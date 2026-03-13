@@ -179,6 +179,7 @@ When these plateau at the same layers simultaneously, and when the inner-product
 
 The `llm_report.txt` in each run directory contains a pre-computed data table, trend descriptions, plateau locations, merge event detection, and flagged anomalies formatted for direct LLM analysis.
 
+Written by Claude Sonnet 4.6
 ---
 
 ## Reference
