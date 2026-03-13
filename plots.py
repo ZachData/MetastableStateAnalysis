@@ -1,0 +1,441 @@
+"""
+plots.py — All figure-generation functions.
+
+Each function takes a results dict (from analysis.analyze_trajectory) and
+a save_dir Path.  Figures are written to disk; nothing is returned.
+
+Functions
+---------
+plot_trajectory          : 4×4 summary panel for one run
+plot_ip_histograms       : replicate paper Figure 1
+plot_pca_panels          : token PCA positions at selected layers
+plot_sinkhorn_detail     : per-head Fiedler heatmap
+plot_spectral_eigengap   : eigenvalue spectrum + eigengap k per layer
+plot_albert_extended     : multi-iteration comparison (ALBERT only)
+plot_cross_model_comparison : side-by-side metric curves across models
+analyze_value_eigenspectrum : singular value histograms of V matrices
+"""
+
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from pathlib import Path
+from scipy.linalg import svdvals
+
+from config import BETA_VALUES, DISTANCE_THRESHOLDS, SPECTRAL_MAX_K
+from models import layernorm_to_sphere
+from metrics import pairwise_inner_products, effective_rank
+
+
+# ---------------------------------------------------------------------------
+# Main trajectory summary panel
+# ---------------------------------------------------------------------------
+
+def plot_trajectory(results: dict, save_dir: Path):
+    """4×4 panel: inner products, rank, energy, clustering, Sinkhorn, PCA, spectral."""
+    model    = results["model"]
+    prompt   = results["prompt"]
+    n_layers = results["n_layers"]
+    layers   = list(range(n_layers))
+
+    fig = plt.figure(figsize=(20, 16))
+    fig.suptitle(
+        f"{model} | {prompt}\n"
+        f"({results['n_tokens']} tokens, d={results['d_model']})",
+        fontsize=10,
+    )
+    gs = gridspec.GridSpec(4, 4, figure=fig, hspace=0.5, wspace=0.38)
+
+    def ax_plot(pos, y, title, color, ylabel=None):
+        ax = fig.add_subplot(gs[pos])
+        ax.plot(layers[:len(y)], y, color=color, linewidth=1.2)
+        ax.set_title(title, fontsize=8)
+        ax.set_xlabel("Layer", fontsize=7)
+        if ylabel:
+            ax.set_ylabel(ylabel, fontsize=7)
+        return ax
+
+    # Mean ± std of pairwise inner products
+    ip_means = [r["ip_mean"] for r in results["layers"]]
+    ip_stds  = [r["ip_std"]  for r in results["layers"]]
+    ax = fig.add_subplot(gs[0, 0])
+    ax.plot(layers, ip_means, color="steelblue")
+    ax.fill_between(
+        layers,
+        np.array(ip_means) - np.array(ip_stds),
+        np.array(ip_means) + np.array(ip_stds),
+        alpha=0.2, color="steelblue",
+    )
+    ax.set_title("Mean ⟨xᵢ, xⱼ⟩ ± std", fontsize=8)
+    ax.axhline(0, color="gray", lw=0.5, ls="--")
+    ax.set_xlabel("Layer", fontsize=7)
+
+    ax_plot((0, 1), [r["ip_mass_near_1"]  for r in results["layers"]],
+            "Fraction pairs > 0.9", "firebrick")
+    ax_plot((0, 2), [r["effective_rank"]  for r in results["layers"]],
+            "Effective rank", "darkgreen")
+
+    # Interaction energy per beta
+    ax = fig.add_subplot(gs[0, 3])
+    for beta, c in zip(BETA_VALUES, ["purple", "darkorange", "teal"]):
+        ax.plot(layers, [r["energies"][beta] for r in results["layers"]],
+                label=f"β={beta}", color=c)
+    ax.set_title("Interaction energy Eβ", fontsize=8)
+    ax.legend(fontsize=6)
+    ax.set_xlabel("Layer", fontsize=7)
+
+    mid_thresh = float(DISTANCE_THRESHOLDS[len(DISTANCE_THRESHOLDS) // 2])
+    ax_plot(
+        (1, 0),
+        [r["clustering"]["agglomerative"].get(mid_thresh, np.nan)
+         for r in results["layers"]],
+        f"Agglomerative k\n(t={mid_thresh:.2f})", "brown",
+    )
+    ax_plot((1, 1), [r["spectral"]["k_eigengap"] for r in results["layers"]],
+            "Spectral k (eigengap)\n[threshold-free]", "navy")
+
+    has_sk    = [r for r in results["layers"] if "sinkhorn" in r]
+    sk_layers = [r["layer"] for r in has_sk]
+
+    if has_sk:
+        ax = fig.add_subplot(gs[1, 2])
+        ax.plot(sk_layers, [r["sinkhorn"]["fiedler_mean"] for r in has_sk],
+                color="darkmagenta", linewidth=1.2)
+        ax.set_title("Sinkhorn Fiedler value\n(↓ = cluster-separated)", fontsize=8)
+        ax.set_xlabel("Layer", fontsize=7)
+
+        ax = fig.add_subplot(gs[1, 3])
+        ax.plot(sk_layers,
+                [r["sinkhorn"]["sinkhorn_cluster_count_mean"] for r in has_sk],
+                color="darkolivegreen", linewidth=1.2)
+        ax.set_title("Sinkhorn cluster count\n(from attention eigenvalues)", fontsize=8)
+        ax.set_xlabel("Layer", fontsize=7)
+
+    # Attention entropy
+    if has_sk:
+        ax = fig.add_subplot(gs[2, 0])
+        ax.plot(sk_layers, [r["attention_entropy_mean"] for r in has_sk],
+                color="darkcyan")
+        ax.set_title("Mean attention entropy", fontsize=8)
+        ax.set_xlabel("Layer", fontsize=7)
+
+        ax = fig.add_subplot(gs[2, 1])
+        ax.plot(sk_layers, [r["sinkhorn"]["row_col_balance_mean"] for r in has_sk],
+                color="sienna")
+        ax.set_title("Attn col-sum std\n(0 = doubly stochastic)", fontsize=8)
+        ax.set_xlabel("Layer", fontsize=7)
+
+    # PCA explained variance
+    ax = fig.add_subplot(gs[2, 2])
+    for ci, color in enumerate(["red", "blue", "green"]):
+        var = [
+            r["pca_explained_variance"][ci]
+            if ci < len(r["pca_explained_variance"]) else 0
+            for r in results["layers"]
+        ]
+        ax.plot(layers, var, color=color, label=f"PC{ci+1}", linewidth=0.9)
+    ax.set_title("PCA explained variance", fontsize=8)
+    ax.legend(fontsize=6)
+    ax.set_xlabel("Layer", fontsize=7)
+
+    # Spectral eigenvalue ladder
+    ax = fig.add_subplot(gs[2, 3])
+    for ei in range(min(5, SPECTRAL_MAX_K)):
+        eig_vals = [
+            r["spectral"]["eigenvalues"][ei]
+            if ei < len(r["spectral"]["eigenvalues"]) else np.nan
+            for r in results["layers"]
+        ]
+        ax.plot(layers, eig_vals, linewidth=0.8, label=f"λ{ei+1}", alpha=0.8)
+    ax.set_title("Laplacian eigenvalues", fontsize=8)
+    ax.legend(fontsize=5)
+    ax.set_xlabel("Layer", fontsize=7)
+
+    # Threshold × layer heatmap
+    ax         = fig.add_subplot(gs[3, :])
+    thresh_list = sorted(DISTANCE_THRESHOLDS)
+    heatmap     = np.zeros((len(thresh_list), n_layers))
+    for li, r in enumerate(results["layers"]):
+        for ti, t in enumerate(thresh_list):
+            heatmap[ti, li] = r["clustering"]["agglomerative"].get(float(t), np.nan)
+    im = ax.imshow(heatmap, aspect="auto", origin="lower",
+                   cmap="viridis", interpolation="nearest")
+    ax.set_title("Agglomerative cluster count: threshold × layer", fontsize=8)
+    ax.set_xlabel("Layer", fontsize=7)
+    ax.set_ylabel("Threshold index", fontsize=7)
+    plt.colorbar(im, ax=ax, shrink=0.8)
+
+    fname = save_dir / f"{model.replace('/', '_')}_{prompt}.png"
+    fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# Inner-product histograms (paper Figure 1)
+# ---------------------------------------------------------------------------
+
+def plot_ip_histograms(results: dict, save_dir: Path, n_panels: int = 8):
+    """Replicate paper Figure 1: ⟨xᵢ, xⱼ⟩ histograms at selected layers."""
+    model    = results["model"]
+    prompt   = results["prompt"]
+    n_layers = results["n_layers"]
+    indices  = np.linspace(0, n_layers - 1, n_panels, dtype=int)
+
+    bins        = np.linspace(-1, 1, 51)
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+
+    fig, axes = plt.subplots(2, n_panels // 2, figsize=(16, 5))
+    axes = axes.flatten()
+    fig.suptitle(f"{model} | {prompt} — ⟨xᵢ, xⱼ⟩ histograms", fontsize=9)
+
+    for ax, li in zip(axes, indices):
+        counts = np.array(results["layers"][li]["ip_histogram"])
+        ax.bar(bin_centers, counts, width=bins[1] - bins[0],
+               color="steelblue", edgecolor="none", alpha=0.8)
+        ax.set_title(f"Layer {li}", fontsize=7)
+        ax.set_xlim(-1, 1)
+        ax.set_xlabel("⟨xᵢ, xⱼ⟩", fontsize=6)
+
+    fname = save_dir / f"{model.replace('/', '_')}_{prompt}_histograms.png"
+    fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# PCA panels
+# ---------------------------------------------------------------------------
+
+def plot_pca_panels(results: dict, save_dir: Path, n_panels: int = 8):
+    """Token positions in PC1–PC2 space at selected layers."""
+    model    = results["model"]
+    prompt   = results["prompt"]
+    tokens   = results["tokens"]
+    n_tokens = results["n_tokens"]
+    n_layers = results["n_layers"]
+
+    indices = np.linspace(0, n_layers - 1, n_panels, dtype=int)
+    colors  = plt.cm.tab20(np.linspace(0, 1, n_tokens))
+
+    fig, axes = plt.subplots(2, n_panels // 2, figsize=(18, 6))
+    axes = axes.flatten()
+    fig.suptitle(f"{model} | {prompt} — PCA projections (PC1 vs PC2)", fontsize=9)
+
+    for ax, li in zip(axes, indices):
+        proj = np.array(results["pca_trajectories"][li])
+        ax.scatter(proj[:, 0], proj[:, 1], c=colors[:n_tokens], s=30, zorder=3)
+        for ti, (x, y) in enumerate(zip(proj[:, 0], proj[:, 1])):
+            label = tokens[ti][:5] if ti < len(tokens) else str(ti)
+            ax.annotate(label, (x, y), fontsize=4, alpha=0.7)
+        ax.set_title(f"Layer {li}", fontsize=7)
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    fname = save_dir / f"{model.replace('/', '_')}_{prompt}_pca.png"
+    fig.savefig(fname, dpi=130, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# Sinkhorn per-head detail
+# ---------------------------------------------------------------------------
+
+def plot_sinkhorn_detail(results: dict, save_dir: Path):
+    """Per-head Fiedler value heatmap: heads × layers."""
+    model  = results["model"]
+    prompt = results["prompt"]
+
+    has_sk = [r for r in results["layers"] if "sinkhorn" in r]
+    if not has_sk:
+        return
+
+    n_heads   = len(has_sk[0]["sinkhorn"]["fiedler_per_head"])
+    sk_layers = [r["layer"] for r in has_sk]
+
+    heatmap = np.zeros((n_heads, len(sk_layers)))
+    for li, r in enumerate(has_sk):
+        for h, fv in enumerate(r["sinkhorn"]["fiedler_per_head"]):
+            heatmap[h, li] = fv
+
+    fig, ax = plt.subplots(figsize=(12, 4))
+    im = ax.imshow(heatmap, aspect="auto", cmap="coolwarm_r",
+                   interpolation="nearest")
+    ax.set_title(
+        f"{model} | {prompt}\n"
+        f"Fiedler value per head × layer  (blue = cluster-separated)",
+        fontsize=9,
+    )
+    ax.set_xlabel("Layer")
+    ax.set_ylabel("Head")
+    plt.colorbar(im, ax=ax, shrink=0.8)
+
+    fname = save_dir / f"{model.replace('/', '_')}_{prompt}_sinkhorn_heads.png"
+    fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# Spectral eigengap
+# ---------------------------------------------------------------------------
+
+def plot_spectral_eigengap(results: dict, save_dir: Path):
+    """Eigenvalue spectrum per layer + eigengap-derived k estimate."""
+    model    = results["model"]
+    prompt   = results["prompt"]
+    n_layers = results["n_layers"]
+
+    max_eigs = min(SPECTRAL_MAX_K, 10)
+    heatmap  = np.zeros((max_eigs, n_layers))
+    for li, r in enumerate(results["layers"]):
+        evs = r["spectral"]["eigenvalues"][:max_eigs]
+        heatmap[:len(evs), li] = evs
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 7))
+    fig.suptitle(f"{model} | {prompt} — Spectral structure (Gram matrix)", fontsize=9)
+
+    im = ax1.imshow(heatmap, aspect="auto", cmap="plasma",
+                    interpolation="nearest", origin="lower")
+    ax1.set_title("Laplacian eigenvalues across layers", fontsize=8)
+    ax1.set_xlabel("Layer", fontsize=7)
+    ax1.set_ylabel("Eigenvalue index", fontsize=7)
+    plt.colorbar(im, ax=ax1, shrink=0.8)
+
+    spectral_k = [r["spectral"]["k_eigengap"] for r in results["layers"]]
+    ax2.step(range(n_layers), spectral_k, color="navy", where="mid")
+    ax2.set_title("k estimated from eigengap heuristic", fontsize=8)
+    ax2.set_xlabel("Layer", fontsize=7)
+    ax2.set_ylabel("k", fontsize=7)
+
+    fname = save_dir / f"{model.replace('/', '_')}_{prompt}_spectral.png"
+    fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# ALBERT extended-iteration comparison
+# ---------------------------------------------------------------------------
+
+def plot_albert_extended(trajectories: dict, save_dir: Path):
+    """
+    Multi-iteration comparison plot for ALBERT.
+
+    Parameters
+    ----------
+    trajectories : {n_iter: list of (n_tokens, d_model) tensors}
+    """
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    fig.suptitle("ALBERT: extended iterations (shared weights)", fontsize=10)
+    colors = plt.cm.plasma(np.linspace(0, 0.85, len(trajectories)))
+
+    for ax, metric in zip(axes, ["ip_mean", "ip_mass_near_1", "effective_rank"]):
+        for (n_iter, traj), color in zip(trajectories.items(), colors):
+            normed = [layernorm_to_sphere(h) for h in traj]
+            if metric == "ip_mean":
+                vals = [pairwise_inner_products(h).mean() for h in normed]
+                ax.set_title("Mean ⟨xᵢ, xⱼ⟩", fontsize=8)
+            elif metric == "ip_mass_near_1":
+                vals = [(pairwise_inner_products(h) > 0.9).mean() for h in normed]
+                ax.set_title("Fraction pairs > 0.9", fontsize=8)
+            else:
+                vals = [effective_rank(h) for h in normed]
+                ax.set_title("Effective rank", fontsize=8)
+            ax.plot(range(len(vals)), vals, label=f"{n_iter} iters", color=color)
+        ax.set_xlabel("Iteration", fontsize=7)
+        ax.legend(fontsize=7)
+
+    fname = save_dir / "albert_extended_iterations.png"
+    fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# Cross-model comparison
+# ---------------------------------------------------------------------------
+
+def plot_cross_model_comparison(all_results: list, save_dir: Path):
+    """Side-by-side metric curves for all models on each prompt."""
+    from collections import defaultdict
+    by_prompt = defaultdict(list)
+    for r in all_results:
+        by_prompt[r["prompt"]].append(r)
+
+    for prompt_key, rlist in by_prompt.items():
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+        fig.suptitle(f"Cross-model | {prompt_key}", fontsize=9)
+        colors = plt.cm.tab10(np.linspace(0, 1, len(rlist)))
+
+        for r, color in zip(rlist, colors):
+            layers = list(range(r["n_layers"]))
+            label  = r["model"].split("/")[-1]
+            axes[0].plot(layers, [l["ip_mass_near_1"] for l in r["layers"]],
+                         label=label, color=color)
+            axes[1].plot(layers, [l["effective_rank"] for l in r["layers"]],
+                         label=label, color=color)
+            axes[2].step(layers, [l["spectral"]["k_eigengap"] for l in r["layers"]],
+                         label=label, color=color, where="mid")
+
+        for ax, title in zip(axes, [
+            "Fraction pairs > 0.9", "Effective rank", "Spectral k (eigengap)"
+        ]):
+            ax.set_title(title, fontsize=8)
+            ax.set_xlabel("Layer", fontsize=7)
+            ax.legend(fontsize=6)
+
+        fname = save_dir / f"cross_model_{prompt_key}.png"
+        fig.savefig(fname, dpi=120, bbox_inches="tight")
+        plt.close(fig)
+        print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# Value matrix singular value spectrum
+# ---------------------------------------------------------------------------
+
+def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path):
+    """Histogram of singular values of V weight matrices per layer."""
+    v_matrices = []
+
+    if "albert" in model_name:
+        try:
+            attn     = model.encoder.albert_layer_groups[0].albert_layers[0].attention
+            v_weight = attn.value.weight.detach().cpu().float().numpy()
+            v_matrices = [("shared", v_weight)]
+        except AttributeError:
+            print(f"  Could not extract V from {model_name}")
+            return
+    elif "bert" in model_name:
+        for i, layer in enumerate(model.encoder.layer):
+            v = layer.attention.self.value.weight.detach().cpu().float().numpy()
+            v_matrices.append((f"layer_{i}", v))
+    elif "gpt2" in model_name:
+        for i, block in enumerate(model.h):
+            d = block.attn.c_attn.weight.shape[1]
+            v = block.attn.c_attn.weight[:, 2*d//3:].detach().cpu().float().numpy()
+            v_matrices.append((f"layer_{i}", v))
+
+    if not v_matrices:
+        return
+
+    n_plot = min(len(v_matrices), 4)
+    fig, axes = plt.subplots(1, n_plot, figsize=(4 * n_plot, 4))
+    if n_plot == 1:
+        axes = [axes]
+    fig.suptitle(f"V singular values — {model_name}", fontsize=9)
+
+    for ax, (name, V) in zip(axes, v_matrices[:n_plot]):
+        sv = svdvals(V)
+        ax.hist(sv, bins=30, color="steelblue", edgecolor="none", alpha=0.8)
+        ax.set_title(f"{name}\nmax={sv.max():.2f} min={sv.min():.2f}", fontsize=8)
+        ax.set_xlabel("Singular value", fontsize=7)
+
+    fname = save_dir / f"V_spectrum_{model_name.replace('/', '_')}.png"
+    fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
