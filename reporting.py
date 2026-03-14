@@ -139,11 +139,19 @@ def print_summary(results: dict):
     print(f"Model: {model} | Prompt: {prompt}")
     print(f"Tokens: {results['n_tokens']} | d_model: {results['d_model']}")
 
+    hdb_k_vals = [
+        r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
+        for r in results["layers"]
+    ]
+    has_hdbscan = any(not np.isnan(v) for v in hdb_k_vals)
+
     metrics = [
         ("Mass-near-1",   [r["ip_mass_near_1"]            for r in results["layers"]], 0.10),
         ("Effective rank",[r["effective_rank"]             for r in results["layers"]], 0.05),
-        ("Spectral k",    [r["spectral"]["k_eigengap"]     for r in results["layers"]], 0.0),
+        ("Spectral k",    [r["spectral"]["k_eigengap"]     for r in results["layers"]], 0.5),
     ]
+    if has_hdbscan:
+        metrics.append(("HDBSCAN k", hdb_k_vals, 0.5))
     for name, vals, tol in metrics:
         plateaus = detect_plateaus(vals, window=2, tol=tol)
         print(f"\n  {name} plateaus (candidate metastable windows):")
@@ -269,9 +277,14 @@ def generate_llm_report(results: dict, save_dir: Path):
     attn_ent  = [r.get("attention_entropy_mean", float("nan"))    for r in has_sk]
     balance   = [r["sinkhorn"]["row_col_balance_mean"]            for r in has_sk]
 
+    hdb_k       = [r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
+                   for r in layers]
+    has_hdbscan = any(not np.isnan(v) for v in hdb_k)
+
     plateaus_mass = detect_plateaus(mass1,  window=2, tol=0.10)
     plateaus_rank = detect_plateaus(erank,  window=2, tol=0.05)
-    plateaus_spk  = detect_plateaus(spec_k, window=2, tol=0.0)
+    plateaus_spk  = detect_plateaus(spec_k, window=2, tol=0.5)
+    plateaus_hdb  = detect_plateaus([v for v in hdb_k if not np.isnan(v)], window=2, tol=0.5) if has_hdbscan else []
     plateaus_fied = detect_plateaus(fiedler, window=2, tol=0.05) if fiedler else []
     merge_events  = _merge_events(spec_k)
     agreement     = _method_agreement(results)
@@ -324,14 +337,15 @@ def generate_llm_report(results: dict, save_dir: Path):
     attn_by_layer    = {r["layer"]: r.get("attention_entropy_mean", float("nan")) for r in has_sk}
 
     W(f"{'L':>3}  {'ip_μ':>7}  {'ip_σ':>6}  {'m>0.9':>6}  "
-      f"{'rank':>6}  {'sp_k':>5}  {'gap':>6}  "
+      f"{'rank':>6}  {'sp_k':>5}  {'hdb_k':>6}  {'gap':>6}  "
       f"{'fied':>7}  {'sk_k':>5}  {'attn_H':>7}  "
       f"{'E_b1':>7}  {'E_b2':>7}  {'E_b5':>7}")
-    W("-" * 95)
+    W("-" * 103)
 
     for r in layers:
-        li = r["layer"]
-        eg = max(r["spectral"]["eigengaps"]) if r["spectral"]["eigengaps"] else float("nan")
+        li    = r["layer"]
+        eg    = max(r["spectral"]["eigengaps"]) if r["spectral"]["eigengaps"] else float("nan")
+        hdb_n = r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
         W(
             f"{li:>3}  "
             f"{r['ip_mean']:>7.4f}  "
@@ -339,6 +353,7 @@ def generate_llm_report(results: dict, save_dir: Path):
             f"{r['ip_mass_near_1']:>6.4f}  "
             f"{r['effective_rank']:>6.2f}  "
             f"{r['spectral']['k_eigengap']:>5}  "
+            f"{hdb_n if not (isinstance(hdb_n, float) and np.isnan(hdb_n)) else 'n/a':>6}  "
             f"{eg:>6.4f}  "
             f"{fiedler_by_layer.get(li, float('nan')):>7.4f}  "
             f"{sk_k_by_layer.get(li, float('nan')):>5.1f}  "
@@ -372,17 +387,19 @@ def generate_llm_report(results: dict, save_dir: Path):
     W(f"  mass_near_1    : {_plateau_str(plateaus_mass)}")
     W(f"  effective_rank : {_plateau_str(plateaus_rank)}")
     W(f"  spectral_k     : {_plateau_str(plateaus_spk)}")
+    if has_hdbscan:
+        W(f"  hdbscan_k      : {_plateau_str(plateaus_hdb)}")
     W(f"  fiedler        : {_plateau_str(plateaus_fied)}")
     W("")
 
     all_plateau_layers = set()
-    for group in [plateaus_mass, plateaus_rank, plateaus_spk, plateaus_fied]:
+    for group in [plateaus_mass, plateaus_rank, plateaus_spk, plateaus_hdb, plateaus_fied]:
         for s, e, _ in group:
             all_plateau_layers.update(range(s, e + 1))
     if all_plateau_layers:
         W(f"  Layers appearing in ANY plateau: {sorted(all_plateau_layers)}")
         layer_count = Counter()
-        for group in [plateaus_mass, plateaus_rank, plateaus_spk, plateaus_fied]:
+        for group in [plateaus_mass, plateaus_rank, plateaus_spk, plateaus_hdb, plateaus_fied]:
             for s, e, _ in group:
                 for l in range(s, e + 1):
                     layer_count[l] += 1
@@ -611,10 +628,16 @@ def generate_cross_run_report(all_results: list, save_dir: Path):
         mass1_  = [l["ip_mass_near_1"]        for l in r["layers"]]
         spec_k_ = [l["spectral"]["k_eigengap"] for l in r["layers"]]
         p_mass  = detect_plateaus(mass1_,  window=2, tol=0.10)
-        p_spk   = detect_plateaus(spec_k_, window=2, tol=0.0)
+        p_spk   = detect_plateaus(spec_k_, window=2, tol=0.5)
+        hdb_k_  = [l["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
+                   for l in r["layers"]]
+        has_hdb = any(not np.isnan(v) for v in hdb_k_)
+        p_hdb   = detect_plateaus([v for v in hdb_k_ if not np.isnan(v)], window=2, tol=0.5) if has_hdb else []
         W(f"  {r['model']} | {r['prompt']}")
         W(f"    mass plateaus   : {_plateau_str(p_mass)}")
         W(f"    spectral k plat : {_plateau_str(p_spk)}")
+        if has_hdb:
+            W(f"    hdbscan k plat  : {_plateau_str(p_hdb)}")
 
     W("")
     W("MERGE EVENT LOCATIONS BY RUN")

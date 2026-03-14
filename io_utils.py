@@ -73,6 +73,7 @@ def save_run(
             "ip_mass_near_1":    layer["ip_mass_near_1"],
             "effective_rank":    layer["effective_rank"],
             "spectral_k":        layer["spectral"]["k_eigengap"],
+            "hdbscan_k":         layer["clustering"].get("hdbscan", {}).get("n_clusters", ""),
             "kmeans_k":          layer["clustering"]["kmeans"]["best_k"],
             "kmeans_silhouette": layer["clustering"]["kmeans"]["best_silhouette"],
         }

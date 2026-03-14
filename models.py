@@ -82,15 +82,12 @@ def extract_activations(model, tokenizer, text: str, model_name: str):
 # ---------------------------------------------------------------------------
 # ALBERT extended-iteration extraction
 # ---------------------------------------------------------------------------
-
 def extract_albert_extended(model, tokenizer, text: str, n_iterations: int):
     """
     Run ALBERT's single shared layer block *n_iterations* times.
-
     ALBERT's weight-sharing means we can iterate the same block to observe
     dynamics that would normally require a much deeper stack.  This is the
     primary analysis path for ALBERT models.
-
     Returns
     -------
     trajectory : list[Tensor]  — (n_tokens, d_model), length n_iterations+1
@@ -102,7 +99,6 @@ def extract_albert_extended(model, tokenizer, text: str, n_iterations: int):
         text, return_tensors="pt", truncation=True, max_length=512
     ).to(DEVICE)
     tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
-
     with torch.no_grad():
         embedding_output = model.embeddings(
             input_ids=inputs["input_ids"],
@@ -114,11 +110,9 @@ def extract_albert_extended(model, tokenizer, text: str, n_iterations: int):
         )
         # ALBERT projects embeddings (128) → hidden_size (768) before iterating
         hidden = model.encoder.embedding_hidden_mapping_in(hidden)
-
         trajectory  = [hidden[0].cpu().float()]
         attentions  = []
         albert_layer = model.encoder.albert_layer_groups[0].albert_layers[0]
-
         for _ in range(n_iterations):
             layer_out = albert_layer(
                 hidden,
@@ -130,5 +124,4 @@ def extract_albert_extended(model, tokenizer, text: str, n_iterations: int):
             # layer_out[1] is (batch, heads, seq, seq) attention probabilities
             if len(layer_out) > 1:
                 attentions.append(layer_out[1][0].cpu().float())
-
     return trajectory, attentions, tokens
