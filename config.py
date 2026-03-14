@@ -30,7 +30,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BETA_VALUES           = [0.1, 1.0, 2.0, 5.0]
 DISTANCE_THRESHOLDS   = np.linspace(0.05, 0.6, 5, 12)
 K_RANGE               = range(2, 10)
-ALBERT_EXTRA_ITERATIONS = [12, 48]
+ALBERT_ITERATIONS = [12, 48]
 
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6

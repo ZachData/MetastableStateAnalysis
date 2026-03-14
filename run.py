@@ -18,7 +18,7 @@ from pathlib import Path
 
 from config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
-    ALBERT_EXTRA_ITERATIONS,
+    ALBERT_ITERATIONS,
 )
 from models import load_model, extract_activations, extract_albert_extended
 from analysis import analyze_trajectory
@@ -97,7 +97,7 @@ def run_all(
         analyze_value_eigenspectrum(model, model_name, OUTPUT_DIR)
 
         cfg          = MODEL_CONFIGS[model_name]
-        use_extended = run_extended and cfg["is_albert"] and ALBERT_EXTRA_ITERATIONS
+        use_extended = run_extended and cfg["is_albert"] and ALBERT_ITERATIONS
 
         if use_extended:
             all_results += _run_albert_extended(
@@ -127,59 +127,45 @@ def run_all(
 
 def _run_albert_extended(model, tokenizer, model_name, prompts_to_run, umap_dir):
     """
-    ALBERT primary path: shared-layer block run for ALBERT_EXTRA_ITERATIONS[0] steps.
+    Run the full analysis pipeline for every entry in ALBERT_ITERATIONS.
+    Each (n_iter, prompt) pair gets its own results, plots, save, and report.
 
-    Use --no-extended to revert to the 13-layer standard behaviour.
+    Use --no-extended to revert to the native-layer standard behaviour.
     """
-    primary_n_iter       = ALBERT_EXTRA_ITERATIONS[0]
-    effective_model_name = f"{model_name}@{primary_n_iter}iter"
-    print(f"  ALBERT extended mode: {primary_n_iter} iterations "
-          f"(label: {effective_model_name})")
-
     extended_trajectories_for_plot = {}
     results_list = []
 
-    for prompt_key in prompts_to_run:
-        print(f"  Prompt: {prompt_key}")
-        try:
-            hidden_states, attentions, tokens = extract_albert_extended(
-                model, tokenizer, PROMPTS[prompt_key], primary_n_iter
-            )
-        except Exception as e:
-            print(f"    Failed: {e}")
-            traceback.print_exc()
-            continue
+    for n_iter in ALBERT_ITERATIONS:
+        effective_model_name = f"{model_name}@{n_iter}iter"
+        print(f"\n  ALBERT iterations: {n_iter}  (label: {effective_model_name})")
 
-        if prompt_key == "wiki_paragraph":
-            extended_trajectories_for_plot[primary_n_iter] = hidden_states
-
-        results = analyze_trajectory(
-            hidden_states, attentions, prompt_key, effective_model_name,
-            tokens, umap_dir=umap_dir,
-        )
-        results_list.append(results)
-        print_summary(results)
-
-        _generate_plots(results, OUTPUT_DIR)
-        stem    = f"{effective_model_name.replace('/', '_').replace('@', '_')}_{prompt_key}"
-        run_dir = OUTPUT_DIR / stem
-        save_run(results, hidden_states, attentions, run_dir)
-        generate_llm_report(results, run_dir)
-        print(f"  Saved run to: {run_dir}/")
-
-    # Optional multi-iter comparison (if more than one iter count is defined)
-    if len(ALBERT_EXTRA_ITERATIONS) > 1:
-        print(f"\n  ALBERT multi-iteration comparison...")
-        for n_iter in ALBERT_EXTRA_ITERATIONS[1:]:
+        for prompt_key in prompts_to_run:
+            print(f"  Prompt: {prompt_key}")
             try:
-                traj, _, _ = extract_albert_extended(
-                    model, tokenizer, PROMPTS["wiki_paragraph"], n_iter
+                hidden_states, attentions, tokens = extract_albert_extended(
+                    model, tokenizer, PROMPTS[prompt_key], n_iter
                 )
-                extended_trajectories_for_plot[n_iter] = traj
-                print(f"    {n_iter} iterations done")
             except Exception as e:
-                print(f"    Failed {n_iter}: {e}")
+                print(f"    Failed: {e}")
                 traceback.print_exc()
+                continue
+
+            if prompt_key == "wiki_paragraph":
+                extended_trajectories_for_plot[n_iter] = hidden_states
+
+            results = analyze_trajectory(
+                hidden_states, attentions, prompt_key, effective_model_name,
+                tokens, umap_dir=umap_dir,
+            )
+            results_list.append(results)
+            print_summary(results)
+
+            _generate_plots(results, OUTPUT_DIR)
+            stem    = f"{effective_model_name.replace('/', '_').replace('@', '_')}_{prompt_key}"
+            run_dir = OUTPUT_DIR / stem
+            save_run(results, hidden_states, attentions, run_dir)
+            generate_llm_report(results, run_dir)
+            print(f"  Saved run to: {run_dir}/")
 
     if extended_trajectories_for_plot:
         plot_albert_extended(extended_trajectories_for_plot, OUTPUT_DIR)
@@ -238,7 +224,7 @@ def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> N
     from config import (
         DEVICE, BETA_VALUES, DISTANCE_THRESHOLDS,
         SINKHORN_MAX_ITER, SINKHORN_TOL, SPECTRAL_MAX_K,
-        ALBERT_EXTRA_ITERATIONS, K_RANGE,
+        ALBERT_ITERATIONS, K_RANGE,
     )
     lines = [
         f"timestamp      : {timestamp}",
@@ -246,8 +232,7 @@ def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> N
         f"models         : {models_to_run}",
         f"prompts        : {prompts_to_run}",
         f"run_extended   : {run_extended}",
-        f"primary_depth  : {ALBERT_EXTRA_ITERATIONS[0]} iter (extended) for ALBERT, "
-        f"native layers for others",
+        f"albert_iterations  : {ALBERT_ITERATIONS}",
         f"device         : {DEVICE}",
         "",
         "--- parameters ---",
@@ -256,7 +241,7 @@ def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> N
         f"sinkhorn_max_iter   : {SINKHORN_MAX_ITER}",
         f"sinkhorn_tol        : {SINKHORN_TOL}",
         f"spectral_max_k      : {SPECTRAL_MAX_K}",
-        f"albert_extra_iters  : {ALBERT_EXTRA_ITERATIONS}",
+        f"albert_iterations   : {ALBERT_ITERATIONS}",
         f"k_range             : {list(K_RANGE)}",
         "",
         "--- prompt texts ---",
