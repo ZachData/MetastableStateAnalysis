@@ -93,8 +93,14 @@ def plot_trajectory(results: dict, save_dir: Path):
          for r in results["layers"]],
         f"Agglomerative k\n(t={mid_thresh:.2f})", "brown",
     )
-    ax_plot((1, 1), [r["spectral"]["k_eigengap"] for r in results["layers"]],
-            "Spectral k (eigengap)\n[threshold-free]", "navy")
+    ax = fig.add_subplot(gs[1, 1])
+    ax.step(layers, [r["spectral"]["k_eigengap"]              for r in results["layers"]],
+            color="navy",       where="mid", label="k")
+    ax.step(layers, [r["spectral"].get("k_second_gap", 1)     for r in results["layers"]],
+            color="darkorange", where="mid", label="k₂", linestyle="--")
+    ax.set_title("Spectral k (eigengap)\nsolid=full  dashed=skip Δλ₁", fontsize=8)
+    ax.set_xlabel("Layer", fontsize=7)
+    ax.legend(fontsize=6)
 
     has_sk    = [r for r in results["layers"] if "sinkhorn" in r]
     sk_layers = [r["layer"] for r in has_sk]
@@ -289,7 +295,7 @@ def plot_spectral_eigengap(results: dict, save_dir: Path):
     prompt   = results["prompt"]
     n_layers = results["n_layers"]
 
-    max_eigs = min(SPECTRAL_MAX_K, 10)
+    max_eigs = SPECTRAL_MAX_K
     heatmap  = np.zeros((max_eigs, n_layers))
     for li, r in enumerate(results["layers"]):
         evs = r["spectral"]["eigenvalues"][:max_eigs]
@@ -305,14 +311,103 @@ def plot_spectral_eigengap(results: dict, save_dir: Path):
     ax1.set_ylabel("Eigenvalue index", fontsize=7)
     plt.colorbar(im, ax=ax1, shrink=0.8)
 
-    spectral_k = [r["spectral"]["k_eigengap"] for r in results["layers"]]
-    ax2.step(range(n_layers), spectral_k, color="navy", where="mid")
-    ax2.set_title("k estimated from eigengap heuristic", fontsize=8)
+    spectral_k   = [r["spectral"]["k_eigengap"]   for r in results["layers"]]
+    spectral_k2  = [r["spectral"].get("k_second_gap", 1) for r in results["layers"]]
+    ax2.step(range(n_layers), spectral_k,  color="navy",       where="mid", label="k (incl. Δλ₁)")
+    ax2.step(range(n_layers), spectral_k2, color="darkorange", where="mid", label="k₂ (skip Δλ₁)", linestyle="--")
+    ax2.set_title("k estimated from eigengap heuristic\n(dashed = skipping trivial zero-mode gap)", fontsize=8)
     ax2.set_xlabel("Layer", fontsize=7)
     ax2.set_ylabel("k", fontsize=7)
+    ax2.legend(fontsize=6)
 
     fname = save_dir / f"{model.replace('/', '_')}_{prompt}_spectral.png"
     fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# Eigenvalue spectrum per layer — is the eigengap real?
+# ---------------------------------------------------------------------------
+
+def plot_eigenvalue_spectra(results: dict, save_dir: Path, n_panels: int = 8):
+    """
+    Plot the raw Laplacian eigenvalue spectrum at selected layers.
+
+    Two rows per panel:
+      Row 1 — bar chart of eigenvalues.  Bars ≤ k are blue; bars > k are coral.
+               A dashed vertical line marks the chosen gap location.
+      Row 2 — bar chart of eigengaps (Δλ between consecutive eigenvalues).
+               The dominant gap (used to pick k) is highlighted in gold.
+
+    Reading this plot:
+      Sharp spike in the gaps row  →  genuine cluster structure.
+      Smooth, monotone gaps row    →  eigengap heuristic is picking noise;
+                                      the k=2 plateau is an artifact.
+    """
+    model    = results["model"]
+    prompt   = results["prompt"]
+    n_layers = results["n_layers"]
+    indices  = np.linspace(0, n_layers - 1, n_panels, dtype=int)
+
+    fig, axes = plt.subplots(2, n_panels, figsize=(n_panels * 2.5, 6))
+    fig.suptitle(
+        f"{model} | {prompt}\n"
+        "Eigenvalue spectra per layer  —  blue ≤ k  |  coral > k  |  gold = dominant gap",
+        fontsize=9,
+    )
+
+    for col, li in enumerate(indices):
+        r    = results["layers"][li]
+        evs  = np.array(r["spectral"]["eigenvalues"])
+        gaps = np.array(r["spectral"]["eigengaps"])
+        k    = r["spectral"]["k_eigengap"]
+        n_ev = len(evs)
+
+        # ── Row 0: eigenvalue magnitudes ──────────────────────────────────
+        ax0 = axes[0, col]
+        bar_colors = ["steelblue" if i < k else "lightcoral" for i in range(n_ev)]
+        ax0.bar(range(n_ev), evs, color=bar_colors, edgecolor="none", width=0.75)
+        if 0 < k < n_ev:
+            ax0.axvline(k - 0.5, color="black", lw=1.0, ls="--", alpha=0.65)
+        ax0.set_title(f"L{li}  k={k}", fontsize=7)
+        ax0.set_xticks(range(n_ev))
+        ax0.set_xticklabels([str(i + 1) for i in range(n_ev)], fontsize=4)
+        ax0.tick_params(axis="y", labelsize=5)
+        ax0.set_xlabel("λ index", fontsize=5)
+        if col == 0:
+            ax0.set_ylabel("λ value", fontsize=6)
+
+        # ── Row 1: eigengaps ───────────────────────────────────────────────
+        ax1 = axes[1, col]
+        if len(gaps) > 0:
+            dominant = int(np.argmax(gaps))
+            gap_colors = ["gold" if i == dominant else "steelblue"
+                          for i in range(len(gaps))]
+            ax1.bar(range(len(gaps)), gaps, color=gap_colors,
+                    edgecolor="none", width=0.75)
+        ax1.set_title("Δλ (gaps)", fontsize=7)
+        ax1.set_xticks(range(len(gaps)))
+        ax1.set_xticklabels([str(i + 1) for i in range(len(gaps))], fontsize=4)
+        ax1.tick_params(axis="y", labelsize=5)
+        ax1.set_xlabel("gap index", fontsize=5)
+        if col == 0:
+            ax1.set_ylabel("Δλ", fontsize=6)
+
+    # Shared legend on the first eigenvalue panel
+    from matplotlib.patches import Patch
+    legend_elems = [
+        Patch(facecolor="steelblue", label="≤ k"),
+        Patch(facecolor="lightcoral", label="> k"),
+        Patch(facecolor="gold",       label="dominant gap"),
+    ]
+    axes[0, 0].legend(handles=legend_elems, fontsize=4, loc="upper right")
+
+    fname = (
+        save_dir
+        / f"{model.replace('/', '_')}_{prompt}_eigenvalue_spectra.png"
+    )
+    fig.savefig(fname, dpi=130, bbox_inches="tight")
     plt.close(fig)
     print(f"  Saved: {fname}")
 

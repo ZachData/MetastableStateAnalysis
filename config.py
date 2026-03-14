@@ -30,11 +30,11 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BETA_VALUES           = [0.1, 1.0, 2.0, 5.0]
 DISTANCE_THRESHOLDS   = np.linspace(0.05, 0.6, 5, 12)
 K_RANGE               = range(2, 10)
-ALBERT_ITERATIONS = [12, 24, 36, 48]   # matches gpt2 / medium / large / xl layer counts
+ALBERT_ITERATIONS = [48]   # 12, 24, 36, 48 matches gpt2 / medium / large / xl layer counts
 
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
-SPECTRAL_MAX_K    = 10
+SPECTRAL_MAX_K    = 15
 
 # ---------------------------------------------------------------------------
 # Prompt variants

@@ -44,8 +44,25 @@ def spectral_eigengap_k(G: np.ndarray, max_k: int = SPECTRAL_MAX_K) -> dict:
     gaps       = np.diff(eigenvalues)
     k_eigengap = int(np.argmax(gaps) + 1)
 
+    # k_second_gap: dominant gap ignoring the trivial first gap (λ₁=0 → λ₂).
+    # λ₁=0 is always the zero mode of any Laplacian, so Δλ₁ is structurally
+    # large regardless of clustering. Skipping it surfaces secondary structure:
+    #   k_second_gap = 1 means no secondary structure (spectrum decays smoothly)
+    #   k_second_gap > 1 means genuine cluster count from non-trivial geometry
+    if len(gaps) > 1:
+        tail_gaps        = gaps[1:]
+        k_second_gap     = int(np.argmax(tail_gaps) + 2)
+        sorted_tail      = np.sort(tail_gaps)
+        second_gap_ratio = float(sorted_tail[-1] / (sorted_tail[-2] + 1e-10)
+                                 if len(sorted_tail) > 1 else 1.0)
+    else:
+        k_second_gap     = 1
+        second_gap_ratio = 1.0
+
     return {
-        "k_eigengap":  k_eigengap,
-        "eigenvalues": eigenvalues.tolist(),
-        "eigengaps":   gaps.tolist(),
+        "k_eigengap":        k_eigengap,
+        "k_second_gap":      k_second_gap,
+        "second_gap_ratio":  second_gap_ratio,
+        "eigenvalues":       eigenvalues.tolist(),
+        "eigengaps":         gaps.tolist(),
     }

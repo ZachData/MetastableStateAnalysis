@@ -328,31 +328,40 @@ def generate_llm_report(results: dict, save_dir: Path):
 
     W("PER-LAYER DATA TABLE")
     W("-" * 40)
-    W("Columns: layer | ip_mean | ip_std | mass>0.9 | eff_rank | spec_k | "
+    W("Columns: layer | ip_mean | ip_std | mass>0.9 | eff_rank | spec_k | spec_k2 | "
       "max_eigengap | fiedler | sk_k | attn_entropy | energy_b1 | energy_b2 | energy_b5")
     W("")
 
     fiedler_by_layer = {r["layer"]: r["sinkhorn"]["fiedler_mean"]                 for r in has_sk}
     sk_k_by_layer    = {r["layer"]: r["sinkhorn"]["sinkhorn_cluster_count_mean"]  for r in has_sk}
     attn_by_layer    = {r["layer"]: r.get("attention_entropy_mean", float("nan")) for r in has_sk}
+    mid_thresh       = float(DISTANCE_THRESHOLDS[len(DISTANCE_THRESHOLDS) // 2])
 
+    W("Columns: layer | ip_mean | ip_std | mass>0.9 | eff_rank | sp_k | k2 | agg_k | km_k | "
+      "hdb_k | gap | fiedler | sk_k | attn_H | E_b1 | E_b2 | E_b5")
     W(f"{'L':>3}  {'ip_μ':>7}  {'ip_σ':>6}  {'m>0.9':>6}  "
-      f"{'rank':>6}  {'sp_k':>5}  {'hdb_k':>6}  {'gap':>6}  "
+      f"{'rank':>7}  {'sp_k':>5}  {'k2':>4}  {'agg_k':>6}  {'km_k':>5}  {'hdb_k':>6}  {'gap':>6}  "
       f"{'fied':>7}  {'sk_k':>5}  {'attn_H':>7}  "
       f"{'E_b1':>7}  {'E_b2':>7}  {'E_b5':>7}")
-    W("-" * 103)
+    W("-" * 122)
 
     for r in layers:
         li    = r["layer"]
         eg    = max(r["spectral"]["eigengaps"]) if r["spectral"]["eigengaps"] else float("nan")
         hdb_n = r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
+        k2    = r["spectral"].get("k_second_gap", float("nan"))
+        agg_k = r["clustering"]["agglomerative"].get(mid_thresh, float("nan"))
+        km_k  = r["clustering"]["kmeans"]["best_k"]
         W(
             f"{li:>3}  "
             f"{r['ip_mean']:>7.4f}  "
             f"{r['ip_std']:>6.4f}  "
             f"{r['ip_mass_near_1']:>6.4f}  "
-            f"{r['effective_rank']:>6.2f}  "
+            f"{r['effective_rank']:>7.2f}  "
             f"{r['spectral']['k_eigengap']:>5}  "
+            f"{k2 if not (isinstance(k2, float) and np.isnan(k2)) else 'n/a':>4}  "
+            f"{int(agg_k) if not (isinstance(agg_k, float) and np.isnan(agg_k)) else 'n/a':>6}  "
+            f"{km_k:>5}  "
             f"{hdb_n if not (isinstance(hdb_n, float) and np.isnan(hdb_n)) else 'n/a':>6}  "
             f"{eg:>6.4f}  "
             f"{fiedler_by_layer.get(li, float('nan')):>7.4f}  "
@@ -364,22 +373,14 @@ def generate_llm_report(results: dict, save_dir: Path):
         )
 
     W("")
-    W("TREND DESCRIPTIONS")
+    W("TREND DESCRIPTIONS  (fiedler and sinkhorn_k only — all others readable from table)")
     W("-" * 40)
-    W(f"  ip_mean        : {_trend(ip_mean)}")
-    W(f"  ip_std         : {_trend(ip_std)}")
-    W(f"  mass_near_1    : {_trend(mass1)}")
-    W(f"  effective_rank : {_trend(erank)}")
-    W(f"  spectral_k     : {_trend(spec_k)}")
     if fiedler:
         W(f"  fiedler        : {_trend(fiedler)}")
     if sk_k:
         W(f"  sinkhorn_k     : {_trend(sk_k)}")
     if attn_ent:
         W(f"  attn_entropy   : {_trend([x for x in attn_ent if not np.isnan(x)])}")
-    for beta in BETA_VALUES:
-        energies = [r["energies"].get(beta, float("nan")) for r in layers]
-        W(f"  energy_b{beta:<4}  : {_trend(energies)}")
     W("")
 
     W("PLATEAU DETECTION  (candidate metastable windows)")
@@ -392,23 +393,13 @@ def generate_llm_report(results: dict, save_dir: Path):
     W(f"  fiedler        : {_plateau_str(plateaus_fied)}")
     W("")
 
-    all_plateau_layers = set()
+    # Compute multi (layers in 2+ metrics) for use in flagged anomalies — not printed here
+    layer_count = Counter()
     for group in [plateaus_mass, plateaus_rank, plateaus_spk, plateaus_hdb, plateaus_fied]:
         for s, e, _ in group:
-            all_plateau_layers.update(range(s, e + 1))
-    if all_plateau_layers:
-        W(f"  Layers appearing in ANY plateau: {sorted(all_plateau_layers)}")
-        layer_count = Counter()
-        for group in [plateaus_mass, plateaus_rank, plateaus_spk, plateaus_hdb, plateaus_fied]:
-            for s, e, _ in group:
-                for l in range(s, e + 1):
-                    layer_count[l] += 1
-        multi = [l for l, c in sorted(layer_count.items()) if c >= 2]
-        if multi:
-            W(f"  Layers in 2+ plateau metrics (STRONGEST SIGNAL): {multi}")
-    else:
-        multi = []
-    W("")
+            for l in range(s, e + 1):
+                layer_count[l] += 1
+    multi = [l for l, c in sorted(layer_count.items()) if c >= 2]
 
     W("MERGE EVENTS  (spectral k drops — cluster collapses)")
     W("-" * 40)
@@ -436,13 +427,16 @@ def generate_llm_report(results: dict, save_dir: Path):
     W("Theory predicts E_beta is monotone increasing along the trajectory.")
     W("Violations indicate deviation from idealized gradient flow.")
     for beta in BETA_VALUES:
-        energies        = [r["energies"].get(beta, float("nan")) for r in layers]
-        diffs           = np.diff(energies)
-        n_violations    = int((diffs < -1e-6).sum())
-        max_drop        = float(diffs.min()) if len(diffs) else float("nan")
-        total_increase  = float(energies[-1] - energies[0])
+        energies       = [r["energies"].get(beta, float("nan")) for r in layers]
+        diffs          = np.diff(energies)
+        viol_layers    = [i + 1 for i, d in enumerate(diffs) if d < -1e-6]
+        n_violations   = len(viol_layers)
+        max_drop       = float(diffs.min()) if len(diffs) else float("nan")
+        total_increase = float(energies[-1] - energies[0])
+        viol_str       = str(viol_layers) if viol_layers else "none"
         W(f"  beta={beta}: total_increase={total_increase:.6f}, "
-          f"violations={n_violations}, max_single_drop={max_drop:.6f}")
+          f"violations={n_violations}, max_single_drop={max_drop:.6f}, "
+          f"violation_layers={viol_str}")
     W("")
 
     W("SINKHORN / ATTENTION ANALYSIS")
@@ -470,6 +464,70 @@ def generate_llm_report(results: dict, save_dir: Path):
               f"values={[round(v, 3) for v in per_head]}")
     else:
         W("  No Sinkhorn data available")
+    W("")
+
+    W("SPECTRAL EIGENVALUE TABLE")
+    W("-" * 40)
+    W("Raw Laplacian eigenvalues (λ₁ … λ_N) and eigengaps (Δλ) per layer.")
+    W("A genuine eigengap at position k appears as a large Δλ[k] relative to its neighbours.")
+    W("A smooth, monotone decay means k is an artifact of the threshold — no real structure.")
+    W("")
+    W("NOTE: λ₁=0 is always the trivial zero mode of the Laplacian.")
+    W("  k_eigengap = dominant gap including Δλ₁  (k=1 throughout = tokens converging to 1 cluster)")
+    W("  k_second_gap = dominant gap SKIPPING Δλ₁ (surfaces secondary structure hidden by zero mode)")
+    W("")
+
+    # Flag if k=1 throughout
+    all_k1 = all(r["spectral"]["k_eigengap"] == 1 for r in layers)
+    if all_k1:
+        k2_vals = [r["spectral"].get("k_second_gap", 1) for r in layers]
+        k2_non1 = [li for li, k2 in enumerate(k2_vals) if k2 > 1]
+        W("  [NOTE] k_eigengap=1 for ALL layers. The trivial zero mode dominates throughout.")
+        if k2_non1:
+            W(f"         k_second_gap finds secondary structure at layers: {k2_non1}")
+            W("         These layers have genuine non-trivial cluster geometry.")
+        else:
+            W("         k_second_gap also=1 throughout: spectrum decays smoothly, no secondary structure.")
+        W("")
+    n_evs = max(len(r["spectral"]["eigenvalues"]) for r in layers)
+    ev_header = "  " + f"{'L':>3}  {'k':>3}  " + "  ".join(
+        f"λ{i+1:>2}" for i in range(n_evs)
+    ) + "   │  " + "  ".join(
+        f"Δ{i+1:>2}" for i in range(n_evs - 1)
+    )
+    W(ev_header)
+    W("  " + "-" * (len(ev_header) - 2))
+    for r in layers:
+        evs  = r["spectral"]["eigenvalues"]
+        gaps = r["spectral"]["eigengaps"]
+        k    = r["spectral"]["k_eigengap"]
+        # Pad to n_evs so columns align regardless of per-layer eigenvalue count
+        evs_padded  = list(evs)  + [float("nan")] * (n_evs - len(evs))
+        gaps_padded = list(gaps) + [float("nan")] * (n_evs - 1 - len(gaps))
+        ev_str  = "  ".join(f"{v:5.3f}" if not np.isnan(v) else "  ---" for v in evs_padded)
+        gap_str = "  ".join(f"{v:5.3f}" if not np.isnan(v) else "  ---" for v in gaps_padded)
+        W(f"  {r['layer']:>3}  {k:>3}  {ev_str}   │  {gap_str}")
+    W("")
+    W("Dominant gap per layer (the gap chosen to set k):")
+    CONVERGED_THRESH = 1e-4   # all gaps below this = fully collapsed, ratios are float noise
+    for r in layers:
+        gaps = r["spectral"]["eigengaps"]
+        k    = r["spectral"]["k_eigengap"]
+        k2   = r["spectral"].get("k_second_gap", "n/a")
+        sgr  = r["spectral"].get("second_gap_ratio", float("nan"))
+        if gaps:
+            dom_gap   = max(gaps)
+            dom_idx   = int(np.argmax(gaps))
+            runner_up = sorted(gaps)[-2] if len(gaps) > 1 else 0.0
+            if dom_gap < CONVERGED_THRESH:
+                # All gaps are floating-point noise — spectrum fully converged
+                W(f"  Layer {r['layer']:2d}: k={k}  k2=n/a  "
+                  f"dom_gap={dom_gap:.2e}@pos{dom_idx+1}  [CONVERGED — all gaps are noise]")
+            else:
+                ratio = dom_gap / (runner_up + 1e-10)
+                W(f"  Layer {r['layer']:2d}: k={k}  k2={k2}  "
+                  f"dom_gap={dom_gap:.4f}@pos{dom_idx+1}  ratio={ratio:.1f}x  "
+                  f"second_gap_ratio={sgr:.1f}x")
     W("")
 
     W("PCA VARIANCE TRAJECTORY")
@@ -515,37 +573,91 @@ def generate_llm_report(results: dict, save_dir: Path):
           f"mass_neg={mass_neg:.3f} mass_zero={mass_zero:.3f} mass_pos1={mass_pos:.3f}")
     W("")
 
-    W("FLAGGED ANOMALIES AND OPEN QUESTIONS FOR LLM")
+    W("FLAGGED ANOMALIES")
     W("-" * 40)
+
+    # Energy monotonicity with specific layers
     e1 = [r["energies"].get(1.0, float("nan")) for r in layers]
-    if np.any(np.diff(e1) < -1e-4):
-        W("  [FLAG] Energy E_beta=1 is NON-MONOTONE. Theory predicts strict increase.")
-        W("         This suggests V matrix has mixed eigenspectrum (some repulsive directions).")
-        W("         Which layers show the drop? Does it correlate with merge events?")
+    e1_viol = [i + 1 for i, d in enumerate(np.diff(e1)) if d < -1e-4]
+    if e1_viol:
+        W(f"  [FLAG] Energy E_beta=1 NON-MONOTONE at layers: {e1_viol}")
+        W("         Suggests V matrix has repulsive directions not in gradient-flow model.")
+        # Check overlap with merge events
+        merge_layers = [layer for layer, _, _ in merge_events]
+        overlap = set(e1_viol) & set(merge_layers)
+        if overlap:
+            W(f"         Energy drops COINCIDE with merge events at layers: {sorted(overlap)}")
+        else:
+            W("         Energy drops do NOT coincide with merge events.")
     else:
         W("  [OK] Energy E_beta=1 is monotone increasing as theory predicts.")
 
+    # Multi-metric plateau summary
     if len(multi) >= 3:
-        W(f"  [SIGNAL] Strong multi-metric plateau at layers {multi}.")
-        W("           Candidate metastable window. What do the tokens look like here?")
+        runs = []
+        start = multi[0]
+        for i in range(1, len(multi)):
+            if multi[i] != multi[i-1] + 1:
+                runs.append((start, multi[i-1]))
+                start = multi[i]
+        runs.append((start, multi[-1]))
+        run_str = ", ".join(f"layers {s}–{e}" for s, e in runs)
+        W(f"  [SIGNAL] Multi-metric plateau spans: {run_str}  ({len(multi)} layers total).")
+        W("           Candidate metastable windows — cross-check with token PCA.")
 
+    # Merge event context
     if not merge_events:
-        W("  [NOTE] No merge events detected. Possible explanations:")
-        W("         (a) Too few layers for two-timescale dynamics")
-        W("         (b) Prompt is too short — metastability needs more tokens")
-        W("         (c) Spectral k threshold insensitive — check raw eigenvalue table")
+        W("  [NOTE] No merge events (spectral k drops) detected.")
+        W("         Possible causes: too few layers, too few tokens, or spectral k stuck at 1.")
+    else:
+        for layer, k_before, k_after in merge_events:
+            fied_at = fiedler_by_layer.get(layer, float("nan"))
+            fied_prev = fiedler_by_layer.get(layer - 1, float("nan"))
+            if not np.isnan(fied_at) and not np.isnan(fied_prev):
+                fied_dir = "↑ ROSE" if fied_at > fied_prev else "↓ fell"
+                W(f"  [MERGE] Layer {layer}: k {k_before}→{k_after}. "
+                  f"Fiedler {fied_prev:.3f}→{fied_at:.3f} ({fied_dir} before merge).")
+            else:
+                W(f"  [MERGE] Layer {layer}: k {k_before}→{k_after}.")
 
-    if fiedler and mass1:
-        fiedler_low_layers = [sk_layers[i] for i, f in enumerate(fiedler) if f < np.median(fiedler)]
-        mass_high_layers   = [i for i, m in enumerate(mass1) if m > np.median(mass1)]
-        overlap = set(fiedler_low_layers) & set(mass_high_layers)
-        if overlap:
-            W(f"  [SIGNAL] Fiedler low AND mass>0.9 high at layers: {sorted(overlap)}")
-            W("           Convergent evidence from attention routing AND activation geometry.")
+    # Fiedler 0.5 crossing
+    if fiedler:
+        crossings = [sk_layers[i] for i in range(1, len(fiedler))
+                     if (fiedler[i-1] < 0.5) != (fiedler[i] < 0.5)]
+        if crossings:
+            W(f"  [TRANSITION] Fiedler crosses 0.5 at layer(s): {crossings}")
+            W("               Below 0.5 = cluster-separated attention; above = tokens mixing.")
+        fiedler_mass_overlap = set(
+            sk_layers[i] for i, f in enumerate(fiedler) if f < np.median(fiedler)
+        ) & set(i for i, m in enumerate(mass1) if m > np.median(mass1))
+        if fiedler_mass_overlap:
+            W(f"  [SIGNAL] Fiedler low AND mass>0.9 high at: {sorted(fiedler_mass_overlap)}")
+            W("           Convergent evidence from attention routing AND geometry.")
         else:
-            W("  [NOTE] Fiedler low layers and mass>0.9 high layers do NOT overlap.")
-            W("         Attention routing and activation geometry telling different stories.")
+            W("  [NOTE] Fiedler-low layers and mass>0.9-high layers do not overlap.")
+            W("         Attention routing and activation geometry are telling different stories.")
 
+    # Effective rank collapse
+    rank_low = [r["layer"] for r in layers if r["effective_rank"] < 10]
+    if rank_low:
+        W(f"  [COLLAPSE] Effective rank drops below 10 at layer {rank_low[0]} "
+          f"(first of {len(rank_low)} layers).")
+        W("             Tokens nearly collinear from this point — geometry is degenerate.")
+
+    # PCA variance jump
+    pca_totals = [sum(r["pca_explained_variance"][:3])
+                  for r in layers if len(r.get("pca_explained_variance", [])) >= 3]
+    if len(pca_totals) > 1:
+        pca_steps = np.diff(pca_totals)
+        max_step_idx = int(np.argmax(pca_steps))
+        max_step = pca_steps[max_step_idx]
+        if max_step > 0.05:
+            W(f"  [PCA JUMP] Largest single-step increase in PC1+PC2+PC3: "
+              f"+{max_step:.3f} at layer {max_step_idx}→{max_step_idx+1} "
+              f"({pca_totals[max_step_idx]:.3f}→{pca_totals[max_step_idx+1]:.3f}).")
+            W("             Rapid dimensional collapse — strong clustering event.")
+
+    # PC1 dominance
     pc1_vals = [r["pca_explained_variance"][0]
                 for r in layers if r.get("pca_explained_variance")]
     if pc1_vals and max(pc1_vals) > 0.8:
@@ -553,16 +665,6 @@ def generate_llm_report(results: dict, save_dir: Path):
         W(f"  [NOTE] PC1 explains {max(pc1_vals):.2%} of variance at layer {peak_layer}.")
         W("         Tokens nearly collinear — strong collapse signal.")
 
-    W("")
-    W("SUGGESTED ANALYSIS QUESTIONS FOR LLM")
-    W("-" * 40)
-    W("  1. Do plateau locations agree across metrics? Which agree and which diverge?")
-    W("  2. Is energy monotone? If not, at which layers does it drop?")
-    W("  3. Are merge events (spectral k drops) preceded by Fiedler value increases?")
-    W("  4. Does the histogram shape match the plateau structure?")
-    W("  5. Does row/col balance of raw attention correlate with Fiedler value?")
-    W("  6. Which tokens end up in the same cluster at each metastable window?")
-    W("  7. Does two-timescale structure appear (fast clustering, slow merging)?")
     W("")
     W("=" * 72)
     W("END OF REPORT")

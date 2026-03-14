@@ -30,6 +30,7 @@ from plots import (
     plot_pca_panels,
     plot_sinkhorn_detail,
     plot_spectral_eigengap,
+    plot_eigenvalue_spectra,
     plot_albert_extended,
     plot_cross_model_comparison,
     analyze_value_eigenspectrum,
@@ -220,6 +221,7 @@ def _generate_plots(results: dict, out_dir: Path) -> None:
     plot_pca_panels(results, out_dir)
     plot_sinkhorn_detail(results, out_dir)
     plot_spectral_eigengap(results, out_dir)
+    plot_eigenvalue_spectra(results, out_dir)
 
 
 def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> None:
@@ -274,7 +276,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-extended", action="store_true",
                         help="Disable ALBERT extended-iteration mode")
     parser.add_argument("--fast", action="store_true",
-                        help="albert-base-v2 + wiki_paragraph + repeated_tokens only")
+                        help="albert-base-v2 + wiki_paragraph")
     parser.add_argument("--replot", type=str, default=None, metavar="RUN_DIR",
                         help="Recreate all plots from a saved run directory")
     parser.add_argument("--summary", type=str, default=None, metavar="RUN_DIR",
