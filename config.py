@@ -27,10 +27,10 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # Numerical parameters
 # ---------------------------------------------------------------------------
 
-BETA_VALUES           = [1.0, 2.0, 5.0]
-DISTANCE_THRESHOLDS   = np.linspace(0.05, 0.6, 12)
+BETA_VALUES           = [0.1, 1.0, 2.0, 5.0]
+DISTANCE_THRESHOLDS   = np.linspace(0.05, 0.6, 5, 12)
 K_RANGE               = range(2, 10)
-ALBERT_EXTRA_ITERATIONS = [48]
+ALBERT_EXTRA_ITERATIONS = [12, 48]
 
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
@@ -41,31 +41,94 @@ SPECTRAL_MAX_K    = 10
 # ---------------------------------------------------------------------------
 
 PROMPTS = {
-    "wiki_paragraph": (
-        "The transformer architecture was introduced in 2017 and has since become "
-        "the dominant paradigm in natural language processing. Self-attention allows "
-        "each token to attend to every other token in the sequence, enabling the "
-        "model to capture long-range dependencies that recurrent architectures struggle with."
-    ),
-    "short_homogeneous": (
-        "The cat sat on the mat and looked at the rat."
-    ),
     "short_heterogeneous": (
         "Quantum mechanics governs the behavior of subatomic particles. "
         "Meanwhile, the stock market closed higher on Friday."
     ),
-    "long_structured": (
-        "Although the researchers had initially hypothesized that the model would "
-        "fail to generalize beyond its training distribution, the experimental results "
-        "demonstrated a surprising degree of robustness, even when the input prompts "
-        "were systematically perturbed in ways that humans found trivially easy to handle."
+    "wiki_paragraph": (
+        "Charlotte Nicholls (née Brontë; 21 April 1816 – 31 March 1855), commonly known by her maiden "
+        "name Charlotte Brontë, was an English novelist and poet, and was the elder sister of Emily, "
+        "Anne and Branwell Brontë. She is best known for her novel Jane Eyre, which was first published "
+        "under the pseudonym Currer Bell. Jane Eyre was a great success on publication, and has since "
+        "become known as a classic of English literature. Charlotte was the third of six siblings born "
+        "to Maria Branwell and Patrick Brontë. Maria died when Charlotte was only five years old, and "
+        "three years later, Charlotte was sent to the Clergy Daughters' School at Cowan Bridge in "
+        "Lancashire, along with her three sisters, Maria, Elizabeth and Emily. Conditions at the school "
+        "were appalling, with frequent outbreaks of disease. Charlotte's two elder sisters fell ill there "
+        "and died shortly afterwards; Charlotte attributed her own lifelong ill-health to her time at "
+        "Cowan Bridge, and later used it as the model for Lowood School in Jane Eyre. In 1831, Charlotte "
+        "became a pupil at Roe Head School in Mirfield, but left the following year to teach her sisters, "
+        "Emily and Anne, at home. In 1835, Charlotte returned to Roe Head as a teacher. In 1839, she "
+        "accepted a job as governess to a local family, but left after a few months. In 1842, Charlotte "
+        "joined the Heger Pensionnat, a girls' boarding school in Brussels, as a student, then later as "
+        "a teacher, in the hope of acquiring the skills required to open a school of her own. However, "
+        "she was obliged to leave after falling in love with the school's director, Constantin Heger, a "
+        "married man, who inspired both the character of Rochester in Jane Eyre, and Charlotte's first "
+        "novel, The Professor. Charlotte, Emily and Anne attempted to open a school in Haworth, but "
+        "failed to attract pupils. In 1846 the sisters published a collection of poems under the "
+        "pseudonyms Currer, Ellis, and Acton Bell. Although Charlotte's first novel, The Professor, was "
+        "rejected by publishers, her second novel, Jane Eyre, was published in 1847, attracting both "
+        "praise and controversy."
     ),
     "repeated_tokens": (
-        "The cat chased the cat because the cat was hungry and the cat wanted food "
-        "and the cat finally caught the cat near the fence."
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat"
     ),
-    "minimal": (
-        "Attention is all you need."
+    "sullivan_ballou": (
+        "My Very Dear Wife: Indications are very strong that we shall move in a few days, perhaps "
+        "to-morrow. Lest I should not be able to write you again, I feel impelled to write a few "
+        "lines, that may fall under your eye when I shall be no more. Our movement may be one of a "
+        "few days duration and full of pleasure and it may be one of severe conflict and death to me. "
+        "Not my will, but thine, O God be done. If it is necessary that I should fall on the "
+        "battle-field for any country, I am ready. I have no misgivings about, or lack of confidence "
+        "in, the cause in which I am engaged, and my courage does not halt or falter. I know how "
+        "strongly American civilization now leans upon the triumph of government, and how great a debt "
+        "we owe to those who went before us through the blood and suffering of the Revolution, and I "
+        "am willing, perfectly willing to lay down all my joys in this life to help maintain this "
+        "government, and to pay that debt. But, my dear wife, when I know, that with my own joys, I "
+        "lay down nearly all of yours, and replace them in this life with care and sorrows, when, after "
+        "having eaten for long years the bitter fruit of orphanage myself, I must offer it, as their "
+        "only sustenance, to my dear little children, is it weak or dishonorable, while the banner of "
+        "my purpose floats calmly and proudly in the breeze, that my unbounded love for you, my "
+        "darling wife and children, should struggle in fierce, though useless, contest with my love of "
+        "country. I cannot describe to you my feelings on this calm summer night, when two thousand "
+        "men are sleeping around me, many of them enjoying the last, perhaps, before that of death, "
+        "and I, suspicious that Death is creeping behind me with his fatal dart, am communing with "
+        "God, my country and thee. I have sought most closely and diligently, and often in my breast, "
+        "for a wrong motive in this hazarding the happiness of those I loved, and I could not find "
+        "one. A pure love of my country, and of the principles I have often advocated before the "
+        "people, and the name of honor, that I love more than I fear death, have called upon me, "
+        "and I have obeyed."
+    ),
+    "paper_excerpt": (
+        "An important aspect of Transformers is that they are not hard-wired to take into account "
+        "the order of the input sequence, contrary to other architectures used for natural language "
+        "processing such as recurrent neural networks. In these applications, each token contains "
+        "not only a word embedding, but also an additional positional encoding which allows tokens "
+        "to also carry their position in the input sequence. Therefore, an input sequence is "
+        "perfectly encoded as a set of tokens, or equivalently as the empirical measure of its "
+        "constituent tokens. Recall that the output of a Transformer is also a probability measure, "
+        "albeit one that captures the likelihood of the next token. As a result, one can view "
+        "Transformers as flow maps between probability measures on the sphere. To describe this "
+        "flow map, we appeal to the continuity equation, which governs precisely the evolution of "
+        "the empirical measure of particles subject to dynamics. This perspective is already present "
+        "in prior work, the only modification here being that we add the projection on the sphere "
+        "arising from layer normalization. After introducing the continuity equation, we show that "
+        "a particular interaction energy functional, which is maximized at any point mass, increases "
+        "along solutions thereof. Motivated by this monotonicity property, we propose an illustrative "
+        "modified model which has the nice property of being a Wasserstein gradient flow for this "
+        "energy. Finally, we demonstrate that the original equation is itself a gradient flow for "
+        "the same energy, upon changing the metric underlying the definition of the gradient."
     ),
 }
 
