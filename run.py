@@ -2,9 +2,11 @@
 run.py — Experiment orchestrator and CLI entry point.
 
 Usage examples:
-    python run.py
-    python run.py --fast
-    python run.py --models albert-base-v2 bert-base-uncased --prompts wiki_paragraph
+    python run.py                                          # all 7 models, all prompts
+    python run.py --fast                                   # albert-base-v2 only, 2 prompts
+    python run.py --models albert-base-v2 gpt2-xl         # specific model subset
+    python run.py --models albert-xlarge-v2               # swap to ALBERT xlarge
+    python run.py --models albert-base-v2 --prompts wiki_paragraph
     python run.py --no-extended
     python run.py --replot  metastability_results/2024-01-01_12-00-00/albert-base-v2_wiki_paragraph
     python run.py --summary metastability_results/2024-01-01_12-00-00/albert-base-v2_wiki_paragraph
@@ -265,7 +267,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Phase 1: Empirical Metastability Detection"
     )
-    parser.add_argument("--models", nargs="+", default=["albert-base-v2"],
+    parser.add_argument("--models", nargs="+", default=list(MODEL_CONFIGS.keys()),
                         choices=list(MODEL_CONFIGS.keys()))
     parser.add_argument("--prompts", nargs="+", default=list(PROMPTS.keys()),
                         choices=list(PROMPTS.keys()))

@@ -30,7 +30,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BETA_VALUES           = [0.1, 1.0, 2.0, 5.0]
 DISTANCE_THRESHOLDS   = np.linspace(0.05, 0.6, 5, 12)
 K_RANGE               = range(2, 10)
-ALBERT_ITERATIONS = [12, 48]
+ALBERT_ITERATIONS = [12, 24, 36, 48]   # matches gpt2 / medium / large / xl layer counts
 
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
@@ -153,6 +153,21 @@ MODEL_CONFIGS = {
         "is_albert":       False,
     },
     "gpt2": {
+        "model_class":     GPT2Model,
+        "tokenizer_class": GPT2Tokenizer,
+        "is_albert":       False,
+    },
+    "gpt2-medium": {
+        "model_class":     GPT2Model,
+        "tokenizer_class": GPT2Tokenizer,
+        "is_albert":       False,
+    },
+    "gpt2-large": {
+        "model_class":     GPT2Model,
+        "tokenizer_class": GPT2Tokenizer,
+        "is_albert":       False,
+    },
+    "gpt2-xl": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
