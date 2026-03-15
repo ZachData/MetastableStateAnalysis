@@ -77,6 +77,7 @@ def save_run(
             "hdbscan_k":         layer["clustering"].get("hdbscan", {}).get("n_clusters", ""),
             "kmeans_k":          layer["clustering"]["kmeans"]["best_k"],
             "kmeans_silhouette": layer["clustering"]["kmeans"]["best_silhouette"],
+            "nn_stability":      layer.get("nn_stability", ""),
         }
         for beta in BETA_VALUES:
             row[f"energy_beta{beta}"] = layer["energies"][beta]

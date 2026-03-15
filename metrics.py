@@ -14,6 +14,8 @@ interaction_energies_batched  : all beta values in one vectorised pass
 effective_rank                : spectral entropy of singular values
 effective_rank_from_normed    : same, accepts pre-normalised ndarray
 attention_entropy             : per-head Shannon entropy of attention rows
+nearest_neighbor_indices      : argmax-NN for each token from Gram matrix
+nearest_neighbor_stability    : fraction of tokens with unchanged NN vs prev layer
 """
 
 import numpy as np
@@ -152,3 +154,49 @@ def attention_entropy(attn_matrix: torch.Tensor) -> np.ndarray:
     log_attn          = np.log(attn + 1e-12)
     entropy_per_token = -(attn * log_attn).sum(axis=-1)   # (n_heads, n_tokens)
     return entropy_per_token.mean(axis=-1)                 # (n_heads,)
+
+
+# ---------------------------------------------------------------------------
+# Nearest-neighbour trajectory tracking
+# ---------------------------------------------------------------------------
+
+def nearest_neighbor_indices(G: np.ndarray) -> np.ndarray:
+    """
+    For each token, return the index of its nearest neighbour by cosine
+    similarity, excluding self.
+
+    Parameters
+    ----------
+    G : (n, n) pre-computed pairwise inner-product (Gram) matrix on S^{d-1}
+
+    Returns
+    -------
+    (n,) int array  —  nn[i] = argmax_{j≠i} G[i, j]
+    """
+    G_masked = G.copy()
+    np.fill_diagonal(G_masked, -np.inf)
+    return np.argmax(G_masked, axis=1).astype(np.int32)
+
+
+def nearest_neighbor_stability(
+    activations: torch.Tensor,
+    prev_activations: torch.Tensor,
+) -> float:
+    """
+    Fraction of tokens whose nearest neighbour (by cosine similarity) did not
+    change between *prev_activations* (layer L-1) and *activations* (layer L).
+
+    Returns a scalar in [0, 1].
+      1.0 = every token's NN is identical — perfect metastable plateau.
+      0.0 = every token's NN changed — tokens still reorganising.
+
+    This is the public spec-compliant API.  The analysis loop uses
+    ``nearest_neighbor_indices`` directly on the pre-computed Gram matrix to
+    avoid redundant normalisation and matmul operations.
+    """
+    from models import layernorm_to_sphere  # local import avoids circular dep
+    normed_curr = layernorm_to_sphere(activations).numpy()
+    normed_prev = layernorm_to_sphere(prev_activations).numpy()
+    nn_curr = nearest_neighbor_indices(normed_curr @ normed_curr.T)
+    nn_prev = nearest_neighbor_indices(normed_prev @ normed_prev.T)
+    return float(np.mean(nn_curr == nn_prev))

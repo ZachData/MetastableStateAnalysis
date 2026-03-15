@@ -25,6 +25,7 @@ from metrics import (
     interaction_energies_batched,
     effective_rank_from_raw,
     attention_entropy,
+    nearest_neighbor_indices,
 )
 from sinkhorn import analyze_attention_sinkhorn
 from spectral import spectral_eigengap_k
@@ -71,6 +72,8 @@ def analyze_trajectory(
         "pca_trajectories": [],   # (n_layers, n_tokens, 3) nested list
     }
 
+    prev_nn: np.ndarray = None   # NN index array from previous layer
+
     for layer_idx, activations in enumerate(tqdm(
         hidden_states,
         desc=f"{model_name[:20]} | {prompt_key}",
@@ -92,6 +95,18 @@ def analyze_trajectory(
         lr["ip_std"]         = float(ips.std())
         lr["ip_histogram"]   = np.histogram(ips, bins=50, range=(-1, 1))[0].tolist()
         lr["ip_mass_near_1"] = float((ips > 0.9).mean())
+
+        # --- Nearest-neighbour trajectory tracking ---
+        # nn[i] = index of token i's nearest neighbour at this layer (excl. self).
+        # nn_stability = fraction of tokens with unchanged NN vs the previous layer.
+        # Layer 0 has no predecessor, so stability is undefined (stored as None).
+        nn                   = nearest_neighbor_indices(G)          # (n_tokens,)
+        lr["nn_indices"]     = nn.tolist()
+        if prev_nn is not None:
+            lr["nn_stability"] = float(np.mean(nn == prev_nn))
+        else:
+            lr["nn_stability"] = None
+        prev_nn = nn
 
         # --- Interaction energies (all betas, one vectorised exp call) ---
         lr["energies"] = interaction_energies_batched(G, beta_values)

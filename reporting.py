@@ -67,6 +67,65 @@ def _merge_events(spectral_k: list) -> list:
     ]
 
 
+def _nn_cycles(nn_indices: list, tokens: list) -> list:
+    """
+    Find all cycles in the NN functional graph.
+
+    Each node has exactly one outgoing edge (its nearest neighbour).  The
+    minimal closed sets — sets S where ∀ i∈S: nn[i]∈S — are exactly the
+    cycles.  Walking each node's chain until revisiting a node surfaces them.
+
+    Parameters
+    ----------
+    nn_indices : (n_tokens,) list of int  —  nn_indices[i] = NN of token i
+    tokens     : list of str             —  decoded token strings
+
+    Returns
+    -------
+    list of (cluster, is_semantic) tuples where:
+      cluster    : list of token strings (sorted by index)
+      is_semantic: True if at least two members have distinct string values
+                   (i.e. not a same-type duplicate pair)
+    Clusters are returned in ascending order of their smallest member index.
+    """
+    n         = len(nn_indices)
+    visited   = [False] * n
+    in_cycle  = [False] * n
+    cycles    = []
+
+    for start in range(n):
+        if visited[start]:
+            continue
+        path = []
+        pos  = {}                     # node → position in current path
+        curr = start
+        while curr not in pos and not visited[curr]:
+            pos[curr] = len(path)
+            path.append(curr)
+            curr = nn_indices[curr]
+
+        if curr in pos and not in_cycle[curr]:
+            # A new cycle starting at pos[curr] in path
+            cycle = path[pos[curr]:]
+            cycles.append(sorted(cycle))
+            for node in cycle:
+                in_cycle[node] = True
+
+        for node in path:
+            visited[node] = True
+
+    # Sort cycles by smallest member index
+    cycles.sort(key=lambda c: c[0])
+
+    result = []
+    for cycle in cycles:
+        token_strs = [tokens[i] for i in cycle]
+        # Semantic = at least two members differ in string value
+        is_semantic = len(set(token_strs)) > 1
+        result.append((token_strs, is_semantic))
+    return result
+
+
 def _method_agreement(results: dict) -> list:
     """
     Layers where agglomerative, KMeans, spectral, and Sinkhorn cluster
@@ -165,6 +224,26 @@ def print_summary(results: dict):
         for start, end, val in detect_plateaus(fiedler, window=2, tol=0.05):
             print(f"    Layers {start}–{end}  (mean={val:.4f})")
 
+    nn_stab_pairs = [(r["layer"], r["nn_stability"])
+                     for r in results["layers"]
+                     if r.get("nn_stability") is not None
+                     and r["effective_rank"] >= 2.0]
+    if nn_stab_pairs:
+        nn_series = [v for _, v in nn_stab_pairs]
+        nn_plat   = detect_plateaus(nn_series, window=2, tol=0.02)
+        n_suppressed = sum(1 for r in results["layers"]
+                           if r.get("nn_stability") is not None
+                           and r["effective_rank"] < 2.0)
+        suffix = f" ({n_suppressed} degenerate layers excluded)" if n_suppressed else ""
+        print(f"\n  NN Stability plateaus (metastable neighbourhood lock-in){suffix}:")
+        if nn_plat:
+            for s, e, val in nn_plat:
+                layer_s = nn_stab_pairs[s][0]
+                layer_e = nn_stab_pairs[e][0]
+                print(f"    Layers {layer_s}–{layer_e}  (mean={val:.4f})")
+        else:
+            print(f"    No plateaus detected")
+
 
 def print_run_summary(run_dir: Path):
     """
@@ -192,11 +271,13 @@ def print_run_summary(run_dir: Path):
 
     print(f"\n{'─'*70}")
     print(f"{'Layer':>6}  {'ip_mean':>8}  {'mass>0.9':>9}  "
-          f"{'eff_rank':>9}  {'spec_k':>7}  {'fiedler':>8}  {'sk_k':>5}")
-    print(f"{'─'*70}")
+          f"{'eff_rank':>9}  {'spec_k':>7}  {'fiedler':>8}  {'sk_k':>5}  {'nn_stab':>8}")
+    print(f"{'─'*80}")
 
     for r in layers:
-        sk = r.get("sinkhorn", {})
+        sk       = r.get("sinkhorn", {})
+        nn_stab  = r.get("nn_stability")
+        nn_str   = f"{nn_stab:>8.4f}" if nn_stab is not None else f"{'n/a':>8}"
         print(
             f"{r['layer']:>6}  "
             f"{r['ip_mean']:>8.4f}  "
@@ -204,7 +285,8 @@ def print_run_summary(run_dir: Path):
             f"{r['effective_rank']:>9.2f}  "
             f"{r['spectral']['k_eigengap']:>7}  "
             f"{sk.get('fiedler_mean', float('nan')):>8.4f}  "
-            f"{sk.get('sinkhorn_cluster_count_mean', float('nan')):>5.1f}"
+            f"{sk.get('sinkhorn_cluster_count_mean', float('nan')):>5.1f}  "
+            f"{nn_str}"
         )
 
     print(f"\n{'─'*70}")
@@ -223,6 +305,27 @@ def print_run_summary(run_dir: Path):
         if plateaus:
             for s, e, v in plateaus:
                 print(f"    Layers {s:2d}–{e:2d}  mean={v:.4f}  width={e-s+1}")
+        else:
+            print("    No plateaus detected")
+
+    # NN stability plateaus — suppress degenerate layers (eff_rank < 2)
+    nn_stab_vals    = [r.get("nn_stability") for r in layers]
+    nn_stab_defined = [
+        (i, v) for i, v in enumerate(nn_stab_vals)
+        if v is not None and layers[i]["effective_rank"] >= 2.0
+    ]
+    if nn_stab_defined:
+        nn_stab_series = [v for _, v in nn_stab_defined]
+        nn_plat = detect_plateaus(nn_stab_series, window=2, tol=0.02)
+        n_sup = sum(1 for r in layers
+                    if r.get("nn_stability") is not None and r["effective_rank"] < 2.0)
+        suffix = f" ({n_sup} degenerate layers excluded)" if n_sup else ""
+        print(f"\n  NN Stability (high = tokens locked in stable neighbourhoods){suffix}:")
+        if nn_plat:
+            for s, e, v in nn_plat:
+                layer_s = nn_stab_defined[s][0]
+                layer_e = nn_stab_defined[e][0]
+                print(f"    Layers {layer_s:2d}–{layer_e:2d}  mean={v:.4f}  width={e-s+1}")
         else:
             print("    No plateaus detected")
 
@@ -286,6 +389,31 @@ def generate_llm_report(results: dict, save_dir: Path):
     plateaus_spk  = detect_plateaus(spec_k, window=2, tol=0.5)
     plateaus_hdb  = detect_plateaus([v for v in hdb_k if not np.isnan(v)], window=2, tol=0.5) if has_hdbscan else []
     plateaus_fied = detect_plateaus(fiedler, window=2, tol=0.05) if fiedler else []
+
+    # NN stability series: skip layer 0 (None) AND degenerate layers (eff_rank < 2).
+    # When all tokens are a near-point-mass (rank ≈ 1–2), NN assignment is determined
+    # by floating-point noise — the stability signal is meaningless there.
+    NN_DEGENERATE_RANK = 2.0
+    nn_stab_pairs   = [
+        (r["layer"], r["nn_stability"])
+        for r in layers
+        if r.get("nn_stability") is not None
+        and r["effective_rank"] >= NN_DEGENERATE_RANK
+    ]
+    nn_stab_series  = [v for _, v in nn_stab_pairs]
+    plateaus_nn     = detect_plateaus(nn_stab_series, window=2, tol=0.02) if nn_stab_series else []
+    # Plateau layer sets for TOKEN CLUSTER MEMBERSHIP (use NN stability primary signal)
+    nn_plateau_layers = set()
+    for s, e, _ in plateaus_nn:
+        for idx in range(s, e + 1):
+            nn_plateau_layers.add(nn_stab_pairs[idx][0])
+    # Count of layers suppressed as degenerate (for report annotation)
+    nn_degenerate_count = sum(
+        1 for r in layers
+        if r.get("nn_stability") is not None
+        and r["effective_rank"] < NN_DEGENERATE_RANK
+    )
+
     merge_events  = _merge_events(spec_k)
     agreement     = _method_agreement(results)
 
@@ -338,20 +466,22 @@ def generate_llm_report(results: dict, save_dir: Path):
     mid_thresh       = float(DISTANCE_THRESHOLDS[len(DISTANCE_THRESHOLDS) // 2])
 
     W("Columns: layer | ip_mean | ip_std | mass>0.9 | eff_rank | sp_k | k2 | agg_k | km_k | "
-      "hdb_k | gap | fiedler | sk_k | attn_H | E_b1 | E_b2 | E_b5")
+      "hdb_k | gap | fiedler | sk_k | attn_H | E_b1 | E_b2 | E_b5 | nn_stab")
     W(f"{'L':>3}  {'ip_μ':>7}  {'ip_σ':>6}  {'m>0.9':>6}  "
       f"{'rank':>7}  {'sp_k':>5}  {'k2':>4}  {'agg_k':>6}  {'km_k':>5}  {'hdb_k':>6}  {'gap':>6}  "
       f"{'fied':>7}  {'sk_k':>5}  {'attn_H':>7}  "
-      f"{'E_b1':>7}  {'E_b2':>7}  {'E_b5':>7}")
-    W("-" * 122)
+      f"{'E_b1':>7}  {'E_b2':>7}  {'E_b5':>7}  {'nn_stab':>8}")
+    W("-" * 132)
 
     for r in layers:
-        li    = r["layer"]
-        eg    = max(r["spectral"]["eigengaps"]) if r["spectral"]["eigengaps"] else float("nan")
-        hdb_n = r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
-        k2    = r["spectral"].get("k_second_gap", float("nan"))
-        agg_k = r["clustering"]["agglomerative"].get(mid_thresh, float("nan"))
-        km_k  = r["clustering"]["kmeans"]["best_k"]
+        li      = r["layer"]
+        eg      = max(r["spectral"]["eigengaps"]) if r["spectral"]["eigengaps"] else float("nan")
+        hdb_n   = r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
+        k2      = r["spectral"].get("k_second_gap", float("nan"))
+        agg_k   = r["clustering"]["agglomerative"].get(mid_thresh, float("nan"))
+        km_k    = r["clustering"]["kmeans"]["best_k"]
+        nn_stab = r.get("nn_stability")
+        nn_str  = f"{nn_stab:>8.4f}" if nn_stab is not None else f"{'n/a':>8}"
         W(
             f"{li:>3}  "
             f"{r['ip_mean']:>7.4f}  "
@@ -369,7 +499,8 @@ def generate_llm_report(results: dict, save_dir: Path):
             f"{attn_by_layer.get(li, float('nan')):>7.4f}  "
             f"{r['energies'].get(1.0, float('nan')):>7.4f}  "
             f"{r['energies'].get(2.0, float('nan')):>7.4f}  "
-            f"{r['energies'].get(5.0, float('nan')):>7.4f}"
+            f"{r['energies'].get(5.0, float('nan')):>7.4f}  "
+            f"{nn_str}"
         )
 
     W("")
@@ -391,6 +522,17 @@ def generate_llm_report(results: dict, save_dir: Path):
     if has_hdbscan:
         W(f"  hdbscan_k      : {_plateau_str(plateaus_hdb)}")
     W(f"  fiedler        : {_plateau_str(plateaus_fied)}")
+    if nn_stab_pairs:
+        # Remap plateau indices (into nn_stab_series) back to actual layer numbers
+        nn_plat_str_parts = []
+        for s, e, v in plateaus_nn:
+            layer_s = nn_stab_pairs[s][0]
+            layer_e = nn_stab_pairs[e][0]
+            nn_plat_str_parts.append(f"layers {layer_s}-{layer_e} (width={e-s+1}, mean={v:.4f})")
+        nn_plat_str = "; ".join(nn_plat_str_parts) if nn_plat_str_parts else "none detected"
+        degenerate_note = (f"  [{nn_degenerate_count} degenerate layers suppressed "
+                           f"(eff_rank < {NN_DEGENERATE_RANK})]") if nn_degenerate_count else ""
+        W(f"  nn_stability   : {nn_plat_str}{degenerate_note}")
     W("")
 
     # Compute multi (layers in 2+ metrics) for use in flagged anomalies — not printed here
@@ -573,6 +715,68 @@ def generate_llm_report(results: dict, save_dir: Path):
           f"mass_neg={mass_neg:.3f} mass_zero={mass_zero:.3f} mass_pos1={mass_pos:.3f}")
     W("")
 
+    W("")
+
+    # ------------------------------------------------------------------
+    # TOKEN CLUSTER MEMBERSHIP
+    # Printed only for layers that fall inside an NN-stability plateau.
+    # At each such layer, finds stable token clusters: maximal sets where
+    # every member's nearest neighbour points within the set.  In the NN
+    # functional graph (each node has out-degree 1) these are precisely
+    # the cycles.  Mutual pairs (i→j, j→i) are the simplest case.
+    # ------------------------------------------------------------------
+    W("TOKEN CLUSTER MEMBERSHIP")
+    W("-" * 40)
+    W("Stable clusters at NN-stability plateau layers.")
+    W("A cluster is a maximal set S where ∀ i ∈ S: NN(i) ∈ S (cycles in the NN graph).")
+    W("Mutual pairs and longer cycles both qualify.")
+    W("SEMANTIC clusters: members have distinct token strings (structurally parallel tokens).")
+    W("DUPLICATE clusters: all members are the same token string (positional copies).")
+    W("")
+
+    if not nn_plateau_layers:
+        W("  No NN-stability plateaus detected — no stable cluster windows to report.")
+    else:
+        W(f"  Plateau layers: {sorted(nn_plateau_layers)}")
+        W("")
+        for r in layers:
+            li = r["layer"]
+            if li not in nn_plateau_layers:
+                continue
+            nn_idx   = r.get("nn_indices", [])
+            if not nn_idx:
+                continue
+            all_clusters = _nn_cycles(nn_idx, tokens)
+            stab_val     = r.get("nn_stability")
+            stab_str     = f"{stab_val:.4f}" if stab_val is not None else "n/a"
+
+            semantic  = [(c, s) for c, s in all_clusters if s]
+            duplicate = [(c, s) for c, s in all_clusters if not s]
+
+            W(f"  Layer {li:2d}  (nn_stability={stab_str}, "
+              f"semantic={len(semantic)}, duplicate={len(duplicate)}, "
+              f"total={len(all_clusters)})")
+
+            if semantic:
+                W(f"    --- SEMANTIC PAIRS / CYCLES ({len(semantic)}) ---")
+                for ci, (cluster, _) in enumerate(semantic, 1):
+                    W(f"    {ci:3d}. {' | '.join(cluster)}")
+            else:
+                W("    No semantic clusters found at this layer.")
+
+            if duplicate:
+                W(f"    --- DUPLICATE PAIRS ({len(duplicate)}) ---"
+                  f"  (same token string, positional copies)")
+                # Compact display: group identical tokens, show count
+                dup_counter: Counter = Counter(c[0] for c, _ in duplicate)
+                dup_str = "  ".join(
+                    f"{tok!r}×{cnt}" if cnt > 1 else repr(tok)
+                    for tok, cnt in dup_counter.most_common()
+                )
+                W(f"    {dup_str}")
+
+            W("")
+
     W("FLAGGED ANOMALIES")
     W("-" * 40)
 
@@ -592,8 +796,44 @@ def generate_llm_report(results: dict, save_dir: Path):
     else:
         W("  [OK] Energy E_beta=1 is monotone increasing as theory predicts.")
 
-    # Multi-metric plateau summary
-    if len(multi) >= 3:
+    # Cross-metric reset event detection.
+    # A reset is a layer where ip_mean, effective_rank, and nn_stability all
+    # reverse direction simultaneously — partial de-clustering.  Signature:
+    #   ip_mean drops (tokens spread out), rank rises (more dimensions used),
+    #   sinkhorn_k spikes (more clusters detected).
+    # Thresholds are empirical: ip_mean drop > 0.05, rank rise > 5.
+    reset_layers = []
+    for i in range(1, len(layers)):
+        prev, curr = layers[i - 1], layers[i]
+        ip_drop   = prev["ip_mean"] - curr["ip_mean"]
+        rank_rise = curr["effective_rank"] - prev["effective_rank"]
+        sk_prev   = prev.get("sinkhorn", {}).get("sinkhorn_cluster_count_mean", None)
+        sk_curr   = curr.get("sinkhorn", {}).get("sinkhorn_cluster_count_mean", None)
+        sk_spike  = (sk_curr - sk_prev) if (sk_prev is not None and sk_curr is not None) else 0
+        if ip_drop > 0.05 and rank_rise > 5:
+            nn_drop = ""
+            nn_prev = prev.get("nn_stability")
+            nn_curr = curr.get("nn_stability")
+            if nn_prev is not None and nn_curr is not None:
+                nn_drop = f", nn_stab {nn_prev:.3f}→{nn_curr:.3f}"
+            sk_note = f", sk_count +{sk_spike:.0f}" if sk_spike > 5 else ""
+            reset_layers.append(
+                f"  [RESET] Layer {curr['layer']}: ip_mean {prev['ip_mean']:.3f}→"
+                f"{curr['ip_mean']:.3f} (Δ={-ip_drop:.3f}), "
+                f"eff_rank {prev['effective_rank']:.1f}→{curr['effective_rank']:.1f}"
+                f"{sk_note}{nn_drop}."
+            )
+    if reset_layers:
+        W("")
+        for line in reset_layers:
+            W(line)
+        W("         Partial de-clustering: tokens spread back out after prior convergence.")
+        W("         Cross-check with energy violations at the same layers.")
+
+    # Multi-metric plateau summary — only meaningful if the window is
+    # narrower than half the run; a union spanning the whole run is vacuous.
+    n_layers_total = results["n_layers"]
+    if len(multi) >= 3 and len(multi) < 0.5 * n_layers_total:
         runs = []
         start = multi[0]
         for i in range(1, len(multi)):
@@ -604,6 +844,10 @@ def generate_llm_report(results: dict, save_dir: Path):
         run_str = ", ".join(f"layers {s}–{e}" for s, e in runs)
         W(f"  [SIGNAL] Multi-metric plateau spans: {run_str}  ({len(multi)} layers total).")
         W("           Candidate metastable windows — cross-check with token PCA.")
+    elif len(multi) >= 0.5 * n_layers_total:
+        W(f"  [NOTE] Multi-metric plateau union spans {len(multi)}/{n_layers_total} layers "
+          f"(≥50% of run) — individual metrics plateau at different windows; "
+          f"no single coherent metastable window identified.")
 
     # Merge event context
     if not merge_events:
