@@ -128,6 +128,11 @@ def load_run(run_dir: Path) -> dict:
         # energy_drop_pairs was added later; default to empty list for old runs
         if "energy_drop_pairs" not in layer:
             layer["energy_drop_pairs"] = []
+        # JSON serialization converts float dict keys to strings ("1.0" etc.).
+        # Rehydrate back to float so downstream float-keyed lookups don't silently
+        # return nan or raise KeyError (e.g. layer["energies"][1.0]).
+        if "energies" in layer:
+            layer["energies"] = {float(k): v for k, v in layer["energies"].items()}
 
     print(f"Loaded: {results['model']} | {results['prompt']}")
     print(f"  {results['n_layers']} layers, {results['n_tokens']} tokens, "

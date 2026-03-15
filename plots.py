@@ -28,7 +28,7 @@ from scipy.linalg import svdvals
 
 from config import BETA_VALUES, DISTANCE_THRESHOLDS, SPECTRAL_MAX_K
 from models import layernorm_to_sphere
-from metrics import pairwise_inner_products, effective_rank
+from metrics import pairwise_inner_products, effective_rank, effective_rank_from_raw
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +81,7 @@ def plot_trajectory(results: dict, save_dir: Path):
 
     # Interaction energy per beta
     ax = fig.add_subplot(gs[0, 3])
-    for beta, c in zip(BETA_VALUES, ["purple", "darkorange", "teal"]):
+    for beta, c in zip(BETA_VALUES, ["purple", "darkorange", "teal", "steelblue"]):
         ax.plot(layers, [r["energies"][beta] for r in results["layers"]],
                 label=f"β={beta}", color=c)
     ax.set_title("Interaction energy Eβ", fontsize=8)
@@ -440,7 +440,7 @@ def plot_albert_extended(trajectories: dict, save_dir: Path):
                 vals = [(pairwise_inner_products(h) > 0.9).mean() for h in normed]
                 ax.set_title("Fraction pairs > 0.9", fontsize=8)
             else:
-                vals = [effective_rank(h) for h in normed]
+                vals = [effective_rank_from_raw(h) for h in traj]
                 ax.set_title("Effective rank", fontsize=8)
             ax.plot(range(len(vals)), vals, label=f"{n_iter} iters", color=color)
         ax.set_xlabel("Iteration", fontsize=7)
@@ -531,7 +531,6 @@ def plot_cka_trajectory(results: dict, save_dir: Path):
     )
 
     # --- Panel 1: CKA ---
-    cka_plot = [v if not np.isnan(v) else None for v in cka_vals]
     valid_xs = [i for i, v in enumerate(cka_vals) if not np.isnan(v)]
     valid_vs = [v for v in cka_vals if not np.isnan(v)]
 

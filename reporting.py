@@ -397,7 +397,7 @@ def print_run_summary(run_dir: Path):
     for name, vals, tol in [
         ("Mass-near-1",   mass1,  0.10),
         ("Effective rank",erank,  0.05),
-        ("Spectral k",    spec_k, 0.0),
+        ("Spectral k",    spec_k, 0.5),
     ]:
         plateaus = detect_plateaus(vals, window=2, tol=tol)
         print(f"\n  {name}:")
