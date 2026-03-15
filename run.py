@@ -34,6 +34,7 @@ from plots import (
     plot_albert_extended,
     plot_cross_model_comparison,
     analyze_value_eigenspectrum,
+    plot_cka_trajectory,
 )
 from reporting import print_summary, generate_llm_report, generate_cross_run_report
 from io_utils import save_run, replot_all
@@ -222,6 +223,7 @@ def _generate_plots(results: dict, out_dir: Path) -> None:
     plot_sinkhorn_detail(results, out_dir)
     plot_spectral_eigengap(results, out_dir)
     plot_eigenvalue_spectra(results, out_dir)
+    plot_cka_trajectory(results, out_dir)
 
 
 def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> None:

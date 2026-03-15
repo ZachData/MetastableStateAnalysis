@@ -11,9 +11,11 @@ plot_ip_histograms       : replicate paper Figure 1
 plot_pca_panels          : token PCA positions at selected layers
 plot_sinkhorn_detail     : per-head Fiedler heatmap
 plot_spectral_eigengap   : eigenvalue spectrum + eigengap k per layer
-plot_albert_extended     : multi-iteration comparison (ALBERT only)
-plot_cross_model_comparison : side-by-side metric curves across models
-analyze_value_eigenspectrum : singular value histograms of V matrices
+plot_eigenvalue_spectra       : per-layer eigenvalue bar charts
+plot_albert_extended          : multi-iteration comparison (ALBERT only)
+plot_cross_model_comparison   : side-by-side metric curves across models
+analyze_value_eigenspectrum   : singular value histograms of V matrices
+plot_cka_trajectory           : CKA per layer with degenerate-region shading
 """
 
 import numpy as np
@@ -487,6 +489,117 @@ def plot_cross_model_comparison(all_results: list, save_dir: Path):
         fig.savefig(fname, dpi=120, bbox_inches="tight")
         plt.close(fig)
         print(f"  Saved: {fname}")
+
+
+# ---------------------------------------------------------------------------
+# CKA trajectory
+# ---------------------------------------------------------------------------
+
+def plot_cka_trajectory(results: dict, save_dir: Path):
+    """
+    Two-panel figure showing CKA layer-to-layer similarity.
+
+    Panel 1 — CKA per layer
+      Each point is CKA(layer L, layer L-1).  Layer 0 is nan (no predecessor).
+      Degenerate layers (effective_rank < 3) are shown as a grey shaded region
+      — CKA is suppressed there to avoid noise-dominated ratios.
+      A horizontal dashed line at y=1 marks perfect layer-to-layer identity.
+      A vertical marker flags the sharpest CKA drop (end of metastable plateau).
+
+    Panel 2 — Effective rank (reference)
+      Drawn on the same x-axis so the rank collapse can be compared directly
+      with the layer where CKA values become nan.  The rank=3 suppression
+      threshold is marked with a dashed line.
+    """
+    model    = results["model"]
+    prompt   = results["prompt"]
+    layers_r = results["layers"]
+    n_layers = results["n_layers"]
+    xs       = list(range(n_layers))
+
+    cka_vals  = [r.get("cka_prev", float("nan")) for r in layers_r]
+    erank     = [r["effective_rank"]              for r in layers_r]
+
+    # Find valid (non-nan) CKA pairs for drop detection
+    valid_pairs = [(i, v) for i, v in enumerate(cka_vals) if not np.isnan(v)]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
+    fig.suptitle(
+        f"{model} | {prompt}\n"
+        f"CKA layer-to-layer similarity  ({results['n_tokens']} tokens, d={results['d_model']})",
+        fontsize=9,
+    )
+
+    # --- Panel 1: CKA ---
+    cka_plot = [v if not np.isnan(v) else None for v in cka_vals]
+    valid_xs = [i for i, v in enumerate(cka_vals) if not np.isnan(v)]
+    valid_vs = [v for v in cka_vals if not np.isnan(v)]
+
+    ax1.plot(valid_xs, valid_vs, color="steelblue", linewidth=1.5, zorder=3)
+    ax1.scatter(valid_xs, valid_vs, color="steelblue", s=18, zorder=4)
+    ax1.axhline(1.0, color="gray", lw=0.7, ls="--", alpha=0.6, label="CKA=1 (identical)")
+
+    # Shade degenerate (suppressed) regions
+    in_degen = False
+    degen_start = None
+    for i, v in enumerate(cka_vals):
+        if np.isnan(v) and not in_degen:
+            in_degen = True
+            degen_start = i - 0.5
+        elif not np.isnan(v) and in_degen:
+            ax1.axvspan(degen_start, i - 0.5, alpha=0.12, color="gray",
+                        label="degenerate (rank<3, CKA suppressed)")
+            in_degen = False
+    if in_degen:  # still degenerate at end
+        ax1.axvspan(degen_start, n_layers - 0.5, alpha=0.12, color="gray",
+                    label="degenerate (rank<3, CKA suppressed)")
+
+    # Mark sharpest drop
+    if len(valid_pairs) >= 2:
+        idxs  = [i for i, _ in valid_pairs]
+        vals  = [v for _, v in valid_pairs]
+        diffs = np.diff(vals)
+        drop_pos = int(np.argmin(diffs))
+        if diffs[drop_pos] < -0.05:
+            drop_layer = idxs[drop_pos + 1]
+            severity = "SHARP" if diffs[drop_pos] < -0.15 else "MILD"
+            ax1.axvline(drop_layer, color="firebrick", lw=1.2, ls=":",
+                        label=f"{severity} drop  (L{idxs[drop_pos]}→L{drop_layer}, "
+                              f"Δ={diffs[drop_pos]:.3f})")
+
+    ax1.set_ylabel("CKA(L, L-1)", fontsize=8)
+    ax1.set_ylim(-0.05, 1.08)
+    ax1.legend(fontsize=6, loc="lower left")
+    ax1.set_title("Linear CKA between consecutive layers  "
+                  "(1 = identical representations, 0 = orthogonal)", fontsize=8)
+
+    # --- Panel 2: Effective rank ---
+    ax2.plot(xs, erank, color="darkgreen", linewidth=1.3)
+    ax2.axhline(3.0, color="gray", lw=0.7, ls="--", alpha=0.7,
+                label="rank=3 suppression threshold")
+    # Match degenerate shading to panel 1
+    in_degen = False
+    degen_start = None
+    for i, v in enumerate(cka_vals):
+        if np.isnan(v) and i > 0 and not in_degen:
+            in_degen = True
+            degen_start = i - 0.5
+        elif not np.isnan(v) and in_degen:
+            ax2.axvspan(degen_start, i - 0.5, alpha=0.12, color="gray")
+            in_degen = False
+    if in_degen:
+        ax2.axvspan(degen_start, n_layers - 0.5, alpha=0.12, color="gray")
+
+    ax2.set_xlabel("Layer", fontsize=8)
+    ax2.set_ylabel("Effective rank", fontsize=8)
+    ax2.set_title("Effective rank (reference — CKA suppressed where rank < 3)", fontsize=8)
+    ax2.legend(fontsize=6, loc="upper right")
+
+    plt.tight_layout()
+    fname = save_dir / f"{model.replace('/', '_')}_{prompt}_cka.png"
+    fig.savefig(fname, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {fname}")
 
 
 # ---------------------------------------------------------------------------

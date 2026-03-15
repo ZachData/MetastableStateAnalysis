@@ -131,6 +131,10 @@ def _method_agreement(results: dict) -> list:
     Layers where agglomerative, KMeans, spectral, and Sinkhorn cluster
     count estimates all agree within ±1.
 
+    KMeans is excluded from the comparison when its best silhouette score
+    is below 0.1 — at that point K_RANGE is bounded below at 2, so
+    best_k=2 is a floor artefact rather than a genuine signal.
+
     Returns list of (layer, [counts]).
     """
     mid_thresh       = float(DISTANCE_THRESHOLDS[len(DISTANCE_THRESHOLDS) // 2])
@@ -138,9 +142,17 @@ def _method_agreement(results: dict) -> list:
     for r in results["layers"]:
         agg_k  = r["clustering"]["agglomerative"].get(mid_thresh)
         km_k   = r["clustering"]["kmeans"]["best_k"]
+        km_sil = r["clustering"]["kmeans"]["best_silhouette"]
         sp_k   = r["spectral"]["k_eigengap"]
         sk_k   = round(r.get("sinkhorn", {}).get("sinkhorn_cluster_count_mean", -99))
-        counts = [k for k in [agg_k, km_k, sp_k, sk_k] if k and k > 0]
+        # Only include KMeans when silhouette is meaningful AND geometry is
+        # non-degenerate. In the collapsed regime (effective_rank < 10) all
+        # tokens are near-collinear, so any k≥2 partition scores a spurious
+        # silhouette of ~0.1–0.3 purely from the geometry — not real structure.
+        if km_sil >= 0.1 and r["effective_rank"] >= 10:
+            counts = [k for k in [agg_k, km_k, sp_k, sk_k] if k and k > 0]
+        else:
+            counts = [k for k in [agg_k, sp_k, sk_k] if k and k > 0]
         if counts and (max(counts) - min(counts)) <= 1:
             agreement_layers.append((r["layer"], counts))
     return agreement_layers
@@ -149,6 +161,82 @@ def _method_agreement(results: dict) -> list:
 # ---------------------------------------------------------------------------
 # Plateau detection
 # ---------------------------------------------------------------------------
+
+def _per_head_fiedler_profile(
+    results: dict,
+    active_rank_threshold: float = 10.0,
+) -> list:
+    """
+    Compute per-head Fiedler statistics restricted to the *active phase*.
+
+    The active phase is defined as layers where effective_rank >=
+    active_rank_threshold.  Once tokens have collapsed to a near-point-mass
+    (rank < threshold) every head trivially saturates to Fiedler ≈ 1.0 —
+    there is only one cluster, so the doubly stochastic matrix is nearly
+    uniform and the Laplacian has no gap.  Including those layers pulls every
+    head's mean toward 1.0 regardless of early behaviour, making the
+    CLUSTER/MIXED/MIXING classification meaningless.
+
+    For each attention head h, collect its Fiedler value at every active-phase
+    layer that has Sinkhorn data, then return a list of dicts with:
+      head               : int   — head index
+      mean               : float — mean Fiedler over active-phase layers
+      std                : float — std  Fiedler over active-phase layers
+      min_layer          : int   — layer index at which Fiedler is minimised
+      classification     : str   — 'CLUSTER' (<0.3), 'MIXED' (0.3–0.7), 'MIXING' (>0.7)
+      values             : list  — per-layer Fiedler values (active phase only)
+      n_active_layers    : int   — number of layers included
+      n_collapsed_layers : int   — number of Sinkhorn layers excluded as collapsed
+
+    Returns an empty list if no Sinkhorn data is present.
+    """
+    all_sk  = [r for r in results["layers"] if "sinkhorn" in r]
+    if not all_sk:
+        return []
+
+    # Restrict to active phase
+    sk_layers = [r for r in all_sk if r["effective_rank"] >= active_rank_threshold]
+    n_collapsed = len(all_sk) - len(sk_layers)
+
+    # Fall back to all Sinkhorn layers if the threshold filters everything
+    # (e.g. very shallow models where rank never reaches the threshold)
+    if not sk_layers:
+        sk_layers = all_sk
+        n_collapsed = 0
+
+    n_heads = len(sk_layers[0]["sinkhorn"].get("fiedler_per_head", []))
+    if n_heads == 0:
+        return []
+
+    profiles = []
+    for h in range(n_heads):
+        vals      = [r["sinkhorn"]["fiedler_per_head"][h] for r in sk_layers]
+        layer_ids = [r["layer"]                            for r in sk_layers]
+        mean_f    = float(np.mean(vals))
+        std_f     = float(np.std(vals))
+        min_idx   = int(np.argmin(vals))
+        min_layer = layer_ids[min_idx]
+
+        if mean_f < 0.3:
+            cls = "CLUSTER"
+        elif mean_f > 0.7:
+            cls = "MIXING"
+        else:
+            cls = "MIXED"
+
+        profiles.append({
+            "head":               h,
+            "mean":               mean_f,
+            "std":                std_f,
+            "min_layer":          min_layer,
+            "classification":     cls,
+            "values":             vals,
+            "n_active_layers":    len(sk_layers),
+            "n_collapsed_layers": n_collapsed,
+        })
+
+    return profiles
+
 
 def detect_plateaus(values: list, window: int = 2, tol: float = 0.05) -> list:
     """
@@ -211,6 +299,14 @@ def print_summary(results: dict):
     ]
     if has_hdbscan:
         metrics.append(("HDBSCAN k", hdb_k_vals, 0.5))
+
+    # CKA series (layer 0 is nan — skip)
+    cka_vals_ps = [r.get("cka_prev", float("nan")) for r in results["layers"]]
+    cka_defined = [(i, v) for i, v in enumerate(cka_vals_ps) if not np.isnan(v)]
+    if cka_defined:
+        cka_series_ps = [v for _, v in cka_defined]
+        metrics.append(("CKA", cka_series_ps, 0.02))
+
     for name, vals, tol in metrics:
         plateaus = detect_plateaus(vals, window=2, tol=tol)
         print(f"\n  {name} plateaus (candidate metastable windows):")
@@ -271,13 +367,15 @@ def print_run_summary(run_dir: Path):
 
     print(f"\n{'─'*70}")
     print(f"{'Layer':>6}  {'ip_mean':>8}  {'mass>0.9':>9}  "
-          f"{'eff_rank':>9}  {'spec_k':>7}  {'fiedler':>8}  {'sk_k':>5}  {'nn_stab':>8}")
-    print(f"{'─'*80}")
+          f"{'eff_rank':>9}  {'spec_k':>7}  {'fiedler':>8}  {'sk_k':>5}  {'nn_stab':>8}  {'cka':>7}")
+    print(f"{'─'*90}")
 
     for r in layers:
         sk       = r.get("sinkhorn", {})
         nn_stab  = r.get("nn_stability")
         nn_str   = f"{nn_stab:>8.4f}" if nn_stab is not None else f"{'n/a':>8}"
+        cka_val  = r.get("cka_prev", float("nan"))
+        cka_str  = f"{cka_val:>7.4f}" if not np.isnan(cka_val) else f"{'n/a':>7}"
         print(
             f"{r['layer']:>6}  "
             f"{r['ip_mean']:>8.4f}  "
@@ -286,7 +384,8 @@ def print_run_summary(run_dir: Path):
             f"{r['spectral']['k_eigengap']:>7}  "
             f"{sk.get('fiedler_mean', float('nan')):>8.4f}  "
             f"{sk.get('sinkhorn_cluster_count_mean', float('nan')):>5.1f}  "
-            f"{nn_str}"
+            f"{nn_str}  "
+            f"{cka_str}"
         )
 
     print(f"\n{'─'*70}")
@@ -305,6 +404,23 @@ def print_run_summary(run_dir: Path):
         if plateaus:
             for s, e, v in plateaus:
                 print(f"    Layers {s:2d}–{e:2d}  mean={v:.4f}  width={e-s+1}")
+        else:
+            print("    No plateaus detected")
+
+    # CKA plateaus (layer 0 is nan)
+    cka_prs_defined = [
+        (r["layer"], r.get("cka_prev", float("nan")))
+        for r in layers if not np.isnan(r.get("cka_prev", float("nan")))
+    ]
+    if cka_prs_defined:
+        cka_prs_series = [v for _, v in cka_prs_defined]
+        cka_prs_plat   = detect_plateaus(cka_prs_series, window=2, tol=0.02)
+        print(f"\n  CKA (consecutive-layer similarity — plateau = metastable):")
+        if cka_prs_plat:
+            for s, e, v in cka_prs_plat:
+                layer_s = cka_prs_defined[s][0]
+                layer_e = cka_prs_defined[e][0]
+                print(f"    Layers {layer_s:2d}–{layer_e:2d}  mean={v:.4f}  width={e-s+1}")
         else:
             print("    No plateaus detected")
 
@@ -390,6 +506,13 @@ def generate_llm_report(results: dict, save_dir: Path):
     plateaus_hdb  = detect_plateaus([v for v in hdb_k if not np.isnan(v)], window=2, tol=0.5) if has_hdbscan else []
     plateaus_fied = detect_plateaus(fiedler, window=2, tol=0.05) if fiedler else []
 
+    # CKA series: skip layer 0 (nan) and any other nan values
+    cka_vals_raw  = [r.get("cka_prev", float("nan")) for r in layers]
+    cka_pairs     = [(r["layer"], r.get("cka_prev", float("nan")))
+                     for r in layers if not np.isnan(r.get("cka_prev", float("nan")))]
+    cka_series    = [v for _, v in cka_pairs]
+    plateaus_cka  = detect_plateaus(cka_series, window=2, tol=0.02) if cka_series else []
+
     # NN stability series: skip layer 0 (None) AND degenerate layers (eff_rank < 2).
     # When all tokens are a near-point-mass (rank ≈ 1–2), NN assignment is determined
     # by floating-point noise — the stability signal is meaningless there.
@@ -416,6 +539,16 @@ def generate_llm_report(results: dict, save_dir: Path):
 
     merge_events  = _merge_events(spec_k)
     agreement     = _method_agreement(results)
+
+    # Pre-compute reset layer indices for cross-referencing in the PER-HEAD section.
+    # A reset is a layer where ip_mean drops >0.05 AND effective_rank rises >5 —
+    # the same thresholds used in the FLAGGED ANOMALIES section.
+    reset_layer_indices = set()
+    for i in range(1, len(layers)):
+        prev, curr = layers[i - 1], layers[i]
+        if (prev["ip_mean"] - curr["ip_mean"]) > 0.05 and (curr["effective_rank"] - prev["effective_rank"]) > 5:
+            reset_layer_indices.add(curr["layer"])
+    merge_layer_indices = {layer for layer, _, _ in merge_events}
 
     lines = []
     W = lines.append
@@ -456,8 +589,6 @@ def generate_llm_report(results: dict, save_dir: Path):
 
     W("PER-LAYER DATA TABLE")
     W("-" * 40)
-    W("Columns: layer | ip_mean | ip_std | mass>0.9 | eff_rank | spec_k | spec_k2 | "
-      "max_eigengap | fiedler | sk_k | attn_entropy | energy_b1 | energy_b2 | energy_b5")
     W("")
 
     fiedler_by_layer = {r["layer"]: r["sinkhorn"]["fiedler_mean"]                 for r in has_sk}
@@ -466,12 +597,12 @@ def generate_llm_report(results: dict, save_dir: Path):
     mid_thresh       = float(DISTANCE_THRESHOLDS[len(DISTANCE_THRESHOLDS) // 2])
 
     W("Columns: layer | ip_mean | ip_std | mass>0.9 | eff_rank | sp_k | k2 | agg_k | km_k | "
-      "hdb_k | gap | fiedler | sk_k | attn_H | E_b1 | E_b2 | E_b5 | nn_stab")
+      "hdb_k | gap | fiedler | sk_k | attn_H | E_b1 | E_b2 | E_b5 | nn_stab | cka")
     W(f"{'L':>3}  {'ip_μ':>7}  {'ip_σ':>6}  {'m>0.9':>6}  "
       f"{'rank':>7}  {'sp_k':>5}  {'k2':>4}  {'agg_k':>6}  {'km_k':>5}  {'hdb_k':>6}  {'gap':>6}  "
       f"{'fied':>7}  {'sk_k':>5}  {'attn_H':>7}  "
-      f"{'E_b1':>7}  {'E_b2':>7}  {'E_b5':>7}  {'nn_stab':>8}")
-    W("-" * 132)
+      f"{'E_b1':>7}  {'E_b2':>7}  {'E_b5':>7}  {'nn_stab':>8}  {'cka':>7}")
+    W("-" * 142)
 
     for r in layers:
         li      = r["layer"]
@@ -482,6 +613,8 @@ def generate_llm_report(results: dict, save_dir: Path):
         km_k    = r["clustering"]["kmeans"]["best_k"]
         nn_stab = r.get("nn_stability")
         nn_str  = f"{nn_stab:>8.4f}" if nn_stab is not None else f"{'n/a':>8}"
+        cka_val = r.get("cka_prev", float("nan"))
+        cka_str = f"{cka_val:>7.4f}" if not (isinstance(cka_val, float) and np.isnan(cka_val)) else f"{'n/a':>7}"
         W(
             f"{li:>3}  "
             f"{r['ip_mean']:>7.4f}  "
@@ -500,7 +633,8 @@ def generate_llm_report(results: dict, save_dir: Path):
             f"{r['energies'].get(1.0, float('nan')):>7.4f}  "
             f"{r['energies'].get(2.0, float('nan')):>7.4f}  "
             f"{r['energies'].get(5.0, float('nan')):>7.4f}  "
-            f"{nn_str}"
+            f"{nn_str}  "
+            f"{cka_str}"
         )
 
     W("")
@@ -522,6 +656,15 @@ def generate_llm_report(results: dict, save_dir: Path):
     if has_hdbscan:
         W(f"  hdbscan_k      : {_plateau_str(plateaus_hdb)}")
     W(f"  fiedler        : {_plateau_str(plateaus_fied)}")
+    if cka_pairs:
+        cka_plat_parts = []
+        for s, e, v in plateaus_cka:
+            layer_s = cka_pairs[s][0]
+            layer_e = cka_pairs[e][0]
+            cka_plat_parts.append(f"layers {layer_s}-{layer_e} (width={e-s+1}, mean={v:.4f})")
+        cka_plat_str = "; ".join(cka_plat_parts) if cka_plat_parts else "none detected"
+        W(f"  cka            : {cka_plat_str}")
+        W("                   (CKA plateau = consecutive layers nearly identical = metastable)")
     if nn_stab_pairs:
         # Remap plateau indices (into nn_stab_series) back to actual layer numbers
         nn_plat_str_parts = []
@@ -541,6 +684,10 @@ def generate_llm_report(results: dict, save_dir: Path):
         for s, e, _ in group:
             for l in range(s, e + 1):
                 layer_count[l] += 1
+    # CKA plateaus are indexed by cka_pairs positions, remap to layer numbers
+    for s, e, _ in plateaus_cka:
+        for idx in range(s, e + 1):
+            layer_count[cka_pairs[idx][0]] += 1
     multi = [l for l, c in sorted(layer_count.items()) if c >= 2]
 
     W("MERGE EVENTS  (spectral k drops — cluster collapses)")
@@ -606,6 +753,62 @@ def generate_llm_report(results: dict, save_dir: Path):
               f"values={[round(v, 3) for v in per_head]}")
     else:
         W("  No Sinkhorn data available")
+    W("")
+
+    W("PER-HEAD FIEDLER PROFILE")
+    W("-" * 40)
+    W("Per-head mean/std Fiedler restricted to the active phase (effective_rank >= 10).")
+    W("Post-collapse layers are excluded: once all tokens merge to one cluster, every head")
+    W("trivially saturates to Fiedler ≈ 1.0 regardless of its structural role.")
+    W("CLUSTER  = mean Fiedler < 0.3 (consistently routes tokens into separated clusters)")
+    W("MIXED    = mean Fiedler 0.3–0.7 (variable behaviour across layers)")
+    W("MIXING   = mean Fiedler > 0.7 (consistently allows tokens to mix freely)")
+    W("")
+    head_profiles = _per_head_fiedler_profile(results)
+    if not head_profiles:
+        W("  No per-head Fiedler data available.")
+    else:
+        n_active    = head_profiles[0]["n_active_layers"]
+        n_collapsed = head_profiles[0]["n_collapsed_layers"]
+        if n_collapsed > 0:
+            W(f"  Active-phase layers used: {n_active}  "
+              f"(collapsed layers excluded: {n_collapsed})")
+        else:
+            W(f"  Active-phase layers used: {n_active}  (no collapsed layers excluded)")
+        W("")
+        W(f"  {'Head':>5}  {'Mean':>7}  {'Std':>7}  {'Class':>8}  {'MinLayer':>9}")
+        W("  " + "-" * 44)
+        flagged_events = reset_layer_indices | merge_layer_indices
+        for p in head_profiles:
+            flag = " ← RESET/MERGE" if p["min_layer"] in flagged_events else ""
+            W(f"  {p['head']:>5}  {p['mean']:>7.4f}  {p['std']:>7.4f}  "
+              f"{p['classification']:>8}  {p['min_layer']:>9}{flag}")
+        W("")
+        cluster_heads = [p["head"] for p in head_profiles if p["classification"] == "CLUSTER"]
+        mixing_heads  = [p["head"] for p in head_profiles if p["classification"] == "MIXING"]
+        mixed_heads   = [p["head"] for p in head_profiles if p["classification"] == "MIXED"]
+        W(f"  CLUSTER heads ({len(cluster_heads)}): {cluster_heads}")
+        W(f"  MIXED   heads ({len(mixed_heads)}):   {mixed_heads}")
+        W(f"  MIXING  heads ({len(mixing_heads)}):  {mixing_heads}")
+        W("")
+        # Always report the lowest-mean head — informative even without a CLUSTER bucket
+        min_fied_head = min(head_profiles, key=lambda p: p["mean"])
+        if cluster_heads:
+            W(f"  Strongest clustering head: head {min_fied_head['head']} "
+              f"(mean Fiedler={min_fied_head['mean']:.4f}, "
+              f"reaches min at layer {min_fied_head['min_layer']})")
+        else:
+            W(f"  [NOTE] No heads classified as CLUSTER under active-phase thresholds.")
+            W(f"         Lowest-mean head: head {min_fied_head['head']} "
+              f"(mean={min_fied_head['mean']:.4f}, "
+              f"reaches min at layer {min_fied_head['min_layer']}) — "
+              f"closest to clustering behaviour.")
+        # Flag heads whose min_layer coincides with a reset or merge event
+        event_heads = [p["head"] for p in head_profiles if p["min_layer"] in flagged_events]
+        if event_heads:
+            W(f"  [NOTE] Head(s) with min_layer at a flagged reset/merge layer: {event_heads}")
+            W("         These heads reach their lowest Fiedler during a transition event,")
+            W("         not during a stable metastable plateau — treat with caution.")
     W("")
 
     W("SPECTRAL EIGENVALUE TABLE")
@@ -696,7 +899,7 @@ def generate_llm_report(results: dict, save_dir: Path):
             continue
         hist_norm = hist / (hist.sum() + 1e-10)
         peaks = [
-            round(bin_centers[i], 2)
+            round(float(bin_centers[i]), 2)
             for i in range(1, len(hist_norm) - 1)
             if hist_norm[i] > hist_norm[i - 1]
             and hist_norm[i] > hist_norm[i + 1]
@@ -779,6 +982,37 @@ def generate_llm_report(results: dict, save_dir: Path):
 
     W("FLAGGED ANOMALIES")
     W("-" * 40)
+
+    # CKA sharpest single-step drop — marks the end of a metastable plateau.
+    # A large CKA decrease means representations changed substantially between
+    # two consecutive layers — the clearest signal that a plateau has ended.
+    # Note: CKA is suppressed (nan) when effective_rank < 3 to avoid
+    # noise-dominated ratios in degenerate near-point-mass layers.
+    cka_nan_count = sum(1 for v in cka_vals_raw if np.isnan(v))
+    if cka_nan_count > 0:
+        W(f"  [CKA NOTE] {cka_nan_count} layers suppressed (effective_rank < 3, degenerate regime).")
+    if cka_pairs and len(cka_series) >= 2:
+        cka_diffs    = np.diff(cka_series)
+        drop_idx     = int(np.argmin(cka_diffs))
+        drop_val     = float(cka_diffs[drop_idx])
+        layer_before = cka_pairs[drop_idx][0]
+        layer_after  = cka_pairs[drop_idx + 1][0]
+        cka_before   = cka_series[drop_idx]
+        cka_after    = cka_series[drop_idx + 1]
+        rank_before  = layers[layer_before]["effective_rank"]
+        rank_after   = layers[layer_after]["effective_rank"]
+        if drop_val < -0.05:
+            severity = "SHARP" if drop_val < -0.15 else "MILD"
+            W(f"  [CKA DROP] {severity} CKA decrease: layer {layer_before}→{layer_after}  "
+              f"Δ={drop_val:.4f}  ({cka_before:.4f}→{cka_after:.4f})")
+            W(f"             eff_rank at boundary: {rank_before:.1f}→{rank_after:.1f}  "
+              f"(high rank = meaningful regime; low = verify against other metrics)")
+            W("             Marks the end of a metastable plateau — representations "
+              "reorganise here.")
+        else:
+            W(f"  [CKA OK] No significant CKA drop detected (max decrease={drop_val:.4f}). "
+              "Representations evolve smoothly.")
+    W("")
 
     # Energy monotonicity with specific layers
     e1 = [r["energies"].get(1.0, float("nan")) for r in layers]
@@ -895,7 +1129,7 @@ def generate_llm_report(results: dict, save_dir: Path):
         pca_steps = np.diff(pca_totals)
         max_step_idx = int(np.argmax(pca_steps))
         max_step = pca_steps[max_step_idx]
-        if max_step > 0.05:
+        if max_step > 0.05 and layers[max_step_idx]["effective_rank"] >= 10:
             W(f"  [PCA JUMP] Largest single-step increase in PC1+PC2+PC3: "
               f"+{max_step:.3f} at layer {max_step_idx}→{max_step_idx+1} "
               f"({pca_totals[max_step_idx]:.3f}→{pca_totals[max_step_idx+1]:.3f}).")
@@ -1045,6 +1279,73 @@ def generate_cross_run_report(all_results: list, save_dir: Path):
               f"{runs_by_length[-1]['n_tokens']} tokens: {long_max:.4f})")
 
     W("")
+    W("CROSS-PROMPT PER-HEAD FIEDLER CONSISTENCY")
+    W("-" * 40)
+    W("For each model, compare per-head Fiedler classifications across prompts.")
+    W("Heads flagged as INCONSISTENT change role between CLUSTER and MIXING on different prompts.")
+    W("Consistent CLUSTER heads are likely structural (syntax/position); inconsistent ones are content-sensitive.")
+    W("")
+
+    by_model_cross: dict = {}
+    for r in all_results:
+        by_model_cross.setdefault(r["model"], []).append(r)
+
+    any_cross_data = False
+    for model, runs in by_model_cross.items():
+        if len(runs) < 2:
+            continue
+        any_cross_data = True
+
+        # Build {head: [classification_per_prompt]}
+        head_cls_by_prompt: dict = {}
+        head_mean_by_prompt: dict = {}
+        prompt_labels = []
+        for run in runs:
+            profiles = _per_head_fiedler_profile(run)
+            if not profiles:
+                continue
+            prompt_labels.append(run["prompt"])
+            for p in profiles:
+                h = p["head"]
+                head_cls_by_prompt.setdefault(h, []).append(p["classification"])
+                head_mean_by_prompt.setdefault(h, []).append(p["mean"])
+
+        if not head_cls_by_prompt:
+            continue
+
+        W(f"  Model: {model}  (prompts: {prompt_labels})")
+        W(f"  {'Head':>5}  {'MeanFiedler':>12}  {'Classes':>30}  {'Status':>12}")
+        W("  " + "-" * 65)
+
+        inconsistent_heads = []
+        for h in sorted(head_cls_by_prompt):
+            classes   = head_cls_by_prompt[h]
+            means     = head_mean_by_prompt[h]
+            mean_all  = float(np.mean(means))
+            cls_set   = set(classes)
+            # Inconsistent = CLUSTER on at least one prompt AND MIXING on at least one
+            if "CLUSTER" in cls_set and "MIXING" in cls_set:
+                status = "INCONSISTENT"
+                inconsistent_heads.append(h)
+            elif len(cls_set) == 1:
+                status = f"STABLE-{classes[0]}"
+            else:
+                status = "VARIABLE"
+            cls_str = " / ".join(classes)
+            W(f"  {h:>5}  {mean_all:>12.4f}  {cls_str:>30}  {status:>12}")
+
+        if inconsistent_heads:
+            W(f"  [FLAG] Content-sensitive heads (CLUSTER on some, MIXING on others): "
+              f"{inconsistent_heads}")
+            W("         These heads respond to prompt content rather than serving a fixed structural role.")
+        else:
+            W("  [OK] All heads show consistent classification across prompts for this model.")
+        W("")
+
+    if not any_cross_data:
+        W("  Only one run per model — cross-prompt comparison requires ≥2 prompts per model.")
+        W("")
+
     W("=" * 72)
     W("END OF CROSS-RUN REPORT")
     W("=" * 72)

@@ -49,12 +49,17 @@ def spectral_eigengap_k(G: np.ndarray, max_k: int = SPECTRAL_MAX_K) -> dict:
     # large regardless of clustering. Skipping it surfaces secondary structure:
     #   k_second_gap = 1 means no secondary structure (spectrum decays smoothly)
     #   k_second_gap > 1 means genuine cluster count from non-trivial geometry
+    # When the spectrum is fully collapsed (all eigenvalues ≈ identical), tail
+    # gaps are pure floating-point noise. Suppress by setting k_second_gap=1
+    # when second_gap_ratio < 1.1 — gaps are indistinguishable from each other.
     if len(gaps) > 1:
         tail_gaps        = gaps[1:]
         k_second_gap     = int(np.argmax(tail_gaps) + 2)
         sorted_tail      = np.sort(tail_gaps)
         second_gap_ratio = float(sorted_tail[-1] / (sorted_tail[-2] + 1e-10)
                                  if len(sorted_tail) > 1 else 1.0)
+        if second_gap_ratio < 1.1:
+            k_second_gap = 1
     else:
         k_second_gap     = 1
         second_gap_ratio = 1.0

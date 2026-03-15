@@ -26,6 +26,7 @@ from metrics import (
     effective_rank_from_raw,
     attention_entropy,
     nearest_neighbor_indices,
+    linear_cka,
 )
 from sinkhorn import analyze_attention_sinkhorn
 from spectral import spectral_eigengap_k
@@ -73,6 +74,7 @@ def analyze_trajectory(
     }
 
     prev_nn: np.ndarray = None   # NN index array from previous layer
+    prev_normed: np.ndarray = None  # L2-normed activations from previous layer
 
     for layer_idx, activations in enumerate(tqdm(
         hidden_states,
@@ -88,6 +90,20 @@ def analyze_trajectory(
         # ------------------------------------------------------------------
         normed = layernorm_to_sphere(activations).numpy()   # (n_tokens, d)
         G      = normed @ normed.T                          # (n_tokens, n_tokens)
+
+        # --- Effective rank (must use raw activations, not L2-normed) ---
+        # Computed early so the CKA block can use it for degeneracy gating.
+        lr["effective_rank"] = effective_rank_from_raw(activations)
+
+        # --- CKA vs previous layer ---
+        # Suppress when effective_rank < 3: all tokens are a near-point-mass,
+        # centering produces noise-dominated vectors, and the Frobenius norms
+        # collapse to near-zero — the ratio is numerically meaningless.
+        if prev_normed is not None and lr["effective_rank"] >= 3.0:
+            lr["cka_prev"] = linear_cka(normed, prev_normed)
+        else:
+            lr["cka_prev"] = float("nan")
+        prev_normed = normed
 
         # --- Inner products ---
         ips                  = pairwise_inner_products_from_gram(G)
@@ -110,9 +126,6 @@ def analyze_trajectory(
 
         # --- Interaction energies (all betas, one vectorised exp call) ---
         lr["energies"] = interaction_energies_batched(G, beta_values)
-
-        # --- Effective rank (must use raw activations, not L2-normed) ---
-        lr["effective_rank"] = effective_rank_from_raw(activations)
 
         # --- Standard clustering (accepts pre-normed ndarray) ---
         lr["clustering"] = cluster_count_sweep(normed, thresholds)

@@ -78,6 +78,7 @@ def save_run(
             "kmeans_k":          layer["clustering"]["kmeans"]["best_k"],
             "kmeans_silhouette": layer["clustering"]["kmeans"]["best_silhouette"],
             "nn_stability":      layer.get("nn_stability", ""),
+            "cka":               layer.get("cka_prev", ""),
         }
         for beta in BETA_VALUES:
             row[f"energy_beta{beta}"] = layer["energies"][beta]
@@ -117,6 +118,13 @@ def load_run(run_dir: Path) -> dict:
 
     if "pca_trajectories" not in results:
         results["pca_trajectories"] = []
+
+    # Backward compatibility: runs saved before CKA was added have no cka_prev.
+    # Default to nan so all downstream code (plotting, reporting) handles it
+    # the same way it handles the suppressed-degenerate case.
+    for layer in results.get("layers", []):
+        if "cka_prev" not in layer:
+            layer["cka_prev"] = float("nan")
 
     print(f"Loaded: {results['model']} | {results['prompt']}")
     print(f"  {results['n_layers']} layers, {results['n_tokens']} tokens, "
@@ -166,6 +174,7 @@ def replot_all(run_dir: Path, out_dir: Path = None) -> None:
         plot_pca_panels,
         plot_sinkhorn_detail,
         plot_spectral_eigengap,
+        plot_cka_trajectory,
     )
     from reporting import print_summary
 
@@ -179,5 +188,6 @@ def replot_all(run_dir: Path, out_dir: Path = None) -> None:
     plot_pca_panels(results, out_dir)
     plot_sinkhorn_detail(results, out_dir)
     plot_spectral_eigengap(results, out_dir)
+    plot_cka_trajectory(results, out_dir)
     print_summary(results)
     print(f"Done. Plots written to {out_dir}/")

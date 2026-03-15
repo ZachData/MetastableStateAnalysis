@@ -16,6 +16,7 @@ effective_rank_from_normed    : same, accepts pre-normalised ndarray
 attention_entropy             : per-head Shannon entropy of attention rows
 nearest_neighbor_indices      : argmax-NN for each token from Gram matrix
 nearest_neighbor_stability    : fraction of tokens with unchanged NN vs prev layer
+linear_cka                    : linear CKA between consecutive layer activations
 """
 
 import numpy as np
@@ -176,6 +177,39 @@ def nearest_neighbor_indices(G: np.ndarray) -> np.ndarray:
     G_masked = G.copy()
     np.fill_diagonal(G_masked, -np.inf)
     return np.argmax(G_masked, axis=1).astype(np.int32)
+
+
+def linear_cka(X: np.ndarray, Y: np.ndarray) -> float:
+    """
+    Linear CKA between two (n_tokens, d) centered activation matrices.
+
+    CKA(X, Y) = ||Y^T X||_F^2 / (||X^T X||_F * ||Y^T Y||_F)
+
+    Parameters
+    ----------
+    X, Y : (n_tokens, d) arrays — already L2-normed (from layernorm_to_sphere).
+           Both are mean-centered internally.
+
+    Returns
+    -------
+    float in [0, 1]
+      1.0 = representations identical up to rotation
+      0.0 = representations orthogonal
+
+    The centering step is critical: without it, a large shared bias token
+    (e.g. [CLS]) can inflate similarity regardless of structure.
+    """
+    X = X - X.mean(axis=0, keepdims=True)
+    Y = Y - Y.mean(axis=0, keepdims=True)
+    # ||Y^T X||_F^2 = tr(X^T Y Y^T X) = ||X.T @ Y||_F^2
+    YtX       = Y.T @ X                          # (d, d)
+    numerator = float(np.sum(YtX ** 2))
+    XtX_norm  = float(np.linalg.norm(X.T @ X, "fro"))
+    YtY_norm  = float(np.linalg.norm(Y.T @ Y, "fro"))
+    denom     = XtX_norm * YtY_norm
+    if denom < 1e-12:
+        return float("nan")
+    return float(np.clip(numerator / denom, 0.0, 1.0))
 
 
 def nearest_neighbor_stability(
