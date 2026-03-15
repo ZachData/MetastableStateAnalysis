@@ -605,8 +605,43 @@ def plot_cka_trajectory(results: dict, save_dir: Path):
 # Value matrix singular value spectrum
 # ---------------------------------------------------------------------------
 
-def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path):
-    """Histogram of singular values of V weight matrices per layer."""
+def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path) -> dict:
+    """
+    Compute and persist the V weight matrix spectrum for Phase 2 analysis.
+
+    For each V matrix (one per layer for BERT/GPT2, one shared for ALBERT):
+
+    Singular values  — magnitudes of the linear map; track spectral energy
+                       and the spectral gap (σ₁/σ₂ ratio).
+
+    Eigenvalues      — for square V matrices, the actual eigenvalues carry sign
+                       information that singular values discard.  A V matrix with
+                       mixed-sign real eigenvalue components has both attractive
+                       (+) and repulsive (−) directions in token space — the
+                       repulsive/attractive tension that Phase 2 is looking for.
+                       Stored as separate real and imaginary part arrays so the
+                       JSON remains serialisable.
+
+    Summary stats per layer (for cross-referencing with Phase 1 plateau locations):
+      sv_max, sv_min, sv_mean, sv_std   — singular value distribution
+      spectral_gap                       — σ₁ / σ₂  (large = low-rank-ish)
+      eig_frac_pos_real                  — fraction of eigenvalues with Re > 0
+      eig_frac_neg_real                  — fraction with Re < 0
+      eig_frac_complex                   — fraction with |Im| > 0.01 * |Re+ε|
+      eig_real_mean                      — mean of Re(eigenvalues)
+      eig_spectral_radius                — max |eigenvalue|
+
+    Saves:
+      V_spectrum_{model_name}.png        — 2-row plot: SVD histogram + Re(eig) histogram
+      v_eigenspectrum.json               — full numerical data for all layers
+
+    Returns
+    -------
+    dict keyed by layer name (e.g. "shared", "layer_0") with the summary stats
+    and full sv / eigenvalue arrays.  Empty dict if extraction fails.
+    """
+    import json
+
     v_matrices = []
 
     if "albert" in model_name:
@@ -616,7 +651,7 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path):
             v_matrices = [("shared", v_weight)]
         except AttributeError:
             print(f"  Could not extract V from {model_name}")
-            return
+            return {}
     elif "bert" in model_name:
         for i, layer in enumerate(model.encoder.layer):
             v = layer.attention.self.value.weight.detach().cpu().float().numpy()
@@ -628,21 +663,117 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path):
             v_matrices.append((f"layer_{i}", v))
 
     if not v_matrices:
-        return
+        return {}
 
-    n_plot = min(len(v_matrices), 4)
-    fig, axes = plt.subplots(1, n_plot, figsize=(4 * n_plot, 4))
-    if n_plot == 1:
-        axes = [axes]
-    fig.suptitle(f"V singular values — {model_name}", fontsize=9)
-
-    for ax, (name, V) in zip(axes, v_matrices[:n_plot]):
+    # ------------------------------------------------------------------
+    # Compute spectra
+    # ------------------------------------------------------------------
+    spectrum_data = {}
+    for name, V in v_matrices:
         sv = svdvals(V)
-        ax.hist(sv, bins=30, color="steelblue", edgecolor="none", alpha=0.8)
-        ax.set_title(f"{name}\nmax={sv.max():.2f} min={sv.min():.2f}", fontsize=8)
-        ax.set_xlabel("Singular value", fontsize=7)
 
+        # Eigenvalues require a square matrix.  V is square for all three
+        # architectures (see models.py extraction notes), but guard anyway.
+        if V.shape[0] == V.shape[1]:
+            eigs          = np.linalg.eigvals(V)          # complex (n,)
+            eig_real      = np.real(eigs).tolist()
+            eig_imag      = np.imag(eigs).tolist()
+            real_arr      = np.real(eigs)
+            # "Complex" = imaginary part is non-trivial relative to magnitude
+            is_complex    = np.abs(np.imag(eigs)) > 0.01 * (np.abs(real_arr) + 1e-8)
+            frac_pos      = float((real_arr > 0).mean())
+            frac_neg      = float((real_arr < 0).mean())
+            frac_complex  = float(is_complex.mean())
+            eig_real_mean = float(real_arr.mean())
+            spec_radius   = float(np.abs(eigs).max())
+        else:
+            # Non-square fallback: eigenvalues not meaningful, store empty
+            eig_real = eig_imag = []
+            frac_pos = frac_neg = frac_complex = eig_real_mean = spec_radius = float("nan")
+
+        spectral_gap = float(sv[0] / sv[1]) if len(sv) > 1 and sv[1] > 1e-10 else float("nan")
+
+        spectrum_data[name] = {
+            "sv":                  sv.tolist(),
+            "sv_max":              float(sv.max()),
+            "sv_min":              float(sv.min()),
+            "sv_mean":             float(sv.mean()),
+            "sv_std":              float(sv.std()),
+            "spectral_gap":        spectral_gap,
+            "eig_real":            eig_real,
+            "eig_imag":            eig_imag,
+            "eig_frac_pos_real":   frac_pos,
+            "eig_frac_neg_real":   frac_neg,
+            "eig_frac_complex":    frac_complex,
+            "eig_real_mean":       eig_real_mean,
+            "eig_spectral_radius": spec_radius,
+        }
+
+    # ------------------------------------------------------------------
+    # Save JSON
+    # ------------------------------------------------------------------
+    json_path = save_dir / f"v_eigenspectrum_{model_name.replace('/', '_')}.json"
+    with open(json_path, "w") as f:
+        json.dump({"model": model_name, "layers": spectrum_data}, f, indent=2)
+    print(f"  Saved: {json_path}")
+
+    # ------------------------------------------------------------------
+    # Plot: 2 rows × n_plot cols
+    #   Row 0 — singular value histogram
+    #   Row 1 — Re(eigenvalue) histogram with pos/neg colouring
+    # ------------------------------------------------------------------
+    n_plot = min(len(v_matrices), 4)
+    has_eigs = any(spectrum_data[name]["eig_real"] for name, _ in v_matrices[:n_plot])
+    n_rows = 2 if has_eigs else 1
+
+    fig, axes = plt.subplots(n_rows, n_plot, figsize=(4 * n_plot, 4 * n_rows),
+                             squeeze=False)
+    fig.suptitle(f"V weight spectrum — {model_name}", fontsize=9)
+
+    for col, (name, _) in enumerate(v_matrices[:n_plot]):
+        d = spectrum_data[name]
+
+        # Row 0: singular values
+        sv = np.array(d["sv"])
+        ax0 = axes[0, col]
+        ax0.hist(sv, bins=30, color="steelblue", edgecolor="none", alpha=0.8)
+        ax0.set_title(
+            f"{name}\nσ max={d['sv_max']:.2f}  gap={d['spectral_gap']:.2f}",
+            fontsize=7,
+        )
+        ax0.set_xlabel("Singular value", fontsize=6)
+        if col == 0:
+            ax0.set_ylabel("Count", fontsize=6)
+
+        # Row 1: Re(eigenvalues) with sign colouring
+        if n_rows == 2 and d["eig_real"]:
+            er  = np.array(d["eig_real"])
+            ax1 = axes[1, col]
+            pos = er[er >= 0]
+            neg = er[er <  0]
+            bins = np.linspace(er.min() - 0.01, er.max() + 0.01, 40)
+            if len(pos):
+                ax1.hist(pos, bins=bins, color="firebrick", alpha=0.7,
+                         edgecolor="none", label="Re>0 (attractive)")
+            if len(neg):
+                ax1.hist(neg, bins=bins, color="steelblue", alpha=0.7,
+                         edgecolor="none", label="Re<0 (repulsive)")
+            ax1.axvline(0, color="black", lw=0.8, ls="--")
+            ax1.set_title(
+                f"Re(eig)  pos={d['eig_frac_pos_real']:.2f} "
+                f"neg={d['eig_frac_neg_real']:.2f} "
+                f"cplx={d['eig_frac_complex']:.2f}",
+                fontsize=6,
+            )
+            ax1.set_xlabel("Re(eigenvalue)", fontsize=6)
+            if col == 0:
+                ax1.set_ylabel("Count", fontsize=6)
+                ax1.legend(fontsize=5)
+
+    plt.tight_layout()
     fname = save_dir / f"V_spectrum_{model_name.replace('/', '_')}.png"
     fig.savefig(fname, dpi=120, bbox_inches="tight")
     plt.close(fig)
     print(f"  Saved: {fname}")
+
+    return spectrum_data

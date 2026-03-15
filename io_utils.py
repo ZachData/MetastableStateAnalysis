@@ -119,6 +119,10 @@ def load_run(run_dir: Path) -> dict:
     if "pca_trajectories" not in results:
         results["pca_trajectories"] = []
 
+    # v_spectrum was added in Phase 2 prep; old runs won't have it
+    if "v_spectrum" not in results:
+        results["v_spectrum"] = {}
+
     # Backward compatibility: runs saved before CKA was added have no cka_prev.
     # Default to nan so all downstream code (plotting, reporting) handles it
     # the same way it handles the suppressed-degenerate case.

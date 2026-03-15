@@ -98,19 +98,27 @@ def run_all(
             print(f"  Failed: {e}")
             continue
 
-        analyze_value_eigenspectrum(model, model_name, OUTPUT_DIR)
+        v_spectrum   = analyze_value_eigenspectrum(model, model_name, OUTPUT_DIR)
 
         cfg          = MODEL_CONFIGS[model_name]
         use_extended = run_extended and cfg["is_albert"] and ALBERT_SNAPSHOTS
 
         if use_extended:
-            all_results += _run_albert_extended(
+            model_results = _run_albert_extended(
                 model, tokenizer, model_name, prompts_to_run, umap_dir
             )
         else:
-            all_results += _run_standard(
+            model_results = _run_standard(
                 model, tokenizer, model_name, prompts_to_run, umap_dir
             )
+
+        # Attach V spectrum to every run result for this model so Phase 2
+        # cross-referencing (plateau locations vs V eigenvalue sign distribution)
+        # doesn't require re-extracting the model.
+        for r in model_results:
+            r["v_spectrum"] = v_spectrum
+
+        all_results += model_results
 
         del model
         if torch.cuda.is_available():
