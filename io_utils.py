@@ -13,6 +13,7 @@ replot_all      : regenerate all plots from a saved run (no model needed)
 import csv
 import json
 import numpy as np
+import torch
 from pathlib import Path
 
 from config import BETA_VALUES
@@ -47,10 +48,10 @@ def save_run(
         json.dump(results, f, indent=2)
 
     # --- activations.npz ---
-    act_stack = np.stack([
-        layernorm_to_sphere(h).numpy()
-        for h in hidden_states
-    ])
+    # Stack all layers into a single tensor, normalize in one fused op on
+    # whatever device the tensors live on, then transfer once.
+    stacked   = torch.stack(hidden_states)                  # (n_layers, n_tokens, d)
+    act_stack = layernorm_to_sphere(stacked).numpy()        # single normalize call
     np.savez_compressed(run_dir / "activations.npz", activations=act_stack)
 
     # --- attentions.npz ---
@@ -80,10 +81,10 @@ def save_run(
         for beta in BETA_VALUES:
             row[f"energy_beta{beta}"] = layer["energies"][beta]
         if "sinkhorn" in layer:
-            row["fiedler_mean"]     = layer["sinkhorn"]["fiedler_mean"]
-            row["sinkhorn_k_mean"]  = layer["sinkhorn"]["sinkhorn_cluster_count_mean"]
-            row["attn_entropy_mean"]= layer.get("attention_entropy_mean", "")
-            row["row_col_balance"]  = layer["sinkhorn"]["row_col_balance_mean"]
+            row["fiedler_mean"]      = layer["sinkhorn"]["fiedler_mean"]
+            row["sinkhorn_k_mean"]   = layer["sinkhorn"]["sinkhorn_cluster_count_mean"]
+            row["attn_entropy_mean"] = layer.get("attention_entropy_mean", "")
+            row["row_col_balance"]   = layer["sinkhorn"]["row_col_balance_mean"]
         csv_rows.append(row)
 
     if csv_rows:

@@ -293,7 +293,7 @@ if __name__ == "__main__":
     else:
         if args.fast:
             models  = ["albert-base-v2"]
-            prompts = ["wiki_paragraph", "repeated_tokens"]
+            prompts = ["wiki_paragraph"]
         else:
             models  = args.models
             prompts = args.prompts

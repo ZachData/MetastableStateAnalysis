@@ -4,6 +4,12 @@ clustering.py — Standard clustering algorithms + PCA/UMAP projections.
 All functions operate on a single-layer (n_tokens, d_model) activation
 tensor.  Tokens are L2-normed before any distance computation.
 
+If the caller already holds an L2-normed ndarray (e.g. from the analysis
+loop where normed is pre-computed once per layer), it can be passed directly
+to avoid redundant normalization — all three public functions accept either a
+torch.Tensor (which will be normalised internally) or a pre-normalised
+np.ndarray (which is used as-is).
+
 Functions
 ---------
 cluster_count_sweep  : agglomerative threshold sweep + KMeans + HDBSCAN
@@ -37,8 +43,27 @@ except ImportError:
     print("umap-learn not available — skipping UMAP (pip install umap-learn)")
 
 
+# ---------------------------------------------------------------------------
+# Internal helper
+# ---------------------------------------------------------------------------
+
+def _to_normed(activations_or_normed) -> np.ndarray:
+    """
+    Accept either a torch.Tensor (raw activations) or a pre-normalised
+    np.ndarray and return an L2-normed float32 ndarray.
+    """
+    if isinstance(activations_or_normed, np.ndarray):
+        return activations_or_normed.astype(np.float32, copy=False)
+    # torch.Tensor path
+    return layernorm_to_sphere(activations_or_normed).numpy()
+
+
+# ---------------------------------------------------------------------------
+# Clustering
+# ---------------------------------------------------------------------------
+
 def cluster_count_sweep(
-    activations: torch.Tensor,
+    activations,
     thresholds: np.ndarray = DISTANCE_THRESHOLDS,
 ) -> dict:
     """
@@ -47,6 +72,11 @@ def cluster_count_sweep(
 
     Also runs HDBSCAN if available.
 
+    Parameters
+    ----------
+    activations : torch.Tensor  (n_tokens, d_model)  OR
+                  np.ndarray    (n_tokens, d_model) already L2-normed
+
     Returns
     -------
     dict with keys:
@@ -54,9 +84,9 @@ def cluster_count_sweep(
       kmeans         : {best_k, best_silhouette}
       hdbscan        : {n_clusters}  (only if hdbscan is installed)
     """
-    normed   = layernorm_to_sphere(activations).numpy()
-    n        = normed.shape[0]
-    results  = {"agglomerative": {}, "kmeans": {}}
+    normed  = _to_normed(activations)
+    n       = normed.shape[0]
+    results = {"agglomerative": {}, "kmeans": {}}
 
     cos_dist = np.clip(pairwise_distances(normed, metric="cosine"), 0, None)
 
@@ -75,7 +105,7 @@ def cluster_count_sweep(
         for k in K_RANGE:
             if k >= n:
                 break
-            km     = KMeans(n_clusters=k, n_init=5, random_state=42)
+            km     = KMeans(n_clusters=k, n_init=3, random_state=42)
             labels = km.fit_predict(normed)
             if len(set(labels)) < 2:
                 continue
@@ -95,36 +125,50 @@ def cluster_count_sweep(
     return results
 
 
+# ---------------------------------------------------------------------------
+# Projections
+# ---------------------------------------------------------------------------
+
 def pca_projection(
-    activations: torch.Tensor,
+    activations,
     n_components: int = 3,
 ):
     """
     Project L2-normed activations onto their top PCA components.
 
+    Parameters
+    ----------
+    activations : torch.Tensor  (n_tokens, d_model)  OR
+                  np.ndarray    (n_tokens, d_model) already L2-normed
+
     Returns
     -------
-    projected            : (n_tokens, n_components) array
+    projected                : (n_tokens, n_components) array
     explained_variance_ratio : (n_components,) array
     """
-    normed = layernorm_to_sphere(activations).numpy()
+    normed = _to_normed(activations)
     n_comp = min(n_components, normed.shape[1], normed.shape[0] - 1)
     pca    = PCA(n_components=n_comp)
     return pca.fit_transform(normed), pca.explained_variance_ratio_
 
 
 def umap_projection(
-    activations: torch.Tensor,
+    activations,
     n_components: int = 2,
 ):
     """
     Project L2-normed activations with UMAP.
 
+    Parameters
+    ----------
+    activations : torch.Tensor  (n_tokens, d_model)  OR
+                  np.ndarray    (n_tokens, d_model) already L2-normed
+
     Returns None if umap-learn is not installed or n_tokens is too small.
     """
     if not HAS_UMAP:
         return None
-    normed = layernorm_to_sphere(activations).numpy()
+    normed = _to_normed(activations)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",

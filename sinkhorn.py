@@ -8,9 +8,10 @@ idealized dynamics.
 
 Functions
 ---------
-sinkhorn_normalize       : iterative row/col normalisation
-fiedler_value            : λ₂ of the normalised Laplacian
-sinkhorn_cluster_count   : eigenvalues near 1 ≈ cluster count
+sinkhorn_normalize         : iterative row/col normalisation (single head)
+sinkhorn_normalize_batched : vectorised normalisation across all heads at once
+fiedler_value              : λ₂ of the normalised Laplacian
+sinkhorn_cluster_count     : eigenvalues near 1 ≈ cluster count
 analyze_attention_sinkhorn : per-head summary dict for one attention layer
 """
 
@@ -32,12 +33,44 @@ def sinkhorn_normalize(
     Iteratively row- and column-normalise *A* until it is doubly stochastic.
 
     Convergence is declared when the max elementwise change < *tol*.
+    Single-head version — kept for external use and the Fiedler/cluster
+    functions that operate on one matrix at a time.
     """
     P = np.clip(A.copy().astype(np.float64), 1e-12, None)
     for _ in range(max_iter):
         P_prev = P.copy()
-        P = P / P.sum(axis=1, keepdims=True)
-        P = P / P.sum(axis=0, keepdims=True)
+        P      = P / P.sum(axis=1, keepdims=True)
+        P      = P / P.sum(axis=0, keepdims=True)
+        if np.abs(P - P_prev).max() < tol:
+            break
+    return P
+
+
+def sinkhorn_normalize_batched(
+    A: np.ndarray,
+    max_iter: int = SINKHORN_MAX_ITER,
+    tol: float = SINKHORN_TOL,
+) -> np.ndarray:
+    """
+    Vectorised Sinkhorn-Knopp across all attention heads simultaneously.
+
+    Parameters
+    ----------
+    A : (n_heads, n_tokens, n_tokens)  raw attention weights
+
+    Returns
+    -------
+    P : (n_heads, n_tokens, n_tokens)  doubly stochastic matrices
+
+    This replaces the Python for-loop over heads in analyze_attention_sinkhorn,
+    reducing n_heads serial passes to a single batched numpy operation.
+    Row and column axes are 2 and 1 respectively under the (H, n, n) layout.
+    """
+    P = np.clip(A.astype(np.float64), 1e-12, None)
+    for _ in range(max_iter):
+        P_prev = P.copy()
+        P     /= P.sum(axis=2, keepdims=True)   # row-normalise all heads
+        P     /= P.sum(axis=1, keepdims=True)   # col-normalise all heads
         if np.abs(P - P_prev).max() < tol:
             break
     return P
@@ -54,11 +87,11 @@ def fiedler_value(P: np.ndarray) -> float:
     A low Fiedler value at a given layer indicates attention routing
     consistent with a metastable state.
     """
-    P_sym        = (P + P.T) / 2
-    L            = laplacian(P_sym, normed=True)
-    n            = L.shape[0]
-    k            = min(3, n - 1)
-    eigenvalues  = eigh(L, eigvals_only=True, subset_by_index=[0, k - 1])
+    P_sym       = (P + P.T) / 2
+    L           = laplacian(P_sym, normed=True)
+    n           = L.shape[0]
+    k           = min(3, n - 1)
+    eigenvalues = eigh(L, eigvals_only=True, subset_by_index=[0, k - 1])
     return float(eigenvalues[1]) if len(eigenvalues) > 1 else 0.0
 
 
@@ -91,20 +124,19 @@ def analyze_attention_sinkhorn(attn_matrix: torch.Tensor) -> dict:
       row_col_balance_mean       float  — mean std of raw attention column sums
                                           (0 = already doubly stochastic)
     """
-    attn            = attn_matrix.numpy()
-    n_heads         = attn.shape[0]
-    fiedler_vals    = []
-    cluster_counts  = []
-    row_col_balance = []
+    attn    = attn_matrix.numpy()              # (n_heads, n, n)
+    n_heads = attn.shape[0]
 
-    for h in range(n_heads):
-        A_h      = attn[h]
-        col_sums = A_h.sum(axis=0)
-        row_col_balance.append(float(np.std(col_sums)))
+    # Vectorised column-sum std — no per-head loop needed
+    col_sums        = attn.sum(axis=1)                          # (n_heads, n)
+    row_col_balance = np.std(col_sums, axis=1).tolist()         # (n_heads,)
 
-        P_h = sinkhorn_normalize(A_h)
-        fiedler_vals.append(fiedler_value(P_h))
-        cluster_counts.append(sinkhorn_cluster_count(P_h))
+    # All heads normalised in one batched call
+    P_all = sinkhorn_normalize_batched(attn)                    # (n_heads, n, n)
+
+    # Fiedler and cluster count still require per-head scipy calls
+    fiedler_vals   = [fiedler_value(P_all[h])        for h in range(n_heads)]
+    cluster_counts = [sinkhorn_cluster_count(P_all[h]) for h in range(n_heads)]
 
     return {
         "fiedler_mean":                float(np.mean(fiedler_vals)),
