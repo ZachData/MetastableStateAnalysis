@@ -27,6 +27,7 @@ from metrics import (
     attention_entropy,
     nearest_neighbor_indices,
     linear_cka,
+    energy_drop_pairs,
 )
 from sinkhorn import analyze_attention_sinkhorn
 from spectral import spectral_eigengap_k
@@ -75,6 +76,7 @@ def analyze_trajectory(
 
     prev_nn: np.ndarray = None   # NN index array from previous layer
     prev_normed: np.ndarray = None  # L2-normed activations from previous layer
+    prev_activations = None  # raw activations from previous layer (for energy drop pairs)
 
     for layer_idx, activations in enumerate(tqdm(
         hidden_states,
@@ -126,6 +128,29 @@ def analyze_trajectory(
 
         # --- Interaction energies (all betas, one vectorised exp call) ---
         lr["energies"] = interaction_energies_batched(G, beta_values)
+
+        # --- Energy drop localization (beta=1.0 only, violation layers only) ---
+        # A violation is when E_beta decreases from the previous layer.
+        # Computing per-pair deltas for all layers would be expensive; we gate
+        # on the beta=1.0 signal since that is the most interpretable scale.
+        e1_curr = lr["energies"].get(1.0, float("nan"))
+        e1_prev = (
+            results["layers"][-1]["energies"].get(1.0, float("nan"))
+            if results["layers"] else float("nan")
+        )
+        if (
+            prev_activations is not None
+            and lr["effective_rank"] >= 3.0          # suppress degenerate-regime noise
+            and not (isinstance(e1_curr, float) and (e1_curr != e1_curr))
+            and not (isinstance(e1_prev, float) and (e1_prev != e1_prev))
+            and e1_curr - e1_prev < -1e-6
+        ):
+            lr["energy_drop_pairs"] = energy_drop_pairs(
+                prev_activations, activations, beta=1.0, top_k=10
+            )
+        else:
+            lr["energy_drop_pairs"] = []
+        prev_activations = activations
 
         # --- Standard clustering (accepts pre-normed ndarray) ---
         lr["clustering"] = cluster_count_sweep(normed, thresholds)

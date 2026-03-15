@@ -728,6 +728,105 @@ def generate_llm_report(results: dict, save_dir: Path):
           f"violation_layers={viol_str}")
     W("")
 
+    # ------------------------------------------------------------------
+    # ENERGY DROP LOCALIZATION
+    # Only printed when beta=1.0 violations exist.
+    # ------------------------------------------------------------------
+    SPECIAL_TOKENS = {"[CLS]", "[SEP]", "<s>", "</s>", "<pad>", "[PAD]",
+                      "<|endoftext|>", "Ġ", "▁"}
+    PUNCT_CHARS    = set(".,!?;:'\"-–—()[]{}…/\\")
+
+    def _is_special(tok: str) -> bool:
+        if tok in SPECIAL_TOKENS:
+            return True
+        if tok.startswith("##"):          # BERT word-piece continuation
+            return False
+        if len(tok) == 1 and tok in PUNCT_CHARS:
+            return True
+        return False
+
+    def _flag_token(tok: str) -> str:
+        """Return a short annotation string, or empty string."""
+        if tok in ("[CLS]", "<s>"):
+            return "[CLS]"
+        if tok in ("[SEP]", "</s>"):
+            return "[SEP]"
+        if len(tok) == 1 and tok in PUNCT_CHARS:
+            return "[PUNCT]"
+        return ""
+
+    # Collect beta=1.0 violation layers
+    energies_b1   = [r["energies"].get(1.0, float("nan")) for r in layers]
+    diffs_b1      = np.diff(energies_b1)
+    viol_b1_layers = [i + 1 for i, d in enumerate(diffs_b1) if d < -1e-6]
+
+    W("ENERGY DROP LOCALIZATION")
+    W("-" * 40)
+    if not viol_b1_layers:
+        W("  No beta=1.0 energy violations — localization not applicable.")
+    else:
+        W("Per-pair contribution delta = [exp(β⟨xᵢ,xⱼ⟩_L+1) - exp(β⟨xᵢ,xⱼ⟩_L)] / (2β n²)")
+        W("Top-5 most-negative pairs per violation layer (beta=1.0).")
+        W("Tokens flagged: [CLS], [SEP], [PUNCT] — structural/special-token repulsion.")
+        W("Violation layers in the degenerate regime (eff_rank < 3) are suppressed as noise.")
+        W("")
+        for vl in viol_b1_layers:
+            lr          = layers[vl]
+            drop_pairs  = lr.get("energy_drop_pairs", [])
+            e_before    = energies_b1[vl - 1]
+            e_after     = energies_b1[vl]
+            erank       = lr.get("effective_rank", float("nan"))
+
+            # Identify if this layer is also a reset event
+            is_reset = (
+                vl > 0
+                and (layers[vl - 1]["ip_mean"] - lr["ip_mean"]) > 0.05
+                and (erank - layers[vl - 1]["effective_rank"]) > 5
+            )
+            reset_tag = "  ← RESET" if is_reset else ""
+
+            W(f"  Layer {vl:2d}  (E_b1: {e_before:.6f} → {e_after:.6f}, "
+              f"drop={e_after - e_before:.6f}, eff_rank={erank:.1f}){reset_tag}")
+
+            if not drop_pairs:
+                # empty means degenerate regime or layer 0 — state which
+                if erank < 3.0:
+                    W("    [SUPPRESSED — degenerate regime (eff_rank < 3): violation is floating-point noise]")
+                else:
+                    W("    [no pair data — layer 0 or data missing]")
+                W("")
+                continue
+
+            # Show top-5
+            top5 = drop_pairs[:5]
+            flags_seen = []
+            for rank, (i, j, delta) in enumerate(top5, 1):
+                tok_i  = tokens[i] if i < len(tokens) else f"tok{i}"
+                tok_j  = tokens[j] if j < len(tokens) else f"tok{j}"
+                flag_i = _flag_token(tok_i)
+                flag_j = _flag_token(tok_j)
+                ann_i  = f" {flag_i}" if flag_i else ""
+                ann_j  = f" {flag_j}" if flag_j else ""
+                # Adaptive formatting: scientific notation when delta is very small
+                if abs(delta) < 1e-4:
+                    delta_str = f"{delta:+.3e}"
+                else:
+                    delta_str = f"{delta:+.6f}"
+                W(f"    {rank}. ({i:3d},{j:3d})  δ={delta_str}  "
+                  f"'{tok_i}'{ann_i} ↔ '{tok_j}'{ann_j}")
+                for flag in [flag_i, flag_j]:
+                    if flag and flag not in flags_seen:
+                        flags_seen.append(flag)
+            if flags_seen:
+                W(f"    [FLAG] Special/structural tokens in top pairs: {flags_seen}")
+                W("           Repulsion may be driven by positional/structural subspace,")
+                W("           not by semantic content geometry.")
+            if is_reset:
+                W("    [RESET NOTE] This is a de-clustering layer (ip_mean drops sharply).")
+                W("                 Top pairs reflect recently-formed semantic groups being broken apart —")
+                W("                 contextually related tokens that were co-clustering prior to this layer.")
+            W("")
+    W("")
     W("SINKHORN / ATTENTION ANALYSIS")
     W("-" * 40)
     if has_sk:

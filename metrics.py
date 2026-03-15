@@ -98,6 +98,58 @@ def interaction_energies_batched(G: np.ndarray, beta_values: list) -> dict:
     return {float(beta): float(e) for beta, e in zip(beta_values, energies)}
 
 
+def energy_drop_pairs(
+    activations_before: torch.Tensor,
+    activations_after: torch.Tensor,
+    beta: float,
+    top_k: int = 10,
+) -> list:
+    """
+    Identify token pairs (i, j) responsible for an energy drop between layers.
+
+    The per-pair contribution to E_beta is exp(β⟨xᵢ,xⱼ⟩) / (2β n²).
+    A drop at layer L means Σᵢⱼ [exp(β⟨xᵢ,xⱼ⟩_after) - exp(β⟨xᵢ,xⱼ⟩_before)] < 0.
+    This function returns the top_k pairs with the most negative contribution delta.
+
+    Parameters
+    ----------
+    activations_before : (n_tokens, d_model) float tensor — layer L activations
+    activations_after  : (n_tokens, d_model) float tensor — layer L+1 activations
+    beta               : interaction energy beta parameter
+    top_k              : number of most-negative pairs to return
+
+    Returns
+    -------
+    list of (i, j, delta) tuples sorted by delta ascending (most negative first),
+    where delta = [exp(β⟨xᵢ,xⱼ⟩_after) - exp(β⟨xᵢ,xⱼ⟩_before)] / (2β n²)
+    """
+    normed_before = layernorm_to_sphere(activations_before).numpy()
+    normed_after  = layernorm_to_sphere(activations_after).numpy()
+    n             = normed_before.shape[0]
+    norm          = 2.0 * beta * n * n
+
+    G_before = normed_before @ normed_before.T   # (n, n)
+    G_after  = normed_after  @ normed_after.T    # (n, n)
+
+    # Per-pair delta matrix: (exp(β⟨·⟩_after) - exp(β⟨·⟩_before)) / (2β n²)
+    delta = (np.exp(beta * G_after) - np.exp(beta * G_before)) / norm  # (n, n)
+
+    # Consider upper triangle only (i < j) to avoid double-counting and self-pairs
+    rows, cols = np.triu_indices(n, k=1)
+    pair_deltas = delta[rows, cols]
+
+    # Find top_k most-negative pairs
+    k = min(top_k, len(pair_deltas))
+    # argpartition is O(n) vs O(n log n) full sort — sufficient for selection
+    worst_idx = np.argpartition(pair_deltas, k)[:k]
+    worst_idx = worst_idx[np.argsort(pair_deltas[worst_idx])]  # sort by value ascending
+
+    return [
+        (int(rows[idx]), int(cols[idx]), float(pair_deltas[idx]))
+        for idx in worst_idx
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Effective rank
 # ---------------------------------------------------------------------------

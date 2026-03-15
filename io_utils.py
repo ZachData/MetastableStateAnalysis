@@ -125,6 +125,9 @@ def load_run(run_dir: Path) -> dict:
     for layer in results.get("layers", []):
         if "cka_prev" not in layer:
             layer["cka_prev"] = float("nan")
+        # energy_drop_pairs was added later; default to empty list for old runs
+        if "energy_drop_pairs" not in layer:
+            layer["energy_drop_pairs"] = []
 
     print(f"Loaded: {results['model']} | {results['prompt']}")
     print(f"  {results['n_layers']} layers, {results['n_tokens']} tokens, "
