@@ -35,7 +35,11 @@ BETA_VALUES       = [0.1, 1.0, 2.0, 5.0]
 DISTANCE_THRESHOLDS = np.linspace(0.05, 0.6, 12)
 
 K_RANGE           = range(2, 10)
-ALBERT_ITERATIONS = [48]   # 12, 24, 36, 48 matches gpt2 / medium / large / xl layer counts
+# Run ALBERT once to ALBERT_MAX_ITERATIONS and take snapshots at each depth.
+# Because ALBERT shares weights, hidden[i] is identical whether the run
+# stops at i or continues to MAX — so a single pass captures every depth.
+ALBERT_MAX_ITERATIONS = 48             # single run length (matches gpt2-xl layer count)
+ALBERT_SNAPSHOTS      = [12, 24, 36, 48]  # depths to record (match gpt2/medium/large/xl)
 
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6

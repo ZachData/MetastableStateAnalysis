@@ -20,7 +20,7 @@ from pathlib import Path
 
 from config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
-    ALBERT_ITERATIONS,
+    ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS,
 )
 from models import load_model, extract_activations, extract_albert_extended
 from analysis import analyze_trajectory
@@ -101,7 +101,7 @@ def run_all(
         analyze_value_eigenspectrum(model, model_name, OUTPUT_DIR)
 
         cfg          = MODEL_CONFIGS[model_name]
-        use_extended = run_extended and cfg["is_albert"] and ALBERT_ITERATIONS
+        use_extended = run_extended and cfg["is_albert"] and ALBERT_SNAPSHOTS
 
         if use_extended:
             all_results += _run_albert_extended(
@@ -131,28 +131,38 @@ def run_all(
 
 def _run_albert_extended(model, tokenizer, model_name, prompts_to_run, umap_dir):
     """
-    Run the full analysis pipeline for every entry in ALBERT_ITERATIONS.
-    Each (n_iter, prompt) pair gets its own results, plots, save, and report.
+    Run ALBERT once per prompt to ALBERT_MAX_ITERATIONS, then fan out analysis
+    across every snapshot depth.  Total iterations = MAX × n_prompts instead
+    of sum(SNAPSHOTS) × n_prompts.
 
-    Use --no-extended to revert to the native-layer standard behaviour.
+    Loop order: outer = prompts, inner = snapshots.
+    Each (prompt, snapshot) pair gets its own results, plots, save, and report.
     """
     extended_trajectories_for_plot = {}
     results_list = []
 
-    for n_iter in ALBERT_ITERATIONS:
-        effective_model_name = f"{model_name}@{n_iter}iter"
-        print(f"\n  ALBERT iterations: {n_iter}  (label: {effective_model_name})")
+    for prompt_key in prompts_to_run:
+        print(f"\n  Prompt: {prompt_key}  "
+              f"(single run to {ALBERT_MAX_ITERATIONS} iterations, "
+              f"snapshots: {ALBERT_SNAPSHOTS})")
+        try:
+            snapshot_data = extract_albert_extended(
+                model, tokenizer, PROMPTS[prompt_key],
+                snapshots=ALBERT_SNAPSHOTS,
+                max_iterations=ALBERT_MAX_ITERATIONS,
+            )
+        except Exception as e:
+            print(f"    Failed: {e}")
+            traceback.print_exc()
+            continue
 
-        for prompt_key in prompts_to_run:
-            print(f"  Prompt: {prompt_key}")
-            try:
-                hidden_states, attentions, tokens = extract_albert_extended(
-                    model, tokenizer, PROMPTS[prompt_key], n_iter
-                )
-            except Exception as e:
-                print(f"    Failed: {e}")
-                traceback.print_exc()
-                continue
+        for n_iter, data in snapshot_data.items():
+            effective_model_name = f"{model_name}@{n_iter}iter"
+            print(f"    Snapshot i{n_iter}  →  {effective_model_name}")
+
+            hidden_states = data["trajectory"]
+            attentions    = data["attentions"]
+            tokens        = data["tokens"]
 
             if prompt_key == "wiki_paragraph":
                 extended_trajectories_for_plot[n_iter] = hidden_states
@@ -169,7 +179,7 @@ def _run_albert_extended(model, tokenizer, model_name, prompts_to_run, umap_dir)
             run_dir = OUTPUT_DIR / stem
             save_run(results, hidden_states, attentions, run_dir)
             generate_llm_report(results, run_dir)
-            print(f"  Saved run to: {run_dir}/")
+            print(f"    Saved run to: {run_dir}/")
 
     if extended_trajectories_for_plot:
         plot_albert_extended(extended_trajectories_for_plot, OUTPUT_DIR)
@@ -230,7 +240,7 @@ def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> N
     from config import (
         DEVICE, BETA_VALUES, DISTANCE_THRESHOLDS,
         SINKHORN_MAX_ITER, SINKHORN_TOL, SPECTRAL_MAX_K,
-        ALBERT_ITERATIONS, K_RANGE,
+        ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS, K_RANGE,
     )
     lines = [
         f"timestamp      : {timestamp}",
@@ -238,7 +248,8 @@ def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> N
         f"models         : {models_to_run}",
         f"prompts        : {prompts_to_run}",
         f"run_extended   : {run_extended}",
-        f"albert_iterations  : {ALBERT_ITERATIONS}",
+        f"albert_max_iterations : {ALBERT_MAX_ITERATIONS}",
+        f"albert_snapshots      : {ALBERT_SNAPSHOTS}",
         f"device         : {DEVICE}",
         "",
         "--- parameters ---",
@@ -247,7 +258,8 @@ def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> N
         f"sinkhorn_max_iter   : {SINKHORN_MAX_ITER}",
         f"sinkhorn_tol        : {SINKHORN_TOL}",
         f"spectral_max_k      : {SPECTRAL_MAX_K}",
-        f"albert_iterations   : {ALBERT_ITERATIONS}",
+        f"albert_max_iterations : {ALBERT_MAX_ITERATIONS}",
+        f"albert_snapshots      : {ALBERT_SNAPSHOTS}",
         f"k_range             : {list(K_RANGE)}",
         "",
         "--- prompt texts ---",

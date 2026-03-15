@@ -107,20 +107,45 @@ def extract_activations(model, tokenizer, text: str, model_name: str):
 # ALBERT extended-iteration extraction
 # ---------------------------------------------------------------------------
 
-def extract_albert_extended(model, tokenizer, text: str, n_iterations: int):
+def extract_albert_extended(
+    model,
+    tokenizer,
+    text: str,
+    snapshots: list,
+    max_iterations: int,
+):
     """
-    Run ALBERT's single shared layer block *n_iterations* times.
-    ALBERT's weight-sharing means we can iterate the same block to observe
-    dynamics that would normally require a much deeper stack.  This is the
-    primary analysis path for ALBERT models.
+    Run ALBERT's single shared layer block *max_iterations* times and return
+    trajectory slices at each requested snapshot depth.
+
+    Because ALBERT shares weights across all layers, hidden[i] is identical
+    whether the run stops at step i or continues further.  A single pass to
+    max_iterations therefore captures every shallower depth for free — there
+    is no need to run the loop multiple times.
+
+    Parameters
+    ----------
+    snapshots      : list of ints — depths at which to record a slice,
+                     e.g. [12, 24, 36, 48].  Every value must be <= max_iterations.
+    max_iterations : total number of layer iterations to run.
 
     Returns
     -------
-    trajectory : list[Tensor]  — (n_tokens, d_model) float32, length n_iterations+1
-    attentions : list[Tensor]  — (n_heads, n_tokens, n_tokens) float32, length n_iterations
-                                 (empty if attention capture fails)
-    tokens     : list[str]
+    dict keyed by snapshot depth n:
+        {
+          n: {
+            "trajectory": list[Tensor],   # length n+1  (step 0 .. step n inclusive)
+            "attentions": list[Tensor],   # length n
+            "tokens":     list[str],
+          }
+        }
     """
+    if any(n > max_iterations for n in snapshots):
+        raise ValueError(
+            f"All snapshots must be <= max_iterations ({max_iterations}). "
+            f"Got: {snapshots}"
+        )
+
     inputs = tokenizer(
         text, return_tensors="pt", truncation=True, max_length=512
     ).to(DEVICE)
@@ -142,20 +167,30 @@ def extract_albert_extended(model, tokenizer, text: str, n_iterations: int):
             )
             # ALBERT projects embeddings (128) → hidden_size (768) before iterating
             hidden = model.encoder.embedding_hidden_mapping_in(hidden)
-            trajectory   = [hidden[0].to(torch.float32).cpu()]
-            attentions   = []
-            albert_layer = model.encoder.albert_layer_groups[0].albert_layers[0]
 
-            for _ in range(n_iterations):
+            full_trajectory = [hidden[0].to(torch.float32).cpu()]  # step 0
+            full_attentions = []
+            albert_layer    = model.encoder.albert_layer_groups[0].albert_layers[0]
+
+            for _ in range(max_iterations):
                 layer_out = albert_layer(
                     hidden,
                     attention_mask=attention_mask,
                     output_attentions=True,
                 )
                 hidden = layer_out[0]
-                trajectory.append(hidden[0].to(torch.float32).cpu())
-                # layer_out[1] is (batch, heads, seq, seq) attention probabilities
+                full_trajectory.append(hidden[0].to(torch.float32).cpu())
                 if len(layer_out) > 1:
-                    attentions.append(layer_out[1][0].to(torch.float32).cpu())
+                    full_attentions.append(layer_out[1][0].to(torch.float32).cpu())
 
-    return trajectory, attentions, tokens
+    # Slice the single trajectory at each requested depth.
+    # full_trajectory has length max_iterations+1 (index 0 = post-projection embedding).
+    # Snapshot n covers steps 0..n, so trajectory[:n+1] and attentions[:n].
+    return {
+        n: {
+            "trajectory": full_trajectory[: n + 1],
+            "attentions": full_attentions[:n],
+            "tokens":     tokens,
+        }
+        for n in snapshots
+    }
