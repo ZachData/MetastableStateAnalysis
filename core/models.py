@@ -22,7 +22,7 @@ Performance notes
 import torch
 import torch.nn.functional as F
 
-from config import DEVICE, MODEL_CONFIGS
+from core.config import DEVICE, MODEL_CONFIGS
 
 
 # ---------------------------------------------------------------------------

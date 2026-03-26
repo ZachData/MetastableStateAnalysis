@@ -21,7 +21,7 @@ import torch
 from scipy.linalg import eigh
 from scipy.sparse.csgraph import laplacian
 
-from config import SINKHORN_MAX_ITER, SINKHORN_TOL
+from core.config import SINKHORN_MAX_ITER, SINKHORN_TOL
 
 
 def sinkhorn_normalize(

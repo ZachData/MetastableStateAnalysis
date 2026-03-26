@@ -2,3 +2,14 @@
 !*.py
 !*.md
 !.gitignore
+!*/
+
+# run artifacts
+results/
+metastability_results/
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/

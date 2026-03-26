@@ -14,7 +14,7 @@ import numpy as np
 from scipy.linalg import eigh
 from scipy.sparse.csgraph import laplacian
 
-from config import SPECTRAL_MAX_K
+from core.config import SPECTRAL_MAX_K
 
 
 def spectral_eigengap_k(G: np.ndarray, max_k: int = SPECTRAL_MAX_K) -> dict:

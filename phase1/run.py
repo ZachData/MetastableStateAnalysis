@@ -18,13 +18,13 @@ import torch
 from datetime import datetime
 from pathlib import Path
 
-from config import (
+from core.config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
     ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS,
 )
-from models import load_model, extract_activations, extract_albert_extended
-from analysis import analyze_trajectory
-from plots import (
+from core.models import load_model, extract_activations, extract_albert_extended
+from .analysis import analyze_trajectory
+from .plots import (
     plot_trajectory,
     plot_ip_histograms,
     plot_pca_panels,
@@ -36,9 +36,9 @@ from plots import (
     analyze_value_eigenspectrum,
     plot_cka_trajectory,
 )
-from reporting import print_summary, generate_llm_report, generate_cross_run_report
-from io_utils import save_run, replot_all
-from clustering import HAS_UMAP
+from .reporting import print_summary, generate_llm_report, generate_cross_run_report
+from .io_utils import save_run, replot_all
+from .clustering import HAS_UMAP
 
 # Module-level output directory set by run_all before any analyze_trajectory call.
 OUTPUT_DIR: Path = BASE_RESULTS_DIR
@@ -245,7 +245,7 @@ def _generate_plots(results: dict, out_dir: Path) -> None:
 
 
 def _write_manifest(timestamp, models_to_run, prompts_to_run, run_extended) -> None:
-    from config import (
+    from core.config import (
         DEVICE, BETA_VALUES, DISTANCE_THRESHOLDS,
         SINKHORN_MAX_ITER, SINKHORN_TOL, SPECTRAL_MAX_K,
         ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS, K_RANGE,
@@ -309,7 +309,7 @@ if __name__ == "__main__":
         replot_all(Path(args.replot))
 
     elif args.summary:
-        from reporting import print_run_summary
+        from .reporting import print_run_summary
         print_run_summary(Path(args.summary))
 
     else:

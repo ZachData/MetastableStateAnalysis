@@ -18,9 +18,9 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 
-from config import BETA_VALUES, DISTANCE_THRESHOLDS
-from models import layernorm_to_sphere
-from metrics import (
+from core.config import BETA_VALUES, DISTANCE_THRESHOLDS
+from core.models import layernorm_to_sphere
+from .metrics import (
     pairwise_inner_products_from_gram,
     interaction_energies_batched,
     effective_rank_from_raw,
@@ -29,9 +29,9 @@ from metrics import (
     linear_cka,
     energy_drop_pairs,
 )
-from sinkhorn import analyze_attention_sinkhorn
-from spectral import spectral_eigengap_k
-from clustering import cluster_count_sweep, pca_projection, umap_projection, HAS_UMAP
+from .sinkhorn import analyze_attention_sinkhorn
+from .spectral import spectral_eigengap_k
+from .clustering import cluster_count_sweep, pca_projection, umap_projection, HAS_UMAP
 
 
 def analyze_trajectory(
@@ -129,31 +129,50 @@ def analyze_trajectory(
         # --- Interaction energies (all betas, one vectorised exp call) ---
         lr["energies"] = interaction_energies_batched(G, beta_values)
 
-        # --- Energy drop localization (beta=1.0 only, violation layers only) ---
+        # --- Energy drop localization (all betas, violation layers only) ---
         # A violation is when E_beta decreases from the previous layer.
-        # Computing per-pair deltas for all layers would be expensive; we gate
-        # on the beta=1.0 signal since that is the most interpretable scale.
-        e1_curr = lr["energies"].get(1.0, float("nan"))
-        e1_prev = (
-            results["layers"][-1]["energies"].get(1.0, float("nan"))
-            if results["layers"] else float("nan")
-        )
-        if (
-            prev_activations is not None
-            and lr["effective_rank"] >= 3.0          # suppress degenerate-regime noise
-            and not (isinstance(e1_curr, float) and (e1_curr != e1_curr))
-            and not (isinstance(e1_prev, float) and (e1_prev != e1_prev))
-            and e1_curr - e1_prev < -1e-6
-        ):
-            lr["energy_drop_pairs"] = energy_drop_pairs(
-                prev_activations, activations, beta=1.0, top_k=10
-            )
+        # Gate on effective_rank >= 3 to suppress degenerate-regime noise.
+        # Output format: {beta: [(i, j, delta), ...]} — empty list per beta
+        # when no violation or not enough context.
+        if prev_activations is not None and lr["effective_rank"] >= 3.0:
+            drop_pairs_by_beta = {}
+            for beta in beta_values:
+                e_curr = lr["energies"].get(beta, float("nan"))
+                e_prev = (
+                    results["layers"][-1]["energies"].get(beta, float("nan"))
+                    if results["layers"] else float("nan")
+                )
+                is_nan = lambda v: isinstance(v, float) and v != v
+                if not is_nan(e_curr) and not is_nan(e_prev) and e_curr - e_prev < -1e-6:
+                    drop_pairs_by_beta[beta] = energy_drop_pairs(
+                        prev_activations, activations, beta=beta, top_k=10
+                    )
+                else:
+                    drop_pairs_by_beta[beta] = []
+            lr["energy_drop_pairs"] = drop_pairs_by_beta
         else:
-            lr["energy_drop_pairs"] = []
+            lr["energy_drop_pairs"] = {beta: [] for beta in beta_values}
         prev_activations = activations
 
         # --- Standard clustering (accepts pre-normed ndarray) ---
         lr["clustering"] = cluster_count_sweep(normed, thresholds)
+
+        # --- KMeans centroids (Phase 5 cluster identity analysis) ---
+        # Computed here where normed is available; stored as a nested list
+        # so they survive JSON serialization in metrics.json and are also
+        # persisted to clusters.npz by save_run.
+        # Centroid[c] = mean of all normed token vectors assigned to cluster c,
+        # re-normalized to S^{d-1} so inner products remain meaningful.
+        km_labels = np.array(lr["clustering"]["kmeans"]["labels"], dtype=np.int32)
+        best_k    = lr["clustering"]["kmeans"]["best_k"]
+        centroids = np.zeros((best_k, normed.shape[1]), dtype=np.float32)
+        for c in range(best_k):
+            mask = km_labels == c
+            if mask.any():
+                mean_vec = normed[mask].mean(axis=0)
+                norm     = np.linalg.norm(mean_vec)
+                centroids[c] = mean_vec / norm if norm > 1e-10 else mean_vec
+        lr["cluster_centroids_kmeans"] = centroids.tolist()
 
         # --- Spectral eigengap on Gram matrix ---
         lr["spectral"] = spectral_eigengap_k(G)

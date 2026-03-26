@@ -16,7 +16,7 @@ import numpy as np
 from collections import Counter
 from pathlib import Path
 
-from config import BETA_VALUES, DISTANCE_THRESHOLDS, PROMPTS
+from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, PROMPTS
 
 
 # ---------------------------------------------------------------------------
@@ -397,7 +397,7 @@ def print_run_summary(run_dir: Path):
     for name, vals, tol in [
         ("Mass-near-1",   mass1,  0.10),
         ("Effective rank",erank,  0.05),
-        ("Spectral k",    spec_k, 0.5),
+        ("Spectral k",    spec_k, 0.0),
     ]:
         plateaus = detect_plateaus(vals, window=2, tol=tol)
         print(f"\n  {name}:")
@@ -766,13 +766,18 @@ def generate_llm_report(results: dict, save_dir: Path):
         W("  No beta=1.0 energy violations — localization not applicable.")
     else:
         W("Per-pair contribution delta = [exp(β⟨xᵢ,xⱼ⟩_L+1) - exp(β⟨xᵢ,xⱼ⟩_L)] / (2β n²)")
-        W("Top-5 most-negative pairs per violation layer (beta=1.0).")
+        W("Top-5 most-negative pairs per violation layer (beta=1.0 shown; all betas stored).")
         W("Tokens flagged: [CLS], [SEP], [PUNCT] — structural/special-token repulsion.")
         W("Violation layers in the degenerate regime (eff_rank < 3) are suppressed as noise.")
         W("")
         for vl in viol_b1_layers:
-            lr          = layers[vl]
-            drop_pairs  = lr.get("energy_drop_pairs", [])
+            lr         = layers[vl]
+            edp        = lr.get("energy_drop_pairs", {})
+            # Support both new dict format {beta: [...]} and old flat list (beta=1.0)
+            if isinstance(edp, dict):
+                drop_pairs = edp.get(1.0, [])
+            else:
+                drop_pairs = edp
             e_before    = energies_b1[vl - 1]
             e_after     = energies_b1[vl]
             erank       = lr.get("effective_rank", float("nan"))

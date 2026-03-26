@@ -3,10 +3,11 @@ io_utils.py — Save and load run artifacts.
 
 Functions
 ---------
-save_run        : persist metrics, activations, attentions, tokens, CSV
+save_run        : persist metrics, activations, attentions, clusters, tokens, CSV
 load_run        : restore results dict from a run directory
 load_activations: load raw L2-normed activation array
 load_attentions : load raw attention array
+load_clusters   : load per-layer cluster labels and KMeans centroids
 replot_all      : regenerate all plots from a saved run (no model needed)
 """
 
@@ -16,8 +17,8 @@ import numpy as np
 import torch
 from pathlib import Path
 
-from config import BETA_VALUES
-from models import layernorm_to_sphere
+from core.config import BETA_VALUES
+from core.models import layernorm_to_sphere
 
 
 # ---------------------------------------------------------------------------
@@ -37,6 +38,7 @@ def save_run(
       metrics.json         — full results dict (JSON-serialisable)
       activations.npz      — L2-normed hidden states (n_layers, n_tokens, d)
       attentions.npz       — attention weights (n_layers, n_heads, n, n)
+      clusters.npz         — per-layer cluster labels and KMeans centroids
       tokens.txt           — one token per line with index
       layer_metrics.csv    — flat CSV of key per-layer scalars
     """
@@ -58,6 +60,33 @@ def save_run(
     if attentions:
         attn_stack = np.stack([a.numpy() for a in attentions])
         np.savez_compressed(run_dir / "attentions.npz", attentions=attn_stack)
+
+    # --- clusters.npz ---
+    # Per-layer cluster labels and KMeans centroids, keyed by layer index.
+    # Labels are (n_tokens,) int32 arrays.
+    # KMeans centroids are (k, d) float32 arrays on S^{d-1}.
+    # HDBSCAN labels use -1 for noise tokens.
+    # Arrays are named: kmeans_labels_L{i}, kmeans_centroids_L{i}, hdbscan_labels_L{i}.
+    # This file is the primary input for Phase 5 cluster identity analysis.
+    cluster_arrays = {}
+    for layer in results["layers"]:
+        i  = layer["layer"]
+        km = layer["clustering"]["kmeans"]
+        if "labels" in km:
+            cluster_arrays[f"kmeans_labels_L{i}"] = np.array(
+                km["labels"], dtype=np.int32
+            )
+        if "cluster_centroids_kmeans" in layer:
+            cluster_arrays[f"kmeans_centroids_L{i}"] = np.array(
+                layer["cluster_centroids_kmeans"], dtype=np.float32
+            )
+        hdb = layer["clustering"].get("hdbscan", {})
+        if "labels" in hdb:
+            cluster_arrays[f"hdbscan_labels_L{i}"] = np.array(
+                hdb["labels"], dtype=np.int32
+            )
+    if cluster_arrays:
+        np.savez_compressed(run_dir / "clusters.npz", **cluster_arrays)
 
     # --- tokens.txt ---
     with open(run_dir / "tokens.txt", "w") as f:
@@ -129,9 +158,20 @@ def load_run(run_dir: Path) -> dict:
     for layer in results.get("layers", []):
         if "cka_prev" not in layer:
             layer["cka_prev"] = float("nan")
-        # energy_drop_pairs was added later; default to empty list for old runs
+        # energy_drop_pairs was added later; default to empty dict for old runs.
+        # Runs saved before the all-betas extension stored a flat list for
+        # beta=1.0 only — migrate those to the new {beta: [...]} dict format.
         if "energy_drop_pairs" not in layer:
-            layer["energy_drop_pairs"] = []
+            layer["energy_drop_pairs"] = {}
+        elif isinstance(layer["energy_drop_pairs"], list):
+            # Old format: flat list for beta=1.0 only — migrate to dict
+            old = layer["energy_drop_pairs"]
+            layer["energy_drop_pairs"] = {1.0: old} if old else {}
+        elif isinstance(layer["energy_drop_pairs"], dict):
+            # JSON stringifies float keys — rehydrate {"1.0": [...]} → {1.0: [...]}
+            layer["energy_drop_pairs"] = {
+                float(k): v for k, v in layer["energy_drop_pairs"].items()
+            }
         # JSON serialization converts float dict keys to strings ("1.0" etc.).
         # Rehydrate back to float so downstream float-keyed lookups don't silently
         # return nan or raise KeyError (e.g. layer["energies"][1.0]).
@@ -168,6 +208,50 @@ def load_attentions(run_dir: Path) -> np.ndarray:
     return data["attentions"]
 
 
+def load_clusters(run_dir: Path) -> dict:
+    """
+    Load per-layer cluster labels and centroids from clusters.npz.
+
+    Returns
+    -------
+    dict with keys:
+      kmeans_labels    : list of (n_tokens,) int32 arrays, one per layer
+      kmeans_centroids : list of (k, d) float32 arrays, one per layer
+      hdbscan_labels   : list of (n_tokens,) int32 arrays, one per layer
+                         (-1 = noise); empty list if HDBSCAN was not run
+
+    Arrays are ordered by layer index (layer 0 first).  Missing layers
+    (e.g. old runs without clusters.npz) raise FileNotFoundError.
+    """
+    path = Path(run_dir) / "clusters.npz"
+    data = np.load(path)
+
+    # Determine layer count from the kmeans_labels keys
+    layer_indices = sorted(
+        int(k.split("_L")[1])
+        for k in data.files
+        if k.startswith("kmeans_labels_L")
+    )
+
+    kmeans_labels    = [data[f"kmeans_labels_L{i}"]    for i in layer_indices]
+    kmeans_centroids = [
+        data[f"kmeans_centroids_L{i}"]
+        for i in layer_indices
+        if f"kmeans_centroids_L{i}" in data.files
+    ]
+    hdbscan_labels   = [
+        data[f"hdbscan_labels_L{i}"]
+        for i in layer_indices
+        if f"hdbscan_labels_L{i}" in data.files
+    ]
+
+    return {
+        "kmeans_labels":    kmeans_labels,
+        "kmeans_centroids": kmeans_centroids,
+        "hdbscan_labels":   hdbscan_labels,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Replot from saved run
 # ---------------------------------------------------------------------------
@@ -180,7 +264,7 @@ def replot_all(run_dir: Path, out_dir: Path = None) -> None:
     Usage:
         python run.py --replot metastability_results/albert-base-v2_wiki_paragraph
     """
-    from plots import (
+    from .plots import (
         plot_trajectory,
         plot_ip_histograms,
         plot_pca_panels,
@@ -188,7 +272,7 @@ def replot_all(run_dir: Path, out_dir: Path = None) -> None:
         plot_spectral_eigengap,
         plot_cka_trajectory,
     )
-    from reporting import print_summary
+    from .reporting import print_summary
 
     run_dir = Path(run_dir)
     out_dir = out_dir or run_dir

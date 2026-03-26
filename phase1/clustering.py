@@ -25,8 +25,8 @@ from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import pairwise_distances, silhouette_score
 from sklearn.decomposition import PCA
 
-from models import layernorm_to_sphere
-from config import DISTANCE_THRESHOLDS, K_RANGE
+from core.models import layernorm_to_sphere
+from core.config import DISTANCE_THRESHOLDS, K_RANGE
 
 try:
     import hdbscan
@@ -81,26 +81,35 @@ def cluster_count_sweep(
     -------
     dict with keys:
       agglomerative  : {threshold -> cluster_count}
-      kmeans         : {best_k, best_silhouette}
-      hdbscan        : {n_clusters}  (only if hdbscan is installed)
+                       plus "mid_labels" — (n_tokens,) int list at the
+                       middle threshold, for Phase 5 spatial analysis
+      kmeans         : {best_k, best_silhouette, labels}
+                       labels is a (n_tokens,) int list for the winning k
+      hdbscan        : {n_clusters, labels}  (only if hdbscan is installed)
+                       labels uses -1 for noise tokens
     """
-    normed  = _to_normed(activations)
-    n       = normed.shape[0]
-    results = {"agglomerative": {}, "kmeans": {}}
+    normed   = _to_normed(activations)
+    n        = normed.shape[0]
+    results  = {"agglomerative": {}, "kmeans": {}}
 
-    cos_dist = np.clip(pairwise_distances(normed, metric="cosine"), 0, None)
+    cos_dist   = np.clip(pairwise_distances(normed, metric="cosine"), 0, None)
+    thresholds = list(thresholds)
+    mid_thresh = float(thresholds[len(thresholds) // 2])
 
     for t in thresholds:
-        agg    = AgglomerativeClustering(
+        agg = AgglomerativeClustering(
             n_clusters=None,
             distance_threshold=float(t),
             linkage="average",
             metric="precomputed",
         )
-        labels = agg.fit_predict(cos_dist)
-        results["agglomerative"][float(t)] = int(len(set(labels)))
+        agg_labels = agg.fit_predict(cos_dist)
+        results["agglomerative"][float(t)] = int(len(set(agg_labels)))
+        # Save token assignments at the mid threshold for Phase 5
+        if float(t) == mid_thresh:
+            results["agglomerative"]["mid_labels"] = agg_labels.tolist()
 
-    best_k, best_sil = 1, -1.0
+    best_k, best_sil, best_labels = 1, -1.0, np.zeros(n, dtype=np.int32)
     if n > 3:
         for k in K_RANGE:
             if k >= n:
@@ -109,18 +118,24 @@ def cluster_count_sweep(
             labels = km.fit_predict(normed)
             if len(set(labels)) < 2:
                 continue
-            sil    = silhouette_score(normed, labels, metric="cosine")
+            sil = silhouette_score(normed, labels, metric="cosine")
             if sil > best_sil:
-                best_sil = sil
-                best_k   = k
+                best_sil   = sil
+                best_k     = k
+                best_labels = labels.copy()
+
     results["kmeans"]["best_k"]          = best_k
     results["kmeans"]["best_silhouette"] = best_sil
+    results["kmeans"]["labels"]          = best_labels.tolist()
 
     if HAS_HDBSCAN:
         hdb        = hdbscan.HDBSCAN(min_cluster_size=2, metric="euclidean")
-        labels     = hdb.fit_predict(normed)
-        n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-        results["hdbscan"] = {"n_clusters": n_clusters}
+        hdb_labels = hdb.fit_predict(normed)
+        n_clusters = len(set(hdb_labels)) - (1 if -1 in hdb_labels else 0)
+        results["hdbscan"] = {
+            "n_clusters": n_clusters,
+            "labels":     hdb_labels.tolist(),
+        }
 
     return results
 

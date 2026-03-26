@@ -24,7 +24,7 @@ import torch
 
 from scipy.linalg import svdvals
 
-from models import layernorm_to_sphere
+from core.models import layernorm_to_sphere
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +280,7 @@ def nearest_neighbor_stability(
     ``nearest_neighbor_indices`` directly on the pre-computed Gram matrix to
     avoid redundant normalisation and matmul operations.
     """
-    from models import layernorm_to_sphere  # local import avoids circular dep
+    from core.models import layernorm_to_sphere  # local import avoids circular dep
     normed_curr = layernorm_to_sphere(activations).numpy()
     normed_prev = layernorm_to_sphere(prev_activations).numpy()
     nn_curr = nearest_neighbor_indices(normed_curr @ normed_curr.T)
