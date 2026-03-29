@@ -31,7 +31,11 @@ from .metrics import (
 )
 from .sinkhorn import analyze_attention_sinkhorn
 from .spectral import spectral_eigengap_k
-from .clustering import cluster_count_sweep, pca_projection, umap_projection, HAS_UMAP
+from .clustering import (
+    cluster_count_sweep, pca_projection, umap_projection, HAS_UMAP,
+    multiscale_nesting, pair_hdbscan_agreement,
+)
+from .cluster_tracking import track_clusters
 
 
 def analyze_trajectory(
@@ -177,6 +181,47 @@ def analyze_trajectory(
         # --- Spectral eigengap on Gram matrix ---
         lr["spectral"] = spectral_eigengap_k(G)
 
+        # --- Multi-scale cluster nesting (P1-3) ---
+        # Run spectral eigengap within each HDBSCAN cluster to detect
+        # hierarchical organization (global bipartition nesting inside
+        # local density structure).
+        hdb_data = lr["clustering"].get("hdbscan", {})
+        if "labels" in hdb_data and normed.shape[0] >= 4:
+            hdb_labels = np.array(hdb_data["labels"], dtype=np.int32)
+            n_real_clusters = len(set(hdb_labels) - {-1})
+            if n_real_clusters >= 2:
+                lr["nesting"] = multiscale_nesting(normed, hdb_labels)
+            else:
+                lr["nesting"] = {
+                    "global_spectral_k": lr["spectral"]["k_eigengap"],
+                    "per_cluster": {},
+                    "has_nesting": False,
+                    "nesting_summary": "fewer than 2 HDBSCAN clusters",
+                    "n_clusters_with_substructure": 0,
+                }
+        else:
+            lr["nesting"] = {
+                "global_spectral_k": lr["spectral"]["k_eigengap"],
+                "per_cluster": {},
+                "has_nesting": False,
+                "nesting_summary": "HDBSCAN not available",
+                "n_clusters_with_substructure": 0,
+            }
+
+        # --- Per-pair HDBSCAN agreement / induction head filtering (P1-4) ---
+        if "labels" in hdb_data:
+            lr["pair_agreement"] = pair_hdbscan_agreement(
+                nn, hdb_labels, tokens,
+            )
+        else:
+            lr["pair_agreement"] = {
+                "mutual_pairs": [],
+                "n_semantic": 0,
+                "n_artifact": 0,
+                "n_noise": 0,
+                "artifact_fraction": 0.0,
+            }
+
         # --- PCA projection (accepts pre-normed ndarray) ---
         proj, var_ratio              = pca_projection(normed, n_components=3)
         lr["pca_explained_variance"] = var_ratio.tolist()
@@ -203,5 +248,25 @@ def analyze_trajectory(
             lr["sinkhorn"]                   = analyze_attention_sinkhorn(attn)
 
         results["layers"].append(lr)
+
+    # ------------------------------------------------------------------
+    # Post-loop: HDBSCAN cluster tracking across layers (P1-1)
+    # ------------------------------------------------------------------
+    results["cluster_tracking"] = track_clusters(results)
+
+    # ------------------------------------------------------------------
+    # Post-loop: identify plateau layers for attention saving (P1-7)
+    # Plateau detection uses mass-near-1 with the same parameters as
+    # reporting.detect_plateaus.  Layers in any plateau window are
+    # flagged so that save_run can persist their raw attention matrices.
+    # ------------------------------------------------------------------
+    from .reporting import detect_plateaus
+    mass1 = [r["ip_mass_near_1"] for r in results["layers"]]
+    plateaus = detect_plateaus(mass1, window=2, tol=0.10)
+    plateau_layer_set = set()
+    for s, e, _ in plateaus:
+        for l in range(s, e + 1):
+            plateau_layer_set.add(l)
+    results["plateau_layers"] = sorted(plateau_layer_set)
 
     return results

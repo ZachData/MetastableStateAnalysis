@@ -12,9 +12,11 @@ np.ndarray (which is used as-is).
 
 Functions
 ---------
-cluster_count_sweep  : agglomerative threshold sweep + KMeans + HDBSCAN
-pca_projection       : PCA onto S^{d-1}-normed activations
-umap_projection      : UMAP (optional — requires umap-learn)
+cluster_count_sweep       : agglomerative threshold sweep + KMeans + HDBSCAN
+pca_projection            : PCA onto S^{d-1}-normed activations
+umap_projection           : UMAP (optional — requires umap-learn)
+multiscale_nesting        : spectral eigengap within each HDBSCAN cluster (P1-3)
+pair_hdbscan_agreement    : tag mutual-NN pairs as semantic vs attention artifact (P1-4)
 """
 
 import warnings
@@ -198,3 +200,178 @@ def umap_projection(
             min_dist=0.1,
         )
         return reducer.fit_transform(normed)
+
+
+# ---------------------------------------------------------------------------
+# Multi-scale cluster nesting (P1-3)
+# ---------------------------------------------------------------------------
+
+def multiscale_nesting(
+    normed: np.ndarray,
+    hdbscan_labels: np.ndarray,
+    max_k: int = 10,
+) -> dict:
+    """
+    Run spectral eigengap within each HDBSCAN cluster to detect hierarchical
+    organization: a global bipartition (spectral k=2) nesting inside local
+    density structure (HDBSCAN k=30-60).
+
+    Parameters
+    ----------
+    normed         : (n_tokens, d) L2-normed activations
+    hdbscan_labels : (n_tokens,) HDBSCAN labels (-1 = noise)
+    max_k          : maximum eigenvalues to inspect per sub-cluster
+
+    Returns
+    -------
+    dict with keys:
+      global_spectral_k   : int — spectral eigengap k on the full token set
+      per_cluster          : dict mapping cluster_id -> {
+                               n_tokens, spectral_k, eigenvalues, eigengaps
+                             }
+      has_nesting          : bool — True if global_k <= 3 AND at least one
+                             sub-cluster has spectral_k > 1
+      nesting_summary      : str — human-readable description
+    """
+    from .spectral import spectral_eigengap_k
+
+    normed = normed.astype(np.float32, copy=False)
+
+    # Global spectral k
+    G_full = normed @ normed.T
+    global_spec = spectral_eigengap_k(G_full, max_k=max_k)
+    global_k = global_spec["k_eigengap"]
+
+    # Per-cluster spectral analysis
+    cluster_ids = sorted(set(hdbscan_labels) - {-1})
+    per_cluster = {}
+
+    for cid in cluster_ids:
+        mask = hdbscan_labels == cid
+        n_c = int(mask.sum())
+        if n_c < 4:
+            per_cluster[cid] = {
+                "n_tokens": n_c,
+                "spectral_k": 1,
+                "eigenvalues": [],
+                "eigengaps": [],
+            }
+            continue
+
+        sub_normed = normed[mask]
+        G_sub = sub_normed @ sub_normed.T
+        sub_spec = spectral_eigengap_k(G_sub, max_k=min(max_k, n_c - 2))
+        per_cluster[cid] = {
+            "n_tokens": n_c,
+            "spectral_k": sub_spec["k_eigengap"],
+            "eigenvalues": sub_spec["eigenvalues"],
+            "eigengaps": sub_spec["eigengaps"],
+        }
+
+    # Nesting detection
+    subclusters_with_structure = [
+        cid for cid, info in per_cluster.items()
+        if info["spectral_k"] > 1
+    ]
+    has_nesting = global_k <= 3 and len(subclusters_with_structure) > 0
+
+    if has_nesting:
+        summary = (
+            f"Global spectral k={global_k} (macro-bipartition) with "
+            f"{len(subclusters_with_structure)}/{len(cluster_ids)} "
+            f"HDBSCAN clusters showing internal sub-structure"
+        )
+    elif global_k <= 3:
+        summary = f"Global spectral k={global_k}, no sub-structure within HDBSCAN clusters"
+    else:
+        summary = f"Global spectral k={global_k} (>3), nesting analysis not applicable"
+
+    return {
+        "global_spectral_k": global_k,
+        "per_cluster": per_cluster,
+        "has_nesting": has_nesting,
+        "nesting_summary": summary,
+        "n_clusters_with_substructure": len(subclusters_with_structure),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Per-pair HDBSCAN agreement for induction head filtering (P1-4)
+# ---------------------------------------------------------------------------
+
+def pair_hdbscan_agreement(
+    nn_indices: np.ndarray,
+    hdbscan_labels: np.ndarray,
+    tokens: list,
+) -> dict:
+    """
+    Tag mutual nearest-neighbour pairs as semantic vs attention artifact.
+
+    A mutual-NN pair (i, j) where nn[i]=j AND nn[j]=i is tagged:
+      - "semantic"  if both tokens share the same HDBSCAN cluster
+      - "artifact"  if they are mutual NNs but in different clusters
+      - "noise"     if either token is HDBSCAN noise (-1)
+
+    Cross-position subword completions (e.g. he↔ger for "Heger") that are
+    driven by induction heads will typically appear as mutual NNs in different
+    clusters — they are locally attracted by attention but not embedded in
+    the same dense region.
+
+    Parameters
+    ----------
+    nn_indices     : (n_tokens,) int array — nearest-neighbour indices
+    hdbscan_labels : (n_tokens,) int array — HDBSCAN cluster labels (-1 = noise)
+    tokens         : list of str — decoded token strings
+
+    Returns
+    -------
+    dict with keys:
+      mutual_pairs : list of dicts, each with:
+                       i, j           : token indices
+                       tok_i, tok_j   : token strings
+                       cluster_i, cluster_j : HDBSCAN cluster IDs
+                       tag            : "semantic" | "artifact" | "noise"
+      n_semantic   : int
+      n_artifact   : int
+      n_noise      : int
+      artifact_fraction : float — fraction of mutual-NN pairs that are artifacts
+    """
+    n = len(nn_indices)
+    nn = np.asarray(nn_indices, dtype=np.int32)
+    labels = np.asarray(hdbscan_labels, dtype=np.int32)
+
+    # Find mutual-NN pairs (i < j to avoid double counting)
+    mutual_pairs = []
+    for i in range(n):
+        j = int(nn[i])
+        if j > i and int(nn[j]) == i:
+            ci = int(labels[i])
+            cj = int(labels[j])
+            if ci == -1 or cj == -1:
+                tag = "noise"
+            elif ci == cj:
+                tag = "semantic"
+            else:
+                tag = "artifact"
+            mutual_pairs.append({
+                "i": i,
+                "j": j,
+                "tok_i": tokens[i] if i < len(tokens) else "?",
+                "tok_j": tokens[j] if j < len(tokens) else "?",
+                "cluster_i": ci,
+                "cluster_j": cj,
+                "tag": tag,
+            })
+
+    n_semantic = sum(1 for p in mutual_pairs if p["tag"] == "semantic")
+    n_artifact = sum(1 for p in mutual_pairs if p["tag"] == "artifact")
+    n_noise = sum(1 for p in mutual_pairs if p["tag"] == "noise")
+    total = len(mutual_pairs)
+
+    return {
+        "mutual_pairs": mutual_pairs,
+        "n_semantic": n_semantic,
+        "n_artifact": n_artifact,
+        "n_noise": n_noise,
+        "artifact_fraction": n_artifact / total if total > 0 else 0.0,
+    }

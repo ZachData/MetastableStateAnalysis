@@ -701,6 +701,90 @@ def generate_llm_report(results: dict, save_dir: Path):
         W("  No merge events detected in spectral k")
     W("")
 
+    # --- P1-1: HDBSCAN Cluster Tracking ---
+    W("CLUSTER TRACKING  (P1-1 — HDBSCAN membership-based)")
+    W("-" * 40)
+    W("Tracks clusters across adjacent layers by Jaccard overlap of token")
+    W("membership.  Replaces spectral-k counting with token-level accounting.")
+    ct = results.get("cluster_tracking", {})
+    ct_summary = ct.get("summary", {})
+    if ct_summary.get("n_trajectories", 0) > 0:
+        W(f"  Trajectories: {ct_summary['n_trajectories']}  "
+          f"Mean lifespan: {ct_summary['mean_lifespan']:.1f} layers  "
+          f"Max lifespan: {ct_summary['max_lifespan']} layers")
+        W(f"  Total births: {ct_summary['total_births']}  "
+          f"Deaths: {ct_summary['total_deaths']}  "
+          f"Merges: {ct_summary['total_merges']}  "
+          f"Peak clusters alive: {ct_summary['max_alive']}")
+        # Per-transition detail for merge events
+        merge_transitions = [
+            ev for ev in ct.get("events", [])
+            if ev.get("n_merges", 0) > 0
+        ]
+        if merge_transitions:
+            W("  Merge transitions:")
+            for ev in merge_transitions:
+                W(f"    Layer {ev['layer_from']}→{ev['layer_to']}: "
+                  f"{ev['n_merges']} merge(s), "
+                  f"{ev['n_births']} birth(s), "
+                  f"{ev['n_deaths']} death(s)")
+                for prev_ids, curr_id in ev.get("merges", []):
+                    W(f"      Clusters {prev_ids} → {curr_id}")
+        # Long-lived trajectories (lifespan > 50% of total layers)
+        long_lived = [
+            t for t in ct.get("trajectories", [])
+            if t["lifespan"] > results["n_layers"] * 0.5
+        ]
+        if long_lived:
+            W(f"  Long-lived trajectories (>{results['n_layers']//2} layers): "
+              f"{len(long_lived)}")
+            for t in long_lived[:5]:
+                W(f"    ID {t['id']}: layers {t['start_layer']}–{t['end_layer']} "
+                  f"(lifespan {t['lifespan']})")
+    else:
+        W("  No HDBSCAN cluster tracking data (HDBSCAN not available or <2 layers)")
+    W("")
+
+    # --- P1-3: Multi-scale Nesting ---
+    W("MULTI-SCALE NESTING  (P1-3 — spectral eigengap within HDBSCAN clusters)")
+    W("-" * 40)
+    W("Detects hierarchical organization: global bipartition nesting inside")
+    W("local density structure.")
+    nesting_layers_found = [
+        lr["layer"] for lr in layers
+        if lr.get("nesting", {}).get("has_nesting", False)
+    ]
+    if nesting_layers_found:
+        W(f"  Nesting detected at {len(nesting_layers_found)} layers: {nesting_layers_found}")
+        for li in nesting_layers_found[:5]:
+            ns = layers[li]["nesting"]
+            W(f"    Layer {li}: global_k={ns['global_spectral_k']}, "
+              f"{ns['n_clusters_with_substructure']} sub-clusters with structure")
+    else:
+        W("  No hierarchical nesting detected at any layer")
+    W("")
+
+    # --- P1-4: Pair HDBSCAN Agreement ---
+    W("PAIR HDBSCAN AGREEMENT  (P1-4 — induction head filtering)")
+    W("-" * 40)
+    W("Mutual-NN pairs tagged: semantic (same HDBSCAN cluster) vs artifact")
+    W("(different clusters — likely attention/induction head driven).")
+    # Aggregate and show at plateau layers specifically
+    plateau_layers_set = set(results.get("plateau_layers", []))
+    for lr in layers:
+        pa = lr.get("pair_agreement", {})
+        total_pairs = pa.get("n_semantic", 0) + pa.get("n_artifact", 0) + pa.get("n_noise", 0)
+        if total_pairs > 0 and lr["layer"] in plateau_layers_set:
+            W(f"  Layer {lr['layer']} (PLATEAU): "
+              f"semantic={pa['n_semantic']} artifact={pa['n_artifact']} "
+              f"noise={pa['n_noise']} "
+              f"artifact_frac={pa['artifact_fraction']:.2f}")
+            # Show up to 5 artifact pairs at this layer
+            artifact_pairs = [p for p in pa.get("mutual_pairs", []) if p["tag"] == "artifact"]
+            for p in artifact_pairs[:5]:
+                W(f"    {p['tok_i']} (c{p['cluster_i']}) ↔ {p['tok_j']} (c{p['cluster_j']})")
+    W("")
+
     W("METHOD AGREEMENT  (agglomerative / kmeans / spectral / sinkhorn)")
     W("-" * 40)
     W("Layers where all available methods agree within ±1 on cluster count:")
@@ -1262,11 +1346,19 @@ def generate_llm_report(results: dict, save_dir: Path):
 # Cross-run comparative report
 # ---------------------------------------------------------------------------
 
-def generate_cross_run_report(all_results: list, save_dir: Path):
+def generate_cross_run_report(all_results: list, save_dir: Path, control_results: list = None):
     """
     Write a comparative plain-text report across all model/prompt combinations.
     Intended for LLM analysis of trends across conditions.
+
+    Parameters
+    ----------
+    all_results     : results for metastability analysis (repeated_tokens excluded)
+    control_results : repeated_tokens runs, reported separately as collapse controls
     """
+    if control_results is None:
+        control_results = []
+
     lines = []
     W = lines.append
 
@@ -1277,10 +1369,14 @@ def generate_cross_run_report(all_results: list, save_dir: Path):
     W("This report compares metastability signals across all model/prompt")
     W("combinations run in this session.")
     W("")
+    W("NOTE: repeated_tokens prompts are excluded from metastability analyses")
+    W("(they test collapse of a degenerate initial distribution, not metastability).")
+    if control_results:
+        W(f"{len(control_results)} repeated_tokens runs reported separately as collapse controls.")
+    W("")
     W("KEY COMPARISON QUESTIONS:")
     W("  - Does ALBERT show stronger/cleaner metastability than BERT or GPT2?")
     W("  - Do longer prompts produce more metastable windows?")
-    W("  - Do repeated tokens cluster immediately or evolve?")
     W("  - Is energy monotonicity model-dependent?")
     W("  - Do plateau locations agree across prompts for the same model?")
     W("")
@@ -1448,6 +1544,105 @@ def generate_cross_run_report(all_results: list, save_dir: Path):
 
     if not any_cross_data:
         W("  Only one run per model — cross-prompt comparison requires ≥2 prompts per model.")
+        W("")
+
+    # --- CLUSTER TRACKING SUMMARY (P1-1) ---
+    W("CLUSTER TRACKING SUMMARY (P1-1)")
+    W("-" * 40)
+    W("HDBSCAN cluster births, deaths, and merges tracked across layers.")
+    W("Replaces spectral-k drop counting with token-level accounting.")
+    W("")
+    for r in all_results:
+        ct = r.get("cluster_tracking", {})
+        summary = ct.get("summary", {})
+        if summary.get("n_trajectories", 0) > 0:
+            W(f"  {r['model']} | {r['prompt']}")
+            W(f"    Trajectories: {summary['n_trajectories']}  "
+              f"Mean lifespan: {summary['mean_lifespan']:.1f}  "
+              f"Max lifespan: {summary['max_lifespan']}")
+            W(f"    Births: {summary['total_births']}  "
+              f"Deaths: {summary['total_deaths']}  "
+              f"Merges: {summary['total_merges']}  "
+              f"Max alive: {summary['max_alive']}")
+            # Report merge events at specific layer transitions
+            merge_layers = [
+                ev for ev in ct.get("events", [])
+                if ev.get("n_merges", 0) > 0
+            ]
+            if merge_layers:
+                labels = [
+                    f"{ev['layer_from']}→{ev['layer_to']}"
+                    for ev in merge_layers
+                ]
+                W(f"    Merge events at layer transitions: {labels}")
+            W("")
+    W("")
+
+    # --- MULTI-SCALE NESTING SUMMARY (P1-3) ---
+    W("MULTI-SCALE NESTING SUMMARY (P1-3)")
+    W("-" * 40)
+    W("Spectral eigengap within HDBSCAN clusters — detects hierarchical organization.")
+    W("")
+    for r in all_results:
+        # Summarize nesting across layers
+        nesting_layers = [
+            lr["layer"] for lr in r["layers"]
+            if lr.get("nesting", {}).get("has_nesting", False)
+        ]
+        if nesting_layers:
+            W(f"  {r['model']} | {r['prompt']}")
+            W(f"    Nesting detected at layers: {nesting_layers}")
+            # Sample one layer for detail
+            sample_lr = r["layers"][nesting_layers[0]]
+            ns = sample_lr["nesting"]
+            W(f"    Layer {nesting_layers[0]}: global_k={ns['global_spectral_k']}, "
+              f"{ns['n_clusters_with_substructure']} sub-clusters with internal structure")
+            W("")
+    W("")
+
+    # --- PAIR AGREEMENT SUMMARY (P1-4) ---
+    W("PAIR HDBSCAN AGREEMENT SUMMARY (P1-4)")
+    W("-" * 40)
+    W("Mutual-NN pairs tagged as semantic (same cluster) vs artifact (different clusters).")
+    W("")
+    for r in all_results:
+        # Aggregate across layers
+        total_semantic = sum(lr.get("pair_agreement", {}).get("n_semantic", 0) for lr in r["layers"])
+        total_artifact = sum(lr.get("pair_agreement", {}).get("n_artifact", 0) for lr in r["layers"])
+        total_noise = sum(lr.get("pair_agreement", {}).get("n_noise", 0) for lr in r["layers"])
+        total = total_semantic + total_artifact + total_noise
+        if total > 0:
+            W(f"  {r['model']} | {r['prompt']}")
+            W(f"    Total mutual-NN pairs: {total}  "
+              f"Semantic: {total_semantic} ({100*total_semantic/total:.0f}%)  "
+              f"Artifact: {total_artifact} ({100*total_artifact/total:.0f}%)  "
+              f"Noise: {total_noise} ({100*total_noise/total:.0f}%)")
+            W("")
+    W("")
+
+    # --- COLLAPSE CONTROL RUNS (P1-2) ---
+    if control_results:
+        W("COLLAPSE CONTROL RUNS (repeated_tokens)")
+        W("-" * 40)
+        W("These runs test collapse speed of a degenerate initial distribution.")
+        W("They are NOT metastability tests and are excluded from the above analyses.")
+        W("")
+        for r in control_results:
+            layers_ = r["layers"]
+            mass1_ = [l["ip_mass_near_1"] for l in layers_]
+            erank_ = [l["effective_rank"] for l in layers_]
+            e1_ = [l["energies"].get(1.0, float("nan")) for l in layers_]
+            W(f"  {r['model']}")
+            W(f"    Tokens: {r['n_tokens']}  Layers: {r['n_layers']}")
+            W(f"    Mass>0.9 at layer 0: {mass1_[0]:.4f}  Final: {mass1_[-1]:.4f}")
+            W(f"    Rank at layer 0: {erank_[0]:.2f}  Final: {erank_[-1]:.2f}")
+            # Collapse layer = first layer where mass > 0.9
+            collapse_layers = [i for i, m in enumerate(mass1_) if m > 0.9]
+            if collapse_layers:
+                W(f"    Collapse onset (mass>0.9): layer {collapse_layers[0]}")
+            else:
+                W(f"    No collapse (mass never exceeds 0.9)")
+            W("")
         W("")
 
     W("=" * 72)

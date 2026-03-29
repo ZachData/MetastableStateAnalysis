@@ -126,8 +126,25 @@ def run_all(
 
     if len(all_results) > 1:
         print("\nGenerating cross-model comparison plots...")
-        plot_cross_model_comparison(all_results, OUTPUT_DIR)
-        generate_cross_run_report(all_results, OUTPUT_DIR)
+        # P1-2: Exclude repeated_tokens from metastability analyses.
+        # It tests collapse of a degenerate initial distribution, not
+        # metastability.  Keep it as a separate control in the full results
+        # but exclude from cross-run comparison and aggregation.
+        metastability_results = [
+            r for r in all_results if r["prompt"] != "repeated_tokens"
+        ]
+        control_results = [
+            r for r in all_results if r["prompt"] == "repeated_tokens"
+        ]
+        if control_results:
+            print(f"  ({len(control_results)} repeated_tokens runs excluded "
+                  f"from metastability aggregation — kept as collapse controls)")
+
+        plot_cross_model_comparison(metastability_results, OUTPUT_DIR)
+        generate_cross_run_report(
+            metastability_results, OUTPUT_DIR,
+            control_results=control_results,
+        )
 
     print(f"\nDone. Results in: {OUTPUT_DIR.resolve()}")
     return all_results
@@ -297,6 +314,8 @@ if __name__ == "__main__":
                         choices=list(PROMPTS.keys()))
     parser.add_argument("--no-extended", action="store_true",
                         help="Disable ALBERT extended-iteration mode")
+    parser.add_argument("--legacy-snapshots", action="store_true",
+                        help="Use legacy ALBERT snapshots [12,24,36,48] instead of dense sweep [6..60 step 2]")
     parser.add_argument("--fast", action="store_true",
                         help="albert-base-v2 + wiki_paragraph")
     parser.add_argument("--replot", type=str, default=None, metavar="RUN_DIR",
@@ -304,6 +323,13 @@ if __name__ == "__main__":
     parser.add_argument("--summary", type=str, default=None, metavar="RUN_DIR",
                         help="Print text summary of a saved run")
     args = parser.parse_args()
+
+    # P1-6: Apply legacy snapshot override before running
+    if args.legacy_snapshots:
+        from core.config import ALBERT_SNAPSHOTS_LEGACY
+        import core.config as _cfg
+        _cfg.ALBERT_SNAPSHOTS = ALBERT_SNAPSHOTS_LEGACY
+        _cfg.ALBERT_MAX_ITERATIONS = 48
 
     if args.replot:
         replot_all(Path(args.replot))
@@ -316,6 +342,10 @@ if __name__ == "__main__":
         if args.fast:
             models  = ["albert-base-v2"]
             prompts = ["wiki_paragraph"]
+            # Fast mode uses legacy snapshots to keep runtime short
+            import core.config as _cfg
+            _cfg.ALBERT_SNAPSHOTS = _cfg.ALBERT_SNAPSHOTS_LEGACY
+            _cfg.ALBERT_MAX_ITERATIONS = 48
         else:
             models  = args.models
             prompts = args.prompts

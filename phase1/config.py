@@ -38,8 +38,10 @@ K_RANGE           = range(2, 10)
 # Run ALBERT once to ALBERT_MAX_ITERATIONS and take snapshots at each depth.
 # Because ALBERT shares weights, hidden[i] is identical whether the run
 # stops at i or continues to MAX — so a single pass captures every depth.
-ALBERT_MAX_ITERATIONS = 48             # single run length (matches gpt2-xl layer count)
-ALBERT_SNAPSHOTS      = [12, 24, 36, 48]  # depths to record (match gpt2/medium/large/xl)
+ALBERT_MAX_ITERATIONS = 60             # single run length (covers full sweep)
+ALBERT_SNAPSHOTS      = list(range(6, 62, 2))  # P1-6: dense sweep for phase transition detection
+# Legacy subset for quick runs (--fast-albert or manual override)
+ALBERT_SNAPSHOTS_LEGACY = [12, 24, 36, 48]
 
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
@@ -157,6 +159,11 @@ MODEL_CONFIGS = {
         "is_albert":       True,
     },
     "bert-base-uncased": {
+        "model_class":     BertModel,
+        "tokenizer_class": BertTokenizer,
+        "is_albert":       False,
+    },
+    "bert-large-uncased": {
         "model_class":     BertModel,
         "tokenizer_class": BertTokenizer,
         "is_albert":       False,

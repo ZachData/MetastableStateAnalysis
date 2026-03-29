@@ -39,6 +39,8 @@ def save_run(
       activations.npz      — L2-normed hidden states (n_layers, n_tokens, d)
       attentions.npz       — attention weights (n_layers, n_heads, n, n)
       clusters.npz         — per-layer cluster labels and KMeans centroids
+      centroid_trajectories.npz — P1-1: HDBSCAN centroid trajectories across layers
+      plateau_attentions.npz    — P1-7: raw attention matrices at plateau layers
       tokens.txt           — one token per line with index
       layer_metrics.csv    — flat CSV of key per-layer scalars
     """
@@ -124,6 +126,48 @@ def save_run(
             writer.writeheader()
             writer.writerows(csv_rows)
 
+    # --- centroid_trajectories.npz (P1-1) ---
+    # Compute HDBSCAN centroid coordinates for each tracked trajectory.
+    # Requires the normed activations and HDBSCAN label arrays.
+    tracking = results.get("cluster_tracking", {})
+    if tracking.get("trajectories"):
+        from .cluster_tracking import compute_centroid_trajectories
+
+        # Build label arrays from results
+        label_arrays = []
+        for layer in results["layers"]:
+            hdb = layer["clustering"].get("hdbscan", {})
+            if "labels" in hdb:
+                label_arrays.append(np.array(hdb["labels"], dtype=np.int32))
+            else:
+                label_arrays.append(np.zeros(results["n_tokens"], dtype=np.int32))
+
+        centroid_trajs = compute_centroid_trajectories(
+            tracking, hidden_states, label_arrays,
+        )
+        if centroid_trajs:
+            ct_arrays = {}
+            for tid, coords in centroid_trajs.items():
+                ct_arrays[f"traj_{tid}"] = coords
+            np.savez_compressed(run_dir / "centroid_trajectories.npz", **ct_arrays)
+
+    # --- plateau_attentions.npz (P1-7) ---
+    # Save raw attention matrices at plateau layers for Phase 3 crosscoder
+    # interpretation.  Plateau layers are identified during analysis.
+    plateau_layers = results.get("plateau_layers", [])
+    if plateau_layers and attentions:
+        plateau_attn_arrays = {}
+        for li in plateau_layers:
+            if li < len(attentions):
+                a = attentions[li]
+                plateau_attn_arrays[f"attn_L{li}"] = (
+                    a.numpy() if hasattr(a, 'numpy') else np.asarray(a)
+                )
+        if plateau_attn_arrays:
+            np.savez_compressed(
+                run_dir / "plateau_attentions.npz", **plateau_attn_arrays,
+            )
+
 
 # ---------------------------------------------------------------------------
 # Loading
@@ -177,6 +221,38 @@ def load_run(run_dir: Path) -> dict:
         # return nan or raise KeyError (e.g. layer["energies"][1.0]).
         if "energies" in layer:
             layer["energies"] = {float(k): v for k, v in layer["energies"].items()}
+
+        # P1-3: nesting — default to empty for old runs
+        if "nesting" not in layer:
+            layer["nesting"] = {
+                "global_spectral_k": layer.get("spectral", {}).get("k_eigengap", 1),
+                "per_cluster": {},
+                "has_nesting": False,
+                "nesting_summary": "not computed (old run)",
+                "n_clusters_with_substructure": 0,
+            }
+        # P1-4: pair agreement — default to empty for old runs
+        if "pair_agreement" not in layer:
+            layer["pair_agreement"] = {
+                "mutual_pairs": [],
+                "n_semantic": 0,
+                "n_artifact": 0,
+                "n_noise": 0,
+                "artifact_fraction": 0.0,
+            }
+
+    # P1-1: cluster tracking — default to empty for old runs
+    if "cluster_tracking" not in results:
+        results["cluster_tracking"] = {
+            "events": [],
+            "trajectories": [],
+            "summary": {"total_births": 0, "total_deaths": 0, "total_merges": 0,
+                         "max_alive": 0, "n_trajectories": 0,
+                         "mean_lifespan": 0.0, "max_lifespan": 0},
+        }
+    # P1-7: plateau layers — default to empty for old runs
+    if "plateau_layers" not in results:
+        results["plateau_layers"] = []
 
     print(f"Loaded: {results['model']} | {results['prompt']}")
     print(f"  {results['n_layers']} layers, {results['n_tokens']} tokens, "
@@ -250,6 +326,42 @@ def load_clusters(run_dir: Path) -> dict:
         "kmeans_centroids": kmeans_centroids,
         "hdbscan_labels":   hdbscan_labels,
     }
+
+
+def load_centroid_trajectories(run_dir: Path) -> dict:
+    """
+    Load HDBSCAN centroid trajectory coordinates from centroid_trajectories.npz.
+
+    Returns
+    -------
+    dict mapping trajectory_id (int) -> (lifespan, d) float32 array
+    Raises FileNotFoundError if file does not exist (old runs).
+    """
+    path = Path(run_dir) / "centroid_trajectories.npz"
+    data = np.load(path)
+    result = {}
+    for key in data.files:
+        tid = int(key.split("_")[1])
+        result[tid] = data[key]
+    return result
+
+
+def load_plateau_attentions(run_dir: Path) -> dict:
+    """
+    Load raw attention matrices at plateau layers from plateau_attentions.npz.
+
+    Returns
+    -------
+    dict mapping layer_index (int) -> (n_heads, n_tokens, n_tokens) float32 array
+    Raises FileNotFoundError if file does not exist (old runs or no plateaus).
+    """
+    path = Path(run_dir) / "plateau_attentions.npz"
+    data = np.load(path)
+    result = {}
+    for key in data.files:
+        li = int(key.split("_L")[1])
+        result[li] = data[key]
+    return result
 
 
 # ---------------------------------------------------------------------------
