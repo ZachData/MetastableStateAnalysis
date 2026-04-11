@@ -595,7 +595,15 @@ def _save_projector_arrays(projectors, ov_data, out):
 
 
 def _build_summary(ov_data, decomps, projectors, qk_data) -> dict:
-    """Build JSON-serialisable summary for reporting."""
+    """Build JSON-serialisable summary for reporting.
+
+    OV spectral norm is the largest singular value of the actual OV matrix,
+    computed via svdvals.  The previous implementation incorrectly used
+    svdvals(diag(|eigenvalues|)), which equals the spectral *radius* and
+    only matches the spectral norm when OV is normal.  For non-normal OV
+    (especially GPT-2 layers with large rotational components) these can
+    differ substantially.
+    """
     summary = {
         "model":       None,  # filled by caller
         "d_model":     ov_data["d_model"],
@@ -605,7 +613,18 @@ def _build_summary(ov_data, decomps, projectors, qk_data) -> dict:
         "layers":      {},
     }
 
-    def _layer_summary(decomp, proj, qk_norms=None):
+    def _layer_summary(decomp, proj, ov_matrix, qk_norms=None):
+        # True spectral norm: largest singular value of the OV matrix itself.
+        # svdvals returns singular values in descending order.
+        ov_spectral_norm = float(svdvals(ov_matrix)[0]) if ov_matrix is not None else None
+
+        # For diagnostics: also record the spectral radius (max |eigenvalue|)
+        # so callers can see how far the two diverge on non-normal layers.
+        if "eigenvalues" in decomp:
+            spectral_radius = float(np.max(np.abs(decomp["eigenvalues"])))
+        else:
+            spectral_radius = None
+
         s = {
             "frac_attractive":     decomp["frac_attractive"],
             "frac_repulsive":      decomp["frac_repulsive"],
@@ -618,11 +637,8 @@ def _build_summary(ov_data, decomps, projectors, qk_data) -> dict:
             "schur_dim_repulse":   proj["schur_dim_repulse"],
             "sym_dim_attract":     proj["sym_dim_attract"],
             "sym_dim_repulse":     proj["sym_dim_repulse"],
-            "ov_spectral_norm":    float(svdvals(
-                # need OV matrix — reconstruct from decomp eigenvalues
-                # Actually just use the eigenvalue magnitudes
-                np.diag(np.abs(decomp["eigenvalues"]))
-            )[0]) if "eigenvalues" in decomp else None,
+            "ov_spectral_norm":    ov_spectral_norm,
+            "ov_spectral_radius":  spectral_radius,
         }
         if qk_norms is not None:
             s["qk_spectral_norms_per_head"] = qk_norms
@@ -632,10 +648,13 @@ def _build_summary(ov_data, decomps, projectors, qk_data) -> dict:
     if ov_data["is_per_layer"]:
         for i, name in enumerate(ov_data["layer_names"]):
             qk = qk_data["qk_spectral_norms"][i] if i < len(qk_data["qk_spectral_norms"]) else None
-            summary["layers"][name] = _layer_summary(decomps[i], projectors[i], qk)
+            ov_mat = ov_data["ov_total"][i]
+            summary["layers"][name] = _layer_summary(decomps[i], projectors[i], ov_mat, qk)
     else:
         qk = qk_data["qk_spectral_norms"][0] if qk_data["qk_spectral_norms"] else None
-        summary["layers"]["shared"] = _layer_summary(decomps, projectors, qk)
+        summary["layers"]["shared"] = _layer_summary(
+            decomps, projectors, ov_data["ov_total"], qk
+        )
 
     return summary
 

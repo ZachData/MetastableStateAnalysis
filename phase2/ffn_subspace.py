@@ -236,46 +236,78 @@ def run_ffn_subspace_analysis(
     """
     Full FFN subspace analysis for one model × prompt.
 
-    Loads saved ffn_deltas.npz and Phase 1 events.  Uses projectors
-    from ov_data.
+    Loads saved ffn_deltas and Phase 1 events.  Uses projectors from ov_data.
+
+    File loading strategy
+    ---------------------
+    After fix 2 (save_decomposed), two files exist per component:
+      ffn_deltas_raw.npz   — unnormalised; use for energy magnitude analysis
+      ffn_deltas_normed.npz — unit-normalised per token; use for direction/projection
+
+    Backward compatibility: if the new files are absent, falls back to the old
+    single ffn_deltas.npz (which was normed).  In that case ffn_total_energy
+    z-scores are unreliable and a warning is recorded in the result.
 
     Parameters
     ----------
-    ffn_dir        : directory containing ffn_deltas.npz (Phase 2 output
-                     or Phase 1 run dir if saved there)
+    ffn_dir        : directory containing ffn_deltas_{raw,normed}.npz
     ov_data        : from weights.analyze_weights
     phase1_run_dir : Phase 1 run directory containing metrics.json.
-                     If None, uses ffn_dir (assumes both are co-located).
+                     If None, uses ffn_dir.
 
     Returns
     -------
     dict with projection, z-scores, per-violation detail
     """
-    # Try to find ffn_deltas
-    ffn_path = Path(ffn_dir) / "ffn_deltas.npz"
-    if not ffn_path.exists():
-        return {"applicable": False, "reason": f"no ffn_deltas.npz in {ffn_dir}"}
+    ffn_dir = Path(ffn_dir)
 
-    ffn_data = np.load(ffn_path)
-    ffn_deltas = ffn_data["ffn_deltas"]
+    # --- Load raw deltas (for energy magnitude) ---
+    raw_path   = ffn_dir / "ffn_deltas_raw.npz"
+    normed_path = ffn_dir / "ffn_deltas_normed.npz"
+    legacy_path = ffn_dir / "ffn_deltas.npz"
 
-    events_dir = Path(phase1_run_dir) if phase1_run_dir is not None else Path(ffn_dir)
+    energy_warning = None
+
+    if raw_path.exists() and normed_path.exists():
+        ffn_raw    = np.load(raw_path)["ffn_deltas"]    # for energy
+        ffn_normed = np.load(normed_path)["ffn_deltas"]  # for projection
+    elif legacy_path.exists():
+        # Old single normed file.  Projection fracs are still valid; energy
+        # z-scores are not (all norms ≈ 1 after per-token normalisation).
+        ffn_raw    = np.load(legacy_path)["ffn_deltas"]
+        ffn_normed = ffn_raw
+        energy_warning = (
+            "Loaded legacy ffn_deltas.npz (normed only). "
+            "ffn_total_energy z-scores are unreliable. "
+            "Re-run decompose.save_decomposed to generate raw + normed files."
+        )
+    else:
+        return {"applicable": False,
+                "reason": f"no ffn_deltas files found in {ffn_dir}"}
+
+    events_dir = Path(phase1_run_dir) if phase1_run_dir is not None else ffn_dir
     events = load_phase1_events(events_dir)
 
-    # Get projectors
-    projectors = ov_data["projectors"]
+    projectors   = ov_data["projectors"]
     is_per_layer = ov_data["is_per_layer"]
+    # projectors is already either a single dict (shared-weight models) or a
+    # list of dicts (per-layer models).  Pass it through directly; the
+    # is_per_layer flag tells project_ffn_onto_v_subspaces which case it is.
+    proj_list = projectors
 
-    # If projectors is a single dict (shared weights), wrap for consistency
-    if isinstance(projectors, dict) and "sym_repulse" in projectors:
-        proj_list = projectors
-    else:
-        proj_list = projectors
+    # Subspace projection fractions use normed deltas (direction only).
+    projection = project_ffn_onto_v_subspaces(ffn_normed, proj_list, is_per_layer)
 
-    projection = project_ffn_onto_v_subspaces(ffn_deltas, proj_list, is_per_layer)
+    # Overwrite ffn_total_energy using raw deltas so magnitudes are meaningful.
+    n_layers = ffn_raw.shape[0]
+    raw_energy = np.zeros(n_layers)
+    for L in range(n_layers):
+        raw_energy[L] = float(np.sum(ffn_raw[L] ** 2))
+    projection["ffn_total_energy"] = raw_energy
+
     zscores = compare_violation_vs_population(projection, events, beta)
     per_violation = per_violation_ffn_projection(
-        ffn_deltas, proj_list, is_per_layer, events, beta
+        ffn_normed, proj_list, is_per_layer, events, beta
     )
 
     # Summary
@@ -299,14 +331,17 @@ def run_ffn_subspace_analysis(
             [v["ffn_attract_frac"] for v in per_violation]
         ))
 
-    return {
+    result = {
         "applicable": True,
-        "projection": {k: v.tolist() if hasattr(v, 'tolist') else v
+        "projection": {k: v.tolist() if hasattr(v, "tolist") else v
                        for k, v in projection.items()},
         "zscores": zscores,
         "per_violation": per_violation,
         "summary": summary,
     }
+    if energy_warning:
+        result["energy_warning"] = energy_warning
+    return result
 
 
 def print_ffn_subspace_summary(result: dict, model_name: str, prompt_key: str):

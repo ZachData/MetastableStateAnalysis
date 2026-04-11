@@ -535,12 +535,15 @@ def analyze_trajectory_offline(
 
     # Resolve OV and projectors (handle shared vs per-layer)
     if ov_data["is_per_layer"]:
-        # For per-layer models, use the layer-matched OV.
-        # trajectory.py functions that need a single OV (self_interaction,
-        # rescaled) use layer 0 as representative — analysis.py does the
-        # per-layer matching.
-        OV         = ov_data["ov_total"][0]
-        projectors = ov_data["projectors"][0]
+        # Per-layer models must go through analyze_trajectory_offline_perlayer,
+        # which uses each layer's own projectors and OV.  Reaching this branch
+        # means the caller bypassed that path — fail loudly rather than silently
+        # using layer 0's projectors everywhere (the original bug this fixes).
+        raise ValueError(
+            "analyze_trajectory_offline called on a per-layer model "
+            f"({ov_data.get('layer_names', ['?'])[0]}...).  "
+            "Use analyze_trajectory_offline_perlayer instead."
+        )
     else:
         OV         = ov_data["ov_total"]
         projectors = ov_data["projectors"]

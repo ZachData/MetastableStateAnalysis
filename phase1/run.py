@@ -20,7 +20,7 @@ from pathlib import Path
 
 from core.config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
-    ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS,
+    ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS, LENGTH_SWEEP_TOKENS,
 )
 from core.models import load_model, extract_activations, extract_albert_extended
 from .analysis import analyze_trajectory
@@ -52,6 +52,7 @@ def run_all(
     models_to_run: list = None,
     prompts_to_run: list = None,
     run_extended: bool = True,
+    run_sublayer: bool = False,
 ) -> list:
     """
     Run the full Phase 1 analysis pipeline.
@@ -61,6 +62,10 @@ def run_all(
     models_to_run  : model name keys from MODEL_CONFIGS (default: all)
     prompts_to_run : prompt keys from PROMPTS (default: all)
     run_extended   : if True, use ALBERT extended-iteration mode for ALBERT models
+    run_sublayer   : if True, also run the full analysis on the post-attention and
+                     post-FFN sublayer residual streams (Fix 14).  Each sublayer
+                     stream is saved as a separate run directory labelled
+                     ``{model}@attn`` and ``{model}@ffn``.
 
     Returns
     -------
@@ -98,6 +103,13 @@ def run_all(
             print(f"  Failed: {e}")
             continue
 
+        # Fix 13: random-init baseline — re-randomise weights after architecture
+        # load so the model has the same structure but no learned representations.
+        if MODEL_CONFIGS[model_name].get("random_init", False):
+            print(f"  Re-initialising weights randomly (random_init=True)…")
+            model.init_weights()
+            print(f"  Done — running with randomly initialised weights.")
+
         v_spectrum   = analyze_value_eigenspectrum(model, model_name, OUTPUT_DIR)
 
         cfg          = MODEL_CONFIGS[model_name]
@@ -109,7 +121,8 @@ def run_all(
             )
         else:
             model_results = _run_standard(
-                model, tokenizer, model_name, prompts_to_run, umap_dir
+                model, tokenizer, model_name, prompts_to_run, umap_dir,
+                run_sublayer=run_sublayer,
             )
 
         # Attach V spectrum to every run result for this model so Phase 2
@@ -212,10 +225,17 @@ def _run_albert_extended(model, tokenizer, model_name, prompts_to_run, umap_dir)
     return results_list
 
 
-def _run_standard(model, tokenizer, model_name, prompts_to_run, umap_dir):
+def _run_standard(model, tokenizer, model_name, prompts_to_run, umap_dir,
+                  run_sublayer: bool = False):
     """
     Standard path: use model's native layer stack.
     Active when --no-extended is passed or for non-ALBERT models.
+
+    When run_sublayer=True, an additional pass extracts the post-attention
+    and post-FFN intermediate residual streams and runs the full analysis
+    on each.  Results are saved to separate ``{stem}@attn`` / ``{stem}@ffn``
+    run directories and are excluded from the cross-run comparison (they are
+    supplementary, not independent model runs).
     """
     results_list = []
 
@@ -243,7 +263,161 @@ def _run_standard(model, tokenizer, model_name, prompts_to_run, umap_dir):
         generate_llm_report(results, run_dir)
         print(f"  Saved run to: {run_dir}/")
 
+        # Fix 14: sublayer analysis — post-attn and post-FFN streams.
+        if run_sublayer:
+            _run_sublayer_analysis(
+                model, tokenizer, model_name, prompt_key,
+                PROMPTS[prompt_key], tokens, umap_dir,
+            )
+
     return results_list
+
+
+def _run_sublayer_analysis(model, tokenizer, model_name, prompt_key,
+                           prompt_text, tokens, umap_dir):
+    """
+    Extract post-attention and post-FFN residual streams via forward hooks
+    and run the full analysis on each.
+
+    Architecture notes
+    ------------------
+    GPT-2   : each Block has .attn (attention) and .mlp (FFN).
+              Residual additions happen *after* each submodule in the Block's
+              forward(), so hooking the Block's output gives the full-block
+              residual, but we need the intermediate.  We hook attn.c_proj
+              output + the residual (approximated as block_input + attn_out)
+              and mlp output + that (= full block output = same as hidden_states).
+              Simpler and equally informative: hook just after the residual
+              add for each sub-layer using the Block's forward.
+
+    BERT / ALBERT : each BertLayer / AlbertLayer exposes
+              self.attention.output (post-attn-add-norm) and
+              self.output (post-FFN-add-norm) as distinct submodules.
+              Hooking their outputs gives the post-attention and post-FFN
+              residual streams directly.
+
+    Because architecture introspection is complex, we use a best-effort
+    approach: iterate named modules looking for known submodule names and
+    hook the ones we find.  If neither set is found we skip gracefully with
+    a warning.
+    """
+    import torch
+
+    def _find_sublayer_modules(m, model_name_lc):
+        """
+        Return (attn_modules, ffn_modules) lists of submodules to hook.
+
+        Each list has one entry per transformer layer, in layer order.
+        Returns ([], []) when the architecture is not recognised.
+        """
+        attn_mods, ffn_mods = [], []
+
+        if "gpt2" in model_name_lc:
+            # GPT-2: transformer.h[i].attn  and  transformer.h[i].mlp
+            h_blocks = None
+            for name, mod in m.named_modules():
+                if name == "transformer":
+                    h_blocks = list(mod.h)
+                    break
+            if h_blocks:
+                attn_mods = [b.attn for b in h_blocks]
+                ffn_mods  = [b.mlp  for b in h_blocks]
+
+        elif "albert" in model_name_lc or "bert" in model_name_lc:
+            # BERT / ALBERT: encoder.layer[i].attention  and  encoder.layer[i]
+            # .intermediate + output (hook the full FFN output at .output).
+            # For BertLayer: attention.output.dense (post-attn-add-norm)
+            #                output.dense (post-FFN-add-norm)
+            # We hook the BertAttention and BertOutput *submodule* outputs.
+            layers_list = []
+            for name, mod in m.named_modules():
+                # Works for both BertEncoder and AlbertTransformer
+                if name in ("encoder", "albert_model.encoder", "bert.encoder"):
+                    try:
+                        layers_list = list(mod.layer)
+                    except AttributeError:
+                        layers_list = list(mod.albert_layer_groups[0].albert_layers)
+                    break
+            for layer in layers_list:
+                try:
+                    attn_mods.append(layer.attention)
+                except AttributeError:
+                    pass
+                try:
+                    ffn_mods.append(layer.output)
+                except AttributeError:
+                    pass
+
+        return attn_mods, ffn_mods
+
+    model_name_lc = model_name.lower()
+    attn_mods, ffn_mods = _find_sublayer_modules(model, model_name_lc)
+
+    if not attn_mods or not ffn_mods:
+        print(f"    [sublayer] Architecture not recognised for {model_name} — skipping.")
+        return
+
+    n_layers = len(attn_mods)
+
+    for sublayer_label, mod_list in [("attn", attn_mods), ("ffn", ffn_mods)]:
+        # Collect one (n_tokens, d_model) tensor per layer via hooks.
+        captured: list = [None] * n_layers
+        handles  = []
+
+        def make_hook(idx):
+            def hook(module, inp, out):
+                # out may be a tuple (BERT attention returns (context, weights))
+                tensor = out[0] if isinstance(out, (tuple, list)) else out
+                # Remove batch dimension (batch=1).
+                captured[idx] = tensor.detach().squeeze(0).cpu()
+            return hook
+
+        for i, mod in enumerate(mod_list):
+            handles.append(mod.register_forward_hook(make_hook(i)))
+
+        try:
+            inputs = tokenizer(
+                prompt_text, return_tensors="pt", truncation=True, max_length=512
+            )
+            inputs = {k: v.to(next(model.parameters()).device) for k, v in inputs.items()}
+            with torch.no_grad():
+                model(**inputs)
+        except Exception as exc:
+            print(f"    [sublayer/{sublayer_label}] Forward pass failed: {exc}")
+            for h in handles:
+                h.remove()
+            continue
+        finally:
+            for h in handles:
+                h.remove()
+
+        # Drop any None slots (layers that didn't fire, shouldn't happen).
+        hs_sub = [t for t in captured if t is not None]
+        if len(hs_sub) != n_layers:
+            print(f"    [sublayer/{sublayer_label}] Only {len(hs_sub)}/{n_layers} "
+                  f"hooks fired — skipping.")
+            continue
+
+        # Run the full analysis on the sublayer stream.
+        # Attentions are not meaningful here (they belong to the full block),
+        # so pass an empty list.
+        eff_model_name = f"{model_name}@{sublayer_label}"
+        print(f"    Sublayer analysis: {eff_model_name}")
+        try:
+            sub_results = analyze_trajectory(
+                hs_sub, [], prompt_key, eff_model_name, tokens,
+                umap_dir=umap_dir,
+            )
+        except Exception as exc:
+            print(f"    [sublayer/{sublayer_label}] analyze_trajectory failed: {exc}")
+            continue
+
+        _generate_plots(sub_results, OUTPUT_DIR)
+        sub_stem    = f"{eff_model_name.replace('/', '_').replace('@', '_')}_{prompt_key}"
+        sub_run_dir = OUTPUT_DIR / sub_stem
+        save_run(sub_results, hs_sub, [], sub_run_dir)
+        generate_llm_report(sub_results, sub_run_dir)
+        print(f"    Sublayer run saved to: {sub_run_dir}/")
 
 
 # ---------------------------------------------------------------------------
@@ -318,6 +492,12 @@ if __name__ == "__main__":
                         help="Use legacy ALBERT snapshots [12,24,36,48] instead of dense sweep [6..60 step 2]")
     parser.add_argument("--fast", action="store_true",
                         help="albert-base-v2 + wiki_paragraph")
+    parser.add_argument("--random-baseline", action="store_true",
+                        help="Add albert-base-v2-random (untrained control) to the run")
+    parser.add_argument("--sublayer", action="store_true",
+                        help="Also analyse post-attention and post-FFN sublayer streams separately")
+    parser.add_argument("--length-sweep", action="store_true",
+                        help="Run wiki_paragraph truncated at each LENGTH_SWEEP_TOKENS target")
     parser.add_argument("--replot", type=str, default=None, metavar="RUN_DIR",
                         help="Recreate all plots from a saved run directory")
     parser.add_argument("--summary", type=str, default=None, metavar="RUN_DIR",
@@ -350,8 +530,32 @@ if __name__ == "__main__":
             models  = args.models
             prompts = args.prompts
 
+        # Fix 13: inject the untrained control model if requested.
+        if args.random_baseline and "albert-base-v2-random" not in models:
+            models = list(models) + ["albert-base-v2-random"]
+
+        # Fix 15: build truncated wiki_paragraph prompt variants.
+        if args.length_sweep:
+            import core.config as _cfg
+            base_text = PROMPTS["wiki_paragraph"]
+            words     = base_text.split()
+            for target in LENGTH_SWEEP_TOKENS:
+                # Rough word-level truncation: ~0.75 tokens per word on average
+                # for English, so target * 0.75 words ≈ target tokens.
+                n_words  = max(1, int(target * 0.75))
+                snippet  = " ".join(words[:n_words])
+                key      = f"wiki_{target}"
+                _cfg.PROMPTS[key] = snippet
+                if key not in prompts:
+                    prompts = list(prompts) + [key]
+            # Ensure the sweep models default to albert-base-v2 unless overridden.
+            if not args.models or args.models == list(MODEL_CONFIGS.keys()):
+                models = ["albert-base-v2"]
+
+        # Fix 14: pass sublayer flag through to run_all.
         run_all(
             models_to_run=models,
             prompts_to_run=prompts,
             run_extended=not args.no_extended,
+            run_sublayer=args.sublayer,
         )

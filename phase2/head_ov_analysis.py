@@ -4,7 +4,7 @@ head_ov_analysis.py — Per-head OV decomposition and Fiedler cross-reference.
 Each attention head has its own OV circuit: OV_h = W_V^{(h)} @ W_O^{(h)}.
 Some heads may be net-repulsive and others net-attractive.  Phase 1's
 per-head Fiedler profiling classified heads by attention connectivity
-(CLUSTER < 0.3, MIXED 0.3–0.7, MIXING > 0.7).
+(CLUSTER < 0.3, MIXED 0.3-0.7, MIXING > 0.7).
 
 This module tests the prediction: repulsive-dominant heads should have
 low Fiedler values (cluster-separating), attractive-dominant heads should
@@ -134,9 +134,9 @@ def load_phase1_fiedler(run_dir: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 def cross_reference_head_ov_fiedler(
-    head_ov: dict,
-    fiedler_data: dict,
-) -> dict:
+        head_ov: dict,
+        fiedler_data: dict,
+    ) -> dict:
     """
     Correlate per-head OV repulsive fraction with per-head mean Fiedler.
 
@@ -223,44 +223,315 @@ def cross_reference_head_ov_fiedler(
     }
 
 
+def dynamic_head_activation_test(
+        fiedler_data: dict,
+        decomposed: dict,
+        phase1_events: dict,
+        beta: float = 1.0,
+    ) -> dict:
+    """
+    Fix 12: Test whether low-Fiedler (clustering) heads receive more attention
+    mass at violation layers than at non-violation layers.
+
+    The static OV × Fiedler correlation (cross_reference_head_ov_fiedler) shows
+    that repulsive-OV heads tend to have low Fiedler values globally.  This
+    function tests the dynamic prediction: at violation layers specifically, is
+    attention weight concentrated on the low-Fiedler heads?
+
+    For each layer, the "weighted mean Fiedler" is:
+
+        F̄(L) = Σ_h  A_h(L) · F_h
+
+    where A_h(L) is the mean attention weight for head h at layer L (averaged
+    over token pairs and tokens) and F_h is that head's mean Fiedler value.
+
+    A high F̄(L) means attention is routing through mixing heads; a low F̄(L)
+    means attention is routing through clustering heads.
+
+    If violations are caused by repulsive-OV / low-Fiedler heads being activated,
+    F̄ should be lower at violation layers than at non-violation layers.
+
+    Parameters
+    ----------
+    fiedler_data    : from load_phase1_fiedler — contains per-layer per-head Fiedler
+    decomposed      : from extract_decomposed_{albert,standard} — contains "attentions"
+    phase1_events   : from load_phase1_events
+    beta            : which beta's violations to compare
+
+    Returns
+    -------
+    dict with:
+      applicable (bool)
+      weighted_fiedler_per_layer : (n_layers,) float — F̄(L)
+      z_score_violation          : z-score of F̄ at violation vs non-violation layers
+      v_mean, pop_mean, pop_std  : distribution statistics
+      interpretation             : str
+    """
+    from scipy.stats import mannwhitneyu
+
+    fiedler_layers = fiedler_data.get("fiedler_per_head_per_layer", [])
+    attentions     = decomposed.get("attentions", [])
+    violations     = set(phase1_events["energy_violations"].get(beta, []))
+
+    if not fiedler_layers or not attentions:
+        return {"applicable": False,
+                "reason": "Missing Fiedler data or attention matrices"}
+
+    n_layers_fiedler = len(fiedler_layers)
+    n_layers_attn    = len(attentions)
+    n_layers         = min(n_layers_fiedler, n_layers_attn)
+    n_heads          = len(fiedler_layers[0]) if fiedler_layers else 0
+
+    if n_heads == 0 or n_layers < 4:
+        return {"applicable": False, "reason": "Too few layers or heads"}
+
+    weighted_fiedler = np.full(n_layers, float("nan"))
+
+    for L in range(n_layers):
+        fiedler_h = np.array(fiedler_layers[L], dtype=np.float64)
+        if len(fiedler_h) != n_heads:
+            continue
+
+        attn_mat = attentions[L]  # (n_heads, n_tokens, n_tokens) or similar
+        if hasattr(attn_mat, "numpy"):
+            attn_mat = attn_mat.numpy()
+        attn_mat = np.array(attn_mat, dtype=np.float64)
+
+        # Compute per-head mean attention weight A_h(L)
+        # Shape can be (n_heads, seq, seq) or (seq, seq) — handle both
+        if attn_mat.ndim == 3 and attn_mat.shape[0] == n_heads:
+            # (n_heads, n_tokens, n_tokens) — mean over token pairs
+            A_h = attn_mat.mean(axis=(1, 2))  # (n_heads,)
+        elif attn_mat.ndim == 2:
+            # Single attention matrix — uniform across heads
+            A_h = np.ones(n_heads) / n_heads
+        else:
+            continue
+
+        # Normalize A_h to sum to 1 (some models include diagonal)
+        A_h = A_h / max(A_h.sum(), 1e-12)
+
+        # Weighted mean Fiedler at this layer
+        weighted_fiedler[L] = float(np.dot(A_h, fiedler_h))
+
+    # Compare violation vs non-violation layers
+    v_indices   = [L for L in range(n_layers) if L in violations and np.isfinite(weighted_fiedler[L])]
+    pop_indices = [L for L in range(n_layers) if L not in violations and np.isfinite(weighted_fiedler[L])]
+
+    if not v_indices or not pop_indices:
+        return {
+            "applicable":                 True,
+            "weighted_fiedler_per_layer": weighted_fiedler.tolist(),
+            "z_score_violation":          float("nan"),
+            "v_mean":                     float("nan"),
+            "pop_mean":                   float("nan"),
+            "pop_std":                    float("nan"),
+            "note":                       "Too few violation or non-violation layers",
+        }
+
+    v_vals   = weighted_fiedler[v_indices]
+    pop_vals = weighted_fiedler[pop_indices]
+    pop_std  = float(np.std(pop_vals))
+
+    z_score = float((np.mean(v_vals) - np.mean(pop_vals)) / (pop_std + 1e-12))
+
+    # Mann-Whitney U test (non-parametric, appropriate for small samples)
+    try:
+        stat, mw_pval = mannwhitneyu(v_vals, pop_vals, alternative="less")
+        mw_pval = float(mw_pval)
+    except Exception:
+        mw_pval = float("nan")
+
+    interpretation = (
+        "Negative z-score: violation layers route through lower-Fiedler (clustering) "
+        "heads, consistent with repulsive heads activating at violations."
+        if z_score < 0 else
+        "Positive z-score: violation layers route through higher-Fiedler (mixing) "
+        "heads — inconsistent with V-repulsive prediction."
+    )
+
+    return {
+        "applicable":                 True,
+        "weighted_fiedler_per_layer": weighted_fiedler.tolist(),
+        "v_indices":                  v_indices,
+        "pop_indices":                pop_indices,
+        "z_score_violation":          z_score,
+        "v_mean":                     float(np.mean(v_vals)),
+        "pop_mean":                   float(np.mean(pop_vals)),
+        "pop_std":                    pop_std,
+        "mw_pval":                    mw_pval,
+        "n_violation_layers":         len(v_indices),
+        "n_population_layers":        len(pop_indices),
+        "interpretation":             interpretation,
+    }
+
+
+def head_ov_fiedler_crossref(
+        head_fiedler_profile: dict,
+        ov_per_head: list,
+    ) -> dict:
+    """
+    Cross-reference Phase 1 head Fiedler classification with Phase 2
+    per-head OV eigenspectra sign dominance.
+
+    Prediction: CLUSTER heads (low Fiedler, routing tokens into separated
+    groups) should have more attractive-dominant OV spectra (more positive
+    eigenvalues), because attractive V pushes tokens together within
+    clusters.  MIXING heads should have more repulsive spectra.
+
+    Parameters
+    ----------
+    head_fiedler_profile : dict with "heads" list from Phase 1
+                           Each entry: {"head", "mean_fiedler", "class", ...}
+    ov_per_head          : list of dicts per head from Phase 2
+                           Each entry: {"eigenvalues_real": [...], ...}
+                           OR list of (d,) arrays of eigenvalues
+
+    Returns
+    -------
+    dict with:
+      spearman_rho            : correlation between Fiedler and attractive fraction
+      p_value                 : significance
+      prediction              : string summary
+      per_class               : {CLUSTER/MIXED/MIXING: {n_heads, mean_attractive_frac}}
+      per_head                : list of per-head records
+    """
+    from scipy import stats
+    import numpy as np
+
+    heads_info = head_fiedler_profile.get("heads", [])
+    if not heads_info or not ov_per_head:
+        return {"applicable": False, "error": "Missing inputs"}
+
+    rows = []
+    for h_info in heads_info:
+        h = h_info["head"]
+        if h >= len(ov_per_head):
+            continue
+
+        h_eig = ov_per_head[h]
+        if isinstance(h_eig, dict):
+            real_parts = np.array(h_eig.get("eigenvalues_real", []))
+        elif hasattr(h_eig, "__len__"):
+            real_parts = np.real(np.array(h_eig))
+        else:
+            continue
+
+        if len(real_parts) == 0:
+            continue
+
+        n_pos = int(np.sum(real_parts > 0))
+        n_neg = int(np.sum(real_parts < 0))
+        attractive_frac = n_pos / max(n_pos + n_neg, 1)
+
+        rows.append({
+            "head": h,
+            "fiedler_class": h_info["class"],
+            "mean_fiedler": h_info["mean_fiedler"],
+            "attractive_frac": attractive_frac,
+            "n_positive_eig": n_pos,
+            "n_negative_eig": n_neg,
+        })
+
+    if len(rows) < 3:
+        return {"applicable": False, "error": "Insufficient heads"}
+
+    fiedler_vals = [r["mean_fiedler"] for r in rows]
+    attract_vals = [r["attractive_frac"] for r in rows]
+    rho, p_val = stats.spearmanr(fiedler_vals, attract_vals)
+
+    per_class = {}
+    for cls in ["CLUSTER", "MIXED", "MIXING"]:
+        cls_rows = [r for r in rows if r["fiedler_class"] == cls]
+        if cls_rows:
+            per_class[cls] = {
+                "n_heads": len(cls_rows),
+                "mean_attractive_frac": float(np.mean(
+                    [r["attractive_frac"] for r in cls_rows]
+                )),
+            }
+
+    return {
+        "applicable": True,
+        "spearman_rho": float(rho),
+        "p_value": float(p_val),
+        "n_heads": len(rows),
+        "prediction": (
+            "CONFIRMED: CLUSTER heads have more attractive OV spectra"
+            if rho < -0.3 and p_val < 0.05
+            else "NOT CONFIRMED: no significant Fiedler-OV relationship"
+        ),
+        "per_class": per_class,
+        "per_head": rows,
+    }
+
+
 # ---------------------------------------------------------------------------
-# Full pipeline
+# Full pipeline (updated)
 # ---------------------------------------------------------------------------
 
 def run_head_analysis(
     ov_data: dict,
     run_dir: Path,
+    decomposed: dict = None,
+    phase1_events: dict = None,
+    beta: float = 1.0,
 ) -> dict:
     """
     Full per-head OV × Fiedler analysis for one model × prompt.
 
     Parameters
     ----------
-    ov_data : from weights.analyze_weights
-    run_dir : Phase 1 run directory
+    ov_data         : from weights.analyze_weights
+    run_dir         : Phase 1 run directory
+    decomposed      : optional, from extract_decomposed_{albert,standard}
+                      Required for dynamic_head_activation_test (fix 12).
+    phase1_events   : optional, from load_phase1_events.
+                      Required for dynamic_head_activation_test (fix 12).
 
     Returns
     -------
-    dict with head_ov, fiedler, cross_reference results
+    dict with head_ov, fiedler, cross_reference, and dynamic_test results
     """
-    head_ov  = analyze_per_head_ov(ov_data)
-    fiedler  = load_phase1_fiedler(run_dir)
+    head_ov = analyze_per_head_ov(ov_data)
+    fiedler = load_phase1_fiedler(run_dir)
 
     if fiedler["n_heads"] == 0:
         return {"applicable": False, "reason": "no Fiedler data in Phase 1 run"}
 
     xref = cross_reference_head_ov_fiedler(head_ov, fiedler)
 
-    return {
+    result = {
         "applicable": True,
         "head_ov":    head_ov,
         "fiedler":    fiedler,
         "xref":       xref,
     }
 
+    # Fix 12: dynamic head activation test (requires decomposed attentions)
+    if decomposed is not None and phase1_events is not None:
+        result["dynamic_test"] = dynamic_head_activation_test(
+            fiedler_data   = fiedler,
+            decomposed     = decomposed,
+            phase1_events  = phase1_events,
+            beta           = beta,
+        )
+    else:
+        result["dynamic_test"] = {"applicable": False,
+                                  "reason": "decomposed or phase1_events not provided"}
+    
+    # P1→P2 cross-reference
+    fiedler_path = run_dir / "head_fiedler_profile.json"
+    if fiedler_path.exists():
+        with open(fiedler_path) as f:
+            hfp = json.load(f)
+        xref = head_ov_fiedler_crossref(hfp, ov_per_head_eigenvalues)
+        result["fiedler_crossref"] = xref
+    return result
+
 
 def print_head_analysis_summary(result: dict, model_name: str, prompt_key: str):
-    """Print concise per-head OV × Fiedler summary."""
+    """Print concise per-head OV × Fiedler summary including dynamic test."""
     if not result.get("applicable"):
         return
 
@@ -301,3 +572,16 @@ def print_head_analysis_summary(result: dict, model_name: str, prompt_key: str):
         if rhos:
             print(f"    Per-layer correlations: mean ρ={np.mean(rhos):+.3f}  "
                   f"significant at p<0.05: {sig_count}/{len(plc)} layers")
+
+    # Fix 12: dynamic head activation test
+    dt = result.get("dynamic_test", {})
+    if dt.get("applicable"):
+        z  = dt["z_score_violation"]
+        vm = dt["v_mean"]
+        pm = dt["pop_mean"]
+        mp = dt.get("mw_pval", float("nan"))
+        sig_dyn = "*" if np.isfinite(mp) and mp < 0.05 else " "
+        print(f"    Dynamic activation test (fix 12):")
+        print(f"      Weighted Fiedler z-score at violations: {z:+.3f}  "
+              f"(viol={vm:.3f}  pop={pm:.3f}  MW p={mp:.3f}{sig_dyn})")
+        print(f"      {dt['interpretation']}")

@@ -118,27 +118,43 @@ def print_phase2_summary(
     # Decomposed attn vs FFN attribution
     decomp = analysis_results.get("decomposed_violations", [])
     if decomp:
+        # Fix 7: warn when decompose covered fewer violations than primary count.
+        primary_n = analysis_results.get("violations_beta1.0", {}).get(
+            "summary", {}).get("n_violations", 0)
+        if primary_n > 0 and len(decomp) != primary_n:
+            print(f"\n  ⚠ Decompose coverage mismatch: "
+                  f"{len(decomp)} violations attributed, "
+                  f"{primary_n} in primary summary. "
+                  f"Channel and FFN-frac metrics cover only the attributed subset.")
         print(f"\n  Attn vs FFN attribution at violation layers ({len(decomp)} violations):")
-        n_attn_drop = sum(1 for d in decomp if d.get("attn_sign") == "drop")
-        n_ffn_drop  = sum(1 for d in decomp if d.get("ffn_sign") == "drop")
-        n_cross_drop = sum(1 for d in decomp if d.get("cross_sign") == "drop")
-        mean_attn_frac = float(np.mean([d["attn_frac"] for d in decomp]))
-        mean_ffn_frac  = float(np.mean([d["ffn_frac"] for d in decomp]))
-        cross_deltas = [d.get("delta_cross", 0) for d in decomp]
-        mean_cross = float(np.mean(cross_deltas)) if cross_deltas else 0
-        print(f"    Attn causes drop:  {n_attn_drop}/{len(decomp)}  "
-              f"mean weight: {mean_attn_frac:.2f}")
-        print(f"    FFN  causes drop:  {n_ffn_drop}/{len(decomp)}  "
-              f"mean weight: {mean_ffn_frac:.2f}")
-        print(f"    Cross-term drops:  {n_cross_drop}/{len(decomp)}  "
+        n_attn_drop    = sum(1 for d in decomp if d.get("attn_sign") == "drop")
+        n_ffn_drop     = sum(1 for d in decomp if d.get("ffn_sign") == "drop")
+        n_cross_drop   = sum(1 for d in decomp if d.get("cross_sign") == "drop")
+        n_attn_opposes = sum(1 for d in decomp if d.get("attn_opposes", False))
+        n_ffn_opposes  = sum(1 for d in decomp if d.get("ffn_opposes",  False))
+        # attn_frac / ffn_frac are now signed (fraction of realised drop);
+        # cap display at 2.0 to avoid huge numbers when components nearly cancel.
+        mean_attn_frac = float(np.mean([min(d["attn_frac"], 2.0) for d in decomp]))
+        mean_ffn_frac  = float(np.mean([min(d["ffn_frac"],  2.0) for d in decomp]))
+        cross_deltas   = [d.get("delta_cross", 0) for d in decomp]
+        mean_cross     = float(np.mean(cross_deltas)) if cross_deltas else 0
+        print(f"    Attn causes drop:    {n_attn_drop}/{len(decomp)}  "
+              f"mean drop-frac: {mean_attn_frac:.2f}  "
+              f"opposes: {n_attn_opposes}")
+        print(f"    FFN  causes drop:    {n_ffn_drop}/{len(decomp)}  "
+              f"mean drop-frac: {mean_ffn_frac:.2f}  "
+              f"opposes: {n_ffn_opposes}")
+        print(f"    Cross-term drops:    {n_cross_drop}/{len(decomp)}  "
               f"mean Δ_cross: {mean_cross:+.6f}")
         for d in decomp[:5]:
-            cross = d.get("delta_cross", 0)
+            cross   = d.get("delta_cross", 0)
             cross_s = d.get("cross_sign", "?")
+            opp_a   = " [attn↑]" if d.get("attn_opposes") else ""
+            opp_f   = " [ffn↑]"  if d.get("ffn_opposes")  else ""
             print(f"      L{d['layer']:3d}  "
                   f"Δ_total={d['delta_total']:+.6f}  "
-                  f"Δ_attn={d['delta_attn']:+.6f} ({d['attn_sign']})  "
-                  f"Δ_ffn={d['delta_ffn']:+.6f} ({d['ffn_sign']})  "
+                  f"Δ_attn={d['delta_attn']:+.6f} ({d['attn_sign']}){opp_a}  "
+                  f"Δ_ffn={d['delta_ffn']:+.6f} ({d['ffn_sign']}){opp_f}  "
                   f"Δ_cross={cross:+.6f} ({cross_s})")
 
 
@@ -198,21 +214,40 @@ def build_verdict(
     # Decomposed attn vs FFN attribution
     decomp = analysis_results.get("decomposed_violations", [])
     if decomp:
-        n_attn_drop = sum(1 for d in decomp if d.get("attn_sign") == "drop")
-        n_ffn_drop  = sum(1 for d in decomp if d.get("ffn_sign") == "drop")
-        verdict["decompose_n_violations"]  = len(decomp)
-        verdict["decompose_attn_drop"]     = n_attn_drop
-        verdict["decompose_ffn_drop"]      = n_ffn_drop
-        verdict["decompose_frac_attn_drop"] = n_attn_drop / len(decomp) if decomp else 0
-        verdict["decompose_frac_ffn_drop"]  = n_ffn_drop / len(decomp) if decomp else 0
-        verdict["decompose_mean_attn_frac"] = float(np.mean([d["attn_frac"] for d in decomp]))
-        verdict["decompose_mean_ffn_frac"]  = float(np.mean([d["ffn_frac"] for d in decomp]))
+        n = len(decomp)
+        n_attn_drop    = sum(1 for d in decomp if d.get("attn_sign") == "drop")
+        n_ffn_drop     = sum(1 for d in decomp if d.get("ffn_sign") == "drop")
+        n_attn_opposes = sum(1 for d in decomp if d.get("attn_opposes", False))
+        n_ffn_opposes  = sum(1 for d in decomp if d.get("ffn_opposes",  False))
+        # Signed drop-fracs: cap at 2.0 to prevent huge means when components nearly cancel.
+        mean_attn_frac = float(np.mean([min(d["attn_frac"], 2.0) for d in decomp]))
+        mean_ffn_frac  = float(np.mean([min(d["ffn_frac"],  2.0) for d in decomp]))
+        verdict["decompose_n_violations"]    = n
+        verdict["decompose_attn_drop"]       = n_attn_drop
+        verdict["decompose_ffn_drop"]        = n_ffn_drop
+        verdict["decompose_frac_attn_drop"]  = n_attn_drop / n if n else 0
+        verdict["decompose_frac_ffn_drop"]   = n_ffn_drop  / n if n else 0
+        verdict["decompose_mean_attn_frac"]  = mean_attn_frac
+        verdict["decompose_mean_ffn_frac"]   = mean_ffn_frac
+        verdict["decompose_n_attn_opposes"]  = n_attn_opposes
+        verdict["decompose_n_ffn_opposes"]   = n_ffn_opposes
+        verdict["decompose_frac_attn_opposes"] = n_attn_opposes / n if n else 0
+        verdict["decompose_frac_ffn_opposes"]  = n_ffn_opposes  / n if n else 0
+
+        # Fix 7: coverage mismatch warning
+        n_primary = primary.get("n_violations", 0)
+        if n_primary > 0 and n != n_primary:
+            verdict["decompose_coverage_warning"] = True
+            verdict["decompose_coverage_n_primary"]    = n_primary
+            verdict["decompose_coverage_n_decomposed"] = n
+        else:
+            verdict["decompose_coverage_warning"] = False
 
         # Refine falsification using decompose data
         if verdict["falsification"] == "mixed_or_unattributed":
-            if n_ffn_drop > len(decomp) * 0.5:
+            if n_ffn_drop > n * 0.5:
                 verdict["falsification"] = "FFN_dominant"
-            elif n_attn_drop > len(decomp) * 0.5 and primary.get("frac_repulsive", 0) > 0.3:
+            elif n_attn_drop > n * 0.5 and primary.get("frac_repulsive", 0) > 0.3:
                 verdict["falsification"] = "V_repulsive_via_attn"
 
     # Layer-V zone events (per-layer models only)
@@ -226,10 +261,17 @@ def build_verdict(
         ze = lv.get("zone_events", {})
         rep_zone = ze.get("repulsive", {})
         att_zone = ze.get("attractive", {})
-        verdict["violations_in_repulsive_zone"] = rep_zone.get("n_violations", 0)
+        verdict["violations_in_repulsive_zone"]  = rep_zone.get("n_violations", 0)
         verdict["violations_in_attractive_zone"] = att_zone.get("n_violations", 0)
-        verdict["merges_in_repulsive_zone"]     = rep_zone.get("n_merges", 0)
-        verdict["merges_in_attractive_zone"]    = att_zone.get("n_merges", 0)
+        verdict["merges_in_repulsive_zone"]      = rep_zone.get("n_merges", 0)
+        verdict["merges_in_attractive_zone"]     = att_zone.get("n_merges", 0)
+        # Fix 8: per-layer violation rates for normalised cross-model comparison.
+        # Raw counts are misleading when repulsive zones differ in size across models.
+        verdict["violation_rate_repulsive_zone"]  = rep_zone.get("violation_rate", 0.0)
+        verdict["violation_rate_attractive_zone"] = att_zone.get("violation_rate", 0.0)
+        verdict["violation_rate_transition_zone"] = (
+            ze.get("transition", {}).get("violation_rate", 0.0)
+        )
 
         corr = lv.get("correlations", {})
         rv = corr.get("repulsive_frac_vs_violation_indicator", {})

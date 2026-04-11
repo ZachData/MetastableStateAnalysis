@@ -25,6 +25,8 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from phase1.io_utils import load_run, load_attentions, load_activations
+from phase1.metrics import nearest_neighbor_indices
+from phase1.clustering import pair_hdbscan_agreement
 from tangents.induction.induction import (
     induction_scores_all_layers,
     induction_fiedler_correlation,
@@ -40,6 +42,82 @@ from tangents.induction.induction import (
 # ---------------------------------------------------------------------------
 
 TANGENT_RESULTS_DIR = _project_root / "tangent_results" / "induction"
+
+
+# ---------------------------------------------------------------------------
+# Recompute mutual-NN pairs from saved data (for old Phase 1 runs)
+# ---------------------------------------------------------------------------
+
+def _recompute_pair_agreement(
+    activations: np.ndarray,
+    run_dir: Path,
+    tokens: list,
+    results: dict,
+) -> dict:
+    """
+    Recompute pair_agreement for all layers from saved activations and
+    HDBSCAN labels.  Used when Phase 1 runs predate the pair_agreement
+    addition.
+
+    Parameters
+    ----------
+    activations : (n_layers, n_tokens, d) L2-normed
+    run_dir     : path to Phase 1 run directory (for clusters.npz)
+    tokens      : list of str
+    results     : Phase 1 results dict (modified in place)
+
+    Returns
+    -------
+    dict mapping layer_idx -> pair_agreement dict
+    """
+    n_layers = activations.shape[0]
+
+    # Try loading HDBSCAN labels from clusters.npz
+    try:
+        from phase1.io_utils import load_clusters
+        cluster_data = load_clusters(run_dir)
+        hdbscan_labels_list = cluster_data.get("hdbscan_labels", [])
+    except (FileNotFoundError, KeyError):
+        hdbscan_labels_list = []
+
+    # Fall back to results dict if clusters.npz is missing
+    if not hdbscan_labels_list:
+        hdbscan_labels_list = []
+        for lr in results["layers"]:
+            hdb = lr.get("clustering", {}).get("hdbscan", {})
+            if "labels" in hdb:
+                hdbscan_labels_list.append(np.array(hdb["labels"], dtype=np.int32))
+            else:
+                hdbscan_labels_list.append(None)
+
+    recomputed = {}
+    n_recomputed = 0
+
+    for li in range(n_layers):
+        normed = activations[li]  # already L2-normed from activations.npz
+        G = normed @ normed.T
+        nn = nearest_neighbor_indices(G)
+
+        if li < len(hdbscan_labels_list) and hdbscan_labels_list[li] is not None:
+            hdb_labels = hdbscan_labels_list[li]
+        else:
+            # No HDBSCAN labels — can still find mutual NNs, tag all as "noise"
+            hdb_labels = np.full(len(tokens), -1, dtype=np.int32)
+
+        pa = pair_hdbscan_agreement(nn, hdb_labels, tokens)
+        recomputed[li] = pa
+
+        # Update the results dict in place so downstream code sees it
+        if li < len(results["layers"]):
+            results["layers"][li]["pair_agreement"] = pa
+            results["layers"][li]["nn_indices"] = nn.tolist()
+
+        if pa["mutual_pairs"]:
+            n_recomputed += 1
+
+    print(f"  Recomputed pair_agreement for {n_layers} layers "
+          f"({n_recomputed} with mutual pairs)")
+    return recomputed
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +220,18 @@ def run_induction_analysis(
     # Measurement 3: Per-pair attention attribution at plateau layers
     # ------------------------------------------------------------------
     print("\n--- Measurement 3: Per-pair attention attribution ---")
+
+    # Check if pair_agreement was computed in the original Phase 1 run.
+    # Old runs predate pair_agreement; load_run defaults it to empty lists.
+    # Recompute from saved activations + HDBSCAN labels if needed.
+    has_pair_data = any(
+        lr.get("pair_agreement", {}).get("mutual_pairs", [])
+        for lr in results["layers"]
+    )
+    if not has_pair_data and activations is not None:
+        print("  pair_agreement is empty (old Phase 1 run). Recomputing from saved data...")
+        _recompute_pair_agreement(activations, run_dir, tokens, results)
+
     plateau_layers = results.get("plateau_layers", [])
     if not plateau_layers:
         # Fall back: use layers where nn_stability > 0.8

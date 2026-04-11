@@ -174,6 +174,7 @@ def run_full(
 
                 stem = _run_stem(model_name, prompt_key, cfg)
                 save_verdict(verdict, output_dir / stem)
+                _save_cross_phase_artifacts(analysis, ov_data, run_dir, output_dir / stem)
 
             except Exception as e:
                 print(f"  Failed: {e}")
@@ -276,6 +277,7 @@ def run_offline(
 
                 stem = _run_stem(model_name, prompt_key, cfg)
                 save_verdict(verdict, output_dir / stem)
+                _save_cross_phase_artifacts(analysis, ov_data, run_dir, output_dir / stem)
 
             except Exception as e:
                 print(f"  Failed: {e}")
@@ -427,6 +429,103 @@ def _save_cross_run(verdicts, output_dir):
     with open(path, "w") as f:
         json.dump(verdicts, f, indent=2)
     print(f"\nCross-run summary saved to {path}")
+
+
+def _save_cross_phase_artifacts(
+    analysis: dict,
+    ov_data: dict,
+    run_dir: Path,
+    save_dir: Path,
+) -> None:
+    """
+    Save standalone JSON artifacts that Phase 3 cross-phase analyses consume.
+
+    Written files (inside save_dir):
+      ffn_subspace.json    — per-violation FFN role classification
+      cross_term.json      — cross-term dominant pairs and mechanism
+      ov_per_head.json     — per-head eigenspectra for head×Fiedler crossref
+      head_ov.json         — head OV analysis results
+    """
+    import json
+
+    # --- ffn_subspace.json ---
+    ffn = analysis.get("ffn_subspace")
+    if ffn and ffn.get("applicable"):
+        with open(save_dir / "ffn_subspace.json", "w") as f:
+            json.dump(_jsonify(ffn), f, indent=2)
+
+    # --- cross_term.json ---
+    # cross_term results are embedded in decomposed_violations or extended
+    ct_data = analysis.get("extended", {}).get("cross_term")
+    if ct_data is None:
+        # Try to extract from decomposed violations
+        decomp = analysis.get("decomposed_violations", [])
+        ct_violations = []
+        for d in decomp:
+            if d.get("cross_frac", 0) > 0.1:
+                ct_violations.append({
+                    "layer": d.get("layer"),
+                    "cross_dominant": d.get("cross_frac", 0) > 0.5,
+                    "cross_frac": d.get("cross_frac", 0),
+                    "delta_cross": d.get("delta_cross", 0),
+                    "delta_total": d.get("delta_total", 0),
+                })
+        if ct_violations:
+            ct_data = {"per_violation": ct_violations}
+
+    # Also try loading cross_term_analysis results if run separately
+    ct_json_path = run_dir / "cross_term_results.json"
+    if ct_json_path.exists():
+        with open(ct_json_path) as f:
+            ct_data = json.load(f)
+
+    if ct_data:
+        with open(save_dir / "cross_term.json", "w") as f:
+            json.dump(_jsonify(ct_data), f, indent=2)
+
+    # --- ov_per_head.json ---
+    # Per-head eigenvalues for Phase 3 head×Fiedler crossref
+    per_head = ov_data.get("ov_per_head")
+    if per_head is not None:
+        # per_head is typically a list of (d,) arrays of eigenvalues per head
+        serializable = []
+        for h_eigs in per_head:
+            if hasattr(h_eigs, "tolist"):
+                serializable.append({
+                    "eigenvalues_real": np.real(h_eigs).tolist(),
+                    "eigenvalues_imag": np.imag(h_eigs).tolist(),
+                })
+            else:
+                serializable.append(h_eigs)
+        with open(save_dir / "ov_per_head.json", "w") as f:
+            json.dump(serializable, f, indent=2)
+
+    # --- head_ov.json ---
+    head_ov = analysis.get("head_ov")
+    if head_ov and head_ov.get("applicable"):
+        with open(save_dir / "head_ov.json", "w") as f:
+            json.dump(_jsonify(head_ov), f, indent=2)
+
+
+def _jsonify(obj):
+    """Recursively convert numpy types to Python natives for JSON."""
+    import numpy as np
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, (np.bool_,)):
+        return bool(obj)
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        v = float(obj)
+        if np.isnan(v) or np.isinf(v):
+            return None
+        return v
+    if isinstance(obj, dict):
+        return {k: _jsonify(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonify(v) for v in obj]
+    return obj
 
 
 # ---------------------------------------------------------------------------

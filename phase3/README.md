@@ -14,8 +14,8 @@ python -m phase3.run --gpt2-only --n-texts 50000
 
 # With Phase 1/2 cross-referencing
 python -m phase3.run --albert-only \
-    --phase1-dir results/2024-xx-xx/albert-xlarge-v2_wiki_paragraph \
-    --phase2-dir results/phase2/albert-xlarge-v2
+    --phase1-dir results/2026-03-15_18-55-33 \
+    --phase2-dir results/phase2_2026-03-27_05-24-25
 
 # Re-analyze without retraining
 python -m phase3.run --albert-only --skip-cache --skip-train
@@ -113,7 +113,7 @@ BatchTopK activation (not L1) per recent consensus. Decoder columns normalized t
 | 16GB (4080) | 16384 (8x) | 512 | 4 | ~8GB |
 | 24GB (3090/4090) | 32768 (16x) | 1024 | 2 | ~16GB |
 
-Default is 4x expansion (8192 for ALBERT-xlarge, 5120 for GPT-2-large). Override with `--n-features`.
+Default is 4× expansion (8192 for ALBERT-xlarge, 5120 for GPT-2-large). Override with `--n-features`.
 
 ---
 
@@ -155,36 +155,128 @@ Dependency graph: `run → {data, crosscoder, training, analysis}`. `training �
 
 ## Phase 2 cross-referencing
 
-`run.py` loads Phase 2 projectors directly from Phase 2's native output format (`ov_projectors_{stem}.npz`). No export step needed — just point to the directory:
+`run.py` loads Phase 2 projectors from Phase 2's native output format (`ov_projectors_{stem}.npz`). No export step needed:
 
 ```bash
-python -m phase3.run --albert-only --phase2-dir results/phase2/albert-xlarge-v2
+python -m phase3.run --albert-only --phase2-dir results/phase2_2026-03-27_05-24-25
 ```
+
+Projectors are loaded as **low-rank** (top-64 eigenvectors by absolute eigenvalue magnitude). Full-rank projectors are useless for crosscoder alignment: when `rep_frac ≈ 0.5`, any random unit vector projects ~0.5 into each subspace, so the classification carries no signal. Low-rank k=64 matches the crosscoder's sparsity parameter k. Tunable via `k_top` in `_load_artifacts` in `run.py`.
 
 ---
 
-## Findings
-
-*This section is updated as experiments complete.*
+## Findings (2026-03-30)
 
 ### Run log
 
 | Date | Model | Data | Steps | Features | Notes |
 |------|-------|------|-------|----------|-------|
-| | | | | | |
+| 2026-03-30 | albert-xlarge-v2 | C4 50k | 100k | 2048 | batch_topk k=64. Note: preset is 4× (8192) — verify checkpoint config. |
+| 2026-03-30 | gpt2-large | C4 50k | 100k | 5120 | batch_topk k=64 |
 
-### Results
+### Prediction 1: Feature lifetime bimodality — CONFIRMED
 
-*(to be filled in)*
+| Model | Mean lifetime | Short (≤3) | Long (≥L/2) | Bimodal score | Multilayer % |
+|-------|--------------|-----------|------------|---------------|-------------|
+| ALBERT-xlarge | 5.2 layers | 236 | 343 | 2 | 99.2% (660/665) |
+| GPT-2-large | 3.4 layers | 627 | 225 | 1 | 97.8% (1018/1041) |
+
+ALBERT shows a clear bimodal distribution with roughly equal numbers of short- and long-lived features. GPT-2 skews short-lived, consistent with Regime B dynamics concentrated in early repulsive layers. Both pass the multilayer control at >97%, confirming the crosscoder is learning genuine cross-layer features. Positional control is clean: 0% ALBERT, 1% GPT-2.
+
+Lifetimes are computed using **data-driven activation scores** rather than decoder norms — see Bug 2 below for why this is necessary.
+
+### Prediction 2: Decoder directions align with V's eigensubspaces — NULL
+
+Decoder directions are statistically indistinguishable from random with respect to V's top-64 eigenvectors:
+
+```
+ALBERT-xlarge (d=2048, k=64, expected random projection = 64/2048 = 0.031):
+  Rep energy: mean=0.0314, std=0.0057
+  Att energy: mean=0.0316, std=0.0058
+  Signal-to-noise: 0.18×
+```
+
+This is a clean null — mean equals the random expectation, std is 0.18× of mean. All known measurement artifacts were ruled out during debugging (Bugs 2–5 below). Two interpretations remain:
+
+**Interpretation A (likely):** The crosscoder trained on C4 general web text learned features tracking syntax, frequency, or surface form rather than the dynamical V-eigenstructure. The mechanism (Phase 2) and the representation (Phase 3) are dissociated. V explains *why* energy drops but doesn't organize *what* the model represents.
+
+**Interpretation B (possible):** The 4-prompt eval set is too narrow to activate features tied to metastable dynamics. Training with metastability-rich prompts overrepresented might recover the alignment.
+
+**Diagnostic to distinguish A from B before retraining:**
+```python
+# Check whether short-lived vs long-lived features separate at all
+# on per-layer decoder directions, even without reaching significance
+lifetimes = np.array(lt_result["lifetimes"])
+short_mask = lifetimes <= 3
+long_mask  = lifetimes >= 5
+
+# rep_by_layer shape: (L, F) — computed from decoder directions × top-k eigenvectors
+print(f"Short-lived: rep={rep_by_layer[:, short_mask].mean():.4f}  att={att_by_layer[:, short_mask].mean():.4f}")
+print(f"Long-lived:  rep={rep_by_layer[:, long_mask].mean():.4f}  att={att_by_layer[:, long_mask].mean():.4f}")
+# Equal values → Interpretation A. Separation at specific layer subsets → B.
+```
+
+### Predictions 3 & 4: Cluster identity, violation-layer features — NOT RUN
+
+Both require Phase 1 results for ALBERT-xlarge and GPT-2-large. The existing Phase 1 directory (`results/2026-03-15_18-55-33`) only contains ALBERT-base.
+
+---
+
+## Bugs found and fixed
+
+All bugs below are fixed in the current `analysis.py`, `crosscoder.py`, and `run.py`. Documented to prevent reintroduction.
+
+### Bug 1: CUDA tensor → numpy crash (crosscoder.py)
+
+`decoder_norms()` and `decoder_directions()` returned tensors on the model's device. Analysis called `.numpy()` directly.
+
+**Fix:** `.cpu()` added to both return values in `crosscoder.py`.
+
+### Bug 2: All feature lifetimes equal n_layers (analysis.py)
+
+`normalize_decoder()` runs after every optimizer step, making all `W_dec` column norms exactly 1.0. The lifetime threshold `norms[f] > max_norm * 0.1` became `1.0 > 0.1` — always true. Every feature got lifetime = 10. `spearmanr` on a constant array returns NaN.
+
+**Fix:** Replaced `decoder_norms()` with `_compute_feature_layer_scores()`, a new helper computing the mean squared projection of actual residual stream activations onto each decoder direction at each layer, weighted by feature activity. Unaffected by norm normalization. Used in `feature_lifetimes`, `multilayer_fraction`, `positional_control`, and `v_subspace_alignment`.
+
+### Bug 3: np.bool_ not JSON serializable (analysis.py)
+
+`rho > 0.2 and pval < 0.05` with NumPy scalar inputs produces `np.bool_`. Python 3.10's JSON encoder rejects it — confusingly, `np.bool_.__name__` is `"bool"` but it isn't a native Python bool. `prediction_confirmed` in `lifetime_vs_alignment` hit this.
+
+**Fix:** Added `isinstance(obj, np.bool_): return bool(obj)` before the `np.integer` check in `_convert()`. Must be first because `np.bool_` is a subclass of `np.integer` in some NumPy versions.
+
+### Bug 4: V subspace alignment all-Mixed due to full-rank projectors (run.py + analysis.py)
+
+Phase 2's `build_subspace_projectors` constructs `P_attract = U_plus @ U_plus.T` using all eigenvectors with positive eigenvalues. With `rep_frac ≈ 0.57` (ALBERT-xlarge), this is a projector onto 57% of R^2048. Any random unit vector projects ~0.57 into repulsive and ~0.43 into attractive — both below the hardcoded 0.6 threshold — so everything was classified Mixed regardless of true alignment.
+
+**Fix (run.py):** Load low-rank projectors using only the top-k=64 eigenvectors by absolute eigenvalue magnitude. Random projection drops to ~3.1%, giving genuine discriminating power. k=64 matches the crosscoder sparsity parameter.
+
+**Fix (analysis.py):** Replace absolute threshold with relative dominance: `attract_dominance = attract / (attract + repulse)`, classified attractive if >0.6, repulsive if <0.4.
+
+After both fixes the all-Mixed result became the clean null above, confirming it is real.
+
+### Bug 5: V subspace weighting used decoder norms (analysis.py)
+
+Even after Bug 4 was fixed, `v_subspace_alignment` weighted per-layer projections by `decoder_norms()`, which `normalize_decoder()` makes all-ones. For per-layer GPT-2 where `rep_frac` ranges from 0.23 (late layers) to 0.69 (early layers), uniform weighting averages opposite signals and cancels any real alignment.
+
+**Fix:** Replaced `decoder_norms()` weighting with `_compute_feature_layer_scores()` weighting, consistent with the lifetime computation.
+
+### Bug 6: Phase 1 artifact loader expected flat directory (run.py)
+
+`_load_artifacts` looked for `phase1_dir/metrics.json`. Phase 1 stores results in `phase1_dir/{model}_{N}iter_{prompt}/metrics.json`.
+
+**Fix:** Now iterates subdirectories matching the model stem, extracts prompt names via `re.sub(r'^.*?\d+iter_', '', dir_name)` (handles multi-word names like `short_heterogeneous`), and accumulates artifacts across all matching prompts.
 
 ---
 
 ## Known issues / TODO
 
-- [ ] Per-layer SAE baselines for comparison (single-layer SAEs at a few layers)
-- [ ] Centroid trajectory correlation (requires `cluster_tracking.py` output format)
-- [ ] GPT-2-large two-zone crosscoders (separate repulsive/attractive zone dictionaries)
-- [ ] Merge event feature dynamics (feature birth/death at cluster merge transitions)
-- [ ] Cross-term accommodation for ALBERT-xlarge (mixed attractive+repulsive projection)
-- [ ] Visualization: feature activation heatmaps across layers × tokens
-- [ ] Integration with Neuronpedia dashboard format for feature browsing
+- [ ] **Run Phase 1 for albert-xlarge-v2 and gpt2-large** — required for Predictions 3 and 4. Use the same prompts as the current eval set.
+- [ ] **Verify ALBERT feature count** — current checkpoint may be 1× (2048 features) rather than the 4× (8192) preset. Check `checkpoints/albert_xlarge_v2/final/config.json`.
+- [ ] **Run the A/B diagnostic** before retraining — see the block in Prediction 2 findings. Cheap and determines whether retraining will help.
+- [ ] **Retrain with metastability-rich prompts** — if diagnostic suggests Interpretation B, oversample Phase 1 eval prompts in the training mix.
+- [ ] **Attach WandB before next run** — `metrics_history.json` exists for retroactive logging. Add live logging to `training.py` callback.
+- [ ] **Per-layer SAE baselines** — train single-layer SAEs at layers 12, 24, 36, 48; compare lifetime distributions and V-alignment to crosscoder.
+- [ ] **GPT-2-large two-zone crosscoders** — separate dictionaries for repulsive (early) and attractive (late) layer zones.
+- [ ] **Merge event feature dynamics** — birth/death of features at cluster merge transitions (requires Phase 1 xlarge results).
+- [ ] **Visualization** — feature activation heatmaps across layers × tokens.
+- [ ] **Neuronpedia format** — integration with dashboard for feature browsing.

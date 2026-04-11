@@ -27,8 +27,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from torch.utils.data import Dataset
-
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -54,7 +52,7 @@ class ExtractionConfig:
     model_name: str
     layer_indices: list[int]
     max_seq_len: int = 512
-    shard_size: int = 50_000
+    shard_size: int = 10_000          # tokens per shard file (ALBERT: ~400MB, GPT-2: ~256MB, float16)
     cache_dir: str = "activation_cache"
     dtype: str = "float16"
 
@@ -204,7 +202,7 @@ def extract_gpt2(model, tokenizer, texts, layer_indices, max_seq_len=512, device
         with torch.no_grad(), torch.autocast(
             device_type=device, dtype=torch.bfloat16, enabled=(device == "cuda")
         ):
-            outputs = model(**inputs)
+            outputs = model(**inputs, output_hidden_states=True)
 
         selected = [
             _l2_normalize(outputs.hidden_states[i][0].float()).cpu().numpy()
@@ -282,62 +280,87 @@ def is_trained(checkpoint_dir: str | Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Dataset
+# Streaming buffer (replaces Dataset + DataLoader)
 # ---------------------------------------------------------------------------
 
-class ActivationDataset(Dataset):
+class ActivationBuffer:
+    """
+    Streaming activation buffer.  Loads one shard at a time in float16,
+    shuffles it, yields batches, then swaps to the next shard.
+
+    Only one shard is in memory at a time.  At 50k tokens × 10 layers ×
+    2048 dims × 2 bytes = ~2GB per shard in float16.  The previous shard
+    is explicitly deleted before loading the next one.
+
+    This replaces the Dataset + DataLoader pattern which thrashed across
+    shards and consumed 4GB+ per shard in float32.
+    """
+
     def __init__(self, cache_dir: str | Path):
         cache_dir = Path(cache_dir)
         with open(cache_dir / "meta.json") as f:
             self.meta = json.load(f)
 
-        self.cache_dir = cache_dir
         self.n_tokens = self.meta["n_tokens_total"]
         self.n_layers = len(self.meta["layer_indices"])
         self.d_model = self.meta["d_model"]
 
         self._shard_paths = sorted(cache_dir.glob("shard_*.npy"))
-        self._shard_sizes = []
-        self._shard_offsets = []
-        offset = 0
-        for sp in self._shard_paths:
-            shape = self._peek_shape(sp)
-            self._shard_sizes.append(shape[0])
-            self._shard_offsets.append(offset)
-            offset += shape[0]
+        self._shard_order: list[int] = []
+        self._shard_idx: int = 0
 
-        self._loaded_shard_idx: Optional[int] = None
-        self._loaded_shard_data: Optional[np.ndarray] = None
+        # Current shard data — kept as float16 to halve RAM
+        self._data: Optional[np.ndarray] = None
+        self._cursor: int = 0
 
-    @staticmethod
-    def _peek_shape(path):
-        with open(path, "rb") as f:
-            ver = np.lib.format.read_magic(f)
-            shape, _, _ = np.lib.format._read_array_header(f, ver)
-        return shape
+        self._reshuffle_shards()
+        self._load_next_shard()
 
-    def _load_shard(self, idx):
-        if self._loaded_shard_idx != idx:
-            self._loaded_shard_data = np.load(self._shard_paths[idx]).astype(np.float32)
-            self._loaded_shard_idx = idx
+    def _reshuffle_shards(self):
+        """Randomize shard order for a new epoch."""
+        self._shard_order = np.random.permutation(len(self._shard_paths)).tolist()
+        self._shard_idx = 0
 
-    def _find_shard(self, global_idx):
-        lo, hi = 0, len(self._shard_offsets) - 1
-        while lo < hi:
-            mid = (lo + hi + 1) // 2
-            if self._shard_offsets[mid] <= global_idx:
-                lo = mid
-            else:
-                hi = mid - 1
-        return lo, global_idx - self._shard_offsets[lo]
+    def _load_next_shard(self):
+        """Load the next shard, free the previous one first."""
+        # Explicitly free previous shard before allocating new one
+        self._data = None
 
-    def __len__(self):
-        return self.n_tokens
+        if self._shard_idx >= len(self._shard_order):
+            self._reshuffle_shards()
 
-    def __getitem__(self, idx):
-        si, li = self._find_shard(idx)
-        self._load_shard(si)
-        return torch.from_numpy(self._loaded_shard_data[li])
+        path = self._shard_paths[self._shard_order[self._shard_idx]]
+        self._data = np.load(path)  # stays float16, ~2GB per shard
+        self._shard_idx += 1
+
+        # Shuffle rows in-place — no copy, no 2x memory spike
+        np.random.shuffle(self._data)
+        self._cursor = 0
+
+    def get_batch(self, batch_size: int) -> torch.Tensor:
+        """
+        Return a (batch_size, n_layers, d_model) float32 tensor on CPU.
+
+        Spans shard boundaries if needed so the returned tensor always has
+        exactly batch_size rows.  Float16 → float32 conversion happens here,
+        on just the batch.
+        """
+        chunks = []
+        remaining = batch_size
+
+        while remaining > 0:
+            available = self._data.shape[0] - self._cursor
+            if available <= 0:
+                self._load_next_shard()
+                available = self._data.shape[0]
+
+            take = min(remaining, available)
+            chunks.append(self._data[self._cursor : self._cursor + take])
+            self._cursor += take
+            remaining -= take
+
+        chunk = np.concatenate(chunks, axis=0) if len(chunks) > 1 else chunks[0]
+        return torch.from_numpy(chunk.astype(np.float32))
 
 
 class PromptActivationStore:

@@ -47,6 +47,12 @@ SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
 SPECTRAL_MAX_K    = 15
 
+# Token-count sweep targets for --length-sweep mode.
+# wiki_paragraph is truncated at word boundaries to each of these approximate
+# token counts and run as separate prompts.  Tests whether plateau width scales
+# with n_tokens as the paper's theory predicts.
+LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
+
 # ---------------------------------------------------------------------------
 # Prompt variants
 # ---------------------------------------------------------------------------
@@ -152,40 +158,59 @@ MODEL_CONFIGS = {
         "model_class":     AlbertModel,
         "tokenizer_class": AlbertTokenizer,
         "is_albert":       True,
+        "random_init":     False,
+    },
+    # Untrained control: same architecture as albert-base-v2 but with weights
+    # randomly re-initialised after loading the architecture.  Used to test
+    # whether metastability is a property of trained weights or just of the
+    # iterated-map architecture.  Registered as a separate model key so it
+    # runs through the full pipeline and produces side-by-side reports.
+    "albert-base-v2-random": {
+        "model_class":     AlbertModel,
+        "tokenizer_class": AlbertTokenizer,
+        "is_albert":       True,
+        "random_init":     True,
     },
     "albert-xlarge-v2": {
         "model_class":     AlbertModel,
         "tokenizer_class": AlbertTokenizer,
         "is_albert":       True,
+        "random_init":     False,
     },
     "bert-base-uncased": {
         "model_class":     BertModel,
         "tokenizer_class": BertTokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
     "bert-large-uncased": {
         "model_class":     BertModel,
         "tokenizer_class": BertTokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
     "gpt2": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
     "gpt2-medium": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
     "gpt2-large": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
     "gpt2-xl": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
 }

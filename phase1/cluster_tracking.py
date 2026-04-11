@@ -196,18 +196,17 @@ def track_clusters(results: dict) -> dict:
     active_trajectories = {}  # traj_id -> list of (layer, cluster_id)
     next_traj_id = 0
 
-    # Initialize from layer 0
+    # Initialize from layer 0.
+    # tip_map: (layer, cluster_id) -> traj_id for the *current tip* of every
+    # active trajectory.  Updated incrementally so each lookup is O(1) instead
+    # of the previous O(n_trajectories) linear scan.
+    tip_map: dict = {}   # (layer, cid) -> traj_id
+
     ids_0 = sorted(set(label_arrays[0]) - {-1})
     for cid in ids_0:
         active_trajectories[next_traj_id] = [(0, cid)]
+        tip_map[(0, cid)] = next_traj_id
         next_traj_id += 1
-
-    # Build a reverse lookup: (layer, cluster_id) -> traj_id
-    def _lookup(layer, cid):
-        for tid, chain in active_trajectories.items():
-            if chain[-1] == (layer, cid):
-                return tid
-        return None
 
     for ev in events:
         lf = ev["layer_from"]
@@ -215,28 +214,40 @@ def track_clusters(results: dict) -> dict:
 
         # Extend matched trajectories
         for prev_id, curr_id, _ in ev["matches"]:
-            tid = _lookup(lf, prev_id)
+            tid = tip_map.get((lf, prev_id))
             if tid is not None:
                 active_trajectories[tid].append((lt, curr_id))
+                # Move the tip forward: old tip key is now stale, add new one.
+                del tip_map[(lf, prev_id)]
+                tip_map[(lt, curr_id)] = tid
 
         # Births: start new trajectories
         for cid in ev["births"]:
             active_trajectories[next_traj_id] = [(lt, cid)]
+            tip_map[(lt, cid)] = next_traj_id
             next_traj_id += 1
 
-        # Merges: extend the primary trajectory, terminate secondaries
+        # Merges: extend the primary trajectory, terminate secondaries.
+        # The first prev_id with a live tip becomes primary; the rest end.
         for prev_ids, curr_id in ev["merges"]:
-            # The first prev_id that has an active trajectory becomes primary
             primary_tid = None
             for pid in prev_ids:
-                tid = _lookup(lf, pid)
+                tid = tip_map.get((lf, pid))
                 if tid is not None:
                     if primary_tid is None:
                         primary_tid = tid
                         active_trajectories[tid].append((lt, curr_id))
-                    # Secondary trajectories just end (death is implicit)
+                        del tip_map[(lf, pid)]
+                        tip_map[(lt, curr_id)] = tid
+                    else:
+                        # Secondary trajectory ends here — remove its tip entry.
+                        tip_map.pop((lf, pid), None)
 
-        # Deaths: trajectories that ended (no action needed — they just stop)
+        # Deaths: stale tip entries for dead clusters.
+        # These were never matched or merged, so their tip keys still point to
+        # lf.  Remove them to keep tip_map clean.
+        for dead_id in ev["deaths"]:
+            tip_map.pop((lf, dead_id), None)
 
     # Extract centroid coordinates using stored centroids or recompute from labels
     # We use KMeans centroids stored in results if available, but for HDBSCAN

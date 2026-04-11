@@ -107,9 +107,9 @@ def energy_drop_pairs(
     """
     Identify token pairs (i, j) responsible for an energy drop between layers.
 
-    The per-pair contribution to E_beta is exp(β⟨xᵢ,xⱼ⟩) / (2β n²).
-    A drop at layer L means Σᵢⱼ [exp(β⟨xᵢ,xⱼ⟩_after) - exp(β⟨xᵢ,xⱼ⟩_before)] < 0.
-    This function returns the top_k pairs with the most negative contribution delta.
+    Accepts raw (un-normalized) tensors.  If the caller already holds
+    L2-normed ndarrays, use ``energy_drop_pairs_from_normed`` to skip the
+    redundant normalization.
 
     Parameters
     ----------
@@ -125,8 +125,53 @@ def energy_drop_pairs(
     """
     normed_before = layernorm_to_sphere(activations_before).numpy()
     normed_after  = layernorm_to_sphere(activations_after).numpy()
-    n             = normed_before.shape[0]
-    norm          = 2.0 * beta * n * n
+    return _energy_drop_pairs_core(normed_before, normed_after, beta, top_k)
+
+
+def energy_drop_pairs_from_normed(
+    normed_before: np.ndarray,
+    normed_after: np.ndarray,
+    beta: float,
+    top_k: int = 10,
+) -> list:
+    """
+    Identify token pairs responsible for an energy drop between layers.
+
+    Accepts pre-normalized (L2-normed) ndarrays directly — no redundant
+    normalization.  Use this inside the analysis loop where ``normed`` is
+    already computed once per layer.
+
+    Parameters
+    ----------
+    normed_before : (n_tokens, d_model) float32 ndarray — L2-normed layer L
+    normed_after  : (n_tokens, d_model) float32 ndarray — L2-normed layer L+1
+    beta          : interaction energy beta parameter
+    top_k         : number of most-negative pairs to return
+
+    Returns
+    -------
+    list of (i, j, delta) tuples sorted by delta ascending (most negative first)
+    """
+    return _energy_drop_pairs_core(normed_before, normed_after, beta, top_k)
+
+
+def _energy_drop_pairs_core(
+    normed_before: np.ndarray,
+    normed_after: np.ndarray,
+    beta: float,
+    top_k: int,
+) -> list:
+    """
+    Shared implementation for energy_drop_pairs and energy_drop_pairs_from_normed.
+
+    Both caller-facing functions resolve to L2-normed ndarrays before arriving
+    here, so no normalization is performed.
+    """
+
+    n    = normed_before.shape[0]
+    if n < 2:
+        return []
+    norm = 2.0 * beta * n * n
 
     G_before = normed_before @ normed_before.T   # (n, n)
     G_after  = normed_after  @ normed_after.T    # (n, n)
@@ -150,24 +195,10 @@ def energy_drop_pairs(
     ]
 
 
+
 # ---------------------------------------------------------------------------
 # Effective rank
 # ---------------------------------------------------------------------------
-
-def effective_rank(activations: torch.Tensor) -> float:
-    """
-    Effective rank = exp(H), where H is the Shannon entropy of the
-    normalised singular value distribution.
-
-    Near 1  → tokens nearly collinear (collapsed).
-    Near d  → tokens spread across all dimensions.
-    """
-    sv      = svdvals(activations.numpy())
-    sv      = sv[sv > 1e-10]
-    sv_norm = sv / sv.sum()
-    entropy = -np.sum(sv_norm * np.log(sv_norm + 1e-12))
-    return float(np.exp(entropy))
-
 
 def effective_rank_from_raw(activations: torch.Tensor) -> float:
     """

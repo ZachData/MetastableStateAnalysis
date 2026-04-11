@@ -223,14 +223,17 @@ def extract_decomposed_standard(
             h2 = block.mlp.register_forward_hook(make_ffn_hook(block))
             hooks.extend([h1, h2])
 
-    # Forward pass
+    # Forward pass — output_attentions=True so outputs.attentions contains
+    # per-layer (batch, n_heads, seq, seq) tensors for the dynamic head test.
     with torch.no_grad():
         with torch.autocast(
             device_type=DEVICE,
             dtype=torch.bfloat16,
             enabled=(DEVICE == "cuda"),
         ):
-            outputs = model(**inputs, output_hidden_states=True)
+            outputs = model(**inputs,
+                            output_hidden_states=True,
+                            output_attentions=True)
 
     # Remove hooks
     for h in hooks:
@@ -238,6 +241,13 @@ def extract_decomposed_standard(
 
     # Hidden states
     hidden_states = [h[0].to(torch.float32).cpu() for h in outputs.hidden_states]
+
+    # Attention weights: outputs.attentions is a tuple of per-layer tensors
+    # (batch, n_heads, seq, seq).  Drop the batch dim → (n_heads, seq, seq).
+    attn_matrices = []
+    if outputs.attentions is not None:
+        for a in outputs.attentions:
+            attn_matrices.append(a[0].to(torch.float32).cpu())
 
     # Compute deltas from hook captures
     # For GPT-2: each block does hidden = hidden + attn(ln1(hidden)) then hidden = hidden + mlp(ln2(hidden))
@@ -270,6 +280,7 @@ def extract_decomposed_standard(
         "trajectory":  hidden_states,
         "attn_deltas": attn_deltas,
         "ffn_deltas":  ffn_deltas,
+        "attentions":  attn_matrices,   # (n_layers,) of (n_heads, seq, seq)
         "tokens":      tokens,
     }
 
@@ -293,6 +304,30 @@ def energy_by_component(
 
     Energy is computed on L2-normed versions of each.
 
+    Attribution fractions
+    ---------------------
+    The previous implementation used abs(delta_attn) / (abs(delta_attn) +
+    abs(delta_ffn)), which is insensitive to sign.  When one component drops
+    energy and the other raises it — which is common at violation layers where
+    attention and FFN partially oppose each other — both components received
+    positive fractions summing to 1, masking the opposition.
+
+    The corrected fractions measure each component's contribution to the
+    *realised* energy drop:
+
+      attn_frac = max(0, -delta_attn) / max(|delta_total|, ε)
+      ffn_frac  = max(0, -delta_ffn)  / max(|delta_total|, ε)
+
+    Interpretation:
+      - attn_frac > 1 means attention drops more than the total realised drop
+        (FFN is actively opposing it).
+      - attn_frac = 0 means attention raised energy (not a contributor to the
+        violation).
+      - attn_frac + ffn_frac can exceed 1 when the components partially cancel.
+
+    The boolean flags attn_opposes and ffn_opposes mark when a component is
+    working against the violation direction (delta > 0 while total delta < 0).
+
     Parameters
     ----------
     hidden_before : (n_tokens, d) float
@@ -305,7 +340,10 @@ def energy_by_component(
     dict with:
       e_before, e_after, e_attn_only, e_ffn_only : float
       delta_total, delta_attn, delta_ffn          : float
-      attn_frac, ffn_frac                         : float (of total delta)
+      delta_cross                                 : float
+      attn_frac, ffn_frac                         : float (signed, see above)
+      attn_opposes, ffn_opposes                   : bool
+      attn_sign, ffn_sign, cross_sign             : str ("drop" | "rise")
     """
     def _energy(X_raw):
         X = X_raw / np.maximum(np.linalg.norm(X_raw, axis=-1, keepdims=True), 1e-10)
@@ -322,18 +360,21 @@ def energy_by_component(
     e_attn_only = _energy(h_attn_only)
     e_ffn_only  = _energy(h_ffn_only)
 
-    delta_total = e_after - e_before
+    delta_total = e_after     - e_before
     delta_attn  = e_attn_only - e_before
-    delta_ffn   = e_ffn_only - e_before
+    delta_ffn   = e_ffn_only  - e_before
+    delta_cross = delta_total - delta_attn - delta_ffn
 
-    # Attribution fraction (how much of the total delta each component explains)
-    denom = abs(delta_attn) + abs(delta_ffn)
-    if denom < 1e-12:
-        attn_frac = 0.5
-        ffn_frac  = 0.5
-    else:
-        attn_frac = abs(delta_attn) / denom
-        ffn_frac  = abs(delta_ffn) / denom
+    # Signed attribution: fraction of the realised drop each component explains.
+    # max(0, -delta) picks out only the energy-decreasing (violation) direction.
+    denom = max(abs(delta_total), 1e-12)
+    attn_frac = max(0.0, -delta_attn) / denom
+    ffn_frac  = max(0.0, -delta_ffn)  / denom
+
+    # Opposition flags: component is raising energy while total is dropping.
+    is_violation = delta_total < -1e-6
+    attn_opposes = bool(is_violation and delta_attn > 1e-6)
+    ffn_opposes  = bool(is_violation and delta_ffn  > 1e-6)
 
     return {
         "e_before":    e_before,
@@ -343,13 +384,15 @@ def energy_by_component(
         "delta_total": delta_total,
         "delta_attn":  delta_attn,
         "delta_ffn":   delta_ffn,
-        "delta_cross": delta_total - delta_attn - delta_ffn,
+        "delta_cross": delta_cross,
         "attn_frac":   attn_frac,
         "ffn_frac":    ffn_frac,
+        "attn_opposes": attn_opposes,
+        "ffn_opposes":  ffn_opposes,
         # Sign: negative = energy-decreasing (violation direction)
-        "attn_sign":   "drop" if delta_attn < -1e-6 else "rise",
-        "ffn_sign":    "drop" if delta_ffn < -1e-6 else "rise",
-        "cross_sign":  "drop" if (delta_total - delta_attn - delta_ffn) < -1e-6 else "rise",
+        "attn_sign":   "drop" if delta_attn  < -1e-6 else "rise",
+        "ffn_sign":    "drop" if delta_ffn   < -1e-6 else "rise",
+        "cross_sign":  "drop" if delta_cross < -1e-6 else "rise",
     }
 
 
@@ -407,31 +450,55 @@ def save_decomposed(
     run_dir: Path,
 ) -> None:
     """
-    Save attn and FFN deltas for Phase 3 crosscoder training.
+    Save attn and FFN deltas for Phase 3 crosscoder training and Phase 2
+    FFN subspace analysis.
 
-    Writes:
-      attn_deltas.npz  — (n_layers, n_tokens, d) L2-normed attention deltas
-      ffn_deltas.npz   — (n_layers, n_tokens, d) L2-normed FFN deltas
+    Two files are written per component:
+
+      {attn,ffn}_deltas_raw.npz
+        (n_layers, n_tokens, d) float32 — unnormalised residual-stream deltas.
+        Use these for energy magnitude analysis (ffn_total_energy, cross-term
+        analysis) where scale carries information.
+
+      {attn,ffn}_deltas_normed.npz
+        (n_layers, n_tokens, d) float32 — per-token-vector L2-normalised.
+        Use these when only direction matters (subspace projection fractions,
+        cosine-based similarity).  Kept for back-compat with any code that
+        already loads the old single normed file.
+
+    The previous implementation only saved normed deltas, causing
+    ffn_total_energy z-scores in ffn_subspace.py to be meaningless (all
+    norms ≈ 1.0 after normalisation).
     """
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    def _stack_and_norm(deltas):
+    def _stack(deltas):
+        """Stack a list of (n_tokens, d) tensors/arrays into (n_layers, n_tokens, d)."""
         if not deltas:
             return np.array([])
-        stacked = np.stack([
-            d.numpy() if hasattr(d, 'numpy') else d for d in deltas
-        ])
-        # L2-normalize for consistency with Phase 1's activation storage
-        norms = np.linalg.norm(stacked, axis=-1, keepdims=True)
-        return stacked / np.maximum(norms, 1e-10)
+        return np.stack([
+            d.numpy() if hasattr(d, "numpy") else d for d in deltas
+        ]).astype(np.float32)
 
-    attn_normed = _stack_and_norm(decomposed["attn_deltas"])
-    ffn_normed  = _stack_and_norm(decomposed["ffn_deltas"])
+    def _l2_norm_rows(arr):
+        """Per-token-vector L2 normalisation: each (d,) row becomes unit length."""
+        norms = np.linalg.norm(arr, axis=-1, keepdims=True)
+        return arr / np.maximum(norms, 1e-10)
 
-    if attn_normed.size > 0:
-        np.savez_compressed(run_dir / "attn_deltas.npz", attn_deltas=attn_normed)
-    if ffn_normed.size > 0:
-        np.savez_compressed(run_dir / "ffn_deltas.npz", ffn_deltas=ffn_normed)
+    for name, deltas in [("attn", decomposed["attn_deltas"]),
+                          ("ffn",  decomposed["ffn_deltas"])]:
+        raw = _stack(deltas)
+        if raw.size == 0:
+            continue
 
-    print(f"    Saved decomposed deltas to {run_dir}/")
+        # Raw: preserve scale for energy analysis.
+        np.savez_compressed(run_dir / f"{name}_deltas_raw.npz",
+                            **{f"{name}_deltas": raw})
+
+        # Normed: direction-only for subspace projection.
+        normed = _l2_norm_rows(raw)
+        np.savez_compressed(run_dir / f"{name}_deltas_normed.npz",
+                            **{f"{name}_deltas": normed})
+
+    print(f"    Saved decomposed deltas (raw + normed) to {run_dir}/")

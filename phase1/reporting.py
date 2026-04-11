@@ -16,6 +16,8 @@ import numpy as np
 from collections import Counter
 from pathlib import Path
 
+from scipy.stats import spearmanr
+
 from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, PROMPTS
 
 
@@ -724,12 +726,50 @@ def generate_llm_report(results: dict, save_dir: Path):
         if merge_transitions:
             W("  Merge transitions:")
             for ev in merge_transitions:
-                W(f"    Layer {ev['layer_from']}→{ev['layer_to']}: "
+                lf = ev["layer_from"]
+                lt = ev["layer_to"]
+                W(f"    Layer {lf}→{lt}: "
                   f"{ev['n_merges']} merge(s), "
                   f"{ev['n_births']} birth(s), "
                   f"{ev['n_deaths']} death(s)")
+
+                # Build token membership maps for both layers.
+                # labels_from[i] = HDBSCAN cluster id for token i at layer_from.
+                # Only built when HDBSCAN data is present in the layer record.
+                def _tok_map(layer_idx: int) -> dict:
+                    """Return {cluster_id: [token_string, ...]} for a layer."""
+                    lr_data = layers[layer_idx] if layer_idx < len(layers) else {}
+                    hdb     = lr_data.get("clustering", {}).get("hdbscan", {})
+                    lbls    = hdb.get("labels")
+                    if lbls is None:
+                        return {}
+                    result: dict = {}
+                    for tok_idx, cid in enumerate(lbls):
+                        if cid == -1:
+                            continue
+                        tok_str = tokens[tok_idx] if tok_idx < len(tokens) else f"tok{tok_idx}"
+                        result.setdefault(cid, []).append(tok_str)
+                    return result
+
+                map_from = _tok_map(lf)
+                map_to   = _tok_map(lt)
+
                 for prev_ids, curr_id in ev.get("merges", []):
                     W(f"      Clusters {prev_ids} → {curr_id}")
+                    # Show absorbing cluster membership after merge.
+                    absorbing = map_to.get(curr_id, [])
+                    if absorbing:
+                        shown = absorbing[:15]
+                        suffix = f" … (+{len(absorbing)-15} more)" if len(absorbing) > 15 else ""
+                        W(f"        absorbing cluster {curr_id} now contains: "
+                          f"{shown}{suffix}")
+                    # For each absorbed cluster, show which tokens it contributed.
+                    for pid in prev_ids:
+                        donated = map_from.get(pid, [])
+                        if donated:
+                            shown = donated[:15]
+                            suffix = f" … (+{len(donated)-15} more)" if len(donated) > 15 else ""
+                            W(f"        ← cluster {pid} donated: {shown}{suffix}")
         # Long-lived trajectories (lifespan > 50% of total layers)
         long_lived = [
             t for t in ct.get("trajectories", [])
@@ -810,6 +850,67 @@ def generate_llm_report(results: dict, save_dir: Path):
         W(f"  beta={beta}: total_increase={total_increase:.6f}, "
           f"violations={n_violations}, max_single_drop={max_drop:.6f}, "
           f"violation_layers={viol_str}")
+    W("")
+
+    W("")
+
+    W("VIOLATION DISTRIBUTION ANALYSIS")
+    W("-" * 40)
+    W("Three secondary analyses on the energy violation events.")
+    W("  (a) Are violations concentrated inside identified plateau windows?")
+    W("      Violations during stable periods are anomalous — the geometry should")
+    W("      be static, so any disruption needs explanation.")
+    W("  (b) Are violations larger at merge-event layers than elsewhere?")
+    W("      If merges are energetically costly, mean |ΔE| should spike at merge layers.")
+    W("  (c) Does violation magnitude predict the subsequent change in effective rank?")
+    W("      A large energy drop followed by a rank rise = reset event.")
+    W("")
+    plateau_layer_set_viol = set(results.get("plateau_layers", []))
+    for beta in [1.0, 2.0]:
+        energies_b = [r["energies"].get(beta, float("nan")) for r in layers]
+        diffs_b    = np.diff(energies_b)
+        viol_idxs  = [i + 1 for i, d in enumerate(diffs_b) if d < -1e-6]
+        if not viol_idxs:
+            W(f"  beta={beta}: no violations — distribution analysis not applicable.")
+            continue
+        viol_magnitudes = [abs(diffs_b[i - 1]) for i in viol_idxs]
+
+        # (a) Fraction of violations inside plateaus
+        in_plateau  = [li for li in viol_idxs if li in plateau_layer_set_viol]
+        frac_in_plat = len(in_plateau) / len(viol_idxs)
+        W(f"  beta={beta}:  {len(viol_idxs)} violations total")
+        W(f"    (a) {len(in_plateau)}/{len(viol_idxs)} ({frac_in_plat:.0%}) violations inside plateau windows"
+          + ("  [ANOMALOUS — geometry should be static here]" if frac_in_plat > 0.3 else ""))
+
+        # (b) Violations at merge layers vs non-merge layers
+        merge_viol  = [abs(diffs_b[i - 1]) for i in viol_idxs if i in merge_layer_indices]
+        other_viol  = [abs(diffs_b[i - 1]) for i in viol_idxs if i not in merge_layer_indices]
+        if merge_viol and other_viol:
+            W(f"    (b) mean |ΔE| at merge layers: {np.mean(merge_viol):.6f}  "
+              f"vs non-merge: {np.mean(other_viol):.6f}"
+              + ("  [MERGE IS COSTLIER]" if np.mean(merge_viol) > np.mean(other_viol) * 1.5 else ""))
+        elif merge_viol:
+            W(f"    (b) all violations are at merge layers (mean |ΔE|={np.mean(merge_viol):.6f})")
+        else:
+            W(f"    (b) no violations coincide with merge-event layers")
+
+        # (c) Spearman ρ between |ΔE_L| and Δrank_{L+1}
+        # Δrank = rank[L+1] - rank[L]; positive = rank rose (reset-like event)
+        rho_pairs = []
+        for i in viol_idxs:
+            if i < len(layers) - 1:
+                delta_e    = abs(diffs_b[i - 1])
+                delta_rank = layers[i + 1]["effective_rank"] - layers[i]["effective_rank"]
+                rho_pairs.append((delta_e, delta_rank))
+        if len(rho_pairs) >= 4:
+            rho_e, rho_p = spearmanr([p[0] for p in rho_pairs],
+                                     [p[1] for p in rho_pairs])
+            sig = "p<0.05" if rho_p < 0.05 else f"p={rho_p:.3f}"
+            W(f"    (c) Spearman ρ(|ΔE|, Δrank_next) = {rho_e:.3f}  ({sig}, n={len(rho_pairs)})"
+              + ("  [RESET SIGNAL: large drops precede rank rises]"
+                 if rho_e > 0.3 and rho_p < 0.05 else ""))
+        else:
+            W(f"    (c) insufficient paired data for rank correlation (n={len(rho_pairs)} < 4)")
     W("")
 
     # ------------------------------------------------------------------
@@ -999,6 +1100,43 @@ def generate_llm_report(results: dict, save_dir: Path):
             W("         not during a stable metastable plateau — treat with caution.")
     W("")
 
+    W("")
+
+    W("FIEDLER–CLUSTER CORRELATION")
+    W("-" * 40)
+    W("Spearman ρ between mean Fiedler value and HDBSCAN cluster count across layers.")
+    W("Validates whether low Fiedler (disconnected attention graph) co-occurs with high")
+    W("cluster count (geometric multi-cluster structure).  ρ < -0.4 = interpretable signal;")
+    W("ρ ≈ 0 = Fiedler and geometry are telling different stories.")
+    W("")
+    # Build paired (fiedler, hdb_k) for layers that have both values.
+    fied_hdb_pairs = [
+        (r["sinkhorn"]["fiedler_mean"],
+         r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan")))
+        for r in layers
+        if "sinkhorn" in r
+        and not np.isnan(r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan")))
+    ]
+    if len(fied_hdb_pairs) >= 4:
+        fied_arr = np.array([p[0] for p in fied_hdb_pairs])
+        hdb_arr  = np.array([p[1] for p in fied_hdb_pairs])
+        rho, pval = spearmanr(fied_arr, hdb_arr)
+        sig = "significant" if pval < 0.05 else "not significant"
+        direction = ""
+        if not np.isnan(rho):
+            if rho < -0.4:
+                direction = "  [SIGNAL] Strong negative correlation — Fiedler tracks cluster geometry."
+            elif rho < 0:
+                direction = "  [WEAK] Negative but weak — partial alignment between metrics."
+            else:
+                direction = "  [NOTE] Non-negative correlation — Fiedler does NOT co-vary with cluster count."
+        W(f"  Spearman ρ = {rho:.4f}  (p={pval:.4f}, {sig}, n={len(fied_hdb_pairs)} layers)")
+        if direction:
+            W(direction)
+    else:
+        W("  Insufficient paired data (need ≥4 layers with both Sinkhorn and HDBSCAN).")
+    W("")
+
     W("SPECTRAL EIGENVALUE TABLE")
     W("-" * 40)
     W("Raw Laplacian eigenvalues (λ₁ … λ_N) and eigengaps (Δλ) per layer.")
@@ -1061,6 +1199,67 @@ def generate_llm_report(results: dict, save_dir: Path):
                 W(f"  Layer {r['layer']:2d}: k={k}  k2={k2}  "
                   f"dom_gap={dom_gap:.4f}@pos{dom_idx+1}  ratio={ratio:.1f}x  "
                   f"second_gap_ratio={sgr:.1f}x")
+    W("")
+
+    W("")
+
+    W("FIEDLER BIPARTITION LABELING")
+    W("-" * 40)
+    W("The second Laplacian eigenvector (Fiedler vector) partitions tokens into two")
+    W("hemispheres.  Printed at the first layer where spectral k=2, and at any layer")
+    W("where the bipartition changes significantly from the previous layer.")
+    W("Hypothesis: at early layers this separates CLS/SEP from content, or function")
+    W("words from content words.  At metastable layers it should stabilise.")
+    W("")
+    # Find all layers where spectral k == 2 and bipartition data is available.
+    k2_layers = [
+        r for r in layers
+        if r["spectral"]["k_eigengap"] == 2
+        and r.get("fiedler_bipartition") is not None
+    ]
+    if not k2_layers:
+        # Fall back to first layer with any bipartition data
+        k2_layers = [r for r in layers if r.get("fiedler_bipartition") is not None][:1]
+
+    def _bipartition_str(lr: dict) -> str:
+        bp = lr.get("fiedler_bipartition")
+        if bp is None:
+            return "  (no bipartition data)"
+        pos_tokens = [tokens[i] for i, s in enumerate(bp) if s >= 0 and i < len(tokens)]
+        neg_tokens = [tokens[i] for i, s in enumerate(bp) if s <  0 and i < len(tokens)]
+        pos_str = str(pos_tokens[:12]) + (" …" if len(pos_tokens) > 12 else "")
+        neg_str = str(neg_tokens[:12]) + (" …" if len(neg_tokens) > 12 else "")
+        return (f"  (+) side ({len(pos_tokens)} tokens): {pos_str}\n"
+                f"  (−) side ({len(neg_tokens)} tokens): {neg_str}")
+
+    prev_bp = None
+    reported = 0
+    for r in layers:
+        bp = r.get("fiedler_bipartition")
+        if bp is None:
+            continue
+        is_k2_layer = r["spectral"]["k_eigengap"] == 2
+        # Detect bipartition flip: fraction of tokens that changed sign vs previous.
+        if prev_bp is not None and len(bp) == len(prev_bp):
+            n_flipped = sum(1 for a, b in zip(bp, prev_bp) if a != b)
+            flip_frac = n_flipped / len(bp)
+        else:
+            flip_frac = 1.0  # first layer or size changed
+        # Report at first k=2 layer, at any layer where >30% of tokens flip side,
+        # and always at the very first layer, up to 5 total.
+        should_report = (
+            (reported == 0) or is_k2_layer or (flip_frac > 0.30)
+        ) and reported < 5
+        if should_report:
+            flip_note = f"  [{flip_frac:.0%} tokens flipped side vs previous reported layer]" if reported > 0 else ""
+            W(f"  Layer {r['layer']}  (spectral k={r['spectral']['k_eigengap']}){flip_note}")
+            W(_bipartition_str(r))
+            W("")
+            reported += 1
+        prev_bp = bp
+
+    if reported == 0:
+        W("  No bipartition data available (spectral eigengap did not run with return_fiedler_vec).")
     W("")
 
     W("PCA VARIANCE TRAJECTORY")
@@ -1420,7 +1619,42 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
             W(f"    hdbscan k plat  : {_plateau_str(p_hdb)}")
 
     W("")
-    W("MERGE EVENT LOCATIONS BY RUN")
+    W("PROMPT SENSITIVITY")
+    W("-" * 40)
+    W("For each model with ≥2 prompts, SD of plateau onset layer across prompts.")
+    W("SD < 2 = plateau onset is a weight-level property (input-independent);")
+    W("SD ≥ 2 = plateau onset is content-driven (changes with prompt).")
+    W("")
+    by_model_ps: dict = {}
+    for r in all_results:
+        by_model_ps.setdefault(r["model"], []).append(r)
+    any_multi = False
+    for model, runs in sorted(by_model_ps.items()):
+        if len(runs) < 2:
+            continue
+        any_multi = True
+        onsets = []
+        for run in runs:
+            mass_ = [l["ip_mass_near_1"] for l in run["layers"]]
+            plats = detect_plateaus(mass_, window=2, tol=0.10)
+            onset = plats[0][0] if plats else None
+            onsets.append((run["prompt"], onset))
+        valid = [(p, o) for p, o in onsets if o is not None]
+        no_plateau = [(p, o) for p, o in onsets if o is None]
+        W(f"  {model}:")
+        for prompt, onset in valid:
+            W(f"    {prompt:<26} plateau onset = layer {onset}")
+        for prompt, _ in no_plateau:
+            W(f"    {prompt:<26} no plateau detected")
+        if len(valid) >= 2:
+            onset_vals = [o for _, o in valid]
+            sd = float(np.std(onset_vals))
+            classification = "weight-level" if sd < 2.0 else "content-driven"
+            W(f"    SD of onset across prompts: {sd:.2f}  → {classification}")
+        W("")
+    if not any_multi:
+        W("  Only one run per model — prompt sensitivity requires ≥2 prompts per model.")
+    W("")
     W("-" * 40)
     for r in all_results:
         spec_k_ = [l["spectral"]["k_eigengap"] for l in r["layers"]]
@@ -1627,6 +1861,22 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
         W("These runs test collapse speed of a degenerate initial distribution.")
         W("They are NOT metastability tests and are excluded from the above analyses.")
         W("")
+        W("Two-timescale ratio: plateau_width / collapse_onset_layer.")
+        W("Theory predicts this ratio >> 1 and growing with iteration depth.")
+        W("A ratio near 1 means the metastable window is no wider than the fast collapse.")
+        W("")
+        # Pre-build {model_name: mean_plateau_width} from metastability runs.
+        model_plateau_width: dict = {}
+        for r in all_results:
+            mass_ = [l["ip_mass_near_1"] for l in r["layers"]]
+            plats = detect_plateaus(mass_, window=2, tol=0.10)
+            widths = [e - s + 1 for s, e, _ in plats]
+            if widths:
+                model_plateau_width.setdefault(r["model"], []).extend(widths)
+        mean_plateau_width: dict = {
+            m: float(np.mean(ws)) for m, ws in model_plateau_width.items()
+        }
+
         for r in control_results:
             layers_ = r["layers"]
             mass1_ = [l["ip_mass_near_1"] for l in layers_]
@@ -1636,10 +1886,25 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
             W(f"    Tokens: {r['n_tokens']}  Layers: {r['n_layers']}")
             W(f"    Mass>0.9 at layer 0: {mass1_[0]:.4f}  Final: {mass1_[-1]:.4f}")
             W(f"    Rank at layer 0: {erank_[0]:.2f}  Final: {erank_[-1]:.2f}")
-            # Collapse layer = first layer where mass > 0.9
             collapse_layers = [i for i, m in enumerate(mass1_) if m > 0.9]
             if collapse_layers:
-                W(f"    Collapse onset (mass>0.9): layer {collapse_layers[0]}")
+                onset = collapse_layers[0]
+                W(f"    Collapse onset (mass>0.9): layer {onset}")
+                # Look up matching model's mean plateau width.
+                mpw = mean_plateau_width.get(r["model"])
+                if mpw is not None and onset > 0:
+                    ratio = mpw / onset
+                    interp = (
+                        "metastable window >> fast collapse  [TWO-TIMESCALE CONFIRMED]"
+                        if ratio > 2.0 else
+                        "metastable window ≈ fast collapse  [WEAK SEPARATION]"
+                        if ratio > 1.0 else
+                        "metastable window NARROWER than collapse  [NO SEPARATION]"
+                    )
+                    W(f"    Mean plateau width (metastability runs): {mpw:.1f} layers")
+                    W(f"    Ratio plateau_width / collapse_onset = {ratio:.2f}  → {interp}")
+                elif mpw is None:
+                    W(f"    No matching metastability run found for ratio computation.")
             else:
                 W(f"    No collapse (mass never exceeds 0.9)")
             W("")

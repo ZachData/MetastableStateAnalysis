@@ -314,7 +314,7 @@ class Crosscoder(nn.Module):
         (n_features, n_layers) — ||W_dec[l, f, :]|| for each (f, l)
         """
         # W_dec is (L, F, d), we want (F, L)
-        return self.W_dec.norm(dim=-1).permute(1, 0)
+        return self.W_dec.norm(dim=-1).permute(1, 0).cpu()
 
     @torch.no_grad()
     def decoder_directions(self) -> torch.Tensor:
@@ -326,4 +326,4 @@ class Crosscoder(nn.Module):
         (n_layers, n_features, d_model) — same shape as W_dec but unit-normed
         """
         norms = self.W_dec.norm(dim=-1, keepdim=True).clamp(min=1e-8)
-        return self.W_dec / norms
+        return (self.W_dec / norms).cpu()

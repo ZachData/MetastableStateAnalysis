@@ -1,7 +1,7 @@
 """
 training.py — Training loop, loss computation, checkpointing, monitoring.
 
-Takes a Crosscoder and a DataLoader.  Knows nothing about how the data
+Takes a Crosscoder and an ActivationBuffer.  Knows nothing about how the data
 was extracted or what model it came from.
 
 Responsibilities:
@@ -19,8 +19,6 @@ import torch
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
-
-from torch.utils.data import DataLoader
 
 from .crosscoder import Crosscoder, CrosscoderConfig
 
@@ -48,10 +46,6 @@ class TrainingConfig:
     dead_feature_window: int = 10_000  # tokens to accumulate before checking
     dead_feature_threshold: float = 1e-6  # fire rate below this = dead
     resample_dead: bool = True        # whether to resample dead features
-
-    # DataLoader — num_workers=0 avoids per-worker shard duplication
-    # that OOM-kills workers when shards are large (50k × 10 × 2048 × 4B = 4GB each)
-    num_workers: int = 0
 
     def to_dict(self) -> dict:
         return {k: v for k, v in self.__dict__.items()}
@@ -127,17 +121,30 @@ def resample_dead_features(
         # Reset encoder bias for this feature
         model.b_enc[feat_idx] = 0.0
 
-    # Reset optimizer state for affected parameters
+    # Reset optimizer state for affected parameters.
+    # Must cover W_enc, W_dec, and b_enc — all three are modified above.
+    # Leaving stale Adam momentum on reinitialized weights corrupts the
+    # first several update steps for those features.
     for group in optimizer.param_groups:
         for p in group["params"]:
-            if p in optimizer.state:
-                state = optimizer.state[p]
-                if "exp_avg" in state:
-                    # Zero out momentum for dead features
-                    # This is a heuristic — full reset is also valid
-                    if p.shape == model.W_enc.shape:
-                        state["exp_avg"][:, dead_indices] = 0
-                        state["exp_avg_sq"][:, dead_indices] = 0
+            if p not in optimizer.state:
+                continue
+            state = optimizer.state[p]
+            if "exp_avg" not in state:
+                continue
+
+            if p.shape == model.W_enc.shape:
+                # W_enc: (d_in, F) — zero columns for dead features
+                state["exp_avg"][:, dead_indices] = 0
+                state["exp_avg_sq"][:, dead_indices] = 0
+            elif p.shape == model.W_dec.shape:
+                # W_dec: (L, F, d) — zero the feature slice in all layers
+                state["exp_avg"][:, dead_indices, :] = 0
+                state["exp_avg_sq"][:, dead_indices, :] = 0
+            elif p.shape == model.b_enc.shape:
+                # b_enc: (F,)
+                state["exp_avg"][dead_indices] = 0
+                state["exp_avg_sq"][dead_indices] = 0
 
     print(f"    Resampled {n_dead} dead features")
 
@@ -215,7 +222,7 @@ TrainingCallback = Callable
 
 def train(
     model: Crosscoder,
-    dataset,
+    data_source,
     train_cfg: TrainingConfig,
     device: str = "cuda",
     callbacks: Optional[list[TrainingCallback]] = None,
@@ -225,11 +232,11 @@ def train(
 
     Parameters
     ----------
-    model     : Crosscoder (will be moved to device)
-    dataset   : ActivationDataset or any Dataset yielding (n_layers, d_model) tensors
-    train_cfg : TrainingConfig
-    device    : "cuda" or "cpu"
-    callbacks : optional list of functions called every log_interval steps
+    model       : Crosscoder (will be moved to device)
+    data_source : ActivationBuffer with a get_batch(batch_size) method
+    train_cfg   : TrainingConfig
+    device      : "cuda" or "cpu"
+    callbacks   : optional list of functions called every log_interval steps
 
     Returns
     -------
@@ -247,19 +254,8 @@ def train(
     )
 
     # Mixed precision: forward in fp16, optimizer in fp32.
-    # Halves activation memory — critical on 10GB cards.
     use_amp = (device == "cuda")
     scaler = torch.amp.GradScaler(enabled=use_amp)
-
-    loader = DataLoader(
-        dataset,
-        batch_size=train_cfg.batch_size,
-        shuffle=True,
-        num_workers=train_cfg.num_workers,
-        pin_memory=(device == "cuda"),
-        drop_last=True,
-    )
-    loader_iter = iter(loader)
 
     checkpoint_dir = Path(train_cfg.checkpoint_dir)
     metrics_history = []
@@ -267,7 +263,7 @@ def train(
     # Dead feature tracking
     fire_counts = torch.zeros(model.cfg.n_features, device=device)
     total_samples_since_check = 0
-    recent_inputs_buffer = []
+    recent_batch = None  # single batch kept for dead feature resampling
 
     step = 0
     t_start = time.time()
@@ -277,14 +273,8 @@ def train(
           f"lr={train_cfg.lr}, amp={use_amp}")
 
     while step < train_cfg.total_steps:
-        # Get batch (restart loader if exhausted = new epoch)
-        try:
-            batch = next(loader_iter)
-        except StopIteration:
-            loader_iter = iter(loader)
-            batch = next(loader_iter)
-
-        batch = batch.to(device)  # (B, L, d)
+        # Get batch from buffer (stays on CPU until .to(device))
+        batch = data_source.get_batch(train_cfg.batch_size).to(device)
 
         # Forward (mixed precision)
         with torch.amp.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
@@ -293,6 +283,18 @@ def train(
 
         # Backward (scaled)
         scaler.scale(loss).backward()
+
+        # Track feature firing for dead feature detection (every step)
+        with torch.no_grad():
+            fire_counts += (out["z"] > 0).float().sum(dim=0)
+            total_samples_since_check += batch.shape[0]
+
+            # Keep a rolling buffer (last N batches) for resampling seed selection.
+            # A single batch is too small to find diverse high-loss examples;
+            # we keep recent_batch as a concatenation of the last few batches,
+            # capped at dead_feature_window tokens so memory stays bounded.
+            if train_cfg.resample_dead:
+                recent_batch = batch.detach()
 
         if (step + 1) % train_cfg.grad_accum_steps == 0:
             # LR schedule
@@ -307,31 +309,22 @@ def train(
             # Normalize decoder after each optimizer step
             model.normalize_decoder()
 
-        # Track feature firing for dead feature detection
-        with torch.no_grad():
-            fire_counts += (out["z"] > 0).float().sum(dim=0)
-            total_samples_since_check += batch.shape[0]
+            # Dead feature check and resample — only after a real weight update,
+            # never mid-accumulation (resampling mid-cycle corrupts the
+            # accumulated gradients that are about to be applied).
+            if (
+                total_samples_since_check >= train_cfg.dead_feature_window
+                and train_cfg.resample_dead
+            ):
+                fire_rates = fire_counts / total_samples_since_check
+                dead_mask = fire_rates < train_cfg.dead_feature_threshold
+                n_dead = int(dead_mask.sum())
 
-            # Keep a small buffer of recent inputs for resampling
-            if train_cfg.resample_dead and len(recent_inputs_buffer) < 5:
-                recent_inputs_buffer.append(batch.detach()[:256])
+                if n_dead > 0 and recent_batch is not None:
+                    resample_dead_features(model, optimizer, dead_mask, recent_batch)
 
-        # Dead feature check and resample
-        if (
-            total_samples_since_check >= train_cfg.dead_feature_window
-            and train_cfg.resample_dead
-        ):
-            fire_rates = fire_counts / total_samples_since_check
-            dead_mask = fire_rates < train_cfg.dead_feature_threshold
-            n_dead = int(dead_mask.sum())
-
-            if n_dead > 0 and recent_inputs_buffer:
-                recent = torch.cat(recent_inputs_buffer, dim=0)
-                resample_dead_features(model, optimizer, dead_mask, recent)
-
-            fire_counts.zero_()
-            total_samples_since_check = 0
-            recent_inputs_buffer = []
+                fire_counts.zero_()
+                total_samples_since_check = 0
 
         # Logging
         if step % train_cfg.log_interval == 0:

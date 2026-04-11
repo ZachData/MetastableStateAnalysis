@@ -54,8 +54,14 @@ def induction_score_per_head(
     if n_tok < 3:
         return scores
 
+    # Detect causal masking: if upper triangle of attention is ~zero,
+    # the model is causal and we must exclude future positions from
+    # the denominator (not just rely on zero attention weights).
+    # Check head 0 as representative.
+    upper_mass = np.abs(np.triu(attn[0], k=1)).sum()
+    is_causal = upper_mass < 1e-6
+
     # Build lookup: token_string -> list of positions where it appears.
-    # This avoids O(n^2) scanning for each destination position.
     token_positions = {}
     for pos, tok in enumerate(tokens):
         token_positions.setdefault(tok, []).append(pos)
@@ -67,20 +73,20 @@ def induction_score_per_head(
 
     for i in range(2, n_tok):
         prev_tok = tokens[i - 1]
-        # Find all positions j where token[j] == token[i-1]
-        # and j+1 is a valid source (j+1 != i, j+1 < n_tok)
         matching_positions = token_positions.get(prev_tok, [])
         for j in matching_positions:
             src = j + 1
             if src >= n_tok or src == i:
                 continue
-            # For causal models: src must be <= i.
-            # We check this at the attention level — if attn[h, i, src] is
-            # zero (masked), it contributes zero and doesn't inflate the score.
-            # For bidirectional models, all positions contribute.
-            # Also skip if j == i-1 (trivial self-match: the "previous token"
+            # Skip trivial self-match (j == i-1 means the "previous token"
             # is the same position we're using as context).
             if j == i - 1:
+                continue
+            # For causal models: only count positions the model can attend to.
+            # Without this gate, future positions inflate the denominator
+            # while contributing zero attention, diluting the score on long
+            # sequences.
+            if is_causal and src > i:
                 continue
             score_accum += attn[:, i, src]  # (n_heads,)
             total_pairs += 1

@@ -179,7 +179,17 @@ def analyze_trajectory(
         lr["cluster_centroids_kmeans"] = centroids.tolist()
 
         # --- Spectral eigengap on Gram matrix ---
-        lr["spectral"] = spectral_eigengap_k(G)
+        # Request the Fiedler vector (second eigenvector) so we can record which
+        # tokens fall on each side of the dominant bipartition.  sign(v[i]) > 0
+        # = "positive side", < 0 = "negative side".  Stored as a list of +1/-1
+        # ints for JSON serialisation.  Used in reporting to label bipartition.
+        spectral_result = spectral_eigengap_k(G, return_fiedler_vec=True)
+        lr["spectral"] = spectral_result
+        fvec = spectral_result.get("fiedler_vec")
+        if fvec is not None:
+            lr["fiedler_bipartition"] = [int(np.sign(v)) if v != 0.0 else 1 for v in fvec]
+        else:
+            lr["fiedler_bipartition"] = None
 
         # --- Multi-scale cluster nesting (P1-3) ---
         # Run spectral eigengap within each HDBSCAN cluster to detect
