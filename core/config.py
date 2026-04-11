@@ -28,6 +28,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # ---------------------------------------------------------------------------
 
 BETA_VALUES       = [0.1, 1.0, 2.0, 5.0]
+LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
 
 # Previously np.linspace(0.05, 0.6, 5, 12) — the 4th positional arg is
 # `endpoint` (expects bool), so 12 was coerced to True, producing only 5

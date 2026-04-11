@@ -133,7 +133,7 @@ def cluster_count_sweep(
 
     if HAS_HDBSCAN:
         hdb        = hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed")
-        hdb_labels = hdb.fit_predict(cos_dist)
+        hdb_labels = hdb.fit_predict(cos_dist.astype(np.float64))
         n_clusters = len(set(hdb_labels)) - (1 if -1 in hdb_labels else 0)
         results["hdbscan"] = {
             "n_clusters": n_clusters,

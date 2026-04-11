@@ -22,15 +22,51 @@ from core.models import layernorm_to_sphere
 
 
 # ---------------------------------------------------------------------------
+# JSON serialisation helper
+# ---------------------------------------------------------------------------
+
+class NumpyEncoder(json.JSONEncoder):
+    """Handles numpy scalars, arrays, and numpy-typed dict keys."""
+
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
+    def iterencode(self, obj, _one_shot=False):
+        # iterencode is used for large objects and bypasses encode(); apply key
+        # coercion recursively so streaming serialisation is also safe.
+        obj = self._coerce_keys(obj)
+        return super().iterencode(obj, _one_shot=_one_shot)
+
+    @staticmethod
+    def _coerce_keys(obj):
+        if isinstance(obj, dict):
+            return {
+                (int(k) if isinstance(k, np.integer) else
+                 float(k) if isinstance(k, np.floating) else k):
+                NumpyEncoder._coerce_keys(v)
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [NumpyEncoder._coerce_keys(v) for v in obj]
+        return obj
+
+
+# ---------------------------------------------------------------------------
 # Saving
 # ---------------------------------------------------------------------------
 
 def save_run(
-        results: dict,
-        hidden_states: list,
-        attentions: list,
-        run_dir: Path,
-    ) -> None:
+    results: dict,
+    hidden_states: list,
+    attentions: list,
+    run_dir: Path,
+) -> None:
     """
     Persist everything needed to reproduce plots and reports later.
 
@@ -49,7 +85,7 @@ def save_run(
 
     # --- metrics.json ---
     with open(run_dir / "metrics.json", "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(results, f, indent=2, cls=NumpyEncoder)
 
     # --- activations.npz ---
     # Stack all layers into a single tensor, normalize in one fused op on
@@ -133,7 +169,6 @@ def save_run(
     if tracking.get("trajectories"):
         from .cluster_tracking import compute_centroid_trajectories
 
-        # Build label arrays from results
         label_arrays = []
         for layer in results["layers"]:
             hdb = layer["clustering"].get("hdbscan", {})
@@ -167,161 +202,7 @@ def save_run(
             np.savez_compressed(
                 run_dir / "plateau_attentions.npz", **plateau_attn_arrays,
             )
-    save_cross_phase_artifacts(results, run_dir)
 
-
-def save_cross_phase_artifacts(results: dict, run_dir: Path) -> None:
-    """
-    Save standalone JSON artifacts consumed by Phase 3 cross-phase analyses.
-
-    Written files:
-      pair_agreement.json        — per-layer semantic/artifact pair lists
-      head_fiedler_profile.json  — per-head mean Fiedler + classification
-      phase1_events.json         — merge_layers, violation_layers, plateau_windows,
-                                   energy_drop_pairs (all in one file for Phase 3)
-      hdbscan_labels.json        — per-layer HDBSCAN labels (compact: layer->labels)
-
-    These duplicate data already in metrics.json and clusters.npz but in a
-    format Phase 3 can load without parsing the full Phase 1 result structure.
-    """
-    run_dir = Path(run_dir)
-
-    # --- pair_agreement.json ---
-    # Collect all per-layer pair agreement data from results
-    pair_data = {}
-    layers = results.get("layers", [])
-    for lr in layers:
-        li = lr.get("layer", lr.get("layer_idx"))
-        pa = lr.get("pair_agreement")
-        if pa is None:
-            continue
-        # Convert tuple pairs to lists for JSON
-        pair_data[str(li)] = {
-            "semantic": [list(p) if isinstance(p, (tuple, list)) else p
-                         for p in pa.get("semantic", [])],
-            "artifact": [list(p) if isinstance(p, (tuple, list)) else p
-                         for p in pa.get("artifact", [])],
-            "n_semantic": pa.get("n_semantic", len(pa.get("semantic", []))),
-            "n_artifact": pa.get("n_artifact", len(pa.get("artifact", []))),
-        }
-    if pair_data:
-        with open(run_dir / "pair_agreement.json", "w") as f:
-            json.dump(pair_data, f, indent=2)
-
-    # --- head_fiedler_profile.json ---
-    # Extract from the reporting helper's logic (replicated here for standalone save)
-    head_profiles = _extract_head_fiedler_profile(results)
-    if head_profiles:
-        with open(run_dir / "head_fiedler_profile.json", "w") as f:
-            json.dump({"heads": head_profiles}, f, indent=2)
-
-    # --- phase1_events.json ---
-    events = {}
-
-    # Merge layers: layers where cluster count drops by ≥2 methods
-    merge_layers = []
-    for li, lr in enumerate(layers):
-        if lr.get("is_merge_event"):
-            merge_layers.append(lr.get("layer", li))
-    events["merge_layers"] = merge_layers
-
-    # Violation layers (energy drops)
-    violations = {}
-    for beta_key in ["1.0", "2.0", "5.0"]:
-        beta_violations = []
-        for lr in layers:
-            ev = lr.get("energy_violations", {})
-            if isinstance(ev, dict) and beta_key in ev:
-                beta_violations.extend(ev[beta_key])
-            elif isinstance(ev, list):
-                beta_violations.extend(ev)
-        if beta_violations:
-            violations[beta_key] = beta_violations
-    # Also check top-level
-    top_violations = results.get("energy_violations", {})
-    if isinstance(top_violations, dict):
-        for k, v in top_violations.items():
-            violations.setdefault(str(k), v)
-    events["energy_violations"] = violations
-
-    # Plateau windows
-    plateau_windows = results.get("plateau_windows", [])
-    events["plateau_windows"] = plateau_windows
-
-    # Energy drop pairs
-    drop_pairs = {}
-    for lr in layers:
-        li = lr.get("layer", lr.get("layer_idx"))
-        edp = lr.get("energy_drop_pairs")
-        if edp:
-            drop_pairs[str(li)] = [
-                list(p) if isinstance(p, (tuple, list)) else p
-                for p in edp
-            ]
-    events["energy_drop_pairs"] = drop_pairs
-
-    with open(run_dir / "phase1_events.json", "w") as f:
-        json.dump(events, f, indent=2)
-
-    # --- hdbscan_labels.json ---
-    # Compact format: {"layer_idx": [label_per_token, ...]}
-    hdb_labels = {}
-    for lr in layers:
-        li = lr.get("layer", lr.get("layer_idx"))
-        hdb = lr.get("clustering", {}).get("hdbscan", {})
-        labels = hdb.get("labels")
-        if labels is not None:
-            if hasattr(labels, "tolist"):
-                labels = labels.tolist()
-            hdb_labels[str(li)] = labels
-    if hdb_labels:
-        with open(run_dir / "hdbscan_labels.json", "w") as f:
-            json.dump(hdb_labels, f, indent=2)
-
-
-def _extract_head_fiedler_profile(results: dict) -> list:
-    """
-    Extract per-head Fiedler profile from results dict.
-    Mirrors the logic in reporting.py _per_head_fiedler_profile().
-    """
-    layers = results.get("layers", [])
-    if not layers:
-        return []
-
-    # Collect per-head Fiedler values across layers, excluding post-collapse
-    head_fiedlers = {}  # head_idx -> [fiedler_values]
-    for lr in layers:
-        # Skip post-collapse layers (effective_rank < 10)
-        if lr.get("effective_rank", 100) < 10:
-            continue
-        sk = lr.get("sinkhorn", {})
-        per_head = sk.get("fiedler_per_head", [])
-        for h, fval in enumerate(per_head):
-            head_fiedlers.setdefault(h, []).append(float(fval))
-
-    profiles = []
-    for h in sorted(head_fiedlers):
-        vals = head_fiedlers[h]
-        if not vals:
-            continue
-        mean_f = float(np.mean(vals))
-        std_f = float(np.std(vals))
-        if mean_f < 0.3:
-            cls = "CLUSTER"
-        elif mean_f > 0.7:
-            cls = "MIXING"
-        else:
-            cls = "MIXED"
-        profiles.append({
-            "head": h,
-            "mean_fiedler": mean_f,
-            "std_fiedler": std_f,
-            "class": cls,
-            "min_fiedler": float(min(vals)),
-            "min_layer": int(np.argmin(vals)),
-        })
-
-    return profiles
 
 # ---------------------------------------------------------------------------
 # Loading
@@ -362,7 +243,6 @@ def load_run(run_dir: Path) -> dict:
         if "energy_drop_pairs" not in layer:
             layer["energy_drop_pairs"] = {}
         elif isinstance(layer["energy_drop_pairs"], list):
-            # Old format: flat list for beta=1.0 only — migrate to dict
             old = layer["energy_drop_pairs"]
             layer["energy_drop_pairs"] = {1.0: old} if old else {}
         elif isinstance(layer["energy_drop_pairs"], dict):
@@ -456,7 +336,6 @@ def load_clusters(run_dir: Path) -> dict:
     path = Path(run_dir) / "clusters.npz"
     data = np.load(path)
 
-    # Determine layer count from the kmeans_labels keys
     layer_indices = sorted(
         int(k.split("_L")[1])
         for k in data.files
@@ -536,6 +415,7 @@ def replot_all(run_dir: Path, out_dir: Path = None) -> None:
         plot_pca_panels,
         plot_sinkhorn_detail,
         plot_spectral_eigengap,
+        plot_eigenvalue_spectra,
         plot_cka_trajectory,
     )
     from .reporting import print_summary
@@ -550,6 +430,7 @@ def replot_all(run_dir: Path, out_dir: Path = None) -> None:
     plot_pca_panels(results, out_dir)
     plot_sinkhorn_detail(results, out_dir)
     plot_spectral_eigengap(results, out_dir)
+    plot_eigenvalue_spectra(results, out_dir)
     plot_cka_trajectory(results, out_dir)
     print_summary(results)
     print(f"Done. Plots written to {out_dir}/")

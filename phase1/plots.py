@@ -28,7 +28,7 @@ from scipy.linalg import svdvals
 
 from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, SPECTRAL_MAX_K
 from core.models import layernorm_to_sphere
-from .metrics import pairwise_inner_products, effective_rank, effective_rank_from_raw
+from .metrics import pairwise_inner_products, effective_rank_from_raw
 
 
 # ---------------------------------------------------------------------------
