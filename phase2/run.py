@@ -20,6 +20,7 @@ import traceback
 import torch
 from datetime import datetime
 from pathlib import Path
+import numpy as np
 
 from core.config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
