@@ -122,7 +122,7 @@ Phase 4 outputs should be structured so Phases 5 and 6 can consume them without 
 
 ## Open questions for this phase
 
-1. **Is the chorus hypothesis viable?** If no individual feature tracks a cluster, but a clique of 5–10 co-active features does, what does that mean for SAE interpretability more broadly? It suggests features aren't atomic units of meaning — they're basis vectors in a distributed code, and the meaningful unit is the activation pattern, not the feature.
+1. **Is the chorus hypothesis viable?** If no individual feature tracks a cluster, but a clique of 5–10 co-active features does, what does that mean for SAE interpretability more broadly? It suggests features aren't atomic units of meaning — they're basis vectors in a distributed code, and the meaningful unit is the activation pattern, not the feature. Maximizing a feature and looking at the token/token interactions or choosing a cluster and seeing which features fire over it may give clues.
 
 2. **Does the low-rank AE recover V-alignment?** If yes, the story is clean: sparsity was the wrong prior for this problem, and the right decomposition (low-rank, matching cluster count) recovers the theory-to-representation link. If no, the dissociation is deeper than sparsity.
 

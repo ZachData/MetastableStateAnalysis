@@ -511,6 +511,8 @@ def _save_cross_phase_artifacts(
 def _jsonify(obj):
     """Recursively convert numpy types to Python natives for JSON."""
     import numpy as np
+    if isinstance(obj, (complex, np.complexfloating)):
+        return {"real": float(obj.real), "imag": float(obj.imag)}
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     if isinstance(obj, (np.bool_,)):
