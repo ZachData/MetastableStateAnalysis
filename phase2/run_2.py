@@ -485,21 +485,10 @@ def _save_cross_phase_artifacts(
             json.dump(_jsonify(ct_data), f, indent=2)
 
     # --- ov_per_head.json ---
-    # Per-head eigenvalues for Phase 3 head×Fiedler crossref
     per_head = ov_data.get("ov_per_head")
     if per_head is not None:
-        # per_head is typically a list of (d,) arrays of eigenvalues per head
-        serializable = []
-        for h_eigs in per_head:
-            if hasattr(h_eigs, "tolist"):
-                serializable.append({
-                    "eigenvalues_real": np.real(h_eigs).tolist(),
-                    "eigenvalues_imag": np.imag(h_eigs).tolist(),
-                })
-            else:
-                serializable.append(h_eigs)
         with open(save_dir / "ov_per_head.json", "w") as f:
-            json.dump(serializable, f, indent=2)
+            json.dump(_jsonify(per_head), f, indent=2)
 
     # --- head_ov.json ---
     head_ov = analysis.get("head_ov")
