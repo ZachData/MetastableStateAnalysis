@@ -26,6 +26,7 @@ full_analysis_extended         : run all extensions, merge into existing results
 
 import numpy as np
 from scipy.stats import spearmanr
+from __future__ import annotations
 
 from phase2.trajectory import load_phase1_events
 
@@ -496,58 +497,389 @@ def full_analysis_extended(
 
 
 def print_extended_summary(results: dict, model_name: str, prompt_key: str):
-    """Print concise summary of extended analysis."""
+    """Print concise extended analysis summary.  Delegates to *_summary_lines."""
     print(f"\n  Extended analysis ({model_name} | {prompt_key}):")
+ 
+    for lines_fn, key in (
+        (continuous_correlations_summary_lines, "continuous_correlations"),
+        (ov_norm_confound_summary_lines,        "ov_norm_confound"),
+        (zone_comparison_summary_lines,         "zone_comparison"),
+        (attractive_zone_violations_summary_lines, "attractive_zone_violations"),
+    ):
+        sub = results.get(key, {})
+        if sub:
+            for line in lines_fn(sub):
+                print(f"    {line}")
 
-    # Continuous correlations
-    cc = results.get("continuous_correlations", {})
+
+def continuous_correlations_summary_lines(result: dict) -> list[str]:
+    """LLM-ready text for continuous_energy_correlations result."""
+    if not result.get("applicable"):
+        return [f"continuous_correlations: not applicable — {result.get('reason', '')}"]
+ 
+    L = ["Continuous ΔE correlations (Spearman):"]
+    for key in (
+        "repulsive_frac_vs_delta_E",
+        "coupling_product_vs_delta_E",
+        "repulsive_frac_vs_abs_delta_E",
+        "coupling_product_vs_abs_delta_E",
+    ):
+        if key in result:
+            c = result[key]
+            sig = "*" if c.get("pval", 1) < 0.05 else " "
+            L.append(
+                f"  {key:<42s}  ρ={c['rho']:+.3f}  p={c['pval']:.3f} {sig}"
+                f"  n={c.get('n', '?')}"
+            )
+            if "interpretation" in c:
+                L.append(f"    {c['interpretation']}")
+ 
+    return L
+ 
+ 
+def ov_norm_confound_summary_lines(result: dict) -> list[str]:
+    """LLM-ready text for ov_norm_confound_check result."""
+    if not result.get("applicable"):
+        return [f"ov_norm_confound: not applicable — {result.get('reason', '')}"]
+ 
+    raw     = result.get("raw", {}).get("ov_norm_vs_violations", {})
+    partial = result.get("partial_controlling_rep_frac", {}).get("ov_norm_vs_violations", {})
+ 
+    L = ["OV spectral norm confound check:"]
+    L.append(f"  Raw correlation:     ρ={raw.get('rho', float('nan')):+.3f}  "
+             f"p={raw.get('pval', float('nan')):.3f}")
+    L.append(f"  Partial correlation: ρ={partial.get('rho', float('nan')):+.3f}  "
+             f"p={partial.get('pval', float('nan')):.3f}  (controlling rep_frac)")
+ 
+    p_rho  = partial.get("rho",  0) or 0
+    p_pval = partial.get("pval", 1) or 1
+    if abs(p_rho) < 0.1:
+        L.append("  → OV norm is NOT an independent predictor of violations")
+    elif p_pval < 0.05:
+        L.append(f"  → OV norm IS an independent predictor (confound)  ρ_partial={p_rho:+.3f}")
+    else:
+        L.append(f"  → OV norm partial correlation not significant (p={p_pval:.3f})")
+ 
+    interp = result.get("interpretation", "")
+    if interp:
+        L.append(f"  Note: {interp}")
+ 
+    return L
+ 
+ 
+def zone_comparison_summary_lines(result: dict) -> list[str]:
+    """LLM-ready text for compare_zone_methods result."""
+    if not result.get("applicable"):
+        return ["zone_comparison: not applicable"]
+ 
+    L = ["Zone classification comparison (fixed vs adaptive thresholds):"]
+    for method, data in result.get("methods", {}).items():
+        lo, hi = data.get("thresholds", (float("nan"), float("nan")))
+        rep    = data.get("n_repulsive", "?")
+        att    = data.get("n_attractive", "?")
+        cross  = data.get("crossover", "?")
+        pz     = data.get("per_zone", {})
+        v_rep  = pz.get("repulsive", {}).get("n_violations", "?")
+        v_att  = pz.get("attractive", {}).get("n_violations", "?")
+        L.append(
+            f"  {method:6s}  thresh=[{lo:.3f},{hi:.3f}]  "
+            f"rep={rep:2}  att={att:2}  cross=L{cross}  "
+            f"v_rep={v_rep}  v_att={v_att}"
+        )
+ 
+    return L
+ 
+ 
+def attractive_zone_violations_summary_lines(result: dict) -> list[str]:
+    """LLM-ready text for attractive_zone_violation_analysis result."""
+    if not result.get("applicable"):
+        return [f"attractive_zone_violations: not applicable — {result.get('reason', '')}"]
+ 
+    L = ["FFN role by zone at violation layers:"]
+    for zone_name in ("repulsive", "transition", "attractive"):
+        z = result.get(zone_name, {})
+        n = z.get("n", 0)
+        if n == 0:
+            L.append(f"  {zone_name:12s}: 0 violations")
+            continue
+        L.append(
+            f"  {zone_name:12s} ({n:2d} violations):  "
+            f"amp_rep={z.get('frac_amplifies_repulsive', 0):.0%}  "
+            f"amp_att={z.get('frac_amplifies_attractive', 0):.0%}  "
+            f"orth={z.get('frac_orthogonal', 0):.0%}  "
+            f"mean_rep={z.get('mean_ffn_repulse_frac', float('nan')):.3f}"
+        )
+ 
+    return L
+
+ 
+def build_verdict_v2_from_subresults(
+    subresults: dict,   # dict[str, SubResult]
+    ctx: dict,
+) -> dict:
+    """
+    Build the machine-readable verdict from the SubResult registry output.
+ 
+    Parameters
+    ----------
+    subresults : dict mapping spec.name -> SubResult (from run_one_prompt)
+    ctx        : shared context dict; must contain ov_data, model_name,
+                 prompt_key
+ 
+    Returns
+    -------
+    verdict dict — same keys as build_verdict_v2, fully backwards compatible
+    """
+    import numpy as np
+    from core.config import BETA_VALUES
+ 
+    ov_data    = ctx["ov_data"]
+    model_name = ctx["model_name"]
+    prompt_key = ctx["prompt_key"]
+ 
+    verdict = {"model": model_name, "prompt": prompt_key}
+ 
+    # --- OV spectrum (from ov_data, not a sub-experiment) ---
+    _add_ov_spectrum_fields(verdict, ov_data)
+ 
+    # --- Merge all verdict_contribution dicts ---
+    # Later specs win on key conflicts (dependency order is respected).
+    for spec_name in [
+        "trajectory",
+        "layer_v_events",
+        "head_ov",
+        "decomposed_violations",
+        "ffn_subspace",
+        "continuous_correlations",
+        "ov_norm_confound",
+        "zone_comparison",
+        "attractive_zone_violations",
+    ]:
+        sr = subresults.get(spec_name)
+        if sr is not None:
+            for k, v in sr.verdict_contribution.items():
+                verdict[k] = v
+ 
+    # Ensure channel always exists
+    verdict.setdefault("channel", "unknown")
+ 
+    # --- Falsification verdict ---
+    verdict = _classify(verdict)
+ 
+    # --- Coverage mismatch warning ---
+    n_primary    = verdict.get("beta1.0_n_violations", 0) or 0
+    n_decomposed = verdict.get("decompose_n_violations", 0) or 0
+    if n_primary > 0 and n_decomposed != n_primary:
+        verdict["decompose_coverage_warning"]     = True
+        verdict["decompose_coverage_n_primary"]   = n_primary
+        verdict["decompose_coverage_n_decomposed"] = n_decomposed
+    else:
+        verdict["decompose_coverage_warning"] = False
+ 
+    # --- Continuous V-score (computed last so all fields are present) ---
+    verdict["v_score"] = build_v_score(verdict)
+ 
+    return verdict
+ 
+ 
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+ 
+def _add_ov_spectrum_fields(verdict: dict, ov_data: dict) -> None:
+    """Populate verdict with OV spectrum scalars from ov_data."""
+    import numpy as np
+    if ov_data.get("is_per_layer"):
+        decomps = ov_data.get("decomps", [])
+        if decomps:
+            verdict["ov_frac_repulsive_mean"] = float(
+                np.mean([d["frac_repulsive"] for d in decomps])
+            )
+            verdict["ov_methods_agree_all"] = all(d.get("agree", False) for d in decomps)
+    else:
+        d = ov_data.get("decomps", {})
+        if isinstance(d, dict):
+            verdict["ov_frac_repulsive"] = d.get("frac_repulsive")
+            verdict["ov_methods_agree"]  = d.get("agree")
+ 
+ 
+def _classify(verdict: dict) -> dict:
+    """
+    Apply falsification logic and FFN-confirmed upgrade.
+ 
+    This is the single source of truth for the categorical verdict.
+    Fixes A and B are applied here.
+    """
+    import numpy as np
+ 
+    n_violations   = verdict.get("beta1.0_n_violations", 0) or 0
+    frac_repulsive = verdict.get("beta1.0_frac_repulsive", 0) or 0
+    frac_overshoot = verdict.get("beta1.0_frac_overshoot", 0) or 0
+    resc_imp       = verdict.get("rescaled_improvement_beta1.0", 0) or 0
+    rescaled_frac  = resc_imp / max(n_violations, 1)
+    ffn_frac_drop  = verdict.get("decompose_frac_ffn_drop", 0) or 0
+    n_decomposed   = verdict.get("decompose_n_violations", 0) or 0
+ 
+    if n_violations == 0:
+        falsification = "no_violations"
+    elif frac_overshoot > 0.5:
+        falsification = "overshoot_dominant"
+    elif frac_repulsive > 0.5:
+        falsification = "V_repulsive_local"
+    elif rescaled_frac > 0.8 and ffn_frac_drop > 0.5:
+        falsification = "V_repulsive_via_FFN"
+    elif rescaled_frac > 0.8 and ffn_frac_drop <= 0.5:
+        falsification = "V_repulsive_via_attn"
+    elif ffn_frac_drop > 0.5 and rescaled_frac < 0.2 and n_decomposed >= 3:
+        # Fix B: guard on n_decomposed (not n_violations)
+        falsification = "FFN_independent"
+    else:
+        falsification = "mixed_or_unattributed"
+ 
+    verdict["falsification"] = falsification
+ 
+    # --- FFN_confirmed upgrade ---
+    # Fix A: require channel == "FFN" explicitly, not just != "attention"
+    channel     = verdict.get("channel", "unknown")
+    frac_amp    = verdict.get("frac_ffn_amplifies_repulsive", 0) or 0
+    if (
+        falsification == "V_repulsive_via_FFN"
+        and frac_amp > 0.5
+        and channel == "FFN"           # Fix A: explicit equality check
+    ):
+        verdict["falsification"] = "V_repulsive_via_FFN_confirmed"
+ 
+    return verdict
+ 
+ 
+# ---------------------------------------------------------------------------
+# Shim — preserved for back-compat
+# ---------------------------------------------------------------------------
+ 
+def _build_verdict_v2_shim(analysis_results, ov_data, model_name, prompt_key):
+    """
+    Adapter: converts monolithic analysis dict into pseudo-subresults and
+    calls build_verdict_v2_from_subresults.
+ 
+    Used only by callers that have not yet been migrated to the registry path.
+    """
+    from phase2.subresult import SubResult
+ 
+    # Build minimal SubResult-like wrappers from the old analysis dict
+    def _sr(name, vc):
+        return SubResult(name=name, applicable=True, payload={},
+                         summary_lines=[], verdict_contribution=vc)
+ 
+    from core.config import BETA_VALUES
+    import numpy as np
+ 
+    subresults = {}
+ 
+    # trajectory
+    traj_vc = {}
+    for beta in BETA_VALUES:
+        key = f"violations_beta{beta}"
+        if key in analysis_results:
+            s = analysis_results[key].get("summary", {})
+            traj_vc[f"beta{beta}_n_violations"]   = s.get("n_violations", 0)
+            traj_vc[f"beta{beta}_frac_overshoot"] = s.get("frac_overshoot", 0)
+            traj_vc[f"beta{beta}_frac_repulsive"] = s.get("frac_repulsive", 0)
+    resc = analysis_results.get("rescaled", {})
+    for beta in [1.0, 5.0]:
+        bkey = f"beta_{beta}"
+        if bkey in resc:
+            traj_vc[f"rescaled_improvement_beta{beta}"] = resc[bkey].get("improvement", 0)
+    subresults["trajectory"] = _sr("trajectory", traj_vc)
+ 
+    # decomposed_violations
+    decomp = analysis_results.get("decomposed_violations", [])
+    if decomp:
+        n = len(decomp)
+        n_ffn  = sum(1 for d in decomp if d.get("ffn_sign")  == "drop")
+        n_attn = sum(1 for d in decomp if d.get("attn_sign") == "drop")
+        mf = float(np.mean([min(d.get("ffn_frac",  0), 2.0) for d in decomp]))
+        ma = float(np.mean([min(d.get("attn_frac", 0), 2.0) for d in decomp]))
+        ch = "FFN" if mf > 0.6 else ("attention" if ma > 0.6 else "mixed")
+        subresults["decomposed_violations"] = _sr("decomposed_violations", {
+            "channel": ch,
+            "decompose_n_violations":  n,
+            "decompose_frac_ffn_drop": n_ffn  / n,
+            "decompose_frac_attn_drop": n_attn / n,
+            "decompose_mean_ffn_frac":  mf,
+            "decompose_mean_attn_frac": ma,
+        })
+ 
+    # layer_v_events
+    lv = analysis_results.get("layer_v_events", {})
+    if lv.get("applicable"):
+        zones = lv.get("zones", {})
+        ze    = lv.get("zone_events", {})
+        corr  = lv.get("correlations", {})
+        rv    = corr.get("repulsive_frac_vs_violation_indicator", {})
+        subresults["layer_v_events"] = _sr("layer_v_events", {
+            "layer_v_crossover":              zones.get("crossover_layer"),
+            "layer_v_n_repulsive":            zones.get("n_repulsive", 0),
+            "layer_v_n_attractive":           zones.get("n_attractive", 0),
+            "violations_in_repulsive_zone":   ze.get("repulsive", {}).get("n_violations", 0),
+            "violations_in_attractive_zone":  ze.get("attractive", {}).get("n_violations", 0),
+            "violation_rate_repulsive_zone":  ze.get("repulsive", {}).get("violation_rate", 0.0),
+            "violation_rate_attractive_zone": ze.get("attractive", {}).get("violation_rate", 0.0),
+            "violation_rate_transition_zone": ze.get("transition", {}).get("violation_rate", 0.0),
+            "rho_repulsive_vs_violations":    rv.get("rho"),
+        })
+ 
+    # head_ov
+    hov = analysis_results.get("head_ov", {})
+    if hov.get("applicable"):
+        xref = hov.get("xref", {})
+        corr = xref.get("correlation_mean", {})
+        subresults["head_ov"] = _sr("head_ov", {
+            "head_ov_fiedler_rho":  corr.get("rho"),
+            "head_ov_fiedler_pval": corr.get("pval"),
+        })
+ 
+    # ffn_subspace
+    ffn = analysis_results.get("ffn_subspace", {})
+    if ffn.get("applicable"):
+        s  = ffn.get("summary", {})
+        zs = ffn.get("zscores", {})
+        subresults["ffn_subspace"] = _sr("ffn_subspace", {
+            "frac_ffn_amplifies_repulsive":  s.get("frac_amplifies_repulsive", 0),
+            "ffn_repulse_frac_at_violations": s.get("mean_ffn_repulse_frac"),
+            "ffn_attract_frac_at_violations": s.get("mean_ffn_attract_frac"),
+            "ffn_rep_zscore": zs.get("ffn_repulse_frac", {}).get("z_score"),
+        })
+ 
+    # extended
+    ext = analysis_results.get("extended", {})
+    cc  = ext.get("continuous_correlations", {})
     if cc.get("applicable"):
-        print(f"    Continuous ΔE correlations:")
-        for key in ["repulsive_frac_vs_delta_E", "coupling_product_vs_delta_E"]:
-            if key in cc:
-                c = cc[key]
-                sig = "*" if c["pval"] < 0.05 else " "
-                print(f"      {key:40s}  ρ={c['rho']:+.3f}  p={c['pval']:.3f} {sig}")
-
-    # OV norm confound
-    oc = results.get("ov_norm_confound", {})
+        key = cc.get("repulsive_frac_vs_delta_E", {})
+        subresults["continuous_correlations"] = _sr("continuous_correlations", {
+            "continuous_repfrac_vs_deltaE_rho":  key.get("rho"),
+            "continuous_repfrac_vs_deltaE_pval": key.get("pval"),
+        })
+ 
+    oc = ext.get("ov_norm_confound", {})
     if oc.get("applicable"):
-        raw = oc["raw"]["ov_norm_vs_violations"]
-        partial = oc["partial_controlling_rep_frac"]["ov_norm_vs_violations"]
-        print(f"    OV norm confound:")
-        print(f"      Raw:     ρ={raw['rho']:+.3f}  p={raw['pval']:.3f}")
-        print(f"      Partial: ρ={partial['rho']:+.3f}  p={partial['pval']:.3f}")
-        if abs(partial["rho"]) < 0.1:
-            print(f"      → Norm is NOT an independent predictor")
-        elif partial["pval"] < 0.05:
-            print(f"      → Norm IS an independent predictor (confound)")
-
-    # Zone comparison
-    zc = results.get("zone_comparison", {})
-    if zc.get("applicable"):
-        print(f"    Zone classification comparison:")
-        for method, data in zc.get("methods", {}).items():
-            lo, hi = data["thresholds"]
-            rep = data["n_repulsive"]
-            att = data["n_attractive"]
-            cross = data["crossover"]
-            v_rep = data["per_zone"]["repulsive"]["n_violations"]
-            v_att = data["per_zone"]["attractive"]["n_violations"]
-            print(f"      {method:6s}  thresh=[{lo:.3f},{hi:.3f}]  "
-                  f"rep={rep:2d}  att={att:2d}  cross=L{cross}  "
-                  f"v_rep={v_rep}  v_att={v_att}")
-
-    # Attractive-zone violation analysis
-    azv = results.get("attractive_zone_violations", {})
+        partial = oc.get("partial_controlling_rep_frac", {}).get("ov_norm_vs_violations", {})
+        subresults["ov_norm_confound"] = _sr("ov_norm_confound", {
+            "ov_norm_partial_rho":  partial.get("rho"),
+            "ov_norm_partial_pval": partial.get("pval"),
+            "ov_norm_is_confound":  abs(partial.get("rho", 0) or 0) > 0.2
+                                    and (partial.get("pval", 1) or 1) < 0.05,
+        })
+ 
+    azv = ext.get("attractive_zone_violations", {})
     if azv.get("applicable"):
-        print(f"    FFN role by zone at violation layers:")
-        for zone_name in ["repulsive", "transition", "attractive"]:
-            z = azv.get(zone_name, {})
-            n = z.get("n", 0)
-            if n == 0:
-                continue
-            print(f"      {zone_name:12s} ({n:2d} violations):  "
-                  f"amp_rep={z['frac_amplifies_repulsive']:.0%}  "
-                  f"amp_att={z['frac_amplifies_attractive']:.0%}  "
-                  f"orth={z['frac_orthogonal']:.0%}  "
-                  f"mean_rep={z['mean_ffn_repulse_frac']:.3f}")
+        att = azv.get("attractive", {})
+        if att.get("n", 0) > 0:
+            subresults["attractive_zone_violations"] = _sr("attractive_zone_violations", {
+                "att_zone_n_violations":       att["n"],
+                "att_zone_frac_amp_repulsive":  att.get("frac_amplifies_repulsive"),
+                "att_zone_frac_amp_attractive": att.get("frac_amplifies_attractive"),
+                "att_zone_frac_orthogonal":     att.get("frac_orthogonal"),
+            })
+ 
+    ctx = {"ov_data": ov_data, "model_name": model_name, "prompt_key": prompt_key}
+    return build_verdict_v2_from_subresults(subresults, ctx)

@@ -345,30 +345,58 @@ def run_ffn_subspace_analysis(
 
 
 def print_ffn_subspace_summary(result: dict, model_name: str, prompt_key: str):
-    """Print concise FFN subspace analysis summary."""
+    """Print concise FFN subspace analysis summary.  Delegates to summary_lines."""
     if not result.get("applicable"):
         return
+    print(f"\n  FFN subspace projection ({model_name} | {prompt_key}):")
+    for line in ffn_subspace_summary_lines(result):
+        print(f"    {line}")
 
+
+def ffn_subspace_summary_lines(result: dict) -> list[str]:
+    """
+    Return LLM-ready plain-text lines summarising FFN subspace analysis.
+ 
+    This is the text-generation body extracted from print_ffn_subspace_summary.
+    The print function delegates to this so disk output and terminal output
+    are always identical.
+    """
+    if not result.get("applicable"):
+        return [f"ffn_subspace: not applicable — {result.get('reason', 'no ffn_deltas')}"]
+ 
     s = result.get("summary", {})
     if not s:
-        return
-
-    print(f"\n  FFN subspace projection ({model_name} | {prompt_key}):")
-    print(f"    At {s['n_violations']} violation layers:")
-    print(f"      Amplifies V-repulsive: {s['frac_amplifies_repulsive']:.0%}")
-    print(f"      Amplifies V-attractive: {s['frac_amplifies_attractive']:.0%}")
-    print(f"      Orthogonal to V:        {s['frac_orthogonal']:.0%}")
-    print(f"      Mean FFN→repulsive frac: {s['mean_ffn_repulse_frac']:.3f}")
-    print(f"      Mean FFN→attractive frac: {s['mean_ffn_attract_frac']:.3f}")
-
-    zs = result["zscores"]
-    for metric in ["ffn_repulse_frac", "ffn_attract_frac"]:
+        return ["ffn_subspace: applicable but no summary produced"]
+ 
+    L = []
+    L.append(f"FFN subspace projection at {s['n_violations']} violation layers:")
+    L.append(f"  Amplifies V-repulsive:   {s['frac_amplifies_repulsive']:.0%}")
+    L.append(f"  Amplifies V-attractive:  {s['frac_amplifies_attractive']:.0%}")
+    L.append(f"  Orthogonal to V:         {s['frac_orthogonal']:.0%}")
+    L.append(f"  Mean FFN→repulsive frac: {s['mean_ffn_repulse_frac']:.3f}")
+    L.append(f"  Mean FFN→attract frac:   {s['mean_ffn_attract_frac']:.3f}")
+ 
+    zs = result.get("zscores", {})
+    for metric in ("ffn_repulse_frac", "ffn_attract_frac"):
         if metric in zs:
             z = zs[metric]
-            print(f"    z({metric}): {z['z_score']:+.2f}  "
-                  f"(viol={z['v_mean']:.3f}  pop={z['pop_mean']:.3f})")
-
-    for v in result["per_violation"][:5]:
-        print(f"      L{v['layer']:3d}  rep={v['ffn_repulse_frac']:.3f}  "
-              f"att={v['ffn_attract_frac']:.3f}  "
-              f"resid={v['ffn_residual_frac']:.3f}  → {v['role']}")
+            L.append(
+                f"  z({metric}): {z['z_score']:+.2f}  "
+                f"(viol={z['v_mean']:.3f}  pop={z['pop_mean']:.3f})"
+            )
+ 
+    per_v = result.get("per_violation", [])
+    if per_v:
+        L.append("  First 5 per-violation classifications:")
+        for v in per_v[:5]:
+            L.append(
+                f"    L{v['layer']:3d}  rep={v['ffn_repulse_frac']:.3f}  "
+                f"att={v['ffn_attract_frac']:.3f}  "
+                f"resid={v.get('ffn_residual_frac', float('nan')):.3f}  → {v['role']}"
+            )
+ 
+    ew = result.get("energy_warning")
+    if ew:
+        L.append(f"  Warning: {ew}")
+ 
+    return L

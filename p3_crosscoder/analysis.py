@@ -49,21 +49,136 @@ def register(name: str):
     return decorator
 
 
+
+
+# ---------------------------------------------------------------------------
+# Summary registry
+# ---------------------------------------------------------------------------
+
+_SUMMARY_REGISTRY: dict[str, Callable[[dict], str]] = {}
+
+
+def register_summary(name: str):
+    """Decorator to register a summarizer for an analysis result dict."""
+    def decorator(fn):
+        _SUMMARY_REGISTRY[name] = fn
+        return fn
+    return decorator
+
+
+def _default_summarize(name: str, result: dict) -> str:
+    """
+    Fallback summarizer used when no @register_summary exists for `name`.
+    Emits top-level scalar values and array shapes.
+    """
+    if "error" in result:
+        return f"ERROR: {result['error']}"
+    lines = []
+    for k, v in result.items():
+        if isinstance(v, (int, float, str)) and not isinstance(v, bool):
+            lines.append(f"{k}: {v}")
+        elif isinstance(v, bool):
+            lines.append(f"{k}: {v}")
+        elif isinstance(v, (list, np.ndarray)):
+            arr = np.asarray(v) if not isinstance(v, np.ndarray) else v
+            lines.append(f"{k}: array{list(arr.shape)}")
+        elif isinstance(v, dict):
+            lines.append(f"{k}: dict({len(v)} keys)")
+    return "\n".join(lines) if lines else "(no scalar fields)"
+
+
+# ---------------------------------------------------------------------------
+# I/O helpers
+# ---------------------------------------------------------------------------
+
+_ARRAY_OFFLOAD_THRESHOLD = 500  # elements; arrays larger than this go to .npz
+
+
+def _save_json(data, path: Path):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(
+            data, f, indent=2,
+            default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o),
+        )
+
+
+def _extract_arrays(result: dict, threshold: int = _ARRAY_OFFLOAD_THRESHOLD) -> dict:
+    """
+    Pull out numpy arrays larger than `threshold` elements for .npz offload.
+    Does not recurse into nested dicts.
+    """
+    return {
+        k: v for k, v in result.items()
+        if isinstance(v, np.ndarray) and v.size > threshold
+    }
+
+
+def _json_safe(result: dict, arrays_offloaded: set) -> dict:
+    """Replace offloaded arrays with shape-note strings."""
+    out = {}
+    for k, v in result.items():
+        if k in arrays_offloaded:
+            shape = list(v.shape) if hasattr(v, "shape") else "?"
+            out[k] = f"<offloaded to .npz shape={shape}>"
+        else:
+            out[k] = v
+    return out
 def run_all_analyses(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
     artifacts: dict,
     config: Optional[dict] = None,
-    only: Optional[list[str]] = None,
-) -> dict:
+    only: Optional[list] = None,
+    out_dir: Optional[Path] = None,
+) -> "tuple[list, dict] | dict":
     """
     Run all registered analyses (or a subset if `only` is specified).
 
-    Returns dict keyed by analysis name.
+    Parameters
+    ----------
+    out_dir : if provided, each analysis result is written to
+              out_dir/analyses/<n>.json as it completes.  Heavy numpy arrays
+              (> _ARRAY_OFFLOAD_THRESHOLD elements) are split into a sibling
+              out_dir/analyses/<n>.npz.  An index is written at the end.
+              Returns (summary_blocks, index) when out_dir is given.
+
+              If out_dir is None (legacy mode) returns the plain dict keyed
+              by analysis name.
+
+    Returns
+    -------
+    (summary_blocks, index)  when out_dir is provided
+        summary_blocks : list of (name, text_block) pairs
+        index          : dict[name -> {file, has_error, has_npz}]
+
+    dict[name -> result]  when out_dir is None (backward compat)
     """
-    config = config or {}
-    results = {}
+    config  = config or {}
     targets = only if only else list(_REGISTRY.keys())
+
+    if out_dir is None:
+        # ---- Legacy path ----
+        results = {}
+        for name in targets:
+            if name not in _REGISTRY:
+                print(f"  Warning: analysis '{name}' not in registry, skipping")
+                continue
+            print(f"  Running analysis: {name}")
+            try:
+                results[name] = _REGISTRY[name](crosscoder, prompt_store, artifacts, config)
+            except Exception as e:
+                print(f"    Failed: {e}")
+                results[name] = {"error": str(e)}
+        return results
+
+    # ---- Streaming path ----
+    analyses_dir = Path(out_dir) / "analyses"
+    analyses_dir.mkdir(parents=True, exist_ok=True)
+
+    summary_blocks: list = []
+    index: dict = {}
 
     for name in targets:
         if name not in _REGISTRY:
@@ -71,14 +186,80 @@ def run_all_analyses(
             continue
         print(f"  Running analysis: {name}")
         try:
-            results[name] = _REGISTRY[name](
-                crosscoder, prompt_store, artifacts, config
-            )
+            result = _REGISTRY[name](crosscoder, prompt_store, artifacts, config)
         except Exception as e:
             print(f"    Failed: {e}")
-            results[name] = {"error": str(e)}
+            result = {"error": str(e)}
 
-    return results
+        arrays        = _extract_arrays(result)
+        offloaded_keys: set = set()
+        if arrays:
+            np.savez_compressed(analyses_dir / f"{name}.npz", **arrays)
+            offloaded_keys = set(arrays.keys())
+
+        out_file = analyses_dir / f"{name}.json"
+        _save_json(_json_safe(result, offloaded_keys), out_file)
+
+        summarizer = _SUMMARY_REGISTRY.get(name)
+        if summarizer is not None:
+            try:
+                block = summarizer(result)
+            except Exception as e:
+                block = f"(summarizer failed: {e})\n" + _default_summarize(name, result)
+        else:
+            block = _default_summarize(name, result)
+
+        summary_blocks.append((name, block))
+        index[name] = {
+            "file":      str(out_file.relative_to(out_dir)),
+            "has_error": "error" in result,
+            "has_npz":   bool(arrays),
+        }
+        print(f"    -> {out_file.name}" + (" + .npz" if arrays else ""))
+
+    _save_json(index, analyses_dir / "index.json")
+    return summary_blocks, index
+
+
+
+def save_results(results: dict, path: Path):
+    """
+    Backward-compatible single-file serializer.
+
+    Still used by callers that haven't migrated to the streaming path.
+    Writes one combined JSON, replacing numpy arrays with .tolist().
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(
+            results, f, indent=2,
+            default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o),
+        )
+    print(f"  Results saved to {path}")
+
+
+def summarize_steering(steer_summary: dict) -> str:
+    """
+    Convert a steering summary dict (from summarise_steering) into a
+    text block for summary.txt.
+    """
+    if not steer_summary or "error" in steer_summary:
+        return f"ERROR: {steer_summary.get('error', 'no steering results')}"
+    lines = []
+    text = steer_summary.get("text_summary", "")
+    if text:
+        lines.extend(text.splitlines()[:30])
+        extra = len(text.splitlines()) - 30
+        if extra > 0:
+            lines.append(f"... ({extra} more lines in steering/steering_summary.json)")
+    else:
+        lines = [
+            f"n_experiments: {steer_summary.get('n_experiments', '?')}",
+            f"n_significant: {steer_summary.get('n_significant', '?')}",
+        ]
+    return "\n".join(lines)
+
 
 
 # ---------------------------------------------------------------------------
@@ -482,6 +663,271 @@ def _compute_plateau_clusters(
 # ---------------------------------------------------------------------------
 # Analysis: Feature lifetimes (Prediction 1)
 # ---------------------------------------------------------------------------
+
+
+
+# ---------------------------------------------------------------------------
+# Summarizers — one per registered analysis
+# ---------------------------------------------------------------------------
+
+@register_summary("feature_lifetimes")
+def _summarize_feature_lifetimes(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    bc      = r.get("bimodality_coefficient", float("nan"))
+    test    = r.get("bimodality_test", "?")
+    valley  = r.get("valley_threshold")
+    lines = [
+        f"n_features: {r.get('n_features', '?')}",
+        f"bimodality_coefficient: {bc:.4f}" if isinstance(bc, float) else f"bimodality_coefficient: {bc}",
+        f"bimodality_test: {test}",
+        f"valley_threshold: {valley}",
+        f"n_short_lived: {r.get('n_short_lived', '?')}",
+        f"n_long_lived: {r.get('n_long_lived', '?')}",
+        f"n_dead: {r.get('n_dead', '?')}",
+    ]
+    verdict = r.get("verdict") or test
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("v_subspace_alignment")
+def _summarize_v_subspace_alignment(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    rho = r.get("spearman_rho", float("nan"))
+    p   = r.get("spearman_p",   float("nan"))
+    lines = [
+        f"spearman_rho: {rho:.4f}" if isinstance(rho, float) else f"spearman_rho: {rho}",
+        f"spearman_p: {p:.4f}"     if isinstance(p, float)   else f"spearman_p: {p}",
+        f"n_repulsive_dominant: {r.get('n_repulsive_dominant', '?')}",
+        f"n_attractive_dominant: {r.get('n_attractive_dominant', '?')}",
+    ]
+    interp = r.get("interpretation", "")
+    if interp:
+        lines.append(f"interpretation: {interp}")
+    return "\n".join(lines)
+
+
+@register_summary("cluster_identity")
+def _summarize_cluster_identity(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    n_prompts = sum(1 for k, v in r.items() if isinstance(v, dict) and k != "overall")
+    lines = [f"n_prompts_run: {n_prompts}"]
+    overall = r.get("overall", {})
+    if overall:
+        lines.append(f"clustering_source: {overall.get('clustering_source', '?')} ")
+    for pk, pd in r.items():
+        if not isinstance(pd, dict) or pk == "overall":
+            continue
+        lines.append(f"  {pk}: {len(pd)} plateau layer(s) evaluated")
+    return "\n".join(lines)
+
+
+@register_summary("violation_layer_features")
+def _summarize_violation_layer_features(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    frac = r.get("fraction_violation_specific")
+    lines = [
+        f"n_violation_layers: {r.get('n_violation_layers', '?')}",
+        f"n_features_at_violations: {r.get('n_features_at_violations', '?')}",
+    ]
+    if frac is not None:
+        lines.append(f"fraction_violation_specific: {frac:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("multilayer_fraction")
+def _summarize_multilayer_fraction(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    frac = r.get("multilayer_fraction", float("nan"))
+    lines = [
+        f"multilayer_fraction: {frac:.4f}" if isinstance(frac, float) else f"multilayer_fraction: {frac}",
+        f"n_multilayer: {r.get('multilayer_count', r.get('n_multilayer', '?'))}",
+        f"n_alive: {r.get('n_alive', r.get('n_features_total', '?'))}",
+        f"min_layers_threshold: {r.get('min_layers_threshold', '?')}",
+    ]
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("positional_control")
+def _summarize_positional_control(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    frac_pos = r.get("frac_positional_among_long_lived")
+    lines = [f"n_positional: {r.get('n_positional', '?')}"]
+    if frac_pos is not None:
+        lines.append(f"frac_positional_among_long_lived: {frac_pos:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("feature_cluster_correlation")
+def _summarize_feature_cluster_correlation(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    overall = r.get("overall", {})
+    lines = [
+        f"n_prompts_run: {overall.get('n_prompts_run', '?')}",
+        f"clustering_source: {overall.get('clustering_source', '?')}",
+        f"top_k: {overall.get('top_k', '?')}",
+    ]
+    for pk, layer_dict in r.items():
+        if pk == "overall" or not isinstance(layer_dict, dict):
+            continue
+        for layer_key, info in layer_dict.items():
+            if not isinstance(info, dict):
+                continue
+            for res_key in ("spectral", "hdbscan"):
+                res = info.get(res_key, {})
+                top = res.get("top_features", [])
+                if top:
+                    top_f = top[0].get("f_spectral", top[0].get("f_stat", "?"))
+                    n_above = res.get("n_features_above_min", "?")
+                    if isinstance(top_f, float):
+                        lines.append(
+                            f"  {pk}/{layer_key}/{res_key}: top_f={top_f:.2f}, n_above_min={n_above}"
+                        )
+                    else:
+                        lines.append(f"  {pk}/{layer_key}/{res_key}: top_f={top_f}")
+    return "\n".join(lines)
+
+
+@register_summary("inspect_top_features")
+def _summarize_inspect_top_features(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    text_report = r.get("text_report", "")
+    if text_report:
+        lines = text_report.splitlines()
+        trimmed = lines[:40]
+        if len(lines) > 40:
+            trimmed.append(f"... ({len(lines) - 40} more lines in analyses/inspect_top_features.txt)")
+        return "\n".join(trimmed)
+    return f"n_features_inspected: {r.get('n_features_inspected', '?')}"
+
+
+@register_summary("ffn_repulsive_feature_alignment")
+def _summarize_ffn_repulsive(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    mean_cs = r.get("mean_cos_sim_to_ffn_delta") or r.get("mean_cosine_repulsive")
+    lines = [
+        f"n_violations_checked: {r.get('n_violations_checked', '?')}",
+        f"n_features_aligned: {r.get('n_features_aligned', '?')}",
+    ]
+    if mean_cs is not None:
+        lines.append(f"mean_cosine: {mean_cs:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("cross_term_feature_weighting")
+def _summarize_cross_term(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    mean_w = r.get("mean_cross_term_weight")
+    lines = [f"n_layers_checked: {r.get('n_layers_checked', '?')}"]
+    if mean_w is not None:
+        lines.append(f"mean_cross_term_weight: {mean_w:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("induction_feature_tagging")
+def _summarize_induction(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    frac = r.get("induction_fraction")
+    lines = [
+        f"n_induction_tagged: {r.get('n_induction_tagged', '?')}",
+        f"n_features_checked: {r.get('n_features_checked', '?')}",
+    ]
+    if frac is not None:
+        lines.append(f"induction_fraction: {frac:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("decoder_violation_projection")
+def _summarize_decoder_violation(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    per_viol = r.get("per_violation", [])
+    mean_exp = r.get("mean_explained")
+    lines = [f"n_violations: {len(per_viol)}"]
+    if mean_exp is not None:
+        lines.append(f"mean_explained_variance: {mean_exp:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("lifetime_centroid_decomposition")
+def _summarize_lifetime_centroid(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    mean_rep = r.get("mean_repulsive_cos")
+    mean_att = r.get("mean_attractive_cos")
+    lines = [f"n_long_lived_inspected: {r.get('n_long_lived_inspected', '?')}"]
+    if mean_rep is not None:
+        lines.append(f"mean_repulsive_cos: {mean_rep:.4f}")
+    if mean_att is not None:
+        lines.append(f"mean_attractive_cos: {mean_att:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("coactivation_at_merges")
+def _summarize_coactivation_at_merges(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    mean_coact    = r.get("mean_coactivation_at_merges")
+    mean_baseline = r.get("mean_coactivation_baseline")
+    lines = [f"n_merge_layers_checked: {r.get('n_merge_layers_checked', '?')}"]
+    if mean_coact is not None:
+        lines.append(f"mean_coactivation_at_merges: {mean_coact:.4f}")
+    if mean_baseline is not None:
+        lines.append(f"mean_coactivation_baseline: {mean_baseline:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
+
+
+@register_summary("cluster_identity_diff")
+def _summarize_cluster_identity_diff(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    mean_overlap = r.get("mean_feature_overlap")
+    lines = [f"n_layers_compared: {r.get('n_layers_compared', '?')}"]
+    if mean_overlap is not None:
+        lines.append(f"mean_feature_overlap: {mean_overlap:.4f}")
+    verdict = r.get("verdict", "")
+    if verdict:
+        lines.append(f"verdict: {verdict}")
+    return "\n".join(lines)
 
 @register("feature_lifetimes")
 def feature_lifetimes(

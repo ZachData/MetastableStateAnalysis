@@ -328,35 +328,58 @@ def run_layer_v_analysis(
 
 
 def print_layer_v_summary(result: dict, model_name: str, prompt_key: str):
-    """Print concise summary of layer-V analysis."""
+    """Print concise layer-V analysis summary.  Delegates to summary_lines."""
     if not result.get("applicable"):
         return
-
     print(f"\n  Layer-V analysis: {model_name} | {prompt_key}")
+    for line in layer_v_summary_lines(result):
+        print(f"    {line}")
 
+ 
+def layer_v_summary_lines(result: dict) -> list[str]:
+    """
+    Return LLM-ready plain-text lines summarising layer-V analysis.
+ 
+    Extracted from print_layer_v_summary so disk output and terminal output
+    are always identical.
+    """
+    if not result.get("applicable"):
+        return [f"layer_v_events: not applicable — {result.get('reason', '')}"]
+ 
+    L = []
     zones = result["zones"]
-    print(f"    Zones: {zones['n_repulsive']} repulsive, "
-          f"{zones['n_transition']} transition, "
-          f"{zones['n_attractive']} attractive")
-    if zones["crossover_layer"] is not None:
-        print(f"    Crossover at layer {zones['crossover_layer']}")
-
+    L.append(
+        f"Layer-V zones: {zones['n_repulsive']} repulsive, "
+        f"{zones['n_transition']} transition, "
+        f"{zones['n_attractive']} attractive"
+    )
+    if zones.get("crossover_layer") is not None:
+        L.append(f"  Crossover at layer {zones['crossover_layer']}")
+ 
     ze = result["zone_events"]
-    for zone_name in ["repulsive", "transition", "attractive"]:
-        z = ze[zone_name]
-        if z["n_layers"] == 0:
+    for zone_name in ("repulsive", "transition", "attractive"):
+        z = ze.get(zone_name, {})
+        if z.get("n_layers", 0) == 0:
             continue
-        print(f"    {zone_name:12s}: {z['n_layers']:2d} layers  "
-              f"violations={z['n_violations']:2d} ({z['violation_rate']:.2f}/layer)  "
-              f"merges={z['n_merges']:2d} ({z['merge_rate']:.2f}/layer)")
-
-    corr = result["correlations"]
-    print(f"    Correlations (Spearman):")
-    for key in ["repulsive_frac_vs_violation_indicator",
-                "repulsive_frac_vs_merge_indicator",
-                "coupling_product_vs_violation_indicator",
-                "repulsive_frac_vs_effective_rank"]:
+        L.append(
+            f"  {zone_name:12s}: {z['n_layers']:2d} layers  "
+            f"violations={z['n_violations']:2d} ({z['violation_rate']:.2f}/layer)  "
+            f"merges={z.get('n_merges', 0):2d} ({z.get('merge_rate', 0.0):.2f}/layer)"
+        )
+ 
+    corr = result.get("correlations", {})
+    L.append("Spearman correlations:")
+    for key in (
+        "repulsive_frac_vs_violation_indicator",
+        "repulsive_frac_vs_merge_indicator",
+        "coupling_product_vs_violation_indicator",
+        "repulsive_frac_vs_effective_rank",
+    ):
         if key in corr:
             c = corr[key]
             sig = "*" if c.get("pval", 1) < 0.05 else " "
-            print(f"      {key:45s}  ρ={c['rho']:+.3f}  p={c['pval']:.3f} {sig}")
+            L.append(
+                f"  {key:<45s}  ρ={c['rho']:+.3f}  p={c['pval']:.3f} {sig}"
+            )
+ 
+    return L

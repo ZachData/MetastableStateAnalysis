@@ -219,21 +219,54 @@ Per-head Fiedler profiling reveals a clean three-way split across architectures.
 
 ## Saved Artifacts
 
-Each (model, prompt) run persists:
+**Format v2** (current). `metrics.json` is replaced by one focused file per experiment, with large arrays in `.npz`. `load_run()` auto-detects v1 vs v2 and reconstructs the same in-memory dict either way.
+
+### Per (model, prompt) run directory
+
+**JSON — small, LLM-readable, Phase 3 loadable:**
+
+| File | Experiment | Key contents |
+|------|-----------|--------------|
+| `geometry.json` | Inner products + CKA | `ip_mean/std/mass`, `effective_rank`, `cka_prev`, `nn_stability`, `ip_histogram` per layer |
+| `energies.json` | Interaction energies | `energies` dict (β→value), `energy_drop_pairs` per layer |
+| `clustering.json` | KMeans + HDBSCAN + nesting | Summaries only (no label arrays); `nesting`, `pair_agreement` per layer |
+| `spectral.json` | Spectral eigengap | `k_eigengap`, `eigenvalues` (≤16), `eigengaps`, `fiedler_bipartition` per layer |
+| `sinkhorn.json` | Attention + Sinkhorn | `fiedler_mean`, `sinkhorn_cluster_count_mean`, `row_col_balance_mean`, `attention_entropy_*` per layer |
+| `trajectory.json` | Cluster tracking | `cluster_tracking` (events, trajectories, summary), `plateau_layers` |
+| `hdbscan_labels.json` | *(Phase 3 bridge)* | `{layer_idx: [label, ...]}` per layer |
+| `events.json` | *(Phase 3 bridge)* | `merge_layers`, `energy_violations`, `energy_drop_pairs` lists |
+| `layer_metrics.json` | *(Phase 3 bridge)* | Flat per-layer scalars for `_detect_plateau_windows` |
+
+**NPZ — binary arrays:**
 
 | File | Contents |
 |------|----------|
-| `metrics.json` | Full results dict (all per-layer metrics, JSON-serializable) |
 | `activations.npz` | L2-normed hidden states `(n_layers, n_tokens, d)` |
 | `attentions.npz` | Attention weights `(n_layers, n_heads, n, n)` |
-| `clusters.npz` | Per-layer KMeans labels/centroids, HDBSCAN labels |
-| `centroid_trajectories.npz` | HDBSCAN centroid coordinates for tracked cluster trajectories |
-| `plateau_attentions.npz` | Raw attention matrices at plateau layers (for Phase 3) |
+| `clusters.npz` | Per-layer KMeans labels+centroids, HDBSCAN labels, agglomerative mid-labels |
+| `centroid_trajectories.npz` | HDBSCAN centroid coordinates for tracked trajectories |
+| `plateau_attentions.npz` | Raw attention matrices at plateau layers |
+| `pca_trajectories.npz` | PCA projections `(n_tokens, 3)` per layer — *evicted from JSON* |
+| `fiedler_vecs.npz` | Fiedler eigenvectors `(n_tokens,)` per layer — *evicted from JSON* |
+
+**Text:**
+
+| File | Contents |
+|------|----------|
 | `tokens.txt` | Decoded token strings with indices |
-| `layer_metrics.csv` | Flat CSV of per-layer scalars |
+| `layer_metrics.csv` | Flat CSV of key per-layer scalars |
 | `llm_report.txt` | Self-contained plain-text analysis for LLM consumption |
 
-Cross-run outputs: `llm_cross_run_report.txt`, cross-model comparison plots, V eigenspectrum JSON.
+### At the phase1_dir root (written after all runs complete)
+
+| File | Contents |
+|------|----------|
+| `pair_agreement.json` | Per-prompt pair-agreement aggregated across all layers |
+| `centroid_trajectories.npz` | All per-prompt centroid trajectories merged, keyed `{prompt_slug}__traj_{tid}` |
+| `cross_run_report.txt` | Comparative report across all model × prompt combinations |
+| `v_eigenspectrum_{model}.json` | V weight matrix spectrum per model |
+
+**Why the split.** The old `metrics.json` reached ~9MB per run (ALBERT-xlarge). The dominant contributors were `cluster_centroids_kmeans` (~4MB, `best_k × d_model` floats per layer) and `pca_trajectories` (~400KB). These are now in `.npz`. The JSON files that remain are each <100KB and contain exactly the scalars an analysis pass or LLM needs to read.
 
 ---
 
@@ -274,7 +307,7 @@ Trajectory summary panels, inner-product histograms (paper Figure 1 replication)
 Plateau detection, merge event detection, method agreement, NN cycle extraction, per-head Fiedler profiling. Single-run LLM report with 12 sections. Cross-run comparative report with cluster tracking summaries, nesting summaries, pair agreement summaries, and collapse control section.
 
 ### `io_utils.py` — Persistence
-Save/load runs, activations, attentions, clusters, centroid trajectories, plateau attentions. Backward-compatible loading with defaults for fields added in later versions. Replot from saved runs without model loading.
+`save_run` writes one JSON per experiment type plus large arrays to `.npz` (format v2). `load_run` auto-detects v1 (`metrics.json`) vs v2 (split files) and returns the same dict either way. `aggregate_global_artifacts` is called by `run.py` after all per-prompt runs finish; it writes `pair_agreement.json` and a merged `centroid_trajectories.npz` at the phase1_dir root. Individual loaders: `load_activations`, `load_attentions`, `load_clusters`, `load_centroid_trajectories`, `load_plateau_attentions`, `load_pca_trajectories`, `load_fiedler_vecs`. Replot from saved runs without model loading.
 
 ### `config.py` — Global constants
 Model registry (8 models), prompt variants (5), numerical parameters ($\beta$ values, distance thresholds, Sinkhorn tolerances, ALBERT iteration sweep). Device selection.

@@ -38,7 +38,7 @@ from .plots import (
     plot_cka_trajectory,
 )
 from .reporting import print_summary, generate_llm_report, generate_cross_run_report
-from .io_utils import save_run, replot_all
+from .io_utils import save_run, replot_all, aggregate_global_artifacts
 from .clustering import HAS_UMAP
 
 # Module-level output directory set by run_all before any analyze_trajectory call.
@@ -159,6 +159,11 @@ def run_all(
             metastability_results, OUTPUT_DIR,
             control_results=control_results,
         )
+
+    # Write global artifacts aggregated across all per-prompt runs.
+    # pair_agreement.json lands at the OUTPUT_DIR root for Phase 3.
+    print("\nAggregating global artifacts...")
+    aggregate_global_artifacts(all_results, OUTPUT_DIR)
 
     print(f"\nDone. Results in: {OUTPUT_DIR.resolve()}")
     return all_results

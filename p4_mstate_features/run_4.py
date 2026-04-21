@@ -31,10 +31,10 @@ from pathlib import Path
 
 from core.config import DEVICE, PROMPTS
 
-from phase3.crosscoder import Crosscoder
-from phase3.data import PromptActivationStore, ActivationBuffer
-from phase3.training import load_trained_crosscoder
-from phase3.run import _detect_plateau_windows
+from p3_crosscoder.crosscoder import Crosscoder
+from p3_crosscoder.data import PromptActivationStore, ActivationBuffer
+from p3_crosscoder.training import load_trained_crosscoder
+from p3_crosscoder.run import _detect_plateau_windows
 
 from .activation_trajectories import (
     extract_activation_trajectories,
@@ -77,7 +77,7 @@ SUPPORTED_MODELS = {
 def _results_dir(model_name: str) -> Path:
     ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     stem = model_name.replace("/", "_").replace("-", "_")
-    return Path("results") / "phase4" / f"{stem}_{ts}"
+    return Path("results") / "p4_mstate_features" / f"{stem}_{ts}"
 
 
 def _cache_dir(model_name: str) -> Path:
@@ -570,7 +570,7 @@ def run_phase4(args) -> dict:
         )
 
     p3_artifacts = _load_phase3(
-        Path(args.phase3_dir) if args.phase3_dir else Path("results/phase3"),
+        Path(args.phase3_dir) if args.phase3_dir else Path("results/p3_crosscoder"),
         model_stem, DEVICE,
     )
 

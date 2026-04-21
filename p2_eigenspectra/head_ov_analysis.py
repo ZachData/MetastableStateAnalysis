@@ -531,49 +531,80 @@ def run_head_analysis(
 
 
 def print_head_analysis_summary(result: dict, model_name: str, prompt_key: str):
-    """Print concise per-head OV × Fiedler summary including dynamic test."""
+    """Print concise head OV summary.  Delegates to head_ov_summary_lines."""
     if not result.get("applicable"):
         return
+    print(f"\n  Head OV analysis ({model_name} | {prompt_key}):")
+    for line in head_ov_summary_lines(result):
+        print(f"    {line}")
 
-    xref = result["xref"]
+
+def head_ov_summary_lines(result: dict) -> list[str]:
+    """
+    Return LLM-ready plain-text lines summarising head OV × Fiedler analysis.
+ 
+    Extracted from print_head_analysis_summary so disk output and terminal
+    output are always identical.
+    """
+    if not result.get("applicable"):
+        return ["head_ov: not applicable"]
+ 
+    xref = result.get("xref", {})
     if "error" in xref:
-        print(f"\n  Head OV × Fiedler: {xref['error']}")
-        return
-
-    corr = xref["correlation_mean"]
-    sig  = "*" if corr["pval"] < 0.05 else " "
-    print(f"\n  Head OV × Fiedler ({model_name} | {prompt_key}):")
-    print(f"    Correlation: ρ={corr['rho']:+.3f}  p={corr['pval']:.3f} {sig}  "
-          f"(n={corr['n']} heads)")
-    print(f"    Prediction matches: {xref['n_prediction_match']}/{xref['n_heads']}")
-
-    # Show heads sorted by repulsive fraction
-    heads = sorted(xref["per_head_summary"],
-                   key=lambda h: h["frac_repulsive"], reverse=True)
-    print(f"    Per head (sorted by repulsive frac):")
-    for h in heads[:4]:
-        match = "✓" if h["prediction_match"] else " "
-        print(f"      H{h['head']:2d}: rep={h['frac_repulsive']:.3f}  "
-              f"fiedler={h['fiedler_mean']:.3f} ({h['fiedler_class']:7s})  "
-              f"ov={h['ov_sign']:10s}  {match}")
-    if len(heads) > 8:
-        print(f"      ...")
-    for h in heads[-4:]:
-        match = "✓" if h["prediction_match"] else " "
-        print(f"      H{h['head']:2d}: rep={h['frac_repulsive']:.3f}  "
-              f"fiedler={h['fiedler_mean']:.3f} ({h['fiedler_class']:7s})  "
-              f"ov={h['ov_sign']:10s}  {match}")
-
-    # Per-layer correlation summary if available
+        return [f"head_ov: {xref['error']}"]
+ 
+    L = []
+    corr = xref.get("correlation_mean", {})
+    sig  = "*" if corr.get("pval", 1) < 0.05 else " "
+    L.append(
+        f"Head OV × Fiedler:  "
+        f"ρ={corr.get('rho', float('nan')):+.3f}  "
+        f"p={corr.get('pval', float('nan')):.3f} {sig}  "
+        f"(n={corr.get('n', '?')} heads)"
+    )
+    L.append(
+        f"  Prediction matches: "
+        f"{xref.get('n_prediction_match', '?')}/{xref.get('n_heads', '?')}"
+    )
+ 
+    # Top / bottom 4 heads by repulsive fraction
+    heads = sorted(
+        xref.get("per_head_summary", []),
+        key=lambda h: h.get("frac_repulsive", 0), reverse=True,
+    )
+    if heads:
+        L.append("  Per head (sorted by repulsive frac, top 4):")
+        for h in heads[:4]:
+            match = "✓" if h.get("prediction_match") else " "
+            L.append(
+                f"    H{h['head']:2d}: rep={h['frac_repulsive']:.3f}  "
+                f"fiedler={h.get('fiedler_mean', float('nan')):.3f} "
+                f"({h.get('fiedler_class', '?'):7s})  "
+                f"ov={h.get('ov_sign', '?'):10s}  {match}"
+            )
+        if len(heads) > 8:
+            L.append("    ...")
+        for h in heads[-4:]:
+            match = "✓" if h.get("prediction_match") else " "
+            L.append(
+                f"    H{h['head']:2d}: rep={h['frac_repulsive']:.3f}  "
+                f"fiedler={h.get('fiedler_mean', float('nan')):.3f} "
+                f"({h.get('fiedler_class', '?'):7s})  "
+                f"ov={h.get('ov_sign', '?'):10s}  {match}"
+            )
+ 
+    # Per-layer correlations summary
     plc = xref.get("per_layer_correlations", [])
     if plc:
-        rhos = [c["rho"] for c in plc if np.isfinite(c["rho"])]
-        sig_count = sum(1 for c in plc if c["pval"] < 0.05)
+        rhos = [c["rho"] for c in plc if np.isfinite(c.get("rho", float("nan")))]
+        sig_count = sum(1 for c in plc if c.get("pval", 1) < 0.05)
         if rhos:
-            print(f"    Per-layer correlations: mean ρ={np.mean(rhos):+.3f}  "
-                  f"significant at p<0.05: {sig_count}/{len(plc)} layers")
-
-    # Fix 12: dynamic head activation test
+            L.append(
+                f"  Per-layer correlations: mean ρ={np.mean(rhos):+.3f}  "
+                f"significant (p<0.05): {sig_count}/{len(plc)} layers"
+            )
+ 
+    # Dynamic activation test
     dt = result.get("dynamic_test", {})
     if dt.get("applicable"):
         z  = dt["z_score_violation"]
@@ -581,7 +612,10 @@ def print_head_analysis_summary(result: dict, model_name: str, prompt_key: str):
         pm = dt["pop_mean"]
         mp = dt.get("mw_pval", float("nan"))
         sig_dyn = "*" if np.isfinite(mp) and mp < 0.05 else " "
-        print(f"    Dynamic activation test (fix 12):")
-        print(f"      Weighted Fiedler z-score at violations: {z:+.3f}  "
-              f"(viol={vm:.3f}  pop={pm:.3f}  MW p={mp:.3f}{sig_dyn})")
-        print(f"      {dt['interpretation']}")
+        L.append(
+            f"  Dynamic activation test: z={z:+.3f}  "
+            f"(viol={vm:.3f}  pop={pm:.3f}  MW p={mp:.3f}{sig_dyn})"
+        )
+        L.append(f"  {dt.get('interpretation', '')}")
+ 
+    return L
