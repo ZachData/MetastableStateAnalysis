@@ -479,10 +479,26 @@ def compute_v_alignment(
             and sibling_centroid_coords.size > 0):
         lf = merge_ev["layer_from"]
         lt = merge_ev["layer_to"]
-        # Find the centroid of primary at lf, sibling at lf, and fused at lt
-        # from the chain/coords mapping.
-        chain_dict = {l: k for k, (l, _) in enumerate(chain)}
-        sib_chain_dict = {l: k for k, (l, _) in enumerate(sibling_trajectory["chain"])}
+        # Build layer → index maps that mirror _centroid_coords: only layers
+        # where the cluster was non-empty produce a centroid row, so we must
+        # skip the same layers here rather than using chain position directly.
+        valid_primary = []
+        for layer, cid in chain:
+            if layer >= activations.shape[0]:
+                break
+            if (hdb_labels[layer] == cid).sum() >= 1:
+                valid_primary.append(layer)
+        chain_dict = {l: k for k, l in enumerate(valid_primary)}
+
+        sib_chain = sibling_trajectory["chain"]
+        valid_sibling = []
+        for layer, cid in sib_chain:
+            if layer >= activations.shape[0]:
+                break
+            if (hdb_labels[layer] == cid).sum() >= 1:
+                valid_sibling.append(layer)
+        sib_chain_dict = {l: k for k, l in enumerate(valid_sibling)}
+
         if (lf in chain_dict and lf in sib_chain_dict
                 and lt in chain_dict):
             merge_geom = merge_event_geometry(

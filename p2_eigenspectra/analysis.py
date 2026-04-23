@@ -1,411 +1,403 @@
 """
-analysis.py — Cross-reference Phase 2 trajectory results with Phase 1 events.
+analysis.py — Layer-wise analysis loop.
 
-Tests each competing explanation for energy violations and produces a
-per-violation attribution.
+analyze_trajectory ingests a list of per-layer hidden states and attentions
+and calls every metric/clustering/projection function, collecting results
+into a single dict that all downstream plotting and reporting functions accept.
 
-Functions
----------
-classify_violations      : per-violation-layer mechanism attribution
-plateau_characterization : subspace dominance profile during plateaus
-merge_prediction_test    : GPT-2 repulsive fraction vs merge location
-rescaled_comparison      : metric improvement in rescaled frame
-full_analysis            : run all tests, return structured verdict
+Performance notes
+-----------------
+normed (L2-normalised activations) and G (Gram matrix) are computed ONCE per
+layer and threaded through to every downstream function that previously
+recomputed them independently.  This eliminates ~8 redundant matrix multiplies
+per layer (inner products, ×4 interaction energies, effective rank, clustering,
+PCA, UMAP).
 """
 
 import numpy as np
 from pathlib import Path
+from tqdm import tqdm
 
-from core.config import BETA_VALUES
-from phase1.reporting import detect_plateaus
+from core.config import BETA_VALUES, DISTANCE_THRESHOLDS
+from core.models import layernorm_to_sphere
+from .metrics import (
+    pairwise_inner_products_from_gram,
+    interaction_energies_batched,
+    effective_rank_from_raw,
+    attention_entropy,
+    nearest_neighbor_indices,
+    linear_cka,
+    energy_drop_pairs,
+)
+from .sinkhorn import analyze_attention_sinkhorn
+from .spectral import spectral_eigengap_k
+from .clustering import (
+    cluster_count_sweep, pca_projection, umap_projection, HAS_UMAP,
+    multiscale_nesting, pair_hdbscan_agreement,
+)
+from .cluster_tracking import track_clusters
 
 
 # ---------------------------------------------------------------------------
-# Violation classification
+# Phase 2 cross-reference: full_analysis
 # ---------------------------------------------------------------------------
 
-def classify_violations(
-    traj_results: dict,
-    beta: float = 1.0,
-) -> dict:
+def full_analysis(traj: dict, ov_data: dict) -> dict:
     """
-    For each energy violation layer, test which mechanism explains it.
+    Cross-reference Phase 1 violation events with Phase 2 trajectory metrics.
 
-    Tests applied per violation layer (all at transition L → L+1,
-    so index into step/displacement arrays is L):
-
-    1. Overshoot — step_mean[L] > overshoot_threshold
-    2. Repulsive subspace — sym_repulse_disp_frac[L] > sym_attract_disp_frac[L]
-       AND repulse frac is above the trajectory median
-    3. Self-interaction — mean self_int at violation-involved tokens is negative
+    Takes the dict from analyze_trajectory_offline or
+    analyze_trajectory_offline_perlayer and produces the violations_beta* and
+    rescaled.beta_*.improvement fields expected by the verdict builders and
+    subexp_wrappers._trajectory_subexp.
 
     Parameters
     ----------
-    traj_results : dict from trajectory.analyze_trajectory_offline
-    beta         : which beta's violations to classify
+    traj    : output of analyze_trajectory_offline[_perlayer].  Must contain:
+              events (phase1 events dict), steps, disp, self_int, rescaled.
+    ov_data : output of weights.analyze_weights (is_per_layer etc).
+              Not used directly here but kept in signature for future use.
 
     Returns
     -------
-    dict with:
-      violations     : list of layer indices
-      per_violation  : list of dicts, one per violation, each with:
-        layer, overshoot (bool), repulsive_dominant (bool),
-        self_int_negative (bool), step_norm (float),
-        repulse_disp_frac (float), attract_disp_frac (float),
-        mean_self_int_drop_tokens (float)
-      summary : dict with aggregate fractions
+    dict with keys:
+      events                : traj["events"] (forwarded unchanged)
+      violations_beta{beta} : per-beta classification, with sub-key "summary"
+                              containing n_violations, frac_overshoot,
+                              frac_repulsive, frac_self_int_neg
+      rescaled              : {"beta_1.0": {"improvement": N, ...}, ...}
     """
-    events = traj_results["events"]
-    steps  = traj_results["steps"]
-    disp   = traj_results["disp"]
-    si     = traj_results["self_int"]
+    from core.config import BETA_VALUES
 
-    violations = events["energy_violations"].get(beta, [])
-    drop_pairs = events["energy_drop_pairs"].get(beta, {})
+    events   = traj["events"]
+    steps    = traj["steps"]
+    disp     = traj["disp"]
+    self_int = traj["self_int"]
+    resc     = traj["rescaled"]
 
-    threshold     = steps["overshoot_threshold"]
-    repulse_med   = float(np.median(disp["sym_repulse_disp_frac"]))
+    overshoot_thresh = steps["overshoot_threshold"]
+    step_mean        = steps["step_mean"]               # (n_transitions,)
+    repulse_frac     = disp["sym_repulse_disp_frac"]    # (n_transitions,)
+    frac_negative    = self_int["frac_negative"]        # (n_layers,)
 
-    per_violation = []
-    for v_layer in violations:
-        # Transition index: violation at layer v_layer means energy dropped
-        # from v_layer-1 to v_layer.  The displacement index is v_layer-1.
-        t_idx = v_layer - 1
-        if t_idx < 0 or t_idx >= len(steps["step_mean"]):
+    result = {"events": events}
+
+    # --- Per-beta violation classification ---
+    for beta in BETA_VALUES:
+        violation_layers = events["energy_violations"].get(beta, [])
+        n = len(violation_layers)
+        if n == 0:
+            result[f"violations_beta{beta}"] = {
+                "layers": [],
+                "per_violation": [],
+                "summary": {
+                    "n_violations":      0,
+                    "frac_overshoot":    0.0,
+                    "frac_repulsive":    0.0,
+                    "frac_self_int_neg": 0.0,
+                },
+            }
             continue
 
-        v = {"layer": v_layer}
+        n_overshoot = 0
+        n_repulsive = 0
+        n_self_neg  = 0
+        per_violation = []
 
-        # --- Overshoot ---
-        v["step_norm"] = float(steps["step_mean"][t_idx])
-        v["overshoot"] = v["step_norm"] > threshold
+        for v_layer in violation_layers:
+            t = v_layer - 1   # transition index: energy dropped from L-1 → L
 
-        # --- Repulsive displacement ---
-        r_frac = float(disp["sym_repulse_disp_frac"][t_idx])
-        a_frac = float(disp["sym_attract_disp_frac"][t_idx])
-        v["repulse_disp_frac"] = r_frac
-        v["attract_disp_frac"] = a_frac
-        v["repulsive_dominant"] = (r_frac > a_frac) and (r_frac > repulse_med)
+            # Overshoot: step size at this transition > global mean + 2σ
+            is_overshoot = bool(0 <= t < len(step_mean) and
+                                step_mean[t] > overshoot_thresh)
 
-        # --- Self-interaction of drop-pair tokens ---
-        pairs = drop_pairs.get(v_layer, [])
-        if pairs and v_layer < si["self_int"].shape[0]:
-            involved_tokens = set()
-            for p in pairs:
-                involved_tokens.add(p[0])
-                involved_tokens.add(p[1])
-            involved = list(involved_tokens)
-            si_vals = si["self_int"][v_layer, involved]
-            v["mean_self_int_drop_tokens"] = float(si_vals.mean())
-            v["self_int_negative"] = float(si_vals.mean()) < 0
-        else:
-            v["mean_self_int_drop_tokens"] = float("nan")
-            v["self_int_negative"] = False
+            # Repulsive: displacement at this transition dominated by repulsive subspace
+            is_repulsive = bool(0 <= t < len(repulse_frac) and
+                                repulse_frac[t] > 0.5)
 
-        per_violation.append(v)
+            # Self-int negative: majority of tokens have negative x^T V x at the
+            # violation layer (locally repulsive field)
+            is_self_neg  = bool(0 <= v_layer < len(frac_negative) and
+                                frac_negative[v_layer] > 0.5)
 
-    # Summary
-    n = len(per_violation)
-    summary = {
-        "n_violations":       n,
-        "frac_overshoot":     _frac(per_violation, "overshoot") if n else 0.0,
-        "frac_repulsive":     _frac(per_violation, "repulsive_dominant") if n else 0.0,
-        "frac_self_int_neg":  _frac(per_violation, "self_int_negative") if n else 0.0,
-    }
+            n_overshoot += int(is_overshoot)
+            n_repulsive += int(is_repulsive)
+            n_self_neg  += int(is_self_neg)
 
-    return {
-        "violations":    violations,
-        "per_violation": per_violation,
-        "summary":       summary,
-        "beta":          beta,
-    }
+            per_violation.append({
+                "layer":        v_layer,
+                "overshoot":    is_overshoot,
+                "repulsive":    is_repulsive,
+                "self_int_neg": is_self_neg,
+            })
 
-
-def _frac(items, key):
-    return float(np.mean([v[key] for v in items]))
-
-
-# ---------------------------------------------------------------------------
-# Subspace profile at violation vs non-violation layers
-# ---------------------------------------------------------------------------
-
-def violation_vs_population(traj_results: dict, beta: float = 1.0) -> dict:
-    """
-    Compare subspace metrics at violation layers vs all other layers.
-
-    For each metric, compute z-score: (mean_violation - mean_pop) / std_pop.
-    Positive z-score for repulsive metrics at violation layers supports
-    the V-repulsion hypothesis.
-
-    Returns
-    -------
-    dict with z-scores and p-value approximations for:
-      repulse_activation, attract_activation, step_norm,
-      self_int_mean, repulse_disp_frac
-    """
-    events   = traj_results["events"]
-    subspace = traj_results["subspace"]
-    steps    = traj_results["steps"]
-    si       = traj_results["self_int"]
-    disp     = traj_results["disp"]
-
-    violations = set(events["energy_violations"].get(beta, []))
-    n_layers   = len(subspace["sym_repulse_frac"])
-
-    result = {}
-    metrics = [
-        ("sym_repulse_activation", subspace["sym_repulse_frac"], False),
-        ("sym_attract_activation", subspace["sym_attract_frac"], False),
-        ("self_int_mean",          si["self_int_mean"],          False),
-        ("frac_negative_self_int", si["frac_negative"],          False),
-    ]
-
-    # Step and displacement are indexed by transition (L-1)
-    # Map violation layer L to transition index L-1
-    violation_transitions = {v - 1 for v in violations if v - 1 >= 0}
-    n_trans = len(steps["step_mean"])
-
-    trans_metrics = [
-        ("step_norm",        steps["step_mean"],               True),
-        ("repulse_disp_frac", disp["sym_repulse_disp_frac"],  True),
-        ("attract_disp_frac", disp["sym_attract_disp_frac"],  True),
-    ]
-
-    for name, values, is_transition in metrics:
-        v_set = violations if not is_transition else violation_transitions
-        n     = n_layers if not is_transition else n_trans
-
-        v_indices   = [i for i in range(n) if i in v_set]
-        pop_indices = [i for i in range(n) if i not in v_set]
-
-        if not v_indices or not pop_indices:
-            result[name] = {"z_score": float("nan"), "v_mean": float("nan"),
-                            "pop_mean": float("nan")}
-            continue
-
-        v_vals   = values[v_indices]
-        pop_vals = values[pop_indices]
-        pop_std  = float(np.std(pop_vals))
-
-        result[name] = {
-            "z_score":  float((np.mean(v_vals) - np.mean(pop_vals)) / (pop_std + 1e-12)),
-            "v_mean":   float(np.mean(v_vals)),
-            "pop_mean": float(np.mean(pop_vals)),
-            "pop_std":  pop_std,
+        result[f"violations_beta{beta}"] = {
+            "layers":        violation_layers,
+            "per_violation": per_violation,
+            "summary": {
+                "n_violations":      n,
+                "frac_overshoot":    n_overshoot / n,
+                "frac_repulsive":    n_repulsive / n,
+                "frac_self_int_neg": n_self_neg  / n,
+            },
         }
 
-    for name, values, _ in trans_metrics:
-        v_indices   = [i for i in range(n_trans) if i in violation_transitions]
-        pop_indices = [i for i in range(n_trans) if i not in violation_transitions]
-
-        if not v_indices or not pop_indices:
-            result[name] = {"z_score": float("nan"), "v_mean": float("nan"),
-                            "pop_mean": float("nan")}
-            continue
-
-        v_vals   = values[v_indices]
-        pop_vals = values[pop_indices]
-        pop_std  = float(np.std(pop_vals))
-
-        result[name] = {
-            "z_score":  float((np.mean(v_vals) - np.mean(pop_vals)) / (pop_std + 1e-12)),
-            "v_mean":   float(np.mean(v_vals)),
-            "pop_mean": float(np.mean(pop_vals)),
-            "pop_std":  pop_std,
+    # --- Rescaled-frame improvement counts ---
+    # resc["n_violations"] is {beta: int} from rescaled_trajectory[_perlayer].
+    rescaled_out = {}
+    resc_n_viol  = resc.get("n_violations", {})
+    for beta in [1.0, 5.0]:
+        n_phase1   = len(events["energy_violations"].get(beta, []))
+        n_rescaled = resc_n_viol.get(beta, 0)
+        rescaled_out[f"beta_{beta}"] = {
+            "improvement":           max(0, n_phase1 - n_rescaled),
+            "n_phase1_violations":   n_phase1,
+            "n_rescaled_violations": n_rescaled,
         }
+    result["rescaled"] = rescaled_out
 
     return result
 
 
-# ---------------------------------------------------------------------------
-# Plateau characterization
-# ---------------------------------------------------------------------------
-
-def plateau_characterization(traj_results: dict) -> dict:
-    """
-    During Phase 1 plateau windows, characterize subspace dominance.
-
-    Hypothesis: attractive subspace dominates during plateaus;
-    repulsive subspace is quiet.
-
-    Returns
-    -------
-    dict with:
-      plateaus : list of (start, end) tuples
-      per_plateau : list of dicts with mean attractive/repulsive fracs,
-                    mean self-interaction, mean step norm
-    """
-    events   = traj_results["events"]
-    subspace = traj_results["subspace"]
-    si       = traj_results["self_int"]
-    steps    = traj_results["steps"]
-
-    # Detect plateaus in ip_mass_near_1 (same as Phase 1)
-    mass_plateaus = detect_plateaus(events["ip_mass_near_1"], window=2, tol=0.05)
-    # Also detect CKA plateaus
-    cka_series = [v for v in events["cka_prev"] if not _isnan_val(v)]
-    cka_plateaus = detect_plateaus(cka_series, window=2, tol=0.02) if cka_series else []
-
-    per_plateau = []
-    for start, end, _ in mass_plateaus:
-        layers = list(range(start, end + 1))
-        if not layers:
-            continue
-
-        p = {"start": start, "end": end}
-        p["sym_attract_mean"]  = float(np.mean(subspace["sym_attract_frac"][layers]))
-        p["sym_repulse_mean"]  = float(np.mean(subspace["sym_repulse_frac"][layers]))
-        p["self_int_mean"]     = float(np.mean(si["self_int_mean"][layers]))
-        p["frac_negative"]     = float(np.mean(si["frac_negative"][layers]))
-
-        # Step norm: transitions within the plateau
-        trans_layers = [l for l in layers if l > 0 and l - 1 < len(steps["step_mean"])]
-        if trans_layers:
-            p["step_mean"] = float(np.mean(steps["step_mean"][[l-1 for l in trans_layers]]))
-        else:
-            p["step_mean"] = float("nan")
-
-        per_plateau.append(p)
-
-    return {
-        "mass_plateaus":  [(s, e) for s, e, _ in mass_plateaus],
-        "per_plateau":    per_plateau,
-        "n_plateaus":     len(per_plateau),
-    }
-
-
-def _isnan_val(v):
-    return isinstance(v, float) and v != v
-
-
-# ---------------------------------------------------------------------------
-# Rescaled-frame comparison
-# ---------------------------------------------------------------------------
-
-def rescaled_comparison(traj_results: dict) -> dict:
-    """
-    Compare Phase 1 metrics in original vs rescaled coordinates.
-
-    Key question: does the energy violation rate drop in the rescaled frame?
-
-    Returns
-    -------
-    dict with per-beta violation counts (original vs rescaled),
-    and ip_mean trajectory comparison.
-    """
-    events   = traj_results["events"]
-    rescaled = traj_results["rescaled"]
-
-    comparison = {}
-    for beta in BETA_VALUES:
-        n_orig     = len(events["energy_violations"].get(beta, []))
-        n_rescaled = rescaled["n_violations"].get(beta, 0)
-        comparison[f"beta_{beta}"] = {
-            "violations_original": n_orig,
-            "violations_rescaled": n_rescaled,
-            "improvement":         n_orig - n_rescaled,
-        }
-
-    # IP mean correlation
-    orig_ip = np.array(events["ip_mean"])
-    resc_ip = rescaled["ip_mean"]
-    n = min(len(orig_ip), len(resc_ip))
-    if n > 2:
-        corr = float(np.corrcoef(orig_ip[:n], resc_ip[:n])[0, 1])
-    else:
-        corr = float("nan")
-
-    comparison["ip_mean_correlation"] = corr
-
-    return comparison
-
-
-# ---------------------------------------------------------------------------
-# GPT-2 merge prediction (per-layer V)
-# ---------------------------------------------------------------------------
-
-def merge_prediction_test(
-    ov_data: dict,
-    phase1_events: dict,
+def analyze_trajectory(
+    hidden_states: list,
+    attentions: list,
+    prompt_key: str,
+    model_name: str,
+    tokens: list,
+    beta_values: list = BETA_VALUES,
+    thresholds: np.ndarray = DISTANCE_THRESHOLDS,
+    umap_dir: Path = None,
 ) -> dict:
     """
-    For per-layer models (GPT-2), test whether the repulsive eigenvalue
-    fraction of V at each layer predicts merge events.
+    Compute all per-layer metrics for one (model, prompt) run.
 
     Parameters
     ----------
-    ov_data       : dict from weights.analyze_weights (must be per_layer)
-    phase1_events : dict from trajectory.load_phase1_events
+    hidden_states : list of (n_tokens, d_model) float tensors, one per layer
+    attentions    : list of (n_heads, n_tokens, n_tokens) float tensors
+    prompt_key    : string key from PROMPTS
+    model_name    : model identifier string
+    tokens        : list of decoded token strings
+    beta_values   : β values for interaction energy
+    thresholds    : cosine-distance thresholds for agglomerative sweep
+    umap_dir      : if provided, UMAP projections are saved here as .npy files
 
     Returns
     -------
-    dict with:
-      repulsive_per_layer : list of floats
-      merge_layers        : list of ints (where spectral_k drops)
-      correlation         : Spearman correlation (repulsive frac vs merge indicator)
+    results dict consumed by plots.py, reporting.py, and io_utils.py
     """
-    if not ov_data["is_per_layer"]:
-        return {"applicable": False, "reason": "shared weights (ALBERT)"}
-
-    decomps  = ov_data["decomps"]
-    rep_frac = [d["frac_repulsive"] for d in decomps]
-
-    spectral_k = phase1_events["spectral_k"]
-    merge_layers = []
-    for i in range(1, len(spectral_k)):
-        if spectral_k[i] < spectral_k[i-1]:
-            merge_layers.append(i)
-
-    # Align lengths (spectral_k may differ from number of weight layers)
-    n = min(len(rep_frac), len(spectral_k))
-    if n < 3:
-        return {"applicable": False, "reason": "too few layers"}
-
-    # Binary merge indicator
-    merge_indicator = np.zeros(n)
-    for m in merge_layers:
-        if m < n:
-            merge_indicator[m] = 1.0
-
-    # Spearman correlation
-    from scipy.stats import spearmanr
-    rho, pval = spearmanr(rep_frac[:n], merge_indicator)
-
-    return {
-        "applicable":         True,
-        "repulsive_per_layer": rep_frac[:n],
-        "merge_layers":       merge_layers,
-        "spearman_rho":       float(rho),
-        "spearman_pval":      float(pval),
+    n_layers = len(hidden_states)
+    results  = {
+        "model":            model_name,
+        "prompt":           prompt_key,
+        "tokens":           tokens,
+        "n_layers":         n_layers,
+        "n_tokens":         hidden_states[0].shape[0],
+        "d_model":          hidden_states[0].shape[1],
+        "layers":           [],
+        "pca_trajectories": [],   # (n_layers, n_tokens, 3) nested list
     }
 
+    prev_nn: np.ndarray = None   # NN index array from previous layer
+    prev_normed: np.ndarray = None  # L2-normed activations from previous layer
+    prev_activations = None  # raw activations from previous layer (for energy drop pairs)
 
-# ---------------------------------------------------------------------------
-# Full analysis
-# ---------------------------------------------------------------------------
+    for layer_idx, activations in enumerate(tqdm(
+        hidden_states,
+        desc=f"{model_name[:20]} | {prompt_key}",
+        leave=False,
+    )):
+        lr = {"layer": layer_idx}
 
-def full_analysis(traj_results: dict, ov_data: dict) -> dict:
-    """
-    Run all Phase 2 cross-reference analyses.
+        # ------------------------------------------------------------------
+        # Pre-compute normed activations and Gram matrix ONCE per layer.
+        # Every downstream call receives these directly, avoiding ~8
+        # redundant layernorm_to_sphere + matmul calls per layer.
+        # ------------------------------------------------------------------
+        normed = layernorm_to_sphere(activations).numpy()   # (n_tokens, d)
+        G      = normed @ normed.T                          # (n_tokens, n_tokens)
 
-    Returns
-    -------
-    dict with all analysis results keyed by test name.
-    """
-    results = {}
+        # --- Effective rank (must use raw activations, not L2-normed) ---
+        # Computed early so the CKA block can use it for degeneracy gating.
+        lr["effective_rank"] = effective_rank_from_raw(activations)
 
-    # Per-beta violation classification
-    for beta in BETA_VALUES:
-        results[f"violations_beta{beta}"] = classify_violations(traj_results, beta)
-        results[f"zscores_beta{beta}"]    = violation_vs_population(traj_results, beta)
+        # --- CKA vs previous layer ---
+        # Suppress when effective_rank < 3: all tokens are a near-point-mass,
+        # centering produces noise-dominated vectors, and the Frobenius norms
+        # collapse to near-zero — the ratio is numerically meaningless.
+        if prev_normed is not None and lr["effective_rank"] >= 3.0:
+            lr["cka_prev"] = linear_cka(normed, prev_normed)
+        else:
+            lr["cka_prev"] = float("nan")
+        prev_normed = normed
 
-    results["plateaus"] = plateau_characterization(traj_results)
-    results["rescaled"] = rescaled_comparison(traj_results)
+        # --- Inner products ---
+        ips                  = pairwise_inner_products_from_gram(G)
+        lr["ip_mean"]        = float(ips.mean())
+        lr["ip_std"]         = float(ips.std())
+        lr["ip_histogram"]   = np.histogram(ips, bins=50, range=(-1, 1))[0].tolist()
+        lr["ip_mass_near_1"] = float((ips > 0.9).mean())
 
-    # Merge prediction (GPT-2 only)
-    if ov_data["is_per_layer"]:
-        results["merge_prediction"] = merge_prediction_test(
-            ov_data, traj_results["events"]
-        )
+        # --- Nearest-neighbour trajectory tracking ---
+        # nn[i] = index of token i's nearest neighbour at this layer (excl. self).
+        # nn_stability = fraction of tokens with unchanged NN vs the previous layer.
+        # Layer 0 has no predecessor, so stability is undefined (stored as None).
+        nn                   = nearest_neighbor_indices(G)          # (n_tokens,)
+        lr["nn_indices"]     = nn.tolist()
+        if prev_nn is not None:
+            lr["nn_stability"] = float(np.mean(nn == prev_nn))
+        else:
+            lr["nn_stability"] = None
+        prev_nn = nn
+
+        # --- Interaction energies (all betas, one vectorised exp call) ---
+        lr["energies"] = interaction_energies_batched(G, beta_values)
+
+        # --- Energy drop localization (all betas, violation layers only) ---
+        # A violation is when E_beta decreases from the previous layer.
+        # Gate on effective_rank >= 3 to suppress degenerate-regime noise.
+        # Output format: {beta: [(i, j, delta), ...]} — empty list per beta
+        # when no violation or not enough context.
+        if prev_activations is not None and lr["effective_rank"] >= 3.0:
+            drop_pairs_by_beta = {}
+            for beta in beta_values:
+                e_curr = lr["energies"].get(beta, float("nan"))
+                e_prev = (
+                    results["layers"][-1]["energies"].get(beta, float("nan"))
+                    if results["layers"] else float("nan")
+                )
+                is_nan = lambda v: isinstance(v, float) and v != v
+                if not is_nan(e_curr) and not is_nan(e_prev) and e_curr - e_prev < -1e-6:
+                    drop_pairs_by_beta[beta] = energy_drop_pairs(
+                        prev_activations, activations, beta=beta, top_k=10
+                    )
+                else:
+                    drop_pairs_by_beta[beta] = []
+            lr["energy_drop_pairs"] = drop_pairs_by_beta
+        else:
+            lr["energy_drop_pairs"] = {beta: [] for beta in beta_values}
+        prev_activations = activations
+
+        # --- Standard clustering (accepts pre-normed ndarray) ---
+        lr["clustering"] = cluster_count_sweep(normed, thresholds)
+
+        # --- KMeans centroids (Phase 5 cluster identity analysis) ---
+        # Computed here where normed is available; stored as a nested list
+        # so they survive JSON serialization in metrics.json and are also
+        # persisted to clusters.npz by save_run.
+        # Centroid[c] = mean of all normed token vectors assigned to cluster c,
+        # re-normalized to S^{d-1} so inner products remain meaningful.
+        km_labels = np.array(lr["clustering"]["kmeans"]["labels"], dtype=np.int32)
+        best_k    = lr["clustering"]["kmeans"]["best_k"]
+        centroids = np.zeros((best_k, normed.shape[1]), dtype=np.float32)
+        for c in range(best_k):
+            mask = km_labels == c
+            if mask.any():
+                mean_vec = normed[mask].mean(axis=0)
+                norm     = np.linalg.norm(mean_vec)
+                centroids[c] = mean_vec / norm if norm > 1e-10 else mean_vec
+        lr["cluster_centroids_kmeans"] = centroids.tolist()
+
+        # --- Spectral eigengap on Gram matrix ---
+        # Request the Fiedler vector (second eigenvector) so we can record which
+        # tokens fall on each side of the dominant bipartition.  sign(v[i]) > 0
+        # = "positive side", < 0 = "negative side".  Stored as a list of +1/-1
+        # ints for JSON serialisation.  Used in reporting to label bipartition.
+        spectral_result = spectral_eigengap_k(G, return_fiedler_vec=True)
+        lr["spectral"] = spectral_result
+        fvec = spectral_result.get("fiedler_vec")
+        if fvec is not None:
+            lr["fiedler_bipartition"] = [int(np.sign(v)) if v != 0.0 else 1 for v in fvec]
+        else:
+            lr["fiedler_bipartition"] = None
+
+        # --- Multi-scale cluster nesting (P1-3) ---
+        # Run spectral eigengap within each HDBSCAN cluster to detect
+        # hierarchical organization (global bipartition nesting inside
+        # local density structure).
+        hdb_data = lr["clustering"].get("hdbscan", {})
+        if "labels" in hdb_data and normed.shape[0] >= 4:
+            hdb_labels = np.array(hdb_data["labels"], dtype=np.int32)
+            n_real_clusters = len(set(hdb_labels) - {-1})
+            if n_real_clusters >= 2:
+                lr["nesting"] = multiscale_nesting(normed, hdb_labels)
+            else:
+                lr["nesting"] = {
+                    "global_spectral_k": lr["spectral"]["k_eigengap"],
+                    "per_cluster": {},
+                    "has_nesting": False,
+                    "nesting_summary": "fewer than 2 HDBSCAN clusters",
+                    "n_clusters_with_substructure": 0,
+                }
+        else:
+            lr["nesting"] = {
+                "global_spectral_k": lr["spectral"]["k_eigengap"],
+                "per_cluster": {},
+                "has_nesting": False,
+                "nesting_summary": "HDBSCAN not available",
+                "n_clusters_with_substructure": 0,
+            }
+
+        # --- Per-pair HDBSCAN agreement / induction head filtering (P1-4) ---
+        if "labels" in hdb_data:
+            lr["pair_agreement"] = pair_hdbscan_agreement(
+                nn, hdb_labels, tokens,
+            )
+        else:
+            lr["pair_agreement"] = {
+                "mutual_pairs": [],
+                "n_semantic": 0,
+                "n_artifact": 0,
+                "n_noise": 0,
+                "artifact_fraction": 0.0,
+            }
+
+        # --- PCA projection (accepts pre-normed ndarray) ---
+        proj, var_ratio              = pca_projection(normed, n_components=3)
+        lr["pca_explained_variance"] = var_ratio.tolist()
+        results["pca_trajectories"].append(proj.tolist())
+
+        # --- UMAP (optional, accepts pre-normed ndarray) ---
+        if HAS_UMAP and umap_dir is not None and normed.shape[0] >= 4:
+            umap_proj = umap_projection(normed, n_components=2)
+            if umap_proj is not None:
+                np.save(
+                    umap_dir / (
+                        f"{model_name.replace('/', '_')}"
+                        f"_{prompt_key}_layer{layer_idx:02d}.npy"
+                    ),
+                    umap_proj,
+                )
+
+        # --- Attention: entropy + Sinkhorn ---
+        if layer_idx < len(attentions):
+            attn                             = attentions[layer_idx]
+            ent                              = attention_entropy(attn)
+            lr["attention_entropy_per_head"] = ent.tolist()
+            lr["attention_entropy_mean"]     = float(ent.mean())
+            lr["sinkhorn"]                   = analyze_attention_sinkhorn(attn)
+
+        results["layers"].append(lr)
+
+    # ------------------------------------------------------------------
+    # Post-loop: HDBSCAN cluster tracking across layers (P1-1)
+    # ------------------------------------------------------------------
+    results["cluster_tracking"] = track_clusters(results)
+
+    # ------------------------------------------------------------------
+    # Post-loop: identify plateau layers for attention saving (P1-7)
+    # Plateau detection uses mass-near-1 with the same parameters as
+    # reporting.detect_plateaus.  Layers in any plateau window are
+    # flagged so that save_run can persist their raw attention matrices.
+    # ------------------------------------------------------------------
+    from .reporting import detect_plateaus
+    mass1 = [r["ip_mass_near_1"] for r in results["layers"]]
+    plateaus = detect_plateaus(mass1, window=2, tol=0.10)
+    plateau_layer_set = set()
+    for s, e, _ in plateaus:
+        for l in range(s, e + 1):
+            plateau_layer_set.add(l)
+    results["plateau_layers"] = sorted(plateau_layer_set)
 
     return results

@@ -24,11 +24,13 @@ classify_layers_adaptive       : model-adaptive zone thresholds
 full_analysis_extended         : run all extensions, merge into existing results
 """
 
-import numpy as np
-from scipy.stats import spearmanr
 from __future__ import annotations
 
-from phase2.trajectory import load_phase1_events
+import numpy as np
+from scipy.stats import spearmanr
+
+from p2_eigenspectra.trajectory import load_phase1_events
+from p2_eigenspectra.verdict_v2 import build_v_score
 
 
 # ---------------------------------------------------------------------------
@@ -763,7 +765,7 @@ def _build_verdict_v2_shim(analysis_results, ov_data, model_name, prompt_key):
  
     Used only by callers that have not yet been migrated to the registry path.
     """
-    from phase2.subresult import SubResult
+    from p2_eigenspectra.subresult import SubResult
  
     # Build minimal SubResult-like wrappers from the old analysis dict
     def _sr(name, vc):

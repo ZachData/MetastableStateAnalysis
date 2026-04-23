@@ -23,7 +23,7 @@ import numpy as np
 from pathlib import Path
 
 from core.config import BETA_VALUES
-from phase2.weights import rescale_matrix
+from p2_eigenspectra.weights import rescale_matrix
 
 
 # ---------------------------------------------------------------------------

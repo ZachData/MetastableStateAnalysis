@@ -2,7 +2,7 @@
 run.py — Experiment orchestrator and CLI entry point.
 
 Usage examples:
-python -m phase1.run
+python -m p1_mstate_tracking.run_1
     python run.py                                          # all 7 models, all prompts
     python run.py --fast                                   # albert-base-v2 only, 2 prompts
     python run.py --models albert-base-v2 gpt2-xl         # specific model subset

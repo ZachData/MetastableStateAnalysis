@@ -2,7 +2,7 @@
 run_2.py — p2_eigenspectra experiment orchestrator and CLI entry point.
 
 Usage examples:
-    python -m phase2.run_2 --full
+    python -m p2_eigenspectra.run_2 --full
     python -m phase2.run_2 --full --models albert-base-v2
     python -m phase2.run_2 --full --phase1-dir results/2026-04-11_13-08-09
     python -m phase2.run_2 --offline results/p2_eigenspectra_full --phase1-dir results/phase1
@@ -63,17 +63,17 @@ from core.config import (
 )
 from core.models import load_model
 
-from phase2.weights import analyze_weights, load_weight_decomposition
-from phase2.trajectory import analyze_trajectory_offline, load_phase1_events
-from phase2.trajectory_perlayer import analyze_trajectory_offline_perlayer
-from phase2.analysis import full_analysis
-from phase2.decompose import (
+from p2_eigenspectra.weights import analyze_weights, load_weight_decomposition
+from p2_eigenspectra.trajectory import analyze_trajectory_offline, load_phase1_events
+from p2_eigenspectra.trajectory_perlayer import analyze_trajectory_offline_perlayer
+from p2_eigenspectra.analysis import full_analysis
+from p2_eigenspectra.decompose import (
     extract_decomposed_albert,
     extract_decomposed_standard,
     save_decomposed,
 )
-from phase2.reporting import save_verdict
-from phase2.subexperiments import run_one_prompt, _save_cross_run_summary
+from p2_eigenspectra.reporting import save_verdict
+from p2_eigenspectra.subexperiments import run_one_prompt
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +304,7 @@ def run_offline(
 def _save_cross_run(verdicts: list, output_dir: Path) -> None:
     """Save cross-run JSON + LLM-friendly summary."""
     import json
-    from phase2.subexperiments import _jsonify
+    from p2_eigenspectra.subexperiments import _jsonify
 
     json_path = output_dir / "p2_eigenspectra_cross_run.json"  # <-- renamed
     with open(json_path, "w") as f:

@@ -27,8 +27,8 @@ from pathlib import Path
 
 import numpy as np
 
-from phase2.subresult import SubResult, SubexperimentSpec
-from phase2.subexp_wrappers import (
+from p2_eigenspectra.subresult import SubResult, SubexperimentSpec
+from p2_eigenspectra.subexp_wrappers import (
     _trajectory_subexp,
     _layer_v_events_subexp,
     _head_ov_subexp,
@@ -120,8 +120,8 @@ def run_one_prompt(ctx: dict, output_dir: Path) -> dict:
     -------
     verdict dict (same structure as build_verdict_v2 output)
     """
-    from phase2.verdict_v2 import build_verdict_v2_from_subresults
-    from phase2.reporting import save_verdict
+    from p2_eigenspectra.analysis_extended import build_verdict_v2_from_subresults
+    from p2_eigenspectra.reporting import save_verdict
 
     stem_dir = Path(output_dir) / ctx["stem"]
     sub_dir  = stem_dir / "sub"

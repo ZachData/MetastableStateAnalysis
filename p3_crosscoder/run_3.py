@@ -49,6 +49,7 @@ results/p3_crosscoder/{model}_{ts}/
 
 import argparse
 import json
+import re
 import torch
 import numpy as np
 from datetime import datetime
@@ -198,8 +199,16 @@ def run_model(model_name: str, args) -> dict:
         for key, text in PROMPTS.items():
             if key == "repeated_tokens":
                 continue
+            # extract_activations returns a list of arrays, one per input text.
+            # For a single text we take element [0]: (n_tokens, n_layers, d_model).
+            # add() signature: (prompt_key, activations, tokens, layer_indices)
             results = extract_activations(model, tokenizer, [text], config, device=DEVICE)
-            prompt_store.add(key, results)
+            arr = results[0]
+            enc = tokenizer(text, return_tensors="pt", truncation=True,
+                            max_length=config.max_seq_len)
+            token_ids  = enc["input_ids"][0].tolist()
+            token_strs = tokenizer.convert_ids_to_tokens(token_ids)
+            prompt_store.add(key, arr, token_strs, config.layer_indices)
         prompt_store.save(cache_dir / "eval_prompts")
 
         del model
@@ -209,6 +218,9 @@ def run_model(model_name: str, args) -> dict:
     # ------------------------------------------------------------------
     # Stage 2: Train crosscoder
     # ------------------------------------------------------------------
+    # Initialise cc_config here so it is always defined even when --skip-train
+    # is passed and the training branch is never entered (Bug F).
+    cc_config: dict = {}
     final_dir = ckpt_dir / "final"
 
     if args.skip_train:
@@ -217,12 +229,18 @@ def run_model(model_name: str, args) -> dict:
         print(f"\n  [train] Found existing checkpoint: {final_dir}")
     else:
         print(f"\n  [train] Training crosscoder...")
-        d_model    = FEATURE_PRESETS[model_name]["d_model"]
-        n_features = args.n_features or FEATURE_PRESETS[model_name]["n_features"]
+        # FEATURE_PRESETS maps model_name → int (n_features only).
+        # d_model comes from the model config constants, not FEATURE_PRESETS.
+        _D_MODEL = {"albert-xlarge-v2": 2048, "gpt2-large": 1280}
+        d_model    = _D_MODEL[model_name]
+        n_features = args.n_features or FEATURE_PRESETS[model_name]
         n_layers   = len(layers)
 
+        # CrosscoderConfig takes d_model + n_layers as separate fields;
+        # d_input is a derived @property, not a constructor argument.
         cc_cfg = CrosscoderConfig(
-            d_input=d_model * n_layers,
+            d_model=d_model,
+            n_layers=n_layers,
             n_features=n_features,
             activation=ActivationType[args.activation.upper()],
             k=args.k,
@@ -487,6 +505,8 @@ def run_model(model_name: str, args) -> dict:
                 if staging.exists():
                     for f in staging.iterdir():
                         f.rename(cp_dir / f.name)
+                    # Must remove the staging subdirectory before its parent.
+                    staging.rmdir()
                     staging.parent.rmdir()
 
                 _save_json(cross_index, cp_dir / "index.json")
@@ -506,7 +526,7 @@ def run_model(model_name: str, args) -> dict:
     summary_txt = _compose_summary(
         model_name=model_name,
         out_dir=out_dir,
-        cc_config=cc_config if "cc_config" in dir() else {},
+        cc_config=cc_config,
         analysis_blocks=analysis_blocks,
         cross_blocks=cross_blocks,
         steer_block=steer_block,
@@ -638,9 +658,13 @@ def _load_artifacts(args, model_name: str) -> dict:
 
         for pd in prompt_dirs:
             stem = pd.name
-            for part in stem.split("_"):
-                prompt_key = part
-                break
+            # Directory names are like: albert_xlarge_v2_100iter_short_heterogeneous
+            # Strip the model+iteration prefix to recover the prompt key.
+            prompt_key = re.sub(r"^.*?\d+iter_", "", stem)
+            if not prompt_key or prompt_key == stem:
+                # Fallback: take everything after the last model-stem segment
+                parts = stem.split("_")
+                prompt_key = "_".join(parts[3:]) if len(parts) > 3 else parts[0]
 
             layer_file = pd / "layer_metrics.json"
             if layer_file.exists():

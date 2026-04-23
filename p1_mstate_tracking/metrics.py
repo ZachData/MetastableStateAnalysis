@@ -185,9 +185,14 @@ def _energy_drop_pairs_core(
 
     # Find top_k most-negative pairs
     k = min(top_k, len(pair_deltas))
-    # argpartition is O(n) vs O(n log n) full sort — sufficient for selection
-    worst_idx = np.argpartition(pair_deltas, k)[:k]
-    worst_idx = worst_idx[np.argsort(pair_deltas[worst_idx])]  # sort by value ascending
+    # argpartition requires kth < len(arr); when k == len(pair_deltas) (small
+    # token counts, e.g. n<=5 with top_k=10) it raises ValueError out of bounds.
+    if k >= len(pair_deltas):
+        worst_idx = np.argsort(pair_deltas)
+    else:
+        # argpartition is O(n) vs O(n log n) full sort — sufficient for selection
+        worst_idx = np.argpartition(pair_deltas, k)[:k]
+        worst_idx = worst_idx[np.argsort(pair_deltas[worst_idx])]  # sort by value ascending
 
     return [
         (int(rows[idx]), int(cols[idx]), float(pair_deltas[idx]))

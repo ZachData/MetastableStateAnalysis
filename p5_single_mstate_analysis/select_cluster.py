@@ -323,8 +323,10 @@ def select_primary_and_sibling(
         if primary is None:
             raise ValueError(
                 f"Forced trajectory (prompt={force_prompt}, id={force_trajectory_id}) "
-                f"not in ranked list (may have failed a hard gate). "
-                f"Use --override-gates to bypass."
+                f"not in ranked list — it may have failed a hard gate "
+                f"(MIN_LIFESPAN={C.MIN_LIFESPAN}, MIN_SIZE={C.MIN_SIZE}, "
+                f"REJECT_PROMPTS={C.REJECT_PROMPTS}). "
+                f"Relax those constants in constants.py or choose a different trajectory."
             )
     else:
         if not ranked:

@@ -28,7 +28,7 @@ from pathlib import Path
 from scipy.stats import spearmanr
 
 from core.config import BETA_VALUES
-from phase2.trajectory import load_phase1_events
+from p2_eigenspectra.trajectory import load_phase1_events
 
 
 # ---------------------------------------------------------------------------

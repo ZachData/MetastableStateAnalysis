@@ -112,12 +112,17 @@ def load_ffn_deltas(
         attn_p = d / "attn_deltas.npz"
         ffn_p  = d / "ffn_deltas.npz"
         if attn_p.exists() and ffn_p.exists():
-            return {
-                "attn": np.load(attn_p)["deltas"] if "deltas" in np.load(attn_p).files
-                        else np.load(attn_p)[np.load(attn_p).files[0]],
-                "ffn":  np.load(ffn_p)["deltas"] if "deltas" in np.load(ffn_p).files
-                        else np.load(ffn_p)[np.load(ffn_p).files[0]],
-            }
+            attn_npz = np.load(attn_p)
+            ffn_npz  = np.load(ffn_p)
+            try:
+                attn_arr = (attn_npz["deltas"] if "deltas" in attn_npz.files
+                            else attn_npz[attn_npz.files[0]])
+                ffn_arr  = (ffn_npz["deltas"]  if "deltas" in ffn_npz.files
+                            else ffn_npz[ffn_npz.files[0]])
+            finally:
+                attn_npz.close()
+                ffn_npz.close()
+            return {"attn": attn_arr, "ffn": ffn_arr}
     return None
 
 

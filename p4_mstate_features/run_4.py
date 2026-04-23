@@ -2,23 +2,27 @@
 run.py — Phase 4 CLI entry point.
 
 Usage:
-    python -m phase4.run --albert-only \
+    python -m p4_mstate_features.run --albert-only \
         --phase1-dir results/phase1_... \
         --phase2-dir results/phase2_... \
         --phase3-dir results/phase3_...
 
-    python -m phase4.run --albert-only --skip-track3   # skip low-rank AE
-    python -m phase4.run --albert-only --tracks 1 2    # explicit track selection
+    python -m p4_mstate_features.run --albert-only --skip-track3
+    python -m p4_mstate_features.run --albert-only --tracks 1 2
 
-The pipeline:
+Pipeline
+--------
   1. Load Phase 1 artifacts (HDBSCAN labels, merge layers, plateau windows)
   2. Load Phase 2 artifacts (V projectors)
   3. Load Phase 3 artifacts (crosscoder checkpoint, prompt activations)
-  4. Run Track 1: crosscoder activation pattern analysis
-  5. Run Track 2: direct geometric methods
-  6. Run Track 3: low-rank autoencoder (optional)
-  7. Cross-track comparison and verdict
-  8. Save outputs for Phases 5/6
+  4. Run Track 1 → save track1/ immediately
+  5. Run Track 2 → save track2/ immediately
+  6. Run Track 3 (optional) → save track3/ immediately
+  7. Cross-track comparison and verdict → verdict.json
+  8. Write summary.txt (LLM-friendly plain-text)
+
+Each track saves its own output directory as soon as it finishes.
+A crash in Track 2 still leaves Track 1 results on disk.
 """
 
 import argparse
@@ -61,7 +65,10 @@ from .low_rank_ae import (
 from .analysis import (
     cross_track_agreement,
     build_phase4_verdict,
-    save_phase4_outputs,
+    save_track1_outputs,
+    save_track2_outputs,
+    save_track3_outputs,
+    write_llm_summary,
 )
 
 
@@ -96,7 +103,6 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
     """Load Phase 1 artifacts: HDBSCAN labels, merge layers, plateau windows."""
     artifacts = {}
 
-    # Find matching subdirectory
     candidates = [d for d in phase1_dir.iterdir()
                   if d.is_dir() and model_stem in d.name]
     if not candidates:
@@ -104,9 +110,11 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
         return artifacts
 
     for run_dir in candidates:
-        prompt_name = run_dir.name.split("iter_", 1)[-1] if "iter_" in run_dir.name else run_dir.name
+        prompt_name = (
+            run_dir.name.split("iter_", 1)[-1]
+            if "iter_" in run_dir.name else run_dir.name
+        )
 
-        # Metrics for plateau detection
         metrics_path = run_dir / "metrics.json"
         if metrics_path.exists():
             with open(metrics_path) as f:
@@ -117,7 +125,6 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
                 artifacts.setdefault("plateau_windows", {})[prompt_name] = plateaus
                 print(f"    {prompt_name}: {len(plateaus)} plateaus detected")
 
-        # HDBSCAN labels
         for fname in ["hdbscan_labels.json", "cluster_labels.json"]:
             fpath = run_dir / fname
             if fpath.exists():
@@ -127,7 +134,6 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
                 print(f"    Loaded {fname} for {prompt_name}")
                 break
 
-        # Merge layers / events
         for fname in ["phase1_events.json", "events.json"]:
             fpath = run_dir / fname
             if fpath.exists():
@@ -153,14 +159,12 @@ def _load_phase2(phase2_dir: Path, model_stem: str, k_top: int = 64) -> dict:
 
     proj_path = phase2_dir / f"ov_projectors_{model_stem}.npz"
     if not proj_path.exists():
-        # Try alternative naming
         for p in phase2_dir.glob(f"*projector*{model_stem}*"):
             proj_path = p
             break
 
     if proj_path.exists():
         data = np.load(proj_path)
-        # Build low-rank projectors from top-k eigenvectors
         eigvecs = data.get("eigenvectors", data.get("U"))
         eigvals = data.get("eigenvalues", data.get("S"))
 
@@ -180,9 +184,9 @@ def _load_phase2(phase2_dir: Path, model_stem: str, k_top: int = 64) -> dict:
                 artifacts["repulsive"] = U_rep @ U_rep.T
 
             print(f"    V projectors: {pos_mask.sum()} attractive, "
-                  f"{neg_mask.sum()} repulsive directions (k={k_top})")
+                  f"{neg_mask.sum()} repulsive (k={k_top})")
         else:
-            print(f"    Warning: projector file exists but missing keys")
+            print(f"    Warning: projector file missing keys")
     else:
         print(f"    No V projectors found at {proj_path}")
 
@@ -195,18 +199,14 @@ def _load_phase3(phase3_dir: Path, model_stem: str, device: str) -> dict:
 
     ckpt_dir = _checkpoint_dir(model_stem.replace("_", "-"))
     if not ckpt_dir.exists():
-        # Try phase3_dir
         ckpt_dir = phase3_dir / "checkpoints" / model_stem
 
     crosscoder, layer_indices = None, None
     for candidate in [ckpt_dir / "final", ckpt_dir]:
         if (candidate / "config.json").exists():
             crosscoder = load_trained_crosscoder(candidate, device=device)
-            # Load layer indices from config
-            cfg_path = candidate / "config.json"
-            with open(cfg_path) as f:
+            with open(candidate / "config.json") as f:
                 cfg = json.load(f)
-            # Layer indices stored in extraction config or separately
             layer_indices = cfg.get("layer_indices")
             print(f"    Crosscoder loaded from {candidate}")
             print(f"    Features: {crosscoder.cfg.n_features}, "
@@ -217,15 +217,13 @@ def _load_phase3(phase3_dir: Path, model_stem: str, device: str) -> dict:
         print(f"    Warning: no crosscoder checkpoint found")
     artifacts["crosscoder"] = crosscoder
 
-    # Layer indices fallback
     if layer_indices is None:
-        from phase3.data import LAYER_PRESETS
+        from p3_crosscoder.data import LAYER_PRESETS
         model_name = model_stem.replace("_", "-")
         if model_name in LAYER_PRESETS:
             layer_indices = LAYER_PRESETS[model_name]
     artifacts["layer_indices"] = layer_indices or []
 
-    # Prompt activation store
     cache_dir = _cache_dir(model_stem.replace("_", "-"))
     prompt_store = PromptActivationStore()
     eval_dir = cache_dir / "eval_prompts"
@@ -241,6 +239,7 @@ def _load_phase3(phase3_dir: Path, model_stem: str, device: str) -> dict:
 
 # ---------------------------------------------------------------------------
 # Track runners
+# Each runner accepts out_dir and saves its own outputs before returning.
 # ---------------------------------------------------------------------------
 
 def run_track1(
@@ -251,8 +250,9 @@ def run_track1(
     merge_layers: dict,
     cluster_plateaus: list,
     config: dict,
+    out_dir: Path,
 ) -> dict:
-    """Run all Track 1 analyses."""
+    """Run Track 1 (crosscoder activation patterns) and save results immediately."""
     print("\n  === Track 1: Crosscoder activation patterns ===")
     results = {}
 
@@ -323,8 +323,7 @@ def run_track1(
     results["chorus_results"] = chorus_results
 
     # Aggregate chorus stats
-    all_aris = []
-    all_purities = []
+    all_aris, all_purities = [], []
     for pk_data in chorus_results.values():
         for layer_data in pk_data.values():
             ari = layer_data.get("ari", {}).get("ari")
@@ -334,8 +333,8 @@ def run_track1(
             if pur is not None:
                 all_purities.append(pur)
     results["chorus_summary"] = {
-        "mean_ari": float(np.mean(all_aris)) if all_aris else 0.0,
-        "max_ari": float(np.max(all_aris)) if all_aris else 0.0,
+        "mean_ari":    float(np.mean(all_aris))    if all_aris    else 0.0,
+        "max_ari":     float(np.max(all_aris))     if all_aris    else 0.0,
         "mean_purity": float(np.mean(all_purities)) if all_purities else 0.0,
     }
 
@@ -348,23 +347,46 @@ def run_track1(
                 if nmi is not None:
                     all_nmis.append(nmi)
     results["mi_summary"] = {
-        "max_nmi": float(np.max(all_nmis)) if all_nmis else 0.0,
+        "max_nmi":  float(np.max(all_nmis))  if all_nmis else 0.0,
         "mean_nmi": float(np.mean(all_nmis)) if all_nmis else 0.0,
     }
 
-    # 5. Plateau alignment (falsification test)
+    # 5. Plateau alignment (falsification test) — run for every prompt, aggregate
     print("  [T1] Testing plateau alignment (falsification criterion)...")
-    # Use first prompt's feature plateaus as representative
-    first_pk = list(all_plateaus.keys())[0] if all_plateaus else None
-    if first_pk and cluster_plateaus:
-        pa = plateau_alignment(
-            all_plateaus[first_pk], cluster_plateaus, layer_indices
-        )
-        results["plateau_alignment"] = pa
-        print(f"    Alignment rate: {pa.get('alignment_rate', 0):.3f} "
-              f"→ {pa.get('falsification', 'untestable')}")
+    pa_results = []
+    for pk, fp in all_plateaus.items():
+        if cluster_plateaus:
+            pa = plateau_alignment(fp, cluster_plateaus, layer_indices)
+            pa_results.append(pa)
+
+    if pa_results:
+        # Aggregate: mean alignment_rate, union of falsification outcomes
+        valid_pa = [p for p in pa_results if "alignment_rate" in p]
+        if valid_pa:
+            mean_rate = float(np.mean([p["alignment_rate"] for p in valid_pa]))
+            mean_iou  = float(np.mean([p.get("mean_overlap_iou", 0.0) for p in valid_pa]))
+            mean_cov  = float(np.mean([p.get("cluster_layer_coverage", 0.0) for p in valid_pa]))
+            # Falsification: pass if any prompt passes, fail if all fail
+            fals_votes = [p.get("falsification", "inconclusive") for p in valid_pa]
+            if "pass"          in fals_votes: overall_fals = "pass"
+            elif "inconclusive" in fals_votes: overall_fals = "inconclusive"
+            else:                              overall_fals = "fail"
+            pa_agg = {
+                "n_prompts":              len(valid_pa),
+                "alignment_rate":         mean_rate,
+                "mean_overlap_iou":       mean_iou,
+                "cluster_layer_coverage": mean_cov,
+                "falsification":          overall_fals,
+                "per_prompt":             valid_pa,
+            }
+        else:
+            pa_agg = {"falsification": "untestable", "per_prompt": pa_results}
     else:
-        results["plateau_alignment"] = {"falsification": "untestable"}
+        pa_agg = {"falsification": "untestable"}
+
+    results["plateau_alignment"] = pa_agg
+    print(f"    Alignment rate: {pa_agg.get('alignment_rate', 'N/A')} "
+          f"→ {pa_agg.get('falsification', 'untestable')}")
 
     # 6. Merge dynamics
     print("  [T1] Analyzing merge event feature dynamics...")
@@ -382,12 +404,15 @@ def run_track1(
                   f"mean dying={s['mean_dying']:.1f}, born={s['mean_born']:.1f}")
     results["merge_dynamics"] = merge_results
 
-    # For cross-track: per-layer chorus results keyed by layer
+    # Per-layer chorus for cross-track correlation
     chorus_per_layer = {}
     for pk_data in chorus_results.values():
         for lk, ld in pk_data.items():
             chorus_per_layer[lk] = ld
     results["chorus_per_layer"] = chorus_per_layer
+
+    # Save immediately
+    save_track1_outputs(out_dir, results)
 
     return results
 
@@ -398,16 +423,24 @@ def run_track2(
     hdbscan_labels: dict,
     v_projectors: dict,
     config: dict,
+    out_dir: Path,
 ) -> dict:
-    """Run all Track 2 analyses."""
+    """Run Track 2 (direct geometric methods) and save results immediately."""
     print("\n  === Track 2: Direct geometric methods ===")
     results = {}
 
-    # Build per-layer activations and labels for each prompt
+    # NOTE: Track 2 currently processes one prompt to avoid the O(n_prompts)
+    # compute cost of LDA + probes on high-dimensional activations.  The loop
+    # structure below is written to *accumulate* rather than overwrite so that
+    # removing the `break` at the end is safe when multi-prompt support is added.
+    # Per-layer keys are prefixed with the prompt key to prevent collisions.
+    all_lda_cosines = []
+    merged_probe_per_layer: dict = {}
+    merged_probe_directions: dict = {}
+    merged_v_alignment: dict = {}
+
     for pk in prompt_store.keys():
-        acts_per_layer = extract_per_layer_activations(
-            prompt_store, pk, layer_indices
-        )
+        acts_per_layer = extract_per_layer_activations(prompt_store, pk, layer_indices)
         labs_per_layer = build_labels_per_layer(hdbscan_labels, pk)
 
         if not labs_per_layer:
@@ -419,23 +452,30 @@ def run_track2(
         # 1. LDA stability
         print("    LDA directions...")
         lda = lda_stability_across_layers(acts_per_layer, labs_per_layer)
-        results.setdefault("lda_results", {})["per_layer"] = lda.get("per_layer", {})
-        results.setdefault("lda_results", {})["cosine_trajectory"] = lda.get("cosine_trajectory", [])
+        # Accumulate into lda_results (keyed by prompt so multi-prompt is safe)
+        results.setdefault("lda_results", {})[pk] = {
+            "per_layer":        lda.get("per_layer", {}),
+            "cosine_trajectory": lda.get("cosine_trajectory", []),
+            "mean_cosine":       lda.get("mean_cosine", 0.0),
+        }
+        all_lda_cosines.append(lda.get("mean_cosine", 0.0))
         print(f"    Mean LDA cosine stability: {lda.get('mean_cosine', 0):.3f}")
 
         # 2. PCA on deltas
         print("    PCA on layer deltas...")
         delta_pca = pca_on_deltas(acts_per_layer, v_projectors=v_projectors or None)
-        results["delta_pca_results"] = delta_pca
+        results.setdefault("delta_pca_results", {})[pk] = delta_pca
         s = delta_pca["summary"]
         print(f"    Mean update variance: {s['mean_total_variance']:.6f}, "
               f"mean top-1 explained: {s['mean_top1_explained']:.3f}")
 
-        # 3. Linear probes
+        # 3. Linear probes — accumulate per-layer results with pk prefix
         print("    Linear probes...")
         probes = probe_accuracy_trajectory(acts_per_layer, labs_per_layer)
-        results["probe_results"] = probes
-        results["probe_directions"] = probes.get("probe_directions", {})
+        for layer_key, layer_val in probes.get("per_layer", {}).items():
+            merged_probe_per_layer[f"{pk}__{layer_key}"] = layer_val
+        for layer_key, w in probes.get("probe_directions", {}).items():
+            merged_probe_directions[f"{pk}__{layer_key}"] = w
         s = probes["summary"]
         print(f"    Probe accuracy: mean={s['mean_accuracy']:.3f}, "
               f"max={s['max_accuracy']:.3f}")
@@ -444,24 +484,57 @@ def run_track2(
         if v_projectors and probes.get("probe_directions"):
             print("    Probe V-alignment...")
             v_align = probe_v_alignment(probes["probe_directions"], v_projectors)
-            results["v_alignment"] = v_align
-            for layer, la in v_align.items():
+            for layer_key, la in v_align.items():
+                merged_v_alignment[f"{pk}__{layer_key}"] = la
                 if isinstance(la, dict) and "mean_repulsive" in la:
-                    print(f"      Layer {layer}: rep={la['mean_repulsive']:.3f}, "
+                    print(f"      Layer {layer_key}: rep={la['mean_repulsive']:.3f}, "
                           f"att={la['mean_attractive']:.3f}")
 
-        # Use first prompt only (extend later for multi-prompt)
-        break
+        break  # single-prompt path; remove this line to enable multi-prompt
 
-    # Summaries
-    results["lda_summary"] = {
-        "mean_cosine": results.get("lda_results", {}).get("mean_cosine", 0),
+    # Flatten accumulated probe/v-alignment results
+    results["probe_results"] = {
+        "per_layer": merged_probe_per_layer,
+        "probe_directions": merged_probe_directions,
+        "summary": {
+            "mean_accuracy": float(np.mean([v["accuracy"] for v in merged_probe_per_layer.values()
+                                            if "accuracy" in v]))
+                             if merged_probe_per_layer else 0.0,
+            "max_accuracy":  float(np.max([v["accuracy"] for v in merged_probe_per_layer.values()
+                                           if "accuracy" in v]))
+                             if merged_probe_per_layer else 0.0,
+            "min_accuracy":  float(np.min([v["accuracy"] for v in merged_probe_per_layer.values()
+                                           if "accuracy" in v]))
+                             if merged_probe_per_layer else 0.0,
+        },
     }
-    results["probe_summary"] = results.get("probe_results", {}).get("summary", {})
-    results["delta_pca_summary"] = results.get("delta_pca_results", {}).get("summary", {})
+    results["probe_directions"] = merged_probe_directions
+    if merged_v_alignment:
+        results["v_alignment"] = merged_v_alignment
 
-    # For cross-track: per-layer probe results
-    results["probe_per_layer"] = results.get("probe_results", {}).get("per_layer", {})
+    # lda_results is now {pk: {per_layer, cosine_trajectory, mean_cosine}}
+    # Compute overall mean_cosine across all processed prompts.
+    mean_cosine_overall = float(np.mean(all_lda_cosines)) if all_lda_cosines else 0.0
+    results["lda_summary"] = {"mean_cosine": mean_cosine_overall}
+
+    results["probe_summary"]     = results.get("probe_results", {}).get("summary", {})
+    # delta_pca_results is now {pk: delta_pca_dict}; build a merged summary.
+    all_delta_pca = results.get("delta_pca_results", {})
+    if all_delta_pca:
+        all_total_var   = [v["summary"]["mean_total_variance"]
+                           for v in all_delta_pca.values() if "summary" in v]
+        all_top1        = [v["summary"]["mean_top1_explained"]
+                           for v in all_delta_pca.values() if "summary" in v]
+        results["delta_pca_summary"] = {
+            "mean_total_variance": float(np.mean(all_total_var)) if all_total_var else 0.0,
+            "mean_top1_explained": float(np.mean(all_top1))      if all_top1      else 0.0,
+        }
+    else:
+        results["delta_pca_summary"] = {}
+    results["probe_per_layer"]   = results.get("probe_results", {}).get("per_layer", {})
+
+    # Save immediately
+    save_track2_outputs(out_dir, results)
 
     return results
 
@@ -474,14 +547,15 @@ def run_track3(
     cluster_count: int,
     model_name: str,
     config: dict,
+    out_dir: Path,
 ) -> dict:
-    """Run Track 3: low-rank autoencoder."""
+    """Run Track 3 (low-rank AE) and save results immediately."""
     print("\n  === Track 3: Low-rank autoencoder ===")
     results = {}
 
     model_info = SUPPORTED_MODELS.get(model_name, {})
-    d_model = model_info.get("d_model", crosscoder.cfg.d_model)
-    n_layers = len(layer_indices)
+    d_model    = model_info.get("d_model", crosscoder.cfg.d_model)
+    n_layers   = len(layer_indices)
 
     ae_cfg = LowRankAEConfig(
         d_input=d_model * n_layers,
@@ -492,33 +566,28 @@ def run_track3(
     print(f"  [T3] Bottleneck rank: {cluster_count} (matching cluster count)")
     print(f"  [T3] Input dim: {ae_cfg.d_input}")
 
-    # Check for existing checkpoint
     ckpt_path = _checkpoint_dir(model_name) / "low_rank_ae"
     if (ckpt_path / "model.pt").exists() and not config.get("force_train_lrae"):
         print(f"  [T3] Loading existing checkpoint from {ckpt_path}")
         lrae = load_low_rank_ae(ckpt_path, device=DEVICE)
     else:
-        # Train
         train_cfg = LRAETrainingConfig(
             lr=config.get("lrae_lr", 1e-3),
             total_steps=config.get("lrae_steps", 20000),
             batch_size=config.get("lrae_batch_size", 512),
             checkpoint_dir=str(_checkpoint_dir(model_name)),
         )
-
         cache_dir = _cache_dir(model_name)
-        buffer = ActivationBuffer(cache_dir)
-        adapter = ActivationBufferAdapter(buffer, train_cfg.batch_size)
+        buffer    = ActivationBuffer(cache_dir)
+        adapter   = ActivationBufferAdapter(buffer, train_cfg.batch_size)
 
         print(f"  [T3] Training low-rank AE ({train_cfg.total_steps} steps)...")
         lrae = train_low_rank_ae(ae_cfg, train_cfg, adapter, device=DEVICE)
 
-    # Bottleneck directions
     ae_dirs = lrae.bottleneck_directions()
     results["bottleneck_directions"] = ae_dirs
     print(f"  [T3] Extracted {ae_dirs.shape[0]} bottleneck directions")
 
-    # V-alignment
     if v_projectors:
         print("  [T3] Testing V-alignment of bottleneck directions...")
         v_align = bottleneck_v_alignment(lrae, v_projectors)
@@ -528,13 +597,15 @@ def run_track3(
         print(f"    {v_align.get('n_repulsive_dominant', 0)} repulsive-dominant, "
               f"{v_align.get('n_attractive_dominant', 0)} attractive-dominant")
 
-    # Reconstruction comparison
     print("  [T3] Comparing reconstruction quality vs crosscoder...")
     recon = compare_reconstruction(lrae, crosscoder, prompt_store, device=DEVICE)
     results["reconstruction"] = recon
     for pk, r in recon.items():
         print(f"    {pk}: LRAE={r['lrae_mse']:.6f}, CC={r['crosscoder_mse']:.6f}, "
               f"ratio={r['ratio']:.2f}")
+
+    # Save immediately
+    save_track3_outputs(out_dir, results)
 
     return results
 
@@ -555,6 +626,7 @@ def run_phase4(args) -> dict:
 
     out_dir = _results_dir(model_name)
     out_dir.mkdir(parents=True, exist_ok=True)
+    print(f"  Output dir: {out_dir}")
 
     # --- Load artifacts ---
     print("\n  Loading artifacts...")
@@ -565,16 +637,14 @@ def run_phase4(args) -> dict:
 
     p2_artifacts = {}
     if args.phase2_dir:
-        p2_artifacts = _load_phase2(
-            Path(args.phase2_dir), model_stem, k_top=args.k_top
-        )
+        p2_artifacts = _load_phase2(Path(args.phase2_dir), model_stem, k_top=args.k_top)
 
     p3_artifacts = _load_phase3(
         Path(args.phase3_dir) if args.phase3_dir else Path("results/p3_crosscoder"),
         model_stem, DEVICE,
     )
 
-    crosscoder = p3_artifacts.get("crosscoder")
+    crosscoder   = p3_artifacts.get("crosscoder")
     prompt_store = p3_artifacts.get("prompt_store")
     layer_indices = p3_artifacts.get("layer_indices", [])
 
@@ -585,16 +655,14 @@ def run_phase4(args) -> dict:
         print("ERROR: No eval prompts. Cannot proceed.")
         return {"error": "missing prompts"}
 
-    hdbscan_labels = p1_artifacts.get("hdbscan_labels", {})
-    merge_layers = p1_artifacts.get("merge_layers", {})
+    hdbscan_labels  = p1_artifacts.get("hdbscan_labels", {})
+    merge_layers    = p1_artifacts.get("merge_layers", {})
     plateau_windows = p1_artifacts.get("plateau_windows", {})
 
-    # Flatten plateau windows for alignment test
     cluster_plateaus = []
     for pk_plateaus in plateau_windows.values():
         cluster_plateaus.extend(pk_plateaus)
 
-    # Determine typical cluster count for Track 3
     cluster_counts = []
     for pk_labels in hdbscan_labels.values():
         for layer_labels in pk_labels.values():
@@ -614,6 +682,7 @@ def run_phase4(args) -> dict:
             crosscoder, prompt_store, layer_indices,
             hdbscan_labels, merge_layers, cluster_plateaus,
             config=vars(args),
+            out_dir=out_dir,
         )
 
     # --- Track 2 ---
@@ -623,6 +692,7 @@ def run_phase4(args) -> dict:
             prompt_store, layer_indices,
             hdbscan_labels, p2_artifacts,
             config=vars(args),
+            out_dir=out_dir,
         )
 
     # --- Track 3 ---
@@ -632,9 +702,10 @@ def run_phase4(args) -> dict:
             crosscoder, prompt_store, layer_indices,
             p2_artifacts, typical_k, model_name,
             config=vars(args),
+            out_dir=out_dir,
         )
 
-    # --- Cross-track comparison ---
+    # --- Cross-track comparison and verdict ---
     print("\n  === Cross-track comparison ===")
     agreement = cross_track_agreement(t1_results, t2_results, t3_results)
     t1t2 = agreement.get("t1_t2_correlation", {})
@@ -642,41 +713,68 @@ def run_phase4(args) -> dict:
         print(f"  T1–T2 correlation: ρ={t1t2['spearman_rho']:.3f} "
               f"(p={t1t2['pval']:.3f}) → {t1t2['interpretation']}")
 
-    # --- Verdict ---
     print("\n  === Phase 4 Verdict ===")
     verdict = build_phase4_verdict(
         t1_results, t2_results, t3_results,
         agreement,
         t1_results.get("plateau_alignment", {}),
     )
-
     for track_name, tv in verdict.get("tracks", {}).items():
         print(f"  {track_name}: {tv.get('verdict', 'N/A')}")
     print(f"  Overall: {verdict.get('overall', 'N/A')}")
     if "interpretation" in verdict:
         print(f"  → {verdict['interpretation']}")
 
-    # --- Save ---
-    # Build activations_per_layer for centroid export
+    # Save verdict
+    import json as _json
+    def _json_default(obj):
+        if isinstance(obj, (np.integer,)): return int(obj)
+        if isinstance(obj, (np.floating,)): return float(obj)
+        if isinstance(obj, np.ndarray): return obj.tolist()
+        raise TypeError(type(obj))
+    with open(out_dir / "verdict.json", "w") as f:
+        _json.dump(verdict, f, indent=2, default=_json_default)
+
+    # Centroids for Phase 6
     acts_for_centroids = {}
     for pk in prompt_store.keys():
         acts_for_centroids[pk] = extract_per_layer_activations(
             prompt_store, pk, layer_indices
         )
+    centroid_dict = {}
+    for pk, layers in acts_for_centroids.items():
+        pk_labels = hdbscan_labels.get(pk, {})
+        for layer_key, acts in (layers.items() if isinstance(layers, dict) else []):
+            labels = pk_labels.get(layer_key)
+            if labels is None:
+                continue
+            labels_arr = np.array(labels)
+            acts_arr   = np.array(acts)
+            for c in set(labels_arr[labels_arr >= 0].tolist()):
+                mask = labels_arr == c
+                centroid = acts_arr[mask].mean(axis=0)
+                centroid_dict[f"{pk}__{layer_key}__c{int(c)}"] = centroid
+    if centroid_dict:
+        np.savez(out_dir / "centroids.npz", **centroid_dict)
 
-    save_phase4_outputs(
-        out_dir, t1_results, t2_results, t3_results, verdict,
-        activations_per_layer=acts_for_centroids,
-        hdbscan_labels=hdbscan_labels,
+    if hdbscan_labels:
+        with open(out_dir / "hdbscan_labels.json", "w") as f:
+            _json.dump(hdbscan_labels, f, default=_json_default)
+
+    # LLM-friendly summary (written last, after all files exist)
+    write_llm_summary(
+        out_dir, model_name,
+        t1_results, t2_results, t3_results,
+        verdict, agreement,
     )
 
     return {
-        "track1": t1_results,
-        "track2": t2_results,
-        "track3": t3_results,
+        "track1":    t1_results,
+        "track2":    t2_results,
+        "track3":    t3_results,
         "agreement": agreement,
-        "verdict": verdict,
-        "out_dir": str(out_dir),
+        "verdict":   verdict,
+        "out_dir":   str(out_dir),
     }
 
 
@@ -687,42 +785,31 @@ def run_phase4(args) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="Phase 4: Identifying Metastable Features")
 
-    # Model selection
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--albert-only", action="store_true")
-    group.add_argument("--gpt2-only", action="store_true")
-    parser.add_argument("--model", type=str, default=None,
-                        help="Explicit model name (overrides --albert-only/--gpt2-only)")
+    group.add_argument("--gpt2-only",   action="store_true")
+    parser.add_argument("--model", type=str, default=None)
 
-    # Artifact paths
     parser.add_argument("--phase1-dir", type=str, default=None)
     parser.add_argument("--phase2-dir", type=str, default=None)
     parser.add_argument("--phase3-dir", type=str, default=None)
 
-    # Track selection
-    parser.add_argument("--tracks", type=int, nargs="+", default=None,
-                        help="Which tracks to run (1, 2, 3)")
-    parser.add_argument("--skip-track3", action="store_true",
-                        help="Skip low-rank AE training")
+    parser.add_argument("--tracks", type=int, nargs="+", default=None)
+    parser.add_argument("--skip-track3", action="store_true")
 
-    # Track 1 config
-    parser.add_argument("--var-threshold", type=float, default=0.01)
-    parser.add_argument("--min-plateau-len", type=int, default=3)
+    parser.add_argument("--var-threshold",   type=float, default=0.01)
+    parser.add_argument("--min-plateau-len", type=int,   default=3)
     parser.add_argument("--coact-threshold", type=float, default=0.3)
 
-    # Track 3 config
-    parser.add_argument("--lrae-steps", type=int, default=20000)
-    parser.add_argument("--lrae-lr", type=float, default=1e-3)
-    parser.add_argument("--lrae-batch-size", type=int, default=512)
+    parser.add_argument("--lrae-steps",      type=int,   default=20000)
+    parser.add_argument("--lrae-lr",         type=float, default=1e-3)
+    parser.add_argument("--lrae-batch-size", type=int,   default=512)
     parser.add_argument("--force-train-lrae", action="store_true")
 
-    # Phase 2 projector config
-    parser.add_argument("--k-top", type=int, default=64,
-                        help="Number of V eigenvectors for projectors")
+    parser.add_argument("--k-top", type=int, default=64)
 
     args = parser.parse_args()
 
-    # Resolve model
     if args.model:
         models = [args.model]
     elif args.albert_only:

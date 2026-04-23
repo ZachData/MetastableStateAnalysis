@@ -185,7 +185,7 @@ def _run_group_C2(run, primary_raw, sibling_raw, phase2_dir, out_dir) -> dict:
 
 
 def _run_group_D(run, primary_raw, sibling_raw, phase3, v_proj, phase4,
-                  out_dir) -> dict:
+                  centroid_coords, out_dir) -> dict:
     layers_needed = sorted({int(l) for l, _ in primary_raw["chain"]})
     feature_acts = _compute_feature_activations(
         phase3, run["prompt_key"], layers_needed,
@@ -231,6 +231,12 @@ def _run_group_D(run, primary_raw, sibling_raw, phase3, v_proj, phase4,
         lda_directions_per_layer=lda_dirs,
         v_projectors=v_proj,
         bottleneck_directions=bn,
+        cluster_centroid=(
+            centroid_coords.mean(axis=0)
+            if centroid_coords is not None and centroid_coords.ndim == 2
+               and centroid_coords.shape[0] > 0
+            else None
+        ),
     )
     save_feature_signature(result, out_dir, tag="primary")
     return result
@@ -542,7 +548,8 @@ def main(argv=None) -> int:
     if "D" in args.groups:
         print("[phase5] GROUP D: feature signatures")
         _run_group_D(
-            run, primary_raw, sibling_raw, phase3, v_proj, phase4, out_dir,
+            run, primary_raw, sibling_raw, phase3, v_proj, phase4,
+            centroid_coords, out_dir,
         )
 
     if "E" in args.groups:

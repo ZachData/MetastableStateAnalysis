@@ -18,6 +18,22 @@ bipartition_sharpness  : centroid angle in activation space, radians.
 within_half_ip         : (mean_a, mean_b) — mean pairwise cosine
                          similarity inside each half.  >= 0.3 in both
                          means each half is itself a tight cluster.
+between_half_ip        : mean pairwise cosine similarity across the
+                         two halves.  Negative → halves point in
+                         opposite directions; near 0 → orthogonal
+                         separation; positive → cosmetic partition
+                         (both halves face the same direction).
+separation_ratio       : between_half_ip / mean(within_half_ip).
+                         Negative values indicate genuine separation;
+                         near 1 indicates no structural contrast.
+fiedler_boundary_frac  : fraction of tokens with |v[i]| <
+                         boundary_threshold * std(v).  Near 0 = sharp
+                         bimodal Fiedler distribution; near 1 = all
+                         tokens cluster near the partition boundary.
+clip_fraction          : fraction of off-diagonal Gram entries clipped
+                         to 0 (only nonzero when clip_negative=True).
+                         Large values mean the Laplacian geometry is
+                         substantially altered by clipping.
 hemisphere_sizes       : (|A|, |B|) with |A| + |B| = n.
 minority_fraction      : min(|A|, |B|) / n.
 fiedler_vec            : (n_tokens,) — the raw second eigenvector
@@ -42,6 +58,9 @@ Functions
 ---------
 extract_bipartition_spectrum : top-3 Laplacian eigenvalues + Fiedler vector per layer.
 within_half_inner_products   : mean pairwise cosine within each hemisphere.
+between_half_inner_products  : mean pairwise cosine across hemispheres.
+separation_ratio             : between_half / mean(within_half) contrast ratio.
+fiedler_boundary_fraction    : fraction of Fiedler values near zero.
 centroid_angle               : angle between hemisphere centroids in activation space.
 classify_regime              : the four-way regime label for one layer's metrics.
 analyze_bipartition          : full pipeline across all layers.
@@ -174,6 +193,119 @@ def within_half_inner_products(
 
 
 # ---------------------------------------------------------------------------
+# Cross-hemisphere compactness (separation contrast)
+# ---------------------------------------------------------------------------
+
+def between_half_inner_products(
+    X: np.ndarray,
+    assignment: np.ndarray,
+) -> float:
+    """
+    Mean pairwise cosine similarity between the two halves (cross-block).
+
+    For L2-normed X, the pairwise cosine is <x_i, x_j>.  We average over
+    all (i in A, j in B) pairs — the full off-diagonal cross block, not
+    the upper triangle, since A×B is not symmetric.
+
+    Returns nan when either half has fewer than 1 token.
+
+    Interpretation
+    --------------
+    Negative  → halves point in opposite directions on the sphere.
+                Strong geometric separation.
+    Near 0    → halves are roughly orthogonal.  Separation exists but
+                the halves are not antipodal.
+    Positive  → both halves lean the same direction.  The bipartition
+                is a local density split, not a global orientation split.
+
+    Use together with within_half_inner_products to compute the
+    separation_ratio: between / mean(within).  Ratio < 0 or << 1 is
+    strong evidence of genuine separation.
+    """
+    mask_a = assignment == 0
+    mask_b = assignment == 1
+    na = int(mask_a.sum())
+    nb = int(mask_b.sum())
+    if na < 1 or nb < 1:
+        return float("nan")
+
+    Xa = X[mask_a]   # (na, d)
+    Xb = X[mask_b]   # (nb, d)
+    # Full cross-Gram: (na, nb), every entry is <x_i, x_j> for i in A, j in B.
+    cross = Xa @ Xb.T
+    return float(cross.mean())
+
+
+def compute_separation_ratio(
+    within_a: float,
+    within_b: float,
+    between: float,
+) -> float:
+    """
+    between_half_ip / mean(within_half_ip).
+
+    Values < 0  : halves are antipodal while each is internally coherent.
+    Values ≈ 1  : no structural contrast — bipartition is cosmetic.
+    Values > 1  : within-half similarity is *less* than cross-half (unusual;
+                  indicates the Fiedler partition is cutting through a coherent
+                  cluster rather than separating two of them).
+
+    Returns nan when any input is nan or when the mean within-half ip is 0.
+    """
+    vals = (within_a, within_b, between)
+    if any(v != v for v in vals):
+        return float("nan")
+    denom = 0.5 * (within_a + within_b)
+    if abs(denom) < 1e-12:
+        return float("nan")
+    return float(between / denom)
+
+
+# ---------------------------------------------------------------------------
+# Fiedler value distribution sharpness
+# ---------------------------------------------------------------------------
+
+def fiedler_boundary_fraction(
+    fiedler_vec: np.ndarray,
+    boundary_threshold: float = 0.30,
+) -> float:
+    """
+    Fraction of tokens that fall in the "boundary zone" of the Fiedler vector.
+
+    The boundary zone is defined as: |v[i]| < boundary_threshold * std(v).
+    These are tokens that are neither clearly in hemisphere A nor hemisphere B
+    — they sit close to the sign-boundary and would switch sides with a small
+    perturbation of the eigenvector.
+
+    Parameters
+    ----------
+    fiedler_vec        : (n_tokens,) raw second Laplacian eigenvector.
+    boundary_threshold : fraction of std(v) that defines the boundary width.
+                         Default 0.30 — tokens within 30% of one std from 0.
+
+    Returns
+    -------
+    float in [0, 1].  Near 0 = sharp bimodal partition (tokens cluster far
+    from 0 on both sides).  Near 1 = all tokens are marginal (unimodal
+    distribution centered near 0, or uniform).
+
+    This is the primary measure of *assignment confidence* at the partition
+    boundary.  A "strong_bipartition" regime layer with a high
+    fiedler_boundary_frac (> 0.3) should be interpreted cautiously: the
+    regime labels are formally correct but a large fraction of the tokens
+    could be re-assigned by numerical noise.
+    """
+    v = np.asarray(fiedler_vec, dtype=np.float64)
+    if v.size == 0:
+        return float("nan")
+    s = float(np.std(v))
+    if s < 1e-12:
+        return float("nan")
+    boundary_width = boundary_threshold * s
+    return float(np.mean(np.abs(v) < boundary_width))
+
+
+# ---------------------------------------------------------------------------
 # Centroid angle
 # ---------------------------------------------------------------------------
 
@@ -214,6 +346,7 @@ REGIME_THRESHOLDS = {
     "weak_minority":        0.10,
     "strong_angle_rad":     np.pi / 2.0,
     "strong_within_ip":     0.30,
+    "boundary_threshold":   0.30,   # for fiedler_boundary_fraction
 }
 
 
@@ -282,6 +415,10 @@ def analyze_bipartition(
       bipartition_eigengap  (n_layers,)  = (λ₃ − λ₂) / λ₃
       centroid_angle        (n_layers,)
       within_half_ip        (n_layers, 2)
+      between_half_ip       (n_layers,)   — NEW: cross-hemisphere cosine mean
+      separation_ratio      (n_layers,)   — NEW: between / mean(within)
+      fiedler_boundary_frac (n_layers,)   — NEW: fraction of tokens near 0
+      clip_fraction         (n_layers,)   — NEW: fraction of Gram entries clipped
       regime                (n_layers,)  str
     """
     n_layers, n_tokens, _ = activations.shape
@@ -291,21 +428,40 @@ def analyze_bipartition(
     fiedler_vecs = spec["fiedler_vecs"]
     valid        = spec["valid"]
 
-    assignments       = np.full((n_layers, n_tokens), -1, dtype=np.int8)
-    hemisphere_sizes  = np.zeros((n_layers, 2),        dtype=np.int32)
-    minority_fraction = np.full (n_layers,            np.nan)
-    bipart_eigengap   = np.full (n_layers,            np.nan)
-    cen_angle         = np.full (n_layers,            np.nan)
-    within_ip         = np.full ((n_layers, 2),       np.nan)
-    regime            = np.full (n_layers, "collapsed", dtype=object)
+    assignments        = np.full((n_layers, n_tokens), -1, dtype=np.int8)
+    hemisphere_sizes   = np.zeros((n_layers, 2),        dtype=np.int32)
+    minority_fraction  = np.full (n_layers,            np.nan)
+    bipart_eigengap    = np.full (n_layers,            np.nan)
+    cen_angle          = np.full (n_layers,            np.nan)
+    within_ip          = np.full ((n_layers, 2),       np.nan)
+    between_ip         = np.full (n_layers,            np.nan)   # NEW
+    sep_ratio          = np.full (n_layers,            np.nan)   # NEW
+    boundary_frac      = np.full (n_layers,            np.nan)   # NEW
+    clip_frac          = np.full (n_layers,            np.nan)   # NEW
+    regime             = np.full (n_layers, "collapsed", dtype=object)
+
+    boundary_threshold = REGIME_THRESHOLDS["boundary_threshold"]
 
     for L in range(n_layers):
+        X = activations[L]
+
+        # --- clip fraction (before valid check — useful for diagnostics) ---
+        if clip_negative:
+            G_raw = X @ X.T
+            n_off = n_tokens * (n_tokens - 1)
+            if n_off > 0:
+                mask = np.triu(np.ones((n_tokens, n_tokens), dtype=bool), k=1)
+                n_neg = int((G_raw[mask] < 0).sum())
+                clip_frac[L] = float(n_neg / n_off)
+            else:
+                clip_frac[L] = 0.0
+
         if not valid[L]:
             regime[L] = "collapsed"
             continue
 
         f = fiedler_vecs[L]
-        # Sign partition: >= 0 → A, < 0 → B.  Ties to A.
+        # Sign partition: >= 0 → 0 (A), < 0 → 1 (B).  Ties to A.
         a = (f >= 0).astype(np.int8)
         assignments[L] = a
 
@@ -317,11 +473,14 @@ def analyze_bipartition(
         l2, l3 = eigvals[L, 1], eigvals[L, 2]
         if l3 > 1e-12:
             bipart_eigengap[L] = float((l3 - l2) / l3)
-        else:
-            bipart_eigengap[L] = float("nan")
 
-        cen_angle[L] = centroid_angle(activations[L], a)
-        within_ip[L] = within_half_inner_products(activations[L], a)
+        cen_angle[L]  = centroid_angle(activations[L], a)
+        within_ip[L]  = within_half_inner_products(activations[L], a)
+        between_ip[L] = between_half_inner_products(activations[L], a)  # NEW
+        sep_ratio[L]  = compute_separation_ratio(                         # NEW
+            within_ip[L, 0], within_ip[L, 1], between_ip[L]
+        )
+        boundary_frac[L] = fiedler_boundary_fraction(f, boundary_threshold)  # NEW
 
         regime[L] = classify_regime(
             minority_fraction[L],
@@ -340,6 +499,10 @@ def analyze_bipartition(
         "bipartition_eigengap": bipart_eigengap,
         "centroid_angle":       cen_angle,
         "within_half_ip":       within_ip,
+        "between_half_ip":      between_ip,       # NEW
+        "separation_ratio":     sep_ratio,        # NEW
+        "fiedler_boundary_frac": boundary_frac,  # NEW
+        "clip_fraction":        clip_frac,        # NEW
         "regime":               regime,
         "n_layers":             n_layers,
         "n_tokens":             n_tokens,
@@ -372,6 +535,10 @@ def bipartition_to_json(result: dict) -> dict:
             "bipartition_eigengap":  _f(result["bipartition_eigengap"][L]),
             "centroid_angle":        _f(result["centroid_angle"][L]),
             "within_half_ip":        [_f(v) for v in result["within_half_ip"][L]],
+            "between_half_ip":       _f(result["between_half_ip"][L]),
+            "separation_ratio":      _f(result["separation_ratio"][L]),
+            "fiedler_boundary_frac": _f(result["fiedler_boundary_frac"][L]),
+            "clip_fraction":         _f(result["clip_fraction"][L]),
             "hemisphere_sizes":      [int(x) for x in result["hemisphere_sizes"][L]],
             "minority_fraction":     _f(result["minority_fraction"][L]),
         })
@@ -381,23 +548,31 @@ def bipartition_to_json(result: dict) -> dict:
     for r in regime:
         regime_counts[str(r)] = regime_counts.get(str(r), 0) + 1
 
-    # Summary over valid layers only, to avoid mixing in invalid-layer nans.
+    # Summary over valid layers only.
     valid = result["valid"]
     mf = result["minority_fraction"][valid]
     ca = result["centroid_angle"][valid]
     eg = result["bipartition_eigengap"][valid]
+    bi = result["between_half_ip"][valid]
+    sr = result["separation_ratio"][valid]
+    bf = result["fiedler_boundary_frac"][valid]
+    cf = result["clip_fraction"]  # all layers, not just valid
 
     summary = {
-        "n_layers":                 n,
-        "n_tokens":                 int(result["n_tokens"]),
-        "n_valid_layers":           int(valid.sum()),
-        "regime_counts":            regime_counts,
+        "n_layers":                    n,
+        "n_tokens":                    int(result["n_tokens"]),
+        "n_valid_layers":              int(valid.sum()),
+        "regime_counts":               regime_counts,
         "strong_bipartition_fraction":
             float(regime_counts.get("strong_bipartition", 0) / n) if n else 0.0,
-        "mean_minority_fraction":   _mean(mf),
-        "mean_centroid_angle":      _mean(ca),
-        "mean_bipartition_eigengap": _mean(eg),
-        "thresholds":               result["thresholds"],
+        "mean_minority_fraction":      _mean(mf),
+        "mean_centroid_angle":         _mean(ca),
+        "mean_bipartition_eigengap":   _mean(eg),
+        "mean_between_half_ip":        _mean(bi),
+        "mean_separation_ratio":       _mean(sr),
+        "mean_fiedler_boundary_frac":  _mean(bf),
+        "mean_clip_fraction":          _mean(cf[np.isfinite(cf)]),
+        "thresholds":                  result["thresholds"],
     }
 
     return {"per_layer": per_layer, "summary": summary}

@@ -142,10 +142,6 @@ def detect_feature_plateaus(
     z = traj.z_per_layer  # (T, F, L)
     T, F, L = z.shape
 
-    # Per-feature, per-layer: variance across tokens
-    # Shape: (F, L)
-    layer_var = np.var(z, axis=0)  # variance across tokens
-
     # Rolling variance across layers for each feature
     # Use a window of min_plateau_len
     per_feature = []

@@ -28,6 +28,7 @@ def build_random_pseudo_trajectory(
     hdb_labels: list,
     primary_chain: list,
     rng: np.random.Generator,
+    sibling_chain: list = None,
 ) -> dict:
     """
     Build a pseudo-trajectory: at each layer of the primary's chain, randomly
@@ -38,9 +39,11 @@ def build_random_pseudo_trajectory(
     Returns a trajectory-shaped dict AND augmented hdb_labels with the
     synthetic ids written in. The caller should substitute these labels
     rather than appending; we return fresh copies to avoid mutating input.
+
+    sibling_chain is excluded from candidates to avoid corrupting silhouette
+    computations that compare the pseudo-cluster against the primary.
     """
     n_layers = activations.shape[0]
-    n_tokens = activations.shape[1]
     synth_id = -100
 
     new_labels = [arr.copy() for arr in hdb_labels]
@@ -53,9 +56,15 @@ def build_random_pseudo_trajectory(
         primary_size = int((base == cid).sum())
         if primary_size < 2:
             continue
-        # Choose from tokens that are NOT in the primary cluster.
-        # Include noise; exclude the primary itself.
-        candidates = np.where(base != cid)[0]
+        # Exclude the primary cluster AND the sibling cluster (if known) so
+        # that overwriting sibling tokens doesn't corrupt the contrast metrics.
+        exclude_mask = base == cid
+        if sibling_chain is not None:
+            sib_dict = {l: c for l, c in sibling_chain}
+            sib_cid = sib_dict.get(layer)
+            if sib_cid is not None:
+                exclude_mask = exclude_mask | (base == sib_cid)
+        candidates = np.where(~exclude_mask)[0]
         if candidates.size < primary_size:
             continue
         chosen = rng.choice(candidates, size=primary_size, replace=False)
@@ -125,6 +134,7 @@ def run_sibling_contrast(
     # ---- Random control ----
     pseudo_traj, pseudo_labels = build_random_pseudo_trajectory(
         activations, hdb_labels, primary_trajectory["chain"], rng,
+        sibling_chain=sibling_trajectory["chain"] if sibling_trajectory is not None else None,
     )
     if pseudo_traj["lifespan"] >= 2:
         try:

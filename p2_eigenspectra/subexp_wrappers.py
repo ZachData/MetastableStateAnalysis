@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from phase2.subresult import SubResult
+from p2_eigenspectra.subresult import SubResult
 
 # ---------------------------------------------------------------------------
 # 1. trajectory
@@ -37,7 +37,7 @@ def _trajectory_subexp(ctx: dict) -> SubResult:
     Wrap full_analysis (traj cross-reference: violations_beta*, rescaled).
     Depends on: ctx["traj"], ctx["ov_data"]
     """
-    from phase2.analysis import full_analysis
+    from p2_eigenspectra.analysis import full_analysis
 
     traj    = ctx["traj"]
     ov_data = ctx["ov_data"]
@@ -113,7 +113,7 @@ def trajectory_summary_lines(result: dict, ov_data: dict) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def _layer_v_events_subexp(ctx: dict) -> SubResult:
-    from phase2.layer_v_events import run_layer_v_analysis, layer_v_summary_lines
+    from p2_eigenspectra.layer_v_events import run_layer_v_analysis, layer_v_summary_lines
 
     result = run_layer_v_analysis(ctx["ov_data"], ctx["phase1_run_dir"], beta=1.0)
 
@@ -156,7 +156,7 @@ def _layer_v_events_subexp(ctx: dict) -> SubResult:
 # ---------------------------------------------------------------------------
 
 def _head_ov_subexp(ctx: dict) -> SubResult:
-    from phase2.head_ov_analysis import run_head_analysis, head_ov_summary_lines
+    from p2_eigenspectra.head_ov_analysis import run_head_analysis, head_ov_summary_lines
 
     result = run_head_analysis(ctx["ov_data"], ctx["phase1_run_dir"])
 
@@ -193,8 +193,7 @@ def _head_ov_subexp(ctx: dict) -> SubResult:
 # ---------------------------------------------------------------------------
 
 def _decomposed_violations_subexp(ctx: dict) -> SubResult:
-    from phase2.decompose import analyze_violations_decomposed
-    from phase2.subexp_wrappers import decomposed_violations_summary_lines
+    from p2_eigenspectra.decompose import analyze_violations_decomposed
 
     traj       = ctx["trajectory_result"]  # payload from trajectory sub-experiment
     decomposed = ctx["decomposed"]
@@ -271,7 +270,7 @@ def decomposed_violations_summary_lines(decomp_results: list) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def _ffn_subspace_subexp(ctx: dict) -> SubResult:
-    from phase2.ffn_subspace import run_ffn_subspace_analysis, ffn_subspace_summary_lines
+    from p2_eigenspectra.ffn_subspace import run_ffn_subspace_analysis, ffn_subspace_summary_lines
 
     stem_dir       = ctx["stem_dir"]
     phase1_run_dir = ctx["phase1_run_dir"]
@@ -316,9 +315,9 @@ def _ffn_subspace_subexp(ctx: dict) -> SubResult:
 # ---------------------------------------------------------------------------
 
 def _continuous_correlations_subexp(ctx: dict) -> SubResult:
-    from phase2.analysis_extended import continuous_energy_correlations
-    from phase2.analysis_extended import continuous_correlations_summary_lines
-    from phase2.trajectory import load_phase1_events
+    from p2_eigenspectra.analysis_extended import continuous_energy_correlations
+    from p2_eigenspectra.analysis_extended import continuous_correlations_summary_lines
+    from p2_eigenspectra.trajectory import load_phase1_events
 
     events = load_phase1_events(ctx["phase1_run_dir"])
     result = continuous_energy_correlations(ctx["ov_data"], events, beta=1.0)
@@ -350,9 +349,9 @@ def _continuous_correlations_subexp(ctx: dict) -> SubResult:
 # ---------------------------------------------------------------------------
 
 def _ov_norm_confound_subexp(ctx: dict) -> SubResult:
-    from phase2.analysis_extended import ov_norm_confound_check
-    from phase2.analysis_extended import ov_norm_confound_summary_lines
-    from phase2.trajectory import load_phase1_events
+    from p2_eigenspectra.analysis_extended import ov_norm_confound_check
+    from p2_eigenspectra.analysis_extended import ov_norm_confound_summary_lines
+    from p2_eigenspectra.trajectory import load_phase1_events
 
     events = load_phase1_events(ctx["phase1_run_dir"])
     result = ov_norm_confound_check(ctx["ov_data"], events, beta=1.0)
@@ -387,9 +386,9 @@ def _ov_norm_confound_subexp(ctx: dict) -> SubResult:
 # ---------------------------------------------------------------------------
 
 def _zone_comparison_subexp(ctx: dict) -> SubResult:
-    from phase2.analysis_extended import compare_zone_methods
-    from phase2.analysis_extended import zone_comparison_summary_lines
-    from phase2.trajectory import load_phase1_events
+    from p2_eigenspectra.analysis_extended import compare_zone_methods
+    from p2_eigenspectra.analysis_extended import zone_comparison_summary_lines
+    from p2_eigenspectra.trajectory import load_phase1_events
 
     events = load_phase1_events(ctx["phase1_run_dir"])
     result = compare_zone_methods(ctx["ov_data"], events, beta=1.0)
@@ -416,8 +415,8 @@ def _zone_comparison_subexp(ctx: dict) -> SubResult:
 # ---------------------------------------------------------------------------
 
 def _attractive_zone_violations_subexp(ctx: dict) -> SubResult:
-    from phase2.analysis_extended import attractive_zone_violation_analysis
-    from phase2.analysis_extended import attractive_zone_violations_summary_lines
+    from p2_eigenspectra.analysis_extended import attractive_zone_violation_analysis
+    from p2_eigenspectra.analysis_extended import attractive_zone_violations_summary_lines
 
     ffn_sr   = ctx.get("ffn_subspace_result")
     lv_sr    = ctx.get("layer_v_events_result")

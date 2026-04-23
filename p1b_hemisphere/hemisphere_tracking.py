@@ -52,12 +52,14 @@ not filtering.
 
 Functions
 ---------
-align_hemisphere_labels    : global sign flip + Jaccard match per pair.
-compute_axis_rotation      : per-transition angle between Fiedler vectors.
-detect_events              : classify regime transitions and shear spikes.
-crossref_phase1            : tag events with Phase 1 merge / violation overlap.
-analyze_hemisphere_tracking: full pipeline.
-hemisphere_tracking_to_json: flat per-transition + event list + summary.
+align_hemisphere_labels       : global sign flip + Jaccard match per pair.
+compute_axis_rotation         : per-transition angle between Fiedler vectors.
+compute_cumulative_rotation   : nan-safe running sum of axis_rotation.   NEW
+compute_persistence_lengths   : per-layer stable-run length.             NEW
+detect_events                 : classify regime transitions, shear, drift.
+crossref_phase1               : tag events with Phase 1 merge / violation overlap.
+analyze_hemisphere_tracking   : full pipeline.
+hemisphere_tracking_to_json   : flat per-transition + event list + summary.
 """
 
 from __future__ import annotations
@@ -211,6 +213,90 @@ def compute_axis_rotation(
 
 
 # ---------------------------------------------------------------------------
+# Cumulative axis rotation (drift trajectory)            NEW
+# ---------------------------------------------------------------------------
+
+def compute_cumulative_rotation(
+    axis_rotation: np.ndarray,
+) -> np.ndarray:
+    """
+    Nan-safe running sum of per-transition axis rotation.
+
+    Returns
+    -------
+    (n_transitions,) float.  Each entry is the total Fiedler-axis rotation
+    from the first valid transition up to and including that transition.
+    nan transitions contribute 0 to the running sum (they are treated as
+    no-rotation, not a gap that resets the counter).  The first entry is
+    axis_rotation[0] if finite, else 0.
+
+    Use this to answer "how far has the Fiedler axis drifted from its
+    initial orientation by depth L?" without requiring that all transitions
+    are valid.
+    """
+    out = np.zeros(len(axis_rotation), dtype=np.float64)
+    running = 0.0
+    for i, v in enumerate(axis_rotation):
+        if np.isfinite(v):
+            running += float(v)
+        out[i] = running
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Persistence length per layer                           NEW
+# ---------------------------------------------------------------------------
+
+def compute_persistence_lengths(
+    regime: np.ndarray,
+    events: list[dict],
+) -> np.ndarray:
+    """
+    Per-layer count of consecutive strong_bipartition layers since the
+    most recent disruptive event (birth, collapse, swap, or drift).
+
+    A layer's persistence_length answers: "how many layers in a row has
+    this bipartition been stable, ending at this layer?"  It resets to 1
+    at any disruptive event and increments for every subsequent
+    strong_bipartition layer.  Non-strong-bipartition layers get 0.
+
+    Parameters
+    ----------
+    regime : (n_layers,) str from Block 0.
+    events : list of event dicts from detect_events.  Disruptive types
+             are: birth, collapse, swap, drift.  (Shear is not disruptive
+             — it is a within-identity perturbation.)
+
+    Returns
+    -------
+    (n_layers,) int.
+    """
+    n = len(regime)
+    out = np.zeros(n, dtype=np.int32)
+    disruptive_types = {"birth", "collapse", "swap", "drift"}
+
+    # Collect the destination-layer indices of all disruptive events.
+    disruptive_layers: set[int] = set()
+    for ev in events:
+        if ev["type"] in disruptive_types:
+            disruptive_layers.add(ev["layer"])
+
+    run = 0
+    for L in range(n):
+        if str(regime[L]) != "strong_bipartition":
+            run = 0
+            out[L] = 0
+            continue
+        if L in disruptive_layers:
+            run = 1   # reset: this layer is the start of a new stable run
+        else:
+            run += 1
+        out[L] = run
+
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Crossing count in aligned frame
 # ---------------------------------------------------------------------------
 
@@ -245,10 +331,21 @@ def aligned_crossing_count(
 # partition of the token set).
 IDENTITY_THRESHOLD = 0.5
 
-# Shear = high crossing count without regime change or swap.  Expressed as
-# a percentile of the valid crossing-count distribution within the run,
-# rather than an absolute count, so it scales with prompt length.
+# Shear = high crossing count without regime change or swap.  Primary
+# criterion: top percentile within the run.  Secondary floor: a shear
+# event also fires if crossing_count exceeds SHEAR_ABSOLUTE_FLOOR
+# regardless of the percentile threshold — prevents high-crossing runs
+# from never emitting shear events.
 SHEAR_PERCENTILE = 95.0
+SHEAR_ABSOLUTE_FLOOR = 3   # tokens; set to 0 to disable absolute floor
+
+# Drift = accumulated axis rotation over a sliding window exceeds
+# DRIFT_WINDOW_RAD radians across DRIFT_WINDOW_LAYERS consecutive
+# transitions, without a swap or collapse event in that window.
+# This catches slow, sustained rotation that never triggers a single-step
+# swap threshold but represents meaningful structural drift.
+DRIFT_WINDOW_LAYERS = 4
+DRIFT_WINDOW_RAD    = np.pi / 4.0   # 45° cumulative over 4 transitions
 
 
 def detect_events(
@@ -256,11 +353,15 @@ def detect_events(
     match_overlap: np.ndarray,
     crossing_count: np.ndarray,
     valid: np.ndarray,
+    axis_rotation: np.ndarray | None = None,
     identity_threshold: float = IDENTITY_THRESHOLD,
     shear_percentile: float = SHEAR_PERCENTILE,
+    shear_absolute_floor: int = SHEAR_ABSOLUTE_FLOOR,
+    drift_window_layers: int = DRIFT_WINDOW_LAYERS,
+    drift_window_rad: float = DRIFT_WINDOW_RAD,
 ) -> list[dict]:
     """
-    Emit birth / collapse / swap / shear events.
+    Emit birth / collapse / swap / shear / drift events.
 
     Parameters
     ----------
@@ -268,12 +369,20 @@ def detect_events(
     match_overlap  : (n_layers - 1,) float, nan at invalid transitions.
     crossing_count : (n_layers - 1,) int.
     valid          : (n_layers,) bool.
+    axis_rotation  : (n_layers - 1,) float, optional.  Required for drift
+                     detection; if None, drift events are not emitted.
 
-    Event schema:
-      {"type": "birth"|"collapse"|"swap"|"shear",
-       "layer": int,          # destination layer (L+1 for transitions)
-       "from_layer": int,     # origin layer
-       "detail": {...}}
+    Event schema
+    ------------
+    {"type": "birth"|"collapse"|"swap"|"shear"|"drift",
+     "layer": int,          # destination layer (L+1 for transitions)
+     "from_layer": int,     # origin layer
+     "detail": {...}}
+
+    Drift detail includes:
+      window_start, window_end  : layer range over which drift accumulates
+      cumulative_rotation       : total axis rotation over the window (radians)
+      window_threshold          : DRIFT_WINDOW_RAD value used
     """
     events: list[dict] = []
     n_layers = len(regime)
@@ -285,9 +394,12 @@ def detect_events(
     )
     cc_valid = crossing_count[valid_trans]
     if cc_valid.size >= 5:
-        shear_thresh = float(np.percentile(cc_valid, shear_percentile))
+        shear_thresh_pct = float(np.percentile(cc_valid, shear_percentile))
     else:
-        shear_thresh = float("inf")   # don't emit shear on tiny runs
+        shear_thresh_pct = float("inf")
+
+    # --- primary pass: birth / collapse / swap / shear ---
+    disrupted_transitions: set[int] = set()   # used to suppress drift in same window
 
     for L in range(n_trans):
         if not valid_trans[L]:
@@ -303,22 +415,18 @@ def detect_events(
                 "type": "birth",
                 "layer": L + 1,
                 "from_layer": L,
-                "detail": {
-                    "match_overlap": ov,
-                    "crossing_count": cc,
-                },
+                "detail": {"match_overlap": ov, "crossing_count": cc},
             })
+            disrupted_transitions.add(L)
             continue
         if r_from == "strong_bipartition" and r_to == "collapsed":
             events.append({
                 "type": "collapse",
                 "layer": L + 1,
                 "from_layer": L,
-                "detail": {
-                    "match_overlap": ov,
-                    "crossing_count": cc,
-                },
+                "detail": {"match_overlap": ov, "crossing_count": cc},
             })
+            disrupted_transitions.add(L)
             continue
 
         # Swap — both strong, axis has rotated to a different partition.
@@ -330,16 +438,18 @@ def detect_events(
                 "type": "swap",
                 "layer": L + 1,
                 "from_layer": L,
-                "detail": {
-                    "match_overlap": ov,
-                    "crossing_count": cc,
-                },
+                "detail": {"match_overlap": ov, "crossing_count": cc},
             })
+            disrupted_transitions.add(L)
             continue
 
-        # Shear — high crossings but identity preserved (or not yet
+        # Shear — high crossings but identity preserved (or regime not yet
         # meaningfully defined, e.g., weak↔weak).
-        if cc >= shear_thresh and cc > 0:
+        # Fire on percentile OR absolute floor (whichever is lower bound).
+        is_high_pct = cc >= shear_thresh_pct
+        is_high_abs = (shear_absolute_floor > 0 and cc >= shear_absolute_floor
+                       and cc_valid.size >= 5)   # suppress on tiny runs
+        if (is_high_pct or is_high_abs) and cc > 0:
             events.append({
                 "type": "shear",
                 "layer": L + 1,
@@ -347,12 +457,47 @@ def detect_events(
                 "detail": {
                     "match_overlap": ov,
                     "crossing_count": cc,
-                    "shear_threshold": shear_thresh,
+                    "shear_threshold_pct": shear_thresh_pct,
+                    "shear_absolute_floor": shear_absolute_floor,
+                    "triggered_by": "percentile" if is_high_pct else "absolute_floor",
                     "regime_from": r_from,
                     "regime_to":   r_to,
                 },
             })
 
+    # --- drift pass: sliding window over axis_rotation ---
+    if axis_rotation is not None and drift_window_layers >= 2:
+        W = drift_window_layers
+        for L_end in range(W - 1, n_trans):
+            L_start = L_end - W + 1
+            # Skip if any disrupted transition falls in this window —
+            # those are accounted for by birth/collapse/swap events.
+            if any(t in disrupted_transitions for t in range(L_start, L_end + 1)):
+                continue
+            # All transitions in the window must be valid.
+            if not all(valid_trans[L_start : L_end + 1]):
+                continue
+            window_rot = axis_rotation[L_start : L_end + 1]
+            if not np.all(np.isfinite(window_rot)):
+                continue
+            cum_rot = float(window_rot.sum())
+            if cum_rot >= drift_window_rad:
+                events.append({
+                    "type": "drift",
+                    "layer": L_end + 1,
+                    "from_layer": L_start,
+                    "detail": {
+                        "window_start":       L_start,
+                        "window_end":         L_end + 1,
+                        "cumulative_rotation": cum_rot,
+                        "window_threshold":    drift_window_rad,
+                        "n_transitions":       W,
+                        "regime_at_end":       str(regime[L_end + 1]),
+                    },
+                })
+
+    # Sort all events by layer for consistent iteration.
+    events.sort(key=lambda e: (e["layer"], e["from_layer"]))
     return events
 
 
@@ -443,6 +588,9 @@ def analyze_hemisphere_tracking(
     violation_layers: set[int] | None = None,
     identity_threshold: float = IDENTITY_THRESHOLD,
     shear_percentile: float = SHEAR_PERCENTILE,
+    shear_absolute_floor: int = SHEAR_ABSOLUTE_FLOOR,
+    drift_window_layers: int = DRIFT_WINDOW_LAYERS,
+    drift_window_rad: float = DRIFT_WINDOW_RAD,
 ) -> dict:
     """
     Run Block 1 on a Block 0 result.
@@ -455,18 +603,25 @@ def analyze_hemisphere_tracking(
     -------
     dict with everything Block 1 produces, ready for the aggregator.
     """
-    aligned = align_hemisphere_labels(block0["assignments"], block0["valid"])
+    aligned  = align_hemisphere_labels(block0["assignments"], block0["valid"])
     axis_rot = compute_axis_rotation(block0["fiedler_vecs"], block0["valid"])
-    cc = aligned_crossing_count(aligned["aligned_assignments"], block0["valid"])
+    cum_rot  = compute_cumulative_rotation(axis_rot)                    # NEW
+    cc       = aligned_crossing_count(aligned["aligned_assignments"], block0["valid"])
 
     raw_events = detect_events(
         block0["regime"],
         aligned["match_overlap"],
         cc,
         block0["valid"],
+        axis_rotation=axis_rot,
         identity_threshold=identity_threshold,
         shear_percentile=shear_percentile,
+        shear_absolute_floor=shear_absolute_floor,
+        drift_window_layers=drift_window_layers,
+        drift_window_rad=drift_window_rad,
     )
+    persistence = compute_persistence_lengths(block0["regime"], raw_events)  # NEW
+
     xref = crossref_phase1(
         raw_events,
         axis_rot,
@@ -476,16 +631,21 @@ def analyze_hemisphere_tracking(
     )
 
     return {
-        "aligned_assignments": aligned["aligned_assignments"],
-        "flips_applied":       aligned["flips_applied"],
-        "match_overlap":       aligned["match_overlap"],
-        "axis_rotation":       axis_rot,
-        "crossing_count":      cc,
-        "events":              xref["events"],
-        "crossref":            xref["agg"],
+        "aligned_assignments":     aligned["aligned_assignments"],
+        "flips_applied":           aligned["flips_applied"],
+        "match_overlap":           aligned["match_overlap"],
+        "axis_rotation":           axis_rot,
+        "cumulative_axis_rotation": cum_rot,       # NEW
+        "crossing_count":          cc,
+        "persistence_length":      persistence,    # NEW
+        "events":                  xref["events"],
+        "crossref":                xref["agg"],
         "thresholds": {
-            "identity": identity_threshold,
-            "shear_percentile": shear_percentile,
+            "identity":            identity_threshold,
+            "shear_percentile":    shear_percentile,
+            "shear_absolute_floor": shear_absolute_floor,
+            "drift_window_layers": drift_window_layers,
+            "drift_window_rad":    drift_window_rad,
         },
     }
 
@@ -497,48 +657,61 @@ def analyze_hemisphere_tracking(
 def hemisphere_tracking_to_json(result: dict) -> dict:
     """Flat representation for the aggregator's per-run JSON."""
     n_trans = len(result["axis_rotation"])
+    n_layers = n_trans + 1
 
     per_transition = []
     for L in range(n_trans):
         per_transition.append({
-            "transition":      L,
-            "from_layer":      L,
-            "to_layer":        L + 1,
-            "match_overlap":   _f(result["match_overlap"][L]),
-            "axis_rotation":   _f(result["axis_rotation"][L]),
-            "crossing_count":  int(result["crossing_count"][L]),
+            "transition":              L,
+            "from_layer":              L,
+            "to_layer":                L + 1,
+            "match_overlap":           _f(result["match_overlap"][L]),
+            "axis_rotation":           _f(result["axis_rotation"][L]),
+            "cumulative_axis_rotation": _f(result["cumulative_axis_rotation"][L]),
+            "crossing_count":          int(result["crossing_count"][L]),
         })
+
+    # Per-layer persistence (n_layers entries, not n_trans).
+    per_layer_persistence = [
+        int(result["persistence_length"][L]) for L in range(n_layers)
+    ]
 
     # Event type counts.
     counts: dict[str, int] = {}
     for ev in result["events"]:
         counts[ev["type"]] = counts.get(ev["type"], 0) + 1
 
-    # Aggregates: mean axis rotation, max overlap, crossing counts, event totals.
-    ar = np.asarray(result["axis_rotation"], dtype=np.float64)
-    mo = np.asarray(result["match_overlap"], dtype=np.float64)
-    cc = np.asarray(result["crossing_count"], dtype=np.float64)
+    # Aggregates.
+    ar  = np.asarray(result["axis_rotation"], dtype=np.float64)
+    mo  = np.asarray(result["match_overlap"], dtype=np.float64)
+    cc  = np.asarray(result["crossing_count"], dtype=np.float64)
+    cum = np.asarray(result["cumulative_axis_rotation"], dtype=np.float64)
+    pl  = np.asarray(result["persistence_length"], dtype=np.float64)
+    pl_pos = pl[pl > 0]
 
     summary = {
-        "n_transitions":       n_trans,
-        "n_events":            len(result["events"]),
-        "event_counts":        counts,
-        "mean_axis_rotation":  _mean(ar),
-        "max_axis_rotation":   _max(ar),
-        "mean_match_overlap":  _mean(mo),
-        "min_match_overlap":   _min(mo),
-        "mean_crossing":       _mean(cc),
-        "max_crossing":        _max(cc),
-        "identity_preserved_fraction":
-            _frac_ge(mo, IDENTITY_THRESHOLD),
-        "thresholds":          result["thresholds"],
-        "crossref":            result["crossref"],
+        "n_transitions":                n_trans,
+        "n_events":                     len(result["events"]),
+        "event_counts":                 counts,
+        "mean_axis_rotation":           _mean(ar),
+        "max_axis_rotation":            _max(ar),
+        "total_axis_rotation":          _f(cum[-1]) if len(cum) else None,
+        "mean_match_overlap":           _mean(mo),
+        "min_match_overlap":            _min(mo),
+        "mean_crossing":                _mean(cc),
+        "max_crossing":                 _max(cc),
+        "identity_preserved_fraction":  _frac_ge(mo, IDENTITY_THRESHOLD),
+        "mean_persistence_length":      _mean(pl_pos),
+        "max_persistence_length":       _max(pl_pos),
+        "thresholds":                   result["thresholds"],
+        "crossref":                     result["crossref"],
     }
 
     return {
-        "per_transition": per_transition,
-        "events":         result["events"],
-        "summary":        summary,
+        "per_transition":          per_transition,
+        "per_layer_persistence":   per_layer_persistence,
+        "events":                  result["events"],
+        "summary":                 summary,
     }
 
 

@@ -236,8 +236,11 @@ def _save_bridge_files(results, run_dir):
     tracking = results.get("cluster_tracking", {})
     events   = tracking.get("events", [])
 
+    # Events from track_clusters have no "type"/"layer" fields; the correct
+    # fields are "layer_from" and "n_merges".  The old predicate was always
+    # False, so merge_layers was always [].
     merge_layers = sorted({
-        e["layer"] for e in events if e.get("type") == "merge"
+        e["layer_from"] for e in events if e.get("n_merges", 0) > 0
     })
 
     energy_violations = {}

@@ -13,7 +13,7 @@ This module:
 """
 
 import numpy as np
-from collections import Counter
+from collections import Counter, deque
 from typing import Optional
 
 from phase3.crosscoder import Crosscoder
@@ -97,9 +97,9 @@ def extract_cliques(
             continue
         # BFS
         comp = []
-        queue = [start]
+        queue = deque([start])
         while queue:
-            node = queue.pop(0)
+            node = queue.popleft()
             if node in visited:
                 continue
             visited.add(node)

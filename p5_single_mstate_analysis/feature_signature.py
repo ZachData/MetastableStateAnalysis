@@ -340,6 +340,7 @@ def analyze_features(
     lda_directions_per_layer: Optional[dict] = None,
     v_projectors: Optional[dict] = None,
     bottleneck_directions: Optional[np.ndarray] = None,  # (d, k) from Phase 4 T3
+    cluster_centroid: Optional[np.ndarray] = None,  # (d,) representative centroid
     top_k: int = 20,
 ) -> dict:
     """
@@ -428,15 +429,24 @@ def analyze_features(
         mid = per_layer[len(per_layer) // 2]
         mid_layer = mid["layer"]
         feat_idx = [t["feature"] for t in mid["top_features"][:10]]
-        # Need cluster centroid at mid_layer — reconstruct from activations
-        # if feature_acts_per_layer also carries residual stream? No: we use
-        # the raw acts from outer scope instead. Fall back to a zero centroid.
-        # Caller supplies centroid via a separate kwarg if desired.
-        # Here we recompute from decoder geometry alone: use dummy centroid
-        # equal to mean of decoder directions (degenerate but safe).
-        dummy_centroid = np.zeros(decoder_directions.shape[-1])
+        # Bug 2 fix: use the caller-supplied centroid when available.
+        # Previously this used np.zeros(), causing every cos_centroid to be 0.
+        # Fall back to mean of the selected decoder directions (non-zero and
+        # meaningful) only when no centroid is provided.
+        if cluster_centroid is not None and float(np.linalg.norm(cluster_centroid)) > 1e-12:
+            geom_centroid = np.asarray(cluster_centroid, dtype=np.float32)
+        elif feat_idx:
+            selected = np.array(
+                [decoder_directions[f] for f in feat_idx
+                 if f < decoder_directions.shape[0]],
+                dtype=np.float32,
+            )
+            geom_centroid = (selected.mean(axis=0) if selected.size
+                             else np.zeros(decoder_directions.shape[-1], dtype=np.float32))
+        else:
+            geom_centroid = np.zeros(decoder_directions.shape[-1], dtype=np.float32)
         geometry = decoder_direction_geometry(
-            decoder_directions, feat_idx, dummy_centroid,
+            decoder_directions, feat_idx, geom_centroid,
             lda_directions_per_layer.get(f"lda_L{mid_layer}")
                 if lda_directions_per_layer else None,
             v_projectors.get("U_att") if v_projectors else None,
@@ -446,14 +456,17 @@ def analyze_features(
     # ---- Bottleneck direction alignment (Phase 4 Track 3) ----
     bn_align = None
     if bottleneck_directions is not None and per_layer:
-        # Compare centroid direction to each bottleneck basis vector
-        # The caller should supply cluster centroid to do this properly;
-        # here we fall back to a summary over the full bottleneck basis.
+        # Bug 3 fix: the previous orientation check was a no-op due to
+        # operator-precedence (the else-branch of the ternary evaluated to
+        # `shape[0] != True`, and both branches did `pass`).  Rewritten as a
+        # proper conditional that actually transposes when needed.
         if bottleneck_directions.size:
-            if bottleneck_directions.shape[0] != decoder_directions.shape[-1] \
-                    if decoder_directions is not None else True:
-                # Detect orientation and transpose if needed
-                pass
+            if decoder_directions is not None:
+                d_model = int(decoder_directions.shape[-1])
+                if (bottleneck_directions.ndim == 2
+                        and bottleneck_directions.shape[0] != d_model
+                        and bottleneck_directions.shape[1] == d_model):
+                    bottleneck_directions = bottleneck_directions.T
             bn_align = {
                 "n_bottleneck_directions": int(bottleneck_directions.shape[-1]),
                 "note": "per-feature alignment computed externally — caller "

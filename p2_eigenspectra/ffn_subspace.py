@@ -23,7 +23,7 @@ run_ffn_subspace_analysis     : full pipeline
 import numpy as np
 from pathlib import Path
 
-from phase2.trajectory import load_phase1_events
+from p2_eigenspectra.trajectory import load_phase1_events
 
 
 # ---------------------------------------------------------------------------

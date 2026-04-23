@@ -22,7 +22,7 @@ from pathlib import Path
 from scipy.linalg import expm
 
 from core.config import BETA_VALUES
-from phase2.trajectory import (
+from p2_eigenspectra.trajectory import (
     step_size_trajectory,
     centroid_projection,
     rescaled_trajectory,
