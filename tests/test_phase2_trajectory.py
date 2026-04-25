@@ -435,3 +435,139 @@ class TestSelfInteractionOutputContract:
     def test_frac_negative_matches_self_int_sign(self):
         expected = (self.result["self_int"] < 0).mean(axis=1)
         npt.assert_allclose(self.result["frac_negative"], expected, atol=1e-5)
+
+#new tests
+
+class TestSubspaceActivationExtreme:
+    """For degenerate projectors, fractions should be exactly 0 or 1."""
+
+    def _constant_acts(self, n_layers=4, n_tokens=10, d=8, seed=0):
+        rng = np.random.default_rng(seed)
+        x = rng.standard_normal((n_tokens, d))
+        x /= np.linalg.norm(x, axis=-1, keepdims=True)
+        return np.stack([x] * n_layers)
+
+    def test_all_attract_projectors_give_frac_one(self):
+        """Positive-definite matrix → attract projector = I → attract_frac = 1."""
+        d = 8
+        M = _pos_def(d)
+        proj = build_subspace_projectors(eigendecompose(M))
+        acts = self._constant_acts(d=d)
+        result = subspace_activation(acts, proj)
+        for L in range(acts.shape[0]):
+            npt.assert_allclose(
+                result["schur_attract_frac"][L], 1.0, atol=1e-8,
+                err_msg=f"Layer {L}: schur_attract_frac should be 1 for pos-def OV"
+            )
+            npt.assert_allclose(
+                result["schur_repulse_frac"][L], 0.0, atol=1e-8,
+                err_msg=f"Layer {L}: schur_repulse_frac should be 0 for pos-def OV"
+            )
+
+    def test_all_repulse_projectors_give_frac_zero(self):
+        d = 8
+        M = -_pos_def(d)
+        proj = build_subspace_projectors(eigendecompose(M))
+        acts = self._constant_acts(d=d)
+        result = subspace_activation(acts, proj)
+        for L in range(acts.shape[0]):
+            npt.assert_allclose(result["schur_attract_frac"][L], 0.0, atol=1e-8)
+            npt.assert_allclose(result["schur_repulse_frac"][L], 1.0, atol=1e-8)
+
+    def test_fracs_sum_to_one_mixed(self):
+        """attract_frac + repulse_frac = 1.0 for arbitrary projectors."""
+        proj, _ = _mixed_projectors()
+        rng = np.random.default_rng(5)
+        acts = rng.standard_normal((4, 10, 8))
+        acts /= np.linalg.norm(acts, axis=-1, keepdims=True)
+        result = subspace_activation(acts, proj)
+        for L in range(4):
+            total = result["schur_attract_frac"][L] + result["schur_repulse_frac"][L]
+            npt.assert_allclose(total, 1.0, atol=1e-8)
+
+
+class TestSelfInteractionSign:
+    """self_interaction_trajectory sign is determined by definiteness of OV."""
+
+    def _unit_acts(self, n_layers=3, n_tokens=15, d=8, seed=1):
+        rng = np.random.default_rng(seed)
+        X = rng.standard_normal((n_layers, n_tokens, d))
+        X /= np.linalg.norm(X, axis=-1, keepdims=True)
+        return X
+
+    def test_pos_def_ov_all_positive(self):
+        """x^T (pos-def OV) x > 0 for any nonzero x."""
+        OV = _pos_def(8)
+        acts = self._unit_acts()
+        result = self_interaction_trajectory(acts, OV)
+        assert np.all(result["self_int"] > 0), \
+            "pos-def OV must yield strictly positive self-interactions"
+
+    def test_neg_def_ov_all_negative(self):
+        OV = -_pos_def(8)
+        acts = self._unit_acts()
+        result = self_interaction_trajectory(acts, OV)
+        assert np.all(result["self_int"] < 0), \
+            "neg-def OV must yield strictly negative self-interactions"
+
+    def test_output_shape(self):
+        n_layers, n_tokens, d = 4, 12, 8
+        rng = np.random.default_rng(9)
+        OV = rng.standard_normal((d, d))
+        acts = rng.standard_normal((n_layers, n_tokens, d))
+        result = self_interaction_trajectory(acts, OV)
+        assert result["self_int"].shape == (n_layers, n_tokens)
+
+    def test_scaling_linearity(self):
+        """self_int(alpha * x, OV) = alpha^2 * self_int(x, OV)."""
+        OV = _pos_def(8)
+        acts = self._unit_acts(n_layers=2, n_tokens=5)
+        alpha = 3.0
+        r1 = self_interaction_trajectory(acts, OV)["self_int"]
+        r2 = self_interaction_trajectory(alpha * acts, OV)["self_int"]
+        npt.assert_allclose(r2, alpha ** 2 * r1, rtol=1e-8)
+
+
+class TestStepSizeTrajectoryShapes:
+    """Output shapes and basic invariants for step_size_trajectory."""
+
+    def _acts(self, n_layers=5, n_tokens=12, d=8, seed=3):
+        rng = np.random.default_rng(seed)
+        return rng.standard_normal((n_layers, n_tokens, d))
+
+    def test_step_norms_shape(self):
+        acts = self._acts(n_layers=5, n_tokens=12)
+        result = step_size_trajectory(acts)
+        assert result["step_norms"].shape == (4, 12)   # n_layers-1 × n_tokens
+
+    def test_step_norms_nonnegative(self):
+        acts = self._acts()
+        result = step_size_trajectory(acts)
+        assert np.all(result["step_norms"] >= 0.0)
+
+    def test_step_mean_std_finite(self):
+        acts = self._acts()
+        result = step_size_trajectory(acts)
+        assert np.all(np.isfinite(result["step_mean"]))
+        assert np.all(np.isfinite(result["step_std"]))
+
+    def test_constant_trajectory_zero_steps(self):
+        """Activations that don't change between layers → all step norms = 0."""
+        rng = np.random.default_rng(0)
+        x = rng.standard_normal((12, 8))
+        acts = np.stack([x] * 5)
+        result = step_size_trajectory(acts)
+        npt.assert_allclose(result["step_norms"], 0.0, atol=1e-12)
+
+    def test_uniform_steps_give_constant_mean(self):
+        """Linearly interpolating activations → equal step norm at every transition."""
+        rng = np.random.default_rng(7)
+        x0 = rng.standard_normal((12, 8))
+        x1 = rng.standard_normal((12, 8))
+        n_layers = 5
+        acts = np.stack([x0 + t / (n_layers - 1) * (x1 - x0)
+                         for t in range(n_layers)])
+        result = step_size_trajectory(acts)
+        # All row-means should be equal (within floating point)
+        means = result["step_norms"].mean(axis=1)
+        npt.assert_allclose(means, means[0] * np.ones_like(means), rtol=1e-8)

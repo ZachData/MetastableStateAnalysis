@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 import torch
 
-from metrics import (
+from p1_mstate_tracking.metrics import (
     pairwise_inner_products_from_gram,
     interaction_energies_batched,
     effective_rank_from_raw,
@@ -22,10 +22,9 @@ from metrics import (
     linear_cka,
     energy_drop_pairs,
 )
-from sinkhorn import analyze_attention_sinkhorn
+from p1_mstate_tracking.sinkhorn import analyze_attention_sinkhorn
 
-from tests.constants import N_TOKENS, D
-
+from tests.config import N_TOKENS, D
 
 # ============================================================================
 # pairwise_inner_products_from_gram
@@ -299,58 +298,229 @@ class TestLinearCKA:
 
 class TestEnergyDropPairs:
     """
-    energy_drop_pairs identifies (i, j, delta) pairs where delta =
-    [exp(β⟨xᵢ,xⱼ⟩_after) − exp(β⟨xᵢ,xⱼ⟩_before)] / (2β n²).
+    energy_drop_pairs(before, after, beta, top_k) → [(i, j, delta), ...]
 
-    If before == after, every delta must be 0.
+    delta_ij = [exp(β⟨xᵢ,xⱼ⟩_after) − exp(β⟨xᵢ,xⱼ⟩_before)] / (2β n²)
+
+    Contracts
+    ---------
+    - before == after  →  all deltas == 0
+    - results sorted ascending (most negative first)
+    - len(result) <= top_k
+    - all (i, j) satisfy i < j  (upper triangle only)
+    - n < 2  →  empty list
+
+    Correctness
+    -----------
+    - known-geometry: pair that transitions from ⟨·⟩≈1 to ⟨·⟩≈0 is the
+      most negative entry
+    - energy-increasing transition (orthogonal → collapsed): no negative deltas
+    - higher β amplifies the delta magnitude for a fixed geometry change
     """
 
-    def _make_raw_tensor(self):
-        """Random (N_TOKENS, D) raw activation tensor (not normalised)."""
-        return torch.randn(N_TOKENS, D, generator=torch.Generator().manual_seed(7))
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
 
-    def test_identical_layers_all_deltas_zero(self):
-        X = self._make_raw_tensor()
-        pairs = energy_drop_pairs(X, X, beta=1.0, top_k=10)
-        for i, j, delta in pairs:
+    @staticmethod
+    def _raw(arr: np.ndarray) -> torch.Tensor:
+        """Wrap a float32 ndarray as a torch Tensor."""
+        return torch.tensor(arr.astype(np.float32))
+
+    @staticmethod
+    def _spread(n: int, seed: int = 0) -> np.ndarray:
+        """n unit vectors spread roughly uniformly in R^D."""
+        rng = np.random.default_rng(seed)
+        X = rng.standard_normal((n, D)).astype(np.float32)
+        X /= np.linalg.norm(X, axis=1, keepdims=True)
+        return X
+
+    @staticmethod
+    def _with_pair_merged(n: int, i: int, j: int, seed: int = 0) -> np.ndarray:
+        """
+        Spread activations where tokens i and j are identical (⟨i,j⟩=1).
+        All other pairs are approximately orthogonal.
+        """
+        rng = np.random.default_rng(seed)
+        # Start from spread, then force i and j to be parallel
+        X = rng.standard_normal((n, D)).astype(np.float32) * 0.05
+        pole = np.zeros(D, dtype=np.float32)
+        pole[0] = 1.0
+        X[i] = pole
+        X[j] = pole
+        X /= np.linalg.norm(X, axis=1, keepdims=True)
+        return X
+
+    # ------------------------------------------------------------------
+    # Contract tests
+    # ------------------------------------------------------------------
+
+    def test_identical_inputs_all_deltas_zero(self):
+        """
+        before == after  →  G_before == G_after  →  every delta == 0.
+        The function should return an empty list or a list of near-zero deltas.
+        """
+        X = self._spread(N_TOKENS, seed=1)
+        t = self._raw(X)
+        pairs = energy_drop_pairs(t, t, beta=1.0, top_k=N_TOKENS * N_TOKENS)
+        for _, _, delta in pairs:
             assert abs(delta) < 1e-6, (
-                f"Pair ({i},{j}) has non-zero delta={delta:.2e} for identical layers"
+                f"Identical inputs: expected delta=0, got {delta:.2e}"
             )
 
-    def test_returns_list_of_triples(self):
-        X = self._make_raw_tensor()
-        pairs = energy_drop_pairs(X, X, beta=1.0, top_k=5)
-        assert isinstance(pairs, list)
-        for item in pairs:
-            assert len(item) == 3, "Each entry should be (i, j, delta)"
+    def test_upper_triangle_only(self):
+        """Every returned pair satisfies i < j."""
+        rng = np.random.default_rng(2)
+        t1 = self._raw(rng.standard_normal((N_TOKENS, D)).astype(np.float32))
+        t2 = self._raw(rng.standard_normal((N_TOKENS, D)).astype(np.float32))
+        pairs = energy_drop_pairs(t1, t2, beta=1.0, top_k=50)
+        for i, j, _ in pairs:
+            assert i < j, f"Pair ({i}, {j}) violates upper-triangle constraint"
 
-    def test_top_k_respected(self):
-        """At most top_k pairs are returned."""
-        X     = self._make_raw_tensor()
-        Y     = torch.randn_like(X)
-        pairs = energy_drop_pairs(X, Y, beta=1.0, top_k=7)
-        assert len(pairs) <= 7
+    def test_top_k_bounds_output_length(self):
+        """len(result) <= top_k for all k."""
+        rng = np.random.default_rng(3)
+        t1 = self._raw(rng.standard_normal((N_TOKENS, D)).astype(np.float32))
+        t2 = self._raw(rng.standard_normal((N_TOKENS, D)).astype(np.float32))
+        for k in [1, 3, 10, 30]:
+            assert len(energy_drop_pairs(t1, t2, beta=1.0, top_k=k)) <= k, (
+                f"top_k={k} not respected"
+            )
 
-    def test_pairs_sorted_ascending_delta(self):
-        """Pairs are ordered by delta ascending (most negative first)."""
-        X     = self._make_raw_tensor()
-        Y     = torch.randn_like(X)
-        pairs = energy_drop_pairs(X, Y, beta=1.0, top_k=10)
+    def test_sorted_ascending(self):
+        """Results are ordered by delta ascending (most negative first)."""
+        rng = np.random.default_rng(4)
+        t1 = self._raw(rng.standard_normal((N_TOKENS, D)).astype(np.float32))
+        t2 = self._raw(rng.standard_normal((N_TOKENS, D)).astype(np.float32))
+        pairs = energy_drop_pairs(t1, t2, beta=1.0, top_k=20)
         deltas = [d for _, _, d in pairs]
         assert deltas == sorted(deltas), (
-            "energy_drop_pairs should be sorted by delta ascending"
+            f"Pairs not sorted ascending: {deltas}"
         )
 
-    def test_indices_are_valid_upper_triangle(self):
-        """All returned pairs satisfy 0 ≤ i < j < n_tokens."""
-        X     = self._make_raw_tensor()
-        Y     = torch.randn_like(X)
-        pairs = energy_drop_pairs(X, Y, beta=1.0, top_k=15)
-        for i, j, _ in pairs:
-            assert 0 <= i < j < N_TOKENS, (
-                f"Invalid pair indices ({i}, {j}); expected 0 ≤ i < j < {N_TOKENS}"
+    def test_single_token_returns_empty(self):
+        """n=1 → no pairs possible → empty list."""
+        t = torch.randn(1, D)
+        pairs = energy_drop_pairs(t, t, beta=1.0, top_k=5)
+        assert pairs == [], f"Single token should yield [], got {pairs}"
+
+    # ------------------------------------------------------------------
+    # Correctness tests
+    # ------------------------------------------------------------------
+
+    def test_known_worst_pair_is_top_result(self):
+        """
+        Geometry
+        --------
+        before: tokens 0 and 1 are parallel (⟨0,1⟩ ≈ 1); all others spread.
+        after:  all tokens spread uniformly (⟨0,1⟩ ≈ 0).
+
+        delta_{01} = [exp(β·0) − exp(β·1)] / (2β n²)
+                   = (1 − eᵝ) / (2β n²)  < 0   for all β > 0.
+
+        All other pairs had ⟨·⟩_before ≈ 0 and ⟨·⟩_after ≈ 0, so their
+        deltas are near zero.  Pair (0, 1) must be the most negative entry.
+        """
+        n = 8
+        before = self._with_pair_merged(n, i=0, j=1, seed=7)
+        after  = self._spread(n, seed=8)
+
+        pairs = energy_drop_pairs(self._raw(before), self._raw(after),
+                                  beta=1.0, top_k=n)
+
+        assert len(pairs) > 0, "Expected at least one pair"
+        worst_i, worst_j, worst_delta = pairs[0]
+        assert worst_delta < 0, (
+            f"Top pair delta should be negative, got {worst_delta:.4f}"
+        )
+        assert (worst_i, worst_j) == (0, 1), (
+            f"Pair (0,1) should be worst; got ({worst_i},{worst_j}) "
+            f"with delta={worst_delta:.4f}"
+        )
+
+    def test_energy_increasing_transition_no_negative_deltas(self):
+        """
+        Transition from spread (low energy) to collapsed (high energy) raises
+        every pairwise exp-term.  No pair should have a negative delta.
+
+        before: tokens spread uniformly → ⟨·⟩ ≈ 0
+        after:  all tokens near +e₀ → ⟨·⟩ ≈ 1
+
+        delta_ij = [exp(β·1) − exp(β·0)] / norm  > 0  for all (i,j).
+        """
+        n = 8
+        spread    = self._spread(n, seed=10)
+        collapsed = self._spread(n, seed=11) * 0.01  # tight cluster
+        collapsed[:, 0] += 1.0                        # all near +e₀
+
+        pairs = energy_drop_pairs(self._raw(spread), self._raw(collapsed),
+                                  beta=1.0, top_k=n * n)
+        for i, j, delta in pairs:
+            assert delta >= -1e-6, (
+                f"Spread→collapsed should have no negative deltas; "
+                f"pair ({i},{j}) delta={delta:.2e}"
             )
 
+    def test_delta_agrees_with_manual_formula(self):
+        """
+        For n=4 tokens where we control the Gram matrices exactly,
+        verify that the returned delta matches the formula:
+          delta_ij = [exp(β G_after[i,j]) − exp(β G_before[i,j])] / (2β n²)
+        for the pair with the largest absolute change.
+        """
+        beta = 2.0
+        n    = 4
+
+        # before: tokens 0 and 1 are identical; 2 and 3 are orthogonal to everything
+        before = np.zeros((n, D), dtype=np.float32)
+        before[0, 0] = 1.0
+        before[1, 0] = 1.0   # parallel to token 0
+        before[2, 1] = 1.0
+        before[3, 2] = 1.0
+
+        # after: all tokens orthogonal to each other
+        after = np.zeros((n, D), dtype=np.float32)
+        for k in range(n):
+            after[k, k] = 1.0   # standard basis vectors
+
+        norm = 2.0 * beta * n * n
+        # G_before[0,1] = ⟨e₀, e₀⟩ = 1.0
+        # G_after[0,1]  = ⟨e₀, e₁⟩ = 0.0
+        expected_delta_01 = (np.exp(beta * 0.0) - np.exp(beta * 1.0)) / norm
+
+        pairs = energy_drop_pairs(self._raw(before), self._raw(after),
+                                  beta=beta, top_k=n)
+        # Pair (0, 1) must be present and match the formula
+        matching = [(i, j, d) for i, j, d in pairs if (i, j) == (0, 1)]
+        assert len(matching) == 1, "Pair (0,1) not found in results"
+        _, _, actual_delta = matching[0]
+        assert actual_delta == pytest.approx(expected_delta_01, rel=1e-4), (
+            f"Expected delta={expected_delta_01:.6f}, got {actual_delta:.6f}"
+        )
+
+    def test_higher_beta_amplifies_negative_delta(self):
+        """
+        Larger β → larger exp contrast → more negative delta for a converging
+        pair that subsequently diverges.
+
+        For pair (0,1): before ⟨·⟩ = 1, after ⟨·⟩ = 0.
+          delta(β) = (1 − eᵝ) / (2β n²)
+
+        d/dβ [1 − eᵝ] = −eᵝ < 0, so delta becomes more negative as β grows.
+        """
+        n = 6
+        before = self._with_pair_merged(n, i=0, j=1, seed=12)
+        after  = self._spread(n, seed=13)
+
+        b_lo, b_hi = self._raw(before), self._raw(after)
+        delta_lo = energy_drop_pairs(b_lo, b_hi, beta=0.5, top_k=1)
+        delta_hi = energy_drop_pairs(b_lo, b_hi, beta=4.0, top_k=1)
+
+        assert len(delta_lo) == 1 and len(delta_hi) == 1
+        assert delta_hi[0][2] < delta_lo[0][2], (
+            f"Higher β should produce more negative delta: "
+            f"β=0.5 → {delta_lo[0][2]:.4f}, β=4.0 → {delta_hi[0][2]:.4f}"
+        )
 
 # ============================================================================
 # analyze_attention_sinkhorn — attention-tensor tests

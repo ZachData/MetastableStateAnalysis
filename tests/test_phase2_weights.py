@@ -383,3 +383,75 @@ class TestRescaleMatrix:
         M = np.eye(4)
         R = rescale_matrix(M)
         assert R.dtype.kind == "f"
+
+
+#new tests
+
+
+class TestProjectorComplementarity:
+    """attract + repulse = I for both schur and sym projectors,
+    regardless of input matrix signature."""
+
+    @pytest.mark.parametrize("seed", [0, 1, 2, 3, 4])
+    def test_schur_complementarity_random(self, seed):
+        rng = np.random.default_rng(seed)
+        M = rng.standard_normal((8, 8))
+        proj = build_subspace_projectors(eigendecompose(M))
+        total = proj["schur_attract"] + proj["schur_repulse"]
+        npt.assert_allclose(total, np.eye(8), atol=1e-8)
+
+    @pytest.mark.parametrize("seed", [0, 1, 2, 3, 4])
+    def test_sym_complementarity_random(self, seed):
+        rng = np.random.default_rng(seed)
+        M = rng.standard_normal((8, 8))
+        proj = build_subspace_projectors(eigendecompose(M))
+        total = proj["sym_attract"] + proj["sym_repulse"]
+        npt.assert_allclose(total, np.eye(8), atol=1e-8)
+
+    def test_complementarity_pos_def(self):
+        proj = build_subspace_projectors(eigendecompose(_pos_def(6)))
+        npt.assert_allclose(
+            proj["schur_attract"] + proj["schur_repulse"], np.eye(6), atol=1e-8
+        )
+
+    def test_complementarity_neg_def(self):
+        proj = build_subspace_projectors(eigendecompose(-_pos_def(6)))
+        npt.assert_allclose(
+            proj["schur_repulse"] + proj["schur_attract"], np.eye(6), atol=1e-8
+        )
+
+
+class TestEigendecomposeSignClassification:
+    """eigendecompose correctly assigns eigenvalues to attract (positive)
+    and repulse (negative) categories."""
+
+    def test_pos_def_all_eigenvalues_attract(self):
+        d = 6
+        M = _pos_def(d)
+        dec = eigendecompose(M)
+        # All eigenvalues positive → attract count = d, repulse count = 0
+        n_attract = (np.array(dec["eigenvalues"]) > 0).sum()
+        assert n_attract == d
+
+    def test_neg_def_all_eigenvalues_repulse(self):
+        d = 6
+        M = -_pos_def(d)
+        dec = eigendecompose(M)
+        n_repulse = (np.array(dec["eigenvalues"]) < 0).sum()
+        assert n_repulse == d
+
+    def test_mixed_block_equal_attract_repulse(self):
+        # _mixed_block: d//2 positive + d//2 negative eigenvalues
+        d = 8
+        M = _mixed_block(d)
+        dec = eigendecompose(M)
+        eigs = np.array(dec["eigenvalues"])
+        assert (eigs > 0).sum() == d // 2
+        assert (eigs < 0).sum() == d // 2
+
+    def test_eigenvalues_are_real(self):
+        """Symmetric input → all eigenvalues are real."""
+        M = _pos_def(6)
+        dec = eigendecompose(M)
+        for ev in dec["eigenvalues"]:
+            assert abs(np.imag(ev)) < 1e-10

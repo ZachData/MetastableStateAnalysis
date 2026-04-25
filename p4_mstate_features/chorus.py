@@ -16,8 +16,8 @@ import numpy as np
 from collections import Counter, deque
 from typing import Optional
 
-from phase3.crosscoder import Crosscoder
-from phase3.data import PromptActivationStore
+from p3_crosscoder.crosscoder import Crosscoder
+from p3_crosscoder.data import PromptActivationStore
 
 from .activation_trajectories import (
     ActivationTrajectory,

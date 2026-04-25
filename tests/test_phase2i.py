@@ -23,28 +23,31 @@ import unittest
 
 import numpy as np
 from scipy.linalg import expm
+import numpy.testing as npt
 
 # ── allow running from project root or tests/ ─────────────────────────────────
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from rotational_schur import (
+from p2_eigenspectra.subresult import SubResult
+
+from p2b_imaginary.rotational_schur import (
     extract_schur_blocks,
     rotation_energy_fractions,
     rotation_angle_stats,
     henrici_nonnormality,
     build_rotation_plane_projectors,
 )
-from rotational_rescaled import (
+from p2b_imaginary.rotational_rescaled import (
     decompose_symmetric_antisymmetric,
     rescaled_trajectory_component,
 )
-from fiedler_tracking import (
+from p2b_imaginary.fiedler_tracking import (
     extract_fiedler_per_layer,
     hemisphere_assignments,
     hemisphere_crossing_rate,
     fiedler_stability,
 )
-from rotation_hemisphere import (
+from p2b_imaginary.rotation_hemisphere import (
     plane_fiedler_alignment,
 )
 
@@ -720,6 +723,289 @@ class TestSchurEdgeCases(unittest.TestCase):
             result = extract_schur_blocks(M)
             total = result["n_real"] + 2 * result["n_complex"]
             self.assertEqual(total, D)
+
+
+
+
+# new tests
+
+
+
+# ── 1. Angle recovery ────────────────────────────────────────────────────────
+
+class TestRotationAngleRecovery(unittest.TestCase):
+    """rotation_angle_stats recovers the exact input angle for a pure
+    block-rotation matrix whose all four 2×2 blocks share the same θ."""
+
+    ANGLES = [np.pi / 6, np.pi / 4, np.pi / 3, np.pi / 2 - 0.01]
+
+    def _mean_angle(self, theta):
+        M = _rot_d8([theta] * 4)
+        blocks = extract_schur_blocks(M)
+        return rotation_angle_stats(blocks)["mean_angle"]
+
+    def test_mean_angle_pi_over_6(self):
+        self.assertAlmostEqual(self._mean_angle(np.pi / 6), np.pi / 6, places=6)
+
+    def test_mean_angle_pi_over_4(self):
+        self.assertAlmostEqual(self._mean_angle(np.pi / 4), np.pi / 4, places=6)
+
+    def test_mean_angle_pi_over_3(self):
+        self.assertAlmostEqual(self._mean_angle(np.pi / 3), np.pi / 3, places=6)
+
+    def test_std_angle_zero_for_uniform_blocks(self):
+        """All blocks at the same angle → angle std ≈ 0."""
+        M = _rot_d8([np.pi / 4] * 4)
+        stats = rotation_angle_stats(extract_schur_blocks(M))
+        self.assertAlmostEqual(stats["std_angle"], 0.0, places=6)
+
+    def test_heterogeneous_angles_span(self):
+        """max_angle - min_angle matches the spread of input angles."""
+        thetas = [0.2, 0.5, 0.9, 1.3]
+        M = _rot_d8(thetas)
+        stats = rotation_angle_stats(extract_schur_blocks(M))
+        span = stats["max_angle"] - stats["min_angle"]
+        self.assertGreater(span, 0.9)   # 1.3 - 0.2 = 1.1 > 0.9
+
+
+# ── 2. Henrici nonnormality — zero for normal matrices ───────────────────────
+
+class TestHenriciNormal(unittest.TestCase):
+    """Pure rotation matrices are normal (R^T R = I), so Henrici = 0."""
+
+    def test_pure_rotation_is_normal(self):
+        M = _rot_d8([0.3, 0.7, 1.1, 1.5])
+        h = henrici_nonnormality(M)
+        self.assertAlmostEqual(h, 0.0, places=6)
+
+    def test_identity_is_normal(self):
+        self.assertAlmostEqual(henrici_nonnormality(np.eye(D)), 0.0, places=8)
+
+    def test_diagonal_is_normal(self):
+        M = np.diag([1.0, -2.0, 0.5, 3.0, -1.0, 0.0, 2.5, -0.5])
+        self.assertAlmostEqual(henrici_nonnormality(M), 0.0, places=8)
+
+    def test_nonnormal_matrix_has_positive_henrici(self):
+        """Strictly upper-triangular matrix is highly non-normal."""
+        M = np.triu(np.ones((D, D)), k=1)
+        self.assertGreater(henrici_nonnormality(M), 0.0)
+
+
+# ── 3. Rotation energy fractions — extremes ──────────────────────────────────
+
+class TestRotationEnergyFractionsExtreme(unittest.TestCase):
+    """rot_frac = 1.0 for pure rotation; 0.0 for diagonal."""
+
+    def test_pure_rotation_frac_is_one(self):
+        M = _rot_d8([0.4, 0.8, 1.2, 1.6])
+        fracs = rotation_energy_fractions(extract_schur_blocks(M))
+        self.assertAlmostEqual(fracs["rot_frac"], 1.0, places=6)
+        self.assertAlmostEqual(fracs["real_frac"], 0.0, places=6)
+
+    def test_diagonal_frac_is_zero(self):
+        M = np.diag([2.0, -1.0, 0.5, -3.0, 1.5, -0.5, 0.1, -2.5])
+        fracs = rotation_energy_fractions(extract_schur_blocks(M))
+        self.assertAlmostEqual(fracs["rot_frac"], 0.0, places=6)
+        self.assertAlmostEqual(fracs["real_frac"], 1.0, places=6)
+
+    def test_fracs_sum_to_one(self):
+        """rot_frac + real_frac = 1.0 for any input matrix."""
+        rng = np.random.default_rng(17)
+        for _ in range(5):
+            M = rng.standard_normal((D, D))
+            fracs = rotation_energy_fractions(extract_schur_blocks(M))
+            self.assertAlmostEqual(fracs["rot_frac"] + fracs["real_frac"], 1.0, places=8)
+
+
+# ── 4. Rotation plane projectors — idempotency and symmetry ──────────────────
+
+class TestRotationPlaneProjectors(unittest.TestCase):
+    """Each projector P returned by build_rotation_plane_projectors must
+    satisfy P² = P (idempotent) and P = P^T (orthogonal projector)."""
+
+    def _projectors(self, k=2):
+        M = _rot_d8([0.3, 0.7, 1.1, 1.5])
+        blocks = extract_schur_blocks(M)
+        return build_rotation_plane_projectors(blocks, k=k)
+
+    def test_each_projector_is_idempotent(self):
+        for i, P in enumerate(self._projectors(k=2)):
+            npt.assert_allclose(P @ P, P, atol=1e-10,
+                                err_msg=f"Projector {i} not idempotent")
+
+    def test_each_projector_is_symmetric(self):
+        for i, P in enumerate(self._projectors(k=2)):
+            npt.assert_allclose(P, P.T, atol=1e-10,
+                                err_msg=f"Projector {i} not symmetric")
+
+    def test_projector_rank_is_two(self):
+        """Each rotation plane is 2-dimensional."""
+        for i, P in enumerate(self._projectors(k=2)):
+            rank = int(np.round(np.trace(P)))
+            self.assertEqual(rank, 2, msg=f"Projector {i} has rank {rank}, expected 2")
+
+    def test_projectors_are_pairwise_orthogonal(self):
+        """Distinct rotation planes in a block-diagonal matrix are orthogonal."""
+        projs = self._projectors(k=4)   # request all 4 planes
+        for i in range(len(projs)):
+            for j in range(i + 1, len(projs)):
+                cross = projs[i] @ projs[j]
+                npt.assert_allclose(cross, np.zeros((D, D)), atol=1e-10,
+                                    err_msg=f"Projectors {i},{j} not orthogonal")
+
+
+# ── 5. Fiedler stability — identical consecutive layers → cosine = 1 ─────────
+
+class TestFiedlerStabilityIdentical(unittest.TestCase):
+    """When all layers are identical, consecutive Fiedler vectors are
+    (up to sign) the same, so the absolute cosine similarity = 1.0."""
+
+    def setUp(self):
+        self.acts = _block_acts_multilayer(N_LAYERS)
+        self.fd = extract_fiedler_per_layer(self.acts)
+        self.stab = fiedler_stability(self.fd)
+
+    def test_cosines_all_one(self):
+        cosines = self.stab["fiedler_cosine"]
+        valid = cosines[np.isfinite(cosines)]
+        npt.assert_allclose(valid, np.ones_like(valid), atol=1e-8)
+
+    def test_length_is_n_layers_minus_one(self):
+        self.assertEqual(len(self.stab["fiedler_cosine"]), N_LAYERS - 1)
+
+
+# ── 6. Crossing rate — zero for perfectly stable block activations ────────────
+
+class TestCrossingRateStable(unittest.TestCase):
+    """Tokens that never move between hemispheres produce crossing_rate = 0."""
+
+    def setUp(self):
+        acts = _block_acts_multilayer(N_LAYERS)
+        fd = extract_fiedler_per_layer(acts)
+        hemi = hemisphere_assignments(fd)
+        crossing = hemisphere_crossing_rate(hemi["assignments"], fd["valid"])
+        self.rates = crossing["crossing_rate"]
+
+    def test_all_crossing_rates_zero(self):
+        valid = self.rates[np.isfinite(self.rates)]
+        npt.assert_allclose(valid, 0.0, atol=1e-10)
+
+
+# ── 7. Block-structured Fiedler — perfect bipartition ────────────────────────
+
+class TestBlockFiedlerBipartition(unittest.TestCase):
+    """_block_acts forms two perfectly separated clusters.
+    The Fiedler vector must assign them to opposite hemispheres."""
+
+    def setUp(self):
+        acts = _block_acts_multilayer(N_LAYERS)
+        self.fd = extract_fiedler_per_layer(acts)
+        self.hemi = hemisphere_assignments(self.fd)
+
+    def test_fiedler_val_near_zero(self):
+        """Spectral gap for a perfect bipartition is the second Laplacian
+        eigenvalue; it approaches 0 as the two clusters become more separated."""
+        vals = self.fd["fiedler_vals"]
+        # The value can be small but the sign structure should be clean
+        # (this is primarily a shape/validity check for the degenerate case)
+        self.assertTrue(np.all(vals[self.fd["valid"]] >= -1e-8))
+
+    def test_hemisphere_sizes_are_equal(self):
+        """Both hemispheres should contain exactly N_TOKENS // 2 tokens."""
+        for L in range(N_LAYERS):
+            if self.fd["valid"][L]:
+                sizes = self.hemi["sizes"][L]
+                self.assertEqual(sizes[0], N_TOKENS // 2)
+                self.assertEqual(sizes[1], N_TOKENS // 2)
+
+    def test_assignments_perfectly_separate_blocks(self):
+        """The first N_TOKENS//2 tokens should all be in the same hemisphere."""
+        half = N_TOKENS // 2
+        for L in range(N_LAYERS):
+            if not self.fd["valid"][L]:
+                continue
+            asgn = self.hemi["assignments"][L]
+            first_half_labels = set(asgn[:half])
+            second_half_labels = set(asgn[half:])
+            self.assertEqual(len(first_half_labels), 1,
+                             msg=f"Layer {L}: first half not in one hemisphere")
+            self.assertEqual(len(second_half_labels), 1,
+                             msg=f"Layer {L}: second half not in one hemisphere")
+            self.assertNotEqual(first_half_labels, second_half_labels,
+                               msg=f"Layer {L}: both halves in the same hemisphere")
+
+
+#moved here from p3 test
+# ---------------------------------------------------------------------------
+# SubResult dataclass tests
+# ---------------------------------------------------------------------------
+
+class TestSubResult:
+    def test_construction_with_required_fields(self):
+        """SubResult must be constructable; adapt field names to actual definition."""
+        sr = SubResult(loss=0.5, n_samples=100)
+        assert sr is not None
+
+    def test_to_json_produces_valid_json(self):
+        sr = SubResult(loss=0.5, n_samples=100)
+        raw = sr.to_json()
+        # Must not raise
+        parsed = json.loads(raw)
+        assert isinstance(parsed, dict)
+
+    def test_to_json_contains_fields(self):
+        sr = SubResult(loss=0.5, n_samples=100)
+        parsed = json.loads(sr.to_json())
+        assert "loss" in parsed
+        assert "n_samples" in parsed
+
+    def test_to_json_values_correct(self):
+        sr = SubResult(loss=1.23, n_samples=42)
+        parsed = json.loads(sr.to_json())
+        assert math.isclose(parsed["loss"], 1.23, rel_tol=1e-6)
+        assert parsed["n_samples"] == 42
+
+    def test_merge_combines_statistics(self):
+        """SubResult.merge(a, b) should combine counts and weight losses correctly."""
+        if not hasattr(SubResult, "merge"):
+            pytest.skip("SubResult.merge not implemented")
+        a = SubResult(loss=1.0, n_samples=10)
+        b = SubResult(loss=3.0, n_samples=10)
+        merged = SubResult.merge(a, b)
+        # Expect weighted average loss: (1.0*10 + 3.0*10) / 20 = 2.0
+        assert math.isclose(merged.loss, 2.0, rel_tol=1e-5), (
+            f"Merged loss should be weighted average 2.0, got {merged.loss}"
+        )
+        assert merged.n_samples == 20
+
+    def test_merge_unequal_weights(self):
+        if not hasattr(SubResult, "merge"):
+            pytest.skip("SubResult.merge not implemented")
+        a = SubResult(loss=0.0, n_samples=90)
+        b = SubResult(loss=10.0, n_samples=10)
+        merged = SubResult.merge(a, b)
+        # Weighted avg: (0*90 + 10*10) / 100 = 1.0
+        assert math.isclose(merged.loss, 1.0, rel_tol=1e-5), (
+            f"Expected weighted avg loss 1.0, got {merged.loss}"
+        )
+        assert merged.n_samples == 100
+
+    def test_to_json_roundtrip(self):
+        """Values survive a to_json → from_json roundtrip if from_json exists."""
+        sr = SubResult(loss=0.42, n_samples=7)
+        raw = sr.to_json()
+        if hasattr(SubResult, "from_json"):
+            sr2 = SubResult.from_json(raw)
+            assert math.isclose(sr2.loss, sr.loss, rel_tol=1e-6)
+            assert sr2.n_samples == sr.n_samples
+
+    def test_to_json_no_nan_inf(self):
+        """to_json must not serialise NaN or Inf (not valid JSON)."""
+        sr = SubResult(loss=0.0, n_samples=0)
+        raw = sr.to_json()
+        assert "NaN" not in raw and "Infinity" not in raw, (
+            "JSON output must not contain NaN or Infinity literals"
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────

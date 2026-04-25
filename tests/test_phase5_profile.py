@@ -14,14 +14,14 @@ import numpy as np
 
 sys.path.insert(0, "/home/claude")
 
-from phase5_case.cluster_profile import compute_profile
-from phase5_case.v_alignment import (
+from p5_single_mstate_analysis.cluster_profile import compute_profile
+from p5_single_mstate_analysis.v_alignment import (
     centroid_subspace_trajectory,
     displacement_subspace_trajectory,
     _split_vector,
 )
-from phase5_case.feature_signature import rank_identity_features
-from phase5_case.sibling_contrast import run_sibling_contrast
+from p5_single_mstate_analysis.feature_signature import rank_identity_features
+from p5_single_mstate_analysis.sibling_contrast import run_sibling_contrast
 
 # ---------------------------------------------------------------------------
 # Shared geometry constants
@@ -374,6 +374,277 @@ class TestSiblingContrastNullSibling(unittest.TestCase):
         )
         self.assertIn("contrast_summary", result)
         self.assertIsNone(result["contrast_summary"].get("sibling_mean_ip"))
+
+
+# new code
+
+# ---------------------------------------------------------------------------
+# Group A — varying membership: Jaccard < 1.0
+#
+# Layer 0: cluster = tokens 0..9   (e_0)
+# Layer 1: cluster = tokens 5..14  (e_0) — 5 tokens enter, 5 leave
+# Intersection = tokens 5..9  (5), Union = tokens 0..14 (15)
+# Expected Jaccard at layer boundary = 5/15 ≈ 0.333
+# ---------------------------------------------------------------------------
+
+class TestProfileVaryingMembership(unittest.TestCase):
+    """Cluster membership shifts across layers → Jaccard < 1."""
+
+    def setUp(self):
+        e0 = _unit_vec(0)
+        acts   = np.tile(e0, (N_LAYERS, N_TOKENS, 1))
+        labels = []
+        for l in range(N_LAYERS):
+            lbl = np.full(N_TOKENS, -1, dtype=int)  # -1 = not in cluster
+            start = l                                 # membership shifts each layer
+            lbl[start : start + HALF] = 0
+            labels.append(lbl)
+        traj = _trajectory(0, cluster_id=0)
+        self.prof = compute_profile(acts, labels, traj, None, _tokens(), _empty_metrics())
+
+    def test_jaccard_below_one(self):
+        """At least one consecutive-layer Jaccard must be < 1.0."""
+        jaccards = self.prof["membership_jaccard"]
+        self.assertTrue(
+            any(j < 0.999 for j in jaccards),
+            f"All Jaccards are 1.0; membership shift was not detected: {jaccards}",
+        )
+
+    def test_jaccard_layer0_to_layer1(self):
+        # Layer 0 members: {0..9}, Layer 1 members: {1..10}
+        # Intersection = {1..9} = 9, Union = {0..10} = 11 → J = 9/11
+        expected = 9 / 11
+        self.assertAlmostEqual(self.prof["membership_jaccard"][0], expected, places=4)
+
+    def test_per_layer_count_correct(self):
+        for layer_row in self.prof["per_layer"]:
+            self.assertEqual(layer_row["n_tokens"], HALF)
+
+
+# ---------------------------------------------------------------------------
+# Group A — silhouette with two perfectly separated clusters
+#
+# e_0 cluster vs e_1 cluster: inter-cluster IP = 0, intra = 1.
+# For any member of cluster 0:
+#   a (mean intra distance) = 0,  b (mean inter distance) = sqrt(2)  → sil = 1.0
+# Similarly for all-clusters silhouette if only 2 clusters exist.
+# ---------------------------------------------------------------------------
+
+class TestProfileSilhouette(unittest.TestCase):
+    """Silhouette = 1.0 for two perfectly orthogonal clusters."""
+
+    def setUp(self):
+        e0, e1 = _unit_vec(0), _unit_vec(1)
+        acts   = np.zeros((N_LAYERS, N_TOKENS, D))
+        labels = []
+        for l in range(N_LAYERS):
+            acts[l, :HALF] = e0
+            acts[l, HALF:] = e1
+            lbl = np.ones(N_TOKENS, dtype=int)
+            lbl[:HALF] = 0
+            labels.append(lbl)
+        traj_p = _trajectory(0, cluster_id=0)
+        traj_s = _trajectory(1, cluster_id=1)
+        self.prof = compute_profile(acts, labels, traj_p, traj_s, _tokens(), _empty_metrics())
+
+    def test_silhouette_vs_sibling_is_one(self):
+        for row in self.prof["per_layer"]:
+            sil = row.get("silhouette_vs_sibling")
+            if sil is not None:
+                self.assertAlmostEqual(sil, 1.0, places=4,
+                    msg=f"Layer {row['layer']}: silhouette_vs_sibling={sil}")
+
+    def test_silhouette_vs_all_is_one(self):
+        for row in self.prof["per_layer"]:
+            sil = row.get("silhouette_vs_all")
+            if sil is not None:
+                self.assertAlmostEqual(sil, 1.0, places=4,
+                    msg=f"Layer {row['layer']}: silhouette_vs_all={sil}")
+
+    def test_summary_mean_silhouette_sibling(self):
+        s = self.prof["summary"].get("mean_silhouette_sibling")
+        if s is not None:
+            self.assertAlmostEqual(s, 1.0, places=4)
+
+
+# ---------------------------------------------------------------------------
+# Group B — non-zero displacement with known fractions
+#
+# Layer 0 centroid = e_0 (fully attractive)
+# Layer 1 centroid = e_1 (fully repulsive)
+# Displacement = e_1 - e_0 = [-1, 1, 0, ...]
+# U_att = e_0, U_rep = e_1
+# proj onto attr: (-1)^2 / |displacement|^2 = 1/2 → attr_frac = 0.5
+# proj onto rep :  (1)^2 / |displacement|^2 = 1/2 → rep_frac  = 0.5
+# orth_frac = 0.0
+# ---------------------------------------------------------------------------
+
+class TestDisplacementNonZero(unittest.TestCase):
+    """Known displacement between attr and rep axes → fracs = 0.5 each."""
+
+    def setUp(self):
+        self.U_att = _unit_vec(0).reshape(D, 1)
+        self.U_rep = _unit_vec(1).reshape(D, 1)
+        centroids  = np.array([_unit_vec(0), _unit_vec(1)])  # 2 layers
+        self.out   = displacement_subspace_trajectory(centroids, self.U_att, self.U_rep)
+
+    def test_one_step_produced(self):
+        self.assertEqual(len(self.out), 1)
+
+    def test_attr_frac(self):
+        self.assertAlmostEqual(self.out[0]["attr_frac"], 0.5, places=6)
+
+    def test_rep_frac(self):
+        self.assertAlmostEqual(self.out[0]["rep_frac"], 0.5, places=6)
+
+    def test_orth_frac(self):
+        self.assertAlmostEqual(self.out[0]["orth_frac"], 0.0, places=6)
+
+    def test_total_sq_correct(self):
+        # |e_1 - e_0|^2 = 2
+        self.assertAlmostEqual(self.out[0]["total_sq"], 2.0, places=6)
+
+
+# ---------------------------------------------------------------------------
+# Group B — compute_v_alignment full pipeline smoke test
+#
+# Uses a trivial projector dict so no Phase 2 files are needed.
+# Verifies the output schema; does not check numerics beyond non-null.
+# ---------------------------------------------------------------------------
+
+from p5_single_mstate_analysis.v_alignment import compute_v_alignment
+
+class TestComputeVAlignmentSmoke(unittest.TestCase):
+    """compute_v_alignment returns expected top-level keys for valid input."""
+
+    def setUp(self):
+        e0  = _unit_vec(0)
+        # Centroid trajectory: all layers pointing at e_0
+        centroids = np.tile(e0, (N_LAYERS, 1))
+        v_proj    = {
+            "U_attractive": _unit_vec(0).reshape(D, 1),
+            "U_repulsive":  _unit_vec(1).reshape(D, 1),
+            "path": "synthetic",
+        }
+        traj = _trajectory(0, cluster_id=0)
+        self.result = compute_v_alignment(centroids, v_proj, traj)
+
+    def test_top_level_keys(self):
+        for key in ("centroid_trajectory", "displacement_trajectory", "summary"):
+            self.assertIn(key, self.result, f"Missing key: {key}")
+
+    def test_centroid_trajectory_length(self):
+        self.assertEqual(len(self.result["centroid_trajectory"]), N_LAYERS)
+
+    def test_displacement_trajectory_length(self):
+        self.assertEqual(len(self.result["displacement_trajectory"]), N_LAYERS - 1)
+
+    def test_summary_mean_attr_frac_is_one(self):
+        # All centroids = e_0 = fully attractive → mean attr_frac = 1.0
+        frac = self.result["summary"].get("mean_attr_frac")
+        self.assertIsNotNone(frac)
+        self.assertAlmostEqual(frac, 1.0, places=5)
+
+
+# ---------------------------------------------------------------------------
+# Group D — perfectly discriminating feature ranks first with MI = 1 bit
+#
+# feature 0: 2.0 for cluster tokens (0..HALF-1), 0.0 outside  → H(Y|X=0)=0, H(Y)=1
+# feature 1: identical activation for both groups (1.0 everywhere) → MI=0
+# Expected: feature 0 rank=0, MI≈1.0; feature 1 rank=1, MI=0.0
+# ---------------------------------------------------------------------------
+
+class TestRankIdentityFeaturesPositive(unittest.TestCase):
+    """One perfectly discriminating feature should rank first with MI ~ 1 bit."""
+
+    def setUp(self):
+        acts = np.ones((N_TOKENS, N_FEATURES), dtype=np.float32)
+        # Feature 0 discriminates perfectly
+        acts[:HALF,  0] = 2.0
+        acts[HALF:,  0] = 0.0
+        mask = np.zeros(N_TOKENS, dtype=bool)
+        mask[:HALF]     = True
+        self.ranked = rank_identity_features(acts, mask, top_k=N_FEATURES)
+
+    def test_top_feature_is_feature_zero(self):
+        self.assertEqual(self.ranked[0]["feature_idx"], 0)
+
+    def test_top_feature_mi_near_one_bit(self):
+        self.assertGreater(self.ranked[0]["mi_bits"], 0.9)
+
+    def test_uniform_features_have_zero_mi(self):
+        # Features 1..N_FEATURES-1 are all 1.0 everywhere → MI = 0
+        mi_vals = [r["mi_bits"] for r in self.ranked if r["feature_idx"] != 0]
+        for mi in mi_vals:
+            self.assertAlmostEqual(mi, 0.0, places=4)
+
+
+class TestRankIdentityFeaturesOrdering(unittest.TestCase):
+    """Features with graded separation should be returned in descending MI order."""
+
+    def setUp(self):
+        rng  = np.random.default_rng(42)
+        acts = np.zeros((N_TOKENS, N_FEATURES), dtype=np.float32)
+        mask = np.zeros(N_TOKENS, dtype=bool)
+        mask[:HALF] = True
+        # Feature i has separation magnitude (i+1); more separation → higher MI
+        for i in range(N_FEATURES):
+            acts[:HALF, i] = float(i + 1)
+            acts[HALF:, i] = 0.0
+        self.ranked = rank_identity_features(acts, mask, top_k=N_FEATURES)
+
+    def test_mi_is_non_increasing(self):
+        mis = [r["mi_bits"] for r in self.ranked]
+        for i in range(len(mis) - 1):
+            self.assertGreaterEqual(mis[i], mis[i + 1],
+                msg=f"MI not sorted at position {i}: {mis[i]:.4f} < {mis[i+1]:.4f}")
+
+    def test_top_feature_has_largest_separation(self):
+        # Feature N_FEATURES-1 has the largest separation → should rank first
+        self.assertEqual(self.ranked[0]["feature_idx"], N_FEATURES - 1)
+
+
+# ---------------------------------------------------------------------------
+# Group G — random control ip_mean < real cluster ip_mean
+#
+# Real cluster: all tokens = e_0 → ip_mean = 1.0
+# Random control: mix of e_0 and e_1 → ip_mean < 1.0
+# ---------------------------------------------------------------------------
+
+class TestSiblingRandomControlWeaker(unittest.TestCase):
+    """Random control must have strictly lower ip_mean than the real cluster."""
+
+    def setUp(self):
+        e0, e1 = _unit_vec(0), _unit_vec(1)
+        acts   = np.zeros((N_LAYERS, N_TOKENS, D))
+        labels = []
+        for l in range(N_LAYERS):
+            acts[l, :HALF] = e0
+            acts[l, HALF:] = e1
+            lbl = np.ones(N_TOKENS, dtype=int)
+            lbl[:HALF] = 0
+            labels.append(lbl)
+        self.result = run_sibling_contrast(
+            acts, None, labels,
+            _trajectory(0, cluster_id=0),
+            _trajectory(1, cluster_id=1),
+            _tokens(), _empty_metrics(),
+        )
+
+    def test_random_ip_less_than_real(self):
+        cs          = self.result["contrast_summary"]
+        real_ip     = cs["sibling_mean_ip"]     # sibling is also compact → 1.0
+        random_ip   = cs.get("random_mean_ip")
+        self.assertIsNotNone(random_ip)
+        # Real (or sibling) cluster is compact; random subset mixes e_0 and e_1
+        # so random ip_mean must be strictly below 1.0
+        self.assertLess(random_ip, real_ip,
+            msg=f"random_mean_ip={random_ip:.4f} >= sibling_mean_ip={real_ip:.4f}")
+
+    def test_random_ip_below_one(self):
+        random_ip = self.result["contrast_summary"].get("random_mean_ip")
+        self.assertIsNotNone(random_ip)
+        self.assertLess(random_ip, 0.99)
 
 
 if __name__ == "__main__":

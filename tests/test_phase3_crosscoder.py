@@ -18,8 +18,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Import under test — adjust path if your package layout differs.
 # ---------------------------------------------------------------------------
-from phase3.crosscoder import Crosscoder
-from phase3.subresult import SubResult
+from p3_crosscoder.crosscoder import Crosscoder
 
 
 # ---------------------------------------------------------------------------
@@ -347,74 +346,3 @@ class TestDeterminism:
         assert torch.equal(out1["x_hat"], out2["x_hat"])
         assert torch.equal(out1["loss"], out2["loss"])
 
-
-# ---------------------------------------------------------------------------
-# SubResult dataclass tests
-# ---------------------------------------------------------------------------
-
-class TestSubResult:
-    def test_construction_with_required_fields(self):
-        """SubResult must be constructable; adapt field names to actual definition."""
-        sr = SubResult(loss=0.5, n_samples=100)
-        assert sr is not None
-
-    def test_to_json_produces_valid_json(self):
-        sr = SubResult(loss=0.5, n_samples=100)
-        raw = sr.to_json()
-        # Must not raise
-        parsed = json.loads(raw)
-        assert isinstance(parsed, dict)
-
-    def test_to_json_contains_fields(self):
-        sr = SubResult(loss=0.5, n_samples=100)
-        parsed = json.loads(sr.to_json())
-        assert "loss" in parsed
-        assert "n_samples" in parsed
-
-    def test_to_json_values_correct(self):
-        sr = SubResult(loss=1.23, n_samples=42)
-        parsed = json.loads(sr.to_json())
-        assert math.isclose(parsed["loss"], 1.23, rel_tol=1e-6)
-        assert parsed["n_samples"] == 42
-
-    def test_merge_combines_statistics(self):
-        """SubResult.merge(a, b) should combine counts and weight losses correctly."""
-        if not hasattr(SubResult, "merge"):
-            pytest.skip("SubResult.merge not implemented")
-        a = SubResult(loss=1.0, n_samples=10)
-        b = SubResult(loss=3.0, n_samples=10)
-        merged = SubResult.merge(a, b)
-        # Expect weighted average loss: (1.0*10 + 3.0*10) / 20 = 2.0
-        assert math.isclose(merged.loss, 2.0, rel_tol=1e-5), (
-            f"Merged loss should be weighted average 2.0, got {merged.loss}"
-        )
-        assert merged.n_samples == 20
-
-    def test_merge_unequal_weights(self):
-        if not hasattr(SubResult, "merge"):
-            pytest.skip("SubResult.merge not implemented")
-        a = SubResult(loss=0.0, n_samples=90)
-        b = SubResult(loss=10.0, n_samples=10)
-        merged = SubResult.merge(a, b)
-        # Weighted avg: (0*90 + 10*10) / 100 = 1.0
-        assert math.isclose(merged.loss, 1.0, rel_tol=1e-5), (
-            f"Expected weighted avg loss 1.0, got {merged.loss}"
-        )
-        assert merged.n_samples == 100
-
-    def test_to_json_roundtrip(self):
-        """Values survive a to_json → from_json roundtrip if from_json exists."""
-        sr = SubResult(loss=0.42, n_samples=7)
-        raw = sr.to_json()
-        if hasattr(SubResult, "from_json"):
-            sr2 = SubResult.from_json(raw)
-            assert math.isclose(sr2.loss, sr.loss, rel_tol=1e-6)
-            assert sr2.n_samples == sr.n_samples
-
-    def test_to_json_no_nan_inf(self):
-        """to_json must not serialise NaN or Inf (not valid JSON)."""
-        sr = SubResult(loss=0.0, n_samples=0)
-        raw = sr.to_json()
-        assert "NaN" not in raw and "Infinity" not in raw, (
-            "JSON output must not contain NaN or Infinity literals"
-        )

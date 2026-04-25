@@ -212,6 +212,80 @@ class TestDetectFeaturePlateaus:
         assert s["n_features_total"] == N_FEATURES
 
 
+class TestDetectFeaturePlateaus_Extra:
+
+    def test_run_shorter_than_min_plateau_len_not_reported(self):
+        """
+        A constant run of exactly min_plateau_len - 1 layers must NOT
+        be reported as a plateau.
+        """
+        min_len = 3
+        # Constant for 2 layers (< min_len), then high variance
+        z = np.zeros((N_TOKENS, N_FEATURES, N_LAYERS), dtype=np.float32)
+        for l in range(2):         # layers 0-1: constant 1.0
+            z[:, 0, l] = 1.0
+        for l in range(2, N_LAYERS):
+            z[:, 0, l] = float(l) * 5.0    # diverges; no plateau
+
+        active = np.ones_like(z, dtype=bool)
+        traj = _make_traj(z, active)
+        result = detect_feature_plateaus(traj, var_threshold=0.01,
+                                         min_plateau_len=min_len)
+
+        reported = {f["feature_idx"] for f in result["per_feature"]}
+        assert 0 not in reported, (
+            f"Feature 0 had only {min_len-1} constant layers but was "
+            "reported as having a plateau"
+        )
+
+    def test_features_without_plateaus_absent_from_per_feature(self):
+        """
+        A feature that never forms a plateau should not appear in
+        per_feature (or appear with an empty plateaus list).
+        We use high-variance alternating values to prevent any plateau.
+        """
+        z = np.zeros((N_TOKENS, N_FEATURES, N_LAYERS), dtype=np.float32)
+        for l in range(N_LAYERS):
+            z[:, 0, l] = 100.0 if l % 2 == 0 else -100.0  # alternating
+
+        active = np.ones_like(z, dtype=bool)
+        traj = _make_traj(z, active)
+        result = detect_feature_plateaus(traj, var_threshold=0.001,
+                                         min_plateau_len=3)
+
+        for f in result["per_feature"]:
+            if f["feature_idx"] == 0:
+                assert f["n_plateaus"] == 0 or len(f["plateaus"]) == 0, (
+                    "High-variance alternating feature should have no plateaus"
+                )
+
+    def test_var_threshold_controls_sensitivity(self):
+        """
+        A mildly drifting signal (small but non-zero variance per window)
+        should form a plateau under a loose threshold but not a tight one.
+        """
+        z = np.zeros((N_TOKENS, N_FEATURES, N_LAYERS), dtype=np.float32)
+        for l in range(N_LAYERS):
+            z[:, 0, l] = l * 0.1    # slow drift; inter-window variance ~0.1
+
+        active = np.ones_like(z, dtype=bool)
+        traj = _make_traj(z, active)
+
+        # Tight threshold: no plateau
+        tight = detect_feature_plateaus(traj, var_threshold=1e-4, min_plateau_len=3)
+        tight_features = {f["feature_idx"] for f in tight["per_feature"]}
+
+        # Loose threshold: plateau allowed
+        loose = detect_feature_plateaus(traj, var_threshold=10.0, min_plateau_len=3)
+        loose_features = {f["feature_idx"] for f in loose["per_feature"]}
+
+        assert 0 not in tight_features, (
+            "Drifting signal should not form plateau under tight threshold"
+        )
+        assert 0 in loose_features, (
+            "Drifting signal should form plateau under loose threshold"
+        )
+
 # ===========================================================================
 # 2.  feature_cluster_mi
 # ===========================================================================
@@ -337,6 +411,54 @@ class TestFeatureClusterMI:
         # MI with an independent uniform variable
         c = np.array([0, 1, 0, 1])
         assert _mutual_information(a, c) == pytest.approx(0.0, abs=1e-9)
+
+
+class TestFeatureClusterMI_Extra:
+
+    def test_noise_tokens_excluded_from_mi(self):
+        """
+        Tokens with label == -1 (HDBSCAN noise) must be excluded.
+        If we make half the tokens noise but the remaining tokens are a
+        perfect predictor, MI should still equal log(2), not be diluted.
+        """
+        rng = np.random.default_rng(42)
+        n   = N_TOKENS
+
+        # First half noise (-1), second half balanced 0/1
+        labels = np.full(n, -1, dtype=int)
+        labels[n // 2 :]   = np.array([0] * (n // 4) + [1] * (n - n // 2 - n // 4))
+
+        z      = rng.standard_normal((n, N_FEATURES, N_LAYERS)).astype(np.float32)
+        active = np.zeros((n, N_FEATURES, N_LAYERS), dtype=bool)
+        # Feature 0: active iff label == 1
+        active[:, 0, :] = (labels == 1)[:, None]
+
+        traj    = _make_traj(z, active)
+        hdbscan = {"layer_0": labels.tolist()}
+        result  = feature_cluster_mi(traj, hdbscan, LAYER_IDX)
+
+        f0 = next(f for f in result["layer_0"]["top_features"]
+                  if f["feature_idx"] == 0)
+        assert f0["nmi"] == pytest.approx(1.0, abs=0.05), (
+            f"Expected NMI≈1.0 after excluding noise tokens, got {f0['nmi']:.4f}"
+        )
+
+    def test_result_has_key_per_hdbscan_layer(self):
+        """
+        If hdbscan_labels contains keys 'layer_0' and 'layer_4', the result
+        dict should contain both keys.
+        """
+        rng = np.random.default_rng(0)
+        z      = rng.standard_normal((N_TOKENS, N_FEATURES, N_LAYERS)).astype(np.float32)
+        active = rng.random((N_TOKENS, N_FEATURES, N_LAYERS)) > 0.5
+        traj   = _make_traj(z, active)
+
+        labels = _binary_labels()
+        hdbscan = {"layer_0": labels.tolist(), "layer_4": labels.tolist()}
+        result  = feature_cluster_mi(traj, hdbscan, LAYER_IDX)
+
+        assert "layer_0" in result, "Missing 'layer_0' in result"
+        assert "layer_4" in result, "Missing 'layer_4' in result"
 
 
 # ===========================================================================
@@ -520,3 +642,71 @@ class TestAnalyzeChorusAtLayer:
         # Should not raise
         result = analyze_chorus_at_layer(traj, labels_uniform, cc_layer_idx=0)
         assert isinstance(result, dict)
+
+
+
+class TestAnalyzeChorusAtLayer_Extra:
+
+    def test_result_contains_required_keys(self):
+        """
+        Smoke-test the result structure for the known required keys:
+        n_cliques, cliques, ari (or cluster_ari).
+        Prevents silent schema drift.
+        """
+        z      = np.zeros((N_TOKENS, N_FEATURES, N_LAYERS), dtype=np.float32)
+        active = np.zeros_like(z, dtype=bool)
+        # Two cliques: features 0-4 on tokens 0-14, features 5-9 on tokens 15-29
+        active[:15,  :5,  0] = True
+        active[15:, 5:10, 0] = True
+        z[active] = 1.0
+        traj   = _make_traj(z, active)
+        labels = _binary_labels()
+
+        result = analyze_chorus_at_layer(traj, labels, cc_layer_idx=0)
+
+        assert "n_cliques" in result, "Missing 'n_cliques'"
+        assert "cliques"   in result, "Missing 'cliques'"
+
+    def test_single_cluster_labels_does_not_raise(self):
+        """
+        When all tokens share the same label the function must return
+        without raising, even if ARI is undefined.
+        """
+        z      = np.zeros((N_TOKENS, N_FEATURES, N_LAYERS), dtype=np.float32)
+        active = np.zeros_like(z, dtype=bool)
+        active[:, :5, 0] = True
+        z[active] = 1.0
+        traj   = _make_traj(z, active)
+        labels = np.zeros(N_TOKENS, dtype=int)   # single cluster
+
+        # Must not raise
+        result = analyze_chorus_at_layer(traj, labels, cc_layer_idx=0)
+        assert isinstance(result, dict)
+
+    def test_two_pure_cliques_ari_is_1(self):
+        """
+        Features 0-9 fire only on cluster-0 tokens; features 10-19 only on
+        cluster-1 tokens.  Each clique is pure → ARI between clique membership
+        and cluster labels should be 1.0.
+        Extends the existing test to check the ARI value, not just n_cliques.
+        """
+        half   = N_TOKENS // 2
+        labels = _binary_labels()
+        z      = np.zeros((N_TOKENS, N_FEATURES, N_LAYERS), dtype=np.float32)
+        active = np.zeros_like(z, dtype=bool)
+
+        # Group A: features 0-9 active on tokens 0..half-1
+        active[:half, :10,  0] = True
+        # Group B: features 10-19 active on tokens half..end
+        active[half:, 10:, 0]  = True
+        z[active] = 1.0
+        traj = _make_traj(z, active)
+
+        result = analyze_chorus_at_layer(traj, labels, cc_layer_idx=0)
+
+        # Accept either 'ari' or 'cluster_ari' key
+        ari_key = "ari" if "ari" in result else "cluster_ari"
+        if ari_key in result:
+            assert result[ari_key] == pytest.approx(1.0, abs=0.05), (
+                f"Expected ARI ≈ 1.0, got {result[ari_key]}"
+            )

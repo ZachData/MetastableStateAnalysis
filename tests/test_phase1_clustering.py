@@ -13,18 +13,16 @@ No model loading.  All inputs are pre-computed synthetic fixtures from conftest.
 import numpy as np
 import pytest
 
-from spectral         import spectral_eigengap_k
-from clustering       import cluster_count_sweep
-from cluster_tracking import track_clusters
+from p1_mstate_tracking.spectral         import spectral_eigengap_k
+from p1_mstate_tracking.clustering       import cluster_count_sweep
+from p1_mstate_tracking.cluster_tracking import track_clusters
 
 from tests.conftest import N_LAYERS, N_TOKENS, D
 from core.config import DISTANCE_THRESHOLDS
 
-
 # Pre-compute mid-threshold once (matches the value used inside cluster_count_sweep).
 _THRESHOLD_LIST = list(DISTANCE_THRESHOLDS)
 _MID_THRESH = float(_THRESHOLD_LIST[len(_THRESHOLD_LIST) // 2])
-
 
 # ============================================================================
 # spectral_eigengap_k

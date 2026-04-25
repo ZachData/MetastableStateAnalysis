@@ -23,7 +23,7 @@ if _PROJECT_ROOT not in sys.path:
 import numpy as np
 import pytest
 
-from geometric import (
+from p4_mstate_features.geometric import (
     lda_stability_across_layers,
     lda_directions,
     probe_accuracy_trajectory,
@@ -234,6 +234,145 @@ class TestLDAStabilityAcrossLayers:
         assert result["n_classes"] == 2
 
 
+class TestLDAStabilityAcrossLayers_Extra:
+
+    def test_mean_cosine_key_present_and_bounded(self):
+        """
+        result['mean_cosine'] must exist and lie in [0, 1].
+        The implementation computes it but no test currently verifies it.
+        """
+        acts, labels = _antipodal_activations()
+        labs = {l: labels for l in range(N_LAYERS)}
+        result = lda_stability_across_layers(acts, labs)
+
+        assert "mean_cosine" in result, "Missing 'mean_cosine' key in result"
+        mc = result["mean_cosine"]
+        assert 0.0 <= mc <= 1.0, f"mean_cosine={mc:.4f} outside [0, 1]"
+
+    def test_direction_stored_per_layer(self):
+        """
+        The implementation stores 'direction' in per_layer[l] for downstream
+        use (Phase 5 export).  No test currently verifies the key or shape.
+        """
+        acts, labels = _antipodal_activations()
+        labs = {l: labels for l in range(N_LAYERS)}
+        result = lda_stability_across_layers(acts, labs)
+
+        for layer, info in result["per_layer"].items():
+            assert "direction" in info, f"Layer {layer}: missing 'direction'"
+            d = info["direction"]
+            assert isinstance(d, np.ndarray), f"Layer {layer}: 'direction' not ndarray"
+            assert d.shape == (D,), (
+                f"Layer {layer}: expected direction shape ({D},), got {d.shape}"
+            )
+
+    def test_per_layer_labels_actually_used(self):
+        """
+        lda_stability_across_layers accepts different labels per layer.
+        At layer 0 the clusters are perfectly separable (antipodal).
+        At layer 1 we pass all-zero labels (a single class) which should
+        produce an error entry, not accuracy=1.0.
+        Verifies that the function does not silently reuse layer-0 labels.
+        """
+        acts, labels = _antipodal_activations()
+        labs = {l: labels for l in range(N_LAYERS)}
+        labs[1] = np.zeros(N_TOKENS, dtype=int)   # single class → error
+
+        result = lda_stability_across_layers(acts, labs)
+
+        # Layer 1 should have an error or no 'accuracy' key
+        layer1 = result["per_layer"].get(1, {})
+        assert "error" in layer1 or layer1.get("accuracy") is None, (
+            "Layer 1 received single-class labels but reported accuracy "
+            f"{layer1.get('accuracy')}"
+        )
+
+    def test_multiclass_directions_shape(self):
+        """
+        With 3 balanced clusters LDA returns 2 discriminant directions
+        (n_classes - 1).  direction stored per layer should be (D,) — the
+        top direction only — while the raw lda_directions call returns (2, D).
+        """
+        n = N_TOKENS + 3  # ensure divisible by 3
+        n = (n // 3) * 3
+        labels = np.array([c for c in range(3) for _ in range(n // 3)])
+
+        rng  = np.random.default_rng(0)
+        X    = np.zeros((n, D))
+        for c in range(3):
+            X[labels == c, c] = 10.0           # each class on its own axis
+        X += rng.standard_normal((n, D)) * 0.01
+
+        acts = {l: X.copy() for l in range(N_LAYERS)}
+        labs = {l: labels   for l in range(N_LAYERS)}
+
+        result = lda_stability_across_layers(acts, labs)
+
+        for layer, info in result["per_layer"].items():
+            assert info.get("n_classes") == 3, (
+                f"Layer {layer}: expected n_classes=3, got {info.get('n_classes')}"
+            )
+
+
+class TestLDADirectionsEdgeCases:
+
+    def test_all_noise_labels_returns_error(self):
+        """
+        When every token has label == -1 (noise), there are zero valid tokens.
+        The function must return an error dict rather than raise.
+        """
+        rng    = np.random.default_rng(0)
+        X      = rng.standard_normal((N_TOKENS, D))
+        labels = np.full(N_TOKENS, -1, dtype=int)
+
+        result = lda_directions(X, labels)
+
+        assert "error" in result, (
+            "All-noise labels should return error dict, got: "
+            f"{list(result.keys())}"
+        )
+
+    def test_single_class_returns_error(self):
+        """
+        A single class after noise filtering must return an error dict
+        (fewer than 2 clusters).
+        """
+        rng    = np.random.default_rng(1)
+        X      = rng.standard_normal((N_TOKENS, D))
+        labels = np.zeros(N_TOKENS, dtype=int)    # all class 0
+
+        result = lda_directions(X, labels)
+
+        assert "error" in result, (
+            "Single-class input should return error dict, got: "
+            f"{list(result.keys())}"
+        )
+
+    def test_multiclass_directions_shape(self):
+        """
+        k classes → (k-1, D) directions matrix.
+        With 4 balanced classes expect directions.shape == (3, D).
+        """
+        n_per_class = 20
+        k           = 4
+        n           = n_per_class * k
+        labels      = np.repeat(np.arange(k), n_per_class)
+
+        rng = np.random.default_rng(7)
+        X   = np.zeros((n, D))
+        for c in range(k):
+            X[labels == c, c % D] = 5.0 * (c + 1)
+        X += rng.standard_normal((n, D)) * 0.01
+
+        result = lda_directions(X, labels)
+
+        assert "error" not in result, f"Unexpected error: {result.get('error')}"
+        expected_shape = (k - 1, D)
+        assert result["directions"].shape == expected_shape, (
+            f"Expected shape {expected_shape}, got {result['directions'].shape}"
+        )
+        assert result["n_classes"] == k
+
 # ===========================================================================
 # 2.  probe_accuracy_trajectory
 # ===========================================================================
@@ -328,6 +467,46 @@ class TestProbeAccuracyTrajectory:
             assert info.get("n_classes") == 2, (
                 f"Layer {layer}: expected n_classes=2, got {info.get('n_classes')}"
             )
+
+
+class TestProbeAccuracyTrajectory_Extra:
+
+    def test_missing_layer_labels_skipped_gracefully(self):
+        """
+        When labels_per_layer is missing a key that exists in
+        activations_per_layer the function must skip that layer without
+        raising.  The returned per_layer dict should not contain the
+        unlabelled layer.
+        """
+        acts, labels = _antipodal_activations()
+        # Provide labels only for even layers
+        labs = {l: labels for l in range(N_LAYERS) if l % 2 == 0}
+
+        result = probe_accuracy_trajectory(acts, labs)
+
+        for layer in result["per_layer"].keys():
+            assert layer in labs, (
+                f"Layer {layer} has no labels but appears in per_layer result"
+            )
+
+    def test_accuracy_increases_with_separation(self):
+        """
+        Accuracy at each layer must be at least as high with separation=20
+        as with separation=5 when everything else is held constant.
+        A probe trained on better-separated data should not do worse.
+        """
+        def _mean_acc(sep):
+            acts, labels = _antipodal_activations(separation=sep, noise_scale=0.0)
+            labs = {l: labels for l in range(N_LAYERS)}
+            result = probe_accuracy_trajectory(acts, labs, reg=1e-6)
+            return result["summary"]["mean_accuracy"]
+
+        acc_low  = _mean_acc(2.0)
+        acc_high = _mean_acc(20.0)
+        assert acc_high >= acc_low, (
+            f"Higher separation should give ≥ accuracy: "
+            f"sep=2 → {acc_low:.3f}, sep=20 → {acc_high:.3f}"
+        )
 
 
 # ===========================================================================
@@ -443,3 +622,49 @@ class TestPCAOnDeltas:
         for trans in result["per_transition"]:
             for r in trans["explained_ratio"]:
                 assert r >= -1e-9, f"Negative explained ratio {r} in {trans}"
+
+
+class TestPCAOnDeltas_Extra:
+
+    def test_single_layer_produces_zero_transitions(self):
+        """
+        A dict with one layer key has no consecutive pair → 0 transitions.
+        """
+        rng  = np.random.default_rng(0)
+        acts = {0: rng.standard_normal((N_TOKENS, D))}
+
+        result = pca_on_deltas(acts)
+
+        assert len(result["per_transition"]) == 0, (
+            f"Single layer should yield 0 transitions, "
+            f"got {len(result['per_transition'])}"
+        )
+
+    def test_summary_contains_mean_total_variance(self):
+        """
+        summary must contain 'mean_total_variance' — used by build_phase4_verdict.
+        """
+        rng  = np.random.default_rng(11)
+        acts = {l: rng.standard_normal((N_TOKENS, D)) for l in range(N_LAYERS)}
+
+        result = pca_on_deltas(acts)
+
+        assert "mean_total_variance" in result["summary"], (
+            f"summary keys: {list(result['summary'].keys())}"
+        )
+
+    def test_non_consecutive_layer_keys(self):
+        """
+        If layer keys are [0, 2, 4] (gaps of 2), only pairs (0,2) and (2,4)
+        are consecutive integer neighbours when sorted.  The function must
+        still produce exactly 2 transitions without KeyError.
+        """
+        rng  = np.random.default_rng(3)
+        acts = {l: rng.standard_normal((N_TOKENS, D)) for l in [0, 2, 4]}
+
+        result = pca_on_deltas(acts)
+
+        assert len(result["per_transition"]) == 2, (
+            f"Keys [0,2,4] → 2 consecutive transitions, "
+            f"got {len(result['per_transition'])}"
+        )

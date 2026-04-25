@@ -48,19 +48,19 @@ def _gram(X: np.ndarray) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# phase1.metrics
+# p1_mstate_tracking.metrics
 # ---------------------------------------------------------------------------
 
 class TestPairwiseInnerProductsFromGram:
     def test_upper_triangle_count(self):
-        from phase1.metrics import pairwise_inner_products_from_gram
+        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
         n = 8
         G = np.eye(n, dtype=np.float32)
         ips = pairwise_inner_products_from_gram(G)
         assert ips.shape == (n * (n - 1) // 2,)
 
     def test_identity_gram_gives_zeros(self):
-        from phase1.metrics import pairwise_inner_products_from_gram
+        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
         # Identity Gram = orthonormal rows → all off-diagonal IPs = 0
         n = 6
         G = np.eye(n, dtype=np.float32)
@@ -68,7 +68,7 @@ class TestPairwiseInnerProductsFromGram:
         np.testing.assert_allclose(ips, 0.0, atol=1e-6)
 
     def test_all_ones_gram_gives_ones(self):
-        from phase1.metrics import pairwise_inner_products_from_gram
+        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
         # All tokens identical → Gram = all 1s → all IPs = 1
         n = 5
         G = np.ones((n, n), dtype=np.float32)
@@ -76,7 +76,7 @@ class TestPairwiseInnerProductsFromGram:
         np.testing.assert_allclose(ips, 1.0, atol=1e-6)
 
     def test_values_in_range(self):
-        from phase1.metrics import pairwise_inner_products_from_gram
+        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
         X = _normed_rand(12, 32)
         G = _gram(X)
         ips = pairwise_inner_products_from_gram(G)
@@ -86,14 +86,14 @@ class TestPairwiseInnerProductsFromGram:
 
 class TestInteractionEnergiesBatched:
     def test_returns_all_betas(self):
-        from phase1.metrics import interaction_energies_batched
+        from p1_mstate_tracking.metrics import interaction_energies_batched
         from core.config import BETA_VALUES
         G = _gram(_normed_rand(10, 32))
         energies = interaction_energies_batched(G, BETA_VALUES)
         assert set(energies.keys()) == set(BETA_VALUES)
 
     def test_energy_is_positive(self):
-        from phase1.metrics import interaction_energies_batched
+        from p1_mstate_tracking.metrics import interaction_energies_batched
         G = _gram(_normed_rand(10, 32))
         for beta, e in interaction_energies_batched(G, [0.5, 1.0, 2.0]).items():
             assert e > 0, f"energy for beta={beta} is non-positive: {e}"
@@ -103,7 +103,7 @@ class TestInteractionEnergiesBatched:
         All-identical tokens (Gram = ones) should have higher energy than
         spread tokens at the same n, because exp(beta * 1) > exp(beta * 0).
         """
-        from phase1.metrics import interaction_energies_batched
+        from p1_mstate_tracking.metrics import interaction_energies_batched
         n, d = 10, 32
         # Spread: random unit vectors
         G_spread = _gram(_normed_rand(n, d))
@@ -125,7 +125,7 @@ class TestInteractionEnergiesBatched:
         not across beta for fixed G.  This test checks the collapsed case where
         the relationship IS monotone (beta >= 1).
         """
-        from phase1.metrics import interaction_energies_batched
+        from p1_mstate_tracking.metrics import interaction_energies_batched
         # All tokens identical → Gram = all 1s
         n = 8
         G = np.ones((n, n), dtype=np.float32)
@@ -140,7 +140,7 @@ class TestInteractionEnergiesBatched:
 
     def test_agrees_with_scalar_formula(self):
         """Batched result matches the direct scalar computation."""
-        from phase1.metrics import interaction_energies_batched
+        from p1_mstate_tracking.metrics import interaction_energies_batched
         n, d = 6, 16
         X = _normed_rand(n, d)
         G = _gram(X)
@@ -153,25 +153,25 @@ class TestInteractionEnergiesBatched:
 class TestEffectiveRankFromRaw:
     def test_rank1_matrix(self):
         """All tokens identical → effective rank ≈ 1."""
-        from phase1.metrics import effective_rank_from_raw
+        from p1_mstate_tracking.metrics import effective_rank_from_raw
         v = torch.randn(1, 64).expand(20, 64).contiguous()
         rank = effective_rank_from_raw(v)
         assert rank < 1.5, f"rank-1 matrix gave effective_rank={rank:.2f}"
 
     def test_full_rank_matrix(self):
         """Random matrix in high-d → effective rank >> 1."""
-        from phase1.metrics import effective_rank_from_raw
+        from p1_mstate_tracking.metrics import effective_rank_from_raw
         t = torch.randn(30, 128)
         rank = effective_rank_from_raw(t)
         assert rank > 5.0, f"expected rank > 5, got {rank:.2f}"
 
     def test_rank_positive(self):
-        from phase1.metrics import effective_rank_from_raw
+        from p1_mstate_tracking.metrics import effective_rank_from_raw
         t = torch.randn(10, 64)
         assert effective_rank_from_raw(t) > 0
 
     def test_rank_bounded_by_min_dimension(self):
-        from phase1.metrics import effective_rank_from_raw
+        from p1_mstate_tracking.metrics import effective_rank_from_raw
         n, d = 8, 128
         t = torch.randn(n, d)
         rank = effective_rank_from_raw(t)
@@ -181,12 +181,12 @@ class TestEffectiveRankFromRaw:
 
 class TestLinearCKA:
     def test_identical_inputs_give_one(self):
-        from phase1.metrics import linear_cka
+        from p1_mstate_tracking.metrics import linear_cka
         X = _normed_rand(15, 32)
         assert abs(linear_cka(X, X) - 1.0) < 1e-5
 
     def test_orthogonal_inputs_give_zero(self):
-        from phase1.metrics import linear_cka
+        from p1_mstate_tracking.metrics import linear_cka
         # Two blocks of orthogonal vectors — CKA should be near 0
         n, d = 10, 64
         rng = np.random.default_rng(7)
@@ -198,7 +198,7 @@ class TestLinearCKA:
         assert 0.0 <= cka <= 1.0
 
     def test_output_in_unit_interval(self):
-        from phase1.metrics import linear_cka
+        from p1_mstate_tracking.metrics import linear_cka
         X = _normed_rand(12, 32, seed=1)
         Y = _normed_rand(12, 32, seed=2)
         cka = linear_cka(X, Y)
@@ -207,13 +207,13 @@ class TestLinearCKA:
 
 class TestNearestNeighborIndices:
     def test_output_shape(self):
-        from phase1.metrics import nearest_neighbor_indices
+        from p1_mstate_tracking.metrics import nearest_neighbor_indices
         G = _gram(_normed_rand(10, 32))
         nn = nearest_neighbor_indices(G)
         assert nn.shape == (10,)
 
     def test_no_self_nn(self):
-        from phase1.metrics import nearest_neighbor_indices
+        from p1_mstate_tracking.metrics import nearest_neighbor_indices
         G = _gram(_normed_rand(12, 32))
         nn = nearest_neighbor_indices(G)
         for i, j in enumerate(nn):
@@ -222,7 +222,7 @@ class TestNearestNeighborIndices:
     def test_two_cluster_nn_within_cluster(self):
         """In a clearly separated 2-cluster layout, each token's NN is
         in the same cluster."""
-        from phase1.metrics import nearest_neighbor_indices
+        from p1_mstate_tracking.metrics import nearest_neighbor_indices
         n_per = 15
         X = _two_cluster_normed(n_per=n_per, d=64, sep=10.0)
         G = _gram(X)
@@ -236,7 +236,7 @@ class TestNearestNeighborIndices:
 
 class TestEnergyDropPairs:
     def test_returns_list_of_tuples(self):
-        from phase1.metrics import energy_drop_pairs
+        from p1_mstate_tracking.metrics import energy_drop_pairs
         before = torch.randn(8, 32)
         after  = torch.randn(8, 32)
         pairs  = energy_drop_pairs(before, after, beta=1.0, top_k=5)
@@ -248,14 +248,14 @@ class TestEnergyDropPairs:
             assert i < j  # upper triangle
 
     def test_top_k_respects_limit(self):
-        from phase1.metrics import energy_drop_pairs
+        from p1_mstate_tracking.metrics import energy_drop_pairs
         pairs = energy_drop_pairs(
             torch.randn(10, 32), torch.randn(10, 32), beta=1.0, top_k=4
         )
         assert len(pairs) <= 4
 
     def test_sorted_ascending(self):
-        from phase1.metrics import energy_drop_pairs
+        from p1_mstate_tracking.metrics import energy_drop_pairs
         pairs = energy_drop_pairs(
             torch.randn(12, 32), torch.randn(12, 32), beta=1.0, top_k=8
         )
@@ -264,19 +264,19 @@ class TestEnergyDropPairs:
 
 
 # ---------------------------------------------------------------------------
-# phase1.spectral
+# p1_mstate_tracking.spectral
 # ---------------------------------------------------------------------------
 
 class TestSpectralEigengap:
     def test_output_keys(self):
-        from phase1.spectral import spectral_eigengap_k
+        from p1_mstate_tracking.spectral import spectral_eigengap_k
         G = _gram(_normed_rand(10, 32))
         result = spectral_eigengap_k(G)
         for key in ("k_eigengap", "k_second_gap", "eigenvalues", "eigengaps"):
             assert key in result
 
     def test_k_at_least_one(self):
-        from phase1.spectral import spectral_eigengap_k
+        from p1_mstate_tracking.spectral import spectral_eigengap_k
         G = _gram(_normed_rand(8, 32))
         result = spectral_eigengap_k(G)
         assert result["k_eigengap"] >= 1
@@ -286,7 +286,7 @@ class TestSpectralEigengap:
         Block-diagonal Gram with two perfectly separated blocks should give
         k_eigengap == 2.
         """
-        from phase1.spectral import spectral_eigengap_k
+        from p1_mstate_tracking.spectral import spectral_eigengap_k
         # Build a 2-block Gram: within-block IP = 1, cross-block IP = -1
         # (perfectly antipodal clusters)
         n = 16
@@ -302,7 +302,7 @@ class TestSpectralEigengap:
 
     def test_eigenvalues_non_negative(self):
         """Normalized Laplacian eigenvalues are always >= 0."""
-        from phase1.spectral import spectral_eigengap_k
+        from p1_mstate_tracking.spectral import spectral_eigengap_k
         G = _gram(_normed_rand(12, 32))
         result = spectral_eigengap_k(G)
         for ev in result["eigenvalues"]:
@@ -310,7 +310,7 @@ class TestSpectralEigengap:
 
 
 # ---------------------------------------------------------------------------
-# phase1.sinkhorn
+# p1_mstate_tracking.sinkhorn
 # ---------------------------------------------------------------------------
 
 class TestSinkhornNormalize:
@@ -323,7 +323,7 @@ class TestSinkhornNormalize:
         )
 
     def test_random_matrix_converges(self):
-        from phase1.sinkhorn import sinkhorn_normalize
+        from p1_mstate_tracking.sinkhorn import sinkhorn_normalize
         rng = np.random.default_rng(0)
         A = np.abs(rng.standard_normal((8, 8))).astype(np.float64)
         P = sinkhorn_normalize(A)
@@ -331,7 +331,7 @@ class TestSinkhornNormalize:
 
     def test_already_doubly_stochastic(self):
         """Uniform matrix is already DS; should be unchanged."""
-        from phase1.sinkhorn import sinkhorn_normalize
+        from p1_mstate_tracking.sinkhorn import sinkhorn_normalize
         n = 6
         A = np.ones((n, n), dtype=np.float64) / n
         P = sinkhorn_normalize(A)
@@ -339,7 +339,7 @@ class TestSinkhornNormalize:
         np.testing.assert_allclose(P, A, atol=1e-6)
 
     def test_output_non_negative(self):
-        from phase1.sinkhorn import sinkhorn_normalize
+        from p1_mstate_tracking.sinkhorn import sinkhorn_normalize
         rng = np.random.default_rng(1)
         A = np.abs(rng.standard_normal((10, 10)))
         P = sinkhorn_normalize(A)
@@ -348,7 +348,7 @@ class TestSinkhornNormalize:
 
 class TestSinkhornNormalizeBatched:
     def test_all_heads_doubly_stochastic(self):
-        from phase1.sinkhorn import sinkhorn_normalize_batched
+        from p1_mstate_tracking.sinkhorn import sinkhorn_normalize_batched
         rng = np.random.default_rng(3)
         n_heads, n = 4, 8
         A = np.abs(rng.standard_normal((n_heads, n, n)))
@@ -362,7 +362,7 @@ class TestSinkhornNormalizeBatched:
                                        err_msg=f"head {h} cols don't sum to 1")
 
     def test_shape_preserved(self):
-        from phase1.sinkhorn import sinkhorn_normalize_batched
+        from p1_mstate_tracking.sinkhorn import sinkhorn_normalize_batched
         rng = np.random.default_rng(4)
         A = np.abs(rng.standard_normal((3, 12, 12)))
         P = sinkhorn_normalize_batched(A)
@@ -370,7 +370,7 @@ class TestSinkhornNormalizeBatched:
 
     def test_agrees_with_scalar(self):
         """Batched result for head 0 must match the scalar version."""
-        from phase1.sinkhorn import sinkhorn_normalize, sinkhorn_normalize_batched
+        from p1_mstate_tracking.sinkhorn import sinkhorn_normalize, sinkhorn_normalize_batched
         rng = np.random.default_rng(5)
         n_heads, n = 3, 6
         A = np.abs(rng.standard_normal((n_heads, n, n)))
@@ -384,7 +384,7 @@ class TestFiedlerValue:
         """
         Two completely disconnected components → λ₂ = 0.
         """
-        from phase1.sinkhorn import fiedler_value
+        from p1_mstate_tracking.sinkhorn import fiedler_value
         n = 8
         half = n // 2
         # Block diagonal: two isolated blocks (no cross-connections)
@@ -396,14 +396,14 @@ class TestFiedlerValue:
 
     def test_complete_graph_positive(self):
         """Complete graph (all-ones / n) → Fiedler value > 0."""
-        from phase1.sinkhorn import fiedler_value
+        from p1_mstate_tracking.sinkhorn import fiedler_value
         n = 8
         P = np.ones((n, n)) / n
         fv = fiedler_value(P)
         assert fv > 0.0
 
     def test_output_is_float(self):
-        from phase1.sinkhorn import fiedler_value
+        from p1_mstate_tracking.sinkhorn import fiedler_value
         rng = np.random.default_rng(6)
         P = np.abs(rng.standard_normal((6, 6)))
         P /= P.sum()
@@ -411,12 +411,12 @@ class TestFiedlerValue:
 
 
 # ---------------------------------------------------------------------------
-# phase1.clustering
+# p1_mstate_tracking.clustering
 # ---------------------------------------------------------------------------
 
 class TestClusterCountSweep:
     def test_output_keys(self):
-        from phase1.clustering import cluster_count_sweep
+        from p1_mstate_tracking.clustering import cluster_count_sweep
         X = _normed_rand(12, 32)
         result = cluster_count_sweep(X)
         assert "agglomerative" in result
@@ -426,7 +426,7 @@ class TestClusterCountSweep:
         assert "best_silhouette" in result["kmeans"]
 
     def test_labels_length(self):
-        from phase1.clustering import cluster_count_sweep
+        from p1_mstate_tracking.clustering import cluster_count_sweep
         n = 15
         X = _normed_rand(n, 32)
         result = cluster_count_sweep(X)
@@ -436,7 +436,7 @@ class TestClusterCountSweep:
         """
         Clearly separated two-cluster input → KMeans should find best_k == 2.
         """
-        from phase1.clustering import cluster_count_sweep
+        from p1_mstate_tracking.clustering import cluster_count_sweep
         X = _two_cluster_normed(n_per=20, d=64, sep=12.0)
         result = cluster_count_sweep(X)
         assert result["kmeans"]["best_k"] == 2, (
@@ -445,12 +445,12 @@ class TestClusterCountSweep:
 
     def test_accepts_normed_ndarray(self):
         """Function must accept a pre-normed ndarray without crashing."""
-        from phase1.clustering import cluster_count_sweep
+        from p1_mstate_tracking.clustering import cluster_count_sweep
         X = _normed_rand(10, 32).astype(np.float32)
         cluster_count_sweep(X)  # should not raise
 
     def test_mid_labels_in_agglomerative(self):
-        from phase1.clustering import cluster_count_sweep
+        from p1_mstate_tracking.clustering import cluster_count_sweep
         X = _normed_rand(12, 32)
         result = cluster_count_sweep(X)
         assert "mid_labels" in result["agglomerative"]
@@ -459,14 +459,14 @@ class TestClusterCountSweep:
 
 class TestPcaProjection:
     def test_output_shape(self):
-        from phase1.clustering import pca_projection
+        from p1_mstate_tracking.clustering import pca_projection
         X = _normed_rand(20, 128)
         proj, var = pca_projection(X, n_components=3)
         assert proj.shape == (20, 3)
         assert var.shape == (3,)
 
     def test_explained_variance_sums_to_at_most_one(self):
-        from phase1.clustering import pca_projection
+        from p1_mstate_tracking.clustering import pca_projection
         X = _normed_rand(20, 64)
         _, var = pca_projection(X, n_components=3)
         assert var.sum() <= 1.0 + 1e-5
@@ -474,7 +474,7 @@ class TestPcaProjection:
 
     def test_fewer_components_than_samples(self):
         """n_components capped at min(n_tokens-1, d)."""
-        from phase1.clustering import pca_projection
+        from p1_mstate_tracking.clustering import pca_projection
         X = _normed_rand(4, 128)  # only 4 tokens
         proj, var = pca_projection(X, n_components=10)
         assert proj.shape[1] <= 3   # capped at n-1 = 3

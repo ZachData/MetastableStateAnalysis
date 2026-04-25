@@ -17,13 +17,13 @@ import numpy as np
 
 sys.path.insert(0, "/home/claude")
 
-from phase5_case.select_cluster import (
+from p5_single_mstate_analysis.select_cluster import (
     select_primary_and_sibling,
     rank_trajectories,
     _pick_sibling,
     _score_trajectory,
 )
-from phase5_case import constants as C
+from p5_single_mstate_analysis import constants as C
 
 # ---------------------------------------------------------------------------
 # Synthetic Phase-1 run factory

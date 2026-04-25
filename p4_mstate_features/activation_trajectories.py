@@ -23,8 +23,8 @@ from typing import Optional
 from scipy import stats
 from dataclasses import dataclass
 
-from phase3.crosscoder import Crosscoder
-from phase3.data import PromptActivationStore
+from p3_crosscoder.crosscoder import Crosscoder
+from p3_crosscoder.data import PromptActivationStore
 
 
 # ---------------------------------------------------------------------------
