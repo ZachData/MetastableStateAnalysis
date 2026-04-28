@@ -268,7 +268,7 @@ def detect_events(
     shear_absolute_floor: int = SHEAR_ABSOLUTE_FLOOR,
     drift_window_layers: int = DRIFT_WINDOW_LAYERS,
     drift_window_rad: float = DRIFT_WINDOW_RAD,
-) -> list[dict]:
+    ) -> list[dict]:
     """
     Emit birth / collapse / swap / shear / drift events.
 
