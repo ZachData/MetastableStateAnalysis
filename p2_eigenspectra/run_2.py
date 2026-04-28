@@ -3,6 +3,8 @@ run_2.py — p2_eigenspectra experiment orchestrator and CLI entry point.
 
 Usage examples:
     python -m p2_eigenspectra.run_2 --full
+    python -m p2_eigenspectra.run_2 --offline results/p2_eigenspectra_full --phase1-dir results/2026-04-23_18-30-06
+
     python -m phase2.run_2 --full --models albert-base-v2
     python -m phase2.run_2 --full --phase1-dir results/2026-04-11_13-08-09
     python -m phase2.run_2 --offline results/p2_eigenspectra_full --phase1-dir results/phase1

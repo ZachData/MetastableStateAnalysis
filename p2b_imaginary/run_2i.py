@@ -3,8 +3,8 @@ run_2i.py — Phase 2i: Rotational Dynamics Investigation orchestrator.
 
 Usage:
     # Full pipeline, all models
-    python -m p2b_imaginary.run_2i --phase2-dir results/phase2_full --phase1-dir results/phase1
-    python -m p2b_imaginary.run_2i --phase2-dir results/phase2_2026-04-13_04-56-36 --phase1-dir results/2026-04-21_15-14-23
+    python -m p2b_imaginary.run_2i --phase2-dir results/phase2_full --phase1-dir results/2026-04-23_18-30-06
+
 
     # Single model
     python -m p2b_imaginary.run_2i --phase2-dir results/phase2_full --phase1-dir results/phase1 \\

@@ -7,6 +7,8 @@ combination and writes per-run JSON/markdown and a cross-run digest.
 Usage
 -----
     python -m p1b_hemisphere.run_1b
+    python -m p1b_hemisphere.run_1b --phase1-dir results/2026-04-23_18-30-06
+
     python run_1b.py                              # all models, all prompts
     python run_1b.py --fast                       # albert-base-v2 + wiki_paragraph
     python run_1b.py --models albert-base-v2 gpt2 # specific model subset
@@ -192,7 +194,7 @@ def _run_standard(
         print(f"\n  {model_name} / {prompt_key}")
         try:
             hidden_states, _attns, tokens = extract_activations(
-                model, tokenizer, PROMPTS[prompt_key]
+                model, tokenizer, PROMPTS[prompt_key], model_name
             )
         except Exception as exc:
             print(f"    extract_activations failed: {exc}")
