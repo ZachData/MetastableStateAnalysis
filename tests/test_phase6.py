@@ -369,8 +369,10 @@ class TestDecomposeQkMatrix:
         npt.assert_allclose(self.decomp["S_QK"] + self.decomp["A_QK"], M, atol=1e-5)
 
     def test_M_equals_WQ_T_WK(self):
-        expected = self.WQ.T @ self.WK
-        npt.assert_allclose(self.decomp["M"], expected, atol=1e-5)
+            # M = W_Q W_K^T  (d_model × d_model), not W_Q^T W_K (d_head × d_head).
+            # logit(i,j) = x_i^T M x_j  where M acts in residual-stream space.
+            expected = self.WQ @ self.WK.T
+            npt.assert_allclose(self.decomp["M"], expected, atol=1e-5)
 
     def test_fractions_sum_to_one(self):
         npt.assert_allclose(self.decomp["s_frac"] + self.decomp["a_frac"], 1.0, atol=1e-5)
@@ -387,10 +389,22 @@ class TestDecomposeQkMatrix:
         npt.assert_allclose(decomp["a_frac"], 0.0, atol=1e-5)
 
     def test_antisymmetric_M_gives_zero_s_frac(self):
-        """If WK = -WQ, M is antisymmetric → S=0 → s_frac=0."""
+        """M = WQ @ WK^T is antisymmetric → S_QK = 0 → s_frac = 0.
+
+        Construction: WQ with orthonormal columns, antisymmetric B (h×h),
+        WK = WQ @ B.  Then M = WQ @ WK^T = WQ @ B^T @ WQ^T = -WQ @ B @ WQ^T = -M^T.
+        """
         rng = np.random.default_rng(8)
-        WQ = rng.standard_normal((16, 8)).astype(np.float32)
-        decomp = decompose_qk_matrix(WQ, -WQ)
+        d, h = 16, 8
+        # WQ with orthonormal columns  (QR gives exactly this)
+        WQ, _ = np.linalg.qr(rng.standard_normal((d, h)).astype(np.float32))
+        WQ = WQ[:, :h]
+        # antisymmetric B
+        raw = rng.standard_normal((h, h)).astype(np.float32)
+        B   = raw - raw.T
+        # WK chosen so M = WQ @ WK^T = WQ @ B^T @ WQ^T  (antisymmetric)
+        WK  = WQ @ B
+        decomp = decompose_qk_matrix(WQ, WK)
         npt.assert_allclose(decomp["s_frac"], 0.0, atol=1e-5)
 
 

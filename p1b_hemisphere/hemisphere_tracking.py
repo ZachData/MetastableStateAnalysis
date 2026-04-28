@@ -300,6 +300,24 @@ def detect_events(
     disrupted_transitions: set[int] = set()
 
     for L in range(n_trans):
+        r_from = str(regime[L])
+        r_to   = str(regime[L + 1])
+        ov = float(match_overlap[L]) if np.isfinite(match_overlap[L]) else None
+        cc = int(crossing_count[L])
+
+        # Birth/collapse cross the valid/invalid boundary — must precede the guard
+        if r_from == "collapsed" and r_to == "strong_bipartition":
+            events.append({"type": "birth", "layer": L + 1, "from_layer": L,
+                            "detail": {"match_overlap": ov, "crossing_count": cc}})
+            disrupted_transitions.add(L)
+            continue
+
+        if r_from == "strong_bipartition" and r_to == "collapsed":
+            events.append({"type": "collapse", "layer": L + 1, "from_layer": L,
+                            "detail": {"match_overlap": ov, "crossing_count": cc}})
+            disrupted_transitions.add(L)
+            continue
+
         if not valid_trans[L]:
             continue
         r_from = str(regime[L])

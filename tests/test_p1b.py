@@ -60,23 +60,41 @@ def make_cone(n_layers=4, n_tokens=20, d=8, rng=None):
 
 
 def make_birth_then_stable(n_layers=8, n_tokens=40, d=16, rng=None):
-    rng = rng or np.random.default_rng(55)
-    v = rng.standard_normal(d); v /= np.linalg.norm(v)
+    """
+    Layers 0-1 collapsed (single-outlier), layers 2-7 strong_bipartition.
+    Produces a 'birth' event at layer 2.
+    """
+    rng  = rng or np.random.default_rng(55)
+    v    = rng.standard_normal(d)
+    v   /= np.linalg.norm(v)
     half = n_tokens // 2
     acts = np.zeros((n_layers, n_tokens, d))
+
     for L in range(n_layers):
         if L < 2:
-            acts[L] = v + 0.02 * rng.standard_normal((n_tokens, d))
+            # Single-outlier: (n_tokens-1) near +v, 1 near -v.
+            # minority_fraction = 1/n_tokens < 0.05  →  "collapsed".
+            # (Same strategy as make_collapse_at_end; previous 1e-4 noise gave
+            # a ~50/50 Fiedler split → minority_fraction ≈ 0.5 → wrong regime.)
+            main      = +v + 0.01 * rng.standard_normal((n_tokens - 1, d))
+            outlier   = -v + 0.01 * rng.standard_normal((1, d))
+            acts[L]   = np.vstack([main, outlier])
         else:
-            a = +v + 0.04 * rng.standard_normal((half, d))
-            b = -v + 0.04 * rng.standard_normal((n_tokens - half, d))
+            a       = +v + 0.04 * rng.standard_normal((half, d))
+            b       = -v + 0.04 * rng.standard_normal((n_tokens - half, d))
             acts[L] = np.vstack([a, b])
+
     return _l2(acts)
 
 
 def make_collapse_at_end(n_layers=8, n_tokens=40, d=16, rng=None):
-    rng = rng or np.random.default_rng(99)
-    v = rng.standard_normal(d); v /= np.linalg.norm(v)
+    """
+    Layers 0-5 strong_bipartition, layers 6-7 collapsed (single outlier).
+    Produces a 'collapse' event at layer 6.
+    """
+    rng = rng or np.random.default_rng(88)
+    v = rng.standard_normal(d)
+    v /= np.linalg.norm(v)
     half = n_tokens // 2
     acts = np.zeros((n_layers, n_tokens, d))
     for L in range(n_layers):
@@ -85,8 +103,13 @@ def make_collapse_at_end(n_layers=8, n_tokens=40, d=16, rng=None):
             b = -v + 0.04 * rng.standard_normal((n_tokens - half, d))
             acts[L] = np.vstack([a, b])
         else:
-            acts[L] = v + 0.01 * rng.standard_normal((n_tokens, d))
+            # Single-outlier pattern: minority_fraction = 1/n < 0.05 → "collapsed".
+            # All-near-+v would give minority_fraction≈0.5 → "weak_bipartition".
+            main = +v + 0.01 * rng.standard_normal((n_tokens - 1, d))
+            out  = -v + 0.01 * rng.standard_normal((1, d))
+            acts[L] = np.vstack([main, out])
     return _l2(acts)
+
 
 
 # ===========================================================================
@@ -504,8 +527,13 @@ class TestTokenTrajectories:
 
 class TestHdbscanNesting:
     def _make_assignments(self, n_L, n_T, half):
-        aa = np.zeros((n_L, n_T), dtype=np.int8); aa[:, half:] = 1
+        aa = np.zeros((n_L, n_T), dtype=np.int8)
+        aa[:, half:] = 1
         return aa
+
+    # NEW — alias so test_mixed_clusters resolves the attribute
+    def _make_aligned_assignments(self, n_L, n_T, half):
+        return self._make_assignments(n_L, n_T, half)
 
     def test_fully_nested(self):
         from p1b_hemisphere.hemisphere_membership import compute_hdbscan_nesting
@@ -518,14 +546,24 @@ class TestHdbscanNesting:
         assert overall["mixed_fraction"]        == 0.0
 
     def test_mixed_clusters(self):
+        """HDBSCAN clusters that split 50/50 across hemispheres → mixed."""
         from p1b_hemisphere.hemisphere_membership import compute_hdbscan_nesting
+
         n_L, n_T, half = 4, 20, 10
-        aa = self._make_assignments(n_L, n_T, half)
+        aa = self._make_aligned_assignments(n_L, n_T, half)
         valid = np.ones(n_L, dtype=bool)
-        mixed = np.array([0]*5 + [0]*5 + [1]*5 + [1]*5, dtype=np.int32)
-        labels = {L: mixed for L in range(n_L)}
-        overall = compute_hdbscan_nesting(aa, labels, valid)["overall"]
-        assert overall["mixed_fraction"] > 0.0
+
+        # Interleave so each cluster draws from both hemispheres:
+        #   cluster 0 = tokens {0..4, 10..14}  → 5 in hem-0, 5 in hem-1 → r_c=0.5
+        #   cluster 1 = tokens {5..9, 15..19}  → 5 in hem-0, 5 in hem-1 → r_c=0.5
+        # (aa has tokens 0..9 in hem-0, 10..19 in hem-1)
+        mixed_labels = np.array([0] * 5 + [1] * 5 + [0] * 5 + [1] * 5,
+                                 dtype=np.int32)
+        labels_per_layer = {L: mixed_labels for L in range(n_L)}
+
+        result = compute_hdbscan_nesting(aa, labels_per_layer, valid)
+        overall = result["overall"]
+        assert overall["mixed_fraction"] > 0.0, overall
 
     def test_nesting_classes_semantics(self):
         """r_c near 0 → nested_B (hemi 1); r_c near 1 → nested_A (hemi 0)."""

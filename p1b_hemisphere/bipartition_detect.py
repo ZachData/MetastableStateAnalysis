@@ -114,6 +114,11 @@ def extract_bipartition_spectrum(
         G = X @ X.T
         if clip_negative:
             G = np.clip(G, 0, None)
+            # Add a tiny uniform weight to prevent complete disconnection.
+            # Antipodal geometry clips all cross-group edges to 0, producing
+            # a degenerate Fiedler eigenspace.  1e-4/n is negligible vs
+            # within-group cosines but ensures λ₂ > 0 (graph connected).
+            G += 1e-4 / G.shape[0]
         np.fill_diagonal(G, 1.0)
         Lap = laplacian(G, normed=True)
 

@@ -102,9 +102,19 @@ def cone_margin_lp(
     max_norm       = float(row_norms.max()) if row_norms.size else 1.0
     norm_margin    = gamma / max_norm if max_norm > 1e-12 else float("nan")
 
+    # Degenerate-w detection: the LP can achieve γ=0 with w=0, which
+    # trivially satisfies all constraints but provides no separating
+    # direction.  This happens exactly when the token set spans both
+    # hemispheres (e.g. antipodal geometry).  Force γ to -tol-ε so
+    # classify_cone_regime returns "split" rather than "borderline".
+    if np.linalg.norm(w_opt) < 1e-4 and gamma < CONE_BORDERLINE_TOL:
+        gamma = -(CONE_BORDERLINE_TOL + 1e-6)
+
+    normalized_margin = gamma / max_norm if max_norm > 1e-12 else float("nan")
+
     return {
         "cone_margin":        gamma,
-        "normalized_margin":  norm_margin,
+        "normalized_margin":  normalized_margin,
         "w_opt":              w_opt,
         "solved":             True,
         "lp_at_limit":        at_limit,

@@ -320,31 +320,25 @@ def analyze_chorus_at_layer(
     min_clique_size: int = 2,
     active_threshold: float = 0.0,
 ) -> dict:
-    """
-    Run the full chorus pipeline at a single layer:
-    co-activation → cliques → purity → ARI.
-
-    Returns combined results dict.
-    """
     coact = compute_coactivation(traj, cc_layer_idx, active_threshold)
     cliques = extract_cliques(coact, coact_threshold, min_clique_size)
 
     if not cliques:
         return {
             "n_cliques": 0,
+            "cliques": [],                              # FIX 1: always present
             "purity": {"summary": {"mean_purity": 0.0}},
-            "ari": {"ari": 0.0},
+            "ari": 0.0,                                 # FIX 2: scalar, not dict
             "coact_density": 0.0,
         }
 
     purity = clique_cluster_correspondence(
         traj, cliques, labels, cc_layer_idx, active_threshold
     )
-    ari = chorus_cluster_ari(
+    ari_result = chorus_cluster_ari(
         traj, cliques, labels, cc_layer_idx, active_threshold
     )
 
-    # Co-activation graph density
     F = coact.shape[0]
     n_edges = (coact > coact_threshold).sum() / 2
     max_edges = F * (F - 1) / 2
@@ -352,13 +346,14 @@ def analyze_chorus_at_layer(
 
     return {
         "n_cliques": len(cliques),
+        "cliques": cliques,                             # FIX 1: raw clique lists
         "largest_clique": len(cliques[0]) if cliques else 0,
         "clique_sizes": [len(c) for c in cliques],
         "purity": purity,
-        "ari": ari,
+        "ari": float(ari_result.get("ari", 0.0)),      # FIX 2: unwrap scalar
+        "ari_details": ari_result,                      # full dict still accessible
         "coact_density": float(density),
     }
-
 
 # ---------------------------------------------------------------------------
 # 6. Sweep co-activation thresholds

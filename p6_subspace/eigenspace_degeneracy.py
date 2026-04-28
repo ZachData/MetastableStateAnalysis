@@ -60,7 +60,6 @@ def project_to_subspace(
 # ---------------------------------------------------------------------------
 # Within/between cluster variance
 # ---------------------------------------------------------------------------
-
 def degeneracy_ratio(
     Z:      np.ndarray,
     labels: np.ndarray,
@@ -73,9 +72,9 @@ def degeneracy_ratio(
     Returns
     -------
     dict with:
-      sigma_W2     : float — mean within-cluster variance (averaged across clusters)
-      sigma_B2     : float — between-cluster variance (centroid spread)
-      ratio        : float — sigma_B2 / sigma_W2  (R in the spec)
+      var_within   : float — mean within-cluster variance (averaged across clusters)
+      var_between  : float — between-cluster variance (centroid spread)
+      ratio        : float — var_between / var_within  (R in the spec)
       n_clusters   : int
       n_tokens     : int — non-noise tokens used
     """
@@ -87,7 +86,7 @@ def degeneracy_ratio(
     n_clusters  = len(cluster_ids)
 
     if n_clusters < 2 or len(Z_v) < 4:
-        return {"sigma_W2": None, "sigma_B2": None, "ratio": None,
+        return {"var_within": None, "var_between": None, "ratio": None,
                 "n_clusters": n_clusters, "n_tokens": int(valid.sum())}
 
     global_mean = Z_v.mean(axis=0)   # (r,)
@@ -101,15 +100,15 @@ def degeneracy_ratio(
         centroids.append(mu_c)
         within_vars.append(float(np.mean(np.sum((Zc - mu_c) ** 2, axis=1))))
 
-    sigma_W2 = float(np.mean(within_vars))
-    centroids = np.stack(centroids)                                  # (K, r)
-    sigma_B2  = float(np.mean(np.sum((centroids - global_mean) ** 2, axis=1)))
+    var_within  = float(np.mean(within_vars))
+    centroids   = np.stack(centroids)                                  # (K, r)
+    var_between = float(np.mean(np.sum((centroids - global_mean) ** 2, axis=1)))
 
-    ratio = sigma_B2 / max(sigma_W2, 1e-12)
+    ratio = var_between / max(var_within, 1e-12)
 
     return {
-        "sigma_W2":    sigma_W2,
-        "sigma_B2":    sigma_B2,
+        "var_within":  var_within,
+        "var_between": var_between,
         "ratio":       ratio,
         "n_clusters":  n_clusters,
         "n_tokens":    int(valid.sum()),

@@ -59,10 +59,6 @@ def rank_identity_features(
     activation_threshold: float = 0.0,
     top_k: int = 20,
 ) -> list:
-    """
-    For each feature, binarize activations at threshold > 0 and compute MI
-    with the cluster mask. Returns top-k features by MI.
-    """
     n_tokens, n_features = feature_acts.shape
     active = feature_acts > activation_threshold   # (n_tokens, n_features)
     y = cluster_mask.astype(bool)
@@ -71,12 +67,24 @@ def rank_identity_features(
     for f in range(n_features):
         mis[f] = _mutual_info_binary(active[:, f], y)
 
-    order = np.argsort(-mis)[:top_k]
+    # Mean in-cluster activation magnitude — used as tiebreaker so that
+    # features with larger cluster-specific activation rank higher when MI
+    # scores are tied (e.g. all features share the same binary pattern).
+    mean_act_in = np.array([
+        float(feature_acts[y, f].mean()) if y.any() else 0.0
+        for f in range(n_features)
+    ], dtype=np.float64)
+
+    # Primary: descending MI. Secondary: descending mean in-cluster activation.
+    # np.lexsort keys are applied right-to-left, so list primary key last.
+    order = np.lexsort((-mean_act_in, -mis))[:top_k]
+
     return [
         {
-            "feature":       int(f),
-            "mi_bits":       round(float(mis[f]), 4),
-            "active_rate":   round(float(active[:, f].mean()), 4),
+            "feature":    int(f),        # alias — expected by TestFeaturePerfectDiscriminator
+            "feature_idx": int(f),       # kept for analyze_features() compatibility
+            "mi_bits":    round(float(mis[f]), 4),
+            "active_rate": round(float(active[:, f].mean()), 4),
             "active_rate_in_cluster": round(float(active[y, f].mean()), 4)
                                        if y.any() else 0.0,
             "active_rate_out": round(float(active[~y, f].mean()), 4)
@@ -370,7 +378,7 @@ def analyze_features(
             continue
         top = rank_identity_features(acts, mask, top_k=top_k)
         chorus = chorus_components(
-            acts, mask, [t["feature"] for t in top],
+            acts, mask, [t["feature_idx"] for t in top], # was t["feature"]
         )
         per_layer.append({
             "layer":         int(layer),
@@ -378,8 +386,8 @@ def analyze_features(
             "top_features":  top,
             "chorus":        chorus,
         })
-        all_top_features.update(t["feature"] for t in top)
-
+        all_top_features.update(t["feature_idx"] for t in top) # was t["feature"]
+ 
     # ---- Cross-layer activation trajectories for union of top features ----
     union_features = sorted(all_top_features)
     activation_trajectories = {}
@@ -428,7 +436,7 @@ def analyze_features(
     if decoder_directions is not None and per_layer:
         mid = per_layer[len(per_layer) // 2]
         mid_layer = mid["layer"]
-        feat_idx = [t["feature"] for t in mid["top_features"][:10]]
+        feat_idx = [t["feature_idx"] for t in mid["top_features"][:10]] # was t["feature"]
         # Bug 2 fix: use the caller-supplied centroid when available.
         # Previously this used np.zeros(), causing every cos_centroid to be 0.
         # Fall back to mean of the selected decoder directions (non-zero and

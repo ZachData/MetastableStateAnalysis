@@ -21,7 +21,7 @@ analyze_fiedler_tracking    : full pipeline
 
 import numpy as np
 from scipy.linalg import eigh
-from scipy.sparse.csgraph import laplacian
+from scipy.sparse.csgraph import laplacian, connected_components
 
 
 # ---------------------------------------------------------------------------
@@ -47,37 +47,48 @@ def extract_fiedler_per_layer(activations: np.ndarray) -> dict:
 
     fiedler_vecs = np.zeros((n_layers, n_tokens))
     fiedler_vals = np.full(n_layers, np.nan)
-    valid = np.zeros(n_layers, dtype=bool)
+    valid        = np.zeros(n_layers, dtype=bool)
 
     for L in range(n_layers):
-        X = activations[L]
-        G = X @ X.T                        # (n, n) Gram matrix
+        X     = activations[L]
+        G     = X @ X.T
         G_pos = np.clip(G, 0, None)
         np.fill_diagonal(G_pos, 1.0)
 
-        Lap = laplacian(G_pos, normed=True)
-
-        # Need at least 3 tokens for a meaningful Fiedler vector
         if n_tokens < 3:
             continue
 
         try:
+            Lap = laplacian(G_pos, normed=True)
             k = min(3, n_tokens - 1)
-            vals, vecs = eigh(Lap, subset_by_index=[0, k - 1])
+            vals, vecs = eigh(Lap, subset_by_index=[0, k - 1])  # Lap computed above
             vals = np.real(vals)
             vecs = np.real(vecs)
 
-            fiedler_vecs[L] = vecs[:, 1]
-            fiedler_vals[L] = vals[1]
-            valid[L] = True
+            if float(vals[1]) < 1e-8:
+                from scipy.sparse.csgraph import connected_components
+                n_comps, comp_labels = connected_components(
+                    csgraph=(G_pos > 1e-9).astype(np.float64), directed=False
+                )
+                if n_comps == 2:
+                    vec = np.where(comp_labels == 0, 1.0, -1.0).astype(np.float64)
+                    fiedler_vecs[L] = vec / np.linalg.norm(vec)
+                    fiedler_vals[L] = float(vals[1])
+                    valid[L] = True
+                    continue
+                var0 = float(np.var(vecs[:, 0]))
+                var1 = float(np.var(vecs[:, 1]))
+                fv   = vecs[:, 0] if var0 > var1 else vecs[:, 1]
+            else:
+                fv = vecs[:, 1]
+
+            fiedler_vecs[L] = fv
+            fiedler_vals[L] = float(vals[1])
+            valid[L]        = True
         except Exception:
             continue
 
-    return {
-        "fiedler_vecs": fiedler_vecs,
-        "fiedler_vals": fiedler_vals,
-        "valid":        valid,
-    }
+    return {"fiedler_vecs": fiedler_vecs, "fiedler_vals": fiedler_vals, "valid": valid}
 
 
 # ---------------------------------------------------------------------------

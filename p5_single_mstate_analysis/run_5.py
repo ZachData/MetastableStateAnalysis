@@ -146,11 +146,13 @@ def _run_group_B(run, primary_raw, sibling_raw, v_proj, phase2i,
     if run.get("attentions") is None:
         print("  [B] skipped: attentions.npz missing")
         return {"_error": "attentions unavailable"}
+
+    # compute_v_alignment now takes the pre-extracted centroid array directly.
+    # centroid_coords is already (n_alive, d); pass it straight through.
     result = compute_v_alignment(
-        run["activations"], run["attentions"], run["hdbscan_labels"],
-        primary_raw, sibling_raw,
-        centroid_coords, sibling_centroid_coords,
-        v_proj, phase2i,
+        centroid_coords,   # (n_alive, d) — extracted by caller
+        v_proj,            # {"U_attractive": ..., "U_repulsive": ...}
+        primary_raw,       # trajectory dict (only id is used inside)
     )
     save_v_alignment(result, out_dir, tag="primary")
     return result

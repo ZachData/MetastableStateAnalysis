@@ -145,12 +145,12 @@ def step_size_trajectory(activations: np.ndarray) -> dict:
       overshoot_threshold : float — global_mean + 2 * global_std
     """
     n_layers = activations.shape[0]
-    diffs    = activations[1:] - activations[:-1]             # (L-1, n, d)
+    diffs    = activations[1:] - activations[:-1]            # (L-1, n, d)
     norms_x  = np.linalg.norm(activations[:-1], axis=-1)     # (L-1, n)
     norms_dx = np.linalg.norm(diffs, axis=-1)                # (L-1, n)
 
     # Avoid division by zero for collapsed tokens
-    step_norms = norms_dx / np.maximum(norms_x, 1e-10)       # (L-1, n)
+    step_norms = norms_dx                                     # (L-1, n)
 
     step_mean   = step_norms.mean(axis=1)                     # (L-1,)
     step_std    = step_norms.std(axis=1)                      # (L-1,)

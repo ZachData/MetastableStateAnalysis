@@ -235,30 +235,46 @@ class TestNearestNeighborIndices:
 
 
 class TestEnergyDropPairs:
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _normed(n: int, d: int, seed: int) -> np.ndarray:
+        """Return (n, d) float32 array with L2-unit rows."""
+        rng = np.random.default_rng(seed)
+        X = rng.standard_normal((n, d)).astype(np.float32)
+        X /= np.linalg.norm(X, axis=1, keepdims=True)
+        return X
+
+    # ------------------------------------------------------------------
+    # Contract tests
+    # ------------------------------------------------------------------
+
     def test_returns_list_of_tuples(self):
-        from p1_mstate_tracking.metrics import energy_drop_pairs
-        before = torch.randn(8, 32)
-        after  = torch.randn(8, 32)
-        pairs  = energy_drop_pairs(before, after, beta=1.0, top_k=5)
+        from p1_mstate_tracking.metrics import energy_drop_pairs_from_normed
+        before = self._normed(8, 32, seed=0)
+        after  = self._normed(8, 32, seed=1)
+        pairs  = energy_drop_pairs_from_normed(before, after, beta=1.0, top_k=5)
         assert isinstance(pairs, list)
         for item in pairs:
             i, j, delta = item
             assert isinstance(i, int)
             assert isinstance(j, int)
-            assert i < j  # upper triangle
+            assert i < j  # upper triangle only
 
     def test_top_k_respects_limit(self):
-        from p1_mstate_tracking.metrics import energy_drop_pairs
-        pairs = energy_drop_pairs(
-            torch.randn(10, 32), torch.randn(10, 32), beta=1.0, top_k=4
-        )
+        from p1_mstate_tracking.metrics import energy_drop_pairs_from_normed
+        before = self._normed(10, 32, seed=2)
+        after  = self._normed(10, 32, seed=3)
+        pairs  = energy_drop_pairs_from_normed(before, after, beta=1.0, top_k=4)
         assert len(pairs) <= 4
 
     def test_sorted_ascending(self):
-        from p1_mstate_tracking.metrics import energy_drop_pairs
-        pairs = energy_drop_pairs(
-            torch.randn(12, 32), torch.randn(12, 32), beta=1.0, top_k=8
-        )
+        from p1_mstate_tracking.metrics import energy_drop_pairs_from_normed
+        before = self._normed(12, 32, seed=4)
+        after  = self._normed(12, 32, seed=5)
+        pairs  = energy_drop_pairs_from_normed(before, after, beta=1.0, top_k=8)
         deltas = [p[2] for p in pairs]
         assert deltas == sorted(deltas), "pairs should be sorted by delta ascending"
 

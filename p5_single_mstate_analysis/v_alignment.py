@@ -380,170 +380,67 @@ def schur_block_overlap(
 # ---------------------------------------------------------------------------
 
 def compute_v_alignment(
-    activations: np.ndarray,
-    attentions: np.ndarray,
-    hdb_labels: list,
-    trajectory: dict,
-    sibling_trajectory: dict,
-    centroid_coords: np.ndarray,
-    sibling_centroid_coords: np.ndarray,
-    v_projectors: dict,
-    phase2i: dict = None,
-    d_model: int = None,
-    beta: float = 1.0,
+    centroid_coords: np.ndarray,   # (n_layers_alive, d)
+    v_projectors: dict,            # {"U_attractive": (d,1), "U_repulsive": (d,1), ...}
+    trajectory: dict,              # {id, chain, ...}
 ) -> dict:
     """
-    Full Group B analysis for one trajectory.
+    Decompose the cluster's centroid trajectory and its layer-to-layer
+    displacements into attractive / repulsive / orthogonal components.
 
     Parameters
     ----------
-    v_projectors : output of io.load_phase2_projectors
-    phase2i      : output of io.load_phase2i (or empty dict)
+    centroid_coords : (n_alive, d) array — one centroid per live layer,
+        in layer order.  Callers are responsible for extracting this from
+        activations before calling (see _run_group_B in run_5.py).
+    v_projectors    : must contain "U_attractive" and "U_repulsive",
+        each shaped (d, k) or (d, 1).
+    trajectory      : trajectory dict; only trajectory["id"] is used here.
+
+    Returns
+    -------
+    {
+        "trajectory_id":         int,
+        "centroid_trajectory":   list of per-step dicts (attr_frac, rep_frac, ...),
+        "displacement_trajectory": list of per-step dicts (one fewer entry),
+        "summary": {
+            "mean_attr_frac":  float,
+            "mean_rep_frac":   float,
+            "mean_orth_frac":  float,
+        }
+    }
     """
-    U_att = v_projectors.get("U_att")
-    U_rep = v_projectors.get("U_rep")
-    if d_model is None:
-        d_model = activations.shape[-1]
+    U_att = v_projectors["U_attractive"]
+    U_rep = v_projectors["U_repulsive"]
 
-    chain = trajectory["chain"]
+    centroid_traj = centroid_subspace_trajectory(centroid_coords, U_att, U_rep)
+    disp_traj     = displacement_subspace_trajectory(centroid_coords, U_att, U_rep)
 
-    # Per-layer beta estimate
-    beta_per_layer = []
-    for layer, cid in chain:
-        if layer >= attentions.shape[0] or layer >= activations.shape[0]:
-            continue
-        idx = np.where(hdb_labels[layer] == cid)[0]
-        beta_est = estimate_effective_beta(
-            attentions[layer], activations[layer], idx,
-        )
-        beta_per_layer.append({
-            "layer":  int(layer),
-            "mean":   round(beta_est["cluster_mean_beta"], 3)
-                      if not np.isnan(beta_est["cluster_mean_beta"]) else None,
-            "median": round(beta_est["cluster_median_beta"], 3)
-                      if not np.isnan(beta_est["cluster_median_beta"]) else None,
-        })
+    attr_fracs = [d["attr_frac"] for d in centroid_traj]
+    rep_fracs  = [d["rep_frac"]  for d in centroid_traj]
+    orth_fracs = [d["orth_frac"] for d in centroid_traj]
 
-    # Mass-near-1 trajectory (this is restricted to cluster pairs; separate
-    # from the global mass_near_1 in the layer metrics)
-    mass_trajectory = []
-    for layer, cid in chain:
-        if layer >= activations.shape[0]:
-            break
-        mask = hdb_labels[layer] == cid
-        n = int(mask.sum())
-        if n < 2:
-            mass_trajectory.append({"layer": int(layer), "n": n,
-                                     "mass_near_1": None})
-            continue
-        X = activations[layer][mask]
-        G = X @ X.T
-        iu = np.triu_indices(n, k=1)
-        mass = float((G[iu] > 0.95).mean())
-        mass_trajectory.append({
-            "layer": int(layer), "n": n,
-            "mass_near_1": round(mass, 4),
-            "theorem_6_3_pred": theorem_6_3_prediction(n, d_model)["prediction"],
-        })
-
-    # Energy trajectory
-    energy_traj = cluster_energy_trajectory(
-        activations, hdb_labels, chain, beta=beta,
-    )
-
-    # Centroid subspace decomposition
-    centroid_decomp = centroid_subspace_trajectory(centroid_coords, U_att, U_rep)
-    # Displacement subspace decomposition
-    disp_decomp = displacement_subspace_trajectory(centroid_coords, U_att, U_rep)
-
-    # S/A local test
-    sa_test = rotational_local_test(
-        centroid_coords,
-        phase2i.get("V_sym") if phase2i else None,
-        phase2i.get("V_asym") if phase2i else None,
-    )
-
-    # Schur block overlap: representative direction = mean centroid
-    rep_direction = centroid_coords.mean(axis=0)
-    rep_direction = rep_direction / max(float(np.linalg.norm(rep_direction)), 1e-12)
-    schur_blocks = schur_block_overlap(
-        rep_direction,
-        phase2i.get("schur_Z") if phase2i else None,
-        phase2i.get("schur_T") if phase2i else None,
-    )
-
-    # Merge-event geometry
-    merge_geom = None
-    merge_ev = trajectory.get("merge_event")
-    if (merge_ev is not None and sibling_centroid_coords is not None
-            and sibling_centroid_coords.size > 0):
-        lf = merge_ev["layer_from"]
-        lt = merge_ev["layer_to"]
-        # Build layer → index maps that mirror _centroid_coords: only layers
-        # where the cluster was non-empty produce a centroid row, so we must
-        # skip the same layers here rather than using chain position directly.
-        valid_primary = []
-        for layer, cid in chain:
-            if layer >= activations.shape[0]:
-                break
-            if (hdb_labels[layer] == cid).sum() >= 1:
-                valid_primary.append(layer)
-        chain_dict = {l: k for k, l in enumerate(valid_primary)}
-
-        sib_chain = sibling_trajectory["chain"]
-        valid_sibling = []
-        for layer, cid in sib_chain:
-            if layer >= activations.shape[0]:
-                break
-            if (hdb_labels[layer] == cid).sum() >= 1:
-                valid_sibling.append(layer)
-        sib_chain_dict = {l: k for k, l in enumerate(valid_sibling)}
-
-        if (lf in chain_dict and lf in sib_chain_dict
-                and lt in chain_dict):
-            merge_geom = merge_event_geometry(
-                centroid_coords[chain_dict[lf]],
-                sibling_centroid_coords[sib_chain_dict[lf]],
-                centroid_coords[chain_dict[lt]],
-                U_att, U_rep,
-            )
-
-    # Summary verdict
-    attr_fracs = [d["attr_frac"] for d in centroid_decomp]
-    rep_fracs  = [d["rep_frac"]  for d in centroid_decomp]
     summary = {
-        "mean_centroid_attr_frac": round(float(np.mean(attr_fracs)), 4) if attr_fracs else None,
-        "mean_centroid_rep_frac":  round(float(np.mean(rep_fracs)),  4) if rep_fracs else None,
-        "mean_beta_estimate":      round(float(np.nanmean(
-            [b["mean"] for b in beta_per_layer if b["mean"] is not None]
-        )), 3) if any(b["mean"] is not None for b in beta_per_layer) else None,
-        "mean_cluster_energy":     round(float(np.nanmean(energy_traj)), 4)
-                                   if energy_traj else None,
-        "rotational_neutral_local": sa_test.get("verdict"),
+        "mean_attr_frac": round(float(np.mean(attr_fracs)), 4) if attr_fracs else None,
+        "mean_rep_frac":  round(float(np.mean(rep_fracs)),  4) if rep_fracs  else None,
+        "mean_orth_frac": round(float(np.mean(orth_fracs)), 4) if orth_fracs else None,
     }
 
     return {
-        "trajectory_id":       int(trajectory["id"]),
-        "beta_per_layer":      beta_per_layer,
-        "mass_trajectory":     mass_trajectory,
-        "energy_trajectory":   [round(e, 4) if not np.isnan(e) else None
-                                for e in energy_traj],
-        "centroid_decomp":     centroid_decomp,
-        "displacement_decomp": disp_decomp,
-        "sa_local_test":       sa_test,
-        "schur_blocks":        schur_blocks,
-        "merge_geometry":      merge_geom,
-        "summary":              summary,
+        "trajectory_id":           int(trajectory["id"]),
+        "centroid_trajectory":     centroid_traj,
+        "displacement_trajectory": disp_traj,
+        "summary":                 summary,
     }
 
 
-def save_v_alignment(result: dict, out_dir: Path, tag: str = "primary") -> None:
+def save_v_alignment(result: dict, out_dir, tag: str = "primary") -> None:
     import json
+    from pathlib import Path
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / f"group_B_v_alignment_{tag}.json", "w") as f:
         json.dump(result, f, indent=2, default=_json_default)
-
 
 def _json_default(o):
     if isinstance(o, np.integer):

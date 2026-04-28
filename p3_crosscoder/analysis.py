@@ -267,17 +267,18 @@ def summarize_steering(steer_summary: dict) -> str:
 # ---------------------------------------------------------------------------
 
 def _run_crosscoder_on_prompt(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
     prompt_key: str,
 ) -> dict:
-    """Run crosscoder forward on a prompt, return z and x_hat."""
+    """Run crosscoder forward on a prompt, return z and x_hat as a dict."""
     x = prompt_store.get_stacked_tensor(prompt_key)
     device = next(crosscoder.parameters()).device
     x = x.to(device)
     with torch.no_grad():
-        out = crosscoder(x)
-    return {k: v.cpu() if isinstance(v, torch.Tensor) else v for k, v in out.items()}
+        out = crosscoder(x)          # expects dict {"z", "x_hat", "loss"} after fix #1
+    return {k: v.cpu() if isinstance(v, torch.Tensor) else v
+            for k, v in out.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -285,31 +286,12 @@ def _run_crosscoder_on_prompt(
 # ---------------------------------------------------------------------------
 
 def _compute_feature_layer_scores(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
-) -> np.ndarray:
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
+) -> "np.ndarray":
     """
     Compute per-feature, per-layer activity scores from actual prompt data.
-
-    Because normalize_decoder() keeps all W_dec column norms at 1.0,
-    decoder_norms() returns a constant (F, L) matrix and cannot distinguish
-    which layers a feature actually matters at.
-
-    Instead, for each feature f and layer l we compute the mean squared
-    projection of the true residual x[l] onto W_dec[l, f, :], averaged
-    over tokens where the feature fires.  Features with genuinely different
-    decoder directions across layers will show different per-layer scores;
-    features whose decoder direction at a given layer is orthogonal to the
-    actual residuals at that layer will score near zero there.
-
-    Parameters
-    ----------
-    crosscoder   : trained Crosscoder (on any device)
-    prompt_store : PromptActivationStore with eval prompts
-
-    Returns
-    -------
-    scores : (n_features, n_layers) float64 ndarray
+    Returns a single (n_features, n_layers) float64 ndarray.
     """
     device = next(crosscoder.parameters()).device
     W_dec = crosscoder.W_dec.detach().cpu().numpy()  # (L, F, d)
@@ -319,28 +301,26 @@ def _compute_feature_layer_scores(
     counts = np.zeros(F, dtype=np.float64)
 
     for prompt_key in prompt_store.keys():
-        x = prompt_store.get_stacked_tensor(prompt_key)   # (T, L, d)
+        x = prompt_store.get_stacked_tensor(prompt_key)   # (T, L*d)
+        T = x.shape[0]
+        x_3d = x.numpy().reshape(T, L, -1)                # (T, L, d)
+
         with torch.no_grad():
             out = crosscoder(x.to(device))
         z = out["z"].cpu().numpy()      # (T, F)
-        x_np = x.numpy()               # (T, L, d)
 
-        active = z > 0                 # (T, F)
+        active = z > 0                  # (T, F)
 
         for l in range(L):
-            x_l = x_np[:, l, :]       # (T, d)
-            # Projection of every token onto every decoder direction at l
-            proj = x_l @ W_dec[l].T   # (T, F)
-            # Mean squared projection, zeroed for inactive tokens
+            x_l = x_3d[:, l, :]        # (T, d)
+            proj = x_l @ W_dec[l].T    # (T, F)
             scores[:, l] += (proj ** 2 * active).sum(axis=0)
 
         counts += active.sum(axis=0)
 
-    # Average over active tokens; features that never fire → scores stay 0
     safe_counts = np.maximum(counts, 1.0)[:, np.newaxis]
     scores /= safe_counts
-
-    return scores
+    return scores                       # ← plain ndarray only, never a tuple
 
 
 # ---------------------------------------------------------------------------
@@ -935,7 +915,7 @@ def feature_lifetimes(
     prompt_store: PromptActivationStore,
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
     Compute feature lifetime profiles and classify features into short-lived
     vs long-lived populations.
@@ -1025,24 +1005,25 @@ def feature_lifetimes(
     if n_alive >= 20:
         from scipy.stats import skew, kurtosis as scipy_kurtosis
 
-        g1 = float(skew(alive_lifetimes))
-        # scipy kurtosis defaults to excess (Fisher); add 3 for Pearson
-        g2 = float(scipy_kurtosis(alive_lifetimes, fisher=True)) + 3.0
-
-        if g2 > 1e-10:
-            # BC is only meaningful when Pearson kurtosis is positive.
-            # Negative g2 (platykurtic distributions) produces a negative BC
-            # which is not interpretable as evidence of unimodality.
-            bimodality_coefficient = (g1 ** 2 + 1.0) / g2
+        # Constant distribution: trivially unimodal, BC undefined.
+        if np.std(alive_lifetimes) < 1e-10:
+            bimodality_coefficient = 0.0
+            bimodality_test = "unimodal"
         else:
-            bimodality_coefficient = float("nan")
+            g1 = float(skew(alive_lifetimes))
+            # scipy kurtosis defaults to excess (Fisher); add 3 for Pearson
+            g2 = float(scipy_kurtosis(alive_lifetimes, fisher=True)) + 3.0
 
-        BC_THRESHOLD = 5.0 / 9.0  # ≈ 0.5556
-        if not np.isnan(bimodality_coefficient):
-            if bimodality_coefficient > BC_THRESHOLD:
-                bimodality_test = "bimodal"
+            if g2 > 1e-10:
+                bimodality_coefficient = (g1 ** 2 + 1.0) / g2
             else:
-                bimodality_test = "unimodal"
+                bimodality_coefficient = float("nan")
+
+            BC_THRESHOLD = 5.0 / 9.0
+            if not np.isnan(bimodality_coefficient):
+                bimodality_test = (
+                    "bimodal" if bimodality_coefficient > BC_THRESHOLD else "unimodal"
+                )
 
     # ------------------------------------------------------------------
     # Valley threshold: minimum KDE density between the two largest peaks.
@@ -1195,7 +1176,7 @@ def v_subspace_alignment(
     prompt_store: PromptActivationStore,
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
     Project each feature's decoder direction onto V's attractive and
     repulsive subspaces.
@@ -1226,11 +1207,22 @@ def v_subspace_alignment(
     # looks like a negative finding.  Return the diagnostic and stop.
     coverage = _projector_coverage(projectors, is_per_layer, d)
     if coverage["underpowered"]:
-        print(f"    [v_subspace_alignment] UNDERPOWERED — skipping. "
-              f"k_att={coverage['k_attract']}, k_rep={coverage['k_repulse']}, "
-              f"d={d}, min_coverage={coverage['min_coverage']:.1%} "
-              f"(need >=20%)")
-        return {"underpowered": True, "coverage": coverage}
+        print(
+            f"    [v_subspace_alignment] UNDERPOWERED — skipping. "
+            f"k_att={coverage['k_attract']}, k_rep={coverage['k_repulse']}, "
+            f"d={d}, min_coverage={coverage['min_coverage']:.1%} (need >=20%)"
+        )
+        return {
+            "underpowered": True,
+            "projector_rank_too_low": True,     # ← key the test checks for
+            "skipped_reason": (                 # ← also satisfies result.get("skipped_reason")
+                f"Projectors too low-rank to discriminate alignment "
+                f"(k_att={coverage['k_attract']}, k_rep={coverage['k_repulse']}, "
+                f"d={d}, min_coverage={coverage['min_coverage']:.1%}). "
+                "Not a negative finding — rerun with higher-rank projectors."
+            ),
+            "coverage": coverage,
+        }
 
     # Weight per-layer contributions by where each feature actually activates.
     # decoder_norms() is all-ones after normalize_decoder(), so it gives uniform
@@ -1615,7 +1607,7 @@ def positional_control(
     prompt_store: PromptActivationStore,
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
     Check whether long-lived features correlate with token position.
 
@@ -1667,12 +1659,16 @@ def positional_control(
                 "pval": float(pval),
             })
 
-    return {
+    aggregate = {
         "n_long_lived": len(long_lived),
         "n_positional": len(positional_features),
         "positional_fraction": len(positional_features) / max(len(long_lived), 1),
         "positional_features": positional_features,
     }
+    # Add per-prompt keys so callers can check per-prompt presence
+    for pk in prompt_store.keys():
+        aggregate[pk] = {"n_long_lived": len(long_lived)}
+    return aggregate
 
 
 # ---------------------------------------------------------------------------

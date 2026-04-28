@@ -366,11 +366,14 @@ def displacement_coherence(
 
         if coh_vals:
             coh_mean[L] = float(np.mean(coh_vals))
+        
+    coh_std = np.nanstd(np.stack([coh_0, coh_1], axis=0), axis=0)
 
     return {
         "coherence_hemi_0": coh_0,
         "coherence_hemi_1": coh_1,
         "coherence_mean":   coh_mean,
+        "coherence_std":    coh_std,
     }
 
 

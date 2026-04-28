@@ -208,6 +208,9 @@ def rotation_angle_stats(block_data: dict) -> dict:
             "rho_mean": 0.0, "rho_std": 0.0,
             "frac_expanding": 0.0, "frac_contracting": 0.0,
             "frac_attractive_rot": 0.0, "frac_repulsive_rot": 0.0,
+            #new
+            "theta_max": 0.0,
+            "theta_min": 0.0,
         }
 
     thetas = [b["theta"] for b in blocks]
@@ -228,6 +231,10 @@ def rotation_angle_stats(block_data: dict) -> dict:
         "frac_contracting":    float(sum(1 for r in rhos if r < 1.0) / n),
         "frac_attractive_rot": float(sum(1 for s in signs if s > 0) / n),
         "frac_repulsive_rot":  float(sum(1 for s in signs if s < 0) / n),
+        #new
+        "theta_max":           float(np.max(thetas)),
+        "theta_min":           float(np.min(thetas)),
+
     }
 
 

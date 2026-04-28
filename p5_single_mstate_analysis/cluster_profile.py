@@ -77,14 +77,15 @@ def _layer_profile(
     cluster_id: int,
     sibling_id: int,
     tokens: list,
-) -> dict:
+    ) -> dict:
     """Compactness + context metrics for one layer."""
     mask = hdb_labels == cluster_id
     indices = np.where(mask)[0]
     points = acts_layer[mask]
 
     result = {
-        "n":               int(mask.sum()),
+        "n":               int(mask.sum()),   # <-- ADD: summary code reads p["n"]
+        "n_tokens":        int(mask.sum()),
         "token_idxs":      [int(i) for i in indices],
         "tokens":          [tokens[i] if i < len(tokens) else "?"
                             for i in indices],

@@ -48,14 +48,18 @@ from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK
 
 def decompose_qk_matrix(WQ: np.ndarray, WK: np.ndarray) -> dict:
     """
-    Decompose W_Q^T W_K into symmetric S and antisymmetric A parts.
+    Decompose W_Q W_K^T into symmetric S and antisymmetric A parts.
 
     Convention: logit(i,j) = q_i^T k_j = (x_i W_Q)^T (x_j W_K)
-                            = x_i^T (W_Q W_K^T) x_j
-                            = x_i^T M x_j  where M = W_Q W_K^T
+                                = x_i^T (W_Q W_K^T) x_j
+                                = x_i^T M x_j  where M = W_Q W_K^T
 
     S_QK = (M + M^T) / 2    (symmetric part)
     A_QK = (M - M^T) / 2    (antisymmetric part)
+
+    Fractions are based on squared Frobenius norms so that s_frac + a_frac == 1.
+    This follows from S ⊥ A in the Frobenius inner product:
+      ||S||_F^2 + ||A||_F^2 == ||M||_F^2
 
     Parameters
     ----------
@@ -68,16 +72,16 @@ def decompose_qk_matrix(WQ: np.ndarray, WK: np.ndarray) -> dict:
       M          : (d_model, d_model) — W_Q W_K^T
       S_QK       : (d_model, d_model) — symmetric part
       A_QK       : (d_model, d_model) — antisymmetric part
-      s_frac     : float — ||S_QK||_F / ||M||_F
-      a_frac     : float — ||A_QK||_F / ||M||_F
+      s_frac     : float — ||S_QK||_F^2 / ||M||_F^2
+      a_frac     : float — ||A_QK||_F^2 / ||M||_F^2
     """
     M = WQ @ WK.T   # (d_model, d_model)
     S = (M + M.T) / 2.0
     A = (M - M.T) / 2.0
 
-    norm_M = float(np.linalg.norm(M, "fro"))
-    s_frac = float(np.linalg.norm(S, "fro")) / max(norm_M, 1e-12)
-    a_frac = float(np.linalg.norm(A, "fro")) / max(norm_M, 1e-12)
+    norm_M2 = float(np.linalg.norm(M, "fro") ** 2)
+    s_frac  = float(np.linalg.norm(S, "fro") ** 2) / max(norm_M2, 1e-24)
+    a_frac  = float(np.linalg.norm(A, "fro") ** 2) / max(norm_M2, 1e-24)
 
     return {"M": M, "S_QK": S, "A_QK": A, "s_frac": s_frac, "a_frac": a_frac}
 
@@ -254,7 +258,8 @@ def compare_aqk_fractions(
         "mwu_pvalue":            float(pval),
         "n_induction":           len(ind_vals),
         "n_same_content":        len(sam_vals),
-        "p6_i2_satisfied":       (delta > 0.05 and pval < 0.05),
+        # bool() cast: prevents np.True_ vs True identity failure in `is True` assertions
+        "p6_i2_satisfied":       bool(delta > 0.05 and pval < 0.05),
     }
 
 

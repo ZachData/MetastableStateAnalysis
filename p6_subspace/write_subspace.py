@@ -52,25 +52,42 @@ def head_write_alignment(
     Parameters
     ----------
     WO    : (d_model, d_head) — output projection
-    P_A   : (d_model, d_model)
-    P_S   : (d_model, d_model)
+    P_A   : (d_model, d_model) — imaginary-channel projector
+    P_S   : (d_model, d_model) — real-channel projector
     top_r : number of dominant write directions
 
     Returns
     -------
     dict with align_rot, align_real, sing_vals
+
+    Notes
+    -----
+    Scores are weighted by squared singular values so that near-zero singular
+    vectors (outside the column space of WO) do not dilute the alignment signal.
+    Without this weighting, a rank-r WO evaluated with top_r > r would return
+    ~r/top_r instead of ~1 for a perfectly aligned subspace.
     """
     U, s, _ = np.linalg.svd(WO, full_matrices=False)
     r       = min(top_r, U.shape[1])
     U_top   = U[:, :r]   # (d_model, r)
+    s_top   = s[:r]
 
     rot_scores  = np.array([float(U_top[:, k] @ P_A @ U_top[:, k]) for k in range(r)])
     real_scores = np.array([float(U_top[:, k] @ P_S @ U_top[:, k]) for k in range(r)])
 
+    weights = s_top ** 2
+    w_sum   = weights.sum()
+    if w_sum > 1e-12:
+        align_rot  = float((rot_scores  * weights).sum() / w_sum)
+        align_real = float((real_scores * weights).sum() / w_sum)
+    else:
+        align_rot  = float(rot_scores.mean())
+        align_real = float(real_scores.mean())
+
     return {
-        "align_rot":  float(rot_scores.mean()),
-        "align_real": float(real_scores.mean()),
-        "sing_vals":  s[:r].tolist(),
+        "align_rot":  align_rot,
+        "align_real": align_real,
+        "sing_vals":  s_top.tolist(),
     }
 
 

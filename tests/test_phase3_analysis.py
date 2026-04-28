@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 import torch
 
-from p3_crosscoder.crosscoder import Crosscoder
+from p3_crosscoder.crosscoder import Crosscoder, CrosscoderConfig
 from p3_crosscoder.analysis import (
     feature_lifetimes,
     multilayer_fraction,
@@ -51,8 +51,12 @@ _PATCH_TARGET = "p3_crosscoder.analysis._compute_feature_layer_scores"
 # ---------------------------------------------------------------------------
 
 def _make_cfg():
-    return SimpleNamespace(n_layers=N_LAYERS, d_model=D, n_features=N_FEATURES, k=K)
-
+    return CrosscoderConfig(
+        n_layers=N_LAYERS,
+        d_model=D,
+        n_features=N_FEATURES,
+        k=K,
+    )
 
 def _make_crosscoder():
     return Crosscoder(_make_cfg()).eval()

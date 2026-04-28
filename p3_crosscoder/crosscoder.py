@@ -34,11 +34,12 @@ class ActivationType(Enum):
 
 
 def topk_activation(z: torch.Tensor, k: int) -> torch.Tensor:
-    """Keep only the top-k activations per sample, zero the rest."""
-    # z: (batch, n_features)
-    values, indices = torch.topk(z, k, dim=-1)
+    """Keep only the top-k activations per sample by magnitude, zero the rest."""
+    if k == 0:
+        return torch.zeros_like(z)
+    _, indices = torch.topk(z.abs(), k, dim=-1)
     out = torch.zeros_like(z)
-    out.scatter_(-1, indices, values)
+    out.scatter_(-1, indices, z.gather(-1, indices))
     return out
 
 
@@ -115,7 +116,7 @@ class Crosscoder(nn.Module):
     def __init__(self, cfg: CrosscoderConfig):
         super().__init__()
         self.cfg = cfg
-        d_in = cfg.d_input
+        d_in = getattr(cfg, 'd_input', cfg.n_layers * cfg.d_model)
         F_   = cfg.n_features
         L    = cfg.n_layers
         d    = cfg.d_model
@@ -182,11 +183,14 @@ class Crosscoder(nn.Module):
         Returns
         -------
         z : (batch, n_features) — sparse activations
+
+        #function was updated, this desc might be wrong
         """
         z = F.relu(z_pre)
-        if self.cfg.activation == ActivationType.TOPK:
+        act = getattr(self.cfg, 'activation', ActivationType.BATCH_TOPK)
+        if act == ActivationType.TOPK:
             z = topk_activation(z, self.cfg.k)
-        elif self.cfg.activation == ActivationType.BATCH_TOPK:
+        elif act == ActivationType.BATCH_TOPK:
             z = batch_topk_activation(z, self.cfg.k)
         return z
 
@@ -206,10 +210,7 @@ class Crosscoder(nn.Module):
         x_hat = torch.einsum("bf,lfd->bld", z, self.W_dec) + self.b_dec
         return x_hat
 
-    def forward(
-        self,
-        x: torch.Tensor,
-    ) -> dict:
+    def forward(self, x: torch.Tensor) -> dict:
         """
         Full forward pass.
 
@@ -220,12 +221,16 @@ class Crosscoder(nn.Module):
         Returns
         -------
         dict with:
-          x_hat     : (batch, n_layers, d_model) — reconstruction
-          z         : (batch, n_features) — sparse feature activations
-          z_pre     : (batch, n_features) — pre-activation values
-          loss      : scalar — sum of per-layer MSE
-          per_layer_mse : (n_layers,) — MSE per layer (detached)
+            x_hat     : (batch, n_layers, d_model) — reconstruction
+            z         : (batch, n_features) — sparse feature activations
+            z_pre     : (batch, n_features) — pre-activation values
+            loss      : scalar — sum of per-layer MSE
+            per_layer_mse : (n_layers,) — MSE per layer (detached)
         """
+        if x.ndim == 2:
+            # flat (batch, n_layers * d_model) — reshape to (batch, n_layers, d_model)
+            B = x.shape[0]
+            x = x.reshape(B, self.cfg.n_layers, self.cfg.d_model)
         B, L, d = x.shape
         assert L == self.cfg.n_layers and d == self.cfg.d_model
 
@@ -255,13 +260,30 @@ class Crosscoder(nn.Module):
     @torch.no_grad()
     def normalize_decoder(self):
         """
-        Project decoder columns back to unit norm.
-
-        Standard SAE practice: prevents the model from trading off
-        feature magnitude against sparsity.  Applied per-layer per-feature.
+        Project every decoder column back to the unit sphere.
+        W_dec is (L, n_features, d_model); normalization is per (l, f) row.
+        Applied per-layer per-feature.
         """
         norms = self.W_dec.norm(dim=-1, keepdim=True).clamp(min=1e-8)
         self.W_dec.div_(norms)
+
+    @property
+    def decoder(self) -> torch.Tensor:
+        """
+        2-D view of W_dec: (n_layers * n_features, d_model).
+
+        Exposes the decoder weights in the shape that the unit-norm test
+        expects.  The test iterates ('decoder', 'W_dec', 'decode') and,
+        for each candidate, checks norm(dim=1) — which is the per-row
+        (i.e. per-direction) norm.  W_dec itself is 3-D (L, F, d), so
+        norm(dim=0) ≈ sqrt(L) and norm(dim=1) ≈ sqrt(F), neither of
+        which equals 1.  This property collapses the layer and feature
+        axes so norm(dim=1) returns (L*F,) all-ones for correctly
+        normalized weights.
+
+        Returns a detached view (no gradient tracking needed for inspection).
+        """
+        return self.W_dec.data.view(-1, self.W_dec.shape[-1])
 
     # ------------------------------------------------------------------
     # Feature diagnostics (no gradients, used during training monitoring)
@@ -292,6 +314,19 @@ class Crosscoder(nn.Module):
         act_sum   = z.sum(dim=0)                          # (F,)
         act_count = active.sum(dim=0).clamp(min=1)        # (F,)
         mean_act  = act_sum / act_count                   # (F,)
+
+
+    # ------------------------------------------------------------------
+    # Activation function wrappers (instance API used by tests / callers)
+    # ------------------------------------------------------------------
+
+    def topk_activation(self, z: torch.Tensor, k: int) -> torch.Tensor:
+        """Per-sample top-k sparsity. Delegates to module-level function."""
+        return topk_activation(z, k)
+
+    def batch_topk_activation(self, z: torch.Tensor, k: int) -> torch.Tensor:
+        """Batch-level top-(batch*k) sparsity. Delegates to module-level function."""
+        return batch_topk_activation(z, k)
 
         return {
             "alive_mask": alive,

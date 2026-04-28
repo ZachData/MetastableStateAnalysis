@@ -70,6 +70,7 @@ def spectral_eigengap_k(G: np.ndarray, max_k: int = SPECTRAL_MAX_K,
         eigenvalues = np.real(
             eigh(L, eigvals_only=True, subset_by_index=[0, k - 1])
         )
+        eigenvalues = np.clip(np.real(eigenvalues), 0.0, None)
         fiedler_vec = None
 
     gaps       = np.diff(eigenvalues)

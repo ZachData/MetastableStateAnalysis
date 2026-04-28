@@ -76,7 +76,6 @@ def fit_local_map(
     # result.  The unconditional return below is always right.
     return W
 
-
 def decompose_local_map(W: np.ndarray) -> dict:
     """
     Decompose local map W into symmetric S and antisymmetric A parts.
@@ -86,7 +85,8 @@ def decompose_local_map(W: np.ndarray) -> dict:
 
     Returns
     -------
-    dict with W_S, W_A, rho_S (spectral radius of W_S), rho_A, rho_W
+    dict with W_S, W_A, rho_S (spectral radius of W_S), rho_A, rho_W,
+    contracting_S (rho_S < 1), neutral_A (|rho_A - 1| < 0.15)
     """
     W_S = (W + W.T) / 2.0
     W_A = (W - W.T) / 2.0
@@ -96,11 +96,13 @@ def decompose_local_map(W: np.ndarray) -> dict:
     rho_A = spectral_radius(W_A)
 
     return {
-        "W_S":   W_S,
-        "W_A":   W_A,
-        "rho_W": rho_W,
-        "rho_S": rho_S,
-        "rho_A": rho_A,
+        "W_S":          W_S,
+        "W_A":          W_A,
+        "rho_W":        rho_W,
+        "rho_S":        rho_S,
+        "rho_A":        rho_A,
+        "contracting_S": bool(rho_S < 1.0),
+        "neutral_A":     bool(abs(rho_A - 1.0) < 0.15),
     }
 
 

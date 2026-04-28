@@ -18,7 +18,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Import under test — adjust path if your package layout differs.
 # ---------------------------------------------------------------------------
-from p3_crosscoder.crosscoder import Crosscoder
+from p3_crosscoder.crosscoder import Crosscoder, CrosscoderConfig 
 
 
 # ---------------------------------------------------------------------------
@@ -27,8 +27,7 @@ from p3_crosscoder.crosscoder import Crosscoder
 
 @pytest.fixture
 def cfg():
-    """Standard config namespace used across all crosscoder tests."""
-    return SimpleNamespace(
+    return CrosscoderConfig(
         n_layers=3,
         d_model=16,
         n_features=32,
