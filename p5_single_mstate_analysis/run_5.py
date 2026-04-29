@@ -8,6 +8,8 @@ report.
 
 Usage
 -----
+     python -m phase5_case.run --phase1-dir --phase2-dir --phase2i-dir --phase4-dir
+
   python -m phase5_case.run \\
       --model albert-xlarge-v2 \\
       --groups A B C1 C2 D G \\

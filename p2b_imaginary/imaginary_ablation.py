@@ -115,13 +115,13 @@ def apply_ablation_from_threshold(
 
 def output_cosine_degradation(acts_orig: np.ndarray, acts_ablated: np.ndarray) -> float:
     """Mean cosine distance at the final layer.  Range [0, 1]; 0 = identical."""
-    orig = acts_orig[-1]
-    abl  = acts_ablated[-1]
-    no = np.linalg.norm(orig, axis=-1, keepdims=True)
-    na = np.linalg.norm(abl,  axis=-1, keepdims=True)
-    orig_n = orig / np.where(no > 1e-10, no, 1.0)
-    abl_n  = abl  / np.where(na > 1e-10, na, 1.0)
-    return float(np.mean(1.0 - np.sum(orig_n * abl_n, axis=-1)))
+    a = acts_orig[-1]      # (N, d)
+    b = acts_ablated[-1]   # (N, d)
+    a = a / np.maximum(np.linalg.norm(a, axis=-1, keepdims=True), 1e-12)
+    b = b / np.maximum(np.linalg.norm(b, axis=-1, keepdims=True), 1e-12)
+    cos_sim = np.sum(a * b, axis=-1)                  # (N,) ∈ [-1, 1]
+    dist = np.clip(1.0 - cos_sim, 0.0, 1.0)           # map to [0, 1]
+    return float(np.mean(dist))
 
 
 def _cluster_labels(X: np.ndarray, min_cluster_size: int = 3) -> np.ndarray:

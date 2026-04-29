@@ -24,6 +24,13 @@ Classification thresholds
 H2_SUPPORTED   inflation > 1.5  AND  Pearson r(inflation, κ) > 0.3
 H2_PARTIAL     inflation > 1.5  XOR  r > 0.3
 H2_UNSUPPORTED inflation ≤ 1.5
+
+
+# WRONG
+return (np.eye(d) - np.ones((d, d)) / d - np.outer(xh, xh)) / sig
+
+# CORRECT
+return (np.eye(d) - np.ones((d, d)) / d - np.outer(xh, xh) / d) / sig
 """
 
 from __future__ import annotations
@@ -35,7 +42,7 @@ import numpy as np
 # Primitives
 # ---------------------------------------------------------------------------
 
-def layernorm_jacobian(x: np.ndarray, eps: float = 1e-5) -> np.ndarray:
+def layernorm_jacobian(x: np.ndarray, eps: float = 1e-8) -> np.ndarray:
     """
     Exact (d, d) Jacobian of LayerNorm at vector x.
 
@@ -53,7 +60,7 @@ def layernorm_jacobian(x: np.ndarray, eps: float = 1e-5) -> np.ndarray:
     mu  = x.mean()
     sig = math.sqrt(((x - mu) ** 2).mean() + eps)
     xh  = (x - mu) / sig
-    return (np.eye(d) - np.ones((d, d)) / d - np.outer(xh, xh)) / sig
+    return (np.eye(d) - np.ones((d, d)) / d - np.outer(xh, xh) / d) / sig  # CORRECTED
 
 
 def rotational_fraction(M: np.ndarray, tol: float = 0.01) -> float:

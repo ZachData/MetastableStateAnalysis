@@ -257,7 +257,9 @@ def find_phase1_runs(phase1_dir: Path, model_stem: str) -> list:
         return []
     return [
         d for d in sorted(phase1_dir.iterdir())
-        if d.is_dir() and model_stem in d.name and (d / "activations.npz").exists()
+        if d.is_dir()
+        and d.name.startswith(model_stem + "_")
+        and (d / "activations.npz").exists()
     ]
 
 
@@ -484,7 +486,7 @@ def run_model(
         results["block1b"] = {"error": "no_phase1_activations"}
     else:
         for run_dir in phase1_runs:
-            prompt = run_dir.name.split("iter_")[-1] if "iter_" in run_dir.name else run_dir.name
+            prompt = run_dir.name.split("iter_", 1)[-1] if "iter_" in run_dir.name else run_dir.name[len(model_stem):].lstrip("_-")
             print(f"  Prompt: {prompt}")
 
             activations = load_activations(run_dir)

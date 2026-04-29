@@ -1,57 +1,65 @@
-# Phase 2 — Energy Violation Mechanism Identification
+# Phase 2 — V Eigenspectrum Characterization
 
-**Status:** Complete. Extensions (FFN subspace, continuous ΔE, norm confound, revised verdicts) implemented and run across all 35 model×prompt combinations.
+## What this does
+
+Phase 1 identified energy violations: layers where the interaction energy $E_\beta$ fails to decrease monotonically, consistent with the V-repulsive mechanism predicted by Geshkovski et al. Phase 2 asks: **is V's mixed-sign eigenspectrum the actual cause?**
+
+Three causal tests are applied:
+
+1. **Displacement test (local):** At each violation layer, project the token displacement $\Delta x = x^{(l+1)} - x^{(l)}$ onto V's repulsive vs attractive eigensubspace. If $>50\%$ of violation-layer displacements are repulsive-dominant, V is locally detectable.
+
+2. **Rescaled frame (global):** Apply the exponential rescaling $z = e^{-tV}x$ to remove V's effect. If violations disappear in the rescaled frame, V is globally causal regardless of local detection.
+
+3. **FFN/attention decomposition (channel):** Split each layer's residual update into attention and FFN components; compute per-component energy deltas. Classifies whether V's causal effect is mediated through the attention path or the FFN path.
+
+A continuous V-score combines these:
+
+```
+V-score = 0.40 × rescaled_frac
+        + 0.25 × frac_repulsive_disp
+        + 0.20 × frac_ffn_amplifies_repulsive
+        - 0.15 × |ov_norm_partial_rho|
+```
+
+Scores above ~0.5 consistently correspond to `V_repulsive_via_FFN_confirmed` or `V_repulsive_local` verdicts.
 
 ---
 
-## Core Question
+## Running
 
-Phase 1 established that the interaction energy $E_\beta$ drops at structurally active "reset" layers in every model tested, violating the monotonicity theorem of Geshkovski et al. (Theorem 3.4). The token pairs responsible are semantically coherent. Phase 2 asks: **what mechanism causes the energy to decrease?**
+```bash
+# Full pipeline — loads model, runs decompose, runs all analyses
+python -m p2_eigenspectra.run_2 --full
+
+# Offline only — uses saved activations/deltas from a previous full run
+python -m p2_eigenspectra.run_2 --offline --phase1-dir results/2026-04-23_18-30-06
+
+# Single model
+python -m p2_eigenspectra.run_2 --full --models albert-xlarge-v2
+
+# Specific prompt
+python -m p2_eigenspectra.run_2 --full --prompts repeated_tokens wiki_paragraph
+```
+
+Outputs are written to a timestamped directory under `results/`. The cross-run summary is written to `p2_eigenspectra_cross_run.summary.txt` and `.json`.
 
 ---
 
-## Competing Explanations Tested
+## Falsification verdict categories
 
-Four hypotheses, tested in order of parsimony:
+| Verdict | Condition | Interpretation |
+|---|---|---|
+| `V_repulsive_local` | `frac_repulsive > 0.5` | V directly detectable via displacement test |
+| `V_repulsive_via_FFN` | `rescaled_frac > 0.8` and `ffn_frac_drop > 0.5` | V globally causal, FFN is the proximal channel |
+| `V_repulsive_via_FFN_confirmed` | as above, plus `frac_ffn_amplifies_repulsive > 0.5` and `channel == "FFN"` | Strongest evidence: FFN pushes into V's repulsive subspace |
+| `V_repulsive_via_attn` | `rescaled_frac > 0.8` and `ffn_frac_drop ≤ 0.5` | V globally causal, attention is the proximal channel |
+| `FFN_independent` | `ffn_frac_drop > 0.5` and `rescaled_frac < 0.2` and `n_decomposed ≥ 3` | FFN causes violations independently of V |
+| `mixed_or_unattributed` | none of the above | No single mechanism dominates |
+| `overshoot_dominant` | `frac_overshoot > 0.5` | Energy violations due to step-size overshoot, not V |
 
-1. **Discrete overshoot** — the Euler-step size exceeds the gradient-flow basin of attraction, producing a mechanical energy drop unrelated to any repulsive force.
-2. **OV repulsive subspace** — negative eigenvalues of the composed OV matrix ($W_O W_V$) push tokens apart. This is the paper's framework: mixed-sign V creates a tension between attraction (softmax) and repulsion (V eigenstructure).
-3. **Attention routing** — attention concentrates on dissimilar targets, creating effective repulsion even when V is net-attractive.
-4. **Feed-forward layer** — the FFN drives the energy drop, entirely outside the paper's attention-only model.
+Note: `V_repulsive_via_attn` exists in the verdict logic and is distinct from `V_repulsive_via_FFN`, but fires on zero runs across the full 35-run evaluation. The condition (rescaling helps + attention dominates FFN drops) does not arise empirically: when the rescaled frame eliminates violations, FFN is always the proximal dropper.
 
----
-
-## Methods
-
-### OV eigendecomposition
-
-The composed OV circuit $V_\text{eff} = \sum_{h=1}^{H} W_O^{(h)} W_V^{(h)}$ is eigendecomposed by two methods: ordered real Schur form (numerically stable for non-normal matrices) and symmetric part $(V + V^\top)/2$ (orthogonal eigenvectors, discards rotation). Methods agree for all models except GPT-2-small (large rotational component) and final layers of GPT-2-small/medium.
-
-### Per-layer trajectory analysis
-
-For per-layer models (GPT-2, BERT), each layer's own V and projectors are used — the initial implementation incorrectly used layer 0's projectors everywhere, which was fixed in `trajectory_perlayer.py`.
-
-Metrics computed per layer: step-size norm, subspace activation energy, per-token self-interaction $x_i^\top V_\text{eff} x_i$, displacement projection onto V's eigensubspaces, and rescaled trajectory via $z_i(L) = (e^{-V})^L x_i(L)$.
-
-### Attn vs FFN decomposition
-
-`decompose.py` splits the residual stream update at each layer into attention and FFN components, computes the energy delta from each at violation layers, and classifies the proximal channel.
-
-### FFN subspace projection (new)
-
-`ffn_subspace.py` projects FFN updates at violation layers onto V's attractive and repulsive eigensubspaces. Per-violation classification: "amplifies_repulsive" (FFN pushes into V's repulsive subspace), "amplifies_attractive", or "orthogonal" (FFN operates outside V's eigenstructure).
-
-### Continuous ΔE correlations (new)
-
-`analysis_extended.py` replaces binary violation indicators with actual energy change magnitude per layer. Spearman correlation of rep_frac vs ΔE tests whether repulsive fraction predicts energy change magnitude, not just binary violation occurrence.
-
-### OV spectral norm confound check (new)
-
-Partial Spearman correlation of OV norm vs violation indicator, controlling for repulsive fraction. Tests whether spectral norm spikes independently predict violations after removing the effect of eigenvalue sign.
-
-### Revised verdict logic (new)
-
-`verdict_v2.py` separates causal question (is V responsible?) from channel question (does energy drop come through attention or FFN?). New categories: V_repulsive_local, V_repulsive_via_FFN, V_repulsive_via_FFN_confirmed, FFN_independent.
+Classification priority order: `V_repulsive_local` takes precedence over all rescaling-based verdicts. A run where `frac_repulsive > 0.5` gets `V_repulsive_local` regardless of what the rescaled frame shows.
 
 ---
 
@@ -59,88 +67,64 @@ Partial Spearman correlation of OV norm vs violation indicator, controlling for 
 
 ### Overshoot: ruled out universally
 
-0% for ALBERT, 0–10% for GPT-2 across all 35 runs. Discrete step size is not the explanation.
+`frac_overshoot = 0` for ALBERT, 0–10% for GPT-2 and BERT across all 35 runs. Discrete step size is not the explanation for energy violations.
 
 ### Two regimes of V-repulsive dynamics
 
-**Regime A — Attention-mediated, locally detectable (ALBERT-xlarge).**
+**Regime A — locally detectable (ALBERT-xlarge, GPT-2-xl, GPT-2-large partial)**
 
-5/5 V_repulsive_local. Displacement test passes at 53–85%. Self-interaction $x^\top V x < 0$ at 100% of violation tokens on every run. FFN subspace confirms: 91% mean "amplifies_repulsive" across 5 prompts. Rescaled frame eliminates 37–73% of violations (partial, never 100%). Channel is attention or mixed (mean_attn_frac 45–75%).
+The displacement test passes: `frac_repulsive > 0.5` at violation layers. V's repulsive eigenstructure is directly detectable in the token trajectory without needing the rescaled frame.
 
-Decomposition anomaly: on 3/5 prompts, neither attn nor FFN individually registers as dropping energy (both decompose_*_drop ≈ 0), yet violations occur. The additive decomposition misses the attn-FFN cross-term, which appears to be the dominant mechanism.
+ALBERT-xlarge: 5/5 `V_repulsive_local`. v_scores 0.60–0.73. `frac_ffn_amplifies_repulsive` 0.71–1.00. Self-interaction $x^\top V x < 0$ at 100% of violation tokens on every run. Channel is attention-dominant (mean_attn_frac > mean_ffn_frac), consistent with ALBERT's shared-weight architecture where the OV circuit acts directly without layer-specific FFN amplification.
 
-**Regime B — FFN-mediated, globally coherent (GPT-2 large/xl, partially medium).**
+GPT-2-xl: 3/5 `V_repulsive_local` + 2/5 `V_repulsive_via_FFN_confirmed`. v_scores 0.51–0.74. The two `_confirmed` runs (short_heterogeneous, wiki_paragraph) have moderate `frac_repulsive` (0.371–0.441) just below threshold, with FFN confirmed as the channel.
 
-FFN drops energy at ~100% of violation layers (18/20 GPT-2 runs, exceptions are repeated_tokens prompts). Mean FFN energy fraction: 58–81%. Displacement repulsive fraction moderate (20–60% for large, 37–77% for xl). Rescaled frame eliminates 100% of violations across all 20 GPT-2 runs with no exceptions. FFN subspace: 63% amplifies_repulsive (large), 61% (xl). The causal chain is V → FFN → energy drop.
+GPT-2-large: 2/5 `V_repulsive_local` + 1/5 `V_repulsive_via_FFN_confirmed` + 2/5 `mixed_or_unattributed`. The two mixed runs (short_heterogeneous, wiki_paragraph) have v_scores 0.455–0.486 — borderline, not clean reversals. `frac_repulsive` (0.467–0.409) just misses the 0.5 threshold and `rescaled_frac` doesn't reach 0.8.
 
-**Below threshold (ALBERT-base, BERT, GPT-2-small).**
+**Regime B — globally coherent, FFN-mediated (GPT-2-small, GPT-2-medium)**
 
-Neither local nor global V-repulsive signal. Rescaling neutral or harmful (ALBERT-base: −3 to −8). Detection threshold: rep_frac × β ≈ 2.8.
+The displacement test fails (`frac_repulsive < 0.5`), but the rescaled frame eliminates violations (`rescaled_frac > 0.8`). FFN is the proximal dropper. V is the cause; FFN is the channel.
 
-### Key numbers across all models
+GPT-2-small: 4/5 `V_repulsive_via_FFN` + 1/5 `mixed_or_unattributed` (repeated_tokens, v_score 0.28). v_scores 0.42–0.57 on the 4 detected runs. `frac_ffn_amplifies_repulsive` 0.17–0.60, lower than larger models.
 
-| Model | OV rep frac | β (QK mean) | Rep×β | Rescaled | Channel | FFN amp rep | Regime |
-|-------|------------|-------------|-------|----------|---------|-------------|--------|
-| ALBERT-base | 0.467 | 1.86 | 0.87 | worse | attn | 0% | below |
-| ALBERT-xlarge | 0.569 | 4.99 | 2.84 | partial | attn | 91% | local |
-| BERT | 0.509 | 2.86 | 1.46 | ~0 | attn | 18% | below |
-| GPT-2-small | 0.431 | 23.0† | — | 100% | mixed | 30% | below‡ |
-| GPT-2-medium | 0.474 | 23.1† | — | 100% | FFN | 41% | global |
-| GPT-2-large | 0.502 | 4.7 | — | 100% | FFN | 63% | global |
-| GPT-2-xl | 0.525 | 4.2 | — | 100% | FFN | 61% | global |
+GPT-2-medium: 4/5 `V_repulsive_via_FFN` + 1/5 `V_repulsive_local` (repeated_tokens, `frac_repulsive` = 0.545). All 5 runs have channel = FFN. v_scores 0.43–0.60. `frac_ffn_amplifies_repulsive` 0.29–0.55.
 
-† Layer-0 anomaly inflates mean; typical layers much lower.
-‡ Small has 100% rescaled elimination and strong continuous ΔE correlations (ρ = −0.87) but fails the categorical tests. The mechanism is present but below the per-violation classification threshold.
+GPT-2-medium repeated_tokens (v_score 0.598, `frac_repulsive` = 0.545) sits at the boundary between regimes: the displacement test marginally passes and the FFN energy decomposition also supports V. Both regimes are consistent for this run.
 
-### GPT-2 depth-dependent repulsive gradient
+**Below threshold (ALBERT-base, BERT)**
 
-All GPT-2 models: early layers majority-repulsive, late layers majority-attractive. Layer 0 is anomalous everywhere (low rep_frac, extremely high QK norms — the embedding layer). QK norms decay monotonically with depth, creating doubly concentrated repulsive force in early layers (high rep_frac × high effective β).
+ALBERT-base: 2/5 `V_repulsive_local` (short_heterogeneous, repeated_tokens), 3/5 `mixed_or_unattributed`. The two positive runs have v_scores 0.167 and 0.250 — weak. Low violation counts (n=1 on 2 runs, n=6 on the positive runs) make the signal fragile. No per-layer decompose data (shared weights), so channel is always "attention" and the FFN path is unresolvable.
 
-Crossover layers: small L5, medium L9, large L16, xl L19. Violations concentrate in repulsive zones for large/xl (Spearman ρ(rep_frac, violation_indicator) positive in 18/20 GPT-2 runs, range 0.19–0.61).
-
-### Continuous ΔE correlations
-
-Repulsive fraction predicts energy change magnitude (not just binary violation). GPT-2-small: 4/5 significant (ρ up to −0.87). GPT-2-large: 4/5 significant (ρ ≈ −0.35). GPT-2-xl: 4/5 significant (ρ up to −0.60). GPT-2-medium: 0/5 significant — the weakest model on this test despite being intermediate in scale.
-
-Coupling product (rep_frac × QK norm) adds nothing over rep_frac alone. Significant in only 2/20 GPT-2 runs. QK decay concentrates both factors in early layers, making the product redundant.
+BERT-base: 4/5 `mixed_or_unattributed` + 1/5 `FFN_independent` (repeated_tokens). v_scores 0.039–0.107. `ov_norm_partial_rho` consistently negative (−0.34 to −0.49), indicating the OV norm confound is significant. The norm confound + low rep_frac means the V-repulsive signal is not credibly separable from spectral-norm effects.
 
 ### OV spectral norm confound
 
-OV spectral norm independently predicts violations after controlling for rep_frac in: GPT-2-medium 3/5 runs (partial ρ up to −0.71, p = 0.0001), GPT-2-large 3/5, GPT-2-xl 2/5. The norm spikes (medium L10 = 70.75, medium L23 = 98.2) produce large displacements in all directions that get misattributed to the repulsive subspace. The rescaled-frame result is immune to this confound. GPT-2-small: 0/5 confound (uniform norm profile). BERT: 0/5.
+`ov_norm_partial_rho` measures Spearman correlation of OV norm vs violation indicator after controlling for `rep_frac`. Significant negative values mean norm spikes predict violations independently of the repulsive-fraction signal.
+
+Present and significant across most GPT-2 models (partial ρ up to −0.71 for GPT-2-medium, with p < 0.05 on multiple runs). Norm spikes in early and final layers produce large displacements that partly get attributed to the repulsive subspace. The rescaled-frame result is immune to this confound; the `V_repulsive_local` verdict is more vulnerable to it.
+
+Notable outliers: GPT-2-medium L23 OV norm ≈ 98.2 (5× mean); GPT-2-small L11 OV norm ≈ 174.3 (22× mean). These are likely the unembedding projections at final layers. ALBERT models: confound not computed (no per-layer norm profile under shared weights).
 
 ### Per-head OV × Fiedler cross-reference
 
-Prediction: repulsive heads → low Fiedler, attractive heads → high Fiedler. GPT-2-medium: ρ = 0.64–0.77, p < 0.01 on 4/5 prompts (strong). BERT: significant on 2/5. GPT-2-large: trending (p = 0.06–0.22). GPT-2-xl: mostly null except short_heterogeneous (ρ = 0.46, p = 0.02).
-
-### Final-layer anomaly
-
-GPT-2-small L11: OV norm 174.3 (22× mean), rep_frac 0.198, methods disagree. GPT-2-medium L23: OV norm 98.2 (5× mean), same pattern. Large/xl have elevated final-layer norms but methods still agree. The final layer is doing something qualitatively different from the rest of the stack — likely the unembedding projection.
+Prediction: repulsive heads → low Fiedler, attractive heads → high Fiedler. GPT-2-medium: ρ = 0.64–0.77, p < 0.01 on 4/5 prompts. BERT: significant on 2/5. GPT-2-large: trending (p = 0.06–0.22). GPT-2-xl: mostly null except short_heterogeneous (ρ = 0.46, p = 0.02).
 
 ---
 
-## Falsification Verdict Distribution (35 runs)
+## Falsification Verdict Distribution (35 runs, current results)
 
 | Verdict | Count | Models |
-|---------|-------|--------|
-| V_repulsive_local | 9 | ALBERT-xlarge (5), GPT-2-large (2), GPT-2-xl (3) |
-| V_repulsive_via_FFN | 13 | GPT-2-small (4), GPT-2-medium (4), GPT-2-large (2), GPT-2-xl (1), ALBERT-base (0†), BERT (0) |
-| V_repulsive_via_FFN_confirmed | 7 | GPT-2-small (1‡), GPT-2-medium (1), GPT-2-large (2), GPT-2-xl (3) |
-| FFN_independent | 2 | ALBERT-base (2) |
-| mixed_or_unattributed | 7 | ALBERT-base (2), BERT (5) |
-| overshoot_dominant | 0 | — |
-| no_violations | 0 | — |
+|---|---|---|
+| `V_repulsive_local` | 13 | ALBERT-xlarge (5), GPT-2-xl (3), GPT-2-large (2), GPT-2-medium (1), ALBERT-base (2†) |
+| `V_repulsive_via_FFN` | 8 | GPT-2-small (4), GPT-2-medium (4) |
+| `V_repulsive_via_FFN_confirmed` | 3 | GPT-2-xl (2), GPT-2-large (1) |
+| `FFN_independent` | 1 | BERT (1‡) |
+| `mixed_or_unattributed` | 10 | ALBERT-base (3), BERT (4), GPT-2-small (1), GPT-2-large (2) |
+| `overshoot_dominant` | 0 | — |
+| `no_violations` | 0 | — |
 
-† ALBERT-base has no continuous ΔE or norm confound tests (shared weights, no per-layer profile).
-‡ Bug: GPT-2-small short_heterogeneous gets _confirmed with channel = "attention." The upgrade should require channel ≠ "attention."
-
----
-
-## Known Issues
-
-1. **verdict_v2 bug**: _confirmed upgrade does not check channel consistency. GPT-2-small short_heterogeneous gets V_repulsive_via_FFN_confirmed despite channel = "attention."
-2. **verdict_v2 bug**: FFN_independent triggers on n=1 violations (ALBERT-base paper_excerpt, sullivan_ballou). Should require n ≥ 3.
-3. **ALBERT-xlarge decomposition**: additive Δ_attn + Δ_ffn accounting misses the cross-term. Need three-way decomposition.
-4. **Coupling product**: confirmed useless. Can be dropped from future analysis.
+† ALBERT-base positive runs (v_scores 0.167, 0.250) are weak signals. No per-layer decompose path available under shared weights.  
+‡ BERT repeated_tokens: `ffn_frac_drop` = 0.400, `rescaled_frac` low, `n_decomposed` = 5. Borderline; the FFN signal is present but uncorroborated by the rescaled frame.
 
 ---
 
@@ -153,31 +137,66 @@ Composed OV circuit, eigendecomposition (Schur + symmetric), subspace projectors
 Step-size norms, subspace activation, self-interaction, displacement projection, centroid projection, rescaled trajectory. Uses single V for ALBERT.
 
 ### `trajectory_perlayer.py` — Per-layer-correct trajectory analysis
-Drop-in replacement for per-layer models. Uses each layer's own V and projectors.
-
-### `layer_v_events.py` — Per-layer V vs Phase 1 event overlay
-Correlates depth-dependent repulsive fraction with violations, merges, cluster structure. Zone classification (repulsive/transition/attractive).
-
-### `head_ov_analysis.py` — Per-head OV × Fiedler cross-reference
-Per-head eigendecomposition, Fiedler loading from Phase 1, Spearman correlation.
+Drop-in replacement for per-layer models (GPT-2, BERT). Uses each layer's own V and projectors.
 
 ### `decompose.py` — Attn/FFN forward-pass decomposition
-Splits residual update, computes per-component energy deltas, saves attn_deltas.npz and ffn_deltas.npz.
+Splits residual update into attention and FFN components at each layer, computes per-component energy deltas. Saves `attn_deltas.npz` and `ffn_deltas.npz`. Required for channel classification and `_confirmed` upgrade.
+
+### `layer_v_events.py` — Per-layer V vs Phase 1 event overlay
+Correlates depth-dependent repulsive fraction with violations, merges, cluster structure. Zone classification (repulsive/transition/attractive) using adaptive thresholds (median ± 0.5×MAD).
+
+### `head_ov_analysis.py` — Per-head OV × Fiedler cross-reference
+Per-head eigendecomposition, Fiedler loading from Phase 1, Spearman correlation between head repulsive fraction and Fiedler score.
 
 ### `ffn_subspace.py` — FFN update projection onto V subspaces
-Projects FFN residual updates onto V's eigensubspaces. Per-violation classification. Z-score comparison of FFN-repulsive fraction at violation vs population layers.
+Projects FFN residual updates onto V's eigensubspaces at violation layers. Per-violation classification: amplifies_repulsive / amplifies_attractive / orthogonal. Z-score comparison of FFN-repulsive fraction at violation vs population layers.
 
-### `analysis.py` — Cross-reference statistical tests
+### `cross_term_analysis.py` — Attn/FFN cross-term decomposition
+Three-way decomposition of the residual update: `Δ_attn + Δ_ffn + Δ_cross`. The additive two-way decomposition misses the cross-term, which is the dominant energy-drop mechanism in ALBERT-xlarge on several prompts. This module computes the cross-term contribution explicitly.
+
+### `analysis.py` — Core cross-reference statistical tests
 Violation classification, z-scores, plateau characterization, rescaled comparison, merge prediction.
 
-### `analysis_extended.py` — Continuous ΔE, norm confound, adaptive zones
-Continuous Spearman correlations, partial correlations controlling for rep_frac, adaptive zone thresholds (median ± 0.5×MAD).
+### `analysis_extended.py` — Continuous ΔE, norm confound, adaptive zones, verdict
+Continuous Spearman correlations (rep_frac vs ΔE magnitude), partial correlations controlling for OV norm, adaptive zone thresholds, attractive-zone violation breakdown. **This is the single source of truth for the categorical falsification verdict** — `_classify()` in this module is what determines the final verdict string.
 
-### `reporting.py` — Terminal summaries
-Per-run output and machine-readable verdict JSON.
+### `verdict_v2.py` — Verdict logic and V-score
+Contains `build_verdict_v2` (used when calling from the monolithic analysis dict path) and `build_v_score`. The `_classify` function in `analysis_extended.py` is authoritative; `verdict_v2._classify` is kept for back-compat via a shim.
 
-### `verdict_v2.py` — Revised falsification logic
-Separates causal (V responsible?) from channel (attn or FFN?). New verdict categories.
+### `subresult.py` — Per-subexperiment result container
+Typed container holding raw results and `verdict_contribution` dict for each subexperiment. Used by `subexperiments.py` to pass structured results to the verdict assembler.
 
-### `run.py` — CLI entry point
-`--full` (model load + decompose), `--offline` (saved data only). Wires all modules including new extensions.
+### `subexperiments.py` — Subexperiment registry and orchestration
+Registry pattern connecting each analysis module to the verdict assembler. Controls which subexperiments run in `--full` vs `--offline` mode, handles per-subexperiment errors without aborting the run.
+
+### `subexp_wrappers.py` — Thin wrappers around analysis modules
+One wrapper per subexperiment. Translates raw module outputs into the `SubResult` contract.
+
+### `threshold_analysis.py` — Beta-sweep and threshold sensitivity
+Sweeps β values to characterize how violation counts and verdict stability change with the energy threshold. Used to assess whether verdict assignments are robust to β choice.
+
+### `head_ablation.py` — Per-head causal ablation
+Ablates individual attention heads and measures the effect on violation counts and energy profiles. Identifies which heads are necessary for the violation pattern.
+
+### `reporting.py` — Terminal summaries and machine-readable output
+Per-run output and the `p2_eigenspectra_cross_run.summary.txt` / `.json` files.
+
+### `run_2.py` — CLI entry point
+`--full` (model load + decompose + all analyses), `--offline` (saved data only). Wires all subexperiments through the registry.
+
+---
+
+## Known Issues
+
+All four bugs documented in the previous README version are resolved in the current code:
+
+- **Bug 1** (`_confirmed` upgrade firing on attention channel): Fixed. `analysis_extended._classify` requires `channel == "FFN"` explicitly. Previously `channel != "attention"` allowed the upgrade when decompose coverage was zero and channel was `"unknown"`.
+- **Bug 2** (`FFN_independent` on n=1 violations): Fixed. Guard now uses `n_decomposed ≥ 3` (count of violations that went through the decompose path) rather than `n_violations ≥ 3`.
+- **Bug 3** (ALBERT-xlarge cross-term): Fixed. `cross_term_analysis.py` computes the three-way `Δ_attn + Δ_ffn + Δ_cross` decomposition. The cross-term is the dominant mechanism for ALBERT-xlarge on several prompts where neither attn nor FFN individually registers as the energy dropper.
+- **Bug 4** (coupling product): Confirmed useless and removed from the analysis pipeline.
+
+Open:
+
+- **GPT-2-large borderline runs**: short_heterogeneous and wiki_paragraph have v_scores 0.455–0.486. Neither test passes cleanly. A finer-grained β sweep might resolve the ambiguity, or these may be genuine regime-boundary cases.
+- **`V_repulsive_via_attn` never fires**: The code path exists and is correct. Empirically, when the rescaled frame helps (rescaled_frac > 0.8), FFN always dominates the energy drop (ffn_frac_drop > 0.5). If a future model or prompt type changes this, the verdict is ready.
+- **ALBERT-base cross-term**: Shared weights mean no per-layer decompose. The FFN path is unresolvable for ALBERT-base. The two positive runs get `V_repulsive_local` but the channel remains "attention" by default — not because attention is confirmed, but because the decompose path doesn't differentiate.
