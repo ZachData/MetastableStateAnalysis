@@ -15,7 +15,7 @@ self_interaction_trajectory: x^T V_eff x per token per layer — local sign
 displacement_projection    : project Δx onto V subspaces per layer
 centroid_projection        : project Phase 1 centroids onto V subspaces
 rescaled_trajectory        : apply (e^{-V})^L and recompute metrics
-load_phase1_events         : extract violation/plateau/merge info from metrics.json
+load_phase1_events         : extract violation/plateau/merge info from layer_metrics.json
 """
 
 import json
@@ -31,46 +31,48 @@ from p2_eigenspectra.weights import rescale_matrix
 # ---------------------------------------------------------------------------
 
 def load_phase1_events(run_dir: Path) -> dict:
-    """
-    Extract structured event info from a Phase 1 metrics.json.
-
-    Returns
-    -------
-    dict with:
-      n_layers         : int
-      n_tokens         : int
-      d_model          : int
-      tokens           : list of str
-
-      energies         : dict {beta: list of floats per layer}
-      energy_violations: dict {beta: list of layer indices where E drops}
-      energy_drop_pairs: dict {beta: {layer_idx: [(i, j, delta), ...]}}
-
-      effective_rank   : list of floats per layer
-      ip_mean          : list of floats per layer
-      ip_mass_near_1   : list of floats per layer
-      cka_prev         : list of floats per layer (nan for layer 0)
-
-      spectral_k       : list of ints per layer
-      kmeans_k         : list of ints per layer
-    """
     run_dir = Path(run_dir)
-    with open(run_dir / "metrics.json") as f:
-        results = json.load(f)
+    
+    # 1. Load data sources
+    with open(run_dir / "layer_metrics.json") as f:
+        metrics_list = json.load(f) # This one is already a flat list
+    
+    with open(run_dir / "geometry.json") as f:
+        geom_root = json.load(f)
+        # Use .get("layers") because the root is a dict
+        geometry_layers = geom_root.get("layers", []) 
+        
+    with open(run_dir / "energies.json") as f:
+        ener_root = json.load(f)
+        # Use .get("layers") because the root is a dict
+        energies_layers = ener_root.get("layers", [])
 
-    layers = results.get("layers", [])
-    n_layers = len(layers)
+    n_layers = len(metrics_list)
+    
+    # 2. Re-map using the list inside the "layers" key
+    # Fix: Removed .int() and pointed to the correct list variable
+    geom_by_layer = {int(item["layer"]): item for item in geometry_layers}
+    ener_by_layer = {int(item["layer"]): item for item in energies_layers}
 
-    # Energy trajectories and violations
+    # Energy trajectories and violations initialization
+    BETA_VALUES = [0.1, 1.0, 2.0, 5.0] # Updated to match your JSON sample
     energies          = {beta: [] for beta in BETA_VALUES}
     energy_violations = {beta: [] for beta in BETA_VALUES}
     energy_drop_pairs = {beta: {} for beta in BETA_VALUES}
 
-    for layer in layers:
-        layer_idx = layer["layer"]
-        # Rehydrate float keys
-        layer_energies = {float(k): v for k, v in layer.get("energies", {}).items()}
-        layer_drops    = layer.get("energy_drop_pairs", {})
+    for i, layer_meta in enumerate(metrics_list):
+        layer_idx = layer_meta.get("layer", i)
+        
+        geom = geom_by_layer.get(layer_idx, {})
+        ener = ener_by_layer.get(layer_idx, {})
+
+        eff_rank = geom.get("effective_rank", 0)
+        
+        # Rehydrate energies (JSON keys are strings, we need floats)
+        layer_energies = {float(k): v for k, v in ener.get("energies", {}).items()}
+        layer_drops    = ener.get("energy_drop_pairs", {})
+
+        # Parse energy drop pairs
         if isinstance(layer_drops, list):
             layer_drops = {1.0: layer_drops} if layer_drops else {}
         else:
@@ -80,12 +82,12 @@ def load_phase1_events(run_dir: Path) -> dict:
             e = layer_energies.get(beta, float("nan"))
             energies[beta].append(e)
 
-            # Check for violation: energy decreased vs previous layer
+            # Check for violation
             if len(energies[beta]) >= 2:
                 e_prev = energies[beta][-2]
-                if (not _isnan(e) and not _isnan(e_prev)
+                if (not np.isnan(e) and not np.isnan(e_prev)
                         and e - e_prev < -1e-6
-                        and layer.get("effective_rank", 0) >= 3.0):
+                        and eff_rank >= 3.0):
                     energy_violations[beta].append(layer_idx)
 
             pairs = layer_drops.get(beta, [])
@@ -94,23 +96,28 @@ def load_phase1_events(run_dir: Path) -> dict:
 
     return {
         "n_layers":          n_layers,
-        "n_tokens":          results.get("n_tokens", 0),
-        "d_model":           results.get("d_model", 0),
-        "tokens":            results.get("tokens", []),
-        "model":             results.get("model", ""),
-        "prompt":            results.get("prompt", ""),
+        # Pull global metadata from geometry_json root
+        "n_tokens":          geom_root.get("n_tokens", 0),
+        "d_model":           geom_root.get("d_model", 0),
+        "tokens":            geom_root.get("tokens", []),
+        "model":             geom_root.get("model", ""),
+        "prompt":            geom_root.get("prompt", ""),
 
         "energies":          energies,
         "energy_violations": energy_violations,
         "energy_drop_pairs": energy_drop_pairs,
 
-        "effective_rank":    [l.get("effective_rank", 0) for l in layers],
-        "ip_mean":           [l.get("ip_mean", 0) for l in layers],
-        "ip_mass_near_1":    [l.get("ip_mass_near_1", 0) for l in layers],
-        "cka_prev":          [l.get("cka_prev", float("nan")) for l in layers],
+        "effective_rank":    [geom_by_layer.get(l.get("layer", idx), {}).get("effective_rank", 0) 
+                              for idx, l in enumerate(metrics_list)],
+        "ip_mean":           [geom_by_layer.get(l.get("layer", idx), {}).get("ip_mean", 0) 
+                              for idx, l in enumerate(metrics_list)],
+        "ip_mass_near_1":    [geom_by_layer.get(l.get("layer", idx), {}).get("ip_mass_near_1", 0) 
+                              for idx, l in enumerate(metrics_list)],
+        "cka_prev":          [geom_by_layer.get(l.get("layer", idx), {}).get("cka_prev", float("nan")) 
+                              for idx, l in enumerate(metrics_list)],
 
-        "spectral_k":        [l.get("spectral", {}).get("k_eigengap", 1) for l in layers],
-        "kmeans_k":          [l["clustering"]["kmeans"]["best_k"] for l in layers],
+        "spectral_k":        [l.get("spectral_k", 1) for l in metrics_list],
+        "kmeans_k":          [l.get("hdbscan_k", 0) for l in metrics_list],
     }
 
 
@@ -518,7 +525,7 @@ def analyze_trajectory_offline(
     Parameters
     ----------
     run_dir : path to a Phase 1 run directory (contains activations.npz,
-              clusters.npz, metrics.json)
+              clusters.npz, layer_metrics.json)
     ov_data : dict from weights.analyze_weights — must contain ov_total,
               projectors, decomps
 

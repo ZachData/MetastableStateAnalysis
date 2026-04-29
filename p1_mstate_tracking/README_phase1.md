@@ -1,6 +1,6 @@
 # Phase 1 — Empirical Verification of Metastability
 
-**Status:** Complete. Extensions (cluster tracking, multi-scale nesting, pair agreement filtering, BERT-large, dense ALBERT sweep, V eigenspectrum extraction) implemented. Run across 8 models × 5 prompts.
+**Status:** Complete. Extensions (cluster tracking, multi-scale nesting, pair agreement filtering, dense ALBERT sweep, V eigenspectrum extraction, sublayer stream analysis) implemented. Run across 7 architectures × 4 prompts, with ALBERT models run at 4 iteration depths (12, 24, 36, 48). `bert-large-uncased` and `albert-base-v2-random` are in config but excluded from the standard run; use `--models bert-large-uncased` or `--random-baseline` to include them.
 
 ---
 
@@ -18,305 +18,153 @@ Phase 1 passed.
 
 Seven predictions from the paper, checked against empirical trajectories:
 
-1. **Tokens cluster over layers** — pairwise inner products $\langle x_i, x_j \rangle$ drift toward 1. ✓ Universal.
-2. **Two-timescale dynamics** — fast initial grouping, slow pairwise merging. ✓ Confirmed for BERT-base, GPT-2-large, GPT-2-xl. ✗ Not cleanly separated in ALBERT (metastable window ≤ collapse onset).
+1. **Tokens cluster over layers** — pairwise inner products $\langle x_i, x_j \rangle$ drift toward 1. ✓ Universal across all models and prompts.
+2. **Two-timescale dynamics** — fast initial grouping, slow pairwise merging. ✓ Confirmed for BERT-base (ratio=8.0), GPT-2-large (ratio=8.2), GPT-2-xl (ratio=7.62). ✗ Not cleanly separated in ALBERT (metastable window ≤ collapse onset) or GPT-2-medium (ratio=0.45). GPT-2-small: degenerate initial distribution never collapses at all in the control (mass never reaches 0.9 in the repeated-tokens run).
 3. **Metastable states** appear as plateaus in cluster count metrics. ✓ Universal.
-4. **ALBERT** (shared weights) should show cleaner dynamics than BERT/GPT-2. ✓ Partially — ALBERT-base is cleanest but degenerately collapses. ALBERT-xlarge resists collapse in a way the theory does not predict.
-5. **Higher $\beta$** (sharper attention) → stronger metastability. ✓ Confirmed.
-6. **Higher dimension $d$** → faster convergence to single cluster (Theorem 6.1). ✗ Falsified. ALBERT-xlarge ($d=2048$) converges slower than ALBERT-base ($d=768$). The governing variable is the spectral radius of $V$, not $d$.
-7. **Interaction energy $E_\beta$** is monotone increasing along the trajectory (Theorem 3.4). ✗ Universally violated. Mechanism identified: $V$'s 96–98% complex eigenvalues introduce rotational dynamics; the near-50/50 real-part sign split means no dominant attractive or repulsive character.
+4. **ALBERT** (shared weights) should show cleaner dynamics than BERT/GPT-2. ✓ Partially — ALBERT-base is cleanest and collapses fully (MaxMass=1.0 by 24 iterations for long prompts). ALBERT-xlarge resists collapse in a way the theory does not predict: MaxMass stays below 0.30 across all prompts even at 48 iterations, and MinRank stays above 55 for long prompts. The cross-run report flags this directly: "ALBERT reaches higher mass>0.9 than other models. Consistent with theory: shared weights = cleaner dynamics." This applies to ALBERT-base, not xlarge.
+5. **Higher $\beta$** (sharper attention) → stronger metastability. ✓ Confirmed — violations and plateau counts increase with $\beta$.
+6. **Higher dimension $d$** → faster convergence to single cluster (Theorem 6.1). ✗ Falsified. ALBERT-xlarge ($d=2048$) converges far slower than ALBERT-base ($d=768$): ALBERT-base collapses at 24 iterations, ALBERT-xlarge has not collapsed at 48. The governing variable is the spectral radius of $V$, not $d$.
+7. **Interaction energy $E_\beta$** is monotone increasing along the trajectory (Theorem 3.4). ✗ Universally violated. Every model, every prompt, every $\beta$: EnergyOK = NO. Mechanism identified in Phase 2: $V$'s mixed-sign eigenspectrum introduces rotational dynamics incompatible with monotone energy flow.
 
 ---
 
-## Experimental Setup
+## Key Findings
 
-### Models
+### Two-timescale separation is architecture-specific, with a depth threshold
 
-| Model | Layers | $d$ | Heads | Weight sharing | Role |
-|-------|--------|-----|-------|----------------|------|
-| ALBERT-base-v2 | 12 (iterated to 60) | 768 | 12 | Yes | Primary — direct analog of paper's recurrent dynamics |
-| ALBERT-xlarge-v2 | 24 (iterated to 60) | 2048 | 16 | Yes | High-dimensional shared-weight control |
-| BERT-base-uncased | 12 | 768 | 12 | No | Baseline non-shared encoder |
-| BERT-large-uncased | 24 | 1024 | 16 | No | Fills gap between BERT-base and GPT-2-medium |
-| GPT-2 | 12 | 768 | 12 | No | Autoregressive baseline |
-| GPT-2-medium | 24 | 1024 | 16 | No | Intermediate depth |
-| GPT-2-large | 36 | 1280 | 20 | No | Deep non-shared control |
-| GPT-2-xl | 48 | 1600 | 25 | No | Maximum depth |
+Two-timescale separation (quantified as the ratio of mean plateau width to collapse onset layer in the repeated-tokens control) is confirmed above a depth threshold between GPT-2-medium (24 layers, ratio=0.45, no separation) and GPT-2-large (36 layers, ratio=8.2, confirmed). The full table:
 
-ALBERT is the primary model. Its weight sharing makes every plateau a genuine dynamical fixpoint of a single map, not an artifact of differing weight matrices at different depths. ALBERT is run once to `ALBERT_MAX_ITERATIONS` (60) and sliced at every even depth from 6 to 60, testing whether metastability onset is a sharp phase transition or gradual crossover.
+| Model | Layers | Ratio | Verdict |
+|---|---|---|---|
+| BERT-base | 12 | 8.0 | TWO-TIMESCALE CONFIRMED |
+| GPT-2-large | 36 | 8.2 | TWO-TIMESCALE CONFIRMED |
+| GPT-2-xl | 48 | 7.62 | TWO-TIMESCALE CONFIRMED |
+| GPT-2-medium | 24 | 0.45 | NO SEPARATION |
+| ALBERT-base@36iter | 37 | 1.06 | WEAK SEPARATION |
+| ALBERT-base@48iter | 49 | 1.25 | WEAK SEPARATION |
+| ALBERT-base@12iter | 13 | 0.62 | NO SEPARATION |
+| ALBERT-xlarge@36+iter | 37/49 | 0.25 | NO SEPARATION |
+| GPT-2-small | 12 | — | No collapse in control |
 
-### Prompts
+GPT-2-small is anomalous: it never collapses a degenerate repeated-token input at all, yet regular prompts reach MaxMass of 0.87–0.97. This indicates its clustering is content/position-driven rather than a strong geometric attractor.
 
-Five prompts span a range of token counts and semantic structure:
+### GPT-2 attention heads are universally content-independent
 
-- **short_heterogeneous** — two unrelated sentences (quantum mechanics + stock market). Tests whether semantically unrelated domains form distinct clusters.
-- **wiki_paragraph** — Charlotte Brontë Wikipedia excerpt (~300 tokens). Rich co-reference structure.
-- **sullivan_ballou** — Civil War letter (~300 tokens). Dense emotional/thematic content.
-- **paper_excerpt** — passage from the Geshkovski paper itself. Self-referential control.
-- **repeated_tokens** — 288 copies of "cat." Degenerate control measuring collapse speed. Excluded from metastability analyses; reported separately.
+Cross-prompt per-head Fiedler consistency shows a sharp architecture split. All GPT-2 family models (gpt2 through gpt2-xl) have 100% STABLE-CLUSTER heads across all four prompts: no head changes its cluster/mixing behavior with input content. BERT-base is the opposite — 11/12 heads are VARIABLE (change behavior by prompt). ALBERT-base transitions from mostly STABLE-CLUSTER at 12 iterations to all STABLE-MIXED at 36+ iterations. ALBERT-xlarge has many VARIABLE heads throughout.
 
-### Activation Extraction
+The implication: GPT-2's routing structure is entirely fixed at training; the cluster geometry is a weight-level property. BERT's routing is content-driven. ALBERT's routing evolves with iteration depth — the shared weights effectively accumulate a content-adaptive transformation.
 
-At every layer, residual stream activations are projected onto the unit sphere via L2 normalization (`layernorm_to_sphere`), producing an $(n_\text{tokens}, d_\text{model})$ matrix of unit vectors. All geometric analyses operate on these sphere-projected representations, matching the paper's mathematical setting. Raw (pre-normalization) activations are retained for effective rank computation, where magnitude information is meaningful.
+### Merge events are weight-level; plateau onset is mostly content-driven
 
----
+Spectral k merge events occur at the same layers across all prompts for a given model (e.g., GPT-2-large always merges at layer 35, GPT-2-xl at layers 37 or 47 depending on prompt). The merge schedule is a property of the weights, not the input. Plateau onset, by contrast, is content-driven for most models (standard deviation across prompts: 5–9 layers for ALBERT-base, ALBERT-xlarge, GPT-2-xl, GPT-2-large). Exceptions: BERT-base (SD=0, weight-level) and GPT-2-medium (SD=1.7, effectively weight-level).
 
-## Methods
+### ALBERT-xlarge resists collapse; spectral k is non-informative for it
 
-### Geometry of the Token Cloud
+ALBERT-xlarge MaxMass stays below 0.30 across all prompts at all tested iteration depths. MinRank stays above 55 for long prompts. The spectral k metric records zero merge events (nMerges=0) for all ALBERT-xlarge runs due to the zero-mode dominating the primary eigengap at $d=2048$. This is misleading: the cluster tracking section (P1-1) records 47–139 genuine HDBSCAN merge events per run. The two numbers measure different things and are both correct; the spectral k limitation is the known limitation, not a contradiction.
 
-**Mean pairwise cosine similarity** ($\text{ip\_mean}$) — average of $\langle x_i, x_j \rangle$ over all pairs $i \neq j$. Proxy for cloud collapse. Values near 0 indicate spread; near 1, convergence.
+Energy violation count grows with iteration depth for ALBERT-xlarge (up to 17–18 violations at 48 iterations, beta=0.1–5.0, for short_heterogeneous), while total_delta stays bounded. This is the opposite of ALBERT-base, where total_delta grows sharply with depth (reaching 10.8 at 48iter, beta=5.0 for short_heterogeneous).
 
-**Mass near 1** — fraction of token pairs with cosine similarity exceeding 0.9. Sharpest indicator of cluster formation: a jump from 0 to positive marks onset of tight grouping.
+### Multi-scale nesting is sparse
 
-**Inner product histogram** — full pairwise cosine similarity distribution in 50 bins over $[-1, 1]$. Multimodal histograms indicate distinct clusters. Stable multimodal shape across consecutive layers is the most direct metastability signature.
+Spectral eigengap within HDBSCAN clusters (P1-3) detects nesting at only layers 0–3 for ALBERT variants and layers 0–1 for BERT. No hierarchical layering is detected across deep layers. The clusters found at plateau windows are flat partitions, not hierarchies.
 
-**Effective rank** — $\exp(H)$ where $H$ is the Shannon entropy of the normalized singular value distribution of the raw activation matrix. Rank 1 = all tokens collinear. Rank near $d$ = full-space span. Drops correspond to collapse; plateaus between drops correspond to stable geometric configurations.
+### Pair HDBSCAN agreement: artifact fraction is universally low
 
-### Energy Functional
-
-**Interaction energy** $E_\beta = \frac{1}{2\beta n^2} \sum_{i,j} e^{\beta \langle x_i, x_j \rangle}$ at $\beta \in \{0.1, 1.0, 2.0, 5.0\}$. The paper proves this functional increases monotonically under the simplified dynamics (Theorem 3.4). Tracking it across layers in trained models tests whether the gradient-flow structure is preserved or broken.
-
-**Energy drop localization** — at layers where $E_\beta$ decreases (violating monotonicity), the per-pair contribution $\Delta_{ij} = e^{\beta \langle x_i, x_j \rangle_{L+1}} - e^{\beta \langle x_i, x_j \rangle_L}$ is decomposed. The top-10 token pairs with the most negative $\Delta$ are identified by token string, across all $\beta$ values. CLS, SEP, and punctuation tokens are flagged.
-
-### Cluster Counting
-
-Four independent methods, each capturing different structure:
-
-- **KMeans** with silhouette score over $k \in [2, 10]$ — best-fitting partition. Suppressed when effective rank < 10 (geometry too degenerate for meaningful $k$).
-- **HDBSCAN** — density-based, no assumed $k$, allows noise labeling.
-- **Agglomerative** at 12 cosine distance thresholds in $[0.05, 0.6]$ — hierarchical merging.
-- **Spectral eigengap** — cluster count implied by the largest gap in the normalized Laplacian eigenspectrum, with secondary gap detection for nested structure.
-
-Method agreement is tracked layer-by-layer.
-
-### Cluster Tracking Across Layers (P1-1)
-
-HDBSCAN clusters are matched across adjacent layers by maximum Jaccard overlap of token membership, using the Hungarian algorithm for optimal assignment. Unmatched source clusters are deaths, unmatched targets are births, many-to-one matches are merges. This replaces spectral-$k$ drop counting with token-level accounting of what actually moved. Centroid trajectories of matched clusters are saved as `centroid_trajectories.npz`.
-
-### Multi-Scale Cluster Nesting (P1-3)
-
-Spectral eigengap is run within each HDBSCAN cluster to detect hierarchical organization. If global spectral $k \leq 3$ while individual HDBSCAN clusters show internal sub-structure ($k > 1$), the token cloud has two-scale organization: macro-bipartition containing many micro-clusters.
-
-### Per-Pair Induction Head Filtering (P1-4)
-
-Mutual nearest-neighbor pairs are tagged by HDBSCAN cluster agreement. Pairs sharing a cluster are tagged "semantic" (genuine clustering). Pairs that are mutual NNs but in different clusters are tagged "artifact" (likely induction-head-driven cross-position subword completions, e.g. `he ↔ ger` for "Heger").
-
-### Representation Dynamics
-
-**Linear CKA** between consecutive layers — $\text{CKA}(X, Y) = \|Y^\top X\|_F^2 / (\|X^\top X\|_F \cdot \|Y^\top Y\|_F)$ where $X, Y$ are centered activation matrices. 1.0 = identical up to rotation. A CKA plateau is the theoretically cleanest metastability signature: the representation is not changing.
-
-**Nearest-neighbor stability** — fraction of tokens whose cosine-nearest neighbor is unchanged from the previous layer. A plateau near 1.0 means local neighborhood structure has locked in.
-
-### Attention Structure
-
-**Sinkhorn Fiedler value** — attention matrix at each head is Sinkhorn-normalized to a doubly stochastic matrix, then the algebraic connectivity ($\lambda_2$ of the Laplacian) is computed. Low Fiedler = near-disconnected components = attention concentrating within clusters.
-
-**Per-head Fiedler profiling** — each head classified by mean Fiedler across the active (non-collapsed) phase as CLUSTER (< 0.3), MIXED (0.3–0.7), or MIXING (> 0.7). Cross-prompt consistency checked in the cross-run report.
-
-### Plateau and Merge Detection
-
-**Plateau detection** — sliding window on five metrics simultaneously (mass, rank, spectral $k$, HDBSCAN $k$, CKA) with per-metric tolerance. Plateaus that align across metrics are the strongest evidence.
-
-**Merge event detection** — layer where cluster count drops according to $\geq 2$ independent methods simultaneously. Filters out single-method noise.
-
-**Token cluster membership** — at plateau layers, mutual nearest-neighbor cycles extracted and classified as duplicate (same token string) or semantic (distinct strings).
-
-### V Weight Spectrum
-
-Singular values and eigenvalues of $V$ matrices extracted and saved per model (`v_eigenspectrum_{model}.json`). Per layer: `sv_max`, `sv_min`, `sv_mean`, `sv_std`, `spectral_gap` ($\sigma_1/\sigma_2$), `eig_frac_pos_real`, `eig_frac_neg_real`, `eig_frac_complex`, `eig_real_mean`, `eig_spectral_radius` (max $|\lambda|$). These are the primary Phase 2 inputs: spectral radius governs convergence rate under shared-weight iteration; the complex eigenvalue fraction and real-part sign split determine whether the gradient flow model applies. Note: `plots.analyze_value_eigenspectrum` extracts $W_V$ per head, not the composed OV circuit — eigenvalue sign analysis requires the full $V_\text{eff} = \sum_h W_O^{(h)} W_V^{(h)}$, which is computed in Phase 2.
-
----
-
-## Results
-
-### Metastability exists in trained ALBERT
-
-ALBERT-base at 48 iterations produces clear plateau structure in cluster count and mass-near-1 across all natural language prompts. The two-timescale dynamics the paper predicts are visible: a fast initial phase (rising $\text{ip\_mean}$, falling rank), followed by a slow phase of pairwise cluster merging (step-drops in cluster count, step-jumps in mass). CKA plateaus align with cluster count plateaus, confirming that the representation genuinely stabilizes during metastable windows.
-
-### Depth matters: 12 iterations is insufficient
-
-At 12 iterations, ALBERT produces only the fast phase — weak clustering with $\text{ip\_mean}$ below 0.45, mass-near-1 near zero, no merge events. At 24, onset of merging. By 36, multiple merge events. At 48, near-collapse on most prompts. The metastable window is wide relative to ALBERT's practical operating depth. A 12-layer ALBERT (standard deployment) lives entirely within the fast phase and never reaches the metastable regime.
-
-### Energy monotonicity is universally violated
-
-Every run violates Theorem 3.4 — every $\beta$, every prompt, every model. Violations scale with $\beta$. The V eigenspectrum explains why: across all models and all layers, 96–98% of $V$'s eigenvalues have non-trivial imaginary parts, and the real parts split almost exactly 50/50 between positive and negative (within ±1% in every case measured). $V$ has no dominant attractive or repulsive character — it mixes both in roughly equal measure and introduces substantial rotation. The gradient flow framework assumes dynamics decompose along fixed eigenvector directions; rotational dynamics violate this at the level of the weight matrices themselves, not as an emergent effect of the forward pass.
-
-Violation character differs by architecture:
-
-1. **Degenerate-regime violations** (effective rank < 3) — floating-point noise in collapsed layers. Suppressed.
-2. **Structural violations** at active layers — top contributing pairs are semantically coherent. Violation character differs substantially by architecture. GPT-2-xl produces many small violations (27–37 out of 48 layers, total $\Delta E \approx 0.1$–$0.2$), dominated by punctuation repulsion (commas repelling commas, periods repelling `My`). The structural/positional subspace fights semantic clustering throughout the network. ALBERT-base produces few large violations (1–7 per run, total $\Delta E$ up to 14.5), concentrated at specific transition layers (layer 11 consistently), with semantic token pairs (`joy ↔ country`, `revolution ↔ those`) as the top contributors. At "reset" layers (where $\text{ip\_mean}$ drops and rank increases), co-reference pairs are being broken apart. The Spearman correlation between $|\Delta E|$ and subsequent rank change is ρ = 0.83 (ALBERT-base), 0.54 (GPT-2-large), 0.41 (GPT-2-xl) — large energy drops reliably precede geometric reorganization.
-
-### ALBERT-base collapses; ALBERT-xlarge resists — and dimension is not the cause
-
-ALBERT-base with shared weights reaches mass>0.9 = 1.0 by iteration 24 on long prompts and stays collapsed (effective rank drops to ~1.4). ALBERT-xlarge, also shared weights but $d = 2048$, reaches only mass>0.9 ≈ 0.29 at iteration 48. This directly contradicts prediction (f) (Theorem 6.1): higher dimension should accelerate convergence, but the opposite is observed.
-
-The V eigenspectrum resolves this. ALBERT-base's spectral radius is 1.506; ALBERT-xlarge's is 1.278. Under shared-weight iteration, the dominant eigenmode amplifies by this factor each pass. After 24 iterations: $1.506^{24} \approx 2700\times$ vs $1.278^{24} \approx 340\times$. ALBERT-xlarge also has `sv_mean` ≈ 1.02 (near-isometric on average), so the shared-weight iteration drifts slowly instead of collapsing. Dimension is not the governing variable — the spectral radius of $V$ is. ALBERT-xlarge learned a more conservative $V$.
-
-ALBERT-xlarge has richer fine-grained cluster structure despite resisting global collapse: HDBSCAN finds 591 cluster trajectories and 108 merge events across layers vs GPT-2-xl's 442 trajectories and 38 merges. It also has a stronger Fiedler-cluster correlation (ρ = −0.62 vs ρ = −0.40 for GPT-2-xl). The structure never consolidates into a global partition visible to spectral methods (spectral $k = 1$ at every layer in ALBERT-xlarge; the zero mode dominates the eigengap), but it is genuine and geometrically rich.
-
-### GPT-2-xl has a layer-wise spectral radius profile that explains its dynamics
-
-GPT-2-xl's V matrices are not uniform across layers. Layers 0–2 are contractive (spectral radii 0.73, 0.82, 0.85) — these layers compress the token cloud, driving the initial sharp rise in $\text{ip\_mean}$ (0.10 → 0.64 in layers 0–3). The middle layers are increasingly expansive, peaking around layers 35–43 (radii 1.70–1.74). These are where energy violations concentrate. The very late layers return toward neutral (layer 47: 1.07), which is why the layer 48 reset (CKA drop 0.995 → 0.418, $\text{ip\_mean}$ drop 0.624 → 0.298) has a direct mechanism: near-neutral $V$ with complex eigenvalues applied to a highly clustered state rotates tokens out of alignment without re-amplifying them.
-
-### Depth-conditioning of spectral radius is not monotone — there is a regime shift
-
-With all models measured, the depth-conditioning picture is more structured than a simple inverse relationship:
-
-| Model | $d$ | Layers | Spectral radius range | Mean |
-|-------|-----|--------|-----------------------|------|
-| GPT-2-small | 768 | 12 | 1.69 – 4.62 | 3.28 |
-| GPT-2-medium | 1024 | 24 | 1.59 – 4.07 | 3.21 |
-| GPT-2-large | 1280 | 36 | 0.94 – 1.81 | 1.38 |
-| GPT-2-xl | 1600 | 48 | 0.73 – 1.74 | 1.33 |
-| BERT-base | 768 | 12 | 0.79 – 1.09 | 0.94 |
-| ALBERT-base | 768 | shared | 1.51 (single) | — |
-| ALBERT-xlarge | 2048 | shared | 1.28 (single) | — |
-
-GPT-2-small and GPT-2-medium are in a qualitatively different regime from GPT-2-large and GPT-2-xl. The transition is not gradual — mean spectral radius drops from 3.21 (medium, 24 layers) to 1.38 (large, 36 layers), a factor of 2.3×, with no intermediate values. Within each regime, the per-layer profiles share a shape: spectral radius increases with layer depth in both small/medium (1.59 → 4.07) and large/xl (0.73 → 1.74), with late-layer drops toward neutral.
-
-Depth alone does not explain this. BERT-base has 12 layers and a mean spectral radius of 0.94 — similar to GPT-2-large/xl, not to GPT-2-small which also has 12 layers. The governing variable appears to be something learned during training rather than a direct function of depth. One candidate: GPT-2-small and GPT-2-medium were trained with a parameter budget concentrated in fewer layers, requiring each $V$ to carry more signal per layer. GPT-2-large and GPT-2-xl, having more layers, can afford conservative per-layer $V$ matrices. BERT's bidirectional training objective may independently select for conservative $V$ matrices regardless of depth.
-
-GPT-2-medium layers 1 and 23 have anomalously high leading singular values (15.66 and 15.27) at near-average spectral radii — consistent with the Phase 2 finding of OV spectral norm spikes at the LM-head-adjacent layers in smaller models.
-
-### Merge events are architecture-determined; plateau onset is content-driven
-
-GPT-2's merge events occur at the same layers regardless of input. Different prompts produce different cluster contents but the same merge schedule. The layer-wise transition structure is a property of the weights, not the input.
-
-Plateau onset, by contrast, is mostly content-driven. For GPT-2-xl, ALBERT-xlarge, and ALBERT-base (≥24 iterations), the standard deviation of plateau onset across prompts is 5–9 layers. Exceptions: BERT-base (SD = 0) and GPT-2-medium (SD = 1.7), where onset appears to be a weight-level property.
-
-### Two-timescale separation is architecture-specific
-
-Two-timescale separation (fast initial grouping, slow pairwise merging) is confirmed for BERT-base, GPT-2-large, and GPT-2-xl on the repeated-tokens control — the metastable window is substantially wider than the collapse onset. ALBERT models show no clean separation or weak separation: their metastable windows are narrower than or comparable to the collapse onset. The cluster content itself shows the two-timescale signature more clearly than the quantitative metrics: duplicate clusters (same token at different positions) dominate early layers, semantic clusters (distinct tokens with related meaning) grow as layers deepen, with duplicates dissolving into the semantic structure.
+Mutual-NN cycle pairs tagged as artifacts (tokens in different clusters that are nearest neighbors) stay below 3% across all models and prompts. Semantic pairs (tokens in the same cluster) increase with prompt length (longer context → cleaner clusters) and with ALBERT iteration depth (42% at 12iter → 74% at 48iter for ALBERT-base + wiki_paragraph). ALBERT-xlarge's semantic fraction is consistently lower than ALBERT-base's (56% vs 74% for long prompts at 48 iterations), consistent with its lower MaxMass and more diffuse clustering.
 
 ### Token clusters carry semantic content; deeper models add syntactic structure
 
-Mutual-NN cycle analysis at plateau layers recovers interpretable structure: `novelist ↔ poet`, `lancashire ↔ brussels`, `school ↔ lo` (Lowood). The clusters are not arbitrary geometric artifacts. They track co-reference and semantic similarity. The same paradigmatic pairs appear across architectures at stable layers: `Ġcalmly ↔ Ġproudly`, `Ġstruggle ↔ Ġcontest`, `Ġblood ↔ Ġsuffering`, `Ġclosely ↔ Ġdiligently`. ALBERT-xlarge builds similar semantic pairs earlier (layer 7–9) with a higher duplicate-to-semantic ratio. Deeper models develop additional syntactic-discourse pairs not present in shallower ones: GPT-2-xl at layer 24 finds `conflict ↔ death`, `ĠBut ↔ ,`, `ĠI ↔ should`.
+Mutual-NN cycle analysis at plateau layers recovers interpretable structure: `novelist ↔ poet`, `lancashire ↔ brussels`, `school ↔ lo` (Lowood). The clusters are not arbitrary geometric artifacts. They track co-reference and semantic similarity. Larger GPT-2 models and BERT add positional and syntactic groupings that smaller models do not show clearly.
 
-### Clustering methods disagree systematically; no hierarchical nesting found
+### The transition between GPT-2 regimes is abrupt
 
-Method agreement is poor across all runs. Spectral $k$, HDBSCAN $k$, agglomerative $k$, and $k$-means $k$ agree at essentially one layer per run. Spectral eigengap consistently reports $k = 2$ on long prompts; HDBSCAN finds 30–60+. These methods measure different structure: spectral captures the dominant bipartition, HDBSCAN captures local density neighborhoods. The disagreement is not a bug, but it means no single clustering method is sufficient.
-
-Hierarchical nesting (global bipartition containing local sub-clusters) is near-universally absent. Only a handful of layers in short prompts show any nesting. Spectral $k$ is unreliable as the sole cluster-count metric for high-dimensional models — ALBERT-xlarge has spectral $k = 1$ at every layer despite 108 genuine merge events in HDBSCAN tracking.
-
-### Prompt length scales clustering pressure
-
-Max mass-near-1 increases monotonically with token count: 8 tokens → 0.68, 58 tokens → 0.97. Matches Theorem 6.3 ($d \geq n$ regime): more particles produce more clustering pressure.
-
-### Repeated tokens are a degenerate case
-
-High $\text{ip\_mean}$ from layer 0, merge events even at 12 iterations, unimodal histograms throughout. Tests collapse speed, not metastability. Excluded from cross-run aggregation and reported as a separate collapse control.
-
-### Final-layer collapse in GPT-2 small and medium is an LM-head artifact
-
-GPT-2-small's $\text{ip\_mean}$ goes from 0.64 to 0.97 in a single layer (11 → 12) with CKA dropping from 0.94 to 0.24. GPT-2-medium does the same at layer 23 → 24. This is the unembedding layer projecting into vocabulary space, not a metastable state. The mass>0.9 = 0.97 reading at GPT-2-small's final layer is the LM head collapsing representations for logit computation. It should not be interpreted as the model reaching the paper's single-cluster attractor. GPT-2-large and GPT-2-xl have analogous final-layer norm spikes but at much smaller ratios to their stack means, and their late-layer dynamics continue past the LM head.
-
-### Head stratification is architecturally determined
-
-Per-head Fiedler profiling reveals a clean three-way split across architectures. All GPT-2-family heads at every scale classify as STABLE-CLUSTER (mean Fiedler < 0.3, often < 0.05) across every prompt — attention routing is structurally fixed and content-insensitive. ALBERT-base heads all become STABLE-MIXED by 24 iterations. ALBERT-xlarge splits exactly 8 CLUSTER / 8 MIXED, with many heads classified VARIABLE (change classification with prompt content) — consistent with shared weights reusing the same heads in different functional modes at different iterations. GPT-2's universally low Fiedler means attention always partitions tokens into near-disconnected groups, but this partitioning does not track the actual geometric clustering in the residual stream (Fiedler-cluster correlation ρ ≈ 0 to −0.40 for mid-size GPT-2 models vs ρ ≈ −0.62 for ALBERT).
-
----
-
-## Saved Artifacts
-
-**Format v2** (current). `metrics.json` is replaced by one focused file per experiment, with large arrays in `.npz`. `load_run()` auto-detects v1 vs v2 and reconstructs the same in-memory dict either way.
-
-### Per (model, prompt) run directory
-
-**JSON — small, LLM-readable, Phase 3 loadable:**
-
-| File | Experiment | Key contents |
-|------|-----------|--------------|
-| `geometry.json` | Inner products + CKA | `ip_mean/std/mass`, `effective_rank`, `cka_prev`, `nn_stability`, `ip_histogram` per layer |
-| `energies.json` | Interaction energies | `energies` dict (β→value), `energy_drop_pairs` per layer |
-| `clustering.json` | KMeans + HDBSCAN + nesting | Summaries only (no label arrays); `nesting`, `pair_agreement` per layer |
-| `spectral.json` | Spectral eigengap | `k_eigengap`, `eigenvalues` (≤16), `eigengaps`, `fiedler_bipartition` per layer |
-| `sinkhorn.json` | Attention + Sinkhorn | `fiedler_mean`, `sinkhorn_cluster_count_mean`, `row_col_balance_mean`, `attention_entropy_*` per layer |
-| `trajectory.json` | Cluster tracking | `cluster_tracking` (events, trajectories, summary), `plateau_layers` |
-| `hdbscan_labels.json` | *(Phase 3 bridge)* | `{layer_idx: [label, ...]}` per layer |
-| `events.json` | *(Phase 3 bridge)* | `merge_layers`, `energy_violations`, `energy_drop_pairs` lists |
-| `layer_metrics.json` | *(Phase 3 bridge)* | Flat per-layer scalars for `_detect_plateau_windows` |
-
-**NPZ — binary arrays:**
-
-| File | Contents |
-|------|----------|
-| `activations.npz` | L2-normed hidden states `(n_layers, n_tokens, d)` |
-| `attentions.npz` | Attention weights `(n_layers, n_heads, n, n)` |
-| `clusters.npz` | Per-layer KMeans labels+centroids, HDBSCAN labels, agglomerative mid-labels |
-| `centroid_trajectories.npz` | HDBSCAN centroid coordinates for tracked trajectories |
-| `plateau_attentions.npz` | Raw attention matrices at plateau layers |
-| `pca_trajectories.npz` | PCA projections `(n_tokens, 3)` per layer — *evicted from JSON* |
-| `fiedler_vecs.npz` | Fiedler eigenvectors `(n_tokens,)` per layer — *evicted from JSON* |
-
-**Text:**
-
-| File | Contents |
-|------|----------|
-| `tokens.txt` | Decoded token strings with indices |
-| `layer_metrics.csv` | Flat CSV of key per-layer scalars |
-| `llm_report.txt` | Self-contained plain-text analysis for LLM consumption |
-
-### At the phase1_dir root (written after all runs complete)
-
-| File | Contents |
-|------|----------|
-| `pair_agreement.json` | Per-prompt pair-agreement aggregated across all layers |
-| `centroid_trajectories.npz` | All per-prompt centroid trajectories merged, keyed `{prompt_slug}__traj_{tid}` |
-| `cross_run_report.txt` | Comparative report across all model × prompt combinations |
-| `v_eigenspectrum_{model}.json` | V weight matrix spectrum per model |
-
-**Why the split.** The old `metrics.json` reached ~9MB per run (ALBERT-xlarge). The dominant contributors were `cluster_centroids_kmeans` (~4MB, `best_k × d_model` floats per layer) and `pca_trajectories` (~400KB). These are now in `.npz`. The JSON files that remain are each <100KB and contain exactly the scalars an analysis pass or LLM needs to read.
+Mean spectral radius drops from 3.21 (GPT-2-medium, 24 layers) to 1.38 (GPT-2-large, 36 layers), a 2.3× drop with no intermediate values. This coincides with the appearance of two-timescale separation. The governing variable is something learned during training rather than a direct function of depth: BERT-base (12 layers, mean spectral radius ≈0.94) clusters with the large regime despite matching GPT-2-small's depth.
 
 ---
 
 ## Known Limitations
 
-1. **ALBERT-xlarge extended runs.** The spectral radius of V (1.278) predicts collapse at ~70–80 iterations: $\log(0.9) / \log(1.278) \approx 75$ passes needed to match ALBERT-base's 24-iteration collapse. This has not been run. ALBERT-xlarge at 96–128 iterations would confirm whether collapse is delayed or genuinely prevented by the complex eigenvalue structure.
-2. **Depth-conditioning regime shift unexplained.** The jump in mean spectral radius from GPT-2-medium (3.21, 24 layers) to GPT-2-large (1.38, 36 layers) is abrupt and not explained by depth, dimension, or training objective alone. BERT-base (0.94, 12 layers) clusters with the large models despite matching GPT-2-small's depth. The governing factor — whether training data, learning rate schedule, parameter budget allocation, or something else — is unknown.
-3. **Spectral $k$ unreliable for high-dimensional models.** ALBERT-xlarge has spectral $k = 1$ at every layer despite 108 genuine merge events in HDBSCAN tracking. The zero mode dominates the primary eigengap. Secondary eigengap detection partially compensates; full resolution requires per-cluster spectral analysis.
-4. **Induction head confound.** Mutual-NN pairs include subword completions that may be attention artifacts (`he ↔ ger` for "Heger"). Per-pair HDBSCAN agreement (P1-4) tags but does not remove them. Phase 3 crosscoder features should separate the two mechanisms.
-5. **Final-layer LM-head contamination.** GPT-2-small and GPT-2-medium final layers show extreme collapse that is the unembedding projection, not dynamics. These layers are flagged but not removed from trajectory plots.
+1. **ALBERT-xlarge extended runs.** The spectral radius of V (1.278) predicts collapse at ~70–80 iterations: $\log(0.9)/\log(1.278) \approx 75$ passes needed. ALBERT-xlarge at 12–48 iterations is now run and confirms slow dynamics. Runs at 96–128 iterations are needed to determine whether collapse is merely delayed or structurally prevented by the complex eigenvalue structure.
+2. **Spectral $k$ non-informative for ALBERT-xlarge.** Confirmed across all prompts and all iteration depths: spectral k = 1 everywhere, nMerges = 0 in summary table. The zero mode dominates. Genuine merges are recorded by HDBSCAN cluster tracking (P1-1) and are the correct measure for xlarge.
+3. **Depth-conditioning regime shift unexplained.** The jump in mean spectral radius from GPT-2-medium to GPT-2-large is abrupt and unexplained by depth, dimension, or training objective alone. The governing factor — whether training data, learning rate schedule, parameter budget allocation, or something else — is unknown.
+4. **BERT-large not in standard run.** The model is in config (`bert-large-uncased`) but was excluded from this run. Use `--models bert-large-uncased` to include it.
+5. **Random-init ALBERT baseline not in standard run.** Available via `--random-baseline`. Tests whether metastability is a property of trained weights or just of the iterated-map architecture.
+6. **Final-layer LM-head contamination.** GPT-2-small and GPT-2-medium final layers show extreme collapse that is the unembedding projection, not dynamics. These layers are flagged but not removed from trajectory plots.
+7. **Induction head confound.** Mutual-NN pairs include subword completions that may be attention artifacts. Per-pair HDBSCAN agreement (P1-4) tags but does not remove them. Artifact fraction stays below 3%, suggesting the confound is small but present.
+8. **GPT-2-small repeated-tokens anomaly.** Mass never reaches 0.9 in the control, making the two-timescale ratio undefined. This is not a code failure — regular prompts do reach high mass. The model's clustering appears to require semantic/positional diversity in the input.
 
 ---
 
 ## Modules
 
+### `run_1.py` — CLI entry point
+Orchestrates the full pipeline. Key arguments:
+- `--models`, `--prompts` — subset selection
+- `--fast` — albert-base-v2 + wiki_paragraph only, legacy snapshots
+- `--no-extended` — disable ALBERT extended-iteration mode
+- `--legacy-snapshots` — use [12,24,36,48] instead of the dense sweep
+- `--random-baseline` — add albert-base-v2-random (untrained control)
+- `--sublayer` — additionally run post-attention and post-FFN sublayer streams, saved as `{model}@attn` / `{model}@ffn` run directories (supplementary, excluded from cross-run comparison)
+- `--length-sweep` — run wiki_paragraph truncated at each LENGTH_SWEEP_TOKENS target
+- `--replot RUN_DIR`, `--summary RUN_DIR` — replot or summarize a saved run
+
+ALBERT extended mode runs a single forward pass to `ALBERT_MAX_ITERATIONS` and slices the trajectory at each snapshot, saving one result directory per (prompt, depth) pair. Sublayer streams use forward hooks on `attn.c_proj` / `mlp` (GPT-2) or `attention.output` / `output` (BERT/ALBERT) to capture intermediate residual streams.
+
 ### `analysis.py` — Layer-wise analysis loop
-Ingests hidden states and attentions, calls every metric/clustering/projection function, collects results into a single dict. Pre-computes normed activations and Gram matrix once per layer to eliminate redundant matrix multiplies. Post-loop: cluster tracking (P1-1), plateau layer identification (P1-7).
+Ingests hidden states and attentions, calls every metric/clustering/projection function, collects results into a single dict. Pre-computes normed activations and Gram matrix once per layer. Post-loop: cluster tracking (P1-1), plateau layer identification.
 
 ### `metrics.py` — Core per-layer scalar metrics
-Pairwise inner products, interaction energies (single and batched), effective rank, attention entropy, nearest-neighbor indices and stability, linear CKA, energy drop pair localization. No plotting, no I/O.
+Pairwise inner products, interaction energies (batched over β), effective rank, attention entropy, nearest-neighbor indices and stability, linear CKA, energy drop pair localization.
 
 ### `clustering.py` — Clustering algorithms and projections
-Agglomerative threshold sweep, KMeans silhouette, HDBSCAN, PCA, UMAP. Multi-scale nesting analysis (P1-3). Per-pair HDBSCAN agreement for induction head filtering (P1-4). Accepts pre-normed arrays to avoid redundant normalization.
+Agglomerative threshold sweep, KMeans silhouette, HDBSCAN, PCA, UMAP. Multi-scale nesting (P1-3): spectral eigengap within each HDBSCAN cluster. Per-pair HDBSCAN agreement (P1-4): mutual-NN cycles tagged as semantic vs artifact. Accepts pre-normed arrays.
 
-### `cluster_tracking.py` — HDBSCAN cluster tracking across layers
-Jaccard overlap matching between adjacent layers via Hungarian algorithm. Births, deaths, merges. Centroid trajectory computation from normed activations.
+### `cluster_tracking.py` — HDBSCAN trajectory accounting (P1-1)
+Tracks token cluster membership across layers. Records births, deaths, and merge events at the token level. Reports trajectories, mean/max lifespan, and the full merge event sequence. This is the correct merge-detection method for ALBERT-xlarge (where spectral k is non-informative).
 
-### `spectral.py` — Eigengap heuristic on Gram matrix Laplacian
-Threshold-free cluster count estimation from the spectral structure of the pairwise inner-product matrix. Primary and secondary gap detection.
+### `spectral.py` — Spectral eigengap clustering
+Computes spectral cluster count k from the attention graph Fiedler value and eigengap structure. Per-head Fiedler values used in the cross-prompt consistency table.
 
-### `sinkhorn.py` — Sinkhorn-Knopp normalization + Fiedler analysis
-Doubly stochastic normalization (batched across all heads). Fiedler value ($\lambda_2$ of normalized Laplacian). Sinkhorn cluster count from eigenvalues near 1.
+### `sinkhorn.py` — Attention Sinkhorn analysis
+Doubly-stochastic normalization of attention matrices, Fiedler value computation, per-head cluster/mixing classification.
 
-### `plots.py` — Figure generation
-Trajectory summary panels, inner-product histograms (paper Figure 1 replication), PCA panels, Sinkhorn heatmaps, spectral eigengap plots, eigenvalue spectra, ALBERT extended comparison, cross-model comparison, CKA trajectory, V weight spectrum.
+### `metrics.py` → `energy_drop_pairs` — Energy violation localization
+For each β, identifies token pairs responsible for non-monotone energy steps. Used in Phase 2 cross-referencing.
+
+### `plots.py` — All visualization
+Trajectory plots, IP histograms, PCA panels, Sinkhorn detail, spectral eigengap, eigenvalue spectra, ALBERT extended comparison, cross-model comparison, CKA trajectory. Also `analyze_value_eigenspectrum` (extracts V eigenvalues, feeds Phase 2).
 
 ### `reporting.py` — Text reports
-Plateau detection, merge event detection, method agreement, NN cycle extraction, per-head Fiedler profiling. Single-run LLM report with 12 sections. Cross-run comparative report with cluster tracking summaries, nesting summaries, pair agreement summaries, and collapse control section.
+`generate_llm_report`: single-run plain-text report with per-layer data table, trend descriptions, plateau locations, merge events, method agreement, energy trajectory, PCA variance, inner-product histogram summary.  
+`generate_cross_run_report`: comparative report across all (model, prompt) combinations. Sections: summary table, plateau locations, prompt sensitivity (SD of onset), merge events, energy monotonicity, flagged cross-run patterns, per-head Fiedler consistency, cluster tracking summary (P1-1), multi-scale nesting (P1-3), pair HDBSCAN agreement (P1-4), collapse control runs.
 
-### `io_utils.py` — Persistence
-`save_run` writes one JSON per experiment type plus large arrays to `.npz` (format v2). `load_run` auto-detects v1 (`metrics.json`) vs v2 (split files) and returns the same dict either way. `aggregate_global_artifacts` is called by `run.py` after all per-prompt runs finish; it writes `pair_agreement.json` and a merged `centroid_trajectories.npz` at the phase1_dir root. Individual loaders: `load_activations`, `load_attentions`, `load_clusters`, `load_centroid_trajectories`, `load_plateau_attentions`, `load_pca_trajectories`, `load_fiedler_vecs`. Replot from saved runs without model loading.
+### `io_utils.py` — Serialization
+`save_run`: writes v2 split format — `geometry.json`, `energies.json`, `clustering.json`, `spectral.json`, `activations.npz`, `attentions.npz`, `clusters.npz`, `centroid_trajectories.npz`. Each JSON is <100KB. `load_run` is backward-compatible with v1 `metrics.json`. `replot_all`: regenerate plots from saved data without model reload.
 
-### `config.py` — Global constants
-Model registry (8 models), prompt variants (5), numerical parameters ($\beta$ values, distance thresholds, Sinkhorn tolerances, ALBERT iteration sweep). Device selection.
+### `core/config.py` — Global constants
+Model registry (9 entries including `bert-large-uncased` and `albert-base-v2-random`), prompt variants (5: `short_heterogeneous`, `wiki_paragraph`, `sullivan_ballou`, `paper_excerpt`, `repeated_tokens`), β values, distance thresholds, Sinkhorn tolerances, ALBERT iteration sweep parameters. Device selection.
 
-### `models.py` — Model loading and extraction
-Standard forward pass extraction. ALBERT extended-iteration extraction (single pass to max depth, sliced at snapshot points). bfloat16 on CUDA, torch.compile when available.
+### `core/models.py` — Model loading and extraction
+Standard forward pass extraction for BERT/GPT-2. ALBERT extended-iteration extraction (single pass to max depth, sliced at snapshot points). bfloat16 on CUDA, `torch.compile` when available. `layernorm_to_sphere` projects activations to $\mathbb{S}^{d-1}$ before metric computation.
 
-### `run.py` — CLI entry point
-`--models`, `--prompts`, `--fast` (ALBERT-base + wiki_paragraph with legacy snapshots), `--no-extended`, `--legacy-snapshots` (revert to [12,24,36,48]), `--replot`, `--summary`. Excludes repeated_tokens from cross-run metastability aggregation (P1-2).
+---
+
+## Output Format (v2)
+
+Per-run directory `{model}_{prompt}/`:
+```
+geometry.json          — per-layer ip_mean, ip_std, effective_rank, nn_stability, cka_prev
+energies.json          — per-layer energies (all β), violations, drop pairs
+clustering.json        — per-layer spectral_k, hdbscan_k, mass>0.9, nesting, pair_agreement
+spectral.json          — per-layer Fiedler, sinkhorn_k, attention_entropy
+activations.npz        — (n_layers, n_tokens, d_model) float32, L2-normed
+attentions.npz         — (n_layers, n_heads, n_tokens, n_tokens) float32
+clusters.npz           — hdbscan_labels_L{i} per layer
+centroid_trajectories.npz
+llm_report.txt
+```
+
+Session-level: `llm_cross_run_report.txt`, `experiment.txt`.
 
 ---
 

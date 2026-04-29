@@ -414,8 +414,8 @@ def run_model(
     force_block2: bool = False,
     skip_ffn: bool = False,
     beta_values: list = None,
-) -> dict:
-    """
+    ) -> dict:
+    """ 
     Run Phase 2i analysis for one model. Writes per-subexperiment JSON +
     summary.txt files under save_dir/{model_stem}/.
 
@@ -599,6 +599,60 @@ def run_model(
     _write_subresult(sub_dir, "block2_hemispheric", block2_results, b2_lines)
     print(f"  Saved: {sub_dir}/block2_hemispheric.{{json,summary.txt}}")
     summary_sections.append(b2_lines)
+
+    # ── Block 3: Imaginary ablation ───────────────────────────────────────────────
+    from p2b_imaginary.imaginary_ablation import (
+        analyze_imaginary_ablation, ablation_to_json, ablation_summary_lines,
+    )
+
+    print(f"\n--- Block 3: Imaginary ablation depth sweep ---")
+    block3_results = {}
+    for run_dir in phase1_runs:
+        prompt = run_dir.name.split("iter_")[-1] if "iter_" in run_dir.name else run_dir.name
+        activations = load_activations(run_dir)
+        if activations is None:
+            continue
+        phase1_events = load_phase1_events(run_dir)
+        try:
+            abl     = analyze_imaginary_ablation(activations, ov_data, phase1_events)
+            abl_j   = ablation_to_json(abl)
+            block3_results[prompt] = abl_j
+            print(f"  {prompt}: {abl['classification']['outcome']}")
+        except Exception as e:
+            block3_results[prompt] = {"error": str(e)}
+
+    results["block3"] = block3_results
+    b3_lines = ablation_summary_lines(
+        next(iter(block3_results.values()), {})  # first prompt for the model-level summary
+    )
+    _write_subresult(sub_dir, "block3_imaginary_ablation", block3_results, b3_lines)
+    summary_sections.append(b3_lines)
+
+    # ── Block 4: LayerNorm Jacobian ───────────────────────────────────────────────
+    from p2b_imaginary.layernorm_jacobian.py import layernorm_jacobian_summary_lines
+
+    print(f"\n--- Block 4: LayerNorm Jacobian inflation ---")
+    block4_results = {}
+    for run_dir in phase1_runs:
+        prompt = run_dir.name.split("iter_")[-1] if "iter_" in run_dir.name else run_dir.name
+        activations = load_activations(run_dir)
+        if activations is None:
+            continue
+        try:
+            lnj   = analyze_layernorm_jacobian(activations, ov_data)
+            lnj_j = layernorm_jacobian_to_json(lnj)
+            block4_results[prompt] = lnj_j
+            print(f"  {prompt}: {lnj['classification']}  "
+                f"inflation={lnj['mean_inflation']:.3f}  r={lnj['mean_pearson_r']:.3f}")
+        except Exception as e:
+            block4_results[prompt] = {"error": str(e)}
+
+    results["block4"] = block4_results
+    b4_lines = layernorm_jacobian_summary_lines(
+        next(iter(block4_results.values()), {})
+    )
+    _write_subresult(sub_dir, "block4_layernorm_jacobian", block4_results, b4_lines)
+    summary_sections.append(b4_lines)
 
     # -----------------------------------------------------------------------
     # FFN rotation interaction (per-layer models only, if deltas available)

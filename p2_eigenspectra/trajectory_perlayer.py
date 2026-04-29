@@ -357,7 +357,7 @@ def analyze_trajectory_offline_perlayer(
     """
     if not ov_data["is_per_layer"]:
         # Shared weights — use the standard path
-        from phase2.trajectory import analyze_trajectory_offline
+        from p2_eigenspectra.trajectory import analyze_trajectory_offline
         return analyze_trajectory_offline(run_dir, ov_data)
 
     run_dir = Path(run_dir)

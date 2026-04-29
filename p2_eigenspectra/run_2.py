@@ -129,7 +129,7 @@ def run_full(
     models_to_run: list = None,
     prompts_to_run: list = None,
     phase1_dir: Path = None,
-) -> list:
+    ) -> list:
     """Full p2_eigenspectra pipeline: load models, extract weights, decompose, analyse."""
     if models_to_run is None:
         models_to_run = list(MODEL_CONFIGS.keys())
@@ -217,7 +217,7 @@ def run_offline(
     prompts_to_run: list = None,
     weights_dir: Path = None,
     head_analysis: bool = False,
-) -> list:
+    ) -> list:
     """Offline p2_eigenspectra: trajectory + analysis from saved data only."""
     if models_to_run is None:
         models_to_run = list(MODEL_CONFIGS.keys())
@@ -265,10 +265,22 @@ def run_offline(
                 stem         = _run_stem(model_name, prompt_key, cfg)
                 decompose_dir = Path(weights_dir) / stem
                 decomposed   = load_decomposed(decompose_dir)
+                
+                # --- Appended to make offline run _run_decompose---
                 if decomposed is None:
-                    decomposed = load_decomposed(run_dir)
+                    print(f"    Decomposition missing. Generating decomposition for {model_name}...")
+                    model, tokenizer = load_model(model_name)
+                    decomposed = _run_decompose(model, tokenizer, model_name, prompt_key, cfg)
+                    # Optionally save it so it's there next time
+                    save_decomposed(decomposed, decompose_dir)
+                    del model
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                # ----------------------
+                
                 if decomposed is None:
-                    print(f"    Decompose: no saved deltas in {decompose_dir} or {run_dir}")
+                    print(f"    Decompose: no saved deltas and generation failed.")
+                    continue # Skip if still None
 
                 ctx = {
                     "model_name":     model_name,
@@ -278,6 +290,7 @@ def run_offline(
                     "traj":           traj,
                     "decomposed":     decomposed,
                     "phase1_run_dir": run_dir,
+                    "weights_dir":    weights_dir, #new
                 }
 
                 verdict = run_one_prompt(ctx, output_dir)
@@ -391,11 +404,11 @@ def _find_run_dir(phase1_dir, model_name, prompt_key, cfg):
             effective = f"{model_name}@{snap}iter"
             stem = f"{effective.replace('/', '_').replace('@', '_')}_{prompt_key}"
             d = phase1_dir / stem
-            if d.exists() and (d / "metrics.json").exists():
+            if d.exists() and (d / "layer_metrics.json").exists():
                 return d
     stem = f"{model_name.replace('/', '_')}_{prompt_key}"
     d    = phase1_dir / stem
-    if d.exists() and (d / "metrics.json").exists():
+    if d.exists() and (d / "layer_metrics.json").exists():
         return d
     return None
 

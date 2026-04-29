@@ -272,13 +272,21 @@ def decomposed_violations_summary_lines(decomp_results: list) -> list[str]:
 def _ffn_subspace_subexp(ctx: dict) -> SubResult:
     from p2_eigenspectra.ffn_subspace import run_ffn_subspace_analysis, ffn_subspace_summary_lines
 
-    stem_dir       = ctx["stem_dir"]
+    stem_dir = ctx["stem_dir"]
     phase1_run_dir = ctx["phase1_run_dir"]
-    ov_data        = ctx["ov_data"]
+    # NEW: Check the directory where run_offline stored/found the deltas
+    weights_decomposed_dir = Path(ctx.get("weights_dir", ".")) / ctx["stem"]
 
-    result = run_ffn_subspace_analysis(stem_dir, ov_data, phase1_run_dir=phase1_run_dir)
+    # Try current output first
+    result = run_ffn_subspace_analysis(stem_dir, ctx["ov_data"], phase1_run_dir=phase1_run_dir)
+    
+    # Try the weights source directory next
+    if not result.get("applicable") and weights_decomposed_dir.exists():
+        result = run_ffn_subspace_analysis(weights_decomposed_dir, ctx["ov_data"], phase1_run_dir=phase1_run_dir)
+    
+    # Fallback to Phase 1
     if not result.get("applicable"):
-        result = run_ffn_subspace_analysis(phase1_run_dir, ov_data)
+        result = run_ffn_subspace_analysis(phase1_run_dir, ctx["ov_data"])
 
     if not result.get("applicable"):
         return SubResult(

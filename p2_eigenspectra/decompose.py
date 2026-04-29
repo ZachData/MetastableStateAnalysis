@@ -34,7 +34,7 @@ def extract_decomposed_albert(
     text: str,
     snapshots: list,
     max_iterations: int,
-) -> dict:
+    ) -> dict:
     """
     Run ALBERT's shared layer with attn/FFN component capture.
 
@@ -160,7 +160,7 @@ def extract_decomposed_standard(
     tokenizer,
     text: str,
     model_name: str,
-) -> dict:
+    ) -> dict:
     """
     Extract attn/FFN decomposition for non-ALBERT models using hooks.
 
