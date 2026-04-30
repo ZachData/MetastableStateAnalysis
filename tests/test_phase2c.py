@@ -16,7 +16,7 @@ C4  slow_point_compare : layer_sa_profile, bootstrap_ci, plateau_vs_merge_table,
 C1  jpca_fit           : pca_reduce, remove_condition_mean, build_regression_mats,
                          fit_skew_symmetric, r2_score, extract_rotation_planes,
                          fit_jpca (end-to-end on synthetic rotational data)
-C1  jpca_alignment     : principal_angles, jpca_ua_alignment
+C1  jpca_alignment     : principal_angles, align_jpca_to_ua
 C1  hdr_fit            : fit_single_condition_skew, consensus_rotation_plane,
                          hdr_variance_ratio
 C2  tangling           : compute_velocities, project_channel, compute_Q_matrix,
@@ -53,7 +53,7 @@ from p2c_churchland.jpca_fit import (
     fit_skew_symmetric, r2_score, extract_rotation_planes, fit_jpca,
 )
 from p2c_churchland.jpca_alignment import (
-    principal_angles, jpca_ua_alignment,
+    principal_angles, align_jpca_to_ua,
 )
 from p2c_churchland.hdr_fit import (
     fit_single_condition_skew, consensus_rotation_plane, hdr_variance_ratio,
@@ -536,7 +536,7 @@ class TestJPCAAUAlignment(unittest.TestCase):
         plane = np.eye(D)[:, :2]
         ua_planes = [np.eye(D)[:, :2]]
         res_jpca = self._synthetic_jpca_result(plane)
-        res = jpca_ua_alignment(res_jpca, ua_planes, angle_threshold_deg=30.0)
+        res = align_jpca_to_ua(res_jpca, ua_planes, angle_threshold_deg=30.0)
         self.assertTrue(res["p2cj2_holds"])
         self.assertAlmostEqual(res["mean_min_angle"], 0.0, places=5)
 
@@ -544,21 +544,21 @@ class TestJPCAAUAlignment(unittest.TestCase):
         plane_j  = np.eye(D)[:, :2]
         plane_ua = np.eye(D)[:, 2:4]
         res_jpca = self._synthetic_jpca_result(plane_j)
-        res = jpca_ua_alignment(res_jpca, [plane_ua], angle_threshold_deg=30.0)
+        res = align_jpca_to_ua(res_jpca, [plane_ua], angle_threshold_deg=30.0)
         self.assertFalse(res["p2cj2_holds"])
         self.assertGreater(res["mean_min_angle"], 60.0)
 
     def test_distribution_tag_aligned(self):
         plane = np.eye(D)[:, :2]
         res_jpca = self._synthetic_jpca_result(plane)
-        res = jpca_ua_alignment(res_jpca, [plane])
+        res = align_jpca_to_ua(res_jpca, [plane])
         self.assertEqual(res["angle_distribution"], "aligned")
 
     def test_distribution_tag_orthogonal(self):
         plane_j  = np.eye(D)[:, :2]
         plane_ua = np.eye(D)[:, 2:4]
         res_jpca = self._synthetic_jpca_result(plane_j)
-        res = jpca_ua_alignment(res_jpca, [plane_ua])
+        res = align_jpca_to_ua(res_jpca, [plane_ua])
         self.assertEqual(res["angle_distribution"], "orthogonal")
 
 
@@ -723,7 +723,7 @@ class TestTanglingThreeChannels(unittest.TestCase):
                            P_S,
                            RNG.standard_normal((T, N, D)))
         # A-channel: smooth sinusoidal (low tangling expected)
-        t_idx = np.linspace(0, 2 * np.pi, T)
+        t_idx = np.linspace(0, np.pi / 2, T)
         a_part = np.zeros((T, N, D))
         for i in range(N):
             a_part[:, i, 0] = np.sin(t_idx + i * 0.3)

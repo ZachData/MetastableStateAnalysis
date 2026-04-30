@@ -224,6 +224,8 @@ def run_model(model_name: str, args) -> dict:
     final_dir = ckpt_dir / "final"
 
     if args.skip_train:
+        with open(final_dir / "config.json") as f:
+            cc_config = json.load(f)
         print("\n  [train] Skipped (--skip-train)")
     elif is_trained(ckpt_dir) and not args.force_train:
         print(f"\n  [train] Found existing checkpoint: {final_dir}")
@@ -604,13 +606,11 @@ def _detect_plateau_windows(layers_data: list, min_length: int = 3) -> list:
         stable_flags.append(_is_stable(info))
         prev_hdb_k  = info.get(
             "hdbscan_k",
-            info.get("clustering", {}).get("hdbscan", {}).get("n_clusters"),
-            prev_hdb_k,
+            info.get("clustering", {}).get("hdbscan", {}).get("n_clusters", prev_hdb_k),
         )
         prev_spec_k = info.get(
             "spectral_k",
-            info.get("clustering", {}).get("spectral", {}).get("k"),
-            prev_spec_k,
+            info.get("clustering", {}).get("spectral", {}).get("k", prev_spec_k),
         )
 
     plateaus = []
@@ -636,111 +636,184 @@ def _detect_plateau_windows(layers_data: list, min_length: int = 3) -> list:
 
 
 def _load_artifacts(args, model_name: str) -> dict:
-    """Load Phase 1/2 artifacts into a dict for analysis registry."""
-    artifacts: dict = {}
+    import re
+    import json
+    import numpy as np
+    from pathlib import Path
 
+    artifacts: dict = {}
     phase1_dir = Path(args.phase1_dir) if getattr(args, "phase1_dir", None) else None
     phase2_dir = Path(args.phase2_dir) if getattr(args, "phase2_dir", None) else None
 
-    if phase1_dir and phase1_dir.exists():
-        prompt_dirs = [
-            d for d in phase1_dir.iterdir()
-            if d.is_dir() and model_name.replace("/", "_") in d.name
-        ]
+    # model_name arrives hyphenated ("albert-xlarge-v2", "gpt2-large")
+    is_albert = "albert" in model_name.lower()
+    target_model = model_name  # keep hyphens; dir names use hyphens too
 
-        plateau_layers:     dict = {}
-        hdbscan_labels:     dict = {}
-        merge_layers:       dict = {}
-        energy_violations:  dict = {}
-        energy_drop_pairs:  dict = {}
-        pair_agreement:     dict = {}
-        head_fiedler_profile: dict = {}
+    # -------------------------------------------------------------------------
+    # Phase 1
+    # -------------------------------------------------------------------------
+    if phase1_dir and phase1_dir.exists():
+        if is_albert:
+            # Albert dirs: <model>_36iter_<prompt>  (12 / 24 / 48 also exist)
+            prompt_dirs = [
+                d for d in phase1_dir.iterdir()
+                if d.is_dir()
+                and target_model in d.name
+                and "_36iter_" in d.name
+            ]
+            def _prompt_key(d):
+                return re.sub(r"^.*?_\d+iter_", "", d.name)
+        else:
+            # GPT-2 dirs: <model>_<prompt>  — no iter tag at all
+            prompt_dirs = [
+                d for d in phase1_dir.iterdir()
+                if d.is_dir()
+                and d.name.startswith(target_model + "_")
+                and not re.search(r"_\d+iter", d.name)
+            ]
+            _prefix_len = len(target_model) + 1  # len("gpt2-large_")
+            def _prompt_key(d):
+                return d.name[_prefix_len:]
+
+        print(f"    Phase 1: Filtered for {target_model}. Found {len(prompt_dirs)} folders.")
+
+        collections = {
+            "plateau_layers":       {},
+            "hdbscan_labels":       {},
+            "merge_layers":         {},
+            "energy_violations":    {},
+            "energy_drop_pairs":    {},
+            "centroid_trajectories":{},
+        }
 
         for pd in prompt_dirs:
-            stem = pd.name
-            # Directory names are like: albert_xlarge_v2_100iter_short_heterogeneous
-            # Strip the model+iteration prefix to recover the prompt key.
-            prompt_key = re.sub(r"^.*?\d+iter_", "", stem)
-            if not prompt_key or prompt_key == stem:
-                # Fallback: take everything after the last model-stem segment
-                parts = stem.split("_")
-                prompt_key = "_".join(parts[3:]) if len(parts) > 3 else parts[0]
+            prompt_key = _prompt_key(pd)
 
+            # 1. Plateau layers from layer_metrics.json
             layer_file = pd / "layer_metrics.json"
             if layer_file.exists():
                 with open(layer_file) as f:
-                    layer_data = json.load(f)
-                plats = _detect_plateau_windows(layer_data)
-                plateau_layers[prompt_key] = [p["mid"] for p in plats]
+                    plats = _detect_plateau_windows(json.load(f))
+                collections["plateau_layers"][prompt_key] = [p["mid"] for p in plats]
 
+            # 2. HDBSCAN labels
             labels_file = pd / "hdbscan_labels.json"
             if labels_file.exists():
                 with open(labels_file) as f:
-                    hdbscan_labels[prompt_key] = json.load(f)
+                    collections["hdbscan_labels"][prompt_key] = json.load(f)
 
+            # 3. Events — merge layers, energy violations, drop pairs
             events_file = pd / "events.json"
             if events_file.exists():
                 with open(events_file) as f:
                     ev = json.load(f)
-                merge_layers[prompt_key]      = ev.get("merge_layers", [])
-                energy_violations[prompt_key] = ev.get("energy_violations", {})
-                energy_drop_pairs[prompt_key] = ev.get("energy_drop_pairs", {})
+                collections["merge_layers"][prompt_key]      = ev.get("merge_layers", [])
+                collections["energy_violations"][prompt_key] = ev.get("energy_violations", {})
+                collections["energy_drop_pairs"][prompt_key] = ev.get("energy_drop_pairs", {})
 
-        for fname, key, target in [
-            ("pair_agreement.json",       "pair_agreement",       pair_agreement),
-            ("head_fiedler_profile.json", "head_fiedler_profile", head_fiedler_profile),
-        ]:
+            # 4. Centroid trajectories (per-prompt npz, kept as NpzFile)
+            centroid_file = pd / "centroid_trajectories.npz"
+            if centroid_file.exists():
+                collections["centroid_trajectories"][prompt_key] = np.load(
+                    centroid_file, allow_pickle=True
+                )
+
+        artifacts.update(collections)
+
+        # Build violation_layers: {prompt_key: [flat sorted list of int layer indices]}
+        # energy_violations structure: {prompt_key: {beta_str: [layer_idx, ...]}}
+        # Flatten across all betas (union) so violation_layer_features can use it directly.
+        violation_layers = {}
+        for pk, beta_dict in collections["energy_violations"].items():
+            if isinstance(beta_dict, dict):
+                flat = set()
+                for layers_list in beta_dict.values():
+                    if isinstance(layers_list, list):
+                        flat.update(int(l) for l in layers_list)
+                violation_layers[pk] = sorted(flat)
+            elif isinstance(beta_dict, list):
+                # Legacy flat format
+                violation_layers[pk] = sorted(int(l) for l in beta_dict)
+        artifacts["violation_layers"] = violation_layers
+
+        # Global Phase 1 files (pair_agreement, etc.)
+        for fname, key in [("pair_agreement.json", "pair_agreement")]:
             fpath = phase1_dir / fname
-            if fpath.exists():
-                with open(fpath) as f:
-                    target.update(json.load(f))
-
-        artifacts.update({
-            "plateau_layers":       plateau_layers,
-            "hdbscan_labels":       hdbscan_labels,
-            "merge_layers":         merge_layers,
-            "energy_violations":    energy_violations,
-            "energy_drop_pairs":    energy_drop_pairs,
-            "pair_agreement":       pair_agreement,
-            "head_fiedler_profile": head_fiedler_profile,
-            "phase1_dir":           str(phase1_dir),
-        })
-        print(f"    Phase 1 artifacts loaded from {phase1_dir}")
-
-    if phase2_dir and phase2_dir.exists():
-        stem = model_name.replace("/", "_").replace("-", "_")
-        projector_file = phase2_dir / f"ov_projectors_{stem}.npz"
-        if projector_file.exists():
-            data = np.load(projector_file)
-            k_top = getattr(args, "k_top", 64)
-            ov_projectors: dict = {}
-            for key in data.files:
-                mat = data[key]
-                if mat.ndim == 2 and mat.shape[0] == mat.shape[1]:
-                    eigvals, eigvecs = np.linalg.eigh(mat)
-                    idx = np.argsort(np.abs(eigvals))[::-1][:k_top]
-                    ov_projectors[key] = eigvecs[:, idx]
-                else:
-                    ov_projectors[key] = mat
-            artifacts["ov_projectors"] = ov_projectors
-            print(f"    OV projectors loaded (k={k_top}): {list(ov_projectors.keys())[:4]}…")
-
-        for fname, key in [
-            ("ffn_subspace.json",  "ffn_subspace"),
-            ("cross_term.json",    "cross_term_results"),
-            ("ov_per_head.json",   "ov_per_head"),
-            ("head_ov.json",       "head_ov"),
-        ]:
-            fpath = phase2_dir / fname
             if fpath.exists():
                 with open(fpath) as f:
                     artifacts[key] = json.load(f)
 
-        artifacts["phase2_dir"] = str(phase2_dir)
-        print(f"    Phase 2 artifacts loaded from {phase2_dir}")
+        artifacts["phase1_dir"] = str(phase1_dir)
+        print(f"    Phase 1: Loaded {len(prompt_dirs)} prompt subdirectories.")
+
+    # -------------------------------------------------------------------------
+    # Phase 2
+    # -------------------------------------------------------------------------
+    if phase2_dir and phase2_dir.exists():
+        proj_stem = model_name.replace("/", "_")  # underscored stem for filenames
+        projector_file = phase2_dir / f"ov_projectors_{proj_stem}.npz"
+
+        if projector_file.exists():
+            data = np.load(projector_file)
+            keys = list(data.files)
+            is_shared = any(k.endswith("_shared") for k in keys)
+
+            if is_shared:
+                # ALBERT shared-weight: strip "_shared" suffix to produce bare keys
+                # e.g. "sym_attract_shared" → "sym_attract"
+                ov_projs = {}
+                for raw_key in keys:
+                    clean = raw_key[:-len("_shared")] if raw_key.endswith("_shared") else raw_key
+                    ov_projs[clean] = data[raw_key].astype(np.float32)
+                artifacts["v_projectors"] = ov_projs
+                artifacts["is_per_layer"] = False
+            else:
+                # GPT-2 per-layer: keys like "sym_attract_h0", "sym_attract_h1" …
+                # Auto-detect layer suffixes from sym_attract_* keys.
+                layer_suffixes = sorted(
+                    k[len("sym_attract_"):]
+                    for k in keys if k.startswith("sym_attract_")
+                )
+                proj_list = []
+                for suffix in layer_suffixes:
+                    proj_dict = {}
+                    for prefix in ("sym_attract", "sym_repulse",
+                                   "schur_attract", "schur_repulse"):
+                        full_key = f"{prefix}_{suffix}"
+                        if full_key in keys:
+                            proj_dict[prefix] = data[full_key].astype(np.float32)
+                    if proj_dict:
+                        proj_list.append(proj_dict)
+                artifacts["v_projectors"] = proj_list if proj_list else None
+                artifacts["is_per_layer"] = True
+
+        # FFN deltas — stored in per-model-prompt subdirectories:
+        #   <phase2_dir>/<model_name>_<prompt_key>/ffn_deltas_raw.npz
+        # e.g. results/p2_.../albert-xlarge-v2_paper_excerpt/ffn_deltas_raw.npz
+        prefix = target_model + "_"  # "albert-xlarge-v2_" or "gpt2-large_"
+        ffn_subspaces = {}
+        for subdir in sorted(phase2_dir.iterdir()):
+            if not subdir.is_dir():
+                continue
+            if not subdir.name.startswith(prefix):
+                continue
+            prompt_key = subdir.name[len(prefix):]
+            # Prefer raw (energy-accurate); fall back to normed
+            for fname in ("ffn_deltas_raw.npz", "ffn_deltas_normed.npz"):
+                fpath = subdir / fname
+                if fpath.exists():
+                    ffn_subspaces[prompt_key] = {
+                        "path":   str(fpath),
+                        "normed": "normed" in fname,
+                    }
+                    break
+
+        artifacts["ffn_subspaces"] = ffn_subspaces
+        artifacts["ffn_subspace"]  = ffn_subspaces   # alias for cross-phase loader gate
+        artifacts["phase2_dir"]    = str(phase2_dir)
+        print(f"    Phase 2: Loaded projectors and {len(ffn_subspaces)} FFN delta sets.")
 
     return artifacts
-
 
 # ---------------------------------------------------------------------------
 # Terminal summary

@@ -38,7 +38,7 @@ from core.config import DEVICE, PROMPTS
 from p3_crosscoder.crosscoder import Crosscoder
 from p3_crosscoder.data import PromptActivationStore, ActivationBuffer
 from p3_crosscoder.training import load_trained_crosscoder
-from p3_crosscoder.run import _detect_plateau_windows
+from p3_crosscoder.run_3 import _detect_plateau_windows
 
 from .activation_trajectories import (
     extract_activation_trajectories,

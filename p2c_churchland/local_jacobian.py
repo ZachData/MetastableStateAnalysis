@@ -68,7 +68,7 @@ def compute_layer_jacobian(
     -------
     J : (d, d) ndarray — Jacobian ∂layer_fn(x) / ∂x.
     """
-    x_t = torch.tensor(x, dtype=torch.float64, device=device)
+    x_t = torch.tensor(x, dtype=torch.float32, device=device)
 
     try:
         # torch.func.jacrev (PyTorch >= 2.0 functional API)
@@ -110,14 +110,14 @@ def _make_layer_fn(
     model_type = model_type.lower()
 
     if model_type == "albert":
-        # ALBERT: single shared layer applied repeatedly
-        layer = model.albert.encoder.albert_layer_groups[0].albert_layers[0]
+        # AutoModel gives AlbertModel directly (model.encoder)
+        # Task-head wrappers give AlbertModel at model.albert.encoder
+        encoder = getattr(model, "albert", model).encoder
+        layer = encoder.albert_layer_groups[0].albert_layers[0]
         def fn(x: torch.Tensor) -> torch.Tensor:
-            # x : (d,) — unsqueeze to (1, 1, d) for [batch, seq, hidden]
             h = x.unsqueeze(0).unsqueeze(0)
-            # attention_mask: all ones, shape (1, 1, 1, 1) for ALBERT
             attn_mask = torch.ones(1, 1, 1, 1, dtype=x.dtype, device=x.device)
-            out = layer(h, attn_mask)[0]  # returns tuple; first elem is hidden
+            out = layer(h, attn_mask)[0]
             return out.squeeze(0).squeeze(0)
 
     elif model_type == "gpt2":
@@ -193,6 +193,9 @@ def decompose_sa(J: np.ndarray) -> dict:
         "S_n_positive": int(np.sum(S_eigvals > 0)),
         "S_n_negative": int(np.sum(S_eigvals < 0)),
         "A_sing_vals":  A_sing_vals,
+        #added for tests
+        "s_frac": S_frob_sq / J_frob_sq if J_frob_sq > 1e-30 else float("nan"),
+        "a_frac": A_frob_sq / J_frob_sq if J_frob_sq > 1e-30 else float("nan"),
     }
 
 

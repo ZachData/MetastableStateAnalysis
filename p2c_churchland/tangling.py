@@ -237,7 +237,7 @@ def tangling_three_channels(
     P_A: np.ndarray,
     P_S: np.ndarray,
     eps: float = 1e-4,
-) -> dict:
+    ) -> dict:
     """
     Compute Q for the full, S-channel, and A-channel trajectories.
 
@@ -281,6 +281,13 @@ def tangling_three_channels(
         "full":          summ_full,
         "S":             summ_S,
         "A":             summ_A,
+        # flat aliases for extended tests
+        "Q_full":        summ_full["per_token_max"],
+        "Q_S":           summ_S["per_token_max"],
+        "Q_A":           summ_A["per_token_max"],
+        "mean_Q_full":   summ_full["population_mean"],
+        "mean_Q_S":      summ_S["population_mean"],
+        "mean_Q_A":      summ_A["population_mean"],
         "p2ct1_holds":   A_mean < S_mean,
         "A_vs_S_ratio":  A_mean / max(S_mean, 1e-30),
     }

@@ -1,14 +1,14 @@
 """
 run_2c.py — p2c_churchland CLI entry point.
 
-Runs all five analysis tracks against Phase 1 + Phase 2i artifacts and writes
+Runs all five analysis tracks against Phase 1 + Phase 2b artifacts and writes
 every result as its own JSON file plus a flat LLM-friendly summary.txt.
 
 Usage
 -----
     python -m p2c_churchland.run_2c \\
         --phase1-dir results/phase1_... \\
-        --phase2-dir results/phase2i_... \\
+        --phase2b-dir results/phase2_... \\
         [--output-dir results/phase2c_...] \\
         [--model albert-xlarge-v2] \\
         [--device cpu] \\
@@ -83,60 +83,127 @@ def _jload(path: Path) -> dict:
 # Phase 1 artifact loading
 # ---------------------------------------------------------------------------
 
-def load_phase1_artifacts(phase1_dir: Path) -> dict:
+
+def load_phase1_artifacts(phase1_dir: Path, model_name: str) -> dict:
     """
-    Load centroid trajectories, cluster metadata, and phase event layers.
+    Load centroid trajectories, cluster metadata, and phase event layers
+    for a specific model by scanning matching subdirectories.
+
+    Subdirectory naming convention:
+        {model_file_stem}_{N}iter_{prompt_key}/
+    e.g. albert-base-v2_12iter_paper_excerpt/
 
     Returns
     -------
     dict with:
-      traj_dict       : {key: (n_layers, d)} — all centroid trajectories
+      traj_dict       : {subdir/key: (n_layers, d)} — all centroid trajectories
       traj_stacked    : (n_cond, n_layers, d) — for jPCA / CIS
       traj_keys       : list[str]
       plateau_layers  : list[int]
       merge_layers    : list[int]
-      metrics         : raw metrics dict (or {})
+      metrics         : raw metrics dict from first matching subdir (or {})
     """
     arts: dict = {
-        "traj_dict":    {},
-        "traj_stacked": None,
-        "traj_keys":    [],
+        "traj_dict":      {},
+        "traj_stacked":   None,
+        "traj_keys":      [],
         "plateau_layers": [],
         "merge_layers":   [],
         "metrics":        {},
     }
 
-    # Centroid trajectories
-    ct_path = phase1_dir / "centroid_trajectories.npz"
-    if ct_path.exists():
-        npz = np.load(ct_path)
-        arts["traj_dict"] = {k: npz[k] for k in npz.files}
+    fstem = _file_stem(model_name)   # e.g. albert-base-v2
+
+    # Collect matching subdirectories
+    subdirs = sorted(
+        d for d in phase1_dir.iterdir()
+        if d.is_dir() and d.name.startswith(fstem)
+    )
+    if not subdirs:
+        print(f"  WARNING: no subdirectories matching '{fstem}' in {phase1_dir}")
+        return arts
+
+    for sub in subdirs:
+        ct_path = sub / "centroid_trajectories.npz"
+        if ct_path.exists():
+            npz = np.load(ct_path)
+            for k in npz.files:
+                arts["traj_dict"][f"{sub.name}/{k}"] = npz[k]
+
+        # Metrics — take from first subdir that has them
+        if not arts["plateau_layers"] or not arts["merge_layers"]:
+            tj = sub / "trajectory.json"
+            if tj.exists():
+                td = _jload(tj)
+                if not arts["plateau_layers"]:
+                    arts["plateau_layers"] = _flatten_layers(
+                        td.get("plateau_layers") or td.get("plateau_layer_indices") or []
+                    )
+                if not arts["merge_layers"]:
+                    tracking = td.get("cluster_tracking", {})
+                    events   = tracking.get("events", [])
+                    ml = sorted({e["layer_from"] for e in events if e.get("n_merges", 0) > 0})
+                    if ml:
+                        arts["merge_layers"] = ml
+
+    if arts["traj_dict"]:
         arts["traj_keys"] = sorted(arts["traj_dict"])
-        if arts["traj_keys"]:
+        all_arrays = [arts["traj_dict"][k] for k in arts["traj_keys"]]
+
+        # Filter to trajectories with enough layers for jPCA (need >= 3 for n_pc >= 2)
+        min_lifespan = 3
+        long_keys  = [k for k, a in zip(arts["traj_keys"], all_arrays)
+                    if a.shape[0] >= min_lifespan]
+        long_arrays = [arts["traj_dict"][k] for k in long_keys]
+
+        print(f"  loaded centroid_trajectories from {len(subdirs)} subdirs "
+            f"({len(arts['traj_keys'])} trajectories, "
+            f"{len(long_keys)} with lifespan ≥ {min_lifespan})")
+
+        if long_arrays:
+            trim = min(a.shape[0] for a in long_arrays)
             arts["traj_stacked"] = np.stack(
-                [arts["traj_dict"][k] for k in arts["traj_keys"]], axis=0
+                [a[:trim] for a in long_arrays], axis=0
             )
-        print(f"  loaded centroid_trajectories.npz  "
-              f"({len(arts['traj_keys'])} trajectories)")
+        else:
+            print("  WARNING: no trajectories survive lifespan filter")
     else:
-        print(f"  WARNING: centroid_trajectories.npz not found in {phase1_dir}")
+        print(f"  WARNING: no centroid_trajectories.npz found under {fstem}* subdirs")
 
-    # Metrics / event layers
-    for fname in ("metrics.json", "phase1_metrics.json"):
-        mp = phase1_dir / fname
-        if mp.exists():
-            arts["metrics"] = _jload(mp)
-            break
+    plateau_set: set[int] = set()
+    merge_set:   set[int] = set()
 
-    m = arts["metrics"]
-    arts["plateau_layers"] = _flatten_layers(m.get("plateau_layers") or
-                                             m.get("plateau_layer_indices") or [])
-    arts["merge_layers"]   = _flatten_layers(m.get("merge_layers") or
-                                             m.get("merge_layer_indices") or [])
+    for sub in subdirs:
+        traj_path = sub / "trajectory.json"
+        if traj_path.exists():
+            try:
+                with open(traj_path) as f:
+                    tj = json.load(f)
+                plateau_set.update(int(l) for l in tj.get("plateau_layers", []))
+            except Exception as e:
+                print(f"  WARNING: could not read {traj_path}: {e}")
+
+        events_path = sub / "events.json"
+        if events_path.exists():
+            try:
+                with open(events_path) as f:
+                    ev = json.load(f)
+                raw = ev.get("merge_layers", [])
+                # merge_layers may be a flat list or a dict keyed by beta/str
+                if isinstance(raw, dict):
+                    for v in raw.values():
+                        if isinstance(v, list):
+                            merge_set.update(int(l) for l in v)
+                else:
+                    merge_set.update(int(l) for l in raw)
+            except Exception as e:
+                print(f"  WARNING: could not read {events_path}: {e}")
+
+    arts["plateau_layers"] = sorted(plateau_set)
+    arts["merge_layers"]   = sorted(merge_set)
     print(f"  plateau layers: {arts['plateau_layers'][:8]}")
     print(f"  merge   layers: {arts['merge_layers'][:8]}")
     return arts
-
 
 def _flatten_layers(v: Any) -> list[int]:
     """Accept int list, dict-keyed lists, or nested lists → flat int list."""
@@ -190,17 +257,16 @@ def load_per_prompt_activations(
 
 
 # ---------------------------------------------------------------------------
-# Phase 2i artifact loading (Schur blocks, P_A, P_S)
+# Phase 2b artifact loading (Schur blocks, P_A, P_S)
 # ---------------------------------------------------------------------------
 
 def load_phase2_artifacts(phase2_dir: Path, model_name: str) -> dict:
     """
-    Load Schur rotation projectors from Phase 2i output.
+    Load Schur rotation projectors from Phase 2 output.
 
     Tries in order:
-      1. {phase2_dir}/{model_stem}/projectors.npz  (explicit save)
-      2. {phase2_dir}/{model_stem}.json            (JSON summary, recompute)
-      3. {phase2_dir}/weights/{model_stem}_*.npz   (Phase 2 OV matrices)
+      1. Recompute P_A / P_S from ov_weights_{file_stem}.npz
+      2. ov_summary_{file_stem}.json  (scalars only, no matrices)
 
     Returns dict with P_A, P_S, ua_planes, global_sa_ratio (None on failure).
     """
@@ -213,94 +279,197 @@ def load_phase2_artifacts(phase2_dir: Path, model_name: str) -> dict:
     if phase2_dir is None:
         return arts
 
-    model_stem = _model_stem(model_name)
+    fstem = _file_stem(model_name)   # albert-base-v2
 
-    # Path 1: explicit projectors NPZ
-    proj_path = phase2_dir / model_stem / "projectors.npz"
-    if proj_path.exists():
-        npz = np.load(proj_path)
-        arts["P_A"] = npz.get("P_A")
-        arts["P_S"] = npz.get("P_S")
-        print(f"  loaded projectors from {proj_path}")
-        return arts
-
-    # Path 2: recompute from OV matrix in weights/
-    ov_matrix = _find_ov_matrix(phase2_dir, model_stem)
+    # ------------------------------------------------------------------
+    # Path 1: recompute P_A / P_S from the OV weight matrix
+    # ------------------------------------------------------------------
+    ov_matrix = _find_ov_matrix(phase2_dir, fstem)
     if ov_matrix is not None:
         try:
             from p2b_imaginary.rotational_schur import (
                 extract_schur_blocks,
                 build_rotation_plane_projectors,
+                rotation_energy_fractions,
             )
             blocks = extract_schur_blocks(ov_matrix)
             arts["schur_blocks"] = blocks
             planes_info = build_rotation_plane_projectors(blocks, top_k=8)
-            arts["P_A"]      = planes_info.get("P_A")
-            arts["P_S"]      = planes_info.get("P_S")
+            # build_rotation_plane_projectors returns:
+            #   combined_rotation → antisymmetric / rotational subspace → P_A
+            #   real_subspace     → symmetric / real subspace           → P_S
+            arts["P_A"]       = planes_info.get("combined_rotation")
+            arts["P_S"]       = planes_info.get("real_subspace")
             arts["ua_planes"] = planes_info.get("top_k_planes", [])
-            # global S/A ratio: fraction of spectral energy in antisymmetric
-            from p2b_imaginary.rotational_schur import rotation_energy_fractions
             fracs = rotation_energy_fractions(blocks)
             arts["global_sa_ratio"] = float(
                 fracs.get("rotation_fraction", 0.5) /
                 max(fracs.get("signed_fraction", 1.0), 1e-12)
             )
             print(f"  recomputed P_A / P_S from OV matrix  "
-                  f"(d={ov_matrix.shape[0]})")
+                  f"(d={ov_matrix.shape[0]}, "
+                  f"P_A={'ok' if arts['P_A'] is not None else 'None'}, "
+                  f"P_S={'ok' if arts['P_S'] is not None else 'None'})")
         except Exception as e:
             print(f"  WARNING: could not build projectors: {e}")
         return arts
 
-    # Path 3: JSON summary (scalars only, no matrices)
-    json_path = phase2_dir / f"{model_stem}.json"
+    # ------------------------------------------------------------------
+    # Path 2: JSON summary — scalars only, no matrices
+    # ------------------------------------------------------------------
+    json_path = phase2_dir / f"ov_summary_{fstem}.json"
     if not json_path.exists():
         for sub in phase2_dir.iterdir():
-            if sub.is_dir() and model_stem in sub.name:
+            if sub.is_dir() and fstem in sub.name:
                 candidate = sub / "results.json"
                 if candidate.exists():
                     json_path = candidate
                     break
+
     if json_path.exists():
         data = _jload(json_path)
         arts["global_sa_ratio"] = (
-            data.get("global_sa_ratio") or
-            data.get("rotation_fraction")
+            data.get("global_sa_ratio") or data.get("rotation_fraction")
         )
-        print(f"  loaded phase2i JSON (no matrices; projector-dependent "
-              f"analyses may be skipped)")
+        print(f"  loaded phase2 JSON (no matrices; projector-dependent "
+              f"analyses will be skipped)")
     else:
         print(f"  WARNING: no phase2 artifacts found for {model_name} in {phase2_dir}")
 
     return arts
 
 
-def _find_ov_matrix(phase2_dir: Path, model_stem: str) -> np.ndarray | None:
-    """Search phase2_dir for an OV / V_eff matrix NPZ."""
+def _find_ov_matrix(phase2_dir: Path, file_stem: str) -> np.ndarray | None:
+    """
+    Search phase2_dir for a single OV matrix ndarray.
+
+    ``file_stem`` must be the *file* stem (slashes → underscores, hyphens
+    kept), matching the naming produced by weights.py.
+    """
     candidates = [
-        phase2_dir / "weights" / f"{model_stem}_decomp.npz",
-        phase2_dir / "weights" / f"{model_stem}_ov.npz",
-        phase2_dir / f"{model_stem}_decomp.npz",
+        phase2_dir / f"ov_weights_{file_stem}.npz",
+        phase2_dir / f"ov_decomp_{file_stem}.npz",
     ]
+    _keys = ("ov_total_shared", "V_eff", "ov_total", "ov_matrix", "V")
+
     for path in candidates:
-        if path.exists():
-            npz = np.load(path)
-            for key in ("V_eff", "ov_total", "ov_matrix", "V"):
-                if key in npz.files:
-                    return npz[key]
-    # Scan weights/ for any matching npz with a V_eff key
-    weights_dir = phase2_dir / "weights"
-    if weights_dir.is_dir():
-        for p in sorted(weights_dir.glob(f"{model_stem}*.npz")):
-            npz = np.load(p)
-            for key in ("V_eff", "ov_total", "ov_matrix", "V"):
-                if key in npz.files:
-                    return npz[key]
+        if not path.exists():
+            continue
+        npz = np.load(path)
+        for key in _keys:
+            if key in npz.files:
+                return npz[key]
+        # Per-layer: return first layer as representative
+        layer_keys = sorted(
+            [k for k in npz.files if k.startswith("ov_total_layer_")],
+            key=lambda k: int(k.split("layer_")[-1]),
+        )
+        if layer_keys:
+            return npz[layer_keys[0]]
+
+    # Broad glob fallback
+    for p in sorted(phase2_dir.glob(f"ov_*{file_stem}*.npz")):
+        npz = np.load(p)
+        for key in _keys:
+            if key in npz.files:
+                return npz[key]
+        layer_keys = sorted(
+            [k for k in npz.files if k.startswith("ov_total_layer_")],
+            key=lambda k: int(k.split("layer_")[-1]),
+        )
+        if layer_keys:
+            return npz[layer_keys[0]]
+
     return None
 
+# ---------------------------------------------------------------------------
+# Stem helpers
+# ---------------------------------------------------------------------------
 
 def _model_stem(model_name: str) -> str:
+    """Internal stem: slashes and hyphens → underscores.  Used for output dirs."""
     return model_name.replace("/", "_").replace("-", "_")
 
+
+def _file_stem(model_name: str) -> str:
+    """
+    On-disk stem: only slashes → underscores, hyphens preserved.
+    Matches the convention in weights.py:
+        stem = model_name.replace("/", "_")
+    """
+    return model_name.replace("/", "_")
+
+
+def _select_c4_centroids(
+    centroids_per_layer: dict[int, dict],
+    plateau_layers: list[int],
+    merge_layers: list[int],
+    max_per_layer: int = 8,
+    cosine_dedup_threshold: float = 0.97,
+    ) -> dict[int, dict]:
+    """
+    Return a culled copy of centroids_per_layer for C4.
+
+    Strategy (applied in order):
+      1. Layer culling  — keep only plateau and merge layers; skip "other".
+      2. Cosine dedup   — within a layer, drop centroids that are nearly
+                          identical (cosine sim >= cosine_dedup_threshold)
+                          to an already-selected centroid.  Greedy: keep the
+                          first, compare each subsequent candidate to all
+                          already-kept centroids, drop if too similar.
+      3. Hard cap       — keep at most max_per_layer centroids per layer
+                          (after dedup, so the cap rarely bites).
+
+    Prints a one-line summary of what was kept vs. what was available.
+    """
+    target_layers = set(plateau_layers) | set(merge_layers)
+
+    total_in, total_out = 0, 0
+    result: dict[int, dict] = {}
+
+    for li, data in centroids_per_layer.items():
+        cents = data["centroids"]   # (n, d)
+        cids  = data["centroid_ids"]
+        n_in  = len(cids)
+        total_in += n_in
+
+        # ── 1. Layer gate ────────────────────────────────────────────────
+        if li not in target_layers:
+            continue
+
+        # ── 2. Cosine dedup ──────────────────────────────────────────────
+        norms = np.linalg.norm(cents, axis=1, keepdims=True)
+        safe  = norms > 1e-12
+        normed = np.where(safe, cents / np.where(safe, norms, 1.0), 0.0)
+
+        kept_idx: list[int] = []
+        for i in range(n_in):
+            if not kept_idx:
+                kept_idx.append(i)
+                continue
+            sims = normed[kept_idx] @ normed[i]   # (k,) cosine sims
+            if float(sims.max()) < cosine_dedup_threshold:
+                kept_idx.append(i)
+
+        # ── 3. Hard cap ──────────────────────────────────────────────────
+        kept_idx = kept_idx[:max_per_layer]
+
+        result[li] = {
+            "centroids":    cents[kept_idx],
+            "centroid_ids": [cids[j] for j in kept_idx],
+        }
+        total_out += len(kept_idx)
+
+    n_layers_kept = len(result)
+    n_layers_total = len(centroids_per_layer)
+    print(
+        f"  C4 centroid selection: "
+        f"{n_layers_kept}/{n_layers_total} layers kept "
+        f"(plateau={len(plateau_layers)}, merge={len(merge_layers)}), "
+        f"{total_out}/{total_in} centroids kept "
+        f"(dedup threshold={cosine_dedup_threshold}, cap={max_per_layer})"
+    )
+    return result
 
 # ---------------------------------------------------------------------------
 # Model loading
@@ -512,6 +681,7 @@ def run_c3(
     return {"c3_cis": result}
 
 
+
 def run_c4(
     model, tokenizer,
     phase1_arts: dict,
@@ -521,7 +691,7 @@ def run_c4(
     args,
 ) -> dict:
     """C4 — Local Jacobians at Phase 1 centroids + slow-point comparison."""
-    from p2c_churchland.local_jacobian   import analyze_local_jacobians
+    from p2c_churchland.local_jacobian import analyze_local_jacobians
     from p2c_churchland.slow_point_compare import (
         compare_local_global,
         layer_sa_profile,
@@ -537,28 +707,84 @@ def run_c4(
         print("  C4 SKIP: no centroid trajectories")
         return {}
 
-    # Build centroids_per_layer: {layer_idx: (n_centroids, d)}
-    # Each trajectory key: (n_layers, d); layer axis = 0
-    sample = next(iter(traj_dict.values()))
-    n_layers = sample.shape[0]
-    centroids_per_layer: dict[int, np.ndarray] = {}
+    # Build centroids_per_layer: {layer_idx: {"centroids": (n, d), "centroid_ids": [...]}}
+    # traj_dict keys are used as centroid identifiers so results stay traceable.
+    traj_keys = list(traj_dict.keys())
+    n_layers  = min(traj_dict[k].shape[0] for k in traj_keys)   # guard ragged arrays
+
+    centroids_per_layer: dict[int, dict] = {}
     for li in range(n_layers):
-        vecs = np.stack([v[li] for v in traj_dict.values()], axis=0)
-        centroids_per_layer[li] = vecs
+        vecs = np.stack([traj_dict[k][li] for k in traj_keys], axis=0)
+        centroids_per_layer[li] = {
+            "centroids":    vecs,
+            "centroid_ids": traj_keys,
+        }
 
     model_type = "albert" if "albert" in model_name.lower() else "gpt2"
-    P_A = phase2_arts.get("P_A")
-    P_S = phase2_arts.get("P_S")
-    global_sa = phase2_arts.get("global_sa_ratio") or 1.0
+    P_A        = phase2_arts.get("P_A")
+    P_S        = phase2_arts.get("P_S")
+    global_sa  = phase2_arts.get("global_sa_ratio") or 1.0
 
-    print(f"  running local Jacobians "
-          f"({n_layers} layers × {len(traj_dict)} centroids) ...")
+    plateau_layers = phase1_arts["plateau_layers"]
+    merge_layers   = phase1_arts["merge_layers"]
+
+    print(f"  C4 trajectories loaded: {len(traj_keys)} keys, {n_layers} layers each")
+
+    # ── Centroid / layer culling (skipped with --run-all-centroids) ──────────
+    run_all = getattr(args, "run_all_centroids", False)
+
+    no_phase_events = not plateau_layers and not merge_layers
+    if no_phase_events and not run_all:
+        print(
+            "  C4 WARNING: plateau_layers and merge_layers both empty — "
+            "phase-event metadata missing from metrics.json. "
+            "Falling back to all layers (centroid dedup/cap still applied). "
+            "Re-run with --run-all-centroids to suppress dedup too."
+        )
+        run_all_layers = True
+    else:
+        run_all_layers = run_all
+
+    if run_all_layers:
+        if run_all:
+            print(
+                f"  C4 running ALL centroids "
+                f"({n_layers} layers × {len(traj_keys)} centroids) ..."
+            )
+        else:
+            # fallback: dedup/cap still active, just no layer gate
+            centroids_per_layer = _select_c4_centroids(
+                centroids_per_layer,
+                plateau_layers=list(range(n_layers)),   # all layers "allowed"
+                merge_layers=[],
+                max_per_layer=getattr(args, "c4_max_per_layer", 8),
+            )
+    else:
+        centroids_per_layer = _select_c4_centroids(
+            centroids_per_layer,
+            plateau_layers=plateau_layers,
+            merge_layers=merge_layers,
+            max_per_layer=getattr(args, "c4_max_per_layer", 8),
+        )
+
+    n_layers_eff = len(centroids_per_layer)
+    n_cents_eff  = sum(len(v["centroid_ids"]) for v in centroids_per_layer.values())
+    print(
+        f"  C4 running local Jacobians "
+        f"({n_layers_eff} layers × up to {n_cents_eff} centroids) ..."
+    )
+
+    if not centroids_per_layer:
+        print("  C4 SKIP: no layers remain after centroid selection "
+              "(plateau_layers and merge_layers both empty?)")
+        return {}
+
     jac_result = analyze_local_jacobians(
         model=model,
         model_type=model_type,
         centroids_per_layer=centroids_per_layer,
-        plateau_layers=phase1_arts["plateau_layers"],
-        merge_layers=phase1_arts["merge_layers"],
+        plateau_layers=plateau_layers,
+        merge_layers=merge_layers,
         global_sa_ratio=global_sa,
         P_A=P_A,
         P_S=P_S,
@@ -567,17 +793,15 @@ def run_c4(
     _jdump(_serialize_jac(jac_result), output_dir / "c4_local_jacobians.json")
 
     print("  running slow-point comparison ...")
-    per_layer = jac_result.get("per_layer", {})
     sp_result = compare_local_global(
-        per_layer=per_layer,
-        plateau_layers=phase1_arts["plateau_layers"],
-        merge_layers=phase1_arts["merge_layers"],
+        per_layer=jac_result.get("per_layer", {}),
+        plateau_layers=plateau_layers,
+        merge_layers=merge_layers,
         global_sa_ratio=global_sa,
     )
     _jdump(_serialize_sp(sp_result), output_dir / "c4_slow_point_compare.json")
 
     return {"c4_local_jacobians": jac_result, "c4_slow_point_compare": sp_result}
-
 
 def _serialize_jac(r: dict) -> dict:
     """Drop large Jacobian matrices for serialization."""
@@ -918,7 +1142,7 @@ def run_phase(model_name: str, args) -> dict:
 
     # Load artifacts
     print("\n[artifacts]")
-    p1 = load_phase1_artifacts(phase1_dir)
+    p1 = load_phase1_artifacts(phase1_dir, model_name)
     p2 = load_phase2_artifacts(phase2_dir, model_name) if phase2_dir else {
         "P_A": None, "P_S": None, "ua_planes": [], "global_sa_ratio": None,
     }
@@ -1010,17 +1234,23 @@ def run_phase(model_name: str, args) -> dict:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+
+    DEFAULT_MODELS = [
+        "albert-base-v2", "albert-xlarge-v2", "bert-base-uncased",
+        "gpt2", "gpt2-medium", "gpt2-large", "gpt2-xl"
+    ]
+
     parser = argparse.ArgumentParser(
         description="Phase 2c: Trajectory-Side Dynamical Systems Analysis"
     )
     parser.add_argument("--phase1-dir",  type=str, required=True,
                         help="Phase 1 output directory")
     parser.add_argument("--phase2-dir",  type=str, default=None,
-                        help="Phase 2i output directory (Schur projectors)")
+                        help="Phase 2b output directory (Schur projectors)")
     parser.add_argument("--output-dir",  type=str, default=None,
                         help="Results output directory (auto-timestamped if omitted)")
-    parser.add_argument("--model",       type=str, default=None,
-                        help="HuggingFace model name (auto-detected from phase1 if omitted)")
+    parser.add_argument("--model", type=str, nargs="+", default=DEFAULT_MODELS,
+                        help=f"Models to process. Defaults to: {', '.join(DEFAULT_MODELS)}")
     parser.add_argument("--device",      type=str, default="cpu",
                         choices=["cpu", "cuda", "mps"],
                         help="Torch device")
@@ -1041,25 +1271,45 @@ def main() -> None:
     parser.add_argument("--skip-hdr", action="store_true",
                         help="Don't run HDR even when jPCA is marginal")
 
+    parser.add_argument(
+        "--run-all-centroids",
+        action="store_true",
+        default=False,
+        help=(
+            "C4: compute Jacobians at every centroid × every layer "
+            "(default: restrict to plateau/merge layers and deduplicated "
+            "centroids for speed)."
+        ),
+    )
+    parser.add_argument(
+        "--c4-max-per-layer",
+        type=int,
+        default=2000,
+        metavar="N",
+        help=(
+            "C4: maximum centroids kept per layer after cosine-deduplication "
+            "(ignored when --run-all-centroids is set, default: 2000)."
+        ),
+    )
+
     args = parser.parse_args()
 
     if args.no_model:
         args.skip_c2 = args.skip_c4 = args.skip_c5 = True
 
-    # Resolve model name
+    # Now 'models' is always a list, either the default or user-provided
+    # We no longer need _infer_models at all.
+    models = [args.model] if isinstance(args.model, str) else args.model
+
     if args.fast:
         models = ["albert-base-v2"]
-    elif args.model:
-        models = [args.model]
-    else:
-        # Try to infer from phase1 metrics
-        models = _infer_models(Path(args.phase1_dir))
-        if not models:
-            print("Could not detect models from phase1_dir. "
-                  "Pass --model explicitly.")
-            sys.exit(1)
 
     for model_name in models:
+        # Optional: Add a safety check to ensure data exists before running
+        if not any(Path(args.phase1_dir).glob(f"v_eigenspectrum_{model_name}.json")):
+            print(f"Skipping {model_name}: No eigenspectrum data found in phase1-dir.")
+            continue
+            
         run_phase(model_name, args)
 
 

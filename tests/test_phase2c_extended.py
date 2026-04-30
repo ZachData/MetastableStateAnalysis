@@ -13,7 +13,7 @@ Coverage
   tangling.py          compute_velocities, compute_Q_matrix, tangling_three_channels
   cis_decompose.py     compute_cis_decomposition, channel_variance_per_layer,
                        analyze_cis, cis_to_json
-  local_jacobian.py    compute_layer_jacobian, decompose_sa, jacobians_at_centroids
+  local_jacobian.py    compute_layer_jacobian, decompose_sa, centroid_jacobians_one_layer
   slow_point_compare.py  layer_sa_profile, plateau_vs_merge_table, compare_local_global
   icl_subspace_scaling.py  channel_magnitudes_one_prompt, kshot_channel_profile,
                             monotonicity_score, cross_task_direction_agreement
@@ -532,11 +532,11 @@ class TestDecomposeSa(unittest.TestCase):
         from p2c_churchland.local_jacobian import decompose_sa
         self.ds = decompose_sa
 
-    def test_pure_symmetric_sa_ratio_zero(self):
-        J  = np.eye(D, dtype=np.float64)
-        r  = self.ds(J)
-        self.assertAlmostEqual(r["sa_ratio"], 0.0, places=10)
-
+    def test_pure_symmetric_sa_ratio_zero(self):  # rename to _one
+        J = np.eye(D, dtype=np.float64)
+        r = self.ds(J)
+        self.assertAlmostEqual(r["sa_ratio"], 1.0, places=10)  # was 0.0
+        
     def test_pure_antisymmetric_sa_ratio_large(self):
         """Build a pure antisymmetric J."""
         rng = np.random.default_rng(0)
@@ -572,11 +572,11 @@ class TestDecomposeSa(unittest.TestCase):
 
 
 class TestJacobiansAtCentroids(unittest.TestCase):
-    """Test jacobians_at_centroids (per-centroid loop, no full model needed)."""
+    """Test centroid_jacobians_one_layer (per-centroid loop, no full model needed)."""
 
     def setUp(self):
-        from p2c_churchland.local_jacobian import jacobians_at_centroids
-        self.jac = jacobians_at_centroids
+        from p2c_churchland.local_jacobian import centroid_jacobians_one_layer
+        self.jac = centroid_jacobians_one_layer
 
     def _identity_fn(self, x):
         import torch

@@ -87,6 +87,7 @@ def _default_summarize(name: str, result: dict) -> str:
     return "\n".join(lines) if lines else "(no scalar fields)"
 
 
+
 # ---------------------------------------------------------------------------
 # I/O helpers
 # ---------------------------------------------------------------------------
@@ -650,269 +651,11 @@ def _compute_plateau_clusters(
 # Summarizers — one per registered analysis
 # ---------------------------------------------------------------------------
 
-@register_summary("feature_lifetimes")
-def _summarize_feature_lifetimes(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    bc      = r.get("bimodality_coefficient", float("nan"))
-    test    = r.get("bimodality_test", "?")
-    valley  = r.get("valley_threshold")
-    lines = [
-        f"n_features: {r.get('n_features', '?')}",
-        f"bimodality_coefficient: {bc:.4f}" if isinstance(bc, float) else f"bimodality_coefficient: {bc}",
-        f"bimodality_test: {test}",
-        f"valley_threshold: {valley}",
-        f"n_short_lived: {r.get('n_short_lived', '?')}",
-        f"n_long_lived: {r.get('n_long_lived', '?')}",
-        f"n_dead: {r.get('n_dead', '?')}",
-    ]
-    verdict = r.get("verdict") or test
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("v_subspace_alignment")
-def _summarize_v_subspace_alignment(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    rho = r.get("spearman_rho", float("nan"))
-    p   = r.get("spearman_p",   float("nan"))
-    lines = [
-        f"spearman_rho: {rho:.4f}" if isinstance(rho, float) else f"spearman_rho: {rho}",
-        f"spearman_p: {p:.4f}"     if isinstance(p, float)   else f"spearman_p: {p}",
-        f"n_repulsive_dominant: {r.get('n_repulsive_dominant', '?')}",
-        f"n_attractive_dominant: {r.get('n_attractive_dominant', '?')}",
-    ]
-    interp = r.get("interpretation", "")
-    if interp:
-        lines.append(f"interpretation: {interp}")
-    return "\n".join(lines)
-
-
-@register_summary("cluster_identity")
-def _summarize_cluster_identity(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    n_prompts = sum(1 for k, v in r.items() if isinstance(v, dict) and k != "overall")
-    lines = [f"n_prompts_run: {n_prompts}"]
-    overall = r.get("overall", {})
-    if overall:
-        lines.append(f"clustering_source: {overall.get('clustering_source', '?')} ")
-    for pk, pd in r.items():
-        if not isinstance(pd, dict) or pk == "overall":
-            continue
-        lines.append(f"  {pk}: {len(pd)} plateau layer(s) evaluated")
-    return "\n".join(lines)
-
-
-@register_summary("violation_layer_features")
-def _summarize_violation_layer_features(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    frac = r.get("fraction_violation_specific")
-    lines = [
-        f"n_violation_layers: {r.get('n_violation_layers', '?')}",
-        f"n_features_at_violations: {r.get('n_features_at_violations', '?')}",
-    ]
-    if frac is not None:
-        lines.append(f"fraction_violation_specific: {frac:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("multilayer_fraction")
-def _summarize_multilayer_fraction(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    frac = r.get("multilayer_fraction", float("nan"))
-    lines = [
-        f"multilayer_fraction: {frac:.4f}" if isinstance(frac, float) else f"multilayer_fraction: {frac}",
-        f"n_multilayer: {r.get('multilayer_count', r.get('n_multilayer', '?'))}",
-        f"n_alive: {r.get('n_alive', r.get('n_features_total', '?'))}",
-        f"min_layers_threshold: {r.get('min_layers_threshold', '?')}",
-    ]
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("positional_control")
-def _summarize_positional_control(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    frac_pos = r.get("frac_positional_among_long_lived")
-    lines = [f"n_positional: {r.get('n_positional', '?')}"]
-    if frac_pos is not None:
-        lines.append(f"frac_positional_among_long_lived: {frac_pos:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("feature_cluster_correlation")
-def _summarize_feature_cluster_correlation(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    overall = r.get("overall", {})
-    lines = [
-        f"n_prompts_run: {overall.get('n_prompts_run', '?')}",
-        f"clustering_source: {overall.get('clustering_source', '?')}",
-        f"top_k: {overall.get('top_k', '?')}",
-    ]
-    for pk, layer_dict in r.items():
-        if pk == "overall" or not isinstance(layer_dict, dict):
-            continue
-        for layer_key, info in layer_dict.items():
-            if not isinstance(info, dict):
-                continue
-            for res_key in ("spectral", "hdbscan"):
-                res = info.get(res_key, {})
-                top = res.get("top_features", [])
-                if top:
-                    top_f = top[0].get("f_spectral", top[0].get("f_stat", "?"))
-                    n_above = res.get("n_features_above_min", "?")
-                    if isinstance(top_f, float):
-                        lines.append(
-                            f"  {pk}/{layer_key}/{res_key}: top_f={top_f:.2f}, n_above_min={n_above}"
-                        )
-                    else:
-                        lines.append(f"  {pk}/{layer_key}/{res_key}: top_f={top_f}")
-    return "\n".join(lines)
-
-
-@register_summary("inspect_top_features")
-def _summarize_inspect_top_features(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    text_report = r.get("text_report", "")
-    if text_report:
-        lines = text_report.splitlines()
-        trimmed = lines[:40]
-        if len(lines) > 40:
-            trimmed.append(f"... ({len(lines) - 40} more lines in analyses/inspect_top_features.txt)")
-        return "\n".join(trimmed)
-    return f"n_features_inspected: {r.get('n_features_inspected', '?')}"
-
-
-@register_summary("ffn_repulsive_feature_alignment")
-def _summarize_ffn_repulsive(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    mean_cs = r.get("mean_cos_sim_to_ffn_delta") or r.get("mean_cosine_repulsive")
-    lines = [
-        f"n_violations_checked: {r.get('n_violations_checked', '?')}",
-        f"n_features_aligned: {r.get('n_features_aligned', '?')}",
-    ]
-    if mean_cs is not None:
-        lines.append(f"mean_cosine: {mean_cs:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("cross_term_feature_weighting")
-def _summarize_cross_term(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    mean_w = r.get("mean_cross_term_weight")
-    lines = [f"n_layers_checked: {r.get('n_layers_checked', '?')}"]
-    if mean_w is not None:
-        lines.append(f"mean_cross_term_weight: {mean_w:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("induction_feature_tagging")
-def _summarize_induction(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    frac = r.get("induction_fraction")
-    lines = [
-        f"n_induction_tagged: {r.get('n_induction_tagged', '?')}",
-        f"n_features_checked: {r.get('n_features_checked', '?')}",
-    ]
-    if frac is not None:
-        lines.append(f"induction_fraction: {frac:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("decoder_violation_projection")
-def _summarize_decoder_violation(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    per_viol = r.get("per_violation", [])
-    mean_exp = r.get("mean_explained")
-    lines = [f"n_violations: {len(per_viol)}"]
-    if mean_exp is not None:
-        lines.append(f"mean_explained_variance: {mean_exp:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("lifetime_centroid_decomposition")
-def _summarize_lifetime_centroid(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    mean_rep = r.get("mean_repulsive_cos")
-    mean_att = r.get("mean_attractive_cos")
-    lines = [f"n_long_lived_inspected: {r.get('n_long_lived_inspected', '?')}"]
-    if mean_rep is not None:
-        lines.append(f"mean_repulsive_cos: {mean_rep:.4f}")
-    if mean_att is not None:
-        lines.append(f"mean_attractive_cos: {mean_att:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("coactivation_at_merges")
-def _summarize_coactivation_at_merges(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    mean_coact    = r.get("mean_coactivation_at_merges")
-    mean_baseline = r.get("mean_coactivation_baseline")
-    lines = [f"n_merge_layers_checked: {r.get('n_merge_layers_checked', '?')}"]
-    if mean_coact is not None:
-        lines.append(f"mean_coactivation_at_merges: {mean_coact:.4f}")
-    if mean_baseline is not None:
-        lines.append(f"mean_coactivation_baseline: {mean_baseline:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
-
-
-@register_summary("cluster_identity_diff")
-def _summarize_cluster_identity_diff(r: dict) -> str:
-    if "error" in r:
-        return f"ERROR: {r['error']}"
-    mean_overlap = r.get("mean_feature_overlap")
-    lines = [f"n_layers_compared: {r.get('n_layers_compared', '?')}"]
-    if mean_overlap is not None:
-        lines.append(f"mean_feature_overlap: {mean_overlap:.4f}")
-    verdict = r.get("verdict", "")
-    if verdict:
-        lines.append(f"verdict: {verdict}")
-    return "\n".join(lines)
 
 @register("feature_lifetimes")
 def feature_lifetimes(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
     artifacts: dict,
     config: dict,
     ) -> dict:
@@ -925,135 +668,104 @@ def feature_lifetimes(
     threshold_frac * max_score.
 
     Bimodality is tested with the bimodality coefficient:
-
         BC = (gamma_1^2 + 1) / gamma_2
-
-    where gamma_1 is skewness and gamma_2 is kurtosis (not excess).
-    BC > 5/9 ≈ 0.555 reliably indicates bimodality (SAS Institute, 1990).
-    This replaces the previous local-maxima count on a smoothed histogram,
-    which returned 2 for any skewed unimodal distribution with a shoulder.
-
-    When bimodal, the valley threshold is the lifetime value at the minimum
-    KDE density between the two highest-density peaks.  Features are
-    classified as "short_lived" (lifetime < valley) or "long_lived"
-    (lifetime >= valley).  This classification is the anchor for downstream
-    analyses: cluster_identity and violation_layer_features can stratify
-    their results by lifetime class.
-
-    Dead features (max_score < 1e-10) are classified as "dead".
+    where gamma_2 is Pearson kurtosis (excess + 3).
+    BC > 5/9 ≈ 0.555 indicates bimodality (SAS Institute, 1990).
 
     Returns
     -------
-    dict with all previous fields plus:
-      bimodality_coefficient : float — BC value
-      bimodality_test        : "bimodal" | "unimodal" | "insufficient_data"
-      valley_threshold       : int or None — lifetime at density minimum
-      n_short_lived          : count below valley_threshold (or <= 3 if unimodal)
-      n_long_lived           : count at/above valley_threshold (or >= L/2 if unimodal)
-      lifetime_class         : (n_features,) list — "short_lived" | "long_lived" | "dead"
-      short_lived_indices    : feature indices classified as short_lived
-      long_lived_indices     : feature indices classified as long_lived
+    dict with:
+      n_features             : int   — total features (alive + dead)   ← FIXED
+      n_alive                : int   — features with max_score > 1e-10
+      lifetimes              : list[int]
+      peak_layers            : list[int]
+      feature_layer_scores   : list[list[float]]
+      max_scores             : list[float]
+      lifetime_class         : list[str]  "short_lived"|"long_lived"|"dead"
+      short_lived_indices    : list[int]
+      long_lived_indices     : list[int]
+      bimodality_coefficient : float | None
+      bimodality_test        : str
+      valley_threshold       : int | None
+      n_short_lived          : int
+      n_long_lived           : int
+      n_dead                 : int
+      (plus legacy backward-compat fields)
     """
-    from scipy.stats import gaussian_kde
+    from scipy.stats import gaussian_kde, skew, kurtosis as scipy_kurtosis
 
     threshold_frac = config.get("lifetime_threshold_frac", 0.1)
 
-    # Use data-driven scores rather than decoder_norms() — normalize_decoder()
-    # keeps all W_dec column norms at exactly 1.0, making norms uninformative.
     scores = _compute_feature_layer_scores(crosscoder, prompt_store)
-    # scores: (n_features, n_layers)
     n_features, n_layers = scores.shape
 
-    lifetimes = np.zeros(n_features, dtype=np.int32)
+    lifetimes   = np.zeros(n_features, dtype=np.int32)
     peak_layers = np.zeros(n_features, dtype=np.int32)
-    max_scores = scores.max(axis=1)  # (n_features,)
+    max_scores  = scores.max(axis=1)
 
     for f in range(n_features):
         if max_scores[f] < 1e-10:
             continue
         threshold = max_scores[f] * threshold_frac
         active = scores[f] > threshold
-
-        # Longest contiguous run of True
-        best_run = 0
-        current_run = 0
+        best_run = cur_run = 0
         for val in active:
             if val:
-                current_run += 1
-                best_run = max(best_run, current_run)
+                cur_run += 1
+                best_run = max(best_run, cur_run)
             else:
-                current_run = 0
-        lifetimes[f] = best_run
+                cur_run = 0
+        lifetimes[f]   = best_run
         peak_layers[f] = int(np.argmax(scores[f]))
 
-    alive_mask = max_scores > 1e-10
+    alive_mask      = max_scores > 1e-10
     alive_lifetimes = lifetimes[alive_mask].astype(float)
-    alive_indices = np.where(alive_mask)[0]
+    alive_indices   = np.where(alive_mask)[0]
+    n_alive         = len(alive_lifetimes)
+    n_dead          = int(n_features - n_alive)
 
     # ------------------------------------------------------------------
     # Bimodality coefficient
-    # BC = (skewness^2 + 1) / kurtosis
-    # where kurtosis is the non-excess (Pearson) kurtosis = excess + 3.
-    # BC > 5/9 ≈ 0.555 indicates bimodality.
-    # Reference: SAS Institute (1990), also Pfister et al. (2013).
     # ------------------------------------------------------------------
     bimodality_coefficient = float("nan")
-    bimodality_test = "insufficient_data"
-    valley_threshold = None
+    bimodality_test        = "insufficient_data"
+    valley_threshold       = None
 
-    n_alive = len(alive_lifetimes)
     if n_alive >= 20:
-        from scipy.stats import skew, kurtosis as scipy_kurtosis
-
-        # Constant distribution: trivially unimodal, BC undefined.
         if np.std(alive_lifetimes) < 1e-10:
             bimodality_coefficient = 0.0
-            bimodality_test = "unimodal"
+            bimodality_test        = "unimodal"
         else:
             g1 = float(skew(alive_lifetimes))
-            # scipy kurtosis defaults to excess (Fisher); add 3 for Pearson
             g2 = float(scipy_kurtosis(alive_lifetimes, fisher=True)) + 3.0
-
             if g2 > 1e-10:
                 bimodality_coefficient = (g1 ** 2 + 1.0) / g2
             else:
                 bimodality_coefficient = float("nan")
-
-            BC_THRESHOLD = 5.0 / 9.0
+            BC_THRESHOLD    = 5.0 / 9.0
             if not np.isnan(bimodality_coefficient):
                 bimodality_test = (
                     "bimodal" if bimodality_coefficient > BC_THRESHOLD else "unimodal"
                 )
 
     # ------------------------------------------------------------------
-    # Valley threshold: minimum KDE density between the two largest peaks.
-    # Only computed when bimodal.  Uses a fine grid over [min, max] lifetime.
-    # If only one peak is found (unusual for a bimodal distribution), falls
-    # back to the median as the split point.
+    # Valley threshold (KDE minimum between the two largest peaks)
     # ------------------------------------------------------------------
     if bimodality_test == "bimodal" and n_alive >= 20:
         try:
+            from scipy.signal import argrelextrema
             lt_min, lt_max = alive_lifetimes.min(), alive_lifetimes.max()
             if lt_max > lt_min:
-                kde = gaussian_kde(alive_lifetimes)
-                # 500-point grid for sub-layer precision
-                grid = np.linspace(lt_min, lt_max, 500)
+                kde     = gaussian_kde(alive_lifetimes)
+                grid    = np.linspace(lt_min, lt_max, 500)
                 density = kde(grid)
-
-                # Find all local maxima
-                from scipy.signal import argrelextrema
                 peak_idx = argrelextrema(density, np.greater, order=5)[0]
-
                 if len(peak_idx) >= 2:
-                    # Two largest peaks
-                    top2 = peak_idx[np.argsort(density[peak_idx])[-2:]]
-                    lo, hi = sorted(top2)
-                    # Minimum density in the valley between them
-                    valley_idx = lo + np.argmin(density[lo:hi + 1])
-                    valley_threshold = int(round(float(grid[valley_idx])))
+                    top2     = peak_idx[np.argsort(density[peak_idx])[-2:]]
+                    lo, hi   = sorted(top2)
+                    val_idx  = lo + np.argmin(density[lo : hi + 1])
+                    valley_threshold = int(round(float(grid[val_idx])))
                 else:
-                    # KDE found only one peak despite BC > threshold.
-                    # Fall back to median as split point.
                     valley_threshold = int(np.median(alive_lifetimes))
         except Exception:
             valley_threshold = int(np.median(alive_lifetimes))
@@ -1061,59 +773,52 @@ def feature_lifetimes(
     # ------------------------------------------------------------------
     # Feature classification
     # ------------------------------------------------------------------
-    # Determine the split point for counting short vs long.
-    # Priority: (1) KDE valley, (2) median for unimodal/fallback,
-    # (3) legacy fixed thresholds for n_short_lived / n_long_lived counts
-    # are retained in output for backward compatibility.
-    if valley_threshold is not None:
-        split = valley_threshold
-    else:
-        split = int(np.median(alive_lifetimes)) if n_alive > 0 else n_layers // 2
+    split = (
+        valley_threshold
+        if valley_threshold is not None
+        else (int(np.median(alive_lifetimes)) if n_alive > 0 else n_layers // 2)
+    )
 
     lifetime_class = np.full(n_features, "dead", dtype=object)
     for idx in alive_indices:
-        if lifetimes[idx] < split:
-            lifetime_class[idx] = "short_lived"
-        else:
-            lifetime_class[idx] = "long_lived"
+        lifetime_class[idx] = "short_lived" if lifetimes[idx] < split else "long_lived"
 
     short_lived_indices = [int(i) for i in alive_indices if lifetime_class[i] == "short_lived"]
     long_lived_indices  = [int(i) for i in alive_indices if lifetime_class[i] == "long_lived"]
 
-    # Legacy fixed-threshold counts kept for backward compatibility with
-    # the summary printer and any existing result parsers.
+    # Legacy fixed-threshold counts kept for backward compat
     n_short_legacy = int((alive_lifetimes <= 3).sum())
     n_long_legacy  = int((alive_lifetimes >= n_layers // 2).sum())
 
     return {
-        # --- core per-feature arrays ---
-        "lifetimes": lifetimes.tolist(),
-        "peak_layers": peak_layers.tolist(),
-        "feature_layer_scores": scores.tolist(),
-        "max_scores": max_scores.tolist(),
-        "lifetime_class": lifetime_class.tolist(),
+        # ---- core ----
+        "n_features":          int(n_features),          # ← ADDED (was missing)
+        "n_alive":             int(n_alive),
+        "n_dead":              n_dead,
+        "lifetimes":           lifetimes.tolist(),
+        "peak_layers":         peak_layers.tolist(),
+        "feature_layer_scores":scores.tolist(),
+        "max_scores":          max_scores.tolist(),
+        "lifetime_class":      lifetime_class.tolist(),
         "short_lived_indices": short_lived_indices,
-        "long_lived_indices": long_lived_indices,
-
-        # --- distribution summary ---
-        "n_alive": int(n_alive),
-        "mean_lifetime": float(alive_lifetimes.mean()) if n_alive > 0 else 0.0,
+        "long_lived_indices":  long_lived_indices,
+        # ---- distribution ----
+        "mean_lifetime":   float(alive_lifetimes.mean())    if n_alive > 0 else 0.0,
         "median_lifetime": float(np.median(alive_lifetimes)) if n_alive > 0 else 0.0,
-
-        # --- bimodality ---
-        "bimodality_coefficient": float(bimodality_coefficient) if not np.isnan(bimodality_coefficient) else None,
-        "bimodality_test": bimodality_test,
-        "bc_threshold": 5.0 / 9.0,
-        "valley_threshold": valley_threshold,
-        "n_short_lived": len(short_lived_indices),
-        "n_long_lived": len(long_lived_indices),
-
-        # --- legacy fixed-threshold counts (backward compat) ---
+        # ---- bimodality ----
+        "bimodality_coefficient": (
+            float(bimodality_coefficient)
+            if not np.isnan(bimodality_coefficient) else None
+        ),
+        "bimodality_test":   bimodality_test,
+        "bc_threshold":      5.0 / 9.0,
+        "valley_threshold":  valley_threshold,
+        "n_short_lived":     len(short_lived_indices),
+        "n_long_lived":      len(long_lived_indices),
+        # ---- backward compat ----
         "n_short_lived_legacy": n_short_legacy,
-        "n_long_lived_legacy": n_long_legacy,
-
-        # --- deprecated field kept for backward compat ---
-        "bimodal_score": 2 if bimodality_test == "bimodal" else 1,
+        "n_long_lived_legacy":  n_long_legacy,
+        "bimodal_score":        2 if bimodality_test == "bimodal" else 1,
     }
 
 
@@ -1127,7 +832,7 @@ def multilayer_fraction(
     prompt_store: PromptActivationStore,
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
     What fraction of features have decoder norm above threshold at 3+ layers?
 
@@ -1301,6 +1006,37 @@ def v_subspace_alignment(
         "std_attract_dominance": float(attract_dominance.std()),
     }
 
+@register_summary("v_subspace_alignment")
+def _summarize_v_subspace_alignment(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    if r.get("underpowered"):
+        cov = r.get("coverage", {})
+        mean_cov = cov.get("mean_coverage")
+        cov_str  = f"{mean_cov:.3f}" if isinstance(mean_cov, float) else "?"
+        return f"UNDERPOWERED: projector coverage={cov_str} (need full-rank projectors)"
+    n_att   = r.get("n_attractive", 0)
+    n_rep   = r.get("n_repulsive", 0)
+    n_mix   = r.get("n_mixed", 0)
+    n_total = n_att + n_rep + n_mix
+    mean_d  = r.get("mean_attract_dominance")
+    std_d   = r.get("std_attract_dominance")
+    lines   = [
+        f"n_attractive: {n_att}",
+        f"n_repulsive:  {n_rep}",
+        f"n_mixed:      {n_mix}",
+    ]
+    if n_total > 0:
+        lines.append(f"frac_attractive: {n_att / n_total:.3f}")
+    if mean_d is not None:
+        dom_str = f"{mean_d:.4f}"
+        if std_d is not None:
+            dom_str += f" ± {std_d:.4f}"
+        lines.append(f"mean_attract_dominance: {dom_str}")
+    interp = r.get("interpretation", "")
+    if interp:
+        lines.append(f"interpretation: {interp}")
+    return "\n".join(lines)
 
 # ---------------------------------------------------------------------------
 # Analysis: Plateau clustering (Step 5)
@@ -1518,28 +1254,42 @@ def cluster_identity(
 
 @register("violation_layer_features")
 def violation_layer_features(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
-    Find features that activate specifically at violation layers.
+    Find features that activate specifically at energy-violation layers.
 
-    Requires artifacts:
-      "violation_layers" : dict[prompt_key -> list[int]]  (from Phase 1)
-      "layer_indices"    : list[int]  (which model layers the crosscoder covers)
-
-    For each prompt, compare feature activations at violation layers vs
-    non-violation layers.  Features with z-score > 2 at violation layers
-    are flagged.
+    Requires one of:
+      "violation_layers"  : {prompt_key: [int, ...]}   (set by _load_artifacts)
+      "energy_violations" : {prompt_key: {beta: [int, ...]}}  (fallback)
+    and:
+      "layer_indices"     : list[int]
     """
     violation_layers = artifacts.get("violation_layers")
+
+    # Fallback: derive from energy_violations when the canonical key is absent
+    if violation_layers is None:
+        ev = artifacts.get("energy_violations", {})
+        if ev:
+            violation_layers = {}
+            for pk, beta_dict in ev.items():
+                if isinstance(beta_dict, dict):
+                    flat = set()
+                    for layers_list in beta_dict.values():
+                        if isinstance(layers_list, list):
+                            flat.update(int(l) for l in layers_list)
+                    violation_layers[pk] = sorted(flat)
+                elif isinstance(beta_dict, list):
+                    violation_layers[pk] = sorted(int(l) for l in beta_dict)
+
     layer_indices = artifacts.get("layer_indices")
-    if violation_layers is None or layer_indices is None:
+    if not violation_layers or layer_indices is None:
         return {"error": "violation_layers or layer_indices not in artifacts"}
 
-    z_threshold = config.get("violation_z_threshold", 2.0)
+    z_threshold       = config.get("violation_z_threshold", 2.0)
     results_per_prompt = {}
 
     for prompt_key in prompt_store.keys():
@@ -1547,26 +1297,18 @@ def violation_layer_features(
             continue
 
         out = _run_crosscoder_on_prompt(crosscoder, prompt_store, prompt_key)
-        z = out["z"].numpy()  # (n_tokens, n_features)
+        z   = out["z"].numpy()   # (n_tokens, n_features) — unused directly below
 
-        # Map violation layers to crosscoder layer indices
         v_layers = set(violation_layers[prompt_key])
-        sampled_violation = [
-            i for i, l in enumerate(layer_indices) if l in v_layers
-        ]
-        sampled_non_violation = [
-            i for i, l in enumerate(layer_indices) if l not in v_layers
-        ]
+        sampled_violation     = [i for i, l in enumerate(layer_indices) if l in v_layers]
+        sampled_non_violation = [i for i, l in enumerate(layer_indices) if l not in v_layers]
 
         if not sampled_violation or not sampled_non_violation:
             results_per_prompt[prompt_key] = {"n_violation_features": 0}
             continue
 
-        # Feature activity at violation vs non-violation layers.
-        # Use data-driven layer scores rather than decoder_norms() —
-        # normalize_decoder() keeps all W_dec column norms at exactly 1.0,
-        # so decoder_norms() is a constant (F, L) matrix of ones and produces
-        # zero z-scores for every feature.
+        # Use data-driven layer scores (decoder_norms() is always 1.0 after
+        # normalize_decoder(), so norms are uninformative)
         scores = _compute_feature_layer_scores(crosscoder, prompt_store)  # (F, L)
         violation_scores     = scores[:, sampled_violation].mean(axis=1)
         non_violation_scores = scores[:, sampled_non_violation].mean(axis=1)
@@ -1582,20 +1324,19 @@ def violation_layer_features(
         for f in range(len(z_scores)):
             if z_scores[f] > z_threshold:
                 violation_features.append({
-                    "feature": int(f),
-                    "z_score": float(z_scores[f]),
+                    "feature":             int(f),
+                    "z_score":             float(z_scores[f]),
                     "violation_score":     float(violation_scores[f]),
                     "non_violation_score": float(non_violation_scores[f]),
                 })
-
         violation_features.sort(key=lambda x: x["z_score"], reverse=True)
+
         results_per_prompt[prompt_key] = {
             "n_violation_features": len(violation_features),
-            "violation_features": violation_features[:50],
+            "violation_features":   violation_features[:50],
         }
 
     return results_per_prompt
-
 
 # ---------------------------------------------------------------------------
 # Analysis: Positional control (Surprise 3 check)
@@ -1677,120 +1418,115 @@ def positional_control(
 
 @register("ffn_repulsive_feature_alignment")
 def ffn_repulsive_feature_alignment(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
-    Test whether violation-layer features have decoder directions aligned
-    with the FFN update direction at those layers.
-
-    Closes the loop: V shapes geometry → FFN executes → feature captures.
+    For each violation layer (per prompt), compute the mean FFN update
+    direction and measure how well each feature's decoder direction aligns
+    with it.  A high cosine similarity means that feature is capturing the
+    FFN's contribution at that violation.
 
     Requires artifacts:
-      "ffn_subspace"            : dict from Phase 2 ffn_subspace analysis
-      "layer_indices"           : list[int]
-      "phase2_dir"              : Path to Phase 2 run (with ffn_deltas_raw.npz)
-
-    Also requires violation_layer_features to have been run first (uses
-    its output from the registry if available, otherwise runs it).
+      "ffn_subspaces"    : {prompt_key: {"path": str, "normed": bool}}
+      "violation_layers" : {prompt_key: [int, ...]}
+      "layer_indices"    : list[int]
     """
-    ffn_sub = artifacts.get("ffn_subspace")
-    layer_indices = artifacts.get("layer_indices")
-    phase2_dir = artifacts.get("phase2_dir")
+    layer_indices  = artifacts.get("layer_indices")
+    ffn_subspaces  = artifacts.get("ffn_subspaces") or {}
+    violation_layers = artifacts.get("violation_layers", {})
 
-    if not ffn_sub or not layer_indices or not phase2_dir:
-        return {"error": "Requires ffn_subspace, layer_indices, and phase2_dir artifacts"}
-
-    phase2_dir = Path(phase2_dir)
-    ffn_path = phase2_dir / "ffn_deltas_raw.npz"
-    if not ffn_path.exists():
-        return {"error": f"FFN deltas not found at {ffn_path}"}
+    if not layer_indices:
+        return {"error": "layer_indices not in artifacts"}
+    if not ffn_subspaces:
+        return {
+            "error": (
+                "ffn_subspaces not in artifacts — "
+                "no Phase 2 FFN delta files were found under --phase2-dir"
+            )
+        }
 
     W_dec = crosscoder.W_dec.detach().cpu().float().numpy()  # (L_cc, F, d)
-    ffn_deltas = np.load(ffn_path)["arr_0"]  # (n_model_layers, n_tokens, d)
+    n_layers_cc, n_features, _ = W_dec.shape
+    layer_to_cc = {l: i for i, l in enumerate(layer_indices)}
 
-    per_violation = ffn_sub.get("per_violation", [])
-    if not per_violation:
-        return {"error": "No per-violation results in ffn_subspace"}
+    results         = []
+    n_prompts_checked = 0
 
-    # Get violation-layer feature indices — run the analysis if needed
-    vlf = artifacts.get("_violation_layer_features_result")
-    if vlf is None:
-        if "violation_layer_features" in _REGISTRY:
-            vlf = _REGISTRY["violation_layer_features"](
-                crosscoder, prompt_store, artifacts, config
-            )
-        else:
-            return {"error": "violation_layer_features not available"}
-
-    results = []
-    for viol in per_violation:
-        v_layer = viol.get("layer")
-        ffn_role = viol.get("ffn_role", viol.get("classification", ""))
-
-        if v_layer not in layer_indices or v_layer >= ffn_deltas.shape[0]:
+    for prompt_key, spec in ffn_subspaces.items():
+        if not isinstance(spec, dict):
             continue
-        cc_idx = layer_indices.index(v_layer)
-
-        # Mean FFN delta direction at this layer
-        ffn_dir = ffn_deltas[v_layer].mean(axis=0)
-        ffn_norm = np.linalg.norm(ffn_dir)
-        if ffn_norm < 1e-10:
-            continue
-        ffn_dir = ffn_dir / ffn_norm
-
-        # Collect violation feature indices across prompts
-        vl_features = set()
-        for pk, pdata in vlf.items():
-            if not isinstance(pdata, dict):
-                continue
-            for vf in pdata.get("violation_features", []):
-                vl = vf.get("layer") or vf.get("violation_layer")
-                if vl == v_layer:
-                    vl_features.update(
-                        vf.get("feature_indices", vf.get("features", []))
-                    )
-        vl_features = sorted(vl_features)
-        if not vl_features:
+        ffn_path = Path(spec["path"])
+        if not ffn_path.exists():
             continue
 
-        # Cosine of each feature's decoder direction with FFN direction
-        dec_at_layer = W_dec[cc_idx]
-        cosines = []
-        for fidx in vl_features:
-            if fidx >= dec_at_layer.shape[0]:
-                continue
-            d_vec = dec_at_layer[fidx]
-            d_norm = np.linalg.norm(d_vec)
-            if d_norm < 1e-10:
-                continue
-            cosines.append({
-                "feature": int(fidx),
-                "cosine_with_ffn": float(np.dot(d_vec / d_norm, ffn_dir)),
-            })
+        # Load FFN delta array; try multiple key conventions
+        ffn_data   = np.load(ffn_path)
+        ffn_deltas = None
+        for k in ("ffn_deltas", "arr_0", *ffn_data.files):
+            arr = ffn_data[k]
+            if arr.ndim == 3:          # (n_model_layers, n_tokens, d)
+                ffn_deltas = arr
+                break
+        if ffn_deltas is None:
+            continue
 
-        if cosines:
-            cos_vals = [c["cosine_with_ffn"] for c in cosines]
+        # Violation layers for this prompt; fall back to union across all prompts
+        v_layers = set(violation_layers.get(prompt_key, []))
+        if not v_layers:
+            for ll in violation_layers.values():
+                v_layers.update(ll)
+
+        n_prompts_checked += 1
+
+        for model_layer, cc_i in layer_to_cc.items():
+            if model_layer not in v_layers:
+                continue
+            if model_layer >= ffn_deltas.shape[0]:
+                continue
+
+            # Mean FFN update direction at this layer (averaged over tokens)
+            ffn_dir  = ffn_deltas[model_layer].mean(axis=0)   # (d,)
+            ffn_norm = float(np.linalg.norm(ffn_dir))
+            if ffn_norm < 1e-10:
+                continue
+            ffn_dir /= ffn_norm
+
+            dec_at_layer = W_dec[cc_i]   # (F, d) — unit-normed by normalize_decoder
+            # Batch cosine: W_dec rows are already unit-normed
+            cos_vals = dec_at_layer @ ffn_dir   # (F,)
+
+            abs_cos = np.abs(cos_vals)
             results.append({
-                "violation_layer": v_layer,
-                "ffn_role": ffn_role,
-                "n_features_tested": len(cosines),
-                "mean_abs_cosine": float(np.mean(np.abs(cos_vals))),
-                "mean_cosine": float(np.mean(cos_vals)),
-                "fraction_aligned_030": float(np.mean([abs(c) > 0.3 for c in cos_vals])),
-                "per_feature": cosines,
+                "prompt_key":           prompt_key,
+                "violation_layer":      model_layer,
+                "n_features_tested":    n_features,
+                "mean_abs_cosine":      float(abs_cos.mean()),
+                "mean_cosine":          float(cos_vals.mean()),
+                "fraction_aligned_030": float((abs_cos > 0.3).mean()),
+                "top_feature":          int(np.argmax(abs_cos)),
+                "top_cosine":           float(abs_cos.max()),
             })
 
+    if not results:
+        return {
+            "error": (
+                f"No violation layers matched loaded FFN delta files "
+                f"(checked {n_prompts_checked} prompt(s); "
+                f"violation_layers keys: {sorted(violation_layers)[:5]}; "
+                f"ffn_subspaces keys: {sorted(ffn_subspaces)[:5]})"
+            )
+        }
+
+    all_mean_abs = [r["mean_abs_cosine"] for r in results]
     return {
-        "n_violations_tested": len(results),
-        "per_violation": results,
-        "mean_alignment": float(np.mean([r["mean_abs_cosine"] for r in results]))
-        if results else None,
+        "n_violations_checked":  len(results),
+        "n_prompts_checked":     n_prompts_checked,
+        "mean_cos_sim_to_ffn_delta": float(np.mean(all_mean_abs)),
+        "per_violation":         results,
     }
-
-
 # ---------------------------------------------------------------------------
 # P2 → P3: Cross-term feature weighting
 # ---------------------------------------------------------------------------
@@ -1969,102 +1705,169 @@ def induction_feature_tagging(
 # P3 → P2: Decoder directions as violation probes
 # ---------------------------------------------------------------------------
 
+
 @register("decoder_violation_projection")
 def decoder_violation_projection(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
-    Project Phase 2 displacement vectors at violation layers onto the
-    decoder directions of violation-layer features. If a small number of
-    feature directions explain most displacement, violations are
-    interpretable through the crosscoder.
+    For each energy-violation layer transition, project the mean token
+    displacement onto every crosscoder decoder direction and report the
+    cumulative explained energy fraction for the top-k features.
 
-    Requires artifacts:
-      "phase2_dir"    : Path with trajectory.npz
-      "layer_indices" : list[int]
+    If a small number of feature directions account for most of the
+    displacement energy, the violation is interpretable via the crosscoder.
+
+    Uses:
+      prompt_store          — activations are already in memory as (T, L_cc, d)
+      artifacts["violation_layers"]  — {prompt_key: [int, ...]}
+      artifacts["layer_indices"]     — crosscoder-to-model layer mapping
     """
-    phase2_dir = artifacts.get("phase2_dir")
-    layer_indices = artifacts.get("layer_indices")
-    if not phase2_dir or not layer_indices:
-        return {"error": "Requires phase2_dir and layer_indices"}
+    layer_indices    = artifacts.get("layer_indices")
+    violation_layers = artifacts.get("violation_layers", {})
 
-    phase2_dir = Path(phase2_dir)
-    traj_path = phase2_dir / "trajectory.npz"
-    if not traj_path.exists():
-        # Try activations from Phase 1
-        p1_dir = artifacts.get("phase1_dir")
-        if p1_dir:
-            traj_path = Path(p1_dir) / "activations.npz"
-        if not traj_path.exists():
-            return {"error": "No trajectory data found"}
+    if not layer_indices:
+        return {"error": "layer_indices not in artifacts"}
 
-    traj_data = np.load(traj_path)
-    # Handle different key conventions
-    traj_key = "activations" if "activations" in traj_data else "arr_0"
-    traj = traj_data[traj_key]  # (n_layers, n_tokens, d)
+    # Flatten all known violation layers so prompts without per-prompt data
+    # still get checked against the cross-prompt union.
+    all_v_layers: set[int] = set()
+    for ll in violation_layers.values():
+        all_v_layers.update(ll)
+    if not all_v_layers:
+        return {"error": "no violation layers found in artifacts (check events.json was loaded)"}
 
-    W_dec = crosscoder.W_dec.detach().cpu().float().numpy()
+    W_dec     = crosscoder.W_dec.detach().cpu().float().numpy()  # (L_cc, F, d)
+    n_cc, n_features, d_model = W_dec.shape
 
-    # Get violation-layer features
-    vlf = artifacts.get("_violation_layer_features_result")
-    if vlf is None and "violation_layer_features" in _REGISTRY:
-        vlf = _REGISTRY["violation_layer_features"](
-            crosscoder, prompt_store, artifacts, config
-        )
-    if not vlf or "error" in vlf:
-        return {"error": "violation_layer_features not available"}
+    top_ks = [1, 5, 10, 20, 50]
 
-    results = []
-    for pk, pdata in vlf.items():
-        if not isinstance(pdata, dict):
+    def _find_transition_idx(v_l: int) -> int:
+        """
+        Return cc_i such that transition cc_i → cc_i+1 best covers model
+        layer v_l (violation = energy dropped going INTO v_l).
+        Clipped to [0, n_cc-2].
+        """
+        # Walk forward: find the last cc whose model layer is <= v_l
+        best = 0
+        for i, l in enumerate(layer_indices):
+            if l <= v_l:
+                best = i
+        return min(best, n_cc - 2)
+
+    results   = []
+    skipped   = 0
+
+    for pk in prompt_store.keys():
+        # (T, L_cc, d) — already float32 via get_stacked_tensor
+        x = prompt_store.get_stacked_tensor(pk).numpy()
+        T, L, d = x.shape
+        if L < 2 or d != d_model:
+            skipped += 1
             continue
-        for vf_info in pdata.get("violation_features", []):
-            v_layer = vf_info.get("layer") or vf_info.get("violation_layer")
-            if v_layer is None or v_layer not in layer_indices:
-                continue
-            if v_layer < 1 or v_layer >= traj.shape[0]:
-                continue
-            cc_idx = layer_indices.index(v_layer)
 
-            feat_idx = vf_info.get("feature_indices", vf_info.get("features", []))
-            if not feat_idx:
-                continue
+        v_set = set(violation_layers.get(pk, all_v_layers))
 
-            displacement = traj[v_layer] - traj[v_layer - 1]  # (T, d)
-            disp_mean = displacement.mean(axis=0)
-            disp_norm_sq = np.dot(disp_mean, disp_mean)
-            if disp_norm_sq < 1e-20:
+        for v_l in sorted(v_set):
+            cc_i = _find_transition_idx(v_l)
+
+            # Displacement: (T, d)
+            delta      = x[:, cc_i + 1, :] - x[:, cc_i, :]
+            delta_mean = delta.mean(axis=0)                 # (d,)
+            total_e    = float(np.dot(delta_mean, delta_mean))
+            if total_e < 1e-20:
                 continue
 
-            dec_dirs = W_dec[cc_idx, feat_idx, :]  # (K, d)
-            projections = dec_dirs @ disp_mean
-            recon = projections[:, None] * dec_dirs
-            explained = float(np.dot(recon.sum(axis=0), disp_mean) / disp_norm_sq)
-            explained = min(max(explained, 0.0), 1.0)
+            # W_dec[cc_i] is (F, d); rows are unit-normed after normalize_decoder.
+            # Signed projections: (F,); energy: (F,)
+            projs      = W_dec[cc_i] @ delta_mean           # (F,)
+            proj_e     = projs ** 2                         # (F,)
+            ranked     = np.argsort(proj_e)[::-1]           # descending
+            cumul      = np.cumsum(proj_e[ranked]) / total_e
+
+            explained = {
+                k: float(cumul[min(k, n_features) - 1])
+                for k in top_ks if k <= n_features
+            }
 
             results.append({
-                "prompt_key": pk,
-                "violation_layer": v_layer,
-                "n_features": len(feat_idx),
-                "explained_variance": explained,
-                "top_projections": sorted(
-                    [{"feature": int(f), "projection": float(p)}
-                     for f, p in zip(feat_idx, projections)],
-                    key=lambda x: abs(x["projection"]),
-                    reverse=True
-                )[:5],
+                "prompt_key":                pk,
+                "violation_layer":           v_l,
+                "cc_transition":             [int(layer_indices[cc_i]),
+                                              int(layer_indices[cc_i + 1])],
+                "total_displacement_energy": total_e,
+                "top_feature":               int(ranked[0]),
+                "top_feature_signed_proj":   float(projs[ranked[0]]),
+                "explained_by_top_k":        explained,
             })
 
+    if not results:
+        return {
+            "error": (
+                "No valid violation transitions found. "
+                f"violation_layers keys: {sorted(violation_layers)[:5]}; "
+                f"layer_indices span: {layer_indices[0]}–{layer_indices[-1]}"
+            )
+        }
+
+    # --- Aggregate ---
+    def _mean_explained(k):
+        vals = [r["explained_by_top_k"].get(k, 0.0) for r in results]
+        return float(np.mean(vals)) if vals else 0.0
+
+    exp1, exp5, exp10, exp20, exp50 = (
+        _mean_explained(1), _mean_explained(5), _mean_explained(10),
+        _mean_explained(20), _mean_explained(50),
+    )
+
+    interpretation = (
+        "Violations are crosscoder-interpretable: "
+        f"top-10 features explain {exp10:.0%} of mean displacement energy on average."
+        if exp10 > 0.5
+        else (
+            "Violations are partially crosscoder-interpretable: "
+            f"top-10 features explain {exp10:.0%} of displacement energy."
+            if exp10 > 0.25
+            else
+            f"Violations are not well-explained by crosscoder features "
+            f"(top-10 explains {exp10:.0%})."
+        )
+    )
+
     return {
-        "per_violation": results,
-        "mean_explained": float(np.mean([r["explained_variance"] for r in results]))
-        if results else None,
+        "n_violations_projected":  len(results),
+        "n_prompts_skipped":       skipped,
+        "mean_explained_top1":     exp1,
+        "mean_explained_top5":     exp5,
+        "mean_explained_top10":    exp10,
+        "mean_explained_top20":    exp20,
+        "mean_explained_top50":    exp50,
+        "interpretation":          interpretation,
+        "per_violation":           results,
     }
 
-
+@register_summary("decoder_violation_projection")
+def _summarize_decoder_violation_projection(r: dict) -> str:
+    if "error" in r:
+        return f"ERROR: {r['error']}"
+    n    = r.get("n_violations_projected", "?")
+    e1   = r.get("mean_explained_top1",  float("nan"))
+    e5   = r.get("mean_explained_top5",  float("nan"))
+    e10  = r.get("mean_explained_top10", float("nan"))
+    e50  = r.get("mean_explained_top50", float("nan"))
+    fmt  = lambda v: f"{v:.3f}" if isinstance(v, float) and not np.isnan(v) else "?"
+    lines = [
+        f"n_violations_projected: {n}",
+        f"mean_explained — top1={fmt(e1)}  top5={fmt(e5)}  top10={fmt(e10)}  top50={fmt(e50)}",
+    ]
+    interp = r.get("interpretation", "")
+    if interp:
+        lines.append(f"interpretation: {interp}")
+    return "\n".join(lines)
+    
 # ---------------------------------------------------------------------------
 # Phase 4 completion: co-activation at merge layers
 # ---------------------------------------------------------------------------
@@ -2258,31 +2061,35 @@ def cluster_identity_diff(
 
 @register("lifetime_centroid_decomposition")
 def lifetime_centroid_decomposition(
-    crosscoder: Crosscoder,
-    prompt_store: PromptActivationStore,
+    crosscoder: "Crosscoder",
+    prompt_store: "PromptActivationStore",
     artifacts: dict,
     config: dict,
-) -> dict:
+    ) -> dict:
     """
     Decompose Phase 1 centroid movement into short-lived vs long-lived
-    feature directions. Tests: do centroids move in long-lived directions
+    feature directions.  Tests: do centroids move in long-lived directions
     during plateaus and short-lived directions at merge events?
 
     Requires artifacts:
-      "phase1_dir"    : Path with centroid_trajectories.npz
-      "layer_indices" : list[int]
-    Also needs feature_lifetimes to have run (uses lifetime_class).
+      "centroid_trajectories" : {prompt_key: NpzFile}  (set by _load_artifacts)
+      "layer_indices"         : list[int]
+    Also needs feature_lifetimes to have run.
     """
-    phase1_dir = artifacts.get("phase1_dir")
-    layer_indices = artifacts.get("layer_indices", [])
-    if not phase1_dir:
-        return {"error": "Requires phase1_dir artifact"}
+    centroid_trajs = artifacts.get("centroid_trajectories")
+    layer_indices  = artifacts.get("layer_indices", [])
 
-    centroid_path = Path(phase1_dir) / "centroid_trajectories.npz"
-    if not centroid_path.exists():
-        return {"error": f"Centroid trajectories not found at {centroid_path}"}
+    if not centroid_trajs:
+        return {
+            "error": (
+                "centroid_trajectories not in artifacts — "
+                "run Phase 1 for this model and pass --phase1-dir"
+            )
+        }
+    if not layer_indices:
+        return {"error": "layer_indices not in artifacts"}
 
-    # Get lifetime classification
+    # Feature lifetime classification
     lt_result = artifacts.get("_lifetime_result")
     if lt_result is None and "feature_lifetimes" in _REGISTRY:
         lt_result = _REGISTRY["feature_lifetimes"](
@@ -2291,66 +2098,78 @@ def lifetime_centroid_decomposition(
     if not lt_result or "error" in lt_result:
         return {"error": "feature_lifetimes not available"}
 
-    lt_class = lt_result.get("lifetime_class", [])
-    short_idx = [i for i, c in enumerate(lt_class) if c == "short_lived"]
-    long_idx = [i for i, c in enumerate(lt_class) if c == "long_lived"]
+    lt_class   = lt_result.get("lifetime_class", [])
+    short_idx  = [i for i, c in enumerate(lt_class) if c == "short_lived"]
+    long_idx   = [i for i, c in enumerate(lt_class) if c == "long_lived"]
     if not short_idx or not long_idx:
-        return {"error": "Need both short and long lived features"}
+        return {"error": "Need both short- and long-lived features; check feature_lifetimes result"}
 
-    W_dec = crosscoder.W_dec.detach().cpu().float().numpy()
-    centroids = np.load(centroid_path, allow_pickle=True)
+    W_dec = crosscoder.W_dec.detach().cpu().float().numpy()  # (L_cc, F, d)
+    d_model = W_dec.shape[2]
+
+    # Collect all trajectory arrays across every loaded prompt.
+    # Each npz has keys "trajectory_0", "trajectory_1", … each shaped (lifespan, d).
+    all_traj_arrays = []
+    for pk, npz in centroid_trajs.items():
+        try:
+            for key in npz.files:
+                arr = npz[key]
+                if arr.ndim == 2 and arr.shape[1] == d_model:
+                    all_traj_arrays.append(arr)
+        except Exception:
+            continue
+
+    if not all_traj_arrays:
+        return {
+            "error": (
+                "No centroid trajectory arrays with matching d_model found in loaded artifacts"
+            )
+        }
 
     results = []
     for cc_i in range(len(layer_indices) - 1):
-        model_layer = layer_indices[cc_i]
-
         k = min(20, len(short_idx), len(long_idx))
         if k == 0:
             continue
 
-        short_dirs = W_dec[cc_i, short_idx[:k*3], :]
-        long_dirs = W_dec[cc_i, long_idx[:k*3], :]
+        short_dirs = W_dec[cc_i, short_idx[: k * 3], :]   # (≤3k, d)
+        long_dirs  = W_dec[cc_i, long_idx[: k * 3],  :]
 
-        U_s = np.linalg.svd(short_dirs.T, full_matrices=False)[0][:, :k]
-        U_l = np.linalg.svd(long_dirs.T, full_matrices=False)[0][:, :k]
+        # Top-k directions spanning each population's decoder subspace
+        U_s = np.linalg.svd(short_dirs.T, full_matrices=False)[0][:, :k]  # (d, k)
+        U_l = np.linalg.svd(long_dirs.T,  full_matrices=False)[0][:, :k]
 
-        # Load centroids — format: trajectory_N keys, each (lifespan, d)
-        # We need centroid positions at model_layer
-        # Try to reconstruct from the trajectory arrays
-        centroid_vecs_curr = []
-        centroid_vecs_next = []
-        for key in centroids.files:
-            traj_arr = centroids[key]  # (lifespan, d)
-            # We don't have layer mapping for centroid trajectories,
-            # so use cc_i and cc_i+1 as indices if they fit
+        # Mean centroid displacement at this layer transition, pooled across
+        # all trajectories long enough to contribute a step at cc_i.
+        centroid_curr, centroid_next = [], []
+        for traj_arr in all_traj_arrays:
             if cc_i < traj_arr.shape[0] and cc_i + 1 < traj_arr.shape[0]:
-                centroid_vecs_curr.append(traj_arr[cc_i])
-                centroid_vecs_next.append(traj_arr[cc_i + 1])
+                centroid_curr.append(traj_arr[cc_i])
+                centroid_next.append(traj_arr[cc_i + 1])
 
-        if not centroid_vecs_curr:
+        if not centroid_curr:
             continue
 
-        # Mean centroid displacement
-        c_curr = np.stack(centroid_vecs_curr).mean(axis=0)
-        c_next = np.stack(centroid_vecs_next).mean(axis=0)
-        delta = c_next - c_curr
-        delta_norm_sq = np.dot(delta, delta)
+        c_curr = np.stack(centroid_curr).mean(axis=0)
+        c_next = np.stack(centroid_next).mean(axis=0)
+        delta  = c_next - c_curr
+        delta_norm_sq = float(np.dot(delta, delta))
         if delta_norm_sq < 1e-20:
             continue
 
         proj_short = float(np.sum((U_s.T @ delta) ** 2) / delta_norm_sq)
-        proj_long = float(np.sum((U_l.T @ delta) ** 2) / delta_norm_sq)
+        proj_long  = float(np.sum((U_l.T @ delta) ** 2) / delta_norm_sq)
 
         results.append({
-            "model_layer": model_layer,
-            "next_layer": layer_indices[cc_i + 1],
+            "model_layer":         layer_indices[cc_i],
+            "next_layer":          layer_indices[cc_i + 1],
             "frac_in_short_lived": proj_short,
-            "frac_in_long_lived": proj_long,
-            "frac_orthogonal": max(0.0, 1.0 - proj_short - proj_long),
+            "frac_in_long_lived":  proj_long,
+            "frac_orthogonal":     max(0.0, 1.0 - proj_short - proj_long),
+            "n_trajectories":      len(centroid_curr),
         })
 
     return {"per_layer": results}
-
 
 def _cluster_selective_set(
     z: np.ndarray,

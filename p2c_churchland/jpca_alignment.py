@@ -18,10 +18,10 @@ Functions
 ---------
 principal_angles           : canonical angles between two subspaces
 mean_principal_angle       : scalar summary across all jPCA-vs-UA plane pairs
-jpca_ua_alignment          : full comparison, all planes × all UA planes
+align_jpca_to_ua          : full comparison, all planes × all UA planes
 alignment_verdict          : P2c-J2 verdict + interpretation string
 print_alignment            : terminal report
-alignment_to_json          : JSON-serializable summary
+jpca_alignment_to_json          : JSON-serializable summary
 """
 
 from __future__ import annotations
@@ -113,7 +113,7 @@ def mean_principal_angle(
 # Full alignment analysis
 # ---------------------------------------------------------------------------
 
-def jpca_ua_alignment(
+def align_jpca_to_ua(
     jpca_result: dict,
     ua_planes: list[np.ndarray],
     angle_threshold_deg: float = 30.0,
@@ -229,7 +229,7 @@ def print_alignment(result: dict) -> None:
 # Serialization
 # ---------------------------------------------------------------------------
 
-def alignment_to_json(result: dict) -> dict:
+def jpca_alignment_to_json(result: dict) -> dict:
     return {
         "mean_min_angle":     float(result["mean_min_angle"]),
         "per_jpca_min_angle": [float(x) for x in result["per_jpca_min_angle"]],

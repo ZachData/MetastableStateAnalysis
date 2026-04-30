@@ -238,7 +238,9 @@ def _run_gpt2(
             hook_handle[0].remove()
             return (patched,) + output[1:]
 
-        hook_handle[0] = model.transformer.h[steer_layer].register_forward_hook(_hook)
+        _blocks = model.transformer.h if hasattr(model, "transformer") else model.h
+        hook_handle[0] = _blocks[steer_layer].register_forward_hook(_hook)
+
 
     inputs_with_hs = {**inputs, "output_hidden_states": True}
     try:
@@ -443,7 +445,7 @@ def run_steering(
     device:             str,
     config:             dict,
     lifetime_class_arr: list = None,
-) -> list:
+    ) -> list:
     """
     Part 9: for each top FCC feature at each mid-plateau layer, run the
     steering experiment (baseline + perturbed forward pass).
@@ -507,22 +509,48 @@ def run_steering(
             if not layer_fcc:
                 continue
 
-            # Top-N features by F-stat
-            features_sorted = sorted(
-                layer_fcc.items(), key=lambda kv: kv[1].get("f_stat", 0), reverse=True
-            )[:n_steer]
-
             cc_layer_idx = layer_indices.index(mid_layer) if mid_layer in layer_indices else None
             if cc_layer_idx is None:
                 continue
 
-            spec_labels, target_cluster = plateau_clusters[prompt_key].get(mid_layer, (None, None))
+            # added to appease the language model:
+            cluster_info = plateau_clusters[prompt_key].get(mid_layer)
+
+            if cluster_info is None:
+                continue
+
+            if isinstance(cluster_info, dict):
+                spec_labels = cluster_info.get("spectral") or cluster_info.get("labels")
+                if spec_labels is None:
+                    continue
+                labels_arr = np.array(spec_labels)
+                valid = labels_arr[labels_arr >= 0]
+                if len(valid) == 0:
+                    continue
+                counts = np.bincount(valid)
+                target_cluster = int(np.argmin(counts)) if len(counts) >= 2 else 0
+            elif isinstance(cluster_info, (tuple, list)) and len(cluster_info) >= 2:
+                spec_labels, target_cluster = cluster_info[0], cluster_info[1]
+            else:
+                continue
+
             if spec_labels is None:
                 continue
 
-            for feat_key, feat_info in features_sorted:
-                feature_idx = int(feat_key)
-                f_stat      = float(feat_info.get("f_stat", 0.0))
+            seen: dict[int, float] = {}
+            for res_key in ("spectral", "hdbscan"):
+                for rec in layer_fcc.get(res_key, {}).get("top_features", []):
+                    fi = rec.get("feature")
+                    fs = float(rec.get("f_stat", rec.get("f_spectral", 0.0)))
+                    if fi is not None and (fi not in seen or fs > seen[fi]):
+                        seen[int(fi)] = fs
+
+            if not seen:
+                continue
+
+            top_features = sorted(seen.items(), key=lambda kv: kv[1], reverse=True)[:n_steer]
+
+            for feature_idx, f_stat in top_features:
                 try:
                     r = _steer_one_feature(
                         model=model,

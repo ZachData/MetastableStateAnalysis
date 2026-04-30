@@ -33,49 +33,74 @@ from typing import Optional
 
 def load_phase1_run(run_dir: Path) -> dict:
     """
-    Load one Phase 1 run directory.
+    Load one Phase 1 run directory (v2 split-file format).
+
+    v2 layout (written by io_utils.save_run):
+      geometry.json         — model, prompt, n_layers, n_tokens, d_model
+      trajectory.json       — cluster_tracking (trajectories + events) + plateau_layers
+      tokens.txt            — "  i  token\n" per line
+      activations.npz       — key "activations": (n_layers, n_tokens, d_model) float32
+      attentions.npz        — key "attentions":  (n_layers, n_heads, n_tokens, n_tokens) float32
+      clusters.npz          — keys hdbscan_labels_L{i}: (n_tokens,) int32
+      centroid_trajectories.npz — keys traj_{id}: (lifespan, d) float32
 
     Returns
     -------
     dict with keys:
-      metrics        : full metrics.json
-      activations    : (n_layers, n_tokens, d_model) float32, L2-normed
-                       or None if activations.npz missing
-      attentions     : (n_layers, n_heads, n_tokens, n_tokens) float32 or None
-      hdbscan_labels : list of (n_tokens,) int32 per layer; -1 = noise
-      centroid_trajs : dict {trajectory_id: (lifespan, d) float32}
       tokens         : list of str
-      trajectories   : list of trajectory dicts from metrics (convenience)
-      events         : list of per-transition event dicts (convenience)
-      prompt_key     : prompt name inferred from dir name
+      prompt_key     : str
+      trajectories   : list of trajectory dicts from cluster_tracking
+      events         : list of per-transition event dicts
+      activations    : (n_layers, n_tokens, d_model) float32, or None
+      attentions     : (n_layers, n_heads, n_tokens, n_tokens) float32, or None
+      hdbscan_labels : list of (n_tokens,) int32 per layer, or None
+      centroid_trajs : dict {trajectory_id (int): (lifespan, d) float32}
+      run_dir        : str
     """
     run_dir = Path(run_dir)
     out = {"run_dir": str(run_dir)}
 
-    # metrics.json
-    with open(run_dir / "metrics.json") as f:
-        metrics = json.load(f)
-    out["metrics"] = metrics
-    out["tokens"] = metrics.get("tokens", [])
-    out["prompt_key"] = metrics.get("prompt", run_dir.name)
+    # --- geometry.json: prompt name, shape metadata ---
+    with open(run_dir / "geometry.json") as f:
+        geo = json.load(f)
+    out["prompt_key"] = geo.get("prompt", run_dir.name)
 
-    tracking = metrics.get("cluster_tracking", {})
+    # --- tokens.txt: "  i  token\n" ---
+    tokens_path = run_dir / "tokens.txt"
+    if tokens_path.exists():
+        tokens = []
+        with open(tokens_path) as f:
+            for line in f:
+                parts = line.rstrip("\n").split(None, 1)
+                tokens.append(parts[1] if len(parts) == 2 else "")
+        out["tokens"] = tokens
+    else:
+        out["tokens"] = []
+
+    # --- trajectory.json: cluster_tracking ---
+    traj_path = run_dir / "trajectory.json"
+    if traj_path.exists():
+        with open(traj_path) as f:
+            traj_data = json.load(f)
+        tracking = traj_data.get("cluster_tracking", {})
+    else:
+        tracking = {}
     out["trajectories"] = tracking.get("trajectories", [])
-    out["events"] = tracking.get("events", [])
+    out["events"]       = tracking.get("events", [])
 
-    # activations.npz
+    # --- activations.npz ---
     act_path = run_dir / "activations.npz"
     out["activations"] = (
         np.load(act_path)["activations"] if act_path.exists() else None
     )
 
-    # attentions.npz
+    # --- attentions.npz ---
     att_path = run_dir / "attentions.npz"
     out["attentions"] = (
         np.load(att_path)["attentions"] if att_path.exists() else None
     )
 
-    # clusters.npz — HDBSCAN labels per layer
+    # --- clusters.npz: hdbscan_labels_L{i} ---
     clu_path = run_dir / "clusters.npz"
     if clu_path.exists():
         data = np.load(clu_path)
@@ -87,15 +112,9 @@ def load_phase1_run(run_dir: Path) -> dict:
             data[f"hdbscan_labels_L{i}"] for i in layer_idxs
         ]
     else:
-        # Fallback: try to read labels from metrics.json layers
-        labels = []
-        for layer in metrics.get("layers", []):
-            hdb = layer.get("clustering", {}).get("hdbscan", {})
-            if "labels" in hdb:
-                labels.append(np.asarray(hdb["labels"], dtype=np.int32))
-        out["hdbscan_labels"] = labels or None
+        out["hdbscan_labels"] = None
 
-    # centroid_trajectories.npz
+    # --- centroid_trajectories.npz: traj_{id} ---
     ct_path = run_dir / "centroid_trajectories.npz"
     if ct_path.exists():
         data = np.load(ct_path)
@@ -110,7 +129,10 @@ def load_phase1_run(run_dir: Path) -> dict:
 
 def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
     """
-    Enumerate Phase 1 runs matching a model stem.
+    Enumerate Phase 1 v2 run directories matching a model stem.
+
+    Reads the prompt name from geometry.json (canonical).
+    Falls back to inferring it from the directory name.
 
     Returns
     -------
@@ -126,11 +148,10 @@ def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
             continue
         if model_stem not in run_dir.name:
             continue
-        # Try to pull prompt from metrics.json (canonical) before guessing
-        mpath = run_dir / "metrics.json"
-        if mpath.exists():
+        geo_path = run_dir / "geometry.json"
+        if geo_path.exists():
             try:
-                with open(mpath) as f:
+                with open(geo_path) as f:
                     pk = json.load(f).get("prompt")
                 if pk:
                     out[pk] = run_dir
@@ -142,7 +163,6 @@ def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
         pk = name.split("iter_", 1)[-1] if "iter_" in name else name
         out[pk] = run_dir
     return out
-
 
 # ---------------------------------------------------------------------------
 # Phase 2 artifacts — V projectors (shared across prompts)
