@@ -226,12 +226,12 @@ def train_low_rank_ae(
 
 
 def load_low_rank_ae(path: Path, device: str = "cpu") -> LowRankAE:
-    """Load a trained low-rank AE from checkpoint."""
     import json
     with open(path / "config.json") as f:
         cfg = LowRankAEConfig.from_dict(json.load(f))
     model = LowRankAE(cfg)
     model.load_state_dict(torch.load(path / "model.pt", map_location=device))
+    model = model.to(device)   # add this
     model.eval()
     return model
 
@@ -377,27 +377,20 @@ def compare_reconstruction(
 # Streaming data adapter
 # ---------------------------------------------------------------------------
 
+
 class ActivationBufferAdapter:
     """
-    Wraps Phase 3's ActivationBuffer to yield flat (B, L*d) batches
-    for low-rank AE training.
+    Wraps Phase 3's ActivationBuffer to yield (B, L, d) tensors for
+    low-rank AE training.  train_low_rank_ae flattens to (B, L*d) itself.
     """
 
     def __init__(self, buffer, batch_size: int = 512):
-        self.buffer = buffer
+        self.buffer     = buffer
         self.batch_size = batch_size
 
     def __iter__(self):
-        batch = []
-        for item in self.buffer:
-            # item is (L, d) or (L*d,)
-            if isinstance(item, torch.Tensor):
-                item = item.numpy()
-            if item.ndim == 2:
-                item = item.reshape(-1)
-            batch.append(item)
-            if len(batch) >= self.batch_size:
-                yield np.stack(batch, axis=0)
-                batch = []
-        if batch:
-            yield np.stack(batch, axis=0)
+        # ActivationBuffer has no __iter__; its public API is get_batch().
+        # Yield indefinitely — train_low_rank_ae breaks on total_steps.
+        while True:
+            yield self.buffer.get_batch(self.batch_size)  # (B, n_layers, d_model) float32
+

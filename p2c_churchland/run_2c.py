@@ -36,6 +36,8 @@ Output layout
     c5_icl_scaling.json
     c5_context_selection.json
     summary.txt                (LLM-friendly flat text, all verdicts)
+
+this is a terrible, terrible script.
 """
 
 from __future__ import annotations
@@ -117,7 +119,9 @@ def load_phase1_artifacts(phase1_dir: Path, model_name: str) -> dict:
     # Collect matching subdirectories
     subdirs = sorted(
         d for d in phase1_dir.iterdir()
-        if d.is_dir() and d.name.startswith(fstem)
+        if d.is_dir()
+        and d.name.startswith(fstem)
+        and (len(d.name) == len(fstem) or d.name[len(fstem)] == "_")
     )
     if not subdirs:
         print(f"  WARNING: no subdirectories matching '{fstem}' in {phase1_dir}")
@@ -155,6 +159,12 @@ def load_phase1_artifacts(phase1_dir: Path, model_name: str) -> dict:
         long_keys  = [k for k, a in zip(arts["traj_keys"], all_arrays)
                     if a.shape[0] >= min_lifespan]
         long_arrays = [arts["traj_dict"][k] for k in long_keys]
+        dims = {a.shape[1] for a in long_arrays}
+        if len(dims) > 1:
+            raise ValueError(
+                f"Inconsistent feature dims across trajectories: {dims}. "
+                f"Check that subdirectory filter is not mixing model variants."
+            )
 
         print(f"  loaded centroid_trajectories from {len(subdirs)} subdirs "
             f"({len(arts['traj_keys'])} trajectories, "
@@ -162,8 +172,11 @@ def load_phase1_artifacts(phase1_dir: Path, model_name: str) -> dict:
 
         if long_arrays:
             trim = min(a.shape[0] for a in long_arrays)
-            arts["traj_stacked"] = np.stack(
+            arts["traj_stacked"]        = np.stack(              # C1 jPCA — no NaNs
                 [a[:trim] for a in long_arrays], axis=0
+            )
+            arts["traj_stacked_padded"] = _pad_trajectories(     # C4 Jacobians
+                long_arrays
             )
         else:
             print("  WARNING: no trajectories survive lifespan filter")
@@ -221,6 +234,26 @@ def _flatten_layers(v: Any) -> list[int]:
             out.extend(_flatten_layers(val))
         return sorted(set(out))
     return []
+
+#helper
+def _pad_trajectories(
+    arrays: list[np.ndarray],
+    pad_value: float = np.nan,
+    ) -> np.ndarray:
+    """
+    Pad a list of (n_layers, d) arrays to the maximum n_layers found,
+    then stack into (n_arrays, max_layers, d).
+
+    NaN padding is intentional — consumers must mask or use nan-aware ops.
+    Not suitable for SVD-based routines (jPCA). Use traj_stacked (truncated)
+    for those; use traj_stacked_padded for local Jacobians (C4).
+    """
+    max_len = max(a.shape[0] for a in arrays)
+    d       = arrays[0].shape[1]
+    out     = np.full((len(arrays), max_len, d), pad_value, dtype=float)
+    for i, a in enumerate(arrays):
+        out[i, : a.shape[0]] = a
+    return out
 
 
 def load_per_prompt_activations(
@@ -501,7 +534,7 @@ def run_c1(
     phase2_arts: dict,
     output_dir: Path,
     args,
-) -> dict:
+)    -> dict:
     """
     C1 — jPCA fit on centroid trajectories, U_A alignment, optional HDR.
     Fully offline: only needs centroid_trajectories.npz + phase2 projectors.
@@ -561,15 +594,14 @@ def run_c2(
     phase1_arts: dict,
     phase2_arts: dict,
     prompts: list[str],
+    induction_grids: dict | None,      # {"induction": [...], "control": [...]}
     output_dir: Path,
     args,
-) -> dict:
-    """C2 — Trajectory tangling (Q metric).  Needs live model or saved activations."""
+    ) -> dict:
     from p2c_churchland.tangling import analyze_tangling, tangling_to_json
 
     P_A = phase2_arts.get("P_A")
     P_S = phase2_arts.get("P_S")
-
     if P_A is None or P_S is None:
         print("  C2 SKIP: P_A / P_S projectors not available")
         return {}
@@ -577,41 +609,19 @@ def run_c2(
         print("  C2 SKIP: no prompts provided")
         return {}
 
-    # Prefer saved activations if model unavailable
-    if model is None:
-        print("  C2: no model — looking for saved per-prompt activations ...")
-        saved = load_per_prompt_activations(phase1_dir)
-        if not saved:
-            print("  C2 SKIP: no model and no saved activations")
-            return {}
-        # analyze_tangling needs model; with saved acts, use low-level path
-        # Pass activations directly (analyze_tangling accepts pre-extracted
-        # activations when model=None and activations_dict is provided)
-        try:
-            result = analyze_tangling(
-                model=None,
-                tokenizer=None,
-                prompts=prompts,
-                P_A=P_A,
-                P_S=P_S,
-                device=args.device,
-                activations_dict=saved,
-            )
-        except TypeError:
-            # If analyze_tangling doesn't accept activations_dict, skip
-            print("  C2 SKIP: saved-activation path not supported by analyze_tangling")
-            return {}
-    else:
-        print("  running tangling ...")
-        result = analyze_tangling(
-            model=model,
-            tokenizer=tokenizer,
-            prompts=prompts,
-            P_A=P_A,
-            P_S=P_S,
-            device=args.device,
-        )
+    induction_prompts, control_prompts = None, None
+    if induction_grids:
+        induction_prompts = [p["prompt"] for p in induction_grids.get("induction", [])] or None
+        control_prompts   = [p["prompt"] for p in induction_grids.get("control", [])]   or None
 
+    # ... existing model/saved-activation branching, then:
+    result = analyze_tangling(
+        model=model, tokenizer=tokenizer, prompts=prompts,
+        P_A=P_A, P_S=P_S,
+        induction_prompts=induction_prompts,
+        control_prompts=control_prompts,
+        device=args.device,
+    )
     _jdump(tangling_to_json(result), output_dir / "c2_tangling.json")
     return {"c2_tangling": result}
 
@@ -720,7 +730,8 @@ def run_c4(
             "centroid_ids": traj_keys,
         }
 
-    model_type = "albert" if "albert" in model_name.lower() else "gpt2"
+    mn = model_name.lower()
+    model_type = "albert" if "albert" in mn else "bert" if "bert" in mn else "gpt2"
     P_A        = phase2_arts.get("P_A")
     P_S        = phase2_arts.get("P_S")
     global_sa  = phase2_arts.get("global_sa_ratio") or 1.0
@@ -949,15 +960,17 @@ def _aggregate_context_pairs(pair_results: list[dict]) -> dict:
 
 def load_prompt_grids(grids_dir: Path) -> dict:
     """Load matched_length.json, icl_kshot.json, context_pairs.json."""
-    grids: dict = {
-        "matched_prompts": None,
-        "icl_prompts":     None,
-        "context_pairs":   None,
-    }
     mapping = {
-        "matched_length.json": "matched_prompts",
-        "icl_kshot.json":      "icl_prompts",
-        "context_pairs.json":  "context_pairs",
+        "matched_length.json":   "matched_prompts",
+        "icl_kshot.json":        "icl_prompts",
+        "context_pairs.json":    "context_pairs",
+        "induction_prompts.json": "induction_prompts",   # add this
+    }
+    grids = {
+        "matched_prompts":   None,
+        "icl_prompts":       None,
+        "context_pairs":     None,
+        "induction_prompts": None,                        # add this
     }
     if grids_dir is None or not grids_dir.is_dir():
         return grids
@@ -1184,7 +1197,7 @@ def run_phase(model_name: str, args) -> dict:
         try:
             all_results.update(
                 run_c2(model, tokenizer, phase1_dir, p1, p2,
-                       prompts_for_c2, out, args)
+                    prompts_for_c2, grids["induction_prompts"], out, args)
             )
         except Exception:
             print(f"  C2 FAILED:\n{traceback.format_exc()}")
@@ -1284,11 +1297,11 @@ def main() -> None:
     parser.add_argument(
         "--c4-max-per-layer",
         type=int,
-        default=2000,
+        default=400,
         metavar="N",
         help=(
             "C4: maximum centroids kept per layer after cosine-deduplication "
-            "(ignored when --run-all-centroids is set, default: 2000)."
+            "(ignored when --run-all-centroids is set, default: 500). 500 ~ 32gb ram"
         ),
     )
 

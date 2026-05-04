@@ -387,7 +387,7 @@ def probe_accuracy_trajectory(
     activations_per_layer: dict[int, np.ndarray],
     labels_per_layer: dict[int, np.ndarray],
     reg: float = 1e-3,
-) -> dict:
+    ) -> dict:
     """
     Train a linear probe at each layer and report accuracy trajectory.
 
@@ -437,19 +437,30 @@ def probe_accuracy_trajectory(
         # Store weight matrix for Phase 5 export and V-alignment
         probe_directions[layer] = W  # (n_classes, d)
 
-    accuracies = [v["accuracy"] for v in per_layer.values()
-                  if "accuracy" in v]
+    accuracies = [v["accuracy"] for v in per_layer.values() if "accuracy" in v]
+
+    # FIX: return NaN when no labels were available at all, not 0.0.
+    # 0.0 accuracy is indistinguishable from a genuine null result.
+    if not accuracies:
+        return {
+            "per_layer":        per_layer,
+            "probe_directions": probe_directions,
+            "untestable":       True,
+            "summary": {
+                "mean_accuracy": float("nan"),
+                "max_accuracy":  float("nan"),
+                "min_accuracy":  float("nan"),
+            },
+        }
 
     return {
-        "per_layer": per_layer,
+        "per_layer":        per_layer,
         "probe_directions": probe_directions,
+        "untestable":       False,
         "summary": {
-            "mean_accuracy": float(np.mean(accuracies))
-            if accuracies else 0.0,
-            "max_accuracy": float(np.max(accuracies))
-            if accuracies else 0.0,
-            "min_accuracy": float(np.min(accuracies))
-            if accuracies else 0.0,
+            "mean_accuracy": float(np.mean(accuracies)),
+            "max_accuracy":  float(np.max(accuracies)),
+            "min_accuracy":  float(np.min(accuracies)),
         },
     }
 

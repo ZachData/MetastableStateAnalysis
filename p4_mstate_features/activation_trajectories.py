@@ -44,6 +44,46 @@ class ActivationTrajectory:
 # 1. Extract per-token, per-layer activation trajectories
 # ---------------------------------------------------------------------------
 
+def _aggregate_mi_summary(mi_results: dict) -> dict:
+    """
+    Aggregate per-prompt, per-layer MI results into a scalar summary.
+
+    Returns NaN values (not 0.0) when no valid MI data exists so that
+    callers can distinguish 'not tested' from 'tested and null'.
+
+    Parameters
+    ----------
+    mi_results : {prompt_key: {layer_key: {"top_features": [{nmi: float, ...}]}}}
+        Output of feature_cluster_mi, potentially empty when Phase 1 labels
+        were unavailable.
+
+    Returns
+    -------
+    {"max_nmi": float, "mean_nmi": float, "untestable": bool}
+    """
+    all_nmis: list[float] = []
+
+    for prompt_data in mi_results.values():
+        for layer_data in prompt_data.values():
+            for feat in layer_data.get("top_features", []):
+                nmi = feat.get("nmi", float("nan"))
+                if np.isfinite(nmi):
+                    all_nmis.append(nmi)
+
+    if not all_nmis:
+        return {
+            "max_nmi":    float("nan"),
+            "mean_nmi":   float("nan"),
+            "untestable": True,
+        }
+
+    return {
+        "max_nmi":    float(np.max(all_nmis)),
+        "mean_nmi":   float(np.mean(all_nmis)),
+        "untestable": False,
+    }
+
+
 def extract_activation_trajectories(
     crosscoder: Crosscoder,
     prompt_store: PromptActivationStore,
@@ -113,65 +153,55 @@ def extract_activation_trajectories(
 # ---------------------------------------------------------------------------
 # 2. Feature plateau detection
 # ---------------------------------------------------------------------------
-
 def detect_feature_plateaus(
     traj: ActivationTrajectory,
     var_threshold: float = 0.01,
     min_plateau_len: int = 3,
-) -> dict:
+    min_peak_activation: float = 0.05,   # NEW: filters dead/noise-floor features
+    ) -> dict:
     """
     For each feature, find windows of consecutive layers where the
     activation trajectory has low variance across tokens.
 
-    A feature plateau means: this feature's relevance is stable over
-    a range of layers. If it also fires on tokens belonging to one
-    HDBSCAN cluster, it's a metastable cluster identity feature.
-
     Parameters
     ----------
-    traj : ActivationTrajectory
-    var_threshold : max rolling variance to count as plateau
-    min_plateau_len : minimum consecutive layers to count
-
-    Returns
-    -------
-    dict with:
-      per_feature: list of {feature_idx, plateaus: [{start, end, length}]}
-      summary: {n_features_with_plateaus, mean_plateau_length, ...}
+    min_peak_activation : features whose peak |activation| across all tokens
+        and layers is below this value are skipped entirely.  This prevents
+        dead and noise-floor features (z ≈ 0 everywhere, active mask = True)
+        from appearing as full-window plateaus.  Pass 0.0 to restore the
+        original behaviour when pre-filtering upstream.
     """
     z = traj.z_per_layer  # (T, F, L)
     T, F, L = z.shape
 
-    # Rolling variance across layers for each feature
-    # Use a window of min_plateau_len
     per_feature = []
     total_plateaus = 0
-    total_length = 0
+    total_length   = 0
 
     for f in range(F):
-        # Check if feature is ever active
+        # Original guard: skip features never active
         if not traj.active_per_layer[:, f, :].any():
             continue
 
-        # Compute variance of z_per_layer values across layers,
-        # using a rolling window
-        feat_vals = z[:, f, :]  # (T, L)
-        # Mean activation per layer for this feature
-        mean_per_layer = feat_vals.mean(axis=0)  # (L,)
+        # NEW guard: skip features whose peak activation is below the noise floor.
+        # Dead features have z ≈ 0 → variance ≈ 0 → _find_stable_windows returns
+        # one plateau spanning the entire depth, inflating mean_plateau_length to L.
+        peak = float(np.abs(z[:, f, :]).max())
+        if peak < min_peak_activation:
+            continue
 
-        # Find stable windows: consecutive layers where the
-        # mean activation doesn't change much
-        plateaus = _find_stable_windows(
-            mean_per_layer, var_threshold, min_plateau_len
-        )
+        feat_vals       = z[:, f, :]          # (T, L)
+        mean_per_layer  = feat_vals.mean(axis=0)   # (L,)
+
+        plateaus = _find_stable_windows(mean_per_layer, var_threshold, min_plateau_len)
 
         if plateaus:
             total_plateaus += len(plateaus)
-            total_length += sum(p["length"] for p in plateaus)
+            total_length   += sum(p["length"] for p in plateaus)
             per_feature.append({
-                "feature_idx": int(f),
-                "plateaus": plateaus,
-                "n_plateaus": len(plateaus),
+                "feature_idx":        int(f),
+                "plateaus":           plateaus,
+                "n_plateaus":         len(plateaus),
                 "max_plateau_length": max(p["length"] for p in plateaus),
             })
 
@@ -180,10 +210,10 @@ def detect_feature_plateaus(
         "per_feature": per_feature,
         "summary": {
             "n_features_with_plateaus": n_with,
-            "n_features_total": F,
-            "fraction_with_plateaus": n_with / max(F, 1),
-            "total_plateaus": total_plateaus,
-            "mean_plateau_length": total_length / max(total_plateaus, 1),
+            "n_features_total":         F,
+            "fraction_with_plateaus":   n_with / max(F, 1),
+            "total_plateaus":           total_plateaus,
+            "mean_plateau_length":      total_length / max(total_plateaus, 1),
         },
     }
 
@@ -497,8 +527,8 @@ def merge_feature_dynamics(
         # Features that die: active pre, inactive post
         pre_active = (np.abs(pre) > 1e-6).mean(axis=0)   # (F,)
         post_active = (np.abs(post) > 1e-6).mean(axis=0)  # (F,)
-        dying = (pre_active > 0.1) & (post_active < 0.05)
-        born = (pre_active < 0.05) & (post_active > 0.1)
+        dying = (pre_active > 0.01) & (post_active < 0.005)
+        born  = (pre_active < 0.005) & (post_active > 0.01)
 
         dying_idx = np.where(dying)[0].tolist()
         born_idx = np.where(born)[0].tolist()

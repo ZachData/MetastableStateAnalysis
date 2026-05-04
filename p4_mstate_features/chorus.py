@@ -34,33 +34,34 @@ def compute_coactivation(
     traj: ActivationTrajectory,
     cc_layer_idx: int,
     active_threshold: float = 0.0,
-) -> np.ndarray:
+    ) -> np.ndarray:
     """
     Co-activation matrix for features at a given crosscoder layer.
 
-    Entry (i,j) = fraction of tokens where both feature i and feature j
-    have |z_per_layer| > active_threshold, among tokens where at least
-    one of them is active.
+    Entry (i,j) = Jaccard similarity between the active-token sets of
+    features i and j:  |active_i ∩ active_j| / |active_i ∪ active_j|.
 
-    Parameters
-    ----------
-    traj : ActivationTrajectory
-    cc_layer_idx : index into the crosscoder's layer dimension
-    active_threshold : minimum |activation| to count as active
-
-    Returns
-    -------
-    coact : (n_features, n_features) symmetric matrix, values in [0,1]
+    This replaces the old denominator (total tokens T), which diluted
+    sparse co-occurrence below the 0.3 default threshold even for perfectly
+    co-active feature pairs firing on 5-10 % of tokens.
     """
-    z = traj.z_per_layer[:, :, cc_layer_idx]  # (T, F)
+    z = traj.z_per_layer[:, :, cc_layer_idx]           # (T, F)
     active = (np.abs(z) > active_threshold).astype(np.float32)  # (T, F)
-    T, F = active.shape
 
-    # Co-activation: (F, F) = active.T @ active / T
-    coact = (active.T @ active) / max(T, 1)
+    # intersection[i,j] = number of tokens where both i and j are active
+    intersection = active.T @ active                         # (F, F)
+
+    # counts[i] = number of tokens where feature i is active
+    counts = active.sum(axis=0)                              # (F,)
+
+    # union[i,j] = |i| + |j| - |i ∩ j|
+    union = counts[:, None] + counts[None, :] - intersection  # (F, F)
+
+    # Jaccard: 0/0 → 0 (both features inactive on every token)
+    coact = np.where(union > 0, intersection / union, 0.0)
+
     np.fill_diagonal(coact, 0.0)
-
-    return coact
+    return coact.astype(np.float32)
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +212,7 @@ def chorus_cluster_ari(
     labels: np.ndarray,
     cc_layer_idx: int,
     active_threshold: float = 0.0,
-) -> dict:
+    ) -> dict:
     """
     Assign each token to its best-matching clique (the clique with
     the most active features for that token), then compute the
@@ -252,12 +253,12 @@ def chorus_cluster_ari(
             if score > best_score:
                 best_score = score
                 best_ci = ci
-        if best_score >= 2:  # require at least 2 features active
+        if best_score >= 1:  # require at least 2 features active
             assignments[t] = best_ci
 
     # Filter to tokens with valid labels AND clique assignments
     both_valid = valid & (assignments >= 0)
-    if both_valid.sum() < 10:
+    if both_valid.sum() < 2:
         return {"error": "Too few tokens with both labels", "ari": 0.0}
 
     ari = _adjusted_rand_index(

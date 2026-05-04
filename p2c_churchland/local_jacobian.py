@@ -121,14 +121,16 @@ def _make_layer_fn(
             return out.squeeze(0).squeeze(0)
 
     elif model_type == "gpt2":
-        block = model.transformer.h[layer_idx]
+        transformer = getattr(model, "transformer", model)  # unwrapped or not
+        block = transformer.h[layer_idx]
         def fn(x: torch.Tensor) -> torch.Tensor:
-            h = x.unsqueeze(0).unsqueeze(0)  # (1, 1, d)
+            h = x.unsqueeze(0).unsqueeze(0)
             out = block(h)[0]
             return out.squeeze(0).squeeze(0)
 
     elif model_type == "bert":
-        layer = model.bert.encoder.layer[layer_idx]
+        encoder = getattr(getattr(model, "bert", model), "encoder", model.encoder)
+        layer = encoder.layer[layer_idx]
         def fn(x: torch.Tensor) -> torch.Tensor:
             h = x.unsqueeze(0).unsqueeze(0)
             attn_mask = torch.ones(1, 1, 1, 1, dtype=x.dtype, device=x.device)

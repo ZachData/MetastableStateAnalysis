@@ -103,8 +103,11 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
     """Load Phase 1 artifacts: HDBSCAN labels, merge layers, plateau windows."""
     artifacts = {}
 
-    candidates = [d for d in phase1_dir.iterdir()
-                  if d.is_dir() and model_stem in d.name]
+    model_dash = model_stem.replace("_", "-")
+    candidates = [
+        d for d in phase1_dir.iterdir()
+        if d.is_dir() and (model_stem in d.name or model_dash in d.name)
+    ]
     if not candidates:
         print(f"  [phase1] No directories matching '{model_stem}' in {phase1_dir}")
         return artifacts
@@ -114,17 +117,48 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
             run_dir.name.split("iter_", 1)[-1]
             if "iter_" in run_dir.name else run_dir.name
         )
+        # Strip model prefix so key matches prompt_store keys
+        # e.g. "gpt2-large_wiki_paragraph" → "wiki_paragraph"
+        for prefix in (model_dash + "_", model_stem + "_"):
+            if prompt_name.startswith(prefix):
+                prompt_name = prompt_name[len(prefix):]
+                break
 
-        metrics_path = run_dir / "metrics.json"
-        if metrics_path.exists():
-            with open(metrics_path) as f:
-                metrics = json.load(f)
-            layers_data = metrics.get("per_layer", metrics.get("layers", []))
-            if layers_data:
-                plateaus = _detect_plateau_windows(layers_data)
-                artifacts.setdefault("plateau_windows", {})[prompt_name] = plateaus
-                print(f"    {prompt_name}: {len(plateaus)} plateaus detected")
+        # ------------------------------------------------------------------
+        # Plateau windows
+        # Primary:  layer_metrics.json  →  _detect_plateau_windows
+        # Fallback: trajectory.json     →  plateau_layers list  →  windows
+        # ------------------------------------------------------------------
+        layer_metrics_path = run_dir / "layer_metrics.json"
+        traj_path          = run_dir / "trajectory.json"
 
+        plateaus = []
+        source   = None
+
+        if layer_metrics_path.exists():
+            with open(layer_metrics_path) as f:
+                layers_data = json.load(f)
+            plateaus = _detect_plateau_windows(layers_data)
+            source = "layer_metrics.json"
+        elif traj_path.exists():
+            with open(traj_path) as f:
+                traj_data = json.load(f)
+            layer_list = traj_data.get("plateau_layers", [])
+            plateaus = _layer_list_to_windows(layer_list)
+            source = "trajectory.json"
+        else:
+            print(f"    {prompt_name}: no layer_metrics.json or trajectory.json — "
+                  f"plateau windows unavailable")
+
+        if plateaus:
+            artifacts.setdefault("plateau_windows", {})[prompt_name] = plateaus
+            print(f"    {prompt_name}: {len(plateaus)} plateau windows (from {source})")
+        elif source:
+            print(f"    {prompt_name}: 0 plateau windows detected (from {source})")
+
+        # ------------------------------------------------------------------
+        # HDBSCAN labels
+        # ------------------------------------------------------------------
         for fname in ["hdbscan_labels.json", "cluster_labels.json"]:
             fpath = run_dir / fname
             if fpath.exists():
@@ -134,6 +168,9 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
                 print(f"    Loaded {fname} for {prompt_name}")
                 break
 
+        # ------------------------------------------------------------------
+        # Merge layers
+        # ------------------------------------------------------------------
         for fname in ["phase1_events.json", "events.json"]:
             fpath = run_dir / fname
             if fpath.exists():
@@ -141,7 +178,7 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
                     events = json.load(f)
                 merge_layers = events.get("merge_layers", [])
                 if isinstance(merge_layers, dict):
-                    flat = set()
+                    flat: set = set()
                     for v in merge_layers.values():
                         if isinstance(v, list):
                             flat.update(v)
@@ -153,46 +190,67 @@ def _load_phase1(phase1_dir: Path, model_stem: str) -> dict:
     return artifacts
 
 
+def _layer_list_to_windows(layer_list: list) -> list:
+    """
+    Convert a flat list of plateau layer indices (from trajectory.json)
+    into the {start, end, mid, length} window dicts that plateau_alignment
+    expects.
+
+    e.g. [3, 4, 5, 10, 11, 12, 13]
+      -> [{"start":3,"end":5,"mid":4,"length":3},
+          {"start":10,"end":13,"mid":11,"length":4}]
+    """
+    if not layer_list:
+        return []
+    sorted_layers = sorted(set(int(l) for l in layer_list))
+    windows = []
+    start = prev = sorted_layers[0]
+    for l in sorted_layers[1:]:
+        if l == prev + 1:
+            prev = l
+        else:
+            windows.append({
+                "start": start, "end": prev,
+                "mid": (start + prev) // 2, "length": prev - start + 1,
+            })
+            start = prev = l
+    windows.append({
+        "start": start, "end": prev,
+        "mid": (start + prev) // 2, "length": prev - start + 1,
+    })
+    return windows
+
+
 def _load_phase2(phase2_dir: Path, model_stem: str, k_top: int = 64) -> dict:
-    """Load Phase 2 V eigensubspace projectors."""
+    """Load Phase 2 V eigensubspace projectors using hardcoded Schur keys."""
     artifacts = {}
 
-    proj_path = phase2_dir / f"ov_projectors_{model_stem}.npz"
+    # Handle the dash/underscore naming for the file
+    model_dash = model_stem.replace("_", "-")
+    proj_path = phase2_dir / f"ov_projectors_{model_dash}.npz"
     if not proj_path.exists():
-        for p in phase2_dir.glob(f"*projector*{model_stem}*"):
-            proj_path = p
-            break
+        proj_path = phase2_dir / f"ov_projectors_{model_stem}.npz"
 
     if proj_path.exists():
         data = np.load(proj_path)
-        eigvecs = data.get("eigenvectors", data.get("U"))
-        eigvals = data.get("eigenvalues", data.get("S"))
+        
+        # Hardcode the keys found in your NPZ file
+        # We prioritize the Schur components for stability
+        attr = data.get("schur_attract_shared")
+        rep  = data.get("schur_repulse_shared")
 
-        if eigvecs is not None and eigvals is not None:
-            idx = np.argsort(np.abs(eigvals))[::-1][:k_top]
-            top_vecs = eigvecs[:, idx]
-            top_vals = eigvals[idx]
+        if attr is not None:
+            artifacts["attractive"] = attr
+        if rep is not None:
+            artifacts["repulsive"] = rep
 
-            pos_mask = top_vals > 0
-            neg_mask = top_vals < 0
-
-            if pos_mask.any():
-                U_att = top_vecs[:, pos_mask]
-                artifacts["attractive"] = U_att @ U_att.T
-            if neg_mask.any():
-                U_rep = top_vecs[:, neg_mask]
-                artifacts["repulsive"] = U_rep @ U_rep.T
-
-            print(f"    V projectors: {pos_mask.sum()} attractive, "
-                  f"{neg_mask.sum()} repulsive (k={k_top})")
-        else:
-            print(f"    Warning: projector file missing keys")
+        print(f"    V projectors: Loaded '{'attractive' if attr is not None else ''}' "
+              f"and '{'repulsive' if rep is not None else ''}' from {proj_path.name}")
     else:
         print(f"    No V projectors found at {proj_path}")
 
     return artifacts
-
-
+    
 def _load_phase3(phase3_dir: Path, model_stem: str, device: str) -> dict:
     """Load Phase 3 crosscoder and prompt store."""
     artifacts = {}
@@ -224,14 +282,19 @@ def _load_phase3(phase3_dir: Path, model_stem: str, device: str) -> dict:
             layer_indices = LAYER_PRESETS[model_name]
     artifacts["layer_indices"] = layer_indices or []
 
+    # 1. Hardcode the prompt directory path
     cache_dir = _cache_dir(model_stem.replace("_", "-"))
-    prompt_store = PromptActivationStore()
     eval_dir = cache_dir / "eval_prompts"
-    if eval_dir.exists():
-        prompt_store.load(eval_dir)
-        print(f"    Prompt store: {len(prompt_store.keys())} prompts")
-    else:
-        print(f"    Warning: no eval prompts at {eval_dir}")
+
+    # 2. Load directly from the eval_prompts subdirectory
+    try:
+        # This specifically looks for 'prompt_meta.json' inside eval_dir
+        prompt_store = PromptActivationStore.load(eval_dir)
+        print(f"    Prompt store: {len(prompt_store.keys())} prompts loaded from {eval_dir}")
+    except FileNotFoundError:
+        print(f"ERROR: Could not find prompt_meta.json in {eval_dir}")
+        prompt_store = PromptActivationStore() # Empty fallback to prevent crash[cite: 2]
+
     artifacts["prompt_store"] = prompt_store
 
     return artifacts
@@ -314,7 +377,7 @@ def run_track1(
             )
             pk_chorus[layer_key] = chorus
 
-            ari_val = chorus.get("ari", {}).get("ari", 0)
+            ari_val = chorus.get("ari", 0)
             purity_val = chorus.get("purity", {}).get("summary", {}).get("mean_purity", 0)
             print(f"    {pk}/{layer_key}: {chorus['n_cliques']} cliques, "
                   f"ARI={ari_val:.3f}, purity={purity_val:.3f}")
@@ -326,7 +389,7 @@ def run_track1(
     all_aris, all_purities = [], []
     for pk_data in chorus_results.values():
         for layer_data in pk_data.values():
-            ari = layer_data.get("ari", {}).get("ari")
+            ari = layer_data.get("ari", 0)
             if ari is not None:
                 all_aris.append(ari)
             pur = layer_data.get("purity", {}).get("summary", {}).get("mean_purity")
@@ -548,7 +611,7 @@ def run_track3(
     model_name: str,
     config: dict,
     out_dir: Path,
-) -> dict:
+    ) -> dict:
     """Run Track 3 (low-rank AE) and save results immediately."""
     print("\n  === Track 3: Low-rank autoencoder ===")
     results = {}
@@ -598,6 +661,7 @@ def run_track3(
               f"{v_align.get('n_attractive_dominant', 0)} attractive-dominant")
 
     print("  [T3] Comparing reconstruction quality vs crosscoder...")
+    lrae = lrae.to(DEVICE)
     recon = compare_reconstruction(lrae, crosscoder, prompt_store, device=DEVICE)
     results["reconstruction"] = recon
     for pk, r in recon.items():
@@ -709,9 +773,12 @@ def run_phase4(args) -> dict:
     print("\n  === Cross-track comparison ===")
     agreement = cross_track_agreement(t1_results, t2_results, t3_results)
     t1t2 = agreement.get("t1_t2_correlation", {})
-    if "spearman_rho" in t1t2:
+    _interp = t1t2.get("interpretation", "missing")
+    if _interp in ("insufficient_data", "constant_input", "missing"):
+        print(f"  T1–T2 correlation: skipped ({_interp}, n_layers={t1t2.get('n_layers', 0)})")
+    else:
         print(f"  T1–T2 correlation: ρ={t1t2['spearman_rho']:.3f} "
-              f"(p={t1t2['pval']:.3f}) → {t1t2['interpretation']}")
+            f"(p={t1t2['pval']:.3f}, n={t1t2['n_layers']}) → {_interp}")
 
     print("\n  === Phase 4 Verdict ===")
     verdict = build_phase4_verdict(

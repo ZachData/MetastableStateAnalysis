@@ -127,6 +127,7 @@ _ensure_p4_package()
 _load_p4_submodule("p4_mstate_features/activation_trajectories.py")
 _load_p4_submodule("p4_mstate_features/chorus.py")
 _load_p4_submodule("p4_mstate_features/geometric.py")
+_load_p4_submodule("p4_mstate_features/analysis.py")
 
 
 # ===========================================================================
