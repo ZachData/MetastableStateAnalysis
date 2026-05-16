@@ -28,6 +28,9 @@ from tests.config import D, N_LAYERS, N_TOKENS
 #    Must run before any project import so sys.modules is populated first.
 # ===========================================================================
 
+_PROJECT_ROOT = Path(__file__).parent.parent
+
+
 def _install_stubs() -> None:
     """Install torch, transformers, and core.* stubs exactly once."""
 
@@ -40,8 +43,15 @@ def _install_stubs() -> None:
     for _mod in ("transformers", "transformers.models", "transformers.models.albert"):
         sys.modules.setdefault(_mod, MagicMock())
 
-    # --- core.config ---
+    # --- core (package) ---
+    # __path__ must be set before any submodule is loaded; without it Python
+    # refuses "from core.io import ..." with "core is not a package".
     _core = types.ModuleType("core")
+    _core.__path__    = [str(_PROJECT_ROOT / "core")]
+    _core.__package__ = "core"
+    sys.modules.setdefault("core", _core)
+
+    # --- core.config ---
     _cfg = types.ModuleType("core.config")
 
     _cfg.BETA_VALUES         = [0.1, 1.0, 2.0, 5.0]
@@ -79,9 +89,20 @@ def _install_stubs() -> None:
 
     _models.layernorm_to_sphere = _real_layernorm_to_sphere
 
-    sys.modules.setdefault("core",         _core)
+    # --- core.io (real implementation — only depends on stdlib + numpy) ---
+    _core_io_path = _PROJECT_ROOT / "core" / "io.py"
+    if _core_io_path.exists():
+        _spec   = importlib.util.spec_from_file_location("core.io", _core_io_path)
+        _core_io = importlib.util.module_from_spec(_spec)
+        _core_io.__package__ = "core"
+        sys.modules.setdefault("core.io", _core_io)
+        _spec.loader.exec_module(_core_io)
+    else:
+        sys.modules.setdefault("core.io", types.ModuleType("core.io"))
+
     sys.modules.setdefault("core.config",  _cfg)
     sys.modules.setdefault("core.models",  _models)
+
 
 
 # ===========================================================================

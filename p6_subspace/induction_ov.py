@@ -4,12 +4,13 @@ induction_ov.py — Track A: Induction score and OV write direction alignment.
 Two questions answered here:
 
 1. Which heads are induction heads?
-   Score each head by how strongly attention(i, j) correlates with the
-   "offset content match" pattern: attend to j when token[j-1] ≈ token[i-1].
-   Heads with score above threshold are flagged as induction candidates.
+   Score each head by mean post-softmax attention weight on canonical
+   induction pairs (query > key, offset >= min_offset, preceding-token
+   identity match).  Heads above threshold are flagged as induction
+   candidates.
 
 2. Do induction heads write into the imaginary channel?
-   For each head's W_O (output projection), compute the fraction of its
+   For each head's OV circuit (W_V @ W_O), compute the fraction of its
    dominant write directions that land in the imaginary (A) subspace.
    Compare induction heads to semantic (high-CC) heads.
 
@@ -24,56 +25,58 @@ Functions
 ---------
 induction_score              : per-head induction strength from attention
 classify_induction_heads     : threshold-based binary classification
-ov_write_alignment           : fraction of W_O singular vectors in A subspace
+ov_write_alignment           : fraction of OV singular vectors in A subspace
 compare_induction_vs_semantic: P6-I1 test
 run_induction_ov             : full pipeline → SubResult
 
-Bugs fixed:
-  #5 : induction_score uses canonical query > key orientation
+Fixes applied
+-------------
+Bug 5  (Doc 2): induction_score — canonical query > key orientation enforced;
+    bidirectional iteration removed; background-mean subtraction removed;
+    returns mean attn on induction pairs only (0.0 when none found).
+Bug 10 (Doc 1): ov_write_alignment — docstring updated to clarify that
+    head_write_matrix is the composed OV circuit (W_V @ W_O), not W_O alone,
+    and documents when column-space equivalence holds.  Function body
+    unchanged.
 """
 
 import numpy as np
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, spearmanr
+
+from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
 
 
-# -----------
-# Induction score
-# Bug #5: Canonical query > key orientation
-# -----------
+# ---------------------------------------------------------------------------
+# Induction score  [Bug 5 fix applied]
+# ---------------------------------------------------------------------------
 
 def induction_score(
-    attn_weights:  np.ndarray,
-    token_ids:     np.ndarray,
-    sim_threshold: float = 0.7,
+    attn_weights:      np.ndarray,
+    token_ids:         np.ndarray,
     token_activations: np.ndarray | None = None,
+    sim_threshold:     float = 0.85,
+    min_offset:        int = 2,
 ) -> float:
     """
-    Measure how strongly one head follows the induction pattern.
+    Mean post-softmax attention weight on canonical induction pairs.
 
-    Score = mean attention weight A[i, j] for (i, j) induction pairs,
-    minus mean attention weight for all other (i != j) pairs.
+    Canonical orientation: query > key, query - key >= min_offset, key >= 1,
+    and token_ids[query - 1] == token_ids[key - 1] (exact) OR
+    cos_sim(token_activations[query - 1], token_activations[key - 1]) >
+    sim_threshold (soft).
 
-    A high positive score indicates the head preferentially attends to
-    the induction target position relative to the background.
+    `token_activations` should be L2-normalized before being passed in if the
+    soft-match branch is used.
 
-    FIX Bug #5: Canonical induction (query > key, query - key >= min_offset,
-    key >= 1, token_ids[query-1] == token_ids[key-1]).
+    Returns 0.0 if no induction pairs are found in this prompt.
 
-    Parameters
-    ----------
-    attn_weights      : (n, n) softmax attention matrix
-    token_ids         : (n,) int — token IDs
-    sim_threshold     : cosine threshold for content match (if activations given)
-    token_activations : (n, d) L2-normed; used for soft content match if provided
-
-    Returns
-    -------
-    float in roughly [-1, 1]; >0.05 is a weak positive signal
+    Bug 5 fix: enforces query > key (canonical direction only); removes the
+    bidirectional loop that allowed key > query pairs.  Also removes the
+    background-mean subtraction — score is now purely the mean attention on
+    induction pairs, making it directly comparable to the softmax baseline
+    (1/n) without sign ambiguity.
     """
-    n = len(token_ids)
-    min_offset = 2
-
-    # Build induction mask
+    n = attn_weights.shape[0]
     induction_mask = np.zeros((n, n), dtype=bool)
     for query in range(2, n):
         for key in range(1, query):
@@ -89,19 +92,10 @@ def induction_score(
             if exact or soft:
                 induction_mask[query, key] = True
 
-    off_diag = ~np.eye(n, dtype=bool)
-    non_induction_mask = off_diag & ~induction_mask
-
-    n_ind = induction_mask.sum()
-    n_non = non_induction_mask.sum()
-
-    if n_ind == 0:
+    if not induction_mask.any():
         return 0.0
 
-    mean_ind = float(attn_weights[induction_mask].mean())
-    mean_non = float(attn_weights[non_induction_mask].mean()) if n_non > 0 else 0.0
-
-    return mean_ind - mean_non
+    return float(attn_weights[induction_mask].mean())
 
 
 def classify_induction_heads(
@@ -112,39 +106,48 @@ def classify_induction_heads(
     return [i for i, s in enumerate(scores) if s > threshold]
 
 
-# -----------
-# OV write direction alignment
-# -----------
+# ---------------------------------------------------------------------------
+# OV write direction alignment  [Bug 10 fix applied — docstring only]
+# ---------------------------------------------------------------------------
 
 def ov_write_alignment(
-    WO:     np.ndarray,
-    P_A:    np.ndarray,
-    P_S:    np.ndarray,
-    top_r:  int = 16,
+    head_write_matrix: np.ndarray,
+    P_A:               np.ndarray,
+    P_S:               np.ndarray,
+    rank:              int = 8,
 ) -> dict:
     """
-    Compute what fraction of a head's dominant write directions land in
-    each channel (imaginary A vs real S).
-
-    The write directions of head h are the left singular vectors of W_O^(h):
-    these are the directions in residual-stream space that the head writes into.
+    Alignment of a head's residual-stream write subspace with the global
+    A and S projectors.
 
     Parameters
     ----------
-    WO    : (d_model, d_head) — output projection for one head
-    P_A   : (d_model, d_model) — imaginary-channel projector
-    P_S   : (d_model, d_model) — real-channel projector
-    top_r : number of dominant write directions to use
+    head_write_matrix : (d_model, d_model) — the head's OV circuit
+        (W_V @ W_O).  This is what is stored in Phase 2's "ov_head*" keys
+        and what `ctx["head_write_matrices"]` carries through.  The column
+        space of OV equals the column space of W_O for full-rank W_V (which
+        is the standard case), so the top-r left singular vectors of this
+        matrix are exactly the head's dominant write directions in the
+        residual stream — the quantity the P6-I1 / P6-C1 prediction is
+        about.  See Bug 10 in the Track A audit for the naming history.
+    P_A, P_S : (d_model, d_model) projectors onto the global rotation /
+        real subspaces (or the _excl variants from the Bug 4 fix when a
+        clean partition is wanted).
+    rank     : number of top left singular vectors to evaluate.
 
     Returns
     -------
     dict with:
-      align_rot  : float — mean |P_A e_k|^2 over top-r left singular vectors
-      align_real : float — mean |P_S e_k|^2 over top-r left singular vectors
-      sing_vals  : list[float] — singular values (top_r)
+      align_rot       : float — (1/r) Σ ‖P_A e_k‖² over top-r left singular vectors
+      align_real      : float — (1/r) Σ ‖P_S e_k‖² over top-r left singular vectors
+      rank            : int   — r actually used (min of `rank` and available vectors)
+      singular_values : list[float] — top-r singular values (for diagnostic plots)
+
+    Bug 10 fix: docstring updated to reflect that the expected input is the
+    composed OV matrix (W_V @ W_O), not W_O alone.  Function body unchanged.
     """
-    U, s, _ = np.linalg.svd(WO, full_matrices=False)   # U: (d_model, d_head)
-    r = min(top_r, U.shape[1])
+    U, s, _ = np.linalg.svd(head_write_matrix, full_matrices=False)   # U: (d_model, min(d_model, d_model))
+    r = min(rank, U.shape[1])
     U_top = U[:, :r]   # (d_model, r)
 
     # |P_A e_k|^2 = e_k^T P_A^T P_A e_k = e_k^T P_A e_k  (projectors are idempotent)
@@ -152,15 +155,16 @@ def ov_write_alignment(
     real_scores = np.array([float(U_top[:, k] @ P_S @ U_top[:, k]) for k in range(r)])
 
     return {
-        "align_rot":  float(rot_scores.mean()),
-        "align_real": float(real_scores.mean()),
-        "sing_vals":  s[:r].tolist(),
+        "align_rot":       float(rot_scores.mean()),
+        "align_real":      float(real_scores.mean()),
+        "rank":            r,
+        "singular_values": s[:r].tolist(),
     }
 
 
-# -----------
+# ---------------------------------------------------------------------------
 # P6-I1 test
-# -----------
+# ---------------------------------------------------------------------------
 
 def compare_induction_vs_semantic(
     head_records:      list[dict],
@@ -190,8 +194,6 @@ def compare_induction_vs_semantic(
         return {
             "mean_align_rot_induction": (float(np.mean(ind_vals)) if ind_vals else None),
             "mean_align_rot_semantic":  (float(np.mean(sem_vals)) if sem_vals else None),
-            "delta_align_rot":          None,
-            "mwu_statistic":            None,
             "mwu_pvalue":              None,
             "n_induction":             len(ind_vals),
             "n_semantic":              len(sem_vals),
@@ -200,13 +202,12 @@ def compare_induction_vs_semantic(
 
     mu_ind = float(np.mean(ind_vals))
     mu_sem = float(np.mean(sem_vals))
-    delta = mu_ind - mu_sem
     stat, pval = mannwhitneyu(ind_vals, sem_vals, alternative="greater")
 
     return {
         "mean_align_rot_induction": mu_ind,
         "mean_align_rot_semantic":  mu_sem,
-        "delta_align_rot":          delta,
+        "delta_align_rot":          mu_ind - mu_sem,
         "mwu_statistic":            float(stat),
         "mwu_pvalue":               float(pval),
         "n_induction":              len(ind_vals),
@@ -215,21 +216,23 @@ def compare_induction_vs_semantic(
     }
 
 
-# -----------
+# ---------------------------------------------------------------------------
 # Full pipeline → SubResult
-# -----------
+# ---------------------------------------------------------------------------
 
-def run_induction_ov(ctx: dict):
+def run_induction_ov(ctx: dict) -> SubResult:
     """
     Track A sub-experiment: induction detection + OV write direction alignment.
 
     Required ctx keys
     -----------------
     attn_matrices       : list of (n, n) softmax attention per head
-    wo_matrices         : list of (d_model, d_head) W_O per head
+    head_write_matrices : list of (d_model, d_model) OV circuits (W_V @ W_O)
+                          per head  [renamed from wo_matrices per Bug 10]
     token_ids           : (n,) int
     token_activations   : (n, d_model) L2-normed
-    projectors          : output of subspace_build, used as projectors["per_layer"][layer_idx]
+    projectors          : output of subspace_build.build_global_projectors,
+                          used as projectors["per_layer"][layer_idx]
     layer_idx           : int (default 0 for ALBERT)
 
     Optional ctx keys
@@ -239,14 +242,14 @@ def run_induction_ov(ctx: dict):
     induction_threshold : float (default 0.05)
     layer_name          : str
     """
-    attn_matrices     = ctx["attn_matrices"]
-    wo_matrices       = ctx["wo_matrices"]
-    token_ids         = np.asarray(ctx["token_ids"])
-    X                 = ctx["token_activations"]
-    projectors        = ctx["projectors"]
-    layer_idx         = ctx.get("layer_idx", 0)
-    layer_name        = ctx.get("layer_name", "shared")
-    ind_threshold     = ctx.get("induction_threshold", 0.05)
+    attn_matrices       = ctx["attn_matrices"]
+    head_write_matrices = ctx["head_write_matrices"]   # Bug 10: was wo_matrices
+    token_ids           = np.asarray(ctx["token_ids"])
+    X                   = ctx["token_activations"]
+    projectors          = ctx["projectors"]
+    layer_idx           = ctx.get("layer_idx", 0)
+    layer_name          = ctx.get("layer_name", "shared")
+    ind_threshold       = ctx.get("induction_threshold", 0.05)
 
     proj_entry = projectors["per_layer"][layer_idx]
     P_A = proj_entry["P_A"]
@@ -254,16 +257,16 @@ def run_induction_ov(ctx: dict):
 
     n_heads = len(attn_matrices)
 
-    # 1. Induction scores
+    # 1. Induction scores  [Bug 5: canonical orientation, no background subtraction]
     scores = [
         induction_score(attn_matrices[h], token_ids, token_activations=X)
         for h in range(n_heads)
     ]
     induction_idx = classify_induction_heads(scores, ind_threshold)
 
-    # 2. OV write alignment per head
+    # 2. OV write alignment per head  [Bug 10: head_write_matrices carries W_V @ W_O]
     alignments = [
-        ov_write_alignment(wo_matrices[h], P_A, P_S)
+        ov_write_alignment(head_write_matrices[h], P_A, P_S)
         for h in range(n_heads)
     ]
 
@@ -314,17 +317,58 @@ def run_induction_ov(ctx: dict):
         "head_records":        head_records,
     }
 
+    # --- Summary lines ---
+    lines = [
+        SEP_THICK,
+        "INDUCTION DETECTION + OV WRITE ALIGNMENT  [Track A]",
+        SEP_THICK,
+        f"Layer:                {layer_name}",
+        f"Heads analysed:       {n_heads}",
+        f"Induction threshold:  {ind_threshold}",
+        "",
+        "Induction scores (mean attn weight on canonical induction pairs):",
+    ]
+    for h, s in enumerate(scores):
+        flag = " ← INDUCTION" if h in induction_idx else ""
+        lines.append(f"  head {h:02d}:  score={_fmt(s)}{flag}")
+
+    lines += [
+        "",
+        f"Induction heads detected: {n_induction} of {n_heads}",
+        "",
+        "OV write direction alignment with S/A channels (top-8 singular vectors):",
+        _bullet("mean align_rot (all heads)", mean_align_rot_all),
+        _bullet("mean align_real (all heads)", mean_align_real_all),
+        _bullet("mean align_rot (induction heads)", mean_align_rot_ind),
+        _bullet("mean align_rot (semantic heads)", mean_align_rot_sem),
+        "",
+        "P6-I1: induction heads write into imaginary channel more than semantic heads?",
+        _bullet("delta align_rot (induction - semantic)", p6i1.get("delta_align_rot")),
+        _bullet("MWU p-value", p6i1.get("mwu_pvalue")),
+        _verdict_line(
+            "P6-I1",
+            p6i1["p6_i1_satisfied"],
+            f"mu_ind={_fmt(mean_align_rot_ind)} vs mu_sem={_fmt(mean_align_rot_sem)}"
+            f" p={_fmt(p6i1.get('mwu_pvalue'))}",
+        ),
+        "",
+        "Note on ALBERT: shared weights mean the same heads implement both channels.",
+        "If P6-I1 passes, channel separation arises from which residual-stream",
+        "subspace the incoming activation occupies, not from separate weight matrices.",
+    ]
+
     vc = {
-        "ind_n_induction_heads":       n_induction,
-        "ind_mean_align_rot_all":      mean_align_rot_all,
+        "ind_n_induction_heads":        n_induction,
+        "ind_mean_align_rot_all":       mean_align_rot_all,
         "ind_mean_align_rot_induction": mean_align_rot_ind,
         "ind_mean_align_rot_semantic":  mean_align_rot_sem,
-        "ind_p6_i1_satisfied":         p6i1["p6_i1_satisfied"],
+        "ind_p6_i1_satisfied":          p6i1["p6_i1_satisfied"],
     }
 
-    return {
-        "name": "induction_ov",
-        "applicable": True,
-        "payload": payload,
-        "verdict_contribution": vc,
-    }
+    return SubResult(
+        name="induction_ov",
+        applicable=True,
+        payload=payload,
+        summary_lines=lines,
+        verdict_contribution=vc,
+    )
