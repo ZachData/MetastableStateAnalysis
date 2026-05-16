@@ -90,41 +90,65 @@ def project_on_direction(deltas: np.ndarray, direction: np.ndarray) -> dict:
 def load_ffn_deltas(
     phase2_run_dir: Path,
     prompt_key: str,
-) -> Optional[dict]:
+    model_stem: Optional[str] = None,
+    ) -> Optional[dict]:
     """
     Load Phase 2 forward-pass decomposition for one prompt.
 
-    Expected files (from phase2.decompose):
-      <phase2_run_dir>/<prompt_key>/attn_deltas.npz  (n_layers, n, d)
-      <phase2_run_dir>/<prompt_key>/ffn_deltas.npz   (n_layers, n, d)
+    Actual p2 layout:
+      <phase2_dir>/<model>_<prompt_key>/ffn_deltas_raw.npz   (preferred)
+      <phase2_dir>/<model>_<prompt_key>/ffn_deltas_normed.npz (fallback)
+      (same for attn_deltas_*)
+
+    model_stem should be supplied (e.g. "albert_xlarge_v2") so the correct
+    model subdirectory is preferred over other models with the same prompt_key.
 
     Returns dict {"attn": ndarray, "ffn": ndarray} or None.
     """
     phase2_run_dir = Path(phase2_run_dir)
+
+    # Build candidate list: model-specific dirs first, then broad glob fallback.
+    model_specific: list[Path] = []
+    if model_stem:
+        stem_h = model_stem.replace("_", "-")   # albert_xlarge_v2 → albert-xlarge-v2
+        for s in (stem_h, model_stem):
+            p = phase2_run_dir / f"{s}_{prompt_key}"
+            if p.is_dir():
+                model_specific.append(p)
+
+    # Broad glob sorted alphabetically — only used when model-specific dirs miss.
+    broad = [p for p in sorted(phase2_run_dir.glob(f"*{prompt_key}*"))
+             if p not in model_specific]
+
     candidates = [
+        *model_specific,
         phase2_run_dir / prompt_key,
+        *broad,
         phase2_run_dir,
-        *phase2_run_dir.glob(f"*{prompt_key}*"),
     ]
+
+    # Filename variants in preference order (raw is energy-accurate).
+    ffn_names  = ["ffn_deltas_raw.npz",  "ffn_deltas_normed.npz",  "ffn_deltas.npz"]
+    attn_names = ["attn_deltas_raw.npz", "attn_deltas_normed.npz", "attn_deltas.npz"]
+
     for d in candidates:
         if not d.is_dir():
             continue
-        attn_p = d / "attn_deltas.npz"
-        ffn_p  = d / "ffn_deltas.npz"
-        if attn_p.exists() and ffn_p.exists():
-            attn_npz = np.load(attn_p)
-            ffn_npz  = np.load(ffn_p)
-            try:
-                attn_arr = (attn_npz["deltas"] if "deltas" in attn_npz.files
-                            else attn_npz[attn_npz.files[0]])
-                ffn_arr  = (ffn_npz["deltas"]  if "deltas" in ffn_npz.files
-                            else ffn_npz[ffn_npz.files[0]])
-            finally:
-                attn_npz.close()
-                ffn_npz.close()
-            return {"attn": attn_arr, "ffn": ffn_arr}
-    return None
+        ffn_p  = next((d / n for n in ffn_names  if (d / n).exists()), None)
+        attn_p = next((d / n for n in attn_names if (d / n).exists()), None)
+        if ffn_p is None or attn_p is None:
+            continue
+        ffn_npz  = np.load(ffn_p)
+        attn_npz = np.load(attn_p)
+        try:
+            ffn_arr  = ffn_npz["deltas"]  if "deltas"  in ffn_npz.files  else ffn_npz[ffn_npz.files[0]]
+            attn_arr = attn_npz["deltas"] if "deltas" in attn_npz.files else attn_npz[attn_npz.files[0]]
+        finally:
+            ffn_npz.close()
+            attn_npz.close()
+        return {"attn": attn_arr, "ffn": ffn_arr}
 
+    return None
 
 # ---------------------------------------------------------------------------
 # Public entry point

@@ -77,12 +77,12 @@ def _run_albert_with_hook(
     model, tokenizer, prompt_text: str,
     max_iterations: int,
     hook_fn: Callable,
-):
+    ):
     """
-    Run ALBERT's shared layer max_iterations times, giving hook_fn the chance
+    Run ALBERT's shared layer or GPT-2's block layers, giving hook_fn the chance
     to modify the attention tensor or hidden state at every iteration.
 
-    hook_fn(step, hidden, attn_module) -> optionally-modified hidden
+    hook_fn(step, hidden, albert_layer) -> optionally-modified hidden
     """
     torch = _torch()
     device = next(model.parameters()).device
@@ -91,30 +91,60 @@ def _run_albert_with_hook(
     tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
 
     traj, attns = [], []
+    model_cls = type(model).__name__
+    _is_gpt2  = "GPT2" in model_cls
+
     with torch.no_grad():
-        embed = model.embeddings(
-            input_ids=inputs["input_ids"],
-            token_type_ids=inputs.get("token_type_ids"),
-        )
-        hidden = model.encoder.embedding_hidden_mapping_in(embed)
-        traj.append(hidden[0].float().cpu().numpy())
-
-        albert_layer = model.encoder.albert_layer_groups[0].albert_layers[0]
-        extended_mask = model.get_extended_attention_mask(
-            inputs["attention_mask"], inputs["input_ids"].shape,
-        )
-
-        for step in range(max_iterations):
-            hidden = hook_fn(step, hidden, albert_layer)
-            out = albert_layer(hidden, attention_mask=extended_mask,
-                                output_attentions=True)
-            hidden = out[0]
+        if _is_gpt2:
+            transformer = model.transformer
+            ids  = inputs["input_ids"]
+            pos  = torch.arange(ids.shape[1], device=ids.device).unsqueeze(0)
+            hidden = transformer.wte(ids) + transformer.wpe(pos)
+            hidden = transformer.drop(hidden)
             traj.append(hidden[0].float().cpu().numpy())
-            if len(out) > 1:
-                attns.append(out[1][0].float().cpu().numpy())
+
+            for block in transformer.h:
+                # Apply hook_fn if needed, or adapt depending on how interventions map to GPT-2
+                # Pass output_attentions=True to access attention weights
+                out = block(hidden, attention_mask=None, use_cache=False,
+                            output_attentions=True)
+                hidden = out[0]
+                traj.append(hidden[0].float().cpu().numpy())
+                
+                # Check if attention weights exist
+                if len(out) > 1 and out[1] is not None:
+                    attns.append(out[1][0].float().cpu().numpy())
+            
+            hidden = transformer.ln_f(hidden)
+
+        else:
+            # ALBERT path
+            base           = getattr(model, "albert", model)
+            embeddings_mod = base.embeddings
+            encoder_mod    = base.encoder
+            
+            embed = embeddings_mod(
+                input_ids=inputs["input_ids"],
+                token_type_ids=inputs.get("token_type_ids"),
+            )
+            hidden = encoder_mod.embedding_hidden_mapping_in(embed)
+            traj.append(hidden[0].float().cpu().numpy())
+
+            albert_layer = encoder_mod.albert_layer_groups[0].albert_layers[0]
+            extended_mask = model.get_extended_attention_mask(
+                inputs["attention_mask"], inputs["input_ids"].shape,
+            )
+
+            for step in range(max_iterations):
+                hidden = hook_fn(step, hidden, albert_layer)
+                out = albert_layer(hidden, attention_mask=extended_mask,
+                                   output_attentions=True)
+                hidden = out[0]
+                traj.append(hidden[0].float().cpu().numpy())
+                if len(out) > 1 and out[1] is not None:
+                    attns.append(out[1][0].float().cpu().numpy())
 
     return np.stack(traj), np.stack(attns) if attns else None, tokens
-
 
 # ---------------------------------------------------------------------------
 # Intervention implementations (ALBERT; per-layer models TODO)
@@ -251,7 +281,7 @@ def recluster_after_intervention(
     modified_activations: np.ndarray,   # (n_layers, n, d)
     baseline_hdb_labels: list,          # for alignment of cluster IDs
     trajectory_chain: list,
-) -> dict:
+    ) -> dict:
     """
     After intervention, re-run HDBSCAN at each layer of the trajectory's
     lifespan and measure:
@@ -310,6 +340,27 @@ def recluster_after_intervention(
 # ---------------------------------------------------------------------------
 # Public entry point — runs all interventions and aggregates
 # ---------------------------------------------------------------------------
+
+def _get_input_embeds(model, input_ids, token_type_ids=None):
+    """
+    Model-agnostic token embedding lookup.
+
+    BERT/ALBERT expose _get_input_embeds(model, input_ids, token_type_ids).
+    GPT-2 / causal LMs expose model.transformer.wte(input_ids).
+    All HuggingFace models expose model.get_input_embeddings() as a fallback.
+    """
+    if hasattr(model, "embeddings"):
+        # BERT / ALBERT path
+        return _get_input_embeds(model,
+            input_ids=input_ids,
+            token_type_ids=token_type_ids,
+        )
+    if hasattr(model, "transformer") and hasattr(model.transformer, "wte"):
+        # GPT-2 path
+        return model.transformer.wte(input_ids)
+    # Generic HuggingFace fallback (works for any architecture)
+    return model.get_input_embeddings()(input_ids)
+
 
 def run_causal_tests(
     model,

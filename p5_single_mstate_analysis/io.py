@@ -114,7 +114,7 @@ def load_phase1_run(run_dir: Path) -> dict:
     else:
         out["hdbscan_labels"] = None
 
-    # --- centroid_trajectories.npz: traj_{id} ---
+    #  --- centroid_trajectories.npz: traj_{id} ---
     ct_path = run_dir / "centroid_trajectories.npz"
     if ct_path.exists():
         data = np.load(ct_path)
@@ -124,7 +124,41 @@ def load_phase1_run(run_dir: Path) -> dict:
     else:
         out["centroid_trajs"] = {}
 
+    # --- metrics: assemble from split JSON files ---
+    # geometry.json is required and already parsed; merge the optional files
+    # into a flat per-layer dict, then expose as {"layers": [...]} so that
+    # compute_profile / run_sibling_contrast can read per-layer scalars.
+    layer_map: dict = {}
+    for lr in geo.get("layers", []):
+        layer_map[lr["layer"]] = dict(lr)
+
+    def _merge_into_layer_map(fname: str) -> None:
+        path = run_dir / fname
+        if not path.exists():
+            return
+        with open(path) as f:
+            data = json.load(f)
+        for row in data.get("layers", []):
+            li = row.get("layer")
+            if li is not None:
+                layer_map.setdefault(li, {}).update(row)
+
+    for fname in ("energies.json", "clustering.json", "spectral.json", "sinkhorn.json"):
+        _merge_into_layer_map(fname)
+
+    # Rehydrate float-keyed dicts that JSON stringified
+    for lr in layer_map.values():
+        if "energies" in lr:
+            lr["energies"] = {float(k): v for k, v in lr["energies"].items()}
+        if "energy_drop_pairs" in lr:
+            lr["energy_drop_pairs"] = {float(k): v for k, v in lr["energy_drop_pairs"].items()}
+
+    out["metrics"] = {
+        "layers": [layer_map[i] for i in sorted(layer_map)],
+    }
+
     return out
+
 
 
 def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
@@ -134,6 +168,16 @@ def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
     Reads the prompt name from geometry.json (canonical).
     Falls back to inferring it from the directory name.
 
+    Handles the hyphen/underscore naming duality:
+      model_stem passed in as "albert_xlarge_v2" (underscores)
+      but p1 dirs are named  "albert-xlarge-v2_12iter_paper_excerpt" (hyphens).
+    Both forms are checked.
+
+    For ALBERT shared-layer models, multiple iter-depth directories
+    (12iter / 24iter / 36iter / 48iter) all resolve to the same prompt_key.
+    The directory whose name encodes the highest iteration count is kept so
+    the selection is deterministic and maximally informative.
+
     Returns
     -------
     dict {prompt_key: run_dir_path}
@@ -142,57 +186,54 @@ def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
     if not phase1_dir.exists():
         return {}
 
-    out = {}
+    # Accept both "albert_xlarge_v2" and "albert-xlarge-v2"
+    model_stem_hyphen = model_stem.replace("_", "-")
+
+    def _matches(name: str) -> bool:
+        return model_stem in name or model_stem_hyphen in name
+
+    def _iter_depth(run_dir: Path) -> int:
+        """Extract numeric iteration depth from names like *_24iter_*; 0 if absent."""
+        import re
+        m = re.search(r"_(\d+)iter", run_dir.name)
+        return int(m.group(1)) if m else 0
+
+    # Collect all candidates; for colliding prompt keys keep highest iter depth.
+    # Structure: {prompt_key: (iter_depth, run_dir)}
+    best: dict = {}
+
     for run_dir in phase1_dir.iterdir():
         if not run_dir.is_dir():
             continue
-        if model_stem not in run_dir.name:
+        if not _matches(run_dir.name):
             continue
+
         geo_path = run_dir / "geometry.json"
+        pk = None
         if geo_path.exists():
             try:
                 with open(geo_path) as f:
                     pk = json.load(f).get("prompt")
-                if pk:
-                    out[pk] = run_dir
-                    continue
             except Exception:
-                pass
-        # Fallback: infer from directory name
-        name = run_dir.name
-        pk = name.split("iter_", 1)[-1] if "iter_" in name else name
-        out[pk] = run_dir
-    return out
+                pk = None
+
+        if not pk:
+            # Fallback: infer from directory name
+            name = run_dir.name
+            pk = name.split("iter_", 1)[-1] if "iter_" in name else name
+
+        depth = _iter_depth(run_dir)
+        if pk not in best or depth > best[pk][0]:
+            best[pk] = (depth, run_dir)
+
+    return {pk: info[1] for pk, info in best.items()}
+
 
 # ---------------------------------------------------------------------------
 # Phase 2 artifacts — V projectors (shared across prompts)
 # ---------------------------------------------------------------------------
 
-def load_phase2_projectors(
-    phase2_dir: Path,
-    model_stem: str,
-    k_top: Optional[int] = None,
-) -> dict:
-    """
-    Load V eigenspectrum and build attractive/repulsive projectors.
-
-    If k_top is None, uses all eigenvectors; otherwise keeps top-k by |eigval|.
-
-    Returns
-    -------
-    dict with keys:
-      eigenvalues    : (n,) complex or real array (may include imaginary parts
-                       if stored from Schur; we take real parts for subspace
-                       construction — Phase 2i confirmed globally rotation-neutral)
-      eigenvectors   : (d, n) array
-      attractive_P   : (d, d) dense projector onto positive-eigval subspace
-      repulsive_P    : (d, d) dense projector onto negative-eigval subspace
-      U_att          : (d, n_pos) basis
-      U_rep          : (d, n_neg) basis
-      eigvals_pos    : positive eigenvalues (sorted desc)
-      eigvals_neg    : negative eigenvalues (sorted asc, i.e. most-negative first)
-      path           : path the projectors were loaded from, or None if missing
-    """
+def load_phase2_projectors(phase2_dir: Path, model_stem: str, k_top=None) -> dict:
     phase2_dir = Path(phase2_dir)
     out = {
         "eigenvalues": None, "eigenvectors": None,
@@ -202,68 +243,108 @@ def load_phase2_projectors(
         "path": None,
     }
 
+    stem_h = model_stem.replace("_", "-")  # albert_xlarge_v2 → albert-xlarge-v2
     candidates = [
         phase2_dir / f"ov_projectors_{model_stem}.npz",
+        phase2_dir / f"ov_projectors_{stem_h}.npz",
         *phase2_dir.glob(f"*projector*{model_stem}*.npz"),
+        *phase2_dir.glob(f"*projector*{stem_h}*.npz"),
         *phase2_dir.glob(f"*{model_stem}*projector*.npz"),
+        *phase2_dir.glob(f"*{stem_h}*projector*.npz"),
     ]
     path = next((p for p in candidates if p.exists()), None)
     if path is None:
         return out
 
     data = np.load(path)
+    keys = set(data.files)
+
+    # --- Path A: eigenvectors + eigenvalues (ideal format) ---
     eigvecs = data.get("eigenvectors", data.get("U"))
-    eigvals = data.get("eigenvalues", data.get("S"))
-    if eigvecs is None or eigvals is None:
-        return out
+    eigvals = data.get("eigenvalues",  data.get("S"))
 
-    # Use real parts; Phase 2i confirmed the rotational component is globally
-    # negligible for ALBERT-xlarge. Local rotational effects are tested
-    # separately by v_alignment.rotational_local_test.
-    eigvals = np.asarray(eigvals)
-    if np.iscomplexobj(eigvals):
-        eigvals = eigvals.real
-    eigvecs = np.asarray(eigvecs)
-    if np.iscomplexobj(eigvecs):
-        eigvecs = eigvecs.real
+    if eigvecs is not None and eigvals is not None:
+        eigvals = np.asarray(eigvals)
+        if np.iscomplexobj(eigvals):
+            eigvals = eigvals.real
+        eigvecs = np.asarray(eigvecs)
+        if np.iscomplexobj(eigvecs):
+            eigvecs = eigvecs.real
 
-    if k_top is not None:
-        idx = np.argsort(np.abs(eigvals))[::-1][:k_top]
-        eigvecs = eigvecs[:, idx]
-        eigvals = eigvals[idx]
+        if k_top is not None:
+            idx = np.argsort(np.abs(eigvals))[::-1][:k_top]
+            eigvecs = eigvecs[:, idx]
+            eigvals = eigvals[idx]
 
-    pos_mask = eigvals > 0
-    neg_mask = eigvals < 0
+        pos_mask = eigvals > 0
+        neg_mask = eigvals < 0
+        U_att = eigvecs[:, pos_mask].astype(np.float32)
+        U_rep = eigvecs[:, neg_mask].astype(np.float32)
 
-    U_att = eigvecs[:, pos_mask].astype(np.float32)
-    U_rep = eigvecs[:, neg_mask].astype(np.float32)
+        out.update({
+            "eigenvalues":  eigvals.astype(np.float32),
+            "eigenvectors": eigvecs.astype(np.float32),
+            "U_att":        U_att,
+            "U_rep":        U_rep,
+            "attractive_P": (U_att @ U_att.T) if U_att.size else None,
+            "repulsive_P":  (U_rep @ U_rep.T) if U_rep.size else None,
+            "eigvals_pos":  np.sort(eigvals[pos_mask])[::-1].astype(np.float32),
+            "eigvals_neg":  np.sort(eigvals[neg_mask]).astype(np.float32),
+            "path":         str(path),
+        })
 
-    out.update({
-        "eigenvalues":  eigvals.astype(np.float32),
-        "eigenvectors": eigvecs.astype(np.float32),
-        "U_att":        U_att,
-        "U_rep":        U_rep,
-        "attractive_P": (U_att @ U_att.T) if U_att.size else None,
-        "repulsive_P":  (U_rep @ U_rep.T) if U_rep.size else None,
-        "eigvals_pos":  np.sort(eigvals[pos_mask])[::-1].astype(np.float32),
-        "eigvals_neg":  np.sort(eigvals[neg_mask]).astype(np.float32),
-        "path":         str(path),
-    })
+    else:
+        # --- Path B: subspace_build.py format ---
+        # ALBERT shared: schur_attract_shared / sym_attract_shared
+        # GPT-2 per-layer: schur_attract_layer0_* etc. — take layer 0 as representative
+        def _pick(prefixes, suffix=""):
+            for pfx in prefixes:
+                k = pfx + suffix
+                if k in keys:
+                    return data[k].astype(np.float32)
+            # glob for any key starting with any prefix
+            for pfx in prefixes:
+                match = next((k for k in keys if k.startswith(pfx)), None)
+                if match:
+                    return data[match].astype(np.float32)
+            return None
+
+        U_att = _pick(["schur_attract_shared", "sym_attract_shared",
+                        "schur_attract", "sym_attract", "U_pos"])
+        U_rep = _pick(["schur_repulse_shared", "sym_repulse_shared",
+                        "schur_repulse", "sym_repulse", "U_neg"])
+
+        if U_att is None or U_rep is None:
+            return out   # genuinely nothing usable
+
+        # Ensure 2-D column matrices (d, k)
+        if U_att.ndim == 1:
+            U_att = U_att[:, None]
+        if U_rep.ndim == 1:
+            U_rep = U_rep[:, None]
+
+        out.update({
+            "U_att":        U_att,
+            "U_rep":        U_rep,
+            "attractive_P": U_att @ U_att.T,
+            "repulsive_P":  U_rep @ U_rep.T,
+            "path":         str(path),
+        })
+
+    out["U_attractive"] = out["U_att"]
+    out["U_repulsive"]  = out["U_rep"]
     return out
 
 
 def load_phase2_weights(phase2_dir: Path, model_stem: str) -> dict:
-    """
-    Load per-head OV and QK matrices if available.
-
-    Expected file: <phase2_dir>/weights_<model_stem>.npz with keys
-        W_V, W_O, W_Q, W_K (shared for ALBERT, per-layer otherwise).
-
-    Returns dict with whatever is present, or empty dict.
-    """
     phase2_dir = Path(phase2_dir)
+    stem_h = model_stem.replace("_", "-")  # albert_xlarge_v2 → albert-xlarge-v2
     for candidate in (
+        phase2_dir / f"ov_weights_{stem_h}.npz",
+        phase2_dir / f"ov_weights_{model_stem}.npz",
+        phase2_dir / f"weights_{stem_h}.npz",
         phase2_dir / f"weights_{model_stem}.npz",
+        *phase2_dir.glob(f"*weights*{stem_h}*.npz"),
         *phase2_dir.glob(f"*weights*{model_stem}*.npz"),
     ):
         if candidate.exists():
@@ -271,34 +352,117 @@ def load_phase2_weights(phase2_dir: Path, model_stem: str) -> dict:
             return {k: data[k] for k in data.files}
     return {}
 
+# ---------------------------------------------------------------------------
+# Phase 2i artifacts — symmetric/antisymmetric decomposition
+# ---------------------------------------------------------------------------
+
 
 # ---------------------------------------------------------------------------
 # Phase 2i artifacts — symmetric/antisymmetric decomposition
 # ---------------------------------------------------------------------------
 
-def load_phase2i(phase2i_dir: Path, model_stem: str) -> dict:
+
+def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
     """
-    Load Phase 2i S/A decomposition artifacts for local rotational testing.
+    Compute Phase 2i S/A decomposition artifacts inline via p2b analysis.
 
-    Returns dict with keys (whichever exist):
-      V_sym       : (d, d) symmetric part of V_eff
-      V_asym      : (d, d) antisymmetric part
-      schur_T     : (d, d) real Schur T matrix
-      schur_Z     : (d, d) Schur orthogonal basis
-      rotational_blocks : list of dicts describing 2D invariant blocks
+    p2b never persisted NPZ files, so this replaces the old disk-based loader
+    with an on-demand recompute from the Phase 2 OV weight matrix.
+
+    Reads:  <phase2_dir>/ov_weights_{model}.npz
+              Per-head OV matrices stored under keys "wo_head_N", "W_O_head_N",
+              or "ov_head_N" (ALBERT-style shared), or a pre-composed "ov_total"
+              array of shape (d, d) or (n_layers, d, d).
+
+    Returns dict with keys:
+      V_sym            — symmetric part  S = (V + Vᵀ) / 2
+      V_asym           — antisymmetric part A = (V - Vᵀ) / 2
+      schur_T          — quasi-triangular Schur form T
+      schur_Z          — orthogonal Schur vectors Z
+      rotational_blocks — list of 2×2 block dicts from extract_schur_blocks
+      is_per_layer     — bool; if True, all array-valued keys are lists (one per layer)
+
+    Call sites that previously passed a phase2i_dir must now pass phase2_dir
+    (the Phase 2 output directory, e.g. results/phase2).
     """
-    phase2i_dir = Path(phase2i_dir)
-    out = {}
-    if not phase2i_dir.exists():
-        return out
+    from p2b_imaginary.rotational_rescaled import decompose_symmetric_antisymmetric
+    from p2b_imaginary.rotational_schur import extract_schur_blocks
 
-    for candidate in phase2i_dir.glob(f"*{model_stem}*.npz"):
-        data = np.load(candidate, allow_pickle=True)
-        for k in data.files:
-            if k not in out:
-                out[k] = data[k]
-    return out
+    phase2_dir = Path(phase2_dir)
+    if not phase2_dir.exists():
+        print(f"  [warn] phase2 dir not found: {phase2_dir}")
+        return {}
 
+    model_stem_hyphen = model_stem.replace("_", "-")
+
+    # Locate ov_weights file — try hyphen form first (canonical on disk)
+    weights_path = None
+    for stem_form in (model_stem_hyphen, model_stem):
+        candidate = phase2_dir / f"ov_weights_{stem_form}.npz"
+        if candidate.exists():
+            weights_path = candidate
+            break
+
+    if weights_path is None:
+        print(f"  [warn] no Phase 2 OV weights found for stem '{model_stem}' "
+              f"in {phase2_dir}")
+        return {}
+
+    try:
+        data = np.load(weights_path, allow_pickle=True)
+    except Exception as e:
+        print(f"  [warn] could not load {weights_path}: {e}")
+        return {}
+
+    keys = list(data.keys())
+
+    # Collect per-head OV matrices.  Convention from run_6._load_ov_weights:
+    # each is the composed W_V_h @ W_O_h matrix (not just W_O alone).
+    head_keys = sorted(
+        k for k in keys
+        if k.startswith("wo_head") or k.startswith("W_O_head") or k.startswith("ov_head")
+    )
+
+    if head_keys:
+        # Shared-weight model (ALBERT): compose V_eff = Σ_h OV_h
+        ov_matrices  = [sum(data[k] for k in head_keys)]
+        is_per_layer = False
+    elif "ov_total" in keys:
+        raw = data["ov_total"]
+        if raw.ndim == 3:
+            # (n_layers, d, d) — one matrix per layer (GPT-2 style)
+            ov_matrices  = list(raw)
+            is_per_layer = True
+        else:
+            ov_matrices  = [raw]
+            is_per_layer = False
+    else:
+        print(f"  [warn] no usable OV matrices in {weights_path}")
+        return {}
+
+    # Run p2b analysis inline on each composed OV matrix
+    sa_list     = [decompose_symmetric_antisymmetric(OV) for OV in ov_matrices]
+    blocks_list = [extract_schur_blocks(OV)              for OV in ov_matrices]
+
+    if is_per_layer:
+        return {
+            "V_sym":             [sa["S"]         for sa in sa_list],
+            "V_asym":            [sa["A"]         for sa in sa_list],
+            "schur_T":           [b["schur_T"]    for b in blocks_list],
+            "schur_Z":           [b["schur_Z"]    for b in blocks_list],
+            "rotational_blocks": [b["blocks_2x2"] for b in blocks_list],
+            "is_per_layer":      True,
+        }
+    else:
+        sa, blocks = sa_list[0], blocks_list[0]
+        return {
+            "V_sym":             sa["S"],
+            "V_asym":            sa["A"],
+            "schur_T":           blocks["schur_T"],
+            "schur_Z":           blocks["schur_Z"],
+            "rotational_blocks": blocks["blocks_2x2"],
+            "is_per_layer":      False,
+        }
 
 # ---------------------------------------------------------------------------
 # Phase 3 artifacts — crosscoder + prompt store
@@ -308,7 +472,7 @@ def load_phase3(
     checkpoint_dir: Path,
     cache_dir: Path,
     device: str = "cpu",
-) -> dict:
+    ) -> dict:
     """
     Load the Phase 3 crosscoder and prompt activation store.
 
@@ -363,9 +527,14 @@ def load_phase3(
 # Phase 4 artifacts — LDA directions, feature-cluster MI, AE bottleneck
 # ---------------------------------------------------------------------------
 
-def load_phase4(phase4_dir: Path) -> dict:
+def load_phase4(phase4_dir: Path, model_stem: str = "") -> dict:
     """
     Load Phase 4 outputs. Files are optional — dict contains whichever exist.
+
+    Selects the most recent run subdirectory whose name matches model_stem
+    (both underscore and hyphen forms).  If model_stem is empty, falls back
+    to the globally most-recently-modified subdir (legacy behaviour, but
+    this is ambiguous when multiple models' results coexist).
 
     Expected files (any subset):
       t1_feature_cluster_mi.json  — {prompt: {layer: {feature_idx: mi}}}
@@ -378,9 +547,23 @@ def load_phase4(phase4_dir: Path) -> dict:
     if not phase4_dir.exists():
         return out
 
-    # Most recent run subdir
-    subdirs = [d for d in phase4_dir.iterdir() if d.is_dir()]
-    target = max(subdirs, key=lambda d: d.stat().st_mtime) if subdirs else phase4_dir
+    model_stem_hyphen = model_stem.replace("_", "-") if model_stem else ""
+
+    def _matches(d: Path) -> bool:
+        if not model_stem:
+            return True  # no filter requested
+        return model_stem in d.name or model_stem_hyphen in d.name
+
+    subdirs = [d for d in phase4_dir.iterdir() if d.is_dir() and _matches(d)]
+    if not subdirs:
+        available = [d.name for d in phase4_dir.iterdir() if d.is_dir()]
+        print(f"  [warn] no phase4 subdirs matching stem '{model_stem}' "
+              f"in {phase4_dir}; available: {available}")
+        print(f"  [phase4] skipped: run phase4 for '{model_stem}' first")
+        return out  # do not fall back to a different model's artifacts
+
+    target = max(subdirs, key=lambda d: d.stat().st_mtime)
+    print(f"  [phase4] loading from {target.name}")
 
     for json_name in ("t1_feature_cluster_mi.json", "verdict.json",
                       "track1.json", "track2.json"):

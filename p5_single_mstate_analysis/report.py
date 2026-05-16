@@ -320,7 +320,6 @@ def _render_group_B(v: Optional[dict]) -> list:
 
     return lines
 
-
 def _render_group_C1(c1: Optional[dict]) -> list:
     lines = _section("C.1 PER-HEAD ATTENTION CONTRIBUTIONS")
     if c1 is None:
@@ -328,19 +327,45 @@ def _render_group_C1(c1: Optional[dict]) -> list:
     if "_error" in c1:
         return lines + [f"  ERROR: {c1['_error']}"]
 
+    src = c1.get("cohesion_source")
+    if src:
+        lines.append(f"  cohesion_source: {src}")
+
     top = c1.get("top_attractor_heads", [])
-    if top:
+    if not top:
+        lines.append("  no attractor heads identified")
+    else:
         lines += ["", "  top attractor heads (cumulative cohesion):"]
         for h in top[:8]:
-            lines.append(
-                f"    head {h['head']:02d}: "
-                f"cohesion={_fmt(h.get('cohesion'))}  "
-                f"ov_top_eigval={_fmt(h.get('ov_top_eigval'), 3)}"
-            )
-    else:
-        lines.append("  no attractor heads identified")
+            fa   = h.get("ov_frac_attractive")
+            pr   = h.get("ov_participation_ratio")
+            catt = h.get("ov_cluster_overlap_att")
+            crep = h.get("ov_cluster_overlap_rep")
+            tevs = h.get("ov_top_eigvals") or []
 
-    # Cumulative cohesion trace (single line)
+            lines.append(
+                f"    head {h['head']:02d}: cohesion={_fmt(h.get('cohesion'))}"
+            )
+
+            if any(v is not None for v in [fa, pr] + tevs):
+                ov_parts = []
+                if fa is not None:
+                    ov_parts.append(f"frac_att={fa:.3f}")
+                if pr is not None:
+                    ov_parts.append(f"pr={pr:.1f}")
+                if catt is not None:
+                    ov_parts.append(f"c_att={catt:.3f}")
+                if crep is not None:
+                    ov_parts.append(f"c_rep={crep:.3f}")
+                lines.append(f"             ov: {' '.join(ov_parts)}")
+                if tevs:
+                    ev_str = "  ".join(
+                        f"{v:+.4f}" if v is not None else "n/a" for v in tevs
+                    )
+                    lines.append(f"             eigvals: {ev_str}")
+            else:
+                lines.append("             ov: n/a")
+
     cc = c1.get("cumulative_cohesion", [])
     if cc:
         lines.append(
@@ -349,7 +374,6 @@ def _render_group_C1(c1: Optional[dict]) -> list:
         )
 
     return lines
-
 
 def _render_group_C2(c2: Optional[dict]) -> list:
     lines = _section("C.2 FFN CONTRIBUTIONS")

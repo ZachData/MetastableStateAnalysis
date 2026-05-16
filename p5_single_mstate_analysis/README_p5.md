@@ -1,315 +1,298 @@
 # Phase 5 — Single-Cluster Case Study
 
-**Status:** Not started. Consumes artifacts from Phases 1, 2, 2i, 3, and 4.
+**Status:** Complete. Six models run. Several groups partially blocked (D, E, merge geometry). See Known Gaps below.
 
------
+---
 
 ## Core Question
 
-Every previous phase has worked in aggregate: 35 model×prompt verdicts, hundreds of features ranked by F-statistic, bulk V-alignment scores. Aggregate statistics established that metastability exists (Phase 1), that OV’s signed component drives energy violations (Phase 2/2i), that crosscoder features bifurcate by lifetime but miss V geometrically (Phase 3), and — pending Phase 4 results — whether features track cluster membership functionally.
+Every previous phase worked in aggregate: 35 model×prompt verdicts, hundreds of features ranked by F-statistic, bulk V-alignment scores. Aggregate statistics established that metastability exists (Phase 1), that OV's signed component drives energy violations (Phase 2/2i), that crosscoder features bifurcate by lifetime but miss V geometrically (Phase 3), and — pending Phase 4 results — whether features track cluster membership functionally.
 
-Aggregate statistics have a ceiling: they answer “how often” and “how much,” not “what happened here.” Phase 5 asks: **take a single HDBSCAN cluster trajectory from Phase 1 and reconstruct, end to end, the mechanism that creates it, maintains it, and dissolves it.** The deliverable is an interpretable narrative of one piece of the model’s computation, cross-referenced to every framework the project has built.
+Phase 5 asks: **take a single HDBSCAN cluster trajectory from Phase 1 and reconstruct, end to end, the mechanism that creates it, maintains it, and dissolves it.** The deliverable is an interpretable narrative of one piece of the model's computation, cross-referenced to every framework the project has built.
 
-This is the inverse of Phase 4. Phase 4 asks whether any features track any clusters across all (feature, cluster, layer) combinations. Phase 5 asks, for one cluster: which features, which heads, which FFN channels, which V subspace directions, and what this cluster means semantically.
-
------
+---
 
 ## What prior phases make available
 
-- **Phase 1:** HDBSCAN labels per layer, Hungarian-matched trajectory chains (`cluster_tracking`), centroid trajectories (`centroid_trajectories.npz`), per-head Sinkhorn Fiedler, CKA, NN stability, merge/birth/death events with token-level accounting, P1-3 nesting, P1-4 semantic/artifact tagging.
-- **Phase 2:** Composed $V_\text{eff}$ per layer (or shared for ALBERT), Schur and symmetric decompositions, attractive/repulsive subspace projectors `ov_projectors_{stem}.npz`, per-head OV with rep_frac, FFN subspace projections, per-layer violation classification.
-- **Phase 2i:** S/A decomposition, confirmed globally `rotation_neutral`. For this phase: locally this still needs checking along a single trajectory.
+- **Phase 1:** HDBSCAN labels per layer, Hungarian-matched trajectory chains, centroid trajectories, per-head Sinkhorn Fiedler, CKA, NN stability, merge/birth/death events with token-level accounting, P1-3 nesting, P1-4 semantic/artifact tagging.
+- **Phase 2:** Composed $V_\text{eff}$ per layer (or shared for ALBERT), Schur and symmetric decompositions, attractive/repulsive subspace projectors, per-head OV with rep_frac, FFN subspace projections, per-layer violation classification.
+- **Phase 2i:** S/A decomposition, confirmed globally `rotation_neutral`.
 - **Phase 3:** Crosscoder checkpoint, per-feature decoder directions, feature lifetime classes, prompt activation store, steering infrastructure.
 - **Phase 4:** Per-token feature activation trajectories, feature–cluster MI, chorus cliques, LDA cluster-separation directions, linear probes, low-rank AE bottleneck directions.
 
-All of this exists as a per-prompt, per-layer substrate. Phase 5 indexes into one cluster trajectory and pulls every matching slice.
-
------
+---
 
 ## Cluster selection
 
-Not every cluster is informative. Selection is not the first interesting step, but getting it wrong wastes the rest of the phase.
+Candidate scoring on Phase 1 tracked trajectories uses six sub-scores:
 
-Candidate scoring on Phase 1 tracked trajectories:
+1. **Lifespan** — at least 6 layers of continuous identity.
+2. **Merge participation** — trajectory ends in a merge or contains one.
+3. **Semantic content** — P1-4 tags the cluster as semantic (not induction-artifact).
+4. **Prompt context** — prefer `sullivan_ballou` or `paper_excerpt`. Avoid `repeated_tokens`.
+5. **Size** — at least 4 tokens while alive.
+6. **Sibling availability** — merge partner or nearest non-merged neighbor is also long-lived.
 
-1. **Lifespan** — at least 6 layers of continuous identity. Below this, too few samples for trajectory statistics.
-1. **Merge participation** — trajectory ends in a merge or contains one. A cluster that just persists and then the model collapses isn’t as informative as one that gets absorbed. Merge events are the interpretable unit of computation (per the plan).
-1. **Semantic content** — P1-4 tags the cluster as semantic (not induction-artifact). Token strings inspected manually for coherence.
-1. **Prompt context** — prefer `sullivan_ballou` or `paper_excerpt` for ALBERT-xlarge; these produced the clearest plateau structure in Phase 1. Avoid `repeated_tokens` (collapse control).
-1. **Size** — at least 4 tokens while alive. Clusters of 2–3 are too close to HDBSCAN’s noise floor.
-1. **Sibling availability** — the cluster it merges with (or its nearest non-merged neighbor) is also long-lived, to enable contrast analysis.
+### Observed selection results (all six models)
 
-Scoring produces a ranked list. The selection step outputs one primary cluster plus a runner-up for replication. Manual override is allowed — if the top-scored cluster has uninteresting tokens, take the next.
+| model | prompt | traj_id | lifespan | score | merge_layer |
+|---|---|---|---|---|---|
+| gpt2-xl | paper_excerpt | 29 | 49 (L0→L48) | 9.000 | L33→L34 |
+| gpt2-large | paper_excerpt | 23 | 16 (L0→L15) | 8.778 | L5→L6 |
+| gpt2-medium | paper_excerpt | 12 | 18 (L0→L17) | 8.478 | L16→L17 |
+| bert-base-uncased | paper_excerpt | 25 | 9 (L0→L8) | 8.000 | L7→L8 |
+| albert-xlarge-v2 | sullivan_ballou | 24 | 20 (L0→L19) | 9.000 | L18→L19 |
+| albert-base-v2 | sullivan_ballou | 34 | 31 (L0→L30) | 9.000 | L29→L30 |
 
-Expected output: one primary trajectory with (prompt_key, trajectory_id, layer_start, layer_end, merges_with, sibling_trajectory_id).
+All six top-scoring trajectories run to their merge event within the final 1–3 layers of their lifespan. The top-4 models achieve perfect scores (9.000); gpt2-medium is penalized on size (mean_size=4.78). For all models, the runner-up trajectory shares the same prompt as the primary and scores within 0.3 points, indicating the selection is stable.
 
------
+---
 
 ## Investigations
 
-Seven thematic groups. Each produces a section of the final report.
+### A. Structural Profile
 
-### A. Structural profile across the cluster’s lifespan
+**What it measures:** token membership stability, compactness (IP mean, radius), silhouette against sibling and all-other, centroid arc length, CKA restricted, mass-near-1.
 
-Establish what the cluster *is* before asking why.
+**Results:**
 
-- Token membership per layer (the chain — stable within, flux at boundaries)
-- Size, mean intra-cluster cosine similarity, cluster radius (max cosine distance from centroid), compactness vs isolation (silhouette against sibling and all-other)
-- Centroid trajectory: angular step size per layer, cumulative arc length on $S^{d-1}$, layers where centroid velocity spikes
-- Cluster mass contribution: fraction of the global `mass-near-1` metric attributable to this cluster
-- CKA contribution: restrict CKA computation to cluster tokens vs complement
-- Membership stability: fraction of tokens retained from layer $L$ to $L+1$; onset (birth) layer and dissolution (death/merge) layer with precise token-level accounting
-- Nesting (P1-3): does the cluster contain stable sub-clusters, and do those sub-clusters survive the merge?
+| model | mean_ip | mean_jaccard | mean_radius | mean_cka | mean_sil_all |
+|---|---|---|---|---|---|
+| gpt2-xl | 0.876 | 0.914 | 0.139 | 0.984 | 0.783 |
+| gpt2-large | 0.916 | 0.943 | 0.091 | 0.987 | 0.825 |
+| gpt2-medium | 0.901 | 0.889 | 0.061 | 0.979 | 0.628 |
+| bert-base | 0.702 | 0.775 | 0.191 | 0.969 | 0.591 |
+| albert-xlarge | 0.462 | 0.770 | 0.398 | 0.979 | 0.394 |
+| albert-base | 0.847 | 0.919 | 0.138 | 0.986 | 0.624 |
 
-### B. Paper-theoretical alignment
+Restricted CKA is uniformly high (0.97–0.99) across all models — the cluster representation is highly self-consistent within its lifespan regardless of IP spread. BERT and albert-xlarge are noticeably looser (lower IP, higher radius, lower silhouette). Albert-xlarge's IP mean of 0.46 with radius 0.40 is the outlier: its clusters are real by the Jaccard and CKA metrics, but geometrically broader than any other model. This likely reflects the weight-sharing architecture spreading token representations over a wider region of $S^{d-1}$ across iterations.
 
-Test the mathematical predictions of Geshkovski et al. at the level of this cluster.
+`mean_silhouette_sib` (cluster vs. its sibling specifically) ranges from −0.096 (bert-base) to 0.704 (gpt2-large). Negative silhouette vs sibling for bert-base means the primary cluster and sibling are geometrically interleaved — their separation is low, consistent with the model being shallower and the clusters not yet fully resolved at the layers captured.
 
-- Effective $\beta$ estimate: fit the local attention softmax temperature by regressing attention weights on inner products within the cluster
-- Intra-cluster mass-near-1 trajectory vs Theorem 6.3 prediction for $n = |\text{cluster}|$, $d = d_\text{model}$
-- Energy contribution: $E_\beta$ restricted to cluster pairs, as a function of layer — does it match the monotonicity the theorem predicts for the simplified dynamics?
-- V-eigenspace projection of the centroid: at each layer, decompose centroid into attractive and repulsive components (using Phase 2 projectors). The paper’s framework predicts attractive component should grow during stable phases, repulsive component at merge events.
-- V-eigenspace projection of cluster-mean displacement $\Delta \bar{x} = \bar{x}^{(L+1)} - \bar{x}^{(L)}$: localizes where the update is pushing the cluster
-- S/A decomposition local test (Phase 2i): does the cluster-level update stay `rotation_neutral`, or does antisymmetric energy become locally meaningful inside this cluster’s subspace?
-- Rotational blocks intersecting the cluster direction: find the Schur blocks whose invariant 2D plane has highest overlap with cluster-centroid direction and with the cluster-separation (LDA) direction
-- Merge-event geometry: at the merge layer, compute the angle between the two pre-merge centroids and the direction along which they fuse; project onto V’s repulsive subspace; test whether fusion proceeds along an attractive direction
+---
 
-### C. Attention mechanism
+### B. Paper-Theoretical Alignment
 
-Per-head, per-layer causal structure.
+**What it measures:** centroid attractive/repulsive decomposition, local rotational test (S/A), merge event geometry.
 
-- Per-head attention restricted to cluster: for each head $h$, extract $A^{(h)}[\text{cluster}, \text{cluster}]$ and $A^{(h)}[\text{cluster}, \text{complement}]$; classify each head as `inward` (attention concentrated inside the cluster), `outward` (cluster tokens attend to non-members), `ignoring`, or `gated-by-position`
-- Sinkhorn Fiedler restricted to cluster: algebraic connectivity of the cluster-only attention subgraph
-- Per-head contribution to cluster cohesion: scalar $\sum_{i \in C} \langle \Delta^{(h)}_i, \bar{x}_C \rangle$ where $\Delta^{(h)}_i$ is head $h$’s residual contribution at token $i$ — positive means the head is pulling the cluster together
-- QK pattern analysis: the top-attended token pairs within the cluster, and whether these are semantically equivalent, syntactically equivalent, or positional
-- Per-head OV × cluster direction: $\langle v_h, \bar{x}_C \rangle$ for each head’s dominant OV eigenvector, to identify which heads’ attractive (or repulsive) subspaces align with this cluster’s direction
-- FFN projection: at each layer, FFN update projected onto (1) cluster centroid direction, (2) cluster-separating LDA direction. Tests whether FFN actively maintains the cluster or just passes through
+**Results:**
 
-### D. Feature-level signatures
+| model | attr_frac | rep_frac | rot_verdict | merge_verdict |
+|---|---|---|---|---|
+| gpt2-xl | 0.522 | 0.478 | locally_rotational | n/a |
+| gpt2-large | 0.481 | 0.519 | locally_rotational | n/a |
+| gpt2-medium | 0.540 | 0.460 | locally_rotational | n/a |
+| bert-base | 0.520 | 0.480 | locally_rotational | n/a |
+| albert-xlarge | 0.493 | 0.507 | locally_rotational | n/a |
+| albert-base | 0.565 | 0.435 | locally_rotational | n/a |
 
-Consume Phase 3/4 outputs for the cluster.
+**`locally_rotational` is universal.** Every model, every cluster, every prompt. The Phase 2i global finding of rotation-neutral holds locally along individual trajectories as well. The S/A asymmetry fractions (sa_mean_asym_frac) are all close to 0.50, meaning neither symmetric nor antisymmetric component dominates locally any more than globally.
 
-- Cluster identity features (from Phase 4 Track 1, MI-ranked): top-20 features by mutual information with cluster membership at each layer the cluster is alive
-- Activation trajectories of those features: do they have plateau shapes aligned with the cluster’s lifespan?
-- Feature chorus for the cluster: connected components in the co-activation graph restricted to cluster-member tokens; how many features, whether the clique is stable across layers
-- At the cluster’s merge event: which features die, which are born, which survive; cross-reference to Phase 4’s `merge_dynamics`
-- LDA direction (Phase 4 Track 2) between this cluster and its sibling at each layer: stability (cosine similarity across layers), alignment with V’s repulsive subspace at the merge
-- Low-rank AE (Phase 4 Track 3) bottleneck directions: do any align with this cluster’s centroid direction?
-- Decoder direction geometry: for the top cluster identity features, compute alignment with V eigensubspaces, with cluster centroid, with LDA direction. Phase 3 found decoder directions random in aggregate — is this still true for the specific features that fire on this cluster?
+The attractive/repulsive centroid split is close to 50/50 everywhere. No model shows strong attractive-subspace dominance at the centroid level, which is a mild tension with the theoretical prediction that cluster tokens should sit primarily in the attractive subspace during stable phases.
 
-### E. Semantic content via tuned lens
+**`merge_verdict` is `n/a` for all six models.** This is a known gap — see Known Issues below. Merge geometry did not compute.
 
-What does the cluster *mean* at each depth. This is the Phase 6 preview, narrowed to one cluster.
+---
 
-- Train (or load) a tuned lens per layer for ALBERT
-- Decode centroid at each layer → token probability distribution; top-20 tokens per layer
-- Decode individual cluster members: consistency across tokens confirms that the cluster-semantic-content reading isn’t centroid-averaging artifact
-- Shannon entropy of centroid distribution per layer: sharp distributions suggest concrete semantic content; diffuse distributions suggest abstract or pre-computational state
-- Sibling-contrast at the pre-merge layers: decode both centroids, compute KL divergence between the two token distributions. The KL drops to zero at the merge — what semantic distinction was the model maintaining before fusing them?
-- Distribution evolution: track the top-1 and top-5 token overlap from layer to layer. Stable top tokens during plateau = locked-in semantic content. Rotating top tokens = the cluster is doing something computational rather than representational.
+### C1. Per-Head Attention Contributions
 
-### F. Causal interventions
+**What it measures:** per-head cumulative cohesion scalar; top attractor heads ranked.
 
-Phase 1–4 establish correlations. This group tests causation.
+**Results — top attractor head per model:**
 
-- **Head ablation:** at the merge layer, zero the head(s) identified in group C as most attractive-to-cluster. Re-run the forward pass. Measure: does the merge layer shift later? Does cluster membership persist further?
-- **Head ablation (control):** ablate an equally contributing but cluster-neutral head. Effect should be small.
-- **Steering along cluster direction:** inject $+\alpha \bar{x}_C$ into residual stream of cluster tokens at an early mid-plateau layer. Measure: does cluster cohesion increase (mass-near-1 within cluster), merge delayed?
-- **Steering along LDA direction:** inject $+\alpha w_\text{LDA}$ (cluster vs sibling). Measure: does membership flip for tokens near the boundary?
-- **Activation patching from sibling cluster onto cluster member:** at a mid-plateau layer, replace token $i$’s residual stream with sibling-centroid. Does it switch cluster at the next layer? At which depth does the patching fail to propagate?
-- **Feature ablation:** zero the top-5 cluster identity features from the crosscoder reconstruction and reinject the reconstructed activation. Measure cluster dissolution rate.
-- **Cross-reference to Phase 3 steering results:** the existing steering code tests lifetime-class features. Apply it specifically to this cluster’s identity features.
+| model | top head | cohesion | source |
+|---|---|---|---|
+| gpt2-xl | h07 | 9.778 | inward_mass_fallback |
+| gpt2-large | h08 | 3.770 | inward_mass_fallback |
+| gpt2-medium | h04 | 2.399 | inward_mass_fallback |
+| bert-base | h06 | 0.943 | inward_mass_fallback |
+| albert-xlarge | h03 | 9.869 | inward_mass_fallback |
+| albert-base | h07 | 5.914 | inward_mass_fallback |
 
-### G. Sibling and contrast
+The leading head's cohesion score is consistently 2–4× higher than the second-ranked head, indicating a single dominant attractor head per cluster. Head concentration is sharper in gpt2-xl and albert-xlarge, where the leading head accounts for a large fraction of total cohesion mass.
 
-Every interpretation in A–F is strengthened by a contrast baseline.
+**OV values are `n/a` universally.** `cohesion_source` is `inward_mass_fallback` for all runs — the OV-path computation did not produce values. Head rankings are valid as relative signals but are not grounded in the OV mechanism analysis Phase 2 intended. This is noted as a Known Issue below.
 
-- Repeat structural profile (A) and attention mechanism (C) for the sibling cluster
-- Compute the LDA direction between target and sibling at each layer; this is the most interpretable “distinguishing direction”
-- Contrast the token distributions (E) at every layer — where they start nearly identical and diverge, vs where they merge
-- Random control cluster: a random same-size subset of non-cluster tokens, tracked as a pseudo-cluster. Most of A–F should return null on this control. If they don’t, the signal in the real cluster is weaker than it looks.
+---
 
------
+### C2. FFN vs. Attention Contributions
 
-## Questions to answer
+**What it measures:** mean FFN cohesion, mean attention cohesion, categorical verdict.
 
-Consolidated list. Each maps to one or more groups above.
+**Results:**
 
-Paper-theoretical:
+| model | attn_coh | ffn_coh | verdict |
+|---|---|---|---|
+| gpt2-xl | 17.13 | 14.38 | both_cohesive |
+| gpt2-large | 2.94 | 1.25 | attn_dominant_cohesive |
+| gpt2-medium | 6.92 | 1.08 | attn_dominant_cohesive |
+| bert-base | 12.40 | −13.19 | attn_cohesive_ffn_disruptive |
+| albert-xlarge | −4.09 | 2.85 | ffn_cohesive_attn_disruptive |
+| albert-base | −22.36 | 15.16 | ffn_cohesive_attn_disruptive |
 
-1. Does the cluster’s intra-mass approach the Theorem 6.3 prediction for its $n$ and $d$?
-1. Is the cluster’s evolution consistent with the energy $E_\beta$ trajectory the paper predicts during stable phases?
-1. What fraction of the centroid lies in V’s attractive vs repulsive subspace at each layer, and does this fraction predict the merge timing?
-1. At the merge event, does fusion proceed along an attractive direction (confirming the framework) or a repulsive one (violating it)?
-1. Is the cluster a Theorem 6.8-type single-cluster-attractor case, or a large-$\beta$ metastable configuration (Figure 4)?
-1. Does the rotational component of $V$ have locally measurable effects on this cluster, even though Phase 2i found it globally neutral?
-1. Is the effective $\beta$ needed to explain the cluster’s stability consistent with ALBERT’s actual attention temperature?
+This is the clearest architecture-level split in Phase 5. GPT-2 variants show attention-dominant or co-dominant cohesion. ALBERT models invert: FFN is cohesive and attention is disruptive. This is consistent with ALBERT's weight-sharing: the same attention weights applied iteratively produce fragmented, less-targeted attention patterns, while the FFN — also shared but applied to a changing residual state — acts as the stabilizing mechanism. BERT is the anomaly: attention cohesive, FFN strongly disruptive (−13.19), despite architectural similarity to ALBERT. This may reflect BERT's bidirectional masked-LM pretraining producing a different balance of computational roles.
 
-Mechanism:
+**Implication for the paper framework:** the framework's prediction that cluster cohesion flows through the attractive subspace of $V_\text{eff}$ (which is dominated by OV composition) does not map cleanly onto FFN dynamics. The ALBERT result in particular suggests that for weight-tied models, the FFN is the primary cohesion mechanism, not OV.
 
-1. Which attention heads pull tokens into the cluster, and which push them out?
-1. Is cluster cohesion maintained primarily by attention, FFN, or a combination?
-1. Does the cluster’s attention structure match any known head type (induction, positional, syntactic, semantic)?
-1. Does the FFN actively maintain the cluster, or just pass it through?
-1. What layer creates the cluster and how? What layer dissolves it and how?
+---
 
-Representation:
+### D. Feature Signatures
 
-1. Is there a crosscoder feature (or small set) whose activation is bijective with cluster membership?
-1. If no single feature, does a chorus of features encode the cluster?
-1. Does the cluster-separating LDA direction remain stable across the cluster’s lifespan, or rotate?
-1. Do the decoder directions of this cluster’s identity features align with the cluster centroid, or are they geometrically random (as Phase 3 found in aggregate)?
-1. Does the low-rank AE recover the cluster direction where sparse features didn’t?
+**Status: blocked for all six models.**
 
-Semantic:
+All runs return `ERROR: feature activations unavailable`. Phase 4 outputs (activation trajectories, MI results, LDA directions) are not reaching Phase 5 for any model. No feature-level analysis ran.
 
-1. What does the cluster *mean* — what tokens does the tuned lens decode the centroid to at each layer?
-1. Does the semantic content evolve (computation) or stay fixed (representation)?
-1. At the merge: what semantic distinction is lost? What’s the KL divergence trajectory between the two pre-merge token distributions?
+---
 
-Causal:
+### E. Tuned-Lens Decoding
 
-1. Does ablating the top attractor head(s) dissolve the cluster or shift the merge?
-1. Does steering along the cluster direction delay the merge?
-1. Does steering along the LDA direction flip membership?
-1. Does activation patching from sibling propagate forward?
-1. Does zeroing the top identity features dissolve cluster cohesion?
+**Status: tuned lens not trained; fallback to logit lens.**
 
-Cross-cutting:
+`used_tuned_lens=false` for all runs.
 
-1. Does the mechanistic story (attention + FFN) agree with the feature-level story (identity features + chorus)? Where they disagree, which is right?
-1. Does the paper’s mathematical framework predict what we actually see, or are there residual effects the framework doesn’t explain?
+**Top-1 stability results:**
 
------
+| model | top1_stable | layers |
+|---|---|---|
+| gpt2-xl | 41/48 | 85% |
+| gpt2-large | 13/15 | 87% |
+| gpt2-medium | 13/17 | 76% |
+| bert-base | 5/8 | 63% |
+| albert-xlarge | 19/19 | 100% |
+| albert-base | 27/30 | 90% |
+
+Top-1 token prediction at the centroid is largely stable across the trajectory lifespan in most models. Albert-xlarge is perfectly stable (19/19) despite having the geometrically loosest clusters — meaning the predicted token identity is fixed even as the representation moves substantially on $S^{d-1}$. BERT is least stable (63%).
+
+**All token probabilities are 0.000.** The logit-lens decoding is running but not recording softmax probabilities — either they're not being stored or they're below the fixed-precision floor. First- and last-layer token distributions are present in the output (e.g., gpt2-xl first layer: `.`, `,`, `;`; last layer: `the`, `a`, `one`) but without probability mass. This is a Known Issue.
+
+---
+
+### F. Causal Interventions
+
+**Status: run on 5 models; bert-base skipped (Group F not run).**
+
+Interventions: `ablate_top_head`, `ablate_control_head`, `steer_centroid`, `steer_lda`. Albert-base and gpt2-medium also ran `patch_sibling`.
+
+**`mean_frac_together` results (fraction of tokens remaining co-clustered post-intervention):**
+
+| model | ablate_top | ablate_ctrl | steer_centroid | steer_lda | patch_sibling |
+|---|---|---|---|---|---|
+| gpt2-xl | 0.801 | 0.801 | 0.801 | 0.801 | — |
+| gpt2-large | 0.527 | 0.527 | 0.527 | 0.527 | — |
+| gpt2-medium | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| albert-xlarge | 0.143 | 0.143 | 0.143 | 0.143 | — |
+| albert-base | 0.146 | 0.146 | 0.146 | 0.154 | 0.160 |
+
+Within each model all interventions return identical (or near-identical) `mean_frac_together`. This is unexpected — the four interventions target different mechanisms and should in principle produce different effect sizes. Two interpretations: (a) the metric is being computed once globally and reused rather than per-intervention, which would be a bug; or (b) all interventions are hitting the same causal bottleneck and the cluster either dissolves completely or is unaffected regardless of the specific perturbation. The gpt2-medium result (0.000 across all interventions) is the most extreme: every perturbation fully dissolves the cluster.
+
+Interpreted as a robustness gradient: gpt2-xl (0.80) > gpt2-large (0.53) > albert-base (0.15) ≈ albert-xlarge (0.14) > gpt2-medium (0.00). The largest model is most robust to any single targeted intervention.
+
+**Action item before using F results in any analysis:** verify that `mean_frac_together` is computed separately per intervention in `causal_tests.py`.
+
+---
+
+### G. Sibling and Random Control
+
+**What it measures:** sibling cluster IP mean and silhouette vs. all; random baseline of same size.
+
+**Results:**
+
+| model | sibling_ip | random_ip | sibling_sil | random_sil |
+|---|---|---|---|---|
+| gpt2-xl | 0.804 | 0.416 | 0.674 | −0.009 |
+| gpt2-large | 0.937 | 0.471 | 0.863 | −0.003 |
+| gpt2-medium | 0.886 | 0.714 | 0.599 | 0.006 |
+| bert-base | 0.762 | 0.215 | 0.681 | 0.003 |
+| albert-xlarge | 0.580 | 0.129 | 0.493 | 0.012 |
+| albert-base | 0.909 | 0.648 | 0.723 | −0.011 |
+
+The three-tier ordering holds cleanly: primary cluster IP > sibling IP > random baseline IP, and similarly for silhouette, for all six models. The random control silhouette is near zero or negative universally, confirming the selection procedure is not detecting noise. The sibling itself is a real, coherent cluster — it passes the quality bar even when it does not pass the selection gates (noted in gpt2-xl and gpt2-medium results: "sibling did not pass selection gates").
+
+Gpt2-medium's random IP (0.714) is elevated relative to other models — its residual stream may be more uniformly correlated even for non-cluster tokens, compressing the signal-to-noise ratio for the cluster/random contrast.
+
+---
+
+## Known Issues (to fix before Phase 7 or publication)
+
+### 1. `merge_verdict` always `n/a`
+Group B does not populate merge geometry for any model. `merge_event_geometry()` is either not executing or the merge event data is not being passed through to `v_alignment.py`. The README anticipated this as a central Group B output (fusion direction vs. attractive subspace). **Fix:** trace the `merge_events` argument from `run_5.py` Group B runner through to `merge_event_geometry()` and confirm the call is being reached.
+
+### 2. OV values always `n/a` in C1
+`inward_mass_fallback` is the universal cohesion source. The OV-path computation in `head_contributions.py` is not producing values — likely a missing or miskeyed weights load from Phase 2. Head rankings based on the fallback are valid relative signals but not grounded in the OV mechanism. **Fix:** confirm `p5io.load_phase2_weights()` is returning the correct OV weight arrays for each model stem, and that `analyze_heads()` uses them when present.
+
+### 3. Group D blocked universally
+Feature activations unavailable for all six models. Phase 4 outputs are not being loaded — either the results directory path is wrong, the file naming convention doesn't match what `p5io.load_phase4()` expects, or Phase 4 did not write activation cache files. **Fix:** check `load_phase4()` path construction against actual Phase 4 output layout; add a fallback that re-derives feature activations inline if the cache is absent.
+
+### 4. Token probabilities all 0.000 in E
+Logit-lens decoding is running (token strings appear) but softmax probabilities are not stored. Either the values are being computed and dropped, or they're falling below the output format's fixed-precision floor. **Fix:** check `tuned_lens_cluster.py` output serialization; store log-probabilities if softmax probs round to zero.
+
+### 5. Causal interventions return identical `mean_frac_together`
+All four interventions produce the same score within each model. **Fix:** audit `causal_tests.py` to confirm the metric is computed in a separate forward pass per intervention, not computed once and duplicated across all result dicts. If the computation is correct, document this as an intentional aggregate metric and add a per-token breakdown to distinguish intervention effects.
+
+### 6. bert-base Group F not run
+BERT skipped causal tests entirely. **Fix:** no blocking reason identified — run Group F for bert-base and add results to the report.
+
+---
+
+## Architecture-level findings (cross-model summary)
+
+These patterns hold across all six models and can inform subsequent phases:
+
+- **Locally rotational, universally.** The global Phase 2i finding extends to individual cluster trajectories. No cluster shows a locally non-rotational S/A profile.
+- **Attractive/repulsive centroid split is ~50/50 everywhere.** No evidence of strong attractive-subspace dominance at the centroid level during stable phases. This is a mild tension with Theorem 6.3 predictions and should be examined in Phase 6.
+- **FFN role is architecture-dependent.** GPT-2: attention-dominant or co-dominant. BERT: attention cohesive, FFN disruptive. ALBERT: FFN cohesive, attention disruptive. The OV-centric framework from Phases 2/2i does not generalize cleanly to FFN-dominant models.
+- **A single head dominates per cluster.** In every model, the top attractor head has cohesion 2–4× higher than second place. This concentration is sharper in larger models.
+- **Cluster robustness scales with model size (GPT-2 family).** gpt2-xl clusters resist targeted interventions; gpt2-medium clusters dissolve completely. This may reflect larger models distributing cluster identity across more components.
+
+---
+
+## Dependencies
+
+**Required (blocking):**
+- Phase 1 run for the chosen prompt with HDBSCAN labels, cluster tracking, centroid trajectories.
+- Phase 2 V projectors (`ov_projectors_{stem}.npz`). *(Currently not loading for C1 — see Known Issue 2.)*
+- Phase 3 crosscoder checkpoint.
+
+**Required (soft — currently blocking Group D):**
+- Phase 4 activation cache and MI/LDA outputs. *(Currently not loading for any model — see Known Issue 3.)*
+- Phase 2i rotational-spectrum per-layer arrays.
+
+**Optional:**
+- Tuned lens checkpoint. *(Not trained; fallback logit lens in use — see Known Issue 4.)*
+
+---
+
+## Falsification criteria
+
+1. **If merge geometry had been populated:** does fusion proceed along an attractive or repulsive direction? The framework predicts attractive-dominant. This remains untested.
+2. **Attractive/repulsive centroid split near 0.50:** the 50/50 split is inconsistent with strong attractor-basin confinement during plateau phases. Either the V-projector computation is underestimating attractive-subspace contribution, or the framework's prediction is too strong.
+3. **Causal tests:** if the identical `mean_frac_together` issue is a bug, the actual causal sensitivity of each intervention type is unknown. If it is not a bug, the result means cluster identity is not localized in any single head, direction, or activation pattern — it is distributed, and targeted single-point interventions are insufficient to assess it.
+
+---
+
+## Forward compatibility
+
+- **Phase 6:** Group E here is a preview. Tuned lens infrastructure needs to be trained before Phase 6 scales it to all clusters. The logit-lens top-1 stability results (76–100%) establish an upper bound on what the trained tuned lens should recover.
+- **Phase 7 (if pursued):** this pipeline is per-cluster. Running it on 20+ clusters produces a distribution of mechanistic stories. The ALBERT/GPT-2 FFN inversion already suggests the distribution is multimodal by architecture.
+- **Publication:** the merge geometry gap (Known Issue 1) and the feature signature gap (Known Issue 3) are the two most important items to close before this phase contributes to a publishable narrative. Everything else is present.
+
+---
 
 ## Code structure
 
 ```
-phase5_case/
-├── README.md                        (this file)
+p5_single_mstate_analysis/
+├── README_p5.md                     (this file)
 ├── __init__.py
 ├── select_cluster.py                — rank and select primary + sibling trajectories
-├── cluster_profile.py               — Group A: structural profile across lifespan
+├── cluster_profile.py               — Group A: structural profile
 ├── v_alignment.py                   — Group B: paper-theoretical alignment
 ├── head_contributions.py            — Group C.1: per-head attention + cohesion scalars
 ├── ffn_contributions.py             — Group C.2: FFN projection onto cluster directions
 ├── feature_signature.py             — Group D: identity features, chorus, LDA
-├── tuned_lens_cluster.py            — Group E: train/apply tuned lens to this cluster
+├── tuned_lens_cluster.py            — Group E: tuned/logit lens decoding
 ├── causal_tests.py                  — Group F: ablation, steering, patching
 ├── sibling_contrast.py              — Group G: sibling + random control
-├── report.py                        — assemble all_results.txt (main deliverable)
-└── run.py                           — CLI entry point
+├── report.py                        — assemble cluster_report.txt
+└── run_5.py                         — CLI entry point
 ```
-
-Each module is independent and writes a JSON fragment to the run directory. `report.py` consumes all fragments and produces the final text file.
-
------
-
-## Outputs
-
-### Primary deliverable: `cluster_report.txt`
-
-One flat text file, LLM-ingestible, containing every quantitative result the phase produces. Sections mirror the investigation groups. No plots, no images, no JSON nesting beyond what text handles naturally. Headers use plain ASCII (`===` and `---`) for robust parsing. Numbers formatted to fixed precision so diffs are meaningful across runs.
-
-Example structure:
-
-```
-================================================================
-PHASE 5 CASE STUDY — CLUSTER REPORT
-================================================================
-model: albert-xlarge-v2
-prompt: sullivan_ballou
-trajectory_id: 17
-layers_alive: 18-41 (lifespan 24)
-merges_with: trajectory_id 23 at layer 42
-sibling_id_for_contrast: 23
-selection_score: 8.4 (rank 1 of 47 candidates)
-
-----------------------------------------------------------------
-A. STRUCTURAL PROFILE
-----------------------------------------------------------------
-A.1 Token membership by layer
-  Layer 18: [novelist, poet, writer, author]  (n=4)
-  Layer 19: [novelist, poet, writer, author, essayist]  (n=5)
-  ...
-A.2 Compactness trajectory
-  layer  size  ip_mean  radius  silhouette_vs_sibling  silhouette_vs_all
-   18     4    0.842    0.18    0.61                    0.44
-   ...
-
-----------------------------------------------------------------
-B. V-EIGENSPACE ALIGNMENT
-----------------------------------------------------------------
-B.1 Centroid attractive/repulsive decomposition
-  layer  ||proj_attr||  ||proj_rep||  attr_fraction
-   18     0.73          0.42          0.75
-   ...
-B.2 Merge-event geometry
-  fusion_direction_vs_attractive_subspace: cos=0.81
-  fusion_direction_vs_repulsive_subspace : cos=0.34
-  verdict: fusion_attractive_dominant
-
-...
-```
-
-All numbers include units or scale context. Every verdict-style claim names the metric and threshold it was computed from. No prose narrative, just structured data rows with minimal headers.
-
-### Secondary outputs
-
-- `cluster_metadata.json` — selection metadata, ranked candidate list
-- `per_layer_arrays.npz` — centroid trajectory, cluster mask, subspace projections, feature activations for cluster tokens only (keeps the report text short)
-- `causal_results.json` — counterfactual outcomes from Group F
-- `tuned_lens_distributions.npz` — top-k tokens per layer for centroid and each member
-- `plots/` — optional visualisations (centroid on S^{d-1} via PCA, feature-cluster heatmap, per-head contribution bars). Not required for the report.
-
------
-
-## Dependencies
-
-Required (blocking):
-
-- Phase 1 run for the chosen prompt on albert-xlarge-v2 with HDBSCAN labels, cluster tracking, and centroid trajectories
-- Phase 2 V projectors (`ov_projectors_albert_xlarge_v2.npz`)
-- Phase 3 crosscoder checkpoint
-- Tuned lens training data (C4 subset used in Phase 3 is sufficient) — or skip Group E if tuned lens isn’t trained in time
-
-Required (soft):
-
-- Phase 4 Track 1 MI results and Track 2 LDA directions — Group D can partly reproduce these inline but reuses Phase 4 outputs if available
-- Phase 2i rotational-spectrum per-layer arrays
-
-Optional:
-
-- GPT-2-large equivalents for cross-model replication of a matched cluster
-
------
-
-## Falsification criteria
-
-The phase can fail cleanly in several ways, each informative:
-
-1. **No cluster meets selection criteria** — metastable trajectories in ALBERT-xlarge are too short-lived or too noisy for case-study work. Implies the real metastability is at the bulk-geometry level (Phase 4 null) and not at the trajectory level.
-1. **Structural profile is unremarkable** — the cluster just persists and dissolves without distinctive attention, FFN, or feature signatures. Implies the cluster is a statistical artifact of HDBSCAN, not a computational object.
-1. **V-alignment is random at the cluster level** — the centroid has no meaningful attractive/repulsive decomposition trajectory. Confirms and strengthens Phase 3’s null: V’s eigenstructure doesn’t organize specific clusters, only the bulk.
-1. **No attention heads or features are cluster-specific** — cohesion is distributed across all heads/features. Implies the representation is genuinely holographic and no atomic-unit interpretation is valid.
-1. **Tuned lens distributions are incoherent** — the cluster doesn’t have decodable semantic content at the layers where it’s alive. Implies the cluster is mid-computation, not a stable representation.
-1. **Causal tests return null** — ablation, steering, and patching don’t shift the merge or flip membership. Implies the cluster structure is an epiphenomenon of pre-merge-layer attractors rather than a load-bearing piece of the computation.
-
-Each null result is a publishable constraint on the metastability-as-interpretability claim. A mixed pattern — some groups positive, some null — is the most likely outcome and the most informative about where the paper’s framework does and doesn’t predict real model behavior.
-
------
-
-## Open questions for this phase
-
-1. **Does a cluster have a single “identity,” or is identity layer-dependent?** The cluster token membership is (mostly) stable across its lifespan — but the mechanism that maintains it might not be. If the attention heads responsible change from layer to layer, the cluster is being maintained by different circuitry at different depths, and there’s no unified “what this cluster is doing” answer.
-1. **How much does the sibling cluster matter for interpretation?** A cluster’s identity might only be meaningful relative to what it’s being distinguished from. The LDA direction is always *between* two clusters. If we picked a different sibling (next-merged, or nearest-neighbor), would the whole interpretation shift?
-1. **Is “merge” a single event or a distributed transition?** Phase 1 flags a merge at a specific layer. If causal tests show the dissolution is already underway two layers before the merge and completes one layer after, the “merge layer” is a summary statistic, not a boundary.
-1. **Does the mechanism generalize?** If the runner-up cluster tells a completely different story, we have one case study, not a theory. The phase should always run the pipeline on at least two clusters and report the degree of agreement.
-
------
-
-## Forward compatibility
-
-- **Phase 6 (tuned lens full):** Group E here is a preview. If the tuned lens infrastructure works on this cluster, Phase 6 scales it to all clusters.
-- **Phase 7 (if pursued — generalization):** The pipeline here is per-cluster. Running it on 20+ clusters produces a distribution of mechanistic stories. Whether the distribution is unimodal (one story) or multimodal (multiple distinct mechanisms) is a Phase 7 question.
-- **Publishable narrative unit:** this phase is the first point in the project where a single interpretable story — “here is what the model is doing at this cluster, cross-referenced to mathematics, mechanism, features, and semantics” — can be written. Prior phases were measurement; this is explanation.

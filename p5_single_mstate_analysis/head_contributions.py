@@ -17,6 +17,7 @@ Scalar cohesion score per head = Σ_{i ∈ C} <Δ^(h)_i, x̄_C>
 
 import numpy as np
 from pathlib import Path
+from typing import Optional
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +230,7 @@ def cluster_sinkhorn_fiedler(
     cluster_idx: np.ndarray,
     max_iter: int = 100,
     tol: float = 1e-6,
-) -> float:
+    ) -> float:
     """
     Doubly-stochasticise A[cluster, cluster] via Sinkhorn, return Fiedler value
     (second smallest eigenvalue of the symmetrized Laplacian).
@@ -257,60 +258,116 @@ def cluster_sinkhorn_fiedler(
 # Public entry point
 # ---------------------------------------------------------------------------
 
+def ov_spectral_profile(
+    OV_h:     np.ndarray,                  # (d, d) composed OV = W_V @ W_O
+    centroid: Optional[np.ndarray] = None, # (d,) unit-normalised cluster direction
+    top_k:    int = 3,
+    ) -> dict:
+    """
+    Spectral profile of one head's OV circuit.
+
+    Uses the symmetric part (OV + OV^T) / 2 for stability — same convention
+    as the former head_ov_cluster_alignment.
+
+    centroid is optional.  When supplied, cluster_overlap_att and
+    cluster_overlap_rep are computed; otherwise they are None.
+
+    Returns
+    -------
+    frac_attractive      : fraction of total |eigval| mass on positive eigvals.
+                           1.0 = purely attractive, 0.0 = purely repulsive.
+    participation_ratio  : (Σλ²)² / Σλ⁴  — effective rank.
+                           1 = rank-1, d = uniform spectrum.
+    cluster_overlap_att  : L2 norm of centroid projected onto the attractive
+                           (positive-eigval) subspace.  None if no centroid.
+    cluster_overlap_rep  : same for the repulsive subspace.
+    top_eigvals          : top_k signed eigvals sorted by |eigval|.
+    """
+    OV_sym          = 0.5 * (OV_h + OV_h.T)
+    eigvals, eigvecs = np.linalg.eigh(OV_sym)          # ascending, real
+
+    abs_ev = np.abs(eigvals)
+    total  = float(abs_ev.sum())
+
+    pos_mask = eigvals > 0
+    frac_att = (float(abs_ev[pos_mask].sum()) / total) if total > 1e-12 else 0.5
+
+    ev2 = eigvals ** 2
+    ev4 = eigvals ** 4
+    s4  = float(ev4.sum())
+    pr  = float(ev2.sum() ** 2 / s4) if s4 > 1e-24 else 1.0
+
+    if centroid is not None:
+        projs       = eigvecs.T @ centroid              # (d,) projection onto each eigvec
+        att_overlap = float(np.sqrt((projs[pos_mask]  ** 2).sum()))
+        rep_overlap = float(np.sqrt((projs[~pos_mask] ** 2).sum()))
+    else:
+        att_overlap = None
+        rep_overlap = None
+
+    order      = np.argsort(-abs_ev)[:top_k]
+    top_eigvals = [round(float(eigvals[i]), 4) for i in order]
+
+    return {
+        "frac_attractive":     round(frac_att, 4),
+        "participation_ratio": round(pr, 3),
+        "cluster_overlap_att": round(att_overlap, 4) if att_overlap is not None else None,
+        "cluster_overlap_rep": round(rep_overlap, 4) if rep_overlap is not None else None,
+        "top_eigvals":         top_eigvals,
+    }
+
+
 def analyze_heads(
     activations: np.ndarray,        # (n_layers, n, d)
-    attentions: np.ndarray,         # (n_layers, n_heads, n, n)
-    hdb_labels: list,
-    trajectory: dict,
-    tokens: list,
-    weights: dict = None,           # {"W_V": ..., "W_O": ...} — per-head slicing
-                                    # depends on model.  If missing, OV-based
-                                    # metrics are skipped (attention-only output).
-    n_heads: int = None,
-) -> dict:
+    attentions:  np.ndarray,        # (n_layers, n_heads, n, n)
+    hdb_labels:  list,
+    trajectory:  dict,
+    tokens:      list,
+    weights:     dict = None,
+    n_heads:     int  = None,
+    ) -> dict:
     """
     Full Group C.1 analysis.
 
     Returns
     -------
     dict with:
-      per_layer : list of per-layer dicts, each with per_head list
-      summary   : top contributing heads by cumulative cohesion across layers
+      trajectory_id       : int
+      per_layer           : per-layer list, each entry has per_head list.
+                            Each per_head entry contains ov_spectral_profile
+                            when OV weights are available.
+      cumulative_cohesion : list[float] — summed head_cohesion_scalar per head
+      top_attractor_heads : top-8 heads by cumulative cohesion, each with
+                            cohesion and the mean OV spectral profile fields:
+                            ov_frac_attractive, ov_participation_ratio,
+                            ov_cluster_overlap_att, ov_cluster_overlap_rep,
+                            ov_top_eigvals.  Fields are None when unavailable.
     """
     chain = trajectory["chain"]
     if n_heads is None:
         n_heads = attentions.shape[1]
 
-    # Per-head W_V, W_O slicing
-    # ALBERT shared weights: weights["W_V"] shape (d, d). For per-head,
-    # (d, n_heads, d_head). We try to auto-detect.
     W_V_all, W_O_all = None, None
     if weights:
         W_V_all = weights.get("W_V")
         W_O_all = weights.get("W_O")
 
     def _slice_head(W_full, h, split_dim):
-        """
-        Slice a per-head chunk from the full weight tensor.
-        split_dim ∈ {"V", "O"}:
-          V: split the second axis (d → n_heads × d_head) for W_V
-          O: split the first axis (n_heads × d_head → d) for W_O
-        """
         if W_full is None:
             return None
-        if W_full.ndim == 3:  # already (d, n_heads, d_head) or similar
+        if W_full.ndim == 3:
             return W_full[:, h] if split_dim == "V" else W_full[h]
-        # 2D — infer d_head
         d = activations.shape[-1]
         if split_dim == "V":
             d_head = W_full.shape[1] // n_heads
             return W_full[:, h * d_head:(h + 1) * d_head]
-        else:  # O
+        else:
             d_head = W_full.shape[0] // n_heads
             return W_full[h * d_head:(h + 1) * d_head, :]
 
-    per_layer_out = []
+    per_layer_out       = []
     cumulative_cohesion = np.zeros(n_heads)
+    ov_profiles: list[list[dict]] = [[] for _ in range(n_heads)]
 
     for layer, cid in chain:
         if layer >= attentions.shape[0] or layer >= activations.shape[0]:
@@ -319,7 +376,7 @@ def analyze_heads(
         if len(cluster_idx) < 2:
             continue
 
-        X = activations[layer]
+        X        = activations[layer]
         centroid = X[cluster_idx].mean(axis=0)
         centroid = centroid / max(float(np.linalg.norm(centroid)), 1e-12)
 
@@ -327,32 +384,57 @@ def analyze_heads(
         for h in range(n_heads):
             A_h = attentions[layer, h]
             cls = classify_head(A_h, cluster_idx)
-            cls["fiedler"] = round(cluster_sinkhorn_fiedler(A_h, cluster_idx), 4)
+            cls["fiedler"]   = round(cluster_sinkhorn_fiedler(A_h, cluster_idx), 4)
             cls["top_pairs"] = top_qk_pairs(A_h, cluster_idx, tokens, top_k=3)
 
-            # OV-aware metrics if weights available
             if W_V_all is not None and W_O_all is not None:
                 try:
                     WV_h = _slice_head(W_V_all, h, "V")
                     WO_h = _slice_head(W_O_all, h, "O")
-                    coh = head_cohesion_scalar(A_h, X, WV_h, WO_h, cluster_idx)
+                    coh  = head_cohesion_scalar(A_h, X, WV_h, WO_h, cluster_idx)
                     cls["cohesion"] = round(coh, 4)
                     cumulative_cohesion[h] += coh
-                    ov_align = head_ov_cluster_alignment(WV_h, WO_h, centroid)
-                    cls["ov_alignment"] = ov_align
+
+                    prof = ov_spectral_profile(WV_h @ WO_h, centroid)
+                    cls["ov_spectral_profile"] = prof
+                    ov_profiles[h].append(prof)
+
                 except Exception as e:
-                    cls["cohesion"] = None
-                    cls["ov_alignment"] = {"error": str(e)}
+                    cls["cohesion"]             = None
+                    cls["ov_spectral_profile"]  = {"error": str(e)}
+
             cls["head"] = int(h)
             per_head.append(cls)
 
         per_layer_out.append({
-            "layer":    int(layer),
+            "layer":      int(layer),
             "cluster_id": int(cid),
-            "per_head": per_head,
+            "per_head":   per_head,
         })
 
-    # Rank heads by cumulative cohesion
+    def _mean_ov_profile(h: int) -> dict:
+        """Average spectral profile fields across trajectory layers."""
+        ps = ov_profiles[h]
+        if not ps:
+            return {}
+        def _mean(key):
+            vals = [p[key] for p in ps if p.get(key) is not None]
+            return round(float(np.mean(vals)), 4) if vals else None
+        top_k_max = max(len(p["top_eigvals"]) for p in ps)
+        top_evs   = [
+            round(float(np.mean([p["top_eigvals"][i]
+                                  for p in ps if i < len(p["top_eigvals"])])), 4)
+            for i in range(top_k_max)
+        ]
+        return {
+            "ov_frac_attractive":     _mean("frac_attractive"),
+            "ov_participation_ratio": round(float(np.mean(
+                                          [p["participation_ratio"] for p in ps])), 3),
+            "ov_cluster_overlap_att": _mean("cluster_overlap_att"),
+            "ov_cluster_overlap_rep": _mean("cluster_overlap_rep"),
+            "ov_top_eigvals":         top_evs,
+        }
+
     top_heads = []
     if cumulative_cohesion.any():
         order = np.argsort(-cumulative_cohesion)
@@ -360,15 +442,15 @@ def analyze_heads(
             top_heads.append({
                 "head":     int(h),
                 "cohesion": round(float(cumulative_cohesion[h]), 4),
+                **_mean_ov_profile(int(h)),
             })
 
     return {
-        "trajectory_id":       int(trajectory["id"]),
-        "per_layer":           per_layer_out,
-        "cumulative_cohesion": [round(float(x), 4) for x in cumulative_cohesion],
-        "top_attractor_heads": top_heads,
+        "trajectory_id":        int(trajectory["id"]),
+        "per_layer":            per_layer_out,
+        "cumulative_cohesion":  [round(float(x), 4) for x in cumulative_cohesion],
+        "top_attractor_heads":  top_heads,
     }
-
 
 def save_head_contributions(result: dict, out_dir: Path,
                             tag: str = "primary") -> None:
