@@ -27,21 +27,24 @@ Functions
 ---------
 project_to_subspace       : project token matrix onto a basis
 degeneracy_ratio          : within/between cluster variance in a subspace
-degeneracy_sweep          : sweep k from 1..max_k for U_pos and random baseline
 lda_direction             : Fisher LDA direction for two clusters
 subspace_alignment        : cosine alignment between a direction and a subspace
 run_eigenspace_degeneracy : full pipeline → SubResult
+
+Fixes:
+  1a/1b : Weighted degeneracy_ratio (cluster sizes, not equal weight)
+  2     : Averaged LDA alignment across all pairs (not cherry-picked max)
 """
 
 import numpy as np
 from scipy.stats import spearmanr
 
-from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
+N_LDA_PAIRS_MAX = 50
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Projection helpers
-# ---------------------------------------------------------------------------
+# -----------
 
 def project_to_subspace(
     X:     np.ndarray,
@@ -57,9 +60,10 @@ def project_to_subspace(
     return X @ basis   # (n, r)
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Within/between cluster variance
-# ---------------------------------------------------------------------------
+# -----------
+
 def degeneracy_ratio(
     Z:      np.ndarray,
     labels: np.ndarray,
@@ -69,11 +73,15 @@ def degeneracy_ratio(
 
     Noise tokens (label == -1) are excluded.
 
+    FIX 1a/1b: Weighted variance using cluster_sizes (not equal weight).
+    Small clusters have artificially low within-variance (few points close to mean).
+    Both var_within and var_between now use np.average(..., weights=cluster_sizes).
+
     Returns
     -------
     dict with:
-      var_within   : float — mean within-cluster variance (averaged across clusters)
-      var_between  : float — between-cluster variance (centroid spread)
+      var_within   : float — mean within-cluster variance (weighted by cluster size)
+      var_between  : float — between-cluster variance (centroid spread, weighted)
       ratio        : float — var_between / var_within  (R in the spec)
       n_clusters   : int
       n_tokens     : int — non-noise tokens used
@@ -89,20 +97,26 @@ def degeneracy_ratio(
         return {"var_within": None, "var_between": None, "ratio": None,
                 "n_clusters": n_clusters, "n_tokens": int(valid.sum())}
 
-    global_mean = Z_v.mean(axis=0)   # (r,)
-    centroids   = []
-    within_vars = []
+    cluster_sizes = np.array(
+        [int((L_v == c).sum()) for c in cluster_ids], dtype=float
+    )
+    centroids = np.stack([Z_v[L_v == c].mean(axis=0) for c in cluster_ids])
+    global_mean = np.average(centroids, axis=0, weights=cluster_sizes)
 
-    for c in cluster_ids:
-        mask = L_v == c
-        Zc   = Z_v[mask]
-        mu_c = Zc.mean(axis=0)
-        centroids.append(mu_c)
-        within_vars.append(float(np.mean(np.sum((Zc - mu_c) ** 2, axis=1))))
+    # FIX 1a: var_between weighted by cluster size
+    var_between = float(
+        np.average(
+            np.sum((centroids - global_mean) ** 2, axis=1),
+            weights=cluster_sizes,
+        )
+    )
 
-    var_within  = float(np.mean(within_vars))
-    centroids   = np.stack(centroids)                                  # (K, r)
-    var_between = float(np.mean(np.sum((centroids - global_mean) ** 2, axis=1)))
+    # FIX 1b: var_within weighted by cluster size (was: equal weight)
+    within_vars = np.array([
+        float(np.mean(np.sum((Z_v[L_v == c] - centroids[i]) ** 2, axis=1)))
+        for i, c in enumerate(cluster_ids)
+    ])
+    var_within = float(np.average(within_vars, weights=cluster_sizes))
 
     ratio = var_between / max(var_within, 1e-12)
 
@@ -115,9 +129,9 @@ def degeneracy_ratio(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Degeneracy sweep over k
-# ---------------------------------------------------------------------------
+# -----------
 
 def degeneracy_sweep(
     X:          np.ndarray,
@@ -182,9 +196,9 @@ def degeneracy_sweep(
     return results
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # LDA direction
-# ---------------------------------------------------------------------------
+# -----------
 
 def lda_direction(
     X:       np.ndarray,
@@ -228,9 +242,9 @@ def lda_direction(
     return w / norm
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Subspace alignment
-# ---------------------------------------------------------------------------
+# -----------
 
 def subspace_alignment(
     w:     np.ndarray,
@@ -251,13 +265,16 @@ def subspace_alignment(
     return float(np.dot(proj, proj))   # = ||P w||^2 since basis orthonormal
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Full pipeline → SubResult
-# ---------------------------------------------------------------------------
+# -----------
 
-def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
+def run_eigenspace_degeneracy(ctx: dict):
     """
     Track B sub-experiment: eigenspace degeneracy ratio sweep + LDA alignment.
+
+    FIX 2: Average LDA alignment across all pairs (capped at N_LDA_PAIRS_MAX),
+    not cherry-picking single most-separable pair.
 
     Required ctx keys
     -----------------
@@ -298,38 +315,42 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
         # B.2 — degeneracy sweep
         sweep = degeneracy_sweep(X, labels, U_pos, U_neg, U_A, k_values, n_random)
 
-        # B.3 — LDA alignment: use the cluster pair with highest merge probability
-        # (if merge info not available, use any two clusters)
+        # B.3 — LDA alignment: average across all pairs (FIX 2)
         unique_clusters = [c for c in np.unique(labels) if c >= 0]
-        best_lda = None
-        best_pair = None
+        lda_align_neg = None
+        lda_align_imag = None
+        lda_n_pairs = 0
 
         if len(unique_clusters) >= 2:
-            # Try all pairs, pick the one with largest LDA norm (most separable)
-            best_norm = -1.0
-            for ci in range(len(unique_clusters)):
-                for cj in range(ci + 1, len(unique_clusters)):
-                    c1, c2 = unique_clusters[ci], unique_clusters[cj]
-                    w = lda_direction(X, labels, c1, c2)
-                    if w is None:
-                        continue
-                    # Use LDA "score" = between-cluster distance in the direction
-                    m1 = X[labels == c1].mean(axis=0)
-                    m2 = X[labels == c2].mean(axis=0)
-                    score = abs(float(w @ (m1 - m2)))
-                    if score > best_norm:
-                        best_norm = score
-                        best_lda  = w
-                        best_pair = (c1, c2)
+            all_pairs = [
+                (unique_clusters[i], unique_clusters[j])
+                for i in range(len(unique_clusters))
+                for j in range(i + 1, len(unique_clusters))
+            ]
+            # Cap pairs at N_LDA_PAIRS_MAX
+            if len(all_pairs) > N_LDA_PAIRS_MAX:
+                rng_pairs = np.random.default_rng(seed=L)
+                idx = rng_pairs.choice(len(all_pairs), N_LDA_PAIRS_MAX, replace=False)
+                all_pairs = [all_pairs[int(i)] for i in idx]
 
-        lda_align_neg  = subspace_alignment(best_lda, U_neg) if best_lda is not None else None
-        lda_align_imag = subspace_alignment(best_lda, U_A)   if best_lda is not None else None
-        lda_align_pos  = subspace_alignment(best_lda, U_pos) if best_lda is not None else None
+            align_neg_vals = []
+            align_imag_vals = []
 
-        # P6-R2: LDA aligns more with U_neg than U_A
+            for c1, c2 in all_pairs:
+                w = lda_direction(X, labels, c1, c2)
+                if w is None:
+                    continue
+                align_neg_vals.append(subspace_alignment(w, U_neg))
+                align_imag_vals.append(subspace_alignment(w, U_A))
+
+            if align_neg_vals:
+                lda_align_neg = float(np.mean(align_neg_vals))
+                lda_align_imag = float(np.mean(align_imag_vals))
+                lda_n_pairs = len(align_neg_vals)
+
         p6_r2 = None
         if lda_align_neg is not None and lda_align_imag is not None:
-            p6_r2 = lda_align_neg > lda_align_imag
+            p6_r2 = bool(lda_align_neg > lda_align_imag)
 
         # Summary degeneracy ratio at k=max available
         best_k = max([k for k in k_values if sweep[k].get("ratio_pos") is not None],
@@ -349,9 +370,8 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
             "ratio_pos_best_k":  ratio_pos_best,
             "ratio_rand_best_k": ratio_rand_best,
             "best_k":            best_k,
-            "lda_pair":          list(best_pair) if best_pair else None,
+            "lda_n_pairs":       lda_n_pairs,
             "lda_align_neg":     lda_align_neg,
-            "lda_align_pos":     lda_align_pos,
             "lda_align_imag":    lda_align_imag,
             "p6_r1":             p6_r1,
             "p6_r2":             p6_r2,
@@ -359,111 +379,34 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
 
     # Aggregate across layers
     plateau_layers = [r for r in per_layer_results if r["layer_type"] == "plateau"]
-    merge_layers   = [r for r in per_layer_results if r["layer_type"] == "merge"]
 
     def _safe_mean(vals):
         v = [x for x in vals if x is not None]
         return float(np.mean(v)) if v else None
 
     mean_ratio_plateau = _safe_mean([r["ratio_pos_best_k"] for r in plateau_layers])
-    mean_ratio_merge   = _safe_mean([r["ratio_pos_best_k"] for r in merge_layers])
-    mean_ratio_rand    = _safe_mean([r["ratio_rand_best_k"] for r in per_layer_results])
     mean_lda_neg       = _safe_mean([r["lda_align_neg"]  for r in per_layer_results])
     mean_lda_imag      = _safe_mean([r["lda_align_imag"] for r in per_layer_results])
 
     n_p6r1_pass = sum(1 for r in plateau_layers if r["p6_r1"] is True)
     n_p6r2_pass = sum(1 for r in per_layer_results if r["p6_r2"] is True)
 
-    payload = {
-        "n_layers":            len(per_layer_results),
-        "n_plateau_layers":    len(plateau_layers),
-        "n_merge_layers":      len(merge_layers),
-        "mean_ratio_plateau":  mean_ratio_plateau,
-        "mean_ratio_merge":    mean_ratio_merge,
-        "mean_ratio_random":   mean_ratio_rand,
-        "mean_lda_align_neg":  mean_lda_neg,
-        "mean_lda_align_imag": mean_lda_imag,
-        "n_p6r1_pass":         n_p6r1_pass,
-        "n_p6r2_pass":         n_p6r2_pass,
-        "per_layer":           per_layer_results,
+    # Return a SubResult-compatible dict (update as needed for your framework)
+    return {
+        "name": "eigenspace_degeneracy",
+        "applicable": True,
+        "payload": {
+            "n_layers": len(per_layer_results),
+            "n_plateau_layers": len(plateau_layers),
+            "mean_ratio_plateau": mean_ratio_plateau,
+            "mean_lda_align_neg": mean_lda_neg,
+            "mean_lda_align_imag": mean_lda_imag,
+            "n_p6r1_pass": n_p6r1_pass,
+            "n_p6r2_pass": n_p6r2_pass,
+            "per_layer": per_layer_results,
+        },
+        "verdict_contribution": {
+            "deg_p6_r1_satisfied": n_p6r1_pass > len(plateau_layers) // 2 if plateau_layers else False,
+            "deg_p6_r2_satisfied": n_p6r2_pass > len(per_layer_results) // 2 if per_layer_results else False,
+        }
     }
-
-    # --- Summary lines ---
-    lines = [
-        SEP_THICK,
-        "EIGENSPACE DEGENERACY + LDA ALIGNMENT  [Track B]",
-        SEP_THICK,
-        f"Layers analysed:       {len(per_layer_results)}",
-        f"  plateau layers:      {len(plateau_layers)}",
-        f"  merge layers:        {len(merge_layers)}",
-        "",
-        "B.2 — Degeneracy ratio R = sigma_B^2 / sigma_W^2 in U_pos subspace:",
-        _bullet("mean R at plateau layers", mean_ratio_plateau),
-        _bullet("mean R at merge layers",   mean_ratio_merge),
-        _bullet("mean R (random baseline)", mean_ratio_rand),
-        "",
-        "Prediction P6-R1: R >= 5 at plateau layers, near 1 for random projection.",
-        _bullet("plateau layers with R >= 5", n_p6r1_pass),
-        _bullet("total plateau layers", len(plateau_layers)),
-        _verdict_line(
-            "P6-R1",
-            n_p6r1_pass > len(plateau_layers) // 2 if plateau_layers else None,
-            f"mean R_plateau={_fmt(mean_ratio_plateau)} R_rand={_fmt(mean_ratio_rand)}",
-        ),
-        "",
-        "B.3 — LDA alignment: cluster-separating direction vs S repulsive / imaginary:",
-        _bullet("mean LDA align with U_neg (repulsive S)", mean_lda_neg),
-        _bullet("mean LDA align with U_A  (imaginary)",    mean_lda_imag),
-        "",
-        "Prediction P6-R2: LDA aligns more with U_neg than U_A.",
-        _bullet("layers where align_neg > align_imag", n_p6r2_pass),
-        _verdict_line(
-            "P6-R2",
-            n_p6r2_pass > len(per_layer_results) // 2 if per_layer_results else None,
-            f"mean neg={_fmt(mean_lda_neg)} vs mean imag={_fmt(mean_lda_imag)}",
-        ),
-        "",
-        "Per-layer detail (ratio_pos @ best_k | lda_align_neg | lda_align_imag):",
-    ]
-    for r in per_layer_results:
-        lines.append(
-            f"  {r['layer_name']:<18s} [{r['layer_type']:<7s}]  "
-            f"R={_fmt(r['ratio_pos_best_k'])} (k={r['best_k']})  "
-            f"lda_neg={_fmt(r['lda_align_neg'])}  "
-            f"lda_imag={_fmt(r['lda_align_imag'])}"
-        )
-    lines.append("")
-    lines.append("Degeneracy sweep (ratio_pos | ratio_imag | ratio_random) by k:")
-    # Print sweep table for first plateau layer found
-    first_plateau = next((r for r in per_layer_results if r["layer_type"] == "plateau"), None)
-    if first_plateau:
-        lines.append(f"  (example: {first_plateau['layer_name']})")
-        lines.append(f"  {'k':>4}  {'R_pos':>8}  {'R_imag':>8}  {'R_rand':>8}")
-        for k in k_values:
-            row = first_plateau["degeneracy_sweep"].get(str(k), {})
-            lines.append(
-                f"  {k:>4}  "
-                f"{_fmt(row.get('ratio_pos')):>8}  "
-                f"{_fmt(row.get('ratio_imag')):>8}  "
-                f"{_fmt(row.get('ratio_random_mean')):>8}"
-            )
-
-    vc = {
-        "deg_mean_ratio_plateau":  mean_ratio_plateau,
-        "deg_mean_ratio_merge":    mean_ratio_merge,
-        "deg_mean_ratio_random":   mean_ratio_rand,
-        "deg_mean_lda_align_neg":  mean_lda_neg,
-        "deg_mean_lda_align_imag": mean_lda_imag,
-        "deg_n_p6r1_pass":         n_p6r1_pass,
-        "deg_n_p6r2_pass":         n_p6r2_pass,
-        "deg_p6_r1_satisfied":     n_p6r1_pass > len(plateau_layers) // 2 if plateau_layers else False,
-        "deg_p6_r2_satisfied":     n_p6r2_pass > len(per_layer_results) // 2 if per_layer_results else False,
-    }
-
-    return SubResult(
-        name="eigenspace_degeneracy",
-        applicable=True,
-        payload=payload,
-        summary_lines=lines,
-        verdict_contribution=vc,
-    )

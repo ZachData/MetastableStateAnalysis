@@ -1,47 +1,24 @@
 """
-run_6.py — Phase 6 orchestrator.
+run_6.py — Phase 6 orchestrator with comprehensive bug fixes.
 
-Usage
------
-  # Full pipeline, one model
-  python run_6.py --model albert-xlarge-v2 \\
-                  --phase1-dir results/phase1 \\
-                  --phase2-dir results/phase2 \\
-                  --out-dir    results/phase6
-
-  # Track A only (weights, no live model needed)
-  python run_6.py --model albert-xlarge-v2 ... --track A
-
-  # Track B/D only (activations, no live model)
-  python run_6.py --model albert-xlarge-v2 ... --track BD
-
-  # All tracks including dissociation (requires --load-model)
-  python run_6.py --model albert-xlarge-v2 ... --track all --load-model
-
-  # Multiple models
-  python run_6.py --models albert-xlarge-v2 bert-base-uncased gpt2 ...
-
-Execution order
----------------
-  1. subspace_build   — builds global S/A projectors (foundation, all tracks need this)
-  2. Track A:  head_classify, qk_decompose, induction_ov   (weights only)
-  3. Track B/D: eigenspace_degeneracy, centroid_velocity,  (activations)
-                local_contraction, probe_subspace
-  4. Track C:  write_subspace (weights), dissociation (live model — only if --load-model)
-  5. report_6.assemble_report → phase6_report.txt
-
-Dependencies from earlier phases
-----------------------------------
-  Phase 1 : activations.npz, clusters.npz, metrics.json (HDBSCAN labels, trajectories)
-  Phase 2 : ov_weights_{stem}.npz — per-head OV matrices (for subspace_build)
-            ov_projectors_{stem}.npz — QK matrices (for qk_decompose)
-  Phase 2i: (optional) rotational energy fractions per head (for head_classify.f_rot)
+Fixes applied
+-------------
+Bug W1  : _compute_qk_logit_matrices(ctx) — compute X @ M_h @ X.T per head
+Bug W3  : _normalise_empty_lists(ctx) — coerce empty lists to None
+Bug W2  : _classify_layer_types handles iter_N vs N naming mismatch
+Bug #1  : _find_p2_weights_path handles hyphen/underscore stem resolution
+Bug #2  : _load_ov_weights uses regex-based key matching (ov/wo/W_O prefixes)
+Bug #4  : Per-layer model routing in _load_ov_weights
+Bug #3  : ov_data key naming (ov_per_head) matches build_global_projectors
+Bug #4  : Model loading, tokenizer, hook targets populated when load_model=True
 """
 
 import argparse
 import json
+import re
 import sys
 import traceback
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -69,10 +46,381 @@ import p6_subspace.report_6 as report_6
 
 
 # ---------------------------------------------------------------------------
-# Thin wrappers for registry entries that need pre-processing
-# FIX (Bug 2): these functions are defined BEFORE REGISTRY, which references
-# them by name at module-level.  The original code defined them after REGISTRY,
-# causing NameError at import time.
+# SECTION A: Phase 1 & Phase 2 artifact loaders (core.io, weights.py)
+# ---------------------------------------------------------------------------
+
+def _find_p2_weights_path(phase2_dir: Path, model_name: str) -> Path | None:
+    """
+    FIX Bug #1: Locate Phase 2 ov_weights NPZ for model_name.
+
+    Phase 2's writer uses stem = model_name.replace("/", "_") — hyphens
+    preserved.  This function tries both hyphen and underscore forms.
+
+    Returns None when neither file exists; caller decides how to fail.
+    """
+    hyphen_stem = model_name.replace("/", "_")
+    underscore_stem = hyphen_stem.replace("-", "_")
+    for stem in (hyphen_stem, underscore_stem):
+        candidate = phase2_dir / f"ov_weights_{stem}.npz"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _load_ov_weights(path: Path) -> dict:
+    """
+    FIX Bug #2, #4: Load per-head OV, W_Q, W_K matrices from Phase 2 npz.
+
+    Accepts keys with ov/wo/W_O prefixes (different Phase 2 versions).
+    Detects per-layer vs shared layout and handles both correctly.
+    Routes results into keys matching build_global_projectors contract.
+
+    Returns dict with:
+      ov_per_head   : list[(d,d)] (shared) or list[list[(d,d)]] (per-layer)
+      is_per_layer  : bool
+      layer_names   : list[str]
+      n_heads       : int
+      d_model       : int
+      qk_per_head   : optional list[(WQ,WK)]
+      rot_energy_fracs : optional list[float]
+    """
+    data = np.load(path, allow_pickle=True)
+    keys = list(data.keys())
+    out: dict = {}
+
+    head_re = re.compile(r"^(?:ov|wo|W_O)_head(\d+)_(.+)$")
+    wq_re = re.compile(r"^(?:wq|W_Q)_head(\d+)_(.+)$")
+    wk_re = re.compile(r"^(?:wk|W_K)_head(\d+)_(.+)$")
+
+    def _suffix_order(s: str) -> tuple:
+        if s == "shared":
+            return (-1, 0)
+        m = re.match(r"^layer_(\d+)$", s)
+        return (0, int(m.group(1))) if m else (1, 0)
+
+    def _bucket(regex) -> dict[str, list[tuple[int, str]]]:
+        b: dict[str, list[tuple[int, str]]] = defaultdict(list)
+        for k in keys:
+            m = regex.match(k)
+            if m:
+                b[m.group(2)].append((int(m.group(1)), k))
+        return b
+
+    # ── OV / W_O per-head ────────────────────────────────────────────────
+    head_buckets = _bucket(head_re)
+
+    if head_buckets:
+        suffixes = sorted(head_buckets.keys(), key=_suffix_order)
+        is_per_layer = not (len(suffixes) == 1 and suffixes[0] == "shared")
+
+        if is_per_layer:
+            ov_per_head = [
+                [data[k] for _, k in sorted(head_buckets[s], key=lambda p: p[0])]
+                for s in suffixes
+            ]
+            out["ov_per_head"] = ov_per_head
+            out["n_heads"] = len(ov_per_head[0]) if ov_per_head else 0
+            out["d_model"] = ov_per_head[0][0].shape[0] if out["n_heads"] else 0
+        else:
+            ov_per_head = [
+                data[k] for _, k in sorted(head_buckets["shared"], key=lambda p: p[0])
+            ]
+            out["ov_per_head"] = ov_per_head
+            out["n_heads"] = len(ov_per_head)
+            out["d_model"] = ov_per_head[0].shape[0] if ov_per_head else 0
+
+        out["is_per_layer"] = is_per_layer
+        out["layer_names"] = suffixes
+    else:
+        out["ov_per_head"] = []
+        out["n_heads"] = 0
+        out["d_model"] = 0
+        out["is_per_layer"] = False
+        out["layer_names"] = []
+
+    # ── W_Q / W_K per-head (optional) ────────────────────────────────────
+    wq_buckets = _bucket(wq_re)
+    wk_buckets = _bucket(wk_re)
+
+    if wq_buckets and wk_buckets:
+        common = sorted(set(wq_buckets) & set(wk_buckets), key=_suffix_order)
+        if out["is_per_layer"] and common:
+            qk = []
+            for s in common:
+                qs = sorted(wq_buckets[s], key=lambda p: p[0])
+                ks = sorted(wk_buckets[s], key=lambda p: p[0])
+                qk.append([(data[q], data[k]) for (_, q), (_, k) in zip(qs, ks)])
+            out["qk_per_head"] = qk
+        elif "shared" in common:
+            qs = sorted(wq_buckets["shared"], key=lambda p: p[0])
+            ks = sorted(wk_buckets["shared"], key=lambda p: p[0])
+            out["qk_per_head"] = [
+                (data[q], data[k]) for (_, q), (_, k) in zip(qs, ks)
+            ]
+
+    # ── Phase 2i rotational energy ───────────────────────────────────────
+    if "rot_energy_fracs" in keys:
+        out["rot_energy_fracs"] = data["rot_energy_fracs"].tolist()
+
+    return out
+
+
+# ---------------------------------------------------------------------------
+# SECTION B: QK logit computation & gating (Bug W1, W3)
+# ---------------------------------------------------------------------------
+
+def _compute_qk_logit_matrices(ctx: dict) -> dict:
+    """
+    FIX Bug W1: Compute per-head QK logit matrices from qk_matrices + token_activations.
+
+    For each head h with weight pair (WQ_h, WK_h):
+        M_h = WQ_h @ WK_h^T            # (d, d) in residual-stream space
+        QK_logit_h[i,j] = x_i^T M_h x_j = (X @ M_h @ X^T)[i,j]
+
+    Sets ctx["qk_logit_matrices"] in-place and returns ctx.
+
+    If qk_matrices is None or empty, leaves ctx["qk_logit_matrices"] = None.
+    """
+    qk = ctx.get("qk_matrices")
+    X = ctx.get("token_activations")
+
+    if not qk or X is None:
+        ctx["qk_logit_matrices"] = None
+        return ctx
+
+    logit_mats = []
+    for WQ, WK in qk:
+        M = WQ @ WK.T  # (d, d)
+        logit_mats.append((X @ M @ X.T).astype(np.float32))  # (n, n)
+
+    ctx["qk_logit_matrices"] = logit_mats
+    return ctx
+
+
+def _normalise_empty_lists(ctx: dict) -> dict:
+    """
+    FIX Bug W3: Coerce empty-list weight keys to None so prerequisites_met gates them.
+
+    SubexperimentSpec.prerequisites_met checks ``ctx.get(k) is None``.
+    An empty list [] is not None and passes the gate, causing sub-experiments
+    to receive zero matrices and either fail silently or crash.
+
+    Keys normalised: qk_matrices, wo_matrices, qk_logit_matrices, attn_matrices.
+    """
+    for key in ("qk_matrices", "wo_matrices", "qk_logit_matrices", "attn_matrices"):
+        if key in ctx and isinstance(ctx[key], list) and len(ctx[key]) == 0:
+            ctx[key] = None
+    return ctx
+
+
+# ---------------------------------------------------------------------------
+# SECTION C: Layer classification (Bug W2)
+# ---------------------------------------------------------------------------
+
+import re as _re
+
+_LAYER_PREFIX_RE = _re.compile(r"^(?:iter|layer)[_-]?(\d+)$")
+
+
+def _layer_idx_from_name(name) -> int | None:
+    """
+    FIX Bug W2: Extract canonical integer layer index from any common form.
+
+    Handles: "iter_2", "iter-2", "layer_2", "layer-2", "2", 2, "02"
+    Returns None if the name doesn't decode.
+    """
+    if name is None:
+        return None
+    if isinstance(name, (int, np.integer)):
+        return int(name)
+    s = str(name).strip()
+    if not s:
+        return None
+    m = _LAYER_PREFIX_RE.match(s)
+    if m is not None:
+        return int(m.group(1))
+    try:
+        return int(s)
+    except ValueError:
+        return None
+
+
+def _classify_layer_types(
+    layer_names: list[str],
+    events: list[dict],
+    trajectories: list[dict] | None = None,
+    plateau_windows: list[dict] | None = None,
+) -> list[str]:
+    """
+    FIX Bug W2: Label each layer as "merge", "plateau", "transition", or "other".
+
+    Both event names and layer_names are normalised to integer indices via
+    _layer_idx_from_name before comparison.  This fixes the silent name-mismatch
+    bug where "iter_2" never matched "2" in merge_layers.
+
+    When plateau_windows is supplied, uses those to distinguish plateau from
+    transition.  When omitted, falls back to legacy behaviour (all non-merge
+    are plateau) for backward compatibility with existing tests.
+    """
+    # ── Build merge index set from events ────────────────────────────────
+    merge_indices: set[int] = set()
+    for ev in events or []:
+        if ev.get("type") != "merge":
+            continue
+        idx = _layer_idx_from_name(ev.get("layer_from"))
+        if idx is None:
+            idx = _layer_idx_from_name(ev.get("layer_name"))
+        if idx is not None:
+            merge_indices.add(idx)
+
+    # ── Build plateau index set from windows (if given) ──────────────────
+    plateau_indices: set[int] | None
+    if plateau_windows:
+        plateau_indices = set()
+        for w in plateau_windows:
+            try:
+                start = int(w["start"])
+                end = int(w["end"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            plateau_indices.update(range(start, end + 1))
+    else:
+        plateau_indices = None  # signal: legacy fallback
+
+    # ── Classify each layer ──────────────────────────────────────────────
+    types: list[str] = []
+    for list_pos, lname in enumerate(layer_names):
+        name_idx = _layer_idx_from_name(lname)
+        canonical_idx = name_idx if name_idx is not None else list_pos
+
+        if canonical_idx in merge_indices:
+            types.append("merge")
+        elif plateau_indices is None:
+            # Legacy: no window data → everything non-merge is plateau
+            types.append("plateau")
+        elif canonical_idx in plateau_indices:
+            types.append("plateau")
+        else:
+            types.append("transition")
+
+    return types
+
+
+# ---------------------------------------------------------------------------
+# SECTION D: Context assembly
+# ---------------------------------------------------------------------------
+
+def build_context(
+    model_name: str,
+    phase1_dir: Path,
+    phase2_dir: Path,
+    out_dir: Path,
+    projectors: dict,
+    load_model: bool = False,
+    prompt_key: str = "wiki_paragraph",
+    layer_idx: int = 0,
+) -> dict:
+    """
+    Assemble the shared context dict for one model.
+
+    Loads Phase 1 activations and Phase 2 weight matrices.
+    Applies Bugs W1/W3/W2 fixes.
+
+    Returns a ctx dict ready for run_phase6.
+    """
+    from core.io import find_phase1_run_dir, load_phase1_run
+
+    stem = model_name.replace("/", "_").replace("-", "_")
+
+    # --- Phase 1 artifacts ---
+    p1_run_dir = find_phase1_run_dir(Path(phase1_dir), model_name, prompt_key)
+
+    ctx: dict = {
+        "model_name": model_name,
+        "stem": stem,
+        "out_dir": out_dir,
+        "projectors": projectors,
+        "layer_name": projectors["layer_names"][
+            min(layer_idx, len(projectors["layer_names"]) - 1)
+        ],
+        "layer_idx": layer_idx,
+        "load_model": load_model,
+    }
+
+    if p1_run_dir is not None and p1_run_dir.exists():
+        p1 = load_phase1_run(p1_run_dir)
+
+        ctx["tokens"] = p1["tokens"]
+        ctx["token_ids"] = np.array(
+            [hash(t) % (2 ** 31) for t in p1["tokens"]], dtype=np.int64
+        )
+
+        if p1["activations"] is not None:
+            ctx["activations_per_layer"] = [
+                p1["activations"][L] for L in range(p1["activations"].shape[0])
+            ]
+            ctx["layer_names"] = [
+                str(L) for L in range(p1["activations"].shape[0])
+            ]
+        else:
+            ctx["activations_per_layer"] = None
+            ctx["layer_names"] = []
+
+        # hdbscan_labels is list[ndarray] from load_phase1_run (Bug IO-2 fix)
+        ctx["labels_per_layer"] = p1.get("hdbscan_labels")
+
+        events = p1.get("events", [])
+        ctx["merge_events"] = events
+
+        # FIX Bug W2: _classify_layer_types handles "iter_N" vs "N" naming
+        ctx["layer_type_labels"] = _classify_layer_types(
+            ctx["layer_names"],
+            events,
+            p1.get("trajectories", []),
+            plateau_windows=p1.get("plateau_windows"),
+        )
+
+        # Token activations for head classification
+        if ctx.get("activations_per_layer"):
+            safe_idx = min(layer_idx, len(ctx["activations_per_layer"]) - 1)
+            ctx["token_activations"] = ctx["activations_per_layer"][safe_idx]
+
+        # Attention matrices (per-head at one layer)
+        if p1.get("attentions") is not None:
+            A = p1["attentions"]  # (n_layers, n_heads, n, n)
+            safe_idx = min(layer_idx, A.shape[0] - 1)
+            ctx["attn_matrices"] = [A[safe_idx, h] for h in range(A.shape[1])]
+        else:
+            ctx["attn_matrices"] = None
+
+    # --- Phase 2 weight artifacts ---
+    # FIX Bug #1: use _find_p2_weights_path for hyphen/underscore resolution
+    p2_weights = _find_p2_weights_path(Path(phase2_dir), model_name)
+    if p2_weights is not None:
+        # FIX Bug #2, #4: use new _load_ov_weights with proper key handling
+        ov_data = _load_ov_weights(p2_weights)
+        # FIX Bug #3: ov_data["ov_per_head"] matches build_global_projectors expectation
+        ctx["wo_matrices"] = ov_data.get("ov_per_head") or None
+        ctx["qk_matrices"] = ov_data.get("qk_per_head") or None
+        ctx["rot_energy_fracs"] = ov_data.get("rot_energy_fracs")
+    else:
+        ctx["wo_matrices"] = None
+        ctx["qk_matrices"] = None
+        ctx["rot_energy_fracs"] = None
+
+    ctx["qk_logit_matrices"] = None  # populated below
+
+    # FIX Bug W1: compute QK logit matrices from qk_matrices + activations
+    ctx = _compute_qk_logit_matrices(ctx)
+
+    # FIX Bug W3: coerce empty lists to None so prerequisites_met gates correctly
+    ctx = _normalise_empty_lists(ctx)
+
+    return ctx
+
+
+# ---------------------------------------------------------------------------
+# SECTION E: Registry & sub-experiment wrappers
 # ---------------------------------------------------------------------------
 
 def _run_head_classify(ctx: dict):
@@ -90,7 +438,7 @@ def _run_head_classify(ctx: dict):
         rot_fracs,
     )
     layer_name = ctx.get("layer_name", "shared")
-    map_data   = head_map_data(records, layer_name)
+    map_data = head_map_data(records, layer_name)
 
     corr = map_data["cross_head_corr"]
 
@@ -110,23 +458,28 @@ def _run_head_classify(ctx: dict):
         f"Anti-similarity heads:  {map_data['anti_sim_heads']}",
         f"Positional/induction:   {map_data['positional_heads']}",
         "",
-        "P6-A2: f_rot(h) negatively correlated with CC and positively with PC?",
-        _bullet("Spearman ρ(f_rot, -CC)", corr["rho_frot_neg_cc"]),
-        _bullet("Spearman ρ(f_rot,  PC)", corr["rho_frot_pc"]),
-        _bullet("n_heads in correlation", corr["n_heads"]),
+        "P6-A2: f_rot(h) negatively correlated with CC and positively with |PC|?",
+        _bullet("Spearman ρ(f_rot, -CC)", corr.get("rho_frot_neg_cc")),
+        _bullet("Spearman p-value (CC)", corr.get("p_value_neg_cc")),
+        _bullet("Spearman ρ(f_rot, |PC|)", corr.get("rho_frot_abs_pc")),
+        _bullet("Spearman p-value (PC)", corr.get("p_value_abs_pc")),
+        _bullet("n_heads in correlation", corr.get("n_heads")),
         _verdict_line(
             "P6-A2",
-            corr["p6_a2_satisfied"],
-            f"ρ(-CC)={_fmt(corr['rho_frot_neg_cc'])} ρ(PC)={_fmt(corr['rho_frot_pc'])}"
-            f" (threshold both > 0.4)",
+            corr.get("p6_a2_passes"),
+            f"ρ(-CC)={_fmt(corr.get('rho_frot_neg_cc'))} "
+            f"ρ(|PC|)={_fmt(corr.get('rho_frot_abs_pc'))}"
+            f" (p < α AND ρ > threshold)",
         ),
     ]
 
     vc = {
-        "hc_rho_frot_neg_cc":    corr["rho_frot_neg_cc"],
-        "hc_rho_frot_pc":        corr["rho_frot_pc"],
-        "hc_p6_a2_satisfied":    corr["p6_a2_satisfied"],
-        "hc_n_anti_sim_heads":   len(map_data["anti_sim_heads"]),
+        "hc_rho_frot_neg_cc": corr.get("rho_frot_neg_cc"),
+        "hc_p_value_neg_cc": corr.get("p_value_neg_cc"),
+        "hc_rho_frot_abs_pc": corr.get("rho_frot_abs_pc"),
+        "hc_p_value_abs_pc": corr.get("p_value_abs_pc"),
+        "hc_p6_a2_passes": corr.get("p6_a2_passes"),
+        "hc_n_anti_sim_heads": len(map_data["anti_sim_heads"]),
         "hc_n_positional_heads": len(map_data["positional_heads"]),
     }
 
@@ -141,12 +494,9 @@ def _run_head_classify(ctx: dict):
 
 def _run_dissociation_gated(ctx: dict):
     from p6_subspace.dissociation import run_dissociation
+
     return run_dissociation(ctx)
 
-
-# ---------------------------------------------------------------------------
-# Registry
-# ---------------------------------------------------------------------------
 
 REGISTRY: list[SubexperimentSpec] = [
     # Track A — weights only
@@ -163,22 +513,34 @@ REGISTRY: list[SubexperimentSpec] = [
     SubexperimentSpec(
         name="induction_ov",
         run=run_induction_ov,
-        requires=["attn_matrices", "wo_matrices", "token_ids",
-                  "token_activations", "projectors"],
+        requires=[
+            "attn_matrices",
+            "wo_matrices",
+            "token_ids",
+            "token_activations",
+            "projectors",
+        ],
     ),
-
     # Track B/D — activations
     SubexperimentSpec(
         name="eigenspace_degeneracy",
         run=run_eigenspace_degeneracy,
-        requires=["activations_per_layer", "labels_per_layer",
-                  "layer_type_labels", "projectors"],
+        requires=[
+            "activations_per_layer",
+            "labels_per_layer",
+            "layer_type_labels",
+            "projectors",
+        ],
     ),
     SubexperimentSpec(
         name="centroid_velocity",
         run=run_centroid_velocity,
-        requires=["activations_per_layer", "labels_per_layer",
-                  "layer_type_labels", "projectors"],
+        requires=[
+            "activations_per_layer",
+            "labels_per_layer",
+            "layer_type_labels",
+            "projectors",
+        ],
     ),
     SubexperimentSpec(
         name="local_contraction",
@@ -188,11 +550,14 @@ REGISTRY: list[SubexperimentSpec] = [
     SubexperimentSpec(
         name="probe_subspace",
         run=run_probe_subspace,
-        requires=["activations_per_layer", "labels_per_layer",
-                  "layer_type_labels", "projectors"],
+        requires=[
+            "activations_per_layer",
+            "labels_per_layer",
+            "layer_type_labels",
+            "projectors",
+        ],
     ),
-
-    # Track C — write subspace (weights) then dissociation (live model, gated)
+    # Track C
     SubexperimentSpec(
         name="write_subspace",
         run=run_write_subspace,
@@ -201,179 +566,24 @@ REGISTRY: list[SubexperimentSpec] = [
     SubexperimentSpec(
         name="dissociation",
         run=_run_dissociation_gated,
-        requires=["model", "tokenizer", "text", "token_ids",
-                  "projectors", "hook_targets"],
+        requires=["model", "tokenizer", "text", "token_ids", "projectors", "hook_targets"],
         applicable=lambda ctx: ctx.get("load_model", False),
     ),
 ]
 
 
 # ---------------------------------------------------------------------------
-# Context assembly
-# ---------------------------------------------------------------------------
-
-def build_context(
-    model_name:  str,
-    phase1_dir:  Path,
-    phase2_dir:  Path,
-    out_dir:     Path,
-    projectors:  dict,
-    load_model:  bool = False,
-    prompt_key:  str  = "wiki_paragraph",
-    layer_idx:   int  = 0,
-) -> dict:
-    """
-    Assemble the shared context dict for one model.
-
-    Loads Phase 1 activations and Phase 2 weight matrices.
-    Returns a ctx dict ready for run_phase6.
-    """
-    from core.io import load_phase1_run   # Phase 5 IO helpers
-
-    stem = model_name.replace("/", "_").replace("-", "_")
-
-    # --- Phase 1 artifacts ---
-    # Find the run directory for this model + prompt
-    p1_candidates = list((phase1_dir / stem).glob(f"*{prompt_key}*"))
-    if not p1_candidates:
-        p1_candidates = list((phase1_dir / stem).glob("*"))
-    p1_dir = sorted(p1_candidates)[-1] if p1_candidates else None
-
-    ctx = {
-        "model_name":   model_name,
-        "stem":         stem,
-        "out_dir":      out_dir,
-        "projectors":   projectors,
-        "layer_name":   projectors["layer_names"][layer_idx],
-        "layer_idx":    layer_idx,
-        "load_model":   load_model,
-    }
-
-    if p1_dir and p1_dir.exists():
-        p1 = load_phase1_run(p1_dir)
-
-        ctx["token_ids"]           = np.array([
-            hash(t) % (2**31) for t in p1["tokens"]
-        ], dtype=np.int64)
-        ctx["tokens"]              = p1["tokens"]
-        ctx["activations_per_layer"] = [
-            p1["activations"][L] for L in range(p1["activations"].shape[0])
-        ] if p1["activations"] is not None else None
-        ctx["labels_per_layer"]    = p1.get("hdbscan_labels")
-        ctx["layer_names"]         = [
-            f"iter_{L}" for L in range(len(ctx["activations_per_layer"]))
-        ] if ctx["activations_per_layer"] else []
-        ctx["merge_events"]        = p1.get("events", [])
-
-        # Layer-type labels: classify each layer as plateau / merge / other
-        ctx["layer_type_labels"]   = _classify_layer_types(
-            ctx["layer_names"],
-            p1.get("events", []),
-            p1.get("trajectories", []),
-        )
-
-        # Token activations at the first interesting layer (for head_classify)
-        if ctx["activations_per_layer"]:
-            ctx["token_activations"] = ctx["activations_per_layer"][layer_idx]
-
-        # Attention matrices from Phase 1 (if saved)
-        if p1.get("attentions") is not None:
-            # attentions shape: (n_layers, n_heads, n_tokens, n_tokens)
-            A = p1["attentions"]
-            ctx["attn_matrices"]      = [A[layer_idx, h] for h in range(A.shape[1])]
-        else:
-            ctx["attn_matrices"] = None
-
-    # --- Phase 2 weight artifacts ---
-    # FIX (Bug 3): _load_ov_weights now stores matrices under "ov_per_head"
-    # (matching what build_global_projectors expects).  Previously this key
-    # was "wo_per_head", causing a KeyError whenever fresh projectors were built.
-    p2_weights = phase2_dir / f"ov_weights_{stem}.npz"
-    if p2_weights.exists():
-        ov_data = _load_ov_weights(p2_weights)
-        ctx["wo_matrices"]       = ov_data.get("ov_per_head", [])   # W_O per head
-        ctx["qk_matrices"]       = ov_data.get("qk_per_head", [])
-        ctx["qk_logit_matrices"] = None   # computed on-the-fly from qk_matrices + activations
-        ctx["rot_energy_fracs"]  = ov_data.get("rot_energy_fracs")
-    else:
-        ctx["wo_matrices"] = None
-        ctx["qk_matrices"] = None
-
-    return ctx
-
-
-def _classify_layer_types(
-    layer_names: list[str],
-    events:      list[dict],
-    trajectories: list[dict],
-) -> list[str]:
-    """
-    Label each layer as "plateau", "merge", or "other".
-
-    A layer is "merge" if any merge event occurs at that layer.
-    A layer is "plateau" if it is not a merge layer and at least one
-    trajectory is active and stable (use heuristic: > 2 consecutive non-merge layers).
-    """
-    merge_layers = set()
-    for ev in events:
-        if ev.get("type") == "merge":
-            lname = ev.get("layer_from") or ev.get("layer_name")
-            if lname:
-                merge_layers.add(str(lname))
-
-    types = []
-    for lname in layer_names:
-        if lname in merge_layers:
-            types.append("merge")
-        else:
-            types.append("plateau")   # simplified; could be refined with trajectory lifespan
-    return types
-
-
-def _load_ov_weights(path: Path) -> dict:
-    """
-    Load per-head OV, WO, QK matrices from Phase 2 npz.
-
-    FIX (Bug 3): W_O matrices are now stored under "ov_per_head" (not
-    "wo_per_head") so that build_global_projectors can find them with its
-    expected key name.  ctx["wo_matrices"] is populated from this same key.
-    """
-    data = np.load(path, allow_pickle=True)
-    out  = {}
-
-    keys = list(data.keys())
-
-    # Collect per-head WO matrices — stored as "ov_per_head" for subspace_build
-    wo_keys = sorted([k for k in keys if "wo_head" in k or "W_O_head" in k])
-    if wo_keys:
-        out["ov_per_head"] = [data[k] for k in wo_keys]
-
-    # Collect QK pairs
-    wq_keys = sorted([k for k in keys if "wq_head" in k or "W_Q_head" in k])
-    wk_keys = sorted([k for k in keys if "wk_head" in k or "W_K_head" in k])
-    if wq_keys and wk_keys:
-        out["qk_per_head"] = [
-            (data[q], data[k]) for q, k in zip(wq_keys, wk_keys)
-        ]
-
-    # Rotational energy fracs from Phase 2i (if present)
-    if "rot_energy_fracs" in keys:
-        out["rot_energy_fracs"] = data["rot_energy_fracs"].tolist()
-
-    return out
-
-
-# ---------------------------------------------------------------------------
-# Model loading helpers (for dissociation track)
+# SECTION F: Model loading (Bug #4)
 # ---------------------------------------------------------------------------
 
 def _load_model_and_tokenizer(model_name: str, device: str):
     """
-    Load a HuggingFace model and tokenizer for the dissociation forward pass.
+    FIX Bug #4: Load HuggingFace model and tokenizer for dissociation.
     """
     from transformers import AutoTokenizer, AutoModel
+
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model     = AutoModel.from_pretrained(
+    model = AutoModel.from_pretrained(
         model_name,
         output_attentions=True,
         output_hidden_states=True,
@@ -385,29 +595,24 @@ def _load_model_and_tokenizer(model_name: str, device: str):
 
 def _get_attention_output_modules(model) -> list:
     """
-    Identify the attention output projection modules to hook.
+    FIX Bug R1: Identify attention output projection modules to hook.
 
-    We need the module whose output tensor is the per-head attention result
-    *before* it is added to the residual stream.  Common patterns:
-
-      BERT / ALBERT  : BertSelfOutput  (dense layer inside BertAttention)
-      RoBERTa        : RobertaSelfOutput
-      GPT-2          : attention output projection (attn.c_proj)
-      Generic        : any module whose class name ends in "SelfOutput"
-
-    Returns an empty list and prints a warning if nothing matches.
+    Targets the .dense child of SelfOutput modules (pre-residual-add),
+    not the SelfOutput module itself (which would fire post-add).
     """
     targets = []
 
     for name, module in model.named_modules():
         cls = type(module).__name__
 
-        # BERT-family: the SelfOutput submodule applies the output dense + LayerNorm
+        # BERT-family: target the .dense projection inside SelfOutput
         if cls.endswith("SelfOutput"):
-            targets.append(module)
+            # Find the .dense child
+            if hasattr(module, "dense"):
+                targets.append(module.dense)
             continue
 
-        # GPT-2 style: the attention output linear is model.transformer.h[i].attn.c_proj
+        # GPT-2 style
         if "attn" in name and name.endswith(".c_proj"):
             targets.append(module)
             continue
@@ -428,17 +633,12 @@ def _get_attention_output_modules(model) -> list:
 
 
 def _select_input_text(ctx: dict) -> str:
-    """
-    Pick a representative input text for the dissociation forward pass.
-
-    Preference order:
-      1. ctx["tokens"] from Phase 1 (reconstruct a sentence-length string)
-      2. A fixed fallback sentence long enough to produce induction candidates
-    """
+    """Pick a representative input text for the dissociation forward pass."""
     tokens = ctx.get("tokens")
     if tokens:
-        # Re-join wordpiece tokens into a rough string (good enough for inference)
-        text = " ".join(t.lstrip("##") for t in tokens if t not in ("[CLS]", "[SEP]", "<s>", "</s>"))
+        text = " ".join(
+            t.lstrip("##") for t in tokens if t not in ("[CLS]", "[SEP]", "<s>", "</s>")
+        )
         if len(text.split()) >= 8:
             return text
 
@@ -449,21 +649,68 @@ def _select_input_text(ctx: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Main entry
+# SECTION G: Main entry
 # ---------------------------------------------------------------------------
 
+def _build_or_load_projectors(
+    out_dir: Path, phase2_dir: Path, model_name: str
+) -> dict | None:
+    """
+    Build (or load from cache) global S/A projectors.
+
+    Returns the projector dict, or None when Phase 2 weights are missing.
+    """
+    proj_path = out_dir / "projectors.npz"
+    if proj_path.exists():
+        print("Loading cached projectors...")
+        return load_projectors(proj_path)
+
+    print("Building global S/A projectors...")
+    # FIX Bug #1: use _find_p2_weights_path
+    p2_weights = _find_p2_weights_path(phase2_dir, model_name)
+    if p2_weights is None:
+        print(
+            f"  ERROR: Phase 2 weights not found in {phase2_dir} for {model_name!r}. "
+            f"Tried both hyphen and underscore stem forms."
+        )
+        return None
+
+    try:
+        # FIX Bug #2, #4: use new _load_ov_weights
+        ov_data = _load_ov_weights(p2_weights)
+    except KeyError as e:
+        print(f"  ERROR: {e}")
+        return None
+
+    if not ov_data.get("ov_per_head"):
+        print(f"  ERROR: no per-head OV matrices in {p2_weights}")
+        return None
+
+    print(
+        f"  loaded {ov_data['n_heads']} heads "
+        f"× {len(ov_data['layer_names'])} layer(s) "
+        f"@ d_model={ov_data['d_model']} "
+        f"({'per-layer' if ov_data['is_per_layer'] else 'shared'})"
+    )
+
+    projectors = build_global_projectors(ov_data)
+    save_projectors(projectors, proj_path)
+    print_projector_summary(projectors)
+    return projectors
+
+
 def run_one_model(
-    model_name:  str,
-    phase1_dir:  Path,
-    phase2_dir:  Path,
-    out_dir:     Path,
-    tracks:      str  = "all",
-    load_model:  bool = False,
-    prompt_key:  str  = "wiki_paragraph",
+    model_name: str,
+    phase1_dir: Path,
+    phase2_dir: Path,
+    out_dir: Path,
+    tracks: str = "all",
+    load_model: bool = False,
+    prompt_key: str = "wiki_paragraph",
 ) -> None:
     import torch
 
-    stem    = model_name.replace("/", "_").replace("-", "_")
+    stem = model_name.replace("/", "_").replace("-", "_")
     out_dir = Path(out_dir) / stem
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -472,53 +719,39 @@ def run_one_model(
     print(f"{'='*64}")
 
     # 1. Build or load projectors
-    proj_path = out_dir / "projectors.npz"
-    if proj_path.exists():
-        print("Loading cached projectors...")
-        projectors = load_projectors(proj_path)
-    else:
-        print("Building global S/A projectors...")
-        p2_weights = phase2_dir / f"ov_weights_{stem}.npz"
-        if not p2_weights.exists():
-            print(f"  ERROR: Phase 2 weights not found at {p2_weights}")
-            return
-        ov_data    = _load_ov_weights(p2_weights)
-        # FIX (Bug 3): ov_data now uses "ov_per_head" (set in _load_ov_weights),
-        # matching the key name expected by build_global_projectors.
-        ov_data["d_model"]     = _infer_d_model(p2_weights)
-        ov_data["n_heads"]     = len(ov_data.get("ov_per_head", []))
-        ov_data["layer_names"] = ["shared"]
-        ov_data["is_per_layer"] = False
-
-        projectors = build_global_projectors(ov_data)
-        save_projectors(projectors, proj_path)
-        print_projector_summary(projectors)
+    projectors = _build_or_load_projectors(out_dir, Path(phase2_dir), model_name)
+    if projectors is None:
+        return
 
     # 2. Assemble context
     ctx = build_context(
-        model_name, Path(phase1_dir), Path(phase2_dir), out_dir,
-        projectors, load_model=load_model, prompt_key=prompt_key,
+        model_name,
+        Path(phase1_dir),
+        Path(phase2_dir),
+        out_dir,
+        projectors,
+        load_model=load_model,
+        prompt_key=prompt_key,
     )
 
-    # FIX (Bug 4): load live model, tokenizer, and hook targets when
-    # --load-model is set.  Previously none of these were populated, so the
-    # dissociation experiment was silently skipped by prerequisites_met even
-    # when the user explicitly requested Track C.
+    # FIX Bug #4: populate model, tokenizer, hook_targets when load_model=True
     if load_model:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Loading model for dissociation (device={device})...")
         try:
             model, tokenizer = _load_model_and_tokenizer(model_name, device)
-            ctx["model"]       = model
-            ctx["tokenizer"]   = tokenizer
-            ctx["device"]      = device
+            ctx["model"] = model
+            ctx["tokenizer"] = tokenizer
+            ctx["device"] = device
             ctx["hook_targets"] = _get_attention_output_modules(model)
-            ctx["text"]        = _select_input_text(ctx)
+            ctx["text"] = _select_input_text(ctx)
             print(f"  Hook targets: {len(ctx['hook_targets'])} modules")
             print(f"  Input text:   {ctx['text'][:80]}...")
         except Exception as exc:
-            print(f"  WARNING: model load failed ({exc}); dissociation will be skipped.")
-            ctx["load_model"] = False   # disable the applicable gate
+            print(
+                f"  WARNING: model load failed ({exc}); dissociation will be skipped."
+            )
+            ctx["load_model"] = False
 
     # 3. Filter registry by track
     registry = _filter_registry(tracks)
@@ -540,8 +773,12 @@ def _filter_registry(tracks: str) -> list[SubexperimentSpec]:
     if "A" in tracks.upper():
         names = {"head_classify", "qk_decompose", "induction_ov"}
     elif "BD" in tracks.upper() or "B" in tracks.upper():
-        names = {"eigenspace_degeneracy", "centroid_velocity",
-                 "local_contraction", "probe_subspace"}
+        names = {
+            "eigenspace_degeneracy",
+            "centroid_velocity",
+            "local_contraction",
+            "probe_subspace",
+        }
     elif "C" in tracks.upper():
         names = {"write_subspace", "dissociation"}
     else:
@@ -549,31 +786,30 @@ def _filter_registry(tracks: str) -> list[SubexperimentSpec]:
     return [s for s in REGISTRY if s.name in names]
 
 
-def _infer_d_model(p2_weights: Path) -> int:
-    data = np.load(p2_weights, allow_pickle=True)
-    for k in data.keys():
-        if "wo_head" in k or "W_O_head" in k:
-            return data[k].shape[0]
-    return 768   # fallback
-
-
 # ---------------------------------------------------------------------------
-# CLI
+# SECTION H: CLI
 # ---------------------------------------------------------------------------
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Phase 6 — Real/Imaginary subspace analysis")
-    p.add_argument("--model",       type=str, default="albert-xlarge-v2")
-    p.add_argument("--models",      type=str, nargs="+", default=None)
-    p.add_argument("--phase1-dir",  type=str, default="results/phase1")
-    p.add_argument("--phase2-dir",  type=str, default="results/phase2")
-    p.add_argument("--out-dir",     type=str, default="results/phase6")
-    p.add_argument("--track",       type=str, default="all",
-                   choices=["all", "A", "BD", "C"],
-                   help="Which track(s) to run")
-    p.add_argument("--load-model",  action="store_true",
-                   help="Load live model for dissociation track C")
-    p.add_argument("--prompt",      type=str, default="wiki_paragraph")
+    p = argparse.ArgumentParser(
+        description="Phase 6 — Real/Imaginary subspace analysis"
+    )
+    p.add_argument("--model", type=str, default="albert-xlarge-v2")
+    p.add_argument("--models", type=str, nargs="+", default=None)
+    p.add_argument("--phase1-dir", type=str, default="results/phase1")
+    p.add_argument("--phase2-dir", type=str, default="results/phase2")
+    p.add_argument("--out-dir", type=str, default="results/phase6")
+    p.add_argument(
+        "--track",
+        type=str,
+        default="all",
+        choices=["all", "A", "BD", "C"],
+        help="Which track(s) to run",
+    )
+    p.add_argument(
+        "--load-model", action="store_true", help="Load live model for dissociation track C"
+    )
+    p.add_argument("--prompt", type=str, default="wiki_paragraph")
     return p.parse_args()
 
 

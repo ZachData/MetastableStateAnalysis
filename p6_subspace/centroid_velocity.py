@@ -16,6 +16,7 @@ Falsifiable predictions tested
 P6-R3 : At plateau layers, |Π_S Δx̄_C| is small (centroid settled);
          at merge layers, |Π_S Δx̄_C| spikes in the merge direction.
          The ratio r_S(L) = |Π_S Δx̄_C| / |Δx̄_C| is elevated at merge layers.
+         Requires both relative gap (diff > 0.05) AND absolute level (> 0.20).
 
 P6-D5 : Inter-centroid distance in S subspace decreases monotonically as
          merge approaches; inter-centroid distance in A does not.
@@ -25,19 +26,23 @@ Functions
 decompose_centroid_delta  : split one centroid step into S and A components
 centroid_velocity_profile : all-layers profile for one cluster
 intercentroid_distances   : d_S and d_A between two cluster centroids per layer
-merge_geometry            : P6-D5 test for one merge event
+merge_geometry_test       : P6-D5 test for one merge event
 run_centroid_velocity     : full pipeline → SubResult
+
+Fixes:
+  1 : Per-layer projectors (not layer-0 only)
+  2 : d_S measured in full U_S (not U_pos-only)
+  3 : P6-R3 requires both relative gap AND absolute level
+  4 : Named warning when merge_events absent
 """
 
 import numpy as np
 from scipy.stats import spearmanr
 
-from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
 
-
-# ---------------------------------------------------------------------------
+# -----------
 # Core decomposition
-# ---------------------------------------------------------------------------
+# -----------
 
 def decompose_centroid_delta(
     delta:  np.ndarray,
@@ -80,30 +85,32 @@ def decompose_centroid_delta(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Per-cluster velocity profile
-# ---------------------------------------------------------------------------
+# -----------
 
 def centroid_velocity_profile(
     activations_per_layer: list[np.ndarray],
     labels_per_layer:      list[np.ndarray],
     layer_types:           list[str],
     layer_names:           list[str],
-    P_S:                   np.ndarray,
-    P_A:                   np.ndarray,
     cluster_id:            int,
+    P_S:                   np.ndarray | None = None,
+    P_A:                   np.ndarray | None = None,
+    proj_per_layer:        list[dict] | None = None,
 ) -> list[dict]:
     """
     Compute centroid displacement decomposition for one cluster across all layers.
 
     Parameters
     ----------
-    activations_per_layer : list of (n, d) — one per layer
+    activations_per_layer : list of (n, d) — one per layer/iteration
     labels_per_layer      : list of (n,) HDBSCAN labels — one per layer
     layer_types           : list of str — "plateau" | "merge" | "other"
     layer_names           : list of str
-    P_S, P_A              : projectors
     cluster_id            : which cluster to track
+    P_S, P_A              : default projectors (fallback if proj_per_layer not provided)
+    proj_per_layer        : optional list of dicts with per-layer projectors (FIX 1)
 
     Returns
     -------
@@ -135,7 +142,15 @@ def centroid_velocity_profile(
             centroid_nxt = X_next[mask_nxt].mean(axis=0)
 
         delta = centroid_nxt - centroid_cur
-        decomp = decompose_centroid_delta(delta, P_S, P_A)
+
+        # FIX 1: Select per-layer projectors
+        if proj_per_layer is not None:
+            p_S = proj_per_layer[L]["P_S"]
+            p_A = proj_per_layer[L]["P_A"]
+        else:
+            p_S, p_A = P_S, P_A
+
+        decomp = decompose_centroid_delta(delta, p_S, p_A)
 
         results.append({
             "layer_from":   layer_names[L],
@@ -153,23 +168,27 @@ def centroid_velocity_profile(
     return results
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Inter-centroid distances in S and A subspaces (D.2.5)
-# ---------------------------------------------------------------------------
+# -----------
 
 def intercentroid_distances(
     activations_per_layer: list[np.ndarray],
     labels_per_layer:      list[np.ndarray],
     layer_names:           list[str],
-    U_pos:                 np.ndarray,
-    U_A:                   np.ndarray,
     c1:                    int,
     c2:                    int,
+    U_pos:                 np.ndarray | None = None,
+    U_A:                   np.ndarray | None = None,
+    proj_per_layer:        list[dict] | None = None,
 ) -> list[dict]:
     """
     Track distance between centroids of clusters c1 and c2 in S and A subspaces.
 
     D.2.5 prediction: d_S decreases monotonically approaching merge; d_A does not.
+
+    FIX 1: Use proj_per_layer if available.
+    FIX 2: Use full U_S (not just U_pos) for d_S measurement.
 
     Returns
     -------
@@ -191,16 +210,25 @@ def intercentroid_distances(
         diff = mu1 - mu2
 
         d_total = float(np.linalg.norm(diff))
-        d_S     = float(np.linalg.norm(U_pos.T @ diff)) if U_pos.shape[1] > 0 else 0.0
-        d_A     = float(np.linalg.norm(U_A.T @ diff))   if U_A.shape[1] > 0  else 0.0
+
+        if proj_per_layer is not None:
+            pe = proj_per_layer[L]
+            # FIX 2: Use full U_S (not just U_pos)
+            u_S = pe["U_S"]
+            d_S = float(np.linalg.norm(u_S.T @ diff)) if u_S.shape[1] > 0 else 0.0
+            u_A = pe["U_A"]
+            d_A = float(np.linalg.norm(u_A.T @ diff)) if u_A.shape[1] > 0 else 0.0
+        else:
+            d_S = float(np.linalg.norm(U_pos.T @ diff)) if U_pos is not None else 0.0
+            d_A = float(np.linalg.norm(U_A.T @ diff)) if U_A is not None else 0.0
 
         results.append({
             "layer_name": lname,
-            "d_S":        d_S,
-            "d_A":        d_A,
-            "d_total":    d_total,
-            "n1":         int(m1.sum()),
-            "n2":         int(m2.sum()),
+            "d_S": d_S,
+            "d_A": d_A,
+            "d_total": d_total,
+            "n1": int(m1.sum()),
+            "n2": int(m2.sum()),
         })
 
     return results
@@ -246,13 +274,15 @@ def merge_geometry_test(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Full pipeline → SubResult
-# ---------------------------------------------------------------------------
+# -----------
 
-def run_centroid_velocity(ctx: dict) -> SubResult:
+def run_centroid_velocity(ctx: dict):
     """
     Track B sub-experiment: centroid velocity decomposition.
+
+    FIX 1, 2, 3, 4: Per-layer projectors, full U_S distance, absolute threshold, warnings.
 
     Required ctx keys
     -----------------
@@ -261,33 +291,31 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
     layer_type_labels     : list of str
     layer_names           : list of str
     projectors            : output of subspace_build
-    merge_events          : list of dicts, each with 'layer_from', 'prev_ids',
-                            'curr_id' (from Phase 1 cluster_tracking output)
 
     Optional ctx keys
     -----------------
     tracked_cluster_ids   : list[int] — clusters to track (default: all unique)
+    merge_events          : list of dicts with cluster merge info
     """
     acts         = ctx["activations_per_layer"]
     labels       = ctx["labels_per_layer"]
     layer_types  = ctx["layer_type_labels"]
     layer_names  = ctx["layer_names"]
-    projectors   = ctx["projectors"]
+    projectors   = ctx.get("projectors")
     merge_events = ctx.get("merge_events", [])
 
-    # Broadcast single projector entry for ALBERT
-    proj_entries = projectors["per_layer"]
-    # Use layer 0 projector as the reference (for ALBERT, only one exists)
-    # For multi-layer models, we use per-layer projectors when indexing velocity steps
-    # Here we use the first entry's P_S / P_A as the canonical projectors
-    # (they represent the global model geometry)
-    pe0  = proj_entries[0]
-    P_S  = pe0["P_S"]
-    P_A  = pe0["P_A"]
-    U_pos = pe0["U_pos"]
-    U_A   = pe0["U_A"]
+    # FIX 1: Build per-layer projector list
+    proj_per_layer = None
+    if projectors is not None:
+        proj_entries = projectors["per_layer"]
+        if len(proj_entries) == 1 and len(acts) > 1:
+            proj_entries = proj_entries * len(acts)
+        proj_per_layer = proj_entries
 
-    # Determine which clusters to track
+    # FIX 4: Explicit warning for missing merge_events
+    merge_events_key_present = "merge_events" in ctx
+    merge_events_empty = not merge_events
+
     all_labels = np.unique(np.concatenate([l[l >= 0] for l in labels if (l >= 0).any()]))
     tracked = ctx.get("tracked_cluster_ids", all_labels.tolist())
 
@@ -295,18 +323,18 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
     all_steps: list[dict] = []
     for cid in tracked:
         steps = centroid_velocity_profile(
-            acts, labels, layer_types, layer_names, P_S, P_A, int(cid)
+            acts, labels, layer_types, layer_names, int(cid),
+            proj_per_layer=proj_per_layer,
         )
         all_steps.extend(steps)
 
     if not all_steps:
-        return SubResult(
-            name="centroid_velocity",
-            applicable=False,
-            payload={},
-            summary_lines=["centroid_velocity: no valid cluster steps found"],
-            verdict_contribution={},
-        )
+        return {
+            "name": "centroid_velocity",
+            "applicable": False,
+            "payload": {},
+            "verdict_contribution": {},
+        }
 
     # 2. Aggregate by layer type
     def _mean_r_S(steps, ltype):
@@ -314,13 +342,16 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
         return float(np.mean(vals)) if vals else None
 
     mean_r_S_plateau = _mean_r_S(all_steps, "plateau")
-    mean_r_S_merge   = _mean_r_S(all_steps, "merge")
-    mean_r_S_other   = _mean_r_S(all_steps, "other")
+    mean_r_S_merge = _mean_r_S(all_steps, "merge")
+    mean_r_S_other = _mean_r_S(all_steps, "other")
 
-    # P6-R3: r_S elevated at merge vs plateau
+    # FIX 3: Require both relative gap AND absolute level
+    P6_R3_ABS_THRESHOLD = 0.20
     p6_r3 = None
     if mean_r_S_merge is not None and mean_r_S_plateau is not None:
-        p6_r3 = mean_r_S_merge > mean_r_S_plateau + 0.05
+        relative_elevated = mean_r_S_merge > mean_r_S_plateau + 0.05
+        absolute_elevated = mean_r_S_merge > P6_R3_ABS_THRESHOLD
+        p6_r3 = relative_elevated and absolute_elevated
 
     # 3. Merge geometry (D.2.5) for each merge event
     merge_geom_results = []
@@ -329,7 +360,9 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
         if len(prev_ids) < 2:
             continue
         c1, c2 = int(prev_ids[0]), int(prev_ids[1])
-        dist_seq = intercentroid_distances(acts, labels, layer_names, U_pos, U_A, c1, c2)
+        dist_seq = intercentroid_distances(
+            acts, labels, layer_names, c1, c2, proj_per_layer=proj_per_layer
+        )
         if not dist_seq:
             continue
         mg = merge_geometry_test(dist_seq)
@@ -340,6 +373,10 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
         })
 
     n_p6d5_pass = sum(1 for r in merge_geom_results if r["p6_d5_satisfied"])
+    p6_d5_satisfied = (
+        n_p6d5_pass > len(merge_geom_results) // 2
+        if merge_geom_results else None
+    )
 
     payload = {
         "n_cluster_steps":   len(all_steps),
@@ -350,56 +387,9 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
         "n_merge_events":    len(merge_geom_results),
         "n_p6d5_pass":       n_p6d5_pass,
         "merge_geometry":    merge_geom_results,
-        # Omit per-step list from payload (too large); summary covers it
+        "merge_events_warning_absent": not merge_events_key_present,
+        "merge_events_warning_empty": merge_events_empty,
     }
-
-    # --- Summary lines ---
-    lines = [
-        SEP_THICK,
-        "CENTROID VELOCITY DECOMPOSITION  [Track B]",
-        SEP_THICK,
-        f"Cluster steps analysed:  {len(all_steps)}",
-        f"Merge events analysed:   {len(merge_geom_results)}",
-        "",
-        "r_S = |Π_S Δx̄| / |Δx̄|  (fraction of centroid motion in real channel):",
-        _bullet("mean r_S at plateau layers", mean_r_S_plateau),
-        _bullet("mean r_S at merge layers",   mean_r_S_merge),
-        _bullet("mean r_S at other layers",   mean_r_S_other),
-        "",
-        "Prediction P6-R3: r_S elevated at merge layers vs plateau layers.",
-        _verdict_line(
-            "P6-R3",
-            p6_r3,
-            f"r_S_merge={_fmt(mean_r_S_merge)} vs r_S_plateau={_fmt(mean_r_S_plateau)}"
-            f" (threshold: diff > 0.05)",
-        ),
-        "",
-        "D.2.5 — Inter-centroid distance in S vs A approaching merge events:",
-        _bullet("merge events with P6-D5 pass", n_p6d5_pass),
-        _bullet("total merge events tested",    len(merge_geom_results)),
-    ]
-
-    if merge_geom_results:
-        lines += ["", "  Per-merge-event geometry:"]
-        lines.append(f"  {'c1':>4} {'c2':>4}  {'rho_S':>8}  {'rho_A':>8}  {'P6-D5':>6}")
-        for r in merge_geom_results:
-            lines.append(
-                f"  {r['c1']:>4d} {r['c2']:>4d}  "
-                f"{_fmt(r['d_S_trend_rho']):>8}  "
-                f"{_fmt(r['d_A_trend_rho']):>8}  "
-                f"{'pass' if r['p6_d5_satisfied'] else 'fail':>6}"
-            )
-
-    p6_d5_satisfied = n_p6d5_pass > len(merge_geom_results) // 2 if merge_geom_results else None
-    lines += [
-        "",
-        _verdict_line(
-            "P6-D5",
-            p6_d5_satisfied,
-            f"{n_p6d5_pass}/{len(merge_geom_results)} merge events: "
-            "d_S decreases more monotonically than d_A",
-        ),
-    ]
 
     vc = {
         "vel_mean_r_S_plateau": mean_r_S_plateau,
@@ -409,10 +399,9 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
         "vel_p6_d5_satisfied":  p6_d5_satisfied,
     }
 
-    return SubResult(
-        name="centroid_velocity",
-        applicable=True,
-        payload=payload,
-        summary_lines=lines,
-        verdict_contribution=vc,
-    )
+    return {
+        "name": "centroid_velocity",
+        "applicable": True,
+        "payload": payload,
+        "verdict_contribution": vc,
+    }

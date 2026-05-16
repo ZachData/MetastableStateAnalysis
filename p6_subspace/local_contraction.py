@@ -1,5 +1,5 @@
 """
-local_contraction.py — Track B: Per-cluster local linear maps.
+local_contraction.py — Track B: Per-cluster local linear maps and subspace dynamics.
 
 During a plateau, each cluster is near an attractor of S. Locally, the
 dynamics should be contracting in the real subspace (S eigenvalues < 1)
@@ -19,91 +19,119 @@ P6-R5 : Plateau layers: W_C^S has spectral radius < 1 (local contraction).
 
 Functions
 ---------
-fit_local_map          : least-squares W_C from x^{L} → x^{L+1}
-decompose_local_map    : W_C → W_C^S + W_C^A (symmetric + antisymmetric)
-spectral_radius        : max |eigenvalue| of a square matrix
-local_map_profile      : all-layers profile for one cluster
-run_local_contraction  : full pipeline → SubResult
+fit_local_map_subspace    : least-squares W_C in subspace (core fix)
+analyze_subspace_maps     : spectral diagnostics from subspace fit
+spectral_radius           : max |eigenvalue| of a square matrix
+local_map_profile         : all-layers profile for one cluster
+run_local_contraction     : full pipeline → SubResult
+
+Core fix:
+  fit_local_map_subspace — project to S/A, reduce to data-adaptive rank,
+  fit well-determined system (not ambient d>>n underdetermined system).
 """
 
 import numpy as np
 from scipy.linalg import eigvals
 
-from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
 
+# -----------
+# Core subspace-aware fitting (main fix)
+# -----------
 
-# ---------------------------------------------------------------------------
-# Local linear map
-# ---------------------------------------------------------------------------
-
-def fit_local_map(
+def fit_local_map_subspace(
     X_curr: np.ndarray,
     X_next: np.ndarray,
-) -> np.ndarray | None:
+    U_S: np.ndarray,
+    U_A: np.ndarray,
+    min_tokens: int = 8,
+    svd_eps: float = 1e-3,
+) -> dict | None:
     """
-    Fit a linear map W such that X_next ≈ X_curr @ W.
-
-    Solves: W = argmin ||X_curr @ W - X_next||_F²
-    via least squares (normal equations).
-
-    np.linalg.lstsq(X_curr, X_next) where both are (n, d) returns W of
-    shape (d, d) directly — no transposition needed.
+    Project into S and A subspaces, reduce to data-adaptive effective rank,
+    solve well-determined systems. Fixes the d >> n underdetermined issue
+    where ambient-space lstsq produces near-zero singular values by construction.
 
     Parameters
     ----------
-    X_curr : (n, d) — token activations at layer L
-    X_next : (n, d) — token activations at layer L+1
+    X_curr : (n, d) — activations at layer L
+    X_next : (n, d) — activations at layer L+1
+    U_S    : (d, r_S) — real subspace basis
+    U_A    : (d, r_A) — imaginary subspace basis
+    min_tokens : minimum tokens to attempt fit
+    svd_eps : threshold for effective rank computation
 
     Returns
     -------
-    W : (d, d) or None if under-determined (too few tokens or low-rank fit)
+    dict with W_S_sub, W_A_sub, r_S_eff, r_A_eff or None if fit fails
     """
-    n, d = X_curr.shape
-    if n < 4:
+    n = X_curr.shape[0]
+    if n < min_tokens:
         return None
 
-    # lstsq solves X_curr @ W ≈ X_next; both inputs are (n, d) → W is (d, d)
-    W, _, rank, _ = np.linalg.lstsq(X_curr, X_next, rcond=None)
+    def _fit_in(Z_curr: np.ndarray, Z_next: np.ndarray):
+        """Fit linear map in a subspace with data-adaptive rank reduction."""
+        if Z_curr.shape[1] == 0:
+            return None, 0
+        mu = Z_curr.mean(axis=0)
+        Z_c = Z_curr - mu
+        try:
+            _, s, Vt = np.linalg.svd(Z_c, full_matrices=False)
+        except np.linalg.LinAlgError:
+            return None, 0
+        if s[0] < 1e-12:
+            return None, 0
+        # Compute effective rank
+        r_eff = max(1, int((s > svd_eps * s[0]).sum()))
+        r_eff = min(r_eff, n - 1)
+        V_eff = Vt[:r_eff].T
+        Z_red_curr = Z_c @ V_eff
+        Z_red_next = (Z_next - mu) @ V_eff
+        W, _, rank, _ = np.linalg.lstsq(Z_red_curr, Z_red_next, rcond=None)
+        if rank < r_eff * 0.5:
+            return None, r_eff
+        return W, r_eff
 
-    if rank < min(n, d) * 0.5:
-        # Very low rank fit — unreliable
+    W_S, r_S = _fit_in(X_curr @ U_S, X_next @ U_S)
+    W_A, r_A = _fit_in(X_curr @ U_A, X_next @ U_A)
+
+    if W_S is None and W_A is None:
         return None
-
-    # FIX (Bug 6): removed incorrect conditional "return W.T if W.shape == (n, d) else W".
-    # lstsq(A, B) where A is (n, d) and B is (n, d) always returns W of shape (d, d).
-    # The transpose condition W.shape == (n, d) is only True when n == d (square
-    # coincidence), at which point it would incorrectly transpose an already-correct
-    # result.  The unconditional return below is always right.
-    return W
-
-def decompose_local_map(W: np.ndarray) -> dict:
-    """
-    Decompose local map W into symmetric S and antisymmetric A parts.
-
-    W_S = (W + W^T) / 2
-    W_A = (W - W^T) / 2
-
-    Returns
-    -------
-    dict with W_S, W_A, rho_S (spectral radius of W_S), rho_A, rho_W,
-    contracting_S (rho_S < 1), neutral_A (|rho_A - 1| < 0.15)
-    """
-    W_S = (W + W.T) / 2.0
-    W_A = (W - W.T) / 2.0
-
-    rho_W = spectral_radius(W)
-    rho_S = spectral_radius(W_S)
-    rho_A = spectral_radius(W_A)
 
     return {
-        "W_S":          W_S,
-        "W_A":          W_A,
-        "rho_W":        rho_W,
-        "rho_S":        rho_S,
-        "rho_A":        rho_A,
-        "contracting_S": bool(rho_S < 1.0),
-        "neutral_A":     bool(abs(rho_A - 1.0) < 0.15),
+        "W_S_sub": W_S,
+        "W_A_sub": W_A,
+        "r_S_eff": r_S,
+        "r_A_eff": r_A,
     }
+
+
+# -----------
+# Spectral diagnostics
+# -----------
+
+def analyze_subspace_maps(fit: dict) -> dict:
+    """Spectral diagnostics from subspace fit."""
+    result = {
+        "rho_S": None,
+        "contracting_S": None,
+        "rho_A": None,
+        "neutral_A": None,
+    }
+
+    W_S = fit.get("W_S_sub")
+    if W_S is not None:
+        W_S_sym = (W_S + W_S.T) / 2.0
+        rho_S = float(np.max(np.abs(eigvals(W_S_sym))))
+        result["rho_S"] = rho_S
+        result["contracting_S"] = bool(rho_S < 1.0)
+
+    W_A = fit.get("W_A_sub")
+    if W_A is not None:
+        rho_A = float(np.max(np.abs(eigvals(W_A))))
+        result["rho_A"] = rho_A
+        result["neutral_A"] = bool(abs(rho_A - 1.0) < 0.15)
+
+    return result
 
 
 def spectral_radius(M: np.ndarray) -> float:
@@ -115,9 +143,9 @@ def spectral_radius(M: np.ndarray) -> float:
         return float("nan")
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Per-cluster, per-layer profile
-# ---------------------------------------------------------------------------
+# -----------
 
 def local_map_profile(
     activations_per_layer: list[np.ndarray],
@@ -125,14 +153,21 @@ def local_map_profile(
     layer_types:           list[str],
     layer_names:           list[str],
     cluster_id:            int,
-    min_tokens:            int = 4,
+    min_tokens:            int = 8,
+    proj_per_layer:        list[dict] | None = None,
 ) -> list[dict]:
     """
     Fit and decompose the local linear map for one cluster at each layer transition.
 
     Parameters
     ----------
-    min_tokens : skip transitions where cluster has fewer than this many tokens
+    activations_per_layer : list of (n, d)
+    labels_per_layer      : list of (n,)
+    layer_types           : list of str
+    layer_names           : list of str
+    cluster_id            : int
+    min_tokens            : skip transitions with fewer tokens
+    proj_per_layer        : optional list of per-layer projectors
 
     Returns
     -------
@@ -158,33 +193,40 @@ def local_map_profile(
         token_indices = np.where(mask_cur)[0]
         X_nxt = activations_per_layer[L + 1][token_indices]
 
-        W = fit_local_map(X_cur, X_nxt)
-        if W is None:
-            continue
-
-        decomp = decompose_local_map(W)
-
-        results.append({
+        row = {
             "layer_from":   layer_names[L],
             "layer_to":     layer_names[L + 1],
             "layer_type_L": layer_types[L],
             "n_tokens":     int(mask_cur.sum()),
             "cluster_id":   cluster_id,
-            "rho_W":        decomp["rho_W"],
-            "rho_S":        decomp["rho_S"],
-            "rho_A":        decomp["rho_A"],
-            "contracting_S": decomp["rho_S"] < 1.0,
-            "neutral_A":     abs(decomp["rho_A"] - 1.0) < 0.15,
-        })
+            "rho_W":        None,
+            "rho_S":        None,
+            "rho_A":        None,
+            "contracting_S": None,
+            "neutral_A":     None,
+            "r_S_eff":      None,
+            "r_A_eff":      None,
+        }
+
+        if proj_per_layer is not None:
+            pe = proj_per_layer[L]
+            U_S = pe["U_S"]
+            U_A = pe["U_A"]
+            fit = fit_local_map_subspace(X_cur, X_nxt, U_S, U_A, min_tokens=min_tokens)
+            if fit is not None:
+                row.update(analyze_subspace_maps(fit))
+                row["r_S_eff"] = fit["r_S_eff"]
+                row["r_A_eff"] = fit["r_A_eff"]
+                results.append(row)
 
     return results
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Full pipeline → SubResult
-# ---------------------------------------------------------------------------
+# -----------
 
-def run_local_contraction(ctx: dict) -> SubResult:
+def run_local_contraction(ctx: dict):
     """
     Track B sub-experiment: per-cluster local contraction analysis.
 
@@ -194,17 +236,27 @@ def run_local_contraction(ctx: dict) -> SubResult:
     labels_per_layer      : list of (n,)
     layer_type_labels     : list of str
     layer_names           : list of str
+    projectors            : output of subspace_build
 
     Optional ctx keys
     -----------------
     tracked_cluster_ids   : list[int] (default: all unique non-noise)
-    min_tokens_for_fit    : int (default 4)
+    min_tokens_for_fit    : int (default 8)
     """
     acts        = ctx["activations_per_layer"]
     labels      = ctx["labels_per_layer"]
     layer_types = ctx["layer_type_labels"]
     layer_names = ctx["layer_names"]
-    min_tokens  = ctx.get("min_tokens_for_fit", 4)
+    projectors  = ctx.get("projectors")
+    min_tokens  = ctx.get("min_tokens_for_fit", 8)
+
+    # Build per-layer projector list
+    proj_per_layer = None
+    if projectors is not None:
+        proj_entries = projectors["per_layer"]
+        if len(proj_entries) == 1 and len(acts) > 1:
+            proj_entries = proj_entries * len(acts)
+        proj_per_layer = proj_entries
 
     all_labels = np.unique(np.concatenate([l[l >= 0] for l in labels if (l >= 0).any()]))
     tracked = ctx.get("tracked_cluster_ids", all_labels.tolist())
@@ -212,18 +264,18 @@ def run_local_contraction(ctx: dict) -> SubResult:
     all_steps: list[dict] = []
     for cid in tracked:
         steps = local_map_profile(
-            acts, labels, layer_types, layer_names, int(cid), min_tokens
+            acts, labels, layer_types, layer_names, int(cid), min_tokens,
+            proj_per_layer=proj_per_layer
         )
         all_steps.extend(steps)
 
     if not all_steps:
-        return SubResult(
-            name="local_contraction",
-            applicable=False,
-            payload={},
-            summary_lines=["local_contraction: no valid fits (too few tokens per cluster)"],
-            verdict_contribution={},
-        )
+        return {
+            "name": "local_contraction",
+            "applicable": False,
+            "payload": {},
+            "verdict_contribution": {},
+        }
 
     # Aggregate by layer type
     def _agg(steps, ltype, key):
@@ -270,59 +322,13 @@ def run_local_contraction(ctx: dict) -> SubResult:
         "std_rho_S_merge":       std_rho_S_merg,
         "mean_rho_A_plateau":    mu_rho_A_plat,
         "std_rho_A_plateau":     std_rho_A_plat,
+        "mean_rho_A_merge":      mu_rho_A_merg,
+        "std_rho_A_merge":       std_rho_A_merg,
         "n_contracting_S_plat":  n_contracting_S_plat,
         "n_neutral_A_plat":      n_neutral_A_plat,
         "n_destab_S_merge":      n_destab_S_merg,
         "p6_r5_satisfied":       p6_r5_satisfied,
     }
-
-    # --- Summary lines ---
-    lines = [
-        SEP_THICK,
-        "LOCAL CONTRACTION ANALYSIS  [Track B]",
-        SEP_THICK,
-        f"Total transition fits:       {len(all_steps)}",
-        f"  plateau transitions:       {n_plat}",
-        f"  merge transitions:         {n_merg}",
-        "",
-        "Spectral radius of per-cluster local linear map, symmetric part W_C^S:",
-        _bullet("mean ρ_S at plateau layers", mu_rho_S_plat),
-        _bullet("std  ρ_S at plateau layers", std_rho_S_plat),
-        _bullet("mean ρ_S at merge layers",   mu_rho_S_merg),
-        _bullet("std  ρ_S at merge layers",   std_rho_S_merg),
-        "",
-        "Spectral radius of antisymmetric part W_C^A (should be ≈ 1.0 throughout):",
-        _bullet("mean ρ_A at plateau layers", mu_rho_A_plat),
-        _bullet("std  ρ_A at plateau layers", std_rho_A_plat),
-        _bullet("mean ρ_A at merge layers",   mu_rho_A_merg),
-        _bullet("std  ρ_A at merge layers",   std_rho_A_merg),
-        "",
-        "P6-R5 component checks:",
-        _bullet("plateau steps with ρ_S < 1 (contracting)", n_contracting_S_plat),
-        _bullet("plateau steps with |ρ_A - 1| < 0.15 (neutral)", n_neutral_A_plat),
-        _bullet("merge steps with ρ_S ≥ 1 (destabilising)", n_destab_S_merg),
-        "",
-        "Prediction P6-R5: W_C^S contracts at plateau, destabilises at merge;",
-        "                  W_C^A has spectral radius ≈ 1 throughout.",
-        _verdict_line(
-            "P6-R5 (contraction at plateau)",
-            p6_r5_contraction,
-            f"{n_contracting_S_plat}/{n_plat} plateau steps with ρ_S < 1"
-            f" (mean ρ_S={_fmt(mu_rho_S_plat)})",
-        ),
-        _verdict_line(
-            "P6-R5 (neutral rotation at plateau)",
-            p6_r5_neutral_A,
-            f"{n_neutral_A_plat}/{n_plat} plateau steps with |ρ_A−1|<0.15"
-            f" (mean ρ_A={_fmt(mu_rho_A_plat)})",
-        ),
-        _verdict_line(
-            "P6-R5 (destabilisation at merge)",
-            p6_r5_destab,
-            f"{n_destab_S_merg}/{n_merg} merge steps with ρ_S ≥ 1"
-            f" (mean ρ_S_merge={_fmt(mu_rho_S_merg)})",
-        ),
-    ]
 
     vc = {
         "lc_mean_rho_S_plateau":   mu_rho_S_plat,
@@ -334,10 +340,9 @@ def run_local_contraction(ctx: dict) -> SubResult:
         "lc_p6_r5_satisfied":      p6_r5_satisfied,
     }
 
-    return SubResult(
-        name="local_contraction",
-        applicable=True,
-        payload=payload,
-        summary_lines=lines,
-        verdict_contribution=vc,
-    )
+    return {
+        "name": "local_contraction",
+        "applicable": True,
+        "payload": payload,
+        "verdict_contribution": vc,
+    }

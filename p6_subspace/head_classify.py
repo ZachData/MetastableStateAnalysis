@@ -36,16 +36,74 @@ Functions
 compute_cc_pc            : CC/PC scores for one head given attention + QK matrices
 classify_heads           : full pipeline for one model's attention matrices
 anti_similarity_score    : correlation of attention with -similarity
+cross_head_correlations  : permutation-based p-values for P6-A2 test
 head_map_data            : structured output for plotting / reporting
+
+Bugs fixed:
+  #6  : compute_cc_pc accepts is_causal mask for lower-triangle restriction
+  #7  : cross_head_correlations uses |PC| (magnitude), not signed pc_dominant
+  #8  : _assign_quadrant adds cc < -0.2 anti_sim branch (strong negative CC)
+  #9  : decompose_qk_matrix docstring clarifies WQ @ WK.T convention
+  #12 : permutation_spearman + cross_head_correlations with p-values
 """
 
 import numpy as np
 from scipy.stats import spearmanr
 
 
-# ---------------------------------------------------------------------------
+# -----------
+# Bug #12: Permutation test for significance
+# -----------
+
+def _permutation_spearman(
+    x: np.ndarray,
+    y: np.ndarray,
+    n_perm: int = 10_000,
+    alternative: str = "greater",
+    seed: int = 42,
+) -> tuple[float, float]:
+    """
+    Empirical Spearman p-value via permutation of y.
+    
+    Returns (rho_observed, p_value) where p-value accounts for finite permutations.
+    """
+    if len(x) != len(y):
+        raise ValueError(f"length mismatch: {len(x)} vs {len(y)}")
+    n = len(x)
+    if n < 4:
+        rho_obs, _ = spearmanr(x, y) if n >= 2 else (0.0, 1.0)
+        return float(rho_obs) if np.isfinite(rho_obs) else 0.0, 1.0
+    if x.std() < 1e-12 or y.std() < 1e-12:
+        return 0.0, 1.0
+
+    rho_obs, _ = spearmanr(x, y)
+    if not np.isfinite(rho_obs):
+        return 0.0, 1.0
+
+    rng = np.random.default_rng(seed)
+    rho_null = np.empty(n_perm, dtype=np.float64)
+    y_perm = np.array(y, copy=True)
+    for i in range(n_perm):
+        rng.shuffle(y_perm)
+        r, _ = spearmanr(x, y_perm)
+        rho_null[i] = r if np.isfinite(r) else 0.0
+
+    if alternative == "greater":
+        n_extreme = int(np.sum(rho_null >= rho_obs))
+    elif alternative == "less":
+        n_extreme = int(np.sum(rho_null <= rho_obs))
+    elif alternative == "two-sided":
+        n_extreme = int(np.sum(np.abs(rho_null) >= abs(rho_obs)))
+    else:
+        raise ValueError(f"unknown alternative: {alternative}")
+
+    p_value = (n_extreme + 1) / (n_perm + 1)
+    return float(rho_obs), float(p_value)
+
+
+# -----------
 # Positional coupling modes
-# ---------------------------------------------------------------------------
+# -----------
 
 _SIGMA_LOCAL = 2.0   # Gaussian half-width for "local" mode
 
@@ -80,14 +138,15 @@ def _positional_function(
     return f
 
 
-# ---------------------------------------------------------------------------
-# Per-head CC/PC
-# ---------------------------------------------------------------------------
+# -----------
+# Bug #6: Causal mask in compute_cc_pc
+# -----------
 
 def compute_cc_pc(
     attn_weights: np.ndarray,
-    qk_logits:    np.ndarray,
-    n_tokens:     int,
+    qk_logits: np.ndarray,
+    n_tokens: int,
+    is_causal: bool = False,
 ) -> dict:
     """
     Compute CC and PC scores for one attention head.
@@ -97,6 +156,10 @@ def compute_cc_pc(
     attn_weights : (n_tokens, n_tokens) — softmax attention matrix A[i,j]
     qk_logits    : (n_tokens, n_tokens) — raw logits ⟨q_i, k_j⟩
     n_tokens     : int
+    is_causal    : bool — if True, restrict to strict lower triangle
+
+    FIX Bug #6: Restrict to strict lower triangle for causal models
+    (where upper triangle has post-softmax attn ≈ 0).
 
     Returns
     -------
@@ -109,7 +172,11 @@ def compute_cc_pc(
       pc_mode       : str   — which positional mode is dominant
     """
     # Flatten upper triangle (i != j) for correlation
-    mask = ~np.eye(n_tokens, dtype=bool)
+    if is_causal:
+        mask = np.tril(np.ones((n_tokens, n_tokens), dtype=bool), k=-1)
+    else:
+        mask = ~np.eye(n_tokens, dtype=bool)
+    
     a_flat = attn_weights[mask].ravel()
     q_flat = qk_logits[mask].ravel()
 
@@ -135,9 +202,9 @@ def compute_cc_pc(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Anti-similarity score
-# ---------------------------------------------------------------------------
+# -----------
 
 def anti_similarity_score(
     attn_weights:       np.ndarray,
@@ -185,9 +252,45 @@ def anti_similarity_score(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
+# Bug #8: Quadrant assignment with strong negative CC
+# -----------
+
+def _assign_quadrant(cc: float, pc: float, is_anti_sim: bool) -> str:
+    """
+    Map (CC, PC, anti_sim) to a named quadrant.
+
+    FIX Bug #8: Add cc < -0.2 anti_sim branch (strong negative CC).
+    
+    Previous code had: is_anti_sim AND cc < 0.1 → "anti_similarity"
+    But missed heads with strong negative CC (e.g., cc = -0.5, pc ≈ 0).
+    
+    Now:
+      1. is_anti_sim AND cc < 0.1          → "anti_similarity" (stricter signal)
+      2. cc < -0.2 AND |pc| < 0.3          → "anti_similarity" (geometric fallback)
+      3. cc > 0.3 AND |pc| < 0.3           → "semantic"
+      4. |pc| > 0.3 AND |cc| < 0.3         → "positional"
+      5. cc > 0.15 AND |pc| > 0.3          → "induction"
+      6. otherwise                         → "mixed"
+
+    Thresholds are intentionally wide to avoid over-labelling.
+    """
+    if is_anti_sim and cc < 0.1:
+        return "anti_similarity"
+    if cc < -0.2 and abs(pc) < 0.3:
+        return "anti_similarity"
+    if cc > 0.3 and abs(pc) < 0.3:
+        return "semantic"
+    if abs(pc) > 0.3 and abs(cc) < 0.3:
+        return "positional"
+    if cc > 0.15 and abs(pc) > 0.15:
+        return "induction"
+    return "mixed"
+
+
+# -----------
 # Full pipeline
-# ---------------------------------------------------------------------------
+# -----------
 
 def classify_heads(
     attn_matrices:      list,
@@ -258,26 +361,10 @@ def classify_heads(
     return results
 
 
-def _assign_quadrant(cc: float, pc: float, is_anti_sim: bool) -> str:
-    """
-    Map (CC, PC, anti_sim) to a named quadrant.
-
-    Thresholds are intentionally wide to avoid over-labelling.
-    """
-    if is_anti_sim and cc < 0.1:
-        return "anti_similarity"
-    if cc > 0.3 and abs(pc) < 0.3:
-        return "semantic"
-    if abs(pc) > 0.3 and abs(cc) < 0.3:
-        return "positional"
-    if cc > 0.15 and abs(pc) > 0.15:
-        return "induction"
-    return "mixed"
-
-
-# ---------------------------------------------------------------------------
+# -----------
 # Cross-head correlation tests (P6-A2)
-# ---------------------------------------------------------------------------
+# Bug #7, #12: Uses |PC| (magnitude) with permutation p-values
+# -----------
 
 def cross_head_correlations(head_records: list[dict]) -> dict:
     """
@@ -285,7 +372,10 @@ def cross_head_correlations(head_records: list[dict]) -> dict:
 
     Tests falsifiable prediction P6-A2:
       ρ(f_rot, -CC) > 0.4  — rotational energy anti-correlates with CC
-      ρ(f_rot,  PC) > 0.4  — rotational energy correlates with PC
+      ρ(f_rot,  |PC|) > 0.4 — rotational energy correlates with |PC| (magnitude)
+
+    FIX Bug #7: Use |PC| (magnitude), not signed pc_dominant.
+    FIX Bug #12: Add permutation p-values; verdict requires p < α AND ρ > threshold.
 
     Parameters
     ----------
@@ -295,38 +385,76 @@ def cross_head_correlations(head_records: list[dict]) -> dict:
     -------
     dict with:
       rho_frot_neg_cc   : float — Spearman(f_rot, -CC)
-      rho_frot_pc       : float — Spearman(f_rot, PC_dominant)
+      p_value_neg_cc    : float — permutation p-value
+      rho_frot_abs_pc   : float — Spearman(f_rot, |PC|)
+      p_value_abs_pc    : float — permutation p-value
       n_heads           : int
-      p6_a2_satisfied   : bool — both correlations > 0.4
+      alpha             : float — significance threshold
+      threshold         : float — effect size threshold
+      n_perm            : int — number of permutations
+      n_heads_too_small_for_alpha: bool
+      significance_passes : bool
+      effect_size_passes : bool
+      p6_a2_passes      : bool — both significance AND effect size pass
     """
     valid = [r for r in head_records if r["f_rot"] is not None]
     if len(valid) < 4:
         return {
-            "rho_frot_neg_cc": None, "rho_frot_pc": None,
-            "n_heads": len(valid), "p6_a2_satisfied": False,
+            "rho_frot_neg_cc": 0.0,
+            "p_value_neg_cc": 1.0,
+            "rho_frot_abs_pc": 0.0,
+            "p_value_abs_pc": 1.0,
+            "n_heads": len(valid),
+            "alpha": 0.05,
+            "threshold": 0.4,
+            "n_perm": 10_000,
+            "n_heads_too_small_for_alpha": True,
+            "significance_passes": False,
+            "effect_size_passes": False,
+            "p6_a2_passes": False,
         }
 
     f_rot = np.array([r["f_rot"] for r in valid])
     cc    = np.array([r["cc"]    for r in valid])
-    pc    = np.array([r["pc_dominant"] for r in valid])
+    pc_mag = np.array([abs(r["pc_dominant"]) for r in valid])
 
-    rho_cc, _ = spearmanr(f_rot, -cc)
-    rho_pc, _ = spearmanr(f_rot,  pc)
+    alpha = 0.05
+    threshold = 0.4
+    n_perm = 10_000
+    n_heads = len(valid)
+    min_n_for_alpha = max(5, int(np.ceil(1.0 / alpha)))
+    too_small = n_heads < min_n_for_alpha
 
-    rho_cc = float(rho_cc) if np.isfinite(rho_cc) else 0.0
-    rho_pc = float(rho_pc) if np.isfinite(rho_pc) else 0.0
+    rho_cc, p_cc = _permutation_spearman(
+        f_rot, -cc, n_perm=n_perm, alternative="greater", seed=42
+    )
+    rho_pc, p_pc = _permutation_spearman(
+        f_rot, pc_mag, n_perm=n_perm, alternative="greater", seed=43
+    )
+
+    significance_passes = (p_cc < alpha) and (p_pc < alpha)
+    effect_size_passes = (rho_cc > threshold) and (rho_pc > threshold)
+    p6_a2_passes = bool(significance_passes and effect_size_passes and not too_small)
 
     return {
         "rho_frot_neg_cc": rho_cc,
-        "rho_frot_pc":     rho_pc,
-        "n_heads":         len(valid),
-        "p6_a2_satisfied": (rho_cc > 0.4 and rho_pc > 0.4),
+        "p_value_neg_cc": p_cc,
+        "rho_frot_abs_pc": rho_pc,
+        "p_value_abs_pc": p_pc,
+        "n_heads": n_heads,
+        "alpha": alpha,
+        "threshold": threshold,
+        "n_perm": n_perm,
+        "n_heads_too_small_for_alpha": too_small,
+        "significance_passes": bool(significance_passes),
+        "effect_size_passes": bool(effect_size_passes),
+        "p6_a2_passes": p6_a2_passes,
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Structured output for reporting
-# ---------------------------------------------------------------------------
+# -----------
 
 def head_map_data(
     head_records:    list[dict],

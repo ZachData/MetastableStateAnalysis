@@ -27,17 +27,19 @@ classify_induction_heads     : threshold-based binary classification
 ov_write_alignment           : fraction of W_O singular vectors in A subspace
 compare_induction_vs_semantic: P6-I1 test
 run_induction_ov             : full pipeline → SubResult
+
+Bugs fixed:
+  #5 : induction_score uses canonical query > key orientation
 """
 
 import numpy as np
-from scipy.stats import mannwhitneyu, spearmanr
-
-from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
+from scipy.stats import mannwhitneyu
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Induction score
-# ---------------------------------------------------------------------------
+# Bug #5: Canonical query > key orientation
+# -----------
 
 def induction_score(
     attn_weights:  np.ndarray,
@@ -54,6 +56,9 @@ def induction_score(
     A high positive score indicates the head preferentially attends to
     the induction target position relative to the background.
 
+    FIX Bug #5: Canonical induction (query > key, query - key >= min_offset,
+    key >= 1, token_ids[query-1] == token_ids[key-1]).
+
     Parameters
     ----------
     attn_weights      : (n, n) softmax attention matrix
@@ -66,20 +71,23 @@ def induction_score(
     float in roughly [-1, 1]; >0.05 is a weak positive signal
     """
     n = len(token_ids)
+    min_offset = 2
 
     # Build induction mask
     induction_mask = np.zeros((n, n), dtype=bool)
-    for i in range(1, n):
-        for j in range(2, n):
-            if j == i:
+    for query in range(2, n):
+        for key in range(1, query):
+            if query - key < min_offset:
                 continue
-            exact = (token_ids[j - 1] == token_ids[i - 1])
+            exact = (token_ids[query - 1] == token_ids[key - 1])
             soft  = False
             if (not exact) and (token_activations is not None):
-                cos = float(token_activations[j - 1] @ token_activations[i - 1])
+                cos = float(
+                    token_activations[query - 1] @ token_activations[key - 1]
+                )
                 soft = cos > sim_threshold
             if exact or soft:
-                induction_mask[i, j] = True
+                induction_mask[query, key] = True
 
     off_diag = ~np.eye(n, dtype=bool)
     non_induction_mask = off_diag & ~induction_mask
@@ -104,9 +112,9 @@ def classify_induction_heads(
     return [i for i, s in enumerate(scores) if s > threshold]
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # OV write direction alignment
-# ---------------------------------------------------------------------------
+# -----------
 
 def ov_write_alignment(
     WO:     np.ndarray,
@@ -150,9 +158,9 @@ def ov_write_alignment(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # P6-I1 test
-# ---------------------------------------------------------------------------
+# -----------
 
 def compare_induction_vs_semantic(
     head_records:      list[dict],
@@ -182,6 +190,8 @@ def compare_induction_vs_semantic(
         return {
             "mean_align_rot_induction": (float(np.mean(ind_vals)) if ind_vals else None),
             "mean_align_rot_semantic":  (float(np.mean(sem_vals)) if sem_vals else None),
+            "delta_align_rot":          None,
+            "mwu_statistic":            None,
             "mwu_pvalue":              None,
             "n_induction":             len(ind_vals),
             "n_semantic":              len(sem_vals),
@@ -190,12 +200,13 @@ def compare_induction_vs_semantic(
 
     mu_ind = float(np.mean(ind_vals))
     mu_sem = float(np.mean(sem_vals))
+    delta = mu_ind - mu_sem
     stat, pval = mannwhitneyu(ind_vals, sem_vals, alternative="greater")
 
     return {
         "mean_align_rot_induction": mu_ind,
         "mean_align_rot_semantic":  mu_sem,
-        "delta_align_rot":          mu_ind - mu_sem,
+        "delta_align_rot":          delta,
         "mwu_statistic":            float(stat),
         "mwu_pvalue":               float(pval),
         "n_induction":              len(ind_vals),
@@ -204,11 +215,11 @@ def compare_induction_vs_semantic(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Full pipeline → SubResult
-# ---------------------------------------------------------------------------
+# -----------
 
-def run_induction_ov(ctx: dict) -> SubResult:
+def run_induction_ov(ctx: dict):
     """
     Track A sub-experiment: induction detection + OV write direction alignment.
 
@@ -218,8 +229,7 @@ def run_induction_ov(ctx: dict) -> SubResult:
     wo_matrices         : list of (d_model, d_head) W_O per head
     token_ids           : (n,) int
     token_activations   : (n, d_model) L2-normed
-    projectors          : output of subspace_build.build_global_projectors,
-                          used as projectors["per_layer"][layer_idx]
+    projectors          : output of subspace_build, used as projectors["per_layer"][layer_idx]
     layer_idx           : int (default 0 for ALBERT)
 
     Optional ctx keys
@@ -304,46 +314,6 @@ def run_induction_ov(ctx: dict) -> SubResult:
         "head_records":        head_records,
     }
 
-    # --- Summary lines ---
-    lines = [
-        SEP_THICK,
-        "INDUCTION DETECTION + OV WRITE ALIGNMENT  [Track A]",
-        SEP_THICK,
-        f"Layer:                {layer_name}",
-        f"Heads analysed:       {n_heads}",
-        f"Induction threshold:  {ind_threshold}",
-        "",
-        "Induction scores (mean attn on induction pairs minus background):",
-    ]
-    for h, s in enumerate(scores):
-        flag = " ← INDUCTION" if h in induction_idx else ""
-        lines.append(f"  head {h:02d}:  score={_fmt(s)}{flag}")
-
-    lines += [
-        "",
-        f"Induction heads detected: {n_induction} of {n_heads}",
-        "",
-        "OV write direction alignment with S/A channels (top-16 singular vectors):",
-        _bullet("mean align_rot (all heads)", mean_align_rot_all),
-        _bullet("mean align_real (all heads)", mean_align_real_all),
-        _bullet("mean align_rot (induction heads)", mean_align_rot_ind),
-        _bullet("mean align_rot (semantic heads)", mean_align_rot_sem),
-        "",
-        "P6-I1: induction heads write into imaginary channel more than semantic heads?",
-        _bullet("delta align_rot (induction - semantic)", p6i1.get("delta_align_rot")),
-        _bullet("MWU p-value", p6i1.get("mwu_pvalue")),
-        _verdict_line(
-            "P6-I1",
-            p6i1["p6_i1_satisfied"],
-            f"mu_ind={_fmt(mean_align_rot_ind)} vs mu_sem={_fmt(mean_align_rot_sem)}"
-            f" p={_fmt(p6i1.get('mwu_pvalue'))}",
-        ),
-        "",
-        "Note on ALBERT: shared weights mean the same heads implement both channels.",
-        "If P6-I1 passes, channel separation arises from which residual-stream",
-        "subspace the incoming activation occupies, not from separate weight matrices.",
-    ]
-
     vc = {
         "ind_n_induction_heads":       n_induction,
         "ind_mean_align_rot_all":      mean_align_rot_all,
@@ -352,10 +322,9 @@ def run_induction_ov(ctx: dict) -> SubResult:
         "ind_p6_i1_satisfied":         p6i1["p6_i1_satisfied"],
     }
 
-    return SubResult(
-        name="induction_ov",
-        applicable=True,
-        payload=payload,
-        summary_lines=lines,
-        verdict_contribution=vc,
-    )
+    return {
+        "name": "induction_ov",
+        "applicable": True,
+        "payload": payload,
+        "verdict_contribution": vc,
+    }

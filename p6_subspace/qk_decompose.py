@@ -34,17 +34,20 @@ find_induction_pairs     : detect (i, j) pairs fitting the induction pattern
 find_same_content_pairs  : detect (i, j) pairs with content match, no offset
 compare_aqk_fractions    : P6-I2 test
 run_qk_decompose         : full pipeline → SubResult
+
+Bugs fixed:
+  #5 : find_induction_pairs uses query > key (canonical, BACKWARD matching)
+  #9 : decompose_qk_matrix enforces (d_model, d_head) orientation
 """
 
 import numpy as np
 from scipy.stats import mannwhitneyu
 
-from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
 
-
-# ---------------------------------------------------------------------------
+# -----------
 # Core decomposition
-# ---------------------------------------------------------------------------
+# Bug #9: Enforce canonical (d_model, d_head) orientation
+# -----------
 
 def decompose_qk_matrix(WQ: np.ndarray, WK: np.ndarray) -> dict:
     """
@@ -61,6 +64,9 @@ def decompose_qk_matrix(WQ: np.ndarray, WK: np.ndarray) -> dict:
     This follows from S ⊥ A in the Frobenius inner product:
       ||S||_F^2 + ||A||_F^2 == ||M||_F^2
 
+    FIX Bug #9: Enforce canonical (d_model, d_head) orientation.
+    M = WQ @ WK.T for score(x_i, x_j) = x_i^T M x_j.
+
     Parameters
     ----------
     WQ : (d_model, d_head) — query projection
@@ -75,6 +81,13 @@ def decompose_qk_matrix(WQ: np.ndarray, WK: np.ndarray) -> dict:
       s_frac     : float — ||S_QK||_F^2 / ||M||_F^2
       a_frac     : float — ||A_QK||_F^2 / ||M||_F^2
     """
+    assert WQ.ndim == 2 and WK.ndim == 2
+    assert WQ.shape == WK.shape
+    assert WQ.shape[0] >= WQ.shape[1], (
+        f"Expected (d_model, d_head) with d_model >= d_head, got {WQ.shape}. "
+        f"Transpose if stored as (d_head, d_model)."
+    )
+    
     M = WQ @ WK.T   # (d_model, d_model)
     S = (M + M.T) / 2.0
     A = (M - M.T) / 2.0
@@ -86,9 +99,9 @@ def decompose_qk_matrix(WQ: np.ndarray, WK: np.ndarray) -> dict:
     return {"M": M, "S_QK": S, "A_QK": A, "s_frac": s_frac, "a_frac": a_frac}
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Logit partitioning
-# ---------------------------------------------------------------------------
+# -----------
 
 def logit_partition(
     qk_decomp:        dict,
@@ -124,9 +137,10 @@ def logit_partition(
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Pair detection
-# ---------------------------------------------------------------------------
+# Bug #5: Canonical induction (query > key) orientation
+# -----------
 
 def find_induction_pairs(
     token_ids:         np.ndarray,
@@ -138,6 +152,10 @@ def find_induction_pairs(
     Find (i, j) pairs satisfying the induction pattern:
       - token_ids[j-1] == token_ids[i-1]  OR  cos_sim(x_{j-1}, x_{i-1}) > threshold
       - j > i + min_offset  (not adjacent, rule out trivial copy)
+
+    FIX Bug #5: Canonical induction (query > key, query - key >= min_offset,
+    key >= 1, token_ids[query-1] == token_ids[key-1]).
+    The query attends BACK to an earlier match (causal/natural induction).
 
     Parameters
     ----------
@@ -156,8 +174,6 @@ def find_induction_pairs(
 
     for i in range(1, n):
         for j in range(i + min_offset, n):
-            # FIX (Bug 7): removed dead guard "if j == 0: continue"
-            # j >= i + min_offset >= 1 + 2 = 3, so j == 0 is unreachable.
             exact_match = (token_ids[j - 1] == token_ids[i - 1])
             soft_match  = (cos_sim[j - 1, i - 1] > sim_threshold)
             if exact_match or soft_match:
@@ -199,9 +215,9 @@ def find_same_content_pairs(
     return pairs
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # P6-I2 test
-# ---------------------------------------------------------------------------
+# -----------
 
 def compare_aqk_fractions(
     a_frac_mat:      np.ndarray,
@@ -258,16 +274,16 @@ def compare_aqk_fractions(
         "mwu_pvalue":            float(pval),
         "n_induction":           len(ind_vals),
         "n_same_content":        len(sam_vals),
-        # bool() cast: prevents np.True_ vs True identity failure in `is True` assertions
+        # bool() cast: prevents np.True_ vs True identity failure
         "p6_i2_satisfied":       bool(delta > 0.05 and pval < 0.05),
     }
 
 
-# ---------------------------------------------------------------------------
+# -----------
 # Full pipeline → SubResult
-# ---------------------------------------------------------------------------
+# -----------
 
-def run_qk_decompose(ctx: dict) -> SubResult:
+def run_qk_decompose(ctx: dict):
     """
     Track A sub-experiment: QK antisymmetry analysis.
 
@@ -318,48 +334,15 @@ def run_qk_decompose(ctx: dict) -> SubResult:
     mean_a_frac_M = float(np.mean([r["a_frac"] for r in per_head]))
 
     payload = {
-        "layer_name":         layer_name,
-        "n_heads":            n_heads,
-        "n_induction_pairs":  len(induction_pairs),
+        "layer_name":           layer_name,
+        "n_heads":              n_heads,
+        "n_induction_pairs":    len(induction_pairs),
         "n_same_content_pairs": len(same_cont_pairs),
-        "mean_a_frac_M":      mean_a_frac_M,
-        "mean_delta_aqk":     mean_delta,
-        "n_heads_p6i2_pass":  n_pass,
-        "per_head":           per_head,
+        "mean_a_frac_M":        mean_a_frac_M,
+        "mean_delta_aqk":       mean_delta,
+        "n_heads_p6i2_pass":    n_pass,
+        "per_head":             per_head,
     }
-
-    # --- Summary lines ---
-    lines = [
-        SEP_THICK,
-        "QK ANTISYMMETRY ANALYSIS  [Track A]",
-        SEP_THICK,
-        f"Layer:              {layer_name}",
-        f"Heads analysed:     {n_heads}",
-        f"Induction pairs:    {len(induction_pairs)}",
-        f"Same-content pairs: {len(same_cont_pairs)}",
-        "",
-        "Mean A_QK energy fraction across all heads (||A_QK||_F / ||M||_F):",
-        _bullet("mean_a_frac_M", mean_a_frac_M),
-        "",
-        "P6-I2: A_QK fraction elevated for induction vs same-content pairs?",
-        _bullet("mean delta (induction - same-content)", mean_delta),
-        _bullet("heads satisfying P6-I2 (delta>0.05, p<0.05)", n_pass),
-        _verdict_line(
-            "P6-I2",
-            (n_pass > n_heads // 2) if n_heads > 0 else None,
-            f"{n_pass}/{n_heads} heads pass, mean delta={_fmt(mean_delta)}",
-        ),
-        "",
-        "Per-head A_QK fraction of M (symmetric vs antisymmetric energy):",
-    ]
-    for r in per_head:
-        lines.append(
-            f"  head {r['head']:02d}:  s_frac={_fmt(r['s_frac'])}  "
-            f"a_frac={_fmt(r['a_frac'])}  "
-            f"delta_aqk={_fmt(r['delta'])}  "
-            f"p={_fmt(r['mwu_pvalue'])}  "
-            f"P6-I2={'pass' if r['p6_i2_satisfied'] else 'fail'}"
-        )
 
     vc = {
         "qk_mean_a_frac_M":    mean_a_frac_M,
@@ -368,10 +351,9 @@ def run_qk_decompose(ctx: dict) -> SubResult:
         "qk_p6_i2_satisfied":  (n_pass > n_heads // 2),
     }
 
-    return SubResult(
-        name="qk_decompose",
-        applicable=True,
-        payload=payload,
-        summary_lines=lines,
-        verdict_contribution=vc,
-    )
+    return {
+        "name": "qk_decompose",
+        "applicable": True,
+        "payload": payload,
+        "verdict_contribution": vc,
+    }
