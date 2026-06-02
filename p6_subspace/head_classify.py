@@ -422,29 +422,40 @@ def cross_head_correlations(
 
     Bug 7 note : uses max(|pc_scores|) instead of signed pc_dominant.
     Bug 12 note: replaces hard threshold-only verdict with permutation p-values.
+    Bug 13 note: guards against all-None f_rot (Phase 2 NPZ missing rot_energy_fracs).
+                 Returns p6_a2_passes=None so the report emits [n/a] rather than
+                 [FAIL] — the test was not run, not run-and-failed.
     """
-    if not head_metrics:
-        return {
-            "rho_f_rot_neg_cc":            0.0,
-            "p_value_neg_cc":              1.0,
-            "rho_f_rot_abs_pc":            0.0,
-            "p_value_abs_pc":              1.0,
-            "n_heads":                     0,
-            "alpha":                       alpha,
-            "threshold":                   threshold,
-            "n_perm":                      n_perm,
-            "n_heads_too_small_for_alpha": True,
-            "significance_passes":         False,
-            "effect_size_passes":          False,
-            "p6_a2_passes":                False,
-        }
+    _na_return = {
+        "rho_f_rot_neg_cc":            None,
+        "p_value_neg_cc":              None,
+        "rho_f_rot_abs_pc":            None,
+        "p_value_abs_pc":              None,
+        "alpha":                       alpha,
+        "threshold":                   threshold,
+        "n_perm":                      n_perm,
+        "n_heads_too_small_for_alpha": False,
+        "significance_passes":         False,
+        "effect_size_passes":          False,
+        "f_rot_unavailable":           True,
+        "p6_a2_passes":                None,
+    }
 
-    f_rot  = np.asarray([h["f_rot"] for h in head_metrics], dtype=np.float64)
-    cc     = np.asarray([h["cc"]    for h in head_metrics], dtype=np.float64)
+    if not head_metrics:
+        return {**_na_return, "n_heads": 0, "n_heads_too_small_for_alpha": True}
+
+    # --- Bug 13: filter to heads with valid f_rot ---
+    valid = [h for h in head_metrics if h.get("f_rot") is not None]
+    if not valid:
+        # Phase 2 NPZ had no rot_energy_fracs key; cannot run P6-A2.
+        return {**_na_return, "n_heads": len(head_metrics)}
+
+    f_rot  = np.asarray([h["f_rot"] for h in valid], dtype=np.float64)
+    cc     = np.asarray([h["cc"]    for h in valid], dtype=np.float64)
     pc_mag = np.asarray(
         [
             max((abs(v) for v in h["pc_scores"].values()), default=0.0)
-            for h in head_metrics
+            for h in valid
         ],
         dtype=np.float64,
     )
@@ -478,9 +489,9 @@ def cross_head_correlations(
         "n_heads_too_small_for_alpha": too_small,
         "significance_passes":         bool(significance_passes),
         "effect_size_passes":          bool(effect_size_passes),
+        "f_rot_unavailable":           False,
         "p6_a2_passes":                p6_a2_passes,
     }
-
 
 # ---------------------------------------------------------------------------
 # Structured output for reporting

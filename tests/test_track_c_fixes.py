@@ -385,7 +385,7 @@ class TestHookTargetSelection:
     def test_hooks_are_linear_dense_not_selfoutput(self):
         import torch.nn as nn
         # Import from the patched run_6 location
-        from run_6 import _get_attention_output_modules
+        from p6_subspace.run_6 import _get_attention_output_modules
         model   = self._make_mock_bert()
         targets = _get_attention_output_modules(model)
 
@@ -397,7 +397,7 @@ class TestHookTargetSelection:
             )
 
     def test_no_selfoutput_module_in_targets(self):
-        from run_6 import _get_attention_output_modules
+        from p6_subspace.run_6 import _get_attention_output_modules
         model   = self._make_mock_bert()
         targets = _get_attention_output_modules(model)
 
@@ -409,7 +409,7 @@ class TestHookTargetSelection:
             )
 
     def test_no_duplicate_targets(self):
-        from run_6 import _get_attention_output_modules
+        from p6_subspace.run_6 import _get_attention_output_modules
         model   = self._make_mock_bert()
         targets = _get_attention_output_modules(model)
         ids = [id(t) for t in targets]

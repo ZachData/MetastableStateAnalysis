@@ -68,7 +68,7 @@ def decompose_centroid_delta(
     delta: np.ndarray,
     P_S:   np.ndarray,
     P_A:   np.ndarray,
-) -> dict:
+    ) -> dict:
     """
     Decompose centroid displacement vector into S and A components.
 
@@ -85,6 +85,8 @@ def decompose_centroid_delta(
     r_S = n_S / max(n_tot, 1e-12)
 
     return {
+        "delta_S":    v_S,
+        "delta_A":    v_A,
         "norm_S":     n_S,
         "norm_A":     n_A,
         "norm_total": n_tot,

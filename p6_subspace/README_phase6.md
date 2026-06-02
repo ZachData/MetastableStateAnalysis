@@ -363,3 +363,89 @@ This is actually a strengthening: if the same weights implement both channels, t
 functional separation must arise from which subspace the incoming activation occupies,
 not from separate weight matrices. This is a cleaner test of whether the residual stream
 itself is partitioned into real and imaginary channels.
+
+For ALBERT, is_per_layer=False in the projector output, so per_layer contains one entry replicated across all layers. This is structurally correct — U_A and U_S are the same at every layer. But it means the 49-layer consistency of the inversion (0/49 layers where align_neg > align_imag) is not 49 independent measurements — it's the same projector applied to 49 activation snapshots from the same OV weights. The result is not as strong as it would be for a standard transformer.
+
+---
+
+## First Run Results — albert-xlarge-v2
+
+**Run date:** 2026-04-xx
+**Status:** 0/6 tested predictions passed. 6/12 predictions not run.
+
+---
+
+### What Ran and What Didn't
+
+Track A (imaginary subspace / relational computation) produced **no data**.
+`head_classify` and `qk_decompose` both skipped due to missing prerequisites
+(`qk_logit_matrices`, `qk_matrices`). Since `head_classify_result` was absent,
+`P6-C1` also skipped. The dissociation test (P6-DD1, P6-DD2) did not run because
+`model`, `tokenizer`, `text`, and `hook_targets` were not threaded through to
+`run_dissociation`. These are the most direct falsification tests in the phase.
+
+**Priority before re-running:**
+1. Confirm `_compute_qk_logit_matrices` in `run_6.py` is populating `ctx["qk_matrices"]`
+   and `ctx["qk_logit_matrices"]` correctly, and that the prerequisite keys match what
+   `head_classify` and `qk_decompose` expect.
+2. Thread `model`, `tokenizer`, `text`, and `hook_targets` into `ctx` before the
+   dissociation subexperiment is registered.
+
+---
+
+### Substantive Findings
+
+#### LDA alignment inverted (P6-R2, P6-R4)
+
+The prediction was that cluster-separating directions align with the real repulsive
+subspace $U_\text{neg}$. The result was the opposite, consistently across all 49 layers:
+
+| Metric | Value |
+|---|---|
+| Mean LDA align with $U_A$ (imaginary) | **0.8869** |
+| Mean LDA align with $U_\text{neg}$ (real repulsive) | 0.0667 |
+| Layers where $\text{align\_neg} > \text{align\_imag}$ | 0 / 49 |
+
+The linear probe result is consistent: `acc_real = 0.152` (at random-baseline level),
+`acc_imag = 0.564` (near full-activation accuracy of 0.590). The real projection
+carries essentially no cluster membership information.
+
+This is not a near-miss — the imaginary subspace dominates cluster geometry by a factor
+of ~13×. Two explanations worth ruling out before concluding the hypothesis is wrong:
+
+1. **Projector construction error.** If `subspace_build.py` is mislabelling Schur
+   blocks — assigning 2×2 rotation blocks to $U_S$ or 1×1 blocks to $U_A$ — then
+   $U_\text{neg}$ and $U_A$ would be swapped and all four geometry tests would invert
+   together. Check the Schur decomposition sign convention and block-type assignment in
+   `subspace_build.py`.
+
+2. **Hypothesis wrong for ALBERT specifically.** ALBERT shares weights across all
+   layers. The same OV matrix implements both semantic clustering and whatever relational
+   operations the imaginary subspace carries. The clean S/A functional separation
+   predicted in Part A may not hold under weight tying — both channels could participate
+   in cluster geometry.
+
+#### P6-R5 partial pass (local contraction)
+
+The one result with positive signal. At plateau layers:
+- 29/44 steps have $\rho_S < 1$ (contracting in real subspace) ✓
+- 28/44 steps have $|\rho_A - 1| < 0.15$ (neutral rotation in imaginary) ✓
+
+The failure is on merge destabilisation: only 121/341 merge steps have $\rho_S \geq 1$.
+This could reflect incorrect merge/plateau layer classification rather than a genuine
+failure. ALBERT's shared-weight architecture means the same layer implements many
+different functional roles depending on residual stream state — the per-layer
+plateau/merge classification from Phase 1 may not transfer cleanly to a per-step
+dynamic label here. Worth checking whether the layer type labels passed into
+`local_contraction.py` match what Phase 1 actually found for this prompt.
+
+---
+
+### Open Questions
+
+- Is the S/A projector split correct? Inspect `projectors.json` (dim_S, dim_A, overlap,
+  coverage) and verify against Phase 2 eigenspectra.
+- Does the LDA/probe inversion persist on a non-weight-tied model? The hypothesis was
+  developed with standard transformer architectures in mind.
+- If Track A runs successfully, do induction heads (if any are found) preferentially
+  write into the imaginary channel? P6-I1 is currently unfalsified, not confirmed.

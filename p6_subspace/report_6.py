@@ -53,7 +53,7 @@ _PREDICTIONS = [
 
 # Mapping from prediction ID → verdict_contribution keys that decide it
 _PRED_KEYS: dict[str, str] = {
-    "P6-A2":  "hc_p6_a2_satisfied",
+    "P6-A2":  "hc_p6_a2_passes", # matches verdict_contribution key in run_6.py
     "P6-I1":  "ind_p6_i1_satisfied",
     "P6-I2":  "qk_p6_i2_satisfied",
     "P6-R1":  "deg_p6_r1_satisfied",

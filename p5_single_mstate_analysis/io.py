@@ -190,7 +190,10 @@ def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
     model_stem_hyphen = model_stem.replace("_", "-")
 
     def _matches(name: str) -> bool:
-        return model_stem in name or model_stem_hyphen in name
+        # return model_stem in name or model_stem_hyphen in name 
+        if not model_stem:
+            return True
+        return any(s in d.name for s in stems)
 
     def _iter_depth(run_dir: Path) -> int:
         """Extract numeric iteration depth from names like *_24iter_*; 0 if absent."""
@@ -463,6 +466,47 @@ def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
             "rotational_blocks": blocks["blocks_2x2"],
             "is_per_layer":      False,
         }
+
+# # old method, matches tests:
+# def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
+#     phase2_dir = Path(phase2_dir)
+#     if not phase2_dir.exists():
+#         return {}
+
+#     stems = {model_stem, model_stem.replace("_", "-"), model_stem.replace("-", "_")}
+#     candidates: list[Path] = []
+
+#     # Nested model subdir (hyphen or underscore form)
+#     for s in stems:
+#         subdir = phase2_dir / s
+#         if subdir.is_dir():
+#             candidates.extend(sorted(subdir.glob("*.npz")))
+
+#     # Flat files at top level whose name contains either stem form
+#     for s in stems:
+#         candidates.extend(sorted(phase2_dir.glob(f"*{s}*.npz")))
+
+#     # Deduplicate, preserve order
+#     seen, ordered = set(), []
+#     for p in candidates:
+#         if p not in seen:
+#             seen.add(p); ordered.append(p)
+
+#     if not ordered:
+#         print(f"  [warn] no Phase 2i artifacts found for stem '{model_stem}' in {phase2_dir}")
+#         return {}
+
+#     merged: dict = {}
+#     for p in ordered:
+#         try:
+#             data = np.load(p, allow_pickle=True)
+#         except Exception as e:
+#             print(f"  [warn] could not load {p}: {e}")
+#             continue
+#         for k in data.files:
+#             if k not in merged:   # first occurrence wins
+#                 merged[k] = data[k]
+#     return merged
 
 # ---------------------------------------------------------------------------
 # Phase 3 artifacts — crosscoder + prompt store

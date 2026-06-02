@@ -36,7 +36,7 @@ measure_induction_score: scalar induction score from attention matrices
 measure_cluster_overlap: HDBSCAN label agreement with baseline (Adjusted Rand Index)
 run_dissociation       : full pipeline → SubResult
 """
-
+from typing import Callable, Optional
 import numpy as np
 import torch
 from sklearn.metrics import adjusted_rand_score
@@ -109,7 +109,7 @@ def run_intervened_forward(
     model,
     tokenizer,
     text:          str,
-    hook_fn:       callable | None,
+    hook_fn:       Optional[Callable],
     hook_targets:  list,
     device:        str,
     max_length:    int = 512,
@@ -241,6 +241,29 @@ def measure_cluster_structure(
 # Full pipeline → SubResult
 # ---------------------------------------------------------------------------
 
+_MIN_BASELINE_IND = 0.02   # matches p6_dd1_ind_drops threshold (> 0.02)
+
+
+def _check_baseline_induction(baseline_ind: float) -> str | None:
+    """
+    Return an INDETERMINATE reason string if the baseline induction score is
+    too low to produce a meaningful DD1 verdict, otherwise None.
+
+    Bug DD1-2: run_dissociation has no guard against a near-zero baseline.
+    ind_drop = baseline_ind - ind_after_zero_imag can never exceed
+    baseline_ind, so if baseline_ind < _MIN_BASELINE_IND the p6_dd1_ind_drops
+    condition (drop > 0.02) is structurally unsatisfiable — any FAIL verdict
+    is uninformative.
+    """
+    if baseline_ind < _MIN_BASELINE_IND:
+        return (
+            f"baseline_induction_score={baseline_ind:.4f} is below the "
+            f"minimum required ({_MIN_BASELINE_IND}) for a meaningful DD1 "
+            f"verdict.  Supply a text with repeated-token bigrams via "
+            f"ctx['tokens'] or --prompt."
+        )
+    return None
+
 def run_dissociation(ctx: dict) -> SubResult:
     """
     Track C sub-experiment: double dissociation via forward-pass interventions.
@@ -288,7 +311,34 @@ def run_dissociation(ctx: dict) -> SubResult:
     baseline = run_intervened_forward(
         model, tokenizer, text, None, hook_targets, device
     )
-    baseline_ind   = measure_induction_score(baseline["attentions"], token_ids)
+    
+    baseline_ind = measure_induction_score(baseline["attentions"], token_ids)
+
+    # DD1-2 fix: bail out before running interventions on a zero baseline
+    indeterminate_reason = _check_baseline_induction(baseline_ind)
+    if indeterminate_reason:
+        payload = {
+            "baseline_induction_score": float(baseline_ind),
+            "p6_dd1_satisfied":         None,
+            "p6_dd2_satisfied":         None,
+            "indeterminate_reason":     indeterminate_reason,
+        }
+        lines = [
+            SEP_THICK,
+            "DOUBLE DISSOCIATION — FORWARD-PASS INTERVENTIONS  [Track C]",
+            SEP_THICK,
+            f"INDETERMINATE: {indeterminate_reason}",
+        ]
+        return SubResult(
+            name="dissociation",
+            applicable=True,
+            payload=payload,
+            summary_lines=lines,
+            verdict_contribution={
+                "dd_p6_dd1_satisfied": None,
+                "dd_p6_dd2_satisfied": None,
+            },
+        )
     baseline_labels_per_layer = ctx.get("baseline_labels")
     if baseline_labels_per_layer is None:
         # Cluster baseline activations

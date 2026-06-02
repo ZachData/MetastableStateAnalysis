@@ -463,8 +463,8 @@ class TestFindInductionPairs:
         X   = rng.standard_normal((n, d)).astype(np.float32)
         X  /= np.linalg.norm(X, axis=1, keepdims=True)
         pairs = find_induction_pairs(ids, X, min_offset=2)
-        for i, j in pairs:
-            assert j >= i + 2, f"Pair ({i},{j}) violates min_offset=2"
+        for query, key in pairs:
+            assert query >= key + 2, f"Pair ({query},{key}) violates min_offset=2"
 
     def test_repeating_token_pattern_detected(self):
         """Token sequence [A, B, A, B, ...] should produce induction pairs."""
@@ -519,8 +519,8 @@ class TestFindSameContentPairs:
         X = rng.standard_normal((n, d)).astype(np.float32)
         X /= np.linalg.norm(X, axis=1, keepdims=True)
         pairs = find_same_content_pairs(ids, X, min_offset=2)
-        for i, j in pairs:
-            assert j >= i + 2
+        for query, key in pairs:
+            assert query >= key + 2, f"Pair ({query},{key}) violates min_offset=2"
 
 
 # ============================================================================
@@ -889,3 +889,252 @@ class TestMergeGeometryTest:
         result = merge_geometry_test(seq, window=5)
         assert -1.0 - 1e-6 <= result["d_S_trend_rho"] <= 1.0 + 1e-6
         assert -1.0 - 1e-6 <= result["d_A_trend_rho"] <= 1.0 + 1e-6
+
+# Add these classes to tests/test_phase6.py
+# They use the same helpers already in the file: _orth_basis, _two_cluster_data,
+# _projector_pair.
+
+from p6_subspace.eigenspace_degeneracy import subspace_alignment_normed
+# probe_accuracy and probe_all_channels already imported at the top of the file
+
+
+# ============================================================================
+# Fix 1 — subspace_alignment_normed
+# ============================================================================
+
+class TestSubspaceAlignmentNormed:
+
+    def test_in_subspace_gives_inv_r(self):
+        """
+        A unit vector inside the subspace contributes ||B.T w||^2 = 1.0 to the
+        numerator; divided by r gives 1/r, NOT 1.0.
+        Maximum normed alignment for a unit vector in a rank-r subspace is 1/r.
+        """
+        B = _orth_basis(16, 4)
+        w = B[:, 0]
+        npt.assert_allclose(subspace_alignment_normed(w, B), 1.0 / 4, atol=1e-6)
+
+    def test_orthogonal_gives_zero(self):
+        d = 16
+        B = _orth_basis(d, 4, seed=10)
+        Q, _ = np.linalg.qr(np.hstack([B, np.eye(d, 1)]))
+        w = Q[:, 4]
+        npt.assert_allclose(subspace_alignment_normed(w, B), 0.0, atol=1e-6)
+
+    def test_empty_basis_gives_zero(self):
+        w = np.array([1.0, 0.0, 0.0])
+        assert subspace_alignment_normed(w, np.zeros((3, 0))) == 0.0
+
+    def test_null_equal_across_subspace_sizes(self):
+        """
+        Core property: random unit vectors should score ~1/d on average
+        in ANY subspace, regardless of that subspace's dimension.
+        Raw alignment grows with dim; normed alignment should not.
+
+        Test with two subspaces of very different sizes (r=4 vs r=12)
+        inside R^16.  Mean normed scores over many random unit vectors
+        should be indistinguishable.
+        """
+        rng = np.random.default_rng(0)
+        d   = 64
+        B_small = _orth_basis(d, 4,  seed=1)
+        B_large = _orth_basis(d, 32, seed=2)
+
+        scores_small, scores_large = [], []
+        for _ in range(2000):
+            w = rng.standard_normal(d)
+            w /= np.linalg.norm(w)
+            scores_small.append(subspace_alignment_normed(w, B_small))
+            scores_large.append(subspace_alignment_normed(w, B_large))
+
+        mean_small = float(np.mean(scores_small))
+        mean_large = float(np.mean(scores_large))
+        # Both should be near 1/d; difference must be < 0.01
+        assert abs(mean_small - mean_large) < 0.01, (
+            f"Normed null not equal: small={mean_small:.4f} large={mean_large:.4f}"
+        )
+
+    def test_raw_alignment_is_biased_by_dim(self):
+        """
+        Confirm the problem the normed version fixes: raw alignment grows
+        with subspace dimension for random unit vectors.
+        B_large (r=32) should yield ~8× higher raw mean than B_small (r=4).
+        """
+        rng = np.random.default_rng(42)
+        d   = 64
+        B_small = _orth_basis(d, 4,  seed=1)
+        B_large = _orth_basis(d, 32, seed=2)
+
+        raw_small, raw_large = [], []
+        for _ in range(2000):
+            w = rng.standard_normal(d)
+            w /= np.linalg.norm(w)
+            raw_small.append(subspace_alignment(w, B_small))
+            raw_large.append(subspace_alignment(w, B_large))
+
+        ratio = np.mean(raw_large) / np.mean(raw_small)
+        assert ratio > 5.0, (
+            f"Expected raw alignment ratio ~8× (32/4), got {ratio:.2f}"
+        )
+
+
+# ============================================================================
+# Fix 2 — probe_all_channels: new channels and equal-capacity guarantee
+# ============================================================================
+
+class TestProbeAllChannelsExtended:
+    """
+    Tests for imag_matched, real_full, dim_r_ref, dim_r_A.
+    Fixtures mirror TestProbeAllChannels but use asymmetric subspace sizes
+    to exercise the capacity-matching logic.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        d = 32
+        self.d = d
+        self.X, self.labels = _two_cluster_data(n_per=40, d=d, sep=10.0)
+        rng = np.random.default_rng(0)
+        Q, _ = np.linalg.qr(rng.standard_normal((d, d)))
+        self.U_pos = Q[:, :4]    # r_pos = 4
+        self.U_S   = Q[:, :8]    # r_S   = 8  (U_pos ∪ U_neg)
+        self.U_A   = Q[:, 8:28]  # r_A   = 20  (much larger than U_S)
+
+    def test_new_channels_present(self):
+        res = probe_all_channels(
+            self.X, self.labels, self.U_pos, self.U_A, U_S=self.U_S
+        )
+        for ch in ("full", "real", "real_full", "imag", "imag_matched", "random"):
+            assert ch in res, f"Missing channel: {ch}"
+
+    def test_dim_metadata_correct(self):
+        res = probe_all_channels(
+            self.X, self.labels, self.U_pos, self.U_A, U_S=self.U_S
+        )
+        assert res["dim_r_ref"] == 8,  f"Expected r_ref=8, got {res['dim_r_ref']}"
+        assert res["dim_r_A"]  == 20, f"Expected r_A=20, got {res['dim_r_A']}"
+
+    def test_imag_matched_uses_r_ref_features(self):
+        """
+        imag_matched must feed the probe r_ref features, not r_A.
+        Verify via n_samples (unchanged) and that accuracy is in [0,1].
+        """
+        res = probe_all_channels(
+            self.X, self.labels, self.U_pos, self.U_A, U_S=self.U_S
+        )
+        acc = res["imag_matched"]["mean_accuracy"]
+        assert acc is not None
+        assert 0.0 <= acc <= 1.0
+
+    def test_imag_matched_reproducible(self):
+        """Same seed must give identical imag_matched accuracy."""
+        res1 = probe_all_channels(
+            self.X, self.labels, self.U_pos, self.U_A, U_S=self.U_S, seed=7
+        )
+        res2 = probe_all_channels(
+            self.X, self.labels, self.U_pos, self.U_A, U_S=self.U_S, seed=7
+        )
+        assert res1["imag_matched"]["mean_accuracy"] == \
+               res2["imag_matched"]["mean_accuracy"]
+
+    def test_imag_matched_not_equal_to_full_imag(self):
+        """
+        With r_A=20 >> r_ref=8, a probe on 20 features should outperform one
+        on 8 when signal is diffuse across all 20 dims.
+        Uses weak, diffuse signal so neither probe saturates at 1.0.
+        """
+        rng = np.random.default_rng(99)
+        d   = 32
+        Q, _ = np.linalg.qr(rng.standard_normal((d, d)))
+        U_A_test = Q[:, 8:28]   # 20 cols
+
+        # Diffuse signal: each of the 20 U_A dims contributes a tiny separation
+        n = 60
+        X_test = rng.standard_normal((n, d)).astype(np.float32)
+        labels_test = np.array([0] * (n // 2) + [1] * (n // 2))
+        for col in range(U_A_test.shape[1]):
+            direction = U_A_test[:, col].astype(np.float32)
+            X_test[:n//2] += direction * 0.3
+            X_test[n//2:] -= direction * 0.3
+
+        res = probe_all_channels(
+            X_test, labels_test,
+            U_pos=Q[:, :4].astype(np.float32),
+            U_A=U_A_test.astype(np.float32),
+            U_S=Q[:, :8].astype(np.float32),
+        )
+        acc_full  = res["imag"]["mean_accuracy"]
+        acc_match = res["imag_matched"]["mean_accuracy"]
+
+        # Neither should be perfect
+        assert acc_full  < 1.0, f"Full imag saturated at 1.0 — increase noise or reduce sep"
+        assert acc_match < 1.0, f"Matched imag saturated at 1.0 — increase noise or reduce sep"
+        # Full probe (20 dims) should outperform matched probe (8 dims)
+        assert acc_full > acc_match, (
+            f"Expected full imag ({acc_full:.3f}) > matched ({acc_match:.3f}); "
+            "subsampling may not be working or signal is too weak"
+        )
+
+    def test_without_U_S_falls_back_to_U_pos_for_capacity(self):
+        """When U_S=None, dim_r_ref must equal U_pos.shape[1]."""
+        res = probe_all_channels(self.X, self.labels, self.U_pos, self.U_A)
+        assert res["dim_r_ref"] == self.U_pos.shape[1]
+
+    def test_real_full_uses_U_S(self):
+        """
+        real_full accuracy should be >= real accuracy: U_S contains U_pos
+        plus U_neg, giving it more information.
+        """
+        res = probe_all_channels(
+            self.X, self.labels, self.U_pos, self.U_A, U_S=self.U_S
+        )
+        acc_real      = res["real"]["mean_accuracy"]
+        acc_real_full = res["real_full"]["mean_accuracy"]
+        assert acc_real_full >= acc_real - 0.05, (
+            f"real_full ({acc_real_full:.3f}) should be >= real ({acc_real:.3f})"
+        )
+
+    def test_capacity_bias_demonstration(self):
+        """
+        With signal in U_S and noise everywhere else, a dimension-matched
+        imag probe (from the orthogonal complement) should score near chance,
+        while the full imag probe (20 dims) may score above chance purely
+        due to capacity.
+
+        This test documents the bias rather than asserting a strict threshold —
+        it will fail if the implementation regresses to using full U_A for the
+        matched channel.
+        """
+        rng = np.random.default_rng(1)
+        d   = 64
+        # Signal lives in first 8 dims
+        Q, _ = np.linalg.qr(rng.standard_normal((d, d)))
+        U_S_sig  = Q[:, :8]
+        U_A_orth = Q[:, 8:48]  # 40 dims, all orthogonal to signal
+
+        X_sig  = rng.standard_normal((80, d)).astype(np.float32)
+        # Cluster signal only in U_S_sig
+        X_sig[:40] += (U_S_sig[:, 0] * 10)
+        X_sig[40:] -= (U_S_sig[:, 0] * 10)
+        labels = np.array([0]*40 + [1]*40)
+
+        res = probe_all_channels(
+            X_sig, labels,
+            U_pos=U_S_sig[:, :4],
+            U_A=U_A_orth,
+            U_S=U_S_sig,
+        )
+        chance = res["full"]["chance_level"]
+        acc_matched = res["imag_matched"]["mean_accuracy"]
+        acc_full_imag = res["imag"]["mean_accuracy"]
+
+        # Matched probe should be near chance (no signal in U_A)
+        assert acc_matched <= chance + 0.15, (
+            f"imag_matched should be near chance ({chance:.2f}), got {acc_matched:.2f}"
+        )
+        # Full imag probe may exceed chance due to capacity alone — that's the bug
+        # we're documenting.  No assertion; just print for visibility.
+        print(
+            f"\n  [capacity_bias] chance={chance:.2f}  "
+            f"imag_full={acc_full_imag:.2f}  imag_matched={acc_matched:.2f}"
+        )

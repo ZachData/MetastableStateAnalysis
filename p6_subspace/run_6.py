@@ -30,8 +30,10 @@ import sys
 import traceback
 from collections import defaultdict
 from pathlib import Path
-
 import numpy as np
+
+
+from core.io import find_phase1_run_dir, load_phase1_run, _load_events
 
 from p6_subspace.p6_io import (
     SubexperimentSpec,
@@ -54,6 +56,40 @@ from p6_subspace.probe_subspace import run_probe_subspace
 from p6_subspace.write_subspace import run_write_subspace
 import p6_subspace.report_6 as report_6
 
+
+def _layer_list_to_windows(layer_list: list) -> list:
+    """
+    Convert a flat list of plateau layer indices (e.g. from trajectory.json's
+    plateau_layers field) into the {start, end, mid, length} window dicts
+    that _classify_layer_types and downstream plateau-alignment code expect.
+
+    e.g. [3, 4, 5, 10, 11, 12, 13]
+      -> [{"start": 3,  "end": 5,  "mid": 4,  "length": 3},
+          {"start": 10, "end": 13, "mid": 11, "length": 4}]
+    """
+    if not layer_list:
+        return []
+    sorted_layers = sorted({int(l) for l in layer_list})
+    windows = []
+    start = prev = sorted_layers[0]
+    for l in sorted_layers[1:]:
+        if l == prev + 1:
+            prev = l
+        else:
+            windows.append({
+                "start":  start,
+                "end":    prev,
+                "mid":    (start + prev) // 2,
+                "length": prev - start + 1,
+            })
+            start = prev = l
+    windows.append({
+        "start":  start,
+        "end":    prev,
+        "mid":    (start + prev) // 2,
+        "length": prev - start + 1,
+    })
+    return windows
 
 # =============================================================================
 # Fix #1 — Path resolution
@@ -174,8 +210,18 @@ def _load_ov_weights(path: Path) -> dict:
     out["d_model"]     = d_model
 
     # Optional QK pairs
-    wq_keys = sorted(k for k in keys if "wq_head" in k or "W_Q_head" in k)
-    wk_keys = sorted(k for k in keys if "wk_head" in k or "W_K_head" in k)
+    def _qk_head_idx(k: str) -> int:
+        m = _re.search(r"(?:wq|wk|W_Q|W_K)_?head(\d+)", k, _re.IGNORECASE)
+        return int(m.group(1)) if m else 0
+
+    wq_keys = sorted(
+        (k for k in keys if "wq_head" in k or "W_Q_head" in k),
+        key=_qk_head_idx,
+    )
+    wk_keys = sorted(
+        (k for k in keys if "wk_head" in k or "W_K_head" in k),
+        key=_qk_head_idx,
+    )
     if wq_keys and wk_keys and len(wq_keys) == len(wk_keys):
         out["qk_per_head"] = [
             (data[q], data[k]) for q, k in zip(wq_keys, wk_keys)
@@ -242,7 +288,7 @@ def _infer_d_model(p2_weights: Path) -> int:
 
 def _build_or_load_projectors(
     out_dir: Path, phase2_dir: Path, model_name: str
-) -> dict | None:
+    ) -> dict | None:
     """
     Build (or load from cache) global S/A projectors.
 
@@ -452,7 +498,7 @@ def _classify_layer_types(
     events:          list[dict],
     trajectories:    list[dict] | None = None,
     plateau_windows: list[dict] | None = None,
-) -> list[str]:
+    ) -> list[str]:
     """
     Label each layer as one of: "merge", "plateau", "transition", "other".
 
@@ -521,7 +567,7 @@ def build_context(
     load_model:  bool = False,
     prompt_key:  str  = "wiki_paragraph",
     layer_idx:   int  = 0,
-) -> dict:
+    ) -> dict:
     """
     Assemble the shared context dict for one model.
 
@@ -568,14 +614,25 @@ def build_context(
 
         ctx["labels_per_layer"] = p1.get("hdbscan_labels")
 
-        events             = p1.get("events", [])
+        events = _load_events(p1_run_dir / "events.json")
+        if not events:
+            events = p1.get("events", [])
         ctx["merge_events"] = events
+
+        traj_path = p1_run_dir / "trajectory.json"
+        plateau_windows = None
+        if traj_path.exists():
+            with open(traj_path) as f:
+                traj_raw = json.load(f)
+            plateau_layers = traj_raw.get("plateau_layers", [])
+            if plateau_layers:
+                plateau_windows = _layer_list_to_windows(plateau_layers)
 
         ctx["layer_type_labels"] = _classify_layer_types(
             ctx["layer_names"],
             events,
             p1.get("trajectories", []),
-            plateau_windows=p1.get("plateau_windows"),
+            plateau_windows=plateau_windows,   # was: p1.get("plateau_windows")
         )
 
         if ctx.get("activations_per_layer"):
@@ -637,24 +694,24 @@ def _run_head_classify(ctx: dict):
         f"Positional/induction:   {map_data['positional_heads']}",
         "",
         "P6-A2: f_rot(h) negatively correlated with CC and positively with |PC|?",
-        _bullet("Spearman ρ(f_rot, -CC)",   corr.get("rho_frot_neg_cc")),
+        _bullet("Spearman ρ(f_rot, -CC)",   corr.get("rho_f_rot_neg_cc")),
         _bullet("Spearman p-value (CC)",     corr.get("p_value_neg_cc")),
-        _bullet("Spearman ρ(f_rot, |PC|)",  corr.get("rho_frot_abs_pc")),
+        _bullet("Spearman ρ(f_rot, |PC|)",  corr.get("rho_f_rot_neg_cc")),
         _bullet("Spearman p-value (PC)",     corr.get("p_value_abs_pc")),
         _bullet("n_heads in correlation",   corr.get("n_heads")),
         _verdict_line(
             "P6-A2",
             corr.get("p6_a2_passes"),
-            f"ρ(-CC)={_fmt(corr.get('rho_frot_neg_cc'))} "
-            f"ρ(|PC|)={_fmt(corr.get('rho_frot_abs_pc'))}"
+            f"ρ(-CC)={_fmt(corr.get('rho_f_rot_neg_cc'))} "
+            f"ρ(|PC|)={_fmt(corr.get('rho_f_rot_neg_cc'))}"
             f" (p < α AND ρ > threshold)",
         ),
     ]
 
     vc = {
-        "hc_rho_frot_neg_cc":    corr.get("rho_frot_neg_cc"),
+        "hc_rho_frot_neg_cc":    corr.get("rho_f_rot_neg_cc"),
         "hc_p_value_neg_cc":     corr.get("p_value_neg_cc"),
-        "hc_rho_frot_abs_pc":    corr.get("rho_frot_abs_pc"),
+        "hc_rho_frot_abs_pc":    corr.get("rho_f_rot_abs_pc"),
         "hc_p_value_abs_pc":     corr.get("p_value_abs_pc"),
         "hc_p6_a2_passes":       corr.get("p6_a2_passes"),
         "hc_n_anti_sim_heads":   len(map_data["anti_sim_heads"]),
@@ -826,6 +883,23 @@ def _get_attention_output_modules(model) -> list:
 # FIX-R2 — _select_input_text with live induction score verification
 # =============================================================================
 
+
+def _apply_text_selection(ctx: dict, model, tokenizer, device: str) -> dict:
+    """
+    Select input text and sync ctx["token_ids"] to the selected text.
+
+    Bug DD1-1: build_context derives token_ids from Phase 1 string-token
+    hashes.  If _select_input_text picks a different text, the token_ids
+    used by measure_induction_score inside run_dissociation will not
+    correspond to the actual forward-pass input, making the induction
+    score structurally zero regardless of the intervention.
+    """
+    text = _select_input_text(ctx, model=model, tokenizer=tokenizer, device=device)
+    ctx["text"] = text
+    enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    ctx["token_ids"] = enc["input_ids"][0].cpu().numpy()
+    return ctx
+
 _MIN_INDUCTION_SCORE = 0.05
 
 _INDUCTION_CANDIDATE_TEXTS = [
@@ -850,13 +924,12 @@ _INDUCTION_CANDIDATE_TEXTS = [
     ),
 ]
 
-
 def _select_input_text(
     ctx: dict,
     model=None,
     tokenizer=None,
     device: str = "cpu",
-) -> str:
+    ) -> str:
     """
     FIX-R2: Choose an input text for the dissociation forward pass.
 
@@ -948,7 +1021,7 @@ def run_one_model(
     tracks:      str  = "all",
     load_model:  bool = False,
     prompt_key:  str  = "wiki_paragraph",
-) -> None:
+    ) -> None:
     import torch
 
     stem    = model_name.replace("/", "_").replace("-", "_")
@@ -986,9 +1059,7 @@ def run_one_model(
             ctx["device"]       = device
             ctx["hook_targets"] = _get_attention_output_modules(model)
             # FIX-R2: pass model + tokenizer so live induction score check runs
-            ctx["text"] = _select_input_text(
-                ctx, model=model, tokenizer=tokenizer, device=device
-            )
+            ctx = _apply_text_selection(ctx, model, tokenizer, device)  # DD1-1 fix also
             print(f"  Input text: {ctx['text'][:80]}…")
         except Exception as exc:
             print(
@@ -1035,7 +1106,8 @@ def parse_args():
         description="Phase 6 — Real/Imaginary subspace analysis"
     )
     p.add_argument("--model",       type=str, default="albert-xlarge-v2")
-    p.add_argument("--models",      type=str, nargs="+", default=None)
+    p.add_argument("--models",      type=str, nargs="+",
+                   default=["albert-xlarge-v2", "gpt2-large"])
     p.add_argument("--phase1-dir",  type=str, default="results/phase1")
     p.add_argument("--phase2-dir",  type=str, default="results/phase2")
     p.add_argument("--out-dir",     type=str, default="results/phase6")

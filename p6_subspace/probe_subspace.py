@@ -39,13 +39,21 @@ Bug fixes applied in this version
 3. multi_class="auto" removed from LogisticRegression
    Deprecated in sklearn ≥ 1.5; the solver auto-selects the correct strategy.
 
+4. Equal-capacity imaginary probe (probe_all_channels / run_probe_subspace)
+   U_A has 1818 dims vs U_S ~230 dims for ALBERT. The original imag probe
+   trained a logistic regression on 1818 features vs ~230, giving U_A a free
+   capacity advantage. Added imag_matched channel: U_A subsampled to dim(U_S)
+   columns before projection. P6-R4 verdict now uses imag_matched.
+   acc_imag (biased) is retained in vc and per_layer for diagnostic comparison.
+
 Functions
 ---------
 probe_accuracy       : fit and evaluate linear probe on given projections
-probe_all_channels   : run (a)-(d) at one layer
+probe_all_channels   : run (a)-(d) at one layer, controls for capacity
 run_probe_subspace   : full pipeline → SubResult
 """
 
+import warnings
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
@@ -58,32 +66,14 @@ from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK
 # Core probe
 # ---------------------------------------------------------------------------
 
+import warnings  # add to existing imports if not present
+
 def probe_accuracy(
     Z:        np.ndarray,
     labels:   np.ndarray,
     n_splits: int = 5,
     max_iter: int = 1000,
 ) -> dict:
-    """
-    Fit a logistic regression probe and evaluate with cross-validation.
-
-    Noise tokens (label == -1) are excluded before fitting.
-
-    Parameters
-    ----------
-    Z      : (n, r) — projected activations
-    labels : (n,)   — cluster labels
-    n_splits: k in k-fold CV
-
-    Returns
-    -------
-    dict with:
-      mean_accuracy  : float
-      std_accuracy   : float
-      n_samples      : int
-      n_classes      : int
-      chance_level   : float — 1/n_classes
-    """
     valid = labels >= 0
     Z_v   = Z[valid].astype(np.float32)
     L_v   = labels[valid]
@@ -103,20 +93,42 @@ def probe_accuracy(
     le = LabelEncoder()
     y  = le.fit_transform(L_v)
 
-    n_splits_actual = min(n_splits, n_classes, len(Z_v))
+    # Bound n_splits by minimum class size to avoid StratifiedKFold warning
+    # when a cluster has fewer members than requested folds.
+    min_class_count = int(np.bincount(y).min())
+    n_splits_actual = min(n_splits, n_classes, len(Z_v), min_class_count)
+    n_splits_actual = max(n_splits_actual, 2)  # need at least 2 folds
+
+    # If even 2-fold CV isn't possible (min class has 1 member), fall back to
+    # returning chance level rather than crashing or warning.
+    if min_class_count < 2:
+        return {
+            "mean_accuracy": chance,
+            "std_accuracy":  0.0,
+            "n_samples":     int(valid.sum()),
+            "n_classes":     n_classes,
+            "chance_level":  chance,
+        }
+
     cv = StratifiedKFold(n_splits=n_splits_actual, shuffle=True, random_state=0)
 
     accs = []
-    for train_idx, test_idx in cv.split(Z_v, y):
-        clf = LogisticRegression(
-            max_iter=max_iter,
-            solver="lbfgs",
-            # Fix 3: removed multi_class="auto" — deprecated in sklearn ≥1.5;
-            # the solver selects multinomial vs OvR automatically.
-            C=1.0,
+    # Suppress the type_of_target "looks like regression" warning — it fires
+    # when n_classes > n_samples/2 (many small clusters), which is expected here.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="The number of unique classes is greater than 50%",
+            category=UserWarning,
         )
-        clf.fit(Z_v[train_idx], y[train_idx])
-        accs.append(float(clf.score(Z_v[test_idx], y[test_idx])))
+        for train_idx, test_idx in cv.split(Z_v, y):
+            clf = LogisticRegression(
+                max_iter=max_iter,
+                solver="lbfgs",
+                C=1.0,
+            )
+            clf.fit(Z_v[train_idx], y[train_idx])
+            accs.append(float(clf.score(Z_v[test_idx], y[test_idx])))
 
     return {
         "mean_accuracy": float(np.mean(accs)),
@@ -131,61 +143,100 @@ def probe_accuracy(
 # All-channel probe at one layer
 # ---------------------------------------------------------------------------
 
+
 def probe_all_channels(
     X:      np.ndarray,
     labels: np.ndarray,
-    U_pos:  np.ndarray,
-    U_A:    np.ndarray,
+    U_pos:  np.ndarray,     # (d, r_pos) — attractive real subspace
+    U_A:    np.ndarray,     # (d, r_A)   — imaginary subspace
+    U_S:    np.ndarray | None = None,  # (d, r_S) — full real subspace (U_pos ∪ U_neg)
     seed:   int = 42,
-) -> dict:
+    ) -> dict:
     """
-    Run probes on full activations, real projection, imaginary projection,
-    and a random same-dimension projection.
+    Run probes on full activations and four projection channels:
+      "full"        — raw activations                    (d dims)
+      "real"        — U_pos projection                   (r_pos dims)
+      "imag"        — U_A projection                     (r_A dims)  [biased if r_A >> r_pos]
+      "imag_matched"— U_A subsampled to r_S directions   (r_S dims)  [equal capacity to real_full]
+      "random"      — random projection of r_pos dims    (r_pos dims) [baseline]
+
+    "imag_matched" is the fair comparison: same number of input features as
+    U_S (or U_pos if U_S not supplied).  If acc_imag_matched > acc_real_full,
+    the imaginary subspace genuinely encodes more cluster information per
+    direction.
 
     Parameters
     ----------
-    X      : (n, d)
-    labels : (n,)
-    U_pos  : (d, r_S) — attractive real subspace basis (tests P6-R4 specifically
-             with U_pos, not the full U_S, as per the prediction's definition of z_i^S)
-    U_A    : (d, r_A) — imaginary subspace basis
-
-    Returns
-    -------
-    dict with probe results for each channel: "full", "real", "imag", "random"
+    U_S : full real subspace (U_pos ∪ U_neg).  When supplied, "real_full" channel
+          uses U_S and "imag_matched" is subsampled to U_S.shape[1] columns.
+          When None, falls back to U_pos for both.
     """
-    d = X.shape[1]
+    d    = X.shape[1]
+    rng  = np.random.default_rng(seed=seed)
 
+    # Decide reference basis for capacity matching
+    U_real = U_S if (U_S is not None and U_S.shape[1] > 0) else U_pos
+    r_ref  = U_real.shape[1]   # capacity reference dimension
+
+    # --- full ---
     res_full = probe_accuracy(X, labels)
 
-    if U_pos.shape[1] > 0:
-        res_real = probe_accuracy(X @ U_pos, labels)
-    else:
-        res_real = {
-            "mean_accuracy": None, "std_accuracy": None,
-            "n_samples": 0, "n_classes": 0, "chance_level": None,
-        }
+    # --- real (U_pos, as per original P6-R4 definition) ---
+    res_real = (
+        probe_accuracy(X @ U_pos, labels)
+        if U_pos.shape[1] > 0
+        else _empty_probe_result()
+    )
 
-    if U_A.shape[1] > 0:
-        res_imag = probe_accuracy(X @ U_A, labels)
-    else:
-        res_imag = {
-            "mean_accuracy": None, "std_accuracy": None,
-            "n_samples": 0, "n_classes": 0, "chance_level": None,
-        }
+    # --- real_full (U_S, includes U_neg — fairer for total real capacity) ---
+    res_real_full = (
+        probe_accuracy(X @ U_real, labels)
+        if U_real.shape[1] > 0
+        else _empty_probe_result()
+    )
 
+    # --- imag (full U_A, biased by dimension) ---
+    res_imag = (
+        probe_accuracy(X @ U_A, labels)
+        if U_A.shape[1] > 0
+        else _empty_probe_result()
+    )
+
+    # --- imag_matched (U_A subsampled to r_ref columns, equal capacity) ---
+    if U_A.shape[1] > 0 and r_ref > 0:
+        if U_A.shape[1] <= r_ref:
+            # U_A is already smaller — use as-is (rare but possible)
+            U_A_sub = U_A
+        else:
+            # Random column subset, reproducible via seed
+            idx     = rng.choice(U_A.shape[1], size=r_ref, replace=False)
+            U_A_sub = U_A[:, idx]
+        res_imag_matched = probe_accuracy(X @ U_A_sub, labels)
+    else:
+        res_imag_matched = _empty_probe_result()
+
+    # --- random (same dimension as U_pos, original baseline) ---
     r_rand = max(U_pos.shape[1], 1)
-    rng    = np.random.default_rng(seed=seed)
     Q, _   = np.linalg.qr(rng.standard_normal((d, r_rand)))
     res_rand = probe_accuracy(X @ Q[:, :r_rand], labels)
 
     return {
-        "full":   res_full,
-        "real":   res_real,
-        "imag":   res_imag,
-        "random": res_rand,
+        "full":         res_full,
+        "real":         res_real,         # U_pos only (original P6-R4)
+        "real_full":    res_real_full,    # U_S = U_pos ∪ U_neg
+        "imag":         res_imag,         # full U_A (biased)
+        "imag_matched": res_imag_matched, # U_A subsampled to r_ref (fair)
+        "random":       res_rand,
+        "dim_r_ref":    r_ref,            # capacity reference stored for reporting
+        "dim_r_A":      U_A.shape[1],
     }
 
+
+def _empty_probe_result() -> dict:
+    return {
+        "mean_accuracy": None, "std_accuracy": None,
+        "n_samples": 0, "n_classes": 0, "chance_level": None,
+    }
 
 # ---------------------------------------------------------------------------
 # Full pipeline → SubResult
@@ -234,7 +285,7 @@ def run_probe_subspace(ctx: dict) -> SubResult:
         if int((lab >= 0).sum()) < 10:
             continue
 
-        res = probe_all_channels(X, lab, pe["U_pos"], pe["U_A"])
+        res = probe_all_channels(X, lab, pe["U_pos"], pe["U_A"], U_S=pe.get("U_S"))
         res["layer_name"] = lname
         res["layer_type"] = ltype
         per_layer_results.append(res)
@@ -258,10 +309,12 @@ def run_probe_subspace(ctx: dict) -> SubResult:
         ]
         return float(np.mean(vals)) if vals else None
 
-    acc_full   = _mean_acc(per_layer_results, "full")
-    acc_real   = _mean_acc(per_layer_results, "real")
-    acc_imag   = _mean_acc(per_layer_results, "imag")
-    acc_random = _mean_acc(per_layer_results, "random")
+    acc_full         = _mean_acc(per_layer_results, "full")
+    acc_real         = _mean_acc(per_layer_results, "real")
+    acc_real_full    = _mean_acc(per_layer_results, "real_full")
+    acc_imag         = _mean_acc(per_layer_results, "imag")
+    acc_imag_matched = _mean_acc(per_layer_results, "imag_matched")
+    acc_random       = _mean_acc(per_layer_results, "random")
 
     # -----------------------------------------------------------------------
     # P6-R4 verdict — Fix 1: explicit None checks (not float truthiness)
@@ -277,8 +330,8 @@ def run_probe_subspace(ctx: dict) -> SubResult:
     # (b) imag near chance: evaluated per layer using that layer's own chance level
     imag_chance_per_layer: list[bool] = []
     for r in per_layer_results:
-        acc_i    = r["imag"]["mean_accuracy"]
-        chance_i = r["full"]["chance_level"]   # 1/K at this layer
+        acc_i    = r["imag_matched"]["mean_accuracy"]   # WAS: r["imag"]["mean_accuracy"]
+        chance_i = r["full"]["chance_level"]
         if acc_i is not None and chance_i is not None:
             imag_chance_per_layer.append(bool(acc_i <= chance_i + 0.10))
 
@@ -307,16 +360,20 @@ def run_probe_subspace(ctx: dict) -> SubResult:
         "p6_r4_satisfied":            p6_r4_satisfied,
         "per_layer": [
             {
-                "layer_name":  r["layer_name"],
-                "layer_type":  r["layer_type"],
-                "acc_full":    r["full"]["mean_accuracy"],
-                "acc_real":    r["real"]["mean_accuracy"],
-                "acc_imag":    r["imag"]["mean_accuracy"],
-                "acc_random":  r["random"]["mean_accuracy"],
-                "n_classes":   r["full"]["n_classes"],
-                "n_samples":   r["full"]["n_samples"],
-                "chance_level": r["full"]["chance_level"],
-            }
+                "layer_name":       r["layer_name"],
+                "layer_type":       r["layer_type"],
+                "acc_full":         r["full"]["mean_accuracy"],
+                "acc_real":         r["real"]["mean_accuracy"],
+                "acc_real_full":    r["real_full"]["mean_accuracy"],
+                "acc_imag":         r["imag"]["mean_accuracy"],
+                "acc_imag_matched": r["imag_matched"]["mean_accuracy"],
+                "acc_random":       r["random"]["mean_accuracy"],
+                "dim_r_ref":        r.get("dim_r_ref"),
+                "dim_r_A":          r.get("dim_r_A"),
+                "n_classes":        r["full"]["n_classes"],
+                "n_samples":        r["full"]["n_samples"],
+                "chance_level":     r["full"]["chance_level"],
+                        }
             for r in per_layer_results
         ],
     }
@@ -334,8 +391,14 @@ def run_probe_subspace(ctx: dict) -> SubResult:
         "Probe accuracy averaged across probed layers:",
         _bullet("Full activation x_i",           acc_full),
         _bullet("Real projection z_i^S (U_pos)",  acc_real),
-        _bullet("Imaginary projection z_i^A",     acc_imag),
         _bullet("Random projection (baseline)",   acc_random),
+        # _bullet("Imaginary projection z_i^A",     acc_imag),
+        _bullet("Imaginary projection (full U_A, biased)",    acc_imag),
+        _bullet("Imaginary projection (matched dim, fair)",   acc_imag_matched),
+        "",
+        "  Note: 'matched dim' subsamples U_A to dim(U_S) columns.",
+        f"  dim(U_S)={per_layer_results[0].get('dim_r_ref','?')}  "
+        f"dim(U_A)={per_layer_results[0].get('dim_r_A','?')}",
         "",
         "P6-R4: z_i^S preserves cluster membership; z_i^A near chance.",
         "  Criteria:  acc_real >= 0.9 * acc_full  (global means)",
@@ -371,11 +434,13 @@ def run_probe_subspace(ctx: dict) -> SubResult:
         )
 
     vc = {
-        "probe_acc_full":           acc_full,
-        "probe_acc_real":           acc_real,
-        "probe_acc_imag":           acc_imag,
-        "probe_acc_random":         acc_random,
-        "probe_p6_r4_satisfied":    p6_r4_satisfied,
+        "probe_acc_full":             acc_full,
+        "probe_acc_real":             acc_real,
+        "probe_acc_real_full":        acc_real_full,        # ADD
+        "probe_acc_imag":             acc_imag,             # keep (biased, for comparison)
+        "probe_acc_imag_matched":     acc_imag_matched,     # ADD (fair, used for verdict)
+        "probe_acc_random":           acc_random,
+        "probe_p6_r4_satisfied":      p6_r4_satisfied,
     }
 
     return SubResult(

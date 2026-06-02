@@ -91,15 +91,18 @@ def extract_answer_token_activations(
 # ---------------------------------------------------------------------------
 # Per-prompt channel magnitudes
 # ---------------------------------------------------------------------------
-
 def channel_magnitudes_one_prompt(
     activations: np.ndarray,
     P_A: np.ndarray,
     P_S: np.ndarray,
 ) -> dict:
     """
-    Compute squared A- and S-channel projection magnitudes per layer
-    for one prompt's answer-token activations.
+    Compute the energy (squared-norm) of each layer's activation in the
+    A- and S-channel subspaces, for one prompt's answer-token activations.
+
+    "Energy" here means ⟨x, Π x⟩ = ‖Π x‖², the standard term for a squared
+    projection norm.  Fractions are energy ratios in [0, 1] and sum to 1
+    when P_A + P_S = I.
 
     Parameters
     ----------
@@ -110,31 +113,32 @@ def channel_magnitudes_one_prompt(
     Returns
     -------
     dict with:
-      mag_A_per_layer  : (n_layers,) squared projection norms onto P_A
-      mag_S_per_layer  : (n_layers,) squared projection norms onto P_S
-      mag_A_total      : float — sum across layers
-      mag_S_total      : float — sum across layers
-      mag_A_normed     : float — total normalized by ||x||² total (relative)
-      mag_S_normed     : float — total normalized by ||x||² total (relative)
+      energy_A_per_layer  : (n_layers,) ‖P_A x_L‖²
+      energy_S_per_layer  : (n_layers,) ‖P_S x_L‖²
+      energy_A            : float — Σ_L ‖P_A x_L‖²
+      energy_S            : float — Σ_L ‖P_S x_L‖²
+      energy_total        : float — Σ_L ‖x_L‖²
+      fraction_A          : float — energy_A / energy_total
+      fraction_S          : float — energy_S / energy_total
     """
-    n_layers, d = activations.shape
-    mag_A = np.array([float(activations[L] @ P_A @ activations[L])
-                      for L in range(n_layers)])
-    mag_S = np.array([float(activations[L] @ P_S @ activations[L])
-                      for L in range(n_layers)])
-    total_sq = np.array([float(activations[L] @ activations[L])
-                         for L in range(n_layers)])
+    energy_A_per_layer = np.einsum("ld,dk,lk->l", activations, P_A, activations)
+    energy_S_per_layer = np.einsum("ld,dk,lk->l", activations, P_S, activations)
+    energy_per_layer   = np.einsum("ld,ld->l",     activations, activations)
 
-    sum_total = float(np.sum(total_sq))
+    energy_A     = float(energy_A_per_layer.sum())
+    energy_S     = float(energy_S_per_layer.sum())
+    energy_total = float(energy_per_layer.sum())
+    denom        = max(energy_total, 1e-30)
+
     return {
-        "mag_A_per_layer": mag_A,
-        "mag_S_per_layer": mag_S,
-        "mag_A_total":     float(np.sum(mag_A)),
-        "mag_S_total":     float(np.sum(mag_S)),
-        "mag_A_normed":    float(np.sum(mag_A)) / max(sum_total, 1e-30),
-        "mag_S_normed":    float(np.sum(mag_S)) / max(sum_total, 1e-30),
+        "energy_A_per_layer": energy_A_per_layer,
+        "energy_S_per_layer": energy_S_per_layer,
+        "energy_A":           energy_A,
+        "energy_S":           energy_S,
+        "energy_total":       energy_total,
+        "fraction_A":         energy_A / denom,
+        "fraction_S":         energy_S / denom,
     }
-
 
 # ---------------------------------------------------------------------------
 # k-shot profile across prompts
@@ -193,10 +197,10 @@ def kshot_channel_profile(
         a_dirs.append(a_vecs)
 
         k_vals.append(k)
-        mag_A.append(mags["mag_A_total"])
-        mag_S.append(mags["mag_S_total"])
-        mag_An.append(mags["mag_A_normed"])
-        mag_Sn.append(mags["mag_S_normed"])
+        mag_A.append(mags["energy_A"])
+        mag_S.append(mags["energy_S"])
+        mag_An.append(mags["fraction_A"])
+        mag_Sn.append(mags["fraction_S"])
         per_k.append({"k": k, **mags})
 
     return {

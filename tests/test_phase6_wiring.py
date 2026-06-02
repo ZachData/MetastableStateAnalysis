@@ -160,7 +160,7 @@ class TestQkLogitMatricesComputed(unittest.TestCase):
         Extracted here so the test can call it directly and verify the contract.
         This function should be moved into build_context / a helper.
         """
-        from run_6 import _compute_qk_logit_matrices
+        from p6_subspace.run_6 import _compute_qk_logit_matrices
         return _compute_qk_logit_matrices(ctx)
 
     def test_qk_logit_matrices_not_none_when_qk_present(self):
@@ -201,14 +201,14 @@ class TestQkLogitMatricesComputed(unittest.TestCase):
         """When qk_matrices is None, qk_logit_matrices must remain None."""
         ctx = _make_base_ctx(with_qk=False)
         ctx["qk_matrices"] = None
-        from run_6 import _compute_qk_logit_matrices
+        from p6_subspace.run_6 import _compute_qk_logit_matrices
         ctx = _compute_qk_logit_matrices(ctx)
         self.assertIsNone(ctx.get("qk_logit_matrices"))
 
     def test_head_classify_prereqs_met_after_computation(self):
         """After computing qk_logit_matrices, head_classify prereqs must pass."""
         ctx = _make_base_ctx(with_qk=True, with_attentions=True)
-        from run_6 import _compute_qk_logit_matrices
+        from p6_subspace.run_6 import _compute_qk_logit_matrices
         ctx = _compute_qk_logit_matrices(ctx)
         spec = SubexperimentSpec(
             name="head_classify",
@@ -234,7 +234,7 @@ class TestLayerTypeClassification(unittest.TestCase):
     """
 
     def _classify(self, layer_names, events, trajectories=None):
-        from run_6 import _classify_layer_types
+        from p6_subspace.run_6 import _classify_layer_types
         return _classify_layer_types(layer_names, events, trajectories or [])
 
     def test_merge_detected_with_iter_prefix_names(self):
@@ -326,7 +326,7 @@ class TestEmptyQkMatricesGating(unittest.TestCase):
         build_context must normalise qk_matrices=[] to None so the prereq
         gate fires correctly.
         """
-        from run_6 import _normalise_empty_lists
+        from p6_subspace.run_6 import _normalise_empty_lists
         ctx = {"qk_matrices": [], "wo_matrices": [np.ones((4, 4))]}
         ctx = _normalise_empty_lists(ctx)
         self.assertIsNone(ctx["qk_matrices"],
@@ -335,14 +335,14 @@ class TestEmptyQkMatricesGating(unittest.TestCase):
                              msg="Non-empty wo_matrices must not be coerced")
 
     def test_empty_wo_matrices_coerced_to_none(self):
-        from run_6 import _normalise_empty_lists
+        from p6_subspace.run_6 import _normalise_empty_lists
         ctx = {"wo_matrices": [], "qk_matrices": None}
         ctx = _normalise_empty_lists(ctx)
         self.assertIsNone(ctx["wo_matrices"])
 
     def test_write_subspace_skipped_when_wo_empty(self):
         """write_subspace must not run when wo_matrices is coerced to None."""
-        from run_6 import _normalise_empty_lists
+        from p6_subspace.run_6 import _normalise_empty_lists
         ctx = _make_base_ctx()
         ctx["wo_matrices"] = []
         ctx = _normalise_empty_lists(ctx)
@@ -363,7 +363,7 @@ class TestRegistryPrereqCoverage(unittest.TestCase):
     """
 
     def setUp(self):
-        from run_6 import _compute_qk_logit_matrices, _normalise_empty_lists
+        from p6_subspace.run_6 import _compute_qk_logit_matrices, _normalise_empty_lists
         ctx = _make_base_ctx(with_qk=True, with_attentions=True)
         ctx = _compute_qk_logit_matrices(ctx)
         ctx = _normalise_empty_lists(ctx)
@@ -434,6 +434,223 @@ class TestRegistryPrereqCoverage(unittest.TestCase):
         ok, reason = spec.prerequisites_met(self.ctx)
         self.assertFalse(ok, msg="dissociation must be gated off without --load-model")
         self.assertIn("not applicable", reason)
+
+# ============================================================================
+# Bug 2 — verdict key contract: _run_head_classify must write the key that
+#          report_6._PRED_KEYS["P6-A2"] reads.
+# =============================================================================
+
+class TestP6A2VerdictKeyContract(unittest.TestCase):
+    """
+    _run_head_classify puts its P6-A2 verdict into verdict_contribution under
+    some key.  report_6._PRED_KEYS["P6-A2"] specifies which key assemble_report
+    looks up.  They must match, or the report always shows [n/a] regardless of
+    whether the test ran.
+    """
+
+    def _vc_key_from_run_head_classify(self) -> str:
+        """Return the key name used in _run_head_classify's vc dict for P6-A2."""
+        # Inspect the source rather than executing the full pipeline so the
+        # test has no heavyweight model deps.
+        import inspect
+        from p6_subspace.run_6 import _run_head_classify
+        src = inspect.getsource(_run_head_classify)
+        # The vc dict is the only place "p6_a2" appears in that function.
+        # Extract the key name: look for `"hc_p6_a2...":` pattern.
+        import re
+        m = re.search(r'"(hc_p6_a2[^"]+)"', src)
+        self.assertIsNotNone(m, "Could not find hc_p6_a2* key in _run_head_classify source")
+        return m.group(1)
+
+    def _vc_key_from_report(self) -> str:
+        from p6_subspace.report_6 import _PRED_KEYS
+        return _PRED_KEYS["P6-A2"]
+
+    def test_verdict_key_names_match(self):
+        """
+        The key _run_head_classify writes must equal what report_6 reads.
+        If this fails, P6-A2 will always be [n/a] even after a successful run.
+        """
+        written = self._vc_key_from_run_head_classify()
+        expected = self._vc_key_from_report()
+        self.assertEqual(
+            written, expected,
+            msg=(
+                f"Key mismatch: _run_head_classify writes '{written}' but "
+                f"report_6._PRED_KEYS['P6-A2'] reads '{expected}'. "
+                f"Fix _PRED_KEYS to use '{written}'."
+            ),
+        )
+
+
+# =============================================================================
+# Bug 3 — cross_head_correlations with all-None f_rot must return p6_a2_passes=None,
+#          not False, so the report emits [n/a] not [FAIL].
+# =============================================================================
+
+def _make_head_metrics(n: int, with_f_rot: bool) -> list[dict]:
+    rng = np.random.default_rng(0)
+    metrics = []
+    for h in range(n):
+        metrics.append({
+            "head_idx":     h,
+            "cc":           float(rng.uniform(-1, 1)),
+            "pc_scores":    {"prev": float(rng.uniform(-1, 1)),
+                             "local": float(rng.uniform(-1, 1)),
+                             "all":   float(rng.uniform(-1, 1))},
+            "pc_dominant":  float(rng.uniform(-1, 1)),
+            "f_rot":        float(rng.uniform(0, 1)) if with_f_rot else None,
+            "is_anti_sim":  False,
+            "quadrant":     "mixed",
+        })
+    return metrics
+
+
+class TestCrossHeadCorrelationsNullFrot(unittest.TestCase):
+
+    def test_all_none_f_rot_returns_none_verdict(self):
+        """
+        When every head has f_rot=None, cross_head_correlations must return
+        p6_a2_passes=None (no data), not False (tested and failed).
+        """
+        from p6_subspace.head_classify import cross_head_correlations
+        metrics = _make_head_metrics(16, with_f_rot=False)
+        result  = cross_head_correlations(metrics)
+        self.assertIsNone(
+            result["p6_a2_passes"],
+            msg="All-None f_rot must produce p6_a2_passes=None, got: "
+                f"{result['p6_a2_passes']}",
+        )
+
+    def test_all_none_f_rot_sets_unavailable_flag(self):
+        from p6_subspace.head_classify import cross_head_correlations
+        metrics = _make_head_metrics(16, with_f_rot=False)
+        result  = cross_head_correlations(metrics)
+        self.assertTrue(
+            result.get("f_rot_unavailable"),
+            msg="f_rot_unavailable flag must be True when all f_rot are None",
+        )
+
+    def test_partial_none_f_rot_still_runs(self):
+        """
+        If some heads have valid f_rot and some don't, the function should
+        filter to valid heads and not crash.
+        """
+        from p6_subspace.head_classify import cross_head_correlations
+        metrics = _make_head_metrics(16, with_f_rot=True)
+        # Zero out half
+        for m in metrics[:8]:
+            m["f_rot"] = None
+        result = cross_head_correlations(metrics)
+        # Should have run on the 8 valid heads
+        self.assertEqual(result["n_heads"], 8)
+        self.assertIsNotNone(result.get("rho_f_rot_neg_cc"))
+
+    def test_valid_f_rot_does_not_set_unavailable_flag(self):
+        from p6_subspace.head_classify import cross_head_correlations
+        metrics = _make_head_metrics(16, with_f_rot=True)
+        result  = cross_head_correlations(metrics)
+        self.assertFalse(
+            result.get("f_rot_unavailable", False),
+            msg="f_rot_unavailable must not be set when f_rot data is present",
+        )
+
+
+# =============================================================================
+# Bug 3 downstream — _verdict_line and assemble_report must treat
+#                    p6_a2_passes=None as [n/a], not [FAIL].
+# =============================================================================
+
+class TestVerdictLineNoneIsNA(unittest.TestCase):
+
+    def test_none_verdict_renders_na(self):
+        """
+        _verdict_line(id, None, detail) must emit [n/a], not [FAIL].
+        This is the downstream consequence of Bug 3: if cross_head_correlations
+        correctly returns None but _verdict_line treats it as falsy → [FAIL],
+        the report is still wrong.
+        """
+        from p6_subspace.p6_io import _verdict_line
+        line = _verdict_line("P6-A2", None, "f_rot unavailable")
+        self.assertIn("n/a", line.lower(), msg=f"Expected [n/a] in line, got: {line!r}")
+        self.assertNotIn("FAIL", line, msg=f"None verdict must not render as FAIL, got: {line!r}")
+
+    def test_false_verdict_renders_fail(self):
+        from p6_subspace.p6_io import _verdict_line
+        line = _verdict_line("P6-A2", False, "p < alpha not met")
+        self.assertIn("FAIL", line, msg=f"False verdict must render as FAIL, got: {line!r}")
+
+    def test_true_verdict_renders_pass(self):
+        from p6_subspace.p6_io import _verdict_line
+        line = _verdict_line("P6-A2", True, "both conditions met")
+        self.assertIn("PASS", line, msg=f"True verdict must render as PASS, got: {line!r}")
+
+
+# =============================================================================
+# Bug 1 — diagnostic: confirm what happens when qk_matrices is absent.
+#          Not a fix (requires Phase 2 to save QK weights), but a clear
+#          signal about why head_classify is skipped.
+# =============================================================================
+
+class TestHeadClassifySkipsWhenQKLogitMissing(unittest.TestCase):
+
+    def test_spec_fails_prereq_when_qk_logit_is_none(self):
+        """
+        When ctx["qk_logit_matrices"] is None, head_classify's SubexperimentSpec
+        must report prerequisites not met.  This confirms the skip is intentional
+        and not a silent bug elsewhere.
+        """
+        from p6_subspace.p6_io import SubexperimentSpec
+        spec = SubexperimentSpec(
+            name="head_classify",
+            run=lambda c: None,
+            requires=["attn_matrices", "qk_logit_matrices", "token_activations"],
+        )
+        ctx = {
+            "attn_matrices":    [np.zeros((5, 5))],
+            "qk_logit_matrices": None,
+            "token_activations": np.zeros((5, 8)),
+        }
+        ok, reason = spec.prerequisites_met(ctx)
+        self.assertFalse(ok)
+        self.assertIn("qk_logit_matrices", reason)
+
+    def test_spec_passes_prereq_when_qk_logit_populated(self):
+        """
+        After _compute_qk_logit_matrices populates the key, prereqs must pass.
+        """
+        from p6_subspace.p6_io import SubexperimentSpec
+        spec = SubexperimentSpec(
+            name="head_classify",
+            run=lambda c: None,
+            requires=["attn_matrices", "qk_logit_matrices", "token_activations"],
+        )
+        ctx = {
+            "attn_matrices":     [np.zeros((5, 5))],
+            "qk_logit_matrices": [np.zeros((5, 5))],
+            "token_activations": np.zeros((5, 8)),
+        }
+        ok, _ = spec.prerequisites_met(ctx)
+        self.assertTrue(ok)
+
+    def test_compute_qk_logit_returns_none_when_qk_matrices_absent(self):
+        """
+        When the Phase 2 NPZ has no WQ/WK keys, ctx["qk_matrices"] is never set.
+        _compute_qk_logit_matrices must set qk_logit_matrices=None (not crash).
+        This is the current behaviour for ALBERT — this test documents it so any
+        regression is caught immediately.
+        """
+        from p6_subspace.run_6 import _compute_qk_logit_matrices
+        ctx = {"token_activations": np.zeros((5, 8))}
+        # qk_matrices key absent entirely
+        result = _compute_qk_logit_matrices(ctx)
+        self.assertIsNone(result.get("qk_logit_matrices"))
+
+    def test_compute_qk_logit_returns_none_when_qk_matrices_is_none(self):
+        from p6_subspace.run_6 import _compute_qk_logit_matrices
+        ctx = {"qk_matrices": None, "token_activations": np.zeros((5, 8))}
+        result = _compute_qk_logit_matrices(ctx)
+        self.assertIsNone(result.get("qk_logit_matrices"))
 
 
 if __name__ == "__main__":

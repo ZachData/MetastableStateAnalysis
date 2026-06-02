@@ -135,7 +135,8 @@ def channel_orthogonality(
     wo_matrices:   list[np.ndarray],
     align_rot_lo:  float = 0.4,
     align_rot_hi:  float = 0.6,
-) -> dict:
+    top_r:         int   = 16,
+    ) -> dict:
     """
     Partition heads and compute principal angles between channel write subspaces.
 
@@ -176,9 +177,8 @@ def channel_orthogonality(
     def _collect_write_vecs(head_indices):
         vecs = []
         for h in head_indices:
-            WO = wo_matrices[h]
-            U, _, _ = np.linalg.svd(WO, full_matrices=False)
-            vecs.append(U)   # (d, d_head) or similar
+            U, _, _ = np.linalg.svd(wo_matrices[h], full_matrices=False)
+            vecs.append(U[:, :top_r])     # clip here
         return np.column_stack(vecs) if vecs else np.zeros((wo_matrices[0].shape[0], 0))
 
     V_real = _collect_write_vecs(real_heads)
@@ -263,10 +263,12 @@ def run_write_subspace(ctx: dict) -> SubResult:
             p6_c1_satisfied = (p6_c1_rho is not None and p6_c1_rho > 0.4)
 
     # C.2 — Channel orthogonality
-    ortho = channel_orthogonality(head_records, wo_matrices)
+    ortho = channel_orthogonality(head_records, wo_matrices, top_r=top_r)
 
     mean_align_rot  = float(np.mean([a["align_rot"]  for a in alignments]))
     mean_align_real = float(np.mean([a["align_real"] for a in alignments]))
+
+    complement_gap_fro = _check_projector_complement(P_S, P_A)
 
     payload = {
         "layer_name":       layer_name,
@@ -277,6 +279,7 @@ def run_write_subspace(ctx: dict) -> SubResult:
         "p6_c1_satisfied":  p6_c1_satisfied,
         "channel_ortho":    ortho,
         "head_records":     head_records,
+        "complement_gap_fro": complement_gap_fro,
     }
 
     # --- Summary lines ---
@@ -363,3 +366,8 @@ def run_write_subspace(ctx: dict) -> SubResult:
         summary_lines=lines,
         verdict_contribution=vc,
     )
+
+def _check_projector_complement(P_S: np.ndarray, P_A: np.ndarray) -> float:
+    """Frobenius gap between (P_S + P_A) and I — zero iff complementary."""
+    d = P_S.shape[0]
+    return float(np.linalg.norm(P_S + P_A - np.eye(d), ord="fro"))

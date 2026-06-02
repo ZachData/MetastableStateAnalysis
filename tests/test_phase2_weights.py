@@ -455,3 +455,126 @@ class TestEigendecomposeSignClassification:
         dec = eigendecompose(M)
         for ev in dec["eigenvalues"]:
             assert abs(np.imag(ev)) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# extract_qk_per_head — structural / shape contracts
+# ---------------------------------------------------------------------------
+
+import torch
+from types import SimpleNamespace
+
+from p2_eigenspectra.weights import extract_qk_per_head
+
+
+def _make_gpt2_stub(n_layers: int = 2, d_model: int = 16, n_heads: int = 4):
+    """Minimal GPT-2-like stub — unwrapped form (blocks at model.h)."""
+    def _block():
+        # Conv1D: weight is (d_model, 3 * d_model)
+        c_attn = SimpleNamespace(
+            weight=torch.randn(d_model, 3 * d_model)
+        )
+        return SimpleNamespace(attn=SimpleNamespace(c_attn=c_attn, num_heads=n_heads))
+    return SimpleNamespace(h=[_block() for _ in range(n_layers)])
+
+
+def _make_bert_stub(n_layers: int = 2, d_model: int = 16, n_heads: int = 4):
+    """Minimal BERT-like stub — unwrapped form (encoder.layer)."""
+    def _layer():
+        attn_self = SimpleNamespace(
+            query=SimpleNamespace(weight=torch.randn(d_model, d_model)),
+            key=SimpleNamespace(weight=torch.randn(d_model, d_model)),
+            num_attention_heads=n_heads,
+        )
+        return SimpleNamespace(attention=SimpleNamespace(self=attn_self))
+    return SimpleNamespace(encoder=SimpleNamespace(layer=[_layer() for _ in range(n_layers)]))
+
+
+def _make_albert_stub(d_model: int = 16, n_heads: int = 4):
+    """Minimal ALBERT-like stub — unwrapped form (encoder.albert_layer_groups)."""
+    attn = SimpleNamespace(
+        query=SimpleNamespace(weight=torch.randn(d_model, d_model)),
+        key=SimpleNamespace(weight=torch.randn(d_model, d_model)),
+        num_attention_heads=n_heads,
+    )
+    albert_layer = SimpleNamespace(attention=attn)
+    group = SimpleNamespace(albert_layers=[albert_layer])
+    return SimpleNamespace(encoder=SimpleNamespace(albert_layer_groups=[group]))
+
+
+class TestExtractQkPerHeadGPT2:
+    D, H, L = 16, 4, 3
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        self.model = _make_gpt2_stub(n_layers=self.L, d_model=self.D, n_heads=self.H)
+        self.result = extract_qk_per_head(self.model, model_type="gpt2")
+
+    def test_is_per_layer(self):
+        assert self.result["is_per_layer"] is True
+
+    def test_layer_count(self):
+        assert len(self.result["wq_per_head"]) == self.L
+        assert len(self.result["wk_per_head"]) == self.L
+
+    def test_head_count_per_layer(self):
+        for li in range(self.L):
+            assert len(self.result["wq_per_head"][li]) == self.H
+            assert len(self.result["wk_per_head"][li]) == self.H
+
+    def test_shape_is_d_model_by_d_head(self):
+        d_head = self.D // self.H
+        for li in range(self.L):
+            for hi in range(self.H):
+                assert self.result["wq_per_head"][li][hi].shape == (self.D, d_head)
+                assert self.result["wk_per_head"][li][hi].shape == (self.D, d_head)
+
+    def test_layer_names(self):
+        assert self.result["layer_names"] == [f"layer_{i}" for i in range(self.L)]
+
+
+class TestExtractQkPerHeadBERT:
+    D, H, L = 16, 4, 2
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        self.model = _make_bert_stub(n_layers=self.L, d_model=self.D, n_heads=self.H)
+        self.result = extract_qk_per_head(self.model, model_type="bert")
+
+    def test_is_per_layer(self):
+        assert self.result["is_per_layer"] is True
+
+    def test_shape_is_d_model_by_d_head(self):
+        d_head = self.D // self.H
+        for li in range(self.L):
+            for hi in range(self.H):
+                assert self.result["wq_per_head"][li][hi].shape == (self.D, d_head)
+                assert self.result["wk_per_head"][li][hi].shape == (self.D, d_head)
+
+
+class TestExtractQkPerHeadALBERT:
+    D, H = 16, 4
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        self.model = _make_albert_stub(d_model=self.D, n_heads=self.H)
+        self.result = extract_qk_per_head(self.model, model_type="albert")
+
+    def test_is_not_per_layer(self):
+        assert self.result["is_per_layer"] is False
+
+    def test_head_count(self):
+        assert len(self.result["wq_per_head"]) == self.H
+
+    def test_shape_is_d_model_by_d_head(self):
+        d_head = self.D // self.H
+        for hi in range(self.H):
+            assert self.result["wq_per_head"][hi].shape == (self.D, d_head)
+            assert self.result["wk_per_head"][hi].shape == (self.D, d_head)
+
+    def test_layer_names(self):
+        assert self.result["layer_names"] == ["shared"]
+
+
+if __name__ == "__main__":
+    unittest.main()

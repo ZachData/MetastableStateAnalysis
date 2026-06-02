@@ -46,7 +46,7 @@ project_to_subspace       : project token matrix onto a basis
 degeneracy_ratio          : within/between cluster variance in a subspace
 degeneracy_sweep          : sweep k from 1..max_k for U_pos and random baseline
 lda_direction             : Fisher LDA direction for two clusters
-subspace_alignment        : cosine alignment between a direction and a subspace
+subspace_alignment        : cosine alignment between a direction and a subspace, dimension-normalised
 run_eigenspace_degeneracy : full pipeline → SubResult
 """
 
@@ -246,22 +246,36 @@ def lda_direction(
 # Subspace alignment
 # ---------------------------------------------------------------------------
 
-def subspace_alignment(
-    w:     np.ndarray,
-    basis: np.ndarray,
-) -> float:
+def subspace_alignment(w: np.ndarray, basis: np.ndarray) -> float:
     """
-    Squared cosine between unit direction w and the subspace spanned by basis.
-
-    align = ||P_basis w||²  where P_basis = basis @ basis^T (orthonormal)
-
-    Returns float in [0, 1].
+    Raw squared projection of unit vector w onto span(basis).
+    Returns float in [0, 1].  NOT comparable across subspaces of different
+    dimensions — use subspace_alignment_normed for cross-subspace comparisons.
     """
     if basis.shape[1] == 0:
         return 0.0
     proj = basis.T @ w
     return float(np.dot(proj, proj))
 
+def subspace_alignment_normed(w: np.ndarray, basis: np.ndarray) -> float:
+    """
+    Mean squared projection per basis direction.
+
+    Divides the raw alignment by the subspace dimension, making the result
+    comparable across subspaces of different sizes.
+
+    A random unit vector in R^d has expected value 1/d in both numerator
+    (raw alignment) and denominator (dim), so the normalised value expected
+    under the null is 1/d regardless of subspace size.  After normalisation,
+    a subspace that genuinely contains the direction will score near 1.0;
+    one that is irrelevant will score near 1/d for any dim.
+
+    Returns float in [0, 1].
+    """
+    if basis.shape[1] == 0:
+        return 0.0
+    proj = basis.T @ w
+    return float(np.dot(proj, proj)) / basis.shape[1]
 
 # ---------------------------------------------------------------------------
 # Full pipeline → SubResult
@@ -339,9 +353,9 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
                 w = lda_direction(X, labels, c1, c2)
                 if w is None:
                     continue
-                align_neg_vals.append(subspace_alignment(w, U_neg))
-                align_imag_vals.append(subspace_alignment(w, U_A))
-                align_pos_vals.append(subspace_alignment(w, U_pos))
+                align_neg_vals.append(subspace_alignment_normed(w, U_neg))
+                align_imag_vals.append(subspace_alignment_normed(w, U_A))
+                align_pos_vals.append(subspace_alignment_normed(w, U_pos))
 
             if align_neg_vals:
                 lda_align_neg  = float(np.mean(align_neg_vals))
@@ -378,6 +392,7 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
             "lda_align_neg":     lda_align_neg,
             "lda_align_pos":     lda_align_pos,
             "lda_align_imag":    lda_align_imag,
+            "null_align":        1.0 / projectors["d_model"],   # expected value for a random direction in R^d, projectors["d_model"] = dimentionality
             "p6_r1":             p6_r1,
             "p6_r2":             p6_r2,
         })

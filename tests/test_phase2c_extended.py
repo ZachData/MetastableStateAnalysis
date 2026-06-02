@@ -592,7 +592,7 @@ class TestJacobiansAtCentroids(unittest.TestCase):
         )
         self.assertEqual(len(results), 3)
         for r in results:
-            self.assertAlmostEqual(r["sa_ratio"], 0.0, places=6)
+            self.assertAlmostEqual(r["sa_ratio"], 1.0, places=6)
 
     def test_centroid_id_preserved(self):
         rng       = np.random.default_rng(1)
@@ -675,13 +675,13 @@ class TestChannelMagnitudesOnePrompt(unittest.TestCase):
 
     def test_output_keys(self):
         r = self.cm(self.acts, self.P_A, self.P_S)
-        for k in ("mag_A", "mag_S", "mag_A_normed", "mag_S_normed"):
+        for k in ("energy_A", "energy_S", "fraction_A", "fraction_S"):
             self.assertIn(k, r, f"missing key: {k}")
 
     def test_magnitudes_non_negative(self):
         r = self.cm(self.acts, self.P_A, self.P_S)
-        self.assertGreaterEqual(r["mag_A"], 0.0)
-        self.assertGreaterEqual(r["mag_S"], 0.0)
+        self.assertGreaterEqual(r["energy_A"], 0.0)
+        self.assertGreaterEqual(r["energy_S"], 0.0)
 
 
 class TestMonotonicityScore(unittest.TestCase):

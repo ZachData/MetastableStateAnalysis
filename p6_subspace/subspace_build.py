@@ -425,9 +425,9 @@ def _build_for_layer(
 def build_global_projectors(
     ov_data:         dict,
     svd_tol:         float = 1e-8,
-    eig_rel_tol:     float = 1e-8,
+    eig_rel_tol:     float = 1e-12, # was 1e-8
     cos_overlap_tol: float = 0.99,
-) -> dict:
+    ) -> dict:
     """
     Build global residual-stream S/A projectors from per-head OV matrices.
 

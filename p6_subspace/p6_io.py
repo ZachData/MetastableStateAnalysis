@@ -82,11 +82,11 @@ class SubexperimentSpec:
     applicable: Callable[[dict], bool] | None = None
 
     def prerequisites_met(self, ctx: dict) -> tuple[bool, str]:
+        if self.applicable is not None and not self.applicable(ctx):
+            return False, "not applicable for this configuration"
         missing = [k for k in self.requires if ctx.get(k) is None]
         if missing:
             return False, f"missing prerequisites: {missing}"
-        if self.applicable is not None and not self.applicable(ctx):
-            return False, "not applicable for this configuration"
         return True, ""
 
 

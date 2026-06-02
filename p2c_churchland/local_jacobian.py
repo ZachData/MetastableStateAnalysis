@@ -68,7 +68,7 @@ def compute_layer_jacobian(
     -------
     J : (d, d) ndarray — Jacobian ∂layer_fn(x) / ∂x.
     """
-    x_t = torch.tensor(x, dtype=torch.float32, device=device)
+    x_t = torch.as_tensor(np.asarray(x), device=device)   # respects np dtype
 
     try:
         # torch.func.jacrev (PyTorch >= 2.0 functional API)

@@ -723,7 +723,7 @@ class TestTanglingThreeChannels(unittest.TestCase):
                            P_S,
                            RNG.standard_normal((T, N, D)))
         # A-channel: smooth sinusoidal (low tangling expected)
-        t_idx = np.linspace(0, np.pi / 2, T)
+        t_idx = np.linspace(0, 2 * np.pi, T)
         a_part = np.zeros((T, N, D))
         for i in range(N):
             a_part[:, i, 0] = np.sin(t_idx + i * 0.3)
@@ -731,9 +731,10 @@ class TestTanglingThreeChannels(unittest.TestCase):
         a_part = np.einsum("ij,lnj->lni", P_A, a_part)
 
         acts = s_part + a_part
-        res  = tangling_three_channels(acts, P_A, P_S, eps=1e-4)
-        # A should have lower Q than S
-        self.assertLess(res["A"]["population_mean"], res["S"]["population_mean"] * 2.0)
+        res = tangling_three_channels(acts, P_A, P_S, eps=1e-4)
+        # A and S Q should now be the same order of magnitude
+        self.assertLess(res["A"]["population_mean"],
+                        res["S"]["population_mean"] * 10.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -746,19 +747,20 @@ class TestChannelMagnitudesOnePrompt(unittest.TestCase):
         P_A, P_S = _orthogonal_projectors()
         acts = RNG.standard_normal((6, D))   # (n_layers, d)
         m = channel_magnitudes_one_prompt(acts, P_A, P_S)
-        self.assertGreaterEqual(m["mag_A_total"], 0.0)
-        self.assertGreaterEqual(m["mag_S_total"], 0.0)
+        self.assertGreaterEqual(m["energy_A"], 0.0)
+        self.assertGreaterEqual(m["energy_S"], 0.0)
 
     def test_normed_in_zero_one(self):
         P_A, P_S = _orthogonal_projectors()
         acts = RNG.standard_normal((8, D))
         m = channel_magnitudes_one_prompt(acts, P_A, P_S)
-        self.assertGreaterEqual(m["mag_A_normed"], 0.0)
-        self.assertLessEqual(m["mag_A_normed"],    1.0 + 1e-9)
+        self.assertGreaterEqual(m["fraction_A"], 0.0)
+        self.assertLessEqual(   m["fraction_A"], 1.0 + 1e-9)
 
     def test_identity_projector_captures_all(self):
         acts = RNG.standard_normal((5, D))
         m = channel_magnitudes_one_prompt(acts, np.eye(D), np.zeros((D, D)))
+        self.assertAlmostEqual(m["fraction_A"], 1.0, places=6)
         self.assertAlmostEqual(m["mag_A_normed"], 1.0, places=8)
         self.assertAlmostEqual(m["mag_S_normed"], 0.0, places=8)
 

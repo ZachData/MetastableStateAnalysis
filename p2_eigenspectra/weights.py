@@ -37,6 +37,36 @@ from scipy.linalg import schur, eigvals, svdvals, expm
 from core.config import MODEL_CONFIGS
 
 
+
+
+# ---------------------------------------------------------------------------
+# Model type detection
+# ---------------------------------------------------------------------------
+
+def _detect_model_type(model) -> str:
+    """
+    Infer model type from architecture attributes.
+
+    Handles both wrapped (AlbertForMaskedLM -> model.albert) and
+    unwrapped (AlbertModel -> model.encoder) forms, consistent with
+    the p6 loading pattern.
+    """
+    # ALBERT — unwrapped (AlbertModel) or wrapped (task-head with .albert)
+    inner = getattr(model, "albert", model)
+    if hasattr(inner, "encoder") and hasattr(inner.encoder, "albert_layer_groups"):
+        return "albert"
+    # GPT-2 — unwrapped (GPT2Model, blocks at model.h) or wrapped (model.transformer.h)
+    transformer = getattr(model, "transformer", model)
+    if hasattr(transformer, "h"):
+        return "gpt2"
+    # BERT — unwrapped or wrapped
+    inner_bert = getattr(model, "bert", model)
+    if hasattr(inner_bert, "encoder") and hasattr(inner_bert.encoder, "layer"):
+        return "bert"
+    raise ValueError(
+        f"_detect_model_type: unrecognised architecture {type(model).__name__}"
+    )
+
 # ---------------------------------------------------------------------------
 # OV extraction
 # ---------------------------------------------------------------------------
@@ -511,11 +541,15 @@ def extract_qk_per_head(model, model_type: str | None = None) -> dict:
     if model_type is None:
         model_type = _detect_model_type(model)
 
+    # print(f"DEBUG extract_qk_per_head: model_type={model_type!r}, type(model)={type(model).__name__}")
+    # print(f"DEBUG branches available: albert={model_type=='albert'}, gpt2={model_type=='gpt2'}, bert={model_type=='bert'}")
+
     if model_type == "albert":
         # ALBERT: weights shared across all layers; nn.Linear (d_total, d_model)
-        attn = model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention
-        WQ = attn.query.weight.detach().cpu().numpy()         # (d_total, d_model)
-        WK = attn.key.weight.detach().cpu().numpy()
+        inner = getattr(model, "albert", model)
+        attn = inner.encoder.albert_layer_groups[0].albert_layers[0].attention
+        WQ = attn.query.weight.detach().cpu().float().numpy()
+        WK = attn.key.weight.detach().cpu().float().numpy()
         d_total, d_model = WQ.shape
         n_heads = attn.num_attention_heads
         d_head  = d_total // n_heads
@@ -533,25 +567,53 @@ def extract_qk_per_head(model, model_type: str | None = None) -> dict:
         }
 
     if model_type == "gpt2":
-        # GPT-2: per-layer; Conv1D fused QKV weight is (d_model, 3 * d_model)
+            wq_layers, wk_layers, layer_names = [], [], []
+            transformer = getattr(model, "transformer", model)
+            for i, block in enumerate(transformer.h):
+                attn = block.attn
+                W = attn.c_attn.weight.detach().cpu().float().numpy()
+                d_model = W.shape[0]
+                WQ_full = W[:, :d_model]
+                WK_full = W[:, d_model : 2 * d_model]
+                n_heads = attn.num_heads
+                d_head  = d_model // n_heads
+
+                wq_h, wk_h = [], []
+                for h in range(n_heads):
+                    s, e = h * d_head, (h + 1) * d_head
+                    wq_h.append(np.ascontiguousarray(WQ_full[:, s:e]))
+                    wk_h.append(np.ascontiguousarray(WK_full[:, s:e]))
+                wq_layers.append(wq_h)
+                wk_layers.append(wk_h)
+                layer_names.append(f"layer_{i}")
+            return {                          # ← this was missing
+                "wq_per_head":  wq_layers,
+                "wk_per_head":  wk_layers,
+                "is_per_layer": True,
+                "layer_names":  layer_names,
+            }
+        
+    if model_type == "bert":
+        # BERT: per-layer; nn.Linear stores weights as (d_total, d_model)
         wq_layers, wk_layers, layer_names = [], [], []
-        for i, block in enumerate(model.transformer.h):
-            attn = block.attn
-            W = attn.c_attn.weight.detach().cpu().numpy()    # (d_model, 3*d_model)
-            d_model = W.shape[0]
-            WQ_full = W[:, :d_model]
-            WK_full = W[:, d_model : 2 * d_model]
-            n_heads = attn.num_heads
-            d_head  = d_model // n_heads
+        inner = getattr(model, "bert", model)
+        for i, layer in enumerate(inner.encoder.layer):
+            attn = layer.attention.self
+            WQ = attn.query.weight.detach().cpu().float().numpy()  # (d_total, d_model)
+            WK = attn.key.weight.detach().cpu().float().numpy()
+            d_total, d_model = WQ.shape
+            n_heads = attn.num_attention_heads
+            d_head  = d_total // n_heads
 
             wq_h, wk_h = [], []
             for h in range(n_heads):
                 s, e = h * d_head, (h + 1) * d_head
-                wq_h.append(np.ascontiguousarray(WQ_full[:, s:e]))   # already (d_model, d_head)
-                wk_h.append(np.ascontiguousarray(WK_full[:, s:e]))
+                wq_h.append(np.ascontiguousarray(WQ[s:e, :].T))  # (d_model, d_head)
+                wk_h.append(np.ascontiguousarray(WK[s:e, :].T))
             wq_layers.append(wq_h)
             wk_layers.append(wk_h)
             layer_names.append(f"layer_{i}")
+
         return {
             "wq_per_head":  wq_layers,
             "wk_per_head":  wk_layers,
