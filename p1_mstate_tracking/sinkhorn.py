@@ -6,13 +6,32 @@ A doubly stochastic attention matrix is the gradient-flow object; the gap
 between raw attention and doubly stochastic form measures deviation from
 idealized dynamics.
 
+Fix 3 (causal-mask confound):
+    GPT-2 attention is lower-triangular.  Sinkhorn + symmetrize (P+Pᵀ)/2 on
+    a lower-triangular matrix forces a low-connectivity graph structure
+    independent of content, likely manufacturing "100% STABLE-CLUSTER" across
+    prompts.  The fix has two parts:
+
+    1.  Baseline subtraction — build a content-free attention (uniform within
+        the causal triangle), compute its per-head Fiedler, and report each
+        head's actual Fiedler *minus* this mask-only baseline.  Classify
+        CLUSTER/MIXED/MIXING on the *deviation*, not the raw value.
+
+    2.  Causal-mask control — apply an artificial causal mask to the input
+        (zero upper triangle + row-renorm) before Sinkhorn.  Running this on
+        BERT tests whether masking alone collapses heads to "STABLE-CLUSTER".
+        If it does, the GPT-2/BERT split is mask-driven, not weight-driven,
+        and the routing claim is withdrawn.
+
 Functions
 ---------
-sinkhorn_normalize         : iterative row/col normalisation (single head)
-sinkhorn_normalize_batched : vectorised normalisation across all heads at once
-fiedler_value              : λ₂ of the normalised Laplacian
-sinkhorn_cluster_count     : eigenvalues near 1 ≈ cluster count
-analyze_attention_sinkhorn : per-head summary dict for one attention layer
+sinkhorn_normalize              : iterative row/col normalisation (single head)
+sinkhorn_normalize_batched      : vectorised normalisation across all heads
+fiedler_value                   : λ₂ of the normalised Laplacian
+sinkhorn_cluster_count          : eigenvalues near 1 ≈ cluster count
+_uniform_causal_attention       : content-free lower-triangular baseline
+causal_fiedler_baseline         : Fiedler of the mask-only baseline
+analyze_attention_sinkhorn      : per-head summary dict for one attention layer
 """
 
 import numpy as np
@@ -23,6 +42,10 @@ from scipy.sparse.csgraph import laplacian
 
 from core.config import SINKHORN_MAX_ITER, SINKHORN_TOL
 
+
+# ---------------------------------------------------------------------------
+# Core Sinkhorn normalisation
+# ---------------------------------------------------------------------------
 
 def sinkhorn_normalize(
     A: np.ndarray,
@@ -61,10 +84,6 @@ def sinkhorn_normalize_batched(
     Returns
     -------
     P : (n_heads, n_tokens, n_tokens)  doubly stochastic matrices
-
-    This replaces the Python for-loop over heads in analyze_attention_sinkhorn,
-    reducing n_heads serial passes to a single batched numpy operation.
-    Row and column axes are 2 and 1 respectively under the (H, n, n) layout.
     """
     P = np.clip(A.astype(np.float64), 1e-12, None)
     for _ in range(max_iter):
@@ -75,6 +94,10 @@ def sinkhorn_normalize_batched(
             break
     return P
 
+
+# ---------------------------------------------------------------------------
+# Fiedler / cluster-count helpers
+# ---------------------------------------------------------------------------
 
 def fiedler_value(P: np.ndarray) -> float:
     """
@@ -95,53 +118,188 @@ def fiedler_value(P: np.ndarray) -> float:
     return float(eigenvalues[1]) if len(eigenvalues) > 1 else 0.0
 
 
-def sinkhorn_cluster_count(P: np.ndarray) -> int:
+def sinkhorn_cluster_count(P: np.ndarray, min_gap_ratio: float = 0.1) -> int:
     """
-    Count eigenvalues of the doubly stochastic matrix P that exceed 0.5.
+    Estimate cluster count from the eigengap of the doubly stochastic matrix P.
 
-    Eigenvalues near 1 correspond to near-invariant subspaces (clusters).
+    Fix 8: replaces the hard > 0.5 threshold with an eigengap method.
+
+    For a k-cluster structure the k largest eigenvalues sit near 1 with a
+    drop below them.  The largest gap in the descending eigenvalue sequence
+    identifies k without a hard threshold on the eigenvalue magnitude.
+
+    Falls back to the hard > 0.5 count when no clear gap exists, i.e. when
+    the largest gap is less than min_gap_ratio * (λ_max − λ_min).  This
+    keeps the function robust on near-uniform matrices (post-collapse layers)
+    where there is no genuine structure to detect.
+
+    Parameters
+    ----------
+    P             : doubly stochastic matrix (n_tokens, n_tokens)
+    min_gap_ratio : gap must be at least this fraction of the total eigenvalue
+                    range to count as a genuine cluster boundary.  Default 0.1;
+                    include in the Fix 7 tolerance sweep.
+
+    Returns
+    -------
+    k : int ≥ 1
     """
-    eigenvalues = np.real(np.linalg.eigvals(P))
-    eigenvalues = np.sort(eigenvalues)[::-1]
-    return int((eigenvalues > 0.5).sum())
+    eigs = np.real(np.linalg.eigvals(P))
+    eigs = np.sort(eigs)[::-1]          # descending
+    n    = len(eigs)
+    if n < 2:
+        return 1
+
+    gap_sizes  = np.abs(np.diff(eigs))  # |λ_i − λ_{i+1}|
+    eig_range  = float(eigs[0] - eigs[-1])
+
+    if eig_range < 1e-6:
+        return 1                         # uniform spectrum — no structure
+
+    largest_gap_pos = int(np.argmax(gap_sizes))
+    if gap_sizes[largest_gap_pos] / eig_range < min_gap_ratio:
+        # No clear gap — fall back to hard threshold
+        return max(1, int((eigs > 0.5).sum()))
+
+    return max(1, largest_gap_pos + 1)
 
 
-def analyze_attention_sinkhorn(attn_matrix: torch.Tensor) -> dict:
+# ---------------------------------------------------------------------------
+# Fix 3 — causal-mask baseline
+# ---------------------------------------------------------------------------
+
+def _uniform_causal_attention(n: int) -> np.ndarray:
+    """
+    Content-free causal attention: token i attends uniformly to tokens 0..i.
+
+    This is the mask-only baseline — what a causal (GPT-2 style) model
+    produces when all QK logits are identical (zero before softmax).
+
+      A[i, j] = 1 / (i + 1)   for j <= i
+      A[i, j] = 0              for j >  i
+
+    Parameters
+    ----------
+    n : sequence length
+
+    Returns
+    -------
+    A : (n, n) float64 lower-triangular attention matrix, rows sum to 1
+    """
+    A = np.zeros((n, n), dtype=np.float64)
+    for i in range(n):
+        A[i, :i + 1] = 1.0 / (i + 1)
+    return A
+
+
+def causal_fiedler_baseline(n: int) -> float:
+    """
+    Fiedler value of the content-free causal attention (mask-only baseline).
+
+    Used to separate content-driven connectivity from the structural effect of
+    the causal mask.  Classification on the deviation (actual − baseline)
+    answers: "does this head route into clusters *beyond* what the mask forces?"
+
+    Parameters
+    ----------
+    n : sequence length
+
+    Returns
+    -------
+    float — λ₂ of the Sinkhorn-normalised uniform-causal attention Laplacian
+    """
+    A_base = _uniform_causal_attention(n)
+    P_base = sinkhorn_normalize(A_base)
+    return fiedler_value(P_base)
+
+
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
+
+def analyze_attention_sinkhorn(
+    attn_matrix: torch.Tensor,
+    is_causal: bool = False,
+    apply_causal_control: bool = False,
+) -> dict:
     """
     Run per-head Sinkhorn analysis for one attention layer.
 
     Parameters
     ----------
-    attn_matrix : (n_heads, n_tokens, n_tokens) float tensor
+    attn_matrix          : (n_heads, n_tokens, n_tokens) float tensor
+    is_causal            : True for decoder-only (GPT-2 style) models.
+                           Computes a per-sequence-length mask-only Fiedler
+                           baseline and reports per-head deviations
+                           (actual − baseline).  The deviation is the correct
+                           quantity for CLUSTER/MIXED/MIXING classification in
+                           causal models; raw values are retained for reference.
+    apply_causal_control : When True, applies an artificial causal mask to the
+                           input (zero upper triangle + row-renorm) before
+                           Sinkhorn and reports Fiedler on the masked version.
+                           Use on BERT to test whether masking alone produces
+                           low Fiedler.  If BERT heads also collapse to
+                           STABLE-CLUSTER under this control, the GPT-2/BERT
+                           split is mask-driven, not weight-driven, and the
+                           "weight-level routing" claim is withdrawn.
 
     Returns
     -------
     dict with keys:
-      fiedler_mean               float  — mean λ₂ across heads
-      fiedler_per_head           list   — λ₂ for each head
-      sinkhorn_cluster_count_mean float — mean cluster count across heads
-      sinkhorn_cluster_counts    list   — count per head
-      row_col_balance_mean       float  — mean std of raw attention column sums
-                                          (0 = already doubly stochastic)
+      fiedler_mean                     float  — mean λ₂ across heads (raw)
+      fiedler_per_head                 list   — raw λ₂ for each head
+      fiedler_per_head_deviation       list   — [causal] actual − baseline per head
+      fiedler_baseline                 float  — [causal] mask-only baseline Fiedler
+      fiedler_causal_control_per_head  list   — [control] Fiedler after artificial mask
+      sinkhorn_cluster_count_mean      float  — mean cluster count across heads
+      sinkhorn_cluster_counts          list   — count per head
+      row_col_balance_mean             float  — mean std of raw attention column sums
+                                                (0 = already doubly stochastic)
     """
-    attn    = attn_matrix.numpy()              # (n_heads, n, n)
+    attn    = attn_matrix.numpy()    # (n_heads, n, n)
     n_heads = attn.shape[0]
+    n       = attn.shape[-1]
 
-    # Vectorised column-sum std — no per-head loop needed
-    col_sums        = attn.sum(axis=1)                          # (n_heads, n)
-    row_col_balance = np.std(col_sums, axis=1).tolist()         # (n_heads,)
+    # Row/col balance on raw attention (content-independent diagnostic)
+    col_sums        = attn.sum(axis=1)                   # (n_heads, n)
+    row_col_balance = np.std(col_sums, axis=1).tolist()  # (n_heads,)
 
     # All heads normalised in one batched call
-    P_all = sinkhorn_normalize_batched(attn)                    # (n_heads, n, n)
+    P_all = sinkhorn_normalize_batched(attn)             # (n_heads, n, n)
 
-    # Fiedler and cluster count still require per-head scipy calls
-    fiedler_vals   = [fiedler_value(P_all[h])        for h in range(n_heads)]
+    fiedler_vals   = [fiedler_value(P_all[h])          for h in range(n_heads)]
     cluster_counts = [sinkhorn_cluster_count(P_all[h]) for h in range(n_heads)]
 
-    return {
+    result = {
         "fiedler_mean":                float(np.mean(fiedler_vals)),
         "fiedler_per_head":            fiedler_vals,
         "sinkhorn_cluster_count_mean": float(np.mean(cluster_counts)),
         "sinkhorn_cluster_counts":     cluster_counts,
         "row_col_balance_mean":        float(np.mean(row_col_balance)),
     }
+
+    # ------------------------------------------------------------------
+    # Fix 3a — causal-mask baseline subtraction
+    # ------------------------------------------------------------------
+    if is_causal:
+        baseline = causal_fiedler_baseline(n)
+        result["fiedler_baseline"]           = baseline
+        result["fiedler_per_head_deviation"] = [
+            round(f - baseline, 6) for f in fiedler_vals
+        ]
+
+    # ------------------------------------------------------------------
+    # Fix 3b — causal-mask control (run on BERT to check mask confound)
+    # ------------------------------------------------------------------
+    if apply_causal_control:
+        causal_mask = np.tril(np.ones((n, n), dtype=np.float64))
+        attn_masked = attn * causal_mask[None, :, :]        # zero upper tri
+        row_sums    = attn_masked.sum(axis=2, keepdims=True)
+        row_sums    = np.where(row_sums < 1e-12, 1.0, row_sums)
+        attn_masked = attn_masked / row_sums                # re-normalise rows
+        P_ctrl      = sinkhorn_normalize_batched(attn_masked)
+        result["fiedler_causal_control_per_head"] = [
+            fiedler_value(P_ctrl[h]) for h in range(n_heads)
+        ]
+
+    return result

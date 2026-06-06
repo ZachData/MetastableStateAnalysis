@@ -54,6 +54,7 @@ def _install_stubs() -> None:
     # --- core.config ---
     _cfg = types.ModuleType("core.config")
 
+    _cfg.DEGENERATE_RANK_THRESHOLD = 2
     _cfg.BETA_VALUES         = [0.1, 1.0, 2.0, 5.0]
     _cfg.MODEL_CONFIGS       = {}
     _cfg.BASE_RESULTS_DIR    = None

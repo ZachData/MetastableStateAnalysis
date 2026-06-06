@@ -547,11 +547,11 @@ def plot_cka_trajectory(results: dict, save_dir: Path):
             degen_start = i - 0.5
         elif not np.isnan(v) and in_degen:
             ax1.axvspan(degen_start, i - 0.5, alpha=0.12, color="gray",
-                        label="degenerate (rank<3, CKA suppressed)")
+                        label=f"degenerate (rank<{DEGENERATE_RANK_THRESHOLD}, CKA suppressed)")
             in_degen = False
     if in_degen:  # still degenerate at end
         ax1.axvspan(degen_start, n_layers - 0.5, alpha=0.12, color="gray",
-                    label="degenerate (rank<3, CKA suppressed)")
+                    label=f"degenerate (rank<{DEGENERATE_RANK_THRESHOLD}, CKA suppressed)")
 
     # Mark sharpest drop
     if len(valid_pairs) >= 2:
@@ -574,8 +574,10 @@ def plot_cka_trajectory(results: dict, save_dir: Path):
 
     # --- Panel 2: Effective rank ---
     ax2.plot(xs, erank, color="darkgreen", linewidth=1.3)
-    ax2.axhline(3.0, color="gray", lw=0.7, ls="--", alpha=0.7,
-                label="rank=3 suppression threshold")
+    ax2.axhline(
+    DEGENERATE_RANK_THRESHOLD,
+    color="gray", lw=0.7, ls="--", alpha=0.7,
+    label=f"rank={DEGENERATE_RANK_THRESHOLD} suppression threshold",)
     # Match degenerate shading to panel 1
     in_degen = False
     degen_start = None
@@ -591,7 +593,9 @@ def plot_cka_trajectory(results: dict, save_dir: Path):
 
     ax2.set_xlabel("Layer", fontsize=8)
     ax2.set_ylabel("Effective rank", fontsize=8)
-    ax2.set_title("Effective rank (reference — CKA suppressed where rank < 3)", fontsize=8)
+    ax2.set_title(
+    f"Effective rank  (CKA suppressed where rank < {DEGENERATE_RANK_THRESHOLD})",
+    fontsize=8,)
     ax2.legend(fontsize=6, loc="upper right")
 
     plt.tight_layout()

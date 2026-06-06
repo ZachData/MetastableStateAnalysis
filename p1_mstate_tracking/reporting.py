@@ -15,6 +15,7 @@ Private helpers: _trend, _plateau_str, _merge_events, _method_agreement
 import numpy as np
 from collections import Counter
 from pathlib import Path
+from core.config import DEGENERATE_RANK_THRESHOLD
 
 from scipy.stats import spearmanr
 
@@ -164,12 +165,18 @@ def _method_agreement(results: dict) -> list:
 # Plateau detection
 # ---------------------------------------------------------------------------
 
+
 def _per_head_fiedler_profile(
     results: dict,
     active_rank_threshold: float = 10.0,
-) -> list:
+    ) -> list:
     """
-    Compute per-head Fiedler statistics restricted to the *active phase*.
+    Per-head Fiedler profile restricted to the active phase.
+
+    For causal models (GPT-2), classification uses fiedler_per_head_deviation
+    (actual Fiedler minus the mask-only baseline) rather than raw values.
+    The raw values are included in the returned dicts under 'values_raw' for
+    reference; 'values' always contains the quantity used for classification.
 
     The active phase is defined as layers where effective_rank >=
     active_rank_threshold.  Once tokens have collapsed to a near-point-mass
@@ -181,43 +188,53 @@ def _per_head_fiedler_profile(
 
     For each attention head h, collect its Fiedler value at every active-phase
     layer that has Sinkhorn data, then return a list of dicts with:
-      head               : int   — head index
-      mean               : float — mean Fiedler over active-phase layers
-      std                : float — std  Fiedler over active-phase layers
-      min_layer          : int   — layer index at which Fiedler is minimised
-      classification     : str   — 'CLUSTER' (<0.3), 'MIXED' (0.3–0.7), 'MIXING' (>0.7)
-      values             : list  — per-layer Fiedler values (active phase only)
-      n_active_layers    : int   — number of layers included
-      n_collapsed_layers : int   — number of Sinkhorn layers excluded as collapsed
+      head                    : int   — head index
+      mean                    : float — mean of classification signal
+      std                     : float — std  of classification signal
+      min_layer               : int   — layer index at which signal is minimised
+      classification          : str   — 'CLUSTER' (<0.3), 'MIXED' (0.3–0.7), 'MIXING' (>0.7)
+      values                  : list  — per-layer values used for classification
+      values_raw              : list  — per-layer raw Fiedler (always present)
+      using_deviation         : bool  — True when classification is on deviation
+      fiedler_baseline        : float — mask-only baseline (causal only, else None)
+      n_active_layers         : int   — number of layers included
+      n_collapsed_layers      : int   — number of Sinkhorn layers excluded as collapsed
 
     Returns an empty list if no Sinkhorn data is present.
     """
-    all_sk  = [r for r in results["layers"] if "sinkhorn" in r]
+    all_sk = [r for r in results["layers"] if "sinkhorn" in r]
     if not all_sk:
         return []
 
-    # Restrict to active phase
-    sk_layers = [r for r in all_sk if r["effective_rank"] >= active_rank_threshold]
+    sk_layers   = [r for r in all_sk if r["effective_rank"] >= active_rank_threshold]
     n_collapsed = len(all_sk) - len(sk_layers)
 
-    # Fall back to all Sinkhorn layers if the threshold filters everything
-    # (e.g. very shallow models where rank never reaches the threshold)
     if not sk_layers:
-        sk_layers = all_sk
+        sk_layers   = all_sk
         n_collapsed = 0
 
     n_heads = len(sk_layers[0]["sinkhorn"].get("fiedler_per_head", []))
     if n_heads == 0:
         return []
 
+    has_deviation = "fiedler_per_head_deviation" in sk_layers[0]["sinkhorn"]
+    fiedler_base  = sk_layers[0]["sinkhorn"].get("fiedler_baseline", None)
+
     profiles = []
     for h in range(n_heads):
-        vals      = [r["sinkhorn"]["fiedler_per_head"][h] for r in sk_layers]
-        layer_ids = [r["layer"]                            for r in sk_layers]
-        mean_f    = float(np.mean(vals))
-        std_f     = float(np.std(vals))
-        min_idx   = int(np.argmin(vals))
-        min_layer = layer_ids[min_idx]
+        raw_vals  = [r["sinkhorn"]["fiedler_per_head"][h] for r in sk_layers]
+        layer_ids = [r["layer"]                           for r in sk_layers]
+
+        if has_deviation:
+            dev_vals = [r["sinkhorn"]["fiedler_per_head_deviation"][h] for r in sk_layers]
+            cls_vals = dev_vals
+        else:
+            dev_vals = None
+            cls_vals = raw_vals
+
+        mean_f  = float(np.mean(cls_vals))
+        std_f   = float(np.std(cls_vals))
+        min_idx = int(np.argmin(cls_vals))
 
         if mean_f < 0.3:
             cls = "CLUSTER"
@@ -230,14 +247,68 @@ def _per_head_fiedler_profile(
             "head":               h,
             "mean":               mean_f,
             "std":                std_f,
-            "min_layer":          min_layer,
+            "min_layer":          layer_ids[min_idx],
             "classification":     cls,
-            "values":             vals,
+            "values":             cls_vals,
+            "values_raw":         raw_vals,
+            "using_deviation":    has_deviation,
+            "fiedler_baseline":   fiedler_base,
             "n_active_layers":    len(sk_layers),
             "n_collapsed_layers": n_collapsed,
         })
 
     return profiles
+
+
+
+def _report_causal_mask_control(results: dict, W) -> None:
+    """
+    Report Fix 3b causal-mask control results when present.
+
+    W is the line-writer callable used by generate_llm_report.
+    Call this inside the PER-HEAD FIEDLER PROFILE section, after the
+    existing per-head table.
+    """
+    layers  = results["layers"]
+    has_sk  = [r for r in layers if "sinkhorn" in r]
+    has_ctl = [r for r in has_sk
+               if "fiedler_causal_control_per_head" in r.get("sinkhorn", {})]
+
+    if not has_ctl:
+        return
+
+    W("")
+    W("CAUSAL-MASK CONTROL (Fix 3b)")
+    W("-" * 40)
+    W("Artificial causal mask applied to this model's attention before Sinkhorn.")
+    W("If heads collapse to CLUSTER under the mask alone, the GPT-2/BERT Fiedler")
+    W("split is mask-driven (not weight-driven) and the routing claim is withdrawn.")
+    W("")
+
+    n_heads   = len(has_ctl[0]["sinkhorn"]["fiedler_causal_control_per_head"])
+    ctl_means = []
+    for h in range(n_heads):
+        vals = [r["sinkhorn"]["fiedler_causal_control_per_head"][h] for h in has_ctl]
+        ctl_means.append(float(np.mean(vals)))
+
+    n_cluster = sum(1 for m in ctl_means if m < 0.3)
+    n_mixed   = sum(1 for m in ctl_means if 0.3 <= m <= 0.7)
+    n_mixing  = sum(1 for m in ctl_means if m > 0.7)
+
+    W(f"  Under causal mask: CLUSTER={n_cluster}  MIXED={n_mixed}  MIXING={n_mixing}  "
+      f"(of {n_heads} heads)")
+
+    if n_cluster == n_heads:
+        W("  [FLAG] ALL heads → CLUSTER under causal mask alone.")
+        W("         The low Fiedler in this model is fully explained by mask structure.")
+        W("         Withdraw any weight-level routing claim based on raw Fiedler.")
+    elif n_cluster > n_heads // 2:
+        W("  [WARN] Majority of heads → CLUSTER under causal mask.")
+        W("         Mask confound is substantial; deviation-based classification is required.")
+    else:
+        W("  [OK] Minority of heads → CLUSTER under causal mask.")
+        W("       Mask confound is limited; deviation-based classification is supported.")
+    W("")
 
 
 def detect_plateaus(values: list, window: int = 2, tol: float = 0.05) -> list:
@@ -518,7 +589,7 @@ def generate_llm_report(results: dict, save_dir: Path):
     # NN stability series: skip layer 0 (None) AND degenerate layers (eff_rank < 2).
     # When all tokens are a near-point-mass (rank ≈ 1–2), NN assignment is determined
     # by floating-point noise — the stability signal is meaningless there.
-    NN_DEGENERATE_RANK = 2.0
+    NN_DEGENERATE_RANK = float(DEGENERATE_RANK_THRESHOLD)
     nn_stab_pairs   = [
         (r["layer"], r["nn_stability"])
         for r in layers
@@ -813,18 +884,46 @@ def generate_llm_report(results: dict, save_dir: Path):
     plateau_layers_set = set(results.get("plateau_layers", []))
     for lr in layers:
         pa = lr.get("pair_agreement", {})
-        total_pairs = pa.get("n_semantic", 0) + pa.get("n_artifact", 0) + pa.get("n_noise", 0)
-        if total_pairs > 0 and lr["layer"] in plateau_layers_set:
-            W(f"  Layer {lr['layer']} (PLATEAU): "
-              f"semantic={pa['n_semantic']} artifact={pa['n_artifact']} "
-              f"noise={pa['n_noise']} "
-              f"artifact_frac={pa['artifact_fraction']:.2f}")
-            # Show up to 5 artifact pairs at this layer
-            artifact_pairs = [p for p in pa.get("mutual_pairs", []) if p["tag"] == "artifact"]
-            for p in artifact_pairs[:5]:
-                W(f"    {p['tok_i']} (c{p['cluster_i']}) ↔ {p['tok_j']} (c{p['cluster_j']})")
-    W("")
+        n_same  = pa.get("n_same_cluster", pa.get("n_semantic", 0))
+        n_diff  = pa.get("n_diff_cluster", pa.get("n_artifact", 0))
+        n_noise = pa.get("n_noise", 0)
+        total_p = n_same + n_diff + n_noise
+        if total_p == 0 or lr["layer"] not in plateau_layers_set:
+            continue
 
+        ext_frac   = pa.get("ext_semantic_fraction")
+        ext_str    = f"{ext_frac:.2f}" if ext_frac is not None else "N/A (no emb_gram or all unknown)"
+        cross_frac = pa.get("ext_sem_same_cluster_frac")
+        cross_str  = f"{cross_frac:.2f}" if cross_frac is not None else "N/A"
+
+        W(f"  Layer {lr['layer']} (PLATEAU):")
+        W(f"    Axis 1 — same_cluster={n_same}  diff_cluster={n_diff}  noise={n_noise}"
+          f"  artifact_frac={pa.get('artifact_fraction', 0.0):.3f}")
+        W(f"    Axis 2 — ext_sem_frac={ext_str}"
+          f"  (n_ext_sem={pa.get('n_ext_semantic', 0)}"
+          f"  n_ext_non_sem={pa.get('n_ext_non_semantic', 0)}"
+          f"  n_ext_unk={pa.get('n_ext_unknown', 0)})")
+        W(f"    Cross  — among ext_semantic pairs, same_cluster_frac={cross_str}")
+
+        # Show up to 5 cross-cluster (diff_cluster) pairs with ext tag
+        diff_pairs = [p for p in pa.get("mutual_pairs", [])
+                      if p.get("cross_method_tag", p.get("tag")) in ("diff_cluster", "artifact")]
+        for p in diff_pairs[:5]:
+            ext = p.get("ext_semantic_tag", "?")
+            W(f"      diff_cluster: {p['tok_i']} (c{p['cluster_i']}) ↔ "
+              f"{p['tok_j']} (c{p['cluster_j']})  [{ext}]")
+    W("")
+    # --- P1-4: Pair Agreement ---
+    W("PAIR AGREEMENT  (P1-4)")
+    W("-" * 40)
+    W("Two independent axes — only Axis 2 supports an interpretability claim.")
+    W("  Axis 1 cross_method: same_cluster | diff_cluster | noise")
+    W("    Measures agreement between mutual-NN and HDBSCAN clustering signals.")
+    W("    artifact_fraction = diff_cluster / total is the one defensible result.")
+    W("  Axis 2 ext_semantic: ext_semantic | ext_non_semantic | ext_unknown")
+    W("    A pair is ext_semantic if emb cosine >= threshold OR same surface form.")
+    W("    This signal is independent of the clustering pipeline.")
+    W("")
     W("METHOD AGREEMENT  (agglomerative / kmeans / spectral / sinkhorn)")
     W("-" * 40)
     W("Layers where all available methods agree within ±1 on cluster count:")
@@ -840,15 +939,13 @@ def generate_llm_report(results: dict, save_dir: Path):
     W("Theory predicts E_beta is monotone increasing along the trajectory.")
     W("Violations indicate deviation from idealized gradient flow.")
     for beta in BETA_VALUES:
-        energies       = [r["energies"].get(beta, float("nan")) for r in layers]
-        diffs          = np.diff(energies)
-        viol_layers    = [i + 1 for i, d in enumerate(diffs) if d < -1e-6]
-        n_violations   = len(viol_layers)
-        max_drop       = float(diffs.min()) if len(diffs) else float("nan")
-        total_increase = float(energies[-1] - energies[0])
-        viol_str       = str(viol_layers) if viol_layers else "none"
-        W(f"  beta={beta}: total_increase={total_increase:.6f}, "
-          f"violations={n_violations}, max_single_drop={max_drop:.6f}, "
+        energies_b   = [r["energies"].get(beta, float("nan")) for r in layers]
+        sev_b        = energy_violation_severity(energies_b)
+        viol_str     = str(sev_b["violation_layers"]) if sev_b["violation_layers"] else "none"
+        W(f"  beta={beta}: total_rel_change={sev_b['total_rel_change']:+.4f}, "
+          f"n_violations={sev_b['n_violations']}, "
+          f"max_severity={sev_b['max_severity']:.3e}, "
+          f"sum_severity={sev_b['sum_severity']:.3e}, "
           f"violation_layers={viol_str}")
     W("")
 
@@ -866,12 +963,13 @@ def generate_llm_report(results: dict, save_dir: Path):
     W("      A large energy drop followed by a rank rise = reset event.")
     W("")
     plateau_layer_set_viol = set(results.get("plateau_layers", []))
-    for beta in [1.0, 2.0]:
+     for beta in [1.0, 2.0]:
         energies_b = [r["energies"].get(beta, float("nan")) for r in layers]
-        diffs_b    = np.diff(energies_b)
-        viol_idxs  = [i + 1 for i, d in enumerate(diffs_b) if d < -1e-6]
+        sev_b      = energy_violation_severity(energies_b)
+        viol_idxs  = sev_b["violation_layers"]
         if not viol_idxs:
-            W(f"  beta={beta}: no violations — distribution analysis not applicable.")
+            W(f"  beta={beta}: no violations (rel_tol={ENERGY_VIOLATION_REL_TOL:.0e}) "
+              "— distribution analysis not applicable.")
             continue
         viol_magnitudes = [abs(diffs_b[i - 1]) for i in viol_idxs]
 
@@ -941,9 +1039,12 @@ def generate_llm_report(results: dict, save_dir: Path):
         return ""
 
     # Collect beta=1.0 violation layers
-    energies_b1   = [r["energies"].get(1.0, float("nan")) for r in layers]
-    diffs_b1      = np.diff(energies_b1)
-    viol_b1_layers = [i + 1 for i, d in enumerate(diffs_b1) if d < -1e-6]
+    # energies_b1   = [r["energies"].get(1.0, float("nan")) for r in layers]
+    # diffs_b1      = np.diff(energies_b1)
+    # viol_b1_layers = [i + 1 for i, d in enumerate(diffs_b1) if d < -1e-6]
+    energies_b1    = [r["energies"].get(1.0, float("nan")) for r in layers]
+    sev_b1         = energy_violation_severity(energies_b1)
+    viol_b1_layers = sev_b1["violation_layers"]
 
     W("ENERGY DROP LOCALIZATION")
     W("-" * 40)
@@ -1402,20 +1503,27 @@ def generate_llm_report(results: dict, save_dir: Path):
     W("")
 
     # Energy monotonicity with specific layers
-    e1 = [r["energies"].get(1.0, float("nan")) for r in layers]
-    e1_viol = [i + 1 for i, d in enumerate(np.diff(e1)) if d < -1e-4]
+    e1      = [r["energies"].get(1.0, float("nan")) for r in layers]
+    sev_e1  = energy_violation_severity(e1)
+    e1_viol = sev_e1["violation_layers"]   # relative-threshold list
+
     if e1_viol:
         W(f"  [FLAG] Energy E_beta=1 NON-MONOTONE at layers: {e1_viol}")
-        W("         Suggests V matrix has repulsive directions not in gradient-flow model.")
-        # Check overlap with merge events
+        W(f"         Relative threshold: {ENERGY_VIOLATION_REL_TOL:.0e} × |E_layer|")
+        W(f"         n_violations={sev_e1['n_violations']}, "
+          f"sum_severity={sev_e1['sum_severity']:.3e}, "
+          f"max_severity={sev_e1['max_severity']:.3e}")
+        W("         Suggests V matrix has repulsive directions absent from gradient-flow model.")
         merge_layers = [layer for layer, _, _ in merge_events]
-        overlap = set(e1_viol) & set(merge_layers)
+        overlap      = set(e1_viol) & set(merge_layers)
         if overlap:
             W(f"         Energy drops COINCIDE with merge events at layers: {sorted(overlap)}")
         else:
             W("         Energy drops do NOT coincide with merge events.")
     else:
-        W("  [OK] Energy E_beta=1 is monotone increasing as theory predicts.")
+        W(f"  [OK] Energy E_beta=1 monotone increasing "
+          f"(rel_tol={ENERGY_VIOLATION_REL_TOL:.0e}; "
+          f"total_rel_change={sev_e1['total_rel_change']:+.4f}).")
 
     # Cross-metric reset event detection.
     # A reset is a layer where ip_mean, effective_rank, and nn_stability all
@@ -1580,12 +1688,15 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
     W("  - Do plateau locations agree across prompts for the same model?")
     W("")
 
+    # Header — add layer-count annotation note
     W("SUMMARY TABLE")
     W("-" * 40)
-    W(f"{'Model':<25} {'Prompt':<22} {'Tokens':>6} {'Layers':>6} "
+    W("Note: for GPT-2 models, 'Layers' = analyzed layers; total depth in [brackets].")
+    W("")
+    W(f"{'Model':<25} {'Prompt':<22} {'Tokens':>6} {'Layers':>10} "
       f"{'MaxMass':>8} {'MinRank':>8} {'nPlateaus':>10} {'nMerges':>8} "
-      f"{'EnergyOK':>9}")
-    W("-" * 100)
+      f"{'nViol@1':>8} {'MaxSev@1':>9}")
+    W("-" * 110)
 
     for r in all_results:
         layers_  = r["layers"]
@@ -1595,10 +1706,27 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
         e1_      = [l["energies"].get(1.0, float("nan")) for l in layers_]
         plateaus = detect_plateaus(mass1_, window=2, tol=0.10)
         merges   = _merge_events(spec_k_)
-        energy_ok = "YES" if np.all(np.diff(e1_) >= -1e-4) else "NO"
+        sev      = energy_violation_severity(e1_)
+
+        # Fix 4: annotate excluded-layer count in the Layers column
+        excluded   = r.get("lm_head_excluded", False)
+        n_analyzed = r.get("n_layers_analyzed", r["n_layers"])
+        n_total    = r.get("n_layers_total",    r["n_layers"])
+        layers_str = f"{n_analyzed}[{n_total}]" if excluded else str(n_analyzed)
+
         W(f"{r['model']:<25} {r['prompt']:<22} {r['n_tokens']:>6} "
-          f"{r['n_layers']:>6} {max(mass1_):>8.4f} {min(erank_):>8.2f} "
-          f"{len(plateaus):>10} {len(merges):>8} {energy_ok:>9}")
+          f"{layers_str:>10} {max(mass1_):>8.4f} {min(erank_):>8.2f} "
+          f"{len(plateaus):>10} {len(merges):>8} "
+          f"{sev['n_violations']:>8} {sev['max_severity']:>9.2e}")
+
+    # IN: generate_llm_report, add immediately after W("=" * 60) at the top:
+    excluded = results.get("lm_head_excluded", False)
+    n_total  = results.get("n_layers_total", results["n_layers"])
+    if excluded:
+        W(f"NOTE: final layer excluded (ln_f / LM-head input, layer index "
+          f"{n_total - 1} of {n_total}).  All metrics computed on layers "
+          f"0–{results['n_layers'] - 1} only.")
+        W("")
 
     W("")
     W("PLATEAU LOCATIONS BY RUN")
@@ -1835,23 +1963,61 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
     W("")
 
     # --- PAIR AGREEMENT SUMMARY (P1-4) ---
-    W("PAIR HDBSCAN AGREEMENT SUMMARY (P1-4)")
+    W("PAIR AGREEMENT SUMMARY (P1-4)")
     W("-" * 40)
-    W("Mutual-NN pairs tagged as semantic (same cluster) vs artifact (different clusters).")
+    W("Axis 1 (cross_method): same_cluster vs diff_cluster — method agreement, NOT meaning.")
+    W("Axis 2 (ext_semantic): independent signal; the only one that supports interp claims.")
+    W("Reported per run: artifact_frac | ext_sem_frac | ext_sem_same_cluster_frac")
     W("")
     for r in all_results:
-        # Aggregate across layers
-        total_semantic = sum(lr.get("pair_agreement", {}).get("n_semantic", 0) for lr in r["layers"])
-        total_artifact = sum(lr.get("pair_agreement", {}).get("n_artifact", 0) for lr in r["layers"])
-        total_noise = sum(lr.get("pair_agreement", {}).get("n_noise", 0) for lr in r["layers"])
-        total = total_semantic + total_artifact + total_noise
-        if total > 0:
-            W(f"  {r['model']} | {r['prompt']}")
-            W(f"    Total mutual-NN pairs: {total}  "
-              f"Semantic: {total_semantic} ({100*total_semantic/total:.0f}%)  "
-              f"Artifact: {total_artifact} ({100*total_artifact/total:.0f}%)  "
-              f"Noise: {total_noise} ({100*total_noise/total:.0f}%)")
-            W("")
+        art_fracs     = []
+        ext_sem_fracs = []
+        cross_fracs   = []
+        for lr in r["layers"]:
+            pa = lr.get("pair_agreement", {})
+            n_same  = pa.get("n_same_cluster", pa.get("n_semantic", 0))
+            n_diff  = pa.get("n_diff_cluster", pa.get("n_artifact", 0))
+            n_noise = pa.get("n_noise", 0)
+            if n_same + n_diff + n_noise == 0:
+                continue
+            art_fracs.append(pa.get("artifact_fraction", 0.0))
+            esf = pa.get("ext_semantic_fraction")
+            if esf is not None:
+                ext_sem_fracs.append(esf)
+            csf = pa.get("ext_sem_same_cluster_frac")
+            if csf is not None:
+                cross_fracs.append(csf)
+
+        if not art_fracs:
+            continue
+
+        mean_art = sum(art_fracs) / len(art_fracs)
+        ext_str  = f"{sum(ext_sem_fracs)/len(ext_sem_fracs):.2f}" if ext_sem_fracs else "N/A"
+        crs_str  = f"{sum(cross_fracs)/len(cross_fracs):.2f}" if cross_fracs else "N/A"
+
+        W(f"  {r['model']} | {r['prompt']}")
+        W(f"    artifact_frac (mean): {mean_art:.3f}  "
+          f"ext_sem_frac (mean): {ext_str}  "
+          f"ext_sem_same_cluster_frac (mean): {crs_str}")
+
+        plateau_set = set(r.get("plateau_layers", []))
+        plat_art, plat_ext = [], []
+        for lr in r["layers"]:
+            if lr["layer"] not in plateau_set:
+                continue
+            pa     = lr.get("pair_agreement", {})
+            n_same = pa.get("n_same_cluster", pa.get("n_semantic", 0))
+            n_diff = pa.get("n_diff_cluster", pa.get("n_artifact", 0))
+            if n_same + n_diff > 0:
+                plat_art.append(pa.get("artifact_fraction", 0.0))
+            esf = pa.get("ext_semantic_fraction")
+            if esf is not None:
+                plat_ext.append(esf)
+        if plat_art:
+            plat_ext_str = f"{sum(plat_ext)/len(plat_ext):.2f}" if plat_ext else "N/A"
+            W(f"    @ plateau layers: artifact_frac={sum(plat_art)/len(plat_art):.3f}  "
+              f"ext_sem_frac={plat_ext_str}")
+        W("")
     W("")
 
     # --- COLLAPSE CONTROL RUNS (P1-2) ---

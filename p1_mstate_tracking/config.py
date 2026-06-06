@@ -46,6 +46,14 @@ ALBERT_SNAPSHOTS_LEGACY = [12, 24, 36, 48]
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
 SPECTRAL_MAX_K    = 15
+# Single degeneracy gate threshold used by CKA, NN-stability, and energy-drop
+# suppression in analysis.py and reporting.py.
+# Previously split: CKA used < 3.0, NN used < 2.0.  Unified at 2.
+# Below this the token cloud is a near-point-mass on the sphere (rank ≈ 1),
+# making NN assignment float-noise and CKA centering noise-dominated.
+# At rank 2 the cloud is still 2-D and both metrics remain meaningful.
+# Raise to 3 via this single constant if post-rerun rank-2 CKA looks erratic.
+DEGENERATE_RANK_THRESHOLD = 2
 
 # Token-count sweep targets for --length-sweep mode.
 # wiki_paragraph is truncated at word boundaries to each of these approximate
