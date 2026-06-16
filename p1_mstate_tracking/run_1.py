@@ -22,8 +22,13 @@ from pathlib import Path
 from core.config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
     ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS, LENGTH_SWEEP_TOKENS,
+    RANDOM_INIT_SEED,
 )
-from core.models import load_model, extract_activations, extract_albert_extended
+from core.models import (
+    load_model, extract_activations, extract_albert_extended,
+    randomize_weights,
+)
+
 from .analysis import analyze_trajectory
 from .plots import (
     plot_trajectory,
@@ -54,7 +59,8 @@ def run_all(
     prompts_to_run: list = None,
     run_extended: bool = True,
     run_sublayer: bool = False,
-) -> list:
+    random_seed=None,
+    ) -> list:
     """
     Run the full Phase 1 analysis pipeline.
 
@@ -73,6 +79,7 @@ def run_all(
     list of results dicts, one per (model, prompt) combination
     """
     global OUTPUT_DIR
+    seed = random_seed if random_seed is not None else RANDOM_INIT_SEED
 
     if models_to_run is None:
         models_to_run = list(MODEL_CONFIGS.keys())
@@ -106,14 +113,16 @@ def run_all(
 
         # Fix 13: random-init baseline — re-randomise weights after architecture
         # load so the model has the same structure but no learned representations.
-        if MODEL_CONFIGS[model_name].get("random_init", False):
-            print(f"  Re-initialising weights randomly (random_init=True)…")
-            model.init_weights()
-            print(f"  Done — running with randomly initialised weights.")
+        cfg = MODEL_CONFIGS[model_name]
+        if cfg.get("random_init", False):
+            scheme = cfg.get("random_init_scheme", "orthogonal")
+            print(f"  Re-initialising weights (scheme={scheme}, seed={seed})…")
+            info = randomize_weights(model, scheme=scheme, seed=seed)
+            print(f"  Done — {info['n_weight_matrices']} matrices, "
+                  f"{info['n_embeddings']} embeddings re-init; checksum "
+                  f"{info['checksum_before']:.3f} → {info['checksum_after']:.3f}.")
 
         v_spectrum   = analyze_value_eigenspectrum(model, model_name, OUTPUT_DIR)
-
-        cfg          = MODEL_CONFIGS[model_name]
         use_extended = run_extended and cfg["is_albert"] and ALBERT_SNAPSHOTS
 
         if use_extended:
@@ -508,6 +517,8 @@ if __name__ == "__main__":
                         help="Recreate all plots from a saved run directory")
     parser.add_argument("--summary", type=str, default=None, metavar="RUN_DIR",
                         help="Print text summary of a saved run")
+    parser.add_argument("--seed", type=int, default=None, metavar="N",
+                        help="Seed for random-init controls (default: config, 0)")
     args = parser.parse_args()
 
     # P1-6: Apply legacy snapshot override before running
@@ -537,8 +548,10 @@ if __name__ == "__main__":
             prompts = args.prompts
 
         # Fix 13: inject the untrained control model if requested.
-        if args.random_baseline and "albert-base-v2-random" not in models:
-            models = list(models) + ["albert-base-v2-random"]
+        if args.random_baseline:
+            for ctrl in ("albert-base-v2-random", "gpt2-large-random"):
+                if ctrl not in models:
+                    models = list(models) + [ctrl]
 
         # Fix 15: build truncated wiki_paragraph prompt variants.
         if args.length_sweep:
@@ -564,4 +577,5 @@ if __name__ == "__main__":
             prompts_to_run=prompts,
             run_extended=not args.no_extended,
             run_sublayer=args.sublayer,
+            random_seed=args.seed,
         )

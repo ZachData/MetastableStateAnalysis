@@ -26,7 +26,7 @@ import matplotlib.gridspec as gridspec
 from pathlib import Path
 from scipy.linalg import svdvals
 
-from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, SPECTRAL_MAX_K
+from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, SPECTRAL_MAX_K, DEGENERATE_RANK_THRESHOLD
 from core.models import layernorm_to_sphere
 from .metrics import pairwise_inner_products, effective_rank_from_raw
 

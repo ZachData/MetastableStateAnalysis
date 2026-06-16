@@ -20,6 +20,7 @@ Performance notes
 """
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from core.config import DEVICE, MODEL_CONFIGS
@@ -33,6 +34,104 @@ def layernorm_to_sphere(activation: torch.Tensor) -> torch.Tensor:
     """L2-normalize each token vector onto the unit sphere."""
     return F.normalize(activation, p=2, dim=-1)
 
+
+def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
+    """
+    Re-initialise every learned parameter of an already-loaded model, keeping
+    the architecture but discarding all trained representations.
+
+    Why this exists
+    ---------------
+    `model.init_weights()` is a no-op after `from_pretrained`: HuggingFace
+    guards initialisation behind a module flag that loading leaves disabled,
+    so the call returns without changing parameter values.  The old random
+    baseline therefore ran on fully trained weights and produced results
+    identical to trained ALBERT.
+
+    Scheme (applies to transformer weight matrices: ndim >= 2, not embedding
+    or LayerNorm)
+      - "orthogonal" (default): orthonormal init -> operator norm 1, so each
+        layer moves the residual stream by an amount comparable to a trained
+        model.  This is the control for "does the *architecture* cluster with
+        any non-degenerate map", and the sphere metrics see its singular-value
+        spectrum (scale is normalised away, structure is not).
+      - "gaussian": N(0, 0.02), the literal HuggingFace init = model before
+        training.  Under post-LN (ALBERT/BERT) this gives tiny per-layer
+        updates, so weak clustering may be a scale artifact, not structure.
+        Use deliberately.
+
+    Embeddings -> N(0, 0.02) (random token directions on the sphere).
+    LayerNorm  -> weight 1, bias 0.  All other biases -> 0.
+
+    Architecture-agnostic: the ndim rule covers nn.Linear, nn.Embedding, and
+    GPT-2's Conv1D (2-D .weight) with no model-specific imports.
+
+    Asserts the parameter checksum changed, so a silent regression fails loudly.
+    """
+    if scheme not in ("orthogonal", "gaussian"):
+        raise ValueError(f"unknown random_init_scheme: {scheme!r}")
+
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    def _checksum(m):
+        # order-sensitive fingerprint over all parameter values
+        return sum(float(p.detach().float().sum().item()) for p in m.parameters())
+
+    def _fill(param, init_fn):
+        # init in float32 then cast back; orthogonal_/qr is unreliable in bf16
+        tmp = torch.empty(param.shape, dtype=torch.float32, device=param.device)
+        init_fn(tmp)
+        with torch.no_grad():
+            param.data.copy_(tmp.to(param.dtype))
+
+    before = _checksum(model)
+    n_matrix = n_embed = n_norm = n_bias = 0
+
+    for module in model.modules():
+        own = list(module.named_parameters(recurse=False))  # each param once
+        if not own:
+            continue
+
+        if isinstance(module, nn.LayerNorm):
+            with torch.no_grad():
+                for name, p in own:
+                    p.data.fill_(1.0) if name == "weight" else p.data.zero_()
+                    n_norm += 1
+            continue
+
+        if isinstance(module, nn.Embedding):
+            for _, p in own:
+                _fill(p, lambda t: nn.init.normal_(t, mean=0.0, std=0.02))
+                n_embed += 1
+            continue
+
+        # generic leaf: Linear, Conv1D, projections, pooler, ...
+        for _, p in own:
+            if p.dim() >= 2:
+                if scheme == "orthogonal":
+                    _fill(p, nn.init.orthogonal_)
+                else:
+                    _fill(p, lambda t: nn.init.normal_(t, mean=0.0, std=0.02))
+                n_matrix += 1
+            else:
+                with torch.no_grad():
+                    p.data.zero_()
+                n_bias += 1
+
+    after = _checksum(model)
+    assert abs(after - before) > 1e-6, (
+        "randomize_weights changed no parameters — the random baseline would "
+        "silently run on trained weights again."
+    )
+
+    return {
+        "scheme": scheme, "seed": seed,
+        "n_weight_matrices": n_matrix, "n_embeddings": n_embed,
+        "n_layernorm_params": n_norm, "n_biases": n_bias,
+        "checksum_before": before, "checksum_after": after,
+    }
 
 # ---------------------------------------------------------------------------
 # Loading
@@ -50,13 +149,15 @@ def load_model(model_name: str):
     -------
     model, tokenizer
     """
-    cfg       = MODEL_CONFIGS[model_name]
-    tokenizer = cfg["tokenizer_class"].from_pretrained(model_name)
+    cfg            = MODEL_CONFIGS[model_name]
+    pretrained_id  = cfg.get("pretrained_name", model_name)   # ← new
+
+    tokenizer = cfg["tokenizer_class"].from_pretrained(pretrained_id)  # ← was model_name
 
     dtype = torch.bfloat16 if DEVICE == "cuda" else torch.float32
 
     model = cfg["model_class"].from_pretrained(
-        model_name,
+        pretrained_id,
         output_hidden_states=True,
         output_attentions=True,
         torch_dtype=dtype,

@@ -317,15 +317,13 @@ def analyze_trajectory(
     results["cluster_tracking"] = track_clusters(results)
 
     # ------------------------------------------------------------------
-    # Post-loop: plateau layer identification (P1-7)
+    # Post-loop: identify plateau layers for attention saving (P1-7)
+    # Uses the multi-signal joint criterion: a layer is included when
+    # it falls inside the plateau window of 2+ independent signals.
+    # This matches what generate_llm_report prints, so results on disk
+    # and the text report are now consistent.
     # ------------------------------------------------------------------
-    from .reporting import detect_plateaus
-    mass1    = [r["ip_mass_near_1"] for r in results["layers"]]
-    plateaus = detect_plateaus(mass1, window=2, tol=0.10)
-    plateau_layer_set = set()
-    for s, e, _ in plateaus:
-        for l in range(s, e + 1):
-            plateau_layer_set.add(l)
-    results["plateau_layers"] = sorted(plateau_layer_set)
+    from .reporting import compute_plateau_layers
+    results["plateau_layers"] = compute_plateau_layers(results)
 
     return results

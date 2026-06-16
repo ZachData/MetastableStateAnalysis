@@ -36,6 +36,7 @@ LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
 DISTANCE_THRESHOLDS = np.linspace(0.05, 0.6, 12)
 
 K_RANGE           = range(2, 10)
+DEGENERATE_RANK_THRESHOLD = 2
 # Run ALBERT once to ALBERT_MAX_ITERATIONS and take snapshots at each depth.
 # Because ALBERT shares weights, hidden[i] is identical whether the run
 # stops at i or continues to MAX — so a single pass captures every depth.
@@ -45,11 +46,10 @@ ALBERT_SNAPSHOTS      = [12, 24, 36, 48]  # depths to record (match gpt2/medium/
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
 SPECTRAL_MAX_K    = 15
-
+RANDOM_INIT_SEED = 0 # override with --seed
 # ---------------------------------------------------------------------------
 # Prompt variants
 # ---------------------------------------------------------------------------
-
 PROMPTS = {
     "short_heterogeneous": (
         "Quantum mechanics governs the behavior of subatomic particles. "
@@ -81,18 +81,17 @@ PROMPTS = {
         "praise and controversy."
     ),
     "repeated_tokens": (
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat "
-        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat"
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
+        ". . . . . . . . . . . . . . . . . . . . . . . . "
     ),
     "sullivan_ballou": (
         "My Very Dear Wife: Indications are very strong that we shall move in a few days, perhaps "
@@ -140,7 +139,95 @@ PROMPTS = {
         "energy. Finally, we demonstrate that the original equation is itself a gradient flow for "
         "the same energy, upon changing the metric underlying the definition of the gradient."
     ),
+    "homer_iliad": (
+        "But then, when the tenth night came on me, black as pitch, I burst the doors of the chamber "
+        "bolted tight and out I rushed, I leapt the walls at a bound, giving the slip to guards and "
+        "women servants. And away I fled through the whole expanse of Hellas and gaining the good dark "
+        "soil of Phthia, mother of flocks, I reached the king, and Peleus gave me a royal welcome. "
+        "Peleus loved me as a father loves a son, I tell you, his only child, the heir to his boundless "
+        "wealth, he made me a rich man, he gave me throngs of subjects, I ruled the Dolopes, settling "
+        "down on Phthia's west frontier. And I made you what you are-strong as the gods, Achilles"
+        "I loved you from the heart. You'd never go with another to banquet on the town or feast in your "
+        "own halls. Never, until I'd sat you down on my knees and cut "
+        "you the first bits of meat, remember? You'd eat your fill, I'd hold the cup to your lips and "
+        "all too often you soaked the shirt on my chest, spitting up some wine, a baby's way ... a misery. "
+        "Oh I had my share of troubles for you, Achilles, did my share of labor. Brooding, never forgetting "
+        "the gods would bring no son of mine to birth, not from my own loins. So you, Achilles"
+        "great godlike Achilles-I made you my son, I tried, so someday you might fight disaster off my back. "
+        "But now, Achilles, beat down your mounting fury! It's wrong to have such an iron, ruthless "
+        "heart. Even the gods themselves can bend and change, and theirs is the greater power, honor, "
+        "strength. Even the gods, I say, with incense, soothing vows. with full cups poured and the deep "
+        "smoky savor men can bring them round, begging for pardon when one oversteps the mark, does "
+        "something wrong. We do have Prayers, you know, Prayers for forgiveness, daughters of mighty "
+        "Zeus ... and they limp and halt, they're all wrinkled, drawn, they squint to the side, can't "
+        "look you in the eyes, and always bent on duty. trudging after Ruin, maddening, blinding Ruin. "
+        "But Ruin is strong and swift"
+        "She outstrips them all by far, stealing a march, leaping over the whole wide earth to bring mankind "
+        "to grief. And the Prayers trail after, trying to heal the wounds. And then, if a man reveres these "
+        "daughters of Zeus as they draw near him, they will help him greatly and listen to his appeals. "
+    ),
+    "hdbscan_code": (
+        "def get_plot_data(self, leaf_separation=1, log_size=False, max_rectangle_per_icicle=20):\n"
+        "        \"\"\"Generates data for use in plotting the 'icicle plot' or dendrogram\n"
+        "        plot of the condensed tree generated by HDBSCAN.\n\n"
+        "        Parameters\n"
+        "        ----------\n"
+        "        leaf_separation : float, optional\n"
+        "                          How far apart to space the final leaves of the\n"
+        "                          dendrogram. (default 1)\n\n"
+        "        log_size : boolean, optional\n"
+        "                   Use log scale for the 'size' of clusters (i.e. number of\n"
+        "                   points in the cluster at a given lambda value).\n"
+        "                   (default False)\n\n"
+        "        max_rectangles_per_icicle : int, optional\n"
+        "            To simplify the plot this method will only emit\n"
+        "            ``max_rectangles_per_icicle`` bars per branch of the dendrogram.\n"
+        "            This ensures that we don't suffer from massive overplotting in\n"
+        "            cases with a lot of data points.\n\n"
+        "        Returns\n"
+        "        -------\n"
+        "        plot_data : dict\n"
+    ),
+    "camus_letranger": (
+        "À part ces ennuis, je n'étais pas trop malheureux. Toute la question, encore une fois, était "
+        "de tuer le temps. J'ai fini par ne plus m'ennuyer du tout à partir de l'instant où j'ai appris "
+        "à me souvenir. Je me mettais quelquefois à penser à ma chambre et, en imagination, je partais "
+        "d'un coin pour y revenir en dénombrant mentalement tout ce qui se trouvait sur mon chemin. "
+        "Au début, c'était vite fait. Mais chaque fois que je recommençais, c'était un peu plus long. "
+        "Car je me souvenais de chaque meuble, et, pour chacun d'entre eux, de chaque objet qui s'y "
+        "trouvait et, pour chaque objet, de tous les détails et pour les détails eux-mêmes, une "
+        "incrustation, une fêlure ou un bord ébréché, de leur couleur ou de leur grain. En même temps, "
+        "j'essayais de ne pas perdre le fil de mon inventaire, de [113] faire une énumération complète. "
+        "Si bien qu'au bout de quelques semaines, je pouvais passer des heures, rien qu'à dénombrer ce "
+        "qui se trouvait dans ma chambre. Ainsi, plus je réfléchissais et plus de choses méconnues et "
+        "oubliées je sortais de ma mémoire. J'ai compris alors qu'un homme qui n'aurait vécu qu'un seul "
+        "jour pourrait sans peine vivre cent ans dans une prison. Il aurait assez de souvenirs pour ne "
+        "pas s'ennuyer. Dans un sens, c'était un avantage. Il y avait aussi le sommeil. Au début, je "
+        "dormais mal la nuit et pas du tout le jour. Peu à peu, mes nuits ont été meilleures et j'ai "
+        "pu dormir aussi le jour."
+    ),
+    "latex_monograph": (
+        "\\documentclass[11pt,a4paper]{\narticle}\n\\usepackage[utf8]{inputenc}\n"
+        "\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage{geometry}\n\\usepackage{xcolor}\n"
+        "\\usepackage{titlesec}\n\\usepackage{microtype}\n\n% Define page geometry\n\\geometry{\n"
+        "    a4paper,\n    total={165mm,247mm},\n    left=22mm,\n    top=25mm,\n}\n\n"
+        "% Define custom corporate/academic color palette\n\\definecolor{primary}{RGB}{26, 54, 93}     "
+        "% Deep slate blue\n\\definecolor{secondary}{RGB}{43, 108, 176} % Accent blue\n"
+        "\\definecolor{textdark}{RGB}{45, 55, 72}    % Dark grey for text body\n\n\\makeatletter\n"
+        "\\newcommand{\\globalcolor}[1]{%\n  \\color{#1}\\global\\let\\default@color\\current@color\n"
+        "}\n\\makeatother\n\\AtBeginDocument{\\globalcolor{textdark}}\n\n% Section styling\n"
+        "\\titleformat{\\section}\n  {\\color{primary}\\normalfont\\Large\\bfseries}\n"
+        "  {\\thesection}{1em}{}[{\\color{secondary}\\titrule[1pt]}]\n\n\\titleformat{\\subsection}\n"
+        "  {\\color{secondary}\\normalfont\\large\\bfseries}\n  {\\thesubsection}{1em}{}\n\n"
+        "% Custom styling for title\n\\title{\n    \\vspace{-1.5cm}\n    \\Huge \\textbf{\\color{primary}"
+        "{The Principle of Least Action}} \\\\\n    \\large \\textit{\\color{secondary}{A Foundational "
+        "Formulation of Classical Mechanics}}\n}\n\\author{\\textbf{Expository Physics Monograph}}\n"
+        "\\date{\\small \\today}\n\n\\begin{document}\n\n\\maketitle\n\n\\section{Introduction}\n"
+        "The \\textbf{Principle of Least Action}---more accurately termed the \\textit{Principle of "
+    ),
 }
+
+
 
 # ---------------------------------------------------------------------------
 # Model registry
@@ -181,5 +268,21 @@ MODEL_CONFIGS = {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+    },
+    "albert-base-v2-random": {
+        "model_class":         AlbertModel,
+        "tokenizer_class":     AlbertTokenizer,
+        "pretrained_name":     "albert-base-v2",   # load architecture from here
+        "is_albert":           True,
+        "random_init":         True,
+        "random_init_scheme":  "orthogonal",        # or "gaussian" for std 0.2
+    },
+    "gpt2-large-random": {
+        "model_class":        GPT2Model,
+        "tokenizer_class":    GPT2Tokenizer,
+        "pretrained_name":    "gpt2-large",   # load architecture from here
+        "is_albert":          False,
+        "random_init":        True,
+        "random_init_scheme": "orthogonal",
     },
 }

@@ -15,11 +15,10 @@ Private helpers: _trend, _plateau_str, _merge_events, _method_agreement
 import numpy as np
 from collections import Counter
 from pathlib import Path
-from core.config import DEGENERATE_RANK_THRESHOLD
-
 from scipy.stats import spearmanr
 
-from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, PROMPTS
+from core.config import BETA_VALUES, DEGENERATE_RANK_THRESHOLD, DISTANCE_THRESHOLDS, PROMPTS
+from .metrics import energy_violation_severity, ENERGY_VIOLATION_REL_TOL
 
 
 # ---------------------------------------------------------------------------
@@ -311,32 +310,42 @@ def _report_causal_mask_control(results: dict, W) -> None:
     W("")
 
 
-def detect_plateaus(values: list, window: int = 2, tol: float = 0.05) -> list:
+def detect_plateaus(                                                               # <<< FIX 2 >>>
+    values: list,
+    window: int = 2,
+    tol: float = 0.05,
+    abs_tol: float = 0.0,
+    ) -> list:
     """
     Find contiguous windows where the signal is approximately flat.
 
     Parameters
     ----------
-    values : 1D list/array
-    window : minimum plateau width (number of steps)
-    tol    : maximum relative span within the plateau
+    values  : 1D list/array
+    window  : minimum plateau width (number of steps)
+    tol     : maximum relative span  span / (|mean| + 1e-8) < tol
+    abs_tol : maximum absolute span  span < abs_tol (OR'd with relative test).
+              Use abs_tol > 0 for signals that legitimately sit near zero
+              (e.g. Fiedler λ₂ in the cluster-separated regime), where the
+              relative denominator collapses and the relative test never fires.
 
     Returns
     -------
     list of (start, end, mean_value) tuples
     """
+    def _is_flat(seg):
+        span = max(seg) - min(seg)
+        return span < abs_tol or span / (abs(np.mean(seg)) + 1e-8) < tol
+
     plateaus = []
     n = len(values)
     i = 0
     while i < n - window:
         segment = values[i:i + window + 1]
-        span    = max(segment) - min(segment)
-        ref     = abs(np.mean(segment)) + 1e-8
-        if span / ref < tol:
+        if _is_flat(segment):
             j = i + window
             while j < n - 1:
-                extended = values[i:j + 2]
-                if (max(extended) - min(extended)) / (abs(np.mean(extended)) + 1e-8) < tol:
+                if _is_flat(values[i:j + 2]):
                     j += 1
                 else:
                     break
@@ -345,6 +354,90 @@ def detect_plateaus(values: list, window: int = 2, tol: float = 0.05) -> list:
         else:
             i += 1
     return plateaus
+
+
+def compute_plateau_layers(results: dict) -> list:
+    """
+    Return the authoritative plateau_layers list using the multi-signal joint
+    criterion: a layer is included when it falls inside the plateau window of
+    2 or more independent signals.
+
+    Signals used (all sourced from results["layers"]):
+      mass_near_1    tol=0.10          always present
+      effective_rank tol=0.05          always present
+      spectral_k     tol=0.50          always present (integer-valued)
+      hdbscan_k      tol=0.50          when HDBSCAN ran
+      fiedler_mean   tol=0.05 abs=0.01 when sinkhorn ran (abs_tol fixes near-0)
+      cka_prev       tol=0.02          non-nan values only; remapped to layer idx
+      nn_stability   tol=0.02          non-None, non-degenerate; remapped to layer idx
+
+    This is the same computation as the layer_count block in generate_llm_report,
+    so plateau_layers in saved results will now match what the report prints.
+    """
+    layers = results["layers"]
+    vote   = Counter()
+
+    # ── always-present scalar signals ────────────────────────────────────────
+    mass1  = [r["ip_mass_near_1"]         for r in layers]
+    erank  = [r["effective_rank"]          for r in layers]
+    spec_k = [r["spectral"]["k_eigengap"]  for r in layers]
+
+    for s, e, _ in detect_plateaus(mass1,  window=2, tol=0.10):
+        for l in range(s, e + 1): vote[l] += 1
+
+    for s, e, _ in detect_plateaus(erank,  window=2, tol=0.05):
+        for l in range(s, e + 1): vote[l] += 1
+
+    for s, e, _ in detect_plateaus(spec_k, window=2, tol=0.50):
+        for l in range(s, e + 1): vote[l] += 1
+
+    # ── optional: HDBSCAN k ──────────────────────────────────────────────────
+    hdb_k = [r["clustering"].get("hdbscan", {}).get("n_clusters", float("nan"))
+             for r in layers]
+    hdb_k_clean = [v for v in hdb_k if not np.isnan(v)]
+    if hdb_k_clean:
+        # hdb_k may have nans; rebuild a (layer_idx, value) mapping to remap
+        hdb_pairs = [(r["layer"], v) for r, v in zip(layers, hdb_k) if not np.isnan(v)]
+        hdb_series = [v for _, v in hdb_pairs]
+        for s, e, _ in detect_plateaus(hdb_series, window=2, tol=0.50):
+            for idx in range(s, e + 1):
+                vote[hdb_pairs[idx][0]] += 1
+
+    # ── optional: Fiedler (abs_tol fixes near-zero denominator) ──────────────
+    has_sk = [r for r in layers if "sinkhorn" in r]
+    if has_sk:
+        fied_pairs  = [(r["layer"], r["sinkhorn"]["fiedler_mean"]) for r in has_sk]
+        fied_series = [v for _, v in fied_pairs]
+        for s, e, _ in detect_plateaus(fied_series, window=2, tol=0.05, abs_tol=0.01):
+            for idx in range(s, e + 1):
+                vote[fied_pairs[idx][0]] += 1
+
+    # ── CKA: skip nan (degenerate / layer 0), remap series idx → layer idx ───
+    cka_pairs = [
+        (r["layer"], r.get("cka_prev", float("nan")))
+        for r in layers
+        if not np.isnan(r.get("cka_prev", float("nan")))
+    ]
+    if cka_pairs:
+        cka_series = [v for _, v in cka_pairs]
+        for s, e, _ in detect_plateaus(cka_series, window=2, tol=0.02):
+            for idx in range(s, e + 1):
+                vote[cka_pairs[idx][0]] += 1
+
+    # ── NN stability: skip None (layer 0) and degenerate layers ──────────────
+    nn_pairs = [
+        (r["layer"], r["nn_stability"])
+        for r in layers
+        if r.get("nn_stability") is not None
+        and r["effective_rank"] >= DEGENERATE_RANK_THRESHOLD
+    ]
+    if nn_pairs:
+        nn_series = [v for _, v in nn_pairs]
+        for s, e, _ in detect_plateaus(nn_series, window=2, tol=0.02):
+            for idx in range(s, e + 1):
+                vote[nn_pairs[idx][0]] += 1
+
+    return sorted(l for l, c in vote.items() if c >= 2)
 
 
 # ---------------------------------------------------------------------------
@@ -390,7 +483,7 @@ def print_summary(results: dict):
     if has_sk:
         fiedler = [r["sinkhorn"]["fiedler_mean"] for r in has_sk]
         print(f"\n  Sinkhorn Fiedler plateaus (low = cluster-separated):")
-        for start, end, val in detect_plateaus(fiedler, window=2, tol=0.05):
+        for s, e, v in detect_plateaus(fiedler, window=2, tol=0.05, abs_tol=0.01):
             print(f"    Layers {start}–{end}  (mean={val:.4f})")
 
     nn_stab_pairs = [(r["layer"], r["nn_stability"])
@@ -577,7 +670,7 @@ def generate_llm_report(results: dict, save_dir: Path):
     plateaus_rank = detect_plateaus(erank,  window=2, tol=0.05)
     plateaus_spk  = detect_plateaus(spec_k, window=2, tol=0.5)
     plateaus_hdb  = detect_plateaus([v for v in hdb_k if not np.isnan(v)], window=2, tol=0.5) if has_hdbscan else []
-    plateaus_fied = detect_plateaus(fiedler, window=2, tol=0.05) if fiedler else []
+    plateaus_fied = detect_plateaus(fiedler, window=2, tol=0.05, abs_tol=0.01) if fiedler else []
 
     # CKA series: skip layer 0 (nan) and any other nan values
     cka_vals_raw  = [r.get("cka_prev", float("nan")) for r in layers]
@@ -941,6 +1034,7 @@ def generate_llm_report(results: dict, save_dir: Path):
     for beta in BETA_VALUES:
         energies_b   = [r["energies"].get(beta, float("nan")) for r in layers]
         sev_b        = energy_violation_severity(energies_b)
+        diffs_b    = np.diff(energies_b)
         viol_str     = str(sev_b["violation_layers"]) if sev_b["violation_layers"] else "none"
         W(f"  beta={beta}: total_rel_change={sev_b['total_rel_change']:+.4f}, "
           f"n_violations={sev_b['n_violations']}, "
@@ -963,7 +1057,7 @@ def generate_llm_report(results: dict, save_dir: Path):
     W("      A large energy drop followed by a rank rise = reset event.")
     W("")
     plateau_layer_set_viol = set(results.get("plateau_layers", []))
-     for beta in [1.0, 2.0]:
+    for beta in [1.0, 2.0]:
         energies_b = [r["energies"].get(beta, float("nan")) for r in layers]
         sev_b      = energy_violation_severity(energies_b)
         viol_idxs  = sev_b["violation_layers"]
@@ -1718,15 +1812,6 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
           f"{layers_str:>10} {max(mass1_):>8.4f} {min(erank_):>8.2f} "
           f"{len(plateaus):>10} {len(merges):>8} "
           f"{sev['n_violations']:>8} {sev['max_severity']:>9.2e}")
-
-    # IN: generate_llm_report, add immediately after W("=" * 60) at the top:
-    excluded = results.get("lm_head_excluded", False)
-    n_total  = results.get("n_layers_total", results["n_layers"])
-    if excluded:
-        W(f"NOTE: final layer excluded (ln_f / LM-head input, layer index "
-          f"{n_total - 1} of {n_total}).  All metrics computed on layers "
-          f"0–{results['n_layers'] - 1} only.")
-        W("")
 
     W("")
     W("PLATEAU LOCATIONS BY RUN")
