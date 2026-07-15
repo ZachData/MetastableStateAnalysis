@@ -149,25 +149,22 @@ def load_model(model_name: str):
     -------
     model, tokenizer
     """
-    cfg            = MODEL_CONFIGS[model_name]
-    pretrained_id  = cfg.get("pretrained_name", model_name)   # ← new
+    cfg      = MODEL_CONFIGS[model_name]
+    repo_id  = cfg.get("hf_repo", cfg.get("pretrained_name", model_name))
+    revision = cfg.get("revision")
 
-    tokenizer = cfg["tokenizer_class"].from_pretrained(pretrained_id)  # ← was model_name
+    tokenizer = cfg["tokenizer_class"].from_pretrained(repo_id, revision=revision)
 
     dtype = torch.bfloat16 if DEVICE == "cuda" else torch.float32
 
     model = cfg["model_class"].from_pretrained(
-        pretrained_id,
+        repo_id,
+        revision=revision,
         output_hidden_states=True,
         output_attentions=True,
         torch_dtype=dtype,
     ).to(DEVICE)
     model.eval()
-
-    repo_id  = cfg.get("hf_repo", model_name)   # unset for every non-Pythia entry
-    revision = cfg.get("revision")               # None -> "main", no-op for existing models
-    model     = cfg["model_class"].from_pretrained(repo_id, revision=revision)
-    tokenizer = cfg["tokenizer_class"].from_pretrained(repo_id, revision=revision)
 
     if model_name == "gpt2" and tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token

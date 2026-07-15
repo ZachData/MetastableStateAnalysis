@@ -25,16 +25,18 @@ the shape of GPT-2's c_attn splitting logic" for both.
 """
 
 import numpy as np
-
+import torch
 
 def _to_numpy(weight) -> np.ndarray:
     """Accept a torch.Tensor or ndarray; return a detached float32 ndarray."""
-    if hasattr(weight, "detach"):
-        weight = weight.detach()
-    if hasattr(weight, "cpu"):
-        weight = weight.cpu()
-    if hasattr(weight, "numpy"):
-        weight = weight.numpy()
+    if torch.is_tensor(weight):
+        weight = weight.detach().cpu().float().numpy()
+    # if hasattr(weight, "detach"):
+    #     weight = weight.detach()
+    # if hasattr(weight, "cpu"):
+    #     weight = weight.cpu()
+    # if hasattr(weight, "numpy"):
+    #     weight = weight.numpy()
     return np.asarray(weight, dtype=np.float32)
 
 

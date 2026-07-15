@@ -19,6 +19,7 @@ from .overview import generate_overview_figures
 from .pair_comparisons import generate_noise_comparison_figures
 from .ablation import generate_ablation_figures
 from .energy_decomposition import generate_energy_decomposition_figures
+from .checkpoint_pipeline import generate_checkpoint_figures
 from .per_model_figures import (
     plot_ip_histogram_migration,
     plot_hdbscan_pca,
@@ -116,6 +117,10 @@ def generate_all(
         generate_noise_comparison_figures(runs, out_dir, prompt, random_agg=random_agg)
         generate_ablation_figures(runs, out_dir, prompt)
         generate_energy_decomposition_figures(runs, phase2_dir, out_dir, prompt)
+        # Checkpoint-sweep figure classes (transition plan v2, item 7) —
+        # no-op when no '-step{N}' families are present, so nothing about
+        # non-Pythia runs changes.
+        generate_checkpoint_figures(runs, out_dir, prompt, random_agg=random_agg)
 
     models = sorted({m for (m, p) in runs.keys()})
     print(f"\nPer-model figures — {len(models)} model variant(s)")
