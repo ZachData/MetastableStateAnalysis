@@ -26,7 +26,7 @@ from unittest.mock import patch
 import numpy as np
 
 # Re-use the fixture builder from test_p5b_io
-from tests.test_p5b_io import (
+from tests.test_phase5b_io import (
     _make_run_dir, _make_p2_projectors,
     N_LAYERS, N_TOKENS, D_MODEL,
 )
@@ -101,30 +101,30 @@ class TestRunOneDiskOutputSkipLogits(unittest.TestCase):
         return ns
 
     def test_fit_summary_written(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         _run_one(self._args(), "gpt2-large", self.out_dir)
         path = self.out_dir / "fit_summary.json"
         self.assertTrue(path.exists(), "fit_summary.json not written")
 
     def test_mh_params_written(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         _run_one(self._args(), "gpt2-large", self.out_dir)
         self.assertTrue((self.out_dir / "mh_params.npz").exists())
 
     def test_report_written(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         _run_one(self._args(), "gpt2-large", self.out_dir)
         self.assertTrue((self.out_dir / "p5b_report.txt").exists())
 
     def test_report_contains_required_sections(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         _run_one(self._args(), "gpt2-large", self.out_dir)
         text = (self.out_dir / "p5b_report.txt").read_text()
         for section in ("PHASE 5b", "SUB-EXP A", "SUB-EXP B", "FALSIFICATION"):
             self.assertIn(section, text, f"Report missing '{section}'")
 
     def test_fit_summary_valid_json(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         _run_one(self._args(), "gpt2-large", self.out_dir)
         with open(self.out_dir / "fit_summary.json") as f:
             summary = json.load(f)
@@ -133,7 +133,7 @@ class TestRunOneDiskOutputSkipLogits(unittest.TestCase):
         self.assertLessEqual(summary["pca_explained_var"], 1.0 + 1e-6)
 
     def test_pca_basis_shape(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         _run_one(self._args(), "gpt2-large", self.out_dir)
         data = np.load(self.out_dir / "mh_params.npz")
         self.assertIn("pca_basis", data)
@@ -141,12 +141,12 @@ class TestRunOneDiskOutputSkipLogits(unittest.TestCase):
         self.assertEqual(basis.shape[0], D_MODEL)
 
     def test_returns_zero_on_success(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         rc = _run_one(self._args(), "gpt2-large", self.out_dir)
         self.assertEqual(rc, 0)
 
     def test_returns_one_for_missing_runs(self):
-        from p5b_manifold.run_5b import _run_one
+        from p5b_manifold_steering.run_5b import _run_one
         args = self._args()
         args.phase1_dir = str(self._tmp / "nonexistent")
         rc = _run_one(args, "gpt2-large", self.out_dir)
@@ -188,14 +188,14 @@ class TestRunOneWithLogits(unittest.TestCase):
     def _inject_cache(self, out_dir: Path, plateau_layers: list[int],
                       merge_layers: list[int]) -> None:
         """Write a synthetic logit cache npz directly into out_dir."""
-        from p5b_manifold.logit_cache import save_logit_cache
+        from p5b_manifold_steering.logit_cache import save_logit_cache
         all_layers = list(set(plateau_layers + merge_layers))
         cache = _synthetic_logit_cache(all_layers, N_TOKENS, VOCAB)
         save_logit_cache(cache, out_dir / "logit_cache.npz")
 
     def test_isometry_json_written_when_cache_present(self):
-        from p5b_manifold.run_5b import _run_one
-        from p5b_manifold.io import find_phase1_runs, load_phase1_run, select_best_run
+        from p5b_manifold_steering.run_5b import _run_one
+        from p5b_manifold_steering.p5b_io import find_phase1_runs, load_phase1_run, select_best_run
 
         # Pre-inject cache before running
         runs = find_phase1_runs(self.p1_dir, "gpt2_large")
@@ -211,8 +211,8 @@ class TestRunOneWithLogits(unittest.TestCase):
                         "isometry.json not written")
 
     def test_isometry_r_manifold_finite(self):
-        from p5b_manifold.run_5b import _run_one
-        from p5b_manifold.io import find_phase1_runs, load_phase1_run, select_best_run
+        from p5b_manifold_steering.run_5b import _run_one
+        from p5b_manifold_steering.p5b_io import find_phase1_runs, load_phase1_run, select_best_run
 
         runs = find_phase1_runs(self.p1_dir, "gpt2_large")
         pk, rd = select_best_run(runs)
@@ -229,8 +229,8 @@ class TestRunOneWithLogits(unittest.TestCase):
         self.assertLessEqual(r,  1.0)
 
     def test_subspace_isometry_written_when_projectors_present(self):
-        from p5b_manifold.run_5b import _run_one
-        from p5b_manifold.io import find_phase1_runs, load_phase1_run, select_best_run
+        from p5b_manifold_steering.run_5b import _run_one
+        from p5b_manifold_steering.p5b_io import find_phase1_runs, load_phase1_run, select_best_run
 
         runs = find_phase1_runs(self.p1_dir, "gpt2_large")
         pk, rd = select_best_run(runs)
@@ -247,8 +247,8 @@ class TestRunOneWithLogits(unittest.TestCase):
             self.assertTrue(np.isfinite(sub[k]), f"{k} not finite")
 
     def test_merge_teleportation_written_when_merges_present(self):
-        from p5b_manifold.run_5b import _run_one
-        from p5b_manifold.io import find_phase1_runs, load_phase1_run, select_best_run
+        from p5b_manifold_steering.run_5b import _run_one
+        from p5b_manifold_steering.p5b_io import find_phase1_runs, load_phase1_run, select_best_run
 
         runs = find_phase1_runs(self.p1_dir, "gpt2_large")
         pk, rd = select_best_run(runs)
@@ -259,7 +259,7 @@ class TestRunOneWithLogits(unittest.TestCase):
         # Merge teleportation depends on having merge layers in events.json
         if p1["merge_layers"]:
             self.assertTrue(
-                (self.out_dir / "merge_teleportation.json").exists()
+                (self.out_dir / "merge_teleportation_subspace.json").exists()
             )
 
 
@@ -280,7 +280,7 @@ class TestTeleportationNullNonTrivial(unittest.TestCase):
         return p / p.sum()
 
     def test_plateau_kl_near_zero_for_stable_distributions(self):
-        from p5b_manifold.merge_teleportation import run_merge_teleportation
+        from p5b_manifold_steering.merge_teleportation_subspace import run_merge_teleportation
 
         vocab = 100
         # plateau layers: all near-identical distributions

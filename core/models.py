@@ -164,6 +164,11 @@ def load_model(model_name: str):
     ).to(DEVICE)
     model.eval()
 
+    repo_id  = cfg.get("hf_repo", model_name)   # unset for every non-Pythia entry
+    revision = cfg.get("revision")               # None -> "main", no-op for existing models
+    model     = cfg["model_class"].from_pretrained(repo_id, revision=revision)
+    tokenizer = cfg["tokenizer_class"].from_pretrained(repo_id, revision=revision)
+
     if model_name == "gpt2" and tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -184,9 +189,9 @@ def extract_activations(model, tokenizer, text: str, model_name: str):
     attentions    : list[Tensor]  — (n_heads, n_tokens, n_tokens) float32 per layer
     tokens        : list[str]     — decoded token strings
     """
-    inputs = tokenizer(
-        text, return_tensors="pt", truncation=True, max_length=512
-    ).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    inputs = {k: v.to(next(model.parameters()).device) for k, v in inputs.items()}
+
     tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
 
     with torch.no_grad():
@@ -195,7 +200,7 @@ def extract_activations(model, tokenizer, text: str, model_name: str):
             dtype=torch.bfloat16,
             enabled=(DEVICE == "cuda"),
         ):
-            outputs = model(**inputs)
+            outputs = model(**inputs, output_hidden_states=True, output_attentions=True)
 
     # Cast to float32 on the GPU (cheap) before the CPU transfer (expensive).
     # This avoids moving bfloat16 data across the PCIe bus then converting.

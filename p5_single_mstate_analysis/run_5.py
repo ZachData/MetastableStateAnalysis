@@ -106,6 +106,23 @@ def _centroid_coords(trajectory: dict, centroid_trajs: dict,
 
 def _compute_feature_activations(phase3: dict, prompt_key: str,
                                    layers_needed: list) -> dict:
+    """
+    Crosscoder feature activations for one prompt, broadcast to every
+    requested layer.
+
+    The crosscoder (crosscoder.py) has no per-layer *encoder* — it encodes
+    one joint (n_tokens, n_features) feature matrix per prompt from the
+    concatenation of all its sampled layers ("input is the concatenation of
+    residual stream activations across L_sampled layers"). Only the
+    *decoder* is per-layer. So there is nothing to fetch "for layer L" on
+    the encoder side: get the prompt's full stack the same way every other
+    Phase 3/4 consumer does (get_stacked_tensor — see activation_trajectories.py,
+    geometric.py, low_rank_ae.py), run the crosscoder once, and hand the
+    resulting matrix to analyze_features under every layer key it asks for.
+    analyze_features then correlates that one matrix against each layer's
+    own HDBSCAN cluster mask to see where in depth each feature tracks
+    cluster identity.
+    """
     store = phase3.get("prompt_store")
     cc    = phase3.get("crosscoder")
     if store is None or cc is None:
@@ -114,25 +131,33 @@ def _compute_feature_activations(phase3: dict, prompt_key: str,
         import torch
     except ImportError:
         return {}
-    out    = {}
+
+    try:
+        x = store.get_stacked_tensor(prompt_key)   # (n_tokens, n_layers, d_model)
+    except Exception as e:
+        print(f"  [D] prompt_store.get_stacked_tensor failed for "
+              f"'{prompt_key}': {e}")
+        return {}
+    if x is None:
+        return {}
+
     device = next(cc.parameters()).device
-    for L in layers_needed:
-        try:
-            res = store.get(prompt_key, L)
-        except Exception:
-            continue
-        if res is None:
-            continue
+    try:
         with torch.no_grad():
-            r = torch.from_numpy(np.asarray(res, dtype=np.float32)).to(device)
-            if hasattr(cc, "encode"):
-                feats = cc.encode(r)
-            elif hasattr(cc, "forward"):
-                feats = cc(r)[0]
+            x = x.to(device=device, dtype=torch.float32)
+            if hasattr(cc, "forward"):
+                out = cc(x)
+                z = out["z"] if isinstance(out, dict) and "z" in out else out
+            elif hasattr(cc, "encode"):
+                z = cc.encode(x.reshape(x.shape[0], -1))
             else:
-                continue
-            out[L] = feats.cpu().numpy()
-    return out
+                return {}
+    except Exception as e:
+        print(f"  [D] crosscoder forward failed for '{prompt_key}': {e}")
+        return {}
+
+    feats = z.cpu().numpy()
+    return {int(L): feats for L in layers_needed}
 
 
 # ---------------------------------------------------------------------------
@@ -763,26 +788,40 @@ def _run_group_C1(
 
     Weight-loading priority
     -----------------------
-    1. weights arg (W_V / W_O separate) — analyze_heads computes cohesion
-       scalar and full OV spectral profile per head per layer.
-    2. ov_weights_{stem}.npz (composed OV = W_V @ W_O) — cohesion falls back
-       to inward_mass; OV spectral profile is recovered from the composed
-       matrix (frac_attractive, participation_ratio, top_eigvals available;
-       cluster_overlap fields unavailable since centroid is not stored).
-    3. No weights — inward_mass cohesion only; all OV fields None.
+    1. weights arg actually contains factored W_V / W_O — analyze_heads
+       computes the cohesion scalar and full OV spectral profile (including
+       cluster_overlap_att/rep) per head per layer directly from them.
+    2. ov_weights_{stem}.npz (composed OV = W_V @ W_O, the schema the Phase 2
+       NPZ actually persists) — fed into analyze_heads as `composed_ov`. Since
+       OV = W_V @ W_O, head_cohesion_scalar_composed gives the same cohesion
+       scalar as path 1 (matrix-mult associativity), and ov_spectral_profile
+       is computed with the real per-layer centroid, so cluster_overlap_att/
+       rep are populated too — not just frac_attractive/participation_ratio.
+    3. Neither available — inward_mass cohesion only; all OV fields None.
+
+    `weights` being a non-empty dict does NOT imply path 1 is usable: when
+    `load_phase2_weights` resolves to the same ov_weights_*.npz used for
+    path 2, the dict is non-empty but holds ov_head{h}_shared / _layer_{i}
+    keys, not W_V / W_O. So the guard below checks for the factored keys
+    specifically, not dict truthiness.
     """
     if run.get("attentions") is None:
         print("  [C1] skipped: attentions.npz missing")
         return {"_error": "attentions unavailable"}
 
+    has_factored = bool(weights) and weights.get("W_V") is not None \
+        and weights.get("W_O") is not None
+
     # ------------------------------------------------------------------
-    # Attempt to load composed OV matrices from Phase 2 NPZ.
-    # Kept separate from `weights` so analyze_heads always receives the
-    # correct W_V / W_O schema (or nothing).
+    # Attempt to load composed OV matrices from Phase 2 NPZ whenever the
+    # factored path isn't usable — independent of whether `weights` is an
+    # empty dict or a non-empty dict of differently-keyed (composed) arrays.
+    # Kept separate from `weights` so analyze_heads always receives a clean
+    # schema for each path.
     # ------------------------------------------------------------------
     composed_weights = {}
 
-    if not weights and p2_dir is not None and stem is not None:
+    if not has_factored and p2_dir is not None and stem is not None:
         stem_h = stem.replace("_", "-")
         for cand in (p2_dir / f"ov_weights_{stem_h}.npz",
                      p2_dir / f"ov_weights_{stem}.npz"):
@@ -794,16 +833,26 @@ def _run_group_C1(
                 if head_ovs:
                     n_h = len(head_ovs[0]) if is_per_layer else len(head_ovs)
                     d   = head_ovs[0][0].shape[0] if is_per_layer else head_ovs[0].shape[0]
+                    layer_index_map = None
+                    if is_per_layer:
+                        # layer_names are "layer_{i}" with i the absolute layer
+                        # index; map it to the position in head_ovs so analyze_heads
+                        # can look up the right per-head OV list by chain layer.
+                        layer_index_map = {
+                            int(name.split("_")[1]): idx
+                            for idx, name in enumerate(layer_names)
+                        }
                     composed_weights = {
-                        "is_per_layer": is_per_layer,
-                        "ov_per_head":  head_ovs,
-                        "n_heads":      n_h,
-                        "d_model":      d,
-                        "layer_names":  layer_names,
+                        "is_per_layer":    is_per_layer,
+                        "ov_per_head":     head_ovs,
+                        "n_heads":         n_h,
+                        "d_model":         d,
+                        "layer_names":     layer_names,
+                        "layer_index_map": layer_index_map,
                     }
                     print(f"  [C1] loaded composed OV matrices from {cand.name} "
                           f"({'per-layer' if is_per_layer else 'shared'}, "
-                          f"{n_h} heads, cohesion via inward_mass)")
+                          f"{n_h} heads, cohesion via composed OV)")
                     break
             except Exception as e:
                 print(f"  [C1] OV fallback load failed ({cand.name}): {e}")
@@ -814,16 +863,16 @@ def _run_group_C1(
     result = analyze_heads(
         run["activations"], run["attentions"], run["hdbscan_labels"],
         primary_raw, run["tokens"], weights=weights,
+        composed_ov=composed_weights or None,
     )
 
     # ------------------------------------------------------------------
-    # Fallback cohesion: fires when cumulative_cohesion is all-zero
-    # (W_V / W_O were unavailable).  Substitutes inward_mass and rebuilds
-    # top_attractor_heads with OV spectral profile from composed matrices
-    # when available.
+    # inward_mass fallback: fires only when neither the factored nor the
+    # composed OV path produced a signal (analyze_heads left
+    # cohesion_source None and cumulative_cohesion all-zero).
     # ------------------------------------------------------------------
     cc = result.get("cumulative_cohesion", [])
-    if cc and not any(x != 0.0 for x in cc):
+    if cc and not any(x != 0.0 for x in cc) and result.get("cohesion_source") is None:
         per_layer = result.get("per_layer", [])
         n_heads   = len(cc)
         fallback  = np.zeros(n_heads)
@@ -842,7 +891,6 @@ def _run_group_C1(
                 {
                     "head":     int(h),
                     "cohesion": round(float(fallback[h]), 4),
-                    **_ov_profile_from_composed_weights(composed_weights, int(h)),
                 }
                 for h in order[:8]
                 if fallback[h] > 0.0
@@ -1185,9 +1233,9 @@ def _run_one_model(args, model_name: str, model_stem: str,
     if any(g in args.groups for g in ("C1", "G")):
         print("[phase5] loading phase2 weights")
         weights = p5io.load_phase2_weights(Path(args.phase2_dir), model_stem)
-        if not weights:
-            print(f"  [note] no phase2 weights.npz — "
-                  "C1 will attempt OV fallback load from ov_weights NPZ")
+        if not (weights.get("W_V") is not None and weights.get("W_O") is not None):
+            print(f"  [note] no factored W_V/W_O in phase2 weights — "
+                  "C1 will attempt the composed-OV load from ov_weights NPZ")
 
     if "D" in args.groups:
         print("[phase5] loading phase3 crosscoder + prompt store")

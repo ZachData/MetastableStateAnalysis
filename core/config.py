@@ -21,6 +21,13 @@ from transformers import (
 
 BASE_RESULTS_DIR = Path("results")
 
+# Default seed for random-initialisation controls.  Overridden at runtime by
+# the --seed CLI argument to run_1 / run_2.  Changing this constant alone is
+# NOT sufficient if Phase 1 runs were produced with a different seed — Phase 2
+# must be given the matching seed for the OV decomposition to correspond to
+# the activations that were actually recorded.
+RANDOM_INIT_SEED: int = 0
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ---------------------------------------------------------------------------
@@ -28,7 +35,6 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # ---------------------------------------------------------------------------
 
 BETA_VALUES       = [0.1, 1.0, 2.0, 5.0]
-LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
 
 # Previously np.linspace(0.05, 0.6, 5, 12) — the 4th positional arg is
 # `endpoint` (expects bool), so 12 was coerced to True, producing only 5
@@ -36,20 +42,36 @@ LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
 DISTANCE_THRESHOLDS = np.linspace(0.05, 0.6, 12)
 
 K_RANGE           = range(2, 10)
-DEGENERATE_RANK_THRESHOLD = 2
 # Run ALBERT once to ALBERT_MAX_ITERATIONS and take snapshots at each depth.
 # Because ALBERT shares weights, hidden[i] is identical whether the run
 # stops at i or continues to MAX — so a single pass captures every depth.
-ALBERT_MAX_ITERATIONS = 48             # single run length (matches gpt2-xl layer count)
-ALBERT_SNAPSHOTS      = [12, 24, 36, 48]  # depths to record (match gpt2/medium/large/xl)
+ALBERT_MAX_ITERATIONS = 60             # single run length (covers full sweep)
+ALBERT_SNAPSHOTS      = list(range(6, 62, 2))  # P1-6: dense sweep for phase transition detection
+# Legacy subset for quick runs (--fast-albert or manual override)
+ALBERT_SNAPSHOTS_LEGACY = [12, 24, 36, 48]
 
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL      = 1e-6
 SPECTRAL_MAX_K    = 15
-RANDOM_INIT_SEED = 0 # override with --seed
+# Single degeneracy gate threshold used by CKA, NN-stability, and energy-drop
+# suppression in analysis.py and reporting.py.
+# Previously split: CKA used < 3.0, NN used < 2.0.  Unified at 2.
+# Below this the token cloud is a near-point-mass on the sphere (rank ≈ 1),
+# making NN assignment float-noise and CKA centering noise-dominated.
+# At rank 2 the cloud is still 2-D and both metrics remain meaningful.
+# Raise to 3 via this single constant if post-rerun rank-2 CKA looks erratic.
+DEGENERATE_RANK_THRESHOLD = 2
+
+# Token-count sweep targets for --length-sweep mode.
+# wiki_paragraph is truncated at word boundaries to each of these approximate
+# token counts and run as separate prompts.  Tests whether plateau width scales
+# with n_tokens as the paper's theory predicts.
+LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
+
 # ---------------------------------------------------------------------------
 # Prompt variants
 # ---------------------------------------------------------------------------
+
 PROMPTS = {
     "short_heterogeneous": (
         "Quantum mechanics governs the behavior of subatomic particles. "
@@ -227,8 +249,6 @@ PROMPTS = {
     ),
 }
 
-
-
 # ---------------------------------------------------------------------------
 # Model registry
 # ---------------------------------------------------------------------------
@@ -238,51 +258,71 @@ MODEL_CONFIGS = {
         "model_class":     AlbertModel,
         "tokenizer_class": AlbertTokenizer,
         "is_albert":       True,
+        "random_init":     False,
+    },
+    # Untrained control: same architecture as albert-base-v2 but with weights
+    # randomly re-initialised after loading the architecture.  Used to test
+    # whether metastability is a property of trained weights or just of the
+    # iterated-map architecture.  Registered as a separate model key so it
+    # runs through the full pipeline and produces side-by-side reports.
+    "albert-base-v2-random": {
+        "model_class":     AlbertModel,
+        "tokenizer_class": AlbertTokenizer,
+        "is_albert":       True,
+        "random_init":     True,
     },
     "albert-xlarge-v2": {
         "model_class":     AlbertModel,
         "tokenizer_class": AlbertTokenizer,
         "is_albert":       True,
+        "random_init":     False,
     },
     "bert-base-uncased": {
         "model_class":     BertModel,
         "tokenizer_class": BertTokenizer,
         "is_albert":       False,
+        "random_init":     False,
+    },
+    "bert-large-uncased": {
+        "model_class":     BertModel,
+        "tokenizer_class": BertTokenizer,
+        "is_albert":       False,
+        "random_init":     False,
     },
     "gpt2": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
     "gpt2-medium": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+        "random_init":     False,
     },
     "gpt2-large": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
+        "random_init":     False,
+    },
+    # Untrained control: same architecture as gpt2-large but randomly
+    # re-initialised after loading.  Mirrors the albert-base-v2-random entry.
+    # Referenced by run_1 --random-baseline and run_2 --random-dir discovery.
+    "gpt2-large-random": {
+        "model_class":     GPT2Model,
+        "tokenizer_class": GPT2Tokenizer,
+        "is_albert":       False,
+        "random_init":     True,
     },
     "gpt2-xl": {
         "model_class":     GPT2Model,
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
-    },
-    "albert-base-v2-random": {
-        "model_class":         AlbertModel,
-        "tokenizer_class":     AlbertTokenizer,
-        "pretrained_name":     "albert-base-v2",   # load architecture from here
-        "is_albert":           True,
-        "random_init":         True,
-        "random_init_scheme":  "orthogonal",        # or "gaussian" for std 0.2
-    },
-    "gpt2-large-random": {
-        "model_class":        GPT2Model,
-        "tokenizer_class":    GPT2Tokenizer,
-        "pretrained_name":    "gpt2-large",   # load architecture from here
-        "is_albert":          False,
-        "random_init":        True,
-        "random_init_scheme": "orthogonal",
+        "random_init":     False,
     },
 }
+
+from core.pythia_registry import build_pythia_model_configs
+MODEL_CONFIGS.update(build_pythia_model_configs())

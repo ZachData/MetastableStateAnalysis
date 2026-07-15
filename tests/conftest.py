@@ -12,6 +12,7 @@ phase-1 and phase-4 test suites.
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import types
 from pathlib import Path
@@ -22,6 +23,13 @@ import numpy as np
 import pytest
 
 from tests.config import D, N_LAYERS, N_TOKENS
+
+# Smoke tests (tests/test_*_smoke.py) need the *real* torch/transformers to
+# do an actual forward pass on a tiny model. Everything else in this suite
+# runs against the MagicMock stubs installed below. Run smoke tests with:
+#     SMOKE_REAL_DEPS=1 pytest -m smoke
+# which skips stub installation for that session so the real imports stand.
+_STUB_HEAVY_DEPS = os.environ.get("SMOKE_REAL_DEPS") != "1"
 
 # ===========================================================================
 # 1. Heavy-dependency stubs
@@ -138,12 +146,43 @@ def _load_p4_submodule(filename: str) -> types.ModuleType:
     return mod
 
 
+# ===========================================================================
+# 3. p5b_manifold package bootstrap
+# ===========================================================================
+
+def _ensure_p5b_package() -> None:
+    """Register p5b_manifold as a package in sys.modules if absent."""
+    if "p5b_manifold" in sys.modules:
+        return
+    pkg = types.ModuleType("p5b_manifold")
+    pkg.__path__    = [str(_P4_SRC)]
+    pkg.__package__ = "p5b_manifold"
+    sys.modules["p5b_manifold"] = pkg
+
+
+def _load_p5b_submodule(filename: str) -> types.ModuleType:
+    """Load a file from the project root as p5b_manifold.<stem>."""
+    stem      = Path(filename).stem
+    full_name = f"p5b_manifold.{stem}"
+    if full_name in sys.modules:
+        return sys.modules[full_name]
+    filepath = _P4_SRC / filename
+    spec     = importlib.util.spec_from_file_location(full_name, filepath)
+    mod      = importlib.util.module_from_spec(spec)
+    mod.__package__       = "p5b_manifold"
+    sys.modules[full_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 # ---------------------------------------------------------------------------
 # Run at collection time
 # ---------------------------------------------------------------------------
 
-_install_stubs()
+if _STUB_HEAVY_DEPS:
+    _install_stubs()
 _ensure_p4_package()
+_ensure_p5b_package()
 
 # Pre-load p4 modules; order matters — chorus imports from activation_trajectories.
 _load_p4_submodule("p4_mstate_features/activation_trajectories.py")
@@ -450,3 +489,166 @@ def ring_pairwise(ring_mh, ring_my, ring_pca, ring_centroids_raw) -> dict:
     angles = np.linspace(0, 2 * np.pi, P5B_N_C, endpoint=False)
     u      = angles / (2 * np.pi)   # normalise to [0, 1)
     return pairwise_distances(ring_mh, ring_my, u, scores, n_pts=50)
+
+# ===========================================================================
+# 4. Smoke-test fixtures (Tier 1 — real end-to-end pipeline checks)
+#
+# Only meaningful under SMOKE_REAL_DEPS=1 (see _STUB_HEAVY_DEPS above), since
+# they need the real torch/transformers, not the MagicMock stand-ins used by
+# the rest of this file. Defining them unconditionally is harmless — they
+# just never get requested unless a test marked `smoke` pulls them in.
+#
+# Model choice: hf-internal-testing/tiny-random-gpt2 and its GPT-NeoX
+# counterpart hf-internal-testing/tiny-random-GPTNeoXForCausalLM — both
+# real, publicly hosted, randomly-initialised checkpoints (a few hundred KB
+# each), confirmed to exist on the Hub. Requires network once; cached by
+# huggingface_hub after that.
+#
+# Confirmed by an actual SMOKE_REAL_DEPS=1 run (not just inferred): load_model
+# does resolve both registry entries correctly — the GPT-2 and GPT-NeoX
+# fixtures both get as far as tokenizing and calling the model. That run also
+# surfaced a real, pre-existing, non-Pythia-specific bug in core/models.py's
+# extract_activations: on a CUDA-visible machine, core.config.DEVICE resolves
+# to "cuda", load_model puts the model there, but extract_activations
+# tokenizes the prompt and calls the model without moving the resulting
+# `inputs` onto that device — "Expected all tensors to be on the same device
+# ... index is on cuda:0, different from other tensors on cpu". Every
+# model_to_run entry then fails silently inside run_1.run_all's per-model
+# try/except, so `results` comes back empty and both tiny_phase1_dir fixtures
+# (GPT-2 and GPT-NeoX) fail their own assert with the same message.
+#
+# Fix (not made here — belongs in core/models.py, not in test code):
+#     inputs = tokenizer(prompt_text, return_tensors="pt", truncation=True, max_length=512)
+#     inputs = {k: v.to(next(model.parameters()).device) for k, v in inputs.items()}
+# mirroring what run_1.py's own _run_sublayer_analysis already does
+# correctly. On a CPU-only machine this bug doesn't surface (model and
+# inputs are both already on "cpu"), which is presumably why it went
+# unnoticed until now.
+# ===========================================================================
+
+SMOKE_TINY_GPT2    = "hf-internal-testing/tiny-random-gpt2"
+SMOKE_TINY_GPTNEOX = "hf-internal-testing/tiny-random-GPTNeoXForCausalLM"
+SMOKE_PROMPT       = "short_heterogeneous"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _register_smoke_models():
+    """Add the tiny smoke-test checkpoints to the real model registry.
+
+    autouse + session-scoped: cheap (dict inserts), and every smoke test
+    needs at least one of these present regardless of which phase it's
+    checking, so there's no value in making each test request it explicitly.
+    No-ops when running under the stubbed (non-smoke) session, since
+    core.config there is the MagicMock/stub version and MODEL_CONFIGS = {}
+    is thrown away at session end either way.
+    """
+    import core.config as cfg
+
+    cfg.MODEL_CONFIGS.setdefault(SMOKE_TINY_GPT2, {
+        "model_class":     __import__("transformers").GPT2Model,
+        "tokenizer_class": __import__("transformers").GPT2Tokenizer,
+        "is_albert":       False,
+        "random_init":     False,
+    })
+    cfg.MODEL_CONFIGS.setdefault(SMOKE_TINY_GPTNEOX, {
+        "model_class":     __import__("transformers").GPTNeoXModel,
+        "tokenizer_class": __import__("transformers").AutoTokenizer,
+        "is_albert":       False,
+        "random_init":     False,
+    })
+
+
+@pytest.fixture(scope="session")
+def tiny_phase1_dir(tmp_path_factory):
+    """
+    Run the real phase 1 pipeline on the tiny GPT-2 checkpoint and one
+    short prompt. Returns the phase 1 output root (the directory phase 2's
+    _find_run_dir expects as `phase1_dir`), so downstream phases can be
+    smoke-tested against a real on-disk artifact set instead of a mock —
+    which is the point: this is what actually exercises the artifact
+    contract (producer/consumer naming) rather than assuming it holds.
+    """
+    from p1_mstate_tracking import run_1
+
+    out_root = tmp_path_factory.mktemp("phase1_smoke")
+    # run_1 imported BASE_RESULTS_DIR by name at module load time, so the
+    # module-level attribute has to be patched directly — patching
+    # core.config.BASE_RESULTS_DIR alone would not reach run_1's copy.
+    run_1.BASE_RESULTS_DIR = out_root
+
+    results = run_1.run_all(
+        models_to_run=[SMOKE_TINY_GPT2],
+        prompts_to_run=[SMOKE_PROMPT],
+        run_extended=False,
+    )
+    assert results, (
+        "phase 1 smoke run produced no results — check that "
+        f"{SMOKE_TINY_GPT2} loads via core.models.load_model, and if it "
+        "does, check for the CUDA/CPU device-mismatch bug documented above "
+        "(extract_activations needs to move `inputs` onto model.device)"
+    )
+    return run_1.OUTPUT_DIR
+
+
+@pytest.fixture(scope="session")
+def tiny_phase1_gptneox_dir(tmp_path_factory):
+    """
+    Run the real phase 1 pipeline on the tiny GPT-NeoX checkpoint and one
+    short prompt — the GPT-NeoX-family counterpart to tiny_phase1_dir.
+
+    Two things this specifically exercises that the GPT-2 smoke fixture
+    can't: (1) _is_causal_model recognizing a non-"gpt2"-prefixed causal
+    model, and (2) analyze_value_eigenspectrum's fused-query_key_value
+    branch, since hf-internal-testing/tiny-random-GPTNeoXForCausalLM has
+    real (if tiny) query_key_value weights to split.
+
+    Same session-scoped shape as tiny_phase1_dir, and subject to the same
+    device-mismatch bug documented in the "Smoke-test fixtures" header
+    above — that bug lives in core/models.py, not here, and affects this
+    fixture identically.
+    """
+    from p1_mstate_tracking import run_1
+
+    out_root = tmp_path_factory.mktemp("phase1_smoke_gptneox")
+    run_1.BASE_RESULTS_DIR = out_root
+
+    results = run_1.run_all(
+        models_to_run=[SMOKE_TINY_GPTNEOX],
+        prompts_to_run=[SMOKE_PROMPT],
+        run_extended=False,
+    )
+    assert results, (
+        "phase 1 smoke run produced no results for the GPT-NeoX branch — "
+        f"check that {SMOKE_TINY_GPTNEOX} loads via core.models.load_model, "
+        "and if it does, check for the CUDA/CPU device-mismatch bug "
+        "documented above (extract_activations needs to move `inputs` onto "
+        "model.device)"
+    )
+    return run_1.OUTPUT_DIR
+
+
+@pytest.fixture(scope="session")
+def tiny_phase2_dir(tiny_phase1_dir, tmp_path_factory):
+    """
+    Run the real phase 2 pipeline against the real phase 1 output above.
+    Deliberately uses run_full (loads its own model + calls analyze_weights)
+    rather than run_offline, so this also re-exercises model loading for
+    the same tiny checkpoint under phase 2's code path, not just phase 1's.
+    """
+    from p2_eigenspectra import run_2
+
+    out_root = tmp_path_factory.mktemp("phase2_smoke")
+    run_2.BASE_RESULTS_DIR = out_root
+
+    verdicts = run_2.run_full(
+        models_to_run=[SMOKE_TINY_GPT2],
+        prompts_to_run=[SMOKE_PROMPT],
+        phase1_dir=tiny_phase1_dir,
+    )
+    assert verdicts, (
+        "phase 2 smoke run produced no verdicts — most likely _find_run_dir "
+        "didn't match phase 1's stem naming for this model_name; that "
+        "mismatch is exactly the artifact-contract bug class this is "
+        "meant to catch"
+    )
+    return out_root

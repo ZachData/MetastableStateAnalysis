@@ -141,6 +141,41 @@ def head_cohesion_scalar(
     return coh
 
 
+def head_cohesion_scalar_composed(
+    attn_head: np.ndarray,    # (n, n)
+    activations: np.ndarray,  # (n, d)  (the layer's input to attention)
+    OV_head: np.ndarray,      # (d, d) composed W_V @ W_O for this head
+    cluster_idx: np.ndarray,
+) -> float:
+    """
+    Same quantity as head_cohesion_scalar, for a pre-composed per-head OV
+    matrix instead of separate W_V / W_O.
+
+    Matrix multiplication is associative:
+        (A_h X W_V) W_O  ==  A_h X (W_V W_O)  ==  A_h X OV
+
+    so this needs only OV_head — exactly what the Phase 2 NPZ persists
+    under ov_head{h}_shared / ov_head{h}_layer_{i} — rather than the
+    factored W_V / W_O that head_cohesion_scalar expects and that the NPZ
+    does not contain.
+    """
+    d = activations.shape[-1]
+    if OV_head.shape[0] != d:
+        OV_head = OV_head.T
+
+    delta = attn_head @ activations @ OV_head   # (n, d)
+
+    X_C = activations[cluster_idx]
+    x_bar = X_C.mean(axis=0)
+    n_bar = np.linalg.norm(x_bar)
+    if n_bar < 1e-12:
+        return 0.0
+    x_bar = x_bar / n_bar
+
+    coh = float((delta[cluster_idx] @ x_bar).sum())
+    return coh
+
+
 # ---------------------------------------------------------------------------
 # OV × cluster direction
 # ---------------------------------------------------------------------------
@@ -324,19 +359,34 @@ def analyze_heads(
     trajectory:  dict,
     tokens:      list,
     weights:     dict = None,
+    composed_ov: dict = None,
     n_heads:     int  = None,
     ) -> dict:
     """
     Full Group C.1 analysis.
 
+    Weight-loading priority for cohesion + OV spectral profile:
+      1. `weights["W_V"]` / `weights["W_O"]` (factored, per-head-sliceable) —
+         cohesion via head_cohesion_scalar.
+      2. `composed_ov` — dict with `ov_per_head` (list[(d,d)] for shared
+         weights, e.g. ALBERT; or list[list[(d,d)]] for per-layer weights,
+         e.g. GPT-2), `is_per_layer`, and `layer_index_map`
+         ({absolute_layer: index into ov_per_head}, only when per-layer).
+         Cohesion via head_cohesion_scalar_composed — mathematically
+         identical to path 1 since OV = W_V @ W_O (associativity), but
+         needs only the composed matrix the Phase 2 NPZ actually stores.
+      3. Neither — cohesion / ov_spectral_profile stay None per head;
+         callers (e.g. _run_group_C1) substitute an inward_mass fallback.
+
     Returns
     -------
     dict with:
       trajectory_id       : int
-      per_layer           : per-layer list, each entry has per_head list.
+      per_layer            : per-layer list, each entry has per_head list.
                             Each per_head entry contains ov_spectral_profile
-                            when OV weights are available.
+                            when OV weights (factored or composed) are available.
       cumulative_cohesion : list[float] — summed head_cohesion_scalar per head
+      cohesion_source      : "factored_ov" | "composed_ov" | None
       top_attractor_heads : top-8 heads by cumulative cohesion, each with
                             cohesion and the mean OV spectral profile fields:
                             ov_frac_attractive, ov_participation_ratio,
@@ -351,6 +401,15 @@ def analyze_heads(
     if weights:
         W_V_all = weights.get("W_V")
         W_O_all = weights.get("W_O")
+    use_factored = W_V_all is not None and W_O_all is not None
+
+    use_composed = (
+        not use_factored
+        and bool(composed_ov)
+        and bool(composed_ov.get("ov_per_head"))
+    )
+    composed_is_per_layer = bool(composed_ov.get("is_per_layer")) if use_composed else False
+    composed_layer_map    = (composed_ov.get("layer_index_map") or {}) if use_composed else {}
 
     def _slice_head(W_full, h, split_dim):
         if W_full is None:
@@ -364,6 +423,17 @@ def analyze_heads(
         else:
             d_head = W_full.shape[0] // n_heads
             return W_full[h * d_head:(h + 1) * d_head, :]
+
+    def _ov_heads_for_layer(layer: int):
+        """Composed per-head OV list applicable at this absolute layer, or None."""
+        if not use_composed:
+            return None
+        if not composed_is_per_layer:
+            return composed_ov["ov_per_head"]      # shared across layers (ALBERT)
+        idx = composed_layer_map.get(layer)
+        if idx is None:
+            return None
+        return composed_ov["ov_per_head"][idx]
 
     per_layer_out       = []
     cumulative_cohesion = np.zeros(n_heads)
@@ -380,6 +450,8 @@ def analyze_heads(
         centroid = X[cluster_idx].mean(axis=0)
         centroid = centroid / max(float(np.linalg.norm(centroid)), 1e-12)
 
+        ov_heads_this_layer = _ov_heads_for_layer(layer)
+
         per_head = []
         for h in range(n_heads):
             A_h = attentions[layer, h]
@@ -387,7 +459,7 @@ def analyze_heads(
             cls["fiedler"]   = round(cluster_sinkhorn_fiedler(A_h, cluster_idx), 4)
             cls["top_pairs"] = top_qk_pairs(A_h, cluster_idx, tokens, top_k=3)
 
-            if W_V_all is not None and W_O_all is not None:
+            if use_factored:
                 try:
                     WV_h = _slice_head(W_V_all, h, "V")
                     WO_h = _slice_head(W_O_all, h, "O")
@@ -396,6 +468,22 @@ def analyze_heads(
                     cumulative_cohesion[h] += coh
 
                     prof = ov_spectral_profile(WV_h @ WO_h, centroid)
+                    cls["ov_spectral_profile"] = prof
+                    ov_profiles[h].append(prof)
+
+                except Exception as e:
+                    cls["cohesion"]             = None
+                    cls["ov_spectral_profile"]  = {"error": str(e)}
+
+            elif use_composed and ov_heads_this_layer is not None \
+                    and h < len(ov_heads_this_layer):
+                try:
+                    OV_h = ov_heads_this_layer[h]
+                    coh  = head_cohesion_scalar_composed(A_h, X, OV_h, cluster_idx)
+                    cls["cohesion"] = round(coh, 4)
+                    cumulative_cohesion[h] += coh
+
+                    prof = ov_spectral_profile(OV_h, centroid)
                     cls["ov_spectral_profile"] = prof
                     ov_profiles[h].append(prof)
 
@@ -445,10 +533,18 @@ def analyze_heads(
                 **_mean_ov_profile(int(h)),
             })
 
+    if use_factored:
+        cohesion_source = "factored_ov"
+    elif use_composed:
+        cohesion_source = "composed_ov"
+    else:
+        cohesion_source = None
+
     return {
         "trajectory_id":        int(trajectory["id"]),
         "per_layer":            per_layer_out,
         "cumulative_cohesion":  [round(float(x), 4) for x in cumulative_cohesion],
+        "cohesion_source":      cohesion_source,
         "top_attractor_heads":  top_heads,
     }
 

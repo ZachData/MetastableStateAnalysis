@@ -542,7 +542,7 @@ def load_phase3(
     checkpoint_dir = Path(checkpoint_dir)
     if (checkpoint_dir / "config.json").exists():
         try:
-            from phase3.training import load_trained_crosscoder
+            from p3_crosscoder.training import load_trained_crosscoder
             out["crosscoder"] = load_trained_crosscoder(
                 checkpoint_dir, device=device,
             )
@@ -557,10 +557,13 @@ def load_phase3(
     eval_dir = cache_dir / "eval_prompts"
     if eval_dir.exists():
         try:
-            from phase3.data import PromptActivationStore
-            store = PromptActivationStore()
-            store.load(eval_dir)
-            out["prompt_store"] = store
+            from p3_crosscoder.data import PromptActivationStore
+            # PromptActivationStore.load is a classmethod that returns a new
+            # instance — it does not mutate an existing one. The previous
+            # `store = PromptActivationStore(); store.load(eval_dir)` called
+            # the classmethod on an empty instance and discarded its return
+            # value, so `store` stayed empty (0 prompts) even on success.
+            out["prompt_store"] = PromptActivationStore.load(eval_dir)
         except Exception as e:
             print(f"[phase3] prompt_store load failed: {e}")
 

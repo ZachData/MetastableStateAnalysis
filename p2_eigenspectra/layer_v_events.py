@@ -154,11 +154,10 @@ def correlate_with_phase1(
 
     for v_name, v_arr in v_metrics.items():
         for p1_name, p1_arr in p1_metrics.items():
-            # Filter nan
             mask = np.isfinite(v_arr) & np.isfinite(p1_arr)
-            if mask.sum() < 4:
+            if mask.sum() < 4 or np.ptp(v_arr[mask]) == 0 or np.ptp(p1_arr[mask]) == 0:
                 results[f"{v_name}_vs_{p1_name}"] = {
-                    "rho": float("nan"), "pval": float("nan"), "n": 0
+                    "rho": float("nan"), "pval": float("nan"), "n": int(mask.sum())
                 }
                 continue
             rho, pval = spearmanr(v_arr[mask], p1_arr[mask])

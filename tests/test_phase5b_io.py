@@ -16,7 +16,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from p5b_manifold.io import (
+from p5b_manifold_steering.p5b_io import (
     find_phase1_runs,
     load_phase1_run,
     select_best_run,

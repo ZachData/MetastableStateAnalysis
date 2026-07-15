@@ -63,7 +63,7 @@ from .cluster_tracking import track_clusters
 # Fix 3 — causal-model detection
 # ---------------------------------------------------------------------------
 
-_CAUSAL_MODEL_PREFIXES = ("gpt2",)   # extend for other decoder models
+_CAUSAL_MODEL_PREFIXES = ("gpt2", "pythia", "gpt-neox", "gptneox")   # extend for other decoder models
 
 
 def _is_causal_model(model_name: str) -> bool:

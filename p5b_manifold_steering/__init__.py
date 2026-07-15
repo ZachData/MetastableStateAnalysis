@@ -64,7 +64,7 @@ from .isometry_test import (
     mds_embed,
     run_isometry_test,
 )
-from .merge_teleportation import (
+from .merge_teleportation_subspace import (
     teleportation_score,
     compare_merge_plateau,
     run_merge_teleportation,
@@ -79,7 +79,7 @@ from .logit_cache import (
     save_logit_cache,
     load_logit_cache,
 )
-from .report import write_report
+from .p5b_report import write_report
 
 __all__ = [
     "pca_reduce", "arc_length_params",

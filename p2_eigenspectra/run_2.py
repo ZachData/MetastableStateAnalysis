@@ -62,8 +62,9 @@ import numpy as np
 from core.config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
     ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS,
+    RANDOM_INIT_SEED,
 )
-from core.models import load_model
+from core.models import load_model, randomize_weights
 
 from p2_eigenspectra.weights import analyze_weights, load_weight_decomposition
 from p2_eigenspectra.trajectory import analyze_trajectory_offline, load_phase1_events
@@ -129,8 +130,27 @@ def run_full(
     models_to_run: list = None,
     prompts_to_run: list = None,
     phase1_dir: Path = None,
+    random_init_seed: int = None,
+    output_dir: Path = None,
+    save_cross_run: bool = True,
     ) -> list:
-    """Full p2_eigenspectra pipeline: load models, extract weights, decompose, analyse."""
+    """Full p2_eigenspectra pipeline: load models, extract weights, decompose, analyse.
+
+    Parameters
+    ----------
+    random_init_seed : seed passed to randomize_weights for random-init models.
+        Defaults to RANDOM_INIT_SEED from config.  Must match the seed used when
+        the corresponding Phase 1 run was produced, or the OV decomposition will
+        not correspond to the recorded activations.
+    output_dir : if provided, write results here instead of creating a new
+        timestamped directory.  Callers that want to merge trained + random
+        verdicts into one cross-run report pass the same output_dir to both
+        run_full and run_random_baseline and set save_cross_run=False until
+        the final aggregation step.
+    save_cross_run : if True (default), write the cross-run summary inside
+        this call.  Set False when the caller will aggregate verdicts from
+        multiple calls before writing the summary.
+    """
     if models_to_run is None:
         models_to_run = list(MODEL_CONFIGS.keys())
     if prompts_to_run is None:
@@ -141,24 +161,35 @@ def run_full(
         print("No Phase 1 results found. Run Phase 1 first.")
         return []
 
-    timestamp  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_dir = BASE_RESULTS_DIR / f"p2_eigenspectra_{timestamp}"  # <-- renamed
+    if output_dir is None:
+        timestamp  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_dir = BASE_RESULTS_DIR / f"p2_eigenspectra_{timestamp}"
+    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"\np2_eigenspectra output: {output_dir}")
     print(f"Phase 1 source:        {phase1_dir}")
 
     all_verdicts = []
+    seed = random_init_seed if random_init_seed is not None else RANDOM_INIT_SEED
 
     for model_name in models_to_run:
         print(f"\n{'='*60}\nModel: {model_name}\n{'='*60}")
+        cfg = MODEL_CONFIGS[model_name]
         try:
             model, tokenizer = load_model(model_name)
         except Exception as e:
             print(f"  Failed to load: {e}")
             continue
 
+        # Apply random re-initialisation when the model config requests it.
+        # The seed must match the one used in the corresponding Phase 1 run;
+        # otherwise the OV decomposition won't correspond to the activations.
+        if cfg.get("random_init", False):
+            scheme = cfg.get("random_init_scheme", "orthogonal")
+            print(f"  Re-initialising weights (scheme={scheme}, seed={seed})")
+            randomize_weights(model, scheme=scheme, seed=seed)
+
         ov_data = analyze_weights(model, model_name, output_dir)
-        cfg     = MODEL_CONFIGS[model_name]
 
         for prompt_key in prompts_to_run:
             run_dir = _find_run_dir(phase1_dir, model_name, prompt_key, cfg)
@@ -200,7 +231,7 @@ def run_full(
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-    if all_verdicts:
+    if all_verdicts and save_cross_run:
         _save_cross_run(all_verdicts, output_dir)
 
     print(f"\np2_eigenspectra complete. Results in: {output_dir.resolve()}")
@@ -310,6 +341,190 @@ def run_offline(
 
     print(f"\nDone. Results in: {output_dir.resolve()}")
     return all_verdicts
+
+
+# ---------------------------------------------------------------------------
+# Random-baseline runner
+# ---------------------------------------------------------------------------
+
+def run_random_baseline(
+    random_dir: Path,
+    output_dir: Path,
+    prompts_to_run: list = None,
+    ) -> list:
+    """
+    Run Phase 2 on all random-initialisation Phase 1 runs found in random_dir.
+
+    Expected layout (produced by run_1 --random-baseline --seed N, then
+    collected into one place):
+
+        random_dir/
+            2026-01-01_10-00-00/        ← timestamped experiment dir
+                experiment.txt          ← command line with --seed N recorded
+                albert-base-v2-random_wiki_paragraph/
+                gpt2-large-random_wiki_paragraph/
+                ...
+            2026-01-01_11-00-00/        ← next seed
+                ...
+
+    Also handles a flat layout (no nested timestamp dirs) by treating
+    random_dir itself as a single phase1 dir with RANDOM_INIT_SEED.
+
+    The seed is extracted from the ``command`` line in experiment.txt so that
+    the OV weight decomposition is computed with the same random state that
+    produced the Phase 1 activations.  Without this, the repulsive/attractive
+    subspaces won't correspond to the recorded token trajectories.
+
+    Results are written into output_dir using a seed-tagged stem
+    (e.g., albert-base-v2-random_wiki_paragraph_s42/) so that multiple
+    seeds don't collide inside a shared output directory.
+    """
+    import re
+    import json
+
+    random_dir = Path(random_dir)
+    if not random_dir.exists():
+        print(f"[random] {random_dir} does not exist, skipping.")
+        return []
+
+    # --- Discover seed entries -----------------------------------------------
+    seed_entries: list[tuple[Path, int]] = []
+    for d in sorted(random_dir.iterdir()):
+        if not d.is_dir():
+            continue
+        manifest = d / "experiment.txt"
+        if manifest.exists():
+            seed = _parse_seed_from_manifest(manifest)
+            seed_entries.append((d, seed))
+
+    if not seed_entries:
+        # Flat layout: random_dir itself is the phase1 dir.
+        seed_entries = [(random_dir, RANDOM_INIT_SEED)]
+        print(f"[random] Flat layout detected; treating {random_dir} as a single "
+              f"phase1 dir (seed={RANDOM_INIT_SEED}).")
+    else:
+        print(f"[random] Found {len(seed_entries)} seed run(s) in {random_dir}")
+
+    if prompts_to_run is None:
+        prompts_to_run = list(PROMPTS.keys())
+
+    all_verdicts = []
+
+    for phase1_dir, seed in seed_entries:
+        # --- Discover which random models appear in this seed dir ------------
+        model_names = _discover_random_models(phase1_dir)
+        if not model_names:
+            print(f"  [random] No recognised models in {phase1_dir.name}, skipping.")
+            continue
+        print(f"\n  Seed dir : {phase1_dir.name}  seed={seed}"
+              f"  models={model_names}")
+
+        for model_name in model_names:
+            cfg = MODEL_CONFIGS[model_name]
+            print(f"\n{'='*60}\n[random] Model: {model_name}  seed={seed}\n{'='*60}")
+            try:
+                model, tokenizer = load_model(model_name)
+            except Exception as e:
+                print(f"  Failed to load {model_name}: {e}")
+                continue
+
+            scheme = cfg.get("random_init_scheme", "orthogonal")
+            print(f"  Re-initialising weights (scheme={scheme}, seed={seed})")
+            randomize_weights(model, scheme=scheme, seed=seed)
+
+            ov_data = analyze_weights(model, model_name, output_dir)
+
+            for prompt_key in prompts_to_run:
+                run_dir = _find_run_dir(phase1_dir, model_name, prompt_key, cfg)
+                if run_dir is None:
+                    continue
+
+                print(f"\n  Prompt: {prompt_key}")
+                try:
+                    traj = analyze_trajectory_offline_perlayer(run_dir, ov_data)
+
+                    # Stem includes seed suffix so multiple seeds don't collide.
+                    stem = f"{model_name.replace('/', '_')}_{prompt_key}_s{seed}"
+                    decomposed = _run_decompose(
+                        model, tokenizer, model_name, prompt_key, cfg
+                    )
+                    if decomposed is not None:
+                        save_decomposed(decomposed, output_dir / stem)
+
+                    ctx = {
+                        "model_name":     model_name,
+                        "prompt_key":     prompt_key,
+                        "stem":           stem,
+                        "ov_data":        ov_data,
+                        "traj":           traj,
+                        "decomposed":     decomposed,
+                        "phase1_run_dir": run_dir,
+                    }
+                    verdict = run_one_prompt(ctx, output_dir)
+                    verdict["random_seed"] = seed
+                    all_verdicts.append(verdict)
+
+                except Exception as e:
+                    print(f"  Failed {model_name} {prompt_key} seed={seed}: {e}")
+                    traceback.print_exc()
+
+            del model
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+    return all_verdicts
+
+
+def _discover_random_models(phase1_dir: Path) -> list:
+    """
+    Read geometry.json files in phase1_dir to discover model names.
+    Returns only names present in MODEL_CONFIGS (skips unrecognised models).
+    """
+    import json
+    found: set = set()
+    for run_dir in Path(phase1_dir).iterdir():
+        if not run_dir.is_dir():
+            continue
+        geo_path = run_dir / "geometry.json"
+        if not geo_path.exists():
+            continue
+        try:
+            geo = json.loads(geo_path.read_text())
+            m = geo.get("model", "")
+            if m and m in MODEL_CONFIGS:
+                found.add(m)
+        except Exception:
+            pass
+    return sorted(found)
+
+
+def _parse_seed_from_manifest(manifest_path: Path) -> int:
+    """
+    Extract --seed N from the command line recorded in experiment.txt.
+    Falls back to RANDOM_INIT_SEED if not found.
+    """
+    import re
+    try:
+        text = manifest_path.read_text()
+        m = re.search(r"--seed\s+(\d+)", text)
+        if m:
+            return int(m.group(1))
+    except Exception:
+        pass
+    return RANDOM_INIT_SEED
+
+
+def _resolve_random_dir(arg: str | None) -> Path | None:
+    """
+    Resolve the --random-dir argument.
+    'auto' (default): use results/p1_random if it exists, else None.
+    Any other value: treat as a path.
+    """
+    if arg is None or arg == "auto":
+        p = BASE_RESULTS_DIR / "p1_random"
+        return p if p.exists() else None
+    p = Path(arg)
+    return p if p.exists() else None
 
 
 # ---------------------------------------------------------------------------
@@ -546,6 +761,14 @@ if __name__ == "__main__":
                         help="albert-base-v2 + wiki_paragraph only")
     parser.add_argument("--head-analysis", action="store_true",
                         help="Load per-head OV matrices (~25 GB for gpt2-xl)")
+    parser.add_argument(
+        "--random-dir", type=str, default="auto", metavar="DIR",
+        help=(
+            "Directory containing Phase 1 random-initialisation runs "
+            "(default 'auto': use results/p1_random if it exists). "
+            "Pass 'none' to disable even when results/p1_random exists."
+        ),
+    )
     args = parser.parse_args()
 
     if args.fast:
@@ -554,6 +777,12 @@ if __name__ == "__main__":
     else:
         models  = args.models
         prompts = args.prompts
+
+    # Resolve random-dir once so both --full and --offline can use it.
+    rand_dir = (
+        None if args.random_dir == "none"
+        else _resolve_random_dir(args.random_dir)
+    )
 
     if args.offline:
         offline_dir = Path(args.offline)
@@ -567,11 +796,35 @@ if __name__ == "__main__":
             phase1_dir=phase1, models_to_run=models, prompts_to_run=prompts,
             weights_dir=weights, head_analysis=args.head_analysis,
         )
+
     elif args.full or args.fast:
-        run_full(
-            models_to_run=models, prompts_to_run=prompts,
+        # Create a shared output dir so trained + random verdicts end up in
+        # one place and the final cross-run report covers both.
+        timestamp  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_dir = BASE_RESULTS_DIR / f"p2_eigenspectra_{timestamp}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        all_verdicts = run_full(
+            models_to_run=models,
+            prompts_to_run=prompts,
             phase1_dir=Path(args.phase1_dir) if args.phase1_dir else None,
+            output_dir=output_dir,
+            save_cross_run=rand_dir is None,   # defer if random runs follow
         )
+
+        if rand_dir is not None:
+            print(f"\n[random] Processing random-init runs from {rand_dir}")
+            random_verdicts = run_random_baseline(
+                random_dir=rand_dir,
+                output_dir=output_dir,
+                prompts_to_run=prompts,
+            )
+            all_verdicts.extend(random_verdicts)
+            # Write the consolidated cross-run report now that all verdicts
+            # (trained + random) are available.
+            if all_verdicts:
+                _save_cross_run(all_verdicts, output_dir)
+
     else:
         parser.print_help()
         print("\nSpecify --full or --offline <P2_FULL_DIR>")

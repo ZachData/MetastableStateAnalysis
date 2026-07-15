@@ -665,6 +665,11 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path) -> dict:
             d = block.attn.c_attn.weight.shape[1]
             v = block.attn.c_attn.weight[:, 2*d//3:].detach().cpu().float().numpy()
             v_matrices.append((f"layer_{i}", v))
+    elif any(s in model_name.lower() for s in ("pythia", "gpt-neox", "gptneox")):
+        from core.pythia_weights import extract_v_gptneox
+        for i, layer in enumerate(model.layers):
+            v = extract_v_gptneox(layer, model_name)
+            v_matrices.append((f"layer_{i}", v))
 
     if not v_matrices:
         return {}

@@ -82,7 +82,13 @@ def _run_albert_with_hook(
     Run ALBERT's shared layer or GPT-2's block layers, giving hook_fn the chance
     to modify the attention tensor or hidden state at every iteration.
 
-    hook_fn(step, hidden, albert_layer) -> optionally-modified hidden
+    hook_fn(step, hidden, layer) -> optionally-modified hidden
+
+    `layer` is the GPT2Block or AlbertLayer module being about to run at
+    this step; both branches now call hook_fn before the layer executes, so
+    interventions that only touch `hidden` (steering, patching) work
+    unmodified on GPT-2, and interventions that need the layer's attention
+    submodule (head ablation) can dispatch on `layer`'s type.
     """
     torch = _torch()
     device = next(model.parameters()).device
@@ -103,9 +109,8 @@ def _run_albert_with_hook(
             hidden = transformer.drop(hidden)
             traj.append(hidden[0].float().cpu().numpy())
 
-            for block in transformer.h:
-                # Apply hook_fn if needed, or adapt depending on how interventions map to GPT-2
-                # Pass output_attentions=True to access attention weights
+            for step, block in enumerate(transformer.h):
+                hidden = hook_fn(step, hidden, block)
                 out = block(hidden, attention_mask=None, use_cache=False,
                             output_attentions=True)
                 hidden = out[0]
@@ -150,79 +155,78 @@ def _run_albert_with_hook(
 # Intervention implementations (ALBERT; per-layer models TODO)
 # ---------------------------------------------------------------------------
 
+def _attn_submodule(layer):
+    """Attention submodule for either a GPT2Block or an AlbertLayer."""
+    if hasattr(layer, "attn"):
+        return layer.attn          # GPT2Block
+    return layer.attention          # AlbertLayer
+
+
+def _attn_output_projection(attn_module):
+    """
+    (projection_module, head_dim) for the linear/conv layer that maps the
+    concatenated per-head context back to hidden_size.
+
+    Both ALBERT's `attention.dense` and GPT-2's `attn.c_proj` consume a
+    (..., n_heads * head_dim) tensor in head-major order, so zeroing the
+    columns belonging to `head_ids` immediately before this projection is
+    architecture-agnostic and head-specific: it removes exactly that head's
+    contribution to the layer's attention output, rather than scaling the
+    whole output by a head-count ratio.
+    """
+    if hasattr(attn_module, "c_proj"):
+        return attn_module.c_proj, attn_module.head_dim          # GPT2Attention
+    return attn_module.dense, attn_module.attention_head_size    # AlbertAttention
+
+
 def ablate_head(
     model, tokenizer, prompt_text: str, max_iterations: int,
     target_layer: int, head_ids: list,
 ):
     """
     Run the forward pass with head(s) zeroed at the target layer only.
-    Implemented via monkey-patching the attention's forward for the target
-    iteration.
+
+    Implemented as a forward pre-hook on the attention's output projection,
+    installed only while the hook_fn step equals target_layer. The hook
+    zeroes the head_ids' column slices of the projection's input — the
+    concatenated per-head context — which is equivalent to zeroing those
+    heads before W_O / c_proj is applied. This distinguishes which head was
+    targeted, unlike the previous whole-output scalar shrink which was
+    identical for any single head.
 
     Returns (trajectory, attentions, tokens) where trajectory has same shape
     as the unmodified extended run.
     """
-    torch = _torch()
+    state = {"handle": None}
 
-    state = {"hooks": []}
+    def _make_zero_hook(ids, head_dim):
+        def _hook(module, inputs):
+            (x,) = inputs
+            x = x.clone()
+            for h in ids:
+                x[..., h * head_dim:(h + 1) * head_dim] = 0.0
+            return (x,)
+        return _hook
 
-    def _install_on_call(attn_module):
-        """
-        ALBERT attention module computes:  output = (A @ V) @ W_O
-        We zero the relevant head rows of V before the composition.
-        """
-        orig_forward = attn_module.forward
-
-        def hooked(*args, **kwargs):
-            out = orig_forward(*args, **kwargs)
-            # Output is (context, attn_probs) or just context depending on version
-            if isinstance(out, tuple):
-                ctx, attn = out
-            else:
-                ctx, attn = out, None
-
-            n_heads = attn_module.num_attention_heads
-            d_head = attn_module.attention_head_size
-            # ctx shape: (B, T, d). Zero the rows belonging to head_ids.
-            # Each head contributes a d_head-wide slice into W_O's input.
-            # We undo-this-head by re-zeroing the output contribution at the
-            # W_O level: since we don't have the per-head context here, we
-            # instead zero the entire output and add back contributions from
-            # heads NOT in head_ids via a re-derivation. Practical approach:
-            # mask attn_probs for target heads to 0 and re-compute.
-            if attn is not None and len(head_ids) > 0:
-                # Re-run attention with zeroed heads
-                # This requires access to Q, K, V — we cannot cleanly do this
-                # from the post-hoc hook. Instead, approximate by scaling the
-                # output by (n_heads - len(head_ids)) / n_heads. Crude but
-                # a useful control.
-                scale = max(0.0, (n_heads - len(head_ids)) / n_heads)
-                ctx = ctx * scale
-            if isinstance(out, tuple):
-                return (ctx,) + out[1:]
-            return ctx
-
-        return orig_forward, hooked
-
-    def hook_fn(step, hidden, albert_layer):
+    def hook_fn(step, hidden, layer):
         if step == target_layer:
-            attn_module = albert_layer.attention
-            orig, hooked = _install_on_call(attn_module)
-            state["hooks"].append((attn_module, orig))
-            attn_module.forward = hooked
-        elif state["hooks"]:
-            # Restore previous
-            attn_module, orig = state["hooks"][-1]
-            attn_module.forward = orig
-            state["hooks"].pop()
+            if state["handle"] is None:
+                attn_module = _attn_submodule(layer)
+                proj, head_dim = _attn_output_projection(attn_module)
+                state["handle"] = proj.register_forward_pre_hook(
+                    _make_zero_hook(head_ids, head_dim)
+                )
+        elif state["handle"] is not None:
+            state["handle"].remove()
+            state["handle"] = None
         return hidden
 
     traj, attns, tokens = _run_albert_with_hook(
         model, tokenizer, prompt_text, max_iterations, hook_fn,
     )
-    # Cleanup
-    for attn_module, orig in state["hooks"]:
-        attn_module.forward = orig
+    if state["handle"] is not None:
+        state["handle"].remove()
+        state["handle"] = None
     return traj, attns, tokens
 
 

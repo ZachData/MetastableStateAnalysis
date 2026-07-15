@@ -328,16 +328,11 @@ def _run_sublayer_analysis(model, tokenizer, model_name, prompt_key,
         attn_mods, ffn_mods = [], []
 
         if "gpt2" in model_name_lc:
-            # GPT-2: transformer.h[i].attn  and  transformer.h[i].mlp
-            h_blocks = None
-            for name, mod in m.named_modules():
-                if name == "transformer":
-                    h_blocks = list(mod.h)
-                    break
+            base = m.transformer if hasattr(m, "transformer") else m
+            h_blocks = list(base.h) if hasattr(base, "h") else None
             if h_blocks:
                 attn_mods = [b.attn for b in h_blocks]
                 ffn_mods  = [b.mlp  for b in h_blocks]
-
         elif "albert" in model_name_lc or "bert" in model_name_lc:
             # BERT / ALBERT: encoder.layer[i].attention  and  encoder.layer[i]
             # .intermediate + output (hook the full FFN output at .output).
@@ -381,10 +376,8 @@ def _run_sublayer_analysis(model, tokenizer, model_name, prompt_key,
 
         def make_hook(idx):
             def hook(module, inp, out):
-                # out may be a tuple (BERT attention returns (context, weights))
                 tensor = out[0] if isinstance(out, (tuple, list)) else out
-                # Remove batch dimension (batch=1).
-                captured[idx] = tensor.detach().squeeze(0).cpu()
+                captured[idx] = tensor.detach().to(torch.float32).cpu().squeeze(0)
             return hook
 
         for i, mod in enumerate(mod_list):
@@ -434,6 +427,37 @@ def _run_sublayer_analysis(model, tokenizer, model_name, prompt_key,
         generate_llm_report(sub_results, sub_run_dir)
         print(f"    Sublayer run saved to: {sub_run_dir}/")
 
+def run_sublayer_only(models_to_run: list, prompts_to_run: list, output_dir: Path) -> None:
+    """
+    Only the post-attention/post-FFN sublayer streams (Fix 14) — no
+    analyze_trajectory/save_run/_generate_plots on the full block.
+
+    output_dir must be the *existing* run's parent directory (the one
+    containing "{model}_{prompt}") so the new "{model}@attn_{prompt}" /
+    "{model}@ffn_{prompt}" folders land next to it — discover_runs() in
+    visualization_p1.py needs them in the same directory to pair them up.
+    """
+    global OUTPUT_DIR
+    OUTPUT_DIR = Path(output_dir)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    umap_dir = OUTPUT_DIR / "umap"
+    umap_dir.mkdir(exist_ok=True)
+
+    for model_name in models_to_run:
+        print(f"\nLoading {model_name}...")
+        try:
+            model, tokenizer = load_model(model_name)
+        except Exception as e:
+            print(f"  Failed: {e}")
+            continue
+        for prompt_key in prompts_to_run:
+            print(f"  Prompt: {prompt_key}")
+            prompt_text = PROMPTS[prompt_key]
+            inputs = tokenizer(prompt_text, return_tensors="pt", truncation=True, max_length=512)
+            tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+            _run_sublayer_analysis(
+                model, tokenizer, model_name, prompt_key, prompt_text, tokens, umap_dir,
+            )
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -519,6 +543,9 @@ if __name__ == "__main__":
                         help="Print text summary of a saved run")
     parser.add_argument("--seed", type=int, default=None, metavar="N",
                         help="Seed for random-init controls (default: config, 0)")
+    parser.add_argument("--sublayer-only", action="store_true",
+                        help="Skip the full-block pass; only generate @attn/@ffn for an existing run")
+    parser.add_argument("--output-dir", type=str, default=None, metavar="DIR")
     args = parser.parse_args()
 
     # P1-6: Apply legacy snapshot override before running
@@ -534,6 +561,20 @@ if __name__ == "__main__":
     elif args.summary:
         from .reporting import print_run_summary
         print_run_summary(Path(args.summary))
+    
+    elif args.sublayer_only:
+        if not args.output_dir:
+            sys.exit("--sublayer-only requires --output-dir")
+        models = list(args.models)
+        if args.random_baseline:
+            for ctrl in ("albert-base-v2-random", "gpt2-large-random"):
+                if ctrl not in models:
+                    models.append(ctrl)
+        run_sublayer_only(
+            models_to_run=models,
+            prompts_to_run=args.prompts,
+            output_dir=Path(args.output_dir),
+        )
 
     else:
         if args.fast:
