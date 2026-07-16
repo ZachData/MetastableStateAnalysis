@@ -1,5 +1,6 @@
 """
-visualization/style.py
+core/style.py (moved from p1_mstate_tracking/visualization/style.py,
+unmodified — transition plan v2, core foundations item 2)
 
 Module-wide defaults and plot styling. Nothing in here reads from disk —
 pure constants, edited directly to change behavior without touching the

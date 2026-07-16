@@ -18,7 +18,7 @@ from pathlib import Path
 from scipy.stats import spearmanr
 
 from core.config import BETA_VALUES, DEGENERATE_RANK_THRESHOLD, DISTANCE_THRESHOLDS, PROMPTS
-from .metrics import energy_violation_severity, ENERGY_VIOLATION_REL_TOL
+from core.metrics import energy_violation_severity, ENERGY_VIOLATION_REL_TOL
 
 
 # ---------------------------------------------------------------------------

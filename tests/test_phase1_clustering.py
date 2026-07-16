@@ -13,7 +13,7 @@ No model loading.  All inputs are pre-computed synthetic fixtures from conftest.
 import numpy as np
 import pytest
 
-from p1_mstate_tracking.spectral         import spectral_eigengap_k
+from core.metrics                        import fiedler_and_eigengap as spectral_eigengap_k
 from p1_mstate_tracking.clustering       import cluster_count_sweep
 from p1_mstate_tracking.cluster_tracking import track_clusters
 

@@ -48,19 +48,19 @@ def _gram(X: np.ndarray) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# p1_mstate_tracking.metrics
+# core.metrics (formerly p1_mstate_tracking.metrics)
 # ---------------------------------------------------------------------------
 
 class TestPairwiseInnerProductsFromGram:
     def test_upper_triangle_count(self):
-        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
+        from core.metrics import pairwise_inner_products_from_gram
         n = 8
         G = np.eye(n, dtype=np.float32)
         ips = pairwise_inner_products_from_gram(G)
         assert ips.shape == (n * (n - 1) // 2,)
 
     def test_identity_gram_gives_zeros(self):
-        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
+        from core.metrics import pairwise_inner_products_from_gram
         # Identity Gram = orthonormal rows → all off-diagonal IPs = 0
         n = 6
         G = np.eye(n, dtype=np.float32)
@@ -68,7 +68,7 @@ class TestPairwiseInnerProductsFromGram:
         np.testing.assert_allclose(ips, 0.0, atol=1e-6)
 
     def test_all_ones_gram_gives_ones(self):
-        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
+        from core.metrics import pairwise_inner_products_from_gram
         # All tokens identical → Gram = all 1s → all IPs = 1
         n = 5
         G = np.ones((n, n), dtype=np.float32)
@@ -76,7 +76,7 @@ class TestPairwiseInnerProductsFromGram:
         np.testing.assert_allclose(ips, 1.0, atol=1e-6)
 
     def test_values_in_range(self):
-        from p1_mstate_tracking.metrics import pairwise_inner_products_from_gram
+        from core.metrics import pairwise_inner_products_from_gram
         X = _normed_rand(12, 32)
         G = _gram(X)
         ips = pairwise_inner_products_from_gram(G)
@@ -86,14 +86,14 @@ class TestPairwiseInnerProductsFromGram:
 
 class TestInteractionEnergiesBatched:
     def test_returns_all_betas(self):
-        from p1_mstate_tracking.metrics import interaction_energies_batched
+        from core.metrics import interaction_energies_batched
         from core.config import BETA_VALUES
         G = _gram(_normed_rand(10, 32))
         energies = interaction_energies_batched(G, BETA_VALUES)
         assert set(energies.keys()) == set(BETA_VALUES)
 
     def test_energy_is_positive(self):
-        from p1_mstate_tracking.metrics import interaction_energies_batched
+        from core.metrics import interaction_energies_batched
         G = _gram(_normed_rand(10, 32))
         for beta, e in interaction_energies_batched(G, [0.5, 1.0, 2.0]).items():
             assert e > 0, f"energy for beta={beta} is non-positive: {e}"
@@ -103,7 +103,7 @@ class TestInteractionEnergiesBatched:
         All-identical tokens (Gram = ones) should have higher energy than
         spread tokens at the same n, because exp(beta * 1) > exp(beta * 0).
         """
-        from p1_mstate_tracking.metrics import interaction_energies_batched
+        from core.metrics import interaction_energies_batched
         n, d = 10, 32
         # Spread: random unit vectors
         G_spread = _gram(_normed_rand(n, d))
@@ -125,7 +125,7 @@ class TestInteractionEnergiesBatched:
         not across beta for fixed G.  This test checks the collapsed case where
         the relationship IS monotone (beta >= 1).
         """
-        from p1_mstate_tracking.metrics import interaction_energies_batched
+        from core.metrics import interaction_energies_batched
         # All tokens identical → Gram = all 1s
         n = 8
         G = np.ones((n, n), dtype=np.float32)
@@ -140,7 +140,7 @@ class TestInteractionEnergiesBatched:
 
     def test_agrees_with_scalar_formula(self):
         """Batched result matches the direct scalar computation."""
-        from p1_mstate_tracking.metrics import interaction_energies_batched
+        from core.metrics import interaction_energies_batched
         n, d = 6, 16
         X = _normed_rand(n, d)
         G = _gram(X)
@@ -153,25 +153,25 @@ class TestInteractionEnergiesBatched:
 class TestEffectiveRankFromRaw:
     def test_rank1_matrix(self):
         """All tokens identical → effective rank ≈ 1."""
-        from p1_mstate_tracking.metrics import effective_rank_from_raw
+        from core.metrics import effective_rank_from_raw
         v = torch.randn(1, 64).expand(20, 64).contiguous()
         rank = effective_rank_from_raw(v)
         assert rank < 1.5, f"rank-1 matrix gave effective_rank={rank:.2f}"
 
     def test_full_rank_matrix(self):
         """Random matrix in high-d → effective rank >> 1."""
-        from p1_mstate_tracking.metrics import effective_rank_from_raw
+        from core.metrics import effective_rank_from_raw
         t = torch.randn(30, 128)
         rank = effective_rank_from_raw(t)
         assert rank > 5.0, f"expected rank > 5, got {rank:.2f}"
 
     def test_rank_positive(self):
-        from p1_mstate_tracking.metrics import effective_rank_from_raw
+        from core.metrics import effective_rank_from_raw
         t = torch.randn(10, 64)
         assert effective_rank_from_raw(t) > 0
 
     def test_rank_bounded_by_min_dimension(self):
-        from p1_mstate_tracking.metrics import effective_rank_from_raw
+        from core.metrics import effective_rank_from_raw
         n, d = 8, 128
         t = torch.randn(n, d)
         rank = effective_rank_from_raw(t)
@@ -181,12 +181,12 @@ class TestEffectiveRankFromRaw:
 
 class TestLinearCKA:
     def test_identical_inputs_give_one(self):
-        from p1_mstate_tracking.metrics import linear_cka
+        from core.metrics import linear_cka
         X = _normed_rand(15, 32)
         assert abs(linear_cka(X, X) - 1.0) < 1e-5
 
     def test_orthogonal_inputs_give_zero(self):
-        from p1_mstate_tracking.metrics import linear_cka
+        from core.metrics import linear_cka
         # Two blocks of orthogonal vectors — CKA should be near 0
         n, d = 10, 64
         rng = np.random.default_rng(7)
@@ -198,7 +198,7 @@ class TestLinearCKA:
         assert 0.0 <= cka <= 1.0
 
     def test_output_in_unit_interval(self):
-        from p1_mstate_tracking.metrics import linear_cka
+        from core.metrics import linear_cka
         X = _normed_rand(12, 32, seed=1)
         Y = _normed_rand(12, 32, seed=2)
         cka = linear_cka(X, Y)
@@ -207,13 +207,13 @@ class TestLinearCKA:
 
 class TestNearestNeighborIndices:
     def test_output_shape(self):
-        from p1_mstate_tracking.metrics import nearest_neighbor_indices
+        from core.metrics import nearest_neighbor_indices
         G = _gram(_normed_rand(10, 32))
         nn = nearest_neighbor_indices(G)
         assert nn.shape == (10,)
 
     def test_no_self_nn(self):
-        from p1_mstate_tracking.metrics import nearest_neighbor_indices
+        from core.metrics import nearest_neighbor_indices
         G = _gram(_normed_rand(12, 32))
         nn = nearest_neighbor_indices(G)
         for i, j in enumerate(nn):
@@ -222,7 +222,7 @@ class TestNearestNeighborIndices:
     def test_two_cluster_nn_within_cluster(self):
         """In a clearly separated 2-cluster layout, each token's NN is
         in the same cluster."""
-        from p1_mstate_tracking.metrics import nearest_neighbor_indices
+        from core.metrics import nearest_neighbor_indices
         n_per = 15
         X = _two_cluster_normed(n_per=n_per, d=64, sep=10.0)
         G = _gram(X)
@@ -252,7 +252,7 @@ class TestEnergyDropPairs:
     # ------------------------------------------------------------------
 
     def test_returns_list_of_tuples(self):
-        from p1_mstate_tracking.metrics import energy_drop_pairs_from_normed
+        from core.metrics import energy_drop_pairs_from_normed
         before = self._normed(8, 32, seed=0)
         after  = self._normed(8, 32, seed=1)
         pairs  = energy_drop_pairs_from_normed(before, after, beta=1.0, top_k=5)
@@ -264,14 +264,14 @@ class TestEnergyDropPairs:
             assert i < j  # upper triangle only
 
     def test_top_k_respects_limit(self):
-        from p1_mstate_tracking.metrics import energy_drop_pairs_from_normed
+        from core.metrics import energy_drop_pairs_from_normed
         before = self._normed(10, 32, seed=2)
         after  = self._normed(10, 32, seed=3)
         pairs  = energy_drop_pairs_from_normed(before, after, beta=1.0, top_k=4)
         assert len(pairs) <= 4
 
     def test_sorted_ascending(self):
-        from p1_mstate_tracking.metrics import energy_drop_pairs_from_normed
+        from core.metrics import energy_drop_pairs_from_normed
         before = self._normed(12, 32, seed=4)
         after  = self._normed(12, 32, seed=5)
         pairs  = energy_drop_pairs_from_normed(before, after, beta=1.0, top_k=8)
@@ -280,19 +280,19 @@ class TestEnergyDropPairs:
 
 
 # ---------------------------------------------------------------------------
-# p1_mstate_tracking.spectral
+# core.metrics (formerly p1_mstate_tracking.spectral)
 # ---------------------------------------------------------------------------
 
 class TestSpectralEigengap:
     def test_output_keys(self):
-        from p1_mstate_tracking.spectral import spectral_eigengap_k
+        from core.metrics import fiedler_and_eigengap as spectral_eigengap_k
         G = _gram(_normed_rand(10, 32))
         result = spectral_eigengap_k(G)
         for key in ("k_eigengap", "k_second_gap", "eigenvalues", "eigengaps"):
             assert key in result
 
     def test_k_at_least_one(self):
-        from p1_mstate_tracking.spectral import spectral_eigengap_k
+        from core.metrics import fiedler_and_eigengap as spectral_eigengap_k
         G = _gram(_normed_rand(8, 32))
         result = spectral_eigengap_k(G)
         assert result["k_eigengap"] >= 1
@@ -302,7 +302,7 @@ class TestSpectralEigengap:
         Block-diagonal Gram with two perfectly separated blocks should give
         k_eigengap == 2.
         """
-        from p1_mstate_tracking.spectral import spectral_eigengap_k
+        from core.metrics import fiedler_and_eigengap as spectral_eigengap_k
         # Build a 2-block Gram: within-block IP = 1, cross-block IP = -1
         # (perfectly antipodal clusters)
         n = 16
@@ -318,7 +318,7 @@ class TestSpectralEigengap:
 
     def test_eigenvalues_non_negative(self):
         """Normalized Laplacian eigenvalues are always >= 0."""
-        from p1_mstate_tracking.spectral import spectral_eigengap_k
+        from core.metrics import fiedler_and_eigengap as spectral_eigengap_k
         G = _gram(_normed_rand(12, 32))
         result = spectral_eigengap_k(G)
         for ev in result["eigenvalues"]:

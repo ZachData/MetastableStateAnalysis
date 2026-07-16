@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 import torch
 
-from p1_mstate_tracking.metrics import (
+from core.metrics import (
     pairwise_inner_products_from_gram,
     interaction_energies_batched,
     effective_rank_from_raw,
@@ -24,7 +24,7 @@ from p1_mstate_tracking.metrics import (
 )
 from p1_mstate_tracking.sinkhorn import analyze_attention_sinkhorn
 
-from tests.config import N_TOKENS, D
+from tests.test_config import N_TOKENS, D
 
 # ============================================================================
 # pairwise_inner_products_from_gram

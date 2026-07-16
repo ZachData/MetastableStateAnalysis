@@ -22,7 +22,7 @@ import torch
 import numpy as np
 import pytest
 
-from tests.config import D, N_LAYERS, N_TOKENS
+from tests.test_config import D, N_LAYERS, N_TOKENS
 
 # Smoke tests (tests/test_*_smoke.py) need the *real* torch/transformers to
 # do an actual forward pass on a tiny model. Everything else in this suite

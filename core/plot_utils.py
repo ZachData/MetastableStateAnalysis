@@ -1,5 +1,6 @@
 """
-visualization/plot_utils.py
+core/plot_utils.py (moved from p1_mstate_tracking/visualization/plot_utils.py,
+unmodified — transition plan v2, core foundations item 2)
 
 Generic plotting helpers with no model/metric semantics of their own:
 layer-span/plateau shading, annotation boxes, layer-spec resolution
@@ -142,5 +143,3 @@ def _project_2d(
 
     else:
         raise ValueError(f"unknown projection method: {method}")
-
-

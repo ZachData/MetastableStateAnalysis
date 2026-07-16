@@ -1,5 +1,6 @@
 """
-visualization/naming.py
+core/naming.py (moved from p1_mstate_tracking/visualization/naming.py,
+unmodified — transition plan v2, core foundations item 2)
 
 Model-name conventions: color lookup, the '-random' / '@attn' / '@ffn' /
 '@Niter' suffix grammar, and the ALBERT iteration-depth filter. No file
@@ -126,4 +127,3 @@ def _safe_model_name(model: str) -> str:
         'gpt2-large-random'      -> 'gpt2-large-random'
     """
     return model.replace("/", "_").replace(".", "_").replace("@", "_")
-

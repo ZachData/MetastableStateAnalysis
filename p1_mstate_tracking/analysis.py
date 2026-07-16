@@ -38,7 +38,7 @@ from tqdm import tqdm
 
 from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, DEGENERATE_RANK_THRESHOLD
 from core.models import layernorm_to_sphere
-from .metrics import (
+from core.metrics import (
     pairwise_inner_products_from_gram,
     interaction_energies_batched,
     effective_rank_from_raw,
@@ -49,9 +49,9 @@ from .metrics import (
     energy_drop_pairs_from_normed,
     energy_violation_severity,
     ENERGY_VIOLATION_REL_TOL,
+    fiedler_and_eigengap as spectral_eigengap_k,
 )
 from .sinkhorn import analyze_attention_sinkhorn
-from .spectral import spectral_eigengap_k
 from .clustering import (
     cluster_count_sweep, pca_projection, umap_projection, HAS_UMAP,
     multiscale_nesting, pair_hdbscan_agreement,

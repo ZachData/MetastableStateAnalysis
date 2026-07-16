@@ -234,7 +234,7 @@ def multiscale_nesting(
                              sub-cluster has spectral_k > 1
       nesting_summary      : str — human-readable description
     """
-    from .spectral import spectral_eigengap_k
+    from core.metrics import fiedler_and_eigengap as spectral_eigengap_k
 
     normed = normed.astype(np.float32, copy=False)
 
