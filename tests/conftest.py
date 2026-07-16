@@ -31,6 +31,7 @@ from tests.test_config import D, N_LAYERS, N_TOKENS
 # which skips stub installation for that session so the real imports stand.
 _STUB_HEAVY_DEPS = os.environ.get("SMOKE_REAL_DEPS") != "1"
 
+
 # ===========================================================================
 # 1. Heavy-dependency stubs
 #    Must run before any project import so sys.modules is populated first.
@@ -62,6 +63,8 @@ def _install_stubs() -> None:
     # --- core.config ---
     _cfg = types.ModuleType("core.config")
 
+    _cfg.LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
+    _cfg.RANDOM_INIT_SEED    = 0  # match real value in core/config.py
     _cfg.DEGENERATE_RANK_THRESHOLD = 2
     _cfg.BETA_VALUES         = [0.1, 1.0, 2.0, 5.0]
     _cfg.MODEL_CONFIGS       = {}

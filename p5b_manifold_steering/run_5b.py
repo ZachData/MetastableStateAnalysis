@@ -55,22 +55,22 @@ def build_argparser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 
 def _run_one(args, model_name: str, out_dir: Path) -> int:
-    from p5b_manifold.io import (
+    from p5b_manifold_steering.p5b_io import (
         find_phase1_runs, load_phase1_run,
         select_best_run, load_phase2_projectors,
     )
-    from p5b_manifold.manifold_fit import (
+    from p5b_manifold_steering.manifold_fit import (
         pca_reduce, arc_length_params,
         fit_activation_manifold, fit_behavior_manifold,
         load_plateau_centroids, compute_fit_summary,
     )
-    from p5b_manifold.isometry_test  import run_isometry_test
-    from p5b_manifold.merge_teleportation import run_merge_teleportation
-    from p5b_manifold.subspace_isometry   import subspace_isometry_score
-    from p5b_manifold.logit_cache import (
+    from p5b_manifold_steering.isometry_test  import run_isometry_test
+    from p5b_manifold_steering.merge_teleportation_subspace import run_merge_teleportation
+    from p5b_manifold_steering.subspace_isometry   import subspace_isometry_score
+    from p5b_manifold_steering.logit_cache import (
         extract_layer_logits, save_logit_cache, load_logit_cache,
     )
-    from p5b_manifold.report import write_report
+    from p5b_manifold_steering.p5b_report import write_report
 
     stem = model_name.replace("-", "_").replace("/", "_")
 
@@ -161,7 +161,7 @@ def _run_one(args, model_name: str, out_dir: Path) -> int:
         print(f"  [warn] only {len(pl_with_logits)} plateau layers have logits — "
               f"skipping My and isometry test")
 
-    fit_sum = compute_fit_summary(mh, my if my is not None else mh, evr)
+    fit_sum = compute_fit_summary(mh, my, evr)
     (out_dir / "fit_summary.json").write_text(json.dumps(fit_sum, indent=2))
     np.savez_compressed(
         out_dir / "mh_params.npz",
@@ -246,7 +246,7 @@ def _run_one(args, model_name: str, out_dir: Path) -> int:
         print("[5b] Sub-exp D: skipped (no behavior distances from B)")
 
     # ---- Report ----
-    from p5b_manifold.report import write_report
+    from p5b_manifold_steering.p5b_report import write_report
     report_path = write_report(
         out_dir,
         results={

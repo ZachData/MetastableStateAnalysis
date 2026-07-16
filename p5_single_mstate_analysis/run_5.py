@@ -465,7 +465,7 @@ def _run_group_B(
     activations_per_layer:  list,
     labels_per_layer:       list,
     attentions_per_layer:   Optional[list],
-    merge_events:           list,
+    merge_events:           list,   # unused post-FIX-B7; kept for call-site compat
     p2_dir:                 Path,
     p2i_dir:                Path,   # kept for caller compatibility; not used
     stem:                   str,
@@ -582,46 +582,57 @@ def _run_group_B(
     # ------------------------------------------------------------------
     # 7. Merge-event geometry.
     #    Saved as "merge_geometry" to match the key report.py reads.
+    #
+    #    FIX-B7 (v2 item 4, known bug 1): the previous version filtered the
+    #    raw per-layer `merge_events` list (the cluster_tracking.py /
+    #    core.io._load_events shape: {"layer_from", "layer_to", "merges":
+    #    [(prev_ids, curr_id), ...]}) with `ev.get("prev_ids", [])`. That key
+    #    does not exist at the top level of those event dicts — it's nested
+    #    inside each tuple in `ev["merges"]` — so the filter was always empty
+    #    and merge_result stayed {"available": False} for every trajectory,
+    #    on every model. select_cluster._merge_event_for_trajectory already
+    #    does this unpacking correctly and attaches its result to the
+    #    trajectory as trajectory["merge_event"] (see run_5.py line ~1199,
+    #    and Group E's identical use of primary_raw.get("merge_event") at
+    #    line ~995). Use that directly instead of re-deriving it here from
+    #    a schema this function was never actually matching.
     # ------------------------------------------------------------------
     merge_result: dict = {"available": False}
-    if sibling_trajectory is not None and merge_events:
-        traj_id  = trajectory["id"]
-        relevant = [
-            ev for ev in merge_events
-            if traj_id in ev.get("prev_ids", [])
-        ]
-        if relevant:
-            ev               = relevant[0]
-            merge_layer_idx  = ev.get("layer_from")
-            if merge_layer_idx is not None:
-                pre_idx  = merge_layer_idx - 1
-                _, cid_p = (trajectory["chain"][-1]
-                            if trajectory["chain"] else (None, None))
-                _, cid_s = (sibling_trajectory["chain"][-1]
-                            if sibling_trajectory["chain"] else (None, None))
-                c_primary = (
-                    _extract_centroid(activations_per_layer, labels_per_layer,
-                                      pre_idx, cid_p)
-                    if cid_p is not None else None
+    merge_event = trajectory.get("merge_event")
+    if merge_event is not None:
+        merge_layer_idx = merge_event.get("layer_from")
+        curr_id         = merge_event.get("curr_id")
+        prev_ids        = merge_event.get("prev_ids") or []
+
+        own_cid = next(
+            (cid for layer, cid in trajectory["chain"] if layer == merge_layer_idx),
+            None,
+        )
+        other_ids = [cid for cid in prev_ids if cid != own_cid]
+
+        if merge_layer_idx is not None and curr_id is not None \
+                and own_cid is not None and other_ids:
+            c_primary = _extract_centroid(
+                activations_per_layer, labels_per_layer, merge_layer_idx, own_cid
+            )
+            c_sibling = _extract_centroid(
+                activations_per_layer, labels_per_layer, merge_layer_idx, other_ids[0]
+            )
+            c_fused = _extract_centroid(
+                activations_per_layer, labels_per_layer,
+                merge_event.get("layer_to"), curr_id
+            )
+            if all(x is not None for x in [c_primary, c_sibling, c_fused]):
+                merge_result = merge_event_geometry(
+                    c_primary, c_sibling, c_fused,
+                    v_projectors["U_attractive"],
+                    v_projectors["U_repulsive"],
                 )
-                c_sibling = (
-                    _extract_centroid(activations_per_layer, labels_per_layer,
-                                      pre_idx, cid_s)
-                    if cid_s is not None else None
-                )
-                c_fused = _extract_centroid(
-                    activations_per_layer, labels_per_layer,
-                    merge_layer_idx, ev.get("curr_id", -1)
-                )
-                if all(x is not None for x in [c_primary, c_sibling, c_fused]):
-                    merge_result = merge_event_geometry(
-                        c_primary, c_sibling, c_fused,
-                        v_projectors["U_attractive"],
-                        v_projectors["U_repulsive"],
-                    )
-                    merge_result["available"] = True
-                else:
-                    merge_result["reason"] = "centroid_extraction_failed"
+                merge_result["available"] = True
+            else:
+                merge_result["reason"] = "centroid_extraction_failed"
+        else:
+            merge_result["reason"] = "own_cluster_or_sibling_id_missing"
     result["merge_geometry"] = merge_result
 
     # ------------------------------------------------------------------

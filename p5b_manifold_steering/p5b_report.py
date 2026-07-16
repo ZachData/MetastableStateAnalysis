@@ -43,6 +43,16 @@ def write_report(
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / "p5b_report.txt"
 
+    def _num(d: dict, key: str) -> float:
+        """Numeric field for an f-string format spec. `.get(key, nan)` only
+        substitutes its default for a *missing* key — it still returns None
+        for a key that's present with value None (e.g. fit_summary's
+        my_spline_residual_rms when no behavior manifold was fit), which
+        then blows up `:.4f` formatting. This treats both cases the same.
+        """
+        v = d.get(key)
+        return float("nan") if v is None else v
+
     lines = []
     W = lines.append
 
@@ -72,10 +82,10 @@ def write_report(
     W("SUB-EXP A — MANIFOLD FITTING")
     W("=" * 72)
     fs = results.get("fit_summary", {})
-    W(f"  PCA explained variance (32d)   : {fs.get('pca_explained_var', float('nan')):.4f}")
+    W(f"  PCA explained variance (32d)   : {_num(fs, 'pca_explained_var'):.4f}")
     W(f"  PCA dims needed for 80%        : {fs.get('pca_n_dims_for_80pct', '?')}")
-    W(f"  Mh spline residual RMS         : {fs.get('mh_spline_residual_rms', float('nan')):.4f}")
-    W(f"  My spline residual RMS         : {fs.get('my_spline_residual_rms', float('nan')):.4f}")
+    W(f"  Mh spline residual RMS         : {_num(fs, 'mh_spline_residual_rms'):.4f}")
+    W(f"  My spline residual RMS         : {_num(fs, 'my_spline_residual_rms'):.4f}")
     W(f"  N control points               : {fs.get('n_control_points', '?')}")
     W("")
     W("  Predictions:")

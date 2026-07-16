@@ -352,12 +352,20 @@ def load_plateau_centroids(
 
 def compute_fit_summary(
     mh:          dict,
-    my:          dict,
+    my:          dict | None,
     pca_evr:     np.ndarray,
     k_threshold: float = 0.80,
 ) -> dict:
     """
     Compute and return fit quality metrics.
+
+    `my` is None whenever no behavior manifold could be fit (fewer than 4
+    logit-bearing plateau layers — the common case for any run without a
+    live model, or with too few plateau layers overlapping the logit
+    cache). Bug fix: the caller previously substituted `mh` for `my` in
+    this case, which crashed on `my["vocab"]` — `fit_activation_manifold`'s
+    return dict has no "vocab" key, only `fit_behavior_manifold`'s does.
+    Behavior-side fields are now reported as None/False instead.
 
     Returns dict suitable for fit_summary.json.
     """
@@ -368,13 +376,14 @@ def compute_fit_summary(
         "pca_explained_var":     pca_cumvar,
         "pca_n_dims_for_80pct":  n_dims_80,
         "mh_spline_residual_rms": mh["residual_rms"],
-        "my_spline_residual_rms": my["residual_rms"],
+        "my_spline_residual_rms": my["residual_rms"] if my is not None else None,
         "n_control_points":      int(len(mh["u_knots"])),
         "k_pca_dim":             int(mh["k_dim"]),
-        "vocab_size":            int(my["vocab"]),
+        "vocab_size":            int(my["vocab"]) if my is not None else None,
         "p5b_a1_pass":           pca_cumvar >= k_threshold,
         "p5b_a2_pass": (
-            mh["residual_rms"] < 0.1 and
-            my["residual_rms"] < 0.1
+            my is not None
+            and mh["residual_rms"] < 0.1
+            and my["residual_rms"] < 0.1
         ),
     }

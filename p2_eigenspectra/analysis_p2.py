@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from core.config import BETA_VALUES, DISTANCE_THRESHOLDS
 from core.models import layernorm_to_sphere
-from p1_mstate_tracking.metrics import (
+from core.metrics import (
     pairwise_inner_products_from_gram,
     interaction_energies_batched,
     effective_rank_from_raw,
@@ -28,9 +28,9 @@ from p1_mstate_tracking.metrics import (
     nearest_neighbor_indices,
     linear_cka,
     energy_drop_pairs,
+    fiedler_and_eigengap as spectral_eigengap_k,
 )
 from p1_mstate_tracking.sinkhorn import analyze_attention_sinkhorn
-from p1_mstate_tracking.spectral import spectral_eigengap_k
 from p1_mstate_tracking.clustering import (
     cluster_count_sweep, pca_projection, umap_projection, HAS_UMAP,
     multiscale_nesting, pair_hdbscan_agreement,
