@@ -31,7 +31,6 @@ from tests.test_config import D, N_LAYERS, N_TOKENS
 # which skips stub installation for that session so the real imports stand.
 _STUB_HEAVY_DEPS = os.environ.get("SMOKE_REAL_DEPS") != "1"
 
-
 # ===========================================================================
 # 1. Heavy-dependency stubs
 #    Must run before any project import so sys.modules is populated first.
@@ -63,8 +62,6 @@ def _install_stubs() -> None:
     # --- core.config ---
     _cfg = types.ModuleType("core.config")
 
-    _cfg.LENGTH_SWEEP_TOKENS = [50, 100, 150, 200, 300, 400]
-    _cfg.RANDOM_INIT_SEED    = 0  # match real value in core/config.py
     _cfg.DEGENERATE_RANK_THRESHOLD = 2
     _cfg.BETA_VALUES         = [0.1, 1.0, 2.0, 5.0]
     _cfg.MODEL_CONFIGS       = {}
@@ -119,13 +116,11 @@ def _install_stubs() -> None:
 
 # ===========================================================================
 # 2. p4_mstate_features package bootstrap
-#    Commented out: p3/p4 renamed to analysis_p3.py/analysis_p4.py and are
-#    not being kept import-consistent or tested. Not in scope.
 # ===========================================================================
 
-# _P4_SRC = Path(__file__).parent.parent  # project root
-#
-#
+_P4_SRC = Path(__file__).parent.parent  # project root
+
+
 # def _ensure_p4_package() -> None:
 #     """Register p4_mstate_features as a package in sys.modules if absent."""
 #     if "p4_mstate_features" in sys.modules:
@@ -134,8 +129,8 @@ def _install_stubs() -> None:
 #     pkg.__path__    = [str(_P4_SRC)]
 #     pkg.__package__ = "p4_mstate_features"
 #     sys.modules["p4_mstate_features"] = pkg
-#
-#
+
+
 # def _load_p4_submodule(filename: str) -> types.ModuleType:
 #     """Load a file from the project root as p4_mstate_features.<stem>."""
 #     stem      = Path(filename).stem
@@ -160,7 +155,7 @@ def _ensure_p5b_package() -> None:
     if "p5b_manifold" in sys.modules:
         return
     pkg = types.ModuleType("p5b_manifold")
-    pkg.__path__    = [str(_PROJECT_ROOT)]
+    pkg.__path__    = [str(_P4_SRC)]
     pkg.__package__ = "p5b_manifold"
     sys.modules["p5b_manifold"] = pkg
 
@@ -171,7 +166,7 @@ def _load_p5b_submodule(filename: str) -> types.ModuleType:
     full_name = f"p5b_manifold.{stem}"
     if full_name in sys.modules:
         return sys.modules[full_name]
-    filepath = _PROJECT_ROOT / filename
+    filepath = _P4_SRC / filename
     spec     = importlib.util.spec_from_file_location(full_name, filepath)
     mod      = importlib.util.module_from_spec(spec)
     mod.__package__       = "p5b_manifold"
@@ -189,7 +184,7 @@ if _STUB_HEAVY_DEPS:
 # _ensure_p4_package()
 _ensure_p5b_package()
 
-# # Pre-load p4 modules; order matters — chorus imports from activation_trajectories.
+# Pre-load p4 modules; order matters — chorus imports from activation_trajectories.
 # _load_p4_submodule("p4_mstate_features/activation_trajectories.py")
 # _load_p4_submodule("p4_mstate_features/chorus.py")
 # _load_p4_submodule("p4_mstate_features/geometric.py")
@@ -657,3 +652,70 @@ def tiny_phase2_dir(tiny_phase1_dir, tmp_path_factory):
         "meant to catch"
     )
     return out_root
+
+
+@pytest.fixture(scope="session")
+def tiny_phase1b_dir(tmp_path_factory):
+    """
+    Run the real phase 1h (hemisphere) pipeline on the tiny GPT-2 checkpoint
+    and one short prompt — same shape as tiny_phase1_dir, for run_1b.py.
+
+    run_cone=True (Block 3's cone-collapse LP test) is left on rather than
+    passing --no-cone: the tiny checkpoint's tiny hidden dimension makes the
+    LP solve trivially fast, and Tier 1's whole point is exercising the full
+    block set (0-4) end-to-end, not the fast path.
+
+    phase1_dir is left as None (no Phase 1 cross-referencing) — this smoke
+    test only checks phase 1h runs standalone, which is all it needs on its
+    own model+prompt; a run with phase1_dir wired in would be the same test
+    as tiny_phase1_dir's own artifacts, and is exercised together in
+    test_phase1b_smoke.py::test_phase1b_with_phase1_xref instead.
+    """
+    from p1b_hemisphere import run_1b
+
+    out_root = tmp_path_factory.mktemp("phase1b_smoke")
+    run_1b.BASE_RESULTS_DIR = out_root
+
+    results = run_1b.run_all(
+        models_to_run=[SMOKE_TINY_GPT2],
+        prompts_to_run=[SMOKE_PROMPT],
+        run_cone=True,
+    )
+    assert results, (
+        "phase 1h smoke run produced no results — check that "
+        f"{SMOKE_TINY_GPT2} loads via core.models.load_model, and if it "
+        "does, check for the CUDA/CPU device-mismatch bug documented above "
+        "tiny_phase1_dir (extract_activations needs to move `inputs` onto "
+        "model.device) — run_1b.py calls the same core.models.extract_activations"
+    )
+    return run_1b.OUTPUT_DIR
+
+
+@pytest.fixture(scope="session")
+def tiny_phase2_eigenspectra_dir(tiny_phase2_dir) -> "Path":
+    """
+    Resolve the actual timestamped p2_eigenspectra_* directory that
+    run_2.run_full wrote into, rather than the parent tiny_phase2_dir
+    itself.
+
+    tiny_phase2_dir returns run_2.BASE_RESULTS_DIR (its own parent),
+    deliberately, per its docstring and per test_phase2_smoke.py's use of
+    .rglob(...) instead of an exact path — run_full always computes its own
+    `output_dir = BASE_RESULTS_DIR / f"p2_eigenspectra_{timestamp}"` and
+    never exposes that path back to the caller (no return value, no module
+    attribute), so BASE_RESULTS_DIR is genuinely all the fixture can hand
+    back.
+
+    Phase 2i (run_2i.load_ov_data) and Phase 5/6 (their own OV-weights
+    loaders) all expect an *exact* flat `phase2_dir / f"ov_weights_{stem}.npz"`
+    path, not a directory to search — so unlike test_phase2_smoke.py, they
+    can't just rglob their way past this. This fixture does the one-time
+    resolution so each downstream smoke test doesn't reimplement it.
+    """
+    candidates = sorted(tiny_phase2_dir.glob("p2_eigenspectra_*"))
+    assert candidates, (
+        f"no p2_eigenspectra_* directory under {tiny_phase2_dir} — "
+        "tiny_phase2_dir's own assertion should have already caught this; "
+        "if it didn't, check run_2.run_full's output_dir naming hasn't changed"
+    )
+    return candidates[-1]
