@@ -5,11 +5,14 @@ Regression tests for Phase 5 known-bug fixes (v2 execution-order item 4).
 
 Fixes covered
 -------------
-FIX-B7  merge_geometry / merge_verdict always {"available": False}, all 6
-        models (run_5.py, _run_group_B).
+FIX-B7   merge_geometry / merge_verdict always {"available": False}, all 6
+         models (run_5.py, _run_group_B).
+FIX-IO1  find_phase1_runs raised NameError on every real call
+         (p5_single_mstate_analysis/io_p5.py — this file was supplied after
+         the rest of this test file was originally written; see below).
 
-Root cause
-----------
+FIX-B7 root cause
+-----------------
 `_run_group_B` filtered the raw per-layer `merge_events` list (the
 cluster_tracking.py / core.io._load_events shape — each entry is
 {"layer_from", "layer_to", "merges": [(prev_ids, curr_id), ...]}) with
@@ -26,7 +29,38 @@ curr_id, role). Group E already consumes this same field correctly
 just wasn't using it. The fix makes Group B use the same field instead of
 re-deriving relevance from a schema it was never actually matching.
 
-No model loading; only a synthetic ov_weights NPZ for the projector build.
+FIX-IO1 root cause
+------------------
+p5_single_mstate_analysis/io.py (io.py renamed to io_p5.py to resolve a
+basename collision with core/io.py — not available when this file was
+first written; supplied afterward) had:
+
+    def _matches(name: str) -> bool:
+        # return model_stem in name or model_stem_hyphen in name
+        if not model_stem:
+            return True
+        return any(s in d.name for s in stems)
+
+`d` and `stems` are both undefined in this scope — a guaranteed NameError
+on the first call with a non-empty model_stem, i.e. on every real
+invocation (find_phase1_runs's early-return only skips this when
+phase1_dir itself doesn't exist). The commented-out line directly above it
+is the evidently-intended logic; the fix just restores it, using the
+already-correct `name` parameter and the already-defined
+`model_stem_hyphen`.
+
+This is very likely the *actual* location of the known bug the v2 plan and
+status-6.md attribute to "eigenspace_degeneracy.py — NameError, `d`
+undefined": that file was checked directly (traced every use of `d`; ran
+run_eigenspace_degeneracy end-to-end) and the error does not reproduce
+there. Both are NameErrors involving an undefined `d`; this one actually
+reproduces, on the exact symptom (a NameError from a directory/stem
+matching helper) that would plausibly get invoked right before Phase 5
+attribution. Treat status-6.md's attribution as likely a copy/transcription
+error onto the wrong phase rather than two independent bugs.
+
+No model loading; only a synthetic ov_weights NPZ for the projector build
+(FIX-B7 tests) or a bare temp directory tree (FIX-IO1 tests).
 """
 
 from __future__ import annotations
@@ -189,3 +223,71 @@ class TestMergeGeometryFixB7:
         result = self._run(trajectory, sibling_trajectory=None,
                             merge_events_raw=[])
         assert result["merge_geometry"]["available"] is True
+
+
+class TestFindPhase1RunsFixIO1:
+    """
+    Regression tests for FIX-IO1 — p5_single_mstate_analysis/io_p5.py's
+    find_phase1_runs raised NameError ("name 'stems' is not defined") on
+    every call with a non-empty model_stem, i.e. on every real call site;
+    run_5.py always passes a real model_stem. Confirmed by running the
+    unpatched function against a real temp directory tree before writing
+    the fix (an empty/missing phase1_dir short-circuits before ever
+    reaching the broken branch, so a naive smoke check that doesn't
+    actually populate phase1_dir would not have caught this).
+    """
+
+    def _make_run_dir(self, tmp_path, dirname: str, prompt: str = "short_heterogeneous"):
+        import json
+        run_dir = tmp_path / dirname
+        run_dir.mkdir(parents=True)
+        (run_dir / "geometry.json").write_text(json.dumps({
+            "prompt": prompt, "n_layers": 2, "n_tokens": 5, "d_model": 4,
+        }))
+        return run_dir
+
+    def test_matching_stem_found_without_raising(self, tmp_path):
+        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+
+        stem = "hf-internal-testing_tiny-random-gpt2"
+        self._make_run_dir(tmp_path, f"{stem}_short_heterogeneous")
+
+        result = find_phase1_runs(tmp_path, stem)
+        assert result == {"short_heterogeneous": tmp_path / f"{stem}_short_heterogeneous"}
+
+    def test_non_matching_stem_returns_empty_without_raising(self, tmp_path):
+        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+
+        self._make_run_dir(tmp_path, "hf-internal-testing_tiny-random-gpt2_short_heterogeneous")
+
+        result = find_phase1_runs(tmp_path, "some-other-model")
+        assert result == {}
+
+    def test_run5_default_double_replaced_stem_does_not_match(self, tmp_path):
+        """
+        Documents why test_phase5_smoke.py passes --model-stem explicitly:
+        run_5.py's own default stem derivation
+        (model_name.replace("-","_").replace("/","_")) replaces the hyphen
+        inside "hf-internal-testing" too, which model_stem_hyphen's simple
+        reversal (all "_" -> "-") cannot undo correctly, since it can't
+        tell which underscores used to be hyphens vs slashes.
+        """
+        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+
+        self._make_run_dir(tmp_path, "hf-internal-testing_tiny-random-gpt2_short_heterogeneous")
+
+        buggy_stem = "hf_internal_testing_tiny_random_gpt2"
+        result = find_phase1_runs(tmp_path, buggy_stem)
+        assert result == {}, (
+            "if this starts matching, run_5.py's default model_stem "
+            "derivation and the --model-stem override in "
+            "test_phase5_smoke.py should be revisited together"
+        )
+
+    def test_empty_stem_matches_everything(self, tmp_path):
+        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+
+        self._make_run_dir(tmp_path, "some_model_wiki_paragraph", prompt="wiki_paragraph")
+
+        result = find_phase1_runs(tmp_path, "")
+        assert "wiki_paragraph" in result

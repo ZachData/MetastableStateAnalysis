@@ -190,10 +190,9 @@ def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
     model_stem_hyphen = model_stem.replace("_", "-")
 
     def _matches(name: str) -> bool:
-        # return model_stem in name or model_stem_hyphen in name 
         if not model_stem:
             return True
-        return any(s in d.name for s in stems)
+        return model_stem in name or model_stem_hyphen in name
 
     def _iter_depth(run_dir: Path) -> int:
         """Extract numeric iteration depth from names like *_24iter_*; 0 if absent."""

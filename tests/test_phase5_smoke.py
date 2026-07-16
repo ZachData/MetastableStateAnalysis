@@ -26,15 +26,24 @@ instead of just --models:
       phase1/phase2 : hf-internal-testing_tiny-random-gpt2
   Group C1's OV-weights loader already works around exactly this
   (_run_group_C1's stem_h reversal, discovered while root-causing the
-  "OV always n/a" known bug) by trying both forms — but nothing suggests
-  the same care was taken wherever the real p5_single_mstate_analysis/io.py
-  resolves Phase 1 run directories (that file isn't available to check
-  directly here — see FIX-B7's docstring in test_phase5_bugs.py for the
-  same access gap). `--model-stem` is a supported CLI override for exactly
-  this situation (single-model runs only); using it here sidesteps the
-  mismatch rather than depending on it being handled correctly downstream.
-  If this test ever needs to run withOUT the override to be a faithful
-  reproduction of default CLI usage, that's the mismatch to check first.
+  "OV always n/a" known bug) by trying both forms. Confirmed directly
+  (p5_single_mstate_analysis/io_p5.py — formerly inaccessible, supplied
+  after this test was first written) that find_phase1_runs does NOT: its
+  own model_stem_hyphen reversal can't tell the org/repo separator hyphen
+  in "hf-internal-testing" from a real underscore, so it doesn't recover
+  from run_5's default derivation either — see
+  TestFindPhase1RunsFixIO1::test_run5_default_double_replaced_stem_does_not_match
+  in test_phase5_bugs.py for the exact reproduction. `--model-stem` is a
+  supported CLI override for single-model runs; using it here sidesteps
+  the mismatch rather than depending on it being handled downstream.
+
+FIX-IO1 prerequisite — this test cannot even run without it:
+  The same io_p5.py had a second, unrelated, and more severe bug:
+  find_phase1_runs raised NameError ("name 'stems' is not defined") on
+  every call with a non-empty model_stem — i.e. on every real call,
+  regardless of stem-naming correctness. Fixed separately (see
+  TestFindPhase1RunsFixIO1 in test_phase5_bugs.py); this smoke test
+  depends on that fix being applied to have any chance of passing.
 
 Run with:
     SMOKE_REAL_DEPS=1 pytest -m smoke tests/test_phase5_smoke.py -v
