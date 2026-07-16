@@ -116,34 +116,36 @@ def _install_stubs() -> None:
 
 # ===========================================================================
 # 2. p4_mstate_features package bootstrap
+#    Commented out: p3/p4 renamed to analysis_p3.py/analysis_p4.py and are
+#    not being kept import-consistent or tested. Not in scope.
 # ===========================================================================
 
-_P4_SRC = Path(__file__).parent.parent  # project root
-
-
-def _ensure_p4_package() -> None:
-    """Register p4_mstate_features as a package in sys.modules if absent."""
-    if "p4_mstate_features" in sys.modules:
-        return
-    pkg = types.ModuleType("p4_mstate_features")
-    pkg.__path__    = [str(_P4_SRC)]
-    pkg.__package__ = "p4_mstate_features"
-    sys.modules["p4_mstate_features"] = pkg
-
-
-def _load_p4_submodule(filename: str) -> types.ModuleType:
-    """Load a file from the project root as p4_mstate_features.<stem>."""
-    stem      = Path(filename).stem
-    full_name = f"p4_mstate_features.{stem}"
-    if full_name in sys.modules:
-        return sys.modules[full_name]
-    filepath = _P4_SRC / filename
-    spec     = importlib.util.spec_from_file_location(full_name, filepath)
-    mod      = importlib.util.module_from_spec(spec)
-    mod.__package__       = "p4_mstate_features"
-    sys.modules[full_name] = mod
-    spec.loader.exec_module(mod)
-    return mod
+# _P4_SRC = Path(__file__).parent.parent  # project root
+#
+#
+# def _ensure_p4_package() -> None:
+#     """Register p4_mstate_features as a package in sys.modules if absent."""
+#     if "p4_mstate_features" in sys.modules:
+#         return
+#     pkg = types.ModuleType("p4_mstate_features")
+#     pkg.__path__    = [str(_P4_SRC)]
+#     pkg.__package__ = "p4_mstate_features"
+#     sys.modules["p4_mstate_features"] = pkg
+#
+#
+# def _load_p4_submodule(filename: str) -> types.ModuleType:
+#     """Load a file from the project root as p4_mstate_features.<stem>."""
+#     stem      = Path(filename).stem
+#     full_name = f"p4_mstate_features.{stem}"
+#     if full_name in sys.modules:
+#         return sys.modules[full_name]
+#     filepath = _P4_SRC / filename
+#     spec     = importlib.util.spec_from_file_location(full_name, filepath)
+#     mod      = importlib.util.module_from_spec(spec)
+#     mod.__package__       = "p4_mstate_features"
+#     sys.modules[full_name] = mod
+#     spec.loader.exec_module(mod)
+#     return mod
 
 
 # ===========================================================================
@@ -155,7 +157,7 @@ def _ensure_p5b_package() -> None:
     if "p5b_manifold" in sys.modules:
         return
     pkg = types.ModuleType("p5b_manifold")
-    pkg.__path__    = [str(_P4_SRC)]
+    pkg.__path__    = [str(_PROJECT_ROOT)]
     pkg.__package__ = "p5b_manifold"
     sys.modules["p5b_manifold"] = pkg
 
@@ -166,7 +168,7 @@ def _load_p5b_submodule(filename: str) -> types.ModuleType:
     full_name = f"p5b_manifold.{stem}"
     if full_name in sys.modules:
         return sys.modules[full_name]
-    filepath = _P4_SRC / filename
+    filepath = _PROJECT_ROOT / filename
     spec     = importlib.util.spec_from_file_location(full_name, filepath)
     mod      = importlib.util.module_from_spec(spec)
     mod.__package__       = "p5b_manifold"
@@ -181,14 +183,14 @@ def _load_p5b_submodule(filename: str) -> types.ModuleType:
 
 if _STUB_HEAVY_DEPS:
     _install_stubs()
-_ensure_p4_package()
+# _ensure_p4_package()
 _ensure_p5b_package()
 
-# Pre-load p4 modules; order matters — chorus imports from activation_trajectories.
-_load_p4_submodule("p4_mstate_features/activation_trajectories.py")
-_load_p4_submodule("p4_mstate_features/chorus.py")
-_load_p4_submodule("p4_mstate_features/geometric.py")
-_load_p4_submodule("p4_mstate_features/analysis.py")
+# # Pre-load p4 modules; order matters — chorus imports from activation_trajectories.
+# _load_p4_submodule("p4_mstate_features/activation_trajectories.py")
+# _load_p4_submodule("p4_mstate_features/chorus.py")
+# _load_p4_submodule("p4_mstate_features/geometric.py")
+# _load_p4_submodule("p4_mstate_features/analysis.py")
 
 
 # ===========================================================================

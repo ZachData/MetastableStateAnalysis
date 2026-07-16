@@ -37,7 +37,7 @@ def _trajectory_subexp(ctx: dict) -> SubResult:
     Wrap full_analysis (traj cross-reference: violations_beta*, rescaled).
     Depends on: ctx["traj"], ctx["ov_data"]
     """
-    from p2_eigenspectra.analysis import full_analysis
+    from p2_eigenspectra.analysis_p2 import full_analysis
 
     traj    = ctx["traj"]
     ov_data = ctx["ov_data"]

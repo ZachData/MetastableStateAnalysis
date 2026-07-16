@@ -29,7 +29,7 @@ from core.models import (
     randomize_weights,
 )
 
-from .analysis import analyze_trajectory
+from .analysis_p1 import analyze_trajectory
 from .plots import (
     plot_trajectory,
     plot_ip_histograms,
@@ -42,7 +42,7 @@ from .plots import (
     analyze_value_eigenspectrum,
     plot_cka_trajectory,
 )
-from .reporting import print_summary, generate_llm_report, generate_cross_run_report
+from .reporting_p1 import print_summary, generate_llm_report, generate_cross_run_report
 from .io_utils import save_run, replot_all, aggregate_global_artifacts
 from .clustering import HAS_UMAP
 
@@ -559,7 +559,7 @@ if __name__ == "__main__":
         replot_all(Path(args.replot))
 
     elif args.summary:
-        from .reporting import print_run_summary
+        from .reporting_p1 import print_run_summary
         print_run_summary(Path(args.summary))
     
     elif args.sublayer_only:

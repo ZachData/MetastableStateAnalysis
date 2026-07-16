@@ -1,5 +1,5 @@
 """
-eigenspace_degeneracy.py — Track B: Eigenspace degeneracy and LDA alignment.
+p6_subspace/eigenspace_degeneracy.py — Track B: Eigenspace degeneracy and LDA alignment.
 
 Two closely related tests on whether cluster structure lives in the real (S)
 subspace:
@@ -54,6 +54,7 @@ import numpy as np
 from scipy.stats import spearmanr
 
 from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
+from core.population import resolve_population_mask
 
 # Cap on number of cluster pairs to evaluate per layer for LDA alignment.
 # Avoids O(K²) cost when K is large. Pairs sampled reproducibly.
@@ -83,25 +84,42 @@ def project_to_subspace(
 # ---------------------------------------------------------------------------
 
 def degeneracy_ratio(
-    Z:      np.ndarray,
-    labels: np.ndarray,
+    Z:          np.ndarray,
+    labels:     np.ndarray,
+    population: str = "clustered",
 ) -> dict:
     """
     Compute within-cluster and between-cluster variance in projection space Z.
 
-    Noise tokens (label == -1) are excluded.
+    Parameters
+    ----------
+    population : which tokens enter the ratio (transition plan v2, core
+        analysis primitives -- population selector). Default "clustered"
+        reproduces this function's exact pre-existing behavior: noise
+        tokens (label == -1) excluded, as before. Pass population="all"
+        to include noise as its own group in the within/between variance
+        decomposition -- a direct test of whether the unclustered
+        population behaves like just another (large, diffuse) cluster in
+        this subspace, or something qualitatively different. See
+        core.population for the full spec.
 
     Returns
     -------
     dict with ratio, var_within, var_between, n_clusters, n_tokens.
     ratio = var_between / var_within  (higher = more degenerate within clusters)
-    None if fewer than 2 valid clusters.
+    None if fewer than 2 valid groups.
     """
-    valid = labels >= 0
+    valid = resolve_population_mask(labels, population)
     Z_v   = Z[valid].astype(np.float32)
     L_v   = labels[valid]
 
-    unique_clusters = [int(c) for c in np.unique(L_v) if c >= 0]
+    # Every distinct label surviving the population mask becomes its own
+    # group -- including -1 when population="all" lets it through. The
+    # old `if c >= 0` re-filter here (on top of the mask above) silently
+    # dropped noise from the group enumeration even when the caller had
+    # deliberately asked to keep it; removed so population="all" is
+    # actually meaningful rather than reducing to "clustered" downstream.
+    unique_clusters = [int(c) for c in np.unique(L_v)]
     n_clusters      = len(unique_clusters)
 
     if n_clusters < 2:
@@ -155,6 +173,7 @@ def degeneracy_sweep(
     U_A:        np.ndarray,
     k_values:   list[int] | None = None,
     n_random:   int = 5,
+    population: str = "clustered",
 ) -> dict:
     """
     Sweep k (number of basis vectors) and compute degeneracy ratio for:
@@ -162,6 +181,9 @@ def degeneracy_sweep(
       - Top-k repulsive eigenvectors of S (U_neg[:, :k])
       - Top-k imaginary planes (U_A[:, :k])
       - Random orthonormal subspaces of same dimension (baseline)
+
+    population : forwarded to every degeneracy_ratio call below (see that
+        function's docstring). Default "clustered" -- unchanged behavior.
 
     Returns
     -------
@@ -179,7 +201,7 @@ def degeneracy_sweep(
         for tag, basis in [("pos", U_pos), ("neg", U_neg), ("imag", U_A)]:
             if basis.shape[1] >= k:
                 Z  = project_to_subspace(X, basis[:, :k])
-                dr = degeneracy_ratio(Z, labels)
+                dr = degeneracy_ratio(Z, labels, population=population)
                 row[f"ratio_{tag}"] = dr["ratio"]
             else:
                 row[f"ratio_{tag}"] = None
@@ -190,7 +212,7 @@ def degeneracy_sweep(
         for _ in range(n_random):
             Q, _ = np.linalg.qr(rng.standard_normal((d, max(k, 1))))
             Z    = X @ Q[:, :k]
-            dr   = degeneracy_ratio(Z, labels)
+            dr   = degeneracy_ratio(Z, labels, population=population)
             if dr["ratio"] is not None:
                 rand_ratios.append(dr["ratio"])
         row["ratio_random_mean"] = float(np.mean(rand_ratios)) if rand_ratios else None
@@ -297,6 +319,14 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
     -----------------
     k_sweep              : list[int] (default [1,2,4,8,16,32])
     n_random_baselines   : int (default 5)
+    population           : population selector forwarded to every B.2
+                            degeneracy_ratio/degeneracy_sweep call (default
+                            "clustered" -- unchanged behavior). Does not
+                            affect B.3's LDA pairwise-cluster enumeration,
+                            which is about which specific cluster *pairs*
+                            to compare, not which population of tokens to
+                            include -- a separate axis from this selector.
+                            See core.population.
     """
     acts_per_layer   = ctx["activations_per_layer"]
     labels_per_layer = ctx["labels_per_layer"]
@@ -308,8 +338,9 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
     if len(proj_entries) == 1 and len(acts_per_layer) > 1:
         proj_entries = proj_entries * len(acts_per_layer)
 
-    k_values = ctx.get("k_sweep", [1, 2, 4, 8, 16, 32])
-    n_random = ctx.get("n_random_baselines", 5)
+    k_values   = ctx.get("k_sweep", [1, 2, 4, 8, 16, 32])
+    n_random   = ctx.get("n_random_baselines", 5)
+    population = ctx.get("population", "clustered")
 
     per_layer_results = []
 
@@ -321,7 +352,9 @@ def run_eigenspace_degeneracy(ctx: dict) -> SubResult:
         U_A   = pe["U_A"]
 
         # B.2 — degeneracy sweep
-        sweep = degeneracy_sweep(X, labels, U_pos, U_neg, U_A, k_values, n_random)
+        sweep = degeneracy_sweep(
+            X, labels, U_pos, U_neg, U_A, k_values, n_random, population=population
+        )
 
         # B.3 — LDA alignment averaged across all cluster pairs
         # Fix 2: was cherry-picking the single most separable pair, inflating P6-R2.

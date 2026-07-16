@@ -323,7 +323,7 @@ def analyze_trajectory(
     # This matches what generate_llm_report prints, so results on disk
     # and the text report are now consistent.
     # ------------------------------------------------------------------
-    from .reporting import compute_plateau_layers
+    from .reporting_p1 import compute_plateau_layers
     results["plateau_layers"] = compute_plateau_layers(results)
 
     return results

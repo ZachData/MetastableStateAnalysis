@@ -69,13 +69,13 @@ from core.models import load_model, randomize_weights
 from p2_eigenspectra.weights import analyze_weights, load_weight_decomposition
 from p2_eigenspectra.trajectory import analyze_trajectory_offline, load_phase1_events
 from p2_eigenspectra.trajectory_perlayer import analyze_trajectory_offline_perlayer
-from p2_eigenspectra.analysis import full_analysis
+from p2_eigenspectra.analysis_p2 import full_analysis
 from p2_eigenspectra.decompose import (
     extract_decomposed_albert,
     extract_decomposed_standard,
     save_decomposed,
 )
-from p2_eigenspectra.reporting import save_verdict
+from p2_eigenspectra.reporting_p2 import save_verdict
 from p2_eigenspectra.subexperiments import run_one_prompt
 
 

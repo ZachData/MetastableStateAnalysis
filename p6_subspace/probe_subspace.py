@@ -1,5 +1,5 @@
 """
-probe_subspace.py — Track B/D: Linear probes on real vs imaginary projections.
+p6_subspace/probe_subspace.py — Track B/D: Linear probes on real vs imaginary projections.
 
 Tests prediction P6-R4: cluster membership is recoverable from the real
 subspace alone (z_i^S = U_pos^T x_i) with near-full accuracy, while the
@@ -60,6 +60,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
 from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK, SEP_THIN
+from core.population import resolve_population_mask
 
 
 # ---------------------------------------------------------------------------
@@ -69,12 +70,32 @@ from p6_subspace.p6_io import SubResult, _fmt, _bullet, _verdict_line, SEP_THICK
 import warnings  # add to existing imports if not present
 
 def probe_accuracy(
-    Z:        np.ndarray,
-    labels:   np.ndarray,
-    n_splits: int = 5,
-    max_iter: int = 1000,
+    Z:          np.ndarray,
+    labels:     np.ndarray,
+    n_splits:   int = 5,
+    max_iter:   int = 1000,
+    population: str = "clustered",
 ) -> dict:
-    valid = labels >= 0
+    """
+    Fit and evaluate a linear probe of `labels` from `Z` via stratified
+    k-fold CV.
+
+    Parameters
+    ----------
+    population : which tokens enter the probe (transition plan v2, core
+        analysis primitives -- population selector). Default "clustered"
+        reproduces this function's exact pre-existing behavior (`labels
+        >= 0`, i.e. noise silently dropped) -- that default is intentional,
+        not just backward-compatibility inertia: a classification probe
+        needs at least the option to exclude the population with no
+        stable class identity. Pass population="all" to keep noise
+        tokens too, in which case -1 becomes its own class the probe must
+        also separate from every real cluster -- a direct test of whether
+        "unclustered" is itself a linearly-readable population rather
+        than an artifact of dropping it before the probe ever sees it.
+        See core.population for the full spec.
+    """
+    valid = resolve_population_mask(labels, population)
     Z_v   = Z[valid].astype(np.float32)
     L_v   = labels[valid]
 
@@ -145,12 +166,13 @@ def probe_accuracy(
 
 
 def probe_all_channels(
-    X:      np.ndarray,
-    labels: np.ndarray,
-    U_pos:  np.ndarray,     # (d, r_pos) — attractive real subspace
-    U_A:    np.ndarray,     # (d, r_A)   — imaginary subspace
-    U_S:    np.ndarray | None = None,  # (d, r_S) — full real subspace (U_pos ∪ U_neg)
-    seed:   int = 42,
+    X:          np.ndarray,
+    labels:     np.ndarray,
+    U_pos:      np.ndarray,     # (d, r_pos) — attractive real subspace
+    U_A:        np.ndarray,     # (d, r_A)   — imaginary subspace
+    U_S:        np.ndarray | None = None,  # (d, r_S) — full real subspace (U_pos ∪ U_neg)
+    seed:       int = 42,
+    population: str = "clustered",
     ) -> dict:
     """
     Run probes on full activations and four projection channels:
@@ -170,6 +192,8 @@ def probe_all_channels(
     U_S : full real subspace (U_pos ∪ U_neg).  When supplied, "real_full" channel
           uses U_S and "imag_matched" is subsampled to U_S.shape[1] columns.
           When None, falls back to U_pos for both.
+    population : forwarded to every probe_accuracy call below (see that
+          function's docstring). Default "clustered" — unchanged behavior.
     """
     d    = X.shape[1]
     rng  = np.random.default_rng(seed=seed)
@@ -179,25 +203,25 @@ def probe_all_channels(
     r_ref  = U_real.shape[1]   # capacity reference dimension
 
     # --- full ---
-    res_full = probe_accuracy(X, labels)
+    res_full = probe_accuracy(X, labels, population=population)
 
     # --- real (U_pos, as per original P6-R4 definition) ---
     res_real = (
-        probe_accuracy(X @ U_pos, labels)
+        probe_accuracy(X @ U_pos, labels, population=population)
         if U_pos.shape[1] > 0
         else _empty_probe_result()
     )
 
     # --- real_full (U_S, includes U_neg — fairer for total real capacity) ---
     res_real_full = (
-        probe_accuracy(X @ U_real, labels)
+        probe_accuracy(X @ U_real, labels, population=population)
         if U_real.shape[1] > 0
         else _empty_probe_result()
     )
 
     # --- imag (full U_A, biased by dimension) ---
     res_imag = (
-        probe_accuracy(X @ U_A, labels)
+        probe_accuracy(X @ U_A, labels, population=population)
         if U_A.shape[1] > 0
         else _empty_probe_result()
     )
@@ -211,14 +235,14 @@ def probe_all_channels(
             # Random column subset, reproducible via seed
             idx     = rng.choice(U_A.shape[1], size=r_ref, replace=False)
             U_A_sub = U_A[:, idx]
-        res_imag_matched = probe_accuracy(X @ U_A_sub, labels)
+        res_imag_matched = probe_accuracy(X @ U_A_sub, labels, population=population)
     else:
         res_imag_matched = _empty_probe_result()
 
     # --- random (same dimension as U_pos, original baseline) ---
     r_rand = max(U_pos.shape[1], 1)
     Q, _   = np.linalg.qr(rng.standard_normal((d, r_rand)))
-    res_rand = probe_accuracy(X @ Q[:, :r_rand], labels)
+    res_rand = probe_accuracy(X @ Q[:, :r_rand], labels, population=population)
 
     return {
         "full":         res_full,
@@ -257,6 +281,10 @@ def run_probe_subspace(ctx: dict) -> SubResult:
     Optional ctx keys
     -----------------
     probe_layers : list of str — which layer names to probe (default: plateau + merge)
+    population   : population selector forwarded to every probe (default
+                   "clustered" — unchanged behavior; see core.population
+                   and probe_accuracy's docstring for the full spec, e.g.
+                   "all" to make -1 a probed class rather than dropping it).
     """
     acts        = ctx["activations_per_layer"]
     labels      = ctx["labels_per_layer"]
@@ -265,6 +293,7 @@ def run_probe_subspace(ctx: dict) -> SubResult:
     projectors  = ctx["projectors"]
 
     probe_layers_override = ctx.get("probe_layers", None)
+    population            = ctx.get("population", "clustered")
 
     proj_entries = projectors["per_layer"]
     if len(proj_entries) == 1 and len(acts) > 1:
@@ -282,10 +311,12 @@ def run_probe_subspace(ctx: dict) -> SubResult:
             if ltype not in ("plateau", "merge"):
                 continue
 
-        if int((lab >= 0).sum()) < 10:
+        if int(resolve_population_mask(lab, population).sum()) < 10:
             continue
 
-        res = probe_all_channels(X, lab, pe["U_pos"], pe["U_A"], U_S=pe.get("U_S"))
+        res = probe_all_channels(
+            X, lab, pe["U_pos"], pe["U_A"], U_S=pe.get("U_S"), population=population
+        )
         res["layer_name"] = lname
         res["layer_type"] = ltype
         per_layer_results.append(res)

@@ -1,5 +1,5 @@
 """
-trajectory.py — Offline Phase 2 analysis on saved Phase 1 activations.
+p2_eigenspectra/trajectory.py — Offline Phase 2 analysis on saved Phase 1 activations.
 
 No model loading required.  Operates on activations.npz, clusters.npz,
 metrics.json (from Phase 1) and the weight decomposition (from weights.py).
@@ -280,6 +280,8 @@ def self_interaction_trajectory(
 def displacement_projection(
     activations: np.ndarray,
     projectors: dict,
+    cluster_labels=None,
+    population=None,
 ) -> dict:
     """
     Project per-layer displacement Δx = x_{L+1} - x_L onto V subspaces.
@@ -290,6 +292,22 @@ def displacement_projection(
     ----------
     activations : (n_layers, n_tokens, d_model)
     projectors  : dict from build_subspace_projectors
+    cluster_labels : optional list/array of (n_tokens,) int HDBSCAN labels,
+        one entry per layer (same convention as core.io's hdbscan_labels
+        contract) -- transition plan v2, core analysis primitives
+        (population selector). When None (default), every token at every
+        transition is included, exactly as before this parameter existed
+        -- this function's behavior is unchanged for every existing call
+        site (e.g. analyze_trajectory_offline, which does not pass this).
+    population : which population of cluster_labels[t] (the *source*
+        layer of transition t) to include -- None/"all" (default),
+        "clustered", "unclustered", or a specific int cluster id. Ignored
+        if cluster_labels is None. See core.population for the full spec.
+        A transition where the selected population is empty gets the same
+        zero-filled result this function already gives a near-zero-energy
+        transition (see the total < 1e-12 skip below) -- no new sentinel
+        introduced, for consistency with this function's existing
+        convention.
 
     Returns
     -------
@@ -298,6 +316,8 @@ def displacement_projection(
       sym_attract_disp_frac, sym_repulse_disp_frac
       total_disp_energy : (n_layers-1,) float — total ‖Δx‖_F^2 per transition
     """
+    from core.population import resolve_population_mask
+
     diffs    = activations[1:] - activations[:-1]       # (L-1, n, d)
     n_trans  = diffs.shape[0]
 
@@ -311,6 +331,11 @@ def displacement_projection(
 
     for t in range(n_trans):
         D = diffs[t]                                    # (n, d)
+
+        if cluster_labels is not None:
+            mask = resolve_population_mask(cluster_labels[t], population)
+            D = D[mask]
+
         total = np.sum(D ** 2)
         result["total_disp_energy"][t] = total
         if total < 1e-12:

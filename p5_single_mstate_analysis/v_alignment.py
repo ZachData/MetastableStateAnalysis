@@ -1,5 +1,5 @@
 """
-v_alignment.py — Group B: paper-theoretical alignment.
+p5_single_mstate_analysis/v_alignment.py — Group B: paper-theoretical alignment.
 
 Tests predictions of Geshkovski et al. at the level of one cluster.
 
@@ -116,25 +116,66 @@ def estimate_effective_beta(
 def cluster_energy_trajectory(
     activations: np.ndarray,  # (n_layers, n, d)
     hdb_labels: list,
-    chain: list,
+    chain: list = None,
     beta: float = 1.0,
+    population=None,
 ) -> list:
     """
-    E_β over cluster-internal pairs, per layer.
+    E_β over a token population's internal pairs, per layer.
 
-    E_β(cluster) = (1/|C|^2) Σ_{i,j in C} exp(β <x_i, x_j>)
+    E_β(pop) = (1/|C|^2) Σ_{i,j in C} exp(β <x_i, x_j>)
+
+    Two mutually exclusive selection modes (transition plan v2, core
+    analysis primitives — population selector):
+
+    chain      : pre-existing behavior. A tracked (layer, cluster_id)
+                 chain — one specific cluster's identity, followed across
+                 depth via cluster_tracking.py's matching. Every existing
+                 call passes this; passing it alone (population omitted)
+                 reproduces the exact prior behavior.
+    population : new. Applied independently at every layer of
+                 `activations` (no depth-tracking of one cluster's
+                 identity) — None/"all", "clustered", "unclustered", or a
+                 specific int cluster id. Use this to ask a question
+                 `chain` can't express, e.g. "how does the unclustered
+                 population's internal energy evolve with depth" — there
+                 is no cluster_tracking chain for a population that isn't
+                 a tracked cluster identity. See core.population.
+
+    Exactly one of chain/population must be given.
     """
+    from core.population import resolve_population_mask
+
+    if (chain is None) == (population is None):
+        raise ValueError(
+            "cluster_energy_trajectory: pass exactly one of chain or "
+            "population, not both and not neither."
+        )
+
     out = []
-    for layer, cid in chain:
-        if layer >= activations.shape[0]:
-            break
-        mask = hdb_labels[layer] == cid
+
+    if chain is not None:
+        for layer, cid in chain:
+            if layer >= activations.shape[0]:
+                break
+            mask = hdb_labels[layer] == cid
+            if mask.sum() < 2:
+                out.append(float("nan"))
+                continue
+            X = activations[layer][mask]
+            G = X @ X.T
+            # Include diagonal (=1) as in the paper
+            E = float(np.exp(beta * G).mean())
+            out.append(E)
+        return out
+
+    for layer in range(activations.shape[0]):
+        mask = resolve_population_mask(hdb_labels[layer], population)
         if mask.sum() < 2:
             out.append(float("nan"))
             continue
         X = activations[layer][mask]
         G = X @ X.T
-        # Include diagonal (=1) as in the paper
         E = float(np.exp(beta * G).mean())
         out.append(E)
     return out

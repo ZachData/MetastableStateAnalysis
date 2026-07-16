@@ -121,7 +121,7 @@ def run_one_prompt(ctx: dict, output_dir: Path) -> dict:
     verdict dict (same structure as build_verdict_v2 output)
     """
     from p2_eigenspectra.analysis_extended import build_verdict_v2_from_subresults
-    from p2_eigenspectra.reporting import save_verdict
+    from p2_eigenspectra.reporting_p2 import save_verdict
 
     stem_dir = Path(output_dir) / ctx["stem"]
     sub_dir  = stem_dir / "sub"

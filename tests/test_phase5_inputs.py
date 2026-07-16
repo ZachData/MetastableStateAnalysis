@@ -32,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-from p5_single_mstate_analysis.io import (
+from p5_single_mstate_analysis.io_p5 import (
     find_phase1_runs,
     load_phase2i,
     load_phase4,

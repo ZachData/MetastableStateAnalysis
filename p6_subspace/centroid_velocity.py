@@ -1,5 +1,5 @@
 """
-centroid_velocity.py — Track B: Centroid velocity decomposition + merge geometry.
+p6_subspace/centroid_velocity.py — Track B: Centroid velocity decomposition + merge geometry.
 
 At each layer transition L → L+1, decompose the cluster centroid displacement:
 
@@ -103,17 +103,27 @@ def centroid_velocity_profile(
     labels_per_layer:      list[np.ndarray],
     layer_types:           list[str],
     layer_names:           list[str],
-    cluster_id:            int,
+    population,
     P_S:                   np.ndarray | None = None,
     P_A:                   np.ndarray | None = None,
     proj_per_layer:        list[dict] | None = None,
 ) -> list[dict]:
     """
-    Compute centroid velocity decomposition for one cluster at each layer
-    transition L → L+1.
+    Compute centroid velocity decomposition for one population at each
+    layer transition L → L+1.
 
     Parameters
     ----------
+    population      : which tokens form the "centroid" at each layer
+                       (transition plan v2, core analysis primitives —
+                       population selector): an int cluster id (original
+                       behavior — every existing call passes one, and an
+                       int here resolves to exactly the same `labels ==
+                       population` mask as before), or "clustered" /
+                       "unclustered" / "all" (new — e.g. "unclustered" to
+                       track the unclustered population's own centroid
+                       velocity, not a tracked cluster's). See
+                       core.population for the full spec.
     P_S, P_A        : fixed projectors used when proj_per_layer is None
                       (backward-compatible fallback; incorrect for per-layer models)
     proj_per_layer  : list of projector dicts, one per layer, each with keys
@@ -125,6 +135,8 @@ def centroid_velocity_profile(
     -------
     list of dicts, one per tracked layer transition.
     """
+    from core.population import population_label, resolve_population_mask
+
     results  = []
     n_layers = len(activations_per_layer)
 
@@ -134,8 +146,8 @@ def centroid_velocity_profile(
         lab_cur = labels_per_layer[L]
         lab_nxt = labels_per_layer[L + 1]
 
-        mask_cur = lab_cur == cluster_id
-        mask_nxt = lab_nxt == cluster_id
+        mask_cur = resolve_population_mask(lab_cur, population)
+        mask_nxt = resolve_population_mask(lab_nxt, population)
 
         if mask_cur.sum() < 2:
             continue
@@ -143,7 +155,7 @@ def centroid_velocity_profile(
         centroid_cur = X_curr[mask_cur].mean(axis=0)
 
         if mask_nxt.sum() < 2:
-            # Cluster dissolved — track same token positions into next layer
+            # Population dissolved — track same token positions into next layer
             centroid_nxt = X_next[np.where(mask_cur)[0]].mean(axis=0)
         else:
             centroid_nxt = X_next[mask_nxt].mean(axis=0)
@@ -169,7 +181,12 @@ def centroid_velocity_profile(
             "norm_A":       decomp["norm_A"],
             "norm_total":   decomp["norm_total"],
             "r_S":          decomp["r_S"],
-            "cluster_id":   cluster_id,
+            # Kept as "cluster_id" (rather than renamed) since nothing
+            # downstream reads this key today and an int population is
+            # exactly what this field always held; "population" added
+            # alongside it for the general (string) case.
+            "cluster_id":   population if isinstance(population, (int, np.integer)) else None,
+            "population":   population_label(population),
         })
 
     return results
@@ -364,17 +381,32 @@ def run_centroid_velocity(ctx: dict) -> SubResult:
     merge_events_empty       = not merge_events
 
     # -----------------------------------------------------------------------
-    # 1. Per-cluster velocity profiles
+    # 1. Per-cluster (and, optionally, per-population) velocity profiles
     # -----------------------------------------------------------------------
     all_labels = np.unique(
         np.concatenate([l[l >= 0] for l in labels if (l >= 0).any()])
     )
     tracked = ctx.get("tracked_cluster_ids", all_labels.tolist())
+    # New (transition plan v2, core analysis primitives — population
+    # selector): supplements tracked_cluster_ids with named populations
+    # ("unclustered", "all") that aren't a specific tracked cluster id.
+    # Default [] — no existing ctx dict has this key, so behavior is
+    # unchanged unless a caller opts in. See core.population.
+    tracked_populations = ctx.get("tracked_populations", [])
 
     all_steps: list[dict] = []
     for cid in tracked:
         steps = centroid_velocity_profile(
             acts, labels, layer_types, layer_names, int(cid),
+            P_S=P_S_fixed,
+            P_A=P_A_fixed,
+            proj_per_layer=proj_per_layer,
+        )
+        all_steps.extend(steps)
+
+    for pop in tracked_populations:
+        steps = centroid_velocity_profile(
+            acts, labels, layer_types, layer_names, pop,
             P_S=P_S_fixed,
             P_A=P_A_fixed,
             proj_per_layer=proj_per_layer,

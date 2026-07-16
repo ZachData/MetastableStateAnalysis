@@ -795,7 +795,7 @@ def replot_all(run_dir, out_dir=None):
         plot_sinkhorn_detail, plot_spectral_eigengap,
         plot_eigenvalue_spectra, plot_cka_trajectory,
     )
-    from .reporting import print_summary
+    from .reporting_p1 import print_summary
 
     run_dir = Path(run_dir)
     out_dir = out_dir or run_dir
