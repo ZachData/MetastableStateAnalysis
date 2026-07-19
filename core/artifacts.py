@@ -190,26 +190,165 @@ MANIFEST = ArtifactSpec(
 )
 
 # ---------------------------------------------------------------------------
-# TODO — not yet registered. Each needs that phase's actual writer read
-# first (not guessed), same standard PHASE1 was held to above.
+# Phase 2 — verified against p2_eigenspectra/weights.py's
+# save_weight_decomposition (the writer) and run_2.py's own header/output
+# list. Two kinds of artifact: weight-decomposition files written per
+# *model* into a shared weights dir, and per-run files written into each
+# run directory.
+#
+# Filename templating: the weight files embed the model stem
+# (model_name.replace("/", "_")) — ArtifactSpec.filename holds the
+# "{stem}" template; use phase2_weight_path() below rather than
+# artifact_path() for these four.
+#
+# NPZ key templating: keys are per-layer-templated —
+#   shared (ALBERT):   ov_total_shared,     ov_head{h}_shared
+#   per-layer (GPT-2): ov_total_layer_{i},  ov_head{h}_layer_{i}
+# plus (when the model was passed to the writer) raw QK arrays via
+# _add_qk_arrays_to_decomposition. Templated keys can't go in
+# required_keys (they depend on n_layers/n_heads); key_shape_hint
+# documents the pattern, and validate_artifact checks only file
+# existence + parseability for these. This registration is what the
+# "Phase 5 OV values always n/a" bug needed: run_5.py's
+# _load_ov_head_matrices now parses exactly these key patterns — keep
+# both in sync through this spec, not through two independent comments.
 # ---------------------------------------------------------------------------
 
-# PHASE2  : p2_eigenspectra/weights.py + run_2.py write eigenspectrum /
-#           decompose / OV-analysis artifacts. Registering this is what
-#           would have caught the "Phase 5 OV values always n/a" bug at
-#           the contract level — read weights.py's actual save calls
-#           before filling this in, don't infer from head_contributions.py's
-#           read side alone (that's the miskeyed half, not the source of
-#           truth).
-# PHASE4  : p4_mstate_features/run_4.py + low_rank_ae.py (frozen-for-
-#           deletion — low priority to register, and per the freeze policy
-#           no new work should happen on it regardless).
-# PHASE5  : p5_single_mstate_analysis/io.py — this is the consumer side of
-#           the Phase 4 path/naming mismatch (Group D blocker); needs
-#           Phase 4's actual writer, not this module's reader, as the
-#           source of truth for required_keys.
-# PHASE5B : p5b_manifold_steering/p5b_io.py.
-# PHASE6  : p6_subspace/p6_io.py.
+PHASE2_WEIGHTS = {
+    "ov_weights": ArtifactSpec(
+        kind="npz", filename="ov_weights_{stem}.npz",
+        key_shape_hint={
+            "ov_total_shared | ov_total_layer_{i}": "(d, d)",
+            "ov_head{h}_shared | ov_head{h}_layer_{i}": "(d, d) composed W_V@W_O per head",
+        },
+        description="OV matrices (total + per-head) and raw W_Q/W_K per head.",
+    ),
+    "ov_decomp": ArtifactSpec(
+        kind="npz", filename="ov_decomp_{stem}.npz",
+        key_shape_hint={
+            "eig_real_* / eig_imag_*": "(d,)",
+            "schur_Z_*": "(d, d)",
+            "sym_evals_*": "(d,)", "sym_evecs_*": "(d, d)",
+        },
+        description="Eigenvalues, Schur vectors, symmetric eigenvectors; *_shared or *_layer_{i}.",
+    ),
+    "ov_projectors": ArtifactSpec(
+        kind="npz", filename="ov_projectors_{stem}.npz",
+        key_shape_hint={
+            "schur_attract_* / schur_repulse_*": "(d, d)",
+            "sym_attract_* / sym_repulse_*": "(d, d)",
+        },
+        description="Subspace projectors; *_shared or *_layer_{i}.",
+    ),
+    "ov_summary": ArtifactSpec(
+        kind="json", filename="ov_summary_{stem}.json",
+        required_keys=("d_model", "d_head", "n_heads", "is_per_layer", "layers"),
+        description="Scalar summaries per layer (frac_attractive, schur dims, spectral norms...).",
+    ),
+}
+
+PHASE2 = {
+    "attn_deltas_raw": ArtifactSpec(
+        kind="npz", filename="attn_deltas_raw.npz",
+        description="Per-layer attention deltas (parallel-decomposition input for 2i and crosscoder training).",
+    ),
+    "ffn_deltas_raw": ArtifactSpec(
+        kind="npz", filename="ffn_deltas_raw.npz",
+        description="Per-layer FFN deltas.",
+    ),
+    "verdict": ArtifactSpec(
+        kind="json", filename="verdict.json",
+        description="Per-run verdict record; cross-run aggregate is p2_eigenspectra_cross_run.json (session level).",
+    ),
+}
+
+PHASE2_SESSION = {
+    "cross_run": ArtifactSpec(
+        kind="json", filename="p2_eigenspectra_cross_run.json",
+        description="List of per-run verdicts, one file per output dir.",
+    ),
+}
+
+# Subexperiment JSONs written under each run's subexperiments/ dir
+# (run_2.py header): trajectory.json, layer_v_events.json, head_ov.json,
+# decomposed_violations.json, ffn_subspace.json, continuous_correlations.json,
+# ov_norm_confound.json, zone_comparison.json, attractive_zone_violations.json.
+PHASE2_SUBEXPERIMENTS = {
+    name: ArtifactSpec(kind="json", filename=f"{name}.json",
+                       description=f"Phase 2 subexperiment output: {name}.")
+    for name in (
+        "trajectory", "layer_v_events", "head_ov", "decomposed_violations",
+        "ffn_subspace", "continuous_correlations", "ov_norm_confound",
+        "zone_comparison", "attractive_zone_violations",
+    )
+}
+
+# ---------------------------------------------------------------------------
+# Phase 5b — verified against run_5b.py / logit_cache.py's actual writes.
+# ---------------------------------------------------------------------------
+
+PHASE5B = {
+    "logit_cache": ArtifactSpec(
+        kind="npz", filename="logit_cache.npz",
+        description="Cached logits for steering readout (logit_cache.py).",
+    ),
+    "fit_summary": ArtifactSpec(
+        kind="json", filename="fit_summary.json",
+        description="Manifold fit summary.",
+    ),
+    "mh_params": ArtifactSpec(
+        kind="npz", filename="mh_params.npz",
+        description="Manifold-hypothesis fit parameters.",
+    ),
+    "isometry": ArtifactSpec(
+        kind="json", filename="isometry.json",
+        description="Isometry test results (flat).",
+    ),
+    "isometry_mds": ArtifactSpec(
+        kind="npz", filename="isometry_mds.npz",
+        description="MDS embeddings backing the isometry test.",
+    ),
+    "merge_teleportation": ArtifactSpec(
+        kind="json", filename="merge_teleportation.json",
+        description="Merge-teleportation subspace test results.",
+    ),
+    "subspace_isometry": ArtifactSpec(
+        kind="json", filename="subspace_isometry.json",
+        description="Subspace isometry results (needs phase 2 ov_projectors).",
+    ),
+}
+
+# ---------------------------------------------------------------------------
+# Phase 6 — verified against p6_subspace/p6_io.py's save_subresult:
+# every subexperiment writes {name}.json + {name}.summary.txt into the
+# run's subresult dir. Names from p6_io.py's own header plus run_6.py's
+# registered subexperiments.
+# ---------------------------------------------------------------------------
+
+def _p6_pair(name: str, desc: str) -> dict:
+    return {
+        name: ArtifactSpec(kind="json", filename=f"{name}.json", description=desc),
+        f"{name}_summary": ArtifactSpec(kind="txt", filename=f"{name}.summary.txt",
+                                        description=f"Human-readable summary for {name}."),
+    }
+
+PHASE6 = {}
+for _n, _d in (
+    ("subspace_build",  "Projector diagnostics (U_A/U_S/U_neg construction)."),
+    ("head_classify",   "Track A head classification."),
+    ("qk_decompose",    "Track A QK decomposition."),
+    ("dissociation",    "Track C double-dissociation causal test."),
+):
+    PHASE6.update(_p6_pair(_n, _d))
+
+
+def phase2_weight_path(weights_dir, name: str, model_name: str) -> Path:
+    """Path for a Phase 2 weight-decomposition artifact — these are keyed
+    by model stem, not run dir. Mirrors save_weight_decomposition's
+    stem = model_name.replace('/', '_')."""
+    spec = get_spec("phase2_weights", name)
+    stem = model_name.replace("/", "_")
+    return Path(weights_dir) / spec.filename.format(stem=stem)
 
 
 # ---------------------------------------------------------------------------
@@ -219,9 +358,23 @@ MANIFEST = ArtifactSpec(
 REGISTRY = {
     "phase1": PHASE1,
     "phase1_session": PHASE1_SESSION,
+    "phase2": PHASE2,
+    "phase2_session": PHASE2_SESSION,
+    "phase2_subexperiments": PHASE2_SUBEXPERIMENTS,
+    "phase2_weights": PHASE2_WEIGHTS,
+    "phase5b": PHASE5B,
+    "phase6": PHASE6,
     "particles": PARTICLES,
     "manifest": {"manifest": MANIFEST},
 }
+
+# Still unregistered, deliberately:
+# PHASE4 : frozen-for-deletion (plan v2); registering would be new work on
+#          code the freeze policy says gets none. The reintroduction
+#          trigger, if ever hit, includes writing this contract first.
+# PHASE5 : p5_single_mstate_analysis writes report-level outputs through
+#          report.py; register from that writer when Phase 5's Pythia
+#          rerun (execution-order item 11) touches it.
 
 
 def get_spec(phase: str, name: str) -> ArtifactSpec:
@@ -242,8 +395,15 @@ def get_spec(phase: str, name: str) -> ArtifactSpec:
 
 
 def artifact_path(run_dir, phase: str, name: str) -> Path:
-    """Expected path for a registered artifact inside a given run directory."""
+    """Expected path for a registered artifact inside a given run directory.
+    Raises for stem-templated filenames (phase2_weights) — those need a
+    model name; use phase2_weight_path instead."""
     spec = get_spec(phase, name)
+    if "{stem}" in spec.filename:
+        raise ValueError(
+            f"Artifact {phase}/{name} has a model-stem-templated filename "
+            f"({spec.filename!r}); use phase2_weight_path(weights_dir, name, model_name)."
+        )
     return Path(run_dir) / spec.filename
 
 

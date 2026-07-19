@@ -1,5 +1,5 @@
 """
-dissociation.py — Track C: Double dissociation via forward-pass interventions.
+p6_subspace/dissociation.py — Track C: Double dissociation via forward-pass interventions.
 
 The strongest causal test in Phase 6.  Two surgical interventions on the
 residual stream during inference:
@@ -130,41 +130,48 @@ def run_intervened_forward(
     Returns
     -------
     dict with:
-      activations  : list of (n_tokens, d_model) per layer/iteration — float32 np
+      activations  : list of (n_tokens, d_model) per layer — float32 np,
+                     INCLUDING the embedding at index 0. This is
+                     core/models.py's convention (the one every Phase 1
+                     hdb_labels array was produced under), adopted here
+                     by migrating onto core.intervention.run_model_with_hook.
+                     The previous implementation skipped the embedding
+                     (hidden_states[1:]) — internally consistent within
+                     this file, but a real misalignment risk whenever
+                     ctx["baseline_labels"] is supplied from genuine
+                     Phase 1 output. Fixed as a side effect of the merge.
       attentions   : list of (n_heads, n_tokens, n_tokens) per layer — float32 np
+      logits       : (n_tokens, vocab) float32 np, or None for a bare
+                     encoder without an LM head (every registry bare-model
+                     load — see core/lm_loading.py to get a logits-bearing
+                     model at the same pinned revision).
       tokens       : list of str
+
+    Implementation: thin delegation to core.intervention.run_model_with_hook
+    (the merged intervention+logits runner, plan v2 core analysis
+    primitives). hook_fn keeps this module's plain forward-hook signature
+    (module, inputs, output) and fires on every invocation of every target
+    — the double-dissociation design's original, ungated "every layer,
+    every head" behavior (steps=None).
     """
-    inputs = tokenizer(
-        text, return_tensors="pt", truncation=True, max_length=max_length
-    ).to(device)
-    tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+    from core.intervention import run_model_with_hook
 
-    handles = []
+    hooks = None
     if hook_fn is not None:
-        for target in hook_targets:
-            handles.append(target.register_forward_hook(hook_fn))
+        hooks = [
+            {"module": target, "hook_fn": hook_fn, "type": "forward", "steps": None}
+            for target in hook_targets
+        ]
 
-    try:
-        with torch.no_grad():
-            out = model(**inputs, output_attentions=True, output_hidden_states=True)
-    finally:
-        for h in handles:
-            h.remove()
-
-    # Extract hidden states: list of (1, n_tokens, d_model)
-    hidden = out.hidden_states   # tuple
-    activations = [
-        h[0].float().cpu().numpy()   # (n_tokens, d_model)
-        for h in hidden[1:]          # skip embedding layer
-    ]
-
-    # Extract attentions: tuple of (1, n_heads, n_tokens, n_tokens)
-    attentions = [
-        a[0].float().cpu().numpy()   # (n_heads, n_tokens, n_tokens)
-        for a in out.attentions
-    ]
-
-    return {"activations": activations, "attentions": attentions, "tokens": tokens}
+    result = run_model_with_hook(
+        model, tokenizer, text, hooks=hooks, device=device, max_length=max_length,
+    )
+    return {
+        "activations": result["activations"],
+        "attentions":  result["attentions"],
+        "logits":      result["logits"],
+        "tokens":      result["tokens"],
+    }
 
 
 # ---------------------------------------------------------------------------

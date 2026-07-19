@@ -1,7 +1,12 @@
+<!-- p2_eigenspectra/status-2.md -->
 # Phase 2 — STATUS
 
 **Last verified:** 2026-04-28 (run dir `results/p2_eigenspectra_2026-04-28_13-22-34`)
 **Overall:** Complete. 35 model×prompt runs. All four previously-documented bugs fixed.
+
+**This is the pre-Pythia (GPT-2/ALBERT/BERT) study, closed as reported.** The Pythia rerun
+(active work as of 2026-07-18 — see INDEX.md's "Current priority") isn't reflected here yet;
+that gets its own verdict/blocker update once real runs exist, not a retrofit of this file.
 
 ## Verdict distribution (35 runs)
 
@@ -43,3 +48,13 @@ residual decomposition module (in `core/`, not this phase's directory) re-enable
 attn-vs-FFN energy panels this phase's questions feed (Phase 1's `energy_decomposition.py` /
 `energy_attribution_aggregate.py`) and potentially reopens the FFN-vs-V question natively on
 Pythia, rather than carrying it forward only as a frozen GPT-2-large reference point.
+
+## Maybe later (not current work, 2026-07-18)
+
+- **SLT anchor** (plan: per-checkpoint training-loss + weight-norm logging alongside the
+  cheap tier) — not implemented, not being added right now. Current Pythia checkpoint runs
+  use anchors at known event locations directly rather than the dense pilot sweep this was
+  meant to support; revisit if that changes.
+- **LLC** — already dropped per the plan (SGLD out of compute range); this just reconfirms
+  no reason has come up to revisit it. Both come back together only if good checkpoint data
+  exists and an actual question needs either.

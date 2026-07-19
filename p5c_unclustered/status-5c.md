@@ -37,18 +37,35 @@ No formal investigation groups (A, C) have been run yet.
 ## Known blockers
 
 1. **`noise_tracking.py` does not exist yet.** Nothing downstream (Group A selection) has a
-   per-token "consecutive layers unclustered" definition without it — described in the plan
-   as a few-line addition, not built.
-2. **Group D blocking dependency, unresolved:** `causal_tests.py`'s intervention functions
-   only run through `_run_albert_with_hook`'s ALBERT branch. The GPT-2 branch loops over
-   `transformer.h` directly and never calls `hook_fn` — none of the existing interventions
-   currently do anything on a GPT-2 model. Must fix (or add a parallel
-   `_run_gpt2_with_hook`) before any Group D sub-experiment can run on GPT-2-large, which is
-   the model this phase's central question is about.
-3. No loss/KL readout path exists yet for any model — new work, not a parameter to an
-   existing function.
+   per-token "consecutive layers unclustered" definition without it. Per-item-3's design
+   note (`core/CHANGES.md`, tracking-module merge): this need is now assigned to the
+   per-particle-record schema (a groupby on token/layer), not to new tracking machinery —
+   but nothing populates that table with real data yet, so the blocker is still live, just
+   relocated.
+2. **Group D blocking dependency — partially resolved, not closed.** The original problem
+   (`causal_tests.py`'s intervention functions only run through `_run_albert_with_hook`,
+   whose GPT-2 branch never calls `hook_fn`) has a real fix now available:
+   `core/intervention.py`'s `run_model_with_hook` (item 3, complete) is exactly the
+   model-agnostic replacement this needed. **But `causal_tests.py` itself has not been
+   rewired onto it** — `ablate_head`/`steer_residual`/`patch_activation` still route
+   entirely through `_run_albert_with_hook`, unchanged. See status-5.md's "v2 follow-up"
+   section for the rewiring shape (per-architecture dispatch, ALBERT path kept, not
+   deleted).
+3. **Loss/KL readout — now exists at the primitive level, still unusable for Group D.**
+   `run_model_with_hook(compute_loss=True)` plus `next_token_kl`/
+   `next_token_kl_all_positions` (`core/intervention.py`) implement exactly the readout
+   design-5c.md specifies ("next-token cross-entropy delta and KL divergence"). Blocked from
+   actual use by two things: (a) blocker 2 above — nothing calls this runner yet in a
+   Group-D-shaped way; (b) **no model in the registry has an LM head** —
+   `MODEL_CONFIGS`/`pythia_registry.py` load bare model classes with no `.logits` output, so
+   even a correctly-wired call returns `logits=None`. A `ForCausalLM` loader, separate from
+   the main extraction pipeline's, doesn't exist yet.
 4. This phase has no code directory yet — everything above ran as standalone visualization
    scripts against Phase 1 output, not as a wired `p5c_unclustered/` package.
+5. The Group D experiment module itself — the force-collapse/force-disperse design this
+   phase actually specifies — has not been written. Every primitive it needs (the runner,
+   KL/loss, population selector, dual-reading) is now built; assembling them into the
+   experiment is separate, phase-level work, not covered by item 3.
 
 ## Not yet started
 

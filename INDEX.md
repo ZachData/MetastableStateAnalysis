@@ -1,4 +1,31 @@
+<!-- INDEX.md -->
 # STATUS/DESIGN Split — Index
+
+## Current priority (2026-07-18 — read this first, supersedes anything below it says otherwise)
+
+- **Active work: Phase 2, Pythia rerun.** Not yet at Phase 5 — anything Phase 5/5b/5c/6
+  below (including the causal-dispatch infrastructure landed 2026-07-18: `causal_tests.py`
+  standard-path dispatch, `dissociation.py`'s migration, `core/lm_loading.py`) is real and
+  pure-tested but **not current work**. It sits ready; revisit and run the smoke tier
+  (`tests/test_item_completion_smoke.py`) only once Phase 5 work resumes. See status-5.md's
+  "v2 follow-up" section for what's actually done there.
+- **Checkpoint schedule: anchors only, pilot sweep not run.** Currently using checkpoints at
+  known event locations (the plan's provisional-anchor steps) directly, not the dense
+  item-8 pilot sweep. Whether item 8 still happens as its own pass, or the anchors are
+  adopted as final without it, is undecided — not blocking current work either way.
+- **SLT anchor and LLC: maybe later, not current work.** The plan's "cheap SLT anchor"
+  (per-checkpoint training-loss / weight-norm logging) is not implemented and not being
+  added right now — hands are full with the anchor-checkpoint runs themselves. LLC stays
+  dropped per the plan, with the same conditional revisit (good checkpoint data + an actual
+  need for it). Flagged at the two places this would otherwise get built:
+  `p1_visualization/checkpoints.py` (shared checkpoint-sweep conventions) and status-2.md
+  (below).
+- **Phase 2c/3/4: out of scope, not being looked into.** Decided 2026-07-18 — see the table
+  below and the "Not done" section; this reverses the "Complete" claim two rows down,
+  which was never verified against source present in this project and is now moot regardless
+  of whether that source arrives.
+
+## STATUS/DESIGN split (original scope, v2)
 
 Output of transition-plan execution-order item 1 (v2): every phase README split into a short
 `status-N.md` (verdict table, blockers, last-verified date) and a long-form `design-N.md`
@@ -56,9 +83,9 @@ infrastructure level rather than patched per-phase.
 | `p1b_hemisphere/{status-1b,design-1b}.md` | 1b (1h) | Complete | — |
 | `p2_eigenspectra/{status-2,design-2}.md` | 2 | Complete | — |
 | `p2b_imaginary/{status-2b,design-2b}.md` | 2b *(reconciled from "2i" — see status-2b.md)* | Complete | — |
-| `p2c_churchland/{status-2c,design-2c}.md` | 2c | **Complete** | README header says "Not started" — **stale, contradicted by results**. |
-| `p3_crosscoder/{status-3,design-3}.md` | 3 | Complete, **frozen-for-deletion** (v2) | Null result. Reintroduction trigger stated precisely — see status-3.md. |
-| `p4_mstate_features/{status-4,design-4}.md` | 4 | Complete | `low_rank_ae.py` frozen-for-deletion alongside Phase 3, despite being this phase's one positive result. |
+| `p2c_churchland/{status-2c,design-2c}.md` | 2c | **Out of scope (2026-07-18)** | Previously claimed "Complete" here — unverified against this project's source, and moot now: not being looked into regardless of whether that source arrives. |
+| `p3_crosscoder/{status-3,design-3}.md` | 3 | **Out of scope (2026-07-18)**, frozen-for-deletion (v2) regardless | Same correction as 2c. Freeze/reintroduction-trigger wording (below) still holds if this is ever revisited. |
+| `p4_mstate_features/{status-4,design-4}.md` | 4 | **Out of scope (2026-07-18)** | Same correction as 2c. `low_rank_ae.py` frozen-for-deletion wording still holds if revisited. |
 | `p5_single_mstate_analysis/{status-5,design-5}.md` | 5 | Complete, partially blocked | 6 code-level blockers; 2 reclassified as "artifact-contract class" (v2). |
 | `p5b_manifold_steering/{status-5b,design-5b}.md` | 5b | Not started (execution) | Code and tests built, never run. |
 | `p5c_unclustered/{status-5c,design-5c}.md` | 5c | Not started (causal); preliminary correlational only | **v2 reframe: this phase's object of study is now the project's** — read status-5c.md first. |
@@ -85,9 +112,13 @@ that lands).
 - The actual file split/move into each phase's real directory, or writing `PREDICTIONS.md`
   into the actual repo root — this is drafted content, ready to drop in. Nothing has been
   written back to `/mnt/project`, which is read-only.
+- **Phase 2c/3/4 doc drop-in — will not happen.** Per the 2026-07-18 decision above, these
+  three are out of scope; whatever was drafted for them previously stays undropped, and no
+  further work should go into recovering or verifying it unless that decision changes.
 - `FROZEN.md` for Phase 3 / `low_rank_ae.py` (v2 item 4, separate from this item) — the
   precise wording and reintroduction trigger are drafted in each phase's `status`/`design`
-  doc, but the actual `FROZEN.md` files aren't written yet.
+  doc, but the actual `FROZEN.md` files aren't written yet. Also on hold per the out-of-scope
+  decision — no urgency to write it while Phase 3/4 aren't being touched either way.
 - Correcting the stale "Not started" headers in the actual `readme-phase2c.md` /
   `README_phase6.md` files, or deleting those files in favor of the split.
 - Renaming the on-disk `phase2i_results.json` / `phase2i_summary.txt` artifacts to match the

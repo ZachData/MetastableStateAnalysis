@@ -1,3 +1,4 @@
+<!-- p5_single_mstate_analysis/status-5.md -->
 # Phase 5 — STATUS
 
 **Last verified:** not recorded in source (after Phase 4, 2026-05-04)
@@ -43,6 +44,52 @@ infrastructure (item 2, `core/artifacts.py`) declares each phase's output contra
 has every consumer import those constants, which is meant to kill this bug *class*, not just
 these two instances. Don't fix these as isolated one-offs before that lands — check whether
 the artifact contract module already resolves them first.
+
+**Deferred, not current work (2026-07-18).** Everything below is built and pure-tested but
+sitting unused — active work is Phase 2, not Phase 5. See INDEX.md's "Current priority."
+Revisit (and run the smoke tier) once Phase 5 work actually resumes.
+
+## v2 follow-up: causal_tests.py migration — DONE (item 3 aftermath, closed)
+
+Item 3 delivered `core/intervention.py` (`run_model_with_hook`,
+`next_token_kl`/`next_token_kl_all_positions`); the consumer-side work that was left
+described-but-undone is now done:
+
+1. **`ablate_head`, `steer_residual`, `patch_activation` now dispatch per architecture.**
+   Standard per-layer models (GPT-2, GPT-NeoX/Pythia, both bare and LM-head wrappers) route
+   through `run_model_with_hook` via `forward_pre` hooks on the target block / attention
+   projection; ALBERT keeps `_run_albert_with_hook` unchanged (the standard HF forward has
+   no parameter for running a shared layer more times than `config.num_hidden_layers`, which
+   extended-iteration ALBERT requires). Dispatch is `_use_legacy_albert_path` — ALBERT by
+   class name, everything else standard. GPT-NeoX gains real support in the process
+   (`_locate_blocks`, `_block_attn_projection` know `gpt_neox.layers` / `attention.dense`);
+   the legacy loop never handled it at all. Return contract unchanged
+   (`trajectory, attentions, tokens`, embedding at index 0). One documented difference on the
+   standard path: the final trajectory entry is post-ln_f (matching `core/models.py`'s
+   extraction convention, i.e. what Phase 1 labels were built on) where the manual GPT-2
+   loop recorded pre-ln_f.
+2. **The LM-head registry gap is closed: `core/lm_loading.py`.** `load_causal_lm(model_name)`
+   resolves the same registry keys (`MODEL_CONFIGS` + `build_pythia_model_configs()`) to the
+   `ForCausalLM` variant at the same repo id and pinned HF revision as the bare load — so the
+   logits-bearing model is provably the same checkpoint the extraction analyzed. Masked-LM
+   entries are refused (the runner's loss is the shifted causal convention; a ForMaskedLM
+   load would silently compute the wrong number). `random_init` entries are refused with a
+   pointer to `load_causal_lm_from_state_dict`, which rebuilds the LM-head architecture and
+   overwrites the transformer body with the extraction pipeline's actual randomized weights —
+   re-randomizing inside the loader would produce a *different* random model than the one the
+   geometric results describe. Head caveat stated in its docstring: untied heads (Pythia
+   `embed_out`) stay trained while the body is random — correct for a trained-vs-random
+   readout contrast (identical head both arms), but not "a fully random causal LM."
+3. **Group E's tuned-lens-untrained bug (blocker 4, above) still does not reach the
+   dual-reading primitive** — `semantic_reading` calls frozen-head decode directly. Unchanged;
+   flag again if a tuned-lens mode is ever wired in.
+
+Verification: pure-logic pieces (dispatch helpers, block/projection locators,
+`resolve_lm_entry` with injected registries) run for real —
+`tests/test_item_completion_pure.py`, 16/16 passing in a torch-free environment. Everything
+touching a live model is in `tests/test_item_completion_smoke.py` (project smoke convention,
+`SMOKE_REAL_DEPS=1`, tiny-random GPT-2 + GPT-NeoX), written but not executed here — no
+torch/network in the sandbox. Run it before trusting the standard path in a pipeline.
 
 ## Not yet done
 

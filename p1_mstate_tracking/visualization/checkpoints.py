@@ -1,5 +1,5 @@
 """
-visualization/checkpoints.py
+p1_mstate_tracking/visualization/checkpoints.py
 
 Checkpoint-sweep conventions (transition plan v2, item 7). Pure string /
 dict / axis logic — no file I/O beyond what series.py extractors already
@@ -25,6 +25,13 @@ The metric registry at the bottom is the single source of truth for
 which per-layer series get swept/heatmapped/distance-measured — one
 entry here adds the metric to all three figure classes at once, the same
 way SERIES_EXTRACTORS works in random_aggregate.py.
+
+Maybe later, not current work (2026-07-18): the plan's "cheap SLT anchor"
+(per-checkpoint training loss + per-layer weight norms) would show up
+here as two more METRIC registry entries if it's ever added — scalar,
+same shape as everything else this file already sweeps. Not added now;
+current checkpoint runs use known-event anchors directly rather than the
+dense pilot sweep this was meant to support. See status-2.md.
 """
 
 import re

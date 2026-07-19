@@ -1,5 +1,5 @@
 """
-causal_tests.py — Group F: causal interventions.
+p5_single_mstate_analysis/causal_tests.py — Group F: causal interventions.
 
 Intervenes on a live forward pass and measures the effect on:
   - Cluster cohesion (mass-near-1 within cluster)
@@ -152,7 +152,100 @@ def _run_albert_with_hook(
     return np.stack(traj), np.stack(attns) if attns else None, tokens
 
 # ---------------------------------------------------------------------------
-# Intervention implementations (ALBERT; per-layer models TODO)
+# Per-architecture dispatch (transition plan v2, item-3 follow-up)
+#
+# Standard per-layer models (GPT-2, GPT-NeoX/Pythia) route through
+# core.intervention.run_model_with_hook — the merged runner, which also
+# makes logits/loss available to Group D callers. ALBERT keeps
+# _run_albert_with_hook: the standard HF forward has no parameter for
+# running a shared layer more times than config.num_hidden_layers, which
+# is exactly what the extended-iteration methodology requires. The legacy
+# path is NOT deleted; it is the ALBERT branch of this dispatch.
+# ---------------------------------------------------------------------------
+
+def _use_legacy_albert_path(model) -> bool:
+    """True iff this model must run through _run_albert_with_hook.
+
+    Decided by class name (no transformers import needed): any Albert*
+    model — extended iterations are only defined there, and keeping ALL
+    ALBERT runs on the proven manual loop means its results stay
+    byte-identical to prior output rather than depending on iteration
+    count. Everything else (GPT2*, GPTNeoX*, ...) takes the standard
+    runner.
+    """
+    return "Albert" in type(model).__name__
+
+
+def _locate_blocks(model):
+    """The per-layer transformer block list for a standard model.
+
+    Handles both bare and LM-head wrappers:
+      GPT2Model.h / GPT2LMHeadModel.transformer.h
+      GPTNeoXModel.layers / GPTNeoXForCausalLM.gpt_neox.layers
+    """
+    for path in (("transformer", "h"), ("h",), ("gpt_neox", "layers"), ("layers",)):
+        obj = model
+        for attr in path:
+            obj = getattr(obj, attr, None)
+            if obj is None:
+                break
+        if obj is not None:
+            return list(obj)
+    raise ValueError(
+        f"Could not locate transformer blocks on {type(model).__name__}; "
+        "expected .transformer.h/.h (GPT-2) or .gpt_neox.layers/.layers (GPT-NeoX)."
+    )
+
+
+def _block_attn_projection(block):
+    """(projection_module, head_dim) for a standard block's attention
+    output projection — the GPT-NeoX-aware sibling of
+    _attn_output_projection below (which serves the legacy hook_fn path).
+
+      GPT2Block:    block.attn.c_proj,       head_dim = attn.head_dim
+      GPTNeoXLayer: block.attention.dense,   head_dim = attention.head_size
+    """
+    if hasattr(block, "attn") and hasattr(block.attn, "c_proj"):
+        return block.attn.c_proj, block.attn.head_dim
+    if hasattr(block, "attention") and hasattr(block.attention, "dense"):
+        attn = block.attention
+        head_dim = getattr(attn, "head_size", None) or getattr(attn, "head_dim", None)
+        if head_dim is None:
+            head_dim = attn.hidden_size // attn.num_attention_heads
+        return attn.dense, head_dim
+    raise ValueError(
+        f"Could not locate attention projection on {type(block).__name__}."
+    )
+
+
+def _run_standard_with_hooks(model, tokenizer, prompt_text: str, hooks: list):
+    """Standard-path forward via the merged runner, adapted to this
+    module's legacy (trajectory, attentions, tokens) return contract.
+
+    trajectory includes the embedding at index 0 — same as
+    _run_albert_with_hook's own convention (both branches append the
+    post-embedding hidden state before the layer loop) and
+    core/models.py's extraction convention. One documented difference
+    from the legacy GPT-2 branch: the final trajectory entry is the
+    standard forward's post-ln_f hidden state, where the manual loop
+    recorded the last block's pre-ln_f output — matching core/models.py
+    (which every Phase 1 label array came from) rather than the manual
+    loop.
+    """
+    from core.intervention import run_model_with_hook
+
+    device = str(next(model.parameters()).device)
+    result = run_model_with_hook(
+        model, tokenizer, prompt_text, hooks=hooks, device=device,
+    )
+    traj  = np.stack(result["activations"])
+    attns = np.stack(result["attentions"]) if result["attentions"] else None
+    return traj, attns, result["tokens"]
+
+
+# ---------------------------------------------------------------------------
+# Intervention implementations (ALBERT via legacy loop; standard models
+# via core.intervention — see dispatch above)
 # ---------------------------------------------------------------------------
 
 def _attn_submodule(layer):
@@ -208,6 +301,23 @@ def ablate_head(
             return (x,)
         return _hook
 
+    if not _use_legacy_albert_path(model):
+        # Standard path: the target layer's own projection module is
+        # invoked exactly once per forward pass in a per-layer model, so
+        # the hook needs no step gating — attaching it to that layer's
+        # projection IS the layer selection.
+        blocks = _locate_blocks(model)
+        proj, head_dim = _block_attn_projection(blocks[target_layer])
+        raw = _make_zero_hook(head_ids, head_dim)
+
+        def _pre_hook(module, inputs):
+            return raw(module, inputs)
+
+        return _run_standard_with_hooks(
+            model, tokenizer, prompt_text,
+            hooks=[{"module": proj, "hook_fn": _pre_hook, "type": "forward_pre"}],
+        )
+
     def hook_fn(step, hidden, layer):
         if step == target_layer:
             if state["handle"] is None:
@@ -243,6 +353,24 @@ def steer_residual(
     device = next(model.parameters()).device
     dir_t = torch.from_numpy(direction.astype(np.float32)).to(device)
 
+    if not _use_legacy_albert_path(model):
+        # Standard path: forward_pre hook on the target block modifies
+        # its input hidden state — same "before the layer computes its
+        # update" semantics as the legacy loop's pre-layer hook_fn call.
+        blocks = _locate_blocks(model)
+
+        def _pre_hook(module, inputs):
+            h = inputs[0].clone()
+            for t in token_indices:
+                h[0, t] = h[0, t] + alpha * dir_t.to(h.dtype)
+            return (h,) + tuple(inputs[1:])
+
+        return _run_standard_with_hooks(
+            model, tokenizer, prompt_text,
+            hooks=[{"module": blocks[target_layer], "hook_fn": _pre_hook,
+                    "type": "forward_pre"}],
+        )
+
     def hook_fn(step, hidden, albert_layer):
         if step == target_layer:
             hidden = hidden.clone()
@@ -265,6 +393,20 @@ def patch_activation(
     torch = _torch()
     device = next(model.parameters()).device
     rep_t = torch.from_numpy(replacement_vector.astype(np.float32)).to(device)
+
+    if not _use_legacy_albert_path(model):
+        blocks = _locate_blocks(model)
+
+        def _pre_hook(module, inputs):
+            h = inputs[0].clone()
+            h[0, token_idx] = rep_t.to(h.dtype)
+            return (h,) + tuple(inputs[1:])
+
+        return _run_standard_with_hooks(
+            model, tokenizer, prompt_text,
+            hooks=[{"module": blocks[target_layer], "hook_fn": _pre_hook,
+                    "type": "forward_pre"}],
+        )
 
     def hook_fn(step, hidden, albert_layer):
         if step == target_layer:

@@ -39,6 +39,19 @@ confirm one model (albert-xlarge-v2 only) has been run. Treat header as stale.
    measurements — same projector, 49 activation snapshots from the same shared OV weights.
    Result is weaker evidence than it would be for a non-weight-tied model.
 
+7. **`dissociation.py::run_intervened_forward` not migrated to `core/intervention.py`'s
+   `run_model_with_hook` (item 3, complete).** The safe half of that migration — one
+   architecture, no ALBERT dispatch, unlike `causal_tests.py`'s — described but not done.
+   Migrating it also fixes a latent embedding-index mismatch as a side effect:
+   `dissociation.py` currently skips the embedding layer (`hidden_states[1:]`), while
+   `core/models.py`'s own extraction functions (and `run_model_with_hook`) include it at
+   index 0. This was internally consistent within `dissociation.py` alone (baseline and
+   intervention runs were always compared to each other, never to externally-supplied
+   labels), but is a real misalignment risk if `ctx["baseline_labels"]` is ever supplied
+   from genuine Phase 1 output. Note this does not by itself fix blocker 2 above
+   (`model`/`tokenizer`/`text`/`hook_targets` not threaded into `ctx`) — that's separate
+   wiring work in `run_6.py`.
+
 ## Not yet done
 
 - Re-run with Track A prerequisites fixed, before drawing further conclusions from R2/R4.
@@ -47,3 +60,5 @@ confirm one model (albert-xlarge-v2 only) has been run. Treat header as stale.
   read as a real functional-separation failure rather than an ALBERT artifact.
 - Falsification-table retrofit not needed here — this phase already has one (12-row table
   in the README), unlike Phases 1/2/5.
+- Migrate `dissociation.py` onto `run_model_with_hook` (blocker 7) — lower risk than
+  `causal_tests.py`'s migration, no dispatch logic needed.
