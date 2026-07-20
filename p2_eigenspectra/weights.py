@@ -59,6 +59,20 @@ def _detect_model_type(model) -> str:
     transformer = getattr(model, "transformer", model)
     if hasattr(transformer, "h"):
         return "gpt2"
+    # GPT-NeoX / Pythia — unwrapped (GPTNeoXModel, blocks at model.layers) or
+    # wrapped (GPTNeoXForCausalLM, blocks at model.gpt_neox.layers). The fused
+    # query_key_value module is the distinguishing attribute — BERT also has
+    # `.layers`-shaped encoders, so check the attention structure, not just
+    # the block list. (Transition plan v2, item 5: Pythia model support.)
+    inner_neox = getattr(model, "gpt_neox", model)
+    if hasattr(inner_neox, "layers"):
+        try:
+            first = inner_neox.layers[0]
+        except (IndexError, TypeError):
+            first = None
+        if first is not None and hasattr(first, "attention") \
+                and hasattr(first.attention, "query_key_value"):
+            return "gptneox"
     # BERT — unwrapped or wrapped
     inner_bert = getattr(model, "bert", model)
     if hasattr(inner_bert, "encoder") and hasattr(inner_bert.encoder, "layer"):
@@ -66,6 +80,23 @@ def _detect_model_type(model) -> str:
     raise ValueError(
         f"_detect_model_type: unrecognised architecture {type(model).__name__}"
     )
+
+
+def _gptneox_layers(model):
+    """Block list for either GPTNeoXModel (.layers) or a wrapped variant
+    (.gpt_neox.layers) — same both-forms pattern _detect_model_type uses."""
+    return getattr(model, "gpt_neox", model).layers
+
+
+def _is_gptneox_name(model_name: str) -> bool:
+    """Name-based dispatch guard, consistent with the existing
+    '"gpt2" in model_name' style used by extract_ov_circuit /
+    extract_qk_spectrum. Covers every registry key the Pythia registry
+    generates ("pythia-410m-step{N}", "pythia-1.4b-step{N}",
+    "pythia-1.4b-random") plus the tiny smoke checkpoint
+    ("hf-internal-testing/tiny-random-GPTNeoXForCausalLM")."""
+    low = model_name.lower()
+    return "pythia" in low or "neox" in low
 
 # ---------------------------------------------------------------------------
 # OV extraction
@@ -106,6 +137,11 @@ def extract_ov_circuit(model, model_name: str) -> dict:
 
     if cfg["is_albert"]:
         return _extract_albert_ov(model, model_name)
+    elif _is_gptneox_name(model_name):
+        # Checked before the "bert" substring test on purpose — harmless
+        # today, but a future registry key like "pythia-bert-distill"
+        # would otherwise silently take the BERT branch.
+        return _extract_gptneox_ov(model, model_name)
     elif "bert" in model_name:
         return _extract_bert_ov(model, model_name)
     elif "gpt2" in model_name:
@@ -167,6 +203,82 @@ def _extract_bert_ov(model, model_name: str) -> dict:
             W_V_h = W_V[s:e, :]
             W_O_h = W_O[:, s:e]
             OV_h  = W_V_h.T @ W_O_h.T
+            per_head.append(OV_h)
+
+        all_ov_total.append(sum(per_head))
+        all_ov_per_head.append(per_head)
+        layer_names.append(f"layer_{i}")
+
+    return {
+        "ov_total":     all_ov_total,
+        "ov_per_head":  all_ov_per_head,
+        "d_model":      d_model,
+        "d_head":       d_head,
+        "n_heads":      n_heads,
+        "layer_names":  layer_names,
+        "is_per_layer": True,
+    }
+
+
+def _extract_gptneox_ov(model, model_name: str) -> dict:
+    """
+    GPT-NeoX / Pythia per-layer OV extraction.
+
+    Two differences from the other branches, neither of which changes the
+    OV math:
+
+    1. V does not exist as its own module — it's the third block of the
+       fused `attention.query_key_value` Linear, and the fused layout is
+       interleaved PER HEAD ([Q_h|K_h|V_h] contiguous per head), not per
+       projection like GPT-2's c_attn. `core.pythia_weights.
+       split_qkv_gptneox` (oracle-tested in tests/test_pythia_qkv_split.py)
+       handles that; a naive `weight[2d:, :]` slice here would silently
+       scramble heads.
+
+    2. Both the recovered V and `attention.dense` (the output projection)
+       are nn.Linear, stored (out_features, in_features) — the same
+       convention as ALBERT/BERT, NOT GPT-2's Conv1D. So the per-head
+       row-vector OV formula is the ALBERT/BERT one:
+
+           v_h   = x @ W_V[s:e, :].T                (n, d_head)
+           out_h = v_h @ W_O[:, s:e].T              (n, d_model)
+           OV_h  = W_V[s:e, :].T @ W_O[:, s:e].T    (d_model, d_model)
+
+       with s:e the head-h row block of the split V and the head-h column
+       block of W_O.T's input axis. Verified against a brute-force forward
+       simulation in tests/test_phase2_weights_gptneox.py.
+    """
+    # Deferred import: core.pythia_weights imports torch at module level;
+    # keeping it out of this module's top-level imports preserves
+    # weights.py's importability under the stubbed (torch-free) test
+    # session, matching the project's existing deferred-import pattern.
+    from core.pythia_weights import split_qkv_gptneox
+
+    all_ov_total    = []
+    all_ov_per_head = []
+    layer_names     = []
+    d_model = n_heads = d_head = None
+
+    for i, layer in enumerate(_gptneox_layers(model)):
+        attn    = layer.attention
+        n_heads = attn.num_attention_heads
+        d_head  = attn.head_size
+
+        qkv = split_qkv_gptneox(
+            attn.query_key_value.weight, num_heads=n_heads, head_size=d_head,
+        )
+        W_V = qkv["V"]                                        # (n_heads*d_head, d_model), Linear (out, in)
+        W_O = attn.dense.weight.detach().cpu().float().numpy()  # (d_model, d_model), Linear (out, in)
+
+        d_model = W_V.shape[1]
+
+        per_head = []
+        for h in range(n_heads):
+            s = h * d_head
+            e = s + d_head
+            W_V_h = W_V[s:e, :]           # (d_head, d_model) — rows of split V
+            W_O_h = W_O[:, s:e]           # (d_model, d_head) — cols of O weight
+            OV_h  = W_V_h.T @ W_O_h.T     # (d_model, d_model), row-vector x @ OV_h
             per_head.append(OV_h)
 
         all_ov_total.append(sum(per_head))
@@ -420,6 +532,8 @@ def extract_qk_spectrum(model, model_name: str) -> dict:
 
     if cfg["is_albert"]:
         return _qk_albert(model)
+    elif _is_gptneox_name(model_name):
+        return _qk_gptneox(model)
     elif "bert" in model_name:
         return _qk_bert(model)
     elif "gpt2" in model_name:
@@ -471,6 +585,38 @@ def _qk_bert(model) -> dict:
             Q_h = W_Q[s:e, :]
             K_h = W_K[s:e, :]
             QK  = Q_h @ K_h.T
+            norms.append(float(svdvals(QK)[0]))
+        all_norms.append(norms)
+        layer_names.append(f"layer_{i}")
+
+    return {"qk_spectral_norms": all_norms, "layer_names": layer_names}
+
+
+def _qk_gptneox(model) -> dict:
+    """Per-layer per-head spectral norm of Q_h K_h^T for GPT-NeoX/Pythia.
+
+    Q and K come out of split_qkv_gptneox in the same nn.Linear
+    (out, in) orientation as ALBERT/BERT's separate query/key modules, so
+    the per-head math below mirrors _qk_bert exactly."""
+    from core.pythia_weights import split_qkv_gptneox  # deferred: torch
+
+    all_norms   = []
+    layer_names = []
+    for i, layer in enumerate(_gptneox_layers(model)):
+        attn    = layer.attention
+        n_heads = attn.num_attention_heads
+        d_head  = attn.head_size
+        qkv = split_qkv_gptneox(
+            attn.query_key_value.weight, num_heads=n_heads, head_size=d_head,
+        )
+        W_Q, W_K = qkv["Q"], qkv["K"]        # each (n_heads*d_head, d_model)
+
+        norms = []
+        for h in range(n_heads):
+            s, e = h * d_head, (h + 1) * d_head
+            Q_h = W_Q[s:e, :]                # (d_head, d_model)
+            K_h = W_K[s:e, :]
+            QK  = Q_h @ K_h.T                # (d_head, d_head)
             norms.append(float(svdvals(QK)[0]))
         all_norms.append(norms)
         layer_names.append(f"layer_{i}")
@@ -610,6 +756,40 @@ def extract_qk_per_head(model, model_type: str | None = None) -> dict:
                 s, e = h * d_head, (h + 1) * d_head
                 wq_h.append(np.ascontiguousarray(WQ[s:e, :].T))  # (d_model, d_head)
                 wk_h.append(np.ascontiguousarray(WK[s:e, :].T))
+            wq_layers.append(wq_h)
+            wk_layers.append(wk_h)
+            layer_names.append(f"layer_{i}")
+
+        return {
+            "wq_per_head":  wq_layers,
+            "wk_per_head":  wk_layers,
+            "is_per_layer": True,
+            "layer_names":  layer_names,
+        }
+
+    if model_type == "gptneox":
+        # GPT-NeoX / Pythia: per-layer; fused query_key_value, per-head
+        # interleaved layout — split first, then the nn.Linear
+        # (d_head, d_model)-slice-then-transpose orientation used by the
+        # ALBERT/BERT branches above.
+        from core.pythia_weights import split_qkv_gptneox  # deferred: torch
+
+        wq_layers, wk_layers, layer_names = [], [], []
+        for i, layer in enumerate(_gptneox_layers(model)):
+            attn    = layer.attention
+            n_heads = attn.num_attention_heads
+            d_head  = attn.head_size
+            qkv = split_qkv_gptneox(
+                attn.query_key_value.weight,
+                num_heads=n_heads, head_size=d_head,
+            )
+            W_Q, W_K = qkv["Q"], qkv["K"]    # each (n_heads*d_head, d_model)
+
+            wq_h, wk_h = [], []
+            for h in range(n_heads):
+                s, e = h * d_head, (h + 1) * d_head
+                wq_h.append(np.ascontiguousarray(W_Q[s:e, :].T))  # (d_model, d_head)
+                wk_h.append(np.ascontiguousarray(W_K[s:e, :].T))
             wq_layers.append(wq_h)
             wk_layers.append(wk_h)
             layer_names.append(f"layer_{i}")

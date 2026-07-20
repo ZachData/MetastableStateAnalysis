@@ -198,7 +198,7 @@ def measure_induction_score(
             if s > 0:
                 scores.append(s)
 
-    return float(np.mean(scores)) if scores else 0.0
+    return float(np.mean(scores)) if scores else None
 
 
 # ---------------------------------------------------------------------------
@@ -251,17 +251,29 @@ def measure_cluster_structure(
 _MIN_BASELINE_IND = 0.02   # matches p6_dd1_ind_drops threshold (> 0.02)
 
 
-def _check_baseline_induction(baseline_ind: float) -> str | None:
+def _check_baseline_induction(baseline_ind: float | None) -> str | None:
     """
     Return an INDETERMINATE reason string if the baseline induction score is
-    too low to produce a meaningful DD1 verdict, otherwise None.
+    too low (or absent) to produce a meaningful DD1 verdict, otherwise None.
 
     Bug DD1-2: run_dissociation has no guard against a near-zero baseline.
     ind_drop = baseline_ind - ind_after_zero_imag can never exceed
     baseline_ind, so if baseline_ind < _MIN_BASELINE_IND the p6_dd1_ind_drops
     condition (drop > 0.02) is structurally unsatisfiable — any FAIL verdict
     is uninformative.
+
+    FIX-DS1 companion: measure_induction_score now returns None (not 0.0)
+    when there are no positive induction scores at all. None is below any
+    numeric threshold, so it must be checked explicitly before the
+    `< _MIN_BASELINE_IND` comparison, which raises TypeError on None.
     """
+    if baseline_ind is None:
+        return (
+            "baseline_induction_score is None (no positive induction scores "
+            "found across any head/layer) — no meaningful DD1 verdict is "
+            "possible. Supply a text with repeated-token bigrams via "
+            "ctx['tokens'] or --prompt."
+        )
     if baseline_ind < _MIN_BASELINE_IND:
         return (
             f"baseline_induction_score={baseline_ind:.4f} is below the "
@@ -325,7 +337,9 @@ def run_dissociation(ctx: dict) -> SubResult:
     indeterminate_reason = _check_baseline_induction(baseline_ind)
     if indeterminate_reason:
         payload = {
-            "baseline_induction_score": float(baseline_ind),
+            "baseline_induction_score": (
+                float(baseline_ind) if baseline_ind is not None else None
+            ),
             "p6_dd1_satisfied":         None,
             "p6_dd2_satisfied":         None,
             "indeterminate_reason":     indeterminate_reason,
@@ -367,7 +381,14 @@ def run_dissociation(ctx: dict) -> SubResult:
     interv1   = run_intervened_forward(
         model, tokenizer, text, hook_imag, hook_targets, device
     )
+    # FIX-DS1 companion: measure_induction_score may now return None (no
+    # positive scores at all — a real, informative outcome for DD1, since
+    # zeroing the imaginary channel is *predicted* to erase induction).
+    # None is treated as 0.0 here: arithmetically equivalent to "induction
+    # fully gone" for the drop/preservation checks below, without losing
+    # the distinction where it matters (the baseline gate above).
     ind_after_zero_imag = measure_induction_score(interv1["attentions"], token_ids)
+    ind_after_zero_imag = 0.0 if ind_after_zero_imag is None else ind_after_zero_imag
     clust_after_zero_imag = measure_cluster_structure(
         interv1["activations"], baseline_labels_per_layer
     )
@@ -378,6 +399,7 @@ def run_dissociation(ctx: dict) -> SubResult:
         model, tokenizer, text, hook_real, hook_targets, device
     )
     ind_after_zero_real = measure_induction_score(interv2["attentions"], token_ids)
+    ind_after_zero_real = 0.0 if ind_after_zero_real is None else ind_after_zero_real
     clust_after_zero_real = measure_cluster_structure(
         interv2["activations"], baseline_labels_per_layer
     )
@@ -388,6 +410,7 @@ def run_dissociation(ctx: dict) -> SubResult:
         model, tokenizer, text, hook_rand, hook_targets, device
     )
     ind_after_rand  = measure_induction_score(interv3["attentions"], token_ids)
+    ind_after_rand  = 0.0 if ind_after_rand is None else ind_after_rand
     clust_after_rand = measure_cluster_structure(
         interv3["activations"], baseline_labels_per_layer
     )

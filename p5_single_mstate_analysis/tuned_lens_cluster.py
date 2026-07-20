@@ -66,14 +66,37 @@ def frozen_head_decode(
     v = v.to(next(model.parameters()).device)
 
     with torch.no_grad():
-        # Find the unembedding path
+        # Find the unembedding path.
+        #
+        # "embed_out" is GPT-NeoX/Pythia's untied unembedding
+        # (GPTNeoXForCausalLM) — the plan's item-5 embed_out audit target.
+        # It's a bare nn.Linear with no layernorm of its own, so
+        # gpt_neox.final_layer_norm is applied first below; skipping it
+        # would decode a vector the head was never trained to read.
+        # (The GPT-2 lm_head path has the analogous ln_f question and
+        # does NOT apply it — pre-existing convention underlying every
+        # existing Group E result, left unchanged deliberately. A bare
+        # GPTNeoXModel from the registry has no embed_out at all and
+        # still raises below — load the ForCausalLM variant via
+        # core.lm_loading.load_causal_lm for decode work.)
         head = None
-        for attr in ("predictions", "lm_head", "cls"):
+        head_attr = None
+        for attr in ("predictions", "lm_head", "cls", "embed_out"):
             if hasattr(model, attr):
                 head = getattr(model, attr)
+                head_attr = attr
                 break
         if head is None:
-            raise RuntimeError("No LM head found on model")
+            raise RuntimeError(
+                "No LM head found on model (checked predictions, lm_head, "
+                "cls, embed_out). Bare registry models have no head — use "
+                "core.lm_loading.load_causal_lm."
+            )
+        if head_attr == "embed_out":
+            inner = getattr(model, "gpt_neox", model)
+            ln = getattr(inner, "final_layer_norm", None)
+            if ln is not None:
+                v = ln(v)
         # ALBERT's predictions returns logits directly given hidden states
         try:
             logits = head(v)

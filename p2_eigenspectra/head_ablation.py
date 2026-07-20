@@ -1,5 +1,6 @@
 """
-head_ablation.py — Per-head OV ablation at violation layers (GPT-2).
+head_ablation.py — Per-head OV ablation at violation layers
+(GPT-2 and GPT-NeoX/Pythia).
 
 Tests the causal claim: if V's repulsive eigenstructure causes violations,
 then ablating (zeroing) the most repulsive heads should reduce violation
@@ -22,7 +23,7 @@ hook (``decompose.save_decomposed_per_head``).  This module provides:
 
 Functions
 ---------
-save_decomposed_per_head         : save per-head attn deltas (GPT-2 only)
+save_decomposed_per_head         : save per-head attn deltas (GPT-2, GPT-NeoX)
 ablate_head_at_violation         : counterfactual energy for one head
 run_head_ablation                : full per-violation ablation analysis
 print_head_ablation_summary      : terminal output
@@ -36,6 +37,91 @@ from pathlib import Path
 # Per-head hook extraction (GPT-2)
 # ---------------------------------------------------------------------------
 
+def _locate_attn_projection(model):
+    """
+    Per-architecture locator for the attention blocks and the output
+    projection whose INPUT is the concatenated per-head attention output.
+
+    Returns
+    -------
+    (blocks, get_proj, get_heads, conv1d) where
+      blocks    : iterable of transformer blocks
+      get_proj  : block -> output-projection module (hook target)
+      get_heads : block -> (n_heads, d_head)
+      conv1d    : True  -> GPT-2 Conv1D convention, weight (in, out),
+                           map y = x @ W;   head h rows  W[s:e, :]
+                  False -> nn.Linear convention, weight (out, in),
+                           map y = x @ W.T; head h slice W[:, s:e].T
+    In both conventions the pre-projection tensor has head h at columns
+    [h*d_head:(h+1)*d_head] — standard contiguous concat — so only the
+    weight-slice orientation differs. Mirrors the dispatch
+    p5_single_mstate_analysis/causal_tests.py's _block_attn_projection
+    already uses for the same two architectures.
+    """
+    # GPT-2: unwrapped (GPT2Model, blocks at model.h) or wrapped
+    # (model.transformer.h)
+    transformer = getattr(model, "transformer", model)
+    if hasattr(transformer, "h"):
+        blocks = transformer.h
+
+        def get_proj(block):
+            return block.attn.c_proj
+
+        def get_heads(block):
+            n_h = block.attn.num_heads
+            d_m = block.attn.c_proj.weight.shape[1]   # Conv1D: (in, out)
+            return n_h, d_m // n_h
+
+        return blocks, get_proj, get_heads, True
+
+    # GPT-NeoX / Pythia: unwrapped (GPTNeoXModel, blocks at model.layers)
+    # or wrapped (model.gpt_neox.layers)
+    inner = getattr(model, "gpt_neox", model)
+    if hasattr(inner, "layers") and len(inner.layers) \
+            and hasattr(inner.layers[0], "attention") \
+            and hasattr(inner.layers[0].attention, "query_key_value"):
+        blocks = inner.layers
+
+        def get_proj(block):
+            return block.attention.dense
+
+        def get_heads(block):
+            attn = block.attention
+            return attn.num_attention_heads, attn.head_size
+
+        return blocks, get_proj, get_heads, False
+
+    raise NotImplementedError(
+        f"save_decomposed_per_head: unsupported architecture "
+        f"{type(model).__name__} — GPT-2 and GPT-NeoX/Pythia only. "
+        f"ALBERT/BERT are out of the forward path per the transition "
+        f"plan's Pythia-only scope decision."
+    )
+
+
+def head_delta_from_projection(pre: "np.ndarray", W: "np.ndarray",
+                               h: int, d_head: int, conv1d: bool) -> "np.ndarray":
+    """
+    Head h's residual-stream contribution from the pre-projection tensor.
+
+    pre : (n_tokens, d_model) concatenated head outputs (input to the
+          output projection), head h at columns [h*d_head:(h+1)*d_head].
+    W   : the output projection's raw .weight —
+          Conv1D (d_model, d_model), map x @ W          (conv1d=True)
+          Linear (d_model, d_model), map x @ W.T        (conv1d=False)
+
+    Pure numpy — the exactness property Σ_h head_delta_h == full
+    projection output is verified in tests/test_head_ablation_math.py.
+    """
+    s, e = h * d_head, (h + 1) * d_head
+    head_pre = pre[:, s:e]                       # (n_tokens, d_head)
+    if conv1d:
+        W_O_h = W[s:e, :]                        # (d_head, d_model)
+    else:
+        W_O_h = W[:, s:e].T                      # (d_head, d_model)
+    return head_pre @ W_O_h                      # (n_tokens, d_model)
+
+
 def save_decomposed_per_head(
     model,
     tokenizer,
@@ -43,20 +129,18 @@ def save_decomposed_per_head(
     run_dir: Path,
 ) -> None:
     """
-    Extract and save per-head attention output deltas for GPT-2.
+    Extract and save per-head attention output deltas (GPT-2, GPT-NeoX).
 
-    For each GPT-2 block, captures the per-head attention output BEFORE
-    the output projection c_proj.  The output projection mixes heads; we
-    need pre-projection outputs to isolate each head's contribution to the
-    residual stream.
-
-    The per-head residual contribution is:
+    For each block, captures the per-head attention output BEFORE the
+    output projection (c_proj for GPT-2, attention.dense for GPT-NeoX).
+    The output projection mixes heads; pre-projection outputs are needed
+    to isolate each head's contribution to the residual stream:
 
         head_delta_h = head_out_h @ W_O_h
 
-    where head_out_h ∈ R^{n_tokens × d_head} is the attention output for
-    head h and W_O_h ∈ R^{d_head × d_model} is the corresponding slice of
-    the output projection.
+    where head_out_h ∈ R^{n_tokens × d_head} is head h's slice of the
+    projection input and W_O_h is the matching slice of the projection
+    weight (orientation per architecture — see head_delta_from_projection).
 
     Saves
     -----
@@ -73,113 +157,59 @@ def save_decomposed_per_head(
         text, return_tensors="pt", truncation=True, max_length=512
     ).to(DEVICE)
 
-    # Storage: per-layer, per-head outputs (before c_proj)
-    # head_outputs[layer][head] = (n_tokens, d_head) tensor
-    head_outputs_by_layer = []
+    blocks, get_proj, get_heads, conv1d = _locate_attn_projection(model)
+
+    # Capture the input to each block's output projection — the
+    # concatenated pre-mix head outputs.
+    pre_proj_by_layer = []   # pre_proj[layer] = [(n_tokens, d_model)]
     hooks = []
 
-    for block_idx, block in enumerate(model.h):
-        layer_heads = []
-        head_outputs_by_layer.append(layer_heads)
-
-        # We hook on block.attn to capture q, k, v and attention weights
-        # then manually compute per-head outputs.
-        # GPT-2 stores W_O as c_proj.weight: (d_model, d_model) Conv1D
-        # where each head's slice is c_proj.weight[h*d_h:(h+1)*d_h, :]
-        # in row convention (Conv1D: input @ weight).
-        n_heads = block.attn.num_heads
-        d_model = block.attn.c_proj.weight.shape[1]  # Conv1D: (in, out)
-        d_head  = d_model // n_heads
-
-        # Hook on the attention module to capture its output split by head
-        def make_hook(b_idx, n_h, d_h, layer_list):
-            def hook(module, inp, out):
-                # out[0] is the full attention output (n_tokens, d_model)
-                attn_out = out[0] if isinstance(out, tuple) else out
-                attn_out = attn_out.detach()[0].to(torch.float32).cpu()
-                # The output of c_proj is NOT split by head by default.
-                # We need the pre-c_proj attention values.
-                # Re-derive from the input to c_proj (stored in module._attn_out)
-                # GPT-2: attn_output = self_attn @ c_proj
-                # Fortunately we also hooked block.attn.c_proj (see below)
-                # For now, split the output by approximating head contributions
-                # via c_proj weight slices.
-                # This is an approximation: head_h_output ≈ full_attn_out slice
-                # split evenly — correct only if heads are ordered in d_model.
-                # Proper implementation requires hooking before c_proj.
-                heads = []
-                for h in range(n_h):
-                    # Each head h contributes to output dims [h*d_h:(h+1)*d_h] in
-                    # the d_model axis BEFORE c_proj mixes them.  After c_proj the
-                    # heads are fully mixed — we cannot cleanly separate them from
-                    # the final output.  Save the pre-c_proj values instead.
-                    # This placeholder saves None; the pre-c_proj hook below fills it.
-                    heads.append(None)
-                layer_list.append(heads)
-            return hook
-
-        hooks.append(block.attn.register_forward_hook(
-            make_hook(block_idx, n_heads, d_head, layer_heads)))
-
-    # We need the actual pre-c_proj head outputs.
-    # Replace the hook strategy: capture the input to c_proj (= pre-mix head outputs).
-    for h_obj in hooks:
-        h_obj.remove()
-    hooks.clear()
-
-    # Reset storage
-    head_outputs_by_layer.clear()
-    pre_cproj_by_layer = []  # pre_cproj[layer] = (n_tokens, d_model) pre-projection attn output
-
-    for block_idx, block in enumerate(model.h):
+    for block in blocks:
         layer_store = []
-        pre_cproj_by_layer.append(layer_store)
+        pre_proj_by_layer.append(layer_store)
 
-        def make_pre_cproj_hook(store):
+        def make_pre_proj_hook(store):
             def hook(module, inp, out):
-                # inp[0] is the input to c_proj: (batch, n_tokens, d_model)
-                # This is the concatenated head outputs before mixing.
-                pre_cproj = inp[0].detach()[0].to(torch.float32).cpu()  # (n_tokens, d_model)
-                store.append(pre_cproj)
+                # inp[0]: (batch, n_tokens, d_model) projection input
+                store.append(inp[0].detach()[0].to(torch.float32).cpu())
             return hook
 
-        hooks.append(block.attn.c_proj.register_forward_hook(
-            make_pre_cproj_hook(layer_store)))
+        hooks.append(get_proj(block).register_forward_hook(
+            make_pre_proj_hook(layer_store)))
 
     with torch.no_grad():
         with torch.autocast(device_type=DEVICE, dtype=torch.bfloat16,
                             enabled=(DEVICE == "cuda")):
-            outputs = model(**inputs, output_hidden_states=True)
+            model(**inputs, output_hidden_states=True)
 
     for h_obj in hooks:
         h_obj.remove()
 
-    # pre_cproj_by_layer[L][0] = (n_tokens, d_model) pre-projection output
-    # W_O = c_proj.weight: Conv1D shape (d_model, d_model)
-    # head h contribution = pre_cproj[:, h*d_h:(h+1)*d_h] @ W_O[h*d_h:(h+1)*d_h, :]
-    n_layers  = len(pre_cproj_by_layer)
-    n_heads   = model.h[0].attn.num_heads
-    d_model_v = model.h[0].attn.c_proj.weight.shape[1]
-    d_head_v  = d_model_v // n_heads
-    n_tokens  = pre_cproj_by_layer[0][0].shape[0] if pre_cproj_by_layer[0] else 0
+    n_layers = len(pre_proj_by_layer)
+    n_heads, d_head = get_heads(blocks[0])
+    first = next((s[0] for s in pre_proj_by_layer if s), None)
+    if first is None:
+        raise RuntimeError(
+            "save_decomposed_per_head: no projection inputs captured — "
+            "hook target never fired; check _locate_attn_projection "
+            "against this transformers version's module names."
+        )
+    n_tokens = first.shape[0]
+    d_model  = first.shape[1]
 
-    # Build per-head delta arrays: (n_layers, n_tokens, d_model) per head
-    per_head_deltas = {h: np.zeros((n_layers, n_tokens, d_model_v), dtype=np.float32)
+    per_head_deltas = {h: np.zeros((n_layers, n_tokens, d_model), dtype=np.float32)
                        for h in range(n_heads)}
 
-    for L in range(n_layers):
-        if not pre_cproj_by_layer[L]:
+    for L, (block, store) in enumerate(zip(blocks, pre_proj_by_layer)):
+        if not store:
             continue
-        pre = pre_cproj_by_layer[L][0].numpy()     # (n_tokens, d_model)
-        W_O = model.h[L].attn.c_proj.weight.detach().cpu().float().numpy()
-        # Conv1D: W_O shape (d_model, d_model), map is x @ W_O
+        pre = store[0].numpy()                                     # (n_tokens, d_model)
+        W   = get_proj(block).weight.detach().cpu().float().numpy()
         for h in range(n_heads):
-            s, e = h * d_head_v, (h + 1) * d_head_v
-            head_pre = pre[:, s:e]                  # (n_tokens, d_head)
-            W_O_h    = W_O[s:e, :]                  # (d_head, d_model)
-            per_head_deltas[h][L] = head_pre @ W_O_h  # (n_tokens, d_model)
+            per_head_deltas[h][L] = head_delta_from_projection(
+                pre, W, h, d_head, conv1d
+            )
 
-    # Save
     arrays = {f"attn_deltas_head_{h}": per_head_deltas[h]
               for h in range(n_heads)}
     np.savez_compressed(run_dir / "per_head_attn_deltas.npz", **arrays)
