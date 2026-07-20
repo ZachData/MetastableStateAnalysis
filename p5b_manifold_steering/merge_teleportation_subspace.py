@@ -210,8 +210,10 @@ def run_merge_teleportation(
 
     # Null: consecutive plateau pairs — measures how much distributions
     # shift in a *stable* window so we have a non-trivial baseline.
-    sorted_plateau = sorted(l for l in plateau_singles
-                            if l in logit_dists or True)
+    # plateau_singles is already in plateau_layers order (the order
+    # extract_event_distributions iterated it in), so no re-sort is needed
+    # here — it's the caller's job to pass plateau_layers pre-sorted if
+    # "consecutive" is meant to track layer order.
     for idx in range(len(plateau_singles) - 1):
         p_a = plateau_singles[idx]
         p_b = plateau_singles[idx + 1]

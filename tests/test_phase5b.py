@@ -1,11 +1,11 @@
 """
-tests/test_p5b.py — TDD contracts for Phase 5b modules.
+tests/test_phase5b.py — TDD contracts for Phase 5b modules.
 
 Each test class specifies the input/output contract for one module.
 Tests use synthetic data with known geometric properties so the expected
 outputs are analytically checkable.
 
-Run with: pytest tests/test_p5b.py -v
+Run with: pytest tests/test_phase5b.py -v
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ class TestPCAReduce:
     """pca_reduce(centroids, k) → (scores, basis, explained_var_ratio)"""
 
     def setup_method(self):
-        from p5b_manifold.manifold_fit import pca_reduce
+        from p5b_manifold_steering.manifold_fit import pca_reduce
         self.fn = pca_reduce
         self.centroids = _ring_centroids(N_C, D)
 
@@ -87,7 +87,7 @@ class TestFitActivationManifold:
     """fit_activation_manifold(centroids_pca, intrinsic_coords) → SplineManifold"""
 
     def setup_method(self):
-        from p5b_manifold.manifold_fit import fit_activation_manifold
+        from p5b_manifold_steering.manifold_fit import fit_activation_manifold
         self.fn = fit_activation_manifold
         self.ring = _ring_centroids(N_C, K)   # already in PCA space
         self.u = np.linspace(0, 1, N_C)       # arc-length params
@@ -99,7 +99,7 @@ class TestFitActivationManifold:
 
     def test_spline_interpolates_control_points(self):
         """Spline evaluated at knot u values should recover control points."""
-        from p5b_manifold.manifold_fit import fit_activation_manifold, eval_manifold
+        from p5b_manifold_steering.manifold_fit import fit_activation_manifold, eval_manifold
         mh = self.fn(self.ring, self.u, periodic=True)
         reconstructed = eval_manifold(mh, self.u)
         npt.assert_allclose(reconstructed, self.ring, atol=1e-3)
@@ -109,7 +109,7 @@ class TestFitActivationManifold:
         assert mh["residual_rms"] < 0.05
 
     def test_eval_returns_correct_shape(self):
-        from p5b_manifold.manifold_fit import fit_activation_manifold, eval_manifold
+        from p5b_manifold_steering.manifold_fit import fit_activation_manifold, eval_manifold
         mh = self.fn(self.ring, self.u, periodic=True)
         t = np.linspace(0, 1, 50)
         pts = eval_manifold(mh, t)
@@ -120,7 +120,7 @@ class TestFitBehaviorManifold:
     """fit_behavior_manifold(distributions, intrinsic_coords) → SplineManifold"""
 
     def setup_method(self):
-        from p5b_manifold.manifold_fit import fit_behavior_manifold
+        from p5b_manifold_steering.manifold_fit import fit_behavior_manifold
         self.fn = fit_behavior_manifold
         self.dists = _peaked_distributions(N_C, N_V)
         self.u = np.linspace(0, 1, N_C)
@@ -138,7 +138,7 @@ class TestFitBehaviorManifold:
 
     def test_eval_returns_valid_distributions(self):
         """Decoded distributions must be non-negative and sum to 1."""
-        from p5b_manifold.manifold_fit import fit_behavior_manifold, eval_behavior_manifold
+        from p5b_manifold_steering.manifold_fit import fit_behavior_manifold, eval_behavior_manifold
         my = self.fn(self.dists, self.u, periodic=True)
         t = np.linspace(0, 1, 20)
         decoded = eval_behavior_manifold(my, t)
@@ -155,8 +155,8 @@ class TestGeodesicDistance:
     """geodesic_distance_manifold(mh, u_i, u_j, n_pts) → float"""
 
     def setup_method(self):
-        from p5b_manifold.manifold_fit import fit_activation_manifold, pca_reduce
-        from p5b_manifold.isometry_test import geodesic_distance_manifold
+        from p5b_manifold_steering.manifold_fit import fit_activation_manifold, pca_reduce
+        from p5b_manifold_steering.isometry_test import geodesic_distance_manifold
         self.geo_fn = geodesic_distance_manifold
         ring = _ring_centroids(N_C, K)
         u    = np.linspace(0, 1, N_C)
@@ -187,7 +187,7 @@ class TestHellingerDistance:
     """hellinger_distance(p, q) → float in [0, 1]"""
 
     def setup_method(self):
-        from p5b_manifold.isometry_test import hellinger_distance
+        from p5b_manifold_steering.isometry_test import hellinger_distance
         self.fn = hellinger_distance
 
     def test_identical_distributions(self):
@@ -219,10 +219,10 @@ class TestPairwiseDistanceMatrix:
     """pairwise_distances(mh, my, u_coords) → dict with d_manifold, d_linear, d_behavior"""
 
     def setup_method(self):
-        from p5b_manifold.manifold_fit import (
+        from p5b_manifold_steering.manifold_fit import (
             fit_activation_manifold, fit_behavior_manifold, pca_reduce
         )
-        from p5b_manifold.isometry_test import pairwise_distances
+        from p5b_manifold_steering.isometry_test import pairwise_distances
         ring  = _ring_centroids(N_C, K)
         dists = _peaked_distributions(N_C, N_V)
         u     = np.linspace(0, 1, N_C)
@@ -250,7 +250,7 @@ class TestPairwiseDistanceMatrix:
     def test_diagonal_zero(self):
         """Self-distances should be zero (not stored in flat array, but
         we can verify via d_manifold at u_i == u_j)."""
-        from p5b_manifold.isometry_test import geodesic_distance_manifold
+        from p5b_manifold_steering.isometry_test import geodesic_distance_manifold
         d_self = geodesic_distance_manifold(self.mh, 0.0, 0.0)
         assert abs(d_self) < 1e-5
 
@@ -259,7 +259,7 @@ class TestIsometryScore:
     """isometry_score(d_manifold, d_behavior, d_linear) → dict with r_manifold, r_linear"""
 
     def setup_method(self):
-        from p5b_manifold.isometry_test import isometry_score
+        from p5b_manifold_steering.isometry_test import isometry_score
         self.fn = isometry_score
 
     def test_perfect_correlation_returns_one(self):
@@ -307,7 +307,7 @@ class TestTeleportationScore:
     """teleportation_score(p_before, p_at, p_after) → dict"""
 
     def setup_method(self):
-        from p5b_manifold.merge_teleportation import teleportation_score
+        from p5b_manifold_steering.merge_teleportation_subspace import teleportation_score
         self.fn = teleportation_score
 
     def _peaked(self, idx: int) -> np.ndarray:
@@ -351,7 +351,7 @@ class TestMergeVsPlateauComparison:
     """compare_merge_plateau(merge_scores, plateau_scores) → dict with statistics"""
 
     def setup_method(self):
-        from p5b_manifold.merge_teleportation import compare_merge_plateau
+        from p5b_manifold_steering.merge_teleportation_subspace import compare_merge_plateau
         self.fn = compare_merge_plateau
 
     def test_output_keys(self):
@@ -384,7 +384,7 @@ class TestSubspaceProjection:
     """project_centroids(centroids, U) → projected (n, k)"""
 
     def setup_method(self):
-        from p5b_manifold.subspace_isometry import project_centroids
+        from p5b_manifold_steering.subspace_isometry import project_centroids
         self.fn = project_centroids
 
     def test_output_shape(self):
@@ -408,7 +408,7 @@ class TestSubspaceIsometryScore:
     """subspace_isometry_score(centroids, U_S, U_A, d_behavior) → dict"""
 
     def setup_method(self):
-        from p5b_manifold.subspace_isometry import subspace_isometry_score
+        from p5b_manifold_steering.subspace_isometry import subspace_isometry_score
         self.fn = subspace_isometry_score
 
     def _orthogonal_basis(self, d: int, k: int) -> np.ndarray:
@@ -467,7 +467,7 @@ class TestLogitCache:
     """
 
     def setup_method(self):
-        from p5b_manifold.logit_cache import validate_logit_output
+        from p5b_manifold_steering.logit_cache import validate_logit_output
         self.validate = validate_logit_output
 
     def test_validate_passes_for_valid_output(self):
@@ -485,7 +485,7 @@ class TestLogitCache:
             self.validate(logits, expected_vocab=10)
 
     def test_logits_to_distribution_shape(self):
-        from p5b_manifold.logit_cache import logits_to_distribution
+        from p5b_manifold_steering.logit_cache import logits_to_distribution
         logits = RNG.standard_normal((8, 1000)).astype(np.float32)
         p = logits_to_distribution(logits)
         assert p.shape == logits.shape
@@ -493,7 +493,7 @@ class TestLogitCache:
         assert np.all(p >= 0)
 
     def test_save_load_roundtrip(self, tmp_path):
-        from p5b_manifold.logit_cache import save_logit_cache, load_logit_cache
+        from p5b_manifold_steering.logit_cache import save_logit_cache, load_logit_cache
         dists = {
             0: RNG.dirichlet(np.ones(100), size=8).astype(np.float32),
             4: RNG.dirichlet(np.ones(100), size=8).astype(np.float32),
@@ -513,7 +513,7 @@ class TestReport:
     """write_report(out_dir, results) → str (path to report file)"""
 
     def test_report_contains_all_sections(self, tmp_path):
-        from p5b_manifold.report import write_report
+        from p5b_manifold_steering.p5b_report import write_report
         results = {
             "fit_summary":  {"pca_explained_var": 0.92, "spline_residual_rms": 0.03},
             "isometry":     {"r_manifold": 0.87, "r_linear": 0.52, "n_pairs": 21},
@@ -533,7 +533,7 @@ class TestReport:
             assert section in text, f"Report missing section: {section}"
 
     def test_report_encodes_pass_fail(self, tmp_path):
-        from p5b_manifold.report import write_report
+        from p5b_manifold_steering.p5b_report import write_report
         results = {
             "fit_summary":  {"pca_explained_var": 0.75, "spline_residual_rms": 0.25},
             "isometry":     {"r_manifold": 0.45, "r_linear": 0.50, "n_pairs": 21},

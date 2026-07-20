@@ -28,15 +28,17 @@ import numpy as np
 import torch
 
 def _to_numpy(weight) -> np.ndarray:
-    """Accept a torch.Tensor or ndarray; return a detached float32 ndarray."""
+    """Accept a torch.Tensor, ndarray, or any tensor-like duck type exposing
+    .detach()/.cpu()/.numpy(); return a detached float32 ndarray."""
     if torch.is_tensor(weight):
         weight = weight.detach().cpu().float().numpy()
-    # if hasattr(weight, "detach"):
-    #     weight = weight.detach()
-    # if hasattr(weight, "cpu"):
-    #     weight = weight.cpu()
-    # if hasattr(weight, "numpy"):
-    #     weight = weight.numpy()
+    else:
+        if hasattr(weight, "detach"):
+            weight = weight.detach()
+        if hasattr(weight, "cpu"):
+            weight = weight.cpu()
+        if hasattr(weight, "numpy"):
+            weight = weight.numpy()
     return np.asarray(weight, dtype=np.float32)
 
 

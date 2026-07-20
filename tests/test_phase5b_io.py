@@ -1,5 +1,5 @@
 """
-tests/test_p5b_io.py — Contract tests for p5b_manifold/io.py.
+tests/test_phase5b_io.py — Contract tests for p5b_manifold_steering/p5b_io.py.
 
 Uses synthetic Phase 1 run directories that match the real v2 layout
 so these tests pass without any actual model output on disk.
@@ -314,7 +314,7 @@ class TestLoadPlateauCentroids:
         shutil.rmtree(self._tmp)
 
     def test_returns_correct_shape(self):
-        from p5b_manifold.manifold_fit import load_plateau_centroids
+        from p5b_manifold_steering.manifold_fit import load_plateau_centroids
         p1 = load_phase1_run(self.run_dir)
         centroids, tids = load_plateau_centroids(
             p1["centroid_trajs"], p1["trajectories"], min_lifespan=2
@@ -324,7 +324,7 @@ class TestLoadPlateauCentroids:
         assert len(tids) == centroids.shape[0]
 
     def test_all_five_trajectories_included(self):
-        from p5b_manifold.manifold_fit import load_plateau_centroids
+        from p5b_manifold_steering.manifold_fit import load_plateau_centroids
         p1 = load_phase1_run(self.run_dir)
         centroids, tids = load_plateau_centroids(
             p1["centroid_trajs"], p1["trajectories"], min_lifespan=2
@@ -332,7 +332,7 @@ class TestLoadPlateauCentroids:
         assert len(tids) == 5
 
     def test_min_lifespan_filters(self):
-        from p5b_manifold.manifold_fit import load_plateau_centroids
+        from p5b_manifold_steering.manifold_fit import load_plateau_centroids
         p1 = load_phase1_run(self.run_dir)
         # lifespan=4 in fixture, min_lifespan=5 should exclude all
         with pytest.raises(ValueError):
@@ -341,7 +341,7 @@ class TestLoadPlateauCentroids:
             )
 
     def test_centroids_l2_normalised(self):
-        from p5b_manifold.manifold_fit import load_plateau_centroids
+        from p5b_manifold_steering.manifold_fit import load_plateau_centroids
         import numpy.testing as npt
         p1 = load_phase1_run(self.run_dir)
         centroids, _ = load_plateau_centroids(
