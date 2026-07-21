@@ -54,7 +54,7 @@ from p5_single_mstate_analysis.v_alignment import (
 )
 
 from . import constants as C
-from . import io_p5 as p5io   # io.py renamed to io_p5.py (basename collision with core/io.py)
+from . import p5_io as p5io
 from .select_cluster     import select_primary_and_sibling, save_selection
 from .cluster_profile    import compute_profile, save_profile
 from .v_alignment        import compute_v_alignment, save_v_alignment

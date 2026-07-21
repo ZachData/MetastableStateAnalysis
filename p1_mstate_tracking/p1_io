@@ -1,5 +1,24 @@
 """
-io_utils.py — Save and load run artifacts.
+p1_mstate_tracking/p1_io.py — Save and load Phase 1 run artifacts.
+
+THE canonical Phase 1 reader and writer. Every other phase reads Phase 1
+output through load_phase1_run / find_phase1_run_dir in this module —
+p5_single_mstate_analysis/p5_io.py and p5b_manifold_steering/p5b_io.py both
+delegate here and add only their own phase-specific derived values on top.
+Do not add another load_phase1_run somewhere else; extend this one.
+
+This file was io_utils.py. Renamed to p1_io.py for the project-wide
+one-io-module-per-phase convention (p1_io.py, p5_io.py, p5b_io.py,
+p6_io.py) — the bare basename io.py is reserved for core/io.py.
+
+load_phase1_run and find_phase1_run_dir were absorbed from core/io.py in
+the same pass: there were three independent Phase 1 readers (this file's
+own load_run/load_activations/etc., core/io.py's load_phase1_run, and
+p5-local variants) that silently disagreed on key names and source files.
+core/io.py's version also had a real bug — it read `trajectories` from the
+top level of trajectory.json, but _save_trajectory below writes them
+nested under cluster_tracking, so it had been returning [] on every real
+run. Fixed as part of the merge; see load_phase1_run's docstring.
 
 Layout (v2): one JSON per experiment type + large arrays to .npz.
 Layout (v1): single metrics.json — detected automatically by load_run.
@@ -34,14 +53,15 @@ Global at phase1_dir root (written by aggregate_global_artifacts):
   pair_agreement.json  aggregated pair-agreement summary across all prompt runs
 """
 
+from __future__ import annotations
+
 import csv
 import json
-import numpy as np
-import torch
+import warnings
 from pathlib import Path
+from typing import Optional
 
-from core.config import BETA_VALUES
-from core.models import layernorm_to_sphere
+import numpy as np
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +244,8 @@ def _save_bridge_files(results, run_dir):
       events.json          merge_layers, energy_violations, energy_drop_pairs
       layer_metrics.json   flat list for _detect_plateau_windows
     """
+    from core.config import BETA_VALUES
+
     # hdbscan_labels.json
     hdb_labels = {}
     for lr in results["layers"]:
@@ -283,6 +305,8 @@ def _save_bridge_files(results, run_dir):
 
 def _save_layer_metrics_csv(results, run_dir):
     """Flat CSV of key per-layer scalars for human inspection."""
+    from core.config import BETA_VALUES
+
     rows = []
     for lr in results["layers"]:
         row = {
@@ -324,6 +348,9 @@ def _save_tokens(results, run_dir):
 def _save_activations(hidden_states, run_dir):
     if not hidden_states:
         return
+    import torch
+    from core.models import layernorm_to_sphere
+
     stacked   = torch.stack(hidden_states)
     act_stack = layernorm_to_sphere(stacked).numpy()
     np.savez_compressed(run_dir / "activations.npz", activations=act_stack)
@@ -779,6 +806,393 @@ def load_fiedler_vecs(run_dir):
     path = Path(run_dir) / "fiedler_vecs.npz"
     data = np.load(path)
     return {int(k.split("_L")[1]): data[k] for k in data.files}
+
+
+# ===========================================================================
+# Cross-phase artifact loader — absorbed from core/io.py.
+#
+# find_phase1_run_dir resolution order
+# -------------------------------------
+# Phase 1 writes flat dirs like:
+#   phase1_dir/albert-xlarge-v2_48iter_wiki_paragraph/
+#
+# This resolves:
+#   1. phase1_dir / stem / *prompt_key*      (legacy nested layout)
+#   2. phase1_dir / *{model_any_form}*{prompt}*   (flat layout)
+#   3. Any dir containing either model fragment or prompt fragment
+#   4. None if nothing matches
+# ===========================================================================
+
+def find_phase1_run_dir(
+    phase1_dir:  Path,
+    model_name:  str,
+    prompt_key:  str,
+) -> Optional[Path]:
+    """
+    Locate the Phase 1 run directory for (model_name, prompt_key).
+
+    Handles both:
+      - nested layout: phase1_dir/{stem}/{prompt_key}/
+      - flat layout:   phase1_dir/{model}-{iter}_{prompt_key}/
+
+    Parameters
+    ----------
+    phase1_dir : root of phase1 results (e.g. results/phase1 or a timestamped subdir)
+    model_name : model name in any form, e.g. "albert-xlarge-v2" or "albert_xlarge_v2"
+    prompt_key : e.g. "wiki_paragraph"
+
+    Returns
+    -------
+    Path to run directory, or None if not found.
+    """
+    phase1_dir = Path(phase1_dir)
+    if not phase1_dir.exists():
+        return None
+
+    # Normalise model name into both hyphen and underscore variants
+    stem_under  = model_name.replace("-", "_").replace("/", "_")
+    stem_hyphen = model_name.replace("_", "-").replace("/", "-")
+
+    # --- 1. Legacy nested layout: phase1_dir / stem_under / *prompt_key* ---
+    nested = phase1_dir / stem_under
+    if nested.is_dir():
+        candidates = sorted(nested.glob(f"*{prompt_key}*"), key=lambda p: p.stat().st_mtime)
+        if candidates:
+            return candidates[-1]
+        # Fallback: any subdir under nested
+        all_sub = [d for d in nested.iterdir() if d.is_dir()]
+        if all_sub:
+            return sorted(all_sub, key=lambda p: p.stat().st_mtime)[-1]
+
+    # --- 2. Flat layout: phase1_dir / *model*_*prompt* ---
+    for stem_form in (stem_hyphen, stem_under):
+        # Both model fragment AND prompt fragment in name
+        candidates = [
+            d for d in phase1_dir.iterdir()
+            if d.is_dir()
+            and _stem_matches(d.name, stem_form)
+            and prompt_key in d.name
+        ]
+        if candidates:
+            return sorted(candidates, key=lambda p: p.stat().st_mtime)[-1]
+
+    # --- 3. Flat layout fallback: model match only (prompt absent from name) ---
+    for stem_form in (stem_hyphen, stem_under):
+        candidates = [
+            d for d in phase1_dir.iterdir()
+            if d.is_dir() and _stem_matches(d.name, stem_form)
+        ]
+        if candidates:
+            return sorted(candidates, key=lambda p: p.stat().st_mtime)[-1]
+
+    return None
+
+
+def _stem_matches(dirname: str, stem: str) -> bool:
+    """
+    True if dirname starts with stem (treating - and _ as equivalent).
+    Both strings are normalised before comparison.
+    """
+    d = dirname.replace("-", "_").lower()
+    s = stem.replace("-", "_").lower()
+    return d.startswith(s)
+
+
+def load_phase1_run(run_dir: Path) -> dict:
+    """
+    Load Phase 1 on-disk artifacts for a single (model, prompt) run and
+    return a flat dict conforming to the cross-phase contract used by
+    Phases 5, 5b, and 6.
+
+    THE canonical Phase 1 reader — p5_single_mstate_analysis/p5_io.py and
+    p5b_manifold_steering/p5b_io.py both delegate to this function and add
+    only their own phase-specific derived values on top.
+
+    Parameters
+    ----------
+    run_dir : path to the per-prompt run directory written by save_run
+              (this module).
+
+    Returns
+    -------
+    dict with keys:
+      activations     : ndarray (n_layers, n_tokens, d) or None
+      attentions      : ndarray (n_layers, n_heads, n_tokens, n_tokens) or None
+      tokens          : list[str] of length n_tokens
+      hdbscan_labels  : list[ndarray(n_tokens,)] or None — a LIST, never a
+                        string-keyed dict, indexed by layer position
+                        0..n_layers-1, gaps filled with all-(-1) noise arrays
+      events          : list[dict] — normalised merge/violation event records
+      merge_layers    : list[int] — raw merge layer indices from events.json.
+                        Distinct from the normalised `events` records above;
+                        p5b_io needs the raw list, run_6/build_context needs
+                        the normalised records, so both are provided.
+      trajectories    : list[dict] — cluster chain trajectories. Read from
+                        trajectory.json's cluster_tracking.trajectories (the
+                        real on-disk shape written by _save_trajectory
+                        above), falling back to a top-level "trajectories"
+                        key for older/synthetic fixtures that don't nest it.
+                        The prior version of this function (core/io.py) only
+                        checked the top-level key, which real Phase 1 output
+                        never has — it had been silently returning [] on
+                        every real run.
+      plateau_layers  : list[int]
+      centroid_trajs  : {int trajectory_id: ndarray (lifespan, d_model)},
+                        read from centroid_trajectories.npz (keys "traj_{id}")
+      n_layers        : int
+      n_tokens        : int
+      d_model         : int
+      prompt          : str
+      model           : str
+      run_dir         : str
+
+    Never raises on missing or malformed files — absent artifacts become
+    None / [] / {} / 0 / "" so callers can degrade gracefully.
+
+    Key invariant: hdbscan_labels is always a list (never a string-keyed
+    dict) so that ctx["labels_per_layer"][L] works with integer L in every
+    Track B/D sub-experiment.
+    """
+    run_dir = Path(run_dir)
+    out: dict = {}
+
+    # ------------------------------------------------------------------
+    # activations.npz  →  (n_layers, n_tokens, d)
+    # ------------------------------------------------------------------
+    acts_path = run_dir / "activations.npz"
+    if acts_path.exists():
+        data = np.load(acts_path)
+        key  = "activations" if "activations" in data else list(data.keys())[0]
+        out["activations"] = data[key]
+    else:
+        out["activations"] = None
+
+    n_layers = out["activations"].shape[0] if out["activations"] is not None else 0
+    n_tokens = out["activations"].shape[1] if out["activations"] is not None else 0
+    d_model  = out["activations"].shape[2] if out["activations"] is not None else 0
+
+    # ------------------------------------------------------------------
+    # geometry.json  →  model, prompt, and n_layers/n_tokens/d_model
+    # fallback for when activations.npz is absent. Tolerant of a missing or
+    # corrupt file — every other artifact here already is, and this one
+    # previously wasn't in the p5b-local direct loader this replaces.
+    # ------------------------------------------------------------------
+    geo_path = run_dir / "geometry.json"
+    geo: dict = {}
+    if geo_path.exists():
+        try:
+            with open(geo_path) as f:
+                geo = json.load(f)
+        except Exception:
+            geo = {}
+
+    out["prompt"]   = geo.get("prompt", "")
+    out["model"]    = geo.get("model", "")
+    out["n_layers"] = n_layers or geo.get("n_layers", 0)
+    out["n_tokens"] = n_tokens or geo.get("n_tokens", 0)
+    out["d_model"]  = d_model  or geo.get("d_model", 0)
+
+    # ------------------------------------------------------------------
+    # tokens.txt  →  list[str]
+    # ------------------------------------------------------------------
+    out["tokens"] = _load_tokens(run_dir, out["n_tokens"])
+
+    # ------------------------------------------------------------------
+    # hdbscan_labels.json  →  list[ndarray]  (NOT dict)
+    #
+    # Phase 1 writes: {"0": [0,1,0,...], "2": [...], ...}
+    # We must convert to a list indexed by layer position so that
+    # ctx["labels_per_layer"][L] works with integer L.
+    # ------------------------------------------------------------------
+    out["hdbscan_labels"] = _load_hdbscan_labels(
+        run_dir / "hdbscan_labels.json", out["n_layers"], out["n_tokens"]
+    )
+
+    # ------------------------------------------------------------------
+    # events.json  →  normalised list[dict] + raw merge_layers list
+    # ------------------------------------------------------------------
+    events_path = run_dir / "events.json"
+    out["events"] = _load_events(events_path)
+
+    if events_path.exists():
+        try:
+            with open(events_path) as f:
+                ev_raw = json.load(f)
+            out["merge_layers"] = [int(l) for l in ev_raw.get("merge_layers", [])]
+        except Exception:
+            out["merge_layers"] = []
+    else:
+        out["merge_layers"] = []
+
+    # ------------------------------------------------------------------
+    # trajectory.json  →  trajectories list + plateau_layers
+    #
+    # See docstring above re: cluster_tracking nesting fix.
+    # ------------------------------------------------------------------
+    traj_path = run_dir / "trajectory.json"
+    if traj_path.exists():
+        try:
+            with open(traj_path) as f:
+                tj = json.load(f)
+            out["trajectories"] = (
+                tj.get("cluster_tracking", {}).get("trajectories")
+                or tj.get("trajectories", [])
+            )
+            out["plateau_layers"] = tj.get("plateau_layers", [])
+        except Exception:
+            out["trajectories"]   = []
+            out["plateau_layers"] = []
+    else:
+        out["trajectories"]   = []
+        out["plateau_layers"] = []
+
+    # ------------------------------------------------------------------
+    # centroid_trajectories.npz  →  {int trajectory_id: (lifespan, d)}
+    # ------------------------------------------------------------------
+    ct_path = run_dir / "centroid_trajectories.npz"
+    out["centroid_trajs"] = {}
+    if ct_path.exists():
+        try:
+            ct_data = np.load(ct_path)
+            for k in ct_data.files:
+                if k.startswith("traj_"):
+                    try:
+                        tid = int(k[len("traj_"):])
+                        out["centroid_trajs"][tid] = ct_data[k].astype(np.float32)
+                    except (ValueError, Exception):
+                        pass
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # attentions.npz  →  (n_layers, n_heads, n_tokens, n_tokens) or None
+    # ------------------------------------------------------------------
+    attn_path = run_dir / "attentions.npz"
+    if attn_path.exists():
+        try:
+            adata = np.load(attn_path)
+            akey  = "attentions" if "attentions" in adata else list(adata.keys())[0]
+            out["attentions"] = adata[akey]
+        except Exception:
+            out["attentions"] = None
+    else:
+        out["attentions"] = None
+
+    out["run_dir"] = str(run_dir)
+
+    return out
+
+
+def _load_tokens(run_dir: Path, n_tokens: int) -> list[str]:
+    """
+    Load tokens from tokens.txt (tab-separated index\\ttoken per line).
+    Falls back to synthetic names if file absent or malformed.
+    """
+    txt_path = run_dir / "tokens.txt"
+    if txt_path.exists():
+        try:
+            toks = []
+            with open(txt_path) as f:
+                for line in f:
+                    line = line.rstrip("\n")
+                    if "\t" in line:
+                        _, tok = line.split("\t", 1)
+                    else:
+                        tok = line
+                    toks.append(tok)
+            if toks:
+                return toks
+        except Exception:
+            pass
+    # Fallback: try tokens.json (alternate format)
+    json_path = run_dir / "tokens.json"
+    if json_path.exists():
+        try:
+            with open(json_path) as f:
+                toks = json.load(f)
+            if isinstance(toks, list):
+                return [str(t) for t in toks]
+        except Exception:
+            pass
+    return [f"<tok_{i}>" for i in range(n_tokens)]
+
+
+def _load_hdbscan_labels(
+    path:     Path,
+    n_layers: int,
+    n_tokens: int,
+) -> list[np.ndarray] | None:
+    """
+    Convert hdbscan_labels.json from string-keyed dict to list[ndarray].
+
+    Input (on disk): {"0": [0, 1, 0, ...], "1": [...], ...}
+    Output:          [ndarray([0,1,0,...]), ndarray([...]), ...]
+                      indexed by layer position 0..n_layers-1
+
+    Gaps (layers absent from the JSON) are filled with noise-label arrays
+    (all -1) so downstream code never receives None in the list.
+    """
+    if not path.exists():
+        return None
+
+    try:
+        with open(path) as f:
+            raw = json.load(f)
+    except Exception as e:
+        warnings.warn(f"load_phase1_run: could not parse {path}: {e}")
+        return None
+
+    if not isinstance(raw, dict):
+        warnings.warn(f"load_phase1_run: expected dict in {path}, got {type(raw)}")
+        return None
+
+    # Infer n_layers from the dict if activations weren't loaded
+    effective_n = n_layers if n_layers > 0 else (
+        max(int(k) for k in raw) + 1 if raw else 0
+    )
+    if effective_n == 0:
+        return None
+
+    noise = np.full(n_tokens, -1, dtype=np.int32)
+    result: list[np.ndarray] = []
+
+    for L in range(effective_n):
+        if str(L) in raw:
+            result.append(np.array(raw[str(L)], dtype=np.int32))
+        else:
+            result.append(noise.copy())
+
+    return result
+
+
+def _load_events(path: Path) -> list[dict]:
+    """
+    Load events.json and return a flat list of event dicts.
+
+    Phase 1 writes events.json as:
+      {"merge_layers": [2, 5], "energy_violations": {"1.0": [3, 4]}}
+
+    We normalise this into a list of {"type": ..., "layer": ...} dicts
+    matching what build_context and _classify_layer_types expect.
+    """
+    if not path.exists():
+        return []
+    try:
+        with open(path) as f:
+            raw = json.load(f)
+    except Exception:
+        return []
+
+    events: list[dict] = []
+
+    for layer in raw.get("merge_layers", []):
+        events.append({"type": "merge", "layer_name": str(layer), "layer_from": str(layer)})
+
+    for beta_str, layers in raw.get("energy_violations", {}).items():
+        for layer in layers:
+            events.append({"type": "energy_violation", "layer": layer, "beta": float(beta_str)})
+
+    return events
 
 
 # ---------------------------------------------------------------------------

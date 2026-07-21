@@ -8,7 +8,7 @@ Fixes covered
 FIX-B7   merge_geometry / merge_verdict always {"available": False}, all 6
          models (run_5.py, _run_group_B).
 FIX-IO1  find_phase1_runs raised NameError on every real call
-         (p5_single_mstate_analysis/io_p5.py — this file was supplied after
+         (p5_single_mstate_analysis/p5_io.py — this file was supplied after
          the rest of this test file was originally written; see below).
 
 FIX-B7 root cause
@@ -31,7 +31,7 @@ re-deriving relevance from a schema it was never actually matching.
 
 FIX-IO1 root cause
 ------------------
-p5_single_mstate_analysis/io.py (io.py renamed to io_p5.py to resolve a
+p5_single_mstate_analysis/io.py (io.py renamed to p5_io.py to resolve a
 basename collision with core/io.py — not available when this file was
 first written; supplied afterward) had:
 
@@ -227,7 +227,7 @@ class TestMergeGeometryFixB7:
 
 class TestFindPhase1RunsFixIO1:
     """
-    Regression tests for FIX-IO1 — p5_single_mstate_analysis/io_p5.py's
+    Regression tests for FIX-IO1 — p5_single_mstate_analysis/p5_io.py's
     find_phase1_runs raised NameError ("name 'stems' is not defined") on
     every call with a non-empty model_stem, i.e. on every real call site;
     run_5.py always passes a real model_stem. Confirmed by running the
@@ -247,7 +247,7 @@ class TestFindPhase1RunsFixIO1:
         return run_dir
 
     def test_matching_stem_found_without_raising(self, tmp_path):
-        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+        from p5_single_mstate_analysis.p5_io import find_phase1_runs
 
         stem = "hf-internal-testing_tiny-random-gpt2"
         self._make_run_dir(tmp_path, f"{stem}_short_heterogeneous")
@@ -256,7 +256,7 @@ class TestFindPhase1RunsFixIO1:
         assert result == {"short_heterogeneous": tmp_path / f"{stem}_short_heterogeneous"}
 
     def test_non_matching_stem_returns_empty_without_raising(self, tmp_path):
-        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+        from p5_single_mstate_analysis.p5_io import find_phase1_runs
 
         self._make_run_dir(tmp_path, "hf-internal-testing_tiny-random-gpt2_short_heterogeneous")
 
@@ -272,7 +272,7 @@ class TestFindPhase1RunsFixIO1:
         reversal (all "_" -> "-") cannot undo correctly, since it can't
         tell which underscores used to be hyphens vs slashes.
         """
-        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+        from p5_single_mstate_analysis.p5_io import find_phase1_runs
 
         self._make_run_dir(tmp_path, "hf-internal-testing_tiny-random-gpt2_short_heterogeneous")
 
@@ -285,7 +285,7 @@ class TestFindPhase1RunsFixIO1:
         )
 
     def test_empty_stem_matches_everything(self, tmp_path):
-        from p5_single_mstate_analysis.io_p5 import find_phase1_runs
+        from p5_single_mstate_analysis.p5_io import find_phase1_runs
 
         self._make_run_dir(tmp_path, "some_model_wiki_paragraph", prompt="wiki_paragraph")
 

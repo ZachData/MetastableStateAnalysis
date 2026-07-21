@@ -41,7 +41,7 @@ import numpy.testing as npt
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-from core.io import load_phase1_run
+from p1_mstate_tracking.p1_io import load_phase1_run
 
 
 # ---------------------------------------------------------------------------
@@ -290,13 +290,13 @@ class TestBuildContextPathResolution(unittest.TestCase):
     # ------------------------------------------------------------------
     def _find_phase1_run_dir(self, phase1_dir: Path, model_name: str, prompt_key: str):
         """
-        Expected resolution logic (to be implemented in core/io.py or run_6.py):
+        Expected resolution logic (to be implemented in p1_mstate_tracking.p1_io or run_6.py):
           1. Try phase1_dir / stem / *prompt_key*   (legacy nested layout)
           2. Try phase1_dir / *{model_stem}*{prompt_key}*  (flat layout, hyphen names)
           3. Try phase1_dir / *{model_hyphen}*{prompt_key}*
           4. Fall back to most-recently modified matching dir
         """
-        from core.io import find_phase1_run_dir
+        from p1_mstate_tracking.p1_io import find_phase1_run_dir
         return find_phase1_run_dir(phase1_dir, model_name, prompt_key)
 
     def test_hyphen_dir_found_for_underscore_stem(self):

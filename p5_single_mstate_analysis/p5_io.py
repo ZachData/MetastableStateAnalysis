@@ -1,5 +1,13 @@
 """
-io.py — Phase 5 artifact loaders.
+p5_single_mstate_analysis/p5_io.py — Phase 5 artifact loaders.
+
+Naming convention (project-wide): one io module per phase, named
+p{phase}_io.py — p1_io.py, p5_io.py, p5b_io.py, p6_io.py. The bare basename
+io.py is reserved for core/io.py, which is why phase-local modules carry a
+p-prefix rather than an io_ prefix or a _utils suffix.
+
+This file was briefly io_p5.py (renamed off the colliding basename io.py);
+renamed again to p5_io.py so all four phase io modules read the same way.
 
 All cross-phase artifact discovery lives here. Each loader returns a single
 dict with documented keys; missing artifacts resolve to sensible defaults
@@ -29,20 +37,18 @@ from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Phase 1 artifacts — per prompt
+#
+# load_phase1_run delegates to p1_mstate_tracking.p1_io.load_phase1_run for
+# every field that reader owns (activations, attentions, tokens,
+# hdbscan_labels, events, trajectories, plateau_layers, merge_layers,
+# centroid_trajs, n_layers/n_tokens/d_model, prompt, model). Phase 5 only
+# adds prompt_key (its own naming convention) and the metrics assembly from
+# the split per-layer JSON files below — neither of which p1_io owns.
 # ---------------------------------------------------------------------------
 
 def load_phase1_run(run_dir: Path) -> dict:
     """
     Load one Phase 1 run directory (v2 split-file format).
-
-    v2 layout (written by io_utils.save_run):
-      geometry.json         — model, prompt, n_layers, n_tokens, d_model
-      trajectory.json       — cluster_tracking (trajectories + events) + plateau_layers
-      tokens.txt            — "  i  token\n" per line
-      activations.npz       — key "activations": (n_layers, n_tokens, d_model) float32
-      attentions.npz        — key "attentions":  (n_layers, n_heads, n_tokens, n_tokens) float32
-      clusters.npz          — keys hdbscan_labels_L{i}: (n_tokens,) int32
-      centroid_trajectories.npz — keys traj_{id}: (lifespan, d) float32
 
     Returns
     -------
@@ -56,77 +62,40 @@ def load_phase1_run(run_dir: Path) -> dict:
       hdbscan_labels : list of (n_tokens,) int32 per layer, or None
       centroid_trajs : dict {trajectory_id (int): (lifespan, d) float32}
       run_dir        : str
+      metrics        : {"layers": [...]} — per-layer scalars assembled from
+                       geometry.json + energies/clustering/spectral/sinkhorn.json
     """
-    run_dir = Path(run_dir)
-    out = {"run_dir": str(run_dir)}
+    from p1_mstate_tracking.p1_io import load_phase1_run as _p1_load
 
-    # --- geometry.json: prompt name, shape metadata ---
-    with open(run_dir / "geometry.json") as f:
-        geo = json.load(f)
+    run_dir = Path(run_dir)
+    p1 = _p1_load(run_dir)
+
+    out: dict = {
+        "run_dir":        str(run_dir),
+        "tokens":         p1.get("tokens", []),
+        "trajectories":   p1.get("trajectories", []),
+        "events":         p1.get("events", []),
+        "activations":    p1.get("activations"),
+        "attentions":     p1.get("attentions"),
+        "hdbscan_labels": p1.get("hdbscan_labels"),
+        "centroid_trajs": p1.get("centroid_trajs", {}),
+    }
+
+    # --- geometry.json: prompt_key. Guarded — every other loader here
+    # tolerates a missing/corrupt geometry.json; this one previously didn't.
+    geo_path = run_dir / "geometry.json"
+    geo: dict = {}
+    if geo_path.exists():
+        try:
+            with open(geo_path) as f:
+                geo = json.load(f)
+        except Exception:
+            geo = {}
     out["prompt_key"] = geo.get("prompt", run_dir.name)
 
-    # --- tokens.txt: "  i  token\n" ---
-    tokens_path = run_dir / "tokens.txt"
-    if tokens_path.exists():
-        tokens = []
-        with open(tokens_path) as f:
-            for line in f:
-                parts = line.rstrip("\n").split(None, 1)
-                tokens.append(parts[1] if len(parts) == 2 else "")
-        out["tokens"] = tokens
-    else:
-        out["tokens"] = []
-
-    # --- trajectory.json: cluster_tracking ---
-    traj_path = run_dir / "trajectory.json"
-    if traj_path.exists():
-        with open(traj_path) as f:
-            traj_data = json.load(f)
-        tracking = traj_data.get("cluster_tracking", {})
-    else:
-        tracking = {}
-    out["trajectories"] = tracking.get("trajectories", [])
-    out["events"]       = tracking.get("events", [])
-
-    # --- activations.npz ---
-    act_path = run_dir / "activations.npz"
-    out["activations"] = (
-        np.load(act_path)["activations"] if act_path.exists() else None
-    )
-
-    # --- attentions.npz ---
-    att_path = run_dir / "attentions.npz"
-    out["attentions"] = (
-        np.load(att_path)["attentions"] if att_path.exists() else None
-    )
-
-    # --- clusters.npz: hdbscan_labels_L{i} ---
-    clu_path = run_dir / "clusters.npz"
-    if clu_path.exists():
-        data = np.load(clu_path)
-        layer_idxs = sorted(
-            int(k.split("_L")[1]) for k in data.files
-            if k.startswith("hdbscan_labels_L")
-        )
-        out["hdbscan_labels"] = [
-            data[f"hdbscan_labels_L{i}"] for i in layer_idxs
-        ]
-    else:
-        out["hdbscan_labels"] = None
-
-    #  --- centroid_trajectories.npz: traj_{id} ---
-    ct_path = run_dir / "centroid_trajectories.npz"
-    if ct_path.exists():
-        data = np.load(ct_path)
-        out["centroid_trajs"] = {
-            int(k.split("_")[1]): data[k] for k in data.files
-        }
-    else:
-        out["centroid_trajs"] = {}
-
     # --- metrics: assemble from split JSON files ---
-    # geometry.json is required and already parsed; merge the optional files
-    # into a flat per-layer dict, then expose as {"layers": [...]} so that
+    # geometry.json's own "layers" entries (if any) seed the map; the
+    # optional per-metric files are merged on top, keyed by layer index, so
     # compute_profile / run_sibling_contrast can read per-layer scalars.
     layer_map: dict = {}
     for lr in geo.get("layers", []):
@@ -158,7 +127,6 @@ def load_phase1_run(run_dir: Path) -> dict:
     }
 
     return out
-
 
 
 def find_phase1_runs(phase1_dir: Path, model_stem: str) -> dict:
@@ -359,11 +327,6 @@ def load_phase2_weights(phase2_dir: Path, model_stem: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-# ---------------------------------------------------------------------------
-# Phase 2i artifacts — symmetric/antisymmetric decomposition
-# ---------------------------------------------------------------------------
-
-
 def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
     """
     Compute Phase 2i S/A decomposition artifacts inline via p2b analysis.
@@ -386,6 +349,14 @@ def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
 
     Call sites that previously passed a phase2i_dir must now pass phase2_dir
     (the Phase 2 output directory, e.g. results/phase2).
+
+    NOTE: this contract does not match TestLoadPhase2i in
+    tests/test_phase5_inputs.py, which writes files like
+    rotational_albert_xlarge_v2.npz containing V_sym/schur_T directly and
+    expects them merged from disk — the commented-out method below. That
+    divergence predates this file's cleanup and is a genuine open question
+    (does anything in p2b still persist those NPZs?), not something this
+    rename resolves. Flagged for a separate decision; not touched here.
     """
     from p2b_imaginary.rotational_rescaled import decompose_symmetric_antisymmetric
     from p2b_imaginary.rotational_schur import extract_schur_blocks
@@ -471,30 +442,30 @@ def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
 #     phase2_dir = Path(phase2_dir)
 #     if not phase2_dir.exists():
 #         return {}
-
+#
 #     stems = {model_stem, model_stem.replace("_", "-"), model_stem.replace("-", "_")}
 #     candidates: list[Path] = []
-
+#
 #     # Nested model subdir (hyphen or underscore form)
 #     for s in stems:
 #         subdir = phase2_dir / s
 #         if subdir.is_dir():
 #             candidates.extend(sorted(subdir.glob("*.npz")))
-
+#
 #     # Flat files at top level whose name contains either stem form
 #     for s in stems:
 #         candidates.extend(sorted(phase2_dir.glob(f"*{s}*.npz")))
-
+#
 #     # Deduplicate, preserve order
 #     seen, ordered = set(), []
 #     for p in candidates:
 #         if p not in seen:
 #             seen.add(p); ordered.append(p)
-
+#
 #     if not ordered:
 #         print(f"  [warn] no Phase 2i artifacts found for stem '{model_stem}' in {phase2_dir}")
 #         return {}
-
+#
 #     merged: dict = {}
 #     for p in ordered:
 #         try:
@@ -593,12 +564,22 @@ def load_phase4(phase4_dir: Path, model_stem: str = "") -> dict:
     if not phase4_dir.exists():
         return out
 
-    model_stem_hyphen = model_stem.replace("_", "-") if model_stem else ""
+    # Both separator directions must be tried. model_stem arrives in either
+    # form depending on the call site, and phase4 run dirs may have been
+    # written under either. Previously only "_"→"-" was covered, so a
+    # hyphenated stem never matched an underscored dir (and vice versa).
+    stem_variants = [
+        s for s in dict.fromkeys([
+            model_stem,
+            model_stem.replace("_", "-"),
+            model_stem.replace("-", "_"),
+        ]) if s
+    ]
 
     def _matches(d: Path) -> bool:
         if not model_stem:
             return True  # no filter requested
-        return model_stem in d.name or model_stem_hyphen in d.name
+        return any(s in d.name for s in stem_variants)
 
     subdirs = [d for d in phase4_dir.iterdir() if d.is_dir() and _matches(d)]
     if not subdirs:

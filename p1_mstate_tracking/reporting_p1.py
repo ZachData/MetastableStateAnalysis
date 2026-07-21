@@ -514,7 +514,7 @@ def print_run_summary(run_dir: Path):
     Usage:
         python run.py --summary metastability_results/albert-base-v2_wiki_paragraph
     """
-    from io_utils import load_run
+    from .p1_io import load_run
 
     run_dir = Path(run_dir)
     results = load_run(run_dir)

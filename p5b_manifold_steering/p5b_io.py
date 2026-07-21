@@ -1,8 +1,8 @@
 """
-p5b_manifold/io.py — Artifact loading for Phase 5b.
+p5b_manifold_steering/p5b_io.py — Artifact loading for Phase 5b.
 
-Wraps the existing Phase 1 / Phase 5 loaders rather than reimplementing them.
-All path conventions match Phase 1 v2 layout (io_utils.save_run).
+Wraps p1_mstate_tracking.p1_io rather than reimplementing Phase 1 loading.
+All path conventions match Phase 1 v2 layout (p1_io.save_run).
 
 Phase 1 v2 layout recap (per-run dir = {phase1_dir}/{stem}_{prompt}/):
   trajectory.json   → plateau_layers: [int, ...]
@@ -18,7 +18,6 @@ Phase 2 layout:
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import numpy as np
@@ -36,6 +35,12 @@ def find_phase1_runs(phase1_dir: Path, stem: str) -> dict[str, Path]:
     e.g. gpt2_large_wiki_paragraph/
 
     Returns {prompt_key: run_dir}.
+
+    Deliberately its own simple stem-prefix rule rather than delegating to
+    p5_io.find_phase1_runs (which does ALBERT iter-depth dedup and reads
+    the prompt key from geometry.json) — that's the right behaviour for
+    Phase 5's trajectory ranking, but it would silently change which run
+    Phase 5b selects. Phase 5b just wants the most direct name match.
     """
     phase1_dir = Path(phase1_dir)
     runs: dict[str, Path] = {}
@@ -46,13 +51,6 @@ def find_phase1_runs(phase1_dir: Path, stem: str) -> dict[str, Path]:
     # and the caller never gets to make that decision.
     if not phase1_dir.is_dir():
         return runs
-
-    # Reuse Phase 5's finder if available; fall back to glob.
-    try:
-        from p5_single_mstate_analysis.io import find_phase1_runs as _p5_find
-        return _p5_find(phase1_dir, stem)
-    except (ImportError, Exception):
-        pass
 
     for subdir in sorted(phase1_dir.iterdir()):
         if not subdir.is_dir():
@@ -75,6 +73,13 @@ def load_phase1_run(run_dir: Path) -> dict:
     """
     Load Phase 1 artifacts from a single run directory.
 
+    Delegates to p1_mstate_tracking.p1_io.load_phase1_run, which already
+    returns everything this function needs: plateau_layers, merge_layers,
+    trajectories, centroid_trajs, activations, n_layers, n_tokens, d_model,
+    prompt, model. Backfills n_layers/n_tokens/d_model from the activations
+    array only in the unlikely case p1_io didn't have geometry.json to read
+    them from.
+
     Returns
     -------
     dict with guaranteed keys:
@@ -89,80 +94,32 @@ def load_phase1_run(run_dir: Path) -> dict:
       prompt            : str
       model             : str
     """
-    # Reuse Phase 5's loader if available.
-    try:
-        from p5_single_mstate_analysis.io import load_phase1_run as _p5_load
-        return _p5_load(run_dir)
-    except (ImportError, Exception):
-        pass
+    from p1_mstate_tracking.p1_io import load_phase1_run as _p1_load
 
-    return _load_phase1_run_direct(Path(run_dir))
+    run_dir = Path(run_dir)
+    p1 = _p1_load(run_dir)
 
-
-def _load_phase1_run_direct(run_dir: Path) -> dict:
-    """Minimal direct loader matching the v2 split-file format."""
     out: dict = {
-        "plateau_layers": [],
-        "merge_layers":   [],
-        "trajectories":   [],
-        "centroid_trajs": {},
-        "activations":    None,
-        "n_layers": 0, "n_tokens": 0, "d_model": 0,
-        "prompt": "", "model": "",
-        "run_dir": str(run_dir),
+        "plateau_layers": p1.get("plateau_layers", []),
+        "merge_layers":   p1.get("merge_layers", []),
+        "trajectories":   p1.get("trajectories", []),
+        "centroid_trajs": p1.get("centroid_trajs", {}),
+        "activations":    p1.get("activations"),
+        "n_layers":       p1.get("n_layers", 0),
+        "n_tokens":       p1.get("n_tokens", 0),
+        "d_model":        p1.get("d_model", 0),
+        "prompt":         p1.get("prompt", ""),
+        "model":          p1.get("model", ""),
+        "run_dir":        str(run_dir),
     }
 
-    # --- geometry.json ---
-    geo_path = run_dir / "geometry.json"
-    if geo_path.exists():
-        with open(geo_path) as f:
-            geo = json.load(f)
-        out["n_layers"] = geo.get("n_layers", 0)
-        out["n_tokens"] = geo.get("n_tokens", 0)
-        out["d_model"]  = geo.get("d_model", 0)
-        out["prompt"]   = geo.get("prompt", "")
-        out["model"]    = geo.get("model", "")
-
-    # --- trajectory.json → plateau_layers + trajectories ---
-    traj_path = run_dir / "trajectory.json"
-    if traj_path.exists():
-        with open(traj_path) as f:
-            tj = json.load(f)
-        out["plateau_layers"] = [int(l) for l in tj.get("plateau_layers", [])]
-        ct = tj.get("cluster_tracking", {})
-        out["trajectories"] = ct.get("trajectories", [])
-
-    # --- events.json → merge_layers ---
-    events_path = run_dir / "events.json"
-    if events_path.exists():
-        with open(events_path) as f:
-            ev = json.load(f)
-        out["merge_layers"] = [int(l) for l in ev.get("merge_layers", [])]
-
-    # --- centroid_trajectories.npz → {int_id: (lifespan, d)} ---
-    ct_path = run_dir / "centroid_trajectories.npz"
-    if ct_path.exists():
-        data = np.load(ct_path)
-        for key in data.files:
-            # Key format: "traj_{id}"
-            if key.startswith("traj_"):
-                try:
-                    tid = int(key[5:])
-                    out["centroid_trajs"][tid] = data[key].astype(np.float32)
-                except (ValueError, Exception):
-                    pass
-
-    # --- activations.npz ---
-    acts_path = run_dir / "activations.npz"
-    if acts_path.exists():
-        data = np.load(acts_path)
-        key  = "activations" if "activations" in data else data.files[0]
-        out["activations"] = data[key]
-        if out["n_layers"] == 0:
+    # Backfill from activations shape if geometry.json didn't have them
+    if out["activations"] is not None:
+        if not out["n_layers"]:
             out["n_layers"] = out["activations"].shape[0]
-        if out["n_tokens"] == 0:
+        if not out["n_tokens"]:
             out["n_tokens"] = out["activations"].shape[1]
-        if out["d_model"] == 0:
+        if not out["d_model"]:
             out["d_model"]  = out["activations"].shape[2]
 
     return out

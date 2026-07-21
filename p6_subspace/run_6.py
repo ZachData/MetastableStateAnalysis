@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 
 
-from core.io import find_phase1_run_dir, load_phase1_run, _load_events
+from p1_mstate_tracking.p1_io import find_phase1_run_dir, load_phase1_run, _load_events
 
 from p6_subspace.p6_io import (
     SubexperimentSpec,
@@ -574,8 +574,6 @@ def build_context(
     Loads Phase 1 activations and Phase 2 weight matrices.
     Applies all W1 / W3 / W2 / Bug-10 fixes.
     """
-    from core.io import find_phase1_run_dir, load_phase1_run
-
     stem = model_name.replace("/", "_").replace("-", "_")
 
     ctx: dict = {
