@@ -245,6 +245,64 @@ def measure_cluster_structure(
 
 
 # ---------------------------------------------------------------------------
+# Baseline clustering reproducibility (FIX-DS3)
+# ---------------------------------------------------------------------------
+
+_ARI_SANITY_THRESHOLD = 0.95   # re-clustering the SAME data should be ~1.0
+
+
+def _baseline_ari_sanity(
+    activations:      list[np.ndarray],
+    baseline_labels:  list[np.ndarray],
+    min_cluster_size: int = 3,
+) -> tuple[float, bool]:
+    """
+    Sanity-check that the baseline clustering is reproducible.
+
+    FIX-DS3. Every DD1/DD2 verdict is an ARI comparison against
+    `baseline_labels`. That comparison is only meaningful if re-running
+    HDBSCAN on the *unmodified* baseline activations recovers those same
+    labels. If it doesn't — because the input is too small, too degenerate,
+    or the clustering is unstable at this min_cluster_size — then a low
+    post-intervention ARI says nothing about the intervention: the baseline
+    was never a fixed reference to begin with.
+
+    This runs the no-op control: cluster the baseline activations again and
+    score them against the labels the pipeline is already treating as
+    ground truth.
+
+    Parameters
+    ----------
+    activations      : list of (n_tokens, d_model) baseline activations,
+                       one per layer — the SAME arrays the baseline labels
+                       were derived from, with no intervention applied.
+    baseline_labels  : list of (n_tokens,) HDBSCAN labels, one per layer.
+    min_cluster_size : passed through to HDBSCAN; must match whatever
+                       produced `baseline_labels`, or the comparison is
+                       measuring the parameter change, not stability.
+
+    Returns
+    -------
+    (mean_ari, is_reliable)
+      mean_ari    : float — mean ARI of the re-clustering vs baseline_labels,
+                    across all layers with enough non-noise points to score.
+                    0.0 if no layer was scorable.
+      is_reliable : bool — True only if at least one layer was scorable AND
+                    mean_ari >= _ARI_SANITY_THRESHOLD. A degenerate input
+                    (too few tokens, all-noise labels) yields (0.0, False)
+                    rather than raising, so callers can downgrade the
+                    verdict to INDETERMINATE instead of crashing.
+    """
+    result = measure_cluster_structure(
+        activations, baseline_labels, min_cluster_size=min_cluster_size
+    )
+    mean_ari = float(result["mean_ari"])
+    scorable = int(result["n_layers"]) > 0
+    is_reliable = bool(scorable and mean_ari >= _ARI_SANITY_THRESHOLD)
+    return mean_ari, is_reliable
+
+
+# ---------------------------------------------------------------------------
 # Full pipeline → SubResult
 # ---------------------------------------------------------------------------
 
@@ -374,6 +432,48 @@ def run_dissociation(ctx: dict) -> SubResult:
                 lab = np.zeros(acts_n.shape[0], dtype=int)
             baseline_labels_per_layer.append(lab)
 
+    # FIX-DS3: verify the baseline clustering is reproducible before any
+    # ARI-based verdict is trusted. If re-clustering the unmodified baseline
+    # doesn't recover baseline_labels_per_layer, then a low post-intervention
+    # ARI is not evidence of disruption — the reference was never stable.
+    baseline_ari, baseline_ari_reliable = _baseline_ari_sanity(
+        baseline["activations"], baseline_labels_per_layer
+    )
+    if not baseline_ari_reliable:
+        reason = (
+            f"baseline clustering is not reproducible "
+            f"(self-ARI={baseline_ari:.4f} < {_ARI_SANITY_THRESHOLD}). "
+            f"Re-clustering the unmodified baseline activations does not "
+            f"recover the baseline labels, so cluster-ARI comparisons "
+            f"against the interventions carry no signal. Check n_tokens, "
+            f"min_cluster_size, and whether ctx['baseline_labels'] came "
+            f"from the same activations."
+        )
+        payload = {
+            "baseline_induction_score": float(baseline_ind),
+            "baseline_self_ari":        baseline_ari,
+            "baseline_ari_reliable":    False,
+            "p6_dd1_satisfied":         None,
+            "p6_dd2_satisfied":         None,
+            "indeterminate_reason":     reason,
+        }
+        lines = [
+            SEP_THICK,
+            "DOUBLE DISSOCIATION — FORWARD-PASS INTERVENTIONS  [Track C]",
+            SEP_THICK,
+            f"INDETERMINATE: {reason}",
+        ]
+        return SubResult(
+            name="dissociation",
+            applicable=True,
+            payload=payload,
+            summary_lines=lines,
+            verdict_contribution={
+                "dd_p6_dd1_satisfied": None,
+                "dd_p6_dd2_satisfied": None,
+            },
+        )
+
     # --- Intervention 1: zero imaginary channel (pass P_A) ---
     # FIX (Bug 5): mode parameter removed from make_projection_hook.
     # Channel selection is entirely determined by which projector is passed.
@@ -434,6 +534,8 @@ def run_dissociation(ctx: dict) -> SubResult:
 
     payload = {
         "baseline_induction_score":     float(baseline_ind),
+        "baseline_self_ari":            baseline_ari,
+        "baseline_ari_reliable":        True,
         "ind_after_zero_imag":          float(ind_after_zero_imag),
         "ind_after_zero_real":          float(ind_after_zero_real),
         "ind_after_zero_rand":          float(ind_after_rand),

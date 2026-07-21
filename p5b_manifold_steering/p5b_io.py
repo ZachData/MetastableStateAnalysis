@@ -40,6 +40,13 @@ def find_phase1_runs(phase1_dir: Path, stem: str) -> dict[str, Path]:
     phase1_dir = Path(phase1_dir)
     runs: dict[str, Path] = {}
 
+    # A missing phase1_dir is an ordinary "nothing to do" case, not an error:
+    # run_5b._run_one treats an empty result as "no Phase 1 runs found" and
+    # returns 1. Without this guard, .iterdir() below raises FileNotFoundError
+    # and the caller never gets to make that decision.
+    if not phase1_dir.is_dir():
+        return runs
+
     # Reuse Phase 5's finder if available; fall back to glob.
     try:
         from p5_single_mstate_analysis.io import find_phase1_runs as _p5_find
@@ -206,7 +213,21 @@ def load_phase2_projectors(
     Returns dict with U_pos, U_neg, U_A as (d, k) arrays, or None if not found.
     """
     phase2_dir = Path(phase2_dir)
-    stem_variants = [stem, stem.replace("_", "-")]
+    if not phase2_dir.is_dir():
+        return None
+
+    # Both directions must be tried. stem arrives in either form depending on
+    # the call site (run_5b passes model_name.replace("-", "_"); tests and
+    # CLI args pass the raw hyphenated model name), while the file on disk
+    # may have been written under either. Previously only "_"→"-" was
+    # covered, so a hyphenated stem never found an underscored file.
+    # dict.fromkeys keeps first-seen order while de-duplicating when the
+    # stem contains only one separator style.
+    stem_variants = list(dict.fromkeys([
+        stem,
+        stem.replace("_", "-"),
+        stem.replace("-", "_"),
+    ]))
 
     for sv in stem_variants:
         for pattern in (
