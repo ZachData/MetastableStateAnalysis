@@ -1,5 +1,5 @@
 """
-plots.py — All figure-generation functions.
+p1_mstate_tracking/plots.py — All figure-generation functions.
 
 Each function takes a results dict (from analysis.analyze_trajectory) and
 a save_dir Path.  Figures are written to disk; nothing is returned.
@@ -25,9 +25,12 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from pathlib import Path
 from scipy.linalg import svdvals
+import warnings
+from torch import float32 as torch_float32, float64 as torch_float64
 
+from core.model_family import model_family
+from core.models import model_dtype, dtype_name, layernorm_to_sphere
 from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, SPECTRAL_MAX_K, DEGENERATE_RANK_THRESHOLD
-from core.models import layernorm_to_sphere
 from core.metrics import pairwise_inner_products, effective_rank_from_raw
 
 
@@ -647,8 +650,9 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path) -> dict:
     import json
 
     v_matrices = []
+    family     = model_family(model_name)
 
-    if "albert" in model_name:
+    if family == "albert":
         try:
             attn     = model.encoder.albert_layer_groups[0].albert_layers[0].attention
             v_weight = attn.value.weight.detach().cpu().float().numpy()
@@ -656,32 +660,60 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path) -> dict:
         except AttributeError:
             print(f"  Could not extract V from {model_name}")
             return {}
-    elif "bert" in model_name:
+    elif family == "bert":
         for i, layer in enumerate(model.encoder.layer):
             v = layer.attention.self.value.weight.detach().cpu().float().numpy()
             v_matrices.append((f"layer_{i}", v))
-    elif "gpt2" in model_name:
+    elif family == "gpt2":
         for i, block in enumerate(model.h):
             d = block.attn.c_attn.weight.shape[1]
             v = block.attn.c_attn.weight[:, 2*d//3:].detach().cpu().float().numpy()
             v_matrices.append((f"layer_{i}", v))
-    elif any(s in model_name.lower() for s in ("pythia", "gpt-neox", "gptneox")):
+    elif family == "gptneox":
         from core.pythia_weights import extract_v_gptneox
         for i, layer in enumerate(model.layers):
             v = extract_v_gptneox(layer, model_name)
             v_matrices.append((f"layer_{i}", v))
+    else:
+        print(f"  No V-extraction branch for {model_name} (family={family!r})")
+        return {}
 
     if not v_matrices:
         return {}
 
     # ------------------------------------------------------------------
-    # Compute spectra
+    # Precision guard.
+    #
+    # These weights come from the loaded model, so they carry whatever
+    # dtype load_model used. eigvals() on a non-normal matrix has no
+    # backward-stability guarantee in terms of the input perturbation, so
+    # eig_frac_pos_real / eig_frac_neg_real are unreliable near the zero
+    # crossing when the input has already been quantised — and those, with
+    # eig_spectral_radius, are what status-1's Thm 6.1 falsification rests
+    # on. Singular values are far more forgiving; the eigenvalues are not.
+    # ------------------------------------------------------------------
+    weight_dtype = dtype_name(model_dtype(model))
+    if model_dtype(model) not in (torch_float32, torch_float64):
+        warnings.warn(
+            f"analyze_value_eigenspectrum: {model_name} is loaded as "
+            f"{weight_dtype}. eig_frac_pos_real / eig_frac_neg_real / "
+            f"eig_spectral_radius from a reduced-precision V are not "
+            f"trustworthy near zero. Re-run with --dtype float32 (the "
+            f"default) before using these numbers for the Thm 6.1 claim.",
+            stacklevel=2,
+        )
+
+    # ------------------------------------------------------------------
+    # Compute spectra — in float64 regardless of load dtype. This does not
+    # recover bits lost at load time; it only stops the decomposition from
+    # adding error of its own on top.
     # ------------------------------------------------------------------
     spectrum_data = {}
     for name, V in v_matrices:
+        V  = np.asarray(V, dtype=np.float64)
         sv = svdvals(V)
 
-        # Eigenvalues require a square matrix.  V is square for all three
+        # Eigenvalues require a square matrix.  V is square for all four
         # architectures (see models.py extraction notes), but guard anyway.
         if V.shape[0] == V.shape[1]:
             eigs          = np.linalg.eigvals(V)          # complex (n,)
@@ -723,8 +755,20 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path) -> dict:
     # ------------------------------------------------------------------
     json_path = save_dir / f"v_eigenspectrum_{model_name.replace('/', '_')}.json"
     with open(json_path, "w") as f:
-        json.dump({"model": model_name, "layers": spectrum_data}, f, indent=2)
-    print(f"  Saved: {json_path}")
+        json.dump(
+            {
+                "model":        model_name,
+                "model_family": family,
+                # Recorded so a cross-run comparison can tell whether two
+                # spectra are comparable. Without it, a dtype change between
+                # runs is invisible in the artifact.
+                "weight_dtype": weight_dtype,
+                "compute_dtype": "float64",
+                "layers":       spectrum_data,
+            },
+            f, indent=2,
+        )
+    print(f"  Saved: {json_path}  (weights {weight_dtype}, spectra float64)")
 
     # ------------------------------------------------------------------
     # Plot: 2 rows × n_plot cols

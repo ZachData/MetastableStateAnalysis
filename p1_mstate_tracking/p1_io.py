@@ -55,6 +55,7 @@ Global at phase1_dir root (written by aggregate_global_artifacts):
 
 from __future__ import annotations
 
+import re
 import csv
 import json
 import warnings
@@ -822,6 +823,68 @@ def load_fiedler_vecs(run_dir):
 #   3. Any dir containing either model fragment or prompt fragment
 #   4. None if nothing matches
 # ===========================================================================
+# Variant tags run_1.py appends between model and prompt: ALBERT snapshot
+# depth ("48iter") and sublayer streams ("attn"/"ffn"). Anything else in
+# that position is a different model, not a variant of this one.
+_VARIANT_TAG_RE = re.compile(r"^(?:\d+iter|attn|ffn)$")
+
+
+def _norm(s: str) -> str:
+    return s.replace("-", "_").replace("/", "_").replace("@", "_").lower()
+
+
+def _stem_matches(dirname: str, stem: str) -> bool:
+    """True if dirname begins with stem at a segment boundary.
+
+    Boundary-anchored, so "pythia_410m_step1" no longer matches
+    "pythia_410m_step1000". Still permissive across the hyphen/underscore
+    split, which is why it can't distinguish "gpt2" from "gpt2_medium" —
+    that's what _exact_run_match is for.
+    """
+    d, s = _norm(dirname), _norm(stem)
+    if not s:
+        return True                      # preserved: empty stem matches all
+    return d == s or d.startswith(s + "_")
+
+
+def _exact_run_match(dirname: str, stem: str, prompt_key: str) -> bool:
+    """True only for the name run_1 would have written for (stem, prompt)."""
+    d, s, p = _norm(dirname), _norm(stem), _norm(prompt_key)
+    suffix = "_" + p
+    if not d.endswith(suffix):
+        return False
+    head = d[: -len(suffix)]
+    if head == s:
+        return True
+    if head.startswith(s + "_"):
+        return bool(_VARIANT_TAG_RE.match(head[len(s) + 1:]))
+    return False
+
+
+def _newest(dirs):
+    return sorted(dirs, key=lambda p: p.stat().st_mtime)[-1]
+
+
+def _resolve_inexact(candidates, stem, prompt_key, model_name):
+    """Rank inexact matches by leftover name length, then recency, and warn.
+
+    An inexact match on a checkpoint-suffixed registry is exactly how the
+    wrong Pythia step gets loaded without anything failing, so this path is
+    audible rather than silent.
+    """
+    n = len(_norm(stem))
+    ranked = sorted(candidates,
+                    key=lambda d: (len(_norm(d.name)) - n, -d.stat().st_mtime))
+    chosen = ranked[0]
+    warnings.warn(
+        f"find_phase1_run_dir: no exact run directory for "
+        f"({model_name!r}, {prompt_key!r}); using {chosen.name!r} from "
+        f"{[d.name for d in ranked]}. Confirm this is the intended "
+        f"checkpoint before trusting downstream results.",
+        stacklevel=3,
+    )
+    return chosen
+
 
 def find_phase1_run_dir(
     phase1_dir:  Path,
@@ -831,71 +894,50 @@ def find_phase1_run_dir(
     """
     Locate the Phase 1 run directory for (model_name, prompt_key).
 
-    Handles both:
-      - nested layout: phase1_dir/{stem}/{prompt_key}/
-      - flat layout:   phase1_dir/{model}-{iter}_{prompt_key}/
+    Resolution order, tightest first:
+      1. legacy nested layout   phase1_dir/{stem}/*{prompt}*
+      2. exact flat name        phase1_dir/{stem}[_{tag}]_{prompt}
+      3. prefix + prompt substring          (warns)
+      4. prefix only, prompt absent         (warns)
 
-    Parameters
-    ----------
-    phase1_dir : root of phase1 results (e.g. results/phase1 or a timestamped subdir)
-    model_name : model name in any form, e.g. "albert-xlarge-v2" or "albert_xlarge_v2"
-    prompt_key : e.g. "wiki_paragraph"
-
-    Returns
-    -------
-    Path to run directory, or None if not found.
+    Steps 3 and 4 exist for pre-v2 directory names and are the only paths
+    that can return a directory for a different model; both warn.
     """
     phase1_dir = Path(phase1_dir)
     if not phase1_dir.exists():
         return None
 
-    # Normalise model name into both hyphen and underscore variants
     stem_under  = model_name.replace("-", "_").replace("/", "_")
     stem_hyphen = model_name.replace("_", "-").replace("/", "-")
 
-    # --- 1. Legacy nested layout: phase1_dir / stem_under / *prompt_key* ---
     nested = phase1_dir / stem_under
     if nested.is_dir():
-        candidates = sorted(nested.glob(f"*{prompt_key}*"), key=lambda p: p.stat().st_mtime)
+        candidates = sorted(nested.glob(f"*{prompt_key}*"),
+                            key=lambda p: p.stat().st_mtime)
         if candidates:
             return candidates[-1]
-        # Fallback: any subdir under nested
         all_sub = [d for d in nested.iterdir() if d.is_dir()]
         if all_sub:
-            return sorted(all_sub, key=lambda p: p.stat().st_mtime)[-1]
+            return _newest(all_sub)
 
-    # --- 2. Flat layout: phase1_dir / *model*_*prompt* ---
-    for stem_form in (stem_hyphen, stem_under):
-        # Both model fragment AND prompt fragment in name
-        candidates = [
-            d for d in phase1_dir.iterdir()
-            if d.is_dir()
-            and _stem_matches(d.name, stem_form)
-            and prompt_key in d.name
-        ]
-        if candidates:
-            return sorted(candidates, key=lambda p: p.stat().st_mtime)[-1]
+    subdirs = [d for d in phase1_dir.iterdir() if d.is_dir()]
 
-    # --- 3. Flat layout fallback: model match only (prompt absent from name) ---
+    exact = [d for d in subdirs if _exact_run_match(d.name, stem_under, prompt_key)]
+    if exact:
+        return _newest(exact)
+
     for stem_form in (stem_hyphen, stem_under):
-        candidates = [
-            d for d in phase1_dir.iterdir()
-            if d.is_dir() and _stem_matches(d.name, stem_form)
-        ]
-        if candidates:
-            return sorted(candidates, key=lambda p: p.stat().st_mtime)[-1]
+        loose = [d for d in subdirs
+                 if _stem_matches(d.name, stem_form) and prompt_key in d.name]
+        if loose:
+            return _resolve_inexact(loose, stem_form, prompt_key, model_name)
+
+    for stem_form in (stem_hyphen, stem_under):
+        loose = [d for d in subdirs if _stem_matches(d.name, stem_form)]
+        if loose:
+            return _resolve_inexact(loose, stem_form, prompt_key, model_name)
 
     return None
-
-
-def _stem_matches(dirname: str, stem: str) -> bool:
-    """
-    True if dirname starts with stem (treating - and _ as equivalent).
-    Both strings are normalised before comparison.
-    """
-    d = dirname.replace("-", "_").lower()
-    s = stem.replace("-", "_").lower()
-    return d.startswith(s)
 
 
 def load_phase1_run(run_dir: Path) -> dict:

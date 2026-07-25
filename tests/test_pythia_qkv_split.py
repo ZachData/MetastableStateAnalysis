@@ -133,3 +133,58 @@ def test_extract_v_gptneox_wrapper():
 
     v_out = extract_v_gptneox(layer)
     np.testing.assert_array_equal(v_out, V.reshape(NUM_HEADS * HEAD_SIZE, HIDDEN_IN))
+
+    class TestAttributeContract:
+    """The stub in this file uses the exact attribute names the old
+    implementation hardcoded, so it could not catch an upstream rename.
+    These cases vary the names."""
+
+    def _weight(self, num_heads, head_size):
+        import numpy as np
+        d = num_heads * head_size
+        return np.arange(3 * d * d, dtype=np.float32).reshape(3 * d, d)
+
+    def _layer(self, attn):
+        return type("Layer", (), {"attention": attn})()
+
+    def test_resolves_head_dim_alias(self):
+        from core.pythia_weights import split_qkv_from_layer
+        attn = type("Attn", (), {
+            "num_heads": 4,
+            "head_dim":  8,                       # not head_size
+            "query_key_value": type("L", (), {"weight": self._weight(4, 8)})(),
+        })()
+        parts = split_qkv_from_layer(self._layer(attn))
+        assert parts["_geometry"]["num_heads"] == 4
+        assert parts["V"].shape == (32, 32)
+
+    def test_resolves_from_config_only(self):
+        from core.pythia_weights import split_qkv_from_layer
+        cfg  = type("Cfg", (), {"num_attention_heads": 4, "hidden_size": 32})()
+        attn = type("Attn", (), {
+            "config": cfg,
+            "query_key_value": type("L", (), {"weight": self._weight(4, 8)})(),
+        })()
+        assert split_qkv_from_layer(self._layer(attn))["V"].shape == (32, 32)
+
+    def test_geometry_weight_shape_mismatch_raises(self):
+        """Stale attributes that disagree with the weight must raise, not
+        produce a misaligned split."""
+        import pytest
+        from core.pythia_weights import split_qkv_from_layer
+        attn = type("Attn", (), {
+            "num_attention_heads": 8,             # wrong: weight is 4 heads
+            "head_size": 8,
+            "query_key_value": type("L", (), {"weight": self._weight(4, 8)})(),
+        })()
+        with pytest.raises(ValueError, match="output rows"):
+            split_qkv_from_layer(self._layer(attn))
+
+    def test_unresolvable_geometry_reports_available_names(self):
+        import pytest
+        from core.pythia_weights import split_qkv_from_layer
+        attn = type("Attn", (), {
+            "query_key_value": type("L", (), {"weight": self._weight(4, 8)})(),
+        })()
+        with pytest.raises(AttributeError, match="cannot resolve head geometry"):
+            split_qkv_from_layer(self._layer(attn))

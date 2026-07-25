@@ -1,5 +1,5 @@
 """
-config.py — Global constants, prompt variants, and model registry.
+core/config.py — Global constants, prompt variants, and model registry.
 
 All tuneable parameters live here. Nothing else imports from this module;
 everything else imports FROM it.
@@ -29,6 +29,26 @@ BASE_RESULTS_DIR = Path("results")
 RANDOM_INIT_SEED: int = 0
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# ---------------------------------------------------------------------------
+# Precision
+# ---------------------------------------------------------------------------
+
+# dtype every model is loaded in. See core/models.py's module docstring for
+# the full argument; the short version:
+#
+#   Pythia checkpoints are stored fp16 on the Hub. float32 is an exact
+#   upcast; bfloat16 is a lossy re-quantisation (fp16 has 10 mantissa bits,
+#   bf16 has 7). The V eigenspectrum is eigvals() of a non-normal matrix,
+#   so eig_frac_pos_real / eig_frac_neg_real / eig_spectral_radius — the
+#   quantities status-1's Thm 6.1 falsification rests on — degrade with
+#   input precision in a way singular values do not.
+#
+# "auto" restores the pre-fix behaviour (bfloat16 on CUDA, float32 on CPU).
+# Whatever is set here is written to experiment.txt and to every
+# v_eigenspectrum JSON, so a dtype change can never again be an invisible
+# term in a cross-run comparison.
+MODEL_DTYPE = "float32"
 
 # ---------------------------------------------------------------------------
 # Numerical parameters
@@ -324,5 +344,59 @@ MODEL_CONFIGS = {
     },
 }
 
-from core.pythia_registry import build_pythia_model_configs
+from core.pythia_registry import (
+    build_pythia_model_configs,
+    PYTHIA_410M_PILOT_STEPS,
+    PYTHIA_1_4B_ANCHOR_STEPS,
+    PYTHIA_1_4B_EXPENSIVE_STEPS,
+)
+
 MODEL_CONFIGS.update(build_pythia_model_configs())
+
+# ---------------------------------------------------------------------------
+# Model groups
+# ---------------------------------------------------------------------------
+#
+# MODEL_CONFIGS grew from 10 entries to 47 when the Pythia checkpoint
+# registry was merged in. run_1.py used to default --models to
+# list(MODEL_CONFIGS.keys()), so a bare `python -m p1_mstate_tracking.run_1`
+# now means 27 × 410M + 10 × 1.4B downloads across every prompt — tens of
+# gigabytes and hundreds of runs from a command that used to mean "the
+# seven Blog 1 architectures". DEFAULT_MODELS pins that original meaning;
+# the Pythia schedules are opt-in by group name.
+
+BLOG1_MODELS = [
+    "albert-base-v2",
+    "albert-xlarge-v2",
+    "bert-base-uncased",
+    "gpt2",
+    "gpt2-medium",
+    "gpt2-large",
+    "gpt2-xl",
+]
+
+MODEL_GROUPS = {
+    "blog1":                 list(BLOG1_MODELS),
+    "blog1-random":          ["albert-base-v2-random", "gpt2-large-random"],
+    "pythia-410m-pilot":     [f"pythia-410m-step{s}" for s in PYTHIA_410M_PILOT_STEPS],
+    "pythia-1.4b-anchors":   [f"pythia-1.4b-step{s}" for s in PYTHIA_1_4B_ANCHOR_STEPS],
+    "pythia-1.4b-expensive": [f"pythia-1.4b-step{s}" for s in PYTHIA_1_4B_EXPENSIVE_STEPS],
+    # transition plan item 6: the replication gate runs Phase 1 at step 0 and
+    # at the final checkpoint and compares against Blog 1's pass criteria.
+    # A failed gate stops the sweep, so this is its own group.
+    "replication-gate":      ["pythia-1.4b-step0", "pythia-1.4b-step143000"],
+}
+
+# Which untrained control belongs to which trained model. --random-baseline
+# used to hardcode ("albert-base-v2-random", "gpt2-large-random"), so on a
+# Pythia-only selection it silently appended two ALBERT/GPT-2 runs that had
+# nothing to do with the sweep. There is no Pythia entry: the published
+# step-0 checkpoint is the untrained-weights object, and it is a model in
+# its own right rather than a flag.
+RANDOM_CONTROLS = {
+    "albert-base-v2": "albert-base-v2-random",
+    "gpt2-large":     "gpt2-large-random",
+}
+
+DEFAULT_MODELS = list(BLOG1_MODELS)
+

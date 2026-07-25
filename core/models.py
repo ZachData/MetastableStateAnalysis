@@ -1,29 +1,49 @@
 """
-models.py — Model loading and activation/attention extraction.
+core/models.py — Model loading and activation/attention extraction.
 
 Handles:
   - load_model              : download + configure any registered model
   - extract_activations     : standard forward pass → hidden states + attentions
   - extract_albert_extended : run ALBERT's shared layer N times to obtain
                               a long depth trajectory
+  - describe_extraction     : the extraction_meta dict analyze_trajectory records
   - layernorm_to_sphere     : L2-normalize token vectors onto S^{d-1}
 
-Performance notes
------------------
-* Models are loaded in bfloat16 on CUDA (~2× memory reduction, faster matmuls
-  on Ampere+ hardware).  Outputs are cast back to float32 on the GPU before the
-  .cpu() transfer to keep downstream numpy code unchanged.
-* torch.compile (mode="reduce-overhead") is applied on CUDA when available,
-  giving a ~20–40% throughput improvement after the first warm-up forward pass.
-* torch.autocast wraps every forward pass so that even float32-loaded models
-  benefit from mixed-precision paths.
+Precision
+---------
+Default dtype is float32 (core.config.MODEL_DTYPE), not bfloat16. This is a
+correctness choice, not a conservatism:
+
+* Pythia checkpoints are stored as float16 on the Hub. Loading them as
+  float32 is an exact upcast — every stored bit survives. Loading them as
+  bfloat16 is a lossy re-quantisation, since fp16 carries 10 mantissa bits
+  and bf16 carries 7.
+* The quantity that suffers is the V eigenspectrum. eigvals() on a
+  non-normal matrix has no backward-stability guarantee tied to the input
+  perturbation, so eig_frac_pos_real / eig_frac_neg_real are unreliable near
+  the zero crossing at bf16 input precision — and those, with
+  eig_spectral_radius, are what status-1's Thm 6.1 falsification rests on.
+* effective_rank feeds DEGENERATE_RANK_THRESHOLD, which gates CKA and
+  NN-stability. A gate driven by a low-precision rank estimate flips
+  silently.
+
+Set MODEL_DTYPE = "auto" (or pass --dtype auto) to restore the previous
+behaviour: bfloat16 on CUDA, float32 on CPU. Whatever is chosen is recorded
+in experiment.txt and in every v_eigenspectrum JSON, so the dtype can never
+again be an invisible term in a cross-run comparison.
+
+autocast is enabled only when the model's own parameters are already in a
+reduced-precision dtype. It used to be gated on `DEVICE == "cuda"` alone,
+which meant a float32-loaded model still ran its forward pass through
+bfloat16 kernels — reintroducing exactly the loss the fp32 load avoids.
 """
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from core.config import DEVICE, MODEL_CONFIGS
+from core.config import DEVICE, MODEL_CONFIGS, MODEL_DTYPE
+from core.model_family import model_family
 
 
 # ---------------------------------------------------------------------------
@@ -33,6 +53,66 @@ from core.config import DEVICE, MODEL_CONFIGS
 def layernorm_to_sphere(activation: torch.Tensor) -> torch.Tensor:
     """L2-normalize each token vector onto the unit sphere."""
     return F.normalize(activation, p=2, dim=-1)
+
+
+_DTYPE_ALIASES = {
+    "float32":  torch.float32,
+    "fp32":     torch.float32,
+    "32":       torch.float32,
+    "float64":  torch.float64,
+    "fp64":     torch.float64,
+    "64":       torch.float64,
+    "bfloat16": torch.bfloat16,
+    "bf16":     torch.bfloat16,
+    "float16":  torch.float16,
+    "fp16":     torch.float16,
+    "16":       torch.float16,
+}
+
+# dtypes for which mixed-precision autocast is meaningful on the forward pass
+_REDUCED_PRECISION = (torch.bfloat16, torch.float16)
+
+
+def resolve_dtype(spec=None) -> torch.dtype:
+    """Turn a dtype spec into a torch.dtype.
+
+    spec may be None (use core.config.MODEL_DTYPE), a torch.dtype, "auto",
+    or any key of _DTYPE_ALIASES. "auto" means bfloat16 on CUDA and float32
+    on CPU — the pre-fix behaviour, kept reachable so old runs can be
+    reproduced deliberately rather than by accident.
+    """
+    if spec is None:
+        spec = MODEL_DTYPE
+    if isinstance(spec, torch.dtype):
+        return spec
+
+    key = str(spec).strip().lower()
+    if key == "auto":
+        return torch.bfloat16 if DEVICE == "cuda" else torch.float32
+    if key not in _DTYPE_ALIASES:
+        raise ValueError(
+            f"unknown dtype spec {spec!r}; expected 'auto' or one of "
+            f"{sorted(set(_DTYPE_ALIASES))}"
+        )
+    return _DTYPE_ALIASES[key]
+
+
+def model_dtype(model) -> torch.dtype:
+    """dtype of the model's first parameter — what it was actually loaded as."""
+    return next(model.parameters()).dtype
+
+
+def dtype_name(dtype: torch.dtype) -> str:
+    return str(dtype).replace("torch.", "")
+
+
+def _autocast_enabled(model) -> bool:
+    return DEVICE == "cuda" and model_dtype(model) in _REDUCED_PRECISION
+
+
+def _autocast_dtype(model) -> torch.dtype:
+    dt = model_dtype(model)
+    return dt if dt in _REDUCED_PRECISION else torch.bfloat16
 
 
 def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
@@ -59,6 +139,10 @@ def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
         training.  Under post-LN (ALBERT/BERT) this gives tiny per-layer
         updates, so weak clustering may be a scale artifact, not structure.
         Use deliberately.
+
+    There is deliberately no "norm_matched" scheme. The Pythia registry once
+    named one; it was never implemented, and the published step-0 checkpoint
+    is the untrained-weights object now.
 
     Embeddings -> N(0, 0.02) (random token directions on the sphere).
     LayerNorm  -> weight 1, bias 0.  All other biases -> 0.
@@ -133,17 +217,27 @@ def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
         "checksum_before": before, "checksum_after": after,
     }
 
+
 # ---------------------------------------------------------------------------
 # Loading
 # ---------------------------------------------------------------------------
 
-def load_model(model_name: str):
+def load_model(model_name: str, dtype=None):
     """
     Instantiate tokenizer + model for *model_name* (must be a key in
     MODEL_CONFIGS).  Model is moved to DEVICE and set to eval mode.
 
-    On CUDA: loaded in bfloat16 and optionally compiled with torch.compile.
-    On CPU:  loaded in float32 (bfloat16 has no benefit on CPU).
+    Parameters
+    ----------
+    dtype : dtype spec (see resolve_dtype). None -> core.config.MODEL_DTYPE,
+            which defaults to float32. See the module docstring for why the
+            default is not bfloat16.
+
+    attn_implementation is pinned to "eager". GPT-NeoX's sdpa path returns
+    no attention weights and only falls back to eager via a deprecation
+    shim; when that shim is removed, output_attentions=True would start
+    yielding empty attentions and Phase 1's entire sinkhorn/Fiedler/entropy
+    family would go quiet without raising.
 
     Returns
     -------
@@ -153,24 +247,101 @@ def load_model(model_name: str):
     repo_id  = cfg.get("hf_repo", cfg.get("pretrained_name", model_name))
     revision = cfg.get("revision")
 
-    tokenizer = cfg["tokenizer_class"].from_pretrained(repo_id, revision=revision)
+    # Falls back to `revision` when the key is absent, so models whose
+    # tokenizer genuinely varies by revision keep the old behaviour. Pythia
+    # sets it to None explicitly: one tokenizer, 37 checkpoints.
+    tok_revision = cfg.get("tokenizer_revision", revision)
+    tokenizer = cfg["tokenizer_class"].from_pretrained(repo_id, revision=tok_revision)
 
-    dtype = torch.bfloat16 if DEVICE == "cuda" else torch.float32
+    torch_dtype = resolve_dtype(dtype)
 
-    model = cfg["model_class"].from_pretrained(
-        repo_id,
+    load_kwargs = dict(
         revision=revision,
         output_hidden_states=True,
         output_attentions=True,
-        torch_dtype=dtype,
-    ).to(DEVICE)
+        torch_dtype=torch_dtype,
+        attn_implementation="eager",
+    )
+    try:
+        model = cfg["model_class"].from_pretrained(repo_id, **load_kwargs)
+    except (TypeError, ValueError):
+        # Older transformers releases don't accept attn_implementation.
+        # Falling back is safe for BERT/ALBERT/GPT-2 (eager is their only
+        # path); for GPT-NeoX it restores the deprecation-shim behaviour.
+        load_kwargs.pop("attn_implementation")
+        model = cfg["model_class"].from_pretrained(repo_id, **load_kwargs)
+
+    model = model.to(DEVICE)
     model.eval()
 
-    if model_name == "gpt2" and tokenizer.pad_token is None:
+    if tokenizer.pad_token is None and getattr(tokenizer, "eos_token", None):
+        # Previously gated on model_name == "gpt2"; every decoder-only
+        # tokenizer in the registry now needs it, and none of them pad
+        # during Phase 1 anyway, so an unconditional default is safer than
+        # a per-model list that silently misses new entries.
         tokenizer.pad_token = tokenizer.eos_token
 
     return model, tokenizer
 
+
+# ---------------------------------------------------------------------------
+# Extraction metadata
+# ---------------------------------------------------------------------------
+
+def _has_final_layernorm(model) -> bool:
+    """True when the last hidden state has passed a stack-final LayerNorm.
+
+    GPT-2 exposes it as .ln_f, GPT-NeoX as .final_layer_norm. BERT and
+    ALBERT are post-LN per block with no stack-final norm, so their last
+    hidden state is the same kind of object as every earlier one.
+
+    This matters because it is the honest version of the claim
+    `lm_head_excluded` was standing in for: on GPT-2 and Pythia the final
+    entry of hidden_states is already shaped toward the output head, so it
+    is not comparable to layers 1..L-1. status-1 blocker #4.
+    """
+    return any(hasattr(model, attr) for attr in ("ln_f", "final_layer_norm"))
+
+def describe_extraction(model, model_name: str, hidden_states, attentions) -> dict:
+    """Build the extraction_meta dict analyze_trajectory records.
+
+    This exists as a separate function rather than a fourth return value of
+    extract_activations because run_1b.py and train_tuned_lens.py both
+    unpack that call as a 3-tuple.
+
+    Checkpoint provenance is included so geometry.json is self-describing
+    along the developmental axis. Without it, the only record of which
+    training step produced a run is the model name, and checkpoints.py
+    recovers the step by parsing it back out of the directory name — which
+    means a rename silently re-labels the x-axis of every developmental
+    plot.
+    """
+    # Strip the @attn / @ffn / @48iter variant suffix before the lookup.
+    base_name = str(model_name).split("@")[0]
+    cfg = MODEL_CONFIGS.get(base_name, {})
+
+    return {
+        # No registry entry loads a model with an LM head (GPT2Model,
+        # GPTNeoXModel, AlbertModel, BertModel are all base classes), and
+        # nothing downstream strips a layer, so this is False and honest.
+        "lm_head_excluded":              False,
+        "n_layers_total":                len(hidden_states),
+        "n_layers_analyzed":             len(hidden_states),
+        "n_attention_layers":            len(attentions),
+        "hidden_state_0_is_embedding":   True,
+        "final_hidden_state_is_post_ln": _has_final_layernorm(model),
+        "model_family":                  model_family(model_name),
+        "weight_dtype":                  dtype_name(model_dtype(model)),
+        "autocast":                      _autocast_enabled(model),
+        "device":                        DEVICE,
+        # --- checkpoint provenance ---
+        "hf_repo":                       cfg.get("hf_repo"),
+        "revision":                      cfg.get("revision"),
+        "tokenizer_revision":            cfg.get("tokenizer_revision", cfg.get("revision")),
+        "checkpoint_step":               cfg.get("checkpoint_step"),
+        "random_init":                   cfg.get("random_init", False),
+        "random_init_scheme":            cfg.get("random_init_scheme"),
+    }
 
 # ---------------------------------------------------------------------------
 # Standard extraction
@@ -182,7 +353,10 @@ def extract_activations(model, tokenizer, text: str, model_name: str):
 
     Returns
     -------
-    hidden_states : list[Tensor]  — (n_tokens, d_model) float32 per layer
+    hidden_states : list[Tensor]  — (n_tokens, d_model) float32 per layer,
+                                    index 0 = embedding output, index L =
+                                    final block output (post-LN on GPT-2 /
+                                    GPT-NeoX)
     attentions    : list[Tensor]  — (n_heads, n_tokens, n_tokens) float32 per layer
     tokens        : list[str]     — decoded token strings
     """
@@ -194,13 +368,23 @@ def extract_activations(model, tokenizer, text: str, model_name: str):
     with torch.no_grad():
         with torch.autocast(
             device_type=DEVICE,
-            dtype=torch.bfloat16,
-            enabled=(DEVICE == "cuda"),
+            dtype=_autocast_dtype(model),
+            enabled=_autocast_enabled(model),
         ):
             outputs = model(**inputs, output_hidden_states=True, output_attentions=True)
 
+    if not outputs.attentions:
+        raise RuntimeError(
+            f"{model_name}: output_attentions=True returned no attention "
+            "weights. The attention implementation is almost certainly sdpa "
+            "or flash; load_model pins attn_implementation='eager' for this "
+            "reason, so this means the pin was dropped by the fallback path."
+        )
+
     # Cast to float32 on the GPU (cheap) before the CPU transfer (expensive).
-    # This avoids moving bfloat16 data across the PCIe bus then converting.
+    # This avoids moving reduced-precision data across the PCIe bus then
+    # converting. It does not recover precision already lost at load time —
+    # see the module docstring on MODEL_DTYPE.
     hidden_states = [h[0].to(torch.float32).cpu() for h in outputs.hidden_states]
     attentions    = [a[0].to(torch.float32).cpu() for a in outputs.attentions]
     return hidden_states, attentions, tokens
@@ -257,8 +441,8 @@ def extract_albert_extended(
     with torch.no_grad():
         with torch.autocast(
             device_type=DEVICE,
-            dtype=torch.bfloat16,
-            enabled=(DEVICE == "cuda"),
+            dtype=_autocast_dtype(model),
+            enabled=_autocast_enabled(model),
         ):
             embedding_output = model.embeddings(
                 input_ids=inputs["input_ids"],
