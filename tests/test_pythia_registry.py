@@ -51,9 +51,6 @@ class TestRegistryCoverage:
     def test_pilot_steps_are_subset_of_all_published_steps(self):
         assert set(PYTHIA_410M_PILOT_STEPS) <= set(PYTHIA_ALL_STEPS)
 
-    def test_random_baseline_present(self, cfgs):
-        assert "pythia-1.4b-random" in cfgs
-
 
 class TestRegistryEntryShape:
 
@@ -89,28 +86,17 @@ class TestRegistryEntryShape:
             if name.startswith("pythia-1.4b"):
                 assert entry["hf_repo"] == "EleutherAI/pythia-1.4b"
 
+class TestNoRandomBaseline:
 
-class TestRandomBaseline:
+    def test_no_random_init_entries(self, cfgs):
+        """Every Pythia entry is a real published checkpoint. A random_init
+        entry here would route into core.models.randomize_weights, which
+        accepts only "orthogonal"/"gaussian" and raises outside run_all's
+        try/except — killing the sweep rather than skipping one model."""
+        assert all(e["random_init"] is False for e in cfgs.values())
 
-    def test_random_baseline_flags(self, cfgs):
-        r = cfgs["pythia-1.4b-random"]
-        assert r["random_init"] is True
-        assert r["random_init_scheme"] == "norm_matched"
-
-    def test_random_baseline_is_final_checkpoint(self, cfgs):
-        """Two-baseline policy: pythia-1.4b-random must randomize the
-        FINAL checkpoint's weights, not step 0 — step 0 is the separate
-        true-init object, already covered by pythia-1.4b-step0."""
-        r = cfgs["pythia-1.4b-random"]
-        assert r["checkpoint_step"] == max(PYTHIA_1_4B_ANCHOR_STEPS)
-        assert r["revision"] == cfgs[f"pythia-1.4b-step{max(PYTHIA_1_4B_ANCHOR_STEPS)}"]["revision"]
-
-    def test_random_baseline_distinct_from_step0(self, cfgs):
-        step0 = cfgs["pythia-1.4b-step0"]
-        random_ = cfgs["pythia-1.4b-random"]
-        assert step0["random_init"] is False
-        assert step0["checkpoint_step"] != random_["checkpoint_step"]
-
+    def test_no_random_init_scheme_keys(self, cfgs):
+        assert all("random_init_scheme" not in e for e in cfgs.values())
 
 class TestNoKeyCollisions:
 

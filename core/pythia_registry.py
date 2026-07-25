@@ -99,11 +99,11 @@ def build_pythia_model_configs() -> dict:
     for step in PYTHIA_1_4B_ANCHOR_STEPS:
         cfgs[f"pythia-1.4b-step{step}"] = _pythia_entry(PYTHIA_1_4B_REPO, step)
 
-    # Two-baseline policy (plan, "Two random baselines, not one"):
-    # norm-matched randomization of the FINAL checkpoint — the continuity
-    # control for Blog 1's trained-vs-random contrast — kept as a distinct
-    # object from true step-0 init (already covered by the
-    # "pythia-1.4b-step0" entry above).
+    # Two-baseline policy is now single-baseline: true step-0 init
+    # ("pythia-1.4b-step0", above) is the developmental-origin control.
+    # The norm-matched randomization of the final checkpoint was dropped —
+    # randomize_weights has no "norm_matched" scheme, and the published
+    # checkpoints already give a real untrained-weights object.
     #
     # Assumes "norm_matched" is a valid scheme string in the existing
     # randomize_weights (mirrors how gpt2-large-random must already be
