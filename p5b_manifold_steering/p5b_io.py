@@ -11,6 +11,7 @@ Phase 1 v2 layout recap (per-run dir = {phase1_dir}/{stem}_{prompt}/):
   events.json       → merge_layers: [int, ...]
   centroid_trajectories.npz → keys "traj_{id}": (lifespan, d) float32
   activations.npz   → key "activations": (n_layers, n_tokens, d_model)
+  hdbscan_labels.json → {layer_idx: [int labels]}
 
 Phase 2 layout:
   {phase2_dir}/ov_projectors_{stem}.npz → U_pos, U_neg, U_A
@@ -88,11 +89,39 @@ def load_phase1_run(run_dir: Path) -> dict:
       trajectories      : list of trajectory dicts {id, chain}
       centroid_trajs    : {int trajectory_id: (lifespan, d) float32}
       activations       : (n_layers, n_tokens, d) float32, or None
+      hdbscan_labels    : {int layer_idx: list[int]}, or {} if absent
       n_layers          : int
       n_tokens          : int
       d_model           : int
       prompt            : str
       model             : str
+
+    ADDED 2026-07-21: hdbscan_labels. Phase 5b needs the per-layer label
+    arrays to mask tokens by (layer, cluster_id) when building per-cluster
+    output distributions — the operation that keeps the activation and
+    behavior manifolds describing the same population. Without them,
+    Sub-exp B has no way to associate a distribution with a cluster and
+    falls back to a global mean over every token, which is the bug that
+    disabled it (WORKING-5b.md §2).
+
+    Sourced from p1_visualization.loaders._hdbscan_labels, which already
+    exists and is already used by attractor_alignment.py and
+    cluster_reality.py — not reimplemented here. Absent file yields {},
+    matching that function's own contract, so a Phase 1 run predating
+    hdbscan_labels.json degrades to "Sub-exp B unavailable" rather than
+    raising.
+
+    FRAME NOTE on `activations`: this array is RAW hidden states, per
+    artifacts.py's ArtifactSpec ("Raw per-layer hidden states for one
+    (model, prompt) run"), and both cluster_tracking.compute_centroid_
+    trajectories and analysis_p1 call layernorm_to_sphere on it at use
+    time. Note that p1_visualization/loaders.py::_load_activations has a
+    docstring claiming it returns "L2-normed hidden states" — that
+    docstring is WRONG; the function performs no normalization and just
+    returns the file contents. Anything doing frame-sensitive work (LN
+    frame, raw-frame controls) must normalize deliberately rather than
+    trusting that docstring. Flagged for a docstring fix in the
+    visualization package; not touched here.
     """
     from p1_mstate_tracking.p1_io import load_phase1_run as _p1_load
 
@@ -112,6 +141,18 @@ def load_phase1_run(run_dir: Path) -> dict:
         "model":          p1.get("model", ""),
         "run_dir":        str(run_dir),
     }
+
+    # HDBSCAN labels. p1_io may already surface them under either name; only
+    # go to the visualization loader if it did not, so a future p1_io that
+    # returns them natively wins without a second disk read.
+    labels = p1.get("hdbscan_labels") or p1.get("labels")
+    if not labels:
+        try:
+            from p1_visualization.loaders import _hdbscan_labels
+            labels = _hdbscan_labels(run_dir)
+        except Exception:
+            labels = {}
+    out["hdbscan_labels"] = {int(k): v for k, v in (labels or {}).items()}
 
     # Backfill from activations shape if geometry.json didn't have them
     if out["activations"] is not None:

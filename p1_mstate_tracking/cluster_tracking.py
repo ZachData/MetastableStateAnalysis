@@ -356,3 +356,264 @@ def compute_centroid_trajectories(
             centroid_trajs[tid] = np.array(coords, dtype=np.float32)
 
     return centroid_trajs
+"""
+APPEND THIS BLOCK to the end of p1_mstate_tracking/cluster_tracking.py.
+
+It is not a standalone module — it is written as an addition so nothing in
+the existing 359-line file has to be retyped or re-diffed. The only import
+it needs (`numpy as np`) is already at the top of that file.
+
+Also update that file's module docstring "Functions" list to add:
+
+    compute_behavior_trajectories : per-trajectory output distributions,
+                                    masked by the same chain
+
+--------------------------------------------------------------------------
+WHY THIS LIVES IN PHASE 1 AND NOT PHASE 5b
+
+It is the same tracking operation compute_centroid_trajectories already
+performs — walk a trajectory's chain of (layer, cluster_id) pairs, mask the
+member tokens, aggregate — applied to a different per-token quantity. The
+activation-side half of that pair has been here since Phase 1; the
+behavior-side half was never written, and Phase 5b compensated by taking a
+global mean over ALL tokens at each plateau layer, which is what decoupled
+Mh's population from My's and silently disabled Sub-exp B (see
+design-5b.md). Putting the sibling next to its twin is also the tracking-
+module merge INDEX.md already lists as outstanding.
+"""
+
+# ===========================================================================
+# --------------------------- BEGIN APPEND BLOCK ---------------------------
+# ===========================================================================
+
+
+def _layer_lookup(container, layer_idx):
+    """
+    Fetch a per-layer array from either a dict keyed by layer index or a
+    list indexed by it. Returns None when the layer is absent.
+
+    Both shapes occur in this codebase and neither is wrong:
+    compute_centroid_trajectories is called with lists (Phase 1's own
+    analysis loop holds every layer); Phase 5b calls with dicts, because
+    its logit cache is deliberately sparse — extract_layer_logits only
+    materializes the layers asked for, and a full (n_layers, n_tokens,
+    vocab) tensor at GPT-2-large scale is not something to build by
+    accident. Accepting both here is cheaper than forcing either caller to
+    convert.
+    """
+    if container is None:
+        return None
+    if isinstance(container, dict):
+        got = container.get(layer_idx)
+        if got is None:
+            got = container.get(int(layer_idx))
+        return got
+    try:
+        if 0 <= layer_idx < len(container):
+            return container[layer_idx]
+    except TypeError:
+        return None
+    return None
+
+
+def _normalize_rows(p, eps: float = 1e-12):
+    """Clip negatives and renormalize rows to sum to 1. float64 out."""
+    arr = np.asarray(p, dtype=np.float64)
+    arr = np.clip(arr, 0.0, None)
+    s = arr.sum(axis=-1, keepdims=True)
+    return arr / np.maximum(s, eps)
+
+
+def compute_behavior_trajectories(
+    tracking,
+    label_arrays,
+    logit_dists,
+    space: str = "hellinger",
+) -> tuple:
+    """
+    Per-trajectory output distributions — the behavior-side twin of
+    compute_centroid_trajectories.
+
+    For each trajectory, walk its chain of (layer_idx, cluster_id) pairs.
+    At each step, mask the tokens belonging to that cluster at that layer —
+    THE SAME MASK the centroid used — and average their decoded output
+    distributions. The result is one distribution sequence per trajectory,
+    over exactly the trajectories and in exactly the order that
+    compute_centroid_trajectories produces centroids for.
+
+    Parameters
+    ----------
+    tracking     : output of track_clusters, OR the bare list of trajectory
+                   dicts (each {"id", "chain", ...}). Both accepted;
+                   compute_centroid_trajectories takes the former.
+    label_arrays : {layer_idx: (n_tokens,) int} or list of the same —
+                   HDBSCAN labels per layer. Phase 5b gets these from
+                   p1_visualization/loaders.py::_hdbscan_labels.
+    logit_dists  : {layer_idx: (n_tokens, vocab) float} or list — decoded
+                   output distributions per layer, from
+                   p5b_manifold_steering/logit_cache.py::extract_layer_logits.
+                   May be SPARSE: layers absent from it are skipped, and
+                   the coverage return value records what was actually used.
+    space        : how to aggregate distributions across the chain.
+                   "hellinger" (default) — mean of √p, renormalized, then
+                   squared back. "mixture" — plain arithmetic mean of p.
+
+    Returns
+    -------
+    behavior_trajs : {trajectory_id: (m, vocab) float32} — one row per
+                     chain step that had both labels and logits, in chain
+                     order. Trajectories with zero covered steps are absent
+                     from the dict entirely (not present-but-empty).
+    coverage       : {trajectory_id: {"layers_used": [int],
+                                      "layers_in_chain": int,
+                                      "frac": float}}
+
+    WHY `space` DEFAULTS TO "hellinger"
+    -----------------------------------
+    The activation side aggregates by taking the mean of L2-normalized
+    vectors and renormalizing (compute_centroid_trajectories, and again in
+    load_plateau_centroids) — a spherical mean, not a Euclidean one. The
+    exact structural analog on the behavior side is the spherical mean in
+    the Hellinger embedding: √p is a unit vector, so mean-then-renormalize
+    there is the same operation in the same geometry. My's own fit maps
+    p → √p before doing anything else (fit_behavior_manifold), so this also
+    avoids aggregating in one space and fitting in another.
+
+    "mixture" is the operationally natural reading — "the cluster's typical
+    next-token distribution" really is the arithmetic mean — but it is
+    entropy-increasing: averaging peaked distributions in probability space
+    blurs them toward uniform faster than in √p space, which compresses the
+    behavior-side distances the isometry test is trying to resolve. Both
+    are available; whichever is used must be recorded in isometry.json,
+    because it changes the numbers.
+
+    COVERAGE IS RETURNED, NOT HIDDEN
+    --------------------------------
+    A trajectory covered at 1 of 5 chain layers and one covered at 5 of 5
+    are not equally-good measurements, and collapsing both to "a
+    distribution" is exactly the kind of silent degradation this project's
+    artifact-contract discipline exists to prevent. The caller decides
+    whether to drop low-coverage trajectories; this function does not
+    decide for them.
+    """
+    if space not in ("hellinger", "mixture"):
+        raise ValueError(
+            f"compute_behavior_trajectories: space must be 'hellinger' or "
+            f"'mixture', got {space!r}"
+        )
+
+    if isinstance(tracking, dict):
+        trajectories = tracking.get("trajectories", [])
+    else:
+        trajectories = tracking or []
+
+    behavior_trajs = {}
+    coverage = {}
+
+    for traj in trajectories:
+        tid = int(traj["id"])
+        chain = traj.get("chain", [])
+        rows = []
+        used = []
+
+        for layer_idx, cluster_id in chain:
+            layer_idx = int(layer_idx)
+            labels = _layer_lookup(label_arrays, layer_idx)
+            probs = _layer_lookup(logit_dists, layer_idx)
+            if labels is None or probs is None:
+                continue
+
+            labels = np.asarray(labels)
+            probs = np.asarray(probs)
+            if labels.shape[0] != probs.shape[0]:
+                # Token-count disagreement means the label array and the
+                # logit array came from different forward passes. Refuse
+                # rather than mask with a mismatched index.
+                raise ValueError(
+                    f"compute_behavior_trajectories: layer {layer_idx} has "
+                    f"{labels.shape[0]} labels but {probs.shape[0]} logit "
+                    f"rows — labels and logits are not from the same pass"
+                )
+
+            mask = labels == cluster_id
+            if not mask.any():
+                continue
+
+            member = _normalize_rows(probs[mask])
+            if space == "hellinger":
+                sq = np.sqrt(member)
+                m = sq.mean(axis=0)
+                nrm = float(np.linalg.norm(m))
+                m = m / max(nrm, 1e-12)
+                rows.append(m ** 2)
+            else:
+                rows.append(member.mean(axis=0))
+
+            used.append(layer_idx)
+
+        coverage[tid] = {
+            "layers_used": used,
+            "layers_in_chain": len(chain),
+            "frac": (len(used) / len(chain)) if chain else 0.0,
+        }
+        if rows:
+            behavior_trajs[tid] = np.asarray(rows, dtype=np.float32)
+
+    return behavior_trajs, coverage
+
+
+def stack_behavior_by_traj_ids(
+    behavior_trajs: dict,
+    traj_ids: list,
+    space: str = "hellinger",
+) -> tuple:
+    """
+    Reduce per-trajectory distribution sequences to one distribution each,
+    stacked in the order given by `traj_ids`.
+
+    This is the function that actually enforces the alignment. `traj_ids`
+    is load_plateau_centroids' second return value — the identity list for
+    the whole phase. Iterating it (rather than iterating behavior_trajs'
+    own keys, or a plateau-layer list, or anything else) is what guarantees
+    row i of the returned stack and row i of the centroid array describe
+    the same cluster.
+
+    Returns
+    -------
+    dists   : (n_kept, vocab) float32
+    kept    : list[int] — the subset of traj_ids that had any coverage, in
+              order. Callers MUST re-index their centroid array by this
+              list rather than assuming it equals traj_ids; a trajectory
+              whose chain layers were all absent from the logit cache has
+              a centroid but no distribution.
+    """
+    stacked = []
+    kept = []
+    for tid in traj_ids:
+        seq = behavior_trajs.get(int(tid))
+        if seq is None or len(seq) == 0:
+            continue
+        seq = _normalize_rows(seq)
+        if space == "hellinger":
+            sq = np.sqrt(seq)
+            m = sq.mean(axis=0)
+            m = m / max(float(np.linalg.norm(m)), 1e-12)
+            stacked.append(m ** 2)
+        else:
+            stacked.append(seq.mean(axis=0))
+        kept.append(int(tid))
+
+    if not stacked:
+        raise ValueError(
+            "stack_behavior_by_traj_ids: no trajectory in traj_ids had any "
+            "logit coverage. Check that extract_layer_logits was asked for "
+            "the layers appearing in these trajectories' chains — the "
+            "plateau_layers + merge_layers union is NOT sufficient."
+        )
+
+    return np.stack(stacked, axis=0).astype(np.float32), kept
+
+
+# ===========================================================================
+# ---------------------------- END APPEND BLOCK ----------------------------
+# ===========================================================================

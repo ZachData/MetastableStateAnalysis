@@ -190,27 +190,54 @@ def frame_for_hidden_state(
     params is ready to splat into ln_transform/ln_frame_gram; None for
     the identity frame (use the activations as-is).
     """
-    if not (0 <= hidden_layer_idx < n_hidden_states):
-        raise IndexError(
-            f"frame_for_hidden_state: index {hidden_layer_idx} out of range "
-            f"for {n_hidden_states} hidden states"
-        )
-    is_last = hidden_layer_idx == n_hidden_states - 1
-    if is_last:
-        if last_is_post_final_ln:
-            return dict(frame="identity", block_idx=None, params=None)
+    res = resolve_frame_index(
+        hidden_layer_idx, n_hidden_states, n_blocks(model),
+        embedding_stripped=embedding_stripped,
+        last_is_post_final_ln=last_is_post_final_ln,
+    )
+    if res["frame"] == "identity":
+        return dict(frame="identity", block_idx=None, params=None)
+    if res["frame"] == "final":
         return dict(frame="final", block_idx=None,
                     params=get_final_ln_params(model))
+    return dict(frame="block", block_idx=res["block_idx"],
+                params=get_ln_params(model, res["block_idx"], which=which))
+
+
+def resolve_frame_index(
+    hidden_layer_idx: int,
+    n_hidden_states: int,
+    n_blocks_: int,
+    embedding_stripped: bool = True,
+    last_is_post_final_ln: bool = False,
+) -> dict:
+    """
+    The off-by-one, and nothing else. Pure: no model, no weights.
+
+    frame_for_hidden_state delegates here so that core/frame_card.py can
+    resolve the same question from artifacts alone without duplicating the
+    arithmetic. One home, two callers — a second copy of this logic is how
+    an extraction-convention mismatch becomes unfalsifiable.
+
+    Returns {"frame": "block"|"final"|"identity", "block_idx": int|None}.
+    """
+    if not (0 <= hidden_layer_idx < n_hidden_states):
+        raise IndexError(
+            f"resolve_frame_index: index {hidden_layer_idx} out of range "
+            f"for {n_hidden_states} hidden states"
+        )
+    if hidden_layer_idx == n_hidden_states - 1:
+        if last_is_post_final_ln:
+            return dict(frame="identity", block_idx=None)
+        return dict(frame="final", block_idx=None)
 
     reader_block = hidden_layer_idx + 1 if embedding_stripped else hidden_layer_idx
-    nb = n_blocks(model)
-    if reader_block >= nb:
+    if reader_block >= n_blocks_:
         # More hidden states than blocks with no post-final-LN flag —
         # the caller's conventions are inconsistent; refuse to guess.
         raise IndexError(
-            f"frame_for_hidden_state: resolved reader block {reader_block} "
-            f">= n_blocks {nb}. Check embedding_stripped / "
+            f"resolve_frame_index: resolved reader block {reader_block} "
+            f">= n_blocks {n_blocks_}. Check embedding_stripped / "
             f"last_is_post_final_ln against the extraction path used."
         )
-    return dict(frame="block", block_idx=reader_block,
-                params=get_ln_params(model, reader_block, which=which))
+    return dict(frame="block", block_idx=reader_block)

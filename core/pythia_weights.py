@@ -25,12 +25,27 @@ the shape of GPT-2's c_attn splitting logic" for both.
 """
 
 import numpy as np
-import torch
+
+try:                                    # torch is optional here
+    import torch
+except ModuleNotFoundError:             # stubbed test session
+    torch = None
+
+
+def _is_torch_tensor(x) -> bool:
+    return torch is not None and torch.is_tensor(x)
+
 
 def _to_numpy(weight) -> np.ndarray:
     """Accept a torch.Tensor, ndarray, or any tensor-like duck type exposing
-    .detach()/.cpu()/.numpy(); return a detached float32 ndarray."""
-    if torch.is_tensor(weight):
+    .detach()/.cpu()/.numpy(); return a detached float32 ndarray.
+
+    The torch import is optional: everything below the is_tensor check is
+    already duck-typed, so an unconditional import was the only thing
+    keeping the fused-QKV layout — the source of a previously-shipped bug —
+    from having a torch-free oracle.
+    """
+    if _is_torch_tensor(weight):
         weight = weight.detach().cpu().float().numpy()
     else:
         if hasattr(weight, "detach"):

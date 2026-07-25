@@ -43,7 +43,7 @@ from .plots import (
     plot_cka_trajectory,
 )
 from .reporting_p1 import print_summary, generate_llm_report, generate_cross_run_report
-from .io_utils import save_run, replot_all, aggregate_global_artifacts
+from .p1_io import save_run, replot_all, aggregate_global_artifacts
 from .clustering import HAS_UMAP
 
 # Module-level output directory set by run_all before any analyze_trajectory call.

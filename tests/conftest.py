@@ -184,6 +184,15 @@ if _STUB_HEAVY_DEPS:
 # _ensure_p4_package()
 _ensure_p5b_package()
 
+def pytest_collection_modifyitems(config, items):
+    if _STUB_HEAVY_DEPS:
+        skip_smoke = pytest.mark.skip(
+            reason="needs SMOKE_REAL_DEPS=1; runs via test_smoke_dispatch.py"
+        )
+        for item in items:
+            if "smoke" in item.keywords:
+                item.add_marker(skip_smoke)
+
 # Pre-load p4 modules; order matters — chorus imports from activation_trajectories.
 # _load_p4_submodule("p4_mstate_features/activation_trajectories.py")
 # _load_p4_submodule("p4_mstate_features/chorus.py")

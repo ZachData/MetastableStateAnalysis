@@ -1,5 +1,5 @@
 """
-p5b_manifold/manifold_fit.py — Sub-experiment A.
+p5b_manifold_steering/manifold_fit.py — Sub-experiment A.
 
 Fit activation manifold Mh and behavior manifold My to cluster centroids
 and output distributions, following Wurgaft et al. (2026) §2.2.
@@ -10,8 +10,14 @@ coordinates are arc-length parameterized from the centroid path across layers.
 
 Imports from existing project scripts:
   - core.config  : model registry, prompt registry
+  - core.polar   : sphere_gap (frame diagnostic, see compute_fit_summary)
   - cluster_tracking.py (Phase 1): centroid trajectory loading
-  - io_utils.py  (Phase 1): load_run for Phase 1 artifacts
+  - p5b_io.py    (Phase 5b): load_phase1_run for Phase 1 artifacts
+
+Scope note (2026-07-21): the splines fit here are consumed by Sub-exp A's
+own residual metric (P5b-A2) and by future steering work. Sub-exp B no
+longer routes through them — see design-5b.md, "Sub-exp B on direct
+pairwise distances", and p5b_distances.py.
 """
 
 from __future__ import annotations
@@ -27,9 +33,50 @@ from scipy.interpolate import CubicSpline, UnivariateSpline
 # PCA reduction
 # ---------------------------------------------------------------------------
 
+def _complete_basis(V: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
+    """
+    Extend orthonormal columns V (d, r) to (d, k) with arbitrary orthonormal
+    directions drawn from the orthogonal complement of span(V).
+
+    Only reached when more components are requested than the data has rank
+    for (k > min(n, d)). The padded columns carry ZERO variance and are not
+    principal components in any meaningful sense — they exist so the
+    returned basis satisfies its declared (d, k) shape contract and stays
+    orthonormal. `pca_reduce` reports their explained-variance ratio as
+    exactly 0.0 so a caller reading `evr` can always tell which columns are
+    real.
+
+    Bounded memory on purpose: the obvious fix for the old truncation bug
+    was np.linalg.svd(..., full_matrices=True), but that materializes a
+    (d, d) matrix — 134 MB at d=4096 — to use k << d columns of it. This
+    route never allocates more than (d, k).
+
+    `seed` is fixed rather than drawn from global state so two runs on the
+    same data return the same basis.
+    """
+    d, r = V.shape
+    if k <= r:
+        return V[:, :k]
+    if k > d:
+        raise ValueError(
+            f"_complete_basis: cannot produce {k} orthonormal columns in "
+            f"{d} dimensions"
+        )
+    rng   = np.random.default_rng(seed)
+    extra = rng.standard_normal((d, k - r))
+    # Project out span(V), orthonormalize, then re-project for numerical
+    # safety (one pass of Gram-Schmidt leaves ~1e-8 leakage at large d).
+    extra -= V @ (V.T @ extra)
+    Q, _   = np.linalg.qr(extra)
+    Q     -= V @ (V.T @ Q)
+    Q, _   = np.linalg.qr(Q)
+    return np.concatenate([V, Q[:, : k - r]], axis=1)
+
+
 def pca_reduce(
     centroids: np.ndarray,
     k: int,
+    seed: int = 0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     PCA-reduce centroids to k dimensions.
@@ -38,20 +85,47 @@ def pca_reduce(
     ----------
     centroids : (n, d) — cluster centroid vectors
     k         : target dimensionality
+    seed      : determinism for the rank-deficient padding path only
 
     Returns
     -------
     scores          : (n, k) — projections onto top-k PCs
     basis           : (d, k) — orthonormal PC basis (columns)
-    explained_var_ratio : (k,) — fraction of variance per PC
+    explained_var_ratio : (k,) — fraction of variance per PC, zero-padded
+                          beyond the data's rank
+
+    Bug fix (2026-07-21): the previous implementation did
+    `k = min(k, len(s))` with `full_matrices=False`, so `s` had only
+    min(n, d) entries and k silently collapsed to the sample count. With
+    n=7 centroids, d=64, k=32 requested, it returned a (64, 7) basis — the
+    caller asked for a 32-d space and got a 7-d one with no warning. Now k
+    is clamped to the ambient dimension d only, and any shortfall in rank
+    is padded (see _complete_basis) and reported as zero variance.
+
+    Note this padding is a contract-compliance path, not a normal one:
+    run_5b.py already clamps `pca_k = min(args.pca_dim, n_c - 1)` before
+    calling, so the pipeline never triggers it. It exists because the
+    declared return shape should not depend on the input's rank.
     """
-    X  = centroids - centroids.mean(axis=0, keepdims=True)
+    X = centroids - centroids.mean(axis=0, keepdims=True)
+    n, d = X.shape
+
+    k = int(min(k, d))
+    if k < 1:
+        raise ValueError(f"pca_reduce: k must be >= 1, got {k}")
+
     _, s, Vt = np.linalg.svd(X, full_matrices=False)
-    k  = min(k, len(s))
-    basis  = Vt[:k].T                              # (d, k)
-    scores = X @ basis                             # (n, k)
+    V = Vt.T                                   # (d, r), r = min(n, d)
+    r = V.shape[1]
+
+    basis  = V[:, :k] if k <= r else _complete_basis(V, k, seed=seed)
+    scores = X @ basis                         # (n, k)
+
     total_var = float((s ** 2).sum())
-    evr = (s[:k] ** 2) / (total_var + 1e-12)
+    evr = np.zeros(k, dtype=np.float64)
+    m = min(k, len(s))
+    evr[:m] = (s[:m] ** 2) / (total_var + 1e-12)
+
     return scores, basis, evr
 
 
@@ -74,6 +148,23 @@ def arc_length_params(
     Returns
     -------
     u : (n,) — normalized cumulative arc-length, u[0]=0, u[-1]=1
+
+    ORDERING CAVEAT — read before using u for anything comparative.
+    "Ordered sequence" is this function's precondition and nothing upstream
+    currently establishes it. load_plateau_centroids iterates
+    `trajectories` in list order, which track_clusters produces as
+    `sorted(active_trajectories)` — trajectory id order, i.e. cluster BIRTH
+    order, which has no relationship to the geometry. Wurgaft's control
+    points carry an intrinsic sequence (Monday→Sunday); ours do not. A
+    spline threaded in birth order is a curve through a zigzag, and its
+    cumulative arc length is the length of that zigzag.
+
+    This is fine for Sub-exp A's residual metric (P5b-A2 asks whether a
+    smooth curve can be threaded through the control points at all, which
+    is order-dependent but still a real question). It is NOT fine as a
+    coordinate for cross-manifold comparison, which is why Sub-exp B moved
+    off it. Do not reintroduce u into a comparative test without first
+    solving the seriation problem.
     """
     if periodic:
         pts_ext = np.vstack([pts, pts[:1]])
@@ -88,6 +179,40 @@ def arc_length_params(
         return np.linspace(0, 1, len(pts))
     u = cumul[:len(pts)] / total
     return u
+
+
+# ---------------------------------------------------------------------------
+# Periodic knot handling
+# ---------------------------------------------------------------------------
+
+def _periodic_wrap_u(u: np.ndarray, period: float = 1.0) -> float:
+    """
+    Resolve the wrap-around knot for a periodic spline.
+
+    CubicSpline(bc_type="periodic") requires a strictly increasing knot
+    vector whose final entry closes the loop.
+
+    Bug fix (2026-07-21): both fit_activation_manifold and
+    fit_behavior_manifold previously hardcoded `np.append(u, 1.0)`. That
+    assumes u stops short of 1.0 — but every caller passes either
+    np.linspace(0, 1, n) (tests) or arc_length_params output (pipeline),
+    and BOTH terminate at exactly 1.0. The result was a duplicated final
+    knot and scipy raising "`x` must be strictly increasing sequence",
+    which took out 14 tests across four classes in test_phase5b.py.
+
+    If u ends short of `period`, `period` is the wrap point. If u already
+    reaches it, extrapolate one mean step past the last knot instead.
+    """
+    u = np.asarray(u, dtype=float)
+    if u.ndim != 1 or u.size < 2:
+        raise ValueError(
+            f"_periodic_wrap_u: need 1-D u with >= 2 knots, got shape {u.shape}"
+        )
+    if not np.all(np.diff(u) > 0):
+        raise ValueError("_periodic_wrap_u: u must be strictly increasing")
+    if u[-1] < period - 1e-12:
+        return float(period)
+    return float(u[-1] + float(np.diff(u).mean()))
 
 
 # ---------------------------------------------------------------------------
@@ -119,14 +244,16 @@ def fit_activation_manifold(
       residual_rms — RMS distance from centroid to nearest spline point
       k_dim        — dimensionality k
       periodic     — bool
+      u_wrap       — float | None; the closing knot used when periodic
     """
     n, k_dim = centroids_pca.shape
-    splines = []
+    splines  = []
+    u_wrap   = None
 
     if periodic:
-        # Append first point to close the loop
-        u_ext = np.append(u, 1.0)
-        c_ext = np.vstack([centroids_pca, centroids_pca[:1]])
+        u_wrap = _periodic_wrap_u(u)
+        u_ext  = np.append(np.asarray(u, dtype=float), u_wrap)
+        c_ext  = np.vstack([centroids_pca, centroids_pca[:1]])
         for d in range(k_dim):
             spl = CubicSpline(u_ext, c_ext[:, d], bc_type="periodic")
             splines.append(spl)
@@ -147,6 +274,7 @@ def fit_activation_manifold(
         "residual_rms": residual_rms,
         "k_dim":        k_dim,
         "periodic":     periodic,
+        "u_wrap":       u_wrap,
     }
 
 
@@ -239,6 +367,7 @@ def fit_behavior_manifold(
       residual_rms     — RMS Hellinger distance from centroid to spline
       vocab            — int
       periodic         — bool
+      u_wrap           — float | None
     """
     sqrt_c = _to_hellinger(distributions)         # (n, vocab)
     base   = sqrt_c.mean(axis=0)
@@ -247,10 +376,12 @@ def fit_behavior_manifold(
 
     vocab   = distributions.shape[1]
     splines = []
+    u_wrap  = None
 
     if periodic:
-        u_ext = np.append(u, 1.0)
-        t_ext = np.vstack([tangents, tangents[:1]])
+        u_wrap = _periodic_wrap_u(u)
+        u_ext  = np.append(np.asarray(u, dtype=float), u_wrap)
+        t_ext  = np.vstack([tangents, tangents[:1]])
         for dim in range(vocab):
             spl = CubicSpline(u_ext, t_ext[:, dim], bc_type="periodic")
             splines.append(spl)
@@ -275,6 +406,7 @@ def fit_behavior_manifold(
         "residual_rms":   residual_rms,
         "vocab":          vocab,
         "periodic":       periodic,
+        "u_wrap":         u_wrap,
     }
 
 
@@ -308,21 +440,36 @@ def load_plateau_centroids(
     """
     Stack per-trajectory mean centroids into a (n_clusters, d) array.
 
-    Uses the integer-keyed dict returned by io.load_phase1_run, not the
+    Uses the integer-keyed dict returned by p5b_io.load_phase1_run, not the
     raw NPZ (which uses string keys "traj_{id}").
 
     Parameters
     ----------
     centroid_trajs : {int trajectory_id: (lifespan, d) float32}
-                     — from io.load_phase1_run["centroid_trajs"]
+                     — from load_phase1_run["centroid_trajs"]
     trajectories   : list of trajectory dicts [{id, chain}, ...]
-                     — from io.load_phase1_run["trajectories"]
+                     — from load_phase1_run["trajectories"]
     min_lifespan   : skip trajectories shorter than this
 
     Returns
     -------
     centroids : (n_valid, d) — L2-normalised mean centroid per trajectory
     traj_ids  : list[int]   — trajectory IDs in the same order as rows
+
+    `traj_ids` is the alignment key for the whole phase: every downstream
+    per-trajectory quantity (behavior distributions, subspace projections)
+    must be assembled by iterating THIS list, not by independently
+    enumerating some other population and hoping the counts match. That
+    hope is what broke Sub-exp B (see design-5b.md).
+
+    Frame note: the returned centroids are L2-normalized, i.e. they live in
+    the sphere frame — which is the frame Phase 1's clustering was
+    performed in, and therefore the frame in which "these are our cluster
+    centroids" is true by construction. It is NOT the frame the model
+    reads in (that is LN; see core/ln_frame.py). Callers wanting the read
+    frame should build centroids via p5b_distances.frame_centroids rather
+    than post-hoc transforming this output — LN is not linear, so
+    LN(mean of tokens) != mean of LN(tokens).
     """
     centroids = []
     traj_ids  = []
@@ -355,6 +502,7 @@ def compute_fit_summary(
     my:          dict | None,
     pca_evr:     np.ndarray,
     k_threshold: float = 0.80,
+    frame_diagnostics: dict | None = None,
 ) -> dict:
     """
     Compute and return fit quality metrics.
@@ -367,12 +515,24 @@ def compute_fit_summary(
     return dict has no "vocab" key, only `fit_behavior_manifold`'s does.
     Behavior-side fields are now reported as None/False instead.
 
+    `frame_diagnostics` : optional dict of per-layer core.polar.sphere_gap
+    output, merged in under "frame_diagnostics". This is the pre-registered
+    escalation trigger for the sphere-vs-LN frame question (design-5b.md):
+    where the gaps are ~0 the sphere-frame reading transfers and the frame
+    question is empirically moot; where they spike, the LN-frame reading is
+    the one to trust. Recording it here rather than deciding post hoc is
+    the point — see core/polar.py::sphere_gap's own interpretation
+    contract.
+
     Returns dict suitable for fit_summary.json.
     """
     pca_cumvar = float(pca_evr.sum())
-    n_dims_80  = int(np.searchsorted(np.cumsum(pca_evr), k_threshold)) + 1
+    cum = np.cumsum(pca_evr)
+    # Clamp: if the spectrum never reaches k_threshold, searchsorted returns
+    # len(cum) and the old `+ 1` reported one MORE dimension than exists.
+    n_dims_80 = int(min(np.searchsorted(cum, k_threshold) + 1, len(pca_evr)))
 
-    return {
+    out = {
         "pca_explained_var":     pca_cumvar,
         "pca_n_dims_for_80pct":  n_dims_80,
         "mh_spline_residual_rms": mh["residual_rms"],
@@ -386,4 +546,53 @@ def compute_fit_summary(
             and mh["residual_rms"] < 0.1
             and my["residual_rms"] < 0.1
         ),
+    }
+    if frame_diagnostics is not None:
+        out["frame_diagnostics"] = frame_diagnostics
+    return out
+
+
+def sphere_gap_by_layer(
+    activations,
+    layers: list[int] | None = None,
+) -> dict:
+    """
+    core.polar.sphere_gap for each requested layer, JSON-ready.
+
+    Parameters
+    ----------
+    activations : (n_layers, n_tokens, d) — load_phase1_run["activations"]
+    layers      : which layer indices to score; None -> all
+
+    Returns
+    -------
+    {"per_layer": {layer_idx: sphere_gap dict},
+     "max_pearson_gap": float, "max_spearman_gap": float}
+
+    The two maxima are the summary numbers the escalation rule reads. Kept
+    as a separate function from compute_fit_summary so it can be called
+    (and tested) without a fitted manifold in hand.
+    """
+    from core.polar import sphere_gap
+
+    if activations is None:
+        return {"per_layer": {}, "max_pearson_gap": None, "max_spearman_gap": None}
+
+    arr = np.asarray(activations)
+    idxs = list(range(arr.shape[0])) if layers is None else list(layers)
+
+    per_layer: dict = {}
+    for li in idxs:
+        if 0 <= li < arr.shape[0]:
+            per_layer[int(li)] = sphere_gap(arr[li])
+
+    def _max(field: str):
+        vals = [v[field] for v in per_layer.values()
+                if v.get(field) is not None and np.isfinite(v[field])]
+        return float(max(vals)) if vals else None
+
+    return {
+        "per_layer":        per_layer,
+        "max_pearson_gap":  _max("pearson_gap"),
+        "max_spearman_gap": _max("spearman_gap"),
     }
