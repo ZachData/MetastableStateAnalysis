@@ -138,21 +138,55 @@ def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
       - "gaussian": N(0, 0.02), the literal HuggingFace init = model before
         training.  Under post-LN (ALBERT/BERT) this gives tiny per-layer
         updates, so weak clustering may be a scale artifact, not structure.
-        Use deliberately.
+        Use deliberately.  GPT-NeoX does *not* init at N(0, 0.02) — its
+        variance scaling differs from GPT-2's — so on Pythia this scheme is
+        not "the model before training" and should not be read as such.
+      - "norm_matched": Gaussian base rescaled per parameter to that
+        parameter's *trained* Frobenius norm.  Structure destroyed, scale
+        preserved.  This is the continuity control for the trained-vs-random
+        contrast (PREDICTIONS.md claim (c)), and the only scheme that
+        transfers that contrast across architectures whose init variance
+        scaling differs.
 
-    There is deliberately no "norm_matched" scheme. The Pythia registry once
-    named one; it was never implemented, and the published step-0 checkpoint
-    is the untrained-weights object now.
+    Why "norm_matched" is not redundant with the other two
+    ------------------------------------------------------
+    "orthogonal" fixes every singular value at 1, so it matches operator norm
+    but flattens the spectrum — and the spectrum is exactly what Phase 2
+    measures.  "gaussian" fixes the base std, which is architecture-specific
+    and therefore does not transfer.  "norm_matched" fixes ||W||_F and leaves
+    the spectrum to be whatever a structureless matrix of that scale gives.
 
-    Embeddings -> N(0, 0.02) (random token directions on the sphere).
-    LayerNorm  -> weight 1, bias 0.  All other biases -> 0.
+    The rescale makes the result independent of the base std (verified to
+    machine precision), which is the property that makes it architecture-
+    portable: two models with different init conventions get the same
+    construction.
+
+    Frobenius, not spectral, is matched.  For a token vector in generic
+    position ||Wx|| ~ ||W||_F/sqrt(d) * ||x||, so Frobenius governs typical
+    residual displacement — which is what E_beta and the trajectory metrics
+    see.  The cost is explicit: against a trained matrix's heavy-tailed
+    spectrum, a Frobenius-matched Gaussian has a *smaller* operator norm
+    (measured ~0.48x on a synthetic heavy-tailed stand-in).  A run that
+    depends on worst-case rather than typical displacement wants a different
+    control, and should say so rather than reusing this one.
+
+    Embeddings -> N(0, 0.02) under "orthogonal"/"gaussian"; norm-matched to
+    the trained embedding matrix under "norm_matched", because the particle
+    cloud's initial radius sets layer-0 geometry and core/polar.py now
+    measures that radius directly.
+    LayerNorm  -> weight 1, bias 0 under every scheme, including
+    "norm_matched".  LN gamma is a diagonal rescale that core/ln_frame.py
+    already tracks as its own object; identity is the conventional null and
+    keeps continuity with the gpt2-large-random baseline Blog 1 established.
+    All other biases -> 0 under every scheme (this discards GPT-NeoX's
+    trained attention biases deliberately; see core/attn_biases.py).
 
     Architecture-agnostic: the ndim rule covers nn.Linear, nn.Embedding, and
     GPT-2's Conv1D (2-D .weight) with no model-specific imports.
 
     Asserts the parameter checksum changed, so a silent regression fails loudly.
     """
-    if scheme not in ("orthogonal", "gaussian"):
+    if scheme not in ("orthogonal", "gaussian", "norm_matched"):
         raise ValueError(f"unknown random_init_scheme: {scheme!r}")
 
     torch.manual_seed(seed)
@@ -167,6 +201,28 @@ def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
         # init in float32 then cast back; orthogonal_/qr is unreliable in bf16
         tmp = torch.empty(param.shape, dtype=torch.float32, device=param.device)
         init_fn(tmp)
+        with torch.no_grad():
+            param.data.copy_(tmp.to(param.dtype))
+
+    def _fill_norm_matched(param):
+        """
+        Overwrite `param` with a Gaussian draw rescaled to its own current
+        (trained) Frobenius norm.
+
+        The target norm is read *before* the overwrite, in float32, so a
+        bf16/fp16 parameter is matched against its own value rather than a
+        rounded one. A parameter whose trained norm is 0 stays 0 — rescaling
+        would divide by the draw's norm to reach a target of 0 anyway, and
+        the explicit branch keeps that from depending on float behaviour.
+        """
+        target = float(param.detach().float().norm())
+        tmp = torch.empty(param.shape, dtype=torch.float32, device=param.device)
+        nn.init.normal_(tmp, mean=0.0, std=0.02)
+        cur = float(tmp.norm())
+        if target > 0.0 and cur > 0.0:
+            tmp.mul_(target / cur)
+        else:
+            tmp.zero_()
         with torch.no_grad():
             param.data.copy_(tmp.to(param.dtype))
 
@@ -187,7 +243,10 @@ def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
 
         if isinstance(module, nn.Embedding):
             for _, p in own:
-                _fill(p, lambda t: nn.init.normal_(t, mean=0.0, std=0.02))
+                if scheme == "norm_matched":
+                    _fill_norm_matched(p)
+                else:
+                    _fill(p, lambda t: nn.init.normal_(t, mean=0.0, std=0.02))
                 n_embed += 1
             continue
 
@@ -196,6 +255,8 @@ def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
             if p.dim() >= 2:
                 if scheme == "orthogonal":
                     _fill(p, nn.init.orthogonal_)
+                elif scheme == "norm_matched":
+                    _fill_norm_matched(p)
                 else:
                     _fill(p, lambda t: nn.init.normal_(t, mean=0.0, std=0.02))
                 n_matrix += 1

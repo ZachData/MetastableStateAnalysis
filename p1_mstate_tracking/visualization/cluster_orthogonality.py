@@ -32,8 +32,8 @@ from typing import Dict, List, Optional
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import BLOG_STYLE, CLUSTER_PAL, MIN_CLUSTER_SIZE
-from .naming import _safe_model_name
+from core.style import BLOG_STYLE, CLUSTER_PAL, MIN_CLUSTER_SIZE
+from core.naming import _safe_model_name
 from .loaders import _geo, _trajectory, _hdbscan_labels, _load_activations
 
 

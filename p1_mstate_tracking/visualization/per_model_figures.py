@@ -14,10 +14,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-from .style import BLOG_STYLE, LayerSpec, PLATEAU_TINT, PLATEAU_BORDER
-from .naming import _color, _safe_model_name
+from core.style import BLOG_STYLE, LayerSpec, PLATEAU_TINT, PLATEAU_BORDER
+from core.naming import _color, _safe_model_name
 from .loaders import _geo, _clustering, _trajectory, _hdbscan_labels, _pca_trajs, _load_activations
-from .plot_utils import _spans, _shade_plateaus, _annotation_box, _scatter_hdbscan, _project_2d, UMAP_AVAILABLE
+from core.plot_utils import _spans, _shade_plateaus, _annotation_box, _scatter_hdbscan, _project_2d, UMAP_AVAILABLE
 
 def plot_ip_histogram_migration(
     run_dir: Path, out_dir: Path, layers: Optional[List[LayerSpec]] = None,

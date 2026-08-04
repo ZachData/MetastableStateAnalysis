@@ -12,8 +12,8 @@ about every submodule below — everything else imports through here.
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from .style import LayerSpec, DEFAULT_PROMPT
-from .naming import filter_iteration_depths, _safe_model_name
+from core.style import LayerSpec, DEFAULT_PROMPT
+from core.naming import filter_iteration_depths, _safe_model_name
 from .loaders import discover_runs
 from .overview import generate_overview_figures
 from .pair_comparisons import generate_noise_comparison_figures
@@ -34,6 +34,19 @@ from .cluster_reality import (
     plot_cluster_colored_text,
 )
 from .cluster_orthogonality import plot_cluster_orthogonality_trajectory
+from .method_comparison import (
+    plot_cluster_count_agreement,
+    plot_agglomerative_threshold_heatmap,
+    plot_method_ari_trajectory,
+    plot_consensus_matrix,
+    plot_method_scatter_grid,
+    plot_noise_label_audit,
+)
+from .spectral_structure import (
+    plot_eigenvalue_ladder,
+    plot_fiedler_bipartition,
+    plot_nesting_overview,
+)
 from .ip_population_dynamics import (
     plot_ip_histogram_depth_heatmap,
     plot_ip_population_trajectory,
@@ -172,4 +185,20 @@ ALL_PLOTS = [
     _ignore_layers(plot_noise_importance_proxies),
     _ignore_layers(plot_attractor_alignment_overview),
     _ignore_layers(plot_unclustered_pull_decomposition),
+    # Cross-method cluster comparison. HDBSCAN is one of four partitions
+    # run_1 persists; these read the other three (KMeans, agglomerative at
+    # the mid threshold, Fiedler sign) plus the Laplacian spectrum and ask
+    # how much of the cluster structure is geometry and how much is the
+    # algorithm. Every entry degrades to a printed [skip] on a run that
+    # predates clusters.npz / spectral.json, so older result dirs still
+    # generate the rest of the figure set.
+    _ignore_layers(plot_cluster_count_agreement),
+    _ignore_layers(plot_agglomerative_threshold_heatmap),
+    _ignore_layers(plot_method_ari_trajectory),
+    plot_consensus_matrix,
+    plot_method_scatter_grid,
+    _ignore_layers(plot_noise_label_audit),
+    _ignore_layers(plot_eigenvalue_ladder),
+    plot_fiedler_bipartition,
+    _ignore_layers(plot_nesting_overview),
 ]

@@ -17,13 +17,13 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import (
+from core.style import (
     BLOG_STYLE, LayerSpec, MIN_CLUSTER_SIZE, CLUSTER_PAL, NOISE_COLOR,
     ADDED_COLOR, REMOVED_COLOR,
 )
-from .naming import _safe_model_name
+from core.naming import _safe_model_name
 from .loaders import _geo, _clustering, _trajectory, _hdbscan_labels, _pca_trajs, _load_activations
-from .plot_utils import _resolve_layers
+from core.plot_utils import _resolve_layers
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Cluster size histogram

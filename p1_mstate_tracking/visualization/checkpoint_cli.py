@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Tuple
 
-from .style import DEFAULT_PROMPT
+from core.style import DEFAULT_PROMPT
 from .loaders import discover_runs
 from .pipeline import _discover_random_dir
 from .random_aggregate import build_aggregate

@@ -60,14 +60,16 @@ class TestValidateArtifact:
 
     def test_json_with_all_required_keys_ok(self, tmp_path):
         (tmp_path / "trajectory.json").write_text(
-            json.dumps({"trajectories": [], "plateau_layers": []})
+            json.dumps({"cluster_tracking": {"trajectories": []}, "plateau_layers": []})
         )
         result = validate_artifact(tmp_path, "phase1", "trajectory")
         assert result["ok"] is True
         assert result["missing_keys"] == []
 
     def test_json_missing_a_required_key_reports_it(self, tmp_path):
-        (tmp_path / "trajectory.json").write_text(json.dumps({"trajectories": []}))
+        (tmp_path / "trajectory.json").write_text(
+            json.dumps({"cluster_tracking": {"trajectories": []}})
+        )
         result = validate_artifact(tmp_path, "phase1", "trajectory")
         assert result["ok"] is False
         assert result["missing_keys"] == ["plateau_layers"]

@@ -108,8 +108,41 @@ def _jdump(obj, path):
 # Saving -- per-experiment helpers
 # ---------------------------------------------------------------------------
 
+# Provenance fields recorded by analyze_trajectory from
+# core.models.describe_extraction. Written verbatim into geometry.json.
+#
+# These were computed and carried in the in-memory results dict but never
+# reached disk, which made every saved run indistinguishable from every
+# other except by its directory name — the exact failure describe_extraction
+# was written to prevent (checkpoints.py otherwise recovers the training
+# step by parsing the directory name back out, so a rename silently
+# re-labels the x-axis of every developmental plot).
+#
+# `sublayer_semantics` in particular is the documented discriminator between
+# a pre-fix GPT-2 @attn/@ffn run (which stored sublayer *deltas* under a
+# stream label) and a post-fix one (true residual streams). Runs predating
+# this change lack the field entirely, and that absence is itself the signal.
+_PROVENANCE_FIELDS = (
+    "n_layers_total",
+    "n_layers_analyzed",
+    "lm_head_excluded",
+    "hidden_state_0_is_embedding",
+    "final_hidden_state_is_post_ln",
+    "model_family",
+    "weight_dtype",
+    "autocast",
+    "hf_repo",
+    "revision",
+    "checkpoint_step",
+    "random_init",
+    "sublayer_semantics",
+    "parallel_residual",
+)
+
+
 def _save_geometry(results, run_dir):
-    """ip stats, CKA, effective rank, NN stability per layer."""
+    """ip stats, CKA, effective rank, NN stability per layer, plus the
+    extraction provenance that makes the run self-describing."""
     layers_out = []
     for lr in results["layers"]:
         layers_out.append({
@@ -119,12 +152,17 @@ def _save_geometry(results, run_dir):
             "ip_mass_near_1":           lr["ip_mass_near_1"],
             "ip_histogram":             lr.get("ip_histogram", []),
             "effective_rank":           lr["effective_rank"],
+            # The frame-correct companion to effective_rank. Kept as a
+            # separate key rather than replacing it: the two are not
+            # interchangeable (see core/metrics.py effective_rank modes).
+            "effective_rank_normed":    lr.get("effective_rank_normed"),
             "cka_prev":                 lr.get("cka_prev"),
             "nn_stability":             lr.get("nn_stability"),
             "nn_indices":               lr.get("nn_indices", []),
             "pca_explained_variance":   lr.get("pca_explained_variance", []),
         })
-    _jdump({
+
+    payload = {
         "model":    results["model"],
         "prompt":   results["prompt"],
         "n_layers": results["n_layers"],
@@ -132,7 +170,14 @@ def _save_geometry(results, run_dir):
         "d_model":  results["d_model"],
         "tokens":   results["tokens"],
         "layers":   layers_out,
-    }, run_dir / "geometry.json")
+    }
+    # .get() rather than [] so a caller that built `results` without
+    # extraction_meta (legacy, or a test fixture) still saves rather than
+    # raising — the field lands as null, which reads as "not recorded".
+    for key in _PROVENANCE_FIELDS:
+        payload[key] = results.get(key)
+
+    _jdump(payload, run_dir / "geometry.json")
 
 
 def _save_energies(results, run_dir):
@@ -347,6 +392,24 @@ def _save_tokens(results, run_dir):
 
 
 def _save_activations(hidden_states, run_dir):
+    """
+    activations.npz: sphere-projected activations, plus the per-token norms
+    that projection discards.
+
+    `activations` is unit-norm, which is what every Phase 1 metric operates
+    on and what Phases 2/5b/6 expect — that stays unchanged. But writing
+    only the unit vectors threw away the radius at save time, and the radius
+    is not recoverable afterwards. That made core/polar.py's analyses
+    (attention-sink norm outliers, cluster/norm coupling, sphere_gap) and
+    the ParticleTable norm column impossible to compute from any saved run,
+    which is a re-extraction of the whole model to recover something that
+    was in memory at write time.
+
+    `norms` is (n_layers, n_tokens) and reconstructs the raw activations
+    exactly: raw = norms[..., None] * activations. Adding a key to the npz
+    is backward-compatible — every existing reader indexes `activations`
+    by name — and older run directories simply have no `norms` entry.
+    """
     if not hidden_states:
         return
     import torch
@@ -354,7 +417,15 @@ def _save_activations(hidden_states, run_dir):
 
     stacked   = torch.stack(hidden_states)
     act_stack = layernorm_to_sphere(stacked).numpy()
-    np.savez_compressed(run_dir / "activations.npz", activations=act_stack)
+
+    raw   = np.asarray(stacked.numpy() if hasattr(stacked, "numpy") else stacked)
+    norms = np.linalg.norm(raw, axis=-1).astype(np.float32)
+
+    np.savez_compressed(
+        run_dir / "activations.npz",
+        activations=act_stack,
+        norms=norms,
+    )
 
 
 def _save_attentions(attentions, run_dir):
@@ -834,17 +905,26 @@ def _norm(s: str) -> str:
 
 
 def _stem_matches(dirname: str, stem: str) -> bool:
-    """True if dirname begins with stem at a segment boundary.
+    """True if dirname starts with stem, permissively.
 
-    Boundary-anchored, so "pythia_410m_step1" no longer matches
-    "pythia_410m_step1000". Still permissive across the hyphen/underscore
-    split, which is why it can't distinguish "gpt2" from "gpt2_medium" —
-    that's what _exact_run_match is for.
+    Used only by the fallback tiers (3 and 4) of find_phase1_run_dir, after
+    _exact_run_match (tier 2) has already failed to find an exact directory
+    for (stem, prompt_key). Tier 2 is where exactness is enforced — it
+    rejects "pythia_410m_step1000..." for a wanted stem of
+    "pythia_410m_step1" regardless of what this function does. Anchoring
+    this predicate at a segment boundary as well made it reject the same
+    neighbour in the fallback tiers too, which turned "return the nearest
+    neighbour with a warning" into "return None silently" whenever no exact
+    directory existed — the one failure mode find_phase1_run_dir's docstring
+    says the fallback tiers must not produce. Every caller of this function
+    is inside _resolve_inexact, which always warns, so permissiveness here
+    is safe: it can only ever produce an audible neighbour, never a silent
+    exact-looking match.
     """
     d, s = _norm(dirname), _norm(stem)
     if not s:
         return True                      # preserved: empty stem matches all
-    return d == s or d.startswith(s + "_")
+    return d.startswith(s)
 
 
 def _exact_run_match(dirname: str, stem: str, prompt_key: str) -> bool:

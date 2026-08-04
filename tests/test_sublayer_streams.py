@@ -35,6 +35,19 @@ class _ParallelBlock(nn.Module):
         return x + self.attention(x) + self.mlp(x)
 
 
+class _AlbertBlock(nn.Module):
+    """attention -> full_layer_layer_norm. Post-LN: each submodule output
+    is already the residual stream, matching real AlbertLayer's shape
+    (which has no .mlp — _ParallelBlock's attention/mlp pair is a
+    GPT-NeoX-shaped block, not an ALBERT-shaped one)."""
+    def __init__(self, d=8):
+        super().__init__()
+        self.attention = _Delta(1.0, d)
+        self.full_layer_layer_norm = _Delta(2.0, d)
+    def forward(self, x, *a, **k):
+        return self.full_layer_layer_norm(self.attention(x))
+
+
 class _SequentialBlock(nn.Module):
     """x1 = x + attn(x); x2 = x1 + mlp(x1) — GPT-2 ordering."""
     def __init__(self, d=8):
@@ -94,7 +107,7 @@ def test_weight_shared_layer_yields_one_capture_per_call():
     """ALBERT's shared layer is called N times; capture must append, not
     index by module position."""
     d = 8
-    shared = _ParallelBlock(d)
+    shared = _AlbertBlock(d)
 
     class Albert(nn.Module):
         def __init__(self):

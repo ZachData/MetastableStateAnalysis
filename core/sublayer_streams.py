@@ -120,21 +120,21 @@ def _blocks(model, family):
 
 def _attn_module(block, family):
     if family == "gpt2":
-        return block.attn
+        return getattr(block, "attn", None)
     if family == "gptneox":
         return getattr(block, "attention", None) or getattr(block, "attn", None)
-    return block.attention          # bert, albert
+    return getattr(block, "attention", None)          # bert, albert
 
 
 def _ffn_module(block, family):
     if family in ("gpt2", "gptneox"):
-        return block.mlp
+        return getattr(block, "mlp", None)
     if family == "bert":
-        return block.output
+        return getattr(block, "output", None)
     if family == "albert":
         # AlbertLayer has no .output; the block ends at this LayerNorm,
         # which is applied to (ffn_output + attention_output).
-        return block.full_layer_layer_norm
+        return getattr(block, "full_layer_layer_norm", None)
     return None
 
 

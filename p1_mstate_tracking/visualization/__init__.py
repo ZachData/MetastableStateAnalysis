@@ -41,11 +41,12 @@ aggregate). See each submodule's docstring for what it owns:
     cli.py                         argparse entry point (main())
 """
 
-from .style import (
+from core.style import (
     DEFAULT_PROMPT, DEFAULT_LAYERS, MIN_CLUSTER_SIZE, LayerSpec,
     MODEL_COLORS, UNTRAINED_COLOR, RANDOM_COLOR_OVERRIDES, BLOG_STYLE,
 )
-from .naming import filter_iteration_depths
+from core.naming import filter_iteration_depths
+
 from .loaders import discover_runs
 from .pipeline import generate_all, generate_model_figures, ALL_PLOTS
 from .random_aggregate import build_aggregate

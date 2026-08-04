@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .naming import _is_untrained
+from core.naming import _is_untrained
 from .loaders import _geo, _clustering, _sinkhorn, _hdbscan_labels
 
 # ─────────────────────────────────────────────────────────────────────────────

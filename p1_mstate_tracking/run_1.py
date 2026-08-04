@@ -32,12 +32,15 @@ from core.config import (
     BASE_RESULTS_DIR, MODEL_CONFIGS, PROMPTS,
     ALBERT_MAX_ITERATIONS, ALBERT_SNAPSHOTS, LENGTH_SWEEP_TOKENS,
     RANDOM_INIT_SEED, MODEL_DTYPE, MODEL_GROUPS, DEFAULT_MODELS, RANDOM_CONTROLS,
+    BETA_VALUES, DISTANCE_THRESHOLDS, SPECTRAL_MAX_K,
 )
 from core.models import (
     load_model, extract_activations, extract_albert_extended,
     randomize_weights, describe_extraction, resolve_dtype, dtype_name,
 )
 from core.model_family import model_family
+from core.io import write_manifest, RunTimer, get_git_sha
+from core.prompts import PROMPT_BATTERY_HASH, PROMPT_BATTERY_VERSION
 
 from .analysis_p1 import analyze_trajectory
 from .plots import (
@@ -58,6 +61,66 @@ from .clustering import HAS_UMAP
 
 # Module-level output directory set by run_all before any analyze_trajectory call.
 OUTPUT_DIR: Path = BASE_RESULTS_DIR
+
+# Seed actually used for this sweep. Set by run_all; recorded in every
+# per-run manifest so a random-control run can be told apart from a rerun
+# of the same control at a different seed.
+RUN_SEED: int = RANDOM_INIT_SEED
+
+
+def _write_run_manifest(results, meta, run_dir, prompt_key, wall_time_seconds):
+    """
+    Write manifest.json into a per-run directory.
+
+    core/io.py's write_manifest has been tested since it was added and had
+    no production caller, so no Phase 1 run has ever produced the
+    manifest.json that core/artifacts.MANIFEST declares for every phase —
+    validate_artifact reported it missing on every run directory. This is
+    the call site.
+
+    The prompt battery hash is the point: two checkpoints are only
+    comparable if they ran the identical prompt set, and nothing else in the
+    pipeline records which set that was. `prompt_key` is passed so that two
+    prompts of the same model do not collide on manifest_id (they share a
+    battery hash by construction).
+
+    Never raises: a manifest is bookkeeping, and losing a completed run's
+    activations because the bookkeeping failed is the worse trade.
+    """
+    meta = meta or {}
+    try:
+        return write_manifest(
+            run_dir,
+            model=results.get("model", ""),
+            prompt_battery_hash=PROMPT_BATTERY_HASH,
+            wall_time_seconds=wall_time_seconds,
+            hf_revision=meta.get("revision"),
+            checkpoint_step=meta.get("checkpoint_step"),
+            prompt_key=prompt_key,
+            config={
+                "beta_values":         list(BETA_VALUES),
+                "distance_thresholds": [float(t) for t in DISTANCE_THRESHOLDS],
+                "spectral_max_k":      SPECTRAL_MAX_K,
+                "weight_dtype":        meta.get("weight_dtype"),
+                "autocast":            meta.get("autocast"),
+                "device":              meta.get("device"),
+                "prompt_battery_version": PROMPT_BATTERY_VERSION,
+            },
+            seeds={"numpy": RUN_SEED, "torch": RUN_SEED},
+            extra={
+                "phase":              "phase1",
+                "hf_repo":            meta.get("hf_repo"),
+                "random_init":        meta.get("random_init", False),
+                "random_init_scheme": meta.get("random_init_scheme"),
+                "sublayer_semantics": meta.get("sublayer_semantics"),
+                "parallel_residual":  meta.get("parallel_residual"),
+                "n_layers_analyzed":  results.get("n_layers"),
+                "n_tokens":           results.get("n_tokens"),
+            },
+        )
+    except Exception as exc:
+        print(f"    [manifest] Failed to write manifest.json in {run_dir}: {exc}")
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -166,8 +229,9 @@ def run_all(
     -------
     list of results dicts, one per (model, prompt) combination
     """
-    global OUTPUT_DIR
+    global OUTPUT_DIR, RUN_SEED
     seed        = random_seed if random_seed is not None else RANDOM_INIT_SEED
+    RUN_SEED    = seed
     torch_dtype = resolve_dtype(dtype)
 
     if models_to_run is None:
@@ -237,7 +301,11 @@ def run_all(
             traceback.print_exc()
             v_spectrum = {}
 
-        use_extended = run_extended and cfg["is_albert"] and ALBERT_SNAPSHOTS
+        # Read at call time for the same reason as _run_albert_extended:
+        # --fast / --legacy-snapshots rebind this in core.config.
+        import core.config as _live_cfg
+        use_extended = (run_extended and cfg["is_albert"]
+                        and _live_cfg.ALBERT_SNAPSHOTS)
 
         if use_extended:
             model_results = _run_albert_extended(
@@ -304,19 +372,30 @@ def _run_albert_extended(model, tokenizer, model_name, prompts_to_run, umap_dir)
 
     Loop order: outer = prompts, inner = snapshots.
     Each (prompt, snapshot) pair gets its own results, plots, save, and report.
+
+    Snapshot config is read from core.config at call time, not from the
+    module-level import. --legacy-snapshots and --fast rebind
+    core.config.ALBERT_SNAPSHOTS; a name bound at import time does not see
+    a rebind, so both flags silently ran the dense sweep while
+    _write_manifest (which re-imports inside its own body) printed the
+    legacy values into experiment.txt. The manifest disagreed with the run.
     """
+    from core.config import (
+        ALBERT_SNAPSHOTS as _SNAPSHOTS,
+        ALBERT_MAX_ITERATIONS as _MAX_ITER,
+    )
     extended_trajectories_for_plot = {}
     results_list = []
 
     for prompt_key in prompts_to_run:
         print(f"\n  Prompt: {prompt_key}  "
-              f"(single run to {ALBERT_MAX_ITERATIONS} iterations, "
-              f"snapshots: {ALBERT_SNAPSHOTS})")
+              f"(single run to {_MAX_ITER} iterations, "
+              f"snapshots: {_SNAPSHOTS})")
         try:
             snapshot_data = extract_albert_extended(
                 model, tokenizer, PROMPTS[prompt_key],
-                snapshots=ALBERT_SNAPSHOTS,
-                max_iterations=ALBERT_MAX_ITERATIONS,
+                snapshots=_SNAPSHOTS,
+                max_iterations=_MAX_ITER,
             )
         except Exception as e:
             print(f"    Failed: {e}")
@@ -324,6 +403,8 @@ def _run_albert_extended(model, tokenizer, model_name, prompts_to_run, umap_dir)
             continue
 
         for n_iter, data in snapshot_data.items():
+            run_timer = RunTimer()
+            run_timer.__enter__()
             effective_model_name = f"{model_name}@{n_iter}iter"
             print(f"    Snapshot i{n_iter}  →  {effective_model_name}")
 
@@ -354,6 +435,8 @@ def _run_albert_extended(model, tokenizer, model_name, prompts_to_run, umap_dir)
             run_dir = OUTPUT_DIR / stem
             save_run(results, hidden_states, attentions, run_dir)
             generate_llm_report(results, run_dir)
+            run_timer.__exit__(None, None, None)
+            _write_run_manifest(results, meta, run_dir, prompt_key, run_timer.elapsed)
             print(f"    Saved run to: {run_dir}/")
 
     if extended_trajectories_for_plot:
@@ -378,11 +461,14 @@ def _run_standard(model, tokenizer, model_name, prompts_to_run, umap_dir,
 
     for prompt_key in prompts_to_run:
         print(f"  Prompt: {prompt_key}")
+        run_timer = RunTimer()
+        run_timer.__enter__()
         try:
             hidden_states, attentions, tokens = extract_activations(
                 model, tokenizer, PROMPTS[prompt_key], model_name
             )
         except Exception as e:
+            run_timer.__exit__(None, None, None)
             print(f"    Failed: {e}")
             continue
 
@@ -402,6 +488,8 @@ def _run_standard(model, tokenizer, model_name, prompts_to_run, umap_dir,
         run_dir = OUTPUT_DIR / stem
         save_run(results, hidden_states, attentions, run_dir)
         generate_llm_report(results, run_dir)
+        run_timer.__exit__(None, None, None)
+        _write_run_manifest(results, meta, run_dir, prompt_key, run_timer.elapsed)
         print(f"  Saved run to: {run_dir}/")
 
         # Fix 14: sublayer analysis — post-attn and post-FFN streams.
@@ -447,6 +535,8 @@ def _run_sublayer_analysis(model, tokenizer, model_name, prompt_key,
     for label, hs_sub in (("attn", streams.post_attn), ("ffn", streams.post_ffn)):
         eff_model_name = f"{model_name}@{label}"
         print(f"    Sublayer analysis: {eff_model_name}")
+        run_timer = RunTimer()
+        run_timer.__enter__()
 
         # Attentions belong to the full block, not to either stream, so an
         # empty list is passed and analyze_trajectory skips the sinkhorn
@@ -469,6 +559,9 @@ def _run_sublayer_analysis(model, tokenizer, model_name, prompt_key,
         sub_run_dir = OUTPUT_DIR / sub_stem
         save_run(sub_results, hs_sub, [], sub_run_dir)
         generate_llm_report(sub_results, sub_run_dir)
+        run_timer.__exit__(None, None, None)
+        _write_run_manifest(sub_results, meta, sub_run_dir, prompt_key,
+                            run_timer.elapsed)
         print(f"    Sublayer run saved to: {sub_run_dir}/")
 
 def run_sublayer_only(models_to_run: list, prompts_to_run: list,
@@ -537,6 +630,12 @@ def _write_manifest(timestamp, models_to_run, prompts_to_run,
         f"albert_max_iterations : {ALBERT_MAX_ITERATIONS}",
         f"albert_snapshots      : {ALBERT_SNAPSHOTS}",
         f"device         : {DEVICE}",
+        # The battery hash is what makes two checkpoint runs checkably
+        # comparable; the prompt text below is for a human, this is for
+        # core.prompts.verify_same_battery.
+        f"prompt_battery : {PROMPT_BATTERY_VERSION} / {PROMPT_BATTERY_HASH}",
+        f"seed           : {RUN_SEED}",
+        f"git_sha        : {get_git_sha()}",
         # Recorded because a dtype change silently shifts the V eigenspectrum
         # and the effective-rank gate. A cross-run comparison that spans two
         # dtypes is not a comparison.
@@ -689,4 +788,3 @@ if __name__ == "__main__":
             random_seed=args.seed,
             dtype=args.dtype,
         )
-

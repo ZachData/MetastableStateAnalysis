@@ -32,8 +32,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-from .style import BLOG_STYLE
-from .naming import _safe_model_name
+from core.style import BLOG_STYLE
+from core.naming import _safe_model_name
 from .loaders import (
     _geo, _clustering, _energy_series, _hdbscan_labels, _load_activations,
 )

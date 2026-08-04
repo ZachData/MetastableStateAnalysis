@@ -25,10 +25,10 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import BLOG_STYLE
-from .naming import _safe_model_name
+from core.style import BLOG_STYLE
+from core.naming import _safe_model_name
 from .loaders import _pca_trajs, _hdbscan_labels, _load_activations
-from .plot_utils import _scatter_hdbscan, _resolve_layers
+from core.plot_utils import _scatter_hdbscan, _resolve_layers
 from .checkpoints import _fmt_step
 
 

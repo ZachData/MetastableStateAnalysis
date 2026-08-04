@@ -22,8 +22,8 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import BLOG_STYLE
-from .naming import _color, _random_color, _safe_model_name
+from core.style import BLOG_STYLE
+from core.naming import _color, _random_color, _safe_model_name
 from .loaders import discover_runs
 from .energy_decomposition import _phase2_decomposed, _find_phase2_run_dir, _per_layer_energy_fracs
 

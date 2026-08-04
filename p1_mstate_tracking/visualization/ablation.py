@@ -14,8 +14,8 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import BLOG_STYLE, ABLATION_STYLE, ABLATION_LABELS
-from .naming import _is_untrained, _color, _random_color, _safe_model_name, _sublayer_groups
+from core.style import BLOG_STYLE, ABLATION_STYLE, ABLATION_LABELS
+from core.naming import _is_untrained, _color, _random_color, _safe_model_name, _sublayer_groups
 from .loaders import _energy_series
 from .series import _mass_near_1_series, _cluster_membership_series, _effective_rank_series
 

@@ -40,8 +40,8 @@ from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import BLOG_STYLE
-from .naming import _safe_model_name
+from core.style import BLOG_STYLE
+from core.naming import _safe_model_name
 from .loaders import _geo, _hdbscan_labels
 from .cluster_reality import _is_punct_token
 

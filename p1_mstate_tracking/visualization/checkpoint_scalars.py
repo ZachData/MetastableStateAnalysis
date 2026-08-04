@@ -36,15 +36,15 @@ from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import BLOG_STYLE
-from .naming import _safe_model_name
+from core.style import BLOG_STYLE
+from core.naming import _safe_model_name
 from .loaders import _available_betas, _energy_series, _trajectory, _sinkhorn
 from .series import _series_or_aggregate
 from .checkpoints import (
     CHECKPOINT_METRICS, TRANSITION_SPAN_COLOR, TRANSITION_SPAN_ALPHA,
     _step_x, format_step_axis, family_baselines,
 )
-from .plot_utils import _spans
+from core.plot_utils import _spans
 
 # Mirrors metrics.ENERGY_VIOLATION_REL_TOL (metrics.py can't be imported
 # here — torch dependency).

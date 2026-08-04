@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import Normalize
 
-from .style import UNTRAINED_COLOR
+from core.style import UNTRAINED_COLOR
 from .series import (
     _mass_near_1_series,
     _effective_rank_series,

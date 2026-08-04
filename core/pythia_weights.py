@@ -204,9 +204,17 @@ def split_qkv_from_layer(layer, model_name: str = "") -> dict:
             f"at the call site."
         )
 
-    weight = qkv_module.weight
+    # Normalize once, before either use. _attn_geometry needs .shape and
+    # split_qkv_gptneox needs an ndarray; the raw qkv_module.weight is only
+    # guaranteed to be the duck type _to_numpy documents (.detach/.cpu/
+    # .numpy), which doesn't include .shape. Reading .shape off the raw
+    # object before converting worked for real torch tensors and bare
+    # ndarrays but broke any other conformer of the documented duck type.
+    # _to_numpy is idempotent on ndarrays, so calling it again inside
+    # split_qkv_gptneox is harmless.
+    weight = _to_numpy(qkv_module.weight)
     num_heads, head_size, provenance = _attn_geometry(
-        attn, tuple(weight.shape), model_name
+        attn, weight.shape, model_name
     )
     parts = split_qkv_gptneox(weight, num_heads=num_heads, head_size=head_size)
     parts["_geometry"] = {

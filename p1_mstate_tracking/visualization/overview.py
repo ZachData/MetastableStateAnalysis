@@ -15,8 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from .style import BLOG_STYLE, DEGENERATE_RANK
-from .naming import _is_untrained, _random_color, _color, _label
+from core.style import BLOG_STYLE, DEGENERATE_RANK
+from core.naming import _is_untrained, _random_color, _color, _label
 from .series import (
     _series_or_aggregate,
     _mass_near_1_series,

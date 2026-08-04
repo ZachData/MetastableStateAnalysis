@@ -23,8 +23,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
 
-from .style import BLOG_STYLE
-from .naming import _safe_model_name
+from core.style import BLOG_STYLE
+from core.naming import _safe_model_name
 from .loaders import _geo
 from .series import _attention_entropy_mean_series, _fiedler_mean_series
 

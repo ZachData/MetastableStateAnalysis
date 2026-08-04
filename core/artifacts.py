@@ -81,8 +81,17 @@ PHASE1 = {
     ),
     "clustering": ArtifactSpec(
         kind="json", filename="clustering.json",
-        required_keys=("hdbscan",),
-        description="Agglomerative/KMeans/HDBSCAN results per layer.",
+        required_keys=("layers",),
+        description=(
+            "Agglomerative/KMeans/HDBSCAN results per layer, plus nesting "
+            "and pair_agreement. Everything is nested under layers[i]; the "
+            "HDBSCAN block is at layers[i].clustering.hdbscan. required_keys "
+            "is checked against the top level only, so the previous "
+            "('hdbscan',) could never be satisfied by any file this "
+            "pipeline writes — the same false-failure class as the "
+            "trajectory spec above. Label arrays live in clusters.npz, not "
+            "here."
+        ),
     ),
     "spectral": ArtifactSpec(
         kind="json", filename="spectral.json",
@@ -103,8 +112,18 @@ PHASE1 = {
     ),
     "trajectory": ArtifactSpec(
         kind="json", filename="trajectory.json",
-        required_keys=("trajectories", "plateau_layers"),
-        description="Cluster-chain trajectories + plateau_layers.",
+        required_keys=("cluster_tracking", "plateau_layers"),
+        description=(
+            "Cluster-chain trajectories + plateau_layers. The trajectory "
+            "list is nested at cluster_tracking.trajectories, not at the top "
+            "level: that is what p1_io._save_trajectory writes and what "
+            "every reader (loaders.py, cluster_reality.py, "
+            "cluster_orthogonality.py, p1_io's own loaders) already reaches "
+            "for. This spec previously required a top-level 'trajectories' "
+            "key that has never been written by anything, so "
+            "validate_artifact reported a failure on every Phase 1 run "
+            "while the pipeline was in fact consistent."
+        ),
     ),
     "activations": ArtifactSpec(
         kind="npz", filename="activations.npz",

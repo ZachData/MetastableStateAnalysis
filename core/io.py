@@ -62,6 +62,7 @@ def compute_manifest_id(
     prompt_battery_hash: str,
     checkpoint_step=None,
     seeds=None,
+    prompt_key=None,
 ) -> str:
     """
     Short, deterministic id for a run — used to stamp figures and to name
@@ -73,8 +74,19 @@ def compute_manifest_id(
 
     Does NOT include the timestamp or wall-time — those vary run-to-run
     for reasons unrelated to the run's identity (retries, machine load).
+
+    `prompt_key` distinguishes runs that differ only in which prompt from
+    the battery they used. The battery *hash* covers the whole set, so it
+    is identical across those runs — without prompt_key, Phase 1's
+    per-(model, prompt) run directories all share one id, and
+    stamp_figure_name then produces colliding filenames for figures from
+    different runs. It is keyword-only-by-position at the end and defaults
+    to None so callers with a genuinely whole-battery scope (a session-level
+    manifest) keep the 4-part id they had.
     """
     parts = [str(model), str(prompt_battery_hash), str(checkpoint_step), str(seeds)]
+    if prompt_key is not None:
+        parts.append(str(prompt_key))
     digest = hashlib.sha256("::".join(parts).encode("utf-8")).hexdigest()
     return digest[:12]
 
@@ -125,6 +137,7 @@ def write_manifest(
     wall_time_seconds: float,
     hf_revision: Optional[str] = None,
     checkpoint_step: Optional[int] = None,
+    prompt_key: Optional[str] = None,
     git_sha: Optional[str] = None,
     config: Optional[dict] = None,
     seeds: Optional[dict] = None,
@@ -150,6 +163,9 @@ def write_manifest(
     hf_revision           : HF revision string (e.g. "step1000"); None for
                             non-checkpointed models
     checkpoint_step       : integer step; None for non-checkpointed models
+    prompt_key            : which prompt from the battery this run used;
+                            required for per-prompt run dirs, or two prompts
+                            of the same model collide on manifest_id
     git_sha               : defaults to get_git_sha() if not passed
     config                : arbitrary config dump (must be JSON-serialisable)
     seeds                 : e.g. {"numpy": 42, "torch": 42}
@@ -169,12 +185,14 @@ def write_manifest(
         prompt_battery_hash=prompt_battery_hash,
         checkpoint_step=checkpoint_step,
         seeds=seeds,
+        prompt_key=prompt_key,
     )
 
     manifest = {
         "manifest_id": manifest_id,
         "model": model,
         "checkpoint_step": checkpoint_step,
+        "prompt_key": prompt_key,
         "hf_revision": hf_revision,
         "prompt_battery_hash": prompt_battery_hash,
         "git_sha": git_sha,

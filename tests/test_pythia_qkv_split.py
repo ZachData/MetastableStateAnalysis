@@ -134,7 +134,7 @@ def test_extract_v_gptneox_wrapper():
     v_out = extract_v_gptneox(layer)
     np.testing.assert_array_equal(v_out, V.reshape(NUM_HEADS * HEAD_SIZE, HIDDEN_IN))
 
-    class TestAttributeContract:
+class TestAttributeContract:
     """The stub in this file uses the exact attribute names the old
     implementation hardcoded, so it could not catch an upstream rename.
     These cases vary the names."""

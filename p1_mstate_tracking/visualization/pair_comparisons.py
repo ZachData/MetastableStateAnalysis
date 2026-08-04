@@ -19,10 +19,10 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .style import BLOG_STYLE
-from .naming import _is_untrained, _color, _random_color, _label, _safe_model_name
+from core.style import BLOG_STYLE
+from core.naming import _is_untrained, _color, _random_color, _label, _safe_model_name
 from .loaders import _trajectory, _available_betas, _energy_series
-from .plot_utils import _shade_plateaus
+from core.plot_utils import _shade_plateaus
 from .series import (
     _series_or_aggregate,
     _cluster_membership_series,
