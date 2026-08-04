@@ -26,8 +26,8 @@ import sys
 from pathlib import Path
 from typing import Dict, Tuple
 
-from .style import DEFAULT_PROMPT
-from .naming import filter_iteration_depths
+from core.style import DEFAULT_PROMPT
+from core.naming import filter_iteration_depths
 from .loaders import discover_runs
 from .pipeline import generate_all, _discover_random_dir
 from .random_aggregate import build_aggregate
