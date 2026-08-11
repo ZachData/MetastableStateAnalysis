@@ -9,7 +9,10 @@ checkpoint_filmstrip) share lives here so the conventions can't drift
 apart:
 
   - the '-step{N}' name grammar (core/pythia_registry.py keys:
-    'pythia-410m-step2000') and family grouping,
+    'pythia-410m-step2000') and family grouping. The grammar itself was
+    moved to core/model_family.py and is re-exported here; this module
+    imports matplotlib, so analysis code that only needed to parse a step
+    was pulling in a plotting dependency to get it,
   - baseline resolution: '{base}-random' (norm-matched continuity
     control) and step 0 (developmental origin) are kept as two separate
     objects, per the plan's two-baseline policy — never folded into one
@@ -34,7 +37,6 @@ current checkpoint runs use known-event anchors directly rather than the
 dense pilot sweep this was meant to support. See status-2.md.
 """
 
-import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -59,36 +61,26 @@ from .series import (
 # so nothing about the existing suffix handling changes.
 # ─────────────────────────────────────────────────────────────────────────────
 
-_STEP_RE = re.compile(r"^(?P<base>.+)-step(?P<step>\d+)$")
+# The grammar itself now lives in `core/model_family.py`, which is
+# stdlib-only. It was defined here, in a module that imports matplotlib and
+# `.series`, so every ANALYSIS module that needed to know a run's checkpoint
+# step either acquired a plotting dependency or re-typed the regex —
+# `p2b_imaginary` was about to be the third copy. `core/model_family.py`
+# already exists to stop exactly this ("two idioms that agree on registry
+# keys and disagree elsewhere"), so the grammar moved there rather than to
+# `core/naming.py`, which imports `core.style` and so imports matplotlib too.
+#
+# Re-exported under the leading-underscore names this module's four figure
+# consumers already call, so nothing downstream changes.
 
-
-def _checkpoint_step(model: str) -> Optional[int]:
-    """'pythia-410m-step2000' -> 2000; None for non-checkpoint names."""
-    m = _STEP_RE.match(model)
-    return int(m.group("step")) if m else None
-
-
-def _checkpoint_base(model: str) -> Optional[str]:
-    """'pythia-410m-step2000' -> 'pythia-410m'; None for non-checkpoint names."""
-    m = _STEP_RE.match(model)
-    return m.group("base") if m else None
-
-
-def checkpoint_families(models: List[str]) -> Dict[str, List[Tuple[int, str]]]:
-    """
-    Group '-step{N}' variants by base model:
-        {'pythia-410m': [(0, 'pythia-410m-step0'), (1, ...), ...]}
-    sorted ascending by step. Families with a single checkpoint are kept —
-    the figure modules decide their own minimum (a sweep of one line is
-    useless; a scalar point is not).
-    """
-    fams: Dict[str, List[Tuple[int, str]]] = {}
-    for m in models:
-        step = _checkpoint_step(m)
-        if step is None:
-            continue
-        fams.setdefault(_checkpoint_base(m), []).append((step, m))
-    return {b: sorted(v) for b, v in sorted(fams.items())}
+from core.model_family import (
+    CHECKPOINT_STEP_RE as _STEP_RE,
+    checkpoint_step as _checkpoint_step,
+    checkpoint_base as _checkpoint_base,
+    checkpoint_families,
+    is_checkpoint,
+    sort_by_step,
+)
 
 
 def family_baselines(base: str, models: List[str]) -> Dict[str, Optional[str]]:

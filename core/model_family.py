@@ -96,3 +96,90 @@ def is_gpt2(model_name: str) -> bool:
 
 def is_gptneox(model_name: str) -> bool:
     return model_family(model_name) == "gptneox"
+
+# ---------------------------------------------------------------------------
+# Checkpoint-name grammar  '{base}-step{N}'
+# ---------------------------------------------------------------------------
+#
+# Added for Phase 2b's Pythia rerun. The grammar already existed, in
+# `p1_mstate_tracking/visualization/checkpoints.py` — but that module imports
+# matplotlib, so every analysis module that needed to know a run's checkpoint
+# step either acquired a plotting dependency or re-typed the regex. Phase 2b
+# was about to be the third copy.
+#
+# This is the same failure this module's header describes: two idioms that
+# agree on registry keys and disagree elsewhere. Kept here rather than in
+# core/naming.py because naming.py imports core.style, which imports
+# matplotlib — the exact edge this move exists to avoid.
+#
+# `p1_mstate_tracking/visualization/checkpoints.py` should re-export these
+# rather than keep its own `_STEP_RE`:
+#
+#     from core.model_family import (
+#         checkpoint_step as _checkpoint_step,
+#         checkpoint_base as _checkpoint_base,
+#         checkpoint_families,
+#     )
+#
+# Its `family_baselines` stays where it is: it is about which lines a figure
+# draws, not about the name grammar.
+
+import re as _re
+
+#: 'pythia-410m-step2000' -> base 'pythia-410m', step 2000.
+#: `pythia-1.4b-random` deliberately does NOT match — it is not a point on
+#: the training trajectory and must never land on the step axis. See
+#: core/pythia_registry.py.
+CHECKPOINT_STEP_RE = _re.compile(r"^(?P<base>.+)-step(?P<step>\d+)$")
+
+
+def checkpoint_step(model_name: str) -> Optional[int]:
+    """'pythia-410m-step2000' -> 2000; None for non-checkpoint names."""
+    m = CHECKPOINT_STEP_RE.match(str(model_name))
+    return int(m.group("step")) if m else None
+
+
+def checkpoint_base(model_name: str) -> Optional[str]:
+    """'pythia-410m-step2000' -> 'pythia-410m'; None for non-checkpoint names."""
+    m = CHECKPOINT_STEP_RE.match(str(model_name))
+    return m.group("base") if m else None
+
+
+def is_checkpoint(model_name: str) -> bool:
+    return CHECKPOINT_STEP_RE.match(str(model_name)) is not None
+
+
+def checkpoint_families(model_names) -> dict:
+    """
+    Group '-step{N}' variants by base model, ascending by step:
+
+        {'pythia-410m': [(0, 'pythia-410m-step0'), (1, ...), ...]}
+
+    Non-checkpoint names are dropped. Single-checkpoint families are kept —
+    the caller decides its own minimum.
+    """
+    fams: dict = {}
+    for m in model_names:
+        step = checkpoint_step(m)
+        if step is None:
+            continue
+        fams.setdefault(checkpoint_base(m), []).append((step, m))
+    return {b: sorted(v) for b, v in sorted(fams.items())}
+
+
+def sort_by_step(model_names) -> list:
+    """Checkpoint names in training order. Non-checkpoint names sort last."""
+    return sorted(
+        model_names,
+        key=lambda m: (checkpoint_step(m) is None, checkpoint_step(m) or 0, str(m)),
+    )
+
+
+__all__ += [
+    "CHECKPOINT_STEP_RE",
+    "checkpoint_step",
+    "checkpoint_base",
+    "is_checkpoint",
+    "checkpoint_families",
+    "sort_by_step",
+]

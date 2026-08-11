@@ -1,490 +1,687 @@
 """
-rotational_rescaled.py — Causal isolation of rotational vs signed dynamics.
+rotational_rescaled.py — Block 1b. Causal isolation of the signed and
+rotational parts of V_eff, and the identity that used to be mistaken for a
+result.
 
-Phase 2's rescaled frame factors out ALL of V_eff via z = e^{-tV} x.
-This removes both signed and rotational components simultaneously.
+THE CORRECTION THIS REWRITE EXISTS FOR
+--------------------------------------
+The previous version built three rescaled frames from V = S + A:
 
-This script decomposes V_eff = S + A where:
-  S = (V + V^T) / 2  — symmetric part (signed, no rotation)
-  A = (V - V^T) / 2  — antisymmetric part (pure rotation, no signed component)
+    remove_full     z = x @ (e^{-V})^T
+    remove_signed   z = x @ (e^{-S})^T
+    remove_rotation z = x @ (e^{-A})^T
 
-Then applies three separate rescalings:
-  1. Full:         z_full  = e^{-tV} x       (removes everything — Phase 2 baseline)
-  2. Signed-only:  z_sign  = e^{-tS} x       (removes signed, keeps rotation)
-  3. Rotation-only: z_rot  = e^{-tA} x       (removes rotation, keeps signed)
+and compared violation counts across them. `elim_rotation = 0.0` in 35/35
+runs was reported as the phase's headline: rotation is dynamically neutral.
 
-Recomputes energy violations in each frame. The comparison:
-  - If signed-only removal matches full removal → rotation is dynamically neutral
-  - If rotation-only removal also reduces violations → rotation contributes independently
-  - If neither alone matches full → S and A interact nonlinearly
+It is not a finding. `A = (V - V^T)/2` is real antisymmetric, so `e^{-A}` is
+ORTHOGONAL, and so is any cumulative product of such matrices. The frame
+then re-projects each token to the unit sphere — which an orthogonal map
+already preserves. Every quantity Block 1b measures is a function of the
+Gram matrix `X X^T`, and
 
-For per-layer models (GPT-2), each layer's own S and A are used.
+    (X R^T)(X R^T)^T = X R^T R X^T = X X^T   for R R^T = I
 
-Functions
----------
-decompose_symmetric_antisymmetric : split V into S and A
-rescaled_trajectory_component     : apply one-component rescaling
-compare_rescaled_frames           : run all three + original, compare violations
-analyze_rotational_rescaling      : full pipeline for one model × prompt
+exactly. Energies, effective rank, `ip_mean`, `ip_mass_near_1`: all
+identical to the unrescaled trajectory. Measured residual over 24
+accumulated layers at d=1024 is ~1e-15, against a violation threshold of
+1e-3 relative. So `n_remove_rotation == n_original` and
+`elim_rotation == 0.0` are forced by construction, in every run, on every
+model, at every beta, before any data is read.
+
+Three consequences, all of which belong next to any use of this module:
+
+1. `rotation_neutral` was never a falsifiable claim in this frame. It must
+   be withdrawn from status-2b, not re-run.
+2. `status-2.md`'s third candidate explanation for Pythia's inert rescaled
+   frame ("Phase 2b established that the signed component carries 100% of
+   causal weight") loses its evidence. The other two — numerical truncation
+   and clipped overcorrection — stand and are testable here.
+3. `core/precision_policy.py`'s docstring says Phase 2b's causal conclusion
+   is "unaffected by how the complex fraction is counted." True about the
+   tolerance, and irrelevant: the conclusion fails for an unrelated reason.
+
+WHAT SURVIVES
+-------------
+`remove_full` vs `remove_signed`. `e^{-(S+A)} != e^{-S} e^{-A}` unless S and
+A commute, so these two frames genuinely differ, and their difference is
+exactly the quantity `status-2.md`'s "next experiments" item 2 asks for:
+
+    if signed-only rescaling recovers ~1.0 while full-V rescaling gives the
+    2.1% Study B measured, the failure is rotational interference in the
+    matrix exponential and V is still causal. If signed-only also fails, the
+    mechanism does not transfer.
+
+`remove_rotation` is retained, but demoted: it is now an INVARIANCE CONTROL,
+returned with `is_invariance_control=True` and a measured residual, and it
+is refused as an input to `interpret_comparison`. Its job is to fail loudly
+if the orthogonality it depends on ever stops holding numerically — not to
+answer a question.
+
+WHAT WOULD BE A REAL ROTATION TEST
+----------------------------------
+Something not invariant under a global orthogonal map of the residual
+stream. Two are reachable from what already exists:
+
+  - Weight-space ablation through `core/intervention.py`: set W_OV := S per
+    layer, re-run the forward pass, recount. The composition with attention
+    and the FFN is not orthogonally invariant even though the metric is.
+  - Readout-space measurement through `core/functional_distance.py`: the
+    decoded next-token distribution depends on `embed_out`, which is fixed,
+    so rotating the residual stream does change it. This is the clean
+    discriminator between "rotation is inert" and "rotation happens to be
+    orthogonal to the metric we chose."
+
+Neither is in this module. Both are the follow-up.
+
+OTHER CHANGES FROM THE PREVIOUS VERSION
+---------------------------------------
+- Violation counting moved to `p2b_energy` — relative tolerance and the
+  project's degeneracy gate, not a local absolute `-1e-6` / `>= 3.0` pair.
+  Effective rank now uses squared singular values, matching
+  `core.metrics.effective_rank`; the old local version used unsquared ones.
+- `n_valid_layers` is returned PER FRAME and is a first-class output rather
+  than being computed and then dropped by the serializer. This is Phase 2's
+  verification item V1. It matters more here than there: `e^{-A}` is
+  orthogonal and cannot overflow, while `e^{-S}` with positive eigenvalues
+  can, so an early-truncating signed frame produces `elim_signed = 1.0` for
+  free.
+- `expm` is computed once per matrix set and reused across prompts
+  (`build_rescalers`). It was previously recomputed inside every
+  (checkpoint, prompt) pair, for a prompt-independent quantity.
 """
 
+from __future__ import annotations
+
+from typing import Optional, Sequence
+
 import numpy as np
-from scipy.linalg import expm, svdvals
+from scipy.linalg import expm
+
+from core.metrics import ENERGY_VIOLATION_REL_TOL
+
+from p2b_imaginary.p2b_energy import (
+    DEFAULT_GATE_KIND,
+    count_violations_all_betas,
+    elimination_rate,
+    sphere_project,
+    trajectory_scalars,
+)
+
+#: Magnitude at which the cumulative rescaling is declared diverged. Kept
+#: identical to the value `p2_eigenspectra/trajectory_perlayer.py` uses, so
+#: a truncation here and a truncation there mean the same thing.
+RESCALE_OVERFLOW_LIMIT: float = 1e15
+
+#: Row norm below which a rescaled token is no longer a direction.
+#:
+#: The mirror failure to overflow, and the one that is silent. `e^{-S}` for a
+#: POSITIVE-definite S contracts; after enough layers the rescaled rows
+#: underflow toward zero. `core.metrics.l2_normalize` leaves rows with norm
+#: < 1e-12 unnormalized rather than dividing by zero, so the Gram matrix goes
+#: to ~0, every energy goes to the constant 1/(2*beta), and the frame reports
+#: ZERO VIOLATIONS. An `elim = 1.0` produced this way is indistinguishable
+#: from a real one unless the collapse is detected here.
+RESCALE_UNDERFLOW_LIMIT: float = 1e-12
+
+#: How far the cumulative rotation-only rescaler may drift from orthogonality
+#: before the invariance control is reported as failed rather than passed.
+#: Set well above float64 accumulation over ~48 layers (~1e-14 observed) and
+#: well below anything that could move a relative energy drop past 1e-3.
+ORTHOGONALITY_TOL: float = 1e-8
+
+FRAME_KEYS = ("original", "remove_full", "remove_signed", "remove_rotation")
+
+#: Old key -> new key, for reading pre-rewrite `phase2i_results.json`.
+#: The old names described what was KEPT; the new ones describe what is
+#: REMOVED, which is what the rescaling actually does.
+LEGACY_FRAME_KEYS = {
+    "n_original": "original",
+    "n_full_rescaled": "remove_full",
+    "n_signed_only": "remove_signed",
+    "n_rotation_only": "remove_rotation",
+}
 
 
 # ---------------------------------------------------------------------------
-# S/A decomposition
+# S / A decomposition
 # ---------------------------------------------------------------------------
 
 def decompose_symmetric_antisymmetric(OV: np.ndarray) -> dict:
     """
     Split V_eff into symmetric (signed) and antisymmetric (rotational) parts.
 
-    S = (V + V^T) / 2  — eigenvalues are real, capture attraction/repulsion
-    A = (V - V^T) / 2  — eigenvalues are purely imaginary, capture rotation
+      S = (V + V^T)/2   real eigenvalues; attraction/repulsion
+      A = (V - V^T)/2   purely imaginary eigenvalues; pure rotation
 
-    Also computes the relative magnitude: ||A||_F / ||S||_F.
-    When this ratio is large, the rotational component dominates.
-
-    Parameters
-    ----------
-    OV : (d, d) ndarray
-
-    Returns
-    -------
-    dict with:
-      S              : (d, d) symmetric part
-      A              : (d, d) antisymmetric part
-      S_frob         : float — ||S||_F
-      A_frob         : float — ||A||_F
-      rotation_ratio : float — ||A||_F / ||S||_F
-      V_frob         : float — ||V||_F (for reference)
+    `rotation_ratio` = ||A||_F / ||S||_F. Note this is a FROBENIUS ratio and
+    is not the same quantity as `rotational_schur.rotation_energy_fractions`'
+    spectral-energy fraction; the two answer different questions and Phase
+    2b previously reported both as "how rotational V is". Both are returned
+    here with distinct names so they cannot be conflated.
     """
+    OV = np.asarray(OV, dtype=np.float64)
     S = (OV + OV.T) / 2.0
     A = (OV - OV.T) / 2.0
 
-    s_norm = float(np.linalg.norm(S, 'fro'))
-    a_norm = float(np.linalg.norm(A, 'fro'))
-    v_norm = float(np.linalg.norm(OV, 'fro'))
+    s_norm = float(np.linalg.norm(S, "fro"))
+    a_norm = float(np.linalg.norm(A, "fro"))
+    v_norm = float(np.linalg.norm(OV, "fro"))
 
     return {
         "S": S,
         "A": A,
         "S_frob": s_norm,
         "A_frob": a_norm,
-        "rotation_ratio": float(a_norm / max(s_norm, 1e-12)),
         "V_frob": v_norm,
+        "rotation_ratio_frobenius": float(a_norm / max(s_norm, 1e-12)),
+        "rotational_frobenius_fraction": float(a_norm ** 2 / max(v_norm ** 2, 1e-12)),
     }
 
 
 # ---------------------------------------------------------------------------
-# Component-wise rescaled trajectory
+# Rescalers
 # ---------------------------------------------------------------------------
 
-def rescaled_trajectory_component(
+def build_rescalers(matrices: Sequence[np.ndarray]) -> list:
+    """
+    `[expm(-M) for M in matrices]`, in float64.
+
+    Separated from the trajectory application so it can be cached per
+    checkpoint. The matrices are OV weights: prompt-independent. The
+    previous version recomputed them inside every (checkpoint, prompt) pair,
+    which on the Study B sweep is 27 x 9 x 3 x 24 exponentials of a
+    1024x1024 matrix where 27 x 3 x 24 suffice.
+    """
+    return [expm(-np.asarray(M, dtype=np.float64)) for M in matrices]
+
+
+def orthogonality_residual(rescalers: Sequence[np.ndarray]) -> dict:
+    """
+    How far the cumulative product of `rescalers` is from orthogonal.
+
+    Used on the rotation-only rescalers, where `e^{-A}` is orthogonal by
+    construction. A residual above ORTHOGONALITY_TOL means the invariance
+    the control depends on has broken numerically and the control's result
+    is no longer an identity check.
+    """
+    if not len(rescalers):
+        return {"max_residual": 0.0, "n_matrices": 0, "orthogonal": True}
+    d = np.asarray(rescalers[0]).shape[0]
+    R = np.eye(d, dtype=np.float64)
+    worst = 0.0
+    for M in rescalers:
+        R = R @ np.asarray(M, dtype=np.float64)
+        worst = max(worst, float(np.abs(R @ R.T - np.eye(d)).max()))
+    return {
+        "max_residual": worst,
+        "n_matrices": int(len(rescalers)),
+        "orthogonal": bool(worst <= ORTHOGONALITY_TOL),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Rescaled trajectory
+# ---------------------------------------------------------------------------
+
+def rescaled_trajectory(
     activations: np.ndarray,
-    matrix: np.ndarray,
-    beta_values: list,
-    is_per_layer: bool = False,
-    matrices_list: list = None,
+    rescalers: Optional[Sequence[np.ndarray]],
 ) -> dict:
     """
-    Apply rescaling z_i(L) = x_i(L) @ ((e^{-M})^L)^T and recompute metrics.
+    Apply the cumulative rescaling z_i(L) = normalize( x_i(L) @ R_cum(L)^T ),
+    with R_cum(L) = prod_{l<L} rescalers[l].
 
-    For shared-weight models: matrix is a single (d,d), applied cumulatively.
-    For per-layer models: matrices_list is a list of (d,d), one per layer.
-      The cumulative rescaling at layer L is Π_{l=0}^{L-1} e^{-M_l}.
-
-    Parameters
-    ----------
-    activations   : (n_layers, n_tokens, d)
-    matrix        : (d, d) for shared models
-    beta_values   : list of float
-    is_per_layer  : bool
-    matrices_list : list of (d, d) for per-layer models
+    `rescalers=None` returns the unrescaled trajectory (the `original`
+    frame) so every frame goes through one code path.
 
     Returns
     -------
     dict with:
-      ip_mean       : (n_layers,) float
-      ip_mass_near_1: (n_layers,) float
-      energies      : {beta: (n_layers,) float}
-      n_violations  : {beta: int}
-      effective_rank: (n_layers,) float
-      max_valid_layer: int — truncation point if rescaling diverges
+      normed           : (n_layers, n_tokens, d), NaN at and after truncation
+      n_valid_layers   : int — layers actually produced. THE number Phase 2's
+                         verification item V1 asks for. A frame that stops at
+                         layer 3 has three transitions to score and cannot be
+                         compared with one that scored twenty-three.
+      truncated        : bool
+      truncation_reason: "nonfinite_activations" | "rescaler_overflow"
+                         | "rescaler_underflow" | None
+      r_cum_max_abs    : (n_layers,) — the growth curve, recorded even when
+                         truncation does not fire, so "the rescaling was fine"
+                         is a measurement rather than the absence of a flag.
+
+    Truncation semantics differ from the previous version. That one set
+    `max_valid = L + 1` BEFORE the overflow check, so the layer computed
+    from an already-diverged R_cum was counted as valid. Here a layer is
+    valid only if the R_cum used to produce it was itself within limits.
     """
-    n_layers, n_tokens, d = activations.shape
+    acts = np.asarray(activations)
+    n_layers, n_tokens, d = acts.shape
 
-    # Precompute per-layer rescaling matrices
-    if is_per_layer and matrices_list is not None:
-        R_per_layer = [expm(-M).astype(np.float64) for M in matrices_list]
-    else:
-        R_single = expm(-matrix).astype(np.float64)
+    out = np.full((n_layers, n_tokens, d), np.nan, dtype=np.float64)
+    r_cum_max = np.full(n_layers, np.nan)
 
-    # Apply rescaling cumulatively
+    if rescalers is None:
+        out = sphere_project(acts.astype(np.float64))
+        r_cum_max[:] = 1.0
+        return {
+            "normed": out,
+            "n_valid_layers": int(n_layers),
+            "truncated": False,
+            "truncation_reason": None,
+            "r_cum_max_abs": r_cum_max,
+        }
+
+    R_list = [np.asarray(M, dtype=np.float64) for M in rescalers]
     R_cum = np.eye(d, dtype=np.float64)
-    rescaled = np.zeros((n_layers, n_tokens, d), dtype=np.float64)
-    max_valid = 0
+    n_valid = 0
+    reason = None
 
     for L in range(n_layers):
-        raw = activations[L].astype(np.float64) @ R_cum.T
+        cur_max = float(np.abs(R_cum).max())
+        r_cum_max[L] = cur_max
+        if not np.isfinite(cur_max) or cur_max > RESCALE_OVERFLOW_LIMIT:
+            reason = "rescaler_overflow"
+            break
+
+        raw = acts[L].astype(np.float64) @ R_cum.T
         if not np.all(np.isfinite(raw)):
+            reason = "nonfinite_activations"
             break
-        norms = np.linalg.norm(raw, axis=-1, keepdims=True)
-        rescaled[L] = raw / np.maximum(norms, 1e-10)
-        max_valid = L + 1
-
-        # Advance cumulative matrix
-        if is_per_layer and matrices_list is not None:
-            idx = min(L, len(R_per_layer) - 1)
-            R_cum = R_cum @ R_per_layer[idx]
-        else:
-            R_cum = R_cum @ R_single
-
-        if np.abs(R_cum).max() > 1e15:
+        if float(np.linalg.norm(raw, axis=-1).min()) < RESCALE_UNDERFLOW_LIMIT:
+            reason = "rescaler_underflow"
             break
 
-    # Compute metrics on rescaled trajectory
-    ip_means = np.full(n_layers, np.nan)
-    ip_mass = np.full(n_layers, np.nan)
-    energies = {b: np.full(n_layers, np.nan) for b in beta_values}
-    eff_rank = np.full(n_layers, np.nan)
+        out[L] = sphere_project(raw)
+        n_valid = L + 1
 
-    for L in range(max_valid):
-        X = rescaled[L].astype(np.float32)
-        G = X @ X.T
-
-        idx_upper = np.triu_indices(n_tokens, k=1)
-        ips = G[idx_upper]
-        ip_means[L] = float(ips.mean())
-        ip_mass[L] = float((ips > 0.9).mean())
-
-        for beta in beta_values:
-            exp_G = np.exp(beta * G)
-            energies[beta][L] = float(
-                exp_G.sum() / (2.0 * beta * n_tokens * n_tokens)
-            )
-
-        sv = svdvals(X)
-        sv = sv[sv > 1e-10]
-        if len(sv) > 0:
-            sv_n = sv / sv.sum()
-            entropy = -np.sum(sv_n * np.log(sv_n + 1e-12))
-            eff_rank[L] = float(np.exp(entropy))
-
-    # Count violations
-    n_violations = {}
-    for beta in beta_values:
-        E = energies[beta]
-        count = 0
-        for L in range(1, max_valid):
-            if (np.isfinite(E[L]) and np.isfinite(E[L - 1])
-                    and E[L] - E[L - 1] < -1e-6
-                    and eff_rank[L] >= 3.0):
-                count += 1
-        n_violations[beta] = count
+        idx = min(L, len(R_list) - 1)
+        R_cum = R_cum @ R_list[idx]
 
     return {
-        "ip_mean":        ip_means,
-        "ip_mass_near_1": ip_mass,
-        "energies":       energies,
-        "n_violations":   n_violations,
-        "effective_rank": eff_rank,
-        "max_valid_layer": max_valid,
+        "normed": out,
+        "n_valid_layers": int(n_valid),
+        "truncated": bool(reason is not None),
+        "truncation_reason": reason,
+        "r_cum_max_abs": r_cum_max,
     }
 
 
 # ---------------------------------------------------------------------------
-# Original trajectory metrics (no rescaling)
+# Frame construction
 # ---------------------------------------------------------------------------
 
-def original_trajectory_metrics(
-    activations: np.ndarray,
-    beta_values: list,
-) -> dict:
+def _matrices_for(ov_data: dict, n_layers: int) -> dict:
     """
-    Compute energy and violation count on the unrescaled trajectory.
-    Baseline for comparison with the three rescaled frames.
+    Per-layer V, S and A lists, one entry per analysed layer.
+
+    Shared-weight models (ALBERT) repeat a single matrix; per-layer models
+    (GPT-2, BERT, Pythia) use their own. `n_layers` is the ACTIVATION depth,
+    which for Pythia is 25 (embeddings + 24 blocks) against 24 OV matrices —
+    `rescaled_trajectory` clamps the index, so the last OV is reused for the
+    trailing hidden state rather than raising.
     """
-    n_layers, n_tokens, d = activations.shape
+    if ov_data["is_per_layer"]:
+        Vs = [np.asarray(M, dtype=np.float64) for M in ov_data["ov_total"]]
+    else:
+        Vs = [np.asarray(ov_data["ov_total"], dtype=np.float64)] * n_layers
 
-    ip_means = np.full(n_layers, np.nan)
-    ip_mass = np.full(n_layers, np.nan)
-    energies = {b: np.full(n_layers, np.nan) for b in beta_values}
-    eff_rank = np.full(n_layers, np.nan)
-
-    for L in range(n_layers):
-        X = activations[L]
-        G = X @ X.T
-        idx_upper = np.triu_indices(n_tokens, k=1)
-        ips = G[idx_upper]
-        ip_means[L] = float(ips.mean())
-        ip_mass[L] = float((ips > 0.9).mean())
-
-        for beta in beta_values:
-            exp_G = np.exp(beta * G)
-            energies[beta][L] = float(
-                exp_G.sum() / (2.0 * beta * n_tokens * n_tokens)
-            )
-
-        sv = svdvals(X)
-        sv = sv[sv > 1e-10]
-        if len(sv) > 0:
-            sv_n = sv / sv.sum()
-            entropy = -np.sum(sv_n * np.log(sv_n + 1e-12))
-            eff_rank[L] = float(np.exp(entropy))
-
-    n_violations = {}
-    for beta in beta_values:
-        E = energies[beta]
-        count = 0
-        for L in range(1, n_layers):
-            if (np.isfinite(E[L]) and np.isfinite(E[L - 1])
-                    and E[L] - E[L - 1] < -1e-6
-                    and eff_rank[L] >= 3.0):
-                count += 1
-        n_violations[beta] = count
-
+    sa = [decompose_symmetric_antisymmetric(V) for V in Vs]
     return {
-        "ip_mean":        ip_means,
-        "ip_mass_near_1": ip_mass,
-        "energies":       energies,
-        "n_violations":   n_violations,
-        "effective_rank": eff_rank,
-        "max_valid_layer": n_layers,
+        "V": Vs,
+        "S": [x["S"] for x in sa],
+        "A": [x["A"] for x in sa],
+        "sa": sa,
     }
 
-
-# ---------------------------------------------------------------------------
-# Compare all frames
-# ---------------------------------------------------------------------------
 
 def compare_rescaled_frames(
     activations: np.ndarray,
     ov_data: dict,
-    beta_values: list,
+    beta_values: Sequence[float],
+    *,
+    rescaler_cache: Optional[dict] = None,
+    gate_kind: str = DEFAULT_GATE_KIND,
+    gate_threshold: Optional[float] = None,
+    rel_tol: float = ENERGY_VIOLATION_REL_TOL,
+    include_invariance_control: bool = True,
 ) -> dict:
     """
-    Run original + three rescaled frames and compare violation counts.
+    Build the frames, score each one, and compare only the pairs that are
+    comparable.
 
-    Parameters
-    ----------
-    activations : (n_layers, n_tokens, d) — L2-normed
-    ov_data     : output of weights.extract_ov_circuit
-    beta_values : list of float
+    `rescaler_cache` is an optional dict, keyed "V"/"S"/"A", holding the
+    output of `build_rescalers` for this checkpoint. Pass the same dict
+    across every prompt of a checkpoint; it is populated on first use.
 
     Returns
     -------
     dict with:
-      original      : trajectory metrics (baseline)
-      full_rescaled : metrics after removing all of V
-      signed_only   : metrics after removing S (signed part) only
-      rotation_only : metrics after removing A (rotation part) only
-      sa_decomp     : S/A norms and rotation ratio (per-layer for GPT-2)
-      comparison    : per-beta violation counts and elimination rates
+      frames        : {frame_key: {scalars, counts, n_valid_layers,
+                                   truncated, truncation_reason}}
+      comparison    : {beta: {pair_key: elimination_rate(...) result}}
+      sa_decomp     : Frobenius summaries per layer
+      invariance    : the rotation-only control's audit, or None
+      counting_rule : the rule every count above was scored with
     """
-    is_per_layer = ov_data["is_per_layer"]
+    acts = np.asarray(activations)
+    n_layers = acts.shape[0]
+    mats = _matrices_for(ov_data, n_layers)
 
-    # Decompose V into S and A
-    if is_per_layer:
-        ov_list = ov_data["ov_total"]
-        sa_list = [decompose_symmetric_antisymmetric(OV) for OV in ov_list]
-        S_list = [sa["S"] for sa in sa_list]
-        A_list = [sa["A"] for sa in sa_list]
+    cache = rescaler_cache if rescaler_cache is not None else {}
+    for key in ("V", "S", "A"):
+        if key not in cache:
+            cache[key] = build_rescalers(mats[key])
 
-        sa_summary = {
-            "per_layer_rotation_ratio": [sa["rotation_ratio"] for sa in sa_list],
-            "mean_rotation_ratio": float(np.mean([sa["rotation_ratio"] for sa in sa_list])),
-            "layer_names": ov_data["layer_names"],
+    frame_rescalers = {
+        "original": None,
+        "remove_full": cache["V"],
+        "remove_signed": cache["S"],
+    }
+    if include_invariance_control:
+        frame_rescalers["remove_rotation"] = cache["A"]
+
+    frames: dict = {}
+    for key, R in frame_rescalers.items():
+        traj = rescaled_trajectory(acts, R)
+        scal = trajectory_scalars(
+            traj["normed"], beta_values, n_valid_layers=traj["n_valid_layers"],
+        )
+        counts = count_violations_all_betas(
+            scal, rel_tol=rel_tol,
+            gate_kind=gate_kind, gate_threshold=gate_threshold,
+        )
+        frames[key] = {
+            "scalars": scal,
+            "counts": counts,
+            "n_valid_layers": traj["n_valid_layers"],
+            "truncated": traj["truncated"],
+            "truncation_reason": traj["truncation_reason"],
+            "r_cum_max_abs": traj["r_cum_max_abs"],
+            # The one frame whose result is an identity, not a measurement.
+            "is_invariance_control": key == "remove_rotation",
         }
 
-        # The "V" for the full rescaling is the per-layer OV list
-        original = original_trajectory_metrics(activations, beta_values)
-        full_rescaled = rescaled_trajectory_component(
-            activations, None, beta_values,
-            is_per_layer=True, matrices_list=ov_list,
-        )
-        signed_only = rescaled_trajectory_component(
-            activations, None, beta_values,
-            is_per_layer=True, matrices_list=S_list,
-        )
-        rotation_only = rescaled_trajectory_component(
-            activations, None, beta_values,
-            is_per_layer=True, matrices_list=A_list,
-        )
-    else:
-        OV = ov_data["ov_total"]
-        sa = decompose_symmetric_antisymmetric(OV)
-        S = sa["S"]
-        A = sa["A"]
+    # --- comparisons -------------------------------------------------------
+    # remove_rotation is deliberately absent from the causal pairs. Including
+    # it would put an algebraic identity next to two measurements in the same
+    # table, which is how it came to be read as a result.
+    causal_pairs = {
+        "elim_full": ("original", "remove_full"),
+        "elim_signed": ("original", "remove_signed"),
+    }
 
-        sa_summary = {
-            "rotation_ratio": sa["rotation_ratio"],
-            "S_frob": sa["S_frob"],
-            "A_frob": sa["A_frob"],
-            "V_frob": sa["V_frob"],
-        }
+    comparison: dict = {}
+    for beta in frames["original"]["counts"]:
+        row = {}
+        for name, (a_key, b_key) in causal_pairs.items():
+            row[name] = elimination_rate(
+                frames[a_key]["counts"][beta], frames[b_key]["counts"][beta],
+            )
+        comparison[float(beta)] = row
 
-        original = original_trajectory_metrics(activations, beta_values)
-        full_rescaled = rescaled_trajectory_component(
-            activations, OV, beta_values,
-        )
-        signed_only = rescaled_trajectory_component(
-            activations, S, beta_values,
-        )
-        rotation_only = rescaled_trajectory_component(
-            activations, A, beta_values,
-        )
-
-    # Build comparison table
-    comparison = {}
-    for beta in beta_values:
-        n_orig = original["n_violations"][beta]
-        n_full = full_rescaled["n_violations"][beta]
-        n_sign = signed_only["n_violations"][beta]
-        n_rot = rotation_only["n_violations"][beta]
-
-        comparison[beta] = {
-            "n_original":          n_orig,
-            "n_full_rescaled":     n_full,
-            "n_signed_only":       n_sign,
-            "n_rotation_only":     n_rot,
-            "elim_full":           _elim_rate(n_orig, n_full),
-            "elim_signed":         _elim_rate(n_orig, n_sign),
-            "elim_rotation":       _elim_rate(n_orig, n_rot),
-        }
+    # --- invariance control ------------------------------------------------
+    invariance = None
+    if include_invariance_control:
+        invariance = _audit_invariance(frames, cache["A"], beta_values)
 
     return {
-        "original":       original,
-        "full_rescaled":  full_rescaled,
-        "signed_only":    signed_only,
-        "rotation_only":  rotation_only,
-        "sa_decomp":      sa_summary,
-        "comparison":     comparison,
+        "frames": frames,
+        "comparison": comparison,
+        "sa_decomp": {
+            "per_layer_rotation_ratio_frobenius": [
+                x["rotation_ratio_frobenius"] for x in mats["sa"]
+            ],
+            "mean_rotation_ratio_frobenius": float(np.mean(
+                [x["rotation_ratio_frobenius"] for x in mats["sa"]]
+            )),
+            "per_layer_S_frob": [x["S_frob"] for x in mats["sa"]],
+            "per_layer_A_frob": [x["A_frob"] for x in mats["sa"]],
+            "layer_names": ov_data.get("layer_names", []),
+        },
+        "invariance": invariance,
+        "counting_rule": frames["original"]["counts"][
+            float(list(frames["original"]["counts"])[0])
+        ]["rule"],
     }
 
 
-def _elim_rate(n_orig: int, n_rescaled: int) -> float:
-    """Fraction of violations eliminated by rescaling."""
-    if n_orig == 0:
-        return 0.0
-    return float((n_orig - n_rescaled) / n_orig)
+def _audit_invariance(frames: dict, a_rescalers: Sequence[np.ndarray],
+                      beta_values: Sequence[float]) -> dict:
+    """
+    Confirm the rotation-only frame reproduces the original frame exactly,
+    and report by how much it fails to.
+
+    `status` is:
+      "identity_holds"  — as predicted by orthogonality. This is the expected
+                          outcome and is NOT evidence about rotation.
+      "identity_broken" — the frames differ. That is a numerical-stability
+                          finding about `expm` or the accumulation, not a
+                          dynamical one, and it invalidates the control.
+    """
+    orig = frames["original"]
+    rot = frames["remove_rotation"]
+
+    ortho = orthogonality_residual(a_rescalers)
+
+    n_common = min(orig["n_valid_layers"], rot["n_valid_layers"])
+    worst_energy = 0.0
+    for beta in beta_values:
+        b = float(beta)
+        Eo = np.asarray(orig["scalars"]["energies"][b][:n_common])
+        Er = np.asarray(rot["scalars"]["energies"][b][:n_common])
+        m = np.isfinite(Eo) & np.isfinite(Er)
+        if m.any():
+            ref = np.maximum(np.abs(Eo[m]), 1e-12)
+            worst_energy = max(worst_energy,
+                               float(np.abs(Er[m] - Eo[m]).max() / ref.max()))
+
+    counts_match = all(
+        orig["counts"][b]["n_violations"] == rot["counts"][b]["n_violations"]
+        for b in orig["counts"]
+    )
+    holds = bool(ortho["orthogonal"] and counts_match)
+
+    return {
+        "status": "identity_holds" if holds else "identity_broken",
+        "orthogonality": ortho,
+        "max_relative_energy_difference": worst_energy,
+        "violation_counts_match": bool(counts_match),
+        "note": (
+            "e^{-A} is orthogonal for antisymmetric A, so this frame cannot "
+            "change any Gram-derived quantity. A match here is an arithmetic "
+            "check, not evidence that rotation is dynamically neutral."
+        ),
+    }
 
 
 # ---------------------------------------------------------------------------
 # Interpretation
 # ---------------------------------------------------------------------------
 
-def interpret_comparison(comparison: dict) -> dict:
+#: What Block 1b can now conclude. Deliberately does NOT include
+#: `rotation_neutral`, `rotation_contributes`, or `rotation_dominant` — those
+#: were verdicts about the rotation-only frame, which cannot support any of
+#: them.
+VERDICTS = (
+    "signed_carries_full_v",       # remove_signed matches remove_full
+    "signed_exceeds_full_v",       # removing S alone beats removing all of V
+    "full_v_exceeds_signed",       # S and A interact; the product matters
+    "both_frames_inert",           # neither rescaling moves the count
+    "no_violations",               # nothing to eliminate at this checkpoint
+    "not_comparable",              # truncation or gate divergence
+)
+
+#: Elimination-rate difference below which two frames are called equivalent.
+EQUIVALENCE_BAND: float = 0.1
+
+
+def interpret_comparison(comparison: dict, band: float = EQUIVALENCE_BAND) -> dict:
     """
-    Classify the rotational dynamics' causal role from violation comparison.
+    Classify the signed-vs-full contrast, per beta and overall.
 
-    Categories:
-      rotation_neutral     — removing rotation alone doesn't help;
-                             signed structure carries all causal weight
-      rotation_contributes — removing rotation alone reduces violations;
-                             rotational dynamics contribute independently
-      rotation_dominant    — removing rotation alone matches or exceeds
-                             signed-only removal
-      interaction          — neither alone matches full removal;
-                             S and A interact nonlinearly
-
-    Returns per-beta classification and an overall assessment.
+    No majority vote across beta. Phase 1 found violation counts are
+    beta-independent after step 512 and Phase 2 Study B ran beta=1.0 only, so
+    a vote over four betas is a vote over four near-copies at trained
+    checkpoints and over a real gradient only at steps 128-256. `overall` is
+    therefore taken at beta=1.0 (the Study B beta) when present, with the
+    full per-beta table always returned alongside; `beta_dispersion` records
+    whether the betas actually disagreed.
     """
-    per_beta = {}
-    classifications = []
+    per_beta: dict = {}
 
-    for beta, comp in comparison.items():
-        e_full = comp["elim_full"]
-        e_sign = comp["elim_signed"]
-        e_rot = comp["elim_rotation"]
+    for beta, row in comparison.items():
+        full = row["elim_full"]
+        signed = row["elim_signed"]
 
-        if e_rot < 0.1:
-            cat = "rotation_neutral"
-        elif e_rot >= e_sign - 0.1:
-            cat = "rotation_dominant"
-        elif e_rot >= 0.1:
-            cat = "rotation_contributes"
+        if full["status"] == "no_violations_to_eliminate" or \
+           signed["status"] == "no_violations_to_eliminate":
+            verdict = "no_violations"
+        elif full["status"] != "ok" or signed["status"] != "ok":
+            verdict = "not_comparable"
         else:
-            cat = "rotation_neutral"
+            ef, es = full["rate"], signed["rate"]
+            if abs(ef) < band and abs(es) < band:
+                verdict = "both_frames_inert"
+            elif abs(es - ef) <= band:
+                verdict = "signed_carries_full_v"
+            elif es > ef:
+                verdict = "signed_exceeds_full_v"
+            else:
+                verdict = "full_v_exceeds_signed"
 
-        # Check for interaction effect
-        # If full > max(sign, rot) by a large margin, there's interaction
-        if e_full > max(e_sign, e_rot) + 0.2:
-            cat = "interaction"
-
-        per_beta[beta] = {
-            "classification": cat,
-            "elim_full": e_full,
-            "elim_signed": e_sign,
-            "elim_rotation": e_rot,
+        per_beta[float(beta)] = {
+            "verdict": verdict,
+            "elim_full": full["rate"],
+            "elim_signed": signed["rate"],
+            "elim_full_status": full["status"],
+            "elim_signed_status": signed["status"],
+            "n_original": full["n_original"],
         }
-        classifications.append(cat)
 
-    # Overall: majority vote across betas
-    from collections import Counter
-    counts = Counter(classifications)
-    overall = counts.most_common(1)[0][0]
+    betas = sorted(per_beta)
+    ref_beta = 1.0 if 1.0 in per_beta else (betas[0] if betas else None)
+    overall = per_beta[ref_beta]["verdict"] if ref_beta is not None else "no_violations"
+
+    distinct = {v["verdict"] for v in per_beta.values()}
 
     return {
         "per_beta": per_beta,
         "overall": overall,
+        "reference_beta": ref_beta,
+        "beta_dispersion": {
+            "n_distinct_verdicts": len(distinct),
+            "verdicts": sorted(distinct),
+            "beta_independent": len(distinct) <= 1,
+        },
     }
 
 
 # ---------------------------------------------------------------------------
-# Full pipeline
+# Pipeline
 # ---------------------------------------------------------------------------
 
 def analyze_rotational_rescaling(
     activations: np.ndarray,
     ov_data: dict,
-    beta_values: list = None,
+    beta_values: Optional[Sequence[float]] = None,
+    *,
+    rescaler_cache: Optional[dict] = None,
+    gate_kind: str = DEFAULT_GATE_KIND,
+    gate_threshold: Optional[float] = None,
+    rel_tol: float = ENERGY_VIOLATION_REL_TOL,
+    include_invariance_control: bool = True,
 ) -> dict:
-    """
-    Full Block 1b analysis: compare three rescaled frames.
-
-    Parameters
-    ----------
-    activations : (n_layers, n_tokens, d) — L2-normed
-    ov_data     : from weights.extract_ov_circuit
-    beta_values : list of float (defaults to [0.1, 1.0, 2.0, 5.0])
-
-    Returns
-    -------
-    dict with comparison results and interpretation
-    """
+    """Block 1b for one (checkpoint, prompt): frames, comparison, verdict."""
     if beta_values is None:
-        beta_values = [0.1, 1.0, 2.0, 5.0]
+        beta_values = [1.0]
 
-    frames = compare_rescaled_frames(activations, ov_data, beta_values)
+    frames = compare_rescaled_frames(
+        activations, ov_data, beta_values,
+        rescaler_cache=rescaler_cache,
+        gate_kind=gate_kind, gate_threshold=gate_threshold, rel_tol=rel_tol,
+        include_invariance_control=include_invariance_control,
+    )
     interp = interpret_comparison(frames["comparison"])
-
-    return {
-        "frames":         frames,
-        "interpretation": interp,
-    }
+    return {"frames": frames, "interpretation": interp}
 
 
 # ---------------------------------------------------------------------------
-# JSON summary
+# Serialization
 # ---------------------------------------------------------------------------
 
 def comparison_to_json(result: dict) -> dict:
-    """Extract JSON-serializable summary from analyze_rotational_rescaling."""
+    """
+    JSON-serializable summary.
+
+    Unlike the previous version this KEEPS `n_valid_layers`, `truncated` and
+    `truncation_reason` per frame. Dropping them is what made Phase 2's
+    verification item V1 unanswerable from the artifact.
+    """
     frames = result["frames"]
 
     out = {
-        "sa_decomp":      frames["sa_decomp"],
-        "comparison":      {},
-        "interpretation":  result["interpretation"],
+        "sa_decomp": frames["sa_decomp"],
+        "counting_rule": frames["counting_rule"],
+        "invariance": frames["invariance"],
+        "interpretation": result["interpretation"],
+        "frames": {},
+        "comparison": {},
     }
 
-    # Convert numpy in comparison
-    for beta, comp in frames["comparison"].items():
+    for key, fr in frames["frames"].items():
+        out["frames"][key] = {
+            "n_valid_layers": int(fr["n_valid_layers"]),
+            "truncated": bool(fr["truncated"]),
+            "truncation_reason": fr["truncation_reason"],
+            "is_invariance_control": bool(fr["is_invariance_control"]),
+            "r_cum_max_abs_final": (
+                None if not np.isfinite(np.nanmax(fr["r_cum_max_abs"]))
+                else float(np.nanmax(fr["r_cum_max_abs"]))
+            ),
+            "counts": {
+                str(beta): {
+                    "n_violations": c["n_violations"],
+                    "n_transitions_scored": c["n_transitions_scored"],
+                    "n_transitions_gated": c["n_transitions_gated"],
+                    "n_transitions_nan": c["n_transitions_nan"],
+                    "violation_layers": c["violation_layers"],
+                    "sum_severity": c["sum_severity"],
+                    "max_severity": c["max_severity"],
+                }
+                for beta, c in fr["counts"].items()
+            },
+        }
+
+    for beta, row in frames["comparison"].items():
         out["comparison"][str(beta)] = {
-            k: int(v) if isinstance(v, (int, np.integer)) else float(v)
-            for k, v in comp.items()
+            name: {
+                "rate": res["rate"],
+                "status": res["status"],
+                "n_original": res["n_original"],
+                "n_rescaled": res["n_rescaled"],
+                "n_scored_a": res["n_scored_a"],
+                "n_scored_b": res["n_scored_b"],
+            }
+            for name, res in row.items()
         }
 
     return out
+
+
+__all__ = [
+    "RESCALE_OVERFLOW_LIMIT",
+    "ORTHOGONALITY_TOL",
+    "FRAME_KEYS",
+    "LEGACY_FRAME_KEYS",
+    "VERDICTS",
+    "EQUIVALENCE_BAND",
+    "decompose_symmetric_antisymmetric",
+    "build_rescalers",
+    "orthogonality_residual",
+    "rescaled_trajectory",
+    "compare_rescaled_frames",
+    "interpret_comparison",
+    "analyze_rotational_rescaling",
+    "comparison_to_json",
+]

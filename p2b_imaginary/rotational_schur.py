@@ -1,541 +1,743 @@
 """
-rotational_schur.py — Characterize V_eff's rotational spectrum.
+rotational_schur.py — Block 1a. The rotational structure of V_eff.
 
-The Schur decomposition V = Z T Z^T produces a quasi-triangular T with:
-  - 1×1 blocks: real eigenvalues (the ~3% Phase 2 analyzed)
-  - 2×2 blocks: complex conjugate pairs encoding rotation + scaling
+Weights only: no activations, no forward passes, no checkpoints beyond what
+Phase 2 already caches. That makes this the cheapest thing in the phase and
+the one item that can be run across all 27 Pythia checkpoints immediately —
+which is also the question it should be answering. See "What this is for".
 
-Each 2×2 block [[a, b], [c, a]] encodes:
-  - Rotation angle θ = arctan2(sqrt(-bc), a)  (for bc < 0)
-  - Spectral radius ρ = sqrt(a² - bc)
-  - Real part sign: sgn(a) → attractive (a>0) or repulsive (a<0)
-  - The rotation plane: the pair of Schur vectors spanning the invariant 2D subspace
+WHAT THIS IS FOR, AFTER THE BLOCK 1B WITHDRAWAL
+-----------------------------------------------
+Block 1b's `rotation_neutral` result is withdrawn (it was an orthogonal-
+invariance identity; see `rotational_rescaled`'s docstring). Block 1a's
+"84-97.5% of OV's spectral energy is rotational" survives as a DESCRIPTION,
+and it was never a causal claim. But two things now have to be attached to
+it, because without them it does not distinguish a trained network from a
+random matrix:
 
-This script extracts per-block statistics and computes the Henrici
-departure from normality (sum of squared off-diagonal entries of T),
-which measures how much the rotational blocks interact.
+  - **A null.** A real matrix with iid Gaussian entries has essentially all
+    of its eigenvalues in complex conjugate pairs. If trained OV is 98%
+    complex and a norm-matched Gaussian is 100%, the headline is a fact
+    about square matrices. `null_comparison` runs that comparison through
+    `core.nulls.sigma_from_null`, so a Block 1a claim lands in the same
+    shape as every other claim in the project.
+  - **A trajectory.** The number is only interesting if it MOVES. Phase 1
+    dates four transitions and Phase 2 has an unexplained `frac_repulsive`
+    decay (1.00 -> 0.50 -> 0.80 across ~90k steps with violation count flat).
+    Whether the complex fraction or the Henrici non-normality moves on either
+    schedule is the first candidate mechanism for either, and it costs one
+    Schur decomposition per layer per checkpoint.
 
-Functions
----------
-extract_schur_blocks       : parse T into 1×1 and 2×2 blocks with statistics
-rotation_energy_fractions  : fraction of spectral energy in rotational vs signed modes
-henrici_nonnormality       : departure from normality measure
-rotation_depth_profile     : per-layer rotation angle distribution (GPT-2)
-analyze_rotational_spectrum: full pipeline for one model
+FOUR DEFECTS FIXED FROM THE PREVIOUS VERSION
+--------------------------------------------
+1. **Memory.** `build_rotation_plane_projectors` materialized `top_k=32`
+   dense `(d, d)` projectors PLUS `combined_rotation` and `real_subspace`,
+   per layer, and `analyze_rotational_spectrum` retained `schur_T` and
+   `schur_Z` per layer on top. At d=1024 x 24 layers that is ~7 GB resident;
+   at d=2048 (pythia-1.4b) ~27 GB. Nothing here stores a `(d, d)` projector:
+   planes are kept as their `(d, 2)` orthonormal bases and
+   `project_onto_planes` contracts through the basis, which is also O(n d k)
+   instead of O(n d^2 k). Schur factors are dropped unless asked for.
+
+2. **Two energy conventions in one file.** `rotation_energy_fractions`
+   counted `rho^2` ONCE per 2x2 block while `henrici_nonnormality` counted
+   `2*rho^2` for the same block — a 2x2 block holds two eigenvalues and
+   occupies two dimensions, so the first understates rotational energy by
+   about a factor of two relative to the second. The reported 84-97.5% uses
+   the first. Here `complex_energy_fraction` is per-eigenvalue throughout
+   (the Henrici convention), and `rotational_fraction_per_block` reproduces
+   the old number under a name that says which one it is, so the historical
+   figure stays checkable rather than silently restated.
+
+3. **Rotation angle folded onto [0, pi/2].** `theta = arctan2(sqrt(-bc),
+   abs(a))` uses `abs(a)`, so a repulsive rotation (Re lambda < 0, theta near
+   pi) was reported as its reflection. The sign survived in a separate field,
+   so nothing was lost — but `theta_mean` was not the mean rotation angle,
+   which matters the moment theta is regressed against depth or against step.
+   Now `arctan2(sqrt(-bc), a)` on [0, pi].
+
+4. **Absolute subdiagonal threshold.** The 2x2 test was
+   `abs(T[i+1, i]) > 1e-10` on a matrix whose scale varies by orders of
+   magnitude across layers and checkpoints. Now relative to `||T||_F`.
+
+A THIRD DEFINITION OF "ROTATIONAL FRACTION"
+-------------------------------------------
+`p2b_imaginary/layernorm_jacobian.rotational_fraction` counts a dimension as
+complex when `|Im lambda| > tol * (|Re lambda| + eps)` with `tol = 0.01` — a
+relative criterion on eigenvalues, not a Schur-block partition.
+`core/precision_policy.py` imports THAT one as its default `frac_fn` and
+flags it (item P2) as possibly an fp16-storage artifact: an exactly-real
+eigenvalue pair perturbed at fp16 epsilon splits into a complex pair with a
+tiny imaginary part, which a relative criterion counts as rotation.
+
+So the phase has had three definitions and reported all of them as "how
+rotational V is". `complex_energy_fraction_relative` below is that third
+definition, given a home next to the other two, with the same signature
+`precision_policy` expects. `precision_policy._default_frac_fn` should be
+repointed here (plan item 16); until it is, both call sites compute the same
+thing from different files.
 """
 
+from __future__ import annotations
+
+from typing import Optional, Sequence
+
 import numpy as np
-from scipy.linalg import schur, norm as la_norm
+from scipy.linalg import schur
+
+#: Subdiagonal entries below this fraction of ||T||_F are treated as zero,
+#: i.e. the block is 1x1. Relative, because OV norms vary by orders of
+#: magnitude across layers and checkpoints.
+SUBDIAGONAL_REL_TOL: float = 1e-12
+
+#: Default relative tolerance for the eigenvalue-based complex criterion.
+#: Matches the shipped value in layernorm_jacobian and
+#: core.precision_policy.SHIPPED_TOL.
+COMPLEX_REL_TOL: float = 0.01
 
 
 # ---------------------------------------------------------------------------
-# Core block extraction
+# Block extraction
 # ---------------------------------------------------------------------------
 
-def extract_schur_blocks(OV: np.ndarray) -> dict:
+def extract_schur_blocks(OV: np.ndarray, keep_factors: bool = False) -> dict:
     """
-    Schur-decompose OV and parse into 1×1 and 2×2 blocks.
+    Real Schur decomposition of OV, parsed into 1x1 and 2x2 blocks.
+
+    Each 2x2 block `[[a, b], [c, a']]` with `bc < 0` encodes a complex
+    conjugate pair: rotation angle `theta = atan2(sqrt(-bc), a)` on [0, pi],
+    modulus `rho = sqrt(a^2 - bc)`, and radial direction `sign(a)`.
 
     Parameters
     ----------
-    OV : (d, d) ndarray — composed OV matrix (row-vector convention)
+    keep_factors : retain `schur_T` and `schur_Z`, two (d, d) float64 arrays
+                   per call. Off by default — retaining them per layer is
+                   most of the previous version's memory footprint, and
+                   nothing downstream reads them except tests.
 
     Returns
     -------
-    dict with:
-      schur_T         : (d, d) quasi-triangular Schur form
-      schur_Z         : (d, d) orthogonal Schur vectors
-      blocks_1x1      : list of dicts with keys:
-                          idx     — diagonal index
-                          value   — the real eigenvalue
-                          sign    — +1 or -1
-                          schur_vec — the corresponding column of Z
-      blocks_2x2      : list of dicts with keys:
-                          idx     — starting diagonal index
-                          theta   — rotation angle in radians [0, π]
-                          rho     — spectral radius of the block
-                          a       — real part (diagonal entry)
-                          bc      — product of off-diagonal entries (negative for rotation)
-                          sign    — sgn(a), the radial direction
-                          plane   — (d, 2) ndarray, the two Schur vectors spanning
-                                    the invariant 2D subspace
-      d               : int — dimension
-      n_real          : int — number of 1×1 blocks
-      n_complex       : int — number of 2×2 blocks
+    dict with `blocks_1x1`, `blocks_2x2`, `d`, `n_real`, `n_complex`,
+    `t_frob_sq`, `subdiagonal_tol`, and (optionally) `schur_T` / `schur_Z`.
+
+    Each 2x2 block carries `plane` as a (d, 2) BASIS, not a (d, d) projector.
+    Each 1x1 block carries `schur_vec` as (d,).
+
+    Degenerate 2x2 blocks (`bc >= 0`: two real eigenvalues that LAPACK
+    happened to leave in a 2x2) are split into two 1x1 entries with values
+    `a +/- sqrt(bc)` rather than being recorded as a rotation of angle 0.
+    The previous version kept them as 2x2 with `theta = 0` and
+    `rho = |a|`, which is the wrong modulus and inflates `n_complex`.
     """
+    OV = np.asarray(OV, dtype=np.float64)
     d = OV.shape[0]
 
-    # Real Schur: T quasi-triangular, Z orthogonal, V = Z T Z^T
-    T, Z = schur(OV, output='real')
+    T, Z = schur(OV, output="real")
+    t_frob = float(np.linalg.norm(T, "fro"))
+    tol = max(SUBDIAGONAL_REL_TOL * t_frob, np.finfo(np.float64).tiny)
 
-    blocks_1x1 = []
-    blocks_2x2 = []
+    blocks_1x1: list = []
+    blocks_2x2: list = []
+
+    def _add_real(idx, value, vec):
+        blocks_1x1.append({
+            "idx": int(idx),
+            "value": float(value),
+            "sign": 1 if value >= 0 else -1,
+            "schur_vec": np.ascontiguousarray(vec),
+        })
 
     i = 0
     while i < d:
-        if i == d - 1:
-            # Last entry, must be 1×1
-            blocks_1x1.append({
-                "idx":       i,
-                "value":     float(T[i, i]),
-                "sign":      1 if T[i, i] >= 0 else -1,
-                "schur_vec": Z[:, i].copy(),
-            })
+        if i == d - 1 or abs(T[i + 1, i]) <= tol:
+            _add_real(i, T[i, i], Z[:, i])
             i += 1
-        elif abs(T[i + 1, i]) > 1e-10:
-            # 2×2 block: T[i:i+2, i:i+2] = [[a, b], [c, a']]
-            # For a proper Schur block, a ≈ a' (both are the real part)
-            a = float(T[i, i])
-            b = float(T[i, i + 1])
-            c = float(T[i + 1, i])
+            continue
 
-            # bc < 0 for genuine rotation (conjugate pair)
-            bc = b * c
-            if bc < 0:
-                theta = float(np.arctan2(np.sqrt(-bc), abs(a)))
-            else:
-                # Degenerate: two real eigenvalues packed as 2×2
-                theta = 0.0
+        a = float(T[i, i])
+        a2 = float(T[i + 1, i + 1])
+        b = float(T[i, i + 1])
+        c = float(T[i + 1, i])
+        bc = b * c
 
-            rho = float(np.sqrt(a * a - bc)) if (a * a - bc) >= 0 else float(abs(a))
-
-            blocks_2x2.append({
-                "idx":   i,
-                "theta": theta,
-                "rho":   rho,
-                "a":     a,
-                "bc":    bc,
-                "sign":  1 if a >= 0 else -1,
-                "plane": Z[:, i:i + 2].copy(),   # (d, 2)
-            })
+        if bc >= 0.0:
+            # Not a conjugate pair. Two real eigenvalues of the 2x2.
+            disc = np.sqrt(max(((a - a2) / 2.0) ** 2 + bc, 0.0))
+            mid = (a + a2) / 2.0
+            _add_real(i, mid + disc, Z[:, i])
+            _add_real(i + 1, mid - disc, Z[:, i + 1])
             i += 2
-        else:
-            # 1×1 block
-            blocks_1x1.append({
-                "idx":       i,
-                "value":     float(T[i, i]),
-                "sign":      1 if T[i, i] >= 0 else -1,
-                "schur_vec": Z[:, i].copy(),
-            })
-            i += 1
+            continue
 
-    return {
-        "schur_T":    T,
-        "schur_Z":    Z,
+        re = (a + a2) / 2.0
+        im = float(np.sqrt(-bc))
+        blocks_2x2.append({
+            "idx": int(i),
+            # [0, pi]. The previous version passed abs(re), folding a
+            # repulsive rotation onto its reflection in [0, pi/2].
+            "theta": float(np.arctan2(im, re)),
+            "rho": float(np.sqrt(re * re + im * im)),
+            "re": re,
+            "im": im,
+            "bc": float(bc),
+            "sign": 1 if re >= 0 else -1,
+            "plane": np.ascontiguousarray(Z[:, i:i + 2]),   # (d, 2) BASIS
+        })
+        i += 2
+
+    out = {
         "blocks_1x1": blocks_1x1,
         "blocks_2x2": blocks_2x2,
-        "d":          d,
-        "n_real":     len(blocks_1x1),
-        "n_complex":  len(blocks_2x2),
+        "d": int(d),
+        "n_real": len(blocks_1x1),
+        "n_complex": len(blocks_2x2),
+        "t_frob_sq": float(t_frob ** 2),
+        "subdiagonal_tol": float(tol),
     }
+    if keep_factors:
+        out["schur_T"] = T
+        out["schur_Z"] = Z
+    return out
 
 
 # ---------------------------------------------------------------------------
-# Energy fractions
+# Energy fractions — ONE convention, plus the legacy one under its own name
 # ---------------------------------------------------------------------------
 
-def rotation_energy_fractions(block_data: dict) -> dict:
+def complex_energy_fraction(block_data: dict) -> dict:
     """
-    Fraction of V_eff's spectral energy in rotational (2×2) vs signed (1×1) modes.
+    Fraction of eigenvalue energy in complex pairs, counted PER EIGENVALUE.
 
-    Spectral energy of a 1×1 block: |λ|²
-    Spectral energy of a 2×2 block: ρ² (= a² - bc = |λ|² for the conjugate pair)
-    Total spectral energy: sum over all blocks.
+    A 1x1 block contributes `lambda^2`. A 2x2 block holds two eigenvalues of
+    modulus `rho`, so it contributes `2*rho^2` — the convention
+    `henrici_nonnormality` already used, and the one that makes
+    `complex_energy + real_energy == eigenvalue_energy` an identity rather
+    than an approximation.
 
-    Returns
-    -------
-    dict with:
-      rotational_energy  : float — sum of ρ² over 2×2 blocks
-      signed_energy      : float — sum of λ² over 1×1 blocks
-      total_energy       : float
-      rotational_fraction: float — rotational / total
-      signed_fraction    : float — signed / total
-      n_real             : int
-      n_complex          : int
-      frac_real          : float — n_real / d
-      frac_complex_dims  : float — 2 * n_complex / d (fraction of dimensions in rotation)
+    `dim_complex_fraction` (`2*n_complex/d`) is reported alongside because it
+    is a different question — how many DIMENSIONS rotate, versus how much
+    ENERGY is in rotation — and the two were previously reported adjacent
+    without a name distinguishing them.
     """
-    signed_e = sum(b["value"] ** 2 for b in block_data["blocks_1x1"])
-    rotation_e = sum(b["rho"] ** 2 for b in block_data["blocks_2x2"])
-    total = signed_e + rotation_e
-
+    real_e = sum(b["value"] ** 2 for b in block_data["blocks_1x1"])
+    cplx_e = 2.0 * sum(b["rho"] ** 2 for b in block_data["blocks_2x2"])
+    total = real_e + cplx_e
     d = block_data["d"]
-    n_r = block_data["n_real"]
-    n_c = block_data["n_complex"]
 
     return {
-        "rotational_energy":   float(rotation_e),
-        "signed_energy":       float(signed_e),
-        "total_energy":        float(total),
-        "rotational_fraction": float(rotation_e / max(total, 1e-12)),
-        "signed_fraction":     float(signed_e / max(total, 1e-12)),
-        "n_real":              n_r,
-        "n_complex":           n_c,
-        "frac_real":           float(n_r / d),
-        "frac_complex_dims":   float(2 * n_c / d),
+        "convention": "per_eigenvalue",
+        "complex_energy": float(cplx_e),
+        "real_energy": float(real_e),
+        "eigenvalue_energy": float(total),
+        "complex_energy_fraction": float(cplx_e / max(total, 1e-300)),
+        "real_energy_fraction": float(real_e / max(total, 1e-300)),
+        "n_real": int(block_data["n_real"]),
+        "n_complex": int(block_data["n_complex"]),
+        "dim_real_fraction": float(block_data["n_real"] / d),
+        "dim_complex_fraction": float(2 * block_data["n_complex"] / d),
     }
 
 
+def rotational_fraction_per_block(block_data: dict) -> float:
+    """
+    The PREVIOUS version's number, reproduced so the historical 84-97.5%
+    figure stays checkable.
+
+    Counts `rho^2` once per 2x2 block against `lambda^2` once per 1x1 block,
+    which mixes a per-pair total with a per-eigenvalue one and understates
+    rotational energy by roughly a factor of two. Do not use it for new
+    results; it exists so a re-run can say "the old convention gives X, the
+    corrected one gives Y" instead of quietly reporting a different number
+    under the same name.
+    """
+    real_e = sum(b["value"] ** 2 for b in block_data["blocks_1x1"])
+    rot_e = sum(b["rho"] ** 2 for b in block_data["blocks_2x2"])
+    return float(rot_e / max(real_e + rot_e, 1e-300))
+
+
+def complex_energy_fraction_relative(M, tol: float = COMPLEX_REL_TOL) -> float:
+    """
+    The eigenvalue-based criterion: a dimension counts as complex when
+    `|Im lambda| > tol * (|Re lambda| + eps)`.
+
+    This is the third definition of "rotational fraction" in the phase
+    (see the module docstring). It is here so there is one home for it, with
+    the signature `core.precision_policy.complex_fraction_surface` expects
+    for `frac_fn`; `p2b_imaginary.layernorm_jacobian.rotational_fraction` is
+    the same function and should become a re-export of this one.
+
+    `core/precision_policy.py` item P2 is about exactly this criterion: it is
+    RELATIVE, and a relative criterion is what an fp16-epsilon split of a
+    genuinely real eigenvalue pair defeats — the split is small in absolute
+    terms and unbounded in ratio when `|Re lambda|` is also small. Which is
+    why the answer to "how complex is OV" is a surface over (tol,
+    perturbation), not a scalar. See `precision_surface` below.
+    """
+    eigs = np.linalg.eigvals(np.asarray(M, dtype=np.float64))
+    is_cx = np.abs(np.imag(eigs)) > tol * (np.abs(np.real(eigs)) + 1e-12)
+    total = float(np.sum(np.abs(eigs) ** 2))
+    if total < 1e-300:
+        return 0.0
+    return float(np.sum(np.abs(eigs[is_cx]) ** 2) / total)
+
+
 # ---------------------------------------------------------------------------
-# Rotation angle statistics
+# Angle / modulus statistics
 # ---------------------------------------------------------------------------
 
 def rotation_angle_stats(block_data: dict) -> dict:
     """
-    Summary statistics of the rotation angle distribution.
+    Distribution of rotation angles and moduli over the 2x2 blocks.
 
-    Returns
-    -------
-    dict with:
-      thetas        : list of float — all rotation angles
-      rhos          : list of float — all spectral radii
-      signs         : list of int — radial direction per block
-      theta_mean    : float
-      theta_std     : float
-      theta_median  : float
-      rho_mean      : float
-      rho_std       : float
-      frac_expanding: float — fraction with ρ > 1 (spiral outward)
-      frac_contracting: float — fraction with ρ < 1
-      frac_attractive_rot: float — fraction of 2×2 blocks with a > 0
-      frac_repulsive_rot : float — fraction with a < 0
+    `frac_repulsive_real_part` is the quantity the rescaled frame actually
+    responds to: `e^{-V}` grows in the directions where `Re lambda < 0`. The
+    previous version reported `frac_expanding` = fraction with `rho > 1`,
+    which is a threshold on a scale convention (how OV was normalized), not
+    on a dynamical property. Both are returned, with `rho > 1` named so it
+    cannot be mistaken for the dynamical one.
     """
     blocks = block_data["blocks_2x2"]
     if not blocks:
         return {
-            "thetas": [], "rhos": [], "signs": [],
-            "theta_mean": 0.0, "theta_std": 0.0, "theta_median": 0.0,
-            "rho_mean": 0.0, "rho_std": 0.0,
-            "frac_expanding": 0.0, "frac_contracting": 0.0,
-            "frac_attractive_rot": 0.0, "frac_repulsive_rot": 0.0,
-            #new
-            "theta_max": 0.0,
-            "theta_min": 0.0,
+            "theta_mean": float("nan"), "theta_std": float("nan"),
+            "theta_median": float("nan"), "theta_min": float("nan"),
+            "theta_max": float("nan"),
+            "rho_mean": float("nan"), "rho_std": float("nan"),
+            "frac_rho_above_one": float("nan"),
+            "frac_repulsive_real_part": float("nan"),
+            "frac_attractive_real_part": float("nan"),
+            "n_complex": 0,
         }
 
-    thetas = [b["theta"] for b in blocks]
-    rhos = [b["rho"] for b in blocks]
-    signs = [b["sign"] for b in blocks]
+    thetas = np.array([b["theta"] for b in blocks], dtype=np.float64)
+    rhos = np.array([b["rho"] for b in blocks], dtype=np.float64)
+    signs = np.array([b["sign"] for b in blocks], dtype=np.int64)
     n = len(blocks)
 
     return {
-        "thetas":              thetas,
-        "rhos":                rhos,
-        "signs":               signs,
-        "theta_mean":          float(np.mean(thetas)),
-        "theta_std":           float(np.std(thetas)),
-        "theta_median":        float(np.median(thetas)),
-        "rho_mean":            float(np.mean(rhos)),
-        "rho_std":             float(np.std(rhos)),
-        "frac_expanding":      float(sum(1 for r in rhos if r > 1.0) / n),
-        "frac_contracting":    float(sum(1 for r in rhos if r < 1.0) / n),
-        "frac_attractive_rot": float(sum(1 for s in signs if s > 0) / n),
-        "frac_repulsive_rot":  float(sum(1 for s in signs if s < 0) / n),
-        #new
-        "theta_max":           float(np.max(thetas)),
-        "theta_min":           float(np.min(thetas)),
-
+        "theta_mean": float(thetas.mean()),
+        "theta_std": float(thetas.std()),
+        "theta_median": float(np.median(thetas)),
+        "theta_min": float(thetas.min()),
+        "theta_max": float(thetas.max()),
+        "rho_mean": float(rhos.mean()),
+        "rho_std": float(rhos.std()),
+        "frac_rho_above_one": float((rhos > 1.0).sum() / n),
+        "frac_repulsive_real_part": float((signs < 0).sum() / n),
+        "frac_attractive_real_part": float((signs > 0).sum() / n),
+        "n_complex": int(n),
     }
 
 
 # ---------------------------------------------------------------------------
-# Henrici non-normality
+# Non-normality
 # ---------------------------------------------------------------------------
 
 def henrici_nonnormality(block_data: dict) -> dict:
     """
-    Henrici departure from normality: ||T||_F² - Σ|λ_i|²
+    Henrici departure from normality: `||T||_F^2 - sum |lambda_i|^2`.
 
-    For a normal matrix this is zero (T is diagonal in the complex Schur form).
-    For a non-normal matrix, this equals the sum of squared off-diagonal
-    entries of T, measuring how much the Schur blocks interact.
+    Zero for a normal matrix. Otherwise it is the squared Frobenius norm of
+    T's strict upper triangle, i.e. how much the Schur blocks interact — the
+    scalar that says whether the S/A split is informative or decorative.
 
-    Also computes the relative departure: Henrici / ||T||_F².
+    Phase 2's open item 5 is the reason this is worth a trajectory:
+    `frac_repulsive` moves 1.00 -> 0.50 -> 0.80 over ~90k steps while the
+    violation count stays flat, so something reorganizes WHICH subspace the
+    violations occupy without changing how many there are. This is a
+    weights-only per-layer scalar measuring exactly that interaction.
 
-    Returns
-    -------
-    dict with:
-      henrici_absolute  : float — ||T||_F² - Σ|λ_i|²
-      henrici_relative  : float — henrici_absolute / ||T||_F²
-      T_frob_sq         : float — ||T||_F²
-      eigenvalue_energy  : float — Σ|λ_i|²
+    `henrici_absolute_unclamped` is returned next to the clamped value. The
+    previous version clamped at zero silently; a materially negative
+    unclamped value means the block parse disagrees with T, which is a bug
+    signal rather than numerical noise.
     """
-    T = block_data["schur_T"]
-    T_frob_sq = float(np.sum(T ** 2))
-
-    # Eigenvalue energy: sum of |λ|² over all eigenvalues
-    # For 1×1 blocks: λ² = value²
-    # For 2×2 blocks: |λ|² = ρ² (each conjugate pair contributes 2 × ρ²)
-    eig_energy = sum(b["value"] ** 2 for b in block_data["blocks_1x1"])
-    eig_energy += 2.0 * sum(b["rho"] ** 2 for b in block_data["blocks_2x2"])
-
-    henrici = T_frob_sq - eig_energy
+    eig_energy = complex_energy_fraction(block_data)["eigenvalue_energy"]
+    t_frob_sq = float(block_data["t_frob_sq"])
+    raw = t_frob_sq - eig_energy
 
     return {
-        "henrici_absolute": float(max(henrici, 0.0)),  # clamp numerical noise
-        "henrici_relative": float(max(henrici, 0.0) / max(T_frob_sq, 1e-12)),
-        "T_frob_sq":        T_frob_sq,
+        "henrici_absolute": float(max(raw, 0.0)),
+        "henrici_absolute_unclamped": float(raw),
+        "henrici_relative": float(max(raw, 0.0) / max(t_frob_sq, 1e-300)),
+        "t_frob_sq": t_frob_sq,
         "eigenvalue_energy": float(eig_energy),
     }
 
 
 # ---------------------------------------------------------------------------
-# Rotation planes as projectors
+# Rotation planes — bases, never (d, d) projectors
 # ---------------------------------------------------------------------------
 
-def build_rotation_plane_projectors(block_data: dict, top_k: int = 32) -> dict:
+def top_rotation_planes(block_data: dict, top_k: int = 32) -> dict:
     """
-    Build projectors onto the top-k rotation planes (by spectral radius).
+    The `top_k` rotation planes by modulus, as `(d, 2)` orthonormal bases.
 
-    Each rotation plane is spanned by two Schur vectors. The projector
-    onto plane j is P_j = v1 @ v1^T + v2 @ v2^T where v1, v2 are the
-    columns of block["plane"].
+    Returns `bases` (list of (d, 2)), `rhos`, `thetas`, `signs`, `indices`,
+    and `dim_rotation` / `dim_real`.
 
-    Also builds a combined projector onto ALL rotation planes and
-    onto the real (non-rotating) subspace.
-
-    Parameters
-    ----------
-    block_data : output of extract_schur_blocks
-    top_k      : number of dominant rotation planes to return individually
-
-    Returns
-    -------
-    dict with:
-      top_k_planes       : list of (d, 2) ndarrays — the plane basis vectors
-      top_k_projectors   : list of (d, d) ndarrays — projectors onto each plane
-      top_k_rhos         : list of float — spectral radii (sorted descending)
-      top_k_thetas       : list of float — rotation angles
-      combined_rotation  : (d, d) ndarray — projector onto ALL rotation planes
-      real_subspace      : (d, d) ndarray — projector onto 1×1 (non-rotating) subspace
-      dim_rotation       : int — dimension of combined rotation subspace (2 * n_complex)
-      dim_real           : int — dimension of real subspace
+    NOT projectors. `P = plane @ plane.T` is (d, d); the previous version
+    built `top_k` of them plus two combined ones PER LAYER, which is ~7 GB at
+    d=1024 x 24 layers and ~27 GB at d=2048. Every downstream use is
+    `X @ P` or `trace(P M)`, both of which factor through the basis —
+    see `project_onto_planes` and `plane_energy`.
     """
-    d = block_data["d"]
-
-    # Sort 2×2 blocks by spectral radius, descending
-    blocks_sorted = sorted(block_data["blocks_2x2"],
-                           key=lambda b: b["rho"], reverse=True)
-    k = min(top_k, len(blocks_sorted))
-
-    top_k_planes = []
-    top_k_projectors = []
-    top_k_rhos = []
-    top_k_thetas = []
-
-    for j in range(k):
-        plane = blocks_sorted[j]["plane"]   # (d, 2)
-        P = plane @ plane.T                  # (d, d)
-        top_k_planes.append(plane)
-        top_k_projectors.append(P)
-        top_k_rhos.append(blocks_sorted[j]["rho"])
-        top_k_thetas.append(blocks_sorted[j]["theta"])
-
-    # Combined projectors
-    all_rot_vecs = []
-    for b in block_data["blocks_2x2"]:
-        all_rot_vecs.append(b["plane"][:, 0])
-        all_rot_vecs.append(b["plane"][:, 1])
-
-    if all_rot_vecs:
-        V_rot = np.column_stack(all_rot_vecs)   # (d, 2*n_complex)
-        P_rot = V_rot @ V_rot.T
-    else:
-        P_rot = np.zeros((d, d))
-
-    all_real_vecs = [b["schur_vec"] for b in block_data["blocks_1x1"]]
-    if all_real_vecs:
-        V_real = np.column_stack(all_real_vecs)  # (d, n_real)
-        P_real = V_real @ V_real.T
-    else:
-        P_real = np.zeros((d, d))
-
+    blocks = sorted(block_data["blocks_2x2"], key=lambda b: b["rho"], reverse=True)
+    k = min(int(top_k), len(blocks))
+    sel = blocks[:k]
     return {
-        "top_k_planes":      top_k_planes,
-        "top_k_projectors":  top_k_projectors,
-        "top_k_rhos":        top_k_rhos,
-        "top_k_thetas":      top_k_thetas,
-        "combined_rotation": P_rot,
-        "real_subspace":     P_real,
-        "dim_rotation":      2 * block_data["n_complex"],
-        "dim_real":          block_data["n_real"],
+        "bases": [b["plane"] for b in sel],
+        "rhos": [float(b["rho"]) for b in sel],
+        "thetas": [float(b["theta"]) for b in sel],
+        "signs": [int(b["sign"]) for b in sel],
+        "indices": [int(b["idx"]) for b in sel],
+        "dim_rotation": int(2 * block_data["n_complex"]),
+        "dim_real": int(block_data["n_real"]),
+        "d": int(block_data["d"]),
     }
 
 
-# ---------------------------------------------------------------------------
-# Depth profile (per-layer models)
-# ---------------------------------------------------------------------------
-
-def rotation_depth_profile(ov_list: list, layer_names: list) -> dict:
+def project_onto_planes(X: np.ndarray, bases: Sequence[np.ndarray]) -> np.ndarray:
     """
-    Per-layer rotation angle and spectral radius distributions for GPT-2.
+    Squared norm of each row of X inside each plane: `(n_tokens, k)`.
 
-    For each layer's V_eff, extracts Schur blocks and computes summary
-    statistics. Enables testing whether rotation angle correlates with
-    the repulsive fraction depth gradient from Phase 2.
-
-    Parameters
-    ----------
-    ov_list     : list of (d, d) ndarrays — per-layer V_eff matrices
-    layer_names : list of str — layer identifiers
-
-    Returns
-    -------
-    dict with:
-      per_layer : list of dicts, each containing:
-                    layer_name, n_real, n_complex,
-                    theta_mean, theta_std, rho_mean, rho_std,
-                    frac_expanding, frac_contracting,
-                    rotational_fraction, henrici_relative
-      summary   : dict with cross-layer statistics
+    `||P_j x||^2 = ||B_j^T x||^2` for an orthonormal `B_j` of shape (d, 2),
+    so this never forms `P_j`. O(n d k) rather than O(n d^2 k).
     """
-    per_layer = []
+    X = np.asarray(X, dtype=np.float64)
+    if not len(bases):
+        return np.zeros((X.shape[0], 0))
+    return np.stack([np.sum((X @ B) ** 2, axis=1) for B in bases], axis=1)
 
-    for OV, name in zip(ov_list, layer_names):
-        blocks = extract_schur_blocks(OV)
-        angles = rotation_angle_stats(blocks)
-        energy = rotation_energy_fractions(blocks)
-        henrici = henrici_nonnormality(blocks)
 
-        per_layer.append({
-            "layer_name":          name,
-            "n_real":              blocks["n_real"],
-            "n_complex":           blocks["n_complex"],
-            "theta_mean":          angles["theta_mean"],
-            "theta_std":           angles["theta_std"],
-            "rho_mean":            angles["rho_mean"],
-            "rho_std":             angles["rho_std"],
-            "frac_expanding":      angles["frac_expanding"],
-            "frac_contracting":    angles["frac_contracting"],
-            "rotational_fraction": energy["rotational_fraction"],
-            "henrici_relative":    henrici["henrici_relative"],
-        })
+def plane_energy(M: np.ndarray, bases: Sequence[np.ndarray]) -> np.ndarray:
+    """
+    `||B_j^T M B_j||_F^2` per plane — how much of an operator M acts within
+    each rotation plane. Again without forming a (d, d) projector.
+    """
+    M = np.asarray(M, dtype=np.float64)
+    if not len(bases):
+        return np.zeros(0)
+    return np.array([float(np.sum((B.T @ M @ B) ** 2)) for B in bases])
 
-    # Cross-layer summary
-    if per_layer:
-        theta_means = [p["theta_mean"] for p in per_layer]
-        rho_means = [p["rho_mean"] for p in per_layer]
-        henrici_vals = [p["henrici_relative"] for p in per_layer]
-        summary = {
-            "theta_mean_across_layers": float(np.mean(theta_means)),
-            "theta_std_across_layers":  float(np.std(theta_means)),
-            "rho_mean_across_layers":   float(np.mean(rho_means)),
-            "henrici_mean":             float(np.mean(henrici_vals)),
-            "henrici_max":              float(np.max(henrici_vals)),
-            "henrici_max_layer":        layer_names[int(np.argmax(henrici_vals))],
-        }
-    else:
-        summary = {}
 
-    return {"per_layer": per_layer, "summary": summary}
+def rotation_subspace_fraction(X: np.ndarray, block_data: dict) -> float:
+    """
+    Fraction of ||X||_F^2 lying in the span of ALL rotation planes.
+
+    Uses the stacked (d, 2*n_complex) basis directly. The combined projector
+    the previous version built for this is (d, d) and unnecessary.
+    """
+    blocks = block_data["blocks_2x2"]
+    if not blocks:
+        return 0.0
+    B = np.concatenate([b["plane"] for b in blocks], axis=1)   # (d, 2*n_complex)
+    X = np.asarray(X, dtype=np.float64)
+    total = float(np.sum(X ** 2))
+    if total < 1e-300:
+        return 0.0
+    return float(np.sum((X @ B) ** 2) / total)
 
 
 # ---------------------------------------------------------------------------
-# Full pipeline for one model
+# Per-layer scalars
+# ---------------------------------------------------------------------------
+
+def layer_scalars(OV: np.ndarray, layer_name: str = "",
+                  top_k: int = 0) -> dict:
+    """
+    Every Block 1a scalar for one OV matrix, with no (d, d) array retained.
+
+    `top_k > 0` additionally returns the top rotation-plane bases. Left at 0
+    by default because a checkpoint sweep wants the scalars, not 24 x 27 sets
+    of plane bases.
+    """
+    blocks = extract_schur_blocks(OV)
+    energy = complex_energy_fraction(blocks)
+    angles = rotation_angle_stats(blocks)
+    henrici = henrici_nonnormality(blocks)
+
+    out = {
+        "layer": layer_name,
+        "d": blocks["d"],
+        "ov_frob": float(np.linalg.norm(np.asarray(OV, dtype=np.float64), "fro")),
+        **energy,
+        **angles,
+        **henrici,
+        "complex_energy_fraction_legacy_per_block":
+            rotational_fraction_per_block(blocks),
+    }
+    if top_k:
+        out["planes"] = top_rotation_planes(blocks, top_k)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Nulls
+# ---------------------------------------------------------------------------
+
+def gaussian_null_matrices(OV: np.ndarray, n_draws: int = 16, rng=None) -> list:
+    """
+    Norm-matched iid Gaussian matrices of the same shape as OV.
+
+    The construction matches `core/pythia_registry.build_pythia_random_baseline`'s
+    scheme: structure destroyed, Frobenius norm preserved. That is the
+    project's continuity control, so Block 1a's null uses the same object
+    rather than inventing a second notion of "random".
+    """
+    rng = rng if rng is not None else np.random.default_rng(0)
+    OV = np.asarray(OV, dtype=np.float64)
+    target = float(np.linalg.norm(OV, "fro"))
+    out = []
+    for _ in range(int(n_draws)):
+        M = rng.normal(size=OV.shape)
+        n = float(np.linalg.norm(M, "fro"))
+        out.append(M * (target / max(n, 1e-300)))
+    return out
+
+
+def null_comparison(OV: np.ndarray, statistic: str = "complex_energy_fraction",
+                    n_draws: int = 16, rng=None) -> dict:
+    """
+    Observed Block 1a statistic against the norm-matched Gaussian null,
+    reported through `core.nulls.sigma_from_null`.
+
+    This is the missing control on the phase's headline. A Gaussian matrix is
+    essentially all complex pairs, so if the observed fraction sits inside
+    the null the statement "OV is 84-97% rotational" is a statement about
+    square matrices and not about the trained network. A `z_score` near zero is
+    therefore the EXPECTED result for the fraction, and it is worth
+    reporting rather than assuming: the interesting nulls are on `theta`
+    (a Gaussian's angles are near-uniform on [0, pi]) and on
+    `henrici_relative` (a Gaussian is strongly non-normal, so a trained
+    matrix sitting BELOW the null means training has made V more normal).
+
+    `statistic` may name any scalar returned by `layer_scalars`.
+    """
+    from core.nulls import sigma_from_null
+
+    observed = layer_scalars(OV)[statistic]
+    null_vals = np.array([
+        layer_scalars(M)[statistic]
+        for M in gaussian_null_matrices(OV, n_draws=n_draws, rng=rng)
+    ], dtype=np.float64)
+
+    # sigma_from_null already returns observed / null_mean / null_std /
+    # z_score / percentile / n_null. Nothing is recomputed here — the
+    # provenance fields are added, not the statistics.
+    res = dict(sigma_from_null(float(observed), null_vals))
+    res.update({
+        "statistic": statistic,
+        "n_draws": int(n_draws),
+        "null_construction": "norm_matched_gaussian",
+    })
+    return res
+
+
+# ---------------------------------------------------------------------------
+# Precision
+# ---------------------------------------------------------------------------
+
+def precision_surface(ov_list: Sequence[np.ndarray],
+                      layer_names: Optional[Sequence[str]] = None,
+                      **kwargs) -> dict:
+    """
+    `core.precision_policy.analyze_ov_precision` over this model's OV list.
+
+    Wired in because it was written specifically against this block (its
+    docstring names `p2b_imaginary.layernorm_jacobian.rotational_fraction`)
+    and was never called from the runner. It answers whether "84-97% complex"
+    survives the fp16 round-trip the checkpoints actually went through, over
+    a sweep of the relative tolerance rather than at the single shipped 0.01.
+
+    `frac_fn` defaults to `complex_energy_fraction_relative` here, which is
+    the same function `precision_policy` would import — passed explicitly so
+    the dependency is visible at the call site rather than resolved by a
+    lazy import inside `core`.
+    """
+    from core.precision_policy import analyze_ov_precision
+    kwargs.setdefault("frac_fn", complex_energy_fraction_relative)
+    return analyze_ov_precision(ov_list, layer_names, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Pipeline
 # ---------------------------------------------------------------------------
 
 def analyze_rotational_spectrum(
     ov_data: dict,
-    top_k_planes: int = 32,
+    top_k_planes: int = 0,
+    with_nulls: bool = False,
+    null_statistics: Sequence[str] = ("complex_energy_fraction",
+                                      "theta_mean", "henrici_relative"),
+    n_null_draws: int = 16,
+    rng=None,
 ) -> dict:
     """
-    Full Block 1a analysis for one model.
+    Block 1a for one checkpoint.
 
     Parameters
     ----------
-    ov_data      : output of weights.extract_ov_circuit (or loaded from disk)
-    top_k_planes : number of dominant rotation planes to extract
+    top_k_planes  : plane bases to retain per layer. 0 (default) keeps none —
+                    a checkpoint sweep wants scalars. Consumers that need
+                    planes (the FFN-rotation block, Block 3) ask for them.
+    with_nulls    : run `null_comparison` per layer. Costs
+                    `n_null_draws` extra Schur decompositions per layer, so
+                    it is off by default and worth doing at a subset of
+                    checkpoints rather than all 27.
 
-    Returns
-    -------
-    dict with per-layer (or single) block analysis, energy fractions,
-    angle statistics, Henrici measure, rotation plane projectors,
-    and (for per-layer models) the depth profile.
+    Returns per-layer scalars plus a cross-layer summary. Carries
+    `checkpoint_step` and `model_stem` straight through from `ov_data` so a
+    result can be placed on the training axis without re-parsing a filename.
     """
-    is_per_layer = ov_data["is_per_layer"]
+    is_per_layer = bool(ov_data["is_per_layer"])
+    ov_list = (list(ov_data["ov_total"]) if is_per_layer
+               else [ov_data["ov_total"]])
+    layer_names = list(ov_data.get("layer_names") or
+                       [f"layer_{i}" for i in range(len(ov_list))])
 
-    if is_per_layer:
-        ov_list = ov_data["ov_total"]
-        layer_names = ov_data["layer_names"]
+    per_layer = [
+        layer_scalars(OV, name, top_k=top_k_planes)
+        for OV, name in zip(ov_list, layer_names)
+    ]
 
-        all_blocks = []
-        all_angles = []
-        all_energy = []
-        all_henrici = []
-        all_planes = []
+    if with_nulls:
+        for OV, rec in zip(ov_list, per_layer):
+            rec["nulls"] = {
+                stat: null_comparison(OV, stat, n_draws=n_null_draws, rng=rng)
+                for stat in null_statistics
+            }
 
-        for OV in ov_list:
-            blocks = extract_schur_blocks(OV)
-            all_blocks.append(blocks)
-            all_angles.append(rotation_angle_stats(blocks))
-            all_energy.append(rotation_energy_fractions(blocks))
-            all_henrici.append(henrici_nonnormality(blocks))
-            all_planes.append(build_rotation_plane_projectors(blocks, top_k_planes))
+    return {
+        "is_per_layer": is_per_layer,
+        "layer_names": layer_names,
+        "model_stem": ov_data.get("model_stem"),
+        "checkpoint_step": ov_data.get("checkpoint_step"),
+        "per_layer": per_layer,
+        "summary": _cross_layer_summary(per_layer, layer_names),
+    }
 
-        depth = rotation_depth_profile(ov_list, layer_names)
 
-        return {
-            "is_per_layer":   True,
-            "layer_names":    layer_names,
-            "blocks":         all_blocks,
-            "angle_stats":    all_angles,
-            "energy_fractions": all_energy,
-            "henrici":        all_henrici,
-            "plane_projectors": all_planes,
-            "depth_profile":  depth,
-        }
-    else:
-        OV = ov_data["ov_total"]
-        blocks = extract_schur_blocks(OV)
-        angles = rotation_angle_stats(blocks)
-        energy = rotation_energy_fractions(blocks)
-        henrici = henrici_nonnormality(blocks)
-        planes = build_rotation_plane_projectors(blocks, top_k_planes)
+def _cross_layer_summary(per_layer: Sequence[dict],
+                         layer_names: Sequence[str]) -> dict:
+    """
+    Depth profile reduced to the scalars a checkpoint trajectory plots.
 
-        return {
-            "is_per_layer":    False,
-            "layer_names":     ["shared"],
-            "blocks":          blocks,
-            "angle_stats":     angles,
-            "energy_fractions": energy,
-            "henrici":         henrici,
-            "plane_projectors": planes,
-        }
+    `*_argmax_layer` is the layer NAME, not the index, so a summary read back
+    from JSON does not need the layer list to be interpretable.
+    """
+    if not per_layer:
+        return {}
+
+    def col(key):
+        return np.array([r.get(key, np.nan) for r in per_layer], dtype=np.float64)
+
+    cef = col("complex_energy_fraction")
+    hen = col("henrici_relative")
+    th = col("theta_mean")
+    rep = col("frac_repulsive_real_part")
+
+    def argmax_name(a):
+        if not np.isfinite(a).any():
+            return None
+        return layer_names[int(np.nanargmax(a))]
+
+    return {
+        "n_layers": len(per_layer),
+        "complex_energy_fraction_mean": float(np.nanmean(cef)),
+        "complex_energy_fraction_min": float(np.nanmin(cef)),
+        "complex_energy_fraction_max": float(np.nanmax(cef)),
+        "henrici_relative_mean": float(np.nanmean(hen)),
+        "henrici_relative_max": float(np.nanmax(hen)),
+        "henrici_argmax_layer": argmax_name(hen),
+        "theta_mean_across_layers": float(np.nanmean(th)),
+        "theta_std_across_layers": float(np.nanstd(th)),
+        "frac_repulsive_real_part_mean": float(np.nanmean(rep)),
+        "dim_complex_fraction_mean": float(np.nanmean(col("dim_complex_fraction"))),
+        "complex_energy_fraction_legacy_mean": float(
+            np.nanmean(col("complex_energy_fraction_legacy_per_block"))),
+    }
 
 
 # ---------------------------------------------------------------------------
-# Serialization helpers
+# Serialization
 # ---------------------------------------------------------------------------
+
+_ARRAY_KEYS = ("planes",)
+
 
 def summary_to_json(result: dict) -> dict:
     """
-    Extract JSON-serializable summary from analyze_rotational_spectrum output.
-    Drops large arrays (schur_T, schur_Z, projector matrices, plane vectors).
+    JSON-serializable Block 1a output. Drops plane bases; every other value
+    is already a scalar, because nothing (d, d) is retained in the first
+    place.
     """
-    if result["is_per_layer"]:
-        layers = []
-        for i, name in enumerate(result["layer_names"]):
-            layers.append({
-                "layer": name,
-                "n_real": result["blocks"][i]["n_real"],
-                "n_complex": result["blocks"][i]["n_complex"],
-                **{k: v for k, v in result["angle_stats"][i].items()
-                   if k not in ("thetas", "rhos", "signs")},
-                **{k: v for k, v in result["energy_fractions"][i].items()},
-                **{k: v for k, v in result["henrici"][i].items()},
-            })
-        return {
-            "is_per_layer": True,
-            "per_layer": layers,
-            "depth_summary": result["depth_profile"]["summary"],
-        }
-    else:
-        return {
-            "is_per_layer": False,
-            "n_real": result["blocks"]["n_real"],
-            "n_complex": result["blocks"]["n_complex"],
-            **{k: v for k, v in result["angle_stats"].items()
-               if k not in ("thetas", "rhos", "signs")},
-            **{k: v for k, v in result["energy_fractions"].items()},
-            **{k: v for k, v in result["henrici"].items()},
-        }
+    def clean(rec):
+        return {k: v for k, v in rec.items() if k not in _ARRAY_KEYS}
+
+    return {
+        "is_per_layer": bool(result["is_per_layer"]),
+        "model_stem": result.get("model_stem"),
+        "checkpoint_step": result.get("checkpoint_step"),
+        "layer_names": list(result["layer_names"]),
+        "per_layer": [clean(r) for r in result["per_layer"]],
+        "summary": result["summary"],
+    }
+
+
+def summary_lines(js: dict) -> list:
+    """LLM-consumable summary block."""
+    s = js.get("summary", {})
+    step = js.get("checkpoint_step")
+    lines = [
+        "--- Block 1a: rotational spectrum ---",
+        f"  Model: {js.get('model_stem')}" + (f"  step {step}" if step is not None else ""),
+        f"  Layers: {s.get('n_layers', 0)}",
+        f"  Complex energy fraction (per-eigenvalue): "
+        f"mean {s.get('complex_energy_fraction_mean', float('nan')):.4f} "
+        f"[{s.get('complex_energy_fraction_min', float('nan')):.4f}, "
+        f"{s.get('complex_energy_fraction_max', float('nan')):.4f}]",
+        f"  Same, legacy per-block convention: "
+        f"{s.get('complex_energy_fraction_legacy_mean', float('nan')):.4f}",
+        f"  Rotating dimensions: {s.get('dim_complex_fraction_mean', float('nan')):.4f}",
+        f"  Mean theta: {s.get('theta_mean_across_layers', float('nan')):.4f} rad "
+        f"(sd {s.get('theta_std_across_layers', float('nan')):.4f})",
+        f"  Repulsive real part: {s.get('frac_repulsive_real_part_mean', float('nan')):.4f}",
+        f"  Henrici (relative): mean {s.get('henrici_relative_mean', float('nan')):.4f}, "
+        f"max {s.get('henrici_relative_max', float('nan')):.4f} "
+        f"at {s.get('henrici_argmax_layer')}",
+    ]
+    nulls = (js.get("per_layer") or [{}])[0].get("nulls")
+    if nulls:
+        lines.append("  Nulls (norm-matched Gaussian, layer 0):")
+        for stat, res in nulls.items():
+            lines.append(
+                f"    {stat}: observed {res['observed']:.4f} vs null "
+                f"{res['null_mean']:.4f} +/- {res['null_std']:.4f} "
+                f"(z {res.get('z_score', float('nan')):.2f}, "
+                f"pct {res.get('percentile', float('nan')):.1f})"
+            )
+    return lines
+
+
+__all__ = [
+    "SUBDIAGONAL_REL_TOL",
+    "COMPLEX_REL_TOL",
+    "extract_schur_blocks",
+    "complex_energy_fraction",
+    "rotational_fraction_per_block",
+    "complex_energy_fraction_relative",
+    "rotation_angle_stats",
+    "henrici_nonnormality",
+    "top_rotation_planes",
+    "project_onto_planes",
+    "plane_energy",
+    "rotation_subspace_fraction",
+    "layer_scalars",
+    "gaussian_null_matrices",
+    "null_comparison",
+    "precision_surface",
+    "analyze_rotational_spectrum",
+    "summary_to_json",
+    "summary_lines",
+]
