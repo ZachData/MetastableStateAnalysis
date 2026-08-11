@@ -54,6 +54,7 @@ def compute_token_trajectories(
     aligned_assignments: np.ndarray,
     fiedler_vecs: np.ndarray,
     valid: np.ndarray,
+    stable_reference: str = "final",
 ) -> dict:
     """
     Compute per-token hemisphere statistics from aligned Block 1 assignments.
@@ -86,6 +87,8 @@ def compute_token_trajectories(
             "border_index":        border_idx,
             "first_stable_layer":  first_stable,
             "dominant_hemisphere": dominant_hemi,
+            "final_hemisphere":    np.full(n_tokens, -1, dtype=np.int8),
+            "stable_reference":    stable_reference,
         }
 
     # Stability score: fraction of consecutive valid transitions where token
@@ -135,12 +138,25 @@ def compute_token_trajectories(
         np.where(count1 > count0, np.int8(1), np.int8(-1))
     ).astype(np.int8)
 
+    final_layer   = int(valid_layers[-1])
+    final_hemi    = aligned_assignments[final_layer].astype(np.int8).copy()
+
+    if stable_reference == "final":
+        reference = final_hemi
+    elif stable_reference == "dominant":
+        reference = dominant_hemi
+    else:
+        raise ValueError(
+            f"stable_reference must be 'final' or 'dominant', "
+            f"got {stable_reference!r}"
+        )
+
     for i in range(n_tokens):
-        dom = int(dominant_hemi[i])
-        if dom < 0:
+        ref = int(reference[i])
+        if ref < 0:
             continue
         for L in reversed(valid_layers.tolist()):
-            if aligned_assignments[L, i] != dom:
+            if aligned_assignments[L, i] != ref:
                 break
             first_stable[i] = L
 
@@ -149,6 +165,8 @@ def compute_token_trajectories(
         "border_index":        border_idx,
         "first_stable_layer":  first_stable,
         "dominant_hemisphere": dominant_hemi,
+        "final_hemisphere":    final_hemi,
+        "stable_reference":    stable_reference,
     }
 
 
@@ -266,6 +284,116 @@ def compute_hdbscan_nesting(
 
 
 # ---------------------------------------------------------------------------
+# Border population vs. HDBSCAN noise population
+# ---------------------------------------------------------------------------
+
+def border_vs_noise(
+    fiedler_vecs: np.ndarray,
+    hdbscan_labels: dict,
+    valid: np.ndarray,
+    layers: list | None = None,
+) -> dict:
+    """
+    Are the tokens near the Fiedler boundary the same tokens HDBSCAN calls
+    noise?
+
+    Phase 5c's reframe makes the unclustered population the project's object
+    of study, and Phase 1b already computes a per-token distance from the
+    partition boundary (|v_i| relative to the layer's scale) while loading
+    HDBSCAN's -1 labels for the nesting test. The two have never been
+    crossed. If boundary tokens ARE the noise population, "unclustered" and
+    "on the axis rather than at either end of it" are the same population
+    under two names, and Phase 5c's object gets a geometric definition it
+    currently lacks. If they are unrelated, that is a constraint on any
+    account that treats noise as merely weakly-clustered.
+
+    Per layer, computes:
+      auc          : probability that a randomly chosen noise token sits
+                     closer to the boundary than a randomly chosen clustered
+                     token (Mann-Whitney U / (n_noise * n_clustered)).
+                     0.5 = no relationship. >0.5 = noise is nearer the
+                     boundary. Rank-based, so it needs no assumption about
+                     the |v| distribution's shape, which is heavy-tailed.
+      mean_abs_v_noise / mean_abs_v_clustered : the raw contrast, in units
+                     of the layer's mean |v|.
+      n_noise / n_clustered
+
+    Returns per-layer records plus a pooled summary. Layers where either
+    population is empty are skipped rather than counted as 0.5.
+    """
+    targets = (layers if layers is not None
+               else sorted(L for L in hdbscan_labels if L < len(valid) and valid[L]))
+
+    per_layer: dict = {}
+    aucs: list = []
+
+    for L in targets:
+        L = int(L)
+        if L >= len(valid) or not valid[L] or L not in hdbscan_labels:
+            continue
+        labels = np.asarray(hdbscan_labels[L])
+        fv     = np.abs(np.asarray(fiedler_vecs[L], dtype=np.float64))
+        if labels.shape[0] != fv.shape[0]:
+            continue
+
+        scale = float(fv.mean())
+        if scale < 1e-12:
+            continue
+        fv_scaled = fv / scale
+
+        noise_mask = labels < 0
+        clus_mask  = ~noise_mask
+        n_noise, n_clus = int(noise_mask.sum()), int(clus_mask.sum())
+        if n_noise == 0 or n_clus == 0:
+            continue
+
+        # AUC via rank sum. Ranks are over the combined sample; ties get
+        # average ranks, which is what makes 0.5 the correct null value.
+        order = np.argsort(fv_scaled, kind="mergesort")
+        ranks = np.empty_like(order, dtype=np.float64)
+        ranks[order] = np.arange(1, fv_scaled.size + 1, dtype=np.float64)
+        # average ranks for ties
+        vals = fv_scaled[order]
+        i = 0
+        while i < vals.size:
+            j = i
+            while j + 1 < vals.size and vals[j + 1] == vals[i]:
+                j += 1
+            if j > i:
+                ranks[order[i:j + 1]] = np.mean(ranks[order[i:j + 1]])
+            i = j + 1
+
+        R_noise = float(ranks[noise_mask].sum())
+        U_noise = R_noise - n_noise * (n_noise + 1) / 2.0
+        # U_noise counts (noise, clustered) pairs where noise ranks HIGHER,
+        # i.e. sits FURTHER from the boundary. Invert so >0.5 means "noise
+        # is nearer the boundary", which is the direction the question is
+        # asked in.
+        auc = 1.0 - (U_noise / (n_noise * n_clus))
+
+        per_layer[L] = {
+            "auc":                    float(auc),
+            "mean_abs_v_noise":       float(fv_scaled[noise_mask].mean()),
+            "mean_abs_v_clustered":   float(fv_scaled[clus_mask].mean()),
+            "n_noise":                n_noise,
+            "n_clustered":            n_clus,
+        }
+        aucs.append(float(auc))
+
+    return {
+        "per_layer": per_layer,
+        "overall": {
+            "n_analyzed_layers": len(per_layer),
+            "mean_auc":          float(np.mean(aucs)) if aucs else None,
+            "min_auc":           float(np.min(aucs))  if aucs else None,
+            "max_auc":           float(np.max(aucs))  if aucs else None,
+            "fraction_layers_auc_above_0.6":
+                float(np.mean([a > 0.6 for a in aucs])) if aucs else None,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
 # Full Block 2 pipeline
 # ---------------------------------------------------------------------------
 
@@ -275,15 +403,18 @@ def analyze_hemisphere_membership(
     hdbscan_labels: dict[int, np.ndarray] | None = None,
     plateau_layers: list[int] | None = None,
     token_strings: list[str] | None = None,
+    stable_reference: str = "final",
 ) -> dict:
     """Run Block 2 on Block 0 + Block 1 results."""
     traj = compute_token_trajectories(
         block1["aligned_assignments"],
         block0["fiedler_vecs"],
         block0["valid"],
+        stable_reference=stable_reference,
     )
 
     nesting = None
+    boundary = None
     if hdbscan_labels is not None:
         nesting = compute_hdbscan_nesting(
             block1["aligned_assignments"],
@@ -291,10 +422,14 @@ def analyze_hemisphere_membership(
             block0["valid"],
             plateau_layers=plateau_layers,
         )
+        boundary = border_vs_noise(
+            block0["fiedler_vecs"], hdbscan_labels, block0["valid"],
+        )
 
     return {
         "token_trajectories": traj,
         "hdbscan_nesting":    nesting,
+        "border_vs_noise":    boundary,
         "n_tokens":           block0["n_tokens"],
         "n_layers":           block0["n_layers"],
         "token_strings":      token_strings,
@@ -343,6 +478,9 @@ def membership_to_json(result: dict) -> dict:
                                    if traj["first_stable_layer"][i] >= 0 else None,
             "dominant_hemisphere": int(traj["dominant_hemisphere"][i])
                                    if traj["dominant_hemisphere"][i] >= 0 else None,
+            "final_hemisphere":    (int(traj["final_hemisphere"][i])
+                                    if traj.get("final_hemisphere") is not None
+                                    and traj["final_hemisphere"][i] >= 0 else None),
             "hemisphere_trajectory": trajectory,
         })
 
@@ -375,6 +513,8 @@ def membership_to_json(result: dict) -> dict:
     out: dict = {"per_token": per_token, "summary": summary}
     if result["hdbscan_nesting"] is not None:
         out["hdbscan_nesting"] = result["hdbscan_nesting"]
+    if result.get("border_vs_noise") is not None:
+        out["border_vs_noise"] = result["border_vs_noise"]
     return out
 
 

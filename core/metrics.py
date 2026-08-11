@@ -224,7 +224,13 @@ def effective_rank_from_normed(normed) -> float:
 # Fiedler value / vector + eigengap cluster-count estimate
 # ---------------------------------------------------------------------------
 
-def fiedler_and_eigengap(G: np.ndarray, max_k: int = 15, return_fiedler_vec: bool = False) -> dict:
+def fiedler_and_eigengap(
+    G: np.ndarray,
+    max_k: int = 15,
+    return_fiedler_vec: bool = False,
+    connectivity_floor: float = 0.0,
+    clip_negative: bool = True,
+) -> dict:
     """
     Canonical Fiedler / eigengap computation on the normalized Laplacian of
     a Gram matrix. Single implementation — previously computed inline
@@ -237,18 +243,62 @@ def fiedler_and_eigengap(G: np.ndarray, max_k: int = 15, return_fiedler_vec: boo
     max_k              : maximum number of eigenvalues to inspect
     return_fiedler_vec : if True, include "fiedler_vec" (the second
                          Laplacian eigenvector) in the result.
+    connectivity_floor : uniform weight added to every edge after clipping,
+                         as a fraction spread over n (the added weight is
+                         connectivity_floor / n). 0.0 (default) reproduces
+                         the historical Phase 1 behaviour exactly.
+
+                         Why this parameter exists rather than a second
+                         implementation: p1b_hemisphere/bipartition_detect.py
+                         used to build its own Laplacian with a hardcoded
+                         1e-4/n floor, so Phase 1b's Fiedler vector and the
+                         Phase 1 Fiedler vector it exists to explain were
+                         computed on *different graphs*. The floor itself is
+                         defensible — clipping negatives can disconnect an
+                         antipodal graph entirely, leaving lambda_2 = 0 and a
+                         degenerate eigenspace — but it has to be a recorded
+                         choice on one code path, not a silent difference
+                         between two.
+    clip_negative      : clip negative Gram entries to 0 before building the
+                         Laplacian. True (default) is what every Phase 1
+                         call has always done.
+
+                         False builds the Laplacian on the SIGNED Gram. This
+                         is not a well-posed spectral clustering problem —
+                         degrees can vanish or go negative, so the normalized
+                         Laplacian can be non-finite — and callers must check
+                         the returned eigenvalues are finite and ordered
+                         before using them. It exists because
+                         bipartition_detect.extract_bipartition_spectrum
+                         genuinely supported it, and folding that module into
+                         this one without carrying the option would have been
+                         a silent capability removal, which is the same class
+                         of failure as the duplication it replaces.
 
     Returns
     -------
     dict with keys: k_eigengap, k_second_gap, second_gap_ratio,
-    fiedler_value (lambda_2), eigenvalues, eigengaps, and (optionally)
-    fiedler_vec.
+    fiedler_value (lambda_2), eigenvalues, eigengaps, connectivity_floor,
+    clip_negative, and (optionally) fiedler_vec.
     """
-    G_pos = np.clip(G, 0, None)
+    G_pos = np.clip(G, 0, None) if clip_negative else np.array(G, dtype=np.float64, copy=True)
+    if connectivity_floor:
+        G_pos = G_pos + float(connectivity_floor) / G_pos.shape[0]
     np.fill_diagonal(G_pos, 1.0)
     L = laplacian(G_pos, normed=True)
     n = G_pos.shape[0]
     k = min(max_k + 1, n - 1)
+
+    # A signed Gram (clip_negative=False) can produce vanishing or negative
+    # degrees, and the normalized Laplacian then contains inf/nan. scipy's
+    # eigh raises on those rather than returning them, so without this guard
+    # an advertised option crashes instead of degrading. The degenerate
+    # return below is the same shape every other failure path uses, so
+    # callers already handle it — bipartition_detect's `valid` mask is
+    # exactly this check, and it was doing the job with a bare
+    # `except Exception: continue` before the delegation.
+    if k >= 2 and not np.all(np.isfinite(L)):
+        k = 1
 
     if k < 2:
         result = {
@@ -258,6 +308,8 @@ def fiedler_and_eigengap(G: np.ndarray, max_k: int = 15, return_fiedler_vec: boo
             "fiedler_value": float("nan"),
             "eigenvalues": [],
             "eigengaps": [],
+            "connectivity_floor": float(connectivity_floor),
+            "clip_negative": bool(clip_negative),
         }
         if return_fiedler_vec:
             result["fiedler_vec"] = None
@@ -293,6 +345,8 @@ def fiedler_and_eigengap(G: np.ndarray, max_k: int = 15, return_fiedler_vec: boo
         "fiedler_value": float(eigenvalues[1]) if len(eigenvalues) > 1 else float("nan"),
         "eigenvalues": eigenvalues.tolist(),
         "eigengaps": gaps.tolist(),
+        "connectivity_floor": float(connectivity_floor),
+        "clip_negative": bool(clip_negative),
     }
     if return_fiedler_vec:
         result["fiedler_vec"] = fiedler_vec

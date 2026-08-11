@@ -54,10 +54,27 @@ from __future__ import annotations
 
 import numpy as np
 
+from p1_mstate_tracking.cluster_tracking import match_layer_pair
 
-# ---------------------------------------------------------------------------
-# Jaccard at k=2 with sign-flip correction
-# ---------------------------------------------------------------------------
+
+#: Default identity-matching backend.
+#:
+#: design-1b.md claimed this module "reuses cluster_tracking.match_layer_pair
+#: at k=2 rather than duplicating identity-matching logic". It did not — it
+#: carried its own Jaccard pair. Both now exist and the claim is true by
+#: default, because at k=2 the Hungarian assignment over labels {0, 1} IS the
+#: global-sign-flip decision: the only two assignments are identity and flip,
+#: and linear_sum_assignment picks the higher-overlap one. There is no
+#: hemisphere-specific matching logic to own.
+#:
+#: What the delegation does NOT take over is the reported *score*.
+#: match_layer_pair returns per-match Jaccards with a min_jaccard filter;
+#: this module reports the mean of the two halves' Jaccards, which is the
+#: quantity IDENTITY_THRESHOLD and every existing result are stated against.
+#: So: matching from cluster_tracking, scoring here, and the two are
+#: independent by design rather than by drift.
+MATCHERS = ("hungarian", "local")
+
 
 def _jaccard(a_mask: np.ndarray, b_mask: np.ndarray) -> float:
     inter = int(np.logical_and(a_mask, b_mask).sum())
@@ -67,18 +84,61 @@ def _jaccard(a_mask: np.ndarray, b_mask: np.ndarray) -> float:
     return inter / union
 
 
-def _match_overlap(labels_prev: np.ndarray, labels_curr: np.ndarray) -> tuple[float, bool]:
-    """
-    Return (best_overlap, needs_flip) for two 0/1 label vectors.
-    Ties broken toward identity (no flip).
-    """
+def _mean_pair_jaccard(labels_prev, labels_curr, flip: bool) -> float:
+    """Mean of the two halves' Jaccards under identity or flipped alignment."""
     p0, p1 = labels_prev == 0, labels_prev == 1
     c0, c1 = labels_curr == 0, labels_curr == 1
-    id_score   = 0.5 * (_jaccard(p0, c0) + _jaccard(p1, c1))
-    flip_score = 0.5 * (_jaccard(p0, c1) + _jaccard(p1, c0))
-    if flip_score > id_score:
-        return flip_score, True
-    return id_score, False
+    if flip:
+        return 0.5 * (_jaccard(p0, c1) + _jaccard(p1, c0))
+    return 0.5 * (_jaccard(p0, c0) + _jaccard(p1, c1))
+
+
+def _match_overlap(labels_prev: np.ndarray, labels_curr: np.ndarray,
+                   matcher: str = "hungarian") -> tuple[float, bool]:
+    """
+    Return (best_overlap, needs_flip) for two 0/1 label vectors.
+
+    matcher="hungarian" delegates the flip decision to
+    cluster_tracking.match_layer_pair (min_jaccard=0.0, so nothing is
+    filtered out — a genuinely poor match must still produce a decision and
+    a low score, not a dropped transition). matcher="local" is the previous
+    in-module comparison, kept so the delegation is checkable against it.
+
+    Ties break toward identity (no flip) under both.
+    """
+    if matcher not in MATCHERS:
+        raise ValueError(f"matcher must be one of {MATCHERS}, got {matcher!r}")
+
+    id_score   = _mean_pair_jaccard(labels_prev, labels_curr, flip=False)
+    flip_score = _mean_pair_jaccard(labels_prev, labels_curr, flip=True)
+
+    if matcher == "local":
+        return (flip_score, True) if flip_score > id_score else (id_score, False)
+
+    # Exact ties are decided here, not by the assignment solver. Hungarian
+    # is free to return either pairing when both score identically, and it
+    # does (measured: 4 of 500 random label pairs, all exact ties). Every
+    # one of those would otherwise flip the hemisphere labelling for the
+    # rest of the run on a coin toss, since align_hemisphere_labels chains
+    # anchors forward. Documented tie-break is identity; enforce it.
+    if flip_score == id_score:
+        return id_score, False
+
+    res = match_layer_pair(
+        np.asarray(labels_prev, dtype=np.int64),
+        np.asarray(labels_curr, dtype=np.int64),
+        min_jaccard=0.0,
+    )
+    # A flip is what a 0->1 / 1->0 pairing means. If matching is degenerate
+    # (one side has a single populated label), fall back to the direct
+    # comparison rather than inventing an alignment.
+    crossed = sum(1 for prev_id, curr_id, _ in res["matches"] if prev_id != curr_id)
+    straight = sum(1 for prev_id, curr_id, _ in res["matches"] if prev_id == curr_id)
+    if crossed == 0 and straight == 0:
+        return (flip_score, True) if flip_score > id_score else (id_score, False)
+
+    needs_flip = crossed > straight
+    return (flip_score if needs_flip else id_score), needs_flip
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +148,7 @@ def _match_overlap(labels_prev: np.ndarray, labels_curr: np.ndarray) -> tuple[fl
 def align_hemisphere_labels(
     assignments: np.ndarray,
     valid: np.ndarray,
+    matcher: str = "hungarian",
 ) -> dict:
     """
     Align hemisphere labels across layers under the global sign flip.
@@ -123,7 +184,7 @@ def align_hemisphere_labels(
             anchor_labels = aligned[L]
             continue
 
-        score, needs_flip = _match_overlap(anchor_labels, raw)
+        score, needs_flip = _match_overlap(anchor_labels, raw, matcher=matcher)
         if needs_flip:
             aligned[L] = 1 - raw
             flips[L]   = True
@@ -198,11 +259,19 @@ def compute_cumulative_rotation(axis_rotation: np.ndarray) -> np.ndarray:
 def compute_persistence_lengths(
     regime: np.ndarray,
     events: list[dict],
+    stable_label: str = "strong_bipartition",
 ) -> np.ndarray:
     """
-    Per-layer count of consecutive strong_bipartition layers since the
-    most recent disruptive event (birth, collapse, swap, drift).
-    Shear is not disruptive.  Non-strong layers get 0.
+    Per-layer count of consecutive `stable_label` layers since the most
+    recent disruptive event (birth, collapse, swap, drift). Shear is not
+    disruptive. Layers not carrying `stable_label` get 0.
+
+    stable_label is a parameter because Block 0 now emits two regime
+    vocabularies: "strong_bipartition" in the antipodal one, "separated" in
+    the cone-compatible one. Hardcoding the former meant that under
+    cone-collapse — where strong_bipartition is unreachable — every
+    persistence length was 0 and the statistic looked measured rather than
+    foreclosed.
     Returns (n_layers,) int.
     """
     n = len(regime)
@@ -214,7 +283,7 @@ def compute_persistence_lengths(
 
     run = 0
     for L in range(n):
-        if str(regime[L]) != "strong_bipartition":
+        if str(regime[L]) != stable_label:
             run   = 0
             out[L] = 0
             continue
@@ -268,9 +337,15 @@ def detect_events(
     shear_absolute_floor: int = SHEAR_ABSOLUTE_FLOOR,
     drift_window_layers: int = DRIFT_WINDOW_LAYERS,
     drift_window_rad: float = DRIFT_WINDOW_RAD,
+    stable_label: str = "strong_bipartition",
+    absent_label: str = "collapsed",
     ) -> list[dict]:
     """
     Emit birth / collapse / swap / shear / drift events.
+
+    stable_label / absent_label name the two regime values a birth or
+    collapse transitions between. See compute_persistence_lengths for why
+    these are parameters rather than literals.
 
     Parameters
     ----------
@@ -306,43 +381,26 @@ def detect_events(
         cc = int(crossing_count[L])
 
         # Birth/collapse cross the valid/invalid boundary — must precede the guard
-        if r_from == "collapsed" and r_to == "strong_bipartition":
+        if r_from == absent_label and r_to == stable_label:
             events.append({"type": "birth", "layer": L + 1, "from_layer": L,
                             "detail": {"match_overlap": ov, "crossing_count": cc}})
             disrupted_transitions.add(L)
             continue
 
-        if r_from == "strong_bipartition" and r_to == "collapsed":
+        if r_from == stable_label and r_to == absent_label:
             events.append({"type": "collapse", "layer": L + 1, "from_layer": L,
                             "detail": {"match_overlap": ov, "crossing_count": cc}})
             disrupted_transitions.add(L)
             continue
 
+        # The birth/collapse cases above already `continue`d, so the
+        # duplicate copies of them that used to sit here were unreachable.
+        # Removed rather than left as a second definition of the same event.
         if not valid_trans[L]:
             continue
-        r_from = str(regime[L])
-        r_to   = str(regime[L + 1])
-        ov     = float(match_overlap[L]) if np.isfinite(match_overlap[L]) else None
-        cc     = int(crossing_count[L])
 
-        if r_from == "collapsed" and r_to == "strong_bipartition":
-            events.append({
-                "type": "birth", "layer": L + 1, "from_layer": L,
-                "detail": {"match_overlap": ov, "crossing_count": cc},
-            })
-            disrupted_transitions.add(L)
-            continue
-
-        if r_from == "strong_bipartition" and r_to == "collapsed":
-            events.append({
-                "type": "collapse", "layer": L + 1, "from_layer": L,
-                "detail": {"match_overlap": ov, "crossing_count": cc},
-            })
-            disrupted_transitions.add(L)
-            continue
-
-        if (r_from == "strong_bipartition"
-                and r_to == "strong_bipartition"
+        if (r_from == stable_label
+                and r_to == stable_label
                 and ov is not None
                 and ov < identity_threshold):
             events.append({
@@ -476,15 +534,41 @@ def analyze_hemisphere_tracking(
     shear_absolute_floor: int = SHEAR_ABSOLUTE_FLOOR,
     drift_window_layers: int = DRIFT_WINDOW_LAYERS,
     drift_window_rad: float = DRIFT_WINDOW_RAD,
+    matcher: str = "hungarian",
+    regime_key: str = "regime",
+    stable_label: str | None = None,
+    absent_label: str = "collapsed",
 ) -> dict:
-    """Run Block 1 on a Block 0 result."""
-    aligned  = align_hemisphere_labels(block0["assignments"], block0["valid"])
+    """
+    Run Block 1 on a Block 0 result.
+
+    regime_key selects which of Block 0's two regime vocabularies drives
+    event detection. "regime" is the antipodal one every existing result is
+    stated in; "regime_relative" is the cone-compatible one, under which
+    birth/collapse/swap fire on transitions into and out of "separated"
+    rather than "strong_bipartition". Under cone-collapse the antipodal
+    vocabulary can never enter strong_bipartition, so with regime_key
+    unchanged this block reports zero births and zero swaps by construction —
+    which is what the existing run did.
+    """
+    regime_arr = block0.get(regime_key)
+    if regime_arr is None:
+        raise KeyError(
+            f"analyze_hemisphere_tracking: block0 has no {regime_key!r}. "
+            f"Available: {sorted(k for k in block0 if k.startswith('regime'))}"
+        )
+    if stable_label is None:
+        stable_label = ("separated" if regime_key == "regime_relative"
+                        else "strong_bipartition")
+
+    aligned  = align_hemisphere_labels(block0["assignments"], block0["valid"],
+                                       matcher=matcher)
     axis_rot = compute_axis_rotation(block0["fiedler_vecs"], block0["valid"])
     cum_rot  = compute_cumulative_rotation(axis_rot)
     cc       = aligned_crossing_count(aligned["aligned_assignments"], block0["valid"])
 
     raw_events = detect_events(
-        block0["regime"],
+        regime_arr,
         aligned["match_overlap"],
         cc,
         block0["valid"],
@@ -494,8 +578,11 @@ def analyze_hemisphere_tracking(
         shear_absolute_floor=shear_absolute_floor,
         drift_window_layers=drift_window_layers,
         drift_window_rad=drift_window_rad,
+        stable_label=stable_label,
+        absent_label=absent_label,
     )
-    persistence = compute_persistence_lengths(block0["regime"], raw_events)
+    persistence = compute_persistence_lengths(regime_arr, raw_events,
+                                              stable_label=stable_label)
 
     xref = crossref_phase1(
         raw_events, axis_rot, cc,
@@ -513,6 +600,9 @@ def analyze_hemisphere_tracking(
         "persistence_length":       persistence,
         "events":                   xref["events"],
         "crossref":                 xref["agg"],
+        "regime_key":               regime_key,
+        "stable_label":             stable_label,
+        "matcher":                  matcher,
         "thresholds": {
             "identity":             identity_threshold,
             "shear_percentile":     shear_percentile,

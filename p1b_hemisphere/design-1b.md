@@ -44,9 +44,16 @@ issue rather than silently patched, since the reasoning behind the correction ha
 
 - `bipartition_detect.py` (Block 0) — per-layer regime classifier and quality metrics.
 - `hemisphere_tracking.py` (Block 1) — identity matching across layers, axis rotation.
-  Reuses `cluster_tracking.match_layer_pair` at $k=2$ rather than duplicating
-  identity-matching logic — the same Jaccard-chaining approach that tracks HDBSCAN clusters
-  works unchanged for a 2-way Fiedler partition.
+  Delegates the $k=2$ flip decision to `cluster_tracking.match_layer_pair`
+  (`matcher="hungarian"`, the default). At $k=2$ the Hungarian assignment over labels
+  $\{0,1\}$ *is* the global-sign-flip decision — the only two assignments are identity
+  and flip — so there is no hemisphere-specific matching logic to own. The reported
+  *score* stays local: the mean of the two halves' Jaccards, which is what
+  `IDENTITY_THRESHOLD` and every existing result are stated against.
+  `matcher="local"` keeps the previous in-module comparison so the delegation stays
+  checkable against it.
+  (Until this revision this paragraph described reuse that did not exist; the module
+  carried its own Jaccard pair. See Errata.)
 - `hemisphere_membership.py` (Block 2) — per-token trajectories, HDBSCAN nesting within the
   bipartition.
 - `cone_collapse.py` (Block 3) — LP-based cone-collapse test and regime classifier. LP
@@ -69,3 +76,90 @@ for alignment against OV eigenvectors once Phase 2 artifacts are available. Phas
 hemisphere centroids and Phase 6's Fiedler-difference-vector probe both inherit this
 "axis, not separator" framing directly from Phase 1b's result rather than from the original
 Phase 1 speculative narrative.
+
+
+---
+
+# Errata and revisions
+
+This section records where the design above was wrong or has been
+superseded. It is appended rather than edited in place so the original
+reasoning stays legible next to what replaced it. Full detail in
+`CHANGES-1b.md`.
+
+## The two-test framing of Block 0 and Block 3 was one test
+
+The design presents "no strong bipartition" and "universal cone-collapse" as
+independent results pointing the same way. They are close to the same test.
+`classify_regime`'s `strong_bipartition` requires a centroid angle of at
+least pi/2, and two centroids inside a single open half-space essentially
+cannot be pi/2 apart. Under cone-collapse the antipodal classifier's positive
+verdict is near-unreachable, so its absence is near-uninformative.
+
+Block 0 now also runs `classify_regime_relative`, which asks whether
+between-half similarity is materially below within-half similarity regardless
+of absolute angle. Measured: two clusters 60 degrees apart with separation
+ratio 0.45 read as `weak_bipartition` under the antipodal rule and
+`separated` under the relative one. **"0% strong bipartition" is not the same
+claim as "no bipartition"**, and the original run could not express the
+difference.
+
+`regime_key` selects which vocabulary drives Block 1's events. With the
+antipodal default, birth/collapse/swap and persistence are all foreclosed
+under cone-collapse — which is why the original run reported zero events.
+
+## Block 3's PCA note was wrong in one direction
+
+The design said the cone question is invariant under orthogonal projection.
+It is not, and the asymmetry matters:
+
+- A reduced-space witness lifts **exactly**: `w = Vt[:k].T @ w_r` gives
+  `X @ w == X_r @ w_r`. A cone_collapse verdict under PCA is sound.
+- A full-space witness's orthogonal component is discarded, so a **split**
+  verdict under PCA may be a projection artifact.
+
+`escalate_on_split=True` re-solves at full d in the one direction that can
+lie. The existing 100%-cone-collapse result is unaffected.
+
+Separately, the design never asked how much of that result is dimension
+counting. n points in d dimensions separate for free unless they positively
+span. Two matched nulls (shuffled-dimension, uniform-sphere) are now
+available via `--n-null`, and `normalized_margin` — not the regime label — is
+the quantity a falsification table should adjudicate.
+
+## Block 1's reuse claim was aspirational
+
+See the corrected text above. Wiring the delegation up surfaced a live
+hazard: exact ties let the assignment solver return either pairing, on 4 of
+500 random label pairs, and anchor chaining would propagate each flip through
+the rest of a run.
+
+## New blocks
+
+**Block A — axis identity** (`axis_identity.py`). Maps the token-space
+Fiedler vector into activation space so it is comparable across layers and
+checkpoints, and asks whether it is distinguishable from the cloud's leading
+variance geometry.
+
+Note what this block does *not* ask. Its first version tested the axis
+against the mean token direction; that is unreachable by construction,
+because the Fiedler vector is orthogonal to the Laplacian's trivial
+eigenvector and `X^T f` therefore cancels the shared mean component
+(measured |cos| between 0.000 and 0.085 across all fixtures). Asking it would
+have repeated the Block 0 defect above. Redundancy is asked against centered
+PC1 and the top-k PC subspace, with `1/sqrt(d)` reported beside every cosine.
+
+**Boundary vs unclustered** (`border_vs_noise` in Block 2). Crosses the
+per-token distance from the Fiedler boundary against HDBSCAN's noise labels.
+Both quantities already existed; nothing had crossed them. This is the Phase
+5c question — whether the unclustered population is the boundary population —
+answered with a rank AUC.
+
+## Checkpoint axis
+
+The design has no training-step axis anywhere, so a Pythia pilot renders as N
+unrelated models. `aggregate_by_checkpoint` groups families and reports
+against log10(step+1), and `cross_checkpoint_axis_rotation` /
+`axis_settling_step` ask when the Fiedler axis reaches its trained direction
+— the quantity PREDICTIONS.md claim (b) needs, and the one thing in this
+phase that tracks the axis's *direction* rather than lambda_2's magnitude.
