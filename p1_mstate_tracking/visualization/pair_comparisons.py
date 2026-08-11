@@ -503,9 +503,15 @@ def plot_energy_trajectory_pair(
     Interaction energy E_β vs. layer, one panel per β found in
     energies.json — trained and random plotted together on each panel
     (trained solid, random dashed) instead of as two separate per-model
-    figures, so the same β panel shows directly whether the dip Theorem
-    3.4 predicts away is training-induced or already present at
+    figures, so the same β panel shows directly whether the dip eq. (3.6)
+    predicts away is training-induced or already present at
     initialization.
+
+    Citation note: monotone E_β is eq. (3.6) for (SA) and Lemma 3.7 for
+    (USA), under Q^T K = I and V = +I_d. Proposition 3.4 is a different
+    result (uniform measure minimizes E_β, Diracs maximize it) and was
+    previously mis-cited here. A dip is the signature of the repulsive
+    regime the paper treats at V = -I_d (§3.2, §9.1), not a falsification.
     """
     plt.rcParams.update(BLOG_STYLE)
     key_t, key_r = (trained_model, prompt), (random_model, prompt)
@@ -551,7 +557,8 @@ def plot_energy_trajectory_pair(
 
     fig.suptitle(
         f"Interaction energy vs. depth — {trained_model} vs {random_model} | {prompt}\n"
-        f"Theorem 3.4 predicts monotone increase  ·  yellow band = plateau window",
+        f"eq. (3.6) predicts monotone increase (V=+I)  ·  dip = repulsive regime "
+        f"(V=-I, §9.1)  ·  yellow band = plateau window",
         fontsize=12, fontweight="bold",
     )
     out_dir.mkdir(parents=True, exist_ok=True)

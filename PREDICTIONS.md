@@ -50,3 +50,141 @@ stops the sweep if it fails) rather than just noted and moved past.
 
 Not yet adjudicated — the replication gate (item 6) has not run. This file exists to make
 sure that when it does, the prediction was on record first.
+
+---
+
+# Phase 1c registered predictions
+
+Committed **before any Phase 1c code is written or run**, for the same reason the three claims
+above were: these are re-analyses of artifacts already on disk, which makes it trivially easy
+to fit the prediction to the data afterward. Same rule applies — no edits after seeing
+results, dated addenda only.
+
+All six follow from re-reading Geshkovski et al. (arXiv:2312.10794v5) against what this
+project already measures; the derivations are in `MATH.md` (paper results marked **[P]**, ours
+**[U]**). None of them require a forward pass except where noted.
+
+| ID | Prediction | Falsifier | Instrument | Cost |
+|---|---|---|---|---|
+| **P-γ1** | Layer-wise `ip_mean` on prompts with $n \ll d$ tracks $\gamma_{\beta_{\rm eff}}(T_{\rm eff}(\ell))$ from (6.9) at step 0, and departs from it monotonically with training | The residual at step 0 is already as large as at step 143k | 1c-B | [R+W] |
+| **P-γ2** | $T_{\rm eff} \ll t^\ast \approx 4.2$ for all prompts and all checkpoints — the network never integrates far enough to collapse | $T_{\rm eff} \gtrsim 4$ with no collapse observed, i.e. genuine resistance | 1c-A | [R] |
+| **P-H1** | Layer-0 tokens lie in an open hemisphere at every checkpoint (Wendel gives probability 1 for $d > n$, which all 8 prompts satisfy) | Infeasible at some checkpoint ⇒ the embedding layer actively breaks the cone condition | 1c-E | [R] |
+| **P-S1** | Trained cluster centroids are closer to a spherical $t$-design than step-0 centroids — low-order Gegenbauer moments smaller | No difference between trained and step-0 ⇒ the repulsive-limit story is unsupported | 1c-F | [R] |
+| **P-T1** | Heads classified $\lambda_1(V) > 0$ simple show trimodal $\langle \varphi_1, x_i\rangle$ (Table 1, row 2: three parallel hyperplanes) | Unimodal ⇒ Table 1 does not transfer past the $z_i = e^{-tV}x_i$ rescaling | 2d-D3 | [R+W] |
+| **P-M1** | Energy-monotonicity violations concentrate in heads far from $Q^\top K$ symmetric and $V = Q^\top K$ | No correlation ⇒ violations are not explained by leaving the gradient-flow regime | 2d-D1 | [W] |
+
+## Why each one is worth pre-committing
+
+**P-γ2 first, because it can invalidate a headline.** Blog 1's claim is that trained weights
+resist collapse. That claim silently compares the observed state against $t = \infty$. A
+residual block is a forward-Euler step of the paper's ODE with step size $h_\ell =
+\|P^\perp_{x_\ell}(\Delta x_\ell)\|/\|x_\ell\|$, so the right comparison is against
+$\gamma_\beta(T_{\rm eff})$ with $T_{\rm eff} = \sum_\ell h_\ell$. Integrating (6.9) at
+$n = 467$ puts $\gamma_\beta = 0.9$ at $t^\ast \approx 4.2$, essentially independent of
+$\beta$ across two decades. If a 24-layer network accumulates $T_{\rm eff} \ll 4$, part of
+what we have been calling resistance is depth. The prediction is stated in the direction that
+would *hurt* us, deliberately.
+
+**P-γ1 is the residual, not the fit.** The deliverable is not "does the curve match" but the
+shape of the gap between observed `ip_mean` and the identity-weight trajectory run for the
+observed amount of time. That gap is the part of the layer-wise dynamics learned weights are
+responsible for, and it is the only version of "resistance" that is a measured quantity
+rather than a comparison against an idealization.
+
+**P-H1 is stated as near-certain on purpose.** Wendel's theorem (Thm 6.7) gives probability 1
+for $d > n$, and Lemma 6.4's proof uses *only* positivity of the attention weights — which
+softmax guarantees — so its hypothesis is entirely a condition on the initial configuration.
+The interesting outcome is therefore the failure or the near-failure: infeasibility, or
+feasibility with a margin $\max_w \min_i \langle x_i, w\rangle$ near zero, would mean the
+embedding layer is doing something specific to escape a regime that otherwise forces
+exponential collapse. Report the margin, not just the boolean.
+
+**P-S1 gives "resistance" a target geometry.** If the trained model sits in the repulsive
+regime, §9.1 does not predict a diffuse spread — it predicts a *sharp configuration* (Def.
+9.1): few distinct pairwise inner products, and a spherical $(2m{-}1)$-design. Both halves are
+checkable on centroids, and the second reduces on the sphere to Gegenbauer moments
+$\frac{1}{n^2}\sum_{ij} C_k^\lambda(\langle x_i, x_j\rangle)$ vanishing for $1 \le k \le t$.
+This is the first time the project's central empirical claim has a named limit object.
+
+**P-T1 is the most falsifiable prediction available anywhere in the paper**, and it costs a
+projection and a histogram. Table 1 (§9.2) maps a classification we *already have* — the sign
+and multiplicity of $\lambda_1(V)$ per head, from `p2_eigenspectra` — onto a geometric
+statement about activations. Row 2 says a real, simple, positive top eigenvalue predicts
+concentration on three parallel hyperplanes normal to $\varphi_1$, i.e. trimodality of
+$\langle \varphi_1, x_i\rangle$.
+
+**P-M1 converts a falsification into a localization.** §3.4 makes (SA) a gradient flow in the
+reweighted metric only when $Q^\top K$ is symmetric *and* $V = Q^\top K$. Heads meeting both
+conditions **must** show monotone $E_\beta$; heads far outside carry no guarantee. So the
+right question is not whether the theorem is violated but whether the violations sit where the
+hypotheses fail. `p2b_imaginary/rotational_schur.py` already performs the
+symmetric/antisymmetric split this needs.
+
+## Adjudication order
+
+P-γ2 and P-γ1 first (1c-A, 1c-B): lowest cost, and the $T_{\rm eff}$ result determines whether
+the energy-monotonicity break is even the right thing to attribute, which gates Phase 2d. Then
+P-H1, P-S1. P-T1 and P-M1 last, since both need Phase 2 operators.
+
+---
+
+## Addendum — P-T1 amended
+
+**Recorded when the Phase 2d code was written, before any run.**
+
+P-T1 as registered above reads:
+
+> Heads classified $\lambda_1(V) > 0$ simple show trimodal
+> $\langle\varphi_1, x_i\rangle$ (Table 1, row 2)
+
+**That is not row 2's hypothesis.** Table 1's second row requires two conditions, and the
+registered wording carries only the first:
+
+| | condition | in the registered wording? |
+|---|---|---|
+| on $V$ | $\lambda_1(V) > 0$, simple | yes |
+| on $QK$ | $\langle Q\varphi_1, K\varphi_1\rangle > 0$, i.e. $\varphi_1^\top M_h \varphi_1 > 0$ | **no** |
+
+A head with a positive simple top eigenvalue but a negative QK form is not in row 2 at all.
+Testing it against row 2's conclusion would falsify a prediction the paper does not make —
+which is structurally the same error as the "Theorem 6.1: higher $d$ → faster convergence"
+verdict row this very update cycle retracted. Making it twice, in the same document, is worth
+recording rather than quietly fixing.
+
+**Amended statement.** Heads satisfying **both** row-2 conditions show trimodal
+$\langle\varphi_1, x_i\rangle$, with the three modes approximately equally spaced (the
+prediction is three *parallel* hyperplanes, so spacing regularity is part of it and the
+original wording omitted that too).
+
+**Amended falsifier.** Predominantly unimodal among heads meeting both conditions ⇒ Table 1's
+geometry does not transfer past the $z_i = e^{-tV}x_i$ rescaling. Before concluding that,
+check `rescaled_modality` at several candidate $t$: if trimodality appears at some $t > 0$ and
+not at $t = 0$, the structure is real and the rescaling is what hides it, which is a different
+conclusion.
+
+**Two adjudication constraints added at the same time, for the same reason — the original
+wording did not specify them and either could have been chosen after seeing results:**
+
+1. **A control arm is required.** Report the trimodal rate among row-2 candidates *and* among
+   non-candidates. If non-candidates are trimodal at the same rate, trimodality is a property
+   of the activations rather than of the classification, and a candidates-only number would
+   read as confirmation.
+2. **Adjudicate on `stable_n_modes` only** — the mode count that survives a bandwidth scan.
+   Any distribution can be made unimodal by over-smoothing and multimodal by under-smoothing,
+   so a mode count at a single bandwidth is a choice, not a measurement. `None` (no stable
+   count) is a legitimate outcome and must be reported as such rather than resolved.
+
+The `row2_candidate` flag in `p2d_operator_activation/table1_predictions.py` implements the
+amended condition; `row2_eigen_only_qk_fails` labels heads that would have been counted under
+the original wording, so the size of the error is recoverable from the output.
+
+**What is NOT amended.** The direction of the prediction is unchanged, and no falsifier has
+been weakened. If anything the amended version is harder to satisfy: it requires two operator
+conditions instead of one, equal spacing, a control arm, and bandwidth stability.
+
+---
+
+## Status
+
+Not yet adjudicated. Phase 1c and Phase 2d code exists and is validated on synthetic data; no
+sub-experiment has been run against Pythia artifacts.

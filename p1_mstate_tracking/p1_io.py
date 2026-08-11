@@ -156,7 +156,25 @@ def _save_geometry(results, run_dir):
             # separate key rather than replacing it: the two are not
             # interchangeable (see core/metrics.py effective_rank modes).
             "effective_rank_normed":    lr.get("effective_rank_normed"),
+            # D10 — the norm-only participation ratio, for the sink test.
+            # If this tracks effective_rank, the "rank collapse" is a sink
+            # count and carries no directional content.
+            "norm_participation_ratio": lr.get("norm_participation_ratio"),
+            # Which rank each degeneracy gate actually read, and whether it
+            # passed. Recorded per layer so a reloaded artifact can always
+            # reconstruct the gated layer set rather than re-deriving it
+            # from a constant that may since have changed.
+            "gate_rank":                lr.get("gate_rank"),
+            "gate_rank_mode":           lr.get("gate_rank_mode"),
+            "gate_passed":              lr.get("gate_passed"),
+            # The cumulant ladder: the non-redundant parameterization of
+            # what four E_beta columns encode. 1/PR = kappa2 + kappa1^2.
+            "gram_cumulants":           lr.get("gram_cumulants", {}),
             "cka_prev":                 lr.get("cka_prev"),
+            # CKA = overlap * sqrt(PR_l * PR_m). Persist both factors so a
+            # drop can be attributed to structure vs rank.
+            "cka_overlap":              lr.get("cka_overlap"),
+            "cka_rank_factor":          lr.get("cka_rank_factor"),
             "nn_stability":             lr.get("nn_stability"),
             "nn_indices":               lr.get("nn_indices", []),
             "pca_explained_variance":   lr.get("pca_explained_variance", []),
@@ -189,6 +207,15 @@ def _save_energies(results, run_dir):
             "layer":             lr["layer"],
             "energies":          {str(b): v for b, v in lr.get("energies", {}).items()},
             "energy_drop_pairs": edp,
+            # Residual of the cumulant-ladder reconstruction of E_beta
+            # against the measured value, per beta. Expected <1% for
+            # beta <= 2 and ~25% at beta = 5, where the MGF truncation
+            # fails (twelve moments are needed there, not three). Persisted
+            # so that failure is visible in the artifact rather than an
+            # unstated modelling assumption in the report.
+            "energy_moment_residual": {
+                str(b): v for b, v in lr.get("energy_moment_residual", {}).items()
+            },
         })
     _jdump({"model": results["model"], "prompt": results["prompt"],
             "n_layers": results["n_layers"], "layers": layers_out},
@@ -256,14 +283,47 @@ def _save_spectral(results, run_dir):
 
 
 def _save_sinkhorn(results, run_dir):
-    """Attention entropy and Sinkhorn statistics per layer."""
+    """
+    Attention entropy and Sinkhorn statistics per layer.
+
+    status-1 defect D2, fourth part — the artifact-contract hole that made
+    the per-head Fiedler section a rerun rather than a re-report. This
+    function previously persisted `fiedler_mean` only, while
+    `fiedler_per_head`, `fiedler_per_head_deviation` and `fiedler_baseline`
+    were computed in analyze_attention_sinkhorn and dropped on the floor.
+    reporting_p1._per_head_fiedler_profile reads sinkhorn["fiedler_per_head"]
+    and returns [] when it is absent, so the entire per-head section
+    silently vanished on any run regenerated from artifacts; it existed in
+    the pilot output only because that report was written in-session from
+    in-memory results.
+
+    The rule this enforces: if a quantity appears in a report, it is
+    persisted. A derived statistic that can only be computed in the session
+    that produced it is not a result.
+
+    Note this makes the FIX a re-report going forward, but it does not make
+    the EXISTING runs re-reportable — those artifacts do not contain the
+    per-head values. D2 still costs one rerun; it costs exactly one.
+    """
     layers_out = []
     for lr in results["layers"]:
         sk = lr.get("sinkhorn", {})
         layers_out.append({
             "layer":                       lr["layer"],
             "fiedler_mean":                sk.get("fiedler_mean"),
+            # --- D2: the three keys that were computed and never written ---
+            "fiedler_per_head":            sk.get("fiedler_per_head", []),
+            "fiedler_per_head_deviation":  sk.get("fiedler_per_head_deviation", []),
+            "fiedler_baseline":            sk.get("fiedler_baseline"),
+            "fiedler_causal_control_per_head": sk.get("fiedler_causal_control_per_head", []),
             "sinkhorn_cluster_count_mean": sk.get("sinkhorn_cluster_count_mean"),
+            "sinkhorn_cluster_counts":     sk.get("sinkhorn_cluster_counts", []),
+            # --- Branch and convergence tracing (D9 + silent fallbacks) ---
+            "sinkhorn_cluster_count_branches": sk.get("sinkhorn_cluster_count_branches", []),
+            "sinkhorn_fallback_fraction":  sk.get("sinkhorn_fallback_fraction"),
+            "sinkhorn_converged":          sk.get("sinkhorn_converged"),
+            "sinkhorn_n_iter":             sk.get("sinkhorn_n_iter"),
+            "sinkhorn_residual":           sk.get("sinkhorn_residual"),
             "row_col_balance_mean":        sk.get("row_col_balance_mean"),
             "attention_entropy_mean":      lr.get("attention_entropy_mean"),
             "attention_entropy_per_head":  lr.get("attention_entropy_per_head", []),

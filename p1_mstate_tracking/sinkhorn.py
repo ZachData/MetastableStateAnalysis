@@ -59,14 +59,50 @@ def sinkhorn_normalize(
     Single-head version — kept for external use and the Fiedler/cluster
     functions that operate on one matrix at a time.
     """
-    P = np.clip(A.copy().astype(np.float64), 1e-12, None)
-    for _ in range(max_iter):
+    P, _info = sinkhorn_normalize_with_info(A, max_iter=max_iter, tol=tol)
+    return P
+
+
+def sinkhorn_normalize_with_info(
+    A: np.ndarray,
+    max_iter: int = SINKHORN_MAX_ITER,
+    tol: float = SINKHORN_TOL,
+):
+    """
+    As sinkhorn_normalize, but returns (P, info) where info records whether
+    the iteration actually converged.
+
+    status-1 defect D9: the cap was hit silently. The n=20 causal baseline
+    needs 232 iterations to reach tol=1e-6, and the old cap was 100, so
+    every short-prompt run was returning a matrix with residual ~4.7e-4
+    while reporting nothing. The lambda_2 error is negligible for the
+    uniform baseline (0.108894 vs 0.108889) but real attention is more
+    peaked and converges more slowly, and no per-layer residual existed
+    anywhere in the artifact to check that against.
+
+    info keys: converged (bool), n_iter (int), residual (float, the final
+    max elementwise change), max_iter, tol.
+    """
+    P = np.clip(np.asarray(A).copy().astype(np.float64), 1e-12, None)
+    residual = float("inf")
+    n_iter = 0
+    converged = False
+    for it in range(max_iter):
         P_prev = P.copy()
         P      = P / P.sum(axis=1, keepdims=True)
         P      = P / P.sum(axis=0, keepdims=True)
-        if np.abs(P - P_prev).max() < tol:
+        residual = float(np.abs(P - P_prev).max())
+        n_iter = it + 1
+        if residual < tol:
+            converged = True
             break
-    return P
+    return P, {
+        "converged": bool(converged),
+        "n_iter": int(n_iter),
+        "residual": residual,
+        "max_iter": int(max_iter),
+        "tol": float(tol),
+    }
 
 
 def sinkhorn_normalize_batched(
@@ -85,14 +121,47 @@ def sinkhorn_normalize_batched(
     -------
     P : (n_heads, n_tokens, n_tokens)  doubly stochastic matrices
     """
-    P = np.clip(A.astype(np.float64), 1e-12, None)
-    for _ in range(max_iter):
+    P, _info = sinkhorn_normalize_batched_with_info(A, max_iter=max_iter, tol=tol)
+    return P
+
+
+def sinkhorn_normalize_batched_with_info(
+    A: np.ndarray,
+    max_iter: int = SINKHORN_MAX_ITER,
+    tol: float = SINKHORN_TOL,
+):
+    """
+    As sinkhorn_normalize_batched, but returns (P, info).
+
+    The batched loop breaks on the max residual ACROSS ALL HEADS, so a
+    single slow head holds every head in the iteration — which is the
+    correct behaviour, but it means a per-head residual is the only way to
+    know which head was responsible. info["residual_per_head"] carries it.
+    """
+    P = np.clip(np.asarray(A).astype(np.float64), 1e-12, None)
+    residual = float("inf")
+    per_head = None
+    n_iter = 0
+    converged = False
+    for it in range(max_iter):
         P_prev = P.copy()
         P     /= P.sum(axis=2, keepdims=True)   # row-normalise all heads
         P     /= P.sum(axis=1, keepdims=True)   # col-normalise all heads
-        if np.abs(P - P_prev).max() < tol:
+        delta = np.abs(P - P_prev)
+        per_head = delta.reshape(delta.shape[0], -1).max(axis=1)
+        residual = float(per_head.max())
+        n_iter = it + 1
+        if residual < tol:
+            converged = True
             break
-    return P
+    return P, {
+        "converged": bool(converged),
+        "n_iter": int(n_iter),
+        "residual": residual,
+        "residual_per_head": (per_head.tolist() if per_head is not None else []),
+        "max_iter": int(max_iter),
+        "tol": float(tol),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -143,25 +212,45 @@ def sinkhorn_cluster_count(P: np.ndarray, min_gap_ratio: float = 0.1) -> int:
     Returns
     -------
     k : int ≥ 1
+
+    See sinkhorn_cluster_count_traced for the branch-recording version.
+    status-1's design note applies here: on a model where no clear eigengap
+    EVER exists, the "fallback" is the whole metric, and nothing in the
+    output distinguished the two branches.
+    """
+    return sinkhorn_cluster_count_traced(P, min_gap_ratio)[0]
+
+
+def sinkhorn_cluster_count_traced(P: np.ndarray, min_gap_ratio: float = 0.1):
+    """
+    As sinkhorn_cluster_count, but returns (k, branch) where branch is one
+    of: "degenerate_n" (n < 2), "uniform_spectrum" (eigenvalue range below
+    1e-6), "hard_threshold_fallback" (no gap exceeded min_gap_ratio, so the
+    pre-Fix-8 >0.5 count was used), or "eigengap".
+
+    The design principle this implements: any filter, gate, or fallback
+    whose behaviour depends on the data must record what it did in the
+    artifact, because the alternative is a curve that looks like a finding
+    and is partly a filter.
     """
     eigs = np.real(np.linalg.eigvals(P))
     eigs = np.sort(eigs)[::-1]          # descending
     n    = len(eigs)
     if n < 2:
-        return 1
+        return 1, "degenerate_n"
 
     gap_sizes  = np.abs(np.diff(eigs))  # |λ_i − λ_{i+1}|
     eig_range  = float(eigs[0] - eigs[-1])
 
     if eig_range < 1e-6:
-        return 1                         # uniform spectrum — no structure
+        return 1, "uniform_spectrum"     # no structure
 
     largest_gap_pos = int(np.argmax(gap_sizes))
     if gap_sizes[largest_gap_pos] / eig_range < min_gap_ratio:
         # No clear gap — fall back to hard threshold
-        return max(1, int((eigs > 0.5).sum()))
+        return max(1, int((eigs > 0.5).sum())), "hard_threshold_fallback"
 
-    return max(1, largest_gap_pos + 1)
+    return max(1, largest_gap_pos + 1), "eigengap"
 
 
 # ---------------------------------------------------------------------------
@@ -264,18 +353,38 @@ def analyze_attention_sinkhorn(
     col_sums        = attn.sum(axis=1)                   # (n_heads, n)
     row_col_balance = np.std(col_sums, axis=1).tolist()  # (n_heads,)
 
-    # All heads normalised in one batched call
-    P_all = sinkhorn_normalize_batched(attn)             # (n_heads, n, n)
+    # All heads normalised in one batched call. D9: the convergence info is
+    # now captured rather than discarded, so a run that hit the iteration
+    # cap is visible in the artifact instead of silently returning a matrix
+    # that is not doubly stochastic.
+    P_all, sk_info = sinkhorn_normalize_batched_with_info(attn)   # (n_heads, n, n)
 
-    fiedler_vals   = [fiedler_value(P_all[h])          for h in range(n_heads)]
-    cluster_counts = [sinkhorn_cluster_count(P_all[h]) for h in range(n_heads)]
+    fiedler_vals = [fiedler_value(P_all[h]) for h in range(n_heads)]
+    counts_and_branches = [sinkhorn_cluster_count_traced(P_all[h]) for h in range(n_heads)]
+    cluster_counts   = [c for c, _ in counts_and_branches]
+    cluster_branches = [b for _, b in counts_and_branches]
 
     result = {
         "fiedler_mean":                float(np.mean(fiedler_vals)),
         "fiedler_per_head":            fiedler_vals,
         "sinkhorn_cluster_count_mean": float(np.mean(cluster_counts)),
         "sinkhorn_cluster_counts":     cluster_counts,
+        # Which branch produced each head's count. On a model where no
+        # clear eigengap ever exists, "hard_threshold_fallback" IS the
+        # metric, and that has to be readable from the artifact.
+        "sinkhorn_cluster_count_branches": cluster_branches,
+        "sinkhorn_fallback_fraction": float(
+            sum(1 for b in cluster_branches if b == "hard_threshold_fallback") / max(n_heads, 1)
+        ),
         "row_col_balance_mean":        float(np.mean(row_col_balance)),
+        # D9 — convergence diagnostics, per layer.
+        "sinkhorn_converged":     sk_info["converged"],
+        "sinkhorn_n_iter":        sk_info["n_iter"],
+        "sinkhorn_residual":      sk_info["residual"],
+        "sinkhorn_residual_max_head": (
+            int(np.argmax(sk_info["residual_per_head"]))
+            if sk_info["residual_per_head"] else -1
+        ),
     }
 
     # ------------------------------------------------------------------
@@ -297,7 +406,7 @@ def analyze_attention_sinkhorn(
         row_sums    = attn_masked.sum(axis=2, keepdims=True)
         row_sums    = np.where(row_sums < 1e-12, 1.0, row_sums)
         attn_masked = attn_masked / row_sums                # re-normalise rows
-        P_ctrl      = sinkhorn_normalize_batched(attn_masked)
+        P_ctrl, _   = sinkhorn_normalize_batched_with_info(attn_masked)
         result["fiedler_causal_control_per_head"] = [
             fiedler_value(P_ctrl[h]) for h in range(n_heads)
         ]

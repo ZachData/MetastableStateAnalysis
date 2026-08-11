@@ -40,7 +40,10 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 
-from core.config import BETA_VALUES, DISTANCE_THRESHOLDS, DEGENERATE_RANK_THRESHOLD
+from core.config import (
+    BETA_VALUES, DISTANCE_THRESHOLDS, DEGENERATE_RANK_THRESHOLD,
+    DEGENERATE_RANK_MODE,
+)
 from core.models import layernorm_to_sphere
 from core.model_family import is_causal_model, model_family
 from core.metrics import (
@@ -55,6 +58,11 @@ from core.metrics import (
     energy_violation_severity,
     ENERGY_VIOLATION_REL_TOL,
     fiedler_and_eigengap as spectral_eigengap_k,
+    # D10 / cumulant-ladder additions
+    norm_participation_ratio,
+    gram_cumulants,
+    energy_from_cumulants,
+    linear_cka_decomposed,
 )
 from .sinkhorn import analyze_attention_sinkhorn
 from .clustering import (
@@ -204,17 +212,44 @@ def analyze_trajectory(
         normed = layernorm_to_sphere(activations).numpy()   # (n_tokens, d)
         G      = normed @ normed.T                          # (n_tokens, n_tokens)
 
-        # --- Fix 8: both rank variants ---
-        # Raw: captures scale + directional collapse; used for all gates.
-        # Normed: measures directional spread on the sphere only; for reporting.
+        # --- Fix 8 + D10: both rank variants, and an explicit gate key ---
+        # Raw:    entropy rank of the unnormalized cloud. Mixes directional
+        #         collapse with residual-stream norm growth. In the
+        #         near-orthogonal limit it degenerates to the participation
+        #         ratio of the norm distribution alone (core/metrics.py,
+        #         moment section), i.e. it becomes a sink count.
+        # Normed: directional spread on the sphere only. This is the
+        #         quantity the theory is about, and per D10 it is now what
+        #         every degeneracy GATE reads, not just what gets reported.
+        # norm_pr: (sum n_i^2)^2 / sum n_i^4 — zero directional content by
+        #         construction. Reported next to raw rank so the sink
+        #         hypothesis is testable directly rather than by inference:
+        #         if raw rank tracks norm_pr, the "rank collapse" is sinks.
         lr["effective_rank"]        = effective_rank_from_raw(activations)
         lr["effective_rank_normed"] = effective_rank_from_normed(normed)
+        lr["norm_participation_ratio"] = norm_participation_ratio(activations)
+
+        # The single value every gate below reads. Recorded per layer so a
+        # reloaded artifact can always reconstruct which layers were gated
+        # and on what basis.
+        gate_rank = (lr["effective_rank_normed"] if DEGENERATE_RANK_MODE == "normed"
+                     else lr["effective_rank"])
+        lr["gate_rank"]      = float(gate_rank)
+        lr["gate_rank_mode"] = DEGENERATE_RANK_MODE
+        lr["gate_passed"]    = bool(gate_rank >= DEGENERATE_RANK_THRESHOLD)
 
         # --- CKA vs previous layer ---
         # Fix 8: gate uses DEGENERATE_RANK_THRESHOLD (=2) unified constant.
         # Note: prev_normed is NOT updated here — deferred until after energy drops.
-        if prev_normed is not None and lr["effective_rank"] >= DEGENERATE_RANK_THRESHOLD:
+        if prev_normed is not None and lr["gate_passed"]:
             lr["cka_prev"] = linear_cka(normed, prev_normed)
+            # D10 companion: CKA = overlap * sqrt(PR_l * PR_m), so a drop
+            # can be a genuine change in pairwise structure OR a change in
+            # effective rank. Both factors are persisted; read `cka_overlap`
+            # when the question is "did the representation change."
+            _cka_d = linear_cka_decomposed(normed, prev_normed)
+            lr["cka_overlap"]     = _cka_d["overlap"]
+            lr["cka_rank_factor"] = _cka_d["rank_factor"]
         else:
             lr["cka_prev"] = float("nan")
 
@@ -237,11 +272,42 @@ def analyze_trajectory(
         # --- Interaction energies ---
         lr["energies"] = interaction_energies_batched(G, beta_values)
 
+        # --- Cumulant ladder (the non-redundant parameterization) ---
+        # E_beta is the MGF of the pairwise-cosine distribution, so four
+        # beta columns are a redundant encoding of that distribution's first
+        # few moments. kappa_1 (common mode), kappa_2 (spread), kappa_3
+        # (asymmetry) are the independent quantities, with 1/PR = k2 + k1^2.
+        # Computed here from the full Gram rather than from the histogram so
+        # the off-diagonal->full conversion error (which is an order of
+        # magnitude at n=20) never enters; the histogram path in
+        # core/metrics.py exists for re-analysing runs already on disk.
+        _cum = gram_cumulants(G)
+        lr["gram_cumulants"] = {
+            "kappa1": _cum["kappa1"], "kappa2": _cum["kappa2"],
+            "kappa3": _cum["kappa3"], "pr_rank": _cum["pr_rank"],
+        }
+        # Residual of the two-term moment approximation against measured
+        # E_beta, per beta. Expected to be <1% for beta <= 2 and ~25% at
+        # beta = 5 (the MGF truncation fails there — see
+        # energy_from_cumulants). Persisting it makes that failure visible
+        # in the artifact instead of being a silent modelling assumption.
+        lr["energy_moment_residual"] = {}
+        for _b in beta_values:
+            _approx = energy_from_cumulants(_cum["kappa1"], _cum["kappa2"],
+                                            _cum["kappa3"], _b)
+            _meas = lr["energies"].get(float(_b), float("nan"))
+            _den = abs(_meas) if abs(_meas) > 1e-15 else float("nan")
+            lr["energy_moment_residual"][float(_b)] = {
+                "two_term":   _approx["two_term"],
+                "three_term": _approx["three_term"],
+                "rel_err_two_term": float(abs(_approx["two_term"] - _meas) / _den),
+            }
+
         # --- Energy drop localization ---
         # Fix 2 + Fix 8: relative threshold + unified gate.
         # prev_normed still points to the PREVIOUS layer here (bug fix: the
         # update is deferred to after this block).
-        if prev_energies is not None and lr["effective_rank"] >= DEGENERATE_RANK_THRESHOLD:
+        if prev_energies is not None and lr["gate_passed"]:
             drops = {}
             for beta in beta_values:
                 e_prev = prev_energies.get(beta, float("nan"))

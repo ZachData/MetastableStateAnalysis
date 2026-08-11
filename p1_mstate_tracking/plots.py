@@ -689,8 +689,11 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path) -> dict:
     # backward-stability guarantee in terms of the input perturbation, so
     # eig_frac_pos_real / eig_frac_neg_real are unreliable near the zero
     # crossing when the input has already been quantised — and those, with
-    # eig_spectral_radius, are what status-1's Thm 6.1 falsification rests
-    # on. Singular values are far more forgiving; the eigenvalues are not.
+    # eig_spectral_radius, are what the attractive/repulsive regime call
+    # rests on (§3.2, §9.1, and Table 1 in §9.2). Formerly described here as
+    # supporting status-1's "Thm 6.1" falsification, which is a mis-citation:
+    # Thm 6.1 is qualitative and dimension-only.
+    # Singular values are far more forgiving; the eigenvalues are not.
     # ------------------------------------------------------------------
     weight_dtype = dtype_name(model_dtype(model))
     if model_dtype(model) not in (torch_float32, torch_float64):
@@ -699,7 +702,8 @@ def analyze_value_eigenspectrum(model, model_name: str, save_dir: Path) -> dict:
             f"{weight_dtype}. eig_frac_pos_real / eig_frac_neg_real / "
             f"eig_spectral_radius from a reduced-precision V are not "
             f"trustworthy near zero. Re-run with --dtype float32 (the "
-            f"default) before using these numbers for the Thm 6.1 claim.",
+            f"default) before using these numbers for any "
+            f"attractive/repulsive regime call (§3.2, §9.1, Table 1).",
             stacklevel=2,
         )
 

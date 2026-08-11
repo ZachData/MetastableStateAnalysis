@@ -14,6 +14,71 @@ across consecutive layers, metastability doesn't survive at this scale and the p
 It didn't. The criterion passed on GPT-2/BERT/ALBERT and passes again on Pythia-410M — all
 216 runs of the checkpoint pilot show plateaus.
 
+## What the theory actually claims
+
+The paragraph above said the paper "proves that they converge to a single cluster, passing
+through metastable multi-cluster states on the way." The first half is proved. **The second
+half is Problem 1, which the paper poses as open**, writing that it observes the behaviour in
+numerics and is not able to explain it theoretically. Its supporting evidence is Figure 4, at
+$d = 2$, $\beta = 4$ (two clusters) and $\beta = 9$ (three).
+
+The distinction is load-bearing here, for two reasons.
+
+**First, it changes what a pass means.** Plateaus in 216 runs do not confirm a theorem; they
+are evidence bearing on a conjecture. A phase whose falsification criterion tests an open
+problem is doing something worthwhile, but it is not replication and should not be written as
+though a proved statement had been checked.
+
+**Second, we are outside the regime the conjecture's evidence comes from.** Figure 3 shows the
+metastable zone — the $(d,\beta)$ band where clustering probability is strictly between 0 and
+1 — narrowing as $d$ grows and vanishing by $d \approx 512$, which the paper attributes to
+Theorem 6.9's concentration of all pairwise inner products onto $\gamma_\beta(t)$. Pythia-410M
+runs at $d = 1024$ with $n \le 512$.
+
+So the criterion is restated: **does the plateau phenomenon the paper conjectures at low $d$
+and high $\beta$ survive at $d = 1024$ under learned weights?** We observe that it does, which
+means either our plateaus are a different object from the paper's metastability, or the
+identity-weight concentration argument fails badly once weights are learned. Phase 1c's
+$\gamma_\beta$ null model is the instrument that separates these: it integrates (6.9) at each
+run's own $(n, \beta_{\rm eff})$, reparameterizes by effective integration time, and reports
+the residual against observed `ip_mean`.
+
+The other citations this doc inherited are corrected in `MATH.md` §9. The two that mattered
+for design decisions: monotone $E_\beta$ is eq. (3.6) / Lemma 3.7, not Proposition 3.4, and
+it is proved for **(SA)** — the normalized dynamics — so the "monotonicity is USA-only" hedge
+that appeared in earlier drafts is dropped. Theorem 6.1 is qualitative ($d \ge 3$ at any
+$\beta$); the rate results are Theorems 6.3 and 6.9.
+
+## The sphere assumption is a measurement, not a convention
+
+The theory lives on $\mathbb{S}^{d-1}$ because layer normalization, in continuous time,
+becomes the tangent projection $P^\perp_x y = y - \langle x,y\rangle x$. But RMS-norm
+multiplies by a *trained diagonal matrix*, so the true state space is a time-varying
+axis-aligned ellipsoid. The paper sets that matrix to $I$ — and justifies it empirically
+(§2.2): in ALBERT XLarge v2 the diagonal is essentially constant across layers, mean $0.44$,
+sd $0.008$.
+
+**That is a measurement, and it is reproducible on any model.** Which reframes what
+`core/ln_frame.py` is for. It has been described in this project as a departure from the
+paper's frame; it is the opposite — it is the paper's own licensing check, run on a model
+where it may fail. If Pythia's LayerNorm $\gamma$ has wide dynamic range per layer, the
+correct manifold is the ellipsoid and **every sphere-frame metric in this phase inherits a
+distortion**, including `ip_mean`, `ip_mass_near_1`, and the interaction energy.
+
+Two further consequences follow from the same place, and both are Phase 1c sub-experiment D:
+
+- Plain LayerNorm ($\gamma = 1$, $\beta_{\rm LN} = 0$) is *exactly* sphere projection in the
+  mean-zero subspace: $\mathrm{LN}(x) = \sqrt{d}\,P_{\mathbf 1}x/\|P_{\mathbf 1}x\|$,
+  constant norm $\sqrt d$. So the LN frame structurally restores uniform token weights and
+  removes the sink domination that D10 identifies in raw effective rank. This is a reason to
+  prefer the LN frame that has nothing to do with fidelity to the paper.
+- The learned LN *bias* adds a fixed vector to every token — pure common mode. It inflates
+  $\langle G\rangle$ by roughly $\|\beta_{\rm LN}\|^2$ regardless of input, and
+  $\langle G\rangle/2$ is the dominant term in the small-$\beta$ expansion of $E_\beta$.
+  **The learned LN bias puts a floor under the interaction energy that has nothing to do with
+  the tokens**, which is a candidate confound for every absolute energy number this phase
+  reports.
+
 ## What changed: the object of study is now a trajectory
 
 The GPT-2-era design swept *architectures* — 7 models × 8 prompts, with ALBERT run at four
@@ -30,7 +95,10 @@ Pythia-410M all three answers are surprising:
 - **Energy monotonicity is not destroyed by randomization — it is destroyed by training.**
   At step 0 there are 3 violations across 8 prompts at every $\beta$. By step 512 there are
   64. The GPT-2 run's "Theorem 3.4 falsified universally, including under random weights" was
-  a statement about GPT-2's initialization, not about transformers.
+  a statement about GPT-2's initialization, not about transformers — and it cited the wrong
+  result. Monotonicity is eq. (3.6) for (SA) and Lemma 3.7 for (USA); Proposition 3.4
+  characterizes the extremizers of $E_\beta$ (uniform measure is the unique global minimizer,
+  Diracs are the maximizers) and says nothing about trajectories.
 - **The transitions do not co-locate.** Effective rank moves at steps 8–32. Energy breaks at
   256–512. Plateau onset becomes content-driven at exactly 512. Fiedler deviation crosses
   zero between 1000 and 3000. A single-checkpoint study necessarily reports these as one
@@ -46,8 +114,8 @@ contains a true step-0 init. The v2 plan's two-baseline policy already required 
 `pythia-1.4b-random` (norm-matched to the final checkpoint) separate from step-0 init,
 because GPT-NeoX's init variance-scaling is not comparable to GPT-2's and attraction dynamics
 scale with weight norms. The pilot strengthens that: step 0 is not merely a stand-in for
-"random," it is the only checkpoint in the entire sweep where the paper's energy theorem
-holds. It has to be its own object.
+"random," it is the only checkpoint in the entire sweep where the network sits in the
+attractive regime eq. (3.6) describes. It has to be its own object.
 
 ## Why the prompt set and controls are what they are
 

@@ -40,9 +40,18 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 #   Pythia checkpoints are stored fp16 on the Hub. float32 is an exact
 #   upcast; bfloat16 is a lossy re-quantisation (fp16 has 10 mantissa bits,
 #   bf16 has 7). The V eigenspectrum is eigvals() of a non-normal matrix,
-#   so eig_frac_pos_real / eig_frac_neg_real / eig_spectral_radius — the
-#   quantities status-1's Thm 6.1 falsification rests on — degrade with
-#   input precision in a way singular values do not.
+#   so eig_frac_pos_real / eig_frac_neg_real / eig_spectral_radius degrade
+#   with input precision in a way singular values do not.
+#
+#   These quantities were previously described as carrying status-1's
+#   "Thm 6.1" falsification. That was a mis-citation twice over: Thm 6.1 is
+#   the qualitative statement that d>=3 suffices at any beta, and nothing
+#   about V's spectrum bears on it. What the sign structure of V's
+#   eigenvalues actually decides is the ATTRACTIVE/REPULSIVE regime
+#   (§3.2 and §9.1: V = +I_d gives increasing E_beta, V = -I_d decreasing)
+#   and which row of Table 1 (§9.2) a head falls under. Both are sign
+#   determinations near zero, which is exactly where reduced precision
+#   fails, so the guard stands — it just guards a different claim.
 #
 # "auto" restores the pre-fix behaviour (bfloat16 on CUDA, float32 on CPU).
 # Whatever is set here is written to experiment.txt and to every
@@ -70,7 +79,14 @@ ALBERT_SNAPSHOTS      = list(range(6, 62, 2))  # P1-6: dense sweep for phase tra
 # Legacy subset for quick runs (--fast-albert or manual override)
 ALBERT_SNAPSHOTS_LEGACY = [12, 24, 36, 48]
 
-SINKHORN_MAX_ITER = 100
+# Raised from 100. The n=20 causal baseline needs 232 iterations to reach
+# SINKHORN_TOL; at iteration 100 the residual is 4.7e-4 and the cap was hit
+# silently on every short-prompt run (status-1 D9). The lambda_2 error was
+# negligible for the *uniform* baseline (0.108894 vs 0.108889 converged),
+# but real attention is more peaked and converges more slowly, and nothing
+# recorded a per-layer residual. sinkhorn_normalize* now return the residual
+# and the iteration count alongside P; see p1_mstate_tracking/sinkhorn.py.
+SINKHORN_MAX_ITER = 500
 SINKHORN_TOL      = 1e-6
 SPECTRAL_MAX_K    = 15
 # Single degeneracy gate threshold used by CKA, NN-stability, and energy-drop
@@ -79,8 +95,44 @@ SPECTRAL_MAX_K    = 15
 # Below this the token cloud is a near-point-mass on the sphere (rank ≈ 1),
 # making NN assignment float-noise and CKA centering noise-dominated.
 # At rank 2 the cloud is still 2-D and both metrics remain meaningful.
-# Raise to 3 via this single constant if post-rerun rank-2 CKA looks erratic.
+#
+# WHICH RANK THIS READS — status-1 defect D10.
+# The gate's own justification ("a near-point-mass ON THE SPHERE") is a
+# statement about DIRECTIONAL collapse, so it must be evaluated on
+# effective_rank_normed. It was previously evaluated on raw effective rank,
+# which core/metrics.py's moment section shows is 1/<s^2>_w with
+# norm-squared weights — in the near-orthogonal limit it degenerates to the
+# participation ratio of the norm distribution alone, carrying zero
+# directional content. Three attention sinks in two hundred tokens take raw
+# rank from ~112 to ~3.4 with the geometry untouched.
+#
+# Because this is a GATE and not a reported column, reading raw rank made
+# the set of layers entering every gated statistic — energy violations,
+# CKA, NN-stability, the Fiedler mean — move with each checkpoint's sink
+# structure. Late checkpoints on short_heterogeneous have raw MinRank
+# 1.06–1.28 and were being gated off entirely on that basis.
+#
+# The threshold value below is stated on the NORMED scale and is not
+# comparable to the old raw-scale 2. Normed effective rank on this sweep
+# spans a different range; re-derive from the actual distribution before
+# treating any specific value as calibrated. Set to 2 as a starting point
+# because the geometric argument (a 2-D cloud is still meaningful for CKA
+# and NN assignment) is scale-free, but this is the weakest-justified
+# constant in the phase and is flagged as such.
 DEGENERATE_RANK_THRESHOLD = 2
+
+# Which key the degeneracy gates read. "normed" is frame-correct per the
+# argument above. Set to "raw" only to reproduce pre-D10 numbers; every
+# artifact records this value so a gate change can never be an invisible
+# term in a cross-run comparison.
+DEGENERATE_RANK_MODE = "normed"
+
+# Layer-inclusion gate for the per-head Fiedler profile
+# (reporting_p1._per_head_fiedler_profile, formerly a hardcoded default of
+# 10.0 read against RAW rank). Same D10 argument: the docstring justifies
+# the gate by directional collapse, so it reads the normed key. Stated on
+# the normed scale; re-derive before trusting the value.
+FIEDLER_ACTIVE_RANK_THRESHOLD = 10.0
 
 # Token-count sweep targets for --length-sweep mode.
 # wiki_paragraph is truncated at word boundaries to each of these approximate
