@@ -86,7 +86,10 @@ def test_phase6_dissociation_gated_off(tiny_phase6_out_dir):
     attempted and failed — confirms the gate itself works, matching
     test_phase6_wiring.py's existing unit-level coverage of the same gate,
     but exercised here through the real CLI path end-to-end."""
-    candidates = list((tiny_phase6_out_dir / "sub").glob("*dissociation*"))
+    # *.json only: save_subresult writes BOTH {name}.json and
+    # {name}.summary.txt, so a bare *dissociation* glob also picked up the
+    # plain-text summary and json.load choked on its first character.
+    candidates = list((tiny_phase6_out_dir / "sub").glob("*dissociation*.json"))
     for c in candidates:
         with open(c) as f:
             data = json.load(f)

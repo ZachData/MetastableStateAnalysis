@@ -264,11 +264,26 @@ def rank_trajectories(phase1_runs: dict) -> list:
     Returns
     -------
     ranked : list of candidate dicts, sorted descending by total_score.
+
+    Events come from `trajectory.json -> cluster_tracking.events`, NOT from
+    the loaded run's `events` key. Phase 1 emits two different event schemas
+    and `load_phase1_run["events"]` is the other one — the Phase 3 bridge
+    `events.json`, normalised by `p1_io._load_events` into
+    `{"type": "merge", "layer_name": str, "layer_from": str}` with no
+    `layer_to` and no `merges`. `_merge_event_for_trajectory` reads both of
+    those, so on any run with at least one merge layer it raised
+    `KeyError: 'layer_to'`, and on a run with none it returned None for every
+    trajectory — the merge criterion (weight 3.0) never contributed either
+    way. This is blocker 1 / B11 in PHASE5_PYTHIA.md, on the legacy
+    selection path.
     """
+    from p5_single_mstate_analysis.anchors import load_cluster_tracking
+
     candidates = []
     for prompt_key, run in phase1_runs.items():
         trajs = run.get("trajectories", [])
-        events = run.get("events", [])
+        run_dir = run.get("run_dir")
+        events = load_cluster_tracking(run_dir)["events"] if run_dir else []
         hdb = run.get("hdbscan_labels") or []
         metrics = run.get("metrics", {})
         if not trajs or hdb is None or len(hdb) == 0:

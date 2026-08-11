@@ -148,14 +148,21 @@ def save_decomposed_per_head(
         attn_deltas_head_{h} : (n_layers, n_tokens, d_model) for head h
     """
     import torch
-    from core.config import DEVICE
 
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    # The model's OWN device, not core.config.DEVICE. A caller that hands us
+    # a CPU model on a CUDA box (any from_pretrained without an explicit
+    # .to(), which is what the smoke fixtures do) otherwise gets cuda inputs
+    # against cpu weights and an index_select device mismatch inside the
+    # embedding. This is the idiom the rest of the project already uses
+    # (core/models.py, core/sublayer_streams.py, causal_tests.py).
+    device = next(model.parameters()).device
+
     inputs = tokenizer(
         text, return_tensors="pt", truncation=True, max_length=512
-    ).to(DEVICE)
+    ).to(device)
 
     blocks, get_proj, get_heads, conv1d = _locate_attn_projection(model)
 
@@ -178,8 +185,8 @@ def save_decomposed_per_head(
             make_pre_proj_hook(layer_store)))
 
     with torch.no_grad():
-        with torch.autocast(device_type=DEVICE, dtype=torch.bfloat16,
-                            enabled=(DEVICE == "cuda")):
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16,
+                            enabled=(device.type == "cuda")):
             model(**inputs, output_hidden_states=True)
 
     for h_obj in hooks:

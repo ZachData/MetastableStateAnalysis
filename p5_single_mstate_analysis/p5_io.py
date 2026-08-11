@@ -350,13 +350,16 @@ def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
     Call sites that previously passed a phase2i_dir must now pass phase2_dir
     (the Phase 2 output directory, e.g. results/phase2).
 
-    NOTE: this contract does not match TestLoadPhase2i in
-    tests/test_phase5_inputs.py, which writes files like
-    rotational_albert_xlarge_v2.npz containing V_sym/schur_T directly and
-    expects them merged from disk — the commented-out method below. That
-    divergence predates this file's cleanup and is a genuine open question
-    (does anything in p2b still persist those NPZs?), not something this
-    rename resolves. Flagged for a separate decision; not touched here.
+    RESOLVED: an earlier note here flagged the mismatch with
+    tests/test_phase5_inputs.py's TestLoadPhase2i — which wrote files like
+    `rotational_albert_xlarge_v2.npz` holding V_sym/schur_T and expected them
+    merged from disk — as an open question ("does anything in p2b still
+    persist those NPZs?"). Nothing does. The only Phase 2 weight artifacts
+    written anywhere are `ov_weights_{stem}.npz`, `ov_decomp_{stem}.npz` and
+    `ov_projectors_{stem}.npz` (p2_eigenspectra/weights.py); p2b persists no
+    NPZ of its own. The disk-merge contract had no producer, so the
+    recompute-from-ov_weights path below is the real one and the tests were
+    rewritten against it.
     """
     from p2b_imaginary.rotational_rescaled import decompose_symmetric_antisymmetric
     from p2b_imaginary.rotational_schur import extract_schur_blocks
@@ -413,9 +416,13 @@ def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
         print(f"  [warn] no usable OV matrices in {weights_path}")
         return {}
 
-    # Run p2b analysis inline on each composed OV matrix
+    # Run p2b analysis inline on each composed OV matrix.
+    # keep_factors=True is REQUIRED: the Phase 2b rewrite made Schur factor
+    # retention opt-in (it was the bulk of that version's memory footprint),
+    # and schur_T / schur_Z below are absent without it.
     sa_list     = [decompose_symmetric_antisymmetric(OV) for OV in ov_matrices]
-    blocks_list = [extract_schur_blocks(OV)              for OV in ov_matrices]
+    blocks_list = [extract_schur_blocks(OV, keep_factors=True)
+                   for OV in ov_matrices]
 
     if is_per_layer:
         return {
@@ -436,51 +443,6 @@ def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
             "rotational_blocks": blocks["blocks_2x2"],
             "is_per_layer":      False,
         }
-
-# # old method, matches tests:
-# def load_phase2i(phase2_dir: Path, model_stem: str) -> dict:
-#     phase2_dir = Path(phase2_dir)
-#     if not phase2_dir.exists():
-#         return {}
-#
-#     stems = {model_stem, model_stem.replace("_", "-"), model_stem.replace("-", "_")}
-#     candidates: list[Path] = []
-#
-#     # Nested model subdir (hyphen or underscore form)
-#     for s in stems:
-#         subdir = phase2_dir / s
-#         if subdir.is_dir():
-#             candidates.extend(sorted(subdir.glob("*.npz")))
-#
-#     # Flat files at top level whose name contains either stem form
-#     for s in stems:
-#         candidates.extend(sorted(phase2_dir.glob(f"*{s}*.npz")))
-#
-#     # Deduplicate, preserve order
-#     seen, ordered = set(), []
-#     for p in candidates:
-#         if p not in seen:
-#             seen.add(p); ordered.append(p)
-#
-#     if not ordered:
-#         print(f"  [warn] no Phase 2i artifacts found for stem '{model_stem}' in {phase2_dir}")
-#         return {}
-#
-#     merged: dict = {}
-#     for p in ordered:
-#         try:
-#             data = np.load(p, allow_pickle=True)
-#         except Exception as e:
-#             print(f"  [warn] could not load {p}: {e}")
-#             continue
-#         for k in data.files:
-#             if k not in merged:   # first occurrence wins
-#                 merged[k] = data[k]
-#     return merged
-
-# ---------------------------------------------------------------------------
-# Phase 3 artifacts — crosscoder + prompt store
-# ---------------------------------------------------------------------------
 
 def load_phase3(
     checkpoint_dir: Path,
