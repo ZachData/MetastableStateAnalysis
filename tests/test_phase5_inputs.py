@@ -156,56 +156,100 @@ class TestFindPhase1RunsIterDepthCollision(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestLoadPhase2i(unittest.TestCase):
+    """
+    load_phase2i RECOMPUTES the S/A + Schur decomposition from Phase 2's
+    `ov_weights_{stem}.npz`; it does not merge pre-computed NPZs off disk.
+
+    These tests previously asserted the disk-merge contract — writing files
+    like `rotational_albert_xlarge_v2.npz` holding V_sym/schur_T and
+    expecting them merged. Nothing in the project ever wrote those. The only
+    Phase 2 weight artifacts produced anywhere are `ov_weights_{stem}.npz`,
+    `ov_decomp_{stem}.npz` and `ov_projectors_{stem}.npz`
+    (p2_eigenspectra/weights.py:910-920), and p2b persists no NPZ of its
+    own. So the old contract had no producer and the tests could only ever
+    pass against a hand-written fixture.
+
+    Worse, they hid a real bug: because the fixtures didn't match what the
+    loader looks for, it returned {} early and never reached the line that
+    reads blocks["schur_T"] — which raised KeyError for EVERY model, since
+    the Phase 2b rewrite made Schur-factor retention opt-in
+    (`keep_factors=True`). Rewritten against the contract that exists.
+    """
 
     def setUp(self):
         import tempfile, shutil
         self._tmpdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self._tmpdir)
-        self.p2i_dir = Path(self._tmpdir)
+        self.p2_dir = Path(self._tmpdir)
 
-    def test_nested_hyphen_subdir_discovered(self):
-        """NPZ inside p2i_dir/albert-xlarge-v2/ must be found for stem albert_xlarge_v2."""
-        model_subdir = self.p2i_dir / "albert-xlarge-v2"
-        _write_minimal_npz(
-            model_subdir / "schur_decomp_albert-xlarge-v2.npz",
-            V_sym=np.eye(4, dtype=np.float32),
-            V_asym=np.zeros((4, 4), dtype=np.float32),
-        )
-        result = load_phase2i(self.p2i_dir, "albert_xlarge_v2")
-        self.assertIn("V_sym", result)
-        self.assertIn("V_asym", result)
+    @staticmethod
+    def _shared_ov(d=4):
+        """ALBERT-style: per-head keys, composed into one shared V_eff."""
+        rng = np.random.default_rng(0)
+        return {f"ov_head_{h}": rng.standard_normal((d, d)).astype(np.float32)
+                for h in range(3)}
 
-    def test_wrong_model_subdir_not_loaded(self):
-        """NPZ files for gpt2-large must not appear when loading albert_xlarge_v2."""
-        model_subdir = self.p2i_dir / "gpt2-large"
-        _write_minimal_npz(
-            model_subdir / "schur_decomp_gpt2-large.npz",
-            V_sym=np.eye(4, dtype=np.float32),
-        )
-        result = load_phase2i(self.p2i_dir, "albert_xlarge_v2")
-        self.assertEqual(result, {})
+    def test_shared_weights_recomputed_from_ov_weights(self):
+        _write_minimal_npz(self.p2_dir / "ov_weights_albert-xlarge-v2.npz",
+                           **self._shared_ov())
+        result = load_phase2i(self.p2_dir, "albert_xlarge_v2")
+        for k in ("V_sym", "V_asym", "schur_T", "schur_Z",
+                  "rotational_blocks", "is_per_layer"):
+            self.assertIn(k, result)
+        self.assertFalse(result["is_per_layer"])
+
+    def test_schur_factors_are_present_not_keyerror(self):
+        """
+        Regression: extract_schur_blocks drops schur_T/schur_Z unless
+        keep_factors=True. Without it this raised KeyError('schur_T') for
+        every model, on every call.
+        """
+        _write_minimal_npz(self.p2_dir / "ov_weights_albert-xlarge-v2.npz",
+                           **self._shared_ov())
+        result = load_phase2i(self.p2_dir, "albert_xlarge_v2")
+        self.assertEqual(result["schur_T"].shape, (4, 4))
+        self.assertEqual(result["schur_Z"].shape, (4, 4))
+
+    def test_sym_antisym_reconstruct_the_composed_ov(self):
+        """S + A == V_eff, so the decomposition describes the real operator."""
+        heads = self._shared_ov()
+        _write_minimal_npz(self.p2_dir / "ov_weights_albert-xlarge-v2.npz", **heads)
+        result = load_phase2i(self.p2_dir, "albert_xlarge_v2")
+        composed = sum(heads.values())
+        np.testing.assert_allclose(
+            result["V_sym"] + result["V_asym"], composed, atol=1e-5)
+
+    def test_per_layer_ov_total_yields_lists(self):
+        """GPT-2-style (n_layers, d, d) ov_total → one entry per layer."""
+        rng = np.random.default_rng(1)
+        _write_minimal_npz(self.p2_dir / "ov_weights_gpt2-large.npz",
+                           ov_total=rng.standard_normal((3, 4, 4)))
+        result = load_phase2i(self.p2_dir, "gpt2_large")
+        self.assertTrue(result["is_per_layer"])
+        self.assertEqual(len(result["V_sym"]), 3)
+        self.assertEqual(len(result["schur_T"]), 3)
+
+    def test_underscore_stem_resolves_hyphenated_file(self):
+        """Stem arrives underscored; the file on disk is hyphenated."""
+        _write_minimal_npz(self.p2_dir / "ov_weights_albert-xlarge-v2.npz",
+                           **self._shared_ov())
+        self.assertIn("V_sym", load_phase2i(self.p2_dir, "albert_xlarge_v2"))
+
+    def test_wrong_model_not_loaded(self):
+        """gpt2-large weights must not satisfy a request for albert_xlarge_v2."""
+        _write_minimal_npz(self.p2_dir / "ov_weights_gpt2-large.npz",
+                           ov_total=np.eye(4))
+        self.assertEqual(load_phase2i(self.p2_dir, "albert_xlarge_v2"), {})
 
     def test_missing_dir_returns_empty_not_exception(self):
-        result = load_phase2i(self.p2i_dir / "nonexistent", "albert_xlarge_v2")
+        result = load_phase2i(self.p2_dir / "nonexistent", "albert_xlarge_v2")
         self.assertEqual(result, {})
 
-    def test_flat_npz_at_top_level_also_found(self):
-        """If a file with the stem name exists directly in phase2i_dir, it should load."""
-        _write_minimal_npz(
-            self.p2i_dir / "rotational_albert_xlarge_v2.npz",
-            schur_T=np.eye(8, dtype=np.float32),
-        )
-        result = load_phase2i(self.p2i_dir, "albert_xlarge_v2")
-        self.assertIn("schur_T", result)
-
-    def test_multiple_npz_files_merged(self):
-        """Keys from separate NPZ files are merged; first occurrence wins on collision."""
-        subdir = self.p2i_dir / "albert-xlarge-v2"
-        _write_minimal_npz(subdir / "part1_albert-xlarge-v2.npz", V_sym=np.eye(4))
-        _write_minimal_npz(subdir / "part2_albert-xlarge-v2.npz", schur_Z=np.eye(4))
-        result = load_phase2i(self.p2i_dir, "albert_xlarge_v2")
-        self.assertIn("V_sym", result)
-        self.assertIn("schur_Z", result)
+    def test_no_usable_matrices_returns_empty_not_exception(self):
+        """An NPZ with neither per-head keys nor ov_total degrades, not raises."""
+        _write_minimal_npz(self.p2_dir / "ov_weights_albert-xlarge-v2.npz",
+                           something_else=np.eye(4))
+        self.assertEqual(load_phase2i(self.p2_dir, "albert_xlarge_v2"), {})
 
 
 # ---------------------------------------------------------------------------

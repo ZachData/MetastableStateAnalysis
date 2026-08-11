@@ -52,11 +52,28 @@ def _read_source(relpath: str) -> str:
 
 
 def _step_re_pattern() -> str:
-    """The `_STEP_RE` pattern literal, lifted from checkpoints.py source."""
+    """
+    The checkpoint-step grammar, as the real compiled object.
+
+    This used to scrape the `_STEP_RE = re.compile(...)` literal out of
+    checkpoints.py source, because importing that module pulled in
+    matplotlib through its package `__init__`. The grammar has since moved
+    to `core/model_family.py` — which is stdlib-only for exactly this
+    reason — and checkpoints.py now re-exports it as `_STEP_RE`. So the
+    scrape found nothing and the assert fired.
+
+    Importing the real object is strictly better than a regex over text:
+    it tests the contract rather than the spelling.
+    """
+    from core.model_family import CHECKPOINT_STEP_RE
+    return CHECKPOINT_STEP_RE.pattern
+
+
+def _checkpoints_reexports_step_re() -> bool:
+    """checkpoints.py must still expose the grammar under `_STEP_RE` — its
+    four figure consumers call that name."""
     src = _read_source(_CHECKPOINTS_PY)
-    m = re.search(r"_STEP_RE\s*=\s*re\.compile\(r?[\"'](.+?)[\"']\)", src)
-    assert m, "could not locate _STEP_RE in checkpoints.py"
-    return m.group(1)
+    return re.search(r"CHECKPOINT_STEP_RE as _STEP_RE", src) is not None
 
 
 def _family_baselines(base: str, models):
@@ -244,14 +261,19 @@ class TestRandomBaseline:
         `checkpoints._STEP_RE` is what puts a model on the step axis. The
         control must not match it, or it would be drawn as a checkpoint.
 
-        The pattern is read from source. Importing
-        `p1_mstate_tracking.visualization.checkpoints` executes that
-        package's `__init__`, which currently raises ModuleNotFoundError on
-        `.style` — see the note at the bottom of this file.
+        The grammar itself now lives in `core/model_family.py` (stdlib-only,
+        so it imports here); checkpoints.py re-exports it under the
+        `_STEP_RE` name its figure consumers use. Both halves are asserted,
+        so moving the grammar again without re-exporting it fails loudly
+        rather than silently taking the control off the step axis.
         """
         pattern = _step_re_pattern()
         assert re.compile(pattern).match("pythia-1.4b-random") is None
         assert re.compile(pattern).match("pythia-1.4b-step143000") is not None
+        assert _checkpoints_reexports_step_re(), (
+            "checkpoints.py no longer re-exports CHECKPOINT_STEP_RE as "
+            "_STEP_RE — its four figure consumers call that name"
+        )
 
     def test_both_baseline_slots_resolve_and_are_distinct(self, cfgs):
         """The two-baseline policy end to end, against the resolver's own rule."""

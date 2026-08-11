@@ -461,7 +461,11 @@ class TestAgainstRealModel:
 
         layer0 = model.gpt_neox.layers[0]
 
-        def hook(_mod, inp, _out):
+        # A forward PRE-hook is called with (module, args) — no output exists
+        # yet. The three-argument signature is the full forward-hook one, and
+        # torch raised TypeError on every call. The pre-hook is the right
+        # choice here: this captures attention's INPUT, i.e. LN1(x).
+        def hook(_mod, inp):
             captured["ln1_in"] = inp[0].detach().float().numpy()[0]
 
         handle = layer0.attention.register_forward_pre_hook(hook)
