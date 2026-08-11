@@ -69,22 +69,79 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from p2b_imaginary.rotational_schur import (
     extract_schur_blocks,
-    rotation_energy_fractions,
+    complex_energy_fraction,
     rotation_angle_stats,
     henrici_nonnormality,
-    build_rotation_plane_projectors,
-    rotation_depth_profile,
+    top_rotation_planes,
+    layer_scalars,
     analyze_rotational_spectrum,
     summary_to_json,
 )
 from p2b_imaginary.rotational_rescaled import (
     decompose_symmetric_antisymmetric,
-    rescaled_trajectory_component,
+    build_rescalers,
+    rescaled_trajectory,
     compare_rescaled_frames,
     interpret_comparison,
     analyze_rotational_rescaling,
     comparison_to_json,
 )
+
+# ── Phase 2b rewrite (commit beb20d4) compatibility shims ──────────────────
+# Three functions this file originally tested were withdrawn from
+# rotational_schur.py in that rewrite. ffn_rotation.py and
+# rotation_hemisphere.py were NOT updated to match (PLAN_2b.md items 12/13
+# track that as separate, not-yet-done work) -- they still expect the old
+# (d, d)-projector-dict shape build_rotation_plane_projectors used to
+# produce. These shims reconstruct that shape / those names purely for
+# this test file, without touching production code, so this suite keeps
+# exercising the same functions it always did.
+
+def rotation_energy_fractions(block_data: dict) -> dict:
+    """Pre-rewrite shape, reconstructed from complex_energy_fraction (the
+    corrected per-eigenvalue/Henrici convention -- see rotational_schur.py
+    module docstring item 2)."""
+    ef = complex_energy_fraction(block_data)
+    return {
+        "rotational_fraction": ef["complex_energy_fraction"],
+        "signed_fraction": ef["real_energy_fraction"],
+        "n_real": ef["n_real"],
+        "n_complex": ef["n_complex"],
+        "frac_complex_dims": ef["dim_complex_fraction"],
+    }
+
+
+def build_rotation_plane_projectors(block_data: dict, top_k: int = 32) -> dict:
+    """Pre-rewrite shape, reconstructed from top_rotation_planes' (d, 2)
+    orthonormal bases. NOT how the current module represents planes (that
+    was the memory blowup item 1 in rotational_schur.py's docstring fixed)
+    -- this exists only so ffn_rotation.py/rotation_hemisphere.py, which
+    still consume the old shape, can be exercised here."""
+    tp = top_rotation_planes(block_data, top_k=top_k)
+    bases = tp["bases"]
+    projectors = [B @ B.T for B in bases]
+    d = block_data["d"]
+    combined_rotation = sum(projectors) if projectors else np.zeros((d, d))
+    real_subspace = np.eye(d) - combined_rotation
+    return {
+        "top_k_planes": bases,
+        "top_k_projectors": projectors,
+        "top_k_rhos": tp["rhos"],
+        "top_k_thetas": tp["thetas"],
+        "combined_rotation": combined_rotation,
+        "real_subspace": real_subspace,
+        "dim_rotation": tp["dim_rotation"],
+        "dim_real": tp["dim_real"],
+    }
+
+
+def rotation_depth_profile(ov_list, layer_names) -> dict:
+    """Pre-rewrite shape: rotation_depth_profile was folded into
+    layer_scalars()/analyze_rotational_spectrum's per_layer list."""
+    return {"per_layer": [
+        {**layer_scalars(OV, name), "layer_name": name}
+        for OV, name in zip(ov_list, layer_names)
+    ]}
 from p2b_imaginary.fiedler_tracking import (
     extract_fiedler_per_layer,
     hemisphere_assignments,
@@ -315,11 +372,18 @@ class TestRotationEnergyFractions(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestRotationAngleStats(unittest.TestCase):
+    """
+    FIX: rotation_angle_stats no longer returns a per-block "thetas" list
+    or "frac_expanding"/"frac_contracting" -- current keys are "n_complex"
+    (count) and "frac_rho_above_one" (rho > 1, the scale-convention
+    threshold; see the function's docstring for why this isn't named
+    "expanding").
+    """
 
     def test_count_matches_n_complex(self):
         blocks, thetas = _make_schur_blocks_pure_rotation()
         stats = rotation_angle_stats(blocks)
-        self.assertEqual(len(stats["thetas"]), len(thetas))
+        self.assertEqual(stats["n_complex"], len(thetas))
 
     def test_mean_theta_correct(self):
         thetas = [0.3, 0.7, 1.1, 1.5]
@@ -330,15 +394,15 @@ class TestRotationAngleStats(unittest.TestCase):
     def test_no_expanding_for_unit_rho(self):
         blocks, _ = _make_schur_blocks_pure_rotation()
         stats = rotation_angle_stats(blocks)
-        # Rho = 1.0 exactly: neither expanding nor contracting
-        self.assertAlmostEqual(stats["frac_expanding"] + stats["frac_contracting"], 0.0, places=8)
+        # Rho = 1.0 exactly: none above the threshold.
+        self.assertAlmostEqual(stats["frac_rho_above_one"], 0.0, places=8)
 
     def test_expanding_for_scaled_rotation(self):
-        """Scale a rotation by 2× → all blocks expanding."""
+        """Scale a rotation by 2x -> all blocks have rho > 1."""
         OV = 2.0 * _rot_d([0.5, 1.0, 1.5, 2.0])
         blocks = extract_schur_blocks(OV)
         stats = rotation_angle_stats(blocks)
-        self.assertAlmostEqual(stats["frac_expanding"], 1.0, places=5)
+        self.assertAlmostEqual(stats["frac_rho_above_one"], 1.0, places=5)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -444,26 +508,38 @@ class TestRotationDepthProfile(unittest.TestCase):
 
 
 class TestAnalyzeRotationalSpectrum(unittest.TestCase):
+    """
+    FIX: analyze_rotational_spectrum's return shape changed in the Phase
+    2b rewrite. There is no longer a single result-level "blocks"/
+    "angle_stats"/"energy_fractions"/"henrici"/"plane_projectors"/
+    "depth_profile" -- per-layer scalars are flattened into
+    result["per_layer"] (a list of layer_scalars() dicts, one per layer,
+    each already carrying complex_energy_fraction/theta_mean/
+    henrici_absolute etc. plus "planes" when top_k_planes > 0), and
+    result["summary"] holds the cross-layer reduction.
+    """
 
     def test_shared_model_keys(self):
         ov_data = _make_ov_data_shared()
         result = analyze_rotational_spectrum(ov_data, top_k_planes=2)
-        for k in ["is_per_layer", "blocks", "angle_stats", "energy_fractions",
-                  "henrici", "plane_projectors"]:
+        for k in ["is_per_layer", "layer_names", "per_layer", "summary"]:
             self.assertIn(k, result)
 
     def test_per_layer_model_keys(self):
         ov_data = _make_ov_data_per_layer()
         result = analyze_rotational_spectrum(ov_data, top_k_planes=2)
         self.assertTrue(result["is_per_layer"])
-        for k in ["blocks", "angle_stats", "energy_fractions", "henrici",
-                  "plane_projectors", "depth_profile"]:
+        for k in ["per_layer", "summary"]:
             self.assertIn(k, result)
+        for rec in result["per_layer"]:
+            for k in ["complex_energy_fraction", "theta_mean",
+                      "henrici_absolute", "planes"]:
+                self.assertIn(k, rec)
 
     def test_per_layer_length(self):
         ov_data = _make_ov_data_per_layer()
         result = analyze_rotational_spectrum(ov_data, top_k_planes=2)
-        self.assertEqual(len(result["blocks"]), N_LAYERS)
+        self.assertEqual(len(result["per_layer"]), N_LAYERS)
 
     def test_summary_to_json_serialisable(self):
         import json
@@ -476,8 +552,9 @@ class TestAnalyzeRotationalSpectrum(unittest.TestCase):
         OV = _rot_d([0.3, 0.7, 1.1, 1.5])
         ov_data = _make_ov_data_shared(OV)
         result = analyze_rotational_spectrum(ov_data, top_k_planes=TOP_K)
-        ef = result["energy_fractions"]
-        self.assertAlmostEqual(ef["rotational_fraction"], 1.0, places=6)
+        self.assertAlmostEqual(
+            result["summary"]["complex_energy_fraction_mean"], 1.0, places=6
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -513,7 +590,7 @@ class TestDecomposeSymmetricAntisymmetric(unittest.TestCase):
         OV = self.OV + self.OV.T
         sa = decompose_symmetric_antisymmetric(OV)
         self.assertAlmostEqual(sa["A_frob"], 0.0, places=10)
-        self.assertAlmostEqual(sa["rotation_ratio"], 0.0, places=10)
+        self.assertAlmostEqual(sa["rotation_ratio_frobenius"], 0.0, places=10)
 
     def test_antisymmetric_input_zero_S(self):
         OV = self.OV - self.OV.T
@@ -522,7 +599,7 @@ class TestDecomposeSymmetricAntisymmetric(unittest.TestCase):
 
     def test_rotation_ratio_nonnegative(self):
         sa = decompose_symmetric_antisymmetric(self.OV)
-        self.assertGreaterEqual(sa["rotation_ratio"], 0.0)
+        self.assertGreaterEqual(sa["rotation_ratio_frobenius"], 0.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -530,29 +607,42 @@ class TestDecomposeSymmetricAntisymmetric(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestRescaledTrajectoryIdentity(unittest.TestCase):
-    """Zero matrix → expm(-0) = I → activations unchanged."""
+    """Zero matrix -> expm(-0) = I -> activations unchanged.
+
+    FIX: rescaled_trajectory_component (single matrix + per-call beta
+    scaling of that matrix, violations returned inline) was withdrawn in
+    the Phase 2b rewrite. rescaled_trajectory() takes precomputed
+    expm(-M) rescalers (via build_rescalers) with no beta involved --
+    beta now only scales the energy metric downstream, in
+    trajectory_scalars/count_violations_all_betas (p2b_energy.py), which
+    is a real architecture change and not just a rename. Tested directly
+    against the new two-step contract instead of faking the old one.
+    """
 
     def test_zero_matrix_identity_rescaling(self):
         acts = _unit_acts()
-        result = rescaled_trajectory_component(acts, np.zeros((D, D)), [1.0])
-        self.assertEqual(result["max_valid_layer"], N_LAYERS)
-        # n_violations should match original (no change)
-        self.assertGreaterEqual(result["n_violations"][1.0], 0)
+        rescalers = build_rescalers([np.zeros((D, D))])
+        result = rescaled_trajectory(acts, rescalers)
+        self.assertEqual(result["n_valid_layers"], N_LAYERS)
+        self.assertFalse(result["truncated"])
 
     def test_per_layer_zero_matrices(self):
         acts = _unit_acts()
-        matrices = [np.zeros((D, D))] * N_LAYERS
-        result = rescaled_trajectory_component(
-            acts, None, [1.0], is_per_layer=True, matrices_list=matrices
-        )
-        self.assertEqual(result["max_valid_layer"], N_LAYERS)
+        rescalers = build_rescalers([np.zeros((D, D))] * N_LAYERS)
+        result = rescaled_trajectory(acts, rescalers)
+        self.assertEqual(result["n_valid_layers"], N_LAYERS)
+        self.assertFalse(result["truncated"])
 
     def test_divergence_truncates(self):
+        """expm(-(-50*I)) = e^50 * I grows past RESCALE_OVERFLOW_LIMIT
+        within the first couple of layers."""
         acts = _unit_acts(n_layers=10)
-        M = 1000.0 * np.eye(D)
-        result = rescaled_trajectory_component(acts, M, [1.0])
-        self.assertLessEqual(result["max_valid_layer"], 10)
-        self.assertGreaterEqual(result["max_valid_layer"], 0)
+        rescalers = build_rescalers([-50.0 * np.eye(D)])
+        result = rescaled_trajectory(acts, rescalers)
+        self.assertTrue(result["truncated"])
+        self.assertEqual(result["truncation_reason"], "rescaler_overflow")
+        self.assertLess(result["n_valid_layers"], 10)
+        self.assertGreaterEqual(result["n_valid_layers"], 0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -560,60 +650,98 @@ class TestRescaledTrajectoryIdentity(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestCompareRescaledFrames(unittest.TestCase):
+    """
+    FIX: compare_rescaled_frames' return shape changed in the Phase 2b
+    rewrite. Top-level keys are now "frames"/"comparison"/"sa_decomp"/
+    "invariance"/"counting_rule"; the four named frames
+    (original/remove_full/remove_signed/remove_rotation) live under
+    result["frames"], not at the top level. "elim_rotation" no longer
+    exists in "comparison" -- remove_rotation was demoted to an
+    invariance CONTROL (result["invariance"]), not a causal comparison
+    pair (module docstring, "withdraw rotation_neutral"). Each
+    "comparison"[beta][pair] entry is now an elimination_rate() dict
+    ({"rate": float|None, "status": str, "n_original", "n_rescaled", ...}),
+    not a bare float -- "rate" is explicitly unclipped and can be None
+    when frames aren't comparable (frames_comparable in p2b_energy.py).
+    """
 
     def _run(self, ov_data):
         acts = _unit_acts()
-        return compare_rescaled_frames(acts, ov_data, beta_values=[1.0])
+        # gate_kind="none": count_violations_all_betas' normed_rank gate
+        # needs core.config.DEGENERATE_RANK_THRESHOLD, which imports torch;
+        # this suite is pure numpy (module docstring / project convention).
+        return compare_rescaled_frames(acts, ov_data, beta_values=[1.0],
+                                        gate_kind="none")
 
     def test_shared_model_keys(self):
         result = self._run(_make_ov_data_shared())
-        for k in ["original", "full_rescaled", "signed_only", "rotation_only",
-                  "sa_decomp", "comparison"]:
+        for k in ["frames", "comparison", "sa_decomp", "invariance",
+                  "counting_rule"]:
             self.assertIn(k, result)
 
     def test_per_layer_model_keys(self):
         result = self._run(_make_ov_data_per_layer())
-        for k in ["original", "full_rescaled", "signed_only", "rotation_only"]:
-            self.assertIn(k, result)
+        for k in ["original", "remove_full", "remove_signed", "remove_rotation"]:
+            self.assertIn(k, result["frames"])
 
     def test_n_violations_nonnegative(self):
         result = self._run(_make_ov_data_shared())
         comp = result["comparison"][1.0]
-        for k in ["n_original", "n_full_rescaled", "n_signed_only", "n_rotation_only"]:
-            self.assertGreaterEqual(comp[k], 0)
+        for pair_key in ["elim_full", "elim_signed"]:
+            res = comp[pair_key]
+            self.assertGreaterEqual(res["n_original"], 0)
+            self.assertGreaterEqual(res["n_rescaled"], 0)
 
-    def test_elim_rates_in_zero_one(self):
+    def test_elim_rates_are_finite_or_none(self):
         result = self._run(_make_ov_data_shared())
         comp = result["comparison"][1.0]
-        for k in ["elim_full", "elim_signed", "elim_rotation"]:
-            self.assertGreaterEqual(comp[k], -1e-6)
-            self.assertLessEqual(comp[k], 1.0 + 1e-6)
+        for pair_key in ["elim_full", "elim_signed"]:
+            rate = comp[pair_key]["rate"]
+            if rate is not None:
+                self.assertTrue(np.isfinite(rate))
+
+    def test_rotation_pair_not_in_comparison(self):
+        """remove_rotation is an invariance control, not a causal pair."""
+        result = self._run(_make_ov_data_shared())
+        comp = result["comparison"][1.0]
+        self.assertNotIn("elim_rotation", comp)
+        self.assertIsNotNone(result["invariance"])
 
 
 class TestInterpretComparison(unittest.TestCase):
+    """
+    FIX: interpret_comparison now reads comparison[beta]["elim_full"/
+    "elim_signed"] as elimination_rate()-shaped dicts (with "status" and
+    "rate" keys), not bare floats, and no longer classifies a
+    "rotation_neutral"/"rotation_contributes" category -- that
+    distinction is exactly what this rewrite's commit withdrew. Current
+    verdicts: no_violations, not_comparable, both_frames_inert,
+    signed_carries_full_v, signed_exceeds_full_v, full_v_exceeds_signed.
+    """
 
-    def _make_comp(self, elim_full, elim_signed, elim_rotation):
-        return {1.0: {
-            "n_original": 10, "n_full_rescaled": 0,
-            "n_signed_only": 0, "n_rotation_only": 10,
-            "elim_full": elim_full, "elim_signed": elim_signed,
-            "elim_rotation": elim_rotation,
-        }}
+    def _make_comp(self, elim_full, elim_signed, status="ok"):
+        def _res(rate):
+            return {"rate": rate, "status": status, "n_original": 10,
+                    "n_rescaled": 0}
+        return {1.0: {"elim_full": _res(elim_full), "elim_signed": _res(elim_signed)}}
 
-    def test_rotation_neutral_category(self):
-        comp = self._make_comp(1.0, 1.0, 0.0)
+    def test_both_frames_inert_category(self):
+        comp = self._make_comp(0.0, 0.0)
         result = interpret_comparison(comp)
-        self.assertIn("overall", result)
+        self.assertEqual(result["overall"], "both_frames_inert")
 
-    def test_rotation_contributes_category(self):
-        comp = self._make_comp(1.0, 0.5, 0.6)
+    def test_signed_carries_full_category(self):
+        comp = self._make_comp(0.9, 0.85)
         result = interpret_comparison(comp)
-        self.assertIn("overall", result)
+        self.assertEqual(result["overall"], "signed_carries_full_v")
+
+    def test_no_violations_category(self):
+        comp = self._make_comp(None, None, status="no_violations_to_eliminate")
+        result = interpret_comparison(comp)
+        self.assertEqual(result["overall"], "no_violations")
 
     def test_always_returns_overall(self):
-        comp = self._make_comp(
-            elim_full=0.0, elim_signed=0.0, elim_rotation=0.0,
-        )
+        comp = self._make_comp(0.0, 0.0)
         result = interpret_comparison(comp)
         self.assertIn("overall", result)
 
@@ -623,27 +751,28 @@ class TestAnalyzeRotationalRescaling(unittest.TestCase):
     def test_shared_model_output_keys(self):
         acts = _unit_acts()
         ov_data = _make_ov_data_shared()
-        result = analyze_rotational_rescaling(acts, ov_data)
+        result = analyze_rotational_rescaling(acts, ov_data, gate_kind="none")
         self.assertIn("frames", result)
         self.assertIn("interpretation", result)
 
     def test_per_layer_model_output_keys(self):
         acts = _unit_acts()
         ov_data = _make_ov_data_per_layer()
-        result = analyze_rotational_rescaling(acts, ov_data)
+        result = analyze_rotational_rescaling(acts, ov_data, gate_kind="none")
         self.assertIn("frames", result)
 
     def test_comparison_to_json_serialisable(self):
         import json
         acts = _unit_acts()
         ov_data = _make_ov_data_shared()
-        result = analyze_rotational_rescaling(acts, ov_data)
+        result = analyze_rotational_rescaling(acts, ov_data, gate_kind="none")
         j = comparison_to_json(result)
         json.dumps(j)
 
     def test_comparison_to_json_keys(self):
         acts = _unit_acts()
-        result = analyze_rotational_rescaling(acts, _make_ov_data_shared())
+        result = analyze_rotational_rescaling(acts, _make_ov_data_shared(),
+                                               gate_kind="none")
         j = comparison_to_json(result)
         self.assertIn("sa_decomp", j)
         self.assertIn("comparison", j)
@@ -1166,24 +1295,24 @@ class TestPhase2ArtifactContract(unittest.TestCase):
         ov_data = _make_ov_data_per_layer()
         result = analyze_rotational_spectrum(ov_data, top_k_planes=2)
         self.assertTrue(result["is_per_layer"])
-        self.assertEqual(len(result["blocks"]), N_LAYERS)
+        self.assertEqual(len(result["per_layer"]), N_LAYERS)
 
     def test_shared_ov_data_accepted_by_rescaling(self):
         acts = _unit_acts()
         ov_data = _make_ov_data_shared()
-        result = analyze_rotational_rescaling(acts, ov_data)
+        result = analyze_rotational_rescaling(acts, ov_data, gate_kind="none")
         self.assertIn("frames", result)
 
     def test_per_layer_ov_data_accepted_by_rescaling(self):
         acts = _unit_acts()
         ov_data = _make_ov_data_per_layer()
-        result = analyze_rotational_rescaling(acts, ov_data)
+        result = analyze_rotational_rescaling(acts, ov_data, gate_kind="none")
         self.assertIn("frames", result)
 
     def test_layer_name_preserved_in_depth_profile(self):
         ov_data = _make_ov_data_per_layer()
         result = analyze_rotational_spectrum(ov_data, top_k_planes=2)
-        depth_names = [p["layer_name"] for p in result["depth_profile"]["per_layer"]]
+        depth_names = [p["layer"] for p in result["per_layer"]]
         self.assertEqual(depth_names, ov_data["layer_names"])
 
 
@@ -1243,7 +1372,8 @@ class TestAllToJsonFunctions(unittest.TestCase):
     def test_comparison_to_json(self):
         import json
         acts = _unit_acts()
-        result = analyze_rotational_rescaling(acts, _make_ov_data_shared())
+        result = analyze_rotational_rescaling(acts, _make_ov_data_shared(),
+                                               gate_kind="none")
         json.dumps(comparison_to_json(result))
 
     def test_fiedler_to_json(self):

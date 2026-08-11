@@ -32,14 +32,10 @@ from p2_eigenspectra.subresult import SubResult
 
 from p2b_imaginary.rotational_schur import (
     extract_schur_blocks,
-    rotation_energy_fractions,
+    complex_energy_fraction,
     rotation_angle_stats,
     henrici_nonnormality,
-    build_rotation_plane_projectors,
-)
-from p2b_imaginary.rotational_rescaled import (
-    decompose_symmetric_antisymmetric,
-    rescaled_trajectory_component,
+    top_rotation_planes,
 )
 from p2b_imaginary.fiedler_tracking import (
     extract_fiedler_per_layer,
@@ -198,45 +194,59 @@ class TestHenriciNormal(unittest.TestCase):
 # ── 3. Rotation energy fractions — extremes ──────────────────────────────────
 
 class TestRotationEnergyFractionsExtreme(unittest.TestCase):
-    """rotational_fraction = 1.0 for pure rotation; 0.0 for diagonal."""
+    """complex_energy_fraction = 1.0 for pure rotation; 0.0 for diagonal.
+
+    FIX: rotational_schur.rotation_energy_fractions was withdrawn in the
+    Phase 2b rewrite (commit beb20d4) in favor of complex_energy_fraction,
+    the per-eigenvalue (Henrici) convention -- see that module's docstring
+    item 2. Keys "rotational_fraction"/"signed_fraction" are now
+    "complex_energy_fraction"/"real_energy_fraction".
+    """
 
     def test_pure_rotation_frac_is_one(self):
         M = _rot_d8([0.4, 0.8, 1.2, 1.6])
-        fracs = rotation_energy_fractions(extract_schur_blocks(M))
-        # FIX: was ["rot_frac"] / ["real_frac"], current keys are
-        # "rotational_fraction" / "signed_fraction"
-        self.assertAlmostEqual(fracs["rotational_fraction"], 1.0, places=6)
-        self.assertAlmostEqual(fracs["signed_fraction"], 0.0, places=6)
+        fracs = complex_energy_fraction(extract_schur_blocks(M))
+        self.assertAlmostEqual(fracs["complex_energy_fraction"], 1.0, places=6)
+        self.assertAlmostEqual(fracs["real_energy_fraction"], 0.0, places=6)
 
     def test_diagonal_frac_is_zero(self):
         M = np.diag([2.0, -1.0, 0.5, -3.0, 1.5, -0.5, 0.1, -2.5])
-        fracs = rotation_energy_fractions(extract_schur_blocks(M))
-        self.assertAlmostEqual(fracs["rotational_fraction"], 0.0, places=6)
-        self.assertAlmostEqual(fracs["signed_fraction"], 1.0, places=6)
+        fracs = complex_energy_fraction(extract_schur_blocks(M))
+        self.assertAlmostEqual(fracs["complex_energy_fraction"], 0.0, places=6)
+        self.assertAlmostEqual(fracs["real_energy_fraction"], 1.0, places=6)
 
     def test_fracs_sum_to_one(self):
-        """rotational_fraction + signed_fraction = 1.0 for any input matrix."""
+        """complex_energy_fraction + real_energy_fraction = 1.0 for any input."""
         rng = np.random.default_rng(17)
         for _ in range(5):
             M = rng.standard_normal((D, D))
-            fracs = rotation_energy_fractions(extract_schur_blocks(M))
+            fracs = complex_energy_fraction(extract_schur_blocks(M))
             self.assertAlmostEqual(
-                fracs["rotational_fraction"] + fracs["signed_fraction"], 1.0, places=8
+                fracs["complex_energy_fraction"] + fracs["real_energy_fraction"],
+                1.0, places=8
             )
 
 
 # ── 4. Rotation plane projectors — idempotency and symmetry ──────────────────
 
 class TestRotationPlaneProjectors(unittest.TestCase):
-    """Each projector P returned by build_rotation_plane_projectors must
-    satisfy P² = P (idempotent) and P = P^T (orthogonal projector)."""
+    """Each projector P built from top_rotation_planes' bases must satisfy
+    P² = P (idempotent) and P = P^T (orthogonal projector).
+
+    FIX: rotational_schur.build_rotation_plane_projectors was withdrawn in
+    the Phase 2b rewrite -- it materialized (d, d) projectors, which is
+    exactly the memory blowup that rewrite fixed (module docstring item 1).
+    top_rotation_planes returns (d, 2) orthonormal BASES instead; this test
+    reconstructs P = B @ B.T locally since the math property under test
+    (idempotency, symmetry, orthogonality) still applies to that
+    reconstruction.
+    """
 
     def _projectors(self, k=2):
         M = _rot_d8([0.3, 0.7, 1.1, 1.5])
         blocks = extract_schur_blocks(M)
-        # FIX: was build_rotation_plane_projectors(blocks, k=k) returning a list.
-        # Current API: keyword is "top_k", returns a dict; extract the projector list.
-        return build_rotation_plane_projectors(blocks, top_k=k)["top_k_projectors"]
+        bases = top_rotation_planes(blocks, top_k=k)["bases"]
+        return [B @ B.T for B in bases]
 
     def test_each_projector_is_idempotent(self):
         for i, P in enumerate(self._projectors(k=2)):
