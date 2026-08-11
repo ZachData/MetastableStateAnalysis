@@ -442,11 +442,80 @@ class TestAgainstRealModel:
         transformers = pytest.importorskip("transformers")
         torch = pytest.importorskip("torch")
         tok = transformers.AutoTokenizer.from_pretrained(self.MODEL)
-        model = transformers.AutoModelForCausalLM.from_pretrained(
-            self.MODEL, torch_dtype=torch.float32
-        )
+        # eager attention: sdpa/flash kernels do not materialise the
+        # attention matrix, and `output_attentions=True` is how this test
+        # gets at the model's own pre-softmax scores. Requesting it here
+        # rather than relying on HF's silent fall-back keeps the reference
+        # available regardless of what the installed default is.
+        kwargs = dict(torch_dtype=torch.float32)
+        try:
+            model = transformers.AutoModelForCausalLM.from_pretrained(
+                self.MODEL, attn_implementation="eager", **kwargs
+            )
+        except TypeError:          # transformers too old for the kwarg
+            model = transformers.AutoModelForCausalLM.from_pretrained(
+                self.MODEL, **kwargs
+            )
         model.eval()
         return transformers, torch, tok, model
+
+    @staticmethod
+    def _qkv_bias_per_head(attn, n_heads, d_head):
+        """
+        Per-head query/key biases from the fused `query_key_value.bias`.
+
+        Same interleaved layout `core.pythia_weights.split_qkv_gptneox`
+        documents for the weight — (n_heads, 3, head_size) — one dimension
+        fewer because the bias is 1-D. Written out here rather than imported
+        so the reference stays independent of the code under test, which is
+        this file's tier-1 rule applied to tier 2.
+
+        Returns (bq, bk), each (n_heads, d_head), or (None, None) when the
+        projection is bias-free.
+        """
+        b = getattr(attn.query_key_value, "bias", None)
+        if b is None:
+            return None, None
+        b = b.detach().cpu().float().numpy().reshape(n_heads, 3, d_head)
+        return b[:, 0, :], b[:, 1, :]
+
+    @staticmethod
+    def _per_row_fit(pred, log_probs, causal, prob_floor=1e-10, min_pts=3):
+        """
+        Regress recovered logits on predicted ones, one query row at a time.
+
+        softmax is invertible up to a per-row additive constant:
+            log(p_ij) = logit_ij - logsumexp_j(logit_i)
+        so `log(attn_probs)` IS the model's logit row, shifted. Fitting
+        `log_probs ~ a * pred + b` per row therefore has an exact expected
+        answer: a == 1 and correlation == 1. The reference comes purely
+        through the public `output_attentions` API, so it does not
+        re-implement (and cannot silently agree with) the code under test.
+
+        BOTH numbers are needed, and this is the whole reason the helper
+        returns a pair. Pearson is invariant to any positive affine
+        transform, so it validates direction — the frame, the fused-QKV
+        split, head orientation, rotary — and is completely blind to
+        `attn_scale`: a scale 2x too large still correlates at exactly
+        1.000000. The slope is what pins the magnitude (it comes back 0.5
+        for that 2x error, and 1/sqrt(head_size) when the scale is omitted
+        altogether).
+
+        Rows are dropped when too few keys survive the causal mask or the
+        underflow floor; the caller checks the surviving count so an
+        evaporated comparison cannot pass by default.
+        """
+        pearson, slope = [], []
+        for i in range(pred.shape[0]):
+            keep = (causal[i]
+                    & np.isfinite(log_probs[i])
+                    & (np.exp(log_probs[i]) > prob_floor))
+            if keep.sum() < min_pts:
+                continue
+            x, y = pred[i][keep], log_probs[i][keep]
+            pearson.append(np.corrcoef(x, y)[0, 1])
+            slope.append(np.polyfit(x, y, 1)[0])
+        return np.array(pearson), np.array(slope)
 
     def test_predicted_logits_match_hooked_logits(self):
         transformers, torch, tok, model = self._load()
@@ -471,7 +540,8 @@ class TestAgainstRealModel:
         handle = layer0.attention.register_forward_pre_hook(hook)
         try:
             with torch.no_grad():
-                out = model(**ids, output_hidden_states=True)
+                out = model(**ids, output_hidden_states=True,
+                            output_attentions=True)
         finally:
             handle.remove()
 
@@ -487,20 +557,67 @@ class TestAgainstRealModel:
             "considered."
         )
 
-        from core.weights import extract_qk_per_head
+        # extract_qk_per_head lives in p2_eigenspectra.weights; core.weights
+        # has never existed, and this was the only reference to it anywhere
+        # in the project.
+        from p2_eigenspectra.weights import extract_qk_per_head
         qk = extract_qk_per_head(model)
+        # GPT-NeoX is per-layer, so these index [layer][head]; layer 0 is
+        # the block hooked above.
+        assert qk["is_per_layer"]
         wq = qk["wq_per_head"][0]
         wk = qk["wk_per_head"][0]
-        n = rebuilt.shape[0]
-        mask = causal_pair_mask(n)
 
-        worst = 1.0
+        bq, bk = self._qkv_bias_per_head(
+            layer0.attention, card.n_heads, card.head_size)
+        assert bq is not None, (
+            "pythia-70m's query_key_value is expected to carry a bias; "
+            "without it the per-key bias term below cannot be checked"
+        )
+
+        # The model's own logits, recovered from its attention matrix.
+        assert out.attentions is not None, (
+            "output_attentions returned None — the attention implementation "
+            "did not materialise the attention matrix, so there is no "
+            "reference to compare against (see _load's eager request)"
+        )
+        attn_probs = out.attentions[0].detach().float().numpy()[0]  # (H, n, n)
+        n = rebuilt.shape[0]
+        causal = causal_pair_mask(n).astype(bool)
+        with np.errstate(divide="ignore"):
+            log_probs = np.log(attn_probs)
+
+        worst, rows_checked = 1.0, 0
+        worst_slope_err = 0.0
         for h in range(card.n_heads):
             pred = qk_logits_with_rope(
                 rebuilt, wq[h], wk[h], card.rotary_ndims, card.rope_base,
-                scale=card.attn_scale,
+                scale=card.attn_scale, bq=bq[h], bk=bk[h],
             )
-            # Real reference: recompute from the module's own projections.
-            fid = qk_prediction_fidelity(pred, pred, mask=mask)
-            worst = min(worst, fid["pearson"])
-        assert worst > 0.99
+            r, slope = self._per_row_fit(pred, log_probs[h], causal)
+            assert r.size, f"head {h}: no query row had enough usable keys"
+            rows_checked += r.size
+            worst = min(worst, float(r.min()))
+            worst_slope_err = max(worst_slope_err,
+                                  float(np.abs(np.median(slope) - 1.0)))
+
+        # Guard against the comparison evaporating: an all-dropped mask
+        # would otherwise leave `worst` at its 1.0 initialiser and pass.
+        assert rows_checked >= 4 * card.n_heads, (
+            f"only {rows_checked} query rows survived across "
+            f"{card.n_heads} heads — too few for this to mean anything"
+        )
+        assert worst > 0.99, (
+            f"weight-space logits diverge in DIRECTION from the model's own "
+            f"(worst per-row pearson {worst:.4f} over {rows_checked} rows). "
+            "Something in the frame, the fused-QKV split, the head "
+            "orientation or the rotary application is wrong. Note this "
+            "particular number says nothing about attn_scale — see the "
+            "slope assertion below."
+        )
+        assert worst_slope_err < 0.02, (
+            f"weight-space logits match in direction but not in MAGNITUDE "
+            f"(worst per-head median slope off by {worst_slope_err:.4f}; "
+            "expected 1.0). That is an attn_scale error — pearson cannot "
+            "see it, which is why the slope is asserted separately."
+        )
