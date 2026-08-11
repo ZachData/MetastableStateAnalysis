@@ -33,12 +33,30 @@ Weights only. No activations, no forward passes, no checkpoints to
 download beyond what Phase 2 already caches. P2 is the one policy item that
 can be closed today, independent of the frame card.
 
-What this does NOT reopen
---------------------------
-Phase 2b's causal conclusion. `elim_signed = 1.0` and `elim_rotation = 0.0`
-in all 35/35 runs are unaffected by how the complex fraction is counted —
-the rescaled-frame test does not consult the tolerance. State that next to
-any re-run so the result is not read as reopening `rotation_neutral`.
+What this does NOT reopen - CORRECTED 2026-08
+----------------------------------------------
+This section previously read: "Phase 2b's causal conclusion. `elim_signed =
+1.0` and `elim_rotation = 0.0` in all 35/35 runs are unaffected by how the
+complex fraction is counted - the rescaled-frame test does not consult the
+tolerance."
+
+The first clause is correct and the conclusion is wrong, for an unrelated
+reason. `elim_rotation = 0.0` is not a measurement at all: `A = (V - V^T)/2`
+is real antisymmetric, so `e^{-A}` is ORTHOGONAL, and every quantity the
+rescaled-frame test reads is a function of the Gram matrix `X X^T`, which an
+orthogonal map preserves exactly. Measured residual over 24 accumulated
+layers at d=1024 is ~1e-15, against a 1e-3 relative threshold. So
+`n_rotation_only == n_original` is forced by construction before any data is
+read, and `rotation_neutral` was never falsifiable in that frame. It is
+withdrawn; see `p2b_imaginary/rotational_rescaled.py` and `status-2b.md`.
+
+`elim_signed` is a real quantity and is being re-adjudicated - the old value
+was scored with an absolute 1e-6 threshold and a 3.0 rank gate rather than
+this project's relative 1e-3 and `DEGENERATE_RANK_THRESHOLD`.
+
+What this module says about the tolerance stands unchanged. The point of the
+correction is that a reader must not take this paragraph as a second
+endorsement of a withdrawn result.
 """
 
 from __future__ import annotations
@@ -112,9 +130,28 @@ def _default_frac_fn() -> Callable:
     """
     Lazy import so `core` does not acquire a dependency on a phase package.
     Pass `frac_fn` explicitly from the caller in phase code.
+
+    Repointed from `p2b_imaginary.layernorm_jacobian.rotational_fraction` to
+    `p2b_imaginary.rotational_schur.complex_energy_fraction_relative`. They
+    compute the same thing; Phase 2b had three functions named some variant of
+    "rotational fraction" and reported all of them under that name:
+
+      1. `rotational_schur.complex_energy_fraction` - Schur-block partition,
+         per-eigenvalue energy. What Block 1a now reports.
+      2. `rotational_schur.rotational_fraction_per_block` - the same partition
+         with rho^2 counted once per 2x2 block, which is what produced the
+         historical 84-97.5% figure. Kept under its own name so that number
+         stays checkable.
+      3. The relative eigenvalue criterion |Im| > tol*(|Re| + eps) - this one,
+         and the only one that is tolerance-sensitive, which is why it is what
+         item P2 is about.
+
+    Definition 3 now lives next to 1 and 2 in `rotational_schur`.
+    `layernorm_jacobian.rotational_fraction` should become a re-export of it
+    rather than a fourth copy.
     """
-    from p2b_imaginary.layernorm_jacobian import rotational_fraction
-    return rotational_fraction
+    from p2b_imaginary.rotational_schur import complex_energy_fraction_relative
+    return complex_energy_fraction_relative
 
 
 def complex_fraction_surface(M,

@@ -371,6 +371,90 @@ def phase2_weight_path(weights_dir, name: str, model_name: str) -> Path:
 
 
 # ---------------------------------------------------------------------------
+# Phase 2b — registered as part of the Pythia rerun. Previously unregistered:
+# every Phase 2b filename was hand-typed at the producer (`run_2i._write_subresult`)
+# and again at any consumer, which is the drift this module exists to end.
+#
+# Filenames are `phase2b_*`, not `phase2i_*`. INDEX.md left the rename
+# unscoped on the grounds that renaming a frozen artifact bought nothing —
+# true while the files were frozen, and no longer true now that they are
+# regenerated. The old names are listed in
+# `p2b_imaginary/p2b_io.LEGACY_COMBINED_NAMES` so a pre-rewrite run directory
+# can be RECOGNISED AND REFUSED rather than parsed as current output: the
+# counting rule changed underneath them.
+# ---------------------------------------------------------------------------
+
+PHASE2B = {
+    "block1a_rotational_spectrum": ArtifactSpec(
+        kind="json", filename="block1a_rotational_spectrum.json",
+        required_keys=("is_per_layer",),
+        description=(
+            "Schur block statistics per layer: complex/real counts, rotation "
+            "angles, spectral-energy fractions, Henrici non-normality. "
+            "Weights-only — no activations, no forward pass."
+        ),
+    ),
+    "block1b_rescaled_comparison": ArtifactSpec(
+        kind="json", filename="block1b_rescaled_comparison.json",
+        required_keys=("frames", "comparison", "counting_rule", "interpretation"),
+        key_shape_hint={
+            "frames.{frame}.n_valid_layers":
+                "int — truncation depth. Phase 2's verification item V1; "
+                "dropping it is what made V1 unanswerable from the artifact.",
+            "frames.remove_rotation.is_invariance_control":
+                "bool — true. e^{-A} is orthogonal, so this frame reproduces "
+                "`original` by construction. Never a causal result.",
+            "counting_rule":
+                "{rel_tol, gate_kind, gate_threshold, criterion} — the exact "
+                "rule every count in this file was scored with.",
+        },
+        description=(
+            "S/A rescaled-frame comparison. `comparison` holds elim_full and "
+            "elim_signed only; rates are unclipped and may be None (refused)."
+        ),
+    ),
+    "block2_hemispheric": ArtifactSpec(
+        kind="json", filename="block2_hemispheric.json",
+        description="Fiedler tracking + rotation-hemisphere alignment (conditional).",
+    ),
+    "block3_imaginary_ablation": ArtifactSpec(
+        kind="json", filename="block3_imaginary_ablation.json",
+        description=(
+            "Depth-swept ablation of the rotational subspace. NOT the col(A) "
+            "projector the first implementation used: a real antisymmetric A "
+            "in even dimension is generically full rank, so that projector is "
+            "the identity and the ablation zeroes every activation."
+        ),
+    ),
+    "block4_layernorm_jacobian": ArtifactSpec(
+        kind="json", filename="block4_layernorm_jacobian.json",
+        description=(
+            "LN-induced change to the effective operator diag(gamma) J_LN V. "
+            "The first implementation's curvature regressor was identically 1 "
+            "by algebra and its inflation ratio was saturated by a base "
+            "fraction of ~0.98; both are redefined."
+        ),
+    ),
+    "ffn_rotation": ArtifactSpec(
+        kind="json", filename="ffn_rotation.json",
+        description=(
+            "FFN displacement projected onto rotation planes. On Pythia the "
+            "input is core/sublayer_streams.py's parallel-residual streams "
+            "(dx = attn_out + ffn_out, exact), not the frozen GPT-2-only "
+            "ffn_deltas_*.npz this block originally required."
+        ),
+    ),
+    "combined_results": ArtifactSpec(
+        kind="json", filename="phase2b_results.json",
+        description="All checkpoints, keyed by model stem; each entry carries checkpoint_step.",
+    ),
+    "combined_summary": ArtifactSpec(
+        kind="txt", filename="phase2b_summary.txt",
+        description="LLM-consumable cross-checkpoint summary.",
+    ),
+}
+
+# ---------------------------------------------------------------------------
 # Registry + validation
 # ---------------------------------------------------------------------------
 
@@ -381,6 +465,7 @@ REGISTRY = {
     "phase2_session": PHASE2_SESSION,
     "phase2_subexperiments": PHASE2_SUBEXPERIMENTS,
     "phase2_weights": PHASE2_WEIGHTS,
+    "phase2b": PHASE2B,
     "phase5b": PHASE5B,
     "phase6": PHASE6,
     "particles": PARTICLES,
