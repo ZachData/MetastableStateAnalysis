@@ -57,21 +57,72 @@ decline — is the phase's main new object, and it is not visible from any singl
 
 ---
 
+## Before the verdict table: which regime we are in
+
+The paper's Figure 3 sweeps clustering probability over $(d, \beta)$. At $d = 2$–$8$ there
+is a broad band where that probability is strictly between 0 and 1 — the metastable zone.
+The band narrows as $d$ grows and is **gone by $d \approx 512$**; the transition is sharp.
+The paper attributes this to Theorem 6.9: as $d \to \infty$ every pairwise inner product
+concentrates on the single curve $\gamma_\beta(t)$ of Theorem 6.8, leaving no room for a
+multi-cluster intermediate state.
+
+Pythia-410M has $d = 1024$ and $n \le 512$, so **every run in this pilot sits in the regime
+where the paper's own numerics say metastability disappears.** We find plateaus in all 216.
+
+Two readings, and nothing currently on disk separates them:
+
+1. The plateaus we detect are not the paper's metastability. Our plateau detector fires on
+   flatness in cluster-count and IP metrics; the paper's metastability is a specific
+   multi-cluster intermediate configuration of the identity-weight dynamics. These may not
+   be the same object.
+2. The identity-weight concentration argument fails under learned weights. Theorem 6.9's
+   hypothesis is $Q^\top K = V = I$; nothing guarantees it survives multi-head attention
+   with an FFN.
+
+Both are results. Neither is currently written down anywhere, and the choice between them
+is what Phase 1c's $\gamma_\beta$ null model (sub-experiment B) is built to force: if
+observed `ip_mean` tracks $\gamma_{\beta_{\rm eff}}(T_{\rm eff}(\ell))$ the concentration
+argument holds and reading (1) wins; if it departs, reading (2) does.
+
+**This paragraph governs everything below.** The verdict table's "metastable plateaus exist —
+confirmed, all 216 runs" row is not a theorem check. Metastability is **Problem 1** in the
+paper, explicitly open, supported by $d=2$ numerics at $\beta = 4$ and $9$ (Fig. 4). The
+falsification criterion this phase passes is a test of a conjecture, run outside the
+parameter regime where the conjecture's own evidence lives.
+
+---
+
 ## Verdict table
+
+Citations below follow `MATH.md` §9. Where a row previously carried a theorem number, the
+number was wrong; the corrected referent is given inline.
 
 | Prediction | Pythia-410M result | Status vs. GPT-2 run |
 |---|---|---|
 | Tokens cluster over layers | Confirmed, all 216 runs | Reproduces |
 | Metastable plateaus exist | Confirmed, all 216 runs | Reproduces |
-| Monotone energy $E_\beta$ (Thm 3.4) | **Holds at init** (3 violations across 8 prompts at every β), **broken by training from step 256** | **Reverses.** GPT-2 run recorded "falsified universally, including under random weights" |
+| Which energy regime is each layer in? — eq. (3.6) / Lemma 3.7 | **Attractive at init** (3 violations across 8 prompts at every β), **repulsive from step 256 onward** | **Reverses.** GPT-2 run recorded "falsified universally, including under random weights" |
 | Higher β → stronger metastability | **Not reproduced.** Violation counts are β-independent after step 512. A β gradient exists only at steps 128–256, and its direction is *higher β → fewer violations* (43/33/22/6) | Does not reproduce |
-| Higher d → faster convergence (Thm 6.1) | Unsupported; nothing dimensional tracks | Unchanged |
+| Exponential convergence rate when $d \ge n$ (**Thm 6.3**) | **Untested.** All 8 prompts satisfy $d > n$ ($d{=}1024$, $n \le 512$), so the hypothesis holds everywhere and the rate $\lambda = O(e^{-\beta})$ is a live prediction. Nothing in the current metric set measures a rate | New row |
+| Trajectory pinned to $\gamma_\beta(t)$ when $d \gg n$ (**Thm 6.9**) | **Untested.** This is the sharpest available prediction and it is [R]-cost: integrate (6.9) at each run's $(n, \beta_{\rm eff})$ and overlay on `ip_mean`. Phase 1c sub-experiment B | New row |
+| ~~Higher d → faster convergence (Thm 6.1)~~ | **Retracted as a prediction.** Theorem 6.1 is qualitative — $d \ge 3$ at any $\beta \ge 0$ implies single-cluster convergence. It makes no dimensional rate claim. The old "unsupported" verdict was testing something the paper does not assert | Withdrawn |
 | Metastability is architecture-, not weight-determined | **Contradicted for plateau onset.** Weight-level (SD 0.00) through step 256, content-driven from step 512 onward | Reverses for this quantity |
 | Degenerate input collapses | **Reversed by training.** `repeated_tokens` final-layer mass 0.948 at init → 0.379 at step 143000; rank 1.11 → 2.02. Onset ~step 11k–13k (0.718 → 0.335) | New |
 | Two-timescale dynamics | Not assessable — the two-timescale ratio is only computed on the collapse controls, and collapse onset is layer 0 in all 27 | Open |
 | Effective-rank collapse | **Pending.** Measured in raw mode, which mixes directional collapse with residual-stream norm growth (defect D1) | Blocked on re-report |
 | Per-head Fiedler classification | **Vacuous.** All 432 head-rows read STABLE-CLUSTER by construction (defect D2) | Blocked on rerun |
 | Cluster-merge counting via spectral $k$ | **Dead metric.** $k = 1.0000$ in all 216 runs at every plateau layer (defect D4) | Does not transfer |
+
+**On the energy row.** It is now phrased as a regime question rather than pass/fail. The
+paper proves $dE_\beta/dt \ge 0$ under $Q^\top K = I$, $V = +I_d$; it also states plainly
+that $V = -I_d$ makes $E_\beta$ *decrease* along trajectories (§3.2, §9.1). An observed
+decrease therefore identifies the repulsive regime — a case the paper treats — rather than
+falsifying anything. The sharper condition under learned weights is §3.4's: (SA) is a
+gradient flow in the reweighted metric $\langle a,b\rangle_X = \sum_i Z_{\beta,i}\langle
+a_i,b_i\rangle$ only when $Q^\top K$ is symmetric **and** $V = Q^\top K$. Heads far from
+that condition carry no monotonicity guarantee at all, which converts "the theorem is
+violated" into "which heads are outside its hypotheses, and do violations localize there?"
+That is prediction **P-M1**, and Phase 2d D1 tests it.
 
 Additional findings not on the original prediction list:
 
@@ -214,6 +265,24 @@ layers and violation counts are computed over fewer transitions than elsewhere i
 `config.py:82` anticipates exactly this moment ("raise to 3 … if post-rerun rank-2 CKA looks
 erratic"). Decide the value after D1, since the gate should probably read normed rank.
 
+**D10 — every rank gate reads the wrong quantity.** Separate from D1, which is about the
+reported `MinRank` column. `DEGENERATE_RANK_THRESHOLD` (`config.py:82`) and the Fiedler
+`active_rank_threshold = 10.0` (`reporting_p1.py:170, 208`) both gate *layer inclusion* on
+raw effective rank. `MATH.md` §6.4 shows what raw rank measures: with $n_i = \|y_i\|$ and
+$s_{ij}$ the cosine, participation-ratio rank is $1/\langle s^2\rangle_w$ with weights
+$w_i = n_i^2/\sum_j n_j^2$, and in the near-orthogonal limit it tends to
+$(\sum_i n_i^2)^2/\sum_i n_i^4$ — the participation ratio of the **norm distribution alone**,
+with zero directional content. Numerically: three tokens at 30× norm in a cloud of 200 take
+raw rank from 112 to 3.4 with the directional geometry untouched. Our `MinRank → 2.3` at step
+143k is most likely a sink count.
+
+Because these are *gates*, this is worse than a mislabeled column: the set of layers entering
+every gated statistic — energy violations, CKA, NN-stability, the Fiedler mean — moves with
+the checkpoint's sink structure. Both gates should read `effective_rank_normed`, and both
+thresholds must be re-derived against the normed scale rather than carried over. Promoted out
+of D1/D3 because it changes which layers enter *every* gated statistic, not just one column.
+Report the norm-participation ratio next to raw rank to test the sink hypothesis directly.
+
 **D9 — `SINKHORN_MAX_ITER = 100` is hit without a flag.** The n=20 causal baseline needs 232
 iterations to reach `SINKHORN_TOL = 1e-6`; at iteration 100 the residual is 4.7e-4. The λ₂
 error is negligible for the uniform baseline (0.108894 vs 0.108889 converged), but real
@@ -224,7 +293,23 @@ recorded anywhere. Log the residual.
 
 ## Blockers / open items
 
-1. **D1, D2, D3** — three verdict rows blocked. D1 is a re-report; D2 needs both a schema fix
+0. **$T_{\rm eff}$ vs $t^\ast$ has never been measured, and it is the single highest-value
+   unrun quantity in the project — at [R] cost, no forward passes.** A residual block is a
+   forward-Euler step of the paper's ODE with step size $h_\ell = \|P^\perp_{x_\ell}(\Delta
+   x_\ell)\|/\|x_\ell\|$ (exact for Pythia's parallel residual), so the network's effective
+   integration time is $T_{\rm eff} = \sum_\ell h_\ell$. Numerically integrating (6.9) at
+   $n = 467$ gives $\gamma_\beta = 0.9$ at $t^\ast \approx 4.2$, near-invariant in $\beta$
+   across two decades. If $T_{\rm eff} \ll t^\ast$, **the network never runs the dynamics
+   long enough to collapse and "trained weights resist collapse" is partly an artifact of
+   depth** — the correct comparison becomes $\gamma_\beta(T_{\rm eff})$, a specific finite
+   number, not $t = \infty$. If $T_{\rm eff} \gtrsim t^\ast$ with no collapse, Blog 1's
+   claim stands and is now quantitative. Every input is on disk (`sublayer_streams`,
+   `activations.npz`, `core/beta_eff.py`). Phase 1c sub-experiments A and B. This is
+   prediction **P-γ2**, and it should be run before the rest of the open list, because the
+   answer changes how the verdict table reads.
+
+1. **D1, D2, D3, D10** — three verdict rows blocked, and D10 moves the layer set under all
+   of them. D1 is a re-report; D2 needs both a schema fix
    and a rerun; D3 is a re-report once D1 lands.
 2. **Claim (c) unadjudicated.** No `pythia-410m-random` / `pythia-1.4b-random` and no 1.4B
    trained checkpoint in this pilot. The hard-stop gate is still pending, and no

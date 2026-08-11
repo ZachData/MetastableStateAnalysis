@@ -139,7 +139,9 @@ def plot_energy_heatmap(
     _draw_heatmap(mat, steps, ax=ax, cmap="viridis", vlabel=rf"$E_\beta$ (β={beta:g})")
 
     # Violation overlay — same relative-drop criterion Phase 1 adjudicated
-    # Theorem 3.4 with.
+    # energy monotonicity with. That result is eq. (3.6) / Lemma 3.7, not
+    # Proposition 3.4 (which characterizes the extremizers of E_β).
+    # A violation marks the repulsive regime (§3.2, §9.1), not a failure.
     for i in range(mat.shape[0]):
         for layer in _violation_layers_np(mat[i]):
             ax.plot(layer, i, marker="x", color="white", markersize=6,

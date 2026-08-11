@@ -21,8 +21,13 @@ correctness choice, not a conservatism:
 * The quantity that suffers is the V eigenspectrum. eigvals() on a
   non-normal matrix has no backward-stability guarantee tied to the input
   perturbation, so eig_frac_pos_real / eig_frac_neg_real are unreliable near
-  the zero crossing at bf16 input precision — and those, with
-  eig_spectral_radius, are what status-1's Thm 6.1 falsification rests on.
+  the zero crossing at bf16 input precision. Those, with eig_spectral_radius,
+  are what the attractive/repulsive regime classification rests on — §3.2 and
+  §9.1 (sign of V sets the sign of dE_beta/dt) and Table 1 in §9.2 (the sign
+  and multiplicity of lambda_1(V) sets the predicted limit geometry). They
+  were formerly described here as supporting a "Thm 6.1" falsification;
+  Thm 6.1 is qualitative (d>=3, any beta) and V's spectrum says nothing
+  about it.
 * effective_rank feeds DEGENERATE_RANK_THRESHOLD, which gates CKA and
   NN-stability. A gate driven by a low-precision rank estimate flips
   silently.

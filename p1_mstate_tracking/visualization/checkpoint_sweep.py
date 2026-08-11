@@ -118,9 +118,10 @@ def plot_energy_sweep(
     family: List[Tuple[int, str]],
 ) -> None:
     """Interaction energy E_β vs. layer across all checkpoints — one panel
-    per β found in any family member's energies.json. Theorem 3.4's
-    monotone-increase prediction reads directly as whether any color band
-    dips."""
+    per β found in any family member's energies.json. The monotone-increase
+    prediction — eq. (3.6) for (SA), Lemma 3.7 for (USA), both under
+    V = +I_d — reads directly as whether any color band dips. A dip is the
+    V = -I_d repulsive regime (§3.2, §9.1). Formerly mis-cited as Thm 3.4."""
     betas: List[float] = []
     for _, model in family:
         rd = runs.get((model, prompt))

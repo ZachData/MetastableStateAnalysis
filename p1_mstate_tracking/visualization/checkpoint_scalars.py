@@ -25,8 +25,9 @@ Three things live here:
 
 Violation criterion is metrics.energy_violation_severity's relative-drop
 rule, reimplemented on numpy only (metrics.py imports torch; this
-package deliberately never does). REL_TOL mirrors
-metrics.ENERGY_VIOLATION_REL_TOL — keep them in sync by hand.
+package deliberately never does). REL_TOL is READ FROM metrics.py's source
+at import time rather than duplicated as a literal — see the note above its
+definition below.
 """
 
 import json
@@ -46,9 +47,49 @@ from .checkpoints import (
 )
 from core.plot_utils import _spans
 
-# Mirrors metrics.ENERGY_VIOLATION_REL_TOL (metrics.py can't be imported
-# here — torch dependency).
-REL_TOL: float = 1e-3
+# ---------------------------------------------------------------------------
+# REL_TOL — kept in sync with metrics.ENERGY_VIOLATION_REL_TOL AT IMPORT TIME
+# ---------------------------------------------------------------------------
+# This used to be a hand-synced literal with a comment asking future editors
+# to remember. That is not a mechanism: the two constants define the same
+# criterion, this module's numbers appear in the checkpoint figures and
+# metrics.py's appear in the text report, and a divergence would show up as
+# two different violation counts for the same run with nothing to indicate
+# which was stale.
+#
+# metrics.py imports torch and this package deliberately never does, so the
+# module cannot simply be imported. It is parsed instead: the constant is
+# read out of the source with ast, which costs one file read at import and
+# cannot execute the torch import. If the constant is ever renamed or moved,
+# this raises at import rather than silently falling back — a stale literal
+# that keeps working is the failure this is designed to prevent.
+
+def _rel_tol_from_metrics() -> float:
+    import ast as _ast
+    from pathlib import Path as _Path
+    src = _Path(__file__).resolve().parents[2] / "core" / "metrics.py"
+    if not src.exists():
+        raise ImportError(
+            f"checkpoint_scalars: cannot locate {src} to read "
+            f"ENERGY_VIOLATION_REL_TOL. This module's violation criterion "
+            f"must match metrics.py's; refusing to guess."
+        )
+    tree = _ast.parse(src.read_text())
+    for node in tree.body:
+        if isinstance(node, (_ast.Assign, _ast.AnnAssign)):
+            targets = ([node.target] if isinstance(node, _ast.AnnAssign)
+                       else node.targets)
+            for t in targets:
+                if isinstance(t, _ast.Name) and t.id == "ENERGY_VIOLATION_REL_TOL":
+                    return float(_ast.literal_eval(node.value))
+    raise ImportError(
+        "checkpoint_scalars: ENERGY_VIOLATION_REL_TOL not found in "
+        "core/metrics.py. It was renamed or moved; update this reader "
+        "rather than restoring a literal."
+    )
+
+
+REL_TOL: float = _rel_tol_from_metrics()
 
 
 # ─────────────────────────────────────────────────────────────────────────────

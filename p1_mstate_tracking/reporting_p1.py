@@ -17,7 +17,10 @@ from collections import Counter
 from pathlib import Path
 from scipy.stats import spearmanr
 
-from core.config import BETA_VALUES, DEGENERATE_RANK_THRESHOLD, DISTANCE_THRESHOLDS, PROMPTS
+from core.config import (
+    BETA_VALUES, DEGENERATE_RANK_THRESHOLD, DEGENERATE_RANK_MODE,
+    FIEDLER_ACTIVE_RANK_THRESHOLD, DISTANCE_THRESHOLDS, PROMPTS,
+)
 from core.metrics import energy_violation_severity, ENERGY_VIOLATION_REL_TOL
 
 
@@ -167,7 +170,7 @@ def _method_agreement(results: dict) -> list:
 
 def _per_head_fiedler_profile(
     results: dict,
-    active_rank_threshold: float = 10.0,
+    active_rank_threshold: float = FIEDLER_ACTIVE_RANK_THRESHOLD,
     ) -> list:
     """
     Per-head Fiedler profile restricted to the active phase.
@@ -177,8 +180,16 @@ def _per_head_fiedler_profile(
     The raw values are included in the returned dicts under 'values_raw' for
     reference; 'values' always contains the quantity used for classification.
 
-    The active phase is defined as layers where effective_rank >=
-    active_rank_threshold.  Once tokens have collapsed to a near-point-mass
+    The active phase is defined as layers where the NORMED effective rank
+    is >= active_rank_threshold (status-1 defect D10; the gate previously
+    read raw rank). The docstring's own justification below — "collapsed to
+    a near-point-mass" — is a claim about directional collapse, so raw rank
+    was the wrong gate quantity: it moves with residual-stream norm growth
+    and attention sinks, so the layer set entering this profile changed
+    with the checkpoint and the -0.023 saturation curve was measured
+    against a moving denominator.
+
+    Once tokens have collapsed to a near-point-mass
     (rank < threshold) every head trivially saturates to Fiedler ≈ 1.0 —
     there is only one cluster, so the doubly stochastic matrix is nearly
     uniform and the Laplacian has no gap.  Including those layers pulls every
@@ -191,7 +202,11 @@ def _per_head_fiedler_profile(
       mean                    : float — mean of classification signal
       std                     : float — std  of classification signal
       min_layer               : int   — layer index at which signal is minimised
-      classification          : str   — 'CLUSTER' (<0.3), 'MIXED' (0.3–0.7), 'MIXING' (>0.7)
+      classification          : str   — see the threshold note below
+      classification_scale    : str   — 'ratio' (deviation/baseline) or 'raw'
+      mean_raw                : float — mean RAW lambda_2, always present
+      mean_deviation          : float — mean deviation, causal runs only
+      mean_ratio              : float — mean deviation/baseline, causal only
       values                  : list  — per-layer values used for classification
       values_raw              : list  — per-layer raw Fiedler (always present)
       using_deviation         : bool  — True when classification is on deviation
@@ -205,12 +220,31 @@ def _per_head_fiedler_profile(
     if not all_sk:
         return []
 
-    sk_layers   = [r for r in all_sk if r["effective_rank"] >= active_rank_threshold]
+    def _gate_rank(r):
+        # D10: prefer the explicitly-recorded gate value written by
+        # analysis_p1; fall back to the normed key, then to raw, so this
+        # function still works on pre-D10 artifacts. Which one was used is
+        # reported, because a silently-different gate quantity is exactly
+        # the confound this fix exists to remove.
+        if r.get("gate_rank") is not None:
+            return float(r["gate_rank"]), r.get("gate_rank_mode", "recorded")
+        if r.get("effective_rank_normed") is not None:
+            return float(r["effective_rank_normed"]), "normed"
+        return float(r["effective_rank"]), "raw_legacy"
+
+    gate_modes  = {_gate_rank(r)[1] for r in all_sk}
+    sk_layers   = [r for r in all_sk if _gate_rank(r)[0] >= active_rank_threshold]
     n_collapsed = len(all_sk) - len(sk_layers)
 
+    # The silent fallback. It fires whenever no layer clears the threshold —
+    # which in the pilot was every layer at steps 16-32 — and nothing in the
+    # output distinguished a filtered profile from a fallback one. It is now
+    # recorded on every returned profile.
+    used_fallback = False
     if not sk_layers:
-        sk_layers   = all_sk
-        n_collapsed = 0
+        sk_layers     = all_sk
+        n_collapsed   = 0
+        used_fallback = True
 
     n_heads = len(sk_layers[0]["sinkhorn"].get("fiedler_per_head", []))
     if n_heads == 0:
@@ -235,16 +269,64 @@ def _per_head_fiedler_profile(
         std_f   = float(np.std(cls_vals))
         min_idx = int(np.argmin(cls_vals))
 
-        if mean_f < 0.3:
+        # ------------------------------------------------------------------
+        # Classification — D2, second part.
+        #
+        # The 0.3 / 0.7 cutoffs were calibrated for RAW lambda_2 on [0, 1].
+        # On this model the raw values live in [0.02, 0.07] and the
+        # deviations in +/-0.05, so every head classified CLUSTER on either
+        # quantity, at every checkpoint, on every prompt. "100%
+        # STABLE-CLUSTER" was a restatement of the thresholds, not a finding.
+        #
+        # The baseline is also n-dependent — 0.1089 at n=20 against 0.0658
+        # at n=512, a 1.7x spread comparable to the entire trained signal —
+        # so a cross-prompt mean of raw deviations averages against
+        # different baselines.
+        #
+        # Both problems are fixed by the same normalization: classify on
+        # deviation / baseline, which is dimensionless, comparable across
+        # prompt lengths, and bounded below at -1 (lambda_2 = 0, total
+        # separation) so the floor is interpretable. The cutoffs below are
+        # stated on that scale and are DELIBERATELY provisional — they have
+        # not been derived from a distribution, only placed at a round
+        # fraction of the baseline. Do not read a classification as a
+        # finding until they have been.
+        # ------------------------------------------------------------------
+        if has_deviation and fiedler_base and abs(fiedler_base) > 1e-12:
+            ratio_vals = [v / fiedler_base for v in cls_vals]
+            mean_ratio = float(np.mean(ratio_vals))
+            cls_scale  = "ratio"
+            score      = mean_ratio
+            lo_cut, hi_cut = -0.30, 0.30
+        else:
+            mean_ratio = float("nan")
+            cls_scale  = "raw"
+            score      = mean_f
+            lo_cut, hi_cut = 0.3, 0.7
+
+        if score < lo_cut:
             cls = "CLUSTER"
-        elif mean_f > 0.7:
+        elif score > hi_cut:
             cls = "MIXING"
         else:
             cls = "MIXED"
 
         profiles.append({
             "head":               h,
+            # `mean` is retained under its old name for call-site
+            # compatibility but is NOT lambda_2 on causal runs — it is the
+            # mask-baseline deviation. The report column that printed it as
+            # "MeanFiedler" was carrying a different quantity than its
+            # header claimed. Read mean_raw / mean_deviation / mean_ratio
+            # explicitly instead.
             "mean":               mean_f,
+            "mean_raw":           float(np.mean(raw_vals)),
+            "mean_deviation":     (float(np.mean(dev_vals)) if dev_vals is not None
+                                   else float("nan")),
+            "mean_ratio":         mean_ratio,
+            "classification_scale": cls_scale,
+            "gate_modes":         sorted(gate_modes),
+            "used_layer_fallback": used_fallback,
             "std":                std_f,
             "min_layer":          layer_ids[min_idx],
             "classification":     cls,
@@ -727,17 +809,40 @@ def generate_llm_report(results: dict, save_dir: Path):
     W("-" * 40)
     W("This report summarizes numerical results from Phase 1 of an empirical")
     W("study of metastable states in transformer residual streams, motivated")
-    W("by Geshkovski et al. (2024) 'A Mathematical Perspective on Transformers'.")
+    W("by Geshkovski, Letrouit, Polyanskiy & Rigollet, 'A Mathematical Perspective")
+    W("on Transformers', arXiv:2312.10794v5 (21 Aug 2025). All equation, theorem and")
+    W("problem numbers below refer to that version.")
     W("")
-    W("Key theoretical predictions from the paper to check against:")
+    W("Key claims from the paper to check against. NOTE the distinction between")
+    W("theorems (proved, for Q^T K = V = I) and conjectures (numerics only):")
     W("  (a) Tokens cluster over layers — pairwise inner products drift toward 1")
+    W("      [Thm 6.1: d>=3, any beta >= 0 => single cluster. Qualitative only.]")
     W("  (b) Clustering follows two timescales: fast initial grouping, slow merging")
     W("  (c) Metastable states appear as PLATEAUS in cluster count metrics")
+    W("      [PROBLEM 1 — explicitly OPEN. The paper reports this in numerics and")
+    W("       says it cannot explain it theoretically. Fig. 4 is d=2, beta=4 and 9.")
+    W("       Fig. 3 shows the metastable zone SHRINKING with d and gone by d~512.")
+    W("       Pythia-410M has d=1024, so this is a test of a conjecture outside the")
+    W("       regime its supporting numerics live in — not a theorem check.]")
     W("  (d) ALBERT (shared weights) should show cleaner dynamics than BERT/GPT2")
+    W("      [Figure 1 — ALBERT iterated to 48 layers shows increasing clustering.")
+    W("       An empirical observation in the paper, not a theorem.]")
     W("  (e) High beta (sharp attention) → stronger metastability")
-    W("  (f) Higher dimension d → faster convergence to single cluster (Theorem 6.1)")
+    W("      [Also Problem 1 / Fig. 4. Not proved.]")
+    W("  (f) Rate of convergence to a single cluster:")
+    W("      [Thm 6.3: d >= n => convergence is EXPONENTIAL, rate lambda = O(e^-beta).")
+    W("       Thm 6.9: d >= d*(n,beta) => all pairwise IPs pinned to the single curve")
+    W("       gamma_beta(t) of Thm 6.8. Both apply here: our prompts have n <= 512")
+    W("       and d = 1024. Thm 6.1 makes NO dimensional rate claim.]")
     W("  (g) Interaction energy E_beta is monotone increasing along the trajectory")
+    W("      [eq. (3.6) for (SA), Lemma 3.7 for (USA). Prop 3.4 is a DIFFERENT")
+    W("       result: uniform measure is the unique global minimizer, Diracs are the")
+    W("       maximizers. Monotonicity holds for V = +I_d; with V = -I_d the paper")
+    W("       states E_beta DECREASES (sec. 3.2, 9.1), so a decrease identifies the")
+    W("       repulsive regime rather than falsifying anything.]")
     W("  (h) Sinkhorn Fiedler value should be LOW at metastable layers")
+    W("      [Remark 3.5: the doubly stochastic form is what restores a Wasserstein")
+    W("       gradient flow. Cluster emergence for that model is flagged as open.]")
     W("  (i) Multiple clustering methods should AGREE at metastable windows")
     W("")
 
@@ -1029,8 +1134,13 @@ def generate_llm_report(results: dict, save_dir: Path):
 
     W("ENERGY TRAJECTORY ANALYSIS")
     W("-" * 40)
-    W("Theory predicts E_beta is monotone increasing along the trajectory.")
-    W("Violations indicate deviation from idealized gradient flow.")
+    W("eq. (3.6) proves dE_beta/dt >= 0 for (SA); Lemma 3.7 is the (USA) analogue.")
+    W("Standing hypotheses: Q^T K = I and V = +I_d. With V = -I_d the paper states")
+    W("E_beta DECREASES by construction (sec. 3.2, 9.1), so the question a violation")
+    W("answers is WHICH REGIME a layer is in, not whether the theorem holds.")
+    W("Under learned weights the sharper condition is sec. 3.4's: (SA) is a gradient")
+    W("flow in the reweighted metric only when Q^T K is symmetric AND V = Q^T K.")
+    W("Heads far from that condition carry no monotonicity guarantee at all.")
     for beta in BETA_VALUES:
         energies_b   = [r["energies"].get(beta, float("nan")) for r in layers]
         sev_b        = energy_violation_severity(energies_b)
@@ -1607,7 +1717,10 @@ def generate_llm_report(results: dict, save_dir: Path):
         W(f"         n_violations={sev_e1['n_violations']}, "
           f"sum_severity={sev_e1['sum_severity']:.3e}, "
           f"max_severity={sev_e1['max_severity']:.3e}")
-        W("         Suggests V matrix has repulsive directions absent from gradient-flow model.")
+        W("         Reading: these layers are in the repulsive regime. The paper's own")
+        W("         V = -I_d case (sec. 3.2, 9.1) predicts decreasing E_beta, so this is a")
+        W("         regime label, not a falsification. Attribution to V's spectrum is")
+        W("         Phase 2's job; the gradient-flow condition (sec. 3.4) is the test.")
         merge_layers = [layer for layer, _, _ in merge_events]
         overlap      = set(e1_viol) & set(merge_layers)
         if overlap:
@@ -1787,20 +1900,56 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
     W("-" * 40)
     W("Note: for GPT-2 models, 'Layers' = analyzed layers; total depth in [brackets].")
     W("")
+    W("Column changes from the pilot report, with reasons:")
+    W("  MinRank  now reads effective_rank_normed, not effective_rank (raw).")
+    W("           Raw entropy rank is 1/<s^2> with norm-squared weights and")
+    W("           degenerates to the participation ratio of the NORM")
+    W("           distribution alone; three sinks in two hundred tokens take")
+    W("           it from ~112 to ~3.4 with the geometry untouched. NormPR")
+    W("           is that norm-only quantity — if MinRankRaw tracks NormPR,")
+    W("           the collapse is a sink count, not a geometric statement.")
+    W("  nMerges  DROPPED. Spectral k = 1.0000 in all 216 pilot runs at every")
+    W("           plateau layer, so the only merges it ever recorded were the")
+    W("           trivial layer-1 k 2->1. P1-1 cluster tracking carries the")
+    W("           real merge counts and is the sole merge instrument now.")
+    W("  MinMass  NEW, alongside MaxMass. MaxMass is pinned to the layer-0")
+    W("           duplicate-token floor outside steps 16-256 and is a fact")
+    W("           about the prompt, not the model. The signal is the")
+    W("           mid-network minimum, which max-over-layers discards.")
+    W("  k1 k2    The cumulant ladder of the pairwise-cosine distribution:")
+    W("           common mode and spread, with 1/PR = k2 + k1^2. Four E_beta")
+    W("           columns are a redundant encoding of these.")
+    W("")
     W(f"{'Model':<25} {'Prompt':<22} {'Tokens':>6} {'Layers':>10} "
-      f"{'MaxMass':>8} {'MinRank':>8} {'nPlateaus':>10} {'nMerges':>8} "
+      f"{'MaxMass':>8} {'MinMass':>9} {'MinRank':>8} {'MinRankRaw':>11} "
+      f"{'NormPR':>8} {'k1':>8} {'k2':>8} {'nPlateaus':>10} "
       f"{'nViol@1':>8} {'MaxSev@1':>9}")
-    W("-" * 110)
+    W("-" * 150)
 
     for r in all_results:
         layers_  = r["layers"]
         mass1_   = [l["ip_mass_near_1"]        for l in layers_]
-        erank_   = [l["effective_rank"]         for l in layers_]
-        spec_k_  = [l["spectral"]["k_eigengap"] for l in layers_]
+        erank_n  = [l.get("effective_rank_normed") for l in layers_]
+        erank_n  = [v for v in erank_n if v is not None]
+        erank_r  = [l["effective_rank"]         for l in layers_]
+        normpr_  = [l.get("norm_participation_ratio") for l in layers_]
+        normpr_  = [v for v in normpr_ if v is not None]
         e1_      = [l["energies"].get(1.0, float("nan")) for l in layers_]
         plateaus = detect_plateaus(mass1_, window=2, tol=0.10)
-        merges   = _merge_events(spec_k_)
         sev      = energy_violation_severity(e1_)
+
+        # Cumulant ladder at the layer where E_{beta=1} is lowest, i.e. the
+        # least-clustered layer; reported as a single pair rather than a
+        # per-layer series to keep this table one line per run.
+        cums = [l.get("gram_cumulants", {}) for l in layers_]
+        cums = [c for c in cums if c]
+        k1_ = float(np.mean([c["kappa1"] for c in cums])) if cums else float("nan")
+        k2_ = float(np.mean([c["kappa2"] for c in cums])) if cums else float("nan")
+
+        def _fmt(vals, fn, width, prec):
+            if not vals:
+                return f"{'n/a':>{width}}"
+            return f"{fn(vals):>{width}.{prec}f}"
 
         # Fix 4: annotate excluded-layer count in the Layers column
         excluded   = r.get("lm_head_excluded", False)
@@ -1809,8 +1958,11 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
         layers_str = f"{n_analyzed}[{n_total}]" if excluded else str(n_analyzed)
 
         W(f"{r['model']:<25} {r['prompt']:<22} {r['n_tokens']:>6} "
-          f"{layers_str:>10} {max(mass1_):>8.4f} {min(erank_):>8.2f} "
-          f"{len(plateaus):>10} {len(merges):>8} "
+          f"{layers_str:>10} {max(mass1_):>8.4f} {min(mass1_):>9.4f} "
+          f"{_fmt(erank_n, min, 8, 2)} {min(erank_r):>11.2f} "
+          f"{_fmt(normpr_, min, 8, 2)} "
+          f"{k1_:>8.4f} {k2_:>8.4f} "
+          f"{len(plateaus):>10} "
           f"{sev['n_violations']:>8} {sev['max_severity']:>9.2e}")
 
     W("")
@@ -1882,14 +2034,32 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
     W("")
     W("ENERGY MONOTONICITY BY RUN")
     W("-" * 40)
+    # D7 — there were two different counters both labelled "violations":
+    # this section used a raw absolute-drop rule (diff < -1e-6) while the
+    # summary table used energy_violation_severity's relative rule
+    # (rel_tol = 1e-3). Step 0 read 1 in one and 3 in the other. Both are
+    # now printed side by side under distinct names, with the relative rule
+    # named as canonical, so no reader has to guess which "violations"
+    # means what. (checkpoint_scalars.py:51 keeps a hand-synced duplicate of
+    # ENERGY_VIOLATION_REL_TOL — a known cost, flagged in both files.)
+    W("Two counters, both previously printed as 'violations':")
+    W(f"  nViolRel : relative rule, (E_prev - E_curr)/|E_prev| > {ENERGY_VIOLATION_REL_TOL:.0e}")
+    W("             — CANONICAL. Scale-free, and what the summary table uses.")
+    W("  nViolAbs : absolute rule, E_curr - E_prev < -1e-6.")
+    W("             — Retained for continuity with the pilot numbers only.")
+    W("             Counts differ; where they do, quote the relative one.")
+    W("")
     for r in all_results:
         for beta in BETA_VALUES:
-            energies = [l["energies"].get(beta, float("nan")) for l in r["layers"]]
-            diffs    = np.diff(energies)
-            n_viol   = int((diffs < -1e-6).sum())
+            energies  = [l["energies"].get(beta, float("nan")) for l in r["layers"]]
+            diffs     = np.diff(energies)
+            n_viol_abs = int((diffs < -1e-6).sum())
+            sev_rel    = energy_violation_severity(energies)
+            n_viol_rel = sev_rel["n_violations"]
+            flag = "  <-- COUNTERS DISAGREE" if n_viol_abs != n_viol_rel else ""
             W(f"  {r['model']:<25} | {r['prompt']:<22} | "
-              f"beta={beta}: violations={n_viol}  "
-              f"total_delta={energies[-1]-energies[0]:.5f}")
+              f"beta={beta}: nViolRel={n_viol_rel:<3} nViolAbs={n_viol_abs:<3} "
+              f"total_delta={energies[-1]-energies[0]:.5f}{flag}")
 
     W("")
     W("FLAGGED CROSS-RUN PATTERNS")
@@ -1946,6 +2116,7 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
         # Build {head: [classification_per_prompt]}
         head_cls_by_prompt: dict = {}
         head_mean_by_prompt: dict = {}
+        head_ratio_by_prompt: dict = {}
         prompt_labels = []
         for run in runs:
             profiles = _per_head_fiedler_profile(run)
@@ -1955,13 +2126,16 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
             for p in profiles:
                 h = p["head"]
                 head_cls_by_prompt.setdefault(h, []).append(p["classification"])
-                head_mean_by_prompt.setdefault(h, []).append(p["mean"])
+                head_mean_by_prompt.setdefault(h, []).append(p.get("mean_raw", p["mean"]))
+                head_ratio_by_prompt.setdefault(h, []).append(p.get("mean_ratio", float("nan")))
 
         if not head_cls_by_prompt:
             continue
 
         W(f"  Model: {model}  (prompts: {prompt_labels})")
-        W(f"  {'Head':>5}  {'MeanFiedler':>12}  {'Classes':>30}  {'Status':>12}")
+        W("  Column note: the classification signal is deviation/baseline on")
+        W("  causal runs, NOT raw lambda_2. Raw lambda_2 is shown separately.")
+        W(f"  {'Head':>5}  {'RawLambda2':>11}  {'DevRatio':>9}  {'Classes':>30}  {'Status':>12}")
         W("  " + "-" * 65)
 
         inconsistent_heads = []
@@ -1978,8 +2152,11 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
                 status = f"STABLE-{classes[0]}"
             else:
                 status = "VARIABLE"
-            cls_str = " / ".join(classes)
-            W(f"  {h:>5}  {mean_all:>12.4f}  {cls_str:>30}  {status:>12}")
+            cls_str   = " / ".join(classes)
+            ratios    = [v for v in head_ratio_by_prompt.get(h, []) if not np.isnan(v)]
+            ratio_all = float(np.mean(ratios)) if ratios else float("nan")
+            ratio_str = f"{ratio_all:>9.3f}" if not np.isnan(ratio_all) else f"{'n/a':>9}"
+            W(f"  {h:>5}  {mean_all:>11.4f}  {ratio_str}  {cls_str:>30}  {status:>12}")
 
         if inconsistent_heads:
             W(f"  [FLAG] Content-sensitive heads (CLUSTER on some, MIXING on others): "
@@ -2113,7 +2290,8 @@ def generate_cross_run_report(all_results: list, save_dir: Path, control_results
         W("They are NOT metastability tests and are excluded from the above analyses.")
         W("")
         W("Two-timescale ratio: plateau_width / collapse_onset_layer.")
-        W("Theory predicts this ratio >> 1 and growing with iteration depth.")
+        W("The two-timescale picture is part of Problem 1 (open), supported by the")
+        W("paper's numerics rather than proved; Fig. 1 is the iteration-depth evidence.")
         W("A ratio near 1 means the metastable window is no wider than the fast collapse.")
         W("")
         # Pre-build {model_name: mean_plateau_width} from metastability runs.

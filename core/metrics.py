@@ -418,3 +418,306 @@ def _energy_drop_pairs_core(normed_before, normed_after, beta, top_k):
         worst_idx = worst_idx[np.argsort(pair_deltas[worst_idx])]
 
     return [(int(rows[idx]), int(cols[idx]), float(pair_deltas[idx])) for idx in worst_idx]
+
+
+# ---------------------------------------------------------------------------
+# Gram moments, cumulants, and the participation-ratio identity
+# ---------------------------------------------------------------------------
+#
+# Everything in this section rests on one observation (MATH.md sec. 6):
+# E_beta is the moment generating function of the pairwise-cosine
+# distribution. For unit-norm rows,
+#
+#     E_beta = (1 / 2 beta) * < exp(beta * G_ij) >_ij
+#            = 1/(2 beta) + <G>/2 + (beta/4) <G^2> + (beta^2/12) <G^3> + ...
+#
+# and, since tr(G) = n for unit rows and tr(G^2) = ||G||_F^2 = sum_ij G_ij^2,
+# the participation-ratio rank is EXACTLY the reciprocal second moment:
+#
+#     PR = (tr G)^2 / tr(G^2) = 1 / <G^2>
+#
+# So E_beta at four betas is a redundant reparameterization of the first
+# few moments of a single scalar distribution that we already persist as
+# `ip_histogram`. The non-redundant version is the cumulant ladder
+# (kappa_1 common mode, kappa_2 spread, kappa_3 asymmetry), with
+# 1/PR = kappa_2 + kappa_1^2.
+#
+# TRAP, and the reason `n` is a required argument below: the identity is
+# over the FULL n^2 Gram including the unit diagonal, while `ip_histogram`
+# and `ip_mean` are OFF-DIAGONAL quantities. The conversion is exact,
+#
+#     <G^k>_full = [1 + (n-1) * <G^k>_offdiag] / n
+#
+# but it is O(1/n). Measured on random unit clouds: at n=20 the naive
+# off-diagonal kappa_1 reads +0.0030 against a true full-matrix value of
+# +0.0523 — an order of magnitude, and a sign-relevant error. At n=467 the
+# gap is 0.002. Feeding off-diagonal moments straight into the energy
+# identity is wrong on exactly the short prompts, which is where the beta
+# gradient in status-1's verdict table lives.
+
+def gram_moments(G: np.ndarray, order: int = 3) -> dict:
+    """
+    Raw moments <G^k>, k = 1..order, over ALL n^2 entries of the Gram
+    matrix (diagonal included), plus the derived participation-ratio rank.
+
+    Returns keys: m1, m2, ..., m{order}, pr_rank, n.
+    """
+    G = np.asarray(G, dtype=np.float64)
+    n = G.shape[0]
+    out = {"n": int(n)}
+    Gk = np.ones_like(G)
+    for k in range(1, order + 1):
+        Gk = Gk * G
+        out[f"m{k}"] = float(Gk.mean())
+    m2 = out.get("m2", float("nan"))
+    out["pr_rank"] = float(1.0 / m2) if m2 > 1e-15 else float("nan")
+    return out
+
+
+def offdiag_to_full_moment(m_off: float, n: int, diag_value: float = 1.0) -> float:
+    """
+    Convert an off-diagonal moment <G^k>_offdiag to the full-matrix moment
+    <G^k>_full. Exact. `diag_value` is 1.0 for unit-norm rows (so the
+    diagonal contributes 1^k = 1 for every k).
+    """
+    if n < 2:
+        return float(diag_value)
+    return float((diag_value + (n - 1) * m_off) / n)
+
+
+def cumulants_from_moments(m1: float, m2: float, m3: float) -> dict:
+    """
+    First three cumulants from the first three raw moments.
+
+      kappa_1 = m1                        (common mode / anisotropy)
+      kappa_2 = m2 - m1^2                 (spread)
+      kappa_3 = m3 - 3 m1 m2 + 2 m1^3     (asymmetry)
+    """
+    k1 = float(m1)
+    k2 = float(m2 - m1 ** 2)
+    k3 = float(m3 - 3.0 * m1 * m2 + 2.0 * m1 ** 3)
+    return {"kappa1": k1, "kappa2": k2, "kappa3": k3}
+
+
+def gram_cumulants(G: np.ndarray) -> dict:
+    """
+    The cumulant ladder plus PR, computed directly from a Gram matrix.
+    Includes the identity check 1/PR == kappa_2 + kappa_1^2.
+    """
+    mom = gram_moments(G, order=3)
+    cum = cumulants_from_moments(mom["m1"], mom["m2"], mom["m3"])
+    cum["pr_rank"] = mom["pr_rank"]
+    cum["n"] = mom["n"]
+    cum["pr_identity_residual"] = float(
+        abs((cum["kappa2"] + cum["kappa1"] ** 2) - mom["m2"])
+    )
+    return cum
+
+
+def cumulants_from_ip_histogram(counts, n_tokens: int,
+                                lo: float = -1.0, hi: float = 1.0) -> dict:
+    """
+    Recover the FULL-matrix cumulant ladder from a persisted off-diagonal
+    `ip_histogram`, which is what Phase 1 has on disk for every layer of
+    every run. This is the [R]-cost path: no activations needed.
+
+    counts    : the saved histogram counts (analysis_p1 uses 50 bins over
+                [-1, 1] of the upper-triangle inner products)
+    n_tokens  : n, required for the off-diagonal -> full conversion above
+
+    Bin-centre quadrature introduces a discretization error of order
+    (binwidth^2 / 12) in the second moment; with 50 bins over [-1, 1] that
+    is 1.3e-4, reported as `quadrature_bias_m2` so it can be compared
+    against whatever residual the energy check produces.
+    """
+    counts = np.asarray(counts, dtype=np.float64)
+    nb = len(counts)
+    if nb == 0 or counts.sum() <= 0:
+        return {"kappa1": float("nan"), "kappa2": float("nan"),
+                "kappa3": float("nan"), "pr_rank": float("nan"),
+                "n": int(n_tokens), "quadrature_bias_m2": float("nan")}
+    edges = np.linspace(lo, hi, nb + 1)
+    centres = 0.5 * (edges[:-1] + edges[1:])
+    w = counts / counts.sum()
+
+    m_off = [float((w * centres ** k).sum()) for k in (1, 2, 3)]
+    m_full = [offdiag_to_full_moment(m, n_tokens) for m in m_off]
+
+    cum = cumulants_from_moments(*m_full)
+    cum["n"] = int(n_tokens)
+    cum["pr_rank"] = float(1.0 / m_full[1]) if m_full[1] > 1e-15 else float("nan")
+    cum["m1_offdiag"] = m_off[0]      # this is `ip_mean`, for cross-checking
+    binw = (hi - lo) / nb
+    cum["quadrature_bias_m2"] = float(binw ** 2 / 12.0)
+    return cum
+
+
+def energy_from_cumulants(kappa1: float, kappa2: float, kappa3: float,
+                          beta: float) -> dict:
+    """
+    The moment-expansion approximation to E_beta, at two truncation orders.
+
+        two_term   = 1/(2b) + k1/2 + (b/4)(k2 + k1^2)
+        three_term = two_term + (b^2/12)(k3 + 3 k1 k2 + k1^3)
+
+    The two-term form is the one MATH.md sec. 6.2 checks numerically
+    (120 random clouds, n=300, d=512): at beta=1, corr(E, two_term) =
+    0.9993, max relative error 8%. Report the residual against the
+    measured E_beta rather than trusting either form.
+
+    RANGE OF VALIDITY — this bounds what the cumulant ladder can replace.
+    Measured on n=300, d=64 unit-norm clouds, isotropic and anisotropic,
+    relative error of the two-term form against exact E_beta:
+
+        beta = 0.1   0.00%      beta = 2.0    0.80%
+        beta = 1.0   0.07%      beta = 5.0   26.57%   (three-term: 22.48%)
+
+    The number of moments needed for <1% accuracy is 2 at beta <= 2 and
+    TWELVE at beta = 5, in both the isotropic and anisotropic cases. So
+    the ladder is a faithful reparameterization of E_beta at beta = 0.1,
+    1.0 and 2.0 and NOT at beta = 5.0, which is in BETA_VALUES. The
+    beta=5 energy column must stay a measured quantity; do not reconstruct
+    it from kappa_1..kappa_3. (This is the MGF's radius-of-usefulness, not
+    a bug: at beta=5 the exponential is dominated by the right tail of the
+    cosine distribution, which is precisely the regime where low-order
+    moments carry no information about it.)
+    """
+    b = float(beta)
+    m2 = kappa2 + kappa1 ** 2
+    m3 = kappa3 + 3.0 * kappa1 * kappa2 + kappa1 ** 3
+    two = 1.0 / (2.0 * b) + kappa1 / 2.0 + (b / 4.0) * m2
+    three = two + (b ** 2 / 12.0) * m3
+    return {"two_term": float(two), "three_term": float(three),
+            "pr_rank_implied": float(1.0 / m2) if m2 > 1e-15 else float("nan")}
+
+
+def norm_participation_ratio(activations) -> float:
+    """
+    (sum_i n_i^2)^2 / sum_i n_i^4, the participation ratio of the row-norm
+    distribution alone.
+
+    This is what raw effective rank converges to in the near-orthogonal
+    limit (MATH.md sec. 6.4) — i.e. it carries ZERO directional content.
+    Reported next to raw effective rank, it tests the attention-sink
+    hypothesis directly: if the two track each other, the reported "rank
+    collapse" is a sink count, not a geometric statement. Reference
+    numbers from the derivation (n=200, d=256): uniform norms give
+    PR_raw 111.9 / PR_norms 200.0; three tokens at 30x norm give
+    PR_raw 3.44 / PR_norms 3.45.
+    """
+    arr = _as_numpy(activations).astype(np.float64, copy=False)
+    n2 = (arr ** 2).sum(axis=-1)
+    denom = float((n2 ** 2).sum())
+    if denom < 1e-30:
+        return float("nan")
+    return float((n2.sum() ** 2) / denom)
+
+
+# ---------------------------------------------------------------------------
+# CKA, decomposed
+# ---------------------------------------------------------------------------
+
+def linear_cka_decomposed(X: np.ndarray, Y: np.ndarray) -> dict:
+    """
+    Linear CKA together with the two factors it is a product of.
+
+    With G the Gram of the CENTERED rows, ||G||_F = n / sqrt(PR), so
+
+        CKA = <G_l, G_m>_F / (||G_l||_F ||G_m||_F)
+            = <G_l (*) G_m> * sqrt(PR_l * PR_m)
+
+    where the overlap is normalized by the traces:
+
+        overlap = <G_l, G_m>_F / (tr G_l * tr G_m)
+
+    For unit-norm rows tr G = n and this reduces to the plain elementwise
+    mean of MATH.md sec. 6.3; CKA centers the rows first, so the trace form
+    is the one that holds exactly here. Verified below to 1e-12.
+
+    The consequence is that a CKA drop between consecutive layers has two
+    possible causes, and the reported number does not distinguish them:
+    the pairwise structure genuinely changed, or the effective rank moved.
+    Since Phase 1 reads consecutive-layer CKA as "representation changed"
+    and separately reports rank collapsing across training, these are not
+    independent readings. Divide the rank factor out before interpreting.
+
+    Returns: cka, overlap (= <G_l (*) G_m>), rank_factor
+    (= sqrt(PR_l PR_m)), pr_x, pr_y.
+    """
+    X = np.asarray(X, dtype=np.float64)
+    Y = np.asarray(Y, dtype=np.float64)
+    Xc = X - X.mean(axis=0, keepdims=True)
+    Yc = Y - Y.mean(axis=0, keepdims=True)
+    Gx = Xc @ Xc.T
+    Gy = Yc @ Yc.T
+    n = Gx.shape[0]
+
+    def _pr(G):
+        t1 = float(np.trace(G))
+        t2 = float((G ** 2).sum())
+        return (t1 ** 2 / t2) if t2 > 1e-30 else float("nan")
+
+    pr_x, pr_y = _pr(Gx), _pr(Gy)
+    fx, fy = float(np.linalg.norm(Gx, "fro")), float(np.linalg.norm(Gy, "fro"))
+    if fx < 1e-15 or fy < 1e-15:
+        return {"cka": float("nan"), "overlap": float("nan"),
+                "rank_factor": float("nan"), "pr_x": pr_x, "pr_y": pr_y}
+    cka = float((Gx * Gy).sum() / (fx * fy))
+    tx, ty = float(np.trace(Gx)), float(np.trace(Gy))
+    overlap = float((Gx * Gy).sum() / (tx * ty)) if abs(tx * ty) > 1e-30 else float("nan")
+    rank_factor = float(np.sqrt(pr_x * pr_y))
+    return {
+        "cka": float(np.clip(cka, 0.0, 1.0)),
+        "overlap": overlap,
+        "rank_factor": rank_factor,
+        "pr_x": pr_x,
+        "pr_y": pr_y,
+        "n": int(n),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Energy-violation attribution: common mode vs spread
+# ---------------------------------------------------------------------------
+
+def energy_violation_attribution(cum_prev: dict, cum_curr: dict,
+                                 beta: float) -> dict:
+    """
+    Split a layer-to-layer change in E_beta into the part driven by the
+    common mode (kappa_1) and the part driven by the spread (kappa_2).
+
+    Differentiating the two-term expansion,
+
+        dE = dk1/2 + (beta/4)(dk2 + d(k1^2))
+           = dk1 * (1/2 + (beta/2) * k1_bar)   +   (beta/4) * dk2
+             \\__________ common mode _________/     \\___ spread ___/
+
+    with k1_bar the midpoint of kappa_1 across the transition (exact to
+    second order in dk1).
+
+    This answers the question the raw violation count cannot: an energy
+    drop can come from the cloud's internal spread contracting (kappa_2
+    falling), or from the whole cloud losing a shared anisotropy component
+    with its internal structure untouched (kappa_1 falling). The second is
+    a pure common-mode effect and is exactly
+    what a learned LayerNorm bias produces (MATH.md sec. 6.5), so an
+    unattributed violation count cannot distinguish a geometric event from
+    a bias term.
+    """
+    b = float(beta)
+    dk1 = float(cum_curr["kappa1"] - cum_prev["kappa1"])
+    dk2 = float(cum_curr["kappa2"] - cum_prev["kappa2"])
+    k1_bar = 0.5 * float(cum_curr["kappa1"] + cum_prev["kappa1"])
+
+    common = dk1 * (0.5 + 0.5 * b * k1_bar)
+    spread = (b / 4.0) * dk2
+    total = common + spread
+    denom = abs(common) + abs(spread)
+    return {
+        "delta_kappa1": dk1,
+        "delta_kappa2": dk2,
+        "common_mode_term": float(common),
+        "spread_term": float(spread),
+        "predicted_delta_E": float(total),
+        "common_mode_fraction": float(abs(common) / denom) if denom > 1e-18 else float("nan"),
+    }

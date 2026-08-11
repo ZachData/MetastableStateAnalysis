@@ -306,6 +306,7 @@ def pair_hdbscan_agreement(
     tokens: list,
     emb_gram: np.ndarray = None,
     ext_sem_threshold: float = 0.5,
+    emb_gram_source: str = "unspecified",
     ) -> dict:
     """
     Tag mutual nearest-neighbour pairs as semantic vs attention artifact.
@@ -317,7 +318,29 @@ def pair_hdbscan_agreement(
 
     Axis 2 — external semantic signal (Fix 1):
       Uses emb_gram (cosine-similarity Gram matrix of the layer-0 / embedding
-      activations) as a model-independent semantic reference.
+      activations) as a semantic reference.
+
+      *** status-1 defect D6: THIS REFERENCE IS NOT MODEL-INDEPENDENT. ***
+      The comment above said "model-independent"; it is not. emb_gram is
+      built from the model's OWN embedding matrix, which changes at every
+      checkpoint. So on a checkpoint sweep the reference frame trains
+      alongside the thing being measured, and the reported ext_sem_frac
+      decline (0.81 at init -> 0.64 at step 5000 -> 0.67 final) conflates
+      two different statements:
+
+        (i)  deep-layer neighbour structure moved away from embedding space
+        (ii) embedding space itself moved
+
+      Nothing in the current output separates them, so the decline cannot
+      be written as a result. `emb_gram_source` below records which frame
+      was used, and `frozen` reference support is the fix: pass the
+      FINAL-checkpoint embeddings (or an external encoder's) as emb_gram
+      for every checkpoint in a sweep, so the reference is constant and
+      (i) is what the number measures.
+
+      For a single-checkpoint run the two readings coincide and the
+      model's own embeddings are a legitimate choice — this only bites on
+      a trajectory, which is what Phase 1 now is.
       "ext_semantic"     emb_gram[i,j] >  ext_sem_threshold  → similar at embedding
       "ext_non_semantic" emb_gram[i,j] <= ext_sem_threshold  → dissimilar at embedding
       "unknown"          emb_gram is None
@@ -332,7 +355,21 @@ def pair_hdbscan_agreement(
     hdbscan_labels    : (n_tokens,) int array  (-1 = noise)
     tokens            : list of str
     emb_gram          : (n_tokens, n_tokens) float32 or None  (Fix 1)
+                        On a checkpoint sweep this MUST be a frozen
+                        reference (see D6 note above), not the current
+                        checkpoint's own embeddings.
+    emb_gram_source   : str — provenance label written into the result, so
+                        a reloaded artifact says which frame produced the
+                        number. Use "self" for the run's own embeddings
+                        (single-checkpoint only), or e.g.
+                        "frozen:step143000" / "external:<encoder>" for a
+                        frozen reference. Defaults to "unspecified", which
+                        should be treated as unusable on a sweep.
     ext_sem_threshold : cosine-sim cutoff for ext_semantic label (default 0.5)
+                        Calibrated on GPT-2/BERT activations and inherited;
+                        under Pythia's pervasive anisotropy nearly every
+                        pairwise IP is positive and large, so this cutoff
+                        has not been re-derived for this architecture.
 
     Returns
     -------
@@ -418,6 +455,11 @@ def pair_hdbscan_agreement(
         ext_sem_same_frac = None
 
     return {
+        # D6 provenance. On a checkpoint sweep, any ext_sem_* number whose
+        # source is "self" or "unspecified" is measuring a moving reference
+        # frame and cannot be read as a statement about the model.
+        "emb_gram_source":           emb_gram_source,
+        "ext_sem_threshold":         float(ext_sem_threshold),
         "mutual_pairs":              mutual_pairs,
         "n_same_cluster":            n_same,
         "n_diff_cluster":            n_diff,
