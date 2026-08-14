@@ -134,6 +134,31 @@ fired in the recorded run; the tie-break is now pinned.
 
 ---
 
+## Visualization
+
+`visualization/` draws this phase from its saved artifacts — no model load,
+no recomputation, every threshold and verdict imported from the phase rather
+than restated. `visualization/FIGURES-1b.md` is the catalogue: every figure,
+what it shows, which artifact it reads, and its status.
+
+Two things there that bear on this document. First, the figures are built
+around R1 and R3's correction — the continuous, null-referenced quantity is
+the figure and the regime label is an annotation beside it, so reading only
+the labels is hard by construction. Second, building them surfaced four
+quantities the blocks computed and the writer dropped before saving
+(per-layer cone nulls and binding tokens, `persistence_length`, the
+per-layer nesting and boundary tables, and the activation-space axes). All
+four are now emitted. `phase1b_{stem}_axes.npz` is the one that matters for
+the rerun: without it `axis_settling_step` — the quantity PREDICTIONS.md
+claim (b) needs — had no input from disk at all.
+
+Nothing in that package has been run against real Phase 1b output, because
+there is none since the revision. It is exercised end to end against a
+synthetic directory (`--fixture`); the shapes are real and the numbers are
+invented.
+
+---
+
 ## Handoff notes (live constraints for later phases)
 
 - **Phase 4:** don't treat the bipartition as a binary label — use the Fiedler

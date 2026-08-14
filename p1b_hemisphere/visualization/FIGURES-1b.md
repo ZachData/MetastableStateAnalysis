@@ -6,10 +6,12 @@ building it. Companion to `status-1b.md` (what the phase found) and
 **what does Phase 1b look like**, and which parts of it can be drawn from the
 artifacts the phase actually writes.
 
-Read the status column before citing any figure. Several entries here are
-`blocked` not because the figure is hard but because the quantity it draws is
-computed and then thrown away at serialization time — those are listed under
-[Data gaps](#data-gaps) with the one-line emission fix each needs.
+Read the status column before citing any figure. Eight entries here need an
+input the writer used to compute and then throw away at serialization time.
+All four of those emissions have landed (see [Data gaps](#data-gaps)), so a
+run made after them draws the complete set — but a run directory made before
+them still does not, and those figures skip with a printed reason rather than
+failing. `--list_runs` says which directory is which.
 
 ---
 
@@ -68,8 +70,10 @@ Eight classes, each its own module and each selectable from the CLI
 | `checkpoints` | `checkpoints_1b.py` | training-step axis | 4 |
 
 Status values: **done** — implemented and exercised against the fixture;
-**blocked** — implemented or specified but its input is not on disk (see
-[Data gaps](#data-gaps)); **planned** — specified here, not yet built.
+**done — needs [Gn]** — implemented, and drawing it needs an input that
+older run directories do not carry (see [Data gaps](#data-gaps); all four
+emissions have since landed, so any run made after them draws the full set);
+**planned** — specified here, not yet built.
 
 ---
 
@@ -91,10 +95,10 @@ Status values: **done** — implemented and exercised against the fixture;
 |---|---|---|---|---|
 | C1 | `cone_margin_depth` | `normalized_margin` vs depth with the zero line, regime band beneath, and null means overlaid as bands when `--n-null` was run. **The figure status-1b R3 asks for.** | `per_layer`, `cone` summary | done |
 | C2 | `cone_regime_strip` | Per-layer regime with escalation markers (`cone_escalated`) — where a reduced-space split was re-solved at full d. | `per_layer` | done |
-| C3 | `cone_null_z` | z vs shuffled-dimension and z vs uniform-sphere nulls, as two stacked panels sharing a layer axis (never two y-scales in one). | per-layer null fields | blocked — [G1](#g1) |
+| C3 | `cone_null_z` | z vs shuffled-dimension and z vs uniform-sphere nulls, as two stacked panels sharing a layer axis (never two y-scales in one). | per-layer null fields | done — needs [G1](#g1) |
 | C4 | `cone_binding` | `n_binding` and `d_eff` vs depth — how many tokens hold the witness, in how many effective dimensions. Distinguishes "cone-collapse" from "n < d". | `per_layer` | done |
-| C5 | `cone_witness_tokens` | Which tokens are binding, and how often across layers. The cone has a small support; this names it. | `cone.per_layer.binding_tokens` | blocked — [G1](#g1) |
-| C6 | `cone_vs_dimension` | Across every run: `normalized_margin` against `n_tokens / d_eff`. If the margin is dimension counting, this is where it shows as a trend rather than a verdict. | all runs | blocked — [G1](#g1) |
+| C5 | `cone_witness_tokens` | Which tokens are binding, and how often across layers. The cone has a small support; this names it. | `cone.per_layer.binding_tokens` | done — needs [G1](#g1) |
+| C6 | `cone_vs_dimension` | Across every run: `normalized_margin` against `n_tokens / d_eff`. If the margin is dimension counting, this is where it shows as a trend rather than a verdict. | all runs | done — needs [G1](#g1) |
 
 ### `tracking` — Block 1, does the axis keep its identity
 
@@ -105,7 +109,7 @@ Status values: **done** — implemented and exercised against the fixture;
 | T3 | `crossing_counts` | Tokens changing hemisphere per transition, as a fraction of n_tokens so it is comparable across prompts. | `per_layer.crossing_count` | done |
 | T4 | `event_timeline` | birth / collapse / swap / shear / drift on the layer axis, one row per type, marker shape per type so identity is not color-alone. Under the antipodal `regime_key` this is expected to be empty — an empty panel that says so is the point (R4). | `events` | done |
 | T5 | `crossref_events` | Axis rotation at merge vs off-merge, and crossings at violation vs off-violation layers, as paired bars with n annotated on each. The baseline the old summary omitted. | `summary.crossref_with_phase1` | done |
-| T6 | `persistence_length` | Regime persistence length per layer, with the `regime_key` the run used printed in the subtitle — the difference between the foreclosed and reachable vocabularies is the whole content of R4. | Block 1 | blocked — [G2](#g2) |
+| T6 | `persistence_length` | Regime persistence length per layer, with the `regime_key` the run used printed in the subtitle — the difference between the foreclosed and reachable vocabularies is the whole content of R4. | Block 1 | done — needs [G2](#g2) |
 
 ### `membership` — Block 2, tokens and the boundary
 
@@ -114,9 +118,9 @@ Status values: **done** — implemented and exercised against the fixture;
 | M1 | `stability_hist` | Distribution of per-token stability, with the mean and the 0.5 line. | `per_token` | done |
 | M2 | `border_vs_stability` | `border_index` against `stability_score`, one point per token. Tests the obvious hypothesis — that unstable tokens are boundary tokens — visually before anyone builds on it. | `per_token` | done |
 | M3 | `first_stable_layer_hist` | When tokens settle, with never-stable as an explicit terminal bar rather than a dropped row. | `per_token` | done |
-| M4 | `nesting_r_c` | `r_c` distribution over clusters against the nesting poles at 0 and 1, plus fully-nested fraction per layer. | `hdbscan_nesting` | blocked — [G3](#g3) |
-| M5 | `border_vs_noise_auc` | AUC vs depth against the 0.5 no-relationship line. **Phase 5c's question as a figure** — is the unclustered population the boundary population. | `border_vs_noise.per_layer` | blocked — [G3](#g3) |
-| M6 | `noise_vs_clustered_margin` | Mean \|v\| for HDBSCAN-noise vs clustered tokens per layer — the AUC's two underlying distributions, since an AUC alone hides magnitude. | `border_vs_noise.per_layer` | blocked — [G3](#g3) |
+| M4 | `nesting_r_c` | `r_c` distribution over clusters against the nesting poles at 0 and 1, plus fully-nested fraction per layer. | `hdbscan_nesting` | done — needs [G3](#g3) |
+| M5 | `border_vs_noise_auc` | AUC vs depth against the 0.5 no-relationship line. **Phase 5c's question as a figure** — is the unclustered population the boundary population. | `border_vs_noise.per_layer` | done — needs [G3](#g3) |
+| M6 | `noise_vs_clustered_margin` | Mean \|v\| for HDBSCAN-noise vs clustered tokens per layer — the AUC's two underlying distributions, since an AUC alone hides magnitude. | `border_vs_noise.per_layer` | done — needs [G3](#g3) |
 
 ### `axis` — Block A, is the Fiedler axis anything new
 
@@ -171,45 +175,48 @@ figures cannot drift from Phase 1's and Phase 2's.
 | K1 | `checkpoint_scalars` | Each aggregated scalar vs log-step, one panel per scalar, one line per family. | `cross_run.by_checkpoint` | done |
 | K2 | `regime_by_step` | Regime-fraction composition vs step, stacked — how the classifier's verdict moves through training. | per-run summaries | done |
 | K3 | `checkpoint_depth_heatmap` | Layer × step heatmaps for `normalized_margin` and `separation_ratio`. Depth and training on the same picture. | per-run `per_layer` | done |
-| K4 | `axis_settling` | Angle to the final-checkpoint axis vs step per layer, with `axis_settling_step`'s tolerance band and the settling step marked. **The PREDICTIONS.md claim (b) figure**, and the only one in the phase tracking the axis's direction rather than λ₂'s magnitude. | saved axes | blocked — [G4](#g4) |
+| K4 | `axis_settling` | Angle to the final-checkpoint axis vs step per layer, with `axis_settling_step`'s tolerance band and the settling step marked. **The PREDICTIONS.md claim (b) figure**, and the only one in the phase tracking the axis's direction rather than λ₂'s magnitude. | saved axes | done — needs [G4](#g4) |
 
 ---
 
 ## Data gaps
 
-Four quantities the phase computes and then drops before writing. Each is an
-additive emission — a key appended to an existing artifact, nothing renamed,
-nothing rewritten — and each unblocks the figures listed above. The loaders
-treat all four as optional and print a skip reason when absent, so figures
-built before the emission lands do not break after it does, and old runs stay
+Four quantities the phase computed and then dropped before writing. **All four
+emissions have landed** — each as a key appended to an existing artifact or a
+new sidecar file, nothing renamed and nothing rewritten. The loaders still
+treat all four as optional and print a skip reason when absent, because run
+directories written before the change do not have them and must stay
 readable.
 
 <a id="g1"></a>
 **G1 — cone per-layer detail.** `_save_run` writes
 `cone_collapse_to_json(...)["summary"]` and discards `["per_layer"]`, taking
 the null z-scores, percentiles, `d_eff`, and `binding_tokens` with it.
-Blocks C3, C5, C6. *(landed: `cone_per_layer` key.)*
+Needed by C3, C5, C6. *Landed: `cone_per_layer`.*
 
 <a id="g2"></a>
 **G2 — Block 1 persistence.** `persistence_length` is returned by
 `analyze_hemisphere_tracking` and never reaches the per-run JSON; only its
-derived event counts do. Blocks T6.
+derived event counts do — and under the antipodal `regime_key` those are
+empty by construction (R4), so the one array that distinguishes the foreclosed
+vocabulary from the reachable one was the one not written. Needed by T6.
+*Landed: `persistence_length` and `regime_key`.*
 
 <a id="g3"></a>
 **G3 — nesting and boundary per-layer.** The per-run summary carries
 `hdbscan_nesting_overall` and `border_vs_noise_mean_auc` — one number each —
 while `membership_to_json` produced a full per-layer breakdown. Blocks M4, M5,
-M6, which is the whole Phase 5c thread. *(landed: `hdbscan_nesting` and
-`border_vs_noise` keys.)*
+M6, which is the whole Phase 5c thread. *Landed: `hdbscan_nesting` and
+`border_vs_noise`.*
 
 <a id="g4"></a>
 **G4 — activation-space axes.** `axis_identity_to_json` drops `axes` with the
 comment that they belong in an npz; no npz is written. Without them
 `cross_checkpoint_axis_rotation` and `axis_settling_step` have no input from
-disk, so the phase's checkpoint headline cannot be drawn. Blocks K4.
-*(landed: `phase1b_{stem}_axes.npz`.)*
+disk, so the phase's checkpoint headline could not be drawn at all. Needed by
+K4. *Landed: `phase1b_{stem}_axes.npz`.*
 
-A fifth is worth naming even though no figure here is blocked on it: **layer 0
+A fifth is worth naming even though no figure needs it closed: **layer 0
 is the embedding output, pre-any-LN** (status-1b open blocker 5) and is still
 averaged into per-model means. Every depth-axis figure in this package marks
 layer 0 rather than dropping it, since dropping it silently would repeat the
