@@ -2,9 +2,14 @@
 p2d_operator_activation/run_2d.py — Phase 2d driver.
 
     python -m p2d_operator_activation.run_2d \
-        --p2-dir results_p2/ --model EleutherAI/pythia-410m \
-        --p1-run results/pythia-410m_step143000/short_heterogeneous \
+        --p2-dir results_p2/ --model pythia-410m-step143000 \
+        --p1-run results/<phase1 run>/pythia-410m-step143000_short_heterogeneous \
         --revision step143000 --out results_p2d/ --subexp D1 D2 D3 D4
+
+--model NAMES THE PHASE 2 ARTIFACT, i.e. the registry key Phase 2 saved
+ov_summary_{stem}.json under, not the HF repo. resolve_hf_repo maps it to a
+repo id for the LN frame with core/models.py's own rule; a bare HF name is
+still accepted for a model outside the registry.
 
 BOTH REVISIONS ARE REQUIRED AND NEITHER IS INFERRED. The join refuses on a
 mismatch or an unknown; see p2d_io. A driver that guessed the revision from
@@ -39,6 +44,52 @@ from .operator_pairing import (
 from .table1_predictions import (
     classify_ov_row, projection_modality, modality_stability, adjudicate_p_t1,
 )
+
+
+def resolve_hf_repo(model_name: str, revision: str) -> str:
+    """
+    The HF repo id to load LN parameters from, given a --model that names a
+    Phase 2 artifact.
+
+    `--model` has to be the registry key, because that is the stem Phase 2
+    writes its ov_summary_/ov_weights_ files under. But the same string was
+    being handed to AutoModelForCausalLM.from_pretrained, where a key like
+    `pythia-410m-step512` is not a repo id — so on this project's own
+    artifacts the LN frame could not be resolved at all, and --raw-frame
+    (a sensitivity check, never the primary measurement) was the only way
+    through.
+
+    The mapping is core/models.py's, not a second one: `hf_repo`, then
+    `pretrained_name`, then the key itself — so a bare `EleutherAI/pythia-410m`
+    still passes through unchanged, which is the form this module's docstring
+    shows.
+
+    A registry key also carries its own `revision`, and disagreeing with
+    --revision is fatal rather than a warning. Loading step-X operators
+    against step-Y LN gains is the failure the join revision guard exists to
+    prevent, one level down and harder to see: the OV circuits would match the
+    activations while the LN gains came from a different checkpoint. The
+    revision is still never inferred — --revision remains required.
+    """
+    # Imported here, not at module scope: core.config pulls torch in via
+    # DEVICE, and this module's import graph is otherwise light.
+    from core.config import MODEL_CONFIGS
+
+    cfg = MODEL_CONFIGS.get(model_name)
+    if cfg is None:
+        return model_name
+
+    cfg_rev = cfg.get("revision")
+    if cfg_rev is not None and str(cfg_rev) != str(revision):
+        raise SystemExit(
+            f"p2d: --model {model_name!r} is the registry key for revision "
+            f"{cfg_rev!r}, but --revision says {revision!r}. Phase 2 wrote "
+            f"that model's operators at {cfg_rev!r}; pairing them with "
+            f"{revision!r}'s LN gains measures neither checkpoint. Fix one "
+            f"of the two."
+        )
+
+    return cfg.get("hf_repo", cfg.get("pretrained_name", model_name))
 
 
 def violation_counts(run: dict, beta: float) -> tuple:
@@ -208,6 +259,10 @@ def main(argv=None) -> int:
     print("NOTE: Phase 2d is sequenced after 1c-B. If T_eff << t*, the "
           "monotonicity break may not be the right thing to attribute.\n")
 
+    # Before anything is loaded: a registry key whose revision disagrees with
+    # --revision is refused here rather than three modules deep.
+    hf_repo = resolve_hf_repo(args.model, args.revision)
+
     try:
         ops = load_operators(args.p2_dir, args.model)
     except (FileNotFoundError, KeyError) as exc:
@@ -255,7 +310,7 @@ def main(argv=None) -> int:
             return 2
         try:
             ln_params, ln_info = resolve_ln_params(
-                args.model, args.revision, n_hidden_states=A.shape[0],
+                hf_repo, args.revision, n_hidden_states=A.shape[0],
                 which=args.ln_which,
                 embedding_stripped=emb_stripped,
                 last_is_post_final_ln=post_ln,
@@ -269,7 +324,8 @@ def main(argv=None) -> int:
                   f"different space, silently.",
                   file=sys.stderr)
             return 2
-        print(f"  LN frame resolved for {A.shape[0]} states "
+        print(f"  LN frame resolved for {A.shape[0]} states from "
+              f"{hf_repo}@{args.revision} "
               f"(which={args.ln_which}): " +
               ", ".join(f"{k}={v}" for k, v in ln_info["frame_counts"].items()))
         if ln_info["identity_indices"]:
