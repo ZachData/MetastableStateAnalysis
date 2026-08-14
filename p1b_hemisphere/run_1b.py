@@ -63,6 +63,14 @@ Outputs (per run)
   phase1b_{stem}.json        flat per-layer / per-token / summary JSON
   phase1b_{stem}.md          human-readable per-block summary
   phase1b_{stem}_particles.npz   ParticleTable, one row per (layer, token)
+  phase1b_{stem}_axes.npz    activation-space Fiedler axes, (n_layers, d)
+
+The JSON additionally carries `cone_per_layer`, `hdbscan_nesting`,
+`border_vs_noise`, and `persistence_length` — per-layer tables every block
+already computed and the writer used to drop, keeping only one summary number
+from each. Readers written against the old shape are unaffected: every key
+above is new, and nothing existing changed name or meaning. See
+visualization/FIGURES-1b.md for what each unblocks.
 
 Outputs (cross-run)
 -------------------
@@ -548,9 +556,36 @@ def _save_run(result: dict, out_dir: Path) -> None:
     }
     serializable["events"] = _serialize_events(result["events"])
     if result.get("_block3") is not None:
-        serializable["cone"] = cone_collapse_to_json(result["_block3"])["summary"]
+        cone_json = cone_collapse_to_json(result["_block3"])
+        serializable["cone"] = cone_json["summary"]
+        # The per-layer half carries the null z-scores, d_eff, and the
+        # binding-token support — everything that distinguishes "cone-collapse"
+        # from "n < d". It was computed and then dropped at serialization, so
+        # nothing downstream could read it. Additive: `cone` keeps its
+        # existing shape and meaning.
+        serializable["cone_per_layer"] = cone_json["per_layer"]
     if result.get("_axis") is not None:
         serializable["axis_identity"] = axis_identity_to_json(result["_axis"])
+
+    # Block 2's per-layer breakdowns. The summary kept one number from each
+    # (hdbscan_nesting_overall, border_vs_noise_mean_auc) and discarded the
+    # per-layer tables membership_to_json had already built — which is the
+    # depth resolution the Phase 5c question is asked at.
+    b2 = result.get("_block2_json") or {}
+    for key in ("hdbscan_nesting", "border_vs_noise"):
+        if b2.get(key) is not None:
+            serializable[key] = b2[key]
+
+    # Block 1's persistence length per layer. Only its derived event counts
+    # reached the JSON, and under the antipodal regime_key those are empty by
+    # construction (status-1b R4) — so the one array that shows the difference
+    # between the two vocabularies was the one not written.
+    b1 = result.get("_block1") or {}
+    if b1.get("persistence_length") is not None:
+        serializable["persistence_length"] = [
+            _f(v) for v in np.asarray(b1["persistence_length"]).ravel()
+        ]
+        serializable["regime_key"] = b1.get("regime_key")
 
     json_path = out_dir / f"{ARTIFACT_PREFIX}_{stem}.json"
     with open(json_path, "w") as f:
@@ -560,6 +595,23 @@ def _save_run(result: dict, out_dir: Path) -> None:
     md_path = out_dir / f"{ARTIFACT_PREFIX}_{stem}.md"
     md_path.write_text(_per_run_md(result))
     print(f"    Saved: {md_path.name}")
+
+    # Activation-space axes, (n_layers, d). axis_identity_to_json drops these
+    # with the note that they belong in an npz; no npz was ever written, so
+    # cross_checkpoint_axis_rotation / axis_settling_step — the quantity
+    # PREDICTIONS.md claim (b) needs — had no input from disk.
+    axis = result.get("_axis")
+    if axis is not None and axis.get("axes") is not None:
+        axes_path = out_dir / f"{ARTIFACT_PREFIX}_{stem}_axes.npz"
+        try:
+            np.savez_compressed(
+                axes_path,
+                axes=np.asarray(axis["axes"], dtype=np.float32),
+                valid=np.asarray(result["_block0"]["valid"], dtype=bool),
+            )
+            print(f"    Saved: {axes_path.name}")
+        except Exception as exc:
+            print(f"    [axes] not written: {exc}")
 
     try:
         cols, extra = p1b_io.hemisphere_particle_rows(
