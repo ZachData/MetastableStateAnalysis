@@ -36,6 +36,7 @@ show it is showing a plotting bug, and none of it a prediction:
 from __future__ import annotations
 
 import json
+import zlib
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
@@ -423,10 +424,18 @@ def build_run(
                      stability, 1.0 - border_index, rng)
 
     # Axes: a stable direction rotating slowly with depth, in d_model dims.
+    #
+    # The anchor is seeded off the model's BASE name, not off `seed`, so every
+    # checkpoint in a family converges toward the same direction as `trained`
+    # rises. Seeding it per-run instead would give each step an unrelated
+    # anchor, and the axis-settling figure would show a family that never
+    # settles — a fixture result rather than a planted phenomenon.
     axes = np.zeros((n_layers, d_model))
-    anchor = rng.normal(0, 1, d_model)
+    base_name = model.rsplit("-step", 1)[0]
+    anchor_rng = np.random.default_rng(zlib.crc32(base_name.encode()) % (2 ** 32))
+    anchor = anchor_rng.normal(0, 1, d_model)
     anchor /= np.linalg.norm(anchor)
-    drift = rng.normal(0, 1, d_model)
+    drift = anchor_rng.normal(0, 1, d_model)
     drift -= drift.dot(anchor) * anchor
     drift /= np.linalg.norm(drift)
     for L in range(n_layers):
