@@ -6,8 +6,8 @@ The single command-line entry point:
     python -m p2b_imaginary.visualization \\
         --p2b_dir results/<phase2b-output-dir> \\
         --out     blog_figures/p2b \\
-        [--classes spectrum frames trajectory report verdicts nulls
-                   curiosities] \\
+        [--classes spectrum heads frames trajectory report verdicts
+                   nulls curiosities] \\
         [--steps 512 3000] [--prompts wiki_paragraph] \\
         [--external phase2_frac_repulsive.json] \\
         [--list_runs] [--fixture]

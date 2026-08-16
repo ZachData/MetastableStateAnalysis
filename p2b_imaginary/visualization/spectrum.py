@@ -24,22 +24,24 @@ that number are visible here and are not visible in the number:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from .loaders import Checkpoint, Sweep, checkpoint_out
 from .style import (
-    BLOG_STYLE, CATEGORICAL, REFERENCE_LINE, depth_axis, depth_color,
-    depth_norm, note, reference_line, save_figure, subtitle,
+    BLOG_STYLE, CATEGORICAL, REFERENCE_LINE, REFUSAL_COLOR, depth_axis,
+    depth_color, depth_norm, no_data, note, reference_line, save_figure,
+    subtitle,
 )
 
 __all__ = ["generate_spectrum_figures", "FIGURES"]
 
 FIGURES = ("complex_fraction_depth", "energy_budget_depth", "theta_depth",
            "rho_depth", "repulsive_depth", "henrici_depth",
-           "normality_budget", "dims_vs_energy")
+           "normality_budget", "dims_vs_energy", "plane_spectrum",
+           "precision_surface")
 
 #: A norm-matched Gaussian is essentially all complex pairs. Drawn as the
 #: reference on every fraction panel, because "97% complex" against a null of
@@ -66,6 +68,10 @@ def generate_spectrum_figures(sweep: Sweep, out_dir: Path) -> List[Path]:
             paths.append(_henrici_depth(ck, d))
             paths.append(_normality_budget(ck, d))
             paths.append(_dims_vs_energy(ck, d))
+            for fn in (_plane_spectrum, _precision_surface):
+                p = fn(ck, d)
+                if p is not None:
+                    paths.append(p)
     return paths
 
 
@@ -404,3 +410,198 @@ def _dims_vs_energy(ck: Checkpoint, out: Path) -> Path:
     note(ax, "Rank deficiency destroys the x axis and leaves the y axis "
              "intact — the two are different questions.")
     return save_figure(fig, out, "dims_vs_energy")
+
+
+# ---------------------------------------------------------------------------
+# S9
+# ---------------------------------------------------------------------------
+
+def _plane_spectrum(ck: Checkpoint, out: Path) -> Optional[Path]:
+    """
+    S9 — every rotation plane in the checkpoint, in the complex plane.
+
+    The spectrum itself, not a summary of it. S3 draws θ's mean, sd, median
+    and extremes; those five numbers are compatible with a single tight
+    cluster, with two clusters at either end, and with a uniform smear, and
+    those are three different claims about what the operator does. A mean of
+    1.5 rad over a bimodal spectrum at 0.2 and 2.8 describes no plane in the
+    layer, and every comparison built on that mean inherits the problem.
+
+    Left panel: the upper half-plane, one point per (layer, plane), radius ρ
+    and angle θ, coloured by depth. The unit circle is drawn because ρ = 1 is
+    where a rotation neither grows nor shrinks, and the imaginary axis
+    because Re λ < 0 — everything left of it — is the direction `e^{−V}`
+    grows in, i.e. what S5 counts.
+
+    Right panel: the pooled θ histogram, which is where bimodality shows.
+    """
+    planes = ck.planes()
+    fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.4),
+                             gridspec_kw={"width_ratios": [1.15, 1]})
+    if not planes:
+        for ax in axes:
+            no_data(ax, "no planes.npz for this checkpoint — the run passed "
+                        "--no-planes, or predates the emission")
+        return save_figure(fig, out, "plane_spectrum")
+
+    rho = ck.plane_column("rho")
+    theta = ck.plane_column("theta")
+    depth = ck.plane_layer_index()
+    norm = depth_norm(len(ck.per_layer))
+
+    ax = axes[0]
+    re, im = rho * np.cos(theta), rho * np.sin(theta)
+    ax.scatter(re, im, s=14, alpha=0.75, edgecolors="none",
+               c=[depth_color(i, norm) for i in depth])
+    r_max = float(np.nanmax(rho)) if rho.size else 1.0
+    # The unit circle is drawn only when the spectrum reaches it. On a
+    # small-norm OV every plane sits near the origin, and a |λ| = 1 arc
+    # would then set the axis limits and squash the actual cloud into a
+    # line — a reference that hides the data is worse than none.
+    if r_max > 0.35:
+        arc = np.linspace(0, np.pi, 200)
+        ax.plot(np.cos(arc), np.sin(arc), **REFERENCE_LINE)
+        ax.annotate("|λ| = 1", xy=(np.cos(2.4), np.sin(2.4)), fontsize=8,
+                    color="#6B7280")
+        span = 1.08 * max(r_max, 1.0)
+        ax.set_xlim(-span, span)
+        ax.set_ylim(-0.04 * span, span)
+    else:
+        pad = 1.15 * max(float(np.nanmax(np.abs(re))), 1e-9)
+        ax.set_xlim(-pad, pad)
+        ax.set_ylim(-0.04 * r_max, 1.12 * r_max)
+        ax.annotate(f"|λ| ≤ {r_max:.3g} — the unit circle is off-scale",
+                    xy=(0.02, 0.02), xycoords="axes fraction", fontsize=8,
+                    color="#6B7280")
+    ax.axvline(0.0, **REFERENCE_LINE)
+    ax.set_xlabel("Re λ        ← repulsive | attractive →")
+    ax.set_ylabel("Im λ")
+    ax.set_title(f"{rho.size} rotation planes, coloured by depth")
+
+    ax = axes[1]
+    ax.hist(theta, bins=40, color=CATEGORICAL[0])
+    reference_line(ax, 0, "", axis="y")
+    ax.axvline(np.pi / 2, **REFERENCE_LINE)
+    ax.annotate("π/2  (a Gaussian's mean)", xy=(np.pi / 2, 0.98),
+                xycoords=("data", "axes fraction"), rotation=90, va="top",
+                ha="left", fontsize=8, color="#6B7280")
+    mean = float(np.nanmean(theta)) if theta.size else float("nan")
+    ax.axvline(mean, color=CATEGORICAL[1], linewidth=2.0)
+    ax.annotate(f"observed mean {mean:.2f}", xy=(mean, 0.62),
+                xycoords=("data", "axes fraction"), rotation=90, va="top",
+                ha="right", fontsize=8, color=CATEGORICAL[1])
+    ax.set_xlim(0, np.pi)
+    ax.set_xlabel("θ  (rad)")
+    ax.set_ylabel("planes")
+    ax.set_title("pooled over every layer")
+
+    fig.tight_layout()
+    fig.suptitle("The spectrum, not a summary of it")
+    subtitle(fig, f"{ck.label}   ·   from planes.npz")
+    note(axes[1], "If the mean line sits in a trough, every statistic built "
+                  "on θ_mean describes no plane in this checkpoint.",
+         outside=True)
+    return save_figure(fig, out, "plane_spectrum")
+
+
+# ---------------------------------------------------------------------------
+# S10
+# ---------------------------------------------------------------------------
+
+def _precision_surface(ck: Checkpoint, out: Path) -> Optional[Path]:
+    """
+    S10 — is "84-97% complex" a fact about OV or about how it was counted?
+
+    Precision-policy item P2. The complex fraction here uses a RELATIVE
+    criterion, `|Im λ| > tol·(|Re λ| + eps)`, and a relative criterion is
+    exactly what an fp16-epsilon split of a genuinely real eigenvalue pair
+    defeats: the split is small in absolute terms and unbounded in ratio when
+    `|Re λ|` is also small. The checkpoints went through an fp16 round trip.
+    So the honest answer is a surface over (tolerance, perturbation), and
+    this draws it — baseline against perturbed, swept over tolerance, with
+    the shipped 0.01 marked.
+
+    A flat pair of curves means the headline is a property of the operator. A
+    baseline that slopes means it is a property of the counting rule and must
+    be quoted with its tolerance. A gap between the curves means it is a
+    property of fp16 storage and should be re-derived from float64. The
+    verdict strip beneath is `precision_verdict`'s, per layer.
+    """
+    precision = ck.precision
+    # Generous hspace: the two panels have DIFFERENT x axes — tolerance above,
+    # depth below — so they must not read as a shared-axis pair.
+    fig, axes = plt.subplots(2, 1, figsize=(9.5, 6.6),
+                             gridspec_kw={"height_ratios": [3, 1],
+                                          "hspace": 0.62})
+    if not precision:
+        for ax in axes:
+            no_data(ax, "no precision surface — the sweep ran without "
+                        "--with-precision (it costs ~10 dense "
+                        "eigendecompositions per layer)")
+        return save_figure(fig, out, "precision_surface")
+
+    per_layer = precision.get("per_layer") or {}
+    names = [n for n in ck.layer_names if n in per_layer] or list(per_layer)
+    norm = depth_norm(len(names))
+
+    ax = axes[0]
+    tols = None
+    for i, name in enumerate(names):
+        surface = (per_layer[name] or {}).get("surface") or {}
+        tols = surface.get("tols") or tols
+        base = surface.get("baseline")
+        pert = surface.get("perturbed_mean")
+        if not base:
+            continue
+        ax.plot(surface["tols"], base, color=depth_color(i, norm),
+                linewidth=1.4, alpha=0.85)
+        if pert:
+            ax.plot(surface["tols"], pert, color=depth_color(i, norm),
+                    linewidth=1.0, linestyle="--", alpha=0.7)
+    if tols:
+        ax.set_xscale("log")
+        shipped = (per_layer[names[0]] or {}).get(
+            "surface", {}).get("shipped_tol")
+        if shipped:
+            reference_line(ax, float(shipped),
+                           f"shipped tol = {shipped:g}", axis="x")
+    ax.set_xlabel("relative tolerance for |Im λ| > tol·|Re λ|  (log)")
+    ax.set_ylabel("complex energy fraction")
+    ax.set_title("Does the headline survive its own counting rule?")
+    ax.plot([], [], color="#374151", linewidth=1.4, label="float64 baseline")
+    ax.plot([], [], color="#374151", linewidth=1.0, linestyle="--",
+            label="after an fp16 round trip")
+    ax.legend(loc="best", fontsize=8.5)
+
+    ax = axes[1]
+    verdicts = [(per_layer[n] or {}).get("verdict", {}).get("verdict",
+                                                            "unknown")
+                for n in names]
+    colors = {"stable": CATEGORICAL[2],
+              "threshold_sensitive": CATEGORICAL[3],
+              "precision_sensitive": CATEGORICAL[1],
+              "both": "#B45B5B", "unknown": REFUSAL_COLOR}
+    for i, v in enumerate(verdicts):
+        ax.axvspan(i - 0.5, i + 0.5, color=colors.get(v, REFUSAL_COLOR),
+                   linewidth=0)
+    ax.set_yticks([])
+    ax.set_ylim(0, 1)
+    ax.grid(False)
+    depth_axis(ax, len(names))
+    ax.set_ylabel("verdict", rotation=0, ha="right", va="center", fontsize=9)
+    seen = [v for v in dict.fromkeys(verdicts)]
+    ax.legend(handles=[plt.matplotlib.patches.Patch(
+        facecolor=colors.get(v, REFUSAL_COLOR), label=v) for v in seen],
+        loc="upper left", bbox_to_anchor=(1.005, 1.2), fontsize=7.5)
+
+    spans = [(per_layer[n] or {}).get("verdict", {}) for n in names]
+    worst_tol = max((v.get("tol_span", 0.0) or 0.0) for v in spans) if spans else 0.0
+    worst_prec = max((v.get("precision_span", 0.0) or 0.0) for v in spans) if spans else 0.0
+    subtitle(fig, f"{ck.label}   ·   overall: "
+                  f"{precision.get('overall_verdict', '?')}   ·   worst "
+                  f"tolerance span {worst_tol:.2e}, worst precision span "
+                  f"{worst_prec:.2e}   ·   item P2")
+    note(ax, "This verdict is about Block 1a's descriptive fraction. Block "
+             "1b's frames are scored on energies and do not consult this "
+             "tolerance.", outside=True)
+    return save_figure(fig, out, "precision_surface")

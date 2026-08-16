@@ -8,10 +8,13 @@ Phase 2b look like**, and which parts of it can be drawn from the artifacts
 the phase actually writes.
 
 Read the status column before citing any figure. Seven quantities this phase
-computes are dropped at serialization time and are listed under
-[Data gaps](#data-gaps); every figure needing one of them skips with a
-printed reason rather than failing. `--list_runs` says which gap is biting a
-particular directory.
+computed and then dropped at serialization time were listed here as data
+gaps; **all seven emissions have now landed** in `p2b_imaginary/` (see
+[Data gaps](#data-gaps)), so a run made after them draws the complete set.
+A run directory made BEFORE them still does not, and those figures skip with
+a printed reason rather than failing — the loaders detect each gap from the
+artifact rather than assuming it, so both kinds of directory stay readable.
+`--list_runs` says which gap is open in a particular directory.
 
 ---
 
@@ -78,11 +81,12 @@ that `p2b_report` already computes its interval widths in. See
 it without inheriting Phase 1's plotting dependencies.
 
 **A missing input is a skipped figure, not a crash.** Blocks 2, 3 and 4 are
-unwired by design (`PLAN_2b.md` items 10–12), nulls are opt-in
-(`--with-nulls`), Block 1b needs Phase 1 activations that a weights-only
-(`--blocks 1a`) sweep never touches, and a single-checkpoint run has no
-trajectory. Every figure declares what it needs and no-ops with a printed
-reason when it is absent.
+unwired by design (`PLAN_2b.md` items 10–12), nulls and the precision surface
+are opt-in (`--with-nulls`, `--with-precision`), Block 1b needs Phase 1
+activations that a weights-only (`--blocks 1a`) sweep never touches, per-head
+circuits need an OV npz carrying `ov_head{h}_*` arrays, and a
+single-checkpoint run has no trajectory. Every figure declares what it needs
+and no-ops with a printed reason when it is absent.
 
 **Color by job.** Categorical hues in fixed order (validated for CVD
 separation, see `style.py`); one hue light→dark for magnitude; a two-hue
@@ -95,27 +99,30 @@ absent inputs, and is never a data color.
 
 ## Figure classes
 
-Seven classes, each its own module and each selectable from the CLI
+Eight classes, each its own module and each selectable from the CLI
 (`--classes spectrum trajectory …`).
 
 | Class | Module | Scope | Figures |
 |---|---|---|---|
-| `spectrum` | `spectrum.py` | Block 1a — one checkpoint, depth axis | 8 |
-| `frames` | `frames.py` | Block 1b — one (checkpoint, prompt) | 7 |
+| `spectrum` | `spectrum.py` | Block 1a — one checkpoint, depth axis | 10 |
+| `heads` | `heads.py` | per-head circuits — is the headline about any head? | 4 |
+| `frames` | `frames.py` | Block 1b — one (checkpoint, prompt) | 10 |
 | `trajectory` | `trajectory.py` | Block 1a across checkpoints | 8 |
 | `report` | `report_fig.py` | `p2b_report` — flatness, intervals, dated events | 5 |
 | `verdicts` | `verdicts.py` | Block 1b across checkpoints and prompts | 5 |
 | `nulls` | `nulls.py` | norm-matched Gaussian null (opt-in) | 4 |
-| `curiosities` | `curiosities.py` | exploratory / speculative | 12 |
+| `curiosities` | `curiosities.py` | exploratory / speculative | 13 |
 
-`spectrum` and `nulls`' per-checkpoint half write into `{out}/{stem}/`;
-`frames` writes into `{out}/{stem}/{prompt}/`; everything else writes into
-`{out}/_cross/`.
+`spectrum`, `heads` and `nulls`' per-checkpoint half write into
+`{out}/{stem}/`; `frames` writes into `{out}/{stem}/{prompt}/`; everything
+else writes into `{out}/_cross/`.
 
 Status values: **done** — implemented and exercised against the fixture;
-**done — needs [Gn]** — implemented, and drawing it needs a quantity the
-phase computes and discards (see [Data gaps](#data-gaps)); **planned** —
-specified here, not yet built.
+**done — needs `--flag`** — implemented, and drawing it needs a sweep that
+opted into an expensive block; **planned** — specified here, not yet built.
+Nothing in the catalogue is now blocked on an emission: all seven gaps below
+have landed, and a figure needing one skips only against a run directory
+older than it.
 
 ---
 
@@ -134,6 +141,8 @@ from a `--blocks 1a` sweep with no activations anywhere.
 | S6 | `henrici_depth` | `henrici_relative` vs depth with the argmax layer marked, and `henrici_absolute_unclamped` beneath with its zero line. A materially negative unclamped value is a block-parse bug, not noise, and the previous version clamped it away silently. | `per_layer` | done |
 | S7 | `normality_budget` | `t_frob_sq` split into eigenvalue energy and the Henrici departure, per layer, as fractions. How much of the operator lives in the interaction between Schur blocks rather than in its eigenvalues — i.e. how informative the S/A split is at each depth. | `per_layer` | done |
 | S8 | `dims_vs_energy` | `dim_complex_fraction` against `complex_energy_fraction`, one point per layer, with y = x. **`head_circuits`' correction as a figure**: rank deficiency destroys dimension fractions and leaves energy fractions intact, so these two are different questions and the gap between them is the answer. | `per_layer` | done |
+| S9 | `plane_spectrum` | Every rotation plane in the checkpoint, in the complex plane, coloured by depth — plus the pooled θ histogram with the observed mean drawn on it. **The spectrum, not a summary of it.** S3's five order statistics are compatible with one tight cluster, with two clusters at either end, and with a uniform smear; if the mean line here sits in a trough, every statistic in the phase built on `theta_mean` describes no plane in the checkpoint. | `planes.npz` | done |
+| S10 | `precision_surface` | Complex fraction against the relative tolerance, at float64 and after an fp16 round trip, one line pair per layer, with the shipped 0.01 marked and `precision_verdict`'s per-layer verdict as a strip beneath. **Precision-policy item P2 with a number attached.** A sloping baseline means the headline is a property of the counting rule; a gap between the curves means it is a property of fp16 storage. | `block1a.precision` | done — needs `--with-precision` |
 
 ### `frames` — Block 1b at one (checkpoint, prompt)
 
@@ -142,6 +151,9 @@ and absent for any prompt whose Phase 1 run had no activations.
 
 | # | Figure | Shows | Source | Status |
 |---|---|---|---|---|
+| F8 | `energy_curves` | Interaction energy vs depth, one curve per frame, with the violating transitions marked and the rank gate shaded beneath. **The central Block 1b picture**, and for a long time an undrawable one — a count says how many transitions crossed a threshold, and only the curve says whether the rescaling changed the trajectory's shape at all. | `frames[*].per_layer` | done |
+| F9 | `violation_severity` | The relative energy drop at every transition, per frame, against `rel_tol` on a symlog axis. Four marginal violations and one catastrophic one give the same count and the same rate. Unscored transitions are gaps, not zeros. | `counts.rel_drops` | done |
+| F10 | `rescaler_growth` | `max |R_cum|` vs depth per frame on a log axis, with the overflow limit and the truncation point marked. Separates a frame that diverged immediately from one that climbed steadily and ran out of depth. The control is flat at 1 by construction — if it is not, F5's identity check is invalid. | `frames[*].r_cum_max_abs` | done |
 | F1 | `frame_counts` | Per frame: violations, and beside them the scored / gated / NaN transitions they are a fraction of. The denominator rewrite as a picture — two frames with different scored counts are not comparable, and this is where that is visible before any rate is read. | `frames[*].counts` | done |
 | F2 | `elimination_rates` | `elim_full` and `elim_signed` at the reference β, **unclipped** (the negative axis is always drawn, because a negative rate is ALBERT's overcorrection and Phase 2's verification item V2), with the ±`EQUIVALENCE_BAND` band and each refusal drawn as a labeled marker at its own row rather than at zero. | `comparison` | done |
 | F3 | `violation_layers_strip` | Which layers violated, one row per frame, on the depth axis, with everything past `n_valid_layers` shaded as not-scored. A frame that truncated at layer 3 and a frame that found no violations after layer 3 look identical in a count; they do not look identical here. | `frames[*].counts.violation_layers` | done |
@@ -149,6 +161,27 @@ and absent for any prompt whose Phase 1 run had no activations.
 | F5 | `invariance_control` | The rotation-only frame's orthogonality residual and its worst relative energy difference, against `ORTHOGONALITY_TOL` and the 1e-3 violation tolerance, on a log axis. **status-2b's withdrawal in one image**: the residual sits ~1e-15 against a 1e-3 threshold, so `elim_rotation = 0.0` was forced before any data was read. | `invariance` | done |
 | F6 | `sa_decomposition_depth` | `S_frob`, `A_frob` and the Frobenius rotation ratio per layer. The structural claim ("OV is mostly rotation") in the norm that the rescaled frames actually act in, as against S1's spectral one. | `sa_decomp` | done |
 | F7 | `phase1_cross_check` | Phase 2b's `original`-frame violation count against Phase 1's own count for the same run, per β. Phase 2b gates on normed effective rank and Phase 1 on raw, so these are *expected* to differ; a large divergence means the gate is doing the work the rescaling is being credited with. | `phase1_cross_check` | done |
+
+### `heads` — is the headline about any actual head?
+
+Reads `block1a_head_circuits.json`. Weights-only, and cheap: per-head `W_OV`
+has rank `d_head`, so every spectrum here is a `d_head²` problem rather than
+`d_model²` — 16 × 64³ against 1024³ per layer at 410m.
+
+The class exists for one distinction. `ov_total = Σ_h W_OV^h` is the
+effective operator only under a counterfactual the model does not satisfy —
+that every head shares an attention pattern; the real update is
+`Σ_h α^h X W_OV^h`. So "OV is 84–97.5% complex" is a statistic of a matrix
+the model never forms, and whether it describes any HEAD is a separate
+question. `summed_vs_per_head` reports both and the gap, and does not
+adjudicate; neither do these.
+
+| # | Figure | Shows | Source | Status |
+|---|---|---|---|---|
+| H1 | `summed_vs_per_head` | The summed statistic against the per-head min–max band and mean, per layer, with the gap beneath. Where the summed value falls outside the band it describes no head in that layer — a statement about the counterfactual, not about the model. | `per_layer.summed` / `.per_head` | done |
+| H2 | `head_agreement_depth` | `head_agreement` — the fraction of heads within 0.05 of the summed value — vs depth, with the head-to-head sd beneath. High spread with low agreement means the heads differ and the sum describes none of them; low spread with low agreement means they agree with each other and not with the sum. | `per_layer.head_agreement` | done |
+| H3 | `head_spectrum_spread` | Every head drawn individually against the one number that stands for all of them. Two clusters of heads, one outlier, and a smooth spread give the same sd and are three different pictures of a layer. | `per_layer` | done |
+| H4 | `head_agreement_trajectory` | Mean and worst head agreement vs training step, with the gap and spread beneath. **The interesting version of the question**: falling agreement means the heads are differentiating and the published number describes less of the model as training proceeds. | `head_circuits.summary` | done |
 
 ### `trajectory` — Block 1a across checkpoints
 
@@ -214,7 +247,8 @@ nothing is a result worth having drawn once.
 |---|---|---|---|---|
 | X1 | `spectrum_fingerprint` | Layer × metric heatmap for one checkpoint, each metric z-scored down its own column. One checkpoint's whole Block 1a table as a single image, for spotting which layers are odd before deciding what to plot. | `block1a.per_layer` | done |
 | X2 | `rotation_clock` | Mean θ per layer on polar axes with radius `rho_mean`, coloured by depth. "How fast does each layer rotate, and how hard" as a shape rather than two columns of a table. | `block1a.per_layer` | done |
-| X3 | `spectral_annulus` | Where each layer's eigenvalues live in the complex plane, as a (ρ ± sd) × (θ_min … θ_max) sector per layer. A *summary* of the spectrum, not the spectrum — the per-plane list is [G3](#g3), and the figure says so in its caption. | `block1a.per_layer` | done — needs [G3](#g3) for the real thing |
+| X3 | `spectral_annulus` | Where each layer's eigenvalues live in the complex plane. With `planes.npz` present, every plane as a point; without it, the (ρ ± sd) × (θ_min … θ_max) sector its summary statistics imply, labelled on the figure as the reconstruction it is — a sector drawn from four order statistics looks exactly like one drawn from a distribution and is not the same claim. | `planes.npz`, else `per_layer` | done |
+| X13 | `theta_ridge` | The rotation-angle distribution at every depth, stacked, on a shared vertical scale with each layer's mean ticked on its baseline. X8 draws θ's coefficient of variation, which cannot tell a wide unimodal spread from two tight clusters far apart; this can. Bimodal ridges mean each layer holds two populations of planes and every mean-based comparison in the phase averages across them. | `planes.npz` | done |
 | X4 | `training_ribbon` | Layer × step ribbon of the complex energy fraction with the dated events drawn as rules. The whole phase as one image. | `block1a.per_layer` | done |
 | X5 | `convention_divergence` | Per-eigenvalue fraction against the legacy per-block one, per layer and per step, with their ratio beneath. The factor of ~2 between two numbers that shipped under the same name, measured rather than asserted. | `block1a.per_layer` | done |
 | X6 | `norm_vs_spectrum` | `ov_frob` against the complex energy fraction over every (layer, checkpoint), coloured by step. Study A's OV spectral-norm confound (partial ρ to −0.71) is a scatter this phase can draw for free, and it is the quantity the rank-gate divergence scales with. | `block1a.per_layer` | done |
@@ -229,117 +263,108 @@ nothing is a result worth having drawn once.
 
 ## Data gaps
 
-Seven quantities Phase 2b computes and then drops before writing. **None of
-them is fixed here.** Closing a gap means changing a serializer in
-`p2b_imaginary/`, which is the phase's own folder and not this one; every
-entry below names the exact function and the shape of the change so the work
-can land there. Until then the loaders treat all seven as optional and print
-a skip reason, because a run directory written before any such change must
-stay readable.
+Seven quantities Phase 2b computed and then dropped before writing. **All
+seven emissions have landed**, each as a key appended to an existing artifact
+or a new sidecar, nothing renamed and nothing rewritten. The loaders still
+treat all seven as optional and print a skip reason when absent, because run
+directories written before the change do not have them and must stay
+readable — and, importantly, the gaps are DETECTED from the artifact rather
+than assumed, so both kinds of directory read correctly with no flag to set.
 
 <a id="g1"></a>
 **G1 — per-layer energies, effective rank, and IP summaries per frame.**
-`p2b_energy.trajectory_scalars` computes `energies` (per β, per layer),
-`effective_rank`, `ip_mean` and `ip_mass_near_1` for every frame;
-`rotational_rescaled.comparison_to_json` keeps only the derived counts. So
-the energy curve — the actual object a "violation" is a feature of — cannot
-be drawn for any frame, and neither can the gate quantity that decides which
-transitions are scored. This is the largest gap in the phase by some margin:
-Block 1b's central picture (four energy curves against depth, with the
-violating transitions marked and the gate shaded) is unavailable, and F1/F3
-are the counting-level stand-ins for it. *Would close: one `per_layer` block
-per frame in `comparison_to_json`.*
+`p2b_energy.trajectory_scalars` computed them for every frame and
+`rotational_rescaled.comparison_to_json` kept only the derived counts, so the
+energy curve — the object a "violation" is a feature of — could not be drawn
+for any frame, and neither could the gate quantity deciding which transitions
+are scored. This was the largest gap in the phase by some margin; F1 and F3
+were the counting-level stand-ins for it. *Landed: `frames[*].per_layer`
+(`energies` per β, `effective_rank`, `ip_mean`, `ip_mass_near_1`). Drawn by
+F8.*
 
 <a id="g2"></a>
 **G2 — the rescaler growth curve.** `rescaled_trajectory` returns
-`r_cum_max_abs`, an (n_layers,) curve recorded deliberately "even when
-truncation does not fire, so 'the rescaling was fine' is a measurement rather
-than the absence of a flag" — and `comparison_to_json` reduces it to its
-maximum. The measurement survives; the curve, which is what says *where* the
-cumulative product started to diverge and how fast, does not. F4 draws the
-scalar. *Would close: keep the array, not just `np.nanmax` of it.*
+`r_cum_max_abs`, recorded deliberately "even when truncation does not fire,
+so 'the rescaling was fine' is a measurement rather than the absence of a
+flag" — and the serializer reduced it to its maximum, which is the flag
+again. *Landed: `frames[*].r_cum_max_abs`. Drawn by F10.*
 
 <a id="g3"></a>
 **G3 — per-plane (ρ, θ) lists.** `top_rotation_planes` returns `rhos`,
 `thetas`, `signs` and `indices` alongside the `(d, 2)` bases, and
-`summary_to_json` drops the whole `planes` key — correctly for the bases,
-which are arrays and belong in an npz, but the four scalar lists go with
-them. The consequence is that θ and ρ exist only as mean / sd / min / max /
-median, so no figure in this package can draw the actual distribution: X3 is
-a sector reconstructed from the summary, and a genuine spectrum scatter is
-not reachable. *Would close: keep `rhos`/`thetas`/`signs`/`indices` in the
-JSON and send only `bases` to an npz — the split `p1b` made for its axes.*
+`summary_to_json` dropped the whole `planes` key — correctly for the bases,
+which are arrays, but the four scalar lists went with them. So θ and ρ
+existed only as mean / sd / min / max / median, and no figure could draw the
+distribution. *Landed: `planes.npz` per checkpoint (the split Phase 1b made
+for its axes — at d = 1024 a layer holds up to 512 planes and
+`phase2b_results.json` is read whole), plus `plane_quantiles` in the JSON for
+a reader with only that. Drawn by S9, X3 and X13.*
 
 <a id="g4"></a>
-**G4 — per-head circuit results.** `head_circuits.py` is landed and tested
-(`PLAN_2b.md` item 19) and is not called by `run_2b.py`, so no artifact
-carries `summed_vs_per_head`, `head_agreement`, or any per-head spectrum.
-This is the gap with the most figures behind it: the phase's headline is a
-statistic of `ov_total = Σ_h ov_per_head`, an operator the model never forms,
-and `summed_vs_per_head` exists precisely to report the disagreement. A
-`heads` figure class — per-head spectra, the summed-vs-per-head gap, head
-agreement per layer — is specified nowhere in this file because there is
-nothing to read. *Would close: a `block1a_head_circuits` subresult, which
-`SUBRESULT_NAMES` and `core.artifacts.PHASE2B` would gain together.*
+**G4 — per-head circuit results.** `head_circuits.py` was landed and tested
+(`PLAN_2b.md` item 19) and was never called by `run_2b.py`, so no artifact
+carried `summed_vs_per_head`, `head_agreement`, or any per-head spectrum —
+the gap with the most figures behind it, since the phase's headline is a
+statistic of `ov_total = Σ_h ov_per_head`, an operator the model never forms.
+The per-head arrays were in the OV npz the whole time; nothing read them.
+*Landed: `p2b_io.load_ov_data` reads `ov_head{h}_{layer}` (sorted
+numerically), and `run_2b.run_head_circuits` writes a
+`block1a_head_circuits` subresult. Drawn by the whole `heads` class.*
 
 <a id="g5"></a>
-**G5 — the precision surface.** `rotational_schur.precision_surface` wires
+**G5 — the precision surface.** `rotational_schur.precision_surface` wired
 `core.precision_policy.analyze_ov_precision` to this phase's own fraction
-function and is never called from the runner. Item P2 — "84–97% complex may
-be an fp16-storage artifact" — is therefore still a caveat in prose with no
-number and no figure, when the answer is a surface over (tolerance,
-perturbation) that this phase can compute for free. *Would close: a
-`precision` key in the Block 1a subresult at a subset of checkpoints.*
+function and was never called from the runner, so item P2 — "84–97% complex
+may be an fp16-storage artifact" — was a caveat in prose with no number.
+*Landed: `block1a.precision` under `--with-precision`, off by default because
+it costs ~10 dense eigendecompositions per layer. Drawn by S10.*
 
 <a id="g6"></a>
-**G6 — nulls are opt-in and cover three statistics.** `--with-nulls` is off
-by default, and `null_statistics` defaults to complex fraction, θ and
-`henrici_relative`. That is the right default for cost, but it means the
-`nulls` class is empty for most directories, and that `frac_repulsive_real_
-part` — the quantity with the clearest dynamical reading — has no null at
-all. *Not a serializer bug; a run-configuration note. `--list_runs` reports
-which checkpoints carry nulls.*
+**G6 — nulls covered three statistics.** `frac_repulsive_real_part` — the
+quantity with the clearest dynamical reading — had no control, while the
+complex fraction, where a Gaussian saturates and z ≈ 0 is foregone, had one.
+*Landed: it joins `NULL_STATISTICS`, at no cost, because
+`null_comparison_multi` now draws ONE null sample per layer and reads every
+statistic off it. The previous per-statistic version multiplied the null's
+cost by the number of statistics and scored each against a different random
+matrix, so a difference between two z-scores mixed a real difference with two
+independent draws.*
 
 <a id="g7"></a>
 **G7 — per-transition severity.** `count_violations` returns `rel_drops`,
 the relative energy drop at every transition with NaN where unscored;
-`comparison_to_json` keeps `sum_severity` and `max_severity` and drops the
-array. So "this frame has 4 violations" can be drawn but "these four are all
-marginally over 1e-3" versus "one is catastrophic" cannot, which is the
-difference between a rescaling that changed the geometry and one that moved
-four numbers across a threshold. *Would close: keep `rel_drops` per frame per
-β.*
+`comparison_to_json` kept `sum_severity` and `max_severity` and dropped the
+array. So "this frame has 4 violations" could be drawn and "these four are
+all marginally over 1e-3" versus "one is catastrophic" could not. *Landed:
+`counts[β].rel_drops`. Drawn by F9.*
 
 <a id="note-1"></a>
-**NOTE-1 — two tracked statistics have no dispersion scale.** Not a dropped
-emission; a key mismatch, found while drawing R1 and R3.
-`p2b_report.collect_trajectory` gets each statistic's across-layer spread by
+**NOTE-1 — two tracked statistics had no dispersion scale. FIXED.** Not a
+dropped emission; a key mismatch, found while drawing R1 and R3.
+`p2b_report.collect_trajectory` got each statistic's across-layer spread by
 mapping the summary name back to the per-layer column it aggregates, via
-`_per_layer_key_for`, which strips a suffix. Two of the seven entries in
-`TRACKED_STATISTICS` do not survive that round trip:
+`_per_layer_key_for`, which stripped a suffix. Two of the seven entries in
+`TRACKED_STATISTICS` did not survive that round trip:
 
-| statistic | `_per_layer_key_for` gives | the per-layer key actually is |
+| statistic | the old heuristic gave | the per-layer key actually is |
 |---|---|---|
 | `complex_energy_fraction_legacy_mean` | `complex_energy_fraction_legacy` | `complex_energy_fraction_legacy_per_block` |
-| `theta_mean_across_layers` | `theta` (the `_mean_across_layers` suffix is stripped whole) | `theta_mean` |
+| `theta_mean_across_layers` | `theta` (the `_mean_across_layers` suffix was stripped whole) | `theta_mean` |
 
-Both therefore collect an empty `vals` list, report `spread = NaN` at every
-checkpoint, and carry NaN through `flatness`' `range_in_spreads`,
+Both collected an empty `vals` list, reported `spread = NaN` at every
+checkpoint, and carried NaN through `flatness`'s `range_in_spreads`,
 `range_in_standard_errors` and `range_excess_over_noise`, and through every
 `delta_in_spreads` in `interval_deltas` and `align_to_transitions`. The
-trajectories themselves are fine — `values` and `steps` are correct — so T1
-and T2 draw them normally; it is only the spread-relative statistics that are
-unavailable, which happens to include the one number open question 1 turns
-on for the legacy convention.
+trajectories themselves were always fine — `values` and `steps` were correct
+— so T1 and T2 drew them normally, and only the spread-relative statistics
+were unavailable. That is why nothing failed.
 
-R1 labels those rows "no dispersion scale" rather than drawing an empty bar,
-and R3 gives their cells their own dotted hatch, distinct from
-`not_bracketed`. **The fix belongs in `p2b_imaginary/p2b_report.py`**, not
-here: either the suffix table gains the two real key names, or
-`collect_trajectory` warns when `vals` comes back empty instead of quietly
-returning NaN. A figure module papering over it by looking up the right key
-itself would hide a defect in the phase's own report, which is precisely the
-thing this package is not for.
+*Fixed in `p2b_imaginary/p2b_report.py`*: the mapping is now the explicit
+`SUMMARY_TO_PER_LAYER` table, `resolve_per_layer_key` warns instead of
+guessing when a statistic is unregistered, and `collect_trajectory` returns
+`spread_status` so a figure can distinguish "no dispersion scale" from "a
+dispersion of zero". R1 and R3 still render the missing-scale state
+distinctly — a run directory written before the fix has the same NaNs.
 
 One more worth naming even though no figure needs it closed: Block 1b's
 activations are in the **`l2_sphere` frame, not the LN frame attention
@@ -372,7 +397,8 @@ imported directly, which is the reason it was moved there in the first place
 python -m p2b_imaginary.visualization \
     --p2b_dir results/<phase2b-output-dir> \
     --out     blog_figures/p2b \
-    [--classes spectrum frames trajectory report verdicts nulls curiosities] \
+    [--classes spectrum heads frames trajectory report verdicts nulls
+               curiosities] \
     [--steps 512 3000] [--prompts wiki_paragraph] \
     [--external phase2_frac_repulsive.json] \
     [--list_runs]
@@ -419,10 +445,6 @@ tests the fixture.
   written — a full-rank "imaginary projector" and a curvature that is
   identically 1. There is nothing to draw and drawing it would be worse than
   the gap.
-- **Per-head figures.** [G4](#g4). The mathematics is landed and the artifact
-  is not; a figure class here that reached into `head_circuits` and
-  recomputed would violate the first ground rule to fill a hole that belongs
-  in the runner.
 - **Re-deriving a verdict, a rate, or a flatness number.** All of them are
   read from the artifact or computed by calling `p2b_report`. A figure
   disagreeing with `phase2b_summary.txt` is a bug here.

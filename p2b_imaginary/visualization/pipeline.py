@@ -32,6 +32,7 @@ from typing import Dict, List, Optional, Sequence
 
 from .curiosities import generate_curiosity_figures
 from .frames import generate_frame_figures
+from .heads import generate_head_figures
 from .loaders import Sweep, load_sweep
 from .nulls import generate_null_figures
 from .report_fig import generate_report_figures
@@ -42,14 +43,15 @@ from .verdicts import generate_verdict_figures
 __all__ = ["CLASSES", "generate_all"]
 
 #: Every figure class, in the order a reader would want them: what the
-#: operator looks like, what the rescaling did, how both move over training,
-#: what the report concludes, what the controls say, and then the
-#: speculative half.
-CLASSES = ("spectrum", "frames", "trajectory", "report", "verdicts",
+#: operator looks like, whether that description holds per head, what the
+#: rescaling did, how both move over training, what the report concludes,
+#: what the controls say, and then the speculative half.
+CLASSES = ("spectrum", "heads", "frames", "trajectory", "report", "verdicts",
            "nulls", "curiosities")
 
 _FNS = {
     "spectrum":    generate_spectrum_figures,
+    "heads":       generate_head_figures,
     "frames":      generate_frame_figures,
     "trajectory":  generate_trajectory_figures,
     "report":      generate_report_figures,

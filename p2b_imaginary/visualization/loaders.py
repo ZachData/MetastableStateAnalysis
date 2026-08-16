@@ -52,7 +52,8 @@ from p2b_imaginary import p2b_io
 __all__ = [
     "Checkpoint", "Sweep", "load_sweep", "describe_sweep",
     "layer_field", "layer_strings", "depth_matrix", "reference_beta",
-    "frame_counts", "elim_row", "null_stat", "GAPS",
+    "frame_counts", "elim_row", "frame_series", "rel_drops", "null_stat",
+    "GAPS",
     "checkpoint_out", "prompt_out", "cross_out",
 ]
 
@@ -68,14 +69,14 @@ GAPS: Tuple[dict, ...] = (
     {"id": "G2", "key": "r_cum_max_abs",
      "what": "the rescaler growth curve (only its maximum survives)",
      "where": "rotational_rescaled.comparison_to_json"},
-    {"id": "G3", "key": "planes",
-     "what": "per-plane rho / theta / sign lists",
-     "where": "rotational_schur.summary_to_json"},
+    {"id": "G3", "key": "planes.npz",
+     "what": "the per-plane rho / theta / sign spectrum",
+     "where": "rotational_schur.summary_to_json + run_2b.run_block_1a"},
     {"id": "G4", "key": "head_circuits",
-     "what": "per-head circuit results (head_circuits.py is never run)",
-     "where": "run_2b.run_checkpoint"},
+     "what": "per-head circuit results",
+     "where": "run_2b.run_head_circuits"},
     {"id": "G5", "key": "precision",
-     "what": "the fp16 precision surface (precision_surface is never called)",
+     "what": "the fp16 precision surface (--with-precision)",
      "where": "run_2b.run_block_1a"},
     {"id": "G7", "key": "rel_drops",
      "what": "per-transition violation severity",
@@ -97,6 +98,12 @@ class Checkpoint:
     #: absent AND what caused it — this string is what a skipped figure
     #: prints, and "block1b" alone would send a reader to the wrong place.
     missing: List[str] = field(default_factory=list)
+    #: The directory this checkpoint's subresults were written to, when the
+    #: sweep is being read from disk. `None` for a Sweep assembled in memory,
+    #: which is why every sidecar read goes through `planes()` and returns
+    #: `None` rather than raising.
+    path: Optional[Path] = None
+    _planes: Optional[dict] = None
 
     # -- identity -----------------------------------------------------------
 
@@ -169,6 +176,79 @@ class Checkpoint:
     def block1b_scored(self) -> Dict[str, dict]:
         """Only the prompts that produced a comparison."""
         return {k: v for k, v in self.block1b.items() if "interpretation" in v}
+
+    # -- the per-plane spectrum (sidecar) ------------------------------------
+
+    def planes(self) -> Optional[dict]:
+        """
+        `planes.npz` as `{layer_name: {rho, theta, sign, idx}}`, lazily.
+
+        The distribution the per-layer angle statistics summarise. Loaded
+        through `p2b_io.load_sidecar` so the filename comes from the artifact
+        contract rather than from a string here, and returns None when the
+        sidecar is absent — which is a real state (`--no-planes`, or a run
+        predating the emission) and not an error.
+        """
+        if self._planes is None:
+            self._planes = self._load_planes()
+        return self._planes or None
+
+    def _load_planes(self) -> dict:
+        if self.path is None or not self.path.exists():
+            return {}
+        try:
+            arrays = p2b_io.load_sidecar(self.path, "planes")
+        except Exception as exc:
+            print(f"  ⚠  {self.stem}: planes sidecar unreadable ({exc})")
+            return {}
+        if not arrays:
+            return {}
+        names = [str(n) for n in arrays.get("layer_names", [])]
+        out: dict = {}
+        for name in names:
+            rec = {f: np.asarray(arrays[f"{name}__{f}"])
+                   for f in ("rho", "theta", "sign", "idx")
+                   if f"{name}__{f}" in arrays}
+            if rec:
+                out[name] = rec
+        return out
+
+    def plane_column(self, field_name: str) -> np.ndarray:
+        """
+        One per-plane field pooled over every layer of this checkpoint.
+
+        For the distribution figures, which are about the spectrum rather
+        than about depth. `plane_layer_index` gives the matching depth label
+        for a coloured version.
+        """
+        planes = self.planes() or {}
+        parts = [planes[name][field_name] for name in self.layer_names
+                 if name in planes and field_name in planes[name]]
+        return (np.concatenate(parts) if parts
+                else np.zeros(0, dtype=np.float64))
+
+    def plane_layer_index(self) -> np.ndarray:
+        """Depth index per pooled plane, matching `plane_column`'s order."""
+        planes = self.planes() or {}
+        parts = []
+        for i, name in enumerate(self.layer_names):
+            if name in planes and "rho" in planes[name]:
+                parts.append(np.full(planes[name]["rho"].size, i, dtype=int))
+        return np.concatenate(parts) if parts else np.zeros(0, dtype=int)
+
+    # -- the other two late emissions ---------------------------------------
+
+    @property
+    def head_circuits(self) -> Optional[dict]:
+        """Per-head circuit results, or None when the block did not run."""
+        return self.data.get("head_circuits") or (self.block1a or {}).get(
+            "head_circuits")
+
+    @property
+    def precision(self) -> Optional[dict]:
+        """The fp16 / tolerance surface, or None (`--with-precision` is
+        opt-in and costs ~10 eigendecompositions per layer)."""
+        return (self.block1a or {}).get("precision")
 
     def field(self, name: str) -> np.ndarray:
         """A Block 1a `per_layer` column as floats, JSON null -> NaN."""
@@ -310,7 +390,12 @@ class Sweep:
                                 return True
             return False
         if gap["id"] == "G3":
-            return any(key in rec for c in self.with_1a for rec in c.per_layer)
+            # The arrays live in a sidecar, so presence is a file question,
+            # not a key question — and the Block 1a JSON says which state a
+            # run is in (`has_plane_arrays`), so a run that deliberately
+            # passed --no-planes is distinguishable from one that predates
+            # the emission.
+            return any(c.planes() for c in self.with_1a)
         if gap["id"] == "G4":
             return any(key in c.data or key in (c.block1a or {})
                        for c in self.checkpoints)
@@ -370,21 +455,22 @@ def load_sweep(p2b_dir, steps: Optional[Sequence[int]] = None,
             rec = dict(rec)
             rec["block1b"] = {k: v for k, v in rec["block1b"].items()
                               if k in set(prompts)}
-        checkpoints.append(_as_checkpoint(stem, rec))
+        checkpoints.append(_as_checkpoint(stem, rec, root=p2b_dir))
 
     checkpoints.sort(key=lambda c: (c.step is None, c.step or 0, c.stem))
     return Sweep(path=p2b_dir, combined=combined, checkpoints=checkpoints,
                  source=source)
 
 
-def _as_checkpoint(stem: str, rec: dict) -> Checkpoint:
+def _as_checkpoint(stem: str, rec: dict,
+                   root: Optional[Path] = None) -> Checkpoint:
     step = rec.get("checkpoint_step")
     if step is None:
         # The stem grammar is stdlib-only and lives in core/model_family.py;
         # `p2b_io` re-exports it so a caller needs one import for one grammar.
         step = p2b_io.checkpoint_step_of(stem)
     ck = Checkpoint(stem=str(stem), step=None if step is None else int(step),
-                    data=rec)
+                    data=rec, path=None if root is None else Path(root) / stem)
 
     if rec.get("status") == "no_ov_weights":
         ck.missing.append("everything (Phase 2 wrote no OV weights for this step)")
@@ -643,6 +729,49 @@ def elim_row(js: dict, beta: Optional[str] = None) -> dict:
     """
     beta = beta or reference_beta(js)
     return dict((js.get("comparison") or {}).get(str(beta)) or {})
+
+
+def frame_series(js: dict, frame: str, name: str,
+                 beta: Optional[str] = None) -> np.ndarray:
+    """
+    One per-frame per-layer series as floats, JSON null -> NaN.
+
+    `name` is `energies` (which is per beta), or any of `effective_rank`,
+    `ip_mean`, `ip_mass_near_1`, or `r_cum_max_abs` — the last living beside
+    `per_layer` rather than inside it, because the rescaler's growth does not
+    depend on beta. Returns an empty array when the series is absent, which is
+    what a run predating the emission looks like.
+    """
+    fr = (js.get("frames") or {}).get(frame) or {}
+    if name == "r_cum_max_abs":
+        values = fr.get("r_cum_max_abs")
+    else:
+        per_layer = fr.get("per_layer") or {}
+        if name == "energies":
+            values = (per_layer.get("energies") or {}).get(
+                str(beta or reference_beta(js)))
+        else:
+            values = per_layer.get(name)
+    if values is None:
+        return np.zeros(0, dtype=np.float64)
+    return np.array([np.nan if v is None else float(v) for v in values],
+                    dtype=np.float64)
+
+
+def rel_drops(js: dict, frame: str, beta: Optional[str] = None) -> np.ndarray:
+    """
+    Per-transition relative energy drop, NaN where unscored.
+
+    Length `n_layers - 1`; position L-1 is the transition L-1 -> L, matching
+    `violation_layers`' L. Getting that off by one would put every marked
+    violation one layer from its severity.
+    """
+    c = frame_counts(js, frame, beta)
+    values = c.get("rel_drops")
+    if values is None:
+        return np.zeros(0, dtype=np.float64)
+    return np.array([np.nan if v is None else float(v) for v in values],
+                    dtype=np.float64)
 
 
 def null_stat(checkpoint: Checkpoint, statistic: str,

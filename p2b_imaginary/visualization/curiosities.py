@@ -1,7 +1,7 @@
 """
 p2b_imaginary/visualization/curiosities.py — the speculative half.
 
-Twelve figures that are not verdict figures. None of them is in a
+Thirteen figures that are not verdict figures. None of them is in a
 falsification table, none decides anything, and none should be cited as
 evidence for a claim the phase makes elsewhere. They exist because Block 1a
 produces a per-layer × per-checkpoint table for free — it reads no
@@ -53,9 +53,10 @@ from .style import (
 __all__ = ["generate_curiosity_figures", "FIGURES", "FINGERPRINT_METRICS"]
 
 FIGURES = ("spectrum_fingerprint", "rotation_clock", "spectral_annulus",
-           "training_ribbon", "convention_divergence", "norm_vs_spectrum",
-           "depth_coupling", "theta_coherence", "spectral_drift_arrows",
-           "sweep_cost", "violation_depth_density", "rho_theta_joint")
+           "theta_ridge", "training_ribbon", "convention_divergence",
+           "norm_vs_spectrum", "depth_coupling", "theta_coherence",
+           "spectral_drift_arrows", "sweep_cost", "violation_depth_density",
+           "rho_theta_joint")
 
 #: The columns X1 puts in its fingerprint. Every one is a per-layer scalar
 #: Block 1a already writes; the point of the figure is the whole table at
@@ -78,6 +79,9 @@ def generate_curiosity_figures(sweep: Sweep, out_dir: Path) -> List[Path]:
             paths.append(_spectrum_fingerprint(ck, d))
             paths.append(_rotation_clock(ck, d))
             paths.append(_spectral_annulus(ck, sweep, d))
+            ridge = _theta_ridge(ck, d)
+            if ridge is not None:
+                paths.append(ridge)
 
         if sweep.with_1a:
             paths.append(_norm_vs_spectrum(sweep, cross))
@@ -195,23 +199,40 @@ def _spectral_annulus(ck: Checkpoint, sweep: Sweep, out: Path) -> Path:
     """
     X3 — where each layer's eigenvalues live in the complex plane.
 
-    A SUMMARY, not the spectrum. The per-plane (ρ, θ) lists are data gap G3 —
-    `top_rotation_planes` computes them and `summary_to_json` drops them with
-    the plane bases — so each layer is drawn as the sector its summary
-    statistics imply: radius ρ_mean ± sd, angle θ_min … θ_max. If G3 ever
-    closes, this figure should be replaced by the real scatter and not
-    extended.
+    Two versions of the same figure, and which one a run gets depends on its
+    directory. With `planes.npz` present each layer's planes are drawn as
+    points, which is the real thing. Without it, each layer is drawn as the
+    sector its summary statistics imply — radius ρ_mean ± sd, angle
+    θ_min … θ_max — which is a RECONSTRUCTION and is labelled as one on the
+    figure, because a sector drawn from four order statistics looks exactly
+    like a sector drawn from a distribution and is not the same claim.
 
-    Interesting when the sectors are narrow and separated by depth: that
-    would mean each layer has its own characteristic rotation, which the
-    summary statistics hint at and cannot establish.
+    Interesting when the sectors separate by depth: that would mean each
+    layer has its own characteristic rotation, which the summary statistics
+    hint at and cannot establish.
     """
     theta_lo, theta_hi = ck.field("theta_min"), ck.field("theta_max")
     rho, rho_sd = ck.field("rho_mean"), ck.field("rho_std")
     fig = plt.figure(figsize=(6.8, 6.4))
     ax = fig.add_subplot(111, projection="polar")
-
     norm = depth_norm(len(ck.per_layer))
+
+    planes = ck.planes()
+    if planes:
+        for i, name in enumerate(ck.layer_names):
+            rec = planes.get(name)
+            if not rec:
+                continue
+            ax.plot(rec["theta"], rec["rho"], marker="o", markersize=3.4,
+                    linestyle="none", color=depth_color(i, norm), alpha=0.7)
+        ax.set_thetamin(0)
+        ax.set_thetamax(180)
+        ax.set_title("Where each layer's eigenvalues sit — every plane",
+                     pad=18, fontsize=11)
+        subtitle(fig, f"{ck.label}   ·   one point per rotation plane, from "
+                      "planes.npz")
+        return save_figure(fig, out, "spectral_annulus")
+
     for i in range(len(ck.per_layer)):
         if not np.isfinite(theta_lo[i]) or not np.isfinite(rho[i]):
             continue
@@ -228,8 +249,9 @@ def _spectral_annulus(ck: Checkpoint, sweep: Sweep, out: Path) -> Path:
     ax.set_title("Where each layer's eigenvalues sit — a summary, not the "
                  "spectrum", pad=18, fontsize=11)
     subtitle(fig, f"{ck.label}   ·   sector = θ_min…θ_max × (ρ_mean ± sd)")
-    note(ax, "The real per-plane (ρ, θ) list is data gap G3 — computed by "
-             "top_rotation_planes and dropped at serialization.")
+    note(ax, "Reconstructed from four order statistics — this run has no "
+             "planes.npz. A sector drawn this way looks like one drawn from a "
+             "distribution and is not the same claim.")
     return save_figure(fig, out, "spectral_annulus")
 
 
@@ -692,3 +714,82 @@ def _rho_theta_joint(sweep: Sweep, out: Path) -> Path:
     note(ax, "A spine in this cloud would mean θ and ρ are not free "
              "parameters — a structural claim no depth profile shows.")
     return save_figure(fig, out, "rho_theta_joint")
+
+
+# ---------------------------------------------------------------------------
+# X13
+# ---------------------------------------------------------------------------
+
+def _theta_ridge(ck: Checkpoint, out: Path) -> Optional[Path]:
+    """
+    X13 — the rotation-angle distribution at every depth, stacked.
+
+    X8 draws θ's coefficient of variation, which is one number per (layer,
+    step) and cannot distinguish a wide unimodal spread from two tight
+    clusters far apart. This draws the distributions themselves, one ridge per
+    layer, with each layer's mean marked.
+
+    Interesting in three different ways, and the figure separates them: a
+    ridge that is unimodal and moves with depth means rotation angle is a
+    depth-graded property; ridges that are bimodal mean each layer holds two
+    populations of planes and every mean-based comparison in the phase is
+    averaging across them; ridges that are identical at all depths mean θ
+    carries no depth information at all, and S3's curve is measuring noise.
+
+    Needs `planes.npz` (G3); the per-layer summary statistics cannot produce
+    a distribution.
+    """
+    planes = ck.planes()
+    if not planes:
+        return None
+
+    names = [n for n in ck.layer_names if n in planes]
+    fig, ax = plt.subplots(figsize=(9, max(4.5, 0.28 * len(names) + 2.4)))
+    norm = depth_norm(len(ck.per_layer))
+    grid = np.linspace(0, np.pi, 160)
+    # One shared vertical scale, so a tall ridge means a concentrated layer
+    # rather than a differently-normalised one.
+    peak = 0.0
+    densities = []
+    for name in names:
+        theta = np.asarray(planes[name]["theta"], dtype=np.float64)
+        theta = theta[np.isfinite(theta)]
+        if theta.size < 2:
+            densities.append(None)
+            continue
+        # A fixed-width Gaussian kernel rather than a fitted one: the point is
+        # to compare layers, and a per-layer bandwidth would rescale each
+        # ridge by its own spread — exactly the comparison being made.
+        dens = np.exp(-0.5 * ((grid[:, None] - theta[None, :]) / 0.08) ** 2
+                      ).sum(axis=1) / theta.size
+        densities.append(dens)
+        peak = max(peak, float(dens.max()))
+    peak = peak or 1.0
+
+    for i, (name, dens) in enumerate(zip(names, densities)):
+        if dens is None:
+            continue
+        y = i + 0.9 * dens / peak
+        color = depth_color(ck.layer_names.index(name), norm)
+        ax.fill_between(grid, i, y, color=color, alpha=0.55, linewidth=0)
+        ax.plot(grid, y, color=color, linewidth=0.9)
+        theta = np.asarray(planes[name]["theta"], dtype=np.float64)
+        ax.plot([float(np.nanmean(theta))], [i], marker="|", markersize=9,
+                markeredgewidth=1.6, color="#111827")
+
+    ax.axvline(np.pi / 2, **REFERENCE_LINE)
+    ax.annotate("π/2", xy=(np.pi / 2, 0.99), xycoords=("data", "axes fraction"),
+                va="top", ha="left", fontsize=8, color="#6B7280")
+    ax.set_xlim(0, np.pi)
+    ax.set_ylim(-0.5, len(names) + 0.5)
+    ax.set_yticks(range(0, len(names), 1 if len(names) <= 16 else 2))
+    ax.set_xlabel("θ  (rad)")
+    ax.set_ylabel("OV layer")
+    ax.grid(False)
+    ax.set_title("The rotation-angle distribution at every depth")
+    subtitle(fig, f"{ck.label}   ·   shared vertical scale   ·   "
+                  "the tick on each baseline is that layer's mean")
+    note(ax, "Bimodal ridges mean each layer holds two populations of planes, "
+             "and every mean-based comparison in the phase averages across "
+             "them.", outside=True)
+    return save_figure(fig, out, "theta_ridge")

@@ -10,8 +10,8 @@ as a single command:
     python -m p2b_imaginary.visualization \\
         --p2b_dir results/<phase2b-output-dir> \\
         --out     blog_figures/p2b \\
-        [--classes spectrum frames trajectory report verdicts nulls
-                   curiosities] \\
+        [--classes spectrum heads frames trajectory report verdicts
+                   nulls curiosities] \\
         [--steps …] [--prompts …] [--external …] [--list_runs] [--fixture]
 
 or imported:
@@ -20,15 +20,16 @@ or imported:
     from p2b_imaginary.visualization import load_sweep, generate_all
     generate_all(Path("results/phase2b"), Path("blog_figures/p2b"))
 
-Seven figure classes. See FIGURES-2b.md in this directory for the full
+Eight figure classes. See FIGURES-2b.md in this directory for the full
 catalogue — every figure, what it shows, which artifact it reads, and its
-status — plus the seven data gaps where a quantity is computed by a block and
-dropped before writing.
+status — plus the seven data gaps, all of which have now landed in
+`p2b_imaginary/` and are detected from the artifact rather than assumed.
 
     style.py        palette, step axis, drawing primitives
     loaders.py      every disk read; gaps DETECTED, never assumed
     _fixture.py     synthetic Phase 2b directory built by the phase's own code
     spectrum.py     Block 1a at one checkpoint, on the depth axis
+    heads.py        per-head circuits — is the headline about any head?
     frames.py       Block 1b at one (checkpoint, prompt)
     trajectory.py   Block 1a across checkpoints — the training axis
     report_fig.py   p2b_report drawn: flatness, intervals, dated events
@@ -59,11 +60,11 @@ an orthogonal map and reproduces the original frame by construction; reading
 it as a measurement is the withdrawal `status-2b` opens with. It appears in
 every frame figure, always hatched and labelled, and never in a comparison.
 
-**Data gaps are detected from the artifact, not hardcoded.** Four of the
-seven are unconditional properties of today's serializers, and the day one is
-closed in `p2b_imaginary/` the figures that need it start drawing against new
-directories with no change here — while old directories keep skipping, which
-is the only behaviour that lets both stay readable.
+**Data gaps are detected from the artifact, not hardcoded.** All seven
+emissions have since landed in `p2b_imaginary/`, and the figures that need
+them started drawing against new directories with no change here — while old
+directories keep skipping, which is the only behaviour that lets both stay
+readable. That is what the detection was for.
 """
 
 from .loaders import Checkpoint, Sweep, describe_sweep, load_sweep

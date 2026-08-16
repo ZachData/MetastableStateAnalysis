@@ -41,9 +41,10 @@ paths:
     `expected_steps` exists to surface.
   - one (checkpoint, prompt) pair records `{"status": "failed"}`, the shape
     `--continue-on-error` writes.
-  - nulls are run at two checkpoints out of six, which is what
-    `--with-nulls` at a subset looks like, and is why the `nulls` class has
-    to handle a partly-populated sweep rather than an all-or-nothing one.
+  - nulls are run at two checkpoints out of six and the precision surface at
+    one, which is what `--with-nulls` / `--with-precision` at a subset look
+    like, and is why those classes have to handle a partly-populated sweep
+    rather than an all-or-nothing one.
 
 THE DEGENERACY GATE is passed explicitly rather than read from
 `core.config.DEGENERATE_RANK_THRESHOLD`, matching `tests/test_phase2b_*.py`:
@@ -55,7 +56,6 @@ correct rather than a shortcut.
 
 from __future__ import annotations
 
-import json
 import zlib
 from pathlib import Path
 from typing import List, Optional, Sequence
@@ -66,7 +66,8 @@ from p2b_imaginary import p2b_io, run_2b
 from p2b_imaginary.p2b_energy import DEFAULT_GATE_KIND
 
 __all__ = ["build_fixture", "build_checkpoint", "FIXTURE_STEPS",
-           "FIXTURE_PROMPTS", "GATE", "D_MODEL", "N_OV_LAYERS"]
+           "FIXTURE_PROMPTS", "GATE", "D_MODEL", "N_OV_LAYERS", "N_HEADS",
+           "NULL_STEPS", "PRECISION_STEPS"]
 
 #: `core.config.DEGENERATE_RANK_THRESHOLD`'s value, passed explicitly so this
 #: module never imports `core.config` (and so torch). Not a fallback: the
@@ -76,6 +77,7 @@ GATE: float = 2.0
 D_MODEL: int = 12
 N_OV_LAYERS: int = 24
 N_TOKENS: int = 20
+N_HEADS: int = 4
 
 #: Six real Pythia checkpoint steps spanning the schedule, chosen to bracket
 #: three of `p2b_report.KNOWN_TRANSITIONS`' dated spans (8->16, 256->512,
@@ -90,6 +92,12 @@ FIXTURE_PROMPTS: tuple = ("wiki_paragraph", "repeated_tokens")
 #: Nulls are expensive (n_draws extra Schur decompositions per layer), so a
 #: real sweep runs them at a subset. So does this.
 NULL_STEPS: tuple = (0, 143000)
+
+#: The precision surface is dearer still — about ten dense eigendecompositions
+#: per layer — so a real sweep runs it at fewer checkpoints than the nulls.
+#: One here, which is also the case the figures have to handle: a statistic
+#: that exists at a single point on the training axis.
+PRECISION_STEPS: tuple = (143000,)
 
 #: Overall scale of the invented OV matrices — see `_ov_matrices`.
 OV_SCALE: float = 0.03
@@ -140,6 +148,30 @@ def _mixture(step: int) -> float:
     return float(0.35 + 0.55 * t + bump)
 
 
+def _ov_per_head(step: int, seed: int = 0) -> List[List[np.ndarray]]:
+    """
+    Per-head OV for one checkpoint: `[layer][head] -> (d, d)`, each of rank
+    `d_head`.
+
+    Built the way the real thing is — `W_O W_V` with `W_O: (d, d_head)` — so
+    `head_circuits.factor_from_dense` recovers factors of the right rank and
+    the per-head spectra are `d_head`-dimensional rather than `d`-dimensional.
+    A fixture that wrote full-rank per-head matrices would exercise the code
+    and none of its mathematics.
+    """
+    rng = np.random.default_rng(seed + 991)
+    d_head = D_MODEL // N_HEADS
+    out = []
+    for L in range(N_OV_LAYERS):
+        heads = []
+        for h in range(N_HEADS):
+            W_O = rng.normal(size=(D_MODEL, d_head))
+            W_V = rng.normal(size=(d_head, D_MODEL))
+            heads.append((W_O @ W_V) / np.sqrt(D_MODEL * d_head))
+        out.append(heads)
+    return out
+
+
 def _ov_matrices(step: int, seed: int = 0) -> List[np.ndarray]:
     """24 OV matrices for one checkpoint, sharing a fixed S and A basis."""
     rng = np.random.default_rng(seed)
@@ -168,8 +200,15 @@ def _ov_data(step: int, stem: str) -> dict:
     """`p2b_io.load_ov_data`'s return shape, without a file on disk."""
     scale = {OVERFLOW_STEP: OVERFLOW_SCALE,
              AMPLIFIED_STEP: AMPLIFIED_SCALE}.get(step, 1.0)
+    # The per-head arrays are deliberately NOT a decomposition of `ov_total`:
+    # a real `ov_total` is `sum_h ov_head_h`, and reproducing that here would
+    # make `summed_vs_per_head`'s gap an artifact of this fixture's arithmetic
+    # rather than of the rank-`d_head` structure the figure is about. The
+    # fixture's job is shapes and vocabulary; the gap it produces is invented
+    # like every other number in this file.
     return {
         "ov_total": [scale * M for M in _ov_matrices(step)],
+        "ov_per_head": _ov_per_head(step),
         "is_per_layer": True,
         "layer_names": [f"layer_{i}" for i in range(N_OV_LAYERS)],
         "model_stem": stem,
@@ -233,6 +272,7 @@ def build_checkpoint(out_root: Path, step: int, *,
                      prompts: Sequence[str] = FIXTURE_PROMPTS,
                      betas: Sequence[float] = (1.0,),
                      with_nulls: bool = False,
+                     with_precision: bool = False,
                      fail_prompt: Optional[str] = None) -> dict:
     """
     One checkpoint's subdirectory, in `run_2b.run_checkpoint`'s output shape.
@@ -256,7 +296,14 @@ def build_checkpoint(out_root: Path, step: int, *,
     # -- Block 1a: the phase's own runner entry point ------------------------
     out["block1a"] = run_2b.run_block_1a(
         ov, ckpt_dir, with_nulls=with_nulls, n_null_draws=4, seed=step,
+        with_precision=with_precision,
     )
+
+    # Per-head circuits, from the same weights. Cheap: per-head W_OV has rank
+    # d_head, so every spectrum here is a d_head^2 problem.
+    heads = run_2b.run_head_circuits(ov, ckpt_dir)
+    if heads is not None:
+        out["head_circuits"] = heads
 
     # -- Block 1b: one record per prompt -------------------------------------
     rescaler_cache: dict = {}          # built once per checkpoint, as in run_2b
@@ -286,8 +333,9 @@ def build_checkpoint(out_root: Path, step: int, *,
         ckpt_dir, stem, None, 0.0,
         config={"blocks": ["1a", "1b"], "betas": list(betas),
                 "gate_kind": DEFAULT_GATE_KIND, "gate_threshold": GATE,
-                "with_nulls": bool(with_nulls), "seed": int(step),
-                "fixture": True},
+                "with_nulls": bool(with_nulls),
+                "with_precision": bool(with_precision),
+                "seed": int(step), "fixture": True},
     )
     # Invented, and used only by the cost figure: real d^3 timings at d = 12
     # would say nothing about a 1024-dimensional sweep, so a plausible curve
@@ -329,6 +377,7 @@ def build_fixture(out_root, steps: Sequence[int] = FIXTURE_STEPS,
         results[f"{BASE}-step{step}"] = build_checkpoint(
             out_root, step, prompts=prompts, betas=betas,
             with_nulls=step in NULL_STEPS,
+            with_precision=step in PRECISION_STEPS,
             # One failed prompt, at one checkpoint, so the refusal path is
             # exercised without swamping the verdict figures.
             fail_prompt=(prompts[-1] if step == 16 else None),
@@ -351,10 +400,7 @@ def build_fixture(out_root, steps: Sequence[int] = FIXTURE_STEPS,
         "fixture": True,
     }
 
-    with open(out_root / p2b_io.COMBINED_RESULTS, "w") as f:
-        json.dump(combined, f, indent=2, default=p2b_io.json_default,
-                  allow_nan=False)
-    with open(out_root / p2b_io.COMBINED_SUMMARY, "w") as f:
-        f.write("\n".join(run_2b.sweep_summary_lines(combined)) + "\n")
-
+    # Through the runner's own writer, not a copy of it: this was a copy
+    # once, and it broke the moment `run_sweep` gained a NaN sanitizer.
+    run_2b.write_combined(out_root, combined)
     return out_root

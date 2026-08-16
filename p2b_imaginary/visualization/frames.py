@@ -27,7 +27,7 @@ holds. Every refusal in these figures is a labelled marker on its own row.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,17 +37,20 @@ from p2b_imaginary.rotational_rescaled import (
 )
 
 from .loaders import (
-    Checkpoint, Sweep, elim_row, frame_counts, prompt_out, reference_beta,
+    Checkpoint, Sweep, elim_row, frame_counts, frame_series, prompt_out,
+    reference_beta, rel_drops,
 )
 from .style import (
-    BLOG_STYLE, CATEGORICAL, FRAME_COLORS, FRAME_ORDER, REFERENCE_LINE,
-    REFUSAL_COLOR, STATUS_COLORS, STATUS_MARKERS, TRUNCATED_SPAN, depth_axis,
-    frame_style, no_data, note, reference_line, save_figure, subtitle,
+    BLOG_STYLE, CATEGORICAL, FRAME_COLORS, FRAME_LABELS, FRAME_ORDER,
+    REFERENCE_LINE, REFUSAL_COLOR, STATUS_COLORS, STATUS_MARKERS,
+    TRUNCATED_SPAN, depth_axis, frame_style, no_data, note, reference_line,
+    save_figure, subtitle,
 )
 
 __all__ = ["generate_frame_figures", "FIGURES"]
 
-FIGURES = ("frame_counts", "elimination_rates", "violation_layers_strip",
+FIGURES = ("energy_curves", "frame_counts", "elimination_rates",
+           "violation_layers_strip", "violation_severity", "rescaler_growth",
            "truncation_ladder", "invariance_control", "sa_decomposition_depth",
            "phase1_cross_check")
 
@@ -55,6 +58,7 @@ def generate_frame_figures(sweep: Sweep, out_dir: Path) -> List[Path]:
     """Every `frames` figure for every scored (checkpoint, prompt) pair."""
     paths: List[Path] = []
     any_scored = False
+    reported_missing = False
 
     for ck in sweep.checkpoints:
         for prompt, js in sorted(ck.block1b.items()):
@@ -63,8 +67,24 @@ def generate_frame_figures(sweep: Sweep, out_dir: Path) -> List[Path]:
                       f"status {js.get('status', 'missing')!r}")
                 continue
             any_scored = True
+            if not reported_missing:
+                reported_missing = _report_missing_series(js)
             d = prompt_out(out_dir, ck, prompt)
             with plt.rc_context(BLOG_STYLE):
+                # These three need per-layer series a run directory older
+                # than the emission does not carry. They return None rather
+                # than drawing an empty panel: there are up to 27 x 9 of
+                # them in a sweep, and three empty PNGs per run is noise
+                # where one printed line at the top is not. The
+                # per-CHECKPOINT figures in `spectrum` and `nulls` make the
+                # opposite choice for the opposite reason — there is one of
+                # each per checkpoint, and a reader goes looking for them by
+                # name.
+                for fn in (_energy_curves, _violation_severity,
+                           _rescaler_growth):
+                    p = fn(js, ck, prompt, d)
+                    if p is not None:
+                        paths.append(p)
                 paths.append(_frame_counts(js, ck, prompt, d))
                 paths.append(_elimination_rates(js, ck, prompt, d))
                 paths.append(_violation_layers_strip(js, ck, prompt, d))
@@ -82,6 +102,30 @@ def generate_frame_figures(sweep: Sweep, out_dir: Path) -> List[Path]:
 # ---------------------------------------------------------------------------
 # Shared
 # ---------------------------------------------------------------------------
+
+def _report_missing_series(js: dict) -> bool:
+    """
+    Say once, at the top, which per-layer series this directory lacks.
+
+    Reported per class rather than per figure: a sweep of 27 checkpoints x 9
+    prompts written before an emission would otherwise print the same line
+    243 times and bury everything else. Returns True when it has spoken, so
+    the caller stops asking.
+    """
+    frames = _ordered_frames(js)
+    beta = reference_beta(js)
+    missing = []
+    if not any(frame_series(js, f, "energies", beta).size for f in frames):
+        missing.append("per-layer energies and effective rank (energy_curves)")
+    if not any(frame_series(js, f, "r_cum_max_abs").size for f in frames):
+        missing.append("the rescaler growth curve (rescaler_growth)")
+    if not any(rel_drops(js, f, beta).size for f in frames):
+        missing.append("per-transition severity (violation_severity)")
+    if missing:
+        print("  frames: this run directory predates "
+              + "; ".join(missing))
+    return True
+
 
 def _header(js: dict, ck: Checkpoint, prompt: str) -> str:
     """
@@ -109,6 +153,206 @@ def _ordered_frames(js: dict) -> List[str]:
 def _is_control(js: dict, key: str) -> bool:
     return bool((js.get("frames") or {}).get(key, {})
                 .get("is_invariance_control", key == "remove_rotation"))
+
+
+# ---------------------------------------------------------------------------
+# F8 — the figure the counting-level ones stood in for
+# ---------------------------------------------------------------------------
+
+def _energy_curves(js: dict, ck: Checkpoint, prompt: str,
+                   out: Path) -> Optional[Path]:
+    """
+    F8 — interaction energy vs depth, one curve per frame, with the violating
+    transitions marked and the gate beneath.
+
+    **The central Block 1b picture**, and for a long time an undrawable one:
+    `trajectory_scalars` computed these curves for every frame and
+    `comparison_to_json` kept only the counts derived from them, so the
+    artifact could say "four violations" and could not say what the energy
+    did. A count answers how many transitions crossed a threshold; the curve
+    answers whether the rescaling changed the trajectory's shape at all,
+    which is a different question and the one the phase is actually asking.
+
+    The lower panel is the gate — normed effective rank against the
+    degeneracy threshold. A transition is scored only where the gate passes,
+    so a frame whose gate profile differs from the original's is not being
+    compared on the same transitions, and that is visible here before any
+    rate is read.
+    """
+    frames = _ordered_frames(js)
+    beta = reference_beta(js)
+    if not any(frame_series(js, f, "energies", beta).size for f in frames):
+        return None       # G1 not landed in this run directory
+
+    fig, axes = plt.subplots(2, 1, figsize=(10, 7.0), sharex=True,
+                             gridspec_kw={"height_ratios": [2.2, 1]})
+    depth = max(frame_series(js, f, "energies", beta).size for f in frames)
+
+    ax = axes[0]
+    for key in frames:
+        E = frame_series(js, key, "energies", beta)
+        if not E.size:
+            continue
+        control = _is_control(js, key)
+        ax.plot(np.arange(E.size), E,
+                color=FRAME_COLORS.get(key, REFUSAL_COLOR),
+                linewidth=(1.4 if control else 2.0),
+                linestyle=("--" if control else "-"),
+                marker=("" if control else "o"), markersize=3.0,
+                alpha=(0.75 if control else 1.0),
+                label=FRAME_LABELS.get(key, key), zorder=(2 if control else 3))
+        for L in frame_counts(js, key, beta).get("violation_layers") or []:
+            if L < E.size and np.isfinite(E[L]):
+                ax.plot([L], [E[L]], marker="v", markersize=8,
+                        color=FRAME_COLORS.get(key, REFUSAL_COLOR),
+                        markeredgecolor="#111827", linestyle="none", zorder=4)
+    ax.set_ylabel(f"interaction energy  (β = {beta})")
+    ax.set_title("What the violation count is counting")
+    ax.legend(loc="best", fontsize=7.5)
+
+    ax = axes[1]
+    threshold = (js.get("counting_rule") or {}).get("gate_threshold")
+    for key in frames:
+        R = frame_series(js, key, "effective_rank")
+        if not R.size:
+            continue
+        ax.plot(np.arange(R.size), R,
+                color=FRAME_COLORS.get(key, REFUSAL_COLOR), linewidth=1.6,
+                linestyle=("--" if _is_control(js, key) else "-"))
+    if threshold is not None:
+        ax.axhspan(0, float(threshold), color=REFUSAL_COLOR, alpha=0.28,
+                   linewidth=0)
+        reference_line(ax, float(threshold),
+                       "degeneracy gate — transitions below are not scored",
+                       side="left")
+    ax.set_ylabel("normed effective rank")
+    depth_axis(ax, depth, xlabel="layer")
+
+    # Truncation, on both panels: past `n_valid_layers` the frame produced
+    # nothing, which is a different statement from a flat curve.
+    for key in frames:
+        fr = js["frames"][key]
+        valid = int(fr.get("n_valid_layers") or 0)
+        if valid < depth:
+            for a in axes:
+                a.axvspan(valid - 0.5, depth - 0.5, **TRUNCATED_SPAN)
+            break
+
+    subtitle(fig, _header(js, ck, prompt))
+    note(axes[0], "▼ marks a scored transition whose relative energy drop "
+                  "exceeded the counting rule's tolerance. Hatched depth was "
+                  "not produced at all.", outside=True)
+    return save_figure(fig, out, "energy_curves")
+
+
+# ---------------------------------------------------------------------------
+# F9
+# ---------------------------------------------------------------------------
+
+def _violation_severity(js: dict, ck: Checkpoint, prompt: str,
+                        out: Path) -> Optional[Path]:
+    """
+    F9 — the relative energy drop at every transition, against the tolerance.
+
+    Four violations all marginally over `rel_tol` and one catastrophic
+    violation give the same count and the same elimination rate. They are not
+    the same result, and `sum_severity` / `max_severity` compress the
+    difference into two numbers that cannot show where it sits in depth.
+
+    Unscored transitions are gaps, not zeros — a transition the gate rejected
+    has no drop, and drawing it at zero would put it among the well-behaved
+    ones.
+    """
+    frames = _ordered_frames(js)
+    beta = reference_beta(js)
+    series = {f: rel_drops(js, f, beta) for f in frames}
+    if not any(v.size for v in series.values()):
+        return None       # G7 not landed in this run directory
+
+    rule = js.get("counting_rule") or {}
+    tol = float(rule.get("rel_tol", 1e-3))
+
+    fig, ax = plt.subplots(figsize=(10, 4.8))
+    for key in frames:
+        v = series[key]
+        if not v.size:
+            continue
+        x = np.arange(1, v.size + 1)     # transition L-1 -> L is drawn at L
+        m = np.isfinite(v)
+        ax.plot(x[m], v[m], marker="o", markersize=3.4,
+                color=FRAME_COLORS.get(key, REFUSAL_COLOR),
+                linewidth=(1.3 if _is_control(js, key) else 1.9),
+                linestyle=("--" if _is_control(js, key) else "-"),
+                label=key)
+
+    reference_line(ax, tol, f"rel_tol = {tol:g} — above this is a violation")
+    ax.axhline(0.0, **REFERENCE_LINE)
+    ax.set_yscale("symlog", linthresh=max(tol, 1e-12))
+    ax.set_ylabel("relative energy drop  (symlog)")
+    depth_axis(ax, max(v.size for v in series.values()) + 1,
+               xlabel="transition (layer L, scored L−1 → L)")
+    ax.set_title("How badly each transition violates, not just whether")
+    subtitle(fig, _header(js, ck, prompt))
+    ax.legend(loc="best", fontsize=8)
+    note(ax, "Missing points are transitions the gate rejected — no drop was "
+             "computed. Not zero.", outside=True)
+    return save_figure(fig, out, "violation_severity")
+
+
+# ---------------------------------------------------------------------------
+# F10
+# ---------------------------------------------------------------------------
+
+def _rescaler_growth(js: dict, ck: Checkpoint, prompt: str,
+                     out: Path) -> Optional[Path]:
+    """
+    F10 — how the cumulative rescaler grew, layer by layer.
+
+    `rescaled_trajectory` records this curve "even when truncation does not
+    fire, so 'the rescaling was fine' is a measurement rather than the absence
+    of a flag" — and only its maximum used to survive, which is the flag
+    again. The curve says where the product started to diverge and how fast,
+    which is what separates a frame that truncated at layer 2 from one that
+    was climbing steadily and ran out of depth.
+
+    `e^{−A}` is orthogonal, so the control's curve is flat at 1 by
+    construction. A control that is NOT flat here is a numerical failure of
+    `expm` or of the accumulation, and it invalidates F5's identity check.
+    """
+    frames = _ordered_frames(js)
+    series = {f: frame_series(js, f, "r_cum_max_abs") for f in frames}
+    if not any(v.size for v in series.values()):
+        return None       # G2 not landed in this run directory
+
+    fig, ax = plt.subplots(figsize=(10, 4.8))
+    for key in frames:
+        v = series[key]
+        if not v.size:
+            continue
+        m = np.isfinite(v)
+        ax.plot(np.arange(v.size)[m], np.maximum(v[m], 1e-300),
+                color=FRAME_COLORS.get(key, REFUSAL_COLOR),
+                linewidth=(1.3 if _is_control(js, key) else 2.0),
+                linestyle=("--" if _is_control(js, key) else "-"),
+                marker="o", markersize=3.0, label=FRAME_LABELS.get(key, key))
+        fr = js["frames"][key]
+        if fr.get("truncated"):
+            valid = int(fr.get("n_valid_layers") or 0)
+            ax.plot([valid], [np.nanmax(v[np.isfinite(v)])], marker="X",
+                    markersize=11, color="#B45B5B", linestyle="none")
+
+    ax.set_yscale("log")
+    reference_line(ax, RESCALE_OVERFLOW_LIMIT, "overflow limit", side="left")
+    reference_line(ax, 1.0, "1.0 — an orthogonal rescaler never leaves this")
+    depth_axis(ax, max(v.size for v in series.values()))
+    ax.set_ylabel("max |R_cum|  (log)")
+    ax.set_title("Where the cumulative rescaling diverges")
+    subtitle(fig, _header(js, ck, prompt))
+    ax.legend(loc="best", fontsize=7.5)
+    note(ax, "✗ marks the layer a frame truncated at. The control is flat at "
+             "1 by construction — if it is not, F5's identity check is "
+             "invalid.", outside=True)
+    return save_figure(fig, out, "rescaler_growth")
 
 
 # ---------------------------------------------------------------------------

@@ -30,11 +30,12 @@ import numpy as np
 import pytest
 
 from p2b_imaginary.visualization._fixture import (
-    FIXTURE_PROMPTS, FIXTURE_STEPS, N_OV_LAYERS, build_fixture,
+    FIXTURE_PROMPTS, FIXTURE_STEPS, N_HEADS, N_OV_LAYERS, NULL_STEPS,
+    PRECISION_STEPS, build_fixture,
 )
 from p2b_imaginary.visualization.loaders import (
-    GAPS, depth_matrix, describe_sweep, elim_row, layer_field, load_sweep,
-    reference_beta,
+    GAPS, depth_matrix, describe_sweep, elim_row, frame_series, layer_field,
+    load_sweep, rel_drops, reference_beta,
 )
 from p2b_imaginary.visualization.style import (
     FRAME_COLORS, REFUSAL_COLOR, STATUS_COLORS, STATUS_MARKERS,
@@ -308,25 +309,77 @@ def test_depth_matrix_is_ordered_by_step_and_shaped_by_depth(fixture_dir):
     assert np.isfinite(mat).all()
 
 
-def test_gaps_are_detected_from_the_artifact(fixture_dir):
+def test_every_gap_is_closed_in_a_current_run(fixture_dir):
     """
-    Four gaps are unconditional properties of today's serializers, so a
-    fixture written by the real code has them open — and the day one is
-    closed in `p2b_imaginary/` the detection must notice without a change
-    here.
+    All seven emissions have landed in `p2b_imaginary/`, and the fixture is
+    written by the phase's own runner — so a directory it produces has no
+    open gap. This is the test that fails if an emission is reverted.
     """
     sweep = load_sweep(fixture_dir)
-    open_ids = {g["id"] for g in sweep.gaps}
-    assert {"G1", "G2", "G3", "G7"} <= open_ids
+    assert [g["id"] for g in sweep.gaps] == [], (
+        "a current run directory should have no open data gap")
+
+
+def test_a_gap_is_detected_from_the_artifact_not_assumed(fixture_dir):
+    """
+    The detection is what lets a directory written BEFORE an emission stay
+    readable: strip the key and the gap reopens, with the address of the
+    function that would close it.
+    """
+    sweep = load_sweep(fixture_dir)
+    for ck in sweep.with_1b:
+        for js in ck.block1b_scored().values():
+            for fr in (js.get("frames") or {}).values():
+                fr.pop("per_layer", None)
     assert sweep.has_gap("G1")
     assert "comparison_to_json" in sweep.gap_reason("G1")
 
-    # Closing one is visible immediately: plant the key the detector looks
-    # for and the gap goes away.
-    ck = sweep.with_1b[0]
+
+def test_the_late_emissions_are_readable(fixture_dir):
+    """
+    The four that needed more than a serializer change: the planes sidecar,
+    the per-head circuits, the precision surface, and the per-frame series.
+    """
+    sweep = load_sweep(fixture_dir)
+    ck = sweep.with_1a[-1]
+
+    planes = ck.planes()
+    assert planes and len(planes) == N_OV_LAYERS
+    assert ck.plane_column("rho").size == ck.plane_layer_index().size > 0
+    assert (ck.plane_column("theta") >= 0).all()
+    assert (ck.plane_column("theta") <= np.pi + 1e-9).all()
+
+    assert ck.head_circuits and ck.head_circuits["summary"]["n_heads"] == N_HEADS
+
     js = next(iter(ck.block1b_scored().values()))
-    js["frames"]["original"]["per_layer"] = {"energies": {}}
-    assert not sweep.has_gap("G1")
+    n_layers = frame_series(js, "original", "energies").size
+    assert n_layers > 0
+    assert frame_series(js, "original", "effective_rank").size == n_layers
+    assert frame_series(js, "original", "r_cum_max_abs").size == n_layers
+    assert rel_drops(js, "original").size == n_layers - 1
+
+
+def test_the_expensive_blocks_are_run_at_a_subset(fixture_dir):
+    """
+    `--with-nulls` and `--with-precision` cost real time, so a real sweep
+    runs them at a subset of checkpoints — and the figure classes have to
+    handle a partly-populated sweep rather than an all-or-nothing one. The
+    fixture is built that way for that reason.
+    """
+    sweep = load_sweep(fixture_dir)
+    with_nulls = [c for c in sweep.with_1a if c.has_nulls]
+    with_precision = [c for c in sweep.with_1a if c.precision]
+    assert 0 < len(with_nulls) < len(sweep.with_1a)
+    assert 0 < len(with_precision) < len(sweep.with_1a)
+    assert {c.step for c in with_nulls} == set(NULL_STEPS)
+    assert {c.step for c in with_precision} == set(PRECISION_STEPS)
+
+
+def test_the_repulsive_fraction_has_a_null(fixture_dir):
+    """G6. It is the statistic with a dynamical reading and it had none."""
+    sweep = load_sweep(fixture_dir)
+    ck = next(c for c in sweep.with_1a if c.has_nulls)
+    assert "frac_repulsive_real_part" in ck.null_statistics()
 
 
 def test_step_and_prompt_filters_apply_to_the_cross_checkpoint_view(
@@ -344,10 +397,9 @@ def test_step_and_prompt_filters_apply_to_the_cross_checkpoint_view(
                                                    "pythia-410m-step8"}
 
 
-def test_describe_sweep_reports_the_open_gaps(fixture_dir):
+def test_describe_sweep_reports_the_gap_state(fixture_dir):
     text = describe_sweep(load_sweep(fixture_dir))
-    assert "open data gaps" in text
-    assert "G3" in text and "p2b_imaginary/" in text
+    assert "no open data gaps" in text
 
 
 def test_a_legacy_directory_is_refused_by_the_phases_own_check(tmp_path):
@@ -412,6 +464,66 @@ def test_unknown_class_is_rejected_rather_than_silently_skipped(fixture_dir,
     from p2b_imaginary.visualization.pipeline import generate_all
     with pytest.raises(ValueError, match="unknown figure class"):
         generate_all(fixture_dir, tmp_path, classes=["spectrun"])
+
+
+def test_the_heads_class_draws_and_skips_by_the_artifact(fixture_dir,
+                                                        tmp_path, capsys):
+    """
+    G4's class. It draws when the OV npz carried per-head arrays and skips
+    with the reason when it did not — which is what a weights file written
+    before `weights.py` saved them looks like, and a normal input.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    from p2b_imaginary.visualization.pipeline import generate_all
+
+    produced = generate_all(fixture_dir, tmp_path / "yes", classes=["heads"])
+    assert produced["heads"]
+
+    sweep = load_sweep(fixture_dir)
+    for ck in sweep.checkpoints:
+        ck.data.pop("head_circuits", None)
+    produced = generate_all(fixture_dir, tmp_path / "no", sweep=sweep,
+                            classes=["heads"])
+    assert produced["heads"] == []
+    assert "ov_head{h}_* arrays" in capsys.readouterr().out
+
+
+def test_figures_needing_a_late_emission_skip_without_it(fixture_dir,
+                                                        tmp_path, capsys):
+    """
+    The other half of the detection contract: a directory written before an
+    emission must still draw everything else. Strip the planes sidecar and
+    the frames' per-layer series, and the classes that use them come back
+    with fewer figures rather than with an error.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    from p2b_imaginary.visualization.pipeline import generate_all
+
+    full = generate_all(fixture_dir, tmp_path / "full",
+                        classes=["spectrum", "frames"])
+
+    sweep = load_sweep(fixture_dir)
+    for ck in sweep.checkpoints:
+        ck._planes = {}                      # as if planes.npz were absent
+        for js in ck.block1b_scored().values():
+            for fr in (js.get("frames") or {}).values():
+                fr.pop("per_layer", None)
+                fr.pop("r_cum_max_abs", None)
+                for counts in (fr.get("counts") or {}).values():
+                    counts.pop("rel_drops", None)
+    stripped = generate_all(fixture_dir, tmp_path / "stripped", sweep=sweep,
+                            classes=["spectrum", "frames"])
+
+    # `frames` drops the three figures that need the series and says so once,
+    # because there are up to 27 x 9 of them in a sweep. `spectrum` keeps its
+    # count and draws the "why" panel instead, because there is one of each
+    # per checkpoint and a reader goes looking for them by name.
+    assert len(stripped["frames"]) < len(full["frames"])
+    assert len(stripped["spectrum"]) == len(full["spectrum"])
+    assert stripped["frames"], "the rest of the class must still draw"
+    assert "predates" in capsys.readouterr().out
 
 
 def test_a_blocks_1a_sweep_degrades_to_skips(fixture_dir, tmp_path, capsys):

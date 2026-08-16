@@ -521,17 +521,30 @@ def run_sweep(weights_dir, phase1_dir, out_root, *,
         "results": results,
     }
 
+    write_combined(out_root, combined)
+    return combined
+
+
+def write_combined(out_root, combined: dict) -> None:
+    """
+    The combined file and its summary, in one place.
+
+    One place because there were two: this function's body was inlined in
+    `run_sweep`, and `visualization/_fixture.py` reproduced it in order to
+    build a synthetic directory in the same shape. When the NaN sanitizer
+    landed here the copy kept the old call and started failing on artifacts
+    the runner writes happily — a duplication that stayed correct exactly as
+    long as nothing changed.
+    """
+    out_root = Path(out_root)
     with open(out_root / p2b_io.COMBINED_RESULTS, "w") as f:
         # Through the same sanitizer `write_subresult` uses: the combined file
         # embeds every subresult, so a bare NaN anywhere in a block's output
         # fails the write here too — and later, after the whole sweep has run.
         json.dump(p2b_io.sanitize_for_json(combined), f, indent=2,
                   default=p2b_io.json_default, allow_nan=False)
-    lines = sweep_summary_lines(combined)
     with open(out_root / p2b_io.COMBINED_SUMMARY, "w") as f:
-        f.write("\n".join(lines) + "\n")
-
-    return combined
+        f.write("\n".join(sweep_summary_lines(combined)) + "\n")
 
 
 # ---------------------------------------------------------------------------
@@ -783,6 +796,7 @@ __all__ = [
     "run_block_1b",
     "run_checkpoint",
     "run_sweep",
+    "write_combined",
     "sweep_summary_lines",
     "build_parser",
     "main",
