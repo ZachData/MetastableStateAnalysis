@@ -47,6 +47,7 @@ equal-length intervals.
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 from typing import Optional, Sequence
 
@@ -171,6 +172,43 @@ def load_combined(path) -> dict:
 # Trajectories
 # ---------------------------------------------------------------------------
 
+#: Summary key -> the per-layer column it aggregates.
+#:
+#: EXPLICIT, because deriving it by stripping a suffix is wrong for two of
+#: the seven tracked statistics and wrong silently:
+#:
+#:   `complex_energy_fraction_legacy_mean` -> `complex_energy_fraction_legacy`
+#:       but the per-layer column is `complex_energy_fraction_legacy_per_block`
+#:   `theta_mean_across_layers`            -> `theta`
+#:       (the `_mean_across_layers` suffix is stripped whole) but the column
+#:       is `theta_mean`
+#:
+#: Both then collected an empty `vals` list, reported `spread = NaN` at every
+#: checkpoint, and carried NaN through `flatness`'s `range_in_spreads`,
+#: `range_in_standard_errors` and `range_excess_over_noise`, and through every
+#: `delta_in_spreads` in `interval_deltas` and `align_to_transitions` — i.e.
+#: through every number in this module that is expressed in dispersion units.
+#: The trajectories themselves were correct throughout; only their error bar
+#: was missing, which is the kind of defect that survives a reading because
+#: the figures still draw.
+#:
+#: Keys are `rotational_schur._cross_layer_summary`'s outputs and values are
+#: `layer_scalars`'s. If a statistic is added there it belongs here too, and
+#: `resolve_per_layer_key` warns rather than guessing when it is not.
+SUMMARY_TO_PER_LAYER: dict = {
+    "complex_energy_fraction_mean":        "complex_energy_fraction",
+    "complex_energy_fraction_min":         "complex_energy_fraction",
+    "complex_energy_fraction_max":         "complex_energy_fraction",
+    "complex_energy_fraction_legacy_mean": "complex_energy_fraction_legacy_per_block",
+    "dim_complex_fraction_mean":           "dim_complex_fraction",
+    "theta_mean_across_layers":            "theta_mean",
+    "theta_std_across_layers":             "theta_mean",
+    "frac_repulsive_real_part_mean":       "frac_repulsive_real_part",
+    "henrici_relative_mean":               "henrici_relative",
+    "henrici_relative_max":                "henrici_relative",
+}
+
+
 def collect_trajectory(combined: dict, statistic: str) -> dict:
     """
     One Block 1a summary scalar across checkpoints, with a dispersion band.
@@ -181,9 +219,17 @@ def collect_trajectory(combined: dict, statistic: str) -> dict:
     change between checkpoints smaller than the layer-to-layer scatter within
     a checkpoint is not a transition.
 
-    Returns dict(steps, values, spread, n_layers, statistic, missing_steps).
+    Returns dict(steps, values, spread, n_layers, statistic, missing_steps,
+    per_layer_key, spread_status). The last two are new and exist because the
+    absence of a dispersion scale used to be indistinguishable from a
+    dispersion of zero: `spread_status` is "ok", "unresolved_per_layer_key"
+    when no per-layer column could be found for this statistic, or
+    "no_per_layer_values" when the column resolved and every record was empty.
+    A caller drawing an error bar can then say which of those happened
+    instead of drawing nothing.
     """
-    per_layer_key = _per_layer_key_for(statistic)
+    per_layer_key = None
+    spread_status = "ok"
 
     rows = []
     for stem, r in combined.get("results", {}).items():
@@ -194,11 +240,20 @@ def collect_trajectory(combined: dict, statistic: str) -> dict:
         summary = block.get("summary") or {}
         if statistic not in summary:
             continue
-        vals = [rec.get(per_layer_key) for rec in (block.get("per_layer") or [])
+        per_layer = block.get("per_layer") or []
+        if per_layer_key is None:
+            per_layer_key = resolve_per_layer_key(statistic, per_layer)
+        vals = [rec.get(per_layer_key) for rec in per_layer
                 if per_layer_key and rec.get(per_layer_key) is not None]
         rows.append((int(step), float(summary[statistic]),
                      float(np.std(vals)) if vals else float("nan"),
-                     len(block.get("per_layer") or [])))
+                     len(per_layer)))
+
+    if rows:
+        if per_layer_key is None:
+            spread_status = "unresolved_per_layer_key"
+        elif not any(np.isfinite(r[2]) for r in rows):
+            spread_status = "no_per_layer_values"
 
     rows.sort()
     return {
@@ -209,15 +264,66 @@ def collect_trajectory(combined: dict, statistic: str) -> dict:
         "n_layers": [r[3] for r in rows],
         "missing_steps": list(combined.get("missing_checkpoints") or []),
         "meaning": TRACKED_STATISTICS.get(statistic),
+        "per_layer_key": per_layer_key,
+        "spread_status": spread_status,
     }
 
 
-def _per_layer_key_for(statistic: str) -> Optional[str]:
-    """Map a summary key back to the per-layer key it aggregates."""
+def resolve_per_layer_key(statistic: str,
+                          per_layer: Optional[Sequence[dict]] = None,
+                          warn: bool = True) -> Optional[str]:
+    """
+    The per-layer column a summary statistic aggregates, or None.
+
+    Resolution order: the explicit `SUMMARY_TO_PER_LAYER` table, then the
+    suffix heuristic as a fallback for a statistic added to the summary and
+    not to the table. When `per_layer` is given the result is CHECKED against
+    the columns actually present, because a key that resolves and is absent
+    produces exactly the silent NaN this function exists to stop — and a
+    warning naming the statistic is what makes it a five-minute fix rather
+    than a puzzle about why one row of a figure is empty.
+    """
+    key = SUMMARY_TO_PER_LAYER.get(statistic)
+    if key is None:
+        key = _per_layer_key_by_suffix(statistic)
+
+    if per_layer:
+        present = set()
+        for rec in per_layer:
+            present.update(rec)
+        if key not in present:
+            if warn:
+                warnings.warn(
+                    f"p2b_report: no per-layer column for summary statistic "
+                    f"{statistic!r} (tried {key!r}); its spread, and every "
+                    "number expressed in spread units, will be NaN. Add it to "
+                    "SUMMARY_TO_PER_LAYER.",
+                    stacklevel=2,
+                )
+            return None
+    return key
+
+
+def _per_layer_key_by_suffix(statistic: str) -> Optional[str]:
+    """The old heuristic, kept as the fallback for an unregistered key."""
     for suffix in ("_mean_across_layers", "_across_layers", "_mean", "_max"):
         if statistic.endswith(suffix):
             return statistic[: -len(suffix)]
     return None
+
+
+def _nanmean(*values) -> float:
+    """
+    Mean of the finite values, or NaN — without a RuntimeWarning.
+
+    `np.nanmean` warns on an all-NaN slice, and an all-NaN slice is EXPECTED
+    here: `external_trajectory` carries NaN spread by design, so a report
+    against a Phase 2 series printed two warnings per interval. Warning on a
+    designed-for case trains a reader to ignore the warnings that matter.
+    """
+    finite = [float(v) for v in values
+              if v is not None and np.isfinite(v)]
+    return float(np.mean(finite)) if finite else float("nan")
 
 
 def interval_deltas(traj: dict) -> list:
@@ -243,7 +349,7 @@ def interval_deltas(traj: dict) -> list:
         s0, s1 = steps[i - 1], steps[i]
         d = vals[i] - vals[i - 1]
         width = float(np.log(s1 + 1) - np.log(s0 + 1))
-        sp = float(np.nanmean([spread[i - 1], spread[i]]))
+        sp = _nanmean(spread[i - 1], spread[i])
         out.append({
             "span": (int(s0), int(s1)),
             "delta": float(d),
@@ -416,7 +522,7 @@ def align_to_transitions(traj: dict,
 
         i0, i1 = int(inside[0]), int(inside[-1])
         d = float(vals[i1] - vals[i0])
-        s = float(np.nanmean(sp[[i0, i1]]))
+        s = _nanmean(sp[i0], sp[i1])
         span_key = (int(steps[i0]), int(steps[i1]))
 
         rows.append({
@@ -693,8 +799,10 @@ __all__ = [
     "KNOWN_TRANSITIONS",
     "expected_range_under_noise",
     "TRACKED_STATISTICS",
+    "SUMMARY_TO_PER_LAYER",
     "load_combined",
     "collect_trajectory",
+    "resolve_per_layer_key",
     "interval_deltas",
     "flatness",
     "align_to_transitions",

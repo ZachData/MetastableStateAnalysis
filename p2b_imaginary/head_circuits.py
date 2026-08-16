@@ -297,22 +297,43 @@ def layer_head_spectra(ov_per_head: Sequence[np.ndarray],
     def col(key):
         return np.array([h[key] for h in per_head], dtype=np.float64)
 
+    # `head_spectrum` returns NaN for the ANGLE statistics of a head with no
+    # complex pairs, which is the correct value and a legitimate state — so a
+    # layer whose heads are all real gives an all-NaN column here. numpy warns
+    # on that; the warning is noise on an expected case, and noise on expected
+    # cases is what trains a reader to ignore the warnings that matter.
+    def _mean(key):
+        a = col(key)
+        return float(np.nanmean(a)) if np.isfinite(a).any() else float("nan")
+
+    def _max(key):
+        a = col(key)
+        return float(np.nanmax(a)) if np.isfinite(a).any() else float("nan")
+
+    def _min(key):
+        a = col(key)
+        return float(np.nanmin(a)) if np.isfinite(a).any() else float("nan")
+
     cef = col("complex_energy_fraction_core")
     return {
         "per_head": per_head,
         "n_heads": len(per_head),
-        "complex_energy_fraction_mean": float(np.nanmean(cef)),
-        "complex_energy_fraction_std": float(np.nanstd(cef)),
-        "complex_energy_fraction_min": float(np.nanmin(cef)),
-        "complex_energy_fraction_max": float(np.nanmax(cef)),
-        "dim_complex_fraction_core_mean": float(np.nanmean(
-            col("dim_complex_fraction_core"))),
-        "rotational_frobenius_fraction_mean": float(np.nanmean(
-            col("rotational_frobenius_fraction"))),
-        "theta_mean": float(np.nanmean(col("theta_mean"))),
-        "frac_repulsive_real_part_mean": float(np.nanmean(
-            col("frac_repulsive_real_part"))),
-        "spectral_radius_max": float(np.nanmax(col("spectral_radius"))),
+        "complex_energy_fraction_mean": _mean("complex_energy_fraction_core"),
+        "complex_energy_fraction_std": (float(np.nanstd(cef))
+                                        if np.isfinite(cef).any()
+                                        else float("nan")),
+        "complex_energy_fraction_min": _min("complex_energy_fraction_core"),
+        "complex_energy_fraction_max": _max("complex_energy_fraction_core"),
+        "dim_complex_fraction_core_mean": _mean("dim_complex_fraction_core"),
+        "rotational_frobenius_fraction_mean": _mean(
+            "rotational_frobenius_fraction"),
+        "theta_mean": _mean("theta_mean"),
+        "frac_repulsive_real_part_mean": _mean("frac_repulsive_real_part"),
+        "spectral_radius_max": _max("spectral_radius"),
+        # How many heads had no complex pair at all. Without this, a NaN
+        # `theta_mean` for the layer is indistinguishable from a bug.
+        "n_heads_without_complex_pairs": int(
+            sum(1 for h in per_head if h["n_complex_pairs"] == 0)),
     }
 
 

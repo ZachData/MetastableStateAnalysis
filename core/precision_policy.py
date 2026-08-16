@@ -245,10 +245,30 @@ def precision_verdict(surface: dict, band: float = STABILITY_BAND) -> dict:
         "tol_span": surface["tol_span"],
         "precision_span": surface["precision_span"],
         "band": band,
-        "causal_conclusion_affected": False,
-        "note": ("Phase 2b's rotation_neutral result does not consult this "
-                 "tolerance; elim_signed = 1.0 stands regardless of the "
-                 "verdict above."),
+        # CORRECTED 2026-08, with the module docstring's "What this does NOT
+        # reopen" section. These two fields previously read
+        # `causal_conclusion_affected: False` and "Phase 2b's rotation_neutral
+        # result does not consult this tolerance; elim_signed = 1.0 stands
+        # regardless of the verdict above." The docstring correction landed
+        # and these did not — and unlike a docstring, these strings are
+        # WRITTEN INTO EVERY ARTIFACT this function's caller emits, so a
+        # withdrawn finding was being re-asserted in the output of a module
+        # that had already retracted it.
+        #
+        # What is true: this verdict is about Block 1a's descriptive complex
+        # fraction. Block 1b's frames are scored on interaction energies and
+        # do not consult this tolerance, so nothing here bears on them either
+        # way — but `rotation_neutral` is withdrawn as an identity and
+        # `elim_signed = 1.0` is being re-adjudicated under a different
+        # counting rule, so neither is available to be "unaffected".
+        "scope": "block1a_complex_fraction",
+        "note": ("This verdict is about Block 1a's descriptive complex "
+                 "fraction. Block 1b's rescaled frames are scored on "
+                 "interaction energies and do not consult this tolerance. "
+                 "It says nothing about `elim_signed`, which is being "
+                 "re-adjudicated under the project's counting rule, and "
+                 "nothing about `rotation_neutral`, which is withdrawn as an "
+                 "orthogonal-invariance identity (status-2b.md)."),
     }
 
 
@@ -308,9 +328,16 @@ def metric_under_precision(X, metric_fn: Callable,
 
 
 def precision_summary_lines(result: dict) -> list:
+    """
+    The printed summary. Its last line used to read "causal conclusion
+    (rotation_neutral) is unaffected either way", which named a withdrawn
+    finding in the output of a module whose docstring already retracts it —
+    see `precision_verdict`.
+    """
     return [
         "Precision policy (P2 / item 13):",
         f"  layers analysed : {result.get('n_layers', 0)}",
         f"  overall verdict : {result.get('overall_verdict', 'unknown')}",
-        "  causal conclusion (rotation_neutral) is unaffected either way.",
+        "  scope: Block 1a's descriptive complex fraction. Block 1b's frames",
+        "  are scored on energies and do not consult this tolerance.",
     ]

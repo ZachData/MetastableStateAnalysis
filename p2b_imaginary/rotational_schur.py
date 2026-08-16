@@ -397,6 +397,62 @@ def top_rotation_planes(block_data: dict, top_k: int = 32) -> dict:
     }
 
 
+def plane_arrays(block_data: dict) -> dict:
+    """
+    Every 2x2 block's `(rho, theta, sign, idx)`, sorted by rho descending.
+
+    The SPECTRUM, as against the summary of it. `rotation_angle_stats` reduces
+    these four arrays to a mean, an sd, a median and two extremes, and until
+    this function existed that reduction was the only thing that reached
+    disk: `top_rotation_planes` returned the arrays alongside the `(d, 2)`
+    bases, and `summary_to_json` dropped the whole `planes` key — correctly
+    for the bases, which are arrays and belong in an npz, but the four scalar
+    lists went with them.
+
+    What the summary cannot answer, and these can: whether a layer's angles
+    are one tight cluster or two, whether the moduli are graded or bimodal,
+    and whether the mean sits where any actual plane does. A mean of 1.5 rad
+    over a bimodal distribution at 0.2 and 2.8 describes no plane in the
+    layer.
+
+    The order matches `top_rotation_planes`' so a caller holding both lines
+    them up without a join. `idx` is the block's position in the Schur form,
+    which is what relates a plane here to a basis there.
+    """
+    blocks = sorted(block_data["blocks_2x2"], key=lambda b: b["rho"],
+                    reverse=True)
+    return {
+        "rho": np.array([b["rho"] for b in blocks], dtype=np.float64),
+        "theta": np.array([b["theta"] for b in blocks], dtype=np.float64),
+        "sign": np.array([b["sign"] for b in blocks], dtype=np.int8),
+        "idx": np.array([b["idx"] for b in blocks], dtype=np.int32),
+    }
+
+
+#: Quantiles kept in the JSON beside the npz. Enough to see a skew or a long
+#: tail without the full array; not enough to see bimodality, which is what
+#: the npz is for.
+PLANE_QUANTILES: tuple = (0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0)
+
+
+def plane_quantiles(arrays: dict,
+                    quantiles: Sequence[float] = PLANE_QUANTILES) -> dict:
+    """
+    Quantiles of `rho` and `theta` over a layer's planes, for the JSON.
+
+    A compromise, and labelled as one: the artifact carries a distribution
+    summary that is strictly richer than mean/sd/min/max, and the npz carries
+    the distribution. A figure drawn from these alone should say so.
+    """
+    q = list(quantiles)
+    out: dict = {"quantiles": q, "n_planes": int(arrays["rho"].size)}
+    for name in ("rho", "theta"):
+        a = arrays[name]
+        out[name] = ([float(x) for x in np.quantile(a, q)] if a.size
+                     else [float("nan")] * len(q))
+    return out
+
+
 def project_onto_planes(X: np.ndarray, bases: Sequence[np.ndarray]) -> np.ndarray:
     """
     Squared norm of each row of X inside each plane: `(n_tokens, k)`.
@@ -444,13 +500,21 @@ def rotation_subspace_fraction(X: np.ndarray, block_data: dict) -> float:
 # ---------------------------------------------------------------------------
 
 def layer_scalars(OV: np.ndarray, layer_name: str = "",
-                  top_k: int = 0) -> dict:
+                  top_k: int = 0, with_planes: bool = True) -> dict:
     """
     Every Block 1a scalar for one OV matrix, with no (d, d) array retained.
 
-    `top_k > 0` additionally returns the top rotation-plane bases. Left at 0
-    by default because a checkpoint sweep wants the scalars, not 24 x 27 sets
-    of plane bases.
+    `top_k > 0` additionally returns the top rotation-plane BASES, which are
+    `(d, 2)` each. Left at 0 by default because a checkpoint sweep wants the
+    scalars, not 24 x 27 sets of bases.
+
+    `with_planes` (on by default) returns the per-plane `(rho, theta, sign,
+    idx)` arrays under `plane_arrays`, plus `plane_quantiles` for the JSON.
+    These are free — the blocks are already extracted — and they are the
+    distribution the angle statistics summarise. `summary_to_json` sends
+    `plane_arrays` to an npz sidecar rather than into the combined file: at
+    d = 1024 a layer has up to 512 planes, so keeping the arrays inline would
+    add roughly a megabyte per checkpoint to a file that is read whole.
     """
     blocks = extract_schur_blocks(OV)
     energy = complex_energy_fraction(blocks)
@@ -467,6 +531,10 @@ def layer_scalars(OV: np.ndarray, layer_name: str = "",
         "complex_energy_fraction_legacy_per_block":
             rotational_fraction_per_block(blocks),
     }
+    if with_planes:
+        arrays = plane_arrays(blocks)
+        out["plane_arrays"] = arrays
+        out["plane_quantiles"] = plane_quantiles(arrays)
     if top_k:
         out["planes"] = top_rotation_planes(blocks, top_k)
     return out
@@ -475,6 +543,28 @@ def layer_scalars(OV: np.ndarray, layer_name: str = "",
 # ---------------------------------------------------------------------------
 # Nulls
 # ---------------------------------------------------------------------------
+
+#: The Block 1a statistics a norm-matched Gaussian null is run on.
+#:
+#: `frac_repulsive_real_part` is here for a reason worth stating. The other
+#: three were chosen when the null's job was to test the phase's HEADLINE, and
+#: on that statistic the null is nearly uninformative by construction — a
+#: Gaussian is essentially all complex pairs, so a z near zero is the expected
+#: result and the finding is that the headline is about square matrices. The
+#: repulsive fraction is the opposite case: it is the quantity with a
+#: DYNAMICAL reading (Re lambda < 0 is the direction `e^{-V}` grows in, and it
+#: is the weights-side analogue of Phase 2's `frac_repulsive`), a Gaussian's
+#: value for it is 0.5 by symmetry rather than by saturation, and it had no
+#: control at all. Adding it costs nothing because `null_comparison_multi`
+#: draws ONE null sample per layer and reads every statistic off it — see that
+#: function for why the per-statistic version was the wrong shape.
+NULL_STATISTICS: tuple = (
+    "complex_energy_fraction",
+    "theta_mean",
+    "henrici_relative",
+    "frac_repulsive_real_part",
+)
+
 
 def gaussian_null_matrices(OV: np.ndarray, n_draws: int = 16, rng=None) -> list:
     """
@@ -516,9 +606,12 @@ def null_comparison(OV: np.ndarray, statistic: str = "complex_energy_fraction",
     """
     from core.nulls import sigma_from_null
 
-    observed = layer_scalars(OV)[statistic]
+    # `with_planes=False`: a null draw's statistic is one scalar, and
+    # building its per-plane arrays would allocate `n_draws` distributions per
+    # layer only to discard them.
+    observed = layer_scalars(OV, with_planes=False)[statistic]
     null_vals = np.array([
-        layer_scalars(M)[statistic]
+        layer_scalars(M, with_planes=False)[statistic]
         for M in gaussian_null_matrices(OV, n_draws=n_draws, rng=rng)
     ], dtype=np.float64)
 
@@ -532,6 +625,51 @@ def null_comparison(OV: np.ndarray, statistic: str = "complex_energy_fraction",
         "null_construction": "norm_matched_gaussian",
     })
     return res
+
+
+def null_comparison_multi(OV: np.ndarray,
+                          statistics: Sequence[str] = NULL_STATISTICS,
+                          n_draws: int = 16, rng=None) -> dict:
+    """
+    Every statistic against ONE null sample. Returns {statistic: result}.
+
+    `null_comparison` draws its own matrices and Schur-decomposes each one, so
+    calling it per statistic multiplied the null's cost by the number of
+    statistics — the dominant term in `estimate_cost`'s `--with-nulls` path,
+    for no benefit. A draw is `n_draws` Schur decompositions and a statistic
+    is a field read off the result; there is no reason for the second to
+    trigger the first.
+
+    Sharing the sample has a second effect worth naming, and it is the reason
+    to prefer this even where cost does not bite: the statistics are then
+    measured on the SAME null realisation, so their z-scores are comparable
+    with each other. Under the per-statistic version, `theta_mean` and
+    `henrici_relative` were scored against different random matrices and any
+    difference between their z-scores mixed a real difference with two
+    independent sampling draws.
+    """
+    from core.nulls import sigma_from_null
+
+    stats = list(statistics)
+    # `with_planes=False`: a null draw contributes scalars, and building its
+    # per-plane arrays would allocate `n_draws` distributions per layer only
+    # to discard them.
+    observed = layer_scalars(OV, with_planes=False)
+    draws = [layer_scalars(M, with_planes=False)
+             for M in gaussian_null_matrices(OV, n_draws=n_draws, rng=rng)]
+
+    out: dict = {}
+    for stat in stats:
+        null_vals = np.array([d[stat] for d in draws], dtype=np.float64)
+        res = dict(sigma_from_null(float(observed[stat]), null_vals))
+        res.update({
+            "statistic": stat,
+            "n_draws": int(n_draws),
+            "null_construction": "norm_matched_gaussian",
+            "shared_null_sample": True,
+        })
+        out[stat] = res
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -567,9 +705,9 @@ def precision_surface(ov_list: Sequence[np.ndarray],
 def analyze_rotational_spectrum(
     ov_data: dict,
     top_k_planes: int = 0,
+    with_planes: bool = True,
     with_nulls: bool = False,
-    null_statistics: Sequence[str] = ("complex_energy_fraction",
-                                      "theta_mean", "henrici_relative"),
+    null_statistics: Sequence[str] = NULL_STATISTICS,
     n_null_draws: int = 16,
     rng=None,
 ) -> dict:
@@ -597,16 +735,18 @@ def analyze_rotational_spectrum(
                        [f"layer_{i}" for i in range(len(ov_list))])
 
     per_layer = [
-        layer_scalars(OV, name, top_k=top_k_planes)
+        layer_scalars(OV, name, top_k=top_k_planes, with_planes=with_planes)
         for OV, name in zip(ov_list, layer_names)
     ]
 
     if with_nulls:
         for OV, rec in zip(ov_list, per_layer):
-            rec["nulls"] = {
-                stat: null_comparison(OV, stat, n_draws=n_null_draws, rng=rng)
-                for stat in null_statistics
-            }
+            # ONE null sample per layer, every statistic read off it — see
+            # `null_comparison_multi`. The per-statistic version multiplied
+            # the null's cost by len(null_statistics) and scored each
+            # statistic against a different random matrix.
+            rec["nulls"] = null_comparison_multi(
+                OV, null_statistics, n_draws=n_null_draws, rng=rng)
 
     return {
         "is_per_layer": is_per_layer,
@@ -663,14 +803,21 @@ def _cross_layer_summary(per_layer: Sequence[dict],
 # Serialization
 # ---------------------------------------------------------------------------
 
-_ARRAY_KEYS = ("planes",)
+#: Keys held out of the JSON. `planes` is the `(d, 2)` bases; `plane_arrays`
+#: is the per-plane spectrum, which goes to the npz sidecar instead — see
+#: `planes_npz_arrays`. Everything else in a per-layer record is a scalar,
+#: because nothing (d, d) is retained in the first place.
+_ARRAY_KEYS = ("planes", "plane_arrays")
 
 
 def summary_to_json(result: dict) -> dict:
     """
-    JSON-serializable Block 1a output. Drops plane bases; every other value
-    is already a scalar, because nothing (d, d) is retained in the first
-    place.
+    JSON-serializable Block 1a output.
+
+    `plane_arrays` is held out and written to `phase2b_{stem}_planes.npz` by
+    `planes_npz_arrays`; `plane_quantiles` stays, so a reader with only the
+    JSON gets a distribution summary rather than four order statistics. The
+    npz is what a spectrum figure needs.
     """
     def clean(rec):
         return {k: v for k, v in rec.items() if k not in _ARRAY_KEYS}
@@ -682,7 +829,37 @@ def summary_to_json(result: dict) -> dict:
         "layer_names": list(result["layer_names"]),
         "per_layer": [clean(r) for r in result["per_layer"]],
         "summary": result["summary"],
+        "has_plane_arrays": any("plane_arrays" in r
+                                for r in result["per_layer"]),
     }
+
+
+def planes_npz_arrays(result: dict) -> dict:
+    """
+    The per-plane spectrum as a flat `{name: array}` dict, for `np.savez`.
+
+    Keys are `{layer_name}__{rho|theta|sign|idx}`, plus `layer_names` so a
+    reader recovers depth order without re-parsing the key strings. Empty
+    when the analysis ran with `with_planes=False`.
+
+    A sidecar rather than a key in the JSON for one reason: at d = 1024 a
+    layer holds up to 512 planes, so the arrays are ~1 MB per checkpoint and
+    `phase2b_results.json` is read whole by everything downstream. The same
+    split Phase 1b made for its Fiedler axes.
+    """
+    out: dict = {}
+    names = []
+    for rec in result.get("per_layer", []):
+        arrays = rec.get("plane_arrays")
+        if arrays is None:
+            continue
+        layer = str(rec.get("layer") or f"layer_{len(names)}")
+        names.append(layer)
+        for field, values in arrays.items():
+            out[f"{layer}__{field}"] = np.asarray(values)
+    if names:
+        out["layer_names"] = np.array(names)
+    return out
 
 
 def summary_lines(js: dict) -> list:
@@ -730,12 +907,18 @@ __all__ = [
     "rotation_angle_stats",
     "henrici_nonnormality",
     "top_rotation_planes",
+    "plane_arrays",
+    "plane_quantiles",
+    "PLANE_QUANTILES",
+    "planes_npz_arrays",
     "project_onto_planes",
     "plane_energy",
     "rotation_subspace_fraction",
     "layer_scalars",
     "gaussian_null_matrices",
     "null_comparison",
+    "null_comparison_multi",
+    "NULL_STATISTICS",
     "precision_surface",
     "analyze_rotational_spectrum",
     "summary_to_json",

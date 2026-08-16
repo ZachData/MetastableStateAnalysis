@@ -407,10 +407,93 @@ PHASE2B = {
             "counting_rule":
                 "{rel_tol, gate_kind, gate_threshold, criterion} — the exact "
                 "rule every count in this file was scored with.",
+            "frames.{frame}.per_layer.energies.{beta}":
+                "(n_layers,) — the energy curve the violation count is a "
+                "feature of. JSON null at and after truncation, so the "
+                "length always matches n_layers and layer index never "
+                "shifts.",
+            "frames.{frame}.per_layer.effective_rank":
+                "(n_layers,) — the NORMED effective rank, i.e. the gate "
+                "quantity that decides which transitions are scored. Phase 1 "
+                "gates on raw; the two are expected to differ and "
+                "phase1_cross_check records by how much.",
+            "frames.{frame}.r_cum_max_abs":
+                "(n_layers,) — the cumulative rescaler's growth curve, "
+                "recorded even when truncation does not fire so that 'the "
+                "rescaling was fine' is a measurement rather than the "
+                "absence of a flag.",
+            "frames.{frame}.counts.{beta}.rel_drops":
+                "(n_layers - 1,) — per-transition relative energy drop, "
+                "JSON null where unscored. Position L-1 is the transition "
+                "L-1 -> L. Four marginal violations and one catastrophic "
+                "one are the same count and not the same result.",
         },
         description=(
             "S/A rescaled-frame comparison. `comparison` holds elim_full and "
-            "elim_signed only; rates are unclipped and may be None (refused)."
+            "elim_signed only; rates are unclipped and may be None (refused). "
+            "Per-frame per-layer series (energies, effective rank, IP "
+            "summaries, rescaler growth, per-transition severity) are "
+            "serialized: they are ~2 kB per record and every one of them is "
+            "needed to read a count rather than take it on faith."
+        ),
+    ),
+    "block1a_head_circuits": ArtifactSpec(
+        kind="json", filename="block1a_head_circuits.json",
+        required_keys=("per_layer", "summary"),
+        key_shape_hint={
+            "per_layer[].summed.complex_energy_fraction":
+                "the statistic of sum_h W_OV^h — the object the published "
+                "84-97.5% figure is computed on, and one the model never "
+                "forms: the real update is sum_h alpha^h X W_OV^h, so the "
+                "sum is the effective operator only if every head shares an "
+                "attention pattern.",
+            "per_layer[].per_head.complex_energy_fraction_mean":
+                "the same statistic computed per head, in each head's own "
+                "d_head-dimensional core. Rank-invariant, unlike the "
+                "DIMENSION fraction, which rank deficiency destroys.",
+            "per_layer[].head_agreement":
+                "fraction of heads within 0.05 of the summed value. Low "
+                "agreement means the summed number describes no head in the "
+                "layer.",
+            "per_layer[].gap":
+                "summed minus per-head mean. The disagreement is the "
+                "finding; nothing here adjudicates between them by fiat.",
+        },
+        description=(
+            "Per-head circuit algebra (PLAN_2b item 19). Weights only, and "
+            "cheap: per-head W_OV has rank d_head, so every spectrum is a "
+            "d_head^2 problem rather than d_model^2. Absent when the OV npz "
+            "carries no ov_head{h}_* arrays."
+        ),
+    ),
+    "planes": ArtifactSpec(
+        kind="npz", filename="planes.npz",
+        key_shape_hint={
+            "{layer_name}__rho":
+                "(n_planes,) — modulus of every 2x2 Schur block in this "
+                "layer, sorted descending.",
+            "{layer_name}__theta":
+                "(n_planes,) — rotation angle on [0, pi]. The DISTRIBUTION "
+                "the per-layer theta_mean / theta_std summarise; a mean of "
+                "1.5 rad over a bimodal spectrum at 0.2 and 2.8 describes no "
+                "plane in the layer.",
+            "{layer_name}__sign":
+                "(n_planes,) int8 — sign of Re(lambda). Negative is the "
+                "repulsive direction, the one e^{-V} grows in.",
+            "{layer_name}__idx":
+                "(n_planes,) int32 — the block's position in the Schur form, "
+                "which is what relates a plane here to a basis elsewhere.",
+            "layer_names":
+                "(n_layers,) str — depth order, so a reader recovers it "
+                "without re-parsing the key strings.",
+        },
+        description=(
+            "Block 1a's per-plane spectrum, one sidecar per checkpoint. A "
+            "sidecar rather than a key in the Block 1a JSON purely for size: "
+            "at d = 1024 a layer holds up to 512 planes, and "
+            "phase2b_results.json embeds every checkpoint's Block 1a JSON and "
+            "is read whole. Absent when a run passed --no-planes; the JSON's "
+            "`has_plane_arrays` says which."
         ),
     ),
     "block2_hemispheric": ArtifactSpec(

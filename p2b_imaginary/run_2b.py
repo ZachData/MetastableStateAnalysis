@@ -72,7 +72,8 @@ DEFAULT_BETAS = (1.0,)
 
 def estimate_cost(n_checkpoints: int, n_prompts: int, n_layers: int,
                   d_model: int, blocks: Sequence[str],
-                  with_nulls: bool = False, n_null_draws: int = 16) -> dict:
+                  with_nulls: bool = False, n_null_draws: int = 16,
+                  with_precision: bool = False) -> dict:
     """
     Rough wall-time estimate, so a sweep that will not finish is known before
     it starts rather than after.
@@ -86,19 +87,32 @@ def estimate_cost(n_checkpoints: int, n_prompts: int, n_layers: int,
 
     schur_calls = 0
     expm_calls = 0
+    eig_calls = 0
     if "1a" in blocks:
         schur_calls += n_checkpoints * n_layers
         if with_nulls:
+            # One null SAMPLE per layer, every statistic read off it
+            # (`rotational_schur.null_comparison_multi`). This line used to
+            # undercount by len(NULL_STATISTICS), because the pipeline drew a
+            # fresh sample per statistic; the fix was to share the sample
+            # rather than to multiply the estimate.
             schur_calls += n_checkpoints * n_layers * n_null_draws
+        if with_precision:
+            # len(DEFAULT_TOLS) tolerances x {baseline, perturbed}, each a
+            # dense eigendecomposition. Same O(d^3) order as a Schur pass,
+            # counted in the same units.
+            from core.precision_policy import DEFAULT_TOLS
+            eig_calls += n_checkpoints * n_layers * 2 * len(DEFAULT_TOLS)
     if "1b" in blocks:
         # 3 frames x n_layers, ONCE per checkpoint (cached across prompts).
         expm_calls += n_checkpoints * 3 * n_layers
         # Plus the S/A Schur-free decomposition, which is O(d^2) and ignored.
 
-    seconds = unit * (schur_calls + expm_calls)
+    seconds = unit * (schur_calls + expm_calls + eig_calls)
     return {
         "schur_calls": int(schur_calls),
         "expm_calls": int(expm_calls),
+        "eig_calls": int(eig_calls),
         "estimated_seconds": float(seconds),
         "estimated_hours": float(seconds / 3600.0),
         "note": (
@@ -115,26 +129,159 @@ def estimate_cost(n_checkpoints: int, n_prompts: int, n_layers: int,
 # ---------------------------------------------------------------------------
 
 def run_block_1a(ov_data: dict, out_dir: Path, *, top_k_planes: int = 0,
-                 with_nulls: bool = False, n_null_draws: int = 16,
-                 seed: int = 0) -> dict:
+                 with_planes: bool = True, with_nulls: bool = False,
+                 with_precision: bool = False,
+                 n_null_draws: int = 16, seed: int = 0) -> dict:
     """
     Rotational spectrum for one checkpoint.
 
     No activations, no forward pass, no prompts. This is the cheapest thing in
     the phase and the one that answers whether the 84-97% complex fraction has
     a developmental trajectory at all — see `PLAN_2b.md` open question 1.
+
+    Writes two files: the subresult JSON, and — when `with_planes` — a
+    `planes.npz` sidecar holding every 2x2 block's (rho, theta, sign, idx) per
+    layer. The npz is the spectrum; the JSON keeps quantiles of it. Splitting
+    them is a size decision and nothing else: at d = 1024 a layer holds up to
+    512 planes, and `phase2b_results.json` embeds every checkpoint's Block 1a
+    JSON and is read whole.
     """
     res = schur_block.analyze_rotational_spectrum(
         ov_data,
         top_k_planes=top_k_planes,
+        with_planes=with_planes,
         with_nulls=with_nulls,
         n_null_draws=n_null_draws,
         rng=np.random.default_rng(seed),
     )
     js = schur_block.summary_to_json(res)
+
+    if with_precision:
+        # `core/precision_policy.py` item P2: the "84-97% complex" figure uses
+        # a RELATIVE criterion (|Im| > tol*(|Re| + eps)), and a relative
+        # criterion is exactly what an fp16-epsilon split of a genuinely real
+        # eigenvalue pair defeats — the split is small in absolute terms and
+        # unbounded in ratio when |Re| is also small. So the honest answer to
+        # "how complex is OV" is a surface over (tolerance, perturbation), not
+        # a scalar. The module that computes it was written against this block
+        # and was never called from here, which is why P2 has been a caveat in
+        # prose with no number attached since it was raised.
+        #
+        # Off by default because it costs len(DEFAULT_TOLS) x 2 dense
+        # eigendecompositions per layer — about 10x Block 1a's own Schur pass.
+        # Worth running at a subset of checkpoints, not all 27.
+        ov_list = (list(ov_data["ov_total"]) if ov_data["is_per_layer"]
+                   else [ov_data["ov_total"]])
+        js["precision"] = schur_block.precision_surface(
+            ov_list, list(js["layer_names"]))
+
     p2b_io.write_subresult(out_dir, "block1a_rotational_spectrum", js,
                            schur_block.summary_lines(js))
+    if with_planes:
+        p2b_io.write_sidecar(out_dir, "planes",
+                             schur_block.planes_npz_arrays(res))
     return js
+
+
+def run_head_circuits(ov_data: dict, out_dir: Path, *,
+                      d_head: Optional[int] = None) -> Optional[dict]:
+    """
+    Per-head circuit algebra for one checkpoint. Weights only.
+
+    THE OBJECT THE HEADLINE IS A STATISTIC OF. `ov_total = sum_h ov_per_head`
+    (`weights.py:184`) is the effective operator only under a counterfactual
+    the model does not satisfy — that every head shares an attention pattern.
+    The real update is `sum_h alpha^h X W_OV^h`. So "OV is 84-97.5% complex"
+    is a statement about a matrix the model never forms, and whether it also
+    describes any HEAD is a separate question that this phase has never
+    asked of an artifact.
+
+    `head_circuits.py` was written to ask it and landed with its own tests
+    (`PLAN_2b.md` item 19); it was simply never called from the runner, so no
+    artifact carried `summed_vs_per_head`, `head_agreement`, or a per-head
+    spectrum. This is that call.
+
+    Cheap, and cheaper than it looks: per-head `W_OV` has rank `d_head`, so
+    every spectrum here is a `d_head^2` problem rather than a `d_model^2`
+    one — 16 x 64^3 against 1024^3 per layer at 410m, a 256x reduction that
+    grows with model size.
+
+    Returns None when the OV npz carries no per-head arrays, which is what a
+    weights file written before `weights.py` saved them looks like.
+    """
+    from p2b_imaginary import head_circuits as hc
+
+    per_layer_input = bool(ov_data["is_per_layer"])
+    per_head = ov_data.get("ov_per_head")
+    if not per_head or (per_layer_input and not any(per_head)):
+        return None
+
+    layer_names = list(ov_data.get("layer_names") or [])
+    totals = (list(ov_data["ov_total"]) if per_layer_input
+              else [ov_data["ov_total"]])
+    heads_by_layer = per_head if per_layer_input else [per_head]
+
+    per_layer = []
+    for name, total, heads in zip(layer_names, totals, heads_by_layer):
+        if not len(heads):
+            continue
+        rec = hc.summed_vs_per_head(heads, ov_total=total, d_head=d_head)
+        rec["layer"] = name
+        rec["n_heads"] = len(heads)
+        per_layer.append(rec)
+
+    if not per_layer:
+        return None
+
+    gaps = np.array([r["gap"] for r in per_layer], dtype=np.float64)
+    agree = np.array([r["head_agreement"] for r in per_layer], dtype=np.float64)
+    spread = np.array([r["head_spread"] for r in per_layer], dtype=np.float64)
+
+    js = {
+        "model_stem": ov_data.get("model_stem"),
+        "checkpoint_step": ov_data.get("checkpoint_step"),
+        "layer_names": layer_names,
+        "per_layer": per_layer,
+        "summary": {
+            "n_layers": len(per_layer),
+            "n_heads": int(per_layer[0]["n_heads"]),
+            "gap_mean": float(np.nanmean(gaps)),
+            "gap_max_abs": float(np.nanmax(np.abs(gaps))),
+            "head_agreement_mean": float(np.nanmean(agree)),
+            "head_agreement_min": float(np.nanmin(agree)),
+            "head_spread_mean": float(np.nanmean(spread)),
+            "head_spread_max": float(np.nanmax(spread)),
+        },
+        "note": (
+            "`summed` is the statistic of sum_h W_OV^h, which is the "
+            "effective operator only if every head shares an attention "
+            "pattern. It is reported for continuity with the published "
+            "84-97.5% figure, not because it is the operator."
+        ),
+    }
+    p2b_io.write_subresult(out_dir, "block1a_head_circuits", js,
+                           head_circuits_summary_lines(js))
+    return js
+
+
+def head_circuits_summary_lines(js: dict) -> list:
+    s = js.get("summary", {})
+    lines = [
+        "--- Block 1a: per-head circuits ---",
+        f"  {js.get('model_stem')}  step {js.get('checkpoint_step')}  "
+        f"{s.get('n_layers', 0)} layers x {s.get('n_heads', 0)} heads",
+        f"  summed - per-head mean gap: {s.get('gap_mean', float('nan')):+.4f} "
+        f"(max |gap| {s.get('gap_max_abs', float('nan')):.4f})",
+        f"  head agreement: mean {s.get('head_agreement_mean', float('nan')):.3f}, "
+        f"min {s.get('head_agreement_min', float('nan')):.3f}",
+        f"  head spread:    mean {s.get('head_spread_mean', float('nan')):.4f}, "
+        f"max {s.get('head_spread_max', float('nan')):.4f}",
+        "",
+        "  Low agreement means the summed number describes no head in the",
+        "  layer. The summed object is the one the published figure is a",
+        "  statistic of; the model never forms it.",
+    ]
+    return lines
 
 
 # ---------------------------------------------------------------------------
@@ -217,7 +364,8 @@ def run_checkpoint(step: Optional[int], stem: str, *, weights_dir: Path,
                    phase1_dir: Path, out_root: Path, blocks: Sequence[str],
                    betas: Sequence[float], prompts: Optional[Sequence[str]],
                    gate_kind: str, gate_threshold: Optional[float],
-                   top_k_planes: int, with_nulls: bool, n_null_draws: int,
+                   top_k_planes: int, with_planes: bool, with_nulls: bool,
+                   with_precision: bool, with_heads: bool, n_null_draws: int,
                    seed: int, continue_on_error: bool) -> dict:
     """One checkpoint: Block 1a once, Block 1b per prompt."""
     t0 = time.time()
@@ -241,8 +389,16 @@ def run_checkpoint(step: Optional[int], stem: str, *, weights_dir: Path,
     if "1a" in blocks:
         out["block1a"] = run_block_1a(
             ov_data, ckpt_dir, top_k_planes=top_k_planes,
-            with_nulls=with_nulls, n_null_draws=n_null_draws, seed=seed,
+            with_planes=with_planes, with_nulls=with_nulls,
+            with_precision=with_precision, n_null_draws=n_null_draws,
+            seed=seed,
         )
+        if with_heads:
+            heads = run_head_circuits(ov_data, ckpt_dir)
+            if heads is None:
+                out["head_circuits_status"] = "no_per_head_weights"
+            else:
+                out["head_circuits"] = heads
 
     if "1b" in blocks:
         runs = p2b_io.find_phase1_runs(phase1_dir, stem, prompt_keys=prompts)
@@ -276,7 +432,10 @@ def run_checkpoint(step: Optional[int], stem: str, *, weights_dir: Path,
         ckpt_dir, stem, None, time.time() - t0,
         config={"blocks": list(blocks), "betas": list(betas),
                 "gate_kind": gate_kind, "gate_threshold": gate_threshold,
-                "with_nulls": bool(with_nulls), "seed": int(seed)},
+                "with_planes": bool(with_planes),
+                "with_nulls": bool(with_nulls),
+                "with_precision": bool(with_precision),
+                "with_heads": bool(with_heads), "seed": int(seed)},
     )
     out["wall_time_seconds"] = time.time() - t0
     return out
@@ -291,7 +450,10 @@ def run_sweep(weights_dir, phase1_dir, out_root, *,
               gate_kind: str = DEFAULT_GATE_KIND,
               gate_threshold: Optional[float] = None,
               top_k_planes: int = 0,
+              with_planes: bool = True,
               with_nulls: bool = False,
+              with_precision: bool = False,
+              with_heads: bool = True,
               n_null_draws: int = 16,
               seed: int = 0,
               continue_on_error: bool = False,
@@ -338,8 +500,9 @@ def run_sweep(weights_dir, phase1_dir, out_root, *,
             step, stem, weights_dir=weights_dir, phase1_dir=phase1_dir,
             out_root=out_root, blocks=blocks, betas=betas, prompts=prompts,
             gate_kind=gate_kind, gate_threshold=gate_threshold,
-            top_k_planes=top_k_planes, with_nulls=with_nulls,
-            n_null_draws=n_null_draws, seed=seed,
+            top_k_planes=top_k_planes, with_planes=with_planes,
+            with_nulls=with_nulls, with_precision=with_precision,
+            with_heads=with_heads, n_null_draws=n_null_draws, seed=seed,
             continue_on_error=continue_on_error,
         )
 
@@ -359,8 +522,11 @@ def run_sweep(weights_dir, phase1_dir, out_root, *,
     }
 
     with open(out_root / p2b_io.COMBINED_RESULTS, "w") as f:
-        json.dump(combined, f, indent=2, default=p2b_io.json_default,
-                  allow_nan=False)
+        # Through the same sanitizer `write_subresult` uses: the combined file
+        # embeds every subresult, so a bare NaN anywhere in a block's output
+        # fails the write here too — and later, after the whole sweep has run.
+        json.dump(p2b_io.sanitize_for_json(combined), f, indent=2,
+                  default=p2b_io.json_default, allow_nan=False)
     lines = sweep_summary_lines(combined)
     with open(out_root / p2b_io.COMBINED_SUMMARY, "w") as f:
         f.write("\n".join(lines) + "\n")
@@ -494,11 +660,34 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--gate-threshold", type=float, default=None,
                    help="default: core.config.DEGENERATE_RANK_THRESHOLD")
     p.add_argument("--top-k-planes", type=int, default=0,
-                   help="rotation-plane bases to retain per layer (Block 1a)")
+                   help="rotation-plane BASES ((d, 2) each) to retain per "
+                        "layer (Block 1a). Separate from --no-planes, which "
+                        "controls the per-plane scalars.")
+    p.add_argument("--no-planes", action="store_true",
+                   help="skip the per-plane (rho, theta, sign) spectrum "
+                        "sidecar. It is free to compute — the Schur blocks "
+                        "are already extracted — so this only trades a "
+                        "~1 MB/checkpoint npz for losing the distribution "
+                        "the angle statistics summarise.")
     p.add_argument("--with-nulls", action="store_true",
                    help="norm-matched Gaussian null per layer (Block 1a). "
                         "Costs n_null_draws extra Schur decompositions per "
                         "layer; run at a subset of checkpoints.")
+    p.add_argument("--no-heads", action="store_true",
+                   help="skip the per-head circuit block. It is cheap — "
+                        "per-head W_OV has rank d_head, so every spectrum is "
+                        "a d_head^2 problem — and it is the only thing in "
+                        "the phase that asks whether the summed operator's "
+                        "statistic describes any actual head.")
+    p.add_argument("--with-precision", action="store_true",
+                   help="run core.precision_policy's tolerance x fp16 "
+                        "surface per layer (Block 1a). This is the number "
+                        "behind precision-policy item P2 — whether "
+                        "'84-97%% complex' survives the fp16 round-trip the "
+                        "checkpoints went through, swept over the relative "
+                        "tolerance rather than taken at the shipped 0.01. "
+                        "Costs ~10 dense eigendecompositions per layer, so "
+                        "run it at a subset of checkpoints.")
     p.add_argument("--n-null-draws", type=int, default=16)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--max-checkpoints", type=int, default=None)
@@ -547,7 +736,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         cost = estimate_cost(len(found), len(prompts or []) or 9, n_layers,
                              d_model or 1024, blocks,
                              with_nulls=args.with_nulls,
-                             n_null_draws=args.n_null_draws)
+                             n_null_draws=args.n_null_draws,
+                             with_precision=args.with_precision)
         print(f"checkpoints: {len(found)}")
         for st, stem in found:
             print(f"  step {st:>7}  {stem}")
@@ -568,7 +758,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         base=args.base, steps=steps, prompts=prompts, blocks=blocks,
         betas=betas, gate_kind=args.gate_kind,
         gate_threshold=args.gate_threshold,
-        top_k_planes=args.top_k_planes, with_nulls=args.with_nulls,
+        top_k_planes=args.top_k_planes, with_planes=not args.no_planes,
+        with_nulls=args.with_nulls, with_precision=args.with_precision,
+        with_heads=not args.no_heads,
         n_null_draws=args.n_null_draws, seed=args.seed,
         continue_on_error=args.continue_on_error,
         max_checkpoints=args.max_checkpoints,
@@ -586,6 +778,8 @@ __all__ = [
     "DEFAULT_BETAS",
     "estimate_cost",
     "run_block_1a",
+    "run_head_circuits",
+    "head_circuits_summary_lines",
     "run_block_1b",
     "run_checkpoint",
     "run_sweep",

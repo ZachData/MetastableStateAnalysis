@@ -610,6 +610,26 @@ def analyze_rotational_rescaling(
 # Serialization
 # ---------------------------------------------------------------------------
 
+def _series(values) -> list:
+    """
+    A per-layer array as a JSON list, non-finite -> None.
+
+    NaN is MEANINGFUL in every series this writes: a rescaled frame's
+    energies are NaN at and after truncation, and `rel_drops` is NaN at
+    every transition the gate rejected. So the length is preserved and the
+    NaN becomes an explicit JSON null rather than the row being dropped —
+    dropping it would silently shift every layer index by one, and only at
+    the end of the depth axis where nobody looks.
+
+    `p2b_io.json_default` would map these on the way out anyway; doing it
+    here means the returned dict is plain-JSON before it reaches a writer,
+    so a caller that dumps it with a different `default=` gets the same
+    file.
+    """
+    return [None if v is None or not np.isfinite(v) else float(v)
+            for v in np.asarray(values, dtype=np.float64).tolist()]
+
+
 def comparison_to_json(result: dict) -> dict:
     """
     JSON-serializable summary.
@@ -617,6 +637,36 @@ def comparison_to_json(result: dict) -> dict:
     Unlike the previous version this KEEPS `n_valid_layers`, `truncated` and
     `truncation_reason` per frame. Dropping them is what made Phase 2's
     verification item V1 unanswerable from the artifact.
+
+    It also keeps three per-layer series that were computed and discarded,
+    all small and all load-bearing for reading a count:
+
+      `per_layer.energies` / `.effective_rank` / `.ip_mean` /
+      `.ip_mass_near_1`
+          `trajectory_scalars` computes these for every frame and the first
+          version kept only the derived counts — so the ENERGY CURVE, the
+          object a violation is a feature of, could not be drawn, and
+          neither could the gate quantity that decides which transitions are
+          scored at all. A count says four transitions violated; only the
+          curve says whether the frame changed the trajectory's shape or
+          moved four numbers across a threshold.
+
+      `r_cum_max_abs`
+          `rescaled_trajectory` records the growth curve "even when
+          truncation does not fire, so 'the rescaling was fine' is a
+          measurement rather than the absence of a flag" — and then only its
+          maximum survived, which is the flag again. The curve says WHERE
+          the cumulative product started to diverge and how fast.
+
+      `counts.rel_drops`
+          The relative energy drop at every transition, NaN where unscored.
+          `sum_severity` and `max_severity` are aggregates of it. Four
+          violations all marginally over `rel_tol` and one catastrophic
+          violation are the same count and not the same result.
+
+    Cost at Study B's shape: 4 frames x 1 beta x 25 layers of float, about
+    2 kB per (checkpoint, prompt) record. There was never a size argument
+    for dropping them.
     """
     frames = result["frames"]
 
@@ -630,6 +680,7 @@ def comparison_to_json(result: dict) -> dict:
     }
 
     for key, fr in frames["frames"].items():
+        scal = fr["scalars"]
         out["frames"][key] = {
             "n_valid_layers": int(fr["n_valid_layers"]),
             "truncated": bool(fr["truncated"]),
@@ -639,6 +690,21 @@ def comparison_to_json(result: dict) -> dict:
                 None if not np.isfinite(np.nanmax(fr["r_cum_max_abs"]))
                 else float(np.nanmax(fr["r_cum_max_abs"]))
             ),
+            # The growth CURVE, not just its maximum. NaN past truncation,
+            # which is where the divergence is.
+            "r_cum_max_abs": _series(fr["r_cum_max_abs"]),
+            "per_layer": {
+                # Keyed by str(beta) to match `counts` below — the whole file
+                # uses one convention for a beta key, so a reader resolves it
+                # once.
+                "energies": {str(beta): _series(E)
+                             for beta, E in scal["energies"].items()},
+                "effective_rank": _series(scal["effective_rank"]),
+                "ip_mean": _series(scal["ip_mean"]),
+                "ip_mass_near_1": _series(scal["ip_mass_near_1"]),
+                "n_layers": int(scal["n_layers"]),
+                "gate_quantity": "effective_rank",
+            },
             "counts": {
                 str(beta): {
                     "n_violations": c["n_violations"],
@@ -648,6 +714,10 @@ def comparison_to_json(result: dict) -> dict:
                     "violation_layers": c["violation_layers"],
                     "sum_severity": c["sum_severity"],
                     "max_severity": c["max_severity"],
+                    # Per-transition severity, NaN (JSON null) where the
+                    # transition was not scored. Length n_layers - 1, indexed
+                    # by the transition L-1 -> L at position L-1.
+                    "rel_drops": list(c["rel_drops"]),
                 }
                 for beta, c in fr["counts"].items()
             },

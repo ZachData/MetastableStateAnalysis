@@ -419,6 +419,123 @@ class TestSharedWeightsAndSerialization(unittest.TestCase):
         self.assertNotIn("NaN", s)
         self.assertNotIn("Infinity", s)
 
+
+# ---------------------------------------------------------------------------
+# The per-layer series a count is a summary of
+# ---------------------------------------------------------------------------
+
+class TestPerLayerSeriesSurviveSerialization(unittest.TestCase):
+    """
+    `trajectory_scalars` computes an energy curve, an effective-rank curve and
+    two IP summaries for every frame; `rescaled_trajectory` computes the
+    rescaler's growth curve; `count_violations` computes a per-transition
+    severity. The first version of `comparison_to_json` kept only the derived
+    counts, so none of that reached disk — which made the central Block 1b
+    picture (four energy curves against depth, with the violating transitions
+    marked and the gate shaded) undrawable from the artifact, and made "four
+    violations" indistinguishable from "four numbers that crossed a
+    threshold".
+
+    They are ~2 kB per record. There was never a size argument.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        d, n_layers, n_tokens = 16, 10, 20
+        cls.n_layers = n_layers
+        cls.js = rr.comparison_to_json(rr.analyze_rotational_rescaling(
+            make_acts(n_layers, n_tokens, d), make_ov(d, n_layers),
+            [0.1, 1.0], gate_threshold=GATE,
+        ))
+
+    def test_every_frame_carries_its_energy_curve(self):
+        for key, fr in self.js["frames"].items():
+            for beta in ("0.1", "1.0"):
+                E = fr["per_layer"]["energies"][beta]
+                self.assertEqual(len(E), self.n_layers,
+                                 f"{key}: energy curve is not n_layers long")
+
+    def test_every_frame_carries_the_gate_quantity(self):
+        """
+        The rank gate decides which transitions are scored at all, so a count
+        cannot be audited without it. Phase 2b gates on NORMED effective rank
+        and Phase 1 on raw; the artifact says which.
+        """
+        for fr in self.js["frames"].values():
+            self.assertEqual(len(fr["per_layer"]["effective_rank"]),
+                             self.n_layers)
+            self.assertEqual(fr["per_layer"]["gate_quantity"], "effective_rank")
+
+    def test_rescaler_growth_curve_not_just_its_maximum(self):
+        for key, fr in self.js["frames"].items():
+            self.assertEqual(len(fr["r_cum_max_abs"]), self.n_layers)
+            finite = [v for v in fr["r_cum_max_abs"] if v is not None]
+            self.assertTrue(finite)
+            self.assertAlmostEqual(max(finite), fr["r_cum_max_abs_final"])
+
+    def test_per_transition_severity_survives(self):
+        for fr in self.js["frames"].values():
+            for beta, c in fr["counts"].items():
+                self.assertEqual(len(c["rel_drops"]), self.n_layers - 1)
+                scored = [v for v in c["rel_drops"] if v is not None]
+                self.assertEqual(len(scored), c["n_transitions_scored"])
+
+    def test_severity_aggregates_match_the_series_they_summarize(self):
+        """
+        `sum_severity` and `max_severity` are aggregates of `rel_drops`. If
+        they ever disagree, one of the two was computed from a different
+        counting pass.
+        """
+        rel_tol = self.js["counting_rule"]["rel_tol"]
+        for fr in self.js["frames"].values():
+            for c in fr["counts"].values():
+                viol = [v for v in c["rel_drops"]
+                        if v is not None and v > rel_tol]
+                self.assertEqual(len(viol), c["n_violations"])
+                self.assertAlmostEqual(sum(viol), c["sum_severity"], places=9)
+                self.assertAlmostEqual(max(viol) if viol else 0.0,
+                                       c["max_severity"], places=9)
+
+    def test_violation_layers_index_the_same_transitions_as_rel_drops(self):
+        """
+        `violation_layers` holds L; `rel_drops` is indexed by L-1 for the
+        transition L-1 -> L. An off-by-one between them would put every
+        marked violation one layer from its severity.
+        """
+        rel_tol = self.js["counting_rule"]["rel_tol"]
+        for fr in self.js["frames"].values():
+            for c in fr["counts"].values():
+                for L in c["violation_layers"]:
+                    drop = c["rel_drops"][L - 1]
+                    self.assertIsNotNone(drop)
+                    self.assertGreater(drop, rel_tol)
+
+    def test_a_truncated_frame_reports_null_past_its_valid_depth(self):
+        """
+        NaN past truncation is the whole point: a frame that stopped at layer
+        3 must not read as "no violation after layer 3". The series keeps its
+        length and nulls the rest, so the layer index never shifts.
+        """
+        d, n_layers, n_tokens = 12, 12, 20
+        js = rr.comparison_to_json(rr.analyze_rotational_rescaling(
+            make_acts(n_layers, n_tokens, d), make_ov(d, n_layers, scale=400.0),
+            [1.0], gate_threshold=GATE,
+        ))
+        truncated = [fr for fr in js["frames"].values() if fr["truncated"]]
+        self.assertTrue(truncated, "expected an overflowing frame at this norm")
+        for fr in truncated:
+            E = fr["per_layer"]["energies"]["1.0"]
+            valid = fr["n_valid_layers"]
+            self.assertEqual(len(E), n_layers)
+            self.assertTrue(all(v is not None for v in E[:valid]))
+            self.assertTrue(all(v is None for v in E[valid:]))
+
+    def test_the_series_are_json_clean(self):
+        import json
+        s = json.dumps(self.js, allow_nan=False)
+        self.assertNotIn("NaN", s)
+        self.assertNotIn("Infinity", s)
+
     def test_rescaler_cache_is_reused_across_prompts(self):
         d, n_layers, n_tokens = 16, 8, 20
         ov = make_ov(d, n_layers)
@@ -434,10 +551,6 @@ class TestSharedWeightsAndSerialization(unittest.TestCase):
         )
         self.assertIs(cache["S"][0].base, first.base)  # not rebuilt
         self.assertTrue(np.array_equal(cache["S"][0], first))
-
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
 
 
 class TestGateDivergenceIsRefused(unittest.TestCase):
@@ -481,3 +594,7 @@ class TestGateDivergenceIsRefused(unittest.TestCase):
         self.assertIsNotNone(res["comparison"][1.0]["elim_full"]["rate"])
         # and the identity still holds in the benign regime
         self.assertEqual(res["invariance"]["status"], "identity_holds")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

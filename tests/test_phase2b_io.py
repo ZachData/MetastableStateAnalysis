@@ -240,12 +240,41 @@ class TestContractAndFrame(_Tmp):
     def test_clean_run_dir_is_accepted(self):
         p2b_io.refuse_legacy_run_dir(self.tmp)  # must not raise
 
-    def test_subresult_write_rejects_nonfinite(self):
-        with self.assertRaises(ValueError):
-            p2b_io.write_subresult(
-                self.tmp / "sub", "block1a_rotational_spectrum",
-                {"x": float("nan")},
-            )
+    def test_nonfinite_is_written_as_null_whatever_its_type(self):
+        """
+        CONTRACT CHANGE, deliberate. This used to assert that a bare
+        `float('nan')` made `write_subresult` RAISE — but only a bare one:
+        `json_default` has always mapped a numpy non-finite to JSON null, so
+        the same value raised or was silently written depending on whether it
+        arrived as `np.float64('nan')` or `float('nan')`. That is not a guard,
+        it is a type accident, and it made `core.precision_policy`'s surface
+        unwritable (it reports z / percentile as NaN for a deterministic
+        perturbation, which is the correct in-memory value).
+
+        NaN is a first-class value in this phase — a truncated frame's
+        energies, an unscored transition's severity, the angle statistics of a
+        layer with no 2x2 blocks — and JSON has no NaN. So one rule, applied
+        to every type: non-finite becomes null. Null and not 0.0, and null and
+        not a dropped key, because "not computed" and "computed and zero" are
+        different statements and the file has to keep them apart.
+        """
+        path = p2b_io.write_subresult(
+            self.tmp / "sub", "block1a_rotational_spectrum",
+            {"bare": float("nan"), "numpy": np.float64("inf"),
+             "nested": {"series": [1.0, float("nan"), 3.0]},
+             "fine": 0.0},
+        )
+        js = json.loads(path.read_text())
+        self.assertIsNone(js["bare"])
+        self.assertIsNone(js["numpy"])
+        self.assertEqual(js["nested"]["series"], [1.0, None, 3.0])
+        self.assertEqual(js["fine"], 0.0)      # a real zero survives as one
+        self.assertNotIn("NaN", path.read_text())
+
+    def test_sanitizer_leaves_everything_else_alone(self):
+        payload = {"s": "text", "i": 3, "b": True, "none": None,
+                   "list": [1, "two", None]}
+        self.assertEqual(p2b_io.sanitize_for_json(payload), payload)
 
 
 if __name__ == "__main__":

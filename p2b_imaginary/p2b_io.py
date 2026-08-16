@@ -42,6 +42,7 @@ the canonical battery.
 from __future__ import annotations
 
 import json
+import re
 import warnings
 from pathlib import Path
 from typing import Optional, Sequence
@@ -60,6 +61,7 @@ from core.model_family import checkpoint_step, checkpoint_base, sort_by_step
 #: it is not.
 SUBRESULT_NAMES = (
     "block1a_rotational_spectrum",
+    "block1a_head_circuits",
     "block1b_rescaled_comparison",
     "block2_hemispheric",
     "block3_imaginary_ablation",
@@ -74,6 +76,17 @@ LEGACY_COMBINED_NAMES = ("phase2i_results.json", "phase2i_summary.txt")
 
 COMBINED_RESULTS = "phase2b_results.json"
 COMBINED_SUMMARY = "phase2b_summary.txt"
+
+#: Per-checkpoint array sidecars, written next to the subresult JSON.
+#:
+#: `planes` holds Block 1a's per-plane spectrum — every 2x2 block's rho,
+#: theta, sign and Schur index, per layer. It is a sidecar rather than a key
+#: in the JSON because at d = 1024 a layer holds up to 512 planes, so inlining
+#: it would add ~1 MB per checkpoint to `phase2b_results.json`, which every
+#: consumer reads whole. Same split Phase 1b made for its Fiedler axes.
+SIDECAR_NAMES = {
+    "planes": "planes.npz",
+}
 
 
 def subresult_filename(name: str) -> str:
@@ -185,10 +198,12 @@ def load_ov_data(weights_dir, model_stem: str) -> Optional[dict]:
     layer_keys = [k for k in keys if k.startswith("ov_total_layer_")]
     if layer_keys:
         layer_keys.sort(key=lambda k: int(k.split("layer_")[1]))
+        names = [k[len("ov_total_"):] for k in layer_keys]
         return {
             "ov_total": [data[k] for k in layer_keys],
+            "ov_per_head": [_per_head_for(data, keys, name) for name in names],
             "is_per_layer": True,
-            "layer_names": [k[len("ov_total_"):] for k in layer_keys],
+            "layer_names": names,
             "model_stem": model_stem,
             "checkpoint_step": checkpoint_step(model_stem),
             "source_path": str(path),
@@ -197,6 +212,7 @@ def load_ov_data(weights_dir, model_stem: str) -> Optional[dict]:
     if "ov_total_shared" in keys:
         return {
             "ov_total": data["ov_total_shared"],
+            "ov_per_head": _per_head_for(data, keys, "shared"),
             "is_per_layer": False,
             "layer_names": ["shared"],
             "model_stem": model_stem,
@@ -209,6 +225,38 @@ def load_ov_data(weights_dir, model_stem: str) -> Optional[dict]:
         f"'ov_total_shared'. Keys present: {sorted(keys)[:8]}... "
         "This is an artifact-contract mismatch, not a missing model."
     )
+
+
+#: `weights.py` writes per-head OV as `ov_head{h}_{layer_name}` in the same
+#: npz as `ov_total_{layer_name}`.
+_HEAD_RE = re.compile(r"^ov_head(\d+)_(.+)$")
+
+
+def _per_head_for(data, keys: Sequence[str], layer_name: str) -> list:
+    """
+    One layer's per-head OV matrices, in head order. Empty when absent.
+
+    `ov_total = sum_h ov_per_head` is the effective operator only under a
+    counterfactual the model does not satisfy — that every head shares an
+    attention pattern; the real update is `sum_h alpha^h X W_OV^h`. So the
+    phase's headline is a statistic of an object the model never forms, and
+    `head_circuits.summed_vs_per_head` exists to report both and the gap.
+    None of that was reachable from a Phase 2b run, because this loader read
+    only the summed matrices — the per-head arrays have been sitting in the
+    same file the whole time.
+
+    The head index is sorted NUMERICALLY. A lexicographic sort puts head 10
+    before head 2, which produces a plausible-looking per-head table in the
+    wrong order — the same failure the layer-key sort above is explicit
+    about.
+    """
+    heads = []
+    for k in keys:
+        m = _HEAD_RE.match(k)
+        if m and m.group(2) == layer_name:
+            heads.append((int(m.group(1)), k))
+    heads.sort()
+    return [data[k] for _, k in heads]
 
 
 # ---------------------------------------------------------------------------
@@ -396,6 +444,39 @@ def json_default(obj):
     raise TypeError(f"Not serializable: {type(obj)}")
 
 
+def sanitize_for_json(obj):
+    """
+    Replace every non-finite float with None, recursively.
+
+    `json_default` handles numpy scalars and arrays, but `default=` is only
+    consulted for types the encoder does not already know — a plain Python
+    `float('nan')` goes straight to the encoder and `allow_nan=False` rejects
+    it. So a block whose analysis returns a bare NaN could not be written at
+    all, and the failure surfaced as a `ValueError` from deep inside
+    `json.dump` naming neither the block nor the key.
+
+    That is not hypothetical: `core.precision_policy.complex_fraction_surface`
+    reports `z_score` and `percentile` as NaN for a deterministic perturbation
+    (one draw, so there is no distribution to score against), which is the
+    correct in-memory value and not a writable one.
+
+    NaN maps to JSON null rather than to 0.0 or to a dropped key, for the same
+    reason it does everywhere else in this phase: "not computed" and "computed
+    and zero" are different statements, and the file has to keep them apart.
+    """
+    if isinstance(obj, float):
+        return None if not np.isfinite(obj) else obj
+    # np.float64 subclasses float and is caught above; np.float32 does not.
+    if isinstance(obj, np.floating):
+        v = float(obj)
+        return None if not np.isfinite(v) else v
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_for_json(v) for v in obj]
+    return obj
+
+
 def write_subresult(sub_dir, name: str, payload: dict,
                     summary_lines: Optional[Sequence[str]] = None) -> Path:
     """Write `sub/{name}.json` (+ `.summary.txt`), validating the name."""
@@ -403,11 +484,70 @@ def write_subresult(sub_dir, name: str, payload: dict,
     sub_dir.mkdir(parents=True, exist_ok=True)
     path = sub_dir / subresult_filename(name)
     with open(path, "w") as f:
-        json.dump(payload, f, indent=2, default=json_default, allow_nan=False)
+        json.dump(sanitize_for_json(payload), f, indent=2,
+                  default=json_default, allow_nan=False)
     if summary_lines is not None:
         with open(sub_dir / f"{name}.summary.txt", "w") as f:
             f.write("\n".join(summary_lines) + "\n")
     return path
+
+
+def sidecar_path(sub_dir, name: str) -> Path:
+    """
+    Path to one array sidecar, through the artifact contract.
+
+    The filename is read from `core.artifacts.PHASE2B` when it is available,
+    so the registry and this module cannot drift; `SIDECAR_NAMES` is the
+    fallback and a mismatch between the two raises rather than silently
+    preferring one. That is the failure `core/artifacts.py` exists for and
+    the reason the local table is not simply the source of truth.
+    """
+    if name not in SIDECAR_NAMES:
+        raise KeyError(
+            f"p2b_io: unknown sidecar {name!r}. Known: {sorted(SIDECAR_NAMES)}. "
+            "Add it to SIDECAR_NAMES and to core.artifacts.PHASE2B together, "
+            "not to one of them."
+        )
+    filename = SIDECAR_NAMES[name]
+    try:
+        from core.artifacts import get_spec
+        registered = get_spec("phase2b", name).filename
+    except Exception:      # pragma: no cover - contract should be present
+        registered = filename
+    if registered != filename:
+        raise RuntimeError(
+            f"p2b_io: sidecar {name!r} is {filename!r} here and "
+            f"{registered!r} in core.artifacts.PHASE2B. One writer and one "
+            "reader disagreeing about a filename is the drift the contract "
+            "module exists to stop; fix both together."
+        )
+    return Path(sub_dir) / filename
+
+
+def write_sidecar(sub_dir, name: str, arrays: dict) -> Optional[Path]:
+    """
+    Write one array sidecar, or nothing when there are no arrays to write.
+
+    Returns the path, or None when `arrays` is empty — an absent sidecar and
+    an empty one are different states downstream, and writing a zero-array
+    npz would make "this run computed no planes" indistinguishable from "this
+    run predates the emission".
+    """
+    if not arrays:
+        return None
+    path = sidecar_path(sub_dir, name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(path, **arrays)
+    return path
+
+
+def load_sidecar(sub_dir, name: str) -> Optional[dict]:
+    """One array sidecar as a plain `{key: ndarray}` dict, or None."""
+    path = sidecar_path(sub_dir, name)
+    if not path.exists():
+        return None
+    with np.load(path) as data:
+        return {k: np.asarray(data[k]) for k in data.files}
 
 
 def write_run_manifest(run_dir, model_stem: str, prompt_key: Optional[str],
@@ -468,10 +608,14 @@ def refuse_legacy_run_dir(run_dir) -> None:
 
 __all__ = [
     "SUBRESULT_NAMES",
+    "SIDECAR_NAMES",
     "LEGACY_COMBINED_NAMES",
     "COMBINED_RESULTS",
     "COMBINED_SUMMARY",
     "subresult_filename",
+    "sidecar_path",
+    "write_sidecar",
+    "load_sidecar",
     "discover_checkpoints",
     "checkpoint_step_of",
     "ov_weights_path",
@@ -481,6 +625,7 @@ __all__ = [
     "load_phase1_run_bundle",
     "frame_spec_for_activations",
     "json_default",
+    "sanitize_for_json",
     "write_subresult",
     "write_run_manifest",
     "refuse_legacy_run_dir",

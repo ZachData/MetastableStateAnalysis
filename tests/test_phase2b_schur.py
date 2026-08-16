@@ -448,5 +448,139 @@ class TestRelativeCriterion(unittest.TestCase):
         self.assertEqual(list(sig.parameters)[:2], ["M", "tol"])
 
 
+# ---------------------------------------------------------------------------
+# The per-plane spectrum
+# ---------------------------------------------------------------------------
+
+class TestPerPlaneSpectrumSurvives(unittest.TestCase):
+    """
+    `rotation_angle_stats` reduces a layer's planes to a mean, an sd, a
+    median and two extremes; until `plane_arrays` existed that reduction was
+    the only thing that reached disk, because `summary_to_json` dropped the
+    whole `planes` key and the four scalar lists went out with the `(d, 2)`
+    bases.
+
+    What the summary cannot say and these can: whether the angles are one
+    cluster or two. A mean of 1.5 rad over a bimodal spectrum at 0.2 and 2.8
+    describes no plane in the layer, and reports every mean-based comparison
+    as if it did.
+    """
+
+    def setUp(self):
+        # Two well-separated angle clusters — the case a mean hides.
+        self.thetas = [0.2, 0.25, 0.3, 2.8, 2.85, 2.9]
+        self.rhos = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
+        self.M = block_diag_rotations(self.thetas, self.rhos, d_pad=2)
+        self.blocks = rs.extract_schur_blocks(self.M)
+
+    def test_arrays_hold_every_plane(self):
+        arrays = rs.plane_arrays(self.blocks)
+        self.assertEqual(arrays["rho"].size, len(self.thetas))
+        for name in ("rho", "theta", "sign", "idx"):
+            self.assertEqual(arrays[name].size, len(self.thetas))
+
+    def test_arrays_are_sorted_by_modulus_like_top_rotation_planes(self):
+        """
+        Both orders must agree, or a caller holding the arrays and the bases
+        would need a join to line them up — and would silently get it wrong.
+        """
+        arrays = rs.plane_arrays(self.blocks)
+        top = rs.top_rotation_planes(self.blocks, top_k=len(self.thetas))
+        np.testing.assert_allclose(arrays["rho"], top["rhos"])
+        np.testing.assert_allclose(arrays["theta"], top["thetas"])
+        np.testing.assert_array_equal(arrays["idx"], top["indices"])
+
+    def test_the_distribution_the_mean_hides(self):
+        """The point of the emission, stated as a test."""
+        arrays = rs.plane_arrays(self.blocks)
+        stats = rs.rotation_angle_stats(self.blocks)
+        theta = np.sort(arrays["theta"])
+        # The mean sits in an empty region of the actual distribution.
+        gap = np.max(np.diff(theta))
+        self.assertGreater(gap, 1.0)
+        self.assertTrue(np.min(np.abs(theta - stats["theta_mean"])) > 0.5,
+                        "no plane sits near the mean, which is the point")
+
+    def test_quantiles_are_kept_in_the_json(self):
+        rec = rs.layer_scalars(self.M, "layer_0")
+        q = rec["plane_quantiles"]
+        self.assertEqual(q["n_planes"], len(self.thetas))
+        self.assertEqual(len(q["theta"]), len(q["quantiles"]))
+        self.assertLessEqual(q["theta"][0], q["theta"][-1])
+
+    def test_summary_to_json_drops_the_arrays_and_keeps_the_quantiles(self):
+        ov = {"ov_total": [self.M], "is_per_layer": True,
+              "layer_names": ["layer_0"]}
+        res = rs.analyze_rotational_spectrum(ov)
+        js = rs.summary_to_json(res)
+        self.assertNotIn("plane_arrays", js["per_layer"][0])
+        self.assertIn("plane_quantiles", js["per_layer"][0])
+        self.assertTrue(js["has_plane_arrays"])
+        json.dumps(js)   # raises if an ndarray survived
+
+    def test_npz_arrays_are_named_by_layer_and_field(self):
+        ov = {"ov_total": [self.M, self.M], "is_per_layer": True,
+              "layer_names": ["layer_0", "layer_1"]}
+        arrays = rs.planes_npz_arrays(rs.analyze_rotational_spectrum(ov))
+        for layer in ("layer_0", "layer_1"):
+            for field in ("rho", "theta", "sign", "idx"):
+                self.assertIn(f"{layer}__{field}", arrays)
+        np.testing.assert_array_equal(arrays["layer_names"],
+                                      np.array(["layer_0", "layer_1"]))
+        # Not an object array: object dtype would force allow_pickle on load.
+        self.assertNotEqual(arrays["layer_names"].dtype, object)
+
+    def test_with_planes_false_costs_nothing_and_emits_nothing(self):
+        ov = {"ov_total": [self.M], "is_per_layer": True,
+              "layer_names": ["layer_0"]}
+        res = rs.analyze_rotational_spectrum(ov, with_planes=False)
+        self.assertNotIn("plane_arrays", res["per_layer"][0])
+        self.assertEqual(rs.planes_npz_arrays(res), {})
+        self.assertFalse(rs.summary_to_json(res)["has_plane_arrays"])
+
+    def test_one_null_sample_serves_every_statistic(self):
+        """
+        `null_comparison` drew its own matrices, so calling it per statistic
+        multiplied the null's cost — the dominant term in `--with-nulls` — by
+        the number of statistics, and scored each statistic against a
+        different random matrix. `null_comparison_multi` draws once.
+        """
+        rng = np.random.default_rng(0)
+        M = rng.normal(size=(12, 12))
+        out = rs.null_comparison_multi(M, rs.NULL_STATISTICS, n_draws=4,
+                                       rng=np.random.default_rng(1))
+        self.assertEqual(set(out), set(rs.NULL_STATISTICS))
+        for stat, res in out.items():
+            self.assertEqual(res["statistic"], stat)
+            self.assertEqual(res["n_null"], 4)
+            self.assertTrue(res["shared_null_sample"])
+
+    def test_the_dynamical_statistic_has_a_null(self):
+        """
+        `frac_repulsive_real_part` is the quantity with a dynamical reading —
+        Re(lambda) < 0 is the direction e^{-V} grows in — and it had no
+        control. Unlike the complex fraction, a Gaussian's value for it is
+        0.5 by symmetry rather than ~1.0 by saturation, so the comparison is
+        informative rather than foregone.
+        """
+        self.assertIn("frac_repulsive_real_part", rs.NULL_STATISTICS)
+        rng = np.random.default_rng(3)
+        out = rs.null_comparison_multi(rng.normal(size=(24, 24)),
+                                       n_draws=8, rng=np.random.default_rng(4))
+        res = out["frac_repulsive_real_part"]
+        self.assertAlmostEqual(res["null_mean"], 0.5, delta=0.2)
+
+    def test_scalars_are_unchanged_by_the_emission(self):
+        """
+        Adding an emission must not move a number. Every scalar a run reports
+        has to be identical with and without the plane arrays.
+        """
+        with_p = rs.layer_scalars(self.M, "l", with_planes=True)
+        without = rs.layer_scalars(self.M, "l", with_planes=False)
+        skip = {"plane_arrays", "plane_quantiles"}
+        self.assertEqual({k: v for k, v in with_p.items() if k not in skip},
+                         without)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

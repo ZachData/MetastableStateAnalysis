@@ -13,6 +13,7 @@ import json
 import shutil
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -35,11 +36,19 @@ def fake_combined(value_fn, spread=0.01, statistic="henrici_relative",
     for step in steps:
         target = value_fn(step)
         vals = target + rng.normal(scale=spread, size=n_layers)
+        # These are `rotational_schur.layer_scalars`' real column names.
+        # An earlier version of this fixture wrote `theta`, which is what
+        # the BUGGY suffix heuristic resolved `theta_mean_across_layers` to
+        # — so the fixture agreed with the defect and the tests passed.
+        # `TestSummaryKeysResolveToRealColumns` below builds a real Block 1a
+        # record rather than a hand-written one, for that reason.
         per_layer = [{
             "layer": f"layer_{i}",
             "henrici_relative": float(v),
             "complex_energy_fraction": float(v),
-            "theta": float(v),
+            "complex_energy_fraction_legacy_per_block": float(v),
+            "dim_complex_fraction": float(v),
+            "theta_mean": float(v),
             "frac_repulsive_real_part": float(v),
         } for i, v in enumerate(vals)]
         results[f"pythia-410m-step{step}"] = {
@@ -391,6 +400,129 @@ class TestSpearman(unittest.TestCase):
 
     def test_too_few_points_is_nan(self):
         self.assertTrue(np.isnan(rep._spearman([1, 2], [1, 2])))
+
+
+# ---------------------------------------------------------------------------
+# The summary -> per-layer key mapping
+# ---------------------------------------------------------------------------
+
+class TestSummaryKeysResolveToRealColumns(unittest.TestCase):
+    """
+    Every summary statistic must resolve to a per-layer column that EXISTS.
+
+    Two did not. `_per_layer_key_for` stripped a suffix, so
+    `complex_energy_fraction_legacy_mean` resolved to
+    `complex_energy_fraction_legacy` (the column is
+    `..._legacy_per_block`) and `theta_mean_across_layers` resolved to
+    `theta` (the column is `theta_mean`). Both then collected an empty list,
+    reported `spread = NaN` at every checkpoint, and carried NaN through
+    every number this module expresses in dispersion units —
+    `range_in_spreads`, `range_excess_over_noise`, `delta_in_spreads`.
+
+    The trajectories were right the whole time; only the error bars were
+    missing, which is why nothing failed. So this class does not test the
+    mapping against a hand-written record: it builds a REAL Block 1a result
+    and checks the two sides against each other.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from p2b_imaginary import rotational_schur as schur
+
+        rng = np.random.default_rng(0)
+        ov = {
+            "ov_total": [rng.normal(size=(10, 10)) for _ in range(4)],
+            "is_per_layer": True,
+            "layer_names": [f"layer_{i}" for i in range(4)],
+            "model_stem": "pythia-410m-step512",
+            "checkpoint_step": 512,
+        }
+        cls.block = schur.summary_to_json(
+            schur.analyze_rotational_spectrum(ov))
+
+    def test_every_summary_key_the_phase_emits_resolves(self):
+        columns = set()
+        for rec in self.block["per_layer"]:
+            columns.update(rec)
+
+        unresolved = []
+        for statistic in self.block["summary"]:
+            if statistic in ("n_layers", "henrici_argmax_layer"):
+                continue      # not per-layer aggregates
+            key = rep.resolve_per_layer_key(statistic, warn=False)
+            if key not in columns:
+                unresolved.append((statistic, key))
+
+        self.assertEqual(unresolved, [], (
+            "these summary statistics resolve to a per-layer column that does "
+            "not exist; add them to p2b_report.SUMMARY_TO_PER_LAYER"))
+
+    def test_every_tracked_statistic_resolves(self):
+        columns = set()
+        for rec in self.block["per_layer"]:
+            columns.update(rec)
+        for statistic in rep.TRACKED_STATISTICS:
+            self.assertIn(rep.resolve_per_layer_key(statistic, warn=False),
+                          columns, f"{statistic} has no per-layer column")
+
+    def test_the_two_that_were_broken(self):
+        self.assertEqual(
+            rep.resolve_per_layer_key("complex_energy_fraction_legacy_mean"),
+            "complex_energy_fraction_legacy_per_block")
+        self.assertEqual(
+            rep.resolve_per_layer_key("theta_mean_across_layers"), "theta_mean")
+
+    def test_an_unresolvable_key_warns_and_returns_none(self):
+        """
+        Silence is what made this survive. An unregistered statistic must say
+        so rather than hand back a key that quietly matches nothing.
+        """
+        per_layer = [{"complex_energy_fraction": 0.5}]
+        with self.assertWarns(UserWarning):
+            key = rep.resolve_per_layer_key("something_new_mean", per_layer)
+        self.assertIsNone(key)
+
+
+class TestTrajectoryReportsItsSpreadStatus(unittest.TestCase):
+    """
+    A trajectory with no dispersion scale and one with a dispersion of zero
+    used to be the same object: NaN spread either way. `spread_status` makes
+    them different, so a figure can say which happened.
+    """
+
+    def test_ok_when_the_column_is_present(self):
+        c = fake_combined(lambda s: 0.5)
+        t = rep.collect_trajectory(c, "henrici_relative_mean")
+        self.assertEqual(t["spread_status"], "ok")
+        self.assertEqual(t["per_layer_key"], "henrici_relative")
+        self.assertTrue(np.isfinite(t["spread"]).all())
+
+    def test_unresolved_when_the_column_is_absent(self):
+        c = fake_combined(lambda s: 0.5)
+        for r in c["results"].values():
+            for rec in r["block1a"]["per_layer"]:
+                rec.pop("henrici_relative")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            t = rep.collect_trajectory(c, "henrici_relative_mean")
+        self.assertEqual(t["spread_status"], "unresolved_per_layer_key")
+        self.assertTrue(np.isnan(t["spread"]).all())
+
+    def test_an_external_series_carries_nan_spread_without_warning(self):
+        """
+        `external_trajectory` has NaN spread BY DESIGN — it arrives from
+        another phase without Phase 2b's across-layer dispersion. The
+        interval statistics must not warn on it: a warning on a
+        designed-for case trains a reader to ignore the ones that matter.
+        """
+        ext = rep.external_trajectory("frac_repulsive", [8, 16, 512],
+                                      [1.0, 0.9, 0.5])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            rows = rep.interval_deltas(ext)
+            rep.align_to_transitions(ext)
+        self.assertEqual([str(w.message) for w in caught], [])
+        self.assertTrue(all(np.isnan(r["delta_in_spreads"]) for r in rows))
 
 
 if __name__ == "__main__":
