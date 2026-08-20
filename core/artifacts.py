@@ -168,6 +168,43 @@ PHASE1_SESSION = {
 }
 
 # ---------------------------------------------------------------------------
+# Phase 1d — cluster-method ensemble. Registered from p1d_io.save_p1d,
+# this module's own writer, rather than guessed: the producer and this
+# contract were written in the same pass and every key below is one
+# save_p1d actually writes.
+# ---------------------------------------------------------------------------
+
+PHASE1D = {
+    "p1d_results": ArtifactSpec(
+        kind="json", filename="p1d_results.json",
+        required_keys=("schema_version", "identity", "layers", "families",
+                       "hdbscan_backend", "settings", "per_layer", "verdicts"),
+        description=(
+            "Per-layer tuned settings, gate decisions with their recorded "
+            "branch, ensemble scalars, and the P-C1..P-C4 verdicts. "
+            "`hdbscan_backend` is load-bearing, not provenance trivia: a "
+            "P-C2 comparison computed against a different HDBSCAN "
+            "implementation than Phase 1 ran is not a comparison of settings."
+        ),
+    ),
+    "p1d_ensemble": ArtifactSpec(
+        kind="npz", filename="p1d_ensemble.npz",
+        key_shape_hint={
+            "co_association_L{layer}": "(n_tokens, n_tokens) float32",
+            "consensus_labels_L{layer}": "(n_tokens,) int",
+            "confidence_L{layer}": "(n_tokens,) float",
+            "population_L{layer}": "(n_tokens,) <U — core/halo/contested",
+        },
+        description=(
+            "Per-layer ensemble arrays, keyed '{name}_L{layer}'. The "
+            "co-association matrices are optional (run_1d "
+            "--no-save-matrices); every per-particle array is always "
+            "written, since those are what downstream phases read."
+        ),
+    ),
+}
+
+# ---------------------------------------------------------------------------
 # Particle records — the canonical artifact shape (core infrastructure
 # item 4, core/particles.py). One per (model, checkpoint, prompt) run;
 # cluster- and population-level results elsewhere are aggregations over
@@ -465,6 +502,7 @@ REGISTRY = {
     "phase2_session": PHASE2_SESSION,
     "phase2_subexperiments": PHASE2_SUBEXPERIMENTS,
     "phase2_weights": PHASE2_WEIGHTS,
+    "phase1d": PHASE1D,
     "phase2b": PHASE2B,
     "phase5b": PHASE5B,
     "phase6": PHASE6,

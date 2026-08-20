@@ -329,6 +329,15 @@ recorded anywhere. Log the residual.
 7. **Final-layer LM-head contamination** — carried over from the GPT-2 run, still not stripped
    from plots. Pythia's untied embedding makes this a different question than it was for
    gpt2-small/medium; not yet checked.
+8. **The clusterer was never tuned, and neither were its alternatives.** Every row in this
+   document that conditions on a cluster reads a partition from
+   `hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed")` — the library minimum with
+   library defaults. The three other partitions Phase 1 persists are untuned in the same way,
+   so the cross-method agreement `p1_visualization/cluster_methods.py` reports is an agreement
+   between defaults. Phase 1d (`p1d_cluster_ensemble/`) exists to test this at [R] cost against
+   artifacts already on disk; **P-C2 registers the prediction that the shipped setting is not
+   the stability-optimal one**, and if it confirms, the affected rows are the ones to re-read
+   first. Nothing here is retracted on that basis — the prediction has not been adjudicated.
 
 ---
 

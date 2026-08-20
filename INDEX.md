@@ -81,6 +81,7 @@ infrastructure level rather than patched per-phase.
 |---|---|---|---|
 | `p1_mstate_tracking/{status-1,design-1}.md` | 1 | Complete | — |
 | `p1b_hemisphere/{status-1b,design-1b}.md` | 1b (1h) | Complete | — |
+| `p1d_cluster_ensemble/{status-1d,design-1d}.md` | 1d | **Implemented, never run** | Auxiliary [R] phase, added after the v2 split. Tunes seven method families — HDBSCAN included, since its shipped setting is a library minimum nobody chose — and builds a calibrated per-particle confidence in place of the categorical label. Predictions P-C1..P-C4 registered before the code. |
 | `p2_eigenspectra/{status-2,design-2}.md` | 2 | Complete | — |
 | `p2b_imaginary/{status-2b,design-2b}.md` | 2b *(reconciled from "2i" — see status-2b.md)* | Complete | — |
 | `p2c_churchland/{status-2c,design-2c}.md` | 2c | **Out of scope (2026-07-18)** | Previously claimed "Complete" here — unverified against this project's source, and moot now: not being looked into regardless of whether that source arrives. |
@@ -90,6 +91,25 @@ infrastructure level rather than patched per-phase.
 | `p5b_manifold_steering/{status-5b,design-5b}.md` | 5b | Not started (execution) | Code and tests built, never run. |
 | `p5c_unclustered/{status-5c,design-5c}.md` | 5c | Not started (causal); preliminary correlational only | **v2 reframe: this phase's object of study is now the project's** — read status-5c.md first. |
 | `p6_subspace/{status-6,design-6}.md` | 6 | **Partial run, one model** | README header says "Not started" — **stale**. |
+
+## Phase 1d, added after the v2 split
+
+Not part of the transition plan's numbering — an auxiliary phase opened because a question the
+plan never asks kept being answered by default: **every cluster-conditioned result in this
+project rests on one clusterer at one untuned setting**, and the three alternative partitions
+Phase 1 persists are untuned too, so `p1_visualization/cluster_methods.py`'s cross-method
+agreement statistic compares four sets of library defaults rather than four methods.
+
+`p1d_cluster_ensemble/` tunes seven families against subsample stability calibrated by a
+matched null, builds a weighted consensus from the tuned partitions, and exports a *continuous*
+per-particle confidence with a null-calibrated core/halo/contested trichotomy into
+`core.particles.ParticleTable`. It reads `activations.npz` and re-clusters — [R] cost, no
+weights, no forward pass, runnable against any Phase 1 run directory that exists today.
+
+It matters most to Phase 5c, whose object of study is the unclustered population: if P-C3
+holds, "unclustered" is not one population, and the selector stops being `cluster_label < 0`.
+Its own falsification is P-C4 — if graded confidence does not out-predict the binary flag, the
+conglomeration is presentation and the status doc says so.
 
 ## Two things worth knowing before reading further
 
