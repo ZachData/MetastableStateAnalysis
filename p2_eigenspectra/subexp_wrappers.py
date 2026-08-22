@@ -207,6 +207,19 @@ def _decomposed_violations_subexp(ctx: dict) -> SubResult:
             verdict_contribution={},
         )
 
+    # A decomposed dict whose delta lists are empty is not a result. Before
+    # decompose.py dispatched on model family it could return exactly that,
+    # and this wrapper went on to report channel "mixed" over zero
+    # violations — a verdict field that looks measured and is not. Empty
+    # deltas now mean inapplicable, like a missing dict.
+    if not decomposed.get("attn_deltas") or not decomposed.get("ffn_deltas"):
+        return SubResult(
+            name="decomposed_violations", applicable=False,
+            payload={"reason": "decomposition returned empty deltas"},
+            summary_lines=["decomposed_violations: skipped — empty attn/ffn deltas"],
+            verdict_contribution={},
+        )
+
     decomp_results = analyze_violations_decomposed(decomposed, events, beta=1.0)
 
     lines = decomposed_violations_summary_lines(decomp_results)

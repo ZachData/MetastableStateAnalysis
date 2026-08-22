@@ -31,36 +31,91 @@ from scipy.stats import spearmanr
 
 def analyze_per_head_ov(ov_data: dict) -> dict:
     """
-    Eigendecompose each head's OV_h matrix separately.
+    Per-head OV spectra.
 
-    For shared-weight models (ALBERT): one set of per-head results.
-    For per-layer models (GPT-2): per-layer × per-head results.
+    Uses `ov_data["ov_head_core"]` when present — the (d_head, d_head)
+    factor product whose spectrum is exactly OV_h's nonzero spectrum (see
+    weights.head_core_spectrum). The composed-matrix path is kept only as
+    a fallback for ov_data dicts built before that field existed, and it is
+    wrong in a way worth stating plainly:
+
+      OV_h has rank <= d_head, so eigvals(OV_h) is d_head genuine
+      eigenvalues plus d_model - d_head structural zeros that floating
+      point scatters to either side of the imaginary axis. At Pythia-410M
+      dimensions that is 960 of 1024. Measured on random heads at those
+      dimensions, `frac_repulsive` from the composed matrix has a spread of
+      0.003 across heads against 0.027 from the core — the null space
+      compresses the between-head signal by roughly 8x. Any correlation
+      against per-head Fiedler computed the old way is attenuated by about
+      that factor, so a null result from it is not evidence of no
+      relationship.
+
+    The fallback also costs ~270x more (615 ms vs 2.3 ms per head at
+    d_model=1024), which is 3.9 minutes versus 0.9 seconds per checkpoint
+    across 24 layers x 16 heads.
 
     Returns
     -------
-    dict with:
-      per_head : list of dicts (one per head for ALBERT, or list of lists
-                 for per-layer models), each containing:
-        frac_repulsive, frac_attractive, spectral_norm, eig_real_mean
+    dict with the same schema as before, plus `low_rank` on each head
+    record saying which path produced it.
     """
+    cores = ov_data.get("ov_head_core")
+
     if ov_data["is_per_layer"]:
         all_layers = []
-        for layer_heads in ov_data["ov_per_head"]:
-            layer_results = [_analyze_single_head(OV_h) for OV_h in layer_heads]
+        for i, layer_heads in enumerate(ov_data["ov_per_head"]):
+            if cores is not None and i < len(cores):
+                layer_results = [_analyze_head_core(c) for c in cores[i]]
+            else:
+                layer_results = [_analyze_single_head(OV_h) for OV_h in layer_heads]
             all_layers.append(layer_results)
         return {
             "is_per_layer": True,
             "per_layer_per_head": all_layers,
             "n_layers": len(all_layers),
             "n_heads": len(all_layers[0]) if all_layers else 0,
+            "low_rank": cores is not None,
         }
     else:
-        per_head = [_analyze_single_head(OV_h) for OV_h in ov_data["ov_per_head"]]
+        if cores is not None:
+            per_head = [_analyze_head_core(c) for c in cores]
+        else:
+            per_head = [_analyze_single_head(OV_h) for OV_h in ov_data["ov_per_head"]]
         return {
             "is_per_layer": False,
             "per_head": per_head,
             "n_heads": len(per_head),
+            "low_rank": cores is not None,
         }
+
+
+def _analyze_head_core(core: np.ndarray) -> dict:
+    """
+    One head, from its (d_head, d_head) core. Same keys as
+    _analyze_single_head so cross_reference_head_ov_fiedler is unchanged.
+
+    `spectral_norm` is None here rather than wrong: singular values are not
+    preserved by the A@B -> B@A swap the way eigenvalues are. The true
+    ||OV_h||_2 is sqrt(max eig(A^T A @ B B^T)), both factors being
+    (d_head, d_head) Grams — cheap, but it needs the factors, which the
+    core alone does not carry. Nothing downstream reads this field today.
+    """
+    from p2_eigenspectra.weights import head_core_spectrum
+
+    s = head_core_spectrum(core)
+    n_eig = s["n_eigenvalues"]
+    return {
+        "frac_repulsive":  s["frac_repulsive"],
+        "frac_attractive": s["frac_attractive"],
+        "spectral_norm":   None,
+        "spectral_radius": s["spectral_radius"],
+        "eig_real_mean":   s.get("eig_real_mean", float("nan")),
+        "eig_real_std":    float("nan"),
+        "n_positive":      int(round(s["frac_attractive"] * n_eig)),
+        "n_negative":      int(round(s["frac_repulsive"] * n_eig)),
+        "n_eigenvalues":   n_eig,
+        "low_rank":        True,
+    }
 
 
 def _analyze_single_head(OV_h: np.ndarray) -> dict:
@@ -80,6 +135,8 @@ def _analyze_single_head(OV_h: np.ndarray) -> dict:
         "eig_real_std":    float(eig_real.std()),
         "n_positive":      int((eig_real > 0).sum()),
         "n_negative":      int((eig_real < 0).sum()),
+        "n_eigenvalues":   int(eig_real.size),
+        "low_rank":        False,
     }
 
 

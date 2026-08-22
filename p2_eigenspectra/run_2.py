@@ -636,6 +636,8 @@ def _run_decompose(model, tokenizer, model_name, prompt_key, cfg):
     text = PROMPTS.get(prompt_key, "")
     if not text:
         return None
+    from core.sublayer_streams import UnsupportedArchitecture
+
     try:
         if cfg["is_albert"]:
             snapshot_data = extract_decomposed_albert(
@@ -646,6 +648,12 @@ def _run_decompose(model, tokenizer, model_name, prompt_key, cfg):
             return snapshot_data[ALBERT_SNAPSHOTS[-1]]
         else:
             return extract_decomposed_standard(model, tokenizer, text, model_name)
+    except UnsupportedArchitecture as e:
+        # A missing branch is a fact about the architecture, not a fault.
+        # One line, no traceback: across a 27-checkpoint x 9-prompt sweep the
+        # traceback would print 243 times and say the same thing each time.
+        print(f"    Decompose: {e}")
+        return None
     except Exception as e:
         print(f"    Decompose failed: {e}")
         traceback.print_exc()

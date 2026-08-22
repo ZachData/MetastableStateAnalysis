@@ -33,6 +33,7 @@ import json
 import numpy as np
 from pathlib import Path
 from scipy.linalg import schur, eigvals, svdvals, expm
+from numpy.linalg import LinAlgError
 
 from core.config import MODEL_CONFIGS
 
@@ -124,6 +125,12 @@ def extract_ov_circuit(model, model_name: str) -> dict:
     dict with:
       ov_total     : (d_model, d_model) ndarray — sum of per-head OV
       ov_per_head  : list of (d_model, d_model) ndarrays — one per head
+      ov_head_core : (n_heads, d_head, d_head) ndarray — the factor product
+                     B_h @ A_h for OV_h = A_h @ B_h. Its spectrum IS the
+                     nonzero spectrum of OV_h, at 1/(d_model/d_head)³ the
+                     eigendecomposition cost and without the structural
+                     zeros that dominate eigvals(OV_h). See
+                     head_core_spectrum.
       d_model      : int
       d_head       : int
       n_heads      : int
@@ -161,6 +168,7 @@ def _extract_albert_ov(model, model_name: str) -> dict:
     d_head  = d_model // n_heads
 
     ov_per_head = []
+    head_cores  = []
     for h in range(n_heads):
         s = h * d_head
         e = s + d_head
@@ -169,12 +177,16 @@ def _extract_albert_ov(model, model_name: str) -> dict:
         # Row-vector convention: x @ OV_h
         OV_h = W_V_h.T @ W_O_h.T     # (d_model, d_model)
         ov_per_head.append(OV_h)
+        # Head core: the (d_head, d_head) factor product whose spectrum is
+        # OV_h's nonzero spectrum. See head_core_spectrum.
+        head_cores.append(W_O_h.T @ W_V_h.T)
 
     ov_total = sum(ov_per_head)
 
     return {
         "ov_total":     ov_total,
         "ov_per_head":  ov_per_head,
+        "ov_head_core": np.stack(head_cores),
         "d_model":      d_model,
         "d_head":       d_head,
         "n_heads":      n_heads,
@@ -186,6 +198,7 @@ def _extract_albert_ov(model, model_name: str) -> dict:
 def _extract_bert_ov(model, model_name: str) -> dict:
     all_ov_total    = []
     all_ov_per_head = []
+    all_head_cores  = []
     layer_names     = []
 
     for i, layer in enumerate(model.encoder.layer):
@@ -197,6 +210,7 @@ def _extract_bert_ov(model, model_name: str) -> dict:
         d_head  = d_model // n_heads
 
         per_head = []
+        cores    = []
         for h in range(n_heads):
             s = h * d_head
             e = s + d_head
@@ -204,14 +218,17 @@ def _extract_bert_ov(model, model_name: str) -> dict:
             W_O_h = W_O[:, s:e]
             OV_h  = W_V_h.T @ W_O_h.T
             per_head.append(OV_h)
+            cores.append(W_O_h.T @ W_V_h.T)
 
         all_ov_total.append(sum(per_head))
         all_ov_per_head.append(per_head)
+        all_head_cores.append(np.stack(cores))
         layer_names.append(f"layer_{i}")
 
     return {
         "ov_total":     all_ov_total,
         "ov_per_head":  all_ov_per_head,
+        "ov_head_core": all_head_cores,
         "d_model":      d_model,
         "d_head":       d_head,
         "n_heads":      n_heads,
@@ -256,6 +273,7 @@ def _extract_gptneox_ov(model, model_name: str) -> dict:
 
     all_ov_total    = []
     all_ov_per_head = []
+    all_head_cores  = []
     layer_names     = []
     d_model = n_heads = d_head = None
 
@@ -273,6 +291,7 @@ def _extract_gptneox_ov(model, model_name: str) -> dict:
         d_model = W_V.shape[1]
 
         per_head = []
+        cores    = []
         for h in range(n_heads):
             s = h * d_head
             e = s + d_head
@@ -280,14 +299,17 @@ def _extract_gptneox_ov(model, model_name: str) -> dict:
             W_O_h = W_O[:, s:e]           # (d_model, d_head) — cols of O weight
             OV_h  = W_V_h.T @ W_O_h.T     # (d_model, d_model), row-vector x @ OV_h
             per_head.append(OV_h)
+            cores.append(W_O_h.T @ W_V_h.T)   # (d_head, d_head)
 
         all_ov_total.append(sum(per_head))
         all_ov_per_head.append(per_head)
+        all_head_cores.append(np.stack(cores))
         layer_names.append(f"layer_{i}")
 
     return {
         "ov_total":     all_ov_total,
         "ov_per_head":  all_ov_per_head,
+        "ov_head_core": all_head_cores,
         "d_model":      d_model,
         "d_head":       d_head,
         "n_heads":      n_heads,
@@ -299,6 +321,7 @@ def _extract_gptneox_ov(model, model_name: str) -> dict:
 def _extract_gpt2_ov(model, model_name: str) -> dict:
     all_ov_total    = []
     all_ov_per_head = []
+    all_head_cores  = []
     layer_names     = []
 
     for i, block in enumerate(model.h):
@@ -316,6 +339,7 @@ def _extract_gpt2_ov(model, model_name: str) -> dict:
         d_head  = d_model // n_heads
 
         per_head = []
+        cores    = []
         for h in range(n_heads):
             s = h * d_head
             e = s + d_head
@@ -324,14 +348,20 @@ def _extract_gpt2_ov(model, model_name: str) -> dict:
             # Row-vector convention: x @ OV_h = x @ W_V_h @ W_O_h
             OV_h = W_V_h @ W_O_h           # (d_model, d_model)
             per_head.append(OV_h)
+            # Factor order is reversed relative to the Linear branches
+            # because Conv1D stores (in, out): here OV_h = A @ B with
+            # A = W_V_h, B = W_O_h, so the core is B @ A.
+            cores.append(W_O_h @ W_V_h)    # (d_head, d_head)
 
         all_ov_total.append(sum(per_head))
         all_ov_per_head.append(per_head)
+        all_head_cores.append(np.stack(cores))
         layer_names.append(f"layer_{i}")
 
     return {
         "ov_total":     all_ov_total,
         "ov_per_head":  all_ov_per_head,
+        "ov_head_core": all_head_cores,
         "d_model":      d_model,
         "d_head":       d_head,
         "n_heads":      n_heads,
@@ -395,7 +425,43 @@ def eigendecompose(OV: np.ndarray) -> dict:
 
     # --- Ordered real Schur form ---
     # sort='rhp' puts eigenvalues with Re > 0 in the upper-left block.
-    T, Z, sdim = schur(OV, output='real', sort='rhp')
+    #
+    # LAPACK's reordering fails outright when eigenvalues cluster ON the
+    # sorting boundary, raising "Leading eigenvalues do not satisfy sort
+    # condition". The case that produces it here is a rank-deficient OV:
+    # its null eigenvalues sit at the origin, exactly on the imaginary
+    # axis, and floating point scatters them across the predicate. For
+    # standard MHA n_heads * d_head == d_model so OV_total is generically
+    # full rank, but this fires on any narrowed or masked head set, and an
+    # unguarded LinAlgError kills a whole checkpoint sweep (run_2 calls
+    # analyze_weights outside the per-model try).
+    #
+    # The retry uses a tolerance band rather than a strict sign: eigenvalues
+    # within `tol` of the axis are assigned to the attractive block, which
+    # makes the predicate decisive on the degenerate cluster. It is a real
+    # sorted Schur form either way, so the projectors built from Z stay
+    # valid — unlike the tempting alternative of falling back to an
+    # UNSORTED Schur, which would silently hand build_subspace_projectors
+    # the wrong invariant subspaces.
+    schur_sort_tol = 0.0
+    try:
+        T, Z, sdim = schur(OV, output='real', sort='rhp')
+    except LinAlgError:
+        scale = float(np.max(np.abs(eigs))) if eigs.size else 0.0
+        schur_sort_tol = max(scale, 1.0) * 1e-9
+        try:
+            T, Z, sdim = schur(
+                OV, output='real',
+                sort=lambda re, im: re > schur_sort_tol,
+            )
+        except LinAlgError as exc:
+            rank = int(np.linalg.matrix_rank(OV))
+            raise LinAlgError(
+                f"Schur reordering failed for a {d}x{d} OV of rank {rank}. "
+                f"{d - rank} eigenvalues sit on the sorting boundary; the "
+                f"attractive/repulsive split is not well defined for this "
+                f"matrix."
+            ) from exc
     n_attractive = int(sdim)
 
     # Condition indicator: ratio of norms of attractive vs repulsive blocks.
@@ -430,6 +496,7 @@ def eigendecompose(OV: np.ndarray) -> dict:
         "schur_Z":             Z,
         "schur_n_attractive":  n_attractive,
         "schur_cond":          cond,
+        "schur_sort_tol":      schur_sort_tol,   # 0.0 unless the retry ran
 
         "sym_eigenvalues":     sym_eig_vals,
         "sym_eigenvectors":    sym_eig_vecs,
@@ -921,6 +988,9 @@ def save_weight_decomposition(
 
     # --- JSON summary ---
     summary = _build_summary(ov_data, decomps, projectors, qk_data)
+    # "filled by caller" — this is that caller. Previously never set, which
+    # forced every reader to recover the model name from the filename stem.
+    summary["model"] = model_name
     with open(save_dir / f"ov_summary_{stem}.json", "w") as f:
         json.dump(summary, f, indent=2)
 
@@ -961,6 +1031,77 @@ def _save_projector_arrays(projectors, ov_data, out):
         out["sym_repulse_shared"]   = projectors["sym_repulse"]
 
 
+# ---------------------------------------------------------------------------
+# Per-head spectra via the head core
+# ---------------------------------------------------------------------------
+
+def head_core_spectrum(core: np.ndarray, tol_scale: float = 1e-10) -> dict:
+    """
+    Eigen-summary of one head, computed from its (d_head, d_head) core.
+
+    Why the core and not OV_h itself. Every extractor builds the head's
+    contribution as a product of two thin factors,
+
+        OV_h = A_h @ B_h,    A_h (d_model, d_head),  B_h (d_head, d_model)
+
+    so OV_h has rank at most d_head and its d_model eigenvalues are
+    d_head genuine ones plus d_model - d_head structural zeros. The nonzero
+    spectrum of A@B equals the spectrum of B@A, so
+
+        core_h = B_h @ A_h   (d_head, d_head)
+
+    carries exactly the head's real spectrum and nothing else.
+
+    This matters twice over.
+
+    Correctness. `frac_repulsive` computed on eigvals(OV_h) counts the
+    structural zeros, and floating-point noise scatters them to either side
+    of the imaginary axis roughly evenly. At Pythia-410M's d_model=1024,
+    d_head=64 that is 960 of 1024 eigenvalues — 94% of the measured
+    fraction is noise, and every head's `frac_repulsive` is pulled towards
+    0.5 regardless of what the head does. The same dilution applies to
+    GPT-2 (1216 of 1280). Any per-head result computed the old way is
+    mostly measuring numerical noise in a null space.
+
+    Cost. eigvals on (1024, 1024) is O(d³) and takes seconds; on (64, 64)
+    it is microseconds. Over 24 layers × 16 heads × 27 checkpoints that is
+    the difference between hours and under a second.
+
+    Returns per-head fractions over the NONZERO spectrum only. Eigenvalues
+    below tol_scale · max|λ| are reported separately as `n_negligible`
+    rather than silently counted as attractive or repulsive — a head whose
+    core is itself rank-deficient is a real finding, not a rounding
+    decision.
+    """
+    eigs = eigvals(np.asarray(core, dtype=np.float64))
+    mag = np.abs(eigs)
+    scale = float(mag.max()) if mag.size else 0.0
+    if scale <= 0:
+        return {
+            "frac_repulsive": float("nan"), "frac_attractive": float("nan"),
+            "frac_complex": float("nan"), "spectral_radius": 0.0,
+            "n_eigenvalues": int(eigs.size), "n_negligible": int(eigs.size),
+        }
+    keep = mag > tol_scale * scale
+    kept = eigs[keep]
+    re, im = np.real(kept), np.imag(kept)
+    n = max(kept.size, 1)
+    return {
+        "frac_repulsive":  float((re < 0).sum() / n),
+        "frac_attractive": float((re > 0).sum() / n),
+        "frac_complex":    float((np.abs(im) > 0.01 * np.abs(re)).sum() / n),
+        "spectral_radius": scale,
+        "eig_real_mean":   float(re.mean()) if kept.size else float("nan"),
+        "n_eigenvalues":   int(kept.size),
+        "n_negligible":    int(eigs.size - kept.size),
+    }
+
+
+def head_core_spectra(cores: np.ndarray) -> list:
+    """Per-head summaries for one layer's (n_heads, d_head, d_head) stack."""
+    return [head_core_spectrum(cores[h]) for h in range(len(cores))]
+
+
 def _build_summary(ov_data, decomps, projectors, qk_data) -> dict:
     """Build JSON-serialisable summary for reporting.
 
@@ -980,7 +1121,7 @@ def _build_summary(ov_data, decomps, projectors, qk_data) -> dict:
         "layers":      {},
     }
 
-    def _layer_summary(decomp, proj, ov_matrix, qk_norms=None):
+    def _layer_summary(decomp, proj, ov_matrix, qk_norms=None, head_cores=None):
         # True spectral norm: largest singular value of the OV matrix itself.
         # svdvals returns singular values in descending order.
         ov_spectral_norm = float(svdvals(ov_matrix)[0]) if ov_matrix is not None else None
@@ -1010,17 +1151,37 @@ def _build_summary(ov_data, decomps, projectors, qk_data) -> dict:
         if qk_norms is not None:
             s["qk_spectral_norms_per_head"] = qk_norms
             s["qk_spectral_norm_mean"]      = float(np.mean(qk_norms))
+        if head_cores is not None:
+            # Per-head spectra, computed on the (d_head, d_head) cores so the
+            # fractions are over each head's genuine spectrum rather than
+            # over d_model - d_head structural zeros. See head_core_spectrum.
+            heads = head_core_spectra(head_cores)
+            s["heads"] = heads
+            rep = np.array([h["frac_repulsive"] for h in heads], dtype=float)
+            rep = rep[np.isfinite(rep)]
+            if rep.size:
+                s["head_rep_frac_mean"] = float(rep.mean())
+                s["head_rep_frac_std"]  = float(rep.std())
+                # Spread across heads is the quantity that distinguishes a
+                # differentiated layer from a uniformly-drifting one; the
+                # mean alone cannot.
+                s["head_rep_frac_range"] = float(rep.max() - rep.min())
         return s
+
+    cores = ov_data.get("ov_head_core")
 
     if ov_data["is_per_layer"]:
         for i, name in enumerate(ov_data["layer_names"]):
             qk = qk_data["qk_spectral_norms"][i] if i < len(qk_data["qk_spectral_norms"]) else None
             ov_mat = ov_data["ov_total"][i]
-            summary["layers"][name] = _layer_summary(decomps[i], projectors[i], ov_mat, qk)
+            hc = cores[i] if cores is not None and i < len(cores) else None
+            summary["layers"][name] = _layer_summary(
+                decomps[i], projectors[i], ov_mat, qk, head_cores=hc,
+            )
     else:
         qk = qk_data["qk_spectral_norms"][0] if qk_data["qk_spectral_norms"] else None
         summary["layers"]["shared"] = _layer_summary(
-            decomps, projectors, ov_data["ov_total"], qk
+            decomps, projectors, ov_data["ov_total"], qk, head_cores=cores,
         )
 
     return summary
