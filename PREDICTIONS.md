@@ -188,3 +188,80 @@ conditions instead of one, equal spacing, a control arm, and bandwidth stability
 
 Not yet adjudicated. Phase 1c and Phase 2d code exists and is validated on synthetic data; no
 sub-experiment has been run against Pythia artifacts.
+
+---
+
+# Phase 7 registered predictions — induction-head formation as a particle motif
+
+**Recorded 2026-08-22, before any Phase 7 code is written.** Same rule as the Phase 1c block
+above and for the same reason: this is an analysis of a phenomenon the mechinterp literature
+has already described qualitatively, which makes it trivially easy to fit a motif definition
+to the data after seeing it. No edits after results — dated addenda only.
+
+## What is being claimed
+
+Phase 7's thesis is that a named mechinterp phenomenon is a **recurring structure of particle
+interactions** — a motif — and not merely describable as one. The first phenomenon is the
+induction head, restated as a two-stage `relay` motif: a `prev_token` edge at layer ℓ₁ whose
+target particle becomes the source of a `match` edge at layer ℓ₂ > ℓ₁. See
+`p7_motifs/design-7.md` for the full alphabet and the interaction-object definition.
+
+All four predictions are adjudicated against the offset nulls in `core/qk_offset_null.py`
+(N1 rotary-only, N2 offset-matched, N3 offset-shuffled). **A pass requires clearing N1 and
+N2.** No prediction below is evaluable on a prompt that `core/battery_structure.py` flags
+degenerate (`uniform`, `empty_null`, `single_offset`, `null_is_sink`) — on those the phase
+refuses rather than returning a number.
+
+| ID | Prediction | Falsifier | Instrument | Cost |
+|---|---|---|---|---|
+| **P-I1** | `relay` motif strength above N1 and N2 first rises in the same checkpoint window as the behavioral induction score | Motif already above nulls at step 0, or absent at step 143,000 despite a high behavioral score | 7-A (formation curve) | [F] |
+| **P-I2** | The stage-2 `match` edge is attractive-channel dominant (`U_pos`); the stage-1 `prev_token` edge is offset-driven and channel-neutral | No channel difference between the two stages | 7-B (channel decomposition) | [R+W] |
+| **P-I3** | Across heads at a fixed checkpoint, `relay` strength correlates with behavioral induction score — **and does not** among non-induction heads | Non-induction heads carry the motif at the same rate ⇒ the motif is a property of the activations, not of the classification | 7-C (cross-head, control arm) | [R] |
+| **P-I4** | `relay_target` particles show `moved_fraction` attributable to the motif's edges, above a matched-magnitude control | Motif present in the attention pattern but moves nothing ⇒ routing artifact, not a dynamical structure | 7-D (event consequence) | [R] |
+
+## Why each one is worth pre-committing
+
+**P-I1's three outcomes are all informative, which is why it is stated as a window and not a
+direction.** Motif-before-behavior would mean the geometric structure assembles before the
+function it supports is measurable — the interesting case, and the one that would make the
+particle account predictive rather than descriptive. Behavior-before-motif would mean the
+motif is not what the behavior is made of. Simultaneity is the null-ish case and still
+locates a circuit-formation event on the checkpoint axis, which is what `PREDICTIONS.md`
+claim (b) needs and currently assumes from the literature rather than measures.
+
+**P-I2 is what makes the two-stage decomposition earn its cost.** If both stages look alike
+in the channel decomposition, then `relay` is a more expensive way of computing something a
+single-head score already gives, and the alphabet should be simplified rather than defended.
+
+**P-I3 is the prediction that can kill the bridge, and it is stated in the direction that
+would hurt.** The control arm is mandatory, not optional: reporting the motif rate only among
+induction heads would read as confirmation no matter what the number was. This is the same
+error the P-T1 amendment was written to prevent, and it is being pre-empted here rather than
+corrected after the fact.
+
+**P-I4 separates a routing claim from a dynamical one.** The particle account's whole
+advantage over attention-pattern analysis is that it tracks forces and motion, not
+attribution weights. If the motif does not move particles, that advantage is not being used
+and the result is a re-description of something mechinterp already measures better.
+
+## Adjudication constraints, fixed now
+
+1. **Effective *n* is the number of heads, not the number of edges.** Edges within a head are
+   not independent samples. Any significance computed over edge counts is wrong by orders of
+   magnitude, in the direction that manufactures findings.
+2. **The tautology check is part of adjudication, not a code-review nicety.** The behavioral
+   induction score is "mean attention on induction pairs"; a motif defined as "attentive edge
+   on induction pairs" is the same number. Every P-I3 result must state which of the three
+   independence sources (two-stage composition, force decomposition, particle event) is
+   carrying the association. "None" means the phase measured one thing twice.
+3. **N3 is reported but does not gate.** It separates "content and offset jointly required"
+   from "either alone suffices" — a distinction about mechanism, not about whether the effect
+   is real.
+4. **Thresholds are labelled `placed` until derived from an observed distribution**
+   (standing rule 6). This includes the `hub` in-degree cutoff and the top-k-by-force
+   retention cutoff on the interaction table, neither of which has a calibrated value yet.
+
+## Status
+
+Not yet adjudicated. No Phase 7 code exists as of this entry — that is the point of the
+timestamp.
