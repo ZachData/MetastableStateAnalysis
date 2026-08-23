@@ -273,6 +273,19 @@ def adjudicate_p_t1(results: list) -> dict:
     non-candidates are trimodal at the same rate, trimodality is a property
     of the activations rather than of the classification, and a
     candidates-only number would read as confirmation.
+
+    PREDATES THE P-T1 AMENDMENT, AND DISAGREES WITH IT.
+    ---------------------------------------------------
+    This function reads `modality["trimodal"]` -- a mode count at ONE
+    bandwidth. The dated addendum in `PREDICTIONS.md` says the opposite:
+    "Adjudicate on `stable_n_modes` only ... a mode count at a single
+    bandwidth is a choice, not a measurement."
+
+    The two will disagree wherever the bandwidth scan does not settle, and
+    where they disagree the addendum is what P-T1 means. `p_value_p_t1` below
+    implements the amended version and is what enters the falsification
+    ledger; this function is kept for its verdict prose and its control-arm
+    rates, not as the adjudicator its name suggests.
     """
     cand = [r for r in results if r.get("row2_candidate")]
     other = [r for r in results if not r.get("row2_candidate")]
@@ -344,3 +357,149 @@ def modality_stability(X: np.ndarray, phi: np.ndarray,
             run, best = cur, v
     return {"counts_by_bw": counts, "stable_n_modes": best if run >= 3 else None,
             "longest_run": run, "n_bandwidths": len(vals)}
+
+
+# ---------------------------------------------------------------------------
+# P-T1's p-value (POPPER_PLAN.md item B6, live instrument)
+# ---------------------------------------------------------------------------
+
+#: The mode count P-T1's amended statement predicts for row-2 heads.
+P_T1_TARGET_MODES = 3
+
+#: One-sided: P-T1 predicts row-2 candidates trimodal at a HIGHER rate than
+#: controls. A two-sided test would score the controls beating the candidates
+#: as evidence for the prediction, which is the opposite of what it claims.
+P_T1_ALTERNATIVE = "greater"
+
+
+def p_value_p_t1(results: list, n_perm: int = 2000, seed: int = 0) -> dict:
+    """
+    P-T1 as a label-permutation test on the trimodality rate.
+
+    **Adjudicated on `stable_n_modes`, not on `modality["trimodal"]`.** The
+    dated addendum in `PREDICTIONS.md` is explicit: "Adjudicate on
+    `stable_n_modes` only -- the mode count that survives a bandwidth scan. Any
+    distribution can be made unimodal by over-smoothing and multimodal by
+    under-smoothing, so a mode count at a single bandwidth is a choice, not a
+    measurement." `adjudicate_p_t1` above predates that amendment and still
+    reads the single-bandwidth flag; this function does not, and the two will
+    disagree wherever the bandwidth scan does not settle.
+
+    **`stable_n_modes is None` is a legitimate outcome and is not resolved.**
+    A head whose modality the data does not determine is excluded from both
+    arms and counted in `n_undetermined`. Filling it in either direction would
+    invent a measurement.
+
+    **The statistic is the rate difference, and the null permutes the row-2
+    labels.** That null is exactly P-T1's own falsifier -- "trimodality is a
+    property of the activations rather than of the classification" -- realised
+    by breaking the association between classification and modality while
+    holding both marginals fixed. It needs no distributional assumption, which
+    matters at the head counts involved (tens, not thousands).
+
+    **Spacing is reported but not adjudicated, and that is a real tension.**
+    The amended statement asks for three *approximately equally spaced* modes,
+    yet the same addendum says to adjudicate on `stable_n_modes` only, and
+    `stable_n_modes` carries no spacing information. The adjudication
+    instruction wins for the p-value; `equally_spaced_rate` is returned
+    alongside so the conjunction can be read, and the registry records that
+    the p-value tests the mode-count half alone.
+    """
+    from core.nulls import p_from_null
+
+    usable, undetermined = [], 0
+    for r in results:
+        stab = r.get("stability") or {}
+        n_modes = stab.get("stable_n_modes", "__missing__")
+        if n_modes == "__missing__":
+            continue                      # no bandwidth scan run for this head
+        if n_modes is None:
+            undetermined += 1
+            continue
+        usable.append((bool(r.get("row2_candidate")), int(n_modes) == P_T1_TARGET_MODES))
+
+    n_cand = sum(1 for c, _ in usable if c)
+    n_ctrl = len(usable) - n_cand
+    out = {
+        "n_candidates": n_cand, "n_controls": n_ctrl,
+        "n_undetermined": undetermined,
+        "adjudicated_on": "stable_n_modes",
+        "target_modes": P_T1_TARGET_MODES,
+    }
+
+    if n_cand == 0 or n_ctrl == 0:
+        out["p_value"] = None
+        out["reason"] = (
+            f"need both arms: {n_cand} candidate(s), {n_ctrl} control(s). "
+            f"No candidates at all is itself a result -- it says how far "
+            f"Table 1's row-2 regime is from a trained transformer -- but it "
+            f"is a measurement, not a test.")
+        return out
+
+    labels = np.array([c for c, _ in usable], dtype=bool)
+    tri = np.array([t for _, t in usable], dtype=bool)
+    observed = float(tri[labels].mean() - tri[~labels].mean())
+
+    rng = np.random.default_rng(seed)
+    null = np.empty(n_perm)
+    for i in range(n_perm):
+        perm = rng.permutation(labels)
+        null[i] = tri[perm].mean() - tri[~perm].mean()
+
+    out.update(p_from_null(observed, null, alternative=P_T1_ALTERNATIVE))
+    out.update({
+        "statistic": "trimodal-rate(row-2 candidates) minus trimodal-rate(controls), "
+                     "trimodality = (stable_n_modes == 3)",
+        "trimodal_rate_candidates": float(tri[labels].mean()),
+        "trimodal_rate_controls": float(tri[~labels].mean()),
+        "equally_spaced_rate": _equally_spaced_rate(results),
+        "spacing_note": "reported, NOT adjudicated -- stable_n_modes carries no "
+                        "spacing information; see the registry entry",
+        "n_perm": int(n_perm),
+    })
+    return out
+
+
+def _equally_spaced_rate(results: list) -> float:
+    spaced = [bool(r.get("modality", {}).get("equally_spaced"))
+              for r in results
+              if r.get("row2_candidate") and r.get("modality", {}).get("trimodal")]
+    return float(np.mean(spaced)) if spaced else float("nan")
+
+
+def adjudicate_p_t1_from_results(
+    results: list,
+    *,
+    n_perm: int = 2000,
+    seed: int = 0,
+    artifact_hashes=(),
+    run_manifest: dict = None,
+    adjudicate: bool = False,
+    adjudications_dir=None,
+) -> dict:
+    """
+    `p_value_p_t1` plus optional entry in the falsification ledger.
+
+    Opt-in for the same reason as every other emitter here: this runs under
+    test, and `core.adjudication.adjudicate` refuses to overwrite, so one
+    accidental test run would permanently occupy P-T1's slot with a synthetic
+    p-value.
+    """
+    res = p_value_p_t1(results, n_perm=n_perm, seed=seed)
+    res["adjudication"] = None
+    if adjudicate and res.get("p_value") is not None:
+        from core.adjudication import adjudicate_if_registered
+        res["adjudication"] = adjudicate_if_registered(
+            "P-T1", res["p_value"],
+            artifact_hashes=artifact_hashes, run_manifest=run_manifest,
+            test_name=(f"label permutation over row-2 classification; statistic = "
+                       f"trimodal-rate(candidates) - trimodal-rate(controls) with "
+                       f"trimodality = (stable_n_modes == {P_T1_TARGET_MODES}); "
+                       f"one-sided '{P_T1_ALTERNATIVE}'; {n_perm} permutations"),
+            notes=(f"n_candidates={res['n_candidates']} n_controls={res['n_controls']} "
+                   f"n_undetermined={res['n_undetermined']} "
+                   f"(stable_n_modes=None, excluded not resolved); "
+                   f"spacing reported not adjudicated"),
+            adjudications_dir=adjudications_dir,
+        )
+    return res

@@ -283,3 +283,138 @@ def adjudicate_p_m1(regimes: list, violations: list) -> dict:
     out["violations_in_regime_layers"] = [
         float(v[l]) for l in in_regime_layers if l < len(v)]
     return out
+
+
+# ---------------------------------------------------------------------------
+# P-M1's p-value (POPPER_PLAN.md item B6, live instrument)
+# ---------------------------------------------------------------------------
+
+#: The head-to-layer aggregate the p-value is computed on. Declared here rather
+#: than passed in: `adjudicate_p_m1` reports all three because the choice
+#: changes the answer, and picking the one that confirms after seeing three
+#: correlations is the selection this apparatus exists to prevent.
+P_M1_PRIMARY_AGGREGATE = "mean"
+
+#: One-sided: P-M1 predicts violations concentrate in layers FAR from the
+#: gradient-flow condition, i.e. a POSITIVE correlation between regime distance
+#: and violations. A negative correlation is the prediction being wrong.
+P_M1_ALTERNATIVE = "greater"
+
+
+def p_value_p_m1(regimes: list, violations, n_perm: int = 2000,
+                 seed: int = 0) -> dict:
+    """
+    P-M1 as a permutation test over layers.
+
+    The null is P-M1's own falsifier -- "violation location is independent of
+    distance from the gradient-flow conditions" -- realised by permuting the
+    per-layer violation series against the regime score. Permuting layers
+    preserves both marginal distributions exactly, which matters because the
+    violation series is heavily skewed and a parametric correlation test would
+    be leaning on normality it does not have.
+
+    **Refuses when the three aggregates disagree in sign.** `adjudicate_p_m1`
+    already establishes that the head-to-layer reduction is a choice and that
+    disagreement in sign means "per-layer energies do not resolve a per-head
+    claim; this needs head ablation." That is a statement about the
+    experiment's resolution, and emitting a p-value for one arbitrarily chosen
+    aggregate would convert an honest "not adjudicable" into a number.
+
+    **On the violation series.** `UPDATE_PLAN.md` §5.9 establishes that a
+    violation is an event between two adjacent layers, so the series is a
+    per-boundary INDICATOR rather than a per-layer count, and layer 0 is zero
+    by construction -- reported rather than dropped, since dropping it would
+    misalign the two series. This function takes whatever series it is given
+    and records its length and whether it is binary, so the artifact says which
+    convention produced the number instead of leaving it to be inferred.
+    """
+    from core.nulls import p_from_null
+
+    agg = adjudicate_p_m1(regimes, violations)
+    out = {
+        "aggregates": agg.get("aggregates", {}),
+        "aggregate_verdict": agg.get("verdict"),
+        "primary_aggregate": P_M1_PRIMARY_AGGREGATE,
+    }
+
+    v_arr = np.asarray(violations, dtype=np.float64)
+    out["violation_series_len"] = int(v_arr.size)
+    finite_v = v_arr[np.isfinite(v_arr)]
+    out["violation_series_is_binary"] = bool(
+        finite_v.size > 0 and np.all(np.isin(finite_v, (0.0, 1.0))))
+
+    corrs = [a["corr"] for a in out["aggregates"].values() if np.isfinite(a["corr"])]
+    if not corrs:
+        out["p_value"] = None
+        out["reason"] = "no usable layers; no correlation could be computed"
+        return out
+    if len({np.sign(c) for c in corrs}) > 1:
+        out["p_value"] = None
+        out["reason"] = (
+            "the mean/min/max head-to-layer aggregates disagree in SIGN, so "
+            "per-layer energies do not resolve this per-head claim. Emitting a "
+            "p-value for one chosen aggregate would turn a resolution limit "
+            "into a result. Needs head ablation instead.")
+        return out
+
+    by_layer: dict = {}
+    for r in regimes:
+        by_layer.setdefault(int(r.get("layer", -1)), []).append(r)
+    layers = sorted(k for k in by_layer if k >= 0)
+    score = np.array([np.nanmean([r["regime_distance"] for r in by_layer[l]])
+                      for l in layers], dtype=np.float64)
+
+    k = min(len(score), len(v_arr))
+    s, vv = score[:k], v_arr[:k]
+    m = np.isfinite(s) & np.isfinite(vv)
+    s, vv = s[m], vv[m]
+    if s.size < 3 or np.std(s) < 1e-12 or np.std(vv) < 1e-12:
+        out["p_value"] = None
+        out["reason"] = f"degenerate after alignment: n={s.size}, constant series"
+        return out
+
+    observed = float(np.corrcoef(s, vv)[0, 1])
+    rng = np.random.default_rng(seed)
+    null = np.array([float(np.corrcoef(s, rng.permutation(vv))[0, 1])
+                     for _ in range(n_perm)])
+
+    out.update(p_from_null(observed, null, alternative=P_M1_ALTERNATIVE))
+    out.update({
+        "statistic": f"Pearson correlation between the per-layer "
+                     f"{P_M1_PRIMARY_AGGREGATE} regime distance and the "
+                     f"violation series, permuted over layers",
+        "n_layers_used": int(s.size), "n_perm": int(n_perm),
+    })
+    return out
+
+
+def adjudicate_p_m1_from_regimes(
+    regimes: list,
+    violations,
+    *,
+    n_perm: int = 2000,
+    seed: int = 0,
+    artifact_hashes=(),
+    run_manifest: dict = None,
+    adjudicate: bool = False,
+    adjudications_dir=None,
+) -> dict:
+    """`p_value_p_m1` plus optional entry in the falsification ledger. Opt-in."""
+    res = p_value_p_m1(regimes, violations, n_perm=n_perm, seed=seed)
+    res["adjudication"] = None
+    if adjudicate and res.get("p_value") is not None:
+        from core.adjudication import adjudicate_if_registered
+        res["adjudication"] = adjudicate_if_registered(
+            "P-M1", res["p_value"],
+            artifact_hashes=artifact_hashes, run_manifest=run_manifest,
+            test_name=(f"permutation over layers; statistic = Pearson correlation "
+                       f"between per-layer {P_M1_PRIMARY_AGGREGATE} regime distance "
+                       f"and the violation series; one-sided "
+                       f"'{P_M1_ALTERNATIVE}'; {n_perm} permutations"),
+            notes=(f"n_layers_used={res.get('n_layers_used')} "
+                   f"series_len={res.get('violation_series_len')} "
+                   f"binary_indicator={res.get('violation_series_is_binary')} "
+                   f"aggregates={ {k: round(v['corr'], 4) for k, v in res['aggregates'].items() if np.isfinite(v['corr'])} }"),
+            adjudications_dir=adjudications_dir,
+        )
+    return res

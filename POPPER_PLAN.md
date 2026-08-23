@@ -609,6 +609,53 @@ simplex-like configuration.
 committed records — recalibrating each e-value from its p-value rather than
 trusting the stored number — so a decision word edited by hand surfaces in CI.
 
+## 6e. All three live predictions now have calibrated nulls
+
+`P-S1`, `P-T1`, `P-M1` — the complete set of predictions that are both
+`e-value` and `active` — can now each produce a p-value. Every one is a
+permutation test, and in each case the permutation is of the thing the
+prediction's own falsifier names:
+
+| | statistic | null permutes | falsifier it realises |
+|---|---|---|---|
+| `P-S1` | sum over degrees 1–3 of the (step0 − trained) Q_k ratio, standardised per degree | two independent i.i.d. configurations at matched (m, d) | "no difference between trained and step-0" |
+| `P-T1` | trimodal-rate(candidates) − trimodal-rate(controls) | the row-2 classification labels | "trimodality is a property of the activations, not of the classification" |
+| `P-M1` | correlation of per-layer mean regime distance with the violation series | the violation series against layers | "violations are not explained by leaving the gradient-flow regime" |
+
+That pattern is worth noticing rather than treating as coincidence: **a
+falsifier stated well enough to be falsifiable usually names its own null.**
+Where these three were easy to construct, it was because `PREDICTIONS.md` had
+already done the hard part. The remaining `needs-null` entries are the ones
+whose falsifiers are stated as thresholds instead.
+
+Two decisions each had to be fixed before running, since either is a selection
+if made after seeing results — the multi-degree combination and direction for
+P-S1, the mode-count source and the spacing question for P-T1, the aggregate
+choice and direction for P-M1. All are module constants rather than parameters,
+so a per-run choice is not available, and all are recorded in the registry's
+`null_construction`.
+
+**Two findings from doing it:**
+
+- **`adjudicate_p_t1` contradicts the P-T1 amendment.** It reads
+  `modality["trimodal"]` — a mode count at one bandwidth — while the dated
+  addendum says "adjudicate on `stable_n_modes` only ... a mode count at a
+  single bandwidth is a choice, not a measurement." The two disagree wherever
+  the bandwidth scan does not settle. `p_value_p_t1` implements the amended
+  version; a note now sits on `adjudicate_p_t1` itself so a reader is not
+  misled by the name.
+- **P-M1 refuses rather than choosing.** When the mean/min/max head-to-layer
+  aggregates disagree in sign, no p-value is emitted. `adjudicate_p_m1` already
+  established that this means per-layer energies cannot resolve a per-head
+  claim; producing a number for one chosen aggregate would convert a resolution
+  limit into a result.
+
+**What is still missing is data, not apparatus.** No artifacts exist in this
+repo (`BASE_RESULTS_DIR` does not), so all three are validated on synthetic
+inputs with known answers — calibration under H0, power against a planted
+effect, and p ≈ 1 when the effect is in the wrong arm. The ledger is still
+empty, and `claims/FALSIFICATION.md` says so.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
