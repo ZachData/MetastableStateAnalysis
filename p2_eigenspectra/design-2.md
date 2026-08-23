@@ -1,5 +1,12 @@
 # Phase 2 — DESIGN
 
+> **Scope note (2026-08-04).** Everything from "Core question" through "Bugs fixed" is the
+> design rationale for **Study A**, the pre-Pythia GPT-2/ALBERT/BERT run, and is unchanged.
+> The sections under "Study B — what the Pythia sweep changed about this design" are new and
+> cover why the same code behaves differently on a parallel-residual architecture. Read both
+> before touching the classifier or the v-score. See `status-2.md` for results and for the
+> open verification items that gate them.
+
 ## Core question
 
 Phase 1 found energy violations — layers where $E_\beta$ fails to decrease monotonically —
@@ -118,3 +125,161 @@ on Pythia — not just inherited as a frozen reference point.
 3. ALBERT-xlarge's dominant cross-term mechanism was invisible to the additive decomposition;
    `cross_term_analysis.py` added to address it.
 4. The "coupling product" metric was confirmed useless and removed.
+
+---
+
+# Study B — what the Pythia sweep changed about this design
+
+Study A's design assumed a sequential-residual architecture and a working global
+intervention. Pythia has neither. The code runs and produces well-formed output regardless,
+which is the problem this section exists to document: **several columns degrade silently
+into defaults rather than erroring, and the resulting values look like measurements.**
+
+## Classifier reachability on a parallel-residual architecture
+
+`_classify` (`analysis_extended.py:708`) has eight outcomes. On Pythia only three are
+reachable, and the reason differs by branch:
+
+| Branch | Reachable on Pythia? | Why |
+|---|---|---|
+| `no_violations` | yes | — |
+| `overshoot_dominant` | yes | never fires empirically, same as Study A |
+| `V_repulsive_local` | yes | the only positive verdict that fires |
+| `V_repulsive_via_FFN` | **no** | requires `decompose_frac_ffn_drop > 0.5`; `decompose.py` frozen |
+| `V_repulsive_via_FFN_confirmed` | **no** | additionally requires `channel == "FFN"` |
+| `FFN_independent` | **no** | requires `decompose_frac_ffn_drop > 0.5` and `n_decomposed ≥ 3` |
+| `V_repulsive_via_attn` | in principle | requires `rescaled_frac > 0.8`; never observed |
+| `mixed_or_unattributed` | yes | absorbs everything the above miss |
+
+The consequence for interpretation is sharp and easy to get wrong: **`mixed_or_unattributed`
+on Pythia does not mean what it means on GPT-2.** On GPT-2 it was a residual bucket after
+four substantive branches had a chance to fire. On Pythia it is the residual bucket after
+*one*. A Pythia `mixed_or_unattributed` run means only `frac_repulsive ≤ 0.5` — it carries no
+information about channel, and it is not evidence that the effect is unattributable.
+
+This is why status-2.md's Study B section reports the continuous `frac_repulsive` curve as
+the primary result and treats the verdict labels as secondary. The labels are a
+coarse-graining calibrated for a classifier that isn't running.
+
+## Why the degradation is silent, and what to do about it
+
+Two independent fall-throughs produce plausible-looking values from missing data:
+
+- **`channel`.** `subexp_wrappers.py:221` assigns `"FFN"` above 0.6, `"attention"` above 0.6,
+  and `"mixed"` otherwise. An empty decompose result gives both fractions 0.0, which lands in
+  the `else`. So `"mixed"` is what "no data" looks like, and it is indistinguishable in the
+  output from a genuine even split. `verdict_v2.py:154` sets `"unknown"` as the initial value
+  precisely to make missing data visible; the decompose wrapper then overwrites it with
+  `"mixed"` on the way through. **Fix: make the `else` branch conditional on `n > 0` and emit
+  `"unknown"` otherwise.** Until that lands, treat every Pythia `channel` value as absent.
+- **`frac_ffn_amplifies_repulsive`.** Absent on Pythia, and `build_v_score` reads it with
+  `verdict.get(..., 0.0)`. A missing term becomes a zero contribution rather than an
+  incomparable score. See below.
+
+The general lesson, and the reason this section exists rather than a one-line comment in the
+code: **a metric that has a defined value when its input is missing will be plotted.** Every
+scalar in the verdict contract needs either a sentinel that propagates or an explicit
+applicability flag. The `SubResult.applicable` field already exists for this; the verdict
+assembler doesn't consult it when flattening `verdict_contribution`.
+
+## Why `v_score` is not portable across architectures
+
+`build_v_score` (`verdict_v2.py:45`) is a fixed-weight sum:
+
+```
+0.40 · rescaled_frac  +  0.25 · frac_repulsive_disp  +  0.20 · frac_ffn_amp  −  0.15 · |ov_norm_partial_rho|
+```
+
+The weights were chosen to express a theory-motivated ordering of evidence strength — global
+intervention beats local detection beats confirmatory channel evidence. That ordering is
+sound. What the design did not anticipate is a model on which **two of the three positive
+terms are structurally unavailable**, leaving a score whose ceiling is 0.65 and whose
+observed variance is entirely explained by the remaining two columns.
+
+Empirically on Pythia: `frac_ffn_amp` is 0 in all 243 runs, `rescaled_frac` is 0 in 134 of
+the 153 runs with violations, and the score reduces to `0.25·fr − 0.15·|ρ|` to within 0.002.
+It is a rearrangement of two columns that are already printed.
+
+Three options, in preference order:
+
+1. **Renormalize over available terms** and report coverage alongside the score, so a
+   two-term score is on the same [0,1] scale as a four-term one and the reader knows which.
+2. **Emit `None` when any term is unavailable**, forcing the comparison to happen on the
+   component columns.
+3. Leave as-is and never compare across architectures. This is the status quo and it has
+   already produced one cross-study table that had to be caught by hand.
+
+Until one of these lands: **Study A's calibration points — "above ~0.5 corresponds to
+`_confirmed` or `_local`", and the 0.455–0.486 GPT-2-large borderline band — do not apply to
+Pythia**, because Pythia cannot reach either number.
+
+## The rescaled frame: two design flaws the Pythia result exposed
+
+The global intervention is the highest-weighted term in the v-score and Study A treated it as
+the more trustworthy of the two main tests. On Pythia it eliminates 2.1% of violations. Two
+properties of the implementation make that number un-interpretable as reported, and both are
+design problems rather than bugs:
+
+**The failure is unobservable in the output.** `rescaled_trajectory_perlayer` builds
+$R_L = e^{-OV_0} \cdots e^{-OV_{L-1}}$ as a running product and breaks out when it goes
+non-finite or exceeds 1e15, recording how far it got in `n_valid_layers` (line 324). That
+field is not propagated into the verdict contract and does not appear in the cross-run
+summary. A run that truncated at layer 6 and a run that completed all 24 produce
+indistinguishable summary rows. **`n_valid_layers` belongs in `verdict_contribution`**, and a
+run where it is less than the layer count should be flagged the way
+`decompose_coverage_warning` (`analysis_extended.py:671`) already flags its analogue.
+
+The reason to expect trouble specifically here: the cumulative product is over 24 layers of
+$e^{-OV}$, and its conditioning depends on OV's spectral norm in a way that has no reason to
+be architecture-invariant. Study A's models had this path exercised at 12–48 layers on
+weights with different scaling; that it stayed finite there is not evidence it stays finite
+on GPT-NeoX.
+
+**The metric is clipped at zero.** `improvement = max(0, n_phase1 − n_rescaled)`
+(`analysis_p2.py:153`). The clip exists so that a noisier rescaled trajectory doesn't produce
+a negative "improvement" that reads as evidence against V. But it also means **rescaling that
+actively makes violations worse is reported as rescaling that does nothing** — and those are
+opposite results. Overcorrection is a known real mode, documented for ALBERT in status-2b
+caveat 1 (`elim_full` going negative under shared weights). The underlying
+`n_rescaled_violations` is retained in the same dict; the clip should move to presentation,
+not storage, and the raw signed difference should reach the verdict.
+
+## What this means for the Regime A / Regime B frame
+
+Regime B is defined by a conjunction: displacement test fails locally **and** rescaled frame
+eliminates violations **and** FFN is the proximal dropper. On Pythia the second conjunct is
+never satisfied and the third is not measurable. So no Pythia run can be classified as
+Regime B — by construction.
+
+**This is not evidence that Regime B is absent on Pythia.** It is an instrument that cannot
+detect it. The distinction matters because the Regime A/B split is the organizing frame for
+Phase 3's model selection and Phase 5's cross-track interpretation; a premature "Pythia is
+Regime A only" would propagate into all of them.
+
+The frame becomes testable on Pythia when two things land: the parallel-residual
+decomposition module (restoring the FFN measurement) and a working global intervention
+(either the numerical fix, or Phase 2b's signed-only rescaling substituted for full-V). Phase
+2b's result — OV is 84–97% rotational energy but the signed component carries 100% of causal
+weight — makes the substitution the more promising of the two, since the full-V matrix
+exponential is exponentiating a matrix that is mostly rotation and mostly irrelevant.
+
+## Why the checkpoint sweep changes the phase's unit of analysis
+
+Study A's unit was a model×prompt run, and the verdict was the deliverable. Study B has 27
+checkpoints of one model, and the interesting object is a **curve**, not a verdict: violation
+count against training step, and `frac_repulsive` against training step, which turn out to
+have different shapes and different timescales.
+
+The categorical verdict actively obscures this. The 40000–100000 flip from
+`V_repulsive_local` to `mixed_or_unattributed` is a smooth `frac_repulsive` decay crossing a
+hard 0.5 guard, with five of the flipped runs sitting at exactly 0.500. Reported as a
+verdict, it looks like a regime change. Reported as a curve, it is a monotone decay and a
+partial rebound.
+
+This is a reporting-layer change, not a classifier change — the verdict stays as the
+cross-run comparable summary. But **`reporting_p2.py`'s cross-run summary should carry the
+component columns as first-class output** (`rescaled_improvement`, `n_rescaled_violations`,
+`n_valid_layers`, `decompose_n_violations`) rather than only the derived v-score and verdict.
+Every substantive finding in Study B had to be reconstructed by algebra from the v-score
+because the components weren't printed. That reconstruction happened to be exact; it should
+not have been necessary.

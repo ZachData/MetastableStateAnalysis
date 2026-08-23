@@ -66,6 +66,13 @@ def full_analysis(traj: dict, ov_data: dict) -> dict:
                               containing n_violations, frac_overshoot,
                               frac_repulsive, frac_self_int_neg
       rescaled              : {"beta_1.0": {"improvement": N, ...}, ...}
+      rescaled_comparison   : exact-vs-mean-V counts per beta, forwarded from
+                              rescaled["comparison_with_meanv"] when present
+      profiles              : the per-layer / per-transition arrays this
+                              function reduces (see _build_profiles). Added
+                              so a depth-resolved reading is possible from
+                              the saved sub-experiment alone; previously
+                              these were computed, consumed, and dropped.
     """
     from core.config import BETA_VALUES
 
@@ -156,7 +163,90 @@ def full_analysis(traj: dict, ov_data: dict) -> dict:
         }
     result["rescaled"] = rescaled_out
 
+    # --- Profiles: the arrays this function reduces, kept rather than dropped ---
+    #
+    # Everything above collapses these to per-beta counts and fractions. The
+    # arrays themselves are what a depth-resolved reading needs: which
+    # transition the repulsive displacement was large at, not just how many
+    # violations had it. They cost O(n_layers) floats each — the (n_layers,
+    # n_tokens) `self_int` and `step_norms` matrices are deliberately NOT
+    # forwarded, only their per-layer reductions.
+    #
+    # Consumers must treat the two axes as different: per_layer arrays are
+    # indexed by layer L, per_transition arrays by t = L-1 (the transition
+    # INTO layer L), which is the same off-by-one the violation loop above
+    # applies when it does `t = v_layer - 1`.
+    result["profiles"] = _build_profiles(traj)
+
+    # Exact-vs-mean-V rescaling comparison, computed in
+    # analyze_trajectory_offline_perlayer and otherwise lost here. Its
+    # approx_error_pct is a measure of how much layers differ from each
+    # other, which is itself worth tracking across checkpoints.
+    result["rescaled_comparison"] = resc.get("comparison_with_meanv", {})
+
     return result
+
+
+def _build_profiles(traj: dict) -> dict:
+    """
+    The per-layer and per-transition arrays behind full_analysis's scalars.
+
+    Missing blocks degrade to absent keys rather than raising: the shared-
+    weight path (`trajectory.analyze_trajectory_offline`) returns a subset
+    of what the per-layer path does, and a summary should not be the thing
+    that fails on ALBERT.
+    """
+    steps    = traj.get("steps", {})
+    disp     = traj.get("disp", {})
+    self_int = traj.get("self_int", {})
+    subspace = traj.get("subspace", {})
+
+    def _arr(d: dict, key: str):
+        v = d.get(key)
+        if v is None:
+            return None
+        a = np.asarray(v, dtype=float)
+        return a.tolist() if a.ndim == 1 else None
+
+    per_layer = {}
+    for src, keys, prefix in (
+        (self_int, ("self_int_mean", "self_int_std", "frac_negative"), ""),
+        (subspace, ("schur_attract_frac", "schur_repulse_frac",
+                    "sym_attract_frac", "sym_repulse_frac"), "subspace_"),
+    ):
+        for k in keys:
+            v = _arr(src, k)
+            if v is not None:
+                per_layer[f"{prefix}{k}"] = v
+
+    per_transition = {}
+    for k in ("step_mean", "step_std"):
+        v = _arr(steps, k)
+        if v is not None:
+            per_transition[k] = v
+    for k in ("schur_attract_disp_frac", "schur_repulse_disp_frac",
+              "sym_attract_disp_frac", "sym_repulse_disp_frac",
+              "total_disp_energy"):
+        v = _arr(disp, k)
+        if v is not None:
+            per_transition[k] = v
+
+    return {
+        "n_layers": len(per_layer.get("frac_negative", [])) or None,
+        "n_transitions": len(per_transition.get("step_mean", [])) or None,
+        "overshoot_threshold": (
+            float(steps["overshoot_threshold"])
+            if "overshoot_threshold" in steps else None
+        ),
+        "global_step_mean": (
+            float(steps["global_mean"]) if "global_mean" in steps else None
+        ),
+        "global_step_std": (
+            float(steps["global_std"]) if "global_std" in steps else None
+        ),
+        "per_layer": per_layer,
+        "per_transition": per_transition,
+    }
 
 
 def analyze_trajectory(

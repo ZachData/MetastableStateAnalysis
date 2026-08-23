@@ -162,127 +162,217 @@ def extract_decomposed_standard(
     model_name: str,
     ) -> dict:
     """
-    Extract attn/FFN decomposition for non-ALBERT models using hooks.
+    Extract the attention/FFN split of each residual update, by hooks.
 
-    For BERT: hooks on attention.output.dense and output.dense
-    For GPT-2: hooks on attn.c_proj and mlp.c_proj
+    Dispatch is on `core.model_family.model_family`, and the block and
+    submodule lookups come from `core.sublayer_streams`. Previously this
+    function branched on substrings of the model name — `"bert" in
+    model_name`, `"gpt2" in model_name` — and a GPT-NeoX name matched
+    neither. The consequence was silent: no hooks were registered, the
+    forward pass ran, and the function returned a well-formed dict whose
+    `attn_deltas` and `ffn_deltas` were empty lists. `save_decomposed`
+    skips empty arrays without complaint, so on a Pythia run
+    `decomposed_violations` reported channel "mixed" over zero violations,
+    `ffn_subspace` found no `ffn_deltas.npz` and was marked inapplicable,
+    `attractive_zone_violations` was skipped with it, and the v-score's
+    0.20 FFN term was identically zero — capping every Pythia v-score at
+    0.80 while looking like a real measurement.
+
+    Residual semantics per family, which is what makes the deltas mean
+    different things even though the capture looks identical:
+
+      pre-LN sequential (GPT-2)
+          x1 = x + attn(ln1(x));  x2 = x1 + mlp(ln2(x1))
+          Hooking the submodules captures the two deltas directly. The FFN
+          delta is computed from the POST-ATTENTION stream, so the two
+          channels are not symmetric and an FFN attribution is partly
+          conditional on what attention just did.
+
+      pre-LN parallel (GPT-NeoX / Pythia)
+          out = x + attn(ln1(x)) + mlp(ln2(x))
+          Both branches read the same block input. The attribution is
+          symmetric and neither channel is downstream of the other, which
+          makes Pythia a cleaner test of the attn-vs-FFN question than
+          GPT-2 was. The flag is read from the config rather than assumed:
+          GPT-NeoX supports both modes.
+
+      post-LN (BERT)
+          Each sub-block ends in add-then-LayerNorm, so its output is the
+          stream, not the delta. Deltas are differences of streams, as
+          before.
 
     Returns
     -------
     dict with:
-      trajectory  : list of (n_tokens, d) tensors — hidden states per layer
-      attn_deltas : list of (n_tokens, d) tensors — attention contribution
-      ffn_deltas  : list of (n_tokens, d) tensors — FFN contribution
-      tokens      : list of str
+      trajectory   : list of (n_tokens, d) tensors — hidden states per layer
+      attn_deltas  : list of (n_tokens, d) tensors — attention contribution
+      ffn_deltas   : list of (n_tokens, d) tensors — FFN contribution
+      attentions   : list of (n_heads, seq, seq) tensors
+      tokens       : list of str
+      semantics    : "pre-ln-parallel" | "pre-ln-sequential" | "post-ln"
+      parallel_residual : bool or None (None for post-LN)
+      residual_identity : {"max_abs_err", "rel_err", "checked"} — see below
+
+    Raises
+    ------
+    UnsupportedArchitecture
+        When no branch exists, instead of returning empty deltas. An
+        architecture with no decomposition and a decomposition whose hooks
+        misfired should not produce the same artifact.
     """
+    from core.model_family import model_family
+    from core.sublayer_streams import (
+        blocks_of, attn_module, ffn_module, uses_parallel_residual,
+        UnsupportedArchitecture,
+    )
+
+    family = model_family(model_name)
+
+    # Checked before block discovery: ALBERT HAS discoverable blocks, so a
+    # discovery-first order would only produce this message for a
+    # malformed ALBERT and give the generic "no branch" text for a
+    # well-formed one. The actionable message should not depend on whether
+    # the model is intact.
+    if family == "albert":
+        raise UnsupportedArchitecture(
+            f"{model_name}: use extract_decomposed_albert, which unrolls the "
+            f"shared layer across iterations."
+        )
+
+    blocks = blocks_of(model, family)
+    if not blocks:
+        raise UnsupportedArchitecture(
+            f"{model_name}: no attn/FFN decomposition for family {family!r}. "
+            f"Add a branch to core/sublayer_streams.blocks_of — the residual "
+            f"structure is architecture-specific and cannot be guessed from "
+            f"module names."
+        )
+
+    post_ln  = family == "bert"
+    parallel = None if post_ln else uses_parallel_residual(model, blocks)
+
     inputs = tokenizer(
         text, return_tensors="pt", truncation=True, max_length=512
     ).to(DEVICE)
     tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
 
-    attn_outputs = []
-    ffn_outputs  = []
-    hooks        = []
+    attn_outputs, ffn_outputs, hooks = [], [], []
 
-    if "bert" in model_name and "albert" not in model_name:
-        # BERT: capture attention output (pre-residual) and FFN output (pre-residual)
-        for layer in model.encoder.layer:
-            # Attention output (after dense, before residual add + LayerNorm)
-            def make_attn_hook(layer_ref):
-                def hook(module, input, output):
-                    # input[0] is the attention dense output
-                    attn_outputs.append(output.detach()[0].to(torch.float32).cpu())
-                return hook
+    def _capture(sink):
+        def hook(_module, _inp, output):
+            t = output[0] if isinstance(output, (tuple, list)) else output
+            sink.append(t.detach()[0].to(torch.float32).cpu())
+        return hook
 
-            def make_ffn_hook(layer_ref):
-                def hook(module, input, output):
-                    ffn_outputs.append(output.detach()[0].to(torch.float32).cpu())
-                return hook
+    try:
+        for block in blocks:
+            a_mod = attn_module(block, family)
+            f_mod = ffn_module(block, family)
+            if family == "bert":
+                # The delta-bearing modules are the post-LN wrappers, not
+                # the attention/MLP submodules themselves.
+                a_mod = block.attention.output
+                f_mod = block.output
+            if a_mod is None or f_mod is None:
+                raise UnsupportedArchitecture(
+                    f"{model_name}: block {type(block).__name__} is missing an "
+                    f"attention or FFN submodule for family {family!r}."
+                )
+            hooks.append(a_mod.register_forward_hook(_capture(attn_outputs)))
+            hooks.append(f_mod.register_forward_hook(_capture(ffn_outputs)))
 
-            h1 = layer.attention.output.register_forward_hook(make_attn_hook(layer))
-            h2 = layer.output.register_forward_hook(make_ffn_hook(layer))
-            hooks.extend([h1, h2])
+        # output_attentions=True so outputs.attentions carries the per-layer
+        # (batch, n_heads, seq, seq) tensors the dynamic head test needs.
+        with torch.no_grad():
+            with torch.autocast(
+                device_type=DEVICE,
+                dtype=torch.bfloat16,
+                enabled=(DEVICE == "cuda"),
+            ):
+                outputs = model(**inputs,
+                                output_hidden_states=True,
+                                output_attentions=True)
+    finally:
+        for h in hooks:
+            h.remove()
 
-    elif "gpt2" in model_name:
-        for block in model.h:
-            def make_attn_hook(block_ref):
-                def hook(module, input, output):
-                    # GPT-2 attn returns (attn_output, present, attn_weights)
-                    if isinstance(output, tuple):
-                        attn_outputs.append(output[0].detach()[0].to(torch.float32).cpu())
-                    else:
-                        attn_outputs.append(output.detach()[0].to(torch.float32).cpu())
-                return hook
-
-            def make_ffn_hook(block_ref):
-                def hook(module, input, output):
-                    ffn_outputs.append(output.detach()[0].to(torch.float32).cpu())
-                return hook
-
-            h1 = block.attn.register_forward_hook(make_attn_hook(block))
-            h2 = block.mlp.register_forward_hook(make_ffn_hook(block))
-            hooks.extend([h1, h2])
-
-    # Forward pass — output_attentions=True so outputs.attentions contains
-    # per-layer (batch, n_heads, seq, seq) tensors for the dynamic head test.
-    with torch.no_grad():
-        with torch.autocast(
-            device_type=DEVICE,
-            dtype=torch.bfloat16,
-            enabled=(DEVICE == "cuda"),
-        ):
-            outputs = model(**inputs,
-                            output_hidden_states=True,
-                            output_attentions=True)
-
-    # Remove hooks
-    for h in hooks:
-        h.remove()
-
-    # Hidden states
     hidden_states = [h[0].to(torch.float32).cpu() for h in outputs.hidden_states]
 
-    # Attention weights: outputs.attentions is a tuple of per-layer tensors
-    # (batch, n_heads, seq, seq).  Drop the batch dim → (n_heads, seq, seq).
     attn_matrices = []
-    if outputs.attentions is not None:
+    if getattr(outputs, "attentions", None) is not None:
         for a in outputs.attentions:
             attn_matrices.append(a[0].to(torch.float32).cpu())
 
-    # Compute deltas from hook captures
-    # For GPT-2: each block does hidden = hidden + attn(ln1(hidden)) then hidden = hidden + mlp(ln2(hidden))
-    # The hook on attn captures attn(ln1(hidden)) (the residual delta)
-    # The hook on mlp captures mlp(ln2(hidden)) (the residual delta)
-    # So attn_delta = attn_outputs[i] and ffn_delta = ffn_outputs[i]
+    if len(attn_outputs) != len(ffn_outputs):
+        raise RuntimeError(
+            f"{model_name}: captured {len(attn_outputs)} attention and "
+            f"{len(ffn_outputs)} FFN outputs. The hooks fired an unequal "
+            f"number of times, so the channels cannot be aligned."
+        )
+    if not attn_outputs:
+        raise RuntimeError(f"{model_name}: no decomposition hooks fired.")
 
-    # For BERT: attention.output does LayerNorm(attn_dense + input), so the hook
-    # captures the post-LN output, not the delta. Similarly for output.
-    # The deltas need to be computed differently for BERT.
-
-    attn_deltas = []
-    ffn_deltas  = []
-
-    if "gpt2" in model_name:
-        # GPT-2 hooks capture the residual stream deltas directly
-        attn_deltas = attn_outputs
-        ffn_deltas  = ffn_outputs
-    elif "bert" in model_name:
-        # BERT hooks capture post-LN outputs; compute deltas from hidden states
-        # attention.output = LayerNorm(attn_dense(self_attn) + input)
-        # output = LayerNorm(ffn(attention.output) + attention.output)
-        # So attn_delta ≈ attention.output - hidden[L], ffn_delta ≈ hidden[L+1] - attention.output
+    if post_ln:
+        # Hooks captured post-LN streams; the deltas are their differences.
+        attn_deltas, ffn_deltas = [], []
         for i in range(len(attn_outputs)):
             if i < len(hidden_states) - 1:
                 attn_deltas.append(attn_outputs[i] - hidden_states[i])
                 ffn_deltas.append(hidden_states[i + 1] - attn_outputs[i])
+        semantics = "post-ln"
+    else:
+        # Pre-LN: the submodule outputs ARE the residual deltas, in both the
+        # sequential and the parallel arrangement. What differs is which
+        # stream the FFN branch read, not what was captured.
+        attn_deltas = attn_outputs
+        ffn_deltas  = ffn_outputs
+        semantics = "pre-ln-parallel" if parallel else "pre-ln-sequential"
 
     return {
         "trajectory":  hidden_states,
         "attn_deltas": attn_deltas,
         "ffn_deltas":  ffn_deltas,
-        "attentions":  attn_matrices,   # (n_layers,) of (n_heads, seq, seq)
+        "attentions":  attn_matrices,
         "tokens":      tokens,
+        "semantics":   semantics,
+        "parallel_residual": parallel,
+        "residual_identity": _residual_identity(
+            hidden_states, attn_deltas, ffn_deltas
+        ),
     }
+
+
+def _residual_identity(trajectory, attn_deltas, ffn_deltas) -> dict:
+    """
+    Check x_{L+1} - x_L == attn_delta_L + ffn_delta_L.
+
+    Free, and it validates the whole capture end to end: if the hooks are
+    on the wrong modules, or one family's outputs are streams where another's
+    are deltas, this identity breaks even though every array still has the
+    right shape. That is exactly the failure mode that made the old
+    substring dispatch invisible.
+
+    Reported, not asserted. Under bf16 autocast the deltas come back through
+    a lower-precision path than the hidden states, so a relative error around
+    1e-2 is expected on GPU and means nothing is wrong; an error near 1.0
+    means the capture is wrong. Post-LN models are exempt — LayerNorm sits
+    between the deltas and the stream, so no such identity exists there.
+    """
+    import numpy as _np
+
+    n = min(len(attn_deltas), len(ffn_deltas), len(trajectory) - 1)
+    if n <= 0:
+        return {"checked": 0, "max_abs_err": None, "rel_err": None}
+
+    max_abs, max_rel = 0.0, 0.0
+    for t in range(n):
+        actual = (trajectory[t + 1] - trajectory[t]).numpy()
+        predicted = (attn_deltas[t] + ffn_deltas[t]).numpy()
+        err = float(_np.abs(actual - predicted).max())
+        scale = float(_np.abs(actual).max()) + 1e-12
+        max_abs = max(max_abs, err)
+        max_rel = max(max_rel, err / scale)
+    return {"checked": n, "max_abs_err": max_abs, "rel_err": max_rel}
 
 
 # ---------------------------------------------------------------------------

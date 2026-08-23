@@ -90,7 +90,7 @@ class SublayerStreams:
 # Block discovery
 # ---------------------------------------------------------------------------
 
-def _blocks(model, family):
+def blocks_of(model, family):
     """Return the per-layer block modules for *family*, or None."""
     if family == "gpt2":
         base = getattr(model, "transformer", model)
@@ -118,7 +118,7 @@ def _blocks(model, family):
     return None
 
 
-def _attn_module(block, family):
+def attn_module(block, family):
     if family == "gpt2":
         return getattr(block, "attn", None)
     if family == "gptneox":
@@ -126,7 +126,7 @@ def _attn_module(block, family):
     return getattr(block, "attention", None)          # bert, albert
 
 
-def _ffn_module(block, family):
+def ffn_module(block, family):
     if family in ("gpt2", "gptneox"):
         return getattr(block, "mlp", None)
     if family == "bert":
@@ -138,7 +138,7 @@ def _ffn_module(block, family):
     return None
 
 
-def _uses_parallel_residual(model, blocks) -> bool:
+def uses_parallel_residual(model, blocks) -> bool:
     cfg = getattr(model, "config", None)
     value = getattr(cfg, "use_parallel_residual", None) if cfg else None
     if value is None and blocks:
@@ -181,7 +181,7 @@ def extract_sublayer_streams(
     misfired".
     """
     family = model_family(model_name)
-    blocks = _blocks(model, family)
+    blocks = blocks_of(model, family)
     if not blocks:
         raise UnsupportedArchitecture(
             f"{model_name}: no sublayer decomposition for family {family!r}. "
@@ -190,15 +190,15 @@ def extract_sublayer_streams(
         )
 
     post_ln  = family in ("bert", "albert")
-    parallel = None if post_ln else _uses_parallel_residual(model, blocks)
+    parallel = None if post_ln else uses_parallel_residual(model, blocks)
 
     x_ins, attn_out, ffn_out = [], [], []
     handles = []
 
     try:
         for block in blocks:
-            attn_mod = _attn_module(block, family)
-            ffn_mod  = _ffn_module(block, family)
+            attn_mod = attn_module(block, family)
+            ffn_mod  = ffn_module(block, family)
             if attn_mod is None or ffn_mod is None:
                 raise UnsupportedArchitecture(
                     f"{model_name}: block {type(block).__name__} is missing an "
@@ -257,3 +257,15 @@ def extract_sublayer_streams(
         family=family, semantics=semantics,
         parallel_residual=parallel, n_layers=n,
     )
+
+# ---------------------------------------------------------------------------
+# Back-compat aliases
+# ---------------------------------------------------------------------------
+# The discovery helpers were private until p2_eigenspectra/decompose.py needed
+# them: it was dispatching on substrings of the model name ("gpt2" in name),
+# which silently produced no hooks for GPT-NeoX. Sharing these makes "where
+# are this family's blocks" one answer rather than two that can disagree.
+_blocks                 = blocks_of
+_attn_module            = attn_module
+_ffn_module             = ffn_module
+_uses_parallel_residual = uses_parallel_residual
