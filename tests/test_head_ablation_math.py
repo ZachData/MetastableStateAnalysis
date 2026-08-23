@@ -17,6 +17,11 @@ No torch anywhere on these paths.
 import numpy as np
 import pytest
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 # ---------------------------------------------------------------------------
 # head_delta_from_projection — decomposition exactness

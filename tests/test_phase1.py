@@ -12,6 +12,11 @@ import numpy as np
 import pytest
 import torch
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 # ---------------------------------------------------------------------------
 # Helpers

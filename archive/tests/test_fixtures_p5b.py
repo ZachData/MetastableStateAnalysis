@@ -109,6 +109,12 @@ from pathlib import Path
 
 import numpy as np
 
+import pytest
+
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
 
 # Kept compatible with tests/test_phase5b_io.py's constants so the Phase 2
 # projector fixture (_make_p2_projectors) can be reused unchanged for the

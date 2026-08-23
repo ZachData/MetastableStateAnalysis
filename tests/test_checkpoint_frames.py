@@ -28,6 +28,11 @@ from core.checkpoint_frames import (
 )
 from core.frame_card import FrameCardError, build_frame_card
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 D_MODEL = 16
 N_HEADS = 2
 N_BLOCKS = 3

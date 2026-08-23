@@ -34,10 +34,16 @@ from pathlib import Path
 
 import numpy as np
 
+import pytest
+
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from p6_subspace.p6_io import SubexperimentSpec
-
 
 # ---------------------------------------------------------------------------
 # Helpers: minimal ctx factories

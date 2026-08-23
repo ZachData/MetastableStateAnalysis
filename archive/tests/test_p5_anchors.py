@@ -31,6 +31,12 @@ from p5_single_mstate_analysis.anchors import (
 )
 from p5_single_mstate_analysis.token_sets import merge_event_for
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
 N_TOKENS = 40
 N_LAYERS = 12
 CORE = [3, 4, 5, 6, 7, 8]

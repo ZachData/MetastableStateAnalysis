@@ -138,7 +138,7 @@ from .low_rank_ae import (
 # Cross-track comparison and I/O
 # ---------------------------------------------------------------------------
 
-from .analysis import (
+from .analysis_p4 import (
     # Cross-track comparison  (B4: key normalisation)
     cross_track_agreement,
 

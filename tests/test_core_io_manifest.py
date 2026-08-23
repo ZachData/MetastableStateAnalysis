@@ -13,6 +13,11 @@ from core.io import (
 )
 from core.artifacts import validate_artifact
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 class TestComputeManifestId:
     def test_deterministic(self):

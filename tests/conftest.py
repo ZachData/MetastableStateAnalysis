@@ -17,12 +17,36 @@ import sys
 import types
 from pathlib import Path
 from unittest.mock import MagicMock
-import torch
 
 import numpy as np
 import pytest
 
+# Real torch if it is installed, None otherwise. Deliberately NOT a bare
+# `import torch`: this file's whole purpose is to install a MagicMock stub for
+# torch (see _install_stubs below) so the pure-numpy computation tests run
+# without a GPU or a multi-gigabyte wheel. A module-scope `import torch` here
+# defeats that -- it raises at collection time and takes every test module in
+# the suite down with it, stub or no stub.
+#
+# When torch IS installed, this import wins and the `setdefault` in
+# _install_stubs becomes a no-op, so real torch is used everywhere exactly as
+# before. When it is not, `torch` stays None here, the MagicMock stub is
+# installed as designed, and the handful of fixtures that genuinely need real
+# tensors skip via `_require_torch` rather than failing on a MagicMock.
+try:                                  # pragma: no cover - environment-dependent
+    import torch
+except ImportError:                   # pragma: no cover - environment-dependent
+    torch = None
+
 from tests.test_config import D, N_LAYERS, N_TOKENS
+
+
+def _require_torch():
+    """Skip the calling test when real torch is not installed."""
+    if torch is None:
+        pytest.skip("needs real torch (install requirements/heavy.txt)")
+    return torch
+
 
 # Smoke tests (tests/test_*_smoke.py) need the *real* torch/transformers to
 # do an actual forward pass on a tiny model. Everything else in this suite
@@ -45,6 +69,28 @@ def _install_stubs() -> None:
     # --- torch ---
     _torch = MagicMock()
     _torch.cuda.is_available.return_value = False
+
+    # `torch.Tensor` must be a REAL class, not a MagicMock attribute.
+    #
+    # scipy's array-API dispatch asks `issubclass(cls, torch.Tensor)` on its way
+    # through anything that touches scipy.stats (array_api_compat's
+    # is_torch_array -> _issubclass_fast). A MagicMock attribute is an instance,
+    # not a class, so that raises
+    #
+    #     TypeError: issubclass() arg 2 must be a class, a tuple of classes, or
+    #     a union
+    #
+    # at *collection* time, taking down every module that imports a scipy.stats
+    # test anywhere in its chain. Nothing in the suite is at fault and the error
+    # names neither torch nor the stub, which is what made it expensive to read.
+    #
+    # An empty class is the right stand-in: it is a class so issubclass works,
+    # and no numpy array is an instance of it so is_torch_array correctly
+    # answers False. The MagicMock stays for everything else.
+    class _StubTensor:
+        """Stand-in for torch.Tensor: a real class, deliberately unpopulated."""
+
+    _torch.Tensor = _StubTensor
     sys.modules.setdefault("torch", _torch)
 
     # --- transformers ---
@@ -93,8 +139,17 @@ def _install_stubs() -> None:
     _models.load_model                = MagicMock()
 
     def _real_layernorm_to_sphere(activation):
-        import torch.nn.functional as F  # resolves to real torch at call-time
-        return F.normalize(activation.float(), p=2, dim=-1)
+        # Real semantics, not a MagicMock: L2-normalize the last axis. Uses
+        # torch when it is installed (preserving dtype/device behaviour that
+        # callers may depend on) and falls back to the identical numpy
+        # computation when it is not, so the pure tier does not need torch
+        # just to normalize a vector.
+        if torch is not None:
+            import torch.nn.functional as F
+            return F.normalize(activation.float(), p=2, dim=-1)
+        arr = np.asarray(activation, dtype=np.float64)
+        norm = np.linalg.norm(arr, axis=-1, keepdims=True)
+        return arr / np.maximum(norm, 1e-12)
 
     _models.layernorm_to_sphere = _real_layernorm_to_sphere
 
@@ -202,8 +257,6 @@ def collapsed_normed() -> np.ndarray:
     return _l2_normalize(X + noise)
 
 
-import torch  # add to conftest imports if not already present
-
 # ---------------------------------------------------------------------------
 # Gram matrix fixtures
 # (add after the "Activation geometry fixtures" block)
@@ -242,6 +295,7 @@ def rank1_tensor() -> "torch.Tensor":
     (N_TOKENS, D) tensor where every row is the same unit vector.
     Rank = 1 → only one non-zero singular value → effective_rank = 1.
     """
+    _require_torch()
     v = torch.zeros(D, dtype=torch.float32)
     v[0] = 1.0
     return v.unsqueeze(0).expand(N_TOKENS, -1).clone()
@@ -254,6 +308,7 @@ def uniform_sv_tensor() -> "torch.Tensor":
     QR decomposition of a random matrix gives an orthonormal column basis.
     Entropy = log(D) → effective_rank = D.
     """
+    _require_torch()
     rng = np.random.default_rng(99)
     X   = rng.standard_normal((N_TOKENS, D)).astype(np.float32)
     Q, _ = np.linalg.qr(X)   # reduced QR: Q is (N_TOKENS, D), orthonormal cols
@@ -278,6 +333,7 @@ def uniform_attention() -> "torch.Tensor":
     analyze_attention_sinkhorn and attention_entropy both call .numpy() on
     their input, so the fixture must be a torch.Tensor, not a numpy array.
     """
+    _require_torch()
     arr = np.full((_N_HEADS, N_TOKENS, N_TOKENS), 1.0 / N_TOKENS, dtype=np.float32)
     return torch.from_numpy(arr)
 
@@ -289,6 +345,7 @@ def identity_attention() -> "torch.Tensor":
     Each head is the identity matrix → each token attends only to itself.
     Shannon entropy per row = 0.
     """
+    _require_torch()
     eye = np.eye(N_TOKENS, dtype=np.float32)
     return torch.from_numpy(np.stack([eye] * _N_HEADS))
 
@@ -573,3 +630,60 @@ def tiny_phase2_eigenspectra_dir(tiny_phase2_dir) -> "Path":
         "if it didn't, check run_2.run_full's output_dir naming hasn't changed"
     )
     return candidates[-1]
+
+
+# ===========================================================================
+# Tier-aware collection
+# ===========================================================================
+# CI's tier 1 runs `pytest -m pure` in an environment with no torch,
+# transformers, scikit-learn or matplotlib. `-m` deselects at the *test* level,
+# which is too late: pytest still imports every module first, so a single
+# `deps`-tier module raises at collection and takes the whole run down before
+# any deselection happens. That is not hypothetical -- 19 modules do exactly
+# this without the heavy tier installed.
+#
+# So the tier has to be honoured at collection time. This hook reads each test
+# module's declared `pytestmark` as *text* (no import, which is the entire
+# point) and refuses to collect a `deps` module when its dependencies are
+# genuinely unavailable. When they are available nothing is skipped and the
+# full suite behaves exactly as before.
+#
+# Deliberately keyed on real importability rather than on an environment
+# variable: a runner that happens to have torch should run the deps tier, and a
+# runner that does not should not need to be told.
+
+# transformers is deliberately absent from this list. _install_stubs above
+# supplies a MagicMock for it by design, and the deps-tier modules run fine
+# against that stub -- they need real *tensors* and real *estimators*, not a
+# real Hub client. Requiring it here would strand the whole deps tier on any
+# machine that has torch but not transformers, which is the common case.
+_HEAVY_DEPS = ("torch", "sklearn", "matplotlib")
+
+
+def _heavy_deps_available() -> bool:
+    import importlib.util
+    for mod in _HEAVY_DEPS:
+        try:
+            if importlib.util.find_spec(mod) is None:
+                return False
+        except (ImportError, ValueError):
+            return False
+    return True
+
+
+_HEAVY_OK = _heavy_deps_available()
+_DEPS_MARK = "pytestmark = pytest.mark.deps"
+
+
+def pytest_ignore_collect(collection_path, config):
+    """Skip `deps`-tier modules when the heavy tier is not installed."""
+    if _HEAVY_OK:
+        return None
+    path = Path(str(collection_path))
+    if path.suffix != ".py" or not path.name.startswith("test_"):
+        return None
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace")[:8000]
+    except OSError:                              # pragma: no cover - defensive
+        return None
+    return True if _DEPS_MARK in head else None

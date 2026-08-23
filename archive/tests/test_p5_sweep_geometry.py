@@ -32,6 +32,12 @@ from p5_single_mstate_analysis.sweep_geometry import (
 from p5_single_mstate_analysis.token_sets import TokenSet
 from core.run_discovery import RunRef
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
 
 def _reference_eff_rank(X, mode="raw"):
     """metrics.effective_rank, reimplemented here so the test does not

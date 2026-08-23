@@ -35,6 +35,11 @@ from core.pythia_registry import (
     PYTHIA_RANDOM_MATCH_STEP,
 )
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 STEP_RE = re.compile(r"^step\d+$")
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent

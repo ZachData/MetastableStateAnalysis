@@ -41,6 +41,11 @@ from p2b_imaginary.visualization.style import (
     VERDICT_COLORS, VERDICT_ORDER, signed_norm, step_x,
 )
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # pure — class vocabularies

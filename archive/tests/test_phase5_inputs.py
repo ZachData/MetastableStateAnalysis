@@ -30,6 +30,13 @@ import unittest
 import numpy as np
 from pathlib import Path
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from p5_single_mstate_analysis.p5_io import (
@@ -365,7 +372,6 @@ class TestLoadPhase4(unittest.TestCase):
 # in run_5.py.  If either import fails, the bug is upstream of the key mapping.
 from p6_subspace.subspace_build import build_global_projectors
 from p5_single_mstate_analysis.v_alignment import compute_v_alignment
-
 
 def _rot2(theta: float) -> np.ndarray:
     c, s = np.cos(theta), np.sin(theta)

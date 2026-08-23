@@ -19,6 +19,12 @@ import numpy as np
 
 from p2b_imaginary import p2b_io, run_2b
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
 
 STEPS = [0, 8, 512, 143000]
 PROMPTS = ["wiki_paragraph", "short_heterogeneous"]

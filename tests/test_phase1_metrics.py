@@ -26,6 +26,11 @@ from p1_mstate_tracking.sinkhorn import analyze_attention_sinkhorn
 
 from tests.test_config import N_TOKENS, D
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 # ============================================================================
 # pairwise_inner_products_from_gram
 # ============================================================================

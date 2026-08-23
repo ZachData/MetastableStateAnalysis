@@ -30,6 +30,11 @@ from core.frame_card import (
 from core.frames import FrameSpec, FrameMismatch, apply_frame, verify_same_revision
 from core.ln_frame import frame_for_hidden_state, ln_transform
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 D_MODEL = 32
 N_HEADS = 4
 N_BLOCKS = 5

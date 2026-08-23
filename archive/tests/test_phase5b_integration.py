@@ -51,6 +51,12 @@ from tests.test_fixtures_p5b import (
     DEFAULT_CHAIN_LAYERS, DEFAULT_PLATEAU, DEFAULT_MERGE,
 )
 
+import pytest
+
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
 N_TRAJ   = 6
 VOCAB    = 128
 LIFESPAN = 5

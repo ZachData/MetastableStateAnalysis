@@ -15,6 +15,11 @@ import pytest
 
 from core.pythia_weights import split_qkv_gptneox, extract_v_gptneox
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 NUM_HEADS  = 4
 HEAD_SIZE  = 3
 HIDDEN_IN  = 6          # deliberately != num_heads * head_size, so the

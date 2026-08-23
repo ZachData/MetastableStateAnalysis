@@ -24,6 +24,11 @@ from core.qk_offset_null import (
 )
 from core.rope import rope_rotation, rope_sa_fractions
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 D_MODEL = 24
 HEAD_SIZE = 8
 ROT_NDIMS = 2

@@ -36,6 +36,12 @@ from p5_single_mstate_analysis.particle_join import (
 )
 from p5_single_mstate_analysis.token_sets import TokenSet
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
 N_TOKENS = 20
 N_LAYERS = 10
 

@@ -1,9 +1,35 @@
+# Deny-by-default: only file types this project deliberately tracks are
+# un-ignored below. Kept as a whitelist because run artifacts (npz, png, large
+# json) are numerous and easy to commit by accident.
+#
+# Extended for the CI/Popperian work (POPPER_PLAN.md): before this pass the
+# whitelist was *.py and *.md only, which silently ignored pyproject.toml,
+# requirements/*.txt, .github/workflows/*.yml and claims/*.json -- i.e. every
+# file CI and the prediction registry need. `git check-ignore -v <path>` is the
+# thing to run when a newly added config file mysteriously will not commit.
 *
 !*.py
 !*.md
 !.gitignore
 !pytest.ini
 !*/
+
+# --- config / CI / declarative records -------------------------------------
+# NB: gitignore has no inline comments -- a trailing "# ..." becomes part of
+# the pattern and silently stops it matching. Keep these bare.
+!*.toml
+!*.cfg
+!*.ini
+!*.yml
+!*.yaml
+!*.sh
+!requirements/*.txt
+
+# The prediction registry and its adjudication records are the project's
+# falsification ledger, not run output -- they are tracked deliberately.
+# Scoped to claims/ so this does not un-ignore result json elsewhere.
+!claims/*.json
+!claims/**/*.json
 
 # run artifacts
 results/
@@ -14,3 +40,5 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.ruff_cache/
+*.egg-info/

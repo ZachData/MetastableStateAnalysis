@@ -42,6 +42,11 @@ from core.metrics import (
     energy_drop_pairs_from_normed,
 )
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 N_TOKENS = 40
 D = 16
 _rng = np.random.default_rng(42)

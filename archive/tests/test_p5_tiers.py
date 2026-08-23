@@ -39,6 +39,12 @@ from p5_single_mstate_analysis.tiers import (
 )
 from p5_single_mstate_analysis.token_sets import TokenSet
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
 
 def _population(n=40, d=16, seed=0, tight=(0, 8), tight_spread=0.03,
                 loose=(8, 16), loose_spread=0.45):

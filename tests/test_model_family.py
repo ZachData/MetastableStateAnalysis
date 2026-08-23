@@ -12,6 +12,11 @@ from core.model_family import (
     model_family, is_causal_model, is_albert, is_bert, is_gpt2, is_gptneox,
 )
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 @pytest.mark.parametrize("name,family", [
     ("albert-base-v2",                                    "albert"),

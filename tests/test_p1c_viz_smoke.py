@@ -46,6 +46,11 @@ from p1c_frames.visualization.style import (
     STEP_COLORS, STEP_DEFS, VERDICT_COLORS, residual_norm, verdict_word,
 )
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # pure — the json / npz split

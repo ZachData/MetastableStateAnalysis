@@ -20,6 +20,11 @@ from p1_mstate_tracking.cluster_tracking import track_clusters
 from tests.conftest import N_LAYERS, N_TOKENS, D
 from core.config import DISTANCE_THRESHOLDS
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 # Pre-compute mid-threshold once (matches the value used inside cluster_count_sweep).
 _THRESHOLD_LIST = list(DISTANCE_THRESHOLDS)
 _MID_THRESH = float(_THRESHOLD_LIST[len(_THRESHOLD_LIST) // 2])
