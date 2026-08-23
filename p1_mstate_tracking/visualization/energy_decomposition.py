@@ -355,8 +355,12 @@ def generate_energy_decomposition_figures(
 # reported as its own quantity because it measures whether the continuum
 # limit this project assumes holds at that layer.
 #
-# Both are kept. The old one is the published GPT-2 number; this one is the
-# thing to read on Pythia.
+# Both are kept, and they answer different questions rather than competing.
+# energy_by_component gives each channel's share of the REALISED DROP, which
+# is what its clip is for and is the right reading when the layer does drop.
+# This one gives what each channel did to the energy, signed — which is the
+# only one of the two that can answer "which channel caused this violation",
+# since at a violation layer there is no realised drop to take a share of.
 
 
 def _per_layer_dissipation(decomp: dict, beta: float) -> dict:

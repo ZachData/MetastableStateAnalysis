@@ -140,10 +140,50 @@ Gaussian blocks, not a single Ginibre matrix; the `sqrt(d)` scaling is generic f
 ensembles but the constant is not guaranteed).
 
 **Sign split.** At initialization the composed OV spectrum is symmetric about the imaginary axis,
-so `frac_repulsive = 0.5` at chance, flat across depth, with `O(d^{-1/2})` scatter. Phase 2's
-unexplained `frac_repulsive` decay — 1.00 -> 0.50 -> 0.80 across ~90k steps with violation count
-flat (`status-2b.md` new-question 2) — passes exactly through the chance value at its midpoint.
-That is at minimum a coincidence worth ruling out before a mechanism is proposed for it.
+so `frac_repulsive = 0.5` at chance, flat across depth, with `O(d^{-1/2})` scatter.
+
+Study B's 243-run Pythia sweep (`status-2.md`) now gives this a full trajectory, and it lands on
+the null value twice:
+
+| Steps | Mean `frac_repulsive` | Against the 0.5 null |
+|---|---|---|
+| 0–4 | 0.50–0.67 | at / near chance, as an untrained spectrum should be |
+| 8–64 | — | no violations at all |
+| 128–19000 | 1.00 -> 0.79 | far from chance; real sign asymmetry |
+| 40000–100000 | 0.58 -> 0.50 | **back to chance** — and this is exactly the window where verdicts flip to `mixed_or_unattributed` |
+| 120000–143000 | 0.80 -> 0.72 | away from chance again, same direction in 8/8 prompts |
+
+`status-2.md` reads the late-training flip as knife-edge and warns it off as a categorical
+regime change, noting that "five sit at `frac_repulsive` exactly 0.500 against a strict `> 0.5`
+guard" and calling the verdict label "an artifact of where the threshold happens to fall".
+
+The warning is right and the diagnosis is incomplete. **0.5 is not an arbitrary threshold that
+happens to sit there — it is the value the statistic takes when the spectrum carries no sign
+asymmetry at all.** A run at exactly 0.500 is not near a decision boundary; it is at the point
+where this particular measurement has stopped distinguishing the trained operator from one with
+no preferred sign. That is a stronger and more specific statement than "knife-edge", and it makes
+the 40000–100000 window the interesting part of the curve rather than the ambiguous part.
+
+It also gives Study B's **open item 5** ("explain the `frac_repulsive` decay and rebound … with
+count roughly flat") a concrete first test, which is the §3 bulk/outlier point applied here.
+`frac_repulsive` is an unweighted count over all `d` eigenvalues, so it is dominated by the bulk.
+Two hypotheses are consistent with it returning to 0.5 while the violation count stays flat:
+
+1. the repulsive structure genuinely dissolved over those 60k steps, or
+2. the structure is still there in a few large-`|lambda|` outliers, and the *counting* statistic
+   lost the ability to see it because the bulk grew relative to them.
+
+These are different findings and the current statistic cannot separate them. An `|lambda|`-weighted
+`frac_repulsive`, or the same fraction restricted to eigenvalues outside the bulk edge,
+distinguishes them directly: under (1) the weighted version also returns to chance, under (2) it
+stays away from it. Both are re-reductions of `ov_summary_*.json`, which is already on disk for
+all 27 checkpoints — no forward pass, no re-run, and it discriminates two readings of the phase's
+largest open question.
+
+**One caveat, stated because it is load-bearing.** 0.5 is derived as the null for the composed OV
+*at initialization*. Whether it remains the right reference for a trained network is precisely
+what the reciprocity parameter below measures, so the elliptic-law check should be read alongside
+this rather than after it.
 
 `visualization/spectra.py` documents **both** of these null lines in its docstring and draws
 `frac_repulsive` on a diverging colormap centered at 0.5 for exactly this reason. The analysis
@@ -261,9 +301,30 @@ Phase 1's energy series.
 
     sum_i <G_i, v_i>  =  sum_i <G_i, v_i^attn>  +  sum_i <G_i, v_i^ffn>
 
-exactly. This is what `status-2.md` asks for ("re-enables the attn-vs-FFN energy panels") and it is
-strictly stronger than GPT-2's `decompose.py`, which carried a sequential-ordering confound that
-`design-2.md` documents at length.
+exactly.
+
+**What this adds on top of the producer work already on main.** `decompose.py` now extracts both
+streams on a parallel-residual architecture — it dispatches through
+`core.sublayer_streams.blocks_of` / `uses_parallel_residual`, records `semantics` as
+`"pre-ln-parallel"`, and checks the additivity itself in `_residual_identity`. So the *extraction*
+half of what `status-2.md` listed as not yet done is done, and it is what makes the identity
+below computable on Pythia at all.
+
+The *attribution* half is not. `decompose.py::energy_by_component` is still the leave-one-in
+scheme: it adds each delta back on its own, computes four separate energies, and calls the
+remainder a cross term — and that cross term is not small, which is why `cross_term_analysis.py`
+exists. It also reduces to `attn_frac` / `ffn_frac` through `max(0, -delta)`, so a channel that
+*raises* energy reads as a zero contribution rather than a negative one. That is deliberate there
+— the fraction is defined as share of the *realised drop* — but it means the same number cannot
+answer "which channel caused this violation", which is the question a violation layer poses.
+
+The dissipation identity has neither property: no cross term to attribute, because linearity of
+`P^perp` makes the split exactly additive; and no clipping, because a positive per-channel term is
+the finding rather than an absence of one. What the leave-one-in scheme puts in "cross" appears
+here as the *second-order residual*, reported as its own quantity (see (d)). The two are
+complementary rather than rival — `energy_by_component` answers "share of the realised drop", this
+answers "what did each channel do to the energy" — and `_per_layer_dissipation` in
+`p1_mstate_tracking/visualization/energy_decomposition.py` draws both.
 
 **(c) The spectral subspaces join the same identity.** Projecting `v_i` through Phase 2's existing
 Schur projectors (`weights.build_subspace_projectors`) factors the dissipation a second way,
