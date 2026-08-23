@@ -22,6 +22,7 @@ import pytest
 
 from core.interactions import (
     HEAD_AGNOSTIC,
+    _as_basis,
     InteractionTable,
     PAIR_TYPES,
     classify_pair_types,
@@ -292,3 +293,101 @@ class TestArtifactContract:
         produced = set(_table().columns)
         missing = set(spec.required_keys) - produced
         assert not missing, f"declared but not produced: {sorted(missing)}"
+
+
+class TestRealProducerForms:
+    """
+    projection_fractions must accept what this project's own producers
+    actually emit, and refuse what they don't:
+
+      p2_eigenspectra/weights.py   (d, d) symmetric idempotent projectors
+                                   (schur_attract = Z @ Z.T)
+      p2b_imaginary/rotational_schur.py
+                                   a LIST of (d, 2) orthonormal plane
+                                   bases — it deliberately never forms the
+                                   (d, d) projector (7 GB at d=1024)
+      generic                      (d, r) orthonormal columns
+    """
+
+    def _split(self, d=8, r=3, seed=0):
+        rng = np.random.default_rng(seed)
+        Q, _ = np.linalg.qr(rng.standard_normal((d, d)))
+        return Q[:, :r], Q[:, r:]
+
+    def test_phase2_style_projector_matrix_matches_its_basis(self):
+        """The two forms describe the same subspace and must give the same
+        number. This is the equivalence the old code relied on silently."""
+        rng = np.random.default_rng(1)
+        U, _ = self._split()
+        P = U @ U.T                       # exactly how weights.py builds it
+        f = rng.standard_normal((20, 8))
+        assert np.allclose(projection_fractions(f, P), projection_fractions(f, U))
+
+    def test_phase2b_style_plane_list_is_accepted(self):
+        """A list of (d, 2) plane bases spans their union."""
+        rng = np.random.default_rng(2)
+        d = 8
+        Q, _ = np.linalg.qr(rng.standard_normal((d, d)))
+        planes = [Q[:, 0:2], Q[:, 2:4]]
+        f = rng.standard_normal((15, d))
+        assert np.allclose(
+            projection_fractions(f, planes),
+            projection_fractions(f, Q[:, 0:4]),
+        )
+
+    def test_plane_list_and_its_complement_sum_to_one(self):
+        rng = np.random.default_rng(3)
+        d = 8
+        Q, _ = np.linalg.qr(rng.standard_normal((d, d)))
+        f = rng.standard_normal((15, d))
+        rot = projection_fractions(f, [Q[:, 0:2], Q[:, 2:4]])
+        real = projection_fractions(f, Q[:, 4:])
+        assert np.allclose(rot + real, 1.0)
+
+    def test_non_idempotent_square_matrix_is_refused(self):
+        """The whole point of validating. A square matrix that is neither a
+        basis nor a projector would previously have produced a
+        plausible-looking number from an unknown object."""
+        rng = np.random.default_rng(4)
+        M = rng.standard_normal((8, 8))
+        with pytest.raises(ValueError, match="neither an orthonormal basis"):
+            projection_fractions(rng.standard_normal((3, 8)), M)
+
+    def test_symmetric_but_not_idempotent_is_refused(self):
+        """A covariance-like matrix is symmetric and is not a projector.
+        Passing one would silently return f^T C f / ||f||^2, which is a
+        real number and the wrong one."""
+        rng = np.random.default_rng(5)
+        A = rng.standard_normal((8, 8))
+        C = A @ A.T
+        with pytest.raises(ValueError, match="idempotent=False"):
+            projection_fractions(rng.standard_normal((3, 8)), C)
+
+    def test_non_orthonormal_rectangular_basis_is_refused(self):
+        rng = np.random.default_rng(6)
+        B = rng.standard_normal((8, 3))       # not orthonormalized
+        with pytest.raises(ValueError, match="not orthonormal"):
+            projection_fractions(rng.standard_normal((3, 8)), B)
+
+    def test_plane_in_the_wrong_frame_is_refused(self):
+        rng = np.random.default_rng(7)
+        Q, _ = np.linalg.qr(rng.standard_normal((6, 6)))
+        with pytest.raises(ValueError, match="frame mismatch"):
+            projection_fractions(rng.standard_normal((3, 8)), [Q[:, 0:2]])
+
+    def test_empty_plane_list_is_refused_not_treated_as_zero(self):
+        """A model with no rotation planes at this layer is a finding, and
+        the caller must decide what it means — not have it silently read
+        as 'no rotational component'."""
+        with pytest.raises(ValueError, match="empty sequence"):
+            projection_fractions(np.ones((2, 4)), [])
+
+    def test_identity_projector_reads_one_everywhere(self):
+        rng = np.random.default_rng(8)
+        f = rng.standard_normal((10, 6))
+        assert np.allclose(projection_fractions(f, np.eye(6)), 1.0)
+
+    def test_as_basis_passes_a_valid_projector_through_unchanged(self):
+        U, _ = self._split()
+        P = U @ U.T
+        assert np.allclose(_as_basis(P, 8), P)

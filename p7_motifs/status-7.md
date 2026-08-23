@@ -41,14 +41,22 @@ interpretable.
    the `motif_counts.json` assembly. Verdicts go through `core/nulls.py`'s `nsigma_verdict`.
    31 tests. The null *values* still have to be produced by `core/qk_offset_null.py` against
    real weights — this module adjudicates them, it does not generate them.
-5. **`events.py`** — capture / hold / escape / relay_target / moved_fraction as `extra__`
-   columns on `ParticleTable`.
-6. **`interaction_graph.py`** — the producer: build typed edges from activations plus
-   Phase 2/2b projectors. Needs a real forward pass, so it is the first module that cannot
-   be fully verified without a model.
-7. **`formation_curve.py`**, **`p7_io.py`**, **`run_7.py`**.
-8. **Smoke tier** — one prompt, two checkpoints, tiny GPT-NeoX, end to end.
-9. **The checkpoint sweep.** Not before.
+5. **`p7_io.py`** — DONE. Reads Phase 2's sign-channel projectors and Phase 2b's rotation
+   planes into the shapes the interaction table needs; writes `motif_counts.json` and
+   `formation_curve.json` against their registered contracts. 22 tests.
+6. **`events.py`** — DONE. capture / hold / hold_run / escape / relay_target /
+   moved_fraction as `extra__` columns on `ParticleTable`. `hold_run` is Phase 5c's
+   never-built `noise_tracking.py` primitive, and it is a groupby on the particle table
+   exactly as the plan predicted. 29 tests.
+7. **`interaction_graph.py`** — DONE (oracle tier). The producer: typed edges from
+   activations, attention and the composed OV circuit, with the projectors `p7_io` supplies.
+   31 tests, including an end-to-end planted relay that goes producer → alphabet → event
+   level, which is the seam a individually-correct producer can still fail at (transposed
+   indices, wrong offset sign, pair types keyed the other way). It has not been run against a
+   real forward pass — that is the smoke tier.
+8. **`formation_curve.py`**, **`run_7.py`** — NEXT.
+9. **Smoke tier** — one prompt, two checkpoints, tiny GPT-NeoX, end to end.
+10. **The checkpoint sweep.** Not before.
 
 ## Findings from implementation
 
@@ -72,11 +80,51 @@ interpretable.
    Relatedly, P-I3's `independence_source` is a required positional argument rather than a
    keyword with a default: a result that cannot name what makes it independent of the
    behavioural induction score has measured that score twice.
-4. **An absent edge is not a zero-force edge.** Edge tables are `n_tokens²` per head per
+4. **The two channels arrive in two incompatible shapes, and neither is the one the
+   primitive originally assumed.** Phase 2's `weights.py` stores the attractive/repulsive
+   split as (d, d) *symmetric idempotent projector matrices* (`P = Z @ Z.T`), while Phase
+   2b's `top_rotation_planes` returns a *list of (d, 2) orthonormal plane bases* and
+   deliberately never forms the projector — its own docstring records that doing so costs
+   ~7 GB at d=1024 and ~27 GB at d=2048. `projection_fractions` was written expecting
+   (d, r) orthonormal columns. It happens to return the right answer for a valid projector
+   (‖Pᵀf‖² = ‖Pf‖² when P is symmetric idempotent) and would have returned a plausible
+   wrong answer for any square matrix that is not one — `UPDATE_PLAN.md` §5.6's failure mode
+   exactly. It now accepts all three forms and *validates* rather than assuming, refusing a
+   square matrix that is neither basis nor projector.
+5. **`schur_*` vs `sym_*` is a choice, not a default.** Phase 2 stores both splits; Phase 2b's
+   finding is that the symmetric part carries 100% of violation causality while the
+   antisymmetric part is dynamically neutral, so they are not interchangeable and which one
+   a result used changes what it means. `p7_io.load_sign_channel`'s `sign_channel` is a
+   required argument, and it is stamped into every record.
+6. **`moved_fraction` is a signed projection, not a magnitude ratio.** The obvious
+   ‖motif_force‖ / ‖displacement‖ scores a large force *orthogonal* to the actual motion as
+   highly explanatory (50× in the pinned test case) while it moved the particle nowhere
+   along its path, and cannot distinguish a force driving the motion from one opposing it.
+   ⟨force, displacement⟩ / ‖displacement‖² reads ~1 for aligned, ~0 for orthogonal, and
+   negative when the motif pushed against where the particle actually went — a real and
+   reportable outcome rather than an error to clip.
+7. **An absent edge is not a zero-force edge.** Edge tables are `n_tokens²` per head per
    layer per checkpoint and will be thinned. `InteractionTable.retention` carries the cutoff
    in the artifact itself, and `concat` refuses to merge tables thinned differently rather
    than silently picking one — two such tables cannot be counted together without a row
    meaning different things in each.
+
+## Two things the producer settled
+
+**The (n², d) force tensor is never built.** Materializing every `f_ij = A_ij · (x_j @ OV_h)`
+is ~4 GB for a single head at n=512, d=2048 in float64. It is also unnecessary: because
+`A_ij ≥ 0` after softmax, `‖f_ij‖ = A_ij · ‖x_j @ OV_h‖`, so every edge's magnitude follows
+from one (n, d) matmul and a row-norm — O(n·d²) once, then an outer product. Selection
+happens on magnitudes before any force vector exists, and only retained edges' vectors are
+formed. Same reasoning `top_rotation_planes` used to stop building (d, d) projectors, applied
+on the other axis. `test_matches_the_brute_force_tensor` pins the identity against the naive
+computation.
+
+**Top-k is per target, not global.** A global cutoff lets a few high-norm particles consume
+the whole budget and leaves others with no incoming edges — which does not read as "this
+particle was not moved much", it reads as "this particle was not moved", and every per-target
+motif (`hub`, `mutual`, both relay stages) would then be counted against a denominator that
+silently varies by particle.
 
 ## Known blockers
 

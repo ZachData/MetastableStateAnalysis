@@ -84,17 +84,105 @@ OPTIONAL_VALUE_COLUMNS = ("real_frac", "imag_frac")
 ALL_COLUMNS = KEY_COLUMNS + REQUIRED_VALUE_COLUMNS + OPTIONAL_VALUE_COLUMNS
 
 
+PROJECTOR_TOL = 1e-6
+
+
+def _as_basis(U, d: int, name: str = "projector") -> np.ndarray:
+    """
+    Normalize the three shapes a caller can legitimately hold into one
+    (d, r) orthonormal basis, validating rather than assuming.
+
+    The three are not hypothetical — they are what this project's own
+    producers emit:
+
+      (d, r) orthonormal columns
+          the generic case.
+
+      (d, d) symmetric idempotent projector
+          p2_eigenspectra/weights.py's `schur_attract` / `schur_repulse` /
+          `sym_attract` / `sym_repulse` are built as `P = Z @ Z.T` and
+          stored as full matrices.
+
+      sequence of (d, k_i) orthonormal bases
+          p2b_imaginary/rotational_schur.py's `top_rotation_planes` returns
+          a LIST of (d, 2) plane bases and deliberately never forms the
+          (d, d) projector: doing so costs ~7 GB at d=1024 and ~27 GB at
+          d=2048. Those planes come from distinct Schur blocks and are
+          mutually orthogonal, so their horizontal stack is an orthonormal
+          basis for the rotational subspace.
+
+    Why validate instead of just multiplying
+    -----------------------------------------
+    ||U^T f||^2 happens to equal ||P f||^2 when P is a symmetric idempotent
+    projector, so passing a (d, d) projector to a function expecting a
+    basis silently returns the right answer. It returns a *wrong* answer,
+    equally silently, for any square matrix that is neither. That is
+    UPDATE_PLAN.md 5.6's failure mode exactly — a contraction that agreed
+    with the truth at the anchor and was wrong for every real head — so
+    the shape is checked and named here rather than trusted.
+    """
+    if isinstance(U, (list, tuple)):
+        if not U:
+            raise ValueError(f"{name}: empty sequence of bases")
+        blocks = [np.asarray(b, dtype=np.float64) for b in U]
+        for b in blocks:
+            if b.ndim != 2 or b.shape[0] != d:
+                raise ValueError(
+                    f"{name}: each basis in a sequence must be (d={d}, k); "
+                    f"got {b.shape} (frame mismatch)"
+                )
+        U = np.hstack(blocks)
+    else:
+        U = np.asarray(U, dtype=np.float64)
+        if U.ndim == 1:
+            U = U[:, None]
+
+    if U.shape[0] != d:
+        raise ValueError(
+            f"{name} has d={U.shape[0]} but force vectors have d={d}; "
+            "these must match (frame mismatch)."
+        )
+
+    gram = U.T @ U
+    orthonormal = np.allclose(gram, np.eye(U.shape[1]), atol=PROJECTOR_TOL)
+    if orthonormal:
+        return U
+
+    if U.shape[0] == U.shape[1]:
+        symmetric = np.allclose(U, U.T, atol=PROJECTOR_TOL)
+        idempotent = np.allclose(U @ U, U, atol=PROJECTOR_TOL)
+        if symmetric and idempotent:
+            # An orthogonal projector. ||P f||^2 = f^T P f, so P itself acts
+            # as the "basis" in the same contraction; no eigendecomposition
+            # needed and no (d, r) factor has to be recovered.
+            return U
+        raise ValueError(
+            f"{name}: square matrix is neither an orthonormal basis nor a "
+            "symmetric idempotent projector "
+            f"(symmetric={symmetric}, idempotent={idempotent}). Refusing "
+            "rather than returning a number computed from an unknown object."
+        )
+
+    raise ValueError(
+        f"{name}: columns are not orthonormal (max |U^T U - I| = "
+        f"{np.abs(gram - np.eye(U.shape[1])).max():.3g}). If this is a "
+        "projector it must be square, symmetric and idempotent."
+    )
+
+
 def projection_fractions(force: np.ndarray, U: Optional[np.ndarray]) -> np.ndarray:
     """
-    Squared-norm fraction of each force vector lying in the subspace
-    spanned by U's columns: ||U^T f||^2 / ||f||^2.
+    Squared-norm fraction of each force vector lying in a subspace:
+    ||U^T f||^2 / ||f||^2.
 
     force : (n_edges, d)
-    U     : (d, r) orthonormal columns, or None -> all-NaN, which is the
-            correct answer when the projector was not supplied. Never a
-            silent 0.0: "no U_A was given" and "this force has no
-            imaginary component" are different facts and must not collapse
-            (standing rule 4, refuse rather than degrade).
+    U     : an orthonormal (d, r) basis, a symmetric idempotent (d, d)
+            projector, or a sequence of orthonormal bases — see _as_basis,
+            which validates and normalizes all three. None -> all-NaN,
+            which is the correct answer when the projector was not
+            supplied. Never a silent 0.0: "no U_A was given" and "this
+            force has no imaginary component" are different facts and must
+            not collapse (standing rule 4, refuse rather than degrade).
 
     Zero-norm forces give 0.0 rather than NaN — an edge that moves nothing
     has a well-defined answer, namely that none of its (absent) motion is
@@ -107,17 +195,10 @@ def projection_fractions(force: np.ndarray, U: Optional[np.ndarray]) -> np.ndarr
     if U is None:
         return np.full(n, np.nan, dtype=np.float64)
 
-    U = np.asarray(U, dtype=np.float64)
-    if U.ndim == 1:
-        U = U[:, None]
-    if U.shape[0] != force.shape[1]:
-        raise ValueError(
-            f"projector has d={U.shape[0]} but force vectors have "
-            f"d={force.shape[1]}; these must match (frame mismatch)."
-        )
+    basis = _as_basis(U, force.shape[1])
 
     total = np.sum(force * force, axis=1)
-    proj = np.sum((force @ U) ** 2, axis=1)
+    proj = np.sum((force @ basis) ** 2, axis=1)
     out = np.zeros(n, dtype=np.float64)
     nz = total > 0
     out[nz] = proj[nz] / total[nz]
