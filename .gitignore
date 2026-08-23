@@ -11,6 +11,7 @@
 !*.py
 !*.md
 !.gitignore
+!pytest.ini
 !*/
 
 # --- config / CI / declarative records -------------------------------------

@@ -193,6 +193,80 @@ PARTICLES = {
 }
 
 # ---------------------------------------------------------------------------
+# Phase 7 — interaction records (p7_motifs). Written BEFORE the producer
+# exists, which is the point: Phase 5's blockers 2 and 3 were both
+# producer/consumer mismatches that nobody noticed because neither side
+# had declared what it was writing. See p7_motifs/design-7.md.
+#
+# The edge table is the interaction-graph analogue of PARTICLES' node
+# table: one row per directed edge (target particle i <- source particle
+# j) at one (model, checkpoint, prompt, layer, head). Motif counts are
+# aggregations over it, not a separate producer.
+# ---------------------------------------------------------------------------
+
+PHASE7 = {
+    "interaction_table": ArtifactSpec(
+        kind="npz", filename="interaction_table.npz",
+        required_keys=(
+            "model", "checkpoint_step", "prompt_key", "layer", "head",
+            "target", "source",
+            "weight", "force_magnitude",
+            "attractive_frac", "repulsive_frac",
+            "offset", "pair_type",
+        ),
+        key_shape_hint={
+            "target": "(n_edges,) int64 — target particle's token_position",
+            "source": "(n_edges,) int64 — source particle's token_position",
+            "weight": "(n_edges,) float64 — post-softmax attention A_ij",
+            "force_magnitude": "(n_edges,) float64 — ||A_ij * V x_j||",
+            "attractive_frac": "(n_edges,) float64 — force fraction in U_pos",
+            "repulsive_frac": "(n_edges,) float64 — force fraction in U_neg",
+            "offset": "(n_edges,) int64 — target - source",
+            "pair_type": "(n_edges,) <U — induction | strict | same_content | neither",
+        },
+        description=(
+            "Long-format typed interaction edges: one row per (model, "
+            "checkpoint, prompt, layer, head, target, source). See "
+            "core/interactions.py:InteractionTable for the full schema, "
+            "including the optional rotational-channel columns (real_frac, "
+            "imag_frac, NaN when Phase 2b projectors were not supplied) and "
+            "the extra__* columns. Write/read via InteractionTable.save/load "
+            "rather than np.savez/np.load directly. Edge tables are subject "
+            "to a top-k-by-force retention cutoff recorded in the manifest; "
+            "an absent edge is not a zero-force edge."
+        ),
+    ),
+    "motif_counts": ArtifactSpec(
+        kind="json", filename="motif_counts.json",
+        required_keys=("motif_alphabet_version", "counts", "nulls", "verdicts",
+                       "degenerate_prompts", "force_cutoff"),
+        description=(
+            "Per-motif counts with their N1/N2/N3 null comparisons and "
+            "verdicts. `degenerate_prompts` lists prompts excluded by "
+            "core.battery_structure's four degeneracy modes and why — an "
+            "empty list is a claim, not an omission. `force_cutoff` records "
+            "the retention threshold the counts were computed under, and "
+            "whether it was placed or calibrated (standing rule 6)."
+        ),
+    ),
+    "formation_curve": ArtifactSpec(
+        kind="json", filename="formation_curve.json",
+        required_keys=("checkpoint_steps", "motif_strength",
+                       "behavioral_induction_score", "independence_source"),
+        description=(
+            "Motif strength and behavioral induction score on a shared "
+            "checkpoint axis (P-I1). `independence_source` states which of "
+            "the three independence sources (two_stage | force_channel | "
+            "particle_event) carries the association — see PREDICTIONS.md's "
+            "Phase 7 adjudication constraint 2. It is required because a "
+            "result that cannot name one has measured the same quantity "
+            "twice."
+        ),
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
 # Run manifest — every phase, every run (core/io.py's write_manifest).
 # ---------------------------------------------------------------------------
 
@@ -469,6 +543,7 @@ REGISTRY = {
     "phase5b": PHASE5B,
     "phase6": PHASE6,
     "particles": PARTICLES,
+    "phase7": PHASE7,
     "manifest": {"manifest": MANIFEST},
 }
 

@@ -169,75 +169,12 @@ def _install_stubs() -> None:
 
 
 
-# ===========================================================================
-# 2. p4_mstate_features package bootstrap
-# ===========================================================================
-
-_P4_SRC = Path(__file__).parent.parent  # project root
-
-
-# def _ensure_p4_package() -> None:
-#     """Register p4_mstate_features as a package in sys.modules if absent."""
-#     if "p4_mstate_features" in sys.modules:
-#         return
-#     pkg = types.ModuleType("p4_mstate_features")
-#     pkg.__path__    = [str(_P4_SRC)]
-#     pkg.__package__ = "p4_mstate_features"
-#     sys.modules["p4_mstate_features"] = pkg
-
-
-# def _load_p4_submodule(filename: str) -> types.ModuleType:
-#     """Load a file from the project root as p4_mstate_features.<stem>."""
-#     stem      = Path(filename).stem
-#     full_name = f"p4_mstate_features.{stem}"
-#     if full_name in sys.modules:
-#         return sys.modules[full_name]
-#     filepath = _P4_SRC / filename
-#     spec     = importlib.util.spec_from_file_location(full_name, filepath)
-#     mod      = importlib.util.module_from_spec(spec)
-#     mod.__package__       = "p4_mstate_features"
-#     sys.modules[full_name] = mod
-#     spec.loader.exec_module(mod)
-#     return mod
-
-
-# ===========================================================================
-# 3. p5b_manifold package bootstrap
-# ===========================================================================
-
-def _ensure_p5b_package() -> None:
-    """Register p5b_manifold as a package in sys.modules if absent."""
-    if "p5b_manifold" in sys.modules:
-        return
-    pkg = types.ModuleType("p5b_manifold")
-    pkg.__path__    = [str(_P4_SRC)]
-    pkg.__package__ = "p5b_manifold"
-    sys.modules["p5b_manifold"] = pkg
-
-
-def _load_p5b_submodule(filename: str) -> types.ModuleType:
-    """Load a file from the project root as p5b_manifold.<stem>."""
-    stem      = Path(filename).stem
-    full_name = f"p5b_manifold.{stem}"
-    if full_name in sys.modules:
-        return sys.modules[full_name]
-    filepath = _P4_SRC / filename
-    spec     = importlib.util.spec_from_file_location(full_name, filepath)
-    mod      = importlib.util.module_from_spec(spec)
-    mod.__package__       = "p5b_manifold"
-    sys.modules[full_name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
 # ---------------------------------------------------------------------------
 # Run at collection time
 # ---------------------------------------------------------------------------
 
 if _STUB_HEAVY_DEPS:
     _install_stubs()
-# _ensure_p4_package()
-_ensure_p5b_package()
 
 def pytest_collection_modifyitems(config, items):
     if _STUB_HEAVY_DEPS:
@@ -248,11 +185,6 @@ def pytest_collection_modifyitems(config, items):
             if "smoke" in item.keywords:
                 item.add_marker(skip_smoke)
 
-# Pre-load p4 modules; order matters — chorus imports from activation_trajectories.
-# _load_p4_submodule("p4_mstate_features/activation_trajectories.py")
-# _load_p4_submodule("p4_mstate_features/chorus.py")
-# _load_p4_submodule("p4_mstate_features/geometric.py")
-# _load_p4_submodule("p4_mstate_features/analysis.py")
 
 
 # ===========================================================================
@@ -468,93 +400,6 @@ def one_merge_tracking_results() -> dict:
     one_cluster  = [0] * N_TOKENS
     return _make_results([two_clusters] * 3 + [one_cluster] * 3)
 
-
-
-"""
-Additions to tests/conftest.py for Phase 5b.
-"""
-
-
-# Shared constants for p5b fixtures
-P5B_N_C   = 7     # clusters (one per "weekday")
-P5B_D     = 64    # activation dimension
-P5B_K_PCA = 16    # PCA dimension for fixture (small for speed)
-P5B_VOCAB = 256   # vocabulary size for behavior manifold
-
-
-# ---------------------------------------------------------------------------
-# Centroid geometry: ring (cyclic) and line (sequential)
-# ---------------------------------------------------------------------------
-
-@pytest.fixture(scope="session")
-def ring_centroids_raw() -> np.ndarray:
-    """
-    (P5B_N_C, P5B_D) unit-norm centroids arranged on a ring in the first
-    two PCA dimensions with small noise in the remaining dimensions.
-
-    These have known geodesic structure: arc-lengths are proportional to
-    angle differences on the circle.
-    """
-    rng    = np.random.default_rng(0)
-    angles = np.linspace(0, 2 * np.pi, P5B_N_C, endpoint=False)
-    c      = np.zeros((P5B_N_C, P5B_D))
-    c[:, 0] = np.cos(angles)
-    c[:, 1] = np.sin(angles)
-    c[:, 2:] = rng.standard_normal((P5B_N_C, P5B_D - 2)) * 0.05
-    norms  = np.linalg.norm(c, axis=1, keepdims=True)
-    return (c / norms).astype(np.float32)
-
-
-@pytest.fixture(scope="session")
-def ring_pca(ring_centroids_raw) -> tuple:
-    """(scores, basis, evr) from pca_reduce on ring centroids."""
-    from p5b_manifold.manifold_fit import pca_reduce
-    return pca_reduce(ring_centroids_raw, P5B_K_PCA)
-
-
-@pytest.fixture(scope="session")
-def ring_mh(ring_pca) -> dict:
-    """Activation manifold fit to ring centroids (periodic)."""
-    from p5b_manifold.manifold_fit import arc_length_params, fit_activation_manifold
-    scores, _, _ = ring_pca
-    u = arc_length_params(scores, periodic=True)
-    return fit_activation_manifold(scores, u, periodic=True)
-
-
-@pytest.fixture(scope="session")
-def ring_dists_peaked() -> np.ndarray:
-    """
-    (P5B_N_C, P5B_VOCAB) peaked distributions: cluster i concentrates mass
-    on token i with neighbour spillover.  Designed to recapitulate ring
-    structure in behavior space.
-    """
-    rng = np.random.default_rng(1)
-    p   = np.ones((P5B_N_C, P5B_VOCAB)) * 1e-6
-    for i in range(P5B_N_C):
-        p[i, i % P5B_VOCAB]           = 0.80
-        p[i, (i + 1) % P5B_VOCAB]     = 0.10
-        p[i, (i - 1) % P5B_VOCAB]     = 0.10
-    p /= p.sum(axis=1, keepdims=True)
-    return p.astype(np.float32)
-
-
-@pytest.fixture(scope="session")
-def ring_my(ring_dists_peaked, ring_pca) -> dict:
-    """Behavior manifold fit to peaked ring distributions (periodic)."""
-    from p5b_manifold.manifold_fit import arc_length_params, fit_behavior_manifold
-    scores, _, _ = ring_pca
-    u = arc_length_params(scores, periodic=True)   # same u as ring_mh
-    return fit_behavior_manifold(ring_dists_peaked, u, periodic=True)
-
-
-@pytest.fixture(scope="session")
-def ring_pairwise(ring_mh, ring_my, ring_pca, ring_centroids_raw) -> dict:
-    """Precomputed pairwise distances for the ring geometry."""
-    from p5b_manifold.isometry_test import pairwise_distances
-    scores, _, _ = ring_pca
-    angles = np.linspace(0, 2 * np.pi, P5B_N_C, endpoint=False)
-    u      = angles / (2 * np.pi)   # normalise to [0, 1)
-    return pairwise_distances(ring_mh, ring_my, u, scores, n_pts=50)
 
 # ===========================================================================
 # 4. Smoke-test fixtures (Tier 1 — real end-to-end pipeline checks)
