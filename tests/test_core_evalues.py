@@ -335,3 +335,44 @@ class TestCombine:
         E, reject = combine([0.5, 0.0, 0.9])
         assert math.isinf(E)
         assert reject is True
+
+
+# ---------------------------------------------------------------------------
+# Environment regression: the torch stub must not break scipy
+# ---------------------------------------------------------------------------
+
+class TestTorchStubIsScipySafe:
+    """
+    Regression guard for a CI-only failure that cost two red runs.
+
+    `tests/conftest.py` stubs torch with a MagicMock when torch is not
+    installed. scipy's array-API dispatch asks `issubclass(cls, torch.Tensor)`
+    on its way through anything touching scipy.stats, and a MagicMock attribute
+    is an instance rather than a class, so that raised
+
+        TypeError: issubclass() arg 2 must be a class, a tuple of classes, or
+        a union
+
+    at *collection* time -- taking down every module whose import chain reaches
+    scipy.stats, with an error naming neither torch nor the stub.
+
+    Invisible in any environment with real torch installed, which is why it
+    survived local verification twice and only appeared on the runner. The
+    assertion below is cheap and fails loudly if the stub ever regresses.
+    """
+
+    def test_torch_tensor_is_a_real_class(self):
+        import sys
+        torch_mod = sys.modules.get("torch")
+        if torch_mod is None:
+            pytest.skip("no torch module in sys.modules at all")
+        assert isinstance(torch_mod.Tensor, type), (
+            "torch.Tensor must be a class so scipy's issubclass() dispatch works; "
+            "see tests/conftest.py::_install_stubs"
+        )
+
+    def test_scipy_stats_survives_the_stub(self):
+        """The actual path that failed: a scipy.stats call under the stub."""
+        from scipy.stats import mannwhitneyu
+        stat, p = mannwhitneyu([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], alternative="greater")
+        assert 0.0 <= float(p) <= 1.0

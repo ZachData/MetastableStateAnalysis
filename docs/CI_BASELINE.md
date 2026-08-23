@@ -64,7 +64,7 @@ whether those tests encode the design or the author's expectation of it.
 
 ```bash
 pip install -r requirements/test.txt
-./scripts/check.sh gate          # tier 0 + tier 1, ~11 s
+./scripts/check.sh gate          # tier 0 + tier 1 (isolated), ~11 s
 
 pip install --index-url https://download.pytorch.org/whl/cpu torch
 pip install -r requirements/heavy.txt
@@ -74,3 +74,26 @@ pip install -r requirements/heavy.txt
 Note that `download.pytorch.org` is reachable from GitHub Actions but not from
 every sandbox; the plain PyPI `torch` wheel is the CUDA build at ~4.9 GB
 unpacked and works but is wasteful.
+
+## Why `gate` isolates the pure tier
+
+`./scripts/check.sh gate` runs tier 1 with torch, transformers, scikit-learn and
+matplotlib shadowed by packages that raise `ImportError`. That is not paranoia;
+it is the difference between the two environments, and it cost two red CI runs.
+
+A developer machine has torch installed. `tests/conftest.py` installs its
+MagicMock stub with `sys.modules.setdefault`, so on that machine the stub never
+takes effect and `pytest -m pure` exercises the real library throughout. The
+pure tier's central claim -- *this passes with no heavy dependencies* -- is then
+not tested at all by the command that appears to test it.
+
+The failure that surfaced it was a good one to have: scipy's array-API dispatch
+asks `issubclass(cls, torch.Tensor)` on any path through `scipy.stats`, and a
+MagicMock attribute is an instance rather than a class, so it raised
+
+    TypeError: issubclass() arg 2 must be a class, a tuple of classes, or a union
+
+at collection time, in a traceback naming neither torch nor the stub. Invisible
+with real torch present. `tests/test_core_evalues.py::TestTorchStubIsScipySafe`
+now asserts the stub's `Tensor` is a real class, and `check.sh gate` runs the
+tier the way the runner does.

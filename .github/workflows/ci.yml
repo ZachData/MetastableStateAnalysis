@@ -83,4 +83,10 @@ jobs:
           echo "torch absent, as required"
 
       - name: Run pure tier
-        run: pytest -m pure -q
+        # `iso`, not a bare pytest invocation: it forces torch, transformers,
+        # scikit-learn and matplotlib unimportable rather than trusting that the
+        # runner happens not to have them, and it is the exact command a
+        # contributor runs locally. Both halves of that matter -- the first CI
+        # failure was `pytest` vs `python -m pytest` (sys.path), and the second
+        # was a stub bug invisible on any machine with real torch installed.
+        run: ./scripts/check.sh iso

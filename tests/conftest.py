@@ -69,6 +69,28 @@ def _install_stubs() -> None:
     # --- torch ---
     _torch = MagicMock()
     _torch.cuda.is_available.return_value = False
+
+    # `torch.Tensor` must be a REAL class, not a MagicMock attribute.
+    #
+    # scipy's array-API dispatch asks `issubclass(cls, torch.Tensor)` on its way
+    # through anything that touches scipy.stats (array_api_compat's
+    # is_torch_array -> _issubclass_fast). A MagicMock attribute is an instance,
+    # not a class, so that raises
+    #
+    #     TypeError: issubclass() arg 2 must be a class, a tuple of classes, or
+    #     a union
+    #
+    # at *collection* time, taking down every module that imports a scipy.stats
+    # test anywhere in its chain. Nothing in the suite is at fault and the error
+    # names neither torch nor the stub, which is what made it expensive to read.
+    #
+    # An empty class is the right stand-in: it is a class so issubclass works,
+    # and no numpy array is an instance of it so is_torch_array correctly
+    # answers False. The MagicMock stays for everything else.
+    class _StubTensor:
+        """Stand-in for torch.Tensor: a real class, deliberately unpopulated."""
+
+    _torch.Tensor = _StubTensor
     sys.modules.setdefault("torch", _torch)
 
     # --- transformers ---
