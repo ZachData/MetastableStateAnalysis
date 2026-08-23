@@ -49,9 +49,9 @@ predictions into the machinery B builds.
 | The pure test tier cannot run without heavy deps | `tests/conftest.py:20` hard-imports `torch` at module scope — which defeats the `sys.modules` stubbing the same file installs 26 lines later, and blocks collection of all ~100 test modules |
 | `pytest.ini` does not exist | `tests/SMOKE_TESTS_NOTES.md` says it does and that the `smoke` marker is registered there; neither is true, so `-m smoke` currently selects nothing and every marker is unregistered |
 | A stale orphan sits in `core/` | `core/.py` — 196 lines, an older truncated copy of `models.py` whose docstring asserts **bfloat16** loading while the live `core/models.py` asserts **float32** and calls that choice load-bearing. Unimportable (not a valid module name), so nothing catches the contradiction |
-| ~26 prediction IDs are registered in prose | `P-γ1 P-γ2 P-H1 P-S1 P-T1 P-M1` (`PREDICTIONS.md`), `P5b-A1…D2`, `P6-A2 P6-C1 P6-DD1 P6-DD2 P6-I1 P6-I2 P6-R1…R5 P6-D5`, `P1-P5` — scattered across `.md` and `.py` docstrings, with no machine-readable index |
+| 30 predictions are registered in prose | `P-γ1 P-γ2 P-H1 P-S1 P-T1 P-M1` and the three transition claims (`PREDICTIONS.md`), nine `P5b-*` (`p5b_report.py`, `logit_cache.py`), twelve `P6-*` (`report_6.py::_PREDICTIONS`) — scattered across `.md` and `.py`, with no machine-readable index. (`P1-P5` in `core/run_policy.py` is *not* one of them: it means "policies P1 through P5". A naive ID pattern counts it as a prediction, which is why `tools/check_registry.py`'s pattern excludes it explicitly.) |
 | p-values already exist in the science code | `p6_subspace/head_classify.py`, `induction_ov.py`, `qk_decompose.py`, `p5_single_mstate_analysis/tiers.py`, `p5b_manifold_steering/isometry_test.py`, `merge_teleportation_subspace.py`, `core/nulls.py`, `core/qk_offset_null.py` — the e-value layer has real inputs to attach to on day one |
-| Baseline suite health | recorded in §A0 below, measured this pass |
+| Baseline suite health | **zero tests collected** before this pass; see `docs/CI_BASELINE.md` |
 
 Two of these are load-bearing for the plan and worth stating plainly. **The project's
 falsification discipline is already better than most published work** — `PREDICTIONS.md`
@@ -104,14 +104,34 @@ gates merges and CI that gets ignored.
 
 Register markers in `pyproject.toml` (not a separate `pytest.ini` — one config file):
 
-- `pure` — numpy/scipy only, no model, no artifacts. The gating tier.
+- `pure` — numpy/scipy/pytest only. The gating tier.
+- `deps` — needs torch/sklearn/matplotlib importable, but no model download and no artifacts.
 - `smoke` — real torch/transformers, tiny HF models, network once. Already partly built
   (`SMOKE_REAL_DEPS=1`); this only registers and documents it.
 - `heavy` — needs real artifacts on disk. **Never** run in CI; marked so it can be
   deselected deterministically rather than by filename convention.
 
-Acceptance: `pytest --markers` lists all three; `pytest -m pure` and `-m "not heavy"`
-partition the suite with no unmarked stragglers (enforced by A5's lint).
+Four tiers rather than the three originally planned. `deps` was added after measuring: the
+planned `pure`/`smoke`/`heavy` split has no home for the ~34 modules that need real tensors
+but no model and no artifacts, and without it they fall into whichever half the partition
+happens to leave them in.
+
+**Tier assignment is measured, not assigned.** A module is `pure` only if its *whole* test
+set passes with torch, transformers, scikit-learn and matplotlib all made unimportable — 59
+of 95 modules qualify, 1532 tests in ~10 seconds. Collecting-without-error is not sufficient
+and was the first thing tried: 72 modules collect clean but 13 of those fail once run.
+
+**`-m` alone is not enough**, which is the non-obvious part. pytest imports every module
+before deselecting, so one `deps` module raises at collection and takes the run down before
+any deselection happens — 19 modules do exactly this. `tests/conftest.py` therefore carries a
+`pytest_ignore_collect` hook that reads each module's declared marker as *text* (no import,
+which is the whole point) and skips `deps` modules when their dependencies are genuinely
+absent. Keyed on real importability rather than an env var, so a runner that has torch runs
+the deps tier without being told.
+
+Acceptance: `pytest --markers` lists all four; `pytest -m pure` is green with no heavy deps
+installed (enforced in CI by an explicit "assert torch is absent" step, so the tier cannot
+silently stop testing what it claims to).
 
 ### A4. Workflows · **DONE** · [C] · M
 
@@ -204,7 +224,7 @@ super-martingale property under a sequence of null p-values, (iv) Markov's-inequ
 Type-I control at nominal α by simulation, (v) log-space accumulation agreeing with the
 direct product to floating tolerance over ≥ 500 terms.
 
-### B2. `claims/` — the machine-readable registry · [D + C] · L
+### B2. `claims/` — the machine-readable registry · **DONE** · [D + C] · L
 
 Two files plus a directory.
 
@@ -243,7 +263,7 @@ Acceptance: `tools/check_registry.py` validates schema, uniqueness, that every `
 row of `CLAIMS.md`, that every prediction ID appearing anywhere in `*.py`/`*.md` has a registry
 entry, and that `relevance ≥ r₀`.
 
-### B3. Pre-registration gate — **where CI and Popper fuse** · [C] · M
+### B3. Pre-registration gate — **where CI and Popper fuse** · **DONE** · [C] · M
 
 POPPER's Assumption 2 (sequential validity) is the assumption that actually carries the Type-I
 guarantee, and it says: *the choice of sub-hypothesis and test function must not depend on the
@@ -288,7 +308,7 @@ Two refusals, both instances of standing rule 4 ("refuse rather than degrade"):
   silently voids the Type-I guarantee for *every other prediction on that claim*, because
   the product is only as valid as its weakest factor.
 
-### B5. The evaluability audit — **the honest part** · [D + R] · M
+### B5. The evaluability audit — **the honest part** · **DONE** · [D + R] · M
 
 Not every registered prediction can carry an e-value, and pretending otherwise would be the
 exact pseudo-rigor this workstream exists to prevent. Each of the ~26 IDs gets classified:
@@ -363,7 +383,7 @@ the two disagree observably.
 That constraint is what makes C a research workstream rather than a glossary, and it is why C
 is sequenced after B — each entry emits into the registry.
 
-### C1. `docs/PARTICLE_ONTOLOGY.md` · [D] · L
+### C1. `docs/PARTICLE_ONTOLOGY.md` · **DONE** · [D] · L
 
 Written before any code, per the norm `core/DESIGN_dual_reading.md` already follows. One
 section per construct: standard definition, particle-paradigm definition, what already exists
@@ -471,6 +491,46 @@ would fix a claim structure before knowing which predictions can actually adjudi
    gated ones.
 
 ---
+
+## 6b. What the first pass actually found
+
+Executed 2026-08-23: workstream A in full, B1–B3 and B5, C1.
+
+Four things were discovered by doing the work rather than by planning it, and
+each changes something downstream:
+
+1. **The suite collected zero tests**, not "most of them" — a conftest-level
+   import failure takes the whole directory down. And two packages
+   (`p3_crosscoder`, `p4_mstate_features`) could not be imported at all because
+   their `__init__` referenced `.analysis` where the module is `analysis_p4`,
+   so those phases' tests had never run once. See `docs/CI_BASELINE.md`.
+
+2. **`.gitignore` whitelisted only `*.py` and `*.md`.** Every file this plan
+   needs — `pyproject.toml`, `requirements/*.txt`, the workflows, the registry
+   JSON — was unstageable. This would have blocked workstream A on its first
+   commit, and it is invisible until you try.
+
+3. **Seven of thirty predictions can carry an e-value.** Twenty need a null
+   constructed; three admit none at all. That number is the real finding of
+   workstream B, and it re-weights the plan: B6's retrofit of existing p-value
+   sites is much smaller than expected, while a *new* workstream — constructing
+   the twenty missing nulls — is the actual bulk of the Popperian work.
+   `claims/EVALUABILITY.md` names three recurring patterns behind it (a
+   threshold is not a null; an equivalence claim needs an equivalence test; the
+   same data cannot settle two entries).
+
+4. **The bridge's only adjudicated prediction has already failed.** P6-R2/R4
+   came back inverted — 0 of 49 layers in the predicted direction. `C1` records
+   this rather than routing around it, and declines to register a fresh probe
+   prediction until the inversion has a null construction, because inventing
+   one now would be fitting theory to a result already in hand.
+
+**Revised critical path**, replacing §5's: A is done, so the path is now
+**B5 → the twenty null constructions → B4 → B6 → B7**, with C2 (registering the
+four bridge predictions prospectively) runnable in parallel since it depends on
+no artifact. The first prediction to adjudicate is `PB-STEER1` from C1 — cheap,
+no new instrument, and the one place the two paradigms make *incompatible*
+rather than merely different predictions.
 
 ## 7. What this plan does *not* do
 
