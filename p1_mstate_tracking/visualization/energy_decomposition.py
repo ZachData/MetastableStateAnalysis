@@ -25,6 +25,8 @@ from scipy.stats import spearmanr
 
 from core.style import BLOG_STYLE
 from core.naming import _safe_model_name
+from core.metrics import ENERGY_VIOLATION_REL_TOL, interaction_energy
+from core.dissipation import dissipation, dissipation_by_channel
 from .loaders import _geo
 from .series import _attention_entropy_mean_series, _fiedler_mean_series
 
@@ -328,7 +330,163 @@ def generate_energy_decomposition_figures(
             continue
         ok1 = plot_energy_decomposition_trajectory(run_dir, phase2_run_dir, out_dir, beta=beta)
         ok2 = plot_fiedler_vs_energy_attribution(run_dir, phase2_run_dir, out_dir, beta=beta)
-        found_any = found_any or ok1 or ok2
+        ok3 = plot_dissipation_attribution(run_dir, phase2_run_dir, out_dir, beta=beta)
+        found_any = found_any or ok1 or ok2 or ok3
     if not found_any:
         print(f"  ⚠  no Phase 2 decompose data found under {phase2_dir} for prompt {prompt!r}")
 
+
+# ---------------------------------------------------------------------------
+# Exact first-order attribution (core.dissipation)
+# ---------------------------------------------------------------------------
+#
+# `energy_by_component` above is a leave-one-in scheme: it adds each delta
+# back on its own and calls whatever is left over a "cross term". That cross
+# term is not small — `p2_eigenspectra/cross_term_analysis.py` exists because
+# it dominates for ALBERT-xlarge on several prompts — and `attn_frac` /
+# `ffn_frac` clip with `max(0.0, -delta)`, which is the same sign-destroying
+# clip status-2b.md flags at `analysis_p2.py:153`.
+#
+# The dissipation identity has neither problem. dE = sum_i <G_i, v_i> to
+# first order, the tangential projection is linear, and on a parallel-residual
+# model dx = dx_attn + dx_ffn exactly — so the split is exactly additive with
+# no cross term to attribute and no clipping to hide a sign. What the old
+# scheme puts in "cross" is here the *second-order* residual, which is
+# reported as its own quantity because it measures whether the continuum
+# limit this project assumes holds at that layer.
+#
+# Both are kept, and they answer different questions rather than competing.
+# energy_by_component gives each channel's share of the REALISED DROP, which
+# is what its clip is for and is the right reading when the layer does drop.
+# This one gives what each channel did to the energy, signed — which is the
+# only one of the two that can answer "which channel caused this violation",
+# since at a violation layer there is no realised drop to take a share of.
+
+
+def _per_layer_dissipation(decomp: dict, beta: float) -> dict:
+    """
+    Per-layer exact first-order energy attribution for one run.
+
+    Returns lists indexed by layer boundary, plus `exact` — False on any
+    architecture where dx != dx_attn + dx_ffn, which is the guard that
+    replaces a model-name branch.
+    """
+    n_layers = len(decomp["attn_deltas"])
+    out = {
+        "attn": [], "ffn": [], "total": [],
+        "actual": [], "residual": [], "violation": [],
+        "exact": True,
+    }
+    for i in range(n_layers):
+        X = decomp["trajectory"][i]
+        a, f = decomp["attn_deltas"][i], decomp["ffn_deltas"][i]
+
+        ch = dissipation_by_channel(X, a, f, beta)
+        # Sum in float64. The saved deltas are float32, and `a + f` at that
+        # precision differs from the sum dissipation_by_channel forms
+        # internally by ~1e-7 relative — enough to break the exact identity
+        # between the two curves this figure draws against each other.
+        full = dissipation(X, np.asarray(a, dtype=np.float64)
+                              + np.asarray(f, dtype=np.float64), beta)
+
+        out["attn"].append(ch["attn"])
+        out["ffn"].append(ch["ffn"])
+        out["total"].append(ch["total"])
+        out["actual"].append(full["actual_delta_E"])
+        out["residual"].append(full["residual"])
+        out["exact"] = out["exact"] and ch["exact"]
+
+        # The project's relative rule, not a local threshold — status-2b.md
+        # known-issue 1 is three hardcoded copies of a different one.
+        e_before = interaction_energy(X, beta)
+        rise = full["actual_delta_E"]
+        out["violation"].append(
+            rise is not None and rise > ENERGY_VIOLATION_REL_TOL * abs(e_before)
+        )
+    return out
+
+
+def plot_dissipation_attribution(
+    run_dir: Path,
+    phase2_run_dir: Path,
+    out_dir: Path,
+    beta: float = 1.0,
+) -> bool:
+    """
+    Exact first-order energy attribution per layer.
+
+      top    — signed dissipation, attention vs FFN, as paired bars. Below
+               zero is the layer pushing energy down; ABOVE zero is a layer
+               pushing uphill, and the sign is not clipped, so a channel
+               that fights the other is visible as two large opposing bars
+               rather than as one small total.
+      bottom — the linearisation residual as a band around zero, against
+               the measured Delta E_beta. Where the band is wide, the
+               forward-Euler reading of a residual block is not valid at
+               that layer and the top panel should be read with care.
+
+    Energy-violation boundaries are hatched in both panels, so "which
+    channel produced this violation" is answerable by looking.
+
+    Returns False (silently) when the run has no saved deltas, matching
+    this module's additive-never-blocking contract.
+    """
+    decomp = _phase2_decomposed(phase2_run_dir)
+    if decomp is None:
+        return False
+
+    geo = _geo(run_dir)
+    model = geo.get("model", Path(run_dir).name) if geo else Path(run_dir).name
+    prompt = geo.get("prompt", "") if geo else ""
+
+    d = _per_layer_dissipation(decomp, beta)
+    layers = np.arange(len(d["attn"]))
+    if len(layers) == 0:
+        return False
+
+    with plt.style.context(BLOG_STYLE):
+        fig, (ax_top, ax_bot) = plt.subplots(
+            2, 1, figsize=(11, 7), sharex=True,
+            gridspec_kw={"height_ratios": [2, 1]},
+        )
+
+        w = 0.4
+        ax_top.bar(layers - w / 2, d["attn"], width=w, label="attention", color="#3B7EA1")
+        ax_top.bar(layers + w / 2, d["ffn"], width=w, label="FFN", color="#C4622D")
+        ax_top.plot(layers, d["total"], "k.-", lw=1, ms=4, label="total (= attn + FFN, exactly)")
+        ax_top.axhline(0.0, color="k", lw=0.8)
+        ax_top.set_ylabel(r"first-order $\Delta E_\beta$")
+        ax_top.legend(fontsize=8, ncol=3)
+
+        exact_note = "" if d["exact"] else "  —  NOT exactly additive on this architecture"
+        ax_top.set_title(
+            f"Exact first-order energy attribution — {model}"
+            f"{(' · ' + prompt) if prompt else ''}  (beta={beta}){exact_note}",
+            fontsize=10,
+        )
+
+        actual = np.array([np.nan if a is None else a for a in d["actual"]], dtype=float)
+        resid = np.array([np.nan if r is None else r for r in d["residual"]], dtype=float)
+        ax_bot.plot(layers, actual, color="k", lw=1.2, label=r"measured $\Delta E_\beta$")
+        ax_bot.fill_between(layers, d["total"], d["total"] + resid, alpha=0.35,
+                            color="#7A7A7A", label="second-order residual")
+        ax_bot.axhline(0.0, color="k", lw=0.8)
+        ax_bot.set_ylabel(r"$\Delta E_\beta$")
+        ax_bot.set_xlabel("layer")
+        ax_bot.legend(fontsize=8)
+
+        for ax in (ax_top, ax_bot):
+            for i, viol in enumerate(d["violation"]):
+                if viol:
+                    ax.axvspan(i - 0.5, i + 0.5, color="#B03A2E",
+                               alpha=0.12, zorder=0, lw=0)
+
+        fig.tight_layout()
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        name = f"dissipation_attribution_{_safe_model_name(model)}"
+        if prompt:
+            name += f"_{prompt}"
+        fig.savefig(out_dir / f"{name}.png", dpi=150)
+        plt.close(fig)
+    return True
