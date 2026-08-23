@@ -785,7 +785,12 @@ def tiny_phase2_eigenspectra_dir(tiny_phase2_dir) -> "Path":
 # variable: a runner that happens to have torch should run the deps tier, and a
 # runner that does not should not need to be told.
 
-_HEAVY_DEPS = ("torch", "transformers", "sklearn", "matplotlib")
+# transformers is deliberately absent from this list. _install_stubs above
+# supplies a MagicMock for it by design, and the deps-tier modules run fine
+# against that stub -- they need real *tensors* and real *estimators*, not a
+# real Hub client. Requiring it here would strand the whole deps tier on any
+# machine that has torch but not transformers, which is the common case.
+_HEAVY_DEPS = ("torch", "sklearn", "matplotlib")
 
 
 def _heavy_deps_available() -> bool:

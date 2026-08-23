@@ -18,6 +18,8 @@ from pathlib import Path
 # Tier: deps -- needs the heavy tier importable (torch / transformers /
 # scikit-learn / matplotlib). No model download, no run artifacts.
 # Measured, not assumed; see pyproject.toml markers.
+import pytest
+
 pytestmark = pytest.mark.deps
 
 # Ensure the project root is on sys.path so geometric.py can be found.

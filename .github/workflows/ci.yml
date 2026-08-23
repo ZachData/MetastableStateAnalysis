@@ -45,6 +45,15 @@ jobs:
       - name: Repo hygiene
         run: python tools/lint_repo.py
 
+      - name: Prediction registry + pre-registration gate
+        # This is the check that carries the Type-I guarantee. POPPER's
+        # Assumption 2 requires that a prediction's design not depend on the
+        # data used to test it; git can verify that, and this is where it does.
+        run: python tools/check_registry.py --summary
+
+      - name: EVALUABILITY.md is in step with the registry
+        run: python tools/render_evaluability.py --check
+
   pure:
     name: tier 1 — pure tests
     runs-on: ubuntu-latest

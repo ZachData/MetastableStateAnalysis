@@ -22,6 +22,14 @@ TARGET="${1:-gate}"
 run_lint() {
   echo "=== tier 0: repo hygiene ==="
   python3 tools/lint_repo.py
+
+  echo
+  echo "=== tier 0: prediction registry + pre-registration gate ==="
+  python3 tools/check_registry.py --summary
+
+  echo
+  echo "=== tier 0: EVALUABILITY.md in step with the registry ==="
+  python3 tools/render_evaluability.py --check
 }
 
 run_pure() {
