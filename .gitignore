@@ -2,6 +2,7 @@
 !*.py
 !*.md
 !.gitignore
+!pytest.ini
 !*/
 
 # run artifacts
