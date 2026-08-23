@@ -351,7 +351,7 @@ In dependency order, cheapest first: `core/nulls.py` (`sigma_from_null` → add
 Each is one chunk: thread `prediction_id` through, call `core.adjudication.adjudicate`, assert
 in tests that the emitted record round-trips. No science changes, no threshold changes.
 
-### B7. `FALSIFICATION.md` generation + CI recomputation · [C] · M
+### B7. `FALSIFICATION.md` generation + CI recomputation · **DONE** · [C] · M
 
 `tools/render_falsification.py` builds, per claim, the ordered table of adjudicated
 predictions with p, e, running E, and the decision at α — replacing the hand-maintained
@@ -571,6 +571,43 @@ Three predictions are adjudicable today: `P-S1`, `P-T1`, `P-M1`. The B6 retrofit
 of existing p-value sites is mostly moot — those sites are archived — so what
 remains of workstream B is B5's null constructions and B7's generated
 falsification table, now pointed at Phase 7 and Phases 1c/2d rather than at 5b/6.
+
+## 6d. First live null construction (2026-08-23, post-merge)
+
+**P-S1 now has a calibrated p-value.** Its null machinery already existed --
+`random_band` sampled 200 draws of the Q_k ratio -- but stopped at "Nσ from
+null", a summary that reads like significance without being calibrated as one.
+`core/nulls.p_from_null` supplies the missing step for every such null in the
+project, with the `(n_extreme + 1)/(n + 1)` floor: a p of exactly 0 calibrates
+to an infinite e-value, asserting more evidence than a finite sample can carry.
+
+Two choices had to be fixed before running, because neither was settled by the
+original wording and both are selections if made afterward:
+
+- **Multi-degree combination.** One pre-declared scalar -- the sum over degrees
+  1–3 of the (step0 − trained) ratio, each standardised by that degree's own
+  null sd -- rather than three per-degree tests plus a correction chosen after
+  seeing three p-values. Standardising is load-bearing: `UPDATE_PLAN.md` §5.8
+  measured the band narrowing from ~0.17 at k=1 to ~0.002 at k=3, so an
+  unstandardised sum is dominated by k=1 and discards the degrees that are more
+  sensitive in relative terms.
+- **Direction.** One-sided `greater`, since P-S1 predicts trained ratios
+  *smaller*. Verified: reversed arms give p = 1.000.
+
+**A calibration defect was found and fixed by measuring rather than reasoning.**
+The first implementation referenced the observed statistic against
+`design_report`'s internal baseline and the null against its own — two
+Monte-Carlo estimates of the same quantity. Null-vs-null pairs came back with a
+mean p of 0.40 against the 0.50 a calibrated statistic must give, in the
+anticonservative direction and invisible in any single result. Re-referencing
+both arms against one shared baseline brings the rejection rate to nominal
+(frac p ≤ 0.05 = 0.050 at n = 40); power is 88% at α = 0.05 against a
+simplex-like configuration.
+
+**B7 is done.** `tools/render_falsification.py` generates
+`claims/FALSIFICATION.md`, and tier 0 now recomputes every claim's E from the
+committed records — recalibrating each e-value from its p-value rather than
+trusting the stored number — so a decision word edited by hand surfaces in CI.
 
 ## 7. What this plan does *not* do
 

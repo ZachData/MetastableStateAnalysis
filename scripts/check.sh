@@ -31,6 +31,18 @@ run_lint() {
   echo
   echo "=== tier 0: EVALUABILITY.md in step with the registry ==="
   python3 tools/render_evaluability.py --check
+
+  echo
+  echo "=== tier 0: ledger recomputes to what it claims ==="
+  # Replays every claim's e-process from the committed adjudication records,
+  # recalibrating each e-value from its p-value rather than trusting the stored
+  # number. Catches arithmetic drift and, more usefully, a decision word
+  # updated by hand without its evidence.
+  python3 -m core.adjudication --verify
+
+  echo
+  echo "=== tier 0: FALSIFICATION.md in step with the ledger ==="
+  python3 tools/render_falsification.py --check
 }
 
 run_pure() {
