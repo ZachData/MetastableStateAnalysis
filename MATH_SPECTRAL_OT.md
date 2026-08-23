@@ -351,6 +351,36 @@ Concretely, three things this predicts are worth building, in this order:
   Fiedler vector is the `k=2` special case of PCCA+. Then the Hessian of `E_beta` and its Morse
   index, which is the definition the word "metastable" is standing in for.
 
+### 6.1 Where this work goes: new subphases, not additions to Phase 2
+
+**Standing constraint.** Phase 2's run cost is already the binding one on this project. None of
+the above is to be added as a stage inside `p2_eigenspectra/run_2.py`, or as a new subexperiment
+in its registry, even where the question is a Phase 2 question. Each goes in its own subphase
+directory that imports Phase 2's saved outputs **read-only**.
+
+That is the pattern the repo already uses and it exists for this reason: `p2b_imaginary/` takes
+Phase 2's `ov_decomp_*.npz`, and `p2d_operator_activation/` takes the same weights plus a Phase 1
+run, and neither makes `run_2.py` do more work. `design-2b.md` states the principle explicitly —
+Phase 2c "is a new directory that only *imports* this phase's Schur projectors as read-only
+inputs" rather than adding metrics to a completed experiment.
+
+Two practical consequences worth stating, because they are what makes the constraint cheap to
+honour rather than merely a rule:
+
+- **Prefer weights-only where the question allows it.** A weights-only subphase needs no forward
+  pass, no activation cache, and no prompt axis, so it runs across all 27 Pythia checkpoints for
+  roughly the cost of one Schur decomposition per layer per checkpoint. The non-normal-dynamics
+  module above is entirely in this class. `rotational_schur.py`'s header makes the same argument
+  for Block 1a and is the model to follow.
+- **Reuse the cached artifacts rather than re-running the model.** `core/dissipation.py` needs
+  `hidden_states.npz` / `attn_deltas_raw.npz` / `ffn_deltas_raw.npz`, all of which a Phase 2
+  `--full` run already wrote. A subphase that reads those adds analysis cost only, and a subphase
+  that would need a *new* forward pass should say so on its face so the compute is a decision
+  rather than a surprise.
+
+The exception is a genuine bug or a wrong quantity inside Phase 2 itself — that is a fix in place,
+not a new subphase.
+
 ---
 
 ## 7. Two stale claims found while writing this
