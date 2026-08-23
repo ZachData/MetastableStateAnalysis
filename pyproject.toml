@@ -63,34 +63,8 @@ packages = [
 # ---------------------------------------------------------------------------
 # pytest
 # ---------------------------------------------------------------------------
-# tests/SMOKE_TESTS_NOTES.md refers to a pytest.ini that registers the `smoke`
-# marker. No such file existed, so every `pytestmark = pytest.mark.smoke` in the
-# suite raised PytestUnknownMarkWarning and `-m smoke` selected nothing. The
-# markers are registered here instead of in a separate pytest.ini so there is
-# one config file rather than two that can disagree.
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-# The project root must be importable: tests/conftest.py does
-# `from tests.test_config import ...`, and tests/ has no __init__.py, so
-# pytest's default prepend import mode puts tests/ on sys.path rather than the
-# root. `python -m pytest` papers over this because Python itself prepends the
-# cwd -- the bare `pytest` console script does not. That is why every local run
-# passed while the first CI run failed with "ModuleNotFoundError: No module
-# named 'tests'": scripts/check.sh used `python3 -m pytest` and the workflow
-# used bare `pytest`. Setting it here fixes both invocations rather than
-# mandating one.
-pythonpath = ["."]
-# The tiers are defined by *what a runner must have installed*, and each module's
-# tier was measured rather than assigned: a module is `pure` only if its whole
-# test set passes with torch, transformers, scikit-learn and matplotlib all made
-# unimportable. 59 modules qualify -- 1532 tests in ~10 seconds, which is what
-# makes tier 1 fast enough to gate every push.
-markers = [
-    "pure: numpy/scipy/pytest only -- torch, transformers, sklearn, matplotlib all absent. The CI gating tier.",
-    "deps: needs the heavy tier importable (torch/transformers/sklearn/matplotlib) but no model download and no run artifacts.",
-    "smoke: needs real torch/transformers and a tiny HF model pulled from the Hub. Run with SMOKE_REAL_DEPS=1.",
-    "heavy: needs real run artifacts on disk. Never runs in CI; deselect with -m 'not heavy'.",
-]
-filterwarnings = [
-    "error::pytest.PytestUnknownMarkWarning",
-]
+# Configuration lives in pytest.ini, NOT here. pytest.ini takes absolute
+# precedence: when it exists, [tool.pytest.ini_options] is not read at all, so
+# a markers block in this file would look authoritative while being ignored.
+# That is not hypothetical -- it happened when main's pytest.ini merged with
+# this file's markers block, and every tier marker silently unregistered.

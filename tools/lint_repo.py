@@ -38,17 +38,21 @@ from typing import Iterable, List
 ROOT = Path(__file__).resolve().parent.parent
 
 #: Directories that are Python packages of this project.
+#: LIVE packages only. Phases 3, 4, 5, 5b, 5c and 6 moved to archive/ on
+#: 2026-08-22 and are deliberately absent: archive/README.md's first rule is
+#: "not maintained, not imported, not collected", and linting them would
+#: reintroduce exactly the maintenance the archive exists to end.
 PACKAGE_DIRS = (
     "core", "tools", "tests",
     "p1_mstate_tracking", "p1b_hemisphere", "p1c_frames",
     "p2_eigenspectra", "p2b_imaginary", "p2d_operator_activation",
-    "p3_crosscoder", "p4_mstate_features",
-    "p5_single_mstate_analysis", "p5b_manifold_steering", "p5c_unclustered",
-    "p6_subspace",
+    "p7_motifs",
 )
 
-#: The tier markers pyproject.toml registers. Rule 2 requires exactly one.
-TIER_MARKERS = ("pure", "smoke", "heavy")
+#: The tier markers pytest.ini registers. Rule 2 requires exactly one.
+#: `deps` was missing here while being a registered marker, so every
+#: deps-tier module counted as unmarked and the rule under-reported.
+TIER_MARKERS = ("pure", "deps", "smoke", "heavy")
 
 
 @dataclass
