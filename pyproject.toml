@@ -70,6 +70,16 @@ packages = [
 # one config file rather than two that can disagree.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The project root must be importable: tests/conftest.py does
+# `from tests.test_config import ...`, and tests/ has no __init__.py, so
+# pytest's default prepend import mode puts tests/ on sys.path rather than the
+# root. `python -m pytest` papers over this because Python itself prepends the
+# cwd -- the bare `pytest` console script does not. That is why every local run
+# passed while the first CI run failed with "ModuleNotFoundError: No module
+# named 'tests'": scripts/check.sh used `python3 -m pytest` and the workflow
+# used bare `pytest`. Setting it here fixes both invocations rather than
+# mandating one.
+pythonpath = ["."]
 # The tiers are defined by *what a runner must have installed*, and each module's
 # tier was measured rather than assigned: a module is `pure` only if its whole
 # test set passes with torch, transformers, scikit-learn and matplotlib all made

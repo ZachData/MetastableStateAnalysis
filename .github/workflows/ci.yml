@@ -42,17 +42,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Repo hygiene
-        run: python tools/lint_repo.py
-
-      - name: Prediction registry + pre-registration gate
-        # This is the check that carries the Type-I guarantee. POPPER's
-        # Assumption 2 requires that a prediction's design not depend on the
-        # data used to test it; git can verify that, and this is where it does.
-        run: python tools/check_registry.py --summary
-
-      - name: EVALUABILITY.md is in step with the registry
-        run: python tools/render_evaluability.py --check
+      - name: Tier 0
+        # scripts/check.sh, not a copy of its commands. The whole point of that
+        # script is that local and CI cannot diverge, and the first CI run
+        # failed precisely because this workflow had reimplemented the test
+        # invocation with a different one (`pytest` vs `python -m pytest`).
+        # Includes: repo hygiene, the prediction registry + pre-registration
+        # gate (POPPER's Assumption 2, the check that carries the Type-I
+        # guarantee), and the EVALUABILITY.md staleness check.
+        run: ./scripts/check.sh lint
 
   pure:
     name: tier 1 — pure tests
