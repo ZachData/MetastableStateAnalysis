@@ -25,6 +25,13 @@ import numpy as np
 from scipy.linalg import expm
 import numpy.testing as npt
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 # ── allow running from project root or tests/ ─────────────────────────────────
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -46,7 +53,6 @@ from p2b_imaginary.fiedler_tracking import (
 from p2b_imaginary.rotation_hemisphere import (
     plane_fiedler_alignment,
 )
-
 # ── shared constants ──────────────────────────────────────────────────────────
 D        = 8
 N_TOKENS = 20

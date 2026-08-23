@@ -50,6 +50,11 @@ from core.rope import (
 from core.ln_frame import ln_transform
 from core.pythia_weights import split_qkv_gptneox
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 RUN_REAL = os.environ.get("SMOKE_REAL_DEPS") == "1"
 

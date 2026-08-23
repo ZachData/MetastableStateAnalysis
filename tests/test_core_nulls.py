@@ -11,6 +11,11 @@ from core.nulls import (
     sigma_from_null, nsigma_verdict,
 )
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 def _mass_near_1(acts, threshold=0.9):
     n = acts.shape[0]

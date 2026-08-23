@@ -64,6 +64,11 @@ from p1b_hemisphere.p1b_report import (
     global_verdict,
 )
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 # ---------------------------------------------------------------------------
 # Fixtures (plain functions — no pytest fixture injection, so the project's

@@ -1,0 +1,61 @@
+# smoke.yml — tier 2 (POPPER_PLAN.md item A4).
+#
+# Real torch and transformers, real forward passes on tiny HF models. Nightly
+# and on demand; NOT required for merge, because it depends on the HF Hub being
+# reachable and a Hub outage should not block a documentation change.
+#
+# tests/SMOKE_TESTS_NOTES.md documents what the tier covers and, more usefully,
+# which of its assumptions are inferred rather than confirmed. The first real
+# run of this workflow is the first time several of those get settled.
+
+name: Smoke
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: tier 2 — smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements/*.txt
+
+      - name: Install heavy tier (CPU torch)
+        # The CPU index matters: the plain PyPI torch wheel is the CUDA build,
+        # ~4.9 GB unpacked, and nothing here needs a GPU. Installing torch
+        # first from the CPU index means the -r below finds it already
+        # satisfied rather than resolving to the CUDA wheel.
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -r requirements/heavy.txt
+
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-tiny-${{ runner.os }}
+
+      - name: Run smoke tier
+        env:
+          SMOKE_REAL_DEPS: "1"
+        run: pytest -m smoke -q
+
+      - name: Run the non-pure, non-heavy remainder
+        # Everything that needs real torch but is not a smoke test: the bulk of
+        # the phase test suites. Deselecting `heavy` keeps out the tests that
+        # need real run artifacts, which no CI runner has.
+        run: pytest -m "not heavy" -q

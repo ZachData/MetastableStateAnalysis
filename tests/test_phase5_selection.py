@@ -15,6 +15,13 @@ import sys
 import unittest
 import numpy as np
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 sys.path.insert(0, "/home/claude")
 
 from p5_single_mstate_analysis.select_cluster import (
@@ -24,7 +31,6 @@ from p5_single_mstate_analysis.select_cluster import (
     _score_trajectory,
 )
 from p5_single_mstate_analysis import constants as C
-
 # ---------------------------------------------------------------------------
 # Synthetic Phase-1 run factory
 #

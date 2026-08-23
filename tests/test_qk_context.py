@@ -24,6 +24,11 @@ from core.qk_context import (
 )
 from core.metrics import l2_normalize
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 D_MODEL = 32
 N_HEADS = 4
 HEAD_SIZE = D_MODEL // N_HEADS

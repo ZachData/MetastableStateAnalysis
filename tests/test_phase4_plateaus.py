@@ -26,6 +26,11 @@ from p4_mstate_features.activation_trajectories import (
 )
 from p4_mstate_features.chorus import analyze_chorus_at_layer
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 # ---------------------------------------------------------------------------
 # Shared fixture helpers

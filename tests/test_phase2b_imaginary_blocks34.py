@@ -33,6 +33,13 @@ from __future__ import annotations
 import sys, os, json, math, unittest
 import numpy as np
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from p2b_imaginary.imaginary_ablation import (
@@ -57,7 +64,6 @@ from p2b_imaginary.layernorm_jacobian import (
     layernorm_jacobian_to_json,
     layernorm_jacobian_summary_lines,
 )
-
 # ── shared dimensions ────────────────────────────────────────────────────────
 D        = 8
 N_TOKENS = 16

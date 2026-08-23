@@ -1,0 +1,4 @@
+# base tier — the torch-optional numpy/scipy core.
+# Mirrors pyproject.toml [project].dependencies; keep the two in step.
+numpy>=1.24
+scipy>=1.10

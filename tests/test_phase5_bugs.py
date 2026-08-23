@@ -73,6 +73,11 @@ import pytest
 
 from p5_single_mstate_analysis.run_5 import _run_group_B
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 def _make_trajectory_pair(own_cid: int = 0, other_cid: int = 1,
                            layer_from: int = 0, layer_to: int = 1,

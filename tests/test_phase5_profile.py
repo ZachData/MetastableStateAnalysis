@@ -12,6 +12,13 @@ import sys
 import unittest
 import numpy as np
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 sys.path.insert(0, "/home/claude")
 
 from p5_single_mstate_analysis.cluster_profile import compute_profile
@@ -513,7 +520,6 @@ class TestDisplacementNonZero(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 from p5_single_mstate_analysis.v_alignment import compute_v_alignment
-
 class TestComputeVAlignmentSmoke(unittest.TestCase):
     """compute_v_alignment returns expected top-level keys for valid input."""
 

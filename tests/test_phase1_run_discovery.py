@@ -7,6 +7,11 @@ from pathlib import Path
 
 from p1_mstate_tracking.p1_io import find_phase1_run_dir
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 PROMPT = "wiki_paragraph"
 
 

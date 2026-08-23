@@ -28,6 +28,11 @@ from p2_eigenspectra.head_ov_analysis import (
     analyze_per_head_ov, _analyze_head_core, _analyze_single_head,
 )
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # The identity the change rests on

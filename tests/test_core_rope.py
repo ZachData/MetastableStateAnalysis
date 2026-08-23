@@ -30,6 +30,11 @@ from core.rope import (
     rope_sa_fractions,
 )
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 HEAD_SIZE = 16
 N_ROT = 8            # rotary_pct = 0.5 here; Pythia's 0.25 is exercised separately

@@ -11,6 +11,11 @@ from core.artifacts import (
     get_spec, artifact_path, validate_artifact,
 )
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
 
 class TestArtifactSpec:
     def test_valid_kinds_accepted(self):

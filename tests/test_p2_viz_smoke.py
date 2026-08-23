@@ -38,6 +38,11 @@ from p2_eigenspectra.visualization.p2_scalars import (
     WEIGHT_SCALARS, RUN_SCALARS, _r_rescaled_frac, ffn_channel_available,
 )
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # pure — loaders

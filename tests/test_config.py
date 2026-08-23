@@ -5,6 +5,12 @@ No model registry, no transformers imports.
 """
 import numpy as np
 
+import pytest
+
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
 SINKHORN_MAX_ITER = 100
 SINKHORN_TOL     = 1e-6
 SPECTRAL_MAX_K   = 15

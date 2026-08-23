@@ -6,6 +6,11 @@ import torch.nn as nn
 
 from core.sublayer_streams import extract_sublayer_streams, UnsupportedArchitecture
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 class _Tok:
     def __call__(self, text, return_tensors=None, truncation=None, max_length=None):

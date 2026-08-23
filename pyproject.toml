@@ -1,0 +1,86 @@
+# pyproject.toml — dependency declaration and test configuration.
+#
+# Until this file existed there was no machine-readable statement of what the
+# project needs to run, which meant CI could not be written at all: a workflow
+# has to install something, and nothing said what. The three tiers below match
+# the three things the code actually needs, and mirror requirements/*.txt so
+# either entry point installs the same set.
+#
+#   base  — numpy, scipy. Everything in core/ that is torch-optional by design
+#           (core.metrics documents this; core.particles states the
+#           no-new-dependency norm explicitly).
+#   test  — base + pytest. The gating CI tier runs on exactly this.
+#   heavy — test + torch, transformers, matplotlib, scikit-learn. Real forward
+#           passes, clustering, and figure generation.
+#
+# Note for CI authors: install torch from the CPU index
+# (https://download.pytorch.org/whl/cpu). The plain PyPI wheel is the CUDA
+# build and is ~4.9 GB unpacked.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metastable-state-analysis"
+version = "0.1.0"
+description = "Metastable-state / interacting-particle analysis of transformer activations"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4",
+]
+heavy = [
+    "pytest>=7.4",
+    "torch>=2.0",
+    "transformers>=4.35",
+    "matplotlib>=3.7",
+    "scikit-learn>=1.3",
+]
+
+[tool.setuptools]
+packages = [
+    "core",
+    "tools",
+    "p1_mstate_tracking",
+    "p1b_hemisphere",
+    "p1c_frames",
+    "p2_eigenspectra",
+    "p2b_imaginary",
+    "p2d_operator_activation",
+    "p3_crosscoder",
+    "p4_mstate_features",
+    "p5_single_mstate_analysis",
+    "p5b_manifold_steering",
+    "p6_subspace",
+]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+# tests/SMOKE_TESTS_NOTES.md refers to a pytest.ini that registers the `smoke`
+# marker. No such file existed, so every `pytestmark = pytest.mark.smoke` in the
+# suite raised PytestUnknownMarkWarning and `-m smoke` selected nothing. The
+# markers are registered here instead of in a separate pytest.ini so there is
+# one config file rather than two that can disagree.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The tiers are defined by *what a runner must have installed*, and each module's
+# tier was measured rather than assigned: a module is `pure` only if its whole
+# test set passes with torch, transformers, scikit-learn and matplotlib all made
+# unimportable. 59 modules qualify -- 1532 tests in ~10 seconds, which is what
+# makes tier 1 fast enough to gate every push.
+markers = [
+    "pure: numpy/scipy/pytest only -- torch, transformers, sklearn, matplotlib all absent. The CI gating tier.",
+    "deps: needs the heavy tier importable (torch/transformers/sklearn/matplotlib) but no model download and no run artifacts.",
+    "smoke: needs real torch/transformers and a tiny HF model pulled from the Hub. Run with SMOKE_REAL_DEPS=1.",
+    "heavy: needs real run artifacts on disk. Never runs in CI; deselect with -m 'not heavy'.",
+]
+filterwarnings = [
+    "error::pytest.PytestUnknownMarkWarning",
+]

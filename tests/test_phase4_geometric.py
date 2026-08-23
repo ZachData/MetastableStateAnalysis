@@ -15,6 +15,11 @@ Standard fixture dimensions: n_layers=8, n_tokens=30, d=16, n_clusters=2
 import sys
 from pathlib import Path
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 # Ensure the project root is on sys.path so geometric.py can be found.
 _PROJECT_ROOT = str(Path(__file__).parent.parent)
 if _PROJECT_ROOT not in sys.path:

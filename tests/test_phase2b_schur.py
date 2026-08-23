@@ -13,6 +13,12 @@ import numpy as np
 
 from p2b_imaginary import rotational_schur as rs
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
 
 def block_diag_rotations(thetas, rhos, d_pad=0):
     """Exact block-diagonal matrix of 2x2 scaled rotations, plus real padding."""

@@ -1,0 +1,3 @@
+# test tier — base + pytest. The CI gating tier installs exactly this.
+-r base.txt
+pytest>=7.4

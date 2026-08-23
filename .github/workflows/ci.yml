@@ -1,0 +1,79 @@
+# ci.yml — the gating tiers (POPPER_PLAN.md item A4).
+#
+# Two jobs, deliberately ordered cheapest-first so a hygiene failure does not
+# wait behind a test run:
+#
+#   lint  — tier 0. No dependencies at all. Repo-hygiene rules that encode the
+#           project's own standing rules (UPDATE_PLAN.md §6), plus the
+#           Popperian record checks once claims/ exists. Seconds.
+#   pure  — tier 1. numpy + scipy + pytest, no torch. The gating test tier.
+#
+# The smoke tier (real torch, tiny HF models, network) lives in smoke.yml and
+# is NOT required for merge — it is slower and depends on the Hub being up.
+#
+# Both jobs call scripts/check.sh rather than reimplementing the commands, so
+# a contributor running it locally sees exactly what CI sees.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: tier 0 — repo hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # check_preregistration.py compares the commit that registered a
+          # prediction against the commit that adjudicated it, so it needs
+          # real history rather than a depth-1 clone.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Repo hygiene
+        run: python tools/lint_repo.py
+
+  pure:
+    name: tier 1 — pure tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements/*.txt
+
+      - name: Install test tier
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/test.txt
+
+      - name: Assert torch is genuinely absent
+        # The pure tier's whole claim is that it runs without heavy deps. If a
+        # transitive dependency ever pulls torch in, the tier silently stops
+        # testing that claim and the tests/conftest.py stub path stops being
+        # exercised at all. Fail loudly instead.
+        run: |
+          if python -c "import torch" 2>/dev/null; then
+            echo "torch is importable in the pure tier; the tier no longer tests what it claims to"
+            exit 1
+          fi
+          echo "torch absent, as required"
+
+      - name: Run pure tier
+        run: pytest -m pure -q

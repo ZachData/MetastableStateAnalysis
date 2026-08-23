@@ -46,6 +46,11 @@ from p6_subspace.local_contraction import (
 from p6_subspace.write_subspace import head_write_alignment, principal_angles
 from p6_subspace.centroid_velocity import decompose_centroid_delta, merge_geometry_test
 
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
+
 
 # ---------------------------------------------------------------------------
 # Shared helpers

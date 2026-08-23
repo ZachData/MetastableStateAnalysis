@@ -25,7 +25,7 @@ import pytest
 import torch
 
 from p3_crosscoder.crosscoder import Crosscoder, CrosscoderConfig
-from p3_crosscoder.analysis import (
+from p3_crosscoder.analysis_p3 import (
     feature_lifetimes,
     multilayer_fraction,
     positional_control,
@@ -33,6 +33,11 @@ from p3_crosscoder.analysis import (
     violation_layer_features,
     _compute_feature_layer_scores,
 )
+
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -44,7 +49,7 @@ N_FEATURES = 32
 K          = 4
 N_TOKENS   = 20
 
-_PATCH_TARGET = "p3_crosscoder.analysis._compute_feature_layer_scores"
+_PATCH_TARGET = "p3_crosscoder.analysis_p3._compute_feature_layer_scores"
 
 # ---------------------------------------------------------------------------
 # Minimal stubs

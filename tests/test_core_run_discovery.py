@@ -27,6 +27,12 @@ from core.run_discovery import (
     sweep_report_lines,
 )
 
+import pytest
+
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
 # The pilot's real schedule (core/pythia_registry.py PYTHIA_410M_PILOT_STEPS).
 PILOT_STEPS = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 3000, 5000,
                7000, 9000, 11000, 13000, 15000, 17000, 19000, 40000, 60000,

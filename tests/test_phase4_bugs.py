@@ -29,7 +29,12 @@ from p4_mstate_features.activation_trajectories import (
 )
 from p4_mstate_features.chorus import compute_coactivation, extract_cliques
 from p4_mstate_features.geometric import probe_accuracy_trajectory
-from p4_mstate_features.analysis import cross_track_agreement, build_phase4_verdict
+from p4_mstate_features.analysis_p4 import cross_track_agreement, build_phase4_verdict
+
+# Tier: deps -- needs the heavy tier importable (torch / transformers /
+# scikit-learn / matplotlib). No model download, no run artifacts.
+# Measured, not assumed; see pyproject.toml markers.
+pytestmark = pytest.mark.deps
 
 
 # ---------------------------------------------------------------------------
