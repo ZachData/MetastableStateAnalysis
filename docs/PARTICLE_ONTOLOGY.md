@@ -306,13 +306,28 @@ adjudicated prediction failed is not yet a bridge.
 
 ## What happens next with this document
 
-Item C2 turns `PB-IND1`, `PB-STEER1`, `PB-SAE1` and `PB-ABL1` into registry
-entries under claim **H-BRIDGE**, with falsifier, instrument, null construction
-and relevance — at which point the pre-registration gate applies to them and
-their timestamps are *gated* rather than backfilled. That will be the first set
-of predictions in this project registered prospectively under the machinery
-rather than reconstructed into it.
+**Item C2 is done.** `PB-STEER1`, `PB-IND1`, `PB-ABL1` and `PB-SAE1` are in
+`claims/registry.json` under claim **H-BRIDGE**, each with h0, h1, falsifier,
+instrument, null construction and relevance.
 
-Nothing here is registered yet. The predictions above are drafts in a design
-document; a draft that has not passed `tools/check_registry.py` cannot be
-adjudicated, which is the intended state until C2 runs.
+They are the **first four predictions in this project registered prospectively**
+— `registered_provenance: "gated"` rather than `"backfilled"`. The other thirty
+had their registration commit reconstructed from git history after the fact,
+which is good evidence but is a reconstruction; these were written into the
+registry with no data to fit them to, and their commit is resolved from the
+registry file's own history rather than typed into it. `tools/check_registry.py`
+reports the two counts separately and permanently.
+
+All four are classified `needs-null`. That is the honest state: each names its
+null construction, and none of those constructions has been built. Two carry a
+blocking dependency worth reading before picking one up —
+
+- `PB-IND1` needs a **pairwise** field on `core/dual_reading.py`; every current
+  `geometric` field is per-point, and the prediction is about inter-particle
+  distance. That extension is the chunk's first task, not an afterthought.
+- `PB-SAE1`'s instrument is frozen and stays frozen. Registered, unrun.
+
+`PB-STEER1` is the one to build first. It needs no new instrument, and it is the
+only entry here where the two accounts make *incompatible* rather than merely
+different predictions — so it is also the only one that can settle anything on
+its own.

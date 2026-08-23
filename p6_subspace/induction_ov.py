@@ -298,6 +298,38 @@ def run_induction_ov(ctx: dict) -> SubResult:
     # 4. P6-I1 test
     p6i1 = compare_induction_vs_semantic(head_records, induction_idx, semantic_idx)
 
+    # 5. P6-I1 adjudication  [POPPER_PLAN.md item B6-first]
+    #
+    # P6-I1 is the first prediction in this project threaded end to end into the
+    # falsification ledger, chosen because it needs no new statistics: the
+    # Mann-Whitney U above is already a valid one-sided test under the null
+    # "induction and semantic heads have the same align_rot distribution", which
+    # is exactly h0 as claims/registry.json records it.
+    #
+    # OPT-IN, and that is deliberate rather than cautious. This function is
+    # exercised by the test suite against synthetic fixtures; adjudicating by
+    # default would write those fixture p-values into claims/adjudications/ as
+    # real evidence for H-OPERATOR. Since adjudicate() refuses to overwrite an
+    # existing record -- correctly, since silent replacement is how evidence
+    # disappears without trace -- a single accidental fixture run would
+    # permanently occupy P6-I1's slot in the ledger. So a run adjudicates only
+    # when it says so, and passes the artifact hashes that make the record
+    # checkable.
+    adjudication = None
+    if ctx.get("adjudicate"):
+        from core.adjudication import adjudicate_if_registered
+        adjudication = adjudicate_if_registered(
+            "P6-I1",
+            p6i1.get("mwu_pvalue"),
+            artifact_hashes=ctx.get("artifact_hashes", ()),
+            run_manifest=ctx.get("run_manifest"),
+            test_name=("scipy.stats.mannwhitneyu(align_rot[induction], "
+                       "align_rot[semantic], alternative='greater')"),
+            notes=(f"layer={layer_name} n_induction={p6i1.get('n_induction')} "
+                   f"n_semantic={p6i1.get('n_semantic')}"),
+            adjudications_dir=ctx.get("adjudications_dir"),
+        )
+
     # 5. Aggregate
     n_induction = len(induction_idx)
     mean_align_rot_all   = float(np.mean([a["align_rot"]  for a in alignments]))
@@ -314,6 +346,7 @@ def run_induction_ov(ctx: dict) -> SubResult:
         "mean_align_rot_all":  mean_align_rot_all,
         "mean_align_real_all": mean_align_real_all,
         "p6_i1":               p6i1,
+        "p6_i1_adjudication":  adjudication,
         "head_records":        head_records,
     }
 
@@ -352,6 +385,29 @@ def run_induction_ov(ctx: dict) -> SubResult:
             f" p={_fmt(p6i1.get('mwu_pvalue'))}",
         ),
         "",
+    ]
+
+    if adjudication is not None:
+        lines += [
+            "Adjudication (claims/adjudications/P6-I1.json):",
+            _bullet("e-value", adjudication["e_value"]),
+            _bullet(f"cumulative E for {adjudication['claim']}",
+                    adjudication["claim_E_after"]),
+            f"  decision at alpha={adjudication['alpha']}: "
+            f"{adjudication['claim_decision_after']}",
+            f"  next experiment on this claim must return p < "
+            f"{adjudication['next_p_needed']:.4g} to cross the threshold",
+            "",
+        ]
+    elif ctx.get("adjudicate"):
+        lines += [
+            "Adjudication: NOT recorded. Either the MWU could not run (too few "
+            "heads in one arm) or core.adjudication refused -- see stderr. A "
+            "refusal is not a failed prediction and must not be read as one.",
+            "",
+        ]
+
+    lines += [
         "Note on ALBERT: shared weights mean the same heads implement both channels.",
         "If P6-I1 passes, channel separation arises from which residual-stream",
         "subspace the incoming activation occupies, not from separate weight matrices.",

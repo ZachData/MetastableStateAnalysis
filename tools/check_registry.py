@@ -75,7 +75,14 @@ FROZEN_FIELDS = ("statement", "h0", "h1", "falsifier", "null_construction")
 #: Prediction-ID shapes used in this project. `P1-P5` deliberately does NOT
 #: match: core/run_policy.py uses it for "policies P1 through P5", not for a
 #: prediction, and a naive pattern picks it up as one.
-ID_PATTERN = re.compile(r"\b(?:P-(?:γ1|γ2|gamma1|gamma2|H1|S1|T1|M1)|P[56]b?-[A-Z]+[0-9]+|CLAIM-[ABC])\b")
+ID_PATTERN = re.compile(
+    r"\b(?:"
+    r"P-(?:γ1|γ2|gamma1|gamma2|H1|S1|T1|M1)"   # PREDICTIONS.md
+    r"|P[56]b?-[A-Z]+[0-9]+"                    # p5b_*, p6_*
+    r"|PB-[A-Z]+[0-9]+"                         # bridge predictions (item C2)
+    r"|CLAIM-[ABC]"                             # the three transition claims
+    r")\b"
+)
 
 #: Files that discuss predictions in prose without registering them. Scanning
 #: these for IDs would report the planning documents as unregistered sources.
@@ -92,6 +99,10 @@ def _fail(msgs: List[str], msg: str) -> None:
 
 def _warn(msgs: List[str], msg: str) -> None:
     msgs.append(f"WARNING {msg}")
+
+
+def _info(msgs: List[str], msg: str) -> None:
+    msgs.append(f"INFO    {msg}")
 
 
 # ---------------------------------------------------------------------------
@@ -252,11 +263,41 @@ def check_preregistration(reg: dict, msgs: List[str]) -> Tuple[int, int]:
                        if p.get("registered_provenance") == "backfilled")
     n_gated = len(by_id) - n_backfilled
 
-    # Every entry must carry a registration commit -- backfilled or not.
+    # Registration provenance, and how each kind proves its own timestamp.
+    #
+    # A *backfilled* entry predates this machinery. Its commit was recovered by
+    # asking git which commit first introduced the prediction id into its source
+    # file, and it is stored in the entry because that answer is about a
+    # different file and will not change.
+    #
+    # A *gated* entry is registered into claims/registry.json itself, which
+    # makes storing its own commit hash impossible -- the hash is not known
+    # until the commit that contains the field exists. So it is resolved here,
+    # dynamically, from the history of the registry file. That is not a
+    # weaker guarantee: it is a stronger one, because the value cannot be typed
+    # in by hand at all.
     for pid, p in sorted(by_id.items()):
-        if not p.get("registered_commit"):
-            _warn(msgs, f"{pid}: no registered_commit; its pre-registration cannot be "
-                        f"verified from history at all")
+        prov = p.get("registered_provenance")
+        if prov == "gated":
+            resolved = _introducing_commit("claims/registry.json", f'"id": "{pid}"')
+            if resolved is None:
+                # Expected in a dirty working tree between writing an entry and
+                # committing it. Not an error: the gate has nothing to check
+                # until the entry is in history, and it will resolve on the
+                # next run.
+                _info(msgs, f"{pid}: registered as gated but not yet committed; its "
+                            f"registration timestamp resolves once it is in history")
+            else:
+                sha, date = resolved
+                p["_resolved_commit"] = sha[:12]
+                p["_resolved_date"] = date[:10]
+        elif prov == "backfilled":
+            if not p.get("registered_commit"):
+                _warn(msgs, f"{pid}: backfilled with no registered_commit; its "
+                            f"pre-registration cannot be verified from history at all")
+        else:
+            _fail(msgs, f"{pid}: registered_provenance must be 'gated' or "
+                        f"'backfilled', got {prov!r}")
 
     if not adjudications:
         return n_gated, n_backfilled
@@ -271,7 +312,10 @@ def check_preregistration(reg: dict, msgs: List[str]) -> Tuple[int, int]:
             continue
 
         adj_commit = _introducing_commit(f"claims/adjudications/{pid}.json", pid)
-        reg_date = p.get("registered_date")
+        # A gated entry's date was resolved from history above; a backfilled
+        # one's is stored. Prefer the resolved value where both exist -- it is
+        # the one nobody could have typed.
+        reg_date = p.get("_resolved_date") or p.get("registered_date")
         if adj_commit and reg_date:
             _, adj_date = adj_commit
             if adj_date[:10] < reg_date[:10]:

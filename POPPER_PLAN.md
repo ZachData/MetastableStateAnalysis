@@ -293,7 +293,7 @@ That is a claim about the past based on git, which is good evidence but not the 
 run the gate. Backfilled entries carry `registered_provenance: "backfilled"` and are reported
 separately in every summary.
 
-### B4. `core/adjudication.py` — emission · [C] · M
+### B4. `core/adjudication.py` — emission · **DONE** · [C] · M
 
 The thin layer between a science module and the registry. Takes `(prediction_id, p_value,
 artifact_hashes, run_manifest)`, looks up the registry, refuses if `evaluable != "e-value"`,
@@ -332,7 +332,14 @@ exact pseudo-rigor this workstream exists to prevent. Each of the ~26 IDs gets c
 Deliverable: `claims/EVALUABILITY.md` with one row per ID, the classification, and the reason.
 Every `needs-null` row spawns a chunk in the queue.
 
-### B6. Retrofit the existing p-value sites · [R] · L — **split one module per chunk**
+### B6. Retrofit the existing p-value sites · **FIRST ONE DONE** · [R] · L — **split one module per chunk**
+
+`p6_subspace/induction_ov.py` (P6-I1) is threaded end to end and is the worked example the other seven follow. Three things it settled that the plan had not:
+
+- **Adjudication is opt-in per run, not automatic.** `run_induction_ov` is exercised by fixtures, and `adjudicate` refuses to overwrite an existing record — correctly, since silent replacement is how evidence disappears without trace. So one accidental fixture run would permanently occupy P6-I1's slot in the real ledger with a synthetic p-value. Every retrofit must carry the same `ctx["adjudicate"]` gate and the same `adjudications_dir` override.
+- **A test that could not run is not a refusal.** `compare_induction_vs_semantic` returns `mwu_pvalue=None` when an arm has fewer than two heads. That passes through quietly; putting it in the log as a refusal would file a data limitation under policy violation.
+- **The summary must say when adjudication did *not* happen**, and say that a refusal is not a failed prediction. A silent absence reads as a passed test.
+
 
 In dependency order, cheapest first: `core/nulls.py` (`sigma_from_null` → add
 `p_from_null`, one-sided and two-sided, with the ≤(n+1)⁻¹ resolution floor stated),
@@ -403,7 +410,7 @@ in this repo, and the differential prediction. Initial six:
 *semantic* reading (frozen-head decode, probe membership) of the same point. C1 should be
 written against that schema rather than inventing a parallel one.
 
-### C2. Differential predictions, registered · [D] · M
+### C2. Differential predictions, registered · **DONE** · [D] · M
 
 One registered prediction per bridged construct, entering `claims/registry.json` under
 H-BRIDGE *before* any of them is run. Draft directions (to be sharpened into falsifiers with
