@@ -539,6 +539,39 @@ no artifact. The first prediction to adjudicate is `PB-STEER1` from C1 — cheap
 no new instrument, and the one place the two paradigms make *incompatible*
 rather than merely different predictions.
 
+## 6c. What main's archive + Phase 7 changed (2026-08-23)
+
+Main archived Phases 3, 4, 5, 5b, 5c and 6 and opened **Phase 7 — the
+mechinterp/particle bridge** while this branch was in flight. Two decisions
+followed, both the author's:
+
+**Workstream C folded into Phase 7.** `docs/PARTICLE_ONTOLOGY.md` and
+`p7_motifs/design-7.md` were the same project, built independently, down to the
+same anti-glossary constraint. Phase 7's formalization is sharper — a named
+mechinterp phenomenon is a *motif*, a recurring structure of typed particle
+interactions, countable against a matched null — and it has running code. So the
+ontology was deleted and its four differential predictions renumbered into Phase
+7's own scheme (`P-I5`, `P-ST1`, `P-AB1`, `P-SA1`), rather than kept under a
+second `PB-*` convention inside one phase. C1, C2 and C4–C6 are therefore closed
+by Phase 7 rather than by this branch; C3's claims layer stands.
+
+**Dormant status.** 21 of 38 registered predictions instrument an archived
+phase — all twelve `P6-*`, all nine `P5b-*`. They carry `status: "dormant"`:
+`core/adjudication.py` refuses them and they contribute nothing to any claim's E,
+but they stay registered, counted, and visible with their falsifiers intact.
+Deleting a pre-registered prediction because its apparatus went away would leave
+the record as the flattering subset of what was actually predicted, which is the
+exact failure the pre-registration gate exists to prevent. `status` is orthogonal
+to `evaluable`: `P6-I1` is `e-value` *and* dormant — its Mann-Whitney U was and
+remains a valid test; what it lacks is a live module to run it.
+
+**What this costs, stated plainly.** H-OPERATOR now has almost no live path to
+adjudication (12 of 14 dormant; only `P-T1` and `P-M1` survive, both on Phase 2d).
+Three predictions are adjudicable today: `P-S1`, `P-T1`, `P-M1`. The B6 retrofit
+of existing p-value sites is mostly moot — those sites are archived — so what
+remains of workstream B is B5's null constructions and B7's generated
+falsification table, now pointed at Phase 7 and Phases 1c/2d rather than at 5b/6.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

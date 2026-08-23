@@ -103,9 +103,15 @@ place them outside the gradient-flow regime.
 the gradient-flow hypotheses fail; the operator classification carries no
 information about activation geometry.
 
-Instruments: `p2_eigenspectra`, `p2b_imaginary`, `p2d_operator_activation`, `p6_subspace`.
-Predictions: `P-T1`, `P-M1`, `P6-A2`, `P6-I1`, `P6-I2`, `P6-R1`, `P6-R2`,
-`P6-R3`, `P6-R4`, `P6-R5`, `P6-C1`, `P6-DD1`, `P6-DD2`, `P6-D5`.
+Instruments: `p2_eigenspectra`, `p2b_imaginary`, `p2d_operator_activation` (live);
+`archive/p6_subspace` (archived 2026-08-22).
+Predictions: `P-T1`, `P-M1` (active, Phase 2d); `P6-A2`, `P6-I1`, `P6-I2`,
+`P6-R1`–`P6-R5`, `P6-C1`, `P6-DD1`, `P6-DD2`, `P6-D5` (**dormant** — see below).
+
+**Twelve of this claim's fourteen predictions are dormant**, so H-OPERATOR has
+essentially no live path to adjudication right now. The two that remain are
+`P-T1` and `P-M1`, both instrumented by Phase 2d, which is live and whose code
+exists and is validated on synthetic data.
 
 **This claim already carries a falsification, and it is the strongest single
 result in the registry.** P6-R2 predicted LDA alignment with the real repulsive
@@ -119,25 +125,70 @@ that has to be settled before a p-value from this can enter an e-process.
 
 ### H-BRIDGE — natural-language-interpretability constructs are particle-dynamical objects
 
-The workstream-C claim. Not "the two vocabularies can be translated" — that is
-unfalsifiable — but: the particle reading makes *differential* predictions,
-correct where the standard account is silent or says something else.
+Not "the two vocabularies can be translated" — that is unfalsifiable — but: the
+particle reading makes *differential* predictions, correct where the standard
+account is silent or says something else.
 
 **Null (H0-BRIDGE):** the particle-paradigm definition of each construct adds no
 predictive content over its standard definition; where they differ observably,
 the standard account is right.
 
-Instruments: `core/dual_reading.py`, `p6_subspace/induction_ov.py`,
-`p5b_manifold_steering`, `core/intervention.py`.
-Predictions: `P5b-A1`, `P5b-A2`, `P5b-B1`, `P5b-B2`, `P5b-B3`, `P5b-C1`,
-`P5b-C3`, `P5b-D1`, `P5b-D2`, plus the differential predictions from
-POPPER_PLAN.md item C2 (not yet registered).
+**Phase 7 is this claim's instrument.** `p7_motifs/` opened on main 2026-08-22 as
+"the mechinterp/particle bridge" and asks the same question this claim does, with
+a sharper formalization: a named mechinterp phenomenon is a **motif** — a
+recurring structure of typed particle interactions — that can be counted, tested
+against a matched null, and tracked across training. Its seven-motif alphabet is
+fixed in advance precisely so the phase cannot become a motif zoo, and `relay`
+*is* the induction head restated as a particle motif.
 
-**Why P5b lives here rather than under H-OPERATOR.** Its sub-experiment D asks
-whether behavioral geometry is carried by the real/symmetric subspace and *not*
-by the imaginary/antisymmetric one (P5b-D1, P5b-D2). That is a claim about what
-the standard "steering vector" is, in particle terms — a coordinate system
-statement, not an operator-classification one.
+This branch independently produced a `docs/PARTICLE_ONTOLOGY.md` covering the
+same ground, down to the same constraint — Phase 7 states it as "the trap this
+phase is designed against is producing a glossary"; the ontology stated it as "an
+entry with no differential prediction is a glossary line and does not belong
+here". Two documents describing one bridge is how doc drift starts, so the
+ontology was folded into Phase 7 and deleted (2026-08-23). Its four differential
+predictions survive as registry entries, renumbered into Phase 7's own `P-*`
+scheme rather than kept under a second `PB-*` convention:
+
+| was | now | where it sits in Phase 7 |
+|---|---|---|
+| `PB-IND1` | `P-I5` | the interventional arm `P-I1`–`P-I4` lack: ablate the relay motif's edges, require both a geometric effect at the matched positions and a logit effect |
+| `PB-STEER1` | `P-ST1` | the steering entry's falsifiable half — sign of the effective-rank change tracks the V-decomposition at matched norm |
+| `PB-ABL1` | `P-AB1` | the patching entry's recapture-vs-propagation question, as a growth exponent in remaining depth |
+| `PB-SAE1` | `P-SA1` | the SAE entry, which asks the identical question independently. Instrument frozen; registered and unrun |
+
+Predictions: `P-I1`–`P-I5`, `P-ST1`, `P-AB1`, `P-SA1` (active), and the nine
+`P5b-*` (dormant — Phase 5b is archived).
+
+**Why the P5b predictions stay here rather than under H-OPERATOR.** Sub-experiment
+D asks whether behavioural geometry is carried by the real/symmetric subspace and
+*not* by the imaginary/antisymmetric one (`P5b-D1`, `P5b-D2`). That is a claim
+about what a steering vector *is* in particle terms — a coordinate-system
+statement, not an operator classification.
+
+## Dormant predictions
+
+Twenty-one of the thirty-eight registered predictions are **dormant**: their
+instrument moved to `archive/` on 2026-08-22 and nothing live can produce their
+p-value. Exactly the twelve `P6-*` (H-OPERATOR) and the nine `P5b-*` (H-BRIDGE);
+nothing else. Phase 1c, Phase 2d and Phase 7 are live, so `P-γ1`, `P-γ2`, `P-H1`,
+`P-S1`, `P-T1`, `P-M1`, the three `CLAIM-*` entries and all eight Phase 7
+predictions stay active.
+
+Dormant is a status, not a deletion, and the distinction is the point. The
+prediction was pre-registered, its falsifier is unchanged, and it has **not** been
+withdrawn — `core/adjudication.py` refuses it and it contributes nothing to any
+claim's E, but it stays counted and visible. Deleting a pre-registered prediction
+because its apparatus went away would leave the record as the flattering subset of
+what was actually predicted, which is the specific failure the pre-registration
+gate exists to prevent. It reverses if the instrument is rebuilt — per
+`archive/README.md`'s second rule, rebuilt against `core/particles.py` rather than
+lifted.
+
+This is why **`H-OPERATOR` currently has no live path to adjudication**: twelve of
+its fourteen predictions are dormant, and the two that are not (`P-T1`, `P-M1`)
+instrument Phase 2d, which is live. That is worth stating plainly rather than
+leaving a reader to infer it from a table.
 
 ## Claim boundaries, and the one that is not obvious
 

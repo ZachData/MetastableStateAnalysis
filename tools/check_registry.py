@@ -68,6 +68,7 @@ REQUIRED_FIELDS = (
     "cost", "evaluable", "null_construction", "relevance", "source",
 )
 EVALUABLE_VALUES = ("e-value", "measurement", "needs-null")
+STATUS_VALUES = ("active", "dormant")
 
 #: Fields frozen once a prediction has been adjudicated (gate rule 2).
 FROZEN_FIELDS = ("statement", "h0", "h1", "falsifier", "null_construction")
@@ -75,11 +76,21 @@ FROZEN_FIELDS = ("statement", "h0", "h1", "falsifier", "null_construction")
 #: Prediction-ID shapes used in this project. `P1-P5` deliberately does NOT
 #: match: core/run_policy.py uses it for "policies P1 through P5", not for a
 #: prediction, and a naive pattern picks it up as one.
+# Deliberately an allowlist rather than a general shape, because `P1-P5` in
+# core/run_policy.py means "policies P1 through P5" and a naive pattern reads it
+# as a prediction. The cost of that choice showed up when Phase 7 landed on main
+# with P-I1..P-I4 registered in PREDICTIONS.md: the coverage check could not see
+# them, so four predictions sat unregistered without anything reporting it. An
+# allowlist has to be extended when a phase adds an id family -- that is the
+# trade, and it is recorded here so the next person extends it instead of
+# wondering why coverage looked clean.
 ID_PATTERN = re.compile(
     r"\b(?:"
-    r"P-(?:γ1|γ2|gamma1|gamma2|H1|S1|T1|M1)"   # PREDICTIONS.md
-    r"|P[56]b?-[A-Z]+[0-9]+"                    # p5b_*, p6_*
-    r"|PB-[A-Z]+[0-9]+"                         # bridge predictions (item C2)
+    r"P-(?:γ1|γ2|gamma1|gamma2|H1|S1|T1|M1)"   # PREDICTIONS.md, phases 1c/2d
+    r"|P-I[0-9]+"                               # Phase 7, induction study
+    r"|P-(?:ST|AB|SA)[0-9]+"                    # Phase 7, rest of the table
+    r"|P[56]b?-[A-Z]+[0-9]+"                    # archived phases 5b, 6
+    r"|PB-[A-Z]+[0-9]+"                         # retired: folded into P-* above
     r"|CLAIM-[ABC]"                             # the three transition claims
     r")\b"
 )
@@ -180,6 +191,14 @@ def check_registry(reg: dict, msgs: List[str]) -> None:
             # (the paper measures 0.082 -> 0.340 with the checker removed).
             _fail(msgs, f"{where}: relevance {rel} is below r0={r0} but evaluable is "
                         f"'e-value'; it may not contribute to a claim's product")
+
+        status = p.get("status")
+        if status not in STATUS_VALUES:
+            _fail(msgs, f"{where}: status={status!r} not one of {STATUS_VALUES}")
+        elif status == "dormant" and not str(p.get("dormant_reason", "")).strip():
+            _fail(msgs, f"{where}: dormant with no dormant_reason; a prediction taken out "
+                        f"of circulation without a stated reason is indistinguishable "
+                        f"from one quietly dropped")
 
         if ev == "e-value" and not str(p.get("null_construction", "")).strip():
             _fail(msgs, f"{where}: classified 'e-value' with no null_construction stated")
@@ -364,25 +383,39 @@ def print_summary(reg: dict) -> None:
     adj = load_adjudications()
 
     print(f"\nregistry: {len(preds)} predictions, {len(adj)} adjudicated\n")
-    print(f"{'claim':<12} {'total':>6} {'e-value':>8} {'needs-null':>11} "
-          f"{'measurement':>12} {'adjudicated':>12}")
-    print("-" * 66)
+    print(f"{'claim':<12} {'total':>6} {'active':>7} {'dormant':>8} {'e-value':>8} "
+          f"{'needs-null':>11} {'measurement':>12} {'adjudicated':>12}")
+    print("-" * 80)
     for claim in sorted({p["claim"] for p in preds}):
         rows = [p for p in preds if p["claim"] == claim]
         c = Counter(p["evaluable"] for p in rows)
+        st = Counter(p.get("status", "active") for p in rows)
         n_adj = sum(1 for p in rows if p["id"] in adj)
-        print(f"{claim:<12} {len(rows):>6} {c['e-value']:>8} {c['needs-null']:>11} "
-              f"{c['measurement']:>12} {n_adj:>12}")
-    print("-" * 66)
+        print(f"{claim:<12} {len(rows):>6} {st['active']:>7} {st['dormant']:>8} "
+              f"{c['e-value']:>8} {c['needs-null']:>11} {c['measurement']:>12} {n_adj:>12}")
+    print("-" * 80)
     c = Counter(p["evaluable"] for p in preds)
-    print(f"{'TOTAL':<12} {len(preds):>6} {c['e-value']:>8} {c['needs-null']:>11} "
-          f"{c['measurement']:>12} {len(adj):>12}")
+    st = Counter(p.get("status", "active") for p in preds)
+    print(f"{'TOTAL':<12} {len(preds):>6} {st['active']:>7} {st['dormant']:>8} "
+          f"{c['e-value']:>8} {c['needs-null']:>11} {c['measurement']:>12} {len(adj):>12}")
 
     n_bf = sum(1 for p in preds if p.get("registered_provenance") == "backfilled")
     print(f"\nPre-registration provenance: {len(preds) - n_bf} gated, {n_bf} backfilled.")
     print("Backfilled entries have their registration commit recovered from git history")
     print("rather than observed by the gate. Good evidence; not the same as having been")
     print("gated. Reported separately, permanently.")
+
+    adjudicable = [p for p in preds
+                   if p["evaluable"] == "e-value" and p.get("status", "active") == "active"]
+    if st["dormant"]:
+        print(f"\n{st['dormant']} predictions are DORMANT: pre-registered, falsifier intact,")
+        print("not withdrawn -- but their instrument was archived, so nothing live can")
+        print("produce their p-value. core/adjudication.py refuses them and they contribute")
+        print("nothing to any claim's E. Counted here rather than deleted, because dropping a")
+        print("pre-registered prediction when its apparatus goes away is how a record becomes")
+        print("the flattering subset of what was actually predicted.")
+        print(f"\nAdjudicable right now (e-value AND active): "
+              f"{len(adjudicable)} -- {[p['id'] for p in adjudicable]}")
 
     n_ev = c["e-value"]
     print(f"\n{n_ev} of {len(preds)} predictions can currently carry an e-value. The other")

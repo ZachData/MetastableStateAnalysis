@@ -42,8 +42,8 @@ from core.evalues import calibrate
 # Fixtures
 # ---------------------------------------------------------------------------
 
-def _entry(pid, claim="H-TEST", evaluable="e-value", relevance=1.0):
-    return {
+def _entry(pid, claim="H-TEST", evaluable="e-value", relevance=1.0, status="active"):
+    d = {
         "id": pid, "claim": claim, "statement": f"{pid} statement",
         "h0": f"{pid} null", "h1": f"{pid} alternative",
         "falsifier": "opposite direction", "instrument": "test",
@@ -52,7 +52,11 @@ def _entry(pid, claim="H-TEST", evaluable="e-value", relevance=1.0):
         "relevance": relevance, "source": "test",
         "registered_commit": "abc123", "registered_date": "2026-01-01",
         "registered_provenance": "gated", "superseded_by": None, "notes": "",
+        "status": status,
     }
+    if status == "dormant":
+        d["dormant_reason"] = "instrument archived (test fixture)"
+    return d
 
 
 @pytest.fixture
@@ -66,6 +70,7 @@ def registry():
             _entry("T-MEASURE", evaluable="measurement"),
             _entry("T-NEEDSNULL", evaluable="needs-null"),
             _entry("T-IRRELEVANT", relevance=0.4),
+            _entry("T-DORMANT", status="dormant"),
             _entry("T-OTHERCLAIM", claim="H-OTHER"),
         ],
     }
@@ -105,6 +110,30 @@ class TestRefusals:
     def test_needs_null_refused(self, registry, ledger):
         with pytest.raises(AdjudicationRefused, match="needs-null"):
             adjudicate("T-NEEDSNULL", 0.001, [], registry=registry, adjudications_dir=ledger)
+
+    def test_dormant_refused(self, registry, ledger):
+        """
+        A dormant prediction has a perfectly valid null and a perfectly valid
+        falsifier -- what it does not have is an instrument. Emitting an e-value
+        for it would mean the number came from somewhere other than the
+        apparatus it was registered against.
+        """
+        with pytest.raises(AdjudicationRefused) as exc:
+            adjudicate("T-DORMANT", 0.001, [], registry=registry, adjudications_dir=ledger)
+        assert "dormant" in str(exc.value)
+        assert "has NOT been withdrawn" in str(exc.value)
+        assert not list(ledger.glob("*.json"))
+
+    def test_dormant_refused_even_though_it_is_an_e_value_entry(self, registry, ledger):
+        """
+        status and evaluable are orthogonal, and this is the case that proves it:
+        T-DORMANT is classified `e-value` -- its null is sound -- and is still
+        refused. A single combined field would have had to pick one meaning and
+        would have lost the other.
+        """
+        assert registry_entry("T-DORMANT", registry).evaluable == "e-value"
+        with pytest.raises(AdjudicationRefused):
+            adjudicate("T-DORMANT", 0.001, [], registry=registry, adjudications_dir=ledger)
 
     def test_below_relevance_floor_refused(self, registry, ledger):
         with pytest.raises(AdjudicationRefused, match="relevance"):
@@ -285,6 +314,21 @@ class TestLedger:
         problems = verify_ledger(ledger, registry)
         assert any("does not match the replayed" in p for p in problems)
 
+    def test_verify_catches_a_dormant_record(self, registry, ledger):
+        """
+        `adjudicate` cannot produce one, but a hand-written file can -- and a
+        dormant prediction silently contributing to a claim is exactly the thing
+        the status exists to prevent.
+        """
+        (ledger / "T-DORMANT.json").write_text(json.dumps({
+            "prediction_id": "T-DORMANT", "claim": "H-TEST", "p_value": 0.001,
+            "e_value": calibrate(0.001), "kappa": 0.5,
+            "adjudicated_at": "2026-01-01T00:00:00+00:00",
+            "claim_log_E_after": 0.0, "claim_decision_after": "reject_null",
+        }))
+        problems = verify_ledger(ledger, registry)
+        assert any("dormant" in p for p in problems)
+
     def test_verify_catches_a_record_that_should_not_exist(self, registry, ledger):
         """
         A record for a `measurement` prediction cannot be produced by
@@ -333,11 +377,35 @@ class TestRealRegistry:
     def test_real_ledger_verifies(self):
         assert verify_ledger() == []
 
-    def test_p6_i1_is_adjudicable(self):
+    def test_p6_i1_is_dormant_since_the_archive(self):
         """
-        The first prediction threaded end-to-end (POPPER_PLAN.md B6-first).
-        If this stops being classified 'e-value', the wiring in
-        p6_subspace/induction_ov.py must change with it rather than silently
-        starting to refuse at runtime.
+        P6-I1 was the first prediction threaded end to end (POPPER_PLAN.md
+        B6-first). Phase 6 moved to archive/ on 2026-08-22, so it is now dormant:
+        still `e-value` (the Mann-Whitney U is a valid test and always was),
+        still registered, still carrying its falsifier -- and unadjudicable,
+        because the module that produces its p-value is frozen.
         """
-        assert registry_entry("P6-I1").evaluable == "e-value"
+        e = registry_entry("P6-I1")
+        assert e.evaluable == "e-value"
+        assert e.status == "dormant"
+        assert "archive" in e.dormant_reason.lower()
+
+    def test_every_dormant_entry_states_why(self):
+        """A prediction taken out of circulation with no reason on record is
+        indistinguishable from one quietly dropped."""
+        from core.adjudication import load_registry
+        for p in load_registry()["predictions"]:
+            if p.get("status") == "dormant":
+                assert p.get("dormant_reason", "").strip(), p["id"]
+
+    def test_phase7_predictions_are_registered_and_active(self):
+        """
+        Phase 7 is H-BRIDGE's live instrument; its predictions must be in the
+        registry and adjudicable in principle. P-I1..P-I4 came from main;
+        P-I5, P-ST1, P-AB1, P-SA1 were folded in from the deleted
+        docs/PARTICLE_ONTOLOGY.md.
+        """
+        for pid in ("P-I1", "P-I2", "P-I3", "P-I4", "P-I5", "P-ST1", "P-AB1", "P-SA1"):
+            e = registry_entry(pid)
+            assert e.claim == "H-BRIDGE", pid
+            assert e.status == "active", pid

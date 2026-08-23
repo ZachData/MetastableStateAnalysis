@@ -10,8 +10,8 @@ fifth:
   3. calibrate p -> e and append to its claim's e-process
   4. write one `claims/adjudications/<id>.json` record
 
-What it will not do is emit a number when the inputs do not support one. Two
-refusals, both instances of the project's standing rule 4 ("refuse rather than
+What it will not do is emit a number when the inputs do not support one. Three
+refusals, all instances of the project's standing rule 4 ("refuse rather than
 degrade" -- `UPDATE_PLAN.md` §6):
 
 **No registry entry -> refuse.** An unregistered prediction has no recorded
@@ -32,6 +32,14 @@ So a prediction classified `measurement` or `needs-null` in
 `claims/EVALUABILITY.md` cannot be adjudicated here, and the right response to
 "but we have a number for it" is to record the number as a measurement in the
 phase's own artifact, not to route it through this module.
+
+**`status == "dormant"` -> refuse.** The prediction's instrument was archived,
+so nothing live can produce its p-value. This is deliberately a *status* and not
+a deletion: the prediction was pre-registered, its falsifier is unchanged, and it
+has not been withdrawn. Deleting a pre-registered prediction because its
+apparatus went away is precisely the selective-record problem the gate exists to
+prevent -- it would let the surviving record be the flattering subset. Dormant
+keeps it visible and uncounted, and reverses if the instrument is rebuilt.
 
 Separation of concerns
 ----------------------
@@ -93,6 +101,8 @@ class RegistryEntry:
     statement: str
     h0: str
     null_construction: str
+    status: str
+    dormant_reason: str
     raw: dict
 
 
@@ -111,6 +121,8 @@ def registry_entry(prediction_id: str, registry: Optional[dict] = None) -> Regis
                 id=p["id"], claim=p["claim"], evaluable=p["evaluable"],
                 relevance=float(p["relevance"]), statement=p["statement"],
                 h0=p["h0"], null_construction=p.get("null_construction", ""),
+                status=p.get("status", "active"),
+                dormant_reason=p.get("dormant_reason", ""),
                 raw=p,
             )
     raise AdjudicationRefused(
@@ -290,6 +302,17 @@ def adjudicate(
             f"construct the null first and re-classify the entry (claims/EVALUABILITY.md)."
         )
 
+    if entry.status == "dormant":
+        raise AdjudicationRefused(
+            f"{prediction_id} is dormant: no live instrument can currently adjudicate it.\n"
+            f"  reason on record: {entry.dormant_reason}\n"
+            f"The prediction stands and has NOT been withdrawn -- its falsifier is unchanged "
+            f"and it is still counted in the registry. What it cannot do is contribute to "
+            f"{entry.claim}'s e-process, because the number would have to come from somewhere "
+            f"other than the instrument it was registered against. Reviving it means reviving "
+            f"the instrument, not relaxing this check."
+        )
+
     if entry.relevance < r0:
         raise AdjudicationRefused(
             f"{prediction_id} has relevance {entry.relevance} below the registry's "
@@ -418,6 +441,11 @@ def verify_ledger(
         if entry["evaluable"] != "e-value":
             problems.append(
                 f"{pid}: adjudicated while classified {entry['evaluable']!r}; "
+                f"this record must not contribute to {entry['claim']}"
+            )
+        if entry.get("status") == "dormant":
+            problems.append(
+                f"{pid}: adjudicated while dormant (instrument archived); "
                 f"this record must not contribute to {entry['claim']}"
             )
         expected_e = calibrate(float(rec["p_value"]), float(rec.get("kappa", DEFAULT_KAPPA)))

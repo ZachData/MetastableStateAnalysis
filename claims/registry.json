@@ -22,7 +22,8 @@
       "notes": "",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "P-gamma1",
@@ -41,7 +42,8 @@
       "notes": "",
       "registered_commit": "cfd7f5b90b6d",
       "registered_date": "2026-08-11",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "P-gamma2",
@@ -60,7 +62,8 @@
       "superseded_by": null,
       "registered_commit": "cfd7f5b90b6d",
       "registered_date": "2026-08-11",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "P-H1",
@@ -79,7 +82,8 @@
       "notes": "",
       "registered_commit": "cfd7f5b90b6d",
       "registered_date": "2026-08-11",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "P-S1",
@@ -98,7 +102,8 @@
       "superseded_by": null,
       "registered_commit": "cfd7f5b90b6d",
       "registered_date": "2026-08-11",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "CLAIM-C",
@@ -117,7 +122,8 @@
       "superseded_by": null,
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "CLAIM-B",
@@ -136,7 +142,8 @@
       "superseded_by": null,
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "P-T1",
@@ -155,7 +162,8 @@
       "superseded_by": null,
       "registered_commit": "cfd7f5b90b6d",
       "registered_date": "2026-08-11",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "P-M1",
@@ -174,7 +182,8 @@
       "notes": "",
       "registered_commit": "cfd7f5b90b6d",
       "registered_date": "2026-08-11",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "active"
     },
     {
       "id": "P6-A2",
@@ -193,7 +202,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-I1",
@@ -212,7 +223,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-I2",
@@ -231,7 +244,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-R1",
@@ -250,7 +265,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-R2",
@@ -269,7 +286,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-R3",
@@ -288,7 +307,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-R4",
@@ -307,7 +328,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-R5",
@@ -326,7 +349,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-C1",
@@ -345,7 +370,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-DD1",
@@ -364,7 +391,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-DD2",
@@ -383,7 +412,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P6-D5",
@@ -402,7 +433,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "71d73c570ccc",
       "registered_date": "2026-04-23",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-A1",
@@ -421,7 +454,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-A2",
@@ -440,7 +475,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-B1",
@@ -459,7 +496,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-B2",
@@ -478,7 +517,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-B3",
@@ -497,7 +538,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-C1",
@@ -516,7 +559,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-C3",
@@ -535,7 +580,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-D1",
@@ -554,7 +601,9 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
       "id": "P5b-D2",
@@ -573,83 +622,170 @@
       "notes": "INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
       "registered_commit": "c3f2b73fa274",
       "registered_date": "2026-07-14",
-      "registered_provenance": "backfilled"
+      "registered_provenance": "backfilled",
+      "status": "dormant",
+      "dormant_reason": "Instrument archived 2026-08-22 (archive/README.md): not maintained, not imported, not collected. Adjudicating this needs a deliberate reintroduction or a rebuild against core/particles.py, since the archive's second rule is that nothing is salvaged by copying."
     },
     {
-      "id": "PB-STEER1",
+      "id": "P-ST1",
       "claim": "H-BRIDGE",
       "statement": "Two steering vectors of EQUAL NORM whose V-eigenbasis decompositions are predominantly attractive (U_pos) versus predominantly repulsive (U_neg), injected at the same layer, produce OPPOSITE-SIGNED changes in the effective rank of the token population at that layer.",
       "h0": "The sign of the effective-rank change is independent of the vector's U_pos/U_neg decomposition: at matched norm, both arms move effective rank in the same direction (or neither moves it).",
       "h1": "Sign of the effective-rank change tracks the decomposition: attractive-dominant steering reduces effective rank, repulsive-dominant steering increases it.",
       "falsifier": "Both arms move effective rank the same way, or the effect tracks ||s|| and is insensitive to the decomposition. Either says the impulse reading adds nothing over 'a vector was added'.",
-      "instrument": "core/intervention.py for injection; core/metrics.py effective_rank for readout; archive/p6_subspace/subspace_build.py for U_pos/U_neg. docs/PARTICLE_ONTOLOGY.md section 2.",
+      "instrument": "7-steering: core/intervention.py injection; p7_motifs/interaction_graph.py for edge sign; core/metrics.py effective_rank",
       "cost": "F",
       "evaluable": "needs-null",
       "null_construction": "Two-sample comparison of the signed effective-rank delta between the two arms, over a set of matched-norm vector pairs drawn per layer. The null is generated by the SAME injection procedure with the decomposition label permuted across pairs, so the norm, the layer and the injection machinery are all held fixed and only the label moves. Requires the pair-drawing scheme (how many pairs, how 'predominantly' is thresholded) fixed in advance.",
       "relevance": 1.0,
-      "source": "docs/PARTICLE_ONTOLOGY.md section 2 (item C2)",
+      "source": "docs/PARTICLE_ONTOLOGY.md (folded into Phase 7, 2026-08-23)",
       "superseded_by": null,
-      "notes": "NORM MATCHING IS THE DESIGN, not a nicety: without it the comparison is confounded by exactly the quantity the standard account predicts from. Run this one first -- it is the only bridge entry where the two accounts make INCOMPATIBLE rather than merely different predictions, and it needs no new instrument. INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
+      "notes": "NORM MATCHING IS THE DESIGN, not a nicety: without it the comparison is confounded by exactly the quantity the standard account predicts from. Run this one first -- it is the only bridge entry where the two accounts make INCOMPATIBLE rather than merely different predictions, and it needs no new instrument. INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying. Migrated from PB-STEER1 (docs/PARTICLE_ONTOLOGY.md, deleted) into Phase 7's translation table. Phase 7's steering entry asks 'which edges change sign under it, and does a new hub form?' -- this prediction supplies the falsifiable half that entry needs, and the norm-matching is the design: without it the comparison is confounded by exactly the quantity the standard account predicts from. Phase 7's note that archive/p3_crosscoder/steering.py already implements a steering intervention with a recorded null applies here and should be read before building.",
       "registered_commit": null,
       "registered_date": null,
-      "registered_provenance": "gated"
+      "registered_provenance": "gated",
+      "status": "active"
     },
     {
-      "id": "PB-IND1",
+      "id": "P-I5",
       "claim": "H-BRIDGE",
       "statement": "Ablating an induction head changes the pairwise-distance distribution among the particles it couples (the matched positions), not only the logit at the copied token.",
       "h0": "Induction-head ablation leaves inter-particle geometry at the matched positions indistinguishable from a matched-magnitude random-direction ablation, while still moving the copied-token logit.",
       "h1": "Both the geometric and the logit effect are present.",
       "falsifier": "A large logit effect with a pairwise-distance change indistinguishable from the matched control: the head moves the readout without moving the particles, and the transport reading is wrong. Adjudicated on the JOINT outcome -- a geometric effect with no logit effect falsifies it equally, in the other direction.",
-      "instrument": "archive/p6_subspace/induction_ov.py for the head set; core/intervention.py for the ablation; core/functional_distance.py for the logit readout. docs/PARTICLE_ONTOLOGY.md section 1.",
+      "instrument": "7-A/7-D plus core/intervention.py for the ablation; core/functional_distance.py for the logit readout",
       "cost": "F",
       "evaluable": "needs-null",
       "null_construction": "Permutation null over the matched-magnitude random-direction ablation arm, on a two-dimensional statistic (geometric delta, logit delta). The joint form matters: two separate one-dimensional tests would let the prediction be scored a partial pass in the configuration it is designed to rule out. REQUIRES an extension to core/dual_reading.py -- every current geometric field is per-point and this needs a pairwise one.",
       "relevance": 1.0,
-      "source": "docs/PARTICLE_ONTOLOGY.md section 1 (item C2)",
+      "source": "docs/PARTICLE_ONTOLOGY.md (folded into Phase 7, 2026-08-23)",
       "superseded_by": null,
-      "notes": "Blocked on the dual_reading pairwise-field extension, which is this chunk's first task. INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
+      "notes": "Blocked on the dual_reading pairwise-field extension, which is this chunk's first task. INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying. Migrated from PB-IND1. P-I1..P-I4 are observational; this is the interventional arm they lack -- ablate the relay motif's edges and require BOTH a geometric effect at the matched positions and a logit effect. Numbered into the P-I family rather than kept as a PB-* id, because it is the same study.",
       "registered_commit": null,
       "registered_date": null,
-      "registered_provenance": "gated"
+      "registered_provenance": "gated",
+      "status": "active"
     },
     {
-      "id": "PB-ABL1",
+      "id": "P-AB1",
       "claim": "H-BRIDGE",
       "statement": "Trajectory divergence following an ablation grows SUPERLINEARLY with the number of layers after the ablation point, because ablation removes a term from a field rather than a value from a sum.",
       "h0": "Divergence is constant or linear in remaining depth, as an additive-contribution account predicts once the ablated contribution is removed.",
       "h1": "Divergence grows superlinearly in remaining depth.",
       "falsifier": "Divergence flat in remaining depth, or growing linearly, across ablation points.",
-      "instrument": "p2_eigenspectra/head_ablation.py, p2b_imaginary/imaginary_ablation.py, core/intervention.py. docs/PARTICLE_ONTOLOGY.md section 5.",
+      "instrument": "7-patching: core/intervention.py; p7_motifs/events.py for the per-layer divergence",
       "cost": "F",
       "evaluable": "needs-null",
       "null_construction": "Growth-exponent comparison against a MATCHED RANDOM-DIRECTION ablation of equal magnitude at the same layer -- the same control design design-5c.md already requires for its force-collapse and force-disperse arms. The control is not optional: later layers have more opportunity to diverge for reasons unrelated to field structure, so a superlinear fit against no control measures remaining depth, not mechanism. Permutation over ablation points once the fitted exponent is the statistic.",
       "relevance": 0.8,
-      "source": "docs/PARTICLE_ONTOLOGY.md section 5 (item C2)",
+      "source": "docs/PARTICLE_ONTOLOGY.md (folded into Phase 7, 2026-08-23)",
       "superseded_by": null,
-      "notes": "",
+      "notes": "Migrated from PB-ABL1. Sits under Phase 7's 'activation patching' entry, whose recapture-vs-propagation framing is the same question asked about basins: superlinear divergence in remaining depth IS propagation, flat divergence IS recapture. The matched random-direction control at equal magnitude is required, not optional.",
       "registered_commit": null,
       "registered_date": null,
-      "registered_provenance": "gated"
+      "registered_provenance": "gated",
+      "status": "active"
     },
     {
-      "id": "PB-SAE1",
+      "id": "P-SA1",
       "claim": "H-BRIDGE",
       "statement": "SAE/crosscoder dictionary elements concentrate in the repulsive subspace U_neg -- the directions along which the dynamics permit particles to stay individuated -- rather than distributing isotropically across U_pos and U_neg.",
       "h0": "Dictionary elements distribute isotropically across the attractive and repulsive subspaces, as a random dictionary of the same rank would.",
       "h1": "Dictionary elements concentrate in U_neg.",
       "falsifier": "Isotropic distribution across the two subspaces, or concentration in U_pos.",
-      "instrument": "archive/p3_crosscoder/, archive/p4_mstate_features/low_rank_ae.py -- BOTH FROZEN-FOR-DELETION. docs/PARTICLE_ONTOLOGY.md section 3.",
+      "instrument": "7-SAE: dictionary directions vs U_pos/U_neg. Instrument frozen (archive/p3_crosscoder, archive/p4_mstate_features/low_rank_ae.py)",
       "cost": "F",
       "evaluable": "needs-null",
       "null_construction": "Random-subspace null of matched dimension, comparing the observed mass fraction in U_neg against dictionaries of the same rank drawn isotropically.",
       "relevance": 0.8,
-      "source": "docs/PARTICLE_ONTOLOGY.md section 3 (item C2)",
+      "source": "docs/PARTICLE_ONTOLOGY.md (folded into Phase 7, 2026-08-23)",
       "superseded_by": null,
-      "notes": "REGISTERED AND DELIBERATELY UNRUN. Phase 3 and low_rank_ae.py are frozen-for-deletion; INDEX.md's reintroduction trigger requires activation caches at >=4 checkpoints AND a specific particle-dynamics question needing a dictionary. This entry is that second condition arriving first. It does not unfreeze anything -- a registered prediction whose instrument is frozen is in a correct state, and registering it now is what makes the freeze reversible on evidence rather than on enthusiasm. Registered in the direction the theory implies, NOT the direction the existing measurement suggests: P6-R2/R4 came back inverted (LDA alignment 0.887 with the imaginary subspace against 0.067 with the real repulsive one, 0/49 layers), which is the closest evidence to this prediction's premise and points the other way. Stated so the theory can lose. INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying.",
+      "notes": "REGISTERED AND DELIBERATELY UNRUN. Phase 3 and low_rank_ae.py are frozen-for-deletion; INDEX.md's reintroduction trigger requires activation caches at >=4 checkpoints AND a specific particle-dynamics question needing a dictionary. This entry is that second condition arriving first. It does not unfreeze anything -- a registered prediction whose instrument is frozen is in a correct state, and registering it now is what makes the freeze reversible on evidence rather than on enthusiasm. Registered in the direction the theory implies, NOT the direction the existing measurement suggests: P6-R2/R4 came back inverted (LDA alignment 0.887 with the imaginary subspace against 0.067 with the real repulsive one, 0/49 layers), which is the closest evidence to this prediction's premise and points the other way. Stated so the theory can lose. INSTRUMENT ARCHIVED 2026-08-22 (archive/README.md): the phase this prediction is adjudicated by is frozen -- not maintained, not imported, not collected. The prediction stays registered and its falsifier stands; adjudicating it requires either a deliberate reintroduction or rebuilding the instrument against the particle schema, per the archive's rule that nothing is salvaged by copying. Migrated from PB-SAE1. Phase 7's SAE section asks the identical question independently -- 'are SAE dictionary directions aligned with the interaction structure? with U_pos/U_neg' -- while keeping the standing rule that SAEs are never an instrument in a measurement path, only an object of study. That rule is unaffected here: the dictionary is what is being measured. REGISTERED AND UNRUN: the instrument is archived.",
       "registered_commit": null,
       "registered_date": null,
-      "registered_provenance": "gated"
+      "registered_provenance": "gated",
+      "status": "active"
+    },
+    {
+      "id": "P-I1",
+      "claim": "H-BRIDGE",
+      "statement": "`relay` motif strength above N1 and N2 first rises in the same checkpoint window as the behavioral induction score.",
+      "h0": "The relay motif and the behavioral induction score have unrelated formation timing.",
+      "h1": "`relay` motif strength above N1 and N2 first rises in the same checkpoint window as the behavioral induction score.",
+      "falsifier": "Motif already above nulls at step 0, or absent at step 143,000 despite a high behavioral score.",
+      "instrument": "7-A (formation curve): p7_motifs/motif_stats.py over a checkpoint sweep",
+      "cost": "F",
+      "evaluable": "needs-null",
+      "null_construction": "Changepoint co-location across a checkpoint sweep; permutation over checkpoint order once the changepoint estimator is fixed. Same construction CLAIM-B needs, and the two should share it rather than each inventing one.",
+      "relevance": 1.0,
+      "source": "PREDICTIONS.md (Phase 7), p7_motifs/design-7.md",
+      "registered_commit": null,
+      "registered_date": null,
+      "registered_provenance": "gated",
+      "notes": "Registered by Phase 7 in PREDICTIONS.md before this registry existed on this branch; brought into the registry unchanged. Not re-worded.",
+      "superseded_by": null,
+      "status": "active"
+    },
+    {
+      "id": "P-I2",
+      "claim": "H-BRIDGE",
+      "statement": "The stage-2 `match` edge is attractive-channel dominant (U_pos); the stage-1 `prev_token` edge is offset-driven and channel-neutral.",
+      "h0": "Both stages have the same channel composition.",
+      "h1": "The stage-2 `match` edge is attractive-channel dominant (U_pos); the stage-1 `prev_token` edge is offset-driven and channel-neutral.",
+      "falsifier": "No channel difference between the two stages.",
+      "instrument": "7-B (channel decomposition): p7_motifs/interaction_graph.py typed edges",
+      "cost": "R+W",
+      "evaluable": "needs-null",
+      "null_construction": "Two-sample comparison of channel mass between edge types, against the N1/N2 nulls motif_stats.py already gates on.",
+      "relevance": 1.0,
+      "source": "PREDICTIONS.md (Phase 7), p7_motifs/design-7.md",
+      "registered_commit": null,
+      "registered_date": null,
+      "registered_provenance": "gated",
+      "notes": "Registered by Phase 7 in PREDICTIONS.md before this registry existed on this branch; brought into the registry unchanged. Not re-worded.",
+      "superseded_by": null,
+      "status": "active"
+    },
+    {
+      "id": "P-I3",
+      "claim": "H-BRIDGE",
+      "statement": "Across heads at a fixed checkpoint, `relay` strength correlates with behavioral induction score -- AND does not among non-induction heads.",
+      "h0": "Relay strength is unrelated to the behavioral induction classification.",
+      "h1": "Across heads at a fixed checkpoint, `relay` strength correlates with behavioral induction score -- AND does not among non-induction heads.",
+      "falsifier": "Non-induction heads carry the motif at the same rate => the motif is a property of the activations, not of the classification.",
+      "instrument": "7-C (cross-head, control arm required): p7_motifs/motif_stats.py",
+      "cost": "R",
+      "evaluable": "needs-null",
+      "null_construction": "Correlation with a REQUIRED control arm over non-induction heads; motif_stats.py makes independence_source a positional argument so the arm cannot be omitted by default. Permutation over the head classification.",
+      "relevance": 1.0,
+      "source": "PREDICTIONS.md (Phase 7), p7_motifs/design-7.md",
+      "registered_commit": null,
+      "registered_date": null,
+      "registered_provenance": "gated",
+      "notes": "Registered by Phase 7 in PREDICTIONS.md before this registry existed on this branch; brought into the registry unchanged. Not re-worded.",
+      "superseded_by": null,
+      "status": "active"
+    },
+    {
+      "id": "P-I4",
+      "claim": "H-BRIDGE",
+      "statement": "`relay_target` particles show `moved_fraction` attributable to the motif's edges, above a matched-magnitude control.",
+      "h0": "Motif edges move no more particle mass than a matched-magnitude control.",
+      "h1": "`relay_target` particles show `moved_fraction` attributable to the motif's edges, above a matched-magnitude control.",
+      "falsifier": "Motif present in the attention pattern but moves nothing => routing artifact, not a dynamical structure.",
+      "instrument": "7-D (event consequence): p7_motifs/events.py, ParticleTable extra__ columns",
+      "cost": "R",
+      "evaluable": "needs-null",
+      "null_construction": "Matched-magnitude control on moved_fraction; permutation over which edges are labelled motif edges.",
+      "relevance": 1.0,
+      "source": "PREDICTIONS.md (Phase 7), p7_motifs/design-7.md",
+      "registered_commit": null,
+      "registered_date": null,
+      "registered_provenance": "gated",
+      "notes": "Registered by Phase 7 in PREDICTIONS.md before this registry existed on this branch; brought into the registry unchanged. Not re-worded.",
+      "superseded_by": null,
+      "status": "active"
     }
-  ]
+  ],
+  "_status_notes": "status: 'active' | 'dormant'. Dormant means the prediction stands -- it was pre-registered, its falsifier is unchanged, and it has NOT been withdrawn -- but no live instrument can currently adjudicate it, so core/adjudication.py refuses it and it contributes nothing to its claim's E. Orthogonal to 'evaluable', which is about whether a valid null exists: a prediction can be e-value AND dormant (the null is sound, the apparatus is gone). Reversible on reintroduction, which is why it is a status rather than a deletion."
 }
