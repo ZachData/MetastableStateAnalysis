@@ -1,0 +1,657 @@
+{
+ "schema_version": 1,
+ "_what": "Audit of archive/p6_subspace/subspace_build.py against status-6.md item 5 (Schur block mislabelling) and p6_subspace/math-6.md 7.2 (the comparison is not dimension-normalized). Generated offline by tools/audit_p6_projector_labels.py and committed, so the finding is a fixed record rather than a claim in prose. Regenerate with --write; the committed result is pinned by tests/test_p6_projector_audit.py.",
+ "_why_a_tool": "Settling explanation (a) requires running the archived code that produced the number, and archive/README.md rule 1 is that nothing under archive/ is imported by anything live. This tool loads it by file path only when run; nothing collected by pytest imports it.",
+ "audited_file": "archive/p6_subspace/subspace_build.py",
+ "audited_sha256": "f20526d39fbd1efe97b696ed6bd216c425e8135e0d2f06fed5da09823b44e590",
+ "seed": 20260824,
+ "arm_L_labelling": {
+  "extractor": "as-shipped",
+  "cases": [
+   {
+    "d": 40,
+    "planted": {
+     "pos": 6,
+     "neg": 5,
+     "rot": 8,
+     "zero": 13
+    },
+    "buckets": {
+     "pos": {
+      "planted_dim": 6,
+      "recovered_dim": 6,
+      "max_principal_angle_rad": 2.9802322387695312e-08
+     },
+     "neg": {
+      "planted_dim": 5,
+      "recovered_dim": 5,
+      "max_principal_angle_rad": 2.580956827951785e-08
+     },
+     "rot": {
+      "planted_dim": 16,
+      "recovered_dim": 16,
+      "max_principal_angle_rad": 2.580956827951785e-08
+     },
+     "zero": {
+      "planted_dim": 13,
+      "recovered_dim": 13,
+      "max_principal_angle_rad": 2.580956827951785e-08
+     }
+    }
+   },
+   {
+    "d": 64,
+    "planted": {
+     "pos": 3,
+     "neg": 17,
+     "rot": 12,
+     "zero": 20
+    },
+    "buckets": {
+     "pos": {
+      "planted_dim": 3,
+      "recovered_dim": 3,
+      "max_principal_angle_rad": 0.0
+     },
+     "neg": {
+      "planted_dim": 17,
+      "recovered_dim": 17,
+      "max_principal_angle_rad": 2.1073424255447017e-08
+     },
+     "rot": {
+      "planted_dim": 24,
+      "recovered_dim": 24,
+      "max_principal_angle_rad": 2.1073424255447017e-08
+     },
+     "zero": {
+      "planted_dim": 20,
+      "recovered_dim": 20,
+      "max_principal_angle_rad": 2.580956827951785e-08
+     }
+    }
+   },
+   {
+    "d": 48,
+    "planted": {
+     "pos": 20,
+     "neg": 2,
+     "rot": 10,
+     "zero": 6
+    },
+    "buckets": {
+     "pos": {
+      "planted_dim": 20,
+      "recovered_dim": 20,
+      "max_principal_angle_rad": 3.332000937312528e-08
+     },
+     "neg": {
+      "planted_dim": 2,
+      "recovered_dim": 2,
+      "max_principal_angle_rad": 2.580956827951785e-08
+     },
+     "rot": {
+      "planted_dim": 20,
+      "recovered_dim": 20,
+      "max_principal_angle_rad": 1.4901161193847656e-08
+     },
+     "zero": {
+      "planted_dim": 6,
+      "recovered_dim": 6,
+      "max_principal_angle_rad": 1.4901161193847656e-08
+     }
+    }
+   }
+  ],
+  "worst_max_principal_angle_rad": 3.332000937312528e-08,
+  "tolerance_rad": 1e-05,
+  "verdict": "PASS"
+ },
+ "arm_C_counts": {
+  "extractor": "as-shipped",
+  "cases": [
+   {
+    "d": 64,
+    "rank": 20,
+    "commutator_fro": 25.372711535131693,
+    "schur_counts": {
+     "pos": 1,
+     "neg": 3,
+     "rot": 16,
+     "zero": 44
+    },
+    "spectrum_counts": {
+     "pos": 1,
+     "neg": 3,
+     "rot": 16,
+     "zero": 44
+    },
+    "max_rel_im_among_real": 0.0,
+    "min_rel_im_among_complex": 0.08567101472819653,
+    "agree": true
+   },
+   {
+    "d": 96,
+    "rank": 30,
+    "commutator_fro": 28.93316013645387,
+    "schur_counts": {
+     "pos": 0,
+     "neg": 4,
+     "rot": 26,
+     "zero": 66
+    },
+    "spectrum_counts": {
+     "pos": 0,
+     "neg": 4,
+     "rot": 26,
+     "zero": 66
+    },
+    "max_rel_im_among_real": 0.0,
+    "min_rel_im_among_complex": 0.048184876427634506,
+    "agree": true
+   },
+   {
+    "d": 128,
+    "rank": 48,
+    "commutator_fro": 29.755444197957345,
+    "schur_counts": {
+     "pos": 1,
+     "neg": 3,
+     "rot": 44,
+     "zero": 80
+    },
+    "spectrum_counts": {
+     "pos": 1,
+     "neg": 3,
+     "rot": 44,
+     "zero": 80
+    },
+    "max_rel_im_among_real": 0.0,
+    "min_rel_im_among_complex": 0.14439896327154716,
+    "agree": true
+   },
+   {
+    "d": 160,
+    "rank": 64,
+    "commutator_fro": 32.3488105486096,
+    "schur_counts": {
+     "pos": 1,
+     "neg": 5,
+     "rot": 58,
+     "zero": 96
+    },
+    "spectrum_counts": {
+     "pos": 1,
+     "neg": 5,
+     "rot": 58,
+     "zero": 96
+    },
+    "max_rel_im_among_real": 0.0,
+    "min_rel_im_among_complex": 0.15065482319978354,
+    "agree": true
+   }
+  ],
+  "im_rel_tol": 1e-08,
+  "verdict": "PASS"
+ },
+ "arm_S_sensitivity": {
+  "_what": "Arms L and C against two deliberately broken extractors. Each breakage must be caught by at least one arm, or the arm's PASS means only that the audit is incapable of failing.",
+  "_asymmetry": "arm L is BLIND to the transposed-subdiagonal breakage, and not by oversight. A planted matrix with known real-versus-rotational structure is block-diagonal in scaled rotations and real eigenvalues, which makes it NORMAL, and a normal matrix's real Schur form is block diagonal -- its superdiagonal is zero outside the 2x2 blocks, so T[i, i+1] and T[i+1, i] carry the same information and the two extractors agree bit for bit. The family that makes ground truth unambiguous is the family that cannot express the bug. Arm C was added for exactly this, and catches it.",
+  "swapped": {
+   "labelling": {
+    "extractor": "deliberately-swapped",
+    "cases": [
+     {
+      "d": 40,
+      "planted": {
+       "pos": 6,
+       "neg": 5,
+       "rot": 8,
+       "zero": 13
+      },
+      "buckets": {
+       "pos": {
+        "planted_dim": 6,
+        "recovered_dim": 6,
+        "max_principal_angle_rad": 2.9802322387695312e-08
+       },
+       "neg": {
+        "planted_dim": 5,
+        "recovered_dim": 16,
+        "max_principal_angle_rad": 1.5707963267948966
+       },
+       "rot": {
+        "planted_dim": 16,
+        "recovered_dim": 5,
+        "max_principal_angle_rad": 1.5707963267948966
+       },
+       "zero": {
+        "planted_dim": 13,
+        "recovered_dim": 13,
+        "max_principal_angle_rad": 2.580956827951785e-08
+       }
+      }
+     },
+     {
+      "d": 64,
+      "planted": {
+       "pos": 3,
+       "neg": 17,
+       "rot": 12,
+       "zero": 20
+      },
+      "buckets": {
+       "pos": {
+        "planted_dim": 3,
+        "recovered_dim": 3,
+        "max_principal_angle_rad": 0.0
+       },
+       "neg": {
+        "planted_dim": 17,
+        "recovered_dim": 24,
+        "max_principal_angle_rad": 1.5707963267948966
+       },
+       "rot": {
+        "planted_dim": 24,
+        "recovered_dim": 17,
+        "max_principal_angle_rad": 1.5707963267948966
+       },
+       "zero": {
+        "planted_dim": 20,
+        "recovered_dim": 20,
+        "max_principal_angle_rad": 2.580956827951785e-08
+       }
+      }
+     },
+     {
+      "d": 48,
+      "planted": {
+       "pos": 20,
+       "neg": 2,
+       "rot": 10,
+       "zero": 6
+      },
+      "buckets": {
+       "pos": {
+        "planted_dim": 20,
+        "recovered_dim": 20,
+        "max_principal_angle_rad": 3.332000937312528e-08
+       },
+       "neg": {
+        "planted_dim": 2,
+        "recovered_dim": 20,
+        "max_principal_angle_rad": 1.5707963267948966
+       },
+       "rot": {
+        "planted_dim": 20,
+        "recovered_dim": 2,
+        "max_principal_angle_rad": 1.5707963267948966
+       },
+       "zero": {
+        "planted_dim": 6,
+        "recovered_dim": 6,
+        "max_principal_angle_rad": 1.4901161193847656e-08
+       }
+      }
+     }
+    ],
+    "worst_max_principal_angle_rad": 1.5707963267948966,
+    "tolerance_rad": 1e-05,
+    "verdict": "FAIL"
+   },
+   "counts": {
+    "extractor": "deliberately-swapped",
+    "cases": [
+     {
+      "d": 64,
+      "rank": 20,
+      "commutator_fro": 25.372711535131693,
+      "schur_counts": {
+       "pos": 1,
+       "neg": 16,
+       "rot": 3,
+       "zero": 44
+      },
+      "spectrum_counts": {
+       "pos": 1,
+       "neg": 3,
+       "rot": 16,
+       "zero": 44
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.08567101472819653,
+      "agree": false
+     },
+     {
+      "d": 96,
+      "rank": 30,
+      "commutator_fro": 28.93316013645387,
+      "schur_counts": {
+       "pos": 0,
+       "neg": 26,
+       "rot": 4,
+       "zero": 66
+      },
+      "spectrum_counts": {
+       "pos": 0,
+       "neg": 4,
+       "rot": 26,
+       "zero": 66
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.048184876427634506,
+      "agree": false
+     },
+     {
+      "d": 128,
+      "rank": 48,
+      "commutator_fro": 29.755444197957345,
+      "schur_counts": {
+       "pos": 1,
+       "neg": 44,
+       "rot": 3,
+       "zero": 80
+      },
+      "spectrum_counts": {
+       "pos": 1,
+       "neg": 3,
+       "rot": 44,
+       "zero": 80
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.14439896327154716,
+      "agree": false
+     },
+     {
+      "d": 160,
+      "rank": 64,
+      "commutator_fro": 32.3488105486096,
+      "schur_counts": {
+       "pos": 1,
+       "neg": 58,
+       "rot": 5,
+       "zero": 96
+      },
+      "spectrum_counts": {
+       "pos": 1,
+       "neg": 5,
+       "rot": 58,
+       "zero": 96
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.15065482319978354,
+      "agree": false
+     }
+    ],
+    "im_rel_tol": 1e-08,
+    "verdict": "FAIL"
+   },
+   "caught": true
+  },
+  "transposed_subdiagonal": {
+   "labelling": {
+    "extractor": "transposed-subdiagonal",
+    "cases": [
+     {
+      "d": 40,
+      "planted": {
+       "pos": 6,
+       "neg": 5,
+       "rot": 8,
+       "zero": 13
+      },
+      "buckets": {
+       "pos": {
+        "planted_dim": 6,
+        "recovered_dim": 6,
+        "max_principal_angle_rad": 2.9802322387695312e-08
+       },
+       "neg": {
+        "planted_dim": 5,
+        "recovered_dim": 5,
+        "max_principal_angle_rad": 2.580956827951785e-08
+       },
+       "rot": {
+        "planted_dim": 16,
+        "recovered_dim": 16,
+        "max_principal_angle_rad": 2.580956827951785e-08
+       },
+       "zero": {
+        "planted_dim": 13,
+        "recovered_dim": 13,
+        "max_principal_angle_rad": 2.580956827951785e-08
+       }
+      }
+     },
+     {
+      "d": 64,
+      "planted": {
+       "pos": 3,
+       "neg": 17,
+       "rot": 12,
+       "zero": 20
+      },
+      "buckets": {
+       "pos": {
+        "planted_dim": 3,
+        "recovered_dim": 3,
+        "max_principal_angle_rad": 0.0
+       },
+       "neg": {
+        "planted_dim": 17,
+        "recovered_dim": 17,
+        "max_principal_angle_rad": 2.1073424255447017e-08
+       },
+       "rot": {
+        "planted_dim": 24,
+        "recovered_dim": 24,
+        "max_principal_angle_rad": 2.1073424255447017e-08
+       },
+       "zero": {
+        "planted_dim": 20,
+        "recovered_dim": 20,
+        "max_principal_angle_rad": 2.580956827951785e-08
+       }
+      }
+     },
+     {
+      "d": 48,
+      "planted": {
+       "pos": 20,
+       "neg": 2,
+       "rot": 10,
+       "zero": 6
+      },
+      "buckets": {
+       "pos": {
+        "planted_dim": 20,
+        "recovered_dim": 20,
+        "max_principal_angle_rad": 3.332000937312528e-08
+       },
+       "neg": {
+        "planted_dim": 2,
+        "recovered_dim": 2,
+        "max_principal_angle_rad": 2.580956827951785e-08
+       },
+       "rot": {
+        "planted_dim": 20,
+        "recovered_dim": 20,
+        "max_principal_angle_rad": 1.4901161193847656e-08
+       },
+       "zero": {
+        "planted_dim": 6,
+        "recovered_dim": 6,
+        "max_principal_angle_rad": 1.4901161193847656e-08
+       }
+      }
+     }
+    ],
+    "worst_max_principal_angle_rad": 3.332000937312528e-08,
+    "tolerance_rad": 1e-05,
+    "verdict": "PASS"
+   },
+   "counts": {
+    "extractor": "transposed-subdiagonal",
+    "cases": [
+     {
+      "d": 64,
+      "rank": 20,
+      "commutator_fro": 25.372711535131693,
+      "schur_counts": {
+       "pos": 0,
+       "neg": 0,
+       "rot": 18,
+       "zero": 44
+      },
+      "spectrum_counts": {
+       "pos": 1,
+       "neg": 3,
+       "rot": 16,
+       "zero": 44
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.08567101472819653,
+      "agree": false
+     },
+     {
+      "d": 96,
+      "rank": 30,
+      "commutator_fro": 28.93316013645387,
+      "schur_counts": {
+       "pos": 0,
+       "neg": 0,
+       "rot": 22,
+       "zero": 66
+      },
+      "spectrum_counts": {
+       "pos": 0,
+       "neg": 4,
+       "rot": 26,
+       "zero": 66
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.048184876427634506,
+      "agree": false
+     },
+     {
+      "d": 128,
+      "rank": 48,
+      "commutator_fro": 29.755444197957345,
+      "schur_counts": {
+       "pos": 0,
+       "neg": 0,
+       "rot": 38,
+       "zero": 80
+      },
+      "spectrum_counts": {
+       "pos": 1,
+       "neg": 3,
+       "rot": 44,
+       "zero": 80
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.14439896327154716,
+      "agree": false
+     },
+     {
+      "d": 160,
+      "rank": 64,
+      "commutator_fro": 32.3488105486096,
+      "schur_counts": {
+       "pos": 0,
+       "neg": 0,
+       "rot": 42,
+       "zero": 96
+      },
+      "spectrum_counts": {
+       "pos": 1,
+       "neg": 5,
+       "rot": 58,
+       "zero": 96
+      },
+      "max_rel_im_among_real": 0.0,
+      "min_rel_im_among_complex": 0.15065482319978354,
+      "agree": false
+     }
+    ],
+    "im_rel_tol": 1e-08,
+    "verdict": "FAIL"
+   },
+   "caught": true
+  },
+  "verdict": "PASS"
+ },
+ "arm_D_dimension": {
+  "rows": [
+   {
+    "d_model": 256,
+    "n_heads": 16,
+    "head_dim": 16,
+    "is_albert_xlarge_v2_shape": false,
+    "dim_pos_pre": 30,
+    "dim_neg_pre": 32,
+    "dim_A_pre": 194,
+    "dim_neg": 32,
+    "dim_A": 194,
+    "dim_kernel": 256,
+    "chance_alignment_ratio": 6.0625,
+    "chance_alignment_U_A": 0.7578125,
+    "chance_alignment_U_neg": 0.125
+   },
+   {
+    "d_model": 512,
+    "n_heads": 16,
+    "head_dim": 32,
+    "is_albert_xlarge_v2_shape": false,
+    "dim_pos_pre": 40,
+    "dim_neg_pre": 50,
+    "dim_A_pre": 422,
+    "dim_neg": 50,
+    "dim_A": 422,
+    "dim_kernel": 512,
+    "chance_alignment_ratio": 8.44,
+    "chance_alignment_U_A": 0.82421875,
+    "chance_alignment_U_neg": 0.09765625
+   },
+   {
+    "d_model": 1024,
+    "n_heads": 16,
+    "head_dim": 64,
+    "is_albert_xlarge_v2_shape": false,
+    "dim_pos_pre": 58,
+    "dim_neg_pre": 56,
+    "dim_A_pre": 910,
+    "dim_neg": 56,
+    "dim_A": 910,
+    "dim_kernel": 1024,
+    "chance_alignment_ratio": 16.25,
+    "chance_alignment_U_A": 0.888671875,
+    "chance_alignment_U_neg": 0.0546875
+   },
+   {
+    "d_model": 2048,
+    "n_heads": 16,
+    "head_dim": 128,
+    "is_albert_xlarge_v2_shape": true,
+    "dim_pos_pre": 80,
+    "dim_neg_pre": 76,
+    "dim_A_pre": 1892,
+    "dim_neg": 76,
+    "dim_A": 1892,
+    "dim_kernel": 2048,
+    "chance_alignment_ratio": 24.894736842105264,
+    "chance_alignment_U_A": 0.923828125,
+    "chance_alignment_U_neg": 0.037109375
+   }
+  ],
+  "observed_alignment_U_A": 0.887,
+  "observed_alignment_U_neg": 0.067,
+  "observed_alignment_ratio": 13.238805970149253,
+  "albert_shape_chance_ratio": 24.894736842105264,
+  "observed_over_chance": 0.53179136032312,
+  "normalized_alignment_U_A": 0.9601353065539112,
+  "normalized_alignment_U_neg": 1.8054736842105263
+ },
+ "explanation_a_schur_mislabelling": "RULED-OUT",
+ "_explanation_a_scope": "RULED-OUT means two independent things agree. On planted matrices whose real-positive, real-negative, rotation and kernel structure is known by construction, every bucket recovers its own span to within 1e-05 rad (arm L); and on non-normal matrices where no planted ground truth is available, the bucket sizes match a classification taken from np.linalg.eigvals without touching the Schur form (arm C). Two deliberate mislabellings of the same code are caught. It does NOT certify the rest of the pipeline, the head-loop wiring in run_6.py, or that the ALBERT run used this version of the file -- only that the block classification this file implements is correct.",
+ "_explanation_c_finding": "The dimension asymmetry is real, large, and produced by the construction rather than by the data: subspace_build's resolution order removes span(U_pos) from U_neg and span(U_S) from U_A, so U_neg is the doubly-shrunk bucket. At albert-xlarge-v2's exact shape the pipeline yields a chance alignment ratio LARGER than the observed 0.887/0.067, which means the recorded inversion is not merely uncorrected for dimension -- correcting it moves the comparison back toward, and on these numbers past, the predicted direction. The reference is random OV matrices at the right shape, NOT ALBERT's trained weights, so this bounds the size of the correction and does not report ALBERT's own dimensions. Those are computed by _build_for_layer on every run and were never reported; recovering them is one number and it decides (c) outright."
+}
