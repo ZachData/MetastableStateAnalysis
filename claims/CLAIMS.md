@@ -135,20 +135,42 @@ Instruments: `p2_eigenspectra`, `p2b_imaginary`, `p2d_operator_activation` (live
 Predictions: `P-T1`, `P-M1` (active, Phase 2d); `P6-A2`, `P6-I1`, `P6-I2`,
 `P6-R1`–`P6-R5`, `P6-C1`, `P6-DD1`, `P6-DD2`, `P6-D5` (**dormant** — see below).
 
-**Twelve of this claim's fourteen predictions are dormant**, so H-OPERATOR has
-essentially no live path to adjudication right now. The two that remain are
-`P-T1` and `P-M1`, both instrumented by Phase 2d, which is live and whose code
-exists and is validated on synthetic data.
+**Ten of this claim's fourteen predictions are dormant.** `P-T1` and `P-M1` are
+instrumented by Phase 2d, which is live; `P6-R2` and `P6-R4` came back on
+2026-08-24 when their projector path was rebuilt in `p6_subspace/` against
+`core/particles.py`, per `archive/README.md` rule 2 that nothing is salvaged by
+copying. `archive/p6_subspace/` stays frozen.
 
-**This claim already carries a falsification, and it is the strongest single
-result in the registry.** P6-R2 predicted LDA alignment with the real repulsive
-subspace $U_\text{neg}$; the measurement gives 0.887 alignment with the
-*imaginary* subspace $U_A$ against 0.067 with $U_\text{neg}$, and **0 of 49
-layers** show the predicted direction. P6-R4 inverts the same way: real-only
-probe accuracy 0.152 (chance), imaginary-only 0.564 against 0.590 for the full
-activation. See `p6_subspace/status-6.md`, and its caveat that 49 layers of
-ALBERT are not 49 independent observations — which is exactly the kind of thing
-that has to be settled before a p-value from this can enter an e-process.
+**This claim was described here as already carrying a falsification, and it does
+not.** P6-R2 predicted LDA alignment with the real repulsive subspace
+$U_\text{neg}$; the 2026-04 ALBERT run gave 0.887 alignment with the *imaginary*
+subspace $U_A$ against 0.067 with $U_\text{neg}$, and 0 of 49 layers in the
+predicted direction. P6-R4 inverted the same way. The caveat recorded against
+both was that 49 ALBERT layers are not 49 independent observations.
+
+That caveat was real and it was not the binding one. `p6_subspace/math-6.md`
+§7.2 names a third explanation: **the comparison is not dimension-normalized.**
+$\mathbb{E}[\lVert P_U v\rVert^2] = \dim U / d$, so raw alignment scales with
+the subspace's dimension, and the projector build's resolution order makes
+$U_\text{neg}$ the doubly-shrunk bucket.
+`claims/audits/p6_projector_labels.json` measures
+$\dim U_A / \dim U_\text{neg} = 24.9$ at `albert-xlarge-v2`'s exact shape
+against an observed ratio of 13.2 — **the correction is larger than the effect
+it would explain.** Chance-normalized, the two numbers read 0.960 for $U_A$ and
+1.805 for $U_\text{neg}$, which is the *predicted* direction; but those dims come
+from random OV matrices at ALBERT's shape rather than ALBERT's trained weights,
+so that bounds the correction and is not itself a result.
+
+So the recorded inversion is **not evidence in either direction**, and no
+exchangeable unit would have made it so. It is withdrawn as a falsification and
+kept as a measurement whose reading is unresolved. The one number that settles
+it — the actual per-layer $\dim U_A$ and $\dim U_\text{neg}$ — is computed by the
+projector build on every run and was never reported.
+
+The same pass also settled `status-6.md` item 5, which `design-6.md` had
+pre-registered as the prerequisite: the Schur block labelling is **correct**,
+verified on planted structure and against an independently derived spectrum,
+with two deliberate mislabellings caught. See `POPPER_PLAN.md` §6h.
 
 ### H-BRIDGE — natural-language-interpretability constructs are particle-dynamical objects
 
@@ -195,12 +217,14 @@ statement, not an operator classification.
 
 ## Dormant predictions
 
-Twenty-one of the thirty-eight registered predictions are **dormant**: their
+Nineteen of the thirty-eight registered predictions are **dormant**: their
 instrument moved to `archive/` on 2026-08-22 and nothing live can produce their
-p-value. Exactly the twelve `P6-*` (H-OPERATOR) and the nine `P5b-*` (H-BRIDGE);
+p-value. Ten of the twelve `P6-*` (H-OPERATOR) and the nine `P5b-*` (H-BRIDGE);
 nothing else. Phase 1c, Phase 2d and Phase 7 are live, so `P-γ1`, `P-γ2`, `P-H1`,
 `P-S1`, `P-T1`, `P-M1`, the three `CLAIM-*` entries and all eight Phase 7
-predictions stay active.
+predictions stay active — and `P6-R2` and `P6-R4` rejoined them on 2026-08-24
+when their instrument was rebuilt, which is the reversal the next paragraph
+says is available.
 
 Dormant is a status, not a deletion, and the distinction is the point. The
 prediction was pre-registered, its falsifier is unchanged, and it has **not** been
@@ -212,10 +236,11 @@ gate exists to prevent. It reverses if the instrument is rebuilt — per
 `archive/README.md`'s second rule, rebuilt against `core/particles.py` rather than
 lifted.
 
-This is why **`H-OPERATOR` currently has no live path to adjudication**: twelve of
-its fourteen predictions are dormant, and the two that are not (`P-T1`, `P-M1`)
-instrument Phase 2d, which is live. That is worth stating plainly rather than
-leaving a reader to infer it from a table.
+`H-OPERATOR` had **no live path to adjudication** while twelve of its fourteen
+predictions were dormant. It now has four: `P-T1` and `P-M1` on Phase 2d, and
+`P6-R2` and `P6-R4` on the rebuilt `p6_subspace/`. That is a live path in the
+sense of apparatus, not of evidence — no run artifacts exist here, and P6-R2/R4
+additionally refuse until an exchangeable unit is registered.
 
 ## Claim boundaries, and the one that is not obvious
 
@@ -233,6 +258,9 @@ adjudication record may only be written by `core/adjudication.py` (item B4,
 not yet built) and only for a prediction the evaluability audit (item B5)
 classified as `e-value`.
 
-Four predictions are adjudicable as of 2026-08-24 — `P-S1`, `P-T1`, `P-M1` and
-`CLAIM-C`. What is missing is data, not apparatus: no run artifacts exist in
-this repo, so all four are validated on synthetic inputs with known answers.
+Six predictions are adjudicable as of 2026-08-24 — `P-S1`, `P-T1`, `P-M1`,
+`CLAIM-C`, `P6-R2` and `P6-R4`. What is missing is data, not apparatus: no run
+artifacts exist in this repo, so all six are validated on synthetic inputs with
+known answers. `P6-R2` and `P6-R4` carry one further refusal on top of that —
+their exchangeable unit is not registered, and `adjudicate_p6_r2_r4` raises
+rather than letting a caller supply it.

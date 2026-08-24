@@ -30,11 +30,39 @@ confirm one model (albert-xlarge-v2 only) has been run. Treat header as stale.
    degeneracy-ratio computation has a known-correct answer on planted synthetic clusters).
 4. **`write_subspace.py` — `channel_orthogonality` called with unsupported `top_r` kwarg**
    (project-wide known bug list; same item-4 fix location as above).
-5. Two competing explanations for the R2/R4 inversion, neither ruled out yet: (a) a
-   projector-construction error in `subspace_build.py` (Schur block mislabeling, swapping
-   $U_\text{neg}$ and $U_A$) that would invert all four geometry tests together; (b) the
-   real/imaginary functional-separation hypothesis genuinely doesn't hold under ALBERT's
-   weight-tying, where one OV matrix implements both channels.
+5. ~~Two competing explanations for the R2/R4 inversion, neither ruled out yet:~~ **SETTLED
+   2026-08-24, and by a third explanation that was not on this list.** Kept verbatim below,
+   because the archive's third rule is that archiving the code does not retract the findings
+   and that includes retracting a diagnosis honestly.
+
+   Original: (a) a projector-construction error in `subspace_build.py` (Schur block
+   mislabeling, swapping $U_\text{neg}$ and $U_A$) that would invert all four geometry tests
+   together; (b) the real/imaginary functional-separation hypothesis genuinely doesn't hold
+   under ALBERT's weight-tying, where one OV matrix implements both channels.
+
+   **(a) is RULED OUT.** `tools/audit_p6_projector_labels.py` runs this file's Schur
+   partition against matrices with planted real/imaginary structure (every bucket recovers
+   its own span to 3.3e-08 rad) and against a classification taken from `np.linalg.eigvals`
+   without touching the Schur form (bucket sizes match exactly). Two deliberate
+   mislabelings are caught. Record: `claims/audits/p6_projector_labels.json`.
+
+   **(b) cannot be assessed from these numbers, and neither could (a) have been.**
+   `p6_subspace/math-6.md` §7.2's explanation (c) — the comparison is not
+   dimension-normalized — is the binding one. $\mathbb{E}[\lVert P_U v\rVert^2] = \dim U/d$,
+   and this file's own resolution order (§2: $U_A$ loses span($U_S$), $U_\text{neg}$ loses
+   span($U_\text{pos}$)) makes $U_\text{neg}$ the doubly-shrunk bucket. At
+   `albert-xlarge-v2`'s exact shape the audit measures $\dim U_A/\dim U_\text{neg} = 24.9$
+   against the observed alignment ratio of $0.887/0.067 = 13.2$. **The correction is larger
+   than the effect.** Chance-normalized the numbers read 0.960 for $U_A$ and 1.805 for
+   $U_\text{neg}$ — the *predicted* direction — though those dims come from random OV
+   matrices at ALBERT's shape, not ALBERT's weights, so they bound the correction rather
+   than reporting a result.
+
+   **What would settle it is one number this phase already computed and never reported:**
+   the actual per-layer $\dim U_A$ and $\dim U_\text{neg}$. `_build_for_layer` returns both
+   on every run.
+
+   Blocker 6 below stands and is now the second-order concern, not the first.
 6. ALBERT-specific caveat on P6-R5: the 0/49-layer inversion is not 49 independent
    measurements — same projector, 49 activation snapshots from the same shared OV weights.
    Result is weaker evidence than it would be for a non-weight-tied model.

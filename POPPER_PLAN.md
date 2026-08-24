@@ -929,6 +929,184 @@ freezes at the first adjudication and has still not frozen — now records the
 correction, both refusals, the H0 family the rates are rates under, and what
 the curve does not cover.
 
+## 6h. P6-R2/R4: the strongest recorded result, and why it is not a p-value (2026-08-24)
+
+`EVALUABILITY.md` called the Phase 6 inversion "the strongest single result in
+the registry" and `CLAIMS.md` called it a falsification H-OPERATOR already
+carries: mean LDA alignment 0.887 with the imaginary subspace $U_A$ against
+0.067 with the real repulsive $U_\text{neg}$, **0 of 49 layers** in the
+predicted direction, probe accuracy real-only 0.152 against imaginary-only
+0.564. Both entries sat at `needs-null` and `dormant` for one stated reason:
+49 ALBERT layers are not 49 independent observations.
+
+The reason was true. It was not the binding one, and the entry that was binding
+was not on the list.
+
+**The prerequisite came first, because it was pre-registered.** `status-6.md`
+item 5 names a projector-construction error — Schur block mislabelling swapping
+$U_\text{neg}$ and $U_A$ — as a live alternative explanation, and `design-6.md`
+had already fixed the ordering: *"the design explicitly prioritizes ruling out
+the first (a Schur sign/block-type convention check) before treating the second
+as established."* Nothing had done it in four months. Emitting a p-value with it
+open would be putting a calibrated number on possibly-broken instrumentation,
+which is standing rule 4's whole subject.
+
+`tools/audit_p6_projector_labels.py` settles it and commits the record to
+`claims/audits/p6_projector_labels.json`. It is a **tool and not a test**
+because settling it means running the archived code that produced the number,
+and `archive/README.md` rule 1 is that nothing under `archive/` is imported by
+anything live. The tool loads it by file path when run;
+`tests/test_p6_projector_audit.py` pins the committed result together with the
+sha256 of the file it describes, so the record going stale is a failure rather
+than a silence. Same division of labour as CLAIM-C's committed curve, for the
+same reason: a finding that takes ~100 seconds to recompute should not have to
+be recomputed to be trusted, but it must not be able to drift.
+
+**Explanation (a) is RULED OUT, on two independent routes** — and the second
+route exists only because the sensitivity arm caught the first one being
+incapable of failing.
+
+Arm L plants OV matrices whose real-positive, real-negative, rotation and kernel
+structure is known by construction and checks that each bucket recovers its own
+span: worst principal angle 3.3e-08 rad against a 1e-05 cut. Arm S then runs the
+same assertions against two deliberate breakages — a relabelling that swaps the
+neg and rotation buckets, and the transposed-subdiagonal bug (`T[i, i+1]`
+instead of `T[i+1, i]`) that real Schur form makes easy to write. The swap was
+caught at $\pi/2$. **The transposition was not caught at all, and could not
+have been.**
+
+To plant known real-versus-rotational structure you build a block-diagonal
+matrix of scaled rotations and real eigenvalues — and that matrix is **normal**.
+A normal matrix's real Schur form is block *diagonal*, so its superdiagonal is
+zero outside the 2×2 blocks, and the two index conventions return bit-identical
+answers. *The family that makes ground truth unambiguous is exactly the family
+that cannot express the bug.* Arm C was added for it: on non-normal matrices the
+spectrum still fixes how many eigenvalues are real-positive, real-negative and
+complex, `np.linalg.eigvals` reaches that without touching the Schur form, and
+the transposed extractor disagrees with it. Arm L's PASS on that breakage is now
+pinned as a **positive** assertion about the method, not left as an absence.
+
+Without arm C the audit would have reported RULED-OUT on the strength of a check
+that could not fail. That is the same defect class as §6d's and §6g's, arriving
+from a third direction: **an audit needs its own null.**
+
+**Explanation (c), which nobody had listed, is the binding one.**
+`p6_subspace/math-6.md` §7.2 states it and this pass measured it. For a random
+unit vector and a $k$-dimensional subspace, $\mathbb{E}[\lVert P_U v\rVert^2] =
+k/d$ — alignment scales with dimension — and the projector build's resolution
+order removes span($U_\text{pos}$) from $U_\text{neg}$ and span($U_S$) from
+$U_A$, making $U_\text{neg}$ the doubly-shrunk bucket. Arm D measures what that
+produces at `albert-xlarge-v2`'s exact $(d, \text{heads}, \text{head dim}) =
+(2048, 16, 128)$:
+
+| | value |
+|---|---|
+| $\dim U_A / \dim U_\text{neg}$, ALBERT's shape | **24.89** |
+| observed alignment ratio $0.887/0.067$ | 13.24 |
+| observed / chance | 0.53 |
+| chance-normalized alignment, $U_A$ | 0.960 |
+| chance-normalized alignment, $U_\text{neg}$ | **1.805** |
+
+**The correction is nearly twice the effect it would explain.** Normalized, the
+comparison does not merely stop favouring $U_A$ — it lands in the *predicted*
+direction. The reference is random OV matrices at the right shape and not
+ALBERT's trained weights, so this bounds the correction rather than reporting a
+result; the actual dims are computed by the projector build on every run and
+were never reported, and recovering them is one number that settles the reading
+outright.
+
+So the recorded inversion is **withdrawn as a falsification** and kept as a
+measurement whose reading is unresolved. It is not weak evidence against
+H-OPERATOR; it is not evidence either way, and **no choice of exchangeable unit
+would have rescued it.** The apparatus question the plan had queued was real and
+downstream of a question nobody had asked.
+
+**The instrument is live again.** Taking `P6-R2` and `P6-R4` out of `dormant`
+means an instrument that can produce their p-value, and `archive/README.md`
+rule 2 is that nothing is salvaged by copying — so the projector path is
+**rebuilt** in `p6_subspace/` against `core/particles.py` and `core/nulls.py`,
+with the chance normalization built in rather than available. Both entries are
+now `e-value` and `active`; ten of H-OPERATOR's twelve `P6-*` remain dormant.
+
+**The null is a matched-dimension random subspace, and choosing it dissolved
+the problem the plan had been braced for.** H0-OPERATOR is "the operator
+classification carries no information about activation geometry" — realise it
+directly by replacing the operator-derived subspaces with random ones *of the
+same dimension*. Everything the statistic could read off dimension is held
+fixed and only operator content moves.
+
+That changes the attainable-floor arithmetic completely. Under a `CLAIM-C`-style
+sign-flip enumeration the coarsest honest unit here is "one model", $n = 1$,
+floor $2/(2^1+1) = 0.667$, and the design cannot reject however clean the data
+is — the refusal §6f established one level up. Under randomisation over
+**subspaces** rather than over units, $n = 1$ is no obstacle: the floor is
+$1/(\text{draws}+1) = 0.0005$. **The binding constraint was the choice of null,
+not the choice of exchangeable unit.** `attainable_floor_report` prints both
+framings side by side rather than leaving that as a docstring claim, and it
+generalises: several queued rows (`P6-R1`, `P6-C1`, `P5b-A1`, `P5b-A2`, `P-SA1`,
+`P-I4`) name a matched control that is a subspace or a magnitude rather than a
+unit.
+
+**A second calibration defect, found the same way as the first two.** The first
+implementation drew the null's two subspaces independently. But $U_\text{neg}$
+and $U_A$ are **orthogonal by construction** — the resolution order guarantees
+it — so an orthogonal observed pair was being compared against overlapping null
+pairs. Measured over 400 replicates, the H0 rejection rate came back at
+**0.0875** against a nominal 0.05, anticonservative and invisible in any single
+result. Drawing the pair mutually orthogonal (one Stiefel draw, split, so each
+half stays marginally uniform) brings it to **0.045**. Power is 100% against a
+direction planted in $U_\text{neg}$ and $p = 1.000$ with the arms reversed.
+§6d's lesson holds a fourth time: *measure the calibration, do not reason about
+it.*
+
+**And a plain bug, found by a test that expected a refusal and got none.**
+`attainable_floor_report(n_units, n_draws=N_NULL_DRAWS)` binds its default once
+at definition time, so the floor **refusal** was reading whatever the constant
+held at import and would have reported a too-small null as safe. Resolved inside
+the function now.
+
+**What the exchangeable unit does control, measured rather than argued.** It
+decides whether one null draw is shared across layers or drawn independently.
+Over 400 replicates, as the layers come to share one direction:
+
+| shared component ρ | unit = model | unit = layer |
+|---|---|---|
+| 0.0 (independent) | 0.0525 | 0.0525 |
+| 0.5 | 0.0450 | 0.0800 |
+| 0.9 | 0.0450 | **0.2325** |
+| 1.0 (identical) | 0.0575 | **0.2800** |
+
+The per-model unit holds nominal across the whole range; the per-layer unit
+reaches 0.28, the same fourfold-plus inflation POPPER reports at 0.082 → 0.340
+and §6f measured at 0.015 → 0.34. Third independent arrival at that number. The
+mechanism is that the layer unit averages $n$ independent null draws where the
+model unit averages $n$ copies of one, so its null is narrower by $\sqrt{n}$ —
+and *that* is what the pure tier pins, deterministically and in milliseconds,
+rather than resampling the consequence.
+
+**Nothing is adjudicated, and the refusal is structural.**
+`REGISTERED_EXCHANGEABLE_UNIT` is `None`, `adjudicate_p6_r2_r4` raises while it
+is, and passing `unit=` does not route around it — that argument selects what to
+**compute**, the module constant decides what may enter an e-process. The
+evidence points unambiguously at `"model"`; registering it is a separate
+decision, of the same class as CLAIM-C's criterion, and making it after seeing a
+p-value would void the guarantee. `claims/adjudications/` is still empty.
+
+**Both entries are registered as adjudicable, and their dependence is recorded.**
+`P6-R2` and `P6-R4` are *not* the `P5b-B1`/`P5b-B3` pattern of one test with two
+thresholds — R2 compares alignments, R4 compares probe accuracies, two
+statistics on two instruments. But they share one projector, so a projector
+defect moves both, and `null_construction` says so: a reader must not take their
+product for two independent factors.
+
+**What this leaves open, stated now.** The audit's dimension arm runs on random
+OV matrices at ALBERT's shape, not on ALBERT's weights, so it bounds the
+correction and does not report the run's own dims. `P6-R4`'s statistic has power
+only while $U_S$ is a small fraction of $d_\text{model}$ — at 14 of 24 both arms
+saturate and a planted effect reads $p = 1.0$, which was found by a fixture that
+did exactly that. And nothing here produces a p-value, because as in §§6e–6g the
+apparatus exists and the artifacts do not.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

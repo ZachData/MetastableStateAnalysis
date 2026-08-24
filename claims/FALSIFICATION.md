@@ -74,11 +74,11 @@ has yet produced a p-value against real artifacts.
 
 ### H-OPERATOR
 
-14 registered · 2 adjudicable now · 12 dormant
+14 registered · 4 adjudicable now · 10 dormant
 
 *No adjudications.*
 
-<details><summary>Registered but not adjudicable (12)</summary>
+<details><summary>Registered but not adjudicable (10)</summary>
 
 | prediction | why |
 |---|---|
@@ -90,9 +90,7 @@ has yet produced a p-value against real artifacts.
 | `P6-I1` | dormant — instrument archived |
 | `P6-I2` | dormant — instrument archived |
 | `P6-R1` | dormant — instrument archived |
-| `P6-R2` | dormant — instrument archived |
 | `P6-R3` | dormant — instrument archived |
-| `P6-R4` | dormant — instrument archived |
 | `P6-R5` | dormant — instrument archived |
 
 </details>
