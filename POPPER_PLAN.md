@@ -656,6 +656,117 @@ inputs with known answers — calibration under H0, power against a planted
 effect, and p ≈ 1 when the effect is in the wrong arm. The ledger is still
 empty, and `claims/FALSIFICATION.md` says so.
 
+## 6f. CLAIM-C's null, and the four things its wording left open (2026-08-24)
+
+`CLAIM-C` — the transfer claim under H-TRANSFER, and the only prediction in the
+registry carrying a hard stop — now has a construction, in
+`p1_mstate_tracking/replication_gate.py`. It is the first `needs-null` entry
+converted, and `claims/EVALUABILITY.md` had already named it the one to do
+first: *"a stop rule that cannot be adjudicated is a stop rule that gets argued
+with at the moment it binds."*
+
+**The criterion.** "Reproduces" is read as sign-concordance of the
+trained-minus-random *contrast*, over the six per-layer series
+`CHECKPOINT_METRICS` already registers, on a common normalized-depth grid
+(gpt2-large has 36 layers, pythia-1.4b has 24 — nothing is comparable before
+depth is normalized). Blog 1's phenomenology is a contrast, not a set of
+absolute levels, so the object that has to transfer is the contrast.
+
+**The null is the same shape §6e found in the other three.** Permute the
+trained/random condition label on the candidate side, gpt2-large held fixed as
+the reference. `delta` is antisymmetric in (trained, random), so a swap is an
+exact sign flip and the null has a closed form — which lets it be enumerated
+**exhaustively** rather than sampled: 256 patterns for the eight metastability
+prompts, so the test is exact rather than Monte-Carlo. That is the first exact
+null in the project.
+
+**The exchangeable unit is the prompt, not the cell.** The label "trained"
+attaches to a run, so swapping it moves all six metrics of one prompt together.
+Flipping cells independently would treat six metrics on one prompt as six
+independent observations — the same error `status-6.md` records for "49 ALBERT
+layers are not 49 independent observations", and the reason that result is
+still `needs-null`. Choosing the unit is where the p-value was won or lost here,
+not choosing the statistic.
+
+**A refusal that is new in kind.** The existing refusals are about the data
+(P-M1's aggregates disagreeing in sign). This one is about the *design*: with n
+prompts the enumeration's smallest expressible p is `2/(2^n + 1)`, so at four
+prompts a **perfect** result gives p = 0.118 and the test cannot reject at
+α = 0.05 however clean the data is. The module refuses rather than reporting
+"not significant" on nothing — which on a hard-stop claim would read as
+evidence against transfer. Six prompts is the first workable gate. Worth
+generalising: several remaining `needs-null` entries are small-n permutation
+designs, and the attainable floor should be checked before the null is built,
+not after a result comes back null.
+
+**And a second refusal, found by measuring the limitation instead of noting
+it.** The plan was to document "prompts on one model are not independent runs"
+and move on. Measuring it changed what the code does. With independent sign
+rows the rejection rate at α = 0.05 is ≈0.015 — conservative, as a discrete
+statistic should be. With every row identical it is **≈0.34** (3000 draws
+each): numerically the
+same fourfold-plus inflation §6 lists as risk 1, POPPER's 0.082 → 0.340 when
+its relevance checker is removed, arriving here from a completely different
+direction. So the exactly-degenerate case is refused rather than documented —
+identical rows mean the prompts contribute one observation, and enumerating
+2^n patterns over one observation is the wrong null, not a conservative one —
+and `sign_homogeneity` is reported in between so a reader can place a real run
+between the two measured rates. This is a degeneracy and not a tolerance: rows
+are either all equal or they are not, so the ordinal criterion stays free of
+the magnitude cut it was chosen to avoid needing.
+
+The transferable lesson is the one §6d already recorded in a different form:
+**measure the calibration, do not reason about it.** §6d found P-S1
+anticonservative at a null-p mean of 0.40 by simulating; this pass found the
+size of a limitation everyone would have been content to describe in prose.
+
+**The stop rule is three-way, and only one branch is a falsification.**
+TRANSFERS (`p_greater ≤ α`), FAILS-TO-TRANSFER (the reciprocal test rejects —
+the contrast systematically *inverts*), INSUFFICIENT (neither). The hard stop
+fires on both of the latter — an unadjudicated gate stops the sweep — but only
+FAILS-TO-TRANSFER enters the ledger as a falsification, because an e-process
+records "insufficient evidence" and never "null accepted". **Only `p_greater`
+is calibrated into an e-value.** `p_reciprocal` is a stop-rule input, recorded
+in the record's notes and kept out of H-TRANSFER's product; two one-sided tests
+on one statistic would otherwise double the claim's Type-I rate for free.
+
+**Four things the registered wording did not settle**, decided here and written
+into `null_construction` so a later reader is not left to infer them:
+
+1. **The criterion adjudicates the contrast, not the two absolute reproductions
+   the statement's words name.** A pythia pair whose levels both sit far from
+   gpt2-large's but whose difference has the same sign passes. The cost is that
+   the criterion is scale-blind; the absolute per-arm profile distances are
+   computed and reported as a diagnostic and enter no p-value.
+2. **The two-baseline policy.** `PREDICTIONS.md` attaches it to this claim
+   specifically. The p-value runs on the norm-matched `pythia-1.4b-random`,
+   which is what the statement names; the true step-0 init is a *mandatory*
+   sensitivity arm — refused on omission, the same refusal
+   `centroids.load_centroids` makes — reported beside the result and kept out
+   of the p-value, since step 0 is CLAIM-A's object and one dataset must not
+   settle two entries. Direction disagreement between the two baselines is
+   flagged in the record.
+3. **`effective_rank` is read from `effective_rank_normed`.** `status-1.md`
+   defect D1: the raw field mixes directional collapse with residual-stream
+   norm growth. Baking the known-defective field into the gate that carries the
+   hard stop would be knowingly wrong.
+4. **Full normalized depth, no band restriction.** Blog 1 quotes layers 5–30 of
+   gpt2-large, but a depth band is a choice with as many options as there are
+   bands.
+
+**The limitation that does not go away.** Prompts run on one model share that
+model's weights, so the rows are not fully independent either: a pythia-wide
+effect present in every prompt is invisible to the enumeration. The prompt is
+the coarsest unit this design provides — a coarser one would need independent
+training runs, which do not exist. Refusing at the degenerate end bounds the
+damage; it does not remove it, and every record the module emits carries both
+measured rates in its notes rather than leaving them to a reader.
+
+**Still no data.** As in §6e, the apparatus exists and the artifacts do not.
+Validation is on synthetic inputs with known answers: exactness of the
+enumeration, validity under H0, power against perfect transfer, p = 1.000 with
+the arms reversed, and every refusal. `claims/adjudications/` remains empty.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

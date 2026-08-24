@@ -56,6 +56,20 @@ checkpoint-sweep work (items 9–11) proceeds past the gate." Item B8 wires that
 sentence to this claim's e-process, so the stop is a check rather than a
 sentence to be argued with at the moment it binds.
 
+**`CLAIM-C` became the first constructed null (2026-08-24), and the stop is now
+three-way.** `p1_mstate_tracking/replication_gate.py` reads "reproduces" as
+sign-concordance of the trained-minus-random contrast over the six per-layer
+series `CHECKPOINT_METRICS` registers, with an exhaustively enumerated
+sign-flip null whose exchangeable unit is the prompt. The gate returns
+TRANSFERS, FAILS-TO-TRANSFER or INSUFFICIENT; it stops the sweep on the latter
+two but records only FAILS-TO-TRANSFER as a falsification, since an e-process
+reports insufficient evidence and never a null accepted. Only the one-sided
+`greater` p-value is calibrated into this claim's E — the reciprocal test that
+separates the two stop branches is a decision input and stays out of the
+product. `POPPER_PLAN.md` §6f records the four choices the registered wording
+left open, including that the criterion adjudicates the *contrast* rather than
+the two absolute reproductions the statement's words name.
+
 ### H-EMERGE — collapse-resistance emerges at circuit-formation events
 
 **Null (H0-EMERGE):** clustering dynamics and circuit formation are independent;
@@ -205,3 +219,7 @@ No claim has been adjudicated. `claims/adjudications/` is empty by design: an
 adjudication record may only be written by `core/adjudication.py` (item B4,
 not yet built) and only for a prediction the evaluability audit (item B5)
 classified as `e-value`.
+
+Four predictions are adjudicable as of 2026-08-24 — `P-S1`, `P-T1`, `P-M1` and
+`CLAIM-C`. What is missing is data, not apparatus: no run artifacts exist in
+this repo, so all four are validated on synthetic inputs with known answers.
