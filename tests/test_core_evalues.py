@@ -17,6 +17,7 @@ distribution where E[e] should be strictly below 1. Both arms are here.
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -376,3 +377,54 @@ class TestTorchStubIsScipySafe:
         from scipy.stats import mannwhitneyu
         stat, p = mannwhitneyu([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], alternative="greater")
         assert 0.0 <= float(p) <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# The tier-0 contract
+# ---------------------------------------------------------------------------
+
+class TestTierZeroIsStdlibOnly:
+    """
+    `scripts/check.sh lint` is tier 0 and CI installs NOTHING for it. Once
+    `python -m core.adjudication --verify` joined that tier, every module it
+    imports joined it too -- and `core/evalues.py` imported numpy at module
+    scope, which took the job down with ModuleNotFoundError on a runner that
+    correctly had no dependencies, while passing on every developer machine.
+
+    `check.sh lint` now runs the tier with numpy and scipy shadowed, which is
+    the real guard. This is the fast one: it reads the source rather than the
+    environment, so it fails here even on a machine where numpy imports fine.
+    """
+
+    #: Modules CI tier 0 imports, directly or transitively.
+    TIER_ZERO_MODULES = ("core/evalues.py", "core/adjudication.py")
+
+    def _module_scope_imports(self, path):
+        import ast
+        tree = ast.parse(Path(path).read_text())
+        names = set()
+        for node in tree.body:                      # module scope ONLY
+            if isinstance(node, ast.Import):
+                names.update(a.name.split(".")[0] for a in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                names.add(node.module.split(".")[0])
+        return names
+
+    @pytest.mark.parametrize("rel", TIER_ZERO_MODULES)
+    def test_no_third_party_import_at_module_scope(self, rel):
+        import sys
+        path = Path(__file__).resolve().parent.parent / rel
+        allowed = set(sys.stdlib_module_names) | {"core", "__future__"}
+        offenders = sorted(self._module_scope_imports(path) - allowed)
+        assert not offenders, (
+            f"{rel} imports {offenders} at module scope. CI tier 0 installs no "
+            f"dependencies, so this is a red lint job that passes locally. Move "
+            f"the import inside the function that needs it.")
+
+    def test_the_guard_would_have_caught_the_real_regression(self, tmp_path):
+        """The rule is only worth having if it fires on the actual bug."""
+        f = tmp_path / "m.py"
+        f.write_text("import math\nimport numpy as np\n")
+        assert "numpy" in self._module_scope_imports(f)
+        f.write_text("import math\ndef g():\n    import numpy as np\n")
+        assert "numpy" not in self._module_scope_imports(f)

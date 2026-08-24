@@ -49,7 +49,8 @@ one. `tools/check_registry.py` owns the pre-registration gate and reads what
 this module writes. Keeping the three apart is what lets the arithmetic stay
 small enough to be obviously correct.
 
-Dependencies: stdlib only (plus `core.evalues`, itself numpy-only). This runs
+Dependencies: stdlib only (plus `core.evalues`, itself stdlib-only at
+import time). This runs
 in CI tier 0 with no `pip install` step, and imports without torch.
 """
 
