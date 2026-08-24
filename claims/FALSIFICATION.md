@@ -30,16 +30,15 @@ has yet produced a p-value against real artifacts.
 
 ### H-BRIDGE
 
-17 registered · 0 adjudicable now · 9 dormant
+17 registered · 1 adjudicable now · 9 dormant
 
 *No adjudications.*
 
-<details><summary>Registered but not adjudicable (17)</summary>
+<details><summary>Registered but not adjudicable (16)</summary>
 
 | prediction | why |
 |---|---|
 | `P-AB1` | needs-null — null not yet constructed |
-| `P-I1` | needs-null — null not yet constructed |
 | `P-I2` | needs-null — null not yet constructed |
 | `P-I3` | needs-null — null not yet constructed |
 | `P-I4` | needs-null — null not yet constructed |
@@ -60,17 +59,9 @@ has yet produced a p-value against real artifacts.
 
 ### H-EMERGE
 
-1 registered · 0 adjudicable now · 0 dormant
+1 registered · 1 adjudicable now · 0 dormant
 
 *No adjudications.*
-
-<details><summary>Registered but not adjudicable (1)</summary>
-
-| prediction | why |
-|---|---|
-| `CLAIM-B` | needs-null — null not yet constructed |
-
-</details>
 
 ### H-OPERATOR
 

@@ -88,6 +88,41 @@ adjudication, and there has been none.
 Claims (a) and (b) still have no criterion of their own. `CLAIM-A` and `CLAIM-B` remain
 `needs-null`.
 
+**Third addendum, 2026-08-24 — claim (b) now has one, and it is shared with Phase 7's
+`P-I1`.** `core/changepoint_colocation.py` reads "co-locate" as: locate each series' change
+as the centroid of its change-mass profile on the log-step axis, and ask whether two such
+locations sit closer together — and closer to the ~512–2000 window this claim names — than a
+matched control population allows. Four things are worth having in this file rather than only
+in the registry.
+
+- **The null this claim's entry named does not work, and it was measured rather than
+  reasoned about.** "A permutation null over checkpoint order" rejects under H0 at 0.32–0.45,
+  because permuting a series scatters its change across every interval and leaves the null
+  with far too little variance next to two real, concentrated profiles. Even an enumerated
+  circular shift, which is honest, reaches 0.103 once both series change early — as
+  everything does early in training. The null used instead is a matched control series: the
+  control for a series at one layer is that series at another layer, combined as a
+  permutation of the *pairing* between the two series' layers, which holds each series' real
+  locations fixed on both sides.
+- **The estimator is not `detect_transitions`, and the floor is why.** Dividing by a log-step
+  spacing that varies 4.6× across a Pythia sweep puts the null's argmax on the tightest
+  interval 44.7% of the time when the value series is permuted against the fixed step grid, so a
+  binary "the two top intervals coincide" statistic cannot
+  reject at any sensible α. The change-mass centroid that replaced it needs no `n_top`, no
+  `min_abs` and no tolerance — the first criterion in this project after CLAIM-C's
+  sign-concordance to carry no placed constant at all.
+- **The stop rule is three-way and the falsifier's asymmetry is a branch.** CO-LOCATES,
+  RE-ANCHORS, INSUFFICIENT. This claim's falsifier says no co-location is *itself a real
+  result*, so RE-ANCHORS records a separation positively shown against the controls, not one
+  inferred from a failure to reject. Only the `greater` p enters claim (b)'s e-process.
+- **The gate will most likely refuse, and the arithmetic was done before the pilot.** The two
+  anchor arms have no relabeling available — nothing permutes "unrelated to the literature's
+  anchors" — so each needs a reference population, and at α = 0.05 that means 19 control
+  series measured on the same sweep at the same layers. A cheap-tier sweep measuring six
+  metrics has six. That is a requirement on what the pilot must measure, not a result.
+
+Recorded before any sweep exists, which is the only time it could be added honestly.
+
 ## Status
 
 Not yet adjudicated — the replication gate (item 6) has not run. This file exists to make
@@ -303,7 +338,39 @@ and the result is a re-description of something mechinterp already measures bett
    (standing rule 6). This includes the `hub` in-degree cutoff and the top-k-by-force
    retention cutoff on the interaction table, neither of which has a calibrated value yet.
 
+## Addendum, 2026-08-24 — `P-I1` has a null, and it is `CLAIM-B`'s
+
+`claims/EVALUABILITY.md` had named `P-I1` and `CLAIM-B` as needing the same changepoint
+co-location construction and said they should be built together rather than each inventing
+one. They were: `core/changepoint_colocation.py` is the construction and
+`p7_motifs/formation_gate.py` is this prediction's half. See the third addendum to the
+transition-project block above for the estimator, the null, and why the registered wording's
+"permutation over checkpoint order" was measured to be invalid.
+
+Four things specific to `P-I1`:
+
+- **The unit is the head, enforced rather than asserted.** Adjudication constraint 1 above
+  fixes it; the null permutes which head's motif curve is matched with which head's
+  behavioral curve, so an edge-level *n* has no way into the arithmetic.
+- **One arm, and no anchor arm.** `P-I1` names no literature anchor — it asks only that the
+  two curves rise together — so nothing is invented for it to test. That also makes `P-I1`
+  the likelier of the two entries to produce a number, since the anchor arms are what refuse
+  on control-set size.
+- **The falsifier's second half is a precondition, not a p-value.** "Motif already above
+  nulls at step 0, or absent at step 143,000 despite a high behavioral score" is about the
+  curve's endpoints and the statistic is about where it rises; one number cannot carry both.
+  Both are reported as per-head counts beside the result and enter no p-value. Because the
+  series handed in is the above-null *excess*, zero is the null envelope and neither check
+  needs a threshold of its own.
+- **Constraint 2's tautology risk cannot be discharged by any null here, and now has a number
+  behind it.** Two identical series co-locate perfectly, and a tautological pair is
+  tautological at every head, so no permutation over the pairing detects it. The gate refuses
+  exactly-identical series per head — the degenerate case only — and the measured version of
+  the same problem is that a common per-head factor unrelated to the claim produces a
+  rejection rate of 1.00 against 0.05. The independence source remains a claim the analyst
+  must state in the record, exactly as constraint 2 requires.
+
 ## Status
 
-Not yet adjudicated. No Phase 7 code exists as of this entry — that is the point of the
-timestamp.
+Not yet adjudicated. No Phase 7 *results* exist; `P-I1`'s gate exists as of 2026-08-24 and
+emits nothing, because no checkpoint sweep of motif strength has been run.

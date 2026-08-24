@@ -89,7 +89,8 @@ two decisions this required and the out-of-sample validation.
 the energy-monotonicity break and Fiedler drop do not co-locate with the
 literature's checkpoint anchors.
 
-Instruments: the Pythia-410M pilot (item 8), `core/checkpoint_frames.py`.
+Instruments: the Pythia-410M pilot (item 8), `core/checkpoint_frames.py`,
+`core/changepoint_colocation.py`.
 Predictions: `CLAIM-B`.
 
 Note the asymmetry, which `PREDICTIONS.md` states and which should survive into
@@ -97,6 +98,46 @@ the e-process: a failure here is *informative on its own terms* — it re-anchor
 the 1.4B checkpoint schedule rather than invalidating the sweep. An e-process
 records "insufficient evidence", never "null accepted", which is the right
 shape for that.
+
+**`CLAIM-B` became the third constructed null (2026-08-24), and the asymmetry is
+now a verdict branch.** `core/changepoint_colocation.py` locates each series'
+change as the centroid of its change-mass profile on the log-step axis and asks
+whether two such locations sit closer together — and closer to the
+pre-registered ~512–2000 window — than a matched control population allows. The
+gate returns CO-LOCATES, RE-ANCHORS or INSUFFICIENT, and **RE-ANCHORS is the
+falsification**: the separation is positively shown rather than inferred from a
+failure to reject, which is exactly what this claim's falsifier says is worth
+having. Only the one-sided `greater` p enters this claim's E; the reciprocal
+test that separates the branches is a decision input.
+
+Three things about it belong here rather than only in `POPPER_PLAN.md` §6i.
+
+**The registered null was wrong, and measurement is what showed it.** The entry
+said "a permutation null over checkpoint order". Measured, permuting the value
+series rejects under H0 at 0.45 and permuting the interval increments at 0.32,
+because both dissolve the concentrated change profile the statistic is built on
+and leave the null with far too little variance. An enumerated circular shift
+is honest at 0.065 but assumes changepoints are uniform on the interval grid,
+and with both series changing early — as everything does early in training — it
+reaches 0.103. What replaced it is a matched control series: the control for a
+series at one layer is that series at another layer, combined as a permutation
+of the *pairing* between the two series' layers. That holds nominal under both
+families.
+
+**The obvious estimator could not carry it.** `detect_transitions` divides by a
+log-step spacing that varies 4.6× across a Pythia sweep, so under the null its
+argmax of a permuted value series lands on the tightest-spacing interval 44.7%
+of the time and a binary
+"the two top intervals coincide" statistic is floored near 0.29. The
+change-mass centroid that replaced it carries no placed constant at all.
+
+**And the gate will most likely refuse, for a reason computed before the pilot
+runs.** The two anchor arms have no permutation available — nothing relabels
+"unrelated to the literature's anchors" — so each needs a reference population,
+and at α = 0.05 that is 19 control series measured on the same sweep at the
+same layers. A cheap-tier sweep measuring six metrics has six. Under the gate's
+unanimity rule a refusing arm refuses the whole gate, so **this is a
+requirement on what the pilot must measure**, not a result.
 
 ### H-BUDGET — the network spends a bounded dimensionality budget on particles that must stay individuated
 
@@ -209,6 +250,34 @@ scheme rather than kept under a second `PB-*` convention:
 Predictions: `P-I1`–`P-I5`, `P-ST1`, `P-AB1`, `P-SA1` (active), and the nine
 `P5b-*` (dormant — Phase 5b is archived).
 
+**`P-I1` gained a null the same day as `CLAIM-B`, and it is the same one**
+(2026-08-24). `EVALUABILITY.md` had named the two as sharing a construction and
+said they should be built together rather than each inventing one;
+`p7_motifs/formation_gate.py` is the thin half over
+`core/changepoint_colocation.py`. The unit is the **head**, which is not a
+convenience — `PREDICTIONS.md`'s first Phase 7 adjudication constraint fixes it,
+and because the null permutes head pairings an edge-level *n* has no way in.
+P-I1 gets one arm and no anchor arm: it names no literature anchor, and
+inventing one would be the glossary error this phase is designed against.
+
+**The two entries sit under different claims, and that is precisely why their
+dependence had to be written down.** `CLAIM-B` is H-EMERGE's and `P-I1` is
+H-BRIDGE's, so there is no `P5b-B1`/`P5b-B3` double-counting problem — but one
+shared *estimator* is a common-cause failure mode, and both `null_construction`
+fields and both ledger records say so, the precedent `P6-R2` and `P6-R4` set for
+their shared projector.
+
+**The construction cannot discharge this phase's tautology risk, and says so.**
+Adjudication constraint 2 records that the behavioral induction score is "mean
+attention on induction pairs" while a motif defined as "attentive edge on
+induction pairs" is the same number. Two identical series co-locate perfectly,
+and no null detects it, because the null is over the pairing and a tautological
+pair is tautological at every head. The gate refuses exactly-identical series
+per head — the degenerate case, not the substantive one — and the independence
+source stays a claim the analyst must make. The measured version of the same
+problem is that a common per-unit factor produces a rejection rate of **1.00**
+against 0.05; see `POPPER_PLAN.md` §6i.
+
 **Why the P5b predictions stay here rather than under H-OPERATOR.** Sub-experiment
 D asks whether behavioural geometry is carried by the real/symmetric subspace and
 *not* by the imaginary/antisymmetric one (`P5b-D1`, `P5b-D2`). That is a claim
@@ -258,9 +327,11 @@ adjudication record may only be written by `core/adjudication.py` (item B4,
 not yet built) and only for a prediction the evaluability audit (item B5)
 classified as `e-value`.
 
-Six predictions are adjudicable as of 2026-08-24 — `P-S1`, `P-T1`, `P-M1`,
-`CLAIM-C`, `P6-R2` and `P6-R4`. What is missing is data, not apparatus: no run
-artifacts exist in this repo, so all six are validated on synthetic inputs with
-known answers. `P6-R2` and `P6-R4` carry one further refusal on top of that —
-their exchangeable unit is not registered, and `adjudicate_p6_r2_r4` raises
-rather than letting a caller supply it.
+Eight predictions are adjudicable as of 2026-08-24 — `P-S1`, `P-T1`, `P-M1`,
+`CLAIM-C`, `P6-R2`, `P6-R4`, and now `CLAIM-B` and `P-I1`. What is missing is
+data, not apparatus: no run artifacts exist in this repo, so all eight are
+validated on synthetic inputs with known answers. `P6-R2` and `P6-R4` carry one
+further refusal on top of that — their exchangeable unit is not registered, and
+`adjudicate_p6_r2_r4` raises rather than letting a caller supply it. `CLAIM-B`
+carries a different one: its two anchor arms refuse below 19 control series, so
+the gate as a whole refuses on any sweep that measures fewer.

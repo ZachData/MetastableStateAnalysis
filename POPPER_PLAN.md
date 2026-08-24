@@ -1107,6 +1107,185 @@ saturate and a planted effect reads $p = 1.0$, which was found by a fixture that
 did exactly that. And nothing here produces a p-value, because as in §§6e–6g the
 apparatus exists and the artifacts do not.
 
+## 6i. CLAIM-B + P-I1: one construction, and the null the wording named was invalid (2026-08-24)
+
+`claims/EVALUABILITY.md` closed on these two: *"`CLAIM-B` is next by the same
+reasoning, and it shares a construction with `P-I1` — the same changepoint
+co-location across a checkpoint sweep — so the two should be built together
+rather than each inventing one."* They are.
+`core/changepoint_colocation.py` is the construction and CLAIM-B's gate;
+`p7_motifs/formation_gate.py` is P-I1's thin half. Both entries are now
+`e-value`; eight predictions are adjudicable in principle and
+`claims/adjudications/` is still empty.
+
+Unlike `P6-R2`/`P6-R4` there was no dormancy to settle first and unlike
+`CLAIM-C` no hard stop rides on it. What there was instead is a registered
+null that does not work, and an obvious estimator that cannot carry the test.
+**Both were found by computing before building, and neither would have shown up
+in any single result.**
+
+**The estimator is not `detect_transitions`, and the floor is why.** The
+existing estimator returns the intervals of largest change per unit log-step —
+adopting it is the reuse this project prefers and it fixes the choice in advance
+for free. It was checked first. `interval_rates` divides by the log-step
+spacing, and that spacing varies 4.6× across a 25-checkpoint Pythia sweep
+(0.065 where the every-1000 releases compress at the top against 0.301 at the
+bottom), so with the value series permuted against that fixed step grid the
+argmax interval lands on the tightest-spacing one **44.7%** of the time. A
+binary co-location statistic — "the two top intervals
+coincide" — is therefore floored at ~0.29 typical and 0.45 worst case
+and **cannot reject at any sensible alpha however clean the data is.** That is
+§6f's attainable-floor refusal reached before building rather than after a null
+result, and §6h's sharper form: check the floor against the null you *could*
+build. `detect_transitions` also takes `n_top` and `min_abs`, both selections if
+set after seeing the sweep.
+
+**What replaced it carries no placed constant.** The location of a series'
+change is the centroid, on the log-step axis, of the **change-mass profile**
+$w_i \propto \max(\text{direction} \cdot (v_{i+1} - v_i),\, 0)$ — the share of
+the series' total registered-direction change that happened in interval $i$. No
+`n_top`, no `min_abs`, no tolerance on what counts as co-located, no smoothing
+bandwidth. `EVALUABILITY.md` had asked whether there was an ordinal formulation
+needing none, the way CLAIM-C's sign-concordance avoided a magnitude cut; this
+is the answer, a distance in log10-step compared against a null.
+
+**It is deliberately NOT divided by the log-step spacing, which departs from
+`checkpoint_frames`, and the reason is power rather than validity.** Both
+weightings are valid — H0 rejection 0.043–0.073 either way under the pairing
+null that is actually used — but their power diverges as the sweep densifies.
+Measured at 8 units and α = 0.05, change mass holds **1.000** across 20, 35, 80
+and 143 checkpoints while rate falls **0.995, 0.970, 0.685, 0.090**: dividing by
+$dx$ amplifies per-checkpoint noise exactly where the spacing is tight, and a
+denser sweep makes every $dx$ tighter. **The log-step axis is right for plotting a
+derivative, which is what `checkpoint_frames` built it for, and wrong for
+weighting a location.** A change-mass profile takes no derivative at all, so
+`spacing_change_steps`' "an index-based derivative will place a peak here by
+construction" cannot reach it — and the spacing report is emitted in every
+record anyway, so a reader checks that rather than taking it.
+
+**The registered null was measured to be invalid, and the failure is large.**
+Both entries said "a permutation null over checkpoint order gives a valid p once
+the changepoint estimator is fixed in advance." Four permutation-family nulls
+were built and their H0 rejection rate measured against a nominal 0.05:
+
+| null | H0 rejection at α = 0.05 |
+|---|---|
+| permute the value series against the fixed step grid | 0.45 |
+| permute the interval increments | 0.32 |
+| circular shift of the increments, **sampled** | 0.13 |
+| circular shift of the increments, **enumerated** | 0.065 |
+| enumerated shift, both onsets drawn early | **0.103** |
+
+The first three fail for one reason: **the statistic is built on a concentrated
+profile and those nulls dissolve the concentration.** A permuted series' change
+is scattered across every interval, so the null has far too little variance and
+any partial overlap of two real profiles reads as significant. The sampled
+circular shift is additionally wrong in a way worth naming — $m$ rotations are
+not $m$ independent draws, so sampling 199 of them and dividing by 200
+understates $p$; the same class of error as reading a discrete design's floor
+off a Monte-Carlo size. And the enumerated shift, which is honest, assumes
+changepoints are uniform on the interval grid. They are not: **everything moves
+early in training**, and with both onsets early it rejects at twice nominal.
+
+**The null that survives is a matched control series, and the control is
+another unit's copy of the same series.** For series B at unit $u$ the control
+is series B at another unit — same metric, same construction, same sweep — and
+those controls are combined across units as a permutation of the **pairing**
+between the two series' units. Under H0 the two series' per-unit locations are
+independent, so which unit of A is paired with which unit of B is arbitrary and
+the permutation is exact. It disposes of the common-trend confound for free,
+because both series keep their real per-unit locations under every permutation:
+the trend is held fixed rather than assumed away. Measured offline at 300
+replicates and committed to
+`claims/calibration/changepoint_colocation.json`:
+
+| H0 family | 8 units | 16 units | 24 units |
+|---|---|---|---|
+| onsets independent | 0.040 | 0.040 | 0.060 |
+| onsets both early (common trend) | 0.050 | 0.037 | 0.047 |
+| **shared per-unit factor** | **0.997** | **1.000** | **1.000** |
+| reversed pairing (reciprocal fires) | 0.983 | 1.000 | 1.000 |
+| power, planted co-location | 1.000 | 1.000 | 1.000 |
+
+Making it a permutation over **pairings** rather than one test per unit is also
+what keeps it clear of `status-6.md`'s "n layers are not n independent
+observations" — the arm is one test over all units.
+
+**§6h's lesson arrives a second time from a different direction.** There the
+attainable floor moved from 0.667 to 0.0005 on the question of what is
+randomised. Here *validity* moves from 0.103 to 0.050 on the same question,
+with the same data, the same estimator and the same claim. And it adds a third
+kind of matched control to the two `EVALUABILITY.md` lists — a subspace, a
+magnitude, and now **another series**.
+
+**The limitation is severe, it was measured rather than described, and it is
+not fixed.** The pairing null tests *association*. A common per-unit factor — a
+layer that changes late changing late in *both* series, for a reason with
+nothing to do with the claim — is an association, and the measured rejection
+rate under exactly that is **1.00 against 0.05**. No null over the pairing
+separates them: a confound present at every unit is present under every
+permutation. Every record therefore carries a `shared_unit_factor_diagnostic`,
+which reports each series' rank correlation with the unit index — catching a
+confound *monotone* in that index and catching nothing else — and the analyst
+must name the independence source, which `PREDICTIONS.md`'s Phase 7
+adjudication constraint 2 already required and now has a number behind. The
+honest fix is a confound-control arm against other per-unit series; it needs
+the same 19 control series CLAIM-B's anchor arms need and it is not built. This
+is the same shape as §6f's "prompts on one model are not independent runs":
+bounded by measurement, not removed by it.
+
+**CLAIM-B is three arms under unanimity; P-I1 is one.** CLAIM-B's statement
+names two co-locations at once, so the mutual arm (energy break against Fiedler
+drop, paired over layers) runs beside one anchor arm per series against the
+pre-registered ~512–2000 window, and the reported p is the intersection-union
+**max** — a valid p for a conjunction regardless of dependence, so no
+multiplicity correction, which matters because the arms share two series
+between them. Same precedent as CLAIM-C's metric-leave-one-out axis. A third
+axis is affordable here in a way §6g records it is not on CLAIM-C, because
+CLAIM-B carries no hard stop. P-I1 names no literature anchor, so it gets no
+anchor arm — inventing one would be the glossary error Phase 7 is designed
+against.
+
+**The anchor arms are the ones that will refuse, and the arithmetic says so
+before the pilot runs.** An anchor arm has no relabeling available: there is no
+permutation that realises "unrelated to the literature's anchors", so it needs
+a reference *population* of change locations and its floor is
+$1/(n_\text{controls} + 1)$. At α = 0.05 that is **19 control series** measured
+on the same sweep at the same layers. A cheap-tier sweep measuring six metrics
+has six, and under unanimity a refusing arm refuses the whole gate. **That is a
+requirement on what the pilot must measure, computed before it runs** — the
+§6f pattern ("six prompts is the first workable gate") one level up. P-I1,
+having no anchor arm, is the likelier of the two to produce a number.
+
+**The stop rule is three-way and only one branch is a falsification**, CLAIM-C's
+shape, and CLAIM-B's falsifier is why the branch exists at all: *"No
+co-location. Itself a real result: it re-anchors the 1.4B schedule rather than
+invalidating the sweep."* CO-LOCATES on `p_greater ≤ α`; RE-ANCHORS when the
+reciprocal test rejects — the changes sit demonstrably *further* apart than the
+matched controls, a separation positively shown rather than inferred from a
+failure to reject; INSUFFICIENT otherwise, because an e-process records
+insufficient evidence and never a null accepted. Only `p_greater` is calibrated
+into a claim's E. **And the RE-ANCHORS branch was checked to be one that can
+actually fire** — a deliberately anti-aligned pairing returns p = 1.000 with the
+reciprocal test rejecting at 0.98–1.00 — because §6h found an audit arm
+reporting PASS while incapable of failing, and a verdict nothing can trigger is
+that defect wearing a different hat.
+
+**Two plain bugs, both found by a test that asserted an exact value.** The
+sampled pairing regime reported its attainable floor as $1/(n+1)$ while the
+identity pairing is already in the draw list, so the reported floor was
+*smaller* than any p the arm can express — the same class of slip as §6h's
+default argument bound at definition time, and found the same way, by a test
+asserting a perfect result lands exactly on the floor. And the anchor arm's
+minimum control count is **19, not 20**: the floor must not *exceed* α, so
+$1/20 = 0.05$ is admissible and rejects exactly when the observed statistic
+beats every control, which is nominal rather than lucky. Both were in prose
+before they were in a test.
+
+**Still no data.** As in §§6e–6h the apparatus exists and the artifacts do not.
+`INDEX.md` records the dense pilot sweep as not executed, validation is on
+synthetic inputs with known answers, and `claims/adjudications/` remains empty.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
