@@ -29,12 +29,25 @@ that actually hold here and break the classical alternatives:
      before (Assumption 2). See the WARNING in `EProcess` about what that does
      and does not permit.
 
-Scope: pure numpy + stdlib, no project imports, no torch. This module knows
+Scope: **stdlib only** at import time, no project imports, no torch. This module
+knows
 nothing about predictions, artifacts, or phases -- `core/adjudication.py`
 (item B4) is the layer that knows those things and calls this one. Keeping the
 arithmetic separate from the bookkeeping is deliberate: this is the only piece
 of the workstream with a proof attached, and it should be testable without
 constructing a registry.
+
+**The stdlib-only scope is load-bearing, not a preference.** `scripts/check.sh
+lint` is tier 0 and CI installs NOTHING for it -- that is the tier's whole
+contract, and `tools/lint_repo.py`, `check_registry.py`,
+`render_evaluability.py` and `render_falsification.py` all state it. Once
+`python -m core.adjudication --verify` joined tier 0, this module joined it too,
+and a module-scope `import numpy` took the job down with `ModuleNotFoundError`
+on a runner that correctly had no dependencies. The calibrator and the
+e-process are pure `math`; numpy appears in exactly one simulation helper
+(`simulate_type_i_error`), which is called from the test tier where numpy
+exists. Its import is therefore function-local. Keep it that way: anything
+imported at module scope here must be in the standard library.
 
 The mathematics, stated once
 ----------------------------
@@ -93,8 +106,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from typing import Iterable, List, Optional, Sequence, Tuple
-
-import numpy as np
 
 #: Fixed calibrator parameter. MUST be chosen before seeing any p-value:
 #: picking kappa after the fact turns a calibrated e-value into a selected
@@ -501,6 +512,11 @@ def simulate_type_i_error(
     covered separately in the tests by stopping at the first crossing, which is
     the adversarial choice for a procedure that claims anytime validity.
     """
+    # Function-local: this module is imported by `core/adjudication.py`, which
+    # runs in CI tier 0 with no dependencies installed. See the module
+    # docstring -- a module-scope numpy import here is a red tier-0 job.
+    import numpy as np
+
     rng = np.random.default_rng(seed)
     p = rng.uniform(size=(n_trials, n_experiments))
     log_e = math.log(kappa) + (kappa - 1.0) * np.log(p)

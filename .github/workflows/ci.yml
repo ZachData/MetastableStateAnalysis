@@ -49,7 +49,9 @@ jobs:
         # invocation with a different one (`pytest` vs `python -m pytest`).
         # Includes: repo hygiene, the prediction registry + pre-registration
         # gate (POPPER's Assumption 2, the check that carries the Type-I
-        # guarantee), and the EVALUABILITY.md staleness check.
+        # guarantee), the EVALUABILITY.md staleness check, a replay of every
+        # claim's e-process from the committed adjudication records, and the
+        # FALSIFICATION.md staleness check.
         run: ./scripts/check.sh lint
 
   pure:

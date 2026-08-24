@@ -287,3 +287,193 @@ def adjudicate_p_s1_banded(trained: dict, step0: dict) -> dict:
             "Whatever the unbanded verdict says, this is not a detection — "
             "the effect is smaller than the baseline's own noise.")
     return base
+
+
+# ---------------------------------------------------------------------------
+# P-S1's p-value (POPPER_PLAN.md item B6, live instrument)
+# ---------------------------------------------------------------------------
+
+#: Degrees combined into P-S1's single statistic. Fixed here rather than passed
+#: in, because a per-run choice of how many degrees to include is a per-run
+#: choice of how many chances the prediction gets.
+P_S1_T_MAX = 3
+
+#: The direction P-S1 claims: trained centroids closer to a spherical design,
+#: i.e. SMALLER Q_k ratios than step 0, i.e. (step0 - trained) > 0. Recorded as
+#: a constant so it cannot be picked after seeing which way the data fell.
+P_S1_ALTERNATIVE = "greater"
+
+
+def _standardised_improvement(r_trained, r_step0, sd) -> float:
+    """
+    P-S1's single scalar: the sum over degrees of the step0-minus-trained ratio
+    difference, each divided by that degree's own null standard deviation.
+
+    **Why standardise, and why sum.** `UPDATE_PLAN.md` §5.8 measured the random
+    band narrowing from ~0.17 at k=1 to ~0.002 at k=3. An unstandardised sum is
+    therefore entirely dominated by k=1 and silently discards k=2 and k=3 --
+    which are the degrees that are *more* sensitive in relative terms, and the
+    same document records getting this backwards once already ("I asserted that
+    discriminating power sits at low k ... Wrong").
+
+    **Why one statistic rather than a test per degree.** Three per-degree tests
+    need a multiplicity correction, and the choice of correction after seeing
+    three p-values is itself a selection. One pre-declared scalar has one
+    p-value and needs no correction.
+    """
+    rt = np.asarray(r_trained, dtype=np.float64)
+    r0 = np.asarray(r_step0, dtype=np.float64)
+    sd = np.asarray(sd, dtype=np.float64)
+    k = min(len(rt), len(r0), len(sd))
+    safe_sd = np.maximum(sd[:k], 1e-12)
+    return float(np.sum((r0[:k] - rt[:k]) / safe_sd))
+
+
+def p_value_p_s1(
+    trained: dict,
+    step0: dict,
+    m: int = None,
+    d: int = None,
+    t_max: int = P_S1_T_MAX,
+    n_null: int = 500,
+    seed: int = 0,
+) -> dict:
+    """
+    A calibrated p-value for P-S1, from the matched random baseline the
+    prediction was already adjudicated against informally.
+
+    The null is exactly the hypothesis P-S1's falsifier names -- "no difference
+    between trained and step-0" -- realised by drawing TWO independent i.i.d.
+    configurations at the same (m, d) and computing the same statistic. Each
+    draw is a pair, so the null carries the sampling variability of *both* arms,
+    which a one-configuration null would understate by roughly a factor of
+    sqrt(2) and would make the p-value anticonservative.
+
+    Returns `core.nulls.p_from_null`'s dict plus the statistic and its parts.
+    Emitting the p-value is deliberately NOT this function's job -- see
+    `run_design_test` callers and `core.adjudication` -- so that computing the
+    number and entering it into the falsification ledger stay separable.
+    """
+    from core.nulls import p_from_null
+    from .design_test import gegenbauer_moments
+
+    if "Q_ratio" not in trained or "Q_ratio" not in step0:
+        return {"p_value": None,
+                "reason": "Q_ratio missing from one or both arms; nothing to test"}
+
+    m = int(m if m is not None else trained.get("n_centroids", 0))
+    d = int(d if d is not None else trained.get("d", 0))
+    if m < 2 or d < 2:
+        return {"p_value": None, "reason": f"degenerate configuration (m={m}, d={d})"}
+
+    band = random_band(m, d, t_max=t_max, n_trials=n_null, seed=seed)
+    base = random_baseline_Q(m, d, t_max=t_max, n_trials=n_null, seed=seed)
+    ref = np.maximum(base["mean"], 1e-30)
+
+    # Both arms are re-referenced against THIS baseline, not against whatever
+    # `design_report` computed internally. The two are not interchangeable:
+    # design_report defaults to n_trials=64 with its own seed, so a `Q_ratio`
+    # taken from the caller is divided by a different Monte-Carlo estimate of
+    # the same quantity than the null draws are. Mixing them leaves a small
+    # systematic offset between observed and null -- measured as a null-p mean
+    # of 0.40 against the 0.50 a calibrated statistic must give. Small, entirely
+    # invisible in any single result, and in the anticonservative direction.
+    #
+    # Falling back to the caller's Q_ratio is allowed only when raw Q is absent,
+    # and the return value says so rather than hiding it.
+    used_raw_Q = "Q" in trained and "Q" in step0
+    if used_raw_Q:
+        r_trained = np.asarray(trained["Q"], dtype=np.float64)[:t_max] / ref[:t_max]
+        r_step0 = np.asarray(step0["Q"], dtype=np.float64)[:t_max] / ref[:t_max]
+    else:
+        r_trained = np.asarray(trained["Q_ratio"], dtype=np.float64)
+        r_step0 = np.asarray(step0["Q_ratio"], dtype=np.float64)
+
+    observed = _standardised_improvement(r_trained, r_step0, band["sd"])
+    rng = np.random.default_rng(seed + 977)
+
+    def _ratio() -> np.ndarray:
+        X = rng.normal(size=(m, d))
+        X /= np.linalg.norm(X, axis=1, keepdims=True)
+        Q = gegenbauer_moments(X @ X.T, t_max=t_max, d=d, check=False)["Q"]
+        return Q / ref
+
+    null_stats = np.array([
+        _standardised_improvement(_ratio(), _ratio(), band["sd"])
+        for _ in range(n_null)
+    ])
+
+    out = p_from_null(observed, null_stats, alternative=P_S1_ALTERNATIVE)
+    out.update({
+        "statistic": "sum over degrees of (step0 - trained) Q_k ratio, "
+                     "standardised by each degree's null sd",
+        "t_max": int(t_max), "m": m, "d": d,
+        "null_sd_per_degree": np.asarray(band["sd"]).tolist(),
+        "trained_Q_ratio": np.asarray(r_trained).tolist(),
+        "step0_Q_ratio": np.asarray(r_step0).tolist(),
+        "shared_reference": bool(used_raw_Q),
+        "reference_note": (
+            "both arms re-referenced against this call's own random baseline"
+            if used_raw_Q else
+            "FELL BACK to the caller's Q_ratio: raw Q absent from one or both "
+            "arms, so observed and null are referenced against different "
+            "Monte-Carlo baselines and the p-value is mildly anticonservative"),
+    })
+    return out
+
+
+def adjudicate_p_s1_from_reports(
+    trained: dict,
+    step0: dict,
+    layer: int,
+    *,
+    n_null: int = 500,
+    seed: int = 0,
+    artifact_hashes=(),
+    run_manifest: dict = None,
+    adjudicate: bool = False,
+    adjudications_dir=None,
+) -> dict:
+    """
+    Compute P-S1's p-value for one layer and, optionally, enter it in the
+    falsification ledger.
+
+    `layer` is REQUIRED and has no default. P-S1 is a statement about cluster
+    centroids, and a run produces one configuration per layer -- so "which
+    layer" is a choice with as many options as there are layers, and choosing
+    it after seeing which layer looks best is the selection this whole
+    apparatus exists to prevent. Naming it at the call site puts it in the
+    adjudication record, where the pre-registration gate can see it.
+
+    Adjudication is opt-in for the same reason it is in
+    `p6_subspace/induction_ov.py`: this function is exercised by tests, and
+    `core.adjudication.adjudicate` refuses to overwrite an existing record, so
+    one accidental test run would permanently occupy P-S1's slot in the real
+    ledger with a synthetic p-value.
+
+    Returns the `p_value_p_s1` dict with `layer` and `adjudication` added.
+    """
+    res = p_value_p_s1(trained, step0, t_max=P_S1_T_MAX, n_null=n_null, seed=seed)
+    res["layer"] = int(layer)
+    res["adjudication"] = None
+
+    if adjudicate and res.get("p_value") is not None:
+        from core.adjudication import adjudicate_if_registered
+        res["adjudication"] = adjudicate_if_registered(
+            "P-S1",
+            res["p_value"],
+            artifact_hashes=artifact_hashes,
+            run_manifest=run_manifest,
+            test_name=(
+                f"Monte-Carlo permutation against a matched i.i.d. baseline; "
+                f"statistic = sum over degrees 1..{P_S1_T_MAX} of "
+                f"(step0 - trained) Q_k ratio standardised by each degree's "
+                f"null sd; one-sided '{P_S1_ALTERNATIVE}'; "
+                f"{res['n_null_finite']} null draws"),
+            notes=(f"layer={layer} m={res.get('m')} d={res.get('d')} "
+                   f"resolution_floor={res.get('resolution'):.5f}"
+                   + ("" if res.get("shared_reference", True)
+                      else " WARNING: " + res.get("reference_note", ""))),
+            adjudications_dir=adjudications_dir,
+        )
+    return res

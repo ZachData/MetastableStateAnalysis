@@ -46,6 +46,48 @@ stops the sweep if it fails) rather than just noted and moved past.
   "random" condition). **If this fails, no checkpoint-sweep work (items 9–11) proceeds past
   the gate.**
 
+### Addendum, 2026-08-24 — what "reproduces" means for claim (c)
+
+Claim (c)'s prediction text above is unchanged and stays unchanged. What it never stated is
+the *criterion*: which statistics count as phenomenology, and what counts as reproduction.
+That is now fixed, in `p1_mstate_tracking/replication_gate.py` and recorded in
+`claims/registry.json` under `CLAIM-C`'s `null_construction` — **before the gate has run**,
+which is the only time it can honestly be chosen.
+
+"Reproduces" is read as **sign-concordance of the trained-minus-random contrast**, over the
+six per-layer series `CHECKPOINT_METRICS` registers, on a common normalized-depth grid. The
+null permutes the trained/random condition label on the pythia side with gpt2-large held
+fixed, one sign flip per prompt, enumerated exhaustively.
+
+Three consequences worth having in this file rather than only in the registry:
+
+- **The criterion adjudicates the contrast, not the two absolute reproductions the sentence
+  above names.** A pythia pair whose levels both sit far from gpt2-large's, but whose
+  *difference* points the same way, passes. Blog 1's result was a contrast, so that is the
+  object required to transfer — but it means the criterion is scale-blind, and the absolute
+  per-arm distances are reported as a diagnostic that enters no p-value.
+- **The two-baseline policy is honoured but asymmetric.** The p-value runs on the norm-matched
+  `pythia-1.4b-random`, which is what the sentence above names. The true step-0 init is a
+  mandatory sensitivity arm — the code refuses to run without it or a written reason for its
+  absence — reported beside the result and kept out of the p-value, because step 0 is claim
+  (a)'s object and one dataset must not settle two entries.
+- **The hard stop is now three-way.** It fires on both a demonstrated inversion and an
+  inconclusive gate — the sweep does not proceed on an unadjudicated gate — but only the
+  inversion is recorded as a falsification of claim (c). "The gate was underpowered" and "the
+  phenomenology does not transfer" are different findings and the ledger distinguishes them.
+
+**Second addendum, same day — agreement across tools as well as across architectures.**
+The criterion now also requires agreement across *metrics*: the cross-architecture test is
+re-run once per metric-leave-one-out subset, and the gate requires unanimity in both
+directions. Confirmation and falsification each get harder and the inconclusive middle grows;
+the hard stop still fires on inconclusive, so only the word *falsified* is reserved for an
+inversion that no single metric is carrying. This was recorded before the gate ran, which is
+the only time it could be added honestly — `null_construction` freezes at the first
+adjudication, and there has been none.
+
+Claims (a) and (b) still have no criterion of their own. `CLAIM-A` and `CLAIM-B` remain
+`needs-null`.
+
 ## Status
 
 Not yet adjudicated — the replication gate (item 6) has not run. This file exists to make

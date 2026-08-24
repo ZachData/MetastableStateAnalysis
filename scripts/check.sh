@@ -6,7 +6,8 @@
 # command list.
 #
 #   ./scripts/check.sh          tier 0 + tier 1 — what gates a merge
-#   ./scripts/check.sh lint     tier 0 only; needs no dependencies at all
+#   ./scripts/check.sh lint     tier 0 only; needs no dependencies at all, and
+#                               is RUN with them unimportable so that stays true
 #   ./scripts/check.sh pure     tier 1 only; needs requirements/test.txt
 #   ./scripts/check.sh iso      tier 1 with heavy deps forced absent (what CI has)
 #   ./scripts/check.sh all      adds the deps tier; needs requirements/heavy.txt
@@ -20,8 +21,36 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 TARGET="${1:-gate}"
 
+# Shadow a list of modules with packages that raise ImportError, so code which
+# claims not to need them is actually run without them. Echoes the directory;
+# the caller is responsible for removing it.
+make_shadow() {
+  local shadow m
+  shadow="$(mktemp -d)"
+  for m in "$@"; do
+    mkdir -p "$shadow/$m"
+    printf 'raise ImportError("%s blocked: dependency isolation, scripts/check.sh")\n' \
+      "$m" > "$shadow/$m/__init__.py"
+  done
+  echo "$shadow"
+}
+
 run_lint() {
-  echo "=== tier 0: repo hygiene ==="
+  # Tier 0's contract is "no dependencies at all", and CI installs none for it,
+  # so tier 0 is run here with them genuinely unimportable. This is not
+  # belt-and-braces: `python -m core.adjudication --verify` joined tier 0 with
+  # `core/evalues.py` behind it, that module imported numpy at scope, and the
+  # job went red on a runner that correctly had nothing installed -- while
+  # passing on every developer machine, which all have numpy. Exactly the gap
+  # `run_pure_isolated` exists to close, one tier up.
+  local shadow
+  shadow="$(make_shadow numpy scipy torch transformers sklearn matplotlib)"
+  trap 'rm -rf "$shadow"' RETURN
+  PYTHONPATH="$shadow${PYTHONPATH:+:$PYTHONPATH}" _lint_commands
+}
+
+_lint_commands() {
+  echo "=== tier 0: repo hygiene (heavy deps AND numpy/scipy unimportable) ==="
   python3 tools/lint_repo.py
 
   echo
@@ -31,6 +60,18 @@ run_lint() {
   echo
   echo "=== tier 0: EVALUABILITY.md in step with the registry ==="
   python3 tools/render_evaluability.py --check
+
+  echo
+  echo "=== tier 0: ledger recomputes to what it claims ==="
+  # Replays every claim's e-process from the committed adjudication records,
+  # recalibrating each e-value from its p-value rather than trusting the stored
+  # number. Catches arithmetic drift and, more usefully, a decision word
+  # updated by hand without its evidence.
+  python3 -m core.adjudication --verify
+
+  echo
+  echo "=== tier 0: FALSIFICATION.md in step with the ledger ==="
+  python3 tools/render_falsification.py --check
 }
 
 run_pure() {
@@ -52,14 +93,8 @@ run_pure_isolated() {
   echo
   echo "=== tier 1 (isolated): pure tests with heavy deps genuinely absent ==="
   local shadow
-  shadow="$(mktemp -d)"
+  shadow="$(make_shadow torch transformers sklearn matplotlib)"
   trap 'rm -rf "$shadow"' RETURN
-  local m
-  for m in torch transformers sklearn matplotlib; do
-    mkdir -p "$shadow/$m"
-    printf 'raise ImportError("%s blocked: pure-tier isolation, scripts/check.sh")\n' \
-      "$m" > "$shadow/$m/__init__.py"
-  done
   PYTHONPATH="$shadow${PYTHONPATH:+:$PYTHONPATH}" python3 -m pytest -m pure -q
 }
 

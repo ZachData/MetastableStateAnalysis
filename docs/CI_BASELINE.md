@@ -87,6 +87,34 @@ takes effect and `pytest -m pure` exercises the real library throughout. The
 pure tier's central claim -- *this passes with no heavy dependencies* -- is then
 not tested at all by the command that appears to test it.
 
+### The same gap, one tier up (2026-08-24)
+
+Tier 0's contract is stronger: *no dependencies at all*, which is why CI's lint
+job installs nothing and why `tools/lint_repo.py`, `check_registry.py`,
+`render_evaluability.py` and `render_falsification.py` each say "standard
+library only" in their docstrings.
+
+`python -m core.adjudication --verify` joined tier 0 when the ledger became
+self-verifying, and it brought `core/evalues.py` with it. That module's scope
+line said "pure numpy + stdlib" and it imported numpy at module scope, so the
+lint job went red with `ModuleNotFoundError: No module named 'numpy'` on a
+runner that correctly had nothing installed — and passed on every developer
+machine, all of which have numpy. Identical in shape to the tier-1 failure
+below, one tier up, and undetectable by the command that appeared to test it.
+
+Two fixes, because either alone leaves the hole open. The calibrator and the
+e-process are pure `math`; numpy appears in one simulation helper
+(`simulate_type_i_error`) whose callers live in the test tier, so its import is
+now function-local. And `check.sh lint` now runs tier 0 with numpy, scipy and
+the heavy four all shadowed, so the contract is exercised rather than asserted
+— `TestTierZeroIsStdlibOnly` in `tests/test_core_evalues.py` is the fast
+in-suite guard for the same rule.
+
+The lesson is the one this section already carried, and it is now three for
+three: **a tier that claims to run without something has to be run without it.**
+
+### The tier-1 failure that surfaced this pattern
+
 The failure that surfaced it was a good one to have: scipy's array-API dispatch
 asks `issubclass(cls, torch.Tensor)` on any path through `scipy.stats`, and a
 MagicMock attribute is an instance rather than a class, so it raised

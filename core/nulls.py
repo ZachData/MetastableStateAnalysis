@@ -198,3 +198,96 @@ def nsigma_verdict(
     z_str = "nan" if np.isnan(z) else f"{z:.1f}"
     summary["verdict_str"] = f"{z_str}σ from null ({tag})"
     return summary
+
+
+# ---------------------------------------------------------------------------
+# P-values from a sampled null (POPPER_PLAN.md item B6)
+# ---------------------------------------------------------------------------
+
+def p_from_null(
+    observed: float,
+    null_values: np.ndarray,
+    alternative: str = "greater",
+) -> dict:
+    """
+    A Monte-Carlo p-value for an observed statistic against a sampled null.
+
+    This is the bridge between this module and `core/adjudication.py`: an
+    e-value needs a p-value that is *valid under H0*, and a null sampled by
+    the same procedure that produced the observation is the construction this
+    project already uses everywhere (`shuffled_dimension_null`,
+    `label_permutation_null`, `p1c_frames.centroids.random_band`). What was
+    missing was the last step, so every such null stopped at "Nσ from null" --
+    a summary that reads like significance without being calibrated as one.
+
+    The `+1` in both numerator and denominator is not a rounding convenience.
+    Without it a statistic more extreme than every draw returns p = 0, which
+    calibrates to an infinite e-value and asserts more evidence than a finite
+    sample can carry. With it the smallest attainable p is 1/(n+1), which is
+    the honest resolution limit of `n` draws, and it makes the estimator
+    conservatively valid (Phipson & Smyth 2010) rather than anticonservative.
+
+    Parameters
+    ----------
+    observed : float
+        The statistic computed on the real data.
+    null_values : array-like
+        Draws of the same statistic under H0, from the same procedure.
+    alternative : {"greater", "less", "two-sided"}
+        Direction the prediction claims. MUST be fixed before seeing the data:
+        choosing it afterward is a one-bit selection that doubles the effective
+        error rate, and it is the cheapest possible way to void the guarantee
+        the e-value is supposed to provide. The registry's `null_construction`
+        field is where that choice is recorded.
+
+    Returns
+    -------
+    dict
+        observed, p_value, n_null, resolution (the 1/(n+1) floor),
+        at_resolution_floor (True when p is the smallest the sample can
+        express -- a signal to draw more, not a stronger result), plus the
+        `sigma_from_null` summary for continuity with existing reports.
+
+    Raises
+    ------
+    ValueError
+        On an unknown alternative, an empty null, or a non-finite observation.
+        Refusing rather than defaulting: a p-value silently computed against
+        the wrong tail is indistinguishable in the artifact from a correct one.
+    """
+    if alternative not in ("greater", "less", "two-sided"):
+        raise ValueError(
+            f"alternative must be 'greater', 'less' or 'two-sided'; got {alternative!r}"
+        )
+    null_values = np.asarray(null_values, dtype=np.float64)
+    if null_values.size == 0:
+        raise ValueError("null_values is empty; a p-value needs a sampled null")
+    if not np.isfinite(observed):
+        raise ValueError(f"observed statistic is not finite: {observed!r}")
+
+    finite = null_values[np.isfinite(null_values)]
+    if finite.size == 0:
+        raise ValueError("null_values contains no finite draws")
+    n = finite.size
+
+    if alternative == "greater":
+        n_extreme = int(np.sum(finite >= observed))
+    elif alternative == "less":
+        n_extreme = int(np.sum(finite <= observed))
+    else:
+        centre = float(np.median(finite))
+        n_extreme = int(np.sum(np.abs(finite - centre) >= abs(observed - centre)))
+
+    p_value = (n_extreme + 1.0) / (n + 1.0)
+    resolution = 1.0 / (n + 1.0)
+
+    out = sigma_from_null(observed, finite)
+    out.update({
+        "p_value": float(p_value),
+        "alternative": alternative,
+        "n_null_finite": n,
+        "n_null_dropped": int(null_values.size - n),
+        "resolution": float(resolution),
+        "at_resolution_floor": bool(p_value <= resolution + 1e-12),
+    })
+    return out

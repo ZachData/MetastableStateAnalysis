@@ -351,7 +351,7 @@ In dependency order, cheapest first: `core/nulls.py` (`sigma_from_null` → add
 Each is one chunk: thread `prediction_id` through, call `core.adjudication.adjudicate`, assert
 in tests that the emitted record round-trips. No science changes, no threshold changes.
 
-### B7. `FALSIFICATION.md` generation + CI recomputation · [C] · M
+### B7. `FALSIFICATION.md` generation + CI recomputation · **DONE** · [C] · M
 
 `tools/render_falsification.py` builds, per claim, the ordered table of adjudicated
 predictions with p, e, running E, and the decision at α — replacing the hand-maintained
@@ -571,6 +571,243 @@ Three predictions are adjudicable today: `P-S1`, `P-T1`, `P-M1`. The B6 retrofit
 of existing p-value sites is mostly moot — those sites are archived — so what
 remains of workstream B is B5's null constructions and B7's generated
 falsification table, now pointed at Phase 7 and Phases 1c/2d rather than at 5b/6.
+
+## 6d. First live null construction (2026-08-23, post-merge)
+
+**P-S1 now has a calibrated p-value.** Its null machinery already existed --
+`random_band` sampled 200 draws of the Q_k ratio -- but stopped at "Nσ from
+null", a summary that reads like significance without being calibrated as one.
+`core/nulls.p_from_null` supplies the missing step for every such null in the
+project, with the `(n_extreme + 1)/(n + 1)` floor: a p of exactly 0 calibrates
+to an infinite e-value, asserting more evidence than a finite sample can carry.
+
+Two choices had to be fixed before running, because neither was settled by the
+original wording and both are selections if made afterward:
+
+- **Multi-degree combination.** One pre-declared scalar -- the sum over degrees
+  1–3 of the (step0 − trained) ratio, each standardised by that degree's own
+  null sd -- rather than three per-degree tests plus a correction chosen after
+  seeing three p-values. Standardising is load-bearing: `UPDATE_PLAN.md` §5.8
+  measured the band narrowing from ~0.17 at k=1 to ~0.002 at k=3, so an
+  unstandardised sum is dominated by k=1 and discards the degrees that are more
+  sensitive in relative terms.
+- **Direction.** One-sided `greater`, since P-S1 predicts trained ratios
+  *smaller*. Verified: reversed arms give p = 1.000.
+
+**A calibration defect was found and fixed by measuring rather than reasoning.**
+The first implementation referenced the observed statistic against
+`design_report`'s internal baseline and the null against its own — two
+Monte-Carlo estimates of the same quantity. Null-vs-null pairs came back with a
+mean p of 0.40 against the 0.50 a calibrated statistic must give, in the
+anticonservative direction and invisible in any single result. Re-referencing
+both arms against one shared baseline brings the rejection rate to nominal
+(frac p ≤ 0.05 = 0.050 at n = 40); power is 88% at α = 0.05 against a
+simplex-like configuration.
+
+**B7 is done.** `tools/render_falsification.py` generates
+`claims/FALSIFICATION.md`, and tier 0 now recomputes every claim's E from the
+committed records — recalibrating each e-value from its p-value rather than
+trusting the stored number — so a decision word edited by hand surfaces in CI.
+
+## 6e. All three live predictions now have calibrated nulls
+
+`P-S1`, `P-T1`, `P-M1` — the complete set of predictions that are both
+`e-value` and `active` — can now each produce a p-value. Every one is a
+permutation test, and in each case the permutation is of the thing the
+prediction's own falsifier names:
+
+| | statistic | null permutes | falsifier it realises |
+|---|---|---|---|
+| `P-S1` | sum over degrees 1–3 of the (step0 − trained) Q_k ratio, standardised per degree | two independent i.i.d. configurations at matched (m, d) | "no difference between trained and step-0" |
+| `P-T1` | trimodal-rate(candidates) − trimodal-rate(controls) | the row-2 classification labels | "trimodality is a property of the activations, not of the classification" |
+| `P-M1` | correlation of per-layer mean regime distance with the violation series | the violation series against layers | "violations are not explained by leaving the gradient-flow regime" |
+
+That pattern is worth noticing rather than treating as coincidence: **a
+falsifier stated well enough to be falsifiable usually names its own null.**
+Where these three were easy to construct, it was because `PREDICTIONS.md` had
+already done the hard part. The remaining `needs-null` entries are the ones
+whose falsifiers are stated as thresholds instead.
+
+Two decisions each had to be fixed before running, since either is a selection
+if made after seeing results — the multi-degree combination and direction for
+P-S1, the mode-count source and the spacing question for P-T1, the aggregate
+choice and direction for P-M1. All are module constants rather than parameters,
+so a per-run choice is not available, and all are recorded in the registry's
+`null_construction`.
+
+**Two findings from doing it:**
+
+- **`adjudicate_p_t1` contradicts the P-T1 amendment.** It reads
+  `modality["trimodal"]` — a mode count at one bandwidth — while the dated
+  addendum says "adjudicate on `stable_n_modes` only ... a mode count at a
+  single bandwidth is a choice, not a measurement." The two disagree wherever
+  the bandwidth scan does not settle. `p_value_p_t1` implements the amended
+  version; a note now sits on `adjudicate_p_t1` itself so a reader is not
+  misled by the name.
+- **P-M1 refuses rather than choosing.** When the mean/min/max head-to-layer
+  aggregates disagree in sign, no p-value is emitted. `adjudicate_p_m1` already
+  established that this means per-layer energies cannot resolve a per-head
+  claim; producing a number for one chosen aggregate would convert a resolution
+  limit into a result.
+
+**What is still missing is data, not apparatus.** No artifacts exist in this
+repo (`BASE_RESULTS_DIR` does not), so all three are validated on synthetic
+inputs with known answers — calibration under H0, power against a planted
+effect, and p ≈ 1 when the effect is in the wrong arm. The ledger is still
+empty, and `claims/FALSIFICATION.md` says so.
+
+## 6f. CLAIM-C's null, and the four things its wording left open (2026-08-24)
+
+`CLAIM-C` — the transfer claim under H-TRANSFER, and the only prediction in the
+registry carrying a hard stop — now has a construction, in
+`p1_mstate_tracking/replication_gate.py`. It is the first `needs-null` entry
+converted, and `claims/EVALUABILITY.md` had already named it the one to do
+first: *"a stop rule that cannot be adjudicated is a stop rule that gets argued
+with at the moment it binds."*
+
+**The criterion.** "Reproduces" is read as sign-concordance of the
+trained-minus-random *contrast*, over the six per-layer series
+`CHECKPOINT_METRICS` already registers, on a common normalized-depth grid
+(gpt2-large has 36 layers, pythia-1.4b has 24 — nothing is comparable before
+depth is normalized). Blog 1's phenomenology is a contrast, not a set of
+absolute levels, so the object that has to transfer is the contrast.
+
+**The null is the same shape §6e found in the other three.** Permute the
+trained/random condition label on the candidate side, gpt2-large held fixed as
+the reference. `delta` is antisymmetric in (trained, random), so a swap is an
+exact sign flip and the null has a closed form — which lets it be enumerated
+**exhaustively** rather than sampled: 256 patterns for the eight metastability
+prompts, so the test is exact rather than Monte-Carlo. That is the first exact
+null in the project.
+
+**The exchangeable unit is the prompt, not the cell.** The label "trained"
+attaches to a run, so swapping it moves all six metrics of one prompt together.
+Flipping cells independently would treat six metrics on one prompt as six
+independent observations — the same error `status-6.md` records for "49 ALBERT
+layers are not 49 independent observations", and the reason that result is
+still `needs-null`. Choosing the unit is where the p-value was won or lost here,
+not choosing the statistic.
+
+**A refusal that is new in kind.** The existing refusals are about the data
+(P-M1's aggregates disagreeing in sign). This one is about the *design*: with n
+prompts the enumeration's smallest expressible p is `2/(2^n + 1)`, so at four
+prompts a **perfect** result gives p = 0.118 and the test cannot reject at
+α = 0.05 however clean the data is. The module refuses rather than reporting
+"not significant" on nothing — which on a hard-stop claim would read as
+evidence against transfer. Six prompts is the first workable gate. Worth
+generalising: several remaining `needs-null` entries are small-n permutation
+designs, and the attainable floor should be checked before the null is built,
+not after a result comes back null.
+
+**And a second refusal, found by measuring the limitation instead of noting
+it.** The plan was to document "prompts on one model are not independent runs"
+and move on. Measuring it changed what the code does. With independent sign
+rows the rejection rate at α = 0.05 is ≈0.015 — conservative, as a discrete
+statistic should be. With every row identical it is **≈0.34** (3000 draws
+each): numerically the
+same fourfold-plus inflation §6 lists as risk 1, POPPER's 0.082 → 0.340 when
+its relevance checker is removed, arriving here from a completely different
+direction. So the exactly-degenerate case is refused rather than documented —
+identical rows mean the prompts contribute one observation, and enumerating
+2^n patterns over one observation is the wrong null, not a conservative one —
+and `sign_homogeneity` is reported in between so a reader can place a real run
+between the two measured rates. This is a degeneracy and not a tolerance: rows
+are either all equal or they are not, so the ordinal criterion stays free of
+the magnitude cut it was chosen to avoid needing.
+
+The transferable lesson is the one §6d already recorded in a different form:
+**measure the calibration, do not reason about it.** §6d found P-S1
+anticonservative at a null-p mean of 0.40 by simulating; this pass found the
+size of a limitation everyone would have been content to describe in prose.
+
+**The stop rule is three-way, and only one branch is a falsification.**
+TRANSFERS (`p_greater ≤ α`), FAILS-TO-TRANSFER (the reciprocal test rejects —
+the contrast systematically *inverts*), INSUFFICIENT (neither). The hard stop
+fires on both of the latter — an unadjudicated gate stops the sweep — but only
+FAILS-TO-TRANSFER enters the ledger as a falsification, because an e-process
+records "insufficient evidence" and never "null accepted". **Only `p_greater`
+is calibrated into an e-value.** `p_reciprocal` is a stop-rule input, recorded
+in the record's notes and kept out of H-TRANSFER's product; two one-sided tests
+on one statistic would otherwise double the claim's Type-I rate for free.
+
+**Four things the registered wording did not settle**, decided here and written
+into `null_construction` so a later reader is not left to infer them:
+
+1. **The criterion adjudicates the contrast, not the two absolute reproductions
+   the statement's words name.** A pythia pair whose levels both sit far from
+   gpt2-large's but whose difference has the same sign passes. The cost is that
+   the criterion is scale-blind; the absolute per-arm profile distances are
+   computed and reported as a diagnostic and enter no p-value.
+2. **The two-baseline policy.** `PREDICTIONS.md` attaches it to this claim
+   specifically. The p-value runs on the norm-matched `pythia-1.4b-random`,
+   which is what the statement names; the true step-0 init is a *mandatory*
+   sensitivity arm — refused on omission, the same refusal
+   `centroids.load_centroids` makes — reported beside the result and kept out
+   of the p-value, since step 0 is CLAIM-A's object and one dataset must not
+   settle two entries. Direction disagreement between the two baselines is
+   flagged in the record.
+3. **`effective_rank` is read from `effective_rank_normed`.** `status-1.md`
+   defect D1: the raw field mixes directional collapse with residual-stream
+   norm growth. Baking the known-defective field into the gate that carries the
+   hard stop would be knowingly wrong.
+4. **Full normalized depth, no band restriction.** Blog 1 quotes layers 5–30 of
+   gpt2-large, but a depth band is a choice with as many options as there are
+   bands.
+
+**The limitation that does not go away.** Prompts run on one model share that
+model's weights, so the rows are not fully independent either: a pythia-wide
+effect present in every prompt is invisible to the enumeration. The prompt is
+the coarsest unit this design provides — a coarser one would need independent
+training runs, which do not exist. Refusing at the degenerate end bounds the
+damage; it does not remove it, and every record the module emits carries both
+measured rates in its notes rather than leaving them to a reader.
+
+**A second agreement axis, added the same day and still pre-data.** The author
+asked whether agreement across *tools* could sit alongside agreement across
+*architectures*, on the reasoning that together they are a stronger argument
+while individually a disagreement is not a death sentence — there are
+instrument quirks nobody is privy to. It was not too late: `null_construction`
+freezes only on a prediction that has been adjudicated
+(`check_registry.py:359` iterates `sorted(adjudications)`), the ledger is
+empty, and no gate data exists. That window closes at the first adjudication
+and not before.
+
+The axis is **metric leave-one-out**: the whole cross-architecture test is
+re-run once per subset with one metric dropped, and the gate requires
+**unanimity in both directions**. Four things about it are worth carrying
+forward:
+
+1. **The two axes stay separate factors.** The gpt/pythia axis is the claim;
+   the metric axis is a statement about the instrument. Folded into one
+   p-value, a failure is ambiguous between "the phenomenology does not
+   transfer" and "one of our six measurements is quirky", and those have
+   opposite consequences for the sweep.
+2. **Intersection-union, so no multiplicity correction.** The alternative is a
+   conjunction, and max(p) is a valid p-value for a conjunction *regardless of
+   dependence* — which is what makes it right here, since six leave-one-out
+   runs share five sixths of their data and any Bonferroni-style correction
+   over them would be absurd.
+3. **The hard stop is not weakened.** Both directions get harder and the
+   INSUFFICIENT middle grows, but the stop already fires on INSUFFICIENT. Only
+   the word *falsified* is reserved for an inversion no single metric carries.
+4. **The rule is "no subset may fail", not "no metric may dissent"** — a
+   distinction that only showed up when a test written on the looser reading
+   failed. Five of six metrics inverting on every prompt survives every
+   leave-one-out and is correctly a falsification. The looser reading would
+   let one quirky measurement veto a real result and make the gate
+   unfalsifiable in practice, which is the failure the whole apparatus exists
+   to prevent. `TestToolAxis` pins both halves.
+
+The attainable-floor refusal is unchanged — a max of p-values each at or above
+`2/(2^n + 1)` is at or above it — and a new refusal joins it: if any subset
+cannot carry a p-value, the gate refuses rather than taking a max over a set
+with an undefined member, which would silently drop whichever subset was
+hardest to satisfy.
+
+**Still no data.** As in §6e, the apparatus exists and the artifacts do not.
+Validation is on synthetic inputs with known answers: exactness of the
+enumeration, validity under H0, power against perfect transfer, p = 1.000 with
+the arms reversed, and every refusal. `claims/adjudications/` remains empty.
 
 ## 7. What this plan does *not* do
 
