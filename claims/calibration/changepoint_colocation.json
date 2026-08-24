@@ -1,0 +1,179 @@
+{
+  "alpha": 0.05,
+  "elapsed_seconds": 99.7,
+  "generated_by": "tools/calibrate_changepoint_colocation.py",
+  "n_checkpoints": 25,
+  "replicates": 300,
+  "rows": [
+    {
+      "family": "independent",
+      "mean_p": 0.5039630184907545,
+      "median_p": 0.5119940029985007,
+      "n_units": 8,
+      "reciprocal_rejection_rate": 0.043333333333333335,
+      "rejection_rate": 0.04,
+      "replicates": 300
+    },
+    {
+      "family": "independent",
+      "mean_p": 0.535184074629352,
+      "median_p": 0.5589705147426287,
+      "n_units": 16,
+      "reciprocal_rejection_rate": 0.06,
+      "rejection_rate": 0.04,
+      "replicates": 300
+    },
+    {
+      "family": "independent",
+      "mean_p": 0.5141296018657339,
+      "median_p": 0.5042478760619691,
+      "n_units": 24,
+      "reciprocal_rejection_rate": 0.056666666666666664,
+      "rejection_rate": 0.06,
+      "replicates": 300
+    },
+    {
+      "family": "common-trend",
+      "mean_p": 0.5014359486923206,
+      "median_p": 0.525487256371814,
+      "n_units": 8,
+      "reciprocal_rejection_rate": 0.03333333333333333,
+      "rejection_rate": 0.05,
+      "replicates": 300
+    },
+    {
+      "family": "common-trend",
+      "mean_p": 0.5336381809095452,
+      "median_p": 0.5572213893053474,
+      "n_units": 16,
+      "reciprocal_rejection_rate": 0.06333333333333334,
+      "rejection_rate": 0.03666666666666667,
+      "replicates": 300
+    },
+    {
+      "family": "common-trend",
+      "mean_p": 0.5158204231217723,
+      "median_p": 0.5097451274362819,
+      "n_units": 24,
+      "reciprocal_rejection_rate": 0.06,
+      "rejection_rate": 0.04666666666666667,
+      "replicates": 300
+    },
+    {
+      "family": "shared-unit-factor",
+      "mean_p": 0.0019690154922538733,
+      "median_p": 0.0009995002498750624,
+      "n_units": 8,
+      "reciprocal_rejection_rate": 0.0,
+      "rejection_rate": 0.9966666666666667,
+      "replicates": 300
+    },
+    {
+      "family": "shared-unit-factor",
+      "mean_p": 0.0005064134599366981,
+      "median_p": 0.0004997501249375312,
+      "n_units": 16,
+      "reciprocal_rejection_rate": 0.0,
+      "rejection_rate": 1.0,
+      "replicates": 300
+    },
+    {
+      "family": "shared-unit-factor",
+      "mean_p": 0.0004997501249375311,
+      "median_p": 0.0004997501249375312,
+      "n_units": 24,
+      "reciprocal_rejection_rate": 0.0,
+      "rejection_rate": 1.0,
+      "replicates": 300
+    },
+    {
+      "family": "reversed",
+      "mean_p": 0.9952473763118441,
+      "median_p": 1.0,
+      "n_units": 8,
+      "reciprocal_rejection_rate": 0.9833333333333333,
+      "rejection_rate": 0.0,
+      "replicates": 300
+    },
+    {
+      "family": "reversed",
+      "mean_p": 0.999966683325004,
+      "median_p": 1.0,
+      "n_units": 16,
+      "reciprocal_rejection_rate": 1.0,
+      "rejection_rate": 0.0,
+      "replicates": 300
+    },
+    {
+      "family": "reversed",
+      "mean_p": 1.0,
+      "median_p": 1.0,
+      "n_units": 24,
+      "reciprocal_rejection_rate": 1.0,
+      "rejection_rate": 0.0,
+      "replicates": 300
+    },
+    {
+      "family": "power",
+      "mean_p": 0.000689655172413793,
+      "median_p": 0.0004997501249375312,
+      "n_units": 8,
+      "reciprocal_rejection_rate": 0.0,
+      "rejection_rate": 1.0,
+      "replicates": 300
+    },
+    {
+      "family": "power",
+      "mean_p": 0.0004997501249375311,
+      "median_p": 0.0004997501249375312,
+      "n_units": 16,
+      "reciprocal_rejection_rate": 0.0,
+      "rejection_rate": 1.0,
+      "replicates": 300
+    },
+    {
+      "family": "power",
+      "mean_p": 0.0004997501249375311,
+      "median_p": 0.0004997501249375312,
+      "n_units": 24,
+      "reciprocal_rejection_rate": 0.0,
+      "rejection_rate": 1.0,
+      "replicates": 300
+    }
+  ],
+  "schema_version": 1,
+  "seed": 20260824,
+  "sweep_steps": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1000,
+    2000,
+    3000,
+    4000,
+    8000,
+    13000,
+    23000,
+    33000,
+    43000,
+    63000,
+    83000,
+    103000,
+    123000,
+    143000
+  ],
+  "synthetic_family": {
+    "_placed": "both PLACED, not calibrated: they define the family the rates are rates under and no distribution was consulted",
+    "curve": "logistic in log10(step+1)",
+    "noise_sd": 0.02,
+    "onset_width_log_step": 0.35
+  }
+}
