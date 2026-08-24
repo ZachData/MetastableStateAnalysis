@@ -104,16 +104,71 @@ reduces to a closed form — row i contributes either its concordant count or
 its discordant count — and is enumerated EXHAUSTIVELY when 2^n_prompts is
 small enough, which it is for the eight metastability prompts (256 patterns).
 
-**The limitation that remains, recorded rather than papered over.** Prompts run
-on one model share that model's weights, so rows are not fully independent
-either. A pythia-wide effect present in every prompt (a metric that moves the
-same way with training for reasons unrelated to gpt2-large) correlates the rows
-and the enumeration cannot see it. The prompt is the coarsest unit the gate's
-own design makes available; a coarser one would need independent training runs,
-which do not exist. The cost was measured, not assumed -- about 0.015 at alpha = 0.05
-with independent rows and about 0.34 with identical ones (3000 draws each) -- so the module refuses at
-the degenerate end, reports `sign_homogeneity` in between, and every record it
-emits carries both numbers in its notes.
+**The limitation that remains, and what is now done about it.** Prompts run on
+one model share that model's weights, so rows are not fully independent either.
+A pythia-wide effect present in every prompt (a metric that moves the same way
+with training for reasons unrelated to gpt2-large) correlates the rows and the
+enumeration cannot see it. The prompt is the coarsest unit the gate's own design
+makes available; a coarser one would need independent training runs, which do
+not exist.
+
+The cost was measured, not assumed: about 0.015 at alpha = 0.05 with
+independent rows and about 0.34 with identical ones. Those two numbers bounded
+the damage and left EVERYTHING BETWEEN THEM uncontrolled, which is where a real
+run lands.
+
+THE HOMOGENEITY CORRECTION (2026-08-24, still before any gate data exists)
+
+The middle is now measured too. `tools/calibrate_claim_c_homogeneity.py`
+simulates H0 offline across the homogeneity range and stores
+
+    R(h, p) = P( the gate reports a p at or below p | it reported one at all,
+                 under H0, at prompt sign-row homogeneity h )
+
+in `claims/calibration/claim_c_homogeneity.json`, and the reported p becomes
+
+    p = max(p_exact, R(sign_homogeneity, p_exact))
+
+**Blunt, never sharpen, and that asymmetry is the choice.** At the independent
+end the exhaustive enumeration is genuinely CONSERVATIVE -- a discrete exact
+test should be -- so R sits well below p_exact and the max is a no-op: the
+exact conditional guarantee survives untouched. At the dependent end R exceeds
+p_exact and the reported number becomes the measured rate. Taking R
+unconditionally would recover the lost power, but it would trade an exact
+guarantee for a simulated one on the claim carrying the hard stop.
+
+**Both directions are corrected.** `p_reciprocal` decides FAILS-TO-TRANSFER,
+the branch that writes a falsification into the ledger, so leaving it
+uncorrected would inflate exactly the outcome it is worst to get wrong. Only
+`p_greater` still enters the e-value; that is unchanged.
+
+**Two numbers in §6f are now known to describe an older gate.** The 0.015 and
+0.34 were measured before the metric-leave-one-out axis existed. With the axis
+the independent-rows rate is about 0.003, because the reported p is a max over
+seven subsets. The endpoints are kept in the record as history and the curve is
+what the code reads.
+
+**What the curve is measured under, since a rate is a rate under something.**
+The H0 family is a per-metric candidate-wide sign propensity with prompt rows
+conditionally independent given it -- literally the threat named two paragraphs
+up. Three bias shapes are swept and each homogeneity bin keeps the
+worst-rejecting configuration that reached it, because one scalar summary
+cannot determine a distribution. Rates are conditional on the gate EMITTING a
+p: not conditioning would let the gate look calibrated by refusing, since at
+high homogeneity most draws hit the identical-rows refusal.
+
+**Measured out of sample as well as in.**
+`tests/test_claim_c_homogeneity.py::TestCalibrationIsRestored` re-measures the
+corrected rate on a dependence family the curve was never fitted to -- a
+duplicate-prompt mixture, "some prompts are redundant" rather than "some
+metrics are architecture-wide" -- and it stays at or below nominal there. That
+is the check that indexing the correction by a scalar summary transfers.
+
+**What it does not cover, stated now rather than discovered later.** Every
+simulated draw has a complete (prompt x metric) table. A real run that drops
+cells has a coarser statistic than anything tabulated, so its correction is
+read off a table measured on a slightly different design. The gate reports
+`n_cells_dropped` beside the correction and every record says so.
 
 REFUSING RATHER THAN DEGRADING
 
@@ -133,6 +188,21 @@ p-value when
     max, and a max over a set with an undefined member is undefined; reporting
     the rest would silently drop whichever subset was hardest to satisfy, which
     is precisely the one the rule exists to catch;
+  - no homogeneity correction is available -- the curve is missing, at
+    another schema version, measured on another metric set, tabulated for
+    another prompt count, or has no measurement in the bin the run landed in.
+    Since the correction is what enters the e-value, falling back to the
+    uncorrected p is not a degraded answer: it is a Type-I guarantee asserted
+    on a null already measured to be anticonservative;
+  - the corrected best attainable p exceeds alpha. This is the attainable-floor
+    refusal one level up, and derived from alpha the same way: if the measured
+    H0 rate at 2/(2^n + 1) is already above alpha, then a PERFECT result does
+    not survive its own correction and the gate cannot reject however clean the
+    data is. It settles the second question the correction had to answer --
+    whether there is a homogeneity above which the gate refuses rather than
+    corrects -- without introducing a tolerance. No homogeneity constant
+    appears anywhere in this module; the cut is wherever alpha and the null
+    size put it, and it moves when alpha does;
   - every usable prompt carries the SAME candidate sign pattern. The prompts
     then contribute one observation, and enumerating 2^n patterns over one
     observation is the wrong null rather than a conservative one. Measured
@@ -283,6 +353,24 @@ EXHAUSTIVE_ENUMERATION_LIMIT = 1 << 16
 DEFAULT_N_PERM = 5000
 
 _MIN_VALID_DEPTH_POINTS = 2
+
+#: The homogeneity calibration curve, measured offline by
+#: `tools/calibrate_claim_c_homogeneity.py` and committed. See
+#: `homogeneity_correction` below and POPPER_PLAN.md 6g for what it is and why
+#: reading it is not optional.
+HOMOGENEITY_CURVE_PATH = (Path(__file__).resolve().parents[1]
+                          / "claims" / "calibration" / "claim_c_homogeneity.json")
+
+#: Schema of the curve this module knows how to read. A file at any other
+#: version is refused rather than reinterpreted: the stored numbers are
+#: rejection rates of a specific test, and reading them as rates of a
+#: different one is worse than having no correction, because it looks like one.
+HOMOGENEITY_CURVE_SCHEMA_VERSION = 1
+
+#: How the measured rate is applied. The reported p is
+#: max(p_exact, R(homogeneity, p_exact)) -- the correction may BLUNT the
+#: exhaustive enumeration's p but never sharpen it. See `apply_homogeneity_correction`.
+CLAIM_C_HOMOGENEITY_CORRECTION = "measured-rejection-rate, never-sharpen"
 
 
 # ---------------------------------------------------------------------------
@@ -699,6 +787,151 @@ def _metric_subsets() -> List[Tuple[str, Tuple[int, ...]]]:
     return subsets
 
 
+# ---------------------------------------------------------------------------
+# The homogeneity correction
+# ---------------------------------------------------------------------------
+
+_CURVE_CACHE: Dict[str, dict] = {}
+
+
+def load_homogeneity_curve(path=None) -> dict:
+    """
+    The committed homogeneity calibration curve, cached by path.
+
+    WHY THIS EXISTS. The sign-flip null enumerates 2^n patterns on the premise
+    that n prompts carry n pieces of information. They do not carry n
+    INDEPENDENT pieces -- they share one model's weights -- and the cost was
+    measured at the two ends of the range rather than argued about. The middle
+    was left uncontrolled, and a real run lands in the middle. This file is
+    that middle, measured offline once by
+    `tools/calibrate_claim_c_homogeneity.py`:
+
+        R(h, p) = P( the gate reports a p at or below p | it reported one at
+                     all, under H0, at prompt sign-row homogeneity h )
+
+    It is COMMITTED rather than regenerated per call for the same reason every
+    other CLAIM-C choice is a module constant: a correction recomputed per run
+    is a per-run quantity, and a per-run quantity can be re-chosen.
+    """
+    key = str(Path(path) if path is not None else HOMOGENEITY_CURVE_PATH)
+    if key not in _CURVE_CACHE:
+        import json
+        with open(key) as f:
+            _CURVE_CACHE[key] = json.load(f)
+    return _CURVE_CACHE[key]
+
+
+def rejection_rate_at(levels: Sequence[float], quantiles: Sequence[float],
+                      p: float) -> float:
+    """
+    Read one stored quantile row as a rejection rate, rounding UP to the next
+    tabulated level.
+
+    The row is the quantile function of the reported p under H0 at that
+    homogeneity, so R(p) = P(p_reported <= p) is the largest level whose
+    quantile value is at or below `p`. Only the tabulated levels exist, so the
+    honest answer is the NEXT level up -- never a smaller correction than the
+    measurement supports. A p below every stored quantile reads as the smallest
+    tabulated level, which is the resolution floor of the draw count and not
+    zero: the simulation cannot certify a rate it never had the draws to see.
+    """
+    q = np.asarray(quantiles, dtype=np.float64)
+    idx = int(np.searchsorted(q, float(p), side="right"))
+    return 1.0 if idx >= len(levels) else float(levels[idx])
+
+
+def homogeneity_correction(n_prompts: int, homogeneity: Optional[float],
+                           *, path=None) -> dict:
+    """
+    The stored curve row for this run's prompt count and observed homogeneity,
+    or a refusal saying why there is none.
+
+    Three ways this comes back unavailable, and each is a refusal rather than
+    a fallback to the uncorrected p. Once the correction is what enters the
+    e-value, an uncorrected p reaching the ledger is not a degraded answer, it
+    is a Type-I guarantee asserted on a null the project has already measured
+    to be wrong in the anticonservative direction.
+    """
+    try:
+        curve = load_homogeneity_curve(path)
+    except (OSError, ValueError) as exc:
+        return {"available": False,
+                "reason": (f"the homogeneity calibration curve could not be read "
+                           f"({exc}); regenerate it with "
+                           f"tools/calibrate_claim_c_homogeneity.py --write")}
+
+    if curve.get("schema_version") != HOMOGENEITY_CURVE_SCHEMA_VERSION:
+        return {"available": False,
+                "reason": (f"calibration curve is schema_version "
+                           f"{curve.get('schema_version')!r}; this module reads "
+                           f"{HOMOGENEITY_CURVE_SCHEMA_VERSION}")}
+    if list(curve.get("metrics", [])) != list(CLAIM_C_METRICS):
+        return {"available": False,
+                "reason": ("the calibration curve was measured on a different "
+                           "metric set than CLAIM_C_METRICS; its rates are rates "
+                           "of a different test")}
+    if homogeneity is None:
+        return {"available": False,
+                "reason": "sign_homogeneity is undefined, so no curve row applies"}
+
+    row = curve.get("curves", {}).get(str(int(n_prompts)))
+    if row is None:
+        return {"available": False,
+                "reason": (f"no calibration curve is tabulated for "
+                           f"{n_prompts} prompts (tabulated: "
+                           f"{curve.get('n_prompts_tabulated')}). The curve is "
+                           f"generated offline; extend N_PROMPTS_TABULATED and "
+                           f"regenerate rather than running uncorrected")}
+
+    edges = curve["homogeneity_bin_edges"]
+    bi = min(max(int(np.searchsorted(edges, float(homogeneity), side="right") - 1), 0),
+             len(edges) - 2)
+    b = row["bins"][bi]
+    if b.get("quantiles_greater") is None:
+        return {"available": False,
+                "bin_lo": b["lo"], "bin_hi": b["hi"],
+                "reason": (f"the calibration curve has no measurement at "
+                           f"homogeneity {float(homogeneity):.3f} (bin "
+                           f"{b['lo']:.3f}-{b['hi']:.3f}): under H0 nearly every "
+                           f"draw there hits a refusal, so there is no emitted "
+                           f"distribution to calibrate against. Interpolating "
+                           f"over that hole would be inventing the correction "
+                           f"the run most needs")}
+
+    return {
+        "available": True,
+        "homogeneity": float(homogeneity),
+        "bin_lo": b["lo"], "bin_hi": b["hi"], "bin_index": bi,
+        "bin_measured": bool(b["measured"]),
+        "bin_filled_from_above": bool(b["filled_from_above"]),
+        "bin_n_emitted": int(b["n_emitted"]),
+        "bin_emission_rate": b["emission_rate"],
+        "levels": curve["correction_levels"],
+        "quantiles_greater": b["quantiles_greater"],
+        "quantiles_less": b["quantiles_less"],
+        "curve_assumes_complete_table": bool(curve.get("assumes_complete_table")),
+        "h0_family": curve.get("_h0_family"),
+    }
+
+
+def apply_homogeneity_correction(corr: dict, p: float, direction: str) -> float:
+    """
+    max(p, R(h, p)) -- blunt the exact p, never sharpen it.
+
+    The max is what makes this safe in both directions at once. At the
+    independent-rows end the enumeration is genuinely CONSERVATIVE (a discrete
+    exact test should be), so R sits well below p and the max is a no-op: the
+    exact conditional guarantee survives untouched. At the dependent end R
+    exceeds p and the reported number becomes the measured rate. Taking R
+    unconditionally would trade a real exact guarantee for a simulated one in
+    exchange for power, which is a bad trade on the claim carrying the hard
+    stop.
+    """
+    q = corr["quantiles_greater" if direction == CLAIM_C_ALTERNATIVE
+            else "quantiles_less"]
+    return max(float(p), rejection_rate_at(corr["levels"], q, p))
+
+
 def _alpha() -> float:
     from core.adjudication import load_registry
     from core.evalues import DEFAULT_ALPHA
@@ -816,6 +1049,50 @@ def p_value_claim_c(
         out.update(gate_verdict(None, None, alpha))
         return out
 
+    # ---- the homogeneity correction, and the refusal it derives ------------
+    # Both are decided here, before any subset is scored, because both depend
+    # only on the prompt count and the observed homogeneity -- exactly like the
+    # attainable-floor refusal above, and for the same reason: a refusal that
+    # can be settled before the statistic is looked at should be.
+    corr = homogeneity_correction(out["n_prompts"], out.get("sign_homogeneity"))
+    out["homogeneity_correction"] = {
+        k: v for k, v in corr.items()
+        if k not in ("quantiles_greater", "quantiles_less", "levels")}
+    if not corr["available"]:
+        out["p_value"] = None
+        out["reason"] = (
+            f"no homogeneity correction is available, and the correction is "
+            f"what enters the e-value: {corr['reason']}. Reporting the "
+            f"uncorrected p instead would assert a Type-I guarantee on a null "
+            f"this project has already measured to be anticonservative when "
+            f"the prompt sign-rows agree.")
+        out.update(gate_verdict(None, None, alpha))
+        return out
+
+    # The corrected attainable floor. The uncorrected check above asks whether
+    # the enumeration can express a small enough p; this asks whether such a p
+    # SURVIVES the correction. Same shape, same derivation from alpha and the
+    # null size, and no tolerance is introduced -- the cut is wherever the
+    # measured rate at a perfect result crosses alpha, which is a consequence
+    # of alpha rather than a number anyone picked.
+    r_floor = apply_homogeneity_correction(corr, best_attainable,
+                                           CLAIM_C_ALTERNATIVE)
+    out["homogeneity_correction"]["corrected_best_attainable_p"] = float(r_floor)
+    if r_floor > alpha:
+        out["p_value"] = None
+        out["reason"] = (
+            f"at sign_homogeneity {corr['homogeneity']:.3f} (curve bin "
+            f"{corr['bin_lo']:.3f}-{corr['bin_hi']:.3f}) the measured H0 "
+            f"rejection rate at this design's BEST attainable p "
+            f"({best_attainable:.4f}) is {r_floor:.3f}, above alpha={alpha}. "
+            f"A perfect result would not survive its own correction, so the "
+            f"gate cannot reject however clean the data is -- the same "
+            f"objection as the uncorrected attainable-floor refusal, one level "
+            f"up. The prompts are telling too nearly the same story; the "
+            f"remedy is prompts that are not, not a weaker correction.")
+        out.update(gate_verdict(None, None, alpha))
+        return out
+
     # ---- the tool axis: one run per metric-leave-one-out subset -------------
     concordant = np.asarray(out["concordant"], dtype=bool)
     usable = np.asarray(out["usable"], dtype=bool)
@@ -851,9 +1128,20 @@ def p_value_claim_c(
     worst = max(subsets, key=lambda k: subsets[k]["p_value"])
     worst_recip = max(subsets, key=lambda k: subsets[k]["p_reciprocal"])
 
+    # Both directions are corrected, and they have to be. The verdict's two
+    # branches are p_greater <= alpha and p_reciprocal <= alpha; correcting
+    # only the adjudicated one would leave FAILS-TO-TRANSFER -- the branch that
+    # writes a falsification into the ledger -- running at the inflated rate.
+    p_corrected = apply_homogeneity_correction(corr, p_iut, CLAIM_C_ALTERNATIVE)
+    p_recip_corrected = apply_homogeneity_correction(
+        corr, p_recip_iut, CLAIM_C_RECIPROCAL_ALTERNATIVE)
+
     out.update({
-        "p_value": float(p_iut),
-        "p_reciprocal": float(p_recip_iut),
+        "p_value": float(p_corrected),
+        "p_reciprocal": float(p_recip_corrected),
+        "p_value_uncorrected": float(p_iut),
+        "p_reciprocal_uncorrected": float(p_recip_iut),
+        "homogeneity_corrected": bool(p_corrected > p_iut),
         "alternative": CLAIM_C_ALTERNATIVE,
         "p_full_set": float(subsets["all"]["p_value"]),
         "p_reciprocal_full_set": float(subsets["all"]["p_reciprocal"]),
@@ -868,7 +1156,11 @@ def p_value_claim_c(
             f"candidate side, reference held fixed. Reported p is the "
             f"intersection-union MAX over the full set and the six "
             f"metric-leave-one-out subsets, so it is the p of the subset that "
-            f"agrees least"),
+            f"agrees least, then blunted to the measured H0 rejection rate at "
+            f"the observed sign_homogeneity ({corr['homogeneity']:.3f}, curve "
+            f"bin {corr['bin_lo']:.3f}-{corr['bin_hi']:.3f}) wherever that rate "
+            f"exceeds it"),
+        "homogeneity_correction_rule": CLAIM_C_HOMOGENEITY_CORRECTION,
     })
     out.update(gate_verdict(out["p_value"], out["p_reciprocal"], alpha))
     return out
@@ -916,6 +1208,7 @@ def adjudicate_claim_c(
 
     from core.adjudication import adjudicate_if_registered
     s0 = res.get("step0_sensitivity", {})
+    hc = res.get("homogeneity_correction", {})
     res["adjudication"] = adjudicate_if_registered(
         "CLAIM-C", res["p_value"],
         artifact_hashes=tuple(artifact_hashes), run_manifest=run_manifest,
@@ -944,12 +1237,29 @@ def adjudicate_claim_c(
             + (f" step0_DISAGREES_WITH_PRIMARY" if s0.get("disagrees_with_primary")
                else "")
             + f" sign_homogeneity={res.get('sign_homogeneity')}"
+            + f" homogeneity_correction={CLAIM_C_HOMOGENEITY_CORRECTION} "
+              f"p_uncorrected={res['p_value_uncorrected']:.4f} "
+              f"p_reciprocal_uncorrected={res['p_reciprocal_uncorrected']:.4f} "
+              f"curve_bin={hc.get('bin_lo')}-{hc.get('bin_hi')} "
+              f"curve_bin_n_emitted={hc.get('bin_n_emitted')}"
+            + (" curve_bin_FILLED_FROM_ABOVE" if hc.get("bin_filled_from_above")
+               else "")
+            + (f" curve_assumes_complete_table but {res['n_cells_dropped']} "
+               f"cell(s) were dropped, so the correction was read off a table "
+               f"measured on a design with none"
+               if hc.get("curve_assumes_complete_table")
+               and res.get("n_cells_dropped") else "")
             + f" | prompts on one model are not independent runs: the sign-flip "
               f"unit is the prompt, which is the coarsest unit this design "
               f"provides, and a pythia-wide effect common to every prompt would "
               f"not be visible to the enumeration. Measured rejection rate at "
               f"alpha=0.05: ~0.015 with independent rows, ~0.34 with identical "
-              f"ones; sign_homogeneity says where this run sits between them"),
+              f"ones (both measured on the single-axis gate, before the metric "
+              f"leave-one-out axis existed). The range between them is no "
+              f"longer uncontrolled: the reported p is the exact one blunted "
+              f"to the measured H0 rejection rate at this run's observed "
+              f"sign_homogeneity, from the committed curve in "
+              f"claims/calibration/claim_c_homogeneity.json"),
         adjudications_dir=adjudications_dir,
     )
     return res
