@@ -49,8 +49,8 @@ data.
 
 | state | n | may contribute to a claim's E |
 |---|---|---|
-| `e-value` | 8 | yes |
-| `needs-null` | 27 | not yet |
+| `e-value` | 10 | yes |
+| `needs-null` | 25 | not yet |
 | `measurement` | 3 | never |
 
 ## Three patterns worth naming, because they recur
@@ -77,19 +77,60 @@ but it cannot see that two *different* ids are the same experiment — so the
 registry must name which of the two is adjudicated, and that decision belongs
 in the chunk that constructs the null.
 
-## Already-run predictions, and why they are still `needs-null`
+## Already-run predictions: what happened to the strongest result in the registry
 
 `p6_subspace/status-6.md` records `P6-R2` and `P6-R4` as **run and inverted** —
 mean LDA alignment 0.887 with the imaginary subspace $U_A$ against 0.067 with
 the real repulsive $U_\text{neg}$, and **0 of 49 layers** in the predicted
-direction. That is the strongest single result in the registry and it points
-against the prediction.
+direction. That was described here as the strongest single result in the
+registry, pointing against the prediction, and as `needs-null` because 49 ALBERT
+layers are not 49 independent observations.
 
-It is still `needs-null`, for the reason `status-6.md` states itself: 49 ALBERT
-layers are not 49 independent observations. Turning "0/49" into a p-value
-requires deciding what the independent unit is, and that decision changes the
-answer by orders of magnitude. Registering the inversion as a fact and the
-p-value as outstanding is the correct state — not a hedge.
+**Both halves of that were wrong, and the second one was the smaller error**
+(2026-08-24, `POPPER_PLAN.md` §6h).
+
+`p6_subspace/math-6.md` §7.2 names a third explanation neither `status-6.md`
+nor this file listed: **the comparison is not dimension-normalized.** For a
+random unit vector and a $k$-dimensional subspace, $\mathbb{E}[\lVert P_U v
+\rVert^2] = k/d$ — alignment scales with the subspace's dimension — and the
+projector build's own resolution order makes $U_\text{neg}$ the doubly-shrunk
+bucket. `claims/audits/p6_projector_labels.json` measures
+$\dim U_A / \dim U_\text{neg} = 24.9$ at `albert-xlarge-v2`'s exact shape,
+against an observed alignment ratio of $0.887/0.067 = 13.2$. **The dimension
+correction is larger than the effect it would explain.** So the recorded
+inversion is not weak evidence against the prediction; it is not evidence either
+way, and no choice of exchangeable unit would have rescued it.
+
+The apparatus is nonetheless live. Phase 6's projector path was **rebuilt** in
+`p6_subspace/` against `core/particles.py` (`archive/README.md` rule 2 — nothing
+is salvaged by copying), which is what taking the two entries out of `dormant`
+required, and both now carry a matched-dimension random-subspace null. They are
+`e-value` and `active`. **No p-value is emitted**: no run artifacts exist here,
+and no exchangeable unit is registered.
+
+Three things generalise from it:
+
+**A prerequisite is not a footnote.** `status-6.md` item 5 listed a projector
+mislabelling as a live alternative explanation and `design-6.md` pre-registered
+ruling it out *first*. Nothing had. `tools/audit_p6_projector_labels.py` does,
+and reports RULED-OUT — but the audit's own sensitivity arm caught its first
+labelling check being **incapable of failing** on one of the two bug classes,
+which is the entire reason to build a sensitivity arm.
+
+**The choice of null can dissolve a problem the choice of unit cannot.** Under a
+`CLAIM-C`-style sign-flip enumeration the coarsest honest unit here is "one
+model", $n = 1$, attainable floor $2/(2^1+1) = 0.667$ — the design refuses on a
+perfect result. Randomising over **subspaces** instead of over units leaves
+$n = 1$ untouched, because the resolution floor becomes $1/(\text{draws}+1)$.
+Several queued rows are small-$n$ designs and should ask this before concluding
+they are underpowered.
+
+**The unit still decides validity, and the cost is measurable.** Measured at 400
+replicates: with independent per-layer directions both units sit at 0.0525; as
+the layers come to share one direction the per-layer unit rises to 0.0800,
+0.2325 and 0.2800 while the per-model unit holds at 0.045–0.0575. Which one may
+enter an e-process is left unregistered, and `adjudicate_p6_r2_r4` refuses while
+it is.
 
 ## The table
 
@@ -108,9 +149,9 @@ p-value as outstanding is the correct state — not a hedge.
 | `P6-I1` | H-OPERATOR | **e-value** | 1.0 | Already a Mann-Whitney U on f_rot(induction heads) vs f_rot(semantic heads). Valid as it stands; only needs threading through core.adjudication. |
 | `P6-I2` | H-OPERATOR | **e-value** | 0.8 | Two-sample test over head pairs; same shape as P6-I1. |
 | `P6-R1` | H-OPERATOR | **needs-null** | 0.8 | Threshold on a ratio (R >= 5) with a random-projection reference already named. That reference IS the null; it needs to be sampled rather than used as a single comparison value. |
-| `P6-R2` | H-OPERATOR | **needs-null** | 1.0 | Currently a per-layer direction comparison. UPDATE ORDER MATTERS: status-6.md records this as ALREADY RUN AND INVERTED (0/49 layers show the predicted direction, alignment 0.887 with U_A vs 0.067 with U_neg). Any p-value must respect status-6.md's own caveat that 49 ALBERT layers are not 49 independent observations. |
+| `P6-R2` | H-OPERATOR | **e-value** | 1.0 | Matched-dimension random-subspace null, built 2026-08-24 in p6_subspace/r2_r4_null.py and fixed BEFORE any p-value exists. INSTRUMENT: Phase 6's projector path was REBUILT live in p6_subspace/ against core/particles.py and core/nulls.py rather than lifted from archive/p6_subspace/subspace_build.py, per archive/README.md rule 2, which is what taking this entry out of `dormant` requires. PREREQUISITE, SETTLED FIRST: status-6.md item 5 records a projector-construction error (Schur block mislabelling swapping U_neg and U_A) as a live alternative explanation for the recorded inversion, and design-6.md pre-registered ruling it out BEFORE treating the hypothesis failure as established. tools/audit_p6_projector_labels.py does so and commits the record to claims/audits/p6_projector_labels.json: RULED-OUT on two independent routes -- planted structure recovered to 3.3e-08 rad, and bucket sizes matching a classification taken from np.linalg.eigvals without touching the Schur form -- with two deliberate mislabellings caught. STATISTIC, fixed in advance: the mean over layers of (chance-normalized alignment of the cluster-separating direction with U_neg minus the same with U_A). NORMALIZED ON BOTH ARMS, which is the substantive change from the archived comparison: p6_subspace/math-6.md 7.2 records that E[\|\|P_U v\|\|^2] = dim U / d, so raw alignment scales with subspace dimension, and the resolution order (span(U_pos) removed from U_neg, span(U_S) removed from U_A) makes U_neg the doubly-shrunk bucket. The audit measures dim(U_A)/dim(U_neg) = 24.9 at albert-xlarge-v2's exact shape against an observed alignment ratio of 13.2 -- the dimension correction is LARGER than the effect it would explain. ALTERNATIVE: one-sided 'greater' (P6-R2 predicts MORE alignment with the real repulsive channel). NULL: H0-OPERATOR realised directly -- replace the operator-derived subspaces with random subspaces OF THE SAME DIMENSION and recompute. Drawn MUTUALLY ORTHOGONAL, because U_neg and U_A are orthogonal by construction and independently drawn null pairs are not; that mismatch alone put the H0 rejection rate at 0.0875 against a nominal 0.05, in the anticonservative direction and invisible in any single result, and it was found by simulating rather than reasoning (the P-S1 defect of POPPER_PLAN.md 6d, second instance). Corrected, the measured rate is 0.045 at alpha=0.05 over 400 replicates. EXCHANGEABLE UNIT: NOT REGISTERED, and adjudication refuses while it is not. The construction is parameterized over it and computes either -- unit='model' draws one set of subspaces shared across layers, which is what ALBERT's weight-tying literally means (one OV matrix, one Schur decomposition, one projector pair, 49 activation snapshots); unit='layer' draws independently per layer, which is the error status-6.md names. The gap was MEASURED at 400 replicates rather than argued: with independent per-layer directions both units sit at 0.0525; as the layers come to share one direction the layer unit rises to 0.0800 (rho=0.5), 0.2325 (rho=0.9) and 0.2800 (rho=1.0) while the model unit stays at 0.045-0.0575 throughout. The mechanism is that the layer unit averages n independent null draws where the model unit averages n copies of one, so its null is narrower by sqrt(n). The evidence points unambiguously at 'model'; registering it is a separate decision and has not been made, so REGISTERED_EXCHANGEABLE_UNIT is None and adjudicate_p6_r2_r4 raises. Passing unit= does not route around that -- the argument selects what to COMPUTE, the module constant decides what may enter an e-process. ATTAINABLE FLOOR, checked before building rather than after a null result: 1/(N_NULL_DRAWS+1) = 0.0005, two orders below alpha, and the module refuses if it ever exceeds alpha. This REFRAMES the question the plan had posed. Under a CLAIM-C-style sign-flip enumeration the coarsest honest unit is 'one model', n=1, floor 2/(2^1+1) = 0.667, and the design could not reject on a perfect result. Under randomisation over SUBSPACES rather than over units, n=1 is no obstacle at all. The binding constraint was the choice of null, not the choice of exchangeable unit. REFUSES rather than degrades: on an unknown unit (no default, since the two differ by orders of magnitude); on an empty U_neg or U_A (normalized alignment is undefined there and 0.0 would read as 'orthogonal' for 'absent'); on fewer than two clusters after dropping HDBSCAN noise (label < 0); on a non-finite statistic; on a null thinned by failures; and on the attainable floor exceeding alpha. WHAT THIS DOES NOT DO: it does not adjudicate the 2026-04 ALBERT run. That run reported RAW alignments (0.887 with U_A, 0.067 with U_neg) and its statistic is not dimension-normalized, so those numbers are SUPERSEDED as evidence rather than turned into a p-value. Chance-normalized against the audit's measured dims they read 0.960 for U_A and 1.805 for U_neg -- the PREDICTED direction -- but the audit's dims come from random OV matrices at ALBERT's shape and not from ALBERT's trained weights, so that is a bound on the correction and not a result. The actual per-layer dims are computed by the projector build on every run and were never reported; recovering them is one number and it settles the reading. DEPENDENCE ON P6-R4: the two share one projector, so a projector defect moves both. They are NOT the P5b-B1/B3 pattern of one test with two thresholds -- R2 compares alignments, R4 compares probe accuracies, two statistics on two instruments -- and both are registered as adjudicable, but the common-cause dependence is recorded here so a reader does not read their product as two independent factors. |
 | `P6-R3` | H-OPERATOR | **needs-null** | 0.8 | Directional dominance at merge events; permutation over merge vs non-merge steps. |
-| `P6-R4` | H-OPERATOR | **needs-null** | 1.0 | Probe accuracy comparison with a real-only / imaginary-only / full contrast. Same inversion as P6-R2 per status-6.md. |
+| `P6-R4` | H-OPERATOR | **e-value** | 1.0 | Matched-dimension random-subspace null, built 2026-08-24 in p6_subspace/r2_r4_null.py alongside P6-R2 and fixed BEFORE any p-value exists. Same rebuilt instrument, same prerequisite audit (claims/audits/p6_projector_labels.json), same exchangeable-unit position: NOT REGISTERED, adjudication refuses, and the measured cost of the wrong unit is recorded on the P6-R2 entry. STATISTIC, fixed in advance: the mean over layers of the cross-validated accuracy of a linear probe fit INSIDE U_S, on the projected coordinates rather than the ambient embedding -- projecting back into R^d would hand the probe the dimensions the projection was supposed to remove. ALTERNATIVE: one-sided 'greater'. NULL: the same probe fit inside a random subspace of THE SAME DIMENSION, which is what makes this a test of operator content rather than of capacity; a probe fit in a higher-dimensional subspace has more capacity, and math-6.md 7.2 records that the archived 'imaginary-only 0.564 vs real-only 0.152' comparison has exactly that confound. PROBE: a ridge one-vs-rest linear probe with stratified k-fold, in numpy. NOT sklearn's LogisticRegression, which archive/p6_subspace/probe_subspace.py used. Partly because sklearn is a heavy-tier dependency and this module is pure tier, but mainly because the archived accuracies are not comparable to anything computed here anyway -- they were measured on subspaces of unequal dimension -- so matching the classifier would buy a comparability that is not available. What matters is that the SAME probe scores both arms, and it does. The ridge coefficient is PLACED, not calibrated, and is applied identically to both arms so it cannot move the contrast. POWER CAVEAT, measured: this statistic separates only while U_S is a SMALL fraction of d_model. At dim U_S / d = 14/24 both arms saturate at accuracy 1.0 and the test reports p = 1.0 on a planted effect -- a random subspace of that size captures the signal about as well as the real one. ALBERT's ratio is roughly 150/2048 and at a comparable fraction the arms separate cleanly (planted in U_S: p = 0.016; planted in U_A: p = 1.000). A run where U_S is a large fraction of d_model needs that said, not a p-value. REFUSES rather than degrades: on an unknown unit; on an empty U_S (there is no subspace to probe); on fewer than two clusters after dropping HDBSCAN noise; when the smallest cluster has fewer than two members, since cross-validation cannot be stratified over it; and on the attainable floor exceeding alpha. DEPENDENCE ON P6-R2: recorded on that entry. The shared projector is a common-cause failure mode for both. |
 | `P6-R5` | H-OPERATOR | **needs-null** | 0.8 | Counts of contracting/rotating steps against a null of no directional preference; a binomial test once the per-step unit is fixed. |
 | `P6-C1` | H-OPERATOR | **needs-null** | 0.8 | Alignment of write subspace with matching channel; needs a random-subspace null of matched dimension. |
 | `P6-DD1` | H-OPERATOR | **needs-null** | 1.0 | Two thresholds (induction drop, ARI floor) on an intervention. Needs the intervention's own control arm sampled. |
@@ -144,15 +185,28 @@ Then the `needs-null` rows in the order their claims matter. `CLAIM-C` was
 first, because it is the one with a hard stop attached and a stop rule that
 cannot be adjudicated is a stop rule that gets argued with at the moment it
 binds. **Built 2026-08-24** (`p1_mstate_tracking/replication_gate.py`,
-`POPPER_PLAN.md` §6f) — it is now an `e-value` row.
+`POPPER_PLAN.md` §6f) — it is now an `e-value` row. `P6-R2` and `P6-R4` followed
+the same day (`p6_subspace/r2_r4_null.py`, §6h), which also took them out of
+`dormant`.
 
-One lesson from building it generalises to the rows still queued, several of
-which are small-n permutation designs: **check the attainable floor before
-building the null, not after the result comes back null.** A permutation over
-n exchangeable units can express no p smaller than `2/(2^n + 1)` when the null
-is enumerated exhaustively, so a four-unit design cannot reject at α = 0.05
-even on a perfect result. Reporting that as "not significant" is worse than
-reporting nothing, and `replication_gate` refuses instead.
+Two lessons from building them generalise to the rows still queued, several of
+which are small-n permutation designs.
+
+**Check the attainable floor before building the null, not after the result
+comes back null.** A permutation over n exchangeable units can express no p
+smaller than `2/(2^n + 1)` when the null is enumerated exhaustively, so a
+four-unit design cannot reject at α = 0.05 even on a perfect result. Reporting
+that as "not significant" is worse than reporting nothing, and
+`replication_gate` refuses instead.
+
+**But check it against the null you could build, not only the one you reached
+for.** `P6-R2`'s floor is 0.667 under a sign-flip enumeration over its one
+honest unit and 0.0005 under randomisation over matched-dimension subspaces —
+same data, same unit, same claim. `P6-R1`, `P6-C1`, `P5b-A1`, `P5b-A2`,
+`P-SA1` and `P-I4` are all threshold or two-sample rows whose predictions
+already name a matched control, and that control is a subspace or a magnitude
+rather than a unit. The floor argument that retires a design should be made
+after asking what is being randomised.
 
 `CLAIM-B` is next by the same reasoning, and it shares a construction with
 `P-I1` — the same changepoint co-location across a checkpoint sweep — so the

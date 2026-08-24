@@ -46,6 +46,11 @@ PACKAGE_DIRS = (
     "core", "tools", "tests",
     "p1_mstate_tracking", "p1b_hemisphere", "p1c_frames",
     "p2_eigenspectra", "p2b_imaginary", "p2d_operator_activation",
+    # p6_subspace is live again as of 2026-08-24: the projector path was
+    # REBUILT here against core/particles.py (archive/README.md rule 2 --
+    # nothing is salvaged by copying) so that P6-R2 and P6-R4 could come out of
+    # `dormant`. archive/p6_subspace/ stays frozen and stays out of this list.
+    "p6_subspace",
     "p7_motifs",
 )
 
