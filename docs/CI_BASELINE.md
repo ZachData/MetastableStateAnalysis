@@ -125,3 +125,35 @@ at collection time, in a traceback naming neither torch nor the stub. Invisible
 with real torch present. `tests/test_core_evalues.py::TestTorchStubIsScipySafe`
 now asserts the stub's `Tensor` is a real class, and `check.sh gate` runs the
 tier the way the runner does.
+
+## Tier 1 now depends on a committed data artifact (2026-08-24)
+
+`claims/calibration/claim_c_homogeneity.json` is CLAIM-C's homogeneity
+calibration curve (`POPPER_PLAN.md` §6g). It is **generated offline** by
+`tools/calibrate_claim_c_homogeneity.py --write` — about 50 seconds, far too
+slow for a gate people wait on — and committed, so the gating tier reads it
+rather than recomputing it.
+
+Two consequences worth knowing before the file surprises someone:
+
+- **If the curve is missing or stale, the gate fails loudly rather than
+  quietly.** `p_value_claim_c` refuses to emit a p-value at all without a
+  correction, so a lost or ignored file turns into refusals across
+  `tests/test_claim_c_homogeneity.py`, not into subtly wrong numbers. That is
+  deliberate: the corrected p is what enters H-TRANSFER's e-value, so falling
+  back to the uncorrected one would put a p already measured to be
+  anticonservative into the ledger.
+- **`.gitignore` is a whitelist, and the curve is only tracked because
+  `!claims/**/*.json` already un-ignores it.** A curve written anywhere else in
+  the tree would be silently untracked, CI would run without it, and the
+  failure would look like a code defect. This is the same trap §2 of this file
+  records for `pyproject.toml` and the workflows; `git check-ignore -v <path>`
+  is still the thing to run.
+
+The staleness check is `tools/calibrate_claim_c_homogeneity.py --check`, pinned
+in the pure tier by `TestCurveIsInStepWithTheGate`. It compares the stored
+metric set, tails, subset names, bin edges and levels against the gate's
+current constants — so adding a metric to `CLAIM_C_METRICS` fails the gate
+instead of leaving the curve describing a test that no longer exists. It is not
+in tier 0, and cannot be: the tool imports numpy at module scope and tier 0 runs
+with numpy shadowed.

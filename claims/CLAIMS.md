@@ -70,6 +70,19 @@ product. `POPPER_PLAN.md` §6f records the four choices the registered wording
 left open, including that the criterion adjudicates the *contrast* rather than
 the two absolute reproductions the statement's words name.
 
+**The p that enters this claim's E is homogeneity-corrected (2026-08-24).** The
+gate's one real limitation is that its exchangeable unit — the prompt — is not
+independent across draws, since every prompt runs on the same model. §6f
+measured what that costs at the two ends of the range and left the middle,
+where any real run lands, uncontrolled. `claims/calibration/claim_c_homogeneity.json`
+now holds the measured H0 rejection rate across that whole range, and the
+reported p is `max(p_exact, R(sign_homogeneity, p_exact))` — the exact
+enumeration's p, blunted to the measured rate wherever the measured rate is
+worse, and never sharpened. Above roughly homogeneity 0.80–0.85 the gate
+refuses instead of correcting, on the derived ground that a *perfect* result
+would not survive its own correction there. `POPPER_PLAN.md` §6g records the
+two decisions this required and the out-of-sample validation.
+
 ### H-EMERGE — collapse-resistance emerges at circuit-formation events
 
 **Null (H0-EMERGE):** clustering dynamics and circuit formation are independent;

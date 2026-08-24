@@ -809,6 +809,126 @@ Validation is on synthetic inputs with known answers: exactness of the
 enumeration, validity under H0, power against perfect transfer, p = 1.000 with
 the arms reversed, and every refusal. `claims/adjudications/` remains empty.
 
+## 6g. CLAIM-C's homogeneity calibration curve (2026-08-24)
+
+§6f ended with a limitation described as bounded: the sign-flip null treats n
+prompts as n pieces of information, they are not independent, and the cost was
+**measured** at the two ends — ≈0.015 at α = 0.05 with independent sign rows,
+≈0.34 with identical ones. The gate refused at the exactly-degenerate end and
+reported `sign_homogeneity` in between.
+
+Two endpoints are not a correction. **Everything between them was
+uncontrolled, and a real run lands in the middle** — so the middle is now
+measured too, offline, once, and committed:
+`tools/calibrate_claim_c_homogeneity.py` →
+`claims/calibration/claim_c_homogeneity.json`. The gate reads
+
+    R(h, p) = P( it reports a p ≤ p │ it reported one at all, under H0,
+                 at prompt sign-row homogeneity h )
+
+and reports `max(p_exact, R(sign_homogeneity, p_exact))`.
+
+**Two decisions had to be fixed first, and both were put to the author before
+any curve existed** — picking either after seeing gate data would void the
+guarantee the curve exists to restore, the same way choosing a tail afterward
+would.
+
+- **The correction ADJUSTS the reported p; it is not a diagnostic beside it.**
+  The corrected number is what enters H-TRANSFER's e-value. `p_exact` stays in
+  the record. The alternative — report both, let the reader apply it — leaves
+  a p the project has already measured to be anticonservative sitting in the
+  ledger, and `EVALUABILITY.md`'s opening argument is that one bad factor
+  voids the product silently.
+- **Blunt, never sharpen.** `max(·)`, not `R(·)`. At the independent end the
+  exhaustive enumeration is genuinely *conservative*, and calibrating there
+  would be a real power gain — the corrected p would fall. It is refused
+  anyway: that trades an exact conditional guarantee for a simulated one, on
+  the one claim carrying a hard stop. The correction may only cost power.
+
+**The refusal is derived from α, not placed.** The second question was whether
+some homogeneity is too high to correct at all. It is, and the cut needs no
+tolerance: refuse when `R(h, 2/(2^n + 1)) > α`, i.e. when even a **perfect**
+result would not survive its own correction. That is §6f's attainable-floor
+refusal one level up, from the same two inputs (α and the null size). No
+homogeneity constant appears anywhere in the module, and the boundary moves
+when α does — which is what a test distinguishes a derived cut from a placed
+one by. Measured, it lands near homogeneity **0.80–0.85** for every tabulated
+prompt count.
+
+**Five things worth carrying forward.**
+
+1. **The simulation is exact, not sampled.** A subset's p depends only on the
+   *multiset* of per-row concordant counts — the null lets row i contribute
+   `conc_i` or `m − conc_i`, so both the observed statistic and the whole null
+   distribution follow from the histogram. There are only C(n+m, m) of those
+   (3003 at eight prompts and six metrics), so every attainable p is tabulated
+   once by integer convolution and each draw is a lookup. No Monte-Carlo error
+   enters the p-values; only the rates carry sampling error. It is a second
+   implementation of the gate's arithmetic, which is a real risk, so
+   `TestFastPathMatchesTheGate` pins it against `p_value_claim_c` cell by cell.
+
+2. **Rates are conditional on the gate EMITTING a p, and that is the subtle
+   part.** Unconditional rates would let the gate look calibrated *by
+   refusing*: at high homogeneity most draws hit the identical-rows refusal,
+   and counting those as non-rejections pushes the measured rate down exactly
+   where the inflation is worst. The ledger only ever receives runs that
+   emitted, so the conditional rate is the one that governs it.
+
+3. **It was validated OUT of sample, and that is the claim worth making.**
+   `sign_homogeneity` is a scalar summary and a scalar cannot determine a
+   distribution, so the open question was never "does this work on the family
+   it was fitted to" but "does indexing by it transfer to a different
+   *mechanism* of dependence". Re-measured on a duplicate-prompt mixture
+   ("some prompts are redundant") rather than the fitted per-metric propensity
+   ("some metrics are architecture-wide"), the uncorrected rate still inflates
+   to 0.23 while the corrected one stays at or below nominal across the range.
+
+   | | uncorrected | corrected |
+   |---|---|---|
+   | worst fitted configuration | 0.199 | 0.046 |
+   | mixture, ρ = 0.4 | 0.036 | 0.008 |
+   | mixture, ρ = 0.6 | 0.094 | 0.008 |
+   | mixture, ρ = 0.8 | 0.175 | 0.008 |
+
+4. **§6f's two headline numbers describe a gate that no longer exists.** The
+   0.015 and 0.34 were measured *before* the metric-leave-one-out axis was
+   added the same day. With the axis the independent-rows rate is ≈0.003,
+   because the reported p is a max over seven subsets. Neither number was
+   wrong when written; both stopped being about the live gate a few hours
+   later, and nothing would have noticed. They are kept in the record as
+   history, and the code now reads a curve that is checked against the gate it
+   corrects (`check_curve`, pinned in the pure tier) instead of prose that
+   cannot be.
+
+5. **A defect found by measuring, again.** The stored quantiles were first
+   rounded to 8 decimals. The derived refusal turns on whether a stored value
+   is at or below `2/(2^n + 1)`, and rounding moves that value *up* for
+   n ∈ {7, 9, 10, 11} and down for n ∈ {6, 8, 12} — so the refusal silently
+   switched off for four of the seven tabulated prompt counts while the file
+   looked entirely normal. It surfaced as an implausible pattern in the
+   refusal map, not as any failure. Values are now **truncated**, which can
+   only make a stored rate more conservative. §6d's lesson holds a third time:
+   *measure the calibration, do not reason about it* — and look at the result
+   even when nothing failed.
+
+**What this deliberately did not do.** It adds no third robustness axis. Each
+axis moves probability mass into INSUFFICIENT, which fires the hard stop, and a
+stop rule that always fires carries no information. The correction is a
+calibration of the existing p, not a new agreement requirement.
+
+**What it leaves open, stated now.** Every simulated draw has a complete
+(prompt × metric) table. A real run that drops cells — a non-finite or exactly
+zero contrast — has a coarser statistic than anything tabulated, so its
+correction is read off a table measured on a slightly different design. The
+gate reports `n_cells_dropped` beside the correction and every record says so;
+the honest fix is a second dimension on the curve, and it is not built.
+
+**Still no data.** As in §6e and §6f, the apparatus exists and the artifacts do
+not. `claims/adjudications/` remains empty, and `null_construction` — which
+freezes at the first adjudication and has still not frozen — now records the
+correction, both refusals, the H0 family the rates are rates under, and what
+the curve does not cover.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

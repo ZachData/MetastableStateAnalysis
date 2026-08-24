@@ -498,14 +498,24 @@ class TestToolAxis:
         The unanimity rule is a MAX, and a max over a set with an undefined
         member is undefined. Reporting the rest would silently drop whichever
         subset was hardest to satisfy -- the one the rule exists to catch.
+
+        The subset is emptied here by killing five metrics' SIGNS (an exactly
+        zero contrast is dropped as sign-undefined) rather than by making five
+        metrics agree across prompts, and the difference is not cosmetic. Five
+        columns identical across prompts forces `sign_homogeneity` to at least
+        5/6 = 0.833, which is inside the range where the homogeneity
+        calibration refuses first -- so that fixture would pin the wrong
+        refusal. Dead columns are ignored by `sign_homogeneity` entirely, which
+        leaves the surviving metric to set it and reaches this branch cleanly.
         """
         prompts = _prompts(8)
-        # Five metrics identical across prompts, one heterogeneous: the full
-        # table is not degenerate, but dropping the heterogeneous metric makes
-        # the remaining subset carry one observation.
-        ref = np.ones((8, len(CLAIM_C_METRICS)))
-        ref[:, 0] = _heterogeneous(8, seed=21)[:, 0]
-        r = self._p(ref, ref.copy(), prompts)
+        # One live metric, five with an exactly-zero contrast in both
+        # architectures. The full table still has signs (the live column), so
+        # the gate gets as far as scoring subsets -- and the subset that drops
+        # the live metric has no cell with a sign at all.
+        signs = np.zeros((8, len(CLAIM_C_METRICS)))
+        signs[:, 0] = _heterogeneous(8, seed=21)[:, 0]
+        r = self._p(signs, signs.copy(), prompts)
         assert r["p_value"] is None
         assert "metric subsets cannot carry a p-value" in r["reason"]
         assert "drop:mass_near_1" in r["reason"]
