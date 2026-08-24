@@ -228,11 +228,17 @@ class TestCalibration:
     def test_valid_under_h0(self):
         """
         Reference and candidate contrast signs drawn independently: the
-        rejection rate at alpha must not exceed alpha. The null here is an
-        EXHAUSTIVE enumeration, so this is an exact conditional test and the
-        bound is a real one rather than a Monte-Carlo approximation -- but the
-        statistic is discrete, so the observed rate sits well BELOW alpha and
-        the assertion is one-sided on purpose.
+        rejection rate at alpha must not exceed alpha. The null is an
+        EXHAUSTIVE enumeration, so each subset's test is exact and the bound is
+        a real one rather than a Monte-Carlo approximation.
+
+        **The reported p is deliberately NOT uniform under H0.** It is an
+        intersection-union max over seven subsets, and a max of p-values is
+        stochastically larger than uniform by construction -- that conservatism
+        IS the unanimity rule, not a calibration defect. So the assertion here
+        is one-sided on validity, and the mean is asserted to sit ABOVE 0.5
+        rather than at it. A max-p that came back uniform would mean the
+        subsets were perfectly redundant and the tool axis was buying nothing.
 
         120 trials catches a systematic violation, not a subtle one.
         """
@@ -245,7 +251,22 @@ class TestCalibration:
         ps = np.asarray(ps)
         assert np.all((ps > 0) & (ps <= 1.0))
         assert (ps <= 0.05).mean() <= 0.05 + 1e-9
-        assert 0.3 < ps.mean() < 0.7          # no gross systematic offset
+        assert ps.mean() > 0.5                # conservative, as an IUT must be
+
+    def test_the_reported_p_is_never_better_than_the_full_set(self):
+        """
+        Unanimity can only cost power, never add it. If the max over subsets
+        ever came back below the full-set p, the max would not be a max and the
+        Type-I guarantee would be coming from the wrong place.
+        """
+        rng = np.random.default_rng(4)
+        prompts = _prompts(8)
+        for _ in range(25):
+            ref = rng.choice([-1.0, 1.0], size=(8, len(CLAIM_C_METRICS)))
+            can = rng.choice([-1.0, 1.0], size=(8, len(CLAIM_C_METRICS)))
+            r = self._p(ref, can, prompts)
+            assert r["p_value"] >= r["p_full_set"] - 1e-12
+            assert r["p_reciprocal"] >= r["p_reciprocal_full_set"] - 1e-12
 
     def test_power_against_perfect_transfer(self):
         prompts = _prompts(8)
@@ -362,6 +383,134 @@ class TestRefusals:
                             step0_absent_reason="synthetic fixture")
         assert r["p_value"] is None
         assert "permutation unit is the prompt" in r["reason"]
+
+
+class TestToolAxis:
+    """
+    The second agreement axis: metric leave-one-out, unanimity in both
+    directions. Together the two axes are a stronger argument; a single
+    disagreement is not a death sentence, it is INSUFFICIENT.
+    """
+
+    def _p(self, ref, can, prompts):
+        return p_value_claim_c(*_four_arms(ref, can, prompts),
+                               candidate_step0=_step0(prompts))
+
+    def test_all_seven_subsets_are_scored(self):
+        prompts = _prompts(8)
+        s = _heterogeneous(8)
+        r = self._p(s, s, prompts)
+        assert set(r["subsets"]) == {"all"} | {f"drop:{m}" for m in CLAIM_C_METRICS}
+        assert r["n_subsets"] == 7
+        assert r["tool_axis"] == "metric-leave-one-out"
+        assert r["tool_rule"] == "unanimity"
+
+    def test_every_subset_shares_one_prompt_set_and_one_null(self):
+        """
+        A max over p-values is only meaningful if the tests are the same shape.
+        Prompt eligibility is decided once from the full six-metric
+        requirement; leave-one-out drops COLUMNS only.
+        """
+        prompts = _prompts(8)
+        s = _heterogeneous(8)
+        r = self._p(s, s, prompts)
+        sizes = {v["n_null_patterns"] for v in r["subsets"].values()}
+        assert sizes == {2 ** 8}
+        assert all(v["null_exhaustive"] for v in r["subsets"].values())
+
+    def test_unanimous_transfer_still_clears(self):
+        prompts = _prompts(8)
+        s = _heterogeneous(8)
+        r = self._p(s, s, prompts)
+        assert r["verdict"] == "TRANSFERS"
+        assert r["p_value"] == pytest.approx(2.0 / 257.0)
+
+    def test_a_result_carried_by_one_metric_is_no_longer_a_transfer(self):
+        """
+        THE POINT OF THE AXIS. Build a case where the full set clears but the
+        agreement lives almost entirely in one metric: dropping that metric
+        must stop the gate calling it transfer. Before the tool axis this
+        scored TRANSFERS on the strength of a single measurement.
+        """
+        prompts = _prompts(8)
+        rng = np.random.default_rng(3)
+        ref = _heterogeneous(8, seed=5)
+        can = -ref.copy()                       # every metric inverts...
+        can[:, 0] = ref[:, 0]                   # ...except one, which agrees
+        r = self._p(ref, can, prompts)
+        assert r["subsets"]["all"]["p_value"] > 0.05
+        assert r["verdict"] != "TRANSFERS"
+        # and the record names which subset was binding, so the reader is not
+        # left to re-derive it
+        assert r["binding_subset"] in r["subsets"]
+
+    def test_one_dissenting_metric_is_not_a_death_sentence(self):
+        """
+        The other half of the rule. A single metric inverting while the rest
+        agree must NOT come back FALSIFIED -- there are instrument quirks we
+        are not privy to, and one of them is not a demonstrated inversion.
+        """
+        prompts = _prompts(8)
+        ref = _heterogeneous(8, seed=9)
+        can = ref.copy()
+        can[:, 3] = -ref[:, 3]
+        r = self._p(ref, can, prompts)
+        assert r["falsified"] is False
+        assert r["verdict"] in ("TRANSFERS", "INSUFFICIENT")
+
+    def test_a_strong_inversion_survives_one_dissenting_metric(self):
+        """
+        What unanimity does NOT mean, pinned because it is easy to misread.
+
+        The rule is "no subset may fail", not "no metric may dissent". Five of
+        six metrics inverting on every prompt IS a demonstrated inversion, and
+        it survives every leave-one-out because no single metric is carrying
+        it. Reading the rule the other way would let one quirky measurement
+        veto a real result and make the gate effectively unfalsifiable -- the
+        opposite of what the axis is for.
+        """
+        prompts = _prompts(8)
+        ref = _heterogeneous(8, seed=13)
+        can = -ref.copy()
+        can[:, 2] = ref[:, 2]                   # one metric declines to invert
+        r = self._p(ref, can, prompts)
+        assert r["verdict"] == "FAILS-TO-TRANSFER"
+        assert all(v["p_reciprocal"] <= 0.05 for v in r["subsets"].values())
+
+    def test_a_mixed_picture_is_insufficient_in_both_directions(self):
+        """
+        Where "individually not a death sentence" actually bites: metrics split
+        down the middle. Neither direction reaches unanimity, so nothing is
+        shown either way. The sweep still stops -- an unadjudicated gate is not
+        a pass -- but CLAIM-C is not recorded as falsified.
+        """
+        prompts = _prompts(8)
+        ref = _heterogeneous(8, seed=13)
+        can = ref.copy()
+        can[:, 3:] = -ref[:, 3:]                # three agree, three invert
+        r = self._p(ref, can, prompts)
+        assert r["verdict"] == "INSUFFICIENT"
+        assert r["falsified"] is False
+        assert r["hard_stop"] is True           # the sweep still does not proceed
+
+    def test_a_refusing_subset_refuses_the_whole_gate(self):
+        """
+        The unanimity rule is a MAX, and a max over a set with an undefined
+        member is undefined. Reporting the rest would silently drop whichever
+        subset was hardest to satisfy -- the one the rule exists to catch.
+        """
+        prompts = _prompts(8)
+        # Five metrics identical across prompts, one heterogeneous: the full
+        # table is not degenerate, but dropping the heterogeneous metric makes
+        # the remaining subset carry one observation.
+        ref = np.ones((8, len(CLAIM_C_METRICS)))
+        ref[:, 0] = _heterogeneous(8, seed=21)[:, 0]
+        r = self._p(ref, ref.copy(), prompts)
+        assert r["p_value"] is None
+        assert "metric subsets cannot carry a p-value" in r["reason"]
+        assert "drop:mass_near_1" in r["reason"]
+        assert r["verdict"] == "INSUFFICIENT"
+        assert r["falsified"] is False
 
 
 class TestRowIndependence:

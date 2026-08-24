@@ -43,6 +43,48 @@ are computed and reported as a diagnostic (`arm_distances`) precisely so a
 reader can see the levels, and they deliberately do NOT enter the p-value: a
 second statistic entering the same test is a second chance for the prediction.
 
+THE SECOND AGREEMENT AXIS: METRIC LEAVE-ONE-OUT, UNANIMOUS BOTH WAYS
+
+Added 2026-08-24, still before any gate data exists. The cross-architecture
+comparison above is the CLAIM. It is now run once on the full metric set and
+once per metric-leave-one-out subset, and the gate requires them to agree.
+
+**Why the two axes are separate factors rather than one p-value.** The
+gpt/pythia axis is what CLAIM-C asserts; the metric axis is a statement about
+whether the instrument is trustworthy. Folded into one number, a failure is
+ambiguous between "the phenomenology does not transfer" and "one of our six
+measurements is quirky" -- and those have opposite consequences for the sweep.
+Kept as factors over a verdict lattice, each keeps its own meaning.
+
+**Intersection-union, so no multiplicity correction.** The alternative is the
+CONJUNCTION over subsets ("every subset agrees"), and for a conjunction the max
+of the sub-p-values is itself a valid p-value. That holds *regardless of how
+dependent the sub-tests are*, which is what makes it the right tool here: six
+leave-one-out runs share five sixths of their data, and any Bonferroni-style
+correction over them would be absurdly conservative while an IUT is exact.
+Every subset shares one prompt set and therefore one null size -- eligibility
+is decided once from the full six-metric requirement and leave-one-out drops
+COLUMNS only -- so the max compares like with like.
+
+**Unanimity in BOTH directions, and what that does and does not mean.**
+TRANSFERS needs every subset to clear; FAILS-TO-TRANSFER needs every subset to
+show the inversion; anything mixed is INSUFFICIENT. Both directions get harder
+and the INSUFFICIENT middle grows. The hard stop already fires on INSUFFICIENT,
+so the gate is not weakened -- only the word *falsified* is reserved for an
+inversion no single metric is carrying.
+
+The rule is "no subset may fail", **not** "no metric may dissent". Five of six
+metrics inverting on every prompt survives every leave-one-out, because no one
+metric is carrying it, and it is correctly recorded as a falsification. Reading
+the rule the other way would let one quirky measurement veto a real result and
+make the gate unfalsifiable in practice, which is the failure this whole
+apparatus exists to prevent. What the axis catches is the other case: a verdict
+that evaporates when one metric is dropped was a verdict about that metric.
+
+The attainable floor is unchanged by the axis -- a max of p-values each at or
+above 2/(2^n + 1) is at or above 2/(2^n + 1) -- so the refusal below still
+works as written. What changes is power, and that cost is the point.
+
 THE NULL, AND WHY THE EXCHANGEABLE UNIT IS THE PROMPT
 
 The null is CLAIM-C's own falsifier — "the Blog-1 contrast is
@@ -87,6 +129,10 @@ p-value when
     and reporting its p-value as "not significant" would read as evidence
     against CLAIM-C when it is evidence of nothing;
   - no cell survives (every delta non-finite or exactly zero);
+  - ANY leave-one-out subset cannot carry a p-value. The unanimity rule is a
+    max, and a max over a set with an undefined member is undefined; reporting
+    the rest would silently drop whichever subset was hardest to satisfy, which
+    is precisely the one the rule exists to catch;
   - every usable prompt carries the SAME candidate sign pattern. The prompts
     then contribute one observation, and enumerating 2^n patterns over one
     observation is the wrong null rather than a conservative one. Measured
@@ -216,6 +262,17 @@ CLAIM_C_RECIPROCAL_ALTERNATIVE = "less"
 #: The exchangeable unit of the permutation. The label "trained" attaches to a
 #: run, so a swap moves all six metrics of one prompt together.
 CLAIM_C_EXCHANGEABLE_UNIT = "prompt"
+
+#: The second agreement axis, added 2026-08-24 and fixed before any gate data
+#: exists. The cross-architecture test is re-run once per metric-leave-one-out
+#: subset, so "the tools agree" means the verdict does not depend on any single
+#: metric. See the module docstring: the claim axis and the instrument axis are
+#: kept as separate factors rather than folded into one p-value.
+CLAIM_C_TOOL_AXIS = "metric-leave-one-out"
+
+#: Unanimity, in BOTH directions. Confirmation and falsification each require
+#: every subset to agree; anything mixed is INSUFFICIENT.
+CLAIM_C_TOOL_RULE = "unanimity"
 
 #: Enumerate the sign-flip null exhaustively while 2^n_prompts is at most this;
 #: fall back to sampling above it. 2^16 = 65536 patterns is well inside the
@@ -535,6 +592,20 @@ def _step0_sensitivity(d_ref: np.ndarray, can_t: dict,
 # The sign-flip null
 # ---------------------------------------------------------------------------
 
+def _null_size(n_prompts: int, n_perm: int) -> Tuple[int, bool]:
+    """
+    (n_patterns, exhaustive) for a sign-flip null over `n_prompts` prompts.
+
+    Depends only on the prompt count, which is why the attainable-floor refusal
+    can be decided before any subset is scored: every leave-one-out subset uses
+    the SAME prompt set (see `p_value_claim_c`), so they all share this null
+    size and their p-values are directly comparable.
+    """
+    if 2 ** n_prompts <= EXHAUSTIVE_ENUMERATION_LIMIT:
+        return 2 ** n_prompts, True
+    return int(n_perm), False
+
+
 def _null_counts(per_row_valid: np.ndarray, per_row_concordant: np.ndarray,
                  n_perm: int, seed: int) -> Tuple[np.ndarray, bool, int]:
     """
@@ -559,6 +630,73 @@ def _null_counts(per_row_valid: np.ndarray, per_row_concordant: np.ndarray,
     flips = rng.integers(0, 2, size=(n_perm, n))
     null = np.where(flips == 0, per_row_concordant, disc).sum(axis=1).astype(np.float64)
     return null, False, int(n_perm)
+
+
+def _subset_result(concordant: np.ndarray, usable: np.ndarray,
+                   sign_can: np.ndarray, cols: Sequence[int],
+                   n_perm: int, seed: int) -> dict:
+    """
+    Score one column subset of the concordance table.
+
+    The prompt set, and therefore the null's pattern count, is identical across
+    subsets -- only the columns change. That is what makes taking a max over
+    their p-values meaningful rather than a comparison of differently-shaped
+    tests.
+
+    Returns `p_value: None` with a `reason` on the same degeneracies the full
+    table refuses on, so a subset cannot quietly contribute a number the design
+    does not support.
+    """
+    from core.nulls import p_from_null
+
+    idx = list(cols)
+    u = usable[:, idx]
+    c = concordant[:, idx]
+    valid = u.sum(axis=1).astype(np.intp)
+    conc = c.sum(axis=1).astype(np.intp)
+    out = {"n_cells": int(valid.sum()), "observed": int(conc.sum())}
+
+    if out["n_cells"] == 0:
+        out.update({"p_value": None,
+                    "reason": "no cell in this subset has a defined sign"})
+        return out
+
+    # The degeneracy check is per subset: dropping a metric can leave the
+    # remaining sign rows identical even when the full table's are not, and a
+    # subset in that state carries one observation rather than n_prompts.
+    common = u.all(axis=0)
+    if common.any() and sign_can.shape[0] > 1:
+        if len({tuple(r) for r in sign_can[:, idx][:, common].tolist()}) == 1:
+            out.update({"p_value": None,
+                        "reason": ("every prompt carries the same candidate sign "
+                                   "pattern within this subset")})
+            return out
+
+    null, exhaustive, n_patterns = _null_counts(valid, conc, n_perm=n_perm, seed=seed)
+    observed = float(out["observed"])
+    out["p_value"] = float(
+        p_from_null(observed, null, alternative=CLAIM_C_ALTERNATIVE)["p_value"])
+    out["p_reciprocal"] = float(
+        p_from_null(observed, null,
+                    alternative=CLAIM_C_RECIPROCAL_ALTERNATIVE)["p_value"])
+    out["n_null_patterns"] = int(n_patterns)
+    out["null_exhaustive"] = bool(exhaustive)
+    return out
+
+
+def _metric_subsets() -> List[Tuple[str, Tuple[int, ...]]]:
+    """
+    The full metric set, then one subset per metric with that metric dropped.
+
+    The full set is included in the unanimity requirement rather than treated
+    as separate: "the test clears AND is not carried by any one metric" is one
+    conjunction, and a max over all seven is the p-value for it.
+    """
+    n = len(CLAIM_C_METRICS)
+    subsets = [("all", tuple(range(n)))]
+    for j, m in enumerate(CLAIM_C_METRICS):
+        subsets.append((f"drop:{m}", tuple(k for k in range(n) if k != j)))
+    return subsets
 
 
 def _alpha() -> float:
@@ -625,8 +763,6 @@ def p_value_claim_c(
     job -- see `adjudicate_claim_c` -- so that computing the number and
     entering it in the falsification record stay separable.
     """
-    from core.nulls import p_from_null
-
     out = claim_c_concordance(
         reference_trained, reference_random, candidate_trained, candidate_random,
         candidate_step0=candidate_step0, step0_absent_reason=step0_absent_reason)
@@ -648,14 +784,9 @@ def p_value_claim_c(
         out.update(gate_verdict(None, None, alpha))
         return out
 
-    per_row_valid = np.asarray(out["per_row_valid"], dtype=np.intp)
-    per_row_conc = np.asarray(out["per_row_concordant"], dtype=np.intp)
-    null, exhaustive, n_patterns = _null_counts(per_row_valid, per_row_conc,
-                                                n_perm=n_perm, seed=seed)
-
-    # The identity pattern is always in an exhaustive enumeration and always
-    # ties the observation, so the smallest p the enumeration can express is
-    # 2/(n+1) under p_from_null's (n_extreme + 1)/(n + 1) convention.
+    # The attainable floor depends only on the prompt count, which every subset
+    # shares, so it is decided once before any subset is scored.
+    n_patterns, exhaustive = _null_size(out["n_prompts"], n_perm)
     best_attainable = (2.0 if exhaustive else 1.0) / (n_patterns + 1.0)
     out.update({
         "n_null_patterns": n_patterns,
@@ -685,17 +816,60 @@ def p_value_claim_c(
         out.update(gate_verdict(None, None, alpha))
         return out
 
-    observed = float(out["observed"])
-    res = p_from_null(observed, null, alternative=CLAIM_C_ALTERNATIVE)
-    recip = p_from_null(observed, null, alternative=CLAIM_C_RECIPROCAL_ALTERNATIVE)
-    out.update(res)
-    out["p_reciprocal"] = float(recip["p_value"])
-    out["statistic"] = (
-        f"count of (metric, prompt) cells where the trained-minus-random "
-        f"contrast agrees in SIGN between architectures, over "
-        f"{len(CLAIM_C_METRICS)} metrics x {out['n_prompts']} prompts; null "
-        f"permutes the trained/random condition label per prompt on the "
-        f"candidate side, reference held fixed")
+    # ---- the tool axis: one run per metric-leave-one-out subset -------------
+    concordant = np.asarray(out["concordant"], dtype=bool)
+    usable = np.asarray(out["usable"], dtype=bool)
+    sign_can = np.sign(np.nan_to_num(np.asarray(out["contrast_candidate"],
+                                                dtype=np.float64), nan=0.0))
+
+    subsets = {}
+    for name, cols in _metric_subsets():
+        subsets[name] = _subset_result(concordant, usable, sign_can, cols,
+                                       n_perm=n_perm, seed=seed)
+    out["subsets"] = subsets
+    out["tool_axis"] = CLAIM_C_TOOL_AXIS
+    out["tool_rule"] = CLAIM_C_TOOL_RULE
+
+    refused = {k: v["reason"] for k, v in subsets.items() if v.get("p_value") is None}
+    if refused:
+        out["p_value"] = None
+        out["reason"] = (
+            f"{len(refused)} of {len(subsets)} metric subsets cannot carry a "
+            f"p-value ({'; '.join(f'{k}: {v}' for k, v in sorted(refused.items()))}). "
+            f"The unanimity rule takes a MAX over subsets, and a max over a set "
+            f"with an undefined member is undefined -- reporting the rest would "
+            f"silently drop whichever subset was hardest to satisfy.")
+        out.update(gate_verdict(None, None, alpha))
+        return out
+
+    # Intersection-union: the alternative is the CONJUNCTION over subsets, so
+    # max(p) is a valid p-value for it and needs NO multiplicity correction --
+    # and that holds regardless of how dependent the subsets are, which matters
+    # here because six leave-one-out runs share five sixths of their data.
+    p_iut = max(v["p_value"] for v in subsets.values())
+    p_recip_iut = max(v["p_reciprocal"] for v in subsets.values())
+    worst = max(subsets, key=lambda k: subsets[k]["p_value"])
+    worst_recip = max(subsets, key=lambda k: subsets[k]["p_reciprocal"])
+
+    out.update({
+        "p_value": float(p_iut),
+        "p_reciprocal": float(p_recip_iut),
+        "alternative": CLAIM_C_ALTERNATIVE,
+        "p_full_set": float(subsets["all"]["p_value"]),
+        "p_reciprocal_full_set": float(subsets["all"]["p_reciprocal"]),
+        "binding_subset": worst,
+        "binding_subset_reciprocal": worst_recip,
+        "n_subsets": len(subsets),
+        "statistic": (
+            f"count of (metric, prompt) cells where the trained-minus-random "
+            f"contrast agrees in SIGN between architectures, over "
+            f"{len(CLAIM_C_METRICS)} metrics x {out['n_prompts']} prompts; null "
+            f"permutes the trained/random condition label per prompt on the "
+            f"candidate side, reference held fixed. Reported p is the "
+            f"intersection-union MAX over the full set and the six "
+            f"metric-leave-one-out subsets, so it is the p of the subset that "
+            f"agrees least"),
+    })
     out.update(gate_verdict(out["p_value"], out["p_reciprocal"], alpha))
     return out
 
@@ -750,7 +924,10 @@ def adjudicate_claim_c(
             f"candidate side, reference held fixed); statistic = count of "
             f"(metric, prompt) cells whose trained-minus-random contrast agrees "
             f"in sign across architectures; one-sided "
-            f"'{CLAIM_C_ALTERNATIVE}'; "
+            f"'{CLAIM_C_ALTERNATIVE}', reported as the intersection-union MAX "
+            f"over the full metric set and the {len(CLAIM_C_METRICS)} "
+            f"metric-leave-one-out subsets (unanimity, no multiplicity "
+            f"correction needed for a conjunction); "
             f"{res['n_null_patterns']} patterns"
             f"{' (exhaustive)' if res['null_exhaustive'] else ' (sampled)'}"),
         notes=(
@@ -758,6 +935,9 @@ def adjudicate_claim_c(
             f"p_reciprocal={res['p_reciprocal']:.4f} (stop-rule input only, NOT "
             f"calibrated into E) "
             f"cells={int(res['observed'])}/{res['n_cells']} "
+            f"tool_axis={res['tool_axis']}/{res['tool_rule']} "
+            f"p_full_set={res['p_full_set']:.4f} "
+            f"binding_subset={res['binding_subset']} "
             f"prompts={res['n_prompts']} dropped={len(res['prompts_dropped'])} "
             f"best_attainable_p={res['best_attainable_p']:.4f} "
             f"step0_arm={'reported' if s0.get('available') else 'absent'}"

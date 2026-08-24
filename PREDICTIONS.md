@@ -76,6 +76,15 @@ Three consequences worth having in this file rather than only in the registry:
   inversion is recorded as a falsification of claim (c). "The gate was underpowered" and "the
   phenomenology does not transfer" are different findings and the ledger distinguishes them.
 
+**Second addendum, same day — agreement across tools as well as across architectures.**
+The criterion now also requires agreement across *metrics*: the cross-architecture test is
+re-run once per metric-leave-one-out subset, and the gate requires unanimity in both
+directions. Confirmation and falsification each get harder and the inconclusive middle grows;
+the hard stop still fires on inconclusive, so only the word *falsified* is reserved for an
+inversion that no single metric is carrying. This was recorded before the gate ran, which is
+the only time it could be added honestly — `null_construction` freezes at the first
+adjudication, and there has been none.
+
 Claims (a) and (b) still have no criterion of their own. `CLAIM-A` and `CLAIM-B` remain
 `needs-null`.
 

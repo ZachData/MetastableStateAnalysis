@@ -762,6 +762,48 @@ training runs, which do not exist. Refusing at the degenerate end bounds the
 damage; it does not remove it, and every record the module emits carries both
 measured rates in its notes rather than leaving them to a reader.
 
+**A second agreement axis, added the same day and still pre-data.** The author
+asked whether agreement across *tools* could sit alongside agreement across
+*architectures*, on the reasoning that together they are a stronger argument
+while individually a disagreement is not a death sentence — there are
+instrument quirks nobody is privy to. It was not too late: `null_construction`
+freezes only on a prediction that has been adjudicated
+(`check_registry.py:359` iterates `sorted(adjudications)`), the ledger is
+empty, and no gate data exists. That window closes at the first adjudication
+and not before.
+
+The axis is **metric leave-one-out**: the whole cross-architecture test is
+re-run once per subset with one metric dropped, and the gate requires
+**unanimity in both directions**. Four things about it are worth carrying
+forward:
+
+1. **The two axes stay separate factors.** The gpt/pythia axis is the claim;
+   the metric axis is a statement about the instrument. Folded into one
+   p-value, a failure is ambiguous between "the phenomenology does not
+   transfer" and "one of our six measurements is quirky", and those have
+   opposite consequences for the sweep.
+2. **Intersection-union, so no multiplicity correction.** The alternative is a
+   conjunction, and max(p) is a valid p-value for a conjunction *regardless of
+   dependence* — which is what makes it right here, since six leave-one-out
+   runs share five sixths of their data and any Bonferroni-style correction
+   over them would be absurd.
+3. **The hard stop is not weakened.** Both directions get harder and the
+   INSUFFICIENT middle grows, but the stop already fires on INSUFFICIENT. Only
+   the word *falsified* is reserved for an inversion no single metric carries.
+4. **The rule is "no subset may fail", not "no metric may dissent"** — a
+   distinction that only showed up when a test written on the looser reading
+   failed. Five of six metrics inverting on every prompt survives every
+   leave-one-out and is correctly a falsification. The looser reading would
+   let one quirky measurement veto a real result and make the gate
+   unfalsifiable in practice, which is the failure the whole apparatus exists
+   to prevent. `TestToolAxis` pins both halves.
+
+The attainable-floor refusal is unchanged — a max of p-values each at or above
+`2/(2^n + 1)` is at or above it — and a new refusal joins it: if any subset
+cannot carry a p-value, the gate refuses rather than taking a max over a set
+with an undefined member, which would silently drop whichever subset was
+hardest to satisfy.
+
 **Still no data.** As in §6e, the apparatus exists and the artifacts do not.
 Validation is on synthetic inputs with known answers: exactness of the
 enumeration, validity under H0, power against perfect transfer, p = 1.000 with
