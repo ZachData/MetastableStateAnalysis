@@ -1286,6 +1286,298 @@ before they were in a test.
 `INDEX.md` records the dense pilot sweep as not executed, validation is on
 synthetic inputs with known answers, and `claims/adjudications/` remains empty.
 
+## 6j. CLAIM-C run on inputs whose answer is known (2026-08-25)
+
+Five passes built apparatus and `claims/adjudications/` was still empty. This
+one adds none. It runs the gate §§6f–6g shipped on two families of input whose
+correct verdict is fixed a priori, and commits what came back to
+`claims/audits/claim_c_dry_run.json` (`tools/dry_run_claim_c.py`, ~5 minutes,
+committed for the same reason as the other three artifacts).
+
+**The sharp input is the self-comparison.** One model as *both* the reference
+and the candidate. The contrast tables are then identical, every cell is
+concordant, and the statistic is at its maximum in the full set and in all six
+leave-one-out subsets at once. If the gate does not return TRANSFERS on that,
+the criterion does not mean what it says — and there was a live reason to
+expect it might not, since a self-comparison inherits whatever prompt-to-prompt
+sign consistency the reference has, §6g's derived refusal fires above
+homogeneity ≈0.80–0.85, and §6f's identical-rows refusal fires at exactly 1.0.
+
+**The criterion is sound, and the tool axis is inert where it should be.** On a
+perfect input every subset returns exactly the attainable floor
+$2/(2^n + 1)$ and the intersection-union max over the seven is that same floor.
+Unanimity does not bite on a unanimous input. That had never been checked; it
+is now pinned at every tabulated prompt count.
+
+**What the sweep found instead is an ADMISSIBLE BAND, outside which the gate is
+a constant function.** At eight prompts, `sign_homogeneity` at or below 0.8125:
+
+| candidate sign homogeneity | what the gate does to a PERFECT input |
+|---|---|
+| ≤ 0.8125 | TRANSFERS, p = max(2/257, R(h, 2/257)) |
+| 0.8333 – 0.9583 | refused: corrected attainable floor |
+| 0.9792 | refused: the curve's top bin has no measurement |
+| 1.0000 | refused: identical sign rows |
+
+0.8125 is **at least 9 of the 48 candidate cells carrying the minority sign for
+their metric** — on average at least 1.5 of the 8 prompts dissenting on each of
+the six metrics. Above it the power curve confirms refusal at *every*
+concordance count from 0 to 48, so neither TRANSFERS nor FAILS-TO-TRANSFER is
+reachable and **the hard stop fires unconditionally**. §6g's own caution against
+a third robustness axis was that *"a stop rule that always fires carries no
+information"*; this is where CLAIM-C's stop rule has such a region, and it was
+found by running the gate rather than by reading it.
+
+**It is not a Type-I defect and not an argument for a weaker correction.**
+`sign_homogeneity` is a *within-candidate* statistic. Under H0 it measures the
+prompt redundancy §6g measured and corrected for; under H1 the same number also
+rises with the strength and *uniformity* of a real effect, and the correction
+cannot tell the two apart. The cost therefore lands as power, and it lands
+hardest where the effect is most uniform. **The gate is powered against a
+contrast carrying a prompt-specific signature that transfers, and unpowered
+against a contrast carrying one uniform direction that transfers.** Blog 1's
+phenomenology is the second kind.
+
+**Two references fix the scale, and both were computed rather than guessed.**
+Under *independent* prompt signs — the most favourable candidate the design can
+be handed — homogeneity concentrates at **0.637** at eight prompts (exact, by
+convolution over the binomial majority counts) and the refusal fires with
+probability **1e-4**. So the band is not tight against chance. It is tight
+against a clean effect: a contrast pointing the same way on every prompt sits at
+exactly 1.0 and is refused with certainty. And more prompts do not help.
+Expressed as the curve bin the refusal starts in — the unit comparable across
+prompt counts, since the attainable homogeneities themselves lie on a grid of
+step $1/(n\,m)$ — the boundary is 0.800–0.825 at six prompts, 0.850–0.875 at
+seven and nine, and 0.825–0.850 at eight, ten, eleven and twelve. Three bins of
+0.025, with no trend.
+
+**So this is a requirement on what the pilot must measure, computed before it
+runs** — the §6i pattern a second time, where CLAIM-B's anchor arms turned out
+to need 19 control series a six-metric sweep does not have. Here: at least ~19%
+of the candidate's 48 cells must dissent in sign. Whether they do is an
+empirical fact about pythia-1.4b that nothing in this repository yet knows, and
+it is now on the record as a precondition rather than as a surprise waiting at
+the far end of a sweep.
+
+**One positive result, and it answers §6h's question asked of a refusal.** §6h
+found an audit arm reporting PASS while incapable of failing. The dual question
+for a refusal is whether it ever refuses something that would have passed.
+R(h, ·) is non-decreasing in p in all 264 tabulated bins, so
+`R(h, floor) > α` implies `R(h, p) > α` for every attainable p: **whenever the
+derived refusal fires, no input whatsoever could have cleared α.** It is tight.
+It never costs a verdict the gate could otherwise have reached; it converts an
+uninformative "p > α" into a refusal that says why.
+
+**The power curve, which was the second queued question.** At eight prompts and
+48 cells, over randomly placed arrangements at a fixed candidate sign table:
+
+| homogeneity | TRANSFERS ≥50% | TRANSFERS always | FAILS ≥50% | INSUFFICIENT band |
+|---|---|---|---|---|
+| 0.625 | 35/48 | 38/48 | ≤13/48 | 14–34 |
+| 0.750 | 37/48 | 42/48 | ≤10/48 | 11–36 |
+| 0.8125 | 39/48 | 44/48 | ≤10/48 | 11–38 |
+
+The queued form of the question was whether the answer is ~44, which would make
+the gate nearly all-or-nothing. It is 44 *at the boundary* and 38 well inside
+it, so the gate is demanding rather than binary — and the requirement tightens
+as the candidate's contrast becomes more uniform, which is the same finding
+arriving from the other direction. The INSUFFICIENT band is 26 of the 49
+possible concordance counts at homogeneity 0.75, and the hard stop fires across
+all of it.
+
+**Decomposed, because "the gate is demanding" is not a finding until you know
+which part of it is demanding.** Two counterfactual rates are recorded beside
+each row: the full-set-only p and the uncorrected intersection-union max. The
+metric-leave-one-out axis moves the 50% point by **1–3 cells**; the homogeneity
+correction moves it by **0 at homogeneity 0.625, rising to 5 at 0.8125**. Most
+of the cost is the correction, and it is concentrated at the top of the band.
+
+**What this deliberately did not do.** It changes nothing in
+`p1_mstate_tracking/replication_gate.py`. It adds no third robustness axis —
+§6g records why CLAIM-C in particular cannot afford one, and the region found
+here is a concrete instance of that argument rather than a reason to add
+another. And it adjudicates nothing: a dry run on synthetic inputs is not
+evidence about pythia-1.4b, `claims/adjudications/` is still empty, and the
+record says so in a field the staleness check reads.
+
+**The lesson, which is the one the last three passes kept paying for.** §6g's
+rounding defect, §6h's audit arm incapable of failing and §6i's power figures
+measured under a discarded null were all found by *looking at an output*, never
+by a failing test. This pass looked at an output nobody had generated: the
+gate's verdict on an input whose answer was already known. Neither of the two
+things it found — the admissible band and the tightness of the refusal — is
+visible in any single result, and no synthetic unit test in the suite was
+failing.
+
+## 6k. P-ST1: the entry that can lose, and four things the wording left open (2026-08-25)
+
+`P-ST1` is H-BRIDGE's cheapest entry and the only registered bridge prediction
+where the particle and standard accounts make **incompatible** rather than
+merely different predictions — which is what makes it the only one that can
+genuinely lose. It now has a construction: `p7_motifs/steering_gate.py`, with
+`tools/calibrate_steering_sign.py` → `claims/calibration/steering_sign.json`
+behind it. Nine predictions are adjudicable in principle;
+`claims/adjudications/` is still empty.
+
+It is unlike every other entry in one way that made this pass possible. The
+whole intervention is exact linear algebra — add `α·v` to every row of an
+activation block and recompute effective rank — so the statistic can be
+exercised **end to end on populations with a planted answer, with no model at
+all**. Every number below was measured rather than argued, and four of them
+changed a decision.
+
+**Two scientific calls were put to the author before any code existed**, the
+§6i pattern, and both were answered. A third and fourth were settled by
+measurement without needing to be asked.
+
+**Steering is a pure mean effect, and that is algebra rather than simulation.**
+Adding `α·v` to every token is exactly a shift of the population mean, so
+`ER(X′ − mean X′) = ER(X − mean X)` identically: a pipeline that re-centres
+after injection measures nothing at all. The consequence the registered wording
+could not have anticipated is that the cloud's **pre-existing** mean offset
+competes directly with the injected one. Per-pair `P(D = +2)`, each
+configuration at its own best α:
+
+| cloud mean norm | H1 | H0 |
+|---|---|---|
+| 0 × spread | 0.970 | 0.010 |
+| 2 × spread | 0.230 | 0.180 |
+| 5 × spread | 0.110 | **0.250** |
+
+A real residual stream sits at the bottom of that table — at five spreads the
+design rejects *more often under H0 than under H1*. Removing the **baseline**
+mean before injecting, keeping the injected offset, restores it to 1.000
+against 0.000 at every offset. That was the first call to the author; its cost
+is that the criterion becomes about the injected direction relative to the
+*centred* population, which is narrower than the words "the effective rank of
+the token population".
+
+**α was a third placed constant the registry never flagged.** It flags
+`n_pairs` and the "predominantly" threshold. Measured, α decides whether the
+prediction is readable at all: below ~0.05 × spread both arms move the same way
+in every pair and the statistic is *identically zero*; above ~0.26 the rank-1
+spike `nα²vvᵀ` dominates the Gram matrix and both arms fall for any direction;
+in between is a **plateau at 0.17–0.24** where the per-pair rate is 1.000 under
+H1 and 0.000 under H0. The second call to the author chose one pre-registered
+α labelled `placed` per Phase 7 adjudication constraint 4. What is *not* placed
+is the scale it multiplies — the population's own RMS deviation from its mean —
+and that is what buys the plateau being **the same four fractions** at mean
+offsets of 0, 2 and 5 spreads.
+
+**The first value written into the module was 0.1, and it was wrong.** The
+plateau was missed on a grid of (0.03, 0.1, 0.3), which reads 0.1 as the peak
+because both its neighbours are zero. On a finer grid 0.1 sits on the shoulder
+at a sixth of the plateau's rate. §6g's rounding defect and §6i's discarded-null
+power figures were both found by looking at a generated table; this is the third,
+and the only thing that found it was printing a finer sweep.
+
+**"Predominantly" was removed rather than thresholded.** The registry asks for
+vectors "predominantly" in one subspace — a magnitude cut with as many values
+as there are cuts. Each arm is instead drawn *uniformly from the subspace
+itself*: 100% by construction. That is CLAIM-C's sign-concordance and CLAIM-B's
+change-mass centroid escape a third time, and it retires one of the two
+constants the registry flagged.
+
+**`ER_MODE` is `raw`, against the CLAIM-C precedent, and the reason is
+structural.** `status-1.md` D1 is why CLAIM-C reads `effective_rank_normed`,
+and at the working α the two modes are indistinguishable — which is exactly how
+the wrong one nearly shipped. Away from that point they are not
+interchangeable. With the baseline mean removed the centred population has zero
+mean, so the first-order Gram term `α(baseᵀ1vᵀ + v1ᵀbase)` **vanishes
+identically**, `dER` is O(α²) and even in `v`. L2 row-normalization is not
+linear and puts an odd term back: `normed` agrees with itself under `v → −v` in
+0 of 60 draws at small α and *manufactures* `D = −2` in 20–22% of pairs there,
+where `raw` gives 0%. A criterion that answers differently for `v` and `−v` is
+not a criterion about a steering **direction**.
+
+**The registered null does not hold, and the failure grows with the pair
+count.** "The same injection procedure with the decomposition label permuted
+across pairs" treats *m* pairs as *m* exchangeable units. Every pair at one
+layer sees the same tokens and the same two subspaces, so a chance tilt of the
+cloud moves them together; more pairs shrink the permutation null's spread like
+√m and leave the tilt untouched. Rejection rate under a noisy H0 at α = 0.05,
+**conditional on the gate emitting**:
+
+| pairs | 8 | 24 | 40 | 150 |
+|---|---|---|---|---|
+| weakly concentrated H0 | 0.000 | 0.031 | 0.030 | **0.220** |
+| slightly concentrated H0 | 0.000 | 0.012 | 0.082 | **0.170** |
+
+That is `status-6.md`'s "49 layers are not 49 independent observations" for the
+third time. It is invisible in the clean regime, where under H0 every pair is
+uninformative and the gate *refuses*: the unconditional rate reads 0.000, and
+it is 0.000 by refusal rather than by control. **Conditioning on emission is
+the only thing that makes it visible**, which is §6g's lesson exactly, and it
+is the second registered null in three passes that measurement retired.
+
+**What replaces it is §6h's construction, arriving for the fourth time:
+randomise over subspaces, not over units.** H0 here is "the sign is independent
+of the U_pos/U_neg decomposition", realised directly by replacing the two
+operator-derived subspaces with **random ones of the same dimensions**, at the
+same layer, on the same population. Every chance tilt is present in the null
+exactly as in the observed value, so the confound the permutation cannot see is
+what the null is made of. The pair is drawn *mutually orthogonal* from one
+Stiefel draw, because the real pair is orthogonal by the projector build's
+resolution order and §6h measured the cost of forgetting that at 0.0875 against
+a nominal 0.05. Measured: 0.000–0.040 under H0, power 1.000 in both directions
+at 8 and 24 pairs. The registered permutation is still computed and reported
+beside every result, never adjudicated, so the difference is visible in the
+record rather than asserted in a docstring.
+
+**Replacing the null also removed a floor the registered design could not
+meet.** Under the permutation, a pair whose two arms move the same way
+contributes `D = 0`, and a zero contributes identically to the observed sum and
+to every null pattern — so with *k* of *m* pairs informative the best
+attainable p is `(2^(m−k) + 1)/(2^m + 1) ≈ 2^−k`, set by the **informative**
+pairs and not the drawn ones. Five is the first *k* that clears α = 0.05, at
+every *m*, so a hundred pairs at a 2% informative rate buy two informative
+pairs and a best possible p of 0.25. The subspace null's floor is
+`1/(draws + 1)`, fixed by how many draws are taken and independent of the data:
+a single informative pair can reject, and correctly so, since if random
+subspaces of the same dimensions essentially never inform then an
+operator-derived pair that does is exactly the surprise the claim is about.
+§6h's "the binding constraint was the choice of null, not the choice of unit"
+holds here too — this time it moved a power requirement rather than a floor.
+
+**The precondition that remains, and it is a requirement on the pilot.** A
+uniform draw from `U_pos` carries only `dim(occupied)/dim(U_pos)` of its energy
+into the subspace the cloud lives in. Per-pair informative rate against that
+ratio: 1.000, 0.710, 0.320, 0.030, 0.005, 0.000 at ratios 1, 1.5, 2, 3, 4, 6.
+§6h already measured that `U_pos` is the **un-shrunk** bucket in the projector
+build's resolution order, which is the unfavourable side. So the pilot must
+report `dim U_pos` at the injection layer against the population's effective
+rank — the third pre-computed requirement in three passes, after CLAIM-B's 19
+control series and CLAIM-C's 19% dissenting cells. The obvious fix is refused:
+drawing from the intersection of `U_pos` with the occupied subspace would
+restore the rate and is circular, since a probe aligned with the cloud by
+construction concentrates it by construction.
+
+**The registered falsifier is not one an e-process can carry**, and that is
+recorded here rather than discovered when it binds. *"Both arms move effective
+rank the same way, or the effect tracks ‖s‖ and is insensitive to the
+decomposition"* — both clauses describe the **null**, and an e-process records
+insufficient evidence and never a null accepted. They map to INSUFFICIENT. The
+falsification branch is **INVERTS**: attractive-dominant steering demonstrably
+*raising* effective rank while repulsive-dominant lowers it, a reversal
+positively shown. §6i's requirement that such a branch be checked to be one
+that can actually fire is met — it fires at 1.000 under a planted inversion.
+The falsifier's second clause is designed out rather than tested: at matched
+norm ‖s‖ cannot vary *within* a pair, so the norm dependence lives in the
+α-profile, which every record carries and no p-value reads.
+
+**What is still weakly measured, stated rather than left to be found.** The
+reciprocal tail — the INVERTS branch, the one that would enter the ledger — is
+measured under H0 at 0.02–0.10 over fifty gate runs per cell. Fifty runs
+resolve a rate to about ±0.03, so that is consistent with nominal and it is not
+a tight bound; the adjudicated `greater` tail is 0.000–0.040 across the same
+cells. Before anything is adjudicated on INVERTS specifically, that cell wants
+more replicates than a committed artifact can afford to carry.
+
+**Still no data.** As in §§6e–6j, the apparatus exists and the artifacts do
+not: the gate needs activations and the Phase 2 attractive/repulsive
+projectors, and neither is in this repository. Validation is on synthetic
+populations with known answers, and `claims/adjudications/` remains empty.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

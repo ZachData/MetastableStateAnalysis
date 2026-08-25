@@ -30,11 +30,11 @@ has yet produced a p-value against real artifacts.
 
 ### H-BRIDGE
 
-17 registered · 1 adjudicable now · 9 dormant
+17 registered · 2 adjudicable now · 9 dormant
 
 *No adjudications.*
 
-<details><summary>Registered but not adjudicable (16)</summary>
+<details><summary>Registered but not adjudicable (15)</summary>
 
 | prediction | why |
 |---|---|
@@ -44,7 +44,6 @@ has yet produced a p-value against real artifacts.
 | `P-I4` | needs-null — null not yet constructed |
 | `P-I5` | needs-null — null not yet constructed |
 | `P-SA1` | needs-null — null not yet constructed |
-| `P-ST1` | needs-null — null not yet constructed |
 | `P5b-A1` | dormant — instrument archived |
 | `P5b-A2` | dormant — instrument archived |
 | `P5b-B1` | dormant — instrument archived |

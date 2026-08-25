@@ -121,6 +121,33 @@ in the registry.
   series measured on the same sweep at the same layers. A cheap-tier sweep measuring six
   metrics has six. That is a requirement on what the pilot must measure, not a result.
 
+**Fourth addendum, 2026-08-25 — what claim (c)'s gate needs the pilot to measure.**
+The gate was run on an input whose answer is known: one model as *both* the reference and
+the candidate, so every cell is concordant and the correct verdict is TRANSFERS a priori.
+The criterion passed that test — every metric-leave-one-out subset returns exactly the
+attainable floor, so the unanimity axis does not bite on a unanimous input. What the sweep
+found is an operating range, and it is a precondition on the run rather than a change to
+the criterion:
+
+- **At least 9 of the candidate's 48 (prompt × metric) cells must dissent in sign** — about
+  19%, on average 1.5 of the 8 prompts disagreeing on each of the six metrics. Above
+  `sign_homogeneity` 0.8125 the homogeneity correction's derived refusal fires on *every*
+  input including a perfect one, so neither TRANSFERS nor FAILS-TO-TRANSFER is reachable and
+  the hard stop fires unconditionally.
+- **This costs power, not validity, and it costs it where the effect is most uniform.**
+  `sign_homogeneity` measures prompt redundancy under H0 and effect uniformity under H1, and
+  the correction cannot separate them. Under independent prompt signs homogeneity sits at
+  0.637 and the refusal essentially never fires; a contrast pointing the same way on every
+  prompt sits at 1.0 and is refused with certainty. More prompts do not move the boundary.
+- **How much concordance the gate needs, so the number is known before forward passes are
+  spent.** TRANSFERS becomes certain at 38 of 48 concordant cells at homogeneity 0.625, 42 at
+  0.75 and 44 at 0.8125; falsification needs 13 or fewer. The band between them, where the
+  gate says nothing and the hard stop fires, is 26 of the 49 possible counts at 0.75.
+
+Measured by running the shipped gate, not by reasoning about it; recorded in
+`claims/audits/claim_c_dry_run.json` and `POPPER_PLAN.md` §6j. Nothing in the criterion
+changed and nothing was adjudicated.
+
 Recorded before any sweep exists, which is the only time it could be added honestly.
 
 ## Status
@@ -370,7 +397,52 @@ Four things specific to `P-I1`:
   rejection rate of 1.00 against 0.05. The independence source remains a claim the analyst
   must state in the record, exactly as constraint 2 requires.
 
+## Addendum, 2026-08-25 — `P-ST1` has a construction, and it is the entry that can lose
+
+`p7_motifs/steering_gate.py`. `P-ST1` is the only registered bridge prediction where the
+particle and standard accounts make INCOMPATIBLE rather than merely different predictions,
+which is why it was built before entries with more apparatus behind them. Five things
+specific to it, all fixed before any activation was steered:
+
+- **Two of them were put to the author first, because they change what the prediction
+  means.** Steering adds `α·v` to every token, so its whole effect on effective rank is a
+  MEAN effect — re-centring after injection annihilates it exactly, as algebra rather than
+  simulation. That makes the token cloud's pre-existing mean offset a competitor to the
+  injected one: measured, the design as literally worded has no power on a realistic
+  residual stream, and at a mean offset of five spreads it rejects more often under H0 than
+  under H1. The gate therefore removes the BASELINE mean before injecting and keeps the
+  injected offset. Second, α — the injection scale — was a third placed constant this file
+  never flagged, and it decides whether the prediction is readable at all: there is a
+  plateau at 0.17–0.24 × the population's spread, with the statistic identically zero below
+  and direction-independent above. One α is pre-registered and labelled `placed` per
+  adjudication constraint 4; the fraction is placed, the scale it multiplies is derived, and
+  the α-profile is reported with every result and enters no p-value.
+- **"Predominantly" is removed rather than thresholded.** Each arm is drawn uniformly from
+  its subspace — 100% by construction, not 60% by cut — so one of the two constants this
+  file's `null_construction` flagged no longer exists. Norm matching is likewise by
+  construction: both arms of a pair get the same α.
+- **The registered null does not hold and was replaced.** Permuting the decomposition label
+  across pairs treats *m* pairs as *m* exchangeable units, and every pair at one layer
+  shares the tokens and both subspaces; the H0 rejection rate grows from nominal at 8 pairs
+  to 0.17–0.22 at 150. What replaces it is a matched-dimension random ORTHOGONAL subspace
+  pair, the construction `P6-R2` uses. The registered permutation is still computed and
+  reported beside every result, never adjudicated.
+- **The registered falsifier is not one an e-process can carry.** "Both arms move effective
+  rank the same way, or the effect tracks ‖s‖" describes the NULL in both clauses, and an
+  e-process records insufficient evidence and never a null accepted. It maps to
+  INSUFFICIENT. The falsification branch is INVERTS — attractive-dominant steering
+  demonstrably RAISING effective rank — a reversal positively shown, checked to be a branch
+  that can fire.
+- **A precondition on the pilot, computed before it runs.** A uniform draw from `U_pos`
+  carries only dim(occupied)/dim(`U_pos`) of its energy into the subspace the cloud
+  occupies; the per-pair informative rate falls from 1.000 at ratio 1 to 0.000 at ratio 6,
+  and the projector audit already records `U_pos` as the un-shrunk bucket. The pilot must
+  report dim `U_pos` at the injection layer against the population's effective rank.
+
+Recorded before any activation exists, which is the only time it could be added honestly.
+
 ## Status
 
 Not yet adjudicated. No Phase 7 *results* exist; `P-I1`'s gate exists as of 2026-08-24 and
-emits nothing, because no checkpoint sweep of motif strength has been run.
+`P-ST1`'s as of 2026-08-25, and both emit nothing — no checkpoint sweep of motif strength
+has been run, and no activations or Phase 2 projectors exist in this repository.
