@@ -312,6 +312,46 @@ source stays a claim the analyst must make. The measured version of the same
 problem is that a common per-unit factor produces a rejection rate of **1.00**
 against 0.05; see `POPPER_PLAN.md` §6i.
 
+**`P-ST1` gained a construction on 2026-08-25, and it is the entry that can
+lose.** `p7_motifs/steering_gate.py`; `POPPER_PLAN.md` §6k. It is H-BRIDGE's
+cheapest entry and the only registered bridge prediction where the particle and
+standard accounts make *incompatible* rather than merely different predictions.
+Four things belong here rather than only in the plan.
+
+**The registered falsifier is not one this claim's e-process can carry.** It
+reads "both arms move effective rank the same way, or the effect tracks ‖s‖ and
+is insensitive to the decomposition" — and both clauses describe the **null**.
+An e-process records insufficient evidence and never a null accepted, so
+neither can enter the ledger. They map to INSUFFICIENT. The falsification
+branch is INVERTS: attractive-dominant steering demonstrably *raising*
+effective rank while repulsive-dominant lowers it, a reversal positively shown,
+and it was checked to be a branch that can fire.
+
+**The registered null was measured and retired, the second in three passes.**
+Permuting the decomposition label across pairs treats *m* pairs as *m*
+exchangeable units when every pair at one layer shares the tokens and both
+subspaces; the rejection rate under a noisy H0 grows from nominal at 8 pairs to
+0.17–0.22 at 150. What replaces it is the matched-dimension random orthogonal
+subspace pair — `P6-R2`/`P6-R4`'s construction, arriving for the fourth time —
+which holds at 0.000–0.040 with power 1.000 in both directions.
+
+**Steering is a pure mean effect, which decided the one thing the wording left
+most open.** Re-centring after injection annihilates the intervention exactly,
+so the cloud's pre-existing mean offset competes with the injected one; on a
+realistic residual stream the design as literally worded has no power, and at a
+mean offset of five spreads it rejects more often under H0 than under H1.
+Removing the *baseline* mean before injecting restores it. That was put to the
+author before the module was written.
+
+**And the pilot has a precondition, computed before it runs** — the third in
+three passes, after `CLAIM-B`'s 19 control series and `CLAIM-C`'s 19%
+dissenting cells. A uniform draw from `U_pos` carries only
+dim(occupied)/dim(`U_pos`) of its energy into the subspace the token cloud
+occupies, and the per-pair informative rate falls from 1.000 at ratio 1 to
+0.000 at ratio 6. `claims/audits/p6_projector_labels.json` already records that
+`U_pos` is the *un-shrunk* bucket in the projector build's resolution order,
+which is the unfavourable side of this.
+
 **Why the P5b predictions stay here rather than under H-OPERATOR.** Sub-experiment
 D asks whether behavioural geometry is carried by the real/symmetric subspace and
 *not* by the imaginary/antisymmetric one (`P5b-D1`, `P5b-D2`). That is a claim
@@ -361,8 +401,8 @@ adjudication record may only be written by `core/adjudication.py` (item B4,
 not yet built) and only for a prediction the evaluability audit (item B5)
 classified as `e-value`.
 
-Eight predictions are adjudicable as of 2026-08-24 — `P-S1`, `P-T1`, `P-M1`,
-`CLAIM-C`, `P6-R2`, `P6-R4`, and now `CLAIM-B` and `P-I1`. What is missing is
+Nine predictions are adjudicable as of 2026-08-25 — `P-S1`, `P-T1`, `P-M1`,
+`CLAIM-C`, `P6-R2`, `P6-R4`, `CLAIM-B`, `P-I1`, and now `P-ST1`. What is missing is
 data, not apparatus: no run artifacts exist in this repo, so all eight are
 validated on synthetic inputs with known answers. `CLAIM-C` was the first put
 through a **dry run on an input whose answer is known a priori** rather than

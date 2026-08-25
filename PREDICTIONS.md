@@ -397,7 +397,52 @@ Four things specific to `P-I1`:
   rejection rate of 1.00 against 0.05. The independence source remains a claim the analyst
   must state in the record, exactly as constraint 2 requires.
 
+## Addendum, 2026-08-25 — `P-ST1` has a construction, and it is the entry that can lose
+
+`p7_motifs/steering_gate.py`. `P-ST1` is the only registered bridge prediction where the
+particle and standard accounts make INCOMPATIBLE rather than merely different predictions,
+which is why it was built before entries with more apparatus behind them. Five things
+specific to it, all fixed before any activation was steered:
+
+- **Two of them were put to the author first, because they change what the prediction
+  means.** Steering adds `α·v` to every token, so its whole effect on effective rank is a
+  MEAN effect — re-centring after injection annihilates it exactly, as algebra rather than
+  simulation. That makes the token cloud's pre-existing mean offset a competitor to the
+  injected one: measured, the design as literally worded has no power on a realistic
+  residual stream, and at a mean offset of five spreads it rejects more often under H0 than
+  under H1. The gate therefore removes the BASELINE mean before injecting and keeps the
+  injected offset. Second, α — the injection scale — was a third placed constant this file
+  never flagged, and it decides whether the prediction is readable at all: there is a
+  plateau at 0.17–0.24 × the population's spread, with the statistic identically zero below
+  and direction-independent above. One α is pre-registered and labelled `placed` per
+  adjudication constraint 4; the fraction is placed, the scale it multiplies is derived, and
+  the α-profile is reported with every result and enters no p-value.
+- **"Predominantly" is removed rather than thresholded.** Each arm is drawn uniformly from
+  its subspace — 100% by construction, not 60% by cut — so one of the two constants this
+  file's `null_construction` flagged no longer exists. Norm matching is likewise by
+  construction: both arms of a pair get the same α.
+- **The registered null does not hold and was replaced.** Permuting the decomposition label
+  across pairs treats *m* pairs as *m* exchangeable units, and every pair at one layer
+  shares the tokens and both subspaces; the H0 rejection rate grows from nominal at 8 pairs
+  to 0.17–0.22 at 150. What replaces it is a matched-dimension random ORTHOGONAL subspace
+  pair, the construction `P6-R2` uses. The registered permutation is still computed and
+  reported beside every result, never adjudicated.
+- **The registered falsifier is not one an e-process can carry.** "Both arms move effective
+  rank the same way, or the effect tracks ‖s‖" describes the NULL in both clauses, and an
+  e-process records insufficient evidence and never a null accepted. It maps to
+  INSUFFICIENT. The falsification branch is INVERTS — attractive-dominant steering
+  demonstrably RAISING effective rank — a reversal positively shown, checked to be a branch
+  that can fire.
+- **A precondition on the pilot, computed before it runs.** A uniform draw from `U_pos`
+  carries only dim(occupied)/dim(`U_pos`) of its energy into the subspace the cloud
+  occupies; the per-pair informative rate falls from 1.000 at ratio 1 to 0.000 at ratio 6,
+  and the projector audit already records `U_pos` as the un-shrunk bucket. The pilot must
+  report dim `U_pos` at the injection layer against the population's effective rank.
+
+Recorded before any activation exists, which is the only time it could be added honestly.
+
 ## Status
 
 Not yet adjudicated. No Phase 7 *results* exist; `P-I1`'s gate exists as of 2026-08-24 and
-emits nothing, because no checkpoint sweep of motif strength has been run.
+`P-ST1`'s as of 2026-08-25, and both emit nothing — no checkpoint sweep of motif strength
+has been run, and no activations or Phase 2 projectors exist in this repository.
