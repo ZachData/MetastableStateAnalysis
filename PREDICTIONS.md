@@ -121,6 +121,33 @@ in the registry.
   series measured on the same sweep at the same layers. A cheap-tier sweep measuring six
   metrics has six. That is a requirement on what the pilot must measure, not a result.
 
+**Fourth addendum, 2026-08-25 — what claim (c)'s gate needs the pilot to measure.**
+The gate was run on an input whose answer is known: one model as *both* the reference and
+the candidate, so every cell is concordant and the correct verdict is TRANSFERS a priori.
+The criterion passed that test — every metric-leave-one-out subset returns exactly the
+attainable floor, so the unanimity axis does not bite on a unanimous input. What the sweep
+found is an operating range, and it is a precondition on the run rather than a change to
+the criterion:
+
+- **At least 9 of the candidate's 48 (prompt × metric) cells must dissent in sign** — about
+  19%, on average 1.5 of the 8 prompts disagreeing on each of the six metrics. Above
+  `sign_homogeneity` 0.8125 the homogeneity correction's derived refusal fires on *every*
+  input including a perfect one, so neither TRANSFERS nor FAILS-TO-TRANSFER is reachable and
+  the hard stop fires unconditionally.
+- **This costs power, not validity, and it costs it where the effect is most uniform.**
+  `sign_homogeneity` measures prompt redundancy under H0 and effect uniformity under H1, and
+  the correction cannot separate them. Under independent prompt signs homogeneity sits at
+  0.637 and the refusal essentially never fires; a contrast pointing the same way on every
+  prompt sits at 1.0 and is refused with certainty. More prompts do not move the boundary.
+- **How much concordance the gate needs, so the number is known before forward passes are
+  spent.** TRANSFERS becomes certain at 38 of 48 concordant cells at homogeneity 0.625, 42 at
+  0.75 and 44 at 0.8125; falsification needs 13 or fewer. The band between them, where the
+  gate says nothing and the hard stop fires, is 26 of the 49 possible counts at 0.75.
+
+Measured by running the shipped gate, not by reasoning about it; recorded in
+`claims/audits/claim_c_dry_run.json` and `POPPER_PLAN.md` §6j. Nothing in the criterion
+changed and nothing was adjudicated.
+
 Recorded before any sweep exists, which is the only time it could be added honestly.
 
 ## Status

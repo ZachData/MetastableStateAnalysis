@@ -1286,6 +1286,129 @@ before they were in a test.
 `INDEX.md` records the dense pilot sweep as not executed, validation is on
 synthetic inputs with known answers, and `claims/adjudications/` remains empty.
 
+## 6j. CLAIM-C run on inputs whose answer is known (2026-08-25)
+
+Five passes built apparatus and `claims/adjudications/` was still empty. This
+one adds none. It runs the gate §§6f–6g shipped on two families of input whose
+correct verdict is fixed a priori, and commits what came back to
+`claims/audits/claim_c_dry_run.json` (`tools/dry_run_claim_c.py`, ~5 minutes,
+committed for the same reason as the other three artifacts).
+
+**The sharp input is the self-comparison.** One model as *both* the reference
+and the candidate. The contrast tables are then identical, every cell is
+concordant, and the statistic is at its maximum in the full set and in all six
+leave-one-out subsets at once. If the gate does not return TRANSFERS on that,
+the criterion does not mean what it says — and there was a live reason to
+expect it might not, since a self-comparison inherits whatever prompt-to-prompt
+sign consistency the reference has, §6g's derived refusal fires above
+homogeneity ≈0.80–0.85, and §6f's identical-rows refusal fires at exactly 1.0.
+
+**The criterion is sound, and the tool axis is inert where it should be.** On a
+perfect input every subset returns exactly the attainable floor
+$2/(2^n + 1)$ and the intersection-union max over the seven is that same floor.
+Unanimity does not bite on a unanimous input. That had never been checked; it
+is now pinned at every tabulated prompt count.
+
+**What the sweep found instead is an ADMISSIBLE BAND, outside which the gate is
+a constant function.** At eight prompts, `sign_homogeneity` at or below 0.8125:
+
+| candidate sign homogeneity | what the gate does to a PERFECT input |
+|---|---|
+| ≤ 0.8125 | TRANSFERS, p = max(2/257, R(h, 2/257)) |
+| 0.8333 – 0.9583 | refused: corrected attainable floor |
+| 0.9792 | refused: the curve's top bin has no measurement |
+| 1.0000 | refused: identical sign rows |
+
+0.8125 is **at least 9 of the 48 candidate cells carrying the minority sign for
+their metric** — on average at least 1.5 of the 8 prompts dissenting on each of
+the six metrics. Above it the power curve confirms refusal at *every*
+concordance count from 0 to 48, so neither TRANSFERS nor FAILS-TO-TRANSFER is
+reachable and **the hard stop fires unconditionally**. §6g's own caution against
+a third robustness axis was that *"a stop rule that always fires carries no
+information"*; this is where CLAIM-C's stop rule has such a region, and it was
+found by running the gate rather than by reading it.
+
+**It is not a Type-I defect and not an argument for a weaker correction.**
+`sign_homogeneity` is a *within-candidate* statistic. Under H0 it measures the
+prompt redundancy §6g measured and corrected for; under H1 the same number also
+rises with the strength and *uniformity* of a real effect, and the correction
+cannot tell the two apart. The cost therefore lands as power, and it lands
+hardest where the effect is most uniform. **The gate is powered against a
+contrast carrying a prompt-specific signature that transfers, and unpowered
+against a contrast carrying one uniform direction that transfers.** Blog 1's
+phenomenology is the second kind.
+
+**Two references fix the scale, and both were computed rather than guessed.**
+Under *independent* prompt signs — the most favourable candidate the design can
+be handed — homogeneity concentrates at **0.637** at eight prompts (exact, by
+convolution over the binomial majority counts) and the refusal fires with
+probability **1e-4**. So the band is not tight against chance. It is tight
+against a clean effect: a contrast pointing the same way on every prompt sits at
+exactly 1.0 and is refused with certainty. And more prompts do not help.
+Expressed as the curve bin the refusal starts in — the unit comparable across
+prompt counts, since the attainable homogeneities themselves lie on a grid of
+step $1/(n\,m)$ — the boundary is 0.800–0.825 at six prompts, 0.850–0.875 at
+seven and nine, and 0.825–0.850 at eight, ten, eleven and twelve. Three bins of
+0.025, with no trend.
+
+**So this is a requirement on what the pilot must measure, computed before it
+runs** — the §6i pattern a second time, where CLAIM-B's anchor arms turned out
+to need 19 control series a six-metric sweep does not have. Here: at least ~19%
+of the candidate's 48 cells must dissent in sign. Whether they do is an
+empirical fact about pythia-1.4b that nothing in this repository yet knows, and
+it is now on the record as a precondition rather than as a surprise waiting at
+the far end of a sweep.
+
+**One positive result, and it answers §6h's question asked of a refusal.** §6h
+found an audit arm reporting PASS while incapable of failing. The dual question
+for a refusal is whether it ever refuses something that would have passed.
+R(h, ·) is non-decreasing in p in all 264 tabulated bins, so
+`R(h, floor) > α` implies `R(h, p) > α` for every attainable p: **whenever the
+derived refusal fires, no input whatsoever could have cleared α.** It is tight.
+It never costs a verdict the gate could otherwise have reached; it converts an
+uninformative "p > α" into a refusal that says why.
+
+**The power curve, which was the second queued question.** At eight prompts and
+48 cells, over randomly placed arrangements at a fixed candidate sign table:
+
+| homogeneity | TRANSFERS ≥50% | TRANSFERS always | FAILS ≥50% | INSUFFICIENT band |
+|---|---|---|---|---|
+| 0.625 | 35/48 | 38/48 | ≤13/48 | 14–34 |
+| 0.750 | 37/48 | 42/48 | ≤10/48 | 11–36 |
+| 0.8125 | 39/48 | 44/48 | ≤10/48 | 11–38 |
+
+The queued form of the question was whether the answer is ~44, which would make
+the gate nearly all-or-nothing. It is 44 *at the boundary* and 38 well inside
+it, so the gate is demanding rather than binary — and the requirement tightens
+as the candidate's contrast becomes more uniform, which is the same finding
+arriving from the other direction. The INSUFFICIENT band is 26 of the 49
+possible concordance counts at homogeneity 0.75, and the hard stop fires across
+all of it.
+
+**Decomposed, because "the gate is demanding" is not a finding until you know
+which part of it is demanding.** Two counterfactual rates are recorded beside
+each row: the full-set-only p and the uncorrected intersection-union max. The
+metric-leave-one-out axis moves the 50% point by **1–3 cells**; the homogeneity
+correction moves it by **0 at homogeneity 0.625, rising to 5 at 0.8125**. Most
+of the cost is the correction, and it is concentrated at the top of the band.
+
+**What this deliberately did not do.** It changes nothing in
+`p1_mstate_tracking/replication_gate.py`. It adds no third robustness axis —
+§6g records why CLAIM-C in particular cannot afford one, and the region found
+here is a concrete instance of that argument rather than a reason to add
+another. And it adjudicates nothing: a dry run on synthetic inputs is not
+evidence about pythia-1.4b, `claims/adjudications/` is still empty, and the
+record says so in a field the staleness check reads.
+
+**The lesson, which is the one the last three passes kept paying for.** §6g's
+rounding defect, §6h's audit arm incapable of failing and §6i's power figures
+measured under a discarded null were all found by *looking at an output*, never
+by a failing test. This pass looked at an output nobody had generated: the
+gate's verdict on an input whose answer was already known. Neither of the two
+things it found — the admissible band and the tightness of the refusal — is
+visible in any single result, and no synthetic unit test in the suite was
+failing.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

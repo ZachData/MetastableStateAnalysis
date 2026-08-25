@@ -83,6 +83,40 @@ refuses instead of correcting, on the derived ground that a *perfect* result
 would not survive its own correction there. `POPPER_PLAN.md` §6g records the
 two decisions this required and the out-of-sample validation.
 
+**The gate was run on inputs whose answer is known, and it has an admissible
+band (2026-08-25).** `tools/dry_run_claim_c.py` puts one model in as *both* the
+reference and the candidate — every cell is then concordant and the correct
+verdict is TRANSFERS a priori — and sweeps the candidate's own sign homogeneity.
+`claims/audits/claim_c_dry_run.json` records the result and `POPPER_PLAN.md` §6j
+reads it. Three things belong here rather than only there.
+
+**The criterion is sound.** On a perfect input every leave-one-out subset
+returns exactly the attainable floor and the intersection-union max is that same
+floor, so the unanimity axis does not bite on a unanimous input. That had never
+been checked.
+
+**But above `sign_homogeneity` 0.8125 at eight prompts the gate is a constant
+function.** The corrected-attainable-floor refusal fires on *every* input,
+including a perfect one, at every concordance count from 0 to 48 — so neither
+TRANSFERS nor FAILS-TO-TRANSFER is reachable and this claim's hard stop fires
+unconditionally there. That is not a Type-I defect: `sign_homogeneity` measures
+prompt redundancy under H0 and effect *uniformity* under H1, and the correction
+cannot separate them, so the cost lands as power and lands hardest where the
+effect is most uniform. **This claim's gate is powered against a contrast with a
+prompt-specific signature that transfers, and unpowered against a contrast with
+one uniform direction that transfers.** Blog 1's phenomenology is the second
+kind.
+
+**Which makes it a requirement on the pilot, computed before it runs** — the
+same shape as `CLAIM-B`'s 19 control series below. At least 9 of the candidate's
+48 cells must dissent in sign, about 19%, or the gate cannot return a verdict at
+all. Under *independent* prompt signs homogeneity concentrates at 0.637 and the
+refusal essentially never fires, so the band is not tight against chance; it is
+tight against a clean effect, which sits at exactly 1.0. More prompts do not
+move it. Whether pythia-1.4b's contrast dissents enough is an empirical fact
+nothing here yet knows, and it is now a stated precondition rather than a
+surprise at the far end of a sweep.
+
 ### H-EMERGE — collapse-resistance emerges at circuit-formation events
 
 **Null (H0-EMERGE):** clustering dynamics and circuit formation are independent;
@@ -330,7 +364,11 @@ classified as `e-value`.
 Eight predictions are adjudicable as of 2026-08-24 — `P-S1`, `P-T1`, `P-M1`,
 `CLAIM-C`, `P6-R2`, `P6-R4`, and now `CLAIM-B` and `P-I1`. What is missing is
 data, not apparatus: no run artifacts exist in this repo, so all eight are
-validated on synthetic inputs with known answers. `P6-R2` and `P6-R4` carry one
+validated on synthetic inputs with known answers. `CLAIM-C` was the first put
+through a **dry run on an input whose answer is known a priori** rather than
+only through unit tests (2026-08-25, `claims/audits/claim_c_dry_run.json`); that
+found an admissible band in its own input space that no test was failing on, and
+the same treatment is owed to the other seven. `P6-R2` and `P6-R4` carry one
 further refusal on top of that — their exchangeable unit is not registered, and
 `adjudicate_p6_r2_r4` raises rather than letting a caller supply it. `CLAIM-B`
 carries a different one: its two anchor arms refuse below 19 control series, so
