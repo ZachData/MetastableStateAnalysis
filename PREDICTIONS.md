@@ -129,24 +129,46 @@ attainable floor, so the unanimity axis does not bite on a unanimous input. What
 found is an operating range, and it is a precondition on the run rather than a change to
 the criterion:
 
-- **At least 9 of the candidate's 48 (prompt × metric) cells must dissent in sign** — about
-  19%, on average 1.5 of the 8 prompts disagreeing on each of the six metrics. Above
-  `sign_homogeneity` 0.8125 the homogeneity correction's derived refusal fires on *every*
+- **At least 11 of the candidate's 48 (prompt × metric) cells must dissent in sign** — about
+  23%, on average about 1.8 of the 8 prompts disagreeing on each of the six metrics. Above
+  `sign_homogeneity` 0.7708 the homogeneity correction's derived refusal fires on *every*
   input including a perfect one, so neither TRANSFERS nor FAILS-TO-TRANSFER is reachable and
-  the hard stop fires unconditionally.
+  the hard stop fires unconditionally. (9 cells and 0.8125 when first measured; the band
+  tightened later the same day — see the second precondition below.)
 - **This costs power, not validity, and it costs it where the effect is most uniform.**
   `sign_homogeneity` measures prompt redundancy under H0 and effect uniformity under H1, and
   the correction cannot separate them. Under independent prompt signs homogeneity sits at
-  0.637 and the refusal essentially never fires; a contrast pointing the same way on every
-  prompt sits at 1.0 and is refused with certainty. More prompts do not move the boundary.
+  0.637 and the refusal essentially never fires — 0.0017 of that distribution sits above the
+  boundary at eight prompts, 0.026 at six; a contrast pointing the same way on every prompt
+  sits at 1.0 and is refused with certainty. More prompts do not move the boundary.
 - **How much concordance the gate needs, so the number is known before forward passes are
-  spent.** TRANSFERS becomes certain at 38 of 48 concordant cells at homogeneity 0.625, 42 at
-  0.75 and 44 at 0.8125; falsification needs 13 or fewer. The band between them, where the
-  gate says nothing and the hard stop fires, is 26 of the 49 possible counts at 0.75.
+  spent.** TRANSFERS becomes certain at 38 of 48 concordant cells at homogeneity 0.5833, 38 at
+  0.7083 and 43 at 0.7708; falsification needs 14 or fewer. The band between them, where the
+  gate says nothing and the hard stop fires, is 27 of the 49 possible counts at 0.7708.
+
+- **And a second precondition, pointing the other way (2026-08-25).** At least five prompts
+  must have usable metrics that do NOT split evenly. A prompt whose label flip does not
+  change the statistic — every cell dropped, or an even number of usable cells splitting
+  exactly half and half, which with six metrics is 3–3 and happens to 20/64 of rows under
+  H0 — is enumerated through all 2^n null patterns and never counted, so the floor is
+  2^-k in the k prompts that can move. Five is the first k that clears α = 0.05, at every
+  prompt count. Before that was checked the gate could be handed a table perfect on four
+  prompts and 3–3 on two, return p = 0.0769 — exactly that table's own floor — and report
+  it as "not significant".
+- **Adding that refusal is what moved the first precondition from 9 cells to 11.** It takes
+  no verdict from any individual table — both tails share the floor, so a refused table
+  could not have cleared α either way, and P(TRANSFERS) is unchanged to four decimals. What
+  it changes is the denominator: every rate in the calibration curve is conditional on the
+  gate emitting, and a draw that could never reject is no longer emitted, so the measured H0
+  rate among the draws a ledger actually receives is higher and the correction is stronger.
+  The band is the price; it is recorded rather than absorbed.
 
 Measured by running the shipped gate, not by reasoning about it; recorded in
-`claims/audits/claim_c_dry_run.json` and `POPPER_PLAN.md` §6j. Nothing in the criterion
-changed and nothing was adjudicated.
+`claims/audits/claim_c_dry_run.json` and `POPPER_PLAN.md` §§6j and 6l. The criterion is
+unchanged and nothing was adjudicated. §6l did change the gate — it added the
+informative-row refusal above, and gave the homogeneity curve a cell-drop dimension so a
+run that loses cells is corrected off a table measured on tables that lost cells, or
+refused — but neither touches what counts as reproduction.
 
 Recorded before any sweep exists, which is the only time it could be added honestly.
 

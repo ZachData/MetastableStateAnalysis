@@ -53,15 +53,42 @@ INDEPENDENTLY per layer:
                   worth having, and a reader who cannot run the wrong one has
                   to take the right one on faith.
 
-NO UNIT IS REGISTERED, AND SO NOTHING HERE ADJUDICATES
+THE UNIT IS REGISTERED, AND IT IS "model" (author's decision, 2026-08-25)
 
-`REGISTERED_EXCHANGEABLE_UNIT` is None. Adjudication refuses while it is, and
-passing `unit=` does not route around that -- the argument selects which null to
-COMPUTE, and the module constant is what decides which one may enter a claim's
-e-process. Choosing it is a scientific decision of the same class as CLAIM-C's
-criterion, and making it after seeing a p-value would void the guarantee. When
-it is made it belongs here, in the registry's `null_construction`, and in
-POPPER_PLAN -- in that order, before any record is written.
+`REGISTERED_EXCHANGEABLE_UNIT` is `"model"`. It was None for two passes because
+choosing it is a scientific decision of the same class as CLAIM-C's criterion,
+not a measurement -- the construction can compute either unit and the two differ
+by orders of magnitude, so making the choice after seeing a p-value would void
+the guarantee. The decision was put to the author and taken by the author,
+BEFORE any p-value on real activations exists: `claims/adjudications/` is empty,
+no run artifact is in this repository, and every number the two units have ever
+produced here came from synthetic populations.
+
+What the decision was made against, recorded so the reader is not asked to take
+it on the authority of whoever wrote this line. Measured at 400 replicates
+(POPPER_PLAN.md 6h) as the layers come to share one direction:
+
+    correlation rho    0.0     0.5     0.9     1.0
+    unit="layer"      0.0525  0.0800  0.2325  0.2800
+    unit="model"      0.0525  0.045-0.0575 throughout
+
+`"layer"` is anticonservative wherever the layers are not independent, and under
+ALBERT's weight-tying they are as far from independent as they get -- one OV
+matrix, one Schur decomposition, one projector pair, 49 activation snapshots of
+it. `"model"` holds at nominal across the whole dependence range, including at
+rho = 0, where it costs nothing. The decision is therefore the conservative one
+at every point of the range rather than a trade.
+
+`unit=` still does not route around the constant: the argument selects which
+null to COMPUTE, the constant decides which one may enter a claim's e-process,
+and `adjudicate_p6_r2_r4` refuses a result computed under the other one. That
+refusal is now reachable in the direction that matters -- a `"layer"` result
+passed to adjudication is rejected on the unit, where before both were rejected
+on there being no unit at all.
+
+Registering the unit lifts ONE of this construction's refusals. It does not
+adjudicate anything: there is still no run artifact, and the entry stays
+`needs-null`-complete-but-unrun like the other eight.
 
 WHAT THIS INSTRUMENT DOES NOT DO
 
@@ -93,9 +120,14 @@ from .subspace_geometry import (
 #: default here would silently pick the anticonservative one.
 EXCHANGEABLE_UNITS = ("model", "layer")
 
-#: Which unit may enter a claim's e-process. None means "not decided", and
-#: adjudication refuses while it is None. See the module docstring.
-REGISTERED_EXCHANGEABLE_UNIT: Optional[str] = None
+#: Which unit may enter a claim's e-process. The AUTHOR'S decision, taken
+#: 2026-08-25 and recorded in the registry's null_construction and
+#: POPPER_PLAN.md 6l. It is a scientific choice and not a measurement -- see the
+#: module docstring for what it was chosen against and for why it was safe to
+#: take now (no p-value on real activations exists, in this repository or
+#: anywhere the ledger can see). None would mean "not decided", and adjudication
+#: refuses while it is None.
+REGISTERED_EXCHANGEABLE_UNIT: Optional[str] = "model"
 
 #: Monte-Carlo null size. A module constant and not a parameter, so a per-run
 #: choice is not available -- the same convention P-S1, P-T1, P-M1 and CLAIM-C
@@ -510,11 +542,14 @@ def adjudicate_p6_r2_r4(result: dict,
     one accidental fixture run would permanently occupy P6-R2's slot with a
     synthetic p-value.
 
-    It refuses on top of that while `REGISTERED_EXCHANGEABLE_UNIT` is None, and
-    the refusal is deliberately NOT satisfiable by an argument. Which unit may
-    enter a claim's e-process is a scientific decision, it has not been made,
-    and letting a caller supply it would make it a per-run choice -- which is
-    the selection this whole apparatus exists to prevent.
+    On top of that it refuses any result not computed under
+    `REGISTERED_EXCHANGEABLE_UNIT`, and that refusal is deliberately NOT
+    satisfiable by an argument. Which unit may enter a claim's e-process is a
+    scientific decision; letting a caller supply it would make it a per-run
+    choice, which is the selection this whole apparatus exists to prevent. The
+    unit is now `"model"` (author's decision, 2026-08-25, taken before any
+    p-value on real activations existed), so the live refusal is the second one:
+    a `"layer"` result reaches this function and is turned away on the unit.
     """
     if not adjudicate:
         return None
@@ -533,9 +568,15 @@ def adjudicate_p6_r2_r4(result: dict,
             f"chooses what to COMPUTE, not what may enter an e-process.")
     if result.get("exchangeable_unit") != REGISTERED_EXCHANGEABLE_UNIT:
         raise NullRefused(
-            f"result was computed under unit "
-            f"{result.get('exchangeable_unit')!r} but "
-            f"{REGISTERED_EXCHANGEABLE_UNIT!r} is registered")
+            f"{result.get('prediction_id')} cannot be adjudicated: the result "
+            f"was computed under unit {result.get('exchangeable_unit')!r} and "
+            f"{REGISTERED_EXCHANGEABLE_UNIT!r} is what is registered. The two "
+            f"units are not two views of one number -- measured at 400 "
+            f"replicates, 'layer' rejects at 0.28 against a nominal 0.05 once "
+            f"the layers share a direction, which under ALBERT's weight-tying "
+            f"they do. Recompute with unit={REGISTERED_EXCHANGEABLE_UNIT!r}; "
+            f"changing what is registered is a scientific decision and not a "
+            f"way to make a computed result adjudicable.")
 
     from core.adjudication import adjudicate_if_registered
     return adjudicate_if_registered(

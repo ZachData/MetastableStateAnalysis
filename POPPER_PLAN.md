@@ -1310,7 +1310,10 @@ Unanimity does not bite on a unanimous input. That had never been checked; it
 is now pinned at every tabulated prompt count.
 
 **What the sweep found instead is an ADMISSIBLE BAND, outside which the gate is
-a constant function.** At eight prompts, `sign_homogeneity` at or below 0.8125:
+a constant function.** At eight prompts, `sign_homogeneity` at or below 0.8125
+— *superseded 2026-08-25: the band is now ≤ 0.7708, see §6l. The finding stands;
+the number moved when the informative-row floor changed what "conditional on
+emission" conditions on.* The table below is the measurement as it stood:
 
 | candidate sign homogeneity | what the gate does to a PERFECT input |
 |---|---|
@@ -1354,7 +1357,8 @@ seven and nine, and 0.825–0.850 at eight, ten, eleven and twelve. Three bins o
 **So this is a requirement on what the pilot must measure, computed before it
 runs** — the §6i pattern a second time, where CLAIM-B's anchor arms turned out
 to need 19 control series a six-metric sweep does not have. Here: at least ~19%
-of the candidate's 48 cells must dissent in sign. Whether they do is an
+of the candidate's 48 cells must dissent in sign (**revised to 11 of 48, ~23%,
+in §6l**). Whether they do is an
 empirical fact about pythia-1.4b that nothing in this repository yet knows, and
 it is now on the record as a precondition rather than as a surprise waiting at
 the far end of a sweep.
@@ -1577,6 +1581,241 @@ more replicates than a committed artifact can afford to carry.
 not: the gate needs activations and the Phase 2 attractive/repulsive
 projectors, and neither is in this repository. Validation is on synthetic
 populations with known answers, and `claims/adjudications/` remains empty.
+
+## 6l. CLAIM-C's cell-drop dimension, and the floor that was never tight (2026-08-25)
+
+§6g closed with a gap it named as the honest fix and did not build: every draw
+in the homogeneity curve had a **complete** (prompt × metric) table, so a real
+run that drops cells reads its correction — and therefore its refusal — off a
+table measured on a design it does not have. §6j promoted that gap by showing
+the correction is what drives the refusal boundary. It is now built, and
+building it turned up a second thing that had been live in the gate since the
+day it was written.
+
+**The second thing came first, because it is exact and needs no simulation.**
+Flipping prompt *i*'s condition label swaps its concordant and discordant cells,
+so row *i* contributes `conc_i` unflipped and `valid_i − conc_i` flipped and its
+**swing** is `|valid_i − 2 conc_i|`. A row with swing 0 contributes the *same*
+number to the observed sum and to every one of the 2^n null patterns: it is
+enumerated and never counted. With *k* rows that do move,
+
+$$\text{floor} = \frac{2^{\,n-k}+1}{2^{\,n}+1} \;\approx\; 2^{-k}$$
+
+which is `2/(2^n + 1)` exactly when *k* = *n* — so the floor the module already
+refused on is the special case, not a different rule. Checked against the gate's
+own enumeration at every *k*, it agrees to the digit.
+
+**Five informative rows is the first count that clears α = 0.05, at every
+tabulated prompt count.** That is `P-ST1`'s informative-*pair* floor (§6k)
+arriving in CLAIM-C from the other direction, down to the same k ≥ 5, which is
+now the third construction where the binding quantity turned out to be the units
+that carry information rather than the units that were run.
+
+| informative rows *k* | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|
+| floor at 8 prompts | 0.128 | 0.066 | **0.035** | 0.020 | 0.012 | 0.008 |
+
+**Two ways a row lands there, and the one nobody was looking for is on a
+perfectly complete table.** All its cells dropped is the obvious one. The other
+is an **even** number of usable cells splitting exactly half and half: with the
+full six metrics, a prompt concordant on three and discordant on three. Under H0
+that is 20/64 of rows. So the gate could be handed a table that was *perfect on
+four prompts* and 3–3 on two, return p = 0.0769 — precisely that table's own
+floor — and report it as "not significant". Measured at six prompts, **61% of H0
+draws** could not have rejected however the statistic fell; at eight prompts 22%,
+at twelve 1.2%.
+
+It does **not** bite on the six leave-one-out subsets of a complete table: five
+metrics is an odd count and an odd swing cannot be zero. The full set is the
+binding subset until drops make a subset's usable count even or empty it — which
+is the join between the two halves of this pass.
+
+**Why a data-dependent refusal is safe, and why that had to be measured rather
+than argued.** The null is symmetric under a global flip, so both tails share
+the floor: when it exceeds α neither `p_greater` nor `p_reciprocal` can reach α,
+TRANSFERS and FAILS-TO-TRANSFER are both unreachable, and the verdict was
+INSUFFICIENT whatever the statistic came to. The refusal therefore removes no
+verdict; it replaces a p above α — which on this claim reads as evidence
+*against* CLAIM-C — with a record saying the design could not have rejected.
+Measured against the counterfactual at five H1 strengths, P(TRANSFERS) is
+identical to four decimals with the refusal and without it, including at a
+strength where the refusal fires on 15% of draws. Zero power, exactly. That is
+§6j's tightness result asked of the refusal that was missing, and the dry run
+now re-scores every table it refuses rather than restating the argument.
+
+**And the cost of stating it that way: `costs_no_power` is `None`, never
+`True`, when the refusal never fired.** A sweep with nothing to re-score would
+report success while being incapable of reporting anything else — §6h's audit
+arm again, caught this time before it shipped rather than after.
+
+### The drop dimension
+
+**Dropping cells is not the same statistic made noisier**, which is why it
+needed a dimension rather than a caveat. It changes three things at once: the
+sum runs over fewer cells, the per-row null weights stop being equal, and a row
+can lose its swing outright.
+
+**The tabulation was affordable only after re-keying the exact fast path.** §6g's
+table was keyed by the histogram of per-row *concordant counts*, which assumes
+every row has all *m* cells. Once `valid_i` varies, the obvious key is the pair
+`(valid_i, conc_i)` — 28 types at six metrics, and multisets of eight rows over
+28 types is **23 million** keys. The null, though, is exactly the distribution of
+`Σ ±g_i`: it depends only on the multiset of **swings**, which has *m* + 1 types,
+so the key count is C(*n* + *m*, *m*) = **3003** at eight prompts — the same size
+as the complete-table version. Dropping cells costs the tabulation nothing. The
+observation `Σ e_i` is not determined by the swing multiset, so each key stores
+the whole null distribution and the observation indexes into it. Pinned against
+the gate cell by cell on holed tables, not only on the complete ones it reduces
+to.
+
+**The curve is now indexed by (n_prompts, drop bin, homogeneity bin).** Drop bin
+0 is `n_cells_dropped == 0` *exactly*, tested as integers — a complete table is
+the design the gate was built on and the common case, and deciding that boundary
+by comparing a float against an epsilon is how §6g's rounding defect got in.
+Above the last tabulated edge the gate **refuses** rather than reading the
+nearest row.
+
+**Three drop mechanisms reach each rate**, for the same reason the bias family
+has three shapes, and each (h, d) cell keeps the worst configuration over bias
+shapes and mechanisms together. The first version pinned the concentrated
+mechanisms to a single line and it was wrong: one metric column is 1/6 of the
+table and one prompt row is 1/*n* of it, so both saturated and left the upper
+drop bins measured by the benign mechanism alone — "worst configuration" over
+one candidate, exactly where the design is most stressed. They now spread over
+as few lines as the rate allows and no fewer.
+
+**Nothing is filled across the drop dimension, and that is a measurement.**
+Coarsening pushes p-values up; selecting for the tables that survived the
+informative-row floor pushes the conditional rate down. The two point opposite
+ways and they do not resolve — at every tabulated prompt count, of the ~118
+adjacent drop-bin pairs at a fixed homogeneity, the overwhelming majority are
+neither non-decreasing nor non-increasing:
+
+| prompts | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|
+| rises | 12 | 9 | 5 | 2 | 1 | 0 | 0 |
+| falls | 7 | 8 | 19 | 5 | 1 | 2 | 2 |
+| **neither** | **93** | **100** | **93** | **110** | **116** | **116** | **116** |
+
+The small prompt counts even carry pairs going *both* ways at once — 12 rising
+and 7 falling at six prompts — which is the strongest possible form of the
+answer: there is no direction to fill in.
+
+So a hole in that dimension is a refusal, and `drop_monotone_in_d` is stored per
+prompt count so a later reader does not take the fill rule on trust.
+
+**The draw count stopped being one number, and the reason is the refusal above.**
+Every rate here is conditional on the gate emitting, so what a bin needs is a
+fixed number of *emitted* draws rather than of drawn ones — and the
+informative-row floor refuses far more often at small prompt counts: measured,
+six prompts emit on 39% of independent-row H0 draws, eight on 78%, twelve on
+99%. Drawing 40000 everywhere therefore measures six prompts to a coarser
+resolution than twelve, and it showed: the first generation of this curve left
+the six-prompt **(0, 5%] drop slab with no measured bin at all**, so the gate
+refused there outright whatever the data was, and the other five six-prompt
+slabs stood on one to three measured bins apiece. Nothing failed; it was found
+by printing the coverage. The draw count is now scaled by `1/P` with *P* in
+closed form, rounded and capped — 3× at six prompts, 2× at seven, unchanged from
+eight up — which closes it: every slab at every prompt count now carries 12 to 18
+measured bins of 20. Every curve also carries a `coverage` block naming any slab
+with no measurement, so the next hole is visible in the artifact rather than
+discovered by a run being turned away.
+
+That is the fifth session running in which looking at a generated table found
+something no test was failing on, and the second in which the thing found was a
+consequence of the same session's own change.
+
+**What the family assumes, stated because a family is only as good as its
+boundary.** Drops are independent of concordance *given the position*: which
+cells go is modelled, whether a surviving cell agrees is not conditioned on it. A
+mechanism that preferentially removes discordant cells is outside it and is not
+corrected by this curve.
+
+### The band moved, and that is this pass's real cost
+
+§6j measured CLAIM-C's admissible band at **≤ 0.8125** at eight prompts, and
+restated it as a precondition on the pilot: at least 9 of the candidate's 48
+cells must dissent in sign. Both numbers are now superseded. Re-measured on the
+regenerated curve, the derived refusal starts in the **0.775–0.800** bin at six,
+seven and eight prompts and 0.825–0.850 at nine and up, and the requirement is
+**11 of 48 cells**, about 23%.
+
+**The cause is the informative-row floor, and it is not a regeneration
+artefact.** Every rate in the curve is conditional on the gate emitting. Before,
+a draw whose rows could not move the statistic was emitted with a p above α and
+counted in the denominator as a non-rejection, diluting *R* downward. It is now
+refused, so it reaches no ledger and belongs in no denominator — and the rate
+among the draws that do reach a ledger is higher. A higher *R* is a stronger
+correction, and a stronger correction refuses at a lower homogeneity. Both
+curves were internally consistent; each matches the gate it was measured on, and
+only the new one matches the gate that exists.
+
+So the refusal that costs no power (above) does cost *band*, and the two are not
+in tension: it removes no verdict from any individual table, and it tightens the
+region in which the gate can reach a verdict at all. That is worth stating
+plainly because §6g's caution — each thing added moves probability mass into
+INSUFFICIENT, and a stop rule that always fires carries no information — applies
+to a refusal exactly as it applies to a robustness axis, and this pass added a
+refusal.
+
+The rest of §6j survives it. The criterion is still sound on a perfect input;
+`R(h, ·)` is still non-decreasing in *p*, now over **1914** tabulated bins
+rather than 264, so the derived refusal is still tight across the drop dimension
+as well; the boundary still does not move with prompt count (two bins of 0.025,
+every count moving down together); and an independent-prompt candidate still
+sits comfortably inside — the share of that distribution above the boundary is
+0.0017 at eight prompts, against 8e-5 before. At six prompts it is 0.026, which
+is the clearest statement yet that six prompts is the marginal design.
+
+**What the pilot must now produce**, replacing §6j's line: at least **11 of 48**
+cells dissenting in sign, and at least five prompts whose usable metrics do not
+split evenly.
+
+**What it cost.** The configuration count went from 35 per prompt count to 770,
+and — with the draw scaling above — generation from about 50 seconds to about 40
+minutes, with the artifact growing from roughly 0.4 MiB to roughly 3 MiB.
+`docs/CI_BASELINE.md` records it, because a tool that used to be worth running
+while waiting is not any more.
+
+**Still no data.** As in §§6e–6k, the apparatus exists and the artifacts do not.
+`claims/adjudications/` is empty for CLAIM-C and `null_construction` has still
+not frozen.
+
+### And the first refusal lifted by a decision rather than by apparatus
+
+`P6-R2` and `P6-R4` refused to adjudicate while `REGISTERED_EXCHANGEABLE_UNIT`
+was `None`. §6h recorded why it was left there: which unit may enter an
+e-process is a scientific decision of the same class as CLAIM-C's criterion, not
+a measurement, and taking it after seeing a p-value would void the guarantee.
+It was put to the author in the previous pass, who chose to build `P-ST1`
+instead; it was put again and **the author registered `"model"`**.
+
+It was safe to take now for the reason that made it worth asking early: no
+p-value on real activations exists — `claims/adjudications/` is empty, no run
+artifact is in the repository, and every number either unit has produced came
+from synthetic populations. What it was decided *against* is on the record
+rather than on anyone's authority: measured at 400 replicates, as the layers
+come to share one direction, `"layer"` runs 0.0525 → 0.0800 → 0.2325 → 0.2800
+while `"model"` holds at 0.045–0.0575 throughout. Under ALBERT's weight-tying
+the layers are as far from independent as they get — one OV matrix, one Schur
+decomposition, one projector pair, 49 activation snapshots of it — so `"model"`
+is the conservative choice at every point of the range and not a trade: at ρ = 0,
+where the two agree, it costs nothing.
+
+**These are the first two entries whose refusal is lifted by a recorded decision
+rather than by new apparatus**, which is a category this project had not used
+yet. Nothing is adjudicated: there is still no run artifact, and the live
+refusal simply moved — `adjudicate_p6_r2_r4` now turns away a result computed
+under `"layer"` instead of turning away everything.
+
+**One consequence worth not rediscovering.** While no unit was registered, that
+refusal was doubling as the safety catch keeping a synthetic p-value out of
+P6-R2's ledger slot: `adjudicate_p6_r2_r4(res, adjudicate=True)` could not reach
+`core.adjudication` at all. It can now, `P6-R2` is classified `e-value`, and
+`adjudicate` refuses to overwrite a record once written — so an accidental
+fixture run would occupy the slot permanently. Every test that both asks to
+adjudicate and uses the registered unit passes an isolated `adjudications_dir`,
+and the test class says so at the top.
 
 ## 7. What this plan does *not* do
 

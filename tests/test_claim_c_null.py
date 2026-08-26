@@ -38,13 +38,16 @@ from p1_mstate_tracking.replication_gate import (
     CLAIM_C_RECIPROCAL_ALTERNATIVE,
     DEPTH_GRID_POINTS,
     adjudicate_claim_c,
+    attainable_p,
     claim_c_concordance,
     contrast,
     gate_verdict,
+    n_informative_rows,
     p_value_claim_c,
     profile_distance,
     profiles_from_run_dir,
     resample_depth,
+    row_swing,
 )
 
 # gpt2-large has 36 layers, pythia-1.4b has 24 -- every fixture uses both
@@ -240,15 +243,35 @@ class TestCalibration:
         rather than at it. A max-p that came back uniform would mean the
         subsets were perfectly redundant and the tool axis was buying nothing.
 
+        **The rate is CONDITIONAL ON EMISSION**, which is the project's standing
+        rule (POPPER_PLAN.md 6g, and 6k for what ignoring it hides). Roughly a
+        fifth of these draws now refuse on the informative-row floor: with six
+        metrics a prompt splits 3-3 with probability 20/64, such a row cannot
+        move the statistic, and a table with fewer than five rows that can move
+        has a floor above alpha. Those draws never reach a ledger, so counting
+        them as non-rejections would flatter the rate. Both numbers are asserted
+        -- the conditional one because it is what governs the ledger, and the
+        emission rate itself so that a refusal quietly swallowing the whole
+        sample would fail here rather than look like perfect calibration.
+
         120 trials catches a systematic violation, not a subtle one.
         """
         rng = np.random.default_rng(20260824)
-        prompts, ps = _prompts(8), []
+        prompts, ps, refused = _prompts(8), [], 0
         for _ in range(120):
             ref = rng.choice([-1.0, 1.0], size=(8, len(CLAIM_C_METRICS)))
             can = rng.choice([-1.0, 1.0], size=(8, len(CLAIM_C_METRICS)))
-            ps.append(self._p(ref, can, prompts)["p_value"])
+            r = self._p(ref, can, prompts)
+            if r["p_value"] is None:
+                refused += 1
+                continue
+            ps.append(r["p_value"])
         ps = np.asarray(ps)
+        # The gate is calibrated by CONTROLLING, not by refusing: most draws
+        # must still emit, or the rate below is a rate over a selected few.
+        assert len(ps) >= 0.5 * 120, f"only {len(ps)} of 120 H0 draws emitted"
+        assert refused > 0, ("no H0 draw hit the informative-row floor; at eight "
+                             "prompts and six metrics it should catch about a fifth")
         assert np.all((ps > 0) & (ps <= 1.0))
         assert (ps <= 0.05).mean() <= 0.05 + 1e-9
         assert ps.mean() > 0.5                # conservative, as an IUT must be
@@ -260,13 +283,17 @@ class TestCalibration:
         Type-I guarantee would be coming from the wrong place.
         """
         rng = np.random.default_rng(4)
-        prompts = _prompts(8)
+        prompts, compared = _prompts(8), 0
         for _ in range(25):
             ref = rng.choice([-1.0, 1.0], size=(8, len(CLAIM_C_METRICS)))
             can = rng.choice([-1.0, 1.0], size=(8, len(CLAIM_C_METRICS)))
             r = self._p(ref, can, prompts)
+            if r["p_value"] is None:            # refused; there is no max to check
+                continue
+            compared += 1
             assert r["p_value"] >= r["p_full_set"] - 1e-12
             assert r["p_reciprocal"] >= r["p_reciprocal_full_set"] - 1e-12
+        assert compared >= 15, f"only {compared} of 25 draws emitted a p to compare"
 
     def test_power_against_perfect_transfer(self):
         prompts = _prompts(8)
@@ -521,6 +548,182 @@ class TestToolAxis:
         assert "drop:mass_near_1" in r["reason"]
         assert r["verdict"] == "INSUFFICIENT"
         assert r["falsified"] is False
+
+
+class TestInformativeRows:
+    """
+    The floor is set by the rows that can move the statistic, not by the rows
+    that were run.
+
+    A prompt's label flip swaps concordant and discordant cells in its row, so
+    the row contributes `conc` unflipped and `valid - conc` flipped and its
+    swing is `|valid - 2 conc|`. A row with swing 0 contributes the SAME number
+    to the observed sum and to all 2^n null patterns: it is enumerated and never
+    counted. With k rows that do move, the smallest expressible p is
+    `(2^(n-k) + 1) / (2^n + 1)`.
+
+    Two ways a row lands there. Every cell dropped, which is what a real run
+    produces and what the curve's cell-drop dimension is about. And -- on a
+    perfectly complete table -- an EVEN number of usable cells splitting exactly
+    half and half: with the full six metrics, three concordant and three not,
+    which happens to 20/64 of rows under H0. That second one was live in this
+    gate from the day it was written and nothing looked for it.
+
+    It is `P-ST1`'s informative-pair floor (POPPER_PLAN.md 6k) arriving in
+    CLAIM-C from the other direction, down to the same k >= 5.
+    """
+
+    def _p(self, ref_signs, can_signs, prompts, **kw):
+        return p_value_claim_c(*_four_arms(ref_signs, can_signs, prompts),
+                               candidate_step0=_step0(prompts), **kw)
+
+    # -- the arithmetic ----------------------------------------------------
+
+    def test_swing_is_zero_exactly_on_an_even_split(self):
+        assert list(row_swing([6, 6, 6, 0], [3, 6, 2, 0])) == [0, 6, 2, 0]
+        assert n_informative_rows([6, 6, 6, 0], [3, 6, 2, 0]) == 2
+
+    def test_an_odd_subset_width_can_never_have_a_zero_swing(self):
+        """
+        Why the full six-metric set is the binding subset on a complete table:
+        five metrics is odd, and `|5 - 2c|` is odd for every c.
+        """
+        assert all(row_swing([5] * 6, list(range(6))) % 2 == 1)
+
+    def test_the_floor_generalises_the_one_already_refused_on(self):
+        """All rows informative reproduces `2 / (2^n + 1)` exactly, so this is
+        one rule sharpened rather than a second rule added."""
+        for n in (6, 8, 12):
+            assert attainable_p(n, n, 2 ** n, True) == pytest.approx(
+                2.0 / (2 ** n + 1.0))
+
+    def test_the_floor_is_the_p_the_gate_actually_returns(self):
+        """
+        Not a bound: the formula is checked against the gate's own enumeration
+        on the best table the informative rows admit.
+        """
+        from core.nulls import p_from_null
+        from p1_mstate_tracking.replication_gate import _null_counts
+        n, m = 8, len(CLAIM_C_METRICS)
+        for k in range(1, n + 1):
+            valid = np.full(n, m)
+            conc = np.full(n, m // 2)          # uninformative
+            conc[:k] = m                       # k rows perfectly concordant
+            null, _, _ = _null_counts(valid, conc, n_perm=0, seed=0)
+            got = p_from_null(float(conc.sum()), null,
+                              alternative=CLAIM_C_ALTERNATIVE)["p_value"]
+            assert got == pytest.approx(attainable_p(n, k, 2 ** n, True))
+
+    def test_a_sampled_null_keeps_its_own_floor(self):
+        """
+        The tightening is exact where it applies and silent where it does not:
+        under sampling every draw tying the maximum has positive probability, so
+        the floor really is `1 / (n_perm + 1)` however few rows inform.
+        """
+        assert attainable_p(20, 1, 5000, False) == pytest.approx(1.0 / 5001.0)
+
+    # -- the refusal -------------------------------------------------------
+
+    def test_refuses_a_table_that_is_perfect_on_too_few_prompts(self):
+        """
+        Six prompts, four of them perfectly concordant and two splitting 3-3.
+        Before this refusal the gate returned p = 0.0769 -- which is exactly
+        this table's floor -- and called it 'not significant'.
+        """
+        prompts = _prompts(6)
+        ref = _heterogeneous(6, seed=21)
+        can = ref.copy()
+        can[4] = np.array([1.0, 1.0, 1.0, -1.0, -1.0, -1.0]) * ref[4]
+        can[5] = np.array([1.0, 1.0, 1.0, -1.0, -1.0, -1.0]) * ref[5]
+        r = self._p(ref, can, prompts)
+        assert r["p_value"] is None
+        assert "can move the statistic" in r["reason"]
+        assert r["verdict"] == "INSUFFICIENT"
+        assert r["falsified"] is False
+        info = r["informative_rows"]
+        assert info["per_subset"]["all"]["n_informative_rows"] == 4
+        assert info["attainable_p_given_informative_rows"] == pytest.approx(
+            (2 ** 2 + 1) / (2 ** 6 + 1))
+
+    def test_a_perfect_table_is_untouched(self):
+        """Every row swings by the full width, so the floor is the design's."""
+        prompts = _prompts(8)
+        s = _heterogeneous(8)
+        r = self._p(s, s, prompts)
+        assert r["p_value"] == pytest.approx(2.0 / 257.0)
+        info = r["informative_rows"]
+        assert info["attainable_p_given_informative_rows"] == pytest.approx(
+            info["design_attainable_p"])
+        assert all(v["n_informative_rows"] == 8
+                   for v in info["per_subset"].values())
+
+    def test_it_is_reported_even_when_it_does_not_refuse(self):
+        prompts = _prompts(8)
+        s = _heterogeneous(8)
+        r = self._p(s, s, prompts)
+        assert set(r["informative_rows"]["per_subset"]) == set(r["subsets"])
+        assert r["informative_rows"]["binding_subset"] in r["subsets"]
+
+    # -- the tightness argument, which is what makes the refusal safe ------
+
+    def test_whenever_it_fires_neither_tail_could_have_reached_alpha(self):
+        """
+        THE ASSERTION THIS CLASS EXISTS FOR, and the dual of POPPER_PLAN.md
+        6j's result about the homogeneity refusal.
+
+        A refusal that depends on the data is only safe if it can remove no
+        verdict. The null is symmetric under a global flip, so both tails share
+        the floor -- but 'so' is an argument, and this measures it instead:
+        every table the refusal fires on is re-scored subset by subset and BOTH
+        intersection-union maxima are required to sit above alpha. If the
+        refusal ever swallowed a table that could have said TRANSFERS, or one
+        that could have said FAILS-TO-TRANSFER, this fails.
+        """
+        from p1_mstate_tracking.replication_gate import _metric_subsets, _subset_result
+        rng = np.random.default_rng(20260825)
+        fired = 0
+        for n in (6, 8):
+            prompts = _prompts(n)
+            for _ in range(80):
+                ref = rng.choice([-1.0, 1.0], size=(n, len(CLAIM_C_METRICS)))
+                can = rng.choice([-1.0, 1.0], size=(n, len(CLAIM_C_METRICS)))
+                r = self._p(ref, can, prompts)
+                if r["p_value"] is not None or "can move the statistic" not in str(
+                        r.get("reason", "")):
+                    continue
+                fired += 1
+                alpha = r["alpha"]
+                concordant = np.asarray(r["concordant"], dtype=bool)
+                usable = np.asarray(r["usable"], dtype=bool)
+                sign_can = np.sign(np.asarray(r["contrast_candidate"], dtype=float))
+                pg, pl = [], []
+                for _name, cols in _metric_subsets():
+                    sub = _subset_result(concordant, usable, sign_can, cols,
+                                         n_perm=5000, seed=0)
+                    assert sub["p_value"] is not None
+                    pg.append(sub["p_value"])
+                    pl.append(sub["p_reciprocal"])
+                # Uncorrected, which is the favourable direction: the
+                # correction can only raise these.
+                assert max(pg) > alpha, "refused a table that could have TRANSFERRED"
+                assert max(pl) > alpha, "refused a table that could have FAILED"
+        assert fired >= 20, f"only {fired} tables triggered the refusal"
+
+    def test_it_does_not_fire_once_five_rows_can_move(self):
+        """
+        Five informative rows is the first count that clears alpha = 0.05, at
+        every prompt count -- so the refusal must let a five-row table through
+        rather than costing it its verdict.
+        """
+        prompts = _prompts(8)
+        ref = _heterogeneous(8, seed=7)
+        can = ref.copy()
+        flip = np.array([1.0, 1.0, 1.0, -1.0, -1.0, -1.0])
+        for i in (5, 6, 7):                    # three rows made uninformative
+            can[i] = flip * ref[i]
+        r = self._p(ref, can, prompts)
+        assert r["informative_rows"]["per_subset"]["all"]["n_informative_rows"] == 5
+        assert "can move the statistic" not in str(r.get("reason", ""))
 
 
 class TestRowIndependence:

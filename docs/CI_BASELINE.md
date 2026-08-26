@@ -140,10 +140,28 @@ tier the way the runner does.
 Five of them, as of P-ST1's steering-sign construction.
 
 `claims/calibration/claim_c_homogeneity.json` is CLAIM-C's homogeneity
-calibration curve (`POPPER_PLAN.md` §6g). It is **generated offline** by
-`tools/calibrate_claim_c_homogeneity.py --write` — about 50 seconds, far too
-slow for a gate people wait on — and committed, so the gating tier reads it
-rather than recomputing it.
+calibration curve (`POPPER_PLAN.md` §6g, §6l). It is **generated offline** by
+`tools/calibrate_claim_c_homogeneity.py --write` and committed, so the gating
+tier reads it rather than recomputing it.
+
+**Its cost changed by a factor of fifty on 2026-08-25 and that is worth knowing
+before someone runs it casually.** It was about 50 seconds. Adding the
+cell-drop dimension (§6l) crossed the existing bias-shape grid with a drop grid
+of one complete-table configuration plus three mechanisms at seven rates, so the
+configuration count went from 35 per prompt count to 770 — **about 40 minutes**
+for the seven tabulated prompt counts, and the file went from roughly 0.4 MiB to
+roughly 3 MiB. It is still the same kind of artifact: generated once, looked at,
+committed. It is just no longer something to regenerate while waiting.
+
+**The draw count is per prompt count, not one number**, which surprises people
+reading `--write`. Every rate in the curve is conditional on the gate emitting,
+so a bin needs a fixed count of *emitted* draws; the informative-row refusal
+(§6l) turns away 61% of independent-row H0 draws at six prompts and 1% at
+twelve. `trials_for` scales the base count by `1 / P` with *P* in closed form,
+capped — 3× at six prompts, 2× at seven, unchanged above. Each curve carries a
+`coverage` block naming any drop slab with no measurement, because a slab like
+that is one the gate refuses outright, and the first generation of this file had
+one at six prompts that no test was failing on.
 
 Two consequences worth knowing before the file surprises someone:
 
@@ -216,10 +234,19 @@ roughly nineteen thousand end-to-end gate calls at ~15 ms each.
 Like the changepoint calibration it is **read by nobody at runtime**: it
 corrects no number and the gate behaves identically without it. What it carries
 is the gate's measured operating range — the admissible homogeneity band, the
-concordance the gate needs, and the fact that the derived refusal is tight — and
-that is the thing this project keeps finding it cannot reconstruct later.
+concordance the gate needs, the fact that the derived refusal is tight, and
+since 2026-08-25 the measured cost of the informative-row floor — and that is
+the thing this project keeps finding it cannot reconstruct later.
 
-It is the only one of the four that hashes **two** files. Every verdict in it is
+Its schema went to 2 on 2026-08-25 for that last section. One field in it is
+worth knowing about: `informative_row_floor.costs_no_power` is `None`, never
+`True`, when the refusal did not fire anywhere in the sweep, and
+`--check` fails on `None` as loudly as on `False`. A sweep with nothing to
+re-score would otherwise report success while being incapable of reporting
+anything else, which is the audit arm `POPPER_PLAN.md` §6h found reporting PASS
+without being able to fail.
+
+It is the only one of the five that hashes **two** files. Every verdict in it is
 a joint property of `p1_mstate_tracking/replication_gate.py` and the committed
 homogeneity curve, so `tests/test_claim_c_dry_run.py` pins both sha256s.
 `tools/dry_run_claim_c.py --check` is the staleness mode, pinned in the pure
@@ -265,8 +292,17 @@ tools import numpy at module scope and tier 0 runs with numpy shadowed.
 The staleness check for the curve is
 `tools/calibrate_claim_c_homogeneity.py --check`, pinned
 in the pure tier by `TestCurveIsInStepWithTheGate`. It compares the stored
-metric set, tails, subset names, bin edges and levels against the gate's
-current constants — so adding a metric to `CLAIM_C_METRICS` fails the gate
-instead of leaving the curve describing a test that no longer exists. It is not
+metric set, tails, subset names, bin edges, levels, drop-bin edges, drop
+mechanisms and drop rates against the gate's current constants — so adding a
+metric to `CLAIM_C_METRICS` fails the gate instead of leaving the curve
+describing a test that no longer exists.
+
+It also compares the stored **alpha** against the registry's, which is newer
+than the rest and less obvious. Since §6l the curve depends on alpha twice
+over: the gate's derived refusal is `R(h, floor) > alpha`, and the
+informative-row refusal reproduced inside the simulation is `floor > alpha`,
+which decides *which draws emit* and therefore what every stored rate is
+conditional on. A curve measured at one alpha and read at another is a
+measurement of a different test, and nothing else in the file would show it. It is not
 in tier 0, and cannot be: the tool imports numpy at module scope and tier 0 runs
 with numpy shadowed.

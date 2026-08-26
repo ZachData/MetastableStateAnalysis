@@ -164,11 +164,75 @@ duplicate-prompt mixture, "some prompts are redundant" rather than "some
 metrics are architecture-wide" -- and it stays at or below nominal there. That
 is the check that indexing the correction by a scalar summary transfers.
 
-**What it does not cover, stated now rather than discovered later.** Every
-simulated draw has a complete (prompt x metric) table. A real run that drops
-cells has a coarser statistic than anything tabulated, so its correction is
-read off a table measured on a slightly different design. The gate reports
-`n_cells_dropped` beside the correction and every record says so.
+THE CELL-DROP DIMENSION (2026-08-25, still before any gate data exists)
+
+The paragraph that used to stand here said what the curve did not cover: every
+simulated draw had a COMPLETE (prompt x metric) table, so a real run that
+dropped cells read its correction off a table measured on a design it does not
+have. POPPER_PLAN.md 6g named the second curve dimension as the honest fix; 6j
+made it the binding gap by showing the correction is what drives the refusal
+boundary. It is now built.
+
+**Dropping cells is not the same statistic made noisier**, which is why it
+needed a dimension rather than a caveat. It changes three things at once: the
+sum runs over fewer cells, the per-row null weights stop being equal, and a row
+can lose its SWING entirely.
+
+So the curve is indexed by `(n_prompts, drop fraction, homogeneity)`. Drop bin 0
+is `n_cells_dropped == 0` exactly -- tested as integers, never as a float
+against an epsilon -- and the remaining bins run to a tabulated ceiling above
+which the gate REFUSES rather than reading the nearest row. Three drop
+mechanisms reach each rate (every cell independently; concentrated in as few
+metrics as the rate allows; concentrated in as few prompts, which is the severe
+one, since a rate above 1/n_prompts empties a row outright) and each cell keeps
+the worst configuration over the bias shapes and mechanisms together.
+
+**Nothing is filled across the drop dimension, and that is a measurement rather
+than caution.** Coarsening pushes p-values up; selecting for the tables that
+survived the informative-row floor pushes the conditional rate down. The two
+point opposite ways and measured they do not resolve -- at eight prompts, 98 of
+117 adjacent drop-bin pairs at a fixed homogeneity are neither non-decreasing
+nor non-increasing. A hole in that dimension is therefore a refusal.
+
+**What is assumed, since a family is only as good as its boundary.** Drops are
+independent of concordance GIVEN THE POSITION: which cells go is modelled,
+whether a surviving cell agrees is not conditioned on it. A mechanism that
+preferentially removes discordant cells is outside this family.
+
+THE FLOOR IS SET BY THE ROWS THAT CAN MOVE (2026-08-25)
+
+Flipping prompt i's label swaps its concordant and discordant cells, so row i
+contributes `conc_i` unflipped and `valid_i - conc_i` flipped and its SWING is
+`|valid_i - 2 conc_i|`. A row with swing 0 contributes the same number to the
+observed sum and to every one of the 2^n null patterns: it is enumerated and
+never counted. With k rows that do move, the smallest p the null can express is
+
+    (2^(n-k) + 1) / (2^n + 1)   ~  2^-k
+
+which is `2 / (2^n + 1)` exactly when k = n, so the floor the module already
+refused on is the special case rather than a different rule. Five informative
+rows is the first count that clears alpha = 0.05, at EVERY prompt count -- the
+same k >= 5 P-ST1's informative-pair floor arrived at (POPPER_PLAN.md 6k).
+
+Two ways a row lands there. All its cells dropped, which is what the dimension
+above is about. And -- on a perfectly complete table -- an EVEN number of usable
+cells splitting exactly half and half: with six metrics, three concordant and
+three not, which happens to 20/64 of rows under H0. The second was live in this
+gate from the day it was written. It is why the six leave-one-out subsets are
+NOT where this bites on a complete table: five metrics is odd and an odd swing
+cannot be zero, so the full set is the binding subset until drops make a
+subset's row count even or empty it.
+
+**Why a data-dependent refusal is safe here.** The null is symmetric under a
+global flip, so both tails share the floor: when it exceeds alpha neither
+`p_greater` nor `p_reciprocal` can reach alpha, so TRANSFERS and
+FAILS-TO-TRANSFER are both unreachable and the verdict was INSUFFICIENT
+whatever the statistic came to. The refusal removes no verdict; it replaces a p
+above alpha -- which on this claim reads as evidence against CLAIM-C -- with a
+record saying the design could not have rejected. That is 6j's tightness
+argument applied to the refusal that was missing, and
+`TestInformativeRows::test_whenever_it_fires_neither_tail_could_have_reached_alpha`
+measures it rather than restating it.
 
 REFUSING RATHER THAN DEGRADING
 
@@ -188,9 +252,15 @@ p-value when
     max, and a max over a set with an undefined member is undefined; reporting
     the rest would silently drop whichever subset was hardest to satisfy, which
     is precisely the one the rule exists to catch;
+  - fewer than five of the prompts can move the statistic in some
+    leave-one-out subset, so this table's floor is above alpha even though the
+    design's is not (see above);
+  - more cells were dropped than the calibration curve tabulates, so there is
+    no measured drop slab to read the correction off;
   - no homogeneity correction is available -- the curve is missing, at
     another schema version, measured on another metric set, tabulated for
-    another prompt count, or has no measurement in the bin the run landed in.
+    another prompt count, or has no measurement in the (homogeneity, drop) cell
+    the run landed in.
     Since the correction is what enters the e-value, falling back to the
     uncorrected p is not a degraded answer: it is a Type-I guarantee asserted
     on a null already measured to be anticonservative;
@@ -365,7 +435,7 @@ HOMOGENEITY_CURVE_PATH = (Path(__file__).resolve().parents[1]
 #: version is refused rather than reinterpreted: the stored numbers are
 #: rejection rates of a specific test, and reading them as rates of a
 #: different one is worse than having no correction, because it looks like one.
-HOMOGENEITY_CURVE_SCHEMA_VERSION = 1
+HOMOGENEITY_CURVE_SCHEMA_VERSION = 2
 
 #: How the measured rate is applied. The reported p is
 #: max(p_exact, R(homogeneity, p_exact)) -- the correction may BLUNT the
@@ -694,6 +764,68 @@ def _null_size(n_prompts: int, n_perm: int) -> Tuple[int, bool]:
     return int(n_perm), False
 
 
+def row_swing(per_row_valid, per_row_concordant) -> np.ndarray:
+    """
+    How far flipping each prompt's condition label moves the statistic.
+
+    Row i contributes `conc_i` unflipped and `valid_i - conc_i` flipped, so the
+    swing is `|valid_i - 2 conc_i|`. A row with swing 0 contributes the SAME
+    number to the observed sum and to every one of the 2^n null patterns: it is
+    carried along by the enumeration without ever distinguishing the observation
+    from the null.
+
+    Two ways a row gets there, and the second is why this function exists:
+
+      * every cell dropped (`valid_i = 0`), which only a real run produces; and
+      * an EVEN number of usable cells splitting exactly half and half --
+        with the full six metrics, a prompt concordant on three of them and
+        discordant on the other three. Under H0 that happens to 31.25% of rows.
+
+    The six leave-one-out subsets have five metrics, an odd count, so on a
+    COMPLETE table their swings are odd and never zero. That is why the full set
+    is the binding subset for the floor below, and why dropped cells change the
+    picture: a drop can make a subset's row count even, or empty it entirely.
+    """
+    v = np.asarray(per_row_valid, dtype=np.int64)
+    c = np.asarray(per_row_concordant, dtype=np.int64)
+    return np.abs(v - 2 * c)
+
+
+def n_informative_rows(per_row_valid, per_row_concordant) -> int:
+    """Rows whose label flip moves the statistic at all."""
+    return int((row_swing(per_row_valid, per_row_concordant) > 0).sum())
+
+
+def attainable_p(n_prompts: int, n_informative: int, n_patterns: int,
+                 exhaustive: bool) -> float:
+    """
+    The smallest p this null can express when only `n_informative` of
+    `n_prompts` rows can move the statistic.
+
+    Under exhaustive enumeration the null is the distribution of `sum ±g_i`
+    over 2^n sign patterns. The `n - k` rows with `g_i = 0` duplicate every
+    pattern, so the maximum is attained by 2^(n-k) of them and
+
+        floor = (2^(n-k) + 1) / (2^n + 1)     ~  2^-k
+
+    which is `2 / (2^n + 1)` exactly when every row is informative -- so this is
+    a strict generalisation of the floor the module already refused on, not a
+    second rule. Five informative rows is the first count that clears
+    alpha = 0.05, AT EVERY PROMPT COUNT: the floor is set by the rows that can
+    move, not by the rows that were run. That is `P-ST1`'s informative-pair
+    floor (POPPER_PLAN.md 6k) arriving in CLAIM-C from the other direction.
+
+    Under a SAMPLED null the floor really is `1 / (n_perm + 1)` however few rows
+    are informative -- every draw tying the maximum has positive probability --
+    so the tightening is exact where it applies and silent where it does not.
+    Sampling needs more than 16 prompts here, which no CLAIM-C design has.
+    """
+    if not exhaustive:
+        return 1.0 / (n_patterns + 1.0)
+    k = max(0, min(int(n_informative), int(n_prompts)))
+    return (2.0 ** (int(n_prompts) - k) + 1.0) / (n_patterns + 1.0)
+
+
 def _null_counts(per_row_valid: np.ndarray, per_row_concordant: np.ndarray,
                  n_perm: int, seed: int) -> Tuple[np.ndarray, bool, int]:
     """
@@ -742,7 +874,9 @@ def _subset_result(concordant: np.ndarray, usable: np.ndarray,
     c = concordant[:, idx]
     valid = u.sum(axis=1).astype(np.intp)
     conc = c.sum(axis=1).astype(np.intp)
-    out = {"n_cells": int(valid.sum()), "observed": int(conc.sum())}
+    out = {"n_cells": int(valid.sum()), "observed": int(conc.sum()),
+           "n_informative_rows": n_informative_rows(valid, conc),
+           "n_rows": int(valid.size)}
 
     if out["n_cells"] == 0:
         out.update({"p_value": None,
@@ -761,6 +895,8 @@ def _subset_result(concordant: np.ndarray, usable: np.ndarray,
             return out
 
     null, exhaustive, n_patterns = _null_counts(valid, conc, n_perm=n_perm, seed=seed)
+    out["attainable_p"] = attainable_p(int(valid.size), out["n_informative_rows"],
+                                       n_patterns, exhaustive)
     observed = float(out["observed"])
     out["p_value"] = float(
         p_from_null(observed, null, alternative=CLAIM_C_ALTERNATIVE)["p_value"])
@@ -840,63 +976,141 @@ def rejection_rate_at(levels: Sequence[float], quantiles: Sequence[float],
     return 1.0 if idx >= len(levels) else float(levels[idx])
 
 
+def drop_bin_index(n_cells_dropped: int, n_cells_total: int,
+                   upper_edges: Sequence[float]) -> Optional[int]:
+    """
+    Which drop-fraction bin a table falls in, or None when it is off the top of
+    the tabulated range.
+
+    Lives here rather than in the calibration tool for the same reason
+    `rejection_rate_at` does: the gate is the consumer, and two copies of "how a
+    stored row is addressed" could disagree without anything noticing. The tool
+    supplies the edges and imports this.
+
+    BIN 0 IS `n_cells_dropped == 0` EXACTLY, tested as integers. A complete
+    table is the design this gate was built on and it is the common case;
+    lumping it with a table that lost one cell would blur the transition the
+    dimension exists to measure. Deciding it by comparing a float fraction
+    against an epsilon is also how POPPER_PLAN.md 6g's rounding defect got in,
+    and that lesson cost a regeneration.
+    """
+    n_dropped = int(n_cells_dropped)
+    if n_dropped == 0:
+        return 0
+    if int(n_cells_total) <= 0:
+        return None
+    frac = n_dropped / float(n_cells_total)
+    for i, edge in enumerate(upper_edges):
+        if frac <= float(edge):
+            return i + 1
+    return None
+
+
 def homogeneity_correction(n_prompts: int, homogeneity: Optional[float],
+                           n_cells_dropped: int, n_cells_total: int,
                            *, path=None) -> dict:
     """
     The stored curve row for this run's prompt count and observed homogeneity,
     or a refusal saying why there is none.
 
-    Three ways this comes back unavailable, and each is a refusal rather than
-    a fallback to the uncorrected p. Once the correction is what enters the
+    Five ways this comes back unavailable, and each is a refusal rather than a
+    fallback to the uncorrected p. Once the correction is what enters the
     e-value, an uncorrected p reaching the ledger is not a degraded answer, it
     is a Type-I guarantee asserted on a null the project has already measured
     to be wrong in the anticonservative direction.
+
+    Two of the five are about DROPPED CELLS, which is the dimension added on
+    2026-08-25 (POPPER_PLAN.md 6l). A cell whose contrast is non-finite or
+    exactly zero in either architecture has no sign and is dropped, and a table
+    that has lost cells is a coarser statistic than a complete one rather than a
+    noisier one: fewer cells in the sum, per-row null weights that stop being
+    equal, and rows that can lose their swing outright. The curve is therefore
+    indexed by the drop fraction as well as by the homogeneity, it tabulates
+    drops only up to a stated ceiling, and it interpolates nothing across that
+    dimension -- so a run outside the measured region is refused rather than
+    corrected off the wrong table. That was 6g's stated honest fix and 6j's
+    binding gap.
     """
     try:
         curve = load_homogeneity_curve(path)
     except (OSError, ValueError) as exc:
-        return {"available": False,
+        return {"available": False, "refusal": "curve-unreadable",
                 "reason": (f"the homogeneity calibration curve could not be read "
                            f"({exc}); regenerate it with "
                            f"tools/calibrate_claim_c_homogeneity.py --write")}
 
     if curve.get("schema_version") != HOMOGENEITY_CURVE_SCHEMA_VERSION:
-        return {"available": False,
+        return {"available": False, "refusal": "curve-schema",
                 "reason": (f"calibration curve is schema_version "
                            f"{curve.get('schema_version')!r}; this module reads "
                            f"{HOMOGENEITY_CURVE_SCHEMA_VERSION}")}
     if list(curve.get("metrics", [])) != list(CLAIM_C_METRICS):
-        return {"available": False,
+        return {"available": False, "refusal": "curve-metrics",
                 "reason": ("the calibration curve was measured on a different "
                            "metric set than CLAIM_C_METRICS; its rates are rates "
                            "of a different test")}
     if homogeneity is None:
-        return {"available": False,
+        return {"available": False, "refusal": "homogeneity-undefined",
                 "reason": "sign_homogeneity is undefined, so no curve row applies"}
 
     row = curve.get("curves", {}).get(str(int(n_prompts)))
     if row is None:
-        return {"available": False,
+        return {"available": False, "refusal": "prompt-count-untabulated",
                 "reason": (f"no calibration curve is tabulated for "
                            f"{n_prompts} prompts (tabulated: "
                            f"{curve.get('n_prompts_tabulated')}). The curve is "
                            f"generated offline; extend N_PROMPTS_TABULATED and "
                            f"regenerate rather than running uncorrected")}
 
+    # The drop dimension is read FIRST, because it selects which homogeneity
+    # curve applies. A run that drops cells has a coarser statistic than a
+    # complete table -- fewer cells in the sum, unequal per-row null weights,
+    # and rows that can lose their swing entirely -- so its rates are rates of a
+    # different test, not noisier measurements of the same one.
+    upper = curve.get("drop_bin_upper_edges") or []
+    di = drop_bin_index(n_cells_dropped, n_cells_total, upper)
+    if di is None:
+        return {"available": False, "refusal": "drop-fraction-above-tabulated",
+                "n_cells_dropped": int(n_cells_dropped),
+                "drop_fraction": (float(n_cells_dropped) / float(n_cells_total)
+                                  if n_cells_total else None),
+                "reason": (f"{int(n_cells_dropped)} of {int(n_cells_total)} cells "
+                           f"have no sign in one architecture or the other "
+                           f"({n_cells_dropped / max(n_cells_total, 1):.1%}), above "
+                           f"the {float(upper[-1]):.0%} the curve tabulates. A table "
+                           f"that has lost that much is not a noisier version of "
+                           f"this design and the curve says nothing about it; "
+                           f"reading the nearest row would be inventing the "
+                           f"correction the run most needs")}
+
+    slabs = row.get("drop_bins") or []
+    if di >= len(slabs):
+        return {"available": False, "refusal": "drop-slab-missing",
+                "reason": (f"the stored curve has {len(slabs)} drop slabs and this "
+                           f"table falls in slab {di}; the artifact is stale")}
+    slab = slabs[di]
+
     edges = curve["homogeneity_bin_edges"]
     bi = min(max(int(np.searchsorted(edges, float(homogeneity), side="right") - 1), 0),
              len(edges) - 2)
-    b = row["bins"][bi]
+    b = slab["bins"][bi]
     if b.get("quantiles_greater") is None:
-        return {"available": False,
+        return {"available": False, "refusal": "curve-hole",
                 "bin_lo": b["lo"], "bin_hi": b["hi"],
+                "drop_bin_index": di,
+                "drop_lo": slab["drop_lo"], "drop_hi": slab["drop_hi"],
+                "n_cells_dropped": int(n_cells_dropped),
                 "reason": (f"the calibration curve has no measurement at "
                            f"homogeneity {float(homogeneity):.3f} (bin "
-                           f"{b['lo']:.3f}-{b['hi']:.3f}): under H0 nearly every "
-                           f"draw there hits a refusal, so there is no emitted "
-                           f"distribution to calibrate against. Interpolating "
-                           f"over that hole would be inventing the correction "
-                           f"the run most needs")}
+                           f"{b['lo']:.3f}-{b['hi']:.3f}) with "
+                           f"{int(n_cells_dropped)} of {int(n_cells_total)} cells "
+                           f"dropped (drop bin {slab['drop_lo']:.2f}-"
+                           f"{slab['drop_hi']:.2f}): under H0 nearly every draw "
+                           f"there hits a refusal, so there is no emitted "
+                           f"distribution to calibrate against. Nothing is "
+                           f"interpolated across the drop dimension -- the "
+                           f"measured direction is recorded rather than assumed "
+                           f"-- so this is a hole and not a lookup failure")}
 
     return {
         "available": True,
@@ -906,11 +1120,18 @@ def homogeneity_correction(n_prompts: int, homogeneity: Optional[float],
         "bin_filled_from_above": bool(b["filled_from_above"]),
         "bin_n_emitted": int(b["n_emitted"]),
         "bin_emission_rate": b["emission_rate"],
+        "n_cells_dropped": int(n_cells_dropped),
+        "n_cells_total": int(n_cells_total),
+        "drop_fraction": (float(n_cells_dropped) / float(n_cells_total)
+                          if n_cells_total else 0.0),
+        "drop_bin_index": di,
+        "drop_lo": slab["drop_lo"], "drop_hi": slab["drop_hi"],
+        "drop_bin_is_exact_zero": bool(slab.get("exact_zero")),
         "levels": curve["correction_levels"],
         "quantiles_greater": b["quantiles_greater"],
         "quantiles_less": b["quantiles_less"],
-        "curve_assumes_complete_table": bool(curve.get("assumes_complete_table")),
         "h0_family": curve.get("_h0_family"),
+        "drop_family": curve.get("_drop_family"),
     }
 
 
@@ -1049,12 +1270,113 @@ def p_value_claim_c(
         out.update(gate_verdict(None, None, alpha))
         return out
 
+    # ---- the tool axis: one run per metric-leave-one-out subset -------------
+    concordant = np.asarray(out["concordant"], dtype=bool)
+    usable = np.asarray(out["usable"], dtype=bool)
+    sign_can = np.sign(np.nan_to_num(np.asarray(out["contrast_candidate"],
+                                                dtype=np.float64), nan=0.0))
+
+    subsets = {}
+    for name, cols in _metric_subsets():
+        subsets[name] = _subset_result(concordant, usable, sign_can, cols,
+                                       n_perm=n_perm, seed=seed)
+    out["subsets"] = subsets
+    out["tool_axis"] = CLAIM_C_TOOL_AXIS
+    out["tool_rule"] = CLAIM_C_TOOL_RULE
+
+    refused = {k: v["reason"] for k, v in subsets.items() if v.get("p_value") is None}
+    if refused:
+        out["p_value"] = None
+        out["reason"] = (
+            f"{len(refused)} of {len(subsets)} metric subsets cannot carry a "
+            f"p-value ({'; '.join(f'{k}: {v}' for k, v in sorted(refused.items()))}). "
+            f"The unanimity rule takes a MAX over subsets, and a max over a set "
+            f"with an undefined member is undefined -- reporting the rest would "
+            f"silently drop whichever subset was hardest to satisfy.")
+        out.update(gate_verdict(None, None, alpha))
+        return out
+
+    # ---- the same floor, computed on the rows that can actually move -------
+    # The pre-scoring check above asks what the null could express if every
+    # prompt carried information. This asks what it can express given how many
+    # do. A row whose label flip does not change the statistic -- every cell
+    # dropped, or an even number of usable cells splitting exactly half and half
+    # -- is carried through all 2^n patterns without ever separating the
+    # observation from the null, so the floor is set by the INFORMATIVE rows and
+    # not by the prompt count. See `attainable_p`.
+    #
+    # IT IS CHECKED HERE, AFTER THE SUBSETS ARE SCORED, AND THE ORDER IS LOAD
+    # BEARING. A subset with no usable cell at all has zero informative rows, so
+    # this refusal would fire on it first and the "cannot carry a p-value"
+    # refusal above would become unreachable -- a branch nothing can trigger,
+    # which POPPER_PLAN.md 6h and 6j both count as a defect. Scoring first keeps
+    # the more specific diagnosis in front of the more general one. The cost is
+    # seven enumerations of 2^n patterns, which is what this gate does anyway.
+    # It also sits above the calibration block for the same reason: this is a
+    # statement about the table, and the table is settled before the curve is
+    # consulted about it.
+    #
+    # WHY A DATA-DEPENDENT REFUSAL IS SAFE HERE, which is the argument that has
+    # to be made rather than assumed. The null is symmetric under a global flip,
+    # so both tails share this floor: when it exceeds alpha neither `p_greater`
+    # nor `p_reciprocal` can reach alpha, TRANSFERS and FAILS-TO-TRANSFER are
+    # both unreachable, and the verdict was INSUFFICIENT whatever the statistic
+    # came to. The refusal changes no verdict and can remove no rejection. What
+    # it changes is that the record says the design could not have rejected,
+    # instead of reporting a p above alpha that reads as evidence against
+    # CLAIM-C. That is 6j's tightness argument applied to a refusal that was
+    # missing, and it is checked in both directions by `TestInformativeRows`.
+    #
+    # The reported p is a MAX over subsets, so the floor it must clear is the
+    # max of the subsets' floors -- set by whichever subset has the FEWEST
+    # informative rows. On a complete table that is always the full six-metric
+    # set: five metrics is an odd count and an odd swing cannot be zero.
+    binding_floor = max(subsets, key=lambda k_: subsets[k_]["attainable_p"])
+    floor_informative = float(subsets[binding_floor]["attainable_p"])
+    out["informative_rows"] = {
+        "per_subset": {k: {"n_informative_rows": v["n_informative_rows"],
+                           "n_rows": v["n_rows"],
+                           "attainable_p": v["attainable_p"]}
+                       for k, v in subsets.items()},
+        "binding_subset": binding_floor,
+        "attainable_p_given_informative_rows": floor_informative,
+        "design_attainable_p": float(best_attainable),
+        "note": ("a row whose label flip does not move the statistic contributes "
+                 "identically to the observed sum and to every null pattern, so "
+                 "the floor is set by the k rows that do move, not by the "
+                 "prompt count"),
+    }
+    if floor_informative > alpha:
+        sub = subsets[binding_floor]
+        out["p_value"] = None
+        out["reason"] = (
+            f"only {sub['n_informative_rows']} of {out['n_prompts']} prompts can "
+            f"move the statistic in subset {binding_floor!r}, so the smallest p "
+            f"this null can express on THIS table is {floor_informative:.4f}, above "
+            f"alpha={alpha}. A prompt whose usable metrics split exactly half and "
+            f"half -- or whose cells were all dropped -- contributes the same number "
+            f"to the observed sum and to every one of the {n_patterns} null "
+            f"patterns, so it is enumerated without ever being counted. The design's "
+            f"floor over {out['n_prompts']} prompts is {best_attainable:.4f} and this "
+            f"table cannot reach it. Both tails share the floor, so nothing has been "
+            f"refused that could have cleared alpha. Needs prompts that come down on "
+            f"one side, not a different threshold.")
+        out.update(gate_verdict(None, None, alpha))
+        return out
+
     # ---- the homogeneity correction, and the refusal it derives ------------
-    # Both are decided here, before any subset is scored, because both depend
-    # only on the prompt count and the observed homogeneity -- exactly like the
-    # attainable-floor refusal above, and for the same reason: a refusal that
-    # can be settled before the statistic is looked at should be.
-    corr = homogeneity_correction(out["n_prompts"], out.get("sign_homogeneity"))
+    # THE DATA REFUSALS ARE ALL BEHIND US BY HERE, AND THAT ORDER IS LOAD
+    # BEARING. Everything above this line says the table cannot carry a
+    # statistic; everything from here down says the CALIBRATION does not cover
+    # the table it carries. Running them the other way round made two branches
+    # unreachable in turn -- the empty-subset refusal needs five dead metric
+    # columns, which is 5/6 of the cells and far above the drop fraction the
+    # curve tabulates, so a correction refusal always beat it to the answer.
+    # A branch nothing can trigger is a defect (POPPER_PLAN.md 6h, 6j), and
+    # this file has now produced two of them by ordering alone.
+    n_cells_total = out["n_prompts"] * len(CLAIM_C_METRICS)
+    corr = homogeneity_correction(out["n_prompts"], out.get("sign_homogeneity"),
+                                  out["n_cells_dropped"], n_cells_total)
     out["homogeneity_correction"] = {
         k: v for k, v in corr.items()
         if k not in ("quantiles_greater", "quantiles_less", "levels")}
@@ -1090,32 +1412,6 @@ def p_value_claim_c(
             f"objection as the uncorrected attainable-floor refusal, one level "
             f"up. The prompts are telling too nearly the same story; the "
             f"remedy is prompts that are not, not a weaker correction.")
-        out.update(gate_verdict(None, None, alpha))
-        return out
-
-    # ---- the tool axis: one run per metric-leave-one-out subset -------------
-    concordant = np.asarray(out["concordant"], dtype=bool)
-    usable = np.asarray(out["usable"], dtype=bool)
-    sign_can = np.sign(np.nan_to_num(np.asarray(out["contrast_candidate"],
-                                                dtype=np.float64), nan=0.0))
-
-    subsets = {}
-    for name, cols in _metric_subsets():
-        subsets[name] = _subset_result(concordant, usable, sign_can, cols,
-                                       n_perm=n_perm, seed=seed)
-    out["subsets"] = subsets
-    out["tool_axis"] = CLAIM_C_TOOL_AXIS
-    out["tool_rule"] = CLAIM_C_TOOL_RULE
-
-    refused = {k: v["reason"] for k, v in subsets.items() if v.get("p_value") is None}
-    if refused:
-        out["p_value"] = None
-        out["reason"] = (
-            f"{len(refused)} of {len(subsets)} metric subsets cannot carry a "
-            f"p-value ({'; '.join(f'{k}: {v}' for k, v in sorted(refused.items()))}). "
-            f"The unanimity rule takes a MAX over subsets, and a max over a set "
-            f"with an undefined member is undefined -- reporting the rest would "
-            f"silently drop whichever subset was hardest to satisfy.")
         out.update(gate_verdict(None, None, alpha))
         return out
 
@@ -1244,11 +1540,16 @@ def adjudicate_claim_c(
               f"curve_bin_n_emitted={hc.get('bin_n_emitted')}"
             + (" curve_bin_FILLED_FROM_ABOVE" if hc.get("bin_filled_from_above")
                else "")
-            + (f" curve_assumes_complete_table but {res['n_cells_dropped']} "
-               f"cell(s) were dropped, so the correction was read off a table "
-               f"measured on a design with none"
-               if hc.get("curve_assumes_complete_table")
-               and res.get("n_cells_dropped") else "")
+            + f" cells_dropped={res['n_cells_dropped']}/{res['n_prompts'] * len(CLAIM_C_METRICS)}"
+            + f" curve_drop_bin={hc.get('drop_lo')}-{hc.get('drop_hi')}"
+            + (" (complete table)" if hc.get("drop_bin_is_exact_zero") else "")
+            + (f" informative_rows_floor="
+               f"{res['informative_rows']['attainable_p_given_informative_rows']:.4f}"
+               f" (binding subset "
+               f"{res['informative_rows']['binding_subset']}, "
+               f"{res['informative_rows']['per_subset'][res['informative_rows']['binding_subset']]['n_informative_rows']}"
+               f"/{res['n_prompts']} prompts can move the statistic)"
+               if res.get("informative_rows") else "")
             + f" | prompts on one model are not independent runs: the sign-flip "
               f"unit is the prompt, which is the coarsest unit this design "
               f"provides, and a pythia-wide effect common to every prompt would "
@@ -1258,8 +1559,13 @@ def adjudicate_claim_c(
               f"leave-one-out axis existed). The range between them is no "
               f"longer uncontrolled: the reported p is the exact one blunted "
               f"to the measured H0 rejection rate at this run's observed "
-              f"sign_homogeneity, from the committed curve in "
-              f"claims/calibration/claim_c_homogeneity.json"),
+              f"sign_homogeneity AND its dropped-cell fraction, from the "
+              f"committed curve in "
+              f"claims/calibration/claim_c_homogeneity.json. The curve no "
+              f"longer assumes a complete (prompt x metric) table: it is "
+              f"indexed by the drop fraction as a second dimension, "
+              f"interpolates nothing across it, and refuses above the drop "
+              f"rate it tabulates"),
         adjudications_dir=adjudications_dir,
     )
     return res

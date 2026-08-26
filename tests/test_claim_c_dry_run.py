@@ -155,15 +155,23 @@ class TestTheSelfComparisonIsOne(unittest.TestCase):
 
     def test_the_three_refusals_all_fire_somewhere(self):
         """
-        Identical rows, the curve's unmeasured top bin, and the derived
-        homogeneity refusal. A refusal that never fires anywhere in the input
-        space is one nothing has checked -- §6h's lesson about an arm incapable
-        of failing, asked of a refusal instead of a PASS.
+        Identical rows, a degenerate metric subset, and the derived homogeneity
+        refusal. A refusal that never fires anywhere in the input space is one
+        nothing has checked -- §6h's lesson about an arm incapable of failing,
+        asked of a refusal instead of a PASS.
+
+        The third entry changed on 2026-08-25 from `no-correction-available` to
+        `subset-undefined`, and it is the reorder rather than a new behaviour
+        (§6l). Near homogeneity 1.0 dropping a metric leaves the remaining sign
+        rows identical WITHIN that subset, and the subsets are now scored before
+        the curve is consulted -- so the specific degeneracy is reported where
+        the generic 'the curve has no row for this' used to be. Both were true
+        of those inputs; the more specific one is now in front.
         """
         row = _record()["self_comparison"]["per_n_prompts"][str(POWER_N_PROMPTS)]
         self.assertEqual(
             row["refusal_kinds_seen"],
-            ["derived-homogeneity", "identical-rows", "no-correction-available"])
+            ["derived-homogeneity", "identical-rows", "subset-undefined"])
 
 
 class TestBoundaryReDerived(unittest.TestCase):
@@ -184,7 +192,13 @@ class TestBoundaryReDerived(unittest.TestCase):
                 passing.append(out["sign_homogeneity"])
         self.assertTrue(passing, "the self-comparison never returned TRANSFERS")
         self.assertAlmostEqual(max(passing), stored, places=10)
-        self.assertAlmostEqual(max(passing), 0.8125, places=10)
+        # 0.8125 until 2026-08-25. The informative-row floor changed what
+        # "conditional on emission" conditions on -- draws that could never
+        # reject are now refused rather than counted as non-rejections -- so
+        # the measured H0 rate rose, the correction got stronger, and the band
+        # TIGHTENED. §6l records it; it is a real cost of the refusal and not a
+        # regeneration artefact.
+        self.assertAlmostEqual(max(passing), 0.7708333333333334, places=10)
 
     def test_minimum_dissenting_cells_to_pass(self):
         """
@@ -193,10 +207,12 @@ class TestBoundaryReDerived(unittest.TestCase):
         metric before the gate can return TRANSFERS at all.
         """
         rec = _record()["self_comparison"]["per_n_prompts"][str(POWER_N_PROMPTS)]
-        self.assertEqual(rec["min_minority_cells_to_pass"], 9)
-        self.assertEqual(_self_compare(POWER_N_PROMPTS, 9)["verdict"],
+        # 9 until 2026-08-25, 11 after -- the band tightened, so the pilot has
+        # to clear a higher bar. See `test_boundary_at_eight_prompts`.
+        self.assertEqual(rec["min_minority_cells_to_pass"], 11)
+        self.assertEqual(_self_compare(POWER_N_PROMPTS, 11)["verdict"],
                          "TRANSFERS")
-        self.assertEqual(_self_compare(POWER_N_PROMPTS, 8)["verdict"],
+        self.assertEqual(_self_compare(POWER_N_PROMPTS, 10)["verdict"],
                          "INSUFFICIENT")
 
 
@@ -208,7 +224,7 @@ class TestGateIsConstantAboveTheBoundary(unittest.TestCase):
     """
 
     def test_perfect_input_is_refused_just_above_the_boundary(self):
-        out = _self_compare(POWER_N_PROMPTS, 8)
+        out = _self_compare(POWER_N_PROMPTS, 10)
         self.assertIsNone(out["p_value"])
         self.assertEqual(out["verdict"], "INSUFFICIENT")
         self.assertTrue(out["hard_stop"])
@@ -217,7 +233,9 @@ class TestGateIsConstantAboveTheBoundary(unittest.TestCase):
 
     def test_the_power_curve_above_the_boundary_is_all_refusals(self):
         levels = _record()["power_curve"]["levels"]
-        above = [lv for lv in levels if lv["homogeneity"] > 0.8125]
+        boundary = _record()["self_comparison"]["per_n_prompts"][
+            str(POWER_N_PROMPTS)]["max_passing_homogeneity"]
+        above = [lv for lv in levels if lv["homogeneity"] > boundary]
         self.assertTrue(above, "no power-curve level sits above the boundary")
         for lv in above:
             for row in lv["rows"]:
@@ -251,14 +269,16 @@ class TestThePowerCurve(unittest.TestCase):
     """
 
     def test_thresholds_at_eight_prompts(self):
+        # The levels are placed relative to the boundary, so they moved with it
+        # on 2026-08-25 (§6l): 0.8125/0.75/0.625 became 0.7708/0.7083/0.5833.
         by_h = {round(lv["homogeneity"], 4): lv
                 for lv in _record()["power_curve"]["levels"]}
-        self.assertEqual(by_h[0.8125]["thresholds"]["k_transfers_half"], 39)
-        self.assertEqual(by_h[0.8125]["thresholds"]["k_transfers_always"], 44)
-        self.assertEqual(by_h[0.75]["thresholds"]["k_transfers_half"], 37)
-        self.assertEqual(by_h[0.75]["thresholds"]["k_transfers_always"], 42)
-        self.assertEqual(by_h[0.625]["thresholds"]["k_transfers_half"], 35)
-        self.assertEqual(by_h[0.625]["thresholds"]["k_transfers_always"], 38)
+        self.assertEqual(by_h[0.7708]["thresholds"]["k_transfers_half"], 38)
+        self.assertEqual(by_h[0.7708]["thresholds"]["k_transfers_always"], 43)
+        self.assertEqual(by_h[0.7083]["thresholds"]["k_transfers_half"], 35)
+        self.assertEqual(by_h[0.7083]["thresholds"]["k_transfers_always"], 38)
+        self.assertEqual(by_h[0.5833]["thresholds"]["k_transfers_half"], 35)
+        self.assertEqual(by_h[0.5833]["thresholds"]["k_transfers_always"], 38)
 
     def test_the_requirement_tightens_as_homogeneity_rises(self):
         """
@@ -282,25 +302,27 @@ class TestThePowerCurve(unittest.TestCase):
         """
         by_h = {round(lv["homogeneity"], 4): lv
                 for lv in _record()["power_curve"]["levels"]}
-        for h in (0.8125, 0.75, 0.625):
+        for h in (0.7708, 0.7083, 0.5833):
             t = by_h[h]["thresholds"]
             tool_axis_cost = t["k_iut_uncorrected_half"] - t["k_full_set_only_half"]
             correction_cost = t["k_transfers_half"] - t["k_iut_uncorrected_half"]
             self.assertLessEqual(tool_axis_cost, 3, f"h={h}")
             self.assertGreaterEqual(correction_cost, 0, f"h={h}")
-        self.assertEqual(by_h[0.625]["thresholds"]["k_transfers_half"]
-                         - by_h[0.625]["thresholds"]["k_iut_uncorrected_half"], 0)
+        # Well inside the band the correction is free; at the boundary it is
+        # what the requirement is made of.
+        self.assertEqual(by_h[0.5833]["thresholds"]["k_transfers_half"]
+                         - by_h[0.5833]["thresholds"]["k_iut_uncorrected_half"], 0)
         self.assertGreaterEqual(
-            by_h[0.8125]["thresholds"]["k_transfers_half"]
-            - by_h[0.8125]["thresholds"]["k_iut_uncorrected_half"], 4)
+            by_h[0.7708]["thresholds"]["k_transfers_half"]
+            - by_h[0.7708]["thresholds"]["k_iut_uncorrected_half"], 4)
 
     def test_falsification_needs_as_much_discordance_as_transfer_needs_concordance(self):
         by_h = {round(lv["homogeneity"], 4): lv
                 for lv in _record()["power_curve"]["levels"]}
-        for h in (0.8125, 0.75, 0.625):
+        for h in (0.7708, 0.7083, 0.5833):
             t = by_h[h]["thresholds"]
             self.assertIsNotNone(t["k_fails_half"], f"h={h}")
-            self.assertLessEqual(t["k_fails_half"], 13, f"h={h}")
+            self.assertLessEqual(t["k_fails_half"], 14, f"h={h}")
 
     def test_the_insufficient_band_is_most_of_the_range(self):
         """
@@ -310,8 +332,8 @@ class TestThePowerCurve(unittest.TestCase):
         """
         by_h = {round(lv["homogeneity"], 4): lv
                 for lv in _record()["power_curve"]["levels"]}
-        lo, hi = by_h[0.75]["thresholds"]["insufficient_band"]
-        self.assertEqual([lo, hi], [11, 36])
+        lo, hi = by_h[0.7708]["thresholds"]["insufficient_band"]
+        self.assertEqual([lo, hi], [11, 37])
         self.assertGreater((hi - lo + 1) / 49.0, 0.5)
 
 
@@ -332,23 +354,82 @@ class TestScaleReferences(unittest.TestCase):
             ref = independent_sign_reference(n, len(CLAIM_C_METRICS))
             self.assertLess(ref["mean_homogeneity"], 0.70, f"n={n}")
             self.assertGreater(ref["mean_homogeneity"], 0.55, f"n={n}")
+        # 1.7e-3 at eight prompts since 2026-08-25, against 8e-5 before: the
+        # boundary moved down a bin (§6l) so slightly more of the
+        # independent-prompt distribution sits above it. Two in a thousand is
+        # still "essentially never", which is the claim being made.
         rec = _record()["independent_prompt_reference"]["per_n_prompts"]
         self.assertLess(rec[str(POWER_N_PROMPTS)]["p_above_refusal_boundary"],
-                        1e-3)
+                        5e-3)
 
     def test_the_boundary_does_not_move_with_prompt_count(self):
         """
-        Expressed in the unit that is comparable across prompt counts. Six to
-        twelve prompts move the boundary across three bins of 0.025 with no
-        trend, so more prompts is not the remedy for a refusal.
+        Expressed in the unit that is comparable across prompt counts, since
+        the attainable homogeneities themselves lie on a grid of step
+        1/(n_prompts * n_metrics). Six to twelve prompts move the boundary
+        across two bins of 0.025, so more prompts is not the remedy for a
+        refusal -- which is the point, and it survived the band tightening on
+        2026-08-25 (§6l): every count moved down together.
         """
         bins = refusal_boundary_bins(0.05)
         los = [bins[str(n)]["first_refusing_bin"]["bin_lo"]
                for n in N_PROMPTS_SWEPT]
         self.assertLessEqual(max(los) - min(los), 0.05)
-        self.assertGreaterEqual(min(los), 0.80)
+        self.assertGreaterEqual(min(los), 0.775)
+        # Six, seven and eight prompts sit a bin BELOW nine and up: the
+        # informative-row floor refuses more of the small-n H0 draws, so the
+        # rate among the survivors is higher there.
+        self.assertEqual(sorted(set(los)), [0.775, 0.825])
         self.assertEqual(_record()["refusal_boundary_bins"][
-            str(POWER_N_PROMPTS)]["first_refusing_bin"]["bin_lo"], 0.825)
+            str(POWER_N_PROMPTS)]["first_refusing_bin"]["bin_lo"], 0.775)
+
+
+class TestTheInformativeRowFloorCostsNothing(unittest.TestCase):
+    """
+    The dual of `TestTheDerivedRefusalIsTight`, asked of the refusal added on
+    2026-08-25 (POPPER_PLAN.md §6l) and answered by running the gate rather
+    than by reading a curve's monotonicity.
+
+    The informative-row floor refuses a table whose rows cannot move the
+    statistic. It is only safe because both tails share that floor, so a
+    refused table could not have cleared alpha in either direction. The record
+    re-scores every table the refusal fired on and counts the ones that could
+    have.
+    """
+
+    def setUp(self):
+        self.floor = _record()["informative_row_floor"]
+
+    def test_no_refused_table_could_have_cleared_alpha(self):
+        """The assertion the whole section exists for."""
+        for row in self.floor["rows"]:
+            self.assertEqual(
+                row["counterfactual_rejections"], 0,
+                f"at H1 strength {row['h1_strength']} the floor refused "
+                f"{row['counterfactual_rejections']} table(s) that could have "
+                f"reached a verdict; the refusal takes power and has to go")
+        self.assertIs(self.floor["costs_no_power"], True)
+
+    def test_the_verdict_is_not_true_by_vacuity(self):
+        """
+        §6h found an audit arm reporting PASS while incapable of failing. A
+        sweep in which the refusal never fires reports `costs_no_power` with
+        nothing behind it, so the record stores None there rather than True --
+        and this pins that the committed sweep actually had refusals to
+        re-score.
+        """
+        self.assertGreater(self.floor["n_refusals_rescored"], 0)
+        self.assertTrue(any(r["refusal_rate"] > 0 for r in self.floor["rows"]))
+
+    def test_it_fires_hardest_under_the_null(self):
+        """
+        The shape that says it is a floor and not a filter on effects: under H0
+        a prompt's six metrics split three and three with probability 20/64, so
+        the refusal is common; as the effect grows the rows swing and it stops
+        firing.
+        """
+        rows = sorted(self.floor["rows"], key=lambda r: r["h1_strength"])
+        self.assertGreater(rows[0]["refusal_rate"], rows[-1]["refusal_rate"])
 
 
 class TestTheHelpersAreWhatTheyClaim(unittest.TestCase):

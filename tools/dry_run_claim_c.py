@@ -99,12 +99,35 @@ rates -- the full-set-only p and the uncorrected intersection-union max -- so
 the cost of the tool axis and the cost of the homogeneity correction are
 separated rather than summed.
 
+PART C -- WHAT THE INFORMATIVE-ROW FLOOR COSTS (added 2026-08-25, §6l)
+
+§6j asked of the derived homogeneity refusal whether it ever refuses something
+that could have passed, and answered it from the curve's monotonicity. The
+informative-row floor -- a row whose usable cells split exactly half and half,
+or whose cells were all dropped, cannot move the statistic, and with fewer than
+five rows that can, no p below alpha is expressible -- needs the same question
+asked, and here it is asked the expensive way. Tables are drawn at a range of H1
+strengths, the whole gate is run, and every table the floor refused is re-scored
+through the gate's own `_subset_result` and `apply_homogeneity_correction` to
+see what it WOULD have reported. `counterfactual_rejections` must be zero in
+every row.
+
+`costs_no_power` is None rather than True when the refusal never fired: a sweep
+with nothing to re-score would report success while being incapable of
+reporting anything else, which is the audit arm §6h found reporting PASS
+without being able to fail.
+
 WHAT THIS DELIBERATELY DOES NOT DO
 
-It changes nothing in `p1_mstate_tracking/replication_gate.py`. It adds no
-third robustness axis -- §6g records why CLAIM-C in particular cannot afford
-one. It adjudicates nothing: a dry run on synthetic inputs is not evidence
-about pythia-1.4b, and `claims/adjudications/` stays empty.
+It adds no third robustness axis -- §6g records why CLAIM-C in particular cannot
+afford one. It adjudicates nothing: a dry run on synthetic inputs is not
+evidence about pythia-1.4b, and `claims/adjudications/` stays empty.
+
+It no longer says "it changes nothing in the gate", because §6l did: the
+informative-row floor is a new refusal in `replication_gate.py` and the
+homogeneity curve gained a cell-drop dimension. What is unchanged is this
+file's relationship to it -- the dry run measures the gate and never adjusts
+it.
 
 RUN IT
 
@@ -134,7 +157,7 @@ RECORD_PATH = ROOT / "claims" / "audits" / "claim_c_dry_run.json"
 
 #: Bump when the record's shape changes. A reader at a different version
 #: refuses rather than reinterpreting fields that may have moved.
-RECORD_SCHEMA_VERSION = 1
+RECORD_SCHEMA_VERSION = 2
 
 #: The two files every verdict in this record depends on. The gate decides the
 #: verdicts; the curve decides where the refusal boundary sits. Either changing
@@ -168,6 +191,15 @@ N_ARRANGEMENTS_ABOVE_BOUNDARY = 20
 #: exercises the depth normalization rather than side-stepping it.
 N_LAYERS_REFERENCE = 36
 N_LAYERS_CANDIDATE = 24
+
+#: H1 strengths for the informative-row floor's cost measurement -- the
+#: per-cell probability that the candidate's contrast agrees with the
+#: reference's. 0.50 is H0 and is included because the refusal fires most there.
+#: The range stops at 0.70 on purpose: past it the candidate's homogeneity rises
+#: into the band where the DERIVED homogeneity refusal fires first, so the
+#: informative-row floor is never reached and the row would measure nothing.
+INFORMATIVE_FLOOR_STRENGTHS: Tuple[float, ...] = (0.50, 0.55, 0.60, 0.65, 0.70)
+N_INFORMATIVE_FLOOR_DRAWS = 150
 
 _SEED = 20260824
 
@@ -287,13 +319,27 @@ def refusal_kind(out: dict) -> Optional[str]:
         return "attainable-floor"
     if out.get("sign_rows_identical"):
         return "identical-rows"
-    corr = out.get("homogeneity_correction") or {}
+    # The data refusals come first in the gate and so they come first here: a
+    # table that cannot carry a statistic is never asked whether the curve
+    # covers it. Which keys are PRESENT is what orders them, with no prose
+    # matching: `informative_rows` is absent until every subset carried a
+    # p-value, and `homogeneity_correction` is absent until the informative-row
+    # floor has been cleared. See POPPER_PLAN.md 6l.
+    if out.get("informative_rows") is None:
+        return "subset-undefined"
+    if "homogeneity_correction" not in out:
+        return "informative-rows-floor"
+
+    corr = out["homogeneity_correction"]
     if not corr.get("available", False):
+        # The correction's own branches carry a stable `refusal` marker, so the
+        # drop-dimension refusals are distinguishable from the older ones
+        # without matching prose.
+        marker = corr.get("refusal")
+        if marker in ("drop-fraction-above-tabulated", "drop-slab-missing"):
+            return marker
         return "no-correction-available"
-    if corr.get("corrected_best_attainable_p") is not None and \
-            corr["corrected_best_attainable_p"] > out.get("alpha", 0.05):
-        return "derived-homogeneity"
-    return "subset-undefined"
+    return "derived-homogeneity"
 
 
 def _run_gate(ref_signs: np.ndarray, can_signs: np.ndarray,
@@ -401,19 +447,26 @@ def refusal_boundary_bins(alpha: float = 0.05) -> dict:
     `max_passing_homogeneity` is not: the attainable homogeneities form a grid
     of step 1/(n_prompts * n_metrics), so that number moves with the grid as
     well as with the boundary. The bin edge is the boundary itself.
+
+    Read on the COMPLETE-TABLE slab of the curve, which since 2026-08-25 is one
+    of several (POPPER_PLAN.md 6l). That is the slab the band reported in 6j was
+    measured on, so reading it here keeps this number comparable with what is on
+    record; the boundary at other drop rates is a separate question and the
+    curve now answers it per slab.
     """
     from p1_mstate_tracking.replication_gate import (
-        CLAIM_C_ALTERNATIVE, apply_homogeneity_correction, homogeneity_correction,
-        load_homogeneity_curve)
+        CLAIM_C_ALTERNATIVE, CLAIM_C_METRICS, apply_homogeneity_correction,
+        homogeneity_correction, load_homogeneity_curve)
 
     curve = load_homogeneity_curve()
     out = {}
     for n, row in sorted(curve["curves"].items(), key=lambda kv: int(kv[0])):
         floor = row["best_attainable_p"]
+        n_cells = int(n) * len(CLAIM_C_METRICS)
         first_bad = None
-        for b in row["bins"]:
+        for b in row["drop_bins"][0]["bins"]:
             mid = (b["lo"] + b["hi"]) / 2.0
-            corr = homogeneity_correction(int(n), mid)
+            corr = homogeneity_correction(int(n), mid, 0, n_cells)
             if not corr["available"]:
                 r = None
             else:
@@ -423,7 +476,8 @@ def refusal_boundary_bins(alpha: float = 0.05) -> dict:
                              "rate_at_floor": r}
                 break
         out[str(int(n))] = {"best_attainable_p": floor,
-                            "first_refusing_bin": first_bad}
+                            "first_refusing_bin": first_bad,
+                            "drop_slab": "no cells dropped"}
     return out
 
 
@@ -475,6 +529,10 @@ def correction_is_monotone() -> dict:
     never costs a verdict the gate could otherwise have reached. Checked here
     rather than asserted, because the property belongs to the committed curve
     and not to the code that reads it.
+
+    Since 2026-08-25 it walks every DROP slab as well as every homogeneity bin,
+    so the tightness claim covers the cell-drop dimension rather than only the
+    complete-table one it was first made on.
     """
     from p1_mstate_tracking.replication_gate import load_homogeneity_curve
 
@@ -482,21 +540,133 @@ def correction_is_monotone() -> dict:
     violations = []
     n_checked = 0
     for n, row in sorted(curve["curves"].items()):
-        for b in row["bins"]:
-            for key in ("quantiles_greater", "quantiles_less"):
-                q = b.get(key)
-                if q is None:
-                    continue
-                n_checked += 1
-                for i in range(len(q) - 1):
-                    if q[i + 1] < q[i] - 1e-12:
-                        violations.append(
-                            {"n_prompts": int(n), "bin_lo": b["lo"],
-                             "tail": key, "index": i,
-                             "values": [q[i], q[i + 1]]})
+        for slab in row["drop_bins"]:
+            for b in slab["bins"]:
+                for key in ("quantiles_greater", "quantiles_less"):
+                    q = b.get(key)
+                    if q is None:
+                        continue
+                    n_checked += 1
+                    for i in range(len(q) - 1):
+                        if q[i + 1] < q[i] - 1e-12:
+                            violations.append(
+                                {"n_prompts": int(n), "bin_lo": b["lo"],
+                                 "drop_bin_index": slab["drop_bin_index"],
+                                 "tail": key, "index": i,
+                                 "values": [q[i], q[i + 1]]})
     return {"n_quantile_vectors_checked": n_checked,
             "monotone": not violations,
             "violations": violations[:8]}
+
+
+def informative_row_floor_cost(n_prompts: int, strengths: Sequence[float],
+                               n_draws: int, rng: np.random.Generator) -> dict:
+    """
+    What the informative-row floor refusal costs, measured on inputs that carry
+    signal rather than on H0.
+
+    POPPER_PLAN.md 6j asked of the derived homogeneity refusal whether it ever
+    refuses something that could have passed, and answered it from the curve's
+    monotonicity. The informative-row floor (6l) needs the same question asked,
+    and here it is asked the expensive way: draw tables at a range of H1
+    strengths, run the whole gate, and for every draw the floor refuses,
+    recompute what the gate WOULD have reported and check that neither tail
+    clears alpha.
+
+    `counterfactual_rejections` is the number that matters and it must be zero.
+    A single non-zero entry means the refusal took a verdict away, and the
+    refusal would have to go.
+
+    The counterfactual is built from `_subset_result` and
+    `apply_homogeneity_correction` -- the gate's own scoring functions, called
+    directly -- rather than from a second implementation of the arithmetic.
+    """
+    from p1_mstate_tracking.replication_gate import (
+        CLAIM_C_ALTERNATIVE, CLAIM_C_METRICS, CLAIM_C_RECIPROCAL_ALTERNATIVE,
+        DEFAULT_N_PERM, _alpha, _metric_subsets, _subset_result,
+        apply_homogeneity_correction, homogeneity_correction)
+
+    n_m = len(CLAIM_C_METRICS)
+    alpha = float(_alpha())
+    rows = []
+    for q in strengths:
+        counts = {"TRANSFERS": 0, "FAILS-TO-TRANSFER": 0, "INSUFFICIENT": 0}
+        n_refused = counterfactual_rejections = n_checked = 0
+        for _ in range(n_draws):
+            can = rng.choice([-1, 1], size=(n_prompts, n_m)).astype(np.int8)
+            agree = rng.random((n_prompts, n_m)) < q
+            ref = (can * np.where(agree, 1, -1)).astype(np.int8)
+            out = _run_gate(ref, can, rng)
+            counts[out["verdict"]] += 1
+            if refusal_kind(out) != "informative-rows-floor":
+                continue
+            n_refused += 1
+
+            # The gate never computed a correction for this table -- the
+            # floor refusal fires before that block -- so the counterfactual
+            # has to look it up here. That is the whole point: what WOULD the
+            # gate have reported had the floor not turned the table away.
+            full = homogeneity_correction(
+                out["n_prompts"], out["sign_homogeneity"],
+                out["n_cells_dropped"], out["n_prompts"] * n_m)
+            if not full.get("available"):
+                continue
+            concordant = np.asarray(out["concordant"], dtype=bool)
+            usable = np.asarray(out["usable"], dtype=bool)
+            sign_can = np.sign(np.asarray(out["contrast_candidate"],
+                                          dtype=np.float64))
+            pg = pl = 0.0
+            for _name, cols in _metric_subsets():
+                sub = _subset_result(concordant, usable, sign_can, cols,
+                                     n_perm=DEFAULT_N_PERM, seed=0)
+                if sub.get("p_value") is None:
+                    pg = pl = 1.0
+                    break
+                pg = max(pg, sub["p_value"])
+                pl = max(pl, sub["p_reciprocal"])
+            n_checked += 1
+            if (apply_homogeneity_correction(full, pg, CLAIM_C_ALTERNATIVE) <= alpha
+                    or apply_homogeneity_correction(
+                        full, pl, CLAIM_C_RECIPROCAL_ALTERNATIVE) <= alpha):
+                counterfactual_rejections += 1
+        rows.append({
+            "h1_strength": float(q),
+            "n_draws": int(n_draws),
+            "refusal_rate": n_refused / float(n_draws),
+            "verdicts": counts,
+            "p_transfers": counts["TRANSFERS"] / float(n_draws),
+            "n_refusals_rescored": int(n_checked),
+            "counterfactual_rejections": int(counterfactual_rejections),
+        })
+    return {
+        "_what": ("the informative-row floor refusal, measured on inputs that "
+                  "carry signal: how often it fires at each H1 strength, and "
+                  "how many of the tables it refused could have cleared alpha "
+                  "in either tail"),
+        "_the_number_that_matters": (
+            "counterfactual_rejections, which must be 0 in every row. The "
+            "refusal is only safe because both tails share the floor; a "
+            "non-zero entry means it took a verdict away and it would have to "
+            "go. POPPER_PLAN.md 6j asked this of the derived homogeneity "
+            "refusal and answered it from the curve's monotonicity; this is the "
+            "same question asked of 6l's refusal by running the gate."),
+        "n_prompts": int(n_prompts),
+        "alpha": alpha,
+        "rows": rows,
+        "n_refusals_rescored": sum(r["n_refusals_rescored"] for r in rows),
+        # None, never True, when nothing was rescored. A sweep in which the
+        # refusal never fired would report "costs no power" while being
+        # INCAPABLE of reporting anything else, which is exactly the audit arm
+        # POPPER_PLAN.md 6h found reporting PASS without being able to fail. The
+        # verdict is evidence or it is absent.
+        "costs_no_power": (
+            all(r["counterfactual_rejections"] == 0 for r in rows)
+            if any(r["n_refusals_rescored"] for r in rows) else None),
+        "_costs_no_power_is_none_when": (
+            "the refusal never fired in this sweep, so there was nothing to "
+            "rescore and the answer would be true by vacuity rather than by "
+            "measurement"),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -631,6 +801,9 @@ def build_record(seed: int = _SEED) -> dict:
                                         N_ARRANGEMENTS_ABOVE_BOUNDARY, rng))
 
     alpha = float(_alpha())
+    floor_cost = informative_row_floor_cost(
+        POWER_N_PROMPTS, INFORMATIVE_FLOOR_STRENGTHS,
+        N_INFORMATIVE_FLOOR_DRAWS, rng)
     bins = refusal_boundary_bins(alpha)
     indep = {}
     for n in N_PROMPTS_SWEPT:
@@ -706,6 +879,7 @@ def build_record(seed: int = _SEED) -> dict:
             "per_n_prompts": indep,
         },
         "correction_monotonicity": correction_is_monotone(),
+        "informative_row_floor": floor_cost,
         "power_curve": {
             "_what": (
                 "verdict rates against the number of concordant cells, at a "
@@ -786,6 +960,21 @@ def check_record(path: Path = RECORD_PATH) -> List[str]:
             "R(h, .) is not non-decreasing in p, so the derived homogeneity "
             "refusal is no longer tight: it can refuse a run that would have "
             "cleared alpha")
+
+    floor = rec.get("informative_row_floor", {})
+    if floor.get("costs_no_power") is not True:
+        problems.append(
+            "the informative-row floor's cost was not established: "
+            f"costs_no_power={floor.get('costs_no_power')!r} over "
+            f"{floor.get('n_refusals_rescored')} rescored refusals. None means "
+            f"the refusal never fired in the sweep, so the record proves "
+            f"nothing about it; False means it took a verdict away and the "
+            f"refusal has to go.")
+    if not floor.get("n_refusals_rescored"):
+        problems.append(
+            "no refusal was rescored, so `costs_no_power` would be true by "
+            "vacuity -- an arm reporting PASS while incapable of failing, "
+            "which POPPER_PLAN.md 6h records as a defect in its own right")
     return problems
 
 
@@ -832,6 +1021,18 @@ def print_summary(rec: dict) -> None:
     print(f"\nR(h,.) non-decreasing in p over {mono['n_quantile_vectors_checked']} "
           f"tabulated bins: {mono['monotone']}  -> the derived refusal is "
           f"{'tight' if mono['monotone'] else 'NOT tight'}")
+
+    fl = rec["informative_row_floor"]
+    print(f"\n=== the informative-row floor at {fl['n_prompts']} prompts ===")
+    print(f"{'H1 strength':>11}  {'refusal rate':>12}  {'P(TRANSFERS)':>12}  "
+          f"{'rescored':>8}  {'could have cleared':>18}")
+    for r in fl["rows"]:
+        print(f"{r['h1_strength']:>11.2f}  {r['refusal_rate']:>12.4f}  "
+              f"{r['p_transfers']:>12.4f}  {r['n_refusals_rescored']:>8d}  "
+              f"{r['counterfactual_rejections']:>18d}")
+    print(f"costs_no_power: {fl['costs_no_power']}  "
+          f"({fl['n_refusals_rescored']} refusals re-scored; None means the "
+          f"refusal never fired and the answer would be vacuous)")
 
     print("\n=== power curve at "
           f"{rec['power_curve']['n_prompts']} prompts, "
