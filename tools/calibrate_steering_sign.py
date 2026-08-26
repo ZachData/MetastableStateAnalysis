@@ -15,7 +15,7 @@ other entry in the registry, P-ST1's statistic can be exercised end to end on
 synthetic populations with a planted answer and no model at all. That is why
 this file can measure what it measures.
 
-SEVEN THINGS IT RECORDS, and four of them decided the module's constants.
+EIGHT THINGS IT RECORDS, and four of them decided the module's constants.
 
 1. `attainable_floor`. Under the REGISTERED null the floor is
    (2^(m-k) + 1)/(2^m + 1) over the k INFORMATIVE pairs, not 2/(2^m + 1) over
@@ -58,15 +58,37 @@ SEVEN THINGS IT RECORDS, and four of them decided the module's constants.
    rate reads 0.000 -- calibrated BY REFUSING, which is the conditioning error
    POPPER_PLAN.md 6g records for CLAIM-C.
 
-7. `adjudicated_null_validity_and_power` -- the replacement, measured on the
-   same draws so the comparison is paired. Randomising over matched-dimension
-   random ORTHOGONAL subspace pairs is POPPER_PLAN.md 6h's construction
-   arriving for the fourth time, and it removes the informative-pair floor as
-   well as the inflation.
+7. `adjudicated_null_validity_and_power` -- all THREE nulls this entry has
+   carried, measured on the same runs and the same drawn pairs so every
+   comparison is paired rather than three experiments. The registered
+   permutation; 2026-08-25's matched-dimension random orthogonal pair; and the
+   random re-split of the observed pair's union, which is what the module now
+   adjudicates.
+
+   THE FAMILY LIST IS PART OF THE MEASUREMENT, and 2026-08-26 is the pass that
+   learned it. Until then every H0 family here put the cloud in a subspace
+   ORTHOGONAL to both arms, leaving both at chance occupancy -- which is
+   precisely the case in which a matched-dimension random pair IS exchangeable
+   with the observed pair. On a family where both arms are occupied above
+   chance and the two are identical by construction, that null rejects at
+   0.20-0.53 against a nominal 0.05, in whichever direction the layer's
+   realized asymmetry happens to fall. Nothing failed; the family that could
+   have shown it was not in the list. Every row now also reports each arm's
+   chance-normalized occupancy, so the coverage of the sweep is visible in the
+   artifact instead of implicit in a concentration parameter.
+
+8. `reciprocal_tail` -- the INVERTS branch under H0 at four times the
+   replicates, at one pair count, which is what pays for them. POPPER_PLAN.md
+   6k named it this construction's weakest measurement: it is the branch that
+   would enter the ledger as a FALSIFICATION and fifty runs resolve a rate only
+   to about +/- 0.03. Every family here has arms that are exchangeable by
+   construction, so the two tails must agree within sampling error -- a table
+   where they do not is measuring something other than a Type-I rate, and
+   `tails_agree` says so in the record rather than leaving it to be noticed.
 
 RUN IT
 
-    python3 -m tools.calibrate_steering_sign --write     # about 12 minutes
+    python3 -m tools.calibrate_steering_sign --write     # about an hour
     python3 -m tools.calibrate_steering_sign --check
     python3 -m tools.calibrate_steering_sign --summary
 """
@@ -85,7 +107,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RECORD_PATH = ROOT / "claims" / "calibration" / "steering_sign.json"
 GATE_PATH = ROOT / "p7_motifs" / "steering_gate.py"
 
-RECORD_SCHEMA_VERSION = 1
+RECORD_SCHEMA_VERSION = 2
 
 #: Synthetic layer geometry. d and n_tokens are the shape of a small real
 #: layer's activation block; kept fixed across every arm so the arms are
@@ -128,13 +150,45 @@ N_MEAN_OFFSET_TRIALS = 100
 
 #: Null draws used HERE. The module ships 199 (floor 0.005); the calibration
 #: uses fewer because what it measures is a rejection rate at alpha = 0.05 and
-#: a floor of 0.01 is already well under that, while the draws are what the
-#: runtime is made of. Recorded in the artifact so the difference is visible.
-CALIB_SUBSPACE_DRAWS = 99
+#: a floor of 0.02 is already well under that, while the draws are what the
+#: runtime is made of -- and from 2026-08-26 every run computes TWO subspace
+#: nulls, the adjudicated re-split and the retired matched-dimension pair on
+#: the same draws, which doubled the cost of the section that carries most of
+#: it. Recorded in the artifact so the difference is visible.
+CALIB_SUBSPACE_DRAWS = 49
 
 #: Permutation-only runs per row. Cheap enough to reach 150 pairs, which is
 #: where the registered null's inflation is worst.
 N_PERM_TRIALS = 100
+
+#: The families the validity table sweeps, as (concentration, occupied, name).
+#: The two `both` rows were added 2026-08-26 and they are why this list is a
+#: constant rather than a literal inside the function: their ABSENCE is what
+#: kept the matched-dimension null's failure invisible for a pass, so the set
+#: of H0 families a calibration covers is itself a decision worth putting on
+#: the record. Their concentrations were chosen to land at chance-normalized
+#: occupancies of roughly 1.2 and 2.2 -- one just above chance and one where a
+#: real residual stream plausibly sits -- and the measured occupancy is
+#: reported in every row rather than inferred from the concentration.
+VALIDITY_FAMILIES: Tuple[Tuple[float, str, str], ...] = (
+    (0.0, "other", "H0-noisy(conc=0.0)"),
+    (0.3, "other", "H0-noisy(conc=0.3)"),
+    (CONCENTRATION, "other", "H0-separated"),
+    (0.6, "both", "H0-both-arms(weak)"),
+    (1.5, "both", "H0-both-arms(strong)"),
+    (CONCENTRATION, "pos", "H1"),
+    (CONCENTRATION, "neg", "INVERTED"),
+)
+
+#: The reciprocal tail's own sweep: H0 families only, one pair count, four
+#: times the replicates. See `reciprocal_tail` for why it is separate.
+RECIPROCAL_FAMILIES: Tuple[Tuple[float, str, str], ...] = (
+    (0.3, "other", "H0-noisy(conc=0.3)"),
+    (CONCENTRATION, "other", "H0-separated"),
+    (1.5, "both", "H0-both-arms(strong)"),
+)
+N_RECIPROCAL_TRIALS = 200
+RECIPROCAL_N_PAIRS = 8
 
 #: Null draws, mirroring the module so the two cannot drift.
 from p7_motifs.steering_gate import N_SUBSPACE_DRAWS  # noqa: E402
@@ -184,20 +238,46 @@ def synthetic_layer(rng: np.random.Generator, *, dim_u_pos: int, dim_u_neg: int,
     planted by construction.
 
     `occupied` is "pos" (H1: the cloud lives inside U_pos), "neg" (the planted
-    INVERSION) or "other" (H0: the cloud lives in a subspace unrelated to
-    both). The occupied subspace always has `dim_occupied` dimensions whatever
-    `dim_u_pos` is, so the dimension cliff varies the RATIO and nothing else --
-    confounding the two is what a first pass of this measurement did.
+    INVERSION), "other" (H0: the cloud lives in a subspace unrelated to both)
+    or "both" (H0, added 2026-08-26). The occupied subspace always has
+    `dim_occupied` dimensions whatever `dim_u_pos` is, so the dimension cliff
+    varies the RATIO and nothing else -- confounding the two is what a first
+    pass of this measurement did.
+
+    "BOTH" IS THE FAMILY THAT RETIRED THE MATCHED-DIMENSION NULL, and it is
+    added here because its absence is why the 2026-08-25 calibration could not
+    see that null fail. "pos", "neg" and "other" all leave BOTH arms at chance
+    occupancy or below -- "other" puts the cloud in a third subspace, and the
+    two H1 families make exactly one arm special. A matched-dimension random
+    pair is exchangeable with the observed pair in every one of those, which is
+    the one circumstance in which it is valid. Under "both" the cloud occupies
+    each arm equally: the two arms are statistically IDENTICAL, so a label swap
+    is a distributional identity, the correct verdict is INSUFFICIENT and
+    P(TRACKS) must equal P(INVERTS). It is also the realistic case, since
+    U_pos and U_neg come from the model's own OV eigenstructure and a residual
+    stream is orthogonal to neither.
     """
     Q = np.linalg.qr(rng.normal(size=(d, d)))[0]
     u_pos = Q[:, :dim_u_pos]
     u_neg = Q[:, dim_u_pos:dim_u_pos + dim_u_neg]
-    start = {"pos": 0, "neg": dim_u_pos,
-             "other": dim_u_pos + dim_u_neg}[occupied]
-    u_occ = Q[:, start:start + dim_occupied]
     X = rng.normal(size=(n, d))
-    if concentration:
-        X = X + (rng.normal(size=(n, dim_occupied)) * concentration) @ u_occ.T
+    if occupied == "both":
+        if dim_occupied > min(dim_u_pos, dim_u_neg):
+            raise ValueError(
+                f"'both' occupies dim_occupied={dim_occupied} dimensions of "
+                f"EACH arm, so it needs dim_occupied <= min(dim_u_pos, "
+                f"dim_u_neg) = {min(dim_u_pos, dim_u_neg)}")
+        if concentration:
+            for U in (u_pos, u_neg):
+                X = X + (rng.normal(size=(n, dim_occupied))
+                         * concentration) @ U[:, :dim_occupied].T
+    else:
+        start = {"pos": 0, "neg": dim_u_pos,
+                 "other": dim_u_pos + dim_u_neg}[occupied]
+        u_occ = Q[:, start:start + dim_occupied]
+        if concentration:
+            X = X + (rng.normal(size=(n, dim_occupied))
+                     * concentration) @ u_occ.T
     if mean_offset:
         scale = float(np.sqrt((X ** 2).sum(axis=1).mean()))
         X = X + (Q[:, -1] * mean_offset * scale)[None, :]
@@ -508,18 +588,17 @@ def adjudicated_null_validity_and_power(rng: np.random.Generator,
     """
     from p7_motifs.steering_gate import p_value_p_st1
 
+    from p7_motifs.steering_gate import occupancy
+
     rows = []
-    for conc, occ, family in ((0.0, "other", "H0-noisy(conc=0.0)"),
-                              (0.3, "other", "H0-noisy(conc=0.3)"),
-                              (CONCENTRATION, "other", "H0-separated"),
-                              (CONCENTRATION, "pos", "H1"),
-                              (CONCENTRATION, "neg", "INVERTED")):
+    for conc, occ, family in VALIDITY_FAMILIES:
         for m in N_PAIRS_SWEPT:
             sub = {"rej": 0, "emit": 0, "recip": 0}
+            matched = {"rej": 0, "emit": 0, "recip": 0}
             perm = {"rej": 0, "emit": 0}
             verdicts = {"TRACKS-DECOMPOSITION": 0, "INVERTS": 0,
                         "INSUFFICIENT": 0}
-            informative = []
+            informative, occ_pos, occ_neg = [], [], []
             for _ in range(N_GATE_TRIALS):
                 X, u_pos, u_neg = synthetic_layer(
                     rng, dim_u_pos=DIM_OCCUPIED, dim_u_neg=DIM_OCCUPIED,
@@ -530,10 +609,17 @@ def adjudicated_null_validity_and_power(rng: np.random.Generator,
                                     with_profile=False)
                 verdicts[res["verdict"]] += 1
                 informative.append(res["n_informative_pairs"])
+                occ_pos.append(occupancy(X, u_pos))
+                occ_neg.append(occupancy(X, u_neg))
                 if res.get("p_value") is not None:
                     sub["emit"] += 1
                     sub["rej"] += int(res["p_value"] <= alpha)
                     sub["recip"] += int(res["p_reciprocal"] <= alpha)
+                md = res.get("matched_dimension_diagnostic", {})
+                if md.get("p_value") is not None:
+                    matched["emit"] += 1
+                    matched["rej"] += int(md["p_value"] <= alpha)
+                    matched["recip"] += int(md["p_reciprocal"] <= alpha)
                 d = res.get("label_permutation_diagnostic", {})
                 if d.get("p_value") is not None:
                     perm["emit"] += 1
@@ -541,11 +627,19 @@ def adjudicated_null_validity_and_power(rng: np.random.Generator,
             n = float(N_GATE_TRIALS)
             rows.append({
                 "family": family, "concentration": conc, "n_pairs": m,
-                "subspace_emission_rate": sub["emit"] / n,
-                "subspace_reject_given_emitted":
+                "mean_occupancy_pos": float(np.mean(occ_pos)),
+                "mean_occupancy_neg": float(np.mean(occ_neg)),
+                "resplit_emission_rate": sub["emit"] / n,
+                "resplit_reject_given_emitted":
                     (None if not sub["emit"] else sub["rej"] / sub["emit"]),
-                "subspace_reciprocal_given_emitted":
+                "resplit_reciprocal_given_emitted":
                     (None if not sub["emit"] else sub["recip"] / sub["emit"]),
+                "matched_dimension_reject_given_emitted":
+                    (None if not matched["emit"]
+                     else matched["rej"] / matched["emit"]),
+                "matched_dimension_reciprocal_given_emitted":
+                    (None if not matched["emit"]
+                     else matched["recip"] / matched["emit"]),
                 "permutation_emission_rate": perm["emit"] / n,
                 "permutation_reject_given_emitted":
                     (None if not perm["emit"] else perm["rej"] / perm["emit"]),
@@ -555,16 +649,120 @@ def adjudicated_null_validity_and_power(rng: np.random.Generator,
                 "mean_informative_pairs": float(np.mean(informative)),
             })
     return {
-        "_what": ("the gate as it runs. `subspace_*` is the adjudicated null; "
-                  "`permutation_*` is the registered one computed on the same "
-                  "draws, so the comparison is paired. H1 and INVERTED rows "
+        "_what": ("the gate as it runs. `resplit_*` is the adjudicated null; "
+                  "`matched_dimension_*` is the null 2026-08-25 adjudicated "
+                  "and 2026-08-26 retired, and `permutation_*` is the one the "
+                  "registry's wording names. All three are computed on the "
+                  "SAME runs and the same drawn pairs, so the comparison is "
+                  "paired rather than three experiments. H1 and INVERTED rows "
                   "are power in each direction."),
+        "_read_the_occupancy_columns": (
+            "mean_occupancy_pos/neg are each arm's share of the centred "
+            "population's energy divided by the k/d a random subspace of that "
+            "dimension would hold. The H0-both-arms rows are the ones the "
+            "2026-08-25 calibration did not have: every other family leaves "
+            "both arms at or below chance, which is exactly where a "
+            "matched-dimension random pair IS exchangeable with the observed "
+            "one, so its failure was invisible."),
         "alpha": alpha,
         "n_trials_per_row": N_GATE_TRIALS,
         "n_subspace_draws_used_here": CALIB_SUBSPACE_DRAWS,
         "n_subspace_draws_shipped": N_SUBSPACE_DRAWS,
         "n_pairs_swept": list(N_PAIRS_SWEPT),
         "rows": rows,
+    }
+
+
+def _reciprocal_row(family: str, conc: float, occ_pos: Sequence[float],
+                    occ_neg: Sequence[float], got: Dict[str, int],
+                    e: int) -> dict:
+    """One row of the reciprocal-tail table, with its own 95% half width."""
+    return {
+        "family": family, "concentration": conc,
+        "mean_occupancy_pos": float(np.mean(occ_pos)),
+        "mean_occupancy_neg": float(np.mean(occ_neg)),
+        "emission_rate": e / float(N_RECIPROCAL_TRIALS),
+        "greater_given_emitted": (None if not e else got["greater"] / e),
+        "reciprocal_given_emitted": (None if not e else got["less"] / e),
+        "half_width_at_95pct": (None if not e
+                                else float(1.96 * np.sqrt(0.25 / e))),
+    }
+
+
+def reciprocal_tail(rng: np.random.Generator, alpha: float) -> dict:
+    """
+    The INVERTS branch's H0 rate, at more replicates than the table above.
+
+    POPPER_PLAN.md 6k left this as the newest construction's weakest
+    measurement and said so rather than leaving it to be found: INVERTS is the
+    branch that enters the ledger as a FALSIFICATION, it was measured over
+    fifty gate runs per cell, and fifty runs resolve a rate to about +/- 0.03 --
+    which cannot separate nominal from twice nominal. Four times the replicates
+    at one pair count resolves it to about +/- 0.015. One pair count is what
+    pays for them, and eight is the one the design's own floor calls for.
+
+    Symmetry is the check that makes the number readable. Under every H0 family
+    here the two arms are exchangeable by construction, so P(INVERTS) must
+    equal P(TRACKS) up to sampling error; a table where they differ by more
+    than that is measuring something other than a Type-I rate.
+    """
+    from p7_motifs import steering_gate as sg
+    from p7_motifs.steering_gate import occupancy, p_value_p_st1
+
+    rows = []
+    # The retired matched-dimension null is computed on every gate run and is
+    # not read here, so it is switched off for this section: four times the
+    # replicates is what this section is for, and paying twice for a diagnostic
+    # nothing reads is how the replicates would have been unaffordable. The
+    # validity table above measures it, paired, on the same families.
+    prev_diag = sg.MATCHED_DIMENSION_NULL_DIAGNOSTIC
+    sg.MATCHED_DIMENSION_NULL_DIAGNOSTIC = False
+    try:
+        for conc, occ, family in RECIPROCAL_FAMILIES:
+            got = {"emit": 0, "greater": 0, "less": 0}
+            occ_pos, occ_neg = [], []
+            for _ in range(N_RECIPROCAL_TRIALS):
+                X, u_pos, u_neg = synthetic_layer(
+                    rng, dim_u_pos=DIM_OCCUPIED, dim_u_neg=DIM_OCCUPIED,
+                    occupied=occ, mean_offset=2.0, concentration=conc)
+                res = p_value_p_st1(X, u_pos, u_neg, RECIPROCAL_N_PAIRS,
+                                    gate_alpha=alpha,
+                                    seed=int(rng.integers(1 << 30)),
+                                    n_draws=CALIB_SUBSPACE_DRAWS,
+                                    with_profile=False)
+                occ_pos.append(occupancy(X, u_pos))
+                occ_neg.append(occupancy(X, u_neg))
+                if res.get("p_value") is None:
+                    continue
+                got["emit"] += 1
+                got["greater"] += int(res["p_value"] <= alpha)
+                got["less"] += int(res["p_reciprocal"] <= alpha)
+            e = got["emit"]
+            rows.append(_reciprocal_row(family, conc, occ_pos, occ_neg, got, e))
+    finally:
+        sg.MATCHED_DIMENSION_NULL_DIAGNOSTIC = prev_diag
+    return {
+        "_what": ("the reciprocal ('less') tail under H0 at "
+                  f"{N_RECIPROCAL_TRIALS} gate runs per cell -- the branch "
+                  "that would enter the ledger as a falsification, which "
+                  "POPPER_PLAN.md 6k recorded as this construction's weakest "
+                  "measurement."),
+        "_symmetry_check": ("every family here has exchangeable arms by "
+                            "construction, so the two tails must agree within "
+                            "sampling error; `tails_agree` says whether they "
+                            "do."),
+        "alpha": alpha,
+        "n_trials_per_row": N_RECIPROCAL_TRIALS,
+        "n_pairs": RECIPROCAL_N_PAIRS,
+        "n_subspace_draws_used_here": CALIB_SUBSPACE_DRAWS,
+        "rows": rows,
+        "tails_agree": all(
+            r["greater_given_emitted"] is None
+            or abs(r["greater_given_emitted"] - r["reciprocal_given_emitted"])
+            <= 2.0 * r["half_width_at_95pct"] for r in rows),
+        "worst_reciprocal_rate": (
+            max([r["reciprocal_given_emitted"] for r in rows
+                 if r["reciprocal_given_emitted"] is not None], default=None)),
     }
 
 
@@ -610,6 +808,7 @@ def build_record(seed: int = _SEED) -> dict:
         "registered_null_inflation": registered_null_inflation(rng, alpha),
         "adjudicated_null_validity_and_power":
             adjudicated_null_validity_and_power(rng, alpha),
+        "reciprocal_tail": reciprocal_tail(rng, alpha),
     }
 
 
@@ -672,7 +871,113 @@ def check_record(path: Path = RECORD_PATH) -> List[str]:
         problems.append(
             f"ER_MODE is {sg.ER_MODE!r}; this calibration's sign-symmetry "
             f"section is the argument for 'raw'")
+    problems.extend(_check_the_null_that_is_adjudicated(rec, sg))
     return problems
+
+
+def _nominal_ceiling(alpha: float, n: int) -> float:
+    """
+    The highest rate a valid test can plausibly show at `n` replicates.
+
+    Derived from alpha and the replicate count -- one normal-approximation
+    standard error either side -- rather than placed, so it moves when either
+    input does. A checker with a hard-coded tolerance is a checker whose
+    verdict cannot be re-derived, which is standing rule 6 applied to the
+    audit rather than to the science.
+    """
+    if n <= 0:
+        return 1.0
+    return float(alpha + 1.96 * np.sqrt(alpha * (1.0 - alpha) / n))
+
+
+def _check_the_null_that_is_adjudicated(rec: dict, sg) -> List[str]:
+    """
+    Does the record still support WHICH null the module adjudicates?
+
+    Three things have to hold, and each of them can fail:
+
+    1. The `H0-both-arms` family must be present. Its absence is exactly why
+       the 2026-08-25 calibration could not see the matched-dimension null
+       fail, and a calibration whose H0 families cannot express the failure it
+       is meant to rule out is `POPPER_PLAN.md` 6h's audit arm incapable of
+       failing.
+    2. The adjudicated null must hold at or near nominal on every H0 family,
+       including that one.
+    3. The RETIRED matched-dimension null must still be anticonservative
+       somewhere in the table. If it is not, retiring it was the wrong call and
+       this record is the evidence against it -- so the check fails rather than
+       quietly agreeing with the module.
+    """
+    out: List[str] = []
+    sec = rec.get("adjudicated_null_validity_and_power", {})
+    rows = sec.get("rows", [])
+    alpha = float(sec.get("alpha", rec.get("alpha", 0.05)))
+    n = int(sec.get("n_trials_per_row", 0))
+    if not rows:
+        return ["adjudicated_null_validity_and_power has no rows"]
+    if "re-split" not in str(sg.NULL_FAMILY):
+        out.append(
+            f"NULL_FAMILY is {sg.NULL_FAMILY!r}; this section's rows are named "
+            f"for the re-split null the module adjudicated when they were "
+            f"measured")
+
+    both = [r for r in rows if r["family"].startswith("H0-both-arms")]
+    if not both:
+        out.append(
+            "no H0-both-arms family in the validity table. That family -- both "
+            "arms occupied above chance, the two identical by construction -- "
+            "is the one that retired the matched-dimension null, and a "
+            "calibration without it cannot see this class of failure at all")
+    ceiling = _nominal_ceiling(alpha, n)
+    for r in rows:
+        if not r["family"].startswith("H0"):
+            continue
+        for key in ("resplit_reject_given_emitted",
+                    "resplit_reciprocal_given_emitted"):
+            v = r.get(key)
+            if v is not None and v > ceiling:
+                out.append(
+                    f"{r['family']} at {r['n_pairs']} pairs: the ADJUDICATED "
+                    f"null's {key} is {v:.3f}, above {ceiling:.3f} = alpha plus "
+                    f"one standard error at {n} replicates. The null this "
+                    f"module adjudicates does not hold on that family")
+    worst = max((r.get("matched_dimension_reject_given_emitted") or 0.0)
+                for r in rows if r["family"].startswith("H0"))
+    if worst <= ceiling:
+        out.append(
+            f"the RETIRED matched-dimension null's worst H0 rejection rate in "
+            f"this record is {worst:.3f}, at or below nominal. It was retired "
+            f"on the evidence that it is anticonservative; if this record no "
+            f"longer shows that, the retirement is not supported by the "
+            f"artifact that is supposed to support it")
+
+    rt = rec.get("reciprocal_tail", {})
+    if not rt.get("rows"):
+        out.append(
+            "no reciprocal_tail section: the INVERTS branch is the one that "
+            "enters the ledger as a falsification and POPPER_PLAN.md 6k "
+            "recorded its rate as this construction's weakest measurement")
+    else:
+        if int(rt.get("n_trials_per_row", 0)) <= n:
+            out.append(
+                f"the reciprocal tail was measured at "
+                f"{rt.get('n_trials_per_row')} replicates, no more than the "
+                f"main table's {n}. It exists to carry MORE")
+        if not rt.get("tails_agree"):
+            out.append(
+                "the reciprocal tail's two tails disagree beyond sampling "
+                "error on a family whose arms are exchangeable by "
+                "construction, so one of them is not measuring a Type-I rate")
+        rt_ceiling = _nominal_ceiling(float(rt.get("alpha", alpha)),
+                                      int(rt.get("n_trials_per_row", 0)))
+        wr = rt.get("worst_reciprocal_rate")
+        if wr is not None and wr > rt_ceiling:
+            out.append(
+                f"the INVERTS branch fires under H0 at {wr:.3f}, above "
+                f"{rt_ceiling:.3f} = alpha plus one standard error at "
+                f"{rt.get('n_trials_per_row')} replicates. That is the branch "
+                f"that would be recorded as a falsification")
+    return out
 
 
 def print_summary(rec: dict) -> None:
@@ -738,23 +1043,46 @@ def print_summary(rec: dict) -> None:
             cells.append("-" if v is None else f"{v:.3f}")
         print(f"  {fam:>20} " + " ".join(f"{c:>7}" for c in cells))
 
-    print("\n=== the ADJUDICATED null, and the registered one on the same draws ===")
-    print(f"  {'family':>20} {'pairs':>5} {'sub rej|em':>11} {'perm rej|em':>12} "
+    print("\n=== all three nulls on the same draws; occupancy is chance-normalized ===")
+    print(f"  {'family':>20} {'pairs':>5} {'occ+':>5} {'occ-':>5} "
+          f"{'resplit':>8} {'matched':>8} {'perm':>7} "
           f"{'TRACKS':>7} {'INVERTS':>8} {'mean inf':>9}")
     for r in rec["adjudicated_null_validity_and_power"]["rows"]:
-        sv = r["subspace_reject_given_emitted"]
-        pv = r["permutation_reject_given_emitted"]
+        def _f(key):
+            v = r.get(key)
+            return "-" if v is None else f"{v:.3f}"
         print(f"  {r['family']:>20} {r['n_pairs']:>5} "
-              f"{'-' if sv is None else f'{sv:.3f}':>11} "
-              f"{'-' if pv is None else f'{pv:.3f}':>12} "
+              f"{r['mean_occupancy_pos']:>5.2f} {r['mean_occupancy_neg']:>5.2f} "
+              f"{_f('resplit_reject_given_emitted'):>8} "
+              f"{_f('matched_dimension_reject_given_emitted'):>8} "
+              f"{_f('permutation_reject_given_emitted'):>7} "
               f"{r['tracks_decomposition']:>7.3f} {r['inverts']:>8.3f} "
               f"{r['mean_informative_pairs']:>9.1f}")
+    print("  (resplit = adjudicated; matched = retired 2026-08-26; "
+          "perm = the registry's wording, retired 2026-08-25)")
+
+    rt = rec["reciprocal_tail"]
+    print(f"\n=== the INVERTS tail under H0, {rt['n_trials_per_row']} runs per "
+          f"cell at {rt['n_pairs']} pairs ===")
+    print(f"  {'family':>20} {'occ+':>5} {'occ-':>5} {'emit':>6} "
+          f"{'greater':>8} {'reciprocal':>11} {'+/- 95%':>8}")
+    for r in rt["rows"]:
+        def _g(key):
+            v = r.get(key)
+            return "-" if v is None else f"{v:.3f}"
+        print(f"  {r['family']:>20} {r['mean_occupancy_pos']:>5.2f} "
+              f"{r['mean_occupancy_neg']:>5.2f} {r['emission_rate']:>6.3f} "
+              f"{_g('greater_given_emitted'):>8} "
+              f"{_g('reciprocal_given_emitted'):>11} "
+              f"{_g('half_width_at_95pct'):>8}")
+    print(f"  tails agree within sampling error: {rt['tails_agree']}   "
+          f"worst reciprocal rate: {rt['worst_reciprocal_rate']}")
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--write", action="store_true",
-                    help="run the calibration and write the record (~4 min)")
+                    help="run the calibration and write the record (about an hour)")
     ap.add_argument("--check", action="store_true",
                     help="verify the committed record without re-running")
     ap.add_argument("--summary", action="store_true",

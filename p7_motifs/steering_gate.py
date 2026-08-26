@@ -125,21 +125,92 @@ is uninformative and the gate REFUSES: the unconditional rate there is 0.000,
 and it is 0.000 by refusal rather than by control. Conditioning on emission is
 what makes it visible, which is `POPPER_PLAN.md` 6g's lesson exactly.
 
-What replaces it is 6h's construction, arriving for the fourth time: randomise
-over SUBSPACES, not over units. H0 for this entry is "the sign is independent
-of the U_pos/U_neg decomposition", realised directly by replacing the two
-operator-derived subspaces with random ones OF THE SAME DIMENSIONS, at the same
-layer, on the same population. Every chance tilt is present in the null exactly
-as it is in the observed value, so the confound the permutation cannot see is
-what the null is made of. The pair is drawn MUTUALLY ORTHOGONAL from one
-Stiefel draw, because the real pair is orthogonal by the projector build's
-resolution order and 6h measured the cost of forgetting that at 0.0875 against
-a nominal 0.05.
+The first replacement was 6h's construction, arriving for the fourth time:
+randomise over SUBSPACES, not over units -- replace the two operator-derived
+subspaces with random ones OF THE SAME DIMENSIONS, drawn mutually orthogonal
+from one Stiefel draw because the real pair is orthogonal by the projector
+build's resolution order and 6h measured the cost of forgetting that at 0.0875
+against a nominal 0.05.
 
-The registered permutation is still computed and reported beside every result
-as a diagnostic, never adjudicated, so the difference between the null the
-wording names and the one that holds is visible in the record rather than
-asserted here.
+IT IS ALSO INVALID, AND THE FAMILY THAT SHOWS IT IS THE REALISTIC ONE
+
+Matching the dimensions holds fixed everything the statistic could read off
+dimension. It does not hold fixed how much of the population each subspace
+CONTAINS -- and dER is driven by exactly that. Injecting along a direction the
+cloud already occupies reinforces a large Gram eigenvalue and lowers effective
+rank; injecting along one it does not adds a new eigenvalue and raises it. A
+random subspace of dimension k captures k/d of the population's energy in
+expectation; U_pos and U_neg are cut from the model's own OV eigenstructure and
+the residual stream is not orthogonal to either, so both capture MORE than
+that. Compared against random pairs, such a pair is unusual whichever arm is
+called attractive -- and the sign of the observed difference is then whichever
+way this layer's realized asymmetry happens to fall.
+
+Measured on an H0 family in which BOTH arms are occupied above chance and the
+two are statistically identical by construction -- so the correct verdict is
+INSUFFICIENT, and P(TRACKS) must equal P(INVERTS) exactly -- it is
+anticonservative, the inflation GROWS with the pair count, and the adjudicated
+null below is at or under nominal on the identical draws. The rates are in
+`claims/calibration/steering_sign.json` and are deliberately not repeated here:
+a rate inlined in a docstring is a rate that goes stale silently, which is what
+the artifact's sha256 pinning exists to prevent and what prose cannot do. The
+first version of this paragraph quoted a sweep at a different geometry than the
+one the calibration measures, which is the whole argument in miniature.
+
+The calibration that shipped with 6k could not see it: all three of its H0
+families put the cloud in a subspace ORTHOGONAL to both arms, which is the one
+case where a matched-dimension random pair IS exchangeable with the observed
+one. An H0 family that cannot express the failure is 6h's audit arm incapable
+of failing, one level up. `check_record` now fails if that family is absent,
+and fails again if the retired null stops coming back anticonservative.
+
+WHAT IS ADJUDICATED: RANDOMISE THE SPLIT, NOT THE SUBSPACES
+
+The diagnosis names the fix. The old null randomised the union and the split
+TOGETHER, so it rejected on either -- and "this pair of subspaces is unlike a
+random pair" is a statement about the union, which is not what P-ST1 claims.
+The claim is about the LABELLED SPLIT: does calling one of them attractive
+predict which way effective rank moves? So hold the union fixed and randomise
+only the split. The null draws a uniformly random k_pos-dimensional subspace of
+span(U_pos + U_neg) and takes its orthogonal complement WITHIN that union as
+the other arm. Every property of the pair as a pair -- its dimensions, its
+orthogonality, its occupancy, its whole spectral relationship to this layer's
+cloud -- is held exactly fixed, and the observed split is one point of the same
+Grassmannian the null draws from, so under H0 it is exchangeable with them by
+construction rather than by measurement.
+
+Measured on the same families and the same draws, it is at or below nominal
+everywhere the retired one is not. It costs power, and the cost is stated
+rather than hidden: as dim U_pos grows past the dimension the population
+occupies, the two nulls' power separates, and `claims/audits/p_st1_dry_run.json`
+carries the whole-gate version of that against the precondition ratio. Power
+lost that way was never power about the decomposition -- it was the union's
+unusualness being read as the split's.
+
+This is `POPPER_PLAN.md` 6h's question -- what is being randomised? -- arriving
+for the fifth time, and the first time the answer is to randomise LESS. 6h
+moved P6-R2 from units to subspaces because units were too coarse; here
+subspaces are too coarse, and the exchangeable object is the assignment.
+
+BOTH RETIRED NULLS ARE STILL COMPUTED AND REPORTED beside every result, never
+adjudicated: the registered label permutation, and 6k's matched-dimension pair.
+Keeping them visible is what lets a reader see the size of the difference
+between the null a wording names and the one that holds, rather than taking
+this module's word for it -- and this pass is the second time that difference
+turned out to be large.
+
+THE OCCUPANCY OF EACH ARM IS REPORTED, AND IT COSTS NOTHING TO COMPUTE
+
+`occupancy_pos` and `occupancy_neg` are the share of the centred population's
+energy inside each arm, divided by the k/d a random subspace of that dimension
+would capture -- 6h's chance normalization, applied to the population instead
+of to a single vector. They need no injection and no null: the pilot can read
+them off the activations and the two projectors before spending a sweep. Two
+things to read them for. Both near 1 means neither arm is where the cloud
+lives, the per-pair statistic is near-degenerate, and the gate will refuse or
+return INSUFFICIENT. A large asymmetry between them is what a TRACKS verdict
+is made of, so a reader who wants to know whether the verdict has a
+non-particle explanation should look there first.
 
 THE FLOOR, AND WHY REPLACING THE NULL REMOVED IT
 
@@ -154,14 +225,36 @@ informative the best attainable p is
 that clears alpha = 0.05, at every m, so a hundred pairs at a 2% informative
 rate buy two informative pairs and a best possible p of 0.25.
 
-The subspace null has no such property: its floor is 1/(draws + 1), fixed by
-how many null draws are taken and independent of the data. A single informative
-pair can reject, and correctly so -- if random subspaces of the same dimensions
-essentially never inform, an operator-derived pair that does is exactly the
-surprise the claim is about. So replacing the null did not only fix validity;
-it removed a power requirement the registered design could not meet. The
-informative-pair floor is still computed and reported, because it is the
-diagnostic arm's floor and a reader comparing the two needs it.
+Neither subspace null has that property. The draw-count floor of both is
+1/(draws + 1), fixed by how many null draws are taken and independent of the
+data, so replacing the null removed a power requirement the registered design
+could not meet: if re-splitting this very union essentially never informs, then
+the operator's own split doing so is exactly the surprise the claim is about,
+and a single informative pair can carry it.
+
+BUT THE DRAW-COUNT FLOOR IS NOT THE ATTAINABLE ONE, and reporting it as though
+it were was a defect this module carried until a dry run looked
+(`tools/dry_run_p_st1.py`, `POPPER_PLAN.md` 6m). sum(D) cannot exceed 2m, so
+the smallest p a run can express is what an observation of 2m would receive --
+and every null re-split that already reaches 2m ties it. On a union the cloud
+occupies, re-splits inform often, and the two floors part company -- at one pair
+by an order of magnitude. The conditional in the previous paragraph is the whole
+content of it, and the measured version is in
+`claims/audits/p_st1_dry_run.json` rather than here.
+
+So the gate computes the attainable floor from the null it already has, in both
+directions, and REFUSES when neither tail can reach alpha -- the design was
+then going to return INSUFFICIENT whatever the statistic came to, which on an
+entry whose value is that it can lose reads as a loss. 2m is an upper bound on
+the observation rather than an attainable value, so the floor computed at it is
+a lower bound on what the run can express and the refusal can never turn away a
+result that would have cleared alpha. It is CLAIM-C's informative-row refusal
+(6l) arriving here, and it was found the same way: by looking at the output of
+a gate run on an input whose answer was already known.
+
+The informative-PAIR floor, (2^(m-k) + 1)/(2^m + 1), is still computed and
+reported, because it is the retired permutation's floor and a reader comparing
+the arms needs it.
 
 THE PRECONDITION THAT REMAINS
 
@@ -178,14 +271,17 @@ pilot should read them against the population's effective rank BEFORE spending
 a sweep -- the same shape of pre-computed requirement as CLAIM-B's 19 control
 series and CLAIM-C's 19% dissenting cells.
 
-WHAT IS STILL WEAKLY MEASURED, stated rather than left to be found. The
-RECIPROCAL tail -- the INVERTS branch, the one that would enter the ledger as a
-falsification -- is measured under H0 at 0.02 to 0.10 over fifty gate runs per
-cell. That is consistent with nominal and it is not a tight bound: fifty runs
-resolve a rate to about +/- 0.03, and the one cell at 0.10 is well inside that.
-The adjudicated `greater` tail is measured at 0.000 to 0.040 across the same
-cells. Before anything is adjudicated on the INVERTS branch specifically, that
-cell wants more replicates than a committed artifact can afford to carry.
+THE RECIPROCAL TAIL IS MEASURED SEPARATELY AND AT MORE REPLICATES, because it
+is the branch that would enter the ledger as a falsification and because fifty
+gate runs -- what the 2026-08-25 calibration could afford per cell -- resolve a
+rate only to about +/- 0.03, which cannot separate nominal from twice nominal.
+`claims/calibration/steering_sign.json` carries a dedicated section for it at a
+higher replicate count and at one pair count, which is what buys the
+replicates; the main validity table stays at fifty because it sweeps seven H0
+and H1 families and two pair counts. Read the artifact for the rates rather
+than this docstring: a number inlined here is a number that goes stale
+silently, which is what the sha256 pinning exists to prevent for the artifact
+and cannot do for prose.
 
 The obvious fix is refused. Drawing from the intersection of U_pos with the
 population's occupied subspace would restore the rate and would be circular:
@@ -250,10 +346,13 @@ DEBIAS_BASELINE_MEAN = True
 #:
 #: 0.2 is the centre of a measured PLATEAU, and the first value written here
 #: was 0.1 because the plateau was missed on a coarse grid. Per-pair rate at
-#: alpha/spread of 0.15, 0.17, 0.20, 0.22, 0.24, 0.26, 0.28: 0.81, 0.96, 1.00,
-#: 1.00, 1.00, 0.03, 0.00. A grid of (0.03, 0.1, 0.3) reads 0.1 as the peak
-#: because its neighbours are both zero; the plateau is 0.17-0.24 and 0.1 sits
-#: on the shoulder at a sixth of the informative rate -- which is 29 pairs
+#: alpha/spread of 0.15, 0.17, 0.20, 0.22, 0.24, 0.26, 0.30: 0.85, 0.96, 1.00,
+#: 1.00, 1.00, 0.03, 0.00 (claims/calibration/steering_sign.json; an earlier
+#: revision of this comment carried 0.81 at 0.15 and a 0.28 the grid does not
+#: contain, which is the reason the rates elsewhere in this module are now
+#: pointers rather than digits). A grid of (0.03, 0.1, 0.3) reads 0.1 as the
+#: peak because its neighbours are both zero; the plateau is 0.17-0.24 and 0.1
+#: sits on the shoulder at a sixth of the informative rate -- which is 29 pairs
 #: needed instead of 5. The upper cliff is sharp, so 0.2 is taken as the middle
 #: of the plateau rather than its best single point.
 ALPHA_SPREAD_FRACTION = 0.2
@@ -268,9 +367,9 @@ ALPHA_PROFILE_FRACTIONS: Tuple[float, ...] = (
 
 #: RAW, and this is structural rather than a preference. `status-1.md` defect
 #: D1 is why CLAIM-C reads `effective_rank_normed`, and at alpha = 0.1 x spread
-#: the two modes are indistinguishable here (informative rate 0.153 raw against
-#: 0.170 normed, H0 exactly 0.000 for both) -- which is exactly how this nearly
-#: shipped wrong. Away from that one point they are not interchangeable:
+#: the two modes are indistinguishable here -- near-equal informative rates and
+#: H0 exactly 0.000 for both -- which is exactly how this nearly shipped wrong.
+#: Away from that one point they are not interchangeable:
 #:
 #:   With the baseline mean removed the centred population has zero mean, so
 #:   the first-order term of the Gram perturbation, alpha*(base^T 1 v^T + v 1^T
@@ -282,8 +381,9 @@ ALPHA_PROFILE_FRACTIONS: Tuple[float, ...] = (
 #:   L2 row-normalization is not linear, and ||x_i + alpha v|| depends on
 #:   x_i . v, which is ODD in v. `normed` therefore reintroduces exactly the
 #:   antisymmetry debiasing removed: agreement falls to 0.00 at small alpha,
-#:   and it manufactures inversions -- D = -2 in 12-18% of pairs at
-#:   alpha <= 1e-4 where raw gives 0%.
+#:   and it manufactures inversions -- D = -2 in about a fifth of pairs at
+#:   alpha <= 1e-4 where raw gives 0%, tabulated per alpha in
+#:   claims/calibration/steering_sign.json.
 #:
 #: A criterion that answers differently for v and -v is not a criterion about a
 #: steering DIRECTION, so `normed` is disqualified here for a reason CLAIM-C's
@@ -298,25 +398,65 @@ ER_MODE = "raw"
 #: chance tilt of the cloud toward one of them moves every pair together; the
 #: permutation treats m pairs as m exchangeable units when they carry far fewer
 #: than m independent pieces of information. Measured under a noisy H0 at
-#: alpha = 0.05, conditional on the gate emitting: 0.143 to 0.172 at 40 and 150
-#: pairs. That is `status-6.md`'s "49 layers are not 49 independent
+#: alpha = 0.05 and conditional on the gate emitting, the rate rises with the
+#: pair count and is worst at 150; the numbers are in
+#: claims/calibration/steering_sign.json, and an earlier revision of this
+#: comment quoted a pair that section no longer contains, which is why they are
+#: no longer inlined. That is `status-6.md`'s "49 layers are not 49 independent
 #: observations" arriving a third time, and it is invisible in the clean regime
 #: because there the gate refuses instead of emitting -- so the rate looks like
 #: 0.000 unless it is conditioned on emission, which is POPPER_PLAN.md 6g's
 #: lesson exactly.
 #:
-#: What replaces it is POPPER_PLAN.md 6h's construction, arriving for the
-#: fourth time: randomise over SUBSPACES, not over units. H0-BRIDGE for this
-#: entry is "the sign is independent of the U_pos/U_neg decomposition", which
-#: is realised directly by replacing the two operator-derived subspaces with
-#: RANDOM ones OF THE SAME DIMENSIONS. Everything the statistic could read off
-#: dimension is held fixed, the layer's own geometry is held fixed, and a
-#: chance tilt is present in every null draw exactly as it is in the observed
-#: one -- so the confound the permutation cannot see is what the null is made
-#: of. The floor becomes 1/(draws + 1) and stops depending on the pair count at
-#: all, which is the same escape 6h found when P6-R2's floor moved from 0.667
-#: to 0.0005 on this question.
-NULL_FAMILY = "matched-dimension random orthogonal subspace pair"
+#: The FIRST replacement was POPPER_PLAN.md 6h's construction, arriving for the
+#: fourth time: randomise over SUBSPACES, not over units, by replacing the two
+#: operator-derived subspaces with RANDOM ones OF THE SAME DIMENSIONS. It is
+#: also invalid, for a reason dimension matching cannot reach. dER is driven by
+#: how much of the population each subspace CONTAINS, a random k-dimensional
+#: subspace contains k/d of it, and U_pos and U_neg -- cut from the model's own
+#: OV eigenstructure, on a residual stream orthogonal to neither -- contain
+#: more. Such a pair is unusual against random pairs whichever arm is called
+#: attractive, and the sign is then whichever way the layer's realized
+#: asymmetry falls. Measured on an H0 family where both arms are occupied above
+#: chance and the two are IDENTICAL by construction -- so a label swap is a
+#: distributional identity and INSUFFICIENT is the only correct verdict -- it is
+#: anticonservative and the inflation grows with the pair count. The rates live
+#: in claims/calibration/steering_sign.json, whose sha256 pins them to this
+#: module; inlining them here would put a number in prose that nothing can
+#: check. 6k's calibration could not see the failure at all, because all three
+#: of its H0 families put the cloud in a subspace ORTHOGONAL to both arms --
+#: the one case where a matched-dimension random pair IS exchangeable with the
+#: observed one.
+#:
+#: WHAT IS ADJUDICATED holds the union fixed and randomises only the SPLIT.
+#: The old null randomised the union and the split together, so it rejected on
+#: either, and "this pair is unlike a random pair" is a statement about the
+#: union -- which is not what P-ST1 claims. The claim is about the labelled
+#: split. So: draw a uniformly random k_pos-dimensional subspace of
+#: span(U_pos + U_neg) and take its orthogonal complement WITHIN that union.
+#: Dimensions, orthogonality, occupancy and the whole spectral relationship to
+#: this layer's cloud are held exactly fixed; the observed split is one point
+#: of the Grassmannian the null draws from, so exchangeability under H0 is by
+#: construction rather than by measurement. Measured on the same draws, it is
+#: at or below nominal everywhere the retired one is not. It costs power, and
+#: that is stated rather than hidden: the two nulls' power separates as
+#: dim U_pos grows past the dimension the population occupies, and
+#: claims/audits/p_st1_dry_run.json carries the whole-gate version of it
+#: against that ratio.
+#:
+#: The floor is 1/(draws + 1) either way, fixed by the draws and independent of
+#: the pair count, which is the escape 6h found when P6-R2's floor moved from
+#: 0.667 to 0.0005 on this same question of what is randomised. This is its
+#: fifth arrival and the first time the answer is to randomise LESS.
+NULL_FAMILY = "random re-split of the observed pair's union subspace"
+
+#: 6k's matched-dimension pair, computed and reported beside every result and
+#: never adjudicated -- the same standing this module already gives the
+#: registered label permutation. Two retired nulls in the record is not
+#: clutter: it is the only way a reader sees the size of the difference between
+#: a null that was believed and the one that holds, and that difference has now
+#: been large twice.
+MATCHED_DIMENSION_NULL_DIAGNOSTIC = True
 
 #: Draws of the null. 199 puts the floor at 1/200 = 0.005, well under alpha,
 #: and it is enumerated-free: unlike a permutation there is no exhaustive set
@@ -736,11 +876,14 @@ def subspace_null(activations: np.ndarray, dim_pos: int, dim_neg: int,
     """
     sum(D) under `n_draws` matched-dimension random orthogonal subspace pairs.
 
-    The POPULATION is held fixed across draws -- that is the whole point. A
-    chance tilt of this layer's cloud toward one subspace produces the same
-    tilt in every null draw, so the observed value is compared against the
-    tilts chance supplies rather than against an independence assumption the
-    pairs do not satisfy.
+    RETIRED as the adjudicated null and kept as a reported diagnostic. It holds
+    the population fixed across draws, which was the point of it, and it holds
+    the DIMENSIONS fixed -- but not how much of the population each subspace
+    contains, which is what dER is actually driven by. On an H0 family where
+    both arms are occupied above chance and the two are identical by
+    construction it is anticonservative and the inflation grows with the pair
+    count; the rates are in claims/calibration/steering_sign.json rather than
+    here. See NULL_FAMILY, and `resplit_null` for what replaced it.
     """
     from core.metrics import effective_rank
 
@@ -750,6 +893,169 @@ def subspace_null(activations: np.ndarray, dim_pos: int, dim_neg: int,
     d = base.shape[1]
     return np.array([
         _sum_D(base, er0, *random_orthogonal_subspace_pair(d, dim_pos, dim_neg, rng),
+               n_pairs, alpha, mode, rng)
+        for _ in range(int(n_draws))], dtype=np.float64)
+
+
+# ---------------------------------------------------------------------------
+# The union, its occupancy, and the null that randomises only the split
+# ---------------------------------------------------------------------------
+
+def compact_basis(U) -> np.ndarray:
+    """
+    A (d, k) orthonormal basis, whichever of the accepted shapes came in.
+
+    `prepared_subspace` deliberately does NOT extract one, because
+    `B @ (B.T @ g)` projects correctly for an orthonormal basis and for a
+    (d, d) symmetric idempotent projector alike. Forming the union of two
+    subspaces needs the actual columns, so this is the one place that pays for
+    the extraction: an SVD, with the singular values telling it how many
+    columns to keep rather than a caller asserting a rank.
+    """
+    B = prepared_subspace(U)
+    k = subspace_rank(B)
+    if B.shape[1] == k and np.allclose(B.T @ B, np.eye(k), atol=1e-8):
+        return B
+    Q, s, _ = np.linalg.svd(B, full_matrices=False)
+    return Q[:, :k]
+
+
+def union_basis(u_pos, u_neg) -> np.ndarray:
+    """
+    An orthonormal basis for span(U_pos + U_neg), of dimension k_pos + k_neg.
+
+    REFUSES if the union's numerical rank falls short of that -- which happens
+    when the two arms overlap, and when their dimensions together exceed
+    d_model. Both are the same fact about the data: there is no pair of
+    subspaces of those dimensions sitting orthogonally inside this space, so
+    the observed pair is not a point in the Grassmannian the null draws from
+    and no re-split of it reproduces the observed geometry.
+
+    Note that the module has ALWAYS assumed this orthogonality -- it is what
+    the projector build's resolution order guarantees and what
+    `random_orthogonal_subspace_pair` reproduced -- and never checked it. A
+    caller passing overlapping arms used to get a null quietly drawn on a
+    geometry the observed pair does not have.
+    """
+    A, B = compact_basis(u_pos), compact_basis(u_neg)
+    if A.shape[0] != B.shape[0]:
+        raise ValueError(
+            f"U_pos has d={A.shape[0]} and U_neg has d={B.shape[0]}; these "
+            f"must match (frame mismatch)")
+    want = A.shape[1] + B.shape[1]
+    M = np.hstack([A, B])
+    s = np.linalg.svd(M, compute_uv=False)
+    tol = max(M.shape) * float(np.finfo(np.float64).eps) * (s[0] if s.size else 1.0)
+    rank = int((s > max(tol, 1e-10)).sum())
+    if rank < want:
+        raise ValueError(
+            f"span(U_pos + U_neg) has rank {rank}, not dim U_pos + dim U_neg = "
+            f"{want} (d_model = {A.shape[0]}). The two arms overlap, or their "
+            f"dimensions together exceed d_model. The adjudicated null draws a "
+            f"random split OF THAT UNION, so a union that cannot hold the "
+            f"observed pair orthogonally gives a null on a geometry the "
+            f"observed pair does not have.")
+    return np.linalg.qr(M)[0][:, :want]
+
+
+def occupancy(activations: np.ndarray, U) -> float:
+    """
+    Share of the CENTRED population's energy inside U, divided by chance.
+
+    Chance is `k / d`: a uniformly random k-dimensional subspace captures that
+    fraction in expectation, which is `POPPER_PLAN.md` 6h's
+    E[||P_U v||^2] = k/d with the population in place of a single vector. So
+    1.0 means "no more of the cloud than a random subspace of this size would
+    hold" and the number is comparable across arms of different dimension --
+    which raw captured energy is not, and 6h's whole finding was a comparison
+    read without that normalization.
+
+    Costs one matmul and no injection, so it is available before a sweep runs.
+
+    Always centred, whatever `DEBIAS_BASELINE_MEAN` says. The two agree at the
+    module's own setting, and where they would not, an uncentred "share of the
+    population's energy" is dominated by the mean offset rather than by the
+    cloud -- so a diagnostic that followed the flag would silently mean two
+    different things.
+    """
+    X = np.asarray(activations, dtype=np.float64)
+    base = X - X.mean(axis=0, keepdims=True)
+    B = compact_basis(U)
+    total = float((base ** 2).sum())
+    if total <= 0:
+        return float("nan")
+    inside = float(((base @ B) ** 2).sum())
+    return (inside / total) / (B.shape[1] / B.shape[0])
+
+
+def occupancy_report(activations: np.ndarray, u_pos, u_neg) -> dict:
+    """
+    Both arms' chance-normalized occupancy, and the asymmetry between them.
+
+    DIAGNOSTIC: enters no p-value. It is here because the statistic is driven
+    by this asymmetry, so a reader deciding whether a TRACKS verdict has a
+    non-particle explanation should be able to look at the quantity the verdict
+    is made of instead of inferring it. `log_ratio` is positive when U_pos is
+    the better-occupied arm, which is the direction H1 predicts.
+    """
+    op, on = occupancy(activations, u_pos), occupancy(activations, u_neg)
+    ratio = (op / on) if (np.isfinite(op) and np.isfinite(on) and on > 0) \
+        else float("nan")
+    return {
+        "occupancy_pos": float(op),
+        "occupancy_neg": float(on),
+        "occupancy_log_ratio": float(np.log(ratio)) if ratio > 0 else float("nan"),
+        "_what": ("share of the centred population's energy inside each arm, "
+                  "divided by the k/d a random subspace of that dimension "
+                  "would capture. 1.0 is chance. DIAGNOSTIC: enters no "
+                  "p-value."),
+    }
+
+
+def resplit_pair(union: np.ndarray, k_pos: int,
+                 rng: np.random.Generator) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    A uniformly random (k_pos, k - k_pos) split of the union, as two bases.
+
+    Rotating the union's basis by a Haar-random k x k orthogonal matrix and
+    cutting the columns gives a uniformly distributed k_pos-dimensional
+    subspace of the union together with its orthogonal complement INSIDE the
+    union -- so the pair is orthogonal, of the right dimensions, and spans
+    exactly what the observed pair spans. Nothing about the union moves.
+    """
+    S = np.asarray(union, dtype=np.float64)
+    k = S.shape[1]
+    kp = int(k_pos)
+    if not (0 < kp < k):
+        raise ValueError(
+            f"a split needs 0 < k_pos < k; got k_pos={kp}, k={k}. A union "
+            f"assigned entirely to one arm has no second arm to draw from.")
+    R = np.linalg.qr(rng.normal(size=(k, k)))[0]
+    Z = S @ R
+    return Z[:, :kp], Z[:, kp:]
+
+
+def resplit_null(activations: np.ndarray, union: np.ndarray, k_pos: int,
+                 n_pairs: int, alpha: float, *, mode: str = ER_MODE,
+                 n_draws: int = N_SUBSPACE_DRAWS,
+                 seed: int = _SEED) -> np.ndarray:
+    """
+    sum(D) under `n_draws` random re-splits of the observed union. ADJUDICATED.
+
+    The population, the union, its dimensions and its whole spectral
+    relationship to the cloud are held fixed; only which half is called
+    attractive moves. That is H0-BRIDGE for this entry stated exactly -- the
+    decomposition label carries no information about the sign -- and it makes
+    the observed value one point of the same Grassmannian the null samples,
+    so exchangeability is by construction rather than by measurement.
+    """
+    from core.metrics import effective_rank
+
+    base = _baseline(activations)
+    er0 = float(effective_rank(base, mode=mode))
+    rng = np.random.default_rng(seed)
+    return np.array([
+        _sum_D(base, er0, *resplit_pair(union, k_pos, rng),
                n_pairs, alpha, mode, rng)
         for _ in range(int(n_draws))], dtype=np.float64)
 
@@ -812,8 +1118,10 @@ def label_permutation_diagnostic(D: Sequence[float], alpha: float) -> dict:
         "n_pairs": m, "n_informative_pairs": k,
         "informative_rate": (float(k / m) if m else float("nan")),
         "min_informative_pairs_for_alpha": min_informative_pairs(alpha),
-        "measured_h0_rate_given_emission": "0.143-0.172 at alpha=0.05; see "
-                                           "claims/calibration/steering_sign.json",
+        "measured_h0_rate_given_emission": (
+            "anticonservative at alpha=0.05 and rising with the pair count; "
+            "rates in claims/calibration/steering_sign.json, whose sha256 pins "
+            "them to this module"),
         "why_not_adjudicated": (
             "every pair at one layer shares the tokens and both subspaces, so a "
             "chance tilt moves them together and m pairs are not m exchangeable "
@@ -832,6 +1140,52 @@ def label_permutation_diagnostic(D: Sequence[float], alpha: float) -> dict:
     return out
 
 
+def matched_dimension_diagnostic(activations: np.ndarray, observed: float,
+                                 dim_pos: int, dim_neg: int, n_pairs: int,
+                                 alpha: float, *, mode: str = ER_MODE,
+                                 n_draws: int = N_SUBSPACE_DRAWS,
+                                 seed: int = _SEED) -> dict:
+    """
+    6k's null, computed and reported, never adjudicated.
+
+    It replaces both arms with random subspaces of the same DIMENSIONS, which
+    randomises the union and the split together -- so it rejects when the pair
+    is unusual as a pair, and "this pair of subspaces holds more of the cloud
+    than a random pair would" is a fact about the union rather than about the
+    decomposition P-ST1 names. Kept in the record for the same reason the
+    registered permutation is: the size of the difference between a null that
+    was believed and the one that holds belongs in the artifact, and it has now
+    been large twice.
+    """
+    from core.nulls import p_from_null
+
+    out = {
+        "null_family": ("matched-dimension random orthogonal subspace pair "
+                        "(RETIRED 2026-08-26, NOT ADJUDICATED)"),
+        "n_draws": int(n_draws),
+        "measured_h0_rate_given_emission": (
+            "anticonservative where both arms are occupied above chance and "
+            "are identical by construction, and the inflation grows with the "
+            "pair count; rates in claims/calibration/steering_sign.json, whose "
+            "sha256 pins them to this module"),
+        "why_not_adjudicated": (
+            "it randomises the union together with the split, so it rejects on "
+            "a pair that holds more of the population than a random pair "
+            "would -- a fact about the union, not about which half is called "
+            "attractive"),
+    }
+    null = subspace_null(activations, dim_pos, dim_neg, n_pairs, alpha,
+                         mode=mode, n_draws=int(n_draws), seed=seed)
+    out["null_mean"] = float(null.mean())
+    out["null_sd"] = float(null.std())
+    out["p_value"] = float(
+        p_from_null(float(observed), null, alternative=ALTERNATIVE)["p_value"])
+    out["p_reciprocal"] = float(
+        p_from_null(float(observed), null,
+                    alternative=RECIPROCAL_ALTERNATIVE)["p_value"])
+    return out
+
+
 def p_value_p_st1(activations: np.ndarray, u_pos, u_neg, n_pairs: int,
                   *, alpha: Optional[float] = None,
                   gate_alpha: Optional[float] = None,
@@ -841,15 +1195,17 @@ def p_value_p_st1(activations: np.ndarray, u_pos, u_neg, n_pairs: int,
     """
     P-ST1's calibrated p-value, or a refusal saying why there is none.
 
-    The adjudicated null is the matched-dimension random orthogonal subspace
-    pair -- see NULL_FAMILY for why it is not the one the registry's wording
-    names, and what that wording's null was measured to do. The registered
-    permutation is computed beside it as a diagnostic.
+    The adjudicated null is a random re-split of the observed pair's union --
+    see NULL_FAMILY for why it is neither the null the registry's wording names
+    nor the matched-dimension pair that replaced that one, and what each of
+    those two was measured to do. Both are computed beside the result as
+    diagnostics.
 
-    Refuses -- `p_value` None with a `reason` -- rather than returning a number
-    the design cannot support. On a prediction whose whole value is that it can
-    lose, a "not significant" produced by an underpowered draw reads as a loss,
-    which is the wrong thing to put in the ledger.
+    Refuses -- `p_value` None with a `reason` and a `refusal_kind` -- rather
+    than returning a number the design cannot support. On a prediction whose
+    whole value is that it can lose, a "not significant" produced by an
+    underpowered draw reads as a loss, which is the wrong thing to put in the
+    ledger.
 
     Emitting into the ledger is deliberately not this function's job; see
     `adjudicate_p_st1`.
@@ -873,57 +1229,125 @@ def p_value_p_st1(activations: np.ndarray, u_pos, u_neg, n_pairs: int,
         "n_inverted": int((D == -2).sum()),
         "n_partial": int((np.abs(D) == 1).sum()),
         "n_subspace_draws": int(n_draws),
+        "refusal_kind": None,
     })
+    out["occupancy"] = occupancy_report(activations, u_pos, u_neg)
     if REPORT_LABEL_PERMUTATION_DIAGNOSTIC:
         out["label_permutation_diagnostic"] = label_permutation_diagnostic(D, a_gate)
     if with_profile:
         out["alpha_profile"] = alpha_profile(activations, u_pos, u_neg, n_pairs,
                                              seed=seed, mode=mode)
 
-    if m < 1:
+    def _refuse(kind: str, reason: str) -> dict:
         out["p_value"] = None
-        out["reason"] = "no pairs were drawn, so there is no statistic"
+        out["refusal_kind"] = kind
+        out["reason"] = reason
         out.update(gate_verdict(None, None, a_gate))
         return out
+
+    # DATA refusals first, calibration refusals second, and the order is the
+    # arrangement POPPER_PLAN.md 6l settled for CLAIM-C's gate: a run whose
+    # geometry cannot carry the null should say so, rather than be turned away
+    # for a draw count that could be raised. Both groups stay reachable --
+    # `n_draws` is a caller's argument and the geometry is the data's, so
+    # neither can hide the other.
+    if m < 1:
+        return _refuse("no_pairs",
+                       "no pairs were drawn, so there is no statistic")
+
+    try:
+        union = union_basis(u_pos, u_neg)
+    except ValueError as exc:
+        return _refuse("union_rank_deficient", str(exc))
+    out["dim_union"] = int(union.shape[1])
 
     floor = 1.0 / (int(n_draws) + 1.0)
+    out["draw_count_floor"] = float(floor)
+    # Provisional: replaced below by the floor the null's TIES set, which is
+    # the one a run can actually reach. It is set here so a record that stops
+    # at the refusal below still carries a floor rather than a missing key.
     out["best_attainable_p"] = float(floor)
     if floor > a_gate:
-        out["p_value"] = None
-        out["reason"] = (
+        return _refuse("draws_below_floor", (
             f"{n_draws} null draws can express no p smaller than "
             f"1/({n_draws}+1) = {floor:.4f}, above alpha={a_gate}. A test that "
-            f"cannot reject on a perfect result is not a test. Unlike the "
-            f"registered permutation's floor this one is fixed by the DRAWS "
-            f"and not by the data, so it is raised by drawing more.")
-        out.update(gate_verdict(None, None, a_gate))
-        return out
+            f"cannot reject on a perfect result is not a test. This one IS "
+            f"fixed by the draws and is raised by drawing more -- unlike the "
+            f"attainable floor computed below it, which is set by how many "
+            f"null re-splits already reach the largest value the statistic "
+            f"can take and is a fact about the layer."))
 
-    d_model = int(np.asarray(activations).shape[1])
-    if out["dim_u_pos"] + out["dim_u_neg"] > d_model:
-        out["p_value"] = None
-        out["reason"] = (
-            f"dim U_pos ({out['dim_u_pos']}) + dim U_neg ({out['dim_u_neg']}) "
-            f"exceeds d_model ({d_model}), so no random ORTHOGONAL pair of "
-            f"matching dimensions exists. Drawing the null pair independently "
-            f"instead would compare an orthogonal observed pair against "
-            f"overlapping null pairs, which POPPER_PLAN.md 6h measured at an "
-            f"H0 rate of 0.0875 against a nominal 0.05.")
-        out.update(gate_verdict(None, None, a_gate))
-        return out
-
-    null = subspace_null(activations, out["dim_u_pos"], out["dim_u_neg"], m,
-                         out["alpha"], mode=mode, n_draws=int(n_draws),
-                         seed=seed + 1)
+    null = resplit_null(activations, union, out["dim_u_pos"], m, out["alpha"],
+                        mode=mode, n_draws=int(n_draws), seed=seed + 1)
     out["null_mean"] = float(null.mean())
     out["null_sd"] = float(null.std())
     out["null_is_degenerate"] = bool(np.all(null == null[0]))
+
+    # THE FLOOR THAT TIES SET, and it is not 1/(draws + 1).
+    #
+    # sum(D) cannot exceed 2m, so the smallest p this run can express in the
+    # `greater` direction is what a hypothetical observation of 2m would get:
+    # every null draw that already reaches 2m ties it and is counted extreme.
+    # On a union the cloud occupies, random re-splits inform often and many of
+    # them reach the maximum, so the draw-count floor 1/(draws+1) can be
+    # unreachable by a wide margin -- at one pair by an order of magnitude.
+    # The measured version is in claims/audits/p_st1_dry_run.json.
+    #
+    # Reporting the draw-count floor as `best_attainable_p` was therefore
+    # optimistic in exactly the way POPPER_PLAN.md 6i names for CLAIM-B's
+    # sampled pairing regime, and leaving it uncorrected reproduced 6l's
+    # defect for CLAIM-C: a design that COULD NOT have rejected returning "not
+    # significant", which on an entry whose whole value is that it can lose
+    # reads as a loss. Found by running the gate on an input whose answer was
+    # known (tools/dry_run_p_st1.py), not by a failing test.
+    #
+    # 2m is an upper bound on the observation rather than an attainable value,
+    # so this floor is a LOWER bound on what the run can express: refusing on
+    # it can never turn away a table that would have cleared alpha. Both tails
+    # are computed, and the refusal needs BOTH to be out of reach -- one
+    # reachable tail means one reachable verdict, and the gate is then not a
+    # constant function.
+    reach_g = float((int((null >= 2.0 * m).sum()) + 1) / (int(n_draws) + 1.0))
+    reach_l = float((int((null <= -2.0 * m).sum()) + 1) / (int(n_draws) + 1.0))
+    out["attainable_p_greater"] = reach_g
+    out["attainable_p_reciprocal"] = reach_l
+    out["best_attainable_p"] = float(min(reach_g, reach_l))
+    # Which VERDICTS this run could have reached, reported rather than refused
+    # on. Refusing when only one tail is out of reach would cost the verdict
+    # the other tail can still deliver, which is the thing 6l's rule forbids.
+    # But the asymmetry matters to a reader: a run whose only reachable verdict
+    # is INVERTS can produce a falsification and cannot produce its opposite,
+    # and that belongs in the record rather than in an inference from two
+    # floats.
+    out["reachable_tails"] = (
+        (["greater"] if reach_g <= a_gate else [])
+        + (["reciprocal"] if reach_l <= a_gate else []))
+    if min(reach_g, reach_l) > a_gate:
+        return _refuse("null_ties_the_maximum", (
+            f"with {m} pairs the statistic cannot exceed {2 * m}, and "
+            f"{int((null >= 2.0 * m).sum())} of {n_draws} null re-splits "
+            f"already reach it, so the smallest expressible p is "
+            f"{reach_g:.4f} in the predicted direction and {reach_l:.4f} in "
+            f"the reciprocal one -- both above alpha={a_gate}. Neither "
+            f"TRACKS-DECOMPOSITION nor INVERTS is reachable however the data "
+            f"falls, so the verdict was INSUFFICIENT before the statistic was "
+            f"looked at. Raising n_draws does NOT fix this: the ties are the "
+            f"layer's, and more pairs or a union the re-splits inform about "
+            f"less often would. dim U_pos {out['dim_u_pos']}, dim U_neg "
+            f"{out['dim_u_neg']}, occupancy "
+            f"{out['occupancy']['occupancy_pos']:.2f}/"
+            f"{out['occupancy']['occupancy_neg']:.2f}."))
+
     out["p_value"] = float(
         p_from_null(out["observed"], null, alternative=ALTERNATIVE)["p_value"])
     out["p_reciprocal"] = float(
         p_from_null(out["observed"], null,
                     alternative=RECIPROCAL_ALTERNATIVE)["p_value"])
     out["alternative"] = ALTERNATIVE
+    if MATCHED_DIMENSION_NULL_DIAGNOSTIC:
+        out["matched_dimension_diagnostic"] = matched_dimension_diagnostic(
+            activations, out["observed"], out["dim_u_pos"], out["dim_u_neg"], m,
+            out["alpha"], mode=mode, n_draws=int(n_draws), seed=seed + 2)
     out["statistic"] = (
         f"sum over {m} matched-norm vector pairs of D = sign(dER_neg) - "
         f"sign(dER_pos), where dER is the change in {mode} effective rank when "
@@ -931,10 +1355,10 @@ def p_value_p_st1(activations: np.ndarray, u_pos, u_neg, n_pairs: int,
         f"{out['alpha_spread_fraction']:.3g} x the population's RMS deviation "
         f"from its mean (PLACED); baseline mean "
         f"{'removed' if DEBIAS_BASELINE_MEAN else 'kept'} before injection; "
-        f"null replaces (U_pos, U_neg) with {n_draws} random ORTHOGONAL "
-        f"subspace pairs of the same dimensions "
-        f"({out['dim_u_pos']}, {out['dim_u_neg']}) at the same layer and "
-        f"population; one-sided '{ALTERNATIVE}'")
+        f"null re-splits span(U_pos + U_neg), dimension {out['dim_union']}, "
+        f"into {n_draws} random ({out['dim_u_pos']}, {out['dim_u_neg']}) "
+        f"orthogonal pairs at the same layer and population, holding the union "
+        f"fixed; one-sided '{ALTERNATIVE}'")
     out.update(gate_verdict(out["p_value"], out["p_reciprocal"], a_gate))
     return out
 
@@ -971,14 +1395,31 @@ def adjudicate_p_st1(activations: np.ndarray, u_pos, u_neg, n_pairs: int,
         notes=(
             f"verdict={res['verdict']} p_reciprocal={res['p_reciprocal']:.4f} "
             f"(INVERTS input only, NOT calibrated into E) "
-            f"null = {NULL_FAMILY} over {res['n_subspace_draws']} draws, NOT "
-            f"the label permutation the registry's wording names -- that one "
-            f"was measured anticonservative (0.143-0.172 at alpha=0.05 "
-            f"conditional on emission) and is reported as a diagnostic only; "
+            f"null = {NULL_FAMILY} over {res['n_subspace_draws']} draws, which "
+            f"is NEITHER of the two nulls this entry previously carried. The "
+            f"registry's wording names a label permutation across pairs, "
+            f"measured anticonservative at alpha=0.05 conditional on emission, "
+            f"rising with the pair count; 2026-08-25 replaced it with a "
+            f"matched-dimension random orthogonal pair, measured "
+            f"anticonservative where both arms are occupied above chance and "
+            f"are identical by construction -- the inflation growing with the "
+            f"pair count -- because it randomises the union together with the "
+            f"split; see claims/calibration/steering_sign.json. Both are "
+            f"computed and "
+            f"reported as diagnostics only; "
             f"{res['n_informative_pairs']}/{res['n_pairs']} pairs informative, "
             f"floor {res['best_attainable_p']:.4f}; dim U_pos "
             f"{res['dim_u_pos']}, dim U_neg {res['dim_u_neg']}, d_model "
-            f"{res['d_model']}; population mean/spread "
+            f"{res['d_model']}; attainable floors "
+            f"{res['attainable_p_greater']:.4f} (greater) and "
+            f"{res['attainable_p_reciprocal']:.4f} (reciprocal), set by how "
+            f"many null re-splits already reach the largest value the "
+            f"statistic can take and NOT by the draw count "
+            f"({res['draw_count_floor']:.4f}); reachable verdicts "
+            f"{res['reachable_tails']}; chance-normalized occupancy "
+            f"{res['occupancy']['occupancy_pos']:.3f} (pos) against "
+            f"{res['occupancy']['occupancy_neg']:.3f} (neg), DIAGNOSTIC and "
+            f"the quantity a TRACKS verdict is made of; population mean/spread "
             f"{res['population_mean_ratio']:.3f}; alpha is PLACED at "
             f"{res['alpha_spread_fraction']:.3g} x spread and the alpha-profile "
             f"is reported as a diagnostic that enters no p-value; the "

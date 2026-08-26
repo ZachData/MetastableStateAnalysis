@@ -1817,6 +1817,327 @@ fixture run would occupy the slot permanently. Every test that both asks to
 adjudicate and uses the registered unit passes an isolated `adjudications_dir`,
 and the test class says so at the top.
 
+## 6m. P-ST1 run on inputs whose answer is known, and the null that did not hold (2026-08-26)
+
+`claims/EVALUABILITY.md` closed §6j's section on a queue: seven adjudicable rows
+had been validated by unit tests and none had been run on an input whose correct
+verdict is fixed a priori, so *"the queue that used to read 'convert the next
+needs-null row' now has a second entry ahead of it for each row already
+converted."* This pass does that for `P-ST1` —
+`tools/dry_run_p_st1.py` → `claims/audits/p_st1_dry_run.json`, about ten
+minutes, committed for the same reason as the other five artifacts.
+
+`P-ST1` was the one to do next for the reason it was built early: it can
+genuinely lose, and its whole intervention is exact linear algebra, so the gate
+runs end to end on populations with a planted answer and no model at all. §6k
+applied the dry-run discipline at *construction* time rather than after, which
+is better and which made this a real check rather than a formality. The question
+was whether anything survives being run on inputs the construction did not
+already have in mind.
+
+Two things did not, and the first was found before the dry run was finished
+being written.
+
+### The adjudicated null is invalid, and the family that shows it is the realistic one
+
+§6k replaced the registered label permutation with §6h's construction arriving
+for the fourth time: randomise over **subspaces**, not over units — replace the
+two operator-derived subspaces with random ones **of the same dimensions**,
+drawn mutually orthogonal from one Stiefel draw. Matching the dimensions holds
+fixed everything the statistic could read off dimension.
+
+It does not hold fixed how much of the population each subspace **contains**,
+and that is what `dER` is driven by. Injecting along a direction the cloud
+already occupies reinforces a large Gram eigenvalue and lowers effective rank;
+injecting along one it does not adds a new eigenvalue and raises it. A random
+*k*-dimensional subspace captures *k/d* of the population's energy in
+expectation — and `U_pos` and `U_neg` are cut from the model's own OV
+eigenstructure, on a residual stream orthogonal to neither, so both capture
+more. Against random pairs, such a pair is unusual **whichever arm is called
+attractive**, and the sign of the observed difference is then whichever way the
+layer's realized asymmetry happens to fall.
+
+Measured on an H0 family in which both arms are occupied above chance and the
+two are *identical by construction* — so a label swap is a distributional
+identity, the correct verdict is INSUFFICIENT, and P(TRACKS) must equal
+P(INVERTS) exactly — against a nominal 0.05, on the same runs and the same
+drawn pairs so the comparison is paired:
+
+| family | pairs | occupancy of each arm | retired null | adjudicated null |
+|---|---|---|---|---|
+| H0-both-arms(weak) | 8 | 1.27 | 0.080 | 0.020 |
+| H0-both-arms(weak) | 24 | 1.27 | **0.200** | 0.020 |
+| H0-both-arms(strong) | 8 | 2.24 | 0.120 | 0.040 |
+| H0-both-arms(strong) | 24 | 2.25 | 0.160 | 0.000 |
+
+**The inflation grows with the pair count**, which is the signature of the
+mechanism rather than a coincidence: more pairs tighten the null's spread
+without touching the union's unusualness, so what is left of the statistic is
+the realized asymmetry between two subspaces that are both special. It is the
+same shape §6k measured for the *registered* permutation and did not think to
+ask of its own replacement.
+
+**§6k's calibration could not see it, and the reason is the transferable
+lesson.** All three of its H0 families put the cloud in a subspace **orthogonal
+to both arms**, which leaves both at chance occupancy — precisely the one case
+in which a matched-dimension random pair *is* exchangeable with the observed
+pair. The families a calibration measures are part of the measurement, and their
+absence is invisible: a calibration whose H0 families cannot express the failure
+it is meant to rule out is §6h's audit arm incapable of failing, one level up.
+`check_record()` now fails if no such family is present — and fails again if the
+retired null does **not** come back anticonservative, since an artifact that no
+longer supports a retirement is a problem with the retirement rather than
+something to pass over.
+
+### What replaces it randomises the split, not the subspaces
+
+The diagnosis names the fix. The old null moved the union and the split
+**together**, so it rejected on either — and "this pair of subspaces holds more
+of the cloud than a random pair would" is a statement about the *union*, which
+is not what `P-ST1` claims. The claim is about the **labelled split**: does
+calling one of the two attractive predict which way effective rank moves?
+
+So hold the union fixed and randomise only the split. The null draws a uniformly
+random *k*<sub>pos</sub>-dimensional subspace of span(`U_pos` + `U_neg`) and
+takes its orthogonal complement **within that union** as the other arm.
+Dimensions, orthogonality, occupancy and the whole spectral relationship to the
+layer's cloud are held exactly fixed, and the observed split is one point of the
+same Grassmannian the null draws from — so **exchangeability under H0 is by
+construction rather than by measurement**, which no other null in this project
+can say.
+
+**This is §6h's question — what is being randomised? — arriving for the fifth
+time, and the first time the answer is to randomise LESS.** §6h moved `P6-R2`
+from units to subspaces because units were too coarse; here subspaces are too
+coarse, and the exchangeable object is the assignment.
+
+It costs power, and the cost is stated rather than hidden. Where the cloud fills
+the whole arm — dim `U_pos` = dim(occupied), the calibration's H1 and INVERTED
+families — both nulls reach 1.000 in both directions and the change is free. The
+cost appears as that ratio grows, and the dry run's band below is the whole-gate
+version of it. Power lost that way was never power about the decomposition — it
+was the union's unusualness being read as the split's. **Both retired nulls are
+computed and reported beside every result**, never adjudicated: the registered
+permutation, and §6k's matched-dimension pair. Two retired nulls in one record
+is not clutter; it is the only way a reader sees the size of the difference
+between a null that was believed and the one that holds, and that difference has
+now been large twice.
+
+**And a check the module had never made.** The two arms' orthogonality was
+*assumed* from the projector build's resolution order from the day the module
+was written. A caller passing overlapping arms used to get a null quietly drawn
+on a geometry the observed pair does not have; the union's rank is now checked,
+and the refusal covers "the arms overlap" and "their dimensions exceed d_model"
+as the same fact about the data.
+
+### Each arm's occupancy is now reported, and it costs no injection
+
+`occupancy_pos` and `occupancy_neg` are the share of the centred population's
+energy inside each arm, divided by the *k/d* a random subspace of that dimension
+would hold. That is §6h's `E[||P_U v||² ] = k/d` with the population in place of
+a single vector, and §6h's whole finding was a comparison read without that
+normalization. They need no injection and no null, so a pilot can read them off
+the activations and the two projectors **before** spending a sweep, and a reader
+deciding whether a TRACKS verdict has a non-particle explanation can look at the
+quantity the verdict is made of rather than infer it.
+
+The dry run asks how far that goes, and the answer is *informative, not
+determinative*. Over 450 whole-gate runs spanning the sweep, the probability
+that a TRACKS run has a larger occupancy log-ratio than an INSUFFICIENT one is
+**0.875** — well clear of the 0.5 that would mean no information, and well
+short of the 1.0 that would mean the gate is an expensive way to compute a
+ratio. The two distributions overlap on both sides: the smallest log-ratio that
+ever tracked is −0.034, which is a Type-I event on a symmetric input, and the
+largest that came back INSUFFICIENT is 1.91, which is a strongly asymmetric pair
+the design had no power on. So the diagnostic is worth reading before a sweep
+and is not a substitute for running the gate — which is the honest version of
+both things it was added for.
+
+### What the dry run itself found: a reported floor that was not attainable
+
+The gate reported `1/(draws + 1)` as the smallest p it could express — a floor
+fixed by the draws and independent of the data, which is what made §6k's "a
+single informative pair can reject" true. `sum(D)` cannot exceed 2*m*, so the
+smallest p a run can actually express is what an observation of 2*m* would
+receive, and **every null re-split that already reaches 2*m* ties it**. On a
+union the cloud occupies, re-splits inform often. Measured on a perfect input at
+one pair with 99 draws, the attainable floors are **0.11–0.17** in both
+directions where `1/(draws + 1)` says 0.01.
+
+Until this pass the gate would report one of those as "not significant" — a design
+that could not have rejected returning a number that, on an entry whose whole
+value is that it can lose, reads as a loss. That is §6l's defect for `CLAIM-C`
+arriving here from the other side, and §6i's optimistically-reported floor for
+`CLAIM-B`'s sampled pairing regime arriving for the second time. It had been
+live since the module was written and no test was failing on it.
+
+The gate now computes both tails' attainable floors from the null it already has
+— which costs nothing — and **refuses when neither can reach α**. 2*m* is an
+upper bound on the observation rather than an attainable value, so the floor
+computed at it is a *lower* bound on what the run can express: the refusal can
+never turn away a result that would have cleared α. When only **one** tail is
+out of reach the gate does not refuse, because one reachable tail is one
+reachable verdict and §6l's rule is that a refusal costs none.
+
+**Unlike §6l's, this one costs no power by construction rather than by
+measurement, and the difference is worth naming.** CLAIM-C's informative-row
+refusal had to be re-scored against a counterfactual — every refused table put
+back through the gate's own subset arithmetic — because the floor it refuses on
+and the p it would otherwise report are computed by different code. Here they
+are the same quantity: the refusal condition *is* "the best p this run could
+express exceeds α". Re-scoring it would be tautological, so the argument is the
+2*m* bound and not a measured zero, and this record says which of the two it is
+rather than reporting a count that could not have come out any other way.
+
+**Which surfaced a category this project had not named.** The two tails' floors
+are computed separately and they are not equal, so a run can have exactly one
+reachable tail — and when the reachable one is INVERTS, the design can return a
+**falsification or nothing** and nothing else. On a cloud planted in `U_pos`,
+few re-splits reach −2*m* while many reach +2*m*, which is the direction that
+produces it; `TestTheSubspaceNulls` pins a one-pair case where the attainable
+floors are 0.175 in the predicted direction and 0.025 in the reciprocal one, and
+the gate correctly emits rather than refusing.
+
+At the dry run's own geometry the one-pair cells fall the other side of that
+line — both tails out of reach, so all six refuse — which is why the category is
+recorded here from the arithmetic and the unit test rather than from the
+artifact. Every record now carries `reachable_tails`, because a run whose only
+reachable verdict is the one that enters the ledger as a falsification is a run
+a reader has to be told about, and nothing else in the record would say it.
+
+### What the four other arms came back with
+
+**The sharp input.** Cloud planted entirely in one arm at dim `U_pos` =
+dim(occupied), so every draw lands in it and the statistic is at its maximum:
+the correct verdict is TRACKS-DECOMPOSITION a priori, and INVERTS with the arms
+mirrored. At two pairs and above the gate returns the planted verdict in every
+cell of both directions and every emitted p lands exactly on that run's own
+**attainable** floor — never on the draw-count floor at two pairs, where the
+attainable floors measure 0.02–0.05 against `1/(draws + 1)` = 0.01. At one pair
+it refuses, in both directions, in all six cells: the attainable floors there
+are 0.11–0.17, and 99 draws cannot help because the ties are the layer's.
+
+**So two pairs is the smallest design that emits at all**, and the binding
+quantity is how often a re-split of the *same union* reaches the maximum rather
+than how many null draws were taken. That is the §6f pattern — "six prompts is
+the first workable gate" — arriving for `P-ST1`, and it is a different number
+from §6k's five *informative* pairs, which was the retired permutation's floor.
+
+**And a small thing the arm's own staleness check caught, which is worth keeping
+because of what it corrects.** The first version of this arm asserted that a
+perfect input puts the statistic at its maximum, and one row failed: at sixteen
+pairs, one drawn direction in forty-eight did not inform. The *planting* is
+perfect — the cloud lies entirely in one arm at dim `U_pos` = dim(occupied), so
+every drawn direction is inside it — but the *statistic* is not deterministic,
+because a direction can land where both arms' effective-rank changes happen to
+share a sign. The measured rate is 0.979 at worst rather than 1.000, the record
+now carries it, and the check asserts a rate rather than an identity: an
+assertion that fails once in fifty runs is an assertion about the draw and not
+about the gate.
+
+**The exchangeable input, which is this entry's sharpest statement and has no
+counterpart elsewhere in the registry.** Draw the observed pair as a random
+re-split of a fixed union and it is exchangeable with the null draws *by
+construction*, so P(p ≤ α) ≤ α exactly, for any population, with no modelling
+assumption at all. Over 200 draws on a population occupying both arms at
+chance-normalized occupancy 2.24, all 200 emitted, and the adjudicated tail
+rejected on **0.020** of them with the reciprocal tail at 0.070 — both inside
+one standard error of nominal at that replicate count, and the mean p is 0.555
+rather than the 0.5 an exactly-uniform p would give, which is the discreteness
+of a rank statistic over 100 values showing up as mild conservatism. None of
+that conservatism is ties: the fraction of runs where both tails read exactly
+1.0 is 0.000, so it is control rather than refusal — §6g's distinction, asked of
+a rank statistic. Every other validity number in this project is a
+rate under a modelled H0 family; this one's answer follows from the
+construction, so a failure would localise to the implementation rather than to
+the choice of family. It is deliberately run on a population that occupies both
+arms — the family that retired the previous null — because running it on a bland
+one would be an arm incapable of failing.
+
+**The verdict band, swept over the occupancy asymmetry and the precondition
+ratio.** No cell is dead in the strict sense — every one of the eighteen reached
+a verdict on at least one of its thirty draws — but the perfect-input
+counterfactual separates them sharply, and it separates them along the
+**precondition ratio** rather than along the asymmetry:
+
+| dim `U_pos` / dim(occupied) | perfect input reaches a verdict | P(TRACKS) across the row |
+|---|---|---|
+| 1 | 5/5 in every cell | 0.00 → 1.00 |
+| 2 | 2/5 to 5/5 | 0.00 → 0.60 |
+| 3 | **0/5 in five of six cells** | 0.00 → 0.12 |
+
+At ratio 3 the design is not merely underpowered: the strongest input the cell
+can be handed comes back INSUFFICIENT essentially every time, and the verdicts
+that do appear are stray draws at rates indistinguishable from the Type-I rate.
+That is the whole-gate version of the per-pair informative rate the registry
+already recorded as a precondition (1.000, 0.710, 0.320, 0.030 at ratios 1, 1.5,
+2, 3) — and it turns a rate into a statement about what the gate can return.
+
+It stops short of §6j's claim, and the field names say so. `CLAIM-C`'s band was
+settled by enumerating every concordance count, which *proves* the gate is a
+constant function there. This statistic has no such enumeration, so what is
+recorded is `no_verdict_in_any_draw` — a measured zero over a stated number of
+draws — and at ratio 3 even that is not reached, because stray draws do get
+through.
+
+**Refusals and branches.** Every refusal is reached by an input built to trigger
+it and re-scored to check it turns away nothing that could have cleared α;
+every verdict branch fires on the input built for it. The refusal this pass
+added is exercised there too, because a refusal no input in the record reaches
+is a refusal nothing has checked.
+
+### The defect this pass found in its own arm, which is the sixth session running
+
+The band sweep re-scores a "perfect input" in every cell to separate *the data
+was not strong enough here* from *nothing reached a verdict at all*. The first
+version read that counterfactual off a **single draw**, and marked cells as
+reaching no verdict whose own twenty-five draws reached one 28% of the time. It
+now runs five seeds and the field is called `no_verdict_in_any_draw`. Nothing
+failed; printing the table is what showed it — after §6g's rounding defect,
+§6h's audit arm, §6i's discarded-null power figures, §6k's α on a shoulder and
+§6l's empty drop slab.
+
+### The cost, and what carries forward
+
+`claims/calibration/steering_sign.json` went from about twenty-five minutes to
+about forty. Every gate run now computes two subspace nulls on the same draws so
+the comparison is paired; two `H0-both-arms` families were added; and a
+dedicated `reciprocal_tail` section measures the INVERTS branch at **four times
+the replicates** at one pair count, which closes the measurement §6k named as
+this construction's weakest — fifty runs resolve a rate to ±0.03 and cannot
+separate nominal from twice nominal. Against that, the calibration's null draws
+dropped from 99 to 49 (floor 0.02, still far under α), which is where most of
+the doubling was paid for.
+
+**And the higher-replicate section earned itself immediately.** The main
+validity table, at fifty runs a cell, shows one H0 cell with a reciprocal rate
+of 0.10 — twice nominal, and exactly the kind of number that reads as a defect.
+It is not one: at fifty runs a true 0.05 lands on 0.10 about once in ten cells
+and that table has twenty of them. The dedicated section measures the same
+family at two hundred runs and reports 0.015. §6k said fifty runs cannot
+separate nominal from twice nominal; this is what that looks like when it
+happens, and the reason the assertion on that table is now α plus one standard
+error of a proportion — derived from the replicate count — rather than a placed
+tolerance.
+
+**A separate cost, and it is the one to carry.** Both retired nulls' rates were
+quoted inline in the module's docstring, and cross-checking them against the
+regenerated artifact found three of them stale — a permutation figure that no
+section contains, a plateau rate off by 0.04, and an inversion rate that
+contradicted a second copy of itself eleven lines away. None of them was wrong
+when written; each stopped being about the artifact and nothing noticed, which
+is precisely what §6g item 4 records for §6f's two headline numbers. The module
+now carries **pointers rather than digits** for every rate an artifact holds,
+and says so where a reader would otherwise wonder why. That is the seventh
+instance of the pattern this pass — and the only one that was found by checking
+prose against a file rather than by looking at the file.
+
+**Still no data.** As in §§6e–6l, the apparatus exists and the artifacts do not:
+the gate needs activations and the Phase 2 attractive/repulsive projectors, and
+neither is in this repository. `claims/adjudications/` is empty and
+`null_construction` has still not frozen — which is the only reason the null
+could be replaced at all, and it is the second time that window has been used.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
