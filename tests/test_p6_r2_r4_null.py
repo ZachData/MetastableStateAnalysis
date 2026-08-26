@@ -500,9 +500,23 @@ class TestP6R4(unittest.TestCase):
 # Adjudication
 # ---------------------------------------------------------------------------
 
-class TestAdjudicationIsRefused(unittest.TestCase):
+class TestTheRegisteredExchangeableUnit(unittest.TestCase):
     """
-    No exchangeable unit is registered, so nothing here may enter an e-process.
+    The unit is `"model"` -- the author's decision, taken 2026-08-25 before any
+    p-value on real activations existed (POPPER_PLAN.md 6l).
+
+    What these pin is that registering it lifted exactly ONE refusal. The
+    module still refuses a result computed under the other unit, still declines
+    to adjudicate unless asked, and the ledger is still empty.
+
+    NOTE FOR ANYONE ADDING A TEST HERE. While no unit was registered, that
+    refusal was doubling as the safety catch that kept a synthetic p-value out
+    of P6-R2's real ledger slot: `adjudicate_p6_r2_r4(res, adjudicate=True)`
+    could not reach `core.adjudication`. It can now, P6-R2 is classified
+    `e-value` in the registry, and `adjudicate` refuses to overwrite a record
+    once written -- so an accidental fixture run would permanently occupy the
+    slot. Every call below that both asks to adjudicate AND uses the registered
+    unit passes an isolated `adjudications_dir`. Keep it that way.
     """
 
     def setUp(self):
@@ -515,42 +529,82 @@ class TestAdjudicationIsRefused(unittest.TestCase):
     def tearDown(self):
         R.N_NULL_DRAWS = self._old
 
-    def test_no_unit_is_registered(self):
-        self.assertIsNone(R.REGISTERED_EXCHANGEABLE_UNIT)
+    def test_the_registered_unit_is_model(self):
+        self.assertEqual(R.REGISTERED_EXCHANGEABLE_UNIT, "model")
+
+    def test_the_registered_unit_is_one_the_construction_can_express(self):
+        self.assertIn(R.REGISTERED_EXCHANGEABLE_UNIT, R.EXCHANGEABLE_UNITS)
 
     def test_does_not_adjudicate_unless_asked(self):
         """
-        The most important assertion in the file.
-
-        `core.adjudication.adjudicate` refuses to overwrite an existing record,
-        so one accidental fixture run would permanently occupy P6-R2's slot in
-        the real ledger with a synthetic p-value.
+        The most important assertion in the file, and more important than it
+        was: the unit refusal no longer stands behind it.
         """
         self.assertIsNone(R.adjudicate_p6_r2_r4(self.res))
 
-    def test_refuses_when_asked_while_no_unit_is_registered(self):
+    def test_a_layer_result_is_refused_on_the_unit(self):
+        """
+        The refusal that is now the live one. `unit=` chooses what to COMPUTE;
+        the module constant chooses what may enter an e-process, so a result
+        computed under the wrong unit is turned away rather than converted.
+        """
+        chs, rng = _albert_like()
+        old = R.N_NULL_DRAWS
+        R.N_NULL_DRAWS = 200
+        try:
+            res = R.p_value_p6_r2(
+                [_unit_vec(rng, 32) for _ in chs], chs, unit="layer")
+        finally:
+            R.N_NULL_DRAWS = old
         with self.assertRaises(R.NullRefused) as cm:
-            R.adjudicate_p6_r2_r4(self.res, adjudicate=True)
-        self.assertIn("exchangeable unit", str(cm.exception))
+            R.adjudicate_p6_r2_r4(res, adjudicate=True,
+                                  adjudications_dir=self._tmp_dir())
+        self.assertIn("'layer'", str(cm.exception))
+        self.assertIn("'model'", str(cm.exception))
 
-    def test_passing_a_unit_does_not_route_around_the_refusal(self):
-        # `unit=` chooses what to COMPUTE. What may enter an e-process is a
-        # module constant, so it cannot become a per-run choice.
-        for unit in R.EXCHANGEABLE_UNITS:
-            chs, rng = _albert_like()
-            old = R.N_NULL_DRAWS
-            R.N_NULL_DRAWS = 200
-            try:
-                res = R.p_value_p6_r2(
-                    [_unit_vec(rng, 32) for _ in chs], chs, unit=unit)
-            finally:
-                R.N_NULL_DRAWS = old
-            with self.assertRaises(R.NullRefused):
-                R.adjudicate_p6_r2_r4(res, adjudicate=True)
+    def test_unregistering_the_unit_restores_the_first_refusal(self):
+        """
+        The None branch is still reachable and still says what to do. Kept
+        exercised rather than deleted: a refusal nothing can trigger is
+        indistinguishable from one that was removed.
+        """
+        old = R.REGISTERED_EXCHANGEABLE_UNIT
+        R.REGISTERED_EXCHANGEABLE_UNIT = None
+        try:
+            with self.assertRaises(R.NullRefused) as cm:
+                R.adjudicate_p6_r2_r4(self.res, adjudicate=True,
+                                      adjudications_dir=self._tmp_dir())
+            self.assertIn("exchangeable unit", str(cm.exception))
+        finally:
+            R.REGISTERED_EXCHANGEABLE_UNIT = old
+
+    def test_the_registered_unit_now_reaches_the_ledger(self):
+        """
+        With the registered unit and `adjudicate=True`, the call now reaches
+        `core.adjudication` -- which is the point of registering it. Pinned
+        against an ISOLATED directory, and the real ledger is checked
+        separately below.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            rec = R.adjudicate_p6_r2_r4(self.res, adjudicate=True,
+                                        adjudications_dir=Path(d))
+            self.assertIsNotNone(rec)
+            self.assertEqual(rec["prediction_id"], "P6-R2")
+            self.assertIn("unit=model", rec["test_name"])
+            self.assertEqual(sorted(p.name for p in Path(d).glob("*.json")),
+                             ["P6-R2.json"])
 
     def test_the_ledger_is_still_empty(self):
         d = REPO / "claims" / "adjudications"
         self.assertEqual(sorted(p.name for p in d.glob("*.json")), [])
+
+    @staticmethod
+    def _tmp_dir():
+        import tempfile
+        # Refusals raise before anything is written, so this directory is only
+        # ever a place the call was NOT allowed to write to.
+        return Path(tempfile.mkdtemp())
 
 
 if __name__ == "__main__":

@@ -95,8 +95,10 @@ returns exactly the attainable floor and the intersection-union max is that same
 floor, so the unanimity axis does not bite on a unanimous input. That had never
 been checked.
 
-**But above `sign_homogeneity` 0.8125 at eight prompts the gate is a constant
-function.** The corrected-attainable-floor refusal fires on *every* input,
+**But above `sign_homogeneity` 0.7708 at eight prompts the gate is a constant
+function** (0.8125 as first measured; the band tightened on 2026-08-25 when the
+informative-row floor changed what "conditional on emission" conditions on —
+`POPPER_PLAN.md` §6l). The corrected-attainable-floor refusal fires on *every* input,
 including a perfect one, at every concordance count from 0 to 48 — so neither
 TRANSFERS nor FAILS-TO-TRANSFER is reachable and this claim's hard stop fires
 unconditionally there. That is not a Type-I defect: `sign_homogeneity` measures
@@ -108,9 +110,20 @@ one uniform direction that transfers.** Blog 1's phenomenology is the second
 kind.
 
 **Which makes it a requirement on the pilot, computed before it runs** — the
-same shape as `CLAIM-B`'s 19 control series below. At least 9 of the candidate's
-48 cells must dissent in sign, about 19%, or the gate cannot return a verdict at
-all. Under *independent* prompt signs homogeneity concentrates at 0.637 and the
+same shape as `CLAIM-B`'s 19 control series below. At least 11 of the candidate's
+48 cells must dissent in sign, about 23%, or the gate cannot return a verdict at
+all — 9 when first measured, raised with the band on 2026-08-25. A **second** requirement joined it on 2026-08-25 and it points the other
+way: at least five prompts must have usable metrics that do **not** split evenly.
+A prompt whose label flip does not change the statistic — every cell dropped, or
+an even number of usable cells split exactly half and half, which with six
+metrics is 3–3 and happens to 20/64 of rows under H0 — is enumerated through all
+2^n null patterns and never counted, so the floor is `2^-k` in the *k* prompts
+that can move. Before that was checked the gate could be handed a table
+**perfect on four prompts** and 3–3 on two, return p = 0.0769 (exactly that
+table's own floor) and report it as "not significant". Refusing there costs
+nothing: both tails share the floor, so nothing is turned away that could have
+cleared α, and measured across five H1 strengths P(TRANSFERS) is unchanged to
+four decimals. `POPPER_PLAN.md` §6l. Under *independent* prompt signs homogeneity concentrates at 0.637 and the
 refusal essentially never fires, so the band is not tight against chance; it is
 tight against a clean effect, which sits at exactly 1.0. More prompts do not
 move it. Whether pythia-1.4b's contrast dissents enough is an empirical fact
@@ -382,8 +395,21 @@ lifted.
 `H-OPERATOR` had **no live path to adjudication** while twelve of its fourteen
 predictions were dormant. It now has four: `P-T1` and `P-M1` on Phase 2d, and
 `P6-R2` and `P6-R4` on the rebuilt `p6_subspace/`. That is a live path in the
-sense of apparatus, not of evidence — no run artifacts exist here, and P6-R2/R4
-additionally refuse until an exchangeable unit is registered.
+sense of apparatus, not of evidence — no run artifacts exist here.
+
+**The exchangeable unit is registered, and it is `"model"` (2026-08-25).** It
+was deliberately left unregistered for two passes, because which unit may enter
+an e-process is a scientific decision of the same class as `CLAIM-C`'s criterion
+and taking it after seeing a p-value would void the guarantee. The author took
+it, before any p-value on real activations existed. What it was decided against
+is on the record: measured at 400 replicates, as the layers come to share one
+direction `"layer"` runs 0.0525 → 0.0800 → 0.2325 → 0.2800 while `"model"` holds
+at 0.045–0.0575 throughout, and under ALBERT's weight-tying the layers are as far
+from independent as they get. `"model"` is therefore the conservative choice at
+every point of that range rather than a trade. `POPPER_PLAN.md` §6l records it.
+`adjudicate_p6_r2_r4` now refuses a result computed under `"layer"` instead of
+refusing everything; it still adjudicates nothing, because there is still no
+run artifact.
 
 ## Claim boundaries, and the one that is not obvious
 
@@ -402,14 +428,15 @@ not yet built) and only for a prediction the evaluability audit (item B5)
 classified as `e-value`.
 
 Nine predictions are adjudicable as of 2026-08-25 — `P-S1`, `P-T1`, `P-M1`,
-`CLAIM-C`, `P6-R2`, `P6-R4`, `CLAIM-B`, `P-I1`, and now `P-ST1`. What is missing is
-data, not apparatus: no run artifacts exist in this repo, so all eight are
+`CLAIM-C`, `P6-R2`, `P6-R4`, `CLAIM-B`, `P-I1` and `P-ST1`. What is missing is
+data, not apparatus: no run artifacts exist in this repo, so all nine are
 validated on synthetic inputs with known answers. `CLAIM-C` was the first put
 through a **dry run on an input whose answer is known a priori** rather than
 only through unit tests (2026-08-25, `claims/audits/claim_c_dry_run.json`); that
 found an admissible band in its own input space that no test was failing on, and
-the same treatment is owed to the other seven. `P6-R2` and `P6-R4` carry one
-further refusal on top of that — their exchangeable unit is not registered, and
-`adjudicate_p6_r2_r4` raises rather than letting a caller supply it. `CLAIM-B`
-carries a different one: its two anchor arms refuse below 19 control series, so
-the gate as a whole refuses on any sweep that measures fewer.
+the same treatment is owed to the other eight. `P6-R2` and `P6-R4` no longer
+carry the extra refusal they used to: their exchangeable unit is registered as
+`"model"` (above), so `adjudicate_p6_r2_r4` now turns away only a result
+computed under the other unit. `CLAIM-B` carries a different one: its two anchor
+arms refuse below 19 control series, so the gate as a whole refuses on any sweep
+that measures fewer.

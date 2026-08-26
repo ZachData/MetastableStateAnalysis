@@ -47,6 +47,7 @@ from p1_mstate_tracking.replication_gate import (
     _metric_subsets,
     apply_homogeneity_correction,
     adjudicate_claim_c,
+    drop_bin_index,
     homogeneity_correction,
     load_homogeneity_curve,
     p_value_claim_c,
@@ -54,10 +55,20 @@ from p1_mstate_tracking.replication_gate import (
 )
 from tools.calibrate_claim_c_homogeneity import (
     CURVE_PATH,
+    DROP_BIN_UPPER_EDGES,
+    DROP_MECHANISMS,
+    DROP_RATES,
+    N_DROP_BINS,
     SubsetPTable,
     _configs,
+    _drop_configs,
+    _drop_mask,
     best_attainable_p,
     check_curve,
+    drop_bin_bounds,
+    drop_bin_index_vec,
+    informative_row_emission_probability,
+    trials_for,
     simulate_config,
 )
 
@@ -138,16 +149,19 @@ class TestFastPathMatchesTheGate:
         rng = np.random.default_rng(4242)
         prompts = _prompts(n_prompts)
         compared = 0
-        for _ in range(20):
+        for _ in range(40):
             ref = rng.choice([-1.0, 1.0], size=M)
             can = rng.choice([-1.0, 1.0], size=(n_prompts, M))
             res = _gate(np.tile(ref, (n_prompts, 1)), can, prompts)
 
             conc = can == ref[None, :]
+            usable = np.ones_like(conc, dtype=bool)
             fast_g = fast_l = 0.0
             for _, cols in SUBSETS:
-                sub = conc[:, list(cols)]
-                a, b = tables[len(cols)].lookup(sub.sum(axis=1)[None, :])
+                idx = list(cols)
+                a, b = tables[len(cols)].lookup(
+                    usable[:, idx].sum(axis=1)[None, :],
+                    conc[:, idx].sum(axis=1)[None, :])
                 fast_g, fast_l = max(fast_g, a[0]), max(fast_l, b[0])
 
             if res.get("p_value_uncorrected") is None:
@@ -157,15 +171,60 @@ class TestFastPathMatchesTheGate:
             compared += 1
         assert compared >= 10, "fixture drifted into refusing almost everything"
 
+    @pytest.mark.parametrize("n_prompts", [6, 8])
+    def test_p_values_agree_on_tables_with_cells_dropped(self, n_prompts):
+        """
+        THE ASSERTION THE DROP DIMENSION RESTS ON. The fast path was
+        generalised from 'histogram of concordant counts' to 'histogram of
+        SWINGS' so that unequal per-row usable counts could be tabulated at
+        all; this pins the generalisation against the gate's own enumeration on
+        holed tables, cell by cell, rather than against the complete-table case
+        it reduces to.
+        """
+        from core.nulls import p_from_null
+        from p1_mstate_tracking.replication_gate import _null_counts
+
+        t = SubsetPTable(n_prompts, M)
+        rng = np.random.default_rng(90210)
+        for _ in range(200):
+            valid = rng.integers(0, M + 1, size=n_prompts)
+            conc = np.array([rng.integers(0, v + 1) if v else 0 for v in valid])
+            null, _, _ = _null_counts(valid, conc, n_perm=0, seed=0)
+            want_g = p_from_null(float(conc.sum()), null, alternative="greater")
+            want_l = p_from_null(float(conc.sum()), null, alternative="less")
+            got_g, got_l = t.lookup(valid[None, :], conc[None, :])
+            assert got_g[0] == pytest.approx(want_g["p_value"], abs=1e-12)
+            assert got_l[0] == pytest.approx(want_l["p_value"], abs=1e-12)
+
     def test_the_exhaustive_table_reproduces_the_attainable_floor(self):
         """
         The smallest p a subset table can express is 2/(2^n + 1) -- the same
-        number the gate's own attainable-floor refusal is derived from.
+        number the gate's own attainable-floor refusal is derived from, and
+        reached only when every row is informative.
         """
         for n in (6, 8):
             t = SubsetPTable(n, M)
-            assert t.p_greater.min() == pytest.approx(best_attainable_p(n))
-            assert t.p_less.min() == pytest.approx(best_attainable_p(n))
+            perfect_v = np.full((1, n), M)
+            perfect_c = np.full((1, n), M)
+            g, _ = t.lookup(perfect_v, perfect_c)
+            _, l = t.lookup(perfect_v, np.zeros((1, n), dtype=int))
+            assert g[0] == pytest.approx(best_attainable_p(n))
+            assert l[0] == pytest.approx(best_attainable_p(n))
+
+    def test_a_row_that_cannot_move_raises_the_floor_in_the_table_too(self):
+        """
+        The fast path has to agree with the gate about uninformative rows, not
+        only about p-values on informative ones -- otherwise the curve would be
+        measured with the informative-row refusal in the wrong place.
+        """
+        n = 8
+        t = SubsetPTable(n, M)
+        for k in range(1, n + 1):
+            valid = np.full((1, n), M)
+            conc = np.full((1, n), M // 2)     # 3-3: swing zero
+            conc[0, :k] = M
+            g, _ = t.lookup(valid, conc)
+            assert g[0] == pytest.approx((2 ** (n - k) + 1) / (2 ** n + 1))
 
 
 # ---------------------------------------------------------------------------
@@ -191,12 +250,14 @@ class TestCurveIsInStepWithTheGate:
         # rates are rates under, and that they are conditional on emission.
         assert "per-metric shared sign propensity" in c["_h0_family"]
         assert "conditional on the gate EMITTING" in c["_conditioning"]
-        assert c["assumes_complete_table"] is True
+        assert c["assumes_complete_table"] is False
+        assert "second curve dimension" in c["_drop_family"]
+        assert c["drop_bin_upper_edges"] == list(DROP_BIN_UPPER_EDGES)
 
     def test_quantile_rows_are_monotone_in_level(self):
         c = load_homogeneity_curve()
         for row in c["curves"].values():
-            for b in row["bins"]:
+            for b in (b for slab in row["drop_bins"] for b in slab["bins"]):
                 for key in ("quantiles_greater", "quantiles_less"):
                     q = b[key]
                     if q is None:
@@ -212,7 +273,7 @@ class TestCurveIsInStepWithTheGate:
         gate refuses there.
         """
         c = load_homogeneity_curve()
-        top = c["curves"]["8"]["bins"][-1]
+        top = c["curves"]["8"]["drop_bins"][0]["bins"][-1]
         assert top["quantiles_greater"] is None
         assert not top["measured"]
 
@@ -282,32 +343,40 @@ class TestTheCorrectionNeverSharpens:
         """
         The substantive consequence, pinned rather than left implicit.
 
-        This table clears at alpha on the exact enumeration (p = 0.031) and
-        does not clear once corrected (0.105), because its prompts agree with
-        each other far more than independent rows would --
-        `sign_homogeneity` 0.8125, where the measured H0 rejection rate at
-        alpha is roughly twice alpha. Before the curve existed this run
-        reported TRANSFERS and the sweep proceeded; it now reports
-        INSUFFICIENT, which stops the sweep without recording a falsification.
+        This table clears at alpha on the exact enumeration (p = 0.019) and
+        does not clear once corrected (0.076), because its prompts agree with
+        each other more than independent rows would -- `sign_homogeneity`
+        0.75, where the measured H0 rejection rate at alpha is above alpha.
+        Before the curve existed this run reported TRANSFERS and the sweep
+        proceeded; it now reports INSUFFICIENT, which stops the sweep without
+        recording a falsification.
 
         That is the correction costing a verdict, which is what a correction
         that only ever blunts is FOR. A test suite in which the correction
         never changed an outcome would not be evidence that it works.
+
+        The fixture was replaced on 2026-08-25. The previous one sat at
+        homogeneity 0.8125, which the curve then still corrected; the cell-drop
+        regeneration moved the derived refusal down to the 0.775-0.800 bin at
+        eight prompts, so that table is now REFUSED rather than corrected and
+        pins a different branch. The band moved because the informative-row
+        floor changed what "conditional on emission" conditions on -- see
+        POPPER_PLAN.md 6l.
         """
         prompts = _prompts(8)
         ref = np.array([
-            [-1, 1, -1, -1, -1, 1], [1, -1, 1, -1, 1, -1],
-            [-1, 1, -1, -1, 1, -1], [1, 1, -1, -1, 1, 1],
-            [1, -1, 1, -1, 1, 1], [1, -1, -1, -1, 1, -1],
-            [-1, -1, -1, -1, 1, 1], [1, -1, -1, -1, 1, 1]], dtype=float)
+            [-1, 1, 1, 1, 1, -1], [1, -1, -1, 1, 1, -1],
+            [-1, 1, -1, 1, 1, -1], [-1, 1, 1, -1, 1, -1],
+            [1, -1, 1, -1, 1, 1], [-1, 1, -1, -1, 1, -1],
+            [-1, -1, -1, -1, 1, -1], [1, -1, -1, 1, -1, -1]], dtype=float)
         can = np.array([
-            [1, 1, -1, -1, -1, 1], [1, -1, 1, -1, 1, -1],
-            [1, -1, 1, -1, 1, -1], [1, -1, -1, -1, 1, -1],
-            [1, -1, 1, 1, -1, -1], [1, 1, 1, -1, 1, -1],
-            [1, -1, 1, -1, 1, 1], [1, -1, 1, -1, 1, -1]], dtype=float)
+            [-1, 1, 1, 1, 1, -1], [1, -1, -1, 1, 1, -1],
+            [-1, 1, -1, 1, 1, -1], [-1, 1, 1, -1, 1, -1],
+            [1, 1, -1, 1, 1, 1], [-1, 1, -1, -1, 1, -1],
+            [-1, -1, -1, -1, 1, -1], [1, 1, -1, 1, 1, 1]], dtype=float)
 
         r = _gate(ref, can, prompts)
-        assert r["sign_homogeneity"] == pytest.approx(0.8125)
+        assert r["sign_homogeneity"] == pytest.approx(0.75)
         assert r["p_value_uncorrected"] <= ALPHA < r["p_value"]
         assert r["homogeneity_corrected"] is True
         assert r["verdict"] == "INSUFFICIENT"
@@ -323,7 +392,7 @@ class TestTheCorrectionNeverSharpens:
         falsifying one running at the inflated rate -- which is the worse of
         the two to get wrong.
         """
-        corr = homogeneity_correction(8, 0.79)
+        corr = homogeneity_correction(8, 0.79, 0, 8 * M)
         assert corr["available"]
         floor = best_attainable_p(8)
         assert apply_homogeneity_correction(
@@ -356,15 +425,33 @@ class TestReaderIsConservative:
 # ---------------------------------------------------------------------------
 
 def _score(tables, table):
-    """(homogeneity, emitted, p_greater) for a batch of concordance tables."""
+    """
+    (homogeneity, emitted, p_greater) for a batch of COMPLETE concordance
+    tables.
+
+    `emitted` folds in the informative-row floor as well as the identical-rows
+    degeneracy: a prompt whose six metrics split three and three cannot move
+    the statistic, and a table with fewer than five that can is refused rather
+    than reported. Leaving it out would measure the corrected rate over draws
+    the gate never emits on, which is the conditioning error POPPER_PLAN.md 6g
+    and 6k both turn on.
+    """
+    n_prompts = table.shape[1]
     f = table.mean(axis=1)
     hom = np.maximum(f, 1.0 - f).mean(axis=1)
     refused = np.zeros(len(table), dtype=bool)
     pg = np.zeros(len(table))
+    floor = np.zeros(len(table))
     for _, cols in SUBSETS:
         sub = table[:, :, list(cols)]
         refused |= (sub == sub[:, :1, :]).all(axis=(1, 2))
-        pg = np.maximum(pg, tables[len(cols)].lookup(sub.sum(axis=2))[0])
+        valid = np.full(sub.shape[:2], sub.shape[2], dtype=np.int64)
+        conc = sub.sum(axis=2).astype(np.int64)
+        k = (np.abs(valid - 2 * conc) > 0).sum(axis=1)
+        floor = np.maximum(floor,
+                           (2.0 ** (n_prompts - k) + 1.0) / (2 ** n_prompts + 1.0))
+        pg = np.maximum(pg, tables[len(cols)].lookup(valid, conc)[0])
+    refused |= floor > ALPHA
     return hom, ~refused, pg
 
 
@@ -375,7 +462,7 @@ def _corrected_rate(n_prompts, hom, emitted, pg, alpha=ALPHA):
     for h, p, e in zip(hom, pg, emitted):
         if not e:
             continue
-        corr = homogeneity_correction(n_prompts, float(h))
+        corr = homogeneity_correction(n_prompts, float(h), 0, n_prompts * M)
         if not corr["available"]:
             continue
         if apply_homogeneity_correction(corr, floor, CLAIM_C_ALTERNATIVE) > alpha:
@@ -411,7 +498,8 @@ class TestCalibrationIsRestored:
         # The high-bias uniform configurations are where the inflation lives.
         for shape, b in [c for c in _configs(M) if c == ("uniform", 0.3)
                          or c == ("uniform", 0.35) or c == ("khot:5", 0.4)]:
-            res = simulate_config(self.N, M, SUBSETS, tables, shape, b, 6000, rng)
+            res = simulate_config(self.N, M, SUBSETS, tables, shape, b,
+                                  "none", 0.0, 15000, rng, ALPHA)
             emitted = res["emitted"]
             if emitted.sum() < 500:
                 continue
@@ -443,9 +531,9 @@ class TestCalibrationIsRestored:
         rng = np.random.default_rng(20260824)
         results = {}
         for rho in (0.4, 0.6, 0.8):
-            consensus = rng.random((8000, 1, M)) < 0.5
-            own = rng.random((8000, self.N, M)) < 0.5
-            take = rng.random((8000, self.N, 1)) < rho
+            consensus = rng.random((20000, 1, M)) < 0.5
+            own = rng.random((20000, self.N, M)) < 0.5
+            take = rng.random((20000, self.N, 1)) < rho
             table = np.where(take, np.broadcast_to(consensus, own.shape), own)
 
             hom, emitted, pg = _score(tables, table)
@@ -461,6 +549,217 @@ class TestCalibrationIsRestored:
                 f"rho={rho}: corrected rate {corrected:.4f} exceeds nominal on a "
                 f"family the curve was not fitted to")
             assert corrected < raw + 1e-9
+
+
+# ---------------------------------------------------------------------------
+# The cell-drop dimension
+# ---------------------------------------------------------------------------
+
+class TestDropBinLookupMatchesTheGate:
+    """
+    The calibration tool addresses forty thousand tables at a time, so it has a
+    vectorized copy of the gate's drop-bin rule. Two copies of one rule is the
+    same risk as this file's p-value fast path, and gets the same treatment.
+    """
+
+    @pytest.mark.parametrize("n_prompts", [6, 8, 12])
+    def test_every_dropped_cell_count_agrees(self, n_prompts):
+        total = n_prompts * M
+        for k in range(total + 1):
+            want = drop_bin_index(k, total, DROP_BIN_UPPER_EDGES)
+            got = int(drop_bin_index_vec(np.array([k]), total)[0])
+            got = None if got == -1 else got
+            assert got == want, f"{k}/{total} cells dropped"
+
+    def test_bin_zero_is_exactly_zero_and_not_a_tolerance(self):
+        """
+        One dropped cell out of 72 is 1.4%, which rounds to nothing at any
+        sensible tolerance. It still leaves bin 0: a complete table is the
+        design the gate was built on, and blurring the boundary would hide the
+        transition the dimension exists to measure.
+        """
+        assert drop_bin_index(0, 72, DROP_BIN_UPPER_EDGES) == 0
+        assert drop_bin_index(1, 72, DROP_BIN_UPPER_EDGES) == 1
+
+    def test_above_the_tabulated_ceiling_there_is_no_bin(self):
+        total = 48
+        top = DROP_BIN_UPPER_EDGES[-1]
+        assert drop_bin_index(int(total * top), total, DROP_BIN_UPPER_EDGES) is not None
+        assert drop_bin_index(total, total, DROP_BIN_UPPER_EDGES) is None
+
+    def test_the_bins_tile_the_range_without_gaps_or_overlap(self):
+        los_his = [drop_bin_bounds(i) for i in range(N_DROP_BINS)]
+        assert los_his[0] == (0.0, 0.0)
+        for (_, hi), (lo2, _) in zip(los_his[1:], los_his[2:]):
+            assert hi == lo2
+
+
+class TestDropMechanisms:
+    """
+    One rate reached three ways. The concentrated mechanisms have to stay
+    concentrated all the way up: a single metric column is 1/6 of the table and
+    a single prompt row is 1/n of it, so a mechanism pinned to one line would
+    saturate and leave the upper drop bins measured by `mcar` alone -- which is
+    the benign one, and would make 'the worst configuration' a worst over one
+    candidate exactly where the design is most stressed.
+    """
+
+    def test_each_mechanism_realises_the_rate_it_is_asked_for(self):
+        rng = np.random.default_rng(5)
+        for mech in DROP_MECHANISMS:
+            for rate in DROP_RATES:
+                m = _drop_mask(mech, rate, 8, M, 4000, rng)
+                assert m.mean() == pytest.approx(rate, abs=0.01), (mech, rate)
+
+    def test_the_concentrated_mechanisms_do_not_saturate(self):
+        """The failure this test exists for: `column` capped at 1/6 = 0.167 and
+        `row` at 1/8 = 0.125 when each was pinned to a single line."""
+        rng = np.random.default_rng(6)
+        for mech in ("column", "row"):
+            m = _drop_mask(mech, DROP_RATES[-1], 8, M, 4000, rng)
+            assert m.mean() > 1.0 / min(8, M) + 0.05, mech
+
+    def test_the_row_mechanism_actually_empties_rows(self):
+        """
+        The severe case, and the one the informative-row floor is about: a rate
+        above 1/n_prompts takes a whole prompt out, and an empty row cannot move
+        the statistic however the rest of the table falls.
+        """
+        rng = np.random.default_rng(7)
+        m = _drop_mask("row", 0.12, 8, M, 4000, rng)
+        assert m.all(axis=2).sum(axis=1).mean() > 0.5
+
+    def test_rate_zero_is_one_configuration_not_three(self):
+        cfgs = _drop_configs()
+        assert cfgs[0] == ("none", 0.0)
+        assert sum(1 for _, r in cfgs if r == 0.0) == 1
+
+
+class TestTheCurveCoversTheDropDimension:
+
+    def test_every_prompt_count_has_every_drop_slab(self):
+        c = load_homogeneity_curve()
+        for n, row in c["curves"].items():
+            assert len(row["drop_bins"]) == N_DROP_BINS, n
+            assert row["drop_bins"][0]["exact_zero"] is True
+            assert not any(sl["exact_zero"] for sl in row["drop_bins"][1:])
+
+    def test_no_slab_is_a_refusal_wearing_a_curves_clothes(self):
+        """
+        A drop slab with no measurement at all is one the gate refuses
+        outright, which would make the dimension look present while being
+        unusable. The artifact reports it directly rather than leaving it to be
+        found by a run getting turned away.
+        """
+        c = load_homogeneity_curve()
+        for n, row in c["curves"].items():
+            assert row["coverage"]["drop_slabs_with_no_measurement"] == [], (
+                f"n_prompts={n}: drop slabs "
+                f"{row['coverage']['drop_slabs_with_no_measurement']} carry no "
+                f"measurement, so the gate refuses in them whatever the data "
+                f"is. Raise the draw count (see `trials_for`) rather than "
+                f"filling across the drop dimension")
+
+    def test_the_slabs_are_measured_and_not_just_present(self):
+        """
+        Present is not enough: a slab held up by one measured bin and nineteen
+        filled from it is not a curve. The threshold is lower at six and seven
+        prompts because the informative-row floor refuses most H0 draws there,
+        which is the same fact `trials_for` sizes the run against.
+        """
+        c = load_homogeneity_curve()
+        for n, row in c["curves"].items():
+            for di, k in enumerate(
+                    row["coverage"]["n_measured_bins_per_drop_slab"]):
+                assert k >= 10, (
+                    f"n_prompts={n} drop slab {di} has only {k} measured "
+                    f"homogeneity bins of 20. Raise the draw count via "
+                    f"`trials_for` -- filling across the drop dimension is not "
+                    f"an option, the measurement says there is no direction")
+
+    def test_the_draw_count_is_derived_from_the_emission_probability(self):
+        """
+        Not one number everywhere. Every rate here is conditional on emission,
+        so a bin needs a fixed count of EMITTED draws; six prompts emit on 39%
+        of independent-row H0 draws and twelve on 99%, so drawing the same
+        number everywhere measures the small counts more coarsely. The scale is
+        `1 / P` rounded and capped, and P is closed-form.
+        """
+        c = load_homogeneity_curve()
+        a = c["alpha"]
+        assert (informative_row_emission_probability(6, M, a)
+                < informative_row_emission_probability(12, M, a))
+        for n, row in c["curves"].items():
+            want = trials_for(int(n), M, a, base=c["n_trials_base"])
+            assert row["n_trials_per_config"] == want, n
+            assert c["n_trials_per_config"][n] == want
+        assert (c["curves"]["6"]["n_trials_per_config"]
+                > c["curves"]["12"]["n_trials_per_config"])
+
+    def test_the_monotonicity_in_drops_is_recorded_and_not_assumed(self):
+        """
+        R is NOT monotone in the drop fraction -- coarsening and selection push
+        opposite ways -- which is exactly why nothing is filled across that
+        dimension. The measurement is stored so a later reader does not have to
+        take the fill rule on trust.
+        """
+        c = load_homogeneity_curve()
+        row = c["curves"]["8"]["drop_monotone_in_d"]
+        assert row["adjacent_pairs_compared"] > 0
+        assert (row["rate_rises_with_drops"] + row["rate_falls_with_drops"]
+                + row["neither"] == row["adjacent_pairs_compared"])
+        assert row["neither"] > 0, (
+            "if R were monotone in the drop fraction, filling across it would "
+            "be defensible and this dimension's fill rule should be revisited")
+
+
+class TestTheGateReadsTheRightSlab:
+
+    def test_a_complete_table_reads_the_exact_zero_slab(self):
+        corr = homogeneity_correction(8, 0.65, 0, 8 * M)
+        assert corr["available"] is True
+        assert corr["drop_bin_index"] == 0
+        assert corr["drop_bin_is_exact_zero"] is True
+
+    def test_one_dropped_cell_leaves_the_complete_table_slab(self):
+        corr = homogeneity_correction(8, 0.65, 1, 8 * M)
+        assert corr["available"] is True
+        assert corr["drop_bin_index"] == 1
+        assert corr["drop_bin_is_exact_zero"] is False
+
+    def test_too_many_dropped_cells_refuses_rather_than_reading_the_nearest(self):
+        """
+        The refusal the dimension adds. Before it existed this run silently read
+        the complete-table row -- rates of a different test -- and the record
+        said so in a note nobody had to act on.
+        """
+        corr = homogeneity_correction(8, 0.65, 8 * M // 2, 8 * M)
+        assert corr["available"] is False
+        assert "above the" in corr["reason"]
+        assert "reading the nearest row" in corr["reason"]
+
+    def test_the_gate_refuses_end_to_end_on_a_table_that_lost_too_much(self):
+        """
+        Not just the lookup: the whole gate, so the refusal reaches the verdict
+        rather than being swallowed on the way.
+        """
+        prompts = _prompts(8)
+        ref = _heterogeneous(8)
+        can = ref.copy().astype(float)
+        # Kill the sign of half the candidate's cells: an exactly-zero contrast
+        # is dropped as sign-undefined.
+        can[:4, :] = 0.0
+        r = _gate(ref, can, prompts)
+        assert r["p_value"] is None
+        assert r["verdict"] == "INSUFFICIENT"
+        assert r["falsified"] is False
+
+    def test_the_correction_carries_the_drop_provenance(self):
+        corr = homogeneity_correction(8, 0.65, 2, 8 * M)
+        assert corr["n_cells_dropped"] == 2
+        assert corr["n_cells_total"] == 8 * M
+        assert corr["drop_fraction"] == pytest.approx(2 / (8 * M))
+        assert corr["drop_lo"] <= corr["drop_fraction"] <= corr["drop_hi"]
 
 
 # ---------------------------------------------------------------------------
@@ -534,13 +833,14 @@ class TestRefusesRatherThanFallingBackToTheUncorrectedP:
         return p
 
     def test_a_missing_curve_refuses(self, tmp_path):
-        corr = homogeneity_correction(8, 0.6, path=tmp_path / "absent.json")
+        corr = homogeneity_correction(8, 0.6, 0, 8 * M,
+                                      path=tmp_path / "absent.json")
         assert corr["available"] is False
         assert "could not be read" in corr["reason"]
 
     def test_a_curve_at_another_schema_version_refuses(self, tmp_path):
         p = self._unreadable(tmp_path, {"schema_version": 999})
-        corr = homogeneity_correction(8, 0.6, path=p)
+        corr = homogeneity_correction(8, 0.6, 0, 8 * M, path=p)
         assert corr["available"] is False
         assert "schema_version" in corr["reason"]
 
@@ -548,12 +848,12 @@ class TestRefusesRatherThanFallingBackToTheUncorrectedP:
         p = self._unreadable(tmp_path, {
             "schema_version": HOMOGENEITY_CURVE_SCHEMA_VERSION,
             "metrics": ["only_one_metric"]})
-        corr = homogeneity_correction(8, 0.6, path=p)
+        corr = homogeneity_correction(8, 0.6, 0, 8 * M, path=p)
         assert corr["available"] is False
         assert "different metric set" in corr["reason"]
 
     def test_an_untabulated_prompt_count_refuses(self):
-        corr = homogeneity_correction(40, 0.6)
+        corr = homogeneity_correction(40, 0.6, 0, 40 * M)
         assert corr["available"] is False
         assert "no calibration curve is tabulated" in corr["reason"]
 
