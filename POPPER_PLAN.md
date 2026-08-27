@@ -2268,6 +2268,211 @@ wrote a comment about it, and this file reproduced it a third time anyway,
 caught by a smoke run taking implausibly long rather than by anything failing.
 A comment is not a guard.
 
+## 6o. CLAIM-B and P-I1 run on inputs whose answer is known, and the location that is partly the grid's (2026-08-27)
+
+`claims/EVALUABILITY.md`'s queue owes every converted row a run on an input
+whose correct verdict is fixed a priori. Four were done; these two are the
+fifth and sixth, and they share one estimator —
+`core/changepoint_colocation.py` — so one dry run covers both, which is why
+§6i built them together. `tools/dry_run_claim_b_p_i1.py` →
+`claims/audits/claim_b_p_i1_dry_run.json`, committed for the same reason as the
+other six artifacts — and it is the first whose generation cost is measured on
+every write and stored in the record as `elapsed_seconds`, rather than quoted in
+a docstring where §6n's had to be corrected in three places after a section was
+added.
+
+They came back differently, which is the second pass running where a shared
+construction is valid in one entry and not in the other.
+
+### A change location is partly a property of the sweep grid, and it was measured rather than argued
+
+The location of a series' change is the centroid of its change-mass profile: a
+weighted mean of the sweep's interval midpoints. So mass spread evenly over the
+sweep lands on the grid's **own midpoint** — exactly, by the definition of a
+mean, not as an approximation. Per-checkpoint noise puts rectified mass in every
+interval, so any real location is a **mixture** of where the series changed and
+where the grid's midpoint is, weighted by the noise's share of total change
+mass.
+
+That share is `n_intervals · σ · √2 / √(2π)` against the series' own range, so
+it grows with the interval count and **a denser sweep is worse rather than
+better.** The dry run predicts the centroid from those two numbers and measures
+it beside the prediction, over three grids and four noise levels; the worst
+disagreement is 0.061 in log10-step. At σ = 0.02 — the committed calibration's
+own noise level — a change planted at step ~1000 reads at step ~1000 on the
+25-checkpoint sweep and at step **~10,000** on the 154-checkpoint one, where 0 of
+300 draws put it inside the anchor window at all.
+
+**The module's power argument for change-mass weighting is correct and does not
+cover this.** §6i measured change mass holding power at 1.000 from 20 to 143
+checkpoints where rate weighting falls to 0.090. That measurement is about the
+**mutual** arm: both series are dragged the same way and the pairing null holds
+both marginals fixed, so the pull cancels. It does not transfer to an arm whose
+reference is a fixed window. §6n's question — does the statistic cancel a common
+elevation of both arms? — arriving as a common pull toward one point.
+
+### `CLAIM-B`'s anchor arms have it, and on the registered sweep it is total
+
+The registry names CLAIM-B's instrument as a "20-30 checkpoint cheap-tier
+sweep". That grid's uniform-profile midpoint is step **955** — inside CLAIM-B's
+own registered 512–2000 anchor window. So a series that changes **nowhere**
+receives the anchor arm's maximum statistic, and against controls that all carry
+a located change:
+
+| input | anchor arm rejects at α = 0.05 |
+|---|---|
+| change planted inside the window | **1.000** |
+| change somewhere else (H0) | 0.075 |
+| **no located change at all** | **1.000** |
+
+The arm's discriminating power there is **0.000**, measured as the difference
+between the first and third rows on the same cell against the same control
+draws. It is not a Type-I rate in the arm's own terms — a series with no change
+is outside the design's domain — which is exactly why it was invisible: no H0
+family anyone would write down contains it. §6m's eighth lesson, that the
+families a calibration measures are part of the measurement, arriving in the
+form where the missing family is not an H0 at all.
+
+**The rate is exactly `1/(k+1)`**, with *k* the number of controls that are
+themselves change-free, measured against that closed form at every *k* from 0 to
+19 (worst error 0.024). A change-free series beats every control that has a
+located change, because on a grid whose midpoint sits inside the window a real
+change is usually further from the window than the midpoint is; its only
+competition is the change-free controls.
+
+### The refusal, and the first attempt at it that the measurement threw out
+
+`anchor_arm` now refuses when the change-free reference lands **inside** the
+window, where it attains the arm's maximum. The condition reads the step grid
+against the registered window and nothing else — no controls, no observation, no
+α — so it is decidable **before a checkpoint is sampled**, which is where a
+requirement on a pilot belongs. Nothing is placed: the reference is the uniform
+profile on the grid, and "inside the window" is a comparison of two numbers the
+prediction already fixes.
+
+**It was first written as the reference's RANK among the controls, and that was
+wrong.** It looked right — rank it the way the observation is ranked, refuse
+when a change-free series would clear α — and the family sweep is what showed
+it is not: the reference is a *noiseless* profile and a realised change-free
+series is a noisy one, so the reference outranks even the change-free members of
+a family and its rank pegs at the floor whatever it is handed. Across the whole
+*k* = 0…19 sweep the rank is flat at **0.050–0.051** while the rate it was
+meant to track runs 1.000 → 0.050. A condition built on it cannot see the axis
+that matters. The sweep is in the artifact because it is what corrected the
+change, not as background.
+
+**Unlike §6l's and §6m's, this refusal costs verdicts, and the record says so
+rather than claiming otherwise.** §6l's informative-row refusal removed no
+reachable verdict and was measured at zero power cost; §6m's attainable-floor
+refusal could not cost one by construction. This one turns away inputs that
+would have rejected, including inputs whose change really is at the anchor — on
+the registered sweep it costs **1.000**, the whole arm. What it refuses is a
+verdict the design cannot **support** rather than one it could not **reach**,
+which is a third category this project had not used, and arm D re-scores the
+counterfactual in every cell instead of asserting the cost is small.
+
+**And what it deliberately does not refuse.** On a grid whose midpoint sits just
+*outside* the window the reference no longer attains the ceiling but a
+change-free series still clears α on about a quarter of draws — five times
+nominal, and unrefused.
+That residual is a rate rather than a ceiling, so it is reported beside every
+result and the analyst must state that the series under test has a located
+change, the same posture §6i takes toward the shared-unit-factor rate of 1.00
+that no null over the pairing can separate.
+
+### `P-I1` does not have it, and that is structural
+
+`P-I1` is the mutual arm alone: a difference of two locations, with a null that
+permutes the pairing and therefore keeps both series' real per-head locations on
+both sides of every draw. A pull that moves every location the same way is
+present in the null exactly as in the observation. Measured on the **registered
+cheap sweep** — the grid where the anchor arm fails hardest, because measuring
+it anywhere else would be choosing the easy case:
+
+| H0 family | mutual arm rejects |
+|---|---|
+| both series change nowhere | 0.065 |
+| one series changes nowhere | 0.045 |
+| both change, independent onsets | 0.055 |
+| both change early (common trend) | 0.050 |
+
+So `P-I1` is left alone, and the measurement is committed because leaving an
+entry unchanged is a decision — the precedent `P6-R4` set in §6n one pass
+earlier, now used twice.
+
+### What actually decides it, which sharpens §6n rather than repeating it
+
+§6n's taxonomy asked whether a statistic cancels a common **elevation** of both
+arms, and put `P6-R4` — one subspace against matched-dimension controls — in the
+safe column with "nothing to mismatch". This is the counter-example that says
+what that column requires:
+
+| entry | statistic | the quantity it degenerates on | matched on it? |
+|---|---|---|---|
+| `P6-R4` | one subspace against matched controls | subspace dimension | **yes**, by construction |
+| `CLAIM-B` anchor | one location against a fixed window | where the grid puts an unlocated profile | **no** |
+| `CLAIM-B`/`P-I1` mutual | a difference of two locations | — cancels | n/a |
+
+**An absolute quantity against matched controls is safe only when the controls
+are matched on the quantity the statistic degenerates on.** "Matched on what" has
+to name the statistic's degenerate input, and for the six queued rows
+`EVALUABILITY.md` lists that is a question to answer before the control is built
+rather than after a rate comes back.
+
+### Three smaller things, and the first is the sixth session running
+
+**CLAIM-B's falsification branch fires, and with no margin.** RE-ANCHORS needs
+unanimity in the reciprocal direction, and both anchor arms' reciprocal p is
+floored at `1/(n_controls + 1)` — which is *exactly* α at nineteen controls. So
+the branch requires the observed series to rank strictly worst of twenty in both
+anchor arms at once. It fires on most of the inputs built for it — the artifact
+carries the rate, which is a proportion over twenty draws — and a single control
+further from the window than the observation removes it. The nineteen
+control series `EVALUABILITY.md` records as the minimum for CO-LOCATES are
+therefore also the exact minimum for the falsifier, with no margin either way —
+a second reading of a number that has been in the registry since §6i.
+
+**Two rows of the known-answer arm asserted a draw rather than a gate**, and both
+were caught by running them. An H0 input reaches a verdict branch at α by
+design, so "five INSUFFICIENTs out of five" fails about once in ten runs, and did
+— on the anchor arms' H0 row at exactly the floor. Both rows now assert a rate
+with an allowance derived from α and the seed count. §6m recorded the same
+correction for `P-ST1`'s sharp input; writing it down did not prevent it.
+
+**And a falsy zero in this pass's own staleness check.** `check_record` guarded
+the discrimination with `(value or 1.0) > 0.10` — and the value it guards is a
+number that *should* be 0.0, which is falsy, so the fallback fired on the healthy
+artifact and reported the finding missing. Found by running `--check` on the file
+just generated, not by a test. That is the seventh session running in which
+looking at a generated output found something nothing was failing on, after
+§6g's rounding defect, §6h's audit arm, §6i's discarded-null power figures,
+§6k's α on a shoulder, §6l's empty drop slab, §6m's single-draw counterfactual
+and §6n's default argument.
+
+### What the pilot must now produce, and it is about which checkpoints rather than which metrics
+
+The fifth pre-computed requirement in five passes, and the first that constrains
+the **sweep grid** rather than the measurements taken on it: CLAIM-B's anchor
+arms need a sweep whose uniform-profile midpoint falls **outside** the 512–2000
+window. The registered 25-checkpoint cheap-tier sweep puts it at step 955 and
+fails; Pythia's full every-1000 schedule puts it at step 31496 and passes the
+condition — but at that density the noise share is 0.63 and a real change at the
+anchor is dragged out of the window, so the arm has no power there either. **The
+two failure modes are one mechanism read at two grid geometries, and the sweep
+that satisfies both is neither of the two the project has.** That is a design
+question for the pilot, computed before it runs, and it sits beside the
+nineteen-control requirement rather than replacing it.
+
+The coincidence that hid all of this is worth stating plainly: the cheap sweep's
+midpoint sits almost exactly where CLAIM-B's anchor is. On the one grid this
+construction was calibrated for, the bias is invisible **because it points at
+the answer**.
+
+**Still no data.** As in §§6e–6n, the apparatus exists and the artifacts do not:
+`INDEX.md` records the dense pilot sweep as not executed,
+`claims/adjudications/` is empty, and `null_construction` has still not frozen
+— the fourth time that window has been used.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

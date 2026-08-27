@@ -151,6 +151,53 @@ assumption, not a property of the code, so:
   family as the series under test really can co-locate by chance, and a design
   that says otherwise is a design whose null is too narrow.
 
+THE CENTROID IS PULLED TOWARD THE SWEEP GRID'S OWN MIDPOINT, AND ONLY ONE OF
+THE TWO ARMS CANCELS IT (2026-08-27)
+
+Found by the dry run these two entries were owed, on inputs whose correct
+verdict is fixed a priori: `tools/dry_run_claim_b_p_i1.py` ->
+`claims/audits/claim_b_p_i1_dry_run.json`, read by `POPPER_PLAN.md` 6o.
+
+A location is a weighted mean of interval midpoints, so mass spread evenly over
+the sweep lands on the grid's own midpoint EXACTLY. Per-checkpoint noise puts
+rectified mass in every interval, so every real location is a mixture of where
+the series changed and where the grid's midpoint is, weighted by the noise's
+share of total change mass -- and that share grows with the interval count,
+so a DENSER sweep is worse rather than better. `change_profile` reports
+`noise_mass_share_estimate` for it and `grid_reference_report` reports the
+midpoint; the artifact holds the measured accuracy of both.
+
+Property 2 above measured change mass holding power at 1.000 from 20 to 143
+checkpoints where rate weighting falls to 0.090. That measurement is correct
+and it is about the MUTUAL arm: both series are dragged the same way and the
+pairing null holds both marginals fixed, so the pull cancels. It does not
+transfer to the anchor arm, whose reference is a fixed window with nothing to
+cancel against -- 6n's taxonomy ("does the statistic cancel a common elevation
+of both arms?") arriving here as a common pull toward one point.
+
+The consequence is not a caveat, it is a verdict:
+
+* where the grid's midpoint falls INSIDE the anchor window -- which the
+  registered 25-checkpoint cheap-tier sweep does, at step ~955 against a window
+  of 512-2000 -- a series that changes NOWHERE receives the anchor arm's
+  maximum statistic. Against controls that all carry a located change its
+  rejection rate on a change-free input then EQUALS its rate on a perfectly
+  anchored one, and in general it is 1/(k+1) with k the number of controls
+  that are themselves change-free -- measured against that closed form at
+  every k. `anchor_arm` now refuses there, on the grid against the registered
+  window with nothing placed and no data read, so the condition is decidable
+  before a checkpoint is sampled;
+* where the grid's midpoint sits far ABOVE the window and the sweep is dense,
+  the same pull drags a real change at the anchor out of the window and the arm
+  loses its power instead. That is not a validity failure -- the gate returns
+  INSUFFICIENT, which is honest -- but it is why `grid_reference_report` is
+  carried in every record including `P-I1`'s, which has no anchor arm.
+
+The two failure modes are one mechanism read at two grid geometries, and the
+coincidence that hid it is that the cheap sweep's midpoint sits almost exactly
+where CLAIM-B's anchor is: on the grid this construction was calibrated for,
+the bias is invisible because it points at the answer.
+
 WHAT NO NULL HERE CAN DO
 
 The sweep's resolution is its intervals. Two changes inside one interval are
@@ -260,7 +307,9 @@ def change_profile(steps: Sequence[float], values: Sequence[float],
             "into one and moves the location it is trying to measure")
 
     sign = CHANGE_DIRECTIONS[direction]
-    mass = np.clip(sign * np.diff(v), 0.0, None)
+    d = sign * np.diff(v)
+    mass = np.clip(d, 0.0, None)
+    reverse = float(np.clip(-d, 0.0, None).sum())
     total = float(mass.sum())
     if total <= 0.0:
         raise ColocationRefused(
@@ -284,6 +333,80 @@ def change_profile(steps: Sequence[float], values: Sequence[float],
         "total_change": total,
         "n_intervals": int(w.size),
         "concentration": float(np.max(w)),
+        "reverse_change_mass": reverse,
+        # The share of this profile's mass that symmetric per-checkpoint noise
+        # put there, estimated with nothing placed and no model of the noise.
+        # Rectified noise is symmetric, so the mass moving AGAINST the
+        # registered direction is noise up to the series' own non-monotonicity,
+        # and the mass moving with it is signal plus an equal amount. It
+        # matters because that share is exactly the weight the centroid puts on
+        # the sweep grid's own midpoint rather than on the series (see
+        # `grid_reference_report`). REPORTED, NEVER SCORED, and never used to
+        # correct the centroid: `claims/audits/claim_b_p_i1_dry_run.json`
+        # measures where it is close and where it reads low.
+        "noise_mass_share_estimate": (reverse / total) if total > 0 else float("nan"),
+    }
+
+
+def diffuse_reference_profile(steps: Sequence[float]) -> dict:
+    """
+    The change-mass profile of a series with NO located change: uniform over
+    the sweep's intervals. A property of the STEP GRID and of nothing else.
+
+    It exists because it is the profile a centroid is pulled toward. A change
+    location is a weighted mean of interval midpoints, so mass spread evenly
+    over the grid places the location at the grid's own midpoint -- not as an
+    approximation but exactly. Any series whose change mass is partly noise is
+    therefore a mixture of its real location and this one, weighted by the
+    noise's share of the mass (`change_profile`'s
+    `noise_mass_share_estimate`).
+
+    `change_profile` already refuses the fully degenerate end -- no change in
+    the registered direction at all -- on the ground that "a uniform profile
+    would report the change as spread evenly over training rather than as
+    absent". That refusal fires only at exactly zero total change, which noisy
+    data never reaches. This function is what lets the arms say where that end
+    actually SITS on a given grid, which is the part that turned out to matter.
+    """
+    x = interval_midpoints(steps)
+    w = np.full(x.size, 1.0 / x.size)
+    centroid = float(np.sum(w * x))
+    return {
+        "weights": w,
+        "x": x,
+        "direction": None,
+        "centroid_log_step": centroid,
+        "centroid_step": float(10.0 ** centroid - 1.0),
+        "dispersion_log_step": float(np.sqrt(np.sum(w * (x - centroid) ** 2))),
+        "n_intervals": int(x.size),
+    }
+
+
+def grid_reference_report(steps: Sequence[float]) -> dict:
+    """
+    Where this sweep's grid puts a series that changes nowhere in particular.
+
+    Carried in every record, `P-I1`'s included, because it is one number that
+    a reader needs to interpret any location this construction reports and it
+    costs nothing to compute. What it means for a given arm differs, and the
+    arms say so themselves: the mutual arm cancels this pull (both series are
+    dragged the same way and the pairing null holds both marginals fixed) and
+    the anchor arm cannot, because its reference is a fixed window rather than
+    another series.
+    """
+    ref = diffuse_reference_profile(steps)
+    return {
+        "uniform_profile_centroid_log_step": ref["centroid_log_step"],
+        "uniform_profile_centroid_step": ref["centroid_step"],
+        "uniform_profile_dispersion_log_step": ref["dispersion_log_step"],
+        "n_intervals": ref["n_intervals"],
+        "_note": (
+            "the location a series with NO located change receives on this "
+            "grid, exactly. A centroid is a weighted mean of interval "
+            "midpoints, so evenly spread mass lands on the grid's own "
+            "midpoint; a partly-noisy series is a mixture of its real location "
+            "and this one. The mutual arm cancels the pull and the anchor arm "
+            "does not -- see `anchor_arm`'s diffuse_reference block."),
     }
 
 
@@ -660,6 +783,46 @@ def anchor_arm(steps: Sequence[float],
     sweep that measures six metrics cannot adjudicate this arm however clean the
     result is. That is a statement about what the pilot must measure, made
     before it runs, which is the whole point of computing a floor first.
+
+    THE SECOND REFUSAL, AND IT IS ABOUT THE SWEEP GRID RATHER THAN THE CONTROLS
+
+    A change location is a weighted mean of interval midpoints, so a series
+    whose change mass is spread over the sweep lands on the grid's own midpoint
+    -- `diffuse_reference_profile`. If that point falls inside the registered
+    window, a series that changes NOWHERE receives this arm's maximum statistic,
+    and a rejection no longer distinguishes "the change is at the anchor" from
+    "there is no located change". Measured on the registered 25-checkpoint
+    cheap-tier sweep against controls that are all localized away from the
+    window, the two rates coincide exactly and the arm's discriminating power is
+    zero; `claims/audits/claim_b_p_i1_dry_run.json` holds the numbers and
+    `POPPER_PLAN.md` 6o reads them.
+
+    So this arm refuses when the change-free reference lands INSIDE the window,
+    where it attains the arm's maximum statistic exactly. Nothing is placed and
+    no data is read: the condition is the step grid against the registered
+    window, decidable before a checkpoint is measured, which is where a
+    requirement on a pilot belongs.
+
+    WHAT THAT CONDITION IS NOT, WHICH WAS MEASURED RATHER THAN ARGUED. It is
+    not the reference's RANK among the controls. The reference is a noiseless
+    profile and a realised change-free series is a noisy one, so the reference
+    outranks even the change-free members of a control family and its rank
+    pegs at the floor whichever family it is handed -- it cannot see the
+    composition, and a condition built on it refuses a family it should not.
+    What the composition decides is a rate rather than a ceiling: the arm
+    clears alpha on a change-free series at exactly 1/(k+1), k the number of
+    controls that are themselves change-free, measured against that closed form
+    at every k from 0 to 19. So the rank is REPORTED and the ceiling is
+    refused.
+
+    UNLIKE THE FLOOR REFUSALS, THIS ONE COSTS VERDICTS, AND SAYING SO IS THE
+    POINT. `POPPER_PLAN.md` 6l's informative-row refusal removed no reachable
+    verdict and was measured to cost zero power; 6m's attainable-floor refusal
+    could not by construction. This one turns away inputs that would have
+    rejected -- including inputs whose change really is at the anchor. What it
+    refuses is a VERDICT THE DESIGN CANNOT SUPPORT rather than one it could not
+    reach, which is a third category. The dry run re-scores the counterfactual
+    and records the cost rather than claiming there is none.
     """
     s = _checked_steps(steps)
     if not controls:
@@ -693,7 +856,33 @@ def anchor_arm(steps: Sequence[float],
         control_stats.append(float(np.mean([anchor_statistic(p, window) for p in cp])))
         names.append(name)
 
+    # The change-free reference. Checked BEFORE the control statistics are
+    # ranked and before the floor, because it depends on neither: it reads the
+    # step grid against the registered window and nothing else, so a caller
+    # cannot move it by choosing what to test or how many controls to pass --
+    # and the message they get on a grid that cannot carry this arm names the
+    # grid rather than whichever other requirement they happened to miss first.
+    ref = diffuse_reference_profile(s)
+    ref_stat = anchor_statistic(ref, window)
+    if ref_stat == 0.0:
+        raise ColocationRefused(
+            f"arm {arm_name!r}: on this grid a series with NO located change "
+            f"lands at step {ref['centroid_step']:.0f}, which is INSIDE the "
+            f"registered window {window[0]:.0f}-{window[1]:.0f} -- so it "
+            f"attains this arm's maximum statistic exactly, and the ceiling "
+            f"the arm ranks against is shared between 'the change is at the "
+            f"anchor' and 'there is no located change'. Measured, a change-free "
+            f"series then clears alpha at 1/(k+1) where k is how many controls "
+            f"are themselves change-free: 1.000 when none is. The condition is "
+            f"the sweep grid against the registered window and nothing else, so "
+            f"it is decidable before a checkpoint is measured -- which is where "
+            f"it belongs, as a requirement on which checkpoints the pilot "
+            f"samples.")
+
     res = _control_stats(observed, control_stats, alpha)
+    cs = np.asarray(control_stats, dtype=np.float64)
+    p_ref = float((np.sum(cs >= ref_stat) + 1) / (cs.size + 1))
+
     res.update({
         "arm": arm_name,
         "kind": "matched-control-series",
@@ -704,6 +893,27 @@ def anchor_arm(steps: Sequence[float],
         "control_names": names,
         "distance_to_window_log_step": -observed,
         "centroids_step": [float(10.0 ** p["centroid_log_step"] - 1.0) for p in prof],
+        "dispersion_log_step": [p["dispersion_log_step"] for p in prof],
+        "noise_mass_share_estimate": [p["noise_mass_share_estimate"] for p in prof],
+        "diffuse_reference": {
+            "centroid_log_step": ref["centroid_log_step"],
+            "centroid_step": ref["centroid_step"],
+            "statistic": float(ref_stat),
+            "p_value": p_ref,
+            "inside_window": bool(ref_stat == 0.0),
+            "_note": (
+                "where a series with NO located change lands on this grid, and "
+                "how it ranks against these controls. The arm REFUSES when the "
+                "reference is inside the window, because it then attains the "
+                "arm's maximum. Outside the window it is reported and not "
+                "acted on, because the residual cost is a RATE and not a "
+                "ceiling: a change-free series clears alpha at 1/(k+1) with k "
+                "the number of controls that are themselves change-free, so a "
+                "reference ranking near the top is an arm to discount rather "
+                "than one to turn away, and the analyst must say that the "
+                "series under test has a located change. Same posture, and the "
+                "same reason, as `shared_unit_factor_diagnostic`."),
+        },
     })
     return res
 
@@ -881,10 +1091,14 @@ def p_value_claim_b(steps: Sequence[float],
     CLAIM-B's p-value: unanimity over the mutual arm and the two anchor arms.
 
     Returns `p_value` None with a `reason` rather than a number the design
-    cannot support. The likeliest refusal is the anchor arms' attainable floor
-    -- 19 control series are needed at alpha = 0.05 and a cheap-tier sweep
-    measuring six metrics has six. That is a requirement on the pilot, computed
-    before it runs; see `anchor_arm`.
+    cannot support. Two refusals are likely and BOTH are requirements on the
+    pilot computed before it runs, so a reader should expect this gate to turn
+    a cheap-tier sweep away rather than to score it. The anchor arms' attainable
+    floor needs 19 control series at alpha = 0.05 and a sweep measuring six
+    metrics has six. And on the 20-30 checkpoint grid the registry names as this
+    prediction's instrument, a series with no located change lands INSIDE the
+    512-2000 window, so the anchor arms refuse on the grid before the control
+    count is even reached. See `anchor_arm` for both.
     """
     a = _alpha() if alpha is None else float(alpha)
     out: dict = {
@@ -896,12 +1110,14 @@ def p_value_claim_b(steps: Sequence[float],
         "unit": CLAIM_B_UNIT,
         "control_family": CLAIM_B_ANCHOR_CONTROL_FAMILY,
         "spacing": None,
+        "grid_reference": None,
         "p_value": None,
         "p_reciprocal": None,
         "reason": None,
     }
     try:
         out["spacing"] = spacing_change_report(steps)
+        out["grid_reference"] = grid_reference_report(steps)
         arms = claim_b_arms(steps, energy_break, fiedler, anchor_controls,
                             anchor_control_directions,
                             control_family=control_family, alpha=a, seed=seed)

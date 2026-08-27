@@ -62,6 +62,18 @@ SWEEP = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 3000, 4000,
 
 SMALL = [0, 1, 10, 100, 1000, 10000]
 
+# The grid the ANCHOR arm's tests run on, and it is not `SWEEP`. A change
+# location is a weighted mean of interval midpoints, so a series with no
+# located change lands on the grid's own midpoint -- and `SWEEP`'s midpoint is
+# step 955, inside CLAIM-B's 512-2000 window. On that grid the anchor arm
+# cannot tell "the change is at the anchor" from "there is no change", and
+# `anchor_arm` now refuses rather than returning a verdict it cannot support
+# (`TestTheDiffuseReferenceRefusal` below, `POPPER_PLAN.md` 6o). Pythia's full
+# every-1000 release schedule puts the midpoint at step 31496, well outside,
+# while keeping intervals 10 and 11 -- 512->1000 and 1000->2000 -- inside it.
+ANCHOR_SWEEP = sorted(set([0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+                          + list(range(1000, 144000, 1000))))
+
 
 def _step_curve(steps, jump_at_index, direction=+1.0):
     """A series that changes in exactly one interval and nowhere else."""
@@ -332,7 +344,7 @@ class TestPairingNull:
 # ---------------------------------------------------------------------------
 
 def _controls(n, jumps=None, steps=None):
-    s = SWEEP if steps is None else steps
+    s = ANCHOR_SWEEP if steps is None else steps
     # Default control jumps avoid intervals 10 and 11 -- the only two whose
     # midpoints lie inside the anchor window -- so the control population is a
     # null for "the change is in the window" rather than a sample of it.
@@ -355,13 +367,13 @@ class TestAnchorArm:
         """
         ctrl, dirs = _controls(18)
         with pytest.raises(C.ColocationRefused, match="attainable floor"):
-            C.anchor_arm(SWEEP, [_step_curve(SWEEP, 11)], "rise",
+            C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 11)], "rise",
                          C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
                          alpha=0.05, unit_name="layer", arm_name="anchor")
 
     def test_nineteen_controls_is_the_first_workable_anchor_arm(self):
         ctrl, dirs = _controls(19)
-        r = C.anchor_arm(SWEEP, [_step_curve(SWEEP, 11)], "rise",
+        r = C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 11)], "rise",
                          C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
                          alpha=0.05, unit_name="layer", arm_name="anchor")
         assert r["attainable_floor"]["control_null_floor"] == pytest.approx(1 / 20)
@@ -370,14 +382,14 @@ class TestAnchorArm:
 
     def test_a_series_far_from_the_window_does_not_clear(self):
         ctrl, dirs = _controls(19)
-        r = C.anchor_arm(SWEEP, [_step_curve(SWEEP, 0)], "rise",
+        r = C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 0)], "rise",
                          C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
                          alpha=0.05, unit_name="layer", arm_name="anchor")
         assert r["p_value"] > 0.05
 
     def test_refuses_an_empty_control_set(self):
         with pytest.raises(C.ColocationRefused, match="no control series"):
-            C.anchor_arm(SWEEP, [_step_curve(SWEEP, 11)], "rise",
+            C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 11)], "rise",
                          C.CLAIM_B_ANCHOR_WINDOW, {}, {},
                          alpha=0.05, unit_name="layer", arm_name="anchor")
 
@@ -385,24 +397,142 @@ class TestAnchorArm:
         ctrl, dirs = _controls(19)
         dirs.pop("ctrl3")
         with pytest.raises(C.ColocationRefused, match="registered change direction"):
-            C.anchor_arm(SWEEP, [_step_curve(SWEEP, 11)], "rise",
+            C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 11)], "rise",
                          C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
                          alpha=0.05, unit_name="layer", arm_name="anchor")
 
     def test_refuses_a_control_covering_different_units(self):
         ctrl, dirs = _controls(19)
-        ctrl["ctrl5"] = [_step_curve(SWEEP, 4), _step_curve(SWEEP, 6)]
+        ctrl["ctrl5"] = [_step_curve(ANCHOR_SWEEP, 4), _step_curve(ANCHOR_SWEEP, 6)]
         with pytest.raises(C.ColocationRefused, match="not matched"):
-            C.anchor_arm(SWEEP, [_step_curve(SWEEP, 11)], "rise",
+            C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 11)], "rise",
                          C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
                          alpha=0.05, unit_name="layer", arm_name="anchor")
 
     def test_refuses_when_every_control_gives_the_same_statistic(self):
         ctrl, dirs = _controls(19, jumps=[11] * 19)
         with pytest.raises(C.ColocationRefused, match="identical statistic"):
+            C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 11)], "rise",
+                         C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
+                         alpha=0.05, unit_name="layer", arm_name="anchor")
+
+
+class TestTheDiffuseReferenceRefusal:
+    """
+    The defect the dry run found, and the refusal that answers it.
+
+    A change location is a weighted mean of interval midpoints, so a series
+    whose change mass is spread over the sweep lands on the grid's own midpoint
+    exactly. `SWEEP` -- CLAIM-B's REGISTERED 25-checkpoint cheap-tier sweep --
+    puts that midpoint at step 955, inside the 512-2000 window, so a series
+    that changes nowhere receives the anchor arm's maximum statistic.
+    `POPPER_PLAN.md` 6o; `claims/audits/claim_b_p_i1_dry_run.json`.
+    """
+
+    def test_a_series_with_no_change_lands_on_the_grid_midpoint(self):
+        """Exactly, not approximately: it is the definition of the centroid."""
+        ref = C.diffuse_reference_profile(SWEEP)
+        x = C.interval_midpoints(SWEEP)
+        assert ref["centroid_log_step"] == pytest.approx(float(np.mean(x)))
+        assert C.anchor_statistic(ref, C.CLAIM_B_ANCHOR_WINDOW) == 0.0
+
+    def test_the_registered_cheap_sweep_puts_that_midpoint_in_the_window(self):
+        r = C.grid_reference_report(SWEEP)
+        lo, hi = C.CLAIM_B_ANCHOR_WINDOW
+        assert lo < r["uniform_profile_centroid_step"] < hi
+
+    def test_the_arm_refuses_on_the_registered_cheap_sweep(self):
+        ctrl, dirs = _controls(19, steps=SWEEP)
+        with pytest.raises(C.ColocationRefused, match="NO located change"):
             C.anchor_arm(SWEEP, [_step_curve(SWEEP, 11)], "rise",
                          C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
                          alpha=0.05, unit_name="layer", arm_name="anchor")
+
+    def test_and_the_whole_gate_refuses_with_it(self):
+        """
+        Unanimity, so the anchor arm takes CLAIM-B down with it -- on the sweep
+        the registry names as this prediction's instrument, and on an input
+        whose mutual arm is perfect.
+        """
+        n = 8
+        ej = [11 + (i % 2) for i in range(n)]
+        e = [_step_curve(SWEEP, j) for j in ej]
+        f = [-_step_curve(SWEEP, j) for j in ej]
+        ctrl, dirs = _controls(19, steps=SWEEP)
+        ctrl = {k: v * n for k, v in ctrl.items()}
+        r = C.p_value_claim_b(SWEEP, e, f, ctrl, dirs,
+                              control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
+                              alpha=0.05)
+        assert r["p_value"] is None
+        assert "NO located change" in r["reason"]
+        assert r["verdict"] == "INSUFFICIENT"
+
+    def test_it_does_not_fire_where_the_arm_can_discriminate(self):
+        """
+        The other direction, which is the one 6h's audit arm failed: a refusal
+        that fires everywhere is not a check. On a grid whose midpoint is
+        outside the window the reference ranks last and the arm emits.
+        """
+        ctrl, dirs = _controls(19)
+        r = C.anchor_arm(ANCHOR_SWEEP, [_step_curve(ANCHOR_SWEEP, 11)], "rise",
+                         C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
+                         alpha=0.05, unit_name="layer", arm_name="anchor")
+        assert r["p_value"] <= 0.05
+        assert r["diffuse_reference"]["p_value"] > 0.05
+        assert r["diffuse_reference"]["inside_window"] is False
+
+    def test_the_condition_is_the_grid_and_not_the_control_family(self):
+        """
+        Measured rather than argued, and it is the correction this pass had to
+        make to its own first attempt. The reference is a NOISELESS uniform
+        profile and a realised change-free series is a noisy one, so the
+        reference outranks even the change-free members of a family and its
+        rank pegs at the floor whichever family it is handed. A refusal built
+        on that rank cannot see the composition. What the composition decides
+        is a RATE -- 1/(k+1) in the change-free controls, in
+        `claims/audits/claim_b_p_i1_dry_run.json` -- so the rank is reported
+        and the ceiling is what is refused.
+        """
+        ctrl, dirs = _controls(19, steps=SWEEP)
+        for i in range(6):                # six controls that change everywhere
+            ctrl[f"ctrl{i}"] = [np.arange(len(SWEEP), dtype=float)]
+        with pytest.raises(C.ColocationRefused, match="NO located change"):
+            C.anchor_arm(SWEEP, [_step_curve(SWEEP, 11)], "rise",
+                         C.CLAIM_B_ANCHOR_WINDOW, ctrl, dirs,
+                         alpha=0.05, unit_name="layer", arm_name="anchor")
+
+    def test_the_reference_outscores_every_realised_change_free_series(self):
+        """
+        Which is why its RANK could not have carried the refusal. The reference
+        is noiseless, so it sits at the ceiling exactly; a realised change-free
+        series scatters below it. A rank-based condition therefore pegs at the
+        floor whether or not the control family contains change-free members,
+        and cannot see the composition that actually sets the rate.
+        """
+        rng = np.random.default_rng(0)
+        ref = C.anchor_statistic(C.diffuse_reference_profile(SWEEP),
+                                 C.CLAIM_B_ANCHOR_WINDOW)
+        realised = [
+            C.anchor_statistic(
+                C.change_profile(SWEEP, 0.02 * rng.standard_normal(len(SWEEP)),
+                                 "rise"),
+                C.CLAIM_B_ANCHOR_WINDOW)
+            for _ in range(200)]
+        assert ref == 0.0
+        assert max(realised) <= ref
+        assert np.mean(np.asarray(realised) < ref) > 0.2
+
+    def test_the_noise_share_diagnostic_is_zero_on_a_monotone_series(self):
+        p = C.change_profile(SWEEP, _step_curve(SWEEP, 11), "rise")
+        assert p["reverse_change_mass"] == 0.0
+        assert p["noise_mass_share_estimate"] == 0.0
+
+    def test_and_rises_with_per_checkpoint_noise(self):
+        rng = np.random.default_rng(0)
+        clean = C.change_profile(SWEEP, _logistic(SWEEP, 1000), "rise")
+        noisy = C.change_profile(
+            SWEEP, _logistic(SWEEP, 1000, rng=rng, noise=0.05), "rise")
+        assert noisy["noise_mass_share_estimate"] > clean["noise_mass_share_estimate"]
 
 
 class TestAttainableFloorReport:
@@ -475,12 +605,12 @@ def _claim_b_inputs(n_layers=8, energy_jumps=None, fiedler_jumps=None,
                     n_controls=19):
     ej = energy_jumps or [11 + (i % 2) for i in range(n_layers)]
     fj = fiedler_jumps or list(ej)
-    energy = [_step_curve(SWEEP, j) for j in ej]
-    fiedler = [-_step_curve(SWEEP, j) for j in fj]          # a DROP
+    energy = [_step_curve(ANCHOR_SWEEP, j) for j in ej]
+    fiedler = [-_step_curve(ANCHOR_SWEEP, j) for j in fj]   # a DROP
     _outside = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19,
                 20, 21, 22, 23]
     js = [_outside[i % len(_outside)] for i in range(n_controls)]
-    ctrl = {f"ctrl{i}": [_step_curve(SWEEP, js[i])] * n_layers
+    ctrl = {f"ctrl{i}": [_step_curve(ANCHOR_SWEEP, js[i])] * n_layers
             for i in range(n_controls)}
     dirs = {f"ctrl{i}": "rise" for i in range(n_controls)}
     return energy, fiedler, ctrl, dirs
@@ -496,7 +626,7 @@ class TestClaimBGate:
         as P6-R2's on a caller-supplied exchangeable unit.
         """
         e, f, ctrl, dirs = _claim_b_inputs()
-        r = C.p_value_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.p_value_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                               control_family="whatever was lying around",
                               alpha=0.05)
         assert r["p_value"] is None
@@ -505,7 +635,7 @@ class TestClaimBGate:
 
     def test_end_to_end_co_location(self):
         e, f, ctrl, dirs = _claim_b_inputs()
-        r = C.p_value_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.p_value_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                               control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                               alpha=0.05)
         assert r["reason"] is None
@@ -520,7 +650,7 @@ class TestClaimBGate:
         the anchor arms are a separate requirement the statement also makes."""
         e, f, ctrl, dirs = _claim_b_inputs(energy_jumps=[0, 1] * 4,
                                            fiedler_jumps=[0, 1] * 4)
-        r = C.p_value_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.p_value_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                               control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                               alpha=0.05)
         assert r["arms"][0]["p_value"] <= 0.05            # mutual arm is perfect
@@ -529,7 +659,7 @@ class TestClaimBGate:
 
     def test_the_anchor_arms_refuse_on_a_six_metric_sweep(self):
         e, f, ctrl, dirs = _claim_b_inputs(n_controls=6)
-        r = C.p_value_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.p_value_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                               control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                               alpha=0.05)
         assert r["p_value"] is None
@@ -537,7 +667,7 @@ class TestClaimBGate:
 
     def test_the_record_carries_the_spacing_report_it_claims_not_to_need(self):
         e, f, ctrl, dirs = _claim_b_inputs()
-        r = C.p_value_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.p_value_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                               control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                               alpha=0.05)
         sp = r["spacing"]
@@ -559,7 +689,7 @@ class TestClaimBAdjudication:
 
     def test_opt_in_writes_nothing_by_default(self, tmp_path):
         e, f, ctrl, dirs = self._ok()
-        r = C.adjudicate_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudications_dir=tmp_path)
         assert r["adjudication"] is None
@@ -567,7 +697,7 @@ class TestClaimBAdjudication:
 
     def test_emits_into_the_ledger_when_asked(self, tmp_path):
         e, f, ctrl, dirs = self._ok()
-        r = C.adjudicate_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudicate=True,
                                  adjudications_dir=tmp_path)
@@ -581,7 +711,7 @@ class TestClaimBAdjudication:
         """P-I1 runs the same estimator under a different claim. A reader of
         the ledger must not take their product for two independent factors."""
         e, f, ctrl, dirs = self._ok()
-        r = C.adjudicate_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudicate=True,
                                  adjudications_dir=tmp_path)
@@ -591,7 +721,7 @@ class TestClaimBAdjudication:
 
     def test_a_refused_gate_writes_nothing_even_when_asked(self, tmp_path):
         e, f, ctrl, dirs = _claim_b_inputs(n_controls=6)
-        r = C.adjudicate_claim_b(SWEEP, e, f, ctrl, dirs,
+        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudicate=True,
                                  adjudications_dir=tmp_path)
