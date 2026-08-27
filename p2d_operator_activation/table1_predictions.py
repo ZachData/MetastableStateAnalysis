@@ -372,6 +372,84 @@ P_T1_TARGET_MODES = 3
 P_T1_ALTERNATIVE = "greater"
 
 
+def p_t1_attainable_floor(n_candidates: int, n_controls: int,
+                          n_trimodal: int) -> dict:
+    """
+    The smallest p THIS design can express, exactly, from its own marginals.
+
+    The statistic is monotone in how many of the trimodal heads land in the
+    candidate arm, and the null holds both marginals fixed, so the number of
+    trimodal candidates is hypergeometric and the one-sided floor is the tail
+    at the most extreme table this design admits -- `min(K, T)` of them.
+    Exact, by `math.comb`, with no sampling and no draw count in it.
+
+    THE POINT IS THAT IT IS NOT `1/(n_perm + 1)`. `core.nulls.p_from_null`
+    reports that as `resolution`, and it is the resolution of the SAMPLE.
+    Here the statistic is a rate difference over tens of heads, so the null
+    puts a lump of mass exactly on the observed value and no number of
+    permutations moves the floor. Five heads with two candidates have an exact
+    floor of 0.100 while `resolution` says 0.0005 -- two hundred times smaller
+    than anything that design can express, so a PERFECT input (every candidate
+    trimodal, no control) could not have cleared alpha there and used to get a
+    number just above it instead. `claims/audits/p_t1_p_m1_dry_run.json`,
+    `POPPER_PLAN.md` 6p.
+
+    `sufficient` is the derived cut. It compares the floor against the
+    registry's alpha and nothing else -- no constant is placed here, and the
+    boundary moves when alpha does, which is how a test tells a derived cut
+    from a placed one.
+    """
+    from math import comb
+
+    K, C, T = int(n_candidates), int(n_controls), int(n_trimodal)
+    N = K + C
+    alpha = registry_alpha()
+    if K <= 0 or C <= 0 or N <= 0:
+        return {"n_candidates": K, "n_controls": C, "n_trimodal": T,
+                "attainable_floor": 1.0, "alpha": alpha, "sufficient": False,
+                "_why": "an empty arm has no permutation null"}
+
+    # The extreme table, and the tail at it. T can exceed K, in which case the
+    # candidate arm is saturated at K and the floor is set by that.
+    m_max = min(K, T)
+    total = comb(N, K)
+    tail = sum(comb(T, m) * comb(N - T, K - m)
+               for m in range(m_max, min(K, T) + 1)
+               if 0 <= K - m <= N - T)
+    floor = (tail / total) if total else 1.0
+    return {
+        "n_candidates": K, "n_controls": C, "n_trimodal": T, "n_heads": N,
+        "attainable_floor": float(floor),
+        "alpha": alpha,
+        "sufficient": bool(floor <= alpha),
+        "and_the_smallest_p_a_RUN_can_express": (
+            "is the MAX of this floor and the sampling resolution. They bind "
+            "at opposite ends: at a small design the marginals bind and the "
+            "draw count is irrelevant, and at a large one this floor falls "
+            "below 1/(n_perm+1) and the draw count binds again. Only the "
+            "first of those was missing, and only the first is a statement "
+            "about the design rather than about the call."),
+        "resolution_is_not_this": (
+            "core.nulls.p_from_null's `resolution` is 1/(n_perm+1) and is the "
+            "sample's limit, not this one. This floor is set by the marginals "
+            "and no number of permutations reduces it."),
+        "_why": (
+            f"the most extreme table this design admits puts {m_max} of the "
+            f"{T} trimodal head(s) in the {K}-head candidate arm; its "
+            f"hypergeometric tail is the smallest p expressible here."),
+    }
+
+
+def registry_alpha() -> float:
+    """The registry's alpha, so a derived cut is derived from the live value."""
+    from core.evalues import DEFAULT_ALPHA
+    try:
+        from core.adjudication import load_registry
+        return float(load_registry().get("alpha", DEFAULT_ALPHA))
+    except Exception:
+        return float(DEFAULT_ALPHA)
+
+
 def p_value_p_t1(results: list, n_perm: int = 2000, seed: int = 0) -> dict:
     """
     P-T1 as a label-permutation test on the trimodality rate.
@@ -438,6 +516,26 @@ def p_value_p_t1(results: list, n_perm: int = 2000, seed: int = 0) -> dict:
 
     labels = np.array([c for c, _ in usable], dtype=bool)
     tri = np.array([t for _, t in usable], dtype=bool)
+
+    # The attainable floor, computed BEFORE the statistic is read: it depends
+    # only on the marginals, so a caller cannot move it by choosing what to
+    # test, and a design that cannot reject should say so rather than return
+    # a number above alpha that reads as evidence against the prediction.
+    floor = p_t1_attainable_floor(n_cand, n_ctrl, int(tri.sum()))
+    out["attainable_floor"] = floor
+    if not floor["sufficient"]:
+        out["p_value"] = None
+        out["reason"] = (
+            f"attainable floor {floor['attainable_floor']:.4f} exceeds "
+            f"alpha={floor['alpha']}: with {n_cand} candidate(s), {n_ctrl} "
+            f"control(s) and {int(tri.sum())} trimodal head(s), the label "
+            f"permutation cannot express a p at or below alpha however clean "
+            f"the data is. Reporting 'not significant' from a design that "
+            f"could not have rejected is worse than reporting nothing. Note "
+            f"this is NOT the {n_perm}-permutation resolution: more "
+            f"permutations do not move it, more HEADS do.")
+        return out
+
     observed = float(tri[labels].mean() - tri[~labels].mean())
 
     rng = np.random.default_rng(seed)

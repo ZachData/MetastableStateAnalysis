@@ -36,6 +36,31 @@ architecture and initialization give for free — training adds nothing.
 Instruments: `p1_mstate_tracking`, `p1b_hemisphere`, `p1c_frames`, `core/nulls.py`.
 Predictions: `P-γ1`, `P-γ2`, `P-H1`, `P-S1`, `CLAIM-A`.
 
+**`P-S1` was run on inputs whose answer is known on 2026-08-27 and gained an
+`(m, d)` refusal** (`POPPER_PLAN.md` §6p, `claims/audits/p_s1_dry_run.json`).
+`p_value_p_s1` takes `m` and `d` from the **trained** arm, draws its null
+there, and re-references both arms against that one baseline — which is right
+when the two arms sit at the same configuration, and nothing checked that they
+did. Since `E[Q_k] = 1/m` for i.i.d. points, a step-0 arm at a different
+cluster count is divided by a baseline that is not its own, and its ratio is
+off by roughly `m_trained/m_step0` — which enters the statistic as a
+*difference between the arms*, the exact shape of the effect P-S1 predicts.
+
+Measured on **two i.i.d. arms**, where the correct verdict is "no difference"
+at every row, a difference of **two clusters in thirty-two** takes the
+rejection rate to **1.000**; and the error runs both ways, since more step-0
+clusters sends p to 1.000 instead and the design can never win. Unequal counts
+are the expected case rather than the exception — clustering runs per
+checkpoint and a random-weight model's activation geometry is not a trained
+one's.
+
+The gate now refuses on a mismatch, and on a step-0 arm that does not report
+its own `(m, d)` to be checked. It costs nothing **by construction**: `Q_k`'s
+i.i.d. floor depends on `m`, so "closer to a spherical design" is not a
+comparison that exists across different `m` and no baseline choice rescues the
+row. **So this claim carries a pre-computed requirement too:** both arms must
+be clustered to the same count rather than each to its own best `k`.
+
 **The sharpest threat to this claim is internal, and already recorded.**
 `UPDATE_PLAN.md` §5.2 found that `MATH.md` §8's step-size definition
 understates $T_\text{eff}$ by ~5.7×, in the direction that would make the
@@ -342,6 +367,36 @@ single subspace against matched controls has no common elevation to mismatch.
 `claims/EVALUABILITY.md` carries that taxonomy forward to the six queued rows
 whose predictions already name a matched control.
 
+**`P-T1` and `P-M1` were run on inputs whose answer is known on 2026-08-27,
+and both gained an attainable floor** (`POPPER_PLAN.md` §6p,
+`claims/audits/p_t1_p_m1_dry_run.json`). Both reported
+`core.nulls.p_from_null`'s `resolution` — 1/(n_perm + 1) — as the smallest p
+they could express. That is the **sample's** limit. Both statistics are
+*discrete*, so the null puts a lump of mass exactly on the observed value and
+the real floor comes from the data's marginals. P-T1 at five heads with two
+candidates has an exact floor of **0.100** and P-M1 at twelve layers with one
+violation **0.083**, both against a reported 0.0005 — so at those designs no
+input whatever could clear α, and both were returning "not significant"
+instead.
+
+Both floors are now exact — hypergeometric for P-T1, `∏(multiplicity)!/n!` for
+P-M1 — and neither contains a draw count, so more permutations do not move
+them: more heads, more layers or more violations do. The refusal costs nothing
+**by enumeration** rather than by measurement, since the floor is the smallest
+value of the same discrete p. Three designs now never emit, which is the
+pre-computed requirement in the form a reader can see, and a 36-layer model
+with a single energy-monotonicity violation is one of them.
+
+**And these two share an instrument, which matters more here than in either
+pair that already records one.** Both classify the same head's `Wq`, `Wk` and
+`W_OV`, and the extraction deciding which head's weights are which is shared —
+the defect class §6h spent an audit ruling out one phase over. `P6-R2`/`P6-R4`
+record their shared projector and `CLAIM-B`/`P-I1` their shared estimator, but
+those two sit under *different* claims. **`P-T1` and `P-M1` are both this
+claim's**, so two e-values that one defect moves together multiply into one
+product — the specific way a claim's E inflates without anyone editing a
+number, which is `EVALUABILITY.md`'s opening argument. Both entries now say so.
+
 The same pass also settled `status-6.md` item 5, which `design-6.md` had
 pre-registered as the prerequisite: the Schur block labelling is **correct**,
 verified on planted structure and against an independently derived spectrum,
@@ -618,7 +673,7 @@ classified as `e-value`.
 Nine predictions are adjudicable as of 2026-08-25 — `P-S1`, `P-T1`, `P-M1`,
 `CLAIM-C`, `P6-R2`, `P6-R4`, `CLAIM-B`, `P-I1` and `P-ST1`. What is missing is
 data, not apparatus: no run artifacts exist in this repo, so all nine are
-validated on synthetic inputs with known answers. **Six have now been put
+validated on synthetic inputs with known answers. **All nine have now been put
 through a dry run on inputs whose answer is known a priori** rather than only
 through unit tests, and every one of them changed something:
 
@@ -629,8 +684,14 @@ through unit tests, and every one of them changed something:
 | `P6-R2`, `P6-R4` | 2026-08-26, `p6_r2_r4_dry_run.json` | the same null, checked where it came from: invalid for R2 and not for R4 |
 | `CLAIM-B`, `P-I1` | 2026-08-27, `claim_b_p_i1_dry_run.json` | a change location is partly a property of the sweep grid; CLAIM-B's anchor arms cannot tell an anchored change from no change at all on the registered sweep, and P-I1's mutual arm cancels the same pull |
 
-None of the six was failing a test. **Three are still owed it: `P-S1`, `P-T1`
-and `P-M1`.** `P6-R2` and `P6-R4` no longer
+| `P-T1`, `P-M1` | 2026-08-27, `p_t1_p_m1_dry_run.json` | both reported the draw count's resolution as their floor; both statistics are discrete, so the design's floor is set by the marginals and a perfect input returns a p hundreds of times larger |
+| `P-S1` | 2026-08-27, `p_s1_dry_run.json` | the null is drawn at the trained arm's (m, d) and nothing checked the step-0 arm matched; two i.i.d. arms two clusters apart in thirty-two reject at 1.000 |
+
+**All nine have now had one, and every one of them changed something.** None
+was failing a test. The queue `claims/EVALUABILITY.md` opened on 2026-08-25 is
+closed; what stands ahead of converting the next `needs-null` row is the list
+of pre-computed requirements those nine passes produced, none of which any
+existing sweep satisfies. `P6-R2` and `P6-R4` no longer
 carry the extra refusal they used to: their exchangeable unit is registered as
 `"model"` (above), so `adjudicate_p6_r2_r4` now turns away only a result
 computed under the other unit. `CLAIM-B` carries a different one: its two anchor

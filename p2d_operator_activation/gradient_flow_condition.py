@@ -301,6 +301,89 @@ P_M1_PRIMARY_AGGREGATE = "mean"
 P_M1_ALTERNATIVE = "greater"
 
 
+def p_m1_attainable_floor(violation_series) -> dict:
+    """
+    The smallest p THIS design can express, from the permuted series' own ties.
+
+    The statistic is a correlation and the null permutes one series against
+    the other, so two permutations give the same value whenever they differ
+    only by swapping EQUAL violation values. The maximum is attained by the
+    sorted pairing, and the permutations attaining it are exactly those
+    permuting equal values among themselves -- so the floor is
+
+        prod_v (multiplicity of v)!  /  n!
+
+    which for a binary series with T violations in n layers is 1/C(n, T).
+    Computed in logs so a long sweep does not overflow.
+
+    IT IS A LOWER BOUND, NOT AN ESTIMATE, AND THAT IS THE SAFE DIRECTION. If
+    the REGIME SCORE also has ties then more permutations attain the maximum
+    and the true floor is larger, so refusing on this bound can only
+    under-refuse -- it can never turn away a result that would have cleared
+    alpha. Same argument as `P-ST1`'s 2m bound (`POPPER_PLAN.md` 6m).
+
+    THE POINT IS THAT IT IS NOT `1/(n_perm + 1)`. Twelve layers with one
+    violation give a floor of 0.083 and six layers with one give 0.167, while
+    `core.nulls.p_from_null` reports a resolution of 0.0005 -- so a PERFECT
+    input, the violation on the highest-regime layer, could not have cleared
+    alpha at either and used to get a number just above it instead. More
+    permutations do not move this; more LAYERS, or more violations, do.
+    `claims/audits/p_t1_p_m1_dry_run.json`, `POPPER_PLAN.md` 6p.
+    """
+    from collections import Counter
+    from math import exp, lgamma
+
+    v = np.asarray(violation_series, dtype=np.float64)
+    v = v[np.isfinite(v)]
+    n = int(v.size)
+    alpha = registry_alpha()
+    if n < 2:
+        return {"n": n, "attainable_floor": 1.0, "alpha": alpha,
+                "sufficient": False,
+                "_why": "fewer than two usable layers; nothing to permute"}
+
+    mult = Counter(np.round(v, 12).tolist())
+    log_floor = sum(lgamma(m + 1) for m in mult.values()) - lgamma(n + 1)
+    floor = exp(log_floor)
+    return {
+        "n": n,
+        "n_distinct_values": len(mult),
+        "value_multiplicities": {str(k): int(m) for k, m in sorted(mult.items())},
+        "attainable_floor": float(floor),
+        "alpha": alpha,
+        "sufficient": bool(floor <= alpha),
+        "is_a_lower_bound": True,
+        "and_the_smallest_p_a_RUN_can_express": (
+            "is the MAX of this floor and the sampling resolution. They bind "
+            "at opposite ends: at a small design the marginals bind and the "
+            "draw count is irrelevant, and at a large one this floor falls "
+            "below 1/(n_perm+1) and the draw count binds again. Only the "
+            "first of those was missing, and only the first is a statement "
+            "about the design rather than about the call."),
+        "resolution_is_not_this": (
+            "core.nulls.p_from_null's `resolution` is 1/(n_perm+1) and is the "
+            "sample's limit, not this one. This floor is set by the ties in "
+            "the permuted series and no number of permutations reduces it."),
+        "_why": (
+            "permutations that only swap equal violation values give the same "
+            "correlation, so the null's support is n! / prod(multiplicity!) "
+            "distinct values and the maximum is attained by one of them. A "
+            "tied REGIME SCORE would make the true floor larger, so this is a "
+            "lower bound and refusing on it can never turn away a result that "
+            "could have cleared alpha."),
+    }
+
+
+def registry_alpha() -> float:
+    """The registry's alpha, so a derived cut is derived from the live value."""
+    from core.evalues import DEFAULT_ALPHA
+    try:
+        from core.adjudication import load_registry
+        return float(load_registry().get("alpha", DEFAULT_ALPHA))
+    except Exception:
+        return float(DEFAULT_ALPHA)
+
+
 def p_value_p_m1(regimes: list, violations, n_perm: int = 2000,
                  seed: int = 0) -> dict:
     """
@@ -371,6 +454,25 @@ def p_value_p_m1(regimes: list, violations, n_perm: int = 2000,
     if s.size < 3 or np.std(s) < 1e-12 or np.std(vv) < 1e-12:
         out["p_value"] = None
         out["reason"] = f"degenerate after alignment: n={s.size}, constant series"
+        return out
+
+    # The attainable floor, on the series that is actually permuted rather
+    # than on what the caller handed in. It depends only on that series' ties,
+    # so it is fixed before the correlation is read.
+    floor = p_m1_attainable_floor(vv)
+    out["attainable_floor"] = floor
+    if not floor["sufficient"]:
+        out["p_value"] = None
+        out["reason"] = (
+            f"attainable floor {floor['attainable_floor']:.4f} exceeds "
+            f"alpha={floor['alpha']}: over {floor['n']} usable layers the "
+            f"violation series takes {floor['n_distinct_values']} distinct "
+            f"value(s), so the permutation null has too few distinct outcomes "
+            f"to express a p at or below alpha however cleanly the violations "
+            f"line up with the regime score. Reporting 'not significant' from "
+            f"a design that could not have rejected is worse than reporting "
+            f"nothing. This is NOT the {n_perm}-permutation resolution: more "
+            f"permutations do not move it, more LAYERS or more violations do.")
         return out
 
     observed = float(np.corrcoef(s, vv)[0, 1])

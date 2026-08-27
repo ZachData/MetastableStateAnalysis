@@ -227,6 +227,33 @@ def p_from_null(
     the honest resolution limit of `n` draws, and it makes the estimator
     conservatively valid (Phipson & Smyth 2010) rather than anticonservative.
 
+    `resolution` IS THE DRAW COUNT'S LIMIT AND NOT THE DESIGN'S FLOOR, AND ON A
+    DISCRETE STATISTIC THE TWO ARE DIFFERENT (2026-08-27)
+
+    1/(n+1) is what `n` draws can resolve. It is the smallest p a run can
+    actually express only when the statistic is continuous, so that ties with
+    the observation have probability zero. When the statistic is discrete --
+    a rate difference over tens of heads, a correlation against a binary
+    series, a sign sum bounded by the pair count -- the null puts a lump of
+    mass exactly on the observed value, and the smallest expressible p is set
+    by the DATA'S OWN MARGINALS rather than by how many draws were taken.
+    Taking more draws does not move it.
+
+    The gap is not small. `P-T1` at five heads and two candidates has an exact
+    floor of 0.100 while this function reports a resolution of 0.0005 -- two
+    hundred times smaller than anything that design can express -- and `P-M1`
+    at twelve layers with one violation has one of 0.083 against the same
+    0.0005. Both were reporting "not significant" from designs that could not
+    have rejected. `claims/audits/p_t1_p_m1_dry_run.json` measures it and
+    `POPPER_PLAN.md` 6p reads it; `p_t1_attainable_floor` and
+    `p_m1_attainable_floor` are the two worked examples, and a caller with a
+    discrete statistic owes its design one of its own.
+
+    So `at_resolution_floor` answers "should I draw more?" and never "could
+    this design have rejected?". Nothing here can compute the second, because
+    it depends on the statistic's support and this function only ever sees a
+    sample of it.
+
     Parameters
     ----------
     observed : float
@@ -243,9 +270,11 @@ def p_from_null(
     Returns
     -------
     dict
-        observed, p_value, n_null, resolution (the 1/(n+1) floor),
-        at_resolution_floor (True when p is the smallest the sample can
-        express -- a signal to draw more, not a stronger result), plus the
+        observed, p_value, n_null, resolution (the 1/(n+1) DRAW-COUNT limit --
+        see the note above; it is not the design's attainable floor when the
+        statistic is discrete), at_resolution_floor (True when p is the
+        smallest this SAMPLE can express -- a signal to draw more, not a
+        stronger result and not a statement about the design), plus the
         `sigma_from_null` summary for continuity with existing reports.
 
     Raises
@@ -289,5 +318,11 @@ def p_from_null(
         "n_null_dropped": int(null_values.size - n),
         "resolution": float(resolution),
         "at_resolution_floor": bool(p_value <= resolution + 1e-12),
+        "_resolution_note": (
+            "resolution is 1/(n_draws+1), the limit of THIS SAMPLE. On a "
+            "discrete statistic the smallest p the DESIGN can express is set "
+            "by the data's marginals and is often far larger; see this "
+            "function's docstring and p_t1_attainable_floor / "
+            "p_m1_attainable_floor."),
     })
     return out

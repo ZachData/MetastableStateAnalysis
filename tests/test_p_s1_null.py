@@ -194,13 +194,72 @@ class TestPS1Calibration:
         assert "re-referenced" in r["reference_note"]
 
     def test_fallback_is_flagged_not_silent(self):
-        """Without raw Q the two arms sit on different baselines; say so."""
+        """Without raw Q the two arms sit on the caller's baseline; say so."""
         ta = run_design_test(_iid(16, 64, 5), n_trials=40)
         tb = run_design_test(_iid(16, 64, 6), n_trials=40)
         ta.pop("Q"); tb.pop("Q")
         r = p_value_p_s1(ta, tb, n_null=80, seed=0)
         assert r["shared_reference"] is False
-        assert "anticonservative" in r["reference_note"]
+        assert "FELL BACK" in r["reference_note"]
+
+    def test_the_fallback_note_no_longer_quotes_a_rate_from_retired_code(self):
+        """
+        It used to say the fallback is "mildly anticonservative" and cite a
+        null-p mean of 0.40. That number was measured on the pre-2026-08-24
+        code, where observed and null sat on genuinely different baselines.
+        On the code that exists the statistic is a DIFFERENCE of two ratios
+        formed against the SAME caller baseline, so a common per-degree factor
+        cancels and the two paths are indistinguishable -- measured in
+        `claims/audits/p_s1_dry_run.json`. A rate that stopped describing the
+        path it was attached to is the defect `POPPER_PLAN.md` §6m records
+        against inlined figures.
+        """
+        ta = run_design_test(_iid(16, 64, 5), n_trials=40)
+        tb = run_design_test(_iid(16, 64, 6), n_trials=40)
+        fixed = p_value_p_s1(ta, tb, n_null=200, seed=3)["p_value"]
+        ta.pop("Q"); tb.pop("Q")
+        fell_back = p_value_p_s1(ta, tb, n_null=200, seed=3)["p_value"]
+        assert abs(fixed - fell_back) < 0.05
+
+
+class TestPS1RefusesMismatchedArms:
+    """
+    The defect the dry run found. The null is drawn at the TRAINED arm's
+    (m, d) and both arms are re-referenced against it, and until 2026-08-27
+    nothing checked that the step-0 arm agreed. `POPPER_PLAN.md` §6p.
+    """
+
+    def test_refuses_a_different_cluster_count(self):
+        ta = run_design_test(_iid(24, 64, 5), n_trials=40)
+        tb = run_design_test(_iid(20, 64, 6), n_trials=40)
+        r = p_value_p_s1(ta, tb, n_null=80, seed=0)
+        assert r["p_value"] is None
+        assert "different configurations" in r["reason"]
+
+    def test_refuses_a_different_dimension(self):
+        ta = run_design_test(_iid(16, 64, 5), n_trials=40)
+        tb = run_design_test(_iid(16, 48, 6), n_trials=40)
+        r = p_value_p_s1(ta, tb, n_null=80, seed=0)
+        assert r["p_value"] is None
+        assert "different configurations" in r["reason"]
+
+    def test_refuses_when_the_step0_arm_cannot_be_checked(self):
+        """
+        Refusing rather than assuming: an arm that does not say what (m, d) it
+        sits at cannot be verified against the one the null is drawn at.
+        """
+        ta = run_design_test(_iid(16, 64, 5), n_trials=40)
+        tb = run_design_test(_iid(16, 64, 6), n_trials=40)
+        tb.pop("n_centroids")
+        r = p_value_p_s1(ta, tb, n_null=80, seed=0)
+        assert r["p_value"] is None
+        assert "cannot be checked" in r["reason"]
+
+    def test_matched_arms_still_emit(self):
+        """The other direction: a refusal that fires on everything is not one."""
+        ta = run_design_test(_iid(16, 64, 5), n_trials=40)
+        tb = run_design_test(_iid(16, 64, 6), n_trials=40)
+        assert p_value_p_s1(ta, tb, n_null=80, seed=0)["p_value"] is not None
 
     def test_degenerate_configuration_returns_no_p_value(self):
         ta = run_design_test(_iid(16, 64, 5), n_trials=40)

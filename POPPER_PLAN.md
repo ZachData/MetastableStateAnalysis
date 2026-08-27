@@ -2473,6 +2473,195 @@ the answer**.
 `claims/adjudications/` is empty, and `null_construction` has still not frozen
 — the fourth time that window has been used.
 
+## 6p. The last three dry runs: P-S1, P-T1 and P-M1, and a floor that was never the design's (2026-08-27)
+
+`claims/EVALUABILITY.md`'s queue is finished. Six of the nine adjudicable rows
+had been run on inputs whose correct verdict is fixed a priori; these are the
+last three. `tools/dry_run_p_s1.py` → `claims/audits/p_s1_dry_run.json` and
+`tools/dry_run_p_t1_p_m1.py` → `claims/audits/p_t1_p_m1_dry_run.json`.
+
+**Nine for nine, every one of them changed something.** That is the fact worth
+recording about the exercise as a whole: not one converted row survived being
+run on an input whose answer was already known, and no test was failing on any
+of them.
+
+### `P-T1` and `P-M1`: a reported floor that belongs to the call, not the design
+
+`core/nulls.p_from_null` reports `resolution` = 1/(n_draws + 1) and calls it
+"the honest resolution limit". It is — of the **sample**. It is the smallest p
+a run can actually express only when the statistic is continuous, so that ties
+with the observation have probability zero. Both of these statistics are
+**discrete**: a rate difference over tens of heads, a correlation against a
+binary series. The null puts a lump of mass exactly on the observed value, and
+the smallest expressible p is set by the data's own marginals.
+
+Measured on a **perfect** input — the most extreme arrangement the marginals
+admit:
+
+| | design | the design's floor | reported resolution | ratio |
+|---|---|---|---|---|
+| `P-T1` | 2 candidates, 3 controls | **0.100** | 0.0005 | 200× |
+| `P-M1` | 12 layers, 1 violation | **0.083** | 0.0005 | 167× |
+| `P-M1` | 6 layers, 1 violation | **0.167** | 0.0005 | 333× |
+
+Those floors are exact, not sampled, and a perfect input is now refused at each
+of the three rather than returning a p just above α. Both were returning "not
+significant" from designs that could not have rejected, which on a prediction
+reads as evidence against it. §6f established that refusal for `CLAIM-C`, §6i
+reached it for `CLAIM-B` before building, §6l found it again on `CLAIM-C`'s
+informative rows and §6m found it on `P-ST1`'s reported floor. This is the
+fifth arrival and the first where two independently written constructions had
+it at once.
+
+**Both floors are exact and neither contains a draw count.** `P-T1`'s statistic
+is monotone in how many trimodal heads land in the candidate arm and the null
+holds both marginals fixed, so that count is hypergeometric and the floor is
+the tail at the most extreme table — exact, by `math.comb`. `P-M1`'s
+permutations that only swap equal violation values give the same correlation,
+so the floor is `∏ (multiplicity)! / n!`, which for a binary series is
+`1/C(n, T)`. A tied regime score makes the true floor larger, so that one is a
+**lower bound** and refusing on it can only under-refuse — §6m's 2m argument in
+a second setting.
+
+**The refusal costs nothing, and here that is enumerated rather than measured.**
+§6l had to re-score `CLAIM-C`'s counterfactual because there the floor and the p
+come from different code. Here the floor *is* the smallest value of the same
+discrete p, so every attainable arrangement at every refused configuration can
+be listed: none clears α. §6m distinguished a zero that is proved from a zero
+that is measured, and this is the second of the first kind.
+
+**And the old resolution was not wrong everywhere, which is the honest reading.**
+The smallest p a run can express is the **max** of the design floor and the
+sampling resolution, and they bind at opposite ends: at 12 candidates and 36
+controls `P-T1`'s design floor is below 1e-6 and the draw count binds again. It
+was wrong exactly where these two entries live — tens of heads, tens of layers,
+few violations — and the record says which constraint binds in every row rather
+than implying one of them always does.
+
+**Three designs now never emit at all**, and that is the pre-computed
+requirement in the form a reader can see: `P-T1` at 2 candidates against 3
+controls, `P-M1` at 6 layers with one violation and at 12 layers with one. A
+36-layer model with a single energy-monotonicity violation is not an exotic
+case; it is the case a mostly-monotone trained model produces.
+
+### And a dependence neither entry recorded, on the pair where it matters most
+
+`P-T1` and `P-M1` classify the same head's `Wq`, `Wk` and `W_OV` — one on the
+eigenstructure of `V` and the QK form, the other on `M = QᵀK`'s symmetry and
+`V`'s alignment with it. The classifications differ; the objects classified do
+not, and neither does the extraction that decides which head's weights are
+which. §6h spent an audit ruling out exactly that class of defect one phase
+over.
+
+`P6-R2`/`P6-R4` record their shared projector and `CLAIM-B`/`P-I1` record their
+shared estimator. These two recorded nothing — **and they are the pair where it
+matters most, because both are H-OPERATOR's.** CLAIM-B and P-I1 sit under
+different claims, so a shared defect does not multiply inside one product.
+Two e-values that one defect moves together, multiplied into one claim's E, is
+the specific way a product inflates without anyone editing a number, which is
+`EVALUABILITY.md`'s opening argument. Both entries now say so.
+
+### `P-S1`: the largest Type-I number the registry has produced
+
+`p_value_p_s1` takes `m` and `d` from the **trained** arm, draws its null
+there, and re-references both arms against that one baseline. That is §6d's fix
+and it is right when the two arms sit at the same configuration. Nothing
+checked that they did.
+
+For i.i.d. points on the sphere `E[Q_k] = 1/m` exactly, so the baseline scales
+like `1/m`. A step-0 arm at a different cluster count is divided by a baseline
+that is not its own and its ratio is off by roughly `m_trained/m_step0` — which
+enters the statistic as a **difference between the arms**, the exact shape of
+the effect P-S1 predicts. Measured on **two i.i.d. arms**, where the correct
+verdict is "no difference" at every row:
+
+| trained | step 0 | rejection rate | mean p |
+|---|---|---|---|
+| 32 | 32 | 0.075 | 0.508 |
+| 32 | **30** | **1.000** | 0.008 |
+| 32 | 28 | **1.000** | 0.008 |
+| 32 | 24 | **1.000** | 0.008 |
+| 32 | 36 | 0.000 | **1.000** |
+| 32 | 40 | 0.000 | **1.000** |
+
+**Two clusters out of thirty-two** — six percent — is enough to take an input
+whose correct verdict is "no difference" to certain rejection. And the error
+runs both ways: fewer step-0 clusters inflates the step-0 ratio and therefore
+*confirms* the prediction, while more sends p to 1.000 and the design can never
+win. Neither is an answer an analyst would notice.
+
+**Unequal cluster counts are the expected case.** Clustering runs per
+checkpoint, and a random-weight model's activation geometry is not a trained
+one's. This is not a stress test of the gate; it is what the gate was going to
+be handed.
+
+**The refusal is more than a guard.** `p_value_p_s1` now refuses when the two
+arms report different `(m, d)`, and refuses when the step-0 arm does not report
+them at all. It is a degeneracy and not a tolerance — the counts are equal or
+they are not. And it is a statement about the statistic rather than about the
+code: `Q_k`'s i.i.d. floor depends on `m`, so "closer to a spherical design" is
+not a comparison that exists across different `m`, and no choice of baseline
+rescues the row. It therefore costs nothing **by construction** — there was no
+correct p there to remove — which is the third refusal of that kind after
+§6m's and this pass's other one.
+
+**The sixth pre-computed requirement in six passes**, and the first that
+constrains how a run is *clustered* rather than what it measures or where it
+samples: both arms must be clustered to the same count, rather than each to its
+own best `k`.
+
+### A number that stopped describing its own path, for the second time
+
+The module warned that its `Q_ratio` fallback — taken when raw `Q` is absent —
+leaves the p-value "mildly anticonservative", citing a null-p mean of **0.40**
+against the 0.50 a calibrated statistic must give. Measured on the same draws,
+the two paths are indistinguishable: 0.508 against 0.507, and rejection 0.058
+against 0.058.
+
+The 0.40 was real when it was written, on the pre-2026-08-24 code where
+observed and null sat on genuinely different baselines. The fix changed the
+structure: the statistic is now a **difference** of two ratios formed against
+the *same* caller baseline, so a common per-degree factor cancels to first
+order and what is left is a rescaling of about a percent. The note stopped
+describing the path it was attached to and nothing noticed — §6m found three
+such numbers in one docstring and the module now carries pointers; this is the
+second arrival, and the reason to state the mechanism in a note rather than a
+rate.
+
+### What did not change, and the reason it is here
+
+`P-S1`'s reported floor **is** attainable: its statistic is continuous, ties
+have probability zero, and a strongly-spread trained arm lands exactly on
+1/(n_null + 1) on every draw. That is the claim that failed for `P-ST1`, `P-T1`
+and `P-M1` — all three discrete — so it was checked rather than assumed, and
+the measurement is committed because a check that comes back clean is a
+decision too. `P6-R4`'s precedent, used a third time.
+
+### The taxonomy the nine dry runs leave behind
+
+Every one of the nine found something, and sorted by what was wrong they fall
+into four kinds rather than nine:
+
+| what was wrong | where |
+|---|---|
+| a reported floor that was not the design's | `P-ST1`, `CLAIM-C`, `P-T1`, `P-M1` |
+| a null that randomised more than the claim is about | `P-ST1`, `P6-R2` |
+| a statistic partly determined by the measurement grid rather than the data | `CLAIM-B` |
+| an input the design cannot compare, scored anyway | `P-S1` |
+
+The first is by far the commonest, it is cheap to check, and it is checkable
+**before** any data exists — the floor is arithmetic on the design. That is the
+one to ask of the next construction first.
+
+### What this leaves
+
+`claims/adjudications/` is empty, `null_construction` has still not frozen, and
+no run artifact is in this repository. The queue `EVALUABILITY.md` opened on
+2026-08-25 — *"a second entry ahead of it for each row already converted"* — is
+now closed, and what stands ahead of converting the next `needs-null` row is
+the list of pre-computed requirements six passes have produced, none of which
+any existing sweep satisfies.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
