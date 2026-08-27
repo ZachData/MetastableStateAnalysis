@@ -113,6 +113,8 @@ from .subspace_geometry import (
     normalized_alignment,
     random_orthogonal_subspace_pair,
     random_subspace,
+    resplit_union,
+    subspace_union,
 )
 
 #: The two units this construction can express. Not a free-text field: an
@@ -134,6 +136,28 @@ REGISTERED_EXCHANGEABLE_UNIT: Optional[str] = "model"
 #: follow. 2000 puts the resolution floor at 1/2001 = 0.0005, two orders below
 #: the registry's alpha, so the floor is not what decides any verdict.
 N_NULL_DRAWS = 2000
+
+#: P6-R2's adjudicated null, changed 2026-08-26 (POPPER_PLAN.md 6n). The
+#: construction 6h introduced -- replace both channels with random subspaces of
+#: MATCHED DIMENSION -- randomises the union together with the assignment, so it
+#: rejects when the pair is unusual as a pair. "span(U_neg + U_A) sits above
+#: chance against this layer's separating direction" is a fact about the union
+#: and not about which half the operator calls repulsive, and measured on an H0
+#: whose split is uniformly random by construction the shipped null's rejection
+#: rate is a monotone trend in that alignment: 0.000 at chance, rising to 0.144
+#: at 3.9x chance against a nominal 0.05. What replaces it holds the union fixed
+#: and re-splits it at the observed dimensions, so exchangeability under H0 is by
+#: construction rather than by measurement. Rates in
+#: claims/audits/p6_r2_r4_dry_run.json; the retired null is computed beside every
+#: result and never adjudicated.
+#:
+#: P6-R4 is deliberately NOT changed. It compares ONE subspace against
+#: matched-dimension random ones, so it has no union and no split for this
+#: defect to reach, and its rate was measured at 0.040-0.048 where a
+#: high-variance U_S captures 3.4x chance. The lesson is that 6h's construction
+#: is safe or not according to the STATISTIC built on it, not according to the
+#: claim it serves.
+NULL_FAMILY = "random re-split of span(U_neg + U_A) at the observed dimensions"
 
 #: One-sided, fixed in advance. P6-R2 predicts MORE alignment with the real
 #: repulsive channel; P6-R4 predicts the real channel PRESERVES cluster
@@ -362,28 +386,79 @@ def p_value_p6_r2(directions: Sequence[np.ndarray],
         r2_layer_contrast(v, ch.u_neg, ch.u_a, ch.d_model)
         for v, ch in zip(directions, channels)]))
 
+    # THE UNION IS HELD FIXED AND ONLY THE SPLIT IS RANDOMISED (2026-08-26).
+    #
+    # The null this construction shipped with replaced BOTH channels with
+    # random subspaces of matched dimension. That randomises the union together
+    # with the assignment, so it rejects when the pair is unusual AS A PAIR --
+    # and "span(U_neg + U_A) sits above chance against this layer's separating
+    # direction" is a fact about the union, not about which half the operator
+    # calls repulsive. Measured on an H0 where the split is uniformly random by
+    # construction, so that the correct answer is 'do not reject', the shipped
+    # null's rejection rate is a monotone TREND in the union's alignment:
+    # 0.000 at chance, 0.064, 0.124, 0.144 as it rises to 3.9x chance, against
+    # a nominal 0.05. See POPPER_PLAN.md 6n and
+    # claims/audits/p6_r2_r4_dry_run.json.
+    #
+    # It survived longer here than the same defect did in P-ST1's gate because
+    # this statistic is a DIFFERENCE of two chance-normalized alignments, and a
+    # common elevation of both channels cancels in it to first order. The
+    # cancellation is only first order, which is why the trend appears at all.
+    #
+    # P6-R4 is NOT affected and is left alone: it compares one subspace against
+    # matched-dimension random ones, so it has no union and no split, and its
+    # rate holds at 0.040-0.048 where a high-variance U_S captures 3.4x chance.
+    union_by_layer = [subspace_union(ch.u_neg, ch.u_a) for ch in channels]
+
     null_values: List[float] = []
     for draw in range(N_NULL_DRAWS):
         rngs = _draw_rngs(unit, len(channels), draw)
         vals = []
-        for v, ch, rng in zip(directions, channels, rngs):
-            # Mutually orthogonal, because the observed pair is. Drawing them
-            # independently leaves the null pairs overlapping where the observed
-            # pair cannot be, and that alone made the test anticonservative --
-            # measured at 0.0875 against a nominal 0.05 before the fix.
-            rn, ra = random_orthogonal_subspace_pair(
-                ch.d_model, ch.u_neg.shape[1], ch.u_a.shape[1], rng)
+        for v, ch, U, rng in zip(directions, channels, union_by_layer, rngs):
+            rn, ra = resplit_union(U, ch.u_neg.shape[1], rng)
             vals.append(r2_layer_contrast(v, rn, ra, ch.d_model))
         null_values.append(float(np.mean(vals)))
 
-    return _finish(observed, null_values, unit, alpha, {
+    # The retired null, computed on the same draws and never adjudicated -- the
+    # standing P-ST1's gate gives its own two retired nulls, and for the same
+    # reason: the size of the difference between a null that was believed and
+    # the one that holds belongs in the record rather than in a docstring.
+    retired: List[float] = []
+    for draw in range(N_NULL_DRAWS):
+        rngs = _draw_rngs(unit, len(channels), draw)
+        vals = []
+        for v, ch, rng in zip(directions, channels, rngs):
+            rn, ra = random_orthogonal_subspace_pair(
+                ch.d_model, ch.u_neg.shape[1], ch.u_a.shape[1], rng)
+            vals.append(r2_layer_contrast(v, rn, ra, ch.d_model))
+        retired.append(float(np.mean(vals)))
+
+    out = _finish(observed, null_values, unit, alpha, {
         "prediction_id": "P6-R2",
         "statistic": "mean over layers of (normalized alignment with U_neg "
-                     "minus normalized alignment with U_A)",
+                     "minus normalized alignment with U_A), against a null "
+                     "that re-splits span(U_neg + U_A) at the observed "
+                     "dimensions and holds the union fixed",
+        "null_family": NULL_FAMILY,
         "n_layers": len(channels),
         "n_units": 1 if unit == "model" else len(channels),
         "dims": [ch.dims() for ch in channels],
+        "union_alignment": [
+            float(normalized_alignment(v, U, ch.d_model))
+            for v, U, ch in zip(directions, union_by_layer, channels)],
     })
+    out["matched_dimension_diagnostic"] = {
+        "null_family": ("matched-dimension random orthogonal subspace pair "
+                        "(RETIRED 2026-08-26, NOT ADJUDICATED)"),
+        "p_value": float(p_from_null(observed, np.asarray(retired),
+                                     alternative=ALTERNATIVE)["p_value"]),
+        "why_not_adjudicated": (
+            "it randomises the union together with the split, so it rejects on "
+            "a union that sits above chance against the separating direction "
+            "-- a fact about the pair rather than about which half is called "
+            "repulsive"),
+    }
+    return out
 
 
 # ---------------------------------------------------------------------------

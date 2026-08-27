@@ -255,6 +255,34 @@ kept as a measurement whose reading is unresolved. The one number that settles
 it — the actual per-layer $\dim U_A$ and $\dim U_\text{neg}$ — is computed by the
 projector build on every run and was never reported.
 
+**`P6-R2`'s null was changed on 2026-08-26 and `P6-R4`'s was not**
+(`POPPER_PLAN.md` §6n, `claims/audits/p6_r2_r4_dry_run.json`). The check was
+forced by §6m: it retired the matched-dimension random orthogonal subspace pair
+for `P-ST1`, and that construction is §6h's, introduced here. It randomises the
+union of the two channels together with the split between them, so it rejects
+when the pair is unusual *as a pair* — and "span($U_\text{neg}$ + $U_A$) sits
+above chance against this layer's separating direction" is a fact about the
+union, not about which half the operator calls repulsive. Measured on an H0
+whose split is uniformly random by construction, so that the correct answer is
+*do not reject*, the retired null's rejection rate is a monotone trend in that
+alignment — 0.000 at chance and **0.155** at 3.9× chance, against a nominal
+0.05. The replacement holds the union fixed and re-splits it at the observed
+dimensions and does not trend: 0.047 and 0.068 at the same two ends over 600
+replicates, pooling with an independent 1000-replicate run to about 0.056 at
+the aligned end — at or marginally above nominal, and 9.7 standard errors
+below the retired null there. Power is unchanged at 1.000.
+
+**`P6-R4` is untouched, and that is a decision with a measurement behind it.**
+It compares *one* subspace against matched-dimension random ones, so it has no
+union and no split for the defect to reach, and its rate holds at 0.040–0.048
+where a high-variance $U_S$ captures 3.4× the variance chance would give.
+Which of the two happens is decided by **the statistic, not the claim**: a sign
+of a difference saturates and fails hardest, a difference of chance-normalized
+alignments cancels a common elevation to first order and fails late, and a
+single subspace against matched controls has no common elevation to mismatch.
+`claims/EVALUABILITY.md` carries that taxonomy forward to the six queued rows
+whose predictions already name a matched control.
+
 The same pass also settled `status-6.md` item 5, which `design-6.md` had
 pre-registered as the prerequisite: the Schur block labelling is **correct**,
 verified on planted structure and against an independently derived spectrum,

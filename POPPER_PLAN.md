@@ -2138,6 +2138,136 @@ neither is in this repository. `claims/adjudications/` is empty and
 `null_construction` has still not frozen — which is the only reason the null
 could be replaced at all, and it is the second time that window has been used.
 
+## 6n. The retired null, checked where it came from: P6-R2 and P6-R4 (2026-08-26)
+
+§6m retired the null `P-ST1` adjudicated — a matched-dimension random
+orthogonal subspace pair — because it randomises the union of the two subspaces
+together with the split between them, and so rejects when the pair is unusual
+*as a pair* rather than when the labelling predicts anything.
+
+**That construction is §6h's, and §6h introduced it here.** `P6-R2` and
+`P6-R4` are where it was built, and `P-ST1` borrowed it. A defect found in a
+borrowed construction is a defect to check at its source, which
+`claims/EVALUABILITY.md`'s opening argument makes non-optional rather than
+tidy-minded: the product is only as valid as its weakest factor, and three
+entries across two claims shared this one. `tools/dry_run_p6_r2_r4.py` →
+`claims/audits/p6_r2_r4_dry_run.json` is the check, and it doubles as the dry
+run `EVALUABILITY.md`'s queue owed both entries.
+
+The two entries came back differently, and the difference is the finding.
+
+### P6-R2 has it, and the evidence is a trend rather than a rate
+
+The H0 is exact: each layer's split is drawn uniformly at random inside its own
+union, so the operator's labelling carries no information by construction and
+the correct answer is *do not reject* at every point of the sweep. What moves
+along the sweep is only how far the union sits above chance against that
+layer's separating direction — the quantity a matched-dimension null does not
+reproduce. Measured at 250 replicates a cell, both nulls scored on the same
+runs:
+
+| union alignment (chance = 1.0) | retired null | adjudicated null |
+|---|---|---|
+| 1.00 | 0.000 | 0.052 |
+| 3.43 | 0.096 | 0.040 |
+| 3.70 | 0.108 | 0.044 |
+| 3.94 | **0.156** | 0.048 |
+
+The replacement holds the union fixed and re-splits it at the observed
+dimensions, so exchangeability under H0 is by construction rather than by
+measurement — the same fix as §6m's, in the same shape.
+
+**What the replacement's own rate is, stated precisely rather than rounded to
+"nominal".** 250 replicates separate 0.05 from 0.15 and do not separate 0.05
+from 0.07, so the artifact carries a `precision_check` section at 600. Two
+independent measurements of the aligned end — that section, and a
+1000-replicate run during construction — gave **0.068** and **0.048**, pooling
+to about **0.056**. So the replacement is at or *marginally above* 0.05 there,
+and saying otherwise would be rounding a measurement into a claim. What is
+established is the thing that matters: it does not **trend** with the union's
+alignment (0.047 at chance against 0.068 at 3.9×, within sampling error of each
+other) where the retired null runs 0.000 to 0.155, and at the aligned end the
+two are **9.7 standard errors apart**.
+
+**A trend is the point, not a rate.** A single cell is a proportion over a few
+hundred draws, and this pass produced a 0.076 at 250 replicates that came back
+0.050 at 1000. What makes this a mechanism rather than a cell is that the rate
+rises monotonically in exactly the quantity the retired null fails to hold
+fixed, and vanishes when that quantity is at chance.
+
+**And the same fact cost this file a red gate, which is worth recording.** The
+`precision_check` section's first bound was alpha plus 1.96 standard errors
+applied to each of its two cells — a bound that fails once in twenty
+regenerations when the null is exactly nominal, *by construction*, because two
+one-sided cells at 2.5% each is a 5% family. It duly failed, on a 0.068. The
+bound now carries a Bonferroni allowance derived from the cell count at a
+family-wise level tighter than alpha, and the reason is about the check rather
+than the science: a gate that cries wolf once per twenty regenerations is a gate
+people re-run rather than read. Placing a threshold on a *proportion in a
+regenerated artifact* needs the regeneration count in it, and nothing in this
+project had said so before.
+
+**Power is unchanged**, so the fix costs nothing here: against the union's
+content concentrated in `U_neg` — P6-R2's predicted direction — both nulls
+reject at 1.000 across the sweep.
+
+### P6-R4 does not have it, and that is structural
+
+`P6-R4` compares **one** subspace against matched-dimension random ones. There
+is no union and no split for this defect to reach. The analogous question is
+whether matching the dimension is enough when the observed subspace is not a
+random one — a probe's accuracy inside a projection depends on the retained
+signal and the retained within-cluster noise together, and which way that cuts
+is not predictable, so it was measured rather than argued. Where a
+high-variance `U_S` captures 3.4× the population variance a random subspace of
+its dimension would, the rate holds at **0.040–0.048**.
+
+So `P6-R4` is left alone — and the measurement is in the record precisely
+because leaving it alone is a decision. Without that arm the difference between
+the two entries would rest on an argument about their statistics rather than on
+a number, which is the position §6h's construction was in for two passes.
+
+### What actually decides it: the statistic, not the claim
+
+Three entries now share §6h's construction and it is valid in one of them,
+mildly invalid in another and badly invalid in the third. The property that
+separates them is **whether the statistic cancels a common elevation of both
+arms**:
+
+| entry | statistic | behaviour under an elevated union |
+|---|---|---|
+| `P-ST1` | the **sign** of a difference | saturating, so no cancellation at all — 0.20 where each arm held 1.27× chance (§6m) |
+| `P6-R2` | a **difference** of two chance-normalized alignments | cancels to *first order*, so it survives until the union is strongly aligned — 0.14 at 3.9× |
+| `P6-R4` | a **single** subspace against matched controls | no common elevation to mismatch — 0.04–0.05 at 3.4× |
+
+That is the transferable result, and it is forward-looking: `EVALUABILITY.md`
+lists `P6-R1`, `P6-C1`, `P5b-A1`, `P5b-A2`, `P-SA1` and `P-I4` as queued rows
+whose predictions already name a matched control. **Matched on what** is now a
+question with a checkable answer rather than a preference, and the answer
+depends on the statistic each row builds.
+
+It also sharpens §6h's own lesson. §6h moved `P6-R2` from units to subspaces on
+the question *what is being randomised?* and that was right; what it did not
+ask is *what else moves when the subspace does*. Randomising a subspace
+randomises everything about it, including the properties the observed one has
+for reasons the claim is not about.
+
+### What this pass did not do
+
+It does not touch `P6-R4`, whose null is unchanged and now has a measurement
+behind that. It adjudicates nothing: the populations are synthetic, no ALBERT
+run artifact is in this repository, `claims/adjudications/` is still empty, and
+`null_construction` has still not frozen — which is again the only reason the
+null could be replaced at all, and the third time that window has been used.
+
+And one small thing worth recording because writing it down did not prevent it.
+The dry-run tool bound a module constant as a **default argument**, so a caller
+overriding the constant did not reach it — §6h found that bug in
+`attainable_floor_report`, §6m found it again in `tools/dry_run_p_st1.py` and
+wrote a comment about it, and this file reproduced it a third time anyway,
+caught by a smoke run taking implausibly long rather than by anything failing.
+A comment is not a guard.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

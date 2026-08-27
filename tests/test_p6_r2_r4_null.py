@@ -42,6 +42,7 @@ import pytest
 pytestmark = pytest.mark.pure
 
 from p6_subspace import r2_r4_null as R
+from p6_subspace import subspace_geometry as SG
 from p6_subspace.subspace_geometry import (
     chance_alignment,
     layer_channels,
@@ -353,6 +354,102 @@ class TestDirectionAndPower(unittest.TestCase):
 
     def test_the_alternative_is_fixed_in_the_module(self):
         self.assertEqual(R.ALTERNATIVE, "greater")
+
+
+class TestTheNullHoldsTheUnionFixed(unittest.TestCase):
+    """
+    P6-R2's null re-splits span(U_neg + U_A) instead of redrawing both channels
+    (2026-08-26, POPPER_PLAN.md 6n).
+
+    The retirement is pinned by its MECHANISM rather than by resampling its
+    consequence, the arrangement 6h's own per-layer/per-model comparison settled
+    on. A re-split draws inside the observed union, so the pair's alignment with
+    the separating direction is the observed pair's to machine precision; a
+    matched-dimension random pair holds only the dimensions, so on a union that
+    sits above chance it is compared against pairs it is not exchangeable with.
+    """
+
+    def setUp(self):
+        rng = np.random.default_rng(11)
+        d, k_neg, k_a = 64, 6, 18
+        Q = np.linalg.qr(rng.normal(size=(d, d)))[0]
+        self.d = d
+        self.v = Q[:, 0]
+        # A union that CONTAINS the separating direction: alignment far above
+        # chance, which is the regime the retirement is about.
+        self.union = np.linalg.qr(
+            np.column_stack([self.v] +
+                            [rng.normal(size=d) for _ in range(k_neg + k_a - 1)])
+        )[0]
+        self.k_neg = k_neg
+        self.rng = rng
+
+    def test_a_resplit_is_orthogonal_and_spans_the_same_union(self):
+        a, b = SG.resplit_union(self.union, self.k_neg, self.rng)
+        self.assertEqual((a.shape[1], b.shape[1]),
+                         (self.k_neg, self.union.shape[1] - self.k_neg))
+        self.assertLess(float(np.abs(a.T @ b).max()), 1e-10)
+        P = np.hstack([a, b])
+        self.assertLess(float(np.abs(P @ (P.T @ self.union)
+                                     - self.union).max()), 1e-10)
+
+    def test_a_union_assigned_entirely_to_one_channel_is_refused(self):
+        with self.assertRaises(ValueError):
+            SG.resplit_union(self.union, self.union.shape[1], self.rng)
+
+    def test_subspace_union_refuses_overlapping_channels(self):
+        a = self.union[:, :self.k_neg]
+        with self.assertRaises(ValueError):
+            SG.subspace_union(a, self.union[:, :self.k_neg + 2])
+
+    def test_the_resplit_preserves_union_alignment_and_the_old_null_does_not(self):
+        """The mechanism, deterministic and in milliseconds."""
+        obs = SG.normalized_alignment(self.v, self.union, self.d)
+        # The union CONTAINS v, so its raw alignment is 1 and its normalized
+        # alignment is the ceiling d/k -- the most elevated a union of this
+        # dimension can be, which is the regime the retirement is about.
+        self.assertAlmostEqual(obs, self.d / self.union.shape[1], places=6)
+        for _ in range(5):
+            a, b = SG.resplit_union(self.union, self.k_neg, self.rng)
+            self.assertAlmostEqual(
+                SG.normalized_alignment(self.v, np.hstack([a, b]), self.d),
+                obs, places=8)
+        for _ in range(5):
+            a, b = SG.random_orthogonal_subspace_pair(
+                self.d, self.k_neg, self.union.shape[1] - self.k_neg, self.rng)
+            # A random pair holds what chance holds -- about 1.0, and measured
+            # never above 1.5 here -- against the observed union's ceiling.
+            self.assertLess(
+                SG.normalized_alignment(self.v, np.hstack([a, b]), self.d),
+                0.65 * obs)
+
+    def test_the_gate_reports_the_union_alignment_and_the_retired_null(self):
+        old = R.N_NULL_DRAWS
+        R.N_NULL_DRAWS = 200
+        try:
+            chs, rng = _albert_like()
+            dirs = [rng.standard_normal(ch.d_model) for ch in chs]
+            dirs = [v / np.linalg.norm(v) for v in dirs]
+            res = R.p_value_p6_r2(dirs, chs, unit="model")
+        finally:
+            R.N_NULL_DRAWS = old
+        self.assertIn("re-split", res["null_family"])
+        self.assertEqual(len(res["union_alignment"]), len(chs))
+        diag = res["matched_dimension_diagnostic"]
+        self.assertIn("RETIRED", diag["null_family"])
+        self.assertIsNotNone(diag["p_value"])
+
+    def test_p6_r4_was_deliberately_left_alone(self):
+        """
+        It compares ONE subspace against matched-dimension random ones, so it
+        has no union and no split for this defect to reach. Measured at
+        0.040-0.048 where a high-variance U_S captures 3.4x chance; changing it
+        would have been a change with no measurement behind it.
+        """
+        import inspect
+        src = inspect.getsource(R.p_value_p6_r4)
+        self.assertIn("random_subspace(", src)
+        self.assertNotIn("resplit_union", src)
 
 
 class TestTheExchangeableUnit(unittest.TestCase):
