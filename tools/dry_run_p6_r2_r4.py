@@ -758,7 +758,7 @@ def print_summary(rec: dict) -> None:
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--write", action="store_true",
-                    help="run it and write the record (~20 minutes)")
+                    help="run it and write the record (~35 minutes)")
     ap.add_argument("--check", action="store_true",
                     help="verify the committed record without re-running")
     ap.add_argument("--summary", action="store_true",

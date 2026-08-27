@@ -186,6 +186,65 @@ same layers. A cheap-tier sweep measuring six metrics has six. Under the gate's
 unanimity rule a refusing arm refuses the whole gate, so **this is a
 requirement on what the pilot must measure**, not a result.
 
+**`CLAIM-B` was run on inputs whose answer is known on 2026-08-27, and its
+anchor arms changed** (`POPPER_PLAN.md` §6o,
+`claims/audits/claim_b_p_i1_dry_run.json`). One dry run covered this entry and
+`P-I1`, because they share one estimator. Five things belong here rather than
+only in the plan.
+
+**A change location is partly a property of the sweep grid.** The location is
+the centroid of a change-mass profile — a weighted mean of the sweep's interval
+midpoints — so mass spread evenly over the sweep lands on the grid's *own*
+midpoint, exactly. Per-checkpoint noise puts rectified mass in every interval,
+so every real location is a mixture of where the series changed and where the
+grid's midpoint is, weighted by the noise's share of the mass. That share grows
+with the interval count, which makes a **denser** sweep worse; the dry run
+predicts the centroid in closed form from the interval count and the noise, and
+the worst disagreement with the measurement across three grids and four noise
+levels is 0.061 in log10-step.
+
+**The registered instrument is the one grid on which that is fatal.** This
+entry's instrument field names a "20-30 checkpoint cheap-tier sweep", and that
+grid's uniform-profile midpoint is step **955** — inside this claim's own
+registered 512–2000 anchor window. So a series that changes *nowhere* receives
+the anchor arm's maximum statistic. Against controls that all carry a located
+change, the arm rejects on a change-free input at **1.000**, which is exactly
+its rate on a perfectly anchored one: its discriminating power there is
+**zero**. The general rate is `1/(k+1)` with *k* the number of controls that
+are themselves change-free, measured against that closed form at every *k*.
+The coincidence that hid it is that the cheap sweep's midpoint sits almost
+exactly where this claim's anchor is, so on the grid the construction was
+calibrated for the bias points at the answer.
+
+**`anchor_arm` now refuses there, and the refusal costs verdicts.** The
+condition is the step grid against the registered window and nothing else — no
+controls, no observation, no α — so it is decidable before a checkpoint is
+sampled. Unlike `CLAIM-C`'s informative-row refusal (measured at zero power
+cost) and `P-ST1`'s attainable-floor refusal (costs none by construction), this
+one turns away inputs that would have rejected, including inputs whose change
+really is at the anchor. What it refuses is a verdict the design cannot
+**support** rather than one it could not **reach**, and the dry run re-scores
+the counterfactual in every cell rather than asserting the cost is small.
+
+**So the fifth pre-computed requirement on the pilot is about which checkpoints
+it samples, not which metrics it measures.** The anchor arms need a sweep whose
+uniform-profile midpoint falls outside 512–2000. The registered cheap sweep
+puts it at step 955 and fails. Pythia's full every-1000 schedule puts it at step
+31,496 and clears the condition — but at that density the noise share reaches
+0.63 and a real change at the anchor is dragged out of the window, so the arm
+has no power there either. Neither sweep the project has satisfies both ends,
+and that is a design question for the pilot rather than a surprise waiting at
+the end of one. It sits beside the 19-control requirement rather than replacing
+it.
+
+**One thing the dry run settled that had never been asked.** This claim's
+falsification branch fires — RE-ANCHORS is reachable on the input built for it
+— and it fires with no margin: both anchor arms' reciprocal p is floored at
+`1/(n_controls + 1)`, which is *exactly* α at nineteen controls, so the branch
+needs the observed series to rank strictly worst of twenty in both arms at once.
+The 19 control series recorded above as the minimum for CO-LOCATES are therefore
+also the exact minimum for the falsifier, in either direction.
+
 ### H-BUDGET — the network spends a bounded dimensionality budget on particles that must stay individuated
 
 Phase 5c's object of study, promoted by plan v2 to be the project's. Motivated
@@ -341,6 +400,32 @@ H-BRIDGE's, so there is no `P5b-B1`/`P5b-B3` double-counting problem — but one
 shared *estimator* is a common-cause failure mode, and both `null_construction`
 fields and both ledger records say so, the precedent `P6-R2` and `P6-R4` set for
 their shared projector.
+
+**`P-I1` was run on the same inputs on 2026-08-27 and was NOT changed, and that
+is a decision with a measurement behind it** (`POPPER_PLAN.md` §6o). The dry run
+that changed `CLAIM-B`'s anchor arms covers this entry too, since the estimator
+is shared. `P-I1` is the **mutual arm alone** — a difference of two locations,
+with a null that permutes the pairing and so keeps both series' real per-head
+locations on both sides of every draw. The pull toward the sweep grid's own
+midpoint that takes `CLAIM-B`'s anchor arms to a rejection rate of 1.000 on a
+series with no located change is common to both series here, and cancels.
+Measured on the **registered cheap sweep**, the grid where the anchor arm fails
+hardest, the mutual arm holds at 0.045–0.065 across four H0 families including
+one in which neither series changes anywhere. Leaving an entry alone is a
+decision, and the precedent is `P6-R4` one pass earlier: without the number the
+difference between the two entries would rest on an argument about their
+statistics.
+
+**Which sharpens the taxonomy `POPPER_PLAN.md` §6n left.** §6n put "one
+subspace against matched-dimension controls" in the safe column with "nothing
+to mismatch". The anchor arm is the counter-example that says what that column
+requires: an absolute quantity against matched controls is safe only when the
+controls are matched on **the quantity the statistic degenerates on**.
+`P6-R4`'s controls are matched on dimension, which is what drives its
+statistic; the anchor arm's are matched on the sweep and the units, and what
+drives its statistic is where the grid puts a profile carrying no location.
+`claims/EVALUABILITY.md` carries that to the six queued rows whose predictions
+already name a matched control.
 
 **The construction cannot discharge this phase's tautology risk, and says so.**
 Adjudication constraint 2 records that the behavioral induction score is "mean
@@ -533,15 +618,19 @@ classified as `e-value`.
 Nine predictions are adjudicable as of 2026-08-25 — `P-S1`, `P-T1`, `P-M1`,
 `CLAIM-C`, `P6-R2`, `P6-R4`, `CLAIM-B`, `P-I1` and `P-ST1`. What is missing is
 data, not apparatus: no run artifacts exist in this repo, so all nine are
-validated on synthetic inputs with known answers. **Two have now been put
+validated on synthetic inputs with known answers. **Six have now been put
 through a dry run on inputs whose answer is known a priori** rather than only
-through unit tests — `CLAIM-C` on 2026-08-25
-(`claims/audits/claim_c_dry_run.json`), which found an admissible band in its
-own input space, and `P-ST1` on 2026-08-26
-(`claims/audits/p_st1_dry_run.json`), which found that the gate's reported floor
-was not the attainable one and, before it even ran, that the null it adjudicated
-was invalid on the H0 family a real residual stream presents. Neither was
-failing a test. Seven are still owed it. `P6-R2` and `P6-R4` no longer
+through unit tests, and every one of them changed something:
+
+| entry | dry run | what it found |
+|---|---|---|
+| `CLAIM-C` | 2026-08-25, `claim_c_dry_run.json` | an admissible band in its own input space, outside which the gate is a constant function |
+| `P-ST1` | 2026-08-26, `p_st1_dry_run.json` | the reported floor was not the attainable one — and, before it ran, that the null it adjudicated was invalid on the H0 family a real residual stream presents |
+| `P6-R2`, `P6-R4` | 2026-08-26, `p6_r2_r4_dry_run.json` | the same null, checked where it came from: invalid for R2 and not for R4 |
+| `CLAIM-B`, `P-I1` | 2026-08-27, `claim_b_p_i1_dry_run.json` | a change location is partly a property of the sweep grid; CLAIM-B's anchor arms cannot tell an anchored change from no change at all on the registered sweep, and P-I1's mutual arm cancels the same pull |
+
+None of the six was failing a test. **Three are still owed it: `P-S1`, `P-T1`
+and `P-M1`.** `P6-R2` and `P6-R4` no longer
 carry the extra refusal they used to: their exchangeable unit is registered as
 `"model"` (above), so `adjudicate_p6_r2_r4` now turns away only a result
 computed under the other unit. `CLAIM-B` carries a different one: its two anchor

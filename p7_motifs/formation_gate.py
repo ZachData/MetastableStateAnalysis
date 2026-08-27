@@ -41,6 +41,30 @@ and folding it into the co-location statistic would put two different questions
 in one number. `endpoint_flags` reports it beside the result, computed from the
 series' own first and last checkpoints, and it enters no p-value.
 
+RUN ON INPUTS WHOSE ANSWER IS KNOWN, AND LEFT UNCHANGED (2026-08-27)
+
+`tools/dry_run_claim_b_p_i1.py` -> `claims/audits/claim_b_p_i1_dry_run.json`,
+read by `POPPER_PLAN.md` 6o. It found that a change location is partly a
+property of the SWEEP GRID: mass spread evenly over the sweep lands on the
+grid's own midpoint exactly, and per-checkpoint noise makes every real location
+a mixture of the two. `CLAIM-B`'s ANCHOR arms cannot cancel that pull -- their
+reference is a fixed window -- and on the registered cheap sweep they reject on
+a series with NO located change at 1.000.
+
+This gate is the MUTUAL arm alone, and the pairing null keeps both series' real
+per-head locations on both sides of every draw, so a pull that moves every
+location the same way is in the null exactly as in the observation and cancels.
+Measured on the REGISTERED cheap sweep -- the grid where the anchor arm fails
+hardest, rather than a friendlier one -- the arm holds at nominal across four
+H0 families including one in which neither series changes anywhere. So nothing
+here changed, and the measurement is committed because leaving an entry alone
+is a decision (`P6-R4`'s precedent, `POPPER_PLAN.md` 6n).
+
+`grid_reference_report` is carried in every record anyway. P-I1 has no window
+for the grid's midpoint to collide with, but a reader interpreting any location
+this construction reports needs to know where a series with no located change
+would have landed, and it costs nothing to compute.
+
 THE TAUTOLOGY RISK, WHICH THIS MODULE CANNOT DISCHARGE
 
 `PREDICTIONS.md`'s second adjudication constraint: the behavioral induction
@@ -67,6 +91,7 @@ from core.changepoint_colocation import (
     _SEED,
     combine_arms,
     gate_verdict,
+    grid_reference_report,
     paired_colocation_arm,
     spacing_change_report,
 )
@@ -152,6 +177,7 @@ def p_value_p_i1(steps: Sequence[float],
         "series": P_I1_SERIES,
         "unit": P_I1_UNIT,
         "spacing": None,
+        "grid_reference": None,
         "endpoint_flags": None,
         "p_value": None,
         "p_reciprocal": None,
@@ -159,6 +185,7 @@ def p_value_p_i1(steps: Sequence[float],
     }
     try:
         out["spacing"] = spacing_change_report(steps)
+        out["grid_reference"] = grid_reference_report(steps)
         rs, bs = list(relay_strength), list(induction_score)
         if len(rs) != len(bs):
             raise ColocationRefused(

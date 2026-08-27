@@ -4,8 +4,8 @@ tests/test_p6_r2_r4_dry_run.py — P6-R2/R4 run on inputs whose answer is known.
 `tools/dry_run_p6_r2_r4.py` runs P6-R2 on a separating direction planted inside
 each channel in turn, sweeps the H0 rejection rate against how far the union
 sits above chance, and measures P6-R4 where `U_S` captures more variance than
-chance. That takes about twenty minutes, so the record is committed and this
-module pins it — the division `tests/test_claim_c_dry_run.py` and
+chance. That takes about thirty-five minutes, so the record is committed
+and this module pins it — the division `tests/test_claim_c_dry_run.py` and
 `tests/test_p_st1_dry_run.py` already use.
 
 The assertion that matters most is `TestTheRetirementIsSupported`. P6-R2's null
