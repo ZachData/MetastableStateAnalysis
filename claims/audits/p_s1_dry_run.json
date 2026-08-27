@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "_what": "P-S1 run on inputs whose correct answer is known a priori, and the measurement that gave it an (m, d) refusal.",
+  "_why": "EVALUABILITY.md's queue owes every converted row a run on an input whose verdict is fixed in advance. P-S1 is the ninth and last of the nine.",
+  "_not": "not evidence about any model and not an adjudication. The configurations are synthetic; what is being checked is the gate.",
+  "generated_by": "python3 -m tools.dry_run_p_s1 --write",
+  "gate_file": "p1c_frames/centroids.py",
+  "gate_sha256": "af4ab034f58d07e8798c88c1b7d7d2589811b18c33a13161927de2e719dcfcbd",
+  "design_file": "p1c_frames/design_test.py",
+  "design_sha256": "c2c79e82f587106767e25356db2acd85b1aa7504bdbf895ec6cdc9970aa2313c",
+  "alpha": 0.05,
+  "alternative": "greater",
+  "t_max": 3,
+  "geometry": {
+    "d": 256,
+    "m_trained": 32,
+    "m_step0_swept": [
+      32,
+      30,
+      28,
+      24,
+      36,
+      40
+    ],
+    "n_null": 120
+  },
+  "seed": 20260827,
+  "known_answer": {
+    "_what": "the gate at MATCHED (m, d) on inputs whose correct verdict is fixed a priori, in both directions.",
+    "_why_matched": "arm B shows the gate is wrong at UNMATCHED (m, d) and the module now refuses there. Asking a gate that refuses whether it returns the right verdict is not a check.",
+    "alpha": 0.05,
+    "m": 32,
+    "d": 256,
+    "rows": [
+      {
+        "input": "trained better spread than step 0",
+        "expected": "reject",
+        "n_reps": 30,
+        "reject_rate": 1.0,
+        "median_p": 0.008264462809917356,
+        "as_expected": true
+      },
+      {
+        "input": "step 0 better spread than trained",
+        "expected": "p high",
+        "n_reps": 30,
+        "reject_rate": 0.0,
+        "median_p": 1.0,
+        "as_expected": true
+      },
+      {
+        "input": "both arms i.i.d. (H0)",
+        "expected": "no rejection",
+        "n_reps": 30,
+        "reject_rate": 0.03333333333333333,
+        "median_p": 0.4380165289256198,
+        "as_expected": true
+      }
+    ],
+    "every_row_as_expected": true
+  },
+  "mismatched_arms": {
+    "_what": "two I.I.D. arms at different cluster counts. Both arms are i.i.d. uniform, so the correct verdict is 'no difference' at every row -- this is P-S1's own H0, realised exactly.",
+    "_the_mechanism": "E[Q_k] = 1/m for i.i.d. points, so the i.i.d. baseline scales like 1/m. The null is drawn at the TRAINED arm's (m, d) and both arms are re-referenced against it, so a step-0 arm at a different count is divided by a baseline that is not its own and its ratio is off by roughly m_trained/m_step0. That enters the statistic as a difference BETWEEN the arms, which is exactly the shape of the effect P-S1 predicts.",
+    "_the_direction_matters": "fewer step-0 clusters inflates the step-0 ratio and the statistic is (step0 - trained), so the error CONFIRMS the prediction. More step-0 clusters sends p to 1.000 and the design can never win. Neither is a wrong answer the analyst would notice.",
+    "_scored_without_the_refusal": "the module now refuses every one of these rows, so this arm reproduces the calls it makes and skips only the (m, d) check. These are the rates the gate had before this pass. The second implementation is pinned against the module on every MATCHED pair, where the module still emits -- see module_agreement.",
+    "alpha": 0.05,
+    "n_reps_per_cell": 80,
+    "d": 256,
+    "rows": [
+      {
+        "m_trained": 32,
+        "m_step0": 32,
+        "cluster_difference": 0,
+        "relative_difference": 0.0,
+        "reject_rate": 0.075,
+        "mean_p": 0.5084710743801653,
+        "n_reps": 80
+      },
+      {
+        "m_trained": 32,
+        "m_step0": 30,
+        "cluster_difference": -2,
+        "relative_difference": -0.0625,
+        "reject_rate": 1.0,
+        "mean_p": 0.008264462809917356,
+        "n_reps": 80
+      },
+      {
+        "m_trained": 32,
+        "m_step0": 28,
+        "cluster_difference": -4,
+        "relative_difference": -0.125,
+        "reject_rate": 1.0,
+        "mean_p": 0.008264462809917356,
+        "n_reps": 80
+      },
+      {
+        "m_trained": 32,
+        "m_step0": 24,
+        "cluster_difference": -8,
+        "relative_difference": -0.25,
+        "reject_rate": 1.0,
+        "mean_p": 0.008264462809917356,
+        "n_reps": 80
+      },
+      {
+        "m_trained": 32,
+        "m_step0": 36,
+        "cluster_difference": 4,
+        "relative_difference": 0.125,
+        "reject_rate": 0.0,
+        "mean_p": 1.0,
+        "n_reps": 80
+      },
+      {
+        "m_trained": 32,
+        "m_step0": 40,
+        "cluster_difference": 8,
+        "relative_difference": 0.25,
+        "reject_rate": 0.0,
+        "mean_p": 1.0,
+        "n_reps": 80
+      }
+    ],
+    "matched_reject_rate": 0.075,
+    "worst_mismatched_reject_rate": 1.0,
+    "smallest_difference_that_breaks_it": 2,
+    "a_mismatch_can_also_make_it_unwinnable": true,
+    "module_agreement": {
+      "_what": "this file's re-implementation against p_value_p_s1 itself, on every matched pair where the module emits.",
+      "n_compared": 80,
+      "max_absolute_difference": 0.0,
+      "agrees": true
+    }
+  },
+  "refusal": {
+    "_what": "which inputs the (m, d) refusal turns away.",
+    "_what_it_costs": "nothing, and by construction rather than by measurement. At unmatched (m, d) there is no correct p that the refusal removed: Q_k's i.i.d. floor depends on m, so the comparison the statistic makes does not exist across different m. That is a different kind of zero from CLAIM-C's informative-row refusal, which had to be re-scored, and the same kind as P-ST1's 2m bound.",
+    "alpha": 0.05,
+    "rows": [
+      {
+        "m_step0": 32,
+        "matched": true,
+        "refused_rate": 0.0,
+        "n_reps": 20
+      },
+      {
+        "m_step0": 30,
+        "matched": false,
+        "refused_rate": 1.0,
+        "n_reps": 20
+      },
+      {
+        "m_step0": 28,
+        "matched": false,
+        "refused_rate": 1.0,
+        "n_reps": 20
+      },
+      {
+        "m_step0": 24,
+        "matched": false,
+        "refused_rate": 1.0,
+        "n_reps": 20
+      },
+      {
+        "m_step0": 36,
+        "matched": false,
+        "refused_rate": 1.0,
+        "n_reps": 20
+      },
+      {
+        "m_step0": 40,
+        "matched": false,
+        "refused_rate": 1.0,
+        "n_reps": 20
+      }
+    ],
+    "refuses_every_mismatch": true,
+    "refuses_no_matched_arm": true,
+    "unverifiable_arm_refused": true,
+    "unverifiable_reason": "the step-0 arm does not report n_centroids and d, so it cannot be checked against the trained arm's (m, d) -- and the null is drawn at the trained arm's. Refusing rather than assuming they match: a mismatch is scored as a design difference and measures 1.000 against 0.05 on two i.i.d. arms."
+  },
+  "the_fallback_note": {
+    "_what": "the raw-Q path against the Q_ratio fallback on the SAME draws, both under H0 (two i.i.d. arms at matched (m, d)).",
+    "_why_it_is_here": "the module's note quoted a null-p mean of 0.40 for the fallback. That number was measured on retired code and stopped describing the path it was attached to; nothing noticed. POPPER_PLAN.md 6m records the same pattern for three rates in P-ST1's docstring, and this is the second arrival.",
+    "alpha": 0.05,
+    "n_reps": 120,
+    "raw_Q_path": {
+      "reject_rate": 0.058333333333333334,
+      "mean_p": 0.5079201101928376
+    },
+    "fallback_path": {
+      "reject_rate": 0.058333333333333334,
+      "mean_p": 0.5073691460055096
+    },
+    "max_absolute_p_difference": 0.016528925619834767,
+    "the_two_paths_are_indistinguishable": true,
+    "the_retired_number_was": 0.4,
+    "and_neither_path_is_near_it": true
+  },
+  "floor_and_power": {
+    "_what": "whether a strongly-spread trained arm reaches the reported 1/(n_null+1) floor, and at what rate the design rejects when it is used at matched (m, d).",
+    "_why_it_matters_here": "the reported floor being the attainable one is the claim that failed for P-ST1, P-T1 and P-M1 -- all discrete statistics. P-S1's is continuous, so it should hold, and that is a thing to check rather than to assume.",
+    "alpha": 0.05,
+    "n_reps": 30,
+    "n_null": 120,
+    "reported_floor": 0.008264462809917356,
+    "reached_the_floor_rate": 1.0,
+    "power_at_alpha": 1.0,
+    "median_p": 0.008264462809917356,
+    "the_floor_is_attainable": true
+  },
+  "elapsed_seconds": 149.3
+}

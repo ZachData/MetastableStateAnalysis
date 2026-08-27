@@ -1,0 +1,490 @@
+{
+  "schema_version": 1,
+  "_what": "P-T1 and P-M1 run on inputs whose correct answer is known a priori, and the measurement that gave both an attainable floor.",
+  "_why": "EVALUABILITY.md's queue owes every converted row a run on an input whose verdict is fixed in advance. These two are the seventh and eighth of nine.",
+  "_not": "not evidence about any transformer and not an adjudication. The heads and layers are synthetic; what is being checked is the gate.",
+  "generated_by": "python3 -m tools.dry_run_p_t1_p_m1 --write",
+  "p_t1_file": "p2d_operator_activation/table1_predictions.py",
+  "p_t1_sha256": "6c6c00d1fbd00d7a65b6dc286f29aa8d542857c190042de2cb907bb91f95c7d0",
+  "p_m1_file": "p2d_operator_activation/gradient_flow_condition.py",
+  "p_m1_sha256": "3685ae2b5109959cfe63fea6878c908216801fa94593efb764756c832d1ed20f",
+  "alpha": 0.05,
+  "alternatives": {
+    "P-T1": "greater",
+    "P-M1": "greater"
+  },
+  "seed": 20260827,
+  "known_answer": {
+    "_what": "both gates on inputs whose correct verdict is fixed a priori, in both directions, at design sizes where the attainable floor is not the binding constraint.",
+    "alpha": 0.05,
+    "rows": [
+      {
+        "entry": "P-T1",
+        "input": "every candidate trimodal, no control",
+        "expected": "reject",
+        "p_value": 0.0004997501249375312,
+        "reason": null,
+        "as_expected": true
+      },
+      {
+        "entry": "P-T1",
+        "input": "no candidate trimodal, every control",
+        "expected": "p = 1",
+        "p_value": 1.0,
+        "reason": null,
+        "as_expected": true
+      },
+      {
+        "entry": "P-T1",
+        "input": "both arms trimodal at the same rate",
+        "expected": "no rejection",
+        "p_value": 0.657671164417791,
+        "reason": null,
+        "as_expected": true
+      },
+      {
+        "entry": "P-M1",
+        "input": "violations on the highest-regime layers",
+        "expected": "reject",
+        "p_value": 0.0009995002498750624,
+        "reason": null,
+        "as_expected": true
+      },
+      {
+        "entry": "P-M1",
+        "input": "violations on the lowest-regime layers",
+        "expected": "p = 1",
+        "p_value": 1.0,
+        "reason": null,
+        "as_expected": true
+      },
+      {
+        "entry": "P-M1",
+        "input": "the three aggregates disagree in sign",
+        "expected": "refused",
+        "p_value": null,
+        "reason": "the mean/min/max head-to-layer aggregates disagree in SIGN, so per-layer energies do not resolve this per-head claim. Emitting a p-value for one chosen aggregate would turn a resolution limit into a result. Needs head ablation instead.",
+        "as_expected": true
+      }
+    ],
+    "every_row_as_expected": true
+  },
+  "the_floor": {
+    "_what": "the exact attainable floor against the resolution `core.nulls.p_from_null` reports, and what a PERFECT input returns, at design sizes each entry can actually have.",
+    "_the_finding": "both entries reported 1/(n_perm+1) as their floor. Both statistics are DISCRETE, so the design's own floor is set by the marginals and no number of permutations moves it.",
+    "_and_which_one_binds": "the smallest p a RUN can express is the MAX of the two, and they bind at opposite ends. At a small design the marginals bind by a factor of hundreds and the draw count is irrelevant; at a large one the design floor falls BELOW 1/(n_perm+1) and the draw count binds again, which is why the reported resolution was never wrong everywhere. It was wrong exactly where these two entries live -- tens of heads, tens of layers, few violations.",
+    "_why_a_perfect_input": "a floor is a claim about what the design can express, and the way to check a claim like that is to hand the design the most extreme arrangement its marginals admit and look at what comes back. Where the floor exceeds alpha, what used to come back was a p ABOVE alpha -- which on a prediction reads as evidence against it rather than as a design that could not speak.",
+    "alpha": 0.05,
+    "n_perm": 2000,
+    "p_t1": [
+      {
+        "n_candidates": 2,
+        "n_controls": 3,
+        "n_heads": 5,
+        "design_floor": 0.1,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.1,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 200.10000000000002,
+        "sufficient": false,
+        "perfect_input_p": null,
+        "perfect_input_refused": true
+      },
+      {
+        "n_candidates": 3,
+        "n_controls": 5,
+        "n_heads": 8,
+        "design_floor": 0.017857142857142856,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.017857142857142856,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 35.732142857142854,
+        "sufficient": true,
+        "perfect_input_p": 0.018490754622688656,
+        "perfect_input_refused": false
+      },
+      {
+        "n_candidates": 3,
+        "n_controls": 9,
+        "n_heads": 12,
+        "design_floor": 0.004545454545454545,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.004545454545454545,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 9.095454545454546,
+        "sufficient": true,
+        "perfect_input_p": 0.0069965017491254375,
+        "perfect_input_refused": false
+      },
+      {
+        "n_candidates": 4,
+        "n_controls": 8,
+        "n_heads": 12,
+        "design_floor": 0.00202020202020202,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.00202020202020202,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 4.042424242424242,
+        "sufficient": true,
+        "perfect_input_p": 0.0034982508745627187,
+        "perfect_input_refused": false
+      },
+      {
+        "n_candidates": 5,
+        "n_controls": 7,
+        "n_heads": 12,
+        "design_floor": 0.0012626262626262627,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.0012626262626262627,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 2.526515151515152,
+        "sufficient": true,
+        "perfect_input_p": 0.0014992503748125937,
+        "perfect_input_refused": false
+      },
+      {
+        "n_candidates": 6,
+        "n_controls": 18,
+        "n_heads": 24,
+        "design_floor": 7.429641296918184e-06,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.0004997501249375312,
+        "which_binds": "the draw count",
+        "floor_over_resolution": 0.014866712235133287,
+        "sufficient": true,
+        "perfect_input_p": 0.0004997501249375312,
+        "perfect_input_refused": false
+      },
+      {
+        "n_candidates": 8,
+        "n_controls": 16,
+        "n_heads": 24,
+        "design_floor": 1.3596729170830664e-06,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.0004997501249375312,
+        "which_binds": "the draw count",
+        "floor_over_resolution": 0.002720705507083216,
+        "sufficient": true,
+        "perfect_input_p": 0.0004997501249375312,
+        "perfect_input_refused": false
+      },
+      {
+        "n_candidates": 12,
+        "n_controls": 36,
+        "n_heads": 48,
+        "design_floor": 1.435368215559806e-11,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.0004997501249375312,
+        "which_binds": "the draw count",
+        "floor_over_resolution": 2.8721717993351718e-08,
+        "sufficient": true,
+        "perfect_input_p": 0.0004997501249375312,
+        "perfect_input_refused": false
+      }
+    ],
+    "p_m1": [
+      {
+        "n_layers": 6,
+        "n_violations": 1,
+        "design_floor": 0.1666666666666666,
+        "closed_form_1_over_C": 0.16666666666666666,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.1666666666666666,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 333.4999999999999,
+        "sufficient": false,
+        "perfect_input_p": null,
+        "perfect_input_refused": true
+      },
+      {
+        "n_layers": 12,
+        "n_violations": 1,
+        "design_floor": 0.08333333333333351,
+        "closed_form_1_over_C": 0.08333333333333333,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.08333333333333351,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 166.75000000000034,
+        "sufficient": false,
+        "perfect_input_p": null,
+        "perfect_input_refused": true
+      },
+      {
+        "n_layers": 12,
+        "n_violations": 2,
+        "design_floor": 0.015151515151515157,
+        "closed_form_1_over_C": 0.015151515151515152,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.015151515151515157,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 30.31818181818183,
+        "sufficient": true,
+        "perfect_input_p": 0.014992503748125937,
+        "perfect_input_refused": false
+      },
+      {
+        "n_layers": 12,
+        "n_violations": 3,
+        "design_floor": 0.004545454545454539,
+        "closed_form_1_over_C": 0.004545454545454545,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.004545454545454539,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 9.095454545454533,
+        "sufficient": true,
+        "perfect_input_p": 0.004997501249375313,
+        "perfect_input_refused": false
+      },
+      {
+        "n_layers": 24,
+        "n_violations": 1,
+        "design_floor": 0.04166666666666683,
+        "closed_form_1_over_C": 0.041666666666666664,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.04166666666666683,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 83.37500000000033,
+        "sufficient": true,
+        "perfect_input_p": 0.04097951024487756,
+        "perfect_input_refused": false
+      },
+      {
+        "n_layers": 24,
+        "n_violations": 2,
+        "design_floor": 0.0036231884057970967,
+        "closed_form_1_over_C": 0.0036231884057971015,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.0036231884057970967,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 7.24999999999999,
+        "sufficient": true,
+        "perfect_input_p": 0.0034982508745627187,
+        "perfect_input_refused": false
+      },
+      {
+        "n_layers": 36,
+        "n_violations": 2,
+        "design_floor": 0.0015873015873015955,
+        "closed_form_1_over_C": 0.0015873015873015873,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.0015873015873015955,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 3.176190476190493,
+        "sufficient": true,
+        "perfect_input_p": 0.001999000499750125,
+        "perfect_input_refused": false
+      },
+      {
+        "n_layers": 49,
+        "n_violations": 1,
+        "design_floor": 0.020408163265305753,
+        "closed_form_1_over_C": 0.02040816326530612,
+        "sampling_resolution": 0.0004997501249375312,
+        "smallest_expressible_p": 0.020408163265305753,
+        "which_binds": "the marginals",
+        "floor_over_resolution": 40.836734693876814,
+        "sufficient": true,
+        "perfect_input_p": 0.022488755622188907,
+        "perfect_input_refused": false
+      }
+    ],
+    "worst_floor_over_resolution_p_t1": 200.10000000000002,
+    "worst_floor_over_resolution_p_m1": 333.4999999999999,
+    "p_t1_has_designs_that_cannot_reject": true,
+    "p_m1_has_designs_that_cannot_reject": true,
+    "every_insufficient_design_is_refused": true
+  },
+  "refusal_costs_nothing": {
+    "_what": "at every refused configuration, whether ANY arrangement of the data could have cleared alpha.",
+    "_by_construction_not_by_measurement": "the floor is the smallest value of the same discrete p that the gate would report, so this is an enumeration and not a simulation. 6l's refusal for CLAIM-C had to be re-scored against a counterfactual because there the floor and the p come from different code; 6m's could not cost a verdict by construction. This one is the second of that kind, and saying which it is is the point -- a measured zero and a proved zero are not the same claim.",
+    "_and_the_smallest_attainable_p_is_the_floor": "for P-M1 there is nothing to enumerate: the floor is defined as the smallest attainable p, and it is a LOWER BOUND on it when the regime score has ties, so refusing on it can only under-refuse.",
+    "alpha": 0.05,
+    "rows": [
+      {
+        "entry": "P-T1",
+        "n_candidates": 2,
+        "n_controls": 3,
+        "attainable_floor": 0.1,
+        "n_attainable_p_values": 3,
+        "smallest_attainable_p": 0.1,
+        "any_clears_alpha": false
+      },
+      {
+        "entry": "P-M1",
+        "n_layers": 6,
+        "n_violations": 1,
+        "attainable_floor": 0.1666666666666666,
+        "any_clears_alpha": false
+      },
+      {
+        "entry": "P-M1",
+        "n_layers": 12,
+        "n_violations": 1,
+        "attainable_floor": 0.08333333333333351,
+        "any_clears_alpha": false
+      }
+    ],
+    "n_refused_configurations": 3,
+    "costs_no_verdict_anywhere": true
+  },
+  "validity": {
+    "_what": "H0 rejection rate conditional on the gate emitting, at every design size above. The H0 is exact in both: P-T1's trimodal set is drawn uniformly at random, which is what its null permutes, and P-M1's violations are placed uniformly at random over layers.",
+    "_why_conditional": "a gate can look calibrated BY REFUSING -- 6g. The ledger only ever receives runs that emitted, so that is the rate which governs it, and the emission rate is reported beside it because the refusal added this pass is what moved it.",
+    "alpha": 0.05,
+    "n_reps_per_cell": 200,
+    "standard_error_at_alpha": 0.015411035007422441,
+    "rows": [
+      {
+        "entry": "P-T1",
+        "design": "2 candidates, 3 controls",
+        "n_draws": 200,
+        "n_emitted": 0,
+        "reject_conditional_on_emission": null,
+        "emission_rate": 0.0
+      },
+      {
+        "entry": "P-T1",
+        "design": "3 candidates, 5 controls",
+        "n_draws": 200,
+        "n_emitted": 26,
+        "reject_conditional_on_emission": 0.038461538461538464,
+        "emission_rate": 0.13
+      },
+      {
+        "entry": "P-T1",
+        "design": "3 candidates, 9 controls",
+        "n_draws": 200,
+        "n_emitted": 67,
+        "reject_conditional_on_emission": 0.029850746268656716,
+        "emission_rate": 0.335
+      },
+      {
+        "entry": "P-T1",
+        "design": "4 candidates, 8 controls",
+        "n_draws": 200,
+        "n_emitted": 59,
+        "reject_conditional_on_emission": 0.01694915254237288,
+        "emission_rate": 0.295
+      },
+      {
+        "entry": "P-T1",
+        "design": "5 candidates, 7 controls",
+        "n_draws": 200,
+        "n_emitted": 69,
+        "reject_conditional_on_emission": 0.014492753623188406,
+        "emission_rate": 0.345
+      },
+      {
+        "entry": "P-T1",
+        "design": "6 candidates, 18 controls",
+        "n_draws": 200,
+        "n_emitted": 96,
+        "reject_conditional_on_emission": 0.03125,
+        "emission_rate": 0.48
+      },
+      {
+        "entry": "P-T1",
+        "design": "8 candidates, 16 controls",
+        "n_draws": 200,
+        "n_emitted": 108,
+        "reject_conditional_on_emission": 0.018518518518518517,
+        "emission_rate": 0.54
+      },
+      {
+        "entry": "P-T1",
+        "design": "12 candidates, 36 controls",
+        "n_draws": 200,
+        "n_emitted": 147,
+        "reject_conditional_on_emission": 0.034013605442176874,
+        "emission_rate": 0.735
+      },
+      {
+        "entry": "P-M1",
+        "design": "6 layers, 1 violations",
+        "n_draws": 200,
+        "n_emitted": 0,
+        "reject_conditional_on_emission": null,
+        "emission_rate": 0.0
+      },
+      {
+        "entry": "P-M1",
+        "design": "12 layers, 1 violations",
+        "n_draws": 200,
+        "n_emitted": 0,
+        "reject_conditional_on_emission": null,
+        "emission_rate": 0.0
+      },
+      {
+        "entry": "P-M1",
+        "design": "12 layers, 2 violations",
+        "n_draws": 200,
+        "n_emitted": 188,
+        "reject_conditional_on_emission": 0.06382978723404255,
+        "emission_rate": 0.94
+      },
+      {
+        "entry": "P-M1",
+        "design": "12 layers, 3 violations",
+        "n_draws": 200,
+        "n_emitted": 200,
+        "reject_conditional_on_emission": 0.02,
+        "emission_rate": 1.0
+      },
+      {
+        "entry": "P-M1",
+        "design": "24 layers, 1 violations",
+        "n_draws": 200,
+        "n_emitted": 200,
+        "reject_conditional_on_emission": 0.035,
+        "emission_rate": 1.0
+      },
+      {
+        "entry": "P-M1",
+        "design": "24 layers, 2 violations",
+        "n_draws": 200,
+        "n_emitted": 195,
+        "reject_conditional_on_emission": 0.07179487179487179,
+        "emission_rate": 0.975
+      },
+      {
+        "entry": "P-M1",
+        "design": "36 layers, 2 violations",
+        "n_draws": 200,
+        "n_emitted": 195,
+        "reject_conditional_on_emission": 0.06153846153846154,
+        "emission_rate": 0.975
+      },
+      {
+        "entry": "P-M1",
+        "design": "49 layers, 1 violations",
+        "n_draws": 200,
+        "n_emitted": 198,
+        "reject_conditional_on_emission": 0.050505050505050504,
+        "emission_rate": 0.99
+      }
+    ],
+    "bound_in_standard_errors": 3.1673290097032334,
+    "bound": 0.0988118182485612,
+    "_the_bound": "alpha plus 3.17 standard errors: the Bonferroni allowance for the cells this section tests at a family-wise 0.01. A per-cell 1.96 fails once in twenty regenerations with the null exactly nominal, which is a property of the check rather than of the null (POPPER_PLAN.md 6n).",
+    "range": [
+      0.014492753623188406,
+      0.07179487179487179
+    ],
+    "holds": true,
+    "some_designs_never_emit": true
+  },
+  "shared_instrument": {
+    "_what": "what a single instrument defect moves, and what that does to H-OPERATOR's product.",
+    "entries": [
+      "P-T1",
+      "P-M1"
+    ],
+    "claim": "H-OPERATOR",
+    "shared_input": "the same head's Wq, Wk and W_OV, and the same per-head extraction that decides which head those belong to. P-T1 classifies on the eigenstructure of V and the QK form; P-M1 on M = Q^T K's symmetry and V's alignment with it. The classifications differ; the objects classified do not.",
+    "why_it_matters_more_here": "P6-R2 and P6-R4 share a projector and CLAIM-B and P-I1 share an estimator, and both pairs record it. But CLAIM-B and P-I1 sit under DIFFERENT claims, so a shared defect does not multiply inside one product. P-T1 and P-M1 are both H-OPERATOR's. Two e-values that one defect moves together, multiplied into one claim's E, is the specific way a product inflates without anyone editing a number.",
+    "precedent_for_the_defect_class": "POPPER_PLAN.md 6h: a Schur block mislabelling swapping U_neg and U_A was a live alternative explanation for four months and took an audit to rule out. Which head's weights are which is the same class of question and has had no audit.",
+    "not_measured_here": "this arm asserts a dependence rather than measuring its size. Measuring it needs the real extraction path and a planted mislabelling -- 6h's arm S, one phase over -- and that is an audit rather than a dry run. It is named here so the registry can record it, which is what the other two pairs did.",
+    "alpha": 0.05
+  },
+  "elapsed_seconds": 28.1
+}

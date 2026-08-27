@@ -65,13 +65,28 @@ class TestPT1:
         distribution can be made multimodal by under-smoothing"). The p-value
         must follow the scan.
         """
-        results = [_head(True, 1) for _ in range(8)] + [_head(False, 1) for _ in range(8)]
+        results = [_head(True, 1) for _ in range(8)] + [_head(False, 3) for _ in range(8)]
         for r in results:
             r["modality"]["trimodal"] = True          # the misleading flag
         out = p_value_p_t1(results, n_perm=500)
         assert out["adjudicated_on"] == "stable_n_modes"
-        assert out["trimodal_rate_candidates"] == 0.0
-        assert out["p_value"] > 0.5
+        assert out["trimodal_rate_candidates"] == 0.0  # the scan, not the flag
+        assert out["trimodal_rate_controls"] == 1.0
+        assert out["p_value"] > 0.5                    # and in the right direction
+
+    def test_refuses_when_no_head_is_trimodal_by_the_scan(self):
+        """
+        Added 2026-08-27. With zero trimodal heads every permutation gives the
+        identical statistic, so the design cannot reject however the labels
+        fall — and it used to report a large p, which reads as evidence
+        against P-T1 rather than as a design that could not have spoken.
+        `POPPER_PLAN.md` §6p.
+        """
+        results = [_head(True, 1) for _ in range(8)] + [_head(False, 1) for _ in range(8)]
+        out = p_value_p_t1(results, n_perm=500)
+        assert out["p_value"] is None
+        assert "attainable floor" in out["reason"]
+        assert out["attainable_floor"]["attainable_floor"] == 1.0
 
     def test_undetermined_modality_is_excluded_not_resolved(self):
         """

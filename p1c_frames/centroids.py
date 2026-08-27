@@ -366,6 +366,47 @@ def p_value_p_s1(
     if m < 2 or d < 2:
         return {"p_value": None, "reason": f"degenerate configuration (m={m}, d={d})"}
 
+    # BOTH ARMS MUST SIT AT THE SAME (m, d), AND UNTIL 2026-08-27 NOTHING
+    # CHECKED IT. `m` and `d` are taken from the TRAINED arm and the null is
+    # drawn there, so a step-0 arm with a different cluster count is scored
+    # against a baseline that is not its own. E[Q_k] = 1/m for i.i.d. points,
+    # so the mis-referenced arm's ratio is off by roughly m_trained/m_step0 --
+    # which enters the statistic as a difference between the arms and is
+    # indistinguishable from the effect P-S1 predicts. Measured on TWO I.I.D.
+    # ARMS, where the correct verdict is "no difference" at every row:
+    # 32 against 28 clusters rejects at 1.000, and 32 against 40 returns
+    # p = 1.000 so the design can never win. See
+    # `claims/audits/p_s1_dry_run.json` and `POPPER_PLAN.md` 6p.
+    #
+    # This is a degeneracy and not a tolerance -- the counts are equal or they
+    # are not -- so no threshold is placed. It is also more than a coding
+    # guard: Q_k's i.i.d. floor depends on m, so "closer to a spherical
+    # design" is not a comparison that exists across different m, and the
+    # requirement it puts on a run is that both arms be clustered to the same
+    # count rather than each to its own best k.
+    m0 = step0.get("n_centroids")
+    d0 = step0.get("d")
+    if m0 is None or d0 is None:
+        return {"p_value": None,
+                "reason": ("the step-0 arm does not report n_centroids and d, "
+                           "so it cannot be checked against the trained arm's "
+                           "(m, d) -- and the null is drawn at the trained "
+                           "arm's. Refusing rather than assuming they match: "
+                           "a mismatch is scored as a design difference and "
+                           "measures 1.000 against 0.05 on two i.i.d. arms.")}
+    if int(m0) != m or int(d0) != d:
+        return {"p_value": None,
+                "reason": (f"the two arms sit at different configurations: "
+                           f"trained (m={m}, d={d}) against step0 "
+                           f"(m={int(m0)}, d={int(d0)}). The null is drawn at "
+                           f"the trained arm's (m, d) and Q_k's i.i.d. floor "
+                           f"scales like 1/m, so the mismatch enters the "
+                           f"statistic as a difference between the arms. "
+                           f"Measured on two I.I.D. arms, 32 against 28 "
+                           f"clusters rejects at 1.000 and 32 against 40 "
+                           f"returns p = 1.000. Cluster both arms to the same "
+                           f"count; there is no comparison to rescue here.")}
+
     band = random_band(m, d, t_max=t_max, n_trials=n_null, seed=seed)
     base = random_baseline_Q(m, d, t_max=t_max, n_trials=n_null, seed=seed)
     ref = np.maximum(base["mean"], 1e-30)
@@ -415,9 +456,17 @@ def p_value_p_s1(
         "reference_note": (
             "both arms re-referenced against this call's own random baseline"
             if used_raw_Q else
-            "FELL BACK to the caller's Q_ratio: raw Q absent from one or both "
-            "arms, so observed and null are referenced against different "
-            "Monte-Carlo baselines and the p-value is mildly anticonservative"),
+            "FELL BACK to the caller's Q_ratio: raw Q is absent from one or "
+            "both arms, so the two ratios were formed against the caller's "
+            "own Monte-Carlo baseline rather than this call's. Measured "
+            "2026-08-27 and the cost is SMALLER than this note used to claim: "
+            "the statistic is a DIFFERENCE of the two arms' ratios, so a "
+            "common per-degree factor cancels to first order and the "
+            "remaining effect is a ~1% rescaling -- indistinguishable from "
+            "the raw-Q path over 120 replicates. The 0.40 null-p mean this "
+            "note used to quote was measured on the pre-2026-08-24 code, "
+            "where the mismatch did not cancel; it stopped describing this "
+            "path and nothing noticed. See claims/audits/p_s1_dry_run.json."),
     })
     return out
 
