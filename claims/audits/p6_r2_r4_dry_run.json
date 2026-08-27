@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "_what": "P6-R2 and P6-R4 run on inputs whose correct answer is known a priori, and the measurement that retired P6-R2's null.",
+  "_why": "POPPER_PLAN.md 6m retired the matched-dimension random subspace pair for P-ST1. That construction is 6h's and 6h introduced it for these two entries, so it had to be checked where it came from.",
+  "_not": "not evidence about ALBERT and not an adjudication. The populations are synthetic; what is being checked is the null.",
+  "generated_by": "python3 -m tools.dry_run_p6_r2_r4 --write",
+  "null_file": "p6_subspace/r2_r4_null.py",
+  "null_sha256": "f163bb142bcdd4a7139334eb7de3d68443ce00cf0aa1331fe99f1e1d1159fffa",
+  "geometry_file": "p6_subspace/subspace_geometry.py",
+  "geometry_sha256": "c98696b5b95d959f435c3690e45ce8f8e812c7101ce431174f9e1cea8f3fe650",
+  "alpha": 0.05,
+  "null_family": "random re-split of span(U_neg + U_A) at the observed dimensions",
+  "registered_exchangeable_unit": "model",
+  "geometry": {
+    "d_model": 128,
+    "dim_u_neg": 8,
+    "dim_u_a": 24,
+    "n_layers": 6,
+    "n_null_draws": 199,
+    "n_null_draws_shipped": 2000
+  },
+  "seed": 20260826,
+  "known_answer": {
+    "_what": "the separating direction drawn inside U_neg (P6-R2's predicted channel), inside U_A (the arms reversed), and in neither. The correct answer is fixed a priori in all three.",
+    "alpha": 0.05,
+    "n_seeds_per_row": 5,
+    "rows": [
+      {
+        "planted_in": "u_neg",
+        "expected": "reject",
+        "p_values": [
+          0.005,
+          0.005,
+          0.005,
+          0.005,
+          0.005
+        ],
+        "retired_null_p_values": [
+          0.005,
+          0.005,
+          0.005,
+          0.005,
+          0.005
+        ],
+        "all_as_expected": true
+      },
+      {
+        "planted_in": "u_a",
+        "expected": "p = 1",
+        "p_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "retired_null_p_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "all_as_expected": true
+      },
+      {
+        "planted_in": "neither",
+        "expected": "no rejection",
+        "p_values": [
+          0.135,
+          0.715,
+          0.515,
+          0.48,
+          0.39
+        ],
+        "retired_null_p_values": [
+          0.17,
+          0.695,
+          0.46,
+          0.48,
+          0.39
+        ],
+        "all_as_expected": true
+      }
+    ],
+    "every_row_as_expected": true
+  },
+  "union_alignment_sweep": {
+    "_what": "H0 rejection rate against how far span(U_neg + U_A) sits above chance, with both nulls scored on the same runs.",
+    "_why_a_trend_and_not_a_rate": "a single rate is a proportion over a few hundred draws and this project has been burned by exactly that. A monotone trend in the quantity the retired null fails to reproduce is the mechanism, and it is what makes the retirement more than one cell.",
+    "alpha": 0.05,
+    "n_reps_per_cell": 250,
+    "standard_error_at_alpha": 0.013784048752090222,
+    "n_null_draws": 199,
+    "rows": [
+      {
+        "union_tilt": 0.0,
+        "mean_union_alignment": 0.9969927422192816,
+        "adjudicated_reject": 0.052,
+        "retired_reject": 0.0
+      },
+      {
+        "union_tilt": 0.9,
+        "mean_union_alignment": 3.4266539602307344,
+        "adjudicated_reject": 0.04,
+        "retired_reject": 0.096
+      },
+      {
+        "union_tilt": 0.95,
+        "mean_union_alignment": 3.7044557379259984,
+        "adjudicated_reject": 0.044,
+        "retired_reject": 0.108
+      },
+      {
+        "union_tilt": 0.99,
+        "mean_union_alignment": 3.93998569890888,
+        "adjudicated_reject": 0.048,
+        "retired_reject": 0.156
+      }
+    ],
+    "retired_null_range": [
+      0.0,
+      0.156
+    ],
+    "adjudicated_null_range": [
+      0.04,
+      0.052
+    ],
+    "retired_null_rises_with_alignment": true,
+    "adjudicated_null_is_flat": true,
+    "adjudicated_null_holds": true
+  },
+  "precision_check": {
+    "_what": "the two ends of the sweep at 600 replicates, where the standard error is 0.009 -- enough to separate nominal from a rate the coarser sweep can only suggest.",
+    "_the_bound": "alpha plus 2.58 standard errors: the Bonferroni allowance for the 2 cells this section tests at a family-wise 0.01. A per-cell 1.96 fails once in twenty regenerations with the null exactly nominal -- a property of the check rather than of the null, and the first version of this section did exactly that on a 0.068. The family-wise level is tighter than alpha itself because a gate that cries wolf once per twenty regenerations is a gate people re-run rather than read.",
+    "_what_it_does_not_claim": "that the replacement is exactly nominal. Two independent measurements of the aligned end -- this section and a 1000-replicate run during construction -- gave 0.068 and 0.048, pooling to about 0.056, so the replacement is at or marginally above 0.05 there. What is established is that it does not TREND with the union's alignment, which is the property the retired null failed, and that the two are far apart at the aligned end.",
+    "alpha": 0.05,
+    "n_reps_per_cell": 600,
+    "standard_error_at_alpha": 0.008897565210026092,
+    "bound_in_standard_errors": 2.5758293035488986,
+    "bound": 0.07291860919822242,
+    "rows": [
+      {
+        "union_tilt": 0.0,
+        "mean_union_alignment": 0.9948835519359016,
+        "adjudicated_reject": 0.04666666666666667,
+        "retired_reject": 0.0
+      },
+      {
+        "union_tilt": 0.99,
+        "mean_union_alignment": 3.9396456704461618,
+        "adjudicated_reject": 0.06833333333333333,
+        "retired_reject": 0.155
+      }
+    ],
+    "adjudicated_holds_at_both_ends": true,
+    "retired_fails_at_the_aligned_end": true,
+    "separation_in_standard_errors": 9.74049244044962
+  },
+  "r4_variance_sweep": {
+    "_what": "P6-R4's H0 rate when U_S captures more of the population's variance than a random subspace of its dimension would.",
+    "_why_it_is_here": "P6-R2's null was changed and P6-R4's was not. Leaving it alone is a decision, and this is the measurement behind it: without this arm the difference between the two entries would rest on an argument about their statistics rather than on a number.",
+    "alpha": 0.05,
+    "n_reps_per_cell": 200,
+    "standard_error_at_alpha": 0.015411035007422441,
+    "rows": [
+      {
+        "variance_scale": 0.0,
+        "mean_variance_capture": 1.0001972481313823,
+        "reject": 0.04
+      },
+      {
+        "variance_scale": 2.0,
+        "mean_variance_capture": 2.501157385978752,
+        "reject": 0.02
+      },
+      {
+        "variance_scale": 4.0,
+        "mean_variance_capture": 3.4027545222521933,
+        "reject": 0.045
+      }
+    ],
+    "range": [
+      0.02,
+      0.045
+    ],
+    "holds": true
+  },
+  "power": {
+    "_what": "power against the union's v-content concentrated in U_neg, which is P6-R2's predicted direction.",
+    "alpha": 0.05,
+    "n_reps_per_cell": 60,
+    "rows": [
+      {
+        "union_tilt": 0.0,
+        "adjudicated_power": 1.0,
+        "retired_power": 1.0
+      },
+      {
+        "union_tilt": 0.9,
+        "adjudicated_power": 1.0,
+        "retired_power": 1.0
+      },
+      {
+        "union_tilt": 0.99,
+        "adjudicated_power": 1.0,
+        "retired_power": 1.0
+      }
+    ],
+    "no_power_lost": true
+  }
+}

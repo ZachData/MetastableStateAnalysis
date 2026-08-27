@@ -255,6 +255,34 @@ kept as a measurement whose reading is unresolved. The one number that settles
 it — the actual per-layer $\dim U_A$ and $\dim U_\text{neg}$ — is computed by the
 projector build on every run and was never reported.
 
+**`P6-R2`'s null was changed on 2026-08-26 and `P6-R4`'s was not**
+(`POPPER_PLAN.md` §6n, `claims/audits/p6_r2_r4_dry_run.json`). The check was
+forced by §6m: it retired the matched-dimension random orthogonal subspace pair
+for `P-ST1`, and that construction is §6h's, introduced here. It randomises the
+union of the two channels together with the split between them, so it rejects
+when the pair is unusual *as a pair* — and "span($U_\text{neg}$ + $U_A$) sits
+above chance against this layer's separating direction" is a fact about the
+union, not about which half the operator calls repulsive. Measured on an H0
+whose split is uniformly random by construction, so that the correct answer is
+*do not reject*, the retired null's rejection rate is a monotone trend in that
+alignment — 0.000 at chance and **0.155** at 3.9× chance, against a nominal
+0.05. The replacement holds the union fixed and re-splits it at the observed
+dimensions and does not trend: 0.047 and 0.068 at the same two ends over 600
+replicates, pooling with an independent 1000-replicate run to about 0.056 at
+the aligned end — at or marginally above nominal, and 9.7 standard errors
+below the retired null there. Power is unchanged at 1.000.
+
+**`P6-R4` is untouched, and that is a decision with a measurement behind it.**
+It compares *one* subspace against matched-dimension random ones, so it has no
+union and no split for the defect to reach, and its rate holds at 0.040–0.048
+where a high-variance $U_S$ captures 3.4× the variance chance would give.
+Which of the two happens is decided by **the statistic, not the claim**: a sign
+of a difference saturates and fails hardest, a difference of chance-normalized
+alignments cancels a common elevation to first order and fails late, and a
+single subspace against matched controls has no common elevation to mismatch.
+`claims/EVALUABILITY.md` carries that taxonomy forward to the six queued rows
+whose predictions already name a matched control.
+
 The same pass also settled `status-6.md` item 5, which `design-6.md` had
 pre-registered as the prerequisite: the Schur block labelling is **correct**,
 verified on planted structure and against an independently derived spectrum,
@@ -344,9 +372,43 @@ and it was checked to be a branch that can fire.
 Permuting the decomposition label across pairs treats *m* pairs as *m*
 exchangeable units when every pair at one layer shares the tokens and both
 subspaces; the rejection rate under a noisy H0 grows from nominal at 8 pairs to
-0.17–0.22 at 150. What replaces it is the matched-dimension random orthogonal
-subspace pair — `P6-R2`/`P6-R4`'s construction, arriving for the fourth time —
-which holds at 0.000–0.040 with power 1.000 in both directions.
+0.17–0.22 at 150. What replaced it was the matched-dimension random orthogonal
+subspace pair — `P6-R2`/`P6-R4`'s construction, arriving for the fourth time.
+
+**And that replacement was retired in turn on 2026-08-26, on an H0 family the
+calibration did not have** (`POPPER_PLAN.md` §6m). Matching the dimensions holds
+fixed everything the statistic could read off dimension. It does not hold fixed
+how much of the population each subspace *contains*, which is what a change in
+effective rank is driven by: injecting along a direction the cloud already
+occupies reinforces a large Gram eigenvalue and lowers effective rank, and
+injecting along one it does not raises it. A random *k*-dimensional subspace
+holds *k/d* of the population; `U_pos` and `U_neg` are cut from the model's own
+OV eigenstructure and a residual stream is orthogonal to neither, so both hold
+more — and against random pairs such a pair is unusual whichever arm is called
+attractive. Measured where both arms are occupied above chance and the two are
+*identical by construction*, so that a label swap is a distributional identity
+and INSUFFICIENT is the only correct verdict: **up to 0.20 against a nominal 0.05, the inflation growing with the pair count**, in whichever direction the layer's realized asymmetry happened to fall.
+All three H0 families the 2026-08-25 calibration measured put the cloud in a
+subspace orthogonal to *both* arms — the one case where a matched-dimension
+random pair is exchangeable with the observed one — so nothing could have seen
+it.
+
+**What replaced it randomises the split rather than the subspaces**, which is
+the first time this project's recurring question — *what is being randomised?*
+— has been answered by randomising **less**. The old null moved the union and
+the split together, so it rejected on either, and "this pair of subspaces is
+unlike a random pair" is a statement about the union rather than about the
+decomposition `P-ST1` names. The gate now draws a uniformly random
+*k*<sub>pos</sub>-dimensional subspace of span(`U_pos` + `U_neg`) and takes its
+orthogonal complement *within that union*: dimensions, orthogonality, occupancy
+and the whole spectral relationship to the layer's cloud are held exactly
+fixed, and the observed split is one point of the same Grassmannian the null
+draws from, so exchangeability under H0 is by construction rather than by
+measurement. It holds at or below nominal on every family including the one
+that retired its predecessor. It costs no power where the cloud fills the whole arm
+(both nulls reach 1.000 in both directions there) and costs it as
+dim `U_pos` grows past the dimension the population occupies — and power lost
+that way was never power about the decomposition.
 
 **Steering is a pure mean effect, which decided the one thing the wording left
 most open.** Re-centring after injection annihilates the intervention exactly,
@@ -364,6 +426,47 @@ occupies, and the per-pair informative rate falls from 1.000 at ratio 1 to
 0.000 at ratio 6. `claims/audits/p6_projector_labels.json` already records that
 `U_pos` is the *un-shrunk* bucket in the projector build's resolution order,
 which is the unfavourable side of this.
+
+**`P-ST1` was the second entry run on inputs whose answer is known
+(2026-08-26).** `tools/dry_run_p_st1.py` → `claims/audits/p_st1_dry_run.json`,
+`POPPER_PLAN.md` §6m. `claims/EVALUABILITY.md` had said each converted row is
+owed that treatment ahead of converting the next one; `CLAIM-C` had it and this
+is the second. Three things belong here rather than only in the plan.
+
+**The gate's reported floor was not the attainable one, and a design that could
+not reject was returning "not significant".** `sum(D)` cannot exceed 2*m*, so
+the smallest p a run can express is what an observation of 2*m* would receive —
+and on a union the cloud occupies, many random re-splits already reach 2*m* and
+tie it. Measured, the attainable floors at one pair are 0.11–0.17 where
+`1/(draws + 1)` says 0.01. The gate now computes both tails' attainable floors
+from the null it already has and refuses when neither can reach α. 2*m* is an
+upper bound on the observation rather than an attainable value, so that floor is
+a lower bound on what the run can express and the refusal can never turn away a
+result that would have cleared α — the same argument, and the same defect, as
+`CLAIM-C`'s informative-row refusal one claim over.
+
+**A run can have only its FALSIFICATION branch reachable, and the record now
+says so.** The two tails' floors are computed separately and are not equal, so
+one can be out of reach while the other is not — and where the reachable one is
+INVERTS, the design can return a falsification or nothing and nothing else. The
+gate does not refuse there: one reachable tail is one reachable verdict, and a
+refusal must cost no verdict. It records `reachable_tails` instead, because a
+run whose only reachable verdict is the one that enters the ledger as a
+falsification is a run a reader must be told about, and nothing else in the
+record would say it. **Two pairs is the smallest design that emits at all** —
+at one pair, on an input planted perfectly in either arm, both tails' floors sit
+at 0.11–0.17 and the gate refuses — and the binding quantity is how often a
+re-split of the same union reaches the maximum, not the draw count.
+
+**And the validity statement this entry can make is sharper than any other in
+the registry.** Draw the observed pair as a random re-split of a fixed union and
+it is exchangeable with the null draws *by construction*, so
+P(p ≤ α) ≤ α exactly, for any population, with no modelling assumption at all.
+Measured over 200 draws on a population that occupies both arms — the family
+that retired the previous null — it holds. Every other validity number in this
+project is a rate under a modelled H0 family; this one's answer follows from the
+construction, so a failure would localise to the implementation rather than to
+the choice of family.
 
 **Why the P5b predictions stay here rather than under H-OPERATOR.** Sub-experiment
 D asks whether behavioural geometry is carried by the real/symmetric subspace and
@@ -430,11 +533,15 @@ classified as `e-value`.
 Nine predictions are adjudicable as of 2026-08-25 — `P-S1`, `P-T1`, `P-M1`,
 `CLAIM-C`, `P6-R2`, `P6-R4`, `CLAIM-B`, `P-I1` and `P-ST1`. What is missing is
 data, not apparatus: no run artifacts exist in this repo, so all nine are
-validated on synthetic inputs with known answers. `CLAIM-C` was the first put
-through a **dry run on an input whose answer is known a priori** rather than
-only through unit tests (2026-08-25, `claims/audits/claim_c_dry_run.json`); that
-found an admissible band in its own input space that no test was failing on, and
-the same treatment is owed to the other eight. `P6-R2` and `P6-R4` no longer
+validated on synthetic inputs with known answers. **Two have now been put
+through a dry run on inputs whose answer is known a priori** rather than only
+through unit tests — `CLAIM-C` on 2026-08-25
+(`claims/audits/claim_c_dry_run.json`), which found an admissible band in its
+own input space, and `P-ST1` on 2026-08-26
+(`claims/audits/p_st1_dry_run.json`), which found that the gate's reported floor
+was not the attainable one and, before it even ran, that the null it adjudicated
+was invalid on the H0 family a real residual stream presents. Neither was
+failing a test. Seven are still owed it. `P6-R2` and `P6-R4` no longer
 carry the extra refusal they used to: their exchangeable unit is registered as
 `"model"` (above), so `adjudicate_p6_r2_r4` now turns away only a result
 computed under the other unit. `CLAIM-B` carries a different one: its two anchor

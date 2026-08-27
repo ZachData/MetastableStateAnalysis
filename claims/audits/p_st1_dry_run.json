@@ -1,0 +1,869 @@
+{
+  "schema_version": 1,
+  "_what": "P-ST1's steering gate run on inputs whose correct verdict is known a priori: a cloud planted entirely in one arm, an observed pair drawn from the null's own family, and a sweep of the gate's input space with a perfect-input counterfactual in every cell.",
+  "_why": "claims/EVALUABILITY.md's queue: each converted row is owed a run on an input whose answer is known, ahead of converting the next one. CLAIM-C had it; this is P-ST1's.",
+  "_not": "not evidence about any model and not an adjudication. The populations are synthetic; what is being checked is the gate.",
+  "generated_by": "python3 -m tools.dry_run_p_st1 --write",
+  "gate_file": "p7_motifs/steering_gate.py",
+  "gate_sha256": "0de24684d1f9cf219dda490a8d9c50b9a6834e75ef75c74da0b1b2a04146816f",
+  "calibration_file": "claims/calibration/steering_sign.json",
+  "calibration_sha256": "76d35fb3e24bc012a56b74eaae9261a5c5f42f0c8e56261723f3f423bba3ff40",
+  "alpha": 0.05,
+  "null_family": "random re-split of the observed pair's union subspace",
+  "geometry": {
+    "d_model": 80,
+    "n_tokens": 48,
+    "dim_occupied": 8,
+    "n_subspace_draws": 99,
+    "n_subspace_draws_shipped": 199
+  },
+  "seed": 20260826,
+  "sharp_input": {
+    "_what": "the cloud planted entirely inside one arm, at dim U_pos = dim(occupied) so every draw lands in it. The correct verdict is TRACKS-DECOMPOSITION when it is U_pos and INVERTS when it is U_neg, a priori.",
+    "_the_sharp_question": "whether a perfect input reaches the draw-count floor 1/(draws+1). It need not, and at small pair counts it does not: the null is drawn on the OBSERVED population, sum(D) cannot exceed 2m, and every re-split that already reaches 2m ties it. The attainable floor is therefore a property of the layer and the pair count. Finding that is what this arm was for, and it changed the gate: the attainable floor is now computed and the gate refuses when neither tail can reach alpha.",
+    "draw_count_floor": 0.01,
+    "n_draws": 99,
+    "n_seeds_per_cell": 3,
+    "alpha": 0.05,
+    "rows": [
+      {
+        "planted": "H1",
+        "n_pairs": 1,
+        "expected_verdict": "TRACKS-DECOMPOSITION",
+        "verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "all_as_expected": false,
+        "n_refused": 3,
+        "refusal_kinds": [
+          "null_ties_the_maximum"
+        ],
+        "adjudicated_tail_p": [
+          null,
+          null,
+          null
+        ],
+        "attainable_floor_of_that_tail": [
+          0.12,
+          0.17,
+          0.14
+        ],
+        "n_at_attainable_floor": 0,
+        "n_at_draw_count_floor": 0,
+        "mean_observed": 2.0,
+        "max_observed": 2.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 1.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "H1",
+        "n_pairs": 2,
+        "expected_verdict": "TRACKS-DECOMPOSITION",
+        "verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.02,
+          0.02,
+          0.05
+        ],
+        "attainable_floor_of_that_tail": [
+          0.02,
+          0.02,
+          0.05
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 0,
+        "mean_observed": 4.0,
+        "max_observed": 4.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 2.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "H1",
+        "n_pairs": 4,
+        "expected_verdict": "TRACKS-DECOMPOSITION",
+        "verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.01,
+          0.02,
+          0.01
+        ],
+        "attainable_floor_of_that_tail": [
+          0.01,
+          0.02,
+          0.01
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 2,
+        "mean_observed": 8.0,
+        "max_observed": 8.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 4.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "H1",
+        "n_pairs": 8,
+        "expected_verdict": "TRACKS-DECOMPOSITION",
+        "verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "attainable_floor_of_that_tail": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 3,
+        "mean_observed": 16.0,
+        "max_observed": 16.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 8.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "H1",
+        "n_pairs": 16,
+        "expected_verdict": "TRACKS-DECOMPOSITION",
+        "verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "attainable_floor_of_that_tail": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 3,
+        "mean_observed": 32.0,
+        "max_observed": 32.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 16.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "INVERTED",
+        "n_pairs": 1,
+        "expected_verdict": "INVERTS",
+        "verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "all_as_expected": false,
+        "n_refused": 3,
+        "refusal_kinds": [
+          "null_ties_the_maximum"
+        ],
+        "adjudicated_tail_p": [
+          null,
+          null,
+          null
+        ],
+        "attainable_floor_of_that_tail": [
+          0.12,
+          0.11,
+          0.14
+        ],
+        "n_at_attainable_floor": 0,
+        "n_at_draw_count_floor": 0,
+        "mean_observed": -2.0,
+        "max_observed": 2.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 1.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "INVERTED",
+        "n_pairs": 2,
+        "expected_verdict": "INVERTS",
+        "verdicts": [
+          "INVERTS",
+          "INVERTS",
+          "INVERTS"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.04,
+          0.04,
+          0.03
+        ],
+        "attainable_floor_of_that_tail": [
+          0.04,
+          0.04,
+          0.03
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 0,
+        "mean_observed": -4.0,
+        "max_observed": 4.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 2.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "INVERTED",
+        "n_pairs": 4,
+        "expected_verdict": "INVERTS",
+        "verdicts": [
+          "INVERTS",
+          "INVERTS",
+          "INVERTS"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "attainable_floor_of_that_tail": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 3,
+        "mean_observed": -8.0,
+        "max_observed": 8.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 4.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "INVERTED",
+        "n_pairs": 8,
+        "expected_verdict": "INVERTS",
+        "verdicts": [
+          "INVERTS",
+          "INVERTS",
+          "INVERTS"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "attainable_floor_of_that_tail": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 3,
+        "mean_observed": -16.0,
+        "max_observed": 16.0,
+        "statistic_is_maximal": true,
+        "mean_informative_pairs": 8.0,
+        "informative_rate": 1.0
+      },
+      {
+        "planted": "INVERTED",
+        "n_pairs": 16,
+        "expected_verdict": "INVERTS",
+        "verdicts": [
+          "INVERTS",
+          "INVERTS",
+          "INVERTS"
+        ],
+        "all_as_expected": true,
+        "n_refused": 0,
+        "refusal_kinds": [],
+        "adjudicated_tail_p": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "attainable_floor_of_that_tail": [
+          0.01,
+          0.01,
+          0.01
+        ],
+        "n_at_attainable_floor": 3,
+        "n_at_draw_count_floor": 3,
+        "mean_observed": -31.333333333333332,
+        "max_observed": 32.0,
+        "statistic_is_maximal": false,
+        "mean_informative_pairs": 15.666666666666666,
+        "informative_rate": 0.9791666666666666
+      }
+    ],
+    "smallest_pair_count_that_emits": 2,
+    "worst_informative_rate": 0.9791666666666666,
+    "every_pair_informative_everywhere": false,
+    "every_emitted_verdict_correct": true,
+    "every_planted_verdict_correct": false,
+    "perfect_input_hits_its_attainable_floor_wherever_it_emits": true,
+    "perfect_input_hits_the_draw_count_floor_everywhere": false
+  },
+  "exchangeable_input": {
+    "_what": "the observed pair drawn as a random re-split of a fixed union, so it is exchangeable with the null draws BY CONSTRUCTION and P(p <= alpha) <= alpha exactly.",
+    "_why_it_is_the_sharp_one": "every other validity measurement in this project is a rate under a modelled H0 family. This one's answer follows from the construction, so a failure localises to the implementation rather than to the family.",
+    "n_draws_of_the_input": 200,
+    "n_emitted": 200,
+    "alpha": 0.05,
+    "reject_greater_given_emitted": 0.02,
+    "reject_reciprocal_given_emitted": 0.07,
+    "both_tails_at_one_given_emitted": 0.0,
+    "mean_p": 0.55475,
+    "median_p": 0.57,
+    "mean_occupancy_of_each_arm": [
+      2.236117559499752,
+      2.2517180106448715
+    ],
+    "holds": true
+  },
+  "verdict_band": {
+    "_what": "verdict rates over the gate's input space: the occupancy asymmetry between the arms, and the dim U_pos / dim(occupied) ratio the registry records as a precondition.",
+    "_the_counterfactual": "`perfect_input_verdicts` re-scores the strongest input each cell can be handed, over several seeds. A cell where nothing -- not one of its own draws and not one perfect input -- reaches a verdict is one where the gate returned no information, which is the shape of what CLAIM-C's dry run found for its own gate.",
+    "_what_this_does_NOT_establish": "that the gate is a CONSTANT FUNCTION there. CLAIM-C's band could be settled by enumerating every concordance count; this statistic has no such enumeration, so `no_verdict_in_any_draw` is a measured zero over a stated number of draws and not a proof. The distinction is kept in the field name.",
+    "alpha": 0.05,
+    "n_draws_per_cell": 25,
+    "n_perfect_seeds": 5,
+    "cells": [
+      {
+        "dim_ratio": 1.0,
+        "dim_arm": 8,
+        "c_pos": 0.0,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": -0.007168977718089247,
+        "mean_informative_pairs": 0.0,
+        "tracks": 0.0,
+        "inverts": 0.0,
+        "insufficient": 1.0,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 5,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 5,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 1.0,
+        "dim_arm": 8,
+        "c_pos": 1.5,
+        "c_neg": 1.5,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": -0.048883448241977,
+        "mean_informative_pairs": 3.72,
+        "tracks": 0.0,
+        "inverts": 0.08,
+        "insufficient": 0.92,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 5,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 7,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 1.0,
+        "dim_arm": 8,
+        "c_pos": 1.5,
+        "c_neg": 1.2,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.2996622563411014,
+        "mean_informative_pairs": 5.44,
+        "tracks": 0.48,
+        "inverts": 0.0,
+        "insufficient": 0.52,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 5,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 17,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 1.0,
+        "dim_arm": 8,
+        "c_pos": 1.5,
+        "c_neg": 0.9,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.5874507302624241,
+        "mean_informative_pairs": 6.68,
+        "tracks": 0.88,
+        "inverts": 0.0,
+        "insufficient": 0.12,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 5,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 27,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 1.0,
+        "dim_arm": 8,
+        "c_pos": 1.5,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 1.2224841341777575,
+        "mean_informative_pairs": 7.28,
+        "tracks": 1.0,
+        "inverts": 0.0,
+        "insufficient": 0.0,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 5,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 30,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 1.0,
+        "dim_arm": 8,
+        "c_pos": 3.0,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 2.33045100149237,
+        "mean_informative_pairs": 7.92,
+        "tracks": 1.0,
+        "inverts": 0.0,
+        "insufficient": 0.0,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 5,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 30,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 2.0,
+        "dim_arm": 16,
+        "c_pos": 0.0,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": -0.0024244811645298594,
+        "mean_informative_pairs": 0.0,
+        "tracks": 0.0,
+        "inverts": 0.0,
+        "insufficient": 1.0,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "INSUFFICIENT",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 4,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 4,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 2.0,
+        "dim_arm": 16,
+        "c_pos": 1.5,
+        "c_neg": 1.5,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": -0.0010329787845118144,
+        "mean_informative_pairs": 0.64,
+        "tracks": 0.0,
+        "inverts": 0.0,
+        "insufficient": 1.0,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 5,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 5,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 2.0,
+        "dim_arm": 16,
+        "c_pos": 1.5,
+        "c_neg": 1.2,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.22345115897992557,
+        "mean_informative_pairs": 0.88,
+        "tracks": 0.04,
+        "inverts": 0.0,
+        "insufficient": 0.96,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 3,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 4,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 2.0,
+        "dim_arm": 16,
+        "c_pos": 1.5,
+        "c_neg": 0.9,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.4374098657024832,
+        "mean_informative_pairs": 1.12,
+        "tracks": 0.2,
+        "inverts": 0.0,
+        "insufficient": 0.8,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "INSUFFICIENT",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 3,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 8,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 2.0,
+        "dim_arm": 16,
+        "c_pos": 1.5,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.7210785158932638,
+        "mean_informative_pairs": 1.24,
+        "tracks": 0.48,
+        "inverts": 0.0,
+        "insufficient": 0.52,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "TRACKS-DECOMPOSITION",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 3,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 15,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 2.0,
+        "dim_arm": 16,
+        "c_pos": 3.0,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 1.7367401964746614,
+        "mean_informative_pairs": 0.96,
+        "tracks": 0.6,
+        "inverts": 0.0,
+        "insufficient": 0.4,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "TRACKS-DECOMPOSITION",
+          "INSUFFICIENT",
+          "TRACKS-DECOMPOSITION",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 2,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 17,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 3.0,
+        "dim_arm": 24,
+        "c_pos": 0.0,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.0038807731874074066,
+        "mean_informative_pairs": 0.04,
+        "tracks": 0.04,
+        "inverts": 0.0,
+        "insufficient": 0.96,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 0,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 1,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 3.0,
+        "dim_arm": 24,
+        "c_pos": 1.5,
+        "c_neg": 1.5,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.013908865940994384,
+        "mean_informative_pairs": 0.04,
+        "tracks": 0.0,
+        "inverts": 0.04,
+        "insufficient": 0.96,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 0,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 1,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 3.0,
+        "dim_arm": 24,
+        "c_pos": 1.5,
+        "c_neg": 1.2,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.18894401736049463,
+        "mean_informative_pairs": 0.04,
+        "tracks": 0.04,
+        "inverts": 0.0,
+        "insufficient": 0.96,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 0,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 1,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 3.0,
+        "dim_arm": 24,
+        "c_pos": 1.5,
+        "c_neg": 0.9,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.2948905139401709,
+        "mean_informative_pairs": 0.12,
+        "tracks": 0.08,
+        "inverts": 0.0,
+        "insufficient": 0.92,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 0,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 2,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 3.0,
+        "dim_arm": 24,
+        "c_pos": 1.5,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 0.5439597567314067,
+        "mean_informative_pairs": 0.12,
+        "tracks": 0.12,
+        "inverts": 0.0,
+        "insufficient": 0.88,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "TRACKS-DECOMPOSITION",
+          "INSUFFICIENT",
+          "TRACKS-DECOMPOSITION"
+        ],
+        "perfect_input_reaches_a_verdict": 2,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 5,
+        "no_verdict_in_any_draw": false
+      },
+      {
+        "dim_ratio": 3.0,
+        "dim_arm": 24,
+        "c_pos": 3.0,
+        "c_neg": 0.0,
+        "n_pairs": 8,
+        "mean_occupancy_log_ratio": 1.3720666651379156,
+        "mean_informative_pairs": 0.12,
+        "tracks": 0.12,
+        "inverts": 0.0,
+        "insufficient": 0.88,
+        "refusal_rate": 0.0,
+        "perfect_input_verdicts": [
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT",
+          "INSUFFICIENT"
+        ],
+        "perfect_input_reaches_a_verdict": 0,
+        "n_perfect_seeds": 5,
+        "n_draws_reaching_a_verdict": 3,
+        "no_verdict_in_any_draw": false
+      }
+    ],
+    "cells_with_no_verdict_in_any_draw": [],
+    "n_cells": 18,
+    "n_cells_with_no_verdict": 0
+  },
+  "occupancy_readout": {
+    "_what": "each arm's chance-normalized occupancy is computable from the activations and the two projectors with no injection and no null. This asks how well their log ratio predicts the verdict the whole gate returns.",
+    "_how_to_read_the_auc": "the probability that a TRACKS run has a larger occupancy log ratio than an INSUFFICIENT one, ties counted half. 0.5 is no information; 1.0 would mean the verdict is a readout of a quantity computable without running the gate at all, which would be worth knowing in both directions -- a free precondition for the pilot, and a warning about what a TRACKS verdict is made of.",
+    "n_runs": 450,
+    "n_tracks": 127,
+    "n_inverts": 3,
+    "n_insufficient": 320,
+    "auc_tracks_vs_insufficient": 0.8750738188976378,
+    "smallest_log_ratio_that_tracked": -0.03411089024769549,
+    "largest_log_ratio_that_was_insufficient": 1.9109410767034374,
+    "largest_log_ratio_that_inverted": -0.08172803673300708,
+    "separation": -1.9450519669511328,
+    "perfectly_separated": false,
+    "mean_log_ratio_by_verdict": {
+      "TRACKS-DECOMPOSITION": 1.1790785993691777,
+      "INVERTS": -0.16294882031126423,
+      "INSUFFICIENT": 0.3083361827621247
+    }
+  },
+  "refusals_and_branches": {
+    "_what": "every refusal reached and re-scored, and every verdict branch reached on an input whose answer is known.",
+    "shipped_n_draws": 199,
+    "refusals": [
+      {
+        "refusal_kind": "draws_below_floor",
+        "reached": true,
+        "best_attainable_p": 0.1,
+        "could_any_input_have_cleared_alpha": false,
+        "how_rescored": "the floor 1/(draws+1) bounds BOTH tails, so it is read directly rather than searched for",
+        "remedy": "raise n_draws to at least 19"
+      },
+      {
+        "refusal_kind": "union_rank_deficient",
+        "reached": true,
+        "best_attainable_p": null,
+        "could_any_input_have_cleared_alpha": false,
+        "how_rescored": "the union cannot hold the observed pair orthogonally, so no re-split of it reproduces the observed geometry and there is no p to compute",
+        "remedy": "supply arms the projector build's resolution order made orthogonal, or fewer dimensions"
+      },
+      {
+        "refusal_kind": "union_rank_deficient",
+        "reached": true,
+        "best_attainable_p": null,
+        "could_any_input_have_cleared_alpha": false,
+        "how_rescored": "no pair of those dimensions fits in d_model at all",
+        "remedy": "none available at this d_model"
+      },
+      {
+        "refusal_kind": "null_ties_the_maximum",
+        "reached": true,
+        "best_attainable_p": 0.23,
+        "could_any_input_have_cleared_alpha": false,
+        "how_rescored": "both tails' attainable floors are computed at the largest value sum(D) can take, which is an upper bound on any observation, so neither could have reached alpha",
+        "remedy": "more pairs, or a union whose random re-splits inform less often; raising n_draws does not help"
+      }
+    ],
+    "all_refusals_reached": true,
+    "no_refusal_turned_away_a_clearable_input": true,
+    "verdict_branches": {
+      "TRACKS-DECOMPOSITION": "TRACKS-DECOMPOSITION",
+      "INVERTS": "INVERTS",
+      "INSUFFICIENT": "INSUFFICIENT"
+    },
+    "all_branches_reached": true
+  }
+}

@@ -463,6 +463,58 @@ specific to it, all fixed before any activation was steered:
 
 Recorded before any activation exists, which is the only time it could be added honestly.
 
+## Addendum, 2026-08-26 — `P-ST1` run on inputs whose answer is known, and a second null retired
+
+`tools/dry_run_p_st1.py` → `claims/audits/p_st1_dry_run.json`;
+`POPPER_PLAN.md` §6m. `claims/EVALUABILITY.md` had said every converted row is
+owed a run on an input whose answer is known ahead of converting the next one, and
+`CLAIM-C` was the first. This is the second, and it changed the gate twice.
+
+- **The null this entry adjudicated does not hold either, and the family that shows
+  it is the realistic one.** The matched-dimension random orthogonal pair holds the
+  DIMENSIONS fixed and not how much of the population each subspace contains — which is
+  what a change in effective rank is driven by. `U_pos` and `U_neg` are cut from the model's
+  own OV eigenstructure and a residual stream is orthogonal to neither, so both hold more
+  than the k/d a random subspace holds, and such a pair is unusual against random pairs
+  whichever arm is called attractive. Measured where both arms are occupied above chance
+  and the two are IDENTICAL by construction — so a label swap is a distributional identity
+  and INSUFFICIENT is the only correct verdict — it rejects at up to 0.20 against a nominal 0.05, the inflation growing with the pair count. All three H0 families the 2026-08-25 calibration measured put the cloud in a subspace
+  ORTHOGONAL to both arms, the one case where that null is exchangeable with the observed
+  pair, so nothing could have seen it.
+- **What replaces it randomises the SPLIT and not the subspaces**, and that is the first
+  time this project's recurring question — what is being randomised — has been answered by
+  randomising less. Draw a uniformly random k_pos-dimensional subspace of
+  span(`U_pos` + `U_neg`) and take its orthogonal complement inside that union. Dimensions,
+  orthogonality, occupancy and the whole spectral relationship to the layer's cloud are held
+  exactly fixed, and the observed split is one point of the same Grassmannian the null draws
+  from — so exchangeability under H0 is by construction rather than by measurement. It costs no power where the cloud fills the whole arm and costs it as
+  dim `U_pos` grows past the dimension the population occupies; power lost that way was
+  never power about the decomposition.
+- **The reported floor was not the attainable one.** `sum(D)` cannot exceed 2m, and on an
+  occupied union many random re-splits already reach 2m and tie it, so the smallest
+  expressible p is a fact about the layer: 0.11–0.17 on a perfect input at one pair with 99 draws, where
+  `1/(draws+1)` says 0.01. The gate now computes both tails' floors from the null it already
+  has and REFUSES when neither reaches alpha — a design that could not have rejected was
+  returning "not significant", which is CLAIM-C's §6l defect arriving here. 2m is an upper
+  bound on the observation, so the refusal turns away nothing that could have cleared alpha.
+- **A run can have only its FALSIFICATION branch reachable.** The two tails' floors are
+  computed separately and are not equal, so one can be out of reach while the other is not;
+  where the reachable one is INVERTS, the design can return a falsification or nothing. The
+  gate does not refuse — one reachable tail is one reachable verdict — and records
+  `reachable_tails` instead, because a run that can only produce the branch which enters the
+  ledger as a falsification is one a reader must be told about. Two pairs is the smallest
+  design that emits at all: at one pair, on an input planted perfectly in either arm, both
+  floors sit at 0.11–0.17 and the gate refuses.
+- **Each arm's chance-normalized occupancy is now reported and costs no injection to
+  compute** — its share of the centred population's energy divided by the k/d a random
+  subspace of that dimension holds, which is `POPPER_PLAN.md` §6h's chance normalization with
+  the population in place of a single vector. The pilot can read it off the activations and
+  the two projectors before spending a sweep, and a reader can see what a TRACKS verdict is
+  made of. It does not determine the verdict on its own; the dry run reports how far it goes.
+
+The registered wording is unchanged and no falsifier has been weakened. What changed is the
+null the wording's successor named, and it changed in the conservative direction.
+
 ## Status
 
 Not yet adjudicated. No Phase 7 *results* exist; `P-I1`'s gate exists as of 2026-08-24 and

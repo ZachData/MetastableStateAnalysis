@@ -366,3 +366,55 @@ def random_orthogonal_subspace_pair(d_model: int, dim_a: int, dim_b: int,
             f"LayerChannels.")
     Q = random_subspace(d_model, total, rng)
     return Q[:, :dim_a], Q[:, dim_a:]
+
+
+def subspace_union(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """
+    An orthonormal basis for span(a + b), of dimension dim_a + dim_b.
+
+    REFUSES if the union's numerical rank falls short of that, which happens
+    when the two subspaces overlap or their dimensions together exceed
+    d_model. The resolution order makes the observed channels orthogonal, so a
+    caller hitting this is not passing channels from one `LayerChannels`.
+    """
+    A = np.asarray(a, dtype=np.float64)
+    B = np.asarray(b, dtype=np.float64)
+    if A.shape[0] != B.shape[0]:
+        raise ValueError(
+            f"subspaces live in R^{A.shape[0]} and R^{B.shape[0]}; these must "
+            f"match (frame mismatch)")
+    want = A.shape[1] + B.shape[1]
+    M = np.hstack([A, B])
+    s = np.linalg.svd(M, compute_uv=False)
+    rank = int((s > max(s[0] if s.size else 1.0, 1.0) * 1e-10).sum())
+    if rank < want:
+        raise ValueError(
+            f"span of the two channels has rank {rank}, not their dimension "
+            f"sum {want} (d_model = {A.shape[0]}). They overlap, or together "
+            f"exceed d_model; either way no re-split of the union reproduces "
+            f"the observed geometry.")
+    return np.linalg.qr(M)[0][:, :want]
+
+
+def resplit_union(union: np.ndarray, dim_a: int,
+                  rng: np.random.Generator) -> tuple:
+    """
+    A uniformly random (dim_a, k - dim_a) split of `union`, as two bases.
+
+    The pair spans exactly what the union spans, is orthogonal, and has the
+    requested dimensions -- so everything about the pair AS A PAIR is held
+    fixed and only the assignment moves. That is what
+    `random_orthogonal_subspace_pair` does not do: it randomises the union and
+    the assignment together, so a union that sits above chance against whatever
+    the statistic reads is not reproduced in the null. See POPPER_PLAN.md 6n.
+    """
+    S = np.asarray(union, dtype=np.float64)
+    k = S.shape[1]
+    ka = int(dim_a)
+    if not 0 < ka < k:
+        raise ValueError(
+            f"a split needs 0 < dim_a < k; got dim_a={ka}, k={k}. A union "
+            f"assigned entirely to one channel has no second channel.")
+    R = np.linalg.qr(rng.normal(size=(k, k)))[0]
+    Z = S @ R
+    return Z[:, :ka], Z[:, ka:]

@@ -71,7 +71,11 @@ from p7_motifs.steering_gate import (
     population_mean_ratio,
     population_spread,
     random_orthogonal_subspace_pair,
+    compact_basis,
+    occupancy,
+    resplit_pair,
     subspace_rank,
+    union_basis,
 )
 
 #: Small on purpose. Every gate call here draws n_draws x n_pairs effective
@@ -98,6 +102,26 @@ def _layer(seed: int, occupied: str = "pos", concentration: float = 3.0,
     if mean_offset:
         scale = float(np.sqrt((X ** 2).sum(axis=1).mean()))
         X = X + (Q[:, -1] * mean_offset * scale)[None, :]
+    return X, u_pos, u_neg
+
+
+def _both_arms_occupied(seed: int, concentration: float = 2.0):
+    """
+    The H0 family that retired the matched-dimension null (2026-08-26).
+
+    Both arms hold more of the cloud than a random subspace of their dimension
+    would, and the two are IDENTICAL by construction -- swapping the labels is
+    a distributional identity, so the correct verdict is INSUFFICIENT and
+    P(TRACKS) must equal P(INVERTS). It is also the realistic case: U_pos and
+    U_neg are cut from the model's own OV eigenstructure and the residual
+    stream is orthogonal to neither.
+    """
+    rng = np.random.default_rng(seed)
+    Q = np.linalg.qr(rng.normal(size=(D_MODEL, D_MODEL)))[0]
+    u_pos, u_neg = Q[:, :DIM], Q[:, DIM:2 * DIM]
+    X = rng.normal(size=(N_TOKENS, D_MODEL))
+    for U in (u_pos, u_neg):
+        X = X + (rng.normal(size=(N_TOKENS, DIM)) * concentration) @ U.T
     return X, u_pos, u_neg
 
 
@@ -285,9 +309,16 @@ class TestTheNullArithmetic(unittest.TestCase):
             null_distribution([3.0, 1.0])
 
 
-class TestTheSubspaceNull(unittest.TestCase):
+class TestTheSubspaceNulls(unittest.TestCase):
     """
-    The adjudicated null: POPPER_PLAN.md 6h's construction, fourth arrival.
+    Two nulls: the one that is adjudicated (re-split the observed union) and
+    6k's matched-dimension pair, retired 2026-08-26 and kept as a diagnostic.
+
+    The retirement is pinned by its MECHANISM rather than by resampling its
+    consequence -- the same arrangement 6h's per-layer/per-model comparison
+    settled on. A matched-dimension random pair does not reproduce how much of
+    the population the observed pair holds; a re-split of the observed union
+    reproduces it exactly, because it is the same union.
     """
 
     def test_the_pair_is_orthogonal_and_matched_in_dimension(self):
@@ -303,26 +334,190 @@ class TestTheSubspaceNull(unittest.TestCase):
         with self.assertRaises(ValueError):
             random_orthogonal_subspace_pair(16, 10, 10, np.random.default_rng(0))
 
-    def test_the_gate_refuses_the_same_case(self):
+    def test_a_resplit_is_orthogonal_and_spans_the_same_union(self):
+        rng = np.random.default_rng(0)
+        S = np.linalg.qr(rng.normal(size=(64, 12)))[0]
+        a, b = resplit_pair(S, 5, rng)
+        self.assertEqual((a.shape[1], b.shape[1]), (5, 7))
+        self.assertLess(float(np.abs(a.T @ b).max()), 1e-10)
+        # span(a) + span(b) == span(S): every column of the union is recovered
+        # by projecting onto the two halves.
+        P = np.hstack([a, b])
+        self.assertLess(float(np.abs(P @ (P.T @ S) - S).max()), 1e-10)
+
+    def test_a_union_assigned_entirely_to_one_arm_is_refused(self):
+        S = np.linalg.qr(np.random.default_rng(0).normal(size=(32, 6)))[0]
+        with self.assertRaises(ValueError):
+            resplit_pair(S, 6, np.random.default_rng(0))
+
+    def test_the_resplit_preserves_union_occupancy_and_the_old_null_does_not(self):
+        """
+        The mechanism the retirement rests on, deterministic and in
+        milliseconds.
+
+        dER is driven by how much of the cloud a subspace holds. A re-split
+        draws inside the observed union, so the pair's occupancy is the
+        observed pair's occupancy to machine precision. A matched-dimension
+        random pair holds what a random subspace holds -- about chance -- so on
+        a population that occupies both arms it is compared against pairs the
+        observed one is not exchangeable with.
+        """
+        X, u_pos, u_neg = _both_arms_occupied(21)
+        union = union_basis(u_pos, u_neg)
+        obs = occupancy(X, union)
+        self.assertGreater(obs, 1.5)                 # both arms well occupied
+
+        rng = np.random.default_rng(0)
+        for _ in range(5):
+            a, b = resplit_pair(union, u_pos.shape[1], rng)
+            self.assertAlmostEqual(occupancy(X, np.hstack([a, b])), obs,
+                                   places=10)
+        for _ in range(5):
+            a, b = random_orthogonal_subspace_pair(
+                D_MODEL, u_pos.shape[1], u_neg.shape[1], rng)
+            self.assertLess(occupancy(X, np.hstack([a, b])), 0.5 * obs)
+
+    def test_the_gate_refuses_a_union_that_cannot_hold_the_observed_pair(self):
         X, u_pos, u_neg = _layer(8)
         big = np.linalg.qr(np.random.default_rng(0).normal(
             size=(D_MODEL, D_MODEL - 4)))[0]
         res = p_value_p_st1(X, big, big, 4, n_draws=19, with_profile=False)
         self.assertIsNone(res["p_value"])
-        self.assertIn("exceeds d_model", res["reason"])
+        self.assertEqual(res["refusal_kind"], "union_rank_deficient")
+        self.assertIn("exceed d_model", res["reason"])
+
+    def test_the_gate_refuses_overlapping_arms(self):
+        """
+        Orthogonality was ASSUMED from the projector build's resolution order
+        from the day the module was written and never checked. Overlapping arms
+        now refuse rather than getting a null drawn on a geometry the observed
+        pair does not have.
+        """
+        X, u_pos, u_neg = _layer(8)
+        overlap = np.hstack([u_pos[:, :2], u_neg[:, :DIM - 2]])
+        res = p_value_p_st1(X, u_pos, overlap, 4, n_draws=19, with_profile=False)
+        self.assertIsNone(res["p_value"])
+        self.assertEqual(res["refusal_kind"], "union_rank_deficient")
+        self.assertIn("overlap", res["reason"])
 
     def test_the_floor_is_fixed_by_the_draws_not_the_data(self):
         X, u_pos, u_neg = _layer(9)
         res = p_value_p_st1(X, u_pos, u_neg, 4, n_draws=9, with_profile=False)
         self.assertIsNone(res["p_value"])
+        self.assertEqual(res["refusal_kind"], "draws_below_floor")
         self.assertIn("null draws can express no p smaller", res["reason"])
         self.assertAlmostEqual(res["best_attainable_p"], 0.1, places=12)
+
+    def test_the_attainable_floor_is_set_by_ties_and_not_by_the_draw_count(self):
+        """
+        The defect `tools/dry_run_p_st1.py` found by running the gate on an
+        input whose answer was known (POPPER_PLAN.md 6m).
+
+        sum(D) cannot exceed 2m, so a run's smallest expressible p is what an
+        observation of 2m would receive -- and on a union the cloud occupies,
+        many null re-splits already reach 2m and tie it. At one pair the two
+        floors are far apart, and the gate refuses rather than reporting the
+        "not significant" that a design incapable of rejecting produces.
+        """
+        X, u_pos, u_neg = _both_arms_occupied(23)
+        res = p_value_p_st1(X, u_pos, u_neg, 1, n_draws=39, with_profile=False)
+        self.assertEqual(res["refusal_kind"], "null_ties_the_maximum")
+        self.assertGreater(res["best_attainable_p"], 0.05)
+        self.assertAlmostEqual(res["draw_count_floor"], 1 / 40, places=12)
+        self.assertGreater(res["best_attainable_p"], res["draw_count_floor"])
+        self.assertIn("Raising n_draws does NOT fix this", res["reason"])
+
+    def test_a_perfect_input_lands_on_its_own_attainable_floor(self):
+        """
+        Not on the draw-count floor -- that is the whole point of the previous
+        test. With enough pairs the two coincide, and where they do not it is
+        the attainable one a perfect input reaches.
+        """
+        X, u_pos, u_neg = _layer(24, "pos")
+        for m in (4, 8):
+            res = p_value_p_st1(X, u_pos, u_neg, m, n_draws=TEST_DRAWS,
+                                with_profile=False)
+            self.assertEqual(res["verdict"], "TRACKS-DECOMPOSITION")
+            self.assertAlmostEqual(res["p_value"],
+                                   res["attainable_p_greater"], places=12)
+
+    def test_the_tie_floor_refusal_needs_BOTH_tails_out_of_reach(self):
+        """
+        One reachable tail is one reachable verdict, so the gate is not a
+        constant function there and must not refuse -- 6l's rule that a refusal
+        costs no verdict the gate could otherwise have reached.
+
+        A cloud in U_pos at one pair is exactly that case: no re-split reaches
+        -2m, so INVERTS stays reachable while TRACKS does not, and the gate
+        emits. `reachable_tails` records the asymmetry, which is worth having
+        in the artifact because a run whose only reachable verdict is the
+        FALSIFICATION is one a reader should know about.
+        """
+        X, u_pos, u_neg = _layer(23, "pos")
+        res = p_value_p_st1(X, u_pos, u_neg, 1, n_draws=TEST_DRAWS,
+                            with_profile=False)
+        self.assertIsNotNone(res["p_value"])
+        self.assertGreater(res["attainable_p_greater"], 0.05)
+        self.assertLessEqual(res["attainable_p_reciprocal"], 0.05)
+        self.assertEqual(res["reachable_tails"], ["reciprocal"])
+
+    def test_a_data_refusal_is_reported_ahead_of_a_calibration_one(self):
+        """
+        POPPER_PLAN.md 6l's ordering rule. An input that is both geometrically
+        impossible and under-drawn should say which of the two it cannot fix by
+        raising `n_draws`.
+        """
+        X, u_pos, _ = _layer(9)
+        res = p_value_p_st1(X, u_pos, u_pos, 4, n_draws=9, with_profile=False)
+        self.assertEqual(res["refusal_kind"], "union_rank_deficient")
 
     def test_subspace_rank_reads_both_shapes(self):
         rng = np.random.default_rng(0)
         U = np.linalg.qr(rng.normal(size=(32, 7)))[0]
         self.assertEqual(subspace_rank(U), 7)
         self.assertEqual(subspace_rank(U @ U.T), 7)
+
+    def test_compact_basis_reads_both_shapes(self):
+        rng = np.random.default_rng(0)
+        U = np.linalg.qr(rng.normal(size=(32, 7)))[0]
+        for arg in (U, U @ U.T):
+            B = compact_basis(arg)
+            self.assertEqual(B.shape, (32, 7))
+            self.assertLess(float(np.abs(B.T @ B - np.eye(7)).max()), 1e-9)
+            # same span either way
+            self.assertLess(float(np.abs(B @ (B.T @ U) - U).max()), 1e-9)
+
+
+class TestOccupancyIsReportedAndChanceNormalized(unittest.TestCase):
+    """
+    The quantity a TRACKS verdict is made of, computable with no injection.
+    """
+
+    def test_a_random_subspace_sits_at_one(self):
+        rng = np.random.default_rng(4)
+        X = rng.normal(size=(N_TOKENS, D_MODEL))
+        U = np.linalg.qr(rng.normal(size=(D_MODEL, DIM)))[0]
+        self.assertAlmostEqual(occupancy(X, U), 1.0, delta=0.35)
+
+    def test_it_is_comparable_across_dimensions(self):
+        """
+        6h's whole finding was an alignment comparison read without dimension
+        normalization. Raw captured energy scales with k; this does not.
+        """
+        rng = np.random.default_rng(5)
+        X = rng.normal(size=(N_TOKENS, D_MODEL))
+        Q = np.linalg.qr(rng.normal(size=(D_MODEL, D_MODEL)))[0]
+        small, large = occupancy(X, Q[:, :3]), occupancy(X, Q[:, :30])
+        self.assertAlmostEqual(small, large, delta=0.6)
+
+    def test_the_gate_reports_both_arms_and_the_asymmetry(self):
+        X, u_pos, u_neg = _layer(6, "pos")
+        res = p_value_p_st1(X, u_pos, u_neg, 4, n_draws=TEST_DRAWS,
+                            with_profile=False)
+        occ = res["occupancy"]
+        self.assertGreater(occ["occupancy_pos"], occ["occupancy_neg"])
+        self.assertGreater(occ["occupancy_log_ratio"], 0.0)
+        self.assertNotIn("occupancy", res["statistic"])
 
 
 class TestAllThreeVerdictsCanFire(unittest.TestCase):
@@ -376,14 +571,60 @@ class TestAllThreeVerdictsCanFire(unittest.TestCase):
                          "INSUFFICIENT")
 
 
-class TestTheRegisteredNullIsReportedButNotAdjudicated(unittest.TestCase):
+class TestBothRetiredNullsAreReportedButNotAdjudicated(unittest.TestCase):
 
-    def test_the_adjudicated_null_is_the_subspace_one(self):
-        self.assertIn("subspace", NULL_FAMILY)
+    def test_the_adjudicated_null_re_splits_the_union(self):
+        self.assertIn("re-split", NULL_FAMILY)
         res = p_value_p_st1(*_layer(12, "pos"), 8, n_draws=TEST_DRAWS,
                             with_profile=False)
         self.assertEqual(res["null_family"], NULL_FAMILY)
         self.assertEqual(res["n_subspace_draws"], TEST_DRAWS)
+        self.assertEqual(res["dim_union"], 2 * DIM)
+
+    def test_the_null_depends_on_the_union_and_not_on_the_labelling(self):
+        """
+        The sharpest statement of what this null holds fixed: it is a function
+        of span(U_pos + U_neg) and the two dimensions, so nothing about which
+        half was called attractive can reach it. That is H0-BRIDGE for this
+        entry -- the label carries no information -- built into the null rather
+        than measured out of it.
+        """
+        _, u_pos, u_neg = _layer(19, "pos")
+        a, b = union_basis(u_pos, u_neg), union_basis(u_neg, u_pos)
+        self.assertEqual(a.shape, b.shape)
+        self.assertLess(float(np.abs(a @ (a.T @ b) - b).max()), 1e-9)
+
+    def test_the_matched_dimension_null_is_computed_beside_it(self):
+        res = p_value_p_st1(*_layer(12, "pos"), 8, n_draws=TEST_DRAWS,
+                            with_profile=False)
+        diag = res["matched_dimension_diagnostic"]
+        self.assertIn("NOT ADJUDICATED", diag["null_family"])
+        self.assertIn("RETIRED", diag["null_family"])
+        self.assertIsNotNone(diag["p_value"])
+
+    def test_the_retired_matched_dimension_null_rejects_where_this_one_does_not(self):
+        """
+        The finding this pass turned on, on inputs whose correct verdict is
+        INSUFFICIENT by construction (both arms occupied above chance, the two
+        statistically identical, so a label swap is a distributional identity).
+
+        Deterministic: everything is seeded, and the two nulls are scored on
+        the SAME eight populations and the same drawn pairs, so the comparison
+        is paired rather than two experiments. The margins are wide because an
+        exact pin on a floating-point RNG stream is a test about LAPACK.
+        """
+        resplit_rejections = matched_rejections = 0
+        for s in range(8):
+            X, u_pos, u_neg = _both_arms_occupied(500 + s)
+            res = p_value_p_st1(X, u_pos, u_neg, 4, n_draws=19,
+                                with_profile=False, seed=2000 + s)
+            diag = res["matched_dimension_diagnostic"]
+            resplit_rejections += (res["p_value"] <= 0.05
+                                   or res["p_reciprocal"] <= 0.05)
+            matched_rejections += (diag["p_value"] <= 0.05
+                                   or diag["p_reciprocal"] <= 0.05)
+        self.assertLessEqual(resplit_rejections, 1)
+        self.assertGreaterEqual(matched_rejections, 3)
 
     def test_the_registered_permutation_is_computed_beside_it(self):
         res = p_value_p_st1(*_layer(12, "pos"), 8, n_draws=TEST_DRAWS,
@@ -552,12 +793,23 @@ class TestCommittedCalibration(unittest.TestCase):
         sec = self._rec()["adjudicated_null_validity_and_power"]
         n = sec["n_trials_per_row"]
         for r in sec["rows"]:
-            rate = r["subspace_reject_given_emitted"]
-            if r["family"].startswith("H0") and rate is not None:
-                # One trial's worth of slack: these are proportions over n runs
-                # and a bound tighter than the resolution fails on noise.
-                self.assertLessEqual(rate, 0.05 + 1.5 / n,
-                                     f"{r['family']} at {r['n_pairs']} pairs")
+            if not r["family"].startswith("H0"):
+                continue
+            for key in ("resplit_reject_given_emitted",
+                        "resplit_reciprocal_given_emitted"):
+                rate = r[key]
+                if rate is None:
+                    continue
+                # alpha plus one standard error of a proportion over n runs --
+                # the same bound `check_record` derives, rather than a placed
+                # tolerance. At n = 50 a true 0.05 lands on 0.10 about once in
+                # ten cells and this table has twenty of them, which is why the
+                # reciprocal tail gets its own section at four times the
+                # replicates instead of a tighter assertion here.
+                ceiling = 0.05 + 1.96 * (0.05 * 0.95 / n) ** 0.5
+                self.assertLessEqual(
+                    rate, ceiling,
+                    f"{r['family']} at {r['n_pairs']} pairs, {key}")
         h1 = [r for r in sec["rows"] if r["family"] == "H1"]
         inv = [r for r in sec["rows"] if r["family"] == "INVERTED"]
         self.assertTrue(h1 and inv)
@@ -567,6 +819,56 @@ class TestCommittedCalibration(unittest.TestCase):
             self.assertGreaterEqual(r["inverts"], 0.9,
                                     "the falsification branch must be shown "
                                     "firing under a planted inversion")
+
+    def test_the_family_that_retired_the_matched_dimension_null_is_measured(self):
+        """
+        The H0 family whose ABSENCE kept the previous null's failure invisible
+        for a pass: both arms occupied above chance, the two identical by
+        construction. A calibration whose families cannot express the failure
+        it rules out is POPPER_PLAN.md 6h's audit arm incapable of failing.
+        """
+        sec = self._rec()["adjudicated_null_validity_and_power"]
+        both = [r for r in sec["rows"] if r["family"].startswith("H0-both-arms")]
+        self.assertTrue(both, "no H0-both-arms family in the record")
+        for r in both:
+            self.assertGreater(min(r["mean_occupancy_pos"],
+                                   r["mean_occupancy_neg"]), 1.05,
+                               "the arms were not actually occupied above "
+                               "chance, so the family is not the one it names")
+
+    def test_the_retired_matched_dimension_null_is_shown_anticonservative(self):
+        """
+        It was retired on this evidence. If the record no longer shows it, the
+        retirement is not supported by the artifact that supports it -- so the
+        test fails rather than quietly agreeing with the module.
+        """
+        sec = self._rec()["adjudicated_null_validity_and_power"]
+        worst = max(
+            max(r["matched_dimension_reject_given_emitted"] or 0.0,
+                r["matched_dimension_reciprocal_given_emitted"] or 0.0)
+            for r in sec["rows"] if r["family"].startswith("H0"))
+        self.assertGreater(worst, 0.12)
+
+    def test_the_reciprocal_tail_carries_more_replicates_and_both_tails(self):
+        """
+        POPPER_PLAN.md 6k named the INVERTS branch's rate as this
+        construction's weakest measurement: fifty runs resolve a rate to about
+        +/- 0.03, which cannot separate nominal from twice nominal.
+        """
+        rec = self._rec()
+        rt = rec["reciprocal_tail"]
+        main = rec["adjudicated_null_validity_and_power"]["n_trials_per_row"]
+        self.assertGreater(rt["n_trials_per_row"], main)
+        self.assertTrue(rt["rows"])
+        self.assertTrue(rt["tails_agree"],
+                        "the arms are exchangeable by construction in every "
+                        "family here, so the two tails must agree within "
+                        "sampling error")
+        for r in rt["rows"]:
+            self.assertLessEqual(r["reciprocal_given_emitted"],
+                                 0.05 + 1.5 / rt["n_trials_per_row"],
+                                 f"{r['family']}: the branch that would enter "
+                                 f"the ledger as a falsification")
 
     def test_the_dimension_precondition_is_recorded(self):
         rows = self._rec()["dimension_cliff"]["rows"]
