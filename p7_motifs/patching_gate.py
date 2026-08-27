@@ -159,7 +159,7 @@ What the sign-flip null needs beyond per-point exchangeability is that the
 signs are **independently** flippable, and that is a claim about the units and
 not about the pair. `status-6.md`'s "49 layers are not 49 independent
 observations" applies to ablation points inside one run exactly as it applied to
-ALBERT's layers, so both readings were measured, at 6 prompts x 6 ablation
+ALBERT's layers, so both readings were measured, at 6 prompts x 7 ablation
 points, against a per-prompt shared component (rho = the share of each
 difference that is the prompt's):
 
@@ -175,10 +175,19 @@ reports at 0.082 -> 0.340 and 6f, 6h and 6k each measured. Every rate is
 CONDITIONAL ON EMISSION and `validity` carries the emission count beside it,
 because the refusal below changes what that conditions on. **Which unit may
 enter an e-process is a scientific decision of the same class as CLAIM-C's
-criterion and P6-R2's**, so `REGISTERED_EXCHANGEABLE_UNIT` is `None`,
-`adjudicate_p_ab1` raises while it is, and passing `unit=` selects what to
-COMPUTE and never what may be adjudicated -- 6h's construction, and for its
-reason: taking the decision after seeing a p-value would void the guarantee.
+criterion and P6-R2's**, so it was put to the author rather than taken here, and
+the author registered **`"prompt"`**. `adjudicate_p_ab1` turns away a result
+computed under any other unit, and `unit=` selects what to COMPUTE and never
+what may be adjudicated -- 6h's construction, and for its reason.
+
+What it was decided AGAINST is on the record rather than on anyone's authority,
+which is the point of asking before a p-value exists. And unlike 6l's `"model"`,
+which cost nothing at rho = 0 where the two units agree, this one is a TRADE and
+the record says so: the per-prompt unit costs RESOLUTION, since the floor
+becomes `2/(2^n_prompts + 1)` and the design needs six prompts with an odd
+number of ablation points each, and it costs POWER, 0.503 against 0.856 at a
+planted exponent gap of 0.15. What it buys is a rate that does not move with a
+confound nothing can rule out in advance.
 
 THE LIMITATION NO LABEL-SWAP NULL REMOVES, MEASURED RATHER THAN DESCRIBED
 
@@ -264,10 +273,16 @@ P_AB1_RECIPROCAL_ALTERNATIVE = "less"
 #: one of them is a null; the other leaves the statistic invariant.
 P_AB1_UNITS = ("prompt", "ablation_point")
 
-#: Which one may enter an e-process. `None` until the author registers it: the
-#: measurement is unambiguous and the DECISION is not a measurement. See the
-#: module docstring's table and POPPER_PLAN.md 6h for the precedent.
-REGISTERED_EXCHANGEABLE_UNIT: Optional[str] = None
+#: Which one may enter an e-process. Registered by the author on 2026-08-27
+#: after the measurement below was put to them, and NOT chosen here: which unit
+#: may carry an e-value is a scientific decision of the same class as CLAIM-C's
+#: criterion, and taking it after seeing a p-value would void the guarantee.
+#: `P6-R2`'s `"model"` (POPPER_PLAN.md 6l) is the precedent for both the
+#: question and the timing -- it was safe to take because no p-value on real
+#: data exists: `claims/adjudications/` is empty, no ablation run artifact is in
+#: this repository, and every number either unit has produced came from
+#: synthetic curves.
+REGISTERED_EXCHANGEABLE_UNIT: Optional[str] = "prompt"
 
 #: The smallest fit window on which a log-log slope has a residual at all. Two
 #: points interpolate exactly, so the curvature that detects saturation -- the
@@ -1160,6 +1175,17 @@ def adjudicate_p_ab1(result: dict,
     COMPUTE; the module constant decides what may enter an e-process. 6h's
     construction and its reason: registering a unit after seeing a p-value would
     void the guarantee the e-value is supposed to provide.
+
+    THE SAFETY CATCH THAT WENT AWAY WHEN THE UNIT WAS REGISTERED
+
+    While no unit was registered, this refusal was also what kept a synthetic
+    p-value out of `P-AB1`'s ledger slot: `adjudicate=True` could not reach
+    `core.adjudication` at all. It can now, and `adjudicate` refuses to
+    overwrite a record once written, so an accidental fixture run would occupy
+    the slot permanently. Every test that both asks to adjudicate and uses the
+    registered unit passes an isolated `adjudications_dir`, and the test class
+    says so at the top. 6l recorded exactly this consequence for `P6-R2`; it is
+    repeated here because writing it down once is not a guard.
     """
     if REGISTERED_EXCHANGEABLE_UNIT is None:
         raise PatchingRefused(
@@ -1177,7 +1203,13 @@ def adjudicate_p_ab1(result: dict,
 
     result = dict(result)
     result["adjudication"] = None
-    if result.get("p_value") is None:
+    #: Opt-in, and the `adjudicate` half of this guard was MISSING until
+    #: 2026-08-27: every call reached the ledger regardless of the flag. It was
+    #: invisible while `REGISTERED_EXCHANGEABLE_UNIT` was `None`, because the
+    #: refusal above turned every call away before it could matter, and it went
+    #: live the moment the unit was registered. 6l recorded that the refusal
+    #: was doubling as a safety catch; this is what was behind it.
+    if not (adjudicate and result.get("p_value") is not None):
         return result
 
     from core.adjudication import adjudicate_if_registered

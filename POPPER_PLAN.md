@@ -2820,13 +2820,38 @@ per-prompt shared component:
 | 1.0 | **0.235** | 0.029 |
 
 The per-prompt unit holds across the range; the per-ablation-point unit — the
-reading the registry's wording implies — reaches 0.235. A fourth independent
+reading the registry's wording implied — reaches 0.235. A fourth independent
 arrival of the fourfold-plus inflation POPPER reports at 0.082 → 0.340 and §§6f,
 6h and 6k each measured. **Which unit may enter an e-process is a scientific
-decision of the same class as CLAIM-C's criterion**, so
-`REGISTERED_EXCHANGEABLE_UNIT` is `None`, `adjudicate_p_ab1` raises while it is,
-and `unit=` selects what to compute and never what may be adjudicated — §6h's
+decision of the same class as CLAIM-C's criterion**, so it was put to the author
+rather than taken here, and **the author registered `"prompt"`.**
+`adjudicate_p_ab1` turns away a result computed under any other unit, and
+`unit=` selects what to compute and never what may be adjudicated — §6h's
 construction, used a second time and for its reason.
+
+**It was safe to take now, and unlike §6l's it is a trade rather than free.**
+Safe for §6l's reason: no p-value on real data exists, `claims/adjudications/`
+is empty, no ablation run artifact is in this repository, and every number
+either unit has produced came from synthetic curves. But where §6l's `"model"`
+cost nothing at ρ = 0 because the two units agree there, this one costs
+**resolution** — the floor becomes `2/(2^n_prompts+1)`, so six prompts with an
+odd number of ablation points each — and it costs **power**, 0.503 against 0.856
+at a planted exponent gap of 0.15. The record says so rather than presenting the
+conservative choice as free.
+
+**And registering it removed a safety catch, which is how a third defect in this
+module was found.** §6l recorded that while `P6-R2`'s unit was `None` the
+refusal was doubling as the thing keeping a synthetic p-value out of its ledger
+slot. The same held here — and behind it, `adjudicate_p_ab1`'s opt-in guard had
+been written as `if result["p_value"] is None: return` with the `adjudicate`
+flag **not read at all**, so every call would have reached the ledger regardless
+of the flag. It was invisible while the unit was unregistered, because the
+refusal above turned every call away before it could matter, and it went live
+the moment the unit was registered. Caught by a test asserting the flag's
+meaning, written because §6l said what registering a unit removes. Nothing in
+`claims/adjudications/` was touched: the directory does not exist, and every
+test that adjudicates writes to an isolated `adjudications_dir` and asserts
+nothing else was written.
 
 **The limitation no label swap removes, measured rather than described.** A
 shared component that is a random per-prompt draw is what the prompt unit

@@ -646,11 +646,13 @@ verdicts — §6o's fourth category, used a second time — and the calibration
 re-scores the counterfactual in every family rather than claiming the cost is
 small.
 
-**And the exchangeable unit is not registered, for `P6-R2`'s reason.** Measured
-on the same draws, one bit per ablation point runs to 0.235 under a per-prompt
-shared factor where one bit per prompt holds at 0.029.
-`REGISTERED_EXCHANGEABLE_UNIT` is `None` and `adjudicate_p_ab1` raises while it
-is. A **fixed** offset between the real and the control direction populations —
+**And the exchangeable unit was put to the author, for `P6-R2`'s reason.**
+Measured on the same draws, one bit per ablation point runs to 0.235 under a
+per-prompt shared factor where one bit per prompt holds at 0.029. The author
+registered **`"prompt"`**, and `adjudicate_p_ab1` turns away a result computed
+under any other unit. Unlike `P6-R2`'s `"model"` this is a trade rather than
+free: it costs resolution — six prompts, an odd number of ablation points each
+— and power, 0.503 against 0.856 at a planted gap of 0.15. A **fixed** offset between the real and the control direction populations —
 real ablation directions are not isotropic and the controls are — is separated
 by neither unit and reaches 1.000, which is `P-I1`'s shared-per-unit-factor
 limitation in a second construction: diagnosed, stated, not removed.

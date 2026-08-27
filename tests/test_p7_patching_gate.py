@@ -464,30 +464,79 @@ class TestTheSharedFactorDiagnostic:
 
 
 # ---------------------------------------------------------------------------
-class TestAdjudicationIsRefused:
+class TestTheRegisteredUnit:
+    """
+    The author registered `"prompt"` on 2026-08-27 (`POPPER_PLAN.md` 6q).
 
-    def test_no_unit_is_registered_so_nothing_can_be_adjudicated(self):
-        assert REGISTERED_EXCHANGEABLE_UNIT is None
-        res = {"unit_computed": "prompt", "p_value": 0.01}
-        with pytest.raises(PatchingRefused,
-                           match="REGISTERED_EXCHANGEABLE_UNIT is None"):
-            adjudicate_p_ab1(res, adjudicate=True)
+    EVERY test here that asks to adjudicate passes an isolated
+    `adjudications_dir`. While no unit was registered, the refusal was also the
+    safety catch keeping a synthetic p-value out of P-AB1's ledger slot; it is
+    not any more, and `core.adjudication` refuses to overwrite a record once
+    written, so a fixture run that reached the real directory would occupy the
+    slot permanently. 6l recorded the same consequence for `P6-R2`.
+    """
+
+    def _res(self, unit, seed=12):
+        rng = np.random.default_rng(seed)
+        real = [[_power_law(2.0, rng=rng, sd=0.15) for _ in range(N_POINTS)]
+                for _ in range(N_PROMPTS)]
+        ctrl = [[_power_law(1.0, rng=rng, sd=0.15) for _ in range(N_POINTS)]
+                for _ in range(N_PROMPTS)]
+        return p_value_p_ab1(real, ctrl, _mags(), _mags(), unit=unit,
+                             alpha=ALPHA)
+
+    def test_the_registered_unit_is_the_one_the_measurement_pointed_at(self):
+        assert REGISTERED_EXCHANGEABLE_UNIT == "prompt"
+        assert REGISTERED_EXCHANGEABLE_UNIT in P_AB1_UNITS
 
     def test_the_unit_argument_does_not_route_around_the_constant(self):
         """
         `unit=` selects what to COMPUTE. The module constant decides what may
         enter an e-process -- 6h's construction, and its reason.
         """
-        rng = np.random.default_rng(12)
-        real = [[_power_law(2.0, rng=rng, sd=0.15) for _ in range(N_POINTS)]
-                for _ in range(N_PROMPTS)]
-        ctrl = [[_power_law(1.0, rng=rng, sd=0.15) for _ in range(N_POINTS)]
-                for _ in range(N_PROMPTS)]
-        res = p_value_p_ab1(real, ctrl, _mags(), _mags(),
-                            unit="ablation_point", alpha=ALPHA)
+        res = self._res("ablation_point")
         assert res["p_value"] is not None
-        with pytest.raises(PatchingRefused):
+        with pytest.raises(PatchingRefused, match="registered unit is"):
             adjudicate_p_ab1(res, adjudicate=True)
+
+    def test_a_result_under_the_registered_unit_reaches_the_ledger_path(self, tmp_path):
+        res = self._res("prompt")
+        assert res["p_value"] is not None
+        out = adjudicate_p_ab1(res, adjudicate=True,
+                               adjudications_dir=tmp_path)
+        assert out["adjudication"] is not None
+        assert list(tmp_path.iterdir())            # written HERE and nowhere else
+
+    def test_nothing_is_adjudicated_when_the_gate_refused(self, tmp_path):
+        res = p_value_p_ab1(
+            [[_saturating(1.4, 5.0) for _ in range(N_POINTS)]
+             for _ in range(N_PROMPTS)],
+            [[_saturating(1.4, 15.0) for _ in range(N_POINTS)]
+             for _ in range(N_PROMPTS)],
+            _mags(), _mags(), alpha=ALPHA)
+        assert res["p_value"] is None
+        out = adjudicate_p_ab1(res, adjudicate=True,
+                               adjudications_dir=tmp_path)
+        assert out["adjudication"] is None
+        assert not list(tmp_path.iterdir())
+
+    def test_the_ledger_is_not_touched_without_the_flag(self, tmp_path):
+        out = adjudicate_p_ab1(self._res("prompt"),
+                               adjudications_dir=tmp_path)
+        assert out["adjudication"] is None
+        assert not list(tmp_path.iterdir())
+
+    def test_the_record_names_the_limitation_no_unit_removes(self, tmp_path):
+        """
+        A fixed offset between the real and control direction populations is
+        separated by neither unit. The ledger note has to say so, because the
+        between-prompt diagnostic beside it cannot see it.
+        """
+        out = adjudicate_p_ab1(self._res("prompt"), adjudicate=True,
+                               adjudications_dir=tmp_path)
+        notes = out["adjudication"]["notes"]
+        assert "FIXED offset" in notes
+        assert "invisible to this estimate and to both" in notes
 
 
 # ---------------------------------------------------------------------------
