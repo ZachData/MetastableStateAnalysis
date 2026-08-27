@@ -79,7 +79,7 @@ touch `P6-R4`.
 
 RUN IT
 
-    python3 -m tools.dry_run_p6_r2_r4 --write      # about twenty minutes
+    python3 -m tools.dry_run_p6_r2_r4 --write      # about thirty-five minutes
     python3 -m tools.dry_run_p6_r2_r4 --check
     python3 -m tools.dry_run_p6_r2_r4 --summary
 """
