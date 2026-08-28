@@ -95,44 +95,55 @@ that the answer inside it does not rest on an artificial bound of it.
 WHAT IT FOUND
 
 **The degeneracies are not the binding constraints.** Roughly two thirds of the
-enumerated family clears them — the reference outside the window, some of the
-window retained, a read span above zero. What binds is the graded conditions,
-and under the shortlist rule (fixed before the enumeration ran, and stored in
-the record) **three grids of 96,127 pass**, all of them the same shape:
+enumerated family clears them — 61,894 of 96,127 — leaving the reference outside
+the window, some of the window retained and a read span above zero. What binds
+is the graded conditions: **2,529 grids** meet all three (ceiling rate under
+α/5, false anchors under a twentieth of a window-width, read span at least one
+of the estimator's own standard deviations).
 
-    step 0, step 512, then every 1000 from 1000 to about 29000-31000
+**And then the rule as first written admitted nothing, which is the finding.**
+Retention was to be at least 0.95 across σ/R ∈ [0, 0.05] — across the range
+rather than at one level, because σ/R is not known until the run happens and
+retention is not monotone in it. **Zero grids of 96,127.** The honest reading is
+not that the bound is too strict:
 
-**Every part of that shape is doing work.** Step 0 is there because a change at
-the window's lower edge spreads mass below it, and a sweep starting at 512
-cannot see that mass at all — grids starting at 512 read a change planted at
-512 well above it. Step 512 is there because it is the window's own edge. The
-every-1000 stage through the window is what gives the read span. And the sweep
-**stops** around 30000 because the tail is what carries the grid's midpoint
-away from the window, and past that point the same pull that carries it away
-starts dragging anchored changes out with it.
+    the best worst-case retention any published Pythia schedule reaches is
+    0.680, and no sweep holds the whole anchor window
 
-That is 31 to 33 checkpoints, a little above the "20-30 checkpoint cheap-tier
-sweep" the registry names as this prediction's instrument.
+So retention is **maximised** rather than thresholded, and the record stores the
+achievable maximum and says that no grid reaches the reference. Tuning the
+threshold until something passed would have hidden the one thing worth knowing.
 
-**And one thing no grid in the family can do.** No sweep both clears the rule
-and reaches past step 100000. A run that must also serve the predictions
-needing late checkpoints cannot carry this arm as well; the record stores the
-best grid that does reach that far and what its retention costs, so the choice
-is visible rather than absent.
+**Where the window is lost is its upper end, and it is lost at zero noise.** A
+change centred near step 2000 puts half its mass above 2000; the next published
+checkpoint a feasible grid can afford there is tens of thousands of steps away,
+so that mass is collected at an interval midpoint far outside the window. Adding
+checkpoints between 2000 and 20000 fixes it and pulls the sweep's own midpoint
+back INTO the window, which is §6o's refusal. That trade is between this claim's
+registered anchor window and EleutherAI's release schedule, and no choice of
+grid removes it.
 
-**Measured, a computed grid's anchor arm discriminates at 1.000** between an
-anchored change and no located change at all, where every schedule this
-repository contains discriminates at 0.000.
+**What the shortlist offers, and the axis it cannot decide.** The best-retention
+grid is twelve checkpoints at 0.680 with a read span of 1.82 SDs; the largest
+read span is 6.84 SDs at thirty-four checkpoints and 0.427 retention; the best
+sweep reaching past step 100000 is fifteen checkpoints at 0.600, so serving the
+predictions that need late checkpoints costs **0.080** of retention. How many
+checkpoints a run can afford, and whether one sweep must do both jobs, is not in
+this arithmetic.
+
+**Measured, every grid this arithmetic picks discriminates at 1.000** between an
+anchored change and no located change at all, and rejects on a change-free input
+at 0.000, where every schedule this repository contains discriminates at 0.000.
 
 WHAT IT DOES NOT DO
 
-WHAT IT DOES NOT DO
-
-It adjudicates nothing, it registers nothing, and it does not choose a grid.
-The series are synthetic, no Pythia sweep artifact is in this repository,
-`claims/adjudications/` is empty and `null_construction` has not frozen.
-Choosing a sweep is a pre-registered decision for the author; what is here is
-the set to choose from and the cost of each choice.
+It adjudicates nothing and it does not choose a grid: the series are synthetic,
+no Pythia sweep artifact is in this repository, `claims/adjudications/` is empty
+and `null_construction` has not frozen. Choosing a sweep is a pre-registered
+decision for the author; what is here is the set to choose from and the cost of
+each choice. **The author took it on 2026-08-28** and
+`core.changepoint_colocation.REGISTERED_CLAIM_B_SWEEP` carries the result — this
+file is the evidence behind that decision and is not where it lives.
 
     python3 -m tools.claim_b_grid_feasibility --write
 """

@@ -3096,7 +3096,10 @@ planted at the anchor and its rate on a series with **no located change at
 all**, measured on the same cell against the same control draws — §6o's arm B,
 reused so the two records compare row for row. All three computed grids reject
 at 1.000 on an anchored change, at **0.000** on a change-free one, and at
-0.020–0.090 on an H0 change elsewhere.
+0.025–0.075 on an H0 change elsewhere — the artifact carries the per-cell rates,
+which are proportions over two hundred draws apiece and move a little on
+regeneration; what the record checks is that no computed grid's H0 cell exceeds
+0.15.
 
 **§6o's unrefused residual is partly the grid's and the record now says which
 part.** §6o measured a change-free series clearing α on 0.245 of draws against

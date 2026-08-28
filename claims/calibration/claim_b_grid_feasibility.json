@@ -959,7 +959,7 @@
   },
   "construction_file": "core/changepoint_colocation.py",
   "construction_sha256": "dcd858c02fe2d246503a767d5f1debc73f9ddc50565ec3d1542cf25633c177a1",
-  "elapsed_seconds": 371.9,
+  "elapsed_seconds": 363.6,
   "feasible_set": {
     "_the_family": {
       "_not_the_power_set": "2^154 subsets of Pythia's published schedule is not enumerable and almost none of them is a schedule anyone would run. What is claimed is that this family contains the shapes this project writes and that the answer is interior to it -- `frontier_is_interior_to_the_family` checks the second.",
