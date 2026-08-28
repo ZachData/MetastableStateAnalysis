@@ -208,6 +208,14 @@ already name a matched control, and that control is a subspace or a magnitude
 rather than a unit. The floor argument that retires a design should be made
 after asking what is being randomised.
 
+*Corrected 2026-08-28: four of those six are **dormant** — `P6-R1`, `P6-C1`,
+`P5b-A1` and `P5b-A2`, whose instruments are under `archive/`, so converting
+them buys no e-value and `core/adjudication.py` refuses them. The list above is
+right about the STATISTICS and wrong as a queue, and it has been read as a
+queue three times. The live `needs-null` bridge rows are `P-I2`, `P-I3`, `P-I4`
+and `P-I5` (all active, relevance 1.0) and `P-SA1` (active, 0.8, instrument
+frozen). See "Which rows are actually next" below.*
+
 ## `CLAIM-B` and `P-I1`: one construction, two entries (2026-08-24)
 
 The line this document closed on — *"`CLAIM-B` is next, and it shares a
@@ -632,7 +640,8 @@ separates them is whether the statistic cancels a common elevation of both arms:
 | `P6-R4` | a **single** subspace against matched controls | nothing to mismatch — 0.04–0.05 at 3.4× |
 
 This document already lists `P6-R1`, `P6-C1`, `P5b-A1`, `P5b-A2`, `P-SA1` and
-`P-I4` as rows whose predictions name a matched control that is a subspace or a
+`P-I4` (four of them dormant — see "Which rows are actually next")
+as rows whose predictions name a matched control that is a subspace or a
 magnitude rather than a unit. **Matched on what** is the question to ask of each
 before the control is built, and the table above is how to answer it: look at
 whether the row's statistic is a sign, a difference, or an absolute quantity
@@ -714,7 +723,8 @@ with "nothing to mismatch". The anchor arm is the counter-example:
 An absolute quantity against matched controls is safe only when the controls are
 matched on its degenerate input. For `P6-R1`, `P6-C1`, `P5b-A1`, `P5b-A2`,
 `P-SA1` and `P-I4` — the rows this document lists as already naming a matched
-control — that is a question to answer before the control is built.
+control — that is a question to answer before the control is built. *(Four of
+those six are dormant; see "Which rows are actually next", 2026-08-28.)*
 
 **`P-I1` was not changed, and the measurement is why.** It is the mutual arm
 alone, whose null permutes the pairing and therefore keeps both series' real
@@ -825,7 +835,8 @@ and `P-M1`, all three discrete, so it was checked rather than assumed.
 
 Three of the four are checkable with no data at all, and all three were missed
 anyway. For the six rows this document lists as still naming a matched control
-— `P6-R1`, `P6-C1`, `P5b-A1`, `P5b-A2`, `P-SA1`, `P-I4` — the order to work in
+— `P6-R1`, `P6-C1`, `P5b-A1`, `P5b-A2`, `P-SA1`, `P-I4`, four of them dormant
+and corrected under "Which rows are actually next" — the order to work in
 is now: compute the attainable floor, name what the statistic degenerates on,
 check what the measurement grid contributes to it, and only then build the
 control.
@@ -990,3 +1001,112 @@ it is sampled, how it is clustered or how large the run is:
 | `P-AB1` | an ablation magnitude and fit window keeping BOTH arms inside the power-law regime | **the intervention itself** |
 
 Still none of which any existing sweep satisfies.
+
+
+## `CLAIM-B`'s grid, computed rather than chosen (2026-08-28)
+
+`core/changepoint_colocation.grid_feasibility` with
+`tools/claim_b_grid_feasibility.py` →
+`claims/calibration/claim_b_grid_feasibility.json`, `POPPER_PLAN.md` §6r. §6o
+left `CLAIM-B` needing a sweep neither grid this project has can supply and said
+choosing one is a pre-registered decision for the author. **Which grids clear
+the conditions is arithmetic, so it is computed and the decision becomes a
+choice from a set.** Nothing here chooses a grid, and
+`claims/adjudications/` is still empty.
+
+**Twenty-sixth lesson, and it is the one this exercise keeps producing in new
+clothes.** *The grid that maximises an arm's numbers can be the grid that
+destroys what the claim is about.* Maximising the retained share of the anchor
+window alone picks a sweep whose one wide interval swallows the window: every
+anchored change reads inside it — retention 1.000 — and so does every change for
+a third of a window-width above, and it cannot say *where* in the window
+anything happened. Two conditions were added for it, and the second of them, the
+read span inside the window, is the **claim's** requirement rather than the
+arm's: the anchor arm alone is happiest at a span of zero. §6o's "a statistic
+partly determined by the measurement grid" read from the other side — not what
+the grid does to the statistic, but what optimising the statistic does to the
+grid.
+
+**Twenty-seventh, and it is the defect.** *A change's location depends on the
+change's own WIDTH as much as on the grid, and the reading that ignores it is
+not conservative.* The first version located a change at the midpoint of the
+interval containing it — this construction's own stated resolution limit, and it
+looks like a bound. It is not: a change of real width spreads mass into
+neighbouring intervals, so a coarse interval just past the window collects it
+and the location leaves the window at **zero** noise. A ten-checkpoint grid that
+reading scored at retention 1.000 put a planted anchor inside the window on
+**0.017** of draws. `grid_feasibility` now takes the width and σ/R together or
+not at all — both are properties of the series, both are measurable from a
+pilot's own data before any p-value is computed, and neither is defaulted. The
+eleventh session running in which looking at a generated output found something
+no test was failing on.
+
+**Twenty-eighth, and it is what the enumeration is for.** *When a
+pre-registered rule admits nothing, the reading is about the world and not about
+the rule.* Requiring 0.95 of the anchor window to survive across the plausible
+noise range admitted **zero** grids of 96,127. The best any published Pythia
+schedule reaches is **0.680**, and the loss is at the window's upper end and at
+zero noise: a change centred near step 2000 puts half its mass above 2000, the
+next affordable published checkpoint is tens of thousands of steps away, and
+adding checkpoints between 2000 and 20000 pulls the sweep's own midpoint back
+*into* the window, which is §6o's refusal. That trade is between this claim's
+registered anchor window and EleutherAI's release schedule. The rule now
+maximises retention and records the achievable maximum; tuning the threshold
+until something passed would have hidden the only thing worth knowing.
+
+**And the registered cheap sweep is not the only schedule here that fails.**
+`core/pythia_registry.PYTHIA_410M_PILOT_STEPS` — the schedule this repository
+would actually run — puts its change-free reference at step **1191**, inside the
+window, exactly as the registry's cheap-tier description does at step 955. §6o
+read the failure off the registry's instrument field; the code's own schedule
+has it too. Measured, both discriminate at **0.000** between an anchored change
+and a series with no located change at all, where all three grids the arithmetic
+picks discriminate at **1.000**.
+
+### Which rows are actually next
+
+The list this document has carried since 2026-08-24 — `P6-R1`, `P6-C1`,
+`P5b-A1`, `P5b-A2`, `P-SA1`, `P-I4` — is right about the **statistics** and
+wrong as a **queue**, and it has been read as a queue three times. Four of the
+six are **dormant**: `P6-R1` and `P6-C1`'s instrument is `archive/p6_subspace`,
+`P5b-A1` and `P5b-A2`'s is `archive/p5b_manifold_steering`, and
+`core/adjudication.py` refuses a dormant row, so converting one buys no e-value
+at all.
+
+The live `needs-null` rows a conversion could reach:
+
+| row | claim | status | relevance | what its null needs |
+|---|---|---|---|---|
+| `P-I2` | H-BRIDGE | active | 1.0 | two-sample channel mass between edge types, against the N1/N2 nulls `motif_stats.py` already gates on |
+| `P-I3` | H-BRIDGE | active | 1.0 | correlation with a **required** control arm over non-induction heads |
+| `P-I4` | H-BRIDGE | active | 1.0 | matched-magnitude control on `moved_fraction`; permutation over which edges are labelled motif edges |
+| `P-I5` | H-BRIDGE | active | 1.0 | permutation over a matched-magnitude random-direction ablation, on a **joint two-dimensional** statistic |
+| `P-SA1` | H-BRIDGE | active | 0.8 | random-subspace null of matched dimension; instrument frozen |
+
+`P-I3` and `P-I4` name a matched control and are the natural next, in the order
+`P-AB1` established: compute the attainable floor, name what the statistic
+degenerates on, check what the measurement grid contributes, and only then build
+the control. `P-I5` is the first row here whose statistic is two-dimensional,
+which no construction in this project has built.
+
+### What the pilot must produce, after eleven
+
+Nine requirements. `CLAIM-B`'s grid row is no longer a constraint to satisfy but
+a set to choose from, and the new row constrains something none of the previous
+eight did — how quiet the measurement has to be, relative to the series' own
+change.
+
+| claim | requirement | constrains |
+|---|---|---|
+| `CLAIM-B` | 19 control series | what the sweep measures |
+| `CLAIM-B` | a grid from `claim_b_grid_feasibility.json`'s computed set — no schedule in this repository is in it, and none holds more than 0.680 of the anchor window | which checkpoints it samples |
+| `CLAIM-B` | a σ/R and a change width that the chosen grid's retention curve still supports | **how quiet the measurement is** |
+| `CLAIM-C` | ≥ 23% of candidate cells dissenting in sign, and ≥ 5 prompts whose usable metrics do not split evenly | what the contrast looks like |
+| `P-ST1` | dim `U_pos` comparable to the dimension the population occupies | the projector's shape |
+| `P-T1` / `P-M1` | enough heads, and enough layers or violations, for the design floor to clear α | how large the run is |
+| `P-S1` | both arms clustered to the same count | how the run is clustered |
+| `P-AB1` | six informative units, an ODD number of ablation points per prompt, and `n + W ≤ L` | the ablation grid |
+| `P-AB1` | an ablation magnitude and fit window keeping BOTH arms inside the power-law regime | the intervention itself |
+
+Still none of which any existing sweep satisfies — and for `CLAIM-B` that is now
+a statement with a set behind it rather than a gap.
