@@ -3139,11 +3139,47 @@ adding the early log-spaced steps pulls the sweep's midpoint down into the
 window: on this construction a denser sweep is worse, and §6o's version of that
 sentence reaches the early end of the schedule too.
 
+### The decision, taken
+
+The set was put to the author with three grids and their costs, and **the author
+registered `(1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)`** — twelve
+checkpoints, the best worst-case retention any published Pythia schedule
+reaches. `REGISTERED_CLAIM_B_SWEEP` carries it, `adjudicate_claim_b` refuses a
+result computed on any other grid, and `p_value_claim_b` still computes on any
+grid and reports `on_the_registered_sweep` on the record — §6h's construction,
+the same division `p7_motifs/patching_gate.py` makes between what `unit=`
+computes and what may be adjudicated.
+
+**It was safe to take now for §6l's reason**: no p-value on real data exists,
+`claims/adjudications/` is empty and no sweep artifact is in this repository. As
+in §6q it is a **trade** rather than free, and the record says which: 0.680 of
+the anchor window rather than the whole of it, a read span of 1.82 of the
+estimator's own standard deviations so a change can be placed inside 512–2000
+only coarsely, and nothing sampled between step 1000 and step 54000 — so this
+sweep serves no prediction needing mid-training resolution. The schedule that
+does reach step 125000 was on the list and costs 0.080 of retention; the author
+weighed that.
+
+**And unlike §6l's and §6q's, this registration ADDS a refusal rather than
+lifting one**, which is worth stating because the previous two both removed a
+safety catch and one of them had a defect behind it. `adjudicate_claim_b` would
+previously take a result from *any* grid — the exposure was the other way round,
+and it is now closed. What both passes' lesson still applies to is the
+isolation: every test here that adjudicates passes an isolated
+`adjudications_dir`, and there is now a test asserting the real
+`claims/adjudications/` directory does not exist afterwards, rather than
+leaving that to the call sites.
+
+The registry records it in `null_construction`, beside §6l's `"model"` and
+§6q's `"prompt"`. The `instrument` field's *"20-30 checkpoint cheap-tier
+sweep"* is superseded and deliberately left unedited: a pre-registered field
+rewritten when it turns out wrong stops being a pre-registration.
+
 ### What the pilot must now produce
 
 §6o's requirement — *a grid whose uniform-profile midpoint falls outside
-512–2000* — was necessary and is not sufficient, and it is replaced by a grid
-from this set plus one requirement that constrains something none of the
+512–2000* — was necessary and is not sufficient, and it is replaced by the
+registered grid above plus one requirement that constrains something none of the
 previous eight did: **how quiet the measurement has to be, relative to the
 series' own change.** Every retained-share figure here is a figure at a stated
 σ/R and a stated change width, both measurable from the pilot's own series

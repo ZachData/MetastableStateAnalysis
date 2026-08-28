@@ -233,10 +233,23 @@ inside the window on 0.017 of draws. `grid_feasibility` therefore takes the
 width and the noise level together or not at all, and returns only the two
 grid-only conditions without them.
 
-What the enumeration found is in `POPPER_PLAN.md` 6r; the part that belongs
-here is that the registered cheap sweep is not the only schedule in this
-repository that fails, `core/pythia_registry.PYTHIA_410M_PILOT_STEPS` puts its
-change-free reference at step 1191 and fails the same way.
+What the enumeration found is in `POPPER_PLAN.md` 6r; two parts of it belong
+here. The registered cheap sweep is not the only schedule in this repository
+that fails -- `core/pythia_registry.PYTHIA_410M_PILOT_STEPS` puts its
+change-free reference at step 1191 and fails the same way. And **no published
+Pythia schedule holds the whole anchor window**: the best worst-case share is
+0.680, lost at the window's upper end and at zero noise, because a change
+centred near step 2000 puts half its mass above 2000 and the next affordable
+published checkpoint is tens of thousands of steps away. Adding checkpoints
+between 2000 and 20000 fixes that and pulls the sweep's own midpoint back INTO
+the window, which is the refusal. No choice of grid removes the trade.
+
+**The author registered a sweep on 2026-08-28**, `REGISTERED_CLAIM_B_SWEEP`,
+chosen from that set. `p_value_claim_b` computes on any grid and
+`adjudicate_claim_b` refuses a result computed on any other -- the division
+`p7_motifs/patching_gate.py` makes between what a caller may compute and what
+may enter an e-process, for the same reason: registering after seeing a p-value
+would void the guarantee.
 
 WHAT NO NULL HERE CAN DO
 
@@ -1500,6 +1513,33 @@ def gate_verdict(p_greater: Optional[float], p_less: Optional[float],
 # CLAIMS.md names `core/checkpoint_frames.py` as H-EMERGE's instrument, which is
 # why CLAIM-B's gate is here and P-I1's is in `p7_motifs/formation_gate.py`.
 
+#: `CLAIM-B`'s REGISTERED SWEEP GRID, chosen by the author on 2026-08-28 from
+#: the set `claims/calibration/claim_b_grid_feasibility.json` computes
+#: (`POPPER_PLAN.md` 6r). Every step is a checkpoint EleutherAI published, so
+#: the sweep is one a pilot can actually download.
+#:
+#: WHY THIS IS A REGISTERED CONSTANT AND NOT A CALLER'S CHOICE. Which
+#: checkpoints a sweep samples decides what `anchor_arm` can express before any
+#: data exists: on the grid the registry's instrument field described, a series
+#: that changes NOWHERE attains the arm's maximum statistic, and on Pythia's
+#: full every-1000 schedule a real anchored change is dragged out of the window
+#: instead. So the grid is of `CLAIM-C`'s criterion's class -- a scientific
+#: decision that must be taken BEFORE a p-value exists, because taking it after
+#: would void the guarantee the e-value provides. It was put to the author with
+#: three computed options and their costs, and this is the one registered.
+#:
+#: WHAT IT COSTS, ON THE RECORD RATHER THAN ON ANYONE'S AUTHORITY. It holds
+#: 0.680 of the anchor window across the plausible noise range, which is the
+#: most ANY published Pythia schedule reaches -- no grid holds the whole window,
+#: and the record says where the rest goes. It reads locations 1.82 of the
+#: estimator's own standard deviations apart across the window, so it can place
+#: a change inside 512-2000 only coarsely. And it samples nothing between step
+#: 1000 and step 54000, so it serves no prediction needing mid-training
+#: resolution: the alternatives that do cost retention (0.600 for the schedule
+#: reaching step 125000) and the author weighed that.
+REGISTERED_CLAIM_B_SWEEP: Optional[Tuple[int, ...]] = (
+    1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)
+
 #: The literature anchors, taken from CLAIM-B's REGISTERED STATEMENT -- "the
 #: energy-monotonicity break and the Fiedler drop co-locate with steps
 #: ~512-2000". PRE-REGISTERED, not placed: standing rule 6 asks where a constant
@@ -1604,6 +1644,15 @@ def p_value_claim_b(steps: Sequence[float],
         "claim": "H-EMERGE",
         "alpha": a,
         "anchor_window_steps": list(CLAIM_B_ANCHOR_WINDOW),
+        # Reported on every record, not only when adjudicating: a reader of a
+        # p-value computed off the registered sweep needs to see that it is
+        # off it, and `adjudicate_claim_b`'s refusal is not visible from a
+        # result that never asked to be adjudicated.
+        "registered_sweep": (list(REGISTERED_CLAIM_B_SWEEP)
+                             if REGISTERED_CLAIM_B_SWEEP is not None else None),
+        "on_the_registered_sweep": bool(
+            REGISTERED_CLAIM_B_SWEEP is not None
+            and tuple(int(v) for v in steps) == tuple(REGISTERED_CLAIM_B_SWEEP)),
         "series": CLAIM_B_SERIES,
         "unit": CLAIM_B_UNIT,
         "control_family": CLAIM_B_ANCHOR_CONTROL_FAMILY,
@@ -1657,6 +1706,24 @@ def adjudicate_claim_b(steps: Sequence[float],
     would be two one-sided tests on one statistic and would double the claim's
     Type-I rate for free.
     """
+    if REGISTERED_CLAIM_B_SWEEP is None:        # pragma: no cover - registered
+        raise ColocationRefused(
+            "REGISTERED_CLAIM_B_SWEEP is None. Which checkpoints the sweep "
+            "samples decides what the anchor arms can express before any data "
+            "exists, so it is a scientific decision of CLAIM-C's criterion's "
+            "class and registering it after seeing a p-value would void the "
+            "guarantee. claims/calibration/claim_b_grid_feasibility.json "
+            "computes the set to choose from.")
+    if tuple(int(v) for v in steps) != tuple(REGISTERED_CLAIM_B_SWEEP):
+        raise ColocationRefused(
+            f"this result was computed on a {len(list(steps))}-checkpoint sweep "
+            f"that is not the registered one. CLAIM-B's registered grid is "
+            f"{list(REGISTERED_CLAIM_B_SWEEP)}. `p_value_claim_b` will compute "
+            f"on any grid -- and `grid_feasibility` says what that grid can "
+            f"express -- but only the registered sweep may enter an e-process, "
+            f"the same division `p7_motifs/patching_gate.py` makes between "
+            f"what `unit=` computes and what may be adjudicated.")
+
     res = p_value_claim_b(steps, energy_break, fiedler, anchor_controls,
                           anchor_control_directions,
                           control_family=control_family, alpha=alpha, seed=seed)
@@ -1680,7 +1747,11 @@ def adjudicate_claim_b(steps: Sequence[float],
             f"p_reciprocal={res['p_reciprocal']:.4f} (RE-ANCHORS input only, NOT "
             f"calibrated into E) "
             f"shares its estimator with P-I1 under H-BRIDGE: an estimator defect "
-            f"moves both, so their e-values are not two independent factors"),
+            f"moves both, so their e-values are not two independent factors; "
+            f"registered sweep grid = {list(REGISTERED_CLAIM_B_SWEEP)}, which "
+            f"holds 0.680 of the anchor window -- the most any published Pythia "
+            f"schedule reaches, so a share of the window is unreachable by "
+            f"design rather than by this run"),
         adjudications_dir=adjudications_dir,
     )
     return res

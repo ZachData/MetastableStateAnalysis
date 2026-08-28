@@ -42,6 +42,8 @@ from __future__ import annotations
 
 import json
 import math
+import pathlib
+import tempfile
 from itertools import permutations
 
 import numpy as np
@@ -602,18 +604,28 @@ class TestVerdict:
 # ---------------------------------------------------------------------------
 
 def _claim_b_inputs(n_layers=8, energy_jumps=None, fiedler_jumps=None,
-                    n_controls=19):
+                    n_controls=19, steps=None):
+    steps = ANCHOR_SWEEP if steps is None else list(steps)
+    n_int = len(steps) - 1
     ej = energy_jumps or [11 + (i % 2) for i in range(n_layers)]
     fj = fiedler_jumps or list(ej)
-    energy = [_step_curve(ANCHOR_SWEEP, j) for j in ej]
-    fiedler = [-_step_curve(ANCHOR_SWEEP, j) for j in fj]   # a DROP
+    ej = [j % n_int for j in ej]
+    fj = [j % n_int for j in fj]
+    energy = [_step_curve(steps, j) for j in ej]
+    fiedler = [-_step_curve(steps, j) for j in fj]          # a DROP
     _outside = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19,
                 20, 21, 22, 23]
-    js = [_outside[i % len(_outside)] for i in range(n_controls)]
-    ctrl = {f"ctrl{i}": [_step_curve(ANCHOR_SWEEP, js[i])] * n_layers
+    js = [_outside[i % len(_outside)] % n_int for i in range(n_controls)]
+    ctrl = {f"ctrl{i}": [_step_curve(steps, js[i])] * n_layers
             for i in range(n_controls)}
     dirs = {f"ctrl{i}": "rise" for i in range(n_controls)}
     return energy, fiedler, ctrl, dirs
+
+
+#: CLAIM-B's registered sweep. The adjudication tests below have to run on it,
+#: because `adjudicate_claim_b` turns away a result computed on any other grid
+#: -- which is the point of registering one.
+REGISTERED_SWEEP = list(C.REGISTERED_CLAIM_B_SWEEP)
 
 
 class TestClaimBGate:
@@ -683,13 +695,85 @@ class TestClaimBGate:
 
 
 class TestClaimBAdjudication:
+    """
+    Every test here that asks to adjudicate passes an isolated
+    `adjudications_dir`, and every one runs on the REGISTERED sweep, because
+    those are now the same requirement: `adjudicate_claim_b` refuses any other
+    grid. `POPPER_PLAN.md` 6l and 6q both record what registering a decision
+    removes -- there, a refusal that had been doubling as the thing keeping a
+    synthetic p-value out of a ledger slot -- so the isolation is asserted
+    rather than assumed.
+    """
 
     def _ok(self):
-        return _claim_b_inputs()
+        return _claim_b_inputs(steps=REGISTERED_SWEEP)
+
+    def test_the_real_ledger_directory_is_never_touched(self):
+        """
+        The invariant the isolation is for. `core.adjudication` refuses to
+        overwrite a record once written, so one fixture run reaching the real
+        directory would occupy CLAIM-B's slot with a synthetic p-value
+        permanently. 6l and 6q both record this and 6q found a dead opt-in flag
+        behind it, so it is asserted rather than left to the call sites.
+        """
+        e, f, ctrl, dirs = self._ok()
+        C.adjudicate_claim_b(REGISTERED_SWEEP, e, f, ctrl, dirs,
+                             control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
+                             alpha=0.05, adjudicate=True,
+                             adjudications_dir=pathlib.Path(
+                                 tempfile.mkdtemp()))
+        real = pathlib.Path(__file__).resolve().parents[1] / "claims" / "adjudications"
+        assert not real.exists(), (
+            f"{real} exists after an adjudicating test; every call here must "
+            f"pass an isolated adjudications_dir")
+
+    def test_a_result_computed_on_another_grid_is_refused(self):
+        """
+        Which checkpoints the sweep samples decides what the anchor arms can
+        express before any data exists, so it is a pre-registered decision of
+        CLAIM-C's criterion's class. `p_value_claim_b` computes on any grid;
+        only the registered one may enter an e-process, the same division
+        `p7_motifs/patching_gate.py` makes between what `unit=` computes and
+        what may be adjudicated.
+        """
+        e, f, ctrl, dirs = _claim_b_inputs()
+        with pytest.raises(C.ColocationRefused, match="registered"):
+            C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
+                                 control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
+                                 alpha=0.05)
+
+    def test_the_registered_sweep_is_one_the_arithmetic_admits(self):
+        """Not a number anyone typed: it comes from the computed set, and the
+        two conditions that need no series properties are re-checked here."""
+        f = C.grid_feasibility(REGISTERED_SWEEP, C.CLAIM_B_ANCHOR_WINDOW)
+        assert f["reference_outside_window"]
+        assert C.anchor_statistic(
+            C.diffuse_reference_profile(REGISTERED_SWEEP),
+            C.CLAIM_B_ANCHOR_WINDOW) != 0.0
+
+    def test_a_result_says_on_its_face_whether_it_is_on_the_registered_sweep(self):
+        """The refusal only fires when someone asks to adjudicate. A reader of
+        a p-value that never asked needs the same fact on the record."""
+        e, f, ctrl, dirs = _claim_b_inputs()
+        off = C.p_value_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
+                                control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
+                                alpha=0.05)
+        assert off["on_the_registered_sweep"] is False
+        assert off["registered_sweep"] == list(C.REGISTERED_CLAIM_B_SWEEP)
+        e, f, ctrl, dirs = self._ok()
+        on = C.p_value_claim_b(REGISTERED_SWEEP, e, f, ctrl, dirs,
+                               control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
+                               alpha=0.05)
+        assert on["on_the_registered_sweep"] is True
+
+    def test_every_registered_step_is_a_published_checkpoint(self):
+        published = set([0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+                        + list(range(1000, 143001, 1000)))
+        assert set(REGISTERED_SWEEP) <= published
 
     def test_opt_in_writes_nothing_by_default(self, tmp_path):
         e, f, ctrl, dirs = self._ok()
-        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
+        r = C.adjudicate_claim_b(REGISTERED_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudications_dir=tmp_path)
         assert r["adjudication"] is None
@@ -697,7 +781,7 @@ class TestClaimBAdjudication:
 
     def test_emits_into_the_ledger_when_asked(self, tmp_path):
         e, f, ctrl, dirs = self._ok()
-        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
+        r = C.adjudicate_claim_b(REGISTERED_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudicate=True,
                                  adjudications_dir=tmp_path)
@@ -711,7 +795,7 @@ class TestClaimBAdjudication:
         """P-I1 runs the same estimator under a different claim. A reader of
         the ledger must not take their product for two independent factors."""
         e, f, ctrl, dirs = self._ok()
-        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
+        r = C.adjudicate_claim_b(REGISTERED_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudicate=True,
                                  adjudications_dir=tmp_path)
@@ -720,8 +804,8 @@ class TestClaimBAdjudication:
         assert "p_reciprocal" in notes and "NOT" in notes
 
     def test_a_refused_gate_writes_nothing_even_when_asked(self, tmp_path):
-        e, f, ctrl, dirs = _claim_b_inputs(n_controls=6)
-        r = C.adjudicate_claim_b(ANCHOR_SWEEP, e, f, ctrl, dirs,
+        e, f, ctrl, dirs = _claim_b_inputs(n_controls=6, steps=REGISTERED_SWEEP)
+        r = C.adjudicate_claim_b(REGISTERED_SWEEP, e, f, ctrl, dirs,
                                  control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                                  alpha=0.05, adjudicate=True,
                                  adjudications_dir=tmp_path)

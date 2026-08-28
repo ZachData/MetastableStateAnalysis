@@ -283,10 +283,15 @@ upper end and at zero noise: a change centred near step 2000 puts half its mass
 above 2000, the next affordable published checkpoint is tens of thousands of
 steps away, and adding checkpoints between 2000 and 20,000 pulls the sweep's own
 midpoint back *into* the window — which is the refusal above. Choosing among the
-admissible grids remains a pre-registered decision for the author; what changed
-is that it is a choice from a computed set with the cost of each option attached,
-and that every figure in it is stated at a per-checkpoint noise level and a
-change width the pilot can measure on its own series before any p-value exists.
+admissible grids was a pre-registered decision for the author, and it was taken:
+**`(1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)` is registered** as
+`REGISTERED_CLAIM_B_SWEEP`, twelve checkpoints holding 0.680 of the window,
+reading locations 1.82 estimator standard deviations apart across it, and
+sampling nothing between step 1000 and step 54000. `adjudicate_claim_b` refuses
+a result computed on any other grid; `p_value_claim_b` still computes on any and
+reports which it was. Every figure here is stated at a per-checkpoint noise
+level and a change width the pilot can measure on its own series before any
+p-value exists, and both are inputs the arithmetic refuses to guess.
 
 **One thing the dry run settled that had never been asked.** This claim's
 falsification branch fires — RE-ANCHORS is reachable on the input built for it
