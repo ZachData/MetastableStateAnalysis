@@ -2662,6 +2662,304 @@ now closed, and what stands ahead of converting the next `needs-null` row is
 the list of pre-computed requirements six passes have produced, none of which
 any existing sweep satisfies.
 
+## 6q. `P-AB1`: the last unbuilt bridge entry, and an exponent that is not monotone in what it measures (2026-08-27)
+
+`claims/EVALUABILITY.md`'s dry-run queue closed in §6p, and what stood ahead of
+converting the next `needs-null` row was that document's own instruction for
+every row naming a matched control: *"compute the attainable floor, name what
+the statistic degenerates on, check what the measurement grid contributes, and
+only then build the control."* `P-AB1` is the last unbuilt Phase 7 bridge entry
+with a live instrument and `design-7.md` calls it the one entry in its
+translation table "where the particle account plausibly says something the
+mechinterp framing does not already say". It is now built —
+`p7_motifs/patching_gate.py`, with
+`tools/calibrate_patching_exponent.py` → `claims/calibration/patching_exponent.json`
+behind it. Ten predictions are adjudicable in principle; `claims/adjudications/`
+is still empty.
+
+**This is the first construction built in that order, and each of the first
+three steps changed the design before any control existed.** That is the
+argument for the order, and it is worth stating as a result rather than as a
+process note: three of the four defect kinds §6p catalogued are checkable
+before any data exists, and all three were missed on the nine rows that had
+them. Asked first, they were all found.
+
+### 1. The floor, and the registered null that cannot reach any
+
+The registry's `null_construction` read *"Permutation over ablation points once
+the fitted exponent is the statistic."* Read literally — permute which ablation
+point's real exponent is compared against which point's control exponent — it is
+**degenerate**, and pure algebra says so. The natural statistic on a matched
+design is the mean paired difference, and permuting the pairing gives
+mean β_real − mean β_control **for every permutation**. The null has no spread,
+every draw ties the observation, and the smallest p the design can express is
+**1.000**.
+
+Not a small floor: the largest one there is. §6p's seventeenth lesson — a floor
+is a claim about the design and not about the call — in the one form where the
+design can never reject whatever it is handed, and reachable with no data and no
+simulation.
+
+The reading that works is the other one. The exchangeable object under H0 is the
+**label** on the two directions at one ablation point: if ablation removes a
+value from a sum, a real direction and a structureless one of equal magnitude at
+the same layer are exchangeable, so swapping their labels is exact by
+construction. That is a sign-flip null with floor `(2^(n−k)+1)/(2^n+1)` in the
+informative units — CLAIM-C's rule from §6l, reached by a second construction
+because it is the same group — so **six informative units is the first design
+that can reject at all**, after CLAIM-C's six prompts (§6f), CLAIM-C's five
+informative rows (§6l) and `P-ST1`'s two pairs (§6m).
+
+**A second floor binds at the other end, and it was found the way the last nine
+were.** Under the per-ablation-point unit the sign-flip group is 2^42 and is
+sampled, so the run cannot express anything below `2/(n_patterns + 1)` either:
+the design floor is 4.5e-13 there and a *perfect* input returns 4.0e-4 — nine
+orders of magnitude apart, and the arm was reporting the first. That is §6i's
+defect exactly, where CLAIM-B's sampled pairing regime reported a floor smaller
+than any p it could express, and §6p's rule is the fix: the smallest expressible
+p is the **max** of the design floor and the sampling resolution, and the two
+bind at opposite ends — under the per-prompt unit the group enumerates and the
+design floor is the whole story. Nothing was failing. It was found by printing
+what a perfect input returns beside what the arm claimed it could return, which
+is the **tenth session running** in which looking at a generated output found
+something no test caught, after §6g's rounding defect, §6h's audit arm, §6i's
+discarded-null power figures, §6k's α on a shoulder, §6l's empty drop slab,
+§6m's single-draw counterfactual, §6n's default argument, §6o's falsy zero and
+§6p's stale fallback note.
+
+**And a second thing the same reading caught**, smaller and the same shape as
+§6p's: the magnitude check the registry requires was being run on whatever array
+it was handed, without checking that array indexes the ablation grid the curves
+describe. Magnitudes for a different grid satisfied it silently — an unchecked
+match, in the refusal that exists for unchecked matches. Refused now, and pinned.
+
+**And §6l's informative-row structure arrives with it, exactly.** A prompt
+contributes the SUM of its ablation points' signs, so a prompt with an **even**
+number of points can split evenly and contribute nothing to the observation or
+to any sign pattern. Under H0 each sign is a fair coin, so at six prompts:
+
+| ablation points per prompt | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|
+| P(the design can reject at all) | 0.274 | **1.000** | 0.394 | **1.000** | 0.479 | **1.000** |
+
+Six points per prompt leaves the design unable to reject on 61% of draws and
+seven leaves it able on all of them. **An odd number of ablation points is free
+and an even number is not**, it is exact arithmetic on the grid rather than a
+fact about any model, and it is in `grid_arithmetic` in closed form.
+
+### 2. What the statistic degenerates on: the fit window, which the ablation point sets
+
+§6o's rule is that "matched on what" has to name the quantity the statistic
+degenerates on. A fitted growth exponent degenerates on the **window it was
+fitted over**, and the ablation point fixes that window: ablating at layer ℓ of
+an L-layer model leaves K = L − ℓ downstream layers and no more.
+
+Divergence saturates — two trajectories can only diverge so far — and the
+log-log slope of a saturating curve is a **decreasing function of K**. On one
+fixed set of dynamics, `D(k) = 1 − exp(−(k/τ)^β)` at β = 2.0 and τ = 4:
+
+| K | 3 | 4 | 6 | 8 | 12 | 16 | 24 |
+|---|---|---|---|---|---|---|---|
+| fitted exponent | 1.79 | 1.71 | 1.53 | 1.35 | 1.07 | 0.88 | **0.66** |
+
+A factor of nearly three on nothing but where the measurement stopped.
+**"Superlinear" is not a window-free statement**, and the registry's own reason
+for requiring a control — "later layers have more opportunity to diverge for
+reasons unrelated to field structure" — is right but is not the binding one. The
+binding one is that β has no meaning at all until a window is named.
+
+The pairing disposes of it: both arms at one ablation point are fitted over the
+same window, so its contribution is identical on both sides of the difference.
+That puts `P-AB1` in the safe column of §6o's table — **and only because it
+pairs at the ablation point.** The comparison across points, which the
+registered null's literal reading performs, is between exponents fitted over
+different windows and is not a comparison at all.
+
+### 3. What the measurement grid contributes: a common window, and a sign rather than a mean
+
+The window cancels within a pair; it does not make the pairs commensurable. The
+sampling spread of a log-log slope is `σ/√Sxx` with `Sxx` fixed by K alone, so
+the fitted exponent's spread runs a factor of five across one model's ablation
+grid — exact arithmetic, tabulated in `sampling_spread`, no replicates. A **mean**
+of paired differences is then dominated by whichever ablation point sits nearest
+the output and carries the least information.
+
+Two consequences, both taken. The gate fits every point over one **common
+window**, the largest every included point can supply, read off the input rather
+than placed — and what IS a choice is the caller's ablation grid, which trades
+directly against the floor, since n points and a window of W need n + W ≤ L. On
+a 12-layer model six ablation points leave a window of six; on a six-layer model
+there is no design at all. And the units are combined by a **sign**, so a point
+fitted over a short window counts exactly as much as one fitted over a long one
+and no more. The cost was measured rather than assumed: against a mean of paired
+differences on a grid whose windows deliberately run 3 to 27, power at a planted
+gap of 0.10 is **0.910 against 0.872** and at 0.05 **0.429 against 0.383**, with
+the H0 rate lower too, 0.030 against 0.045. It also places no constant, which is
+§6i's change-mass centroid, CLAIM-C's sign concordance and `P-ST1`'s
+sign-of-a-difference escaping the same way a fourth time.
+
+### 4. And only then the control, where the unit is the open question
+
+The control is the registry's — a matched random-direction ablation of equal
+magnitude at the same layer — and **equal magnitude is now checked rather than
+assumed**, §6p's `P-S1` precedent, where a null drawn at one arm's configuration
+and applied to the other's rejected at 1.000 on two i.i.d. arms because nothing
+checked they matched.
+
+What the sign-flip needs beyond per-point exchangeability is that the signs are
+independently flippable, and that is a claim about the units. `status-6.md`'s
+"49 layers are not 49 independent observations" applies to ablation points
+inside one run exactly as it applied to ALBERT's layers, so both readings were
+measured on the same draws, at six prompts × seven ablation points, against a
+per-prompt shared component:
+
+| shared share ρ | unit = ablation point | unit = prompt |
+|---|---|---|
+| 0.0 (independent) | 0.050 | 0.018 |
+| 0.5 | **0.141** | 0.016 |
+| 1.0 | **0.235** | 0.029 |
+
+The per-prompt unit holds across the range; the per-ablation-point unit — the
+reading the registry's wording implied — reaches 0.235. A fourth independent
+arrival of the fourfold-plus inflation POPPER reports at 0.082 → 0.340 and §§6f,
+6h and 6k each measured. **Which unit may enter an e-process is a scientific
+decision of the same class as CLAIM-C's criterion**, so it was put to the author
+rather than taken here, and **the author registered `"prompt"`.**
+`adjudicate_p_ab1` turns away a result computed under any other unit, and
+`unit=` selects what to compute and never what may be adjudicated — §6h's
+construction, used a second time and for its reason.
+
+**It was safe to take now, and unlike §6l's it is a trade rather than free.**
+Safe for §6l's reason: no p-value on real data exists, `claims/adjudications/`
+is empty, no ablation run artifact is in this repository, and every number
+either unit has produced came from synthetic curves. But where §6l's `"model"`
+cost nothing at ρ = 0 because the two units agree there, this one costs
+**resolution** — the floor becomes `2/(2^n_prompts+1)`, so six prompts with an
+odd number of ablation points each — and it costs **power**, 0.503 against 0.856
+at a planted exponent gap of 0.15. The record says so rather than presenting the
+conservative choice as free.
+
+**And registering it removed a safety catch, which is how a third defect in this
+module was found.** §6l recorded that while `P6-R2`'s unit was `None` the
+refusal was doubling as the thing keeping a synthetic p-value out of its ledger
+slot. The same held here — and behind it, `adjudicate_p_ab1`'s opt-in guard had
+been written as `if result["p_value"] is None: return` with the `adjudicate`
+flag **not read at all**, so every call would have reached the ledger regardless
+of the flag. It was invisible while the unit was unregistered, because the
+refusal above turned every call away before it could matter, and it went live
+the moment the unit was registered. Caught by a test asserting the flag's
+meaning, written because §6l said what registering a unit removes. Nothing in
+`claims/adjudications/` was touched: the directory does not exist, and every
+test that adjudicates writes to an isolated `adjudications_dir` and asserts
+nothing else was written.
+
+**The limitation no label swap removes, measured rather than described.** A
+shared component that is a random per-prompt draw is what the prompt unit
+disposes of. A **fixed** offset — real ablation directions are not isotropic and
+the controls are, so every cell is nudged the same way for a reason with nothing
+to do with the field account — is not, by either unit: at one jitter it rejects
+at **1.000** under the point unit and **0.895** under the prompt unit. That is
+§6i's shared-per-unit-factor at 1.00 in this design's clothing, and every record
+carries a `shared_prompt_factor_diagnostic` that catches a factor varying
+*between* prompts and catches this one not at all — which is pinned by a test,
+so it cannot later be mistaken for coverage.
+
+### The finding: a fitted exponent is not monotone in what the prediction is about
+
+Divergence is **bounded**. So the arm whose divergence is larger at every layer
+reaches its ceiling sooner inside a fixed window and its log-log slope
+**flattens**: at one true exponent of 2.0 over eight layers, τ = 4 fits 1.35 and
+τ = 16 fits 1.95 — and τ = 4 is the arm that dominates everywhere.
+
+On two arms carrying the **same** true exponent where only the real one
+saturates sooner — which is what a real ablation that propagates *does* — the
+gate returned **`RECAPTURES`, its registered falsification branch, on 0.98 of
+draws under the prompt unit and 1.00 under the other.** An input on which the
+prediction holds, scored as the prediction refuted. It is §6p's fourth defect
+kind ("an input the design cannot compare, scored anyway") in its worst form,
+because the verdict it produces is the one that would enter the ledger as a
+falsification — and it is not visible in any single result, because the number
+the gate reports is the same number either way.
+
+**The first attempt at the refusal was the paired contrast, and the measurement
+threw it out.** An equal bend cancels inside the pair, so the confound is a bend
+*contrast*, and it is testable two-sided with the gate's own exact null. Right
+shape, too weak: on the differential-saturation family it turned away 52 of 100
+draws under the prompt unit and the 48 it let through **still returned
+RECAPTURES on 0.979 of them**; under the other unit 23 got through and 1.000 of
+those did. A refusal that thins a defect is not a refusal. It is kept as a
+reported diagnostic naming the *direction* of the confound, and the sweep is in
+the artifact because it is what corrected the design — §6o's discarded
+rank-based refusal, same shape, one pass later.
+
+**What refuses instead asks the per-arm question.** The exponent is a growth
+exponent only where the curve is a **power law** over the window, and that is a
+property of one arm rather than of the pair. Each curve's `window_sensitivity`
+divided by the spread its own OLS residual gives it is a z under "this curve is
+a power law"; pooled over the arm's cells it is standard normal, and each arm is
+tested two-sided at α/2 — Bonferroni over the two arms, which is §6n's rule
+about putting a threshold on a family without the family's size in it. Measured
+over the design's own 42 cells: **0.060 on pure power laws and at τ = 30, 0.360
+at τ = 15, 0.970 at τ = 8, 1.000 at τ = 5 and below.** Nominal on the shape it
+is meant to admit, certain on the shape it is not.
+
+**It costs verdicts, and the record says which kind of cost.** §6p names three
+kinds of "this costs nothing" — measured, proved, enumerated — and §6o names a
+fourth category that is none of them: a refusal that is right and costs verdicts
+anyway. This is the second of those. It turns away every draw of *both*
+saturating families, including the symmetric one where both arms bend equally
+and the contrast measured nominal. That case is refused deliberately: an
+exponent fitted through a ceiling is a property of the window, so a `PROPAGATES`
+verdict there would say the real arm's window artifact exceeded the control's,
+which is not what `P-AB1` predicts. What is refused is a verdict the design
+cannot **support** rather than one it could not **reach**, and every family in
+the calibration carries the counterfactual rate re-scored on the refused draws
+instead of a claim that the cost is small.
+
+### The falsifier, and the branch that can carry it
+
+*"Divergence flat in remaining depth, or growing linearly, across ablation
+points"* describes the **null**, and an e-process records insufficient evidence
+and never a null accepted — §6k recorded the same for `P-ST1` and the resolution
+is the same. Both clauses map to INSUFFICIENT. The falsification branch is
+`RECAPTURES`: the real ablation's exponent demonstrably *below* its matched
+control's, the perturbation reabsorbed faster than a structureless one, which is
+`design-7.md`'s own other side of the recapture-vs-propagation question and a
+reversal positively shown. §6i's requirement that such a branch be checked to be
+one that can fire is met — it fires at 0.457–0.803 against a planted inversion
+and at the floor exactly on a perfect one. `p_reciprocal` is a stop-rule input
+only and never enters a claim's E, which is CLAIM-B's and CLAIM-C's division
+doing real work here rather than being a convention: the branch differential
+saturation can manufacture is exactly the one that reaches no ledger.
+
+### What the pilot must now produce
+
+Two more requirements, and the second constrains something none of the previous
+six did — **the intervention itself** rather than what is measured, where it is
+sampled, how it is clustered or how large the run is:
+
+- **Six informative units, with an odd number of ablation points per prompt.**
+  Under the per-prompt unit that is six prompts; the ablation grid and the
+  common fit window trade against the model's depth as `n + W ≤ L`.
+- **An ablation magnitude and a fit window that keep BOTH arms inside the
+  power-law regime.** Checkable off the divergence curves before any p-value is
+  computed, refused by the gate when it fails, and not obtainable any other way.
+
+That takes `claims/EVALUABILITY.md`'s list to eight, and no existing sweep
+satisfies any of them.
+
+### What this pass did not do
+
+It does not touch `CLAIM-B`'s grid question or the centroid de-biasing decision
+(§6o) — both are decisions for the author rather than construction, and the
+window to take them is open only while `claims/adjudications/` is empty. It
+builds no confound-control arm for `CLAIM-B`/`P-I1`, which remains blocked on
+nineteen control series *and* a grid. And it adjudicates nothing: the divergence
+curves are synthetic with planted answers, no ablation run artifact is in this
+repository, `claims/adjudications/` is empty, and `null_construction` has still
+not frozen — the fifth time that window has been used, and the first time it was
+used to record that the registered null was not one.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

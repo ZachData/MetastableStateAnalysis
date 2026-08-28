@@ -1,0 +1,715 @@
+{
+  "alpha": 0.05,
+  "design": {
+    "fit_window": 8,
+    "min_fit_points": 3,
+    "n_ablation_points": 7,
+    "n_prompts": 6
+  },
+  "discarded_refusal": {
+    "_note": "The reciprocal branch is P-AB1's registered FALSIFICATION branch, and the correct verdict on this family is INSUFFICIENT -- both arms carry the same true exponent and only their saturation differs. `power_law_arm` refuses the whole family instead.",
+    "family": "differential-saturation",
+    "per_unit": {
+      "ablation_point": {
+        "flagged_by_the_discarded_refusal": 77,
+        "let_through": 23,
+        "reciprocal_rejection_among_those_let_through": 1.0
+      },
+      "prompt": {
+        "flagged_by_the_discarded_refusal": 52,
+        "let_through": 48,
+        "reciprocal_rejection_among_those_let_through": 0.9791666666666666
+      }
+    },
+    "replicates": 100
+  },
+  "elapsed_seconds": 190.1,
+  "generated_by": "tools/calibrate_patching_exponent.py",
+  "grid_arithmetic": {
+    "_note": "p_prompt_non_informative_under_h0 is exact: under H0 each cell's sign is a fair coin, so a prompt with an even number of usable ablation points splits evenly with probability C(n, n/2)/2^n and contributes nothing to the observation or to any sign pattern. An odd count cannot.",
+    "even_vs_odd": [
+      {
+        "ablation_points_per_prompt": 3,
+        "p_design_can_reject_at_all": 1.0,
+        "p_prompt_non_informative_under_h0": 0.0
+      },
+      {
+        "ablation_points_per_prompt": 4,
+        "p_design_can_reject_at_all": 0.274181,
+        "p_prompt_non_informative_under_h0": 0.375
+      },
+      {
+        "ablation_points_per_prompt": 5,
+        "p_design_can_reject_at_all": 1.0,
+        "p_prompt_non_informative_under_h0": 0.0
+      },
+      {
+        "ablation_points_per_prompt": 6,
+        "p_design_can_reject_at_all": 0.393575,
+        "p_prompt_non_informative_under_h0": 0.3125
+      },
+      {
+        "ablation_points_per_prompt": 7,
+        "p_design_can_reject_at_all": 1.0,
+        "p_prompt_non_informative_under_h0": 0.0
+      },
+      {
+        "ablation_points_per_prompt": 8,
+        "p_design_can_reject_at_all": 0.479289,
+        "p_prompt_non_informative_under_h0": 0.2734375
+      },
+      {
+        "ablation_points_per_prompt": 9,
+        "p_design_can_reject_at_all": 1.0,
+        "p_prompt_non_informative_under_h0": 0.0
+      },
+      {
+        "ablation_points_per_prompt": 10,
+        "p_design_can_reject_at_all": 0.543229,
+        "p_prompt_non_informative_under_h0": 0.24609375
+      },
+      {
+        "ablation_points_per_prompt": 11,
+        "p_design_can_reject_at_all": 1.0,
+        "p_prompt_non_informative_under_h0": 0.0
+      }
+    ],
+    "floor_by_informative_unit_count": {
+      "1": 0.666667,
+      "10": 0.001951,
+      "2": 0.4,
+      "3": 0.222222,
+      "4": 0.117647,
+      "5": 0.060606,
+      "6": 0.030769,
+      "7": 0.015504,
+      "8": 0.007782,
+      "9": 0.003899
+    },
+    "min_informative_units_for_alpha": 6,
+    "n_prompts": 6
+  },
+  "power_law_arm_operating_curve": [
+    {
+      "n_cells": 42,
+      "refusal_rate_one_arm_at_0.05": 0.06,
+      "replicates": 100,
+      "tau": 1000000.0
+    },
+    {
+      "n_cells": 42,
+      "refusal_rate_one_arm_at_0.05": 0.06,
+      "replicates": 100,
+      "tau": 30.0
+    },
+    {
+      "n_cells": 42,
+      "refusal_rate_one_arm_at_0.05": 0.36,
+      "replicates": 100,
+      "tau": 15.0
+    },
+    {
+      "n_cells": 42,
+      "refusal_rate_one_arm_at_0.05": 0.97,
+      "replicates": 100,
+      "tau": 8.0
+    },
+    {
+      "n_cells": 42,
+      "refusal_rate_one_arm_at_0.05": 1.0,
+      "replicates": 100,
+      "tau": 5.0
+    },
+    {
+      "n_cells": 42,
+      "refusal_rate_one_arm_at_0.05": 1.0,
+      "replicates": 100,
+      "tau": 3.0
+    }
+  ],
+  "power_note": "the two power@ rows are the verdict branches. power@+0.15 must reject in the predicted direction and power@-0.15 in the reciprocal one, or a branch of the stop rule is one nothing can trigger -- POPPER_PLAN.md 6h's audit arm, and 6i's requirement that the falsification branch be checked to be one that can fire.",
+  "replicates": 400,
+  "sampling_spread": {
+    "_note": "Exact arithmetic on the window, no replicates. The ratio between the shortest and longest window tabulated here is what a mean of paired differences would weight by and a sign sum does not.",
+    "by_window": {
+      "12": {
+        "slope_sd_at_this_files_noise": 0.079782,
+        "slope_sd_per_unit_log_noise": 0.398911,
+        "sxx": 6.284178
+      },
+      "16": {
+        "slope_sd_at_this_files_noise": 0.065436,
+        "slope_sd_per_unit_log_noise": 0.327182,
+        "sxx": 9.341592
+      },
+      "24": {
+        "slope_sd_at_this_files_noise": 0.050216,
+        "slope_sd_per_unit_log_noise": 0.251079,
+        "sxx": 15.862829
+      },
+      "3": {
+        "slope_sd_at_this_files_noise": 0.254562,
+        "slope_sd_per_unit_log_noise": 1.272809,
+        "sxx": 0.617268
+      },
+      "4": {
+        "slope_sd_at_this_files_noise": 0.192076,
+        "slope_sd_per_unit_log_noise": 0.960382,
+        "sxx": 1.084207
+      },
+      "5": {
+        "slope_sd_at_this_files_noise": 0.157354,
+        "slope_sd_per_unit_log_noise": 0.78677,
+        "sxx": 1.615489
+      },
+      "6": {
+        "slope_sd_at_this_files_noise": 0.134979,
+        "slope_sd_per_unit_log_noise": 0.674893,
+        "sxx": 2.195482
+      },
+      "8": {
+        "slope_sd_at_this_files_noise": 0.107469,
+        "slope_sd_per_unit_log_noise": 0.537343,
+        "sxx": 3.46335
+      }
+    }
+  },
+  "schema_version": 1,
+  "seed": 20260827,
+  "statistic_choice": [
+    {
+      "mean_difference_rejection": 0.045112781954887216,
+      "planted_exponent_gap": 0.0,
+      "replicates": 133,
+      "sign_sum_rejection": 0.03007518796992481,
+      "windows": [
+        3,
+        7,
+        11,
+        15,
+        19,
+        23,
+        27
+      ]
+    },
+    {
+      "mean_difference_rejection": 0.38345864661654133,
+      "planted_exponent_gap": 0.05,
+      "replicates": 133,
+      "sign_sum_rejection": 0.42857142857142855,
+      "windows": [
+        3,
+        7,
+        11,
+        15,
+        19,
+        23,
+        27
+      ]
+    },
+    {
+      "mean_difference_rejection": 0.8721804511278195,
+      "planted_exponent_gap": 0.1,
+      "replicates": 133,
+      "sign_sum_rejection": 0.9097744360902256,
+      "windows": [
+        3,
+        7,
+        11,
+        15,
+        19,
+        23,
+        27
+      ]
+    },
+    {
+      "mean_difference_rejection": 1.0,
+      "planted_exponent_gap": 0.2,
+      "replicates": 133,
+      "sign_sum_rejection": 1.0,
+      "windows": [
+        3,
+        7,
+        11,
+        15,
+        19,
+        23,
+        27
+      ]
+    }
+  ],
+  "synthetic_family": {
+    "_placed": "all PLACED, not calibrated: they define the family the rates are rates under and no distribution was consulted",
+    "base_exponent": 1.4,
+    "curve": "D(k) = 1 - exp(-(k/tau)^beta), times exp(N(0, sd))",
+    "log_noise_sd": 0.2,
+    "tau_bent": 5.0,
+    "tau_straight": 1000000.0
+  },
+  "validity": [
+    {
+      "bend_contrast_flagged": 18,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0125,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.02,
+      "emission_rate": 0.955,
+      "emitted": 382,
+      "family": "independent",
+      "mean_p": 0.5337494965767218,
+      "mean_paired_window_sensitivity": 0.0014245377044740683,
+      "mean_shared_share_estimate": 0.11892891137453776,
+      "reciprocal_rejection_rate": 0.013089005235602094,
+      "refused_not_a_power_law": 18,
+      "refused_other": 0,
+      "rejection_rate": 0.01832460732984293,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 24,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0375,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.05,
+      "emission_rate": 0.955,
+      "emitted": 382,
+      "family": "independent",
+      "mean_p": 0.517633260831793,
+      "mean_paired_window_sensitivity": 0.0014245377044740683,
+      "mean_shared_share_estimate": 0.11892891137453776,
+      "reciprocal_rejection_rate": 0.03926701570680628,
+      "refused_not_a_power_law": 18,
+      "refused_other": 0,
+      "rejection_rate": 0.049738219895287955,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 17,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.03,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.015,
+      "emission_rate": 0.9575,
+      "emitted": 383,
+      "family": "shared-prompt-factor@0.5",
+      "mean_p": 0.5460534243824061,
+      "mean_paired_window_sensitivity": 0.0011440002328847094,
+      "mean_shared_share_estimate": 0.3935222085314367,
+      "reciprocal_rejection_rate": 0.031331592689295036,
+      "refused_not_a_power_law": 17,
+      "refused_other": 0,
+      "rejection_rate": 0.015665796344647518,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 17,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.1675,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.14,
+      "emission_rate": 0.9575,
+      "emitted": 383,
+      "family": "shared-prompt-factor@0.5",
+      "mean_p": 0.5375760922784932,
+      "mean_paired_window_sensitivity": 0.0011440002328847094,
+      "mean_shared_share_estimate": 0.3935222085314367,
+      "reciprocal_rejection_rate": 0.16971279373368145,
+      "refused_not_a_power_law": 17,
+      "refused_other": 0,
+      "rejection_rate": 0.1409921671018277,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 15,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0175,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.03,
+      "emission_rate": 0.935,
+      "emitted": 374,
+      "family": "shared-prompt-factor@1.0",
+      "mean_p": 0.5271904566022213,
+      "mean_paired_window_sensitivity": -0.00011451810178592998,
+      "mean_shared_share_estimate": 0.6785490813308434,
+      "reciprocal_rejection_rate": 0.01871657754010695,
+      "refused_not_a_power_law": 26,
+      "refused_other": 0,
+      "rejection_rate": 0.029411764705882353,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 19,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.1975,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.235,
+      "emission_rate": 0.935,
+      "emitted": 374,
+      "family": "shared-prompt-factor@1.0",
+      "mean_p": 0.5059981355051563,
+      "mean_paired_window_sensitivity": -0.00011451810178592998,
+      "mean_shared_share_estimate": 0.6785490813308434,
+      "reciprocal_rejection_rate": 0.20588235294117646,
+      "refused_not_a_power_law": 26,
+      "refused_other": 0,
+      "rejection_rate": 0.23529411764705882,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 8,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.3675,
+      "emission_rate": 0.96,
+      "emitted": 384,
+      "family": "fixed-offset@0.5jitter",
+      "mean_p": 0.10697115384615385,
+      "mean_paired_window_sensitivity": 0.001401084527973647,
+      "mean_shared_share_estimate": 0.11662768350428161,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 16,
+      "refused_other": 0,
+      "rejection_rate": 0.3723958333333333,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 13,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.675,
+      "emission_rate": 0.96,
+      "emitted": 384,
+      "family": "fixed-offset@0.5jitter",
+      "mean_p": 0.06957581550713049,
+      "mean_paired_window_sensitivity": 0.001401084527973647,
+      "mean_shared_share_estimate": 0.11662768350428161,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 16,
+      "refused_other": 0,
+      "rejection_rate": 0.6744791666666666,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 12,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.8975,
+      "emission_rate": 0.95,
+      "emitted": 380,
+      "family": "fixed-offset@1.0jitter",
+      "mean_p": 0.03623481781376518,
+      "mean_paired_window_sensitivity": 0.001953363827119901,
+      "mean_shared_share_estimate": 0.12639588907188498,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 20,
+      "refused_other": 0,
+      "rejection_rate": 0.8947368421052632,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 19,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0,
+      "counterfactual_rejection_rate_no_bend_refusal": 1.0,
+      "emission_rate": 0.95,
+      "emitted": 380,
+      "family": "fixed-offset@1.0jitter",
+      "mean_p": 0.001837685978240283,
+      "mean_paired_window_sensitivity": 0.001953363827119901,
+      "mean_shared_share_estimate": 0.12639588907188498,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 20,
+      "refused_other": 0,
+      "rejection_rate": 1.0,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 8,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0125,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.005,
+      "emission_rate": 0.0,
+      "emitted": 0,
+      "family": "saturating-both-arms",
+      "mean_p": null,
+      "mean_paired_window_sensitivity": null,
+      "mean_shared_share_estimate": null,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 400,
+      "refused_other": 0,
+      "rejection_rate": 0.0,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 8,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0325,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.0375,
+      "emission_rate": 0.0,
+      "emitted": 0,
+      "family": "saturating-both-arms",
+      "mean_p": null,
+      "mean_paired_window_sensitivity": null,
+      "mean_shared_share_estimate": null,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 400,
+      "refused_other": 0,
+      "rejection_rate": 0.0,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 164,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.9825,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.0,
+      "emission_rate": 0.0,
+      "emitted": 0,
+      "family": "differential-saturation",
+      "mean_p": null,
+      "mean_paired_window_sensitivity": null,
+      "mean_shared_share_estimate": null,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 400,
+      "refused_other": 0,
+      "rejection_rate": 0.0,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 287,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 1.0,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.0,
+      "emission_rate": 0.0,
+      "emitted": 0,
+      "family": "differential-saturation",
+      "mean_p": null,
+      "mean_paired_window_sensitivity": null,
+      "mean_shared_share_estimate": null,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 400,
+      "refused_other": 0,
+      "rejection_rate": 0.0,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 13,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.4975,
+      "emission_rate": 0.955,
+      "emitted": 382,
+      "family": "power@+0.15",
+      "mean_p": 0.07486910994764398,
+      "mean_paired_window_sensitivity": 0.0028237154265168107,
+      "mean_shared_share_estimate": 0.12437293056213533,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 18,
+      "refused_other": 0,
+      "rejection_rate": 0.5026178010471204,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 19,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.0,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.8525,
+      "emission_rate": 0.955,
+      "emitted": 382,
+      "family": "power@+0.15",
+      "mean_p": 0.03349759572610746,
+      "mean_paired_window_sensitivity": 0.0028237154265168107,
+      "mean_shared_share_estimate": 0.12437293056213533,
+      "reciprocal_rejection_rate": 0.0,
+      "refused_not_a_power_law": 18,
+      "refused_other": 0,
+      "rejection_rate": 0.856020942408377,
+      "replicates": 400,
+      "unit": "ablation_point"
+    },
+    {
+      "bend_contrast_flagged": 20,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.46,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.0,
+      "emission_rate": 0.94,
+      "emitted": 376,
+      "family": "power@-0.15",
+      "mean_p": 0.9635433715220949,
+      "mean_paired_window_sensitivity": 0.0012991548345673172,
+      "mean_shared_share_estimate": 0.11763389656261251,
+      "reciprocal_rejection_rate": 0.4574468085106383,
+      "refused_not_a_power_law": 24,
+      "refused_other": 0,
+      "rejection_rate": 0.0,
+      "replicates": 400,
+      "unit": "prompt"
+    },
+    {
+      "bend_contrast_flagged": 13,
+      "counterfactual_reciprocal_rate_no_bend_refusal": 0.8075,
+      "counterfactual_rejection_rate_no_bend_refusal": 0.0,
+      "emission_rate": 0.94,
+      "emitted": 376,
+      "family": "power@-0.15",
+      "mean_p": 0.9698094166588684,
+      "mean_paired_window_sensitivity": 0.0012991548345673172,
+      "mean_shared_share_estimate": 0.11763389656261251,
+      "reciprocal_rejection_rate": 0.8031914893617021,
+      "refused_not_a_power_law": 24,
+      "refused_other": 0,
+      "rejection_rate": 0.0,
+      "replicates": 400,
+      "unit": "ablation_point"
+    }
+  ],
+  "window_dependence": [
+    {
+      "beta_true": 1.0,
+      "fitted": {
+        "12": 0.5697,
+        "16": 0.503,
+        "24": 0.4067,
+        "3": 0.7956,
+        "4": 0.7631,
+        "6": 0.705,
+        "8": 0.6541
+      },
+      "tau": 4.0
+    },
+    {
+      "beta_true": 1.0,
+      "fitted": {
+        "12": 0.7528,
+        "16": 0.7026,
+        "24": 0.6181,
+        "3": 0.8933,
+        "4": 0.875,
+        "6": 0.841,
+        "8": 0.8096
+      },
+      "tau": 8.0
+    },
+    {
+      "beta_true": 1.0,
+      "fitted": {
+        "12": 0.8678,
+        "16": 0.8375,
+        "24": 0.7824,
+        "3": 0.9455,
+        "4": 0.9359,
+        "6": 0.9176,
+        "8": 0.9003
+      },
+      "tau": 16.0
+    },
+    {
+      "beta_true": 1.0,
+      "fitted": {
+        "12": 1.0,
+        "16": 1.0,
+        "24": 1.0,
+        "3": 1.0,
+        "4": 1.0,
+        "6": 1.0,
+        "8": 1.0
+      },
+      "tau": 1000000.0
+    },
+    {
+      "beta_true": 1.5,
+      "fitted": {
+        "12": 0.8256,
+        "16": 0.6961,
+        "24": 0.5309,
+        "3": 1.2836,
+        "4": 1.2248,
+        "6": 1.1095,
+        "8": 1.0026
+      },
+      "tau": 4.0
+    },
+    {
+      "beta_true": 1.5,
+      "fitted": {
+        "12": 1.1902,
+        "16": 1.0896,
+        "24": 0.9165,
+        "3": 1.4202,
+        "4": 1.3967,
+        "6": 1.347,
+        "8": 1.2952
+      },
+      "tau": 8.0
+    },
+    {
+      "beta_true": 1.5,
+      "fitted": {
+        "12": 1.3798,
+        "16": 1.333,
+        "24": 1.2358,
+        "3": 1.4714,
+        "4": 1.4627,
+        "6": 1.444,
+        "8": 1.4237
+      },
+      "tau": 16.0
+    },
+    {
+      "beta_true": 1.5,
+      "fitted": {
+        "12": 1.5,
+        "16": 1.5,
+        "24": 1.5,
+        "3": 1.5,
+        "4": 1.5,
+        "6": 1.5,
+        "8": 1.5
+      },
+      "tau": 1000000.0
+    },
+    {
+      "beta_true": 2.0,
+      "fitted": {
+        "12": 1.0688,
+        "16": 0.8814,
+        "24": 0.6582,
+        "3": 1.7933,
+        "4": 1.7087,
+        "6": 1.526,
+        "8": 1.3489
+      },
+      "tau": 4.0
+    },
+    {
+      "beta_true": 2.0,
+      "fitted": {
+        "12": 1.6381,
+        "16": 1.4766,
+        "24": 1.2047,
+        "3": 1.9463,
+        "4": 1.9223,
+        "6": 1.8643,
+        "8": 1.7954
+      },
+      "tau": 8.0
+    },
+    {
+      "beta_true": 2.0,
+      "fitted": {
+        "12": 1.8979,
+        "16": 1.8386,
+        "24": 1.6979,
+        "3": 1.9864,
+        "4": 1.9803,
+        "6": 1.965,
+        "8": 1.9459
+      },
+      "tau": 16.0
+    },
+    {
+      "beta_true": 2.0,
+      "fitted": {
+        "12": 2.0,
+        "16": 2.0,
+        "24": 2.0,
+        "3": 2.0,
+        "4": 2.0,
+        "6": 2.0,
+        "8": 2.0
+      },
+      "tau": 1000000.0
+    }
+  ]
+}

@@ -608,6 +608,55 @@ project is a rate under a modelled H0 family; this one's answer follows from the
 construction, so a failure would localise to the implementation rather than to
 the choice of family.
 
+**`P-AB1` gained a construction on 2026-08-27, and it is the last unbuilt
+bridge entry with a live instrument.** `p7_motifs/patching_gate.py`;
+`POPPER_PLAN.md` §6q. `design-7.md` calls the patching entry the one place in
+its translation table "where the particle account plausibly says something the
+mechinterp framing does not already say", and the particle question is
+**recapture versus propagation**: superlinear divergence in remaining depth is
+propagation, flat divergence is recapture. Three things belong here rather than
+only in the plan.
+
+**The registered null could not have rejected anything, and one line of algebra
+says so.** *"Permutation over ablation points once the fitted exponent is the
+statistic"* permutes which point's real exponent meets which point's control
+exponent — and a mean paired difference is **invariant** under that, since it is
+mean β_real − mean β_control for every permutation. The null has no spread and
+the design's floor is **1.000**. What replaces it is the exact sign flip of the
+two arms' labels at one ablation point, which is exchangeable under H0 by
+construction: if ablation removes a value from a sum, a real direction and a
+structureless one of equal magnitude at the same layer are the same kind of
+object. Six informative units is then the first design that can reject, and
+because a prompt contributes the *sum* of its points' signs, an **odd** number
+of ablation points per prompt is free while an even one is not — at six prompts,
+seven points leave the design able to reject on every H0 draw and six leave it
+able on 0.394.
+
+**The statistic is not monotone in the quantity the claim is about, which is the
+finding and is new to this registry.** Divergence is bounded, so the arm whose
+divergence is larger at every layer reaches its ceiling sooner inside a fixed
+window and its log-log slope **flattens**. On two arms carrying the same true
+exponent where only the real one saturates sooner — which is what a real
+ablation that propagates does — the gate returned `RECAPTURES`, its falsification
+branch, on 0.98–1.00 of draws. The gate now refuses when either arm's divergence
+is not a power law over the window; the first attempt at that refusal tested the
+*paired* bend and was thrown out by measurement, because it let 48 of 100 draws
+through and 0.979 of those still returned the falsification. The refusal costs
+verdicts — §6o's fourth category, used a second time — and the calibration
+re-scores the counterfactual in every family rather than claiming the cost is
+small.
+
+**And the exchangeable unit was put to the author, for `P6-R2`'s reason.**
+Measured on the same draws, one bit per ablation point runs to 0.235 under a
+per-prompt shared factor where one bit per prompt holds at 0.029. The author
+registered **`"prompt"`**, and `adjudicate_p_ab1` turns away a result computed
+under any other unit. Unlike `P6-R2`'s `"model"` this is a trade rather than
+free: it costs resolution — six prompts, an odd number of ablation points each
+— and power, 0.503 against 0.856 at a planted gap of 0.15. A **fixed** offset between the real and the control direction populations —
+real ablation directions are not isotropic and the controls are — is separated
+by neither unit and reaches 1.000, which is `P-I1`'s shared-per-unit-factor
+limitation in a second construction: diagnosed, stated, not removed.
+
 **Why the P5b predictions stay here rather than under H-OPERATOR.** Sub-experiment
 D asks whether behavioural geometry is carried by the real/symmetric subspace and
 *not* by the imaginary/antisymmetric one (`P5b-D1`, `P5b-D2`). That is a claim
