@@ -198,6 +198,59 @@ coincidence that hid it is that the cheap sweep's midpoint sits almost exactly
 where CLAIM-B's anchor is: on the grid this construction was calibrated for,
 the bias is invisible because it points at the answer.
 
+WHICH GRIDS CAN CARRY THE ANCHOR ARM, COMPUTED RATHER THAN CHOSEN (2026-08-28)
+
+6o left the two failures above as one mechanism at two geometries and said the
+sweep satisfying both is neither of the two the project has. Which grids DO
+satisfy both is arithmetic on the grid and the window, so `grid_feasibility`
+computes it and `claims/calibration/claim_b_grid_feasibility.json` enumerates
+the answer over Pythia's published schedule. `anchor_arm` carries the result on
+every record it emits.
+
+Five conditions, and three of them are new here. `reference_outside_window` is
+the refusal above, unchanged. `change_free_ceiling_rate` is that refusal read
+as a RATE, because the refusal tests the noiseless reference and a realised
+change-free series scatters around it -- a grid clearing the refusal by a hair
+puts a change-free series at the arm's ceiling on half its draws.
+`retained_window_fraction` is the drag as a share of the window.
+`false_anchor_fraction` is how much sweep OUTSIDE the window a grid reads
+INSIDE it, and `window_read_span_in_change_free_sd` is how far apart the
+locations it reports for the two ends of the window are. The last two exist
+because without them the arithmetic prefers a sweep whose one wide interval
+swallows the window: every anchored change reads inside it, so does a stretch
+above it, and it cannot say where in the window anything happened. **The grid
+that maximises the arm's numbers is the grid that destroys what the claim is
+about**, which is 6o's own finding one turn further round.
+
+**A location depends on the change's own WIDTH as much as on the grid, and the
+reading that ignores it is not conservative.** The first version of this
+arithmetic located a change at the midpoint of the interval containing it --
+the resolution limit this docstring already states. A change of real width
+spreads mass into neighbouring intervals, so a coarse interval just past the
+window collects it and the location leaves the window at zero noise. A
+ten-checkpoint grid that reading scored at retention 1.000 put a planted anchor
+inside the window on 0.017 of draws. `grid_feasibility` therefore takes the
+width and the noise level together or not at all, and returns only the two
+grid-only conditions without them.
+
+What the enumeration found is in `POPPER_PLAN.md` 6r; two parts of it belong
+here. The registered cheap sweep is not the only schedule in this repository
+that fails -- `core/pythia_registry.PYTHIA_410M_PILOT_STEPS` puts its
+change-free reference at step 1191 and fails the same way. And **no published
+Pythia schedule holds the whole anchor window**: the best worst-case share is
+0.680, lost at the window's upper end and at zero noise, because a change
+centred near step 2000 puts half its mass above 2000 and the next affordable
+published checkpoint is tens of thousands of steps away. Adding checkpoints
+between 2000 and 20000 fixes that and pulls the sweep's own midpoint back INTO
+the window, which is the refusal. No choice of grid removes the trade.
+
+**The author registered a sweep on 2026-08-28**, `REGISTERED_CLAIM_B_SWEEP`,
+chosen from that set. `p_value_claim_b` computes on any grid and
+`adjudicate_claim_b` refuses a result computed on any other -- the division
+`p7_motifs/patching_gate.py` makes between what a caller may compute and what
+may enter an e-process, for the same reason: registering after seeing a p-value
+would void the guarantee.
+
 WHAT NO NULL HERE CAN DO
 
 The sweep's resolution is its intervals. Two changes inside one interval are
@@ -211,6 +264,7 @@ exists and the artifacts do not. `claims/adjudications/` is empty.
 
 from __future__ import annotations
 
+from math import erf
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -408,6 +462,454 @@ def grid_reference_report(steps: Sequence[float]) -> dict:
             "and this one. The mutual arm cancels the pull and the anchor arm "
             "does not -- see `anchor_arm`'s diffuse_reference block."),
     }
+
+
+#: The rectified-normal moment constants the change-free centroid's spread is
+#: built from. DERIVED, not placed: for a standard bivariate normal pair with
+#: correlation r, E[X+ Y+] = (sqrt(1 - r^2) + r (pi/2 + arcsin r)) / (2 pi).
+#: Dividing by (E X+)^2 = 1/(2 pi) gives E[X+ Y+]/mu^2, so
+#:
+#:     Var(u)/mu^2      = pi - 1                       (r = 0 with itself)
+#:     Cov(u_i,u_i+1)/mu^2 = sqrt(3)/2 - pi/6 - 1      (r = -1/2)
+#:
+#: and r = -1/2 is exact for ADJACENT first differences of i.i.d. noise, which
+#: is why it appears at all: the two increments share one checkpoint. Every
+#: other pair is independent, so those two numbers are the whole covariance.
+_RECT_VAR_OVER_MEAN_SQ = np.pi - 1.0
+_RECT_ADJACENT_COV_OVER_MEAN_SQ = np.sqrt(3.0) / 2.0 - np.pi / 6.0 - 1.0
+
+
+def change_free_centroid_sd(steps: Sequence[float]) -> float:
+    """
+    How far a REALISED change-free series' location scatters around the grid's
+    own midpoint, in log10-step. A property of the step grid alone.
+
+    `diffuse_reference_profile` is the noiseless limit: mass spread exactly
+    evenly lands exactly on the grid's midpoint. A real change-free series is
+    rectified noise, so its weights fluctuate and its centroid does too. This
+    is the spread of that fluctuation, to first order.
+
+    THE NOISE SCALE CANCELS, WHICH IS WHY THIS IS GRID ARITHMETIC. The weights
+    are normalised, so scaling every increment by the same factor leaves the
+    centroid unchanged: sigma appears in the numerator and the denominator and
+    drops out. So this number is decidable before a checkpoint is sampled,
+    exactly like the grid's midpoint, and unlike the noise SHARE (which needs
+    sigma against the series' own range).
+
+    The delta method on w_i = u_i / sum(u) with u_i = max(d_i, 0), d the first
+    differences of i.i.d. per-checkpoint noise:
+
+        Var(centroid) = ( (pi - 1) S0 + 2 K S1 ) / n^2
+
+    with S0 = sum (x_i - xbar)^2, S1 = sum_i (x_i - xbar)(x_i+1 - xbar) over
+    the interval midpoints x, and K the adjacent covariance constant above.
+    The S1 term is not decoration: adjacent increments of i.i.d. noise are
+    correlated at exactly -1/2 because they share a checkpoint, adjacent
+    midpoints sit on the same side of the mean, and dropping it overstates the
+    spread by about 75%. Checked against simulation on four grids spanning
+    n = 24 to 153 in `claims/calibration/claim_b_grid_feasibility.json`.
+
+    It is a FIRST-ORDER approximation of a ratio, and it assumes the noise is
+    i.i.d. across checkpoints and symmetric. Both are the model
+    `tools/calibrate_changepoint_colocation.py` already draws under; neither is
+    a property of a real sweep, which is why the artifact measures the error
+    rather than the module asserting there is none.
+    """
+    x = interval_midpoints(steps)
+    n = x.size
+    c = x - x.mean()
+    s0 = float(np.sum(c * c))
+    s1 = float(np.sum(c[:-1] * c[1:]))
+    var = (_RECT_VAR_OVER_MEAN_SQ * s0
+           + 2.0 * _RECT_ADJACENT_COV_OVER_MEAN_SQ * s1) / float(n) ** 2
+    return float(np.sqrt(max(var, 0.0)))
+
+
+#: How finely the window and the sweep are scanned when a read map is built.
+#: PLACED, and it bounds an arithmetic error rather than a statistical one: the
+#: retained share is a length measured on this scan, so it is exact to one part
+#: in `_SCAN`. 400 puts that under 0.3% of the window, which is two orders
+#: below anything reported.
+_SCAN = 400
+
+
+def _read_locations(s_x: np.ndarray, mids: np.ndarray, x_t: np.ndarray,
+                    width: Optional[float]) -> np.ndarray:
+    """
+    Where this grid puts the location of a change that really happened at
+    `x_t`, before any noise. Exact, and it needs no simulation.
+
+    THE CHANGE'S OWN WIDTH IS AN INPUT, AND LEAVING IT OUT WAS A DEFECT. With
+    `width` None this is the SHARP limit: all the change mass falls in the one
+    interval containing `x_t` and the location is that interval's midpoint --
+    the module docstring's "the sweep's resolution is its intervals". That
+    limit is not conservative and the first version of this arithmetic assumed
+    it was. A change of any real width spreads mass into neighbouring
+    intervals, so on a grid whose next checkpoint after the window is far away
+    the mass lands there and the location leaves the window even at zero
+    noise. Measured, a 10-checkpoint grid the sharp reading scored at retention
+    1.000 put a planted anchor inside the window on 0.017 of draws.
+
+    With a width, the profile is the logistic's own increments, which are
+    exact: for v(x) = 1 / (1 + exp(-(x - x_t)/w)) the mass in interval
+    [x_i, x_i+1] is v(x_i+1) - v(x_i), so the location is a weighted mean of
+    midpoints with no integration and no draws. It is the same profile
+    `change_profile` builds, at zero noise.
+
+    The width is a property of the SERIES, not of the grid -- like sigma/R, and
+    like sigma/R it is measurable from a pilot's own series before any p-value
+    is computed. Both are inputs here and neither is defaulted.
+    """
+    x_t = np.atleast_1d(np.asarray(x_t, dtype=np.float64))
+    if width is None:
+        idx = np.searchsorted(s_x, x_t, side="right") - 1
+        out = np.full(x_t.shape, np.nan)
+        ok = (idx >= 0) & (idx < mids.size)
+        out[ok] = mids[idx[ok]]
+        return out
+    v = 1.0 / (1.0 + np.exp(-(s_x[None, :] - x_t[:, None]) / float(width)))
+    m = np.diff(v, axis=1)
+    tot = m.sum(axis=1)
+    out = np.full(x_t.shape, np.nan)
+    ok = tot > 0.0
+    out[ok] = (m[ok] * mids[None, :]).sum(axis=1) / tot[ok]
+    return out
+
+
+def _read_map(s_x: np.ndarray, mids: np.ndarray, x_lo: float, x_hi: float,
+              grid_mid: float, width: Optional[float]) -> dict:
+    """
+    The whole geometry of what this grid reads, computed once and reused.
+
+    Returns the noiseless read locations on a scan across the window and
+    across the sweep, so every downstream quantity -- the retained share at any
+    noise level, the false-anchor share, the read span and both noise budgets
+    -- is algebra on these two arrays. The noise share enters only as
+
+        read(x, phi) = (1 - phi) * b(x) + phi * grid_mid
+
+    which is linear in phi with `b` fixed, so nothing here is recomputed per
+    noise level and no budget needs a search.
+    """
+    x_win = np.linspace(x_lo, x_hi, _SCAN)
+    x_all = np.linspace(float(s_x[0]), float(s_x[-1]), _SCAN)
+    return {
+        "x_win": x_win,
+        "b_win": _read_locations(s_x, mids, x_win, width),
+        "x_all": x_all,
+        "b_all": _read_locations(s_x, mids, x_all, width),
+        "grid_mid": grid_mid,
+        "x_lo": x_lo,
+        "x_hi": x_hi,
+    }
+
+
+def _shares(rm: dict, phi: float) -> Tuple[float, float]:
+    """The retained share of the window and the false-anchor share, at one
+    noise share. Both are lengths measured on the read map's scans."""
+    x_lo, x_hi, mid = rm["x_lo"], rm["x_hi"], rm["grid_mid"]
+
+    def inside(b):
+        r = (1.0 - phi) * b + phi * mid
+        return np.isfinite(b) & (r >= x_lo) & (r <= x_hi)
+
+    retained = float(np.mean(inside(rm["b_win"])))
+    outside = (rm["x_all"] < x_lo) | (rm["x_all"] > x_hi)
+    if not np.any(outside):                      # pragma: no cover - degenerate
+        return retained, 0.0
+    span = float(rm["x_all"][-1] - rm["x_all"][0])
+    false_len = float(np.mean(inside(rm["b_all"]) & outside)) * span
+    return retained, float(false_len / (x_hi - x_lo))
+
+
+def _read_span(rm: dict) -> float:
+    """
+    How far apart the locations this grid reports for the two ends of the
+    window are, in log10-step. Zero when one interval swallows the window --
+    every anchored change then reads at the same place and the sweep cannot say
+    where in the window anything happened.
+
+    Compared against `change_free_centroid_sd` rather than against a placed
+    number: a location difference smaller than the estimator's own scatter is
+    not a difference the sweep can report.
+    """
+    b = rm["b_win"][np.isfinite(rm["b_win"])]
+    return float(b.max() - b.min()) if b.size else 0.0
+
+
+#: Where the retention curve is sampled, in sigma/R. PLACED as a reporting
+#: ladder and nothing reads a threshold off it: a pilot measures its own
+#: sigma/R and reads the row, so the ladder only has to bracket the plausible
+#: range. It brackets the committed calibration's 0.02 on both sides.
+RETENTION_CURVE_NOISE_LEVELS: Tuple[float, ...] = (
+    0.0, 0.005, 0.01, 0.02, 0.035, 0.05, 0.1)
+
+
+def _noise_budgets(rm: dict) -> Tuple[float, float, int]:
+    """
+    The noise level at which retention reaches zero, in sigma/R, and the
+    interval count it is converted with.
+
+    Exact, because `read` is linear in the noise share: each scan point is
+    inside the window on an interval of phi, so the level at which EVERY point
+    is still inside is a min over those and the level up to which SOME point
+    still is, continuously from zero, is a max.
+
+    IT IS NOT A BISECTION, AND THE FIRST VERSION WAS. Bisecting assumes
+    retention is monotone in the noise, which sounds obvious and is false: a
+    location sitting just below the window is pulled INTO it by a grid midpoint
+    above, so its contribution starts at zero and becomes positive. Retention
+    can rise with noise, and a bisection would have returned the first crossing
+    as if it were the only one.
+    """
+    x_lo, x_hi, mid = rm["x_lo"], rm["x_hi"], rm["grid_mid"]
+    b = rm["b_win"][np.isfinite(rm["b_win"])]
+    if b.size == 0:                              # pragma: no cover - degenerate
+        return 0.0, 0.0, 0
+    d = mid - b
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lo_phi = np.where(d > 0, (x_lo - b) / d, (x_hi - b) / d)
+        hi_phi = np.where(d > 0, (x_hi - b) / d, (x_lo - b) / d)
+    flat = d == 0.0
+    lo_phi = np.where(flat, np.where((b >= x_lo) & (b <= x_hi), 0.0, 1.0), lo_phi)
+    hi_phi = np.where(flat, np.where((b >= x_lo) & (b <= x_hi), 1.0, 1.0), hi_phi)
+    lo_phi = np.clip(lo_phi, 0.0, 1.0)
+    hi_phi = np.clip(hi_phi, 0.0, 1.0)
+    hi_phi = np.where(hi_phi > lo_phi, hi_phi, 0.0)
+    at_zero = lo_phi <= 0.0
+    # Only the window's own share matters here, and it is the share of the SCAN
+    # that is inside at zero noise: a grid that already reads part of the window
+    # elsewhere has no full-retention budget at all.
+    full = float(hi_phi.min()) if bool(np.all(at_zero)) else 0.0
+    any_ = float(hi_phi[at_zero].max()) if bool(np.any(at_zero)) else 0.0
+    return full, any_, int(b.size)
+
+
+def _phi_to_sigma(phi: float, n_intervals: int) -> Optional[float]:
+    """A noise share back to sigma/R, inverting nu = n (sigma/R)/sqrt(pi) and
+    phi = nu/(1+nu). None at phi = 1, where no finite noise level reaches it."""
+    if phi <= 0.0:
+        return 0.0
+    if phi >= 1.0:                               # pragma: no cover - degenerate
+        return None
+    return float(np.sqrt(np.pi) * (phi / (1.0 - phi)) / float(n_intervals))
+
+
+def grid_feasibility(steps: Sequence[float],
+                     window: Tuple[float, float],
+                     *,
+                     noise_to_range: Optional[float] = None,
+                     change_width_log_step: Optional[float] = None) -> dict:
+    """
+    Whether a sweep grid can carry an anchor arm at all, computed before a
+    checkpoint is sampled.
+
+    `POPPER_PLAN.md` 6o left CLAIM-B with two grid failures that are one
+    mechanism read at two geometries -- the registered cheap sweep's midpoint
+    lands INSIDE the window, and Pythia's full every-1000 schedule drags a real
+    anchored change OUT of it -- and said the sweep satisfying both is neither
+    of the two the project has. Which grids satisfy both is arithmetic, so it
+    can be enumerated rather than invented; choosing among the grids it admits
+    is a pre-registered decision for the author, of CLAIM-C's criterion's class,
+    and this function does not take it.
+    `claims/calibration/claim_b_grid_feasibility.json` holds the enumeration.
+
+    FIVE CONDITIONS, AND THE TENSION BETWEEN THEM IS EXACT
+
+    Write W for the window's width in log10-step and m for the distance from
+    the grid's uniform-profile midpoint to the nearer window edge.
+
+    1. `reference_outside_window` -- m > 0. Exactly `anchor_arm`'s refusal: at
+       m = 0 a series that changes nowhere attains the arm's maximum statistic
+       and a rejection stops distinguishing "the change is at the anchor" from
+       "there is no located change". Binary, exact, grid only.
+
+    2. `change_free_ceiling_rate` -- condition 1 read as a RATE. The refusal
+       tests the NOISELESS reference; a realised change-free series scatters
+       around it by `change_free_centroid_sd`, so a grid clearing condition 1
+       by a hair still puts a change-free series at the arm's maximum on half
+       its draws. Grid only: the noise scale cancels out of that spread.
+
+    3. `retained_window_fraction` -- the share of the window whose changes this
+       grid still reads inside it. Needs both series properties below.
+
+    4. `false_anchor_fraction` -- the share of sweep OUTSIDE the window that it
+       reads INSIDE, as a multiple of the window's own width. The mirror of
+       condition 2, and invisible to a retention figure.
+
+    5. `window_read_span_in_change_free_sd` -- how far apart the locations it
+       reports for the two ends of the window are, measured in the estimator's
+       own scatter. This is the CLAIM's requirement rather than the arm's: the
+       anchor arm is happiest at zero, where one interval swallows the window,
+       every anchored change reads at the same place and the sweep cannot say
+       where in the window anything happened.
+
+    **Conditions 4 and 5 exist because the arithmetic without them returned a
+    grid that is optimal and useless.** Maximising retention alone picks a
+    sweep whose single wide interval swallows the window: retention 1.000,
+    a third of a window-width above it read as anchored too, and no ability to
+    place anything inside it. That is 6o's own finding one turn further round.
+
+    TWO INPUTS ARE PROPERTIES OF THE SERIES AND NEITHER IS DEFAULTED
+
+    `noise_to_range` is sigma/R, per-checkpoint noise against the series' own
+    total registered-direction change. `change_width_log_step` is how wide the
+    change itself is on the log-step axis. Conditions 1 and 2 need neither and
+    are returned without them; conditions 3 to 5 need both, because where a
+    grid puts a change depends on how much of it falls in which interval.
+
+    **The width is not optional in disguise, and omitting it was a defect.**
+    Without one the read is the SHARP limit -- all the mass in the interval
+    containing the change, located at that interval's midpoint. That limit is
+    the sweep's resolution and it is NOT conservative: a change of real width
+    spreads mass into neighbouring intervals, so a coarse interval just past
+    the window collects it and the location leaves the window at zero noise. A
+    ten-checkpoint grid that scored retention 1.000 in the sharp reading put a
+    planted anchor inside the window on 0.017 of draws. Both readings are
+    returned, and the one with a width is the one to use.
+
+    Both are measurable from a pilot's own series before any p-value is
+    computed, which is the point: this is a requirement on a run, checkable in
+    advance, not a diagnostic afterwards.
+    """
+    s = _checked_steps(steps)
+    lo, hi = float(window[0]), float(window[1])
+    if not (np.isfinite(lo) and np.isfinite(hi)) or lo < 0 or hi < lo:
+        raise ColocationRefused(
+            f"anchor window {window!r} must be a finite, non-negative, "
+            f"non-decreasing pair of steps")
+    x_lo, x_hi = float(step_x([lo])[0]), float(step_x([hi])[0])
+    width = x_hi - x_lo
+    if width <= 0.0:
+        raise ColocationRefused(
+            f"anchor window {window!r} has zero width in log10-step; a retained "
+            f"FRACTION of it is 0/0 and the grid question does not arise")
+
+    mids = interval_midpoints(s)
+    s_x = step_x(s)
+    n_int = int(mids.size)
+    mid = float(mids.mean())
+    if mid < x_lo:
+        side, margin = "below", x_lo - mid
+    elif mid > x_hi:
+        side, margin = "above", mid - x_hi
+    else:
+        side, margin = "inside", 0.0
+
+    sd = change_free_centroid_sd(s)
+    # The ceiling rate under the same first-order normal approximation the sd
+    # comes from. Reported as a rate and never compared against a threshold
+    # here: what counts as small is the author's decision, not this module's.
+    if sd > 0.0:
+        z_lo, z_hi = (x_lo - mid) / sd, (x_hi - mid) / sd
+        ceiling_rate = float(0.5 * (erf(z_hi / np.sqrt(2.0))
+                                    - erf(z_lo / np.sqrt(2.0))))
+    else:                                        # pragma: no cover - degenerate
+        ceiling_rate = 1.0 if side == "inside" else 0.0
+
+    sharp = _read_map(s_x, mids, x_lo, x_hi, mid, None)
+    sharp_retained, sharp_false = _shares(sharp, 0.0)
+    out = {
+        "n_intervals": n_int,
+        "n_checkpoints": int(s.size),
+        "window_steps": [lo, hi],
+        "window_width_log_step": width,
+        "uniform_profile_centroid_log_step": mid,
+        "uniform_profile_centroid_step": float(10.0 ** mid - 1.0),
+        "margin_log_step": float(margin),
+        "margin_side": side,
+        # Condition 1 -- and it IS `anchor_arm`'s refusal, not a restatement:
+        # both read the uniform profile's centroid against the window.
+        "reference_outside_window": bool(side != "inside"),
+        # Condition 2.
+        "change_free_centroid_sd_log_step": sd,
+        "margin_in_change_free_sd": float(margin / sd) if sd > 0 else None,
+        "change_free_ceiling_rate": ceiling_rate,
+        # The width -> 0 limit of conditions 3 to 5, reported because it is the
+        # sweep's own resolution limit and NOT because it bounds anything: see
+        # the docstring.
+        "sharp_change_retained_window_fraction": sharp_retained,
+        "sharp_change_false_anchor_fraction": sharp_false,
+        "midpoints_inside_window": int(np.sum((mids >= x_lo) & (mids <= x_hi))),
+        "_note": (
+            "grid arithmetic. Conditions 1 and 2 need nothing but the grid and "
+            "the window and are always present; conditions 3 to 5 need the "
+            "series' own noise and change width and appear only when both are "
+            "given. Condition 1 is `anchor_arm`'s own refusal. Choosing among "
+            "the grids that pass is a pre-registered decision, not a "
+            "measurement -- see claims/calibration/claim_b_grid_feasibility.json."),
+    }
+
+    if (noise_to_range is None) != (change_width_log_step is None):
+        raise ColocationRefused(
+            "noise_to_range and change_width_log_step are given together or "
+            "not at all. Where a grid puts a change depends on how wide the "
+            "change is as much as on how noisy the series is, and answering "
+            "with one of them is how the sharp-change reading came to be "
+            "mistaken for a bound.")
+    if noise_to_range is None:
+        return out
+
+    ntr = float(noise_to_range)
+    cw = float(change_width_log_step)
+    if not np.isfinite(ntr) or ntr < 0:
+        raise ColocationRefused(
+            f"noise_to_range must be finite and non-negative; got {ntr!r}")
+    if not np.isfinite(cw) or cw <= 0:
+        raise ColocationRefused(
+            f"change_width_log_step must be finite and positive; got {cw!r}. "
+            f"A width of zero is the sharp limit, which is reported "
+            f"unconditionally and is not a bound.")
+
+    nu = float(n_int * ntr / np.sqrt(np.pi))
+    phi = nu / (1.0 + nu)
+    rm = _read_map(s_x, mids, x_lo, x_hi, mid, cw)
+    retained, false_share = _shares(rm, phi)
+    span = _read_span(rm)
+    full_phi, any_phi, _ = _noise_budgets(rm)
+    out.update({
+        "noise_to_range": ntr,
+        "change_width_log_step": cw,
+        "noise_mass_over_range": nu,
+        "noise_mass_share": phi,
+        # Conditions 3, 4 and 5.
+        "retained_window_fraction": retained,
+        "false_anchor_fraction": false_share,
+        "window_read_span_log_step": span,
+        "window_read_span_in_change_free_sd": float(span / sd) if sd > 0 else None,
+        # What a pilot checks its own series against. There is deliberately no
+        # "full retention" budget: a change centred exactly on a window edge
+        # reads just outside it at any noise, so that number is zero for every
+        # grid and says nothing. The curve is the useful form -- a pilot
+        # measures its own sigma/R and reads the row.
+        "noise_to_range_for_any_retention": _phi_to_sigma(any_phi, n_int),
+        "retention_curve": [
+            {"noise_to_range": float(level),
+             "retained_window_fraction": _shares(
+                 rm, (n_int * level / np.sqrt(np.pi))
+                 / (1.0 + n_int * level / np.sqrt(np.pi)))[0]}
+            for level in RETENTION_CURVE_NOISE_LEVELS],
+        # The joint statement, so no one condition is taken for the answer. It
+        # is the degeneracies only: what counts as a small ceiling rate, a
+        # small false-anchor share or a usable read span is the author's.
+        "feasible": bool(side != "inside" and retained > 0.0 and span > 0.0),
+        "_feasible_note": (
+            "the DEGENERACIES only -- the reference outside the window, some "
+            "of the window retained, and a read span that is not zero. What "
+            "counts as a small enough ceiling rate, a small enough "
+            "false-anchor share or a large enough read span is a decision, and "
+            "the record reports the numbers rather than thresholding them."),
+        "_noise_share_note": (
+            "the noise share is an upper bound and provably so: rectified "
+            "noise adds E[(a+Z)+] - a per interval, which is decreasing in the "
+            "signal's own increment a and equals E[Z+] only where the signal "
+            "contributes nothing. So the PULL is at most this. That bounds one "
+            "of the two effects and not the other -- how much of a change's "
+            "mass a coarse interval collects is set by the width, not by the "
+            "noise -- which is why the width is a required input rather than a "
+            "conservative default."),
+    })
+    return out
 
 
 def spacing_change_report(steps: Sequence[float]) -> dict:
@@ -877,7 +1379,10 @@ def anchor_arm(steps: Sequence[float],
             f"the sweep grid against the registered window and nothing else, so "
             f"it is decidable before a checkpoint is measured -- which is where "
             f"it belongs, as a requirement on which checkpoints the pilot "
-            f"samples.")
+            f"samples. `grid_feasibility` computes this condition and the two "
+            f"that trade against it for any candidate grid, and "
+            f"claims/calibration/claim_b_grid_feasibility.json enumerates the "
+            f"grids that clear all three over Pythia's published schedule.")
 
     res = _control_stats(observed, control_stats, alpha)
     cs = np.asarray(control_stats, dtype=np.float64)
@@ -891,6 +1396,12 @@ def anchor_arm(steps: Sequence[float],
         "direction": direction,
         "window_steps": [float(window[0]), float(window[1])],
         "control_names": names,
+        # The grid arithmetic behind this arm's own refusal, carried on the
+        # records that DO emit. The refusal above is its condition 1; the other
+        # two say how much of the window this grid retains and how often a
+        # realised change-free series reaches the ceiling anyway, and a reader
+        # discounting an anchor result needs both.
+        "grid_feasibility": grid_feasibility(s, window),
         "distance_to_window_log_step": -observed,
         "centroids_step": [float(10.0 ** p["centroid_log_step"] - 1.0) for p in prof],
         "dispersion_log_step": [p["dispersion_log_step"] for p in prof],
@@ -1002,6 +1513,33 @@ def gate_verdict(p_greater: Optional[float], p_less: Optional[float],
 # CLAIMS.md names `core/checkpoint_frames.py` as H-EMERGE's instrument, which is
 # why CLAIM-B's gate is here and P-I1's is in `p7_motifs/formation_gate.py`.
 
+#: `CLAIM-B`'s REGISTERED SWEEP GRID, chosen by the author on 2026-08-28 from
+#: the set `claims/calibration/claim_b_grid_feasibility.json` computes
+#: (`POPPER_PLAN.md` 6r). Every step is a checkpoint EleutherAI published, so
+#: the sweep is one a pilot can actually download.
+#:
+#: WHY THIS IS A REGISTERED CONSTANT AND NOT A CALLER'S CHOICE. Which
+#: checkpoints a sweep samples decides what `anchor_arm` can express before any
+#: data exists: on the grid the registry's instrument field described, a series
+#: that changes NOWHERE attains the arm's maximum statistic, and on Pythia's
+#: full every-1000 schedule a real anchored change is dragged out of the window
+#: instead. So the grid is of `CLAIM-C`'s criterion's class -- a scientific
+#: decision that must be taken BEFORE a p-value exists, because taking it after
+#: would void the guarantee the e-value provides. It was put to the author with
+#: three computed options and their costs, and this is the one registered.
+#:
+#: WHAT IT COSTS, ON THE RECORD RATHER THAN ON ANYONE'S AUTHORITY. It holds
+#: 0.680 of the anchor window across the plausible noise range, which is the
+#: most ANY published Pythia schedule reaches -- no grid holds the whole window,
+#: and the record says where the rest goes. It reads locations 1.82 of the
+#: estimator's own standard deviations apart across the window, so it can place
+#: a change inside 512-2000 only coarsely. And it samples nothing between step
+#: 1000 and step 54000, so it serves no prediction needing mid-training
+#: resolution: the alternatives that do cost retention (0.600 for the schedule
+#: reaching step 125000) and the author weighed that.
+REGISTERED_CLAIM_B_SWEEP: Optional[Tuple[int, ...]] = (
+    1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)
+
 #: The literature anchors, taken from CLAIM-B's REGISTERED STATEMENT -- "the
 #: energy-monotonicity break and the Fiedler drop co-locate with steps
 #: ~512-2000". PRE-REGISTERED, not placed: standing rule 6 asks where a constant
@@ -1106,6 +1644,15 @@ def p_value_claim_b(steps: Sequence[float],
         "claim": "H-EMERGE",
         "alpha": a,
         "anchor_window_steps": list(CLAIM_B_ANCHOR_WINDOW),
+        # Reported on every record, not only when adjudicating: a reader of a
+        # p-value computed off the registered sweep needs to see that it is
+        # off it, and `adjudicate_claim_b`'s refusal is not visible from a
+        # result that never asked to be adjudicated.
+        "registered_sweep": (list(REGISTERED_CLAIM_B_SWEEP)
+                             if REGISTERED_CLAIM_B_SWEEP is not None else None),
+        "on_the_registered_sweep": bool(
+            REGISTERED_CLAIM_B_SWEEP is not None
+            and tuple(int(v) for v in steps) == tuple(REGISTERED_CLAIM_B_SWEEP)),
         "series": CLAIM_B_SERIES,
         "unit": CLAIM_B_UNIT,
         "control_family": CLAIM_B_ANCHOR_CONTROL_FAMILY,
@@ -1159,6 +1706,24 @@ def adjudicate_claim_b(steps: Sequence[float],
     would be two one-sided tests on one statistic and would double the claim's
     Type-I rate for free.
     """
+    if REGISTERED_CLAIM_B_SWEEP is None:        # pragma: no cover - registered
+        raise ColocationRefused(
+            "REGISTERED_CLAIM_B_SWEEP is None. Which checkpoints the sweep "
+            "samples decides what the anchor arms can express before any data "
+            "exists, so it is a scientific decision of CLAIM-C's criterion's "
+            "class and registering it after seeing a p-value would void the "
+            "guarantee. claims/calibration/claim_b_grid_feasibility.json "
+            "computes the set to choose from.")
+    if tuple(int(v) for v in steps) != tuple(REGISTERED_CLAIM_B_SWEEP):
+        raise ColocationRefused(
+            f"this result was computed on a {len(list(steps))}-checkpoint sweep "
+            f"that is not the registered one. CLAIM-B's registered grid is "
+            f"{list(REGISTERED_CLAIM_B_SWEEP)}. `p_value_claim_b` will compute "
+            f"on any grid -- and `grid_feasibility` says what that grid can "
+            f"express -- but only the registered sweep may enter an e-process, "
+            f"the same division `p7_motifs/patching_gate.py` makes between "
+            f"what `unit=` computes and what may be adjudicated.")
+
     res = p_value_claim_b(steps, energy_break, fiedler, anchor_controls,
                           anchor_control_directions,
                           control_family=control_family, alpha=alpha, seed=seed)
@@ -1182,7 +1747,11 @@ def adjudicate_claim_b(steps: Sequence[float],
             f"p_reciprocal={res['p_reciprocal']:.4f} (RE-ANCHORS input only, NOT "
             f"calibrated into E) "
             f"shares its estimator with P-I1 under H-BRIDGE: an estimator defect "
-            f"moves both, so their e-values are not two independent factors"),
+            f"moves both, so their e-values are not two independent factors; "
+            f"registered sweep grid = {list(REGISTERED_CLAIM_B_SWEEP)}, which "
+            f"holds 0.680 of the anchor window -- the most any published Pythia "
+            f"schedule reaches, so a share of the window is unreachable by "
+            f"design rather than by this run"),
         adjudications_dir=adjudications_dir,
     )
     return res

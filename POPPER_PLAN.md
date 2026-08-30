@@ -2960,6 +2960,243 @@ repository, `claims/adjudications/` is empty, and `null_construction` has still
 not frozen — the fifth time that window has been used, and the first time it was
 used to record that the registered null was not one.
 
+## 6r. `CLAIM-B`'s grid question, computed rather than chosen, and the part of the window Pythia cannot hold (2026-08-28)
+
+§6o closed by naming a requirement it could not meet: `CLAIM-B`'s anchor arms
+need a sweep whose uniform-profile midpoint falls outside the 512–2000 window,
+the registered 25-checkpoint cheap sweep puts it at step 955 and fails, Pythia's
+full every-1000 schedule puts it at step 31496 and clears that condition while
+the same pull drags a real anchored change out of the window instead — *"the two
+failure modes are one mechanism read at two grid geometries, and the sweep that
+satisfies both is neither of the two the project has."* Choosing a grid is a
+pre-registered decision of `CLAIM-C`'s criterion's class and belongs to the
+author. **Which grids clear both ends is arithmetic on the grid and the window,
+and nobody had computed it.**
+
+It is computed now — `core/changepoint_colocation.grid_feasibility` with
+`tools/claim_b_grid_feasibility.py` →
+`claims/calibration/claim_b_grid_feasibility.json`,
+`tests/test_claim_b_grid_feasibility.py`. The record stores its own
+`elapsed_seconds`. Nothing here chooses a grid.
+
+### Three conditions §6o did not have, and each of them changed the answer
+
+**The refusal as a rate.** §6o's refusal tests the **noiseless** reference. A
+realised change-free series is rectified noise, so its location scatters around
+the grid's midpoint, and a grid clearing the refusal by a hair still puts a
+change-free series at the arm's ceiling on half its draws.
+`change_free_centroid_sd` is that scatter in closed form, and **the noise scale
+cancels out of it** — the weights are normalised, so σ appears above and below
+— which is what keeps it grid arithmetic. The delta method on the ratio gives
+`Var = ((π−1) S0 + 2K S1)/n²` over the interval midpoints, with
+`K = √3/2 − π/6 − 1` the rectified-normal covariance at correlation −1/2. The
+−1/2 is exact rather than modelled: adjacent first differences of i.i.d. noise
+share a checkpoint. Measured against simulation on four grids spanning n = 24 to
+153, the worst relative error is **3.1%**; dropping the covariance term
+overstates the spread by **41–53%**, which is the difference between a
+change-free series sitting three standard deviations outside the window and two.
+
+**The false-anchor share and the read span, and they exist because the
+arithmetic without them returned a grid that is optimal and useless.**
+Maximising retention alone picks a sweep whose single wide interval swallows the
+window: `(512, 3000, 8000, …)` scores retention 1.000, reads a third of a
+window-width *above* the window as anchored too, and cannot say *where* in the
+window anything happened. **The grid that maximises the arm's numbers is the
+grid that destroys what the claim is about** — §6o's own finding one turn
+further round, and the read span is the CLAIM's requirement rather than the
+arm's, since the anchor arm alone is happiest at a span of zero.
+
+### The defect, and it is the eleventh session running
+
+**A location depends on the change's own width as much as on the grid, and the
+reading that ignores it is not a bound.** The first version located a change at
+the midpoint of the interval containing it — the module docstring's own *"the
+sweep's resolution is its intervals"*, and it looks conservative. It is not. A
+change of real width spreads mass into neighbouring intervals, so a coarse
+interval just past the window collects it and the location leaves the window at
+**zero** noise. A ten-checkpoint grid that reading scored at retention 1.000 put
+a planted anchor inside the window on **0.017** of draws.
+
+Nothing was failing. The prediction and the measurement were both in a smoke run
+with nothing comparing them, and the section that now compares them on every row
+exists because of it — after §6g's rounding defect, §6h's audit arm, §6i's
+discarded-null power figures, §6k's α on a shoulder, §6l's empty drop slab,
+§6m's single-draw counterfactual, §6n's default argument, §6o's falsy zero,
+§6p's stale fallback note and §6q's sampled-regime floor. `grid_feasibility` now
+takes the width and σ/R **together or not at all**, and returns only the two
+grid-only conditions without them; `check_record` fails if the sharp reading
+ever stops overstating retention, because that is the argument for requiring the
+width.
+
+**And retention is not monotone in the noise.** A location sitting below the
+window is pulled *into* it by a grid midpoint above, so the share can rise with
+σ. The first `_noise_budgets` was a bisection resting on monotonicity; it is now
+closed form, because `read(x, φ) = (1−φ)b(x) + φ·mid` is linear in the noise
+share with `b` fixed, so every level is algebra on one precomputed array and
+nothing is searched.
+
+### Every schedule this repository contains fails, and the registered cheap sweep is not the only one
+
+| grid | n | change-free reference | retained | false anchors | ceiling rate | read span (sd) |
+|---|---|---|---|---|---|---|
+| `cheap-25` (registered) | 25 | step **955**, inside | 1.000 | 0.28 | **0.636** | 1.79 |
+| `PYTHIA_410M_PILOT_STEPS` | 27 | step **1191**, inside | 1.000 | 0.33 | **0.657** | 1.89 |
+| `dense-154` (every 1000) | 154 | step 31496, above | **0.000** | 2.01 | 0.000 | 7.75 |
+| `early-dense-73` (§6o's probe) | 73 | step 287, below | 0.655 | 1.27 | 0.001 | 6.97 |
+
+The second row is new and matters more than the first: `PYTHIA_410M_PILOT_STEPS`
+is the schedule this repository would actually run, and its change-free
+reference lands inside the window as well. §6o read the failure off the
+*registry's* instrument field; the code's own schedule has it too.
+
+### The enumeration, and the shape of what passes
+
+The family enumerated is the shape the schedules here already have — a
+log-spaced head, a fine arithmetic stage, a coarse tail — over Pythia's
+published checkpoints and nothing else, since those are the only ones a pilot
+can download. **96,127 grids.** 20,524 put the change-free reference inside the
+window; 61,894 clear the three degeneracies; **2,529 meet the three hard
+conditions** (ceiling rate under α/5, false anchors under a twentieth of a
+window-width, read span at least one of the estimator's own standard
+deviations).
+
+**And then the rule as first written admitted nothing, which is the finding.**
+Retention was to be at least 0.95 across σ/R ∈ [0, 0.05] — across the range,
+not at one level, because σ/R is not known until the run happens and retention
+is not monotone in it. Zero grids of 96,127. The honest reading is not that the
+bound is too strict:
+
+> **The best worst-case retention any published Pythia schedule reaches is
+> 0.680.** No sweep holds the whole anchor window.
+
+So retention is **maximised** rather than thresholded, and the record stores the
+achievable maximum and says no grid reaches the reference. Tuning the threshold
+until something passed would have hidden the one thing worth knowing.
+
+**Where the window is lost is the upper end, and it is lost at zero noise.** A
+change centred near step 2000 puts half its mass above 2000; the next published
+checkpoint a feasible grid can afford there is tens of thousands of steps away,
+so that mass is collected at an interval midpoint far outside the window. Adding
+checkpoints between 2000 and 20000 fixes it — and pulls the sweep's own midpoint
+back **into** the window, which is §6o's refusal. That trade is between this
+claim's registered anchor window and EleutherAI's release schedule, and no
+choice of grid removes it.
+
+### What the arithmetic picks, measured
+
+| grid | n | worst retained | read span (sd) | discrimination |
+|---|---|---|---|---|
+| best retention: `1, 2, 4 … 512, 1000, 54000` | 12 | **0.680** | 1.82 | **+1.000** |
+| largest read span: `0, 512, 1000, 2000 … 31000, 71000` | 34 | 0.427 | **6.84** | **+1.000** |
+| best reaching past step 100000: `0, 512, 1000, 15000 … 125000` | 15 | 0.600 | 2.66 | **+1.000** |
+| — every schedule this repository has | | | | **+0.000** |
+
+Discrimination is the difference between the arm's rejection rate on a change
+planted at the anchor and its rate on a series with **no located change at
+all**, measured on the same cell against the same control draws — §6o's arm B,
+reused so the two records compare row for row. All three computed grids reject
+at 1.000 on an anchored change, at **0.000** on a change-free one, and at
+0.025–0.075 on an H0 change elsewhere — the artifact carries the per-cell rates,
+which are proportions over two hundred draws apiece and move a little on
+regeneration; what the record checks is that no computed grid's H0 cell exceeds
+0.15.
+
+**§6o's unrefused residual is partly the grid's and the record now says which
+part.** §6o measured a change-free series clearing α on 0.245 of draws against
+the `localized` family on a grid whose midpoint sits just outside the window,
+and left it as a rate the analyst must discount. On these grids it is **0.000**:
+with the reference far from the window the change-free series ranks *below*
+controls that carry a real change rather than above them. What stays
+family-dependent is the `mixed` rows, where a quarter of the controls are
+themselves change-free and the observed series competes against its own kind.
+No grid removes that half.
+
+**And §6o's probe grid does discriminate**, at +0.725. `early-dense-73` was
+built by §6o to show that discrimination recovers off the registered sweep, and
+it does; it is not a schedule anyone proposed running, and what it does not do
+is work — 0.655 of the window retained, a full window-width of sweep outside the
+window read as anchored, and a change-free input clearing α on 0.275 of draws.
+*Discriminates* and *is a usable grid* are different questions. The first
+version of this pass's own summary lumped it in with the repository's schedules
+and reported that no existing grid discriminates, which is false of it; the
+record now separates project schedules, §6o's probe and the computed grids, and
+says why the distinction is there.
+
+**One thing found by reading the self-check rather than by a test.** The
+measurement loop's inner variable was named `kind`, shadowing the outer loop's
+grid kind, so every row was written with `kind = "no-change"`, every summary
+list came back empty and three of `check_record`'s findings fired as false
+alarms on a record that was fine. A check that fails loudly on a healthy
+artifact is the failure mode §6n named for the `precision_check` bound, arriving
+as a name collision.
+
+### What the author has to decide, and it is one question
+
+The set is computed; the choice is not in the arithmetic. Three axes are, and
+the fourth is not: how many checkpoints the run can afford, how much of the
+anchor window it needs to hold, how finely it needs to place a change **inside**
+the window — and whether the same sweep must also serve the predictions that
+need late checkpoints, which costs 0.080 of retention and is the author's to
+weigh. Each pick also records the published checkpoints it **omits**, because
+adding the early log-spaced steps pulls the sweep's midpoint down into the
+window: on this construction a denser sweep is worse, and §6o's version of that
+sentence reaches the early end of the schedule too.
+
+### The decision, taken
+
+The set was put to the author with three grids and their costs, and **the author
+registered `(1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)`** — twelve
+checkpoints, the best worst-case retention any published Pythia schedule
+reaches. `REGISTERED_CLAIM_B_SWEEP` carries it, `adjudicate_claim_b` refuses a
+result computed on any other grid, and `p_value_claim_b` still computes on any
+grid and reports `on_the_registered_sweep` on the record — §6h's construction,
+the same division `p7_motifs/patching_gate.py` makes between what `unit=`
+computes and what may be adjudicated.
+
+**It was safe to take now for §6l's reason**: no p-value on real data exists,
+`claims/adjudications/` is empty and no sweep artifact is in this repository. As
+in §6q it is a **trade** rather than free, and the record says which: 0.680 of
+the anchor window rather than the whole of it, a read span of 1.82 of the
+estimator's own standard deviations so a change can be placed inside 512–2000
+only coarsely, and nothing sampled between step 1000 and step 54000 — so this
+sweep serves no prediction needing mid-training resolution. The schedule that
+does reach step 125000 was on the list and costs 0.080 of retention; the author
+weighed that.
+
+**And unlike §6l's and §6q's, this registration ADDS a refusal rather than
+lifting one**, which is worth stating because the previous two both removed a
+safety catch and one of them had a defect behind it. `adjudicate_claim_b` would
+previously take a result from *any* grid — the exposure was the other way round,
+and it is now closed. What both passes' lesson still applies to is the
+isolation: every test here that adjudicates passes an isolated
+`adjudications_dir`, and there is now a test asserting the real
+`claims/adjudications/` directory does not exist afterwards, rather than
+leaving that to the call sites.
+
+The registry records it in `null_construction`, beside §6l's `"model"` and
+§6q's `"prompt"`. The `instrument` field's *"20-30 checkpoint cheap-tier
+sweep"* is superseded and deliberately left unedited: a pre-registered field
+rewritten when it turns out wrong stops being a pre-registration.
+
+### What the pilot must now produce
+
+§6o's requirement — *a grid whose uniform-profile midpoint falls outside
+512–2000* — was necessary and is not sufficient, and it is replaced by the
+registered grid above plus one requirement that constrains something none of the
+previous eight did: **how quiet the measurement has to be, relative to the
+series' own change.** Every retained-share figure here is a figure at a stated
+σ/R and a stated change width, both measurable from the pilot's own series
+before any p-value is computed, and both are inputs the gate refuses to guess.
+That takes `claims/EVALUABILITY.md`'s list to nine.
+
+### What this pass did not do
+
+It does not choose a grid, it does not touch the centroid de-biasing decision
+§6o left open, and it builds no confound-control arm for `CLAIM-B`/`P-I1`, which
+remains blocked on nineteen control series *and* a grid. It adjudicates nothing:
+the series are synthetic, no Pythia sweep artifact is in this repository,
+`claims/adjudications/` is empty and `null_construction` has still not frozen.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

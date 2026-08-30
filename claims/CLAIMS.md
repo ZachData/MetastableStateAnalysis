@@ -262,6 +262,37 @@ and that is a design question for the pilot rather than a surprise waiting at
 the end of one. It sits beside the 19-control requirement rather than replacing
 it.
 
+**That question was computed on 2026-08-28, and the answer is a set**
+(`POPPER_PLAN.md` §6r, `claims/calibration/claim_b_grid_feasibility.json`).
+Which grids clear both ends is arithmetic on the grid and the window, so it was
+enumerated over Pythia's published checkpoints rather than invented: 96,127
+schedules, 2,529 of them clearing the conditions §6o's requirement implies once
+two more are added — how often a *realised* change-free series reaches the arm's
+ceiling, and how much sweep outside the window a grid reads inside it. All three
+grids the arithmetic picks discriminate at **1.000** between an anchored change
+and a series with no located change; every schedule this repository contains
+discriminates at **0.000**, and that now includes
+`core/pythia_registry.PYTHIA_410M_PILOT_STEPS`, whose change-free reference
+lands at step **1191** — inside the window, exactly as the registry's cheap-tier
+description does at step 955.
+
+**And one limit no grid removes, which is a fact about this claim's window and
+Pythia's release schedule together.** The best worst-case share of the anchor
+window any published schedule holds is **0.680**. The loss is at the window's
+upper end and at zero noise: a change centred near step 2000 puts half its mass
+above 2000, the next affordable published checkpoint is tens of thousands of
+steps away, and adding checkpoints between 2000 and 20,000 pulls the sweep's own
+midpoint back *into* the window — which is the refusal above. Choosing among the
+admissible grids was a pre-registered decision for the author, and it was taken:
+**`(1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)` is registered** as
+`REGISTERED_CLAIM_B_SWEEP`, twelve checkpoints holding 0.680 of the window,
+reading locations 1.82 estimator standard deviations apart across it, and
+sampling nothing between step 1000 and step 54000. `adjudicate_claim_b` refuses
+a result computed on any other grid; `p_value_claim_b` still computes on any and
+reports which it was. Every figure here is stated at a per-checkpoint noise
+level and a change width the pilot can measure on its own series before any
+p-value exists, and both are inputs the arithmetic refuses to guess.
+
 **One thing the dry run settled that had never been asked.** This claim's
 falsification branch fires — RE-ANCHORS is reachable on the input built for it
 — and it fires with no margin: both anchor arms' reciprocal p is floored at
@@ -740,7 +771,9 @@ through unit tests, and every one of them changed something:
 was failing a test. The queue `claims/EVALUABILITY.md` opened on 2026-08-25 is
 closed; what stands ahead of converting the next `needs-null` row is the list
 of pre-computed requirements those nine passes produced, none of which any
-existing sweep satisfies. `P6-R2` and `P6-R4` no longer
+existing sweep satisfies — and for `CLAIM-B`'s grid requirement that is now a
+statement with a computed set behind it (`POPPER_PLAN.md` §6r), rather than a
+gap. `P6-R2` and `P6-R4` no longer
 carry the extra refusal they used to: their exchangeable unit is registered as
 `"model"` (above), so `adjudicate_p6_r2_r4` now turns away only a result
 computed under the other unit. `CLAIM-B` carries a different one: its two anchor
