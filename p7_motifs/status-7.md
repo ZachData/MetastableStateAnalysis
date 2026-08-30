@@ -16,7 +16,7 @@ written, matching the discipline used for Phase 1c and Phase 2d.
 |---|---|
 | P-I1 (co-emergence of motif and behavior) | not run |
 | P-I2 (channel asymmetry between stages) | not run |
-| P-I3 (cross-head association, control arm required) | not run |
+| P-I3 (cross-head association, control arm required) | not run — gate built 2026-08-30 |
 | P-I4 (event consequence) | not run |
 
 ## Build order
@@ -38,7 +38,8 @@ interpretable.
    for the two-stage composition. 36 tests including the planted-relay oracle, six negative
    controls, and random-graph null calibration.
 4. **`motif_stats.py`** — DONE. Per-head rates, N1/N2/N3 gating, P-I3's control arm, and
-   the `motif_counts.json` assembly. Verdicts go through `core/nulls.py`'s `nsigma_verdict`.
+   the `motif_counts.json` assembly. `cross_head_association` here reports the association
+   descriptively; the p-value and its refusals live in `cross_head_gate.py` (finding 8). Verdicts go through `core/nulls.py`'s `nsigma_verdict`.
    31 tests. The null *values* still have to be produced by `core/qk_offset_null.py` against
    real weights — this module adjudicates them, it does not generate them.
 5. **`p7_io.py`** — DONE. Reads Phase 2's sign-channel projectors and Phase 2b's rotation
@@ -108,6 +109,20 @@ interpretable.
    in the artifact itself, and `concat` refuses to merge tables thinned differently rather
    than silently picking one — two such tables cannot be counted together without a row
    meaning different things in each.
+
+8. **P-I3's registered null cannot be used, and its own tautology risk is what says so**
+   (2026-08-30, `p7_motifs/cross_head_gate.py`, `POPPER_PLAN.md` §6s). An induction head is
+   one whose behavioural induction score clears a cutoff, so "permutation over the head
+   classification" permutes a label that is a deterministic function of the variable the
+   prediction correlates against: exactly one of its 1.09e16 draws is a classification the
+   definition permits, and measured, neither reading of the statistic can tell a planted
+   effect from its absence. What replaces it compares each induction head against control
+   heads matched on its own score, straddled above and below, and permutes the label within
+   a matched set — a null that enumerates, so the p-value is exact. The tautology finding 3
+   names then falls out as arithmetic: when the classification IS the thresholded score, no
+   head can be straddled and the design floor is 1.000, decidable before an edge is counted.
+   `p7_motifs/patching_gate.py` (P-AB1, 2026-08-27) is the other gate built since this list
+   was last written.
 
 ## Two things the producer settled
 

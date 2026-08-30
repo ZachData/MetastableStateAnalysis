@@ -3197,6 +3197,340 @@ remains blocked on nineteen control series *and* a grid. It adjudicates nothing:
 the series are synthetic, no Pythia sweep artifact is in this repository,
 `claims/adjudications/` is empty and `null_construction` has still not frozen.
 
+## 6s. `P-I3`: the classification that IS the correlate, and a tautology caught by a floor (2026-08-30)
+
+`claims/EVALUABILITY.md`'s corrected queue (§6r) named five live `needs-null`
+rows a conversion could reach and said `P-I3` and `P-I4` "name a matched
+control and are the natural next, in the order `P-AB1` established". `P-I3` is
+now built — `p7_motifs/cross_head_gate.py`, with
+`tools/calibrate_cross_head_association.py` →
+`claims/calibration/cross_head_association.json` behind it and
+`tests/test_p7_cross_head_gate.py` over both. **Eleven predictions are
+adjudicable in principle; `claims/adjudications/` is still empty.**
+
+It is the third row built in that order — *compute the attainable floor, name
+what the statistic degenerates on, check what the measurement grid contributes,
+and only then build the control* — after `P-AB1` (§6q) and `CLAIM-B`'s grid
+(§6r), and as on both of those every step before the control changed the
+design. On this row the first step changed what the null is, the second changed
+what the statistic is, and the third changed what the control is matched on.
+
+`PREDICTIONS.md` calls `P-I3` "the prediction that can kill the bridge, and it
+is stated in the direction that would hurt", and says of its control arm that
+it "is mandatory, not optional". Both survive. What does not survive is the
+registered null.
+
+### 1. The floor: the largest group in this registry, containing one possible configuration
+
+The registry's `null_construction` reads *"Correlation with a REQUIRED control
+arm over non-induction heads … Permutation over the head classification."*
+Permuting the classification draws which *k* of the *n* heads are labelled
+induction. At Pythia-410M's 384 heads and eight induction heads that group has
+**1.09e16** members and a nominal floor of 9.2e-17 — more resolution than any
+other design in this registry claims.
+
+**It is not a floor of anything, and the reason needs no data.** An induction
+head is one whose behavioural induction score clears a cutoff. So the
+classification is a **threshold on the variable the statistic correlates
+against**, and of those 1.09e16 label assignments **exactly one** — the
+observed one — is a classification the definition permits. The null family is
+one possible configuration and 1.09e16 impossible ones.
+
+Measured, on both readings of the statistic, on the same draws
+(`registered_null.rejection_rates`):
+
+| statistic against the registered null | plain H0 | a genuine effect | discrimination |
+|---|---|---|---|
+| contrast of within-group correlations | 0.020 | 0.017 | **-0.003** |
+| contrast of within-group slopes | 0.110 | 0.100 | **-0.010** |
+
+One reading is anti-conservative at over twice nominal and neither has any
+power at all: **the registered construction's discriminating power is 0.000**,
+in §6o's arm-B sense — the rate on an input carrying the effect minus the rate
+on one that does not, on the same cell. Both numbers are the same mechanism
+read in opposite directions. A permuted group carries the full score spread and
+the observed group carries a thin slice at the top, and every within-group
+association statistic is a function of that spread; the correlation is biased
+by it and the slope's variance is set by it.
+
+The floor the design does have comes from the matched sets. Each induction head
+is compared against `M` control heads matched on its own behavioural score;
+under H0 its rank among the `M + 1` is uniform, the sets are disjoint, so the
+null **enumerates in closed form** and
+
+    design floor = 1 / (M + 1) ** n_informative_sets
+
+with a set counted informative only when its `M + 1` motif rates are not all
+equal — CLAIM-C's informative rows (§6l) and `P-AB1`'s odd ablation grids (§6q),
+the same arithmetic on a third group. **There is no second floor here**, which
+is worth saying rather than omitting: §6p's rule is that the attainable floor
+is the max of the design floor and the sampling resolution, and this null is not
+sampled, so the rule applies with one term absent. `attainable_floor_report`
+returns `sampling_floor: None` and says why, because an omitted term and a
+forgotten one look identical in a record.
+
+### The finding: the tautology this phase names as its central danger is a floor of 1.000
+
+`design-7.md` gives the tautology risk a section of its own and calls it "the
+phase's central methodological danger": the behavioural induction score is
+*mean attention on induction pairs*, a motif defined as *an attentive edge on
+induction pairs* is the same number, and "correlating them would produce a
+beautiful result that means nothing". `PREDICTIONS.md`'s Phase 7 adjudication
+constraint 2 requires every result to name which of three sources carries its
+independence. §6i built `P-I1`'s gate and could do no better than refuse
+exactly-identical series — "no null detects it, because the null is over the
+PAIRING and a tautological pair is tautological at every head" — leaving the
+substantive case "a claim the analyst must make in the record".
+
+Here it is arithmetic, and it falls out of the matching rather than being added
+to it. Matching on the behavioural score is what removes the shared component;
+when the classification **is** the thresholded score, no induction head has a
+control head above it in score, no matched set can be straddled, and:
+
+    perfect separation  ⇒  0 straddleable sets  ⇒  0 informative sets
+                        ⇒  design floor 1.000
+
+The design cannot reject on any input whatever, and it says so before a single
+edge is counted. §6q's twenty-first lesson — *a null that leaves the statistic
+invariant is not a weak null; it is a floor of 1.000* — reached by a third
+construction, and this time the invariance **is** the tautology rather than
+merely resembling one.
+
+**And the danger is larger than the constraint's wording describes.**
+`grid.tautology_leak` sweeps how hard the motif tracks the score under a
+threshold classification, scored under the matching this construction
+discarded: 0.027 with no relation, then 0.153, **0.400**, 0.827 and 1.000 as
+the relation strengthens, while the straddled matching yields **zero** matched
+sets at every point. Constraint 2 warns about two variables that are "the same
+number wearing a different name"; the curve says the danger is not identity but
+*any* tracking, which is the family the wording does not name.
+
+### 2. What the statistic degenerates on: the within-group spread of the score, which the classification sets
+
+§6o's rule is that "matched on what" has to name the quantity the statistic
+degenerates on. `P-I3`'s registered statistic is a within-group **correlation**,
+and a correlation degenerates on the spread of what it correlates — which the
+classification cuts to a thin slice at the top by construction.
+
+Measured on ONE population carrying ONE relation, with no interaction of any
+kind (`degeneracy.selection_attenuation`, at the design's eight induction
+heads): the induction arm reads **0.255** and the control arm **0.673**. The
+contrast is **-0.417** in a world where the two groups' relation is literally
+identical — several times any effect a real result would carry, and in the
+**falsifier's** direction. So the registered statistic tends to report "the
+motif is a property of the activations, not of the classification" whenever the
+classification is a threshold, which it always is.
+
+The within-group **slope** is the same quantity with the bias removed —
+selection on a regressor leaves an OLS slope unbiased, and the record measures
+1.052 against 1.002 where the correlations read 0.255 against 0.673. **It is
+unbiased and unusable.** The induction group's score spread is what a slope's
+variance is inversely proportional to, so its sampling spread is **23.9 times**
+the control arm's at eight induction heads and 69.3 at four. That is the same
+fact the correlation shows as bias, and it is why the registered null's slope
+reading sits at 0.110 on plain H0.
+
+So neither within-group association statistic survives, and both are reported
+as diagnostics that reach no ledger. **What replaces them is the quantity this
+entry's own `h0` and `falsifier` already name** — *"relay strength is unrelated
+to the behavioral induction classification"*, *"non-induction heads carry the
+motif at the same rate"* — a **level** contrast at matched score. The
+prediction's `statement` names a third quantity, the within-group correlation,
+and one number cannot carry both questions: §6i split `P-I1` the same way from
+the other side, where it was the falsifier's second half that had to become a
+reported precondition rather than a p-value. Here it is the statement's.
+
+### 3. What the measurement grid contributes: the matching, and an optimum that excludes the claim's own subject
+
+**The straddle, which is not a refinement of the construction but the
+construction.** Matching each induction head to its `M` *nearest* control heads
+by score is what "matched control" first suggests, and it leaks: an induction
+head sits high in the ranking, so its nearest controls are almost all *below*
+it, the residual score gap is one-signed, and curvature in the score-to-motif
+relation is read as an effect. Measured (`grid.straddle`), a curved relation
+with no interaction at all rejects at **0.130 / 0.207 / 0.227** as the curvature
+grows under nearest matching, and at **0.037 / 0.033 / 0.020** when each
+induction head's controls are required to straddle it, `M/2` below and `M/2`
+above. The discarded matching is in the artifact because it is what corrected
+the construction — §6o's rank refusal and §6q's bend contrast, a third time.
+The straddle is also exactly what turns a threshold classification into zero
+informative sets rather than into a plausible-looking answer, so it is one
+requirement doing two jobs.
+
+**The control count, whose optimum is not at an extreme and which excludes the
+heads the claim is most about as it grows** (`grid.n_controls_frontier`, H0 flat
+at 0.027–0.043 throughout):
+
+| controls per induction head | 2 | 4 | 6 | 8 | 10 |
+|---|---|---|---|---|---|
+| power at a planted effect of 0.8 | 0.287 | **0.350** | 0.337 | 0.344 | 0.344 |
+| informative sets | 6.41 | 5.51 | 4.86 | 4.41 | 4.02 |
+| mean score rank of the retained induction heads | 357.4 | 354.2 | 351.3 | 348.9 | **346.9** |
+
+Power is bought by four and nothing after that buys any more. What every
+further control *does* buy is a smaller analysis — and the heads it drops are
+the **highest-scoring** ones, because the top of the ranking has nothing above
+it to straddle with. Against 362.1 for all eight induction heads, the retained
+ones slide from 357.4 to 346.9. **Chasing the arm's numbers moves the analysis
+down the induction ranking, away from the heads the prediction is about**:
+§6r's twenty-sixth lesson in a second construction, and the reason
+`N_CONTROLS_PER_INDUCTION_HEAD` is fixed where power stops rising rather than
+where it is highest.
+
+**And how much design there is at all is a function of the classification**
+(`grid.overlap_frontier`, matched sets and the share of draws whose floor clears
+α, as the classification stops being a cutoff on the score):
+
+| classification's correlation with the score | 1.00 | 0.98 | 0.95 | 0.90 | 0.80 |
+|---|---|---|---|---|---|
+| matched sets | **0.00** | 1.49 | 2.60 | 3.80 | 5.46 |
+| draws whose floor clears α | **0.000** | 0.487 | 0.803 | 0.950 | 1.000 |
+
+### 4. And only then the control, where the choice is what it is matched on
+
+The control is the registry's — non-induction heads — and what this pass adds
+is that they are **matched**, on the quantity step 2 named, and that the match
+is checked rather than assumed (`P-AB1`'s equal-magnitude precedent, §6q, and
+§6p's `P-S1` before it, where a control that was not matched and nothing
+looked rejected at 1.000).
+
+What matching on score alone does not remove is a confound the literature
+guarantees is present: **induction heads cluster in a band of layers**, so
+anything elevating the motif rate across that band elevates it on the induction
+heads and not on their controls. Measured with the induction heads confined to
+layers 6–11 and a shared elevation on those layers (`limitation.layer_band`):
+
+| shared elevation (sd) | 0.0 | 0.3 | 0.6 | 1.0 |
+|---|---|---|---|---|
+| controls matched on score | 0.043 | 0.107 | 0.233 | **0.440** |
+| controls matched on score AND layer | 0.011 | 0.011 | 0.011 | **0.011** |
+
+That is §6i's shared-per-unit-factor at 1.00 and §6q's fixed offset at 1.000 in
+this design's clothing — and unlike both of those, **it can be removed**, by
+drawing every control from the induction head's own layer. It is removed at a
+price the same measurement carries (`limitation.layer_band_power`): 1.88
+informative sets against 7.21, a p-value emitted on **0.657** of draws against
+1.000, and power **0.203 against 0.410** at one planted effect and **0.528
+against 0.883** at another.
+
+**The decision, taken.** Both keys and their costs were put to the author, and
+**the author registered `"score_and_layer"`** — every control head drawn from
+the induction head's own layer. `REGISTERED_CONTROL_MATCHING_KEY` carries it,
+`adjudicate_p_i3` refuses a result computed under the other key, and
+`p_value_p_i3` still computes under either and reports which: §6h's
+construction, the same division `patching_gate.py` makes between what `unit=`
+computes and what may be adjudicated. The fourth registered decision of this
+class after `P6-R2`'s `"model"` (§6l), `P-AB1`'s `"prompt"` (§6q) and CLAIM-B's
+sweep (§6r), safe to take for §6l's reason — no p-value on real data exists,
+`claims/adjudications/` is empty, no motif sweep artifact is in this repository
+— and, as in the last two, a **trade** rather than free, with the record saying
+which side costs what. Like §6r's and unlike §6l's and §6q's, it **adds** a
+refusal rather than lifting one.
+
+### The stop rule, and the branch a confound can manufacture
+
+Three-way, CLAIM-B's and `P-AB1`'s shape. The registered falsifier —
+*"non-induction heads carry the motif at the same rate"* — describes the
+**null**, so it maps to INSUFFICIENT (§6k's rule, a fourth time). The
+falsification branch an e-process can carry is `ACTIVATION_PROPERTY`: control
+heads matched on score carrying demonstrably **more** of the motif than the
+induction heads they are matched to, which is `PREDICTIONS.md`'s own "the motif
+is a property of the activations, not of the classification" positively shown.
+§6i's requirement that such a branch be checked to be one that can fire is met
+— it fires at 0.770 under the score key and 0.408 under the registered one
+against a planted inversion, and at 0.000 on every other family.
+`p_reciprocal` is a stop-rule input only and enters no claim's E, which is the
+division doing real work again: a layer band elevated on the heads the
+induction heads are *not* in reaches that branch the same way, and that branch
+reaches no ledger.
+
+### Four things found by looking at the record rather than by a failing test
+
+The twelfth session running, after §6g's rounding defect, §6h's audit arm,
+§6i's discarded-null power figures, §6k's α on a shoulder, §6l's empty drop
+slab, §6m's single-draw counterfactual, §6n's default argument, §6o's falsy
+zero, §6p's stale fallback note, §6q's sampled-regime floor and §6r's shadowed
+loop variable. All four were caught by reading the tool's own output, and all
+four were in this pass's own reasoning rather than in code that was wrong.
+
+**A claim from one draw, presented as a bound.** The module docstring said the
+observed induction group's score spread was "smaller than all 20,000
+label-permuted draws". It had been, in the exploratory draw it was written
+from. Averaged over draws it is not a bound at all: the permuted family's mean
+spread is **2.92×** the observed one under a threshold classification and
+**0.00255** of draws are as tightly clustered — small, and not zero, because a
+permuted group *can* be tightly clustered somewhere else. The exact statement
+was always the combinatorial one (1 of 1.09e16) and the spread study is its
+illustration; the record now reports both sides averaged and checks the ratio,
+which is what does not move on regeneration. §6r's rule against quoting a
+per-cell rate that moves, reached one level up: a per-*draw* claim presented as
+a bound.
+
+**A check that fired on a healthy artifact.** The self-check asserted the two
+within-group slopes agree to a fixed 0.20 — of a statistic whose sampling
+spread the same section exists to report as enormous. At a low replicate count
+it fired on a record that was fine. It now tests against three standard errors
+of the induction arm's own spread, so it scales with the run. §6n named that
+failure mode for the `precision_check` bound and §6r hit it as a name
+collision; this is the third.
+
+**A counterfactual that could not express the thing it was for.** Every
+validity row carries "what the arm would have returned with no refusal", §6q's
+convention. On the tautology family it returned 0.000 — because on that family
+the straddle yields no matched sets, so there was no arm to score. The
+counterfactual that answers the question is the **discarded matching**, and it
+returns **0.410** where the gate refuses at 1.000. A counterfactual has to be
+computable on the family the refusal exists for, or it reports the refusal's
+success as the family's harmlessness.
+
+**And the record's own finding sentence disagreed with the record's own
+numbers.** `registered_null._the_finding` said the correlation contrast
+discriminated at +0.010 from an H0 rate of 0.065 and the slope contrast at
+−0.005 from 0.285. Those were an exploratory run's digits, written into the
+tool beside the fields rather than derived from them; the committed measurement
+says −0.003 from 0.020 and −0.010 from 0.110. **Nothing was failing, and
+nothing could, because nothing in this project compares a record's prose to its
+own fields.** §6r found two rounds of the same thing by re-reading a committed
+output; this is the third pass to find it, which makes it a pattern rather than
+an accident, so the fix here is structural rather than a correction: the
+sentence is now **built from the rows at write time**, and `check_record` fails
+if any measured rate it should carry is missing from it. A finding derived from
+the numbers cannot drift from them. It is worth naming what the three
+occurrences have in common — in every one the code was already right and the
+prose beside it was written from an earlier run, which is the failure mode a
+committed artifact is uniquely good at hiding and uniquely good at revealing if
+someone reads it.
+
+### What the pilot must now produce
+
+Ten requirements, and the new one constrains something none of the previous
+nine did — **how the two arms are defined**, rather than what is measured,
+where it is sampled, how it is clustered, how large the run is, the ablation
+grid, the intervention, or how quiet the measurement is:
+
+> **`P-I3`: the head classification must not be a cutoff on the behavioural
+> induction score it is correlated against — and specifically, at least TWO
+> induction heads must have, in their own layer, two control heads below them
+> and two above them in that score.**
+
+Two, because with four controls the design floor is `5 ** -n_informative_sets`
+and two informative sets is the first that clears α = 0.05. It is computable
+from the pilot's own head table before a single edge is counted, and it is a
+requirement on the *classification criterion*: if induction heads are picked by
+thresholding the same score `P-I3` correlates against, `P-I3` is not adjudicable
+at all, and the gate returns a floor of 1.000 rather than a number.
+
+### What this pass did not do
+
+It does not build `P-I4`, `P-I2` or `P-I5`. It does not touch the centroid
+de-biasing decision §6o left open, and it builds no confound-control arm for
+`CLAIM-B`/`P-I1`, which after §6r remains blocked on nineteen control series
+alone. It adjudicates nothing: the head tables are synthetic with planted
+answers, no motif sweep artifact is in this repository,
+`claims/adjudications/` is empty and `null_construction` has still not frozen
+— and this is the second pass in which that window was used to record that the
+registered null was not one, after §6q's.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

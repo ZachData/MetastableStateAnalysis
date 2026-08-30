@@ -310,6 +310,58 @@ conditions instead of one, equal spacing, a control arm, and bandwidth stability
 
 ---
 
+## Addendum, 2026-08-30 — `P-I3` has a null, and the registered one was not one
+
+`claims/EVALUABILITY.md` named `P-I3` as the next `needs-null` row that names a matched
+control. It is built: `p7_motifs/cross_head_gate.py`, calibrated by
+`tools/calibrate_cross_head_association.py` into
+`claims/calibration/cross_head_association.json`, `POPPER_PLAN.md` §6s. The registered
+wording is unchanged. Four things specific to `P-I3`:
+
+- **The registered null cannot be used, and the reason is the tautology risk this block
+  already names.** "Permutation over the head classification" draws which *k* of the *n*
+  heads are labelled induction. But an induction head is one whose behavioural induction
+  score clears a cutoff, so the classification is a threshold on the very variable the
+  prediction correlates against, and exactly **one** of those 1.09e16 label assignments is
+  a classification the definition permits. Measured on both readings of the statistic, the
+  registered null discriminates a genuine effect from its absence at −0.003 and −0.010 —
+  and the slope reading is anti-conservative on plain H0 besides. The null used instead
+  compares each induction head against control heads **matched on its own behavioural
+  score**, straddled above and below, and permutes the induction label within a matched
+  set only. That null enumerates, so the p-value is exact and no draw count enters.
+
+- **Adjudication constraint 2 is now arithmetic rather than a caution — where the
+  constraint permits it.** The constraint records that a motif defined as "an attentive
+  edge on induction pairs" is the behavioural score wearing a different name, and `P-I1`'s
+  gate could only refuse exactly-identical series. Matching on the score is what removes
+  the shared component, so when the classification IS the thresholded score no induction
+  head can be straddled, no matched set is informative, and the design floor is **1.000**:
+  the gate refuses before an edge is counted. The leak it catches is proportional to how
+  hard the motif *tracks* the score rather than to a literal identity, which is a larger
+  family than the constraint's wording describes. `independence_source` remains required
+  and remains the analyst's claim: what the floor discharges is the measurement of one
+  quantity twice, not the argument that the motif is independent for the right reason.
+
+- **The `statement` and the `falsifier` name different quantities, and the p-value carries
+  the falsifier's.** "Correlates with behavioral induction score" is a within-group
+  association; "non-induction heads carry the motif at the same rate" is a level. One
+  number cannot carry both, and the association reading is not adjudicable anyway: on ONE
+  population with ONE relation the within-group correlations read 0.255 among induction
+  heads and 0.673 among the rest — a contrast of −0.417 with no interaction present, in
+  the falsifier's own direction. Both correlations are reported beside every result and
+  enter no p-value, exactly as `P-I1`'s endpoint counts do.
+
+- **The control's matching key is a registered decision, and it is a trade.** Induction
+  heads cluster in a band of layers, and a shared elevation across that band is invisible
+  to a control matched on score alone (0.440 at one standard deviation) and removed exactly
+  by one drawn from the induction head's own layer (0.011, flat). The author registered
+  `"score_and_layer"` on 2026-08-30; it costs roughly a quarter of the informative sets, a
+  p-value on 0.657 of runs rather than all of them, and about half the power. Adjudication
+  refuses a result computed under the other key.
+
+`P-I3` is reclassified `e-value` in `claims/registry.json`. No falsifier has been weakened
+and no threshold has been moved.
+
 ## Status
 
 Not yet adjudicated. Phase 1c and Phase 2d code exists and is validated on synthetic data; no
@@ -518,5 +570,7 @@ null the wording's successor named, and it changed in the conservative direction
 ## Status
 
 Not yet adjudicated. No Phase 7 *results* exist; `P-I1`'s gate exists as of 2026-08-24 and
-`P-ST1`'s as of 2026-08-25, and both emit nothing — no checkpoint sweep of motif strength
-has been run, and no activations or Phase 2 projectors exist in this repository.
+`P-ST1`'s as of 2026-08-25, `P-AB1`'s as of 2026-08-27 and `P-I3`'s as of 2026-08-30, and
+all of them emit nothing — no checkpoint sweep of motif strength has been run, no head
+table of motif rates and behavioural induction scores exists, and no activations or
+Phase 2 projectors exist in this repository.
