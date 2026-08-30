@@ -426,6 +426,20 @@ class TestSharedWeightsAndSerialization(unittest.TestCase):
         self.assertNotIn("Infinity", s)
 
     def test_rescaler_cache_is_reused_across_prompts(self):
+        """
+        The second prompt must reuse the first prompt's rescalers, by object
+        identity.
+
+        Asserted on the cached objects themselves, not on `.base`. The earlier
+        version compared `cache["S"][0].base` against the `.base` of a *copy*,
+        which is `None` by construction; under scipy < 1.18 `expm` returned an
+        owndata array whose `.base` was also `None`, so the assertion read
+        `assertIs(None, None)` and passed whether or not the cache was rebuilt
+        -- a rebuild yields a fresh `expm` output with `.base is None` too.
+        scipy 1.18 stopped returning owndata from `expm` (`.base` is now a
+        memory-owner capsule) and turned the tautology red. Identity is what
+        the test meant and is what the cache actually promises.
+        """
         d, n_layers, n_tokens = 16, 8, 20
         ov = make_ov(d, n_layers)
         cache = {}
@@ -433,13 +447,18 @@ class TestSharedWeightsAndSerialization(unittest.TestCase):
             make_acts(n_layers, n_tokens, d, seed=1), ov, [1.0],
             rescaler_cache=cache, gate_threshold=GATE,
         )
-        first = cache["S"][0].copy()
+        first_list, first = cache["S"], cache["S"][0]
+        first_values = first.copy()
         rr.compare_rescaled_frames(
             make_acts(n_layers, n_tokens, d, seed=2), ov, [1.0],
             rescaler_cache=cache, gate_threshold=GATE,
         )
-        self.assertIs(cache["S"][0].base, first.base)  # not rebuilt
-        self.assertTrue(np.array_equal(cache["S"][0], first))
+        self.assertIs(cache["S"], first_list)     # list not rebuilt
+        self.assertIs(cache["S"][0], first)       # nor its entries
+        # `expm` is deterministic on the same OV weights, so equality cannot
+        # detect a rebuild; against the pre-call copy it does catch the cached
+        # rescalers being mutated in place by a prompt.
+        self.assertTrue(np.array_equal(cache["S"][0], first_values))
 
 
 if __name__ == "__main__":
