@@ -35,7 +35,10 @@ SMOKE_TINY_GPT2 = "hf-internal-testing/tiny-random-gpt2"
 @pytest.fixture(scope="module")
 def tiny_causal_lm():
     from transformers import AutoModelForCausalLM, AutoTokenizer
-    model = AutoModelForCausalLM.from_pretrained(SMOKE_TINY_GPT2)
+    from core.models import from_pretrained_eager
+    # eager, like every loader in core/: sdpa returns a tuple of None for
+    # output_attentions rather than attention matrices.
+    model = from_pretrained_eager(AutoModelForCausalLM, SMOKE_TINY_GPT2)
     tokenizer = AutoTokenizer.from_pretrained(SMOKE_TINY_GPT2)
     model.eval()
     return model, tokenizer

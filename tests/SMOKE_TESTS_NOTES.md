@@ -52,6 +52,71 @@ Suggest explicitly excluding these two from the "one per phase" smoke
 requirement rather than silently skipping them — worth confirming rather
 than assuming either way.
 
+## The first real run (2026-08-30)
+
+The tier had never been executed outside CI. Running it settled the open
+questions above and found four defects, none of which any other tier could
+see. Result now: **36 passed, 0 failed**, ~19 s, on Fedora / Python 3.14.7
+with torch 2.13.0+cpu and transformers 4.57.6.
+
+Resolving the "not confirmed" list first: `load_model` does do the plain
+`cfg["model_class"].from_pretrained(model_name)` these fixtures assume — with
+`attn_implementation="eager"` added, see below — so `_register_smoke_models`
+needed no adjustment, and the `*verdict*` glob matched.
+
+What it found:
+
+* **`core/rope.py:112` silently reported the wrong rotary geometry.**
+  `float(getattr(cfg, "rotary_pct", 1.0))` — transformers 5 moved GPTNeoX's
+  rotary geometry into `config.rope_parameters`, so under 5.x the default
+  fires and Pythia's card reports `rotary_ndims = 64` where the model rotates
+  16. The docstring four lines above it says "Never assume rotary_pct == 1.0
+  ... assuming full rotary silently changes every downstream number." Pinned
+  `transformers<5` rather than taught `rope_parameters`; lifting the pin
+  requires fixing `core/rope.py` first.
+* **`output_attentions=True` returns a tuple of `None`.** Modern transformers
+  defaults these architectures to `sdpa`, which does not materialise the
+  attention matrix. Not `None` — a tuple whose every element is `None`, so a
+  guard of the form `if out.attentions is not None` passes and the indexing
+  after it raises. `core/models.py`'s docstring predicted this precisely
+  ("when that shim is removed ... Phase 1's entire sinkhorn/Fiedler/entropy
+  family would go quiet without raising"); 4.57 removed the shim. `load_model`
+  already pinned eager, but `core/lm_loading.py` (both paths, the checkpoint
+  sweep among them), `p2d_io.py` and this tier's own fixture did not. All now
+  go through `core.models.from_pretrained_eager`.
+* **`GPTNeoXAttention` no longer exposes `num_attention_heads`.** Three sites
+  in `p2_eigenspectra/weights.py` and one in `head_ablation.py` read it off
+  the module directly. `core/pythia_weights` had already solved this with
+  `_attn_geometry`'s module → config → weight-shape walk; those four call
+  sites had simply never been switched over. They are now.
+* **`_is_torch_tensor` was truthy for everything under the test stub.**
+  `torch.is_tensor(x)` on the conftest's MagicMock torch returns a MagicMock,
+  so `_to_numpy` took its torch branch on plain ndarrays and died on
+  `.detach()`. This made `split_qkv_from_layer`'s comment — "_to_numpy is
+  idempotent on ndarrays, so calling it again inside split_qkv_gptneox is
+  harmless" — false in exactly the isolated tier, and it stayed hidden only
+  because no caller had yet passed an ndarray through both. Now an
+  `isinstance` check against a real class, the same shape of fix as
+  `TestTorchStubIsScipySafe`.
+
+Two findings that are recorded rather than fixed:
+
+**`hidden_states` and forward hooks part company under transformers 5.**
+`test_core_intervention_smoke.py` asserts that zeroing block 0's output changes
+`activations[1]`, and its comment argues why. That is **correct** on 4.57 and
+false on 5.16.1, where a forward hook replacing a block's output leaves that
+block's own `hidden_states` entry at the pre-hook value while changing every
+later one. Verified with raw transformers and a plain `register_forward_hook`,
+no project code involved. The test is right for the pinned version and was left
+alone; it is a third reason the pin is the right call.
+
+**`run_model_with_hook` has no production caller.** Audited on the back of the
+above: every reference outside `core/intervention.py` is a docstring or a test.
+The p7 steering and patching gates take `activations: np.ndarray` and never
+load a model or touch `hidden_states` — they are all `pure` tier. So the
+off-by-one has no blast radius today, and the hazard is entirely prospective:
+it lands the first time a real intervention run happens, which is the pilot.
+
 ## Extending to the remaining phases
 
 Entrypoint signatures already found by reading each `run_N.py` (not

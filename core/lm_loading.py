@@ -164,6 +164,7 @@ def load_causal_lm(
 
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
+    from core.models import from_pretrained_eager
 
     if device is None:
         from core.config import DEVICE as device  # noqa: F811
@@ -172,7 +173,8 @@ def load_causal_lm(
         entry["repo_id"], revision=entry["revision"]
     )
     dtype = torch.bfloat16 if str(device).startswith("cuda") else torch.float32
-    model = AutoModelForCausalLM.from_pretrained(
+    model = from_pretrained_eager(
+        AutoModelForCausalLM,
         entry["repo_id"],
         revision=entry["revision"],
         torch_dtype=dtype,
@@ -218,6 +220,7 @@ def load_causal_lm_from_state_dict(
 
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
+    from core.models import from_pretrained_eager
 
     if device is None:
         from core.config import DEVICE as device  # noqa: F811
@@ -225,7 +228,8 @@ def load_causal_lm_from_state_dict(
     tokenizer = AutoTokenizer.from_pretrained(
         entry["repo_id"], revision=entry["revision"]
     )
-    model = AutoModelForCausalLM.from_pretrained(
+    model = from_pretrained_eager(
+        AutoModelForCausalLM,
         entry["repo_id"],
         revision=entry["revision"],
         torch_dtype=torch.float32,   # state_dict override → keep full precision

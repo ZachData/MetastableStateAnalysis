@@ -38,7 +38,10 @@ test = [
 heavy = [
     "pytest>=7.4",
     "torch>=2.0",
-    "transformers>=4.35",
+    # <5: see requirements/heavy.txt -- transformers 5 moved GPTNeoX rotary
+    # geometry into config.rope_parameters and core/rope.py silently defaults
+    # rotary_pct to 1.0 when it is absent.
+    "transformers>=4.35,<5",
     "matplotlib>=3.7",
     "scikit-learn>=1.3",
 ]

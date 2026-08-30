@@ -7,6 +7,16 @@
 # needs a GPU.
 -r test.txt
 torch>=2.0
-transformers>=4.35
+# Upper bound is load-bearing, not hygiene. transformers 5 moved GPTNeoX's
+# rotary geometry from config.rotary_pct / config.rotary_emb_base into
+# config.rope_parameters, and core/rope.py reads the old names with a
+# `getattr(cfg, "rotary_pct", 1.0)` fallback. Under 5.x that default fires and
+# Pythia's frame card reports rotary_ndims = head_size (64 on pythia-70m)
+# instead of the 16 the model actually rotates -- silently, with every
+# RoPE-dependent number downstream of it wrong. Measured on 5.16.1; the smoke
+# tier is the only tier that sees it, because every rope test builds a fake
+# config using the pre-5 attribute names.
+# Lift this bound only together with a core/rope.py that reads rope_parameters.
+transformers>=4.35,<5
 matplotlib>=3.7
 scikit-learn>=1.3
