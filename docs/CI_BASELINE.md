@@ -37,7 +37,8 @@ unimportable. 59 of 95 modules qualify.
 its measured values rather than edited forward — a baseline that gets updated
 in place stops being a baseline. The registry held 30 entries then and holds 38
 now; `./scripts/check.sh gate` reports the current tier-0 + tier-1 figure, which
-was **1894 passed, 5 skipped, 251 deselected** on 2026-08-30 (1839 before
+was **2115 passed, 5 skipped, 30 deselected** on 2026-08-30, after the tier
+retrofit below (1894 before it, on the same day; 1839 before
 P-I3's cross-head construction, 1788 before the
 CLAIM-B grid feasibility record, 1651 on 2026-08-26, 1629 before the
 P6-R2/R4 dry run, 1589 before
@@ -72,6 +73,51 @@ acceptance test. Phase 5b's 20 are the most interesting of the three, because a
 20-failure integration suite over a pipeline that has never been executed is
 evidence about the suite as much as about the pipeline — the first question is
 whether those tests encode the design or the author's expectation of it.
+
+### The tier retrofit finished, and 221 tests that ran in nothing (2026-08-30)
+
+`-m heavy` collects **zero tests**: the marker is registered at `pytest.ini:28`
+but nothing anywhere carries it, in `tests/` or `archive/tests/`, and nothing
+applies it dynamically. Consistent with its definition — "needs real run
+artifacts on disk" — and with there being no real run artifacts yet.
+
+Counting the other markers is what mattered. Against 2721 collected:
+
+| marker | collected |
+|---|---|
+| `pure` | 1899 |
+| `deps` | 571 |
+| `smoke` | 36 |
+| `heavy` | 0 |
+| **unmarked** | **221** |
+
+`check.sh gate` selects `-m pure` and `check.sh all` adds `-m deps`, so **221
+tests, 8% of the suite, ran in no tier** — executed by nothing, locally or in
+CI, with nothing failing to say so. Seven modules, five of them Phase 7's:
+`test_p7_motif_alphabet`, `test_p7_motif_stats`, `test_p7_interaction_graph`,
+`test_p7_events`, `test_p7_io`, plus `test_core_interactions` and
+`test_core_dissipation`. The motif alphabet, the interaction graph, event
+extraction and the I/O layer underneath the current P-I3 work were all outside
+the gate meant to protect them.
+
+The cause is exact and is worth keeping: all seven arrived in `e6d7dba`
+(2026-08-22), "Archive phases 3-6; open Phase 7" — one day before `4fb460d`
+introduced the tier taxonomy. They predate the tiering pass and were never
+swept up, while every Phase 7 module written after `4fb460d`
+(`cross_head_gate`, `patching_gate`, `formation_gate`) carries its marker.
+
+All seven are now `pure`, measured under the project's own rule rather than
+assigned: they pass with torch, transformers, scikit-learn and matplotlib all
+made genuinely unimportable. The gate moves 1894 -> 2115 and deselected 251 ->
+30.
+
+`rule_test_tier_markers` in `tools/lint_repo.py` had been reporting exactly
+these seven as **warnings** since the taxonomy landed, above a comment reading
+"Promote to error once that lands." It is now an error, which is the half that
+matters — a warning is what let 221 tests sit unrun for eight sessions while
+the rule that knew about them printed every time. Checked against the family it
+is meant to catch: with one module's `pytestmark` removed, `check.sh lint`
+exits 1.
 
 ### Remeasured (2026-08-30): tier 3 is green, and the table above is not
 

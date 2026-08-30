@@ -16,6 +16,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pytest.ini [pytest] markers.
+pytestmark = pytest.mark.pure
+
 from core.interactions import InteractionTable
 from p7_motifs.interaction_graph import (
     build_head_edges,

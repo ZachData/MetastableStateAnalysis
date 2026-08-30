@@ -23,6 +23,11 @@ Structure:
 import numpy as np
 import pytest
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pytest.ini [pytest] markers.
+pytestmark = pytest.mark.pure
+
 from core.metrics import interaction_energy, l2_normalize
 from core.dissipation import (
     tangential,

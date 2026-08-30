@@ -15,6 +15,11 @@ import json
 import numpy as np
 import pytest
 
+# Tier: pure -- this module's whole test set passes with torch,
+# transformers, scikit-learn and matplotlib all unimportable. Measured,
+# not assumed; see pytest.ini [pytest] markers.
+pytestmark = pytest.mark.pure
+
 from core.interactions import projection_fractions
 from p7_motifs.p7_io import (
     SIGN_CHANNEL_CHOICES,
