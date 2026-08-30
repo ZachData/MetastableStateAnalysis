@@ -73,6 +73,56 @@ acceptance test. Phase 5b's 20 are the most interesting of the three, because a
 evidence about the suite as much as about the pipeline — the first question is
 whether those tests encode the design or the author's expectation of it.
 
+### Remeasured (2026-08-30): tier 3 is green, and the table above is not
+
+The A0 table is left at its measured values, per the rule stated under it. This
+section records what tier 3 does *now*, because "25 red" had become wrong in
+three separate ways and a stale red count is read as a to-do list.
+
+Measured on Fedora, Python 3.14.7, with numpy 2.5.2, scipy 1.18.1,
+torch 2.13.0+cpu, transformers 5.16.1, scikit-learn 1.9.0, matplotlib 3.11.1,
+pytest 9.1.1:
+
+    ./scripts/check.sh all
+    tier 3 (-m deps): 569 passed, 2 skipped, 2150 deselected, 0 failed, 145 s
+
+**Zero red.** Taking the three modules in turn:
+
+* `tests/test_p2_producer_changes.py` — **18 tests, all passing**, and it is in
+  the deps tier, so those 18 are inside the 569. Its recorded 5 failures do not
+  reproduce, and not because anything was fixed: the test file and both modules
+  it imports (`p2_eigenspectra/weights.py`, `p2_eigenspectra/head_ov_analysis.py`)
+  are byte-identical to `4fb460d`, the commit the A0 figure was measured on —
+  the only change to `p2_eigenspectra/` since is an added `math-2.md`. Checked
+  the hard way rather than inferred: `4fb460d` checked out into a worktree and
+  run against the dependency set above gives 18 passed there too. So the 5 is a
+  property of the 2026-08-23 *environment*, not of the code at that commit.
+* `tests/test_phase5b_integration.py` — now `archive/tests/`, excluded by
+  `pytest.ini`'s `norecursedirs`. Its 20 is not merely uncollected but
+  unmeasurable in place: pointed at directly it fails collection with
+  `ModuleNotFoundError: No module named 'tests.test_phase5b_io'`, the helper
+  having stayed behind when the module was archived.
+* `tests/test_phase6_regression.py` — now `archive/tests/`, likewise excluded.
+  Run directly it gives **14 failed, 4 passed**, not the 5 recorded.
+
+Two further things the remeasurement turned up, both worth more than the count:
+
+**The A0 section does not add up.** The header says 25 red and the table below
+it lists 5 + 20 + 5 = 30. Which of the two was measured cannot be recovered now,
+so this is recorded rather than corrected.
+
+**No dependency versions were written down, which is what made the p2 case
+ambiguous.** `requirements/base.txt` floats everything (`numpy>=1.24`,
+`scipy>=1.10`), so "we fixed it" and "the environment moved" were
+indistinguishable from the record alone — the exact confusion this file exists
+to prevent, one level up from the test counts it prevents it for. It took a
+worktree checkout to settle a question a pinned version list would have
+answered. The live example arrived the same day: scipy 1.18 stopped returning an
+owndata array from `expm` and turned a tautological assertion in
+`tests/test_phase2b_rescaled.py` red, in the *gating* tier, with no commit
+involved. Hence the version block above, and hence recording it here as a
+standing gap rather than as a one-off.
+
 ## Reproducing this
 
 ```bash
