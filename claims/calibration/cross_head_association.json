@@ -1,0 +1,619 @@
+{
+  "alpha": 0.05,
+  "construction_sha256": "42e2d00b057f83ebebc4cfa2826cb38c8558ebbe632c14a69cd1f0e0788b4aa9",
+  "degeneracy": {
+    "_note": "one population, ONE relation, no interaction present. The correlation contrast reads large and negative -- the falsifier's direction -- on nothing but where the classification cut. The slope is unbiased and its spread is the same fact in the other currency",
+    "selection_attenuation": [
+      {
+        "n_induction_heads": 4,
+        "score_spread_ratio": 0.2608567209928089,
+        "slope_control": 1.000995188879948,
+        "slope_control_sd": 0.05713219017787469,
+        "slope_induction": 0.9447978338713563,
+        "slope_induction_sd": 3.9599550070415814,
+        "slope_induction_standard_error": 0.2286281089294263,
+        "slope_sd_ratio": 69.31215125330753,
+        "spearman_contrast": -0.47448312260509173,
+        "spearman_control": 0.6791497892717584,
+        "spearman_induction": 0.20466666666666666
+      },
+      {
+        "n_induction_heads": 8,
+        "score_spread_ratio": 0.3257783873308186,
+        "slope_control": 1.001720883620219,
+        "slope_control_sd": 0.05874659517653717,
+        "slope_induction": 1.051848452334485,
+        "slope_induction_sd": 1.4023918567157745,
+        "slope_induction_standard_error": 0.08096713159841915,
+        "slope_sd_ratio": 23.871883170445873,
+        "spearman_contrast": -0.4174211928904224,
+        "spearman_control": 0.6725005579697876,
+        "spearman_induction": 0.2550793650793652
+      },
+      {
+        "n_induction_heads": 16,
+        "score_spread_ratio": 0.38112436601144506,
+        "slope_control": 1.0001951575298824,
+        "slope_control_sd": 0.05950604629792572,
+        "slope_induction": 0.9434122359158967,
+        "slope_induction_sd": 0.8156097210204064,
+        "slope_induction_standard_error": 0.04708924919848072,
+        "slope_sd_ratio": 13.706333587295266,
+        "spearman_contrast": -0.37835934318750003,
+        "spearman_control": 0.6572515000502451,
+        "spearman_induction": 0.2788921568627451
+      },
+      {
+        "n_induction_heads": 32,
+        "score_spread_ratio": 0.4457785475022029,
+        "slope_control": 1.0008416610885509,
+        "slope_control_sd": 0.05885157174829025,
+        "slope_induction": 0.9768775867312839,
+        "slope_induction_sd": 0.5215138450258902,
+        "slope_induction_standard_error": 0.030109615881181443,
+        "slope_sd_ratio": 8.861510908432809,
+        "spearman_contrast": -0.3261339205240557,
+        "spearman_control": 0.6397653965748865,
+        "spearman_induction": 0.3136314760508308
+      },
+      {
+        "n_induction_heads": 64,
+        "score_spread_ratio": 0.5658403376682983,
+        "slope_control": 0.9942112789153599,
+        "slope_control_sd": 0.0710290327691731,
+        "slope_induction": 0.9766337912638782,
+        "slope_induction_sd": 0.3003072880632523,
+        "slope_induction_standard_error": 0.017338249360292518,
+        "slope_sd_ratio": 4.22795125254172,
+        "spearman_contrast": -0.24160908007379173,
+        "spearman_control": 0.5941428102325218,
+        "spearman_induction": 0.3525337301587301
+      }
+    ]
+  },
+  "design": {
+    "_placed": "the head grid is Pythia-410M's shape and the rest are PLACED, not calibrated: they define the family the rates are rates under and no distribution was consulted for any of them",
+    "induction_layer_band": [
+      6,
+      11
+    ],
+    "n_controls_per_induction_head": 4,
+    "n_heads": 384,
+    "n_heads_per_layer": 16,
+    "n_induction_heads": 8,
+    "n_layers": 24
+  },
+  "elapsed_seconds": 174.3,
+  "floor_arithmetic": {
+    "alpha": 0.05,
+    "no_informative_sets": {
+      "_note": "a classification that is a cutoff on the behavioural score leaves no induction head with a control above it, so no set can be straddled, so the floor is 1.000 and no input whatever could reject. PREDICTIONS.md's Phase 7 adjudication constraint 2 as arithmetic",
+      "attainable_floor": 1.0,
+      "sufficient": false
+    },
+    "sampling_floor_is_absent_because": "the null enumerates: the induction label is uniform over each matched set's M+1 members and the sets are disjoint. 6p's rule -- the attainable floor is the MAX of the design floor and the sampling resolution -- applies with its second term absent, and the record says so rather than omitting it",
+    "table": [
+      {
+        "min_informative_sets_for_alpha": 3,
+        "n_controls": 2,
+        "sets_1": 0.3333333333333333,
+        "sets_2": 0.1111111111111111,
+        "sets_3": 0.037037037037037035,
+        "sets_4": 0.012345679012345678,
+        "sets_6": 0.0013717421124828531,
+        "sets_8": 0.00015241579027587258
+      },
+      {
+        "min_informative_sets_for_alpha": 2,
+        "n_controls": 4,
+        "sets_1": 0.2,
+        "sets_2": 0.04,
+        "sets_3": 0.008,
+        "sets_4": 0.0016,
+        "sets_6": 6.4e-05,
+        "sets_8": 2.56e-06
+      },
+      {
+        "min_informative_sets_for_alpha": 2,
+        "n_controls": 6,
+        "sets_1": 0.14285714285714285,
+        "sets_2": 0.02040816326530612,
+        "sets_3": 0.0029154518950437317,
+        "sets_4": 0.00041649312786339027,
+        "sets_6": 8.499859752314087e-06,
+        "sets_8": 1.7346652555743034e-07
+      },
+      {
+        "min_informative_sets_for_alpha": 2,
+        "n_controls": 8,
+        "sets_1": 0.1111111111111111,
+        "sets_2": 0.012345679012345678,
+        "sets_3": 0.0013717421124828531,
+        "sets_4": 0.00015241579027587258,
+        "sets_6": 1.8816764231589208e-06,
+        "sets_8": 2.3230573125418773e-08
+      }
+    ]
+  },
+  "generated_by": "tools/calibrate_cross_head_association.py",
+  "grid": {
+    "n_controls_frontier": [
+      {
+        "h0_rejection": 0.02666666666666667,
+        "mean_informative_sets": 6.41,
+        "mean_score_rank_of_all_induction_heads": 362.13166666666666,
+        "mean_score_rank_of_retained_induction_heads": 357.41861111111115,
+        "n_controls": 2,
+        "power_at_effect_0.8": 0.2866666666666667
+      },
+      {
+        "h0_rejection": 0.03,
+        "mean_informative_sets": 5.506666666666667,
+        "mean_score_rank_of_all_induction_heads": 362.13166666666666,
+        "mean_score_rank_of_retained_induction_heads": 354.1593055555556,
+        "n_controls": 4,
+        "power_at_effect_0.8": 0.35
+      },
+      {
+        "h0_rejection": 0.03,
+        "mean_informative_sets": 4.863333333333333,
+        "mean_score_rank_of_all_induction_heads": 362.13166666666666,
+        "mean_score_rank_of_retained_induction_heads": 351.27058730158734,
+        "n_controls": 6,
+        "power_at_effect_0.8": 0.33666666666666667
+      },
+      {
+        "h0_rejection": 0.033444816053511704,
+        "mean_informative_sets": 4.414715719063545,
+        "mean_score_rank_of_all_induction_heads": 362.0769230769231,
+        "mean_score_rank_of_retained_induction_heads": 348.9395684026119,
+        "n_controls": 8,
+        "power_at_effect_0.8": 0.34448160535117056
+      },
+      {
+        "h0_rejection": 0.043478260869565216,
+        "mean_informative_sets": 4.0200668896321075,
+        "mean_score_rank_of_all_induction_heads": 362.0769230769231,
+        "mean_score_rank_of_retained_induction_heads": 346.86584647236816,
+        "n_controls": 10,
+        "power_at_effect_0.8": 0.34448160535117056
+      }
+    ],
+    "overlap_frontier": [
+      {
+        "classification_correlation_with_the_score": 1.0,
+        "mean_matched_sets": 0.0,
+        "median_attainable_floor": 1.0,
+        "share_of_draws_whose_floor_clears_alpha": 0.0
+      },
+      {
+        "classification_correlation_with_the_score": 0.98,
+        "mean_matched_sets": 1.49,
+        "median_attainable_floor": 0.2,
+        "share_of_draws_whose_floor_clears_alpha": 0.4866666666666667
+      },
+      {
+        "classification_correlation_with_the_score": 0.95,
+        "mean_matched_sets": 2.6033333333333335,
+        "median_attainable_floor": 0.008,
+        "share_of_draws_whose_floor_clears_alpha": 0.8033333333333333
+      },
+      {
+        "classification_correlation_with_the_score": 0.9,
+        "mean_matched_sets": 3.8033333333333332,
+        "median_attainable_floor": 0.0016,
+        "share_of_draws_whose_floor_clears_alpha": 0.95
+      },
+      {
+        "classification_correlation_with_the_score": 0.8,
+        "mean_matched_sets": 5.46,
+        "median_attainable_floor": 6.4e-05,
+        "share_of_draws_whose_floor_clears_alpha": 1.0
+      },
+      {
+        "classification_correlation_with_the_score": 0.6,
+        "mean_matched_sets": 6.973333333333334,
+        "median_attainable_floor": 1.28e-05,
+        "share_of_draws_whose_floor_clears_alpha": 1.0
+      },
+      {
+        "classification_correlation_with_the_score": 0.4,
+        "mean_matched_sets": 7.5633333333333335,
+        "median_attainable_floor": 2.56e-06,
+        "share_of_draws_whose_floor_clears_alpha": 1.0
+      },
+      {
+        "classification_correlation_with_the_score": 0.0,
+        "mean_matched_sets": 7.91,
+        "median_attainable_floor": 2.56e-06,
+        "share_of_draws_whose_floor_clears_alpha": 1.0
+      }
+    ],
+    "straddle": {
+      "_why": "an induction head sits high in the score ranking, so its NEAREST control heads are almost all below it. The residual score gap is then one-signed, and any curvature in the score-to-motif relation is read as an effect. Requiring half the controls below and half above makes the gap cancel to first order -- and is also what turns a classification that is a cutoff on the score into zero informative sets rather than into a plausible-looking answer",
+      "rows": [
+        {
+          "curvature_in_the_score_to_motif_relation": 0.0,
+          "nearest_by_score_rejection": 0.13,
+          "straddled_rejection": 0.03678929765886288
+        },
+        {
+          "curvature_in_the_score_to_motif_relation": 0.4,
+          "nearest_by_score_rejection": 0.20666666666666667,
+          "straddled_rejection": 0.033444816053511704
+        },
+        {
+          "curvature_in_the_score_to_motif_relation": 0.8,
+          "nearest_by_score_rejection": 0.22666666666666666,
+          "straddled_rejection": 0.020066889632107024
+        }
+      ]
+    },
+    "tautology_leak": [
+      {
+        "nearest_matching_rejection": 0.02666666666666667,
+        "score_to_motif_relation": 0.0,
+        "straddled_matched_sets": 0
+      },
+      {
+        "nearest_matching_rejection": 0.15333333333333332,
+        "score_to_motif_relation": 0.5,
+        "straddled_matched_sets": 0
+      },
+      {
+        "nearest_matching_rejection": 0.4,
+        "score_to_motif_relation": 1.0,
+        "straddled_matched_sets": 0
+      },
+      {
+        "nearest_matching_rejection": 0.8266666666666667,
+        "score_to_motif_relation": 2.0,
+        "straddled_matched_sets": 0
+      },
+      {
+        "nearest_matching_rejection": 1.0,
+        "score_to_motif_relation": 4.0,
+        "straddled_matched_sets": 0
+      }
+    ]
+  },
+  "limitation": {
+    "_note": "induction heads cluster in a band of layers and a shared elevation across that band is invisible to a control matched on score alone. Unlike 6i's shared unit factor and 6q's fixed offset this one CAN be removed, by matching within the layer, and the price is in layer_band_power beside it -- fewer informative sets, fewer draws emitting a p-value at all, and less power",
+    "layer_band": [
+      {
+        "emitted_rate": 1.0,
+        "matching_key": "score",
+        "mean_matched_sets": 7.21,
+        "shared_elevation_on_the_induction_band_sd": 0.0,
+        "tracks_classification_rate": 0.043333333333333335
+      },
+      {
+        "emitted_rate": 0.5866666666666667,
+        "matching_key": "score_and_layer",
+        "mean_matched_sets": 1.8766666666666667,
+        "shared_elevation_on_the_induction_band_sd": 0.0,
+        "tracks_classification_rate": 0.011363636363636364
+      },
+      {
+        "emitted_rate": 1.0,
+        "matching_key": "score",
+        "mean_matched_sets": 7.21,
+        "shared_elevation_on_the_induction_band_sd": 0.3,
+        "tracks_classification_rate": 0.10666666666666667
+      },
+      {
+        "emitted_rate": 0.5866666666666667,
+        "matching_key": "score_and_layer",
+        "mean_matched_sets": 1.8766666666666667,
+        "shared_elevation_on_the_induction_band_sd": 0.3,
+        "tracks_classification_rate": 0.011363636363636364
+      },
+      {
+        "emitted_rate": 1.0,
+        "matching_key": "score",
+        "mean_matched_sets": 7.21,
+        "shared_elevation_on_the_induction_band_sd": 0.6,
+        "tracks_classification_rate": 0.23333333333333334
+      },
+      {
+        "emitted_rate": 0.5866666666666667,
+        "matching_key": "score_and_layer",
+        "mean_matched_sets": 1.8766666666666667,
+        "shared_elevation_on_the_induction_band_sd": 0.6,
+        "tracks_classification_rate": 0.011363636363636364
+      },
+      {
+        "emitted_rate": 1.0,
+        "matching_key": "score",
+        "mean_matched_sets": 7.21,
+        "shared_elevation_on_the_induction_band_sd": 1.0,
+        "tracks_classification_rate": 0.44
+      },
+      {
+        "emitted_rate": 0.5866666666666667,
+        "matching_key": "score_and_layer",
+        "mean_matched_sets": 1.8766666666666667,
+        "shared_elevation_on_the_induction_band_sd": 1.0,
+        "tracks_classification_rate": 0.011363636363636364
+      }
+    ],
+    "layer_band_power": [
+      {
+        "emitted_rate": 1.0,
+        "matching_key": "score",
+        "planted_effect": 0.8,
+        "power": 0.41
+      },
+      {
+        "emitted_rate": 0.6566666666666666,
+        "matching_key": "score_and_layer",
+        "planted_effect": 0.8,
+        "power": 0.20304568527918782
+      },
+      {
+        "emitted_rate": 1.0,
+        "matching_key": "score",
+        "planted_effect": 1.5,
+        "power": 0.8833333333333333
+      },
+      {
+        "emitted_rate": 0.6566666666666666,
+        "matching_key": "score_and_layer",
+        "planted_effect": 1.5,
+        "power": 0.5279187817258884
+      }
+    ]
+  },
+  "registered_null": {
+    "_the_finding": "the registered null's group has 1.09e+16 members and exactly one of them is a possible classification. Measured, neither statistic computed against it discriminates a planted effect from its absence: the correlation contrast at -0.003 from an H0 rate of 0.020, the slope contrast at -0.010 from an H0 rate of 0.110. Both are the same mechanism read in opposite directions -- the permuted groups carry the full score spread and the observed one does not. These are proportions over 300 replicates and move on regeneration; what check_record enforces is that neither discrimination leaves +/-0.10 and that the slope reading stays anti-conservative",
+    "arithmetic": {
+      "assignments_that_are_a_threshold_on_the_score": 1,
+      "group_size": 10895665708319184,
+      "invalid_because": "the classification IS a cutoff on the behavioural induction score, so every draw but the observed one contradicts the definition of the label being permuted. The permuted groups carry the full score spread where the observed induction group carries a thin slice at the top, and every within-group association statistic is a function of that spread",
+      "measured_consequence": "see claims/calibration/cross_head_association.json, registered_null.rejection_rates: neither the correlation contrast nor the slope contrast discriminates a genuine effect from its absence, and the slope contrast is anti-conservative on plain H0 besides. The record carries both and checks that the discrimination stays inside 0.10 either way",
+      "nominal_floor": 9.17796146440569e-17,
+      "possible_fraction_of_the_group": 9.17796146440569e-17,
+      "reading": "draw which k of the n heads are labelled induction",
+      "reading_used_instead": "compare each induction head against control heads MATCHED on its own behavioural score, and permute the induction label within a matched set only. The score is then on both sides of every draw, which is what the registered null could not arrange"
+    },
+    "permutation_draws": 299,
+    "rejection_rates": [
+      {
+        "discrimination": -0.003333333333333334,
+        "genuine_effect": 0.016666666666666666,
+        "h0": 0.02,
+        "statistic": "correlation_contrast"
+      },
+      {
+        "discrimination": -0.009999999999999995,
+        "genuine_effect": 0.1,
+        "h0": 0.11,
+        "statistic": "slope_contrast"
+      }
+    ],
+    "replicates": 300,
+    "spread_under_permutation": {
+      "_note": "the observed group is a slice at the TOP of the score ranking; a permuted group is k heads from anywhere. The exact statement is the combinatorial one above -- one assignment of C(n,k) puts all k at the top -- and this is its consequence in the currency the statistics care about. A permuted draw CAN be tightly clustered somewhere else, so the share below the observed spread is small rather than zero, and what is checked is the ratio of the means",
+      "permuted_draws": 20000,
+      "rows": [
+        {
+          "classification_correlation_with_the_score": 1.0,
+          "draws_at_or_below_the_observed": 51,
+          "observed_draws": 300,
+          "observed_induction_group_score_sd": 0.3090525590598989,
+          "permuted_mean_over_observed": 2.9220455249380892,
+          "permuted_mean_sd": 0.9030656471716422,
+          "permuted_min_sd": 0.18775486707339914,
+          "share_at_or_below_the_observed": 0.00255
+        },
+        {
+          "classification_correlation_with_the_score": 0.8,
+          "draws_at_or_below_the_observed": 2291,
+          "observed_draws": 300,
+          "observed_induction_group_score_sd": 0.6135709313220818,
+          "permuted_mean_over_observed": 1.4736051381135544,
+          "permuted_mean_sd": 0.9041612769933387,
+          "permuted_min_sd": 0.1877275712403943,
+          "share_at_or_below_the_observed": 0.11455
+        }
+      ]
+    }
+  },
+  "replicates": 300,
+  "schema_version": 1,
+  "seed": 20260830,
+  "self_check": {
+    "findings": [],
+    "ok": true
+  },
+  "synthetic_family": {
+    "_note": "`main` is the score-to-motif relation the tautology risk is about -- present under H0 and H1 alike. `effect` is the prediction's own quantity: motif carried by an induction head OVER a control at the same behavioural score",
+    "behavioural_score": "b ~ N(0,1) over heads",
+    "classification": "top k by c = rho_c*b + sqrt(1-rho_c^2)*z; rho_c = 1.0 IS a cutoff on b itself",
+    "motif_rate": "main*(b + curve*(b^2-1)) + effect*induction + band_elevation + N(0,1)"
+  },
+  "validity": [
+    {
+      "activation_property_rate": 0.016666666666666666,
+      "correct_verdict": "INSUFFICIENT",
+      "counterfactual_rate_nearest_matching": 0.03,
+      "emitted": 300,
+      "family": "independent",
+      "matching_key": "score",
+      "median_attainable_floor": 6.4e-05,
+      "refusal_rate": 0.0,
+      "refused": 0,
+      "replicates": 300,
+      "tracks_classification_rate": 0.03666666666666667
+    },
+    {
+      "activation_property_rate": 0.041666666666666664,
+      "correct_verdict": "INSUFFICIENT",
+      "counterfactual_rate_nearest_matching": 0.03,
+      "emitted": 120,
+      "family": "independent",
+      "matching_key": "score_and_layer",
+      "median_attainable_floor": 0.04,
+      "refusal_rate": 0.6,
+      "refused": 180,
+      "replicates": 300,
+      "tracks_classification_rate": 0.041666666666666664
+    },
+    {
+      "activation_property_rate": 0.023333333333333334,
+      "correct_verdict": "INSUFFICIENT",
+      "counterfactual_rate_nearest_matching": 0.09,
+      "emitted": 300,
+      "family": "pure-score-relation",
+      "matching_key": "score",
+      "median_attainable_floor": 6.4e-05,
+      "refusal_rate": 0.0,
+      "refused": 0,
+      "replicates": 300,
+      "tracks_classification_rate": 0.043333333333333335
+    },
+    {
+      "activation_property_rate": 0.03333333333333333,
+      "correct_verdict": "INSUFFICIENT",
+      "counterfactual_rate_nearest_matching": 0.09,
+      "emitted": 120,
+      "family": "pure-score-relation",
+      "matching_key": "score_and_layer",
+      "median_attainable_floor": 0.04,
+      "refusal_rate": 0.6,
+      "refused": 180,
+      "replicates": 300,
+      "tracks_classification_rate": 0.03333333333333333
+    },
+    {
+      "activation_property_rate": 0.02666666666666667,
+      "correct_verdict": "INSUFFICIENT",
+      "counterfactual_rate_nearest_matching": 0.21,
+      "emitted": 300,
+      "family": "curved-score-relation",
+      "matching_key": "score",
+      "median_attainable_floor": 6.4e-05,
+      "refusal_rate": 0.0,
+      "refused": 0,
+      "replicates": 300,
+      "tracks_classification_rate": 0.03333333333333333
+    },
+    {
+      "activation_property_rate": 0.016666666666666666,
+      "correct_verdict": "INSUFFICIENT",
+      "counterfactual_rate_nearest_matching": 0.21,
+      "emitted": 120,
+      "family": "curved-score-relation",
+      "matching_key": "score_and_layer",
+      "median_attainable_floor": 0.04,
+      "refusal_rate": 0.6,
+      "refused": 180,
+      "replicates": 300,
+      "tracks_classification_rate": 0.016666666666666666
+    },
+    {
+      "activation_property_rate": 0.0,
+      "correct_verdict": "REFUSED",
+      "counterfactual_rate_nearest_matching": 0.41,
+      "emitted": 0,
+      "family": "tautology",
+      "matching_key": "score",
+      "median_attainable_floor": null,
+      "refusal_rate": 1.0,
+      "refused": 300,
+      "replicates": 300,
+      "tracks_classification_rate": 0.0
+    },
+    {
+      "activation_property_rate": 0.0,
+      "correct_verdict": "REFUSED",
+      "counterfactual_rate_nearest_matching": 0.41,
+      "emitted": 0,
+      "family": "tautology",
+      "matching_key": "score_and_layer",
+      "median_attainable_floor": null,
+      "refusal_rate": 1.0,
+      "refused": 300,
+      "replicates": 300,
+      "tracks_classification_rate": 0.0
+    },
+    {
+      "activation_property_rate": 0.0,
+      "correct_verdict": "TRACKS_CLASSIFICATION",
+      "counterfactual_rate_nearest_matching": 0.6633333333333333,
+      "emitted": 300,
+      "family": "effect-0.8",
+      "matching_key": "score",
+      "median_attainable_floor": 6.4e-05,
+      "refusal_rate": 0.0,
+      "refused": 0,
+      "replicates": 300,
+      "tracks_classification_rate": 0.38333333333333336
+    },
+    {
+      "activation_property_rate": 0.0,
+      "correct_verdict": "TRACKS_CLASSIFICATION",
+      "counterfactual_rate_nearest_matching": 0.6633333333333333,
+      "emitted": 120,
+      "family": "effect-0.8",
+      "matching_key": "score_and_layer",
+      "median_attainable_floor": 0.04,
+      "refusal_rate": 0.6,
+      "refused": 180,
+      "replicates": 300,
+      "tracks_classification_rate": 0.16666666666666666
+    },
+    {
+      "activation_property_rate": 0.0,
+      "correct_verdict": "TRACKS_CLASSIFICATION",
+      "counterfactual_rate_nearest_matching": 0.9633333333333334,
+      "emitted": 300,
+      "family": "effect-1.5",
+      "matching_key": "score",
+      "median_attainable_floor": 6.4e-05,
+      "refusal_rate": 0.0,
+      "refused": 0,
+      "replicates": 300,
+      "tracks_classification_rate": 0.7633333333333333
+    },
+    {
+      "activation_property_rate": 0.0,
+      "correct_verdict": "TRACKS_CLASSIFICATION",
+      "counterfactual_rate_nearest_matching": 0.9633333333333334,
+      "emitted": 120,
+      "family": "effect-1.5",
+      "matching_key": "score_and_layer",
+      "median_attainable_floor": 0.04,
+      "refusal_rate": 0.6,
+      "refused": 180,
+      "replicates": 300,
+      "tracks_classification_rate": 0.44166666666666665
+    },
+    {
+      "activation_property_rate": 0.77,
+      "correct_verdict": "ACTIVATION_PROPERTY",
+      "counterfactual_rate_nearest_matching": 0.0,
+      "emitted": 300,
+      "family": "reciprocal-1.5",
+      "matching_key": "score",
+      "median_attainable_floor": 6.4e-05,
+      "refusal_rate": 0.0,
+      "refused": 0,
+      "replicates": 300,
+      "tracks_classification_rate": 0.0
+    },
+    {
+      "activation_property_rate": 0.4083333333333333,
+      "correct_verdict": "ACTIVATION_PROPERTY",
+      "counterfactual_rate_nearest_matching": 0.0,
+      "emitted": 120,
+      "family": "reciprocal-1.5",
+      "matching_key": "score_and_layer",
+      "median_attainable_floor": 0.04,
+      "refusal_rate": 0.6,
+      "refused": 180,
+      "replicates": 300,
+      "tracks_classification_rate": 0.0
+    }
+  ]
+}
