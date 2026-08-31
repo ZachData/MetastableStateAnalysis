@@ -107,6 +107,12 @@ class TestNullGating:
 # Prompt admissibility
 # ---------------------------------------------------------------------------
 
+#: The keys `core.battery_structure.analyze_prompt` documents itself as
+#: returning, of the kind a gate could read. Asserted against the real
+#: function below, so this list cannot quietly fall out of date.
+_KEYS_ANALYZE_PROMPT_RETURNS = ("verdict", "flags")
+
+
 class TestPromptAdmissibility:
 
     def test_degenerate_prompt_refuses(self):
@@ -120,6 +126,69 @@ class TestPromptAdmissibility:
     def test_clean_prompt_passes(self):
         check_prompt_admissible({"degeneracy": []}, "p")       # must not raise
         check_prompt_admissible({}, "p")
+
+    # -- the shape battery_structure actually produces ---------------------
+    #
+    # Every test above passes a report with a `degeneracy` or
+    # `degeneracy_modes` key. Nothing in this repository writes either one.
+    # `analyze_prompt` returns `flags` and `verdict`, so until 2026-08-31
+    # this gate returned None for every real report it was ever handed,
+    # including a genuinely degenerate one. The tests below are built from
+    # analyze_prompt's documented output shape rather than a hand-made dict,
+    # which is the only reason they can fail.
+
+    def _report(self, verdict, flags):
+        """analyze_prompt's shape, abbreviated to the keys the gate reads."""
+        return {"name": "p", "verdict": verdict, "flags": list(flags)}
+
+    def test_a_real_degenerate_report_refuses(self):
+        with pytest.raises(DegeneratePrompt, match="uniform"):
+            check_prompt_admissible(
+                self._report("degenerate", ["uniform"]), "repeated_tokens")
+
+    def test_a_real_insufficient_report_refuses(self):
+        """`insufficient` is not `degenerate` and battery_structure keeps
+        them apart, but neither can carry the test — a prompt with one
+        induction pair yields a rate, not a measurement. Measured on the
+        committed battery: short_heterogeneous tokenizes to 20 tokens with
+        1 induction pair and this is the verdict it gets."""
+        with pytest.raises(DegeneratePrompt):
+            check_prompt_admissible(
+                self._report("insufficient", []), "short_heterogeneous")
+
+    def test_a_real_usable_report_passes(self):
+        check_prompt_admissible(self._report("usable", []), "p")
+
+    def test_the_gate_reads_a_key_analyze_prompt_writes(self):
+        """Guards the defect itself rather than one instance of it: if the
+        gate ever again consults only keys the producer does not emit, the
+        refusal silently stops existing and every other test here still
+        passes."""
+        import inspect
+        from core.battery_structure import analyze_prompt
+
+        class _Tok:
+            bos_token_id = None
+            name_or_path = "fake"
+
+            def __call__(self, text):
+                vocab = {}
+                return {"input_ids": [vocab.setdefault(w, len(vocab))
+                                      for w in text.split()]}
+
+        # Both ends of the contract, so neither side can drift alone.
+        real = analyze_prompt(_Tok(), "p", "a b a b a c a b")
+        missing = [k for k in _KEYS_ANALYZE_PROMPT_RETURNS if k not in real]
+        assert not missing, (
+            f"analyze_prompt no longer returns {missing}; this test's key "
+            "list is stale and the gate below is being checked against a "
+            "shape that no longer exists"
+        )
+        src = inspect.getsource(check_prompt_admissible)
+        assert any(f'"{k}"' in src for k in _KEYS_ANALYZE_PROMPT_RETURNS), (
+            "check_prompt_admissible consults no key that analyze_prompt "
+            "returns, so it cannot refuse any real structure report"
+        )
 
 
 # ---------------------------------------------------------------------------
