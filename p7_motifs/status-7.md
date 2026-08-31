@@ -1,10 +1,14 @@
 <!-- p7_motifs/status-7.md -->
 # Phase 7 — STATUS
 
-**Last verified:** 2026-08-22 (oracle tier only — nothing has executed against any model).
-**Overall:** Design plus the first two build steps. The artifact contract, the typed-edge
-primitive and the motif alphabet exist and pass their oracle tier; no run has touched a
-model, and no prediction is adjudicated.
+**Last verified:** 2026-08-31 (oracle tier plus the driver — still nothing has executed
+against any model).
+**Overall:** Design plus build steps 1-8. The artifact contract, the typed-edge
+primitive, the motif alphabet, the statistics, the IO layer, the event level, the
+producer and now the driver exist and pass their oracle tier. The driver has been run
+end to end against synthetic Phase 1 / Phase 2 artifacts and a real tokenizer, and
+produces a contract-valid `interaction_table.npz`; it has not been run against a real
+forward pass, which is step 9. No prediction is adjudicated.
 
 ## Verdict table
 
@@ -55,7 +59,28 @@ interpretable.
    level, which is the seam a individually-correct producer can still fail at (transposed
    indices, wrong offset sign, pair types keyed the other way). It has not been run against a
    real forward pass — that is the smoke tier.
-8. **`formation_curve.py`**, **`run_7.py`** — NEXT.
+8. **`run_7.py`** — DONE (2026-08-31). The driver, and the first thing in this phase
+   with a caller: it joins a Phase 1 run directory (activations on the L2 sphere plus
+   their norms, and the attention tensor) to a Phase 2 decomposition (composed OV
+   circuits and sign-channel projectors) and writes `interaction_table.npz` against the
+   contract step 1 registered. Until it existed nothing in the repository wrote that
+   file outside a test, so `motif_stats`, `formation_gate` and `cross_head_gate` — all
+   built, all passing — had no input. 26 tests, every refusal checked by constructing
+   the mismatch rather than asserting the message.
+
+   Three frames are resolved rather than assumed, and two of them refuse: the raw
+   residual stream is reconstructed by multiplying the stored norms back and the run
+   stops when a Phase 1 artifact predates that field, and which stored state is the
+   input to layer *l* is read from `geometry.json`'s extraction convention, stopping
+   when it is unrecorded. The rotational channel is NOT wired — `U_S`/`U_A` are None,
+   `real_frac`/`imag_frac` are NaN, and the manifest records
+   `rotational_channel: "absent"` so that a table missing the channel cannot be read as
+   one measured to have none (finding 2). Supplying it needs Phase 2b's
+   `extract_schur_blocks` for the same checkpoint.
+
+   **`formation_curve.py` is still NEXT.** `write_formation_curve` exists in `p7_io`;
+   what does not is the module that turns a checkpoint series of motif counts into the
+   curve P-I1 and CLAIM-B adjudicate.
 9. **Smoke tier** — one prompt, two checkpoints, tiny GPT-NeoX, end to end.
 10. **The checkpoint sweep.** Not before.
 
