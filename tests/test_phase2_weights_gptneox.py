@@ -287,3 +287,87 @@ class TestNameDispatch:
     def test_existing_names_do_not_route_to_gptneox(self, name):
         from p2_eigenspectra.weights import _is_gptneox_name
         assert not _is_gptneox_name(name)
+
+
+# ---------------------------------------------------------------------------
+# The precision the projectors are decomposed at, which Phase 7 depends on
+# ---------------------------------------------------------------------------
+
+class TestDecompositionPrecision:
+    """
+    Phase 2's projectors are consumed by `core.interactions._as_basis`,
+    which refuses a square matrix that is not a symmetric idempotent
+    projector to within PROJECTOR_TOL. Single-precision Schur does not
+    reach that: measured on pythia-410m layer 9, float32 gives Schur
+    vectors orthogonal only to 1.5e-05 and a projector at ||P@P-P|| ~ 6e-06
+    against a 1e-6 tolerance.
+
+    It did not fail uniformly, which is why it survived. `np.allclose`
+    carries rtol=1e-5 beside the atol, so whether a ~6e-06 residual passed
+    depended on where in the matrix it landed — Phase 7 refused step 2 of
+    the registered sweep and accepted steps 1 and 4 on projectors that were
+    equally non-idempotent.
+    """
+
+    def _projector(self, dtype):
+        from scipy.linalg import schur
+        rng = np.random.default_rng(0)
+        d = 128
+        A = (rng.standard_normal((d, d)) / np.sqrt(d)).astype(dtype)
+        _, Z = schur(A, output="real")
+        Zs = Z[:, : d // 2]
+        return Zs @ Zs.T
+
+    def test_float32_schur_does_not_reach_the_projector_tolerance(self):
+        """The defect itself. If this ever passes, single precision became
+        good enough and the promotion below is no longer load-bearing —
+        which is worth being told about explicitly."""
+        from core.interactions import PROJECTOR_TOL
+        P = self._projector(np.float32)
+        assert np.abs(P @ P - P).max() > PROJECTOR_TOL
+
+    def test_float64_schur_clears_it_by_orders_of_magnitude(self):
+        from core.interactions import PROJECTOR_TOL
+        P = self._projector(np.float64)
+        assert np.abs(P @ P - P).max() < PROJECTOR_TOL / 1000
+
+    def test_extraction_promotes_every_float_array(self):
+        """The promotion happens at the one point every model type passes
+        through, so a new `_extract_*` branch cannot miss it."""
+        from p2_eigenspectra.weights import _as_float64
+        out = _as_float64({
+            "ov_total": [np.zeros((4, 4), dtype=np.float32)],
+            "ov_per_head": [[np.zeros((4, 4), dtype=np.float32)]],
+            "ov_head_core": np.zeros((2, 2, 2), dtype=np.float32),
+            "n_heads": 2,
+            "layer_names": ["layer_0"],
+        })
+        assert out["ov_total"][0].dtype == np.float64
+        assert out["ov_per_head"][0][0].dtype == np.float64
+        assert out["ov_head_core"].dtype == np.float64
+        assert out["n_heads"] == 2 and out["layer_names"] == ["layer_0"]
+
+    def test_a_float64_projector_is_accepted_by_the_phase_7_validator(self):
+        """The end-to-end contract, stated as the consumer sees it."""
+        from core.interactions import _as_basis
+        P = self._projector(np.float64)
+        assert _as_basis(P, P.shape[0]) is P
+
+    def test_float32_leaves_acceptance_to_rtol_rather_than_guaranteeing_it(self):
+        """Why the failure was arbitrary, stated as the property it is.
+
+        `_as_basis` tests `np.allclose(P @ P, P, atol=PROJECTOR_TOL)`, and
+        allclose carries rtol=1e-5 as well — so a residual ABOVE atol is
+        accepted or refused depending on where it sits relative to |P|.
+        float32 lands in exactly that band and float64 does not, which is
+        the whole difference: one is decided by placement, the other by
+        margin. Asserting a flat refusal for float32 would be wrong — at
+        d=128 it is accepted, at d=1024 on real weights step 2 was not.
+        """
+        from core.interactions import PROJECTOR_TOL
+        f32 = np.abs(np.subtract(*(lambda P: (P @ P, P))(self._projector(np.float32)))).max()
+        f64 = np.abs(np.subtract(*(lambda P: (P @ P, P))(self._projector(np.float64)))).max()
+        assert f32 > PROJECTOR_TOL          # in the band rtol decides
+        assert f64 < PROJECTOR_TOL / 1000   # decided by margin, not placement
+        assert f32 / f64 > 1e6
+

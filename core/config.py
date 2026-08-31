@@ -6,6 +6,7 @@ everything else imports FROM it.
 """
 
 import numpy as np
+import os
 from pathlib import Path
 
 import torch
@@ -19,7 +20,12 @@ from transformers import (
 # Paths & device
 # ---------------------------------------------------------------------------
 
-BASE_RESULTS_DIR = Path("results")
+#: Where every phase writes its run directories. Overridable because the
+#: artifacts are large — a 12-checkpoint Pythia-410M sweep is ~77 GB of
+#: Phase 1 + Phase 2 output in float64 — and the repository's own volume is
+#: not always the one with room. Default unchanged, so nothing that does not
+#: set it moves.
+BASE_RESULTS_DIR = Path(os.environ.get("METS_RESULTS_DIR", "results"))
 
 # Default seed for random-initialisation controls.  Overridden at runtime by
 # the --seed CLI argument to run_1 / run_2.  Changing this constant alone is
