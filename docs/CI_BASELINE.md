@@ -37,8 +37,9 @@ unimportable. 59 of 95 modules qualify.
 its measured values rather than edited forward — a baseline that gets updated
 in place stops being a baseline. The registry held 30 entries then and holds 38
 now; `./scripts/check.sh gate` reports the current tier-0 + tier-1 figure, which
-was **2115 passed, 5 skipped, 30 deselected** on 2026-08-30, after the tier
-retrofit below (1894 before it, on the same day; 1839 before
+was **2119 passed, 5 skipped, 30 deselected** on 2026-08-31, after the
+registry gained CLAIM-B's registered sweep (2115 on 2026-08-30 after the tier
+retrofit below, 1894 before it on the same day; 1839 before
 P-I3's cross-head construction, 1788 before the
 CLAIM-B grid feasibility record, 1651 on 2026-08-26, 1629 before the
 P6-R2/R4 dry run, 1589 before

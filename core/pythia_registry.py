@@ -55,6 +55,8 @@ indication that the weights were fine.
 
 from transformers import GPTNeoXModel, AutoTokenizer
 
+from core.changepoint_colocation import REGISTERED_CLAIM_B_SWEEP
+
 
 # ---------------------------------------------------------------------------
 # Checkpoint schedules
@@ -62,11 +64,46 @@ from transformers import GPTNeoXModel, AutoTokenizer
 
 # Step A — 410M pilot. Log-spaced through the first 512 steps (where the
 # plan expects the sharpest structural change), then a coarse linear sweep.
+#
+# NOT A SCHEDULE `CLAIM-B` CAN BE ADJUDICATED ON, and that is measured rather
+# than argued. POPPER_PLAN.md §6r enumerated 96,127 candidate grids against the
+# registered anchor window and found this one places its change-free reference
+# at step 1191 — inside the window — so it discriminates at 0.000 between an
+# anchored change and a series with no located change at all, where all three
+# grids the arithmetic picks discriminate at 1.000. It is kept because it is
+# what Phases 1-2 were run on and what their committed artifacts are indexed
+# by. It is not a default for anything new, and `adjudicate_claim_b` refuses a
+# result computed on it.
 PYTHIA_410M_PILOT_STEPS = sorted(set(
     [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
     + list(range(1000, 20001, 2000))
     + [40000, 60000, 80000, 100000, 120000, 143000]
 ))
+
+# Step A' — the grid `CLAIM-B` is actually registered on, chosen by the author
+# on 2026-08-28 from the computed feasible set (POPPER_PLAN.md §6r).
+#
+# Imported rather than restated. `core.changepoint_colocation` owns the tuple
+# and `adjudicate_claim_b` refuses every other grid, so a second copy here
+# could drift from the thing the gate enforces without a single test failing
+# on the difference — the registry would then name one sweep and the
+# adjudicator accept another.
+#
+# It is not a subset of the pilot schedule: step 54000 is the divergence,
+# where the pilot sweep steps 40000 -> 60000. Until 2026-08-31 that one
+# missing step meant `build_pythia_model_configs()` emitted no
+# `pythia-410m-step54000`, so this repository could not express the sweep its
+# own registry requires — the gate was registered on a grid the loader could
+# not build.
+PYTHIA_410M_CLAIM_B_STEPS = list(REGISTERED_CLAIM_B_SWEEP)
+
+# Every 410M step this registry offers a config for: the union of the two, not
+# either one alone. The pilot schedule has to stay loadable to re-read the
+# artifacts already computed on it; the registered sweep has to be loadable to
+# compute anything `adjudicate_claim_b` will accept.
+PYTHIA_410M_STEPS = sorted(
+    set(PYTHIA_410M_PILOT_STEPS) | set(PYTHIA_410M_CLAIM_B_STEPS)
+)
 
 # Step B — anchored 1.4B schedule (plan table, provisional rationale column).
 # The 2-3 reserved adaptive slots are deliberately NOT included here — they
@@ -153,15 +190,16 @@ def build_pythia_random_baseline(hf_repo: str = PYTHIA_1_4B_REPO,
 
 def build_pythia_model_configs() -> dict:
     """
-    MODEL_CONFIGS-format entries for every Pythia-410M pilot checkpoint and
-    every Pythia-1.4B anchor checkpoint.
+    MODEL_CONFIGS-format entries for every Pythia-410M step in
+    `PYTHIA_410M_STEPS` — the pilot schedule together with `CLAIM-B`'s
+    registered sweep — and every Pythia-1.4B anchor checkpoint.
 
     Keys: "pythia-410m-step{N}", "pythia-1.4b-step{N}", and the single
     non-checkpoint entry "pythia-1.4b-random".
     """
     cfgs = {}
 
-    for step in PYTHIA_410M_PILOT_STEPS:
+    for step in PYTHIA_410M_STEPS:
         cfgs[f"pythia-410m-step{step}"] = _pythia_entry(PYTHIA_410M_REPO, step)
 
     for step in PYTHIA_1_4B_ANCHOR_STEPS:

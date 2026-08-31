@@ -28,7 +28,9 @@ import pytest
 
 from core.pythia_registry import (
     build_pythia_model_configs,
+    PYTHIA_410M_CLAIM_B_STEPS,
     PYTHIA_410M_PILOT_STEPS,
+    PYTHIA_410M_STEPS,
     PYTHIA_1_4B_ANCHOR_STEPS,
     PYTHIA_1_4B_EXPENSIVE_STEPS,
     PYTHIA_ALL_STEPS,
@@ -133,6 +135,39 @@ class TestRegistryCoverage:
 
     def test_pilot_steps_are_subset_of_all_published_steps(self):
         assert set(PYTHIA_410M_PILOT_STEPS) <= set(PYTHIA_ALL_STEPS)
+
+    def test_one_entry_per_registered_claim_b_step(self, cfgs):
+        """`CLAIM-B` is registered on a specific twelve-step sweep and
+        `adjudicate_claim_b` refuses a result computed on any other. If the
+        registry cannot build every step of it, the claim cannot be run at
+        all — which was the state until 2026-08-31, when step 54000 had no
+        entry because the pilot schedule steps 40000 -> 60000."""
+        for step in PYTHIA_410M_CLAIM_B_STEPS:
+            assert f"pythia-410m-step{step}" in cfgs, (
+                f"step {step} of the registered CLAIM-B sweep has no "
+                "MODEL_CONFIGS entry, so the sweep the gate requires cannot "
+                "be loaded"
+            )
+
+    def test_registered_sweep_steps_are_subset_of_all_published_steps(self):
+        """Same reason as the anchor check: a registered step EleutherAI
+        never published would 404 partway through the sweep."""
+        assert set(PYTHIA_410M_CLAIM_B_STEPS) <= set(PYTHIA_ALL_STEPS)
+
+    def test_410m_steps_is_the_union_of_both_schedules(self):
+        assert set(PYTHIA_410M_STEPS) == (
+            set(PYTHIA_410M_PILOT_STEPS) | set(PYTHIA_410M_CLAIM_B_STEPS)
+        )
+
+    def test_the_pilot_schedule_is_not_the_registered_sweep(self):
+        """Recorded, not incidental. POPPER_PLAN.md §6r measured the pilot
+        schedule discriminating at 0.000 for CLAIM-B because its
+        change-free reference lands at step 1191, inside the anchor window.
+        The two lists are therefore required to differ; a change making
+        them equal would mean the falsified schedule had become the
+        registered one."""
+        assert set(PYTHIA_410M_CLAIM_B_STEPS) != set(PYTHIA_410M_PILOT_STEPS)
+        assert set(PYTHIA_410M_CLAIM_B_STEPS) - set(PYTHIA_410M_PILOT_STEPS) == {54000}
 
 
 class TestRegistryEntryShape:
@@ -308,7 +343,7 @@ class TestNoKeyCollisions:
     def test_step_count_matches_key_count(self, cfgs):
         n_410m = sum(1 for k in cfgs if k.startswith("pythia-410m"))
         n_14b  = sum(1 for k in cfgs if k.startswith("pythia-1.4b-step"))
-        assert n_410m == len(set(PYTHIA_410M_PILOT_STEPS))
+        assert n_410m == len(set(PYTHIA_410M_STEPS))
         assert n_14b == len(set(PYTHIA_1_4B_ANCHOR_STEPS))
 
     def test_random_control_is_the_only_non_step_key(self, cfgs):
