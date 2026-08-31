@@ -3,7 +3,7 @@
 
 **Last verified:** 2026-08-31 (oracle tier plus the driver — still nothing has executed
 against any model).
-**Overall:** Design plus build steps 1-8. The artifact contract, the typed-edge
+**Overall:** Design plus build steps 1-8, both halves. The artifact contract, the typed-edge
 primitive, the motif alphabet, the statistics, the IO layer, the event level, the
 producer and now the driver exist and pass their oracle tier. The driver has been run
 end to end against synthetic Phase 1 / Phase 2 artifacts and a real tokenizer, and
@@ -78,9 +78,25 @@ interpretable.
    one measured to have none (finding 2). Supplying it needs Phase 2b's
    `extract_schur_blocks` for the same checkpoint.
 
-   **`formation_curve.py` is still NEXT.** `write_formation_curve` exists in `p7_io`;
-   what does not is the module that turns a checkpoint series of motif counts into the
-   curve P-I1 and CLAIM-B adjudicate.
+   **`formation_curve.py`** — DONE (2026-08-31). Turns a checkpoint series of
+   interaction tables into `formation_curve.json`. Two arguments are required with no
+   default because both are the author's: `relay_owner`, because `relay_strength` is
+   keyed by (layer_1, head_1, layer_2, head_2) while `P_I1_UNIT` is the head, so the
+   collapse onto a head axis is a definition of what the motif measures; and
+   `independence_source`, which the contract already required. 21 tests.
+
+   It does NOT emit the above-null excess the gate requires, and says so:
+   `above_null_excess` is stamped into the artifact and `assert_gate_ready` refuses a
+   raw series. `core/qk_offset_null.py` computes N1/N2 for the QK antisymmetry
+   statistic, not for relay counts, and **a relay-count null does not exist in this
+   repository** — that is now the single named blocker between the sweep and P-I1's
+   p-value.
+
+   The behavioural score is computed from the attention tensor rather than from the
+   table's `weight` column on induction rows. The table is thinned by a top-k-by-force
+   cutoff, so averaging over it would select on force magnitude — the quantity the
+   motif side is built from — and the two arms would share a selection step the
+   pairing null cannot separate.
 9. **Smoke tier** — one prompt, two checkpoints, tiny GPT-NeoX, end to end.
 10. **The checkpoint sweep.** Not before.
 
