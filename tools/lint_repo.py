@@ -172,13 +172,20 @@ def rule_test_tier_markers(lint: Linter) -> None:
             continue
         markers = _module_markers(tree) & set(TIER_MARKERS)
         if len(markers) == 0:
-            # Reported as a warning during the retrofit: ~100 existing modules
-            # predate the taxonomy and marking them all is its own chunk
-            # (POPPER_PLAN.md A3 follow-up). Promote to error once that lands.
-            lint.warn(
+            # An error since 2026-08-30, as the retrofit comment here always
+            # said it should become. The last seven unmarked modules -- five of
+            # them Phase 7's -- were marked `pure` that day, measured under the
+            # heavy four made unimportable rather than assumed. They had been
+            # invisible since e6d7dba (2026-08-22) opened Phase 7 one day
+            # before 4fb460d introduced the taxonomy, and 221 tests, 8% of the
+            # suite, ran in no tier at all: `-m pure` and `-m deps` between
+            # them selected everything EXCEPT these, so nothing executed them
+            # locally or in CI and nothing failed to say so. A warning did not
+            # stop that, which is the argument for the promotion.
+            lint.error(
                 "test-tier-marker", py, 0,
-                "no tier marker (pure/smoke/heavy); CI's -m partition cannot "
-                "place it deterministically",
+                "no tier marker (pure/deps/smoke/heavy); CI's -m partition "
+                "cannot place it deterministically, so it runs in no tier",
             )
         elif len(markers) > 1:
             lint.error(

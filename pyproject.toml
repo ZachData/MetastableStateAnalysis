@@ -38,12 +38,33 @@ test = [
 heavy = [
     "pytest>=7.4",
     "torch>=2.0",
-    "transformers>=4.35",
+    # <5: see requirements/heavy.txt -- transformers 5 moved GPTNeoX rotary
+    # geometry into config.rope_parameters and core/rope.py silently defaults
+    # rotary_pct to 1.0 when it is absent.
+    "transformers>=4.35,<5",
     "matplotlib>=3.7",
     "scikit-learn>=1.3",
 ]
 
 [tool.setuptools]
+# Every name here must be a real importable package in the repo root, i.e. a
+# directory with an __init__.py. Two ways this list has gone stale, both of
+# which `pip install -e . --no-deps` catches and nothing else does:
+#
+#   * a phase gets archived and its name is left behind. setuptools raises
+#     "package directory 'X' does not exist" and the editable install fails
+#     outright. p3_crosscoder and p4_mstate_features sat here after their code
+#     moved to archive/. Note that a stale __pycache__/ left in the root from
+#     before the move hides this -- the directory exists, so the build passes
+#     on that machine and fails on a fresh clone.
+#   * a phase gets archived but keeps a math-*.md in the root, so the directory
+#     survives with no __init__.py and no .py at all. The build then succeeds
+#     while declaring something that is not a package. p5_single_mstate_analysis
+#     and p5b_manifold_steering were in that state.
+#
+# And the failure that costs something rather than just erroring: a NEW phase's
+# package not being added. p7_motifs was missing while holding the current
+# phase's code, so an install of this project shipped without it.
 packages = [
     "core",
     "tools",
@@ -53,11 +74,8 @@ packages = [
     "p2_eigenspectra",
     "p2b_imaginary",
     "p2d_operator_activation",
-    "p3_crosscoder",
-    "p4_mstate_features",
-    "p5_single_mstate_analysis",
-    "p5b_manifold_steering",
     "p6_subspace",
+    "p7_motifs",
 ]
 
 # ---------------------------------------------------------------------------

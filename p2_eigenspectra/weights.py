@@ -269,7 +269,7 @@ def _extract_gptneox_ov(model, model_name: str) -> dict:
     # keeping it out of this module's top-level imports preserves
     # weights.py's importability under the stubbed (torch-free) test
     # session, matching the project's existing deferred-import pattern.
-    from core.pythia_weights import split_qkv_gptneox
+    from core.pythia_weights import split_qkv_from_layer
 
     all_ov_total    = []
     all_ov_per_head = []
@@ -278,13 +278,15 @@ def _extract_gptneox_ov(model, model_name: str) -> dict:
     d_model = n_heads = d_head = None
 
     for i, layer in enumerate(_gptneox_layers(model)):
-        attn    = layer.attention
-        n_heads = attn.num_attention_heads
-        d_head  = attn.head_size
-
-        qkv = split_qkv_gptneox(
-            attn.query_key_value.weight, num_heads=n_heads, head_size=d_head,
-        )
+        attn = layer.attention
+        # Geometry via split_qkv_from_layer, not attn.num_attention_heads:
+        # transformers 4.57's GPTNeoXAttention carries head_size but no
+        # num_attention_heads, so the direct read is an AttributeError there.
+        # core.pythia_weights._attn_geometry already walks module -> config ->
+        # weight shape for exactly this.
+        qkv = split_qkv_from_layer(layer, model_name)
+        n_heads = qkv["_geometry"]["num_heads"]
+        d_head  = qkv["_geometry"]["head_size"]
         W_V = qkv["V"]                                        # (n_heads*d_head, d_model), Linear (out, in)
         W_O = attn.dense.weight.detach().cpu().float().numpy()  # (d_model, d_model), Linear (out, in)
 
@@ -665,17 +667,14 @@ def _qk_gptneox(model) -> dict:
     Q and K come out of split_qkv_gptneox in the same nn.Linear
     (out, in) orientation as ALBERT/BERT's separate query/key modules, so
     the per-head math below mirrors _qk_bert exactly."""
-    from core.pythia_weights import split_qkv_gptneox  # deferred: torch
+    from core.pythia_weights import split_qkv_from_layer  # deferred: torch
 
     all_norms   = []
     layer_names = []
     for i, layer in enumerate(_gptneox_layers(model)):
-        attn    = layer.attention
-        n_heads = attn.num_attention_heads
-        d_head  = attn.head_size
-        qkv = split_qkv_gptneox(
-            attn.query_key_value.weight, num_heads=n_heads, head_size=d_head,
-        )
+        qkv = split_qkv_from_layer(layer)    # resolves geometry robustly
+        n_heads = qkv["_geometry"]["num_heads"]
+        d_head  = qkv["_geometry"]["head_size"]
         W_Q, W_K = qkv["Q"], qkv["K"]        # each (n_heads*d_head, d_model)
 
         norms = []
@@ -839,17 +838,13 @@ def extract_qk_per_head(model, model_type: str | None = None) -> dict:
         # interleaved layout — split first, then the nn.Linear
         # (d_head, d_model)-slice-then-transpose orientation used by the
         # ALBERT/BERT branches above.
-        from core.pythia_weights import split_qkv_gptneox  # deferred: torch
+        from core.pythia_weights import split_qkv_from_layer  # deferred: torch
 
         wq_layers, wk_layers, layer_names = [], [], []
         for i, layer in enumerate(_gptneox_layers(model)):
-            attn    = layer.attention
-            n_heads = attn.num_attention_heads
-            d_head  = attn.head_size
-            qkv = split_qkv_gptneox(
-                attn.query_key_value.weight,
-                num_heads=n_heads, head_size=d_head,
-            )
+            qkv = split_qkv_from_layer(layer)   # resolves geometry robustly
+            n_heads = qkv["_geometry"]["num_heads"]
+            d_head  = qkv["_geometry"]["head_size"]
             W_Q, W_K = qkv["Q"], qkv["K"]    # each (n_heads*d_head, d_model)
 
             wq_h, wk_h = [], []

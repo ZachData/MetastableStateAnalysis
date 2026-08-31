@@ -49,7 +49,17 @@ except ModuleNotFoundError:             # stubbed test session
 
 
 def _is_torch_tensor(x) -> bool:
-    return torch is not None and torch.is_tensor(x)
+    """True only for a genuine torch.Tensor.
+
+    Not `torch.is_tensor(x)`: under the test suite's MagicMock torch stub that
+    call returns a MagicMock, which is truthy for every input, so _to_numpy
+    took its torch branch on plain ndarrays and died on `.detach()`. isinstance
+    against a real class is stub-safe -- the stub's Tensor is a real class
+    (tests/test_core_evalues.py::TestTorchStubIsScipySafe pins that) and a
+    MagicMock attribute is not a type, so both stub shapes answer False.
+    """
+    tensor_cls = getattr(torch, "Tensor", None) if torch is not None else None
+    return isinstance(tensor_cls, type) and isinstance(x, tensor_cls)
 
 
 def _to_numpy(weight) -> np.ndarray:
@@ -82,7 +92,7 @@ def _first_present(obj, *names):
     return None, None
 
 
-def _attn_geometry(attn, weight_shape, model_name: str = "") -> tuple:
+def _attn_geometry(attn, weight_shape=None, model_name: str = "") -> tuple:
     """Resolve (num_heads, head_size) for a GPTNeoXAttention module.
 
     Sources, in order:
@@ -91,9 +101,14 @@ def _attn_geometry(attn, weight_shape, model_name: str = "") -> tuple:
       3. the weight shape, given whichever of the two is known
       4. failure, with the attribute names actually present reported
 
+    `weight_shape` is optional: pass it when the fused query_key_value weight
+    is already to hand and steps 3 and the output-row cross-check are wanted.
+    Callers that only need the head counts (head_ablation's `get_heads`) may
+    omit it rather than materialise a weight solely to be measured.
+
     Returns (num_heads, head_size, provenance_string).
     """
-    hidden_out, hidden_in = weight_shape
+    hidden_out = weight_shape[0] if weight_shape is not None else None
     cfg = getattr(attn, "config", None)
 
     num_heads, nh_src = _first_present(attn, "num_attention_heads", "num_heads")
@@ -108,10 +123,11 @@ def _attn_geometry(attn, weight_shape, model_name: str = "") -> tuple:
             head_size, hs_src = hidden_size // num_heads, "config.hidden_size//heads"
 
     # Derive whichever is still missing from the weight itself.
-    if num_heads is None and head_size:
-        num_heads, nh_src = hidden_out // (3 * head_size), "weight_shape"
-    if head_size is None and num_heads:
-        head_size, hs_src = hidden_out // (3 * num_heads), "weight_shape"
+    if hidden_out is not None:
+        if num_heads is None and head_size:
+            num_heads, nh_src = hidden_out // (3 * head_size), "weight_shape"
+        if head_size is None and num_heads:
+            head_size, hs_src = hidden_out // (3 * num_heads), "weight_shape"
 
     if not num_heads or not head_size:
         present = sorted(
@@ -129,7 +145,7 @@ def _attn_geometry(attn, weight_shape, model_name: str = "") -> tuple:
     # The cross-check that cannot drift: the fused matrix has exactly
     # 3 * num_heads * head_size output rows, by construction.
     expected = 3 * num_heads * head_size
-    if hidden_out != expected:
+    if hidden_out is not None and hidden_out != expected:
         raise ValueError(
             f"{model_name or 'GPTNeoXAttention'}: head geometry "
             f"num_heads={num_heads} (from {nh_src}), head_size={head_size} "

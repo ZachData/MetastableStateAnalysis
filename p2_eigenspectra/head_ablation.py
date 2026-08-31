@@ -86,8 +86,12 @@ def _locate_attn_projection(model):
             return block.attention.dense
 
         def get_heads(block):
-            attn = block.attention
-            return attn.num_attention_heads, attn.head_size
+            # Not attn.num_attention_heads: transformers 4.57's
+            # GPTNeoXAttention has head_size but not num_attention_heads.
+            # _attn_geometry walks module -> config -> weight shape.
+            from core.pythia_weights import _attn_geometry
+            n_heads, head_size, _ = _attn_geometry(block.attention)
+            return n_heads, head_size
 
         return blocks, get_proj, get_heads, False
 

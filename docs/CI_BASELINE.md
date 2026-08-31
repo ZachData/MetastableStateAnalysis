@@ -37,7 +37,8 @@ unimportable. 59 of 95 modules qualify.
 its measured values rather than edited forward — a baseline that gets updated
 in place stops being a baseline. The registry held 30 entries then and holds 38
 now; `./scripts/check.sh gate` reports the current tier-0 + tier-1 figure, which
-was **1894 passed, 5 skipped, 251 deselected** on 2026-08-30 (1839 before
+was **2115 passed, 5 skipped, 30 deselected** on 2026-08-30, after the tier
+retrofit below (1894 before it, on the same day; 1839 before
 P-I3's cross-head construction, 1788 before the
 CLAIM-B grid feasibility record, 1651 on 2026-08-26, 1629 before the
 P6-R2/R4 dry run, 1589 before
@@ -72,6 +73,101 @@ acceptance test. Phase 5b's 20 are the most interesting of the three, because a
 20-failure integration suite over a pipeline that has never been executed is
 evidence about the suite as much as about the pipeline — the first question is
 whether those tests encode the design or the author's expectation of it.
+
+### The tier retrofit finished, and 221 tests that ran in nothing (2026-08-30)
+
+`-m heavy` collects **zero tests**: the marker is registered at `pytest.ini:28`
+but nothing anywhere carries it, in `tests/` or `archive/tests/`, and nothing
+applies it dynamically. Consistent with its definition — "needs real run
+artifacts on disk" — and with there being no real run artifacts yet.
+
+Counting the other markers is what mattered. Against 2721 collected:
+
+| marker | collected |
+|---|---|
+| `pure` | 1899 |
+| `deps` | 571 |
+| `smoke` | 36 |
+| `heavy` | 0 |
+| **unmarked** | **221** |
+
+`check.sh gate` selects `-m pure` and `check.sh all` adds `-m deps`, so **221
+tests, 8% of the suite, ran in no tier** — executed by nothing, locally or in
+CI, with nothing failing to say so. Seven modules, five of them Phase 7's:
+`test_p7_motif_alphabet`, `test_p7_motif_stats`, `test_p7_interaction_graph`,
+`test_p7_events`, `test_p7_io`, plus `test_core_interactions` and
+`test_core_dissipation`. The motif alphabet, the interaction graph, event
+extraction and the I/O layer underneath the current P-I3 work were all outside
+the gate meant to protect them.
+
+The cause is exact and is worth keeping: all seven arrived in `e6d7dba`
+(2026-08-22), "Archive phases 3-6; open Phase 7" — one day before `4fb460d`
+introduced the tier taxonomy. They predate the tiering pass and were never
+swept up, while every Phase 7 module written after `4fb460d`
+(`cross_head_gate`, `patching_gate`, `formation_gate`) carries its marker.
+
+All seven are now `pure`, measured under the project's own rule rather than
+assigned: they pass with torch, transformers, scikit-learn and matplotlib all
+made genuinely unimportable. The gate moves 1894 -> 2115 and deselected 251 ->
+30.
+
+`rule_test_tier_markers` in `tools/lint_repo.py` had been reporting exactly
+these seven as **warnings** since the taxonomy landed, above a comment reading
+"Promote to error once that lands." It is now an error, which is the half that
+matters — a warning is what let 221 tests sit unrun for eight sessions while
+the rule that knew about them printed every time. Checked against the family it
+is meant to catch: with one module's `pytestmark` removed, `check.sh lint`
+exits 1.
+
+### Remeasured (2026-08-30): tier 3 is green, and the table above is not
+
+The A0 table is left at its measured values, per the rule stated under it. This
+section records what tier 3 does *now*, because "25 red" had become wrong in
+three separate ways and a stale red count is read as a to-do list.
+
+Measured on Fedora, Python 3.14.7, with numpy 2.5.2, scipy 1.18.1,
+torch 2.13.0+cpu, transformers 5.16.1, scikit-learn 1.9.0, matplotlib 3.11.1,
+pytest 9.1.1:
+
+    ./scripts/check.sh all
+    tier 3 (-m deps): 569 passed, 2 skipped, 2150 deselected, 0 failed, 145 s
+
+**Zero red.** Taking the three modules in turn:
+
+* `tests/test_p2_producer_changes.py` — **18 tests, all passing**, and it is in
+  the deps tier, so those 18 are inside the 569. Its recorded 5 failures do not
+  reproduce, and not because anything was fixed: the test file and both modules
+  it imports (`p2_eigenspectra/weights.py`, `p2_eigenspectra/head_ov_analysis.py`)
+  are byte-identical to `4fb460d`, the commit the A0 figure was measured on —
+  the only change to `p2_eigenspectra/` since is an added `math-2.md`. Checked
+  the hard way rather than inferred: `4fb460d` checked out into a worktree and
+  run against the dependency set above gives 18 passed there too. So the 5 is a
+  property of the 2026-08-23 *environment*, not of the code at that commit.
+* `tests/test_phase5b_integration.py` — now `archive/tests/`, excluded by
+  `pytest.ini`'s `norecursedirs`. Its 20 is not merely uncollected but
+  unmeasurable in place: pointed at directly it fails collection with
+  `ModuleNotFoundError: No module named 'tests.test_phase5b_io'`, the helper
+  having stayed behind when the module was archived.
+* `tests/test_phase6_regression.py` — now `archive/tests/`, likewise excluded.
+  Run directly it gives **14 failed, 4 passed**, not the 5 recorded.
+
+Two further things the remeasurement turned up, both worth more than the count:
+
+**The A0 section does not add up.** The header says 25 red and the table below
+it lists 5 + 20 + 5 = 30. Which of the two was measured cannot be recovered now,
+so this is recorded rather than corrected.
+
+**No dependency versions were written down, which is what made the p2 case
+ambiguous.** `requirements/base.txt` floats everything (`numpy>=1.24`,
+`scipy>=1.10`), so "we fixed it" and "the environment moved" were
+indistinguishable from the record alone — the exact confusion this file exists
+to prevent, one level up from the test counts it prevents it for. It took a
+worktree checkout to settle a question a pinned version list would have
+answered. The live example arrived the same day: scipy 1.18 stopped returning an
+owndata array from `expm` and turned a tautological assertion in
+`tests/test_phase2b_rescaled.py` red, in the *gating* tier, with no commit
+involved. Hence the version block above, and hence recording it here as a
+standing gap rather than as a one-off.
 
 ## Reproducing this
 

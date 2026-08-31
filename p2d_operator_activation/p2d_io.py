@@ -332,8 +332,10 @@ def resolve_ln_params(model_name: str, revision: str, n_hidden_states: int,
     from core.ln_frame import frame_for_hidden_state
 
     torch_dtype = getattr(torch, dtype)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name, revision=revision, torch_dtype=torch_dtype,
+    from core.models import from_pretrained_eager
+    model = from_pretrained_eager(
+        AutoModelForCausalLM, model_name,
+        revision=revision, torch_dtype=torch_dtype,
     )
 
     params, frames, identity_idx = [], [], []

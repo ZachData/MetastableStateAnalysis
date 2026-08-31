@@ -288,6 +288,36 @@ def randomize_weights(model, scheme: str = "orthogonal", seed: int = 0) -> dict:
 # Loading
 # ---------------------------------------------------------------------------
 
+def from_pretrained_eager(model_class, repo_id: str, **kwargs):
+    """
+    `model_class.from_pretrained(repo_id, attn_implementation="eager", ...)`,
+    falling back for transformers releases that do not accept the argument.
+
+    Every loader in this project goes through here, because the alternative is
+    silent. Modern transformers defaults these architectures to `sdpa`, which
+    does not materialise the attention matrix: `output_attentions=True` then
+    returns a tuple of `None` -- not `None`, a tuple whose every element is
+    `None` -- with only a UserWarning. A caller that indexes it gets a
+    confusing TypeError and a caller that iterates it gets nothing at all.
+    HF used to paper over this with a fall-back shim; 4.57 has removed it,
+    which is exactly the scenario load_model's docstring below anticipated.
+
+    Kept as one function rather than a kwarg spelled out at each call site so
+    that "this project always loads eager" is stated once and cannot rot at
+    one loader while holding at the others -- which is how p2d_io and both
+    lm_loading paths came to differ from load_model.
+    """
+    try:
+        return model_class.from_pretrained(
+            repo_id, attn_implementation="eager", **kwargs
+        )
+    except (TypeError, ValueError):
+        # Older transformers releases don't accept attn_implementation.
+        # Falling back is safe for BERT/ALBERT/GPT-2 (eager is their only
+        # path); for GPT-NeoX it restores the deprecation-shim behaviour.
+        return model_class.from_pretrained(repo_id, **kwargs)
+
+
 def load_model(model_name: str, dtype=None):
     """
     Instantiate tokenizer + model for *model_name* (must be a key in
@@ -321,21 +351,13 @@ def load_model(model_name: str, dtype=None):
 
     torch_dtype = resolve_dtype(dtype)
 
-    load_kwargs = dict(
+    model = from_pretrained_eager(
+        cfg["model_class"], repo_id,
         revision=revision,
         output_hidden_states=True,
         output_attentions=True,
         torch_dtype=torch_dtype,
-        attn_implementation="eager",
     )
-    try:
-        model = cfg["model_class"].from_pretrained(repo_id, **load_kwargs)
-    except (TypeError, ValueError):
-        # Older transformers releases don't accept attn_implementation.
-        # Falling back is safe for BERT/ALBERT/GPT-2 (eager is their only
-        # path); for GPT-NeoX it restores the deprecation-shim behaviour.
-        load_kwargs.pop("attn_implementation")
-        model = cfg["model_class"].from_pretrained(repo_id, **load_kwargs)
 
     model = model.to(DEVICE)
     model.eval()
