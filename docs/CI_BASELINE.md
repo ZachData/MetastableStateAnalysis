@@ -37,8 +37,9 @@ unimportable. 59 of 95 modules qualify.
 its measured values rather than edited forward — a baseline that gets updated
 in place stops being a baseline. The registry held 30 entries then and holds 38
 now; `./scripts/check.sh gate` reports the current tier-0 + tier-1 figure, which
-was **2203 passed, 5 skipped, 30 deselected** on 2026-09-01, after P-I1's
-own sweep grid was registered (2197 the same day after the pairing null's
+was **2205 passed, 5 skipped, 30 deselected** on 2026-09-01, after edge and
+particle tables were written compressed (2203 the same day after P-I1's own
+sweep grid was registered; 2197 after the pairing null's
 invariance guard was made structural; 2194 after the motif join was
 confined to one (model, checkpoint, prompt) context; 2183 on
 2026-08-31 after Phase 2's

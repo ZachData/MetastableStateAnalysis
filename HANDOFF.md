@@ -303,7 +303,75 @@ and the one nine previous passes were corrected by.
 
 ---
 
-## 8. Untouched, and named so it is not mistaken for done
+## 8. The artifact format, and what its compressibility says
+
+**Edge tables are now written compressed** (`InteractionTable.save`,
+`ParticleTable.save`). Measured on the step-54000 sweep table, 19,077,120
+edges: **5.49 GB → 0.35 GB, 15×**. Across the 19-step grid that is 104 GB → 7
+GB. `np.load` reads both encodings, so every table written before this keeps
+loading unchanged; `tools/recompress_tables.py` rewrites the existing ones.
+
+The rest of the repository already compressed — `p1_mstate_tracking/p1_io.py`,
+`core/frame_card.py` — so this was the two tables that did not, not a new
+policy.
+
+### Why it compresses that hard, which is the part worth thinking about
+
+The per-column ratios are a direct measure of how much of each column is
+structure rather than signal:
+
+| column | ratio | why |
+|---|---|---|
+| `layer` | 693× | 24 values, perfectly uniform |
+| `checkpoint_step` | 686× | **one** value per table |
+| `real_frac`, `imag_frac` | 686× | **entirely NaN** — see below |
+| `model` | 295× | one value, stored as `<U21` per row |
+| `pair_type` | 174× | 4 values, stored as `<U12` per row |
+| `target` | 64× | token positions, 0–561 |
+| `source` | 11× | token positions, more varied |
+| `attractive_frac`, `repulsive_frac` | 4.5× | real measurements |
+| `offset` | 7.9× | 512 values |
+| **`weight`** | **1.9×** | post-softmax attention — nearly all information |
+
+**A 5.49 GB table carries roughly 350 MB of measurement.** The other 94% is
+identity columns repeated once per row plus an unpopulated channel. That is
+not a defect — it is what a columnar format does with key columns — but it is
+worth knowing before sizing storage or an instance.
+
+### `real_frac` and `imag_frac` are NaN in every row of every table
+
+100.0% NaN, 19,077,120 of 19,077,120, on the step-54000 table. **This is
+deliberate and correctly recorded**, not a silent gap: `p7_motifs/run_7.py`'s
+module docstring item 3 says the rotational channel is not wired there, `U_S`
+/ `U_A` stay `None`, and the manifest records `rotational_channel: "absent"`
+so a table missing the channel cannot be mistaken for one measured to have
+none. `status-7.md` finding 2 is why NaN rather than 0.0.
+
+What it costs, and what is worth looking into: **0.31 GB per table, 5.8 GB
+across the grid, storing NaN.** Supplying the channel needs Phase 2b's
+`extract_schur_blocks` output per checkpoint, which is a separate run;
+`p7_io.rotational_channel_from_blocks` is the seam. Two questions follow, and
+neither has been answered:
+
+1. Does any registered prediction need the rotational channel? If one does,
+   every table on disk is missing an input it requires, and the manifest flag
+   is the only thing that says so.
+2. If none does, the two columns are schema that no producer fills and no
+   consumer reads, and `OPTIONAL_VALUE_COLUMNS` is carrying them on the
+   strength of a plan rather than a use.
+
+### The categorical option, not taken
+
+Compression fixes disk and does nothing for RAM — a compressed table still
+expands to 5.49 GB on load. Storing `model` / `prompt_key` / `pair_type` as
+int8 category codes would take the in-memory table to **1.89 GB**, which is
+what would let a 16 GB instance stop being tight. It changes the schema and
+every consumer reading those columns as strings, so it is a deliberate piece
+of work with its own tests, not a one-line change. Not done.
+
+---
+
+## 9. Untouched, and named so it is not mistaken for done
 
 `core/precision_policy.py`'s **P2** (Pythia ships fp16; an fp16-epsilon
 perturbation splits a genuinely real eigenvalue pair into a complex one) and
@@ -312,7 +380,7 @@ that noise floor). The previous session's float64 change addresses neither.
 
 ---
 
-## 9. Reproducing anything
+## 10. Reproducing anything
 
 ```bash
 cd /mnt/mets && source .venv/bin/activate

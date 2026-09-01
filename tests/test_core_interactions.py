@@ -286,6 +286,41 @@ class TestPersistence:
         _table().save(p)
         assert InteractionTable.load(p).retention is None
 
+    def test_the_file_is_compressed(self, tmp_path):
+        """Most of an edge table is structure, not measurement: `model` and
+        `checkpoint_step` hold one value repeated per row, `prompt_key` and
+        `pair_type` a handful, and real_frac/imag_frac are all-NaN whenever
+        the rotational channel was not supplied. On the step-54000 sweep
+        table that is 5.49 GB raw against 0.35 GB compressed.
+
+        Pinned because the saving is large and silent: switching back to
+        np.savez would cost 15x the disk with every test still passing."""
+        import zipfile
+        n = 4000
+        t = _table(n=n, pair_type=["induction"] * n)
+        p = tmp_path / "c.npz"
+        t.save(p)
+
+        z = zipfile.ZipFile(p)
+        assert all(i.compress_type == zipfile.ZIP_DEFLATED for i in z.infolist()), \
+            "every member should be deflated, not stored"
+        uncompressed = sum(i.file_size for i in z.infolist())
+        assert p.stat().st_size < uncompressed / 4, (
+            f"{p.stat().st_size} on disk against {uncompressed} raw; a table "
+            "this redundant should compress far harder than 4x")
+
+    def test_an_uncompressed_file_still_loads(self, tmp_path):
+        """Tables written before the switch must keep loading — np.load
+        reads both encodings, and the sweep's existing tables depend on it."""
+        import numpy as _np
+        t = _table(n=6, pair_type=["induction"] * 6)
+        p = tmp_path / "legacy.npz"
+        payload = {k: _np.asarray(v) for k, v in t.columns.items()}
+        _np.savez(p, **payload)          # the old, uncompressed writer
+        back = InteractionTable.load(p)
+        assert len(back) == 6
+        assert _np.array_equal(back.columns["target"], t.columns["target"])
+
 
 class TestArtifactContract:
 
