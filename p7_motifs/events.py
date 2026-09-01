@@ -141,10 +141,17 @@ def relay_target_flags(
     Flagged at the stage-1 layer (`layer_1`), not at every layer: the tag
     is written there, and marking the particle at every depth would make
     the flag a property of the token rather than of the event.
+
+    Matched on the relay's own `prompt_key` as well as its position. A
+    position is a per-prompt token index, so a relay found in one prompt
+    would otherwise flag the particle sitting at the same index in every
+    other prompt of the battery. `prompt_key` here is a further filter on
+    the particle side, not the join.
     """
     cols = table.columns
     flags = np.zeros(len(table), dtype=bool)
-    wanted = {(int(r.tag_position), int(r.layer_1)) for r in relays}
+    wanted = {(str(r.prompt_key), int(r.tag_position), int(r.layer_1))
+              for r in relays}
     if not wanted:
         return flags
     for i, (pos, layer, pk) in enumerate(zip(
@@ -152,7 +159,7 @@ def relay_target_flags(
     )):
         if prompt_key is not None and pk != prompt_key:
             continue
-        if (int(pos), int(layer)) in wanted:
+        if (str(pk), int(pos), int(layer)) in wanted:
             flags[i] = True
     return flags
 

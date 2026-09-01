@@ -195,6 +195,85 @@ class TestRelayMultiplicity:
 
 
 # ---------------------------------------------------------------------------
+# The join scope: a position only names a particle inside its own context
+# ---------------------------------------------------------------------------
+
+class TestRelayJoinIsPerContext:
+    """
+    p7_motifs/run_7.py writes all 8 battery prompts into one
+    InteractionTable, and `tag_position` is a per-prompt token index. A
+    join on position alone therefore composes a tag written in one prompt
+    with a match found in another. It does not error; the positions
+    collide and the pair reads as a relay. On pythia-410m at step 54000 it
+    was a 9.0x inflation (23,050,007 against 2,560,483).
+
+    The halves below are each a complete relay in isolation and must
+    produce exactly one relay each — never a third from the cross terms.
+    """
+
+    def _stage_1_only(self, prompt):
+        return _edges([(2, 0, 5, 4, "a", "neither")], prompt=prompt)
+
+    def _stage_2_only(self, prompt):
+        return _edges([(7, 3, 9, 5, "a", "induction")], prompt=prompt)
+
+    def test_a_tag_in_one_prompt_does_not_feed_a_match_in_another(self):
+        """The defect, isolated: stage 1 exists only in prompt A, stage 2
+        only in prompt B. Neither prompt holds a relay, so there is none."""
+        t = InteractionTable.concat([self._stage_1_only("prompt_a"),
+                                     self._stage_2_only("prompt_b")])
+        assert find_relays(t) == []
+
+    def test_two_prompts_each_holding_one_relay_give_two(self):
+        """The join must still fire WITHIN each prompt — a scope fix that
+        also dropped the real relays would pass the test above."""
+        t = InteractionTable.concat([
+            _edges([(2, 0, 5, 4, "a", "neither"),
+                    (7, 3, 9, 5, "a", "induction")], prompt="prompt_a"),
+            _edges([(2, 0, 5, 4, "a", "neither"),
+                    (7, 3, 9, 5, "a", "induction")], prompt="prompt_b"),
+        ])
+        assert len(find_relays(t)) == 2
+        assert relay_strength(t) == {(2, 0, 7, 3): 2}
+        assert {r.prompt_key for r in find_relays(t)} == {"prompt_a", "prompt_b"}
+
+    def test_concatenating_prompts_equals_summing_them_separately(self):
+        """The property the sweep's numbers depend on: one table holding
+        the battery must count what the per-prompt tables counted. This is
+        the assertion the 9.0x inflation violated."""
+        halves = [
+            _edges([(2, 0, 5, 4, "a", "neither"),
+                    (7, 3, 9, 5, "a", "induction"),
+                    (3, 1, 8, 7, "a", "neither")], prompt="prompt_a"),
+            _edges([(2, 0, 6, 5, "a", "neither"),
+                    (7, 3, 9, 5, "a", "induction"),
+                    (4, 2, 12, 11, "a", "neither")], prompt="prompt_b"),
+        ]
+        summed = {}
+        for h in halves:
+            for k, v in relay_strength(h).items():
+                summed[k] = summed.get(k, 0) + v
+        assert relay_strength(InteractionTable.concat(halves)) == summed
+
+    def test_the_same_prompt_at_two_checkpoints_does_not_join(self):
+        """Positions repeat across checkpoints too, and
+        InteractionTable.concat does not forbid mixing them."""
+        t = InteractionTable.concat([
+            _edges([(2, 0, 5, 4, "a", "neither")], checkpoint_step=0),
+            _edges([(7, 3, 9, 5, "a", "induction")], checkpoint_step=1000),
+        ])
+        assert find_relays(t) == []
+
+    def test_a_relay_carries_the_prompt_its_positions_belong_to(self):
+        """`tag_position` without `prompt_key` cannot be resolved back to a
+        particle, so the finder must report both."""
+        r = find_relays(_edges([(2, 0, 5, 4, "a", "neither"),
+                               (7, 3, 9, 5, "a", "induction")],
+                              prompt="homer_iliad"))[0]
+        assert r.prompt_key == "homer_iliad"
+
+
+# ---------------------------------------------------------------------------
 # The null: random graphs must read as nothing
 # ---------------------------------------------------------------------------
 
@@ -318,6 +397,79 @@ class TestSingleEdgeMotifs:
         specs = [(1, 0, i, j, "a", "neither")
                  for i in (10, 11, 12) for j in (1, 2, 3)]
         assert motif_mask("hub", _edges(specs))["count"] == 0
+
+    # -- the structural motifs join by position too, and positions are
+    # -- per-prompt token indices. Same defect as TestRelayJoinIsPerContext.
+
+    def test_mutual_does_not_cross_prompts(self):
+        """5<-4 in one prompt and 4<-5 in another are not each other's
+        reverse: they are edges between four different particles. Joined on
+        position alone, both read as a bound pair neither prompt has."""
+        t = InteractionTable.concat([
+            _edges([(1, 0, 5, 6, "a", "neither")], prompt="prompt_a"),
+            _edges([(1, 0, 6, 5, "a", "neither")], prompt="prompt_b"),
+        ])
+        assert motif_mask("mutual", t)["count"] == 0
+
+    def test_mutual_still_fires_within_one_prompt_of_a_battery(self):
+        """The scope fix must not cost the real bound pairs."""
+        t = InteractionTable.concat([
+            _edges([(1, 0, 5, 6, "a", "neither"),
+                    (1, 0, 6, 5, "a", "neither")], prompt="prompt_a"),
+            _edges([(1, 0, 9, 8, "a", "neither")], prompt="prompt_b"),
+        ])
+        assert motif_mask("mutual", t)["count"] == 2
+
+    def _flat_head(self, sources, in_degree, first_target):
+        """One (layer, head) whose every source has the SAME in-degree, so
+        it holds no attractor on its own. `first_target` keeps the target
+        positions distinct within the group."""
+        specs, tgt = [], first_target
+        for src in sources:
+            for _ in range(in_degree):
+                specs.append((1, 0, tgt, src, "a", "neither"))
+                tgt += 1
+        return specs
+
+    def test_hub_in_degree_is_not_pooled_across_prompts(self):
+        """Two prompts, each internally FLAT — no attractor in either. They
+        share source 3 and differ elsewhere, so pooling their in-degrees
+        gives 3 a count of 9 against a 4/4/5/5 background and manufactures
+        an attractor that neither prompt contains.
+
+        This is what a battery table does to `hub` by default: prompts
+        differ in length and in which positions carry content, so pooled
+        in-degrees are a sum over texts the position has nothing to do
+        with. Manufacture is the direction planted here because it is the
+        one a test can pin; on the real step-54000 table the net effect ran
+        the other way (see hub_mask's docstring), and both follow from the
+        same pooled baseline."""
+        a = self._flat_head(sources=(1, 2, 3), in_degree=4, first_target=10)
+        b = self._flat_head(sources=(3, 4, 5), in_degree=5, first_target=10)
+        assert motif_mask("hub", _edges(a, prompt="prompt_a"))["count"] == 0
+        assert motif_mask("hub", _edges(b, prompt="prompt_b"))["count"] == 0
+
+        t = InteractionTable.concat([_edges(a, prompt="prompt_a"),
+                                     _edges(b, prompt="prompt_b")])
+        assert motif_mask("hub", t)["count"] == 0
+
+    def test_hub_still_fires_within_one_prompt_of_a_battery(self):
+        planted = [(1, 0, i, 3, "a", "neither") for i in range(10, 30)]
+        planted += [(1, 0, i, i - 1, "a", "neither") for i in range(5, 10)]
+        background = [(1, 0, i, i - 1, "a", "neither") for i in range(5, 10)]
+        t = InteractionTable.concat([_edges(planted, prompt="prompt_a"),
+                                     _edges(background, prompt="prompt_b")])
+        assert motif_mask("hub", t)["count"] == 20
+
+    def test_hub_does_not_pool_across_checkpoints(self):
+        """The same collision one axis over: positions repeat at every
+        checkpoint, and InteractionTable.concat does not forbid mixing
+        them."""
+        a = self._flat_head(sources=(1, 2, 3), in_degree=4, first_target=10)
+        b = self._flat_head(sources=(3, 4, 5), in_degree=5, first_target=10)
+        t = InteractionTable.concat([_edges(a, checkpoint_step=0),
+                                     _edges(b, checkpoint_step=1000)])
+        assert motif_mask("hub", t)["count"] == 0
 
 
 class TestReportingContract:

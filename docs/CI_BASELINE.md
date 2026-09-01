@@ -37,8 +37,10 @@ unimportable. 59 of 95 modules qualify.
 its measured values rather than edited forward — a baseline that gets updated
 in place stops being a baseline. The registry held 30 entries then and holds 38
 now; `./scripts/check.sh gate` reports the current tier-0 + tier-1 figure, which
-was **2183 passed, 5 skipped, 30 deselected** on 2026-08-31, after Phase 2's
-float64 promotion (2178 the same day after Phase 7's formation curve; 2157
+was **2194 passed, 5 skipped, 30 deselected** on 2026-09-01, after the motif
+join was confined to one (model, checkpoint, prompt) context (2183 on
+2026-08-31 after Phase 2's
+float64 promotion; 2178 the same day after Phase 7's formation curve; 2157
 after its driver; 2124 earlier, after the two gates the real tokenizer
 found; 2119 when the registry gained CLAIM-B's registered sweep; 2115 on
 2026-08-30 after the tier retrofit below, 1894 before it on the same day; 1839
