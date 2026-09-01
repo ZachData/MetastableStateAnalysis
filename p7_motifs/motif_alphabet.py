@@ -404,6 +404,31 @@ def relay_strength(t: InteractionTable, thresholds=None) -> Dict[tuple, int]:
     given the prompt's induction-pair structure) is prompt-dependent and
     belongs with the null comparison in motif_stats, not baked in here
     where it would silently become part of the definition.
+
+    HOW MUCH that denominator explains is now measured rather than left as
+    a caveat, because the size of it decides what a null has to hold fixed.
+    Across the 8 battery prompts at step 54000, the raw relay count against
+    the prompt's own induction-pair supply (`n_induction` from
+    `core.battery_structure.analyze_prompt`) runs r = **+0.9958** — 99% of
+    the cross-prompt variance in this count is the prompt's combinatorics,
+    not the model's circuitry. Excluding `repeated_tokens` it is +0.8908.
+    No other structural quantity comes close: n_tokens -0.39,
+    n_same_content -0.36, n_distinct_tokens -0.79.
+
+    That also explains `repeated_tokens` carrying 61% of the battery's
+    relays. ". . . ." x 265 holds **34,191** induction pairs against the
+    next prompt's 2,873 — twelve times as many, because every repeated
+    token pairs with every other. Its share is a fact about the prompt, not
+    about the checkpoint.
+
+    The consequence for the null, and it is a constraint rather than an
+    observation: a relay-count null that does not hold `n_induction` fixed
+    per prompt is testing whether the prompt has induction pairs, which is
+    known before the model runs. That is EVALUABILITY.md's "a null that
+    randomised more than the claim is about". What is left after
+    normalising is not nothing — relays per induction pair still spans 45
+    to 133 across the battery, a factor of three — and that residue is
+    where a formation signal would have to live.
     """
     counts: Dict[tuple, int] = {}
     for r in find_relays(t, thresholds):

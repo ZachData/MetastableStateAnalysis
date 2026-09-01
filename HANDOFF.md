@@ -18,14 +18,22 @@ the disk.
 | | |
 |---|---|
 | Repo | `/mnt/mets` (fuse share — **not** where large output should go) |
-| Bulk volume | `/mnt/vm_storage` (117 GB free at 12:26; the running sweep needs ~84) |
+| Bulk volume | `/mnt/vm_storage` (~247 GB free after the author cleared space; the running sweep needs ~84) |
 | venv | `/mnt/mets/.venv` — torch 2.13.0+cpu, transformers 4.57.6, numpy 2.5.2, scipy 1.18.1 |
 | CPU / RAM | 10 cores, 19 GB |
 
 ```bash
 export HF_HOME=/mnt/vm_storage/hf_cache
 export METS_RESULTS_DIR=/mnt/vm_storage/mets_results
+export HF_HUB_OFFLINE=1        # every 410M registry revision is mirrored locally
+export HF_HUB_DISABLE_XET=1
 ```
+
+**All 33 of `PYTHIA_410M_STEPS` are mirrored into `HF_HOME` as
+`model.safetensors`** (~1.62 GB each), so nothing streams. Take safetensors and
+NOT `pytorch_model.bin` when adding revisions: the hub carries both, they are
+1.62 GB against 0.91 GB, and mixing them across a grid varies precision between
+checkpoints silently.
 
 `transformers` is pinned `<5` deliberately; on 5.x GPT-NeoX moved rotary
 parameters into `config.rope_parameters` and `core/rope.py`'s `rotary_pct`
@@ -180,14 +188,41 @@ The head **sets** differ; these are not rescalings.
 
 ## 6. The sweep that is running
 
-Launched 12:26 on 2026-09-01, `nohup bash /mnt/vm_storage/mets_runs/sweep.sh`,
+Relaunched 14:51 on 2026-09-01, `nohup bash /mnt/vm_storage/mets_runs/sweep.sh`,
 log at the session scratchpad's `sweep.log`. Seven new checkpoints —
-0, 2000, 4000, 8000, 16000, 32000, 143000 — at ~35 min and ~12 GB each, so
-**~4 h and ~84 GB against 117 GB free**. It is resumable and skips any step
-whose `interaction_table.npz` exists, so re-running it is safe.
+0, 2000, 4000, 8000, 16000, 32000, 143000 — at ~35 min and ~12 GB each. It is
+resumable and skips any step whose `interaction_table.npz` exists, so
+re-running it is safe.
 
-`sweep.sh` now **reads its step list from `REGISTERED_P_I1_SWEEP`** rather than
-restating it, so it cannot name a grid the gate refuses.
+`sweep.sh` **reads its step list from `REGISTERED_P_I1_SWEEP`** rather than
+restating it, so it cannot name a grid the gate refuses. It also **reuses a
+complete phase-1 directory** for a model if one exists, since phase 1 is ~20
+minutes and re-running it because a later stage failed is the expensive way to
+be wrong.
+
+### Two ways the first launch failed, both now guarded
+
+Worth reading before touching the script, because neither announced itself.
+
+1. **HuggingFace's Xet CDN (`us.aws.cdn.hf.co`) was unreachable** while
+   `huggingface.co` answered in 0.5 s, so any check that did not hit the CDN
+   specifically looked healthy. The seven new revisions were not cached; the
+   twelve from the previous session were. `run_1` printed the download failure,
+   then printed `Results in:` and exited **0**, so the script read a directory
+   containing no prompts as a success and ran phase 2 and phase 7 on it. Fixed
+   by mirroring every revision and running with `HF_HUB_OFFLINE=1`, so a reach
+   for the network fails immediately instead of stalling.
+2. **The guard added for (1) was itself wrong**, and cost three checkpoints at
+   ~20 minutes each. It counted prompt directories with
+   `ls -d ${P1}/${M}_*`, which also matches the per-prompt PNGs and so reports
+   64 where it means 8. It now asks for the eight directories by name — which is
+   what the phase-7 argument loop had always done. The three discarded phase-1
+   runs were complete and were recovered by the reuse path rather than re-run.
+
+The lesson worth carrying: a guard that rejects good input is not the safe
+direction of a guard being wrong. Both failures here were silent in the sense
+that mattered — one produced an empty artifact, the other threw away a good
+one — and neither would have been visible in the final numbers.
 
 When it finishes, re-run the curve analysis over all nineteen steps. The
 previous session's `/mnt/vm_storage/mets_runs/curve.py` calls
@@ -219,15 +254,49 @@ on, check what the measurement grid contributes, and only then build the
 control.** The first three steps changed the design before any control existed
 on `P-AB1`, which is that document's case for the order.
 
-Two of those steps are already done for the *arm*, and both are in §3.2 and
-§4: the statistic degenerates on a series whose change mass falls in one
-interval, and the grid contributed the entire failure. What is not done is the
-same three steps for the **envelope** — what a relay count degenerates on, and
-what an absent-structure relay count looks like. The obvious shape is a
-degree-preserving rewiring within each (context, layer, head) that keeps each
-head's edge count and attractive fraction and randomises which particles the
-edges connect, but that is a design choice of the class this repository puts to
-the author, not one to register from the code.
+Two of those steps are done for the *arm*, and both are in §3.2 and §4: the
+statistic degenerates on a series whose change mass falls in one interval, and
+the grid contributed the entire failure.
+
+**Step 2 is now done for the relay count itself, and it constrains the null.**
+Across the 8 battery prompts at step 54000, the raw relay count against the
+prompt's own induction-pair supply (`n_induction` from
+`core.battery_structure.analyze_prompt`) runs **r = +0.9958** — 99% of the
+cross-prompt variance in the count is the prompt's combinatorics, not the
+model's circuitry. Excluding `repeated_tokens` it is +0.8908. Nothing else is
+close: n_tokens −0.39, n_same_content −0.36, n_distinct_tokens −0.79.
+
+| prompt | tokens | n_induction | relays | relays/induction |
+|---|---|---|---|---|
+| `repeated_tokens` | 265 | **34,191** | 1,551,930 | 45.4 |
+| `latex_monograph` | 446 | 2,873 | 310,346 | 108.0 |
+| `homer_iliad` | 562 | 2,518 | 166,132 | 66.0 |
+| `sullivan_ballou` | 482 | 2,038 | 151,710 | 74.4 |
+| `wiki_paragraph` | 467 | 1,598 | 146,601 | 91.7 |
+| `hdbscan_code` | 300 | 1,247 | 78,024 | 62.6 |
+| `camus_letranger` | 465 | 963 | 81,876 | 85.0 |
+| `paper_excerpt` | 286 | 554 | 73,864 | 133.3 |
+
+This also settles why `repeated_tokens` carries 61% of the battery: ". . . ."
+× 265 holds **34,191** induction pairs against the next prompt's 2,873, twelve
+times as many, because every repeated token pairs with every other. Its share
+is a fact about the prompt, not about the checkpoint — which is worth carrying
+into §4's decision 4, since it means the excluding-it series is not a
+robustness check but a different question.
+
+**The constraint that falls out:** a relay-count null that does not hold
+`n_induction` fixed per prompt is testing whether the prompt has induction
+pairs, which is known before the model runs. That is `EVALUABILITY.md`'s "a
+null that randomised more than the claim is about". What survives normalising
+is not nothing — relays per induction pair still spans 45 to 133, a factor of
+three — and that residue is where a formation signal would have to live.
+
+What is still not done is step 1 (the attainable floor) and the control itself.
+The obvious shape is a degree-preserving rewiring within each (context, layer,
+head) that keeps each head's edge count and attractive fraction and randomises
+which particles the edges connect — and it must now also preserve the induction
+structure. That is a design choice of the class this repository puts to the
+author, not one to register from the code.
 
 **Do not start it from the control.** That is the order `EVALUABILITY.md` names
 and the one nine previous passes were corrected by.
