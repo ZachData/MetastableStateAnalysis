@@ -55,7 +55,10 @@ indication that the weights were fine.
 
 from transformers import GPTNeoXModel, AutoTokenizer
 
-from core.changepoint_colocation import REGISTERED_CLAIM_B_SWEEP
+from core.changepoint_colocation import (
+    REGISTERED_CLAIM_B_SWEEP,
+    REGISTERED_P_I1_SWEEP,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -97,12 +100,23 @@ PYTHIA_410M_PILOT_STEPS = sorted(set(
 # not build.
 PYTHIA_410M_CLAIM_B_STEPS = list(REGISTERED_CLAIM_B_SWEEP)
 
-# Every 410M step this registry offers a config for: the union of the two, not
-# either one alone. The pilot schedule has to stay loadable to re-read the
-# artifacts already computed on it; the registered sweep has to be loadable to
-# compute anything `adjudicate_claim_b` will accept.
+# Step A'' — the grid `P-I1` is registered on, chosen by the author on
+# 2026-09-01. Imported for the same reason as CLAIM-B's: the module the gate
+# reads owns the tuple, so a second copy here cannot drift from it.
+#
+# A superset of the CLAIM-B sweep, adding the five log-spaced fills inside
+# (1000, 54000) that the pairing null needs to express anything at all and the
+# two endpoint steps the falsifier names. See REGISTERED_P_I1_SWEEP.
+PYTHIA_410M_P_I1_STEPS = list(REGISTERED_P_I1_SWEEP)
+
+# Every 410M step this registry offers a config for: the union of the three,
+# not any one alone. The pilot schedule has to stay loadable to re-read the
+# artifacts already computed on it; each registered sweep has to be loadable to
+# compute anything its own adjudicator will accept.
 PYTHIA_410M_STEPS = sorted(
-    set(PYTHIA_410M_PILOT_STEPS) | set(PYTHIA_410M_CLAIM_B_STEPS)
+    set(PYTHIA_410M_PILOT_STEPS)
+    | set(PYTHIA_410M_CLAIM_B_STEPS)
+    | set(PYTHIA_410M_P_I1_STEPS)
 )
 
 # Step B — anchored 1.4B schedule (plan table, provisional rationale column).

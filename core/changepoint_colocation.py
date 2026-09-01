@@ -1584,6 +1584,47 @@ def gate_verdict(p_greater: Optional[float], p_less: Optional[float],
 REGISTERED_CLAIM_B_SWEEP: Optional[Tuple[int, ...]] = (
     1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)
 
+#: `P-I1`'s REGISTERED SWEEP GRID, chosen by the author on 2026-09-01.
+#:
+#: WHY P-I1 NEEDS ITS OWN GRID AND CANNOT REUSE CLAIM-B'S. The paragraph above
+#: names the cost that binds here: the registered CLAIM-B sweep "samples
+#: nothing between step 1000 and step 54000, so it serves no prediction needing
+#: mid-training resolution." P-I1 is that prediction, and the shortfall is not
+#: a loss of resolution but a floor of 1.000.
+#:
+#: MEASURED, on the finished 12-checkpoint sweep rather than argued from the
+#: grid's shape. No edge reaches the 0.5 motif threshold at any of the eleven
+#: checkpoints from step 1 to step 1000, so every head's relay series is
+#: exactly zero there and jumps once. Every head's change centroid is then the
+#: same number -- 3.8664179398591134, the midpoint of the single interval
+#: (1000, 54000] -- with no noise to break the tie. `paired_colocation_arm`
+#: permutes a constant against the other side, every pairing reproduces the
+#: observation, and no input can reject. It is the same for all three
+#: `relay_owner` collapses: 68, 80 and 87 heads all give ONE distinct centroid.
+#: The units contribute one location, not 80, and no number of heads or of
+#: prompts changes that -- only intervals inside the transition do.
+#:
+#: WHAT WAS ADDED, AND WHY THESE STEPS. Five log-spaced fills inside the gap
+#: (2000, 4000, 8000, 16000, 32000), taking the interval midpoints inside
+#: (1000, 54000) from 1 to 6. Log spacing matches the spacing of the sweep it
+#: extends and does not privilege a location before measuring one; 52 published
+#: checkpoints lie in the gap, so the choice is a cost decision and not an
+#: availability one. Plus steps 0 and 143000, which are `P_I1_ENDPOINT_STEPS`
+#: -- the two the falsifier names, and neither was in the grid, so
+#: `endpoint_flags` was reporting on a first step that is not 0 and a last that
+#: is not 143000.
+#:
+#: WHAT IT COSTS, ON THE RECORD. Seven checkpoints at ~35 min and ~12 GB each:
+#: ~4 h and ~84 GB against 117 GB free. It is a SUPERSET of
+#: REGISTERED_CLAIM_B_SWEEP, so the twelve tables already computed are reused
+#: and only the seven are new. It is NOT a grid CLAIM-B may be adjudicated on:
+#: `adjudicate_claim_b` refuses every grid but its own, and that refusal stands
+#: -- CLAIM-B's grid was chosen to hold its anchor window and this one was not
+#: chosen for that at all.
+REGISTERED_P_I1_SWEEP: Optional[Tuple[int, ...]] = (
+    0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000,
+    2000, 4000, 8000, 16000, 32000, 54000, 143000)
+
 #: The literature anchors, taken from CLAIM-B's REGISTERED STATEMENT -- "the
 #: energy-monotonicity break and the Fiedler drop co-locate with steps
 #: ~512-2000". PRE-REGISTERED, not placed: standing rule 6 asks where a constant

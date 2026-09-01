@@ -35,15 +35,21 @@ SWEEP = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 3000, 4000,
          8000, 13000, 23000, 33000, 43000, 63000, 83000, 103000, 123000, 143000]
 
 
-def _rise_at(j, amp=1.0, base=0.0):
+#: P-I1's registered grid. `p_value_p_i1` computes on any grid; only this one
+#: may be adjudicated, so the adjudication tests must run on it.
+REG = list(F.REGISTERED_P_I1_SWEEP)
+
+
+def _rise_at(j, amp=1.0, base=0.0, steps=None):
     """An above-null excess that is `base` until interval j and base+amp after."""
-    v = np.full(len(SWEEP), float(base))
+    n = len(SWEEP if steps is None else steps)
+    v = np.full(n, float(base))
     v[j + 1:] = base + amp
     return v
 
 
-def _heads(jumps, amp=1.0, base=0.0):
-    return [_rise_at(j, amp, base) for j in jumps]
+def _heads(jumps, amp=1.0, base=0.0, steps=None):
+    return [_rise_at(j, amp, base, steps) for j in jumps]
 
 
 class TestRegisteredChoices:
@@ -186,19 +192,32 @@ class TestEndpointFlags:
 class TestAdjudication:
 
     def _args(self):
+        j = [1, 5, 9, 13, 15, 16, 17]
+        return (_heads(j, steps=REG),
+                _heads(j, amp=2.0, steps=REG))
+
+    def test_a_grid_that_is_not_the_registered_one_is_refused(self):
+        """`p_value_p_i1` computes on any grid; only the registered sweep may
+        enter an e-process. On the CLAIM-B grid P-I1 borrowed until
+        2026-09-01 the pairing null could not express anything at all — every
+        head's change centroid was the same number — so which grid this ran
+        on is exactly the thing that must be registered in advance."""
         j = [1, 5, 9, 13, 17, 21, 23]
-        return _heads(j), _heads(j, amp=2.0)
+        unregistered = SWEEP
+        with pytest.raises(ColocationRefused, match="not the registered one"):
+            F.adjudicate_p_i1(unregistered, _heads(j), _heads(j, amp=2.0),
+                              alpha=0.05)
 
     def test_opt_in_writes_nothing_by_default(self, tmp_path):
         relay, behav = self._args()
-        r = F.adjudicate_p_i1(SWEEP, relay, behav, alpha=0.05,
+        r = F.adjudicate_p_i1(REG, relay, behav, alpha=0.05,
                               adjudications_dir=tmp_path)
         assert r["adjudication"] is None
         assert not list(tmp_path.glob("*.json"))
 
     def test_emits_into_the_ledger_when_asked(self, tmp_path):
         relay, behav = self._args()
-        r = F.adjudicate_p_i1(SWEEP, relay, behav, alpha=0.05, adjudicate=True,
+        r = F.adjudicate_p_i1(REG, relay, behav, alpha=0.05, adjudicate=True,
                               adjudications_dir=tmp_path)
         adj = r["adjudication"]
         assert adj is not None and adj["prediction_id"] == "P-I1"
@@ -208,7 +227,7 @@ class TestAdjudication:
 
     def test_the_record_carries_the_endpoints_and_the_shared_estimator(self, tmp_path):
         relay, behav = self._args()
-        r = F.adjudicate_p_i1(SWEEP, relay, behav, alpha=0.05, adjudicate=True,
+        r = F.adjudicate_p_i1(REG, relay, behav, alpha=0.05, adjudicate=True,
                               adjudications_dir=tmp_path)
         notes = r["adjudication"]["notes"]
         assert "CLAIM-B" in notes and "independent factors" in notes
@@ -218,7 +237,7 @@ class TestAdjudication:
     def test_a_refused_gate_writes_nothing_even_when_asked(self, tmp_path):
         j = [1, 5, 9, 13, 17, 21, 23]
         same = _heads(j)
-        r = F.adjudicate_p_i1(SWEEP, same, same, alpha=0.05, adjudicate=True,
+        r = F.adjudicate_p_i1(REG, same, same, alpha=0.05, adjudicate=True,
                               adjudications_dir=tmp_path)
         assert r["adjudication"] is None
         assert not list(tmp_path.glob("*.json"))

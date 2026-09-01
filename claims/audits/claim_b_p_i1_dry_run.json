@@ -5,9 +5,9 @@
   "_not": "not evidence about Pythia and not an adjudication. The series are synthetic; what is being checked is the gate.",
   "generated_by": "python3 -m tools.dry_run_claim_b_p_i1 --write",
   "construction_file": "core/changepoint_colocation.py",
-  "construction_sha256": "863a4316ea236620bdacd7f9b4121493d342ddd878edb351c3177b781b16a452",
+  "construction_sha256": "d8658542b602a818192f065fc15ee5658f9762b43b73e252314fda213ce9d3f9",
   "formation_gate_file": "p7_motifs/formation_gate.py",
-  "formation_gate_sha256": "23af9c69da438c109e7788b7036f049286935d6dee41376413840d4a8cb21f9d",
+  "formation_gate_sha256": "ab5ca7d3f24e98f509ba87a851f515eeb318f4cded7e01041062bb85b23f8d4f",
   "alpha": 0.05,
   "anchor_window_steps": [
     512.0,
@@ -782,5 +782,5 @@
     "max_absolute_difference": 0.0,
     "agrees": true
   },
-  "elapsed_seconds": 139.9
+  "elapsed_seconds": 140.0
 }
