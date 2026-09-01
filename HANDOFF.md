@@ -1,13 +1,15 @@
 <!-- HANDOFF.md -->
-# HANDOFF — session of 2026-08-31
+# HANDOFF — session of 2026-09-01
 
 Written to be pasted into, or read at the start of, a fresh session. It records
 what changed, what was measured, what is still open, and where everything
-lives. Every number below is measured on this machine; where a first reading
-was wrong it says so, because two of them were.
+lives. Every number below is measured on this machine.
 
-Branch: `claude/rescaler-cache-identity-test`, five commits ahead of
-`a7ce1c2`. Nothing is merged and no PR is open.
+Branch: `claude/rescaler-cache-identity-test`, three commits past the previous
+session's `fe2ae6e`. Nothing is merged and no PR is open.
+
+**A sweep is running.** See §6 before starting anything that needs the CPU or
+the disk.
 
 ---
 
@@ -15,26 +17,23 @@ Branch: `claude/rescaler-cache-identity-test`, five commits ahead of
 
 | | |
 |---|---|
-| Repo | `/mnt/mets` (fuse share, ~55 GB free — **not** where large output should go) |
-| Bulk volume | `/mnt/vm_storage` (~150 GB free; symlinked as `~/vm_storage`) |
+| Repo | `/mnt/mets` (fuse share — **not** where large output should go) |
+| Bulk volume | `/mnt/vm_storage` (117 GB free at 12:26; the running sweep needs ~84) |
 | venv | `/mnt/mets/.venv` — torch 2.13.0+cpu, transformers 4.57.6, numpy 2.5.2, scipy 1.18.1 |
 | CPU / RAM | 10 cores, 19 GB |
 
-Two environment variables matter and neither is set by default:
-
 ```bash
-export HF_HOME=/mnt/vm_storage/hf_cache          # 19 GB of checkpoints already cached
-export METS_RESULTS_DIR=/mnt/vm_storage/mets_results   # added this session; default is ./results
+export HF_HOME=/mnt/vm_storage/hf_cache
+export METS_RESULTS_DIR=/mnt/vm_storage/mets_results
 ```
 
-`transformers` is pinned `<5` deliberately. On 5.x, GPT-NeoX moved rotary
-parameters into `config.rope_parameters` and `core/rope.py`'s
-`rotary_pct` default then fires, silently reporting `rotary_ndims=64` where
-pythia-410m rotates 16. Lifting the pin requires fixing `core/rope.py` first.
+`transformers` is pinned `<5` deliberately; on 5.x GPT-NeoX moved rotary
+parameters into `config.rope_parameters` and `core/rope.py`'s `rotary_pct`
+default then fires, silently reporting `rotary_ndims=64` where pythia-410m
+rotates 16. Lifting the pin requires fixing `core/rope.py` first.
 
-**`/mnt/mets/results/` holds 315 GB of pre-refactor runs.** Nothing was
-deleted. Reclaiming it is the author's call. All new output goes to
-`/mnt/vm_storage/mets_results`.
+`/mnt/mets/results/` still holds 315 GB of pre-refactor runs. Nothing was
+deleted; reclaiming it is the author's call.
 
 ---
 
@@ -42,203 +41,228 @@ deleted. Reclaiming it is the author's call. All new output goes to
 
 | commit | what |
 |---|---|
-| `aa437ec` | Registry gained `CLAIM-B`'s registered sweep — `pythia-410m-step54000` had no `MODEL_CONFIGS` entry, so the repo could not build the grid its own gate requires |
-| `017f749` | Two gates that could not fire (see §3) |
-| `2cabaec` | `p7_motifs/run_7.py` — the Phase 7 driver, build step 8's first half |
-| `3558b70` | `p7_motifs/formation_curve.py` — build step 8's second half |
-| `dd6b0de` | Phase 2 decomposed in float64 |
+| `f7e95bc` | Every motif join confined to the context its positions belong to |
+| `9655631` | The pairing null refuses when it permutes a constant, before the floats decide |
+| `7196e24` | P-I1's own sweep grid, its `relay_owner` and its dominant prompt, registered |
 
-Gate went 2115 → **2183 passed / 5 skipped / 30 deselected**; tier 3 569
-passed / 2 skipped, unchanged; tier 0 clean. Recorded in `docs/CI_BASELINE.md`.
+Gate went 2183 → **2203 passed / 5 skipped / 30 deselected**. Tier 3 unchanged
+at 569 passed / 2 skipped. Recorded in `docs/CI_BASELINE.md`.
 
 ---
 
-## 3. Defects found, with how they were found
+## 3. Defects found and fixed, with how they were found
 
-Each was invisible to the existing tests, and each is now mutation-checked
-(revert the fix, the new test fails by name).
+Each is mutation-checked: revert the fix and the named test fails.
 
-1. **`tokenize_prompt` returned two strings, not token ids.** The test was
-   `isinstance(enc, dict)`, and transformers' `BatchEncoding` extends
-   `UserDict`, not `dict` — so `list(enc)` iterated the mapping's KEYS and
-   every prompt tokenized to `["input_ids", "attention_mask"]`. The stubbed
-   session's fake returns a plain dict, so no test could take the branch
-   production took.
-2. **`check_prompt_admissible` read keys nothing writes.** It consulted
-   `degeneracy` / `degeneracy_modes`; `analyze_prompt` emits `flags` and
-   `verdict`. The one refusal between a degenerate prompt and a motif rate
-   returned `None` for every real report. Its three tests all passed a
-   hand-made shape the repo never produces.
-3. **Phase 2 decomposed in single precision.** `_extract_*` reads weights with
-   torch's `.float()`, so `scipy.linalg.schur` returned vectors orthogonal
-   only to `‖ZᵀZ − I‖ = 1.5e-5`, and `P = ZZᵀ` was non-idempotent at ~6e-6
-   against `PROJECTOR_TOL = 1e-6`. `_as_basis` refused step 2 of the sweep and
-   accepted steps 1 and 4 **on equally non-idempotent projectors** — `np.allclose`
-   carries `rtol=1e-5` beside the atol, so which checkpoints failed was
-   arbitrary. In float64: 3.2e-14 and 3.6e-09.
-4. **A bug in `formation_curve.py`, caught before it shipped.** The head axis
-   was intersected over the *sparse* relay maps, which drops every head with
-   no relay at any checkpoint — precisely the heads that go on to form. On the
-   real sweep that axis is empty. It now comes from the dense behavioural
-   series.
+### 3.1 Three motifs joined rows by position without grouping first
 
-### Two readings that were wrong and were corrected
+`target` and `source` are **per-prompt token indices**, and `run_7` writes all
+8 battery prompts into one `InteractionTable`. Position 7 of one prompt and
+position 7 of another are different particles. None of the three errored.
 
-- "float32 *storage* causes the projector failure" — no: an exact projector
-  cast to float32 gives 5.7e-7, an order of magnitude *better* than what was on
-  disk. The loss was in the computation.
-- "first real forward pass in the project's history" — no: `results/` holds
-  Phase 2 runs from 2026-08-03 and 2026-08-13 over 27 checkpoints. What had
-  never run was **Phase 7**; no `interaction_table.npz` had ever existed.
+* **`find_relays`** composed a tag written in one prompt with a match found in
+  another. The previous session measured 23,050,007 relays against the
+  2,560,483 a per-prompt join gives — **9.0×**, entirely spurious. Now
+  verified after the fix on the real step-54000 table:
+  `find_relays(t)` over the whole battery returns **2,560,483**, equal to the
+  per-prompt sum, and reproduces all eight per-prompt counts.
+* **`hub_mask`** pooled in-degrees, and the leave-one-out baseline they are
+  compared against, across prompts. Measured: **305,233 pooled against 437,508
+  grouped**. The direction is *dilution* — pooling buried 30% of the real
+  per-prompt hubs under a baseline the other prompts inflated. **That is not
+  the direction predicted before measuring it**; the first docstring claimed
+  manufacture, and was corrected to what the data says. Both directions are
+  reachable and the oracle test plants the manufacture case, since it is the
+  one a test can pin.
+* **`mutual_mask`** could read 5←4 in one prompt and 4←5 in another as each
+  other's reverse. On the same table the collision does not fire: **105,752
+  either way**. Latent, fixed for correctness, with the collision planted in a
+  test rather than waited for.
+
+`RelayInstance` now carries `prompt_key` with **no default**, because
+`tag_position` cannot be resolved back to a particle without it —
+`relay_target_flags` was matching on position alone and flagged the particle at
+that index in every prompt of the battery.
+
+`hub_mask`'s grouping is one sort rather than one full-length boolean scan per
+group; it needed that once the context entered the key.
+
+### 3.2 The pairing null returned a p-value computed from rounding
+
+`paired_colocation_arm`'s statistic is `-mean|ca - cb[p]|`, a sum over a
+**permuted multiset**. If either side's change centroids are all equal, every
+pairing reproduces the observation exactly: the null *is* the observation and
+the attainable floor is 1.000. `EVALUABILITY.md`'s twenty-first lesson, reached
+by this arm's own construction.
+
+The guard was `float(stats.max()) == float(stats.min())`, checked after the
+fact. Exact equality is the wrong test — floating-point summation order splits
+a mathematically constant statistic across two adjacent doubles, so the guard
+does not fire.
+
+**This was live on the finished sweep.** Every head's relay change centroid is
+`3.8664179398591134`, *exactly* equal, with no noise to break the tie, because
+the series is zero at 11 of 12 checkpoints. Across 2001 sampled pairings the
+statistic spanned **4.4e-16** and took two distinct values; p came out 0.764,
+0.764, 0.778, 0.778, 0.784, 0.786 over six permutation seeds. The number was
+the seed and the rounding, nothing else.
+
+The check is now structural — either side constant, tested before the statistic
+exists — and names the grid as the cause. The after-the-fact test survives as a
+tolerance backstop at the floating-point scale of a mean over `n_units` terms,
+~1e-13 here, ten orders below any effect the statistic can carry.
+
+It is shared with CLAIM-B's arms, so the fix is not P-I1's alone.
 
 ---
 
-## 4. The sweep — DONE
+## 4. The four decisions — registered
 
-12/12 checkpoints of `REGISTERED_CLAIM_B_SWEEP`, 8 prompts each, zero
-refusals. 11:08 → 18:36 on 2026-08-31, ~35 min per checkpoint, flat.
+Put to the author with the costs measured, and registered on 2026-09-01. The
+first was reframed by §3.2 before it was asked.
 
-| | |
-|---|---|
-| Edges | 19,077,120 per checkpoint, **229M total** |
-| Tables | `/mnt/vm_storage/mets_runs/p7/step{N}/interaction_table.npz` (~5 GB each) |
-| Phase 1 / 2 dirs | recorded per checkpoint in `p1_dir.txt` / `p2_dir.txt` beside each table |
-| Sweep script | `/mnt/vm_storage/mets_runs/sweep.sh` (resumable; skips a step whose table exists) |
-| Curve analysis | `/mnt/vm_storage/mets_runs/curve.py` → `formation_curve_raw.json` |
+1. **P-I1's grid** — `REGISTERED_P_I1_SWEEP`, in
+   `core/changepoint_colocation.py` beside CLAIM-B's. Nineteen steps:
+   `0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000,
+   32000, 54000, 143000`. A **superset** of the CLAIM-B sweep, so the twelve
+   tables on disk are reused. `adjudicate_p_i1` now refuses every other grid,
+   the division `adjudicate_claim_b` already makes; `p_value_p_i1` still
+   computes on any.
+2. **`P_I1_RELAY_OWNER = "matcher"`** — the stage-2 head, because the arm pairs
+   this series against the behavioural induction score, which is mean attention
+   on induction pairs and therefore the matcher's own behaviour.
+3. **Endpoints** — steps 0 and 143000 added, so `P_I1_ENDPOINT_STEPS` are in
+   the grid and `endpoint_flags` reports on the steps the registry named.
+4. **`P_I1_DOMINANT_PROMPT = "repeated_tokens"`** — kept, since it is a
+   registered battery member, with the excluding-it series carried beside the
+   including-it one. Reported, never scored — the standing `endpoint_flags`
+   has.
 
-Prompts: the 8 admissible ones. `short_heterogeneous` is refused by
-`check_prompt_admissible` (20 tokens, 1 induction pair → `insufficient`).
+### Why the grid was the binding constraint, and the other three were not
+
+The step function is real: no edge reaches the 0.5 motif threshold at any of
+the eleven checkpoints from step 1 to step 1000, so every head's relay series
+is exactly zero there and jumps once. Every head's change centroid is then the
+midpoint of the single interval (1000, 54000].
+
+**All three `relay_owner` choices give ONE distinct centroid** — 68, 80 and 87
+heads alike. **Excluding `repeated_tokens` does not change it** — eleven zeros
+either way. The units contribute one location, not 80, and no number of heads
+or of prompts fixes that. Only intervals inside the transition do.
+
+The five log-spaced fills take the interval midpoints inside (1000, 54000) from
+**1 to 6**. 52 published checkpoints lie in the gap, so the count was a cost
+decision and not an availability one.
 
 ---
 
-## 5. What the data says
+## 5. What the data said (unchanged from the previous session)
 
-### The formation curve is a step function
-
-```
-step      1  2  4  8  16  32  64  128  256  512  1000        54000
-relays    0  0  0  0   0   0   0    0    0    0     0    2,560,483
-```
-
-Excluding `repeated_tokens`: eleven zeros, then 1,008,553.
-
-Not a bug. **No edge in eleven checkpoints reaches the 0.5 motif threshold.**
+Per-prompt relays at step 54000, now confirmed by the whole-table call:
+`repeated_tokens` **1,551,930** (61%), `latex_monograph` 310,346,
+`homer_iliad` 166,132, `sullivan_ballou` 151,710, `wiki_paragraph` 146,601,
+`camus_letranger` 81,876, `hdbscan_code` 78,024, `paper_excerpt` 73,864.
 
 | step | max `attractive_frac` | median | edges ≥ 0.5 |
 |---|---|---|---|
 | 1 | 0.4861 | 0.3717 | 0 |
-| 512 | 0.4665 | 0.2566 | 0 |
 | 1000 | 0.4766 | 0.1029 | 0 |
 | 54000 | **0.9364** | 0.2726 | **2,015,626** |
 
-`dim(U_pos)/d` — what an isotropic force would score — is **0.501** at step 1
-(the untrained OV spectrum splits ~50/50 like a random matrix), 0.351 at step
-1000, 0.453 at step 54000. Early forces sit tightly *below* the isotropic
-baseline; by step 54000 the max is far above it. The step is real.
+`dim(U_pos)/d` — what an isotropic force would score — is 0.501 at step 1,
+0.351 at step 1000, 0.453 at step 54000.
 
-### But the grid cannot locate it
-
-The registered sweep was chosen (§6r) to maximise retention of **CLAIM-B's**
-anchor window. For **P-I1** the same grid puts **11 of 12 points in the flat
-zero**, resolving the transition only to *somewhere in (1000, 54000]* — a
-53,000-step interval with no point inside it. This is §6r's own lesson
-arriving on the other claim.
-
-**P-I1's registered falsifier endpoints are not in the grid at all.**
-`P_I1_ENDPOINT_STEPS = (0, 143000)`; the sweep runs 1 → 54000. Both absent, so
-`endpoint_flags` reports on a first step that is not 0 and a last that is not
-143000.
-
-### `relay_owner` — the three choices, measured at step 54000
-
-| choice | heads with relays | total relays |
-|---|---|---|
-| `tag_writer` | 68 | 2,560,483 |
-| `matcher` | 80 | 2,560,483 |
-| `both` | 87 | 5,120,966 |
-
-Not rescalings of one another — the head sets differ.
-
-### One prompt dominates
-
-Per-prompt relays at step 54000: `repeated_tokens` **1,551,930** (61% of all),
-`latex_monograph` 310,346, `homer_iliad` 166,132, `sullivan_ballou` 151,710,
-`wiki_paragraph` 146,601, `camus_letranger` 81,876, `hdbscan_code` 78,024,
-`paper_excerpt` 73,864.
-
-`repeated_tokens` is ". . . ." × 265. It reads `usable` because
-`n_distinct > 1` under this tokenizer, so the `uniform` flag never fires. Any
-battery-averaged statistic is substantially a statement about that one prompt.
-That is a registered criterion, so it was reported, not changed.
+`relay_owner` costs at step 54000: `tag_writer` 68 heads / 2,560,483 relays,
+`matcher` 80 / 2,560,483, `both` 87 / 5,120,966 (each relay counted twice).
+The head **sets** differ; these are not rescalings.
 
 ---
 
-## 6. Open — the author's decisions
+## 6. The sweep that is running
 
-None of these were taken, because all four are pre-registered criteria.
+Launched 12:26 on 2026-09-01, `nohup bash /mnt/vm_storage/mets_runs/sweep.sh`,
+log at the session scratchpad's `sweep.log`. Seven new checkpoints —
+0, 2000, 4000, 8000, 16000, 32000, 143000 — at ~35 min and ~12 GB each, so
+**~4 h and ~84 GB against 117 GB free**. It is resumable and skips any step
+whose `interaction_table.npz` exists, so re-running it is safe.
 
-1. **`relay_owner`** — `relay_strength` is keyed by
-   `(layer_1, head_1, layer_2, head_2)` but `P_I1_UNIT` is the head. The
-   collapse is a definition. Costs measured above.
-2. **Checkpoints between 1000 and 54000**, to locate the transition. Roughly
-   35 min and ~12 GB per added checkpoint.
-3. **Whether P-I1 needs its own grid** including 0 and 143000, its registered
-   falsifier endpoints.
-4. **Whether `repeated_tokens` belongs in the battery** for this statistic.
-   Excluding it at curve-assembly needs no re-run.
+`sweep.sh` now **reads its step list from `REGISTERED_P_I1_SWEEP`** rather than
+restating it, so it cannot name a grid the gate refuses.
+
+When it finishes, re-run the curve analysis over all nineteen steps. The
+previous session's `/mnt/vm_storage/mets_runs/curve.py` calls
+`find_relays(t.filter(prompt_key=p))` per prompt — that workaround is no longer
+needed (§3.1) and the whole-table call gives the same answer, but leaving it in
+costs only time.
+
+**The first thing to check when the tables land** is whether the degeneracy
+clears: the six interval midpoints inside (1000, 54000) should give more than
+one distinct change centroid across heads. If they do not — if every head still
+jumps in the same interval — the transition is sharper than the fill resolves
+and §4's decision 1 comes back with a denser grid.
 
 ---
 
-## 7. Blockers
+## 7. The one remaining blocker
 
-**Hard blocker: the relay-count null does not exist.** `formation_gate`
-requires the series to be the excess above the N1/N2 offset-null envelope.
-`core/qk_offset_null.py` computes N1/N2 for the **QK antisymmetry statistic**,
-not for relay counts. `formation_curve.assert_gate_ready` therefore refuses
-the series, correctly — handing raw counts to `p_value_p_i1` would report a
-p-value against a null the series never cleared. Constructing that null is a
-null-construction decision; `claims/EVALUABILITY.md` prescribes the order
-(floor → what the statistic degenerates on → what the grid contributes → only
-then the control).
+**The relay-count null does not exist.** `formation_gate` requires the series
+to be the excess above the N1/N2 offset-null envelope, and
+`core/qk_offset_null.py` computes N1/N2 for the **QK antisymmetry statistic**
+(`a_frac`, from weights and offsets) — not for relay counts.
+`formation_curve.assert_gate_ready` refuses the series, correctly: handing raw
+counts to `p_value_p_i1` would report a p-value against a null the series never
+cleared.
 
-**Known defect, not yet fixed.** `find_relays` joins a `prev_token` edge to a
-`match` edge **by particle position**, and positions are per-prompt token
-indices. `run_7` writes all 8 prompts into one table, so calling `find_relays`
-on a `run_7` artifact composes a tag written in one prompt with a match in
-another. Measured at step 54000: **23,050,007 relays concatenated vs 2,560,483
-summed per prompt — 9.0× inflation.** Nothing errors. All numbers in §5 are
-the correct per-prompt ones. The fix belongs in `motif_alphabet.find_relays`
-(group by `prompt_key`) rather than as a caller's obligation.
+This is a null-construction decision, and `claims/EVALUABILITY.md` prescribes
+the order: **compute the attainable floor, name what the statistic degenerates
+on, check what the measurement grid contributes, and only then build the
+control.** The first three steps changed the design before any control existed
+on `P-AB1`, which is that document's case for the order.
 
-**Untouched, and named so it is not mistaken for done.**
-`core/precision_policy.py`'s P2 (Pythia ships fp16; an fp16-epsilon
+Two of those steps are already done for the *arm*, and both are in §3.2 and
+§4: the statistic degenerates on a series whose change mass falls in one
+interval, and the grid contributed the entire failure. What is not done is the
+same three steps for the **envelope** — what a relay count degenerates on, and
+what an absent-structure relay count looks like. The obvious shape is a
+degree-preserving rewiring within each (context, layer, head) that keeps each
+head's edge count and attractive fraction and randomises which particles the
+edges connect, but that is a design choice of the class this repository puts to
+the author, not one to register from the code.
+
+**Do not start it from the control.** That is the order `EVALUABILITY.md` names
+and the one nine previous passes were corrected by.
+
+---
+
+## 8. Untouched, and named so it is not mistaken for done
+
+`core/precision_policy.py`'s **P2** (Pythia ships fp16; an fp16-epsilon
 perturbation splits a genuinely real eigenvalue pair into a complex one) and
-item 13 (the forward pass runs under bf16 autocast, so activations carry that
-noise floor). The float64 change addresses neither.
+**item 13** (the forward pass runs under bf16 autocast, so activations carry
+that noise floor). The previous session's float64 change addresses neither.
 
 ---
 
-## 8. Suggested next step
-
-Fix `find_relays`'s cross-prompt join first — it is a real defect, it is
-small, and every future relay number depends on it. Then put decisions 1–4 to
-the author with the costs already measured above. The relay-count null is the
-only thing standing between the finished sweep and P-I1's first p-value, and
-it should be built in `EVALUABILITY.md`'s prescribed order rather than
-started from the control.
-
-### Reproducing anything
+## 9. Reproducing anything
 
 ```bash
 cd /mnt/mets && source .venv/bin/activate
 export HF_HOME=/mnt/vm_storage/hf_cache METS_RESULTS_DIR=/mnt/vm_storage/mets_results
 
-./scripts/check.sh gate     # 2183 passed / 5 skipped / 30 deselected
+./scripts/check.sh gate     # 2203 passed / 5 skipped / 30 deselected
 ./scripts/check.sh all      # adds tier 3: 569 passed / 2 skipped
 
-# one checkpoint, end to end
 bash /mnt/vm_storage/mets_runs/sweep.sh      # resumable; skips completed steps
 PYTHONPATH=/mnt/mets python /mnt/vm_storage/mets_runs/curve.py
+```
+
+Two records carry file hashes and must be rewritten whenever
+`core/changepoint_colocation.py` or `p7_motifs/formation_gate.py` changes;
+both re-derive their numbers, and neither moved this session:
+
+```bash
+python3 -m tools.dry_run_claim_b_p_i1 --write      # ~1 min
+python3 -m tools.claim_b_grid_feasibility --write  # ~4 min
 ```
 
 `pythonpath = .` in `pytest.ini` applies to pytest only — a plain
