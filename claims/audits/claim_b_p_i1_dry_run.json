@@ -5,7 +5,7 @@
   "_not": "not evidence about Pythia and not an adjudication. The series are synthetic; what is being checked is the gate.",
   "generated_by": "python3 -m tools.dry_run_claim_b_p_i1 --write",
   "construction_file": "core/changepoint_colocation.py",
-  "construction_sha256": "dcd858c02fe2d246503a767d5f1debc73f9ddc50565ec3d1542cf25633c177a1",
+  "construction_sha256": "863a4316ea236620bdacd7f9b4121493d342ddd878edb351c3177b781b16a452",
   "formation_gate_file": "p7_motifs/formation_gate.py",
   "formation_gate_sha256": "23af9c69da438c109e7788b7036f049286935d6dee41376413840d4a8cb21f9d",
   "alpha": 0.05,
@@ -494,7 +494,7 @@
         "grid_midpoint_log_step": 2.9806133201777634,
         "noise_sd": 0.005,
         "predicted_noise_mass_share": 0.06340973648714418,
-        "measured_noise_mass_share_estimate": 0.023449220729822445,
+        "measured_noise_mass_share_estimate": 0.02344922072982245,
         "predicted_centroid_log_step": 3.015760583876049,
         "measured_centroid_log_step": 2.9989738793274268,
         "measured_centroid_inside_window": 1.0
@@ -505,7 +505,7 @@
         "grid_midpoint_log_step": 2.9806133201777634,
         "noise_sd": 0.02,
         "predicted_noise_mass_share": 0.21310092537835293,
-        "measured_noise_mass_share_estimate": 0.12340362071320402,
+        "measured_noise_mass_share_estimate": 0.12340362071320404,
         "predicted_centroid_log_step": 3.009216761367928,
         "measured_centroid_log_step": 3.0069789293782128,
         "measured_centroid_inside_window": 0.99
@@ -529,7 +529,7 @@
         "predicted_noise_mass_share": 0.0,
         "measured_noise_mass_share_estimate": 0.0,
         "predicted_centroid_log_step": 3.028141142078391,
-        "measured_centroid_log_step": 3.001080119715252,
+        "measured_centroid_log_step": 3.0010801197152515,
         "measured_centroid_inside_window": 1.0
       },
       {
@@ -540,7 +540,7 @@
         "predicted_noise_mass_share": 0.16881959712616107,
         "measured_noise_mass_share_estimate": 0.0684426006328237,
         "predicted_centroid_log_step": 2.931986393932501,
-        "measured_centroid_log_step": 2.971800766248702,
+        "measured_centroid_log_step": 2.9718007662487014,
         "measured_centroid_inside_window": 1.0
       },
       {
@@ -782,5 +782,5 @@
     "max_absolute_difference": 0.0,
     "agrees": true
   },
-  "elapsed_seconds": 248.4
+  "elapsed_seconds": 139.9
 }

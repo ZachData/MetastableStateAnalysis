@@ -309,12 +309,60 @@ class TestPairingNull:
         with pytest.raises(C.ColocationRefused, match="at least two units"):
             _paired([5], [5])
 
-    def test_refuses_when_every_pairing_gives_the_same_statistic(self):
-        """The units then contribute one observation; permuting them is the
-        wrong null and not a conservative one."""
+    def test_refuses_when_one_side_puts_every_change_in_one_interval(self):
+        """The statistic sums over a PERMUTED MULTISET, so a constant on
+        either side makes every pairing reproduce the observation and the
+        attainable floor is 1.000 — EVALUABILITY.md's twenty-first lesson,
+        reached by this arm's own construction."""
         j = [7, 7, 7, 7, 7, 7, 7]
-        with pytest.raises(C.ColocationRefused, match="identical statistic"):
+        with pytest.raises(C.ColocationRefused, match="the same location"):
             _paired(j, j)
+
+    def test_the_constant_side_is_refused_whichever_side_it_is(self):
+        with pytest.raises(C.ColocationRefused, match="on the A side"):
+            _paired([7] * 7, [1, 3, 5, 7, 9, 11, 13])
+        with pytest.raises(C.ColocationRefused, match="on the B side"):
+            _paired([1, 3, 5, 7, 9, 11, 13], [7] * 7)
+
+    def test_the_refusal_does_not_wait_for_the_floats_to_come_out_equal(self):
+        """The case that reaches production, and the reason the check is
+        structural rather than a look at the computed statistic.
+
+        Summation order splits a mathematically constant statistic across
+        two adjacent doubles, so an exact `max == min` test does not fire and
+        the arm returns a p-value determined by the permutation seed. This is
+        the shape of the finished step-54000 relay sweep: every head's change
+        centroid identical because the series is zero at 11 of 12
+        checkpoints, and enough units for the pairing group to be SAMPLED
+        rather than enumerated, which is what introduces the jitter."""
+        n = 12                      # 12! is past the exhaustive limit
+        a = [7] * n                 # constant -> statistic is invariant
+        b = list(range(1, 2 * n, 2))
+        s = SWEEP
+
+        ca = np.array([C.change_profile(s, _step_curve(s, j), "rise")
+                       ["centroid_log_step"] for j in a])
+        cb = np.array([C.change_profile(s, _step_curve(s, j), "rise")
+                       ["centroid_log_step"] for j in b])
+        perms, exhaustive = C._pairing_permutations(n, seed=0)
+        stats = np.array([-np.mean(np.abs(ca - cb[q])) for q in perms])
+        assert not exhaustive, "this case needs the sampled regime"
+        # The premise: mathematically constant, numerically not.
+        assert np.ptp(stats) > 0.0, "no jitter to be fooled by"
+        assert float(stats.max()) != float(stats.min())
+        assert np.ptp(stats) < 1e-12, "the spread is floating-point noise"
+
+        with pytest.raises(C.ColocationRefused, match="the same location"):
+            _paired(a, b)
+
+    def test_a_genuinely_small_effect_is_not_mistaken_for_noise(self):
+        """The tolerance backstop must not swallow a real statistic. These
+        units differ by one grid interval — the smallest difference the
+        statistic can express — and the arm returns rather than refuses."""
+        a = [6, 7, 8, 9, 10, 11, 12]
+        b = [7, 8, 9, 10, 11, 12, 13]
+        arm = _paired(a, b)
+        assert arm["p_value"] is not None
 
     def test_refuses_mismatched_unit_counts(self):
         with pytest.raises(C.ColocationRefused, match="same units on both"):

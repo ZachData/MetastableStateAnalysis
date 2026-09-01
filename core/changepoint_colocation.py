@@ -1197,6 +1197,38 @@ def paired_colocation_arm(steps: Sequence[float],
 
     ca = np.array([p["centroid_log_step"] for p in a], dtype=np.float64)
     cb = np.array([p["centroid_log_step"] for p in b], dtype=np.float64)
+
+    # A null that leaves the statistic invariant is not a weak null; it is a
+    # floor of 1.000 (EVALUABILITY.md, twenty-first lesson). This arm has an
+    # exact way in: -mean|ca - cb[p]| sums over a permuted MULTISET, so if
+    # either side's centroids are all equal the sum is the same for every p
+    # and the null IS the observation.
+    #
+    # Checked structurally here rather than by noticing afterwards that the
+    # statistic came out constant, because noticing afterwards is what
+    # failed. Floating-point summation order splits a mathematically constant
+    # statistic across two adjacent doubles, so the `stats.max() ==
+    # stats.min()` test below does not fire and the arm returns a p-value
+    # that is a function of the permutation SEED and nothing else. Measured
+    # on the finished step-54000 relay sweep, where every head's change
+    # centroid is 3.8664179398591134 because the series is zero at 11 of 12
+    # checkpoints: the statistic spanned 4.4e-16 across 2001 pairings, took
+    # exactly two distinct values, and p ran 0.764 - 0.786 over six seeds.
+    for side, c, direction in (("A", ca, direction_a), ("B", cb, direction_b)):
+        if float(np.ptp(c)) == 0.0:
+            raise ColocationRefused(
+                f"arm {arm_name!r}: every unit on the {side} side puts its "
+                f"change at the same location ({c[0]:.6f} in log10 step, "
+                f"direction {direction!r}). The pairing null then permutes a "
+                f"constant against the other side and every pairing reproduces "
+                f"the observation exactly, so the attainable floor is 1.000 and "
+                f"no input can reject. The {n_units} units contribute one "
+                f"location, not {n_units}. This is a statement about the "
+                f"measurement grid — a series whose change mass falls entirely "
+                f"in one interval has one interval to locate it in — and is "
+                f"fixed by a grid with more than one interval inside the "
+                f"transition, not by more units.")
+
     perms, exhaustive = _pairing_permutations(n_units, seed)
     n_draws = len(perms)
 
@@ -1221,11 +1253,23 @@ def paired_colocation_arm(steps: Sequence[float],
     observed = float(stats[0])          # the identity pairing IS the observation
     if not np.isfinite(observed) or not np.all(np.isfinite(stats)):
         raise ColocationRefused(f"arm {arm_name!r}: a non-finite statistic")
-    if float(stats.max()) == float(stats.min()):
+    # Backstop for invariance the structural check above cannot name, and
+    # deliberately a TOLERANCE rather than exact equality: the exact test
+    # cannot distinguish "constant" from "constant plus summation-order
+    # noise", and it is the second that reaches production. The width is the
+    # floating-point scale of a mean over n_units terms, ~1e-13 at this arm's
+    # magnitudes, which is smaller than any effect the statistic can carry by
+    # ten orders of magnitude.
+    spread = float(stats.max() - stats.min())
+    noise = 16.0 * n_units * float(np.spacing(max(float(np.abs(stats).max()), 1.0)))
+    if spread <= noise:
         raise ColocationRefused(
-            f"arm {arm_name!r}: every pairing gives the identical statistic. "
-            f"The units then contribute one observation and permuting them is "
-            f"the wrong null, not a conservative one.")
+            f"arm {arm_name!r}: every pairing gives the same statistic to "
+            f"within floating-point error (spread {spread:.3e}, numerical "
+            f"noise floor {noise:.3e}). The units then contribute one "
+            f"observation and permuting them is the wrong null, not a "
+            f"conservative one; the p-value such a null returns is determined "
+            f"by the permutation seed and rounding, not by the data.")
 
     p_greater = float(np.sum(stats >= observed) / n_draws) if exhaustive else \
         float((np.sum(stats[1:] >= observed) + 1) / (n_draws))
