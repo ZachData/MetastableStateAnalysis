@@ -40,6 +40,37 @@ from pathlib import Path
 import numpy as np
 
 
+# The suffix this tool gives its in-flight rewrite. Named once because two
+# places need it: `recompress` builds it, and `collect` must EXCLUDE it.
+TMP_SUFFIX = ".recompress-tmp"
+
+
+def collect(roots, pattern: str = "*.npz") -> list:
+    """The files to rewrite, with this tool's own temporaries excluded.
+
+    A run that dies between `np.savez_compressed` and `os.replace` -- a
+    SIGTERM, a full disk, a killed batch -- leaves `<name>.npz.recompress-tmp
+    .npz` beside the original. That name matches `*.npz`, so the NEXT run
+    picked it up as a table to rewrite. Sorted order puts it immediately after
+    the original, whose successful `os.replace` then consumes it, and the run
+    died on `stat()` of a path that no longer existed. Observed on 2026-09-03
+    against stale_float32: it aborted the batch after step16, leaving step4
+    untouched with no indication which files had been skipped.
+
+    Excluding them here rather than deleting them: a leftover temp is evidence
+    that a run was interrupted, and this tool is not the thing that should
+    decide to discard it.
+    """
+    files: list[Path] = []
+    for root in roots:
+        root = Path(root)
+        if root.is_file():
+            files.append(root)
+        else:
+            files.extend(sorted(root.rglob(pattern)))
+    return [f for f in files if TMP_SUFFIX not in f.name]
+
+
 def is_compressed(path: Path) -> bool:
     """True when every member is deflated. A file with no members is not a
     table and is left alone."""
@@ -65,7 +96,14 @@ def arrays_equal(a: np.ndarray, b: np.ndarray) -> bool:
 
 
 def recompress(path: Path, dry_run: bool = False) -> dict:
-    before = path.stat().st_size
+    # Listing and rewriting are separated in time, so a file can be gone by the
+    # time its turn comes. Report it and carry on: aborting the batch here
+    # leaves every later file unprocessed and says nothing about which.
+    try:
+        before = path.stat().st_size
+    except FileNotFoundError:
+        return {"path": path, "status": "vanished before rewrite",
+                "before": 0, "after": None}
     if is_compressed(path):
         return {"path": path, "status": "already", "before": before,
                 "after": before}
@@ -75,7 +113,7 @@ def recompress(path: Path, dry_run: bool = False) -> dict:
     src = np.load(path, allow_pickle=False)
     payload = {k: src[k] for k in src.files}
 
-    tmp = path.with_suffix(".npz.recompress-tmp")
+    tmp = path.with_suffix(".npz" + TMP_SUFFIX)
     t0 = time.time()
     try:
         np.savez_compressed(tmp, **payload)
@@ -113,12 +151,7 @@ def main(argv=None) -> int:
     ap.add_argument("--pattern", default="*.npz")
     args = ap.parse_args(argv)
 
-    files: list[Path] = []
-    for root in args.roots:
-        if root.is_file():
-            files.append(root)
-        else:
-            files.extend(sorted(root.rglob(args.pattern)))
+    files = collect(args.roots, args.pattern)
     if not files:
         print("no .npz files found", file=sys.stderr)
         return 1
