@@ -348,9 +348,23 @@ small; `phase3` is referenced from `archive/`.
   **item 13** (the forward pass runs under bf16 autocast).
 * **`real_frac`/`imag_frac` are NaN in every row of every table** — deliberate
   and correctly recorded (`rotational_channel: "absent"` in the manifest), not a
-  silent gap. Two open questions: does any registered prediction need the
-  rotational channel, and if none does, are those columns schema no producer
-  fills and no consumer reads? `p7_io.rotational_channel_from_blocks` is the seam.
+  silent gap. **Both open questions answered 2026-09-04, nothing changed in
+  code.** No registered prediction needs the rotational channel: `P-I2` names
+  only the sign channel (`U_pos`), and `P-I1`/`P-I3`/`P-I4` don't reference
+  `real_frac`/`imag_frac` at all. And no consumer reads them for a computation —
+  grepped across every `.py` file: `run_7.py` writes the NaN, `p7_io.py` is the
+  seam that would fill it (`rotational_channel_from_blocks`, unwired), and
+  `core/interactions.py` / `core/artifacts.py` only carry the schema and
+  validation. None of `motif_stats.py`, `formation_gate.py`,
+  `formation_curve.py`, `cross_head_gate.py`, `patching_gate.py`, `events.py` or
+  `motif_alphabet.py` touch either column. (`core/dual_reading.py` computes
+  fields with the same names but is an unrelated per-particle primitive from an
+  earlier phase, not a Phase 7 consumer.) So the columns are exactly what §6
+  asked whether they were: schema nothing fills and nothing reads. Left as is —
+  removing them would touch `InteractionTable`'s hashed schema for a channel
+  Phase 2b's `extract_schur_blocks` could still wire in later, and no registered
+  prediction is asking for the removal either. `p7_io.rotational_channel_from_blocks`
+  stays the seam if that changes.
 * **The phase-7 manifest records no library versions.** §1's first trap is the
   argument for adding them; not done, because it changes the manifest schema and
   every record that hashes it.
