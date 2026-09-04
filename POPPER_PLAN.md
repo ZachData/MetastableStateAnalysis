@@ -3688,6 +3688,68 @@ what `P-I1`'s unit is, which is what fixing the dense-axis refusal properly
 would require. And it does not touch the centroid de-biasing decision §6o left
 open.
 
+## 6u. `P-I1`'s behavioural arm, measured over the sweep (2026-09-03)
+
+`tools/run/behavioural.py` -> `data/analysis/behavioural_series.json`, the
+sibling of `curve.py`. §6t's "it does not compute the behavioural arm" is the
+one piece of `P-I1` that was runnable without an author decision — `PROJECT.md`
+§3.5 — and it is now run. Every B-side number in the floor record was synthetic
+(`b_side_is_synthetic: True`); this is the real one.
+
+**The score.** `formation_curve.behavioural_induction_score` — mean post-softmax
+attention on a prompt's induction pairs, per (layer, head), read from
+`attentions.npz` and not from the interaction table's `weight` column, for the
+reason `formation_curve.py`'s docstring gives: the table is force-thinned and
+averaging over it would make the two arms share a selection step. The pairs are
+`induction_candidates` on the prompt's ids, the same call `run_7.py` makes, so
+A and B see one pair set. Tokenisation is reproduced from `EleutherAI/
+pythia-410m` (revision-independent) truncated to the attention width, and
+verified token-for-token against each run's `tokens.txt` — a mismatch is fatal,
+because it would index the pairs against a different tokenisation than the
+tensor.
+
+**The cross-prompt convention — registered by the author 2026-09-03: "mirror
+the relay side".** `curve.py` pools relay counts across the seven
+non-`repeated_tokens` prompts and carries a `repeated_tokens`-included series
+beside it, never scored (§5.1 decision 4). The B arm does the same: all
+induction pairs from the seven prompts pooled, the per-head score the mean over
+that pooled set — pair-count weighted, as a pooled count is —
+`series_incl_repeated` beside it. `induction_candidates` is token-identity
+based, so the pooled pair count is a property of the prompt, not the checkpoint:
+**10,618** pairs (44,809 with `repeated_tokens`), asserted constant across all
+19 steps as a tokenisation-drift tripwire.
+
+**What it shows.** Steps 0–128 are flat: every head's pooled induction-pair
+attention sits at ~0.0043–0.0047, i.e. `≈ 1/n_tokens`, uniform — no head
+attends to induction pairs preferentially before formation. First rise at step
+512→1000 (peak head 0.0075 → 0.0107). Sharp climb 2000–8000: L7H8 peaks at
+**0.0368 at step 4000**, then L6H0 takes over and peaks at **0.0306 at step
+16000**. Heads more than 2× over baseline: 0 through step 128, 8 at step 1000,
+**14 at step 8000**, settling to 9 at step 143000.
+
+**It is not monotone, and in the same shape as the relay side (§2).** The
+leaders recede while the signal spreads: L7H8 falls 0.0368 → 0.0160 from step
+4000 to 143000, L6H0 falls 0.0306 → 0.0247 from step 16000, and the elevated-
+head count drops from 14 to 9 — the raw peak declining while the population
+carrying the behaviour stays broad, which is the `54000 → 143000` relay-count
+decline reached from the B side. A relay-count null (§3.4) that describes a
+series peaking between 54000 and 143000 has a B-side counterpart peaking earlier
+still, around 4000–16000.
+
+**The falsifier's second half — the endpoint precondition — is clean either
+way.** `EVALUABILITY.md`: "motif already above nulls at step 0, or absent at
+step 143000 despite a high behavioural score". At step 0 all 384 heads are at
+the uniform baseline (max 0.0046, 0 elevated). At step 143000, 7–9 heads are
+clearly elevated (L6H0 0.0247, L2H10 0.0197), so a relay side that is absent
+there would be the falsifier's second disjunct and not a scoring question.
+
+**What this did not do.** It produces no p-value: that is blocked on §3.1 (the
+scored head axis) and §3.4 (the relay-count null's shape), neither startable
+from the code. It does not wire the series into the gate or into `curve.json`
+(§7.1: `curve.json` is the file that gets diffed). It leaves the A/B
+co-location — B leads A by an interval or two on inspection — for the gate that
+cannot yet run.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication

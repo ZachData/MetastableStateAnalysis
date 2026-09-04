@@ -233,13 +233,30 @@ a series that peaks between 54000 and 143000 rather than a monotone rise.
 Relays per induction pair spans 45 to 133 across the battery, and that residue is
 where a formation signal would have to live.
 
-### 3.5 Also not done: the behavioural arm
+### 3.5 Done: the behavioural arm over the sweep
 
-`behavioural_induction_score` reads phase-1 `attentions.npz` per prompt per
-checkpoint and has never been run over the sweep. Every relay-side number above
-is measured on the 19 tables; the B side in the floor record is synthetic, and is
-sound only because `paired_colocation_arm` profiles the A side first — which the
-record checks rather than assumes.
+`tools/run/behavioural.py` → `data/analysis/behavioural_series.json`, run
+2026-09-03 (`POPPER_PLAN.md` §6u). Pooled mean post-softmax attention on
+induction pairs per (layer, head) per checkpoint, on the same pair set `run_7.py`
+types the A side with, tokenisation verified token-for-token against each run's
+`tokens.txt`. Cross-prompt convention registered by the author: **mirror the
+relay side** — pool the seven non-`repeated_tokens` prompts, carry the
+eight-prompt series beside it, never scored. **10,618** pooled pairs (44,809 with
+`repeated_tokens`), asserted constant across all 19 steps.
+
+The result: flat at `≈ 1/n_tokens` through step 128 (0 heads elevated), first
+rise at 512→1000, sharp climb 2000–8000 — L7H8 peaks **0.0368 at step 4000**,
+L6H0 peaks **0.0306 at step 16000**. **Non-monotone in the §2 shape**: leaders
+recede (L7H8 → 0.0160, L6H0 → 0.0247 by 143000) while the elevated-head count
+runs 0 → 14 (step 8000) → 9. Endpoint precondition clean both ends: step 0 all
+384 heads at baseline, step 143000 has 7–9 heads clearly elevated. B leads A by
+an interval or two on inspection; the co-location itself needs the gate, which is
+blocked on §3.1 and §3.4.
+
+The B side in `claims/audits/p_i1_attainable_floor.json` is still synthetic —
+that record predates this run and its floor arithmetic does not depend on the B
+values (`paired_colocation_arm` profiles the A side first). Rewiring the floor
+record to the measured B series is a follow-up, not a correction.
 
 ---
 
@@ -349,6 +366,10 @@ export HF_HOME=$PWD/data/hf METS_RESULTS_DIR=$PWD/data/phase12 HF_HUB_OFFLINE=1
 bash tools/run/sweep.sh     # resumable; all 19 steps present, so it is a no-op
 python tools/run/curve.py   # ~2:43, writes data/analysis/curve.json AND
                             # data/analysis/formation_series.json
+
+python3 -m tools.run.behavioural --write    # ~1:06, reads 19x8 attentions.npz,
+                                            # writes data/analysis/behavioural_series.json
+python3 -m tools.run.behavioural --check    # structural checks on the written series
 
 python3 -m tools.p_i1_attainable_floor --write     # ~0.2 s, needs the series
 python3 -m tools.p_i1_attainable_floor --check     # needs no data
