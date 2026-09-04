@@ -186,9 +186,40 @@ def _pair_types(targets: np.ndarray, sources: np.ndarray,
     return out
 
 
+def prompt_row_indices(t: InteractionTable) -> Dict[str, np.ndarray]:
+    """
+    Row indices for each `prompt_key` in `t`, computed once.
+
+    This is the expensive part of every replicate if it is redone inside
+    one: `prompt_key` is a string column, and hashing or comparing it over
+    every row of a ~19M-edge battery table costs ~1.5-2s BY ITSELF — measured
+    directly, not estimated, and it does not depend on the random draw at
+    all. `null_envelope` computes this once per checkpoint and passes it to
+    every replicate; a bare call to `shuffle_replicate` (as the tests use)
+    computes it internally and pays that cost once per call, which is fine
+    at test scale and wrong at 19M edges x 100 replicates.
+    """
+    prompts = t.columns["prompt_key"]
+    order = np.argsort(prompts, kind="stable")
+    sorted_p = prompts[order]
+    if len(order) == 0:
+        return {}
+    bounds = np.flatnonzero(sorted_p[1:] != sorted_p[:-1]) + 1
+    idx_groups = np.split(order, bounds)
+    name_groups = np.split(sorted_p, bounds)
+    # `name_groups[i][0]` is a position IN THE SORTED array, unlike
+    # `idx_groups[i][0]` which is an ORIGINAL row index -- indexing `sorted_p`
+    # with the latter was the bug this replaced (caught by
+    # `TestShuffleReplicate::test_two_prompts_do_not_leak_positions_into_
+    # each_other`, which failed silently correct-looking otherwise).
+    return {str(names[0]): idx for idx, names in zip(idx_groups, name_groups)}
+
+
 def shuffle_replicate(t: InteractionTable,
                       contexts: Dict[str, PromptNullContext],
-                      rng: np.random.Generator) -> InteractionTable:
+                      rng: np.random.Generator,
+                      *,
+                      row_indices: Optional[Dict[str, np.ndarray]] = None) -> InteractionTable:
     """
     One null replicate of `t`.
 
@@ -199,6 +230,11 @@ def shuffle_replicate(t: InteractionTable,
     `layer`, `head`, and the entire force-derived payload travel with the
     row they started on, unchanged.
 
+    `row_indices` is `prompt_row_indices(t)`, computed once and reused
+    across many calls by a caller that knows it is about to run many
+    replicates of the SAME table (`null_envelope` does this); left `None`
+    it is computed here, once per call.
+
     Refuses rather than silently mis-shuffling when a prompt in `t` has no
     entry in `contexts`, or when a head's retained edge count exceeds its
     prompt's pool size (retention promising more edges than the prompt has
@@ -206,9 +242,8 @@ def shuffle_replicate(t: InteractionTable,
     """
     c = t.columns
     n = len(t)
-    prompts = c["prompt_key"]
-    table_prompts = set(np.unique(prompts).tolist())
-    missing = table_prompts - set(contexts)
+    row_idx = prompt_row_indices(t) if row_indices is None else row_indices
+    missing = set(row_idx) - set(contexts)
     if missing:
         raise RelayNullRefused(
             f"no PromptNullContext for {sorted(missing)}; every prompt in "
@@ -219,21 +254,26 @@ def shuffle_replicate(t: InteractionTable,
     layers = c["layer"]
     heads = c["head"]
 
-    for p in sorted(table_prompts):
+    for p, idx in row_idx.items():
         ctx = contexts[p]
-        pmask = prompts == p
-        idx = np.flatnonzero(pmask)
         # Group within this prompt's context, matching `_context_ids`'
         # own scoping (`motif_alphabet.py`) — the shuffle must respect the
         # same boundary the real join does, or a position collision across
         # prompts would read as a relay exactly as commit f7e95bc's finding
-        # describes for the unshuffled table.
+        # describes for the unshuffled table. argsort+split rather than
+        # `np.unique`, which measured slower on this column's actual value
+        # distribution than the sort it would otherwise do internally.
         lh = (layers[idx].astype(np.int64) * 4096 + heads[idx].astype(np.int64))
-        for g in np.unique(lh):
-            gm = idx[lh == g]
+        order = np.argsort(lh, kind="stable")
+        sorted_idx = idx[order]
+        sorted_lh = lh[order]
+        bounds = np.flatnonzero(sorted_lh[1:] != sorted_lh[:-1]) + 1
+        for gm in np.split(sorted_idx, bounds):
             k = len(gm)
+            if k == 0:
+                continue
             if k > ctx.pool_size:
-                l_val, h_val = divmod(int(g), 4096)
+                l_val, h_val = int(layers[gm[0]]), int(heads[gm[0]])
                 raise RelayNullRefused(
                     f"{p!r} layer {l_val} head {h_val}: {k} retained edges "
                     f"but the causal pool for {ctx.n_tokens} tokens holds "
@@ -247,10 +287,8 @@ def shuffle_replicate(t: InteractionTable,
     new_cols["source"] = new_source
     new_cols["offset"] = new_target - new_source
     pair_type = np.empty(n, dtype="<U12")
-    for p in sorted(table_prompts):
-        pmask = prompts == p
-        pair_type[pmask] = _pair_types(new_target[pmask], new_source[pmask],
-                                       contexts[p])
+    for p, idx in row_idx.items():
+        pair_type[idx] = _pair_types(new_target[idx], new_source[idx], contexts[p])
     new_cols["pair_type"] = pair_type
     return InteractionTable(columns=new_cols, extra=dict(t.extra),
                             retention=t.retention)
@@ -281,10 +319,15 @@ def null_envelope(t: InteractionTable,
             f"standard deviation to mean anything")
     from .formation_curve import per_head_relay_strength
 
+    # Computed once and reused across every replicate: it is a property of
+    # `t` alone, not of any draw, and is the single most expensive step in
+    # `shuffle_replicate` if it is redone inside one (see its docstring).
+    row_idx = prompt_row_indices(t)
+
     rng = np.random.default_rng(seed)
     per_rep: List[Dict[tuple, float]] = []
     for _ in range(n_replicates):
-        shuf = shuffle_replicate(t, contexts, rng)
+        shuf = shuffle_replicate(t, contexts, rng, row_indices=row_idx)
         per_rep.append(per_head_relay_strength(shuf, relay_owner))
 
     all_heads = set(heads) if heads is not None else set()
