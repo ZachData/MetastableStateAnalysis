@@ -1273,6 +1273,13 @@ def pairing_floor_report(ca: np.ndarray, cb: np.ndarray, n_draws: int,
     }
 
 
+#: The one `change_profile` refusal a per-unit skip may absorb. Matched on
+#: this exact substring, deliberately, rather than on any `ColocationRefused`
+#: from that call: a shape mismatch or a non-finite value is a data error and
+#: must still propagate, not be silently counted as "no rise".
+_NO_RISE_MARKER = "there is no location to measure"
+
+
 def paired_colocation_arm(steps: Sequence[float],
                           series_a: Sequence[Sequence[float]],
                           direction_a: str,
@@ -1282,7 +1289,8 @@ def paired_colocation_arm(steps: Sequence[float],
                           alpha: float,
                           unit_name: str,
                           arm_name: str,
-                          seed: int = _SEED) -> dict:
+                          seed: int = _SEED,
+                          skip_no_rise: bool = False) -> dict:
     """
     Do A's change locations and B's change locations co-locate, unit by unit,
     more than an arbitrary pairing of the same two populations allows?
@@ -1291,10 +1299,46 @@ def paired_colocation_arm(steps: Sequence[float],
     CLAIM-B, head for P-I1), both sampled at `steps`. The statistic is the mean
     over units of minus the log10-step distance between the two change
     centroids; the null repairs A's units with B's under a permutation.
+
+    `skip_no_rise` -- default False, which is CLAIM-B's unchanged behaviour --
+    lets a unit whose A series OR B series has no rise anywhere (`change_
+    profile`'s "no location to measure" refusal) be DROPPED rather than take
+    the whole arm down with it. This is PROJECT.md §3.1's fix, half of it: a
+    dense head axis zero-fills the relay side for every head that never
+    carries a relay, and with no per-unit skip `paired_colocation_arm`
+    refused on the first one of those regardless of how many other heads had
+    a real, locatable rise on both sides. `n_skipped_no_rise` is reported in
+    the returned dict either way, and named in every refusal this function
+    can still raise afterward, so a reader is never left inferring from a
+    count of zero units what was silently dropped.
+
+    False preserves the exact prior code path -- both list comprehensions run
+    to completion or the first one to fail raises immediately -- so CLAIM-B,
+    which never opts in, is untouched byte-for-byte.
     """
     s = _checked_steps(steps)
-    a = [change_profile(s, v, direction_a) for v in series_a]
-    b = [change_profile(s, v, direction_b) for v in series_b]
+    if not skip_no_rise:
+        a = [change_profile(s, v, direction_a) for v in series_a]
+        b = [change_profile(s, v, direction_b) for v in series_b]
+        n_skipped_no_rise = 0
+    else:
+        if len(series_a) != len(series_b):
+            raise ColocationRefused(
+                f"{len(series_a)} units on the A side against {len(series_b)} "
+                f"on the B side; the pairing null needs the same units on both")
+        a, b = [], []
+        n_skipped_no_rise = 0
+        for va, vb in zip(series_a, series_b):
+            try:
+                pa = change_profile(s, va, direction_a)
+                pb = change_profile(s, vb, direction_b)
+            except ColocationRefused as exc:
+                if _NO_RISE_MARKER in str(exc):
+                    n_skipped_no_rise += 1
+                    continue
+                raise
+            a.append(pa)
+            b.append(pb)
     if len(a) != len(b):
         raise ColocationRefused(
             f"{len(a)} units on the A side against {len(b)} on the B side; the "
@@ -1302,9 +1346,11 @@ def paired_colocation_arm(steps: Sequence[float],
     n_units = len(a)
     if n_units < 2:
         raise ColocationRefused(
-            f"the pairing null needs at least two units; got {n_units}. With one "
-            f"unit there is one pairing, the null is the observation, and the "
-            f"only expressible p is 1.0.")
+            f"the pairing null needs at least two units; got {n_units}"
+            + (f" after skipping {n_skipped_no_rise} with no rise on either "
+               f"side" if n_skipped_no_rise else "") +
+            f". With one unit there is one pairing, the null is the "
+            f"observation, and the only expressible p is 1.0.")
 
     ca = np.array([p["centroid_log_step"] for p in a], dtype=np.float64)
     cb = np.array([p["centroid_log_step"] for p in b], dtype=np.float64)
@@ -1359,18 +1405,21 @@ def paired_colocation_arm(steps: Sequence[float],
     # owns both halves and says which binds.
     fl = pairing_floor_report(ca, cb, n_draws, alpha, exhaustive)
     floor = fl["attainable_floor"]
+    _skip_clause = (f" ({n_skipped_no_rise} unit(s) already dropped for no "
+                    f"rise on either side)" if n_skipped_no_rise else "")
     if not fl["sufficient"]:
         if fl["binds"] == "draws":
             raise ColocationRefused(
                 f"arm {arm_name!r}: attainable floor {floor:.4f} exceeds "
-                f"alpha={alpha}. With {n_units} units there are only "
-                f"{n_draws} distinct pairings, so this arm cannot reject on a "
-                f"perfect result and 'not significant' would be a statement "
-                f"about the design and not about the data.")
+                f"alpha={alpha}. With {n_units} units{_skip_clause} there are "
+                f"only {n_draws} distinct pairings, so this arm cannot reject "
+                f"on a perfect result and 'not significant' would be a "
+                f"statement about the design and not about the data.")
         raise ColocationRefused(
             f"arm {arm_name!r}: attainable floor {floor:.4f} exceeds "
             f"alpha={alpha}, and what binds is TIES rather than draws: the "
-            f"{n_units} units carry {fl['n_distinct_locations_a']} distinct "
+            f"{n_units} units{_skip_clause} carry "
+            f"{fl['n_distinct_locations_a']} distinct "
             f"locations on the A side and {fl['n_distinct_locations_b']} on "
             f"the B side, so every pairing ties a coset of order "
             f"10^{fl['log10_tying_subgroup_order']:.3g} out of "
@@ -1414,6 +1463,7 @@ def paired_colocation_arm(steps: Sequence[float],
         "shared_unit_factor_diagnostic": _shared_unit_factor_diagnostic(ca, cb),
         "unit": unit_name,
         "n_units": n_units,
+        "n_skipped_no_rise": n_skipped_no_rise,
         "observed": observed,
         "mean_distance_log_step": -observed,
         "p_value": p_greater,

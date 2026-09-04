@@ -389,6 +389,106 @@ class TestPairingNull:
         assert d2["centroid_rank_corr_a_vs_b"] == pytest.approx(1.0)
 
 
+def _flat(steps):
+    """A series with no rise anywhere -- `change_profile`'s "no location to
+    measure" refusal, the one `skip_no_rise` is allowed to absorb."""
+    return [0.0] * len(steps)
+
+
+class TestPairedColocationArmSkipNoRise:
+    """
+    PROJECT.md §3.1's fix, the arm's half. A dense head axis zero-fills the
+    relay side for every head that never carries a relay, and with no
+    per-unit skip the FIRST such head took the whole gate down with it
+    (`tests/test_p_i1_attainable_floor.py::TestTheDenseAxisCannotBeScored`
+    pins that as it stands). `skip_no_rise=False` is the default and must
+    reproduce the untouched behaviour exactly, because CLAIM-B never opts in.
+    """
+
+    def test_default_is_unchanged_and_still_refuses_on_a_flat_unit(self):
+        j = [1, 5, 11, 17, 21]
+        a = [_step_curve(SWEEP, x) for x in j]
+        b = [_step_curve(SWEEP, x) for x in j]
+        a[2] = _flat(SWEEP)                     # one flat unit, A side
+        with pytest.raises(C.ColocationRefused, match="no rise anywhere"):
+            C.paired_colocation_arm(SWEEP, a, "rise", b, "rise", alpha=0.05,
+                                    unit_name="head", arm_name="mutual")
+
+    def test_skip_drops_exactly_the_flat_units_and_reports_the_count(self):
+        j = [1, 5, 11, 17, 21, 3, 9]
+        a = [_step_curve(SWEEP, x) for x in j]
+        b = [_step_curve(SWEEP, x) for x in j]
+        a[2] = _flat(SWEEP)                     # flat on A
+        b[5] = _flat(SWEEP)                     # flat on B, a different unit
+        res = C.paired_colocation_arm(SWEEP, a, "rise", b, "rise", alpha=0.05,
+                                      unit_name="head", arm_name="mutual",
+                                      skip_no_rise=True)
+        assert res["n_skipped_no_rise"] == 2
+        assert res["n_units"] == len(j) - 2
+        # The surviving units are exactly the identity pairing on the
+        # untouched jumps, so a perfect result still lands on the floor.
+        assert res["p_value"] == pytest.approx(res["attainable_floor"])
+
+    def test_all_flat_reduces_to_the_pre_existing_single_unit_refusal(self):
+        j = [1, 5, 11]
+        a = [_step_curve(SWEEP, x) for x in j]
+        a[0] = _flat(SWEEP)
+        a[1] = _flat(SWEEP)
+        with pytest.raises(C.ColocationRefused,
+                           match="at least two units.*after skipping 2"):
+            C.paired_colocation_arm(SWEEP, a, "rise", a, "rise", alpha=0.05,
+                                    unit_name="head", arm_name="mutual",
+                                    skip_no_rise=True)
+
+    def test_the_skip_count_is_named_in_a_floor_refusal_too(self):
+        # After the flat unit is dropped, 5 units remain with 4 tied at "1"
+        # and one at "5" -- tie floor 4!/5! = 0.2, above alpha -- so the
+        # arm still refuses, and the refusal must say a unit was skipped.
+        j = [1, 1, 1, 1, 5]
+        a = [_step_curve(SWEEP, x) for x in j]
+        a.append(_flat(SWEEP))
+        with pytest.raises(C.ColocationRefused,
+                           match=r"attainable floor.*already dropped for no rise"):
+            C.paired_colocation_arm(SWEEP, a, "rise", a, "rise", alpha=0.05,
+                                    unit_name="head", arm_name="mutual",
+                                    skip_no_rise=True)
+
+    def test_mismatched_lengths_still_refuse_loudly_rather_than_truncating(self):
+        """
+        `zip` truncates silently; the skip path must not inherit that. A
+        length mismatch is an input error regardless of skip_no_rise.
+        """
+        a = [_step_curve(SWEEP, j) for j in (1, 5, 9, 13, 17)]
+        b = [_step_curve(SWEEP, j) for j in (1, 5, 9, 13)]
+        with pytest.raises(C.ColocationRefused, match="same units on both"):
+            C.paired_colocation_arm(SWEEP, a, "rise", b, "rise", alpha=0.05,
+                                    unit_name="layer", arm_name="mutual",
+                                    skip_no_rise=True)
+
+    def test_a_non_finite_series_still_propagates_rather_than_being_skipped(self):
+        """
+        The skip is scoped to exactly ONE `change_profile` refusal -- "no
+        location to measure" -- not to every ColocationRefused that call can
+        raise. A non-finite value is a data error and must still surface.
+        """
+        j = [1, 5, 11, 17, 21]
+        a = [_step_curve(SWEEP, x) for x in j]
+        a[2] = [float("nan")] * len(SWEEP)
+        with pytest.raises(C.ColocationRefused, match="non-finite"):
+            C.paired_colocation_arm(SWEEP, a, "rise", a, "rise", alpha=0.05,
+                                    unit_name="head", arm_name="mutual",
+                                    skip_no_rise=True)
+
+    def test_zero_skipped_reports_as_zero_not_as_absent(self):
+        j = [1, 5, 11, 17, 21]
+        a = [_step_curve(SWEEP, x) for x in j]
+        res = C.paired_colocation_arm(SWEEP, a, "rise", a, "rise", alpha=0.05,
+                                      unit_name="head", arm_name="mutual",
+                                      skip_no_rise=True)
+        assert res["n_skipped_no_rise"] == 0
+        assert res["n_units"] == len(j)
+
+
 # ---------------------------------------------------------------------------
 # The anchor arm, whose floor is the one likely to bind
 # ---------------------------------------------------------------------------
