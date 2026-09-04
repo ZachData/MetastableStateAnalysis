@@ -1284,3 +1284,113 @@ intervention, or how quiet the measurement is.
 Still none of which any existing sweep satisfies — and `P-I3`'s is the first
 that a sweep cannot satisfy at all, because it is a requirement on the
 classification criterion rather than on the run.
+
+## `P-I1`'s floor, computed before its null: a design that cannot express a p, and a floor with a half missing (2026-09-03)
+
+`tools/p_i1_attainable_floor.py` ->
+`claims/audits/p_i1_attainable_floor.json`, with
+`core.changepoint_colocation.pairing_floor_report` behind it,
+`POPPER_PLAN.md` §6t. **Eleven predictions are adjudicable in principle and
+`claims/adjudications/` is still empty.**
+
+Fourth row worked in the order this document prescribes — floor, then what the
+statistic degenerates on, then the measurement grid, then the control — after
+`P-AB1` (§6q), `CLAIM-B`'s grid (§6r) and `P-I3` (§6s). It is the first applied
+to a control that **does not exist yet**: `P-I1`'s relay-count null has never
+been built, `HANDOFF.md` §5 records its shape as the author's decision, and
+steps 2 and 3 were done on 2026-09-01 with step 1 left. `P-I1` is **not
+converted** by this pass and stays `needs-null`.
+
+**Thirty-third lesson, and it is the floor lesson arriving at a design that
+cannot express a p at all.** *Before asking how small a p a design can return,
+check that it can return one — and the answer can be no for a reason that is a
+property of the axis rather than of the data.* `formation_curve_payload` takes
+its head axis from the behavioural series, dense over all 384 heads, and
+zero-fills the relay side; `paired_colocation_arm` profiles every unit with **no
+per-unit skip**; `change_profile` refuses a series with no rise. On the real
+sweep 116 heads carry relays and **268 never do**, so the gate returns no
+p-value at all, and its message — *"the series has no rise anywhere in the
+sweep"* — names no arm, no head and no unit count. The same input on the 116
+forming heads emits. What that costs is not a p-value at the wrong number; it is
+the absence of one, attributed to a series that is fine.
+
+**Thirty-fourth, and it is the strongest evidence yet FOR the order, because it
+is a lesson this repository already had.** *A null that leaves the statistic
+partly invariant has a floor the draw count cannot reach, and the two halves can
+sit two units apart.* The pairing statistic is `-mean|ca - cb[p]|`; permuting
+units within a class of equal locations leaves it exactly unchanged, so every
+pairing ties a coset of order `prod(m!)` and no input can express a p below
+`prod(m!)/n!`. Measured on the registered 19-step grid with nine of ten units
+sharing one location: reported floor **0.000500**, attainable **0.100000** — a
+factor of **200**, above α, emitted with no refusal. Seven of ten tied is
+0.00139 and emits legitimately. `p7_motifs/steering_gate.py` has carried
+`draw_count_floor` beside `best_attainable_p` since §6m, with a test named
+`test_the_attainable_floor_is_set_by_ties_and_not_by_the_draw_count` pinning it,
+and **the shared estimator two gates over did not have it**. Nothing about
+finding it needed data; it needed someone to run the floor step.
+
+**Thirty-fifth, and it is §6o's rule at a fourth entry with the answer "not
+yet".** *When the control does not exist, the floor is a constraint ON it, and
+that is the entire reason for computing it first.* A relay-count null turns the
+series into an above-null excess, and a head whose excess stops rising leaves
+the scored set — so the null chooses `n_units`, and `n_units` with the tie
+structure chooses the floor. The draw-count half needs four heads; the tie half
+needs `k!/n! ≤ α` for the largest surviving class k, and is **not monotone in
+n** (`k = n − 1` gives exactly `1/n`, so all-but-one-tied clears 0.05 at twenty
+survivors and fails at nineteen). Both are computable with no null built and no
+draw taken.
+
+| entry | statistic | the quantity it degenerates on | matched on it? |
+|---|---|---|---|
+| `P6-R4` | one subspace against matched controls | subspace dimension | **yes**, by construction |
+| `P-AB1` | one exponent against a control at the same point | the fit window | **yes**, by pairing |
+| `CLAIM-B` anchor | one location against a fixed window | where the grid puts an unlocated profile | **no** (§6o) |
+| `P-I3` correlation | one within-group correlation against another | the within-group score spread | **cannot be**, the classification sets it |
+| `P-I1` mutual | two locations paired unit by unit | how many DISTINCT locations the grid resolves | **not yet** — the null that sets it is unbuilt |
+
+**And one thing the pass declined to do, recorded because declining is a
+decision.** Reducing the axis to the forming heads, or giving the arm a
+per-unit skip with a count reported, would both make the gate return a number.
+Both change what `P-I1`'s **unit** is, and `PREDICTIONS.md`'s first Phase 7
+adjudication constraint fixes the unit at the head. So the diagnosability gap is
+pinned as it is, in a test that says so, and the choice goes to the author with
+the measurement beside it — §6r's and §6s's shape, a third time.
+
+### Which rows are next
+
+Unchanged from §6s. `P-I1` is not on it: it was already `needs-null` and this
+pass did not convert it.
+
+| row | claim | status | relevance | what its null needs |
+|---|---|---|---|---|
+| `P-I2` | H-BRIDGE | active | 1.0 | two-sample channel mass between edge types, against the N1/N2 nulls `motif_stats.py` already gates on |
+| `P-I4` | H-BRIDGE | active | 1.0 | matched-magnitude control on `moved_fraction`; permutation over which edges are labelled motif edges |
+| `P-I5` | H-BRIDGE | active | 1.0 | permutation over a matched-magnitude random-direction ablation, on a **joint two-dimensional** statistic |
+| `P-SA1` | H-BRIDGE | active | 0.8 | random-subspace null of matched dimension; instrument frozen |
+
+### What the pilot must produce, after thirteen
+
+Eleven requirements. The new one constrains something none of the previous ten
+did — **how aggressive the control may be**, rather than what is measured, where
+it is sampled, how it is clustered, how large the run is, the ablation grid, the
+intervention, how quiet the measurement is, or how the arms are defined.
+
+| claim | requirement | constrains |
+|---|---|---|
+| `CLAIM-B` | 19 control series | what the sweep measures |
+| `CLAIM-B` | the registered sweep `(1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)`, chosen 2026-08-28 from the computed set | which checkpoints it samples |
+| `CLAIM-B` | a σ/R and a change width that the chosen grid's retention curve still supports | how quiet the measurement is |
+| `CLAIM-C` | ≥ 23% of candidate cells dissenting in sign, and ≥ 5 prompts whose usable metrics do not split evenly | what the contrast looks like |
+| `P-ST1` | dim `U_pos` comparable to the dimension the population occupies | the projector's shape |
+| `P-T1` / `P-M1` | enough heads, and enough layers or violations, for the design floor to clear α | how large the run is |
+| `P-S1` | both arms clustered to the same count | how the run is clustered |
+| `P-AB1` | six informative units, an ODD number of ablation points per prompt, and `n + W ≤ L` | the ablation grid |
+| `P-AB1` | an ablation magnitude and fit window keeping BOTH arms inside the power-law regime | the intervention itself |
+| `P-I3` | a head classification that is NOT a cutoff on the behavioural induction score — ≥ 2 induction heads with two control heads below and two above them, within their own layer | how the two arms are defined |
+| `P-I1` | a relay-count null leaving ≥ 4 heads with a rising above-null excess, and among them no more than k sharing one change location (k tabulated in `POPPER_PLAN.md` §6t) | **how aggressive the control may be** |
+
+Still none of which any existing sweep satisfies. `P-I3`'s is a requirement on
+the classification criterion and `P-I1`'s is a requirement on the **null**,
+which is the first of either kind: it is not satisfiable or unsatisfiable by a
+run at all, and it is checkable the moment the null is written and before it is
+used.

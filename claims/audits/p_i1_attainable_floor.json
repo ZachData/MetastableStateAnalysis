@@ -1,0 +1,564 @@
+{
+  "schema_version": 1,
+  "_what_this_is": "step 1 of EVALUABILITY.md's order \u2014 the attainable floor \u2014 for P-I1's relay-count null, run before the control exists.",
+  "generated_utc": "2026-09-04T03:08:54Z",
+  "seed": 20260824,
+  "alpha": 0.05,
+  "registered_sweep": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1000,
+    2000,
+    4000,
+    8000,
+    16000,
+    32000,
+    54000,
+    143000
+  ],
+  "registered_relay_owner": "matcher",
+  "construction_sha256": "82c79cf962a10f5ec4185a77844daf1b932abed50868d0a484a432633fe9a6ed",
+  "formation_gate_sha256": "ab5ca7d3f24e98f509ba87a851f515eeb318f4cded7e01041062bb85b23f8d4f",
+  "formation_curve_sha256": "577129639169d4ffd0250bad1961c11eda37bd330eb25dada1026ed20f615ee9",
+  "inputs": {
+    "series_json": "data/analysis/formation_series.json",
+    "series_json_sha256": "5d8b40fdae63d0e6d222c79d591221da1c43fe2ff3b1d98c3bf99737a9bf5d07",
+    "curve_json_sha256": "e6e09b93edb1c07cd03ecbf5f851a8b72f9ed6166e48f51ccc13e85195f3d6b1",
+    "_note": "generated bulk under data/, git-ignored. The hashes are here so a reader can tell whether their tables are the ones these numbers came from; `--check` verifies them only when the files are present."
+  },
+  "dense_axis": {
+    "_what": "`p_value_p_i1` on the payload `formation_curve_payload` builds from the real relay series, and on the same input restricted to the heads that carry relays.",
+    "_why_it_is_here": "a floor is the smallest p a design can express, and the first thing to establish is whether it can express one. On the axis the pipeline builds it cannot, and the reason is the axis rule rather than the data: the behavioural series is dense over all 384 heads, the relay side is zero on the 268 that never carry a relay, and `paired_colocation_arm` profiles every unit with no per-unit skip while `change_profile` refuses a series with no rise.",
+    "_and_the_message_names_none_of_that": "the refusal reads 'the series has no rise anywhere in the sweep'. It names no arm, no head index and no unit count, so a reader cannot tell that 268 of 384 units caused it, nor that no relay series whatever lifts it short of every head in the model gaining one.",
+    "n_layers": 24,
+    "n_heads_per_layer": 16,
+    "b_side_is_synthetic": true,
+    "b_side_is_sound_because_the_a_side_is_profiled_first": true,
+    "rows": [
+      {
+        "axis": "dense (every head the model has)",
+        "n_heads_on_axis": 384,
+        "n_heads_with_no_relay_anywhere": 268,
+        "p_value": null,
+        "refused": true,
+        "reason": "the series has no rise anywhere in the sweep (total registered-direction change is 0.0); there is no location to measure. A uniform profile would report the change as spread evenly over training rather than as absent.",
+        "attainable_floor": null
+      },
+      {
+        "axis": "forming (heads carrying relays)",
+        "n_heads_on_axis": 116,
+        "n_heads_with_no_relay_anywhere": 0,
+        "p_value": 0.050474762618690654,
+        "refused": false,
+        "reason": null,
+        "attainable_floor": 0.0004997501249375312
+      }
+    ],
+    "dense_axis_emits_no_p_value": true,
+    "forming_axis_emits_a_p_value": true,
+    "refusal_names_the_no_rise_condition": true,
+    "refusal_names_the_unit_that_caused_it": false
+  },
+  "tie_structure": {
+    "_what": "the class structure of the per-head change locations on the registered 19-step grid, from the real relay series.",
+    "_the_reading_it_corrects": "'79 distinct centroids across 116 heads' is true and is not 79 classes of roughly 1.5. It is 77 singletons, one class of three and one class of thirty-six: 31% of the heads still put their change in a single interval, which is the twelve-step grid's degeneracy surviving in a third of the population.",
+    "_why_the_largest_class_is_the_number_that_matters": "the tying subgroup's order is prod(m!) over the classes, and a factorial is dominated by its largest term. Thirty-six of 116 is harmless \u2014 10^42 against 10^190 \u2014 and thirty-six of forty would not be.",
+    "rows": [
+      {
+        "relay_owner": "tag_writer",
+        "registered": false,
+        "n_heads_scored": 102,
+        "n_heads_refused_no_rise": 0,
+        "n_distinct_locations": 68,
+        "largest_class_size": 34,
+        "largest_class_share": 0.3333333333333333,
+        "n_singleton_classes": 66,
+        "class_size_histogram": {
+          "1": 66,
+          "2": 1,
+          "34": 1
+        },
+        "three_largest_classes": [
+          {
+            "location_log_step": 4.943870438,
+            "location_step": 87875.03193270953,
+            "n_heads": 34
+          },
+          {
+            "location_log_step": 4.618782676,
+            "location_step": 41569.25379768275,
+            "n_heads": 2
+          },
+          {
+            "location_log_step": 4.059781661,
+            "location_step": 11474.765390817702,
+            "n_heads": 1
+          }
+        ],
+        "log10_tying_subgroup_order": 38.77119459966402,
+        "log10_n_factorial": 161.98292520026033,
+        "tie_floor": 6.14142849083724e-124
+      },
+      {
+        "relay_owner": "matcher",
+        "registered": true,
+        "n_heads_scored": 116,
+        "n_heads_refused_no_rise": 0,
+        "n_distinct_locations": 79,
+        "largest_class_size": 36,
+        "largest_class_share": 0.3103448275862069,
+        "n_singleton_classes": 77,
+        "class_size_histogram": {
+          "1": 77,
+          "3": 1,
+          "36": 1
+        },
+        "three_largest_classes": [
+          {
+            "location_log_step": 4.943870438,
+            "location_step": 87875.03193270953,
+            "n_heads": 36
+          },
+          {
+            "location_log_step": 4.618782676,
+            "location_step": 41569.25379768275,
+            "n_heads": 3
+          },
+          {
+            "location_log_step": 4.169720515,
+            "location_step": 14780.56831936253,
+            "n_heads": 1
+          }
+        ],
+        "log10_tying_subgroup_order": 42.34868639950124,
+        "log10_n_factorial": 190.53059777072724,
+        "tie_floor": 6.5779206276735575e-149
+      },
+      {
+        "relay_owner": "both",
+        "registered": false,
+        "n_heads_scored": 122,
+        "n_heads_refused_no_rise": 0,
+        "n_distinct_locations": 86,
+        "largest_class_size": 35,
+        "largest_class_share": 0.28688524590163933,
+        "n_singleton_classes": 84,
+        "class_size_histogram": {
+          "1": 84,
+          "3": 1,
+          "35": 1
+        },
+        "three_largest_classes": [
+          {
+            "location_log_step": 4.943870438,
+            "location_step": 87875.03193270953,
+            "n_heads": 35
+          },
+          {
+            "location_log_step": 4.618782676,
+            "location_step": 41569.25379768275,
+            "n_heads": 3
+          },
+          {
+            "location_log_step": 4.169720515,
+            "location_step": 14780.56831936253,
+            "n_heads": 1
+          }
+        ],
+        "log10_tying_subgroup_order": 40.79238389873396,
+        "log10_n_factorial": 202.9945390482109,
+        "tie_floor": 6.278340282576714e-163
+      }
+    ],
+    "registered_owner": "matcher",
+    "registered_largest_class_size": 36,
+    "registered_tie_floor": 6.5779206276735575e-149,
+    "tie_half_does_not_bind_on_the_real_head_set": true
+  },
+  "perfect_input": {
+    "_what": "the mutual arm on the real relay locations against a B side that co-locates with them exactly at every head.",
+    "_why_it_is_here": "the floor is defined as what a perfect input returns, so the way to check a reported floor is to build one and read the number back. It is what found the gap arm D reports.",
+    "_the_b_side": "twice the A series at every head. `change_profile` normalises the change mass, so the centroid is bit-identical while the series are not equal \u2014 which keeps `p_value_p_i1`'s tautology refusal, whose subject is identical series, out of a measurement about floors.",
+    "alpha": 0.05,
+    "rows": [
+      {
+        "relay_owner": "tag_writer",
+        "registered": false,
+        "n_units": 102,
+        "n_pairings": 2001,
+        "null_exhaustive": false,
+        "observed_mean_distance_log_step": 0.0,
+        "perfect_input_p": 0.0004997501249375312,
+        "attainable_floor": 0.0004997501249375312,
+        "tie_floor": 6.14142849083724e-124,
+        "draw_count_floor": 0.0004997501249375312,
+        "binds": "draws",
+        "lands_on_the_floor": true
+      },
+      {
+        "relay_owner": "matcher",
+        "registered": true,
+        "n_units": 116,
+        "n_pairings": 2001,
+        "null_exhaustive": false,
+        "observed_mean_distance_log_step": 0.0,
+        "perfect_input_p": 0.0004997501249375312,
+        "attainable_floor": 0.0004997501249375312,
+        "tie_floor": 6.5779206276735575e-149,
+        "draw_count_floor": 0.0004997501249375312,
+        "binds": "draws",
+        "lands_on_the_floor": true
+      },
+      {
+        "relay_owner": "both",
+        "registered": false,
+        "n_units": 122,
+        "n_pairings": 2001,
+        "null_exhaustive": false,
+        "observed_mean_distance_log_step": 0.0,
+        "perfect_input_p": 0.0004997501249375312,
+        "attainable_floor": 0.0004997501249375312,
+        "tie_floor": 6.278340282576714e-163,
+        "draw_count_floor": 0.0004997501249375312,
+        "binds": "draws",
+        "lands_on_the_floor": true
+      }
+    ],
+    "every_owner_lands_on_its_floor": true,
+    "mean_distance_is_zero_at_a_perfect_input": true
+  },
+  "the_defect": {
+    "_what": "the arm's reported floor before this pass against the floor a perfect input on the same locations actually reaches, on the registered 19-step grid.",
+    "_the_finding": "at 10 units with 9 of them sharing one change location the arm reported 0.000500 and the attainable floor is 0.100000 \u2014 a factor of 200, above alpha=0.05, and emitted as a p-value with no refusal. It is 6m's defect in the steering gate arriving in the shared estimator, and 6q's 'the floor has two halves' reached by a third construction.",
+    "_why_more_draws_do_not_fix_it": "the tie fraction is prod(m!)/n!, which contains no draw count. Sampling the pairing group harder resolves a finer quantile of a distribution whose mass is already piled on the observation.",
+    "_and_the_two_halves_cross_within_two_heads": "9-of-10 refuses and 7-of-10 does not. The binding half is not a regime one is safely in or out of; it is set by the largest class and moves fast in it.",
+    "alpha": 0.05,
+    "rows": [
+      {
+        "n_units": 10,
+        "largest_tied_class": 9,
+        "n_draws": 2001,
+        "reported_floor_before": 0.0004997501249375312,
+        "closed_form_tie_floor": 0.1,
+        "computed_tie_floor": 0.0999999999999999,
+        "closed_form_agrees": true,
+        "attainable_floor_now": 0.0999999999999999,
+        "binds": "ties",
+        "perfect_input_p_if_emitted": null,
+        "refused_now": true,
+        "refusal_reason": "arm 'defect::10::9': attainable floor 0.1000 exceeds alpha=0.05, and what binds is TIES rather than draws: the 10 units carry 2 distinct locations on the A side and 2 on the B side, so every pairing ties a coset of order 10^5.56 out of 10^6.56 and no input can express a p below 0.1. Raising the draw count does NOT fix this (its own floor is 0.0004998); the number of DISTINCT locations does, and th",
+        "understatement_factor": 200.0999999999998
+      },
+      {
+        "n_units": 10,
+        "largest_tied_class": 8,
+        "n_draws": 2001,
+        "reported_floor_before": 0.0004997501249375312,
+        "closed_form_tie_floor": 0.011111111111111112,
+        "computed_tie_floor": 0.011111111111111112,
+        "closed_form_agrees": true,
+        "attainable_floor_now": 0.011111111111111112,
+        "binds": "ties",
+        "perfect_input_p_if_emitted": 0.011494252873563218,
+        "refused_now": false,
+        "refusal_reason": null,
+        "understatement_factor": 22.233333333333334
+      },
+      {
+        "n_units": 10,
+        "largest_tied_class": 7,
+        "n_draws": 2001,
+        "reported_floor_before": 0.0004997501249375312,
+        "closed_form_tie_floor": 0.001388888888888889,
+        "computed_tie_floor": 0.0013888888888888911,
+        "closed_form_agrees": true,
+        "attainable_floor_now": 0.0013888888888888911,
+        "binds": "ties",
+        "perfect_input_p_if_emitted": 0.0014992503748125937,
+        "refused_now": false,
+        "refusal_reason": null,
+        "understatement_factor": 2.7791666666666712
+      },
+      {
+        "n_units": 12,
+        "largest_tied_class": 9,
+        "n_draws": 2001,
+        "reported_floor_before": 0.0004997501249375312,
+        "closed_form_tie_floor": 0.0007575757575757576,
+        "computed_tie_floor": 0.0007575757575757569,
+        "closed_form_agrees": true,
+        "attainable_floor_now": 0.0007575757575757569,
+        "binds": "ties",
+        "perfect_input_p_if_emitted": 0.001999000499750125,
+        "refused_now": false,
+        "refusal_reason": null,
+        "understatement_factor": 1.5159090909090898
+      },
+      {
+        "n_units": 20,
+        "largest_tied_class": 12,
+        "n_draws": 2001,
+        "reported_floor_before": 0.0004997501249375312,
+        "closed_form_tie_floor": 1.9688487180747244e-10,
+        "computed_tie_floor": 1.9688487180747213e-10,
+        "closed_form_agrees": true,
+        "attainable_floor_now": 0.0004997501249375312,
+        "binds": "draws",
+        "perfect_input_p_if_emitted": 0.0004997501249375312,
+        "refused_now": false,
+        "refusal_reason": null,
+        "understatement_factor": 1.0
+      },
+      {
+        "n_units": 36,
+        "largest_tied_class": 30,
+        "n_draws": 2001,
+        "reported_floor_before": 0.0004997501249375312,
+        "closed_form_tie_floor": 7.130581134376201e-10,
+        "computed_tie_floor": 7.130581134376261e-10,
+        "closed_form_agrees": true,
+        "attainable_floor_now": 0.0004997501249375312,
+        "binds": "draws",
+        "perfect_input_p_if_emitted": 0.0004997501249375312,
+        "refused_now": false,
+        "refusal_reason": null,
+        "understatement_factor": 1.0
+      }
+    ],
+    "closed_form_agrees_everywhere": true,
+    "max_understatement_factor": 200.0999999999998,
+    "the_gap_reaches_above_alpha": true,
+    "the_arm_now_refuses_exactly_those": true,
+    "and_emits_unchanged_below_it": true
+  },
+  "floor_vs_survivors": {
+    "_what": "the two halves of the floor as functions of how many heads survive the above-null excess, at the registered alpha.",
+    "_why_it_is_here": "EVALUABILITY.md's order puts the floor before the control because the floor is a constraint ON the control. A relay-count null that leaves three scored heads cannot produce a p-value at any alpha the registry uses, and one that leaves twelve of which nine share a location cannot either \u2014 and both are decidable now, with no null built and no draw taken.",
+    "_what_it_does_not_say": "nothing here is a null. It does not say how much a relay-count null SHOULD remove, only what it may remove and still leave a design that can reject. HANDOFF.md \u00a75 records the shape the author has to choose and this does not choose it.",
+    "alpha": 0.05,
+    "rows": [
+      {
+        "n_units": 2,
+        "n_draws": 2,
+        "draw_count_floor": 0.5,
+        "draw_half_sufficient": false,
+        "largest_admissible_tied_class": 0,
+        "tie_floor_at_that_class": null,
+        "share_of_units_that_may_be_tied": null
+      },
+      {
+        "n_units": 3,
+        "n_draws": 6,
+        "draw_count_floor": 0.16666666666666666,
+        "draw_half_sufficient": false,
+        "largest_admissible_tied_class": 0,
+        "tie_floor_at_that_class": null,
+        "share_of_units_that_may_be_tied": null
+      },
+      {
+        "n_units": 4,
+        "n_draws": 24,
+        "draw_count_floor": 0.041666666666666664,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 1,
+        "tie_floor_at_that_class": 0.041666666666666664,
+        "share_of_units_that_may_be_tied": 0.25
+      },
+      {
+        "n_units": 5,
+        "n_draws": 120,
+        "draw_count_floor": 0.008333333333333333,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 3,
+        "tie_floor_at_that_class": 0.05,
+        "share_of_units_that_may_be_tied": 0.6
+      },
+      {
+        "n_units": 6,
+        "n_draws": 720,
+        "draw_count_floor": 0.001388888888888889,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 4,
+        "tie_floor_at_that_class": 0.03333333333333333,
+        "share_of_units_that_may_be_tied": 0.6666666666666666
+      },
+      {
+        "n_units": 7,
+        "n_draws": 5040,
+        "draw_count_floor": 0.0001984126984126984,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 5,
+        "tie_floor_at_that_class": 0.023809523809523808,
+        "share_of_units_that_may_be_tied": 0.7142857142857143
+      },
+      {
+        "n_units": 8,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 6,
+        "tie_floor_at_that_class": 0.017857142857142856,
+        "share_of_units_that_may_be_tied": 0.75
+      },
+      {
+        "n_units": 9,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 7,
+        "tie_floor_at_that_class": 0.013888888888888888,
+        "share_of_units_that_may_be_tied": 0.7777777777777778
+      },
+      {
+        "n_units": 10,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 8,
+        "tie_floor_at_that_class": 0.011111111111111112,
+        "share_of_units_that_may_be_tied": 0.8
+      },
+      {
+        "n_units": 11,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 9,
+        "tie_floor_at_that_class": 0.00909090909090909,
+        "share_of_units_that_may_be_tied": 0.8181818181818182
+      },
+      {
+        "n_units": 12,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 10,
+        "tie_floor_at_that_class": 0.007575757575757576,
+        "share_of_units_that_may_be_tied": 0.8333333333333334
+      },
+      {
+        "n_units": 13,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 11,
+        "tie_floor_at_that_class": 0.00641025641025641,
+        "share_of_units_that_may_be_tied": 0.8461538461538461
+      },
+      {
+        "n_units": 14,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 12,
+        "tie_floor_at_that_class": 0.005494505494505495,
+        "share_of_units_that_may_be_tied": 0.8571428571428571
+      },
+      {
+        "n_units": 15,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 13,
+        "tie_floor_at_that_class": 0.004761904761904762,
+        "share_of_units_that_may_be_tied": 0.8666666666666667
+      },
+      {
+        "n_units": 16,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 14,
+        "tie_floor_at_that_class": 0.004166666666666667,
+        "share_of_units_that_may_be_tied": 0.875
+      },
+      {
+        "n_units": 17,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 15,
+        "tie_floor_at_that_class": 0.003676470588235294,
+        "share_of_units_that_may_be_tied": 0.8823529411764706
+      },
+      {
+        "n_units": 18,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 16,
+        "tie_floor_at_that_class": 0.0032679738562091504,
+        "share_of_units_that_may_be_tied": 0.8888888888888888
+      },
+      {
+        "n_units": 19,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 17,
+        "tie_floor_at_that_class": 0.0029239766081871343,
+        "share_of_units_that_may_be_tied": 0.8947368421052632
+      },
+      {
+        "n_units": 20,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 19,
+        "tie_floor_at_that_class": 0.05,
+        "share_of_units_that_may_be_tied": 0.95
+      },
+      {
+        "n_units": 21,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 20,
+        "tie_floor_at_that_class": 0.047619047619047616,
+        "share_of_units_that_may_be_tied": 0.9523809523809523
+      },
+      {
+        "n_units": 22,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 21,
+        "tie_floor_at_that_class": 0.045454545454545456,
+        "share_of_units_that_may_be_tied": 0.9545454545454546
+      },
+      {
+        "n_units": 23,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 22,
+        "tie_floor_at_that_class": 0.043478260869565216,
+        "share_of_units_that_may_be_tied": 0.9565217391304348
+      },
+      {
+        "n_units": 24,
+        "n_draws": 2001,
+        "draw_count_floor": 0.0004997501249375312,
+        "draw_half_sufficient": true,
+        "largest_admissible_tied_class": 23,
+        "tie_floor_at_that_class": 0.041666666666666664,
+        "share_of_units_that_may_be_tied": 0.9583333333333334
+      }
+    ],
+    "min_units_for_the_draw_half": 4,
+    "the_two_halves_are_not_the_same_constraint": true,
+    "_and_the_admissible_class_is_not_monotone_in_n": "k = n - 1 gives a tie floor of exactly 1/n, so 'all but one head tied' clears alpha = 0.05 from n = 20 upward and fails below it. The column therefore jumps 17 -> 19 between 19 and 20 survivors. That is arithmetic and not a glitch, and it is why the table is reported as a table rather than as a rule of thumb: the constraint is on the largest class, and 'a big share of them may be tied' is true at one n and false at the n below it.",
+    "_the_requirement": "P-I1 needs a relay-count null leaving at least 4 heads with a rising excess, and among them no more than k sharing one change location, k as tabulated. On the raw series the scored set is 116 heads with a largest class of 36, which clears both by a wide margin; what is not known, and cannot be until the null exists, is how much of that the excess subtraction keeps."
+  },
+  "elapsed_seconds": 0.2,
+  "_the_finding": "P-I1's mutual arm cannot express a p-value at all on the axis `formation_curve_payload` builds: 384 heads, 268 of them with no relay anywhere, and `change_profile` refuses each one. On the 116 heads that do form it emits (0.05047 against an arbitrary B side, 0.0004998 against a perfectly co-locating one, which is its floor). And the floor it reported was the draw-count half alone: at 10 units with 9 sharing one location the reported floor was 0.000500 against an attainable 0.100000, a factor of 200. On the real 116 heads the tie half is 10^-148 and does not bind \u2014 it binds on the set a relay-count null leaves, which is why this is step 1 and not a footnote to step 4."
+}

@@ -125,6 +125,22 @@ for o in OWNERS:
              if vals.size else ""))
 
 out["interval_midpoints"] = interval_midpoints(STEPS).tolist()
-dest = Path(os.environ.get("METS_SCRATCH", str(DATA / "analysis"))) / "curve.json"
+outdir = Path(os.environ.get("METS_SCRATCH", str(DATA / "analysis")))
+dest = outdir / "curve.json"
 json.dump(out, open(dest, "w"), indent=1)
 print(f"\nWROTE {dest}")
+
+# The per-head SERIES, written beside the centroids and not into curve.json.
+# curve.json is the artifact HANDOFF §4.6 diffs after every change to the
+# storage layer, and a file whose content is diffed is not the place to add a
+# key. The centroids alone determine `paired_colocation_arm`'s statistic, but
+# they cannot be handed to it: the arm takes series and computes the profiles
+# itself, so anything that runs the REAL arm rather than a re-implementation of
+# it needs these.
+sdest = outdir / "formation_series.json"
+json.dump({"steps": STEPS,
+           "relay_owner_registered": P_I1_RELAY_OWNER,
+           "series": {o: {f"{k[0]},{k[1]}": v for k, v in series[o].items()}
+                      for o in OWNERS}},
+          open(sdest, "w"), indent=1)
+print(f"WROTE {sdest}")

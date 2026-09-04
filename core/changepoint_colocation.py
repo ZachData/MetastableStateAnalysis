@@ -251,6 +251,27 @@ chosen from that set. `p_value_claim_b` computes on any grid and
 may enter an e-process, for the same reason: registering after seeing a p-value
 would void the guarantee.
 
+THE PAIRING ARM'S FLOOR HAS TWO HALVES, AND ONLY ONE WAS REPORTED (2026-09-03)
+
+Found by the floor step for `P-I1`'s not-yet-existing relay-count null:
+`tools/p_i1_attainable_floor.py` -> `claims/audits/p_i1_attainable_floor.json`,
+read by `POPPER_PLAN.md` 6t. `paired_colocation_arm` reported `1 / n_draws`
+alone. Permuting units within a class of EQUAL change locations leaves
+`-mean|ca - cb[p]|` exactly unchanged, so every pairing ties a coset of order
+`prod(m!)` and no input can express a p below `prod(m!) / n!`. On the registered
+19-step P-I1 grid with nine of ten units sharing one location the arm reported
+0.000500 against an attainable 0.100000 -- above alpha, emitted with no
+refusal -- while seven of ten tied is 0.00139 and emits legitimately. The two
+halves cross within two units. `pairing_floor_report` owns both and the arm
+refuses on the max; it is `POPPER_PLAN.md` 6m's defect in
+`p7_motifs/steering_gate.py`, which has carried both halves since 2026-08-26,
+arriving in the shared estimator.
+
+This is the second thing about the pairing arm that is a property of the
+measurement grid rather than of the data, after the ptp-zero refusal above: how
+many DISTINCT locations the grid resolves sets the floor, and the number of
+units does not.
+
 WHAT NO NULL HERE CAN DO
 
 The sweep's resolution is its intervals. Two changes inside one interval are
@@ -264,7 +285,7 @@ exists and the artifacts do not. `claims/adjudications/` is empty.
 
 from __future__ import annotations
 
-from math import erf
+from math import erf, lgamma, log
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -1162,6 +1183,96 @@ def _shared_unit_factor_diagnostic(ca: np.ndarray, cb: np.ndarray) -> dict:
     }
 
 
+def pairing_floor_report(ca: np.ndarray, cb: np.ndarray, n_draws: int,
+                         alpha: float, exhaustive: bool) -> dict:
+    """
+    The smallest p `paired_colocation_arm` can express, and it has TWO halves.
+
+    `POPPER_PLAN.md` 6m's finding, reached by this construction. The arm used
+    to report `1 / n_draws` alone, which is the DRAW-COUNT floor: how fine a
+    quantile a sampled null can resolve. That is not what a perfect input
+    returns when the locations carry TIES.
+
+    The statistic is `-mean|ca - cb[p]|`. Let sigma permute units WITHIN a class
+    of equal `ca`. Then
+
+        sum_{i in C} |ca_i - cb_{p(sigma(i))}| = sum_{j in C} |c - cb_{p(j)}|
+
+    because sigma is a bijection of C and every `ca_i` in it is the same number,
+    so the sum is unchanged. The same holds on the other side for equal `cb`.
+    Every pairing therefore ties an entire coset of that subgroup, whose order
+    is `prod(m!)` over the class sizes, and no p smaller than
+
+        prod(m!) / n!
+
+    is expressible by ANY input on these locations. Raising `n_draws` does NOT
+    fix it: the tie fraction is a property of how many distinct locations the
+    sweep grid resolves, not of how hard the null is sampled. Reported as
+    `p7_motifs/steering_gate.py` reports its pair -- both halves and which one
+    binds -- because that gate found the same defect in 6m and the two should
+    not name it differently.
+
+    MEASURED, on the registered 19-step P-I1 grid with nine of ten units sharing
+    one location: the arm reported 0.000500 against an attainable 0.100000 --
+    a factor of 200, above alpha, and emitted with no refusal. The closed form
+    above gives that 0.100000 exactly, and the one realised sampled draw came
+    back 0.101449. See `claims/audits/p_i1_attainable_floor.json`.
+
+    TWO THINGS THIS IS CAREFUL ABOUT, BECAUSE BOTH ARE HOW A FLOOR GOES WRONG
+
+    `tie_floor` is a LOWER bound on the p, not the p itself: the group the tying
+    pairings generate can be larger than either side's subgroup, so a perfect
+    input can land above it. It is the half decidable from the locations alone,
+    which is what a floor has to be.
+
+    And in the SAMPLED regime the realised p is not this number but a Binomial
+    around it -- each of the N non-identity draws ties with probability
+    `tie_floor` -- so a run can return slightly less. The hard bound a sampled
+    run cannot go below is `draw_count_floor`, carried as `hard_lower_bound`;
+    `attainable_floor` is what a perfect input CONCENTRATES on, and it is the
+    one alpha is compared against, because a design whose perfect input sits at
+    0.10 cannot reject whichever side of 0.10 one draw lands.
+    """
+    n = int(ca.size)
+    a = float(alpha)
+
+    def _log_subgroup(c: np.ndarray) -> float:
+        # log of prod(m!) over the classes of equal values in `c`. Rounded to
+        # the scale a float64 mean over the grid's intervals can resolve, which
+        # is the rounding `tools/run/curve.py` counts distinct centroids at:
+        # two locations differing in the last ulp are one class for the purpose
+        # of a tie, because the statistic sums them.
+        _, counts = np.unique(np.round(c, 9), return_counts=True)
+        return float(sum(lgamma(int(m) + 1) for m in counts))
+
+    log_ties = max(_log_subgroup(ca), _log_subgroup(cb))
+    log_n_fact = lgamma(n + 1)
+    tie_floor = float(np.exp(min(log_ties - log_n_fact, 0.0)))
+    draw_floor = 1.0 / float(n_draws)
+    best = max(tie_floor, draw_floor)
+    return {
+        "n_units": n,
+        "alpha": a,
+        "n_draws": int(n_draws),
+        "null_exhaustive": bool(exhaustive),
+        "n_distinct_locations_a": int(np.unique(np.round(ca, 9)).size),
+        "n_distinct_locations_b": int(np.unique(np.round(cb, 9)).size),
+        "log10_tying_subgroup_order": float(log_ties / log(10.0)),
+        "log10_n_factorial": float(log_n_fact / log(10.0)),
+        "tie_floor": tie_floor,
+        "draw_count_floor": draw_floor,
+        "attainable_floor": float(best),
+        "hard_lower_bound": tie_floor if exhaustive else draw_floor,
+        "binds": "ties" if tie_floor > draw_floor else "draws",
+        "sufficient": bool(best <= a),
+        "_note": (
+            "attainable_floor is the max of the two halves and is what a "
+            "perfect input concentrates on. In the sampled regime the realised "
+            "p is Binomial around it, so a single run can land just below; "
+            "hard_lower_bound is what no run can go under."),
+    }
+
+
 def paired_colocation_arm(steps: Sequence[float],
                           series_a: Sequence[Sequence[float]],
                           direction_a: str,
@@ -1232,21 +1343,42 @@ def paired_colocation_arm(steps: Sequence[float],
     perms, exhaustive = _pairing_permutations(n_units, seed)
     n_draws = len(perms)
 
-    # 1/n_draws in BOTH regimes, and not 1/(n_draws + 1) in the sampled one:
-    # `perms` already carries the identity pairing as its first entry, so
-    # n_draws is N + 1 and the sampled p is (count over the N samples + 1) /
-    # n_draws, whose minimum is 1/n_draws. Writing the usual +1 here made the
-    # reported floor SMALLER than any p the arm can express -- the same class of
-    # slip as P6-R2's default argument bound at definition time, found the same
-    # way, by a test that asserted a perfect result lands exactly on the floor.
-    floor = 1.0 / n_draws
-    if floor > alpha:
+    # The DRAW-COUNT half is 1/n_draws in BOTH regimes, and not 1/(n_draws + 1)
+    # in the sampled one: `perms` already carries the identity pairing as its
+    # first entry, so n_draws is N + 1 and the sampled p is (count over the N
+    # samples + 1) / n_draws, whose minimum is 1/n_draws. Writing the usual +1
+    # here made the reported floor SMALLER than any p the arm can express --
+    # the same class of slip as P6-R2's default argument bound at definition
+    # time, found the same way, by a test that asserted a perfect result lands
+    # exactly on the floor.
+    #
+    # And that half was reported ALONE until 2026-09-03, which is the same slip
+    # a second time and larger: on locations carrying ties a perfect input
+    # returns the TIE floor, 200x the draw-count one at nine of ten units and
+    # above alpha where the arm still emitted a p-value. `pairing_floor_report`
+    # owns both halves and says which binds.
+    fl = pairing_floor_report(ca, cb, n_draws, alpha, exhaustive)
+    floor = fl["attainable_floor"]
+    if not fl["sufficient"]:
+        if fl["binds"] == "draws":
+            raise ColocationRefused(
+                f"arm {arm_name!r}: attainable floor {floor:.4f} exceeds "
+                f"alpha={alpha}. With {n_units} units there are only "
+                f"{n_draws} distinct pairings, so this arm cannot reject on a "
+                f"perfect result and 'not significant' would be a statement "
+                f"about the design and not about the data.")
         raise ColocationRefused(
             f"arm {arm_name!r}: attainable floor {floor:.4f} exceeds "
-            f"alpha={alpha}. With {n_units} units there are only "
-            f"{n_draws} distinct pairings, so this arm cannot reject on a "
-            f"perfect result and 'not significant' would be a statement about "
-            f"the design and not about the data.")
+            f"alpha={alpha}, and what binds is TIES rather than draws: the "
+            f"{n_units} units carry {fl['n_distinct_locations_a']} distinct "
+            f"locations on the A side and {fl['n_distinct_locations_b']} on "
+            f"the B side, so every pairing ties a coset of order "
+            f"10^{fl['log10_tying_subgroup_order']:.3g} out of "
+            f"10^{fl['log10_n_factorial']:.3g} and no input can express a p "
+            f"below {fl['tie_floor']:.4g}. Raising the draw count does NOT fix "
+            f"this (its own floor is {fl['draw_count_floor']:.4g}); the number "
+            f"of DISTINCT locations does, and that is set by how many of the "
+            f"sweep's intervals the series' change mass falls across.")
 
     stats = np.array([-np.mean(np.abs(ca - cb[p])) for p in perms],
                      dtype=np.float64)
@@ -1289,6 +1421,7 @@ def paired_colocation_arm(steps: Sequence[float],
         "n_pairings": int(n_draws),
         "null_exhaustive": bool(exhaustive),
         "attainable_floor": floor,
+        "floor": fl,
         "alternative": ALTERNATIVE,
         "direction_a": direction_a,
         "direction_b": direction_b,

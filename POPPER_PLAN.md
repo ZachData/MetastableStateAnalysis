@@ -3531,6 +3531,162 @@ answers, no motif sweep artifact is in this repository,
 — and this is the second pass in which that window was used to record that the
 registered null was not one, after §6q's.
 
+## 6t. `P-I1`'s floor: the axis the gate cannot score, and the half of the floor that was missing (2026-09-03)
+
+`tools/p_i1_attainable_floor.py` -> `claims/audits/p_i1_attainable_floor.json`,
+with `core.changepoint_colocation.pairing_floor_report` behind it.
+`claims/EVALUABILITY.md` prescribes one order for every row that names a matched
+control — *compute the attainable floor, name what the statistic degenerates on,
+check what the measurement grid contributes, and only then build the control* —
+and `HANDOFF.md`'s session of 2026-09-01 did steps 2 and 3 for `P-I1`'s
+relay-count null and left step 1. This is step 1. It is the **fourth** row built
+in that order after `P-AB1` (§6q), `CLAIM-B`'s grid (§6r) and `P-I3` (§6s), and
+the first where the order was applied to a null that does not exist yet rather
+than to one about to be written.
+
+**`P-I1` is not converted and the relay-count null is not built.** `HANDOFF.md`
+§5 records the shape such a null would take — a degree-preserving rewiring
+within each (context, layer, head) — and records that choosing it is the
+author's. It stays the author's. What step 1 produces is a *constraint on* that
+choice, which is the whole reason `EVALUABILITY.md` puts it first.
+
+### 1. The floor, and the first thing to establish is whether a p exists at all
+
+Before any arithmetic about how small a p can be, the gate has to be able to
+return one. On the real 19-step sweep it cannot, and the reason is the axis rule
+rather than the data.
+
+`formation_curve_payload` takes its head axis from the **behavioural** series,
+which is dense over every head the model has — 384 for pythia-410m, 24 layers ×
+16 — and zero-fills the relay side, with a comment explaining correctly why 0.0
+is the right fill. But `paired_colocation_arm` calls `change_profile` on every
+unit with **no per-unit skip**, and `change_profile` refuses a series with no
+rise. 116 heads carry relays on this sweep and **268 never do**, so the arm
+refuses on the first all-zero unit and `p_value_p_i1` returns no p-value at all.
+Restricted to the 116 forming heads the identical input emits, which is what
+says the refusal is about the axis and not about the relay series.
+
+`HANDOFF.md` §3 recorded that `change_profile` "refuses each one" of the 268.
+That reading is what a per-unit refusal would do and is not what happens: there
+is no per-unit branch, so the first one takes the gate with it.
+
+**And the message names none of it.** It reads *"the series has no rise anywhere
+in the sweep"* — no arm, no head index, no unit count — so a reader cannot tell
+that 268 of 384 units caused it, nor that no relay series short of every head in
+the model gaining one would lift it. The gap is pinned as it is, in
+`test_the_refusal_names_neither_the_unit_nor_how_many`, rather than papered
+over: whether the axis should be reduced to the forming heads, or the arm should
+skip refused units and report how many, is a change to what `P-I1`'s **unit**
+is, and `PREDICTIONS.md`'s first Phase 7 adjudication constraint fixes that.
+Not a decision to take from inside a floor calculation.
+
+### The finding: the floor had two halves and the arm reported the wrong one
+
+`paired_colocation_arm` reported `1 / n_draws` — the **draw-count** floor, how
+fine a quantile a sampled null resolves. That is not what a perfect input
+returns when the change locations carry **ties**.
+
+The statistic is `-mean|ca - cb[p]|`. Let σ permute units within a class of
+equal `ca`. Then `Σ_{i∈C} |ca_i − cb_{p(σ(i))}| = Σ_{j∈C} |c − cb_{p(j)}|`,
+because σ is a bijection of C and every `ca_i` in it is the same number. The sum
+is unchanged, the same holds on the other side for equal `cb`, and so **every
+pairing ties an entire coset** of a subgroup of order `prod(m!)`. No input
+whatever can express a p below `prod(m!) / n!`.
+
+Measured on the registered 19-step grid with nine of ten units sharing one
+location: the arm reported **0.000500** against an attainable **0.100000** — a
+factor of **200**, above α = 0.05, **emitted as a p-value with no refusal**. The
+closed form gives that 0.100000 exactly and the realised sampled draw came back
+0.101449. Seven of ten tied is 0.00139 and emits legitimately: the two halves
+cross **within two heads**, so this is not a regime one is safely inside or
+outside.
+
+This is §6m's defect in `p7_motifs/steering_gate.py` arriving in the shared
+estimator — that gate has carried `draw_count_floor` beside `best_attainable_p`
+since 2026-08-26, and `tests/test_p_st1_steering_gate.py::test_the_attainable_
+floor_is_set_by_ties_and_not_by_the_draw_count` has pinned it there since — and
+it is §6q's "the floor has two halves and the record says which binds" reached
+by a third construction. **The lesson was in the repository, with a test on it,
+in a sibling gate, and the shared estimator did not have it.** Which is the
+argument for the order rather than against it: nothing about this needed data,
+and it took running the floor step to look.
+
+`pairing_floor_report` now owns both halves, reports `tie_floor`,
+`draw_count_floor`, `attainable_floor` (the max), `hard_lower_bound` and which
+one `binds`, and the arm refuses when the max exceeds α with a message that says
+raising the draw count does not fix it. **Adding a refusal, not lifting one**
+(§6r's and §6s's shape), and in §6m's category rather than §6o's: what it turns
+away is a verdict the design cannot REACH, so it costs nothing where it does not
+fire and the record measures that rather than asserting it.
+
+### 2 and 3, already done, and what the new arithmetic adds to them
+
+Recorded in `HANDOFF.md` and unchanged here. **Step 2** — what the statistic
+degenerates on — is the prompt's own induction-pair supply, r = **+0.9958**
+across the eight battery prompts at step 54000, +0.8908 excluding
+`repeated_tokens`. **Step 3** — what the measurement grid contributes — was
+everything: on the twelve-step CLAIM-B grid all 116 heads' change centroids were
+ONE number, the pairing null permuted a constant, and the attainable floor was
+1.000. The five registered log-spaced fills inside (1000, 54000) fixed it.
+
+What step 1 adds is that **"79 distinct centroids" is not 79 classes**. Measured
+on the registered `matcher` series: **77 singletons, one class of three, and one
+class of thirty-six**. Thirty-one percent of the heads still put their change in
+a single interval — the twelve-step grid's degeneracy surviving in a third of
+the population — and the tying subgroup's order is dominated by its largest
+class, not by the count of them. At 116 heads it does not matter: `10^42`
+against `10^190`, a tie floor of `10^-148`. At forty heads it would.
+
+### 4. And only then the control — which is why the constraint is stated and not the null
+
+A relay-count null turns the raw series into an above-null **excess**, and a
+head whose excess no longer rises leaves the scored set. So the null chooses
+`n_units`, and `n_units` with the tie structure chooses the floor. Two
+conditions, binding from opposite directions:
+
+| | condition | at α = 0.05 |
+|---|---|---|
+| draw-count half | `n! ≥ 1/α` | **four** heads minimum |
+| tie half | `k! / n! ≤ α`, k the largest surviving class | tabulated below |
+
+| survivors | max tied | tie floor there |
+|---|---|---|
+| 4 | 1 | 0.0417 |
+| 6 | 4 | 0.0333 |
+| 8 | 6 | 0.0179 |
+| 12 | 10 | 0.0076 |
+| 19 | 17 | 0.0029 |
+| 20 | **19** | 0.0500 |
+
+The jump at twenty is arithmetic, not a glitch: `k = n − 1` gives a tie floor of
+exactly `1/n`, so "all but one head tied" clears 0.05 from n = 20 upward and
+fails at n = 19. Which is why it is a table rather than a rule of thumb — the
+constraint is on the largest class and "a large share may be tied" is true at
+one n and false at the n below it.
+
+> **`P-I1`: the relay-count null must leave at least four heads with a rising
+> above-null excess, and among them no more than k sharing one change location,
+> k as tabulated.**
+
+On the raw series the scored set is 116 heads with a largest class of 36 and
+clears both by a wide margin. How much of that the excess subtraction keeps is
+not knowable until the null exists — and that is the point of having the
+constraint written down before it does.
+
+### What this pass did not do
+
+It builds no relay-count null, registers nothing, and adjudicates nothing:
+`claims/adjudications/` stays empty, `P-I1` stays `needs-null`, and
+`assert_gate_ready` still refuses the raw series for the reason it always has.
+It does not compute the behavioural arm — that needs phase 1's `attentions.npz`
+per prompt per checkpoint and is a separate computation from the relay series —
+so every number here about the **relay** side is measured on the 19 tables and
+the B side is synthetic, sound only because `paired_colocation_arm` profiles the
+A side first, which the record checks rather than assumes. It does not change
+what `P-I1`'s unit is, which is what fixing the dense-axis refusal properly
+would require. And it does not touch the centroid de-biasing decision §6o left
+open.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
