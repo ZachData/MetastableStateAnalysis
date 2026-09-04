@@ -3768,6 +3768,86 @@ startable from the code. It does not wire the series into the gate or into
 `curve.json` (§7.1: `curve.json` is the file that gets diffed). It leaves the
 A/B co-location — B leads A — for the gate that cannot yet run.
 
+## 6v. §3.1 and §3.4, both closed: the axis fix, the null, and the real run (2026-09-04)
+
+The author's decisions from the walk-through: §3.1's axis fix is BOTH the
+pre-filter and the per-unit skip, not either; §3.4's null is degree-preserving
+AT THE HEAD LEVEL (edge count and the full force distribution, not per
+particle). Four pieces, in the order built.
+
+**1. `paired_colocation_arm` gets a per-unit skip, opt-in.**
+`core/changepoint_colocation.py`. `skip_no_rise: bool = False` — the default
+reproduces the untouched two-pass code path exactly (both list comprehensions
+run to completion or the first to fail raises immediately), so CLAIM-B, which
+never opts in, is byte-for-byte unaffected — verified by regenerating the two
+records that hash this file (`dry_run_claim_b_p_i1`, `claim_b_grid_
+feasibility`) and diffing nothing but the hash and timestamp. `True` drops a
+unit only on `change_profile`'s "no location to measure" refusal
+specifically — a shape mismatch or a non-finite value still propagates — and
+reports the count as `n_skipped_no_rise`, named in every refusal the arm can
+still raise afterward (the diagnosability gap §3.1 named: "the message names
+none of it"). 7 new tests, including one pinning that `zip`'s silent
+truncation on mismatched lengths does not survive the refactor.
+
+**2. `p7_motifs/relay_count_null.py` — the null itself.**
+`pair_type` and `offset` are pure facts about where an edge points, given the
+prompt's tokenisation (`classify_pair_types`, computed once, never by the
+model); `attractive_frac`/`repulsive_frac`/`force_magnitude`/`weight` are
+facts about its force. Those two axes are independent, so the null is a
+payload shuffle: for each (prompt, layer, head), draw `len(group)` DISTINCT
+positions uniformly at random from the prompt's full causal pool and
+reattach each edge's entire force-derived payload to it unchanged, with
+`offset`/`pair_type` recomputed from the new position and everything else —
+including which edges are attractive at all — untouched. This holds fixed
+each head's edge count exactly, the ENTIRE force distribution rather than an
+aggregate like "attractive fraction", and `n_induction` per prompt
+automatically, because the pool and the candidate sets
+(`PromptNullContext`) are properties of the prompt's tokenisation alone and
+do not depend on the checkpoint or the replicate — no separate bookkeeping
+needed for §3.4's first constraint. Per-particle in/out-degree is NOT held
+fixed; a double-edge-swap configuration-model null was considered and not
+chosen. The relay count itself — a two-edge composition, not a single masked
+edge — is scored by Monte Carlo (reshuffle, rerun `find_relays`/`per_head_
+relay_strength` unchanged, K replicates → mean/sd) rather than a closed
+form, to avoid re-deriving the composition's null distribution by hand.
+18 tests, including a planted-relay oracle that collapses to near-chance
+under the shuffle and calibration on a structureless table.
+
+**The performance pass this needed, and the bug it found.** The first cut
+recomputed which rows belong to which prompt — hashing/comparing the STRING
+`prompt_key` column over the whole table — inside every replicate, at ~1.5-2s
+by itself on the real ~19M-edge battery table and not a function of the
+random draw at all. `prompt_row_indices` computes it once; `null_envelope`
+does so before its replicate loop. ~6.8x per replicate on the real step0
+table (8.3s → 1.2s on a toy context; ~3.7s measured on the real 19-step
+sweep's real induction-candidate pools, which are far larger than a toy test
+assumed — `repeated_tokens` alone carries 34,191 induction-candidate
+positions). Writing that cache is also what caught a real bug: the original
+grouping indexed the SORTED prompt-name array with an ORIGINAL row index,
+which happened to read back a plausible name in every case the first test
+suite exercised and was silently wrong whenever a prompt's row indices
+didn't coincide with its sorted position — reassigning one prompt's edges to
+another prompt's causal pool with no error and no visible symptom short of a
+battery-wide cross-prompt contamination nobody was looking for.
+`test_two_prompts_do_not_leak_positions_into_each_other` caught it the
+moment the code path changed.
+
+**3. `p_value_p_i1` / `adjudicate_p_i1` take `skip_no_rise`.**
+`p7_motifs/formation_gate.py`, forwarded to the arm unchanged. Default off;
+regenerating the two records that hash this file confirmed no other
+behaviour moved.
+
+**4. `tools/run/relay_null.py` and `tools/score_p_i1.py`.** The sibling of
+`curve.py`/`behavioural.py`: builds each battery prompt's `PromptNullContext`
+once (a property of tokenisation, reused across all 19 checkpoints), runs
+`null_envelope` on the pre-filtered forming axis at every checkpoint, and
+writes `data/analysis/relay_null_series.json` — per-head null mean/sd and
+`above_null_excess = max(raw - null_mean, 0.0)`. `score_p_i1.py` is the first
+script to call `p_value_p_i1` with the real excess series, the real
+behavioural series, and `skip_no_rise=True` together. It does not adjudicate —
+`claims/adjudications/` stays empty until the author decides this result
+belongs there.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
