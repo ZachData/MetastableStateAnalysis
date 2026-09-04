@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "_what_this_is": "step 1 of EVALUABILITY.md's order \u2014 the attainable floor \u2014 for P-I1's relay-count null, run before the control exists.",
-  "generated_utc": "2026-09-04T19:13:10Z",
+  "generated_utc": "2026-09-04T19:42:40Z",
   "seed": 20260824,
   "alpha": 0.05,
   "registered_sweep": [
@@ -27,7 +27,7 @@
   ],
   "registered_relay_owner": "matcher",
   "construction_sha256": "63702c546e4f4a07e8c92f99cdd5501cd712aa290f20d369153889620a001528",
-  "formation_gate_sha256": "ab5ca7d3f24e98f509ba87a851f515eeb318f4cded7e01041062bb85b23f8d4f",
+  "formation_gate_sha256": "e16cb22ff9855749d8a1b7450dad36dd6ad0dc25369b5144bc9c0ccb22993b4e",
   "formation_curve_sha256": "577129639169d4ffd0250bad1961c11eda37bd330eb25dada1026ed20f615ee9",
   "inputs": {
     "series_json": "data/analysis/formation_series.json",

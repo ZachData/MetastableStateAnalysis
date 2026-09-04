@@ -7,7 +7,7 @@
   "construction_file": "core/changepoint_colocation.py",
   "construction_sha256": "63702c546e4f4a07e8c92f99cdd5501cd712aa290f20d369153889620a001528",
   "formation_gate_file": "p7_motifs/formation_gate.py",
-  "formation_gate_sha256": "ab5ca7d3f24e98f509ba87a851f515eeb318f4cded7e01041062bb85b23f8d4f",
+  "formation_gate_sha256": "e16cb22ff9855749d8a1b7450dad36dd6ad0dc25369b5144bc9c0ccb22993b4e",
   "alpha": 0.05,
   "anchor_window_steps": [
     512.0,
@@ -782,5 +782,5 @@
     "max_absolute_difference": 0.0,
     "agrees": true
   },
-  "elapsed_seconds": 140.7
+  "elapsed_seconds": 151.0
 }

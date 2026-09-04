@@ -181,10 +181,22 @@ identical input emits.
 
 The message names none of it — "the series has no rise anywhere in the sweep",
 no arm, no head index, no unit count. Pinned as it is, in
-`tests/test_p_i1_attainable_floor.py`. Fixing it properly means either reducing
-the axis to the forming heads or giving the arm a per-unit skip with a count
-reported, and **both change what `P-I1`'s unit is**, which `PREDICTIONS.md`'s
-first Phase 7 adjudication constraint fixes at the head. Author's decision.
+`tests/test_p_i1_attainable_floor.py`.
+
+**Fixed, both halves, 2026-09-04 — the author's decision was both, not
+either.** Pre-filter the axis to the 116 heads that carry a relay anywhere in
+the raw sweep (a static, pre-registrable population — §3.4's null still runs
+on the raw series before subtraction, so nothing here depends on the null),
+**and** give the arm a per-unit skip for whatever residual heads have zero
+above-null EXCESS once §3.4's null is subtracted (a head can be in the 116 and
+still have the null absorb its entire signal). `paired_colocation_arm` and
+`p_value_p_i1`/`adjudicate_p_i1` now take `skip_no_rise: bool = False` —
+default off, CLAIM-B untouched, `p7_motifs/formation_gate.py` — dropping a
+unit only on `change_profile`'s "no location to measure" refusal specifically,
+reporting the count as `n_skipped_no_rise` on the arm's own record and naming
+it in every refusal the arm can still raise afterward. The real scoring call
+is `tools/score_p_i1.py`, which pre-filters to the forming axis and passes
+`skip_no_rise=True`.
 
 ### 3.2 The pairing arm's floor has two halves
 

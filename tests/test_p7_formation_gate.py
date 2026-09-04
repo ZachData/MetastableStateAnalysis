@@ -151,6 +151,32 @@ class TestGate:
         assert r["p_value"] is None
         assert "attainable floor" in r["reason"]
 
+    def test_skip_no_rise_defaults_off_and_still_refuses_on_a_flat_head(self):
+        """
+        PROJECT.md §3.1's fix. Default behaviour is untouched: a head whose
+        above-null excess never rises still takes the whole gate down unless
+        the caller opts in. `base=0.5` on the B side keeps every head off the
+        tautology refusal (identical series), which is a different, earlier
+        check this test is not about.
+        """
+        j = [1, 5, 9, 13, 17]
+        rs = _heads(j)
+        bs = _heads(j, base=0.5)
+        rs[2] = np.zeros(len(SWEEP))            # one head with no excess rise
+        r = F.p_value_p_i1(SWEEP, rs, bs, alpha=0.05)
+        assert r["p_value"] is None
+        assert "no rise anywhere" in r["reason"]
+
+    def test_skip_no_rise_scores_the_surviving_heads_and_reports_the_count(self):
+        j = [1, 5, 9, 13, 17]
+        rs = _heads(j)
+        bs = _heads(j, base=0.5)
+        rs[2] = np.zeros(len(SWEEP))
+        r = F.p_value_p_i1(SWEEP, rs, bs, alpha=0.05, skip_no_rise=True)
+        assert r["p_value"] is not None
+        assert r["arms"][0]["n_skipped_no_rise"] == 1
+        assert r["arms"][0]["n_units"] == len(j) - 1
+
 
 class TestEndpointFlags:
     """

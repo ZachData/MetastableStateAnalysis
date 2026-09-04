@@ -200,13 +200,23 @@ def p_value_p_i1(steps: Sequence[float],
                  induction_score: Sequence[Sequence[float]],
                  *,
                  alpha: Optional[float] = None,
-                 seed: int = _SEED) -> dict:
+                 seed: int = _SEED,
+                 skip_no_rise: bool = False) -> dict:
     """
     P-I1's p-value. One arm: do the two curves' rises co-locate across heads,
     more than an arbitrary pairing of the same two populations allows?
 
     Refuses -- `p_value` None with a `reason` -- rather than returning a number
     the design cannot support.
+
+    `skip_no_rise` -- default False, unchanged behaviour -- forwards to
+    `paired_colocation_arm`: PROJECT.md §3.1's fix. Even on the pre-filtered
+    axis (heads that carry a relay somewhere in the RAW sweep) a head's
+    ABOVE-NULL EXCESS can still be flat everywhere once the null is
+    subtracted, and with no skip that one head would refuse the whole gate
+    for a reason that is the null's, not the data's. The count is carried on
+    the arm's own record (`arms[0]["n_skipped_no_rise"]`) rather than
+    duplicated here.
     """
     out: dict = {
         "prediction_id": "P-I1",
@@ -244,7 +254,8 @@ def p_value_p_i1(steps: Sequence[float],
             steps, rs, P_I1_SERIES["relay_strength"]["direction"],
             bs, P_I1_SERIES["induction_score"]["direction"],
             alpha=(alpha if alpha is not None else _gate_alpha()),
-            unit_name=P_I1_UNIT, arm_name="mutual", seed=seed)
+            unit_name=P_I1_UNIT, arm_name="mutual", seed=seed,
+            skip_no_rise=skip_no_rise)
         comb = combine_arms([arm])
     except ColocationRefused as exc:
         out["reason"] = str(exc)
@@ -268,6 +279,7 @@ def adjudicate_p_i1(steps: Sequence[float],
                     *,
                     alpha: Optional[float] = None,
                     seed: int = _SEED,
+                    skip_no_rise: bool = False,
                     artifact_hashes: Sequence[str] = (),
                     run_manifest: Optional[dict] = None,
                     adjudicate: bool = False,
@@ -295,7 +307,7 @@ def adjudicate_p_i1(steps: Sequence[float],
             f"guarantee.")
 
     res = p_value_p_i1(steps, relay_strength, induction_score,
-                       alpha=alpha, seed=seed)
+                       alpha=alpha, seed=seed, skip_no_rise=skip_no_rise)
     res["adjudication"] = None
     if not (adjudicate and res.get("p_value") is not None):
         return res
