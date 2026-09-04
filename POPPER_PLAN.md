@@ -3683,10 +3683,12 @@ It does not compute the behavioural arm — that needs phase 1's `attentions.npz
 per prompt per checkpoint and is a separate computation from the relay series —
 so every number here about the **relay** side is measured on the 19 tables and
 the B side is synthetic, sound only because `paired_colocation_arm` profiles the
-A side first, which the record checks rather than assumes. It does not change
-what `P-I1`'s unit is, which is what fixing the dense-axis refusal properly
-would require. And it does not touch the centroid de-biasing decision §6o left
-open.
+A side first, which the record checks rather than assumes. *(§6u computed the
+behavioural arm and rewired arm A's B side to it; the dense-axis refusal and the
+floor arithmetic are unchanged, and `b_side_is_synthetic` is now `False`.)* It
+does not change what `P-I1`'s unit is, which is what fixing the dense-axis
+refusal properly would require. And it does not touch the centroid de-biasing
+decision §6o left open.
 
 ## 6u. `P-I1`'s behavioural arm, measured over the sweep (2026-09-03)
 
@@ -3743,12 +3745,28 @@ the uniform baseline (max 0.0046, 0 elevated). At step 143000, 7–9 heads are
 clearly elevated (L6H0 0.0247, L2H10 0.0197), so a relay side that is absent
 there would be the falsifier's second disjunct and not a scoring question.
 
-**What this did not do.** It produces no p-value: that is blocked on §3.1 (the
-scored head axis) and §3.4 (the relay-count null's shape), neither startable
-from the code. It does not wire the series into the gate or into `curve.json`
-(§7.1: `curve.json` is the file that gets diffed). It leaves the A/B
-co-location — B leads A by an interval or two on inspection — for the gate that
-cannot yet run.
+**The floor record is rewired to it.** `tools/p_i1_attainable_floor.py` arm A
+paired the real relay series against a synthetic located rise per head, because
+this arm had not been run; `dense_axis_arm` now takes `series_excl_repeated` and
+the record's `b_side_is_synthetic` is `False` (`schema_version` 2, a
+`behavioural_series_json` hash in `inputs`, `--check` verifies it). Nothing the
+record found changes: the **dense** 384-head axis still returns no p-value,
+because `paired_colocation_arm` profiles the A side first and the refusal is the
+268 all-zero relay heads regardless of B. What is new is the **forming** row —
+the 116 relay-carrying heads now emit **p = 0.420** against the measured B side,
+`mean_distance_log_step = 2.02`, the behavioural change leading. On the RAW
+count the two curves do not co-locate per head. Part of that gap is a floor
+effect the null has to absorb — the raw relay count is zero until step 4000, so
+its per-head change cannot be located below log-step 3.6, while the behavioural
+score moves from step 256 — and part is real: the relay counts genuinely
+explode late (`8000 → 54000`). It is the raw-series baseline, not P-I1's test,
+which is the above-null excess §3.4's null would produce.
+
+**What this did not do.** It produces no P-I1 p-value: that is blocked on §3.1
+(the scored head axis) and §3.4 (the relay-count null's shape), neither
+startable from the code. It does not wire the series into the gate or into
+`curve.json` (§7.1: `curve.json` is the file that gets diffed). It leaves the
+A/B co-location — B leads A — for the gate that cannot yet run.
 
 ## 7. What this plan does *not* do
 

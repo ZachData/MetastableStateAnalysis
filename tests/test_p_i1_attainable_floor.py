@@ -297,6 +297,36 @@ class TestTheCommittedRecord:
         assert any("changepoint_colocation.py has changed" in s
                    for s in check_record(p))
 
+    def test_arm_a_is_paired_against_the_measured_behavioural_series(self):
+        """
+        The 2026-09-03 rewire: arm A's B side is the real behavioural series
+        `tools/run/behavioural.py` writes, not the synthetic located rise it
+        used before. The forming-head axis still emits, and on the RAW count
+        the two curves do not co-locate -- p well above alpha, the per-head
+        change locations ~2 log-steps apart.
+        """
+        from tools.p_i1_attainable_floor import RECORD_PATH
+        rec = json.loads(RECORD_PATH.read_text())
+        da = rec["dense_axis"]
+        assert da["b_side_is_synthetic"] is False
+        assert rec["inputs"]["behavioural_series_json"].endswith(
+            "behavioural_series.json")
+        assert rec["inputs"]["behavioural_series_json_sha256"]
+        forming = da["rows"][1]
+        assert forming["refused"] is False
+        assert forming["p_value"] > 0.05
+        assert da["the_two_curves_do_not_co_locate_on_the_raw_series"] is True
+        assert forming["mean_distance_log_step"] > 1.0
+
+    def test_the_checker_catches_a_record_reverted_to_a_synthetic_b_side(self, tmp_path):
+        from tools.p_i1_attainable_floor import RECORD_PATH, check_record
+        rec = json.loads(RECORD_PATH.read_text())
+        rec["dense_axis"]["b_side_is_synthetic"] = True
+        p = tmp_path / "synthetic.json"
+        p.write_text(json.dumps(rec))
+        assert any("B side is not the measured behavioural series" in s
+                   for s in check_record(p))
+
     def test_the_record_carries_the_registered_grid_and_owner(self):
         from tools.p_i1_attainable_floor import RECORD_PATH
         rec = json.loads(RECORD_PATH.read_text())

@@ -253,10 +253,18 @@ runs 0 → 14 (step 8000) → 9. Endpoint precondition clean both ends: step 0 a
 an interval or two on inspection; the co-location itself needs the gate, which is
 blocked on §3.1 and §3.4.
 
-The B side in `claims/audits/p_i1_attainable_floor.json` is still synthetic —
-that record predates this run and its floor arithmetic does not depend on the B
-values (`paired_colocation_arm` profiles the A side first). Rewiring the floor
-record to the measured B series is a follow-up, not a correction.
+**The floor record is rewired to it** (`schema_version` 2, same session).
+`tools/p_i1_attainable_floor.py` arm A now pairs the real relay series against
+`series_excl_repeated`, not the synthetic located rise it used before;
+`b_side_is_synthetic` is `False` and `--check` verifies the input hash. The
+dense-axis refusal is unchanged (`paired_colocation_arm` profiles the A side
+first, so the 268 all-zero relay heads decide it regardless of B). What is new:
+the 116 forming heads emit **p = 0.420** against the measured B side,
+**mean_distance_log_step = 2.02** — on the raw count the two curves do not
+co-locate per head, behaviour leading. Not P-I1's test (raw count, not the
+above-null excess §3.4's null would produce) and partly a floor effect — the
+relay count is structurally zero until step 4000 so its change can't be located
+below log-step 3.6 — but it is the number the null now has to move.
 
 ---
 

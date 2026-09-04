@@ -38,6 +38,15 @@ input emits — which is what says the refusal is about the AXIS and not about t
 relay series. Whether it emits at its FLOOR is arm C's question, and there it
 does.
 
+Against the MEASURED behavioural series (`series_excl_repeated`, seven prompts
+pooled, `POPPER_PLAN.md` §6u) the forming-head axis emits p = 0.420: on the RAW
+count the per-head relay-change and behavioural-change locations are 2.02
+log-steps apart, the behavioural rise leading. That is not P-I1's test — the
+gate scores the above-null EXCESS, and the raw relay count is structurally zero
+until step 4000 so its change cannot be located below log-step 3.6 while the
+behavioural score has no such floor — but it is the raw-series baseline a
+relay-count null has to move.
+
 **The floor the arm reported was the wrong half.** `paired_colocation_arm`
 reported `1 / n_draws`, the draw-count floor, alone. The statistic is
 `-mean|ca - cb[p]|`, and permuting units WITHIN a class of equal locations
@@ -57,7 +66,8 @@ why it is step 1 rather than a footnote to step 4.
 
 FIVE ARMS
 
-A. `dense_axis`         — the wiring, on the real relay series.
+A. `dense_axis`         — the wiring, on the real relay series paired against
+                          the measured behavioural series.
 B. `tie_structure`      — the multiplicity of the real per-head locations, per
                           relay owner. 79 distinct centroids is not 79 even
                           classes.
@@ -75,10 +85,13 @@ shape such a null would have — a degree-preserving rewiring within each
 (context, layer, head) — and records that it is the author's decision. It stays
 the author's decision.
 
-It adjudicates nothing. `claims/adjudications/` stays empty, `P-I1` stays
-`needs-null`, and the behavioural arm of the curve is still not computed: the
-B-side series used here is synthetic and is only ever the side the refusals do
-not come from. Every number about the RELAY side is measured on the 19 tables.
+It adjudicates nothing. `claims/adjudications/` stays empty and `P-I1` stays
+`needs-null`. The behavioural arm of the curve IS now computed — arm A pairs the
+real relay series against the measured behavioural series `tools/run/
+behavioural.py` writes (`POPPER_PLAN.md` §6u), not the synthetic stand-in it
+used through 2026-09-03. What stays uncomputed is P-I1's relay-count NULL, so
+the relay series here is still the raw count and not the above-null excess the
+gate scores; §3.4 records the null's shape as the author's decision.
 """
 
 from __future__ import annotations
@@ -109,17 +122,21 @@ from p7_motifs.formation_gate import P_I1_RELAY_OWNER, p_value_p_i1
 
 REPO = Path(__file__).resolve().parent.parent
 RECORD_PATH = REPO / "claims" / "audits" / "p_i1_attainable_floor.json"
-RECORD_SCHEMA_VERSION = 1
+#: 2 — arm A rewired from a synthetic B side to the measured behavioural series
+#: (`tools/run/behavioural.py`), 2026-09-03.
+RECORD_SCHEMA_VERSION = 2
 
 CONSTRUCTION_PATH = REPO / "core" / "changepoint_colocation.py"
 FORMATION_GATE_PATH = REPO / "p7_motifs" / "formation_gate.py"
 FORMATION_CURVE_PATH = REPO / "p7_motifs" / "formation_curve.py"
 
-#: Written by `tools/run/curve.py`. Generated bulk, git-ignored, so the record
-#: carries their hashes rather than assuming a reader has them.
+#: Written by `tools/run/curve.py` and `tools/run/behavioural.py`. Generated
+#: bulk, git-ignored, so the record carries their hashes rather than assuming a
+#: reader has them.
 DATA = Path(os.environ.get("METS_DATA", str(REPO / "data")))
 CURVE_JSON = DATA / "analysis" / "curve.json"
 SERIES_JSON = DATA / "analysis" / "formation_series.json"
+BEHAVIOURAL_SERIES_JSON = DATA / "analysis" / "behavioural_series.json"
 
 #: pythia-410m. Not read from a config: this arm is about what the axis rule
 #: does at a KNOWN head count, and the count is the thing being varied against.
@@ -156,10 +173,40 @@ def _load_series() -> Tuple[List[int], Dict[str, Dict[Tuple[int, int], List[floa
     return steps, series
 
 
+def _load_behavioural_series() -> Dict[Tuple[int, int], List[float]]:
+    """
+    The per-head behavioural (B) series `tools/run/behavioural.py` writes.
+
+    `series_excl_repeated` — the scored side of that arm: the seven
+    non-`repeated_tokens` battery prompts pooled, `repeated_tokens` carried
+    beside and never in it, which is the relay side's convention (PROJECT.md
+    §5.1 decision 4) mirrored. Dense over all 384 heads at every checkpoint,
+    which is what `formation_curve_payload`'s axis rule needs — a head absent
+    from it would be one the checkpoint did not have, not one that scored zero.
+    """
+    if not BEHAVIOURAL_SERIES_JSON.exists():
+        raise SystemExit(
+            f"{BEHAVIOURAL_SERIES_JSON} is missing. It is generated bulk: run\n"
+            f"  python3 -m tools.run.behavioural --write\n"
+            f"which reads the 19x8 phase-1 attention tensors (~1 min).")
+    raw = json.loads(BEHAVIOURAL_SERIES_JSON.read_text())
+    steps = [int(s) for s in raw["steps"]]
+    if tuple(steps) != tuple(REGISTERED_P_I1_SWEEP):
+        raise SystemExit(
+            f"{BEHAVIOURAL_SERIES_JSON} is on a {len(steps)}-checkpoint grid "
+            f"that is not the registered sweep {list(REGISTERED_P_I1_SWEEP)}. "
+            f"A floor measured on the wrong grid is a floor for another design.")
+    return {tuple(int(x) for x in k.split(",")): [float(v) for v in vals]
+            for k, vals in raw["series_excl_repeated"].items()}
+
+
 def _b_side(a: Sequence[Sequence[float]]) -> List[List[float]]:
     """
-    A perfect input's B side: a DIFFERENT series with the SAME change location
-    at every unit.
+    A PERFECT INPUT's B side: a DIFFERENT series with the SAME change location
+    at every unit. Arms C and D use this and not the measured behavioural
+    series on purpose — they ask what a perfectly co-locating input returns,
+    which is the definition of the floor, so their B must co-locate with A by
+    construction. Only arm A pairs against the real behavioural series.
 
     `change_profile` normalises the change mass, so a positive rescaling leaves
     the centroid bit-identical while `np.array_equal` is False — which matters,
@@ -176,37 +223,29 @@ def _b_side(a: Sequence[Sequence[float]]) -> List[List[float]]:
 # ---------------------------------------------------------------------------
 
 def dense_axis_arm(steps: Sequence[int],
-                   series: Dict[Tuple[int, int], List[float]]) -> dict:
+                   series: Dict[Tuple[int, int], List[float]],
+                   behav: Dict[Tuple[int, int], List[float]]) -> dict:
     """
     Hand `p_value_p_i1` the payload `formation_curve_payload` actually builds,
     and then the same input restricted to the heads that carry relays.
 
-    The B side is synthetic. It has to be — the behavioural induction score is
-    computed from phase 1's attention tensor and has not been computed for this
-    sweep — and it is sound here for one reason that is checked rather than
-    assumed: `paired_colocation_arm` profiles the A side FIRST, so the refusal
-    this arm reports comes from the relay series, which is real. The arm records
-    which side the refusal names.
+    The B side is the MEASURED behavioural series (`tools/run/behavioural.py`,
+    `POPPER_PLAN.md` §6u) — `series_excl_repeated`, the seven-prompt pool. It
+    was a synthetic located rise per head through 2026-09-03, when the
+    behavioural arm had not been run; that stand-in is gone. The dense-axis
+    refusal is unchanged by the swap and the arm records why: `paired_
+    colocation_arm` profiles the A side FIRST, so the refusal comes from the
+    relay series' 268 all-zero heads regardless of what B is.
     """
     forming = sorted(series)
     dense = [(l, h) for l in range(N_LAYERS) for h in range(N_HEADS)]
-    rng = np.random.default_rng(_SEED)
 
-    # A behavioural series that rises everywhere, at a LOCATION that differs
-    # across heads. The first version of this arm used a random monotone walk
-    # and the forming row refused too — with the same numerical-noise backstop,
-    # for the opposite reason: a walk spreads its change mass over every
-    # interval, so every head's centroid sits at the grid's own midpoint, the
-    # B side is a constant, and permuting it moves nothing. That is the
-    # `diffuse_reference_profile` pull the construction exists to warn about,
-    # arriving in this file's own fixture. A located change per head is what a
-    # B side has to be for the arm to have two populations to pair.
-    n_int = len(steps) - 1
-    behav = {}
-    for k in dense:
-        v = np.zeros(len(steps), dtype=np.float64)
-        v[int(rng.integers(n_int)) + 1:] = 1.0
-        behav[k] = v.tolist()
+    missing = [k for k in dense if k not in behav]
+    if missing:
+        raise SystemExit(
+            f"the behavioural series is missing {len(missing)} of the "
+            f"{len(dense)} heads (e.g. {missing[:3]}); it must be dense over "
+            f"the model's heads for `formation_curve_payload`'s axis rule")
 
     rows = []
     for label, axis in (("dense (every head the model has)", dense),
@@ -224,6 +263,7 @@ def dense_axis_arm(steps: Sequence[int],
                            pay["behavioral_induction_score"])
         n_zero = sum(1 for row in pay["motif_strength"]
                      if not any(v > 0.0 for v in row))
+        arm0 = res["arms"][0] if res["p_value"] is not None else {}
         rows.append({
             "axis": label,
             "n_heads_on_axis": int(pay["n_heads"]),
@@ -231,15 +271,16 @@ def dense_axis_arm(steps: Sequence[int],
             "p_value": res["p_value"],
             "refused": res["p_value"] is None,
             "reason": res["reason"],
-            "attainable_floor": (res["arms"][0]["attainable_floor"]
-                                 if res["p_value"] is not None else None),
+            "attainable_floor": arm0.get("attainable_floor"),
+            "mean_distance_log_step": arm0.get("mean_distance_log_step"),
         })
 
     dense_row, forming_row = rows
     return {
         "_what": ("`p_value_p_i1` on the payload `formation_curve_payload` "
-                  "builds from the real relay series, and on the same input "
-                  "restricted to the heads that carry relays."),
+                  "builds from the real relay series and the measured "
+                  "behavioural series, and on the same input restricted to the "
+                  "heads that carry relays."),
         "_why_it_is_here": (
             "a floor is the smallest p a design can express, and the first "
             "thing to establish is whether it can express one. On the axis the "
@@ -254,13 +295,29 @@ def dense_axis_arm(steps: Sequence[int],
             "cannot tell that 268 of 384 units caused it, nor that no relay "
             "series whatever lifts it short of every head in the model gaining "
             "one."),
+        "_the_forming_axis_against_the_measured_b_side": (
+            f"emits p = {forming_row['p_value']:.3g}: on the RAW relay count "
+            f"the per-head relay-change and behavioural-change locations are "
+            f"{forming_row['mean_distance_log_step']:.3g} log-steps apart, the "
+            "behavioural rise leading. Not P-I1's test — the gate scores the "
+            "above-null EXCESS, and the raw relay count is structurally zero "
+            "until step 4000 so its change cannot be located below log-step "
+            "3.6 while the behavioural score has no such floor — but it is the "
+            "raw-series baseline a relay-count null has to move."),
         "n_layers": N_LAYERS,
         "n_heads_per_layer": N_HEADS,
-        "b_side_is_synthetic": True,
-        "b_side_is_sound_because_the_a_side_is_profiled_first": True,
+        "b_side_is_synthetic": False,
+        "b_side_source": "data/analysis/behavioural_series.json :: "
+                         "series_excl_repeated (tools/run/behavioural.py, "
+                         "POPPER_PLAN.md 6u)",
+        "dense_refusal_comes_from_the_a_side_profiled_first": True,
         "rows": rows,
         "dense_axis_emits_no_p_value": bool(dense_row["refused"]),
         "forming_axis_emits_a_p_value": bool(not forming_row["refused"]),
+        "forming_axis_p_against_measured_b": forming_row["p_value"],
+        "forming_axis_mean_separation_log_step": forming_row["mean_distance_log_step"],
+        "the_two_curves_do_not_co_locate_on_the_raw_series": bool(
+            forming_row["p_value"] is not None and forming_row["p_value"] > 0.05),
         "refusal_names_the_no_rise_condition": bool(
             dense_row["reason"] is not None
             and "no rise" in dense_row["reason"]),
@@ -596,7 +653,9 @@ def build_record(seed: int = _SEED) -> dict:
     t0 = time.time()
     alpha = _alpha()
     steps, series = _load_series()
+    behav = _load_behavioural_series()
     reg = series[P_I1_RELAY_OWNER]
+    behav_raw = json.loads(BEHAVIOURAL_SERIES_JSON.read_text())
 
     rec: dict = {
         "schema_version": RECORD_SCHEMA_VERSION,
@@ -617,6 +676,19 @@ def build_record(seed: int = _SEED) -> dict:
             "series_json_sha256": _sha256(SERIES_JSON),
             "curve_json_sha256": (_sha256(CURVE_JSON)
                                   if CURVE_JSON.exists() else None),
+            "behavioural_series_json": str(
+                BEHAVIOURAL_SERIES_JSON.relative_to(REPO))
+            if BEHAVIOURAL_SERIES_JSON.is_relative_to(REPO)
+            else str(BEHAVIOURAL_SERIES_JSON),
+            "behavioural_series_json_sha256": _sha256(BEHAVIOURAL_SERIES_JSON),
+            "behavioural_n_pairs_excl_repeated": behav_raw.get(
+                "n_pairs_excl_repeated"),
+            "behavioural_n_pairs_incl_repeated": behav_raw.get(
+                "n_pairs_incl_repeated"),
+            "behavioural_convention": (
+                "series_excl_repeated: seven non-repeated_tokens prompts "
+                "pooled, pair-count weighted; mirrors the relay side "
+                "(PROJECT.md 5.1 decision 4)"),
             "_note": (
                 "generated bulk under data/, git-ignored. The hashes are here "
                 "so a reader can tell whether their tables are the ones these "
@@ -624,7 +696,7 @@ def build_record(seed: int = _SEED) -> dict:
                 "files are present."),
         },
     }
-    rec["dense_axis"] = dense_axis_arm(steps, reg)
+    rec["dense_axis"] = dense_axis_arm(steps, reg, behav)
     rec["tie_structure"] = tie_structure_arm(steps, series)
     rec["perfect_input"] = perfect_input_arm(steps, series, alpha)
     rec["the_defect"] = the_defect_arm(steps, alpha)
@@ -646,9 +718,12 @@ def build_record(seed: int = _SEED) -> dict:
         f"heads, {t['rows'][0]['n_heads_with_no_relay_anywhere']} of them with "
         f"no relay anywhere, and `change_profile` refuses each one. On the "
         f"{t['rows'][1]['n_heads_on_axis']} heads that do form it emits "
-        f"({t['rows'][1]['p_value']:.4g} against an arbitrary B side, "
-        f"{p_reg['perfect_input_p']:.4g} against a perfectly co-locating one, "
-        f"which is its floor). And the floor it reported was the draw-count "
+        f"({t['rows'][1]['p_value']:.4g} against the measured behavioural "
+        f"series — the two curves do not co-locate on the raw count, ~"
+        f"{t['rows'][1]['mean_distance_log_step']:.3g} log-steps apart with "
+        f"the behaviour leading — and {p_reg['perfect_input_p']:.4g} against a "
+        f"perfectly co-locating B side, which is its floor). And the floor it "
+        f"reported was the draw-count "
         f"half alone: at "
         f"{d['rows'][0]['n_units']} units with "
         f"{d['rows'][0]['largest_tied_class']} sharing one location the "
@@ -667,10 +742,11 @@ def check_record(path: Path = RECORD_PATH) -> List[str]:
     Is the committed record still about the files on disk, and does it still
     support the change it was the evidence for?
 
-    Four things can fail and each of them should: the record can describe a
-    module that has moved; the dense-axis refusal can stop being there, in
-    which case the wiring finding has nothing behind it; the two halves of the
-    floor can stop disagreeing, in which case `pairing_floor_report` is
+    Things that can fail and each of them should: the record can describe a
+    module that has moved; the B side can stop being the measured behavioural
+    series or its hash can drift; the dense-axis refusal can stop being there,
+    in which case the wiring finding has nothing behind it; the two halves of
+    the floor can stop disagreeing, in which case `pairing_floor_report` is
     reporting a distinction that no longer exists; and the arm can stop
     refusing exactly the cases whose floor is above alpha, which is the fix.
     """
@@ -715,8 +791,20 @@ def check_record(path: Path = RECORD_PATH) -> List[str]:
         problems.append(
             f"{SERIES_JSON.name} on disk is not the one these numbers came "
             f"from; rerun `python tools/run/curve.py` then --write")
+    if (BEHAVIOURAL_SERIES_JSON.exists()
+            and inp.get("behavioural_series_json_sha256")
+            != _sha256(BEHAVIOURAL_SERIES_JSON)):
+        problems.append(
+            f"{BEHAVIOURAL_SERIES_JSON.name} on disk is not the one these "
+            f"numbers came from; rerun "
+            f"`python3 -m tools.run.behavioural --write` then --write")
 
     da = rec.get("dense_axis") or {}
+    if da.get("b_side_is_synthetic") is not False:
+        problems.append(
+            "the record's B side is not the measured behavioural series. Arm A "
+            "was rewired to `data/analysis/behavioural_series.json` on "
+            "2026-09-03; a synthetic B side here means the rewire was reverted")
     if not da.get("dense_axis_emits_no_p_value"):
         problems.append(
             "the record's dense-axis refusal is gone. Either the axis rule or "
@@ -727,6 +815,12 @@ def check_record(path: Path = RECORD_PATH) -> List[str]:
             "the forming-head axis stopped emitting a p-value, so the record "
             "no longer shows that the dense-axis refusal is about the AXIS "
             "rather than about the data")
+    if not da.get("the_two_curves_do_not_co_locate_on_the_raw_series"):
+        problems.append(
+            "the forming-axis p against the measured B side dropped to or "
+            "below alpha. The raw relay and behavioural counts co-locating "
+            "per head would be a substantive change this record does not "
+            "describe — check it is not an artefact of a regenerated series")
 
     ts = rec.get("tie_structure") or {}
     if not ts.get("tie_half_does_not_bind_on_the_real_head_set"):
@@ -785,6 +879,9 @@ def print_summary(rec: dict) -> None:
         print(f"  {r['axis']:36s} {r['n_heads_on_axis']:>6d} "
               f"{r['n_heads_with_no_relay_anywhere']:>9d} {p:>10s}  "
               f"{(r['reason'] or '')[:52]}")
+    print(f"  B side: measured behavioural series (synthetic={da['b_side_is_synthetic']}); "
+          f"forming-axis p {da['forming_axis_p_against_measured_b']:.4g}, "
+          f"separation {da['forming_axis_mean_separation_log_step']:.3g} log-step")
     print(f"  refusal names the unit that caused it: "
           f"{da['refusal_names_the_unit_that_caused_it']}")
 

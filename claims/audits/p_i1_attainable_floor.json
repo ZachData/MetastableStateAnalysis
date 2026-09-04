@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "_what_this_is": "step 1 of EVALUABILITY.md's order \u2014 the attainable floor \u2014 for P-I1's relay-count null, run before the control exists.",
-  "generated_utc": "2026-09-04T03:29:06Z",
+  "generated_utc": "2026-09-04T04:01:00Z",
   "seed": 20260824,
   "alpha": 0.05,
   "registered_sweep": [
@@ -33,16 +33,23 @@
     "series_json": "data/analysis/formation_series.json",
     "series_json_sha256": "5d8b40fdae63d0e6d222c79d591221da1c43fe2ff3b1d98c3bf99737a9bf5d07",
     "curve_json_sha256": "e6e09b93edb1c07cd03ecbf5f851a8b72f9ed6166e48f51ccc13e85195f3d6b1",
+    "behavioural_series_json": "data/analysis/behavioural_series.json",
+    "behavioural_series_json_sha256": "0eb229010c2c3c164e644b7373b016ccfbbd2e0b8713733a7acdd7c9810e8b7c",
+    "behavioural_n_pairs_excl_repeated": 10618,
+    "behavioural_n_pairs_incl_repeated": 44809,
+    "behavioural_convention": "series_excl_repeated: seven non-repeated_tokens prompts pooled, pair-count weighted; mirrors the relay side (PROJECT.md 5.1 decision 4)",
     "_note": "generated bulk under data/, git-ignored. The hashes are here so a reader can tell whether their tables are the ones these numbers came from; `--check` verifies them only when the files are present."
   },
   "dense_axis": {
-    "_what": "`p_value_p_i1` on the payload `formation_curve_payload` builds from the real relay series, and on the same input restricted to the heads that carry relays.",
+    "_what": "`p_value_p_i1` on the payload `formation_curve_payload` builds from the real relay series and the measured behavioural series, and on the same input restricted to the heads that carry relays.",
     "_why_it_is_here": "a floor is the smallest p a design can express, and the first thing to establish is whether it can express one. On the axis the pipeline builds it cannot, and the reason is the axis rule rather than the data: the behavioural series is dense over all 384 heads, the relay side is zero on the 268 that never carry a relay, and `paired_colocation_arm` profiles every unit with no per-unit skip while `change_profile` refuses a series with no rise.",
     "_and_the_message_names_none_of_that": "the refusal reads 'the series has no rise anywhere in the sweep'. It names no arm, no head index and no unit count, so a reader cannot tell that 268 of 384 units caused it, nor that no relay series whatever lifts it short of every head in the model gaining one.",
+    "_the_forming_axis_against_the_measured_b_side": "emits p = 0.42: on the RAW relay count the per-head relay-change and behavioural-change locations are 2.02 log-steps apart, the behavioural rise leading. Not P-I1's test \u2014 the gate scores the above-null EXCESS, and the raw relay count is structurally zero until step 4000 so its change cannot be located below log-step 3.6 while the behavioural score has no such floor \u2014 but it is the raw-series baseline a relay-count null has to move.",
     "n_layers": 24,
     "n_heads_per_layer": 16,
-    "b_side_is_synthetic": true,
-    "b_side_is_sound_because_the_a_side_is_profiled_first": true,
+    "b_side_is_synthetic": false,
+    "b_side_source": "data/analysis/behavioural_series.json :: series_excl_repeated (tools/run/behavioural.py, POPPER_PLAN.md 6u)",
+    "dense_refusal_comes_from_the_a_side_profiled_first": true,
     "rows": [
       {
         "axis": "dense (every head the model has)",
@@ -51,20 +58,25 @@
         "p_value": null,
         "refused": true,
         "reason": "the series has no rise anywhere in the sweep (total registered-direction change is 0.0); there is no location to measure. A uniform profile would report the change as spread evenly over training rather than as absent.",
-        "attainable_floor": null
+        "attainable_floor": null,
+        "mean_distance_log_step": null
       },
       {
         "axis": "forming (heads carrying relays)",
         "n_heads_on_axis": 116,
         "n_heads_with_no_relay_anywhere": 0,
-        "p_value": 0.050474762618690654,
+        "p_value": 0.42028985507246375,
         "refused": false,
         "reason": null,
-        "attainable_floor": 0.0004997501249375312
+        "attainable_floor": 0.0004997501249375312,
+        "mean_distance_log_step": 2.015583818169803
       }
     ],
     "dense_axis_emits_no_p_value": true,
     "forming_axis_emits_a_p_value": true,
+    "forming_axis_p_against_measured_b": 0.42028985507246375,
+    "forming_axis_mean_separation_log_step": 2.015583818169803,
+    "the_two_curves_do_not_co_locate_on_the_raw_series": true,
     "refusal_names_the_no_rise_condition": true,
     "refusal_names_the_unit_that_caused_it": false
   },
@@ -560,5 +572,5 @@
     "_the_requirement": "P-I1 needs a relay-count null leaving at least 4 heads with a rising excess, and among them no more than k sharing one change location, k as tabulated. On the raw series the scored set is 116 heads with a largest class of 36, which clears both by a wide margin; what is not known, and cannot be until the null exists, is how much of that the excess subtraction keeps."
   },
   "elapsed_seconds": 0.2,
-  "_the_finding": "P-I1's mutual arm cannot express a p-value at all on the axis `formation_curve_payload` builds: 384 heads, 268 of them with no relay anywhere, and `change_profile` refuses each one. On the 116 heads that do form it emits (0.05047 against an arbitrary B side, 0.0004998 against a perfectly co-locating one, which is its floor). And the floor it reported was the draw-count half alone: at 10 units with 9 sharing one location the reported floor was 0.000500 against an attainable 0.100000, a factor of 200. On the real 116 heads the tie half is 10^-148 and does not bind \u2014 it binds on the set a relay-count null leaves, which is why this is step 1 and not a footnote to step 4."
+  "_the_finding": "P-I1's mutual arm cannot express a p-value at all on the axis `formation_curve_payload` builds: 384 heads, 268 of them with no relay anywhere, and `change_profile` refuses each one. On the 116 heads that do form it emits (0.4203 against the measured behavioural series \u2014 the two curves do not co-locate on the raw count, ~2.02 log-steps apart with the behaviour leading \u2014 and 0.0004998 against a perfectly co-locating B side, which is its floor). And the floor it reported was the draw-count half alone: at 10 units with 9 sharing one location the reported floor was 0.000500 against an attainable 0.100000, a factor of 200. On the real 116 heads the tie half is 10^-148 and does not bind \u2014 it binds on the set a relay-count null leaves, which is why this is step 1 and not a footnote to step 4."
 }
