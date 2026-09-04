@@ -1,10 +1,18 @@
 <!-- INDEX.md -->
 # Project index
 
-## Current priority (2026-08-22 — read this first)
+**This file is the structural map: which phase lives in which directory, what is
+archived, and what is referenced but absent. It is not the current state of the
+work — that is `PROJECT.md`, which is the file to read first.**
 
-- **Active work: Phase 2, Pythia rerun**, plus **Phase 7** (new — the mechinterp/particle
-  bridge, starting with induction-head formation; see `p7_motifs/design-7.md`).
+## Current priority (updated 2026-09-03)
+
+- **Active work: Phase 7** — the mechinterp/particle bridge, currently `P-I1`
+  (induction-head formation as a two-stage `relay` motif). See `PROJECT.md` for
+  where it stands and what is blocking, and `p7_motifs/design-7.md` for the
+  translation table.
+- **Phase 2's Pythia rerun is complete.** The 19-step registered sweep is on
+  disk; `PROJECT.md` §1 has the layout.
 - **Everything after Phase 2 has been archived.** Phases 3, 4, 5, 5b, 5c and 6 moved to
   `archive/` on 2026-08-22. They are not maintained, not imported by anything live, and
   their tests are not collected. Their findings stand and stay citable — see
@@ -25,7 +33,7 @@
 | 1 | `p1_mstate_tracking/` | Complete |
 | 1b | `p1b_hemisphere/` | Complete |
 | 1c | `p1c_frames/` | Implemented and validated on synthetic data; **not yet run against Pythia artifacts** |
-| 2 | `p2_eigenspectra/` | Complete; Pythia rerun is the active work |
+| 2 | `p2_eigenspectra/` | Complete; the Pythia rerun is done and the 19-step sweep is on disk |
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |
 | 2d | `p2d_operator_activation/` | Implemented and validated on constructed operators; **not run**. Blocked on Phase 1c-B by design |
 | 7 | `p7_motifs/` | New — mechinterp phenomena as particle motifs. See "Phase 7" below |

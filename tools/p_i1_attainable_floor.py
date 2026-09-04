@@ -7,8 +7,8 @@ check what the measurement grid contributes, and only then build the control.*
 `P-AB1` (`POPPER_PLAN.md` 6q) and `P-I3` (6s) were built that way and on both of
 them the first three steps changed the design before any control existed.
 
-For P-I1's relay-count null, HANDOFF.md's session of 2026-09-03 recorded steps 2
-and 3 as done and step 1 as NOT done:
+For P-I1's relay-count null, the session of 2026-09-01 recorded steps 2 and 3 as
+done and step 1 as NOT done (PROJECT.md §3):
 
   * step 2 — what the statistic degenerates on: the prompt's own induction-pair
     supply, r = +0.9958 across the eight battery prompts at step 54000.
@@ -70,7 +70,7 @@ E. `floor_vs_survivors` — the closed form over (n, k) and where the real
 
 WHAT THIS DELIBERATELY DOES NOT DO
 
-It builds no relay-count null and registers nothing. HANDOFF.md §5 records the
+It builds no relay-count null and registers nothing. PROJECT.md §3.4 records the
 shape such a null would have — a degree-preserving rewiring within each
 (context, layer, head) — and records that it is the author's decision. It stays
 the author's decision.
@@ -279,7 +279,7 @@ def tie_structure_arm(steps: Sequence[int],
     """
     The multiplicity of the real per-head change locations, per relay owner.
 
-    HANDOFF.md §3 reports 68 / 79 / 86 distinct centroids over 102 / 116 / 122
+    PROJECT.md §2 reports 68 / 79 / 86 distinct centroids over 102 / 116 / 122
     heads and reads that as the degeneracy clearing. It does clear — one
     location was a floor of 1.000 and this is not — but the classes are not
     even, and the floor is set by the LARGEST class, not by the count of them.
@@ -561,7 +561,7 @@ def floor_vs_survivors_arm(alpha: float) -> dict:
         "_what_it_does_not_say": (
             "nothing here is a null. It does not say how much a relay-count "
             "null SHOULD remove, only what it may remove and still leave a "
-            "design that can reject. HANDOFF.md §5 records the shape the "
+            "design that can reject. PROJECT.md §3.4 records the shape the "
             "author has to choose and this does not choose it."),
         "alpha": alpha,
         "rows": rows,

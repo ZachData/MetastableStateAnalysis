@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "_what_this_is": "step 1 of EVALUABILITY.md's order \u2014 the attainable floor \u2014 for P-I1's relay-count null, run before the control exists.",
-  "generated_utc": "2026-09-04T03:08:54Z",
+  "generated_utc": "2026-09-04T03:29:06Z",
   "seed": 20260824,
   "alpha": 0.05,
   "registered_sweep": [
@@ -343,7 +343,7 @@
   "floor_vs_survivors": {
     "_what": "the two halves of the floor as functions of how many heads survive the above-null excess, at the registered alpha.",
     "_why_it_is_here": "EVALUABILITY.md's order puts the floor before the control because the floor is a constraint ON the control. A relay-count null that leaves three scored heads cannot produce a p-value at any alpha the registry uses, and one that leaves twelve of which nine share a location cannot either \u2014 and both are decidable now, with no null built and no draw taken.",
-    "_what_it_does_not_say": "nothing here is a null. It does not say how much a relay-count null SHOULD remove, only what it may remove and still leave a design that can reject. HANDOFF.md \u00a75 records the shape the author has to choose and this does not choose it.",
+    "_what_it_does_not_say": "nothing here is a null. It does not say how much a relay-count null SHOULD remove, only what it may remove and still leave a design that can reject. PROJECT.md \u00a73.4 records the shape the author has to choose and this does not choose it.",
     "alpha": 0.05,
     "rows": [
       {

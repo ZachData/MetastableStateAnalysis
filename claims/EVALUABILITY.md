@@ -1297,7 +1297,7 @@ Fourth row worked in the order this document prescribes — floor, then what the
 statistic degenerates on, then the measurement grid, then the control — after
 `P-AB1` (§6q), `CLAIM-B`'s grid (§6r) and `P-I3` (§6s). It is the first applied
 to a control that **does not exist yet**: `P-I1`'s relay-count null has never
-been built, `HANDOFF.md` §5 records its shape as the author's decision, and
+been built, `PROJECT.md` §3.4 records its shape as the author's decision, and
 steps 2 and 3 were done on 2026-09-01 with step 1 left. `P-I1` is **not
 converted** by this pass and stays `needs-null`.
 

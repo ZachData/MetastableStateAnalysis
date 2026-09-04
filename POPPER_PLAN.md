@@ -3538,14 +3538,14 @@ with `core.changepoint_colocation.pairing_floor_report` behind it.
 `claims/EVALUABILITY.md` prescribes one order for every row that names a matched
 control — *compute the attainable floor, name what the statistic degenerates on,
 check what the measurement grid contributes, and only then build the control* —
-and `HANDOFF.md`'s session of 2026-09-01 did steps 2 and 3 for `P-I1`'s
+and the session of 2026-09-01 (commit `f395127`) did steps 2 and 3 for `P-I1`'s
 relay-count null and left step 1. This is step 1. It is the **fourth** row built
 in that order after `P-AB1` (§6q), `CLAIM-B`'s grid (§6r) and `P-I3` (§6s), and
 the first where the order was applied to a null that does not exist yet rather
 than to one about to be written.
 
-**`P-I1` is not converted and the relay-count null is not built.** `HANDOFF.md`
-§5 records the shape such a null would take — a degree-preserving rewiring
+**`P-I1` is not converted and the relay-count null is not built.** `PROJECT.md`
+§3.4 records the shape such a null would take — a degree-preserving rewiring
 within each (context, layer, head) — and records that choosing it is the
 author's. It stays the author's. What step 1 produces is a *constraint on* that
 choice, which is the whole reason `EVALUABILITY.md` puts it first.
@@ -3566,7 +3566,8 @@ refuses on the first all-zero unit and `p_value_p_i1` returns no p-value at all.
 Restricted to the 116 forming heads the identical input emits, which is what
 says the refusal is about the axis and not about the relay series.
 
-`HANDOFF.md` §3 recorded that `change_profile` "refuses each one" of the 268.
+The 2026-09-01 write-up recorded that `change_profile` "refuses each one" of
+the 268.
 That reading is what a per-unit refusal would do and is not what happens: there
 is no per-unit branch, so the first one takes the gate with it.
 
@@ -3621,7 +3622,7 @@ fire and the record measures that rather than asserting it.
 
 ### 2 and 3, already done, and what the new arithmetic adds to them
 
-Recorded in `HANDOFF.md` and unchanged here. **Step 2** — what the statistic
+Recorded in `PROJECT.md` §3 and unchanged here. **Step 2** — what the statistic
 degenerates on — is the prompt's own induction-pair supply, r = **+0.9958**
 across the eight battery prompts at step 54000, +0.8908 excluding
 `repeated_tokens`. **Step 3** — what the measurement grid contributes — was

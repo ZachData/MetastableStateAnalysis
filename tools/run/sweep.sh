@@ -69,7 +69,7 @@ want = {"torch": "2.13.0+cpu", "transformers": "4.57.6"}
 got = {"torch": torch.__version__, "transformers": transformers.__version__}
 if got != want:
     print(f"WRONG LIBRARY VERSIONS: {got} != {want}", file=sys.stderr)
-    print("  The 19-step grid must be one environment; see HANDOFF.md §1 on the "
+    print("  The 19-step grid must be one environment; see PROJECT.md §1 on the "
           "transformers<5 pin and core/rope.py.", file=sys.stderr)
     sys.exit(2)
 EOF

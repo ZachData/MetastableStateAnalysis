@@ -1,7 +1,8 @@
 """The P-I1 formation curve over the registered 19-step grid.
 
-Answers HANDOFF.md §6's first question: with the five log-spaced fills inside
-(1000, 54000) on disk, does the per-head change centroid still take ONE value?
+Answers the question the 12-step CLAIM-B grid left standing: with the five
+log-spaced fills inside (1000, 54000) on disk, does the per-head change centroid
+still take ONE value? It does not -- PROJECT.md §2.
 
 PATHS ARE DERIVED. The first version opened with
 `sys.path.insert(0, "/mnt/mets")` and read `/mnt/vm_storage/...`; both mounts
@@ -9,7 +10,7 @@ were gone by 2026-09-03, and the tree then moved under the repo. METS_REPO and
 METS_DATA override.
 
 THE PER-PROMPT WORKAROUND IS GONE. It called `find_relays(t.filter(prompt_key=p))`
-because `find_relays` used to join rows across prompts (HANDOFF §3.1). Commit
+because `find_relays` used to join rows across prompts. Commit
 f7e95bc confined the join to its context, so the whole-table call is now the
 same answer for a fraction of the time.
 """
@@ -109,7 +110,7 @@ for o in OWNERS:
         }
     vals = np.array([c["centroid_log_step"] for c in cents.values()])
     # Distinct at the scale a float64 mean over n_intervals terms can resolve,
-    # which is what HANDOFF §3.2 found the equality test could not do.
+    # which is what an exact equality test on these centroids could not do.
     distinct = len(np.unique(np.round(vals, 9))) if vals.size else 0
     out["centroids"][o] = {
         "n_heads_scored": len(cents), "n_heads_refused_no_rise": refused,
@@ -131,7 +132,7 @@ json.dump(out, open(dest, "w"), indent=1)
 print(f"\nWROTE {dest}")
 
 # The per-head SERIES, written beside the centroids and not into curve.json.
-# curve.json is the artifact HANDOFF §4.6 diffs after every change to the
+# curve.json is the artifact PROJECT.md §7.1 diffs after every change to the
 # storage layer, and a file whose content is diffed is not the place to add a
 # key. The centroids alone determine `paired_colocation_arm`'s statistic, but
 # they cannot be handed to it: the arm takes series and computes the profiles
