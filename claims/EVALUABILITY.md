@@ -1356,10 +1356,26 @@ adjudication constraint fixes the unit at the head. So the diagnosability gap is
 pinned as it is, in a test that says so, and the choice goes to the author with
 the measurement beside it — §6r's and §6s's shape, a third time.
 
+**Addendum, 2026-09-04 — the null was built, run, and `P-I1` scored
+INSUFFICIENT.** `p7_motifs/relay_count_null.py`, `POPPER_PLAN.md` §6v: a
+head-level payload shuffle, degree-preserving at the head (edge count and the
+full force distribution held fixed, not per particle), holding `n_induction`
+fixed per prompt automatically because the pool and candidate sets are
+properties of the prompt's tokenisation alone. The requirement this document's
+table above named — "a relay-count null leaving ≥ 4 heads with a rising
+above-null excess, and among them no more than k sharing one change
+location" — is satisfied by a wide margin: 116 heads scored, 0 skipped,
+attainable floor 0.0005. The row `P-I1` mutual's "not yet — the null that sets
+it is unbuilt" is stale as of this line; `tools/score_p_i1.py` returns **p =
+0.1414**, verdict **INSUFFICIENT** — not falsified, not validated, and
+`claims/adjudications/` is untouched. `PROJECT.md` §3.6 carries the full
+number set.
+
 ### Which rows are next
 
 Unchanged from §6s. `P-I1` is not on it: it was already `needs-null` and this
-pass did not convert it.
+pass did not convert it — the pass that DID, 2026-09-04, produced a p-value
+rather than an adjudication, and the addendum above is where it is recorded.
 
 | row | claim | status | relevance | what its null needs |
 |---|---|---|---|---|
@@ -1393,4 +1409,7 @@ Still none of which any existing sweep satisfies. `P-I3`'s is a requirement on
 the classification criterion and `P-I1`'s is a requirement on the **null**,
 which is the first of either kind: it is not satisfiable or unsatisfiable by a
 run at all, and it is checkable the moment the null is written and before it is
-used.
+used. `P-I1`'s row IS now satisfied — 2026-09-04, 116 heads scored, 0 skipped,
+see the addendum above — which is a fact about the null's design, not about
+the sweep it was checkable against; the "still none" reading was always about
+the OTHER ten rows and remains true for them.

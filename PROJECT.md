@@ -101,9 +101,11 @@ longer globs its own temp file (`tests/test_tools_recompress_tables.py`).
 
 ## 2. Where the work stands
 
-Active work is **Phase 7** — the mechinterp/particle bridge — and specifically
-`P-I1`, induction-head formation as a two-stage `relay` motif tracked across the
-checkpoint axis. `INDEX.md`'s phase table is still accurate for everything else.
+Active work is **Phase 7** — the mechinterp/particle bridge. `P-I1`,
+induction-head formation as a two-stage `relay` motif tracked across the
+checkpoint axis, has run end to end and scored **INSUFFICIENT** (p = 0.1414,
+§3.6) — not falsified, not validated. `INDEX.md`'s phase table is still
+accurate for everything else.
 
 **The registered 19-step sweep is complete.** All 19 interaction tables are on
 disk under `data/phase7/`.
@@ -148,12 +150,14 @@ a single interval. Harmless at 116 heads and not harmless at forty; see §3.2.
 
 ---
 
-## 3. The open front: `P-I1`'s relay-count null
+## 3. `P-I1`: built, run, and scored — INSUFFICIENT (2026-09-04)
 
-**The relay-count null does not exist.** `formation_gate` requires the series to
-be the excess above the N1/N2 offset-null envelope, and `core/qk_offset_null.py`
-computes N1/N2 for the **QK antisymmetry statistic**, not for relay counts.
-`formation_curve.assert_gate_ready` refuses the raw series, correctly.
+**The relay-count null did not exist through 2026-09-03.** `formation_gate`
+requires the series to be the excess above a null envelope, and
+`core/qk_offset_null.py` computes that for the **QK antisymmetry statistic**,
+not for relay counts. `formation_curve.assert_gate_ready` refused the raw
+series, correctly. §3.1–§3.4 below is the construction log, kept as it happened
+rather than rewritten now that §3.6 has the answer.
 
 `claims/EVALUABILITY.md` prescribes the order — compute the attainable floor,
 name what the statistic degenerates on, check what the measurement grid
@@ -233,17 +237,51 @@ from n = 20 upward and fails at n = 19. Full table in the record.
 > **The relay-count null must leave at least four heads with a rising above-null
 > excess, and among them no more than k sharing one change location.**
 
-### 3.4 What is still the author's, and must not be started from the code
+### 3.4 The null — built 2026-09-04, degree-preserving at the head level
 
-The null's shape. The obvious one is a degree-preserving rewiring within each
-(context, layer, head) that keeps each head's edge count and attractive
-fraction, randomises which particles the edges connect, and preserves the
-induction structure. Two constraints on it are already measured: it must hold
-`n_induction` fixed per prompt (step 2 — otherwise it tests whether the prompt
-has induction pairs, which is known before the model runs), and it must describe
-a series that peaks between 54000 and 143000 rather than a monotone rise.
-Relays per induction pair spans 45 to 133 across the battery, and that residue is
-where a formation signal would have to live.
+The author's decision, walked through and registered rather than started from
+the code: degree-preserving at the **head** level, not per particle.
+`p7_motifs/relay_count_null.py`. `pair_type` and `offset` are pure facts about
+where an edge points, given the prompt's tokenisation; `attractive_frac` /
+`repulsive_frac` / `force_magnitude` / `weight` are facts about its force —
+independent axes of the same edge-row. So the null is a payload shuffle: for
+each (prompt, layer, head), draw `len(group)` DISTINCT positions uniformly at
+random from the prompt's full causal pool and reattach each real edge's entire
+force-derived payload to it unchanged, recomputing `offset`/`pair_type` from
+the new position.
+
+This holds `n_induction` fixed per prompt automatically (the pool and the
+induction/strict/same-content candidate sets are properties of the prompt's
+tokenisation alone, `PromptNullContext`, identical at every checkpoint and
+replicate — no separate bookkeeping needed), and preserves each head's edge
+count and its **entire** force distribution exactly, not just an aggregate like
+"attractive fraction". Per-particle in/out-degree is NOT held fixed — a
+heavier double-edge-swap configuration-model null was considered and not
+chosen. The relay count itself, a two-edge composition rather than a single
+masked edge, is scored by Monte Carlo — reshuffle, rerun
+`find_relays`/`per_head_relay_strength` unchanged, K replicates → mean/sd —
+rather than a closed form, to avoid re-deriving the composition's null
+distribution by hand. 18 tests, including a planted-relay oracle and
+calibration on a structureless table; caching the null's per-prompt grouping
+(a ~6.8× speedup, needed to make the real run feasible) also caught a genuine
+cross-prompt position-leak bug before it reached the real sweep.
+
+Run over the real 19-step sweep, 50 replicates/checkpoint
+(`tools/run/relay_null.py` → `data/analysis/relay_null_series.json`):
+
+| step | raw relays | null mean | excess | excess / null |
+|---|---|---|---|---|
+| 0 – 2000 | 0 | 0 | 0 | — |
+| 4000 | 15,030 | 2,968 | 12,063 | 4.1× |
+| 8000 | 232,568 | 27,719 | 204,849 | 8.4× |
+| 16000 | 509,646 | 64,176 | 445,473 | 6.9× |
+| 32000 | 1,176,478 | 128,647 | 1,047,832 | 8.1× |
+| 54000 | 2,560,483 | 346,008 | 2,214,479 | 6.4× |
+| 143000 | 2,407,556 | 241,229 | 2,166,327 | 8.9× |
+
+The raw count sits 4–9× the chance level at every formation-window checkpoint
+— real excess above what the induction-pair supply and edge counts alone would
+produce — and that excess is what §3.6's gate is scored on.
 
 ### 3.5 Done: the behavioural arm over the sweep
 
@@ -277,6 +315,40 @@ co-locate per head, behaviour leading. Not P-I1's test (raw count, not the
 above-null excess §3.4's null would produce) and partly a floor effect — the
 relay count is structurally zero until step 4000 so its change can't be located
 below log-step 3.6 — but it is the number the null now has to move.
+
+### 3.6 The real result: `tools/score_p_i1.py`, p = 0.1414, INSUFFICIENT
+
+`p_value_p_i1` on the real above-null excess series (§3.4) against the real
+behavioural series (§3.5), pre-filtered to the 116 forming heads,
+`skip_no_rise=True`:
+
+| | |
+|---|---|
+| p_value | **0.1414** |
+| p_reciprocal | 1.0 |
+| verdict | **INSUFFICIENT** |
+| n_units | 116 (`n_skipped_no_rise` = 0 — every forming head's excess still located a rise) |
+| attainable_floor | 0.0005 |
+| mean_distance_log_step | 2.018 |
+
+**Barely moved from the raw-series number** (§3.5's 2.02): subtracting the
+null rescales the curves' magnitude far more than it moves where each head's
+change is located, at least at this replicate count. p dropped from 0.420
+(raw) to 0.141 (excess) — real movement, and still nowhere near α = 0.05.
+
+**Both endpoint failure modes are clear**, reported and entering no p-value
+per §3.3: 0 of 116 heads are already above-null at step 0, and of the 2 heads
+absent at step 143000, 0 had a high behavioural score. Neither disjunct of the
+falsifier's second half fires.
+
+**Not adjudicated.** `claims/adjudications/` is untouched — `tools/
+score_p_i1.py` deliberately does not call `adjudicate_p_i1(..., adjudicate=
+True)`. INSUFFICIENT is not RE-ANCHORS: the design did not fail, and nothing
+here falsifies `P-I1`; it means the two curves' rises do not co-locate across
+heads more than an arbitrary pairing allows, at the registered sweep and the
+50-replicate null. Raising the replicate count would sharpen the null's
+mean/sd estimate but is very unlikely to move a p this far from the floor by
+enough to flip the verdict.
 
 ---
 

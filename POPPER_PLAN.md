@@ -3848,6 +3848,30 @@ behavioural series, and `skip_no_rise=True` together. It does not adjudicate —
 `claims/adjudications/` stays empty until the author decides this result
 belongs there.
 
+**5. The real run, and the result.** 50 replicates/checkpoint over the
+registered 19-step sweep — `~3.7s/replicate` measured on real induction-
+candidate pools (far larger than a toy test suggested: `repeated_tokens`
+alone carries 34,191 candidates), ~9 minutes/checkpoint at the busiest steps,
+total run time close to two hours. The raw relay count sits 4–9× the null's
+chance level at every formation-window checkpoint (4000 through 143000) —
+real excess, not an artefact of the induction-pair supply or the edge count
+alone, which is exactly what §3.4's construction is built to subtract out.
+
+`tools/score_p_i1.py`: **p = 0.1414**, `p_reciprocal = 1.0`, verdict
+**INSUFFICIENT**, 116 units (`n_skipped_no_rise` = 0 — no forming head's
+excess was flat), attainable floor 0.0005, `mean_distance_log_step = 2.018` —
+barely moved from the raw series' 2.02 (§6u): the null rescales magnitude far
+more than it relocates each head's change, at 50 replicates. p fell from
+0.420 (raw, §6u/§6t) to 0.141 (excess) — real movement, still an order of
+magnitude from α = 0.05. Both endpoint disjuncts are clear (0 heads above-null
+at step 0; the 2 heads absent at step 143000 do not include a high-behavioural
+one), reported and entering no p-value per §3.3's original design.
+
+**INSUFFICIENT is not RE-ANCHORS.** Nothing here falsifies `P-I1`; the design
+did not fail either — it is a real p-value from a real null, sitting well
+above α. `claims/adjudications/` is untouched by this pass; entering it there
+is the author's decision. `PROJECT.md` §3.6 carries the full number set.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
