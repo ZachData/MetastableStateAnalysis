@@ -104,8 +104,10 @@ longer globs its own temp file (`tests/test_tools_recompress_tables.py`).
 Active work is **Phase 7** — the mechinterp/particle bridge. `P-I1`,
 induction-head formation as a two-stage `relay` motif tracked across the
 checkpoint axis, has run end to end and scored **INSUFFICIENT** (p = 0.1414,
-§3.6) — not falsified, not validated. `INDEX.md`'s phase table is still
-accurate for everything else.
+§3.6) at a 50-replicate null — not falsified, not validated. **§3.7 is where
+to pick this up**: a 100-replicate rerun to check the p-value's sensitivity
+was started and deliberately paused, not finished. `INDEX.md`'s phase table is
+still accurate for everything else.
 
 **The registered 19-step sweep is complete.** All 19 interaction tables are on
 disk under `data/phase7/`.
@@ -346,9 +348,43 @@ score_p_i1.py` deliberately does not call `adjudicate_p_i1(..., adjudicate=
 True)`. INSUFFICIENT is not RE-ANCHORS: the design did not fail, and nothing
 here falsifies `P-I1`; it means the two curves' rises do not co-locate across
 heads more than an arbitrary pairing allows, at the registered sweep and the
-50-replicate null. Raising the replicate count would sharpen the null's
-mean/sd estimate but is very unlikely to move a p this far from the floor by
-enough to flip the verdict.
+50-replicate null.
+
+### 3.7 Open: does the p-value move at a higher replicate count? — PICK UP HERE
+
+Asked 2026-09-04, not answered. §3.6's p = 0.1414 is a Monte Carlo estimate
+with K = 50 replicates/checkpoint; a K = 100 rerun was started to check
+sensitivity and deliberately **killed after ~5 minutes** (still on step 0) to
+stop and write this down instead of leaving a multi-hour job running unwatched
+across a context reset. Nothing was lost: `tools/run/relay_null.py` only
+writes its output file after the *last* step completes, so
+`data/analysis/relay_null_series.json` on disk is still the untouched K = 50
+result (`n_replicates: 50`, checked directly).
+
+**To resume:**
+
+```bash
+METS_NULL_REPLICATES=100 python3 -m tools.run.relay_null   # ~3+ hours, prints
+                                                            # per-checkpoint
+                                                            # progress
+python3 -m tools.score_p_i1                                # the new p-value
+```
+
+The K = 50 timing, for planning a longer background run: 13 "empty" steps
+(0 relays, steps 0–2000) at ~180–200s each, 6 "formation-window" steps
+(4000–143000) at ~480–540s each — **93 minutes total**, so K = 100 should run
+close to **~3 hours** (per-checkpoint table loading is the only part that does
+not scale with the replicate count, and it is small — a few seconds).
+
+The K = 50 result and log are preserved for comparison at
+`$CLAUDE_JOB_DIR/tmp/relay_null_series_k50.json` and
+`relay_null_full_k50.log` — job-scratch, not durable, so if this matters
+past this job's lifetime copy them somewhere in the repo tree first. **What
+to check once K = 100 finishes:** whether `p_value`, `mean_distance_log_step`
+and `n_skipped_no_rise` move meaningfully from 0.1414 / 2.018 / 0 — a null
+this far from being marginal (floor 0.0005, observed 0.14) is not expected to
+flip verdict on tighter replicate noise alone, but that is exactly the
+claim this check exists to verify rather than assume.
 
 ---
 
@@ -479,6 +515,20 @@ python3 -m tools.run.behavioural --check    # structural checks on the written s
 
 python3 -m tools.p_i1_attainable_floor --write     # ~0.2 s, needs the series
 python3 -m tools.p_i1_attainable_floor --check     # needs no data
+
+METS_NULL_REPLICATES=50 python3 -m tools.run.relay_null
+                            # ~1:33 at 50 reps (measured); ~3:00+ at 100 --
+                            # scales close to linearly in the replicate count.
+                            # Writes data/analysis/relay_null_series.json.
+                            # Prints one line per checkpoint as it goes, so a
+                            # long run can be judged and killed early; the
+                            # output file is only written at the very end, so
+                            # killing it mid-run loses nothing already on disk
+                            # (the PREVIOUS successful --write, if any, is
+                            # untouched until the new run's last line prints).
+python3 -m tools.score_p_i1
+                            # needs relay_null_series.json and
+                            # behavioural_series.json; prints P-I1's p-value
 ```
 
 ### 7.1 `curve.json` is the artifact that gets diffed
