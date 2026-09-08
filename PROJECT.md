@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test` — nothing merged, no PR open |
-| Last updated | 2026-09-04 |
+| Last updated | 2026-09-08 |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -30,7 +30,7 @@ export METS_RESULTS_DIR=$PWD/data/phase12
 export HF_HUB_OFFLINE=1
 export HF_HUB_DISABLE_XET=1
 
-./scripts/check.sh gate     # 2228 passed / 5 skipped / 30 deselected, ~35 s
+./scripts/check.sh gate     # 2264 passed / 5 skipped / 30 deselected, ~34 s
 ```
 
 If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
@@ -103,11 +103,77 @@ longer globs its own temp file (`tests/test_tools_recompress_tables.py`).
 
 Active work is **Phase 7** — the mechinterp/particle bridge. `P-I1`,
 induction-head formation as a two-stage `relay` motif tracked across the
-checkpoint axis, has run end to end and scored **INSUFFICIENT** (p = 0.1414,
-§3.6) at a 50-replicate null — not falsified, not validated. **§3.7 is where
-to pick this up**: a 100-replicate rerun to check the p-value's sensitivity
-was started and deliberately paused, not finished. `INDEX.md`'s phase table is
-still accurate for everything else.
+checkpoint axis, has run end to end and scored **INSUFFICIENT** — not
+falsified, not validated — at both a 50- and a 100-replicate null (§3.6, §3.7).
+The K = 100 rerun (§3.7) settled the sensitivity question: the verdict is
+stable but **the p-value is not** (0.14 at K = 50, 0.89 at K = 100, same
+observed statistic) — the pairing null is near-degenerate on a 36-head
+change-centroid tie coset, so P-I1's arm returns the verdict but cannot
+quantify how insufficient. `INDEX.md`'s phase table is still accurate for
+everything else.
+
+**Two analysis tracks, run 2026-09-05/06** (`docs/`, §3.8): a co-location panel
+putting the Phase 1 / Phase 2 global observables on the P-I1 19-step axis
+(`data/analysis/colocation_panel.*`), and the dissipation-identity
+decomposition — Tier A (`data/analysis/dissipation_series.json`) and Tier B
+(`data/analysis/dissipation_sublayer_series.json`, the exact attn/FFN split +
+per-head roll-up). **Tier B's headline**: the per-head attention-dissipation
+series breaks §3.7's tie coset and `|d_attn_repulsive|` co-locates with the
+behavioural induction rise at a *stable* p ≈ 0.004 (CO-LOCATES) — but this is
+**exploratory** (three anchors tried, no differential falsifier registered
+first), so it is a hypothesis to register and re-test, not an adjudication.
+`claims/adjudications/` stays empty.
+
+**The co-location programme was stopped on 2026-09-07 and NOT registered**
+(§3.10, `POPPER_PLAN.md` §6w). `relay` membership requires attractive-channel
+edges defined by `U_pos` — the same OV Schur projector whose sign split the
+proposed prediction would measure — so the obvious entry would have
+"confirmed" at `p_less` = 0.018 a claim its own head-selection presupposes.
+Stripping the filter moves into the *other* tautology `find_relays` guards
+against, so the circularity is a property of the motif's construction. Work
+has pivoted to a bottom-up interventional programme (§3.11).
+
+**Open, in rough priority order** (for the next session):
+1. **The bottom-up induction programme** (§3.11) — isolate one induction head,
+   find the minimal rank `r*` that carries induction, characterise its shape,
+   then perturb it. Replaces the population/co-location frame entirely: no
+   projector-defined population, so no §3.10 circularity, and `n = 1` is
+   sound because the null randomises over *subspaces* rather than units
+   (`claims/EVALUABILITY.md`'s own unused advice). **Stages 0–2 have run**
+   (§3.11, dated blocks): the circuit is `L5H2 → L7H8`; the OV copying effect
+   is carried ~82 % by a single high-gain SVD direction (`r*_SVD ≪ r*_Schur`);
+   the core is 100 % repulsive but not a spectral outlier, and the rank-1 mode
+   shows no token-identity copy structure — cutting against both the standard
+   and the particle accounts. **Pick up at: register the differential
+   prediction** (reshaped by Stage 2 — see §3.11 "Next"), then **Stage 3**
+   (matched-norm perturbation of the rank-1 mode). QK half still not done
+   (RoPE). `claims/registry.json` unchanged.
+2. **Violation-restricted subspace split** (dissipation v2): the repulsive
+   share of the *positive* first-order term at ΔE > 0 boundaries, not of
+   `|dissipation|` over all boundaries. This is the specific thing that would
+   close `p2_eigenspectra/status-2.md` item 5 (the `frac_repulsive` decay).
+3. **The pythia-70m dense-onset sub-study** (§3.9) — new registered ground,
+   fills the 512 → 1000 gap, would let §3.8's ODE-regime finding be checked at
+   4-step resolution. Now also the natural second model for anything §3.11
+   produces.
+4. **Phase 2's runner needs a manifest** (`_write_run_manifest`) —
+   `docs/results_provenance_audit_2026-09-05.md` §3.1.
+
+*(The former item 3, "per-head OV Schur projectors", is **done** — the
+machinery already existed in `p2b_imaginary/head_circuits.py` and the sweep is
+`data/analysis/ov_per_head_series.json`. See §3.10.)*
+
+**Nothing is committed.** All of the above is on the working tree;
+`./scripts/check.sh gate` is green (2264 passed / 5 skipped, 34 s). New files:
+`tools/run/dissipation.py`, `tools/run/dissipation_sublayer.py`,
+`tools/run/ov_per_head.py`, `tools/run/induction_rank_sweep.py`,
+`tools/run/induction_subspace_characterize.py`,
+`docs/dissipation_checkpoint_axis_scoping.md`,
+`docs/results_provenance_audit_2026-09-05.md`; `data/analysis/` holds the new
+series JSONs (`dissipation_series`, `dissipation_sublayer_series`,
+`ov_per_head_series`, `induction_rank_sweep`,
+`induction_subspace_characterize`, `relay_null_series_k50` / `_k100`), four
+`.png` panels (+ two `.csv`), and durable copies of the builder scripts.
 
 **The registered 19-step sweep is complete.** All 19 interaction tables are on
 disk under `data/phase7/`.
@@ -350,41 +416,506 @@ here falsifies `P-I1`; it means the two curves' rises do not co-locate across
 heads more than an arbitrary pairing allows, at the registered sweep and the
 50-replicate null.
 
-### 3.7 Open: does the p-value move at a higher replicate count? — PICK UP HERE
+### 3.7 Answered (2026-09-05): the p-value moves 0.14 → 0.89, and the reason is structural
 
-Asked 2026-09-04, not answered. §3.6's p = 0.1414 is a Monte Carlo estimate
-with K = 50 replicates/checkpoint; a K = 100 rerun was started to check
-sensitivity and deliberately **killed after ~5 minutes** (still on step 0) to
-stop and write this down instead of leaving a multi-hour job running unwatched
-across a context reset. Nothing was lost: `tools/run/relay_null.py` only
-writes its output file after the *last* step completes, so
-`data/analysis/relay_null_series.json` on disk is still the untouched K = 50
-result (`n_replicates: 50`, checked directly).
+The K = 100 rerun ran end to end — **3 h 12 m**, matching the estimate — and
+wrote `data/analysis/relay_null_series.json` (`n_replicates: 100`). All three
+replicate series are now durable in the repo tree:
+`data/analysis/relay_null_series_k50.json`, `…_k100.json`,
+`relay_null_full_k100.log`.
 
-**To resume:**
+| | K = 50 | K = 100 |
+|---|---|---|
+| `p_value` | 0.14143 | **0.89355** |
+| `p_reciprocal` | **1.0** | 0.89305 |
+| `mean_distance_log_step` | 2.017944 | 2.018009 |
+| `n_units` / `n_skipped_no_rise` | 116 / 0 | 116 / 0 |
+| `attainable_floor` | 0.0004998 | 0.0004998 |
+| verdict | INSUFFICIENT | INSUFFICIENT |
 
-```bash
-METS_NULL_REPLICATES=100 python3 -m tools.run.relay_null   # ~3+ hours, prints
-                                                            # per-checkpoint
-                                                            # progress
-python3 -m tools.score_p_i1                                # the new p-value
-```
+**The p-value moved 6.3×. The observed statistic did not** — `mean_distance_
+log_step` changed by 6.5e-5 (0.003%). So this is not the point estimate
+shifting; it is the permutation null that the p is read against.
 
-The K = 50 timing, for planning a longer background run: 13 "empty" steps
-(0 relays, steps 0–2000) at ~180–200s each, 6 "formation-window" steps
-(4000–143000) at ~480–540s each — **93 minutes total**, so K = 100 should run
-close to **~3 hours** (per-checkpoint table loading is the only part that does
-not scale with the replicate count, and it is small — a few seconds).
+**Mechanism.** 50 more null replicates moved the above-null excess series by
+< 0.06 % at every step (0 sign flips, largest single-cell change 91 relays
+against millions). That nudged **77 of the 116 heads' change-centroids by
+~1e-4 – 1e-3 log-step** — enough to move the observed `-mean|c_a − c_b|`
+across the body of the permutation null. The tie structure itself did **not**
+change: 79 distinct centroids both times, one class of **36** heads pinned at
+log-step 4.9439 (rise entirely in the 54000 → 143000 interval), one class of
+3, 77 singletons — exactly §2's "77 singletons, one class of three, and one
+class of thirty-six". That 36-head coset dominates the null's spread, so the
+permutation distribution of `-mean|c_a − c_b[perm]|` is a near-spike and the
+observed value sits at its median. On a near-vertical CDF a 6e-5 shift in x is
+a 0.75 shift in F(x). `p_reciprocal` collapsing from exactly 1.000 (pinned to
+the atom) to 0.893 is the same tell.
 
-The K = 50 result and log are preserved for comparison at
-`$CLAUDE_JOB_DIR/tmp/relay_null_series_k50.json` and
-`relay_null_full_k50.log` — job-scratch, not durable, so if this matters
-past this job's lifetime copy them somewhere in the repo tree first. **What
-to check once K = 100 finishes:** whether `p_value`, `mean_distance_log_step`
-and `n_skipped_no_rise` move meaningfully from 0.1414 / 2.018 / 0 — a null
-this far from being marginal (floor 0.0005, observed 0.14) is not expected to
-flip verdict on tighter replicate noise alone, but that is exactly the
-claim this check exists to verify rather than assume.
+**This realises §3.3's stated precondition as a failure.** "No more than k
+heads sharing one change location" — 36 of 116 share one. §3.2's tie *floor*
+is 1e-148 here and does not bind, but the tie-driven *atomicity* of the null
+still makes the p-value a step function of an input that the replicate count
+perturbs at the 4th–5th decimal.
+
+**What is robust, and what is not.** Robust: the verdict (INSUFFICIENT at both
+K), the observed mean distance (~2.018 log-step — the two families of rises do
+not co-locate per head, nowhere near α), `n_units`, the floor. Not robust:
+the p-value itself. **§3.6's p = 0.1414 is not a quotable number, and neither
+is 0.8936.** P-I1's pairing arm can return the verdict but cannot quantify how
+insufficient the evidence is, on this sweep.
+
+**To get a stable p (not required — the verdict stands):** break the 36-head
+coset. Either a denser sweep inside 54000 → 143000 so those heads' rises spread
+across more intervals, or a B-anchor that is not centroid-tied the same way —
+the per-head attention-dissipation series from
+`docs/dissipation_checkpoint_axis_scoping.md` Tier B is the candidate, and it
+is defined at every checkpoint rather than structurally zero before step 4000.
+
+---
+
+### 3.8 The two analysis tracks opened 2026-09-05 (context: while K = 100 ran)
+
+Both are in `docs/` and `data/analysis/`; both build only on artifacts already
+on disk. Neither adjudicates anything — measurement, with the provenance caveat
+from `docs/results_provenance_audit_2026-09-05.md` §3.1 (the Phase 2 OV
+projectors carry no `git_sha`; every producing module is unchanged since the
+runs, but that is inference not record).
+
+### 3.8.1 Co-location panel — `data/analysis/colocation_panel.{png,csv}`
+
+The Phase 1 / Phase 2 global observables parsed onto the P-I1 19-step axis from
+the committed run reports: energy-monotonicity violations (both phases),
+`frac_repulsive`, `ov_frac_repulsive`, effective rank (normed + raw), raw λ₂
+and the Fiedler deviation, beside the P-I1 behavioural and relay-excess series.
+The reading: the transitions fire in a fixed order across one decade —
+**128→256** energy break + first behavioural rise; **512** plateau-onset flips
+weight→content, `frac_repulsive` hits 1.0, raw λ₂ starts its monotone fall;
+**2000–4000** effective rank peaks (44.5) with the behavioural leaders; **4000**
+the relay motif first appears (structural zero before). The relay count is the
+*lagging* indicator — every other signal turns 3–4 checkpoints earlier and on
+more points, which is why §3.7's pairing arm, anchored on the relay side, has
+so little to locate against.
+
+### 3.8.2 Dissipation identity, Tier A — `data/analysis/dissipation_series.json`, `dissipation_panel.{png,csv}`
+
+`core/dissipation.py` evaluated per (step, prompt, layer) over the 19 × 7 grid ×
+24 layer boundaries, from `activations.npz` (total dX) + the on-disk per-checkpoint
+OV Schur projectors. No forward pass. `tools/run/dissipation.py`, ~22 min,
+`max_subspace_sum_check = 2e-12` (the split is exact). β ∈ {1.0, 2.0}, sphere
+frame. **Caveat, recorded in the artifact:** the subspace split projects the
+*total* dX (attn+ffn), not the attention channel — the attention-only and
+per-head versions need the Tier B sublayer-capture pass.
+
+Four findings:
+
+1. **The forward-Euler / ODE framing the project rests on is checkpoint- and
+   layer-dependent, and mostly does not hold.** The relative linearisation
+   residual `|ΔE − Σᵢ⟨Gᵢ,vᵢ⟩| / max(|ΔE|,|Σ⟨G,v⟩|)`:
+   - **layer 0 is never in the regime** — residual ≈ 1.0 at every checkpoint
+     (step size ~450 in raw coords). Any per-layer dissipation reading must
+     drop layer 0.
+   - deep layers (4–23) reach residual **~0.17 only at steps 2000–4000** — the
+     ODE picture is decent *in the induction-formation window* — and degrade to
+     ~0.87 both before (steps 8–256) and after (steps ≥ 16000).
+   This is `MATH_SPECTRAL_OT` §5.3(d)'s "a large residual is a finding about the
+   project's framing", quantified: it is large outside a narrow window.
+
+2. **Step 512 is a triple co-location in the dissipation view** — same
+   checkpoint as the energy break / plateau flip / Fiedler turn. The
+   repulsive-subspace share of `|dissipation|` jumps 0.45 → 0.67 and **stays**
+   0.63–0.76 for the rest of training; the gradient-flow alignment
+   `mean cos(−G, v)` is at its least anti-aligned (≈ −0.01, i.e. motion most
+   orthogonal to the energy landscape) with `frac_descending` at its peak 0.55.
+
+3. **The layer motion is weakly anti-aligned with the energy gradient almost
+   everywhere** — `mean cos(−G, v)` ∈ [−0.10, −0.01], most negative (−0.10) at
+   the step-128–256 energy-break onset, drifting back to −0.08 late. Trained
+   layers are, on average, very slightly *ascending* E_β — the activation-side
+   reading of the monotone-energy break, and the measured counterpart of Phase
+   2d's weights-only D1.
+
+4. **Phase 2 open-item-5's `frac_repulsive` decay (1.00 → 0.56 over steps
+   8000–143000) is NOT reproduced** in the total-displacement subspace split —
+   the dissipation repulsive-share is flat ~0.64 from step 8000 on. So the
+   reorganisation Phase 2 sees is either specific to the *attention* channel
+   (Tier B would show it) or to the *violation* mass rather than the
+   displacement magnitude. First thing for Tier B to resolve.
+
+### 3.8.3 Dissipation identity, Tier B — `data/analysis/dissipation_sublayer_series.json`, `dissipation_tierB_panel.png`
+
+`tools/run/dissipation_sublayer.py`, run 2026-09-06 (20 min, 133 forward passes
+with sublayer capture, `max channel sum_check = 4e-15` — the attn/FFN split is
+exact, and the per-head projection `Σ_h dX_attn[h] + bias = dX_attn` holds to
+1e-5 at every layer). All 24 layers kept (author's call: fine for L0/L23 to have
+unexplained behaviour in analysis, not fine to exclude them from the
+measurement). β = 1.0.
+
+1. **The `frac_repulsive` decay is NOT in the attention channel's displacement
+   geometry.** The attention channel's repulsive-subspace share of `|dissipation|`
+   is near-cancelling at the aggregate (Σ d_attn passes through ~0 several times)
+   and does not track Phase 2's violation-based `frac_repulsive`. On the forming
+   layers L8–23 it rises to 0.82 at step 2000, dips, returns to 0.85 at
+   step 32000, drops to 0.54 at 143000 — a trajectory, but not the smooth
+   1.00 → 0.56 decay. The FFN-channel projection nominally tracks it better
+   (0.97 → 0.82 over 8000 → 143000) but projecting an FFN output through an OV
+   subspace is not physically meaningful. **Net: still not localised to a
+   displacement channel — the clean test is a violation-restricted subspace
+   split (share of the *positive* first-order term, not of `|dissipation|`),
+   which is a v2.**
+
+2. **Step 512 co-location holds in the attention channel specifically** — attn
+   `mean cos(−G, v)` crosses positive (+0.03) at step 512, its only positive
+   value, against −0.11 to −0.13 through steps 2000–4000.
+
+3. **The per-head co-location test — one stable CO-LOCATES, exploratory.** The
+   per-head attention-dissipation series **breaks §3.7's 36-head centroid tie
+   coset**: change-centroids are 116 singletons, no ties. Three candidate
+   B-anchors were tried post hoc against the behavioural rise, on the same
+   `p_value_p_i1` gate, `skip_no_rise=True`:
+
+   | B-anchor (per forming head) | p_value | verdict | mean_dist (log-step) |
+   |---|---|---|---|
+   | `d_attn_total` (head's attn contribution to first-order ΔE) | 0.333 | INSUFFICIENT | 0.566 |
+   | **`|d_attn_repulsive|`** (attn displacement projected on repulsive OV subspace) | **0.0040** | **CO-LOCATES** | 0.576 |
+   | `-gfa_cos` (attn anti-alignment with the energy gradient) | 0.587 | INSUFFICIENT | 0.508 |
+
+   The `|d_attn_repulsive|` result is **stable** where §3.7's relay-based p was
+   not: deterministic on re-run, seed-stable (10 seeds, p ∈ [0.0015, 0.0045],
+   sd 0.0009), head-jackknife-stable (drop any 1 of 116 → p ∈ [0.0005, 0.0065],
+   0 flips above α), and not a magnitude tautology (centroid corr with the
+   behavioural side r = 0.21; observed mean pairing distance sits at the 0.1st
+   percentile of the label-permutation null). Mechanism reading: **as a head
+   becomes an induction head, its attention output starts moving the residual
+   stream along the repulsive (individuating) OV directions in a way that pushes
+   on E_β, and that onset tracks the behavioural onset across all 116 heads.**
+
+   **This is exploratory, not an adjudication.** Three anchors were tried and one
+   was significant — multiple comparisons, and no differential falsifier was
+   registered before running (POPPER_PLAN §C2's requirement). It is a
+   **hypothesis to register and re-test**, e.g. on held-out heads or a second
+   model, not a validated P-I1. `claims/adjudications/` stays empty. What it
+   does settle: §3.7's "get a stable p by using a non-centroid-tied B-anchor"
+   works — the anchor exists and the tie coset is gone.
+
+---
+
+### 3.9 External resource — the pythia-70m dense-onset run (`lora_ind`)
+
+Logged 2026-09-06 from an inspection of a sister project. **Not consumed by any
+Mets code yet.** This is a resource note plus where it could plug in.
+
+### What it is
+
+A **full-parameter** training continuation of `pythia-70m` from `step512` to
+`step2000`, on an RTX 3080 (6.9 h, torch 2.11.0+cu130, `lora_ind` git
+`1ebbe33`). Not LoRA, not that project's M1–M8 protocol — a plain
+`GPTNeoXForCausalLM` (`attn_implementation="eager"`, bf16), AdamW (0.9, 0.95),
+wd 0.01, grad-clip 1.0, micro-bs 2 × grad-accum 512 = a 1024-sequence batch,
+`monology/pile-uncopyrighted` streamed and packed to 2048.
+
+**The load-bearing detail is the LR schedule**: it *continues* Pythia's own —
+peak 1e-3, 1430-step linear warmup, cosine to 0.1× over 143k. Step 512 sits
+*inside* the warmup at 3.58e-4 and climbs to 1e-3 by ~step 1500, so the onset
+window runs at the intended rate, not at peak LR (which is what a
+default-configured continuation would do, and would make the transition an
+artefact of the harness).
+
+**It is not the Pythia trajectory.** Adam is cold-started at step 512, so it
+diverges from published `pythia-70m` from step 1. These checkpoints are "a
+clean, correctly-scheduled induction onset in the loss landscape near
+`step512`", not "`pythia-70m` steps 528–852". The sister project's own spec
+phrases every such result as *reachability, not developmental* — Mets would
+inherit that constraint.
+
+### On disk
+
+`/home/iron/Desktop/lora_ind/data/retrain/cb25e3f6c2185c1e/` (67 GB):
+
+| file | content |
+|---|---|
+| `ckpt/step_NNNNNN.pt` | **249 weight snapshots**, every 4 optimiser steps, 528 → 1860 (one gap, 1184 → 1528). Each a **plain HF `GPTNeoXForCausalLM` state_dict** — fp32, 281 MB, **no optimiser state, no RNG**. Loads with `core.lm_loading.load_causal_lm_from_state_dict`. |
+| `probe.jsonl` | 381 rows, step 516 → 2000 every 4 steps: `pms` (prefix-matching score), `icl` (first−second copy NLL), `nll_first/second`, `train_loss`, `lr`. |
+| `final/model.safetensors` | the step-2000 model = the sister project's checkpoint **B**. |
+| `provenance.json` | `onset_step: 620`. **Its `retained_checkpoints` list (1528–1860) is wrong** — a double-resume reset the buffer bookkeeping. |
+
+**Clean bracket: steps 528 → 852, 82 checkpoints, all present, no gaps**, onset
+at 620 (PMS 0.019 @ 592 → 0.051 @ 620 → 0.36 @ 676 → 0.51 @ 700; ICL 0.03 →
+1.86; loss declines smoothly, no LR kink). Session 1 ran 516 → 868 correctly;
+only steps 856 / 860 are contaminated. Everything 864 → 1860 is from two resumes
+that replayed different batches (visible as different `train_loss` at identical
+steps) — usable as a rough long tail, not for anything tight.
+
+**State as of 2026-09-06:** the local `lora_ind` repo is **very out of date**,
+and a **re-probe is running now** — it re-scores PMS/ICL at `n_eval=512`
+(the run used 128, the sister project's §5 wants 512) and raises rather than
+logging a 0.0 when attentions come back empty. It emits `onset_bracket.json`,
+which is **authoritative** over `provenance.json` for the bracket and the
+contaminated steps. Wait for it before consuming the bracket.
+
+### The sister project, in one paragraph
+
+`lora_ind` = "Induction Bandwidth": the minimum-rank weight update that installs
+a working induction circuit into a pre-induction `pythia-70m` checkpoint, and
+whether the update's antisymmetric fraction φ differs between the
+prefix-matching (QK) and copying (OV) halves. **Shared spine with Phase 2 / 2b**:
+`M_QK = W_Q W_Kᵀ`, `M_OV = W_Oᵀ W_Vᵀ`, the `S + Λ` split, `φ(M) = ‖Λ‖²/‖M‖²` —
+the same operator decomposition `p2b_imaginary` and `core/dual_reading.py` use.
+Its gates G0–G2 passed (checkpoint A = step 512, B = step 2000, induction head
+**L3H6**, previous-token head **L2H1**). **G3 — the positive control — failed**:
+a generous-rank QK-only update did not reach criterion, and the run could not
+distinguish "composition rule too restrictive" from "optimisation broken". M1–M8
+(the actual rank sweeps) are blocked on it. **So there is no rank-r induction
+subspace yet.**
+
+### How / where it could plug into Mets
+
+1. **Dense-onset sub-study — the thing the Pythia mirror cannot give.**
+   `p2_eigenspectra/status-2.md` item 4 and §3.7 both note there is no released
+   Pythia checkpoint between 512 and 1000. This run has one every 4 steps
+   through the onset. It would let the §3.8 findings be checked at real
+   resolution instead of 3 sparse points — in particular **§3.8.2 finding 1**
+   (the forward-Euler residual "sharpens across 512 → 1000, sharpest at
+   2000–4000"): with 4-step spacing the claim becomes testable rather than
+   interpolated. `pythia-70m` is 6 layers / d=512 / 8 heads, so a full Phase 1 +
+   Phase 2 + dissipation pass over all 82 clean checkpoints × the battery is
+   cheap on CPU.
+
+2. **A non-tie-coset behavioural / energy co-location axis.** §3.7's whole
+   problem was 36 of 116 heads sharing one change-centroid because the axis is
+   too sparse in the formation window. A 4-step axis through the onset spreads
+   the centroids by construction — the co-location arm gets a well-conditioned
+   null without needing §3.8.3's post-hoc anchor hunt.
+
+3. **The real merge, once `lora_ind` unblocks G3.** When that project produces
+   `r*_QK`, `r*_OV` and the φ signatures, Mets can project the rank-r induction
+   subspace **in and out** of the residual stream at each dense checkpoint and
+   re-measure the particle dynamics — the dissipation identity, the energy
+   violations, the relay motif — with vs without the induction contribution.
+   That is the concrete form of "isolate what induction does to the particle
+   picture", and it is **blocked on `lora_ind` G3**, not on anything here.
+
+### Cost of adoption, stated honestly
+
+- **New registered ground.** Every Mets registered decision is 410m-specific
+  (`REGISTERED_P_I1_SWEEP`, `P_I1_RELAY_OWNER`, the CLAIM-B grid, the battery
+  tokenisation). A 70m dense run needs its **own** registered grid, forming-head
+  axis and battery — no 410m number transfers, and this must be a labelled
+  sub-study, not an extension of the 410m sweep.
+- **Reachability, not developmental** (above) — any co-location result on this
+  run generalises to Pythia only as far as the loss landscape near `step512` is
+  representative.
+- **No activations saved** — weights + scalar probe trace only. Adoption means
+  pointing the Phase 1/2/7 runners at local `.pt` paths and re-running forward
+  passes. `core.lm_loading.load_causal_lm_from_state_dict` already exists; a thin
+  "checkpoint dir → (model, tokenizer)" adapter and a `REGISTERED_P70M_*` grid
+  are the whole lift.
+- **torch 2.11 (run) vs 2.13 (this venv)** — irrelevant for loading, the
+  snapshots are plain state_dicts.
+
+---
+
+### 3.10 Per-head OV, and the circularity that stopped a registration (2026-09-07)
+
+Full narrative in `POPPER_PLAN.md` §6w. What a fresh session needs:
+
+**Nothing was registered.** `claims/registry.json` is unchanged,
+`claims/adjudications/` is still empty. Every number below is post-hoc on
+artifacts that already existed and may not be adjudicated on them.
+
+**The instrument.** `p2b_imaginary/head_circuits.py` already had the per-head
+OV machinery (`head_core`, `head_spectrum`, `sym_antisym_factors`,
+`apply_factored`). It gained an energy-weighted sign split —
+`repulsive_energy_fraction_core` / `attractive_energy_fraction_core` /
+`repulsive_dim_fraction_core`, +7 tests — which is `MATH_SPECTRAL_OT` §3's own
+proposed discriminator, energy-weighted rather than bulk-edge-restricted
+because a bulk edge is a placed constant and a weighting is not.
+`tools/run/ov_per_head.py` → `data/analysis/ov_per_head_series.json`
+(45 min, weights only, no forward pass, no model load — every checkpoint's
+per-head dense OV is already on disk as `ov_head<h>_layer_<l>`).
+
+**It is calibrated**, which is the strongest null check in the sequence:
+chance is 0.500 ± 0.033 (300 matched-shape random heads at the real 1024/64
+geometry) and **step 0 measures 0.4982**. Not dominated by one eigenvalue
+(top-eigenvalue energy share median 0.057, exceeds 0.5 nowhere in 384 heads).
+The 21% of heads pinned at exactly 0.0/1.0 are pinned *structurally* — median
+`min|Re λ|/|λ|` = 0.873, none under 1e-2 against an fp32 floor of ~1e-8.
+
+**The trajectory is a real finding regardless of the circularity.** Every head
+at chance through step 64; both populations swing to near-total repulsive
+dominance by step 1000 (forming 0.989, non-forming 0.948); from step 2000 the
+relay-carrying heads reverse to **0.156** while the rest hold at **0.701**.
+The divergence opens in the formation window and grows monotonically.
+
+**Two population facts that bear on `P-I1` and `P-I3` directly.**
+The 116-head relay axis and the behavioural induction population are nearly
+disjoint — **1 of the top 9** behavioural heads is on it, the relay axis sits
+in layers 8–23 (mass 21–23) against the behavioural leaders in layers 1–10
+(mass 6, 7, 9), and the relay axis's mean peak behavioural score (0.00536) is
+*below* the off-axis mean (0.00618). `spearman(max relay excess, peak
+behavioural)` = −0.230 (p = 0.013), **but the partial controlling for layer is
++0.004** and the mean within-layer ρ is +0.090 — so it is **no association
+within layer**, not an inversion, and the raw negative is two opposite depth
+trends multiplying. This is a more direct account of §3.6's INSUFFICIENT than
+§3.7's tie coset: `P-I1` pairs two per-head series that are unrelated within
+layer, over a population where the behavioural side sits near baseline.
+
+**The summed-OV projector is a fiction, quantified.** The on-disk
+`schur_repulse_layer_*` come from `ov_total = sum_h ov_per_head`, and the
+summed value lands within 0.05 of only **21.2%** of the heads in its own layer.
+So the Tier B per-head anchor (§3.8.3) projects each head's write onto a
+subspace of an operator the model never forms.
+
+### 3.11 The bottom-up induction programme — decisions taken before running
+
+Replaces the co-location frame. Isolate one induction head, find the minimal
+structure that carries induction, perturb it, then build outward. Machinery is
+live: `p2_eigenspectra/head_ablation.py` (per-head OV ablation for GPT-NeoX),
+`core/intervention.py` (`run_model_with_hook`, `next_token_kl`),
+`head_circuits.py` (factored S/A surgery), `tools/run/behavioural.py`.
+
+**Stages.** 0: target `L7H8` at step 4000 (peak behavioural 0.0368) and locate
+its stage-1 prev-token partner. 1: rank sweep on QK and OV separately → `r*`.
+2: characterise the `r*` subspace (Schur sign, φ, token-subspace alignment).
+3: small variations at matched norm against a matched-norm random control,
+joint behavioural + logit + geometry readout (`P-I5`'s registered shape).
+4: repeat on the other elevated heads — generalisation *after* mechanism.
+
+**Three decisions, taken now because taking them after seeing a curve would
+void the guarantee** (§6l's timing argument):
+
+1. **Both bases, and they answer different questions.** SVD finds `r*` — it
+   measures gain, is Eckart–Young optimal for "minimum rank that carries the
+   action", and orders unambiguously. Schur characterises what is *in* `r*` —
+   it is the only one carrying a **sign**, so the attractive/repulsive
+   differential falsifier cannot be posed in the SVD frame at all. Cost is not
+   a consideration: 0.40 ms (SVD) and 0.99 ms (real Schur) per 64×64 core,
+   ~25 s for the whole 19-step × 384-head grid. **Their disagreement is itself
+   a registered outcome**: these cores are strongly non-normal (Henrici median
+   **0.450**; rank for 90% of action 36.5 by SVD against 41.5 by eigenvalue
+   ordering, median per-head gap 5, max 13), so `r*_SVD ≈ r*_Schur` says the
+   induction-relevant part is near-normal and the eigenvalue picture is
+   trustworthy, while `r*_SVD ≪ r*_Schur` says induction lives in high-gain
+   non-invariant directions and the project's whole attractive/repulsive frame
+   is measuring something other than what the head does — `MATH_SPECTRAL_OT`
+   §5.3(d)'s "a large residual is a finding about the framing", reached from a
+   second direction.
+2. **`r*` is derived, not thresholded.** No "induction collapsed" constant.
+   Report the score-vs-`r` curve and define `r*` as where it crosses the
+   matched-norm control band — the same move that made
+   `N_CONTROLS_PER_INDUCTION_HEAD` a frontier rather than a placed number.
+3. **Readouts are paired to the operator, and getting this wrong measures
+   nothing.** The behavioural induction score is *mean post-softmax attention
+   on induction pairs* — a pure QK quantity — so **ablating OV cannot move it
+   within the layer**. QK sweep → behavioural score. OV sweep → logit/copying
+   effect (`next_token_kl`). Either → particle-geometry delta. A flat OV curve
+   read against the attention score would be misread as "OV does not matter".
+
+**Still to register before stage 2 reads anything**: the differential
+prediction itself — particle account says the causally-identified induction
+subspace is repulsive/individuating, standard account says it is a copier
+(attractive, token-aligned). Neither is silent, so INVERTS can fire. Stating
+it after seeing the `r*` subspace repeats §6w's mistake one level down.
+
+### What has run (2026-09-07) — Stages 0–1 done, Stage 2 invalid, nothing registered
+
+All exploratory. `claims/registry.json` and `claims/adjudications/` unchanged.
+
+**Stage 0 — the circuit is `L5H2 → L7H8`.** From `attentions.npz` at step 4000,
+no forward pass: `L5H2` is an overwhelming previous-token head (mean attention
+at offset −1 = **0.895** against a 384-head median of 0.018, ~49×). `L7H8` is
+the behavioural leader (§3.5). Textbook two-stage shape: prev-token head in L5,
+matcher in L7.
+
+**Stage 1 — OV half only, `tools/run/induction_rank_sweep.py` →
+`data/analysis/induction_rank_sweep.json`.** QK half deferred: Pythia rotates
+only `rotary_ndims = 16` of 64 head dims, so an `M_QK = W_Q W_Kᵀ` rank
+truncation is not a truncation of what the model computes — needs a
+RoPE-aware treatment. Readout is the **copying** side (decision 3): second-copy
+NLL on repeated uniform-random sequences (`N_REP=96`, 8 seqs) plus KL from the
+unablated model, through the full forward. Weights saved/restored around every
+measurement; end-of-run restore check exact (`abs_diff` 0.0).
+
+The OV effect on this head is **modest**: full OV ablation (`r=0`) moves the
+second-copy NLL only **0.779 → 1.023** (KL 0.043). Fraction of that effect
+recovered by a rank-`r` truncation, `(nll₀ − nllᵣ)/(nll₀ − nll_base)`:
+
+| r | SVD | Schur | random control |
+|---|---|---|---|
+| 1 | **82 %** | 12 % | ~0 % |
+| 2 | 85 % | 15 % | ~0 % |
+| 6 | 93 % | 75 % | 16 % |
+| 16 | ~99 % | 81 % | 32 % |
+| 24 | ~99 % | 88 % | 52 % |
+| 48 | 100 % | 97 % | 90 % |
+
+**`r*_SVD ≪ r*_Schur`** — SVD rank 1 already carries 82 % and is flat past
+r≈6; Schur needs r≈16 to match rank-1 SVD, and beats the random control only
+modestly below r≈24. This is the **pre-registered branch of decision 1**:
+induction's copying action lives in a **high-gain, non-invariant** direction,
+and the attractive/repulsive (eigenvalue-sign) frame is not the natural
+description of this head's OV — `MATH_SPECTRAL_OT` §5.3(d) reached from a
+second direction.
+
+**Stage 2 — redone 2026-09-08, `tools/run/induction_subspace_characterize.py`
+→ `data/analysis/induction_subspace_characterize.json`.** (An earlier inline
+Stage 2 was discarded: its copying readout was a direct logit attribution with
+no `final_layer_norm` and no control heads.) This version reads copying
+**causally through the full forward** — same readout as Stage 1, LN present by
+construction — and calibrates every number against all 16 heads of layer 7 and
+24 matched-Frobenius-norm random OV operators. Weights save/restore, end
+restore check 0.0.
+
+*L7H8's OV is the causally load-bearing half, by a wide margin.* Full OV
+ablation moves the second-copy NLL **0.779 → 1.023** (ΔNLL **+0.244**, KL
+0.043) — **the largest of all 16 layer-7 heads**, ~10× the layer mean (0.021 ±
+0.059). So the mid-Stage-2 doubt ("is OV even the right half") is settled for
+this readout: it is.
+
+*`r*_SVD ≪ r*_Schur` holds under the causal readout too.* Rank-1 SVD carries
+**82.0 %** of that ΔNLL (rank 1 of 16; layer mean 15 %), rank-1 Schur only
+**11.9 %**. The top singular value holds 17.6 % of the OV Frobenius energy
+(rank 2 of 16) — one unusually dominant gain direction, which is where the
+action is.
+
+*The subspace is entirely repulsive — and that turns out not to be the
+description that matters.* Every eigenvalue of the 64×64 core has Re < 0:
+`attractive_energy_fraction_core` is **exactly 0.0**, top |λ| has Re −0.165,
+the rank-1 SVD mode's own eigenvalue is Re −0.177, the top-16 Schur subspace
+is 100 % repulsive. But φ = 0.398 (rank 10/16, *below* the layer mean) and
+Henrici = 0.353 (rank 8/16, *less* non-normal than a random operator's 0.71),
+so L7H8 is not a spectral outlier in its layer. The `r*_SVD ≪ r*_Schur` result
+says the copying action lives in a **high-gain, non-invariant** direction, so
+sorting the operator by eigenvalue sign is not sorting it by what it does —
+the repulsive sign is *true but not the mechanism*.
+
+*And it is not a token-identity copier.* The direct copy score of the rank-1
+mode (LN mean-scale folded, `s_in` 1.36, `s_final` 0.61, descriptive only):
+the diagonal is the row-max for **1 token in 4000 — exactly chance** —
+diag z-mean 0.03, diag-positive 0.514. No `W_E → W_U` diagonal structure.
+
+**So Stage 2 cuts against both accounts.** The standard account (induction OV =
+attractive, token-aligned copier) fails on both counts. The particle account
+(repulsive/individuating) has the sign right but the wrong frame — the effect
+is carried by an SVD gain direction, not an eigen-mode. What L7H8's OV
+actually is, on this evidence: a **functional** copier (ablating its one
+high-gain direction measurably degrades repeated-token prediction) that is
+neither a **representational** copier (no token diagonal) nor an **eigen-mode**
+(SVD, not Schur, is where the rank collapses).
+
+**Caveats.** One head, one checkpoint. The causal ΔNLL / KL are solid; the
+"not token-aligned" half leans on the approximate LN-folded copy score. The
+per-head SVD/Schur fractions are only interpretable for L7H8 — it is the only
+layer-7 head with a non-noise OV effect, so the others' ratios divide by
+~0.01. **QK half still not done** (RoPE — `rotary_ndims = 16` of 64).
+
+**Next.** Register the differential prediction before Stage 3 reads anything
+(§3.11 opening) — the Stage 2 result reshapes it: the live question is no
+longer "attractive vs repulsive" but "does the high-gain SVD direction that
+carries copying behave as an individuating / repulsive channel under
+perturbation, or as a copier the token-alignment test just missed". Then
+Stage 3 (matched-norm variations of the rank-1 mode, joint behavioural +
+logit + geometry readout). `POPPER_PLAN.md` §6x is still unwritten — §6w
+refers forward to it; this §3.11 is currently the only home for the design.
 
 ---
 
@@ -493,6 +1024,22 @@ small; `phase3` is referenced from `archive/`.
   nothing for RAM.
 * **Eleven predictions are adjudicable in principle and
   `claims/adjudications/` is empty.**
+* **`data/analysis/` is git-ignored, so every number quoted in a committed
+  document is reproducible only by re-running its producer.** `data/` is
+  ignored by `*` (§1), which is right for the 118 GB of bulk and wrong for the
+  small JSON series and the builder scripts sitting beside them:
+  `dissipation_series`, `dissipation_sublayer_series`, `ov_per_head_series`,
+  `relay_null_series_k50`/`_k100`, `behavioural_series`, and the five/six
+  `build_*.py` / `*_analysis.py` scripts. `POPPER_PLAN.md` §6w, §3.8 and
+  `p2_eigenspectra/status-2.md`'s dated section all quote figures whose only
+  provenance is a file outside version control. The producers are tracked and
+  deterministic, so this is recoverable rather than lost — but it is inference
+  from a rerun, not a record, which is the same class of gap
+  `docs/results_provenance_audit_2026-09-05.md` §3.1 raises against Phase 2's
+  missing manifest. **Fix: un-ignore `data/analysis/*.json` and
+  `data/analysis/*.py`** (a `!` rule under the `data/` ignore), or move them to
+  a tracked `results/analysis/`. Deferred deliberately — it is a chore, and the
+  decision on which of the two shapes to take is not yet made.
 
 ---
 
@@ -529,6 +1076,35 @@ METS_NULL_REPLICATES=50 python3 -m tools.run.relay_null
 python3 -m tools.score_p_i1
                             # needs relay_null_series.json and
                             # behavioural_series.json; prints P-I1's p-value
+
+METS_REPO=$PWD METS_DATA=$PWD/data python3 -m tools.run.dissipation
+                            # ~22 min. Dissipation identity Tier A per
+                            # (step, prompt, layer) from activations.npz +
+                            # the on-disk OV Schur projectors, no forward
+                            # pass. Writes data/analysis/dissipation_series.json.
+METS_REPO=$PWD METS_DATA=$PWD/data python3 -m tools.run.dissipation_sublayer
+                            # ~20 min, 133 forward passes (loads pythia-410m
+                            # checkpoints). Exact attn/FFN split + per-head
+                            # roll-up. Writes dissipation_sublayer_series.json.
+# Panels + the per-head co-location test are rebuilt by the scripts in
+# data/analysis/ (build_colocation_panel.py, build_dissipation_panel.py,
+# build_earlylayer_and_512to1k.py, tierB_panel_and_colocation.py).
+
+METS_REPO=/run/media/system/WDS_500/Mets METS_DATA=$METS_REPO/data \
+  python3 -m tools.run.induction_rank_sweep
+                            # ~4 min, loads pythia-410m-step4000. Stage 1 of
+                            # sec 3.11: OV rank sweep of L7H8 in the SVD, Schur
+                            # and random bases. Writes induction_rank_sweep.json.
+METS_REPO=/run/media/system/WDS_500/Mets METS_DATA=$METS_REPO/data \
+  python3 -m tools.run.induction_subspace_characterize
+                            # ~5.5 min. Stage 2: L7H8 OV r* characterisation
+                            # (Schur sign, phi, Henrici, rank-1 mode) calibrated
+                            # against all 16 layer-7 heads + 24 random OVs.
+                            # Copying read causally (final LN present). Writes
+                            # induction_subspace_characterize.json.
+                            # NB METS_REPO must be the canonical path (matches
+                            # sys.prefix); $PWD via the bind mount fails the
+                            # interpreter check.
 ```
 
 ### 7.1 `curve.json` is the artifact that gets diffed
@@ -570,4 +1146,7 @@ itself.
 | Which predictions can carry an e-value, and the order to build a null in | `claims/EVALUABILITY.md` |
 | Phase 7's translation table and motif alphabet | `p7_motifs/design-7.md` |
 | A phase's current state | `<phase>/status-N.md` |
+| The dissipation-identity run — what it is, Tiers A/B, v2 list | `docs/dissipation_checkpoint_axis_scoping.md`, §3.8 |
+| Are the on-disk phase12/phase7 results stale? | `docs/results_provenance_audit_2026-09-05.md` |
+| The pythia-70m dense-onset run, and how it could plug in | §3.9 |
 | What changed and when | `git log` |

@@ -3872,6 +3872,164 @@ did not fail either — it is a real p-value from a real null, sitting well
 above α. `claims/adjudications/` is untouched by this pass; entering it there
 is the author's decision. `PROJECT.md` §3.6 carries the full number set.
 
+## 6w. The registration that was *not* made: `P-I6`, and the circularity that stopped it (2026-09-07)
+
+`PROJECT.md` §3.8.3 left an exploratory result — `|d_attn_repulsive|`
+co-locating with the behavioural induction rise at p = 0.0040 — and
+`PROJECT.md` §2 item 1 asked for a differential falsifier to be registered for
+it. This pass built that entry, found three reasons it could not stand, and
+**registered nothing**. The entry is not in `claims/registry.json`. What
+follows is why, because a registration not made for a measured reason is worth
+more than the entry would have been.
+
+**1. The drafted falsifier named a branch its own instrument cannot express.**
+The statement said the attention write turns repulsive-*dominant*. "Dominant"
+is a share. The instrument is `|d_attn_repulsive|`, an absolute magnitude, and
+`dissipation_sublayer_series.json`'s `per_head` block stores
+`d_attn_repulsive`, `d_attn_total` and `gfa_cos` — **no `d_attn_attractive`**.
+So INVERTS ("turns attractive-dominant"), the only branch an e-process can
+carry here, is not computable from the artifact. That is §6k's `P-ST1` defect
+— "the registered falsifier is not one an e-process can carry" — in a worse
+form: there it was a wording problem, here the number does not exist. Caught
+before registration rather than when it bound, which is the first time in this
+sequence that has happened.
+
+**2. The margin over plain magnitude is thin, and the published defence tests
+the wrong thing.** `tierB_panel_and_colocation.py` defends the anchor as "not
+a magnitude tautology" by reporting the centroid correlation with the
+behavioural side (r = 0.21). That is not the comparison: the confound is head
+output magnitude, so the comparator is `d_attn_total`. Measured:
+`spearman(cen[|d_attn_rep|], cen[behav])` = 0.227 (p = 0.014) against
+`spearman(cen[|d_attn_total|], cen[behav])` = 0.166 (p = 0.074). The
+repulsive-specific part adds little. And per head across the sweep,
+`corr(|d_attn_rep|(t), behavioural(t))` has median **0.077** — the
+trajectories are essentially unrelated within a head, and only the rise-mass
+*locations* associate. The shared-unit-factor diagnostic §3.3 requires was
+also computed and is **not** the problem it was drafted as: partial
+`rho(A, B | layer)` = 0.216 against a raw 0.227, so depth mediates 0.011. That
+caveat was overstated in the draft and is corrected here rather than carried.
+
+**3. THE CIRCULARITY, which is the finding.** The obvious repair was to move
+the claim from the activation-side write to the *operator*: does an induction
+head's own OV turn repulsive? `p2b_imaginary/head_circuits.py` already exists
+for exactly this and opens by ruling out the object the Tier B instrument
+uses — `ov_total = sum_h ov_per_head` (`p2_eigenspectra/weights.py:228`), the
+source of the on-disk `schur_repulse_layer_*` projectors — as "the operator
+only in the counterfactual where every head attends identically. It is not a
+thing the model ever forms." Measured here: the summed value lands within 0.05
+of only **21.2%** of the heads in its own layer (median gap 0.076, max 0.298).
+So `PROJECT.md`'s open item 3 is not a v2 refinement of an approximation; the
+layer-aggregated projector is a subspace of a fiction, and the per-head
+machinery to replace it was already written.
+
+The per-head run was built and done (`tools/run/ov_per_head.py`,
+`data/analysis/ov_per_head_series.json`, 45 min, weights only, no forward
+pass). It gives a large, clean, sign-carrying, developmentally-timed result —
+**and it is substantially an artifact of the motif's own definition.**
+
+    relay          = prev_token_mask o match_mask          (motif_alphabet.py)
+    prev_token_mask = _attractive(t) & (offset == 1)
+    match_mask      = _attractive(t) & (pair_type in {induction, strict})
+    _attractive     = attractive_frac >= threshold
+    attractive_frac = projection_fractions(force, U_pos)   (interactions.py:361)
+    U_pos           = the layer's OV Schur ATTRACTIVE subspace
+
+A head carries a relay only if its edge forces project onto the attractive OV
+subspace — and the statistic then asks whether that head's OV operator is
+attractive-dominant. Selection and measurement share `U_pos`. The two are not
+the same object (edge force projection is activation-side and per-edge; the
+statistic is the weights-side operator spectrum), so this is a strong
+structural link rather than an identity, but it is not a link a registered
+prediction may rest on.
+
+**What the contamination is worth, measured.** The two available definitions
+of "induction head" give **opposite signs**, and the contaminated one is the
+strong one:
+
+| population | shares `U_pos` with the selector | result at step 143000 |
+|---|---|---|
+| relay-carrying ("forming", n=116) | **yes** | strongly ATTRACTIVE: within-layer mean diff **−0.586**, forming head more attractive than an in-layer control in **613/678 = 90.4%**, all 13 layers the same sign, registered `score_and_layer` arm `p_less` = **0.0181** |
+| behaviourally elevated | no — pure post-softmax attention | weakly REPULSIVE: partial `rho | layer` = **+0.114**, within-layer mean rho **+0.137**, 16 of 24 layers positive |
+
+Had the relay version been registered it would have "confirmed" at p = 0.018 a
+prediction whose selection criterion presupposes half of it.
+`find_relays`'s own docstring guards against a *different* tautology — that
+`relay` must not reduce to "a match edge exists", which is the behavioural
+score — and is silent on this one. §6i's tautology paragraph in `CLAIMS.md`
+says the independence source "stays a claim the analyst must make"; this is
+what it looks like when the claim is false and nothing checks it.
+
+**And the repair for the repair does not work either.** Stripping `_attractive`
+from the relay definition leaves `relay` = an offset −1 edge composed with an
+induction-pair edge, which is much closer to the behavioural induction score —
+the tautology the docstring was written to prevent. The two circularities are
+in tension: removing one moves toward the other. That is a property of the
+motif's construction, not a coding error.
+
+**4. The statistic itself is sound; only the design around it was not.** This
+is worth separating, because the instrument is now available.
+`head_spectrum` gained `repulsive_energy_fraction_core` /
+`attractive_energy_fraction_core` / `repulsive_dim_fraction_core`
+(+7 tests). Energy weighting is `MATH_SPECTRAL_OT` §3's own proposed
+discriminator, taken over the bulk-edge-restricted alternative because a bulk
+edge is a placed constant and a weighting is not (standing rule 6).
+Validation, measured rather than argued:
+
+- **Chance is 0.500 +- 0.033** (300 matched-shape random heads at the real
+  1024/64 geometry), and **step 0 measures 0.4982**. The statistic is
+  calibrated on an untrained checkpoint to three decimals — CLAIM-A's logic,
+  and the cleanest null check in this sequence.
+- **Not dominated by one eigenvalue**: the top eigenvalue's share of the core
+  energy has median 0.057 and **exceeds 0.5 nowhere** in 384 heads, so it is a
+  distributional statistic and not a sign bit.
+- **The 21% of heads pinned at exactly 0.0 or 1.0 are structurally pinned, not
+  numerically**: their median `min|Re lambda| / |lambda|` is **0.873** and not
+  one has a relative margin under 1e-2, against an fp32 storage floor of ~1e-8.
+- **Randomized factorisation is exact here**: the per-head singular spectrum
+  has a seven-order gap at index 64 (energy in the top 64 = 1.000000000000),
+  and the randomized path agrees with the full SVD to ~1e-10 at 40x the speed.
+- Weak residual confound with head energy (rho = −0.12), reported not removed.
+
+The trajectory it produces is a clean bifurcation, and it is a real finding
+about the model whatever happens to `P-I6`: every head sits at chance through
+step 64, both populations swing to near-total repulsive dominance by step 1000
+(forming 0.989, non-forming 0.948), and from step 2000 the relay-carrying
+heads reverse completely to 0.156 while the rest stay at 0.701. The
+divergence opens in the induction-formation window and grows monotonically.
+The 512 -> 1000 interval carries the largest single move, which is
+`status-2.md`'s (b) reached from a fourth instrument.
+
+**5. A second population fact, and it bears on `P-I1` directly.** The 116-head
+relay axis and the behavioural induction population are nearly disjoint:
+**1 of the top 9** behavioural heads is on the relay axis (1 of 14, 2 of 20),
+the relay axis sits in layers 8-23 with its mass at 21-23, the behavioural
+leaders sit in layers 1-10 with their mass at 6, 7 and 9, and the relay axis's
+mean peak behavioural score (0.00536) is *below* the off-axis mean (0.00618).
+`spearman(max relay excess, peak behavioural)` = **−0.230** (p = 0.013) — but
+the partial controlling for layer is **+0.004** and the mean within-layer rho
+is **+0.090** with 7 of 10 layers positive. So it is **not** an inversion; it
+is **no association within layer**, and the raw negative is the product of two
+opposite depth trends (relay rises with depth at rho = +0.610, behavioural
+falls at rho = −0.383). Stated carefully because the raw number invites the
+stronger claim and the stronger claim is wrong.
+
+This is a more direct account of §3.6's INSUFFICIENT than §3.7's tie coset.
+The coset explains why the *p-value* is unstable; this explains why the
+*statistic* does not move: `P-I1` pairs two per-head series that are unrelated
+within layer, over a population on which the behavioural side is near its
+baseline. It is `P-I3`'s registered question answered on real artifacts, in
+the direction of that entry's falsifier, and it is recorded here rather than
+in a ledger because it is post-hoc on artifacts that already existed.
+
+**6. What was registered: nothing.** `claims/registry.json` is unchanged and
+`claims/adjudications/` is still empty. Every number in this section is
+discovery on existing artifacts, the anchor and the population were both
+chosen after seeing them, and the forking paths of this pass alone include two
+population definitions, four candidate statistics, level versus timing, and
+several checkpoints. None of it may be adjudicated on these artifacts; a
+registration needs a fresh one, and §6x's bottom-up design is the proposal for
+getting one that does not route through a projector-defined population at all.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
