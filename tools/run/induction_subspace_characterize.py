@@ -128,11 +128,11 @@ def _ln_inv_scale(x: torch.Tensor, eps: float) -> torch.Tensor:
 
 
 @torch.no_grad()
-def measure_ln_scales(model, ids) -> dict:
+def measure_ln_scales(model, ids, layer) -> dict:
     """Mean of LN's per-position inverse-RMS scale over the second-copy
-    positions, for the head's input LN (layer LAYER) and the final LN."""
+    positions, for the head's input LN (`layer`) and the final LN."""
     caught = {}
-    h1 = model.gpt_neox.layers[LAYER].input_layernorm.register_forward_pre_hook(
+    h1 = model.gpt_neox.layers[layer].input_layernorm.register_forward_pre_hook(
         lambda m, a: caught.__setitem__("in", a[0].detach()))
     h2 = model.gpt_neox.final_layer_norm.register_forward_pre_hook(
         lambda m, a: caught.__setitem__("final", a[0].detach()))
@@ -144,7 +144,7 @@ def measure_ln_scales(model, ids) -> dict:
     sl = slice(N_REP - 1, None)               # second-copy positions
     s_in = _ln_inv_scale(caught["in"][:, sl, :], eps)
     s_final = _ln_inv_scale(caught["final"][:, sl, :], eps)
-    g_in = model.gpt_neox.layers[LAYER].input_layernorm.weight.detach().float().numpy()
+    g_in = model.gpt_neox.layers[layer].input_layernorm.weight.detach().float().numpy()
     g_final = model.gpt_neox.final_layer_norm.weight.detach().float().numpy()
     return {
         "s_in_mean": float(s_in.mean()), "s_in_sd": float(s_in.std()),
@@ -231,20 +231,26 @@ def random_matched_ov(fro: float, rng) -> tuple:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--step", type=int, default=STEP)
+    ap.add_argument("--layer", type=int, default=LAYER)
+    ap.add_argument("--head", type=int, default=HEAD)
     ap.add_argument("--out", default="")
     ap.add_argument("--n-random", type=int, default=N_RANDOM)
     args = ap.parse_args()
+    step, layer, head = args.step, args.layer, args.head
+    is_default = (step, layer, head) == (STEP, LAYER, HEAD)
 
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
     rng = np.random.default_rng(EVAL_SEED)
 
-    model, tok = load_causal_lm(f"pythia-410m-step{STEP}")
+    model, tok = load_causal_lm(f"pythia-410m-step{step}")
     model.eval()
     ids = induction_batch(np.random.default_rng(EVAL_SEED))
 
-    lns = measure_ln_scales(model, ids)
-    print(f"  LN scales  s_in {lns['s_in_mean']:.3f}+-{lns['s_in_sd']:.3f}   "
+    lns = measure_ln_scales(model, ids, layer)
+    print(f"  L{layer}H{head} step {step}   LN scales  "
+          f"s_in {lns['s_in_mean']:.3f}+-{lns['s_in_sd']:.3f}   "
           f"s_final {lns['s_final_mean']:.4f}+-{lns['s_final_sd']:.4f}", flush=True)
 
     W_E = model.gpt_neox.embed_in.weight.detach().float().numpy()
@@ -255,57 +261,56 @@ def main() -> None:
 
     out = {
         "_what_this_is":
-            "Stage 2 of PROJECT.md sec 3.11: characterisation of induction "
-            "head L7H8's OV r* subspace (Schur sign, phi, Henrici, rank-1 "
-            "mode), calibrated against all 16 layer-7 heads and matched-norm "
-            "random heads. Copying effect is read causally through the full "
-            "forward (final layer norm present); the direct copy score folds "
-            "the mean LN scale and is descriptive only. Replaces an earlier "
-            "inline Stage 2 that omitted the final layer norm and had no "
-            "control heads. Exploratory: nothing registered.",
+            "Stage 2 of PROJECT.md sec 3.11: characterisation of one "
+            "behavioural induction head's OV r* subspace (Schur sign, phi, "
+            "Henrici, rank-1 mode), calibrated against all 16 heads of its "
+            "own layer and matched-norm random heads. Copying effect is read "
+            "causally through the full forward (final layer norm present); "
+            "the direct copy score folds the mean LN scale and is descriptive "
+            "only. Exploratory: nothing registered.",
         "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
         "git_sha": git_sha,
         "lib_versions": {"python": sys.version.split()[0], "numpy": np.__version__,
                          "scipy": scipy.__version__, "torch": torch.__version__,
                          "transformers": transformers.__version__},
-        "target": {"layer": LAYER, "head": HEAD,
-                   "prev_token_partner": [PREV_LAYER, PREV_HEAD], "step": STEP},
+        "target": {"layer": layer, "head": head, "step": step,
+                   "prev_token_partner": [PREV_LAYER, PREV_HEAD] if is_default else None},
         "params": {"r_star_schur": R_STAR_SCHUR, "n_random": args.n_random,
                    "vocab_sample": VOCAB_SAMPLE, "eval_seed": EVAL_SEED,
                    "n_rep": N_REP, "n_seqs": N_SEQS},
         "ln_scales": {k: v for k, v in lns.items() if not k.startswith("gamma")},
-        "layer7_heads": {},
+        "layer_heads": {},
         "random_heads": [],
     }
 
     for h in range(N_HEADS):
-        A, B = ov_factors(model, LAYER, h)
+        A, B = ov_factors(model, layer, h)
         rec = spectral_stats(A, B)
         rec.update(approx_copy_score(A, B, 1, "svd", lns, W_E, W_U, tok_ids, rng))
-        rec.update(causal_readout(model, LAYER, h, A, B, ids, base_lp, rng))
-        out["layer7_heads"][str(h)] = rec
-        tag = "  <-- TARGET" if h == HEAD else ""
-        print(f"  L7H{h:<2} top-lambda {rec['lambda_top_sign']:>10} "
+        rec.update(causal_readout(model, layer, h, A, B, ids, base_lp, rng))
+        out["layer_heads"][str(h)] = rec
+        tag = "  <-- TARGET" if h == head else ""
+        print(f"  L{layer}H{h:<2} top-lambda {rec['lambda_top_sign']:>10} "
               f"(Re {rec['lambda_top_re']:+.3f})  henrici {rec['henrici']:.3f}  "
               f"phi {rec['phi_antisym_fro_fraction']:.3f}  "
               f"svd-r1 {rec['svd_r1_frac_of_effect']:+.2f}  "
               f"schur-r1 {rec['schur_r1_frac_of_effect']:+.2f}  "
               f"|full dNLL| {rec['full_ablation_delta_nll']:+.4f}{tag}", flush=True)
 
-    tgt_fro = out["layer7_heads"][str(HEAD)]["ov_fro"]
+    tgt_fro = out["layer_heads"][str(head)]["ov_fro"]
     for i in range(args.n_random):
         A, B = random_matched_ov(tgt_fro, rng)
         # random OV is calibrated by weights only -- phi / henrici / sign
         out["random_heads"].append(spectral_stats(A, B))
 
-    # --- L7H8 vs the two reference sets -----------------------------------
-    tgt = out["layer7_heads"][str(HEAD)]
+    # --- target head vs the two reference sets ---------------------------
+    tgt = out["layer_heads"][str(head)]
     def _rank_in_layer(key, want_high=True):
-        vals = [out["layer7_heads"][str(h)][key] for h in range(N_HEADS)]
+        vals = [out["layer_heads"][str(h)][key] for h in range(N_HEADS)]
         r = int(sum(v > tgt[key] for v in vals)) if want_high else \
             int(sum(v < tgt[key] for v in vals))
-        return {"value": tgt[key], "rank_in_layer7": r, "of": N_HEADS,
-                "layer7_mean": float(np.mean(vals)), "layer7_sd": float(np.std(vals))}
+        return {"value": tgt[key], "rank_in_layer": r, "of": N_HEADS,
+                "layer_mean": float(np.mean(vals)), "layer_sd": float(np.std(vals))}
     def _z_vs_random(key):
         vals = np.array([r[key] for r in out["random_heads"]])
         return {"value": tgt[key], "random_mean": float(vals.mean()),
@@ -332,7 +337,9 @@ def main() -> None:
                             "abs_diff": abs(base_nll - final_nll)}
     print(f"  restore check: {out['restore_check']['abs_diff']:.2e}")
 
-    dest = Path(args.out) if args.out else DATA / "analysis" / "induction_subspace_characterize.json"
+    _default = ("induction_subspace_characterize.json" if is_default
+                else f"induction_subspace_characterize_s{step}_L{layer}H{head}.json")
+    dest = Path(args.out) if args.out else DATA / "analysis" / _default
     dest.parent.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(dest, "w"), indent=1)
     print(f"wrote {dest}")

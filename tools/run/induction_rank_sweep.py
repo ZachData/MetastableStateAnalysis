@@ -186,22 +186,26 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--ranks", default="1,2,3,4,6,8,12,16,24,32,48,64")
     ap.add_argument("--controls", type=int, default=5)
+    ap.add_argument("--step", type=int, default=STEP)
+    ap.add_argument("--layer", type=int, default=LAYER)
+    ap.add_argument("--head", type=int, default=HEAD)
     ap.add_argument("--out", default="")
     args = ap.parse_args()
+    step, layer, head = args.step, args.layer, args.head
 
     ranks = [int(x) for x in args.ranks.split(",")]
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
     rng = np.random.default_rng(EVAL_SEED)
 
-    model, tok = load_causal_lm(f"pythia-410m-step{STEP}")
+    model, tok = load_causal_lm(f"pythia-410m-step{step}")
     model.eval()
     ids = induction_batch(np.random.default_rng(EVAL_SEED))
 
-    A0, B0 = ov_factors(model, LAYER, HEAD)
+    A0, B0 = ov_factors(model, layer, head)
     ref = np.load(sorted(DATA.glob(
-        f"phase12/p2_eigenspectra_*/ov_weights_pythia-410m-step{STEP}.npz"))[0]
-    )[f"ov_head{HEAD}_layer_{LAYER}"]
+        f"phase12/p2_eigenspectra_*/ov_weights_pythia-410m-step{step}.npz"))[0]
+    )[f"ov_head{head}_layer_{layer}"]
     ov_rel = float(np.linalg.norm(A0 @ B0 - ref) / np.linalg.norm(ref))
 
     base = measure(model, ids)
@@ -224,8 +228,9 @@ def main() -> None:
         "lib_versions": {"python": sys.version.split()[0], "numpy": np.__version__,
                          "scipy": scipy.__version__, "torch": torch.__version__,
                          "transformers": transformers.__version__},
-        "target": {"layer": LAYER, "head": HEAD,
-                   "prev_token_partner": [PREV_LAYER, PREV_HEAD], "step": STEP},
+        "target": {"layer": layer, "head": head,
+                   "prev_token_partner": [PREV_LAYER, PREV_HEAD] if
+                   (layer, head) == (LAYER, HEAD) else None, "step": step},
         "eval": {"n_rep": N_REP, "n_seqs": N_SEQS, "seed": EVAL_SEED,
                  "vocab_range": [VOCAB_LO, VOCAB_HI]},
         "ov_extraction_rel_error": ov_rel,
@@ -241,12 +246,12 @@ def main() -> None:
             vals = []
             for d in range(n_draws):
                 A, B = truncate(A0, B0, r, basis, rng)
-                write_ov(model, LAYER, HEAD, A, B)
+                write_ov(model, layer, head, A, B)
                 m = measure(model, ids)
                 lp = m.pop("logprobs")
                 kl = float((base_lp.exp() * (base_lp - lp)).sum(-1).mean())
                 vals.append({**m, "kl_from_baseline": kl})
-            write_ov(model, LAYER, HEAD, A0, B0)          # restore
+            write_ov(model, layer, head, A0, B0)          # restore
             agg = {k: float(np.mean([v[k] for v in vals])) for k in vals[0]}
             agg["sd"] = float(np.std([v["second_copy_nll"] for v in vals]))
             agg["rank"] = r
@@ -265,7 +270,9 @@ def main() -> None:
     }
     print(f"  restore check: {out['restore_check']['abs_diff']:.2e}")
 
-    dest = Path(args.out) if args.out else DATA / "analysis" / "induction_rank_sweep.json"
+    _default = ("induction_rank_sweep.json" if (step, layer, head) == (STEP, LAYER, HEAD)
+                else f"induction_rank_sweep_s{step}_L{layer}H{head}.json")
+    dest = Path(args.out) if args.out else DATA / "analysis" / _default
     dest.parent.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(dest, "w"), indent=1)
     print(f"wrote {dest}")
