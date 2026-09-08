@@ -148,10 +148,16 @@ has pivoted to a bottom-up interventional programme (§3.11).
    prediction** (reshaped by Stage 2 — see §3.11 "Next"), then **Stage 3**
    (matched-norm perturbation of the rank-1 mode). QK half still not done
    (RoPE). `claims/registry.json` unchanged.
-2. **Violation-restricted subspace split** (dissipation v2): the repulsive
-   share of the *positive* first-order term at ΔE > 0 boundaries, not of
-   `|dissipation|` over all boundaries. This is the specific thing that would
-   close `p2_eigenspectra/status-2.md` item 5 (the `frac_repulsive` decay).
+2. ~~Violation-restricted subspace split (dissipation v2)~~ **— done
+   2026-09-08, `status-2.md` item 5 ~resolved.** The clean per-particle
+   version (`v2_attn_pos_*` in `tools/run/dissipation_sublayer.py` →
+   `data/analysis/dissipation_v2_series.json`) does **not** reproduce Phase
+   2's `frac_repulsive` decay: the energy-weighted repulsive share of the
+   positive first-order term at ΔE>0 boundaries stays 0.6–0.9 across the
+   trained regime. So `frac_repulsive` (a count with a hard `>0.5` per-
+   violation threshold) falls because marginal violations drift across the
+   line, not because the energy leaves the repulsive subspace. Nothing
+   further for the dissipation runner here.
 3. **The pythia-70m dense-onset sub-study** (§3.9) — new registered ground,
    fills the 512 → 1000 gap, would let §3.8's ODE-regime finding be checked at
    4-step resolution. Now also the natural second model for anything §3.11
@@ -916,6 +922,20 @@ perturbation, or as a copier the token-alignment test just missed". Then
 Stage 3 (matched-norm variations of the rank-1 mode, joint behavioural +
 logit + geometry readout). `POPPER_PLAN.md` §6x is still unwritten — §6w
 refers forward to it; this §3.11 is currently the only home for the design.
+
+**In flight (2026-09-08, exploratory, nothing registered).** Two generalisation
+runs, launched to answer whether the Stage 2 picture is L7H8-specific before
+the prediction is written:
+- `induction_rank_sweep.py --step` across all 19 axis steps for L7H8 →
+  `data/analysis/induction_rank_sweep_s<step>_L7H8.json`. *When* does
+  `r*_SVD ≪ r*_Schur` form?
+- `induction_subspace_characterize.py --step --layer --head` on the top
+  behavioural heads (L7H8, L6H0, L2H10, L9H9, L7H0, L9H8, L7H3, L1H15) each at
+  its peak step → `…_s<step>_L<layer>.json`. Is "high-gain SVD direction /
+  100 % repulsive core / non-token-aligned" general to induction OV or
+  idiosyncratic?
+Both scripts now take `--step/--layer/--head`; the no-arg defaults reproduce
+the L7H8 @ 4000 files above unchanged.
 
 ---
 
