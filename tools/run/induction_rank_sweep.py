@@ -193,7 +193,7 @@ def main() -> None:
     args = ap.parse_args()
     step, layer, head = args.step, args.layer, args.head
 
-    ranks = [int(x) for x in args.ranks.split(",")]
+    ranks = sorted({0, *(int(x) for x in args.ranks.split(","))})  # 0 is the ceiling
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
     rng = np.random.default_rng(EVAL_SEED)
