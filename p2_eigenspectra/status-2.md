@@ -268,10 +268,105 @@ it lands.
    0.20 `v_score` term.
 4. **Dense checkpoints between 128 and 512.** The whole onset happens inside one order of
    magnitude with three sampled points. This is where the pilot sweep's reserved adaptive
-   slots should go.
+   slots should go. **Follow-on (2026-09-06): the 512 → 1000 interval wants the same
+   treatment** — see the dated section below — but Pythia-410M has **no released checkpoint
+   between step 512 and step 1000** (log schedule to 512, then every 1000), so this one
+   cannot be filled from the mirror. Any densification there needs a retrain or a different
+   model family.
 5. **Explain the `frac_repulsive` decay and rebound** (1.00 → 0.50 → 0.80 with count roughly
    flat). Something reorganizes which subspace the violations occupy without changing how
    many there are, and the 120000–143000 rebound moves the same direction in 8 of 8 prompts.
+   **Constrained further 2026-09-06 (dissipation identity, below): the decay is NOT in the
+   displacement geometry — it is in the attention channel or the violation set specifically.**
+
+## 2026-09-06 — what the dissipation identity and the co-location panel add
+
+Two Phase-7-driven analyses built on Phase 2's on-disk artifacts (`docs/dissipation_
+checkpoint_axis_scoping.md`, `PROJECT.md` §3.8; `data/analysis/dissipation_series.json`,
+`colocation_panel.*`, `dissipation_panel.*`). All on the registered 19-step P-I1 sweep,
+which is a superset of this phase's grid. Three things bear on the open items above.
+
+### (a) Item 5 — the `frac_repulsive` decay is not a displacement-geometry effect
+
+`core.dissipation.dissipation_by_subspace` splits each layer's **total** residual
+displacement `dx` through this phase's own per-checkpoint OV Schur projectors
+(`ov_projectors_pythia-410m-step*.npz`) and attributes the first-order energy change
+`Σᵢ⟨Gᵢ,vᵢ⟩` to the attractive vs repulsive subspace. The repulsive share of
+`|dissipation|`, pooled over 7 prompts and 24 layers:
+
+| step | this phase's `beta1.0_frac_repulsive` | dissipation repulsive share (total dx) |
+|---|---|---|
+| 512 | 1.00 | 0.67 |
+| 2000 | 1.00 | 0.76 |
+| 8000 | 0.97 | 0.65 |
+| 32000 | 0.64 | 0.65 |
+| 54000 | 0.56 | 0.64 |
+| 143000 | 0.73 | 0.64 |
+
+`beta1.0_frac_repulsive` decays 1.00 → 0.56 over 8000 → 54000; the dissipation repulsive
+share is **flat at ~0.64 across the same window**. So whatever reorganises the violation
+subspace between step 8000 and 54000 is **not visible in where the residual stream moves**,
+and it rules out "the whole layer's motion rotates into a different subspace" as the
+mechanism.
+
+**Tier B (2026-09-06, `data/analysis/dissipation_sublayer_series.json`) narrows it
+further.** With the exact attention/FFN split in hand: the **attention channel's**
+repulsive-subspace share of `|dissipation|` is near-cancelling at the aggregate and does
+**not** track the `frac_repulsive` decay either (on the forming layers it rises to 0.82 at
+step 2000, dips, returns to 0.85 at 32000, drops to 0.54 at 143000 — a trajectory, not the
+smooth decay). So the decay is **not in either channel's displacement geometry**. The
+remaining candidate is that it is genuinely about the **violation set** — the clean test is
+a *violation-restricted* subspace split (the repulsive share of the *positive* first-order
+term at boundaries where ΔE > 0, not the share of `|dissipation|` over all boundaries),
+which the current runner does not compute. That is the v2, and it is the specific thing
+that would close item 5.
+The weights-only `ov_frac_repulsive_mean` **does** have a trajectory — 0.499 flat through
+step 128, up to 0.71 at step 2000, back to 0.52 by 143000 — so the OV operator's own
+attractive/repulsive balance moves during the formation window and relaxes after; that is a
+candidate driver for the *onset* but its timing (peak at 2000, monotone decline after) does
+not match the *decay* (flat then down at 8000).
+
+### (b) The 128 → 512 onset has a second act at 512 → 1000, and it is sharp
+
+Item 4's onset window is followed immediately by a second reorganisation across the single
+512 → 1000 interval — the first linearly-spaced gap in the schedule, and a step interval
+that recurs as a landmark across the developmental-interpretability literature:
+
+| quantity (7-prompt pooled) | step 512 | step 1000 |
+|---|---|---|
+| effective rank (normed) | 12.1 | **31.1** |
+| `ov_frac_repulsive_mean` | 0.55 | 0.65 |
+| dissipation Σ first-order (β=1) | **−0.38** (net downhill) | **+0.07** (net uphill) |
+| linearisation residual, layers 4–23 (median rel.) | 0.50 | **0.28** |
+| gradient-flow alignment, mean cos(−G,v) | −0.010 | −0.014 |
+
+The normed-rank jump (12 → 31) is the **largest single-interval move anywhere in the
+sweep**. And the forward-Euler linearisation residual on the deep layers **halves** across
+this one interval (0.50 → 0.28) — the ODE picture the whole project rests on becomes a good
+approximation here, bottoms at ~0.17 around step 2000–4000, and degrades back to ~0.64 by
+step 16000 and ~0.87 by step 32000. So 512 → 1000 is where the network briefly *is* running
+the paper's dynamics.
+Worth its own analysis focus; the checkpoint-density constraint in item 4 applies.
+
+### (c) Step 512 co-locates across the dissipation instruments too
+
+Independent of this phase's counters: at step 512 the dissipation repulsive share **jumps**
+0.45 → 0.67 and stays elevated for the rest of training; `mean cos(−G,v)` is at its
+**least anti-aligned** (≈ −0.01, motion most orthogonal to the energy landscape) with
+`frac_descending` at its peak (0.55). Same checkpoint as this phase's energy-monotonicity
+break onset (128–512) and Phase 1's plateau-onset weight→content flip (exactly 512). A
+fourth instrument, same location.
+
+### (d) Provenance gap in this phase's artifacts
+
+`docs/results_provenance_audit_2026-09-05.md` §3.1: the `p2_eigenspectra_*` run
+directories carry **no manifest, no `git_sha`, no timestamp** in any file — provenance is
+directory mtime only (2026-08-31 / 2026-09-01). Phase 1's runner writes a full
+`manifest.json`; this phase's does not. Every module that produced the OV artifacts is
+unchanged since the runs (`git log` on `weights.py` / `decompose.py`), so the results are
+almost certainly HEAD-consistent, but that is inference, not record. **Give `run_2.py` the
+same `_write_run_manifest` contract Phase 1 has** — it is the artifact-contract bug class
+`INDEX.md` names, sitting in this phase.
 
 ## Maybe later (not current work, 2026-07-18)
 
