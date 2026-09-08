@@ -139,15 +139,18 @@ has pivoted to a bottom-up interventional programme (§3.11).
    then perturb it. Replaces the population/co-location frame entirely: no
    projector-defined population, so no §3.10 circularity, and `n = 1` is
    sound because the null randomises over *subspaces* rather than units
-   (`claims/EVALUABILITY.md`'s own unused advice). **Stages 0–2 have run**
-   (§3.11, dated blocks): the circuit is `L5H2 → L7H8`; the OV copying effect
-   is carried ~82 % by a single high-gain SVD direction (`r*_SVD ≪ r*_Schur`);
-   the core is 100 % repulsive but not a spectral outlier, and the rank-1 mode
-   shows no token-identity copy structure — cutting against both the standard
-   and the particle accounts. **Pick up at: register the differential
-   prediction** (reshaped by Stage 2 — see §3.11 "Next"), then **Stage 3**
-   (matched-norm perturbation of the rank-1 mode). QK half still not done
-   (RoPE). `claims/registry.json` unchanged.
+   (`claims/EVALUABILITY.md`'s own unused advice). **Stages 0–2 have run,
+   plus a generalisation batch** (§3.11, dated blocks). Settled: the
+   representational picture — OV core 100 % repulsive, non-normal but not
+   outlier, no token-identity copy structure — is **universal** across the top
+   8 behavioural induction heads and stable across development; `r*_SVD ≪
+   r*_Schur` holds across the whole trained regime (`r*_SVD` grows 1 → 2 over
+   consolidation). The causal OV→copying effect is **concentrated in L7H8**
+   (~10× any other). **Pick up at: register the differential prediction** —
+   it must be about the high-gain SVD direction specifically, since "repulsive"
+   is now a population baseline (§3.11 "Consequence for the registration") —
+   then **Stage 3**. QK half still not done (RoPE). `claims/registry.json`
+   unchanged.
 2. ~~Violation-restricted subspace split (dissipation v2)~~ **— done
    2026-09-08, `status-2.md` item 5 ~resolved.** The clean per-particle
    version (`v2_attn_pos_*` in `tools/run/dissipation_sublayer.py` →
@@ -169,17 +172,14 @@ has pivoted to a bottom-up interventional programme (§3.11).
 machinery already existed in `p2b_imaginary/head_circuits.py` and the sweep is
 `data/analysis/ov_per_head_series.json`. See §3.10.)*
 
-**Nothing is committed.** All of the above is on the working tree;
-`./scripts/check.sh gate` is green (2264 passed / 5 skipped, 34 s). New files:
-`tools/run/dissipation.py`, `tools/run/dissipation_sublayer.py`,
-`tools/run/ov_per_head.py`, `tools/run/induction_rank_sweep.py`,
-`tools/run/induction_subspace_characterize.py`,
-`docs/dissipation_checkpoint_axis_scoping.md`,
-`docs/results_provenance_audit_2026-09-05.md`; `data/analysis/` holds the new
-series JSONs (`dissipation_series`, `dissipation_sublayer_series`,
-`ov_per_head_series`, `induction_rank_sweep`,
-`induction_subspace_characterize`, `relay_null_series_k50` / `_k100`), four
-`.png` panels (+ two `.csv`), and durable copies of the builder scripts.
+**Committed 2026-09-08, on `claude/rescaler-cache-identity-test`, not yet
+pushed / no PR.** Commits `b44c3e9`..`HEAD` (10): the `head_spectrum` sign
+split, the dissipation runners + v2, `ov_per_head`, the induction programme
+Stages 0–2 + generalisation batch, the provenance docs, and the PROJECT /
+POPPER / status-2 sync. `./scripts/check.sh gate` was green before the batch
+(2270 passed / 5 skipped). The tracked new code is under `tools/run/` and
+`data/analysis/*.py`; every `data/analysis/*.json` series is git-ignored (§6)
+and reproducible via §7.
 
 **The registered 19-step sweep is complete.** All 19 interaction tables are on
 disk under `data/phase7/`.
@@ -923,19 +923,58 @@ Stage 3 (matched-norm variations of the rank-1 mode, joint behavioural +
 logit + geometry readout). `POPPER_PLAN.md` §6x is still unwritten — §6w
 refers forward to it; this §3.11 is currently the only home for the design.
 
-**In flight (2026-09-08, exploratory, nothing registered).** Two generalisation
-runs, launched to answer whether the Stage 2 picture is L7H8-specific before
-the prediction is written:
-- `induction_rank_sweep.py --step` across all 19 axis steps for L7H8 →
-  `data/analysis/induction_rank_sweep_s<step>_L7H8.json`. *When* does
-  `r*_SVD ≪ r*_Schur` form?
-- `induction_subspace_characterize.py --step --layer --head` on the top
-  behavioural heads (L7H8, L6H0, L2H10, L9H9, L7H0, L9H8, L7H3, L1H15) each at
-  its peak step → `…_s<step>_L<layer>.json`. Is "high-gain SVD direction /
-  100 % repulsive core / non-token-aligned" general to induction OV or
-  idiosyncratic?
-Both scripts now take `--step/--layer/--head`; the no-arg defaults reproduce
-the L7H8 @ 4000 files above unchanged.
+### Generalisation batch — results (2026-09-08, exploratory, nothing registered)
+
+`data/analysis/induction_developmental_analysis.py` →
+`induction_developmental_series.json`. Two questions: does the Stage 2 picture
+hold across development, and across the other behavioural induction heads?
+
+**A. L7H8 OV rank sweep across all 19 axis steps.** Through step 2000 the OV
+copying effect is ~zero (`ΔOV_nll` ≤ |0.014|; L7H8 cannot do induction yet) —
+the rank fractions there are noise. From step 4000 it switches on and grows
+monotonically: `ΔOV_nll` **+0.24 → +0.73 → +1.02 → +1.47** (steps
+4000/8000/16000/54000), KL 0.04 → 0.57, slight pullback to +1.18 at 143000.
+The `r*` story:
+
+| regime | steps | `svd@1` | `svd@2` | `schur@1` | `schur@8` |
+|---|---|---|---|---|---|
+| formation | 4000–16000 | 0.82–0.96 | 0.85–0.99 | 0.12–0.49 | 0.77–0.93 |
+| consolidation | 32000–143000 | **0.68 → 0.20** | 0.85–0.97 | 0.25–0.34 | 0.83–0.89 |
+
+So the copying action is **one SVD direction during formation**, then spreads
+to a **second** during consolidation (`r*_SVD` grows 1 → 2). Schur rank-1 is
+weak throughout; Schur needs ~8 modes at every step. **`r*_SVD ≪ r*_Schur`
+holds across the entire trained regime** — a stable developmental property,
+not a snapshot. Caveat: late full-ablation KL is 0.57, so the rank-1-vs-2 gap
+there is partly nonlinearity.
+
+**B. Stage 2 on the top 8 behavioural heads** (L7H8, L7H0, L7H3, L7H12, L6H0,
+L2H10, L9H9, L9H8, L1H15), each at its peak step, each calibrated against its
+own layer.
+
+*Universal — the representational claim generalises.* **Every** head's OV core
+is 100 % repulsive (`attractive_energy_fraction_core` = 0.000, top-λ
+repulsive, 9 of 9), φ ∈ [0.29, 0.46], Henrici ∈ [0.23, 0.53] (no spectral
+outliers), and **none is a token-identity copier** (copy z ≈ 0, diag-is-row-max
+at chance). The standard "attractive, token-aligned copier" account fails for
+every behavioural induction head, not just L7H8.
+
+*Concentrated — the functional claim does not.* The causal OV→copying effect is
+L7H8's at scale (`ΔOV_nll` +0.244) against L9H9 +0.054, L1H15 +0.040, L6H0
++0.021, and the rest ≤ 0.01 or negative (L2H10, L9H8 negative — their OV is
+not a copier). The "top behavioural heads" are ranked by attention pattern (a
+QK quantity) and are mostly not OV copiers — decision 3, confirmed. Where the
+OV effect is real (L7H8, L9H9, L1H15, L6H0) rank-1 SVD carries it (0.68–0.97)
+and Schur rank-1 is weaker, so `r*_SVD ≲ r*_Schur` generalises there too;
+L1H15 is the near-exception (Schur rank-1 0.76 vs SVD 0.83 — more normal).
+
+**Consequence for the registration.** "100 % repulsive" is now a
+population-wide baseline, not a distinguishing feature — the differential
+prediction cannot be "is the induction subspace repulsive" (all of them are).
+It has to be about the **high-gain SVD direction** specifically: under
+matched-norm perturbation does it act as an individuating channel, or does
+copying survive (a copier the token-alignment test missed). That is Stage 3's
+design and the thing to register before it runs.
 
 ---
 
