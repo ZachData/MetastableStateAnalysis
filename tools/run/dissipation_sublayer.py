@@ -161,7 +161,11 @@ def main() -> None:
             "of the first-order energy change (core.dissipation.dissipation_by_"
             "channel) per (step, prompt, layer), plus a per-head roll-up of the "
             "attention channel on the P-I1 forming heads. One forward pass per "
-            "(step, prompt). frame=l2_sphere.",
+            "(step, prompt). frame=l2_sphere. v2 fields "
+            "(v2_attn_pos_*, pooled v2_attn_repulsive_share, per-head "
+            "v2_pos_*): status-2.md item 5's violation-restricted split -- the "
+            "repulsive share of the POSITIVE part of the attention channel's "
+            "first-order term, at boundaries where actual dE > 0.",
         "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
         "git_sha": git_sha,
         "lib_versions": {"python": sys.version.split()[0], "numpy": np.__version__,
@@ -174,7 +178,9 @@ def main() -> None:
         "pooled_by_step_layer": {},  # "<step>|<layer>" -> 7-prompt pooled
         "per_head": {f"{l},{h}": {"d_attn_repulsive": [None] * len(STEPS),
                                   "d_attn_total": [None] * len(STEPS),
-                                  "gfa_cos": [None] * len(STEPS)}
+                                  "gfa_cos": [None] * len(STEPS),
+                                  "v2_pos_first_order": [None] * len(STEPS),
+                                  "v2_pos_repulsive": [None] * len(STEPS)}
                      for l, h in forming},
         "max_channel_sum_check": 0.0,
         "input_provenance": {},
@@ -199,7 +205,9 @@ def main() -> None:
         step_t0 = time.time()
         pooled = {l: {"d_attn": 0.0, "d_ffn": 0.0, "d_attn_rep": 0.0, "d_attn_att": 0.0,
                       "d_ffn_rep": 0.0, "d_ffn_att": 0.0, "first_order": 0.0,
-                      "actual_delta_E": 0.0, "n": 0} for l in range(N_BLOCKS)}
+                      "actual_delta_E": 0.0, "n": 0,
+                      "v2_fo": 0.0, "v2_rep": 0.0, "v2_att": 0.0, "v2_n": 0}
+                  for l in range(N_BLOCKS)}
 
         for prompt in prompts_all:
             want_n = _phase1_ntok(step, prompt)
@@ -222,6 +230,18 @@ def main() -> None:
                 gfa_a = gradient_flow_alignment(X, da, BETA)
                 gfa_f = gradient_flow_alignment(X, df, BETA)
 
+                # v2 (status-2.md item 5): the violation-restricted split.
+                # Restrict to the particles whose attention-channel first-order
+                # contribution is POSITIVE -- the part of the term that pushes
+                # E_beta up -- and split THAT by OV subspace. Gate on
+                # actual_delta_E > 0 at analysis time (stored below).
+                _ppr = np.asarray(sub_a["per_particle_repulsive"])
+                _ppa = np.asarray(sub_a["per_particle_attractive"])
+                _m = (_ppr + _ppa) > 0
+                v2_fo = float((_ppr + _ppa)[_m].sum())
+                v2_rep = float(_ppr[_m].sum())
+                v2_att = float(_ppa[_m].sum())
+
                 key = f"{step}|{prompt}|{l}"
                 out["per_step_layer"][key] = {
                     "d_attn": ch["attn"], "d_ffn": ch["ffn"],
@@ -230,6 +250,9 @@ def main() -> None:
                     "d_ffn_repulsive": sub_f["repulsive"], "d_ffn_attractive": sub_f["attractive"],
                     "first_order": tot["first_order"], "actual_delta_E": tot["actual_delta_E"],
                     "relative_residual": tot["relative_residual"],
+                    "v2_attn_pos_first_order": v2_fo,
+                    "v2_attn_pos_repulsive": v2_rep,
+                    "v2_attn_pos_attractive": v2_att,
                     "gfa_attn": _gfa_reduce(gfa_a), "gfa_ffn": _gfa_reduce(gfa_f),
                 }
 
@@ -241,6 +264,11 @@ def main() -> None:
                     p["first_order"] += tot["first_order"]
                     p["actual_delta_E"] += (tot["actual_delta_E"] or 0.0)
                     p["n"] += 1
+                    if (tot["actual_delta_E"] or 0.0) > 0:   # dE>0 gate
+                        p["v2_fo"] += v2_fo
+                        p["v2_rep"] += v2_rep
+                        p["v2_att"] += v2_att
+                        p["v2_n"] += 1
 
                 # per-head roll-up (attention channel), scored prompts summed
                 if prompt in SCORED_PROMPTS and l in forming_by_layer:
@@ -251,6 +279,14 @@ def main() -> None:
                         rec = out["per_head"][f"{l},{h}"]
                         rec["d_attn_repulsive"][si] = (rec["d_attn_repulsive"][si] or 0.0) + s["repulsive"]
                         rec["d_attn_total"][si] = (rec["d_attn_total"][si] or 0.0) + s["total"]
+                        # v2 per head: positive-part split, restricted to the
+                        # boundaries where the layer's actual dE > 0.
+                        if (tot["actual_delta_E"] or 0.0) > 0:
+                            _hr = np.asarray(s["per_particle_repulsive"])
+                            _ha = np.asarray(s["per_particle_attractive"])
+                            _hm = (_hr + _ha) > 0
+                            rec["v2_pos_first_order"][si] = (rec["v2_pos_first_order"][si] or 0.0) + float((_hr + _ha)[_hm].sum())
+                            rec["v2_pos_repulsive"][si] = (rec["v2_pos_repulsive"][si] or 0.0) + float(_hr[_hm].sum())
                         # gfa cos: accumulate a prompt-mean at the end; store sum + count via list trick
                         prev = rec["gfa_cos"][si]
                         rec["gfa_cos"][si] = (0.0 if prev is None else prev) + (
@@ -268,6 +304,8 @@ def main() -> None:
             p["attn_repulsive_share"] = (abs(p["d_attn_rep"]) / mag) if mag > 0 else None
             magt = abs(p["d_attn"]) + abs(p["d_ffn"])
             p["attn_share_of_channels"] = (abs(p["d_attn"]) / magt) if magt > 0 else None
+            # v2: repulsive share of the positive first-order term, dE>0 only
+            p["v2_attn_repulsive_share"] = (p["v2_rep"] / p["v2_fo"]) if p["v2_fo"] > 0 else None
             out["pooled_by_step_layer"][f"{step}|{l}"] = p
 
         del model, tokenizer

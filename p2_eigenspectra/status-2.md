@@ -273,11 +273,16 @@ it lands.
    between step 512 and step 1000** (log schedule to 512, then every 1000), so this one
    cannot be filled from the mirror. Any densification there needs a retrain or a different
    model family.
-5. **Explain the `frac_repulsive` decay and rebound** (1.00 → 0.50 → 0.80 with count roughly
-   flat). Something reorganizes which subspace the violations occupy without changing how
-   many there are, and the 120000–143000 rebound moves the same direction in 8 of 8 prompts.
-   **Constrained further 2026-09-06 (dissipation identity, below): the decay is NOT in the
-   displacement geometry — it is in the attention channel or the violation set specifically.**
+5. **~RESOLVED 2026-09-08 (dissipation v2, below §(a)): the `frac_repulsive` decay is a
+   threshold-crossing count effect, not an energy reorganisation.** The clean per-particle
+   violation-restricted repulsive share stays 0.6–0.9 (flat-to-rising) across the trained
+   regime while Phase 2's `frac_repulsive` — a count of violations with `repulse_frac[t] >
+   0.5` — falls 1.00 → 0.56. Late in training more violations sit just below the 50 % line
+   without the energy that drives them leaving the repulsive subspace. The 120000–143000
+   rebound (8 of 8 prompts) is unexplained but is the same kind of count wobble.
+   *Original framing, kept:* something reorganizes which subspace the violations occupy
+   without changing how many there are; 2026-09-06 constrained it out of the displacement
+   geometry, 2026-09-08 out of the energy-flow decomposition entirely.
 
 ## 2026-09-06 — what the dissipation identity and the co-location panel add
 
@@ -320,6 +325,33 @@ a *violation-restricted* subspace split (the repulsive share of the *positive* f
 term at boundaries where ΔE > 0, not the share of `|dissipation|` over all boundaries),
 which the current runner does not compute. That is the v2, and it is the specific thing
 that would close item 5.
+
+**v2 done 2026-09-08 — and it does NOT reproduce the decay; the decay is a threshold
+artefact.** `tools/run/dissipation_sublayer.py` gained per-particle `v2_attn_pos_*` fields
+(the positive part of the attention channel's first-order term, restricted to dE>0
+boundaries) and was re-run (bit-identical on all 32832 pre-v2 scalars).
+`data/analysis/dissipation_v2_violation_restricted.py` → `dissipation_v2_series.json`
+carries three cuts on the forming layers L8–23:
+
+| step | Phase 2 `frac_repulsive` | v2 boundary-level (attn) | **v2 per-particle (clean)** |
+|---|---|---|---|
+| 2000 | 1.00 | +0.81 | +0.83 |
+| 8000 | 0.97 | +0.37 | +0.62 |
+| 32000 | 0.64 | +0.21 | **+0.89** |
+| 54000 | 0.56 | +0.19 | **+0.89** |
+| 143000 | 0.73 | +0.25 | +0.83 |
+
+The clean per-particle cut is **flat-to-rising** across the trained regime — opposite to
+Phase 2. The boundary-level cut's apparent decay is a cancellation artefact (a `first_order
+> 0` boundary with large offsetting ±contributions makes `d_repulsive / first_order` swing).
+And `beta1.0_frac_repulsive` (`analysis_p2.py:147`) is a **count** of violations with
+`repulse_frac[t] > 0.5` — a hard threshold. So the resolution of item 5: late in training
+more violations sit *near but below* the 50 % repulsive-displacement line (the count drops)
+while the **energy** that pushes E_β up stays repulsive-dominated (0.6–0.9, energy-weighted).
+The subspace the violations occupy reorganises in the *count/marginal* sense, not the
+*energy* sense — there is nothing further for the dissipation runner to find here.
+Early training steps (≤8) are below the forward-Euler regime; their v2 values are not
+meaningful.
 The weights-only `ov_frac_repulsive_mean` **does** have a trajectory — 0.499 flat through
 step 128, up to 0.71 at step 2000, back to 0.52 by 143000 — so the OV operator's own
 attractive/repulsive balance moves during the formation window and relaxes after; that is a
