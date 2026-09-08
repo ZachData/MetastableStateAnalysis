@@ -225,6 +225,42 @@ def head_spectrum(W_O: np.ndarray, W_V: np.ndarray,
           ||A||_F^2 / ||W_OV||_F^2, from the factored parts. A norm question,
           not a spectral one, and it does not depend on the rank at all.
 
+    THE SIGN SPLIT, AND WHY IT IS ENERGY-WEIGHTED
+    ---------------------------------------------
+    For the flow `x' = -Vx`, `Re lambda > 0` contracts (attractive) and
+    `Re lambda < 0` expands (repulsive). `MATH_SPECTRAL_OT.md` §3 records that
+    the phase's existing `frac_repulsive` is an unweighted COUNT over all `d`
+    ambient eigenvalues, so it is dominated by the bulk — and that a return to
+    the 0.5 chance value therefore cannot distinguish
+
+      (1) the repulsive structure genuinely dissolved, from
+      (2) the structure is still in a few large-|lambda| outliers and the
+          COUNTING statistic lost the ability to see it.
+
+    It proposes two discriminators: a `|lambda|`-weighted fraction, or the
+    same fraction restricted to eigenvalues outside the bulk edge. The
+    weighted one is taken here because a bulk-edge cut is a PLACED CONSTANT
+    and the weighting is not — standing rule 6 asks where a constant came from
+    and this way there is none to answer for.
+
+      `repulsive_energy_fraction_core` / `attractive_energy_fraction_core`
+          sum |lambda|^2 over `Re lambda < 0` (resp. `> 0`) divided by the
+          total. Rank-invariant for the same reason the complex energy
+          fraction is (`|0|^2 = 0`), so the null space cannot move it, and it
+          weights an outlier by its actual dynamical strength. The two do NOT
+          have to sum to 1: eigenvalues with `Re lambda == 0` exactly are
+          neither, and they are left visible in the gap rather than folded
+          into one side.
+      `repulsive_dim_fraction_core`
+          the unweighted count over the CORE spectrum, reported beside it as
+          the comparator that makes (1)-vs-(2) readable: the count and the
+          energy fraction agree under (1) and diverge under (2).
+
+    Note this is a different object from the pre-existing
+    `frac_repulsive_real_part`, which is a count restricted to the COMPLEX
+    eigenvalues only. That field is unchanged and still reported; the two
+    answer different questions and neither is renamed.
+
     `rel_tol` is the `|Im| > tol*(|Re| + eps)` criterion — the tolerance-
     sensitive definition `core/precision_policy.py` item P2 is about. It is
     used here only for `n_complex_relative`; the energy fractions use the
@@ -241,6 +277,16 @@ def head_spectrum(W_O: np.ndarray, W_V: np.ndarray,
 
     e_all = float(np.sum(np.abs(eigs) ** 2))
     e_cx = float(np.sum(np.abs(eigs[is_cx]) ** 2))
+
+    # Sign split on the core spectrum. `< 0` / `> 0` rather than `<= 0` on one
+    # side: an eigenvalue with Re == 0 exactly is neither attractive nor
+    # repulsive, and assigning it to a side by the choice of comparison
+    # operator would hide it. It shows up as the two fractions failing to sum
+    # to 1, which is the visible form.
+    _rep = eigs.real < 0.0
+    _att = eigs.real > 0.0
+    e_rep = float(np.sum(np.abs(eigs[_rep]) ** 2))
+    e_att = float(np.sum(np.abs(eigs[_att]) ** 2))
 
     fac = sym_antisym_factors(W_O, W_V)
     # ||B C||_F^2 = trace(C^T B^T B C) — computed through the factors.
@@ -265,6 +311,10 @@ def head_spectrum(W_O: np.ndarray, W_V: np.ndarray,
         # both of those are reported below and the energy one is not doubled.
         "dim_complex_fraction_core": float(is_cx.sum() / max(k, 1)),
         "dim_complex_fraction_ambient": float(is_cx.sum() / max(d, 1)),
+        "repulsive_energy_fraction_core": float(e_rep / max(e_all, 1e-300)),
+        "attractive_energy_fraction_core": float(e_att / max(e_all, 1e-300)),
+        "repulsive_dim_fraction_core": (float(_rep.mean()) if eigs.size
+                                        else float("nan")),
         "eigenvalue_energy": e_all,
         "spectral_radius": float(np.max(np.abs(eigs))) if eigs.size else 0.0,
         "theta_mean": (float(np.mean(np.abs(np.angle(eigs[is_cx]))))
@@ -312,6 +362,15 @@ def layer_head_spectra(ov_per_head: Sequence[np.ndarray],
         "theta_mean": float(np.nanmean(col("theta_mean"))),
         "frac_repulsive_real_part_mean": float(np.nanmean(
             col("frac_repulsive_real_part"))),
+        # The energy-weighted sign split and its unweighted comparator, as
+        # per-layer means. Both are carried because their DISAGREEMENT is the
+        # bulk-vs-outlier reading -- see `head_spectrum`.
+        "repulsive_energy_fraction_mean": float(np.nanmean(
+            col("repulsive_energy_fraction_core"))),
+        "repulsive_energy_fraction_std": float(np.nanstd(
+            col("repulsive_energy_fraction_core"))),
+        "repulsive_dim_fraction_mean": float(np.nanmean(
+            col("repulsive_dim_fraction_core"))),
         "spectral_radius_max": float(np.nanmax(col("spectral_radius"))),
     }
 
