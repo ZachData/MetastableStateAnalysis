@@ -70,10 +70,22 @@ bug.
   at 512–2000 that §3.11 missed (F2); and `L2H10` is spectrally
   indistinguishable from `L7H8` with **opposite-signed** causal copying, which
   makes it the control head and cuts against the spectral frame (F3).
-- **NEXT ACTION: draft the S-flip entry in `POPPER_PLAN.md` §6x** — perturbing
-  the **top-2 subspace**, controlled against `L2H10`. Still to run first, both
-  needing one model load: the **input-whitening** check (§3.12-C3) and the
-  **`L5H2`→`L7H8` composition** series (§3.12-E1). Then Stage 3.
+- **All 7b diagnostics have run** (§3.12 blocks F, G, H). Net effect: the
+  Stage 3 entry §3.11 asked for is **not the one the measurements support**.
+  `−Mᵀ` alone confounds the `S` sign with a read/write swap (G2), no
+  spectral-*sign* quantity identifies the copier across 112 heads while every
+  *concentration* quantity does (G6), the weight-identified direction does not
+  survive whitening though the concentration does (H2), and the top-1 direction
+  is not stable across checkpoints (F2).
+- **NEXT ACTION: draft §6x around GAIN CONCENTRATION, not a named direction**,
+  as the full **2² factorial** `{M, Mᵀ, −M, −Mᵀ}` (all four isometric; main
+  effects clean, interaction aliased with the role swap), controlled against
+  `L2H10`, with the pre-run prediction from G6 recorded: **`−Mᵀ` should not
+  destroy copying, and `M` vs `Mᵀ` is the informative contrast.**
+- **Two cheap follow-ups named by the runs themselves:** score the Q and V
+  composition arms against their own 112-head populations (H1 — K and Q rise
+  together and the K-specific story is not yet isolated), and re-estimate Σ with
+  more than 1536 tokens (H2).
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1424,6 +1436,67 @@ it is concentration rather than size.
    *alignment* matters, `Mᵀ` destroys it while `−M` does not. So the informative
    contrast is **`M` vs `Mᵀ`** — alignment at fixed gain — and not the `S` sign
    at all. The factorial computes both for the same four forward passes.
+
+**H. Composition and whitening (2026-09-09,
+`tools/run/induction_composition_whitening.py`).** The two checks that needed a
+model. Both returned, and both matter.
+
+*H1 — the composition switches on between step 512 and step 1000, and it is the
+cleanest circuit-level signal in the programme.* K-composition
+`‖W_K^{L7H8} · W_OV^{L5H2}‖_F / (‖W_K‖_F‖W_OV‖_F)`, scored against **all 112
+upstream heads** into the same key path, so "elevated" is against the model's
+own distribution and no threshold is placed:
+
+| step | K | pop median | **rank / 112** | z | Q | V |
+|---|---|---|---|---|---|---|
+| 0 – 256 | 0.0311 | 0.0313 | **83** | −0.56 | 0.0311 | 0.0320 |
+| 512 | 0.0313 | 0.0313 | **66** | −0.08 | 0.0312 | 0.0320 |
+| **1000** | 0.0346 | 0.0314 | **0** | **+5.78** | 0.0331 | 0.0317 |
+| 2000 | 0.0502 | 0.0317 | **0** | +6.87 | 0.0486 | 0.0377 |
+| 4000 | 0.0551 | 0.0318 | **0** | +5.74 | 0.0541 | 0.0438 |
+| 143000 | 0.0778 | 0.0315 | **0** | +6.93 | 0.0778 | 0.0470 |
+
+`L5H2 → L7H8` goes from **below the population median (rank 83 of 112)** to
+**the single strongest composition into that key path (rank 0, z ≈ +6)** in one
+step interval, and never leaves rank 0 again. **Sixth quantity to name
+512–2000**, and the first that is unambiguously about the *circuit* rather than
+about spectra.
+
+**The honest caveat, and it is not small: K and Q rise together.** By step 8000
+they are equal to three digits (0.0778 both at 143000). V is clearly lower
+(0.0470) so the measurement is not purely generic, but **the Q/V arms were
+computed without their own population controls**, so this does *not* yet isolate
+the K-specific induction story — only that `L5H2`'s output becomes strongly
+aligned with `L7H8`'s read subspaces. Scoring Q and V against their own 112-head
+populations is the immediate next step and is the same cost.
+
+*H2 — §3.12-C3 confirmed: the weight-identified direction is not the
+data-identified one.* At step 4000, comparing the top singular directions of
+`W_OV` against those of `W_OV Σ^{1/2}` (pulled back to input space):
+
+- top-1 overlap **0.207**
+- top-2 plane principal cosines **[0.293, 0.091]** — very nearly orthogonal planes
+- but `σ₁` energy share 0.176 → 0.148 and `σ₁₂` **0.241 → 0.270**
+
+So the *direction* does not survive whitening and the **concentration does**.
+
+**Caveats, both real.** Σ is estimated from only **1536 tokens** for a 1024-dim
+space (effective rank 238), so part of the low overlap is estimation noise —
+raising `N_SEQS` is cheap and should be done before this is leaned on. And Σ
+here comes from the repeated-random-token battery, not natural text; that is
+arguably the *right* metric since it is the distribution the causal readout
+uses, but it is not the model's operating distribution and the two should be
+compared.
+
+*H3 — three independent results now converge on the same correction.* G6 says
+**concentration** identifies the copier and directional/sign quantities do not.
+H2 says concentration **survives whitening** and the direction does not. F2 says
+the top-1 direction is not even stable across checkpoints while the top-2
+*plane* is. So F2's "perturb the top-2 subspace" fix is **still not enough** —
+the object has to be defined in the whitened metric, or, better, **the Stage 3
+entry should be about gain concentration rather than about any named
+direction.** That is a different prediction from the one §3.11 asked for, and it
+is the one the measurements support.
 
 ---
 
