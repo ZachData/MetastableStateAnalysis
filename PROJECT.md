@@ -1723,6 +1723,75 @@ copier's *payoff* does not. That is §3.11 block C's dissociation and §3.12-J's
 two-halves picture arriving from the position axis, which neither was derived
 from.
 
+**L. The Stage-1 table compares operators of different size (2026-09-09).**
+Found while stress-testing the Stage 3 design, and it revises a headline.
+
+`tools/run/induction_rank_sweep.py::truncate` returns, at rank `r`: for `svd` a
+genuine rank-`r` truncation (`U[:, :r] * s[:r], Vt[:r]`), and for `schur` and
+`random` a **projection of `A`** onto an `r`-dimensional subspace (`A @ P, B`).
+**None preserves Frobenius norm, and they lose it at very different rates.**
+Measured on `L7H8` at step 4000, energy retained as a fraction of the full OV:
+
+| r | svd | schur | random | svd/rand | svd/schur |
+|---|---|---|---|---|---|
+| **1** | **0.1755** | **0.0373** | **0.0108** | **16.2×** | **4.7×** |
+| 4 | 0.3368 | 0.1398 | 0.0518 | 6.5× | 2.4× |
+| 16 | 0.6153 | 0.4039 | 0.2315 | 2.7× | 1.5× |
+| 48 | 0.9263 | 0.8017 | 0.7050 | 1.3× | 1.2× |
+
+The `random` branch's own docstring says *"Matched-norm random rank-r control …
+so the operator norm scale and the factor structure match the real
+truncation."* **At `r = 1` it is off by 16×.** So §3.11's Stage-1 table — the
+one reading `r*_SVD ≪ r*_Schur` and "random ≈ 0 %" — **compares operators of
+different size at the same rank.**
+
+*Re-read at matched ENERGY instead of matched rank*, using the NLLs already in
+`induction_rank_sweep.json` (no new forward passes):
+
+| energy | svd | schur | random |
+|---|---|---|---|
+| 0.175 (= svd's r=1) | **0.820** (r 1) | **0.599** (r≈4.8) | **0.353** (r≈12.6) |
+| 0.25 | 0.847 | 0.760 | 0.427 |
+| 0.40 | 0.924 | 0.807 | 0.586 |
+| 0.60 | 0.964 | 0.893 | 0.814 |
+
+**The ordering survives — SVD > Schur > random at every matched energy — but the
+gaps collapse.** SVD-over-Schur goes from **6.9×** at matched rank (0.820 vs
+0.119) to **1.37×** at matched energy. Random is not "≈ 0 %"; at `r = 1` it
+holds 1.08 % of the energy, and given 17.55 % it recovers **0.353**.
+
+*What stands and what does not.* The **structural** claim stands: at matched
+energy the top singular directions beat structureless ones **2.3×**, so this is
+not energy alone. What does not stand is the *magnitude* of `r*_SVD ≪
+r*_Schur` — 1.37× is much weaker support for "the copying action lives in a
+high-gain non-invariant direction, and the attractive/repulsive frame is the
+wrong description" than 6.9× was. Eckart–Young makes "SVD retains most energy at
+rank `r`" a **theorem**, so at matched rank part of the gap was never a finding.
+**§3.12-G6's population result is unaffected** — it correlates gain
+concentration with *which head* is the copier and never uses this comparison.
+
+*And this is §6n's own rule applied to this project's headline for the first
+time*: match the control on **the quantity the statistic degenerates on**. It
+degenerates on energy; the controls were matched on rank.
+
+**Consequence for Stage 3, and it is a convergence.** Any Stage 3 arm must be
+**energy-matched, not rank-matched**. The `{M, Mᵀ, −M, −Mᵀ}` factorial is
+*exactly* energy-matched — every arm is an isometry (§2.4.2) — so the design
+motivated by the S/A group structure turns out to be the fix for this confound
+as well, from a completely independent direction.
+
+*Precondition on the S-flip, computed before it runs.* If `S` carried little of
+the OV's energy, "the flip does nothing" would be guaranteed by magnitude rather
+than by mechanism. It does not: `‖S‖²/‖M‖²` for `L7H8`'s OV is **0.602** at step
+4000 and 0.543 at 143000, so `‖M − (−Mᵀ)‖ = ‖2S‖ ≈ 1.55‖M‖` — **the change is
+larger than the operator**. The precondition passes.
+
+*But it also shows the two halves are structurally different in exactly the way
+§3.12-J found.* `L7H8`'s **OV** symmetric fraction is 0.602 against a layer
+median of 0.584 — at the baseline, carrying no signal. Its **QK** symmetric
+fraction is **0.956 against a layer median of 0.520**. The matcher becomes a
+similarity kernel; the copier does not, and never does.
+
 ---
 
 ## 3.13 When the mean is the wrong instrument (2026-09-09)
