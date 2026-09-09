@@ -37,27 +37,44 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-08, machine slept mid-session)
+### Resume here (2026-09-09)
 
-- **14 commits on `claude/rescaler-cache-identity-test`, NOT pushed, no PR.**
-  `b44c3e9`..`HEAD` (`git log --oneline b44c3e9~1..HEAD`). The user chose
-  *open a PR* + *split by topic*. Push:
-  `GIT_SSH_COMMAND="ssh -i $PWD/github_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin claude/rescaler-cache-identity-test`
-  then open a PR to `main` (no `gh` CLI installed — web UI, or install `gh`).
-- **Working tree may have 1–2 uncommitted files** from the last analysis
-  pass — check `git status`, commit as a topic commit, then push.
-- **The induction programme (§3.11) has run Stages 0–2 + QK + generalisation.**
-  Everything exploratory, `claims/registry.json` untouched. **The next step is
-  the user's: register the Stage 3 differential prediction** (§3.11
-  "Consequence for the registration" — it must be about L7H8's rank-1 high-gain
-  OV direction specifically). Do not run Stage 3 before that entry exists.
+- **Git is clean and everything is pushed.** `claude/rescaler-cache-identity-test`
+  is up to date with origin. The 13-commit batch was split into **three stacked
+  topic branches**, all pushed, each gate-green; PRs are **not yet opened** (no
+  `gh` CLI — web UI):
+  | PR | branch | base |
+  |---|---|---|
+  | 1 | `claude/p-i1-build-null-score` | `main` |
+  | 2 | `claude/spectral-dissipation-infra` | PR1 branch |
+  | 3 | `claude/induction-programme-stage012` | PR2 branch |
+
+  `https://github.com/ZachData/MetastableStateAnalysis/compare/<base>...<head>?expand=1`.
+  PR3's tree is byte-identical to `claude/rescaler-cache-identity-test`'s tip.
+- **The repo's `github_key` is DEAD** — GitHub rejects it (`Permission denied
+  (publickey)`). Push with the default `~/.ssh/id_ed25519`: plain
+  `git push origin <branch>`, no `GIT_SSH_COMMAND`. The old instruction in this
+  block was wrong and cost a debugging pass.
+- **§3.12 is the live block, and it supersedes §3.11's registration advice.**
+  The "repulsiveness is a population baseline" premise was measured against the
+  wrong reference class, and the matched-norm control is degenerate. **Nothing
+  is registered; `claims/registry.json` is untouched.**
+- **The Stage 3 entry was drafted and is NOT registrable as drafted** (§3.12 block C —
+  three defects, all decidable before a forward pass). The draft and its
+  decisions memo were session-scratchpad only and are **gone** if that session
+  is gone; §3.12 blocks C and D carry everything needed to rebuild them.
+- **NEXT ACTION: the four diagnostics in §3.12 block E**, plus the
+  input-whitening check in C3. All cheap, all on data already on disk, none
+  produces a p-value — so none spends the registration. They run **before** the
+  Stage 3 entry is written, because two of them can change what a valid control
+  is. Then register the block-D **S-flip** prediction, then Stage 3.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
-  `dissipation_v2_series`, `dissipation_sublayer_series`) are on disk but not
-  in git; rerun their `.py` producers (§7) to regenerate.
+  `ov_per_head_series`, `dissipation_v2_series`, `dissipation_sublayer_series`)
+  are on disk but not in git; rerun their `.py` producers (§7) to regenerate.
 - **`POPPER_PLAN.md` §6x is still unwritten** (§6w points to it). A
-  doc-consolidation pass would move the §3.11 design + results into it.
+  doc-consolidation pass would move the §3.11 + §3.12 design into it.
 
 ### The machine
 
@@ -129,9 +146,13 @@ frame (`P-I1`) hit a construction-level circularity and was retired (below,
 §3.10, `POPPER_PLAN.md` §6w); it was replaced by isolating one induction head
 (`L5H2 → L7H8`) and characterising its circuit directly. As of 2026-09-08
 Stages 0–2, the QK half, and a generalisation batch have all run — everything
-**exploratory, nothing registered** — and the next step is the user's: register
-the Stage 3 differential prediction. §3.11's dated blocks are the detail;
-§§3.6–3.10 below are the retired-frame history, kept as the construction log.
+**exploratory, nothing registered**. **2026-09-09 (§3.12) reopened the design**:
+the OV repulsive collapse is a model-wide developmental phase with its floor in
+`CLAIM-B`'s own anchor window, §3.11's baseline argument used the wrong
+reference class, and the Stage 3 control needs rebuilding. Next action is
+§3.12's diagnostics, not a registration. §3.11 and §3.12's dated blocks are the
+detail; §§3.6–3.10 below are the retired-frame history, kept as the
+construction log.
 
 `P-I1`, induction-head formation as a two-stage `relay` motif tracked across the
 checkpoint axis, ran end to end and scored **INSUFFICIENT** — not
@@ -179,11 +200,13 @@ has pivoted to a bottom-up interventional programme (§3.11).
    effect is **concentrated in L7H8** (~10× any other). The **QK half is done**
    and is the spectral opposite — the matcher is a ~12-dim high-eigenvalue
    near-normal invariant subspace (`r*_Schur` 12 < `r*_SVD` 32, SVD below the
-   random control). **Pick up at: register the differential prediction** — it
-   must be about L7H8's rank-1 high-gain OV direction specifically, since both
-   "repulsive" and the OV/QK dissociation are now population baselines (§3.11
-   "Consequence for the registration") — then **Stage 3**.
-   `claims/registry.json` unchanged.
+   random control). **Pick up at: the four diagnostics of §3.12 block E** —
+   §3.11's registration advice is superseded by §3.12. The reference class was
+   wrong ("100 % repulsive" is 9/9 against *the induction heads*, but 0.435 →
+   0.109 of the 384-head population at matched step), the matched-norm control
+   is degenerate, and the drafted Stage 3 entry has three defects decidable before a
+   forward pass. Diagnostics first, then the §3.12-D **S-flip** entry, then
+   **Stage 3**. `claims/registry.json` unchanged.
 2. ~~Violation-restricted subspace split (dissipation v2)~~ **— done
    2026-09-08, `status-2.md` item 5 ~resolved.** The clean per-particle
    version (`v2_attn_pos_*` in `tools/run/dissipation_sublayer.py` →
@@ -1037,6 +1060,158 @@ prediction has to be about the **rank-1 high-gain OV direction of L7H8**
 specifically — under matched-norm perturbation does it act as an individuating
 channel, or does copying survive (a copier the token-alignment test missed) —
 not about repulsiveness or rank per se. Register that, then Stage 3.
+
+*Superseded in part by §3.12 (2026-09-09): the "repulsiveness is a population
+baseline" premise was measured against the wrong reference class, and the
+matched-norm control is degenerate. Left unedited — the reasoning is the
+construction log.*
+
+### 3.12 The reference-class error, and what it opens (2026-09-09)
+
+Exploratory. `claims/registry.json` and `claims/adjudications/` unchanged.
+Nothing here is registered and nothing here is a p-value.
+
+**A. The OV repulsive collapse is a model-wide developmental phase, not an
+induction-head property.** Read off `data/analysis/ov_per_head_series.json`
+(commit `08175a8`, weights-only, all 384 heads × 19 steps — the file was
+computed for §3.10's per-head projector item and its population axis was never
+looked at). Median `attractive_energy_fraction_core` over all 384 heads, and
+the share of heads whose core is *exactly* 100 % repulsive:
+
+| step | 0–64 | 128 | 256 | 512 | **1000** | **2000** | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| median attractive | ~0.504 | 0.481 | 0.385 | 0.094 | **0.000** | **0.000** | 0.001 | 0.026 | 0.066 | 0.134 | 0.225 | 0.392 |
+| frac heads exactly 0 | 0.000 | 0.000 | 0.000 | 0.000 | **0.617** | **0.654** | 0.435 | 0.297 | 0.219 | 0.188 | 0.164 | 0.109 |
+
+The whole model slides off the random-matrix baseline into a **fully repulsive
+phase whose floor is steps 1000–2000**, then partially recovers. 1030 of 7296
+head-steps are exactly 0.0 overall (14.1 %).
+
+*Checked, not assumed:* `attractive + repulsive = 1.000` exactly at every step,
+so this is not energy vanishing into an unclassified bucket — the `< 0` / `> 0`
+split in `head_spectrum` leaves nothing at zero. And step 0's ~0.504 is the
+**random-real-matrix baseline** (eigenvalues symmetric about the imaginary
+axis), so the measurement carries its own control and the model demonstrably
+moves off it.
+
+**Two things this collides with.** The floor sits *exactly inside* `CLAIM-B`'s
+registered anchor window (512–2000) — either a striking convergence or a shared
+cause, and which one matters before either is scored. And Phase 2's activation-
+level `frac_repulsive` decay (§2 item 2) runs the *other* way over the trained
+regime while this weights-only quantity recovers; they are different
+measurements and the shapes have never been put side by side.
+
+**B. §3.11's exclusion of repulsiveness rests on a reference-class error.**
+"OV core 100 % repulsive, 9 of 9 induction heads" was read as a population
+baseline — but the population it was compared against was *the induction heads
+themselves*. Against the 384-head population **at matched step**, exactly-0.0
+runs 0.435 at step 4000 down to **0.109 at 143000**. `L6H0` peaks at 143000,
+where only 11 % of heads are fully repulsive. The 9/9 is not a baseline.
+
+This does **not** resurrect the observational claim as a registrable
+differential — 9/9 with no control arm is still not a test. What it removes is
+the *reason given* for excluding repulsiveness from Stage 3, which reopens the
+**causal** test of it (block D).
+
+**Before anything is built on A:** check the count version
+(`repulsive_dim_fraction_core`) against the energy version, in case one dominant
+eigenvalue carries it; and name weight decay as the leading alternative
+mechanism, though the recovery after step 2000 argues against a pure-decay
+story.
+
+**C. The Stage 3 entry was drafted and is not registrable as drafted.**
+A draft entry (H-BRIDGE, geometry-vs-copying at the rank-1 OV direction) was in
+the session scratchpad, not in the repo. Three defects, all decidable before a
+forward pass.
+
+*Three things the gate taught us while writing this section, and they decide
+where this discussion lives.* (1) The draft reused the **induction id that
+`POPPER_PLAN.md` §6w already spent** on the co-location registration that was
+*not* made; the next free one is one higher. (2) `tools/check_registry.py`'s
+coverage rule fired the moment that id was named here — working exactly as
+intended, since an id in a scanned file with no registry entry is the state the
+registry exists to forbid. (3) It did **not** fire on §6w's use, because
+`POPPER_PLAN.md` sits in `SCAN_EXCLUDE` beside the three generated files — so
+the design narrative can burn an id invisibly to coverage, and no *uniqueness*
+check spans the excluded files.
+
+**Consequence, and it is structural rather than a nuisance:** `PROJECT.md`
+cannot name an unregistered prediction id at all, so **the id-level design
+discussion belongs in `POPPER_PLAN.md` §6x** — which §6w already points forward
+to and which is still unwritten. This section is the summary; §6x is where the
+candidate entry, its id, and its wording go before registration.
+
+The three defects:
+
+1. **The copy-matched control is probably unbuildable.** Random rank-1
+   directions recover ~0 % at matched norm (§3.11 Stage 1), so reaching the
+   observed ΔNLL needs hard rescaling, which drives KL up — matching a
+   *copying* effect against a *destruction* effect. §3.11's own nonlinearity
+   caveat (KL 0.57 late) bites here. This replaced one degenerate null with
+   another.
+2. **The geometry contrast has a mechanical component with no individuation
+   content.** Perturbing `W_OV` along `v` moves every position the head writes
+   to by a near-rank-1 update; the matched positions share attention structure
+   *by construction*, so they move together and their pairwise distances change
+   *less* than unmatched ones — contraction contrast in the wrong direction, for
+   algebraic reasons. `P-ST1`'s "steering is a pure mean effect" one level over:
+   settle it on paper, not by simulation.
+3. **The direction is identified weights-only.** The top singular direction of
+   `W_OV` ignores the residual-stream distribution; the 82 % is a causal
+   measurement but the identification is not, and Stage 3 perturbs the
+   identified object.
+
+Also missing, and every other registry entry has one: a **precondition on the
+pilot, computed before it runs**. Expected verdict distribution as drafted is
+INSUFFICIENT-dominated, because the direction was *selected* for carrying the
+copy effect and is then asked to beat a bar its own selection sets.
+
+**D. The proposal that replaces it: flip the symmetric part.**
+For `M = S + A` with `S = (M+Mᵀ)/2`, `A = (M−Mᵀ)/2`: `Re(λ)` is governed by `S`,
+and `tr(SᵀA) = 0`, so `‖−S+A‖_F = ‖S+A‖_F`. **`S → −S` flips every eigenvalue's
+real part at exactly matched Frobenius norm, by construction** — no rescaling,
+no matching search, no tolerance. `p2b_imaginary/head_circuits.py` already does
+factored S/A surgery.
+
+- Standard account: copying depends on gain (σ and singular vectors), not on
+  eigenvalue sign → flip `S`, **copying survives**.
+- Particle account: individuation depends on repulsive character → flip `S`,
+  **matched particles collapse and copying degrades**.
+
+Both non-silent, so the falsification branch can fire; the matching problem and
+the mechanical-geometry confound both dissolve. And it is the *causal* test of
+repulsiveness, which is not a baseline even where the observational version is:
+if every induction head is 100 % repulsive and flipping it changes nothing, the
+repulsive frame is decoratively true and causally empty — a real registrable
+negative. If flipping it destroys induction, the frame is load-bearing. **Either
+outcome is informative**, which is the property the drafted entry lacks.
+
+**E. Four absences, all cheap, none producing a p-value.**
+
+1. **The composition has never been measured.** Grep confirms no K/Q/V-
+   composition score anywhere in the repo — the only "composition" hits are the
+   retired `relay` motif. Induction is `L5H2 → L7H8` and only the *endpoints*
+   are characterised. Weights-only, milliseconds, and it yields a developmental
+   series: when the **composition** forms against when each half forms. No §6w
+   circularity, since composition is defined by weights, not by the projector
+   whose sign a prediction would read.
+2. **Rotated or spread?** `svd@1` falls 0.68 → 0.20 across consolidation while
+   `svd@2` stays high; §3.11 reads this as spreading to a second direction.
+   Equally consistent: the direction **rotated** and rank 2 tracks a moving
+   target. Distinguish by top-singular-vector overlap between adjacent steps.
+3. **The anti-copiers.** `L2H10` and `L9H8` have *negative* `ΔOV_nll` —
+   ablating their OV *improves* second-copy prediction — while carrying the
+   universal representational description. Stage 2's "representation is not the
+   mechanism" in its sharpest available form, already computed.
+4. **The 16 rotary dims were never examined.** The QK sweep truncates rows
+   16–63 and leaves rotary intact; but `L5H2` is a *pure positional* head and
+   "previous token" is positional. Block C describes the static half only.
+
+**Order of work decided here:** the four diagnostics run *before* the entry is
+written, because two of them (1 and 3 above, plus the input-whitening check in
+C3) can change what a valid control even is. Registering first and diagnosing
+after is the §6l timing argument pointed the wrong way — nothing here is a
+p-value, so none of it spends the registration.
 
 ---
 
