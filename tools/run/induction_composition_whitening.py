@@ -113,68 +113,163 @@ def composition_at_step(model, step: int) -> dict:
         "K_static": comp_score(W_K[ROTARY_NDIMS:, :], OV_src),
     }
 
-    # population control: every head in layers 0..DST_LAYER-1 into L7H8's K
-    pop = []
+    # Population control for ALL THREE read paths, over every head in layers
+    # 0..DST_LAYER-1. H1's caveat was that K and Q rise together with no control
+    # on Q or V; each arm now gets its own 112-head distribution, so "elevated"
+    # is judged per path rather than only for K.
+    popK, popQ, popV = [], [], []
     for L in range(DST_LAYER):
         for h in range(N_HEADS):
-            pop.append(comp_score(W_K, _load_ov(step, L, h)))
-    pop = np.asarray(pop)
-    row["K_pop_median"] = float(np.median(pop))
-    row["K_pop_max"] = float(pop.max())
-    row["K_pop_n"] = int(pop.size)
-    # where L5H2 sits in the model's own distribution -- no placed threshold
-    row["K_pop_rank"] = int((pop > row["K"]).sum())          # 0 == the largest
-    row["K_pop_z"] = float((row["K"] - pop.mean()) / max(pop.std(), 1e-300))
+            ov = _load_ov(step, L, h)
+            popK.append(comp_score(W_K, ov))
+            popQ.append(comp_score(W_Q, ov))
+            popV.append(comp_score(W_V, ov))
+    for name, pop in (("K", popK), ("Q", popQ), ("V", popV)):
+        pop = np.asarray(pop)
+        row[f"{name}_pop_median"] = float(np.median(pop))
+        row[f"{name}_pop_max"] = float(pop.max())
+        row[f"{name}_pop_n"] = int(pop.size)
+        # where L5H2 sits in the model's own distribution -- no placed threshold
+        row[f"{name}_pop_rank"] = int((pop > row[name]).sum())   # 0 == largest
+        row[f"{name}_pop_z"] = float(
+            (row[name] - pop.mean()) / max(pop.std(), 1e-300))
     return row
 
 
 @torch.no_grad()
-def whitening_at_step(model, step: int) -> dict:
-    """Residual covariance at layer DST_LAYER's input, and whether the top OV
-    directions survive it."""
-    ids = induction_batch(np.random.default_rng(EVAL_SEED))
-    out = model(ids, output_hidden_states=True)
-    # hidden_states[i] is the INPUT to block i (hidden_states[0] = embeddings)
-    X = out.hidden_states[DST_LAYER].float().reshape(-1, D_MODEL).numpy().astype(np.float64)
-    Xc = X - X.mean(0, keepdims=True)
-    Sigma = (Xc.T @ Xc) / max(len(Xc) - 1, 1)
+def _resid_cov(model, batches) -> tuple:
+    """Chunked (n, mean, Sigma) of the residual stream at DST_LAYER's input.
+    Accumulates X^T X rather than holding every activation, so the token count
+    is limited by time and not by memory."""
+    n = 0
+    s = np.zeros(D_MODEL, dtype=np.float64)
+    C = np.zeros((D_MODEL, D_MODEL), dtype=np.float64)
+    for ids in batches:
+        out = model(ids, output_hidden_states=True)
+        X = out.hidden_states[DST_LAYER].float().reshape(-1, D_MODEL)
+        X = X.numpy().astype(np.float64)
+        n += len(X); s += X.sum(0); C += X.T @ X
+        del out, X
+    mean = s / max(n, 1)
+    Sigma = (C - np.outer(s, s) / max(n, 1)) / max(n - 1, 1)
+    return n, mean, Sigma
 
-    w, Vs = np.linalg.eigh(Sigma)
+
+def _sqrtm_psd(Sigma):
+    w, V = np.linalg.eigh(Sigma)
     w = np.clip(w, 0.0, None)
-    S_half = (Vs * np.sqrt(w)) @ Vs.T
+    return (V * np.sqrt(w)) @ V.T, w
 
-    M = _load_ov(step, DST_LAYER, DST_HEAD)
-    _, sv_raw, Vt_raw = np.linalg.svd(M, full_matrices=False)
-    _, sv_wht, Vt_wht = np.linalg.svd(M @ S_half, full_matrices=False)
 
-    # pull whitened read directions back to input space
-    def pullback(v):
+def _plane_compare(M, S_half, k=2):
+    """Top-k right-singular plane of M, against that of M Sigma^(1/2) pulled
+    back to input space. Returns (top1 overlap, principal cosines)."""
+    _, _, Vt_raw = np.linalg.svd(M, full_matrices=False)
+    _, _, Vt_wht = np.linalg.svd(M @ S_half, full_matrices=False)
+
+    def pull(v):
         u = S_half @ v
-        n = np.linalg.norm(u)
-        return u / n if n > 0 else u
+        nn = np.linalg.norm(u)
+        return u / nn if nn > 0 else u
 
-    v_raw1 = Vt_raw[0]
-    v_wht1 = pullback(Vt_wht[0])
-    P_raw = Vt_raw[:2]
-    P_wht = np.stack([pullback(Vt_wht[0]), pullback(Vt_wht[1])])
-    # orthonormalise the pulled-back plane before taking principal angles
-    Qw, _ = np.linalg.qr(P_wht.T)
-    cos = np.clip(np.linalg.svd(P_raw @ Qw, compute_uv=False), -1.0, 1.0)
+    top1 = float(abs(np.dot(Vt_raw[0], pull(Vt_wht[0]))))
+    P = np.stack([pull(Vt_wht[i]) for i in range(k)])
+    Q, _ = np.linalg.qr(P.T)
+    cos = np.clip(np.linalg.svd(Vt_raw[:k] @ Q, compute_uv=False), -1.0, 1.0)
+    return top1, [float(x) for x in cos], Vt_raw, Vt_wht
 
-    e_raw, e_wht = sv_raw ** 2, sv_wht ** 2
-    return {
-        "step": step,
-        "n_tokens": int(len(X)),
-        "top1_overlap_raw_vs_whitened": float(abs(np.dot(v_raw1, v_wht1))),
-        "top2_principal_cos": [float(x) for x in cos],
-        "top2_mean_principal_cos": float(np.mean(cos)),
-        "sv1_energy_share_raw": float(e_raw[0] / e_raw.sum()),
-        "sv1_energy_share_whitened": float(e_wht[0] / e_wht.sum()),
-        "sv12_energy_share_raw": float(e_raw[:2].sum() / e_raw.sum()),
-        "sv12_energy_share_whitened": float(e_wht[:2].sum() / e_wht.sum()),
-        "sigma_effective_rank": float(
-            np.exp(-(lambda p: (p * np.log(p + 1e-300)).sum())(w / w.sum()))),
+
+@torch.no_grad()
+def whitening_at_step(model, step: int, n_seqs: int, tok=None) -> dict:
+    """Does the top OV plane survive the metric the data actually occupies?
+
+    Three arms, because H2's first pass could not separate a real effect from
+    covariance estimation noise at 1536 tokens:
+      battery      the repeated-token battery at `n_seqs` sequences
+      natural      core.config.PROMPTS, the model's own operating distribution
+      split-half   the battery split in two, each half whitening independently.
+                   If the two halves AGREE with each other while both DISAGREE
+                   with raw, the low overlap is signal and not noise. This is
+                   the control, and it needs no model of the noise.
+    """
+    M = _load_ov(step, DST_LAYER, DST_HEAD)
+    rng = np.random.default_rng(EVAL_SEED)
+
+    # ---- battery, chunked so the token count is bounded by time not memory --
+    CH = 8
+    seqs = [induction_batch(rng) for _ in range(max(n_seqs // CH, 1))]
+    n_b, _, Sig_b = _resid_cov(model, seqs)
+    Sh_b, w_b = _sqrtm_psd(Sig_b)
+
+    # ---- split half of the SAME battery, for the noise control --------------
+    half = max(len(seqs) // 2, 1)
+    n_h1, _, Sig_h1 = _resid_cov(model, seqs[:half])
+    n_h2, _, Sig_h2 = _resid_cov(model, seqs[half:] or seqs[:half])
+    Sh_h1, _ = _sqrtm_psd(Sig_h1)
+    Sh_h2, _ = _sqrtm_psd(Sig_h2)
+
+    out = {"step": step, "arms": {}}
+
+    def arm(name, n, Sh, w):
+        top1, cos, Vt_raw, Vt_wht = _plane_compare(M, Sh)
+        e_r = np.linalg.svd(M, compute_uv=False) ** 2
+        e_w = np.linalg.svd(M @ Sh, compute_uv=False) ** 2
+        out["arms"][name] = {
+            "n_tokens": int(n),
+            "top1_overlap_raw_vs_whitened": top1,
+            "top2_principal_cos": cos,
+            "top2_mean_principal_cos": float(np.mean(cos)),
+            "sv1_energy_share_raw": float(e_r[0] / e_r.sum()),
+            "sv1_energy_share_whitened": float(e_w[0] / e_w.sum()),
+            "sv12_energy_share_raw": float(e_r[:2].sum() / e_r.sum()),
+            "sv12_energy_share_whitened": float(e_w[:2].sum() / e_w.sum()),
+            "sigma_effective_rank": float(
+                np.exp(-((w / w.sum()) * np.log(w / w.sum() + 1e-300)).sum()))
+            if w is not None else None,
+        }
+        return Vt_wht
+
+    arm("battery", n_b, Sh_b, w_b)
+    V1 = arm("battery_half1", n_h1, Sh_h1, None)
+    V2 = arm("battery_half2", n_h2, Sh_h2, None)
+
+    # ---- THE CONTROL: do the two halves agree with EACH OTHER? --------------
+    def pull(Sh, v):
+        u = Sh @ v
+        nn = np.linalg.norm(u)
+        return u / nn if nn > 0 else u
+    P1 = np.stack([pull(Sh_h1, V1[i]) for i in range(2)])
+    P2 = np.stack([pull(Sh_h2, V2[i]) for i in range(2)])
+    Q2, _ = np.linalg.qr(P2.T)
+    cos_hh = np.clip(np.linalg.svd(P1 @ Q2, compute_uv=False), -1.0, 1.0)
+    out["split_half_agreement"] = {
+        "top1_overlap": float(abs(np.dot(P1[0], P2[0]))),
+        "top2_principal_cos": [float(x) for x in cos_hh],
+        "reading": ("halves agreeing with each other while both disagree with "
+                    "raw => the low raw-vs-whitened overlap is signal; halves "
+                    "disagreeing with each other too => it is estimation noise"),
     }
+
+    # ---- natural text, the model's operating distribution -------------------
+    if tok is not None:
+        from core.config import PROMPTS
+        batches = []
+        for v in PROMPTS.values():
+            if not isinstance(v, str):
+                continue
+            ids = tok(v, return_tensors="pt", truncation=True,
+                      max_length=512)["input_ids"]
+            if ids.shape[1] >= 8:
+                batches.append(ids)
+        if batches:
+            n_n, _, Sig_n = _resid_cov(model, batches)
+            Sh_n, w_n = _sqrtm_psd(Sig_n)
+            arm("natural_text", n_n, Sh_n, w_n)
+            # and how different are the two metrics themselves?
+            fb = np.linalg.norm(Sig_b) * np.linalg.norm(Sig_n)
+            out["sigma_battery_vs_natural_cos"] = float(
+                np.sum(Sig_b * Sig_n) / max(fb, 1e-300))
+    return out
 
 
 def main() -> None:
@@ -182,6 +277,7 @@ def main() -> None:
     ap.add_argument("--steps", default=",".join(str(s) for s in ALL_STEPS))
     ap.add_argument("--whiten-step", type=int, default=4000)
     ap.add_argument("--skip-composition", action="store_true")
+    ap.add_argument("--whiten-seqs", type=int, default=128)
     args = ap.parse_args()
     steps = [int(x) for x in args.steps.split(",") if x]
 
@@ -204,9 +300,10 @@ def main() -> None:
                   f"Q {row['Q']:.4f}  V {row['V']:.4f}", flush=True)
             del model
 
-    model, _ = load_causal_lm(f"pythia-410m-step{args.whiten_step}")
+    model, tok = load_causal_lm(f"pythia-410m-step{args.whiten_step}")
     model.eval()
-    res["whitening"] = whitening_at_step(model, args.whiten_step)
+    res["whitening"] = whitening_at_step(model, args.whiten_step,
+                                         args.whiten_seqs, tok)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT, "w") as fh:
@@ -223,15 +320,24 @@ def main() -> None:
                   f"{r['K_pop_rank']:>6} {r['K_pop_z']:>+7.2f}")
 
     w = res["whitening"]
-    print(f"\n=== whitening at step {w['step']} ({w['n_tokens']} tokens, "
-          f"Sigma eff. rank {w['sigma_effective_rank']:.1f}) ===")
-    print(f"  top-1 overlap raw vs whitened : {w['top1_overlap_raw_vs_whitened']:.3f}")
-    print(f"  top-2 principal cosines       : "
-          f"[{w['top2_principal_cos'][0]:.3f}, {w['top2_principal_cos'][1]:.3f}]")
-    print(f"  sigma1 energy share  raw {w['sv1_energy_share_raw']:.3f} -> "
-          f"whitened {w['sv1_energy_share_whitened']:.3f}")
-    print(f"  sigma12 energy share raw {w['sv12_energy_share_raw']:.3f} -> "
-          f"whitened {w['sv12_energy_share_whitened']:.3f}")
+    print(f"\n=== whitening at step {w['step']} ===")
+    print(f"{'arm':>16} {'tokens':>8} {'top1':>7} {'cos1':>7} {'cos2':>7} "
+          f"{'sv12 raw':>9} {'sv12 wht':>9} {'eff rank':>9}")
+    for name, a in w["arms"].items():
+        er = a["sigma_effective_rank"]
+        print(f"{name:>16} {a['n_tokens']:>8} "
+              f"{a['top1_overlap_raw_vs_whitened']:>7.3f} "
+              f"{a['top2_principal_cos'][0]:>7.3f} {a['top2_principal_cos'][1]:>7.3f} "
+              f"{a['sv12_energy_share_raw']:>9.3f} "
+              f"{a['sv12_energy_share_whitened']:>9.3f} "
+              f"{(f'{er:.1f}' if er else '-'):>9}")
+    sh = w["split_half_agreement"]
+    print(f"\n  SPLIT-HALF CONTROL: half1 vs half2 top1 {sh['top1_overlap']:.3f}, "
+          f"plane cos [{sh['top2_principal_cos'][0]:.3f}, "
+          f"{sh['top2_principal_cos'][1]:.3f}]")
+    if "sigma_battery_vs_natural_cos" in w:
+        print(f"  Sigma(battery) vs Sigma(natural) cosine: "
+              f"{w['sigma_battery_vs_natural_cos']:.3f}")
 
 
 if __name__ == "__main__":

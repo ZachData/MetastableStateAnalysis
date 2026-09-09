@@ -1500,6 +1500,108 @@ is the one the measurements support.
 
 ---
 
+## 3.13 When the mean is the wrong instrument (2026-09-09)
+
+`§3.12-G6` found a signal that Spearman could not see: fifteen of sixteen heads
+per layer carry causal noise, so a correlation over all sixteen averages the
+signal away, while the *rank of the top head* recovers it at ~2.6e-4. That is a
+general lesson and this section is where it is logged, because the sites it
+applies to are spread across the repo.
+
+**The principle, and its edge.** A mean or correlation is the right summary when
+the effect is *distributed* across the population; an extremum — max, argmax,
+top-rank — is right when it is *concentrated* in a few members. **Choosing
+between them after seeing the data is exactly the selection `claims/registry.json`
+exists to forbid.** So the rule is not "use max": it is
+
+- **exploratory work reports both, always** (`§3.12-G6` was legitimate because
+  nothing is registered and both were reported);
+- **registered work has already frozen the choice**, and the alternative may be
+  *reported beside* the result but never swapped in — the same discipline the
+  registry already applies to `p_reciprocal`, which is a stop-rule input and
+  enters no `E`.
+
+### 3.13.1 The arithmetic sub-case, which is not a judgment call
+
+A z-score computed against a population **that contains the point being
+scored** is capped. For a sample of `n`, the largest attainable studentized
+deviate is `(n − 1)/√n` — at `n = 16`, **3.75**. The statistic cannot report a
+larger effect however large the effect is.
+
+`induction_subspace_characterize`'s `target_vs_reference` computes the target
+head's z against `layer_mean` / `layer_sd` **over all 16 heads, the target
+included**. Measured on the seven populations already on disk:
+
+| population | top head | ΔOV_nll | z (self-included) | z (leave-one-out) | |
+|---|---|---|---|---|---|
+| 4000 / L7 | H8 | 0.244 | 3.69 | **20.59** | 5.6× |
+| **8000 / L7** | **H8** | **0.725** | **3.74** | **50.17** | **13.4×** |
+| 8000 / L9 | H5 | 0.187 | 2.93 | 4.84 | 1.7× |
+| 2000 / L9 | H5 | 0.317 | 3.60 | 13.25 | 3.7× |
+| 16000 / L1 | H15 | 0.040 | 3.35 | 7.72 | 2.3× |
+| 16000 / L6 | H0 | 0.021 | 2.23 | 2.86 | 1.3× |
+| 32000 / L2 | H2 | 0.056 | 2.48 | 3.41 | 1.4× |
+
+**`L7H8` at step 8000 measures 3.74 against a ceiling of 3.75 — saturated.** A
+reader comparing it to step 4000's 3.69 would conclude the effect barely moved;
+the leave-one-out z went **20.6 → 50.2**. The reported number stopped being a
+measurement and became the ceiling.
+
+This is a **reporting defect, not a scoring one** — no p-value is computed from
+this z and `claims/adjudications/` is empty, so nothing registered is affected.
+`core/nulls.py`'s z is *not* subject to it: there `observed` is scored against a
+null distribution it is not a member of, and where the identity permutation *is*
+included the draw count is large enough that `(P−1)/√P` is far above anything
+attainable. **The fix is leave-one-out, and it is a docstring and three lines.**
+
+### 3.13.2 Sites surveyed
+
+*Already handled — recorded so they are not re-litigated.* `tools/run/
+behavioural.py` prints `mean` **and** `max` side by side. `P-M1`'s registry
+entry computes the mean/min/max head-to-layer aggregates, declares `mean`
+primary *in advance* so it cannot be picked after the fact, and **refuses a
+p-value when the three disagree in sign**. `CLAIM-B` reports dispersion beside
+every centroid precisely so a bimodal profile is visible. `ov_per_head.py`
+records the energy split *and* the count because their disagreement is the
+reading (`§3.12-F0` finally read it).
+
+*Worth a look, none registered-blocking.* `p7_motifs/motif_stats.py`'s
+`mean_ind` / `mean_non` are means over head sets — `P-I3`'s registered statistic
+already superseded them with a rank-based matched contrast, so the means are
+diagnostics; they should say so. `p2d_operator_activation/run_2d.py`'s
+`head_mean` energy series is `P-M1`'s aggregate and inherits that entry's
+refusal.
+
+*A frozen entry whose stated reason does not distinguish the two.* `CLAIM-C`
+takes `delta = mean over normalized depth`. Its `null_construction` justifies
+the choice against a depth band: *"Blog 1 quotes layers 5-30 of gpt2-large, but
+a depth band is a choice with as many options as there are bands."* That
+argument is sound against a **band** — and **a max over depth places no constant
+either**, so it does not distinguish mean from max at all. The registered
+wording is frozen and stays; this is recorded because the reasoning has a gap,
+not because the entry should change. Blog 1 quoting a band is itself weak
+evidence the contrast is depth-concentrated.
+
+### 3.13.3 What this suggests we have overlooked: the position axis
+
+Every readout in `§3.11`–`§3.12` is a mean over **token positions**, and nothing
+has ever looked at that axis:
+
+- `behavioural_induction_score` and `induction_attention` are
+  `picked.mean()` over `N_REP = 96` second-copy positions × 8 sequences;
+- `second_copy_nll` — the readout the **entire** OV rank sweep, the 82 %, and
+  every ΔOV_nll in this document rest on — is a mean over the repeated half.
+
+If copying is concentrated at particular positions (later second-copy positions
+have more context, so concentration is the expected shape rather than an exotic
+one), then the mean dilutes it and the rank sweep's `r*` is being read off a
+diluted curve. **This is the same error `§3.12-G6` found, one axis over, in the
+measurement everything else depends on.** It is one forward pass to check: emit
+the per-position NLL delta instead of its mean and look at the profile. Report
+mean and max together, per 3.13's own rule.
+
+---
+
 ## 4. Open, analysed, not yet acted on: the scoring threshold
 
 Investigated 2026-09-03, nothing changed in code. Recorded here because it is
