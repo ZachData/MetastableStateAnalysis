@@ -82,10 +82,20 @@ bug.
   effects clean, interaction aliased with the role swap), controlled against
   `L2H10`, with the pre-run prediction from G6 recorded: **`−Mᵀ` should not
   destroy copying, and `M` vs `Mᵀ` is the informative contrast.**
-- **Two cheap follow-ups named by the runs themselves:** score the Q and V
-  composition arms against their own 112-head populations (H1 — K and Q rise
-  together and the K-specific story is not yet isolated), and re-estimate Σ with
-  more than 1536 tokens (H2).
+- **Both follow-ups have run** (H1-REVISED, H2-CONFIRMED). The composition is
+  **not** K-specific — `W_Q` and `W_K` converge onto one subspace (principal
+  cosine 0.21 → 0.83) so the score cannot separate the paths; the timing and
+  magnitude stand, and the **V arm does** discriminate, so it is composition
+  into the *attention* pathway. Whitening is confirmed by a split-half control
+  (halves agree at 0.990 with each other, both ~0.22 against raw).
+- **NEW, and the strongest single result (§3.12-I):** `L7H8`'s static QK
+  operator becomes **symmetric** — 0.50 (random baseline) → **0.956**, layer-7
+  median stays 0.520, **rank 0 of 16 from step 2000 on**. The first weights-only
+  quantity that cleanly identifies the head; it *derives* block C's "near-normal
+  matcher"; and it makes "matching kernel" a measurement rather than a metaphor.
+  **Next: the same sweep on `L9H9`/`L6H0`/`L1H15`, and on non-induction matchers
+  — does symmetry track INDUCTION or merely track MATCHING?** That, and the
+  §3.13.3 position-axis check, before §6x is drafted.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1488,6 +1498,54 @@ arguably the *right* metric since it is the distribution the causal readout
 uses, but it is not the model's operating distribution and the two should be
 compared.
 
+**H1-REVISED (2026-09-09, rerun with per-path population controls).** The
+caveat was right and it is now settled: **the composition is not K-specific.**
+Scoring Q and V against their own 112-head populations:
+
+| step | K rank / z | Q rank / z | V rank / z |
+|---|---|---|---|
+| 0 – 512 | 83 / −0.56 | 72 / −0.38 | 2 / +1.94 |
+| **1000** | **0 / +5.78** | 2 / +3.25 | 21 / +0.81 |
+| 2000 | 0 / +6.87 | **0 / +6.40** | 0 / +6.07 |
+| 8000 | 0 / +4.94 | **0 / +5.41** | 4 / +2.32 |
+| 143000 | 0 / +6.93 | **0 / +6.79** | 6 / +1.54 |
+
+**And the reason is an artifact, identified rather than guessed:** `L7H8`'s
+`W_Q` and `W_K` **converge onto the same subspace** over training — mean
+principal cosine between their rowspaces **0.213 → 0.829**, top principal cosine
+**0.476 → 0.995**. Any operator composing into `K` therefore composes into `Q`,
+and the composition score cannot separate the two pathways for this head.
+
+*What survives, and it is most of it.* The **timing** (rank 83 of 112 → rank 0
+between 512 and 1000) and the **magnitude** (z ≈ +6, sustained) stand
+untouched — those never depended on which read path. What must be dropped is the
+phrase "K-composition": the right description is **composition into `L7H8`'s
+attention read-space**, which is *one* object because Q and K share it. And the
+**V arm does discriminate** — it drifts to rank 4–6 at z ≈ +1.5 while K and Q
+hold rank 0 at z ≈ +6 — so the composition is into the **attention** pathway and
+not the **value** pathway, which is the induction-shaped result and is the part
+that was actually worth having. At the onset step alone (1000) K does lead Q,
+rank 0 / z +5.78 against rank 2 / z +3.25; one step and a small gap, recorded
+and not leaned on.
+
+**H2-CONFIRMED, by a control that needed no model of the noise.** Three arms
+plus a split-half at step 4000:
+
+| arm | tokens | top-1 overlap | plane cos | Σ eff. rank |
+|---|---|---|---|---|
+| battery | 24,576 | 0.217 | [0.329, 0.088] | 327 |
+| battery half 1 | 12,288 | 0.222 | [0.320, 0.088] | — |
+| battery half 2 | 12,288 | 0.213 | [0.336, 0.088] | — |
+| natural text | 3,185 | 0.266 | [0.270, 0.104] | 281 |
+
+**Split-half: half 1 against half 2 agrees at top-1 0.990 and plane cos
+[1.000, 0.778].** The two independent halves agree with *each other* at 0.99
+while both disagree with raw at ~0.22 — so **the low overlap is signal, not
+estimation noise**, and H2's caveat is discharged. Sixteen times the tokens
+moved the answer 0.207 → 0.217, so the original estimate was already sound. And
+`Σ(battery)` vs `Σ(natural)` have cosine **0.453** — substantially different
+metrics giving the same answer, which is the robustness the caveat asked for.
+
 *H3 — three independent results now converge on the same correction.* G6 says
 **concentration** identifies the copier and directional/sign quantities do not.
 H2 says concentration **survives whitening** and the direction does not. F2 says
@@ -1497,6 +1555,64 @@ the object has to be defined in the whitened metric, or, better, **the Stage 3
 entry should be about gain concentration rather than about any named
 direction.** That is a different prediction from the one §3.11 asked for, and it
 is the one the measurements support.
+
+**I. The matcher becomes a similarity kernel, and this is the first quantity
+that cleanly identifies the head (2026-09-09).** H1-REVISED's artifact — `W_Q`
+and `W_K` converging onto one subspace — is not only an artifact. A head whose
+query and key read the *same* subspace computes an attention logit
+`qᵀk = xᵀ(W_Qᵀ W_K)y` that is close to a **similarity form**, i.e. the static QK
+operator should be becoming **symmetric**. Measured directly, on
+`M = W_Q[16:]ᵀ W_K[16:]` (the same static operator §3.11 block C sweeps), as
+`‖S‖²_F / ‖M‖²_F`:
+
+| step | `L7H8` sym. fraction | `‖M‖_F` | **layer-7 median** | `L7H8` rank / 16 |
+|---|---|---|---|---|
+| 0 | 0.5017 | 2.78 | 0.5006 | 2 |
+| 512 | 0.5019 | 2.79 | 0.5008 | 1 |
+| 1000 | 0.5042 | 2.87 | 0.5034 | 6 |
+| **2000** | **0.5742** | 3.50 | 0.5095 | **0** |
+| 4000 | 0.7398 | 4.44 | 0.5181 | **0** |
+| 8000 | 0.8807 | 5.90 | 0.5200 | **0** |
+| 16000 | 0.9311 | 7.85 | 0.5263 | **0** |
+| 32000 | 0.9465 | 9.86 | 0.5257 | **0** |
+| 143000 | **0.9561** | 7.91 | 0.5203 | **0** |
+
+A random real matrix splits its energy 50/50 between `S` and `A`, and 0.50 is
+where every head starts. **`L7H8` goes to 0.956 while its fifteen neighbours
+stay at the random baseline (layer median 0.520 at step 143000), and it is rank
+0 of 16 at every step from 2000 on.** Takeoff is 1000 → 2000 — the **seventh**
+quantity to name that window.
+
+**Three things this is.**
+
+1. **The first weights-only quantity in the entire programme that cleanly
+   identifies the head.** §3.12-G6's negative — no spectral field picks out the
+   copier — surveyed the **OV** operator only. On the **QK** side, symmetry
+   identifies the matcher decisively: 0.956 against a layer median of 0.520,
+   rank 0 of 16, sustained over seven checkpoints.
+2. **It explains a previously descriptive finding.** §3.11 block C reports the
+   matcher as a "near-normal" invariant subspace with `r*_Schur` 12 < `r*_SVD`
+   32. A symmetric operator **is** normal, so near-symmetric *derives*
+   near-normal rather than restating it, and it explains why the Schur frame is
+   the right one for the matcher and the wrong one for the copier.
+3. **"Matching kernel" stops being a metaphor.** The particle account's own
+   framing is that induction is "a matching-kernel coupling rather than a
+   feature-copying circuit" (`POPPER_PLAN.md` §C2). The static QK half of this
+   head *is* a similarity kernel, at 0.956. That is the account's language
+   arriving as a measurement — **on the half nobody was testing**.
+
+**What it does not do, stated because the temptation is obvious.** It adjudicates
+nothing: `claims/registry.json` is untouched, this is one head in one model, and
+the differential prediction §3.11 wanted was about **OV**, where the evidence
+still runs the other way. A symmetric *content* operator is also exactly what
+one would expect architecturally — RoPE carries the positional asymmetry in the
+16 excluded dims and the causal mask carries the rest, so "symmetric content
+part plus positional part" is the ordinary way to build a content matcher, and
+that reading has to be ruled out before any of this is registered. The obvious
+next measurements: the same sweep on the other genuine induction heads
+(`L9H9`, `L6H0`, `L1H15` — block C's 3-of-4), and on non-induction heads that
+also match, to see whether symmetry tracks *induction* or merely tracks
+*matching*.
 
 ---
 
