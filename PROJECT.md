@@ -150,11 +150,22 @@ bug.
   measure**. Reading: `L5H2` (positional match) → `L7H8` (content match, writes
   something that is not token identity) → layers 9–20 (token copying). §3.11 may
   have been calling `L7H8` "the copier" when it is **upstream** of the copier.
-- **NEXT, in order:** (1) test the three-stage reading — composition
-  `L7H8 →` the downstream copiers' `V`/`K` paths, and whether ablating `L7H8`'s
-  OV suppresses their contribution (machinery already built); (2) run the §2.5
-  isometric path on `L7H8`; (3) only then draft §6x, which should now be about
-  what `L7H8` writes, not about whether it copies.
+- **The three-stage reading is FALSIFIED (§3.12-P).** No sub-additivity
+  anywhere — three copiers are **super**-additive, `L11H14` most sharply
+  (alone +0.187, `L7H8` alone +1.107, both **+2.275**), which is redundancy
+  between parallel paths, not mediation; and the sign is conservative because
+  §3.12-M5's compressive readout biases toward *sub*-additivity. Composition
+  gives no specific pathway either: on both Q and V a **non-copier control beats
+  every copier** (`L11H0` Q rank 0, `L9H15` V rank 4). Without the per-path
+  controls this would have read as support.
+- **The puzzle is sharper, not resolved.** `L7H8`'s OV write is causally
+  enormous (+1.107, ~2× baseline NLL), is not token-identity copying, and does
+  not route through the copiers. **The obvious gap: every composition score in
+  §3.12 is head→head, and the MLPs — the majority of the parameters — have never
+  been measured.**
+- **NEXT, in order:** (1) `L7H8` → MLP composition, the untested path; (2) the
+  §2.5 isometric path on `L7H8`; (3) only then draft §6x, which is about what
+  `L7H8` writes, not whether it copies.
 - **§3.14 records the organisation**: three objects (7a population / 7b
   mechanism / 7c formation), the author's queued **7d case-study programme**
   (follow all three circuit stages across every checkpoint, look for phase
@@ -2038,6 +2049,79 @@ suppresses their contribution. **One cross-reference already points that way:**
 — high QK symmetry, induction rank 382 of 384. It copies without matching;
 `L7H8` matches without copying. The dissociation now has named heads on both
 sides.
+
+**P. The three-stage reading is FALSIFIED, on both tests (2026-09-09,
+`tools/run/three_stage_mediation.py`).** Step 16000, 16 sequences, restore exact.
+`ΔNLL(ablate L7H8 alone) = +1.1069` against a baseline of 0.5335.
+
+*P1 — mediation: no sub-additivity anywhere, and three copiers are
+**super**-additive.* `I = ΔNLL(both) − ΔNLL(L7H8) − ΔNLL(C)`:
+
+| head | kind | ΔNLL(C) | ΔNLL(both) | **I** | reading |
+|---|---|---|---|---|---|
+| `L13H5` | copier | −0.0000 | +1.1259 | +0.019 | independent |
+| `L12H8` | copier | +0.0104 | +1.1331 | +0.016 | independent |
+| `L9H0` | copier | +0.0320 | +1.1810 | **+0.042** | super-additive |
+| `L10H0` | copier | +0.0452 | +1.2703 | **+0.118** | super-additive |
+| **`L11H14`** | copier | **+0.1869** | **+2.2753** | **+0.982** | **super-additive** |
+| `L11H10` | ctrl | +0.0004 | +1.1252 | +0.018 | independent |
+| `L11H0` | ctrl | +0.0157 | +1.1324 | +0.010 | independent |
+| `L9H15` | ctrl | +0.0037 | +1.1117 | +0.001 | independent |
+
+A serial circuit predicts `I < 0` — once the upstream stage is gone there is less
+for the downstream one to do. **Every measured `I` is ≥ 0.** The clearest case
+inverts the prediction outright: `L11H14` alone costs +0.187 and `L7H8` alone
+costs +1.107, but **both together cost +2.275**. With `L7H8` intact, `L11H14`
+barely matters; with `L7H8` gone, removing it costs five times as much. That is
+**redundancy between parallel paths that partially substitute for each other**,
+not mediation.
+
+*And the sign is conservative.* §3.12-M5 measured the readout as **compressive**
+(half the operator does 30 % of the damage), and a compressive readout pushes
+genuinely independent contributions toward *apparent sub-additivity*. Observing
+super-additivity against that bias strengthens the reading rather than weakening
+it.
+
+*P2 — composition: the prediction fails, and the controls are why we know.*
+`L7H8`'s OV into each copier's read paths, ranked against **every head in the
+layers below it**:
+
+| head | kind | Q rank (z) | K rank (z) | V rank (z) |
+|---|---|---|---|---|
+| `L9H0` | copier | **4** (+2.81) | 63 (−0.06) | 8 (+1.39) |
+| `L11H14` | copier | 6 (+2.67) | 142 (−0.54) | 15 (+1.07) |
+| `L10H0` | copier | 9 (+1.85) | 99 (−0.31) | 73 (+0.25) |
+| `L13H5` | copier | 54 (+0.37) | 59 (+0.39) | 10 (+1.59) |
+| `L12H8` | copier | 33 (+0.86) | 58 (+0.32) | 102 (−0.12) |
+| **`L11H0`** | **ctrl** | **0 (+3.02)** | 61 (+0.21) | 48 (+0.54) |
+| **`L9H15`** | **ctrl** | 39 (+0.33) | 52 (+0.02) | **4 (+2.83)** |
+| `L11H10` | ctrl | 113 (−0.51) | 77 (−0.09) | 69 (+0.04) |
+
+The three-stage prediction was **elevated V-composition** — the copier copies
+what `L7H8` wrote. Some copiers are modestly elevated on V (ranks 8–15), **but
+the control `L9H15` ranks 4th at z +2.83, above every copier.** Q looks elevated
+for copiers until the control `L11H0` ranks **0th at z +3.02**, above every
+copier. K is flat everywhere. **On both paths a non-copier control beats the
+copiers, so composition supplies no evidence for a specific `L7H8` → copier
+pathway.** Without the controls, "V rank 10, z +1.59" would have been read as
+support; this is the §3.12-H1 lesson (a population control *per path*) paying for
+itself a second time.
+
+*P3 — what survives, and it is a sharper puzzle than before.* `L7H8`'s OV write
+is **causally enormous** (+1.107 at step 16000, ~2× the baseline NLL), is **not
+token-identity copying** (§3.12-O), and **does not route through the heads that
+do token-identity copying** (P1, P2). Three explanations remain, and the first is
+a gap in this test rather than a hypothesis:
+
+1. **It writes to MLPs, which were never measured.** Every composition score in
+   §3.12 is head→head. MLPs are the majority of the parameters and the obvious
+   place for a non-token-identity signal to be read. **This is the next
+   measurement.**
+2. It acts on the unembedding directly but not by token identity — boosting a
+   *class*, or suppressing alternatives.
+3. It acts on residual-stream geometry rather than any single readable
+   direction — which is the particle account's own claim, and the one §3.14.2's
+   case-study programme is built to examine.
 
 ---
 
