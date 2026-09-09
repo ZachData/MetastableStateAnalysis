@@ -1298,6 +1298,78 @@ Separately: `L5H2` is the **only** spectrally mixed head of the four (0.444) and
 the least gain-concentrated. The two stages of the circuit are spectrally
 unlike, which no one had checked.
 
+**G. The derivation, and the negative it produced (2026-09-09).**
+`MATH_SPECTRAL_OT.md` gains **§2.4, "The S/A split as an intervention"**, built
+on §§2.1–2.3 rather than re-deriving them. Four results, three of which changed
+the design and one of which killed a hypothesis of its own making.
+
+*G1 — the readout Stage 3 depends on is a quadratic form in `S` (§2.4.1).* §2.1
+derives the first-order result for `‖x‖`; the particle account is about
+*inter-particle* distance. For `δ = x − y` the update is linear, so
+`‖δ + Mδ‖² = ‖δ‖² + 2·δᵀSδ + ‖Mδ‖²` — identical form. Hence "individuating" is
+literally the statement `δᵀSδ > 0` on the matched differences, `A` contributes
+**exactly nothing** at first order, and **§3.12-C2's mechanical confound becomes
+computable in closed form and subtractable** rather than something to control
+for. `P-I5`'s pairwise readout and `P-ST1`'s effective-rank readout are the same
+quadratic form on different arguments.
+
+*G2 — the four sign choices are a group, and block D was under-specified
+(§§2.4.2–2.4.3).* `{M, Mᵀ, −M, −Mᵀ} = {S+A, S−A, −S−A, −S+A}` is a complete
+**2² factorial** in (sign `S`, sign `A`), and **every arm is an isometry** —
+same singular values, same `‖·‖_F`, same eigenvalue moduli, no rescaling, no
+draws. But `M = UΣVᵀ ⟹ Mᵀ = VΣUᵀ`, so **transposing swaps the read subspace
+with the write subspace**, which for a copier is a change of function. It
+resolves exactly: role-swap `⟺ sign(S) ≠ sign(A)`, i.e. the `S×A` interaction.
+So **both main effects are clean and the interaction is aliased with the role
+swap** — and block D's single `−Mᵀ` arm, run alone, confounds the `S` sign with
+the swap completely. **Stage 3 must run all four cells.**
+
+*G3 — the flip's residual is the non-normality (§2.4.4).* Applying `M` and
+`−Mᵀ` to the same `δ`, the first-order terms cancel identically and the
+difference is `4·δᵀSδ + δᵀ[Mᵀ,M]δ`. So the S-flip inverts the first order
+*exactly*, and the whole deviation is a quadratic form in the self-commutator —
+a third readout for free, and the one that answers §5.3(d) per head by
+intervention rather than by residual.
+
+*G4 — §2.4.5's own prediction, measured and FALSIFIED
+(`induction_abscissa_7b.py`, §2.4.6).* Bendixson gives only the inclusion
+`Re λ(M) ∈ [λ_min(S), λ_max(S)]`, so two heads can agree on every
+eigenvalue-derived field and differ on the numerical abscissa — which would have
+explained F3. **It does not.** At step 4000:
+
+| | `attr_frac` | `λ_max(S)` | `λ_min(S)` | `S_pos_E` | `‖[Mᵀ,M]‖` |
+|---|---|---|---|---|---|
+| `L7H8` (ΔOV_nll **+0.244**) | 0.000 | 0.2644 | −0.4392 | 0.150 | 0.2968 |
+| `L2H10` (**negative**) | 0.000 | 0.2238 | −0.3038 | 0.202 | 0.2924 |
+
+The two candidate separators differ by ~15 % and ~35 % **in opposite
+directions**, and the commutator agrees to two digits. Across its own layer
+`L7H8` ranks **8th of 16** on `λ_max(S)` while carrying ~10× the layer's causal
+effect.
+
+**So `L7H8` is unremarkable in the eigenvalue frame, unremarkable in the
+symmetric frame, and unremarkable in the gain frame — and it is the head that
+does induction.** No weights-only spectral quantity this project computes
+identifies the copier. (Population test of that claim:
+`induction_spectral_predicts_7b.py`, 112 heads with a measured causal readout.)
+
+This does **not** show the spectral character is causally inert — a static
+property failing to *predict* which head copies is not the same as flipping it
+failing to *change* what the head does. The G2 factorial is now the thing that
+decides it. But it moves the prior hard, and it puts the *representational*
+reading of induction in trouble on a third independent front, after the missing
+token diagonal and after F3.
+
+*G5 — and the developmental signal is where the structure is.* `L7H8`'s
+`λ_max(S)` holds its initialisation value (~0.040) through step 1000, then rises
+~20× — 0.104 at 2000, 0.264 at 4000, 0.455, 0.627, peaking **0.729 at 32000**
+before falling to 0.385 at 143000. Its `S_pos_E` traces a **U-shape with floor
+at step 2000** (0.076). That is the **fifth** quantity to name 512–2000, after
+the population repulsive collapse (A), this head's OV plane rotation (F2), the
+eigenvalue-frame U-shape (A), and `CLAIM-B`'s registered anchor. The
+cross-sectional question has a negative answer; **the developmental one is the
+live one**, which is sub-phase 7a rather than 7b.
+
 ---
 
 ## 4. Open, analysed, not yet acted on: the scoring threshold

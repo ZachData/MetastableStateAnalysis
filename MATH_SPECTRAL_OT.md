@@ -116,6 +116,183 @@ OV circuit "come in near-degenerate clusters". `kappa_i` is the quantity that *d
 tolerance instead of placing it, and near-degenerate clustering in a non-normal matrix is precisely
 what proximity to an exceptional point looks like.
 
+### 2.4 The S/A split as an *intervention* (2026-09-09)
+
+§§2.1–2.3 read the split. This section perturbs it, because `PROJECT.md` §3.12-D needs a
+matched control for Stage 3 and every constructed one has failed. Everything below is
+algebra; none of it needs a run.
+
+**Convention, stated because this is where a sign error would live.** §2.1 uses the
+continuous flow `x' = -Vx`. A head does not integrate a flow — it makes one *additive*
+write to the residual stream. So take the discrete update with `M = W_OV`:
+
+    x  <-  x + M x
+
+Then `||x + Mx||^2 = ||x||^2 + 2 x^T S x + ||Mx||^2`, and **growth is `x^T S x > 0`**, with
+the largest first-order growth rate `lambda_max(S)`. Under §2.1's flow convention the
+inequality reverses. The two are consistent; the sign of `M` differs. State which you are in.
+
+#### 2.4.1 The same algebra governs *pairwise* distances, which is what Stage 3 reads
+
+§2.1 derives the result for `||x||`. The particle account is not about norms — it is about
+whether two particles stay apart. For `x, y` with difference `delta = x - y`, the update is
+linear, so `delta <- delta + M delta` and
+
+    ||delta + M delta||^2 = ||delta||^2 + 2 delta^T S delta + ||M delta||^2
+
+**Identical form.** So the first-order change in *inter-particle distance* is a quadratic
+form in `S` alone, and `A` contributes exactly nothing to it. Three things follow that the
+phase docs state as design choices and which are actually forced:
+
+1. **"Individuating" is a statement about `S`.** "The direction holds the matched particles
+   apart" means `delta^T S delta > 0` on the matched differences. It is not a statement about
+   eigenvalues, and it is not a statement about `A`.
+2. **The mechanical confound `PROJECT.md` §3.12-C2 flags is computable in closed form.**
+   The first-order geometry change is `2 delta^T S delta`, so it can be *subtracted* rather
+   than controlled for. That removes the confound analytically instead of by matching.
+3. **`P-I5`'s pairwise-distance readout and `P-ST1`'s effective-rank readout are the same
+   quadratic form** evaluated on differences and on deviations-from-mean respectively.
+
+#### 2.4.2 The four sign choices form a group, and give a complete 2^2 factorial
+
+Write `M = S + A`. Then
+
+    M    =  S + A          M^T  =  S - A
+    -M   = -S - A         -M^T  = -S + A
+
+so `{M, M^T, -M, -M^T}` realises **every combination of the two independent sign flips** —
+a Klein four-group — and it is a complete `2^2` factorial in (sign of `S`, sign of `A`):
+
+|              | keep `A`  | flip `A` |
+|---|---|---|
+| **keep `S`** | `M`       | `M^T`    |
+| **flip `S`** | `-M^T`    | `-M`     |
+
+**Every arm is an isometry of the operator.** `M^T` has the same singular values as `M`, and
+negation changes none, so all four share `||.||_F`, every singular value, and every
+eigenvalue modulus. There is no rescaling, no matching search, no tolerance and no random
+draw anywhere in the design — which is exactly what the two constructed controls could not
+achieve (§3.12-C1).
+
+`-M^T = -S + A` is the arm `PROJECT.md` §3.12-D calls the S-flip. The derivation says it
+should never be run alone: it is one cell of a factorial whose other cells cost the same.
+
+#### 2.4.3 What the transpose costs: read/write swap, and what it aliases
+
+If `M = U Sigma V^T` then `M^T = V Sigma U^T`. **Transposing exchanges the read subspace
+with the write subspace.** For a copier — an operator whose job is to read one thing and
+write another — that is not a side effect, it is a change of function. So the transpose is a
+nuisance factor and it must be accounted for rather than ignored.
+
+It is accounted for exactly. Role-swap occurs for `M^T` and `-M^T`, whose sign pairs are
+`(+,-)` and `(-,+)`; it does not for `M` and `-M`, whose pairs are `(+,+)` and `(-,-)`. So
+
+    role-swap  <=>  sign(S) != sign(A)
+
+which is precisely the `S x A` **interaction** contrast. Therefore, in the `2^2` design:
+
+- the **main effect of flipping `S`** — `{-M, -M^T}` against `{M, M^T}` — averages over
+  swapped and unswapped arms and is **free of the confound**;
+- the **main effect of flipping `A`** — `{M^T, -M}` against `{M, -M^T}` — likewise;
+- the **interaction is aliased with role-swap** and cannot be read as an interaction.
+
+Two clean main effects and one known alias, derived rather than measured. A single-arm
+S-flip design does not have this property: run alone, `-M^T` confounds the `S` sign with the
+role swap completely.
+
+#### 2.4.4 The flip inverts the first order exactly; the residual *is* the non-normality
+
+Apply the same `delta` to `M` and to `-M^T`:
+
+    M    :  Delta||delta||^2 = +2 delta^T S delta + delta^T (M^T M) delta
+    -M^T :  Delta||delta||^2 = -2 delta^T S delta + delta^T (M M^T) delta
+
+Two exact consequences, both usable as readouts:
+
+- **Sum.** The first-order terms cancel identically. What survives is
+  `delta^T (M^T M + M M^T) delta` — second order, and independent of the sign of `S`.
+- **Difference.** `4 delta^T S delta + delta^T [M^T, M] delta`, where `[M^T, M] = M^T M - M M^T`
+  is the **self-commutator**. `|| [M^T, M] ||_F` is the standard departure-from-normality, the
+  quantity Henrici's number is built from and which §2.2 says the project already measures.
+
+So the S-flip does *not* invert the geometry effect exactly — it inverts the first order
+exactly, and the discrepancy is a quadratic form in the self-commutator. For a **normal**
+operator the flip is an exact sign inversion of the whole effect. For `L7H8` (Henrici 0.353)
+it is not, and **the deviation from exact inversion is a direct measurement of the head's
+non-normality on the matched differences** rather than a nuisance. That is a third readout
+the design gets for free, and it is the one that separates "the eigenvalue frame describes
+this head" from "it does not" — §5.3(d)'s question, answered per head by an intervention
+instead of by a residual.
+
+#### 2.4.5 The consequence that should be measured first
+
+§2.2 already establishes that `Re lambda` governs `t -> infinity` while `lambda_max(S)` (the
+numerical abscissa) governs the initial slope, and that a head can have every eigenvalue on
+the stable side while `S` still has growing directions. §2.4.1 shows the *pairwise* readout
+is governed by `S` too. Put together:
+
+**`attractive_energy_fraction_core` and the numerical abscissa are different objects, and the
+second is the one that governs what Stage 3 measures.**
+
+`PROJECT.md` §3.12-F3 is the empirical instance and it was read as a puzzle: `L7H8` and
+`L2H10` agree to three digits on every eigenvalue-derived field — attractive fraction 0.000
+both, sigma-1 share 0.166 against 0.176, participation 21.5 against 19.9 — and their causal
+copying effects have **opposite sign**. §2.2 predicts exactly this: agreement on the
+spectral abscissa constrains the numerical abscissa only through Bendixson's bound
+`Re lambda(M) in [lambda_min(S), lambda_max(S)]`, which is an inclusion and not an equality.
+Two heads can share the former and differ arbitrarily on the latter.
+
+`p2_eigenspectra/weights.py::eigendecompose` already computes `sym_eigenvalues` and
+`ov_decomp_*.npz` already stores them — **but per layer**, i.e. for `sum_h W_OV^h`, which
+`p2b_imaginary/head_circuits.py` and `tools/run/ov_per_head.py` both rule out as "the
+operator only in the counterfactual where every head attends identically." **The per-head
+numerical abscissa has never been computed.** It is one `eigh` per head on a matrix already
+on disk, and it is the cheapest test in the programme of whether the eigenvalue frame or the
+symmetric frame is the one carrying the induction result.
+
+#### 2.4.6 It was measured, and the answer is no (2026-09-09)
+
+`data/analysis/induction_abscissa_7b.py`, per-head, on the dense OV already on disk.
+**§2.4.5's prediction is falsified and the section is left standing above this line** — a
+derivation that motivated a measurement is not improved by deleting it once the measurement
+comes back.
+
+At step 4000, `L7H8` (`dOV_nll` +0.244) against `L2H10` (negative):
+
+| | `attr_frac` | `lambda_max(S)` | `lambda_min(S)` | `S_pos_E` | `\|\|[M^T,M]\|\|` |
+|---|---|---|---|---|---|
+| `L7H8` | 0.000 | 0.2644 | −0.4392 | 0.150 | 0.2968 |
+| `L2H10` | 0.000 | 0.2238 | −0.3038 | 0.202 | 0.2924 |
+
+The symmetric frame does **not** separate them. The two quantities that could have —
+`lambda_max(S)` and `S_pos_E` — differ by ~15 % and by 35 %, **in opposite directions**, and
+the self-commutator is identical to two digits. Across its own layer `L7H8` ranks **8th of
+16** on `lambda_max(S)` while carrying roughly ten times the layer's causal effect.
+
+So the situation is now: `L7H8` is unremarkable in the **eigenvalue** frame (attractive
+fraction 0.000, shared with seven other layer-7 heads), unremarkable in the **symmetric**
+frame (rank 8/16), and unremarkable in the **gain** frame (`||M||_F` 1.665, mid-pack) — and
+it is the head that does induction. **No weights-only spectral quantity computed by this
+project identifies the copier.** §2.4.7 is the population test of that statement.
+
+**What this does and does not license.** It does not show the S/A character is causally
+inert: a static property failing to *predict* which head copies is not the same as flipping
+that property failing to *change* what the head does — displacement does not tell you a car's
+destination, and removing the engine still stops it. The §2.4.2 factorial remains the right
+intervention and is now the one that decides it. What the result does do is move the prior
+hard, and it puts the *representational* reading of induction — "induction lives in
+repulsive/individuating spectral structure" — in trouble on a third independent front, after
+the missing token diagonal and after `PROJECT.md` §3.12-F3.
+
+**One thing did move, and it is developmental rather than cross-sectional.** `L7H8`'s
+`lambda_max(S)` sits at its initialisation value (~0.040) through step 1000, then rises
+about twentyfold — 0.104 at 2000, 0.264 at 4000, 0.455, 0.627, peaking 0.729 at 32000 before
+falling back to 0.385 at 143000. And its `S_pos_E` traces a **U-shape whose floor is step
+2000** (0.076). That is the *fifth* quantity to name the 512–2000 window, after the
+population repulsive collapse, this head's OV plane rotation, the eigenvalue-frame U-shape,
+and `CLAIM-B`'s registered anchor. The cross-sectional question has a negative answer; the
+developmental one is where the structure is.
+
 ---
 
 ## 3. Nulls: the counting statistics sit on top of chance
