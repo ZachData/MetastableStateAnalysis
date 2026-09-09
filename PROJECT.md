@@ -30,12 +30,34 @@ export METS_RESULTS_DIR=$PWD/data/phase12
 export HF_HUB_OFFLINE=1
 export HF_HUB_DISABLE_XET=1
 
-./scripts/check.sh gate     # 2264 passed / 5 skipped / 30 deselected, ~34 s
+./scripts/check.sh gate     # 2270 passed / 5 skipped / 30 deselected, ~40 s
 ```
 
 If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
+
+### Resume here (2026-09-08, machine slept mid-session)
+
+- **14 commits on `claude/rescaler-cache-identity-test`, NOT pushed, no PR.**
+  `b44c3e9`..`HEAD` (`git log --oneline b44c3e9~1..HEAD`). The user chose
+  *open a PR* + *split by topic*. Push:
+  `GIT_SSH_COMMAND="ssh -i $PWD/github_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin claude/rescaler-cache-identity-test`
+  then open a PR to `main` (no `gh` CLI installed — web UI, or install `gh`).
+- **Working tree may have 1–2 uncommitted files** from the last analysis
+  pass — check `git status`, commit as a topic commit, then push.
+- **The induction programme (§3.11) has run Stages 0–2 + QK + generalisation.**
+  Everything exploratory, `claims/registry.json` untouched. **The next step is
+  the user's: register the Stage 3 differential prediction** (§3.11
+  "Consequence for the registration" — it must be about L7H8's rank-1 high-gain
+  OV direction specifically). Do not run Stage 3 before that entry exists.
+- **`data/analysis/*.json` are git-ignored** — the batch outputs
+  (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
+  `induction_subspace_characterize_*`, `induction_developmental_series`,
+  `dissipation_v2_series`, `dissipation_sublayer_series`) are on disk but not
+  in git; rerun their `.py` producers (§7) to regenerate.
+- **`POPPER_PLAN.md` §6x is still unwritten** (§6w points to it). A
+  doc-consolidation pass would move the §3.11 design + results into it.
 
 ### The machine
 
@@ -101,9 +123,18 @@ longer globs its own temp file (`tests/test_tools_recompress_tables.py`).
 
 ## 2. Where the work stands
 
-Active work is **Phase 7** — the mechinterp/particle bridge. `P-I1`,
-induction-head formation as a two-stage `relay` motif tracked across the
-checkpoint axis, has run end to end and scored **INSUFFICIENT** — not
+Active work is **Phase 7** — the mechinterp/particle bridge. **The live thread
+is the bottom-up induction programme (§3.11)**: the co-location / `relay`-motif
+frame (`P-I1`) hit a construction-level circularity and was retired (below,
+§3.10, `POPPER_PLAN.md` §6w); it was replaced by isolating one induction head
+(`L5H2 → L7H8`) and characterising its circuit directly. As of 2026-09-08
+Stages 0–2, the QK half, and a generalisation batch have all run — everything
+**exploratory, nothing registered** — and the next step is the user's: register
+the Stage 3 differential prediction. §3.11's dated blocks are the detail;
+§§3.6–3.10 below are the retired-frame history, kept as the construction log.
+
+`P-I1`, induction-head formation as a two-stage `relay` motif tracked across the
+checkpoint axis, ran end to end and scored **INSUFFICIENT** — not
 falsified, not validated — at both a 50- and a 100-replicate null (§3.6, §3.7).
 The K = 100 rerun (§3.7) settled the sensitivity question: the verdict is
 stable but **the p-value is not** (0.14 at K = 50, 0.89 at K = 100, same
@@ -987,6 +1018,16 @@ right for the matcher, wrong for the copier. The Schur<SVD pattern for QK
 appears exactly when the match forms (step 2000→4000) and holds through 143000.
 (Schur reordering is non-monotone above r≈16 on near-degenerate |λ|; the
 r ≤ 16 Schur values are clean.)
+
+*Across the other genuine induction heads (L1H15, L9H9, L6H0 — the heads that
+both match on the repo-convention pairs and have an OV copy effect; the other
+"behavioural leaders" do neither).* **L9H9** shows the same Schur ≫ random > SVD
+matcher pattern as L7H8. **L6H0** (weakest matcher, 0.76) leans the same at low
+rank but is noisy. **L1H15** is **generic** — SVD ≈ Schur ≈ random, ~40 of 48
+dims needed, no spectral structure — and it was also the near-normal outlier on
+OV (Schur rank-1 ≈ SVD rank-1). So L1H15's whole circuit is spectrally
+unstructured; the QK dissociation holds for 3 of 4 but is not as clean as the
+OV representational claim's 9/9.
 
 **Consequence for the registration.** Two things are now population-level
 baselines, not distinguishing features: "OV core 100 % repulsive" (every
