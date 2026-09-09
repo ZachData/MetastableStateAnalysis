@@ -163,9 +163,22 @@ bug.
   not route through the copiers. **The obvious gap: every composition score in
   §3.12 is head→head, and the MLPs — the majority of the parameters — have never
   been measured.**
-- **NEXT, in order:** (1) `L7H8` → MLP composition, the untested path; (2) the
-  §2.5 isometric path on `L7H8`; (3) only then draft §6x, which is about what
-  `L7H8` writes, not whether it copies.
+- **Five probes run (§3.12-Q); three negative, and the survivor is geometry.**
+  MLPs: **negative** (best z +0.57, most layers below median). Composed
+  `L5H2→L7H8` circuit: **more** anti-copying (−0.0997 vs −0.0496). Offset: L7H8
+  attends **93.4 % at exactly `j`**, so the repo's non-standard convention is
+  right for this head — and copying from there would return the *current* token,
+  not the successor. What survives is **residual-stream geometry**: ablating
+  `L7H8`'s OV shifts *every* logit by ~4 nats and removes **16 %** of the final
+  residual norm, against <0.4 % for ordinary heads.
+- **FRAMING CORRECTION: `L5H2` has TWICE `L7H8`'s OV effect** (ΔNLL +2.227 vs
+  +1.107). §3.11's "largest of all 16 layer-7 heads" is true but has been read
+  too broadly — `L7H8` is not the largest OV effect in the circuit; its own
+  prev-token partner is. And QK ablation is worth 56 % of OV ablation on NLL,
+  which §3.11 never measured (it read attention only).
+- **NEXT, in order:** (1) close Q3's open caveat — sweep `‖OV‖_F` against
+  `Δ‖resid‖` across heads, to rule out norm-proportionality before the geometry
+  reading is leaned on; (2) the §2.5 isometric path on `L7H8`; (3) then §6x.
 - **§3.14 records the organisation**: three objects (7a population / 7b
   mechanism / 7c formation), the author's queued **7d case-study programme**
   (follow all three circuit stages across every checkpoint, look for phase
@@ -2122,6 +2135,86 @@ a gap in this test rather than a hypothesis:
 3. It acts on residual-stream geometry rather than any single readable
    direction — which is the particle account's own claim, and the one §3.14.2's
    case-study programme is built to examine.
+
+**Q. Five probes: three negative, and the surviving one corrects a framing
+(2026-09-09, `tools/run/what_l7h8_writes.py`, step 16000).** Ordered by what
+could reframe the question rather than by convenience; MLPs deliberately last.
+
+*Q1 — the offset. My off-by-one worry was WRONG, and that deepens the puzzle.*
+`induction_candidates` documents two conventions and the repo uses the
+non-standard one (`ids[key-1] == ids[query-1]`, pairing query `N_REP+j` with key
+`j`, the **same-token** position) rather than the Anthropic one
+(`ids[key-1] == ids[query]`, pairing with `j+1`, the **successor**). Measured
+attention from query `N_REP+j`:
+
+| offset | j−2 | j−1 | **j** | j+1 | j+2 |
+|---|---|---|---|---|---|
+| `L7H8` | 0.0012 | 0.0013 | **0.9339** | 0.0000 | 0.0000 |
+
+**93.4 % at exactly `j`, and nothing at `j+1`.** So the repo's convention
+correctly describes this head. But copying from the same-token position returns
+the **current** token when the answer is the **successor** — so a token-identity
+copier here would be actively wrong, which is consistent with §3.12-O's near-zero
+score and makes "what does it write" harder, not easier.
+
+*Q2 — the effect is a large GLOBAL logit shift, not a targeted promotion.*
+`ΔNLL = −(Δlogit_correct − Δlogsumexp)` exactly. Ablating `L7H8`'s OV gives
+`Δlogit_correct = −5.02` **and** `Δlogsumexp = −3.91` — every logit falls by
+about four nats and the correct one by five, netting +1.11. This is not a
+delicate promotion of one token; it is the removal of a large component of the
+residual.
+
+*Q3 — and the control says that is specific, not generic — while correcting a
+framing this document has carried.* Ablating each head's OV, against a baseline
+logsumexp of 16.05 and final residual norm of 52.95:
+
+| head | ΔNLL | Δlogit(correct) | Δlogsumexp | Δ‖resid‖ |
+|---|---|---|---|---|
+| **`L5H2`** (prev-token) | **+2.227** | −5.89 | −3.67 | **−5.92** |
+| `L7H8` | +1.107 | −5.02 | −3.91 | **−8.38** |
+| `L11H14` (top copier) | +0.187 | −1.02 | −0.83 | −0.40 |
+| `L13H5` (top copier) | −0.000 | −0.02 | −0.02 | −0.06 |
+| `L2H10`, `L0H0`, `L20H7` | ≤ +0.008 | ≤ 0.10 | ≤ 0.10 | ≤ 0.19 |
+
+Two things. **The global shift is not generic** — ordinary heads move logsumexp
+by under 0.1 where these two move it by ~4, and they remove 11–16 % of the final
+residual norm against under 0.4 % for the rest. And **`L5H2` has TWICE `L7H8`'s
+effect**. §3.11's "largest of all 16 layer-7 heads" is true and has been read
+too broadly: `L7H8` is not the largest OV effect in the circuit, its own
+prev-token partner is. Every "the causally load-bearing half" statement needs
+that qualifier.
+
+**Caveat, not yet closed:** the two large heads may simply have larger OV norms,
+and norm-proportionality is not ruled out here. The check is one sweep of
+`‖OV‖_F` against `Δ‖resid‖` across heads.
+
+*Q4 — QK against OV on the same readout.* Ablating the static QK costs +0.616,
+**56 % of the OV ablation's +1.107**. §3.11 only ever read attention for the QK
+half (0.92 → 0.02); on NLL, attending correctly is worth a bit over half of what
+the head is worth in total.
+
+*Q5 — the composed circuit is MORE anti-copying, not less.* §3.12-O's score uses
+the raw embedding as the OV's input, but the residual at the attended position
+has already been written by `L5H2`. The composed path
+`W_U OV(L7H8) OV(L5H2) W_Eᵀ` scores **−0.0997** against the direct
+`W_U OV(L7H8) W_Eᵀ` at **−0.0496** — twice as negative. So it is not copying the
+prev-token signal either.
+
+*Q6 — the MLPs are negative, which is why they were not run first.* `L7H8`'s OV
+into each downstream MLP's input projection, ranked against every head below that
+layer: the best is layer 10 at **rank 44 of 159, z +0.57**, layer 9 at rank 47 of
+143 (z +0.31), and **every other layer is at or below the population median**
+(z −0.16 to −0.73). No elevated MLP pathway anywhere.
+
+**Where this leaves it.** Of the three §3.12-P explanations, (1) MLPs is
+**negative** (Q6) and (2) unembedding-without-token-identity is **negative in
+the targeted sense** (Q2: the shift is global, not selective). What survives is
+**(3), residual-stream geometry** — and it now has a measurement behind it rather
+than being the leftover option: `L5H2` and `L7H8` each remove a tenth or more of
+the final residual norm, two orders of magnitude more than an ordinary head,
+while shifting every logit by ~4 nats. That is the particle account's own claim
+arrived at by eliminating the alternatives on their own instruments, and it is
+exactly what §3.14.2's case-study programme was queued to examine.
 
 ---
 
