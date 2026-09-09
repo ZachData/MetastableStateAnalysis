@@ -93,9 +93,15 @@ bug.
   median stays 0.520, **rank 0 of 16 from step 2000 on**. The first weights-only
   quantity that cleanly identifies the head; it *derives* block C's "near-normal
   matcher"; and it makes "matching kernel" a measurement rather than a metaphor.
-  **Next: the same sweep on `L9H9`/`L6H0`/`L1H15`, and on non-induction matchers
-  — does symmetry track INDUCTION or merely track MATCHING?** That, and the
-  §3.13.3 position-axis check, before §6x is drafted.
+  **Answered in §3.12-J: it tracks MATCHING, not induction**, and block I's
+  claim 1 is corrected there. `L5H2` (a pure *positional* matcher) never becomes
+  symmetric — rank ~310 of 384 throughout — so symmetry marks **content**
+  matching; and `L2H10` reaches symmetry rank 3 with a **negative** OV copy
+  effect, so matching and copying are separable. Two halves: QK = symmetry
+  (sharp, 11 of 384), OV = gain concentration (weak). **Induction is both.**
+- **NEXT: the §3.13.3 position-axis check** — every readout the OV rank sweep,
+  the 82 % and every ΔOV_nll rest on is a *mean over token positions* and that
+  axis has never been looked at. Then §6x.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1583,7 +1589,8 @@ stay at the random baseline (layer median 0.520 at step 143000), and it is rank
 0 of 16 at every step from 2000 on.** Takeoff is 1000 → 2000 — the **seventh**
 quantity to name that window.
 
-**Three things this is.**
+**Three things this is** *(claim 1 below was overstated and is corrected in
+block J — left standing because the correction is the point)*.
 
 1. **The first weights-only quantity in the entire programme that cleanly
    identifies the head.** §3.12-G6's negative — no spectral field picks out the
@@ -1613,6 +1620,67 @@ next measurements: the same sweep on the other genuine induction heads
 (`L9H9`, `L6H0`, `L1H15` — block C's 3-of-4), and on non-induction heads that
 also match, to see whether symmetry tracks *induction* or merely tracks
 *matching*.
+
+**J. It tracks MATCHING, not induction — block I's claim 1 is corrected
+(2026-09-09, `tools/run/qk_symmetry_sweep.py`, all 384 heads × 19 steps).**
+The symmetric fraction reduces to 48×48 algebra — `‖M‖²_F = tr((AᵀA)(BBᵀ))` and
+`tr(M²) = tr((BA)²)` for `M = AB` — so no (1024,1024) matrix is ever formed;
+the identity is asserted against the direct computation on the first head of
+every run rather than trusted.
+
+*The population.* Every head sits at the random baseline (median 0.5005, max
+0.5027, **none above 0.7**) through step **512**. First movement at 1000; by
+143000 the median is 0.5231 and only **11 of 384** heads exceed 0.7, **one**
+exceeds 0.9. So high symmetry is genuinely rare — but it is **not unique**.
+
+*The decisive cell, at 143000 — top-10 symmetry heads and their induction rank
+of 384:* `L7H8` 0.956 (rank 2), `L6H0` 0.873 (**0**), `L1H15` 0.840 (5),
+`L2H10` 0.835 (**1**), `L7H0` 0.796 (3), `L9H9` 0.738 (7), **`L1H4` 0.734
+(40)**, **`L8H13` 0.730 (47)**, `L9H8` 0.727 (4), **`L7H4` 0.708 (91)**.
+
+**Seven of the top ten are top-8 induction heads — and three are not.** At step
+4000 the mismatch was starker still (`L10H3`, symmetry rank 5, induction rank
+**382 of 384**). So symmetry is close to *necessary* for induction and clearly
+not *sufficient*: **block I's "the first quantity that cleanly identifies the
+head" was too strong.** What symmetry identifies is the **matching half of the
+circuit**, and induction heads are matchers.
+
+*Two controls settle what "matching" means here, and neither was arranged.*
+
+- **`L5H2`, the previous-token head, never becomes symmetric** — 0.500 → 0.504,
+  rank 322 → 310 of 384, flat across the entire axis while its induction
+  partners climb past 0.8. It is an overwhelming matcher (attention 0.895 at
+  offset −1, ~49× the head median) but it matches on **position**. So symmetry
+  marks **content** matching specifically, and the architectural reading block I
+  flagged is *partly right*: it is about matching, not about induction.
+- **`L2H10` matches without copying.** It reaches symmetry rank 3 (0.835) and
+  induction rank 1 while its OV copy effect is **negative**. Its trajectory —
+  rank 131 at 4000, 23 at 8000, 4 at 16000, 3 thereafter — means the step-4000
+  reading ("the anti-copier is not symmetric") **does not survive the full
+  axis**, and what replaces it is better: **matching (QK, symmetric) and copying
+  (OV) are separable, and this head has one without the other.**
+
+*What the two halves now look like together.* §3.12-G6: on the **OV** side no
+sign quantity identifies the copier and only *gain concentration* does, weakly.
+Block J: on the **QK** side *symmetry* identifies the matcher, sharply and
+rarely (11 of 384). **Induction is both**, and `L2H10` is the existence proof
+that they come apart. That is the dissociation §3.11 block C was reaching for,
+now on a population footing rather than one head.
+
+*Developmentally — the eighth quantity to name the window.* Flat at baseline
+through 512; first movement at 1000; by 2000 `L9H9` leads at rank 0 (0.595)
+with `L7H8` at rank 3, and from 4000 `L7H8` takes rank 0 and never gives it up.
+And the high-symmetry set **purifies toward induction heads over training** —
+the worst induction rank in the symmetry top-10 goes from 382 at step 4000 to 91
+at 143000.
+
+*A §3.13 footnote that is not a footnote.* Spearman of symmetry against
+induction over all 384 heads is ≈ 0 at every step **except step 1000, where it
+is +0.343**. The correlation is the right instrument exactly once — at the onset,
+when many heads move slightly together — and the wrong one everywhere after,
+when the signal concentrates into a handful. **The right summary changes with
+training stage**, which is a sharper version of §3.13 than that section states:
+the mean-versus-extremum choice is not only per-quantity, it is per-regime.
 
 ---
 
