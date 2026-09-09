@@ -144,13 +144,15 @@ has pivoted to a bottom-up interventional programme (§3.11).
    representational picture — OV core 100 % repulsive, non-normal but not
    outlier, no token-identity copy structure — is **universal** across the top
    8 behavioural induction heads and stable across development; `r*_SVD ≪
-   r*_Schur` holds across the whole trained regime (`r*_SVD` grows 1 → 2 over
-   consolidation). The causal OV→copying effect is **concentrated in L7H8**
-   (~10× any other). **Pick up at: register the differential prediction** —
-   it must be about the high-gain SVD direction specifically, since "repulsive"
-   is now a population baseline (§3.11 "Consequence for the registration") —
-   then **Stage 3**. QK half still not done (RoPE). `claims/registry.json`
-   unchanged.
+   r*_Schur` holds across the whole trained regime. The causal OV→copying
+   effect is **concentrated in L7H8** (~10× any other). The **QK half is done**
+   and is the spectral opposite — the matcher is a ~12-dim high-eigenvalue
+   near-normal invariant subspace (`r*_Schur` 12 < `r*_SVD` 32, SVD below the
+   random control). **Pick up at: register the differential prediction** — it
+   must be about L7H8's rank-1 high-gain OV direction specifically, since both
+   "repulsive" and the OV/QK dissociation are now population baselines (§3.11
+   "Consequence for the registration") — then **Stage 3**.
+   `claims/registry.json` unchanged.
 2. ~~Violation-restricted subspace split (dissipation v2)~~ **— done
    2026-09-08, `status-2.md` item 5 ~resolved.** The clean per-particle
    version (`v2_attn_pos_*` in `tools/run/dissipation_sublayer.py` →
@@ -912,18 +914,12 @@ neither a **representational** copier (no token diagonal) nor an **eigen-mode**
 "not token-aligned" half leans on the approximate LN-folded copy score. The
 per-head SVD/Schur fractions are only interpretable for L7H8 — it is the only
 layer-7 head with a non-noise OV effect, so the others' ratios divide by
-~0.01. **QK half still not done** (RoPE — `rotary_ndims = 16` of 64).
+~0.01. The **QK half is now done** — see block C below.
 
-**Next.** Register the differential prediction before Stage 3 reads anything
-(§3.11 opening) — the Stage 2 result reshapes it: the live question is no
-longer "attractive vs repulsive" but "does the high-gain SVD direction that
-carries copying behave as an individuating / repulsive channel under
-perturbation, or as a copier the token-alignment test just missed". Then
-Stage 3 (matched-norm variations of the rank-1 mode, joint behavioural +
-logit + geometry readout). `POPPER_PLAN.md` §6x is still unwritten — §6w
-refers forward to it; this §3.11 is currently the only home for the design.
+`POPPER_PLAN.md` §6x is still unwritten — §6w refers forward to it; this §3.11
+is currently the only home for the design.
 
-### Generalisation batch — results (2026-09-08, exploratory, nothing registered)
+### Generalisation batch + QK half — results (2026-09-08, exploratory, nothing registered)
 
 `data/analysis/induction_developmental_analysis.py` →
 `induction_developmental_series.json`. Two questions: does the Stage 2 picture
@@ -968,13 +964,38 @@ OV effect is real (L7H8, L9H9, L1H15, L6H0) rank-1 SVD carries it (0.68–0.97)
 and Schur rank-1 is weaker, so `r*_SVD ≲ r*_Schur` generalises there too;
 L1H15 is the near-exception (Schur rank-1 0.76 vs SVD 0.83 — more normal).
 
-**Consequence for the registration.** "100 % repulsive" is now a
-population-wide baseline, not a distinguishing feature — the differential
-prediction cannot be "is the induction subspace repulsive" (all of them are).
-It has to be about the **high-gain SVD direction** specifically: under
-matched-norm perturbation does it act as an individuating channel, or does
-copying survive (a copier the token-alignment test missed). That is Stage 3's
-design and the thing to register before it runs.
+**C. The QK half — `tools/run/induction_qk_sweep.py`, L7H8 across 8 steps.**
+Rank-truncates the **static** (rows 16–63, non-rotary) QK operator — the
+content-match half; RoPE carries the positional part and its 16 dims are left
+intact — and reads the induction attention directly (mean post-softmax weight
+on the repo's pairs: query `N_REP+t`, key `t`). Full static-QK ablation drops
+L7H8's induction attention from **0.92 to 0.02**, so the readout bites.
+
+The matcher is the **spectral opposite of the copier.** Once formed
+(step 4000+, induction attn 0.92 → 0.95, stable):
+
+| | `r*` (rank reaching ½ the effect) | low-rank basis vs random |
+|---|---|---|
+| **OV copier** | `r*_SVD` 1–2 · `r*_Schur` ~8–16 | SVD ≫ random ≫ Schur |
+| **QK matcher** | `r*_Schur` **12** · `r*_SVD` **32** | Schur > random > **SVD (below random)** |
+
+So the copy lives in a **rank-1 high-gain non-normal** direction; the match
+lives in a **~12-dim high-eigenvalue near-normal invariant subspace**, and its
+top-*gain* directions are worse than random. `MATH_SPECTRAL_OT` §5.3(d)'s
+"the eigenvalue frame is or isn't the right description" resolves *per half*:
+right for the matcher, wrong for the copier. The Schur<SVD pattern for QK
+appears exactly when the match forms (step 2000→4000) and holds through 143000.
+(Schur reordering is non-monotone above r≈16 on near-degenerate |λ|; the
+r ≤ 16 Schur values are clean.)
+
+**Consequence for the registration.** Two things are now population-level
+baselines, not distinguishing features: "OV core 100 % repulsive" (every
+behavioural induction head) and the **OV/QK spectral dissociation** (a generic
+property of a copy+match circuit, plausibly). The Stage 3 differential
+prediction has to be about the **rank-1 high-gain OV direction of L7H8**
+specifically — under matched-norm perturbation does it act as an individuating
+channel, or does copying survive (a copier the token-alignment test missed) —
+not about repulsiveness or rank per se. Register that, then Stage 3.
 
 ---
 
