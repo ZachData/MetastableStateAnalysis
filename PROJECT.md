@@ -155,6 +155,12 @@ bug.
   OV suppresses their contribution (machinery already built); (2) run the §2.5
   isometric path on `L7H8`; (3) only then draft §6x, which should now be about
   what `L7H8` writes, not about whether it copies.
+- **§3.14 records the organisation**: three objects (7a population / 7b
+  mechanism / 7c formation), the author's queued **7d case-study programme**
+  (follow all three circuit stages across every checkpoint, look for phase
+  correlations and particle dynamics, then repeat over many circuits and ask
+  whether the dynamics correlate *across* cases), and the **three code defects**
+  found this session — all reporting-only, none touching a p-value.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -2032,6 +2038,83 @@ suppresses their contribution. **One cross-reference already points that way:**
 — high QK symmetry, induction rank 382 of 384. It copies without matching;
 `L7H8` matches without copying. The dissociation now has named heads on both
 sides.
+
+---
+
+## 3.14 How this work is organised, and what is queued (2026-09-09)
+
+### 3.14.1 Three objects, not one thread
+
+§§3.11–3.12 have been running as a single "induction programme", and they are
+not one. Three research objects are tangled in them, with **different nulls,
+different exchangeable units, and different failure modes**, and separating them
+is the largest structural improvement available:
+
+| | object | exchangeable unit | state |
+|---|---|---|---|
+| **7a** | population spectral development — the OV repulsive collapse (§3.12-A), its relation to `CLAIM-B`'s window, the Phase-2 `frac_repulsive` comparison | head, with a shared-model factor | biggest signal, hardest null |
+| **7b** | circuit mechanism at a fixed step — rank sweeps, S/A interventions, composition, alignment | the perturbation draw, so `n = 1` is sound | most of §3.12; closest to registrable |
+| **7c** | circuit formation — the backward search from a behavioural anchor, the pythia-70m study (§3.9) | checkpoint / window — where co-location circularity lives | scoped, not started |
+
+Splitting them says immediately what can be registered when, and stops 7a's hard
+null blocking 7b's clean one. Note that the labels are for *this document's*
+organisation; they are not new phase directories, and §3's numbering is
+unchanged (`INDEX.md`'s rule: do not rename directories).
+
+### 3.14.2 Queued: `7d`, the case-study programme — **the author's direction,
+recorded 2026-09-09, not started**
+
+Take **one induction circuit as a case study** and follow **each of its three
+stages** (§3.12-O: positional matcher → content matcher → token copier) across
+**every checkpoint**, asking three things of each stage:
+
+1. **How does it evolve?** Per-stage developmental series, not just the endpoint
+   snapshots §3.11 has been taking.
+2. **Does it correlate with a phase?** Against the transitions already on the
+   axis — the population repulsive collapse and the 512–2000 window (§3.12-A,
+   noting §3.12-N3: that window is the literature's, not ours), the OV plane
+   rotation (§3.12-F2), the numerical-abscissa takeoff (§3.12-G5), the
+   composition switch-on (§3.12-H1), the QK symmetry takeoff (§3.12-I).
+3. **Is there particle dynamics inside it?** This is where the project's own
+   frame (`core/particles.py`, `core/dual_reading.py`, `P-I5`'s geometric
+   reading) attaches to a circuit rather than to a population — the thing the
+   retired co-location frame was reaching for and could not have without
+   circularity (§3.10, `POPPER_PLAN.md` §6w).
+
+Then **repeat over as many circuits as can be found** — other induction heads in
+410m, the copier band of layers 9–20, and 70m under §3.9's own registered grid —
+and ask the question the single case cannot: **is the particle dynamics
+correlated ACROSS cases?** A shared dynamical signature over independent circuits
+is a population claim that no single circuit can make, and it is the natural home
+for anything §3.12 produces that wants to generalise.
+
+*Why it is queued rather than started.* It needs 7b's mechanism settled first —
+§3.12-O has just moved the target from "which head copies" to "what does `L7H8`
+write", and a case study built on the two-stage reading would be built on a
+picture that is currently being revised. It also needs the `dual_reading`
+pairwise-field extension that `P-I5` is blocked on (§3.12-C).
+
+### 3.14.3 Defects found this session, not yet fixed
+
+All three are **reporting or documentation** defects. None touches a p-value,
+`claims/registry.json` is unchanged and `claims/adjudications/` is empty, so
+nothing registered is affected — but each is live in code a reader would trust.
+
+1. **`induction_rank_sweep.truncate`'s `random` branch docstring is false**
+   (§3.12-L). It claims *"Matched-norm random rank-r control … the operator norm
+   scale and the factor structure match the real truncation."* At `r = 1` the
+   energy ratio to the `svd` arm is **16×**. Either the docstring changes or the
+   branch rescales; the §3.11 Stage-1 table must be read against §3.12-L's
+   energy-matched version either way.
+2. **`target_vs_reference` computes a self-inclusive z** (§3.13.1), which is
+   capped at `(n−1)/√n = 3.75` for `n = 16`. `L7H8` at step 8000 reads **3.74** —
+   saturated, against a leave-one-out value of **50.2**. Fix is leave-one-out.
+3. **`ov_factors` returns `OV_h = (W_O W_V)ᵀ`**, the transpose of the
+   residual-stream operator (§3.12-O, verified at relative error 0.0). Harmless
+   for every quantity read off it so far — all transpose-invariant — and the
+   docstring does state the convention, but nothing warns that a **directional**
+   read (any circuit with `W_E` on one side and `W_U` on the other) must not use
+   it. A one-line warning would have saved a careful check.
 
 ---
 
