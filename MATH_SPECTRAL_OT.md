@@ -293,6 +293,118 @@ population repulsive collapse, this head's OV plane rotation, the eigenvalue-fra
 and `CLAIM-B`'s registered anchor. The cross-sectional question has a negative answer; the
 developmental one is where the structure is.
 
+### 2.5 An isometric, rank-preserving path from `M` to `M^T` (2026-09-09)
+
+§2.4.2's four corners are the only S/A sign interventions a head can express, and
+`PROJECT.md` §3.12-M's pilot showed the factorial they form cannot answer its own
+question. This section builds what is actually needed: a **graded** perturbation
+that is energy-matched, stays inside the head's rank budget, and interpolates the
+thing the pilot identified as the mechanism — the read/write alignment.
+
+#### 2.5.1 The obstruction, stated exactly
+
+`W_OV = A B` with `A` `(d,k)`, `B` `(k,d)`, `k = d_head << d`. So `rank(M) <= k`.
+But `S = (M + M^T)/2 = [A, B^T] [B ; A^T] / 2` is a product of `(d,2k)` and
+`(2k,d)`, hence **`rank(S) <= 2k` and generically `= 2k`** — confirmed at
+`rank(S) = rank(A_skew) = 128` against `k = 64` on `L7H8`.
+
+**A head cannot write its own symmetric part.** The arithmetic mean of `M` and
+`M^T` leaves the manifold the head lives on, so every intermediate point of the
+naive interpolation `(1-2e)S + A_skew` is unrealisable. Only the endpoints
+survive, and they are exactly `M` and `-M^T`.
+
+#### 2.5.2 The construction: interpolate the frames, not the matrix
+
+Take the thin SVD `M = U Sigma V^T` with `U, V` in the Stiefel manifold
+`St(d,k) = {X : X^T X = I_k}` and `Sigma = diag(sigma_1..sigma_k)`. The obstruction
+above is a fact about *matrix* interpolation; the frames have no such problem.
+Let `gamma : [0,1] -> St(d,k)` be **any** smooth path with `gamma(0) = U`,
+`gamma(1) = V`, and define
+
+    M(t) = gamma(t) Sigma gamma(1-t)^T
+
+Then, with no further conditions on `gamma`:
+
+| property | why |
+|---|---|
+| `M(0) = M` | `gamma(0) Sigma gamma(1)^T = U Sigma V^T` |
+| `M(1) = M^T` | `gamma(1) Sigma gamma(0)^T = V Sigma U^T` |
+| `rank M(t) = k` exactly | both factors have orthonormal columns, `Sigma` full rank |
+| **singular values `= Sigma` for every `t`** | `M(t)` is `Sigma` conjugated by two Stiefel frames |
+| **`\|\|M(t)\|\|_F = \|\|M\|\|_F` for every `t`** | corollary of the above |
+| **`M(1/2)` is symmetric PSD** | `gamma(1/2) Sigma gamma(1/2)^T` |
+
+So the path is an **exact isometry throughout** — same singular values, same
+Frobenius norm, same rank — and it is writable at every `t`. That is precisely
+what §3.12-L demands (arms must be energy-matched, not rank-matched) and what
+§2.5.1 says the arithmetic path cannot deliver.
+
+**An explicit `gamma`, closed form.** No geodesic is needed — the experiment
+requires *an* isometric path, not the shortest one, and geodesics on the
+fixed-rank manifold have no closed form anyway (Absil, Vandereycken). The polar
+retraction of the chord suffices:
+
+    Y(t) = (1-t) U + t V ,     gamma(t) = Y(t) ( Y(t)^T Y(t) )^{-1/2}
+
+`gamma(0) = U` and `gamma(1) = V` because the polar factor of a Stiefel point is
+itself. **REFUSAL CONDITION, checkable before any forward pass:**
+`sigma_min(Y(t)) > 0` on `[0,1]`, which fails only if some principal angle
+between the two frames reaches `pi`.
+
+#### 2.5.3 What the path sweeps, and why it is the experiment §3.12-D wanted
+
+Transposition preserves eigenvalues, so `eig(M(1)) = eig(M^T) = eig(M)`, while
+`M(1/2)` is PSD and therefore has **every eigenvalue real and non-negative**.
+`L7H8`'s OV core is 100 % repulsive (`attractive_energy_fraction_core = 0.000`).
+So along `t`:
+
+    t = 0     the head's own spectrum        100% repulsive
+    t = 1/2   symmetric PSD                  100% attractive
+    t = 1     the head's own spectrum again  100% repulsive
+
+**The attractive/repulsive character is swept causally, at exactly matched
+singular values, inside the rank budget.** §3.12-D asked for a causal test of the
+project's central spectral frame and §3.12-M showed the four corners cannot give
+one; this can. Note what it does *not* separate: symmetry and read/write
+alignment move together along this path by construction, so a response curve in
+`t` shows *whether* the spectral character is load-bearing, not *which of the two*
+carries it.
+
+#### 2.5.4 A second family that fixes both subspaces
+
+For that separation, hold `U` and `V` fixed and rotate only the correspondence:
+
+    M_R = U R Sigma V^T ,     R in O(k)
+
+`rank = k` and `sigma(M_R) = sigma(R Sigma) = Sigma`, so this too is an exact
+isometry inside the budget. The **read space `span(V)` and write space `span(U)`
+are unchanged**; only which read direction feeds which write direction moves.
+`R = I` is the trained head and `R ~ Haar(O(k))` is the null, graded by
+`R(s) = exp(s L)` for `L` skew.
+
+This is `P-ST1`'s hard-won lesson (`POPPER_PLAN.md` §6m — *hold the union fixed,
+randomise only the split*) arriving in the OV circuit, and the exchangeable unit
+is the **draw**, so `claims/EVALUABILITY.md`'s note that randomising over
+subspaces leaves `n = 1` untouched applies directly.
+
+#### 2.5.5 What here is standard, and what is not
+
+**Standard, and deliberately reused rather than reinvented:** Stiefel geometry
+and its geodesics/logarithm (Edelman–Arias–Smith 1998; Zimmermann 2017);
+retraction-based paths and the polar retraction; fixed-rank matrix manifolds and
+the fact that their geodesics have no closed form (Vandereycken 2013; Absil et
+al.); interpolation of SVD factors in model reduction (Zimmermann, *Manifold
+Interpolation and Model Reduction*). The construction in §2.5.2 is an
+elementary application of these, not a new theorem.
+
+**What a literature check did not find** (2026-09-09, searches on QK symmetry,
+S/A decomposition of attention, transpose/read-write-swap interventions, and
+fixed-rank interpolation): any use of `M -> M^T` **as an intervention on an
+attention head**, and any isometric interpolation between a head's OV operator
+and its transpose. The nearest work decomposes attention *scores* rather than
+weights and performs zeroing ablations, not transposition — see `PROJECT.md`
+§3.12-N.
+
 ---
 
 ## 3. Nulls: the counting statistics sit on top of chance

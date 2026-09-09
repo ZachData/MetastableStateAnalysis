@@ -120,11 +120,26 @@ bug.
   head. Gain concentration (G6) is a **marker** of which head copies; it does
   not carry the copying. G6's own pre-run prediction is falsified, and that is
   the finding.
-- **NEXT: §6x should be drafted around ALIGNMENT, not sign and not
-  concentration.** The open design question is what a *graded, energy-matched*
-  alignment perturbation looks like that stays inside the rank-`d_head` manifold
-  — `Mᵀ` is one extreme point and the identity is the other, and nothing between
-  them is yet known to be writable.
+- **The graded perturbation now exists** (`MATH_SPECTRAL_OT.md` §2.5): with
+  `M = UΣVᵀ` and any Stiefel path `γ` from `U` to `V`, `M(t) = γ(t)Σγ(1−t)ᵀ` is
+  an **exact isometry at every `t`** — same singular values, same `‖·‖_F`, rank
+  exactly `k` — with `M(0)=M`, `M(1)=Mᵀ`, and `M(½)` symmetric PSD. Explicit
+  `γ` = polar retraction of the chord. It sweeps the head from 100 % repulsive
+  through 100 % attractive and back **at constant singular values**, which is the
+  causal test of the spectral frame §3.12-D wanted and the four corners could not
+  give. A second family `U R Σ Vᵀ`, `R ∈ O(k)`, fixes both subspaces and moves
+  only the read/write correspondence, with a Haar null whose unit is the draw.
+- **A literature check ran first** (§3.12-N) and changes what may be claimed: QK
+  symmetry is known at the population level (Saponati et al.) — our tail result
+  is the complement, not a duplicate; the symmetric/skew split has a published
+  mechanistic reading (**filtering vs routing**) that names §3.12-J; the
+  512–2000 window is **established in the literature** and must stop being
+  implied as ours; and **we have never computed Elhage's copying score**, which
+  is a different matrix from the one every "100 % repulsive" claim rests on.
+- **NEXT, in order:** (1) compute the token-basis copying score
+  `Σλ/Σ|λ|` on `B W_U W_E A` — one 64×64 eigendecomposition per head, and it may
+  reconcile or overturn §3.11's "not a token-identity copier"; (2) run the §2.5
+  isometric path on `L7H8`; (3) only then draft §6x.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1861,6 +1876,74 @@ matches without copying stands; its use as the Stage 3 control does not.
 **sublinear**: halving `L7H8`'s OV costs only +0.073 against ablation's +0.242,
 so **50 % of the operator does 30 % of the damage**. Any future arm reported in
 "equivalent λ" is on a compressive scale and must say so.
+
+**N. Literature check before registering (2026-09-09).** Run because §3.12-I/J
+and §2.4 are close enough to published work that registering without checking
+would risk re-deriving it. Four threads, and they change what should be claimed.
+
+*N1 — QK symmetry is known at the population level, and our result is the
+complement rather than a duplicate.* Saponati et al., *"The underlying
+structures of self-attention: symmetry, directionality, and emergent dynamics in
+Transformer training"* (arXiv 2502.10927), decomposes `W_QK` into symmetric and
+skew parts and defines a Frobenius symmetry score. **Their finding is that
+bidirectional training induces symmetry while autoregressive training induces
+directionality** — decoder-only models score *more directional* than
+encoder-only. That is a **median across layers, model-level, with no per-head
+breakdown, no head-type analysis, no mention of induction or previous-token
+heads, and no exclusion of positional dimensions.**
+
+**This does not contradict §3.12-J; it frames it.** Our population median is
+**0.523** — essentially neutral, consistent with their directional aggregate.
+What §3.12-J adds is the **tail**: 11 of 384 heads exceed 0.7, one reaches
+0.956, and those heads are the content matchers. Their claim is about the
+median; ours is about which heads leave it, and why. The RoPE exclusion matters
+here too — pythia's positional (directional) information lives in the 16 rotary
+dims we remove, so we measure the *content* operator they do not separate.
+
+*N2 — the mechanistic reading of the S/A split exists, and it gives §3.12-J its
+name.* *"The Routing and Filtering Structure of Attention"* (arXiv 2605.18826)
+splits the pre-softmax score matrix into a symmetric **"filtering"** part
+(undirected mutual relevance) and a skew **"routing"** part (directional
+transport, purely imaginary eigenvalues), and finds routing removal catastrophic
+(699 PPL against a 34.99 baseline). Since `A = X M X^T` for `M = W_Q W_K^T`,
+their split of the *scores* is our split of the *weights* conjugated by the
+activations — the same decomposition at two levels, which should be said rather
+than discovered later. **In their vocabulary §3.12-J reads: `L7H8`'s content
+operator becomes almost pure filtering (0.956) with almost no routing** — the
+routing being supplied by RoPE and the causal mask, which is exactly the
+architectural division block I flagged. They report **no transposition
+experiment, no induction-head connection, and no OV analysis.**
+
+*N3 — the induction-head emergence window is established, so §3.12's "eighth
+quantity" claim needs restating.* Published checkpoint studies of Pythia put
+induction-head emergence at **around step 1000 of 143000**. The 512–2000 window
+is therefore **not our finding**, and this document should stop implying
+novelty for the window itself. What is ours is the **set of quantities that
+co-locate in it** — the population OV repulsive collapse, `L7H8`'s OV plane
+rotation, the eigenvalue-frame U-shape, the numerical-abscissa takeoff, the
+composition switch-on, and the QK symmetry takeoff — several of which are
+weights-only and none of which is the behavioural score the literature dates the
+window by.
+
+*N4 — and the actionable one: we have not computed the field's own copying
+score.* Elhage et al.'s copying test takes the eigenvalues of the **token-basis**
+OV circuit `W_E W_V W_O W_U` and summarises their positiveness as
+`sum(lambda) / sum(|lambda|)`; a copier has **positive** eigenvalues.
+**This project has never computed that matrix.**
+`p2b_imaginary/head_circuits.head_core` returns `W_V W_O` — the `(64,64)` core in
+the **residual** basis — and every "100 % repulsive" statement in §3.11 and
+§3.12-A is about *that*, not about the token-basis circuit. The two differ by the
+vocabulary round-trip `W_U W_E` sandwiched between the factors, and **nothing
+guarantees they share a sign**.
+
+It is cheap: with `W_OV = A B`, the nonzero spectrum of `W_E A B W_U` equals that
+of the `(64,64)` matrix `B W_U W_E A`, so it costs one `64x64` eigendecomposition
+per head — the same price as the core we already compute. **If `L7H8` scores as
+a copier on the field-standard measure, then §3.11's "not a token-identity
+copier" — which rests on the weaker LN-folded diagonal check the section itself
+flags as its softest half — is measuring a different thing, and the
+"repulsive/individuating" reading cannot be carried over to it.** This is the
+next measurement, before any registration.
 
 ---
 
