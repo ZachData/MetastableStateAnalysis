@@ -176,9 +176,23 @@ bug.
   too broadly — `L7H8` is not the largest OV effect in the circuit; its own
   prev-token partner is. And QK ablation is worth 56 % of OV ablation on NLL,
   which §3.11 never measured (it read attention only).
-- **NEXT, in order:** (1) close Q3's open caveat — sweep `‖OV‖_F` against
-  `Δ‖resid‖` across heads, to rule out norm-proportionality before the geometry
-  reading is leaned on; (2) the §2.5 isometric path on `L7H8`; (3) then §6x.
+- **Q3's caveat is CLOSED (§3.12-R): norm-proportionality is ruled out and
+  runs backwards** — `‖OV‖_F` explains r² = 0.001 of the effect, and `L11H4`
+  carries 2.8× `L7H8`'s norm with a 50× smaller effect.
+- **`P-I7` IS REGISTERED** (2026-09-09, H-BRIDGE, `needs-null`): content
+  matchers' static QK becomes symmetric, positional matchers stay at baseline.
+  **Adjudicable only on a model this project has not measured** — the 410m
+  artifact is spent under `check_registry` rule 3 — so pythia-70m under §3.9's
+  grid is the site, and §5.3 says its weights are not on disk yet.
+- **§3.12-S: the induction circuit does not behave serially.** `L5H2` × `L7H8`
+  interaction is **+4.151** (both +7.484 against a parts-sum of +3.334) — the
+  opposite of the sub-additivity a serial circuit predicts. And they converge on
+  the same effect **without sharing weights**: write-subspace overlap 0.222
+  against a chance 0.250, residual-delta cosine **+0.868**. The effect
+  **compounds** down the stack (23× amplification for `L7H8`).
+- **NEXT:** (1) the §2.5 isometric path on `L7H8` — still the one designed
+  intervention never run; (2) characterise `L5H2`, which has twice the effect and
+  a fraction of the attention; (3) then §6x.
 - **§3.14 records the organisation**: three objects (7a population / 7b
   mechanism / 7c formation), the author's queued **7d case-study programme**
   (follow all three circuit stages across every checkpoint, look for phase
@@ -2233,6 +2247,71 @@ the final residual norm, two orders of magnitude more than an ordinary head,
 while shifting every logit by ~4 nats. That is the particle account's own claim
 arrived at by eliminating the alternatives on their own instruments, and it is
 exactly what §3.14.2's case-study programme was queued to examine.
+
+---
+
+**S. `L5H2` x `L7H8`: the induction circuit does not behave like a circuit
+(2026-09-09, `tools/run/two_big_heads.py`, step 16000, restore exact).**
+§3.12-P ran the ablation interaction for `L7H8` against downstream *copiers* and
+never against **the pair that is supposed to BE the circuit**. Closing that
+omission overturns the serial reading.
+
+*S1 — the interaction is larger than either effect.*
+
+| | ΔNLL |
+|---|---|
+| `L5H2` alone | **+2.2271** |
+| `L7H8` alone | +1.1069 |
+| sum of parts | +3.3340 |
+| **both** | **+7.4844** |
+| **interaction** | **+4.1505** |
+
+Removing both costs **2.2x the sum of removing each**, and the interaction
+exceeds either individual effect. A serial two-stage circuit predicts
+**sub**-additivity — take away the prev-token head and the matcher has less to
+match on, so ablating it too should cost *less* than it did alone. The result is
+the opposite and it is not marginal. As in §3.12-P the sign is conservative:
+§3.12-M5's compressive readout biases independent contributions toward apparent
+sub-additivity.
+
+*S2 — and they converge on the same EFFECT without sharing WEIGHTS.*
+
+| overlap | measured | chance (64-dim in R^1024) |
+|---|---|---|
+| write subspaces (`col W_O`) | **0.222** | 0.250 |
+| read subspaces (`row W_V`) | 0.316 | 0.250 |
+| **residual-delta cosine** | **+0.868** | — |
+
+Their write subspaces overlap **at or below chance**, yet the residual changes
+their ablations produce are **87 % aligned**. So the redundancy in S1 is not two
+heads writing the same directions — it is two structurally distinct operators
+arriving at the same functional effect through the network. **Weight-space
+overlap and function-space overlap come apart**, which is exactly what a
+composition score (a weight-space measure) cannot see, and it explains why
+§3.12-P's composition probes found no pathway while the ablations shout.
+
+*S3 — the effect compounds down the stack rather than carrying forward.*
+Per-layer residual norm under ablation: divergence begins at the head's own
+layer (index 6 for `L5H2`, index 8 for `L7H8`) and then **grows**. `L7H8`'s gap
+runs −0.36 at index 8 to **−8.38** at the output — a **23x amplification**. A
+write that merely added a vector would carry a roughly constant offset forward.
+This is the "change of regime rather than a big write" signature §3.12-Q could
+not distinguish with a final-layer measurement alone. (Non-monotone detail worth
+keeping: ablating **both** *raises* the norm above baseline at index 22, 88.23
+against 86.62, before collapsing to 39.53 at the output.)
+
+*Caveat, stated because the joint arm is extreme.* `ΔNLL(both) = +7.48` on a
+0.53 baseline puts the model at NLL ≈ 8.0 against a uniform ceiling of
+`ln 50304 = 10.8`. Not saturated, but far outside the regime the readout was
+calibrated in, so the *magnitude* of the interaction should be read as "large
+and super-additive" rather than as a calibrated number.
+
+**What this does to the picture.** The two heads are **functionally redundant
+and structurally distinct**, and together they set up a residual-stream regime
+that amplifies down the stack and that either one alone can partly maintain.
+That is a stronger form of §3.12-Q's geometry reading than the norm evidence
+alone supported, and it is the first result in §3.12 that is about the *circuit*
+rather than about a head.
 
 ---
 
