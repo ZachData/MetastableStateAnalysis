@@ -63,11 +63,17 @@ bug.
   three defects, all decidable before a forward pass). The draft and its
   decisions memo were session-scratchpad only and are **gone** if that session
   is gone; §3.12 blocks C and D carry everything needed to rebuild them.
-- **NEXT ACTION: the four diagnostics in §3.12 block E**, plus the
-  input-whitening check in C3. All cheap, all on data already on disk, none
-  produces a p-value — so none spends the registration. They run **before** the
-  Stage 3 entry is written, because two of them can change what a valid control
-  is. Then register the block-D **S-flip** prediction, then Stage 3.
+- **The block-E diagnostics HAVE RUN** (§3.12 block F, 2026-09-09,
+  `data/analysis/induction_diagnostics_7b.py`). Three of four changed the
+  design: the S-flip is exact and writable back (F1); the stable object is the
+  **top-2 subspace**, not the top-1 direction, and there is a violent rotation
+  at 512–2000 that §3.11 missed (F2); and `L2H10` is spectrally
+  indistinguishable from `L7H8` with **opposite-signed** causal copying, which
+  makes it the control head and cuts against the spectral frame (F3).
+- **NEXT ACTION: draft the S-flip entry in `POPPER_PLAN.md` §6x** — perturbing
+  the **top-2 subspace**, controlled against `L2H10`. Still to run first, both
+  needing one model load: the **input-whitening** check (§3.12-C3) and the
+  **`L5H2`→`L7H8` composition** series (§3.12-E1). Then Stage 3.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1212,6 +1218,85 @@ written, because two of them (1 and 3 above, plus the input-whitening check in
 C3) can change what a valid control even is. Registering first and diagnosing
 after is the §6l timing argument pointed the wrong way — nothing here is a
 p-value, so none of it spends the registration.
+
+**F. Diagnostics run (2026-09-09) — `data/analysis/induction_diagnostics_7b.py`
+→ `induction_diagnostics_7b.json`.** Weights-only, no model load, no forward
+pass, ~1 min 43 s. All four returned, and three of them change the design.
+
+*F0 — the U-shape survives the count check, and gains an ordering.* The
+`repulsive_dim_fraction_core` count tells the same story as the energy version
+— identical `frac heads exactly 1` at every step (0.617 / 0.654 / 0.435 / …),
+so **the collapse is not one dominant eigenvalue**. What the disagreement shows
+is *how* it happens: in the ramp, repulsive **energy leads repulsive dimension**
+— 0.615 vs 0.562 at step 256, **0.906 vs 0.734 at step 512** — and the two
+meet at 1.000 by step 1000. **The large eigenvalues go repulsive first and the
+count catches up.** This is exactly the bulk-vs-outlier reading
+`ov_per_head.py`'s own docstring said the disagreement was for; nobody had read
+it.
+
+*F1 — block D is exact, and feasible.* `(−S+A)` and `−Mᵀ` agree **bit for bit**
+(`max|Δ| = 0.000e+00`) on all four heads. The flip preserves every singular
+value to `≤1.3e-15`, the Frobenius norm to printed precision, and every
+eigenvalue modulus to `≤1.1e-15`, while `attractive_energy_fraction_core` goes
+**0.000 → 1.000** for `L7H8`, `L2H10`, `L9H8` (and 0.444 → 0.556 for the mixed
+`L5H2`). The factored write-back `W_O' = −W_Vᵀ`, `W_V' = W_Oᵀ` reproduces it at
+`1.2e-07` relative — the **fp32 storage floor** the OV artifact already carries
+(`s[64]/s[0] = 4.9e-8`), i.e. exact to the data's own precision. So the Stage 3
+control needs no rescaling, no matching search, no tolerance, and no new
+machinery.
+
+*F2 — "rotated or spread?" is BOTH, at different times, and §3.11 saw only the
+second.* Overlap of `L7H8`'s top right-singular vector between adjacent steps,
+with the top-2 subspace's principal cosines beside it:
+
+| window | top-1 overlap | top-2 principal cos | reading |
+|---|---|---|---|
+| 0 → 512 | 1.000 → 0.882 | [0.940, 0.890] | stable |
+| **512 → 1000** | **0.188** | **[0.352, 0.122]** | **rotation** |
+| **1000 → 2000** | **0.282** | **[0.287, 0.002]** | **rotation** |
+| 2000 → 16000 | 0.653 → 0.940 | rising to [0.943, 0.915] | re-forming |
+| **16000 → 32000** | **0.490** | **[0.961, 0.951]** | **reordering** |
+| 32000 → 143000 | 0.870 → 0.978 | [0.979, 0.974] | stable |
+
+Two distinct events. **512–2000 is a genuine rotation** — the whole plane moves,
+second principal cosine reaching **0.002** (orthogonal). **16000–32000 is
+reordering inside a stable plane** — top-1 halves while the subspace holds at
+[0.961, 0.951], which is `svd@1` falling 0.68 → 0.20 while `svd@2` stays
+0.85–0.97, seen from the other side. §3.11's consolidation reading is right; the
+earlier event was missed entirely.
+
+**And the rotation window is the repulsive-collapse window is `CLAIM-B`'s
+anchor window.** Three independent quantities — a population spectral phase, one
+head's OV direction, and a registered literature anchor — all name 512–2000.
+Whether that is one event or three is now the question worth asking.
+
+**Design consequence, forced by measurement:** the stable object is the
+**top-2 subspace**, not the top-1 direction. The Stage 3 entry must perturb the
+plane. "The rank-1 direction" is well defined only inside the formation regime
+(4000–16000).
+
+*F3 — the found control is decisive, and it cuts against the spectral frame.*
+At step 4000:
+
+| head | attr. frac | complex frac | ‖M‖_F | σ₁ share | σ₁₂ share | participation |
+|---|---|---|---|---|---|---|
+| `L7H8` copier (ΔOV_nll **+0.244**) | 0.000 | 0.787 | 1.665 | 0.176 | 0.241 | 19.9 |
+| `L2H10` anti-copier (**negative**) | 0.000 | 0.881 | 1.287 | 0.166 | 0.226 | 21.5 |
+| `L9H8` anti-copier (**negative**) | 0.000 | 0.728 | 1.749 | 0.125 | 0.174 | 30.8 |
+| `L5H2` prev-token | **0.444** | 0.896 | 2.568 | 0.062 | 0.118 | 27.5 |
+
+**`L2H10` is spectrally near-indistinguishable from `L7H8`** — same repulsive
+fraction (0.000), same gain concentration (0.166 vs 0.176), same participation
+ratio (21.5 vs 19.9) — and its causal copying effect has **the opposite sign**.
+So the OV spectral description **does not determine the causal role**. That is
+§3.11's "the repulsive sign is true but not the mechanism" in its sharpest
+available form, obtained from a *found* control rather than a constructed one,
+and therefore immune to the matching problem that killed both constructed
+designs. `L2H10` is the control head the S-flip experiment should run against.
+
+Separately: `L5H2` is the **only** spectrally mixed head of the four (0.444) and
+the least gain-concentrated. The two stages of the circuit are spectrally
+unlike, which no one had checked.
 
 ---
 
