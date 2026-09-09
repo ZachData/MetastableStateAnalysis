@@ -1370,6 +1370,61 @@ eigenvalue-frame U-shape (A), and `CLAIM-B`'s registered anchor. The
 cross-sectional question has a negative answer; **the developmental one is the
 live one**, which is sub-phase 7a rather than 7b.
 
+*G6 — the population test, and it splits the fields cleanly
+(`induction_spectral_predicts_7b.py`).* G4 was two heads. Seven
+`induction_subspace_characterize*` runs already carry a measured
+`full_ablation_delta_nll` for **every head of a layer** at four checkpoints —
+112 heads with a causal readout and a dense `W_OV` on disk. Asking whether any
+weights-only field rank-correlates with the causal effect: **Spearman ρ is ≈ 0
+for all ten fields** (best `|mean ρ|` = 0.133; **no field reaches `|ρ| > 0.5` in
+any of the 7 populations**).
+
+**But the correlation was the wrong instrument, and the rank table is the right
+one.** Fifteen of sixteen heads per layer carry causal noise, so Spearman
+averages the signal away. What matters is where the *causally-top* head sits on
+each field (rank 0 = that field's own maximum of 16):
+
+| field | top-head rank across the 7 populations | extreme in |
+|---|---|---|
+| `sv12_share` | 2, 1, 11, 0, 0, 1, 1 | **6/7 top-3** |
+| `lambda_min_S` | 13, 15, 11, 15, 15, 15, 14 | **6/7 bottom-3** |
+| `sv1_share` | 2, 2, 12, 0, 0, 1, 3 | 5/7 top-3 |
+| `nonnormality` | 2, 2, 6, 0, 0, 1, 3 | 5/7 top-3 |
+| `participation_ratio` | 13, 13, 7, 15, 15, 14, 12 | 5/7 bottom-3 |
+| `attractive_energy_fraction_core` | 8, 9, 2, 0, 14, 10, 2 | — |
+| `sym_pos_energy_fraction` | 10, 8, 1, 0, 15, 14, 13 | — |
+| `max_re_lambda` | 11, 9, 2, 0, 14, 14, 13 | — |
+| `lambda_max_S` | 7, 7, 3, 0, 5, 8, 5 | — |
+| `frobenius` | 8, 6, 1, 2, 13, 13, 5 | — |
+
+Under a uniform-rank null the top group sits at ~2.6e-4 and ~3.5e-3, the bottom
+group at 0.13–0.77. **That is arithmetic, not an adjudication** — the
+populations share checkpoints, heads within a layer are not independent, and the
+fields were not chosen in advance. No p-value is emitted and
+`claims/registry.json` is untouched.
+
+**The split is exact and it is the finding.** *Concentration and magnitude*
+quantities identify the copier — `σ₁₂` share, `σ₁` share, participation ratio,
+non-normality, and the single most-negative `λ(S)`. *Sign-balance* quantities do
+not — the attractive fraction, `max Re λ`, `S_pos_E`, and (worst of all ten, at
+0.77) `λ_max(S)`, the field §2.4.5 nominated. `‖M‖_F` alone does not either, so
+it is concentration rather than size.
+
+**Three consequences.**
+
+1. **`r*_SVD ≪ r*_Schur` — the one Stage 1/2 finding that survived — is now a
+   population result**, confirmed across 7 layer-populations and 4 checkpoints
+   rather than one head at one step. The copier is the most gain-concentrated
+   head in its layer, and that is what marks it.
+2. **A pre-run prediction for Stage 3, which the drafted entry lacked.** The
+   S-flip preserves *every singular value*, so it preserves gain concentration
+   exactly. **Predicted before running: `−Mᵀ` will not destroy copying.**
+3. **That sharpens the G2 factorial rather than weakening it.** If concentration
+   is the whole story, even `Mᵀ` preserves copying; if the read/write
+   *alignment* matters, `Mᵀ` destroys it while `−M` does not. So the informative
+   contrast is **`M` vs `Mᵀ`** — alignment at fixed gain — and not the `S` sign
+   at all. The factorial computes both for the same four forward passes.
+
 ---
 
 ## 4. Open, analysed, not yet acted on: the scoring threshold
