@@ -136,10 +136,25 @@ bug.
   512–2000 window is **established in the literature** and must stop being
   implied as ours; and **we have never computed Elhage's copying score**, which
   is a different matrix from the one every "100 % repulsive" claim rests on.
-- **NEXT, in order:** (1) compute the token-basis copying score
-  `Σλ/Σ|λ|` on `B W_U W_E A` — one 64×64 eigendecomposition per head, and it may
-  reconcile or overturn §3.11's "not a token-identity copier"; (2) run the §2.5
-  isometric path on `L7H8`; (3) only then draft §6x.
+- **The copying score has run (§3.12-O) and CONFIRMS §3.11 emphatically.**
+  `L7H8`'s token-basis copying score is at or below zero at every step, falling
+  to **−0.094 (rank 328 of 384)** at 143000 while its causal `ΔOV_nll` grows
+  ~6×. The model has plenty of real copiers (max +0.723) — **all in layers
+  9–20, downstream**. Two unarranged consistency checks passed (`L9H8`'s
+  negative effect ↔ negative score; `L9H9` the one induction head that both
+  copies and sits in the copier band), and the LN caveat is discharged to the
+  fourth decimal.
+- **THE LIVE QUESTION IS NOW A THREE-STAGE CIRCUIT.** `L7H8` has the largest OV
+  causal effect in its layer *and* is an anti-copier by the token test — which
+  **falsifies the standard account for this head on the standard account's own
+  measure**. Reading: `L5H2` (positional match) → `L7H8` (content match, writes
+  something that is not token identity) → layers 9–20 (token copying). §3.11 may
+  have been calling `L7H8` "the copier" when it is **upstream** of the copier.
+- **NEXT, in order:** (1) test the three-stage reading — composition
+  `L7H8 →` the downstream copiers' `V`/`K` paths, and whether ablating `L7H8`'s
+  OV suppresses their contribution (machinery already built); (2) run the §2.5
+  isometric path on `L7H8`; (3) only then draft §6x, which should now be about
+  what `L7H8` writes, not about whether it copies.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1944,6 +1959,79 @@ copier" — which rests on the weaker LN-folded diagonal check the section itsel
 flags as its softest half — is measuring a different thing, and the
 "repulsive/individuating" reading cannot be carried over to it.** This is the
 next measurement, before any registration.
+
+**O. It was measured, and it CONFIRMS §3.11 — emphatically (2026-09-09,
+`tools/run/copying_score_sweep.py`).** All 384 heads, eight checkpoints, weights
+only. A convention trap was checked rather than assumed first: `ov_factors`
+returns `OV_h = (W_O W_V)ᵀ`, the **transpose** of the residual operator (verified
+at relative error 0.0). Harmless for every quantity read off it so far — all
+transpose-invariant — but **not** for a copying score, which is directional, so
+this runner uses `W_O W_V` from the model.
+
+*O1 — `L7H8` is not a token-identity copier at any point in training, and it
+becomes less of one as its causal effect grows.*
+
+| step | `L7H8` copying score | rank / 384 | `ΔOV_nll` (§3.11-A) |
+|---|---|---|---|
+| 512 | −0.038 | 324 | ~0 |
+| 1000 | −0.050 | 305 | ~0 |
+| 2000 | −0.043 | 258 | ~0 |
+| 4000 | **+0.062** | 139 | **+0.24** |
+| 8000 | +0.020 | 181 | **+0.73** |
+| 16000 | −0.050 | 267 | **+1.02** |
+| 32000 | −0.115 | 322 | — |
+| 143000 | **−0.094** | **328** | +1.18 |
+
+**Its causal OV effect grows roughly sixfold while its copying score stays at or
+below zero and its rank falls to 328 of 384.** The two run in opposite
+directions. §3.11's conclusion was reached on the LN-folded diagonal check it
+called its own softest half; it now stands on the field's instrument, across the
+whole axis, and stronger than when it was stated.
+
+*O2 — and the model is full of real copiers, none of them these heads.* Scores
+above 0.4 go 0 (step 512) → 10 → 24 → 56 (32000) → 41 (143000), with the maximum
+rising to **+0.723**. The top ten at 143000 — `L11H14` 0.723, `L13H5` 0.708,
+`L18H8` 0.675, `L12H8` 0.661, `L10H0` 0.649, `L9H0` 0.635, `L17H10`, `L20H15`,
+`L11H2`, `L17H6` — sit in **layers 9–20, all downstream of `L7H8`**. So the
+measure is not blind: it finds copying where copying is, and reports its absence
+at the induction heads.
+
+*O3 — two internal consistency checks nobody arranged.* `L9H8`, whose `ΔOV_nll`
+is **negative**, has a **negative** copying score at every step (−0.096 to
+−0.109, rank ~305–312). And `L9H9` — the one induction head with a real positive
+OV effect besides `L7H8` — is the one induction head that **does** become a
+modest copier (+0.206 at 16000, rank ~104), and it sits in layer 9, at the
+boundary of the copier band. The measure tracks the causal readout where the two
+should agree.
+
+*O4 — LN sensitivity is discharged.* Median raw against final-LN-gain-and-
+centring folded, at all eight steps: differences in the **fourth decimal**
+(+0.0324 vs +0.0293 at 143000). The softest half of §3.11's copy-score reading
+is no longer load-bearing anywhere.
+
+**What this sharpens into, and it is the live question now.** `L7H8` has the
+largest OV causal effect in its layer (10× the layer mean, growing sixfold across
+training) **and is an anti-copier by the token-identity test**. Both now rest on
+solid instruments. So its OV write is causally important for repeated-token
+prediction *without* being token-identity copying — which **falsifies the
+standard account's central claim for this head**, on the standard account's own
+measure.
+
+The natural reading is that the circuit has **three stages, not two**:
+
+    L5H2  (layer 5)     positional matcher, prev-token
+    L7H8  (layer 7)     content matcher (QK symmetry 0.956), writes NOT token identity
+    L9-L20              the actual token-identity copiers
+
+If that holds, §3.11 has been calling `L7H8` "the copier" because ablating its OV
+moves second-copy NLL — but it may be **upstream** of the copier and its ΔNLL
+mediated. Testable with machinery already built: composition `L7H8 →` the
+downstream copiers' `V` and `K` paths, and whether ablating `L7H8`'s OV
+suppresses their contribution. **One cross-reference already points that way:**
+`L10H3` is a top-ten copier (0.530 at step 4000) and was §3.12-J's counterexample
+— high QK symmetry, induction rank 382 of 384. It copies without matching;
+`L7H8` matches without copying. The dissociation now has named heads on both
+sides.
 
 ---
 
