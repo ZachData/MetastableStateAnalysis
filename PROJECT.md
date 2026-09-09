@@ -99,9 +99,20 @@ bug.
   matching; and `L2H10` reaches symmetry rank 3 with a **negative** OV copy
   effect, so matching and copying are separable. Two halves: QK = symmetry
   (sharp, 11 of 384), OV = gain concentration (weak). **Induction is both.**
-- **NEXT: the §3.13.3 position-axis check** — every readout the OV rank sweep,
-  the 82 % and every ΔOV_nll rest on is a *mean over token positions* and that
-  axis has never been looked at. Then §6x.
+- **The §3.13.3 position-axis check has run and came back NEGATIVE** (§3.13.3,
+  §3.12-K): the effect is not position-concentrated (37 of 96 positions carry
+  half the mass) and `r*_SVD = 1` is robust — 0.824 all-positions against 0.791
+  / 0.858 on the concentrated / dilute halves. **The 82 % is not an artifact of
+  averaging.** Two things it found instead: `j = 0`, where induction *cannot*
+  fire, is the only position with a negative effect (−0.048) and the lowest
+  attention (0.779) — the first end-to-end validation that `second_copy_nll`
+  measures what it should; and attention is flat at 0.90–0.93 while ΔNLL varies
+  fourfold, the QK/OV dissociation on a third axis.
+- **NEXT: draft §6x.** All the 7b diagnostics are done and three separate checks
+  designed to break findings instead confirmed them (split-half whitening,
+  `L5H2` on symmetry, the position axis). The entry is about **gain
+  concentration**, run as the **2² factorial** `{M, Mᵀ, −M, −Mᵀ}`, controlled
+  against `L2H10`, with G6's pre-run prediction on the record.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1682,6 +1693,36 @@ when the signal concentrates into a handful. **The right summary changes with
 training stage**, which is a sharper version of §3.13 than that section states:
 the mean-versus-extremum choice is not only per-quantity, it is per-regime.
 
+**K. What the position profile found instead (2026-09-09).** §3.13.3's own
+hypothesis came back negative, but the profile carries two things nobody had
+looked for.
+
+*K1 — a mechanism check the readout has never made, and it passes.* At the first
+second-copy position `j = 0` the model predicts `ids[N_REP]` from the first copy
+alone: **no earlier occurrence of the current token exists yet, so induction
+cannot fire there.** Measured, `j = 0` is the **only** position with a negative
+effect — ΔNLL **−0.0484**, and it is the run's minimum — so ablating `L7H8`'s OV
+slightly *helps* exactly where induction is impossible. Its induction attention
+is also the lowest of any position, **0.779** against a mean of 0.910. The
+prediction was made from the slice convention before the run and both halves
+hold. This is the first end-to-end validation that `second_copy_nll` is
+measuring what it is supposed to measure.
+
+*K2 — there is real position structure; it just does not bias the mean.* ΔNLL
+runs **−0.048 at j = 0**, peaks at **+0.570 at j = 4**, falls to **+0.390 at
+j = 8**, and settles onto a plateau near **+0.22** for the rest of the sequence.
+So the copying effect is largest immediately after induction becomes possible
+and then decays to about a third of its peak — consistent with the model having
+progressively more non-induction evidence as the repeat proceeds, and worth a
+look on its own.
+
+*K3 — and the QK/OV dissociation appears on a third axis.* Across the same
+positions **induction attention is flat at 0.90–0.93** while **ΔNLL varies
+roughly fourfold (0.20 → 0.57)**. The matcher fires essentially uniformly; the
+copier's *payoff* does not. That is §3.11 block C's dissociation and §3.12-J's
+two-halves picture arriving from the position axis, which neither was derived
+from.
+
 ---
 
 ## 3.13 When the mean is the wrong instrument (2026-09-09)
@@ -1783,6 +1824,40 @@ diluted curve. **This is the same error `§3.12-G6` found, one axis over, in the
 measurement everything else depends on.** It is one forward pass to check: emit
 the per-position NLL delta instead of its mean and look at the profile. Report
 mean and max together, per 3.13's own rule.
+
+**MEASURED 2026-09-09 (`tools/run/induction_position_profile.py`, `L7H8` at
+step 4000, 64 sequences — eight times the original readout's sample count).
+THE HYPOTHESIS ABOVE IS WRONG, and the negative is worth more than the positive
+would have been.**
+
+*The effect is not position-concentrated.* **37 of 96** positions carry half the
+ΔNLL mass (uniform would be 48); ninety percent needs **80 of 96**; the top
+decile of positions carries **0.178** of the total against 0.100 for uniform.
+Mildly above uniform, nowhere near "a few members".
+
+*And `r*` does not move.* Recovered fraction by rank, computed as a **ratio of
+sums** over each position set rather than a mean of per-position ratios (the
+per-position denominator is near zero where the head does nothing):
+
+| rank | all positions | concentrated half | dilute half | excluding j=0 |
+|---|---|---|---|---|
+| 1 | **0.824** | 0.791 | 0.858 | 0.822 |
+| 2 | 0.850 | 0.832 | 0.869 | 0.849 |
+| 4 | 0.871 | 0.866 | 0.877 | 0.870 |
+| 8 | 0.945 | 0.943 | 0.947 | 0.944 |
+| 16 | 0.971 | 0.972 | 0.971 | 0.971 |
+| 64 | 1.001 | 1.001 | 1.000 | 1.001 |
+
+The concentrated and dilute halves differ by at most **0.067** at rank 1 and are
+identical to three digits by rank 8. **The 82 % is not an artifact of
+averaging**, and `r*_SVD = 1` survives the axis that could have dissolved it.
+Restore check exact (`0.000e+00`).
+
+*The methodological reading, which is the point of §3.13.* The principle says
+**report both**, not *expect the extremum to win*. Here the mean was the right
+instrument and the check confirms a result rather than overturning one. §3.13
+is not a licence to prefer extrema — it is a requirement to look, and looking is
+cheap.
 
 ---
 
