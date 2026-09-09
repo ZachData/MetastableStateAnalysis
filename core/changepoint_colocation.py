@@ -251,6 +251,27 @@ chosen from that set. `p_value_claim_b` computes on any grid and
 may enter an e-process, for the same reason: registering after seeing a p-value
 would void the guarantee.
 
+THE PAIRING ARM'S FLOOR HAS TWO HALVES, AND ONLY ONE WAS REPORTED (2026-09-03)
+
+Found by the floor step for `P-I1`'s not-yet-existing relay-count null:
+`tools/p_i1_attainable_floor.py` -> `claims/audits/p_i1_attainable_floor.json`,
+read by `POPPER_PLAN.md` 6t. `paired_colocation_arm` reported `1 / n_draws`
+alone. Permuting units within a class of EQUAL change locations leaves
+`-mean|ca - cb[p]|` exactly unchanged, so every pairing ties a coset of order
+`prod(m!)` and no input can express a p below `prod(m!) / n!`. On the registered
+19-step P-I1 grid with nine of ten units sharing one location the arm reported
+0.000500 against an attainable 0.100000 -- above alpha, emitted with no
+refusal -- while seven of ten tied is 0.00139 and emits legitimately. The two
+halves cross within two units. `pairing_floor_report` owns both and the arm
+refuses on the max; it is `POPPER_PLAN.md` 6m's defect in
+`p7_motifs/steering_gate.py`, which has carried both halves since 2026-08-26,
+arriving in the shared estimator.
+
+This is the second thing about the pairing arm that is a property of the
+measurement grid rather than of the data, after the ptp-zero refusal above: how
+many DISTINCT locations the grid resolves sets the floor, and the number of
+units does not.
+
 WHAT NO NULL HERE CAN DO
 
 The sweep's resolution is its intervals. Two changes inside one interval are
@@ -264,7 +285,7 @@ exists and the artifacts do not. `claims/adjudications/` is empty.
 
 from __future__ import annotations
 
-from math import erf
+from math import erf, lgamma, log
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -1162,6 +1183,103 @@ def _shared_unit_factor_diagnostic(ca: np.ndarray, cb: np.ndarray) -> dict:
     }
 
 
+def pairing_floor_report(ca: np.ndarray, cb: np.ndarray, n_draws: int,
+                         alpha: float, exhaustive: bool) -> dict:
+    """
+    The smallest p `paired_colocation_arm` can express, and it has TWO halves.
+
+    `POPPER_PLAN.md` 6m's finding, reached by this construction. The arm used
+    to report `1 / n_draws` alone, which is the DRAW-COUNT floor: how fine a
+    quantile a sampled null can resolve. That is not what a perfect input
+    returns when the locations carry TIES.
+
+    The statistic is `-mean|ca - cb[p]|`. Let sigma permute units WITHIN a class
+    of equal `ca`. Then
+
+        sum_{i in C} |ca_i - cb_{p(sigma(i))}| = sum_{j in C} |c - cb_{p(j)}|
+
+    because sigma is a bijection of C and every `ca_i` in it is the same number,
+    so the sum is unchanged. The same holds on the other side for equal `cb`.
+    Every pairing therefore ties an entire coset of that subgroup, whose order
+    is `prod(m!)` over the class sizes, and no p smaller than
+
+        prod(m!) / n!
+
+    is expressible by ANY input on these locations. Raising `n_draws` does NOT
+    fix it: the tie fraction is a property of how many distinct locations the
+    sweep grid resolves, not of how hard the null is sampled. Reported as
+    `p7_motifs/steering_gate.py` reports its pair -- both halves and which one
+    binds -- because that gate found the same defect in 6m and the two should
+    not name it differently.
+
+    MEASURED, on the registered 19-step P-I1 grid with nine of ten units sharing
+    one location: the arm reported 0.000500 against an attainable 0.100000 --
+    a factor of 200, above alpha, and emitted with no refusal. The closed form
+    above gives that 0.100000 exactly, and the one realised sampled draw came
+    back 0.101449. See `claims/audits/p_i1_attainable_floor.json`.
+
+    TWO THINGS THIS IS CAREFUL ABOUT, BECAUSE BOTH ARE HOW A FLOOR GOES WRONG
+
+    `tie_floor` is a LOWER bound on the p, not the p itself: the group the tying
+    pairings generate can be larger than either side's subgroup, so a perfect
+    input can land above it. It is the half decidable from the locations alone,
+    which is what a floor has to be.
+
+    And in the SAMPLED regime the realised p is not this number but a Binomial
+    around it -- each of the N non-identity draws ties with probability
+    `tie_floor` -- so a run can return slightly less. The hard bound a sampled
+    run cannot go below is `draw_count_floor`, carried as `hard_lower_bound`;
+    `attainable_floor` is what a perfect input CONCENTRATES on, and it is the
+    one alpha is compared against, because a design whose perfect input sits at
+    0.10 cannot reject whichever side of 0.10 one draw lands.
+    """
+    n = int(ca.size)
+    a = float(alpha)
+
+    def _log_subgroup(c: np.ndarray) -> float:
+        # log of prod(m!) over the classes of equal values in `c`. Rounded to
+        # the scale a float64 mean over the grid's intervals can resolve, which
+        # is the rounding `tools/run/curve.py` counts distinct centroids at:
+        # two locations differing in the last ulp are one class for the purpose
+        # of a tie, because the statistic sums them.
+        _, counts = np.unique(np.round(c, 9), return_counts=True)
+        return float(sum(lgamma(int(m) + 1) for m in counts))
+
+    log_ties = max(_log_subgroup(ca), _log_subgroup(cb))
+    log_n_fact = lgamma(n + 1)
+    tie_floor = float(np.exp(min(log_ties - log_n_fact, 0.0)))
+    draw_floor = 1.0 / float(n_draws)
+    best = max(tie_floor, draw_floor)
+    return {
+        "n_units": n,
+        "alpha": a,
+        "n_draws": int(n_draws),
+        "null_exhaustive": bool(exhaustive),
+        "n_distinct_locations_a": int(np.unique(np.round(ca, 9)).size),
+        "n_distinct_locations_b": int(np.unique(np.round(cb, 9)).size),
+        "log10_tying_subgroup_order": float(log_ties / log(10.0)),
+        "log10_n_factorial": float(log_n_fact / log(10.0)),
+        "tie_floor": tie_floor,
+        "draw_count_floor": draw_floor,
+        "attainable_floor": float(best),
+        "hard_lower_bound": tie_floor if exhaustive else draw_floor,
+        "binds": "ties" if tie_floor > draw_floor else "draws",
+        "sufficient": bool(best <= a),
+        "_note": (
+            "attainable_floor is the max of the two halves and is what a "
+            "perfect input concentrates on. In the sampled regime the realised "
+            "p is Binomial around it, so a single run can land just below; "
+            "hard_lower_bound is what no run can go under."),
+    }
+
+
+#: The one `change_profile` refusal a per-unit skip may absorb. Matched on
+#: this exact substring, deliberately, rather than on any `ColocationRefused`
+#: from that call: a shape mismatch or a non-finite value is a data error and
+#: must still propagate, not be silently counted as "no rise".
+_NO_RISE_MARKER = "there is no location to measure"
+
+
 def paired_colocation_arm(steps: Sequence[float],
                           series_a: Sequence[Sequence[float]],
                           direction_a: str,
@@ -1171,7 +1289,8 @@ def paired_colocation_arm(steps: Sequence[float],
                           alpha: float,
                           unit_name: str,
                           arm_name: str,
-                          seed: int = _SEED) -> dict:
+                          seed: int = _SEED,
+                          skip_no_rise: bool = False) -> dict:
     """
     Do A's change locations and B's change locations co-locate, unit by unit,
     more than an arbitrary pairing of the same two populations allows?
@@ -1180,10 +1299,46 @@ def paired_colocation_arm(steps: Sequence[float],
     CLAIM-B, head for P-I1), both sampled at `steps`. The statistic is the mean
     over units of minus the log10-step distance between the two change
     centroids; the null repairs A's units with B's under a permutation.
+
+    `skip_no_rise` -- default False, which is CLAIM-B's unchanged behaviour --
+    lets a unit whose A series OR B series has no rise anywhere (`change_
+    profile`'s "no location to measure" refusal) be DROPPED rather than take
+    the whole arm down with it. This is PROJECT.md §3.1's fix, half of it: a
+    dense head axis zero-fills the relay side for every head that never
+    carries a relay, and with no per-unit skip `paired_colocation_arm`
+    refused on the first one of those regardless of how many other heads had
+    a real, locatable rise on both sides. `n_skipped_no_rise` is reported in
+    the returned dict either way, and named in every refusal this function
+    can still raise afterward, so a reader is never left inferring from a
+    count of zero units what was silently dropped.
+
+    False preserves the exact prior code path -- both list comprehensions run
+    to completion or the first one to fail raises immediately -- so CLAIM-B,
+    which never opts in, is untouched byte-for-byte.
     """
     s = _checked_steps(steps)
-    a = [change_profile(s, v, direction_a) for v in series_a]
-    b = [change_profile(s, v, direction_b) for v in series_b]
+    if not skip_no_rise:
+        a = [change_profile(s, v, direction_a) for v in series_a]
+        b = [change_profile(s, v, direction_b) for v in series_b]
+        n_skipped_no_rise = 0
+    else:
+        if len(series_a) != len(series_b):
+            raise ColocationRefused(
+                f"{len(series_a)} units on the A side against {len(series_b)} "
+                f"on the B side; the pairing null needs the same units on both")
+        a, b = [], []
+        n_skipped_no_rise = 0
+        for va, vb in zip(series_a, series_b):
+            try:
+                pa = change_profile(s, va, direction_a)
+                pb = change_profile(s, vb, direction_b)
+            except ColocationRefused as exc:
+                if _NO_RISE_MARKER in str(exc):
+                    n_skipped_no_rise += 1
+                    continue
+                raise
+            a.append(pa)
+            b.append(pb)
     if len(a) != len(b):
         raise ColocationRefused(
             f"{len(a)} units on the A side against {len(b)} on the B side; the "
@@ -1191,41 +1346,111 @@ def paired_colocation_arm(steps: Sequence[float],
     n_units = len(a)
     if n_units < 2:
         raise ColocationRefused(
-            f"the pairing null needs at least two units; got {n_units}. With one "
-            f"unit there is one pairing, the null is the observation, and the "
-            f"only expressible p is 1.0.")
+            f"the pairing null needs at least two units; got {n_units}"
+            + (f" after skipping {n_skipped_no_rise} with no rise on either "
+               f"side" if n_skipped_no_rise else "") +
+            f". With one unit there is one pairing, the null is the "
+            f"observation, and the only expressible p is 1.0.")
 
     ca = np.array([p["centroid_log_step"] for p in a], dtype=np.float64)
     cb = np.array([p["centroid_log_step"] for p in b], dtype=np.float64)
+
+    # A null that leaves the statistic invariant is not a weak null; it is a
+    # floor of 1.000 (EVALUABILITY.md, twenty-first lesson). This arm has an
+    # exact way in: -mean|ca - cb[p]| sums over a permuted MULTISET, so if
+    # either side's centroids are all equal the sum is the same for every p
+    # and the null IS the observation.
+    #
+    # Checked structurally here rather than by noticing afterwards that the
+    # statistic came out constant, because noticing afterwards is what
+    # failed. Floating-point summation order splits a mathematically constant
+    # statistic across two adjacent doubles, so the `stats.max() ==
+    # stats.min()` test below does not fire and the arm returns a p-value
+    # that is a function of the permutation SEED and nothing else. Measured
+    # on the finished step-54000 relay sweep, where every head's change
+    # centroid is 3.8664179398591134 because the series is zero at 11 of 12
+    # checkpoints: the statistic spanned 4.4e-16 across 2001 pairings, took
+    # exactly two distinct values, and p ran 0.764 - 0.786 over six seeds.
+    for side, c, direction in (("A", ca, direction_a), ("B", cb, direction_b)):
+        if float(np.ptp(c)) == 0.0:
+            raise ColocationRefused(
+                f"arm {arm_name!r}: every unit on the {side} side puts its "
+                f"change at the same location ({c[0]:.6f} in log10 step, "
+                f"direction {direction!r}). The pairing null then permutes a "
+                f"constant against the other side and every pairing reproduces "
+                f"the observation exactly, so the attainable floor is 1.000 and "
+                f"no input can reject. The {n_units} units contribute one "
+                f"location, not {n_units}. This is a statement about the "
+                f"measurement grid — a series whose change mass falls entirely "
+                f"in one interval has one interval to locate it in — and is "
+                f"fixed by a grid with more than one interval inside the "
+                f"transition, not by more units.")
+
     perms, exhaustive = _pairing_permutations(n_units, seed)
     n_draws = len(perms)
 
-    # 1/n_draws in BOTH regimes, and not 1/(n_draws + 1) in the sampled one:
-    # `perms` already carries the identity pairing as its first entry, so
-    # n_draws is N + 1 and the sampled p is (count over the N samples + 1) /
-    # n_draws, whose minimum is 1/n_draws. Writing the usual +1 here made the
-    # reported floor SMALLER than any p the arm can express -- the same class of
-    # slip as P6-R2's default argument bound at definition time, found the same
-    # way, by a test that asserted a perfect result lands exactly on the floor.
-    floor = 1.0 / n_draws
-    if floor > alpha:
+    # The DRAW-COUNT half is 1/n_draws in BOTH regimes, and not 1/(n_draws + 1)
+    # in the sampled one: `perms` already carries the identity pairing as its
+    # first entry, so n_draws is N + 1 and the sampled p is (count over the N
+    # samples + 1) / n_draws, whose minimum is 1/n_draws. Writing the usual +1
+    # here made the reported floor SMALLER than any p the arm can express --
+    # the same class of slip as P6-R2's default argument bound at definition
+    # time, found the same way, by a test that asserted a perfect result lands
+    # exactly on the floor.
+    #
+    # And that half was reported ALONE until 2026-09-03, which is the same slip
+    # a second time and larger: on locations carrying ties a perfect input
+    # returns the TIE floor, 200x the draw-count one at nine of ten units and
+    # above alpha where the arm still emitted a p-value. `pairing_floor_report`
+    # owns both halves and says which binds.
+    fl = pairing_floor_report(ca, cb, n_draws, alpha, exhaustive)
+    floor = fl["attainable_floor"]
+    _skip_clause = (f" ({n_skipped_no_rise} unit(s) already dropped for no "
+                    f"rise on either side)" if n_skipped_no_rise else "")
+    if not fl["sufficient"]:
+        if fl["binds"] == "draws":
+            raise ColocationRefused(
+                f"arm {arm_name!r}: attainable floor {floor:.4f} exceeds "
+                f"alpha={alpha}. With {n_units} units{_skip_clause} there are "
+                f"only {n_draws} distinct pairings, so this arm cannot reject "
+                f"on a perfect result and 'not significant' would be a "
+                f"statement about the design and not about the data.")
         raise ColocationRefused(
             f"arm {arm_name!r}: attainable floor {floor:.4f} exceeds "
-            f"alpha={alpha}. With {n_units} units there are only "
-            f"{n_draws} distinct pairings, so this arm cannot reject on a "
-            f"perfect result and 'not significant' would be a statement about "
-            f"the design and not about the data.")
+            f"alpha={alpha}, and what binds is TIES rather than draws: the "
+            f"{n_units} units{_skip_clause} carry "
+            f"{fl['n_distinct_locations_a']} distinct "
+            f"locations on the A side and {fl['n_distinct_locations_b']} on "
+            f"the B side, so every pairing ties a coset of order "
+            f"10^{fl['log10_tying_subgroup_order']:.3g} out of "
+            f"10^{fl['log10_n_factorial']:.3g} and no input can express a p "
+            f"below {fl['tie_floor']:.4g}. Raising the draw count does NOT fix "
+            f"this (its own floor is {fl['draw_count_floor']:.4g}); the number "
+            f"of DISTINCT locations does, and that is set by how many of the "
+            f"sweep's intervals the series' change mass falls across.")
 
     stats = np.array([-np.mean(np.abs(ca - cb[p])) for p in perms],
                      dtype=np.float64)
     observed = float(stats[0])          # the identity pairing IS the observation
     if not np.isfinite(observed) or not np.all(np.isfinite(stats)):
         raise ColocationRefused(f"arm {arm_name!r}: a non-finite statistic")
-    if float(stats.max()) == float(stats.min()):
+    # Backstop for invariance the structural check above cannot name, and
+    # deliberately a TOLERANCE rather than exact equality: the exact test
+    # cannot distinguish "constant" from "constant plus summation-order
+    # noise", and it is the second that reaches production. The width is the
+    # floating-point scale of a mean over n_units terms, ~1e-13 at this arm's
+    # magnitudes, which is smaller than any effect the statistic can carry by
+    # ten orders of magnitude.
+    spread = float(stats.max() - stats.min())
+    noise = 16.0 * n_units * float(np.spacing(max(float(np.abs(stats).max()), 1.0)))
+    if spread <= noise:
         raise ColocationRefused(
-            f"arm {arm_name!r}: every pairing gives the identical statistic. "
-            f"The units then contribute one observation and permuting them is "
-            f"the wrong null, not a conservative one.")
+            f"arm {arm_name!r}: every pairing gives the same statistic to "
+            f"within floating-point error (spread {spread:.3e}, numerical "
+            f"noise floor {noise:.3e}). The units then contribute one "
+            f"observation and permuting them is the wrong null, not a "
+            f"conservative one; the p-value such a null returns is determined "
+            f"by the permutation seed and rounding, not by the data.")
 
     p_greater = float(np.sum(stats >= observed) / n_draws) if exhaustive else \
         float((np.sum(stats[1:] >= observed) + 1) / (n_draws))
@@ -1238,6 +1463,7 @@ def paired_colocation_arm(steps: Sequence[float],
         "shared_unit_factor_diagnostic": _shared_unit_factor_diagnostic(ca, cb),
         "unit": unit_name,
         "n_units": n_units,
+        "n_skipped_no_rise": n_skipped_no_rise,
         "observed": observed,
         "mean_distance_log_step": -observed,
         "p_value": p_greater,
@@ -1245,6 +1471,7 @@ def paired_colocation_arm(steps: Sequence[float],
         "n_pairings": int(n_draws),
         "null_exhaustive": bool(exhaustive),
         "attainable_floor": floor,
+        "floor": fl,
         "alternative": ALTERNATIVE,
         "direction_a": direction_a,
         "direction_b": direction_b,
@@ -1539,6 +1766,47 @@ def gate_verdict(p_greater: Optional[float], p_less: Optional[float],
 #: reaching step 125000) and the author weighed that.
 REGISTERED_CLAIM_B_SWEEP: Optional[Tuple[int, ...]] = (
     1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)
+
+#: `P-I1`'s REGISTERED SWEEP GRID, chosen by the author on 2026-09-01.
+#:
+#: WHY P-I1 NEEDS ITS OWN GRID AND CANNOT REUSE CLAIM-B'S. The paragraph above
+#: names the cost that binds here: the registered CLAIM-B sweep "samples
+#: nothing between step 1000 and step 54000, so it serves no prediction needing
+#: mid-training resolution." P-I1 is that prediction, and the shortfall is not
+#: a loss of resolution but a floor of 1.000.
+#:
+#: MEASURED, on the finished 12-checkpoint sweep rather than argued from the
+#: grid's shape. No edge reaches the 0.5 motif threshold at any of the eleven
+#: checkpoints from step 1 to step 1000, so every head's relay series is
+#: exactly zero there and jumps once. Every head's change centroid is then the
+#: same number -- 3.8664179398591134, the midpoint of the single interval
+#: (1000, 54000] -- with no noise to break the tie. `paired_colocation_arm`
+#: permutes a constant against the other side, every pairing reproduces the
+#: observation, and no input can reject. It is the same for all three
+#: `relay_owner` collapses: 68, 80 and 87 heads all give ONE distinct centroid.
+#: The units contribute one location, not 80, and no number of heads or of
+#: prompts changes that -- only intervals inside the transition do.
+#:
+#: WHAT WAS ADDED, AND WHY THESE STEPS. Five log-spaced fills inside the gap
+#: (2000, 4000, 8000, 16000, 32000), taking the interval midpoints inside
+#: (1000, 54000) from 1 to 6. Log spacing matches the spacing of the sweep it
+#: extends and does not privilege a location before measuring one; 52 published
+#: checkpoints lie in the gap, so the choice is a cost decision and not an
+#: availability one. Plus steps 0 and 143000, which are `P_I1_ENDPOINT_STEPS`
+#: -- the two the falsifier names, and neither was in the grid, so
+#: `endpoint_flags` was reporting on a first step that is not 0 and a last that
+#: is not 143000.
+#:
+#: WHAT IT COSTS, ON THE RECORD. Seven checkpoints at ~35 min and ~12 GB each:
+#: ~4 h and ~84 GB against 117 GB free. It is a SUPERSET of
+#: REGISTERED_CLAIM_B_SWEEP, so the twelve tables already computed are reused
+#: and only the seven are new. It is NOT a grid CLAIM-B may be adjudicated on:
+#: `adjudicate_claim_b` refuses every grid but its own, and that refusal stands
+#: -- CLAIM-B's grid was chosen to hold its anchor window and this one was not
+#: chosen for that at all.
+REGISTERED_P_I1_SWEEP: Optional[Tuple[int, ...]] = (
+    0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000,
+    2000, 4000, 8000, 16000, 32000, 54000, 143000)
 
 #: The literature anchors, taken from CLAIM-B's REGISTERED STATEMENT -- "the
 #: energy-monotonicity break and the Fiedler drop co-locate with steps

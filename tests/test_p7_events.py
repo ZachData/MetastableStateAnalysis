@@ -127,7 +127,7 @@ class TestRelayTargetFlags:
     def test_tag_particle_is_flagged_at_the_stage_one_layer(self):
         t = _table([[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]])
         r = RelayInstance(layer_1=1, head_1=0, layer_2=2, head_2=3,
-                          tag_position=2, match_target=0)
+                          tag_position=2, match_target=0, prompt_key="p")
         flags = relay_target_flags(t, [r])
         sel = (t.columns["layer"] == 1) & (t.columns["token_position"] == 2)
         assert flags[sel][0]
@@ -138,8 +138,21 @@ class TestRelayTargetFlags:
         property of the token rather than of the event."""
         t = _table([[-1, -1, -1]] * 4)
         r = RelayInstance(layer_1=1, head_1=0, layer_2=3, head_2=1,
-                          tag_position=2, match_target=0)
+                          tag_position=2, match_target=0, prompt_key="p")
         assert relay_target_flags(t, [r]).sum() == 1
+
+    def test_flag_does_not_cross_into_another_prompt(self):
+        """`tag_position` is a per-prompt token index. A relay found in one
+        prompt must not flag the particle sitting at the same index in
+        every other prompt of the battery."""
+        t = ParticleTable.concat([_table([[-1, -1, -1]] * 3, prompt="prompt_a"),
+                                  _table([[-1, -1, -1]] * 3, prompt="prompt_b")])
+        r = RelayInstance(layer_1=1, head_1=0, layer_2=2, head_2=3,
+                          tag_position=2, match_target=0,
+                          prompt_key="prompt_a")
+        flags = relay_target_flags(t, [r])
+        assert flags.sum() == 1
+        assert t.columns["prompt_key"][flags][0] == "prompt_a"
 
     def test_no_relays_gives_no_flags(self):
         t = _table([[-1, -1]] * 2)

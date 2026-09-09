@@ -85,6 +85,43 @@ class TestTokenization:
         out = tokenize_prompt(FakeTokenizer(), "a b a b c")
         assert out["n_tokens"] == 5 and out["n_distinct"] == 3
 
+    def test_a_mapping_that_is_not_a_dict_still_yields_integer_ids(self):
+        """
+        The shape a REAL tokenizer returns. transformers' BatchEncoding
+        extends UserDict, so `isinstance(enc, dict)` is False for it — which
+        is what this function tested until 2026-08-31. The fallback branch
+        then ran `list(enc)` over a mapping, yielding its KEYS, and every
+        prompt in the battery tokenized to the two strings "input_ids" and
+        "attention_mask".
+
+        UserDict is used here rather than importing BatchEncoding on
+        purpose: it reproduces the exact relationship to dict that caused
+        the bug, and it keeps this module in the pure tier, where
+        transformers is unimportable. FakeTokenizer returns a plain dict —
+        which IS a dict — so no existing test in this file could have
+        exercised the branch that ran in production.
+        """
+        from collections import UserDict
+
+        class BatchEncodingLike(UserDict):
+            pass
+
+        class UserDictTokenizer(FakeTokenizer):
+            def __call__(self, text):
+                enc = super().__call__(text)
+                return BatchEncodingLike(
+                    {"input_ids": enc["input_ids"],
+                     "attention_mask": [1] * len(enc["input_ids"])}
+                )
+
+        tok = UserDictTokenizer()
+        assert not isinstance(tok("a b a b"), dict), (
+            "this test is vacuous unless the encoding is a non-dict mapping"
+        )
+        ids = tokenize_prompt(tok, "a b a b")["ids"]
+        assert ids == tokenize_prompt(FakeTokenizer(), "a b a b")["ids"]
+        assert all(isinstance(i, int) for i in ids)
+
 
 _USABLE_TEXT = (
     "alpha beta gamma delta alpha beta epsilon zeta alpha beta gamma eta "

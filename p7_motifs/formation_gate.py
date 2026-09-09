@@ -88,6 +88,7 @@ import numpy as np
 from core.changepoint_colocation import (
     ALTERNATIVE,
     ColocationRefused,
+    REGISTERED_P_I1_SWEEP,
     _SEED,
     combine_arms,
     gate_verdict,
@@ -117,7 +118,43 @@ P_I1_UNIT = "head"
 
 #: Pythia's first and last released checkpoints, which are the two the
 #: falsifier names. Taken from the falsifier's wording, not chosen here.
+#:
+#: Both are in `REGISTERED_P_I1_SWEEP` as of 2026-09-01 and neither was in the
+#: CLAIM-B sweep P-I1 had been borrowing, so `endpoint_flags` was reporting on
+#: a first step that is not 0 and a last that is not 143000.
 P_I1_ENDPOINT_STEPS = (0, 143000)
+
+#: Which head of a relay's head PAIR carries it, registered by the author on
+#: 2026-09-01. `relay_strength` is keyed by (layer_1, head_1, layer_2, head_2)
+#: and `P_I1_UNIT` is the head, so the pair must collapse and the collapse is a
+#: definition, not a rescaling: measured at step 54000 the three choices give
+#: 68, 80 and 87 heads with relays and the head SETS differ.
+#:
+#: `matcher` -- the stage-2 head -- because the arm pairs this series against
+#: the behavioural induction score head for head, and that score is mean
+#: attention on induction pairs, which is the matcher's behaviour. Under
+#: `tag_writer` the two series in a pair would describe different heads' roles.
+#: `both` credits each relay twice (5,120,966 against 2,560,483), so its counts
+#: are not comparable with either.
+#:
+#: This does NOT change what the pairing null can express: all three choices
+#: give one distinct change centroid on the 12-checkpoint grid. The grid was
+#: the binding constraint, not the collapse. See REGISTERED_P_I1_SWEEP.
+P_I1_RELAY_OWNER = "matcher"
+
+#: The battery prompt that dominates this statistic, and the author's decision
+#: about it (2026-09-01): it is a registered battery member, so it STAYS, and
+#: the series excluding it is carried in the artifact beside the one including
+#: it. Reported, never scored -- the same standing as `endpoint_flags`.
+#:
+#: Measured at step 54000: `repeated_tokens` is 1,551,930 of 2,560,483 relays,
+#: 61% of the battery. It is ". . . ." x 265 and reads admissible because
+#: `n_distinct > 1` under this tokenizer, so `analyze_prompt`'s `uniform` flag
+#: never fires. Any battery-averaged relay statistic is therefore substantially
+#: a statement about that one prompt, and a reader who cannot see both series
+#: cannot tell how much of the result is it. Excluding it at curve assembly
+#: needs no re-run, which is why carrying both costs nothing.
+P_I1_DOMINANT_PROMPT = "repeated_tokens"
 
 
 def endpoint_flags(steps: Sequence[float],
@@ -163,13 +200,23 @@ def p_value_p_i1(steps: Sequence[float],
                  induction_score: Sequence[Sequence[float]],
                  *,
                  alpha: Optional[float] = None,
-                 seed: int = _SEED) -> dict:
+                 seed: int = _SEED,
+                 skip_no_rise: bool = False) -> dict:
     """
     P-I1's p-value. One arm: do the two curves' rises co-locate across heads,
     more than an arbitrary pairing of the same two populations allows?
 
     Refuses -- `p_value` None with a `reason` -- rather than returning a number
     the design cannot support.
+
+    `skip_no_rise` -- default False, unchanged behaviour -- forwards to
+    `paired_colocation_arm`: PROJECT.md §3.1's fix. Even on the pre-filtered
+    axis (heads that carry a relay somewhere in the RAW sweep) a head's
+    ABOVE-NULL EXCESS can still be flat everywhere once the null is
+    subtracted, and with no skip that one head would refuse the whole gate
+    for a reason that is the null's, not the data's. The count is carried on
+    the arm's own record (`arms[0]["n_skipped_no_rise"]`) rather than
+    duplicated here.
     """
     out: dict = {
         "prediction_id": "P-I1",
@@ -207,7 +254,8 @@ def p_value_p_i1(steps: Sequence[float],
             steps, rs, P_I1_SERIES["relay_strength"]["direction"],
             bs, P_I1_SERIES["induction_score"]["direction"],
             alpha=(alpha if alpha is not None else _gate_alpha()),
-            unit_name=P_I1_UNIT, arm_name="mutual", seed=seed)
+            unit_name=P_I1_UNIT, arm_name="mutual", seed=seed,
+            skip_no_rise=skip_no_rise)
         comb = combine_arms([arm])
     except ColocationRefused as exc:
         out["reason"] = str(exc)
@@ -231,6 +279,7 @@ def adjudicate_p_i1(steps: Sequence[float],
                     *,
                     alpha: Optional[float] = None,
                     seed: int = _SEED,
+                    skip_no_rise: bool = False,
                     artifact_hashes: Sequence[str] = (),
                     run_manifest: Optional[dict] = None,
                     adjudicate: bool = False,
@@ -239,8 +288,26 @@ def adjudicate_p_i1(steps: Sequence[float],
     `p_value_p_i1` plus, optionally, an entry in the falsification ledger.
     Opt-in behind a flag, for the reason given in `core.changepoint_colocation`.
     """
+    if REGISTERED_P_I1_SWEEP is None:        # pragma: no cover - registered
+        raise ColocationRefused(
+            "REGISTERED_P_I1_SWEEP is None. Which checkpoints the sweep "
+            "samples decides what the pairing null can express before any data "
+            "exists -- on the CLAIM-B grid it can express nothing, because "
+            "every head's change centroid is the same number -- so it is a "
+            "scientific decision that must be registered before a p-value "
+            "exists.")
+    if tuple(int(v) for v in steps) != tuple(REGISTERED_P_I1_SWEEP):
+        raise ColocationRefused(
+            f"this result was computed on a {len(list(steps))}-checkpoint "
+            f"sweep that is not the registered one. P-I1's registered grid is "
+            f"{list(REGISTERED_P_I1_SWEEP)}. `p_value_p_i1` will compute on "
+            f"any grid, but only the registered sweep may enter an e-process "
+            f"-- the same division `adjudicate_claim_b` makes, and for the "
+            f"same reason: registering after seeing a p-value would void the "
+            f"guarantee.")
+
     res = p_value_p_i1(steps, relay_strength, induction_score,
-                       alpha=alpha, seed=seed)
+                       alpha=alpha, seed=seed, skip_no_rise=skip_no_rise)
     res["adjudication"] = None
     if not (adjudicate and res.get("p_value") is not None):
         return res

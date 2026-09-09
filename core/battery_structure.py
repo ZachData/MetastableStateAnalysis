@@ -88,9 +88,23 @@ def tokenize_prompt(tokenizer, text: str) -> dict:
     Duck-typed on the HF tokenizer call interface so a fake works in the
     stubbed session. Returns ids as a plain list of ints — NOT hashes of
     token strings (item 12).
+
+    The membership test is `hasattr(enc, "keys")` and not
+    `isinstance(enc, dict)`, which is what it was until 2026-08-31 and which
+    is False for the object a real tokenizer returns: transformers'
+    `BatchEncoding` extends `UserDict`, not `dict`. So the fallback branch
+    ran, `list(enc)` iterated the MAPPING KEYS, and every prompt tokenized to
+    `["input_ids", "attention_mask"]` — two strings. Induction pairs,
+    same-content pairs, the structure hash and every verdict built on them
+    were then computed on that. Nothing failed: the stubbed session's fake
+    tokenizer returns a plain dict, which IS a dict, so the tests took the
+    correct branch and the real branch was never exercised. `int()` on each
+    id is likewise deliberate — it makes a non-integer id an error here,
+    where the cause is visible, rather than a hash mismatch later.
     """
     enc = tokenizer(text)
-    ids = list(enc["input_ids"] if isinstance(enc, dict) else enc)
+    raw = enc["input_ids"] if hasattr(enc, "keys") else enc
+    ids = [int(i) for i in raw]
     bos = getattr(tokenizer, "bos_token_id", None)
     has_bos = bool(ids and bos is not None and ids[0] == bos)
     return {

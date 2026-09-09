@@ -1,0 +1,573 @@
+<!-- PROJECT.md -->
+# PROJECT — the living state of this repository
+
+The file to read first, and the one to keep current. It answers: what machine
+this runs on, where the work stands, what is blocking, what has been registered
+and may not be re-decided, and how to reproduce anything.
+
+**It is not a session diary.** What changed and why lives in `git log`, and the
+reasoning behind a construction lives in `POPPER_PLAN.md`'s numbered sections.
+This file carries only what a fresh session needs in order to start working,
+and every number in it is measured on this machine.
+
+| | |
+|---|---|
+| Branch | `claude/rescaler-cache-identity-test` — nothing merged, no PR open |
+| Last updated | 2026-09-04 |
+| Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
+| Method and construction log | `POPPER_PLAN.md` §6a–§6t |
+| Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
+| What can carry an e-value | `claims/EVALUABILITY.md` |
+
+---
+
+## 1. Start here
+
+```bash
+cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
+export HF_HOME=$PWD/data/hf
+export METS_RESULTS_DIR=$PWD/data/phase12
+export HF_HUB_OFFLINE=1
+export HF_HUB_DISABLE_XET=1
+
+./scripts/check.sh gate     # 2228 passed / 5 skipped / 30 deselected, ~35 s
+```
+
+If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
+a module carrying a record's hash was edited — see §6.3, it is a chore and not a
+bug.
+
+### The machine
+
+| | |
+|---|---|
+| Repo | `/run/media/system/WDS_500/Mets` (NVMe, `/dev/nvme0n1p1`, 458 GB) |
+| venv | `<repo>/.venv` — Python 3.14.7, torch 2.13.0+cpu, transformers 4.57.6, numpy 2.5.2, scipy 1.18.1 |
+| CPU / RAM | 16 cores, 31 GB |
+| Free | 95 GB on WDS_500, 440 GB on HDD_1TB |
+
+### The tree
+
+Everything generated lives under the repo, on one root. `data/` is git-ignored
+by `*`.
+
+```
+Mets/
+├── data/                            # all generated bulk
+│   ├── hf/                 51 GB    # HF_HOME — 33 mirrored pythia-410m revisions
+│   ├── phase12/           118 GB    # METS_RESULTS_DIR — phase 1 and phase 2
+│   ├── phase7/            6.1 GB    # the 19 interaction tables
+│   ├── analysis/                    # curve.json, formation_series.json
+│   ├── logs/
+│   └── superseded/phase7_float32/   # 1.1 GB, pre-float64 tables
+├── results/               132 GB    # the PILOT grid — §5.2, DO NOT DELETE
+└── tools/run/                       # sweep.sh, curve.py — tracked
+```
+
+`METS_REPO` and `METS_DATA` are the only two overrides. There is deliberately no
+`METS_VOL`: it named a VM scratch volume, which is the class of path that
+encodes transient infrastructure and fails silently when the infrastructure
+changes. Both run scripts derive everything from `METS_REPO`.
+
+`transformers` is pinned `<5`. On 5.x GPT-NeoX moved rotary parameters into
+`config.rope_parameters`, `core/rope.py`'s `rotary_pct` default then fires, and
+it reports `rotary_ndims=64` where pythia-410m rotates 16.
+
+### Traps this machine sets
+
+**`source .venv/bin/activate` can succeed and give you the wrong interpreter.**
+`activate` carries the absolute `VIRTUAL_ENV` recorded at creation. If the repo
+has moved, it prepends a directory that does not exist, sets the variable, and
+returns 0 — and `python` falls through `PATH` to whatever else is installed (here
+a conda env at `miniforge3/envs/mets`, Python 3.10 with a pre-4.45
+transformers). This cost a phase-7 checkpoint computed against the wrong library
+with nothing in the artifact to record it: the phase-7 manifest stores
+`git_sha`, `hf_revision` and `seeds`, but **no library versions**.
+`tools/run/sweep.sh` now asserts `sys.prefix` and the torch/transformers
+versions rather than trusting activation. Check `sys.prefix`, never
+`VIRTUAL_ENV`.
+
+**"No output yet" is not evidence a job died.** The check is `pgrep`, not the
+log — and write the pattern as a real ERE, since `pgrep -f "a\|b"` matches
+nothing and reports success. Two writers on one temp path can replace a good
+table with a corrupt one.
+
+Both of the other traps this repo has hit are now guarded in code with tests:
+the phase-1/phase-2 reuse selector identifies each phase by a file only that
+phase writes (`tests/test_run_scripts.py`), and `tools/recompress_tables.py` no
+longer globs its own temp file (`tests/test_tools_recompress_tables.py`).
+
+---
+
+## 2. Where the work stands
+
+Active work is **Phase 7** — the mechinterp/particle bridge. `P-I1`,
+induction-head formation as a two-stage `relay` motif tracked across the
+checkpoint axis, has run end to end and scored **INSUFFICIENT** (p = 0.1414,
+§3.6) at a 50-replicate null — not falsified, not validated. **§3.7 is where
+to pick this up**: a 100-replicate rerun to check the p-value's sensitivity
+was started and deliberately paused, not finished. `INDEX.md`'s phase table is
+still accurate for everything else.
+
+**The registered 19-step sweep is complete.** All 19 interaction tables are on
+disk under `data/phase7/`.
+
+**The degeneracy that blocked `P-I1` has cleared.** On the twelve-step CLAIM-B
+grid every head's change centroid was one number, so the pairing null permuted a
+constant and the attainable floor was 1.000. The five registered log-spaced
+fills inside (1000, 54000) fixed it:
+
+| `relay_owner` | heads scored | distinct centroids | span (log-step) | sd |
+|---|---|---|---|---|
+| `tag_writer` | 102 | 68 | 3.8898 – 4.9439 | 0.2813 |
+| `matcher` (registered) | 116 | **79** | 4.1604 – 4.9439 | 0.2374 |
+| `both` | 122 | 86 | 4.1604 – 4.9439 | 0.2641 |
+
+The relay counts behind it:
+
+| step | relays | ex-`repeated_tokens` | heads (matcher) |
+|---|---|---|---|
+| 0 – 2000 | 0 | 0 | 0 |
+| 4000 | 15,030 | 5,563 | 9 |
+| 8000 | 232,568 | 83,659 | 25 |
+| 16000 | 509,646 | 216,528 | 46 |
+| 32000 | 1,176,478 | 582,796 | 63 |
+| 54000 | 2,560,483 | 1,008,553 | 80 |
+| 143000 | **2,407,556** | **1,465,052** | **114** |
+
+**Two things that must not be skipped when this is scored.**
+
+*The series is not monotone.* The total relay count FALLS from 54000 to 143000
+while heads carrying relays rises 80 → 114 and the ex-`repeated_tokens` count
+keeps climbing — the signal spreads across heads and away from the one
+combinatorially-loaded prompt while the raw total drops. `change_profile`
+rectifies, so that decline lands in `reverse_change_mass` and will inflate
+`noise_mass_share_estimate` on a series whose reverse motion is real structure.
+That field is documented "REPORTED, NEVER SCORED"; this is the case that earns
+the distinction.
+
+*"79 distinct centroids" is not 79 classes.* It is **77 singletons, one class of
+three, and one class of thirty-six** — 31% of the heads still put their change in
+a single interval. Harmless at 116 heads and not harmless at forty; see §3.2.
+
+---
+
+## 3. `P-I1`: built, run, and scored — INSUFFICIENT (2026-09-04)
+
+**The relay-count null did not exist through 2026-09-03.** `formation_gate`
+requires the series to be the excess above a null envelope, and
+`core/qk_offset_null.py` computes that for the **QK antisymmetry statistic**,
+not for relay counts. `formation_curve.assert_gate_ready` refused the raw
+series, correctly. §3.1–§3.4 below is the construction log, kept as it happened
+rather than rewritten now that §3.6 has the answer.
+
+`claims/EVALUABILITY.md` prescribes the order — compute the attainable floor,
+name what the statistic degenerates on, check what the measurement grid
+contributes, and only then build the control. **All three steps before the
+control are done.** `POPPER_PLAN.md` §6t is the write-up.
+
+* **Step 2.** Across the 8 battery prompts at step 54000 the raw relay count
+  against the prompt's own induction-pair supply runs **r = +0.9958** — 99% of
+  the cross-prompt variance is the prompt's combinatorics, not the model's
+  circuitry. Excluding `repeated_tokens`, +0.8908. Nothing else is close:
+  n_tokens −0.39, n_same_content −0.36, n_distinct_tokens −0.79.
+* **Step 3.** §2's table is the answer: the grid contributed the entire previous
+  failure and the fills fixed it.
+* **Step 1.** `claims/audits/p_i1_attainable_floor.json`. Two findings, below.
+
+### 3.1 The gate cannot score the axis the pipeline builds
+
+`formation_curve_payload` takes its head axis from the **behavioural** series,
+dense over all 384 heads (24 × 16), and zero-fills the relay side. But
+`paired_colocation_arm` calls `change_profile` on every unit with **no per-unit
+skip**, and `change_profile` refuses a series with no rise. 116 heads carry
+relays and **268 never do**, so the arm refuses on the first all-zero unit and
+`p_value_p_i1` returns **no p-value at all**. On the 116 forming heads the
+identical input emits.
+
+The message names none of it — "the series has no rise anywhere in the sweep",
+no arm, no head index, no unit count. Pinned as it is, in
+`tests/test_p_i1_attainable_floor.py`.
+
+**Fixed, both halves, 2026-09-04 — the author's decision was both, not
+either.** Pre-filter the axis to the 116 heads that carry a relay anywhere in
+the raw sweep (a static, pre-registrable population — §3.4's null still runs
+on the raw series before subtraction, so nothing here depends on the null),
+**and** give the arm a per-unit skip for whatever residual heads have zero
+above-null EXCESS once §3.4's null is subtracted (a head can be in the 116 and
+still have the null absorb its entire signal). `paired_colocation_arm` and
+`p_value_p_i1`/`adjudicate_p_i1` now take `skip_no_rise: bool = False` —
+default off, CLAIM-B untouched, `p7_motifs/formation_gate.py` — dropping a
+unit only on `change_profile`'s "no location to measure" refusal specifically,
+reporting the count as `n_skipped_no_rise` on the arm's own record and naming
+it in every refusal the arm can still raise afterward. The real scoring call
+is `tools/score_p_i1.py`, which pre-filters to the forming axis and passes
+`skip_no_rise=True`.
+
+### 3.2 The pairing arm's floor has two halves
+
+Permuting units within a class of equal change locations leaves
+`-mean|ca - cb[p]|` exactly unchanged, so every pairing ties a coset of order
+`prod(m!)` and no input can express a p below `prod(m!) / n!`. The arm reported
+`1 / n_draws` alone. At nine of ten units sharing one location it reported
+**0.000500** against an attainable **0.100000** — 200×, above α, emitted with no
+refusal. Seven of ten tied is 0.00139 and emits legitimately: **the halves cross
+within two units.**
+
+`core.changepoint_colocation.pairing_floor_report` now owns both halves and the
+arm refuses on the max. On the real head set the tie half does not bind (116
+heads, tie floor 1e-148); it binds on the set a relay-count null *leaves*.
+
+### 3.3 What that constrains — the point of doing it first
+
+A relay-count null turns the series into an above-null excess, and a head whose
+excess stops rising leaves the scored set. So the null chooses `n_units`, and
+`n_units` with the tie structure chooses the floor.
+
+| survivors | max tied | tie floor there |
+|---|---|---|
+| 4 | 1 | 0.0417 |
+| 6 | 4 | 0.0333 |
+| 8 | 6 | 0.0179 |
+| 12 | 10 | 0.0076 |
+| 19 | 17 | 0.0029 |
+| 20 | **19** | 0.0500 |
+
+Not monotone: `k = n − 1` gives exactly `1/n`, so all-but-one-tied clears 0.05
+from n = 20 upward and fails at n = 19. Full table in the record.
+
+> **The relay-count null must leave at least four heads with a rising above-null
+> excess, and among them no more than k sharing one change location.**
+
+### 3.4 The null — built 2026-09-04, degree-preserving at the head level
+
+The author's decision, walked through and registered rather than started from
+the code: degree-preserving at the **head** level, not per particle.
+`p7_motifs/relay_count_null.py`. `pair_type` and `offset` are pure facts about
+where an edge points, given the prompt's tokenisation; `attractive_frac` /
+`repulsive_frac` / `force_magnitude` / `weight` are facts about its force —
+independent axes of the same edge-row. So the null is a payload shuffle: for
+each (prompt, layer, head), draw `len(group)` DISTINCT positions uniformly at
+random from the prompt's full causal pool and reattach each real edge's entire
+force-derived payload to it unchanged, recomputing `offset`/`pair_type` from
+the new position.
+
+This holds `n_induction` fixed per prompt automatically (the pool and the
+induction/strict/same-content candidate sets are properties of the prompt's
+tokenisation alone, `PromptNullContext`, identical at every checkpoint and
+replicate — no separate bookkeeping needed), and preserves each head's edge
+count and its **entire** force distribution exactly, not just an aggregate like
+"attractive fraction". Per-particle in/out-degree is NOT held fixed — a
+heavier double-edge-swap configuration-model null was considered and not
+chosen. The relay count itself, a two-edge composition rather than a single
+masked edge, is scored by Monte Carlo — reshuffle, rerun
+`find_relays`/`per_head_relay_strength` unchanged, K replicates → mean/sd —
+rather than a closed form, to avoid re-deriving the composition's null
+distribution by hand. 18 tests, including a planted-relay oracle and
+calibration on a structureless table; caching the null's per-prompt grouping
+(a ~6.8× speedup, needed to make the real run feasible) also caught a genuine
+cross-prompt position-leak bug before it reached the real sweep.
+
+Run over the real 19-step sweep, 50 replicates/checkpoint
+(`tools/run/relay_null.py` → `data/analysis/relay_null_series.json`):
+
+| step | raw relays | null mean | excess | excess / null |
+|---|---|---|---|---|
+| 0 – 2000 | 0 | 0 | 0 | — |
+| 4000 | 15,030 | 2,968 | 12,063 | 4.1× |
+| 8000 | 232,568 | 27,719 | 204,849 | 8.4× |
+| 16000 | 509,646 | 64,176 | 445,473 | 6.9× |
+| 32000 | 1,176,478 | 128,647 | 1,047,832 | 8.1× |
+| 54000 | 2,560,483 | 346,008 | 2,214,479 | 6.4× |
+| 143000 | 2,407,556 | 241,229 | 2,166,327 | 8.9× |
+
+The raw count sits 4–9× the chance level at every formation-window checkpoint
+— real excess above what the induction-pair supply and edge counts alone would
+produce — and that excess is what §3.6's gate is scored on.
+
+### 3.5 Done: the behavioural arm over the sweep
+
+`tools/run/behavioural.py` → `data/analysis/behavioural_series.json`, run
+2026-09-03 (`POPPER_PLAN.md` §6u). Pooled mean post-softmax attention on
+induction pairs per (layer, head) per checkpoint, on the same pair set `run_7.py`
+types the A side with, tokenisation verified token-for-token against each run's
+`tokens.txt`. Cross-prompt convention registered by the author: **mirror the
+relay side** — pool the seven non-`repeated_tokens` prompts, carry the
+eight-prompt series beside it, never scored. **10,618** pooled pairs (44,809 with
+`repeated_tokens`), asserted constant across all 19 steps.
+
+The result: flat at `≈ 1/n_tokens` through step 128 (0 heads elevated), first
+rise at 512→1000, sharp climb 2000–8000 — L7H8 peaks **0.0368 at step 4000**,
+L6H0 peaks **0.0306 at step 16000**. **Non-monotone in the §2 shape**: leaders
+recede (L7H8 → 0.0160, L6H0 → 0.0247 by 143000) while the elevated-head count
+runs 0 → 14 (step 8000) → 9. Endpoint precondition clean both ends: step 0 all
+384 heads at baseline, step 143000 has 7–9 heads clearly elevated. B leads A by
+an interval or two on inspection; the co-location itself needs the gate, which is
+blocked on §3.1 and §3.4.
+
+**The floor record is rewired to it** (`schema_version` 2, same session).
+`tools/p_i1_attainable_floor.py` arm A now pairs the real relay series against
+`series_excl_repeated`, not the synthetic located rise it used before;
+`b_side_is_synthetic` is `False` and `--check` verifies the input hash. The
+dense-axis refusal is unchanged (`paired_colocation_arm` profiles the A side
+first, so the 268 all-zero relay heads decide it regardless of B). What is new:
+the 116 forming heads emit **p = 0.420** against the measured B side,
+**mean_distance_log_step = 2.02** — on the raw count the two curves do not
+co-locate per head, behaviour leading. Not P-I1's test (raw count, not the
+above-null excess §3.4's null would produce) and partly a floor effect — the
+relay count is structurally zero until step 4000 so its change can't be located
+below log-step 3.6 — but it is the number the null now has to move.
+
+### 3.6 The real result: `tools/score_p_i1.py`, p = 0.1414, INSUFFICIENT
+
+`p_value_p_i1` on the real above-null excess series (§3.4) against the real
+behavioural series (§3.5), pre-filtered to the 116 forming heads,
+`skip_no_rise=True`:
+
+| | |
+|---|---|
+| p_value | **0.1414** |
+| p_reciprocal | 1.0 |
+| verdict | **INSUFFICIENT** |
+| n_units | 116 (`n_skipped_no_rise` = 0 — every forming head's excess still located a rise) |
+| attainable_floor | 0.0005 |
+| mean_distance_log_step | 2.018 |
+
+**Barely moved from the raw-series number** (§3.5's 2.02): subtracting the
+null rescales the curves' magnitude far more than it moves where each head's
+change is located, at least at this replicate count. p dropped from 0.420
+(raw) to 0.141 (excess) — real movement, and still nowhere near α = 0.05.
+
+**Both endpoint failure modes are clear**, reported and entering no p-value
+per §3.3: 0 of 116 heads are already above-null at step 0, and of the 2 heads
+absent at step 143000, 0 had a high behavioural score. Neither disjunct of the
+falsifier's second half fires.
+
+**Not adjudicated.** `claims/adjudications/` is untouched — `tools/
+score_p_i1.py` deliberately does not call `adjudicate_p_i1(..., adjudicate=
+True)`. INSUFFICIENT is not RE-ANCHORS: the design did not fail, and nothing
+here falsifies `P-I1`; it means the two curves' rises do not co-locate across
+heads more than an arbitrary pairing allows, at the registered sweep and the
+50-replicate null.
+
+### 3.7 Open: does the p-value move at a higher replicate count? — PICK UP HERE
+
+Asked 2026-09-04, not answered. §3.6's p = 0.1414 is a Monte Carlo estimate
+with K = 50 replicates/checkpoint; a K = 100 rerun was started to check
+sensitivity and deliberately **killed after ~5 minutes** (still on step 0) to
+stop and write this down instead of leaving a multi-hour job running unwatched
+across a context reset. Nothing was lost: `tools/run/relay_null.py` only
+writes its output file after the *last* step completes, so
+`data/analysis/relay_null_series.json` on disk is still the untouched K = 50
+result (`n_replicates: 50`, checked directly).
+
+**To resume:**
+
+```bash
+METS_NULL_REPLICATES=100 python3 -m tools.run.relay_null   # ~3+ hours, prints
+                                                            # per-checkpoint
+                                                            # progress
+python3 -m tools.score_p_i1                                # the new p-value
+```
+
+The K = 50 timing, for planning a longer background run: 13 "empty" steps
+(0 relays, steps 0–2000) at ~180–200s each, 6 "formation-window" steps
+(4000–143000) at ~480–540s each — **93 minutes total**, so K = 100 should run
+close to **~3 hours** (per-checkpoint table loading is the only part that does
+not scale with the replicate count, and it is small — a few seconds).
+
+The K = 50 result and log are preserved for comparison at
+`$CLAUDE_JOB_DIR/tmp/relay_null_series_k50.json` and
+`relay_null_full_k50.log` — job-scratch, not durable, so if this matters
+past this job's lifetime copy them somewhere in the repo tree first. **What
+to check once K = 100 finishes:** whether `p_value`, `mean_distance_log_step`
+and `n_skipped_no_rise` move meaningfully from 0.1414 / 2.018 / 0 — a null
+this far from being marginal (floor 0.0005, observed 0.14) is not expected to
+flip verdict on tighter replicate noise alone, but that is exactly the
+claim this check exists to verify rather than assume.
+
+---
+
+## 4. Open, analysed, not yet acted on: the scoring threshold
+
+Investigated 2026-09-03, nothing changed in code. Recorded here because it is
+measured and it affects every gate.
+
+Every gate refuses when `attainable_floor > alpha`. The e-process validates at
+`E >= 1/alpha`. With κ = 0.5 those are different requirements: for a claim
+carrying k factors each at its floor, `p <= (κ·α^(1/k))^(1/(1−κ))`.
+
+| k factors | required p | vs. the α the gates check |
+|---|---|---|
+| 1 | 6.25e-4 | **80× stricter** |
+| 2 | 0.0125 | 4× stricter |
+| 4 | 0.0559 | `p ≤ α` suffices |
+
+`H-EMERGE`, `H-TRANSFER` and `H-RESIST` each have **exactly one** active
+e-value row. `H-BRIDGE` and `H-OPERATOR` have four each.
+
+**CLAIM-B on a perfect input returns p = 0.05 on all five seeds** — its arms
+combine by max and the anchor arm is floored at `1/(n_controls+1)` with the 19
+controls its dry run uses. `claims/audits/claim_b_p_i1_dry_run.json` already
+carries `floor_equals_alpha: True`. That is e = 2.24 against a threshold of 20:
+falsifiable via the RE-ANCHORS branch, **not validatable**, at any data.
+
+`core/evalues.py:216`'s `required_p_for_rejection` already computes the right
+number and **no gate calls it**. That is the whole defect in one line.
+
+Best floors across the committed audits as e-value ceilings: `P-T1`/`P-M1` 183,
+`CLAIM-C` 22.6, `P-I1` 22.4, `P-ST1` 1.58.
+
+Measured, on 400k H0 replicates at N = 2000: a randomization p is discrete on a
+known grid, so `e = (N+1)/(R·H_{N+1})` is a valid e-value directly (E[e] =
+1.0005 under H0) and returns **244.7** at rank 1 where `calibrate(p)` returns
+22.4. κ registered per prediction from its own floor (κ\* = 1/ln(1/p_floor))
+gives 96.8. Neither fixes the tie floor: with heavy ties and the conservative
+convention `paired_colocation_arm` correctly uses, E[e] = 0.28 under H0 — the
+design cannot produce evidence under any scoring rule.
+
+Nothing here has been implemented. The cheapest structural win is **more factors
+per claim**, not a better calibrator.
+
+---
+
+## 5. Registered decisions, and disk that must not be deleted
+
+### 5.1 Registered — do not re-decide from the code
+
+1. **`P-I1`'s grid** — `REGISTERED_P_I1_SWEEP`, 19 steps: `0, 1, 2, 4, 8, 16,
+   32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 54000, 143000`.
+   A superset of the CLAIM-B sweep. All 19 tables are on disk.
+2. **`P_I1_RELAY_OWNER = "matcher"`** — `p7_motifs/formation_gate.py:143`.
+3. **Endpoints** — steps 0 and 143000 are in the grid, which is what
+   `endpoint_flags` needs.
+4. **`P_I1_DOMINANT_PROMPT = "repeated_tokens"`** — kept, carried beside the
+   excluding-it series, reported and never scored. It holds **34,191** induction
+   pairs against the next prompt's 2,873, because every repeated token pairs with
+   every other; its 61% share is a fact about the prompt, not the checkpoint.
+5. **`CLAIM-B`'s sweep** — `REGISTERED_CLAIM_B_SWEEP`, chosen 2026-08-28 from the
+   computed feasible set (`POPPER_PLAN.md` §6r).
+6. **`P-I3`'s matching** — `"score_and_layer"`, registered 2026-08-30 with both
+   sides measured (§6s).
+
+### 5.2 `results/` holds 132 GB and must keep it
+
+`2026-08-12_05-01-35` (56.5 GB) and `p2_eigenspectra_2026-08-13_05-13-52`
+(74.2 GB) each cover **27 steps on the PILOT schedule** — 11000, 13000, 15000,
+17000, 19000, 100000, 120000 and so on. Those steps appear in nothing else on
+disk, and `core/pythia_registry.py` keeps `PYTHIA_410M_PILOT_STEPS` loadable for
+exactly this reason. `p1b_pilot`, `p2b_pilot`, `p2d_pilot` and `phase3` are
+small; `phase3` is referenced from `archive/`.
+
+---
+
+## 6. Untouched, and named so it is not mistaken for done
+
+* `core/precision_policy.py`'s **P2** (Pythia ships fp16; an fp16-epsilon
+  perturbation splits a genuinely real eigenvalue pair into a complex one) and
+  **item 13** (the forward pass runs under bf16 autocast).
+* **`real_frac`/`imag_frac` are NaN in every row of every table** — deliberate
+  and correctly recorded (`rotational_channel: "absent"` in the manifest), not a
+  silent gap. **Both open questions answered 2026-09-04, nothing changed in
+  code.** No registered prediction needs the rotational channel: `P-I2` names
+  only the sign channel (`U_pos`), and `P-I1`/`P-I3`/`P-I4` don't reference
+  `real_frac`/`imag_frac` at all. And no consumer reads them for a computation —
+  grepped across every `.py` file: `run_7.py` writes the NaN, `p7_io.py` is the
+  seam that would fill it (`rotational_channel_from_blocks`, unwired), and
+  `core/interactions.py` / `core/artifacts.py` only carry the schema and
+  validation. None of `motif_stats.py`, `formation_gate.py`,
+  `formation_curve.py`, `cross_head_gate.py`, `patching_gate.py`, `events.py` or
+  `motif_alphabet.py` touch either column. (`core/dual_reading.py` computes
+  fields with the same names but is an unrelated per-particle primitive from an
+  earlier phase, not a Phase 7 consumer.) So the columns are exactly what §6
+  asked whether they were: schema nothing fills and nothing reads. Left as is —
+  removing them would touch `InteractionTable`'s hashed schema for a channel
+  Phase 2b's `extract_schur_blocks` could still wire in later, and no registered
+  prediction is asking for the removal either. `p7_io.rotational_channel_from_blocks`
+  stays the seam if that changes.
+* **The phase-7 manifest records no library versions.** §1's first trap is the
+  argument for adding them; not done, because it changes the manifest schema and
+  every record that hashes it.
+* **The in-memory categorical option** (int8 codes for `model`/`prompt_key`/
+  `pair_type`, 5.49 GB → 1.89 GB expanded). Compression fixed disk and does
+  nothing for RAM.
+* **Eleven predictions are adjudicable in principle and
+  `claims/adjudications/` is empty.**
+
+---
+
+## 7. Reproducing anything
+
+```bash
+cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
+export HF_HOME=$PWD/data/hf METS_RESULTS_DIR=$PWD/data/phase12 HF_HUB_OFFLINE=1
+
+./scripts/check.sh gate     # tier 0 + 1, what gates a merge; ~35 s
+./scripts/check.sh all      # adds the deps tier; ~2:15
+
+bash tools/run/sweep.sh     # resumable; all 19 steps present, so it is a no-op
+python tools/run/curve.py   # ~2:43, writes data/analysis/curve.json AND
+                            # data/analysis/formation_series.json
+
+python3 -m tools.run.behavioural --write    # ~1:06, reads 19x8 attentions.npz,
+                                            # writes data/analysis/behavioural_series.json
+python3 -m tools.run.behavioural --check    # structural checks on the written series
+
+python3 -m tools.p_i1_attainable_floor --write     # ~0.2 s, needs the series
+python3 -m tools.p_i1_attainable_floor --check     # needs no data
+
+METS_NULL_REPLICATES=50 python3 -m tools.run.relay_null
+                            # ~1:33 at 50 reps (measured); ~3:00+ at 100 --
+                            # scales close to linearly in the replicate count.
+                            # Writes data/analysis/relay_null_series.json.
+                            # Prints one line per checkpoint as it goes, so a
+                            # long run can be judged and killed early; the
+                            # output file is only written at the very end, so
+                            # killing it mid-run loses nothing already on disk
+                            # (the PREVIOUS successful --write, if any, is
+                            # untouched until the new run's last line prints).
+python3 -m tools.score_p_i1
+                            # needs relay_null_series.json and
+                            # behavioural_series.json; prints P-I1's p-value
+```
+
+### 7.1 `curve.json` is the artifact that gets diffed
+
+Every change to the storage or estimator layer is verified by re-running
+`curve.py` and diffing `curve.json` against the pre-change copy. It has come
+back **0 differences** three times: after the single-pass rewrite and table
+compression, after the 176 GB migration, and after adding the per-head series
+dump. That is why the series went into a **second** file — a file whose content
+is diffed is not the place to add a key.
+
+### 7.2 Records that carry file hashes
+
+Three records hash `core/changepoint_colocation.py` or
+`p7_motifs/formation_gate.py` and must be rewritten whenever either changes. The
+gate fails loudly if they are stale, which is the intended behaviour.
+
+```bash
+python3 -m tools.dry_run_claim_b_p_i1 --write      # ~4 min
+python3 -m tools.claim_b_grid_feasibility --write  # ~3:45
+python3 -m tools.p_i1_attainable_floor --write     # ~0.2 s
+```
+
+### 7.3 One gotcha
+
+`pythonpath = .` in `pytest.ini` applies to pytest only. A plain
+`python script.py` needs `PYTHONPATH` set, which `tools/run/curve.py` does for
+itself.
+
+---
+
+## 8. Where to read next
+
+| Question | File |
+|---|---|
+| Which phase lives where, what is archived | `INDEX.md` |
+| Why a construction is the way it is | `POPPER_PLAN.md` §6a–§6t |
+| What is pre-registered, and its falsifier | `PREDICTIONS.md`, `claims/registry.json` |
+| Which predictions can carry an e-value, and the order to build a null in | `claims/EVALUABILITY.md` |
+| Phase 7's translation table and motif alphabet | `p7_motifs/design-7.md` |
+| A phase's current state | `<phase>/status-N.md` |
+| What changed and when | `git log` |

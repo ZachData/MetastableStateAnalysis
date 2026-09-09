@@ -124,6 +124,117 @@ def load_sign_channel(
     }
 
 
+def load_ov_circuits(weights_dir: Union[str, Path], model_name: str) -> dict:
+    """
+    Per-layer, per-head composed OV circuits from Phase 2's
+    ov_weights_{stem}.npz — the third input `build_head_edges` needs,
+    alongside the two channels above.
+
+    Reads the array-name convention `weights.save_weight_decomposition`
+    writes: `ov_head{h}_{lname}` with lname from summary["layers"], or the
+    `_shared` suffix for a weight-tied model.
+
+    Deliberately NOT `p2d_io.load_operators`, which reads the same file.
+    That function raises when the `wq_head*` / `wk_head*` arrays are absent,
+    because every Phase 2d sub-experiment needs M_h = W_Q W_K^T. Phase 7
+    needs no such thing — the QK side enters here only through the pair
+    types, which come from token identity in `core.battery_structure`, not
+    from weights. Borrowing 2d's loader would make a Phase 2 run that is
+    complete for this phase's purposes unreadable by it.
+
+    Returns {"layers", "d_model", "n_layers", "n_heads", "source",
+    "is_per_layer"}, with `layers[i]["heads"][h]["ov"]` the (d_model,
+    d_model) matrix.
+    """
+    weights_dir = Path(weights_dir)
+    stem = _stem(model_name)
+    sum_p = weights_dir / f"ov_summary_{stem}.json"
+    w_p = weights_dir / f"ov_weights_{stem}.npz"
+    for path in (sum_p, w_p):
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Phase 2 OV circuits not found at {path}. Phase 7's edges "
+                "are typed by force, which is built from the composed OV "
+                "circuit; there is no other source. Run Phase 2 for this "
+                "model first."
+            )
+
+    with open(sum_p) as f:
+        summary = json.load(f)
+    w = np.load(w_p, allow_pickle=False)
+
+    is_per_layer = bool(summary["is_per_layer"])
+    lnames = list(summary["layers"]) if is_per_layer else ["shared"]
+
+    layers = []
+    for lname in lnames:
+        heads = []
+        h = 0
+        while f"ov_head{h}_{lname}" in w.files:
+            heads.append({"head": h, "ov": w[f"ov_head{h}_{lname}"]})
+            h += 1
+        if not heads:
+            raise KeyError(
+                f"{w_p.name} has no ov_head*_{lname} arrays. Present keys: "
+                f"{sorted(w.files)[:8]}{'...' if len(w.files) > 8 else ''}."
+            )
+        layers.append({"layer_name": lname, "heads": heads})
+
+    # Every layer must carry the same head count. A ragged decomposition
+    # would otherwise be discovered as an IndexError against the attention
+    # tensor, several loops in, with nothing naming the cause.
+    counts = {len(l["heads"]) for l in layers}
+    if len(counts) > 1:
+        raise ValueError(
+            f"{w_p.name} has differing head counts across layers ({sorted(counts)}); "
+            "refusing rather than iterating the smallest."
+        )
+
+    # The summary is the authority for the geometry, not the arrays. Taking
+    # d_model from the first array instead would make the one substitution
+    # worth catching undetectable: `ov_head_core` is (d_head, d_head) for
+    # every head, so an inferred d_model simply comes out as d_head and
+    # every shape agrees. Its spectrum matches the composed circuit's and
+    # its action on the residual stream does not, so the resulting force
+    # vectors would be wrong in a way no shape reveals.
+    declared = summary.get("d_model")
+    d_head = summary.get("d_head")
+    d_model = int(declared) if declared is not None else int(
+        layers[0]["heads"][0]["ov"].shape[0])
+
+    for layer in layers:
+        for head in layer["heads"]:
+            if head["ov"].shape != (d_model, d_model):
+                extra = ""
+                if d_head is not None and head["ov"].shape == (int(d_head), int(d_head)):
+                    extra = (" That is (d_head, d_head) — the `ov_head_core` "
+                             "factor B_h @ A_h, not the composed circuit "
+                             "A_h @ B_h. Its spectrum is the same; what it "
+                             "does to the residual stream is not.")
+                raise ValueError(
+                    f"{w_p.name}: ov_head{head['head']}_{layer['layer_name']} has "
+                    f"shape {head['ov'].shape}, expected ({d_model}, {d_model})."
+                    + extra
+                )
+
+    declared_heads = summary.get("n_heads")
+    if declared_heads is not None and int(declared_heads) != len(layers[0]["heads"]):
+        raise ValueError(
+            f"{sum_p.name} declares n_heads={int(declared_heads)} but "
+            f"{w_p.name} holds {len(layers[0]['heads'])} ov_head* arrays per "
+            "layer. The summary and the arrays are from different runs."
+        )
+
+    return {
+        "layers": layers,
+        "is_per_layer": is_per_layer,
+        "n_layers": len(layers),
+        "n_heads": len(layers[0]["heads"]),
+        "d_model": d_model,
+        "source": str(w_p),
+    }
+
+
 def rotational_channel_from_blocks(block_data: dict, top_k: int = 32) -> dict:
     """
     Build the real/imaginary channel inputs from one layer's Schur block

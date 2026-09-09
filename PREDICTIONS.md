@@ -574,3 +574,16 @@ Not yet adjudicated. No Phase 7 *results* exist; `P-I1`'s gate exists as of 2026
 all of them emit nothing — no checkpoint sweep of motif strength has been run, no head
 table of motif rates and behavioural induction scores exists, and no activations or
 Phase 2 projectors exist in this repository.
+
+**Addendum, 2026-09-04 — `P-I1` has emitted a p-value, and it is
+INSUFFICIENT.** This paragraph is unchanged above because it is now stale for
+`P-I1` specifically and not for the others, which this pass did not touch.
+`tools/score_p_i1.py`, on the real 19-step sweep, the real behavioural series,
+and the relay-count null `PROJECT.md` §3.4 registers: **p = 0.1414**,
+attainable floor 0.0005, 116 heads scored (0 skipped — every forming head's
+above-null excess still located a rise), verdict **INSUFFICIENT**. Neither
+endpoint failure mode fires: 0 heads above-null at step 0, and the 2 heads
+absent at step 143000 do not include any with a high behavioural score. Not
+adjudicated — `claims/adjudications/` is untouched, and entering this there is
+the author's decision, not this run's. `POPPER_PLAN.md` §6v and `PROJECT.md`
+§3 carry the construction and the full number set.

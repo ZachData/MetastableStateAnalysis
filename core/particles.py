@@ -292,7 +292,10 @@ class ParticleTable:
         path = Path(path)
         payload = {k: np.asarray(v) for k, v in self.columns.items()}
         payload.update({f"extra__{k}": np.asarray(v) for k, v in self.extra.items()})
-        np.savez(path, **payload)
+        # Compressed, for InteractionTable.save's reason: the key columns
+        # repeat one value per row and dominate the file. np.load reads both
+        # encodings, so existing files keep loading.
+        np.savez_compressed(path, **payload)
 
     @classmethod
     def load(cls, path: Union[str, Path]) -> "ParticleTable":

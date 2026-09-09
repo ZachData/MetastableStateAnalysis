@@ -76,8 +76,28 @@ def check_prompt_admissible(structure_report: dict, prompt_key: str) -> None:
     verify_battery_structure produced for this prompt. This function does
     not re-derive degeneracy — that logic lives in battery_structure and
     is tested there; duplicating the rule here is how the two drift apart.
+
+    IT ALSO HAS TO READ THE KEYS THAT MODULE ACTUALLY WRITES, which until
+    2026-08-31 it did not. The only keys consulted were `degeneracy` and
+    `degeneracy_modes`, and `analyze_prompt` emits neither — it emits
+    `flags` and `verdict`. Handed a real report for a genuinely degenerate
+    prompt this gate returned None, so the one refusal standing between a
+    uniform prompt and a motif rate never fired. The tests did not catch it
+    because they passed `{"degeneracy": ["uniform"]}`, a shape nothing in
+    the repository produces. Both spellings are still honoured, so a caller
+    holding the older shape keeps its refusal.
+
+    `verdict` is taken whole: "usable" passes and anything else refuses.
+    battery_structure separates "degenerate" from "insufficient" and the
+    distinction is real, but neither can carry the test, and deciding which
+    of its verdicts are fatal here would be exactly the re-derivation the
+    paragraph above forbids.
     """
     modes = structure_report.get("degeneracy") or structure_report.get("degeneracy_modes")
+    if not modes:
+        verdict = structure_report.get("verdict")
+        if verdict is not None and verdict != "usable":
+            modes = structure_report.get("flags") or [verdict]
     if modes:
         raise DegeneratePrompt(
             f"prompt {prompt_key!r} is degenerate for motif analysis "

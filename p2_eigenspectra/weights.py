@@ -103,6 +103,48 @@ def _is_gptneox_name(model_name: str) -> bool:
 # OV extraction
 # ---------------------------------------------------------------------------
 
+def _as_float64(ov_data: dict) -> dict:
+    """
+    Promote every extracted OV array to float64, at the one point every
+    model type passes through.
+
+    Each `_extract_*` branch reads weights with torch's `.float()`, which is
+    float32, and `scipy.linalg.schur` decomposes in whatever precision it is
+    given. Measured on pythia-410m layer 9: single-precision Schur returns
+    vectors orthogonal only to ||Z^T Z - I|| = 1.5e-05, so the projector
+    P = Z Z^T built from them carries ||P P - P|| ~ 6e-06 — above
+    `core.interactions.PROJECTOR_TOL` (1e-6), which made `_as_basis` refuse
+    the projector outright. In float64 the same decomposition gives
+    3.2e-14 and 3.6e-09.
+
+    That refusal is not cosmetic and was not uniform: `np.allclose` carries
+    rtol=1e-5 alongside the atol, so whether a ~6e-06 residual passed
+    depended on where in the matrix it landed. Phase 7 refused step 2 of the
+    registered sweep and accepted steps 1 and 4, on projectors that were
+    equally non-idempotent. Which checkpoints failed was arbitrary.
+
+    Promoting here rather than inside `eigendecompose` keeps one rule for
+    the whole phase: everything downstream of extraction — the eigenvalues,
+    the Schur form, the symmetric part, the projectors and the per-head
+    circuits that Phase 7 turns into forces — is float64 from this point on.
+
+    This does NOT address `core/precision_policy.py`'s P2 item. Pythia ships
+    fp16 and an fp16-epsilon perturbation splits a genuinely real eigenvalue
+    pair into a complex one; that is a property of the published weights,
+    upstream of anything here, and the policy's own warning stands — a
+    float64 re-run answers half that question and looks like it answered all
+    of it.
+    """
+    def promote(x):
+        if isinstance(x, list):
+            return [promote(v) for v in x]
+        if isinstance(x, np.ndarray) and x.dtype.kind == "f":
+            return x.astype(np.float64, copy=False)
+        return x
+
+    return {k: promote(v) for k, v in ov_data.items()}
+
+
 def extract_ov_circuit(model, model_name: str) -> dict:
     """
     Extract per-head and total composed OV matrices from model weights.
@@ -143,18 +185,20 @@ def extract_ov_circuit(model, model_name: str) -> dict:
     cfg = MODEL_CONFIGS[model_name]
 
     if cfg["is_albert"]:
-        return _extract_albert_ov(model, model_name)
+        out = _extract_albert_ov(model, model_name)
     elif _is_gptneox_name(model_name):
         # Checked before the "bert" substring test on purpose — harmless
         # today, but a future registry key like "pythia-bert-distill"
         # would otherwise silently take the BERT branch.
-        return _extract_gptneox_ov(model, model_name)
+        out = _extract_gptneox_ov(model, model_name)
     elif "bert" in model_name:
-        return _extract_bert_ov(model, model_name)
+        out = _extract_bert_ov(model, model_name)
     elif "gpt2" in model_name:
-        return _extract_gpt2_ov(model, model_name)
+        out = _extract_gpt2_ov(model, model_name)
     else:
         raise ValueError(f"Unknown model type: {model_name}")
+
+    return _as_float64(out)
 
 
 def _extract_albert_ov(model, model_name: str) -> dict:

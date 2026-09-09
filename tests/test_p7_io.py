@@ -23,6 +23,7 @@ pytestmark = pytest.mark.pure
 from core.interactions import projection_fractions
 from p7_motifs.p7_io import (
     SIGN_CHANNEL_CHOICES,
+    load_ov_circuits,
     load_sign_channel,
     rotational_channel_from_blocks,
     write_formation_curve,
@@ -216,3 +217,93 @@ class TestWriters:
         }
         p = write_formation_curve(payload, tmp_path)
         assert json.loads(p.read_text())["checkpoint_steps"] == [0, 1000]
+
+
+# ---------------------------------------------------------------------------
+# The composed OV circuits — the third input build_head_edges needs
+# ---------------------------------------------------------------------------
+
+def _write_ov_weights(tmp_path, model="pythia-1.4b", d=8, n_heads=2,
+                      layers=("layer_0", "layer_1"), head_counts=None,
+                      shape=None):
+    """ov_summary_{stem}.json + ov_weights_{stem}.npz as
+    p2_eigenspectra/weights.save_weight_decomposition writes them."""
+    rng = np.random.default_rng(3)
+    stem = model.replace("/", "_")
+    json.dump({"is_per_layer": True, "layers": list(layers), "model": model,
+               "d_model": d, "d_head": d // 2, "n_heads": n_heads},
+              open(tmp_path / f"ov_summary_{stem}.json", "w"))
+    arrays = {}
+    for i, ln in enumerate(layers):
+        n_h = n_heads if head_counts is None else head_counts[i]
+        for h in range(n_h):
+            arrays[f"ov_head{h}_{ln}"] = rng.standard_normal(shape or (d, d))
+    np.savez_compressed(tmp_path / f"ov_weights_{stem}.npz", **arrays)
+    return model
+
+
+class TestLoadOVCircuits:
+
+    def test_reads_every_layer_and_head(self, tmp_path):
+        model = _write_ov_weights(tmp_path)
+        ov = load_ov_circuits(tmp_path, model)
+        assert ov["n_layers"] == 2 and ov["n_heads"] == 2
+        assert ov["d_model"] == 8
+        assert ov["layers"][1]["heads"][0]["ov"].shape == (8, 8)
+
+    def test_a_missing_decomposition_names_what_produces_it(self, tmp_path):
+        with pytest.raises(FileNotFoundError, match="Phase 2"):
+            load_ov_circuits(tmp_path, "pythia-1.4b")
+
+    def test_it_does_not_require_the_qk_arrays(self, tmp_path):
+        """p2d_io.load_operators reads the same file and raises without
+        wq_head*/wk_head*, because every Phase 2d sub-experiment needs M_h.
+        Phase 7 does not: the QK side enters only through pair types, which
+        come from token identity. Borrowing that loader would make a Phase 2
+        run that is complete for this phase unreadable by it."""
+        model = _write_ov_weights(tmp_path)
+        stem = model.replace("/", "_")
+        assert not any(
+            k.startswith("wq_head")
+            for k in np.load(tmp_path / f"ov_weights_{stem}.npz").files)
+        assert load_ov_circuits(tmp_path, model)["n_heads"] == 2
+
+    def test_a_ragged_head_count_is_refused(self, tmp_path):
+        """Otherwise found as an IndexError against the attention tensor
+        several loops into the run, with nothing naming the cause."""
+        model = _write_ov_weights(tmp_path, head_counts=[2, 1])
+        with pytest.raises(ValueError, match="head counts"):
+            load_ov_circuits(tmp_path, model)
+
+    def test_the_head_core_factor_is_refused_and_named(self, tmp_path):
+        """`ov_head_core` has the same nonzero spectrum as the composed OV
+        and a different action on the residual stream, and it is square, so
+        nothing about the shapes alone distinguishes them. The summary's
+        declared d_model is what makes this catchable: every head-core array
+        is (d_head, d_head), so an inferred d_model would come out as d_head
+        and every shape would agree."""
+        model = _write_ov_weights(tmp_path, shape=(4, 4), d=8)
+        with pytest.raises(ValueError, match="ov_head_core"):
+            load_ov_circuits(tmp_path, model)
+
+    def test_a_summary_that_disagrees_with_the_arrays_is_refused(self, tmp_path):
+        model = _write_ov_weights(tmp_path, n_heads=2)
+        stem = model.replace("/", "_")
+        summary = json.load(open(tmp_path / f"ov_summary_{stem}.json"))
+        summary["n_heads"] = 4
+        json.dump(summary, open(tmp_path / f"ov_summary_{stem}.json", "w"))
+        with pytest.raises(ValueError, match="different runs"):
+            load_ov_circuits(tmp_path, model)
+
+    def test_an_artifact_without_a_declared_d_model_still_loads(self, tmp_path):
+        """Older Phase 2 output predates the field. Inference is the
+        fallback, not the rule — it just cannot catch the substitution
+        above."""
+        model = _write_ov_weights(tmp_path)
+        stem = model.replace("/", "_")
+        summary = json.load(open(tmp_path / f"ov_summary_{stem}.json"))
+        for k in ("d_model", "d_head", "n_heads"):
+            summary.pop(k)
+        json.dump(summary, open(tmp_path / f"ov_summary_{stem}.json", "w"))
+        assert load_ov_circuits(tmp_path, model)["d_model"] == 8
+

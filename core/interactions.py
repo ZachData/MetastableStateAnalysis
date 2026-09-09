@@ -490,6 +490,30 @@ class InteractionTable:
 
         `retention` rides along as two scalar arrays rather than a pickled
         dict, so the thinning is recoverable from the file itself.
+
+        COMPRESSED, which for this table is not a marginal saving. Most of an
+        edge table is not measurement: `model` and `checkpoint_step` hold one
+        value repeated once per row, `prompt_key` eight and `pair_type` four,
+        and `real_frac`/`imag_frac` are NaN whenever the rotational channel
+        was not supplied (which `p7_motifs/run_7.py` documents as its normal
+        case). Measured on the step-54000 sweep table, 19,077,120 edges:
+
+            raw 5.49 GB -> 0.35 GB, 15x
+
+        Per column the ratio tracks how much of it is structure rather than
+        signal — layer 693x, checkpoint_step 686x, real_frac and imag_frac
+        686x (all NaN), model 295x, pair_type 174x, target 64x, source 11x —
+        against `weight` at 1.9x, which is the one column that is nearly all
+        information. A 5.49 GB table carries about 350 MB of measurement.
+
+        The cost is CPU on write, ~2-3 minutes against phase 7's ~15, and
+        none on read. `np.load` reads both encodings, so tables written
+        before this change keep loading unchanged; `tools/recompress_tables.py`
+        rewrites them in place if the space is wanted back.
+
+        The rest of the repository already compresses (`p1_mstate_tracking/
+        p1_io.py`, `core/frame_card.py`); this table and `ParticleTable` were
+        the two that did not.
         """
         for name, arr in {**self.columns, **self.extra}.items():
             if np.asarray(arr).dtype == object:
@@ -502,7 +526,7 @@ class InteractionTable:
         if self.retention is not None:
             for rk, rv in self.retention.items():
                 payload[f"retention__{rk}"] = np.asarray(rv)
-        np.savez(Path(path), **payload)
+        np.savez_compressed(Path(path), **payload)
 
     @classmethod
     def load(cls, path: Union[str, Path]) -> "InteractionTable":
