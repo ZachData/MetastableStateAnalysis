@@ -61,6 +61,41 @@ TARGETS = [  # file, layer, head, step  (behavioural leaders + peak step)
 ]
 
 
+def qk_trajectory():
+    """L7H8 static-QK rank sweep across the axis: induction-attn recovered as
+    a fraction of (baseline - full-static-QK-ablation), and r* per basis
+    (smallest rank reaching >= 0.5 of the effect)."""
+    def _s(f):
+        m = re.search(r'_s(\d+)_L7H8', f)
+        return int(m.group(1)) if m else 4000
+    files = sorted(glob.glob(str(AN / 'induction_qk_sweep_s*_L7H8.json'))
+                   + [str(AN / 'induction_qk_sweep.json')], key=_s)
+    rows = []
+    for f in files:
+        d = json.load(open(f))
+        s = _s(f)
+        base = d['baseline']['induction_attn']
+        C = {b: {r['rank']: r['induction_attn'] for r in d['curves'][b]} for b in d['curves']}
+        r0 = C['svd'][0]
+        dn = base - r0
+        def fr(b, r):
+            return ((C[b][r] - r0) / dn) if abs(dn) > 1e-4 else None
+        def rstar(b):
+            for r in sorted(C[b]):
+                v = fr(b, r)
+                if v is not None and v >= 0.5:
+                    return r
+            return None
+        rows.append({
+            "step": s, "baseline_induction_attn": base, "full_ablation_attn": r0,
+            "svd_frac": {r: fr('svd', r) for r in (8, 16, 24, 32)},
+            "schur_frac": {r: fr('schur', r) for r in (8, 12, 16, 24)},
+            "random_frac": {r: fr('random', r) for r in (16, 24, 32)},
+            "r_star": {"svd": rstar('svd'), "schur": rstar('schur'), "random": rstar('random')},
+        })
+    return rows
+
+
 def head_characterisations():
     out = []
     for fn, L, H, S in TARGETS:
@@ -110,8 +145,21 @@ if __name__ == "__main__":
               f"{h['phi']:5.2f} {h['henrici']:5.2f} | "
               f"{h['approx_copy_diag_z_mean']:+7.3f} {h['approx_copy_frac_diag_is_rowmax']:8.5f}")
 
+    qk = qk_trajectory()
+    print("\n=== C. L7H8 STATIC-QK rank sweep across the axis "
+          "(induction-attn recovered; r* = rank reaching 0.5) ===\n")
+    print(f"{'step':>7} {'base':>6} | {'svd@16':>7} {'svd@32':>7} | {'sch@12':>7} {'sch@16':>7} | "
+          f"{'rnd@16':>7} | {'r*svd':>6} {'r*sch':>6} {'r*rnd':>6}")
+    for r in qk:
+        print(f"{r['step']:>7} {r['baseline_induction_attn']:6.3f} | "
+              f"{_f(r['svd_frac'][16], 7)} {_f(r['svd_frac'][32], 7)} | "
+              f"{_f(r['schur_frac'][12], 7)} {_f(r['schur_frac'][16], 7)} | "
+              f"{_f(r['random_frac'][16], 7)} | "
+              f"{str(r['r_star']['svd']):>6} {str(r['r_star']['schur']):>6} {str(r['r_star']['random']):>6}")
+
     dest = AN / "induction_developmental_series.json"
     json.dump({"_what_this_is": __doc__,
-               "rank_sweep_trajectory_L7H8": traj,
+               "rank_sweep_trajectory_L7H8_OV": traj,
+               "rank_sweep_trajectory_L7H8_QK_static": qk,
                "head_characterisations": hc}, open(dest, "w"), indent=1)
     print(f"\nwrote {dest}")
