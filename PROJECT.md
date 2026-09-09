@@ -2520,6 +2520,56 @@ disk, and `core/pythia_registry.py` keeps `PYTHIA_410M_PILOT_STEPS` loadable for
 exactly this reason. `p1b_pilot`, `p2b_pilot`, `p2d_pilot` and `phase3` are
 small; `phase3` is referenced from `archive/`.
 
+### 5.3 The activation cache: measured before deleting (2026-09-09)
+
+Asked whether to clear the 355 GB activation cache and refill it with
+**real** pythia-70m activations. **Measured answer: do not delete — the premise
+does not hold.**
+
+*The size arithmetic, verified against the cache that exists.* Cost is
+`tokens x d_model x n_states x 2` (float16): `gpt2_large` 13.2M tokens, d=1280,
+10 states = **315.8 GiB**; `albert_xlarge_v2` 1.0M, d=2048, 10 states =
+**38.5 GiB**; total **354.3 GiB** against `du`'s 355G. The formula is good, so
+the projections below are too.
+
+*70m is much smaller — 7.1x — but that is not the binding factor.*
+
+| model | d | states | at 13.2M tokens |
+|---|---|---|---|
+| pythia-70m | 512 | 7 | **88.4 GiB** |
+| pythia-410m | 1024 | 25 | 631.6 GiB |
+
+**Token count dominates.** A 19-checkpoint 70m sweep with every layer costs
+1680 GiB at Blog-1's 13.2M tokens, **127 GiB at 1M**, and **25 GiB at 200k** —
+and the induction battery this project actually reads is **1,536 tokens**
+(8 x 192). The old cache is enormous because it holds 13.2M tokens for Blog-1,
+roughly a hundred times more than anything the current programme touches.
+
+*Three reasons not to delete.*
+
+1. **It frees the wrong drive.** `activation_cache` lives on **HDD_1TB, which
+   has 440 GB free (50 % used)**. The constrained volume is **WDS_500 at 95 GB
+   free (79 %)**. A 19-checkpoint 70m sweep at 1M tokens (127 GiB) fits in
+   HDD_1TB's existing free space three times over.
+2. **The caches are probably not regenerable.** `HF_HOME` holds **only**
+   `models--EleutherAI--pythia-410m` (51 GB). No gpt2-large, no albert, no 70m —
+   and `HF_HUB_OFFLINE=1`. Deleting is irreversible without network.
+3. **`P6-R2` and `P6-R4` are REGISTERED on albert-xlarge-v2** (their entries cite
+   "albert-xlarge-v2's exact shape" and "the 2026-04 ALBERT run"), and
+   `CLAIM-C`'s statement names gpt2-large. Deleting their instrument's data
+   without checking what those entries still need would be §6's "flattering
+   subset" problem arriving through the disk.
+
+*A premise that needs checking first.* **No pythia-70m checkpoints were found on
+either volume**, and the 70m *model* is not mirrored in `HF_HOME` either. If
+manually-made 70m checkpoints exist they are somewhere not searched; if they do
+not, the sweep needs network access before it needs disk.
+
+*If WDS_500 space is the real need*, the target is `data/` (171 GB: `phase12`
+114 GB, `hf` 51 GB, `phase7` 6.1 GB) — **not** the activation cache, and not
+`results/` (132 GB, protected by §5.2). `data/superseded/` (1.1 GB) is the only
+part already marked superseded.
+
 ---
 
 ## 6. Untouched, and named so it is not mistaken for done
