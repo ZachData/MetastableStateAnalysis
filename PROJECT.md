@@ -108,11 +108,23 @@ bug.
   attention (0.779) — the first end-to-end validation that `second_copy_nll`
   measures what it should; and attention is flat at 0.90–0.93 while ΔNLL varies
   fourfold, the QK/OV dissociation on a third axis.
-- **NEXT: draft §6x.** All the 7b diagnostics are done and three separate checks
-  designed to break findings instead confirmed them (split-half whitening,
-  `L5H2` on symmetry, the position axis). The entry is about **gain
-  concentration**, run as the **2² factorial** `{M, Mᵀ, −M, −Mᵀ}`, controlled
-  against `L2H10`, with G6's pre-run prediction on the record.
+- **The S/A factorial is RETIRED before registration** (§3.12-M). Its own pilot
+  killed it: `−M` is off-scale at 5.13× ablation (KL 0.97 vs 0.09) so additivity
+  fails, and the role swap that §2.4.3 proved inseparable from any sign contrast
+  **destroys copying on its own** (`Mᵀ` = 0.94× ablation), so the S-sign effect
+  can only be measured on a floor. §3.12-L's rank result shows no other points
+  exist, so it is not repairable. `L2H10` is also not usable as a control (§M4).
+- **What replaced it is a stronger result: ALIGNMENT is the mechanism.** `Mᵀ` —
+  same singular values, same `‖·‖_F`, same eigenvalue moduli, only the read and
+  write subspaces exchanged — destroys copying as completely as deleting the
+  head. Gain concentration (G6) is a **marker** of which head copies; it does
+  not carry the copying. G6's own pre-run prediction is falsified, and that is
+  the finding.
+- **NEXT: §6x should be drafted around ALIGNMENT, not sign and not
+  concentration.** The open design question is what a *graded, energy-matched*
+  alignment perturbation looks like that stays inside the rank-`d_head` manifold
+  — `Mᵀ` is one extreme point and the identity is the other, and nothing between
+  them is yet known to be writable.
 - **`data/analysis/*.json` are git-ignored** — the batch outputs
   (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
   `induction_subspace_characterize_*`, `induction_developmental_series`,
@@ -1791,6 +1803,64 @@ larger than the operator**. The precondition passes.
 median of 0.584 — at the baseline, carrying no signal. Its **QK** symmetric
 fraction is **0.956 against a layer median of 0.520**. The matcher becomes a
 similarity kernel; the copier does not, and never does.
+
+**M. The S/A factorial is not a viable Stage 3 design — its own pilot killed it,
+and produced a better result (2026-09-09,
+`tools/run/induction_sa_pilot.py`).** Step 4000, 16 sequences, restore exact
+(`0.0e+00`) on every head. ΔNLL against the unablated model:
+
+| arm | `L7H8` ΔNLL | KL | /ablation | `L9H9` | `L2H10` |
+|---|---|---|---|---|---|
+| ablation | +0.2420 | 0.093 | — | +0.0752 | −0.0129 |
+| scale 0.25 | +0.1412 | 0.036 | | +0.0457 | −0.0096 |
+| scale 0.50 | +0.0729 | 0.011 | | +0.0242 | −0.0034 |
+| scale 0.75 | +0.0279 | 0.002 | | +0.0094 | −0.0015 |
+| **`Mᵀ`** | **+0.2278** | 0.089 | **0.94×** | +0.0928 (1.23×) | −0.0112 |
+| **`−M`** | **+1.2409** | **0.969** | **5.13×** | +0.3163 (4.21×) | −0.0076 |
+| **`−Mᵀ`** | **+0.4000** | 0.181 | **1.65×** | +0.1113 (1.48×) | −0.0083 |
+
+*M1 — `−M` is off-scale, exactly as predicted.* **5.13×** ablation on `L7H8`,
+4.21× on `L9H9`, with KL **0.969** against ablation's 0.093 — an order of
+magnitude. Reversing the write is far more destructive than removing it, because
+the head actively suppresses the token it used to promote. **So the balanced
+main effects — which average `−M` with `−Mᵀ` — are dominated by one catastrophic
+arm, and additivity fails.** The prediction was made from the algebra before the
+run and both halves hold.
+
+*M2 — and the design cannot answer its own question.* §2.4.3 proved every
+pairwise contrast isolating a sign **also swaps the read/write role**. The pilot
+now measures what that swap costs on its own: **`Mᵀ` alone destroys copying at
+0.94× ablation.** So by the time the transpose has been applied the effect is
+already gone, and the `S`-sign contrast (`Mᵀ` → `−Mᵀ`, 0.94× → 1.65×) is
+measured **on top of a floor**. The main effects cannot rescue it because of M1.
+**Both routes to the `S` sign are blocked, and §3.12-L's rank result shows no
+other points exist** — so this is not a design to be repaired. It is retired
+before registration, which is what the pilot was for.
+
+*M3 — `G6`'s pre-run prediction is FALSIFIED, and the falsification is the
+finding.* G6 predicted `−Mᵀ` would **not** destroy copying, because it preserves
+every singular value and hence gain concentration exactly. It destroys it at
+**1.65× ablation**. And `Mᵀ` — same singular values, same Frobenius norm, same
+eigenvalue moduli, *nothing changed but which subspace reads and which writes* —
+destroys it at **0.94×**, as completely as deleting the head.
+
+**So the copier's function is carried by read/write ALIGNMENT, not by its
+spectrum and not by its gain profile.** §3.12-G6 showed gain concentration
+identifies *which head* is a copier; it does not carry *the copying*. That is
+consistent with §3.12-H2 — the top OV direction does not survive whitening
+(overlap 0.217) while the concentration does — and it completes that reading:
+concentration is a **marker**, alignment is the **mechanism**.
+
+*M4 — `L2H10` is not usable as a control, measured rather than argued.* Its
+whole dynamic range is |ΔNLL| ≤ 0.013 and the arm ratios (0.87×, 0.59×, 0.65×)
+are noise on that scale. A head whose baseline effect is ~2 % of the target's
+cannot calibrate an intervention on the target. The §3.12-J finding that it
+matches without copying stands; its use as the Stage 3 control does not.
+
+*M5 — a nonlinearity worth carrying forward.* The scale curve is strongly
+**sublinear**: halving `L7H8`'s OV costs only +0.073 against ablation's +0.242,
+so **50 % of the operator does 30 % of the damage**. Any future arm reported in
+"equivalent λ" is on a compressive scale and must say so.
 
 ---
 
