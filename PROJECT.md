@@ -2184,9 +2184,27 @@ too broadly: `L7H8` is not the largest OV effect in the circuit, its own
 prev-token partner is. Every "the causally load-bearing half" statement needs
 that qualifier.
 
-**Caveat, not yet closed:** the two large heads may simply have larger OV norms,
-and norm-proportionality is not ruled out here. The check is one sweep of
-`‖OV‖_F` against `Δ‖resid‖` across heads.
+**Caveat CLOSED (2026-09-09, `data/analysis/norm_proportionality.json`), and
+it inverts rather than merely fails.** 38 heads sampled across the full `‖OV‖_F`
+range (0.4–13.5), each ablated and measured:
+
+- Spearman `‖OV‖_F` vs `|Δ‖resid‖|` = **−0.241** (slightly *negative*)
+- Spearman `‖OV‖_F` vs `ΔNLL` = **+0.087** (nothing)
+- linear fit **r² = 0.001** — operator norm explains **one tenth of one percent**
+  of the variance
+
+| head | `‖OV‖_F` | `Δ‖resid‖` | predicted by norm | **excess** |
+|---|---|---|---|---|
+| `L11H4` | **13.470** | −0.151 | 0.588 | −0.44 |
+| `L16H2` | 8.639 | +0.002 | 0.415 | −0.41 |
+| `L11H14` | 8.080 | −0.405 | 0.430 | −0.03 |
+| **`L5H2`** | 5.336 | **−5.924** | 0.506 | **+5.42** |
+| **`L7H8`** | **4.792** | **−8.382** | 0.520 | **+7.86** |
+
+`L11H4` carries **2.8× `L7H8`'s norm** and has an effect **50× smaller**. Heads
+with larger operators do less. So "these two heads are just big" is not merely
+unsupported — the relationship runs the wrong way, and the residual-geometry
+reading survives on its own.
 
 *Q4 — QK against OV on the same readout.* Ablating the static QK costs +0.616,
 **56 % of the OV ablation's +1.107**. §3.11 only ever read attention for the QK
