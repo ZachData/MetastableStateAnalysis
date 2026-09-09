@@ -61,6 +61,45 @@ TARGETS = [  # file, layer, head, step  (behavioural leaders + peak step)
 ]
 
 
+QK_HEAD_FILES = {  # (layer, head, step) -> file  (the genuine 2-stage heads)
+    (7, 8): sorted(glob.glob(str(AN / 'induction_qk_sweep_s*_L7H8.json'))
+                   + [str(AN / 'induction_qk_sweep.json')]),
+    (1, 15): [str(AN / 'induction_qk_sweep_s16000_L1H15.json')],
+    (9, 9): [str(AN / 'induction_qk_sweep_s8000_L9H9.json')],
+    (6, 0): [str(AN / 'induction_qk_sweep_s143000_L6H0.json')],
+}
+
+
+def _qk_row(f):
+    d = json.load(open(f))
+    base = d['baseline']['induction_attn']
+    C = {b: {r['rank']: r['induction_attn'] for r in d['curves'][b]} for b in d['curves']}
+    r0 = C['svd'][0]
+    dn = base - r0
+    def fr(b, r):
+        return ((C[b][r] - r0) / dn) if abs(dn) > 1e-4 else None
+    def rstar(b):
+        for r in sorted(C[b]):
+            v = fr(b, r)
+            if v is not None and v >= 0.5:
+                return r
+        return None
+    return {
+        "layer": d['target']['layer'], "head": d['target']['head'],
+        "step": d['target']['step'],
+        "baseline_induction_attn": base, "full_ablation_attn": r0,
+        "svd_frac": {r: fr('svd', r) for r in (8, 16, 24, 32)},
+        "schur_frac": {r: fr('schur', r) for r in (8, 12, 16, 24)},
+        "random_frac": {r: fr('random', r) for r in (8, 16, 24, 32)},
+        "r_star": {"svd": rstar('svd'), "schur": rstar('schur'), "random": rstar('random')},
+    }
+
+
+def qk_other_heads():
+    """The 3 other genuine induction heads' static-QK sweep, one step each."""
+    return [_qk_row(QK_HEAD_FILES[k][0]) for k in ((1, 15), (9, 9), (6, 0))]
+
+
 def qk_trajectory():
     """L7H8 static-QK rank sweep across the axis: induction-attn recovered as
     a fraction of (baseline - full-static-QK-ablation), and r* per basis
@@ -157,9 +196,23 @@ if __name__ == "__main__":
               f"{_f(r['random_frac'][16], 7)} | "
               f"{str(r['r_star']['svd']):>6} {str(r['r_star']['schur']):>6} {str(r['r_star']['random']):>6}")
 
+    qko = qk_other_heads()
+    print("\n=== D. static-QK sweep on the 3 other genuine induction heads ===\n")
+    print(f"{'head':>7} {'step':>7} {'base':>6} | {'svd@16':>7} {'sch@16':>7} {'rnd@16':>7} | "
+          f"{'r*svd':>6} {'r*sch':>6} {'r*rnd':>6}   pattern")
+    for r in qko:
+        sv, sc, rn = r['r_star']['svd'], r['r_star']['schur'], r['r_star']['random']
+        pat = ("Schur>rnd>SVD (like L7H8)" if (sc is not None and rn is not None and sv is not None
+                                              and sc < rn <= sv)
+               else "SVD~Schur~rnd (generic)")
+        print(f"L{r['layer']}H{r['head']:<2} {r['step']:>7} {r['baseline_induction_attn']:6.3f} | "
+              f"{_f(r['svd_frac'][16], 7)} {_f(r['schur_frac'][16], 7)} {_f(r['random_frac'][16], 7)} | "
+              f"{str(sv):>6} {str(sc):>6} {str(rn):>6}   {pat}")
+
     dest = AN / "induction_developmental_series.json"
     json.dump({"_what_this_is": __doc__,
                "rank_sweep_trajectory_L7H8_OV": traj,
                "rank_sweep_trajectory_L7H8_QK_static": qk,
+               "qk_static_other_heads": qko,
                "head_characterisations": hc}, open(dest, "w"), indent=1)
     print(f"\nwrote {dest}")
