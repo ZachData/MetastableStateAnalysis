@@ -190,9 +190,22 @@ bug.
   the same effect **without sharing weights**: write-subspace overlap 0.222
   against a chance 0.250, residual-delta cosine **+0.868**. The effect
   **compounds** down the stack (23× amplification for `L7H8`).
-- **NEXT:** (1) the §2.5 isometric path on `L7H8` — still the one designed
-  intervention never run; (2) characterise `L5H2`, which has twice the effect and
-  a fraction of the attention; (3) then §6x.
+- **SUB-PHASE `7d` IS NOW THE ACTIVE THREAD** (§3.14.2, promoted 2026-09-09).
+  Its premise was restated the same day it was queued: §3.12-O/P killed the
+  three-stage reading and §3.12-S killed the serial reading of the pair, so the
+  object is **not a chain of stages** but a **set of functionally redundant,
+  structurally distinct heads** holding a residual-stream regime. Five questions:
+  how many members, did they form together, did they form as early as possible,
+  did they form the same way, and are they one class or several.
+- **RUNNING: `tools/run/redundancy_catalog.py`** — single-head OV ablation ΔNLL
+  for **all 384 heads** at step 16000. A full sweep and not a proxy, because no
+  weights-only quantity predicts causal effect (§3.12-R, -G6, -S).
+- **The most conspicuous gap: `L5H2` has no formation curve.** §3.11-A has
+  `L7H8`'s across all 19 steps; the head with **twice** the effect has none. Add
+  the **interaction per checkpoint**, which dates the *redundancy* rather than
+  the heads.
+- **Still unrun, and still the only designed intervention that is:** the §2.5
+  isometric path on `L7H8`.
 - **§3.14 records the organisation**: three objects (7a population / 7b
   mechanism / 7c formation), the author's queued **7d case-study programme**
   (follow all three circuit stages across every checkpoint, look for phase
@@ -2335,38 +2348,89 @@ null blocking 7b's clean one. Note that the labels are for *this document's*
 organisation; they are not new phase directories, and §3's numbering is
 unchanged (`INDEX.md`'s rule: do not rename directories).
 
-### 3.14.2 Queued: `7d`, the case-study programme — **the author's direction,
-recorded 2026-09-09, not started**
+### 3.14.2 `7d` — the redundancy catalogue. **PROMOTED TO ACTIVE 2026-09-09**
 
-Take **one induction circuit as a case study** and follow **each of its three
-stages** (§3.12-O: positional matcher → content matcher → token copier) across
-**every checkpoint**, asking three things of each stage:
+Queued earlier the same day as a case-study programme following a circuit's
+three stages. **Two results overturned that framing within hours and the
+programme is better for it**, so the premise is restated rather than inherited:
 
-1. **How does it evolve?** Per-stage developmental series, not just the endpoint
-   snapshots §3.11 has been taking.
-2. **Does it correlate with a phase?** Against the transitions already on the
-   axis — the population repulsive collapse and the 512–2000 window (§3.12-A,
-   noting §3.12-N3: that window is the literature's, not ours), the OV plane
-   rotation (§3.12-F2), the numerical-abscissa takeoff (§3.12-G5), the
-   composition switch-on (§3.12-H1), the QK symmetry takeoff (§3.12-I).
-3. **Is there particle dynamics inside it?** This is where the project's own
-   frame (`core/particles.py`, `core/dual_reading.py`, `P-I5`'s geometric
-   reading) attaches to a circuit rather than to a population — the thing the
-   retired co-location frame was reaching for and could not have without
-   circularity (§3.10, `POPPER_PLAN.md` §6w).
+- **§3.12-O/P killed the three-stage reading.** `L7H8` is not a token-identity
+  copier, the real copiers sit in layers 9–20, and the mediation test found **no
+  sub-additivity anywhere** — `L7H8` does not route through them.
+- **§3.12-S killed the serial reading of the pair itself.** `L5H2` × `L7H8`
+  interact at **+4.151** (joint 2.2× the parts-sum), and they converge on an
+  **87 %-aligned residual effect from chance-level weight overlap**.
 
-Then **repeat over as many circuits as can be found** — other induction heads in
-410m, the copier band of layers 9–20, and 70m under §3.9's own registered grid —
-and ask the question the single case cannot: **is the particle dynamics
-correlated ACROSS cases?** A shared dynamical signature over independent circuits
-is a population claim that no single circuit can make, and it is the natural home
-for anything §3.12 produces that wants to generalise.
+So the object is **not a chain of stages**. It is a **set of functionally
+redundant, structurally distinct heads** that jointly hold a residual-stream
+regime, and the programme's unit is that set and its classes.
 
-*Why it is queued rather than started.* It needs 7b's mechanism settled first —
-§3.12-O has just moved the target from "which head copies" to "what does `L7H8`
-write", and a case study built on the two-stage reading would be built on a
-picture that is currently being revised. It also needs the `dual_reading`
-pairwise-field extension that `P-I5` is blocked on (§3.12-C).
+#### The five questions, as asked
+
+1. **How many members are there?** `L5H2` and `L7H8` may be a pair or the two
+   visible members of a set. §3.12-R's 38-head sample cannot say.
+2. **Did they form at the same time?** Or at different checkpoints?
+3. **Did they form at the earliest point the network *could*?** The literature
+   puts induction-head emergence near step 1000 in Pythia (§3.12-N3), so
+   "as early as possible" is a checkable claim, not a figure of speech.
+4. **Did they form the same way — same structure, same job?** `L5H2` is
+   spectrally mixed (attractive fraction 0.444, the only one of four), the least
+   gain-concentrated, and its QK symmetry **never leaves baseline**; `L7H8` is
+   100 % repulsive with QK symmetry reaching 0.956. Two very different operators
+   producing an 87 %-aligned effect.
+5. **Are they one class or several?** With a catalogue in hand, do members
+   cluster by structure, by formation time, or not at all?
+
+#### What each question needs
+
+**Q1 — membership.** `tools/run/redundancy_catalog.py`, launched 2026-09-09:
+single-head OV ablation `ΔNLL` for **all 384 heads** at step 16000. A full sweep
+rather than a proxy screen **because no weights-only quantity predicts causal
+effect** — §3.12-R ruled out `‖OV‖_F` (r² = 0.001, relation inverted), §3.12-G6
+ruled out every spectral field, and §3.12-S showed weight- and function-space
+overlap come apart. A proxy would inherit exactly that failure.
+
+**Q2/Q3 — timing.** The causal formation curve is `ΔNLL` per checkpoint per
+member. §3.11-A already has `L7H8`'s (≈0 through step 2000, then +0.24 → +0.73 →
++1.02 → +1.47 at 54000, +1.18 at 143000). **`L5H2`'s does not exist** — that is
+the single most conspicuous gap, given it has twice the effect. Add the
+**interaction per checkpoint**, which dates the *redundancy* rather than the
+heads, and is the question no single-head curve can answer.
+
+**Q4 — structure.** Largely **already on disk** and unread along this axis:
+`qk_symmetry_sweep.json` (384 heads × 19 steps), `ov_per_head_series.json`
+(spectral fields, same grid), `copying_score_sweep.json` (8 steps),
+`behavioural_series.json`. What is missing is the *causal* side per member, and
+the read-vs-write subspace geometry §3.12-S introduced.
+
+**Q5 — classes.** Only answerable after Q1. Cluster members on (formation step,
+spectral signature, QK symmetry trajectory, copying score, causal magnitude) and
+ask whether the structure is discrete or continuous — reporting **both** a
+central-tendency and an extremum view, per §3.13.
+
+#### Constraints this programme inherits, and must not lose
+
+- **Weight-space overlap is not function-space overlap** (§3.12-S). Every
+  composition score in §3.12 is a weight-space measure and is blind to the
+  redundancy the ablations show. Catalogue membership must be defined causally.
+- **§3.13's rule**: report the mean view *and* the extremum view, and never
+  choose between them after seeing the data. §3.12-J found the right instrument
+  changes with *training stage*, so this applies per checkpoint too.
+- **The spent-artifact rule** (`check_registry` rule 3). Everything 7d touches on
+  410m is exploratory and **cannot later be registered and adjudicated on the
+  same data** — which is exactly why `P-I7` was registered against an unmeasured
+  model. Any 7d claim intended for the registry needs its own unseen test site.
+- **The particle-dynamics half needs `dual_reading`'s pairwise field**, which
+  `P-I5` is blocked on (§3.12-C). Until it exists, 7d can characterise structure
+  and timing but not inter-particle geometry.
+
+#### Where the cross-case question lives
+
+The original framing's best part survives: once several circuits are catalogued
+— other 410m members, and pythia-70m under §3.9's grid — ask whether their
+**dynamics correlate across cases**. A shared signature over independent
+circuits is a population claim no single circuit can make, and it is the natural
+home for anything §3.12 produced that wants to generalise.
 
 ### 3.14.3 Defects found this session, not yet fixed
 
