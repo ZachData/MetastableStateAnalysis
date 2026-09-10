@@ -54,6 +54,15 @@ and 1000, so that is the finest interval this axis can resolve. `L7H8` — the
 head §3.11–§3.12 was largely spent on — is the **last** member to arrive, and
 the only one of the six that rises monotonically.
 
+**Read the ordering and the clustering together, not one instead of the other.**
+Five of the six form inside `(512, 2000]` — one doubling of training on a
+143,000-step axis, with the remaining 140,000 steps recruiting nobody, and the
+window is exactly where the model acquires induction. So the members are
+*ordered* at the resolution of the grid and *simultaneous* at the scale of
+training. Whether that shared window is a common trigger or a cascade is not
+decidable on one model; §3.14.4-A gives the pythia-70m design that decides it,
+and it is the one 7d question that could carry a registered prediction.
+
 **The redundancy postdates both heads.** The interaction is ≈0 while `L5H2` is
 at its maximum (−0.03 at 1000, +0.02 at 2000), then +0.39 (3000), +1.72 (4000),
 +4.15 (16000), +4.17 (32000). Dating the set by dating its members would have
@@ -65,6 +74,19 @@ Full table and caveats: `PROJECT.md` §3.12-U.
 
 ## What is open
 
+**Priority, set 2026-09-10.** This is the thread the project is working on, and
+`PROJECT.md` §3.14.4 states the three questions driving it — what the members are
+doing, whether there is any relationship between them, and why they form in one
+narrow window. Read §3.14.4 before picking from the list below: it converts each
+question into the specific measurement that answers it, and it flags that **the
+members are not known to be independent** — one pair has ever been measured and
+it is strongly redundant.
+
+**The pairwise interaction matrix (pass 2) is the highest-value item**, because
+it is the only measurement that can answer the relationship question. Run it at
+**step 16000 or later**: the readout ceiling makes earlier interactions
+uninterpretable, and biases them toward the serial-looking sign.
+
 - **Q4 — structure per member.** Largely on disk and unread along this axis:
   `qk_symmetry_sweep.json` (384 heads × 19 steps), `ov_per_head_series.json`,
   `copying_score_sweep.json`, `behavioural_series.json`. §3.12-U says which
@@ -72,9 +94,15 @@ Full table and caveats: `PROJECT.md` §3.12-U.
 - **Q5 — classes.** Needs Q4. Cluster on (formation step, spectral signature, QK
   symmetry trajectory, copying score, causal magnitude); report both views
   per §3.13.
-- **Pass 2 of the catalogue** — the pairwise interaction matrix over the top
-  members (6 arms for the top 4, 45 for the top 10) at a fixed 16 sequences.
-  One redundancy set, or several disjoint ones?
+- **Pass 2 of the catalogue — the pairwise interaction matrix. Do this first.**
+  The top members, `n(n−1)/2` arms — 6 for the top 4, 45 for the top 10 — at a
+  fixed 16 sequences, **at step 16000 or later**. One redundancy set, or several
+  disjoint ones? `member_formation_curves.py --pair` already computes one cell;
+  what is missing is the loop over cells. There is already a hint in §3.12-U's
+  own table that the answer is *not* "independent": across training the **sum of
+  the six single-head effects falls 12.44 → 2.90** while the **joint pair arm
+  only falls 8.44 → 5.91**, so removing heads together keeps costing what
+  removing them one at a time stops costing.
 - **The step-1000 circuit, which is a different circuit.** At step 1000 the
   mechanism is `L5H2` (+4.97) and `L11H14` (+3.57), with `L7H8` absent and every
   other member under +0.06. `L11H14` is the top copier in the model at 143000

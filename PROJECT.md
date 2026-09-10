@@ -112,11 +112,29 @@ the fastest way into this thread, and §3.12-S/T/U remain the detail.
   arrives**, so the redundancy postdates both heads, and four of six members
   **decay to 5–22 % of their peak** while `L7H8` alone rises monotonically.
 
-**NEXT ACTIONS, in order:**
-1. **Pass 2 of the catalogue** — the pairwise interaction matrix over the top
-   members (6 arms for the top 4, 45 for the top 10) at a **fixed 16 sequences**
-   so it is comparable with §3.12-S. Are they one redundancy set or several
-   disjoint ones?
+**THIS IS THE THREAD TO WORK ON.** Stated by the user, 2026-09-10: *"I really
+want to work on that. That's what I'm personally most interested in. I want to
+see what all these induction heads are doing and to see if there's any
+relationship between them and why they're all so independent, but they all seem
+to form at the same time."* Those are three questions, they are all live, and
+**§3.14.4 turns each into the specific measurement that would answer it.** Read
+that section before picking an action. Two of the three are already partly
+answered and one of them contains a false premise worth knowing about — the
+heads are **not** known to be independent; the only pair ever measured is
+strongly *redundant*, and every other pair is simply unmeasured.
+
+**NEXT ACTIONS, in order.** 1 and 2 serve the user's questions directly and are
+the reason for the ordering; 3 and 4 were the previous plan and still stand.
+
+1. **Pass 2 of the catalogue — the pairwise interaction matrix.** The single
+   highest-value measurement in the phase, because it is the *only* thing that
+   can answer "is there a relationship between them" (§3.14.4-B). Top members,
+   `n(n−1)/2` arms — 6 for the top 4, 45 for the top 10 — at a **fixed 16
+   sequences** so it is comparable with §3.12-S. Are they one redundancy set or
+   several disjoint ones? `p7d_redundancy/member_formation_curves.py --pair`
+   already runs one cell of this matrix; the runner it needs is that loop.
+   **Run it at step 16000 or later**, where the readout has headroom — see
+   §3.14.4-D, this is exactly where the ceiling bites.
 2. **The step-1000 circuit is a different circuit, and it is now the cheapest
    open question.** §3.12-U found that at step 1000 the mechanism is `L5H2`
    (+4.97) **and `L11H14` (+3.57)**, with `L7H8` absent and every other member
@@ -2525,6 +2543,118 @@ The original framing's best part survives: once several circuits are catalogued
 **dynamics correlate across cases**. A shared signature over independent
 circuits is a population claim no single circuit can make, and it is the natural
 home for anything §3.12 produced that wants to generalise.
+
+### 3.14.4 The three questions `7d` is actually for (2026-09-10)
+
+Stated by the user when `7d` got its directory: *what are all these induction
+heads doing, is there any relationship between them, and why are they all so
+independent but seem to form at the same time?* Each is answerable. One rests on
+a premise the data does not support, and saying so is the most useful thing this
+section does.
+
+#### A. "Why do they all seem to form at the same time?" — **they do, and that is the finding**
+
+§3.12-U reads as *"the members formed at different times"*, and at the
+resolution of the checkpoint grid that is correct. **At the scale of training it
+is the wrong emphasis, and the user's reading is the better one.** Five of the
+six members cross into existence inside `(512, 2000]`:
+
+| window | members |
+|---|---|
+| `(512, 1000]` | `L5H2`, `L11H14`, `L8H6` |
+| `(1000, 2000]` | `L12H5`, `L8H9` |
+| `(2000, 3000]` | `L7H8` |
+
+That is **one doubling of training on a 143,000-step axis** — the last 140,000
+steps recruit nobody. And the window is not arbitrary: it is exactly where the
+model acquires induction at all, second-copy NLL **12.63 → 4.91 → 1.56**. So
+both statements are true and they should be stated together: *ordered at the
+grid's resolution, simultaneous at the scale of training.*
+
+**The real question is therefore whether formation time has a common cause.**
+Two hypotheses, and they are distinguishable:
+
+- **Recruitment.** The induction phase transition is a single event that makes
+  many heads useful at once, and formation order is incidental — noise on a
+  shared trigger.
+- **Cascade.** One head forms first and its presence is what makes the others
+  useful, so the order is causal and should be reproducible.
+
+**The measurement that separates them** is not on the 410m axis at all, because
+`n = 1` model gives one draw of the ordering. It needs **a second model** —
+pythia-70m under §3.9's grid, which §5.3 records as not yet on disk. If the
+order `L5H2 → L12H5 → L7H8` (or its analogue) reappears in a differently-seeded
+model, that is cascade; if the *window* reappears but the order scrambles, that
+is recruitment. **This is also the one 7d question that could carry a
+registered prediction**, precisely because 70m is an unmeasured site and the
+spent-artifact rule does not bite there.
+
+#### B. "Is there any relationship between them?" — **unmeasured, and the premise of independence is not supported**
+
+The heads are **not** known to be independent. Exactly one pair has ever had its
+interaction measured, and it is **strongly redundant**: `L5H2` × `L7H8` at
+**+4.151**, joint 2.2× the parts-sum (§3.12-S). Every other pair among the ~10
+members is simply **unmeasured** — 44 of the 45 cells of the top-10 matrix are
+empty. "They are all so independent" is an impression from reading the
+single-head column of §3.12-T, which by construction says nothing about pairs.
+
+There is already evidence pointing the other way, and it is in §3.12-U's own
+table. Compare the **sum of the six single-head effects** against the **joint
+pair arm**:
+
+| step | Σ singles | joint(`L5H2`,`L7H8`) | ratio joint : Σ-of-that-pair |
+|---|---|---|---|
+| 2000 | **+12.44** | +8.44 | 1.00 |
+| 4000 | +9.09 | +8.18 | 1.27 |
+| 16000 | +4.30 | +7.48 | 2.24 |
+| 143000 | **+2.90** | +5.91 | **2.38** |
+
+**The sum of what each head is individually worth collapses four-fold, while
+removing the pair together still costs most of what it ever did.** That is the
+signature of a set becoming *more* interchangeable over training, not less — and
+it is the opposite of independence. Pass 2 (next action 1) fills the matrix and
+settles it.
+
+#### C. "What are all these induction heads doing?" — **partly on disk, and the members are not copiers**
+
+Two things are already known and should not be re-derived. The members are
+**spread across layers 5, 7, 8, 8, 11, 12, 15**, *not* clustered in the 9–20
+band where the token-identity copiers live (§3.12-O2) — membership and copying
+are different properties. And the pair that has been characterised is
+**structurally opposite**: `L5H2` is spectrally mixed (attractive fraction
+0.444), least gain-concentrated, QK symmetry never leaves baseline; `L7H8` is
+100 % repulsive with QK symmetry reaching 0.956. Two very different operators
+producing an **87 %-aligned** effect.
+
+What is missing is the same characterisation for `L12H5`, `L8H6`, `L11H14` and
+`L8H9`, and it is **mostly on disk already**: `qk_symmetry_sweep.json` (384
+heads × 19 steps), `ov_per_head_series.json`, `copying_score_sweep.json`,
+`behavioural_series.json`. The catalogue says which rows to read and §3.12-U says
+which **steps** matter — the action is in `(512, 4000]`, not at the endpoints,
+which is where every one of those files has previously been read. This is next
+action 3, it costs no forward passes, and it is the input Q5 (classes) needs.
+
+#### D. The one thing that will waste a day if forgotten
+
+**The readout has a ceiling and the interesting steps are against it.**
+`ΔNLL` on the second copy is bounded by uniform prediction, `ln 50304 = 10.83`.
+At steps 1000–3000 both the single-`L5H2` arm and the joint arm sit within
+**0.83–1.4 nats** of it, and the `L5H2`×`L11H14` pilot lands *past* it at 11.77.
+
+Three consequences, all of which have already nearly bitten:
+
+1. Early magnitudes are **floors**, not measurements.
+2. Interactions are **compressed toward zero** there — so §3.12-U's "interaction
+   ≈ 0 before `L7H8` arrives" is safe as a *date* only because two
+   ceiling-immune instruments agree with it (`L7H8`'s own curve, and the
+   δ-cosine, which is geometric).
+3. The compression biases interactions toward apparent **sub**-additivity
+   (§3.12-M5) — which is the serial-circuit signature. **A serial-looking result
+   measured near the ceiling is an artifact until proven otherwise.**
+
+So: run the pairwise matrix at **step 16000 or later**, where there is 2.8+ nats
+of headroom, and treat any early-checkpoint interaction as needing the graded
+readout (§3.12-M's KL / λ scale) first.
 
 ### 3.14.3 Defects found this session, not yet fixed
 
