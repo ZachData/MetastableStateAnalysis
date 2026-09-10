@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test` — nothing merged, no PR open |
-| Last updated | 2026-09-08 |
+| Last updated | 2026-09-09 |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -72,21 +72,44 @@ residual-stream regime — not a chain of stages.
   overlap** (§3.12-S).
 - The effect **compounds** down the stack (23× for `L7H8`), and
   norm-proportionality is **ruled out and inverted** (r² = 0.001, §3.12-R).
+- **Q2/Q3 are answered** (§3.12-U): members form at **different** times —
+  `L5H2`/`L11H14` in `(512, 1000]`, the model's own induction interval;
+  `L7H8` **last**, in `(2000, 3000]` — the **interaction is ≈ 0 until `L7H8`
+  arrives**, so the redundancy postdates both heads, and four of six members
+  **decay to 5–22 % of their peak** while `L7H8` alone rises monotonically.
 
 **NEXT ACTIONS, in order:**
 1. **Pass 2 of the catalogue** — the pairwise interaction matrix over the top
    members (6 arms for the top 4, 45 for the top 10) at a **fixed 16 sequences**
    so it is comparable with §3.12-S. Are they one redundancy set or several
    disjoint ones?
-2. **Formation curves per member** — `ΔNLL` per checkpoint. **`L5H2` has none**
-   despite twice `L7H8`'s effect; that is the most conspicuous gap. Add the
-   **interaction per checkpoint**, which dates the *redundancy* rather than the
-   heads, and check §3.14.2's Q3 (did they form at the earliest possible point —
-   the literature puts induction-head emergence near step 1000).
+2. **The step-1000 circuit is a different circuit, and it is now the cheapest
+   open question.** §3.12-U found that at step 1000 the mechanism is `L5H2`
+   (+4.97) **and `L11H14` (+3.57)**, with `L7H8` absent and every other member
+   under +0.06. `L11H14` is the **top copier in the model at 143000** (0.723,
+   §3.12-O2) but it does not enter the copying top-5 until step **16000**, and
+   `copying_score_sweep.json` stores only the top ten and a named set, so **its
+   step-1000 copying score is not on disk** — measuring it is step one, and it is
+   a weights-only quantity. Then run the same 2×2 for `L5H2` × `L11H14` across
+   1000/2000/3000: serial or redundant? If serial, the three-stage reading
+   §3.12-P falsified at step 16000 may be **true early and dismantled later**,
+   which is a different claim and a registrable one.
+   **A one-step pilot is already on the board and it must not be over-read.** At
+   step 1000, `--heads L5H2,L11H14 --pair L5H2,L11H14 --steps 1000` (restore
+   exact) gives singles +4.973 and +3.567, joint **+6.859**, interaction
+   **−1.682**, δ-cosine +0.857 — *sub*-additive, the serial signature, and the
+   opposite sign to the `L7H8` pair. But the joint arm lands at NLL **11.77
+   against a uniform ceiling of 10.83**, so it is outside the readout entirely,
+   and §3.12-M5 warns that this readout's compression biases independent
+   contributions toward exactly this apparent sub-additivity. **The sign here is
+   not evidence.** Settling it needs the graded readout (§3.12-M's KL / λ scale)
+   before more steps are run at raw `ΔNLL`. Use `--out`: a partial run overwrites
+   the six-member curve otherwise.
 3. **Structure per member** — mostly **already on disk and unread along this
    axis**: `qk_symmetry_sweep.json`, `ov_per_head_series.json`,
    `copying_score_sweep.json`, `behavioural_series.json`, all 384 heads × the
-   checkpoint grid. The catalogue now says which rows to read.
+   checkpoint grid. The catalogue now says which rows to read, and §3.12-U says
+   which *steps* matter — the action is in `(512, 4000]`, not at the endpoints.
 4. Still unrun, and still the only *designed* intervention that is: the **§2.5
    isometric path** on `L7H8` (`M(t) = γ(t)Σγ(1−t)ᵀ`, exact isometry, rank `k`,
    sweeps 100 % repulsive → attractive → repulsive).
@@ -109,8 +132,12 @@ directional reads.
 `induction_spectral_predicts_7b`, `induction_composition_whitening`,
 `qk_symmetry_sweep`, `induction_position_profile`, `induction_sa_pilot`,
 `copying_score_sweep`, `three_stage_mediation`, `what_l7h8_writes`,
-`norm_proportionality`, `two_big_heads`, `redundancy_catalog`) are on disk and
-regenerable from their `.py` producers in `tools/run/` and `data/analysis/`.
+`norm_proportionality`, `two_big_heads`, `redundancy_catalog`,
+`member_formation_curves`) are on disk and regenerable from their `.py`
+producers in `tools/run/` and `data/analysis/`. `member_formation_curves.json`
+is the 23-step, six-member curve of §3.12-U and costs ~20 min to rebuild:
+`python -u tools/run/member_formation_curves.py --top 6 --chunk 4`, then
+`--append --steps 3000,5000,7000,9000` for the fills.
 
 ### The machine
 
@@ -2265,6 +2292,92 @@ sweep and are now specified.
 
 ---
 
+**U. The formation curves — the members did not form together, and the
+redundancy formed after both of them (2026-09-09,
+`tools/run/member_formation_curves.py`, 16 sequences, restore exact at all 23
+steps).** OV-ablation `ΔNLL` per checkpoint for the top six catalogue members,
+plus the joint `L5H2`+`L7H8` arm and the residual-delta cosine, on the registered
+19-step grid with four fills (3000, 5000, 7000, 9000) added to date the
+interaction. Answers §3.14.2's Q2 and Q3. `L7H8` reproduces §3.11-A throughout
+(+0.242 at 4000 against its +0.24, +0.747 at 8000 against +0.73, +1.107 at 16000
+against +1.02 at 8 sequences), and step 16000 reproduces §3.12-S to four decimals
+— so the instrument is the same one, extended along the training axis.
+
+*U1 — `L5H2` forms in `(512, 1000]`, alone, and `L7H8` does not exist yet.*
+
+| step | baseline NLL | `L5H2` | `L7H8` | `L12H5` | `L8H6` | `L11H14` | `L8H9` | joint | **interaction** | δ-cosine |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 512 | 12.63 | +0.01 | +0.00 | +0.00 | −0.00 | −0.00 | +0.00 | +0.01 | +0.00 | −0.01 |
+| 1000 | **4.91** | **+4.97** | −0.01 | −0.01 | +0.05 | **+3.57** | +0.02 | +4.93 | −0.03 | −0.17 |
+| 2000 | 1.56 | **+8.43** | −0.01 | +0.86 | +0.44 | +2.44 | +0.27 | +8.44 | +0.02 | +0.02 |
+| 3000 | 1.06 | +7.94 | +0.07 | +0.99 | +0.70 | +1.34 | +0.60 | +8.40 | **+0.39** | +0.26 |
+| 4000 | 0.72 | +6.22 | +0.24 | +0.94 | +0.61 | +0.68 | +0.40 | +8.18 | **+1.72** | **+0.83** |
+| 8000 | 0.67 | +3.68 | +0.75 | +0.66 | +0.28 | +0.38 | +0.28 | +7.74 | +3.32 | +0.85 |
+| 16000 | 0.53 | +2.23 | +1.11 | +0.43 | +0.22 | +0.19 | +0.13 | +7.48 | +4.15 | +0.87 |
+| 54000 | 0.52 | +1.55 | +1.54 | +0.11 | +0.16 | +0.14 | +0.04 | +6.61 | +3.52 | +0.92 |
+| 143000 | 0.61 | +1.26 | +1.22 | +0.11 | +0.15 | +0.17 | −0.01 | +5.91 | +3.43 | +0.87 |
+
+Nothing moves before step 512 — every member reads |ΔNLL| < 0.02 for the first
+eleven checkpoints. Then, **in the single interval where the model acquires
+induction at all** (second-copy NLL 12.63 → 4.91), `L5H2` goes from +0.01 to
++4.97 and `L11H14` from −0.00 to +3.57. Pythia publishes no checkpoint between
+512 and 1000, so `(512, 1000]` is **the finest interval this axis can resolve**:
+Q3's "did they form at the earliest point the network could" is **yes for
+`L5H2`**, and the §3.12-N3 literature anchor near step 1000 is confirmed for it.
+
+*U2 — and **no** for `L7H8`, which forms in `(2000, 3000]`.* It is the last
+member to appear, three to six times later than the rest, and it is the **only
+one of the six that rises monotonically** and the only one still near its peak at
+143000 (79 % of it, against 15 % for `L5H2`, 11 % for `L12H5`, **5 % for
+`L11H14`**). Two-stage circuit stories have the prev-token head feeding the
+matcher; the ordering is right, but `L5H2` does not *wait* for a matcher — it
+carries induction by itself for over two thousand steps, and `L7H8` arrives into
+a mechanism that is already working and already decaying.
+
+*U3 — the redundancy is acquired, and dating the heads would have dated it wrong
+by 2000 steps.* The interaction is **≈ 0 while both heads have effects** — −0.03
+at 1000, +0.02 at 2000, when `L5H2` is at its maximum — then +0.39 (3000), +1.72
+(4000), +4.15 (16000), +4.17 (32000). It tracks `L7H8`'s arrival, not `L5H2`'s.
+This is the arm no single-head curve can supply, and it is the direct answer to
+§3.14.2's Q2: **the members formed at different times, and the property that
+makes them a set formed later than either.**
+
+*U4 — the alignment is `L7H8`'s entry condition, not a converged endpoint.* The
+residual-delta cosine that §3.12-S measured at +0.868 does not climb gradually:
+−0.17 (1000) → +0.01 (2000) → +0.26 (3000) → **+0.83 (4000)** → +0.91 (7000),
+flat thereafter. At step 3000 `L7H8`'s own effect is only **+0.069** — barely
+present — and the pair is already 26 % aligned. `L7H8` appears already pointed at
+the effect `L5H2` was producing.
+
+*U5 — the pair's total causal load is roughly conserved while its distribution
+is not.* The joint arm runs 8.44 (2000) → 8.18 (4000) → 7.48 (16000) → 5.91
+(143000), a 30 % decline, while `L5H2`'s share of it falls **85 %** and `L7H8`
+rises from nothing to parity (they cross at step 54000: +1.549 against +1.537).
+The set redistributes work it does not shed.
+
+*U6 — and the behavioural instrument is blind to all of it, `L5H2` inverted.*
+Against `behavioural_series.json` on the same grid: `L5H2`'s induction score
+**falls twenty-fold**, 0.0046 → 0.0002, across exactly the interval where its
+causal effect goes +0.01 → +4.97, and never recovers. `L7H8`'s peaks at step
+4000 (0.0368) and then declines by half while its causal effect keeps rising to
+54000. §3.12-R and §3.12-G6 ruled out weights-only predictors of causal effect;
+this extends the same failure to the **attention-pattern** proxy along the
+developmental axis, and it is why §3.14.2 specified the causal instrument.
+
+*Caveat, and it is a real limit on the magnitudes.* At steps 1000–3000 both the
+single-`L5H2` arm and the joint arm sit **within 0.83–1.4 nats of the uniform
+ceiling** `ln 50304 = 10.83` (NLL 9.99 and 10.00 at step 2000). The readout is
+saturated there, so `L5H2`'s early peaks are **floors rather than calibrated
+values**, the measured decay is if anything shallower than the true one, and —
+importantly — **the interaction is compressed downward at exactly the steps where
+U3 reads it as zero.** Two instruments carry U3's date without that confound:
+`L7H8`'s own single-head curve, which is nowhere near ceiling, and the δ-cosine,
+which is a geometric measure of the residual and independent of the readout.
+Both put the transition in `(2000, 4000]`. A calibrated magnitude for the early
+interaction needs a graded readout (§3.12-M's KL / λ scale), not this one.
+
+---
+
 ## 3.14 How this work is organised, and what is queued (2026-09-09)
 
 ### 3.14.1 Three objects, not one thread
@@ -2327,12 +2440,18 @@ effect** — §3.12-R ruled out `‖OV‖_F` (r² = 0.001, relation inverted), �
 ruled out every spectral field, and §3.12-S showed weight- and function-space
 overlap come apart. A proxy would inherit exactly that failure.
 
-**Q2/Q3 — timing.** The causal formation curve is `ΔNLL` per checkpoint per
-member. §3.11-A already has `L7H8`'s (≈0 through step 2000, then +0.24 → +0.73 →
-+1.02 → +1.47 at 54000, +1.18 at 143000). **`L5H2`'s does not exist** — that is
-the single most conspicuous gap, given it has twice the effect. Add the
-**interaction per checkpoint**, which dates the *redundancy* rather than the
-heads, and is the question no single-head curve can answer.
+**Q2/Q3 — timing. ANSWERED 2026-09-09, §3.12-U** (`member_formation_curves.py`,
+top six members + the joint arm + the δ-cosine, 23 checkpoints, 16 sequences).
+**Q2: no — they formed at different times.** `L5H2` and `L11H14` in `(512, 1000]`,
+`L12H5` and `L8H9` in `(1000, 2000]`, `L7H8` last in `(2000, 3000]`. **Q3: yes
+for `L5H2`, no for `L7H8`.** `L5H2` appears in the same interval the model
+acquires induction, which is the finest interval Pythia's grid resolves; `L7H8`
+is three to six times later. And the interaction — the arm no single-head curve
+can supply — is **≈ 0 until `L7H8` arrives**, so **the redundancy postdates both
+heads** and dating it by dating them would have been wrong by 2000 steps. Four
+of the six members then **decay** to 5–22 % of their peak while `L7H8` alone
+rises monotonically. Magnitudes at steps 1000–3000 are ceiling-limited; see
+§3.12-U's caveat.
 
 **Q4 — structure.** Largely **already on disk** and unread along this axis:
 `qk_symmetry_sweep.json` (384 heads × 19 steps), `ov_per_head_series.json`
