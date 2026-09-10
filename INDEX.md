@@ -5,9 +5,21 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-03)
+## Current priority (updated 2026-09-10)
 
-- **Active work: Phase 7** — the mechinterp/particle bridge, currently `P-I1`
+- **Active work: Phase 8, the Pythia scale ladder.** `p8_scale_ladder/`, opened
+  2026-09-10 — the 7d/7e measurements repeated across model sizes so `n = 1`
+  observations can become population claims. **Rung policy: explore on 70m and
+  410m, RESERVE 1b and 1.4b** (no induction measurement there until a prediction
+  naming them is registered). Read `p8_scale_ladder/design-8.md`. Nothing has run.
+- **Phase 7d/7e — the 410m body of work the ladder generalises.**
+  `p7d_redundancy/` (redundancy catalogue, both open axes closed 2026-09-10) and
+  `p7e_consolidation/` (`L11H14`; whether the set collapses into one head). Read
+  their `status-7d.md` / `status-7e.md`, then `PROJECT.md` §3.12-V.
+- **Literature scan, 2026-09-10** — `docs/literature_scan_2026-09-10.md`. Leads,
+  not readings. Three of §3.12-V's four headlines are in populated territory;
+  read it before building on them.
+- **Phase 7 (original)** — the mechinterp/particle bridge, `P-I1`
   (induction-head formation as a two-stage `relay` motif). See `PROJECT.md` for
   where it stands and what is blocking, and `p7_motifs/design-7.md` for the
   translation table.
@@ -37,8 +49,18 @@ work — that is `PROJECT.md`, which is the file to read first.**
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |
 | 2d | `p2d_operator_activation/` | Implemented and validated on constructed operators; **not run**. Blocked on Phase 1c-B by design |
 | 7 | `p7_motifs/` | New — mechinterp phenomena as particle motifs. See "Phase 7" below |
+| 7d | `p7d_redundancy/` | **Active.** The redundancy set — which heads hold the induction regime and when each formed. Q1/Q2/Q3 answered; results in `PROJECT.md` §3.12-S/T/U |
 
 Shared code lives in `core/`; one-off scripts in `tools/`; tests in `tests/`.
+
+`p7d_redundancy/` and `p7_motifs/` are different programmes and are easy to
+confuse. `p7_motifs/` is the motif/relay line behind `P-I1`; `p7d_redundancy/`
+is the causal-ablation line behind §3.12. In particular
+`p7_motifs/formation_curve.py` is a **behavioural** relay curve and
+`p7d_redundancy/member_formation_curves.py` is the **causal** ablation curve —
+similar names, different instruments. `7a`/`7b`/`7c` remain labels in
+`PROJECT.md` §3.14.1 with no directory of their own; only `7d` grew one, when it
+went active and started producing results.
 
 Read `status-N.md` for the current state of a phase. Read `design-N.md` for the reasoning
 that is not visible from the code. `PREDICTIONS.md` is the project-level falsification
