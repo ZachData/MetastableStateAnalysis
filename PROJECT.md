@@ -39,8 +39,9 @@ bug.
 
 ### Resume here (2026-09-09, end of session — 7d is the live thread)
 
-**Git.** Branch `claude/rescaler-cache-identity-test`, **0 unpushed**, gate green
-(2270 passed / 5 skipped). 22 commits today. Three stacked topic branches are
+**Git.** Branch `claude/rescaler-cache-identity-test`, **unpushed** — everything
+from §3.12-U (the formation curves) forward; check with `git status -sb`. Gate
+green (2270 passed / 5 skipped). Three stacked topic branches are
 pushed but **PRs are still NOT opened** (no `gh` CLI — use the web compare URL
 `https://github.com/ZachData/MetastableStateAnalysis/compare/<base>...<head>?expand=1`):
 `claude/p-i1-build-null-score` → `main`, then
