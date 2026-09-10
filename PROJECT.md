@@ -86,6 +86,15 @@ reading and §3.12-S killed the serial reading of the pair. The object is a **se
 of functionally redundant, structurally distinct heads** holding a
 residual-stream regime — not a chain of stages.
 
+**`7d` now has a directory: `p7d_redundancy/`** (2026-09-10). §3.14.1 created
+`7a`–`7d` as labels for *this file's* organisation and said they were not phase
+directories; that held until `7d` went active and started producing results,
+and it was the only live phase without a `status-N.md` while its runners sat in
+`tools/run/`, which `INDEX.md` calls one-off scripts. `7a`/`7b`/`7c` are still
+labels with no directory. Read `p7d_redundancy/status-7d.md` for what is
+answered and `design-7d.md` for why the instrument is causal — those two are now
+the fastest way into this thread, and §3.12-S/T/U remain the detail.
+
 **What 7d already knows (do not re-derive):**
 - **Q1 is answered** (§3.12-T): the set is **~4 substantial members, ~10 with any
   effect, of 384**; median head moves the readout by **0.001**. Members:
@@ -165,7 +174,7 @@ per-step families, carried because they are the expensive ones to lose:
 `induction_subspace_characterize_*`, `induction_developmental_series`,
 `dissipation_v2_series`, `dissipation_sublayer_series`.
 `member_formation_curves.json` is the 23-step, six-member curve of §3.12-U and
-costs ~20 min to rebuild: `python -u tools/run/member_formation_curves.py --top
+costs ~20 min to rebuild: `python -u p7d_redundancy/member_formation_curves.py --top
 6 --chunk 4`, then `--append --steps 3000,5000,7000,9000` for the fills.
 
 ### The machine
@@ -2212,7 +2221,7 @@ exactly what §3.14.2's case-study programme was queued to examine.
 ---
 
 **S. `L5H2` x `L7H8`: the induction circuit does not behave like a circuit
-(2026-09-09, `tools/run/two_big_heads.py`, step 16000, restore exact).**
+(2026-09-09, `p7d_redundancy/two_big_heads.py`, step 16000, restore exact).**
 §3.12-P ran the ablation interaction for `L7H8` against downstream *copiers* and
 never against **the pair that is supposed to BE the circuit**. Closing that
 omission overturns the serial reading.
@@ -2277,7 +2286,7 @@ rather than about a head.
 ---
 
 **T. The redundancy catalogue, pass 1 — the set is not a pair (2026-09-09,
-`tools/run/redundancy_catalog.py`).** Single-head OV ablation `ΔNLL` for **all
+`p7d_redundancy/redundancy_catalog.py`).** Single-head OV ablation `ΔNLL` for **all
 384 heads** at step 16000, 8 sequences, restore exact. Answers §3.14.2's Q1.
 
 | | |
@@ -2323,7 +2332,7 @@ sweep and are now specified.
 
 **U. The formation curves — the members did not form together, and the
 redundancy formed after both of them (2026-09-09,
-`tools/run/member_formation_curves.py`, 16 sequences, restore exact at all 23
+`p7d_redundancy/member_formation_curves.py`, 16 sequences, restore exact at all 23
 steps).** OV-ablation `ΔNLL` per checkpoint for the top six catalogue members,
 plus the joint `L5H2`+`L7H8` arm and the residual-delta cosine, on the registered
 19-step grid with four fills (3000, 5000, 7000, 9000) added to date the
@@ -2462,7 +2471,7 @@ regime, and the programme's unit is that set and its classes.
 
 #### What each question needs
 
-**Q1 — membership.** `tools/run/redundancy_catalog.py`, launched 2026-09-09:
+**Q1 — membership.** `p7d_redundancy/redundancy_catalog.py`, launched 2026-09-09:
 single-head OV ablation `ΔNLL` for **all 384 heads** at step 16000. A full sweep
 rather than a proxy screen **because no weights-only quantity predicts causal
 effect** — §3.12-R ruled out `‖OV‖_F` (r² = 0.001, relation inverted), §3.12-G6
