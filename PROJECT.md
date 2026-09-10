@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `claude/rescaler-cache-identity-test` — nothing merged, no PR open |
-| Last updated | 2026-09-09 |
+| Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
+| Last updated | 2026-09-10 |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,17 +37,41 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-09, end of session — 7d is the live thread)
+### Resume here (2026-09-10 — 7d is the live thread)
 
-**Git.** Branch `claude/rescaler-cache-identity-test`, **unpushed** — everything
-from §3.12-U (the formation curves) forward; check with `git status -sb`. Gate
-green (2270 passed / 5 skipped). Three stacked topic branches are
-pushed but **PRs are still NOT opened** (no `gh` CLI — use the web compare URL
-`https://github.com/ZachData/MetastableStateAnalysis/compare/<base>...<head>?expand=1`):
-`claude/p-i1-build-null-score` → `main`, then
-`claude/spectral-dissipation-infra`, then `claude/induction-programme-stage012`.
+**Git. The backlog is gone.** PRs #26–#32 all merged, `main` is at `32370fd`,
+and the four-branch stack (`p-i1-build-null-score`, `spectral-dissipation-infra`,
+`induction-programme-stage012`, `p2b-per-head-figure`) is **merged and its
+branches deleted**. `claude/rescaler-cache-identity-test` is the only working
+branch left; it carries `main` and is +38 over it, and its PR is the next one to
+open. Gate green (2270 passed / 5 skipped).
+
+**Only three remote branches exist**, and two of them must not be deleted:
+
+| branch | state |
+|---|---|
+| `claude/rescaler-cache-identity-test` | this branch, +38 over `main`, PR not opened |
+| `claude/particle-methods-comparison-vpuads` | **KEEP** — all of Phase 1d (`p1d_cluster_ensemble/`), on no other branch |
+| `claude/visualize-mets-results-sl2ya5` | **KEEP** — `tools/visualize_latest.py`, on no other branch |
+
+The two `KEEP` branches look deletable and are not: both are from August, ~93
+commits behind, one commit ahead. `INDEX.md`'s "In flight on other branches"
+section is the record, and `docs/deleted-branches-2026-09-10.md` says it again
+next to the 21 branches that *were* deleted (with their SHAs, restorable by
+`git push origin <sha>:refs/heads/<name>`).
+
+**No `gh` CLI** — open PRs from the web compare URL
+`https://github.com/ZachData/MetastableStateAnalysis/compare/main...<head>?expand=1`.
 **The repo's `github_key` is DEAD** — push with the default `~/.ssh/id_ed25519`,
 plain `git push`, no `GIT_SSH_COMMAND`.
+
+*Merge note, in case `PROJECT.md` conflicts again.* Merging `main` into this
+branch conflicted in five hunks, all of them this file's handoff header. Every
+one resolved to **this branch's side** — `main` carried the superseded
+2026-09-08 resume block — and the resolution was checked line-by-line rather
+than assumed: the 29 lines only `main` had were all stale handoff text, except
+the earlier per-step output families, which were merged back into the
+git-ignored-outputs bullet rather than dropped.
 
 **`P-I7` IS REGISTERED** (H-BRIDGE, `needs-null`) — the first registration in a
 long while. Content matchers' static QK becomes symmetric, positional matchers
@@ -128,17 +152,21 @@ p-value): `truncate`'s `random` docstring claims matched-norm and is off 16× at
 returns the **transpose** of the residual operator with no warning against
 directional reads.
 
-**`data/analysis/*.json` are git-ignored** — today's twelve outputs
-(`induction_diagnostics_7b`, `induction_abscissa_7b`,
-`induction_spectral_predicts_7b`, `induction_composition_whitening`,
-`qk_symmetry_sweep`, `induction_position_profile`, `induction_sa_pilot`,
-`copying_score_sweep`, `three_stage_mediation`, `what_l7h8_writes`,
-`norm_proportionality`, `two_big_heads`, `redundancy_catalog`,
-`member_formation_curves`) are on disk and regenerable from their `.py`
-producers in `tools/run/` and `data/analysis/`. `member_formation_curves.json`
-is the 23-step, six-member curve of §3.12-U and costs ~20 min to rebuild:
-`python -u tools/run/member_formation_curves.py --top 6 --chunk 4`, then
-`--append --steps 3000,5000,7000,9000` for the fills.
+**`data/analysis/*.json` are git-ignored** and every one of them is on disk and
+regenerable from its `.py` producer in `tools/run/` or `data/analysis/`. The
+2026-09-09 batch, fourteen outputs: `induction_diagnostics_7b`,
+`induction_abscissa_7b`, `induction_spectral_predicts_7b`,
+`induction_composition_whitening`, `qk_symmetry_sweep`,
+`induction_position_profile`, `induction_sa_pilot`, `copying_score_sweep`,
+`three_stage_mediation`, `what_l7h8_writes`, `norm_proportionality`,
+`two_big_heads`, `redundancy_catalog`, `member_formation_curves`. The earlier
+per-step families, carried because they are the expensive ones to lose:
+`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
+`induction_subspace_characterize_*`, `induction_developmental_series`,
+`dissipation_v2_series`, `dissipation_sublayer_series`.
+`member_formation_curves.json` is the 23-step, six-member curve of §3.12-U and
+costs ~20 min to rebuild: `python -u tools/run/member_formation_curves.py --top
+6 --chunk 4`, then `--append --steps 3000,5000,7000,9000` for the fills.
 
 ### The machine
 
