@@ -5,9 +5,21 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-03)
+## Current priority (updated 2026-09-10)
 
-- **Active work: Phase 7** — the mechinterp/particle bridge, currently `P-I1`
+- **Active work: Phase 8, the Pythia scale ladder.** `p8_scale_ladder/`, opened
+  2026-09-10 — the 7d/7e measurements repeated across model sizes so `n = 1`
+  observations can become population claims. **Rung policy: explore on 70m and
+  410m, RESERVE 1b and 1.4b** (no induction measurement there until a prediction
+  naming them is registered). Read `p8_scale_ladder/design-8.md`. Nothing has run.
+- **Phase 7d/7e — the 410m body of work the ladder generalises.**
+  `p7d_redundancy/` (redundancy catalogue, both open axes closed 2026-09-10) and
+  `p7e_consolidation/` (`L11H14`; whether the set collapses into one head). Read
+  their `status-7d.md` / `status-7e.md`, then `PROJECT.md` §3.12-V.
+- **Literature scan, 2026-09-10** — `docs/literature_scan_2026-09-10.md`. Leads,
+  not readings. Three of §3.12-V's four headlines are in populated territory;
+  read it before building on them.
+- **Phase 7 (original)** — the mechinterp/particle bridge, `P-I1`
   (induction-head formation as a two-stage `relay` motif). See `PROJECT.md` for
   where it stands and what is blocking, and `p7_motifs/design-7.md` for the
   translation table.

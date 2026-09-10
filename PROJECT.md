@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-10 |
+| Last updated | 2026-09-10 (§3.12-V; 7e opened; LoRA tangent) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,7 +37,164 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-10 — 7d is the live thread)
+### Resume here (2026-09-10 — 7d's open axes are CLOSED; `7e` is live; on a LoRA tangent)
+
+**Read `p7d_redundancy/status-7d.md` and `p7e_consolidation/design-7e.md`
+first — both are current as of this session — then §3.12-V for the detail.**
+
+**What this session did.** Closed 7d's two open axes and opened `7e`. Full
+record in **§3.12-V**; the two headlines are that the redundancy set is **one
+set with independence dead across 45 pairs**, and that the members are **aligned
+at birth and fan out**, losing 56 % of peak alignment *while their signals grow*,
+with redundancy surviving the separation. `7e` was created at the user's request
+around **`L11H14`** and the **consolidation** question.
+
+**The result most likely to matter elsewhere**, and it is a *hold* on an existing
+instrument: **`L11H14` is anti-ordered by SVD** — keeping its smallest singular
+directions beats keeping its largest at every rank, and rank-1 truncation is
+worse than deleting the head. So **any SVD-ordered rank truncation misleads on
+such heads, `induction_rank_sweep`'s `r*` construction included.** Do not quote
+an `svd`-basis `r*` for a head not checked with `useful_rank.py --bottom`. The
+`schur` basis may be immune (eigenvalue-ordered, carries a sign) and the
+comparison is **weights-only and free** — it is the cheapest next action.
+
+**CURRENT TANGENT (user-directed, 2026-09-10): the LoRA induction-head project.**
+Deliberate context switch, taken at this point *because* of §3.12-V4 — a project
+that minimises induction-head rank with LoRA is directly relevant to a finding
+that the members are rank-1-to-24 and one of them inverts. Two sources:
+**read, and written up in §3.9-A** — start there, not at §3.9, which is
+**stale on four points**. Remote `git@github.com:ZachData/Lora_inductionhead.git`
+is the source of truth; the desktop clone was 57 commits behind. Headlines:
+their **G3 is no longer ambiguous** (optimisation ruled out; reachability
+upper-bounds any trained update); their **copying score is a readout failure**
+that `tools/run/copying_score_sweep.py` fixes directly; and their re-probe
+supplies the **ordered six-head pythia-70m cascade** that §3.14.4-A said it
+needed and did not have. §3.9-A lists what to send them and what to take.
+Expect to clear context and return here; **this file plus the phase docs
+are the return path.**
+
+**DECISION TAKEN 2026-09-10 — `p8_scale_ladder/` is open, and the ladder is the
+new organising frame.** The sister project's *concepts and analysis* are
+absorbed; its *training half* (EC2 spot, S3, `METRIC_VERSION` CI, the LoRA
+fitting) stays upstream — this box has no GPU. The reason for absorbing is that
+**everything 7d/7e found is `n = 1`**, and `design-7d.md` already reserved the
+slot: a shared signature over independent circuits is a population claim no
+single circuit can make. Pythia only, by user decision — the suite is already
+wired in, shares one data order and one checkpoint schedule across sizes, and is
+convenient enough that other families are not worth the setup cost.
+
+**THE RUNG POLICY — explore low, validate high. Do not violate it by accident.**
+
+| model | status | role |
+|---|---|---|
+| pythia-70m | untouched on the induction axis | **exploration** |
+| pythia-410m | spent (7d/7e, §3.12) | **exploration** |
+| pythia-1b | never measured, not in the registry | **RESERVED** |
+| pythia-1.4b | Phase-1 phenomenology only (CLAIM-C) | **RESERVED** |
+
+**No induction measurement on 1b or 1.4b until a prediction naming that model is
+registered.** This is `check_registry` rule 3 applied *forward* rather than
+discovered afterwards, and it is what lets the ladder produce **adjudications** —
+of which `claims/adjudications/` holds zero against 39 registrations.
+
+**1.4b needs no cleanup**, and a proposal to delete its analysis was dropped for
+this reason: CLAIM-C measured it on `mass_near_1`, `effective_rank`,
+`cluster_membership`, `cluster_count`, `cka_prev`, `fiedler_mean` — **no
+induction quantity among them** — so it is already clean on this phase's axis.
+Deleting it would have cost a registered claim and bought nothing.
+
+**`P-I7`'s "not yet measured by this project" is NOT binding to the letter**
+(user, 2026-09-10): written on a whim, still roughly stands, not to be enforced
+rigorously. Under the rung policy it is satisfiable on either reserved rung.
+**Still undecided and needing an explicit call:** adjudicate P-I7 on 70m before
+exploration touches it, or send 70m to exploration and move P-I7 to 1b.
+
+**The engineering gate on all of it is small and specific:**
+`tools/run/induction_rank_sweep.py:83` sets `D_MODEL, D_HEAD, N_HEADS = 1024,
+64, 16` at module level and **every 7d/7e runner imports them from there** —
+read from `model.config` instead and the whole instrument suite becomes
+scale-generic. Then add `PYTHIA_70M_REPO` / `PYTHIA_1B_REPO` to
+`core/pythia_registry.py` (410m and 1.4b are already there). **Adding 1b to the
+registry is not measuring it.**
+
+**`pyproject.toml` was missing `p7d_redundancy` and `p7e_consolidation`** from
+`packages` — the exact failure its own comment warns about ("a NEW phase's
+package not being added… p7_motifs was missing while holding the current phase's
+code"). Fixed 2026-09-10 along with `p8_scale_ladder`.
+
+**70m is also the TRAINING rung** (user, 2026-09-10) — the only size this box can
+train, so it is where **activations** and **custom checkpoints** come from when a
+question needs a checkpoint Pythia never published. 1b/1.4b are validation only
+and are never trained here.
+
+**The existing 70m retrain is a FORK, not pythia-70m** — beyond §3.9's
+"reachability, not development" caveat, its **dataset batching seeds differ**, so
+it shares only checkpoint A (step 512) with the published model. That is
+**fine for invariant 3** (a differently-seeded draw is exactly what
+cascade-vs-recruitment wants) and **disqualifying for anything developmental**.
+If a dense *and* faithful axis is wanted, rebuild it on **Pythia's published
+batch order** rather than a fresh seed; **do not re-run the old fork protocol.**
+
+**What to keep and drop from the sister project** is enumerated in `design-8.md`
+("What to keep from the sister project"). Keep: the dense bracket, the 48-head
+re-probe, the ordered cascade, the φ question, the reachability result, the
+localization dissociation. Drop: the EC2/S3 infrastructure, the G0–G3/M1–M8 gate
+lattice, the broken argmax copying score, the fork retrain protocol. **Record
+only** (dead ends, kept so they are not rediscovered): `layer_host_plus_ln_final`
+closed 8/8 on spot reclaims; the four negative G3 diagnostics; and Cor 17.2's
+gradient-gating mechanism, ruled out because σ_OV is nonzero at all 2048 query
+positions.
+
+Read `p8_scale_ladder/design-8.md` for the six candidate invariants and the
+sequencing, `status-8.md` for what has run (**nothing yet**).
+
+**LITERATURE SCAN RUN 2026-09-10 — `docs/literature_scan_2026-09-10.md`. READ IT
+BEFORE THE NEXT MEASUREMENT.** It is **leads, not readings** — four searches,
+no paper read, every arXiv id needs verifying. Its verdict is that **three of
+§3.12-V's four headline findings sit in populated territory**:
+
+- **"SVD ordering is a poor proxy for causal importance" is not new** — `FWSVD`
+  (**2207.00112**, ICLR 2022) states the general form, and follow-ups report
+  non-monotone degradation when truncating by singular-value magnitude. Ours may
+  survive as *stronger* (anti-optimal, **negative** recovery at `r = 1`, versus
+  their suboptimal) but that is a narrower claim than it looked.
+- **Super-additive co-ablation is the self-repair signature**, not a new
+  phenomenon — *The Hydra Effect* (**2307.15771**) predicts exactly the sign 7d
+  measured in 44/45 cells. And **2607.01940** (2026) looks structurally like
+  `pairwise_interaction_matrix.py`. **Read that one first.**
+- **The developmental axis is populated and recent** — **2502.14010** reports a
+  head's induction score falling as another rises (§3.12-U from the other side),
+  and **2606.02378** (2026) tracks developmental trajectories across three
+  1B-class models **including Pythia-1B**, one of our reserved rungs.
+
+**What still looks distinctive**, best card first: **causally-defined membership
+across all 384 heads with the demonstration that structural proxies fail**
+(§3.12-R, §3.12-G6, §3.12-V1); the **measured-null discipline** (§3.12-V3's
+ambient PR of 22/1024 kills the isotropic baseline; §3.12-V5's
+changing-membership artifact); the **heterogeneity within one set** (rank-1
+gain-ordered `L7H8` beside full-rank anti-ordered `L11H14`, same job, still
+substitutable while going orthogonal); and anti-optimality as a strengthening of
+FWSVD.
+
+**Consequence for the plan: do NOT build a paper on "induction heads are rank-1"
+or "the redundancy set is super-additive".** Both are known. The ladder plan
+survives — turning `n = 1` into a population claim was always the point — but
+check what **2606.02378** already measured on Pythia-1B before assuming that rung
+is untouched by the field. The `lora_ind` merge case is **unaffected**: its value
+is the dense onset axis and the φ question, neither of which the scan touched.
+
+**Uncommitted as of 2026-09-10, nothing staged.** Modified: `PROJECT.md`,
+`INDEX.md`, `pyproject.toml`, `p7d_redundancy/status-7d.md`. New:
+`p7d_redundancy/{pairwise_interaction_matrix,member_subspace_geometry}.py`,
+`p7e_consolidation/` (4 files + `status-7e.md`), `p8_scale_ladder/`
+(`__init__.py`, `design-8.md`, `status-8.md`).
+
+**Machine note:** the geometry and rank runners were **killed for memory twice**
+while `falsification/e4_bootstrap.py` (~5 GB, not this project's) was running.
+Use `--chunk 2` and `OMP_NUM_THREADS=4` on this box; outputs are written per
+step, so `--append` finishes an interrupted grid.
+
+#### The earlier resume block (git state, branches, `P-I7`) — still current
 
 **Git. The backlog is gone.** PRs #26–#32 all merged, `main` is at `32370fd`,
 and the four-branch stack (`p-i1-build-null-score`, `spectral-dissipation-infra`,
@@ -126,15 +283,23 @@ strongly *redundant*, and every other pair is simply unmeasured.
 **NEXT ACTIONS, in order.** 1 and 2 serve the user's questions directly and are
 the reason for the ordering; 3 and 4 were the previous plan and still stand.
 
-1. **Pass 2 of the catalogue — the pairwise interaction matrix.** The single
-   highest-value measurement in the phase, because it is the *only* thing that
-   can answer "is there a relationship between them" (§3.14.4-B). Top members,
-   `n(n−1)/2` arms — 6 for the top 4, 45 for the top 10 — at a **fixed 16
-   sequences** so it is comparable with §3.12-S. Are they one redundancy set or
-   several disjoint ones? `p7d_redundancy/member_formation_curves.py --pair`
-   already runs one cell of this matrix; the runner it needs is that loop.
-   **Run it at step 16000 or later**, where the readout has headroom — see
-   §3.14.4-D, this is exactly where the ceiling bites.
+1. ~~**Pass 2 of the catalogue — the pairwise interaction matrix.**~~ **DONE
+   2026-09-10**, §3.12-V. `p7d_redundancy/pairwise_interaction_matrix.py`, top
+   10, 45 cells, steps 16000 and 143000, restore exact, no cell against the
+   ceiling. **44/45 positive at 16000, no block structure — one set, and the
+   independence premise of §3.14.4-B is dead.** But **74–81 % of the interaction
+   is the product of the two heads' own magnitudes**, and δ-cosine explains only
+   7–9 % of it: direction and substitutability are **decoupled**, which is
+   §3.12-S's single-pair dissociation generalised to 45 pairs.
+   The **geometric axis is also done** (`member_subspace_geometry.py`, 13
+   checkpoints, with a *measured* null from three near-median control heads):
+   members are **born aligned** (step 1000, the only extant pair at cosine 0.857
+   and centered CKA 0.693 vs null 0.128), then **fan out** — fixed-15-pair mean
+   cosine peaks at step 5000 (+0.744) and falls to +0.327 at 143000 **while
+   delta norms grow 671 → 1093**, so it is not a fading-signal artifact. **No
+   member's subspace expands** (PR stays in 8–28). And **redundancy survives the
+   separation**: `L5H2`×`L11H14` holds interaction +2.18 → +1.53 while its
+   cosine goes 0.344 → **0.004**. Full detail: `p7d_redundancy/status-7d.md`.
 2. **The step-1000 circuit is a different circuit, and it is now the cheapest
    open question.** §3.12-U found that at step 1000 the mechanism is `L5H2`
    (+4.97) **and `L11H14` (+3.57)**, with `L7H8` absent and every other member
@@ -164,7 +329,50 @@ the reason for the ordering; 3 and 4 were the previous plan and still stand.
    which *steps* matter — the action is in `(512, 4000]`, not at the endpoints.
 4. Still unrun, and still the only *designed* intervention that is: the **§2.5
    isometric path** on `L7H8` (`M(t) = γ(t)Σγ(1−t)ᵀ`, exact isometry, rank `k`,
-   sweeps 100 % repulsive → attractive → repulsive).
+   sweeps 100 % repulsive → attractive → repulsive). **`7e` is a better use of
+   it** than `L7H8` alone — see below.
+
+5. **`7e` — `p7e_consolidation/`, opened 2026-09-10 at the user's request.**
+   Two objects, one phase: **`L11H14`**, which four independent 7d measurements
+   single out (mean cosine to the set **−0.033** at the *third-largest* delta
+   norm, against +0.389 for magnitude-matched `L7H1`; effect subspace PR ~50 vs
+   everyone else's 8–28; earliest defector, breaking away between steps 2000 and
+   4000); and **consolidation** — can the set be collapsed into a single head,
+   removing the redundancy, and is the result more interpretable?
+   **The first measurement is already run and it refuted this phase's own
+   opening argument** (`ambient_budget.py`): reaching 90 % of the joint effect
+   needs **355 ambient directions** against an ambient participation ratio of
+   **22**, so the set writes into directions the residual stream barely uses —
+   private low-variance bandwidth, not the shared trunk. Only **73–78 %** of the
+   joint energy fits one head's rank-64 budget. The phase survives because
+   **energy is not usefulness**; the capacity question is causal
+   (`dNLL(rank k)`), not geometric. Read `p7e_consolidation/design-7e.md`, which
+   also records why naive weight-copying between members is ill-posed — they sit
+   in **different layers**, so a transplanted OV would be driven by the wrong
+   attention pattern.
+   **The causal gate is now run too (`useful_rank.py`), and it splits the set.**
+   `r*` — the OV rank recovering 90 % of a head's own causal effect, of 64:
+   `L7H8` **1**, `L12H5` **1**, `L8H9` **2**, `L5H2` **12**, `L8H6` **24**,
+   `L11H14` **64**. **`L7H8` recovers 97 % of its effect from a single
+   direction.** The five low-rank members sum to **40, inside one head's
+   budget** — consolidation of the aligned core is viable. **`L11H14` is the
+   exception on a fifth independent axis**: its recovery curve sits *below* the
+   matched-norm random control at nearly every rank, and at `r = 1` recovery is
+   **negative** — the Eckart-Young optimal truncation is worse than deleting the
+   head. Singular-value magnitude **anti-orders** its causal usefulness, which
+   is §3.12-R and §3.12-G6 reproduced *inside a single head*. Its orthogonality
+   is load-bearing and it cannot be folded in.
+   **Confirmed directly** with `useful_rank.py --bottom`, which keeps the
+   *smallest* `r` directions: for `L11H14` the ordering is **bottom-`r` >
+   matched-random > top-`r` at every rank** (top-1 **−0.096**, bottom-48
+   **+0.846**), while `L7H8` is textbook (top-1 **+0.971**, bottom-48 +0.095).
+   **Two classes, not a gradient** — `L7H8`/`L5H2` are gain-ordered, `L11H14`
+   differs in kind. **Methodological warning that reaches outside 7e: any
+   SVD-ordered rank truncation misleads on `L11H14`-like heads, including
+   `induction_rank_sweep`'s `r*` construction.** Its `schur` basis orders by
+   eigenvalue and carries a sign so it may be immune; the comparison is
+   weights-only. Until then, do not quote an `svd`-basis `r*` for a head not
+   checked with `--bottom`.
 
 **Constraints 7d must not lose** (§3.14.2): weight-space overlap is **not**
 function-space overlap, so membership is defined causally and every composition
@@ -892,6 +1100,100 @@ subspace yet.**
   are the whole lift.
 - **torch 2.11 (run) vs 2.13 (this venv)** — irrelevant for loading, the
   snapshots are plain state_dicts.
+
+### 3.9-A The sister project re-read (2026-09-10) — **§3.9 above is stale on four points**
+
+User-directed tangent, taken after §3.12-V because a project that minimises
+induction-head **rank** bears directly on a finding that the members are
+rank-1-to-24 and one of them **inverts**. Source of truth is now the GitHub
+remote `git@github.com:ZachData/Lora_inductionhead.git`; the desktop clone at
+`/var/home/iron/Desktop/lora_ind` was **57 commits behind** `origin/main` when
+read. Read their `HANDOFF.md`, then `PROJECT.md` §10/§11, then `REVIEW.md`.
+
+**Corrections to §3.9, which was written 2026-09-06:**
+
+1. **G3 is no longer ambiguous.** §3.9 says the run "could not distinguish
+   'composition rule too restrictive' from 'optimisation broken'". **Optimisation
+   is now ruled out** — eight diagnostics agree, and the reachability graft shows
+   `B`'s **own** `W_Q` for the target head does not move `R`, which
+   *upper-bounds any trained update*. Four negative diagnostics (broken
+   objective, insufficient rank, frozen `W_K`, wrong head) point at a genuine
+   capacity/structural limit.
+2. **Matching and recovery dissociate.** Grafting blocks 0–2 restores prefix
+   matching almost fully (PMS **0.895** vs full graft's 0.964) while `R` stays at
+   **0.10**.
+3. **The gradient is not gated.** σ_OV is nonzero at all 2048 query positions at
+   `A`, so Cor 17.2's condition fails and Prop 17.5's flat-`R(r)` mechanism is
+   not what the diagnostics measured.
+4. **The re-probe §3.9 says to wait for is done** — 82/82 checkpoints, all 48
+   heads at `n_eval=512`, `data/reprobe_merged.{json,png}`.
+
+**What Mets should send them, highest value first.**
+
+- **Their copying score is broken and Mets has the fix.** `src/indbw/probes.py`
+  defines it as a **full-vocab argmax hit rate** (`argmax_s(W_U M_OV e_t) == t`).
+  It reads **≤ 2.8e-4 for every head at both checkpoints, including `B`'s (3,6),
+  which demonstrably does induction** — a known-positive at the floor. They have
+  parked it in `REVIEW.md` as a `METRIC_VERSION` human call. **`tools/run/
+  copying_score_sweep.py` is the answer**: Elhage's `Σλ / Σ|λ|` over the
+  token-to-token circuit, which discriminates on 410m (`L11H14` 0.723). It fixes
+  two things at once — it is **continuous** rather than winner-take-all over
+  50304 tokens, and it is **transpose-invariant**, which their *directional*
+  score is not (Mets' own §3.14.3 defect 3 is exactly this trap, and that runner
+  documents it as verified rather than assumed). Cheap via the **64×64**
+  reduction: nonzero spec(`C`) = spec(`W_V G W_O`), `G = W_Eᵀ W_U` once per
+  checkpoint.
+- **§3.12-V4's anti-ordering is a prerequisite check for M1–M8**, not an
+  explanation of G3. If their cascade heads are `L11H14`-like, a minimum-rank
+  result taken in the SVD/gain basis measures nearly the **opposite** of what it
+  intends — bottom-`r` beat top-`r` at every rank, and rank-1 was worse than
+  deleting the head. Their whole programme is minimum-rank, so this should run on
+  (3,6) and (3,1) **before** M1–M8 unblock. It does **not** explain G3:
+  reachability is a more fundamental blocker and does not reduce to a basis
+  choice.
+- **Their "dissociation puzzle" is Mets' recurring finding.** §3.12-U had
+  `L5H2`'s induction score fall **twenty-fold** across the interval its causal
+  effect went +0.01 → +4.97; §3.12-O/P found `L7H8` is not a copier at any point;
+  §3.12-V1 has δ-cosine explaining 7–9 % of causal interaction across 45 pairs.
+  Behavioural and structural proxies systematically fail to predict causal
+  effect — their PMS-0.895 / R-0.10 result is an instance, not an anomaly.
+- **Two hazards worth forwarding**: the readout **ceiling** (§3.14.4-D — ΔNLL
+  near `ln V` is a floor, and it biases interactions toward false
+  sub-additivity), and §3.12-V5's **changing-membership artifact**, which is
+  live for them because their six heads form at *different* steps inside the
+  bracket.
+
+**What Mets gains — and it is the thing §3.14.4-A said it did not have.**
+
+Their re-probe gives an **ordered six-head cascade** through a pythia-70m
+induction onset, stride 4, 82 checkpoints, all 48 heads:
+
+| head | first PMS ≥ 0.10 | peak PMS |
+|---|---|---|
+| **3.6** | 640 | 0.857 |
+| **3.1** | 652 | 0.783 |
+| 4.6 | 696 | 0.309 |
+| 4.7 | 724 | 0.263 |
+| 3.0 | 760 | 0.190 |
+| 3.5 | 832 | 0.105 |
+
+Prev-token head **2.1 goes 0.389 → 0.947 inside the window**; ICL −0.01 → 6.63;
+`R` 0.001 → 0.576. §3.14.4-A asks whether the 410m ordering is **cascade** (order
+reproduces) or **recruitment** (window reproduces, order scrambles) and states
+the discriminator needs a second, differently-seeded model, with 70m the site and
+its weights not on disk. **This is that draw**, and Mets found six ordered
+members in 410m against six ordered heads here.
+
+**The caveat is load-bearing and §3.9 already states it**: the retrain
+cold-starts Adam at step 512, so it is **reachability, not development** — a
+legitimately independent draw of the *ordering*, and not a claim about
+`pythia-70m`'s trajectory. Adoption still needs its **own registered grid**
+(§3.9's "Cost of adoption"): no 410m number transfers.
+
+**Second gain — resolution.** Every §3.12-V claim in the formation window rests
+on 1–2 grid points (alignment peaking at 5000, `L11H14` defecting in (2000,
+4000], birth-alignment at 1000). A stride-4 axis converts several of them from
+interpolated to measured.
 
 ---
 
@@ -2431,6 +2733,102 @@ U3 reads it as zero.** Two instruments carry U3's date without that confound:
 which is a geometric measure of the residual and independent of the readout.
 Both put the transition in `(2000, 4000]`. A calibrated magnitude for the early
 interaction needs a graded readout (§3.12-M's KL / λ scale), not this one.
+
+---
+
+### 3.12-V The matrix, the geometry, and the rank (2026-09-10)
+
+Three runs closing 7d's two open axes and opening 7e. All restore checks exact
+(`0.0e+00`). Producers: `p7d_redundancy/pairwise_interaction_matrix.py`,
+`p7d_redundancy/member_subspace_geometry.py`, `p7e_consolidation/useful_rank.py`.
+Outputs: `pairwise_interaction_matrix.json`, `member_subspace_geometry{,_weighted}.json`,
+`ambient_budget.json`, `useful_rank{,_bottom}.json` — all git-ignored, all
+regenerable from the commands in `p7d_redundancy/status-7d.md`.
+
+*V1 — one set, and independence is dead.* Top 10, 45 cells, 16 sequences, steps
+16000 and 143000, **no cell within 2 nats of the ceiling**. `L5H2`×`L7H8`
+reproduces §3.12-S at **+4.1505** vs +4.151.
+
+| | 16000 | 143000 |
+|---|---|---|
+| positive cells | **44/45** | 38/45 |
+| super-additive (> +0.02) | 38 | 28 |
+| r²(interaction, `d_a·d_b`) | 0.739 | 0.807 |
+| r²(interaction, δ-cosine) | 0.094 | 0.073 |
+
+No block structure at either step — **one** redundancy set. But **74–81 % of the
+interaction is magnitude**, and δ-cosine explains 7–9 %: direction and
+substitutability are **decoupled**, §3.12-S's single-pair dissociation now at
+45 pairs. A tails-only "opposite directions are more redundant" pattern **does
+not survive the full sample** (ρ = −0.167, p = 0.27) and must not be quoted.
+
+*V2 — born aligned, then fanning out, with a **measured** null.* Six members
+plus three near-median control heads (`L5H5`, `L8H3`, `L12H15`), 13 checkpoints.
+Fixed 15-pair set, from step 4000 (first checkpoint with all six formed):
+
+| step | mean δ-cos | null | min pair | max pair | mean ‖δ‖ |
+|---|---|---|---|---|---|
+| 4000 | +0.722 | −0.196 | +0.322 | +0.967 | 670.6 |
+| 5000 | **+0.744** | −0.170 | +0.358 | +0.964 | 643.2 |
+| 16000 | +0.603 | +0.004 | +0.131 | +0.882 | 657.1 |
+| 54000 | +0.432 | −0.076 | −0.155 | +0.917 | 820.8 |
+| 143000 | **+0.327** | −0.044 | **−0.189** | +0.874 | **1093.1** |
+
+Alignment peaks at **step 5000** and loses 56 % by 143000 **while delta norms
+grow 671 → 1093** — not a fading-signal artifact. The **max pair stays pinned at
+0.87–0.97 while the min falls to −0.19**: a locked core with heads peeling off,
+not a uniform drift. At step 1000 the only extant pair is already at δ-cos 0.857
+and **centered CKA 0.693 against a null of 0.128** — **aligned at birth, no
+private-subspace phase**. **No member's subspace expands** (PR stays 8–28).
+And **redundancy survives the separation**: `L5H2`×`L11H14` holds interaction
++2.18 → +1.53 while δ-cos goes 0.344 → **0.004**.
+
+*V3 — the ambient stream is ~20-dimensional, and it broke two measures.* The
+baseline residual's own participation ratio is **22.0 of 1024** at step 16000 and
+**8.4 at 143000** (on this probe — copied positions of repeated *random-token*
+sequences; natural text would be far higher). Consequences: `coverage_by_others`
+**saturates to 1.000 and is unusable** (pooled bases span 742–819 dims), and the
+isotropic `k/d_model` chance value is not a baseline. **Quote `cka` /
+`cka_centered`, never the unweighted `subspace_*_cos` alone.**
+
+*V4 — useful rank splits the set, and `L11H14` inverts.* `r*` = smallest OV rank
+recovering 90 % of a head's own causal effect, of `D_HEAD` = 64, against
+matched-norm random controls:
+
+| member | effect | `r*` | control `r*` | top-1 | bottom-48 |
+|---|---|---|---|---|---|
+| `L7H8` | +1.107 | **1** | 48 | **+0.971** | +0.095 |
+| `L12H5` | +0.431 | **1** | 48 | — | — |
+| `L8H9` | +0.127 | **2** | 48 | — | — |
+| `L5H2` | +2.227 | **12** | 24 | +0.123 | +0.616 |
+| `L8H6` | +0.219 | **24** | 48 | — | — |
+| `L11H14` | +0.187 | **64** | *never* | **−0.096** | **+0.846** |
+
+**`L7H8` recovers 97 % of its causal effect from one direction.** The five
+low-rank members sum to **40, inside one head's 64-dim budget** — 7e's
+consolidation of the aligned core is viable, and `ambient_budget.py`'s energy
+criterion (only 73–78 % of the joint effect inside 64 ambient dims, needing
+**355** for 90 %) was the wrong currency.
+
+**`L11H14` is anti-ordered**: bottom-`r` > matched-random > top-`r` **at every
+rank**, and at `r = 1` recovery is **negative** — the Eckart-Young optimal
+truncation is worse than deleting the head. §3.12-R and §3.12-G6 reproduced
+*inside one head's spectrum*. **Two classes, not a gradient.**
+
+**Methodological hold, reaching outside 7e: any SVD-ordered rank truncation
+misleads on `L11H14`-like heads, including `induction_rank_sweep`'s entire `r*`
+construction.** Its `schur` basis orders by eigenvalue and carries a sign so it
+may be immune; the comparison is weights-only and free. **Until it is run, do
+not quote an `svd`-basis `r*` for a head not checked with `--bottom`.**
+
+*V5 — the artifact that caught this session three times.* **Every set-level mean
+whose membership changes as heads form manufactures a rising trend.** It bit
+`union_ratio` (0.94 → 0.16, almost entirely arithmetic), the set-level mean
+cosine ("peaks at step 1000" — an average of *one* pair), and centered CKA
+("0.197 → 0.637", where 0.197 was one real pair averaged with fourteen
+non-existent ones — a spurious three-phase "convergence" was written up and
+withdrawn on this). **Read trajectories over a fixed pair set, or print `n`.**
+§3.13's report-both rule does not protect against this on its own.
 
 ---
 
