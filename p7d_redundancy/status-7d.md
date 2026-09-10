@@ -2,10 +2,12 @@
 # Phase 7d — STATUS
 
 **Last verified:** 2026-09-10.
-**Overall:** Q1, Q2 and Q3 are answered on pythia-410m. Q4 is mostly on disk and
-unread along this axis; Q5 needs Q4 first. Nothing is registered and nothing can
-be — every measurement here is on an artifact spent under `check_registry`
-rule 3. Restore checks are exact (`0.0e+00`) on every run reported below.
+**Overall:** Q1, Q2 and Q3 are answered on pythia-410m, and **pass 2 (the
+pairwise interaction matrix) and the geometric axis are now answered too**. Q4
+is mostly on disk and unread; Q5 has a partial answer from geometry alone.
+Nothing is registered and nothing can be — every measurement here is on an
+artifact spent under `check_registry` rule 3. Restore checks are exact
+(`0.0e+00`) on every run reported below.
 
 ## What is answered
 
@@ -72,6 +74,83 @@ converged endpoint but `L7H8`'s **entry condition**: −0.17 → +0.01 → +0.26
 
 Full table and caveats: `PROJECT.md` §3.12-U.
 
+### Pass 2 — **one set, not several.** 45 cells, and independence is dead.
+
+`pairwise_interaction_matrix.py`, top 10 members, 16 sequences, steps 16000 and
+143000, restore exact, no cell within 2 nats of the ceiling. The
+`L5H2`×`L7H8` cell reproduces §3.12-S at **+4.1505** against its +4.151.
+
+| | step 16000 | step 143000 |
+|---|---|---|
+| positive cells | **44/45** | 38/45 |
+| super-additive (> +0.02) | 38 | 28 |
+| r²(interaction, `d_a·d_b`) | 0.739 | 0.807 |
+| r²(interaction, δ-cosine) | 0.094 | 0.073 |
+
+No block structure at either step, so it is **one redundancy set**, not several
+disjoint ones. But **74–81 % of the interaction is explained by the product of
+the two heads' own effects** — most of the matrix's apparent structure is
+magnitude, not pairing. A tempting "opposite directions are more redundant"
+pattern shows in the tails and **does not survive the full sample**
+(ρ = −0.167, p = 0.27); the honest statement is that direction and
+substitutability are **decoupled**, which is §3.12-S's single-pair dissociation
+generalised to 45 pairs.
+
+### The geometry — **born aligned, then decoherent, while redundancy is kept.**
+
+`member_subspace_geometry.py`, six members + **three near-median control heads
+carrying a measured null** (`L5H5`, `L8H3`, `L12H15`), 13 checkpoints.
+
+- **Alignment is present at birth.** At step 1000 the only extant pair,
+  `L5H2`×`L11H14`, is at rank-1 cosine **0.857** and centered CKA **0.693
+  against a null of 0.128**. There is no private-subspace phase.
+- **Then the set fans out.** Fixed-15-pair mean cosine peaks at step 5000
+  (+0.744) and falls to **+0.327** at 143000 — 56 % of the peak — while mean
+  delta norm *grows* 671 → 1093. Not a fading-signal artifact. The max pair
+  stays pinned at 0.87–0.97 throughout while the min pair goes +0.32 → −0.19:
+  **a locked core with heads peeling off, not a uniform drift.**
+- **Redundancy survives the separation.** `L5H2`×`L11H14` holds interaction
+  +2.18 (16000) and +1.53 (143000) while its cosine goes 0.344 → **0.004**.
+  Redundancy here is routed through downstream computation, not through writing
+  the same direction.
+- **No member's subspace expands.** Participation ratio sits in 8–28 and ends
+  lower than it starts. Both halves of "did they start private and expand out"
+  are false.
+
+### `L11H14` is singled out by four independent measurements
+
+Lowest mean cosine to the set at 143000 (**−0.033**) at the **third-largest**
+delta norm (10.60) — against +0.389 for `L7H1` at a magnitude-matched 9.45, and
++0.43 to +0.48 for the rest. Effect subspace **3–4× higher-dimensional** than
+any other member (PR ~50 vs 8–28). **Earliest defector**, breaking away between
+steps 2000 and 4000 while the rest stay locked to 9000. And it is already known
+as the step-1000 co-mechanism and the top copier at 143000.
+
+### The ambient stream is ~20-dimensional, and that broke two measures
+
+The baseline residual's own participation ratio is **20.3 of 1024** at step
+16000, falling to **8.4 at 143000** (on this probe — copied positions of
+repeated *random-token* sequences, a deliberately narrow distribution; natural
+text would be far higher). Members put 18 % of their effect energy in the
+ambient top-10 and 59 % in the top-50.
+
+This is why `coverage_by_others` **saturates to 1.000 and is unusable**, and why
+the isotropic `k/d_model` chance value is not a baseline: unweighted principal
+angles count 150–300 directions of which only ~20 carry ambient variance.
+**Quote `cka` / `cka_centered`, never the unweighted `subspace_*_cos` alone.**
+
+### The hazard that caught this session three times
+
+**Every set-level mean over "the members" silently changes its own membership as
+heads form, and it always manufactures a rising trend.** It bit `union_ratio`
+(0.94 → 0.16, almost entirely arithmetic), the set-level mean cosine ("peaks at
+step 1000" — an average of one pair), and centered CKA ("0.197 → 0.637", where
+the 0.197 was one real pair averaged with fourteen non-existent ones). Any
+trajectory here must be read over a **fixed** pair set, or over a formed-only
+set with `n` printed beside it. The runner now reports `union_formed` and
+`formed_members` for this reason; §3.13's report-both rule is not sufficient
+protection on its own.
+
 ## What is open
 
 **Priority, set 2026-09-10.** This is the thread the project is working on, and
@@ -82,10 +161,7 @@ question into the specific measurement that answers it, and it flags that **the
 members are not known to be independent** — one pair has ever been measured and
 it is strongly redundant.
 
-**The pairwise interaction matrix (pass 2) is the highest-value item**, because
-it is the only measurement that can answer the relationship question. Run it at
-**step 16000 or later**: the readout ceiling makes earlier interactions
-uninterpretable, and biases them toward the serial-looking sign.
+**Pass 2 is done** (above) and **the geometric axis is done**. What is left:
 
 - **Q4 — structure per member.** Largely on disk and unread along this axis:
   `qk_symmetry_sweep.json` (384 heads × 19 steps), `ov_per_head_series.json`,
@@ -94,15 +170,18 @@ uninterpretable, and biases them toward the serial-looking sign.
 - **Q5 — classes.** Needs Q4. Cluster on (formation step, spectral signature, QK
   symmetry trajectory, copying score, causal magnitude); report both views
   per §3.13.
-- **Pass 2 of the catalogue — the pairwise interaction matrix. Do this first.**
-  The top members, `n(n−1)/2` arms — 6 for the top 4, 45 for the top 10 — at a
-  fixed 16 sequences, **at step 16000 or later**. One redundancy set, or several
-  disjoint ones? `member_formation_curves.py --pair` already computes one cell;
-  what is missing is the loop over cells. There is already a hint in §3.12-U's
-  own table that the answer is *not* "independent": across training the **sum of
-  the six single-head effects falls 12.44 → 2.90** while the **joint pair arm
-  only falls 8.44 → 5.91**, so removing heads together keeps costing what
-  removing them one at a time stops costing.
+- **`L11H14` has its own phase now — `p7e_consolidation/`.** Four independent
+  measurements single it out (above), and the consolidation experiment designed
+  there uses it as the hardest case.
+- **Causal usefulness per rank, which nothing here measured.** Every rank in
+  this phase is a *variance* rank — participation ratio, r90, CKA — and none of
+  them says which directions carry the causal effect. `induction_rank_sweep.
+  truncate` already ablates OV restricted to rank `r` in the head's 64-dim
+  core; sweeping `r` per member gives `dNLL(r)` and turns "effective rank" into
+  "useful rank". Note the tension worth measuring: the OV core is **rank ≤ 64**
+  while the measured *effect* subspaces run to **150–300** dims — the effect is
+  much wider than the head's own write rank, which is the geometric face of
+  §3.12-Q's "compounds down the stack".
 - **The step-1000 circuit, which is a different circuit.** At step 1000 the
   mechanism is `L5H2` (+4.97) and `L11H14` (+3.57), with `L7H8` absent and every
   other member under +0.06. `L11H14` is the top copier in the model at 143000
@@ -135,7 +214,18 @@ python -u p7d_redundancy/member_formation_curves.py --top 6 --chunk 4
 python -u p7d_redundancy/member_formation_curves.py --append \
         --steps 3000,5000,7000,9000                               # Q2/Q3, ~20 min
 python -u p7d_redundancy/two_big_heads.py                         # §3.12-S
+
+python -u p7d_redundancy/pairwise_interaction_matrix.py \
+        --top 10 --seqs 16 --steps 16000,143000                   # pass 2, ~50 min
+python -u p7d_redundancy/member_subspace_geometry.py \
+        --top 6 --seqs 16 --chunk 2 \
+        --steps 1000,2000,3000,4000,5000,9000,16000,32000,54000,143000
 ```
+
+`--chunk 2` on the geometry runner is not optional at 16 sequences: the first
+full-grid run was **killed for memory at the last checkpoint** with `--chunk 4`.
+Outputs are written per step, so a kill loses only the step in flight and
+`--append --steps <the missing one>` finishes the job.
 
 Outputs land in `data/analysis/*.json`, which is git-ignored — see PROJECT.md's
 resume block for the full list. Use `--out` when running a different `--pair` or
