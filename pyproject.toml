@@ -76,6 +76,9 @@ packages = [
     "p2d_operator_activation",
     "p6_subspace",
     "p7_motifs",
+    "p7d_redundancy",
+    "p7e_consolidation",
+    "p8_scale_ladder",
 ]
 
 # ---------------------------------------------------------------------------
