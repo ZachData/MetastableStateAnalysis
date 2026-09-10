@@ -82,6 +82,12 @@ Not on `main`, and not reflected in the tables above:
 - **Phase 1d** — clusterer comparison, `origin/claude/particle-methods-comparison-vpuads`.
 - **Cross-phase visualization CLI** — `origin/claude/visualize-mets-results-sl2ya5`.
 
+**These two are the only branches carrying work that exists nowhere else, and a
+2026-09-10 cleanup deleted 21 branches around them.** Both are from August and
+~93 commits behind `main`, so branch age and commit count will keep suggesting
+they are stale; this section is the reason they are not.
+`docs/deleted-branches-2026-09-10.md` records what went and how to restore it.
+
 ## Phase 7 — the mechinterp/particle bridge
 
 New as of 2026-08-22. The goal is to describe mechinterp phenomena — induction heads,

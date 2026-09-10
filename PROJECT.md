@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `claude/rescaler-cache-identity-test` — nothing merged, no PR open |
-| Last updated | 2026-09-08 |
+| Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
+| Last updated | 2026-09-10 |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,27 +37,136 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-08, machine slept mid-session)
+### Resume here (2026-09-10 — 7d is the live thread)
 
-- **14 commits on `claude/rescaler-cache-identity-test`, NOT pushed, no PR.**
-  `b44c3e9`..`HEAD` (`git log --oneline b44c3e9~1..HEAD`). The user chose
-  *open a PR* + *split by topic*. Push:
-  `GIT_SSH_COMMAND="ssh -i $PWD/github_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" git push origin claude/rescaler-cache-identity-test`
-  then open a PR to `main` (no `gh` CLI installed — web UI, or install `gh`).
-- **Working tree may have 1–2 uncommitted files** from the last analysis
-  pass — check `git status`, commit as a topic commit, then push.
-- **The induction programme (§3.11) has run Stages 0–2 + QK + generalisation.**
-  Everything exploratory, `claims/registry.json` untouched. **The next step is
-  the user's: register the Stage 3 differential prediction** (§3.11
-  "Consequence for the registration" — it must be about L7H8's rank-1 high-gain
-  OV direction specifically). Do not run Stage 3 before that entry exists.
-- **`data/analysis/*.json` are git-ignored** — the batch outputs
-  (`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
-  `induction_subspace_characterize_*`, `induction_developmental_series`,
-  `dissipation_v2_series`, `dissipation_sublayer_series`) are on disk but not
-  in git; rerun their `.py` producers (§7) to regenerate.
-- **`POPPER_PLAN.md` §6x is still unwritten** (§6w points to it). A
-  doc-consolidation pass would move the §3.11 design + results into it.
+**Git. The backlog is gone.** PRs #26–#32 all merged, `main` is at `32370fd`,
+and the four-branch stack (`p-i1-build-null-score`, `spectral-dissipation-infra`,
+`induction-programme-stage012`, `p2b-per-head-figure`) is **merged and its
+branches deleted**. `claude/rescaler-cache-identity-test` is the only working
+branch left; it carries `main` and is +38 over it, and its PR is the next one to
+open. Gate green (2270 passed / 5 skipped).
+
+**Only three remote branches exist**, and two of them must not be deleted:
+
+| branch | state |
+|---|---|
+| `claude/rescaler-cache-identity-test` | this branch, +38 over `main`, PR not opened |
+| `claude/particle-methods-comparison-vpuads` | **KEEP** — all of Phase 1d (`p1d_cluster_ensemble/`), on no other branch |
+| `claude/visualize-mets-results-sl2ya5` | **KEEP** — `tools/visualize_latest.py`, on no other branch |
+
+The two `KEEP` branches look deletable and are not: both are from August, ~93
+commits behind, one commit ahead. `INDEX.md`'s "In flight on other branches"
+section is the record, and `docs/deleted-branches-2026-09-10.md` says it again
+next to the 21 branches that *were* deleted (with their SHAs, restorable by
+`git push origin <sha>:refs/heads/<name>`).
+
+**No `gh` CLI** — open PRs from the web compare URL
+`https://github.com/ZachData/MetastableStateAnalysis/compare/main...<head>?expand=1`.
+**The repo's `github_key` is DEAD** — push with the default `~/.ssh/id_ed25519`,
+plain `git push`, no `GIT_SSH_COMMAND`.
+
+*Merge note, in case `PROJECT.md` conflicts again.* Merging `main` into this
+branch conflicted in five hunks, all of them this file's handoff header. Every
+one resolved to **this branch's side** — `main` carried the superseded
+2026-09-08 resume block — and the resolution was checked line-by-line rather
+than assumed: the 29 lines only `main` had were all stale handoff text, except
+the earlier per-step output families, which were merged back into the
+git-ignored-outputs bullet rather than dropped.
+
+**`P-I7` IS REGISTERED** (H-BRIDGE, `needs-null`) — the first registration in a
+long while. Content matchers' static QK becomes symmetric, positional matchers
+stay at baseline. **It may only be adjudicated on a model this project has NOT
+measured**: the 410m artifact is spent under `check_registry` rule 3. pythia-70m
+under §3.9's grid is the site, and §5.3 records that its weights are not on disk.
+Registry: 39 predictions, `claims/adjudications/` still empty.
+
+**THE LIVE THREAD IS `7d`, the redundancy catalogue (§3.14.2, active).** Its
+premise was restated the day it was queued: §3.12-O/P killed the three-stage
+reading and §3.12-S killed the serial reading of the pair. The object is a **set
+of functionally redundant, structurally distinct heads** holding a
+residual-stream regime — not a chain of stages.
+
+**What 7d already knows (do not re-derive):**
+- **Q1 is answered** (§3.12-T): the set is **~4 substantial members, ~10 with any
+  effect, of 384**; median head moves the readout by **0.001**. Members:
+  `L5H2` +1.97, `L7H8` +1.02, **`L12H5` +0.42**, `L8H6` +0.21, `L11H14` +0.19,
+  `L8H9` +0.13, `L15H14` +0.09, `L7H1` +0.07, `L9H13` +0.06, `L10H9` +0.05.
+  **`L12H5` and `L8H6` were entirely unknown before today.**
+- `L5H2` × `L7H8` interact at **+4.15** (joint 2.2× the parts-sum) — redundant,
+  not serial — with **87 %-aligned residual effect from chance-level weight
+  overlap** (§3.12-S).
+- The effect **compounds** down the stack (23× for `L7H8`), and
+  norm-proportionality is **ruled out and inverted** (r² = 0.001, §3.12-R).
+- **Q2/Q3 are answered** (§3.12-U): members form at **different** times —
+  `L5H2`/`L11H14` in `(512, 1000]`, the model's own induction interval;
+  `L7H8` **last**, in `(2000, 3000]` — the **interaction is ≈ 0 until `L7H8`
+  arrives**, so the redundancy postdates both heads, and four of six members
+  **decay to 5–22 % of their peak** while `L7H8` alone rises monotonically.
+
+**NEXT ACTIONS, in order:**
+1. **Pass 2 of the catalogue** — the pairwise interaction matrix over the top
+   members (6 arms for the top 4, 45 for the top 10) at a **fixed 16 sequences**
+   so it is comparable with §3.12-S. Are they one redundancy set or several
+   disjoint ones?
+2. **The step-1000 circuit is a different circuit, and it is now the cheapest
+   open question.** §3.12-U found that at step 1000 the mechanism is `L5H2`
+   (+4.97) **and `L11H14` (+3.57)**, with `L7H8` absent and every other member
+   under +0.06. `L11H14` is the **top copier in the model at 143000** (0.723,
+   §3.12-O2) but it does not enter the copying top-5 until step **16000**, and
+   `copying_score_sweep.json` stores only the top ten and a named set, so **its
+   step-1000 copying score is not on disk** — measuring it is step one, and it is
+   a weights-only quantity. Then run the same 2×2 for `L5H2` × `L11H14` across
+   1000/2000/3000: serial or redundant? If serial, the three-stage reading
+   §3.12-P falsified at step 16000 may be **true early and dismantled later**,
+   which is a different claim and a registrable one.
+   **A one-step pilot is already on the board and it must not be over-read.** At
+   step 1000, `--heads L5H2,L11H14 --pair L5H2,L11H14 --steps 1000` (restore
+   exact) gives singles +4.973 and +3.567, joint **+6.859**, interaction
+   **−1.682**, δ-cosine +0.857 — *sub*-additive, the serial signature, and the
+   opposite sign to the `L7H8` pair. But the joint arm lands at NLL **11.77
+   against a uniform ceiling of 10.83**, so it is outside the readout entirely,
+   and §3.12-M5 warns that this readout's compression biases independent
+   contributions toward exactly this apparent sub-additivity. **The sign here is
+   not evidence.** Settling it needs the graded readout (§3.12-M's KL / λ scale)
+   before more steps are run at raw `ΔNLL`. Use `--out`: a partial run overwrites
+   the six-member curve otherwise.
+3. **Structure per member** — mostly **already on disk and unread along this
+   axis**: `qk_symmetry_sweep.json`, `ov_per_head_series.json`,
+   `copying_score_sweep.json`, `behavioural_series.json`, all 384 heads × the
+   checkpoint grid. The catalogue now says which rows to read, and §3.12-U says
+   which *steps* matter — the action is in `(512, 4000]`, not at the endpoints.
+4. Still unrun, and still the only *designed* intervention that is: the **§2.5
+   isometric path** on `L7H8` (`M(t) = γ(t)Σγ(1−t)ᵀ`, exact isometry, rank `k`,
+   sweeps 100 % repulsive → attractive → repulsive).
+
+**Constraints 7d must not lose** (§3.14.2): weight-space overlap is **not**
+function-space overlap, so membership is defined causally and every composition
+score in §3.12 is blind to it; §3.13's report-both rule, which §3.12-J showed
+applies **per training stage**; the **spent-artifact rule** — nothing 7d touches
+on 410m can later be registered *and* adjudicated on the same data; and the
+particle-dynamics half stays blocked on `dual_reading`'s pairwise field (P-I5).
+
+**Three open code defects** (§3.14.3, all reporting-only, none touching a
+p-value): `truncate`'s `random` docstring claims matched-norm and is off 16× at
+`r=1`; `target_vs_reference`'s self-inclusive z saturates at 3.75; `ov_factors`
+returns the **transpose** of the residual operator with no warning against
+directional reads.
+
+**`data/analysis/*.json` are git-ignored** and every one of them is on disk and
+regenerable from its `.py` producer in `tools/run/` or `data/analysis/`. The
+2026-09-09 batch, fourteen outputs: `induction_diagnostics_7b`,
+`induction_abscissa_7b`, `induction_spectral_predicts_7b`,
+`induction_composition_whitening`, `qk_symmetry_sweep`,
+`induction_position_profile`, `induction_sa_pilot`, `copying_score_sweep`,
+`three_stage_mediation`, `what_l7h8_writes`, `norm_proportionality`,
+`two_big_heads`, `redundancy_catalog`, `member_formation_curves`. The earlier
+per-step families, carried because they are the expensive ones to lose:
+`induction_rank_sweep_s*`, `induction_qk_sweep_s*`,
+`induction_subspace_characterize_*`, `induction_developmental_series`,
+`dissipation_v2_series`, `dissipation_sublayer_series`.
+`member_formation_curves.json` is the 23-step, six-member curve of §3.12-U and
+costs ~20 min to rebuild: `python -u tools/run/member_formation_curves.py --top
+6 --chunk 4`, then `--append --steps 3000,5000,7000,9000` for the fills.
 
 ### The machine
 
@@ -129,9 +238,13 @@ frame (`P-I1`) hit a construction-level circularity and was retired (below,
 §3.10, `POPPER_PLAN.md` §6w); it was replaced by isolating one induction head
 (`L5H2 → L7H8`) and characterising its circuit directly. As of 2026-09-08
 Stages 0–2, the QK half, and a generalisation batch have all run — everything
-**exploratory, nothing registered** — and the next step is the user's: register
-the Stage 3 differential prediction. §3.11's dated blocks are the detail;
-§§3.6–3.10 below are the retired-frame history, kept as the construction log.
+**exploratory, nothing registered**. **2026-09-09 (§3.12) reopened the design**:
+the OV repulsive collapse is a model-wide developmental phase with its floor in
+`CLAIM-B`'s own anchor window, §3.11's baseline argument used the wrong
+reference class, and the Stage 3 control needs rebuilding. Next action is
+§3.12's diagnostics, not a registration. §3.11 and §3.12's dated blocks are the
+detail; §§3.6–3.10 below are the retired-frame history, kept as the
+construction log.
 
 `P-I1`, induction-head formation as a two-stage `relay` motif tracked across the
 checkpoint axis, ran end to end and scored **INSUFFICIENT** — not
@@ -179,11 +292,13 @@ has pivoted to a bottom-up interventional programme (§3.11).
    effect is **concentrated in L7H8** (~10× any other). The **QK half is done**
    and is the spectral opposite — the matcher is a ~12-dim high-eigenvalue
    near-normal invariant subspace (`r*_Schur` 12 < `r*_SVD` 32, SVD below the
-   random control). **Pick up at: register the differential prediction** — it
-   must be about L7H8's rank-1 high-gain OV direction specifically, since both
-   "repulsive" and the OV/QK dissociation are now population baselines (§3.11
-   "Consequence for the registration") — then **Stage 3**.
-   `claims/registry.json` unchanged.
+   random control). **Pick up at: the four diagnostics of §3.12 block E** —
+   §3.11's registration advice is superseded by §3.12. The reference class was
+   wrong ("100 % repulsive" is 9/9 against *the induction heads*, but 0.435 →
+   0.109 of the 384-head population at matched step), the matched-norm control
+   is degenerate, and the drafted Stage 3 entry has three defects decidable before a
+   forward pass. Diagnostics first, then the §3.12-D **S-flip** entry, then
+   **Stage 3**. `claims/registry.json` unchanged.
 2. ~~Violation-restricted subspace split (dissipation v2)~~ **— done
    2026-09-08, `status-2.md` item 5 ~resolved.** The clean per-particle
    version (`v2_attn_pos_*` in `tools/run/dissipation_sublayer.py` →
@@ -1038,6 +1153,1528 @@ specifically — under matched-norm perturbation does it act as an individuating
 channel, or does copying survive (a copier the token-alignment test missed) —
 not about repulsiveness or rank per se. Register that, then Stage 3.
 
+*Superseded in part by §3.12 (2026-09-09): the "repulsiveness is a population
+baseline" premise was measured against the wrong reference class, and the
+matched-norm control is degenerate. Left unedited — the reasoning is the
+construction log.*
+
+### 3.12 The reference-class error, and what it opens (2026-09-09)
+
+Exploratory. `claims/registry.json` and `claims/adjudications/` unchanged.
+Nothing here is registered and nothing here is a p-value.
+
+**A. The OV repulsive collapse is a model-wide developmental phase, not an
+induction-head property.** Read off `data/analysis/ov_per_head_series.json`
+(commit `08175a8`, weights-only, all 384 heads × 19 steps — the file was
+computed for §3.10's per-head projector item and its population axis was never
+looked at). Median `attractive_energy_fraction_core` over all 384 heads, and
+the share of heads whose core is *exactly* 100 % repulsive:
+
+| step | 0–64 | 128 | 256 | 512 | **1000** | **2000** | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| median attractive | ~0.504 | 0.481 | 0.385 | 0.094 | **0.000** | **0.000** | 0.001 | 0.026 | 0.066 | 0.134 | 0.225 | 0.392 |
+| frac heads exactly 0 | 0.000 | 0.000 | 0.000 | 0.000 | **0.617** | **0.654** | 0.435 | 0.297 | 0.219 | 0.188 | 0.164 | 0.109 |
+
+The whole model slides off the random-matrix baseline into a **fully repulsive
+phase whose floor is steps 1000–2000**, then partially recovers. 1030 of 7296
+head-steps are exactly 0.0 overall (14.1 %).
+
+*Checked, not assumed:* `attractive + repulsive = 1.000` exactly at every step,
+so this is not energy vanishing into an unclassified bucket — the `< 0` / `> 0`
+split in `head_spectrum` leaves nothing at zero. And step 0's ~0.504 is the
+**random-real-matrix baseline** (eigenvalues symmetric about the imaginary
+axis), so the measurement carries its own control and the model demonstrably
+moves off it.
+
+**Two things this collides with.** The floor sits *exactly inside* `CLAIM-B`'s
+registered anchor window (512–2000) — either a striking convergence or a shared
+cause, and which one matters before either is scored. And Phase 2's activation-
+level `frac_repulsive` decay (§2 item 2) runs the *other* way over the trained
+regime while this weights-only quantity recovers; they are different
+measurements and the shapes have never been put side by side.
+
+**B. §3.11's exclusion of repulsiveness rests on a reference-class error.**
+"OV core 100 % repulsive, 9 of 9 induction heads" was read as a population
+baseline — but the population it was compared against was *the induction heads
+themselves*. Against the 384-head population **at matched step**, exactly-0.0
+runs 0.435 at step 4000 down to **0.109 at 143000**. `L6H0` peaks at 143000,
+where only 11 % of heads are fully repulsive. The 9/9 is not a baseline.
+
+This does **not** resurrect the observational claim as a registrable
+differential — 9/9 with no control arm is still not a test. What it removes is
+the *reason given* for excluding repulsiveness from Stage 3, which reopens the
+**causal** test of it (block D).
+
+**Before anything is built on A:** check the count version
+(`repulsive_dim_fraction_core`) against the energy version, in case one dominant
+eigenvalue carries it; and name weight decay as the leading alternative
+mechanism, though the recovery after step 2000 argues against a pure-decay
+story.
+
+**C. The Stage 3 entry was drafted and is not registrable as drafted.**
+A draft entry (H-BRIDGE, geometry-vs-copying at the rank-1 OV direction) was in
+the session scratchpad, not in the repo. Three defects, all decidable before a
+forward pass.
+
+*Three things the gate taught us while writing this section, and they decide
+where this discussion lives.* (1) The draft reused the **induction id that
+`POPPER_PLAN.md` §6w already spent** on the co-location registration that was
+*not* made; the next free one is one higher. (2) `tools/check_registry.py`'s
+coverage rule fired the moment that id was named here — working exactly as
+intended, since an id in a scanned file with no registry entry is the state the
+registry exists to forbid. (3) It did **not** fire on §6w's use, because
+`POPPER_PLAN.md` sits in `SCAN_EXCLUDE` beside the three generated files — so
+the design narrative can burn an id invisibly to coverage, and no *uniqueness*
+check spans the excluded files.
+
+**Consequence, and it is structural rather than a nuisance:** `PROJECT.md`
+cannot name an unregistered prediction id at all, so **the id-level design
+discussion belongs in `POPPER_PLAN.md` §6x** — which §6w already points forward
+to and which is still unwritten. This section is the summary; §6x is where the
+candidate entry, its id, and its wording go before registration.
+
+The three defects:
+
+1. **The copy-matched control is probably unbuildable.** Random rank-1
+   directions recover ~0 % at matched norm (§3.11 Stage 1), so reaching the
+   observed ΔNLL needs hard rescaling, which drives KL up — matching a
+   *copying* effect against a *destruction* effect. §3.11's own nonlinearity
+   caveat (KL 0.57 late) bites here. This replaced one degenerate null with
+   another.
+2. **The geometry contrast has a mechanical component with no individuation
+   content.** Perturbing `W_OV` along `v` moves every position the head writes
+   to by a near-rank-1 update; the matched positions share attention structure
+   *by construction*, so they move together and their pairwise distances change
+   *less* than unmatched ones — contraction contrast in the wrong direction, for
+   algebraic reasons. `P-ST1`'s "steering is a pure mean effect" one level over:
+   settle it on paper, not by simulation.
+3. **The direction is identified weights-only.** The top singular direction of
+   `W_OV` ignores the residual-stream distribution; the 82 % is a causal
+   measurement but the identification is not, and Stage 3 perturbs the
+   identified object.
+
+Also missing, and every other registry entry has one: a **precondition on the
+pilot, computed before it runs**. Expected verdict distribution as drafted is
+INSUFFICIENT-dominated, because the direction was *selected* for carrying the
+copy effect and is then asked to beat a bar its own selection sets.
+
+**D. The proposal that replaces it: flip the symmetric part.**
+For `M = S + A` with `S = (M+Mᵀ)/2`, `A = (M−Mᵀ)/2`: `Re(λ)` is governed by `S`,
+and `tr(SᵀA) = 0`, so `‖−S+A‖_F = ‖S+A‖_F`. **`S → −S` flips every eigenvalue's
+real part at exactly matched Frobenius norm, by construction** — no rescaling,
+no matching search, no tolerance. `p2b_imaginary/head_circuits.py` already does
+factored S/A surgery.
+
+- Standard account: copying depends on gain (σ and singular vectors), not on
+  eigenvalue sign → flip `S`, **copying survives**.
+- Particle account: individuation depends on repulsive character → flip `S`,
+  **matched particles collapse and copying degrades**.
+
+Both non-silent, so the falsification branch can fire; the matching problem and
+the mechanical-geometry confound both dissolve. And it is the *causal* test of
+repulsiveness, which is not a baseline even where the observational version is:
+if every induction head is 100 % repulsive and flipping it changes nothing, the
+repulsive frame is decoratively true and causally empty — a real registrable
+negative. If flipping it destroys induction, the frame is load-bearing. **Either
+outcome is informative**, which is the property the drafted entry lacks.
+
+**E. Four absences, all cheap, none producing a p-value.**
+
+1. **The composition has never been measured.** Grep confirms no K/Q/V-
+   composition score anywhere in the repo — the only "composition" hits are the
+   retired `relay` motif. Induction is `L5H2 → L7H8` and only the *endpoints*
+   are characterised. Weights-only, milliseconds, and it yields a developmental
+   series: when the **composition** forms against when each half forms. No §6w
+   circularity, since composition is defined by weights, not by the projector
+   whose sign a prediction would read.
+2. **Rotated or spread?** `svd@1` falls 0.68 → 0.20 across consolidation while
+   `svd@2` stays high; §3.11 reads this as spreading to a second direction.
+   Equally consistent: the direction **rotated** and rank 2 tracks a moving
+   target. Distinguish by top-singular-vector overlap between adjacent steps.
+3. **The anti-copiers.** `L2H10` and `L9H8` have *negative* `ΔOV_nll` —
+   ablating their OV *improves* second-copy prediction — while carrying the
+   universal representational description. Stage 2's "representation is not the
+   mechanism" in its sharpest available form, already computed.
+4. **The 16 rotary dims were never examined.** The QK sweep truncates rows
+   16–63 and leaves rotary intact; but `L5H2` is a *pure positional* head and
+   "previous token" is positional. Block C describes the static half only.
+
+**Order of work decided here:** the four diagnostics run *before* the entry is
+written, because two of them (1 and 3 above, plus the input-whitening check in
+C3) can change what a valid control even is. Registering first and diagnosing
+after is the §6l timing argument pointed the wrong way — nothing here is a
+p-value, so none of it spends the registration.
+
+**F. Diagnostics run (2026-09-09) — `data/analysis/induction_diagnostics_7b.py`
+→ `induction_diagnostics_7b.json`.** Weights-only, no model load, no forward
+pass, ~1 min 43 s. All four returned, and three of them change the design.
+
+*F0 — the U-shape survives the count check, and gains an ordering.* The
+`repulsive_dim_fraction_core` count tells the same story as the energy version
+— identical `frac heads exactly 1` at every step (0.617 / 0.654 / 0.435 / …),
+so **the collapse is not one dominant eigenvalue**. What the disagreement shows
+is *how* it happens: in the ramp, repulsive **energy leads repulsive dimension**
+— 0.615 vs 0.562 at step 256, **0.906 vs 0.734 at step 512** — and the two
+meet at 1.000 by step 1000. **The large eigenvalues go repulsive first and the
+count catches up.** This is exactly the bulk-vs-outlier reading
+`ov_per_head.py`'s own docstring said the disagreement was for; nobody had read
+it.
+
+*F1 — block D is exact, and feasible.* `(−S+A)` and `−Mᵀ` agree **bit for bit**
+(`max|Δ| = 0.000e+00`) on all four heads. The flip preserves every singular
+value to `≤1.3e-15`, the Frobenius norm to printed precision, and every
+eigenvalue modulus to `≤1.1e-15`, while `attractive_energy_fraction_core` goes
+**0.000 → 1.000** for `L7H8`, `L2H10`, `L9H8` (and 0.444 → 0.556 for the mixed
+`L5H2`). The factored write-back `W_O' = −W_Vᵀ`, `W_V' = W_Oᵀ` reproduces it at
+`1.2e-07` relative — the **fp32 storage floor** the OV artifact already carries
+(`s[64]/s[0] = 4.9e-8`), i.e. exact to the data's own precision. So the Stage 3
+control needs no rescaling, no matching search, no tolerance, and no new
+machinery.
+
+*F2 — "rotated or spread?" is BOTH, at different times, and §3.11 saw only the
+second.* Overlap of `L7H8`'s top right-singular vector between adjacent steps,
+with the top-2 subspace's principal cosines beside it:
+
+| window | top-1 overlap | top-2 principal cos | reading |
+|---|---|---|---|
+| 0 → 512 | 1.000 → 0.882 | [0.940, 0.890] | stable |
+| **512 → 1000** | **0.188** | **[0.352, 0.122]** | **rotation** |
+| **1000 → 2000** | **0.282** | **[0.287, 0.002]** | **rotation** |
+| 2000 → 16000 | 0.653 → 0.940 | rising to [0.943, 0.915] | re-forming |
+| **16000 → 32000** | **0.490** | **[0.961, 0.951]** | **reordering** |
+| 32000 → 143000 | 0.870 → 0.978 | [0.979, 0.974] | stable |
+
+Two distinct events. **512–2000 is a genuine rotation** — the whole plane moves,
+second principal cosine reaching **0.002** (orthogonal). **16000–32000 is
+reordering inside a stable plane** — top-1 halves while the subspace holds at
+[0.961, 0.951], which is `svd@1` falling 0.68 → 0.20 while `svd@2` stays
+0.85–0.97, seen from the other side. §3.11's consolidation reading is right; the
+earlier event was missed entirely.
+
+**And the rotation window is the repulsive-collapse window is `CLAIM-B`'s
+anchor window.** Three independent quantities — a population spectral phase, one
+head's OV direction, and a registered literature anchor — all name 512–2000.
+Whether that is one event or three is now the question worth asking.
+
+**Design consequence, forced by measurement:** the stable object is the
+**top-2 subspace**, not the top-1 direction. The Stage 3 entry must perturb the
+plane. "The rank-1 direction" is well defined only inside the formation regime
+(4000–16000).
+
+*F3 — the found control is decisive, and it cuts against the spectral frame.*
+At step 4000:
+
+| head | attr. frac | complex frac | ‖M‖_F | σ₁ share | σ₁₂ share | participation |
+|---|---|---|---|---|---|---|
+| `L7H8` copier (ΔOV_nll **+0.244**) | 0.000 | 0.787 | 1.665 | 0.176 | 0.241 | 19.9 |
+| `L2H10` anti-copier (**negative**) | 0.000 | 0.881 | 1.287 | 0.166 | 0.226 | 21.5 |
+| `L9H8` anti-copier (**negative**) | 0.000 | 0.728 | 1.749 | 0.125 | 0.174 | 30.8 |
+| `L5H2` prev-token | **0.444** | 0.896 | 2.568 | 0.062 | 0.118 | 27.5 |
+
+**`L2H10` is spectrally near-indistinguishable from `L7H8`** — same repulsive
+fraction (0.000), same gain concentration (0.166 vs 0.176), same participation
+ratio (21.5 vs 19.9) — and its causal copying effect has **the opposite sign**.
+So the OV spectral description **does not determine the causal role**. That is
+§3.11's "the repulsive sign is true but not the mechanism" in its sharpest
+available form, obtained from a *found* control rather than a constructed one,
+and therefore immune to the matching problem that killed both constructed
+designs. `L2H10` is the control head the S-flip experiment should run against.
+
+Separately: `L5H2` is the **only** spectrally mixed head of the four (0.444) and
+the least gain-concentrated. The two stages of the circuit are spectrally
+unlike, which no one had checked.
+
+**G. The derivation, and the negative it produced (2026-09-09).**
+`MATH_SPECTRAL_OT.md` gains **§2.4, "The S/A split as an intervention"**, built
+on §§2.1–2.3 rather than re-deriving them. Four results, three of which changed
+the design and one of which killed a hypothesis of its own making.
+
+*G1 — the readout Stage 3 depends on is a quadratic form in `S` (§2.4.1).* §2.1
+derives the first-order result for `‖x‖`; the particle account is about
+*inter-particle* distance. For `δ = x − y` the update is linear, so
+`‖δ + Mδ‖² = ‖δ‖² + 2·δᵀSδ + ‖Mδ‖²` — identical form. Hence "individuating" is
+literally the statement `δᵀSδ > 0` on the matched differences, `A` contributes
+**exactly nothing** at first order, and **§3.12-C2's mechanical confound becomes
+computable in closed form and subtractable** rather than something to control
+for. `P-I5`'s pairwise readout and `P-ST1`'s effective-rank readout are the same
+quadratic form on different arguments.
+
+*G2 — the four sign choices are a group, and block D was under-specified
+(§§2.4.2–2.4.3).* `{M, Mᵀ, −M, −Mᵀ} = {S+A, S−A, −S−A, −S+A}` is a complete
+**2² factorial** in (sign `S`, sign `A`), and **every arm is an isometry** —
+same singular values, same `‖·‖_F`, same eigenvalue moduli, no rescaling, no
+draws. But `M = UΣVᵀ ⟹ Mᵀ = VΣUᵀ`, so **transposing swaps the read subspace
+with the write subspace**, which for a copier is a change of function. It
+resolves exactly: role-swap `⟺ sign(S) ≠ sign(A)`, i.e. the `S×A` interaction.
+So **both main effects are clean and the interaction is aliased with the role
+swap** — and block D's single `−Mᵀ` arm, run alone, confounds the `S` sign with
+the swap completely. **Stage 3 must run all four cells.**
+
+*G3 — the flip's residual is the non-normality (§2.4.4).* Applying `M` and
+`−Mᵀ` to the same `δ`, the first-order terms cancel identically and the
+difference is `4·δᵀSδ + δᵀ[Mᵀ,M]δ`. So the S-flip inverts the first order
+*exactly*, and the whole deviation is a quadratic form in the self-commutator —
+a third readout for free, and the one that answers §5.3(d) per head by
+intervention rather than by residual.
+
+*G4 — §2.4.5's own prediction, measured and FALSIFIED
+(`induction_abscissa_7b.py`, §2.4.6).* Bendixson gives only the inclusion
+`Re λ(M) ∈ [λ_min(S), λ_max(S)]`, so two heads can agree on every
+eigenvalue-derived field and differ on the numerical abscissa — which would have
+explained F3. **It does not.** At step 4000:
+
+| | `attr_frac` | `λ_max(S)` | `λ_min(S)` | `S_pos_E` | `‖[Mᵀ,M]‖` |
+|---|---|---|---|---|---|
+| `L7H8` (ΔOV_nll **+0.244**) | 0.000 | 0.2644 | −0.4392 | 0.150 | 0.2968 |
+| `L2H10` (**negative**) | 0.000 | 0.2238 | −0.3038 | 0.202 | 0.2924 |
+
+The two candidate separators differ by ~15 % and ~35 % **in opposite
+directions**, and the commutator agrees to two digits. Across its own layer
+`L7H8` ranks **8th of 16** on `λ_max(S)` while carrying ~10× the layer's causal
+effect.
+
+**So `L7H8` is unremarkable in the eigenvalue frame, unremarkable in the
+symmetric frame, and unremarkable in the gain frame — and it is the head that
+does induction.** No weights-only spectral quantity this project computes
+identifies the copier. (Population test of that claim:
+`induction_spectral_predicts_7b.py`, 112 heads with a measured causal readout.)
+
+This does **not** show the spectral character is causally inert — a static
+property failing to *predict* which head copies is not the same as flipping it
+failing to *change* what the head does. The G2 factorial is now the thing that
+decides it. But it moves the prior hard, and it puts the *representational*
+reading of induction in trouble on a third independent front, after the missing
+token diagonal and after F3.
+
+*G5 — and the developmental signal is where the structure is.* `L7H8`'s
+`λ_max(S)` holds its initialisation value (~0.040) through step 1000, then rises
+~20× — 0.104 at 2000, 0.264 at 4000, 0.455, 0.627, peaking **0.729 at 32000**
+before falling to 0.385 at 143000. Its `S_pos_E` traces a **U-shape with floor
+at step 2000** (0.076). That is the **fifth** quantity to name 512–2000, after
+the population repulsive collapse (A), this head's OV plane rotation (F2), the
+eigenvalue-frame U-shape (A), and `CLAIM-B`'s registered anchor. The
+cross-sectional question has a negative answer; **the developmental one is the
+live one**, which is sub-phase 7a rather than 7b.
+
+*G6 — the population test, and it splits the fields cleanly
+(`induction_spectral_predicts_7b.py`).* G4 was two heads. Seven
+`induction_subspace_characterize*` runs already carry a measured
+`full_ablation_delta_nll` for **every head of a layer** at four checkpoints —
+112 heads with a causal readout and a dense `W_OV` on disk. Asking whether any
+weights-only field rank-correlates with the causal effect: **Spearman ρ is ≈ 0
+for all ten fields** (best `|mean ρ|` = 0.133; **no field reaches `|ρ| > 0.5` in
+any of the 7 populations**).
+
+**But the correlation was the wrong instrument, and the rank table is the right
+one.** Fifteen of sixteen heads per layer carry causal noise, so Spearman
+averages the signal away. What matters is where the *causally-top* head sits on
+each field (rank 0 = that field's own maximum of 16):
+
+| field | top-head rank across the 7 populations | extreme in |
+|---|---|---|
+| `sv12_share` | 2, 1, 11, 0, 0, 1, 1 | **6/7 top-3** |
+| `lambda_min_S` | 13, 15, 11, 15, 15, 15, 14 | **6/7 bottom-3** |
+| `sv1_share` | 2, 2, 12, 0, 0, 1, 3 | 5/7 top-3 |
+| `nonnormality` | 2, 2, 6, 0, 0, 1, 3 | 5/7 top-3 |
+| `participation_ratio` | 13, 13, 7, 15, 15, 14, 12 | 5/7 bottom-3 |
+| `attractive_energy_fraction_core` | 8, 9, 2, 0, 14, 10, 2 | — |
+| `sym_pos_energy_fraction` | 10, 8, 1, 0, 15, 14, 13 | — |
+| `max_re_lambda` | 11, 9, 2, 0, 14, 14, 13 | — |
+| `lambda_max_S` | 7, 7, 3, 0, 5, 8, 5 | — |
+| `frobenius` | 8, 6, 1, 2, 13, 13, 5 | — |
+
+Under a uniform-rank null the top group sits at ~2.6e-4 and ~3.5e-3, the bottom
+group at 0.13–0.77. **That is arithmetic, not an adjudication** — the
+populations share checkpoints, heads within a layer are not independent, and the
+fields were not chosen in advance. No p-value is emitted and
+`claims/registry.json` is untouched.
+
+**The split is exact and it is the finding.** *Concentration and magnitude*
+quantities identify the copier — `σ₁₂` share, `σ₁` share, participation ratio,
+non-normality, and the single most-negative `λ(S)`. *Sign-balance* quantities do
+not — the attractive fraction, `max Re λ`, `S_pos_E`, and (worst of all ten, at
+0.77) `λ_max(S)`, the field §2.4.5 nominated. `‖M‖_F` alone does not either, so
+it is concentration rather than size.
+
+**Three consequences.**
+
+1. **`r*_SVD ≪ r*_Schur` — the one Stage 1/2 finding that survived — is now a
+   population result**, confirmed across 7 layer-populations and 4 checkpoints
+   rather than one head at one step. The copier is the most gain-concentrated
+   head in its layer, and that is what marks it.
+2. **A pre-run prediction for Stage 3, which the drafted entry lacked.** The
+   S-flip preserves *every singular value*, so it preserves gain concentration
+   exactly. **Predicted before running: `−Mᵀ` will not destroy copying.**
+3. **That sharpens the G2 factorial rather than weakening it.** If concentration
+   is the whole story, even `Mᵀ` preserves copying; if the read/write
+   *alignment* matters, `Mᵀ` destroys it while `−M` does not. So the informative
+   contrast is **`M` vs `Mᵀ`** — alignment at fixed gain — and not the `S` sign
+   at all. The factorial computes both for the same four forward passes.
+
+**H. Composition and whitening (2026-09-09,
+`tools/run/induction_composition_whitening.py`).** The two checks that needed a
+model. Both returned, and both matter.
+
+*H1 — the composition switches on between step 512 and step 1000, and it is the
+cleanest circuit-level signal in the programme.* K-composition
+`‖W_K^{L7H8} · W_OV^{L5H2}‖_F / (‖W_K‖_F‖W_OV‖_F)`, scored against **all 112
+upstream heads** into the same key path, so "elevated" is against the model's
+own distribution and no threshold is placed:
+
+| step | K | pop median | **rank / 112** | z | Q | V |
+|---|---|---|---|---|---|---|
+| 0 – 256 | 0.0311 | 0.0313 | **83** | −0.56 | 0.0311 | 0.0320 |
+| 512 | 0.0313 | 0.0313 | **66** | −0.08 | 0.0312 | 0.0320 |
+| **1000** | 0.0346 | 0.0314 | **0** | **+5.78** | 0.0331 | 0.0317 |
+| 2000 | 0.0502 | 0.0317 | **0** | +6.87 | 0.0486 | 0.0377 |
+| 4000 | 0.0551 | 0.0318 | **0** | +5.74 | 0.0541 | 0.0438 |
+| 143000 | 0.0778 | 0.0315 | **0** | +6.93 | 0.0778 | 0.0470 |
+
+`L5H2 → L7H8` goes from **below the population median (rank 83 of 112)** to
+**the single strongest composition into that key path (rank 0, z ≈ +6)** in one
+step interval, and never leaves rank 0 again. **Sixth quantity to name
+512–2000**, and the first that is unambiguously about the *circuit* rather than
+about spectra.
+
+**The honest caveat, and it is not small: K and Q rise together.** By step 8000
+they are equal to three digits (0.0778 both at 143000). V is clearly lower
+(0.0470) so the measurement is not purely generic, but **the Q/V arms were
+computed without their own population controls**, so this does *not* yet isolate
+the K-specific induction story — only that `L5H2`'s output becomes strongly
+aligned with `L7H8`'s read subspaces. Scoring Q and V against their own 112-head
+populations is the immediate next step and is the same cost.
+
+*H2 — §3.12-C3 confirmed: the weight-identified direction is not the
+data-identified one.* At step 4000, comparing the top singular directions of
+`W_OV` against those of `W_OV Σ^{1/2}` (pulled back to input space):
+
+- top-1 overlap **0.207**
+- top-2 plane principal cosines **[0.293, 0.091]** — very nearly orthogonal planes
+- but `σ₁` energy share 0.176 → 0.148 and `σ₁₂` **0.241 → 0.270**
+
+So the *direction* does not survive whitening and the **concentration does**.
+
+**Caveats, both real.** Σ is estimated from only **1536 tokens** for a 1024-dim
+space (effective rank 238), so part of the low overlap is estimation noise —
+raising `N_SEQS` is cheap and should be done before this is leaned on. And Σ
+here comes from the repeated-random-token battery, not natural text; that is
+arguably the *right* metric since it is the distribution the causal readout
+uses, but it is not the model's operating distribution and the two should be
+compared.
+
+**H1-REVISED (2026-09-09, rerun with per-path population controls).** The
+caveat was right and it is now settled: **the composition is not K-specific.**
+Scoring Q and V against their own 112-head populations:
+
+| step | K rank / z | Q rank / z | V rank / z |
+|---|---|---|---|
+| 0 – 512 | 83 / −0.56 | 72 / −0.38 | 2 / +1.94 |
+| **1000** | **0 / +5.78** | 2 / +3.25 | 21 / +0.81 |
+| 2000 | 0 / +6.87 | **0 / +6.40** | 0 / +6.07 |
+| 8000 | 0 / +4.94 | **0 / +5.41** | 4 / +2.32 |
+| 143000 | 0 / +6.93 | **0 / +6.79** | 6 / +1.54 |
+
+**And the reason is an artifact, identified rather than guessed:** `L7H8`'s
+`W_Q` and `W_K` **converge onto the same subspace** over training — mean
+principal cosine between their rowspaces **0.213 → 0.829**, top principal cosine
+**0.476 → 0.995**. Any operator composing into `K` therefore composes into `Q`,
+and the composition score cannot separate the two pathways for this head.
+
+*What survives, and it is most of it.* The **timing** (rank 83 of 112 → rank 0
+between 512 and 1000) and the **magnitude** (z ≈ +6, sustained) stand
+untouched — those never depended on which read path. What must be dropped is the
+phrase "K-composition": the right description is **composition into `L7H8`'s
+attention read-space**, which is *one* object because Q and K share it. And the
+**V arm does discriminate** — it drifts to rank 4–6 at z ≈ +1.5 while K and Q
+hold rank 0 at z ≈ +6 — so the composition is into the **attention** pathway and
+not the **value** pathway, which is the induction-shaped result and is the part
+that was actually worth having. At the onset step alone (1000) K does lead Q,
+rank 0 / z +5.78 against rank 2 / z +3.25; one step and a small gap, recorded
+and not leaned on.
+
+**H2-CONFIRMED, by a control that needed no model of the noise.** Three arms
+plus a split-half at step 4000:
+
+| arm | tokens | top-1 overlap | plane cos | Σ eff. rank |
+|---|---|---|---|---|
+| battery | 24,576 | 0.217 | [0.329, 0.088] | 327 |
+| battery half 1 | 12,288 | 0.222 | [0.320, 0.088] | — |
+| battery half 2 | 12,288 | 0.213 | [0.336, 0.088] | — |
+| natural text | 3,185 | 0.266 | [0.270, 0.104] | 281 |
+
+**Split-half: half 1 against half 2 agrees at top-1 0.990 and plane cos
+[1.000, 0.778].** The two independent halves agree with *each other* at 0.99
+while both disagree with raw at ~0.22 — so **the low overlap is signal, not
+estimation noise**, and H2's caveat is discharged. Sixteen times the tokens
+moved the answer 0.207 → 0.217, so the original estimate was already sound. And
+`Σ(battery)` vs `Σ(natural)` have cosine **0.453** — substantially different
+metrics giving the same answer, which is the robustness the caveat asked for.
+
+*H3 — three independent results now converge on the same correction.* G6 says
+**concentration** identifies the copier and directional/sign quantities do not.
+H2 says concentration **survives whitening** and the direction does not. F2 says
+the top-1 direction is not even stable across checkpoints while the top-2
+*plane* is. So F2's "perturb the top-2 subspace" fix is **still not enough** —
+the object has to be defined in the whitened metric, or, better, **the Stage 3
+entry should be about gain concentration rather than about any named
+direction.** That is a different prediction from the one §3.11 asked for, and it
+is the one the measurements support.
+
+**I. The matcher becomes a similarity kernel, and this is the first quantity
+that cleanly identifies the head (2026-09-09).** H1-REVISED's artifact — `W_Q`
+and `W_K` converging onto one subspace — is not only an artifact. A head whose
+query and key read the *same* subspace computes an attention logit
+`qᵀk = xᵀ(W_Qᵀ W_K)y` that is close to a **similarity form**, i.e. the static QK
+operator should be becoming **symmetric**. Measured directly, on
+`M = W_Q[16:]ᵀ W_K[16:]` (the same static operator §3.11 block C sweeps), as
+`‖S‖²_F / ‖M‖²_F`:
+
+| step | `L7H8` sym. fraction | `‖M‖_F` | **layer-7 median** | `L7H8` rank / 16 |
+|---|---|---|---|---|
+| 0 | 0.5017 | 2.78 | 0.5006 | 2 |
+| 512 | 0.5019 | 2.79 | 0.5008 | 1 |
+| 1000 | 0.5042 | 2.87 | 0.5034 | 6 |
+| **2000** | **0.5742** | 3.50 | 0.5095 | **0** |
+| 4000 | 0.7398 | 4.44 | 0.5181 | **0** |
+| 8000 | 0.8807 | 5.90 | 0.5200 | **0** |
+| 16000 | 0.9311 | 7.85 | 0.5263 | **0** |
+| 32000 | 0.9465 | 9.86 | 0.5257 | **0** |
+| 143000 | **0.9561** | 7.91 | 0.5203 | **0** |
+
+A random real matrix splits its energy 50/50 between `S` and `A`, and 0.50 is
+where every head starts. **`L7H8` goes to 0.956 while its fifteen neighbours
+stay at the random baseline (layer median 0.520 at step 143000), and it is rank
+0 of 16 at every step from 2000 on.** Takeoff is 1000 → 2000 — the **seventh**
+quantity to name that window.
+
+**Three things this is** *(claim 1 below was overstated and is corrected in
+block J — left standing because the correction is the point)*.
+
+1. **The first weights-only quantity in the entire programme that cleanly
+   identifies the head.** §3.12-G6's negative — no spectral field picks out the
+   copier — surveyed the **OV** operator only. On the **QK** side, symmetry
+   identifies the matcher decisively: 0.956 against a layer median of 0.520,
+   rank 0 of 16, sustained over seven checkpoints.
+2. **It explains a previously descriptive finding.** §3.11 block C reports the
+   matcher as a "near-normal" invariant subspace with `r*_Schur` 12 < `r*_SVD`
+   32. A symmetric operator **is** normal, so near-symmetric *derives*
+   near-normal rather than restating it, and it explains why the Schur frame is
+   the right one for the matcher and the wrong one for the copier.
+3. **"Matching kernel" stops being a metaphor.** The particle account's own
+   framing is that induction is "a matching-kernel coupling rather than a
+   feature-copying circuit" (`POPPER_PLAN.md` §C2). The static QK half of this
+   head *is* a similarity kernel, at 0.956. That is the account's language
+   arriving as a measurement — **on the half nobody was testing**.
+
+**What it does not do, stated because the temptation is obvious.** It adjudicates
+nothing: `claims/registry.json` is untouched, this is one head in one model, and
+the differential prediction §3.11 wanted was about **OV**, where the evidence
+still runs the other way. A symmetric *content* operator is also exactly what
+one would expect architecturally — RoPE carries the positional asymmetry in the
+16 excluded dims and the causal mask carries the rest, so "symmetric content
+part plus positional part" is the ordinary way to build a content matcher, and
+that reading has to be ruled out before any of this is registered. The obvious
+next measurements: the same sweep on the other genuine induction heads
+(`L9H9`, `L6H0`, `L1H15` — block C's 3-of-4), and on non-induction heads that
+also match, to see whether symmetry tracks *induction* or merely tracks
+*matching*.
+
+**J. It tracks MATCHING, not induction — block I's claim 1 is corrected
+(2026-09-09, `tools/run/qk_symmetry_sweep.py`, all 384 heads × 19 steps).**
+The symmetric fraction reduces to 48×48 algebra — `‖M‖²_F = tr((AᵀA)(BBᵀ))` and
+`tr(M²) = tr((BA)²)` for `M = AB` — so no (1024,1024) matrix is ever formed;
+the identity is asserted against the direct computation on the first head of
+every run rather than trusted.
+
+*The population.* Every head sits at the random baseline (median 0.5005, max
+0.5027, **none above 0.7**) through step **512**. First movement at 1000; by
+143000 the median is 0.5231 and only **11 of 384** heads exceed 0.7, **one**
+exceeds 0.9. So high symmetry is genuinely rare — but it is **not unique**.
+
+*The decisive cell, at 143000 — top-10 symmetry heads and their induction rank
+of 384:* `L7H8` 0.956 (rank 2), `L6H0` 0.873 (**0**), `L1H15` 0.840 (5),
+`L2H10` 0.835 (**1**), `L7H0` 0.796 (3), `L9H9` 0.738 (7), **`L1H4` 0.734
+(40)**, **`L8H13` 0.730 (47)**, `L9H8` 0.727 (4), **`L7H4` 0.708 (91)**.
+
+**Seven of the top ten are top-8 induction heads — and three are not.** At step
+4000 the mismatch was starker still (`L10H3`, symmetry rank 5, induction rank
+**382 of 384**). So symmetry is close to *necessary* for induction and clearly
+not *sufficient*: **block I's "the first quantity that cleanly identifies the
+head" was too strong.** What symmetry identifies is the **matching half of the
+circuit**, and induction heads are matchers.
+
+*Two controls settle what "matching" means here, and neither was arranged.*
+
+- **`L5H2`, the previous-token head, never becomes symmetric** — 0.500 → 0.504,
+  rank 322 → 310 of 384, flat across the entire axis while its induction
+  partners climb past 0.8. It is an overwhelming matcher (attention 0.895 at
+  offset −1, ~49× the head median) but it matches on **position**. So symmetry
+  marks **content** matching specifically, and the architectural reading block I
+  flagged is *partly right*: it is about matching, not about induction.
+- **`L2H10` matches without copying.** It reaches symmetry rank 3 (0.835) and
+  induction rank 1 while its OV copy effect is **negative**. Its trajectory —
+  rank 131 at 4000, 23 at 8000, 4 at 16000, 3 thereafter — means the step-4000
+  reading ("the anti-copier is not symmetric") **does not survive the full
+  axis**, and what replaces it is better: **matching (QK, symmetric) and copying
+  (OV) are separable, and this head has one without the other.**
+
+*What the two halves now look like together.* §3.12-G6: on the **OV** side no
+sign quantity identifies the copier and only *gain concentration* does, weakly.
+Block J: on the **QK** side *symmetry* identifies the matcher, sharply and
+rarely (11 of 384). **Induction is both**, and `L2H10` is the existence proof
+that they come apart. That is the dissociation §3.11 block C was reaching for,
+now on a population footing rather than one head.
+
+*Developmentally — the eighth quantity to name the window.* Flat at baseline
+through 512; first movement at 1000; by 2000 `L9H9` leads at rank 0 (0.595)
+with `L7H8` at rank 3, and from 4000 `L7H8` takes rank 0 and never gives it up.
+And the high-symmetry set **purifies toward induction heads over training** —
+the worst induction rank in the symmetry top-10 goes from 382 at step 4000 to 91
+at 143000.
+
+*A §3.13 footnote that is not a footnote.* Spearman of symmetry against
+induction over all 384 heads is ≈ 0 at every step **except step 1000, where it
+is +0.343**. The correlation is the right instrument exactly once — at the onset,
+when many heads move slightly together — and the wrong one everywhere after,
+when the signal concentrates into a handful. **The right summary changes with
+training stage**, which is a sharper version of §3.13 than that section states:
+the mean-versus-extremum choice is not only per-quantity, it is per-regime.
+
+**K. What the position profile found instead (2026-09-09).** §3.13.3's own
+hypothesis came back negative, but the profile carries two things nobody had
+looked for.
+
+*K1 — a mechanism check the readout has never made, and it passes.* At the first
+second-copy position `j = 0` the model predicts `ids[N_REP]` from the first copy
+alone: **no earlier occurrence of the current token exists yet, so induction
+cannot fire there.** Measured, `j = 0` is the **only** position with a negative
+effect — ΔNLL **−0.0484**, and it is the run's minimum — so ablating `L7H8`'s OV
+slightly *helps* exactly where induction is impossible. Its induction attention
+is also the lowest of any position, **0.779** against a mean of 0.910. The
+prediction was made from the slice convention before the run and both halves
+hold. This is the first end-to-end validation that `second_copy_nll` is
+measuring what it is supposed to measure.
+
+*K2 — there is real position structure; it just does not bias the mean.* ΔNLL
+runs **−0.048 at j = 0**, peaks at **+0.570 at j = 4**, falls to **+0.390 at
+j = 8**, and settles onto a plateau near **+0.22** for the rest of the sequence.
+So the copying effect is largest immediately after induction becomes possible
+and then decays to about a third of its peak — consistent with the model having
+progressively more non-induction evidence as the repeat proceeds, and worth a
+look on its own.
+
+*K3 — and the QK/OV dissociation appears on a third axis.* Across the same
+positions **induction attention is flat at 0.90–0.93** while **ΔNLL varies
+roughly fourfold (0.20 → 0.57)**. The matcher fires essentially uniformly; the
+copier's *payoff* does not. That is §3.11 block C's dissociation and §3.12-J's
+two-halves picture arriving from the position axis, which neither was derived
+from.
+
+**L. The Stage-1 table compares operators of different size (2026-09-09).**
+Found while stress-testing the Stage 3 design, and it revises a headline.
+
+`tools/run/induction_rank_sweep.py::truncate` returns, at rank `r`: for `svd` a
+genuine rank-`r` truncation (`U[:, :r] * s[:r], Vt[:r]`), and for `schur` and
+`random` a **projection of `A`** onto an `r`-dimensional subspace (`A @ P, B`).
+**None preserves Frobenius norm, and they lose it at very different rates.**
+Measured on `L7H8` at step 4000, energy retained as a fraction of the full OV:
+
+| r | svd | schur | random | svd/rand | svd/schur |
+|---|---|---|---|---|---|
+| **1** | **0.1755** | **0.0373** | **0.0108** | **16.2×** | **4.7×** |
+| 4 | 0.3368 | 0.1398 | 0.0518 | 6.5× | 2.4× |
+| 16 | 0.6153 | 0.4039 | 0.2315 | 2.7× | 1.5× |
+| 48 | 0.9263 | 0.8017 | 0.7050 | 1.3× | 1.2× |
+
+The `random` branch's own docstring says *"Matched-norm random rank-r control …
+so the operator norm scale and the factor structure match the real
+truncation."* **At `r = 1` it is off by 16×.** So §3.11's Stage-1 table — the
+one reading `r*_SVD ≪ r*_Schur` and "random ≈ 0 %" — **compares operators of
+different size at the same rank.**
+
+*Re-read at matched ENERGY instead of matched rank*, using the NLLs already in
+`induction_rank_sweep.json` (no new forward passes):
+
+| energy | svd | schur | random |
+|---|---|---|---|
+| 0.175 (= svd's r=1) | **0.820** (r 1) | **0.599** (r≈4.8) | **0.353** (r≈12.6) |
+| 0.25 | 0.847 | 0.760 | 0.427 |
+| 0.40 | 0.924 | 0.807 | 0.586 |
+| 0.60 | 0.964 | 0.893 | 0.814 |
+
+**The ordering survives — SVD > Schur > random at every matched energy — but the
+gaps collapse.** SVD-over-Schur goes from **6.9×** at matched rank (0.820 vs
+0.119) to **1.37×** at matched energy. Random is not "≈ 0 %"; at `r = 1` it
+holds 1.08 % of the energy, and given 17.55 % it recovers **0.353**.
+
+*What stands and what does not.* The **structural** claim stands: at matched
+energy the top singular directions beat structureless ones **2.3×**, so this is
+not energy alone. What does not stand is the *magnitude* of `r*_SVD ≪
+r*_Schur` — 1.37× is much weaker support for "the copying action lives in a
+high-gain non-invariant direction, and the attractive/repulsive frame is the
+wrong description" than 6.9× was. Eckart–Young makes "SVD retains most energy at
+rank `r`" a **theorem**, so at matched rank part of the gap was never a finding.
+**§3.12-G6's population result is unaffected** — it correlates gain
+concentration with *which head* is the copier and never uses this comparison.
+
+*And this is §6n's own rule applied to this project's headline for the first
+time*: match the control on **the quantity the statistic degenerates on**. It
+degenerates on energy; the controls were matched on rank.
+
+**Consequence for Stage 3, and it is a convergence.** Any Stage 3 arm must be
+**energy-matched, not rank-matched**. The `{M, Mᵀ, −M, −Mᵀ}` factorial is
+*exactly* energy-matched — every arm is an isometry (§2.4.2) — so the design
+motivated by the S/A group structure turns out to be the fix for this confound
+as well, from a completely independent direction.
+
+*Precondition on the S-flip, computed before it runs.* If `S` carried little of
+the OV's energy, "the flip does nothing" would be guaranteed by magnitude rather
+than by mechanism. It does not: `‖S‖²/‖M‖²` for `L7H8`'s OV is **0.602** at step
+4000 and 0.543 at 143000, so `‖M − (−Mᵀ)‖ = ‖2S‖ ≈ 1.55‖M‖` — **the change is
+larger than the operator**. The precondition passes.
+
+*But it also shows the two halves are structurally different in exactly the way
+§3.12-J found.* `L7H8`'s **OV** symmetric fraction is 0.602 against a layer
+median of 0.584 — at the baseline, carrying no signal. Its **QK** symmetric
+fraction is **0.956 against a layer median of 0.520**. The matcher becomes a
+similarity kernel; the copier does not, and never does.
+
+**M. The S/A factorial is not a viable Stage 3 design — its own pilot killed it,
+and produced a better result (2026-09-09,
+`tools/run/induction_sa_pilot.py`).** Step 4000, 16 sequences, restore exact
+(`0.0e+00`) on every head. ΔNLL against the unablated model:
+
+| arm | `L7H8` ΔNLL | KL | /ablation | `L9H9` | `L2H10` |
+|---|---|---|---|---|---|
+| ablation | +0.2420 | 0.093 | — | +0.0752 | −0.0129 |
+| scale 0.25 | +0.1412 | 0.036 | | +0.0457 | −0.0096 |
+| scale 0.50 | +0.0729 | 0.011 | | +0.0242 | −0.0034 |
+| scale 0.75 | +0.0279 | 0.002 | | +0.0094 | −0.0015 |
+| **`Mᵀ`** | **+0.2278** | 0.089 | **0.94×** | +0.0928 (1.23×) | −0.0112 |
+| **`−M`** | **+1.2409** | **0.969** | **5.13×** | +0.3163 (4.21×) | −0.0076 |
+| **`−Mᵀ`** | **+0.4000** | 0.181 | **1.65×** | +0.1113 (1.48×) | −0.0083 |
+
+*M1 — `−M` is off-scale, exactly as predicted.* **5.13×** ablation on `L7H8`,
+4.21× on `L9H9`, with KL **0.969** against ablation's 0.093 — an order of
+magnitude. Reversing the write is far more destructive than removing it, because
+the head actively suppresses the token it used to promote. **So the balanced
+main effects — which average `−M` with `−Mᵀ` — are dominated by one catastrophic
+arm, and additivity fails.** The prediction was made from the algebra before the
+run and both halves hold.
+
+*M2 — and the design cannot answer its own question.* §2.4.3 proved every
+pairwise contrast isolating a sign **also swaps the read/write role**. The pilot
+now measures what that swap costs on its own: **`Mᵀ` alone destroys copying at
+0.94× ablation.** So by the time the transpose has been applied the effect is
+already gone, and the `S`-sign contrast (`Mᵀ` → `−Mᵀ`, 0.94× → 1.65×) is
+measured **on top of a floor**. The main effects cannot rescue it because of M1.
+**Both routes to the `S` sign are blocked, and §3.12-L's rank result shows no
+other points exist** — so this is not a design to be repaired. It is retired
+before registration, which is what the pilot was for.
+
+*M3 — `G6`'s pre-run prediction is FALSIFIED, and the falsification is the
+finding.* G6 predicted `−Mᵀ` would **not** destroy copying, because it preserves
+every singular value and hence gain concentration exactly. It destroys it at
+**1.65× ablation**. And `Mᵀ` — same singular values, same Frobenius norm, same
+eigenvalue moduli, *nothing changed but which subspace reads and which writes* —
+destroys it at **0.94×**, as completely as deleting the head.
+
+**So the copier's function is carried by read/write ALIGNMENT, not by its
+spectrum and not by its gain profile.** §3.12-G6 showed gain concentration
+identifies *which head* is a copier; it does not carry *the copying*. That is
+consistent with §3.12-H2 — the top OV direction does not survive whitening
+(overlap 0.217) while the concentration does — and it completes that reading:
+concentration is a **marker**, alignment is the **mechanism**.
+
+*M4 — `L2H10` is not usable as a control, measured rather than argued.* Its
+whole dynamic range is |ΔNLL| ≤ 0.013 and the arm ratios (0.87×, 0.59×, 0.65×)
+are noise on that scale. A head whose baseline effect is ~2 % of the target's
+cannot calibrate an intervention on the target. The §3.12-J finding that it
+matches without copying stands; its use as the Stage 3 control does not.
+
+*M5 — a nonlinearity worth carrying forward.* The scale curve is strongly
+**sublinear**: halving `L7H8`'s OV costs only +0.073 against ablation's +0.242,
+so **50 % of the operator does 30 % of the damage**. Any future arm reported in
+"equivalent λ" is on a compressive scale and must say so.
+
+**N. Literature check before registering (2026-09-09).** Run because §3.12-I/J
+and §2.4 are close enough to published work that registering without checking
+would risk re-deriving it. Four threads, and they change what should be claimed.
+
+*N1 — QK symmetry is known at the population level, and our result is the
+complement rather than a duplicate.* Saponati et al., *"The underlying
+structures of self-attention: symmetry, directionality, and emergent dynamics in
+Transformer training"* (arXiv 2502.10927), decomposes `W_QK` into symmetric and
+skew parts and defines a Frobenius symmetry score. **Their finding is that
+bidirectional training induces symmetry while autoregressive training induces
+directionality** — decoder-only models score *more directional* than
+encoder-only. That is a **median across layers, model-level, with no per-head
+breakdown, no head-type analysis, no mention of induction or previous-token
+heads, and no exclusion of positional dimensions.**
+
+**This does not contradict §3.12-J; it frames it.** Our population median is
+**0.523** — essentially neutral, consistent with their directional aggregate.
+What §3.12-J adds is the **tail**: 11 of 384 heads exceed 0.7, one reaches
+0.956, and those heads are the content matchers. Their claim is about the
+median; ours is about which heads leave it, and why. The RoPE exclusion matters
+here too — pythia's positional (directional) information lives in the 16 rotary
+dims we remove, so we measure the *content* operator they do not separate.
+
+*N2 — the mechanistic reading of the S/A split exists, and it gives §3.12-J its
+name.* *"The Routing and Filtering Structure of Attention"* (arXiv 2605.18826)
+splits the pre-softmax score matrix into a symmetric **"filtering"** part
+(undirected mutual relevance) and a skew **"routing"** part (directional
+transport, purely imaginary eigenvalues), and finds routing removal catastrophic
+(699 PPL against a 34.99 baseline). Since `A = X M X^T` for `M = W_Q W_K^T`,
+their split of the *scores* is our split of the *weights* conjugated by the
+activations — the same decomposition at two levels, which should be said rather
+than discovered later. **In their vocabulary §3.12-J reads: `L7H8`'s content
+operator becomes almost pure filtering (0.956) with almost no routing** — the
+routing being supplied by RoPE and the causal mask, which is exactly the
+architectural division block I flagged. They report **no transposition
+experiment, no induction-head connection, and no OV analysis.**
+
+*N3 — the induction-head emergence window is established, so §3.12's "eighth
+quantity" claim needs restating.* Published checkpoint studies of Pythia put
+induction-head emergence at **around step 1000 of 143000**. The 512–2000 window
+is therefore **not our finding**, and this document should stop implying
+novelty for the window itself. What is ours is the **set of quantities that
+co-locate in it** — the population OV repulsive collapse, `L7H8`'s OV plane
+rotation, the eigenvalue-frame U-shape, the numerical-abscissa takeoff, the
+composition switch-on, and the QK symmetry takeoff — several of which are
+weights-only and none of which is the behavioural score the literature dates the
+window by.
+
+*N4 — and the actionable one: we have not computed the field's own copying
+score.* Elhage et al.'s copying test takes the eigenvalues of the **token-basis**
+OV circuit `W_E W_V W_O W_U` and summarises their positiveness as
+`sum(lambda) / sum(|lambda|)`; a copier has **positive** eigenvalues.
+**This project has never computed that matrix.**
+`p2b_imaginary/head_circuits.head_core` returns `W_V W_O` — the `(64,64)` core in
+the **residual** basis — and every "100 % repulsive" statement in §3.11 and
+§3.12-A is about *that*, not about the token-basis circuit. The two differ by the
+vocabulary round-trip `W_U W_E` sandwiched between the factors, and **nothing
+guarantees they share a sign**.
+
+It is cheap: with `W_OV = A B`, the nonzero spectrum of `W_E A B W_U` equals that
+of the `(64,64)` matrix `B W_U W_E A`, so it costs one `64x64` eigendecomposition
+per head — the same price as the core we already compute. **If `L7H8` scores as
+a copier on the field-standard measure, then §3.11's "not a token-identity
+copier" — which rests on the weaker LN-folded diagonal check the section itself
+flags as its softest half — is measuring a different thing, and the
+"repulsive/individuating" reading cannot be carried over to it.** This is the
+next measurement, before any registration.
+
+**O. It was measured, and it CONFIRMS §3.11 — emphatically (2026-09-09,
+`tools/run/copying_score_sweep.py`).** All 384 heads, eight checkpoints, weights
+only. A convention trap was checked rather than assumed first: `ov_factors`
+returns `OV_h = (W_O W_V)ᵀ`, the **transpose** of the residual operator (verified
+at relative error 0.0). Harmless for every quantity read off it so far — all
+transpose-invariant — but **not** for a copying score, which is directional, so
+this runner uses `W_O W_V` from the model.
+
+*O1 — `L7H8` is not a token-identity copier at any point in training, and it
+becomes less of one as its causal effect grows.*
+
+| step | `L7H8` copying score | rank / 384 | `ΔOV_nll` (§3.11-A) |
+|---|---|---|---|
+| 512 | −0.038 | 324 | ~0 |
+| 1000 | −0.050 | 305 | ~0 |
+| 2000 | −0.043 | 258 | ~0 |
+| 4000 | **+0.062** | 139 | **+0.24** |
+| 8000 | +0.020 | 181 | **+0.73** |
+| 16000 | −0.050 | 267 | **+1.02** |
+| 32000 | −0.115 | 322 | — |
+| 143000 | **−0.094** | **328** | +1.18 |
+
+**Its causal OV effect grows roughly sixfold while its copying score stays at or
+below zero and its rank falls to 328 of 384.** The two run in opposite
+directions. §3.11's conclusion was reached on the LN-folded diagonal check it
+called its own softest half; it now stands on the field's instrument, across the
+whole axis, and stronger than when it was stated.
+
+*O2 — and the model is full of real copiers, none of them these heads.* Scores
+above 0.4 go 0 (step 512) → 10 → 24 → 56 (32000) → 41 (143000), with the maximum
+rising to **+0.723**. The top ten at 143000 — `L11H14` 0.723, `L13H5` 0.708,
+`L18H8` 0.675, `L12H8` 0.661, `L10H0` 0.649, `L9H0` 0.635, `L17H10`, `L20H15`,
+`L11H2`, `L17H6` — sit in **layers 9–20, all downstream of `L7H8`**. So the
+measure is not blind: it finds copying where copying is, and reports its absence
+at the induction heads.
+
+*O3 — two internal consistency checks nobody arranged.* `L9H8`, whose `ΔOV_nll`
+is **negative**, has a **negative** copying score at every step (−0.096 to
+−0.109, rank ~305–312). And `L9H9` — the one induction head with a real positive
+OV effect besides `L7H8` — is the one induction head that **does** become a
+modest copier (+0.206 at 16000, rank ~104), and it sits in layer 9, at the
+boundary of the copier band. The measure tracks the causal readout where the two
+should agree.
+
+*O4 — LN sensitivity is discharged.* Median raw against final-LN-gain-and-
+centring folded, at all eight steps: differences in the **fourth decimal**
+(+0.0324 vs +0.0293 at 143000). The softest half of §3.11's copy-score reading
+is no longer load-bearing anywhere.
+
+**What this sharpens into, and it is the live question now.** `L7H8` has the
+largest OV causal effect in its layer (10× the layer mean, growing sixfold across
+training) **and is an anti-copier by the token-identity test**. Both now rest on
+solid instruments. So its OV write is causally important for repeated-token
+prediction *without* being token-identity copying — which **falsifies the
+standard account's central claim for this head**, on the standard account's own
+measure.
+
+The natural reading is that the circuit has **three stages, not two**:
+
+    L5H2  (layer 5)     positional matcher, prev-token
+    L7H8  (layer 7)     content matcher (QK symmetry 0.956), writes NOT token identity
+    L9-L20              the actual token-identity copiers
+
+If that holds, §3.11 has been calling `L7H8` "the copier" because ablating its OV
+moves second-copy NLL — but it may be **upstream** of the copier and its ΔNLL
+mediated. Testable with machinery already built: composition `L7H8 →` the
+downstream copiers' `V` and `K` paths, and whether ablating `L7H8`'s OV
+suppresses their contribution. **One cross-reference already points that way:**
+`L10H3` is a top-ten copier (0.530 at step 4000) and was §3.12-J's counterexample
+— high QK symmetry, induction rank 382 of 384. It copies without matching;
+`L7H8` matches without copying. The dissociation now has named heads on both
+sides.
+
+**P. The three-stage reading is FALSIFIED, on both tests (2026-09-09,
+`tools/run/three_stage_mediation.py`).** Step 16000, 16 sequences, restore exact.
+`ΔNLL(ablate L7H8 alone) = +1.1069` against a baseline of 0.5335.
+
+*P1 — mediation: no sub-additivity anywhere, and three copiers are
+**super**-additive.* `I = ΔNLL(both) − ΔNLL(L7H8) − ΔNLL(C)`:
+
+| head | kind | ΔNLL(C) | ΔNLL(both) | **I** | reading |
+|---|---|---|---|---|---|
+| `L13H5` | copier | −0.0000 | +1.1259 | +0.019 | independent |
+| `L12H8` | copier | +0.0104 | +1.1331 | +0.016 | independent |
+| `L9H0` | copier | +0.0320 | +1.1810 | **+0.042** | super-additive |
+| `L10H0` | copier | +0.0452 | +1.2703 | **+0.118** | super-additive |
+| **`L11H14`** | copier | **+0.1869** | **+2.2753** | **+0.982** | **super-additive** |
+| `L11H10` | ctrl | +0.0004 | +1.1252 | +0.018 | independent |
+| `L11H0` | ctrl | +0.0157 | +1.1324 | +0.010 | independent |
+| `L9H15` | ctrl | +0.0037 | +1.1117 | +0.001 | independent |
+
+A serial circuit predicts `I < 0` — once the upstream stage is gone there is less
+for the downstream one to do. **Every measured `I` is ≥ 0.** The clearest case
+inverts the prediction outright: `L11H14` alone costs +0.187 and `L7H8` alone
+costs +1.107, but **both together cost +2.275**. With `L7H8` intact, `L11H14`
+barely matters; with `L7H8` gone, removing it costs five times as much. That is
+**redundancy between parallel paths that partially substitute for each other**,
+not mediation.
+
+*And the sign is conservative.* §3.12-M5 measured the readout as **compressive**
+(half the operator does 30 % of the damage), and a compressive readout pushes
+genuinely independent contributions toward *apparent sub-additivity*. Observing
+super-additivity against that bias strengthens the reading rather than weakening
+it.
+
+*P2 — composition: the prediction fails, and the controls are why we know.*
+`L7H8`'s OV into each copier's read paths, ranked against **every head in the
+layers below it**:
+
+| head | kind | Q rank (z) | K rank (z) | V rank (z) |
+|---|---|---|---|---|
+| `L9H0` | copier | **4** (+2.81) | 63 (−0.06) | 8 (+1.39) |
+| `L11H14` | copier | 6 (+2.67) | 142 (−0.54) | 15 (+1.07) |
+| `L10H0` | copier | 9 (+1.85) | 99 (−0.31) | 73 (+0.25) |
+| `L13H5` | copier | 54 (+0.37) | 59 (+0.39) | 10 (+1.59) |
+| `L12H8` | copier | 33 (+0.86) | 58 (+0.32) | 102 (−0.12) |
+| **`L11H0`** | **ctrl** | **0 (+3.02)** | 61 (+0.21) | 48 (+0.54) |
+| **`L9H15`** | **ctrl** | 39 (+0.33) | 52 (+0.02) | **4 (+2.83)** |
+| `L11H10` | ctrl | 113 (−0.51) | 77 (−0.09) | 69 (+0.04) |
+
+The three-stage prediction was **elevated V-composition** — the copier copies
+what `L7H8` wrote. Some copiers are modestly elevated on V (ranks 8–15), **but
+the control `L9H15` ranks 4th at z +2.83, above every copier.** Q looks elevated
+for copiers until the control `L11H0` ranks **0th at z +3.02**, above every
+copier. K is flat everywhere. **On both paths a non-copier control beats the
+copiers, so composition supplies no evidence for a specific `L7H8` → copier
+pathway.** Without the controls, "V rank 10, z +1.59" would have been read as
+support; this is the §3.12-H1 lesson (a population control *per path*) paying for
+itself a second time.
+
+*P3 — what survives, and it is a sharper puzzle than before.* `L7H8`'s OV write
+is **causally enormous** (+1.107 at step 16000, ~2× the baseline NLL), is **not
+token-identity copying** (§3.12-O), and **does not route through the heads that
+do token-identity copying** (P1, P2). Three explanations remain, and the first is
+a gap in this test rather than a hypothesis:
+
+1. **It writes to MLPs, which were never measured.** Every composition score in
+   §3.12 is head→head. MLPs are the majority of the parameters and the obvious
+   place for a non-token-identity signal to be read. **This is the next
+   measurement.**
+2. It acts on the unembedding directly but not by token identity — boosting a
+   *class*, or suppressing alternatives.
+3. It acts on residual-stream geometry rather than any single readable
+   direction — which is the particle account's own claim, and the one §3.14.2's
+   case-study programme is built to examine.
+
+**Q. Five probes: three negative, and the surviving one corrects a framing
+(2026-09-09, `tools/run/what_l7h8_writes.py`, step 16000).** Ordered by what
+could reframe the question rather than by convenience; MLPs deliberately last.
+
+*Q1 — the offset. My off-by-one worry was WRONG, and that deepens the puzzle.*
+`induction_candidates` documents two conventions and the repo uses the
+non-standard one (`ids[key-1] == ids[query-1]`, pairing query `N_REP+j` with key
+`j`, the **same-token** position) rather than the Anthropic one
+(`ids[key-1] == ids[query]`, pairing with `j+1`, the **successor**). Measured
+attention from query `N_REP+j`:
+
+| offset | j−2 | j−1 | **j** | j+1 | j+2 |
+|---|---|---|---|---|---|
+| `L7H8` | 0.0012 | 0.0013 | **0.9339** | 0.0000 | 0.0000 |
+
+**93.4 % at exactly `j`, and nothing at `j+1`.** So the repo's convention
+correctly describes this head. But copying from the same-token position returns
+the **current** token when the answer is the **successor** — so a token-identity
+copier here would be actively wrong, which is consistent with §3.12-O's near-zero
+score and makes "what does it write" harder, not easier.
+
+*Q2 — the effect is a large GLOBAL logit shift, not a targeted promotion.*
+`ΔNLL = −(Δlogit_correct − Δlogsumexp)` exactly. Ablating `L7H8`'s OV gives
+`Δlogit_correct = −5.02` **and** `Δlogsumexp = −3.91` — every logit falls by
+about four nats and the correct one by five, netting +1.11. This is not a
+delicate promotion of one token; it is the removal of a large component of the
+residual.
+
+*Q3 — and the control says that is specific, not generic — while correcting a
+framing this document has carried.* Ablating each head's OV, against a baseline
+logsumexp of 16.05 and final residual norm of 52.95:
+
+| head | ΔNLL | Δlogit(correct) | Δlogsumexp | Δ‖resid‖ |
+|---|---|---|---|---|
+| **`L5H2`** (prev-token) | **+2.227** | −5.89 | −3.67 | **−5.92** |
+| `L7H8` | +1.107 | −5.02 | −3.91 | **−8.38** |
+| `L11H14` (top copier) | +0.187 | −1.02 | −0.83 | −0.40 |
+| `L13H5` (top copier) | −0.000 | −0.02 | −0.02 | −0.06 |
+| `L2H10`, `L0H0`, `L20H7` | ≤ +0.008 | ≤ 0.10 | ≤ 0.10 | ≤ 0.19 |
+
+Two things. **The global shift is not generic** — ordinary heads move logsumexp
+by under 0.1 where these two move it by ~4, and they remove 11–16 % of the final
+residual norm against under 0.4 % for the rest. And **`L5H2` has TWICE `L7H8`'s
+effect**. §3.11's "largest of all 16 layer-7 heads" is true and has been read
+too broadly: `L7H8` is not the largest OV effect in the circuit, its own
+prev-token partner is. Every "the causally load-bearing half" statement needs
+that qualifier.
+
+**Caveat CLOSED (2026-09-09, `data/analysis/norm_proportionality.json`), and
+it inverts rather than merely fails.** 38 heads sampled across the full `‖OV‖_F`
+range (0.4–13.5), each ablated and measured:
+
+- Spearman `‖OV‖_F` vs `|Δ‖resid‖|` = **−0.241** (slightly *negative*)
+- Spearman `‖OV‖_F` vs `ΔNLL` = **+0.087** (nothing)
+- linear fit **r² = 0.001** — operator norm explains **one tenth of one percent**
+  of the variance
+
+| head | `‖OV‖_F` | `Δ‖resid‖` | predicted by norm | **excess** |
+|---|---|---|---|---|
+| `L11H4` | **13.470** | −0.151 | 0.588 | −0.44 |
+| `L16H2` | 8.639 | +0.002 | 0.415 | −0.41 |
+| `L11H14` | 8.080 | −0.405 | 0.430 | −0.03 |
+| **`L5H2`** | 5.336 | **−5.924** | 0.506 | **+5.42** |
+| **`L7H8`** | **4.792** | **−8.382** | 0.520 | **+7.86** |
+
+`L11H4` carries **2.8× `L7H8`'s norm** and has an effect **50× smaller**. Heads
+with larger operators do less. So "these two heads are just big" is not merely
+unsupported — the relationship runs the wrong way, and the residual-geometry
+reading survives on its own.
+
+*Q4 — QK against OV on the same readout.* Ablating the static QK costs +0.616,
+**56 % of the OV ablation's +1.107**. §3.11 only ever read attention for the QK
+half (0.92 → 0.02); on NLL, attending correctly is worth a bit over half of what
+the head is worth in total.
+
+*Q5 — the composed circuit is MORE anti-copying, not less.* §3.12-O's score uses
+the raw embedding as the OV's input, but the residual at the attended position
+has already been written by `L5H2`. The composed path
+`W_U OV(L7H8) OV(L5H2) W_Eᵀ` scores **−0.0997** against the direct
+`W_U OV(L7H8) W_Eᵀ` at **−0.0496** — twice as negative. So it is not copying the
+prev-token signal either.
+
+*Q6 — the MLPs are negative, which is why they were not run first.* `L7H8`'s OV
+into each downstream MLP's input projection, ranked against every head below that
+layer: the best is layer 10 at **rank 44 of 159, z +0.57**, layer 9 at rank 47 of
+143 (z +0.31), and **every other layer is at or below the population median**
+(z −0.16 to −0.73). No elevated MLP pathway anywhere.
+
+**Where this leaves it.** Of the three §3.12-P explanations, (1) MLPs is
+**negative** (Q6) and (2) unembedding-without-token-identity is **negative in
+the targeted sense** (Q2: the shift is global, not selective). What survives is
+**(3), residual-stream geometry** — and it now has a measurement behind it rather
+than being the leftover option: `L5H2` and `L7H8` each remove a tenth or more of
+the final residual norm, two orders of magnitude more than an ordinary head,
+while shifting every logit by ~4 nats. That is the particle account's own claim
+arrived at by eliminating the alternatives on their own instruments, and it is
+exactly what §3.14.2's case-study programme was queued to examine.
+
+---
+
+**S. `L5H2` x `L7H8`: the induction circuit does not behave like a circuit
+(2026-09-09, `tools/run/two_big_heads.py`, step 16000, restore exact).**
+§3.12-P ran the ablation interaction for `L7H8` against downstream *copiers* and
+never against **the pair that is supposed to BE the circuit**. Closing that
+omission overturns the serial reading.
+
+*S1 — the interaction is larger than either effect.*
+
+| | ΔNLL |
+|---|---|
+| `L5H2` alone | **+2.2271** |
+| `L7H8` alone | +1.1069 |
+| sum of parts | +3.3340 |
+| **both** | **+7.4844** |
+| **interaction** | **+4.1505** |
+
+Removing both costs **2.2x the sum of removing each**, and the interaction
+exceeds either individual effect. A serial two-stage circuit predicts
+**sub**-additivity — take away the prev-token head and the matcher has less to
+match on, so ablating it too should cost *less* than it did alone. The result is
+the opposite and it is not marginal. As in §3.12-P the sign is conservative:
+§3.12-M5's compressive readout biases independent contributions toward apparent
+sub-additivity.
+
+*S2 — and they converge on the same EFFECT without sharing WEIGHTS.*
+
+| overlap | measured | chance (64-dim in R^1024) |
+|---|---|---|
+| write subspaces (`col W_O`) | **0.222** | 0.250 |
+| read subspaces (`row W_V`) | 0.316 | 0.250 |
+| **residual-delta cosine** | **+0.868** | — |
+
+Their write subspaces overlap **at or below chance**, yet the residual changes
+their ablations produce are **87 % aligned**. So the redundancy in S1 is not two
+heads writing the same directions — it is two structurally distinct operators
+arriving at the same functional effect through the network. **Weight-space
+overlap and function-space overlap come apart**, which is exactly what a
+composition score (a weight-space measure) cannot see, and it explains why
+§3.12-P's composition probes found no pathway while the ablations shout.
+
+*S3 — the effect compounds down the stack rather than carrying forward.*
+Per-layer residual norm under ablation: divergence begins at the head's own
+layer (index 6 for `L5H2`, index 8 for `L7H8`) and then **grows**. `L7H8`'s gap
+runs −0.36 at index 8 to **−8.38** at the output — a **23x amplification**. A
+write that merely added a vector would carry a roughly constant offset forward.
+This is the "change of regime rather than a big write" signature §3.12-Q could
+not distinguish with a final-layer measurement alone. (Non-monotone detail worth
+keeping: ablating **both** *raises* the norm above baseline at index 22, 88.23
+against 86.62, before collapsing to 39.53 at the output.)
+
+*Caveat, stated because the joint arm is extreme.* `ΔNLL(both) = +7.48` on a
+0.53 baseline puts the model at NLL ≈ 8.0 against a uniform ceiling of
+`ln 50304 = 10.8`. Not saturated, but far outside the regime the readout was
+calibrated in, so the *magnitude* of the interaction should be read as "large
+and super-additive" rather than as a calibrated number.
+
+**What this does to the picture.** The two heads are **functionally redundant
+and structurally distinct**, and together they set up a residual-stream regime
+that amplifies down the stack and that either one alone can partly maintain.
+That is a stronger form of §3.12-Q's geometry reading than the norm evidence
+alone supported, and it is the first result in §3.12 that is about the *circuit*
+rather than about a head.
+
+---
+
+**T. The redundancy catalogue, pass 1 — the set is not a pair (2026-09-09,
+`tools/run/redundancy_catalog.py`).** Single-head OV ablation `ΔNLL` for **all
+384 heads** at step 16000, 8 sequences, restore exact. Answers §3.14.2's Q1.
+
+| | |
+|---|---|
+| median | **+0.00107** |
+| p99 | +0.1935 |
+| max / min | +1.9662 / −0.0522 |
+| above +0.05 | **10 heads** |
+| above +0.2 | **4 heads** |
+| above +1.0 | **2 heads** |
+| below −0.05 | 1 head |
+
+**Top of the tail:** `L5H2` **+1.966**, `L7H8` **+1.019**, **`L12H5` +0.420**,
+`L8H6` +0.212, `L11H14` +0.190, `L8H9` +0.131, `L15H14` +0.087, `L7H1` +0.067,
+`L9H13` +0.064, `L10H9` +0.050. Most negative: `L10H7` −0.052.
+
+*Three things this settles or opens.*
+
+1. **Q1 answered: ~4 substantial members, ~10 with any effect, out of 384.** The
+   distribution is brutally heavy-tailed — the median head moves the readout by
+   **0.001** — so "the redundancy set" is a real, small, identifiable object
+   rather than a gradient.
+2. **`L12H5` (+0.420) was entirely unknown.** It is the third-largest OV effect
+   in the model, four times `L11H14`'s, and nothing in §3.11–§3.12 has ever
+   named it. `L8H6` (+0.212) likewise. The 38-head sample of §3.12-R missed both,
+   which is precisely why the full sweep was run instead of a proxy.
+3. **The members are spread across depth** — layers 5, 7, 8, 8, 11, 12, 15 — not
+   clustered in the layer band where the token-identity copiers live (9–20,
+   §3.12-O). Membership and copying remain different properties.
+
+*Batch-size note, carried so the numbers are comparable.* This screen used 8
+sequences for speed; §3.12-S used 16. `L5H2` reads +1.966 here against +2.227
+there and `L7H8` +1.019 against +1.107 — about 10 % lower throughout, with the
+ordering unchanged. Pass 2 should fix the sequence count before any pairwise
+interaction is compared against §3.12-S's.
+
+*What pass 2 needs, now that membership exists:* the pairwise interaction matrix
+over the top members (`n(n-1)/2` arms — 6 for the top 4, 45 for the top 10), and
+the per-checkpoint formation curves for each. Both were undefined before this
+sweep and are now specified.
+
+---
+
+**U. The formation curves — the members did not form together, and the
+redundancy formed after both of them (2026-09-09,
+`tools/run/member_formation_curves.py`, 16 sequences, restore exact at all 23
+steps).** OV-ablation `ΔNLL` per checkpoint for the top six catalogue members,
+plus the joint `L5H2`+`L7H8` arm and the residual-delta cosine, on the registered
+19-step grid with four fills (3000, 5000, 7000, 9000) added to date the
+interaction. Answers §3.14.2's Q2 and Q3. `L7H8` reproduces §3.11-A throughout
+(+0.242 at 4000 against its +0.24, +0.747 at 8000 against +0.73, +1.107 at 16000
+against +1.02 at 8 sequences), and step 16000 reproduces §3.12-S to four decimals
+— so the instrument is the same one, extended along the training axis.
+
+*U1 — `L5H2` forms in `(512, 1000]`, alone, and `L7H8` does not exist yet.*
+
+| step | baseline NLL | `L5H2` | `L7H8` | `L12H5` | `L8H6` | `L11H14` | `L8H9` | joint | **interaction** | δ-cosine |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 512 | 12.63 | +0.01 | +0.00 | +0.00 | −0.00 | −0.00 | +0.00 | +0.01 | +0.00 | −0.01 |
+| 1000 | **4.91** | **+4.97** | −0.01 | −0.01 | +0.05 | **+3.57** | +0.02 | +4.93 | −0.03 | −0.17 |
+| 2000 | 1.56 | **+8.43** | −0.01 | +0.86 | +0.44 | +2.44 | +0.27 | +8.44 | +0.02 | +0.02 |
+| 3000 | 1.06 | +7.94 | +0.07 | +0.99 | +0.70 | +1.34 | +0.60 | +8.40 | **+0.39** | +0.26 |
+| 4000 | 0.72 | +6.22 | +0.24 | +0.94 | +0.61 | +0.68 | +0.40 | +8.18 | **+1.72** | **+0.83** |
+| 8000 | 0.67 | +3.68 | +0.75 | +0.66 | +0.28 | +0.38 | +0.28 | +7.74 | +3.32 | +0.85 |
+| 16000 | 0.53 | +2.23 | +1.11 | +0.43 | +0.22 | +0.19 | +0.13 | +7.48 | +4.15 | +0.87 |
+| 54000 | 0.52 | +1.55 | +1.54 | +0.11 | +0.16 | +0.14 | +0.04 | +6.61 | +3.52 | +0.92 |
+| 143000 | 0.61 | +1.26 | +1.22 | +0.11 | +0.15 | +0.17 | −0.01 | +5.91 | +3.43 | +0.87 |
+
+Nothing moves before step 512 — every member reads |ΔNLL| < 0.02 for the first
+eleven checkpoints. Then, **in the single interval where the model acquires
+induction at all** (second-copy NLL 12.63 → 4.91), `L5H2` goes from +0.01 to
++4.97 and `L11H14` from −0.00 to +3.57. Pythia publishes no checkpoint between
+512 and 1000, so `(512, 1000]` is **the finest interval this axis can resolve**:
+Q3's "did they form at the earliest point the network could" is **yes for
+`L5H2`**, and the §3.12-N3 literature anchor near step 1000 is confirmed for it.
+
+*U2 — and **no** for `L7H8`, which forms in `(2000, 3000]`.* It is the last
+member to appear, three to six times later than the rest, and it is the **only
+one of the six that rises monotonically** and the only one still near its peak at
+143000 (79 % of it, against 15 % for `L5H2`, 11 % for `L12H5`, **5 % for
+`L11H14`**). Two-stage circuit stories have the prev-token head feeding the
+matcher; the ordering is right, but `L5H2` does not *wait* for a matcher — it
+carries induction by itself for over two thousand steps, and `L7H8` arrives into
+a mechanism that is already working and already decaying.
+
+*U3 — the redundancy is acquired, and dating the heads would have dated it wrong
+by 2000 steps.* The interaction is **≈ 0 while both heads have effects** — −0.03
+at 1000, +0.02 at 2000, when `L5H2` is at its maximum — then +0.39 (3000), +1.72
+(4000), +4.15 (16000), +4.17 (32000). It tracks `L7H8`'s arrival, not `L5H2`'s.
+This is the arm no single-head curve can supply, and it is the direct answer to
+§3.14.2's Q2: **the members formed at different times, and the property that
+makes them a set formed later than either.**
+
+*U4 — the alignment is `L7H8`'s entry condition, not a converged endpoint.* The
+residual-delta cosine that §3.12-S measured at +0.868 does not climb gradually:
+−0.17 (1000) → +0.01 (2000) → +0.26 (3000) → **+0.83 (4000)** → +0.91 (7000),
+flat thereafter. At step 3000 `L7H8`'s own effect is only **+0.069** — barely
+present — and the pair is already 26 % aligned. `L7H8` appears already pointed at
+the effect `L5H2` was producing.
+
+*U5 — the pair's total causal load is roughly conserved while its distribution
+is not.* The joint arm runs 8.44 (2000) → 8.18 (4000) → 7.48 (16000) → 5.91
+(143000), a 30 % decline, while `L5H2`'s share of it falls **85 %** and `L7H8`
+rises from nothing to parity (they cross at step 54000: +1.549 against +1.537).
+The set redistributes work it does not shed.
+
+*U6 — and the behavioural instrument is blind to all of it, `L5H2` inverted.*
+Against `behavioural_series.json` on the same grid: `L5H2`'s induction score
+**falls twenty-fold**, 0.0046 → 0.0002, across exactly the interval where its
+causal effect goes +0.01 → +4.97, and never recovers. `L7H8`'s peaks at step
+4000 (0.0368) and then declines by half while its causal effect keeps rising to
+54000. §3.12-R and §3.12-G6 ruled out weights-only predictors of causal effect;
+this extends the same failure to the **attention-pattern** proxy along the
+developmental axis, and it is why §3.14.2 specified the causal instrument.
+
+*Caveat, and it is a real limit on the magnitudes.* At steps 1000–3000 both the
+single-`L5H2` arm and the joint arm sit **within 0.83–1.4 nats of the uniform
+ceiling** `ln 50304 = 10.83` (NLL 9.99 and 10.00 at step 2000). The readout is
+saturated there, so `L5H2`'s early peaks are **floors rather than calibrated
+values**, the measured decay is if anything shallower than the true one, and —
+importantly — **the interaction is compressed downward at exactly the steps where
+U3 reads it as zero.** Two instruments carry U3's date without that confound:
+`L7H8`'s own single-head curve, which is nowhere near ceiling, and the δ-cosine,
+which is a geometric measure of the residual and independent of the readout.
+Both put the transition in `(2000, 4000]`. A calibrated magnitude for the early
+interaction needs a graded readout (§3.12-M's KL / λ scale), not this one.
+
+---
+
+## 3.14 How this work is organised, and what is queued (2026-09-09)
+
+### 3.14.1 Three objects, not one thread
+
+§§3.11–3.12 have been running as a single "induction programme", and they are
+not one. Three research objects are tangled in them, with **different nulls,
+different exchangeable units, and different failure modes**, and separating them
+is the largest structural improvement available:
+
+| | object | exchangeable unit | state |
+|---|---|---|---|
+| **7a** | population spectral development — the OV repulsive collapse (§3.12-A), its relation to `CLAIM-B`'s window, the Phase-2 `frac_repulsive` comparison | head, with a shared-model factor | biggest signal, hardest null |
+| **7b** | circuit mechanism at a fixed step — rank sweeps, S/A interventions, composition, alignment | the perturbation draw, so `n = 1` is sound | most of §3.12; closest to registrable |
+| **7c** | circuit formation — the backward search from a behavioural anchor, the pythia-70m study (§3.9) | checkpoint / window — where co-location circularity lives | scoped, not started |
+
+Splitting them says immediately what can be registered when, and stops 7a's hard
+null blocking 7b's clean one. Note that the labels are for *this document's*
+organisation; they are not new phase directories, and §3's numbering is
+unchanged (`INDEX.md`'s rule: do not rename directories).
+
+### 3.14.2 `7d` — the redundancy catalogue. **PROMOTED TO ACTIVE 2026-09-09**
+
+Queued earlier the same day as a case-study programme following a circuit's
+three stages. **Two results overturned that framing within hours and the
+programme is better for it**, so the premise is restated rather than inherited:
+
+- **§3.12-O/P killed the three-stage reading.** `L7H8` is not a token-identity
+  copier, the real copiers sit in layers 9–20, and the mediation test found **no
+  sub-additivity anywhere** — `L7H8` does not route through them.
+- **§3.12-S killed the serial reading of the pair itself.** `L5H2` × `L7H8`
+  interact at **+4.151** (joint 2.2× the parts-sum), and they converge on an
+  **87 %-aligned residual effect from chance-level weight overlap**.
+
+So the object is **not a chain of stages**. It is a **set of functionally
+redundant, structurally distinct heads** that jointly hold a residual-stream
+regime, and the programme's unit is that set and its classes.
+
+#### The five questions, as asked
+
+1. **How many members are there?** `L5H2` and `L7H8` may be a pair or the two
+   visible members of a set. §3.12-R's 38-head sample cannot say.
+2. **Did they form at the same time?** Or at different checkpoints?
+3. **Did they form at the earliest point the network *could*?** The literature
+   puts induction-head emergence near step 1000 in Pythia (§3.12-N3), so
+   "as early as possible" is a checkable claim, not a figure of speech.
+4. **Did they form the same way — same structure, same job?** `L5H2` is
+   spectrally mixed (attractive fraction 0.444, the only one of four), the least
+   gain-concentrated, and its QK symmetry **never leaves baseline**; `L7H8` is
+   100 % repulsive with QK symmetry reaching 0.956. Two very different operators
+   producing an 87 %-aligned effect.
+5. **Are they one class or several?** With a catalogue in hand, do members
+   cluster by structure, by formation time, or not at all?
+
+#### What each question needs
+
+**Q1 — membership.** `tools/run/redundancy_catalog.py`, launched 2026-09-09:
+single-head OV ablation `ΔNLL` for **all 384 heads** at step 16000. A full sweep
+rather than a proxy screen **because no weights-only quantity predicts causal
+effect** — §3.12-R ruled out `‖OV‖_F` (r² = 0.001, relation inverted), §3.12-G6
+ruled out every spectral field, and §3.12-S showed weight- and function-space
+overlap come apart. A proxy would inherit exactly that failure.
+
+**Q2/Q3 — timing. ANSWERED 2026-09-09, §3.12-U** (`member_formation_curves.py`,
+top six members + the joint arm + the δ-cosine, 23 checkpoints, 16 sequences).
+**Q2: no — they formed at different times.** `L5H2` and `L11H14` in `(512, 1000]`,
+`L12H5` and `L8H9` in `(1000, 2000]`, `L7H8` last in `(2000, 3000]`. **Q3: yes
+for `L5H2`, no for `L7H8`.** `L5H2` appears in the same interval the model
+acquires induction, which is the finest interval Pythia's grid resolves; `L7H8`
+is three to six times later. And the interaction — the arm no single-head curve
+can supply — is **≈ 0 until `L7H8` arrives**, so **the redundancy postdates both
+heads** and dating it by dating them would have been wrong by 2000 steps. Four
+of the six members then **decay** to 5–22 % of their peak while `L7H8` alone
+rises monotonically. Magnitudes at steps 1000–3000 are ceiling-limited; see
+§3.12-U's caveat.
+
+**Q4 — structure.** Largely **already on disk** and unread along this axis:
+`qk_symmetry_sweep.json` (384 heads × 19 steps), `ov_per_head_series.json`
+(spectral fields, same grid), `copying_score_sweep.json` (8 steps),
+`behavioural_series.json`. What is missing is the *causal* side per member, and
+the read-vs-write subspace geometry §3.12-S introduced.
+
+**Q5 — classes.** Only answerable after Q1. Cluster members on (formation step,
+spectral signature, QK symmetry trajectory, copying score, causal magnitude) and
+ask whether the structure is discrete or continuous — reporting **both** a
+central-tendency and an extremum view, per §3.13.
+
+#### Constraints this programme inherits, and must not lose
+
+- **Weight-space overlap is not function-space overlap** (§3.12-S). Every
+  composition score in §3.12 is a weight-space measure and is blind to the
+  redundancy the ablations show. Catalogue membership must be defined causally.
+- **§3.13's rule**: report the mean view *and* the extremum view, and never
+  choose between them after seeing the data. §3.12-J found the right instrument
+  changes with *training stage*, so this applies per checkpoint too.
+- **The spent-artifact rule** (`check_registry` rule 3). Everything 7d touches on
+  410m is exploratory and **cannot later be registered and adjudicated on the
+  same data** — which is exactly why `P-I7` was registered against an unmeasured
+  model. Any 7d claim intended for the registry needs its own unseen test site.
+- **The particle-dynamics half needs `dual_reading`'s pairwise field**, which
+  `P-I5` is blocked on (§3.12-C). Until it exists, 7d can characterise structure
+  and timing but not inter-particle geometry.
+
+#### Where the cross-case question lives
+
+The original framing's best part survives: once several circuits are catalogued
+— other 410m members, and pythia-70m under §3.9's grid — ask whether their
+**dynamics correlate across cases**. A shared signature over independent
+circuits is a population claim no single circuit can make, and it is the natural
+home for anything §3.12 produced that wants to generalise.
+
+### 3.14.3 Defects found this session, not yet fixed
+
+All three are **reporting or documentation** defects. None touches a p-value,
+`claims/registry.json` is unchanged and `claims/adjudications/` is empty, so
+nothing registered is affected — but each is live in code a reader would trust.
+
+1. **`induction_rank_sweep.truncate`'s `random` branch docstring is false**
+   (§3.12-L). It claims *"Matched-norm random rank-r control … the operator norm
+   scale and the factor structure match the real truncation."* At `r = 1` the
+   energy ratio to the `svd` arm is **16×**. Either the docstring changes or the
+   branch rescales; the §3.11 Stage-1 table must be read against §3.12-L's
+   energy-matched version either way.
+2. **`target_vs_reference` computes a self-inclusive z** (§3.13.1), which is
+   capped at `(n−1)/√n = 3.75` for `n = 16`. `L7H8` at step 8000 reads **3.74** —
+   saturated, against a leave-one-out value of **50.2**. Fix is leave-one-out.
+3. **`ov_factors` returns `OV_h = (W_O W_V)ᵀ`**, the transpose of the
+   residual-stream operator (§3.12-O, verified at relative error 0.0). Harmless
+   for every quantity read off it so far — all transpose-invariant — and the
+   docstring does state the convention, but nothing warns that a **directional**
+   read (any circuit with `W_E` on one side and `W_U` on the other) must not use
+   it. A one-line warning would have saved a careful check.
+
+---
+
+## 3.13 When the mean is the wrong instrument (2026-09-09)
+
+`§3.12-G6` found a signal that Spearman could not see: fifteen of sixteen heads
+per layer carry causal noise, so a correlation over all sixteen averages the
+signal away, while the *rank of the top head* recovers it at ~2.6e-4. That is a
+general lesson and this section is where it is logged, because the sites it
+applies to are spread across the repo.
+
+**The principle, and its edge.** A mean or correlation is the right summary when
+the effect is *distributed* across the population; an extremum — max, argmax,
+top-rank — is right when it is *concentrated* in a few members. **Choosing
+between them after seeing the data is exactly the selection `claims/registry.json`
+exists to forbid.** So the rule is not "use max": it is
+
+- **exploratory work reports both, always** (`§3.12-G6` was legitimate because
+  nothing is registered and both were reported);
+- **registered work has already frozen the choice**, and the alternative may be
+  *reported beside* the result but never swapped in — the same discipline the
+  registry already applies to `p_reciprocal`, which is a stop-rule input and
+  enters no `E`.
+
+### 3.13.1 The arithmetic sub-case, which is not a judgment call
+
+A z-score computed against a population **that contains the point being
+scored** is capped. For a sample of `n`, the largest attainable studentized
+deviate is `(n − 1)/√n` — at `n = 16`, **3.75**. The statistic cannot report a
+larger effect however large the effect is.
+
+`induction_subspace_characterize`'s `target_vs_reference` computes the target
+head's z against `layer_mean` / `layer_sd` **over all 16 heads, the target
+included**. Measured on the seven populations already on disk:
+
+| population | top head | ΔOV_nll | z (self-included) | z (leave-one-out) | |
+|---|---|---|---|---|---|
+| 4000 / L7 | H8 | 0.244 | 3.69 | **20.59** | 5.6× |
+| **8000 / L7** | **H8** | **0.725** | **3.74** | **50.17** | **13.4×** |
+| 8000 / L9 | H5 | 0.187 | 2.93 | 4.84 | 1.7× |
+| 2000 / L9 | H5 | 0.317 | 3.60 | 13.25 | 3.7× |
+| 16000 / L1 | H15 | 0.040 | 3.35 | 7.72 | 2.3× |
+| 16000 / L6 | H0 | 0.021 | 2.23 | 2.86 | 1.3× |
+| 32000 / L2 | H2 | 0.056 | 2.48 | 3.41 | 1.4× |
+
+**`L7H8` at step 8000 measures 3.74 against a ceiling of 3.75 — saturated.** A
+reader comparing it to step 4000's 3.69 would conclude the effect barely moved;
+the leave-one-out z went **20.6 → 50.2**. The reported number stopped being a
+measurement and became the ceiling.
+
+This is a **reporting defect, not a scoring one** — no p-value is computed from
+this z and `claims/adjudications/` is empty, so nothing registered is affected.
+`core/nulls.py`'s z is *not* subject to it: there `observed` is scored against a
+null distribution it is not a member of, and where the identity permutation *is*
+included the draw count is large enough that `(P−1)/√P` is far above anything
+attainable. **The fix is leave-one-out, and it is a docstring and three lines.**
+
+### 3.13.2 Sites surveyed
+
+*Already handled — recorded so they are not re-litigated.* `tools/run/
+behavioural.py` prints `mean` **and** `max` side by side. `P-M1`'s registry
+entry computes the mean/min/max head-to-layer aggregates, declares `mean`
+primary *in advance* so it cannot be picked after the fact, and **refuses a
+p-value when the three disagree in sign**. `CLAIM-B` reports dispersion beside
+every centroid precisely so a bimodal profile is visible. `ov_per_head.py`
+records the energy split *and* the count because their disagreement is the
+reading (`§3.12-F0` finally read it).
+
+*Worth a look, none registered-blocking.* `p7_motifs/motif_stats.py`'s
+`mean_ind` / `mean_non` are means over head sets — `P-I3`'s registered statistic
+already superseded them with a rank-based matched contrast, so the means are
+diagnostics; they should say so. `p2d_operator_activation/run_2d.py`'s
+`head_mean` energy series is `P-M1`'s aggregate and inherits that entry's
+refusal.
+
+*A frozen entry whose stated reason does not distinguish the two.* `CLAIM-C`
+takes `delta = mean over normalized depth`. Its `null_construction` justifies
+the choice against a depth band: *"Blog 1 quotes layers 5-30 of gpt2-large, but
+a depth band is a choice with as many options as there are bands."* That
+argument is sound against a **band** — and **a max over depth places no constant
+either**, so it does not distinguish mean from max at all. The registered
+wording is frozen and stays; this is recorded because the reasoning has a gap,
+not because the entry should change. Blog 1 quoting a band is itself weak
+evidence the contrast is depth-concentrated.
+
+### 3.13.3 What this suggests we have overlooked: the position axis
+
+Every readout in `§3.11`–`§3.12` is a mean over **token positions**, and nothing
+has ever looked at that axis:
+
+- `behavioural_induction_score` and `induction_attention` are
+  `picked.mean()` over `N_REP = 96` second-copy positions × 8 sequences;
+- `second_copy_nll` — the readout the **entire** OV rank sweep, the 82 %, and
+  every ΔOV_nll in this document rest on — is a mean over the repeated half.
+
+If copying is concentrated at particular positions (later second-copy positions
+have more context, so concentration is the expected shape rather than an exotic
+one), then the mean dilutes it and the rank sweep's `r*` is being read off a
+diluted curve. **This is the same error `§3.12-G6` found, one axis over, in the
+measurement everything else depends on.** It is one forward pass to check: emit
+the per-position NLL delta instead of its mean and look at the profile. Report
+mean and max together, per 3.13's own rule.
+
+**MEASURED 2026-09-09 (`tools/run/induction_position_profile.py`, `L7H8` at
+step 4000, 64 sequences — eight times the original readout's sample count).
+THE HYPOTHESIS ABOVE IS WRONG, and the negative is worth more than the positive
+would have been.**
+
+*The effect is not position-concentrated.* **37 of 96** positions carry half the
+ΔNLL mass (uniform would be 48); ninety percent needs **80 of 96**; the top
+decile of positions carries **0.178** of the total against 0.100 for uniform.
+Mildly above uniform, nowhere near "a few members".
+
+*And `r*` does not move.* Recovered fraction by rank, computed as a **ratio of
+sums** over each position set rather than a mean of per-position ratios (the
+per-position denominator is near zero where the head does nothing):
+
+| rank | all positions | concentrated half | dilute half | excluding j=0 |
+|---|---|---|---|---|
+| 1 | **0.824** | 0.791 | 0.858 | 0.822 |
+| 2 | 0.850 | 0.832 | 0.869 | 0.849 |
+| 4 | 0.871 | 0.866 | 0.877 | 0.870 |
+| 8 | 0.945 | 0.943 | 0.947 | 0.944 |
+| 16 | 0.971 | 0.972 | 0.971 | 0.971 |
+| 64 | 1.001 | 1.001 | 1.000 | 1.001 |
+
+The concentrated and dilute halves differ by at most **0.067** at rank 1 and are
+identical to three digits by rank 8. **The 82 % is not an artifact of
+averaging**, and `r*_SVD = 1` survives the axis that could have dissolved it.
+Restore check exact (`0.000e+00`).
+
+*The methodological reading, which is the point of §3.13.* The principle says
+**report both**, not *expect the extremum to win*. Here the mean was the right
+instrument and the check confirms a result rather than overturning one. §3.13
+is not a licence to prefer extrema — it is a requirement to look, and looking is
+cheap.
+
 ---
 
 ## 4. Open, analysed, not yet acted on: the scoring threshold
@@ -1110,6 +2747,56 @@ per claim**, not a better calibrator.
 disk, and `core/pythia_registry.py` keeps `PYTHIA_410M_PILOT_STEPS` loadable for
 exactly this reason. `p1b_pilot`, `p2b_pilot`, `p2d_pilot` and `phase3` are
 small; `phase3` is referenced from `archive/`.
+
+### 5.3 The activation cache: measured before deleting (2026-09-09)
+
+Asked whether to clear the 355 GB activation cache and refill it with
+**real** pythia-70m activations. **Measured answer: do not delete — the premise
+does not hold.**
+
+*The size arithmetic, verified against the cache that exists.* Cost is
+`tokens x d_model x n_states x 2` (float16): `gpt2_large` 13.2M tokens, d=1280,
+10 states = **315.8 GiB**; `albert_xlarge_v2` 1.0M, d=2048, 10 states =
+**38.5 GiB**; total **354.3 GiB** against `du`'s 355G. The formula is good, so
+the projections below are too.
+
+*70m is much smaller — 7.1x — but that is not the binding factor.*
+
+| model | d | states | at 13.2M tokens |
+|---|---|---|---|
+| pythia-70m | 512 | 7 | **88.4 GiB** |
+| pythia-410m | 1024 | 25 | 631.6 GiB |
+
+**Token count dominates.** A 19-checkpoint 70m sweep with every layer costs
+1680 GiB at Blog-1's 13.2M tokens, **127 GiB at 1M**, and **25 GiB at 200k** —
+and the induction battery this project actually reads is **1,536 tokens**
+(8 x 192). The old cache is enormous because it holds 13.2M tokens for Blog-1,
+roughly a hundred times more than anything the current programme touches.
+
+*Three reasons not to delete.*
+
+1. **It frees the wrong drive.** `activation_cache` lives on **HDD_1TB, which
+   has 440 GB free (50 % used)**. The constrained volume is **WDS_500 at 95 GB
+   free (79 %)**. A 19-checkpoint 70m sweep at 1M tokens (127 GiB) fits in
+   HDD_1TB's existing free space three times over.
+2. **The caches are probably not regenerable.** `HF_HOME` holds **only**
+   `models--EleutherAI--pythia-410m` (51 GB). No gpt2-large, no albert, no 70m —
+   and `HF_HUB_OFFLINE=1`. Deleting is irreversible without network.
+3. **`P6-R2` and `P6-R4` are REGISTERED on albert-xlarge-v2** (their entries cite
+   "albert-xlarge-v2's exact shape" and "the 2026-04 ALBERT run"), and
+   `CLAIM-C`'s statement names gpt2-large. Deleting their instrument's data
+   without checking what those entries still need would be §6's "flattering
+   subset" problem arriving through the disk.
+
+*A premise that needs checking first.* **No pythia-70m checkpoints were found on
+either volume**, and the 70m *model* is not mirrored in `HF_HOME` either. If
+manually-made 70m checkpoints exist they are somewhere not searched; if they do
+not, the sweep needs network access before it needs disk.
+
+*If WDS_500 space is the real need*, the target is `data/` (171 GB: `phase12`
+114 GB, `hf` 51 GB, `phase7` 6.1 GB) — **not** the activation cache, and not
+`results/` (132 GB, protected by §5.2). `data/superseded/` (1.1 GB) is the only
+part already marked superseded.
 
 ---
 
