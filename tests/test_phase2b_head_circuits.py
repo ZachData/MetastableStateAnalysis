@@ -173,6 +173,93 @@ class TestRankArtifact(unittest.TestCase):
         self.assertAlmostEqual(s["rotational_frobenius_fraction"], want, places=8)
 
 
+class TestEnergyWeightedSignSplit(unittest.TestCase):
+    """
+    `MATH_SPECTRAL_OT.md` §3: the phase's `frac_repulsive` is an unweighted
+    COUNT and so is bulk-dominated, which is why a return to 0.5 cannot tell
+    "the repulsive structure dissolved" from "the counting statistic lost the
+    outliers". The energy-weighted split is the discriminator. These pin the
+    three properties that claim rests on.
+    """
+
+    def _planted(self, reps, atts, d=D):
+        """A head whose core spectrum is exactly the given real eigenvalues."""
+        k = len(reps) + len(atts)
+        lam = np.array(list(reps) + list(atts), dtype=np.float64)
+        # W_V W_O = diag(lam) exactly, with W_O orthonormal columns.
+        rng = np.random.default_rng(7)
+        Q, _ = np.linalg.qr(rng.normal(size=(d, k)))
+        W_O = Q                      # (d, k), orthonormal
+        W_V = np.diag(lam) @ Q.T     # (k, d) -> W_V W_O = diag(lam)
+        return W_O, W_V
+
+    def test_matches_hand_computed_fractions_on_a_planted_spectrum(self):
+        # One large repulsive outlier against many small attractive ones:
+        # the count says overwhelmingly attractive, the energy says otherwise.
+        W_O, W_V = self._planted(reps=[-10.0], atts=[0.1] * 9)
+        s = hc.head_spectrum(W_O, W_V)
+        e_rep, e_att = 100.0, 9 * 0.01
+        self.assertAlmostEqual(s["repulsive_energy_fraction_core"],
+                               e_rep / (e_rep + e_att), places=10)
+        self.assertAlmostEqual(s["attractive_energy_fraction_core"],
+                               e_att / (e_rep + e_att), places=10)
+        self.assertAlmostEqual(s["repulsive_dim_fraction_core"], 0.1, places=10)
+
+    def test_count_and_energy_diverge_exactly_where_the_math_doc_says(self):
+        """The whole point: outlier-carried structure the count cannot see."""
+        W_O, W_V = self._planted(reps=[-10.0], atts=[0.1] * 9)
+        s = hc.head_spectrum(W_O, W_V)
+        self.assertLess(s["repulsive_dim_fraction_core"], 0.15)
+        self.assertGreater(s["repulsive_energy_fraction_core"], 0.99)
+
+    def test_energy_split_is_rank_invariant(self):
+        """
+        Same argument as the complex energy fraction: |0|^2 = 0, so embedding
+        the head in more ambient dimensions cannot move it.
+        """
+        W_O, W_V = self._planted(reps=[-2.0, -0.5], atts=[1.0, 0.25], d=D)
+        W_O2, W_V2 = self._planted(reps=[-2.0, -0.5], atts=[1.0, 0.25], d=4 * D)
+        a = hc.head_spectrum(W_O, W_V)["repulsive_energy_fraction_core"]
+        b = hc.head_spectrum(W_O2, W_V2)["repulsive_energy_fraction_core"]
+        self.assertAlmostEqual(a, b, places=10)
+
+    def test_fractions_need_not_sum_to_one_and_the_gap_is_visible(self):
+        """
+        A purely imaginary conjugate pair is neither attractive nor repulsive.
+        Folding it into either side by the choice of `<=` would hide it.
+        """
+        # Core = [[0, 1], [-1, 0]] has eigenvalues +-i: Re == 0 exactly.
+        d = D
+        rng = np.random.default_rng(3)
+        Q, _ = np.linalg.qr(rng.normal(size=(d, 2)))
+        W_O = Q
+        W_V = np.array([[0.0, 1.0], [-1.0, 0.0]]) @ Q.T
+        s = hc.head_spectrum(W_O, W_V)
+        self.assertAlmostEqual(s["repulsive_energy_fraction_core"], 0.0, places=10)
+        self.assertAlmostEqual(s["attractive_energy_fraction_core"], 0.0, places=10)
+
+    def test_layer_rollup_reports_both_and_their_spread(self):
+        layer = make_layer(0)
+        out = hc.layer_head_spectra(layer, d_head=K)
+        for key in ("repulsive_energy_fraction_mean",
+                    "repulsive_energy_fraction_std",
+                    "repulsive_dim_fraction_mean"):
+            self.assertIn(key, out)
+            self.assertTrue(np.isfinite(out[key]))
+        want = float(np.mean([h["repulsive_energy_fraction_core"]
+                              for h in out["per_head"]]))
+        self.assertAlmostEqual(out["repulsive_energy_fraction_mean"], want,
+                               places=12)
+
+    def test_pre_existing_complex_only_count_is_unchanged(self):
+        """`frac_repulsive_real_part` answers a different question; it stays."""
+        W_O, W_V = make_head(0)
+        s = hc.head_spectrum(W_O, W_V)
+        self.assertIn("frac_repulsive_real_part", s)
+        self.assertNotAlmostEqual(s["frac_repulsive_real_part"],
+                                  s["repulsive_energy_fraction_core"], places=6)
+
+
 # ---------------------------------------------------------------------------
 # Factor recovery
 # ---------------------------------------------------------------------------
