@@ -48,11 +48,12 @@ import torch
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    D_MODEL, N_HEADS, N_REP, VOCAB_LO, VOCAB_HI, EVAL_SEED,
-    ov_factors, write_ov,
+    N_REP, VOCAB_LO, VOCAB_HI, EVAL_SEED,
+    ablate_heads, arch_dims, ov_factors, write_ov,
 )
 
 OUT = DATA / "analysis" / "redundancy_catalog.json"
+DEFAULT_MODEL = "pythia-410m"
 
 
 def batch(rng, n):
@@ -77,28 +78,49 @@ def nll(model, ids, chunk=8):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL,
+                    help="registry family prefix, e.g. pythia-70m, pythia-410m "
+                         "(p8_scale_ladder/design-8.md: 70m and 410m are the "
+                         "exploration rungs; 1b/1.4b are reserved -- do not "
+                         "pass those here without a registered prediction)")
     ap.add_argument("--step", type=int, default=16000)
     ap.add_argument("--seqs", type=int, default=8)
+    ap.add_argument("--ablation", default="ov", choices=("ov", "zero", "mean"),
+                    help="'ov' (default) is the historical path -- zero the OV "
+                         "weight factors via write_ov, which LEAVES the value "
+                         "bias, so the head keeps writing a small constant. "
+                         "'zero' and 'mean' intervene on the head's output "
+                         "activation instead (see ablate_heads). 'mean' is the "
+                         "control for zero-ablation's off-distribution bias, "
+                         "which scales as 1/n_heads and so is worse at 70m")
+    ap.add_argument("--out", default="")
     args = ap.parse_args()
 
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
-    model, _ = load_causal_lm(f"pythia-410m-step{args.step}")
+    model, _ = load_causal_lm(f"{args.model}-step{args.step}")
     model.eval()
     ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
     base = nll(model, ids)
     print(f"baseline second-copy NLL {base:.4f}  ({args.seqs} seqs, "
-          f"step {args.step})", flush=True)
+          f"model {args.model}, step {args.step})", flush=True)
 
-    Z = (np.zeros((D_MODEL, 1)), np.zeros((1, D_MODEL)))
+    d_model, d_head, n_heads = arch_dims(model)
+    Z = (np.zeros((d_model, 1)), np.zeros((1, d_model)))
     n_layers = len(model.gpt_neox.layers)
     rows, t0 = [], time.time()
     for L in range(n_layers):
-        for H in range(N_HEADS):
-            a, b = ov_factors(model, L, H)
-            write_ov(model, L, H, *Z)
-            d = nll(model, ids) - base
-            write_ov(model, L, H, a, b)
+        for H in range(n_heads):
+            if args.ablation == "ov":
+                a, b = ov_factors(model, L, H)
+                write_ov(model, L, H, *Z)
+                d = nll(model, ids) - base
+                write_ov(model, L, H, a, b)
+            else:
+                # No weights touched at all, so the restore check below is
+                # trivially exact for these modes rather than informative.
+                with ablate_heads(model, [(L, H)], mode=args.ablation):
+                    d = nll(model, ids) - base
             rows.append({"head": f"L{L}H{H}", "layer": L, "head_idx": H,
                          "dnll": d})
             if abs(d) > 0.05:
@@ -109,7 +131,11 @@ def main():
 
     chk = abs(nll(model, ids) - base)
     d = np.array([r["dnll"] for r in rows])
-    res = {"_what_this_is": __doc__, "git_sha": git_sha, "step": args.step,
+    n_total_heads = n_layers * n_heads
+    res = {"_what_this_is": __doc__, "git_sha": git_sha,
+           "model": args.model, "step": args.step, "ablation": args.ablation,
+           "d_model": d_model, "d_head": d_head, "n_heads_per_layer": n_heads,
+           "n_layers": n_layers, "n_total_heads": n_total_heads,
            "n_seqs": args.seqs, "baseline_nll": base,
            "restore_abs_diff": float(chk),
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
@@ -120,13 +146,27 @@ def main():
            "n_above_1.0": int((d > 1.0).sum()),
            "n_negative_0.05": int((d < -0.05).sum()),
            "heads": rows}
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUT, "w") as fh:
+    # 410m at its historical default keeps the original filename so existing
+    # readers of redundancy_catalog.json are undisturbed; every other
+    # model/step combination gets its own file rather than silently
+    # overwriting the 410m baseline (p8_scale_ladder/design-8.md: the two
+    # artifacts must never be conflated).
+    _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    if args.out:
+        dest = Path(args.out)
+    elif args.model == DEFAULT_MODEL and args.step == 16000 and not _abl:
+        dest = OUT
+    else:
+        dest = (DATA / "analysis" /
+                f"redundancy_catalog_{args.model}_step{args.step}{_abl}.json")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with open(dest, "w") as fh:
         json.dump(res, fh, indent=2)
-    print(f"\nwrote {OUT}  (restore {chk:.1e})")
+    print(f"\nwrote {dest}  (restore {chk:.1e})")
 
     order = np.argsort(-d)
-    print(f"\n=== where does the tail end? (384 heads, step {args.step}) ===")
+    print(f"\n=== where does the tail end? ({n_total_heads} heads, "
+          f"model {args.model}, step {args.step}) ===")
     print(f"  median {res['median']:+.5f}   p99 {res['p99']:+.4f}   "
           f"max {res['max']:+.4f}   min {res['min']:+.4f}")
     print(f"  above +0.05: {res['n_above_0.05']}   above +0.2: "

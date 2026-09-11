@@ -5,13 +5,24 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-10)
+## Current priority (updated 2026-09-11)
 
 - **Active work: Phase 8, the Pythia scale ladder.** `p8_scale_ladder/`, opened
   2026-09-10 — the 7d/7e measurements repeated across model sizes so `n = 1`
   observations can become population claims. **Rung policy: explore on 70m and
   410m, RESERVE 1b and 1.4b** (no induction measurement there until a prediction
-  naming them is registered). Read `p8_scale_ladder/design-8.md`. Nothing has run.
+  naming them is registered). Read `p8_scale_ladder/design-8.md`, then
+  `status-8.md`. **First rung has run** (2026-09-11): the 48-head catalogue and
+  invariants 2/4/5/6 on pythia-70m, each under two ablation modes.
+  **Invariant 5 does not replicate; 2 and 4 do; 6 needs its ceiling-immune
+  instrument.** `compare_rungs.py` holds the threshold-free cross-rung
+  statistics — no absolute bar transfers between rungs, and the first write-up
+  broke that rule before the A/B caught it.
+- **Read before running any ablation anywhere:** `status-8.md`'s
+  ablation-mode A/B. Zero-ablation's off-distribution bias scales as
+  `1/n_heads`, so it distorts at 70m (8 heads/layer) and barely touches 410m
+  (16) — and **pythia-1b is also 8 heads/layer**, so a prediction registered
+  against that reserved rung should name mean-ablation.
 - **Phase 7d/7e — the 410m body of work the ladder generalises.**
   `p7d_redundancy/` (redundancy catalogue, both open axes closed 2026-09-10) and
   `p7e_consolidation/` (`L11H14`; whether the set collapses into one head). Read
@@ -49,7 +60,9 @@ work — that is `PROJECT.md`, which is the file to read first.**
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |
 | 2d | `p2d_operator_activation/` | Implemented and validated on constructed operators; **not run**. Blocked on Phase 1c-B by design |
 | 7 | `p7_motifs/` | New — mechinterp phenomena as particle motifs. See "Phase 7" below |
-| 7d | `p7d_redundancy/` | **Active.** The redundancy set — which heads hold the induction regime and when each formed. Q1/Q2/Q3 answered; results in `PROJECT.md` §3.12-S/T/U |
+| 7d | `p7d_redundancy/` | **Active.** The redundancy set — which heads hold the induction regime and when each formed. Q1/Q2/Q3 answered; results in `PROJECT.md` §3.12-S/T/U. Every runner now takes `--model` and `--ablation` |
+| 7e | `p7e_consolidation/` | **Active.** Whether the set collapses into one head; `L11H14`. Gate measurement answered — `status-7e.md` |
+| 8 | `p8_scale_ladder/` | **Active.** The same measurements across the Pythia ladder. 70m rung run 2026-09-11; `compare_rungs.py` is the cross-rung reader. See `status-8.md` and `PROJECT.md` §3.15 |
 
 Shared code lives in `core/`; one-off scripts in `tools/`; tests in `tests/`.
 

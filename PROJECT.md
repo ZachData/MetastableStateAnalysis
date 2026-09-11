@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-10 (§3.12-V; 7e opened; LoRA tangent) |
+| Last updated | 2026-09-11 (§3.15 — the 70m rung, and the ablation-mode A/B) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -146,7 +146,8 @@ gradient-gating mechanism, ruled out because σ_OV is nonzero at all 2048 query
 positions.
 
 Read `p8_scale_ladder/design-8.md` for the six candidate invariants and the
-sequencing, `status-8.md` for what has run (**nothing yet**).
+sequencing, `status-8.md` for what has run — **the 70m rung, 2026-09-11**, and
+§3.15 below for the one result that is not phase-8-local.
 
 **LITERATURE SCAN RUN 2026-09-10 — `docs/literature_scan_2026-09-10.md`. READ IT
 BEFORE THE NEXT MEASUREMENT.** It is **leads, not readings** — four searches,
@@ -183,11 +184,19 @@ check what **2606.02378** already measured on Pythia-1B before assuming that run
 is untouched by the field. The `lora_ind` merge case is **unaffected**: its value
 is the dense onset axis and the φ question, neither of which the scan touched.
 
-**Uncommitted as of 2026-09-10, nothing staged.** Modified: `PROJECT.md`,
-`INDEX.md`, `pyproject.toml`, `p7d_redundancy/status-7d.md`. New:
-`p7d_redundancy/{pairwise_interaction_matrix,member_subspace_geometry}.py`,
-`p7e_consolidation/` (4 files + `status-7e.md`), `p8_scale_ladder/`
-(`__init__.py`, `design-8.md`, `status-8.md`).
+**Committed 2026-09-11**: the de-hardcoding, the 70m/1b registry entries, the
+`--model` and `--ablation` flags across all six 7d/7e runners, the 70m rung, and
+§3.15. Working tree clean at that commit except `data/hf/` (HF cache, not for
+version control — note its `.no_exist/` marker files are *not* matched by
+`.gitignore`, so never stage `data/` with `git add -A`).
+
+**Results are git-ignored by design.** Every `data/analysis/*.json` this phase
+wrote — `redundancy_catalog_pythia-{70m,410m}_*`, `useful_rank_pythia-70m_mean`,
+`pairwise_interaction_matrix_pythia-70m_mean`,
+`member_subspace_geometry_pythia-70m_mean`, `ambient_budget_pythia-70m_mean`,
+`member_formation_curves_pythia-70m_mean`, `p8_rung_comparison.json` — lives
+only on this machine. `status-8.md` carries the numbers; the JSON carries the
+rows. Re-running is cheap at 70m and ~25 min for a 410m full sweep.
 
 **Machine note:** the geometry and rank runners were **killed for memory twice**
 while `falsification/e4_bootstrap.py` (~5 GB, not this project's) was running.
@@ -3075,6 +3084,56 @@ nothing registered is affected — but each is live in code a reader would trust
    docstring does state the convention, but nothing warns that a **directional**
    read (any circuit with `W_E` on one side and `W_U` on the other) must not use
    it. A one-line warning would have saved a careful check.
+
+---
+
+## 3.15 The ablation mode is not a detail (2026-09-11)
+
+Phase 8's first rung ran on pythia-70m; the per-invariant numbers are in
+`p8_scale_ladder/status-8.md` and are not repeated here. **One result from it is
+not phase-8-local and changes how every ablation number in this file should be
+read.**
+
+**Zero-ablation's off-distribution bias scales as `1/n_heads`.** Setting a head's
+output to zero does not only remove its function, it puts the residual stream
+somewhere the downstream layers never saw. One head is **1/16** of a pythia-410m
+layer and **1/8** of a pythia-70m one, so that component does not cancel in a
+cross-rung comparison. Measured, all heads, step 16000, 8 sequences:
+
+| rung | mode | participation ratio of \|dNLL\| | Gini | top-5 identity |
+|---|---|---|---|---|
+| 70m | zero-ish (`ov`) | 5.05 | 0.677 | `L2H1`, `L0H6`, `L0H5`, `L0H0`, `L1H4` |
+| 70m | `mean` | **2.12** | 0.779 | `L2H1`, `L0H3`, `L3H1`, `L3H6`, `L3H5` |
+| 410m | zero-ish (`ov`) | 1.71 | 0.828 | `L5H2`, `L7H8`, `L12H5`, `L8H6`, `L11H14` |
+| 410m | `mean` | 1.47 | 0.859 | unchanged |
+
+**410m is robust to the mode and 70m is not** — at 70m the top-5 changes
+identity, layer-0 heads dropping out and the real induction cascade coming in.
+`L0H6` goes −3.34 → −0.22, `L0H0` +2.70 → **+0.27**. So 410m's existing results
+are safe on this axis, and any *small* model's are not. **`pythia-1b` is also 8
+heads/layer**, so a prediction registered against that reserved rung should name
+mean-ablation rather than spend the rung on the distorting instrument.
+
+**`write_ov`'s zero path is a bias-ablation, not a zero-ablation.** It zeroes
+`W_V`'s weight and leaves its bias, so the head keeps writing a constant —
+measured 0.1007 at every position at 70m `L3H6` against an unablated 2.1–3.2.
+Every 7d/7e/8 number to date is one. It is **immaterial**: true zero-ablation
+through an activation hook reproduces the `ov` NLL *bitwise*. Recorded because
+the docstrings say "the head's OV removed entirely" and that is not what happens.
+
+**Two instrument limits found in the same pass.** (1) `useful_rank`'s `r = 64`
+float32 refactorisation residue is harmless while `|d0|` is large and fatal once
+it is not — at 70m `L0H2` the residue is **56 % of that head's own
+mean-ablation `d0`**, so `recovery` never approaches 1 and `r*` is meaningless.
+`useful_rank` needs `|d0| >>` that residue, and mean-ablation shrinks `d0`, so
+the two requirements pull against each other. (2) **No absolute threshold
+transfers between rungs** — `design-8.md` says so and the first 70m write-up
+imported the `+0.05` bar anyway, producing "40 % of heads matter at 70m vs
+1–3 % at 410m". Against each rung's own bulk the same counts are **14.6–16.7 %
+at 70m and 15.1–15.6 % at 410m**, i.e. indistinguishable.
+`p8_scale_ladder/compare_rungs.py` holds the threshold-free statistics
+(participation ratio, Gini, top-k share) and is what cross-rung claims should
+be read from.
 
 ---
 
