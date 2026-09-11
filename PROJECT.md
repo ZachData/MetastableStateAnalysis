@@ -3127,6 +3127,26 @@ Every 7d/7e/8 number to date is one. It is **immaterial**: true zero-ablation
 through an activation hook reproduces the `ov` NLL *bitwise*. Recorded because
 the docstrings say "the head's OV removed entirely" and that is not what happens.
 
+**The probe's token distribution is a third, and it is not an instrument limit
+but a scope limit on the readout.** `p8_scale_ladder/probe_distribution.py`:
+uniform-random ids from `[1000, 40000)` are so far out of distribution that
+first-copy true-token median rank is ~23000 of 50304 at **every** rung, so the
+second-copy number inherits a baseline that is already worse than uniform.
+pythia-70m at step 143000 reads second-copy NLL **14.25**, past `ln 50304`, and
+looks like an induction collapse — but on **repeated natural text the same
+checkpoint copies at 99.2 % top-1**, identical to its own step-16000 number and
+to 410m's, and its natural-text NLL is 3.68. Induction is intact; the language
+prior has won on the OOD arm, and it wins harder as training strengthens the
+prior (`wide` top-1 0.366 → 0.242 from step 16000 → 143000, `text` unchanged).
+**410m is nearly arm-independent** (0.954 `wide` / 0.989 `text`): it has the
+capacity for both, and 70m must trade off. Consequences: anything read on this
+probe at a *small* model's *late* checkpoints measures prior-versus-probe
+conflict as well as induction; `freq` ids from `[1000, 5000)` keep the induction
+dynamic range (ICL median gap 10.41 against `wide`'s 3.76) while cutting
+above-ceiling positions 42 % → 8 %, and are strictly the better probe — as an
+ADDED arm, since every existing 7d/7e/8 number is on `wide`. And §3.13 bites
+hardest here yet: mean 8.097 against median **1.428** on the same `freq` rows.
+
 **Two instrument limits found in the same pass.** (1) `useful_rank`'s `r = 64`
 float32 refactorisation residue is harmless while `|d0|` is large and fatal once
 it is not — at 70m `L0H2` the residue is **56 % of that head's own

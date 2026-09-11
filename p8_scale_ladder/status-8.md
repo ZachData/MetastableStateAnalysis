@@ -551,15 +551,70 @@ through downstream computation" — reproduced under `mean`). 70m never separate
 this "same shape, smaller degree"; on the matched instrument it is better read
 as **the same birth and a different fate**.
 
-**One hedge on the 70m end of that row.** At step 143000 pythia-70m's baseline
-second-copy NLL is **14.25**, worse than uniform (`ln 50304 = 10.83`) — the model
-is confidently predicting something other than the repeat, its language prior
-having overridden literal copying on random-token input. A cosine between
-ablation deltas at a checkpoint where the probe is that degenerate is not
-obviously measuring what it measures at 410m, whose baseline stays at 0.65. The
-natural-text arm `ambient_budget.py`'s docstring promises and never implements
-is the instrument that would settle it, and this is the clearest case yet for
-building it.
+**One hedge on the 70m end of that row** — chased down below, and it is larger
+than a hedge.
+
+### The probe, not the model: 70m's late-checkpoint collapse is the token distribution (2026-09-11)
+
+pythia-70m's baseline second-copy NLL reaches **14.25 at step 143000**, past
+uniform (`ln 50304 = 10.83`). `probe_distribution.py` separates the candidate
+explanations. **It is not a broken load** — natural-text NLL is 3.85 (70m@16000),
+3.68 (70m@143000) and 2.74 (410m@143000), so all three checkpoints are healthy
+language models, and 70m is *better* at English at 143000 than at 16000.
+
+**First-copy NLL is above the ceiling at every rung** — 13.48, 13.46, 12.57
+median, true-token median rank ~23000 of 50304. Uniform-random ids from
+`[1000, 40000)` are so far out of distribution that every model orders them
+near-randomly. That is the *baseline* on this probe, not an induction failure,
+and the second-copy number inherits it.
+
+Three arms, same length and repetition structure, induction window only:
+
+| model / step | arm | ind. median NLL | top-1 | median rank | ICL gap (median) |
+|---|---|---|---|---|---|
+| 70m @ 16000 | `wide` U[1000,40000) | 4.769 | 0.366 | 8 | 8.71 |
+| 70m @ 16000 | `freq` U[1000,5000) | 1.475 | 0.742 | 1 | 10.35 |
+| 70m @ 16000 | `text` repeated prose | 0.009 | **0.992** | 1 | 1.70 |
+| 70m @ 143000 | `wide` | 9.699 | 0.242 | **1305** | 3.76 |
+| 70m @ 143000 | `freq` | 1.428 | 0.668 | 1 | 10.41 |
+| 70m @ 143000 | `text` | 0.020 | **0.992** | 1 | 1.79 |
+| 410m @ 143000 | `wide` | 0.085 | 0.954 | 1 | 12.49 |
+| 410m @ 143000 | `text` | 0.004 | 0.989 | 1 | 0.99 |
+
+**On repeated natural text, 70m at step 143000 copies at 99.2 % top-1 — identical
+to its own step-16000 number and to 410m's.** Induction is completely intact.
+The collapse exists only on the arm where the prior most strongly disagrees with
+copying, and it deepens as the prior strengthens with training: `wide` top-1
+falls 0.366 → 0.242 and median rank 8 → 1305 between 16000 and 143000, while
+`text` does not move at all. **410m is nearly arm-independent** (0.954 / 0.963 /
+0.989) — it has the capacity to model language *and* copy arbitrary tokens; 70m
+has to trade off, and by 143000 the prior has won on the OOD arm.
+
+**§3.13 again, and harder than anywhere it has bitten so far.** At 70m@143000
+`wide` the mean is 14.25 against a median of 9.699, and on `freq` the mean is
+8.097 against a median of **1.428** — a factor of 5.7 between mean and median on
+the same rows. 43 % of `wide` positions sit above the ceiling and drag the mean
+past it while the median position is *better* than uniform. The "worse than
+chance" headline is a mean artifact on a heavy-tailed distribution.
+
+**What this costs the phase.** Everything read on the `wide` probe at a small
+model's late checkpoints is measuring prior-versus-probe conflict as well as
+induction — including 70m's end-of-training column in the invariant-4 table
+above, whose 0.685 now has to be read as "the pair stays aligned in a regime
+where the readout is degenerate", not as a clean contrast with 410m's −0.009.
+It does **not** touch step 16000, where `wide` still has top-1 0.366 and median
+rank 8, nor anything at 410m.
+
+**What to do about it, in order of cost.** `freq` (ids from `[1000, 5000)`) keeps
+almost all of the induction dynamic range — ICL median gap **10.41** against
+`wide`'s 3.76 at 70m@143000 — while cutting above-ceiling positions from 42 % to
+8 %. It is a one-constant change to `VOCAB_HI` and is strictly the better probe
+on this evidence. It must be an **added arm, not a replacement**: every existing
+number in 7d/7e/8 is on `wide`, and swapping the constant would silently
+invalidate the comparison. `text` is the honest in-distribution control and is
+the arm `ambient_budget.py`'s docstring has promised as `--text` all along;
+its drawback is little headroom (ICL gap 1.7–1.8), which is why the random
+probe exists in the first place.
 
 ## Reproducing
 
