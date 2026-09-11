@@ -114,9 +114,31 @@ discipline (§3.12-V3, §3.12-V5).
    a model-keyed catalogue instead of always the 410m one. This is a single
    pass, one checkpoint (or the 19-step formation grid for invariants 2/4) —
    not the full per-invariant workup 7d/7e gave 410m.
+   **Both rungs are now on one instrument** (`mean`, 8 sequences) for invariants
+   2, 4, 5, 6 and the energy leg — see "The matched cross-rung read" below.
 5. **Invariant 3 against the dense bracket** — the sister project's cascade
-   versus 70m's published-checkpoint ordering.
-6. **Register what survives, then measure 1b.** Not before.
+   versus 70m's published-checkpoint ordering. **CANNOT RUN AS WRITTEN, and
+   this is a scoping finding, not a to-do.** All six 70m heads cross from noise
+   to full effect inside the single published `(512, 1000]` gap, so the
+   published trajectory yields a **six-way tie, not an ordering**, and there is
+   no second ordering for the fork's cascade to be compared against. It needs a
+   second differently-seeded dense fork, or the published-data-order retrain
+   `status-8.md`'s fork section describes — **GPU work this box cannot do**.
+   Raise it as a scoping decision rather than letting it sit as an open item.
+6. **Register what survives, then measure 1b.** Not before. On the evidence so
+   far the registrable candidates are invariant 5 (fails, sharply and on a
+   matched instrument) and the *born-aligned* half of invariant 4 (holds at
+   both rungs); invariant 6's direction holds but its 70m matrix is half
+   censored, and invariant 2 holds but is nearly unfalsifiable as stated. **Any
+   1b prediction must name mean-ablation** — 1b is 8 heads/layer, 70m's
+   exposure, not 410m's.
+7. **Not measured, and it is the probe rather than the instrument.** pythia-70m's
+   baseline second-copy NLL rises to **14.25 at step 143000**, past uniform
+   (10.83): the language prior overrides literal copying on random-token input,
+   so late-checkpoint small-model readings may measure that conflict rather than
+   induction. `ambient_budget.py`'s docstring promises a `--text` natural-text
+   arm and the flag does not exist. Building it is the single cheapest way to
+   find out how much of the 70m column survives.
 
 ### Invariants 2, 4, 5, 6 — first pass on pythia-70m (2026-09-11, exploratory)
 
@@ -496,10 +518,48 @@ on the quantity 7d says to trust, 70m's set is much closer to its own null.
 against 10.9–31.8 for every other member, still the 3–4x-higher-dimensional
 outlier `status-7d.md` singled out.
 
-**Not yet matched:** `member_formation_curves` (invariants 2 and 4) has been run
-under `mean` at 70m only; 410m's formation grid is still `ov` at 16 sequences.
-Invariants 2 and 4 are the two that replicated, so this is the least urgent gap,
-but it is a gap.
+**Invariants 2 and 4 matched too (2026-09-11).** 410m formation curves re-run
+under `mean` at 8 sequences. **The `--pair` default had to change to read this
+at all**, and the reason is §3.12-V5's changing-membership hazard biting live:
+at step 1000 the formed heads are `L5H2` (+5.01) and **`L11H14`** (+3.53) while
+`L7H8` is still at −0.01, so the default `L5H2`×`L7H8` cosine there (−0.334) is
+taken between a formed head and one that does not exist yet. `status-7d.md`
+already used the *extant* pair; re-run on `L5H2`×`L11H14` it reads:
+
+| step | 512 | 1000 | 2000 | 16000 | 143000 |
+|---|---|---|---|---|---|
+| 410m `mean` | 0.233 | **0.888** | 0.887 | 0.340 | **−0.009** |
+| 410m canonical `ov` (`status-7d.md`) | — | 0.857 | — | 0.344 | 0.004 |
+| 70m `mean` (`L2H1`×`L3H6`) | 0.041 | **0.934** | 0.928 | 0.709 | **0.685** |
+
+Mode-invariance holds here too — 410m's `mean` trajectory reproduces its
+canonical `ov` one to within 0.03 at every shared step.
+
+**Invariant 2 replicates at both rungs, and 410m reproduces its own "five of
+six" shape.** At step 2000 five members carry effect (`L5H2` +8.08, `L11H14`
++2.31, `L12H5` +0.69, `L8H6` +0.30, `L8H9` +0.15) and `L7H8` does not (−0.03),
+forming only later — exactly `design-8.md`'s "five of six inside `(512, 2000]`".
+70m's window is the narrower of the two: everything above noise arrives by 1000.
+
+**Invariant 4 splits in half, and only one half replicates.** *Born aligned*
+replicates cleanly — 0.888 at 410m against 0.934 at 70m, both at birth, neither
+with a private-subspace phase. *Then fans out* does **not**: 410m decoheres to
+**−0.009**, complete orthogonality, while holding interaction +1.65 at 16000 and
++0.88 at 143000 (`status-7d.md`'s "redundancy survives the separation, routed
+through downstream computation" — reproduced under `mean`). 70m never separates:
+0.934 → 0.685, a 27 % loss where 410m loses everything. The first pass called
+this "same shape, smaller degree"; on the matched instrument it is better read
+as **the same birth and a different fate**.
+
+**One hedge on the 70m end of that row.** At step 143000 pythia-70m's baseline
+second-copy NLL is **14.25**, worse than uniform (`ln 50304 = 10.83`) — the model
+is confidently predicting something other than the repeat, its language prior
+having overridden literal copying on random-token input. A cosine between
+ablation deltas at a checkpoint where the probe is that degenerate is not
+obviously measuring what it measures at 410m, whose baseline stays at 0.65. The
+natural-text arm `ambient_budget.py`'s docstring promises and never implements
+is the instrument that would settle it, and this is the clearest case yet for
+building it.
 
 ## Reproducing
 
