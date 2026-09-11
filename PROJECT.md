@@ -3107,7 +3107,13 @@ cross-rung comparison. Measured, all heads, step 16000, 8 sequences:
 | 410m | zero-ish (`ov`) | 1.71 | 0.828 | `L5H2`, `L7H8`, `L12H5`, `L8H6`, `L11H14` |
 | 410m | `mean` | 1.47 | 0.859 | unchanged |
 
-**410m is robust to the mode and 70m is not** — at 70m the top-5 changes
+**410m is mode-invariant and 70m is not.** Confirmed on the invariant runners
+too, 2026-09-11: at 410m, `useful_rank`'s `r*` under `mean` reproduces the
+canonical `ov` values for five of six members, ambient top-64 energy reads 0.729
+against 0.732, and the `L5H2`x`L7H8` interaction ratio reads 2.22 against
+§3.12-S's 2.2x. The 410m body of work is not an artifact of its ablation mode.
+
+At the catalogue level the same asymmetry: at 70m the top-5 changes
 identity, layer-0 heads dropping out and the real induction cascade coming in.
 `L0H6` goes −3.34 → −0.22, `L0H0` +2.70 → **+0.27**. So 410m's existing results
 are safe on this axis, and any *small* model's are not. **`pythia-1b` is also 8

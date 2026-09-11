@@ -443,6 +443,64 @@ the same absolute budget at the same `d_head`.
 with 410m), strengthened one (4), left one intact (2), and left the failure of
 invariant 5 standing slightly harder. The mode is not a detail at this rung.
 
+### The matched cross-rung read (2026-09-11) — **both rungs, one instrument**
+
+The section above compared 70m under `mean` against 410m numbers taken under
+`ov` at 16 sequences. That is two confounds stacked on the comparison the phase
+exists to make, so 410m was re-run under `mean` at **8 sequences**, same rank
+grid, same six canonical members (`status-7e.md`'s set, which is also the
+catalogue's own top six). Everything below is now one instrument at both rungs.
+
+**410m is mode-invariant, which is the premise the rest rests on.** `r*` under
+`mean` reproduces the canonical `ov` values for five of six heads
+(`L7H8` 1, `L12H5` 1, `L8H9` 2, `L5H2` 12, `L11H14` 64; only `L8H6` moves,
+24 → 32). Ambient top-64 energy is **0.729** against the canonical 0.732. The
+`L5H2`×`L7H8` interaction ratio is **2.22**, reproducing §3.12-S's "joint 2.2x
+the parts-sum". So the 410m body of work is not an artifact of its ablation
+mode, and the 70m/410m differences below are about the rungs.
+
+| | pythia-70m | pythia-410m |
+|---|---|---|
+| **invariant 5** — `r*` of members | **24, 64, 64, 64** (4 above noise) | **1, 1, 2, 12, 32, 64** |
+| sum of the low-rank majority | 216, no majority to sum | **48, inside one head's 64** |
+| **invariant 6** — super-additive cells | 8/15 (5 of the 8 readable) | **12/15** |
+| ceiling-censored cells | **7/15** | **0/15** |
+| **invariant 6** — centered CKA, members vs null | 0.232 / 0.174 (gap 0.058) | **0.552 / 0.246** (gap 0.306) |
+| **energy leg** — joint energy in ambient top-64 | 0.556 | **0.729** |
+| ambient participation ratio | 7.3 of 512 | 20.3 of 1024 |
+
+**Invariant 5 does not replicate, now on a matched comparison.** 410m keeps five
+of six members at `r* <= 12` summing to **48**, still inside one head's 64-dim
+budget — `design-7e.md`'s consolidation premise survives mean-ablation at 410m.
+70m has no low-rank majority to consolidate: three of its four above-noise heads
+need the full 64. This was the strongest claim of the first pass and it is the
+one that survives every check applied to it.
+
+**Invariant 6's direction replicates; its strength does not.** Both rungs lean
+super-additive under the same instrument, so 70m's earlier apparent inversion is
+closed out as instrument. But 410m shows it on a clean matrix (0/15 censored,
+12/15 super) where 70m shows it on half a matrix (7/15 censored). The
+censorship asymmetry is now quantified rather than asserted: at 8 sequences and
+step 16000, 410m has ~10.2 nats of headroom and 70m ~5.1, and 70m's per-head
+effects are the larger of the two in absolute nats.
+
+**The geometric leg separates the rungs more sharply than the causal one.**
+Centered CKA member-vs-null gap is **0.306 at 410m against 0.058 at 70m** — a
+five-fold difference in how distinguishable the members are from near-median
+controls. Note the unweighted `subspace_mean_cos` gap runs the *other* way
+(70m 0.190, 410m 0.087), which is exactly the trap `status-7d.md` names when it
+says to quote `cka`/`cka_centered` and never the unweighted cosine alone. Read
+on the quantity 7d says to trust, 70m's set is much closer to its own null.
+
+`L11H14`'s signature also survives the mode change: participation ratio **60.4**
+against 10.9–31.8 for every other member, still the 3–4x-higher-dimensional
+outlier `status-7d.md` singled out.
+
+**Not yet matched:** `member_formation_curves` (invariants 2 and 4) has been run
+under `mean` at 70m only; 410m's formation grid is still `ov` at 16 sequences.
+Invariants 2 and 4 are the two that replicated, so this is the least urgent gap,
+but it is a gap.
+
 ## Reproducing
 
 ```
