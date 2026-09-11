@@ -56,7 +56,8 @@ import torch
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    N_REP, VOCAB_LO, VOCAB_HI, EVAL_SEED, ablated, arch_dims, head_means,
+    N_REP, PROBE_ARMS, VOCAB_LO, VOCAB_HI, EVAL_SEED, ablated, arch_dims,
+    head_means,
 )
 
 OUT = DATA / "analysis" / "member_formation_curves.json"
@@ -118,10 +119,12 @@ def members(n, catalog=CATALOG):
         f"rather than --top")
 
 
-def batch(rng, n):
+def batch(rng, n, lo=VOCAB_LO, hi=VOCAB_HI):
+    """`n` repeated random-token sequences. Defaults are the `wide` arm every
+    7d/7e/8 number was measured on; see `induction_rank_sweep.PROBE_ARMS`."""
     return torch.tensor(np.stack([
         np.concatenate([s, s]) for s in
-        (rng.integers(VOCAB_LO, VOCAB_HI, size=N_REP) for _ in range(n))
+        (rng.integers(lo, hi, size=N_REP) for _ in range(n))
     ]), dtype=torch.long)
 
 
@@ -180,6 +183,11 @@ def main():
                          "layers, and the default is refused rather than "
                          "silently wrong")
     ap.add_argument("--chunk", type=int, default=4)
+    ap.add_argument("--probe", default="wide", choices=tuple(PROBE_ARMS),
+                    help="token range the repeated sequences are drawn from. "
+                         "'wide' is every existing number; 'freq' is the less "
+                         "out-of-distribution probe -- see PROBE_ARMS and "
+                         "p8_scale_ladder/probe_distribution.py")
     ap.add_argument("--ablation", default="ov", choices=("ov", "zero", "mean"),
                     help="'ov' is the historical weight path; 'mean' replaces "
                          "each head's output with its clean-run mean, the "
@@ -196,6 +204,7 @@ def main():
                          "default filename instead")
     args = ap.parse_args()
     _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    _abl += "" if args.probe == "wide" else f"_{args.probe}"
     if args.out:
         out = Path(args.out)
     elif args.model == DEFAULT_MODEL and not _abl:
@@ -229,7 +238,8 @@ def main():
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
     res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
-           "ablation": args.ablation,
+           "ablation": args.ablation, "probe": args.probe,
+           "probe_vocab_range": list(PROBE_ARMS[args.probe]),
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "membership_source": source,
            "eval": {"n_seqs": args.seqs, "n_rep": N_REP, "seed": EVAL_SEED,
@@ -242,7 +252,8 @@ def main():
         res["per_step"] = prev["per_step"]
         res["steps"] = sorted(set(prev["steps"]) | set(steps))
 
-    print(f"model:   {args.model}")
+    print(f"model:   {args.model}   probe: {args.probe} "
+          f"{PROBE_ARMS[args.probe]}   ablation: {args.ablation}")
     print(f"members: {', '.join(names[k] for k in heads)}   ({source})")
     print(f"grid:    {len(steps)} steps, {args.seqs} sequences, "
           f"{len(heads) + 2} forward arms per step\n")
@@ -261,7 +272,8 @@ def main():
             raise SystemExit(
                 f"{', '.join(bad)}: out of range for {args.model} "
                 f"({n_layers} layers x {n_heads} heads/layer)")
-        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs,
+                    *PROBE_ARMS[args.probe])
         # Clean-run means, so the joint arm does not depend on layer order.
         means = (head_means(model, ids, heads, args.chunk)
                  if args.ablation == "mean" else None)

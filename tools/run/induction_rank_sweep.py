@@ -230,6 +230,20 @@ def ablate_heads(model, heads, mode="mean", means=None):
 N_REP = 96
 N_SEQS = 8
 VOCAB_LO, VOCAB_HI = 1000, 40000
+
+#: Probe token ranges. `wide` is what every 7d/7e/8 number to date was measured
+#: on and stays the default, so nothing already recorded changes meaning.
+#: `freq` samples lower BPE ids, which are far more frequent tokens, and is
+#: strictly the better probe on the evidence in
+#: `p8_scale_ladder/probe_distribution.py`: at pythia-70m step 143000 it keeps
+#: the induction dynamic range (ICL median gap **10.41** against `wide`'s 3.76)
+#: while cutting positions above the `ln 50304` ceiling from **42 % to 8 %**.
+#: `wide`'s true-token median rank is ~23000 of 50304 on the FIRST copy at every
+#: rung -- the probe is far out of distribution for any trained LM, and at a
+#: small model's late checkpoints the language prior beats the copy mechanism
+#: on it, which reads as an induction collapse that repeated natural text shows
+#: is not there (70m@143000 copies at 99.2 % top-1 on prose).
+PROBE_ARMS = {"wide": (VOCAB_LO, VOCAB_HI), "freq": (1000, 5000)}
 EVAL_SEED = 20260907
 
 

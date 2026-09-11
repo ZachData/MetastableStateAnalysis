@@ -597,13 +597,33 @@ the same rows. 43 % of `wide` positions sit above the ceiling and drag the mean
 past it while the median position is *better* than uniform. The "worse than
 chance" headline is a mean artifact on a heavy-tailed distribution.
 
-**What this costs the phase.** Everything read on the `wide` probe at a small
-model's late checkpoints is measuring prior-versus-probe conflict as well as
-induction — including 70m's end-of-training column in the invariant-4 table
-above, whose 0.685 now has to be read as "the pair stays aligned in a regime
-where the readout is degenerate", not as a clean contrast with 410m's −0.009.
-It does **not** touch step 16000, where `wide` still has top-1 0.366 and median
-rank 8, nor anything at 410m.
+**What this costs the phase — tested, and the answer is less than feared.** The
+obvious casualty was 70m's end-of-training column in the invariant-4 table
+above, whose 0.685 would have to be read as "the pair stays aligned in a regime
+where the readout is degenerate". So it was re-measured on `freq`, where that
+checkpoint is **not** degenerate — baseline NLL **8.13**, below the ceiling,
+against `wide`'s 14.25. Prediction stated before running: if the "never
+separates" result were a probe artifact, the late cosine should fall toward
+410m's decoherence.
+
+| step | 1000 | 2000 | 16000 | 143000 |
+|---|---|---|---|---|
+| 70m `mean`, `wide` | 0.934 | 0.928 | 0.709 | **0.685** |
+| 70m `mean`, `freq` | 0.936 | 0.951 | 0.559 | **0.750** |
+| 410m `mean`, `wide` | 0.888 | 0.887 | 0.340 | **−0.009** |
+
+**The prediction is falsified and the finding survives.** On a probe where the
+readout is sound, 70m's pair still sits at 0.750 at the end of training — if
+anything *higher* than on `wide`. Invariant 4's second half genuinely does not
+replicate: 410m decoheres to orthogonality and 70m does not, and that is a
+property of the rungs, not of the probe. Step 16000 moves more (0.709 → 0.559)
+than the endpoint does, so there is real probe sensitivity in the middle of the
+trajectory — but none of it in the direction that would explain the result away.
+
+The scope limit still stands for anything else read on `wide` at a small model's
+late checkpoints; it simply does not happen to bite this particular claim. It
+does **not** touch step 16000 on `wide` either (top-1 0.366, median rank 8), nor
+anything at 410m.
 
 **What to do about it, in order of cost.** `freq` (ids from `[1000, 5000)`) keeps
 almost all of the induction dynamic range — ICL median gap **10.41** against
