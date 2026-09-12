@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-11 (§3.15 — the 70m rung, and the ablation-mode A/B) |
+| Last updated | 2026-09-11 (§3.15 — the 70m rung, the ablation-mode A/B, and the probe hedge tested against invariant 4: the finding survives) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -3146,6 +3146,30 @@ dynamic range (ICL median gap 10.41 against `wide`'s 3.76) while cutting
 above-ceiling positions 42 % → 8 %, and are strictly the better probe — as an
 ADDED arm, since every existing 7d/7e/8 number is on `wide`. And §3.13 bites
 hardest here yet: mean 8.097 against median **1.428** on the same `freq` rows.
+
+**The hedge was tested against the finding it threatened, and the finding
+survives (2026-09-11).** `--probe {wide,freq}` now selects the token range
+(`PROBE_ARMS` in `induction_rank_sweep.py`; `wide` stays the default, so no
+existing number changes meaning). 70m's end-of-training column was re-measured
+on `freq`, where step 143000 is **not** degenerate — baseline NLL 8.13, below
+the ceiling, against `wide`'s 14.25. Prediction stated before running: if
+"70m never separates" were a probe artifact, the late cosine should fall
+toward 410m's decoherence.
+
+| step | 1000 | 2000 | 16000 | 143000 |
+|---|---|---|---|---|
+| 70m `mean`, `wide` | 0.934 | 0.928 | 0.709 | **0.685** |
+| 70m `mean`, `freq` | 0.936 | 0.951 | 0.559 | **0.750** |
+| 410m `mean`, `wide` | 0.888 | 0.887 | 0.340 | **−0.009** |
+
+It does not: on `freq` the endpoint is if anything *higher* (0.750 vs.
+`wide`'s 0.685). **Invariant 4's second half genuinely fails to replicate**:
+410m decoheres to orthogonality and 70m does not, and that is about the
+rungs, not the instrument. Step 16000 moves more (0.709 → 0.559) than the
+endpoint does, so there is real probe sensitivity mid-trajectory — none of it
+in the direction that would explain the result away. The scope limit above
+still stands for anything else read on `wide` at a small model's late
+checkpoints; it just does not bite this claim.
 
 **Two instrument limits found in the same pass.** (1) `useful_rank`'s `r = 64`
 float32 refactorisation residue is harmless while `|d0|` is large and fatal once
