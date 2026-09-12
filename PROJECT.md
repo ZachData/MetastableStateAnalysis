@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§6 — CodeRabbit installed, CI/CD + TDD tightening logged as a to-do) |
+| Last updated | 2026-09-12 (§6 — CodeRabbit installed, CI/CD + TDD logged as a to-do, working agreements now in `CLAUDE.md`) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -3503,7 +3503,12 @@ part already marked superseded.
   code that produces it. Scope not yet decided: whether "tighten TDD" means a
   repo-wide policy or just raising the bar for new `tools/run/` runners going
   forward. Deliberately deferred to its own session rather than mixed into
-  research work.
+  research work. **The working agreements that came out of the same decision
+  are in `CLAUDE.md`** (new 2026-09-12): update this file as work closes rather
+  than at session end, open PRs at boundaries a reviewer can get through, and
+  run a literature scan at two triggers only — a phase/subphase opening before
+  its `design-N.md` freezes, and before an entry lands in
+  `claims/registry.json`.
 
 ---
 
