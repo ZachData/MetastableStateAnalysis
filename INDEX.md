@@ -11,8 +11,11 @@ work — that is `PROJECT.md`, which is the file to read first.**
   2026-09-10 — the 7d/7e measurements repeated across model sizes so `n = 1`
   observations can become population claims. **Rung policy: explore on 70m and
   410m, RESERVE 1b and 1.4b** (no induction measurement there until a prediction
-  naming them is registered). Read `p8_scale_ladder/design-8.md`, then
-  `status-8.md`. **First rung has run** (2026-09-11): the 48-head catalogue and
+  naming them is registered). Read `p8_scale_ladder/literature-8.md` first
+  (2026-09-12 — the verified scan; the phase's original headline question is
+  answered by `2407.10827` and the phase reframes onto the **geometry of the
+  substitution**, with invariant 4 the load-bearing card), then `design-8.md`,
+  then `status-8.md`. **First rung has run** (2026-09-11): the 48-head catalogue and
   invariants 2/4/5/6 on pythia-70m, each under two ablation modes.
   **Invariant 5 does not replicate; 2 and 4 do; 6 needs its ceiling-immune
   instrument.** `compare_rungs.py` holds the threshold-free cross-rung
@@ -62,7 +65,7 @@ work — that is `PROJECT.md`, which is the file to read first.**
 | 7 | `p7_motifs/` | New — mechinterp phenomena as particle motifs. See "Phase 7" below |
 | 7d | `p7d_redundancy/` | **Active.** The redundancy set — which heads hold the induction regime and when each formed. Q1/Q2/Q3 answered; results in `PROJECT.md` §3.12-S/T/U. Every runner now takes `--model` and `--ablation` |
 | 7e | `p7e_consolidation/` | **Active.** Whether the set collapses into one head; `L11H14`. Gate measurement answered — `status-7e.md` |
-| 8 | `p8_scale_ladder/` | **Active.** The same measurements across the Pythia ladder. 70m rung run 2026-09-11; `compare_rungs.py` is the cross-rung reader. See `status-8.md` and `PROJECT.md` §3.15 |
+| 8 | `p8_scale_ladder/` | **Active.** The same measurements across the Pythia ladder. 70m rung run 2026-09-11; `compare_rungs.py` is the cross-rung reader. **Read `literature-8.md` before the next measurement** — the verified scan reframes the phase. See `status-8.md`, `PROJECT.md` §3.15–§3.16 |
 
 Shared code lives in `core/`; one-off scripts in `tools/`; tests in `tests/`.
 

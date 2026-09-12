@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§7.4 — the math is symbolically checked and clean; §6 — CodeRabbit in, CI/CD + TDD a to-do, agreements in `CLAUDE.md`) |
+| Last updated | 2026-09-12 (§3.16 — the verified literature scan reframes phase 8; §7.4 — the math is checked and clean; §6 — CodeRabbit in, CI/CD + TDD a to-do) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -3187,6 +3187,78 @@ be read from.
 
 ---
 
+## 3.16 The verified literature scan, and the phase-8 reframe (2026-09-12)
+
+Full record in **`p8_scale_ladder/literature-8.md`**; this is the part that is
+not phase-8-local. Run under `CLAUDE.md`'s trigger 1 — a phase open, its
+invariants not yet registered, so the last moment the literature could still
+change what gets built. **Every id was fetched**, which is what
+`docs/literature_scan_2026-09-10.md` could not claim and is now marked
+superseded for.
+
+**The phase's headline question is already answered.** `2407.10827`, *LLM
+Circuit Analyses Are Consistent Across Training and Scale* (2024), covers
+**70M–2.8B over 300B tokens** — our ladder's span — and reports that components
+"may be implemented by different attention heads over time, [but] the
+overarching algorithm that they implement remains". So "do induction signatures
+recur across scale" is settled. **What it does not do is account for the
+substitution structurally** — no rank, no subspace geometry, no alignment
+trajectory — and **invariant 4 is exactly that account**. The phase reframes
+from *whether* signatures recur to **what the substitution looks like
+geometrically**, which inherits that paper as support rather than competition.
+
+**Scored against the literature: invariants 1, 2 and the super-additive half of
+6 are replication; 3 is half-anticipated; 4, 5 and 6's magnitude/direction split
+are the real content.** This inverts `design-8.md`'s sequencing, which opened
+with invariant 1 because it is cheapest.
+
+**Novelty and replication are orthogonal, and invariant 5 is where they
+disagree.** The literature scan scores novelty; `status-8.md` scores
+replication. Invariant 4 is **unclaimed and replicates** — the load-bearing
+card, and where the next rung's effort belongs. Invariant 5 is **unclaimed and
+fails to replicate**: 70m has no low-rank majority (three of four above-noise
+heads need the full 64, against 410m's five of six at `r* ≤ 12` summing to 48),
+and that non-replication survived every check. So it is a property of
+**pythia-410m, not of induction** — a legitimate negative, and exactly the
+discrimination the ladder exists to make, but it must never be written as a
+cross-scale property. **Conflating the two axes is the trap this section
+exists to prevent**, and a first draft of it fell in.
+
+**Two corrections that matter beyond phase 8.**
+
+1. **A search summary is not a source, and it cut the wrong way.** The
+   2026-09-10 scan concluded invariant 5's anti-ordering was covered by an SVD
+   compression chain. Fetched, it is not: AdaSVD is error-compensation, QSVD is
+   VLM QKV compression, and **CARE is GQA→MLA conversion with nothing to do
+   with truncation ordering.** Only FWSVD's *suboptimality* stands against our
+   measured *anti-optimality*. **An unverified scan talked us out of the
+   finding with the least cover** — the failure mode is not just citing a
+   hallucination, it is dropping real work on a bad reading.
+2. **Nothing was confabulated.** All nine ids resolved. Recorded as plainly as
+   a hit would have been, because the opposite expectation is what motivated
+   the check.
+
+**The methodological cards, re-ranked.** The strongest is **measured rather
+than isotropic nulls**, and it is a live correction to a published method:
+`2601.10266`'s projection kernel scores affinity against a **random orthogonal
+subspace** baseline, with no mention of anisotropy in its full text — exactly
+the baseline §3.12-V3's ambient participation ratio of **22 of 1024**
+invalidates. *Check that the anisotropy transfers to their `d = 768` setting
+before writing it as a critique.* Conversely **the ablation-mode phenomenon is
+no longer ours**: `2604.14433` is a whole paper on zero-ablation's
+distributional bias (in ViTs), so §3.15's residue narrows to the `1/n_heads`
+scaling and its non-cancellation across rungs.
+
+**The single most valuable thing the scan produced is an experiment.**
+`2502.14010` (Yin & Steinhardt, ICML 2025) reports induction heads *becoming*
+function-vector heads, induction score declining as FV score rises. §3.12-U
+measured `L5H2`'s induction score falling twenty-fold **while its causal effect
+went +0.01 → +4.97** — plausibly that same transition seen from the causal
+side, and currently filed as a puzzle. **Running an FV score on our members is
+cheap and would resolve it.**
+
+---
+
 ## 3.13 When the mean is the wrong instrument (2026-09-09)
 
 `§3.12-G6` found a signal that Spearman could not see: fifteen of sixteen heads
@@ -3652,4 +3724,7 @@ into a document, not after.
 | The dissipation-identity run — what it is, Tiers A/B, v2 list | `docs/dissipation_checkpoint_axis_scoping.md`, §3.8 |
 | Are the on-disk phase12/phase7 results stale? | `docs/results_provenance_audit_2026-09-05.md` |
 | The pythia-70m dense-onset run, and how it could plug in | §3.9 |
+| What is already published, and what it hands us | `p8_scale_ladder/literature-8.md`, §3.16 |
+| How the working agreements read (handoff cadence, PR size, scan triggers) | `CLAUDE.md` |
+| Whether a closed-form derivation has been checked | `tools/math_checks/`, §7.4 |
 | What changed and when | `git log` |

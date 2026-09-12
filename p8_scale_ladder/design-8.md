@@ -143,6 +143,16 @@ to the registry is not measuring it** — the reserve holds.
 
 ## Sequencing
 
+> **Revised 2026-09-12 — read `literature-8.md` first.** The verified scan
+> changes this order. Invariant 1 is the cheapest test and also the most
+> *replicative* (small heavy-tailed head sets are published); **invariants 5
+> and 4 are where the phase's remaining value is**, and the core question as
+> worded above ("do the signatures reappear at other scales") is answered by
+> `2407.10827` across 70M–2.8B. The phase reframes onto the **geometry of the
+> substitution** — that paper establishes heads turn over while the algorithm
+> persists, and gives no structural account of it. Steps 2–4 below still stand
+> as written; their *priority* order is what moves.
+
 1. **De-hardcode the architecture constants**, add 70m and 1b to the registry.
    Cheap, and it gates everything else.
 2. **Reproduce 7d's Q1 on pythia-70m** — the full 48-head causal ablation sweep.
