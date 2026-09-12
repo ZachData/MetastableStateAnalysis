@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§6 — CodeRabbit installed, CI/CD + TDD logged as a to-do, working agreements now in `CLAUDE.md`) |
+| Last updated | 2026-09-12 (§7.4 — the math is symbolically checked and clean; §6 — CodeRabbit in, CI/CD + TDD a to-do, agreements in `CLAUDE.md`) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -3602,6 +3602,40 @@ python3 -m tools.p_i1_attainable_floor --write     # ~0.2 s
 `pythonpath = .` in `pytest.ini` applies to pytest only. A plain
 `python script.py` needs `PYTHONPATH` set, which `tools/run/curve.py` does for
 itself.
+
+### 7.4 The math is symbolically checked, and `MATH_SPECTRAL_OT.md` is clean
+
+`tools/math_checks/` holds seven `sympy` scripts, **47 checks, all passing as of
+2026-09-12**. Each exits non-zero on any failure, so they are drop-in for a CI
+tier whenever §6's CI/TDD item gets picked up.
+
+```bash
+for f in tools/math_checks/*.py; do python3 "$f"; done   # a few seconds total
+```
+
+**Nothing wrong was found in the source.** Every closed-form derivation in
+`MATH_SPECTRAL_OT.md` §2.1, §2.4–2.4.5, §2.5.1–2.5.4, §3 and §5.2–5.3(b) holds
+exactly, including the two places a sign or transpose error was most likely: the
+§2.4.4 sum/difference identities under the `M` vs `−M^T` flip, and §5.2's
+"the factor of 2 and the `beta` both cancel" gradient. §5.2 is checked by
+**direct symbolic differentiation of `E_beta`**, not by re-deriving the same
+algebra, and the chain was verified end to end — `core/metrics.py:117`
+implements the energy the doc attributes to it, so this is not a
+producer/consumer mismatch of the kind `MATH_INDEX.md`'s pattern 5 names.
+
+**Read the scripts' docstrings for what each does NOT prove.** A general-`n`
+matrix identity instantiated at `n = 4` is evidence, not a proof; the §2.5.2
+polar-retraction and §2.4.5 Bendixson checks are numeric instances of classical
+results rather than derivations of this project's own.
+
+**Why they exist, stated as a hit rate.** Of the six corrections in
+`MATH_INDEX.md`'s "Corrections owed to the source", **four were algebraic or
+arithmetic claims this class of check catches mechanically** (the Hellinger
+range, the Henrici real-vs-complex-Schur gap — re-derived here as exactly
+`(b−c)²` per complex-conjugate block — the V-score weights, and
+`UPDATE_PLAN.md` §5.6's trace contraction). The other two were structural, and
+need a human. So the cheap win is to check a derivation **before** it is written
+into a document, not after.
 
 ---
 
