@@ -24,6 +24,17 @@ do not. Every cell therefore carries its own `joint_nll` and `headroom`, and any
 cell under `--headroom-warn` is flagged in the output rather than left for a
 reader to notice.
 
+THE PROBE IS THE OTHER HANDLE ON THAT CEILING, and at a small rung it is the
+binding one. `--probe freq` draws the repeated tokens from `[1000, 5000)`
+instead of `wide`'s `[1000, 40000)`, which lowers the baseline NLL and so buys
+headroom: at pythia-70m it cuts above-ceiling positions from 42 % to 8 %
+(`p8_scale_ladder/probe_distribution.py`). That matters here because 70m's
+`mean`-ablation matrix came back with **7 of 15 cells censored**, all five of
+them involving `L2H1` -- including `L2H1` x `L3H6`, the direct analogue of
+410m's headline pair (`status-8.md`, the matched cross-rung read). `wide` stays
+the default: every existing 7d/7e/8 number is on it, and a `freq` run is an
+ADDED arm, never a replacement.
+
 THE GEOMETRIC MATRIX IS FREE. The singles are run with hidden states anyway, so
 the residual-delta cosine between every pair costs no additional forward pass.
 It is reported beside the causal cell because §3.12-S found the two dissociate --
@@ -59,7 +70,9 @@ if not sys.prefix.startswith(_want):
 import numpy as np
 
 from core.lm_loading import load_causal_lm
-from tools.run.induction_rank_sweep import EVAL_SEED, ablated, arch_dims, head_means
+from tools.run.induction_rank_sweep import (
+    EVAL_SEED, PROBE_ARMS, ablated, arch_dims, head_means,
+)
 
 from p7d_redundancy.member_formation_curves import batch, catalog_path_for, members, probe
 
@@ -89,6 +102,13 @@ def main():
                     help="16 matches §3.12-S, so the L5H2 x L7H8 cell is a "
                          "reproduction check rather than a new number")
     ap.add_argument("--chunk", type=int, default=4)
+    ap.add_argument("--probe", default="wide", choices=tuple(PROBE_ARMS),
+                    help="token range the repeated sequences are drawn from. "
+                         "'wide' is every existing number; 'freq' lowers the "
+                         "baseline NLL and so buys headroom against the "
+                         "uniform ceiling -- the handle on the censored cells "
+                         "at a small rung. See PROBE_ARMS and "
+                         "p8_scale_ladder/probe_distribution.py")
     ap.add_argument("--ablation", default="ov", choices=("ov", "zero", "mean"),
                     help="'mean' replaces each head's output with its clean-run "
                          "mean -- the control for zero-ablation's "
@@ -101,6 +121,7 @@ def main():
                          "instead of the 410m one")
     args = ap.parse_args()
     _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    _abl += "" if args.probe == "wide" else f"_{args.probe}"
     if args.out:
         out = Path(args.out)
     elif args.model == DEFAULT_MODEL and not _abl:
@@ -124,14 +145,17 @@ def main():
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
     res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
-           "ablation": args.ablation,
+           "ablation": args.ablation, "probe": args.probe,
+           "probe_vocab_range": list(PROBE_ARMS[args.probe]),
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "membership_source": source, "uniform_ceiling_nll": CEILING,
            "eval": {"n_seqs": args.seqs, "seed": EVAL_SEED,
+                    "vocab_range": list(PROBE_ARMS[args.probe]),
                     "headroom_warn": args.headroom_warn},
            "heads": [names[k] for k in heads], "steps": steps, "per_step": {}}
 
-    print(f"model:   {args.model}")
+    print(f"model:   {args.model}   probe: {args.probe} "
+          f"{PROBE_ARMS[args.probe]}   ablation: {args.ablation}")
     print(f"members: {', '.join(names[k] for k in heads)}   ({source})")
     print(f"grid:    {len(steps)} steps, {len(cells)} pairs, {args.seqs} "
           f"sequences, {1 + len(heads) + len(cells)} arms per step")
@@ -142,7 +166,8 @@ def main():
         model, _ = load_causal_lm(f"{args.model}-step{s}")
         model.eval()
         d_model, d_head, n_heads = arch_dims(model)
-        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs,
+                    *PROBE_ARMS[args.probe])
         means = (head_means(model, ids, heads, args.chunk)
                  if args.ablation == "mean" else None)
 

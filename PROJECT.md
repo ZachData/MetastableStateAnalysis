@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§3.16 — the verified literature scan reframes phase 8; §7.4 — the math is checked and clean; §6 — CodeRabbit in, CI/CD + TDD a to-do) |
+| Last updated | 2026-09-12 (§3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class; §3.16 — the verified literature scan reframes phase 8; §7.4 — the math is checked and clean; §6 — CodeRabbit in, CI/CD + TDD a to-do) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -54,7 +54,10 @@ instrument: **`L11H14` is anti-ordered by SVD** — keeping its smallest singula
 directions beats keeping its largest at every rank, and rank-1 truncation is
 worse than deleting the head. So **any SVD-ordered rank truncation misleads on
 such heads, `induction_rank_sweep`'s `r*` construction included.** Do not quote
-an `svd`-basis `r*` for a head not checked with `useful_rank.py --bottom`. The
+an `svd`-basis `r*` for a head not checked with `useful_rank.py --bottom`.
+**§3.17 widens this**: there is a third class, *unordered*, where neither end of
+the basis beats a random subspace — so "below its matched-norm control" does
+**not** by itself mean anti-ordered, and only `--bottom` tells them apart. The
 `schur` basis may be immune (eigenvalue-ordered, carries a sign) and the
 comparison is **weights-only and free** — it is the cheapest next action.
 
@@ -194,7 +197,10 @@ version control — note its `.no_exist/` marker files are *not* matched by
 wrote — `redundancy_catalog_pythia-{70m,410m}_*`, `useful_rank_pythia-70m_mean`,
 `pairwise_interaction_matrix_pythia-70m_mean`,
 `member_subspace_geometry_pythia-70m_mean`, `ambient_budget_pythia-70m_mean`,
-`member_formation_curves_pythia-70m_mean`, `p8_rung_comparison.json` — lives
+`member_formation_curves_pythia-70m_mean`, `p8_rung_comparison.json`, and the
+2026-09-12 `freq`-probe arms `pairwise_interaction_matrix_pythia-70m_mean_freq`,
+`useful_rank_pythia-70m_mean_freq`,
+`useful_rank_pythia-70m_mean_freq_bottom` — lives
 only on this machine. `status-8.md` carries the numbers; the JSON carries the
 rows. Re-running is cheap at 70m and ~25 min for a 410m full sweep.
 
@@ -3256,6 +3262,78 @@ measured `L5H2`'s induction score falling twenty-fold **while its causal effect
 went +0.01 → +4.97** — plausibly that same transition seen from the causal
 side, and currently filed as a puzzle. **Running an FV score on our members is
 cheap and would resolve it.**
+
+---
+
+## 3.17 The probe is the ceiling handle, and SVD ordering has a third class (2026-09-12)
+
+Phase-8 detail is in `p8_scale_ladder/status-8.md` ("Invariants 5 and 6 on the
+`freq` probe"). Two results from it are not phase-8-local.
+
+**1. `--probe freq` is the instrument for ceiling censorship, not just for
+late-checkpoint degeneracy.** §3.15 introduced `freq` as a scope fix for a
+*small model's late checkpoints*, where the language prior beats the copy
+mechanism. It is more general than that: the probe sets the **baseline NLL**,
+and the baseline sets the headroom every joint arm has before it hits
+`ln 50304`. At pythia-70m step 16000 the switch takes the baseline **5.73 →
+2.67** and the headroom **5.10 → 8.15 nats**, which uncensors two cells of the
+pairwise matrix outright — and the three uncensored cells turn out to be **the
+three largest interactions in the matrix** (+0.79, +0.74, +0.67). §3.14.4-D
+said to run the matrix at a step with headroom; the probe is the *other* knob,
+and it is the one that works when the head itself is large. So: **any
+`ceiling_contaminated` cell should be retried on `freq` before it is written
+off as unmeasurable.** Ported to `pairwise_interaction_matrix.py` and
+`useful_rank.py` on 2026-09-12; `wide` stays the default everywhere, so nothing
+recorded changes meaning.
+
+Its limit, which is real: a head whose own effect is comparable to the whole
+headroom cannot be rescued by any probe. 70m's `L2H1` (+6.88 on a 2.67
+baseline) censors all five of its own cells on `freq` too, so the analogue of
+§3.12-S's prev-token × matcher pair stays unmeasurable at raw `dNLL` at that
+rung and needs §3.12-M's graded readout.
+
+**2. SVD ordering versus causal usefulness has THREE classes, not two.** §3.12-V4
+and 7e set up a dichotomy — gain-ordered (`L7H8`: top-1 recovers 0.971) versus
+anti-ordered (`L11H14`: bottom-`r` > matched-random > top-`r` at every rank,
+top-1 **−0.096**). pythia-70m's `L3H1` is neither. It sits below its
+matched-norm control at 11 of 11 ranks, which is how `L11H14` announced itself —
+but run with `--bottom`, its top and bottom curves **coincide** (r=8: +0.239 vs
++0.238) and a random subspace beats both:
+
+| class | top-`r` | random | bottom-`r` | exemplar |
+|---|---|---|---|---|
+| gain-ordered | best | mid | worst | `L7H8`, `L5H2`, 70m `L2H1`/`L3H6` |
+| **unordered** | ≈ bottom | **best** | ≈ top | **70m `L3H1`** |
+| anti-ordered | worst | mid | **best** | `L11H14` — still the only one |
+
+**This widens §3.15's methodological warning rather than narrowing it.** That
+warning said an SVD-ordered `r*` misleads on `L11H14`-like heads. The third
+class means *"below its control"* is **not** sufficient to diagnose
+anti-ordering — it is consistent with a basis that carries no ordering at all,
+and only `--bottom` separates the two. `induction_rank_sweep`'s `r*`
+construction is wrong on both classes and for different reasons. **Do not quote
+an `svd`-basis `r*` for a head not checked with `--bottom`**, and do not infer
+anti-ordering from the control comparison alone.
+
+**`L11H14` remains a pythia-410m singleton.** 70m has no anti-ordered member,
+so invariant 5 fails at that rung on both halves (no low-rank majority, no
+anti-ordered exception) — which is §3.16's "a property of pythia-410m, not of
+induction" in its sharpest form.
+
+*Caveat carried, not buried:* `--controls 2`, and `L3H1`'s top-versus-random
+margin is only 0.02–0.08. The robust half is **bottom beats random 0/11**,
+where the gain-ordered heads separate by 0.2–0.9.
+
+**And one stale-doc cost, recorded because `CLAUDE.md` opens on it.**
+`status-8.md`'s "Reproducing" section claimed *"none of them has been re-read
+under `mean`"* for a full day after the re-read landed in the section above it,
+and sent a session looking for work that was already done. The nominated
+candidate in that same document — `L0H0` as a second anti-ordered head — was
+also wrong, and wrong in a diagnosable way: under `mean` its `d0` is −0.09, so
+its recovery fractions (+63.7 against a control of +31.9) are the
+small-denominator garbage §3.15's second instrument limit predicts. **A
+`useful_rank` row whose `|d0|` is near the noise floor is not evidence in
+either direction.**
 
 ---
 
