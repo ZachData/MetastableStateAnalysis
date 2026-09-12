@@ -232,10 +232,26 @@ section is the record, and `docs/deleted-branches-2026-09-10.md` says it again
 next to the 21 branches that *were* deleted (with their SHAs, restorable by
 `git push origin <sha>:refs/heads/<name>`).
 
-**No `gh` CLI** — open PRs from the web compare URL
-`https://github.com/ZachData/MetastableStateAnalysis/compare/main...<head>?expand=1`.
+**The `gh` CLI IS installed and authenticated** (verified 2026-09-12: `gh pr
+list`, `gh pr view`, `gh pr create --base <branch>` all work, and PRs #37/#38
+were opened with it). *This line used to say "No `gh` CLI — open PRs from the
+web compare URL"; that was true when written and is not now.* The compare URL
+`https://github.com/ZachData/MetastableStateAnalysis/compare/main...<head>?expand=1`
+still works as a fallback.
 **The repo's `github_key` is DEAD** — push with the default `~/.ssh/id_ed25519`,
 plain `git push`, no `GIT_SSH_COMMAND`.
+
+**CodeRabbit does NOT review this repo automatically** — its own comment says
+*"This repository does not receive automatic reviews because it has fewer than
+10 stars."* Every PR needs the **"🔍 Trigger review" checkbox** ticked on
+CodeRabbit's first comment, by hand. A PR sitting with no review is the
+expected state, not a failure.
+
+**PRs are stacked, not piled.** `--base` a PR on the branch below it rather
+than on `main` when the work builds on unmerged work: #36 → `main`, #37 → #36's
+branch, #38 → #37's branch. Each diff is then the one commit a reviewer
+actually has to read, which is what `CLAUDE.md`'s "open PRs at natural
+boundaries" is asking for.
 
 *Merge note, in case `PROJECT.md` conflicts again.* Merging `main` into this
 branch conflicted in five hunks, all of them this file's handoff header. Every
