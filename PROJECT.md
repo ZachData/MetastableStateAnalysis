@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-11 (§3.15 — the 70m rung, the ablation-mode A/B, and the probe hedge tested against invariant 4: the finding survives) |
+| Last updated | 2026-09-12 (§6 — CodeRabbit installed, CI/CD + TDD tightening logged as a to-do) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -3494,6 +3494,16 @@ part already marked superseded.
   `data/analysis/*.py`** (a `!` rule under the `data/` ignore), or move them to
   a tracked `results/analysis/`. Deferred deliberately — it is a chore, and the
   decision on which of the two shapes to take is not yet made.
+* **Process tooling, decided 2026-09-12, not yet built.** CodeRabbit is
+  **installed** on the repo (reviews PRs from here on) — that part is done.
+  Still open: CI/CD is one gate (`./scripts/check.sh gate`, tier 0 + 1) with no
+  tiered required-checks policy on GitHub itself, and there is no TDD
+  discipline for new phase work — tests get written to validate a result after
+  the fact (or not at all for one-off exploratory scripts), not before the
+  code that produces it. Scope not yet decided: whether "tighten TDD" means a
+  repo-wide policy or just raising the bar for new `tools/run/` runners going
+  forward. Deliberately deferred to its own session rather than mixed into
+  research work.
 
 ---
 
