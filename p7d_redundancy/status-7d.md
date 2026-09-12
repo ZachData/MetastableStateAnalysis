@@ -151,6 +151,86 @@ set with `n` printed beside it. The runner now reports `union_formed` and
 `formed_members` for this reason; §3.13's report-both rule is not sufficient
 protection on its own.
 
+### The FV-head experiment (2026-09-12) — **the set divides labour; it does not transition**
+
+`fv_score.py`, six members + six controls, four Todd-et-al. word-pair tasks
+(10-shot × 16 prompts each), six checkpoints, induction and FV scored in the
+same process off the same weights. Run because `PROJECT.md` §3.16 read
+`2502.14010` (Yin & Steinhardt: induction heads *become* function-vector heads)
+as a candidate resolution of §3.12-U's `L5H2` puzzle.
+
+**The hypothesis is refuted for the head it was proposed about.** `L5H2`'s FV
+score never leaves zero and ends **negative**:
+
+| step | 1000 | 2000 | 4000 | 8000 | 16000 | 143000 |
+|---|---|---|---|---|---|---|
+| `L5H2` FV | −0.0000 | −0.0006 | −0.0004 | +0.0008 | −0.0019 | **−0.0018** |
+| `L7H8` FV | −0.0000 | −0.0000 | −0.0000 | −0.0001 | +0.0001 | **+0.0001** |
+| `L8H9` FV | +0.0000 | +0.0004 | +0.0060 | +0.0112 | +0.0093 | **+0.0152** |
+| `L11H14` FV | +0.0010 | +0.0013 | +0.0054 | **+0.0085** | +0.0020 | +0.0012 |
+| `L8H6` FV | +0.0001 | +0.0006 | +0.0037 | +0.0061 | +0.0030 | +0.0041 |
+| `L12H5` FV | −0.0000 | −0.0000 | +0.0015 | +0.0054 | +0.0058 | +0.0018 |
+| control mean | +0.0000 | −0.0000 | −0.0003 | −0.0001 | −0.0005 | −0.0017 |
+| max abs control | 0.0000 | 0.0001 | 0.0020 | **0.0009** | 0.0035 | 0.0103 |
+
+At 143000 `L5H2` sits *below* four of the six controls. Per task it is
+sign-inconsistent — +0.0103 on country-capital against −0.0070 on past-tense at
+step 8000 — which is what noise looks like, not a function vector. **§3.12-U's
+puzzle stands as a puzzle.**
+
+**What replaced it is better.** The set contains real FV heads and they are a
+*different subset*. At step 8000 the **top four FV heads of the twelve scored
+are all members**, and the fourth of them (+0.0054) beats the best control
+(+0.0003) by 18×. `L8H9` rises monotonically to **+0.0152**, the largest score
+at the endpoint, at ~8 standard errors (per-prompt sd 0.0147, n = 64).
+
+**And `L7H8` is the dissociation.** It is the model's induction head by a
+distance — induction score **0.021 → 0.947**, textbook — and its FV score is
+pinned at ±0.0001 at **every** checkpoint. Meanwhile the four FV-positive
+members never exceed an induction score of 0.015, which is inside the control
+band (mean 0.008–0.013). So within one causally-defined redundancy set:
+
+> **no member does both jobs.** One head carries induction and no
+> function-vector role; four carry a function-vector role and no induction;
+> `L5H2` carries neither, while having the largest causal effect on the
+> induction readout of any member.
+
+Yin & Steinhardt report heads *transitioning* between the two roles over
+training. This set shows a **division of labour** instead — which is a
+different structure, and it is only visible because membership here is defined
+causally rather than by either score.
+
+**The instrument validates itself on the task axis.** The FV effect appears
+exactly where the model can do the task: per-task CIE tracks the per-task ICL
+gap (past-tense and plural, gap +0.51/+0.56 at step 8000, carry the whole
+effect; country-capital never gets a gap above +0.08 and shows almost nothing).
+A head cannot supply a function vector for a function the model has not
+learned.
+
+**Three limits, none of them hidden.**
+
+1. **The null grows and the separation narrows at the endpoint.** Max abs
+   control goes 0.0000 → **0.0103** (that is `L14H7`, a large *negative*
+   outlier). At step 8000 `L8H9` beats the best control 12×; at 143000 only
+   1.5×. The result is cleanest **mid-training**, and the endpoint column
+   should not be quoted alone.
+2. **The FV rise is confounded with task acquisition** — the ICL gap rises over
+   the same interval. What breaks the confound is that the **controls stay at
+   zero while the gap grows**, so task acquisition alone does not manufacture a
+   member-vs-control gap. That argument holds cleanly through step 16000 and
+   weakens at 143000, where the controls spread.
+3. **Six controls is a small null**, and per §3.13 both views are reported:
+   `fv_score_median` agrees with the mean in sign and ordering at every
+   checkpoint and is uniformly smaller (`L8H9` +0.0091 against +0.0152 at
+   143000), so nothing here is a mean artifact.
+
+**One instrument note, not a contradiction.** This runner scores induction on
+the **repeated-random-token** probe and reads `L5H2` at 0.0000 at every step;
+§3.12-U's twenty-fold fall (0.0046 → 0.0002) is `behavioural_series.json`'s
+**natural-text** probe. Different probes, both saying `L5H2` is a negligible
+attention-pattern induction head. This probe has the dynamic range to tell —
+it reads `L7H8` at 0.947 on the same batch.
+
 ## What is open
 
 **Priority, set 2026-09-10.** This is the thread the project is working on, and
@@ -230,3 +310,16 @@ Outputs are written per step, so a kill loses only the step in flight and
 Outputs land in `data/analysis/*.json`, which is git-ignored — see PROJECT.md's
 resume block for the full list. Use `--out` when running a different `--pair` or
 `--heads`: a partial run replaces the main six-member curve otherwise.
+
+The FV experiment, ~2 min per checkpoint:
+
+```
+python -u p7d_redundancy/fv_score.py \
+        --steps 1000,2000,4000,8000,16000,143000 \
+        --top 6 --controls 6 --n-prompts 16 --n-shot 10 --seqs 8 --chunk 4
+```
+
+It writes `data/analysis/fv_score.json` per step, so a kill loses only the step
+in flight. `--controls` is the measured null and is not optional: patching any
+vector into a corrupted prompt perturbs it, so the FV chance level is not zero,
+and at step 143000 the largest control reads **0.0103**.
