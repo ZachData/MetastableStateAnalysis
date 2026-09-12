@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§3.18 — the set DIVIDES induction and function-vector roles between members, and §3.16's L5H2 hypothesis is refuted; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class; §3.16 — the verified literature scan reframes phase 8) |
+| Last updated | 2026-09-12 (§3.19 — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES, and the wording needs fixing before registration; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -200,7 +200,9 @@ wrote — `redundancy_catalog_pythia-{70m,410m}_*`, `useful_rank_pythia-70m_mean
 `member_formation_curves_pythia-70m_mean`, `p8_rung_comparison.json`, and the
 2026-09-12 `freq`-probe arms `pairwise_interaction_matrix_pythia-70m_mean_freq`,
 `useful_rank_pythia-70m_mean_freq`,
-`useful_rank_pythia-70m_mean_freq_bottom`, and `fv_score` (§3.18) — lives
+`useful_rank_pythia-70m_mean_freq_bottom`, `fv_score` (§3.18), and the §3.19
+geometry trajectories `member_subspace_geometry_pythia-{410m,70m}_mean` and
+`member_subspace_geometry_pythia-70m_mean_freq` — lives
 only on this machine. `status-8.md` carries the numbers; the JSON carries the
 rows. Re-running is cheap at 70m and ~25 min for a 410m full sweep.
 
@@ -3283,6 +3285,65 @@ cheap and would resolve it.**
 > experiment produced a better result than it was designed for: the set
 > divides the two roles between different members rather than transitioning
 > between them.** §3.12-U's puzzle stands as a puzzle.
+
+---
+
+## 3.19 Invariant 4, measured on the set instead of one pair (2026-09-12)
+
+Detail in `p8_scale_ladder/status-8.md` ("Invariant 4 as a set-level
+trajectory") and `p7d_redundancy/status-7d.md`. `literature-8.md` calls
+invariant 4 the phase's load-bearing card — the only one both unclaimed and
+replicating — and the reframe makes it *the* account of what `2407.10827`'s
+head turnover looks like geometrically. Its evidence was **one pair per rung**.
+Now it is the set, at both rungs, on the matched instrument.
+
+**Three things that are not phase-8-local.**
+
+**1. A single pair is not a set, and here it inverted the conclusion.**
+`status-8.md` concluded "70m never separates" from `L2H1`×`L3H6` going
+0.934 → 0.685. That pair turns out to be **70m's most-aligned pair at every
+late checkpoint**. On the four-head core the same trajectory reads **+0.922 →
++0.321 by step 16000**, against 410m's core at **+0.814** — so 70m separates
+*more*, not less. **The finding was not wrong about its pair; it was wrong to
+be a set-level claim.** Any invariant stated over "the members" needs a
+set-level statistic with `n`, and §3.12-V5's changing-membership hazard is the
+same lesson one level down.
+
+**2. The rank-1 cosine and the subspace CKA can disagree, and which one is
+right depends on the head's dimensionality.** `L11H14`'s mean-delta cosine to
+the set inverts to **−0.099** while its centered CKA holds **+0.317 against a
+measured null of +0.179**. Both are correct: its mean write direction
+anti-aligns, its effect subspace still overlaps. The tell is its participation
+ratio, ~60 against everyone else's 8–28 — **a rank-1 summary of a
+60-dimensional effect is the wrong instrument**, which is `§3.13`'s principle
+on the dimension axis rather than the population axis. `status-7d.md` already
+said to quote `cka`/`cka_centered` over the unweighted cosine; this is the case
+that shows the two genuinely parting company rather than merely differing in
+scale. **Never write "`L11H14` is orthogonal to the set" — write "anti-aligned
+in mean direction".**
+
+**3. The cached checkpoint grids differ between rungs, and offline mode turns
+that into a mid-run crash.** 410m carries earlier phases' log-spaced fills
+(3000, 5000, 7000, 9000, 54000); 70m carries the 19-step behavioural grid and
+64000. Neither has the other's. With `HF_HUB_OFFLINE=1` a missing revision is
+an `OSError` eleven minutes into a run, which is how this was found. **The
+intersection — `256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 143000` — is
+the only matched grid**, and any cross-rung trajectory must be planned on it
+before the job is launched. `ls data/hf/hub/models--EleutherAI--pythia-*/refs/`
+is the check.
+
+**What it does to the invariant itself.** *Born aligned* replicates at both
+rungs and is solid (+0.888 at 410m, +0.922 at 70m, both at step 1000, neither
+with a private-subspace phase). *Then fans out* replicates at both rungs once
+measured on the set. **The fate does not replicate, and neither ending is in
+the current wording**: 410m ends as a locked core plus one inverted defector;
+70m's core reaches its minimum at step 32000 (+0.302) and then **re-coheres**,
++0.580 by 64000 and +0.611 at 143000 — all six core pairs, delta norms growing
+through it, and it survives the `freq` re-check that exists precisely because
+70m's late `wide` readout is degenerate. `design-8.md`'s invariant 4 stops at
+the fan-out. **It must be reworded before registration, and that is cheap now
+and impossible afterwards** — which is `CLAUDE.md`'s literature-scan trigger 2
+applied to the wording rather than to the citation.
 
 ---
 
