@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class; §3.16 — the verified literature scan reframes phase 8; §7.4 — the math is checked and clean; §6 — CodeRabbit in, CI/CD + TDD a to-do) |
+| Last updated | 2026-09-12 (§3.18 — the set DIVIDES induction and function-vector roles between members, and §3.16's L5H2 hypothesis is refuted; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class; §3.16 — the verified literature scan reframes phase 8) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -200,7 +200,7 @@ wrote — `redundancy_catalog_pythia-{70m,410m}_*`, `useful_rank_pythia-70m_mean
 `member_formation_curves_pythia-70m_mean`, `p8_rung_comparison.json`, and the
 2026-09-12 `freq`-probe arms `pairwise_interaction_matrix_pythia-70m_mean_freq`,
 `useful_rank_pythia-70m_mean_freq`,
-`useful_rank_pythia-70m_mean_freq_bottom` — lives
+`useful_rank_pythia-70m_mean_freq_bottom`, and `fv_score` (§3.18) — lives
 only on this machine. `status-8.md` carries the numbers; the JSON carries the
 rows. Re-running is cheap at 70m and ~25 min for a 410m full sweep.
 
@@ -3262,6 +3262,71 @@ measured `L5H2`'s induction score falling twenty-fold **while its causal effect
 went +0.01 → +4.97** — plausibly that same transition seen from the causal
 side, and currently filed as a puzzle. **Running an FV score on our members is
 cheap and would resolve it.**
+
+> **RUN 2026-09-12 — see §3.18. The hypothesis is refuted for `L5H2`, and the
+> experiment produced a better result than it was designed for: the set
+> divides the two roles between different members rather than transitioning
+> between them.** §3.12-U's puzzle stands as a puzzle.
+
+---
+
+## 3.18 The redundancy set divides labour between induction and function-vector roles (2026-09-12)
+
+`p7d_redundancy/fv_score.py`, detail in `p7d_redundancy/status-7d.md` ("The
+FV-head experiment"). Six members + six controls, four word-pair tasks, six
+checkpoints, **both scores measured in one process off the same weights** —
+because the claim under test is about two trajectories' joint shape, and
+reading one of them off a stored series would rest the comparison on an
+uncontrolled instrument difference.
+
+**§3.16's hypothesis is refuted for `L5H2`.** Its FV score never leaves zero
+and ends **negative** (−0.0018 at 143000, below four of the six controls), and
+per task it is sign-inconsistent. `L5H2` is not acquiring a function-vector
+role as it sheds an induction one. **§3.12-U's puzzle is still open** — the
+head with the largest causal effect on the induction readout does neither job
+by either score.
+
+**The result that replaced it is the structural one.** Within one
+causally-defined redundancy set, **no member does both jobs**:
+
+| | induction score | FV score | role |
+|---|---|---|---|
+| `L7H8` | **0.021 → 0.947** | ±0.0001 at every step | induction only |
+| `L8H9` | ≤ 0.011 | **+0.0152** at 143000 | function-vector only |
+| `L8H6`, `L12H5`, `L11H14` | ≤ 0.015 | +0.0012 … +0.0085 | function-vector only |
+| `L5H2` | 0.0000 | −0.0018 | **neither**, and the largest causal effect |
+
+The four FV-positive members never exceed an induction score inside the control
+band (0.008–0.013), and the one real induction head has no FV score at all. At
+step 8000 the **top four FV heads of the twelve scored are all members**, the
+fourth beating the best control by 18×.
+
+**Why this is worth more than the hypothesis it replaced.** `2502.14010`
+reports induction heads *transitioning* into function-vector heads over
+training. A **division of labour** across members of one set is a different
+structure, and it is visible here only because §3.14.2 defined membership
+**causally** — by `ΔNLL` under ablation — rather than by either score. A
+catalogue built on induction score would have contained `L7H8` and missed the
+other four; one built on FV score would have done the reverse. **This is the
+strongest direct vindication the causal-membership card (§3.16's "best card
+first") has had**, and unlike the rest of that card it is a positive result
+rather than a demonstration that proxies fail.
+
+**Read against the endpoint at your peril.** The measured null grows: max abs
+control 0.0000 → **0.0103** over the grid, so `L8H9` beats the best control 12×
+at step 8000 and only 1.5× at 143000. The effect is cleanest **mid-training**.
+The FV rise is also confounded with the model simply learning the tasks (the
+ICL gap rises over the same interval) — what breaks that confound is the
+**controls staying at zero while the gap grows**, which holds cleanly through
+step 16000 and weakens at 143000. Both §3.13 views agree in sign and ordering
+at every checkpoint, the median uniformly smaller.
+
+**A methodological note that generalises.** The FV instrument validates itself
+on the task axis: per-task effect tracks the per-task ICL gap, and the two
+tasks pythia-410m cannot do show almost nothing. **An FV score measured on a
+task the model has not learned is not a null, it is undefined** — so any FV
+work at another rung must carry its per-task ICL gap beside the score. The
+runner does.
 
 ---
 
