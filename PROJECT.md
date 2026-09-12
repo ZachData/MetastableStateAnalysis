@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§3.19 — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES, and the wording needs fixing before registration; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class) |
+| Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
+| Last updated | 2026-09-12, end of session — **resume block rewritten, read it first**. §3.19 — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES, and **the wording needs fixing before registration**; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,7 +37,68 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-10 — 7d's open axes are CLOSED; `7e` is live; on a LoRA tangent)
+### Resume here (2026-09-12 — four PRs open in a stack; invariant 4 needs rewording BEFORE it is registered)
+
+**Read this block, then §3.19, §3.18, §3.17 in that order.** Everything below
+this block is earlier and is kept as background, not as the current state.
+
+**Nothing is running and nothing is uncommitted.** All four branches are pushed
+and in sync with their remotes; the only untracked path is `data/hf/` (the HF
+cache — never `git add -A` under `data/`, its `.no_exist/` markers are not
+gitignored). Gate green: **2280 passed / 5 skipped / 30 deselected**.
+
+**The PR stack, oldest first. Each is based on the one above it, so review in
+order and merge in order.**
+
+| PR | branch | what |
+|---|---|---|
+| #36 | `claude/rescaler-cache-identity-test` → `main` | process tooling, working agreements, 47 sympy checks |
+| #37 | `claude/probe-ceiling-svd-third-class` | `--probe` on two more runners; invariants 5/6 re-read on `freq` |
+| #38 | `claude/fv-head-division-of-labour` | the FV experiment (§3.18) + `tests/test_p7d_fv_score.py` |
+| #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) |
+
+**CodeRabbit will not review any of them on its own** — under 10 stars this
+repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
+checkbox ticked by hand on CodeRabbit's first comment. `gh` works here; see the
+git block below.
+
+**THE ONE ACTION THAT IS TIME-SENSITIVE.** `design-8.md`'s **invariant 4 is
+worded for a fate that neither rung has**, and it is the phase's load-bearing
+card (`literature-8.md`: the only one both unclaimed and replicating). Measured
+on the set rather than one pair, *born aligned* and *then fans out* both
+replicate — but 410m ends as **a locked core plus one inverted defector** and
+70m **re-coheres** after step 32000. Registration freezes wording
+(`CLAUDE.md` trigger 2), so **reword invariant 4 in `design-8.md` before
+anything is registered against it.** Cheap now, impossible after. §3.19.
+
+**What else is open, in rough order.**
+
+1. **Reword invariant 4** (above), then decide what of 1/2/4/5/6 is registrable.
+   Invariant 5 is a clean *unclaimed negative* and is the other registration
+   candidate; both rungs are exploration, so a registration needs `1b` as its
+   test site and `1b` may not be touched until that prediction exists.
+2. **§3.12-U's `L5H2` puzzle is still open** and §3.16's proposed resolution is
+   dead (§3.18): the head with the largest causal effect on the induction
+   readout has neither an induction score nor an FV score.
+3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
+   analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
+   graded KL/λ readout, which is still unbuilt and is now blocking two things.
+4. **`--probe` is on three of six runners.** `redundancy_catalog.py`,
+   `member_subspace_geometry.py` have it as of 2026-09-12 along with
+   `member_formation_curves.py`, `pairwise_interaction_matrix.py` and
+   `useful_rank.py`; `ambient_budget.py` is still `wide`-only and its docstring
+   still promises a `--text` arm that does not exist.
+5. The older threads below (the LoRA tangent, invariant 3's scoping block, the
+   step-1000 circuit) are unchanged by today's work.
+
+**Before launching any cross-rung trajectory**, check the cached grids —
+`ls data/hf/hub/models--EleutherAI--pythia-*/refs/`. They differ between rungs
+and `HF_HUB_OFFLINE=1` turns a missing revision into an `OSError` mid-run
+(§3.19). The matched grid is `256,512,1000,2000,4000,8000,16000,32000,143000`.
+
+---
+
+### The earlier resume block (2026-09-10 — 7d's open axes are CLOSED; `7e` is live; on a LoRA tangent)
 
 **Read `p7d_redundancy/status-7d.md` and `p7e_consolidation/design-7e.md`
 first — both are current as of this session — then §3.12-V for the detail.**
@@ -211,20 +272,21 @@ while `falsification/e4_bootstrap.py` (~5 GB, not this project's) was running.
 Use `--chunk 2` and `OMP_NUM_THREADS=4` on this box; outputs are written per
 step, so `--append` finishes an interrupted grid.
 
-#### The earlier resume block (git state, branches, `P-I7`) — still current
+#### The earlier resume block (git state, branches, `P-I7`) — **branch table updated 2026-09-12**
 
 **Git. The backlog is gone.** PRs #26–#32 all merged, `main` is at `32370fd`,
 and the four-branch stack (`p-i1-build-null-score`, `spectral-dissipation-infra`,
 `induction-programme-stage012`, `p2b-per-head-figure`) is **merged and its
-branches deleted**. `claude/rescaler-cache-identity-test` is the only working
-branch left; it carries `main` and is +38 over it, and its PR is the next one to
-open. Gate green (2270 passed / 5 skipped).
+branches deleted**.
 
-**Only three remote branches exist**, and two of them must not be deleted:
+**Six remote branches exist**, and two of them must not be deleted:
 
 | branch | state |
 |---|---|
-| `claude/rescaler-cache-identity-test` | this branch, +38 over `main`, PR not opened |
+| `claude/rescaler-cache-identity-test` | **PR #36**, base `main` — was "+38, PR not opened"; opened 2026-09-12 |
+| `claude/probe-ceiling-svd-third-class` | **PR #37**, based on #36 |
+| `claude/fv-head-division-of-labour` | **PR #38**, based on #37 |
+| `claude/invariant4-set-level` | **PR #39**, based on #38 — the tip |
 | `claude/particle-methods-comparison-vpuads` | **KEEP** — all of Phase 1d (`p1d_cluster_ensemble/`), on no other branch |
 | `claude/visualize-mets-results-sl2ya5` | **KEEP** — `tools/visualize_latest.py`, on no other branch |
 
