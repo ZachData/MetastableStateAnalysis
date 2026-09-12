@@ -77,7 +77,7 @@ import numpy as np
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    EVAL_SEED, ablated, arch_dims, head_means, ov_factors, write_ov,
+    EVAL_SEED, PROBE_ARMS, ablated, arch_dims, head_means, ov_factors, write_ov,
 )
 
 from p7d_redundancy.member_formation_curves import batch, catalog_path_for, members, probe
@@ -176,6 +176,16 @@ def main():
                          "ordering (see svd_rank)")
     ap.add_argument("--recover", type=float, default=0.90,
                     help="recovery fraction defining r*")
+    ap.add_argument("--probe", default="wide", choices=tuple(PROBE_ARMS),
+                    help="token range the repeated sequences are drawn from. "
+                         "'wide' is every existing number; 'freq' is the less "
+                         "out-of-distribution probe. It matters HERE for the "
+                         "denominator: `useful_rank` needs |d0| >> the r=64 "
+                         "float32 refactorisation residue, and at 70m L0H2 "
+                         "that residue is 56 %% of d0 under `mean` (see "
+                         "__doc__ and p8_scale_ladder/status-8.md). A probe "
+                         "the model is less hopeless on gives a larger, "
+                         "better-conditioned d0")
     ap.add_argument("--ablation", default="ov", choices=("ov", "mean"),
                     help="which reference the r=0 row uses -- i.e. the "
                          "DENOMINATOR of every recovery fraction, and so what "
@@ -189,12 +199,13 @@ def main():
                     help="a non-default --model gets its own default filename "
                          "instead of the 410m one")
     args = ap.parse_args()
+    _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    _abl += "" if args.probe == "wide" else f"_{args.probe}"
     if args.out:
         out_path = Path(args.out)
-    elif args.model == DEFAULT_MODEL and args.ablation == "ov":
+    elif args.model == DEFAULT_MODEL and not _abl:
         out_path = OUT
     else:
-        _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
         out_path = DATA / "analysis" / f"useful_rank_{args.model}{_abl}.json"
 
     def parse(spec):
@@ -211,10 +222,12 @@ def main():
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
     res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
-           "ablation": args.ablation,
+           "ablation": args.ablation, "probe": args.probe,
+           "probe_vocab_range": list(PROBE_ARMS[args.probe]),
            "step": args.step, "membership_source": source,
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "eval": {"n_seqs": args.seqs, "seed": EVAL_SEED,
+                    "vocab_range": list(PROBE_ARMS[args.probe]),
                     "recover_frac": args.recover, "n_controls": args.controls},
            "ranks": ranks, "heads": [names[k] for k in heads], "per_head": {}}
 
@@ -222,11 +235,13 @@ def main():
     model.eval()
     d_model, d_head, n_heads = arch_dims(model)
     res["d_head"] = d_head
-    ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+    ids = batch(np.random.default_rng(EVAL_SEED), args.seqs,
+                *PROBE_ARMS[args.probe])
     nll0, _ = probe(model, ids, args.chunk, False)
     rng = np.random.default_rng(EVAL_SEED)
 
-    print(f"model:   {args.model}")
+    print(f"model:   {args.model}   probe: {args.probe} "
+          f"{PROBE_ARMS[args.probe]}   ablation: {args.ablation}")
     print(f"members: {', '.join(names[k] for k in heads)}   ({source})")
     print(f"step {args.step}, baseline NLL {nll0:.4f}, {args.seqs} seqs, "
           f"{len(ranks)} ranks x (1 + {args.controls}) arms per head\n")
