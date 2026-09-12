@@ -117,6 +117,32 @@ carrying a measured null** (`L5H5`, `L8H3`, `L12H15`), 13 checkpoints.
   lower than it starts. Both halves of "did they start private and expand out"
   are false.
 
+**Re-run under `mean` across the same axis (2026-09-12) — mode-invariant, and
+the fan-out decomposes.** The fixed-15-pair statistic reproduces: peak
+**+0.753** against `ov`'s +0.744, endpoint **+0.327** against +0.327, 57 %
+against 56 %. But split on `L11H14` — which the four measurements below
+singled out *before* this trajectory existed, so this is not a post-hoc cut —
+and the single number turns out to average two opposite behaviours:
+
+| step | core (5 heads, no `L11H14`) | `L11H14`'s pairs |
+|---|---|---|
+| 1000 | — (n=0) | **+0.888** (n=1, the birth pair) |
+| 4000 | **+0.903** (n=10) | +0.303 (n=5) |
+| 16000 | +0.814 (n=10) | +0.136 (n=5) |
+| 143000 | **+0.751** (n=3) | **−0.099** (n=3) |
+
+**The set does not fan out; one head leaves a locked core.** At 143000 all five
+`L11H14` pairs are the bottom five of fifteen and every other pair is ≥ +0.201.
+Formed-only throughout, `n` printed, per the hazard section below.
+
+**And the two instruments disagree about that head.** `L11H14`'s rank-1
+mean-delta cosine inverts to **−0.099** while its centered CKA ends at
+**+0.317 against a measured null of +0.179** — still well above chance. Its
+*mean write direction* anti-aligns; its *effect subspace* keeps real overlap.
+That fits its participation ratio of ~60 against everyone else's 8–28: for this
+head specifically a rank-1 summary is the wrong instrument. **Write it as
+"anti-aligned in mean direction", never as "orthogonal to the set".**
+
 ### `L11H14` is singled out by four independent measurements
 
 Lowest mean cosine to the set at 143000 (**−0.033**) at the **third-largest**

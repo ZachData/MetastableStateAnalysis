@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-12 (§3.18 — the set DIVIDES induction and function-vector roles between members, and §3.16's L5H2 hypothesis is refuted; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class; §3.16 — the verified literature scan reframes phase 8) |
+| Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
+| Last updated | 2026-09-12, end of session — **resume block rewritten, read it first**. §3.19 — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES, and **the wording needs fixing before registration**; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,7 +37,68 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-10 — 7d's open axes are CLOSED; `7e` is live; on a LoRA tangent)
+### Resume here (2026-09-12 — four PRs open in a stack; invariant 4 needs rewording BEFORE it is registered)
+
+**Read this block, then §3.19, §3.18, §3.17 in that order.** Everything below
+this block is earlier and is kept as background, not as the current state.
+
+**Nothing is running and nothing is uncommitted.** All four branches are pushed
+and in sync with their remotes; the only untracked path is `data/hf/` (the HF
+cache — never `git add -A` under `data/`, its `.no_exist/` markers are not
+gitignored). Gate green: **2280 passed / 5 skipped / 30 deselected**.
+
+**The PR stack, oldest first. Each is based on the one above it, so review in
+order and merge in order.**
+
+| PR | branch | what |
+|---|---|---|
+| #36 | `claude/rescaler-cache-identity-test` → `main` | process tooling, working agreements, 47 sympy checks |
+| #37 | `claude/probe-ceiling-svd-third-class` | `--probe` on two more runners; invariants 5/6 re-read on `freq` |
+| #38 | `claude/fv-head-division-of-labour` | the FV experiment (§3.18) + `tests/test_p7d_fv_score.py` |
+| #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) |
+
+**CodeRabbit will not review any of them on its own** — under 10 stars this
+repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
+checkbox ticked by hand on CodeRabbit's first comment. `gh` works here; see the
+git block below.
+
+**THE ONE ACTION THAT IS TIME-SENSITIVE.** `design-8.md`'s **invariant 4 is
+worded for a fate that neither rung has**, and it is the phase's load-bearing
+card (`literature-8.md`: the only one both unclaimed and replicating). Measured
+on the set rather than one pair, *born aligned* and *then fans out* both
+replicate — but 410m ends as **a locked core plus one inverted defector** and
+70m **re-coheres** after step 32000. Registration freezes wording
+(`CLAUDE.md` trigger 2), so **reword invariant 4 in `design-8.md` before
+anything is registered against it.** Cheap now, impossible after. §3.19.
+
+**What else is open, in rough order.**
+
+1. **Reword invariant 4** (above), then decide what of 1/2/4/5/6 is registrable.
+   Invariant 5 is a clean *unclaimed negative* and is the other registration
+   candidate; both rungs are exploration, so a registration needs `1b` as its
+   test site and `1b` may not be touched until that prediction exists.
+2. **§3.12-U's `L5H2` puzzle is still open** and §3.16's proposed resolution is
+   dead (§3.18): the head with the largest causal effect on the induction
+   readout has neither an induction score nor an FV score.
+3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
+   analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
+   graded KL/λ readout, which is still unbuilt and is now blocking two things.
+4. **`--probe` is on three of six runners.** `redundancy_catalog.py`,
+   `member_subspace_geometry.py` have it as of 2026-09-12 along with
+   `member_formation_curves.py`, `pairwise_interaction_matrix.py` and
+   `useful_rank.py`; `ambient_budget.py` is still `wide`-only and its docstring
+   still promises a `--text` arm that does not exist.
+5. The older threads below (the LoRA tangent, invariant 3's scoping block, the
+   step-1000 circuit) are unchanged by today's work.
+
+**Before launching any cross-rung trajectory**, check the cached grids —
+`ls data/hf/hub/models--EleutherAI--pythia-*/refs/`. They differ between rungs
+and `HF_HUB_OFFLINE=1` turns a missing revision into an `OSError` mid-run
+(§3.19). The matched grid is `256,512,1000,2000,4000,8000,16000,32000,143000`.
+
+---
+
+### The earlier resume block (2026-09-10 — 7d's open axes are CLOSED; `7e` is live; on a LoRA tangent)
 
 **Read `p7d_redundancy/status-7d.md` and `p7e_consolidation/design-7e.md`
 first — both are current as of this session — then §3.12-V for the detail.**
@@ -200,7 +261,9 @@ wrote — `redundancy_catalog_pythia-{70m,410m}_*`, `useful_rank_pythia-70m_mean
 `member_formation_curves_pythia-70m_mean`, `p8_rung_comparison.json`, and the
 2026-09-12 `freq`-probe arms `pairwise_interaction_matrix_pythia-70m_mean_freq`,
 `useful_rank_pythia-70m_mean_freq`,
-`useful_rank_pythia-70m_mean_freq_bottom`, and `fv_score` (§3.18) — lives
+`useful_rank_pythia-70m_mean_freq_bottom`, `fv_score` (§3.18), and the §3.19
+geometry trajectories `member_subspace_geometry_pythia-{410m,70m}_mean` and
+`member_subspace_geometry_pythia-70m_mean_freq` — lives
 only on this machine. `status-8.md` carries the numbers; the JSON carries the
 rows. Re-running is cheap at 70m and ~25 min for a 410m full sweep.
 
@@ -209,20 +272,21 @@ while `falsification/e4_bootstrap.py` (~5 GB, not this project's) was running.
 Use `--chunk 2` and `OMP_NUM_THREADS=4` on this box; outputs are written per
 step, so `--append` finishes an interrupted grid.
 
-#### The earlier resume block (git state, branches, `P-I7`) — still current
+#### The earlier resume block (git state, branches, `P-I7`) — **branch table updated 2026-09-12**
 
 **Git. The backlog is gone.** PRs #26–#32 all merged, `main` is at `32370fd`,
 and the four-branch stack (`p-i1-build-null-score`, `spectral-dissipation-infra`,
 `induction-programme-stage012`, `p2b-per-head-figure`) is **merged and its
-branches deleted**. `claude/rescaler-cache-identity-test` is the only working
-branch left; it carries `main` and is +38 over it, and its PR is the next one to
-open. Gate green (2270 passed / 5 skipped).
+branches deleted**.
 
-**Only three remote branches exist**, and two of them must not be deleted:
+**Six remote branches exist**, and two of them must not be deleted:
 
 | branch | state |
 |---|---|
-| `claude/rescaler-cache-identity-test` | this branch, +38 over `main`, PR not opened |
+| `claude/rescaler-cache-identity-test` | **PR #36**, base `main` — was "+38, PR not opened"; opened 2026-09-12 |
+| `claude/probe-ceiling-svd-third-class` | **PR #37**, based on #36 |
+| `claude/fv-head-division-of-labour` | **PR #38**, based on #37 |
+| `claude/invariant4-set-level` | **PR #39**, based on #38 — the tip |
 | `claude/particle-methods-comparison-vpuads` | **KEEP** — all of Phase 1d (`p1d_cluster_ensemble/`), on no other branch |
 | `claude/visualize-mets-results-sl2ya5` | **KEEP** — `tools/visualize_latest.py`, on no other branch |
 
@@ -3283,6 +3347,65 @@ cheap and would resolve it.**
 > experiment produced a better result than it was designed for: the set
 > divides the two roles between different members rather than transitioning
 > between them.** §3.12-U's puzzle stands as a puzzle.
+
+---
+
+## 3.19 Invariant 4, measured on the set instead of one pair (2026-09-12)
+
+Detail in `p8_scale_ladder/status-8.md` ("Invariant 4 as a set-level
+trajectory") and `p7d_redundancy/status-7d.md`. `literature-8.md` calls
+invariant 4 the phase's load-bearing card — the only one both unclaimed and
+replicating — and the reframe makes it *the* account of what `2407.10827`'s
+head turnover looks like geometrically. Its evidence was **one pair per rung**.
+Now it is the set, at both rungs, on the matched instrument.
+
+**Three things that are not phase-8-local.**
+
+**1. A single pair is not a set, and here it inverted the conclusion.**
+`status-8.md` concluded "70m never separates" from `L2H1`×`L3H6` going
+0.934 → 0.685. That pair turns out to be **70m's most-aligned pair at every
+late checkpoint**. On the four-head core the same trajectory reads **+0.922 →
++0.321 by step 16000**, against 410m's core at **+0.814** — so 70m separates
+*more*, not less. **The finding was not wrong about its pair; it was wrong to
+be a set-level claim.** Any invariant stated over "the members" needs a
+set-level statistic with `n`, and §3.12-V5's changing-membership hazard is the
+same lesson one level down.
+
+**2. The rank-1 cosine and the subspace CKA can disagree, and which one is
+right depends on the head's dimensionality.** `L11H14`'s mean-delta cosine to
+the set inverts to **−0.099** while its centered CKA holds **+0.317 against a
+measured null of +0.179**. Both are correct: its mean write direction
+anti-aligns, its effect subspace still overlaps. The tell is its participation
+ratio, ~60 against everyone else's 8–28 — **a rank-1 summary of a
+60-dimensional effect is the wrong instrument**, which is `§3.13`'s principle
+on the dimension axis rather than the population axis. `status-7d.md` already
+said to quote `cka`/`cka_centered` over the unweighted cosine; this is the case
+that shows the two genuinely parting company rather than merely differing in
+scale. **Never write "`L11H14` is orthogonal to the set" — write "anti-aligned
+in mean direction".**
+
+**3. The cached checkpoint grids differ between rungs, and offline mode turns
+that into a mid-run crash.** 410m carries earlier phases' log-spaced fills
+(3000, 5000, 7000, 9000, 54000); 70m carries the 19-step behavioural grid and
+64000. Neither has the other's. With `HF_HUB_OFFLINE=1` a missing revision is
+an `OSError` eleven minutes into a run, which is how this was found. **The
+intersection — `256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 143000` — is
+the only matched grid**, and any cross-rung trajectory must be planned on it
+before the job is launched. `ls data/hf/hub/models--EleutherAI--pythia-*/refs/`
+is the check.
+
+**What it does to the invariant itself.** *Born aligned* replicates at both
+rungs and is solid (+0.888 at 410m, +0.922 at 70m, both at step 1000, neither
+with a private-subspace phase). *Then fans out* replicates at both rungs once
+measured on the set. **The fate does not replicate, and neither ending is in
+the current wording**: 410m ends as a locked core plus one inverted defector;
+70m's core reaches its minimum at step 32000 (+0.302) and then **re-coheres**,
++0.580 by 64000 and +0.611 at 143000 — all six core pairs, delta norms growing
+through it, and it survives the `freq` re-check that exists precisely because
+70m's late `wide` readout is degenerate. `design-8.md`'s invariant 4 stops at
+the fan-out. **It must be reworded before registration, and that is cheap now
+and impossible afterwards** — which is `CLAUDE.md`'s literature-scan trigger 2
+applied to the wording rather than to the citation.
 
 ---
 
