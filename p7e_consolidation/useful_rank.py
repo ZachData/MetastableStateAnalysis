@@ -77,12 +77,13 @@ import numpy as np
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    D_HEAD, D_MODEL, EVAL_SEED, ov_factors, write_ov,
+    EVAL_SEED, ablated, arch_dims, head_means, ov_factors, write_ov,
 )
 
-from p7d_redundancy.member_formation_curves import batch, members, probe
+from p7d_redundancy.member_formation_curves import batch, catalog_path_for, members, probe
 
 OUT = DATA / "analysis" / "useful_rank.json"
+DEFAULT_MODEL = "pythia-410m"
 
 #: `0` and `D_HEAD` are not optional: `0` sets the scale every recovery is
 #: measured against, and `D_HEAD` must return to ~0 (see __doc__) or the
@@ -143,7 +144,7 @@ def random_rank(A, B, r, target_norm, rng):
     """
     if r == 0:
         return np.zeros((A.shape[0], 1)), np.zeros((1, B.shape[1]))
-    Qr, _ = np.linalg.qr(rng.normal(size=(D_HEAD, r)))
+    Qr, _ = np.linalg.qr(rng.normal(size=(B.shape[0], r)))
     Ar = A @ (Qr @ Qr.T)
     n = float(np.linalg.norm(Ar @ B))
     if n > 0:
@@ -153,6 +154,13 @@ def random_rank(A, B, r, target_norm, rng):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL,
+                    help="registry family prefix, e.g. pythia-70m, pythia-410m "
+                         "(p8_scale_ladder/design-8.md rung policy: 1b/1.4b "
+                         "are reserved -- do not pass those without a "
+                         "registered prediction). The default --ranks tops "
+                         "out at 64 = d_head for both 410m and 70m; a "
+                         "different d_head rung needs its own --ranks")
     ap.add_argument("--step", type=int, default=16000)
     ap.add_argument("--top", type=int, default=6)
     ap.add_argument("--heads", default="")
@@ -168,8 +176,26 @@ def main():
                          "ordering (see svd_rank)")
     ap.add_argument("--recover", type=float, default=0.90,
                     help="recovery fraction defining r*")
-    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--ablation", default="ov", choices=("ov", "mean"),
+                    help="which reference the r=0 row uses -- i.e. the "
+                         "DENOMINATOR of every recovery fraction, and so what "
+                         "r* is measured against. 'ov' keeps the rank family's "
+                         "own bottom (a rank-0 OV is the zero matrix). 'mean' "
+                         "uses the head's clean-run mean instead, which is the "
+                         "better estimate of the head's true causal effect and "
+                         "is NOT a member of the rank family -- an inflated "
+                         "denominator deflates recovery and inflates r*")
+    ap.add_argument("--out", default="",
+                    help="a non-default --model gets its own default filename "
+                         "instead of the 410m one")
     args = ap.parse_args()
+    if args.out:
+        out_path = Path(args.out)
+    elif args.model == DEFAULT_MODEL and args.ablation == "ov":
+        out_path = OUT
+    else:
+        _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+        out_path = DATA / "analysis" / f"useful_rank_{args.model}{_abl}.json"
 
     def parse(spec):
         return [(int(h[1:h.index("H")]), int(h[h.index("H") + 1:]))
@@ -178,25 +204,29 @@ def main():
     if args.heads:
         heads, source = parse(args.heads), "--heads"
     else:
-        heads, source = members(args.top)
+        heads, source = members(args.top, catalog_path_for(args.model))
     ranks = [int(x) for x in args.ranks.split(",") if x]
     names = {k: f"L{k[0]}H{k[1]}" for k in heads}
 
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
-    res = {"_what_this_is": __doc__, "git_sha": git_sha, "step": args.step,
-           "d_head": D_HEAD, "membership_source": source,
+    res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
+           "ablation": args.ablation,
+           "step": args.step, "membership_source": source,
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "eval": {"n_seqs": args.seqs, "seed": EVAL_SEED,
                     "recover_frac": args.recover, "n_controls": args.controls},
            "ranks": ranks, "heads": [names[k] for k in heads], "per_head": {}}
 
-    model, _ = load_causal_lm(f"pythia-410m-step{args.step}")
+    model, _ = load_causal_lm(f"{args.model}-step{args.step}")
     model.eval()
+    d_model, d_head, n_heads = arch_dims(model)
+    res["d_head"] = d_head
     ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
     nll0, _ = probe(model, ids, args.chunk, False)
     rng = np.random.default_rng(EVAL_SEED)
 
+    print(f"model:   {args.model}")
     print(f"members: {', '.join(names[k] for k in heads)}   ({source})")
     print(f"step {args.step}, baseline NLL {nll0:.4f}, {args.seqs} seqs, "
           f"{len(ranks)} ranks x (1 + {args.controls}) arms per head\n")
@@ -210,22 +240,31 @@ def main():
               f"{'ctrl recov':>11} {'bot recov':>9}")
         d0 = None
         for r in ranks:
-            Ar, Br, tn = svd_rank(U, s_ov, Vt, r, D_MODEL)
+            Ar, Br, tn = svd_rank(U, s_ov, Vt, r, d_model)
             write_ov(model, *k, Ar, Br)
             d = probe(model, ids, args.chunk, False)[0] - nll0
             db = None
-            if args.bottom and 0 < r < D_HEAD:
-                Ab, Bb, _ = svd_rank(U, s_ov, Vt, r, D_MODEL, bottom=True)
+            if args.bottom and 0 < r < d_head:
+                Ab, Bb, _ = svd_rank(U, s_ov, Vt, r, d_model, bottom=True)
                 write_ov(model, *k, Ab, Bb)
                 db = probe(model, ids, args.chunk, False)[0] - nll0
             cd = []
-            for _ in range(args.controls if 0 < r < D_HEAD else 0):
+            for _ in range(args.controls if 0 < r < d_head else 0):
                 Ac, Bc = random_rank(A, B, r, tn, rng)
                 write_ov(model, *k, Ac, Bc)
                 cd.append(probe(model, ids, args.chunk, False)[0] - nll0)
             write_ov(model, *k, A, B)
             if d0 is None:
-                d0 = d            # r = 0: the head's whole causal effect
+                # r = 0: the head's whole causal effect. Under --ablation mean
+                # the reference is the mean-ablation effect instead of the
+                # rank-family's zero matrix, so `recovery` is measured against
+                # what the head actually contributes rather than against the
+                # off-distribution response to deleting it.
+                if args.ablation == "mean":
+                    with ablated(model, [k], "mean",
+                                 head_means(model, ids, [k], args.chunk)):
+                        d = probe(model, ids, args.chunk, False)[0] - nll0
+                d0 = d
             rv = 1.0 - d / d0 if d0 else float("nan")
             cv = [1.0 - c / d0 for c in cd] if d0 else []
             row[str(r)] = {"dnll": d, "recovery": rv,
@@ -251,30 +290,30 @@ def main():
         res["per_head"][names[k]] = {
             "full_effect_dnll": d0, "by_rank": row,
             "r_star": r_star, "r_star_control": r_star_ctrl,
-            "identity_check_dnll_at_full_rank": row[str(D_HEAD)]["dnll"]}
+            "identity_check_dnll_at_full_rank": row[str(d_head)]["dnll"]}
         print(f"  r* (>= {args.recover:.0%} recovery) = {r_star}   "
               f"control r* = {r_star_ctrl}   "
-              f"full-rank dNLL {row[str(D_HEAD)]['dnll']:+.2e} (must be ~0)\n",
+              f"full-rank dNLL {row[str(d_head)]['dnll']:+.2e} (must be ~0)\n",
               flush=True)
         del U, s_ov, Vt, A, B
         gc.collect()
 
-        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        with open(args.out, "w") as fh:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w") as fh:
             json.dump(res, fh, indent=2)
 
     nll_chk, _ = probe(model, ids, args.chunk, False)
     res["restore_abs_diff"] = abs(nll_chk - nll0)
-    with open(args.out, "w") as fh:
+    with open(out_path, "w") as fh:
         json.dump(res, fh, indent=2)
 
     print(f"=== r* summary (step {args.step}) ===")
     for k in heads:
         h = res["per_head"][names[k]]
         print(f"  {names[k]:>7}  effect {h['full_effect_dnll']:>+7.3f}   "
-              f"r* {str(h['r_star']):>4} of {D_HEAD}   "
+              f"r* {str(h['r_star']):>4} of {d_head}   "
               f"control r* {str(h['r_star_control']):>4}")
-    print(f"\nrestore {abs(nll_chk - nll0):.1e}   wrote {args.out}")
+    print(f"\nrestore {abs(nll_chk - nll0):.1e}   wrote {out_path}")
 
 
 if __name__ == "__main__":

@@ -53,19 +53,25 @@ import numpy as np
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    D_HEAD, D_MODEL, EVAL_SEED, ov_factors, write_ov,
+    EVAL_SEED, ablated, arch_dims, head_means,
 )
 
-from p7d_redundancy.member_formation_curves import batch, members
+from p7d_redundancy.member_formation_curves import batch, catalog_path_for, members
 from p7d_redundancy.member_subspace_geometry import (
     participation_ratio, resid_matrix,
 )
 
 OUT = DATA / "analysis" / "ambient_budget.json"
+DEFAULT_MODEL = "pythia-410m"
 
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL,
+                    help="registry family prefix, e.g. pythia-70m, pythia-410m "
+                         "(p8_scale_ladder/design-8.md rung policy: 1b/1.4b "
+                         "are reserved -- do not pass those without a "
+                         "registered prediction)")
     ap.add_argument("--steps", default="16000,143000")
     ap.add_argument("--top", type=int, default=6)
     ap.add_argument("--heads", default="")
@@ -74,8 +80,21 @@ def main():
                     help="2, not 4 -- the 7d geometry runner was killed for "
                          "memory at 4 with 16 sequences")
     ap.add_argument("--energy", type=float, default=0.90)
-    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--ablation", default="ov", choices=("ov", "zero", "mean"),
+                    help="'mean' replaces each head's output with its clean-run "
+                         "mean -- the control for zero-ablation's "
+                         "off-distribution bias (status-8.md's A/B)")
+    ap.add_argument("--out", default="",
+                    help="a non-default --model gets its own default filename "
+                         "instead of the 410m one")
     args = ap.parse_args()
+    if args.out:
+        out_path = Path(args.out)
+    elif args.model == DEFAULT_MODEL and args.ablation == "ov":
+        out_path = OUT
+    else:
+        _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+        out_path = DATA / "analysis" / f"ambient_budget_{args.model}{_abl}.json"
 
     def parse(spec):
         return [(int(h[1:h.index("H")]), int(h[h.index("H") + 1:]))
@@ -84,38 +103,39 @@ def main():
     if args.heads:
         heads, source = parse(args.heads), "--heads"
     else:
-        heads, source = members(args.top)
+        heads, source = members(args.top, catalog_path_for(args.model))
     steps = [int(x) for x in args.steps.split(",") if x]
     names = [f"L{L}H{H}" for L, H in heads]
 
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
-    res = {"_what_this_is": __doc__, "git_sha": git_sha, "d_head": D_HEAD,
+    res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
+           "ablation": args.ablation,
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "membership_source": source, "heads": names, "steps": steps,
            "readout": "induction probe only -- natural-text arm NOT run here",
            "per_step": {}}
 
+    print(f"model:   {args.model}")
     print(f"members: {', '.join(names)}   ({source})")
-    print(f"budget:  one head's OV is rank <= {D_HEAD}; the question is whether "
-          f"{args.energy:.0%} of the JOINT effect fits in that many ambient "
-          f"directions\n")
 
-    Z = (np.zeros((D_MODEL, 1)), np.zeros((1, D_MODEL)))
     for s in steps:
-        model, _ = load_causal_lm(f"pythia-410m-step{s}")
+        model, _ = load_causal_lm(f"{args.model}-step{s}")
         model.eval()
+        d_model, d_head, n_heads = arch_dims(model)
+        res["d_head"] = d_head
+        print(f"budget:  one head's OV is rank <= {d_head}; the question is "
+              f"whether {args.energy:.0%} of the JOINT effect fits in that "
+              f"many ambient directions\n")
         ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+        means = (head_means(model, ids, heads, args.chunk)
+                 if args.ablation == "mean" else None)
 
         nll0, R0 = resid_matrix(model, ids, args.chunk)
         _, s_amb, Vt_amb = np.linalg.svd(R0, full_matrices=False)
 
-        saved = {k: ov_factors(model, *k) for k in heads}
-        for k in heads:
-            write_ov(model, *k, *Z)
-        nll_j, Rj = resid_matrix(model, ids, args.chunk)
-        for k, (a, b) in saved.items():
-            write_ov(model, *k, a, b)
+        with ablated(model, heads, args.ablation, means):
+            nll_j, Rj = resid_matrix(model, ids, args.chunk)
         nll_chk, _ = resid_matrix(model, ids, args.chunk)
 
         Dj = Rj - R0
@@ -136,29 +156,29 @@ def main():
                "joint_effect_participation_ratio": participation_ratio(sv),
                "k_ambient_for_energy": k_needed,
                "r_own_basis_for_energy": r_own,
-               "energy_in_ambient_top_64": float(cum[D_HEAD - 1]),
-               "fits_in_one_head": bool(k_needed <= D_HEAD)}
+               "energy_in_ambient_top_64": float(cum[d_head - 1]),
+               "fits_in_one_head": bool(k_needed <= d_head)}
         res["per_step"][str(s)] = rec
 
         print(f"step {s}  baseline NLL {nll0:.4f}  joint dNLL "
               f"{nll_j - nll0:+.4f}  restore {abs(nll_chk - nll0):.1e}")
         print(f"    ambient participation ratio      {participation_ratio(s_amb):>8.1f} "
-              f"of {D_MODEL}")
+              f"of {d_model}")
         print(f"    joint effect, its OWN basis      {r_own:>8d} dims for "
               f"{args.energy:.0%}")
         print(f"    joint effect, AMBIENT ordering   {k_needed:>8d} dims for "
               f"{args.energy:.0%}")
-        print(f"    energy inside ambient top-{D_HEAD}      "
-              f"{cum[D_HEAD - 1]:>8.3f}")
-        print(f"    -> {'FITS in one head' if k_needed <= D_HEAD else 'DOES NOT FIT -- capacity objection stands'}"
-              f" (budget {D_HEAD})\n", flush=True)
+        print(f"    energy inside ambient top-{d_head}      "
+              f"{cum[d_head - 1]:>8.3f}")
+        print(f"    -> {'FITS in one head' if k_needed <= d_head else 'DOES NOT FIT -- capacity objection stands'}"
+              f" (budget {d_head})\n", flush=True)
 
-        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        with open(args.out, "w") as fh:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w") as fh:
             json.dump(res, fh, indent=2)
         del model, ids, R0, Rj, Dj
 
-    print(f"wrote {args.out}")
+    print(f"wrote {out_path}")
 
 
 if __name__ == "__main__":

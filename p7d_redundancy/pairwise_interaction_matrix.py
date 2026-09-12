@@ -59,11 +59,12 @@ if not sys.prefix.startswith(_want):
 import numpy as np
 
 from core.lm_loading import load_causal_lm
-from tools.run.induction_rank_sweep import D_MODEL, EVAL_SEED, ov_factors, write_ov
+from tools.run.induction_rank_sweep import EVAL_SEED, ablated, arch_dims, head_means
 
-from p7d_redundancy.member_formation_curves import batch, members, probe
+from p7d_redundancy.member_formation_curves import batch, catalog_path_for, members, probe
 
 OUT = DATA / "analysis" / "pairwise_interaction_matrix.json"
+DEFAULT_MODEL = "pythia-410m"
 
 #: Uniform prediction over pythia's vocabulary. The readout cannot report a
 #: larger NLL than this, so an arm that approaches it is censored.
@@ -72,6 +73,11 @@ CEILING = float(np.log(50304))
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL,
+                    help="registry family prefix, e.g. pythia-70m, pythia-410m "
+                         "(p8_scale_ladder/design-8.md rung policy: 1b/1.4b "
+                         "are reserved -- do not pass those without a "
+                         "registered prediction)")
     ap.add_argument("--steps", default="16000",
                     help="16000 or later -- see the ceiling note in __doc__; "
                          "earlier steps bias interactions sub-additive")
@@ -83,12 +89,25 @@ def main():
                     help="16 matches §3.12-S, so the L5H2 x L7H8 cell is a "
                          "reproduction check rather than a new number")
     ap.add_argument("--chunk", type=int, default=4)
+    ap.add_argument("--ablation", default="ov", choices=("ov", "zero", "mean"),
+                    help="'mean' replaces each head's output with its clean-run "
+                         "mean -- the control for zero-ablation's "
+                         "off-distribution bias (status-8.md's A/B)")
     ap.add_argument("--headroom-warn", type=float, default=2.0,
                     help="flag cells whose joint arm lands within this many "
                          "nats of the uniform ceiling")
-    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--out", default="",
+                    help="a non-default --model gets its own default filename "
+                         "instead of the 410m one")
     args = ap.parse_args()
-    out = Path(args.out)
+    _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    if args.out:
+        out = Path(args.out)
+    elif args.model == DEFAULT_MODEL and not _abl:
+        out = OUT
+    else:
+        out = (DATA / "analysis" /
+               f"pairwise_interaction_matrix_{args.model}{_abl}.json")
 
     def parse(spec):
         return [(int(h[1:h.index("H")]), int(h[h.index("H") + 1:]))
@@ -97,40 +116,39 @@ def main():
     if args.heads:
         heads, source = parse(args.heads), "--heads"
     else:
-        heads, source = members(args.top)
+        heads, source = members(args.top, catalog_path_for(args.model))
     steps = [int(x) for x in args.steps.split(",") if x]
     names = {k: f"L{k[0]}H{k[1]}" for k in heads}
     cells = list(itertools.combinations(heads, 2))
 
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
-    res = {"_what_this_is": __doc__, "git_sha": git_sha,
+    res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
+           "ablation": args.ablation,
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "membership_source": source, "uniform_ceiling_nll": CEILING,
            "eval": {"n_seqs": args.seqs, "seed": EVAL_SEED,
                     "headroom_warn": args.headroom_warn},
            "heads": [names[k] for k in heads], "steps": steps, "per_step": {}}
 
+    print(f"model:   {args.model}")
     print(f"members: {', '.join(names[k] for k in heads)}   ({source})")
     print(f"grid:    {len(steps)} steps, {len(cells)} pairs, {args.seqs} "
           f"sequences, {1 + len(heads) + len(cells)} arms per step")
     print(f"ceiling: uniform NLL {CEILING:.3f}; cells within "
           f"{args.headroom_warn} nats are flagged, not trusted\n")
 
-    Z = (np.zeros((D_MODEL, 1)), np.zeros((1, D_MODEL)))
     for s in steps:
-        model, _ = load_causal_lm(f"pythia-410m-step{s}")
+        model, _ = load_causal_lm(f"{args.model}-step{s}")
         model.eval()
+        d_model, d_head, n_heads = arch_dims(model)
         ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+        means = (head_means(model, ids, heads, args.chunk)
+                 if args.ablation == "mean" else None)
 
         def run(ablate, want_vec):
-            saved = {k: ov_factors(model, *k) for k in ablate}
-            for k in ablate:
-                write_ov(model, *k, *Z)
-            r = probe(model, ids, args.chunk, want_vec)
-            for k, (a, b) in saved.items():
-                write_ov(model, *k, a, b)
-            return r
+            with ablated(model, ablate, args.ablation, means):
+                return probe(model, ids, args.chunk, want_vec)
 
         nll0, vec0 = probe(model, ids, args.chunk, True)
         print(f"step {s}: baseline NLL {nll0:.4f}, headroom to ceiling "

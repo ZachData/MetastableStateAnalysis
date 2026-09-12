@@ -110,12 +110,13 @@ import torch
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    D_MODEL, N_REP, EVAL_SEED, ov_factors, write_ov,
+    N_REP, EVAL_SEED, ablated, arch_dims, head_means,
 )
 
-from p7d_redundancy.member_formation_curves import ALL_STEPS, batch, members
+from p7d_redundancy.member_formation_curves import ALL_STEPS, batch, catalog_path_for, members
 
 OUT = DATA / "analysis" / "member_subspace_geometry.json"
+DEFAULT_MODEL = "pythia-410m"
 
 #: Near-median catalogue heads (median dNLL +0.00107), layer-matched to the
 #: members' spread over layers 5-12. These carry the null for every overlap
@@ -136,6 +137,7 @@ def resid_matrix(model, ids, chunk=4):
     column mean.
     """
     lc, lz, rows = [], [], []
+    d_model = model.config.hidden_size
     for i in range(0, len(ids), chunk):
         out = model(ids[i:i + chunk], output_hidden_states=True)
         lg = out.logits[:, :-1, :].float()
@@ -145,7 +147,7 @@ def resid_matrix(model, ids, chunk=4):
         lc.append(c[:, N_REP - 1:].numpy().astype(np.float64))
         lz.append(z[:, N_REP - 1:].numpy().astype(np.float64))
         h = out.hidden_states[-1][:, N_REP - 1:, :].float()
-        rows.append(h.reshape(-1, D_MODEL).numpy().astype(np.float64))
+        rows.append(h.reshape(-1, d_model).numpy().astype(np.float64))
         del out, lg, z, c, h
     return (float(-(np.concatenate(lc).mean() - np.concatenate(lz).mean())),
             np.concatenate(rows, axis=0))
@@ -254,6 +256,11 @@ def orth(cols):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL,
+                    help="registry family prefix, e.g. pythia-70m, pythia-410m "
+                         "(p8_scale_ladder/design-8.md rung policy: 1b/1.4b "
+                         "are reserved -- do not pass those without a "
+                         "registered prediction)")
     ap.add_argument("--steps", default=",".join(str(s) for s in ALL_STEPS))
     ap.add_argument("--top", type=int, default=6,
                     help="catalogue members; 6 matches the §3.12-U curve, so "
@@ -267,14 +274,31 @@ def main():
     ap.add_argument("--controls", default=CONTROLS,
                     help="near-median heads carrying the measured null; the "
                          "isotropic k/d chance value is not a usable baseline "
-                         "in this residual stream -- see __doc__")
+                         "in this residual stream -- see __doc__. The default "
+                         "is a 410m-specific layer/head selection (L12H15 does "
+                         "not exist at 70m's 6 layers x 8 heads) -- a non-410m "
+                         "--model MUST pass its own near-median heads from "
+                         "that rung's own redundancy_catalog, not this default")
     ap.add_argument("--noise-mult", type=float, default=2.0,
                     help="a member whose delta_rel is under this multiple of "
                          "the largest control's is flagged unreadable")
+    ap.add_argument("--ablation", default="ov", choices=("ov", "zero", "mean"),
+                    help="'mean' replaces each head's output with its clean-run "
+                         "mean -- the control for zero-ablation's "
+                         "off-distribution bias (status-8.md's A/B)")
     ap.add_argument("--append", action="store_true")
-    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--out", default="",
+                    help="a non-default --model gets its own default filename "
+                         "instead of the 410m one")
     args = ap.parse_args()
-    out = Path(args.out)
+    _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    if args.out:
+        out = Path(args.out)
+    elif args.model == DEFAULT_MODEL and not _abl:
+        out = OUT
+    else:
+        out = (DATA / "analysis" /
+               f"member_subspace_geometry_{args.model}{_abl}.json")
 
     def parse(spec):
         return [(int(h[1:h.index("H")]), int(h[h.index("H") + 1:]))
@@ -283,16 +307,17 @@ def main():
     if args.heads:
         heads, source = parse(args.heads), "--heads"
     else:
-        heads, source = members(args.top)
+        heads, source = members(args.top, catalog_path_for(args.model))
     ctrls = [k for k in parse(args.controls) if k not in heads]
     steps = [int(x) for x in args.steps.split(",") if x]
     names = {k: f"L{k[0]}H{k[1]}" for k in heads + ctrls}
 
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
-    res = {"_what_this_is": __doc__, "git_sha": git_sha,
+    res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
+           "ablation": args.ablation,
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
-           "membership_source": source, "d_model": D_MODEL,
+           "membership_source": source,
            "eval": {"n_seqs": args.seqs, "seed": EVAL_SEED, "n_rep": N_REP,
                     "energy_frac": args.energy, "noise_mult": args.noise_mult,
                     "scored_from_position": N_REP - 1},
@@ -304,6 +329,7 @@ def main():
         res["per_step"] = prev["per_step"]
         res["steps"] = sorted(set(prev["steps"]) | set(steps))
 
+    print(f"model:    {args.model}")
     print(f"members:  {', '.join(names[k] for k in heads)}   ({source})")
     print(f"controls: {', '.join(names[k] for k in ctrls)}   "
           f"(near-median dNLL; they carry the null)")
@@ -311,11 +337,23 @@ def main():
           f"{1 + len(heads) + len(ctrls)} arms per step, effect subspace = "
           f"{args.energy:.0%} of energy\n")
 
-    Z = (np.zeros((D_MODEL, 1)), np.zeros((1, D_MODEL)))
     for s in steps:
-        model, _ = load_causal_lm(f"pythia-410m-step{s}")
+        model, _ = load_causal_lm(f"{args.model}-step{s}")
         model.eval()
+        d_model, d_head, n_heads = arch_dims(model)
+        n_layers = len(model.gpt_neox.layers)
+        bad = [names[k] for k in heads + ctrls
+               if not (0 <= k[0] < n_layers and 0 <= k[1] < n_heads)]
+        if bad:
+            raise SystemExit(
+                f"{', '.join(bad)}: out of range for {args.model} "
+                f"({n_layers} layers x {n_heads} heads/layer) -- --heads and "
+                f"--controls must name heads that exist at this rung; the "
+                f"410m defaults do not carry over (see --controls help)")
+        res["d_model"] = d_model
         ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+        means = (head_means(model, ids, heads + ctrls, args.chunk)
+                 if args.ablation == "mean" else None)
 
         nll0, R0 = resid_matrix(model, ids, args.chunk)
         base_norm = float(np.linalg.norm(R0))
@@ -327,10 +365,8 @@ def main():
 
         D, B, K, per_head = {}, {}, {}, {}
         for k in heads + ctrls:
-            saved = ov_factors(model, *k)
-            write_ov(model, *k, *Z)
-            nll, R = resid_matrix(model, ids, args.chunk)
-            write_ov(model, *k, *saved)
+            with ablated(model, [k], args.ablation, means):
+                nll, R = resid_matrix(model, ids, args.chunk)
 
             D[k] = R - R0
             sv = spectrum(D[k])
@@ -377,7 +413,7 @@ def main():
                     "mean_delta_cosine": float(
                         np.dot(ma, mb) /
                         (np.linalg.norm(ma) * np.linalg.norm(mb))),
-                    "chance_isotropic": float(np.sqrt(min(K[a], K[b]) / D_MODEL)),
+                    "chance_isotropic": float(np.sqrt(min(K[a], K[b]) / d_model)),
                     "cross_coverage_a_in_b": coverage(D[a], B[b]),
                     "cross_coverage_b_in_a": coverage(D[b], B[a])}
 
@@ -402,8 +438,8 @@ def main():
             h = per_head[names[k]]
             h["coverage_by_others"] = coverage(D[k], Q)
             h["coverage_by_others_dim"] = int(Q.shape[1])
-            h["coverage_by_others_chance_isotropic"] = float(Q.shape[1] / D_MODEL)
-            h["coverage_saturated"] = bool(Q.shape[1] > D_MODEL / 3)
+            h["coverage_by_others_chance_isotropic"] = float(Q.shape[1] / d_model)
+            h["coverage_saturated"] = bool(Q.shape[1] > d_model / 3)
         # A control's coverage by the members' span is what "already covered"
         # scores when there is nothing to cover -- the baseline the members must
         # clear to mean anything.
@@ -490,7 +526,7 @@ def main():
               f"{np.mean([c['cka_centered'] for c in pair.values()]):.3f} vs "
               f"null {np.mean([c['cka_centered'] for c in null_pair.values()]):.3f}")
         print(f"{'':>10}ambient: residual PR {participation_ratio(s_amb):.1f} "
-              f"of {D_MODEL}; member energy in ambient top-10 "
+              f"of {d_model}; member energy in ambient top-10 "
               f"{np.mean([per_head[names[k]]['energy_frac_in_ambient_top']['10'] for k in heads]):.3f}, "
               f"top-50 "
               f"{np.mean([per_head[names[k]]['energy_frac_in_ambient_top']['50'] for k in heads]):.3f}")

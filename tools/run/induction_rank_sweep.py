@@ -54,6 +54,7 @@ Weights only ever touched through a save/restore around each measurement; the
 baseline is re-measured at the end and asserted equal to the first one.
 """
 import argparse
+import contextlib
 import json
 import os
 import subprocess
@@ -80,7 +81,145 @@ from core.lm_loading import load_causal_lm
 LAYER, HEAD = 7, 8
 PREV_LAYER, PREV_HEAD = 5, 2          # located from attentions.npz, see docstring
 STEP = 4000
+#: pythia-410m values, kept as the default target's own constants (the
+#: docstring's L5H2 -> L7H8 circuit is 410m-specific either way). NOT used by
+#: ov_factors/write_ov/truncate below -- those read arch_dims(model) so they
+#: are correct at any ladder rung (p8_scale_ladder/design-8.md).
 D_MODEL, D_HEAD, N_HEADS = 1024, 64, 16
+
+
+def arch_dims(model):
+    """`(d_model, d_head, n_heads)` from the loaded model's own config, not a
+    hardcoded 410m constant. The ladder's rungs differ in all three (design-8.md:
+    70m is 512/64/8, 410m is 1024/64/16, 1b is 2048/256/8, 1.4b is 2048/128/16)."""
+    cfg = model.config
+    d_model = cfg.hidden_size
+    n_heads = cfg.num_attention_heads
+    d_head = d_model // n_heads
+    return d_model, d_head, n_heads
+
+
+@torch.no_grad()
+def head_means(model, ids, heads, chunk=8):
+    """`{(layer, head): mean output vector}` from a **clean** forward pass.
+
+    Mean over (batch, position) of the head's slice of `attention.dense`'s
+    input. Precomputing on the clean run is what makes a multi-head mean
+    ablation well defined: taken in-pass instead, an earlier layer's ablation
+    changes the activations a later head's mean is computed from, so the arm
+    would depend on layer order, and a chunked eval would use per-chunk means.
+    Single-head arms are unaffected either way -- a head's own slice is read
+    before it is replaced, and nothing upstream is intervened on.
+    """
+    _, d_head, _ = arch_dims(model)
+    by_layer = {}
+    for (L, H) in heads:
+        by_layer.setdefault(L, []).append(H)
+    acc = {}
+
+    def make_hook(L, idxs):
+        def hook(mod, args):
+            x = args[0]
+            for H in idxs:
+                v = x[..., H * d_head:(H + 1) * d_head].reshape(-1, d_head)
+                s, n = acc.get((L, H), (0.0, 0))
+                acc[(L, H)] = (s + v.double().sum(0), n + v.shape[0])
+        return hook
+
+    handles = [model.gpt_neox.layers[L].attention.dense
+               .register_forward_pre_hook(make_hook(L, idxs))
+               for L, idxs in by_layer.items()]
+    try:
+        for i in range(0, len(ids), chunk):
+            model(ids[i:i + chunk])
+    finally:
+        for h in handles:
+            h.remove()
+    return {k: (s / n) for k, (s, n) in acc.items()}
+
+
+@contextlib.contextmanager
+def ablated(model, heads, mode="ov", means=None):
+    """One ablation arm, in whichever mode, restoring on exit.
+
+    `ov` is the historical weight path (`write_ov` with zero factors, which
+    leaves the value bias -- see `ablate_heads`); `zero` and `mean` intervene
+    on the activation. Pass `means` from `head_means` for any multi-head arm.
+    """
+    if mode == "ov":
+        d_model, _, _ = arch_dims(model)
+        Z = (np.zeros((d_model, 1)), np.zeros((1, d_model)))
+        saved = {k: ov_factors(model, *k) for k in heads}
+        for k in heads:
+            write_ov(model, *k, *Z)
+        try:
+            yield
+        finally:
+            for k, (a, b) in saved.items():
+                write_ov(model, *k, a, b)
+    else:
+        with ablate_heads(model, heads, mode=mode, means=means):
+            yield
+
+
+@contextlib.contextmanager
+def ablate_heads(model, heads, mode="mean", means=None):
+    """Activation-level whole-head ablation, as a context manager.
+
+    Intervenes on the input to `attention.dense`, whose columns
+    `[h*d_head:(h+1)*d_head]` are exactly head `h`'s output before `W_O` mixes
+    the heads together. Each named head's slice is replaced by:
+
+      ``zero``  the zero vector. **This is what `write_ov`'s zero-factor path
+                does NOT do.** That path zeroes `W_V`'s *weight* and leaves its
+                *bias*, so the head keeps writing a constant: measured at
+                pythia-70m `L3H6`, norm **0.1007** identical at every position
+                (std across positions 5e-9) against an unablated 2.1-3.2.
+                Every 7d/7e/8 number to date is therefore a **bias-ablation**,
+                not a zero-ablation -- small, but not nothing, and not what the
+                docstrings say.
+      ``mean``  the slice's own mean over (batch, position), so the head writes
+                what it writes *on average* rather than being removed from the
+                residual stream. The standard control for zero-ablation's
+                off-distribution bias, which matters more at small `n_heads`:
+                one head is 1/8 of a pythia-70m layer against 1/16 at 410m.
+
+    `means` (from `head_means`, taken on a CLEAN pass) is what makes a
+    multi-head mean arm well defined. Without it the mean is computed in-pass,
+    which is exact for a single head -- the slice is read before it is replaced
+    and nothing upstream is intervened on -- but for several heads it becomes
+    order-dependent (an earlier layer's ablation moves a later head's mean) and
+    chunk-dependent (per-chunk rather than per-batch means).
+    """
+    if mode not in ("zero", "mean"):
+        raise ValueError(f"mode must be 'zero' or 'mean', got {mode!r}")
+    _, d_head, _ = arch_dims(model)
+    by_layer = {}
+    for (L, H) in heads:
+        by_layer.setdefault(L, []).append(H)
+
+    def make_hook(L, idxs):
+        def hook(mod, args):
+            x = args[0].clone()
+            for H in idxs:
+                sl = slice(H * d_head, (H + 1) * d_head)
+                if mode == "zero":
+                    x[..., sl] = 0.0
+                elif means is not None:
+                    x[..., sl] = means[(L, H)].to(x.dtype)
+                else:
+                    x[..., sl] = x[..., sl].mean(dim=(0, 1), keepdim=True)
+            return (x,) + args[1:]
+        return hook
+
+    handles = [model.gpt_neox.layers[L].attention.dense
+               .register_forward_pre_hook(make_hook(L, idxs))
+               for L, idxs in by_layer.items()]
+    try:
+        yield
+    finally:
+        for h in handles:
+            h.remove()
 
 #: Repeated-sequence induction eval. `n_rep` tokens sampled uniformly from a
 #: safe id range, concatenated twice; the model is scored on the SECOND copy,
@@ -91,6 +230,20 @@ D_MODEL, D_HEAD, N_HEADS = 1024, 64, 16
 N_REP = 96
 N_SEQS = 8
 VOCAB_LO, VOCAB_HI = 1000, 40000
+
+#: Probe token ranges. `wide` is what every 7d/7e/8 number to date was measured
+#: on and stays the default, so nothing already recorded changes meaning.
+#: `freq` samples lower BPE ids, which are far more frequent tokens, and is
+#: strictly the better probe on the evidence in
+#: `p8_scale_ladder/probe_distribution.py`: at pythia-70m step 143000 it keeps
+#: the induction dynamic range (ICL median gap **10.41** against `wide`'s 3.76)
+#: while cutting positions above the `ln 50304` ceiling from **42 % to 8 %**.
+#: `wide`'s true-token median rank is ~23000 of 50304 on the FIRST copy at every
+#: rung -- the probe is far out of distribution for any trained LM, and at a
+#: small model's late checkpoints the language prior beats the copy mechanism
+#: on it, which reads as an induction collapse that repeated natural text shows
+#: is not there (70m@143000 copies at 99.2 % top-1 on prose).
+PROBE_ARMS = {"wide": (VOCAB_LO, VOCAB_HI), "freq": (1000, 5000)}
 EVAL_SEED = 20260907
 
 
@@ -124,41 +277,50 @@ def ov_factors(model, layer, head):
     """`(A, B)` with `OV_h = A @ B`, in `p2_eigenspectra/weights.py`'s
     convention `OV_h = W_V_h.T @ W_O_h.T`. Verified 2026-09-07 against the
     on-disk `ov_head<h>_layer_<l>` to 1.3e-7 relative, the fp32 storage floor."""
+    d_model, d_head, n_heads = arch_dims(model)
     attn = model.gpt_neox.layers[layer].attention
     qkv = attn.query_key_value.weight.detach().numpy().astype(np.float64)
     dense = attn.dense.weight.detach().numpy().astype(np.float64)
-    qkv3 = qkv.reshape(N_HEADS, 3 * D_HEAD, D_MODEL)
-    W_V = qkv3[head, 2 * D_HEAD:, :]              # (64, 1024)
-    W_O = dense[:, head * D_HEAD:(head + 1) * D_HEAD]   # (1024, 64)
-    return W_V.T.copy(), W_O.T.copy()             # A (1024,64), B (64,1024)
+    qkv3 = qkv.reshape(n_heads, 3 * d_head, d_model)
+    W_V = qkv3[head, 2 * d_head:, :]              # (d_head, d_model)
+    W_O = dense[:, head * d_head:(head + 1) * d_head]   # (d_model, d_head)
+    return W_V.T.copy(), W_O.T.copy()             # A (d_model,d_head), B (d_head,d_model)
 
 
 def write_ov(model, layer, head, A, B):
     """Write `OV = A @ B` back, padding the factors to `d_head` with zeros."""
+    d_model, d_head, n_heads = arch_dims(model)
     attn = model.gpt_neox.layers[layer].attention
     r = A.shape[1]
-    A_pad = np.zeros((D_MODEL, D_HEAD)); A_pad[:, :r] = A
-    B_pad = np.zeros((D_HEAD, D_MODEL)); B_pad[:r, :] = B
+    A_pad = np.zeros((d_model, d_head)); A_pad[:, :r] = A
+    B_pad = np.zeros((d_head, d_model)); B_pad[:r, :] = B
     with torch.no_grad():
         qkv = attn.query_key_value.weight
-        v = qkv.view(N_HEADS, 3 * D_HEAD, D_MODEL)[head, 2 * D_HEAD:, :]
+        v = qkv.view(n_heads, 3 * d_head, d_model)[head, 2 * d_head:, :]
         v.copy_(torch.tensor(A_pad.T, dtype=qkv.dtype))
-        attn.dense.weight[:, head * D_HEAD:(head + 1) * D_HEAD].copy_(
+        attn.dense.weight[:, head * d_head:(head + 1) * d_head].copy_(
             torch.tensor(B_pad.T, dtype=attn.dense.weight.dtype))
 
 
 def truncate(A, B, r, basis, rng=None):
-    """Rank-r factors for the head's OV in the requested basis."""
+    """Rank-r factors for the head's OV in the requested basis.
+
+    `d_model, d_head = A.shape[0], B.shape[0]` -- read off the *factors passed
+    in* rather than a hardcoded or model-derived constant, since callers also
+    truncate sub-head-width factors (e.g. `induction_qk_sweep.py`'s 48-dim
+    unrotated static core, where `d_head` would otherwise silently mean 64)."""
+    d_model = A.shape[0]
     if r == 0:
         # The ceiling of the whole curve: the head's OV removed entirely. Every
         # basis agrees here by construction, and without it the curve has no
         # top end to read `r*` against.
-        return np.zeros((D_MODEL, 0)), np.zeros((0, D_MODEL))
+        return np.zeros((d_model, 0)), np.zeros((0, d_model))
+    d_head = B.shape[0]
     if basis == "svd":
         U, s, Vt = np.linalg.svd(A @ B, full_matrices=False)
         return U[:, :r] * s[:r], Vt[:r]
     if basis == "schur":
-        C = B @ A                                   # (64, 64) head core
+        C = B @ A                                   # (d_head, d_head) head core
         T, Q, sdim = sla.schur(C, output="complex",
                                sort=lambda z: False)  # unsorted; reorder below
         ev = np.diag(T)
@@ -176,7 +338,7 @@ def truncate(A, B, r, basis, rng=None):
         # Matched-norm random rank-r control: a random r-dim projector in the
         # core, so the operator norm scale and the factor structure match the
         # real truncation and only the DIRECTIONS are structureless.
-        Qr, _ = np.linalg.qr(rng.normal(size=(D_HEAD, r)))
+        Qr, _ = np.linalg.qr(rng.normal(size=(d_head, r)))
         P = Qr @ Qr.T
         return A @ P, B
     raise ValueError(basis)

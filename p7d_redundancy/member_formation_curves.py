@@ -56,11 +56,13 @@ import torch
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    D_MODEL, N_REP, VOCAB_LO, VOCAB_HI, EVAL_SEED, ov_factors, write_ov,
+    N_REP, PROBE_ARMS, VOCAB_LO, VOCAB_HI, EVAL_SEED, ablated, arch_dims,
+    head_means,
 )
 
 OUT = DATA / "analysis" / "member_formation_curves.json"
 CATALOG = DATA / "analysis" / "redundancy_catalog.json"
+DEFAULT_MODEL = "pythia-410m"
 
 #: The registered 19-step grid (`core.changepoint_colocation`), imported rather
 #: than restated so this cannot drift from the grid the gate reads.
@@ -72,24 +74,57 @@ ALL_STEPS = list(REGISTERED_P_I1_SWEEP)
 #: the parts it must be differenced against.
 PAIR = "L5H2,L7H8"
 
-#: Fallback membership if the git-ignored catalogue is not on disk: §3.14.2's
-#: Q1 answer, every head above +0.1 at step 16000, 8 sequences.
+#: Fallback membership if the git-ignored 410m catalogue is not on disk:
+#: §3.14.2's Q1 answer, every head above +0.1 at step 16000, 8 sequences.
+#: 410m-specific coordinates -- never used for any other --model (see members()).
 FALLBACK = [(5, 2), (7, 8), (12, 5), (8, 6), (11, 14), (8, 9)]
 
+#: The step `redundancy_catalog.py` is conventionally run at (its own default),
+#: so `catalog_path_for` can find a non-410m catalogue without the caller
+#: having to name the step again.
+CATALOG_STEP = 16000
 
-def members(n):
-    """Top-`n` catalogue members, from the sweep if it is on disk."""
-    if CATALOG.exists():
-        rows = json.load(open(CATALOG))["heads"]
+
+def catalog_path_for(model, default_model="pythia-410m"):
+    """Which catalogue `members()` should read for this `--model`.
+
+    `redundancy_catalog.py` writes the 410m catalogue to the historical fixed
+    name (`CATALOG`) and every other model/step combination to its own
+    `redundancy_catalog_{model}_step{N}.json` (p8_scale_ladder/design-8.md:
+    the two artifacts must never be conflated) -- this mirrors that naming so
+    the two files agree without a second copy of the convention.
+    """
+    if model == default_model:
+        return CATALOG
+    return DATA / "analysis" / f"redundancy_catalog_{model}_step{CATALOG_STEP}.json"
+
+
+def members(n, catalog=CATALOG):
+    """Top-`n` catalogue members, from the sweep if it is on disk.
+
+    `catalog != CATALOG` (a non-410m rung) gets NO fallback: the 410m
+    `FALLBACK` list's head coordinates are meaningless or out-of-range at
+    another rung (e.g. `L12H5` does not exist at 70m's 6 layers), and
+    silently returning them would measure the wrong heads without saying so.
+    """
+    if catalog.exists():
+        rows = json.load(open(catalog))["heads"]
         rows.sort(key=lambda r: -r["dnll"])
-        return [(r["layer"], r["head_idx"]) for r in rows[:n]], str(CATALOG)
-    return FALLBACK[:n], "fallback list (catalogue not on disk)"
+        return [(r["layer"], r["head_idx"]) for r in rows[:n]], str(catalog)
+    if catalog == CATALOG:
+        return FALLBACK[:n], "fallback list (catalogue not on disk)"
+    raise SystemExit(
+        f"{catalog} not found -- run redundancy_catalog.py with this run's "
+        f"--model at --step {CATALOG_STEP} first, or pass --heads explicitly "
+        f"rather than --top")
 
 
-def batch(rng, n):
+def batch(rng, n, lo=VOCAB_LO, hi=VOCAB_HI):
+    """`n` repeated random-token sequences. Defaults are the `wide` arm every
+    7d/7e/8 number was measured on; see `induction_rank_sweep.PROBE_ARMS`."""
     return torch.tensor(np.stack([
         np.concatenate([s, s]) for s in
-        (rng.integers(VOCAB_LO, VOCAB_HI, size=N_REP) for _ in range(n))
+        (rng.integers(lo, hi, size=N_REP) for _ in range(n))
     ]), dtype=torch.long)
 
 
@@ -107,6 +142,7 @@ def probe(model, ids, chunk=4, want_vec=True):
     was killed for memory at step 4000.
     """
     lc, lz, vecs = [], [], []
+    d_model = model.config.hidden_size
     for i in range(0, len(ids), chunk):
         out = model(ids[i:i + chunk], output_hidden_states=want_vec)
         lg = out.logits[:, :-1, :].float()
@@ -117,7 +153,7 @@ def probe(model, ids, chunk=4, want_vec=True):
         lz.append(z[:, N_REP - 1:].numpy().astype(np.float64))
         if want_vec:
             h = out.hidden_states[-1][:, N_REP - 1:, :].float()
-            vecs.append(h.reshape(-1, D_MODEL).mean(0).numpy().astype(np.float64))
+            vecs.append(h.reshape(-1, d_model).mean(0).numpy().astype(np.float64))
             del h
         del out, lg, z, c
     return (float(-(np.concatenate(lc).mean() - np.concatenate(lz).mean())),
@@ -126,6 +162,11 @@ def probe(model, ids, chunk=4, want_vec=True):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL,
+                    help="registry family prefix, e.g. pythia-70m, pythia-410m "
+                         "(p8_scale_ladder/design-8.md rung policy: 1b/1.4b "
+                         "are reserved -- do not pass those without a "
+                         "registered prediction)")
     ap.add_argument("--steps", default=",".join(str(s) for s in ALL_STEPS))
     ap.add_argument("--seqs", type=int, default=16,
                     help="16 matches §3.12-S; the catalogue screen used 8 and "
@@ -136,17 +177,41 @@ def main():
                     help="explicit 'L5H2,L7H8' override of --top")
     ap.add_argument("--pair", default=PAIR,
                     help="the two heads the joint arm ablates together; the "
-                         "default is §3.12-S's pair, so the interaction stays "
-                         "comparable with it")
+                         "default is §3.12-S's 410m pair, so the interaction "
+                         "stays comparable with it. A non-410m --model MUST "
+                         "override this -- L7H8 does not exist at 70m's 6 "
+                         "layers, and the default is refused rather than "
+                         "silently wrong")
     ap.add_argument("--chunk", type=int, default=4)
+    ap.add_argument("--probe", default="wide", choices=tuple(PROBE_ARMS),
+                    help="token range the repeated sequences are drawn from. "
+                         "'wide' is every existing number; 'freq' is the less "
+                         "out-of-distribution probe -- see PROBE_ARMS and "
+                         "p8_scale_ladder/probe_distribution.py")
+    ap.add_argument("--ablation", default="ov", choices=("ov", "zero", "mean"),
+                    help="'ov' is the historical weight path; 'mean' replaces "
+                         "each head's output with its clean-run mean, the "
+                         "control for zero-ablation's off-distribution bias "
+                         "(which distorts at 70m's 8 heads/layer -- see "
+                         "p8_scale_ladder/status-8.md's ablation-mode A/B)")
     ap.add_argument("--append", action="store_true",
                     help="merge into an existing output rather than replacing it")
-    ap.add_argument("--out", default=str(OUT),
-                    help="a run over a different --pair or --heads belongs in "
-                         "its own file; the default is the main six-member "
-                         "curve and a partial run WILL replace it")
+    ap.add_argument("--out", default="",
+                    help="a run over a different --pair, --heads, or --model "
+                         "belongs in its own file; the default is the main "
+                         "410m six-member curve and a partial run WILL "
+                         "replace it -- a non-default --model gets its own "
+                         "default filename instead")
     args = ap.parse_args()
-    out = Path(args.out)
+    _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    _abl += "" if args.probe == "wide" else f"_{args.probe}"
+    if args.out:
+        out = Path(args.out)
+    elif args.model == DEFAULT_MODEL and not _abl:
+        out = OUT
+    else:
+        out = (DATA / "analysis" /
+               f"member_formation_curves_{args.model}{_abl}.json")
 
     def parse(spec):
         return [(int(h[1:h.index("H")]), int(h[h.index("H") + 1:]))
@@ -155,7 +220,12 @@ def main():
     if args.heads:
         heads, source = parse(args.heads), "--heads"
     else:
-        heads, source = members(args.top)
+        heads, source = members(args.top, catalog_path_for(args.model))
+    if args.model != DEFAULT_MODEL and args.pair == PAIR:
+        raise SystemExit(
+            f"--pair defaults to the 410m pair {PAIR!r}, which does not carry "
+            f"over to {args.model!r} -- pass an explicit --pair for this rung "
+            f"(see redundancy_catalog's top heads for a candidate)")
     pair = parse(args.pair)
     if len(pair) != 2:
         raise SystemExit(f"--pair needs exactly two heads, got {args.pair!r}")
@@ -167,7 +237,9 @@ def main():
 
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
-    res = {"_what_this_is": __doc__, "git_sha": git_sha,
+    res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
+           "ablation": args.ablation, "probe": args.probe,
+           "probe_vocab_range": list(PROBE_ARMS[args.probe]),
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "membership_source": source,
            "eval": {"n_seqs": args.seqs, "n_rep": N_REP, "seed": EVAL_SEED,
@@ -180,6 +252,8 @@ def main():
         res["per_step"] = prev["per_step"]
         res["steps"] = sorted(set(prev["steps"]) | set(steps))
 
+    print(f"model:   {args.model}   probe: {args.probe} "
+          f"{PROBE_ARMS[args.probe]}   ablation: {args.ablation}")
     print(f"members: {', '.join(names[k] for k in heads)}   ({source})")
     print(f"grid:    {len(steps)} steps, {args.seqs} sequences, "
           f"{len(heads) + 2} forward arms per step\n")
@@ -187,20 +261,26 @@ def main():
           " ".join(f"{names[k]:>8}" for k in heads) +
           f" {'joint':>8} {'INTER':>8} {'cos':>7} {'restore':>8}")
 
-    Z = (np.zeros((D_MODEL, 1)), np.zeros((1, D_MODEL)))
     for s in steps:
-        model, _ = load_causal_lm(f"pythia-410m-step{s}")
+        model, _ = load_causal_lm(f"{args.model}-step{s}")
         model.eval()
-        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+        d_model, d_head, n_heads = arch_dims(model)
+        n_layers = len(model.gpt_neox.layers)
+        bad = [names[k] for k in heads
+               if not (0 <= k[0] < n_layers and 0 <= k[1] < n_heads)]
+        if bad:
+            raise SystemExit(
+                f"{', '.join(bad)}: out of range for {args.model} "
+                f"({n_layers} layers x {n_heads} heads/layer)")
+        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs,
+                    *PROBE_ARMS[args.probe])
+        # Clean-run means, so the joint arm does not depend on layer order.
+        means = (head_means(model, ids, heads, args.chunk)
+                 if args.ablation == "mean" else None)
 
         def run(ablate, want_vec):
-            saved = {k: ov_factors(model, *k) for k in ablate}
-            for k in ablate:
-                write_ov(model, *k, *Z)
-            r = probe(model, ids, args.chunk, want_vec)
-            for k, (a, b) in saved.items():
-                write_ov(model, *k, a, b)
-            return r
+            with ablated(model, ablate, args.ablation, means):
+                return probe(model, ids, args.chunk, want_vec)
 
         nll0, vec0 = probe(model, ids, args.chunk, True)
         single = {}

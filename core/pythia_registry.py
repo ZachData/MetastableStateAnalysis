@@ -139,6 +139,16 @@ PYTHIA_ALL_STEPS = sorted(set(
 PYTHIA_410M_REPO = "EleutherAI/pythia-410m"
 PYTHIA_1_4B_REPO = "EleutherAI/pythia-1.4b"
 
+# p8_scale_ladder's exploration and reserved rungs (design-8.md). Both use the
+# full published-checkpoint schedule (`PYTHIA_ALL_STEPS`) rather than a
+# family-specific pilot/anchor list: unlike 410m/1.4b, which carry earlier
+# phases' historical schedules, these two exist for the ladder alone, and the
+# ladder's whole point is "one data order and one checkpoint schedule across
+# sizes" (status-8.md). Adding 1b here is not measuring it -- the rung policy
+# is enforced by the runners, not by registry absence.
+PYTHIA_70M_REPO = "EleutherAI/pythia-70m"
+PYTHIA_1B_REPO = "EleutherAI/pythia-1b"
+
 
 def _revision_for_step(step: int) -> str:
     return f"step{step}"
@@ -206,10 +216,13 @@ def build_pythia_model_configs() -> dict:
     """
     MODEL_CONFIGS-format entries for every Pythia-410M step in
     `PYTHIA_410M_STEPS` — the pilot schedule together with `CLAIM-B`'s
-    registered sweep — and every Pythia-1.4B anchor checkpoint.
+    registered sweep — every Pythia-1.4B anchor checkpoint, and every
+    published step for 70M and 1B (p8_scale_ladder's exploration and
+    reserved rungs -- see `PYTHIA_70M_REPO`/`PYTHIA_1B_REPO` above).
 
-    Keys: "pythia-410m-step{N}", "pythia-1.4b-step{N}", and the single
-    non-checkpoint entry "pythia-1.4b-random".
+    Keys: "pythia-410m-step{N}", "pythia-1.4b-step{N}", "pythia-70m-step{N}",
+    "pythia-1b-step{N}", and the single non-checkpoint entry
+    "pythia-1.4b-random".
     """
     cfgs = {}
 
@@ -218,6 +231,12 @@ def build_pythia_model_configs() -> dict:
 
     for step in PYTHIA_1_4B_ANCHOR_STEPS:
         cfgs[f"pythia-1.4b-step{step}"] = _pythia_entry(PYTHIA_1_4B_REPO, step)
+
+    for step in PYTHIA_ALL_STEPS:
+        cfgs[f"pythia-70m-step{step}"] = _pythia_entry(PYTHIA_70M_REPO, step)
+
+    for step in PYTHIA_ALL_STEPS:
+        cfgs[f"pythia-1b-step{step}"] = _pythia_entry(PYTHIA_1B_REPO, step)
 
     # The second baseline object. Named to satisfy
     # `family_baselines("pythia-1.4b", ...)["random"]`, which matches
