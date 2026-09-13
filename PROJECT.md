@@ -12,7 +12,7 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
+| Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
 | Last updated | 2026-09-13 — **§3.22 is the one to read: the self-repair measured exhaustively, and it CORRECTS §3.21.** The stand-in population is **44 heads**, not three; the four largest were missed by §3.21's attention search (`L5H9` +3.36, `L9H5` +2.75, `L1H15` +2.35, all above `L11H14` +1.94); and **MLP 6 beats every head at +6.26** on a solo effect of +0.14, specific to `L5H2` (50x smaller against `L7H8`/`L12H5`), which overturns §3.12-Q6's weights-only "no MLP pathway". Stand-ins split by position: upstream ones partly restore `L7H8`'s attention, downstream ones (`L11H14`, `L9H5`) move it by exactly 0.0000. What selects the relay is **composition, not prev-token attention** (`L4H9`/`L3H1` carry 71–83 % of `L5H2`'s prev-token score and do nothing). §3.21/§3.20 (same day, prerequisites) closed §3.12-U's `L5H2` puzzle. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, both rungs' post-minimum fates non-replicating (§3.19); §3.18 — the set DIVIDES induction and FV roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -37,12 +37,14 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-12 — four PRs open in a stack; invariant 4 needs rewording BEFORE it is registered)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.22 is the current front)
 
-**Read this block, then §3.19, §3.18, §3.17 in that order.** Everything below
-this block is earlier and is kept as background, not as the current state.
+**Read this block, then §3.22, §3.21, §3.20 in that order** — that is the
+`L5H2`/self-repair thread, which is where the work actually is. §3.19–§3.17
+are the phase-8 material behind PRs #37–#39. Everything below this block is
+earlier and is kept as background, not as the current state.
 
-**Nothing is running and nothing is uncommitted.** All four branches are pushed
+**Nothing is running and nothing is uncommitted.** All five branches are pushed
 and in sync with their remotes; the only untracked path is `data/hf/` (the HF
 cache — never `git add -A` under `data/`, its `.no_exist/` markers are not
 gitignored). Gate green: **2280 passed / 5 skipped / 30 deselected**.
@@ -55,7 +57,8 @@ order and merge in order.**
 | #36 | `claude/rescaler-cache-identity-test` → `main` | process tooling, working agreements, 47 sympy checks |
 | #37 | `claude/probe-ceiling-svd-third-class` | `--probe` on two more runners; invariants 5/6 re-read on `freq` |
 | #38 | `claude/fv-head-division-of-labour` | the FV experiment (§3.18) + `tests/test_p7d_fv_score.py` |
-| #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) |
+| #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) + its reword |
+| #40 | `claude/l5h2-self-repair` | the `L5H2` puzzle and the self-repair behind it (§3.20–§3.22) |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
