@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
-| Last updated | 2026-09-12, end of session — **resume block rewritten, read it first**. §3.19 — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES, and **the wording needs fixing before registration**; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
+| Last updated | 2026-09-13 — **invariant 4 reworded in `design-8.md`** (below, and the item this replaces): the wording now stops at the mid-training minimum and states both rungs' post-minimum fates as non-replicating rather than asserting one ending. §3.19 (2026-09-12) — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -62,21 +62,22 @@ repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
 checkbox ticked by hand on CodeRabbit's first comment. `gh` works here; see the
 git block below.
 
-**THE ONE ACTION THAT IS TIME-SENSITIVE.** `design-8.md`'s **invariant 4 is
-worded for a fate that neither rung has**, and it is the phase's load-bearing
-card (`literature-8.md`: the only one both unclaimed and replicating). Measured
-on the set rather than one pair, *born aligned* and *then fans out* both
-replicate — but 410m ends as **a locked core plus one inverted defector** and
-70m **re-coheres** after step 32000. Registration freezes wording
-(`CLAUDE.md` trigger 2), so **reword invariant 4 in `design-8.md` before
-anything is registered against it.** Cheap now, impossible after. §3.19.
+**Invariant 4 has been reworded (2026-09-13).** `design-8.md`'s item 4 no
+longer asserts a fate neither rung has: it now stops the claim at the
+mid-training minimum (both rungs diverge from a birth alignment to a minimum —
+410m at 143000, 70m at step 32000) and states explicitly that what happens
+after is **not** claimed to replicate — 410m ends a locked core plus one
+inverted-direction defector, 70m **re-coheres**. §3.19 has the measurements
+this rests on; this was the phase's one time-sensitive action (registration
+freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
 
 **What else is open, in rough order.**
 
-1. **Reword invariant 4** (above), then decide what of 1/2/4/5/6 is registrable.
-   Invariant 5 is a clean *unclaimed negative* and is the other registration
-   candidate; both rungs are exploration, so a registration needs `1b` as its
-   test site and `1b` may not be touched until that prediction exists.
+1. **Decide what of 1/2/4/5/6 is registrable**, now that invariant 4's wording
+   is fixed. Invariant 5 is a clean *unclaimed negative* and is the other
+   registration candidate; both rungs are exploration, so a registration needs
+   `1b` as its test site and `1b` may not be touched until that prediction
+   exists.
 2. **§3.12-U's `L5H2` puzzle is still open** and §3.16's proposed resolution is
    dead (§3.18): the head with the largest causal effect on the induction
    readout has neither an induction score nor an FV score.
