@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
-| Last updated | 2026-09-13 — **invariant 4 reworded in `design-8.md`** (below, and the item this replaces): the wording now stops at the mid-training minimum and states both rungs' post-minimum fates as non-replicating rather than asserting one ending. §3.19 (2026-09-12) — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
+| Last updated | 2026-09-13 — **§3.20: `L5H2`'s puzzle closed on the mechanism** (new `upstream_relay_check.py`: ablating `L5H2` demonstrably breaks `L7H8`'s own matching attention, 60–600x any generic control, while a magnitude-matched control head — `L12H5` — moves it by exactly 0.0000; the joint-ablation super-additivity is still unreconciled). Also today: **invariant 4 reworded in `design-8.md`** — the wording now stops at the mid-training minimum and states both rungs' post-minimum fates as non-replicating rather than asserting one ending (§3.19, 2026-09-12: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES); §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -78,9 +78,15 @@ freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
    registration candidate; both rungs are exploration, so a registration needs
    `1b` as its test site and `1b` may not be touched until that prediction
    exists.
-2. **§3.12-U's `L5H2` puzzle is still open** and §3.16's proposed resolution is
-   dead (§3.18): the head with the largest causal effect on the induction
-   readout has neither an induction score nor an FV score.
+2. **§3.12-U's `L5H2` puzzle is closed on the mechanism (§3.20, 2026-09-13),
+   not on the additivity.** `L5H2` is a previous-token head whose ablation
+   demonstrably breaks `L7H8`'s own matching attention (60–600x any generic
+   control; a magnitude-matched control, `L12H5`, moves it by 0.0000) — that
+   is why it has neither an induction score nor an FV score of its own. What
+   is still open: why the joint-ablation `ΔNLL` is super-additive when a
+   dependency this direct predicts sub-additive (§3.12-S). Hydra-effect
+   self-repair elsewhere in the 384 heads is the standing hypothesis and is
+   untested; §3.20 names the next probe.
 3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
    analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
    graded KL/λ readout, which is still unbuilt and is now blocking two things.
@@ -3348,6 +3354,54 @@ cheap and would resolve it.**
 > experiment produced a better result than it was designed for: the set
 > divides the two roles between different members rather than transitioning
 > between them.** §3.12-U's puzzle stands as a puzzle.
+>
+> **UPDATE 2026-09-13 — see §3.20. Closed on the mechanism**: `L5H2` is a
+> previous-token head whose ablation demonstrably breaks `L7H8`'s own
+> matching attention; it has neither score because neither is its job. The
+> joint-ablation super-additivity (§3.12-S) is a separate, still-open
+> question.
+
+---
+
+## 3.20 `L5H2`'s puzzle, closed on the mechanism — not on the additivity (2026-09-13)
+
+`p7d_redundancy/upstream_relay_check.py`, new this session; detail in
+`status-7d.md` ("The upstream-relay check"). §3.16/§3.18 filed a puzzle:
+`L5H2` has the largest single-head causal effect on the readout of any
+redundancy-set member (+1.97 at step 16000, §3.12-T) yet scores near zero on
+both instruments ever pointed at it — the QK-based induction-attention score
+(§3.12-U) and the FV score (§3.18). Both instruments measure `L5H2`'s **own**
+behaviour; neither can see a causal role running through a downstream head.
+Two facts already on disk pointed exactly there and had never been connected:
+`L5H2` is a confirmed previous-token head on its own attention (Stage 0,
+2026-09-07: offset −1 = 0.895, ~49x the 384-head median), and its OV composes
+into `L7H8`'s Q/K read-space at rank 0 of 112 (z ≈ +6), onset step 512–1000
+(§3.12-H1-REVISED, 2026-09-09) — a weights-only quantity that was never tested
+for whether it does anything.
+
+**It does.** Ablating `L5H2`'s OV (restore exact) degrades `L7H8`'s **own**
+induction-attention score at every one of 6 checkpoints, 60–600x more than any
+of 4 generic controls per step: delta −0.0052 (step 1000, floor-limited) to
+**−0.3742** (step 4000, `L7H8`'s own formation window) to −0.16 at the trained
+endpoint, against controls that never move it by more than 0.0032. **The
+sharper control**: `L12H5`, the model's third-largest single-head causal
+effect (+0.42), moves `L7H8`'s attention by **exactly 0.0000** at three
+checkpoints — mattering a lot for the readout is not sufficient to disturb
+`L7H8`; only `L5H2` does, so this is not a "removing something big" artifact.
+
+**This closes the mechanism half**: `L5H2` has no induction score of its own
+because it is a genuine previous-token head, not an induction-position
+attender, and no FV score because that is not its job either — its causal
+weight runs through feeding `L7H8`'s own matching attention, and the
+composition already on disk is now shown to be functional rather than only
+structural. **It does not close §3.12-S's super-additivity** — a dependency
+this direct predicts *sub*-additive joint ablation and S1 found the opposite
+(2.2x the sum of the parts). The standing hypothesis, not yet measured, is
+that the Hydra-effect self-repair §3.16 already invokes for 44/45 pairwise
+cells restores `L7H8`'s effect on the **loss** when `L5H2` alone is ablated,
+without restoring `L7H8`'s **attention pattern** — consistent with why an
+attention-level probe, not an NLL one, is what could still see this. Finding
+the head(s) that do that restoring is the next test if this thread reopens.
 
 ---
 

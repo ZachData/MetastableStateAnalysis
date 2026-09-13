@@ -1,10 +1,12 @@
 <!-- p7d_redundancy/status-7d.md -->
 # Phase 7d — STATUS
 
-**Last verified:** 2026-09-10.
+**Last verified:** 2026-09-13.
 **Overall:** Q1, Q2 and Q3 are answered on pythia-410m, and **pass 2 (the
 pairwise interaction matrix) and the geometric axis are now answered too**. Q4
-is mostly on disk and unread; Q5 has a partial answer from geometry alone.
+is mostly on disk and unread; Q5 has a partial answer from geometry alone. The
+`L5H2` puzzle (§3.12-U/§3.16/§3.18) is now closed on the mechanism — see "The
+upstream-relay check" below — though not on the joint-ablation additivity.
 Nothing is registered and nothing can be — every measurement here is on an
 artifact spent under `check_registry` rule 3. Restore checks are exact
 (`0.0e+00`) on every run reported below.
@@ -256,6 +258,78 @@ the **repeated-random-token** probe and reads `L5H2` at 0.0000 at every step;
 **natural-text** probe. Different probes, both saying `L5H2` is a negligible
 attention-pattern induction head. This probe has the dynamic range to tell —
 it reads `L7H8` at 0.947 on the same batch.
+
+### The upstream-relay check (2026-09-13) — **`L5H2`'s puzzle, closed on the mechanism**
+
+`p7d_redundancy/upstream_relay_check.py`, new this session. §3.16/§3.18 filed a
+puzzle: `L5H2` has the largest single-head causal effect on the readout of any
+member (+1.97 at step 16000) yet scores near zero on both instruments ever
+pointed at it — the QK induction-attention score and the FV score. Both of
+those measure `L5H2`'s **own** behaviour; neither can see a causal role that
+runs through a downstream head. Two facts already on disk point exactly there
+and had never been connected: Stage 0 (2026-09-07) found `L5H2` is a
+previous-token head on its own attention (offset −1 = 0.895, ~49x the
+384-head median); `induction_composition_whitening.py`'s H1-REVISED
+(2026-09-09) found `L5H2`'s OV composes into `L7H8`'s Q/K read-space at rank
+0 of 112 (z ≈ +6), onset between step 512 and 1000 — `L5H2`'s own formation
+window. Neither result had been read as an answer to the puzzle before now.
+
+**The functional test.** Ablate `L5H2`'s OV (weights-only, restore exact) and
+read `L7H8`'s **own** induction-attention score, at 6 checkpoints, against 4
+generic controls per step drawn outside the catalogue's top 6
+(`member_formation_curves.members`'s own pool convention):
+
+| step | `L7H8` baseline | after `L5H2` ablated | delta | max \|control delta\| |
+|---|---|---|---|---|
+| 1000 | 0.022 | 0.017 | −0.0052 | 0.0001 |
+| 2000 | 0.378 | 0.165 | **−0.2128** | 0.0032 |
+| 4000 | 0.919 | 0.545 | **−0.3742** | 0.0029 |
+| 8000 | 0.928 | 0.719 | −0.2089 | 0.0011 |
+| 16000 | 0.934 | 0.744 | −0.1901 | 0.0006 |
+| 143000 | 0.946 | 0.784 | −0.1614 | 0.0013 |
+
+At every checkpoint, ablating `L5H2` moves `L7H8`'s own attention pattern
+60–600x more than any of the 4 generic controls that step. **`L5H2` does not
+merely correlate with `L7H8`'s formation — removing it demonstrably breaks
+part of `L7H8`'s own matching mechanism**, from the pair's shared formation
+window through the trained endpoint.
+
+**The sharper control.** A magnitude-matched head is a stronger null than a
+near-zero one: `L12H5`, the model's **third-largest** single-head causal
+effect (+0.42), moves `L7H8`'s induction score by **exactly 0.0000** at steps
+4000, 16000 and 143000. Mattering a lot for the readout is not sufficient to
+disturb `L7H8`'s attention; only `L5H2` does. The disruption is specific to
+this pair, not a "removing something big" artifact.
+
+**What this settles, and what it does not.**
+
+- **Settled: the mechanism half.** `L5H2` has no induction score because it is
+  not attending to the induction position — it is a genuine previous-token
+  head — and no FV score because that is not its job either. Its causal
+  weight comes from feeding `L7H8`'s own matching attention through the
+  composition H1-REVISED already found as a weights-only quantity. That
+  quantity is now shown to be **functional**, not just structural.
+- **Not settled: §3.12-S's super-additivity.** A dependency this direct
+  predicts *sub*-additive joint ablation (remove the input, the matcher has
+  less to match on); S1 found the opposite — joint ablation costs 2.2x the
+  sum of the parts. The natural reconciliation is that the NLL readout has
+  network-wide self-repair available (§3.16's Hydra-effect citation, already
+  invoked for 44/45 pairwise cells) that this attention-level probe cannot
+  see: something elsewhere in the 384 heads may partly restore `L7H8`'s
+  *effect on the loss* when `L5H2` alone is gone, without restoring `L7H8`'s
+  *own attention pattern* — which is exactly why an attention-level probe,
+  not an NLL one, is what could still see the dependency. **This is a
+  hypothesis, not a measurement.** The next test, if this thread is picked up
+  again: search the other ~380 heads' own induction-attention delta under
+  `L5H2`-alone ablation for whichever one moves to partly cover the NLL gap.
+- Step 1000 is floor-limited (`L7H8`'s own baseline there is 0.022, §3.14.4-D)
+  — read the −0.0052 as a direction, not a magnitude.
+- Exploratory; no p-value; `claims/registry.json` unchanged; pythia-410m spent
+  under `check_registry` rule 3.
+
+`data/analysis/upstream_relay_check.json` (git-ignored, ~3 min for the 6-step
+grid): `python -u p7d_redundancy/upstream_relay_check.py --steps
+1000,2000,4000,8000,16000,143000`.
 
 ## What is open
 
