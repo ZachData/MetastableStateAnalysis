@@ -43,6 +43,13 @@ the catalogue's own top members (`p7d_redundancy.member_formation_curves`'s
 own pool convention, reused rather than reinvented) and scores them
 identically.
 
+`--background` (added 2026-09-13) ablates a fixed set in EVERY arm including
+the baseline, which is what lets the same instrument ask the conditional
+question §3.21's sweep raised: does a candidate backup restore the target's
+attention **once the relay is already gone**? On the clean model a backup is
+by definition redundant, so the unconditional arm reads ~0 for it and says
+nothing either way.
+
 WHAT THIS DOES NOT SETTLE. A drop confirms the composition is functional but
 not that it is THE explanation for `L5H2`'s causal effect -- §3.12-S's
 residual-delta-cosine reading (structurally distinct operators converging on
@@ -93,6 +100,16 @@ def main():
     ap.add_argument("--controls", type=int, default=4,
                      help="generic heads ablated identically, as the "
                           "measured null (§3.12-V3)")
+    ap.add_argument("--background", default="",
+                     help="heads ablated in EVERY arm, the baseline reference "
+                          "included, so each delta is measured against the "
+                          "background-ablated state rather than the clean "
+                          "model. `--background L5H2 --source L4H9` asks "
+                          "whether a candidate backup restores the target's "
+                          "attention once the relay is already gone -- a "
+                          "question the clean-model arm cannot pose, because "
+                          "on the clean model the backup is redundant "
+                          "(§3.21).")
     ap.add_argument("--top", type=int, default=6,
                      help="catalogue members excluded from the control pool")
     ap.add_argument("--seqs", type=int, default=16)
@@ -102,6 +119,7 @@ def main():
     args = ap.parse_args()
 
     source, target = parse_head(args.source), parse_head(args.target)
+    background = [parse_head(h) for h in args.background.split(",") if h]
     out = Path(args.out) if args.out else (
         OUT if args.model == DEFAULT_MODEL else
         DATA / "analysis" / f"upstream_relay_check_{args.model}.json")
@@ -114,12 +132,14 @@ def main():
     res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "source": args.source, "target": args.target,
+           "background": [f"L{L}H{H}" for L, H in background],
            "membership_source": msource, "probe": args.probe,
            "n_seqs": args.seqs, "n_controls": args.controls,
            "steps": steps, "per_step": {}}
 
     print(f"model: {args.model}   source (ablated): {args.source}   "
-          f"target (read): {args.target}\n")
+          f"target (read): {args.target}"
+          + (f"   background: {args.background}" if background else "") + "\n")
 
     for s in steps:
         model, _ = load_causal_lm(f"{args.model}-step{s}")
@@ -136,15 +156,34 @@ def main():
         ctrl = [pool[i] for i in
                 rng_c.choice(len(pool), size=args.controls, replace=False)]
 
-        base = induction_scores(model, ids, [source, target],
-                                 max(1, args.chunk // 2))
+        def measure(extra, want=(source, target)):
+            """Scores with `background + extra` ablated, in ONE arm.
+
+            One `ablated` call rather than nested ones: nesting two `ov`-mode
+            contexts over overlapping heads would have the inner restore write
+            back weights the outer had already zeroed.
+            """
+            heads = list(dict.fromkeys(list(background) + list(extra)))
+            if not heads:
+                return induction_scores(model, ids, list(want),
+                                        max(1, args.chunk // 2))
+            with ablated(model, heads, mode="ov"):
+                return induction_scores(model, ids, list(want),
+                                        max(1, args.chunk // 2))
+
+        if source in background:
+            raise SystemExit(
+                f"--source {args.source} is also in --background; the source "
+                f"must be ablated by the arm, not by the background")
+
+        base = measure([])
         row = {"baseline_source": base[source], "baseline_target": base[target],
-               "controls": [f"L{L}H{H}" for L, H in ctrl], "ablations": {}}
+               "controls": [f"L{L}H{H}" for L, H in ctrl],
+               "background": [f"L{L}H{H}" for L, H in background],
+               "ablations": {}}
 
         for (L, H) in [source] + ctrl:
-            with ablated(model, [(L, H)], mode="ov"):
-                abl = induction_scores(model, ids, [target],
-                                        max(1, args.chunk // 2))
+            abl = measure([(L, H)], want=(target,))
             d = abl[target] - base[target]
             row["ablations"][f"L{L}H{H}"] = {
                 "target_induction_ablated": abl[target], "delta": d}
@@ -153,8 +192,7 @@ def main():
                   f"target induction {base[target]:.4f} -> {abl[target]:.4f}  "
                   f"delta {d:+.4f}", flush=True)
 
-        chk = induction_scores(model, ids, [source, target],
-                                max(1, args.chunk // 2))
+        chk = measure([])
         restore_diff = max(abs(chk[source] - base[source]),
                             abs(chk[target] - base[target]))
         row["restore_check_abs_diff"] = restore_diff

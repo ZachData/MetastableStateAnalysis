@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
-| Last updated | 2026-09-13 — **§3.21: the super-additivity is set-wide self-repair.** `L11H14`, `L8H6`, `L8H9` all reproduce `L7H8`'s own super-additive interaction with `L5H2` (`L11H14`'s is 8–11x its solo effect) — §3.12-S's puzzle was never a private `L5H2`×`L7H8` feature, the pairwise arm was only seeing one of several stand-ins. §3.20 (same day, prerequisite): `L5H2`'s puzzle closed on the mechanism — ablating it demonstrably breaks `L7H8`'s own matching attention, 60–600x any generic control, 0.0000 for a magnitude-matched one. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, states both rungs' post-minimum fates as non-replicating (§3.19, 2026-09-12: "70m never separates" withdrawn, 410m a locked core + one defector, 70m RE-COHERES); §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
+| Last updated | 2026-09-13 — **§3.22 is the one to read: the self-repair measured exhaustively, and it CORRECTS §3.21.** The stand-in population is **44 heads**, not three; the four largest were missed by §3.21's attention search (`L5H9` +3.36, `L9H5` +2.75, `L1H15` +2.35, all above `L11H14` +1.94); and **MLP 6 beats every head at +6.26** on a solo effect of +0.14, specific to `L5H2` (50x smaller against `L7H8`/`L12H5`), which overturns §3.12-Q6's weights-only "no MLP pathway". Stand-ins split by position: upstream ones partly restore `L7H8`'s attention, downstream ones (`L11H14`, `L9H5`) move it by exactly 0.0000. What selects the relay is **composition, not prev-token attention** (`L4H9`/`L3H1` carry 71–83 % of `L5H2`'s prev-token score and do nothing). §3.21/§3.20 (same day, prerequisites) closed §3.12-U's `L5H2` puzzle. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, both rungs' post-minimum fates non-replicating (§3.19); §3.18 — the set DIVIDES induction and FV roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -78,16 +78,21 @@ freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
    registration candidate; both rungs are exploration, so a registration needs
    `1b` as its test site and `1b` may not be touched until that prediction
    exists.
-2. **§3.12-U's `L5H2` puzzle is closed, both halves (§3.20, §3.21,
-   2026-09-13).** `L5H2` is a previous-token head whose ablation demonstrably
-   breaks `L7H8`'s own matching attention (60–600x any generic control; a
-   magnitude-matched control, `L12H5`, moves it by 0.0000) — that is why it
-   has neither an induction score nor an FV score of its own (§3.20). And
-   §3.12-S's super-additive joint ablation is a **set-wide** property, not a
-   private `L5H2`×`L7H8` feature: `L11H14`, `L8H6` and `L8H9` all reproduce
-   `L7H8`'s own super-additive interaction with `L5H2`, `L11H14`'s at 8–11x
-   its solo effect (§3.21). Not closed: whether these three are the *only*
-   stand-ins (MLPs untested), or why `L11H14` is the strongest one.
+2. **§3.12-U's `L5H2` puzzle is closed (§3.20–§3.22, 2026-09-13), and the
+   self-repair behind it is now measured exhaustively.** `L5H2` is a
+   previous-token head, uniquely wired into `L7H8`'s read-space
+   (composition rank 0/112 at z +5.25, where prev-token heads without the wire
+   do nothing), whose ablation breaks `L7H8`'s matching attention — hence
+   neither an induction nor an FV score of its own. §3.12-S's super-additivity
+   is set-wide: **44 heads above +0.1**, led by `L5H9` +3.36, `L9H5` +2.75,
+   `L1H15` +2.35, and **MLP 6 at +6.26, above every head**. Stand-ins split by
+   position — upstream ones partly restore `L7H8`'s attention, downstream ones
+   move it by exactly zero. **Open, and now sharper:** why the output-side
+   class exists at all (`L11H14` is its extreme, and `L5H2`×`L11H14` is the
+   single largest residual against §3.12-V's magnitude rule at both
+   checkpoints while being δ-cosine-orthogonal); and whether MLP 6's role is
+   recomputing the prev-token signal or something else — nothing here opens
+   the MLP itself.
 3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
    analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
    graded KL/λ readout, which is still unbuilt and is now blocking two things.
@@ -3364,7 +3369,158 @@ cheap and would resolve it.**
 
 ---
 
+## 3.22 The self-repair, measured exhaustively — and §3.21 was wrong about who does it (2026-09-13)
+
+Four runners, all new: `backup_sweep_full.py` (every head's marginal cost once
+`L5H2` is gone), `prev_token_profile.py`, `relay_selection_check.py`,
+`mlp_backup_check.py`. Detail in `status-7d.md` ("Tying up the self-repair").
+§3.21 left three things open and closing them **corrected §3.21 itself twice
+and turned up a larger effect than anything in the thread so far.**
+
+**1. §3.21's stand-in list was an artifact of the instrument, and it missed the
+biggest ones.** The full 383-head causal sweep at step 16000 (solo, joint,
+marginal, interaction per head; **solo column reproduces
+`redundancy_catalog.json` bit-for-bit, max |diff| 0.0e+00 over 383 heads**;
+restore exact; 0 of 383 ceiling-contaminated) ranks the stand-ins:
+
+| rank | head | interaction | solo | found by §3.21's attention search? |
+|---|---|---|---|---|
+| 1 | `L7H8` | +4.068 | +1.019 | — (the known pair) |
+| 2 | **`L5H9`** | **+3.356** | +0.035 | **no** |
+| 3 | **`L9H5`** | **+2.745** | +0.030 | **no** |
+| 4 | **`L1H15`** | **+2.351** | +0.040 | **no** |
+| 5 | `L11H14` | +1.944 | +0.190 | yes |
+| 6 | `L8H6` | +1.464 | +0.212 | yes |
+| 15 | `L8H9` | +0.523 | +0.131 | yes |
+
+**The attention search missed all four of the largest and ranked one of its own
+top candidates (`L10H7`) at 377 of 383, with a negative interaction.** Its
+precision and recall were both poor, and the reason is structural: it searched
+for heads whose own *induction-attention* rose, and **a head that backs up
+`L5H2` without being an induction head has no such score to rise.** So
+§3.21's "three redundancy-set members" is withdrawn as a characterisation of
+the stand-in population — it is **44 heads above +0.1**, of which §3.21 named
+three. The set-wide claim survives and is strengthened; the *membership* claim
+does not. This is §3.19's "a single pair is not a set" one level over, and the
+same lesson as §3.12-R/G6/S with a *behavioural* proxy instead of a weights-one.
+
+**2. The MLPs are the largest stand-in in the model, and no one had looked.**
+MLP 6's interaction with `L5H2` is **+6.26** — above `L7H8`'s +4.07 and above
+every head — while its solo effect is **+0.14**, so on the clean model it looks
+irrelevant to induction. It survives every control:
+
+| arm | interaction | headroom |
+|---|---|---|
+| step 16000, `mean`, `wide` | **+6.26** | 1.87 |
+| step 16000, `zero`, `wide` | +5.25 | 2.82 |
+| step 16000, `mean`, `freq` | +5.67 | 3.04 |
+| step 143000, `mean`, `wide` | +5.14 | 3.67 |
+| step 4000, `mean`, `wide` | +1.56 | 2.38 |
+
+argmax over all 24 layers at every checkpoint; MLP 5 is second (+1.43/+1.72)
+and everything from layer 12 up is under 0.25. **And it is specific to
+`L5H2`**: the same MLP against `L7H8` gives **+0.125** and against `L12H5`
+**+0.127** — 50x smaller — and with those sources no MLP anywhere exceeds
++0.25. Architecturally MLP 6 is the sublayer immediately after `L5H2`
+(layer 5) and immediately before `L7H8` (layer 7). **MLP 0 is excluded in
+every arm**: its solo ablation costs +12.5 and puts the joint arm *past*
+`ln V`, so its negative interaction is exactly §3.12-M5's predicted artifact.
+This **overturns the impression §3.12-Q6 left** ("no elevated MLP pathway",
+best rank 44/159 at z +0.57) — that was a weights-only composition score on a
+different question, and the causal interaction finds the model's largest effect
+where the proxy found nothing.
+
+**3. Why `L11H14`? Not by supplying what `L5H2` supplies — and the stand-ins
+split into two classes by layer position.** The obvious hypothesis was that a
+stand-in is a head that can re-supply the prev-token signal. For §3.21's three
+it is dead: `L11H14`, `L8H6`, `L8H9` rank **377th, 380th and 372nd of 384** on
+prev-token attention, *below* the population median. But the sweep's larger
+stand-ins include real prev-token heads (`L5H9` 0.62, `L4H9` 0.81, `L3H1`
+0.71), so the hypothesis is not simply wrong either — it is a **threshold**
+property, and this is a fresh §3.13 case: across 383 heads the rank
+correlation is **zero** (Spearman −0.016, p = 0.75) while the 12 heads above
+prev-token 0.3 have median interaction **+0.444 against the other 371's
++0.0007** (Mann-Whitney p < 1e-5). Pearson (+0.322) splits the difference and
+is the misleading one. Below the threshold prev-token attention predicts
+nothing; above it, it predicts a great deal.
+
+What separates the two classes is **position relative to the matcher**, read
+off a conditional arm (`--background L5H2`, new flag) against a conditional
+null where 6 generic controls move `L7H8`'s attention by ≤ 0.0038:
+
+| stand-in | layer | Δ `L7H8` attention given `L5H2` gone | ΔNLL interaction |
+|---|---|---|---|
+| `L5H9` | 5 | **−0.0870** (23x null) | +3.356 |
+| `L1H15` | 1 | **−0.0671** (18x null) | +2.351 |
+| `L4H9` | 4 | −0.0095 | +1.018 |
+| `L9H5` | 9 | **+0.0000** | +2.745 |
+| `L11H14` | 11 | **+0.0000** | +1.944 |
+
+**Upstream stand-ins partly restore the matching pathway; downstream ones
+cannot and do not.** `L5H9`'s conditional effect is 3.4x its unconditional one
+(−0.025 → −0.087) — it matters *more* to `L7H8` once the relay is gone, which
+is the literal backup signature. `L9H5` and `L11H14` sit past layer 7, carry
+interactions of +2.7 and +1.9, and move `L7H8`'s attention by **exactly
+zero**: they compensate at the readout, not in the circuit. So `L11H14` is an
+output-side compensator, and "why is it the strongest" is now the narrower
+question of why the output-side class exists at all.
+
+**4. What selects `L5H2` as the relay is composition, not its attention
+pattern.** Prev-token capacity is common — 13 heads above 0.3 — so it cannot
+be what makes one head the relay. Scoring every layer-0..6 head's composition
+into `L7H8`'s read-space per head (`relay_selection_check.py`; H1-REVISED
+stored only the population summary, so this comparison was previously
+unanswerable) and pairing it with an ablation:
+
+| head | prev-token | composition rank / z | Δ `L7H8` attention |
+|---|---|---|---|
+| `L5H2` | 0.970 (1st) | **0 / +5.25** | **−0.190** |
+| `L5H9` | 0.616 (4th) | 1 / +3.64 | −0.025 |
+| `L6H0` | 0.005 (381st) | 2 / +3.27 | −0.029 |
+| `L6H13` | 0.429 | 3 / +2.85 | −0.017 |
+| `L4H9` | 0.805 (2nd) | 23 / +0.28 | **+0.0008** |
+| `L3H1` | 0.710 (3rd) | 24 / +0.25 | **+0.0028** |
+
+**Prev-token attention without composition buys nothing** — `L4H9` and `L3H1`
+carry 71–83 % of `L5H2`'s prev-token attention and are within the generic
+control band. Composition without prev-token attention buys a little
+(`L6H0`). `L5H2` is the joint extreme and is **7x the next largest**, so the
+account is conjunctive and strongly super-linear; no functional form is
+claimed. *Report-both caveat:* Pearson(prev-token, composition) is +0.42 but
+Spearman is **+0.12, p = 0.23** — the axes are barely rank-associated and the
+Pearson is driven by `L5H2` being extreme on both, so "these are independent
+axes" is the conservative reading and "composition tracks prev-token" is not
+supported.
+
+**5. Part of §3.21 was already on disk, unread.** `L5H2`×`L11H14` = **+2.1800**
+at step 16000 is in `pairwise_interaction_matrix.json` (2026-09-10), and
+§3.21's run reproduced it to four decimals. The 45-cell matrix already
+contained the whole `L5H2` row, so "which top-10 members are super-additive
+with `L5H2`" was answerable without a forward pass. What was genuinely new in
+§3.21 was `L10H7`/`L10H15` (not in the top 10), step 4000, and the framing.
+Recorded because `CLAUDE.md` opens on this cost and §3.17 logged a prior
+instance. **And reading that matrix against its own regression pays off
+immediately**: §3.12-V's magnitude rule (r² 0.74 at 16000, 0.81 at 143000,
+both reproduced) has **one systematic exception, `L5H2`×`L11H14`** — the
+largest positive residual of all 45 cells at *both* checkpoints (+1.37, +0.97)
+— while its δ-cosine at 143000 is **0.004**, orthogonal. `L11H14` stands in far
+more than either its size or its alignment predicts.
+
+Exploratory throughout; no p-value is claimed as an adjudication (the two
+population tests above are descriptive, on non-independent units);
+`claims/registry.json` unchanged; pythia-410m spent under `check_registry`
+rule 3.
+
+---
+
 ## 3.21 The super-additivity is set-wide self-repair, not an `L5H2`×`L7H8` special case (2026-09-13)
+
+> **CORRECTED 2026-09-13 by §3.22, same day.** The set-wide conclusion stands.
+> The *membership* claim below does not: the three members named here are
+> ranks 5, 6 and 15 of a 44-head stand-in population, and the four largest
+> stand-ins — `L5H9`, `L9H5`, `L1H15`, and **MLP 6**, which beats every head —
+> were missed because the search below reads induction-attention, which a
+> non-induction backup does not have. Read §3.22 before quoting this section.
 
 `p7d_redundancy/l5h2_backup_search.py` and `l5h2_backup_causal_check.py`, new
 this session; detail in `status-7d.md` ("Self-repair"). §3.20 closed `L5H2`'s
