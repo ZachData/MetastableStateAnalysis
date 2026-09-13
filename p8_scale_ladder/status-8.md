@@ -5,8 +5,12 @@
 **Overall:** the de-hardcoding blocker is cleared, the 70m rung is measured on
 invariants 1/2/4/5/6 under both ablation modes, and invariants 5 and 6 are now
 also read on the `freq` probe — which uncensors invariant 6's matrix and
-confirms invariant 5's failure on a third instrument. Read `design-8.md`
-first — it carries the rung policy, which is the phase's whole epistemic value.
+confirms invariant 5's failure on a third instrument. **Invariant 4, the
+load-bearing card, is now a set-level trajectory at both rungs and it needed
+correcting**: "70m never separates" was a single-pair artifact, 410m's fan-out
+is one head leaving a locked core, and 70m *re-coheres* after step 32000 —
+a fate the invariant as worded has no room for. Read `design-8.md` first — it
+carries the rung policy, which is the phase's whole epistemic value.
 
 ## What is decided
 
@@ -130,7 +134,10 @@ discipline (§3.12-V3, §3.12-V5).
    far the registrable candidates are invariant 5 (fails, sharply, and now on
    three instruments — both ablation modes and both probes — with its
    anti-ordered half failing too) and the *born-aligned* half of invariant 4
-   (holds at both rungs); invariant 6's direction holds and on `freq` holds
+   (holds at both rungs — but **only that half**: see the set-level trajectory
+   below, where the *fate* diverges and the current wording covers neither
+   ending, so invariant 4 must be reworded before it is registered);
+   invariant 6's direction holds and on `freq` holds
    unanimously over every readable 70m cell, though the prev-token × matcher
    cell stays censored; invariant 2 holds but is nearly unfalsifiable as
    stated. **Any
@@ -726,6 +733,105 @@ anti-ordered member. `L11H14` stays a **pythia-410m singleton** — which
 strengthens §3.16's reading that invariant 5 is a 410m property rather than an
 induction one, and it is now the *sharpest* form of that negative rather than
 the softest.
+### Invariant 4 as a set-level trajectory, both rungs (2026-09-12) — **the load-bearing card, and it needed correcting**
+
+`literature-8.md` §7 says to sequence invariant 4 first because it is the only
+card that is both unclaimed and replicates. Its evidence, until now, was **one
+pair per rung** from `member_formation_curves.py` — while the set-level
+instrument (`member_subspace_geometry.py`) had a 13-step trajectory at 410m on
+the **superseded `ov` mode** and a **single checkpoint** everywhere else. So:
+both rungs, `mean`, on the matched grid, 8 seqs.
+
+**A cache constraint that shapes every cross-rung trajectory, and was not
+written down.** The two rungs' locally cached checkpoint grids differ — 410m
+carries earlier phases' log-spaced fills (**3000, 5000, 7000, 9000, 54000**),
+70m carries the 19-step behavioural grid and **64000**, and neither has the
+other's. `HF_HUB_OFFLINE=1` turns a missing revision into a mid-run `OSError`,
+which is how this was found. **The intersection is `256, 512, 1000, 2000,
+4000, 8000, 16000, 32000, 143000`** and that is the only grid on which a
+cross-rung trajectory is matched.
+
+**410m is mode-invariant on the published statistic.** The fixed-15-pair rank-1
+mean peaks at **+0.753** and ends at **+0.327** (57 % loss) under `mean`,
+against `status-7d.md`'s canonical `ov` **+0.744 → +0.327** (56 %). The
+endpoint reproduces to three decimals. **The number `design-8.md` states
+invariant 4 on is safe.**
+
+**But that statistic averages two populations that do opposite things.**
+Splitting 410m's set on `L11H14` — singled out by four independent
+`status-7d.md` measurements *and* 7e's anti-ordering, all before this
+trajectory existed, so this is not a post-hoc split:
+
+| step | core (5 heads, no `L11H14`) | `L11H14`'s pairs | null CKAc |
+|---|---|---|---|
+| 1000 | — (n=0) | **+0.888** (n=1) | +0.156 |
+| 4000 | **+0.903** (n=10) | +0.303 (n=5) | +0.216 |
+| 16000 | +0.814 (n=10) | +0.136 (n=5) | +0.246 |
+| 32000 | +0.766 (n=6) | +0.059 (n=4) | +0.225 |
+| 143000 | **+0.751** (n=3) | **−0.099** (n=3) | +0.179 |
+
+**410m's "fan-out" is one head leaving a locked core**, not the set spreading.
+At the endpoint **all five of `L11H14`'s pairs are the bottom five of fifteen**;
+every other pair is ≥ +0.201. The core loses 17 % of its peak over 139,000
+steps; `L11H14` crosses zero between 32000 and 54000.
+
+**And the two instruments disagree about `L11H14`, which is the §3.13 rule
+paying off.** Its **rank-1 mean-delta cosine** inverts to −0.099, but its
+**centered CKA** ends at **+0.317 against a measured null of +0.179** — still
+clearly above chance. So `L11H14`'s *mean write direction* anti-aligns with the
+set while its *effect subspace* keeps real overlap. That is consistent with its
+participation ratio of ~60 against everyone else's 8–28: a rank-1 summary is a
+poor instrument for that head specifically. **"`L11H14` goes orthogonal" is a
+statement about mean direction only, and must be written that way.**
+
+**`status-8.md`'s own "70m never separates" was a single-pair artifact, and
+this section withdraws it.** That conclusion rested on `L2H1`×`L3H6`, which
+turns out to be **70m's most-aligned pair at every late checkpoint**. On the
+set-level core (the four layer-2/3 cascade heads; `L0H0`/`L0H2` excluded as the
+layer-0 heads the ablation A/B above already identified as zero-ablation
+artifacts):
+
+| step | 70m core, `freq` | 70m `L2H1`×`L3H6` alone | 410m core |
+|---|---|---|---|
+| 1000 | **+0.922** (n=3) | +0.936 | — |
+| 4000 | +0.524 (n=6) | +0.884 | +0.903 (n=10) |
+| 16000 | **+0.321** (n=6) | +0.559 | +0.814 (n=10) |
+| 32000 | +0.302 (n=6) | +0.548 | +0.766 (n=6) |
+
+At step 16000 70m's core sits at **+0.321 against 410m's +0.814**. On the
+set-level instrument **70m separates *more* than 410m**, which is the opposite
+of what the single pair said.
+
+**A third state the invariant does not have a name for: 70m RE-COHERES.**
+
+| step | 8000 | 16000 | 32000 | **64000** | 143000 |
+|---|---|---|---|---|---|
+| 70m core rank-1 (`freq`) | +0.468 | +0.321 | **+0.302** | **+0.580** | **+0.611** |
+| 70m core CKAc (`freq`) | +0.402 | +0.385 | +0.365 | +0.502 | +0.473 |
+| mean delta norm | 319 | 315 | 349 | — | **575** |
+
+The minimum is at step 32000 and the recovery is **complete by 64000**. It is
+**all six core pairs**, not one (`L2H1`×`L3H1` 0.227 → 0.711, `L3H6`×`L3H1`
+0.217 → 0.741, the smallest mover 0.479 → 0.533), and delta norms *grow*
+through it, so it is not a shrinking-signal artifact. **410m does the opposite
+over the same interval** — monotone decline to the end.
+
+**Checked against the probe, because 70m's endpoint on `wide` is the degenerate
+regime.** `wide` reads the 143000 core at +0.535/CKAc +0.703; `freq`, where the
+baseline NLL is **8.13** against `wide`'s 14.25 and the ceiling's 10.83, reads
++0.611/+0.473. The two probes disagree on magnitude and **agree on the
+direction and the timing**, so the re-coherence is a property of the rung, not
+of the readout — the same verdict, on the same axis, that the single-pair
+version of this check reached above.
+
+**Net for invariant 4.** *Born aligned* replicates at both rungs and is the
+solid half (+0.888 at 410m, +0.922 at 70m, both at step 1000, neither with a
+private-subspace phase). *Then fans out* replicates at both rungs — **more** at
+70m, once measured on the set rather than one pair. What does **not** replicate
+is the **fate**: 410m's set ends with a locked core and one inverted defector,
+70m's ends re-cohered. The invariant as `design-8.md` words it stops at the
+fan-out and has no room for either ending, so **it needs rewording before it is
+registered** — and rewording it is cheap now and impossible after.
 
 ## Reproducing
 
@@ -737,6 +843,17 @@ useful_rank.py               --model pythia-70m --heads L2H1,L0H0,L3H6,L3H1,L0H2
 useful_rank.py               --model pythia-70m --heads L3H1,L3H6,L2H1 --ablation mean \
                                --probe freq --controls 2 --bottom \
                                --out data/analysis/useful_rank_pythia-70m_mean_freq_bottom.json
+
+# invariant 4, set-level, on the MATCHED grid (the intersection of the two
+# rungs' locally cached revisions -- 410m's 3000/5000/7000/9000/54000 and 70m's
+# 64000 exist at one rung only, and HF_HUB_OFFLINE turns a miss into an OSError)
+member_subspace_geometry.py  --model pythia-410m --top 6 --seqs 8 --chunk 2 --ablation mean \
+                               --steps 256,512,1000,2000,4000,8000,16000,32000,143000 --append
+member_subspace_geometry.py  --model pythia-70m --heads L2H1,L0H0,L3H6,L3H1,L0H2,L3H5 \
+                               --controls L2H0,L4H5,L5H2 --seqs 8 --chunk 2 --ablation mean \
+                               --steps 256,512,1000,2000,4000,8000,16000,32000,143000 --append
+member_subspace_geometry.py  --model pythia-70m --heads ... --controls ... --ablation mean \
+                               --probe freq --steps 1000,2000,4000,8000,16000,32000,64000,143000
 
 redundancy_catalog.py        --model pythia-70m --step 16000 --seqs 8 --ablation mean
 useful_rank.py               --model pythia-70m --heads ... --ablation mean --controls 2
