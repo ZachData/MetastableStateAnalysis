@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.22 is the one to read: the self-repair measured exhaustively, and it CORRECTS §3.21.** The stand-in population is **44 heads**, not three; the four largest were missed by §3.21's attention search (`L5H9` +3.36, `L9H5` +2.75, `L1H15` +2.35, all above `L11H14` +1.94); and **MLP 6 beats every head at +6.26** on a solo effect of +0.14, specific to `L5H2` (50x smaller against `L7H8`/`L12H5`), which overturns §3.12-Q6's weights-only "no MLP pathway". Stand-ins split by position: upstream ones partly restore `L7H8`'s attention, downstream ones (`L11H14`, `L9H5`) move it by exactly 0.0000. What selects the relay is **composition, not prev-token attention** (`L4H9`/`L3H1` carry 71–83 % of `L5H2`'s prev-token score and do nothing). §3.21/§3.20 (same day, prerequisites) closed §3.12-U's `L5H2` puzzle. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, both rungs' post-minimum fates non-replicating (§3.19); §3.18 — the set DIVIDES induction and FV roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
+| Last updated | 2026-09-13 — **§3.23 is the current front: MLP 6 opened.** `L5H2` + MLP 6 are an **OR-gate** over `L7H8`'s matching (either alone leaves it working, both gone drops attention 0.938 → **0.045**), and the repair is **ACTIVE** — μ from the clean state restores nothing (0.038, like zero and like noise) while the direction MLP 6 *moves to* restores 0.643, a ~33° rotation carrying the whole effect. Not scale (identical residual norms, norm-matched random = zero) and **not** re-supplying `L5H2`'s content (cos −0.507 to it). **§3.22: the self-repair measured exhaustively, and it CORRECTS §3.21.** The stand-in population is **44 heads**, not three; the four largest were missed by §3.21's attention search (`L5H9` +3.36, `L9H5` +2.75, `L1H15` +2.35, all above `L11H14` +1.94); and **MLP 6 beats every head at +6.26** on a solo effect of +0.14, specific to `L5H2` (50x smaller against `L7H8`/`L12H5`), which overturns §3.12-Q6's weights-only "no MLP pathway". Stand-ins split by position: upstream ones partly restore `L7H8`'s attention, downstream ones (`L11H14`, `L9H5`) move it by exactly 0.0000. What selects the relay is **composition, not prev-token attention** (`L4H9`/`L3H1` carry 71–83 % of `L5H2`'s prev-token score and do nothing). §3.21/§3.20 (same day, prerequisites) closed §3.12-U's `L5H2` puzzle. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, both rungs' post-minimum fates non-replicating (§3.19); §3.18 — the set DIVIDES induction and FV roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -39,10 +39,11 @@ bug.
 
 ### Resume here (2026-09-13 — five PRs open in a stack; §3.22 is the current front)
 
-**Read this block, then §3.22, §3.21, §3.20 in that order** — that is the
-`L5H2`/self-repair thread, which is where the work actually is. §3.19–§3.17
-are the phase-8 material behind PRs #37–#39. Everything below this block is
-earlier and is kept as background, not as the current state.
+**Read this block, then §3.23, §3.22, §3.21, §3.20 in that order** — that is
+the `L5H2`/self-repair thread, which is where the work actually is, and §3.23
+is its live front. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
+Everything below this block is earlier and is kept as background, not as the
+current state.
 
 **Nothing is running and nothing is uncommitted.** All five branches are pushed
 and in sync with their remotes; the only untracked path is `data/hf/` (the HF
@@ -90,12 +91,16 @@ freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
    is set-wide: **44 heads above +0.1**, led by `L5H9` +3.36, `L9H5` +2.75,
    `L1H15` +2.35, and **MLP 6 at +6.26, above every head**. Stand-ins split by
    position — upstream ones partly restore `L7H8`'s attention, downstream ones
-   move it by exactly zero. **Open, and now sharper:** why the output-side
-   class exists at all (`L11H14` is its extreme, and `L5H2`×`L11H14` is the
-   single largest residual against §3.12-V's magnitude rule at both
-   checkpoints while being δ-cosine-orthogonal); and whether MLP 6's role is
-   recomputing the prev-token signal or something else — nothing here opens
-   the MLP itself.
+   move it by exactly zero. **MLP 6 is now opened too (§3.23)**: it forms an
+   OR-gate with `L5H2` over `L7H8`'s matching, the repair is *active* (only
+   the direction it rotates to works — the one it already had is worth no more
+   than noise), and it is **not** recomputing the prev-token signal (cos
+   −0.507 to `L5H2`'s own contribution). **Open, and now sharper:** *what that
+   direction is* — decoding MLP 6's μ against the unembedding or against
+   `L7H8`'s read-space is the obvious next step and is not done; and why the
+   output-side compensator class exists at all (`L11H14` is its extreme, and
+   `L5H2`×`L11H14` is the single largest residual against §3.12-V's magnitude
+   rule at both checkpoints while being δ-cosine-orthogonal).
 3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
    analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
    graded KL/λ readout, which is still unbuilt and is now blocking two things.
@@ -3369,6 +3374,96 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.23 What MLP 6 is doing: active self-repair, by rotating one direction (2026-09-13)
+
+`mlp_relay_role.py`, `mlp6_content_vs_scale.py`, `mlp6_response.py`, all new.
+Detail in `status-7d.md` ("Opening MLP 6"). §3.22 found MLP 6 is `L5H2`'s
+largest stand-in (+6.26, above every head) and closed with "nothing here opens
+the MLP itself". This opens it.
+
+**The architecture makes MLP 6 the unique candidate, and it is a fact not an
+assumption.** pythia-410m has `use_parallel_residual = True` (read off the
+loaded config): at every layer the attention and the MLP read the *same*
+layernormed residual and both write into the next. So **MLP 5 cannot see
+`L5H2`'s output** — it is parallel to it — and **MLP 6 is the first sublayer in
+the network that can**, while writing into the residual `L7H8` reads. Two exact
+validity checks fell out of measuring it: MLPs **7–23 move `L7H8`'s attention by
+exactly 0.0000** (they are at or after the matcher), and MLPs **0–5 have
+`cos(μ_clean, μ_cond) = 1.0000` and per-position change exactly 0.0000** when
+`L5H2` is ablated. The instrument returns exact zero everywhere causality
+requires it.
+
+**1. `L5H2` and MLP 6 are an OR-gate over `L7H8`'s matching.** Either alone is
+dispensable; together they are the whole supply:
+
+| state | `L7H8` induction attention (16000 / 143000) |
+|---|---|
+| clean | 0.938 / 0.947 |
+| `L5H2` ablated | 0.751 / 0.796 |
+| MLP 6 ablated | 0.876 / — |
+| **both** | **0.045 / 0.012** |
+
+That is the attention-level mechanism behind §3.22's +6.26 ΔNLL interaction:
+the super-additivity in the loss is the shadow of the matcher going blind.
+
+**2. It is not scale, and that is established rather than assumed.** §3.15's
+rule puts the burden on `zero`, so three arms answer it. `zero` and `mean`
+leave the residual entering layer 7 at **43.07 vs 43.46** (and 42.83 vs 42.91
+at 143000) — indistinguishable — while giving attention 0.045 vs 0.643. A
+**norm-matched random constant** reproduces `zero` exactly (0.030–0.050 /
+0.011–0.014). And MLP 5 removes as much residual norm as MLP 6 (43.2 vs 43.5)
+while doing a fraction of the damage. Three independent ways of saying the
+collapse is not an off-distribution norm artifact.
+
+**3. The signal is a specific direction, carried by the mean.** MLP 6's output
+is only **25–28 % constant** (‖μ‖ 9.69 against RMS‖out‖ 35.19), yet replacing
+the *entire* output with μ alone retains **0.643 / 0.567** of the matcher's
+attention. Direction-specificity is what separates MLP 6 from its neighbours —
+`mean` minus `random` is **+0.60** for MLP 6, +0.12 for MLP 5, **−0.02** for
+MLP 3.
+
+**4. It is ACTIVE self-repair, not pre-existing redundancy — and this is the
+result worth having.** Every interaction measured in §3.21/§3.22 is equally
+consistent with a component that does exactly the same thing and merely becomes
+load-bearing; §3.16 imported "self-repair" from `2307.15771` without anything
+here separating the two. MLP 6's output **moves** when the relay is ablated:
+its mean rotates to `cos = 0.837` and **grows 21 %** (the only MLP that grows),
+with the change concentrated in the mean — its per-position variation changes
+by 0.19, the *smallest* of MLPs 6–23. The causal version settles it:
+
+| constant written into MLP 6's slot, `L5H2` ablated | 16000 | 143000 |
+|---|---|---|
+| zero | 0.045 | 0.012 |
+| norm-matched random | 0.030–0.050 | 0.011–0.014 |
+| **μ from the CLEAN state** | **0.038** | **0.016** |
+| **μ after responding** | **0.643** | **0.567** |
+
+**The direction MLP 6 already had is worth no more than zero or noise; only the
+direction it moves to restores the matcher.** The response *is* the mechanism.
+And the rotation is small — `cos = 0.837`, about 33° — so the entire difference
+between a blind matcher and a working one lives in the component orthogonal to
+what MLP 6 was already writing.
+
+**5. It is not standing in by writing where `L5H2` wrote.** `cos(μ_cond,
+d_L5H2)` = **−0.507**, the largest magnitude of any MLP and *negative*, against
+0.01–0.14 for the unchanged MLPs 0–5. So "MLP 6 recomputes the prev-token
+signal" is **not** what the data show — a position-independent constant could
+not carry per-token match information in any case. The role is closer to an
+enabling or operating-point term for the matcher than to a re-supply of its
+content.
+
+**Caveats, none of them hidden.** Every `L5H2` ablation in this thread is `ov`
+mode, which §3.15 notes is really a *bias*-ablation; consistent throughout, and
+named. The `mean` arms recompute μ inside the conditional state rather than
+reusing clean-model means, because a clean mean injected into an ablated pass
+is itself an off-distribution constant. `--controls 3` random directions,
+agreeing to ~0.02. **What that direction actually is remains open** — decoding
+it against the unembedding, or against `L7H8`'s own read-space, is the obvious
+next step and is not done. Exploratory; no p-value; `claims/registry.json`
+unchanged; pythia-410m spent under `check_registry` rule 3.
 
 ---
 

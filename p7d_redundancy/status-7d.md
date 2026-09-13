@@ -6,7 +6,11 @@
 pairwise interaction matrix) and the geometric axis are now answered too**. Q4
 is mostly on disk and unread; Q5 has a partial answer from geometry alone. The
 `L5H2` puzzle (§3.12-U/§3.16/§3.18) is now closed on both the mechanism ("The
-upstream-relay check") and the super-additivity ("Self-repair") below.
+upstream-relay check") and the super-additivity ("Self-repair", then "Tying up
+the self-repair" for the exhaustive version, which corrects it). **"Opening
+MLP 6" is the current front**: `L5H2` and MLP 6 are an OR-gate over `L7H8`'s
+matching, and the repair is *active* — only the direction MLP 6 moves to when
+the relay is ablated restores the matcher, not the one it already had.
 Nothing is registered and nothing can be — every measurement here is on an
 artifact spent under `check_registry` rule 3. Restore checks are exact
 (`0.0e+00`) on every run reported below.
@@ -488,6 +492,63 @@ both checkpoints** (+1.37, +0.97), with δ-cosine **0.004** at 143000.
 `prev_token_profile.json`, `relay_selection_check.json` (weights only),
 `mlp_backup_check.json` — all git-ignored. Rerun lines are each runner's
 `--help`; defaults reproduce the numbers above.
+
+### Opening MLP 6 (2026-09-13) — an OR-gate, and the repair is ACTIVE
+
+`mlp_relay_role.py`, `mlp6_content_vs_scale.py`, `mlp6_response.py`. Synthesis
+in `PROJECT.md` §3.23.
+
+**Position first, and it is a config fact.** `use_parallel_residual = True`, so
+attention and MLP at each layer read the same residual in parallel: **MLP 5
+cannot see `L5H2`'s output**, and **MLP 6 is the first sublayer that can**,
+writing into the residual `L7H8` reads. Two exact validity checks came free:
+MLPs **7–23 move `L7H8`'s attention by exactly 0.0000**, and MLPs **0–5 are
+unchanged by the ablation to the last digit** (cos 1.0000, per-position change
+0.0000).
+
+**The OR-gate.** `L7H8` induction attention, step 16000 / 143000: clean
+0.938 / 0.947; `L5H2` ablated 0.751 / 0.796; MLP 6 ablated 0.876 / —; **both
+0.045 / 0.012**. Either supplier alone suffices; removing both blinds the
+matcher. That is what §3.22's +6.26 ΔNLL interaction looks like upstream.
+
+**Not scale** — three ways. `zero` and `mean` leave the residual entering
+layer 7 at 43.07 vs 43.46 (42.83 vs 42.91 at 143000) yet give attention 0.045
+vs 0.643; a **norm-matched random constant** reproduces `zero` (0.030–0.050);
+and MLP 5 removes as much norm as MLP 6 for a fraction of the damage. §3.15
+puts the burden on `zero` and this is how it is discharged.
+
+**A specific direction, carried by the mean.** Constant share is only
+0.25–0.28, yet μ alone retains 0.643 / 0.567. `mean` minus `random`: **+0.60**
+(MLP 6), +0.12 (MLP 5), −0.02 (MLP 3).
+
+**Active, not pre-existing — the distinction §3.16 imported but never tested.**
+MLP 6's mean rotates to cos **0.837** and grows **21 %** (the only MLP that
+grows), with its per-position variation changing least of MLPs 6–23 (0.19).
+Causally:
+
+| constant in MLP 6's slot, `L5H2` ablated | 16000 | 143000 |
+|---|---|---|
+| zero | 0.045 | 0.012 |
+| norm-matched random | 0.030–0.050 | 0.011–0.014 |
+| **μ from the CLEAN state** | **0.038** | **0.016** |
+| **μ after responding** | **0.643** | **0.567** |
+
+**The direction MLP 6 already had is worth no more than noise; only the one it
+moves to works.** A ~33° rotation is the whole difference between a blind
+matcher and a working one.
+
+**And it is not writing where `L5H2` wrote**: `cos(μ_cond, d_L5H2)` = −0.507,
+largest magnitude of any MLP and negative (the unchanged MLPs 0–5 sit at
+0.01–0.14). So this is an enabling/operating-point role, not a re-supply of
+prev-token content — which a position-independent constant could not carry
+anyway.
+
+*Caveats:* all `L5H2` ablations are `ov` (a bias-ablation, §3.15), consistent
+throughout; `mean` arms recompute μ inside the conditional state; 3 random
+directions agreeing to ~0.02. **What the direction is remains open.**
+
+`data/analysis/mlp_relay_role.json`, `mlp6_content_vs_scale.json`,
+`mlp6_response.json` — git-ignored.
 
 ## What is open
 
