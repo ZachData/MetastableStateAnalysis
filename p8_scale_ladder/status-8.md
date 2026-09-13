@@ -833,6 +833,43 @@ is the **fate**: 410m's set ends with a locked core and one inverted defector,
 fan-out and has no room for either ending, so **it needs rewording before it is
 registered** — and rewording it is cheap now and impossible after.
 
+### What DOES replicate (2026-09-13) — the relay supports the causally-defined set
+
+`p7d_redundancy/relay_support_profile.py`. Synthesis in `PROJECT.md` §3.27.
+The section below found the relay replicates and the circuit around it does
+not; this is the better-posed question, and the first positive replication in
+the thread beyond the relay itself.
+
+**The instrument needed a measured null.** Raw TV between clean and
+relay-ablated put `L7H8` at rank **191 of 288**, *below* the population median,
+though §3.20 measured that same ablation dropping it 0.938 -> 0.751 — because
+the relay's removal moves every downstream head by ~0.24 and a specific 0.19
+does not stand out. Calibrating each head against its own sensitivity to
+generic ablation (4 non-member heads, §3.12-V3) recovers `L7H8` at **rank 7**,
+74x its own null, and `L6H0` at rank 8, 67x.
+
+| | 410m (`L5H2`) | 70m (`L2H1`) |
+|---|---|---|
+| downstream heads | 288 | 24 |
+| carry half the above-median support | **5** | **2** |
+| **top-5 by support in the catalogue top-10** | **5 of 5** | **5 of 5** |
+| Spearman(catalogue ΔNLL, support) | +0.312 | **+0.727** |
+
+**Replicates:** the support is concentrated and lands on the causally-defined
+catalogue — five of five at both rungs. Stated over a causal population rather
+than head names, so it is a candidate for the registrable list.
+
+**Does not:** how tightly support tracks causal magnitude. 70m's support
+ranking is nearly the catalogue order (`L3H6` +2.150 → `L3H1` +1.889 → `L3H5`
++1.248 → `L3H0` +0.644, ρ +0.73); at 410m ρ is +0.31, with `L8H6` taking the
+top slot at **632x its null** on +0.212 while `L7H8` (+1.019) sits seventh.
+
+*Caveats:* 24 downstream heads vs 288, so only counts and ranking compare, not
+the concentration shares; 70m read on `freq` (§3.17) and 410m on `wide`, which
+the within-rung ratio mitigates but does not erase.
+
+`data/analysis/relay_support_profile{,_pythia-70m}.json` — git-ignored.
+
 ### The self-repair chain at 70m (2026-09-13) — the relay replicates, the circuit does not
 
 `p7d_redundancy/mlp_backup_attention_scan.py`, `prev_token_profile.py`.

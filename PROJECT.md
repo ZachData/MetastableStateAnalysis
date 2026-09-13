@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.26 takes the chain to the 70m rung: the relay replicates, the circuit around it does not.** `L2H1` carries prev-token 0.950 *and* the largest causal effect (+6.17) — same double signature as `L5H2`. But 70m's only strong same-token matcher is `L0H3` in **layer 0**, *upstream* of the relay with a **negative** effect, so the relay→matcher ordering is inverted and 410m's circuit cannot exist there; and the dominant MLP backup is MLP 2, which is **parallel to the relay and cannot see it**, while the structural analogue MLP 3 is negative. Worked around §3.17's ceiling blocker by using attention instead of loss. **The instrument failed its own 410m positive control twice first** — mean-ablation is blind to a mean-carried backup, which is a caveat §3.15 needs. §3.25/§3.24: the repair direction decoded and shown to move the heads it points at. |
+| Last updated | 2026-09-13 — **§3.27 is the first POSITIVE replication in the self-repair thread: the relay supports the causally-defined set at both rungs** — top-5 by support are **5 of 5 catalogue members** at 410m *and* 70m, concentrated (5 of 288 / 2 of 24 carry half the above-median mass). What differs is how tightly support tracks causal magnitude (ρ +0.73 at 70m vs +0.31 at 410m). Its instrument needed a measured null — raw TV put `L7H8` at rank 191 of 288 before calibration, rank 7 after. §3.26: the relay replicates but 410m's circuit cannot exist at 70m (matcher `L0H3` is in layer 0, upstream, with a NEGATIVE effect). §3.20–§3.25: the 410m chain. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,11 +37,11 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-13 — five PRs open in a stack; §3.26 is the current front)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.27 is the current front)
 
-**Read this block, then §3.26, then §3.25 → §3.20 in that order** — §3.20–§3.25
-are the `L5H2`/self-repair chain on 410m and §3.26 takes it to the 70m rung,
-which is the live front. The chain is measured end to end;
+**Read this block, then §3.27 and §3.26, then §3.25 → §3.20** — §3.20–§3.25 are
+the `L5H2`/self-repair chain on 410m; §3.26 takes it to the 70m rung and §3.27
+is the live front and the thread's first positive cross-rung replication. The chain is measured end to end;
 what is open is listed below, and none of it is load-bearing for the chain. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
 Everything below this block is earlier and is kept as background, not as the
 current state.
@@ -3377,6 +3377,69 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.27 What DOES replicate: the relay supports the causally-defined set, at both rungs (2026-09-13)
+
+`p7d_redundancy/relay_support_profile.py`, new. §3.26 closed by admitting the
+replication question as posed "does not quite have a subject" at 70m, because
+70m does not do relay-backed matching. This is the better-posed version, and it
+is the **first positive replication in this thread beyond the relay itself**.
+
+**The question.** 70m's `L2H1` moves the readout by **+6.17 on a 5.73
+baseline**, so *something* depends on it. Naming that something is the 70m
+analogue of §3.20 — and asking it at both rungs on one instrument gives a
+comparison §3.26's table could not, since that had to be assembled from two.
+
+**The instrument needed a measured null, and its absence was caught by the
+positive control.** Raw TV between clean and relay-ablated put `L7H8` at **rank
+191 of 288**, with TV 0.1887 *below* the 0.2400 population median — even though
+§3.20 measured exactly this ablation dropping `L7H8` 0.938 → 0.751. The numbers
+agree (0.189 vs 0.190); the *comparison* fails, because ablating the relay
+moves every downstream head by ~0.24 and a specific 0.19 does not stand out.
+Calibrating each head against **its own sensitivity to generic ablation** (four
+heads drawn outside the catalogue, §3.12-V3's discipline) fixes it: `L7H8` goes
+to **rank 7** at 74x its own null, and `L6H0` to rank 8 at 67x. **Raw TV finds
+a collapse and misses a targeted shift** — which is why
+`mlp_backup_attention_scan.py` passed on raw TV (there `L7H8` goes to 0.045)
+and this did not.
+
+**What replicates:**
+
+| | pythia-410m (`L5H2`) | pythia-70m (`L2H1`) |
+|---|---|---|
+| downstream heads | 288 | 24 |
+| carry half the above-median support | **5** (1.7 %) | **2** (8.3 %) |
+| **top-5 by support that are catalogue top-10** | **5 of 5** | **5 of 5** |
+| Spearman(catalogue ΔNLL, support) | +0.312 (p = 6.2e-08) | **+0.727** (p = 5.7e-05) |
+
+**The relay's support is concentrated, and it lands on the causally-defined
+set — five of five at both rungs.** That is a structural invariant stated over
+a causally-defined population rather than over head names (`design-8.md`:
+"nothing transfers by head name"), and it is a candidate for the phase's
+registrable list.
+
+**What does not: how tightly support tracks causal magnitude.** At 70m the
+support ranking *is* nearly the catalogue ranking — `L3H6` (+2.150) → `L3H1`
+(+1.889) → `L3H5` (+1.248) → `L3H0` (+0.644) in that exact order, ρ = **+0.73**.
+At 410m the two are only loosely related, ρ = **+0.31**: `L8H6` takes the top
+support slot at **632x its null** on a causal effect of +0.212, while `L7H8` —
+five times its causal effect at +1.019 — sits seventh. So at 70m one relay
+supports a small set in order of how much each member matters; at 410m support
+and importance come apart. That is the same decoupling §3.12-V found between
+direction and substitutability, and it fits §3.24's finding that the 410m set
+shares a read-space, so support spreads across the set rather than tracking any
+member's own weight.
+
+**Caveats, named.** 24 downstream heads at 70m against 288 at 410m, so the
+concentration *shares* (8.3 % vs 1.7 %) are not comparable and only the counts
+and the ranking are; the 70m Spearman is over 24 units. The rungs were read on
+different probes (`freq` at 70m per §3.17, `wide` at 410m), which the ratio
+statistic mitigates by calibrating each head within its own rung but does not
+erase. Heads within a layer are not independent (§3.12-G6), so both p-values are
+descriptive. Exploratory; `claims/registry.json` unchanged; both rungs spent
+under `check_registry` rule 3.
 
 ---
 
