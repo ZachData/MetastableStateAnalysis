@@ -9,8 +9,11 @@ is mostly on disk and unread; Q5 has a partial answer from geometry alone. The
 upstream-relay check") and the super-additivity ("Self-repair", then "Tying up
 the self-repair" for the exhaustive version, which corrects it). **"Opening
 MLP 6" is the current front**: `L5H2` and MLP 6 are an OR-gate over `L7H8`'s
-matching, and the repair is *active* — only the direction MLP 6 moves to when
-the relay is ablated restores the matcher, not the one it already had.
+matching, the repair is *active* — only the direction MLP 6 moves to when the
+relay is ablated restores the matcher, not the one it already had — and that
+direction is aimed at the redundancy set's shared key read-space, moving
+precisely the heads it points at ("Decoding the repair direction", "Geometry
+predicts function").
 Nothing is registered and nothing can be — every measurement here is on an
 artifact spent under `check_registry` rule 3. Restore checks are exact
 (`0.0e+00`) on every run reported below.
@@ -594,8 +597,51 @@ MLP** — the wrong operating point rather than a missing one. *Still geometry
 only:* per-member attribution of the rotation to `L7H1`/`L8H6`/`L8H9`'s own
 contributions is unrun; the loss arm is aggregate.
 
+### Geometry predicts function (2026-09-13) — the rotation moves the heads it points at
+
+`rotation_per_head_effect.py`. Synthesis in `PROJECT.md` §3.25. Closes the
+weight-space gap the section above had to leave open (§3.12-S: weight-space
+overlap is not function-space overlap).
+
+**Minimal pair**, differing by exactly the rotation, both constant in MLP 6's
+slot: REF = `L5H2` ablated with μ_cond (NLL 2.859), TEST = same with μ_clean
+(NLL 8.955). **Readout is attention, not loss** — at 8.955 any per-head
+marginal is ceiling-contaminated, while an attention distribution is still
+well defined. Per head: total-variation distance between its attention in the
+two states, which is role-agnostic (the FV-positive members have no induction
+attention to measure, §3.18). **Zero check: layers 0–6 give TV exactly
+0.00e+00.**
+
+| layers > 6 (n=272) | members (9) | non-members (263) | Mann-Whitney |
+|---|---|---|---|
+| step 16000 | **0.2850** | 0.1471 | p = 1.1e-05 |
+| step 143000 | **0.2483** | 0.1201 | p = 1.0e-02 |
+
+Within layers 7, 8 and 10 the members exceed the non-member **maximum** at both
+checkpoints (L7: 0.353 / 0.281 vs max 0.249 / 0.154; L8: 0.321 / 0.323 vs
+0.265 / 0.225; L10: 0.321 / 0.318 vs 0.289 / 0.231).
+
+**TV tracks `frac_K` head by head**, and layer control strengthens it:
+
+| | raw ρ | layer-centred ρ | mean within-layer | layers positive |
+|---|---|---|---|---|
+| 16000 | +0.318 (7.9e-08) | **+0.325** (4.2e-08) | +0.285 | 14/17 |
+| 143000 | +0.223 (2.1e-04) | **+0.337** (1.1e-08) | +0.318 | 15/17 |
+
+TV rises with depth on its own (per-layer medians 0.03 → 0.16), so the raw
+ranking carries accumulation; centring each layer on its own median removes it
+and the relationship gets *stronger*.
+
+**The misses are the geometry's own**: `L9H13` (frac_K rank #104/#89) sits
+*below* its layer's non-member median at both steps; `L12H5` (#36/#43) is
+barely above at 143000. **Two things not to quote**: the raw top-TV list at
+143000 is dominated by layers 22–23 (accumulation — at 16000, five of the top
+nine are members), and `L15H14` flips sign between checkpoints (0.264 vs 0.113
+at 16000; 0.044 vs 0.101 at 143000).
+
 `data/analysis/mlp_relay_role.json`, `mlp6_content_vs_scale.json`,
-`mlp6_response.json`, `mlp6_decode_direction.json` — git-ignored.
+`mlp6_response.json`, `mlp6_decode_direction.json`,
+`rotation_per_head_effect.json` — git-ignored.
 
 ## What is open
 
