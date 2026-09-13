@@ -67,6 +67,7 @@ from tools.run.induction_rank_sweep import PROBE_ARMS, EVAL_SEED, ablated
 from p7d_redundancy.member_formation_curves import batch
 from p7d_redundancy.fv_score import induction_scores
 from p7d_redundancy.mlp_backup_check import ablated_mlp, mlp_output_means
+from p7d_redundancy.redundancy_catalog import nll
 
 OUT = DATA / "analysis" / "mlp6_content_vs_scale.json"
 
@@ -158,17 +159,21 @@ def main():
         return induction_scores(model, ids, [target], ck)[target]
 
     clean = attn()
+    nll_clean = nll(model, ids, args.chunk)
     means_clean = mlp_output_means(model, ids, args.chunk)
     with ablated(model, [source], mode="ov"):
         cond_base = attn()
+        nll_cond_base = nll(model, ids, args.chunk)
         means_cond = mlp_output_means(model, ids, args.chunk)
         mu_norm, rms_out, rms_var = output_stats(model, ids, args.mlp, args.chunk)
         resid_base = resid_rms(model, ids, tgt_layer, args.chunk)
         with ablated_mlp(model, args.mlp, mode="zero"):
             a_zero = attn()
+            n_zero = nll(model, ids, args.chunk)
             resid_zero = resid_rms(model, ids, tgt_layer, args.chunk)
         with ablated_mlp(model, args.mlp, mode="mean", means=means_cond):
             a_mean = attn()
+            n_mean = nll(model, ids, args.chunk)
             resid_mean = resid_rms(model, ids, tgt_layer, args.chunk)
         # The CLEAN-state mean, held constant in the ablated state. `mlp6_response.py`
         # found MLP 6's mean rotates (cos 0.837) and grows 21 % when the relay goes,
@@ -177,6 +182,7 @@ def main():
         # the `mean` arm above is the whole question.
         with constant_mlp(model, args.mlp, means_clean[args.mlp]):
             a_mean_clean = attn()
+            n_mean_clean = nll(model, ids, args.chunk)
             resid_mean_clean = resid_rms(model, ids, tgt_layer, args.chunk)
 
         mu = means_cond[args.mlp]
@@ -187,9 +193,10 @@ def main():
             r = r / r.norm() * mu.norm()
             with constant_mlp(model, args.mlp, r):
                 a_r = attn()
+                n_r = nll(model, ids, args.chunk)
                 res_r = resid_rms(model, ids, tgt_layer, args.chunk)
             rand_rows.append({"attn": a_r, "delta": a_r - cond_base,
-                              "resid_rms": res_r})
+                              "nll": n_r, "resid_rms": res_r})
             print(f"  random constant {c}: attention {a_r:.4f} "
                   f"(delta {a_r - cond_base:+.4f}, resid RMS {res_r:.2f})",
                   flush=True)
@@ -200,18 +207,19 @@ def main():
         "step": args.step, "source": args.source, "target": args.target,
         "mlp": args.mlp, "probe": args.probe, "n_seqs": args.seqs,
         "clean_attn": clean, "conditional_baseline_attn": cond_base,
+        "nll_clean": nll_clean, "nll_conditional_baseline": nll_cond_base,
         "output_stats_in_conditional_state": {
             "mu_norm": mu_norm, "rms_out_norm": rms_out,
             "rms_variation_norm": rms_var,
             "constant_share": mu_norm / max(rms_out, 1e-30)},
         "arms": {
             "zero": {"attn": a_zero, "delta": a_zero - cond_base,
-                     "resid_rms": resid_zero},
+                     "nll": n_zero, "resid_rms": resid_zero},
             "mean": {"attn": a_mean, "delta": a_mean - cond_base,
-                     "resid_rms": resid_mean},
+                     "nll": n_mean, "resid_rms": resid_mean},
             "mean_from_clean_state": {
                 "attn": a_mean_clean, "delta": a_mean_clean - cond_base,
-                "resid_rms": resid_mean_clean,
+                "nll": n_mean_clean, "resid_rms": resid_mean_clean,
                 "cos_with_conditional_mean": float(
                     torch.dot(means_clean[args.mlp], means_cond[args.mlp])
                     / max(float(means_clean[args.mlp].norm()
@@ -231,6 +239,10 @@ def main():
     print(f"attention: zero {a_zero:.4f}   mean(cond) {a_mean:.4f}   "
           f"mean(clean) {a_mean_clean:.4f}   "
           f"random-constant {[round(r['attn'], 4) for r in rand_rows]}")
+    print(f"NLL: clean {nll_clean:.4f}   {args.source}-ablated "
+          f"{nll_cond_base:.4f}   then zero {n_zero:.4f}   "
+          f"mean(cond) {n_mean:.4f}   mean(clean) {n_mean_clean:.4f}   "
+          f"random {[round(r['nll'], 3) for r in rand_rows]}")
     print(f"restore check abs diff {res['restore_check_abs_diff']:.2e}")
 
     out.parent.mkdir(parents=True, exist_ok=True)
