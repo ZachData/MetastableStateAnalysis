@@ -833,6 +833,57 @@ is the **fate**: 410m's set ends with a locked core and one inverted defector,
 fan-out and has no room for either ending, so **it needs rewording before it is
 registered** — and rewording it is cheap now and impossible after.
 
+### The self-repair chain at 70m (2026-09-13) — the relay replicates, the circuit does not
+
+`p7d_redundancy/mlp_backup_attention_scan.py`, `prev_token_profile.py`.
+Synthesis in `PROJECT.md` §3.26; §3.20–§3.25 are the 410m chain this ports.
+
+**The ceiling blocker, worked around rather than waited on.** §3.17 recorded
+that 70m's `L2H1` (+6.88 on a 2.67 baseline) censors its own cells against
+`ln 50304` even on `freq`, so every ΔNLL interaction in the 410m chain is
+unavailable here. Attention is immune to that bound, which is what made the
+port possible.
+
+**Replicates: the relay.** `L2H1` has prev-token attention **0.950** (rank 1 of
+48; next 0.347) *and* the largest catalogue effect (**+6.17**) — the same double
+signature as `L5H2` (0.970, rank 1 of 384, +1.97).
+
+**Does not replicate: the matcher, and the ordering.** 70m's only strong
+same-token matcher is `L0H3` at **0.906 / 0.957**, as high as `L7H8`, but in
+**layer 0** — upstream of the relay — with catalogue ΔNLL **−0.839**. It matches
+on embeddings directly; it cannot compose. So the relay → matcher ordering is
+reversed and the 410m circuit cannot exist here. Not a convention artifact:
+§3.12-Q1 measured `L7H8` at 93.4 % on exactly `j`, nothing at `j+1`. And **no
+70m head above +1.0 in the catalogue has an induction score over 0.024.**
+
+**Does not replicate: the MLP backup's structure.** Step 16000, validated
+instrument (zero mode, second-copy queries):
+
+| | 410m (`L5H2`, layer 5) | 70m (`L2H1`, layer 2) |
+|---|---|---|
+| parallel MLP (cannot see relay) | MLP 5, +0.0377 | **MLP 2, +0.0944 (`freq`) / +0.0528 (`wide`)** |
+| first MLP that can see it | **MLP 6, +0.1099** | MLP 3, **−0.0153 / −0.0083** |
+| separation over next | 2.1x | 1.4–1.8x |
+
+The winner at 70m is *parallel* to the relay and so cannot be responding to its
+output; MLP 3, the analogue of MLP 6, is negative on both probes. Its targeted
+consumer is consistently `L3H6` (a member, +2.15), so there is a backup
+pathway — just not 410m's.
+
+**Read 16000, not 143000.** The endpoint is degenerate on *both* probes here:
+TV saturates (0.90–0.98 for MLPs 0–2). That is §3.15's late-`wide` degeneracy
+appearing in attention rather than NLL, and `freq` does not rescue it.
+
+**Limitation stated rather than buried.** 6 layers against 24: "parallel to the
+relay" and "first sublayer that can see it" are adjacent in a network a quarter
+as deep. This supports *the MLP-6 structure is 410m's, not induction's* — the
+same verdict as invariant 5 and `L11H14` — but it is not evidence that
+relay-backed matching is missing at 70m, because 70m does not do relay-backed
+matching at all.
+
+`data/analysis/mlp_backup_attention_scan_pythia-70m{,_freq}.json`,
+`prev_token_profile_pythia-70m.json` — git-ignored.
+
 ## Reproducing
 
 ```
