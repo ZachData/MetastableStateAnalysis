@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.27 is the first POSITIVE replication in the self-repair thread: the relay supports the causally-defined set at both rungs** — top-5 by support are **5 of 5 catalogue members** at 410m *and* 70m, concentrated (5 of 288 / 2 of 24 carry half the above-median mass). What differs is how tightly support tracks causal magnitude (ρ +0.73 at 70m vs +0.31 at 410m). Its instrument needed a measured null — raw TV put `L7H8` at rank 191 of 288 before calibration, rank 7 after. §3.26: the relay replicates but 410m's circuit cannot exist at 70m (matcher `L0H3` is in layer 0, upstream, with a NEGATIVE effect). §3.20–§3.25: the 410m chain. |
+| Last updated | 2026-09-13 — **§3.28: the mandated pre-registration scan ran and it moved the ground.** `2607.01940` (*Conditional Co-Ablation*, 2 Jul 2026) — the paper §3.16 said to read first and nobody read — **publishes §3.22's exact statistic** (conditional growth of a unit's ablation effect once a primary is removed) and its headline framing, on induction across eight models including Pythia-410M. §3.22's novelty is reclassified as replication, and §3.27 is **not to be registered as worded**. What survives is sharper for it: CoAx is head-level and names MLP-mediated repair as future work, which is exactly where §3.23–§3.25's MLP 6 result and its direction-rotation mechanism sit — and the published rival mechanism (LayerNorm scaling, Rushing & Nanda) is one §3.23 already rejects three ways. Nothing written to the registry. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,11 +37,12 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-13 — five PRs open in a stack; §3.27 is the current front)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.28 is the current front)
 
-**Read this block, then §3.27 and §3.26, then §3.25 → §3.20** — §3.20–§3.25 are
-the `L5H2`/self-repair chain on 410m; §3.26 takes it to the 70m rung and §3.27
-is the live front and the thread's first positive cross-rung replication. The chain is measured end to end;
+**Read this block, then §3.28 FIRST, then §3.27 → §3.20.** §3.28 is the
+pre-registration literature scan and it reclassifies §3.22's novelty and blocks
+§3.27's registration, so reading the chain without it will overstate what is
+new. §3.20–§3.25 are the 410m chain, §3.26–§3.27 the 70m rung. The chain is measured end to end;
 what is open is listed below, and none of it is load-bearing for the chain. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
 Everything below this block is earlier and is kept as background, not as the
 current state.
@@ -3380,7 +3381,87 @@ cheap and would resolve it.**
 
 ---
 
+## 3.28 The pre-registration scan: §3.22's statistic is published, and the MLP result is in the gap (2026-09-13)
+
+Full record in **`docs/literature_scan_2026-09-13.md`**; every id was fetched
+and read as full text, two of them by pulling the PDF and extracting locally
+because the abstract pages answered none of the questions that mattered. Run
+under `CLAUDE.md` **trigger 2** — an entry was about to be proposed off §3.27
+and registration freezes the wording, the statistic and the null. **It changed
+them, which is the whole reason the trigger exists.**
+
+**`2607.01940`, *Conditional Co-Ablation* (Gong et al., NTU, 2 Jul 2026) — the
+paper §3.16 flagged as "read that one first" and nobody read.** Its Definition 1
+is §3.22's statistic: the conditional ablation effect of a unit given an ablated
+set, scored as **the growth of that effect once the primary set is removed**.
+Ours is `dNLL(S+u) − dNLL(S) − dNLL(u)`; theirs is the same second-order object
+in a Fisher energy over logits. Its abstract is §3.22's headline — first-order
+scores *"become misleading when a transformer self-repairs: a dormant backup can
+take over, muting the primary's measured effect while the backup itself appears
+irrelevant on the intact model"* — which is exactly §3.22's `L4H9` (solo
+**−0.001**, marginal **+1.018**), presented there as a finding rather than a
+reproduction. And it runs **induction across eight models in six families,
+Pythia-410M included**, with attribution factors from 2.1× (Pythia-160M) to
+**12× (Pythia-410M)**.
+
+**`2402.15390`, Rushing & Nanda (ICML 2024).** MLP participation in self-repair
+is published: *"changes in the final LayerNorm scaling factor and sparse sets of
+neurons implementing Anti-Erasure"*, on gpt2-small/medium/large and
+pythia-160m/**410m**/1b.
+
+**So four things are reclassified as replication**: §3.22's interaction
+statistic; its misleading-first-order-scores framing; cross-scale recovery of
+induction backups; and MLPs participating in self-repair at all.
+
+**What survives is sharper for sitting in a gap the paper names itself.** CoAx
+is **head-level by construction** — *"the signal is instantiated primarily at
+attention-head granularity"*, head-level CoAx *"does not recover"* the
+MLP-dominated case, its FFN probe is *"preliminary"*, and *"a full FFN-level
+treatment of strongly MLP-mediated self-repair"* is *"left to future work."*
+That is precisely where §3.23–§3.25 sit:
+
+1. **An MLP as the *dominant* backup for one head** — MLP 6 at **+6.26**, above
+   every head including `L7H8`'s +4.07, on a solo effect of +0.14.
+2. **The mechanism is an active rotation of a constant direction** — `mu_clean`
+   restores nothing (0.038, on a par with zero and with noise), `mu_cond`
+   restores 0.643. Neither paper characterises a compensator's residual-stream
+   write at all, and **the published mechanism is a rival hypothesis §3.23
+   already rejects three ways** (identical residual norms under zero vs mean
+   with attention 0.045 vs 0.643; norm-matched random reproducing zero; MLP 5
+   removing as much norm for a fraction of the damage). The direction result is
+   not LayerNorm scaling measured differently.
+3. **The rotation is aimed at the set's shared key read-space and moves the
+   heads it points at** (§3.24, §3.25) — no residual geometry in either paper.
+4. **The attention/TV readouts and the ceiling-immunity argument**, which is what
+   made the 70m port possible where §3.17's ceiling censors every ΔNLL cell.
+   Both papers are output-grounded.
+
+**And one non-hit recorded as a non-hit.** A search summary attributed
+*"many-to-many wiring between previous-token and induction heads"* to
+`2604.01094`; the phrase is not in its abstract and the full text was not
+obtained, so it is logged as **unresolved, not as support**. Quoting it would
+have repeated the 2026-09-10 failure §3.16 exists to prevent.
+
+**Consequence for the registration, and it is a human call.** §3.27's candidate
+— relay support concentrated on the causally-defined set, replicating across
+rungs — is adjacent to CoAx's induction transfer. Not identical (ours is the
+relay's *support* over downstream heads; theirs is *backups of* an ablated
+primary) but close enough that **registering it as worded would claim novelty
+this scan does not support.** The card with literature cover is the
+**MLP-mediated, direction-carried repair**, and it needs its own scan of
+FFN/neuron-level interpretability before anything is frozen. Nothing has been
+written to `claims/registry.json`.
+
+---
+
 ## 3.27 What DOES replicate: the relay supports the causally-defined set, at both rungs (2026-09-13)
+
+> **NOVELTY QUALIFIED 2026-09-13 by §3.28.** The cross-rung measurement stands.
+> Its status as a *registration candidate* does not: CoAx (`2607.01940`) reports
+> induction-backup recovery transferring across eight models including
+> Pythia-410M, so "backup structure replicates across scale" is substantially
+> weaker as a novelty claim than this section presents it. **Do not register as
+> worded.**
 
 `p7d_redundancy/relay_support_profile.py`, new. §3.26 closed by admitting the
 replication question as posed "does not quite have a subject" at 70m, because
@@ -3816,6 +3897,14 @@ unchanged; pythia-410m spent under `check_registry` rule 3.
 ---
 
 ## 3.22 The self-repair, measured exhaustively — and §3.21 was wrong about who does it (2026-09-13)
+
+> **NOVELTY CORRECTED 2026-09-13 by §3.28, same day.** The measurements stand.
+> The *framing* does not: this section's conditional marginal-vs-solo
+> interaction is **CoAx** (`2607.01940`, 2 Jul 2026, Definition 1), and its
+> headline — that single-unit scores mislead under self-repair because a backup
+> looks irrelevant on the intact model — is that paper's central thesis, run on
+> Pythia-410M among eight models. Independently derived here, published first.
+> Read §3.28 before quoting any novelty claim from this section.
 
 Four runners, all new: `backup_sweep_full.py` (every head's marginal cost once
 `L5H2` is gone), `prev_token_profile.py`, `relay_selection_check.py`,
