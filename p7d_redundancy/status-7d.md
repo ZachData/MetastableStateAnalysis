@@ -5,8 +5,8 @@
 **Overall:** Q1, Q2 and Q3 are answered on pythia-410m, and **pass 2 (the
 pairwise interaction matrix) and the geometric axis are now answered too**. Q4
 is mostly on disk and unread; Q5 has a partial answer from geometry alone. The
-`L5H2` puzzle (§3.12-U/§3.16/§3.18) is now closed on the mechanism — see "The
-upstream-relay check" below — though not on the joint-ablation additivity.
+`L5H2` puzzle (§3.12-U/§3.16/§3.18) is now closed on both the mechanism ("The
+upstream-relay check") and the super-additivity ("Self-repair") below.
 Nothing is registered and nothing can be — every measurement here is on an
 artifact spent under `check_registry` rule 3. Restore checks are exact
 (`0.0e+00`) on every run reported below.
@@ -330,6 +330,61 @@ this pair, not a "removing something big" artifact.
 `data/analysis/upstream_relay_check.json` (git-ignored, ~3 min for the 6-step
 grid): `python -u p7d_redundancy/upstream_relay_check.py --steps
 1000,2000,4000,8000,16000,143000`.
+
+### Self-repair (2026-09-13) — three redundancy-set members reproduce `L7H8`'s super-additive signature with `L5H2`
+
+`l5h2_backup_search.py` (attention search, all 384 heads) then
+`l5h2_backup_causal_check.py` (the ΔNLL-interaction version, on the search's
+own candidates). Closes the half the upstream-relay check left open: §3.12-S's
+`L5H2`×`L7H8` joint ablation is super-additive (2.2x the sum of parts), which
+a direct dependency should NOT produce, and §3.16 named Hydra-effect
+self-repair as the untested reconciliation.
+
+**The search.** All 384 heads' own induction-attention, baseline vs.
+`L5H2`-ablated, at 6 checkpoints (~13 s/checkpoint at 8 seqs — `induction_scores`
+already batches every head into one attention-output pass). Two findings, one
+of them not what the search was built for: `L6H0` — not a catalogue member —
+falls **harder than `L7H8`** at every checkpoint from 2000 on (−0.485 at
+143000 vs `L7H8`'s −0.161), so `L5H2` feeds more than one downstream matcher.
+And a consistent riser cluster from step 1000 on: `L10H7`, `L10H15`, and
+three known members — `L11H14`, `L8H6`, `L8H9` — all show their OWN
+induction-attention rise when `L5H2` is ablated.
+
+**The causal version**, on exactly those candidates (fixed before running,
+not chosen after):
+
+| step | `L11H14` | `L8H6` | `L8H9` | `L10H15` | `L10H7` | `L7H8` (control) |
+|---|---|---|---|---|---|---|
+| 4000 | **+1.578** | +0.750 | +0.500 | +0.220 | −0.011 | +1.717 |
+| 16000 | **+2.180** | +1.613 | +0.543 | +0.154 | −0.220 | +4.151 |
+| 143000 | **+1.532** | +0.302 | +0.083 | +0.002 | −0.101 | +3.430 |
+
+`L7H8`'s interaction reproduces §3.12-S exactly at step 16000 (+4.1505 here
+vs +4.151), which calibrates the method. `L11H14`, `L8H6` and `L8H9` are
+super-additive with `L5H2` at **every** checkpoint — `L11H14`'s interaction is
+8–11x its own solo effect, a bigger relative jump than `L7H8`'s own. **The
+super-additivity is a property of the set, not a private feature of one
+pair**: several members stand in for `L5H2` at once, and the original pairwise
+arm was only seeing one of them.
+
+**`L10H15` decays like the set's other members** (positive at 4000/16000,
++0.002 by 143000 — the same shape §3.12-U found for four of the six original
+members). **`L10H7` dissociates**: its attention rises at every checkpoint but
+its causal interaction is **negative** at every checkpoint (−0.01 to −0.22) —
+sub-additive, the opposite of self-repair. A behavioural (attention) proxy
+failing to predict a causal quantity is §3.12-R/G6's lesson one level up.
+
+**Not settled**: whether these three are the *only* stand-ins (MLPs untested;
+the search only read attention, not every head's own marginal ΔNLL), or why
+`L11H14` — already the set's oddest member on four other axes (§3.19, §7e) —
+is also its strongest stand-in for `L5H2` specifically.
+
+`data/analysis/l5h2_backup_search.json`,
+`data/analysis/l5h2_backup_causal_check.json` (both git-ignored). Rerun:
+`python -u p7d_redundancy/l5h2_backup_search.py --steps
+1000,2000,4000,8000,16000,143000` (~1.5 min), then
+`python -u p7d_redundancy/l5h2_backup_causal_check.py --steps 4000,16000,143000`
+(~3.5 min).
 
 ## What is open
 

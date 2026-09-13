@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
-| Last updated | 2026-09-13 — **§3.20: `L5H2`'s puzzle closed on the mechanism** (new `upstream_relay_check.py`: ablating `L5H2` demonstrably breaks `L7H8`'s own matching attention, 60–600x any generic control, while a magnitude-matched control head — `L12H5` — moves it by exactly 0.0000; the joint-ablation super-additivity is still unreconciled). Also today: **invariant 4 reworded in `design-8.md`** — the wording now stops at the mid-training minimum and states both rungs' post-minimum fates as non-replicating rather than asserting one ending (§3.19, 2026-09-12: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES); §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
+| Last updated | 2026-09-13 — **§3.21: the super-additivity is set-wide self-repair.** `L11H14`, `L8H6`, `L8H9` all reproduce `L7H8`'s own super-additive interaction with `L5H2` (`L11H14`'s is 8–11x its solo effect) — §3.12-S's puzzle was never a private `L5H2`×`L7H8` feature, the pairwise arm was only seeing one of several stand-ins. §3.20 (same day, prerequisite): `L5H2`'s puzzle closed on the mechanism — ablating it demonstrably breaks `L7H8`'s own matching attention, 60–600x any generic control, 0.0000 for a magnitude-matched one. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, states both rungs' post-minimum fates as non-replicating (§3.19, 2026-09-12: "70m never separates" withdrawn, 410m a locked core + one defector, 70m RE-COHERES); §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -78,15 +78,16 @@ freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
    registration candidate; both rungs are exploration, so a registration needs
    `1b` as its test site and `1b` may not be touched until that prediction
    exists.
-2. **§3.12-U's `L5H2` puzzle is closed on the mechanism (§3.20, 2026-09-13),
-   not on the additivity.** `L5H2` is a previous-token head whose ablation
-   demonstrably breaks `L7H8`'s own matching attention (60–600x any generic
-   control; a magnitude-matched control, `L12H5`, moves it by 0.0000) — that
-   is why it has neither an induction score nor an FV score of its own. What
-   is still open: why the joint-ablation `ΔNLL` is super-additive when a
-   dependency this direct predicts sub-additive (§3.12-S). Hydra-effect
-   self-repair elsewhere in the 384 heads is the standing hypothesis and is
-   untested; §3.20 names the next probe.
+2. **§3.12-U's `L5H2` puzzle is closed, both halves (§3.20, §3.21,
+   2026-09-13).** `L5H2` is a previous-token head whose ablation demonstrably
+   breaks `L7H8`'s own matching attention (60–600x any generic control; a
+   magnitude-matched control, `L12H5`, moves it by 0.0000) — that is why it
+   has neither an induction score nor an FV score of its own (§3.20). And
+   §3.12-S's super-additive joint ablation is a **set-wide** property, not a
+   private `L5H2`×`L7H8` feature: `L11H14`, `L8H6` and `L8H9` all reproduce
+   `L7H8`'s own super-additive interaction with `L5H2`, `L11H14`'s at 8–11x
+   its solo effect (§3.21). Not closed: whether these three are the *only*
+   stand-ins (MLPs untested), or why `L11H14` is the strongest one.
 3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
    analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
    graded KL/λ readout, which is still unbuilt and is now blocking two things.
@@ -3360,6 +3361,84 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.21 The super-additivity is set-wide self-repair, not an `L5H2`×`L7H8` special case (2026-09-13)
+
+`p7d_redundancy/l5h2_backup_search.py` and `l5h2_backup_causal_check.py`, new
+this session; detail in `status-7d.md` ("Self-repair"). §3.20 closed `L5H2`'s
+mechanism but left its companion open: §3.12-S found the joint ablation of
+`L5H2` + `L7H8` is super-additive (2.2x the sum of parts), the opposite of
+what a direct serial dependency predicts, and named Hydra-effect self-repair
+as the untested standing hypothesis.
+
+**Step 1 — a cheap full-model search.** `induction_scores` batches over every
+head in one attention-output pass, so scoring all 384 heads' own
+induction-attention under baseline and under `L5H2`-ablation costs two
+forward passes per checkpoint (~13 s at 8 seqs). Two things fall out that
+were not being looked for:
+
+- **`L5H2` feeds more than `L7H8`.** `L6H0` — not a redundancy-set member by
+  the causal-ablation criterion, but a strong repeated-random-token induction
+  head in its own right (0.75–0.84 through training) — falls **harder** than
+  `L7H8` at every checkpoint from 2000 on: delta −0.435 at 16000, **−0.485 at
+  143000**, against `L7H8`'s −0.190 / −0.161. `L9H9` and `L9H8` fall too,
+  smaller and fading late. `L5H2` is a hub feeding several matchers, not a
+  private circuit with one.
+- **A consistent riser cluster.** `L10H7`, `L10H15`, and three already-known
+  redundancy-set members — `L11H14`, `L8H6`, `L8H9` — show their OWN
+  induction-attention rise when `L5H2` is ablated, from step 1000 onward.
+  `L10H15` peaks mid-training (+0.118 at 16000); `L10H7` is the dominant riser
+  only at the trained endpoint (+0.136 at 143000). Rising attention is not a
+  causal claim by itself — it says a head *could* be compensating.
+
+**Step 2 — the causal version, on the risers the search actually produced**
+(fixed in advance, not chosen after seeing this run). For each candidate,
+`interaction = dNLL(L5H2 + candidate) − dNLL(L5H2 alone) − dNLL(candidate
+alone)` — the same quantity §3.12-S computed for `L7H8`, now asked of heads
+the attention search surfaced instead of assumed. `L7H8` reproduces to three
+decimals at step 16000 (**+4.1505** here against §3.12-S's **+4.151**), which
+calibrates the method.
+
+| step | `L11H14` | `L8H6` | `L8H9` | `L10H15` | `L10H7` | `L7H8` (control) |
+|---|---|---|---|---|---|---|
+| 4000 | **+1.578** | +0.750 | +0.500 | +0.220 | −0.011 | +1.717 |
+| 16000 | **+2.180** | +1.613 | +0.543 | +0.154 | −0.220 | +4.151 |
+| 143000 | **+1.532** | +0.302 | +0.083 | +0.002 | −0.101 | +3.430 |
+
+**Three of the five candidates show `L7H8`'s own signature.** `L11H14`,
+`L8H6` and `L8H9` are all super-additive with `L5H2` at every checkpoint —
+`L11H14`'s interaction (+1.53 to +2.18) is **8–11x its own solo effect**
+(+0.17 to +0.19), a bigger relative jump than `L7H8`'s own (interaction ~4x
+solo). **The super-additivity is a set-wide property, not a private feature
+of the `L5H2`×`L7H8` pair** — which is what actually reconciles §3.12-S with
+§3.20: `L5H2`'s ablation is compensated for by several members of its own
+redundancy set at once, and the pairwise `L5H2`×`L7H8` arm was only ever
+seeing one of them.
+
+**`L10H15` fades exactly like the set's other members do.** Positive at 4000
+and 16000, vanished by 143000 (+0.002) — the same decay-to-near-zero shape
+§3.12-U found for four of the six original members.
+
+**`L10H7` is the dissociation, and it is worth keeping.** Its attention rose
+at every checkpoint, but its causal interaction is **negative at every
+checkpoint** (−0.01 to −0.22) — sub-additive, the opposite of self-repair.
+Rising attention does not imply rising causal usefulness, which is §3.12-R/G6's
+lesson (weights-only proxies fail to predict causal effect) reproduced one
+level up: here the proxy is a *behavioural* readout (attention), not a
+weight one, and it still fails to predict the causal quantity it looks like
+it should predict.
+
+**What this does and does not settle.** It gives §3.12-S's super-additivity a
+concrete, located mechanism — three named members of the set standing in for
+`L5H2` — rather than leaving "self-repair" as an unlocated citation. It does
+**not** show these three are the *only* contributors (MLPs are untested; the
+384-head search only looked at attention, not at every head's own marginal
+ΔNLL), and it does not explain why `L11H14` — already the set's oddest
+member on four independent axes (§3.19, §7e) — is also its strongest
+stand-in for `L5H2` specifically. Exploratory; no p-value; `claims/registry.json`
+unchanged; pythia-410m spent under `check_registry` rule 3.
 
 ---
 
