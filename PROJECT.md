@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.23 is the current front: MLP 6 opened.** `L5H2` + MLP 6 are an **OR-gate** over `L7H8`'s matching (either alone leaves it working, both gone drops attention 0.938 → **0.045**), and the repair is **ACTIVE** — μ from the clean state restores nothing (0.038, like zero and like noise) while the direction MLP 6 *moves to* restores 0.643, a ~33° rotation carrying the whole effect. Not scale (identical residual norms, norm-matched random = zero) and **not** re-supplying `L5H2`'s content (cos −0.507 to it). **§3.22: the self-repair measured exhaustively, and it CORRECTS §3.21.** The stand-in population is **44 heads**, not three; the four largest were missed by §3.21's attention search (`L5H9` +3.36, `L9H5` +2.75, `L1H15` +2.35, all above `L11H14` +1.94); and **MLP 6 beats every head at +6.26** on a solo effect of +0.14, specific to `L5H2` (50x smaller against `L7H8`/`L12H5`), which overturns §3.12-Q6's weights-only "no MLP pathway". Stand-ins split by position: upstream ones partly restore `L7H8`'s attention, downstream ones (`L11H14`, `L9H5`) move it by exactly 0.0000. What selects the relay is **composition, not prev-token attention** (`L4H9`/`L3H1` carry 71–83 % of `L5H2`'s prev-token score and do nothing). §3.21/§3.20 (same day, prerequisites) closed §3.12-U's `L5H2` puzzle. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, both rungs' post-minimum fates non-replicating (§3.19); §3.18 — the set DIVIDES induction and FV roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
+| Last updated | 2026-09-13 — **§3.24 is the current front: the repair direction decoded, and it addresses the SET.** MLP 6's rotation puts ~half its energy into a 64-of-1024 key rowspace (7–8x chance) and, scored across all 272 downstream heads, **six of the top nine are redundancy-set members** — with a flat per-layer profile, so it is membership and not proximity. It is not a token signal (logit lens is noise). Functionally: one constant vector replaces MLP 6's entire varying output to within 0.31 nats, while its pre-ablation mean is **worse than deleting the MLP**. §3.23: MLP 6 opened. `L5H2` + MLP 6 are an **OR-gate** over `L7H8`'s matching (either alone leaves it working, both gone drops attention 0.938 → **0.045**), and the repair is **ACTIVE** — μ from the clean state restores nothing (0.038, like zero and like noise) while the direction MLP 6 *moves to* restores 0.643, a ~33° rotation carrying the whole effect. Not scale (identical residual norms, norm-matched random = zero) and **not** re-supplying `L5H2`'s content (cos −0.507 to it). **§3.22: the self-repair measured exhaustively, and it CORRECTS §3.21.** The stand-in population is **44 heads**, not three; the four largest were missed by §3.21's attention search (`L5H9` +3.36, `L9H5` +2.75, `L1H15` +2.35, all above `L11H14` +1.94); and **MLP 6 beats every head at +6.26** on a solo effect of +0.14, specific to `L5H2` (50x smaller against `L7H8`/`L12H5`), which overturns §3.12-Q6's weights-only "no MLP pathway". Stand-ins split by position: upstream ones partly restore `L7H8`'s attention, downstream ones (`L11H14`, `L9H5`) move it by exactly 0.0000. What selects the relay is **composition, not prev-token attention** (`L4H9`/`L3H1` carry 71–83 % of `L5H2`'s prev-token score and do nothing). §3.21/§3.20 (same day, prerequisites) closed §3.12-U's `L5H2` puzzle. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, both rungs' post-minimum fates non-replicating (§3.19); §3.18 — the set DIVIDES induction and FV roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,11 +37,11 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-13 — five PRs open in a stack; §3.22 is the current front)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.24 is the current front)
 
-**Read this block, then §3.23, §3.22, §3.21, §3.20 in that order** — that is
-the `L5H2`/self-repair thread, which is where the work actually is, and §3.23
-is its live front. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
+**Read this block, then §3.24, §3.23, §3.22, §3.21, §3.20 in that order** —
+that is the `L5H2`/self-repair thread, which is where the work actually is, and
+§3.24 is its live front. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
 Everything below this block is earlier and is kept as background, not as the
 current state.
 
@@ -95,9 +95,12 @@ freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
    OR-gate with `L5H2` over `L7H8`'s matching, the repair is *active* (only
    the direction it rotates to works — the one it already had is worth no more
    than noise), and it is **not** recomputing the prev-token signal (cos
-   −0.507 to `L5H2`'s own contribution). **Open, and now sharper:** *what that
-   direction is* — decoding MLP 6's μ against the unembedding or against
-   `L7H8`'s read-space is the obvious next step and is not done; and why the
+   −0.507 to `L5H2`'s own contribution). **§3.24 decodes the direction**: it is
+   aimed at the redundancy set's shared key read-space (six of the top nine of
+   272 downstream heads are members, on a flat per-layer profile) and is not a
+   token signal. **Open, and now sharper:** per-member functional attribution —
+   that the rotation is aimed at `L7H1`/`L8H6`/`L8H9` is weight-space geometry,
+   and the loss arm confirming it is aggregate; and why the
    output-side compensator class exists at all (`L11H14` is its extreme, and
    `L5H2`×`L11H14` is the single largest residual against §3.12-V's magnitude
    rule at both checkpoints while being δ-cosine-orthogonal).
@@ -3377,6 +3380,110 @@ cheap and would resolve it.**
 
 ---
 
+## 3.24 The repair direction decoded: it is aimed at the redundancy set's shared read-space (2026-09-13)
+
+`p7d_redundancy/mlp6_decode_direction.py`, new. §3.23 closed by naming the
+decode as the obvious next step; this is it. The object is `mu_cond` — MLP 6's
+mean output once `L5H2` is ablated — and in particular the **rotation
+component**, `mu_cond` minus its projection onto `mu_clean`, which §3.23 showed
+carries the entire causal effect (writing `mu_clean` restores nothing, 0.038;
+writing `mu_cond` restores 0.643).
+
+**The LayerNorm guard, first, because it could have invalidated the whole
+thing.** GPT-NeoX LayerNorm subtracts the mean across the hidden dimension, so
+anything along the uniform vector is deleted before `L7H8` reads it.
+`cos(mu, uniform)` is **+0.005 / −0.007** and the share surviving
+mean-subtraction is **1.0000**. Nothing here lives in LayerNorm's null
+direction.
+
+**1. The rotation is aimed at attention read-space.** `W_K` for one head is
+64x1024, so a random direction lands `64/1024 = 0.0625` of its squared norm in
+its rowspace; measured over 200 random directions, **0.0617 ± 0.0100**. Taken
+through the layer's own LayerNorm gain:
+
+| vector | frac in `L7H8`'s K | frac in Q |
+|---|---|---|
+| random null | 0.0617 ± 0.0100 | 0.0616 ± 0.0100 |
+| `mu_clean` | 0.091 / 0.120 | 0.064 / 0.114 |
+| `mu_cond` | 0.220 / 0.237 | 0.144 / 0.197 |
+| **rotation component** | **0.456 / 0.499** | 0.323 / 0.398 |
+
+The component that carries the causal effect puts **~half its energy into a
+64-of-1024 subspace** — 7–8x chance, ~39 sd above the null — while the
+direction MLP 6 already had is ordinary. **K exceeds Q at both checkpoints**
+(0.456 vs 0.323; 0.499 vs 0.398), which is the induction-shaped side.
+
+**2. It is not a token signal.** The logit lens through `W_U` returns noise —
+`'urn'`, `'il'`, `'ats'`, `'abo'` — with **entirely different token sets at the
+two checkpoints**. That is a real negative and it agrees with the geometry: the
+direction is position-independent, so it could not carry per-token match
+content, and it is pointed at the matcher's machinery rather than at the
+vocabulary.
+
+**3. And it is aimed at the SET, not at `L7H8`.** Scoring the rotation into
+every one of the **272 heads downstream of MLP 6**, `L7H8` ranks **5th at step
+16000 and 4th at 143000** — far above the 0.073 median, but not the target.
+The proximity confound is dead on the layer profile, which is flat (per-layer
+medians 0.064–0.081 at 16000, spanning layers 7 to 23). What separates heads is
+membership, not position:
+
+| | members | non-members |
+|---|---|---|
+| within layer 7 | `L7H1`, `L7H8` — median **0.581** | median 0.071 |
+| within layer 8 | `L8H6`, `L8H9` — median **0.650** | median 0.061, max 0.435 |
+
+Global ranks of 272 at step 16000: **`L7H1` #0, `L8H6` #1, `L8H9` #3, `L7H8`
+#5, `L10H9` #6, `L11H14` #8** — six of the top nine are catalogue members, from
+a population where members are ~2 %. The same six lead at 143000.
+
+**The exceptions are consistent, which is the best kind.** The members that are
+*not* in the targeted group are `L12H5` (#36 / #43), `L9H13` (#104 / #89) and
+`L15H14` (#125 / #177) — and `L12H5` is precisely the member that has come out
+uncoupled on every previous measurement: it moved `L7H8`'s attention by exactly
+**0.0000** (§3.20), and it is the largest *negative* residual against §3.12-V's
+magnitude rule (§3.22). A fourth independent instrument putting `L12H5` outside
+the same pathway is a consistency check that was not designed in.
+
+**What this says.** The redundancy set is not merely a collection of heads with
+interchangeable function — **its members share a read-space, and MLP 6's repair
+addresses that shared space rather than any one head.** That is why §3.21/§3.22
+found compensation distributed across several members instead of routed to the
+matcher: the repair is a broadcast into the set's common input subspace. It
+also gives §3.14.2's "a set of heads holding a residual-stream regime" a
+concrete geometric referent.
+
+**The function-space check, because §3.12-S's lesson binds here.** A rowspace
+projection is a **weight-space** measure and weight-space overlap is not
+function-space overlap — the finding that made membership causal in the first
+place. The other members cannot be checked on `L7H8`'s instrument (§3.18:
+their induction attention never exceeds 0.015, so there is nothing to restore),
+so the readout is the **loss**, which aggregates every member's contribution:
+
+| MLP 6's slot, `L5H2` ablated | NLL @ 16000 | NLL @ 143000 |
+|---|---|---|
+| *baseline (`L5H2` ablated, MLP 6 intact)* | *2.551* | *1.761* |
+| zero | 8.002 | 6.701 |
+| norm-matched random constant | 8.09–8.99 | 7.99–8.32 |
+| **`mu_clean`** | **8.955** | **7.153** |
+| **`mu_cond`** | **2.859** | **1.986** |
+
+**One constant vector substitutes for MLP 6's entire position-varying output**,
+recovering to within **0.31 / 0.23 nats** of the baseline and closing ~95 % of
+the 5.45-nat gap that deleting the MLP opens. And `mu_clean` is **worse than
+deleting the MLP outright** (8.955 against 8.002) — the pre-ablation direction
+is not merely useless in the ablated state, it is actively wrong, which is what
+an operating-point term should look like when set to the wrong point. So the
+rotation is load-bearing in function space, not only in geometry.
+
+**What is still geometry only** is the *per-member attribution*: that the
+rotation is aimed at `L7H1`/`L8H6`/`L8H9`'s read-spaces is a weight-space fact,
+and the loss arm above is aggregate. Showing that each member's own causal
+contribution depends on the rotation needs a per-member arm and is unrun.
+Exploratory; no p-value; `claims/registry.json` unchanged; pythia-410m spent
+under `check_registry` rule 3.
+
+---
+
 ## 3.23 What MLP 6 is doing: active self-repair, by rotating one direction (2026-09-13)
 
 `mlp_relay_role.py`, `mlp6_content_vs_scale.py`, `mlp6_response.py`, all new.
@@ -3460,9 +3567,10 @@ mode, which §3.15 notes is really a *bias*-ablation; consistent throughout, and
 named. The `mean` arms recompute μ inside the conditional state rather than
 reusing clean-model means, because a clean mean injected into an ablated pass
 is itself an off-distribution constant. `--controls 3` random directions,
-agreeing to ~0.02. **What that direction actually is remains open** — decoding
-it against the unembedding, or against `L7H8`'s own read-space, is the obvious
-next step and is not done. Exploratory; no p-value; `claims/registry.json`
+agreeing to ~0.02. **What that direction is: decoded in §3.24** — it is
+aimed at the redundancy set's shared key read-space (6 of the top 9 of 272
+downstream heads are members), and it is not a token signal. Exploratory; no
+p-value; `claims/registry.json`
 unchanged; pythia-410m spent under `check_registry` rule 3.
 
 ---

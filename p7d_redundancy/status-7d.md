@@ -545,10 +545,57 @@ anyway.
 
 *Caveats:* all `L5H2` ablations are `ov` (a bias-ablation, §3.15), consistent
 throughout; `mean` arms recompute μ inside the conditional state; 3 random
-directions agreeing to ~0.02. **What the direction is remains open.**
+directions agreeing to ~0.02.
+
+### Decoding the repair direction (2026-09-13) — it addresses the SET, not the matcher
+
+`mlp6_decode_direction.py`. Synthesis in `PROJECT.md` §3.24. The object is the
+**rotation component** (μ_cond minus its projection on μ_clean), which carries
+the whole causal effect.
+
+**LayerNorm guard first**: `cos(μ, uniform)` = +0.005 / −0.007, share surviving
+mean-subtraction **1.0000**. None of it lives in LayerNorm's null direction.
+
+**Aimed at attention read-space.** A random direction puts 0.0617 ± 0.0100
+(n=200) of its squared norm in a head's 64-of-1024 K rowspace, taken through
+the layer's LayerNorm gain. The rotation component puts **0.456 / 0.499** —
+7–8x chance — while μ_clean is ordinary (0.091 / 0.120). K exceeds Q at both
+steps (0.456 vs 0.323; 0.499 vs 0.398).
+
+**Not a token signal.** The logit lens returns noise (`'urn'`, `'il'`, `'ats'`)
+with entirely different token sets at the two checkpoints — consistent with a
+position-independent direction, which cannot carry per-token match content.
+
+**Aimed at the set.** Scored into all **272 heads downstream of MLP 6**,
+`L7H8` ranks **5th / 4th** — high but not the target. Proximity is ruled out:
+per-layer medians are flat (0.064–0.081 at 16000, layers 7–23). Membership is
+what separates them:
+
+| | members | non-members |
+|---|---|---|
+| within layer 7 | `L7H1`, `L7H8` — median **0.581** | 0.071 |
+| within layer 8 | `L8H6`, `L8H9` — median **0.650** | 0.061 (max 0.435) |
+
+Global ranks of 272 at 16000: `L7H1` #0, `L8H6` #1, `L8H9` #3, `L7H8` #5,
+`L10H9` #6, `L11H14` #8 — **six of the top nine are catalogue members**, and
+the same six lead at 143000. The members that are *not* targeted are `L12H5`
+(#36/#43), `L9H13`, `L15H14` — and `L12H5` is the member that came out
+uncoupled on every earlier instrument (0.0000 on `L7H8`'s attention; largest
+negative residual against the magnitude rule). A fourth instrument agreeing
+about `L12H5` was not designed in.
+
+**Function-space check**, because §3.12-S's lesson binds: the other members have
+no induction attention to restore (§3.18, all ≤0.015), so the readout is the
+loss. With `L5H2` ablated (baseline NLL 2.551 / 1.761): zero 8.002 / 6.701;
+random constant 8.09–8.99 / 7.99–8.32; **μ_clean 8.955 / 7.153**; **μ_cond
+2.859 / 1.986**. One constant vector replaces MLP 6's whole position-varying
+output to within **0.31 / 0.23 nats**, and μ_clean is **worse than deleting the
+MLP** — the wrong operating point rather than a missing one. *Still geometry
+only:* per-member attribution of the rotation to `L7H1`/`L8H6`/`L8H9`'s own
+contributions is unrun; the loss arm is aggregate.
 
 `data/analysis/mlp_relay_role.json`, `mlp6_content_vs_scale.json`,
-`mlp6_response.json` — git-ignored.
+`mlp6_response.json`, `mlp6_decode_direction.json` — git-ignored.
 
 ## What is open
 
