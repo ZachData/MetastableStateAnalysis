@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.24 is the current front: the repair direction decoded, and it addresses the SET.** MLP 6's rotation puts ~half its energy into a 64-of-1024 key rowspace (7–8x chance) and, scored across all 272 downstream heads, **six of the top nine are redundancy-set members** — with a flat per-layer profile, so it is membership and not proximity. It is not a token signal (logit lens is noise). Functionally: one constant vector replaces MLP 6's entire varying output to within 0.31 nats, while its pre-ablation mean is **worse than deleting the MLP**. §3.23: MLP 6 opened. `L5H2` + MLP 6 are an **OR-gate** over `L7H8`'s matching (either alone leaves it working, both gone drops attention 0.938 → **0.045**), and the repair is **ACTIVE** — μ from the clean state restores nothing (0.038, like zero and like noise) while the direction MLP 6 *moves to* restores 0.643, a ~33° rotation carrying the whole effect. Not scale (identical residual norms, norm-matched random = zero) and **not** re-supplying `L5H2`'s content (cos −0.507 to it). **§3.22: the self-repair measured exhaustively, and it CORRECTS §3.21.** The stand-in population is **44 heads**, not three; the four largest were missed by §3.21's attention search (`L5H9` +3.36, `L9H5` +2.75, `L1H15` +2.35, all above `L11H14` +1.94); and **MLP 6 beats every head at +6.26** on a solo effect of +0.14, specific to `L5H2` (50x smaller against `L7H8`/`L12H5`), which overturns §3.12-Q6's weights-only "no MLP pathway". Stand-ins split by position: upstream ones partly restore `L7H8`'s attention, downstream ones (`L11H14`, `L9H5`) move it by exactly 0.0000. What selects the relay is **composition, not prev-token attention** (`L4H9`/`L3H1` carry 71–83 % of `L5H2`'s prev-token score and do nothing). §3.21/§3.20 (same day, prerequisites) closed §3.12-U's `L5H2` puzzle. Also today: **invariant 4 reworded in `design-8.md`** — stops at the mid-training minimum, both rungs' post-minimum fates non-replicating (§3.19); §3.18 — the set DIVIDES induction and FV roles; §3.17 — the probe is the ceiling handle, SVD ordering has a THIRD class |
+| Last updated | 2026-09-13 — **§3.25 closes the thread's last gap: the geometry predicts the function.** MLP 6's repair direction moves exactly the heads it points at — members exceed their own layer's non-member MAXIMUM in layers 7/8/10, and TV-vs-`frac_K` survives layer-centring (Spearman **+0.325 / +0.337**, positive within 14/17 and 15/17 layers), so it is not depth accumulation. The heads the direction misses (`L9H13`, `L12H5`) are the ones that do not move. Chain now measured end to end: §3.20 relay → §3.21/§3.22 set-wide compensation → §3.23 MLP 6 actively rotates → §3.24 aimed at the set's shared key subspace → §3.25 it moves them. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,11 +37,12 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-13 — five PRs open in a stack; §3.24 is the current front)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.25 is the current front)
 
-**Read this block, then §3.24, §3.23, §3.22, §3.21, §3.20 in that order** —
-that is the `L5H2`/self-repair thread, which is where the work actually is, and
-§3.24 is its live front. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
+**Read this block, then §3.25, §3.24, §3.23, §3.22, §3.21, §3.20 in that
+order** — that is the `L5H2`/self-repair thread, which is where the work
+actually is, and §3.25 is its live front. The chain is measured end to end;
+what is open is listed below, and none of it is load-bearing for the chain. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
 Everything below this block is earlier and is kept as background, not as the
 current state.
 
@@ -98,9 +99,8 @@ freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
    −0.507 to `L5H2`'s own contribution). **§3.24 decodes the direction**: it is
    aimed at the redundancy set's shared key read-space (six of the top nine of
    272 downstream heads are members, on a flat per-layer profile) and is not a
-   token signal. **Open, and now sharper:** per-member functional attribution —
-   that the rotation is aimed at `L7H1`/`L8H6`/`L8H9` is weight-space geometry,
-   and the loss arm confirming it is aggregate; and why the
+   token signal. **§3.25 closes the per-member attribution** (the rotation
+   moves the heads it points at; misses move least). **Open:** why the
    output-side compensator class exists at all (`L11H14` is its extreme, and
    `L5H2`×`L11H14` is the single largest residual against §3.12-V's magnitude
    rule at both checkpoints while being δ-cosine-orthogonal).
@@ -3380,6 +3380,83 @@ cheap and would resolve it.**
 
 ---
 
+## 3.25 The geometry predicts the function: the rotation moves the heads it points at (2026-09-13)
+
+`p7d_redundancy/rotation_per_head_effect.py`, new. §3.24 showed MLP 6's repair
+direction is aimed at the redundancy set's key read-spaces and flagged the gap
+it could not close: **that is a weight-space measure**, and §3.12-S is this
+project's own finding that weight-space overlap is not function-space overlap.
+This closes it.
+
+**The minimal pair.** Two states differing by exactly the rotation and nothing
+else, both holding a *constant* in MLP 6's slot:
+
+    REF  = `L5H2` ablated, MLP 6 := mu_cond    (rotation present; NLL 2.859)
+    TEST = `L5H2` ablated, MLP 6 := mu_clean   (rotation absent;  NLL 8.955)
+
+**The readout is attention, not loss, and that is forced.** At NLL 8.955 the
+model is a nat from `ln 50304`, so any per-head marginal computed there is
+ceiling-contaminated (§3.14.4-D); an attention distribution stays well defined
+however badly the model is doing. Per head: **total-variation distance** between
+its attention in REF and TEST, averaged over queries and sequences — in [0, 1],
+needing no scale calibration, and role-agnostic, which matters because §3.18
+found the FV-positive members never exceed an induction score of 0.015 and so
+have no induction attention to measure. **Zero check: layers 0–6 return TV
+exactly 0.00e+00** at both checkpoints, as causality requires.
+
+**Members move, non-members do not** (layers > 6, n = 272):
+
+| | members (n=9) | non-members (n=263) | Mann-Whitney |
+|---|---|---|---|
+| step 16000 | **0.2850** | 0.1471 | p = 1.1e-05 |
+| step 143000 | **0.2483** | 0.1201 | p = 1.0e-02 |
+
+Within the layers where the effect is largest, members exceed the non-member
+**maximum** at both checkpoints — layer 7: members 0.353 / 0.281 against a
+non-member max of 0.249 / 0.154; layer 8: 0.321 / 0.323 against 0.265 / 0.225;
+layer 10: 0.321 / 0.318 against 0.289 / 0.231.
+
+**And the geometry predicts the function head by head.** TV against `frac_K`
+from §3.24, over the same 272 heads:
+
+| | raw Spearman | layer-centred Spearman | mean within-layer | layers positive |
+|---|---|---|---|---|
+| 16000 | +0.318 (p = 7.9e-08) | **+0.325** (p = 4.2e-08) | +0.285 | 14 / 17 |
+| 143000 | +0.223 (p = 2.1e-04) | **+0.337** (p = 1.1e-08) | +0.318 | 15 / 17 |
+
+**Controlling for layer strengthens it rather than explaining it away**, which
+is the confound that had to be ruled out: TV rises with depth on its own (per-layer
+medians 0.03 → 0.16), so the raw ranking is contaminated by accumulation, and
+the relationship survives centring each layer on its own median and holds
+*within* individual layers in 14 of 17 and 15 of 17.
+
+**The exceptions are the geometry's own.** `L9H13` — `frac_K` rank #104 / #89,
+i.e. not a targeted head — sits **below** its layer's non-member median at both
+checkpoints (0.113 vs 0.133; 0.062 vs 0.094). `L12H5` (#36 / #43) is barely
+above median at 143000 (0.162 vs 0.141). The members the direction does not
+point at are the members that do not move, which is the prediction rather than
+a rescue.
+
+**Two things not to quote.** The **raw top-TV ranking at 143000 is dominated by
+layers 22–23** (`L23H7` 0.497 and eight more from layers 22–23 above any
+member) — pure accumulation, and the reason the layer-controlled statistics are
+the ones that carry the claim; at 16000, where accumulation is milder, five of
+the top nine are members. And **`L15H14` flips**: above its layer's non-members
+at 16000 (0.264 vs 0.113) and below at 143000 (0.044 vs 0.101). Recorded rather
+than smoothed.
+
+**Where this leaves the thread.** The chain is now complete end to end and each
+link is measured rather than inferred: `L5H2` is a previous-token head wired
+into the matcher's read-space (§3.20); removing it is compensated set-wide
+(§3.21, §3.22); the dominant compensator is MLP 6, which *actively rotates* a
+constant direction (§3.23); that direction is aimed at the redundancy set's
+shared key subspace (§3.24); and it moves precisely those heads (this section).
+No p-value here is an adjudication — heads within a layer are not independent
+(§3.12-G6) and these statistics are descriptive. `claims/registry.json`
+unchanged; pythia-410m spent under `check_registry` rule 3.
+
+---
+
 ## 3.24 The repair direction decoded: it is aimed at the redundancy set's shared read-space (2026-09-13)
 
 `p7d_redundancy/mlp6_decode_direction.py`, new. §3.23 closed by naming the
@@ -3475,10 +3552,10 @@ is not merely useless in the ablated state, it is actively wrong, which is what
 an operating-point term should look like when set to the wrong point. So the
 rotation is load-bearing in function space, not only in geometry.
 
-**What is still geometry only** is the *per-member attribution*: that the
-rotation is aimed at `L7H1`/`L8H6`/`L8H9`'s read-spaces is a weight-space fact,
-and the loss arm above is aggregate. Showing that each member's own causal
-contribution depends on the rotation needs a per-member arm and is unrun.
+**The per-member attribution is closed in §3.25**: the rotation moves the
+heads its geometry points at, members exceeding their layer's non-member
+maximum in layers 7/8/10, with TV-vs-`frac_K` surviving layer control
+(Spearman +0.325 / +0.337).
 Exploratory; no p-value; `claims/registry.json` unchanged; pythia-410m spent
 under `check_registry` rule 3.
 
