@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.25 closes the thread's last gap: the geometry predicts the function.** MLP 6's repair direction moves exactly the heads it points at — members exceed their own layer's non-member MAXIMUM in layers 7/8/10, and TV-vs-`frac_K` survives layer-centring (Spearman **+0.325 / +0.337**, positive within 14/17 and 15/17 layers), so it is not depth accumulation. The heads the direction misses (`L9H13`, `L12H5`) are the ones that do not move. Chain now measured end to end: §3.20 relay → §3.21/§3.22 set-wide compensation → §3.23 MLP 6 actively rotates → §3.24 aimed at the set's shared key subspace → §3.25 it moves them. |
+| Last updated | 2026-09-13 — **§3.26 takes the chain to the 70m rung: the relay replicates, the circuit around it does not.** `L2H1` carries prev-token 0.950 *and* the largest causal effect (+6.17) — same double signature as `L5H2`. But 70m's only strong same-token matcher is `L0H3` in **layer 0**, *upstream* of the relay with a **negative** effect, so the relay→matcher ordering is inverted and 410m's circuit cannot exist there; and the dominant MLP backup is MLP 2, which is **parallel to the relay and cannot see it**, while the structural analogue MLP 3 is negative. Worked around §3.17's ceiling blocker by using attention instead of loss. **The instrument failed its own 410m positive control twice first** — mean-ablation is blind to a mean-carried backup, which is a caveat §3.15 needs. §3.25/§3.24: the repair direction decoded and shown to move the heads it points at. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,11 +37,11 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-13 — five PRs open in a stack; §3.25 is the current front)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.26 is the current front)
 
-**Read this block, then §3.25, §3.24, §3.23, §3.22, §3.21, §3.20 in that
-order** — that is the `L5H2`/self-repair thread, which is where the work
-actually is, and §3.25 is its live front. The chain is measured end to end;
+**Read this block, then §3.26, then §3.25 → §3.20 in that order** — §3.20–§3.25
+are the `L5H2`/self-repair chain on 410m and §3.26 takes it to the 70m rung,
+which is the live front. The chain is measured end to end;
 what is open is listed below, and none of it is load-bearing for the chain. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
 Everything below this block is earlier and is kept as background, not as the
 current state.
@@ -3377,6 +3377,106 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.26 The chain at 70m: the relay replicates, the circuit around it does not (2026-09-13)
+
+`p7d_redundancy/mlp_backup_attention_scan.py` (new) plus
+`prev_token_profile.py --model pythia-70m`. Detail in
+`p8_scale_ladder/status-8.md` ("The self-repair chain at 70m"). §3.20–§3.25 are
+`n = 1` on pythia-410m, which is spent forever under `check_registry` rule 3, so
+the ladder is the only route by which any of it becomes registrable. 70m is the
+other exploration rung and is free (`design-8.md`'s rung policy; 1b/1.4b stay
+reserved and untouched).
+
+**The blocker first, and the instrument built to get past it.** §3.17 records
+that 70m's `L2H1` costs **+6.88 on a 2.67 baseline**, so it censors its own
+cells against `ln 50304` *even on the `freq` probe* — every ΔNLL interaction in
+§3.22/§3.23 is unavailable at that rung. Attention is immune: a distribution
+over keys is well defined however badly the model is doing. That is what made
+this port possible at all, and it is the first time the ceiling blocker §3.17
+logged has been worked around rather than waited on.
+
+**1. The relay replicates, cleanly.** 70m's `L2H1` carries prev-token attention
+**0.950** (rank 1 of 48, next is 0.347) *and* the largest causal effect in the
+catalogue (**+6.17**) — the same double signature as 410m's `L5H2` (0.970,
+rank 1 of 384, +1.97). Two rungs, same object: a dominant previous-token head
+that is also the most causally load-bearing head in the model.
+
+**2. The matcher does not, and the ordering is inverted.** 70m's only strong
+same-token matcher is **`L0H3` at 0.906 / 0.957** — as high as `L7H8`'s 0.934 —
+but it sits in **layer 0**, *upstream* of the relay, and its catalogue effect is
+**−0.839**: ablating it *improves* the readout. A layer-0 head cannot compose;
+it matches on the embedding directly. So 70m solves same-token matching off the
+embeddings at the bottom of the network while 410m does it seven layers up
+through a relay, and **the relay → matcher ordering that defines the 410m
+circuit is reversed at 70m and cannot exist there.** The offset convention is
+not the explanation: §3.12's Q1 already measured `L7H8` at 93.4 % on exactly `j`
+with nothing at `j+1`, so the instrument describes "attends to an earlier copy
+of my own token" correctly at both rungs. And **no causally-important 70m head
+does induction attention at all** — every head above +1.0 in the catalogue
+scores under 0.024.
+
+**3. The MLP backup does not replicate in its structural form.** At 410m the
+dominant backup is MLP 6, *the first MLP that can see the relay's output* under
+parallel residual, at **d_mean +0.1099** with its argmax head independently
+landing on `L7H8` — 2.1x the next MLP. At 70m, on the same validated
+instrument, step 16000:
+
+| | 410m (relay `L5H2`, layer 5) | 70m (relay `L2H1`, layer 2) |
+|---|---|---|
+| parallel MLP (cannot see the relay) | MLP 5, +0.0377 | **MLP 2, +0.0944 / +0.0528** |
+| first MLP that can see it | **MLP 6, +0.1099** | MLP 3, **−0.0153 / −0.0083** |
+| separation over next best | 2.1x | 1.4–1.8x |
+
+**The ordering inverts.** At 70m the winner is MLP 2, which is *parallel* to
+`L2H1` and so architecturally cannot be responding to its output at all, while
+MLP 3 — the structural analogue of MLP 6 — is **negative on both probes** at
+step 16000. Its targeted consumer is consistently `L3H6`, a catalogue member
+(+2.15), so 70m does have a targeted backup pathway; it is simply not the one
+410m uses.
+
+**Read 16000, not 143000.** At the endpoint the 70m readout is degenerate on
+*both* probes for this instrument — TV saturates (max 0.90–0.98, and every MLP
+0–2 near ceiling), which is §3.15's late-`wide` degeneracy showing up in
+attention rather than only in NLL, and `freq` does not rescue it. Step 16000 is
+the checkpoint that carries the claim, and both probes agree there.
+
+**The honest limitation.** 70m has **6 layers against 410m's 24**, so
+"parallel to the relay" and "the first sublayer that can see it" are one layer
+apart in a network a quarter as deep, and the analogy is geometrically strained
+in a way no amount of care fixes. This is evidence that the *specific*
+MLP-6 structure is 410m's, not induction's — the same verdict §3.16/§3.17
+reached for invariant 5 and `L11H14` — but it is **not** evidence that
+relay-backed matching is absent at 70m, because 70m does not do relay-backed
+matching in the first place (point 2). The replication question as posed does
+not quite have a subject at this rung.
+
+**A methodological finding that cost three iterations and is worth more than
+the port.** The new instrument failed its own 410m positive control twice
+before passing, and both failures would have produced a confident wrong answer
+about 70m:
+
+1. **Mean-ablation is blind by construction to a backup carried by the mean.**
+   §3.15 makes `mean` the control for `zero`'s off-distribution bias, and that
+   is right when the signal is in the variation. MLP 6's signal *is* its mean
+   (§3.23), so mean-ablating it preserves the very thing under test and the
+   scan put MLP 6 at **−0.0160**. **§3.15's rule needs this caveat attached:
+   `mean` is the conservative control only when the mechanism is not itself the
+   mean.**
+2. **Averaging TV over all query positions halved a second-copy-only effect**
+   and pushed `L7H8` below a layer-23 head, so the max statistic nominated the
+   wrong MLP. Restricting to second-copy queries, matching `induction_scores`'
+   own scope, fixed it.
+
+Only after both fixes does the control reproduce MLP 6 *and* identify `L7H8` as
+its target without being told. **A new instrument that has not reproduced a
+known answer is not evidence about a new rung**, and this is the cleanest
+example this project has of that principle paying for itself.
+
+Exploratory; no p-value; `claims/registry.json` unchanged; both rungs spent
+under `check_registry` rule 3.
 
 ---
 
