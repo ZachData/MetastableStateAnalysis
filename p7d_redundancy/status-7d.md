@@ -386,6 +386,109 @@ is also its strongest stand-in for `L5H2` specifically.
 `python -u p7d_redundancy/l5h2_backup_causal_check.py --steps 4000,16000,143000`
 (~3.5 min).
 
+> **Superseded in part, 2026-09-13, by "Tying up the self-repair" below.** The
+> set-wide conclusion stands; the claim that the stand-ins *are* those three
+> members does not.
+
+### Tying up the self-repair (2026-09-13) — the exhaustive version, and it corrects the section above
+
+Four runners: `backup_sweep_full.py`, `prev_token_profile.py`,
+`relay_selection_check.py`, `mlp_backup_check.py`. Full synthesis in
+`PROJECT.md` §3.22; this is the phase-local detail.
+
+**The sweep, and the recall failure it exposes.** Every head's solo, joint,
+marginal and interaction against `L5H2` at step 16000, 8 seqs, `ov`, both arms
+in one process. Validations: the **solo column reproduces
+`redundancy_catalog.json` exactly** (max |diff| 0.0e+00 over 383 heads),
+restore exact, and **0 of 383 arms ceiling-contaminated**. Median interaction
++0.0018; **44 heads above +0.1**; 15 below −0.1.
+
+| rank | head | interaction | solo | in the attention search's list? |
+|---|---|---|---|---|
+| 1 | `L7H8` | +4.068 | +1.019 | — |
+| 2 | `L5H9` | **+3.356** | +0.035 | **no** |
+| 3 | `L9H5` | **+2.745** | +0.030 | **no** |
+| 4 | `L1H15` | **+2.351** | +0.040 | **no** |
+| 5 | `L11H14` | +1.944 | +0.190 | yes |
+| 6 | `L8H6` | +1.464 | +0.212 | yes |
+| 8 | `L4H9` | +1.018 | **−0.001** | no |
+| 15 | `L8H9` | +0.523 | +0.131 | yes |
+| 377 | `L10H7` | **−0.183** | −0.053 | yes (as a top riser) |
+
+The attention search missed the four largest and put `L10H7` — which it ranked
+as a leading candidate — at 377 of 383 with a *negative* interaction. The
+cause is structural, not sloppy: it searched for heads whose own
+induction-attention rose, and a backup that is not an induction head has no
+such score. `L4H9` makes the point sharply: solo effect **−0.001** (invisible
+on the clean model) and interaction **+1.018**.
+
+**The MLPs, never previously tested here, contain the largest stand-in.**
+MLP 6's interaction with `L5H2` is **+6.26** at step 16000 — above `L7H8`'s
++4.07 and above every head — on a solo effect of +0.14. Robust across modes
+(`mean` +6.26 / `zero` +5.25), probes (`freq` +5.67 at 3.04 nats headroom),
+and checkpoints (4000 +1.56, 16000 +6.26, 143000 +5.14), argmax of all 24
+layers every time; MLP 5 second (+1.43/+1.72); layers 12+ under 0.25.
+**Specific to `L5H2`**: MLP 6 × `L7H8` = +0.125, MLP 6 × `L12H5` = +0.127, and
+with those sources no MLP exceeds +0.25. MLP 0 is excluded everywhere (solo
++12.5 puts the joint arm past `ln V`; its negative interaction is §3.12-M5's
+artifact, which is why the runner flags `headroom` per arm). §3.12-Q6's
+weights-only "no elevated MLP pathway" was answering a different question.
+
+**Two classes of stand-in, separated by position.** `--background L5H2` (new
+flag on `upstream_relay_check.py`) measures each candidate's effect on `L7H8`'s
+attention *given the relay is already gone* — the question the unconditional
+arm cannot pose, since on the clean model a backup is redundant. Conditional
+null: 6 generic controls move `L7H8` by ≤ 0.0038.
+
+| stand-in | layer | Δ `L7H8` attention, conditional | interaction |
+|---|---|---|---|
+| `L5H9` | 5 | −0.0870 (23x null) | +3.356 |
+| `L1H15` | 1 | −0.0671 (18x null) | +2.351 |
+| `L4H9` | 4 | −0.0095 | +1.018 |
+| `L9H5` | 9 | +0.0000 | +2.745 |
+| `L11H14` | 11 | +0.0000 | +1.944 |
+
+Upstream stand-ins partly restore the matching pathway (`L5H9`'s conditional
+effect is **3.4x its unconditional** one); the two downstream of layer 7 move
+`L7H8`'s attention by exactly zero while carrying interactions of +2.7 and
++1.9, so they compensate at the readout instead. **`L11H14` is an output-side
+compensator** — which reframes "why is it the strongest" rather than answering
+it.
+
+**Prev-token capacity is a threshold property, and a fresh §3.13 case.** The
+three members §3.21 named rank **377th, 380th, 372nd of 384** on prev-token
+attention, below the median — so re-supplying the signal is not what they do.
+But across all 383 heads the rank correlation with interaction is **zero**
+(Spearman −0.016, p = 0.75) while the **12 heads above prev-token 0.3 have
+median interaction +0.444 against the other 371's +0.0007** (Mann-Whitney
+p < 1e-5). Pearson (+0.322) is the misleading middle. Below the threshold it
+predicts nothing; above it, a great deal.
+
+**What selects the relay is composition.** 13 heads carry prev-token
+attention above 0.3, so that cannot be what makes one head the relay.
+Per-head composition into `L7H8`'s read-space (H1-REVISED stored only the
+population summary) paired with an ablation: `L5H2` rank **0/112 at z +5.25**
+→ Δattention **−0.190**; `L5H9` rank 1 → −0.025; `L6H0` rank 2 (prev-token
+0.005) → −0.029; `L4H9` rank **23** (prev-token 0.805) → **+0.0008**;
+`L3H1` rank 24 (0.710) → **+0.0028**. Prev-token attention without
+composition is inside the control band. `L5H2` is the joint extreme at 7x the
+next largest — conjunctive and strongly super-linear, no functional form
+claimed. *Report-both:* Pearson(prev-token, composition) +0.42 vs Spearman
+**+0.12 (p = 0.23)**, so treat the axes as near-independent.
+
+**Already on disk, unread.** `L5H2`×`L11H14` = +2.1800 at step 16000 is in
+`pairwise_interaction_matrix.json` (2026-09-10) — §3.21 reproduced rather than
+discovered it, and the matrix's whole `L5H2` row was answerable without a
+forward pass. Reading it against its own regression does pay: §3.12-V's
+magnitude rule (r² 0.74 / 0.81, both reproduced) has **one systematic
+exception — `L5H2`×`L11H14`, the largest positive residual of all 45 cells at
+both checkpoints** (+1.37, +0.97), with δ-cosine **0.004** at 143000.
+
+`data/analysis/backup_sweep_full.json` (~56 min, 383 heads x 2 arms),
+`prev_token_profile.json`, `relay_selection_check.json` (weights only),
+`mlp_backup_check.json` — all git-ignored. Rerun lines are each runner's
+`--help`; defaults reproduce the numbers above.
+
 ## What is open
 
 **Priority, set 2026-09-10.** This is the thread the project is working on, and
