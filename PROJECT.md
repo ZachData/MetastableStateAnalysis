@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.28: the mandated pre-registration scan ran and it moved the ground.** `2607.01940` (*Conditional Co-Ablation*, 2 Jul 2026) — the paper §3.16 said to read first and nobody read — **publishes §3.22's exact statistic** (conditional growth of a unit's ablation effect once a primary is removed) and its headline framing, on induction across eight models including Pythia-410M. §3.22's novelty is reclassified as replication, and §3.27 is **not to be registered as worded**. What survives is sharper for it: CoAx is head-level and names MLP-mediated repair as future work, which is exactly where §3.23–§3.25's MLP 6 result and its direction-rotation mechanism sit — and the published rival mechanism (LayerNorm scaling, Rushing & Nanda) is one §3.23 already rejects three ways. Nothing written to the registry. |
+| Last updated | 2026-09-13 — **§3.29 sets the direction and it reorders everything: the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns.** STEP ONE is to give `core/dual_reading.py` a **pairwise geometric field**, which unblocks **`P-I5`** — already registered, the frame's own differential test (falsifier: *"the transport reading is wrong"*), `needs-null` for exactly that missing field — and puts the project's first adjudication in reach against 39 registrations and zero. §3.29 also carries the particle translation of §3.20–§3.28, a W₁-over-TV instrument note, and the registration discipline (frame-level not instance-level; e-process across objects). §3.28: the scan that blocked §3.27's registration. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,12 +37,14 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-13 — five PRs open in a stack; §3.28 is the current front)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.29 sets the direction, read it first)
 
-**Read this block, then §3.28 FIRST, then §3.27 → §3.20.** §3.28 is the
-pre-registration literature scan and it reclassifies §3.22's novelty and blocks
-§3.27's registration, so reading the chain without it will overstate what is
-new. §3.20–§3.25 are the 410m chain, §3.26–§3.27 the 70m rung. The chain is measured end to end;
+**Read this block, then §3.29, then §3.28.** §3.29 is the direction decision
+and it demotes everything below it: the programme is the particle/OT reading and
+the induction thread is an instance of it that is now past diminishing returns.
+§3.28 is the pre-registration scan — it reclassifies §3.22's novelty and blocks
+§3.27's registration, so reading §3.20–§3.27 without it will overstate what is
+new. The chain is measured end to end;
 what is open is listed below, and none of it is load-bearing for the chain. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
 Everything below this block is earlier and is kept as background, not as the
 current state.
@@ -77,15 +79,30 @@ inverted-direction defector, 70m **re-coheres**. §3.19 has the measurements
 this rests on; this was the phase's one time-sensitive action (registration
 freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
 
-**What else is open, in rough order.**
+**What is open. READ §3.29 FIRST — it reorders this list and the reason
+matters more than the order.** The programme is the particle/OT reading;
+induction heads were the instance and are past diminishing returns. Actions 1
+and 2 serve the frame; 3–6 are the induction thread's leftovers and are
+explicitly *not* the priority.
 
-1. **Decide what of 1/2/4/5/6 is registrable**, now that invariant 4's wording
-   is fixed. Invariant 5 is a clean *unclaimed negative* and is the other
-   registration candidate; both rungs are exploration, so a registration needs
-   `1b` as its test site and `1b` may not be touched until that prediction
-   exists.
-2. **§3.12-U's `L5H2` puzzle is closed (§3.20–§3.22, 2026-09-13), and the
-   self-repair behind it is now measured exhaustively.** `L5H2` is a
+1. **STEP ONE — give `core/dual_reading.py` a pairwise geometric field.** This
+   unblocks **`P-I5`**, which is already registered, is the particle frame's own
+   differential test (its falsifier is literally *"the transport reading is
+   wrong"*), and is `needs-null` for exactly one reason the registry states:
+   *"every current geometric field is per-point and this needs a pairwise one."*
+   Unblocking it puts the project's **first adjudication** in reach against 39
+   registrations and zero. `core/functional_distance.py` and
+   `core/intervention.py` already exist; verified 2026-09-13.
+2. **Then §2.5's isometric path on `L7H8`** — the only *designed* particle
+   intervention, still unrun, and now readable against a known mechanism
+   (§3.29).
+3. **Do NOT register §3.27** (§3.28): not differential, and CoAx reached the
+   statistic first. Invariant 5 remains a clean *unclaimed negative* and is the
+   better registration candidate if one is wanted — but per §3.29 the bar is
+   frame-level, and `1b`/`1.4b` are spent only on that.
+4. **§3.12-U's `L5H2` puzzle is closed (§3.20–§3.22, 2026-09-13), and the
+   self-repair behind it is now measured exhaustively.** *(Closed thread — kept
+   for reference, not as an action.)* `L5H2` is a
    previous-token head, uniquely wired into `L7H8`'s read-space
    (composition rank 0/112 at z +5.25, where prev-token heads without the wire
    do nothing), whose ablation breaks `L7H8`'s matching attention — hence
@@ -105,15 +122,15 @@ freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
    output-side compensator class exists at all (`L11H14` is its extreme, and
    `L5H2`×`L11H14` is the single largest residual against §3.12-V's magnitude
    rule at both checkpoints while being δ-cosine-orthogonal).
-3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
+5. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
    analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
    graded KL/λ readout, which is still unbuilt and is now blocking two things.
-4. **`--probe` is on three of six runners.** `redundancy_catalog.py`,
+6. **`--probe` is on three of six runners.** `redundancy_catalog.py`,
    `member_subspace_geometry.py` have it as of 2026-09-12 along with
    `member_formation_curves.py`, `pairwise_interaction_matrix.py` and
    `useful_rank.py`; `ambient_budget.py` is still `wide`-only and its docstring
    still promises a `--text` arm that does not exist.
-5. The older threads below (the LoRA tangent, invariant 3's scoping block, the
+7. The older threads below (the LoRA tangent, invariant 3's scoping block, the
    step-1000 circuit) are unchanged by today's work.
 
 **Before launching any cross-rung trajectory**, check the cached grids —
@@ -3378,6 +3395,122 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.29 DIRECTION (2026-09-13, user) — the programme is the particle/OT reading; induction heads are an instance of it
+
+**Read this before choosing an action.** Stated by the user at the close of the
+session, and it reframes everything above it.
+
+**The goal is the particle interpretation of transformers**, via the
+mathematical perspective and optimal transport, applied to mechanisms the
+network actually builds. Induction heads are the *current instance*, not the
+object. The same pass — **why did this form, what were the mechanisms of its
+forming, what happened after it formed** — is to be run on SAE feature
+decompositions, on the clusters themselves, and on other objects, building a
+developmental trail from the random-matrix start. The standing hazard is
+**depth in one place against sparseness everywhere else**, and this session is
+an example of it.
+
+**Honest accounting of §3.20–§3.28.** Nine commits, essentially all head-level
+causal mechanism on one model, three of them instrument corrections. **None of
+it is expressed in particle or OT language.** It is good plumbing and it drifted
+from the programme. Past the point of diminishing returns on this one object:
+the next session's job is to make the *second* object cheap, not the first one
+more complete.
+
+**The particle/OT translation of what was found**, recorded so the work is not
+lost when the frame changes. An attention head **is** a transport plan —
+row-stochastic, queries onto keys — which is what the softmax produces, not a
+metaphor:
+
+- **The relay is a translation.** `L5H2` at 0.95 on offset −1 is transport by
+  fixed displacement, the simplest OT object available.
+- **The matcher is a near-Monge map.** `L7H8` at 0.934 on offset `j`
+  concentrates nearly all mass on one target per query — an almost
+  deterministic map, not a diffuse plan.
+- **MLP 6's repair is an external field, not an interaction.** It is
+  position-independent, so it cannot change the pairwise coupling; what it
+  changes is the **cost geometry** the coupling is computed in (it projects
+  into the keys' read subspace, §3.24). §3.23's result restates as: the field
+  must point the right way in that geometry, and a field of equal magnitude in
+  the wrong direction is **worse than no field** (8.955 vs 8.002 nats).
+- **Invariant 4 is already the cluster story.** "Born aligned, then diverging to
+  a mid-training minimum" (§3.19), with 70m re-cohering, is cluster formation
+  and dissolution measured inside one causally-defined set. No new phase needed
+  for that link.
+
+**Instrument note, cheap and worth doing: W₁ over TV.** §3.25–§3.27 measure
+attention change with total-variation distance. TV says *the plan changed*;
+**Wasserstein-1 on the position axis says the plan changed by moving mass this
+far**, which for induction is the whole mechanism — mass leaking to `j ± 1`
+versus scattering uniformly are different events and TV cannot separate them.
+Same attention tensors, different reduction, and it puts the readout in the
+frame's own language so later objects inherit it. It would also have separated
+70m's `L0H3` from a real matcher more sharply than TV did.
+
+**Registration discipline, decided here.** The near-miss in §3.27/§3.28 was
+registering an **instance-level** claim ("this relay supports this set"). No
+account on the table predicts otherwise, so the null does no work and a
+reserved rung buys a fact rather than a discrimination. **What the particle/OT
+frame can predict differentially is *shape*** — the trajectory of a transport
+plan's concentration, the attractive/repulsive split at formation, the
+dissipation signature at onset. Three tiers, held strictly:
+
+1. **Exploratory, labelled, no p-value.** Surveys, catalogues, "what is this
+   object". Most work lives here; the repo already does this well.
+2. **Registered frame-level predictions.** Rare, differential, with a null a
+   rival account could beat. Reserved rungs (1b, 1.4b) spent only here.
+3. **An e-process across objects.** One frame-level prediction carried across
+   induction heads → SAE features → clusters, e-values multiplied — anytime
+   valid, and it solves the multiplicity problem that 40 separate entries
+   creates. `claims/EVALUABILITY.md` is the authority on what may enter the
+   product and is **generated from the registry, never hand-edited**. §4's κ/α
+   analysis points the same way: a single-factor claim needs p ≤ 6.25e-4 to
+   validate at the e-threshold, 80× stricter than the gates check — so few,
+   sharp, multiplied.
+
+**39 registrations, 0 adjudications.** The marginal value of a 40th is low and
+of the first adjudication is high. **Do not register §3.27** — not primarily
+because CoAx reached the statistic first (§3.28), but because it is not
+differential.
+
+### The next action, and it is already registered: unblock `P-I5`
+
+`P-I5` is the particle frame's own differential test and it is sitting in the
+registry unbuilt. Its statement: *"Ablating an induction head changes the
+pairwise-distance distribution among the particles it couples (the matched
+positions), not only the logit at the copied token."* Its falsifier is the
+frame itself: *"a large logit effect with a pairwise-distance change
+indistinguishable from the matched control: the head moves the readout without
+moving the particles, **and the transport reading is wrong**."* Adjudicated on
+the **joint** outcome — a geometric effect with no logit effect falsifies it
+equally, in the other direction.
+
+It is `needs-null`, and the registry states the blocker exactly:
+
+> Permutation null over the matched-magnitude random-direction ablation arm, on
+> a two-dimensional statistic (geometric delta, logit delta). The joint form
+> matters: two separate one-dimensional tests would let the prediction be
+> scored a partial pass in the configuration it is designed to rule out.
+> **REQUIRES an extension to `core/dual_reading.py` — every current geometric
+> field is per-point and this needs a pairwise one.**
+
+**So step one is: give `core/dual_reading.py` a pairwise geometric field.**
+Verified 2026-09-13: the module has no pairwise function, and
+`core/functional_distance.py` (the logit readout) and `core/intervention.py`
+(the ablation) both exist. That single extension unblocks the null, which
+unblocks the adjudication, which would be the project's **first** — and it is
+the bridge that makes every later object (SAE features, clusters) expressible
+in the same language instead of needing its own bespoke plumbing.
+
+**Second, and now better set up than it was:** §2.5's isometric path on `L7H8`
+(`M(t) = γ(t)Σγ(1−t)ᵀ`, exact isometry, repulsive → attractive → repulsive) is
+the only *designed* particle intervention and is still unrun. This session made
+it more readable, not less: `L7H8`'s matching is now known to depend on the
+relay plus MLP 6's background field, so the sweep has a mechanism to be read
+against rather than a black box.
 
 ---
 
