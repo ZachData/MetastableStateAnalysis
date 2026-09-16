@@ -12,7 +12,7 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair`, plus `claude/pairwise-geometric-field` stacked on #40 — see the resume block |
+| Branch | a six-PR stack, #36→#41, tip `claude/pairwise-geometric-field` (PR #41, stacked on #40) — see the resume block |
 | Last updated | 2026-09-16 — **§3.30: STEP ONE is done.** `core/dual_reading.py` has `pairwise_geometric_reading`, the field **`P-I5`**'s `null_construction` named as its only blocker. `P-I5` is still `needs-null` — the reading exists, the permutation-null gate over it does not; that gate is the new next action, and every primitive it needs now exists (`core/intervention.py`, `core/functional_distance.py`, this extension). §3.29 (2026-09-13) is the direction decision this serves: the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns. §3.28: the scan that blocked §3.27's registration. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -49,12 +49,11 @@ registration, so reading §3.20–§3.27 without it will overstate what is new.
 Everything below this block is earlier and is kept as background, not as the
 current state.
 
-**Nothing is running and nothing is uncommitted on the five earlier
-branches.** `claude/pairwise-geometric-field` (new, stacked on #40) has
-`core/dual_reading.py`'s pairwise extension, staged and ready to push/PR.
-The only untracked path is `data/hf/` (the HF cache — never `git add -A`
-under `data/`, its `.no_exist/` markers are not gitignored). Gate green on
-the new branch: **2278 passed / 5 skipped / 30 deselected**.
+**Nothing is running and nothing is uncommitted.** All six branches are
+pushed and in sync with their remotes; the only untracked path is
+`data/hf/` (the HF cache — never `git add -A` under `data/`, its
+`.no_exist/` markers are not gitignored). Gate green on the tip:
+**2278 passed / 5 skipped / 30 deselected**.
 
 **The PR stack, oldest first. Each is based on the one above it, so review in
 order and merge in order.**
@@ -66,7 +65,7 @@ order and merge in order.**
 | #38 | `claude/fv-head-division-of-labour` | the FV experiment (§3.18) + `tests/test_p7d_fv_score.py` |
 | #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) + its reword |
 | #40 | `claude/l5h2-self-repair` | the `L5H2` puzzle and the self-repair behind it (§3.20–§3.22) |
-| — | `claude/pairwise-geometric-field` (stacked on #40, not yet opened as a PR) | §3.30: `pairwise_geometric_reading` in `core/dual_reading.py`, unblocks `P-I5`'s missing field |
+| #41 | `claude/pairwise-geometric-field` | §3.30: `pairwise_geometric_reading` in `core/dual_reading.py`, unblocks `P-I5`'s missing field |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
