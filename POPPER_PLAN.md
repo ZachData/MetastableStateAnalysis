@@ -4147,10 +4147,13 @@ prompts to reach. Nothing here commits it to `claims/registry.json`.
 the matched-magnitude random-direction ablation itself — drawing a direction
 of the real ablation's magnitude, running it through `core/intervention.py`
 on the cached checkpoints, and scoring the result with
-`pairwise_geometric_reading` and `core/functional_distance.py::
-next_token_kl` to produce real `(delta_geometric, delta_logit)` arrays. That
-is the next PR. Nothing in this pass has touched a real activation; `P-I5`
-is unchanged in `claims/registry.json`.
+`pairwise_geometric_reading` and `core/intervention.py::next_token_kl` (both
+readouts, ablation and logit, live in `core/intervention.py` — corrected
+2026-09-16, see `p7_motifs/p_i5_gate.py`'s docstring for where the earlier
+`core/functional_distance.py` misattribution came from) to produce real
+`(delta_geometric, delta_logit)` arrays. That is the next PR. Nothing in
+this pass has touched a real activation; `P-I5` is unchanged in
+`claims/registry.json`.
 
 ## 7. What this plan does *not* do
 

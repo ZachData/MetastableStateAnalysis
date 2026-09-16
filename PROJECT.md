@@ -107,8 +107,9 @@ explicitly *not* the priority.
    — draw a random direction of the real ablation's magnitude, run it
    through `core/intervention.py` on the cached pythia-70m/410m
    checkpoints, and score both arms with `pairwise_geometric_reading`
-   (geometric) and `core/functional_distance.py::next_token_kl` (logit) to
-   get real `(delta_geometric, delta_logit)` per prompt. Feed those into
+   (geometric) and `core/intervention.py::next_token_kl` (logit — both
+   readouts live in the same module, corrected 2026-09-16) to get real
+   `(delta_geometric, delta_logit)` per prompt. Feed those into
    `joint_rank_pvalue` and running it against real matched positions puts
    the project's **first adjudication** in reach against 39
    registrations and zero.
@@ -3461,7 +3462,7 @@ floor `1/256`.
 **What is still not built:** the matched-magnitude random-direction
 ablation itself — wiring `core/intervention.py`, running it on the cached
 checkpoints, and scoring with `pairwise_geometric_reading` /
-`core/functional_distance.py::next_token_kl` to get real
+`core/intervention.py::next_token_kl` to get real
 `(delta_geometric, delta_logit)` arrays. Nothing here has touched a real
 activation; `claims/registry.json`'s `P-I5` entry is unchanged.
 

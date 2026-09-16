@@ -190,11 +190,15 @@ The matched-magnitude random-direction ablation itself: drawing a random
 direction of the same norm as the real ablation's effect, running it
 through `core/intervention.py` on cached pythia-70m/410m checkpoints, and
 scoring the result with `core/dual_reading.py::pairwise_geometric_reading`
-(the geometric half) and `core/functional_distance.py::next_token_kl` (the
-logit half) to produce real `(delta_geometric, delta_logit)` arrays. That
-is the next PR, not this one — steps 1–3 above are validated on synthetic
-data and a real but model-forward-pass-free measurement (tokenization
-only); nothing here has touched a real activation.
+(the geometric half) and `core/intervention.py::next_token_kl` (the logit
+half — corrected 2026-09-16: earlier drafts of this docstring, and of
+`PROJECT.md` §3.29 before it, misattributed this function to
+`core/functional_distance.py`, which holds a *different* pairwise-KL
+primitive for clustering, not this one) to produce real
+`(delta_geometric, delta_logit)` arrays. That is the next PR, not this
+one — steps 1–3 above are validated on synthetic data and a real but
+model-forward-pass-free measurement (tokenization only); nothing here has
+touched a real activation.
 """
 
 from __future__ import annotations
