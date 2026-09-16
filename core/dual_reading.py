@@ -12,13 +12,18 @@ a new computation engine. It does not fit probes, fit LDA directions,
 build projectors, or load models — every one of those is supplied by the
 caller, already computed.
 
-Verification note: `geometric_reading` and the numpy pieces of
-`semantic_reading` (LDA projection, probe prediction) are pure numpy/plain
-Python and ARE runtime-verified in this pass (see
+Verification note: `geometric_reading`, `pairwise_geometric_reading`, and
+the numpy pieces of `semantic_reading` (LDA projection, probe prediction)
+are pure numpy/plain Python and ARE runtime-verified in this pass (see
 tests/test_dual_reading.py). The frozen-head decode piece
 (`tuned_lens_cluster.frozen_head_decode`) needs torch + a real model and is
 NOT — same limitation as core/intervention.py, for the same reason (no
 torch, no network, in the sandbox this was written in).
+
+`pairwise_geometric_reading` (2026-09-16) is the pairwise extension
+`P-I5`'s null_construction names as its blocker — see
+core/DESIGN_dual_reading.md, "Pairwise geometric field", for the schema
+written before this function.
 """
 
 from __future__ import annotations
@@ -109,6 +114,67 @@ def geometric_reading(
         "effective_rank_contribution": effective_rank_contribution(
             population, point_membership_mask
         ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Pairwise geometric reading (2026-09-16 extension — unblocks P-I5)
+# ---------------------------------------------------------------------------
+
+def pairwise_geometric_reading(
+    vector_a: np.ndarray,
+    vector_b: np.ndarray,
+    projectors: Optional[dict] = None,
+) -> dict:
+    """
+    The geometric field P-I5 needs and every field above lacks: a reading
+    on a PAIR of points rather than one. See core/DESIGN_dual_reading.md,
+    "Pairwise geometric field", for the full schema and why this is a
+    separate function rather than an overload of geometric_reading /
+    dual_reading.
+
+    Substitution, not new machinery: every subspace fraction here is
+    _squared_norm_frac applied to the displacement `vector_a - vector_b`
+    instead of to a single vector, so it inherits geometric_reading's own
+    caveats (missing projector key -> None; near-zero denominator -> None;
+    fractions need not sum to 1 unless the subspaces are a full orthogonal
+    decomposition of R^d).
+
+    Parameters
+    ----------
+    vector_a, vector_b : (d,) — the two particles (e.g. an induction head's
+        query position and the position it copies from).
+    projectors : same {"U_pos", "U_neg", "U_S", "U_A"} dict shape as
+        geometric_reading, or None (every subspace fraction is then None).
+
+    Returns
+    -------
+    dict: raw_distance, cosine_similarity, cosine_distance,
+    distance_attractive_frac, distance_repulsive_frac, distance_real_frac,
+    distance_imag_frac.
+    """
+    a = np.asarray(vector_a)
+    b = np.asarray(vector_b)
+    diff = a - b
+
+    norm_a = float(np.dot(a, a)) ** 0.5
+    norm_b = float(np.dot(b, b)) ** 0.5
+    if norm_a < 1e-12 or norm_b < 1e-12:
+        cosine_similarity = None
+        cosine_distance = None
+    else:
+        cosine_similarity = float(np.dot(a, b) / (norm_a * norm_b))
+        cosine_distance = 1.0 - cosine_similarity
+
+    projectors = projectors or {}
+    return {
+        "raw_distance":             float(np.linalg.norm(diff)),
+        "cosine_similarity":        cosine_similarity,
+        "cosine_distance":          cosine_distance,
+        "distance_attractive_frac": _squared_norm_frac(diff, projectors.get("U_pos")),
+        "distance_repulsive_frac":  _squared_norm_frac(diff, projectors.get("U_neg")),
+        "distance_real_frac":       _squared_norm_frac(diff, projectors.get("U_S")),
+        "distance_imag_frac":       _squared_norm_frac(diff, projectors.get("U_A")),
     }
 
 

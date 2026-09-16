@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
-| Last updated | 2026-09-13 — **§3.29 sets the direction and it reorders everything: the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns.** STEP ONE is to give `core/dual_reading.py` a **pairwise geometric field**, which unblocks **`P-I5`** — already registered, the frame's own differential test (falsifier: *"the transport reading is wrong"*), `needs-null` for exactly that missing field — and puts the project's first adjudication in reach against 39 registrations and zero. §3.29 also carries the particle translation of §3.20–§3.28, a W₁-over-TV instrument note, and the registration discipline (frame-level not instance-level; e-process across objects). §3.28: the scan that blocked §3.27's registration. |
+| Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair`, plus `claude/pairwise-geometric-field` stacked on #40 — see the resume block |
+| Last updated | 2026-09-16 — **§3.30: STEP ONE is done.** `core/dual_reading.py` has `pairwise_geometric_reading`, the field **`P-I5`**'s `null_construction` named as its only blocker. `P-I5` is still `needs-null` — the reading exists, the permutation-null gate over it does not; that gate is the new next action, and every primitive it needs now exists (`core/intervention.py`, `core/functional_distance.py`, this extension). §3.29 (2026-09-13) is the direction decision this serves: the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns. §3.28: the scan that blocked §3.27's registration. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,22 +37,24 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-13 — five PRs open in a stack; §3.29 sets the direction, read it first)
+### Resume here (2026-09-16 — six PRs in a stack; §3.30 closed STEP ONE, the gate is next)
 
-**Read this block, then §3.29, then §3.28.** §3.29 is the direction decision
-and it demotes everything below it: the programme is the particle/OT reading and
-the induction thread is an instance of it that is now past diminishing returns.
-§3.28 is the pre-registration scan — it reclassifies §3.22's novelty and blocks
-§3.27's registration, so reading §3.20–§3.27 without it will overstate what is
-new. The chain is measured end to end;
-what is open is listed below, and none of it is load-bearing for the chain. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
+**Read this block, then §3.30, then §3.29, then §3.28.** §3.29 is the
+direction decision and it demotes everything below it: the programme is the
+particle/OT reading and the induction thread is an instance of it that is
+now past diminishing returns. §3.30 is this session's close: the pairwise
+geometric field §3.29 named as STEP ONE is built. §3.28 is the
+pre-registration scan — it reclassifies §3.22's novelty and blocks §3.27's
+registration, so reading §3.20–§3.27 without it will overstate what is new.
 Everything below this block is earlier and is kept as background, not as the
 current state.
 
-**Nothing is running and nothing is uncommitted.** All five branches are pushed
-and in sync with their remotes; the only untracked path is `data/hf/` (the HF
-cache — never `git add -A` under `data/`, its `.no_exist/` markers are not
-gitignored). Gate green: **2280 passed / 5 skipped / 30 deselected**.
+**Nothing is running and nothing is uncommitted on the five earlier
+branches.** `claude/pairwise-geometric-field` (new, stacked on #40) has
+`core/dual_reading.py`'s pairwise extension, staged and ready to push/PR.
+The only untracked path is `data/hf/` (the HF cache — never `git add -A`
+under `data/`, its `.no_exist/` markers are not gitignored). Gate green on
+the new branch: **2278 passed / 5 skipped / 30 deselected**.
 
 **The PR stack, oldest first. Each is based on the one above it, so review in
 order and merge in order.**
@@ -64,6 +66,7 @@ order and merge in order.**
 | #38 | `claude/fv-head-division-of-labour` | the FV experiment (§3.18) + `tests/test_p7d_fv_score.py` |
 | #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) + its reword |
 | #40 | `claude/l5h2-self-repair` | the `L5H2` puzzle and the self-repair behind it (§3.20–§3.22) |
+| — | `claude/pairwise-geometric-field` (stacked on #40, not yet opened as a PR) | §3.30: `pairwise_geometric_reading` in `core/dual_reading.py`, unblocks `P-I5`'s missing field |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
@@ -85,14 +88,22 @@ induction heads were the instance and are past diminishing returns. Actions 1
 and 2 serve the frame; 3–6 are the induction thread's leftovers and are
 explicitly *not* the priority.
 
-1. **STEP ONE — give `core/dual_reading.py` a pairwise geometric field.** This
-   unblocks **`P-I5`**, which is already registered, is the particle frame's own
-   differential test (its falsifier is literally *"the transport reading is
-   wrong"*), and is `needs-null` for exactly one reason the registry states:
-   *"every current geometric field is per-point and this needs a pairwise one."*
-   Unblocking it puts the project's **first adjudication** in reach against 39
-   registrations and zero. `core/functional_distance.py` and
-   `core/intervention.py` already exist; verified 2026-09-13.
+1. **STEP ONE IS DONE (§3.30, 2026-09-16) — `core/dual_reading.py` has
+   `pairwise_geometric_reading`.** **STEP ONE-B, now the actual next
+   action: build `P-I5`'s permutation-null gate over it.** The registry's
+   `null_construction` for `P-I5` (the particle frame's own differential
+   test; falsifier: *"the transport reading is wrong"*) needs a permutation
+   null over the matched-magnitude random-direction ablation arm, on the
+   **joint** two-dimensional statistic (geometric delta from the new
+   pairwise field, logit delta from `core/functional_distance.py`'s
+   `next_token_kl`) — two separate one-dimensional tests would let the
+   configuration `P-I5` is designed to rule out score a partial pass. Every
+   primitive the gate needs now exists (`core/intervention.py` for the
+   ablation, `core/functional_distance.py` for the logit half,
+   `core/dual_reading.py::pairwise_geometric_reading` for the geometric
+   half); building the gate script and running it against real matched
+   positions puts the project's **first adjudication** in reach against 39
+   registrations and zero.
 2. **Then §2.5's isometric path on `L7H8`** — the only *designed* particle
    intervention, still unrun, and now readable against a known mechanism
    (§3.29).
@@ -3395,6 +3406,43 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.30 The pairwise geometric field lands; `P-I5`'s gate is next (2026-09-16)
+
+§3.29's STEP ONE is done: `core/dual_reading.py` has
+`pairwise_geometric_reading(vector_a, vector_b, projectors)`, the field
+`P-I5`'s `null_construction` named as its blocker ("every current geometric
+field is per-point and this needs a pairwise one"). Schema written first in
+`core/DESIGN_dual_reading.md` per that doc's own rule, then implemented,
+then tested — `tests/test_dual_reading.py` gained 8 cases (27 pass total in
+the module), gate green.
+
+**Design: substitution, not new machinery.** Every existing per-point field
+is `_squared_norm_frac` of a vector against a subspace; the pairwise field
+is the same function applied to the displacement `vector_a - vector_b`
+instead — `raw_distance`, `cosine_similarity`, `cosine_distance`, and four
+subspace fractions (`distance_attractive_frac`, `_repulsive_frac`,
+`_real_frac`, `_imag_frac`). Cross-checked directly against
+`geometric_reading(a - b, ...)` rather than trusting a re-derivation
+(`test_matches_squared_norm_frac_of_difference`). Kept separate from
+`dual_reading()`/`geometric_reading()` (would make the combined
+entry-point's signature ambiguous about which mode it's in), not
+vectorized over many pairs (the caller loops over matched positions, same
+division of labour as `effective_rank_contribution` and
+`member_subspace_geometry.py`'s `cell()`), and not wired into
+`ParticleTable` (pairwise has no single row to attach to).
+
+**What this does NOT do, so it isn't mistaken for more than it is.** `P-I5`
+is still `needs-null` in `claims/registry.json` — untouched here. This
+lands the *reading*, not the permutation-null gate over the
+matched-magnitude random-direction ablation arm on the joint (geometric
+delta, logit delta) statistic. That gate is the next action, and now has
+every primitive it needs: `core/intervention.py` (the ablation),
+`core/functional_distance.py` (the logit half — `next_token_kl`), and this
+extension (the geometric half). Building it is the first thing that would
+put the project's first adjudication in reach.
 
 ---
 
