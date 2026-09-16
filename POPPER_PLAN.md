@@ -4027,8 +4027,130 @@ discovery on existing artifacts, the anchor and the population were both
 chosen after seeing them, and the forking paths of this pass alone include two
 population definitions, four candidate statistics, level versus timing, and
 several checkpoints. None of it may be adjudicated on these artifacts; a
-registration needs a fresh one, and §6x's bottom-up design is the proposal for
-getting one that does not route through a projector-defined population at all.
+registration needs a fresh one, and `PROJECT.md` §3.11's bottom-up design is
+the proposal for getting one that does not route through a projector-defined
+population at all. *(Corrected 2026-09-16: this forward reference named "§6x"
+before that label existed here; the bottom-up programme it points to was
+written into `PROJECT.md` §3.11 rather than into this file. §6x below is
+unrelated — P-I5's joint null, not the bottom-up induction programme.)*
+
+## 6x. `P-I5`'s joint null, part one: the floor, a construction that did not
+    hold, and its fix (2026-09-16)
+
+`p7_motifs/p_i5_gate.py`, `tools/calibrate_p_i5_joint_null.py` ->
+`claims/calibration/p_i5_joint_null.json`. Built in the order
+`claims/EVALUABILITY.md` prescribes for every row naming a matched control —
+floor, then what the statistic degenerates on, then the measurement grid, then
+the control — after `P-AB1` (6q) and `P-I3` (6s). `P-I5` is EVALUABILITY.md's
+own flagged exception: "the first row here whose statistic is two-dimensional,
+which no construction in this project has built," so this pass could reuse
+neither precedent's null verbatim, only their method. The control itself is
+not built in this pass — see the module docstring's closing section for
+exactly what is left.
+
+**Step zero, load-bearing for everything after it: `core/dual_reading.py`
+needed a pairwise geometric field, and did not have one.** `P-I5`'s
+`null_construction` names this as its blocker verbatim ("every current
+geometric field is per-point and this needs a pairwise one"); `core.
+dual_reading.pairwise_geometric_reading` (PR #41, 2026-09-16) closes it by
+substitution — every existing per-point subspace fraction, applied to the
+displacement between two particles instead of to one vector. Full schema in
+`core/DESIGN_dual_reading.md`, written before the implementation per that
+file's own rule.
+
+**1. The attainable floor.** `P-AB1`'s sign-flip justification carries over
+unchanged — under H0 a real ablation direction and a structureless one of
+equal magnitude are exchangeable, so swapping the real/control label is an
+exact symmetry. What's new: the label swap at one unit flips the sign of
+*both* `delta_geometric[i]` and `delta_logit[i]` together, since both come
+from the same (real, control) pair — a single `2**n`-point sign-pattern
+space, not two independent ones. Best-case floor (every unit fully
+informative, same-signed on both axes — the observed pattern becomes the
+unique maximizer of both sums): `1/2**n` one-sided, `2/2**n` two-sided.
+Enumeration-checked for n = 1..15 (`tests/test_p_i5_gate.py::
+TestAttainableFloor`).
+
+**2. What the statistic degenerates on — the first one tried did not hold.**
+The obvious joint statistic is an AND-corner: count the sign patterns with
+*both* `T_g(s) >= T_g_obs` and `T_l(s) >= T_l_obs`. It reduces correctly to a
+plain one-dimensional test when one axis is held at zero, which is exactly
+why the bug was easy to miss — that's the case a first check is likely to
+run. **Run on synthetic data under a TRUE joint H0 (both axes independent
+noise, zero effect on either), it rejects at 0.18–0.21 against a nominal
+0.05 across n = 6, 8, 10, 12** — a ~4x inflation, not a rounding error
+(`claims/calibration/p_i5_joint_null.json`, `naive_and_corner`). Mechanism:
+intersecting two independently-derived "at least this extreme" sets does not
+preserve the uniform-rank property a single exchangeability argument gives
+one dimension — `|A cap B|/2**n` for two independent roughly-half-sized
+random subsets of the same `2**n`-point space is not itself uniformly
+distributed. General fact about the construction, not specific to sign-flip
+nulls, found the way P-ST1 and P6-R2/R4's retired nulls were: by running it
+on inputs whose answer is known (6m's method), not by inspection.
+
+**The fix: rank by the weaker axis.** For every sign pattern, compute each
+axis's own valid ascending rank (ties to the minimum, `scipy.stats.
+rankdata(method="min")`) and combine as `min(rank_g, rank_l)` — a
+Tippett-style minimum-rank statistic. Now a genuine scalar function of the
+sign pattern, computed identically for observed and null alike, so the
+standard single-dimension exchangeability argument applies directly.
+**Calibrates correctly: 0.040–0.049 at nominal 0.05 across the same four n**
+(`joint_rank` in the same file). It also does what the AND-corner was meant
+to: `min` of two ranks is only large when both axes are individually
+extreme, so a pattern with one huge sum and one middling one gets pulled
+down. Measured on the falsifier's own configuration (real logit effect, pure
+noise on the geometric axis, n=8, effect size 1.0): the logit axis alone
+rejects at 0.79 (there IS a real effect — a reader looking at only that axis
+sees strong support); the joint statistic on the SAME draws rejects at 0.17.
+That gap — not the AND-corner's inflated one — is what EVALUABILITY.md's
+"two separate one-dimensional tests would let the prediction be scored a
+partial pass" warning is about, made quantitative.
+
+**Caveat found while testing this, not while designing it: an identically-
+zero axis degenerates the min-rank statistic rather than reducing it** — every
+pattern ties for the minimum rank on a perfectly-flat axis, collapsing the
+combined statistic to that tie regardless of the other axis, so `p = 1.0` no
+matter how extreme the informative axis is. `one_dimensional_pvalue` is a
+separate, real single-axis statistic for exactly this reading; "zero out the
+other axis" only works for the (retired) AND-corner construction.
+
+**3. The measurement grid, and the design choice it forces — put to the
+author before the control is built, matching how `P-AB1`'s prompt-as-unit
+choice and `P-I3`'s `score_and_layer` key were both registered.**
+`count_matched_pairs_by_prompt` runs `core.battery_structure.
+induction_candidates` (the same primitive every `InteractionTable` in this
+project already uses) against `core.config.PROMPTS` under a real cached
+`pythia-70m` step143000 tokenizer. Per-prompt pair counts run from 1
+(`short_heterogeneous`) to 2873 (`latex_monograph`), with `repeated_tokens`
+at 34,191 — reproducing the figure `p7_motifs/motif_alphabet.py::
+relay_strength`'s docstring and the resume block already quote for that
+exact prompt, which cross-validates this measurement against an independent
+prior one rather than trusting a fresh count blind. `repeated_tokens` is
+excluded the same way `P_I1_DOMINANT_PROMPT` is excluded everywhere else in
+this project (every token repeats — a fact about the prompt, not the
+checkpoint).
+
+Per-pair counts in the thousands would make `n` enormous if the exchangeable
+unit were "one matched pair" — but pairs inside one prompt share the same
+forward pass and the same model state, and would share the same
+random-direction draw for the control arm too if that draw is made once per
+prompt. That is `P-AB1`'s finding again (6q: the per-ablation-point reading
+inflated to 0.235 under a shared per-prompt factor where the per-prompt
+reading held at 0.029) — reused rather than re-derived, since the mechanism
+is the same one: many correlated readings inside one prompt masquerading as
+many independent units. **Design choice this step lands on: the exchangeable
+unit is the prompt, one random direction per (prompt, ablation site).**
+Excluding `repeated_tokens`, `n = 8` — floor `1/256` one-sided, comfortably
+below the usual 0.05 working threshold, the same regime `P-AB1` needed six
+prompts to reach. Nothing here commits it to `claims/registry.json`.
+
+**What this pass does not build**, stated so it is not mistaken for more:
+the matched-magnitude random-direction ablation itself — drawing a direction
+of the real ablation's magnitude, running it through `core/intervention.py`
+on the cached checkpoints, and scoring the result with
+`pairwise_geometric_reading` and `core/functional_distance.py::
+next_token_kl` to produce real `(delta_geometric, delta_logit)` arrays. That
+is the next PR. Nothing in this pass has touched a real activation; `P-I5`
+is unchanged in `claims/registry.json`.
 
 ## 7. What this plan does *not* do
 
