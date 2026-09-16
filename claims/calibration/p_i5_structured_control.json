@@ -1,0 +1,54 @@
+{
+  "constant_substitution_diagnostic": {
+    "delta_geometric": [
+      0.0,
+      2.80492445936531e-08,
+      6.551246545249967e-09,
+      -7.746452035384266e-09,
+      -1.1362283336424639e-08,
+      2.2386721032496837e-08,
+      1.0522107629640232e-08,
+      -2.9874935858487106e-09
+    ],
+    "delta_logit": [
+      -0.0034852239531062445,
+      -0.0012602320582361555,
+      -0.0030074590870132144,
+      0.0004322775555135501,
+      -6.978341379560056e-05,
+      -0.00867446856360344,
+      -0.008774920283999472,
+      -0.002242108193201909
+    ],
+    "geometric_is_near_zero": true,
+    "n_prompts": 8,
+    "p_value": 0.984375,
+    "target_head": [
+      3,
+      6
+    ]
+  },
+  "negative_controls": {
+    "L3H6": {
+      "is_target": true,
+      "mean_delta_geometric": 0.3730852756312135,
+      "mean_delta_logit": 0.0032800651604344014,
+      "n_prompts": 8,
+      "p_value": 0.0234375
+    },
+    "L4H6": {
+      "is_target": false,
+      "mean_delta_geometric": 0.05785911897878295,
+      "mean_delta_logit": 0.002239034850813227,
+      "n_prompts": 8,
+      "p_value": 0.0078125
+    },
+    "L5H3": {
+      "is_target": false,
+      "mean_delta_geometric": 0.4177578196419426,
+      "mean_delta_logit": 0.001615842255341259,
+      "n_prompts": 8,
+      "p_value": 0.015625
+    }
+  }
+}
