@@ -111,21 +111,29 @@ layers** — those are the keepers.
 
 ## 4. Directions to grow
 
-1. **Compute the Elhage statistic on our heads and cross it against `frac_repulsive`.**
-   `Σλ/Σ|λ|` on `W_E W_OV W_U` is weights-only and free; `frac_repulsive` is already
-   on disk for the Pythia sweep. If the two agree, Phase 2 has an independent
-   validation of its projectors and a translation into the field's vocabulary. If
-   they disagree, **the disagreement is the paper**: a head that is "copying" in
-   token space and repulsive in residual space is a real dissociation, and the
-   project already has the pattern — §3.12-R found weight-space and function-space
-   overlap coming apart. **Cheapest high-value item here.**
-2. **Put the copying-eigenvalue statistic on the checkpoint axis.** Elhage's statistic
-   is reported for trained models. Phase 2 has 27 Pythia checkpoints and Phase 7d has
-   causal effect per head per checkpoint. *When does a head's positive-eigenvalue
-   fraction cross, relative to when its causal effect arrives?* §3.12-U already found
-   the behavioural proxy inverted for `L5H2`; the weights-based proxy has not been
-   tested the same way. **This is a direct extension of a 7d result into Phase 2's
-   instrument.**
+**Corrected 2026-09-16, after this file's first draft.** Directions 1 and 2 below
+originally proposed computing the Elhage statistic and putting it on the checkpoint
+axis. **Both were already done**, in `PROJECT.md` §3.12-O
+(`tools/run/copying_score_sweep.py`, all 384 heads, eight checkpoints, weights only,
+with the `ov_factors` transpose trap checked rather than assumed). §3.12-N4 had
+already identified the statistic and named it. The corrected directions are below;
+the error was mine and it is recorded rather than quietly fixed.
+
+1. **Cross the copying score against `frac_repulsive`.** This is the part §3.12-O did
+   **not** do, and §3.12-N4 says why it matters: the copying score is **token-basis**
+   (`W_E W_OV W_U`), `frac_repulsive` and the `U_pos`/`U_neg` projectors are
+   **residual-basis**, the two differ by the vocabulary round-trip `W_U W_E`, and
+   **nothing guarantees they share a sign**. O crossed the score against the *causal*
+   readout and found them running in opposite directions. **Both columns are on disk.**
+   If they agree, Phase 2's projectors get independent validation and a translation
+   into the field's vocabulary. If they disagree, it is a dissociation **between two
+   weight-space measures** — a third instance of the project's recurring pattern
+   (§3.12-R, §3.12-S) and the sharper outcome, because it would mean "repulsive" and
+   "anti-copying" are not the same claim. **Cheapest high-value item here.**
+2. **Carry `L11H14` through both.** It is the **top copier at 143000 (+0.723)**
+   (§3.12-O2) *and* 7e's full-rank anti-ordered outlier. The head whose singular
+   directions do not order its causal usefulness is the one the token-basis measure
+   ranks first. Whatever direction 1 finds, this head is where it will be sharpest.
 3. **Diagnose the rescaled frame on Pythia before anything else.** §3.1.
 4. **Check the RoPE spectral-algebra paper (2607.06621).** If positional scheme sets
    the default spectral algebra, then "98 % complex" may be a RoPE fact rather than a
@@ -142,8 +150,9 @@ layers** — those are the keepers.
 ## 5. Verification queue
 
 1. **`transformer-circuits.pub/2021/framework`** — the exact definition of the
-   positive-eigenvalue statistic and the basis it is computed in. Decides §1.1's
-   table and growth direction 1.
+   positive-eigenvalue statistic and the basis it is computed in. Confirms §1.1's
+   table, and confirms that §3.12-O's `copying_score_sweep.py` implements the same
+   statistic.
 2. **2310.04625** — how much of L10H7's effect the negative diagonal explains, and
    the self-repair argument in full (needed by `lit-7d.md` too).
 3. **2607.06621** — whether the complex fraction is positional-scheme-determined.

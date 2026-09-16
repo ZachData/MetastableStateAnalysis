@@ -86,7 +86,10 @@ what survives → directions to grow → a verification queue → the search log
    ICLR 2026 — massive activations *provably* produce representational compression.
 5. **Phase 1b's cone-collapse result.** The anisotropy / common-direction literature
    has had it since NAACL 2021.
-6. **Phase 2's OV sign spectrum.** Elhage et al. 2021's copying-head statistic.
+6. **Phase 2's OV sign spectrum.** Elhage et al. 2021's copying-head statistic
+   `Σλ/Σ|λ|`. **The project already adopted the field's instrument** — §3.12-N4
+   identified it and §3.12-O ran it across 384 heads and eight checkpoints — which
+   `p2_eigenspectra/lit-2.md`'s first draft missed and has been corrected for.
 7. **Phase 2b's S/A decomposition and the `exp(A)` orthogonality identity.**
 8. **Phase 1c's Euler-discretisation construction.** Standard since ~2018, and
    **2604.23740** **[S]** does it on the sphere.
@@ -200,7 +203,7 @@ none needs new forward passes unless marked.
 | 2 | **Re-report the developmental arc in the normed frame** | 1 | Turns a scooped finding into a frame correction on two published papers |
 | 3 | **Formation-point equation** (batch size, context size) vs the measured `(512, 2000]` window, at 70m and 410m | 7, 8 | Free external adjudication; two rungs of evidence already exist |
 | 4 | **`PR_M` / `coupling_efficiency` vs 7d's 384-head causal sweep** | 2d, 7d | The one instrument that could rescue a structural proxy for causal effect, after `‖OV‖_F` failed at r² = 0.001 |
-| 5 | **Elhage's `Σλ/Σ\|λ\|` vs `frac_repulsive`**, then on the checkpoint axis | 2 | Validation if they agree; a real dissociation if they do not |
+| 5 | **The copying score vs `frac_repulsive`** (token basis vs residual basis) | 2 | The score itself is **already computed** — `PROJECT.md` §3.12-O, all 384 heads, eight checkpoints. What is uncrossed is the residual-basis column, which §3.12-N4 says need not share a sign. Both are on disk |
 | 6 | **`schur` vs `svd` basis on `L11H14`** | 7e | Weights-only, already named in `PROJECT.md`'s resume block, still unrun, and a stated hold sits on an instrument until it is done |
 | 7 | **Selectivity screen vs causal membership, per checkpoint** (confusion matrix) | 7d | `lit-7d.md` §4.1 — the project's sharpest live disagreement with a published method |
 | 8 | **Re-run `cone_collapse.py` with BOS excluded** | 1b | If universal cone-collapse is one token's norm, that is a publishable negative on our own result |

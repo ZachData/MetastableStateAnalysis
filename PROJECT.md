@@ -142,6 +142,18 @@ registered.** This is `check_registry` rule 3 applied *forward* rather than
 discovered afterwards, and it is what lets the ladder produce **adjudications** —
 of which `claims/adjudications/` holds zero against 39 registrations.
 
+**Amendment proposed 2026-09-16, NOT TAKEN — a rung may be *externally* spent.**
+The table's "never measured" is a statement about *this project*. It is no longer
+true of the field: **`2606.02378` and `2606.05378` (both June 2026, same group,
+public code at `skydancerosel/spectral-probe-circuits`) run pythia-1b on the
+induction axis.** `p8_scale_ladder/lit-8.md` §3 argues this cuts **in favour** of
+keeping the reserve — an independent measurement of the same rung by another
+group turns an adjudication into a three-way comparison — provided the
+registration records which external measurements exist and is written before
+reading them. **This is a human call and has not been made.** **Pythia-1.4b is
+unaffected and is now the cleaner reserved rung; prefer it for the first
+registration.**
+
 **1.4b needs no cleanup**, and a proposal to delete its analysis was dropped for
 this reason: CLAIM-C measured it on `mass_near_1`, `effective_rank`,
 `cluster_membership`, `cluster_count`, `cka_prev`, `fiedler_mean` — **no
@@ -534,6 +546,14 @@ reference class, and the Stage 3 control needs rebuilding. Next action is
 §3.12's diagnostics, not a registration. §3.11 and §3.12's dated blocks are the
 detail; §§3.6–3.10 below are the retired-frame history, kept as the
 construction log.
+
+**Read `docs/LITERATURE.md` before writing any of this up (2026-09-16, §3.16).**
+Every phase now has a `lit-N.md`. Three headline results are in populated
+territory — Phase 1's developmental arc (`2509.23024`), 7d's second-order
+ablation instrument (`2607.01940`), and 7d's "behavioural proxies fail" thesis
+(`2606.05378`) — and two of Phase 1's framing statements are stale. What survives
+is ranked in that file's §3; the per-claim notes are inline at §3.12-V and
+§3.14.4-A below.
 
 `P-I1`, induction-head formation as a two-stage `relay` motif tracked across the
 checkpoint axis, ran end to end and scored **INSUFFICIENT** — not
@@ -2397,6 +2417,34 @@ centring folded, at all eight steps: differences in the **fourth decimal**
 (+0.0324 vs +0.0293 at 143000). The softest half of §3.11's copy-score reading
 is no longer load-bearing anywhere.
 
+> **What §3.16's review adds to O, and one thing it leaves open (2026-09-16).**
+> The measure O computes is **the** field-standard statistic — Elhage et al.
+> (2021) propose the positive-eigenvalue fraction of the token-basis OV circuit
+> `W_E W_OV W_U`, summarised as `Σλ/Σ|λ|`, as the copying-head detector. So this
+> project has **already adopted the field's instrument, on the checkpoint axis,
+> for all 384 heads**, which is more than `p2_eigenspectra/lit-2.md`'s first
+> draft credited it with — that file proposed computing it as a growth direction
+> and has been corrected.
+>
+> **What is still not crossed** is N4's own distinction: `frac_repulsive` and the
+> `U_pos`/`U_neg` projectors are **residual-basis** quantities, the copying score
+> is **token-basis**, and the two differ by the vocabulary round-trip `W_U W_E`
+> with nothing guaranteeing a shared sign. O crossed the copying score against
+> the **causal** readout (`ΔOV_nll`) and found them running in opposite
+> directions. **Crossing it against `frac_repulsive` — the Phase 2 quantity the
+> "attractive/repulsive" reading is actually built on — has never been done, and
+> both columns already exist on disk.** If they agree, Phase 2's projectors get
+> an independent validation and a translation into the field's vocabulary. If
+> they disagree, that is a third instance of the project's recurring
+> weight-space-vs-function-space dissociation (§3.12-R, §3.12-S), this time
+> *between two weight-space measures*, and it would mean "repulsive" and
+> "anti-copying" are not the same claim.
+>
+> **One cross-reference O and 7e should share:** `L11H14` is the **top copier at
+> 143000 (+0.723)** and the full-rank anti-ordered outlier of §3.12-V4. The head
+> whose singular directions do not order its causal usefulness is the head the
+> token-basis measure ranks first.
+
 **What this sharpens into, and it is the live question now.** `L7H8` has the
 largest OV causal effect in its layer (10× the layer mean, growing sixfold across
 training) **and is an anti-copier by the token-identity test**. Both now rest on
@@ -2792,6 +2840,22 @@ interaction needs a graded readout (§3.12-M's KL / λ scale), not this one.
 
 ### 3.12-V The matrix, the geometry, and the rank (2026-09-10)
 
+> **Literature status (added 2026-09-16, §3.16).** Detail in
+> `p7d_redundancy/lit-7d.md` and `p7e_consolidation/lit-7e.md`. Per result:
+>
+> | | verdict |
+> |---|---|
+> | **V1** super-additivity across the set | **NOT NEW.** It is the self-repair signature — *The Hydra Effect*, `2307.15771` |
+> | **V1** the second-order interaction *instrument* | **NOT NEW as of July 2026** — *Conditional Co-Ablation (CoAx)*, `2607.01940`. Plausibly still ours: the **variance decomposition** (74–81 % magnitude vs 7–9 % direction), the **full matrix over a causally-established set** rather than a ranking from a seed set, the **checkpoint axis**, and the **ceiling discipline** |
+> | **V2** born aligned, then fanning out | **No neighbour found.** Keep |
+> | **V3** the ambient stream is ~20-dimensional, which kills the isotropic `k/d` baseline | **No neighbour found, and it is the project's rank-1 survivor.** The adjacent subspace literature appears to use the baseline this measurement voids — check `2601.10266` |
+> | **V4** SVD order is a poor proxy for causal importance | **NOT NEW (2022)** — FWSVD, `2207.00112`, states the general form |
+> | **V4** `L11H14` is *anti*-ordered (bottom-`r` > matched-random > top-`r`, negative at `r = 1`) | **Looks new.** The compression literature reports *suboptimality*, not inversion. Conditional on a read, and on three differences surviving it: our unit is one head's OV, our readout is causal-ablation recovery, and our baseline is **matched-norm random** — which that literature has no reason to run |
+> | **V5** the changing-membership artifact | **No neighbour found.** Transferable |
+>
+> **Do not write V1's super-additivity or V4's SVD result up as findings.** Write
+> V4 as a *strengthening* of FWSVD, with FWSVD cited.
+
 Three runs closing 7d's two open axes and opening 7e. All restore checks exact
 (`0.0e+00`). Producers: `p7d_redundancy/pairwise_interaction_matrix.py`,
 `p7d_redundancy/member_subspace_geometry.py`, `p7e_consolidation/useful_rank.py`.
@@ -3040,6 +3104,18 @@ model, that is cascade; if the *window* reappears but the order scrambles, that
 is recruitment. **This is also the one 7d question that could carry a
 registered prediction**, precisely because 70m is an unmeasured site and the
 spent-artifact rule does not bite there.
+
+> **Promoted 2026-09-16 (§3.16).** `p8_scale_ladder/lit-8.md` §2 checked all six
+> of Phase 8's invariants against the field. **This is the only one with no
+> neighbour found.** The developmental literature reports whole-model head-class
+> fractions and emergence curves (`2606.02378`); **nobody reports the order in
+> which individual members of a redundancy set form across independently-seeded
+> models.** Invariant 2 (the window) is the opposite case — occupied, and
+> `2511.16893` supplies an *equation* predicting the formation point from batch
+> size and context size, which Pythia holds constant across the whole suite.
+> **Promote ordering to the ladder's headline and demote the window to a
+> calibration check.** `2602.16740`'s mid-depth-instability result predicts this
+> is also the hardest one to reproduce — our members sit at layers 5–12 of 24.
 
 #### B. "Is there any relationship between them?" — **unmeasured, and the premise of independence is not supported**
 
@@ -3530,6 +3606,30 @@ weights-only, except the last. The five with the best ratio:
 5. **`schur` vs `svd` basis on `L11H14`.** Weights-only, named in the resume block on
    2026-09-10, **still unrun**, and a stated hold sits on `induction_rank_sweep`'s `r*`
    construction until it is done.
+
+### Done in PROJECT.md (2026-09-16, second pass)
+
+The review's findings are now inline at the claims they touch, not only here:
+
+- **§1**, rung-policy table — the *externally spent* amendment, proposed and
+  **not taken**.
+- **§2** — a pointer at the top of the orientation section.
+- **§3.12-O** — a note that O already implements the field-standard statistic,
+  what the review leaves uncrossed (`frac_repulsive`, residual basis vs token
+  basis), and the `L11H14` cross-reference.
+- **§3.12-V** — a per-result literature-status table. V1's super-additivity and
+  V4's SVD result must not be written up as findings.
+- **§3.14.4-A** — ordering promoted to Phase 8's headline; the window demoted to
+  a calibration check.
+- **§8** — `docs/LITERATURE.md` added to "where to read next".
+
+**One correction to the review itself, recorded rather than quietly fixed.**
+`p2_eigenspectra/lit-2.md`'s first draft proposed computing Elhage's copying
+statistic and putting it on the checkpoint axis as growth directions. **Both were
+already done** — §3.12-N4 identified the statistic, §3.12-O ran it over 384 heads
+at eight checkpoints. That file and `docs/LITERATURE.md` §6 now say so, and the
+surviving direction is the narrower one: the token-basis score has never been
+crossed against the residual-basis `frac_repulsive`.
 
 ### What must change in other documents
 
