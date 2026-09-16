@@ -1,0 +1,124 @@
+{
+  "ablation_mode": "mean",
+  "attainable_floor_one_sided": 0.00390625,
+  "delta_geometric": [
+    0.02061176300048828,
+    0.3049027020850677,
+    0.1375627224063967,
+    0.27105523446837054,
+    0.47023574381806343,
+    0.7770553933622691,
+    0.24501794904687077,
+    0.9034932529391041
+  ],
+  "delta_logit": [
+    -0.0001230432477618322,
+    0.0031380411366311676,
+    -1.658400921228766e-05,
+    0.0016529399658536705,
+    0.0024065868112666698,
+    0.013326302609263024,
+    -0.00148839618965295,
+    0.005873648631085429
+  ],
+  "gate": {
+    "alternative": "greater",
+    "combined_rank_obs": 248,
+    "exact": true,
+    "n_extreme": 6,
+    "n_reference_patterns": 256,
+    "n_units": 8,
+    "p_value": 0.0234375,
+    "rank_geometric_obs": 255,
+    "rank_logit_obs": 248
+  },
+  "model": "pythia-70m-step143000",
+  "n_prompts": 8,
+  "per_prompt": {
+    "camus_letranger": {
+      "delta_geometric": 0.24501794904687077,
+      "delta_logit": -0.00148839618965295,
+      "geo_control_mean": 0.06188004261979433,
+      "geo_real_mean": 0.3068979916666651,
+      "logit_control_mean": 0.006556103221764405,
+      "logit_real_mean": 0.005067707032111455,
+      "n_pairs": 963,
+      "n_tokens": 465
+    },
+    "hdbscan_code": {
+      "delta_geometric": 0.7770553933622691,
+      "delta_logit": 0.013326302609263024,
+      "geo_control_mean": 0.07103634216416051,
+      "geo_real_mean": 0.8480917355264297,
+      "logit_control_mean": 0.020054067313530006,
+      "logit_real_mean": 0.03338036992279303,
+      "n_pairs": 426,
+      "n_tokens": 242
+    },
+    "homer_iliad": {
+      "delta_geometric": 0.47023574381806343,
+      "delta_logit": 0.0024065868112666698,
+      "geo_control_mean": 0.058724358405642704,
+      "geo_real_mean": 0.5289601022237062,
+      "logit_control_mean": 0.006791423489488627,
+      "logit_real_mean": 0.009198010300755297,
+      "n_pairs": 2518,
+      "n_tokens": 562
+    },
+    "latex_monograph": {
+      "delta_geometric": 0.9034932529391041,
+      "delta_logit": 0.005873648631085429,
+      "geo_control_mean": 0.07146975374205204,
+      "geo_real_mean": 0.9749630066811561,
+      "logit_control_mean": 0.01882856432209163,
+      "logit_real_mean": 0.02470221295317706,
+      "n_pairs": 2873,
+      "n_tokens": 446
+    },
+    "paper_excerpt": {
+      "delta_geometric": 0.27105523446837054,
+      "delta_logit": 0.0016529399658536705,
+      "geo_control_mean": 0.06534024093985988,
+      "geo_real_mean": 0.33639547540823045,
+      "logit_control_mean": 0.013516472535124622,
+      "logit_real_mean": 0.015169412500978292,
+      "n_pairs": 554,
+      "n_tokens": 286
+    },
+    "short_heterogeneous": {
+      "delta_geometric": 0.02061176300048828,
+      "delta_logit": -0.0001230432477618322,
+      "geo_control_mean": 0.00030803680419921875,
+      "geo_real_mean": 0.0209197998046875,
+      "logit_control_mean": 0.0002909512254505326,
+      "logit_real_mean": 0.00016790797768870042,
+      "n_pairs": 1,
+      "n_tokens": 20
+    },
+    "sullivan_ballou": {
+      "delta_geometric": 0.1375627224063967,
+      "delta_logit": -1.658400921228766e-05,
+      "geo_control_mean": 0.03648628687835184,
+      "geo_real_mean": 0.17404900928474853,
+      "logit_control_mean": 0.0020459727625351115,
+      "logit_real_mean": 0.002029388753322824,
+      "n_pairs": 2038,
+      "n_tokens": 482
+    },
+    "wiki_paragraph": {
+      "delta_geometric": 0.3049027020850677,
+      "delta_logit": 0.0031380411366311676,
+      "geo_control_mean": 0.05535162770852577,
+      "geo_real_mean": 0.36025432979359345,
+      "logit_control_mean": 0.009778115548983574,
+      "logit_real_mean": 0.012916156685614742,
+      "n_pairs": 1598,
+      "n_tokens": 467
+    }
+  },
+  "seed": 20260916,
+  "target_head": [
+    3,
+    6
+  ]
+}
