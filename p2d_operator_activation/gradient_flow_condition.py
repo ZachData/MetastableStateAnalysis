@@ -431,6 +431,36 @@ def p_value_p_m1(regimes: list, violations, n_perm: int = 2000,
         out["p_value"] = None
         out["reason"] = "no usable layers; no correlation could be computed"
         return out
+    # THIS REFUSAL CONDITIONS ON THE STATISTIC, NOT ON AN ANCILLARY (2026-09-16,
+    # POPPER_PLAN.md 6y). Flagged, not changed: what to do about it is a
+    # scientific decision about a registered gate, and the measurement below is
+    # suggestive rather than conclusive.
+    #
+    # P-T1's floor refusal and this one look alike and are not. P-T1 refuses on
+    # the 2x2 table's MARGINS, which the permutation null holds fixed -- they are
+    # ancillary, so conditioning on them costs nothing and the emitted p stays
+    # valid conditional on emission. This one refuses on the observed sign
+    # pattern of the mean/min/max aggregates, and the MEAN aggregate's
+    # correlation IS the test statistic. Conditioning on "all three agree in
+    # sign" therefore selects on |corr|, and under a null symmetric in sign that
+    # selection runs in the anticonservative direction for a one-sided test.
+    #
+    # `claims/audits/p_t1_p_m1_dry_run.json`'s `validity` block measures the H0
+    # rate conditional on emission, which is the rate that governs the ledger.
+    # Ordered by emission rate, P-M1's six emitting designs read:
+    #
+    #     emission 0.940 -> 0.0638    emission 0.990 -> 0.0505
+    #     emission 0.975 -> 0.0718    emission 1.000 -> 0.0200
+    #     emission 0.975 -> 0.0615    emission 1.000 -> 0.0350
+    #
+    # Every design where this refusal fired at all sits AT OR ABOVE the nominal
+    # 0.05; both designs where it never fired sit well below. P-T1's seven
+    # designs, whose refusal is the ancillary one, are all below 0.05 with no
+    # such ordering. At 200 replicates per cell (SE ~ 0.0155) no single row is
+    # significant, and the audit's own 3.17-SE bound passes -- which is why this
+    # is a flag and not a verdict. What would settle it is cheap and has not been
+    # run: replicates at a cell with a LOW emission rate, where the selection is
+    # strongest and the present grid is thinnest.
     if len({np.sign(c) for c in corrs}) > 1:
         out["p_value"] = None
         out["reason"] = (

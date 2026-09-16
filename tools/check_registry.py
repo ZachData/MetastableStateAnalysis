@@ -66,6 +66,12 @@ ADJUDICATIONS = ROOT / "claims" / "adjudications"
 REQUIRED_FIELDS = (
     "id", "claim", "statement", "h0", "h1", "falsifier", "instrument",
     "cost", "evaluable", "null_construction", "relevance", "source",
+    # The phase join, added 2026-09-16. Descriptive, not frozen: `phase` is the
+    # directory the instrument lives in, `experiment` is the instrument's own id
+    # where it names one, `gate` is the module:function computing the p-value.
+    # Required so that a prediction registered without them is caught here
+    # rather than surfacing later as a hole in claims/EXPERIMENTS.md.
+    "phase", "experiment", "gate",
 )
 EVALUABLE_VALUES = ("e-value", "measurement", "needs-null")
 STATUS_VALUES = ("active", "dormant")
@@ -152,6 +158,26 @@ def load_adjudications() -> Dict[str, dict]:
 # Check 1 — registry validation
 # ---------------------------------------------------------------------------
 
+def _resolve_gate(gate: str) -> Tuple[bool, str]:
+    """
+    ``(ok, why)`` for a ``"module.path:function"`` gate string.
+
+    Textual rather than by import, because this runs in tier 0 with nothing
+    installed and every gate module imports numpy. A check that cannot run in
+    the tier that gates a merge is not a check.
+    """
+    if ":" not in gate:
+        return False, "not of the form module.path:function"
+    mod, func = gate.split(":", 1)
+    path = ROOT / (mod.replace(".", "/") + ".py")
+    if not path.exists():
+        return False, f"{mod} has no file at {path.relative_to(ROOT)}"
+    src = path.read_text(encoding="utf-8", errors="replace")
+    if not re.search(rf"^def {re.escape(func)}\(", src, re.M):
+        return False, f"{path.relative_to(ROOT)} defines no `{func}`"
+    return True, ""
+
+
 def check_registry(reg: dict, msgs: List[str]) -> None:
     preds = reg.get("predictions", [])
     if not preds:
@@ -200,6 +226,24 @@ def check_registry(reg: dict, msgs: List[str]) -> None:
                         f"of circulation without a stated reason is indistinguishable "
                         f"from one quietly dropped")
 
+        # The phase join. A `gate` that does not resolve is the failure mode
+        # worth catching: it reads as "this prediction has an instrument" in
+        # every generated table while pointing at nothing.
+        gate = str(p.get("gate", "")).strip()
+        if gate:
+            ok, why = _resolve_gate(gate)
+            if not ok:
+                _fail(msgs, f"{where}: gate {gate!r} does not resolve — {why}")
+            if ev != "e-value":
+                _warn(msgs, f"{where}: names a gate but is classified {ev!r}; "
+                            f"core/adjudication.py will refuse it, so the gate "
+                            f"cannot reach a claim's e-process")
+        elif ev == "e-value" and p.get("status", "active") == "active":
+            _fail(msgs, f"{where}: classified 'e-value' and active but names no gate. "
+                        f"An adjudicable prediction with no module:function computing "
+                        f"its p-value cannot be run, and reads as available in "
+                        f"claims/EXPERIMENTS.md")
+
         if ev == "e-value" and not str(p.get("null_construction", "")).strip():
             _fail(msgs, f"{where}: classified 'e-value' with no null_construction stated")
         if ev == "measurement" and "NONE" not in str(p.get("null_construction", "")).upper() \
@@ -218,8 +262,26 @@ def check_registry(reg: dict, msgs: List[str]) -> None:
 
 
 def check_coverage(reg: dict, msgs: List[str]) -> None:
-    """Every prediction ID mentioned in the tree has a registry entry."""
+    """
+    Every prediction ID mentioned in the tree has a registry entry — and every
+    claim CLAIMS.md declares has at least one prediction.
+
+    The second direction was missing until 2026-09-16 and is not symmetric with
+    the first. `check_registry` already fails a prediction naming a claim that
+    is not a CLAIMS.md heading; nothing looked the other way, so a claim could be
+    declared, described at length, and never wired to anything — its e-process
+    holding at E = 1 because no factor exists rather than because none crossed.
+    Those two states are indistinguishable in `FALSIFICATION.md`, which is why
+    this is stated here.
+    """
     registered = {p["id"] for p in reg.get("predictions", []) if "id" in p}
+
+    claimed = {p.get("claim") for p in reg.get("predictions", [])}
+    for claim in sorted(set(declared_claims()) - claimed):
+        _warn(msgs, f"claim {claim!r} is declared in CLAIMS.md and no prediction names "
+                    f"it; its e-process can never move, and an E of 1 from no factors "
+                    f"reads identically to an E of 1 from factors that did not cross")
+
     # The registry stores ASCII ids; the prose uses the Greek letters.
     alias = {"P-γ1": "P-gamma1", "P-γ2": "P-gamma2"}
 

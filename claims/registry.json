@@ -8,6 +8,9 @@
     {
       "id": "CLAIM-A",
       "claim": "H-RESIST",
+      "phase": "1",
+      "experiment": "item-6 replication gate",
+      "gate": "",
       "statement": "Collapse-resistance is learned, not present at initialization.",
       "h0": "Steps 0 and 8 already show the trained model's departure from collapse.",
       "h1": "Steps 0 and 8 look random-like: monotone energy, rank collapse, high stationary Fiedler.",
@@ -28,6 +31,9 @@
     {
       "id": "P-gamma1",
       "claim": "H-RESIST",
+      "phase": "1c",
+      "experiment": "1c-B",
+      "gate": "",
       "statement": "Layer-wise ip_mean on prompts with n << d tracks gamma_beta_eff(T_eff(l)) from (6.9) at step 0, and departs from it monotonically with training.",
       "h0": "The residual between observed ip_mean and the identity-weight trajectory is the same at step 0 and step 143k.",
       "h1": "The residual grows monotonically with training.",
@@ -48,6 +54,9 @@
     {
       "id": "P-gamma2",
       "claim": "H-RESIST",
+      "phase": "1c",
+      "experiment": "1c-A",
+      "gate": "",
       "statement": "T_eff << t* ~ 4.2 for all prompts and all checkpoints: the network never integrates far enough to collapse.",
       "h0": "T_eff is comparable to t*, so observed non-collapse is explained by integration time (depth), not by learned weights.",
       "h1": "T_eff is far below t*.",
@@ -68,6 +77,9 @@
     {
       "id": "P-H1",
       "claim": "H-RESIST",
+      "phase": "1c",
+      "experiment": "1c-E",
+      "gate": "",
       "statement": "Layer-0 tokens lie in an open hemisphere at every checkpoint.",
       "h0": "The cone condition fails at some checkpoint.",
       "h1": "It holds at every checkpoint.",
@@ -88,6 +100,9 @@
     {
       "id": "P-S1",
       "claim": "H-RESIST",
+      "phase": "1c",
+      "experiment": "1c-F",
+      "gate": "p1c_frames.centroids:p_value_p_s1",
       "statement": "Trained cluster centroids are closer to a spherical t-design than step-0 centroids: low-order Gegenbauer moments smaller.",
       "h0": "Trained and step-0 centroids are equally far from a spherical t-design.",
       "h1": "Trained centroids have smaller low-order Gegenbauer moments.",
@@ -108,6 +123,9 @@
     {
       "id": "CLAIM-C",
       "claim": "H-TRANSFER",
+      "phase": "1",
+      "experiment": "item-6 replication gate",
+      "gate": "p1_mstate_tracking.replication_gate:p_value_claim_c",
       "statement": "Phenomenology transfers across architecture: pythia-1.4b-random reproduces gpt2-large-random, and checkpoint 143000 reproduces trained gpt2-large.",
       "h0": "The Blog-1 contrast is architecture-dependent, not a general property of trained transformers.",
       "h1": "Both reproductions hold.",
@@ -128,6 +146,9 @@
     {
       "id": "CLAIM-B",
       "claim": "H-EMERGE",
+      "phase": "1",
+      "experiment": "item-8 checkpoint pilot",
+      "gate": "core.changepoint_colocation:p_value_claim_b",
       "statement": "Resistance emerges at circuit-formation events: the energy-monotonicity break and Fiedler drop co-locate with steps ~512-2000.",
       "h0": "Clustering dynamics and circuit formation are independent.",
       "h1": "The transitions co-locate with the literature's circuit-formation anchors.",
@@ -148,6 +169,9 @@
     {
       "id": "P-T1",
       "claim": "H-OPERATOR",
+      "phase": "2d",
+      "experiment": "2d-D3",
+      "gate": "p2d_operator_activation.table1_predictions:p_value_p_t1",
       "statement": "Heads satisfying BOTH Table-1 row-2 conditions (lambda_1(V) > 0 simple AND phi_1^T M phi_1 > 0) show trimodal <phi_1, x_i> with approximately equally spaced modes.",
       "h0": "Trimodality rate among row-2 candidates equals the rate among non-candidates.",
       "h1": "Row-2 candidates are trimodal at a higher rate.",
@@ -168,6 +192,9 @@
     {
       "id": "P-M1",
       "claim": "H-OPERATOR",
+      "phase": "2d",
+      "experiment": "2d-D1",
+      "gate": "p2d_operator_activation.gradient_flow_condition:p_value_p_m1",
       "statement": "Energy-monotonicity violations concentrate in heads far from Q^T K symmetric and V = Q^T K.",
       "h0": "Violation location is independent of distance from the gradient-flow conditions.",
       "h1": "Violations concentrate where the hypotheses fail.",
@@ -188,6 +215,9 @@
     {
       "id": "P6-A2",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "f_rot(h) predicts head type (real vs relational)",
       "h0": "The quantity P6-A2 measures shows no preference in the predicted direction.",
       "h1": "f_rot(h) predicts head type (real vs relational)",
@@ -209,6 +239,9 @@
     {
       "id": "P6-I1",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Induction head OV write directions project more strongly onto the imaginary (A) subspace than semantic heads' do",
       "h0": "The quantity P6-I1 measures shows no preference in the predicted direction.",
       "h1": "Induction head OV write directions project more strongly onto the imaginary (A) subspace than semantic heads' do",
@@ -230,6 +263,9 @@
     {
       "id": "P6-I2",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "QK antisymmetry elevated for induction vs same-content pairs",
       "h0": "The quantity P6-I2 measures shows no preference in the predicted direction.",
       "h1": "QK antisymmetry elevated for induction vs same-content pairs",
@@ -251,6 +287,9 @@
     {
       "id": "P6-R1",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Degeneracy ratio R >= 5 at plateau layers, near 1 for random projection",
       "h0": "The quantity P6-R1 measures shows no preference in the predicted direction.",
       "h1": "Degeneracy ratio R >= 5 at plateau layers, near 1 for random projection",
@@ -272,6 +311,9 @@
     {
       "id": "P6-R2",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "p6_subspace.r2_r4_null:p_value_p6_r2",
       "statement": "LDA aligns more with the real repulsive subspace U_neg than with the imaginary subspace U_A",
       "h0": "The quantity P6-R2 measures shows no preference in the predicted direction.",
       "h1": "LDA aligns more with the real repulsive subspace U_neg than with the imaginary subspace U_A",
@@ -292,6 +334,9 @@
     {
       "id": "P6-R3",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Centroid motion at merges is real-dominated",
       "h0": "The quantity P6-R3 measures shows no preference in the predicted direction.",
       "h1": "Centroid motion at merges is real-dominated",
@@ -313,6 +358,9 @@
     {
       "id": "P6-R4",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "p6_subspace.r2_r4_null:p_value_p6_r4",
       "statement": "S-only projection preserves cluster membership",
       "h0": "The quantity P6-R4 measures shows no preference in the predicted direction.",
       "h1": "S-only projection preserves cluster membership",
@@ -333,6 +381,9 @@
     {
       "id": "P6-R5",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Plateau dynamics contracting in S, rotating in A",
       "h0": "The quantity P6-R5 measures shows no preference in the predicted direction.",
       "h1": "Plateau dynamics contracting in S, rotating in A",
@@ -354,6 +405,9 @@
     {
       "id": "P6-C1",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Head write subspace aligns with its matching channel",
       "h0": "The quantity P6-C1 measures shows no preference in the predicted direction.",
       "h1": "Head write subspace aligns with its matching channel",
@@ -375,6 +429,9 @@
     {
       "id": "P6-DD1",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Zeroing the imaginary channel reduces induction (>0.02 drop) while preserving clusters (ARI > 0.5)",
       "h0": "The quantity P6-DD1 measures shows no preference in the predicted direction.",
       "h1": "Zeroing the imaginary channel reduces induction (>0.02 drop) while preserving clusters (ARI > 0.5)",
@@ -396,6 +453,9 @@
     {
       "id": "P6-DD2",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Zeroing the real channel disrupts clusters while preserving induction",
       "h0": "The quantity P6-DD2 measures shows no preference in the predicted direction.",
       "h1": "Zeroing the real channel disrupts clusters while preserving induction",
@@ -417,6 +477,9 @@
     {
       "id": "P6-D5",
       "claim": "H-OPERATOR",
+      "phase": "6",
+      "experiment": "",
+      "gate": "",
       "statement": "Merge is driven by real-subspace centroid convergence: d_S decreases monotonically approaching merge, d_A does not",
       "h0": "The quantity P6-D5 measures shows no preference in the predicted direction.",
       "h1": "Merge is driven by real-subspace centroid convergence: d_S decreases monotonically approaching merge, d_A does not",
@@ -438,6 +501,9 @@
     {
       "id": "P5b-A1",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "32d PCA of the cluster-centroid manifold retains >= 80% variance",
       "h0": "The relation P5b-A1 asserts does not hold.",
       "h1": "32d PCA of the cluster-centroid manifold retains >= 80% variance",
@@ -459,6 +525,9 @@
     {
       "id": "P5b-A2",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "Spline residuals < 10% of inter-centroid distances",
       "h0": "The relation P5b-A2 asserts does not hold.",
       "h1": "Spline residuals < 10% of inter-centroid distances",
@@ -480,6 +549,9 @@
     {
       "id": "P5b-B1",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "The frame the model reads in predicts behaviour better: r_manifold > r_linear",
       "h0": "The relation P5b-B1 asserts does not hold.",
       "h1": "The frame the model reads in predicts behaviour better: r_manifold > r_linear",
@@ -501,6 +573,9 @@
     {
       "id": "P5b-B2",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "r_manifold > 0.7",
       "h0": "The relation P5b-B2 asserts does not hold.",
       "h1": "r_manifold > 0.7",
@@ -522,6 +597,9 @@
     {
       "id": "P5b-B3",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "r_manifold - r_linear > 0.1",
       "h0": "The relation P5b-B3 asserts does not hold.",
       "h1": "r_manifold - r_linear > 0.1",
@@ -543,6 +621,9 @@
     {
       "id": "P5b-C1",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "KL(merge) > KL(plateau), p < 0.05",
       "h0": "The relation P5b-C1 asserts does not hold.",
       "h1": "KL(merge) > KL(plateau), p < 0.05",
@@ -564,6 +645,9 @@
     {
       "id": "P5b-C3",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "Non-adjacent mass is higher at merge layers",
       "h0": "The relation P5b-C3 asserts does not hold.",
       "h1": "Non-adjacent mass is higher at merge layers",
@@ -585,6 +669,9 @@
     {
       "id": "P5b-D1",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "r_S > r_full >= r_A: the real/symmetric subspace is the manifold's coordinate system",
       "h0": "The relation P5b-D1 asserts does not hold.",
       "h1": "r_S > r_full >= r_A: the real/symmetric subspace is the manifold's coordinate system",
@@ -606,6 +693,9 @@
     {
       "id": "P5b-D2",
       "claim": "H-BRIDGE",
+      "phase": "5b",
+      "experiment": "",
+      "gate": "",
       "statement": "r_A ~ r_linear: the imaginary subspace carries no extra behavioural geometry",
       "h0": "The relation P5b-D2 asserts does not hold.",
       "h1": "r_A ~ r_linear: the imaginary subspace carries no extra behavioural geometry",
@@ -627,6 +717,9 @@
     {
       "id": "P-ST1",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-steering",
+      "gate": "p7_motifs.steering_gate:p_value_p_st1",
       "statement": "Two steering vectors of EQUAL NORM whose V-eigenbasis decompositions are predominantly attractive (U_pos) versus predominantly repulsive (U_neg), injected at the same layer, produce OPPOSITE-SIGNED changes in the effective rank of the token population at that layer.",
       "h0": "The sign of the effective-rank change is independent of the vector's U_pos/U_neg decomposition: at matched norm, both arms move effective rank in the same direction (or neither moves it).",
       "h1": "Sign of the effective-rank change tracks the decomposition: attractive-dominant steering reduces effective rank, repulsive-dominant steering increases it.",
@@ -647,6 +740,9 @@
     {
       "id": "P-I5",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-A/7-D",
+      "gate": "",
       "statement": "Ablating an induction head changes the pairwise-distance distribution among the particles it couples (the matched positions), not only the logit at the copied token.",
       "h0": "Induction-head ablation leaves inter-particle geometry at the matched positions indistinguishable from a matched-magnitude random-direction ablation, while still moving the copied-token logit.",
       "h1": "Both the geometric and the logit effect are present.",
@@ -667,6 +763,9 @@
     {
       "id": "P-AB1",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-patching",
+      "gate": "p7_motifs.patching_gate:p_value_p_ab1",
       "statement": "Trajectory divergence following an ablation grows SUPERLINEARLY with the number of layers after the ablation point, because ablation removes a term from a field rather than a value from a sum.",
       "h0": "Divergence is constant or linear in remaining depth, as an additive-contribution account predicts once the ablated contribution is removed.",
       "h1": "Divergence grows superlinearly in remaining depth.",
@@ -687,6 +786,9 @@
     {
       "id": "P-SA1",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-SAE",
+      "gate": "",
       "statement": "SAE/crosscoder dictionary elements concentrate in the repulsive subspace U_neg -- the directions along which the dynamics permit particles to stay individuated -- rather than distributing isotropically across U_pos and U_neg.",
       "h0": "Dictionary elements distribute isotropically across the attractive and repulsive subspaces, as a random dictionary of the same rank would.",
       "h1": "Dictionary elements concentrate in U_neg.",
@@ -707,6 +809,9 @@
     {
       "id": "P-I1",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-A",
+      "gate": "p7_motifs.formation_gate:p_value_p_i1",
       "statement": "`relay` motif strength above N1 and N2 first rises in the same checkpoint window as the behavioral induction score.",
       "h0": "The relay motif and the behavioral induction score have unrelated formation timing.",
       "h1": "`relay` motif strength above N1 and N2 first rises in the same checkpoint window as the behavioral induction score.",
@@ -727,6 +832,9 @@
     {
       "id": "P-I2",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-B",
+      "gate": "",
       "statement": "The stage-2 `match` edge is attractive-channel dominant (U_pos); the stage-1 `prev_token` edge is offset-driven and channel-neutral.",
       "h0": "Both stages have the same channel composition.",
       "h1": "The stage-2 `match` edge is attractive-channel dominant (U_pos); the stage-1 `prev_token` edge is offset-driven and channel-neutral.",
@@ -747,6 +855,9 @@
     {
       "id": "P-I3",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-C",
+      "gate": "p7_motifs.cross_head_gate:p_value_p_i3",
       "statement": "Across heads at a fixed checkpoint, `relay` strength correlates with behavioral induction score -- AND does not among non-induction heads.",
       "h0": "Relay strength is unrelated to the behavioral induction classification.",
       "h1": "Across heads at a fixed checkpoint, `relay` strength correlates with behavioral induction score -- AND does not among non-induction heads.",
@@ -767,6 +878,9 @@
     {
       "id": "P-I4",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "7-D",
+      "gate": "",
       "statement": "`relay_target` particles show `moved_fraction` attributable to the motif's edges, above a matched-magnitude control.",
       "h0": "Motif edges move no more particle mass than a matched-magnitude control.",
       "h1": "`relay_target` particles show `moved_fraction` attributable to the motif's edges, above a matched-magnitude control.",
@@ -787,6 +901,9 @@
     {
       "id": "P-I7",
       "claim": "H-BRIDGE",
+      "phase": "7",
+      "experiment": "qk-symmetry-sweep",
+      "gate": "",
       "statement": "In a transformer NOT YET MEASURED BY THIS PROJECT, the static (non-positional) QK operator of behaviourally-identified CONTENT-matching heads becomes symmetric over training -- a similarity kernel -- while behaviourally-identified POSITIONAL matchers remain at the random-matrix baseline.",
       "h0": "Symmetry of the static QK operator is unrelated to whether a head matches on content: content matchers and positional matchers sit at the same place in their model's own symmetry distribution.",
       "h1": "Content matchers sit higher in that distribution than positional matchers do, and higher than the head population.",
@@ -805,5 +922,6 @@
       "status": "active"
     }
   ],
-  "_status_notes": "status: 'active' | 'dormant'. Dormant means the prediction stands -- it was pre-registered, its falsifier is unchanged, and it has NOT been withdrawn -- but no live instrument can currently adjudicate it, so core/adjudication.py refuses it and it contributes nothing to its claim's E. Orthogonal to 'evaluable', which is about whether a valid null exists: a prediction can be e-value AND dormant (the null is sound, the apparatus is gone). Reversible on reintroduction, which is why it is a status rather than a deletion."
+  "_status_notes": "status: 'active' | 'dormant'. Dormant means the prediction stands -- it was pre-registered, its falsifier is unchanged, and it has NOT been withdrawn -- but no live instrument can currently adjudicate it, so core/adjudication.py refuses it and it contributes nothing to its claim's E. Orthogonal to 'evaluable', which is about whether a valid null exists: a prediction can be e-value AND dormant (the null is sound, the apparatus is gone). Reversible on reintroduction, which is why it is a status rather than a deletion.",
+  "_map_notes": "phase/experiment/gate are DESCRIPTIVE join keys added 2026-09-16, not part of any falsifier: phase is the directory the instrument lives in as INDEX.md names phases, experiment is the instrument's own experiment id where it names one, and gate is the module:function that computes the p-value ('' where no null is built). They carry no frozen content and change nothing about what any entry predicts; they exist so the phase-to-prediction join is machine-checkable instead of living in `instrument` prose. tools/render_experiments.py renders claims/EXPERIMENTS.md from them and tools/check_registry.py fails when a gate does not resolve to a real module and function."
 }

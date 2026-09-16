@@ -90,6 +90,14 @@ where the phase is scooped, and what is left to grow — `docs/LITERATURE.md` in
 sixteen. `PREDICTIONS.md` is the project-level falsification record, separate from any
 single phase's.
 
+**Which phase carries which e-value: `claims/EXPERIMENTS.md`.** Generated from
+`claims/registry.json`, it is the phase → experiment → prediction → gate join that this
+index (phases to directories) and `claims/FALSIFICATION.md` (claims to evidence) each hold
+half of. It is also where the three phases with a live instrument and no registered
+prediction are named — **7d, 7e and 8, which are the active work** — together with the two
+adjudicable gates that never had a known-answer dry run (`P-AB1`, `P-I3`) and the one
+declared claim nothing feeds (`H-BUDGET`). See `POPPER_PLAN.md` §6y.
+
 ## Archived phases
 
 Moved to `archive/` on 2026-08-22. Reason in every case: the project moved to Pythia
@@ -128,6 +136,7 @@ documentation instance of that bug class. Nothing here has been invented to fill
 | `DESIGN_pythia_frames.md` | 11 live files, all in `core/` — `frames.py`, `rope.py`, `qk_offset_null.py`, `battery_structure.py`, `frame_card.py`, `sink_audit.py`, and others | Cited by item number ("see items 5, 8, 12"), so the numbering is load-bearing too |
 | `CHANGES_jlens_adjacent.md` | `p2_eigenspectra/lens_band.py` | |
 | A "2026-07-22 addendum" to `PREDICTIONS.md` | `core/qk_offset_null.py:12` | `PREDICTIONS.md` has no such addendum. The one it does carry (P-T1) is undated in the body and describes a different change |
+| `POPPER_PLAN.md` §6x | `POPPER_PLAN.md:4030`, `PROJECT.md:1636` | Both forward-reference a section that stops at §6w. `PROJECT.md` calls it "where the [design] is" and `POPPER_PLAN.md` calls it "the proposal for getting [a fresh artifact]"; the audit pass that would otherwise have taken the next letter used §6y instead, so the reference stays open rather than silently resolving to the wrong section |
 
 ## In flight on other branches
 

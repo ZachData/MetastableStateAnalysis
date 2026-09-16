@@ -62,6 +62,13 @@ _lint_commands() {
   python3 tools/render_evaluability.py --check
 
   echo
+  echo "=== tier 0: EXPERIMENTS.md in step with the registry ==="
+  # The phase -> experiment -> prediction -> gate join. Stale here means a phase
+  # gained or lost a falsifier and the map still shows the old shape, which is
+  # the one question this file exists to answer.
+  python3 tools/render_experiments.py --check
+
+  echo
   echo "=== tier 0: ledger recomputes to what it claims ==="
   # Replays every claim's e-process from the committed adjudication records,
   # recalibrating each e-value from its p-value rather than trusting the stored
