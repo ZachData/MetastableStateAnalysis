@@ -3438,10 +3438,13 @@ is still `needs-null` in `claims/registry.json` — untouched here. This
 lands the *reading*, not the permutation-null gate over the
 matched-magnitude random-direction ablation arm on the joint (geometric
 delta, logit delta) statistic. That gate is the next action, and now has
-every primitive it needs: `core/intervention.py` (the ablation),
-`core/functional_distance.py` (the logit half — `next_token_kl`), and this
-extension (the geometric half). Building it is the first thing that would
-put the project's first adjudication in reach.
+every primitive it needs: `core/intervention.py` (both the ablation and
+the logit half — `next_token_kl` — corrected 2026-09-16: this line and
+this section's own "So step one is" paragraph below previously
+misattributed `next_token_kl` to `core/functional_distance.py`, a
+different pairwise-KL primitive for clustering), and this extension (the
+geometric half). Building it is the first thing that would put the
+project's first adjudication in reach.
 
 ---
 
@@ -3546,8 +3549,10 @@ It is `needs-null`, and the registry states the blocker exactly:
 
 **So step one is: give `core/dual_reading.py` a pairwise geometric field.**
 Verified 2026-09-13: the module has no pairwise function, and
-`core/functional_distance.py` (the logit readout) and `core/intervention.py`
-(the ablation) both exist. That single extension unblocks the null, which
+`core/intervention.py` (the ablation, and `next_token_kl` for the logit
+readout — corrected 2026-09-16: previously misattributed the logit readout
+to `core/functional_distance.py`, a different pairwise-KL primitive built
+for clustering, not this) already exists. That single extension unblocks the null, which
 unblocks the adjudication, which would be the project's **first** — and it is
 the bridge that makes every later object (SAE features, clusters) expressible
 in the same language instead of needing its own bespoke plumbing.
