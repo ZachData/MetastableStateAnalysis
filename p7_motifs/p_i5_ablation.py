@@ -190,18 +190,29 @@ def _forward(model, tokenizer, text: str) -> dict:
 # One prompt: clean, real-ablated, control-ablated -> (delta_geometric, delta_logit)
 # ---------------------------------------------------------------------------
 
-def run_prompt(model, tokenizer, text: str, rng: np.random.Generator) -> Optional[dict]:
+def run_prompt(
+    model, tokenizer, text: str, rng: np.random.Generator,
+    target_head: tuple = TARGET_HEAD, hidden_state_index: Optional[int] = None,
+) -> Optional[dict]:
     """
     One prompt's contribution to the joint null: the real ablation arm vs
     the matched-magnitude random-direction control arm, aggregated over
     every induction-matched (query, key) pair in the prompt (mean absolute
     change per pair). Returns None if the prompt has no matched pairs
     (nothing to aggregate).
+
+    `target_head` / `hidden_state_index` default to the module's own
+    `L3H6` target — overridden by callers validating the pipeline against
+    other heads (see `p_i5_validation.py`, e.g. a negative-control head
+    with no real relationship to induction).
     """
     from core.battery_structure import induction_candidates
     from core.dual_reading import pairwise_geometric_reading
     from core.intervention import next_token_kl
     from tools.run.induction_rank_sweep import arch_dims, head_means, ablate_heads
+
+    if hidden_state_index is None:
+        hidden_state_index = target_head[0] + 1
 
     clean = _forward(model, tokenizer, text)
     pairs = induction_candidates(clean["ids"])
@@ -211,19 +222,19 @@ def run_prompt(model, tokenizer, text: str, rng: np.random.Generator) -> Optiona
     inputs_ids = [clean["ids"]]
     import torch
     ids_tensor = torch.tensor(inputs_ids)
-    means = head_means(model, ids_tensor, [TARGET_HEAD])
+    means = head_means(model, ids_tensor, [target_head])
 
-    with ablate_heads(model, [TARGET_HEAD], mode=ABLATION_MODE, means=means):
+    with ablate_heads(model, [target_head], mode=ABLATION_MODE, means=means):
         real = _forward(model, tokenizer, text)
 
     _, d_head, _ = arch_dims(model)
     direction = draw_unit_direction(rng, d_head)
-    with matched_magnitude_random_ablation(model, TARGET_HEAD, direction, means):
+    with matched_magnitude_random_ablation(model, target_head, direction, means):
         control = _forward(model, tokenizer, text)
 
-    h_clean = clean["hidden"][HIDDEN_STATE_INDEX]
-    h_real = real["hidden"][HIDDEN_STATE_INDEX]
-    h_control = control["hidden"][HIDDEN_STATE_INDEX]
+    h_clean = clean["hidden"][hidden_state_index]
+    h_real = real["hidden"][hidden_state_index]
+    h_control = control["hidden"][hidden_state_index]
 
     geo_real, geo_control = [], []
     logit_real, logit_control = [], []
@@ -254,19 +265,27 @@ def run_prompt(model, tokenizer, text: str, rng: np.random.Generator) -> Optiona
 # Full run: every informative prompt -> joint_rank_pvalue
 # ---------------------------------------------------------------------------
 
-def run_all(seed: int = SEED) -> dict:
+def run_all_on_loaded_model(
+    model, tokenizer, target_head: tuple = TARGET_HEAD, seed: int = SEED,
+) -> dict:
+    """
+    Same as run_all, but against an already-loaded model — the form
+    callers comparing several target heads (`p_i5_validation.py`) actually
+    want, so the (slow-ish) model load happens once rather than once per
+    head.
+    """
     from core.config import PROMPTS
-    from core.lm_loading import load_causal_lm
     from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, joint_rank_pvalue, attainable_floor
 
-    model, tokenizer = load_causal_lm(MODEL_NAME)
+    hidden_state_index = target_head[0] + 1
     rng = np.random.default_rng(seed)
 
     per_prompt = {}
     for key, text in PROMPTS.items():
         if key == DEGENERATE_PROMPT:
             continue
-        result = run_prompt(model, tokenizer, text, rng)
+        result = run_prompt(model, tokenizer, text, rng, target_head=target_head,
+                             hidden_state_index=hidden_state_index)
         if result is not None:
             per_prompt[key] = result
 
@@ -277,8 +296,7 @@ def run_all(seed: int = SEED) -> dict:
     gate = joint_rank_pvalue(delta_geometric, delta_logit, alternative="greater") if n >= 1 else None
 
     return {
-        "model": MODEL_NAME,
-        "target_head": list(TARGET_HEAD),
+        "target_head": list(target_head),
         "ablation_mode": ABLATION_MODE,
         "seed": seed,
         "n_prompts": n,
@@ -288,6 +306,15 @@ def run_all(seed: int = SEED) -> dict:
         "gate": gate,
         "attainable_floor_one_sided": attainable_floor(n, "greater") if n >= 1 else None,
     }
+
+
+def run_all(seed: int = SEED, target_head: tuple = TARGET_HEAD) -> dict:
+    from core.lm_loading import load_causal_lm
+
+    model, tokenizer = load_causal_lm(MODEL_NAME)
+    result = run_all_on_loaded_model(model, tokenizer, target_head=target_head, seed=seed)
+    result["model"] = MODEL_NAME
+    return result
 
 
 if __name__ == "__main__":

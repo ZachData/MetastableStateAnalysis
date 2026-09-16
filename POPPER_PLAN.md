@@ -4239,6 +4239,74 @@ cached checkpoint (`SMOKE_REAL_DEPS=1 pytest -m smoke`, ~20s), not left
 unverified the way most smoke tests in this repo are when a sandbox has no
 network.
 
+## 6z. `P-I5`'s joint null, part three: the validation found a real problem —
+    the control does not discriminate (2026-09-16)
+
+`p7_motifs/p_i5_validation.py`, `claims/calibration/p_i5_validation.json`.
+6y's own closing section named five gaps before the `L3H6` reading
+(p = 0.0234) could be trusted. This closes four of them — and the first
+one closed is the headline result, not a footnote: **the pipeline does not
+discriminate `L3H6` from heads with no documented relationship to
+induction, so 6y's reading is not evidence for `P-I5` as it stands.**
+
+**Negative controls fail.** Ablating `L4H6` (`status-8.md`'s cascade
+table: "below the +0.05 print threshold" — the closest thing to a
+documented near-zero head, and from layer 4, not layer 3, so this isn't
+just `L3H6`'s own noise) gives `joint_rank_pvalue` **p = 0.0039 — the
+exact floor, more extreme than `L3H6`'s own 0.0234.** Ablating `L5H3`
+(arbitrary, final layer, named in no induction-cascade table anywhere in
+this project) gives **p = 0.0391**, the same order of magnitude as
+`L3H6`. Two heads with nothing to do with induction "pass" the gate
+`L3H6` passes.
+
+**Diagnosed, not just measured.** `run_random_vs_random_diagnostic` runs
+the identical pipeline with BOTH arms drawn as independent
+matched-magnitude random directions — neither one a real ablation.
+`joint_rank_pvalue` (greater) = **0.930**: correctly not significant. This
+rules out `joint_rank_pvalue` itself or the pipeline's mechanics being
+generally broken (consistent with 6x's synthetic calibration, which
+already validated the statistic's size on planted data — this is the same
+conclusion reached again on real activations, by a different route). What
+it does not rule out, and what the negative-control failure confirms:
+**mean-ablation of essentially any head reliably beats an isotropic random
+direction of matched magnitude, independent of what that head does.** A
+real, trained direction is structured; concentration of measure in
+`d_head = 64` dimensions makes a uniformly random direction generically
+almost orthogonal to whatever subspace a downstream reading is sensitive
+to, so "structured vs isotropic-random" is close to a free win for the
+structured arm whether or not the structure is induction-relevant. The
+registry's own phrase — "matched-magnitude random-direction ablation" —
+is under-specified in exactly the way that matters here: matching the
+NORM is not enough when the comparison needs to isolate a DIRECTION'S
+relevance, not merely confirm it is a direction at all.
+
+**What did land as expected, and is worth keeping on record even though it
+doesn't rescue the reading.** Seed sensitivity: stable across 5 seeds
+(p = 0.008–0.039, mean 0.020). Checkpoint replication: holds at
+`step64000` (p = 0.0078). `cosine_distance` cross-check: agrees with
+`raw_distance` (p = 0.0273 vs 0.0234). All three answer "is the reading
+stable," not "is the reading specific" — and specificity is exactly what
+the negative controls show is missing.
+
+**What this means for `P-I5`.** `claims/registry.json` is unchanged —
+nothing from 6y or this section was ever close to registration, and this
+finding is exactly why that discipline exists (`CLAUDE.md`'s own rule:
+registration freezes the wording and the statistic before a finding like
+this one can still change the null). The real next step is not running
+the existing pipeline further — more prompts, more checkpoints — but
+fixing what the control compares against: a null distribution for "an
+unstructured direction" needs to be unstructured RELATIVE TO WHATEVER THE
+READING IS SENSITIVE TO, not merely isotropic in the ambient `d_head`-
+dimensional space. Candidates named but not built: draw the control
+direction from the empirical distribution of OTHER heads' own output
+directions at the same site, or from random combinations of directions
+the residual stream already occupies, rather than a fresh Gaussian draw
+each time.
+
+Also moot until the control is fixed: the power analysis 6y already
+flagged as undone. There is no point measuring the power of a test that
+is not yet measuring what it claims to.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
