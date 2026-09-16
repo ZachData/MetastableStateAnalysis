@@ -5,7 +5,7 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-11)
+## Current priority (updated 2026-09-16)
 
 - **Active work: Phase 8, the Pythia scale ladder.** `p8_scale_ladder/`, opened
   2026-09-10 — the 7d/7e measurements repeated across model sizes so `n = 1`
@@ -27,9 +27,18 @@ work — that is `PROJECT.md`, which is the file to read first.**
   `p7d_redundancy/` (redundancy catalogue, both open axes closed 2026-09-10) and
   `p7e_consolidation/` (`L11H14`; whether the set collapses into one head). Read
   their `status-7d.md` / `status-7e.md`, then `PROJECT.md` §3.12-V.
-- **Literature scan, 2026-09-10** — `docs/literature_scan_2026-09-10.md`. Leads,
-  not readings. Three of §3.12-V's four headlines are in populated territory;
-  read it before building on them.
+- **Literature review, per phase, 2026-09-16** — **`docs/LITERATURE.md`** is the
+  index; **`<phase>/lit-N.md`** is the review, and **every phase now has one**. Leads,
+  not readings: `arxiv.org` and every other scholarly host are blocked by the session
+  egress proxy, so nothing was read and every citation is marked `[S]` (search summary)
+  or `[N]` (title only). **Read it before building on any phase's headline.** Three
+  results are scooped — Phase 1's developmental arc (`2509.23024`), 7d's second-order
+  ablation instrument (`2607.01940`), and 7d's "behavioural proxies fail" thesis
+  (`2606.05378`) — and two of Phase 1's framing statements are stale. See
+  `PROJECT.md` §3.16.
+- **Literature scan, 2026-09-10** — `docs/literature_scan_2026-09-10.md`. The earlier,
+  narrower scan; covers §3.12-V only. **Superseded in scope, not overturned** — all
+  four of its verdicts are confirmed or sharpened by the 2026-09-16 review.
 - **Phase 7 (original)** — the mechinterp/particle bridge, `P-I1`
   (induction-head formation as a two-stage `relay` motif). See `PROJECT.md` for
   where it stands and what is blocking, and `p7_motifs/design-7.md` for the
@@ -76,14 +85,24 @@ similar names, different instruments. `7a`/`7b`/`7c` remain labels in
 went active and started producing results.
 
 Read `status-N.md` for the current state of a phase. Read `design-N.md` for the reasoning
-that is not visible from the code. `PREDICTIONS.md` is the project-level falsification
-record, separate from any single phase's.
+that is not visible from the code. Read **`lit-N.md`** for what has been done before,
+where the phase is scooped, and what is left to grow — `docs/LITERATURE.md` indexes all
+sixteen. `PREDICTIONS.md` is the project-level falsification record, separate from any
+single phase's.
 
 ## Archived phases
 
 Moved to `archive/` on 2026-08-22. Reason in every case: the project moved to Pythia
 checkpoints and to the "particles first" framing, and this code predates both. Not a
 verdict on the work.
+
+Each archived phase also carries a `lit-N.md`: `archive/p3_crosscoder/lit-3.md`,
+`archive/p4_mstate_features/lit-4.md`, `archive/p5c_unclustered/lit-5c.md`. Phases 5,
+5b and 6 keep their reviews beside their study notes in the live top-level directories
+(`p5_single_mstate_analysis/lit-5.md`, `p5b_manifold_steering/lit-5b.md`,
+`p6_subspace/lit-6.md`). **A `lit-N.md` is not a reintroduction trigger** — it records
+what the field has done since, so that a trigger in `FROZEN.md` is evaluated against
+2026-09, not against the date the phase was frozen.
 
 | Phase | Directory | What it found |
 |---|---|---|

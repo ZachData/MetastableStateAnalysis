@@ -12,9 +12,10 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `claude/rescaler-cache-identity-test`, carrying `main` — see the resume block |
-| Last updated | 2026-09-11 (§3.15 — the 70m rung, the ablation-mode A/B, and the probe hedge tested against invariant 4: the finding survives) |
+| Branch | `claude/phase-literature-review-ntd772`, carrying `main` — see the resume block |
+| Last updated | 2026-09-16 (§3.16 — a per-phase literature review; three headline findings are scooped, two Phase-1 framing statements are stale, and the rung policy needs an amendment) |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
+| **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
 | What can carry an e-value | `claims/EVALUABILITY.md` |
@@ -37,7 +38,51 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-10 — 7d's open axes are CLOSED; `7e` is live; on a LoRA tangent)
+### Resume here (2026-09-16 — every phase now has a literature review; read `docs/LITERATURE.md` first)
+
+**Read `docs/LITERATURE.md` before anything else.** It is new, it is the index to
+sixteen new `<phase>/lit-N.md` files, and it changes what several phases should do
+next. Full record in **§3.16**. Then `p7d_redundancy/status-7d.md`,
+`p7e_consolidation/design-7e.md` and `p8_scale_ladder/status-8.md` for where the
+measurements stand, and §3.12-V / §3.15 for the detail.
+
+**The four things from §3.16 that change the plan, stated here so they are not
+missed:**
+
+1. **Phase 1's headline developmental arc is scooped** — `2509.23024` (NeurIPS 2025)
+   reports the same non-monotonic three-phase trajectory on **Pythia 160M–12B**.
+   `status-1.md`'s "the phase's main new object" must be struck or rewritten as a
+   replication with a frame correction.
+2. **7d's nearest neighbour is real** — `2607.01940` (CoAx, July 2026) computes the
+   same second-order conditional-ablation object, and `2606.05378` (June 2026)
+   publishes "pattern selectivity is not task-causal structure" as a title. **The
+   developmental half of our version survives; the cross-model half does not.**
+3. **Two Phase-1 framing statements are stale.** Metastability may no longer be an
+   open problem (`2410.06833`), and the theory has had a **causal-mask version since
+   Nov 2024** (`2411.04990`) — which Pythia, being decoder-only, should have been
+   compared against all along. That one also carries a **Rényi-parking cluster-count
+   prediction** nobody has checked on a trained model, and we have the counts on disk.
+4. **The rung policy needs a rule 4 — a rung may be *externally* spent.** Pythia-1B is
+   measured on the induction axis by two June 2026 papers. `p8_scale_ladder/lit-8.md`
+   §3 argues this cuts *in favour* of keeping the reserve, with the registration
+   recording what external measurements exist. **This is a human call and has not been
+   taken.** **Pythia-1.4b is unaffected and is now the cleaner reserved rung.**
+
+**`docs/LITERATURE.md` §6 lists thirteen cheap experiments this review surfaced**, all
+re-analysis or weights-only. **§4 of that file is a paper** — five worked instances,
+from five phases, of a null forced by its own instrument — and it needs no compute.
+
+**The constraint the review ran under, because it bounds every claim in it:**
+`arxiv.org` and every other scholarly host are **blocked by this session's egress
+proxy**. `WebSearch` works; `WebFetch` and `curl` do not. So **nothing was read** —
+every id and finding is from a search-engine summary, marked `[S]` or `[N]`.
+**Working `docs/LITERATURE.md` §5 from a machine with arXiv access is the
+highest-value unblocked task in the project.**
+
+---
+
+**Previous resume block (2026-09-10 — 7d's open axes are CLOSED; `7e` is live; on a
+LoRA tangent). Still current for the measurement state:**
 
 **Read `p7d_redundancy/status-7d.md` and `p7e_consolidation/design-7e.md`
 first — both are current as of this session — then §3.12-V for the detail.**
@@ -3323,6 +3368,197 @@ cheap.
 
 ---
 
+## 3.16 The per-phase literature review (2026-09-16)
+
+**Every phase now has a `lit-N.md`.** `docs/LITERATURE.md` is the index, the shared
+method, the cross-phase findings, and a single ranked reading queue. This section is
+the record of what the review changed; the detail lives in the files.
+
+### Why it was run, and what it supersedes
+
+`docs/literature_scan_2026-09-10.md` covered §3.12-V only — the 7d/7e/8 territory. Every
+other phase was standing on citations chosen when the phase was designed, some of them
+two years old, with no check on what the field did since. The user asked for the same
+treatment, per phase. **All four of the 2026-09-10 scan's verdicts are confirmed or
+sharpened; none is overturned.**
+
+### The constraint, stated first because it bounds everything
+
+**`arxiv.org`, `semanticscholar.org`, `openreview.net` and every other scholarly host
+are blocked by this session's egress proxy.** Not one abstract page could be fetched.
+`WebSearch` runs server-side and works; `WebFetch` and `curl` return `EGRESS_BLOCKED`
+or a 403 CONNECT.
+
+So **nothing was read.** Every arXiv id, author list, date and finding came from a
+search engine's summary of a page — weaker than an abstract, much weaker than a paper.
+The marks `[S]` (summary read) and `[N]` (title and id only) appear throughout, and
+nothing is marked "read". At least one attribution is flagged as unreliable for
+exactly this reason (`p1c_frames/lit-1c.md` §5.3). **This is the same discipline the
+2026-09-10 scan set and it is not optional.**
+
+**Working `docs/LITERATURE.md` §5 from a machine with arXiv access is the
+highest-value unblocked task in the project.** Item 18 in that queue is a GitHub
+repository rather than a paper — GitHub may be reachable where arXiv is not.
+
+### What is scooped
+
+Ranked, with the full list in `docs/LITERATURE.md` §2:
+
+1. **Phase 1's four-transition developmental arc.** `2509.23024`, *Tracing the
+   Representation Geometry of Language Models from Pretraining to Post-training*
+   **[S]**, NeurIPS 2025 / ICML 2025 — **Pythia 160M–12B and OLMo**, RankMe and αReQ,
+   "a consistent non-monotonic sequence of three geometric phases": warmup collapse →
+   entropy-seeking expansion (peak n-gram memorisation) → compression-seeking
+   consolidation. That is `status-1.md`'s "collapse, recovery, overshoot, slow
+   decline", which it calls **"the phase's main new object"**. **Strike or rewrite.**
+2. **7d's second-order interaction instrument.** `2607.01940`, *Conditional
+   Co-Ablation (CoAx)* **[S]**, 2 July 2026 — "measures how much each remaining unit's
+   ablation effect grows once a primary set has been removed". The 2026-09-10 scan
+   named it as the nearest scoop; it is.
+3. **7d's "behavioural proxies fail" thesis.** `2606.05378`, *Pattern Selectivity is
+   Not Task-Causal Structure* **[S]**, June 2026 — by the **same group** as
+   `2606.02378`, same repository. The cross-model half of §3.12-U's thesis is
+   published; **the developmental half — selectivity inverts against causal effect
+   during formation — is not, and is sharper.**
+4. **Phase 1's raw-effective-rank defect, as a phenomenon.** `2510.06477` **[S]**,
+   ICLR 2026, *proves* massive activations produce representational compression.
+5. Phase 1b's cone-collapse (anisotropy literature, NAACL 2021); Phase 2's OV sign
+   spectrum (Elhage et al. 2021's copying-head statistic `Σλ/Σ|λ|`); Phase 2b's S/A
+   decomposition and the `exp(A)` orthogonality identity; Phase 1c's Euler
+   discretisation; 7e's "SVD order is a poor proxy" (FWSVD, ICLR 2022); 7d's
+   super-additivity (the Hydra effect, 2023).
+
+### What survives
+
+Also ranked in `docs/LITERATURE.md` §3. The top four:
+
+1. **The measured-null discipline**, and specifically §3.12-V3's anisotropy correction
+   — ambient participation ratio **22 of 1024**, which kills the isotropic `k/d`
+   baseline the adjacent subspace literature appears to use. The live Phase 6 rebuild
+   already depends on it.
+2. **Causal membership over every head, with structural *and* behavioural proxies
+   demonstrated to fail** — narrowed by `2606.05378` to its developmental half, which
+   is the better half.
+3. **Force-typed interaction edges** (Phase 7). Every attention-graph paper found uses
+   the attention weight as the edge; ours carries `A_ij · V x_j`, typed by sign and
+   rotational channel. Novel in composition, from parts the field trusts.
+4. **The `γ_β` residual as a null for a trained network** (Phase 1c). The field builds
+   ODE transformers; nobody subtracts the ODE from a trained one.
+
+### The cross-phase finding, which no single phase's file could state
+
+Three phases independently produced **a clean, uniform null forced by the instrument**:
+2b's `elim_rotation = 0.0` in 35/35 runs (`exp(A)` orthogonal, readout a function of
+`X Xᵀ`); Phase 3's chance alignment (the sparse objective drives `Dᵀ D → I`); Phase 5's
+two-of-six criteria contributing 0.0 on every model (wrong event schema, silently).
+Two more phases have a metric confounded by a single token or a stale threshold
+(Phase 1's raw effective rank, D1; Phase 1's Fiedler classification, D2).
+
+> **An intervention whose readout is invariant under it returns a clean null at machine
+> precision, and perfect cross-architecture uniformity is the tell. A scoring function
+> whose terms can silently evaluate to zero still returns a ranked list, and the
+> ranking still looks like a selection.**
+
+**Five worked instances, from five phases, with numbers.** The searches found nobody
+making this point about interpretability instruments. It needs no compute, and no
+other group is positioned to write it, because no other group keeps its failures in
+the repository. `docs/LITERATURE.md` §4.
+
+### Two Phase-1 framing statements are stale rather than scooped
+
+- **Metastability may no longer be an open problem.** `2410.06833`, *Dynamic
+  metastability in the self-attention model* **[S]**, Oct 2024, is summarised as
+  *proving* that particles remain trapped near a several-cluster configuration for an
+  **exponentially long** period. `design-1.md` and `status-1.md` both rest on
+  "Problem 1, which the paper poses as open". **What it is proved *for* is the thing
+  to check** — a search summary elsewhere says "theoretical results are proven for
+  d = 1", and we run at d = 1024. If the proof is d = 1 with identity weights, only
+  the word "open" has to change.
+- **The theory has had a causal-mask version since Nov 2024.** `2411.04990`,
+  *Clustering in Causal Attention Masking* **[S]** (Karagodin, Polyanskiy, Rigollet,
+  NeurIPS): the masked system **cannot be interpreted as a mean-field gradient flow**;
+  convergence to a single cluster is proved for **arbitrary QK with V = I**; and it
+  connects metastable states to the **Rényi parking problem**. `design-1c.md` calls
+  `causal=True` "a departure from the theory" — since Nov 2024 it *is* the theory, and
+  every Pythia number in this project has been compared against the unmasked one.
+
+The parking link is the most useful single item the review found: **it predicts a
+number of clusters as a function of `n`**, and Phase 1 has cluster counts per layer,
+per prompt length, at 27 checkpoints, already on disk. Nobody has checked a
+parking-derived prediction against a trained transformer, it costs no forward passes,
+and `claims/adjudications/` holds zero entries against 39 registrations.
+
+### The rung policy needs a rule 4, and it is a human call
+
+`design-8.md` reserves **pythia-1b** because it is "not in the registry, never
+measured". True of *this project*. **It is no longer true of the field:**
+`2606.02378` and `2606.05378` both run Pythia-1B on the induction axis, with public
+code at `skydancerosel/spectral-probe-circuits`.
+
+**Proposed amendment (`p8_scale_ladder/lit-8.md` §3), not taken:**
+
+> Add a rule 4: **a rung may be externally spent.** Before registering a prediction
+> against a reserved rung, record which external measurements of that rung exist and
+> what they report, in the registration itself. Reserve the rung against *our*
+> measurement as before; reserve the *registration* against reading the external
+> results first.
+
+The argument cuts **in favour of keeping the reserve**: an independent measurement of
+the same rung by a different group with different instruments turns an adjudication
+into a three-way comparison — our prediction, our measurement, theirs. That is the
+strongest adjudication site this project has had.
+
+**Pythia-1.4b is unaffected.** No source found measures it on the induction axis, so
+it is now the cleaner of the two reserved rungs and should be preferred for the first
+registration.
+
+### The thirteen cheap experiments
+
+`docs/LITERATURE.md` §6 lists them in full. All are re-analysis of artifacts on disk or
+weights-only, except the last. The five with the best ratio:
+
+1. **The Rényi-parking cluster-count prediction** against 27 checkpoints of counts.
+2. **The formation-point equation** from `2511.16893` **[S]** — batch size and context
+   size predict the induction-head formation step, and Pythia holds both constant
+   across the whole suite, so it predicts **the same step at every rung**. 70m and
+   410m are both already measured. Free external adjudication.
+3. **`PR_M` / `coupling_efficiency` (Phase 2d D2) against 7d's 384-head causal sweep.**
+   The one instrument that could rescue a structural proxy for causal effect after
+   `‖OV‖_F` failed at r² = 0.001 and ran backwards. This connection is in no other doc.
+4. **Elhage's `Σλ/Σ|λ|` against `frac_repulsive`**, then on the checkpoint axis.
+   Validation if they agree; a real dissociation if they do not.
+5. **`schur` vs `svd` basis on `L11H14`.** Weights-only, named in the resume block on
+   2026-09-10, **still unrun**, and a stated hold sits on `induction_rank_sweep`'s `r*`
+   construction until it is done.
+
+### What must change in other documents
+
+Not done in this session beyond the pointers; recorded so it is not lost.
+
+- **`design-1.md`** — the "Problem 1 is open" framing, and the `causal=True`
+  "departure from the theory" line in **`design-1c.md`**.
+- **`status-1.md`** — "the phase's main new object".
+- **`math-5b.md`** — add the id `2605.05115` for Wurgaft et al., and correct
+  "approximately isometric" to **"scaled isometry"** wherever a threshold depends on it.
+- **`design-8.md`** — the rung policy, if the amendment is accepted.
+- **Project-wide** — cite `2312.10794` as *Bulletin of the AMS* **62(3), 2025**, not as
+  the preprint, and check whether the published version renumbers the theorems the
+  absent `MATH.md` §9 depends on.
+
+### One design change this review proposes outright
+
+**Phase 5b must not run its main arm before an ordered-concept positive control.**
+`2605.05115`'s isometry correlations of **≈ 0.999** are on **weekday, month, letter and
+age** — totally ordered, low-cardinality, densely sampled concepts, where a
+spline-threaded manifold is nearly a 1-D curve. Our substitution puts **unordered
+HDBSCAN cluster centroids with layer-varying membership** in their place. A negative
+result under that substitution would be uninterpretable. Build one of their four tasks,
+run our pipeline on it, and check that our unsupervised centroids recover their
+supervised manifold first. **If they do not, the substitution has failed on the easy
+case.** (`p5b_manifold_steering/lit-5b.md` §1.1.)
+
+---
+
 ## 4. Open, analysed, not yet acted on: the scoring threshold
 
 Investigated 2026-09-03, nothing changed in code. Recorded here because it is
@@ -3595,6 +3831,7 @@ itself.
 | Question | File |
 |---|---|
 | Which phase lives where, what is archived | `INDEX.md` |
+| **What has been done before, per phase, and where we can still grow** | **`docs/LITERATURE.md`, then `<phase>/lit-N.md`** |
 | Why a construction is the way it is | `POPPER_PLAN.md` §6a–§6t |
 | What is pre-registered, and its falsifier | `PREDICTIONS.md`, `claims/registry.json` |
 | Which predictions can carry an e-value, and the order to build a null in | `claims/EVALUABILITY.md` |
