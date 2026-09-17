@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | an eight-PR stack, #36→#43, tip `claude/p-i5-real-ablation` (PR #43, stacked on #42) — see the resume block |
-| Last updated | 2026-09-16 — **§3.32: `P-I5`'s joint null, part two — the control, real activations, a first reading.** `L3H6` (pythia-70m's induction/matcher head, `status-8.md`) mean-ablated at `step143000`, against a matched-magnitude random-direction control defined for the first time in this project. Real result on all 8 informative prompts: `joint_rank_pvalue` **p = 0.0234** (floor 0.0039 — not floor-saturated). **Explicitly a first look, not an adjudication** — `claims/registry.json`'s `P-I5` entry is unchanged; missing a positive/negative control pair, more than one checkpoint, a random-draw sensitivity check, and a power analysis before it could be trusted the way `P-AB1`/`P-I3`'s finished gates are. §3.31: the statistic this reading uses (a Tippett-style minimum-rank fix to an AND-corner construction that over-rejected ~4x). §3.30: the pairwise field this rests on. §3.29 (2026-09-13): the direction decision. |
+| Branch | a nine-PR stack, #36→#44, tip `claude/p-i5-validation` (PR #44, stacked on #43) — see the resume block |
+| Last updated | 2026-09-16 — **§3.33: the validation found a real problem — `P-I5`'s control does not discriminate.** Negative controls FAIL: `L4H6` (no relationship to induction) gives `joint_rank_pvalue` **p = 0.0039**, more extreme than `L3H6`'s own **p = 0.0234**; `L5H3` gives 0.0391, same order. Diagnosed: a random-vs-random check (neither arm real) correctly gives p = 0.930, so the statistic itself is fine — the problem is that mean-ablation of *any* head reliably beats an ISOTROPIC random direction of matched magnitude, independent of what that head does. **§3.32's `L3H6` reading is therefore not yet evidence for `P-I5`.** `claims/registry.json` unchanged. Next: redesign the control so the random direction is unstructured relative to what the reading is sensitive to, not just isotropic in the ambient space. §3.31: the statistic (validated sound by this session's diagnostic). §3.30: the pairwise field. §3.29 (2026-09-13): the direction decision. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,35 +37,43 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-16 — eight PRs in a stack; §3.32 got a first real reading on `P-I5`, validation is next)
+### Resume here (2026-09-16 — nine PRs in a stack; §3.33 found `P-I5`'s control does not discriminate — fixing it is next)
 
-**Read this block, then §3.32, then §3.31, then §3.30, then §3.29, then
-§3.28.** §3.29 is the direction decision and it demotes everything below
-it: the programme is the particle/OT reading and the induction thread is
-an instance of it that is now past diminishing returns. §3.30 built the
-pairwise geometric field §3.29 named as STEP ONE. §3.31 built the joint
-permutation null's floor and fixed its statistic (the first-tried
-AND-corner was invalid). §3.32 is this session's close: the
-matched-magnitude random-direction control, built and run against real
-cached `pythia-70m` activations — `L3H6` ablated at `step143000`, joint
-p = 0.0234 on the real 8-prompt grid, **explicitly a first look and not an
-adjudication**. §3.28 is the pre-registration scan — it reclassifies
-§3.22's novelty and blocks §3.27's registration, so reading §3.20–§3.27
-without it will overstate what is new. Everything below this block is
-earlier and is kept as background, not as the current state.
+**Read this block, then §3.33, then §3.32, then §3.31, then §3.30, then
+§3.29, then §3.28.** §3.29 is the direction decision and it demotes
+everything below it: the programme is the particle/OT reading and the
+induction thread is an instance of it that is now past diminishing
+returns. §3.30 built the pairwise geometric field §3.29 named as STEP
+ONE. §3.31 built the joint permutation null's floor and fixed its
+statistic (the first-tried AND-corner was invalid). §3.32 built the
+matched-magnitude random-direction control and got a first real reading on
+`L3H6` (p = 0.0234) — **since superseded by §3.33's finding, not a result
+to build on as-is.** §3.33 is this session's close: validating that
+reading found it is NOT specific to induction — negative-control heads
+pass the same gate, and a random-vs-random diagnostic shows the statistic
+itself is sound, so the problem is the control's isotropy, not the test.
+§3.28 is the pre-registration scan — it reclassifies §3.22's novelty and
+blocks §3.27's registration, so reading §3.20–§3.27 without it will
+overstate what is new. Everything below this block is earlier and is kept
+as background, not as the current state.
 
-**Nothing is running and nothing is uncommitted.** All eight branches are
+**Nothing is running and nothing is uncommitted.** All nine branches are
 pushed and in sync with their remotes; the only untracked path is
 `data/hf/` (the HF cache — never `git add -A` under `data/`, its
 `.no_exist/` markers are not gitignored). Gate green on the tip:
-**2321 passed / 5 skipped / 37 deselected** (run under `.venv`, not the
+**2321 passed / 5 skipped / 41 deselected** (run under `.venv`, not the
 `mets` conda env — the two interpreters coexist on this machine and only
 `.venv` is what `check.sh gate` and CI actually use; `python -m pytest`
 under the wrong one still runs, silently, which is how a stale count could
-slip in unnoticed). The 7 new smoke tests in
-`tests/test_p_i5_ablation_smoke.py` are among the deselected — they need
-`SMOKE_REAL_DEPS=1 pytest -m smoke` and were run for real this session
-(20s, all pass) rather than left unverified.
+slip in unnoticed). The 11 new smoke tests across
+`tests/test_p_i5_ablation_smoke.py` and `tests/test_p_i5_validation_smoke.py`
+are among the deselected — they need `SMOKE_REAL_DEPS=1 pytest -m smoke`
+and were run for real this session (both files, all pass) rather than
+left unverified. **This machine's memory watchdog killed two background
+runs mid-session** (transient — `free -h` showed 24GB+ available both
+immediately before and after) — the validation script now checkpoints its
+JSON after every step for exactly this reason; if a future run dies
+partway, read what's on disk before rerunning finished steps.
 
 **The PR stack, oldest first. Each is based on the one above it, so review in
 order and merge in order.**
@@ -80,6 +88,7 @@ order and merge in order.**
 | #41 | `claude/pairwise-geometric-field` | §3.30: `pairwise_geometric_reading` in `core/dual_reading.py`, unblocks `P-I5`'s missing field |
 | #42 | `claude/p-i5-joint-null` | §3.31: `P-I5`'s joint null — floor, the AND-corner's failure and its min-rank fix, the real measurement grid |
 | #43 | `claude/p-i5-real-ablation` | §3.32: the matched-magnitude random-direction control, real `L3H6` ablation, first reading (p = 0.0234, exploratory) |
+| #44 | `claude/p-i5-validation` | §3.33: validation finds the control does not discriminate — negative controls fail, random-vs-random diagnoses why |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
@@ -102,22 +111,23 @@ and 2 serve the frame; 3–6 are the induction thread's leftovers and are
 explicitly *not* the priority.
 
 1. **STEP ONE (§3.30) and STEP ONE-B (§3.31) are done. STEP ONE-C's
-   pipeline is built and has produced a first real reading (§3.32,
-   2026-09-16) — but it is explicitly NOT yet the project's first
-   adjudication.** `L3H6` (pythia-70m's induction/matcher head)
-   mean-ablated at `step143000` against a matched-magnitude
-   random-direction control (defined for the first time in this project,
-   `p7_motifs/p_i5_ablation.py`), scored with `pairwise_geometric_reading`
-   and `core/intervention.py::next_token_kl`, fed into `joint_rank_pvalue`:
-   **p = 0.0234** on all 8 informative prompts, floor 0.0039 (not
-   floor-saturated). **STEP ONE-D, the actual next action: validate the
-   pipeline before trusting that number.** Named gaps, not yet closed: a
-   positive/negative control pair (e.g. a head with a known-null effect,
-   to confirm the pipeline reads ~0 there), more than the one checkpoint
-   (`step143000`) measured, a sensitivity check on the one random
-   direction drawn per prompt, a power analysis, and a cross-check of
-   `raw_distance` against `cosine_distance`/a projector-restricted
-   reading. Only after that would running this against real matched
+   pipeline exists but its first reading (§3.32, p = 0.0234) is
+   SUPERSEDED — STEP ONE-D's validation (§3.33, 2026-09-16) found it is
+   not specific to induction.** Negative-control heads `L4H6` (p = 0.0039,
+   the exact floor) and `L5H3` (p = 0.0391) pass the same gate `L3H6`
+   does; a random-vs-random diagnostic (neither arm real) correctly gives
+   p = 0.930, showing `joint_rank_pvalue` itself is sound — the problem is
+   that mean-ablation of essentially ANY head beats an isotropic
+   random-direction control of matched magnitude, regardless of what that
+   head does. Seed sensitivity, checkpoint replication (`step64000`), and
+   a `cosine_distance` cross-check all landed as expected, but none of
+   them speak to specificity. **STEP ONE-E, now the actual next action:
+   redesign the control** so the random direction is unstructured
+   RELATIVE TO WHAT THE READING IS SENSITIVE TO, not merely isotropic in
+   the ambient `d_head`-dimensional space — e.g. drawn from other heads'
+   own output directions at the same site, or from random combinations of
+   directions the residual stream already occupies, rather than a fresh
+   Gaussian draw. Only after that would running this against real matched
    positions put the project's **first adjudication** in reach against 39
    registrations and zero.
 2. **Then §2.5's isometric path on `L7H8`** — the only *designed* particle
@@ -3422,6 +3432,45 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.33 `P-I5`'s joint null, part three: the validation found a real problem — the control does not discriminate (2026-09-16)
+
+§3.32's closing section named five gaps before its `L3H6` reading
+(p = 0.0234) could be trusted. Closing them found the headline result:
+**the pipeline does not discriminate `L3H6` from heads with no
+relationship to induction — §3.32's reading is not yet evidence for
+`P-I5`.** Full derivation in `POPPER_PLAN.md` §6z.
+
+**Negative controls fail.** `L4H6` ("below the +0.05 print threshold" in
+`status-8.md`'s cascade table, layer 4 not layer 3) gives `joint_rank_pvalue`
+**p = 0.0039 — the exact floor**, more extreme than `L3H6`'s own 0.0234.
+`L5H3` (arbitrary, final layer, named nowhere as induction-related) gives
+**p = 0.0391**, same order of magnitude. Two heads with nothing to do with
+induction pass the gate `L3H6` passes.
+
+**Diagnosed: a random-vs-random control (neither arm real) correctly gives
+p = 0.930 — not significant.** `joint_rank_pvalue` itself is fine; the
+problem is that mean-ablation of essentially any head reliably beats an
+ISOTROPIC random direction of matched magnitude, regardless of what that
+head does — a real, trained direction is structured, and concentration of
+measure in `d_head = 64` dimensions makes uniform random noise generically
+near-orthogonal to whatever a downstream reading is sensitive to.
+"Matched-magnitude random-direction ablation" (the registry's own phrase)
+matches the norm but not the thing that actually needs to be null:
+directional relevance, not mere directionality.
+
+**Seed sensitivity, checkpoint replication (`step64000`), and a
+`cosine_distance` cross-check all landed as expected — stable, but that
+answers "is the reading stable," not "is it specific," and specificity is
+what's missing.**
+
+**Next step, named not built:** redesign the control so the random
+direction is unstructured RELATIVE TO WHAT THE READING IS SENSITIVE TO —
+e.g. drawn from other heads' own output directions, not a fresh Gaussian
+draw. `claims/registry.json`'s `P-I5` entry stays unchanged; a power
+analysis is moot until the control measures what it claims to.
 
 ---
 
