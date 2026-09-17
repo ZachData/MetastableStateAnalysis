@@ -180,6 +180,54 @@ un-bundled from the energy/Fiedler pair in any restatement.
 **Claim (c) — phenomenology transfers across architecture. → Not adjudicated.** No random
 baseline and no 1.4B run in this pilot. The hard stop is still armed.
 
+## E-value audit, Phase 1 (2026-09-17)
+
+The pass over this phase's two registered predictions (`PROJECT.md` §3.36).
+Neither carries an e-value and neither can on the data in the tree.
+
+**`CLAIM-C` — the instrument was complete except for its plumbing, and the
+data does not exist.** The gate (`replication_gate.py`) was built and
+calibrated on 2026-08-24/25 but nothing assembled its arms from a Phase 1 run
+directory, so it had never been pointed at real artifacts. `tools/
+score_claim_c.py` now does that — five module-constant arms, the eight
+metastability prompts, `repeated_tokens` excluded as the control it is,
+artifact hashes and a committed record either way. Run against every Phase 1
+run directory on disk it **refuses**: `gpt2-large`, `gpt2-large-random`,
+`pythia-1.4b-step143000` and `pythia-1.4b-random` are absent from all of them
+(`claims/audits/claim_c_real_run.json`). The tree holds pythia-410m at 19
+steps and nothing else; the 2026-04-23 GPT-2 directory cited above no longer
+exists. Producing the arms is five `run_1.py` model runs (every one is already
+in `MODEL_CONFIGS`, including the norm-matched `pythia-1.4b-random`) and two
+HF downloads that `HF_HUB_OFFLINE=1` currently forbids. Order of magnitude
+from the 410m sweep's timestamps (~35 min per 9-prompt checkpoint): 6–8 h.
+**The hard stop this claim carries was bypassed de facto** — Phase 2's rerun
+and Phase 7's 19-step sweep are exactly the "checkpoint-sweep work (items
+9–11)" the gate was to precede, and they ran with the gate unrun. That is a
+process fact to state, not to relitigate: the sweeps exist, and if the gate
+later FAILS-TO-TRANSFER the reading is that they were run on an
+architecture whose phenomenology was never shown to match Blog 1's.
+
+**`CLAIM-A` — nothing built, and the 410m reading above cannot be its data.**
+The "Split" verdict in the table above is three threshold readings on
+pythia-410m steps 0 and 8, already seen. A null designed now and run on the
+same artifact would be shaped by that outcome, so the construction must be
+calibrated on known-answer inputs and run on a checkpoint pair not yet read —
+`pythia-1.4b` steps 0 and 8, which is what the instrument line names and what
+`CLAIM-C`'s arms would download anyway. Recommended construction, **not
+built** because it is a `design` decision (`CLAUDE.md` scan trigger 2
+applies before it lands in the registry): the prediction is a CONJUNCTION of
+three criteria, so the valid correction-free combination is the
+intersection-union max over three per-criterion one-sided p's, the same
+device `CLAIM-C` uses across its metric subsets; exchangeable unit the
+prompt, as in `CLAIM-C`; per-criterion null the matched random-weight
+baseline the registry already names (`core/nulls.shuffled_dimension_null`),
+with the attainable floor checked first — eight prompts under exhaustive
+sign-flip gives 2/(2⁸+1) = 0.0078, so the design can reject; the informative-
+row floor that bit `CLAIM-C` needs checking per criterion. The table above
+also says the three criteria come apart in time (energy ≠ rank ≠ Fiedler),
+which an IU max reports as INSUFFICIENT rather than as a partial pass — the
+correct reading for a conjunction the data splits.
+
 ---
 
 ## Measurement defects
