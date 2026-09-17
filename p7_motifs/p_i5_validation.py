@@ -339,7 +339,9 @@ if __name__ == "__main__":
         # every step completed so far on disk, not just the last print.
         if args.write:
             out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+            tmp_path = out_path.with_suffix(out_path.suffix + ".tmp")
+            tmp_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+            tmp_path.replace(out_path)
 
     print("=== 1. Negative controls ===")
     result["negative_controls"] = run_negative_controls()
