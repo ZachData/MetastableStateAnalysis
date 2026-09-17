@@ -1,12 +1,14 @@
 # Phase 1 — STATUS
 
-**Registered predictions:** `CLAIM-A` (needs-null — nothing built) and
-`CLAIM-C` (e-value — null built in `replication_gate.py`, calibrated on a
-known-answer dry run, **not run against real artifacts**). Their nulls and
-evidence paths are `claims/registry.json`; the per-phase view is
-`claims/EXPERIMENTS.md`. Nothing in this file is an e-value: the
-verdict tables below are threshold comparisons, and the gate that would turn
-this phase's Pythia sweep into a p-value has not been run on it.
+**Registered predictions:** `CLAIM-A` (needs-null — construction specified
+below, deliberately not built; decision 2026-09-17) and `CLAIM-C` (e-value —
+null built in `replication_gate.py`, calibrated on a known-answer dry run,
+**two of five arms produced on 2026-09-17, gate still refusing on the three
+pythia-1.4b arms**; see "E-value audit" below). Their nulls and evidence paths
+are `claims/registry.json`; the per-phase view is `claims/EXPERIMENTS.md`.
+Nothing in this file is an e-value: the verdict tables below are threshold
+comparisons, and the gate that would turn this phase's Pythia sweep into a
+p-value has not yet produced one.
 
 **Last verified:** Pythia-410M checkpoint pilot (execution-order item 8), cross-run report
 `llm_cross_run_report.txt`.
@@ -227,6 +229,71 @@ row floor that bit `CLAIM-C` needs checking per criterion. The table above
 also says the three criteria come apart in time (energy ≠ rank ≠ Fiedler),
 which an IU max reports as INSUFFICIENT rather than as a partial pass — the
 correct reading for a conjunction the data splits.
+
+### Decisions taken, and the first two arms produced (2026-09-17)
+
+**Decisions (user).** `CLAIM-C`: spend the compute, in arm-sized jobs — one
+`run_1.py --models <arm>` per invocation, each its own run directory, because
+the scorer takes an arm whole from one directory and `run_1.py` cannot resume a
+partial one, so a kill costs one arm and never more. `CLAIM-A`: leave
+`needs-null`; the construction above is the spec, building it is its own unit
+(design decision, lit-scan trigger 2 before registration), and it cannot run
+before pythia-1.4b steps 0/8 are on disk. Queued behind `CLAIM-C`'s verdict.
+
+**Produced, in a ~3 h window.** Both reference arms, on all nine prompts
+(`repeated_tokens` included in the run, excluded by the scorer):
+
+| arm | run directory | wall time |
+|---|---|---|
+| `gpt2-large` | `data/phase12/2026-09-17_14-51-40` | 65 min (14:51→15:57) |
+| `gpt2-large-random` | `data/phase12/2026-09-17_16-04-54` | 33 min (16:05→16:38) |
+
+Per-prompt times are in `data/phase12/claim_c_logs/`. The trained arm ran
+~5–7 min per long prompt; the random arm is half that. Both are on the 16-core
+CPU in float32. The 6–8 h estimate for all five arms was extrapolated from
+410m; measured, the two gpt2-large arms cost 1 h 40 min together, so the three
+1.4b arms (2× the parameters, 24 layers at d = 2048) should be roughly 2 h each
+trained and less random — a 3 h window fits one, not two.
+
+**Defect found on the way: `gpt2-large-random` had never loaded.** Its
+`MODEL_CONFIGS` entry carried no `hf_repo` / `pretrained_name`, so
+`load_model` resolved the Hub repo to the key itself and asked for
+`gpt2-large-random`, which does not exist; `run_1.py`'s per-model handler
+swallowed it as a protobuf error and the sweep "finished" with zero prompts.
+The resolution rule is unchanged since the earliest recorded `core/models.py`,
+so this arm has never run through this code path — consistent with its absence
+from every run directory on disk. Fixed (`hf_repo: "gpt2-large"`, and
+`albert-base-v2-random` likewise) with a smoke-tier test,
+`tests/test_random_controls_name_base.py`, that every `random_init` entry
+names a base repo of the same model class and that `RANDOM_CONTROLS` agrees.
+The fix is not a registry amendment: the arm is still gpt2-large's
+architecture, orthogonally re-initialised at seed 0 (144 matrices, 2
+embeddings; checksum 105156.8 → 92759.1 in the log).
+
+**The record.** `claims/audits/claim_c_real_run.json` now carries both arms —
+8 metastability prompts each, 48 artifact files hashed — and refuses on
+`pythia-1.4b-step143000` and `pythia-1.4b-random` (`step0` is the sensitivity
+arm and is not in the refusal's required list). `real_run_record` in the
+registry stays null: the record is a refusal, not a run that produced the
+statistic. The two arms' contrast was NOT read — the gate is the reader, and it
+reads all arms at once.
+
+**Remaining.** All three pythia-1.4b revisions are cached under `data/hf`
+(step143000, step0; `-random` norm-matches step143000), so the remaining arms
+run offline:
+
+```bash
+cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
+export HF_HOME=$PWD/data/hf METS_RESULTS_DIR=$PWD/data/phase12 HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1
+python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-step143000   # one arm per invocation
+python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-random
+python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-step0
+python -m tools.score_claim_c --run-dir data/phase12/2026-09-17_14-51-40 \
+    --run-dir data/phase12/2026-09-17_16-04-54 --run-dir <each new dir>
+```
+
+`-u` matters: without it the log is block-buffered and shows nothing until
+exit. Do not stop an invocation mid-arm.
 
 ---
 
