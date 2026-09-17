@@ -10,10 +10,12 @@ constructions below — the headline is the diagnosis, not either fix.
 
 `p_i5_ablation.py`'s control (an isotropic random direction, matched only
 in magnitude) does not discriminate `L3H6` from heads with no relationship
-to induction (§3.33) — mean-ablation of essentially any head beats
-isotropic noise, because a real trained direction is structured and a
-uniformly random direction of the same magnitude is generically almost
-orthogonal to whatever a downstream reading is sensitive to.
+to induction (§3.33) — on the two controls measured, `L4H6` and `L5H3`,
+mean-ablation beats isotropic noise as decisively as `L3H6`'s does,
+plausibly because a real trained direction is structured and a uniformly
+random direction of the same magnitude is generically almost orthogonal to
+whatever a downstream reading is sensitive to. Whether that holds for
+heads generally is not measured (no head sweep has been run).
 
 CONSTRUCTION 1: OTHER-HEAD-DIRECTION, MAGNITUDE-MATCHED. Draw the control
 direction from OTHER HEADS' OWN OUTPUT DIRECTIONS instead of `N(0, I)`:
@@ -29,10 +31,17 @@ replacing a matched-dimension random subspace with a matched-occupancy one
 
 **Result: still fails.** `L4H6` p = 0.0078 (MORE significant than before),
 `L5H3` p = 0.0156, `L3H6` p = 0.0234 — same pattern as the isotropic
-control, structure alone does not fix it.
+control, structure alone does not fix it. (Min-rank p-values; this control
+is run on all three heads by `run_negative_controls`, so it IS a
+head-comparison — the 2026-09-16 record stores no per-prompt deltas and
+cannot be re-scored under the intersection-union statistic without a
+rerun, which now stores them.)
 
-CONSTRUCTION 2 (DIAGNOSTIC): CONSTANT-SUBSTITUTION SWAP
-(`run_constant_substitution_diagnostic`). Both arms use full constant
+CONSTRUCTION 2 (DIAGNOSTIC, `L3H6` ONLY): CONSTANT-SUBSTITUTION SWAP
+(`run_constant_substitution_diagnostic`). Run on the target head alone —
+it is a readout/mechanism observation about `L3H6`, NOT a test of whether
+`L3H6` is discriminated from uninvolved heads; construction 1 above is the
+head comparison. Both arms use full constant
 substitution (`ablate_heads(mode="mean")`, exactly the real arm's own
 mechanism) — real substitutes `target_head`'s own mean, control substitutes
 a randomly drawn OTHER head's mean. Not magnitude-matched at all; it
@@ -42,11 +51,15 @@ does WHICH constant matters?
 **Result: `delta_geometric` is ~1e-8 for every prompt — floating-point
 noise, not a null finding about induction.** This is a property of the
 READOUT, not the control. `pairwise_geometric_reading` reads the full
-512-dim residual stream at two positions; the ablated head is one fixed
-64-dim slice of it. Under constant substitution, THAT SLICE BECOMES
+512-dim residual stream at two positions. The hook (`ablate_heads`)
+replaces the head's 64-dim OUTPUT slice in the input to `attention.dense`,
+BEFORE the output projection mixes heads — so the substituted constant is
+projected through `W_O` and can touch every residual dimension, not a
+fixed 64-dim residual slice. Under constant substitution that slice is
 IDENTICAL AT EVERY POSITION — real or donor constant, it doesn't matter —
-so its contribution to the (query, key) PAIRWISE DIFFERENCE is exactly
-zero either way. `raw_distance` on the full residual stream cannot tell
+so its projected contribution is the SAME vector at the query and key
+positions and cancels exactly in the (query, key) PAIRWISE DIFFERENCE
+either way. `raw_distance` on the full residual stream cannot tell
 "the right constant" from "a wrong constant" under this intervention
 type; it can only detect "was a slice unified across positions or not,"
 which both arms do identically. This is a real, mechanistic reason
@@ -57,16 +70,18 @@ readout itself needs to be sensitive to *content*, not just *whether
 variance was removed*.
 
 `delta_logit` under construction 2 is also informative and goes the WRONG
-way for `P-I5`: negative on every single prompt (donor-substitution is
-MORE disruptive to next-token prediction than the target's own mean,
-consistently) — plausibly because a foreign head's mean is further
+way for `P-I5`: negative on seven of eight prompts, negative on average
+(donor-substitution is MORE disruptive to next-token prediction than the
+target's own mean, on all but one prompt) — plausibly because a foreign head's mean is further
 out-of-distribution for whatever the downstream computation expects than
 the target's own mean is, which is a statement about how "unusual" the
 substitute is, not about induction relevance.
 
-WHAT THIS ADDS UP TO. Three constructions tried, three failures to
-discriminate, and the third one's failure has a clean mechanistic cause
-rather than an unexplained number. The open problem is no longer only
+WHAT THIS ADDS UP TO. Two head-comparison controls tried (§3.33's
+isotropic direction, construction 1's other-head direction), both failing
+to discriminate `L3H6` from `L4H6` and `L5H3`; and one single-head
+diagnostic (construction 2) whose null geometric result has a clean
+mechanistic cause in the readout rather than an unexplained number. The open problem is no longer only
 "what control isolates directional relevance" (§3.33's framing) — it now
 also includes "does `raw_distance` on the ablated layer's own residual
 stream even have the sensitivity this test needs, once the intervention
@@ -209,7 +224,7 @@ def run_prompt(model, tokenizer, text: str, rng: np.random.Generator, target_hea
 
 def run_all_on_loaded_model(model, tokenizer, target_head: tuple, seed: int = 20260916) -> dict:
     from core.config import PROMPTS
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, joint_rank_pvalue, attainable_floor
+    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
 
     rng = np.random.default_rng(seed)
     per_prompt = {}
@@ -223,7 +238,8 @@ def run_all_on_loaded_model(model, tokenizer, target_head: tuple, seed: int = 20
     delta_geometric = np.array([r["delta_geometric"] for r in per_prompt.values()])
     delta_logit = np.array([r["delta_logit"] for r in per_prompt.values()])
     n = len(per_prompt)
-    gate = joint_rank_pvalue(delta_geometric, delta_logit, alternative="greater") if n >= 1 else None
+    gate = intersection_union_pvalue(delta_geometric, delta_logit, alternative="greater") if n >= 1 else None
+    gate_min_rank_superseded = joint_rank_pvalue(delta_geometric, delta_logit, alternative="greater") if n >= 1 else None
 
     return {
         "target_head": list(target_head),
@@ -233,6 +249,7 @@ def run_all_on_loaded_model(model, tokenizer, target_head: tuple, seed: int = 20
         "delta_geometric": delta_geometric.tolist(),
         "delta_logit": delta_logit.tolist(),
         "gate": gate,
+        "gate_min_rank_superseded": gate_min_rank_superseded,
         "attainable_floor_one_sided": attainable_floor(n, "greater") if n >= 1 else None,
     }
 
@@ -264,9 +281,12 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
     one fixed 64-dim slice of it. Under constant substitution, that slice
     becomes IDENTICAL at every position (= the substituted constant, real
     OR donor), so its contribution to the (query, key) PAIRWISE DIFFERENCE
-    is exactly zero regardless of which constant was used -- the
-    difference is a property of the OTHER 448 dimensions, which no head
-    ablation here touches. `raw_distance` on the full residual stream
+    is exactly zero regardless of which constant was used. (The hook
+    replaces the head's 64-dim output slice in the input to
+    `attention.dense`, before head mixing, so the projected contribution
+    can reach every residual dimension -- but it is the SAME vector at
+    both positions, which is why it cancels in the pairwise difference.)
+    `raw_distance` on the full residual stream
     cannot distinguish "the right constant" from "a wrong constant" under
     this intervention type; it can only detect "was a slice UNIFIED across
     positions or not."
@@ -277,7 +297,7 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
     from core.dual_reading import pairwise_geometric_reading
     from core.intervention import next_token_kl
     from p7_motifs.p_i5_ablation import MODEL_NAME, ABLATION_MODE, _forward
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, joint_rank_pvalue
+    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue
     from tools.run.induction_rank_sweep import head_means, ablate_heads
     import torch
 
@@ -324,7 +344,8 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
 
     dg = np.array(deltas_geo)
     dl = np.array(deltas_logit)
-    gate = joint_rank_pvalue(dg, dl, alternative="greater") if len(dg) >= 1 else None
+    gate = intersection_union_pvalue(dg, dl, alternative="greater") if len(dg) >= 1 else None
+    gate_min_rank_superseded = joint_rank_pvalue(dg, dl, alternative="greater") if len(dg) >= 1 else None
     return {
         "target_head": list(target_head),
         "n_prompts": len(dg),
@@ -332,6 +353,8 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
         "delta_logit": dl.tolist(),
         "geometric_is_near_zero": bool(np.max(np.abs(dg)) < 1e-6) if len(dg) else None,
         "p_value": gate["p_value"] if gate else None,
+        "p_value_min_rank_superseded": (gate_min_rank_superseded["p_value"]
+                                        if gate_min_rank_superseded else None),
     }
 
 
@@ -352,9 +375,13 @@ def run_negative_controls(seed: int = 20260916) -> dict:
         out[label] = {
             "is_target": head == TARGET_HEAD,
             "p_value": result["gate"]["p_value"] if result["gate"] else None,
+            "p_value_min_rank_superseded": (result["gate_min_rank_superseded"]["p_value"]
+                                            if result.get("gate_min_rank_superseded") else None),
             "n_prompts": result["n_prompts"],
             "mean_delta_geometric": float(np.mean(result["delta_geometric"])),
             "mean_delta_logit": float(np.mean(result["delta_logit"])),
+            "delta_geometric": list(map(float, result["delta_geometric"])),
+            "delta_logit": list(map(float, result["delta_logit"])),
         }
     return out
 

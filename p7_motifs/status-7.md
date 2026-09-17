@@ -9,7 +9,9 @@ been scored on the real 19-step sweep (p = 0.1414, INSUFFICIENT, 2026-09-04)
 but the record lives in git-ignored `data/analysis/`, so the registry's
 `real_run_record` is empty until a record is committed under `claims/`.
 needs-null — `P-I5` (built, calibrated, run on real `L3H6`, and **parked**:
-three control constructions failed to discriminate, `PROJECT.md` §3.31–§3.34),
+two head-comparison controls failed to discriminate it from `L4H6`/`L5H3` and a
+single-head diagnostic explained the readout, `PROJECT.md` §3.31–§3.34; statistic
+corrected to intersection-union 2026-09-17),
 `P-I2`, `P-I4`, `P-I7` (nothing built), `P-SA1` (instrument frozen). Nulls and
 evidence paths are `claims/registry.json`; the per-phase view is
 `claims/EXPERIMENTS.md`.

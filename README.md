@@ -95,9 +95,11 @@ A one-paragraph summary as of 2026-09-17; `PROJECT.md`'s header line and
   was supposed to pass through — refuses on everything in the tree, because
   the `gpt2-large` and `pythia-1.4b` arms it needs were never run. Two
   decisions are pending there before Phase 1c.
-- **Parked, not closed:** `P-I5`'s joint permutation null — three control
-  constructions failed to discriminate an induction head from uninvolved heads
-  (§3.31–§3.34), with the third failure mechanistically explained.
+- **Parked, not closed:** `P-I5`'s joint permutation null — two
+  head-comparison controls failed to discriminate an induction head from two
+  uninvolved heads, and a single-head diagnostic explained why the readout
+  cannot see constant substitution (§3.31–§3.34); its statistic was corrected
+  to an intersection-union test on 2026-09-17.
 - **Just run:** the only *designed* particle intervention in the project,
   §2.5's isometric path on `L7H8` (§3.35) — an exact isometry whose two
   endpoints have identical singular values but different causal effect, so

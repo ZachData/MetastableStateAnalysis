@@ -22,12 +22,14 @@ work — that is `PROJECT.md`, which is the file to read first.**
   be run on SAE features, clusters, and other objects next. Read §3.29 before
   choosing where to work.
 - **Live construction thread, PARKED not closed: `P-I5`'s joint permutation
-  null.** `p7_motifs/p_i5_gate.py` (the statistic — a Tippett-style
-  minimum-rank fix to an AND-corner construction that over-rejected),
-  `p_i5_ablation.py`/`p_i5_validation.py`/`p_i5_structured_control.py` (three
-  real-activation control constructions on pythia-70m `L3H6`, all three
-  failed to discriminate it from uninvolved heads — the third failure
-  mechanistically explained, `PROJECT.md` §3.31–§3.34). Next step named
+  null.** `p7_motifs/p_i5_gate.py` (the statistic — the intersection-union
+  test as of 2026-09-17; the earlier min-rank fix to an over-rejecting
+  AND-corner controlled only the complete null, not the union null a
+  conjunction needs), `p_i5_ablation.py`/`p_i5_validation.py`/
+  `p_i5_structured_control.py` (on pythia-70m `L3H6`: two head-comparison
+  controls that failed to discriminate it from `L4H6`/`L5H3`, and one
+  `L3H6`-only diagnostic with a mechanistic explanation, `PROJECT.md`
+  §3.31–§3.34). Next step named
   there (a later-layer geometric readout) when this becomes the priority
   again; `claims/registry.json` untouched throughout.
 - **Just run: §2.5's isometric path on `L7H8` (`PROJECT.md` §3.35,
@@ -135,7 +137,7 @@ index (phases to directories) and `claims/FALSIFICATION.md` (claims to evidence)
 half of. It is also where the three phases with a live instrument and no registered
 prediction are named — **7d, 7e and 8, which are the active work** — together with the two
 adjudicable gates that never had a known-answer dry run (`P-AB1`, `P-I3`) and the one
-declared claim nothing feeds (`H-BUDGET`). See `POPPER_PLAN.md` §6y.
+declared claim nothing feeds (`H-BUDGET`). See `POPPER_PLAN.md` §6zb.
 
 ## Archived phases
 

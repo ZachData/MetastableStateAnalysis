@@ -31,6 +31,8 @@ from p7_motifs.p_i5_gate import (
     informative_prompt_count,
     DEGENERATE_PROMPT,
     MAX_EXACT_UNITS,
+    intersection_union_pvalue,
+    calibrate_intersection_union,
 )
 
 pytestmark = pytest.mark.pure
@@ -114,7 +116,12 @@ class TestNaiveAndCornerPvalue:
         n = 6
         dg = rng.standard_normal(n)
         dl = rng.standard_normal(n)
-        t_g_obs, t_l_obs = dg.sum(), dl.sum()
+        # The observed statistics come from the all-positive row of the same
+        # enumeration the reference loops over, so they are bit-identical to
+        # what the implementation compares against; `dg.sum()` can differ by
+        # one ULP from `ones @ dg` and then omit the observed pattern itself.
+        ones = np.ones(n, dtype=np.float64)
+        t_g_obs, t_l_obs = ones @ dg, ones @ dl
 
         count = 0
         for signs in itertools.product([1, -1], repeat=n):
@@ -364,3 +371,56 @@ class TestCountMatchedPairsByPrompt:
         counts = {"a": {}, "b": {}, "c": {}}
         assert informative_prompt_count(counts, exclude=("b",)) == 2
         assert informative_prompt_count(counts, exclude=()) == 3
+
+
+class TestIntersectionUnion:
+    """P-I5's statistic: max of the two axes' exact sign-flip p-values."""
+
+    def test_is_the_max_of_the_two_axes(self):
+        rng = np.random.default_rng(5)
+        dg, dl = rng.standard_normal(7), rng.standard_normal(7)
+        r = intersection_union_pvalue(dg, dl, alternative="greater")
+        assert r["p_value"] == max(r["p_geometric"], r["p_logit"])
+        assert r["p_geometric"] == one_dimensional_pvalue(dg, "greater")
+        assert r["p_logit"] == one_dimensional_pvalue(dl, "greater")
+        assert r["binding_axis"] in ("geometric", "logit")
+
+    def test_best_case_reaches_the_shared_floor(self):
+        for n in range(1, 9):
+            dg = np.ones(n) + 0.1 * np.arange(n)
+            dl = np.ones(n) + 0.2 * np.arange(n)
+            assert intersection_union_pvalue(dg, dl, "greater")["p_value"] == attainable_floor(n, "greater")
+            assert intersection_union_pvalue(dg, dl, "two-sided")["p_value"] == attainable_floor(n, "two-sided")
+
+    def test_one_extreme_axis_cannot_carry_the_other(self):
+        """The partial-pass configuration: a decisive logit axis, a zero
+        geometric axis. The conjunction must NOT reject."""
+        n = 8
+        dl = np.ones(n)
+        dg = np.zeros(n)
+        r = intersection_union_pvalue(dg, dl, "greater")
+        assert r["p_logit"] == attainable_floor(n, "greater")
+        assert r["p_value"] == 1.0 and r["binding_axis"] == "geometric"
+
+    def test_controls_all_three_arms_of_the_union_null(self):
+        """The calibration the min-rank statistic never had: at or below
+        nominal on the complete null AND both partial nulls. Loose bound so
+        a specific RNG stream's noise is not pinned."""
+        rec = calibrate_intersection_union(n_units=8, n_trials=800, rng=np.random.default_rng(3))
+        for arm, r in rec["arms"].items():
+            assert r["rejection_rate"]["0.05"] <= 0.08, (arm, r)
+
+    def test_min_rank_does_not_control_the_partial_null(self):
+        """Why the statistic changed: on the falsifier's own configuration
+        the min-rank statistic rejects at several times nominal."""
+        rec = partial_pass_risk_demo(n_units=8, n_trials=600, logit_effect=1.0,
+                                     alpha=0.05, rng=np.random.default_rng(0))
+        assert rec["joint_reject_rate"] > 0.10
+
+    def test_rejects_mismatched_or_empty(self):
+        with pytest.raises(ValueError):
+            intersection_union_pvalue(np.ones(3), np.ones(4))
+        with pytest.raises(ValueError):
+            intersection_union_pvalue(np.ones(0), np.ones(0))
+        with pytest.raises(ValueError):
+            intersection_union_pvalue(np.ones(3), np.ones(3), alternative="less")

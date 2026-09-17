@@ -75,57 +75,69 @@ sets, not specific to sign-flip nulls — verified here rather than assumed
 because it is the kind of thing that reads as obviously fine until it is
 run (P-ST1, P6-R2/R4 and P-I3's own gates each record one of these).
 
-**The fix: rank by the WEAKER axis, not the intersection.** `joint_rank_pvalue`
-computes, for every sign pattern `s` (exact enumeration or its Monte Carlo
-approximation — see below), `rank_g(s)` and `rank_l(s)` — each axis's own
-valid ascending rank among all reference patterns (ties broken to the
-minimum rank, via `scipy.stats.rankdata(method="min")`, so a tie cannot
-inflate an observed pattern's apparent extremeness) — and combines them as
-`combined(s) = min(rank_g(s), rank_l(s))`, a Tippett-style minimum-rank
-statistic. This is now a genuine SCALAR function of `s`, computed
-identically for every pattern including the observed one, so the standard
-single-dimension exchangeability argument applies to IT directly: the
-observed pattern's rank in `combined` is uniform under H0, and
-`p = count(combined >= combined_obs) / n_patterns` is exactly (or, in the
-Monte Carlo regime, approximately) valid. **Calibration confirms it**:
-same synthetic true-H0 draws, `calibrate_joint_rank` rejects at 0.049
-against nominal 0.05 at n = 8 (`claims/calibration/p_i5_joint_null.json`).
+**The second construction: rank by the WEAKER axis, not the intersection.**
+`joint_rank_pvalue` computes, for every sign pattern `s`, `rank_g(s)` and
+`rank_l(s)` — each axis's own valid ascending rank among all reference
+patterns (ties to the minimum rank, `scipy.stats.rankdata(method="min")`) —
+and combines them as `combined(s) = min(rank_g(s), rank_l(s))`, a
+Tippett-style minimum-rank statistic. That is a genuine scalar function of
+`s`, so the single-dimension exchangeability argument applies to it: under
+the COMPLETE null (no effect on either axis) the observed pattern's rank in
+`combined` is uniform, and `calibrate_joint_rank` measures 0.049 against
+nominal 0.05 at n = 8 (`claims/calibration/p_i5_joint_null.json`).
 
-**It also does what the naive test was meant to do.** `min` of two ranks is
-only large when BOTH axes are individually extreme for that pattern — a
-pattern with a huge `T_g(s)` and a middling `T_l(s)` gets pulled down to
-the middling rank. `partial_pass_risk_demo` measures this directly on the
-falsifier's own configuration (a real logit effect, pure noise on the
-geometric axis): at n = 8, effect size 1.0, the logit axis ALONE rejects
-at ~0.78 (there IS a real effect there — a reader looking at only that
-axis sees strong support), while `joint_rank_pvalue` on the SAME draws
-rejects at ~0.19, close to what a correctly-calibrated test should do when
-one of its two required conditions is absent. That gap — not the naive
-AND-corner's inflated one — is what EVALUABILITY.md's "two separate
-one-dimensional tests would let the prediction be scored a partial pass"
-warning is about, made quantitative rather than asserted.
+**Why that is still not P-I5's statistic (2026-09-17, found in review).**
+The prediction is a CONJUNCTION — a geometric effect AND a logit effect, and
+the falsifier says either one missing falsifies it. So the null P-I5 must
+control is the UNION `H0_geometric OR H0_logit`: any configuration where at
+least one axis carries no effect. The min-rank statistic is calibrated only
+at the intersection of those two (both absent); at the falsifier's own
+configuration — a real logit effect, pure noise on geometry —
+`partial_pass_risk_demo` measures it rejecting at **0.17–0.19** against
+nominal 0.05 (`p_i5_joint_null.json`, `partial_pass_risk`). An earlier
+draft of this docstring read that as "close to what a correctly-calibrated
+test should do when one of its two required conditions is absent". It is
+not: that configuration is a point IN the null, and a rate of 0.19 there is
+an uncontrolled Type-I rate, not a power trade. A Tippett minimum is the
+right combination for "at least one effect"; it is the wrong one for
+"both".
 
-**Caveat found while testing this (not while designing it): an
-identically-zero axis degenerates `joint_rank_pvalue`, it does not reduce
-it.** `_axis_rank` gives every sign pattern the SAME (minimum) rank on a
-perfectly-tied axis, so `min(rank_g, rank_l)` collapses to that shared
-value for every pattern regardless of the other axis, and `p_value` comes
-back `1.0` no matter how extreme the informative axis is. This is
-mathematically correct behavior for a genuinely zero-variance input, but it
-means "zero out one axis to read the other in isolation" — which DOES work
-for `naive_and_corner_pvalue`, since its condition on a zero axis is
-trivially always-true rather than a maximal tie — is NOT a valid way to get
-a one-dimensional reading from `joint_rank_pvalue`. `one_dimensional_pvalue`
-is the real single-axis statistic; `partial_pass_risk_demo` uses it rather
-than the zero-out trick.
+**The statistic: intersection-union.** `intersection_union_pvalue` computes
+each axis's own exact one-dimensional sign-flip p-value over the SAME
+`2**n` joint sign-pattern space (`one_dimensional_pvalue` on each axis) and
+reports `p = max(p_geometric, p_logit)`. Rejecting only when BOTH axes
+individually clear alpha is the intersection-union test, valid under the
+union null at level alpha with no multiplicity correction, however
+dependent the two axes are — the same device `CLAIM-C`'s gate uses across
+its metric-leave-one-out subsets and `CLAIM-A`'s recommended null uses
+across its three criteria. `calibrate_intersection_union` measures it on
+three arms — the complete null and BOTH partial nulls — and it must sit at
+or below nominal on all three, which is the calibration the min-rank
+statistic never had. `joint_rank_pvalue` is kept because the committed
+exploratory records (`p_i5_real_ablation.json`, `p_i5_validation.json`,
+`p_i5_structured_control.json`) were scored with it; the scripts now report
+both, with `intersection_union` as `gate` and the min-rank value beside it
+as `gate_min_rank_superseded`, and the stored deltas re-score under the
+new statistic without a model run.
 
-**Attainable floor is unchanged by the fix, and re-verified against it**
-(`tests/test_p_i5_gate.py::TestAttainableFloor`): the best case — every
-unit's `delta_geometric` and `delta_logit` both nonzero and same-signed —
-still makes the observed pattern the UNIQUE global maximizer of BOTH `T_g`
-and `T_l` simultaneously, hence the unique holder of the top rank on both
-axes, hence the unique occupant of the top `combined` score. `count = 1`
-either way the statistic is computed in that best case, so:
+**Caveat found while testing the min-rank statistic: an identically-zero
+axis degenerates `joint_rank_pvalue`, it does not reduce it.** `_axis_rank`
+gives every sign pattern the SAME (minimum) rank on a perfectly-tied axis,
+so `min(rank_g, rank_l)` collapses to that shared value for every pattern
+regardless of the other axis, and `p_value` comes back `1.0` no matter how
+extreme the informative axis is. `one_dimensional_pvalue` is the real
+single-axis statistic, and the intersection-union test is built from it
+directly. On an identically-zero axis `one_dimensional_pvalue` returns 1.0
+(every pattern ties the observed one), so the intersection-union p is 1.0
+there too — correctly: an axis with no variation cannot show an effect.
+
+**Attainable floor is the same for all three constructions and is
+re-verified** (`tests/test_p_i5_gate.py::TestAttainableFloor`): the best
+case — every unit's `delta_geometric` and `delta_logit` both nonzero and
+same-signed — makes the observed pattern the UNIQUE global maximizer of
+BOTH `T_g` and `T_l`, hence the unique top rank on both axes, hence the
+unique top `combined` score, and each axis's one-dimensional p is
+`1 / 2**n`, so their max is too:
 
     one-sided: p_min(n) = 1 / 2**n
     two-sided: p_min(n) = 2 / 2**n = 1 / 2**(n-1)
@@ -447,10 +459,59 @@ def joint_rank_pvalue(
     }
 
 
+def intersection_union_pvalue(
+    delta_geometric: np.ndarray,
+    delta_logit: np.ndarray,
+    alternative: str = "greater",
+) -> dict:
+    """
+    P-I5's statistic: the intersection-union test over the two axes.
+
+    Each axis gets its own exact one-dimensional sign-flip p-value over the
+    joint 2**n sign-pattern space, and the reported p is their MAXIMUM. The
+    test rejects only when both axes individually clear alpha, which is
+    valid under the union null (either effect absent) at level alpha with
+    no multiplicity correction, whatever the dependence between the axes
+    — module docstring section 2. `joint_rank_pvalue` (min-rank) is NOT
+    this test; it controls only the complete null.
+
+    Returns
+    -------
+    dict: p_value, p_geometric, p_logit, binding_axis, n_units, exact,
+    alternative.
+    """
+    dg = np.asarray(delta_geometric, dtype=np.float64)
+    dl = np.asarray(delta_logit, dtype=np.float64)
+    if dg.shape != dl.shape or dg.ndim != 1:
+        raise ValueError(
+            f"intersection_union_pvalue: delta_geometric {dg.shape} and "
+            f"delta_logit {dl.shape} must be same-length 1-D arrays."
+        )
+    if dg.shape[0] == 0:
+        raise ValueError("intersection_union_pvalue: no units.")
+    if alternative not in ("greater", "two-sided"):
+        raise ValueError(
+            f"intersection_union_pvalue: alternative must be 'greater' or "
+            f"'two-sided', got {alternative!r}."
+        )
+    p_g = one_dimensional_pvalue(dg, alternative)
+    p_l = one_dimensional_pvalue(dl, alternative)
+    return {
+        "p_value": float(max(p_g, p_l)),
+        "p_geometric": float(p_g),
+        "p_logit": float(p_l),
+        "binding_axis": "geometric" if p_g >= p_l else "logit",
+        "n_units": int(dg.shape[0]),
+        "exact": True,
+        "alternative": alternative,
+    }
+
+
 def attainable_floor(n: int, alternative: str = "greater") -> float:
     """
-    Closed-form best-case floor for n exchangeable units, shared by both
-    naive_and_corner_pvalue and joint_rank_pvalue (proved in module
+    Closed-form best-case floor for n exchangeable units, shared by
+    naive_and_corner_pvalue, joint_rank_pvalue and intersection_union_pvalue
+    (proved in module
     docstring sections 1–2, enumeration-checked in tests/test_p_i5_gate.py
     for n = 1..15): every unit fully informative and same-signed on both
     axes makes the observed sign pattern the UNIQUE occupant of the top
@@ -512,6 +573,38 @@ def calibrate_joint_rank(
         "n_units": n_units, "n_trials": n_trials,
         "rejection_rate": {str(a): float((ps <= a).mean()) for a in alphas},
     }
+
+
+def calibrate_intersection_union(
+    n_units: int, n_trials: int = 3000, effect: float = 1.0,
+    rng: Optional[np.random.Generator] = None,
+) -> dict:
+    """
+    Rejection rate of intersection_union_pvalue on the THREE arms of the
+    union null: complete (both axes pure noise), geometry-null (real logit
+    effect, noise on geometry — the falsifier's configuration), and
+    logit-null (real geometric effect, noise on logit). A valid test for a
+    conjunction sits at or below nominal on all three; the min-rank
+    statistic fails the second arm at ~0.17-0.19 (partial_pass_risk_demo).
+    """
+    rng = rng if rng is not None else np.random.default_rng(11)
+    alphas = (0.01, 0.05, 0.10, 0.20)
+    arms = {
+        "complete_null": (0.0, 0.0),
+        "geometry_null_logit_effect": (0.0, effect),
+        "logit_null_geometry_effect": (effect, 0.0),
+    }
+    out = {"n_units": n_units, "n_trials": n_trials, "effect": effect, "arms": {}}
+    for name, (mu_g, mu_l) in arms.items():
+        ps = np.empty(n_trials)
+        for i in range(n_trials):
+            dg = rng.normal(loc=mu_g, scale=1.0, size=n_units)
+            dl = rng.normal(loc=mu_l, scale=1.0, size=n_units)
+            ps[i] = intersection_union_pvalue(dg, dl, alternative="greater")["p_value"]
+        out["arms"][name] = {
+            "rejection_rate": {str(a): float((ps <= a).mean()) for a in alphas},
+        }
+    return out
 
 
 def partial_pass_risk_demo(

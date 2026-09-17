@@ -431,12 +431,16 @@ values by construction (§2.5's own exact-isometry guarantee) — both are
 "100% repulsive" in exactly the sense §2.5.3 describes. If the repulsive/
 attractive SIGN alone were what copying needs, `t = 1` should read close to
 baseline, the same as `t = 0`. It does not — cross-checked directly against
-an independently-built `M^T` (bypassing `build_M_t` entirely: `A = V @
-diag(S)`, `B = U^T`), bit-identical NLL (`1.040218472480774` both ways, `2026-
-09-16`). **The read/write alignment — which subspace is read (`V`) and which
-is written (`U`) — is doing real causal work here, not merely the
-attractive/repulsive sign of the spectrum.** `M^T` swaps that alignment while
-preserving the sign exactly, and copying stays broken.
+an independently-built `(M_r)^T` (bypassing `build_M_t` entirely: `A = V_r @
+diag(S_r)`, `B = U_r^T`, the transpose of the RANK-r TRUNCATION, since the
+full-rank path is refused and the runner reports ranks 1, 8 and 16), equal
+NLL to the printed precision (`1.040218472480774` both ways, `2026-09-16`).
+**At each of those ranks, the read/write alignment — which subspace is read
+(`V_r`) and which is written (`U_r`) — is doing real causal work, not merely
+the attractive/repulsive sign of the spectrum.** `(M_r)^T` swaps that
+alignment while preserving the truncated spectrum exactly, and copying stays
+broken. The conclusion is rank-specific: it is measured at r = 1, 8, 16 and
+not at the full d_head = 64, where §2.5.2's refusal condition fails.
 
 This is precisely the ambiguity §2.5.3 flagged as unresolved by this
 construction ("symmetry and read/write alignment move together along this
@@ -450,10 +454,12 @@ sign cleanly; not run here). What it does show, without needing that
 separation: **`L7H8`'s function is not simply "has a repulsive spectrum" — it
 depends on which specific directions play the read and write roles.**
 
-Every run: weights restored exactly (`rel error 0.00e+00`) and baseline
-reproduced bit-for-bit after the full sweep, at every rank — the save/restore
-convention `tools/run/induction_rank_sweep.py`'s own docstring states, held
-to directly rather than assumed.
+Every run: the written-back OV product agrees with the original to relative
+error below `1e-10` (measured `0.00e+00`) and the re-measured second-copy NLL
+agrees with the first baseline within `1e-6`, at every rank — the
+save/restore convention `tools/run/induction_rank_sweep.py`'s own docstring
+states, checked to those tolerances rather than assumed (not a claim of exact
+weight equality: only the OV product and one scalar are compared).
 
 Exploratory. No `P-*` id names this curve as of 2026-09-16;
 `claims/registry.json` is untouched.

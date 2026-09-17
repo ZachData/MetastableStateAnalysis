@@ -432,7 +432,7 @@ def p_value_p_m1(regimes: list, violations, n_perm: int = 2000,
         out["reason"] = "no usable layers; no correlation could be computed"
         return out
     # THIS REFUSAL CONDITIONS ON THE STATISTIC, NOT ON AN ANCILLARY (2026-09-16,
-    # POPPER_PLAN.md 6y). Flagged, not changed: what to do about it is a
+    # POPPER_PLAN.md 6zb). Flagged, not changed: what to do about it is a
     # scientific decision about a registered gate, and the measurement below is
     # suggestive rather than conclusive.
     #

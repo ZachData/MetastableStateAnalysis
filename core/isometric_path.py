@@ -30,13 +30,20 @@ class RunRefused(RuntimeError):
     pass
 
 
+#: The one singular-value threshold below which `Y(t)` is treated as
+#: singular. `polar_frame` compares eigenvalues of `Y^T Y`, so it squares it;
+#: `check_refusal` compares singular values directly. One constant, so the
+#: preflight cannot pass a path that `build_M_t` later refuses.
+MIN_SIGMA = 1e-10
+
+
 def polar_frame(Y: np.ndarray) -> Optional[np.ndarray]:
     """`gamma = Y (Y^T Y)^{-1/2}`. `None` if `Y^T Y` is singular (the refusal
     condition, checked in bulk by `check_refusal` before any forward pass —
     this is the per-point primitive it calls)."""
     YtY = Y.T @ Y
     w, Q = np.linalg.eigh(YtY)
-    if np.min(w) <= 1e-12:
+    if np.min(w) <= MIN_SIGMA ** 2:
         return None
     inv_sqrt = (Q * (w ** -0.5)) @ Q.T
     return Y @ inv_sqrt
@@ -54,7 +61,7 @@ def check_refusal(U: np.ndarray, V: np.ndarray, n_grid: int = 101) -> dict:
         "t_grid": ts.tolist(),
         "sigma_min": sigma_mins.tolist(),
         "min_sigma_min": float(sigma_mins.min()),
-        "ok": bool(np.all(sigma_mins > 1e-10)),
+        "ok": bool(np.all(sigma_mins > MIN_SIGMA)),
     }
 
 
