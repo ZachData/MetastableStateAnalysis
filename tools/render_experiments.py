@@ -304,7 +304,7 @@ def render() -> str:
     W("`module:function` that computes the p-value; an empty gate means no null is")
     W("built, which is what `needs-null` and `measurement` mean in code. The null")
     W("column is a pointer, not the construction — `claims/registry.json`'s")
-    W("`null_construction` holds the whole of it, and `POPPER_PLAN.md` §6a–6y holds")
+    W("`null_construction` holds the whole of it, and `POPPER_PLAN.md` §6a–6zb holds")
     W("what each one cost to build and what it was wrong about first. `calibrated`")
     W("and `real run` are the registry's `calibration_record` and `real_run_record`:")
     W("each a git-tracked path or nothing, checked by `tools/check_registry.py`, so")

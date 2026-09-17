@@ -87,7 +87,9 @@ REPO = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO))
 
 _want_prefix = str(REPO / ".venv")
-if not sys.prefix.startswith(_want_prefix):
+# Script-time only: modules are importable by tests on runners that are not
+# this machine\'s .venv; a real run still refuses the wrong interpreter.
+if __name__ == "__main__" and not sys.prefix.startswith(_want_prefix):
     raise SystemExit(f"wrong interpreter: sys.prefix={sys.prefix!r}, need {_want_prefix!r}")
 
 from tools.run.induction_rank_sweep import (  # noqa: E402
@@ -100,6 +102,11 @@ from core.isometric_path import (  # noqa: E402
 
 LAYER, HEAD = 7, 8
 STEP = 4000
+#: Restoration is checked to tolerance, not asserted exact: relative operator
+#: error of the written-back OV product against the original, and the
+#: second-copy NLL re-measured after the sweep against the first baseline.
+RESTORE_REL_TOL = 1e-10
+BASELINE_NLL_TOL = 1e-6
 
 
 # ---------------------------------------------------------------------------
@@ -147,10 +154,17 @@ def run_sweep(step: int = STEP, layer: int = LAYER, head: int = HEAD,
     U_full, S_full, Vt_full = np.linalg.svd(M0, full_matrices=False)
     V_full = Vt_full.T
 
-    if rank is None:
-        U, S, V = U_full, S_full, V_full
-    else:
-        U, S, V = U_full[:, :rank], S_full[:rank], V_full[:, :rank]
+    # M0 = A0 @ B0 is (d_model, d_model) but its rank is at most d_head, the
+    # factors' inner dimension; the SVD returns d_model modes, the last
+    # d_model - d_head of which are structural null space. "Full rank" means
+    # d_head, and `write_ov` cannot store factors wider than that anyway.
+    max_rank = A0.shape[1]
+    path_rank = max_rank if rank is None else int(rank)
+    if not 1 <= path_rank <= max_rank:
+        raise ValueError(
+            f"rank must be between 1 and d_head={max_rank}, got {rank!r}"
+        )
+    U, S, V = U_full[:, :path_rank], S_full[:path_rank], V_full[:, :path_rank]
 
     refusal = check_refusal(U, V)
     if not refusal["ok"]:
@@ -189,20 +203,23 @@ def run_sweep(step: int = STEP, layer: int = LAYER, head: int = HEAD,
     restore_error = float(np.linalg.norm(A_final @ B_final - M0) / np.linalg.norm(M0))
     final_check = measure(model, ids)
     final_check.pop("logprobs")
-    weights_restored_exactly = restore_error < 1e-10
+    weights_restored = restore_error < RESTORE_REL_TOL
     baseline_reproduced = abs(
         final_check["second_copy_nll"] - true_baseline["second_copy_nll"]
-    ) < 1e-6
+    ) < BASELINE_NLL_TOL
 
     return {
         "target": {"layer": layer, "head": head, "step": step},
-        "rank": rank,
+        "rank": path_rank,
+        "rank_requested": rank,
         "eval": {"n_rep": N_REP, "n_seqs": N_SEQS, "seed": seed,
                  "vocab_range": [VOCAB_LO, VOCAB_HI], "n_t": n_t},
         "refusal_check": refusal,
         "true_baseline": true_baseline,
         "rows": rows,
-        "weights_restored_exactly": weights_restored_exactly,
+        "weights_restored": weights_restored,
+        "restore_rel_tol": RESTORE_REL_TOL,
+        "baseline_nll_tol": BASELINE_NLL_TOL,
         "restore_error": restore_error,
         "baseline_reproduced_after_sweep": baseline_reproduced,
     }
@@ -245,7 +262,7 @@ def main() -> int:
                 continue
             print(f"    t={row['t']:.2f}  second-copy NLL "
                   f"{row['second_copy_nll']:.4f}  KL {row['kl_from_baseline']:.4f}")
-        print(f"  weights restored exactly: {result['weights_restored_exactly']} "
+        print(f"  weights restored (rel error < {RESTORE_REL_TOL:g}): {result['weights_restored']} "
               f"(rel error {result['restore_error']:.2e})")
         print(f"  baseline reproduced after sweep: "
               f"{result['baseline_reproduced_after_sweep']}")

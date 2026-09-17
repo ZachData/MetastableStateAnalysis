@@ -275,7 +275,7 @@ def run_all_on_loaded_model(
     head.
     """
     from core.config import PROMPTS
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, joint_rank_pvalue, attainable_floor
+    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
 
     hidden_state_index = target_head[0] + 1
     rng = np.random.default_rng(seed)
@@ -293,7 +293,8 @@ def run_all_on_loaded_model(
     delta_logit = np.array([r["delta_logit"] for r in per_prompt.values()])
     n = len(per_prompt)
 
-    gate = joint_rank_pvalue(delta_geometric, delta_logit, alternative="greater") if n >= 1 else None
+    gate = intersection_union_pvalue(delta_geometric, delta_logit, alternative="greater") if n >= 1 else None
+    gate_min_rank_superseded = joint_rank_pvalue(delta_geometric, delta_logit, alternative="greater") if n >= 1 else None
 
     return {
         "target_head": list(target_head),
@@ -304,6 +305,7 @@ def run_all_on_loaded_model(
         "delta_geometric": delta_geometric.tolist(),
         "delta_logit": delta_logit.tolist(),
         "gate": gate,
+        "gate_min_rank_superseded": gate_min_rank_superseded,
         "attainable_floor_one_sided": attainable_floor(n, "greater") if n >= 1 else None,
     }
 

@@ -52,7 +52,9 @@ sys.path.insert(0, str(REPO))
 
 # --- venv trap (PROJECT.md §1): assert the interpreter, never trust activate ---
 _want_prefix = str(REPO / ".venv")
-if not sys.prefix.startswith(_want_prefix):
+# Script-time only: modules are importable by tests on runners that are not
+# this machine\'s .venv; a real run still refuses the wrong interpreter.
+if __name__ == "__main__" and not sys.prefix.startswith(_want_prefix):
     raise SystemExit(f"wrong interpreter: sys.prefix={sys.prefix!r}, need {_want_prefix!r}")
 
 import numpy as np

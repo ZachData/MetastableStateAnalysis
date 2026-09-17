@@ -1,6 +1,6 @@
 {
-  "construction_sha256": "d5d4585e8bf1b2603cb277edeafb36ac2d158ec1acde29793f3c22983e109a39",
-  "elapsed_seconds": 18.1,
+  "construction_sha256": "2ea6a4f7363420e1c62b6bb31cae38814c39b90d23e96112e64926e4d3134a33",
+  "elapsed_seconds": 55.6,
   "floor": {
     "1": {
       "greater": 0.5,
@@ -64,6 +64,132 @@
     }
   },
   "generated_by": "tools/calibrate_p_i5_joint_null.py",
+  "intersection_union": {
+    "10": {
+      "arms": {
+        "complete_null": {
+          "rejection_rate": {
+            "0.01": 0.0,
+            "0.05": 0.002,
+            "0.1": 0.009666666666666667,
+            "0.2": 0.035333333333333335
+          }
+        },
+        "geometry_null_logit_effect": {
+          "rejection_rate": {
+            "0.01": 0.004666666666666667,
+            "0.05": 0.042333333333333334,
+            "0.1": 0.09633333333333334,
+            "0.2": 0.196
+          }
+        },
+        "logit_null_geometry_effect": {
+          "rejection_rate": {
+            "0.01": 0.005,
+            "0.05": 0.047,
+            "0.1": 0.096,
+            "0.2": 0.19466666666666665
+          }
+        }
+      },
+      "effect": 1.0,
+      "n_trials": 3000,
+      "n_units": 10
+    },
+    "12": {
+      "arms": {
+        "complete_null": {
+          "rejection_rate": {
+            "0.01": 0.0,
+            "0.05": 0.004,
+            "0.1": 0.009666666666666667,
+            "0.2": 0.03866666666666667
+          }
+        },
+        "geometry_null_logit_effect": {
+          "rejection_rate": {
+            "0.01": 0.007333333333333333,
+            "0.05": 0.04533333333333334,
+            "0.1": 0.09733333333333333,
+            "0.2": 0.191
+          }
+        },
+        "logit_null_geometry_effect": {
+          "rejection_rate": {
+            "0.01": 0.006,
+            "0.05": 0.043,
+            "0.1": 0.09533333333333334,
+            "0.2": 0.2
+          }
+        }
+      },
+      "effect": 1.0,
+      "n_trials": 3000,
+      "n_units": 12
+    },
+    "6": {
+      "arms": {
+        "complete_null": {
+          "rejection_rate": {
+            "0.01": 0.0,
+            "0.05": 0.0023333333333333335,
+            "0.1": 0.006666666666666667,
+            "0.2": 0.032
+          }
+        },
+        "geometry_null_logit_effect": {
+          "rejection_rate": {
+            "0.01": 0.0,
+            "0.05": 0.033666666666666664,
+            "0.1": 0.083,
+            "0.2": 0.18766666666666668
+          }
+        },
+        "logit_null_geometry_effect": {
+          "rejection_rate": {
+            "0.01": 0.0,
+            "0.05": 0.025,
+            "0.1": 0.06633333333333333,
+            "0.2": 0.16066666666666668
+          }
+        }
+      },
+      "effect": 1.0,
+      "n_trials": 3000,
+      "n_units": 6
+    },
+    "8": {
+      "arms": {
+        "complete_null": {
+          "rejection_rate": {
+            "0.01": 0.0,
+            "0.05": 0.0016666666666666668,
+            "0.1": 0.008333333333333333,
+            "0.2": 0.035666666666666666
+          }
+        },
+        "geometry_null_logit_effect": {
+          "rejection_rate": {
+            "0.01": 0.0036666666666666666,
+            "0.05": 0.039,
+            "0.1": 0.09233333333333334,
+            "0.2": 0.20066666666666666
+          }
+        },
+        "logit_null_geometry_effect": {
+          "rejection_rate": {
+            "0.01": 0.003,
+            "0.05": 0.03266666666666666,
+            "0.1": 0.084,
+            "0.2": 0.189
+          }
+        }
+      },
+      "effect": 1.0,
+      "n_trials": 3000,
+      "n_units": 8
+    }
+  },
   "joint_rank": {
     "10": {
       "n_trials": 3000,
@@ -202,7 +328,7 @@
     "n_units": 8
   },
   "replicates": 3000,
-  "schema_version": 1,
+  "schema_version": 2,
   "seed": 20260916,
   "self_check": {
     "findings": [],

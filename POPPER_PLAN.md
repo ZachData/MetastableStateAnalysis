@@ -4036,8 +4036,7 @@ before that label existed here; the bottom-up programme it points to was
 written into `PROJECT.md` §3.11 rather than into this file. §6x below is
 unrelated — P-I5's joint null, not the bottom-up induction programme.)*
 
-## 6x. `P-I5`'s joint null, part one: the floor, a construction that did not
-    hold, and its fix (2026-09-16)
+## 6x. `P-I5`'s joint null, part one: the floor, a construction that did not hold, and its fix (2026-09-16)
 
 `p7_motifs/p_i5_gate.py`, `tools/calibrate_p_i5_joint_null.py` ->
 `claims/calibration/p_i5_joint_null.json`. Built in the order
@@ -4103,9 +4102,29 @@ down. Measured on the falsifier's own configuration (real logit effect, pure
 noise on the geometric axis, n=8, effect size 1.0): the logit axis alone
 rejects at 0.79 (there IS a real effect — a reader looking at only that axis
 sees strong support); the joint statistic on the SAME draws rejects at 0.17.
-That gap — not the AND-corner's inflated one — is what EVALUABILITY.md's
-"two separate one-dimensional tests would let the prediction be scored a
-partial pass" warning is about, made quantitative.
+
+**Corrected 2026-09-17 (review): that 0.17 is a Type-I rate, not a power
+trade, and the min-rank statistic is not `P-I5`'s test.** `P-I5` is a
+conjunction — a geometric effect AND a logit effect, either one missing
+falsifies it — so the null it must control is the UNION of the two axes'
+nulls, and the falsifier's configuration (real logit effect, no geometric
+effect) is a point IN that null. A rate of 0.17 there is an uncontrolled
+rejection rate under H0; the min-rank statistic was calibrated only at
+the intersection (both absent). A Tippett minimum is the right combination
+for "at least one effect" and the wrong one for "both". The statistic is
+now the **intersection-union test**: each axis's own exact one-dimensional
+sign-flip p over the same joint sign-pattern space, reported as their MAX,
+rejecting only when both clear alpha — valid under the union null with no
+multiplicity correction however dependent the axes are, the device
+`CLAIM-C`'s gate already uses (6f). `calibrate_intersection_union` in the
+same file measures it on three arms — complete null, geometry-null with a
+logit effect, logit-null with a geometric effect — at **0.002 / 0.039 /
+0.033** at n = 8, nominal 0.05 (`p_i5_joint_null.json`, schema 2), where
+the min-rank statistic reads 0.171 on the second arm. The 6y–6za
+real-activation numbers below were computed with min-rank and are kept
+as reported; where a record stores its deltas the intersection-union
+re-score is given beside it (`L3H6`: 0.0234 → **0.0312**; the scripts now
+report both, with min-rank labelled superseded).
 
 **Caveat found while testing this, not while designing it: an identically-
 zero axis degenerates the min-rank statistic rather than reducing it** — every
@@ -4157,8 +4176,7 @@ readouts, ablation and logit, live in `core/intervention.py` — corrected
 this pass has touched a real activation; `P-I5` is unchanged in
 `claims/registry.json`.
 
-## 6y. `P-I5`'s joint null, part two: the control, real activations, a first
-    reading — exploratory, not an adjudication (2026-09-16)
+## 6y. `P-I5`'s joint null, part two: the control, real activations, a first reading — exploratory, not an adjudication (2026-09-16)
 
 `p7_motifs/p_i5_ablation.py`, `claims/calibration/p_i5_real_ablation.json`.
 Builds the piece 6x's closing section named as not built: the
@@ -4241,8 +4259,7 @@ cached checkpoint (`SMOKE_REAL_DEPS=1 pytest -m smoke`, ~20s), not left
 unverified the way most smoke tests in this repo are when a sandbox has no
 network.
 
-## 6z. `P-I5`'s joint null, part three: the validation found a real problem —
-    the control does not discriminate (2026-09-16)
+## 6z. `P-I5`'s joint null, part three: the validation found a real problem — the control does not discriminate (2026-09-16)
 
 `p7_motifs/p_i5_validation.py`, `claims/calibration/p_i5_validation.json`.
 6y's own closing section named five gaps before the `L3H6` reading
@@ -4261,18 +4278,28 @@ this project) gives **p = 0.0391**, the same order of magnitude as
 `L3H6`. Two heads with nothing to do with induction "pass" the gate
 `L3H6` passes.
 
-**Diagnosed, not just measured.** `run_random_vs_random_diagnostic` runs
-the identical pipeline with BOTH arms drawn as independent
-matched-magnitude random directions — neither one a real ablation.
-`joint_rank_pvalue` (greater) = **0.930**: correctly not significant. This
-rules out `joint_rank_pvalue` itself or the pipeline's mechanics being
-generally broken (consistent with 6x's synthetic calibration, which
-already validated the statistic's size on planted data — this is the same
-conclusion reached again on real activations, by a different route). What
-it does not rule out, and what the negative-control failure confirms:
-**mean-ablation of essentially any head reliably beats an isotropic random
-direction of matched magnitude, independent of what that head does.** A
-real, trained direction is structured; concentration of measure in
+**One random-versus-random draw, reported as what it is** (corrected
+2026-09-17 in review). `run_random_vs_random_diagnostic` runs the identical
+pipeline with BOTH arms drawn as independent matched-magnitude random
+directions (seed 100 against seed 200) — neither one a real ablation.
+Because both arms are random, `seed_a − seed_b` has no predeclared
+direction, so only the two-sided reading means anything: min-rank
+two-sided = **0.031**; intersection-union two-sided = **0.156** (re-scored
+from the stored deltas). The one-sided 0.930 (0.965 under
+intersection-union) says nothing either way. One observed draw from the
+null is not a calibration of it: it neither establishes nor rules out a
+pipeline defect, and the earlier claim that it "rules out
+`joint_rank_pvalue` itself or the pipeline's mechanics being generally
+broken" is withdrawn. Real-pipeline calibration needs repeated seed-pair
+draws — a rejection rate over many random-vs-random pairs — which has
+not been run; 6x's synthetic calibration supports a separate claim about
+the statistic under its synthetic null. What the negative-control failure
+shows, on the two controls measured: **mean-ablation of `L4H6` and of
+`L5H3` each beats an isotropic random direction of matched magnitude as
+decisively as `L3H6` does.** Whether that holds for heads generally is
+the natural reading and is not measured — a representative head sweep
+would be needed. A real, trained direction is structured; concentration
+of measure in
 `d_head = 64` dimensions makes a uniformly random direction generically
 almost orthogonal to whatever subspace a downstream reading is sensitive
 to, so "structured vs isotropic-random" is close to a free win for the
@@ -4309,9 +4336,7 @@ Also moot until the control is fixed: the power analysis 6y already
 flagged as undone. There is no point measuring the power of a test that
 is not yet measuring what it claims to.
 
-## 6za. `P-I5`'s joint null, part four: two more constructions tried, two
-    more failures — and the second one's diagnosis moves the problem from
-    the control to the readout (2026-09-16)
+## 6za. `P-I5`'s joint null, part four: two more constructions tried, two more failures — and the second one's diagnosis moves the problem from the control to the readout (2026-09-16)
 
 `p7_motifs/p_i5_structured_control.py`,
 `claims/calibration/p_i5_structured_control.json`. 6z named the fix
@@ -4330,7 +4355,9 @@ made replacing a matched-dimension subspace with a matched-occupancy one
 `L5H3` p = 0.0156, `L3H6` p = 0.0234 — same pattern as the isotropic
 control.
 
-**Construction 2 (diagnostic): constant-substitution swap.** Both arms use
+**Construction 2 (diagnostic, `L3H6` only): constant-substitution swap.**
+Run on the target head alone, so it is a readout observation about `L3H6`,
+not a head comparison. Both arms use
 full constant substitution (`ablate_heads(mode="mean")`, exactly the real
 arm's own mechanism) — real substitutes `L3H6`'s own mean, control
 substitutes a randomly drawn other head's mean. Not magnitude-matched;
@@ -4339,10 +4366,15 @@ isolates a sharper question with intervention TYPE held fixed. **Result:
 test_p_i5_structured_control_smoke.py` checks this numerically, not just
 in prose) — not a null finding about induction, but a property of the
 READOUT. `pairwise_geometric_reading` reads the full 512-dim residual
-stream at two positions; the ablated head is one fixed 64-dim slice.
-Under constant substitution that slice becomes IDENTICAL at both
-positions regardless of which constant was used, so its contribution to
-their pairwise difference is exactly zero either way. `raw_distance` on
+stream at two positions. The hook (`ablate_heads`) replaces the head's
+64-dim OUTPUT slice in the input to `attention.dense`, before the output
+projection mixes heads, so the substituted constant is projected through
+`W_O` and can reach every residual dimension (corrected 2026-09-17: an
+earlier wording had it as a fixed 64-dim residual slice with "the other
+448 dimensions untouched"). Under constant substitution that slice is
+IDENTICAL at both positions regardless of which constant was used, so its
+projected contribution is the same vector at both, and it cancels exactly
+in their pairwise difference either way. `raw_distance` on
 this layer's own residual stream cannot tell "the right constant" from
 "a wrong constant" under this intervention type — it can only detect
 "was a slice unified across positions," which both arms do identically.
@@ -4351,13 +4383,18 @@ which displace each position by its own magnitude rather than unifying
 them — which is why they show *a* signal, just not a specific one.)
 
 `delta_logit` under construction 2 goes the WRONG way for `P-I5`: negative
-on every prompt — the donor substitution is MORE disruptive to next-token
-prediction than the target's own mean, consistently. Plausibly a
+on seven of eight prompts, negative on average — the donor substitution is
+MORE disruptive to next-token prediction than the target's own mean on all
+but one prompt (`p_i5_structured_control.json`). Plausibly a
 foreignness effect (a wrong head's mean is further out-of-distribution
 than the target's own mean is) rather than anything about induction.
 
-**What this adds up to.** Three constructions, three failures to
-discriminate, and the third has a mechanistic explanation rather than an
+**What this adds up to.** Two head-comparison controls (6z's isotropic
+direction and construction 1's other-head direction, each run on `L3H6`,
+`L4H6` and `L5H3` by `run_negative_controls`), both failing to
+discriminate; and one single-head diagnostic (construction 2, run on
+`L3H6` alone) that is a readout/mechanism observation rather than a
+discrimination test, with a mechanistic explanation rather than an
 unexplained number. The open problem now has two parts, not one: what
 control isolates directional relevance (6z's framing), AND whether
 `raw_distance` on the ablated layer's own residual stream has the
@@ -4368,7 +4405,7 @@ information would need to propagate through further mixing to matter — is
 the next candidate, named rather than built. `claims/registry.json`'s
 `P-I5` entry is unchanged.
 
-## 6y. The phase-to-e-value map, four joins nothing was checking, and a refusal that conditions on its own statistic (2026-09-16)
+## 6zb. The phase-to-e-value map, four joins nothing was checking, and a refusal that conditions on its own statistic (2026-09-16; renumbered from a colliding 6y on merge, 2026-09-17)
 
 An audit pass rather than a construction: no null was built, no prediction was
 registered, and `claims/adjudications/` is still empty. What it asked was the

@@ -188,8 +188,8 @@ Neither carries an e-value and neither can on the data in the tree.
 **`CLAIM-C` — the instrument was complete except for its plumbing, and the
 data does not exist.** The gate (`replication_gate.py`) was built and
 calibrated on 2026-08-24/25 but nothing assembled its arms from a Phase 1 run
-directory, so it had never been pointed at real artifacts. `tools/
-score_claim_c.py` now does that — five module-constant arms, the eight
+directory, so it had never been pointed at real artifacts.
+`tools/score_claim_c.py` now does that — five module-constant arms, the eight
 metastability prompts, `repeated_tokens` excluded as the control it is,
 artifact hashes and a committed record either way. Run against every Phase 1
 run directory on disk it **refuses**: `gpt2-large`, `gpt2-large-random`,

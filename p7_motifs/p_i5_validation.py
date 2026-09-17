@@ -1,7 +1,17 @@
 """
 p7_motifs/p_i5_validation.py — P-I5's gate, PART FOUR: validating the
 pipeline `p_i5_ablation.py` built, before its `L3H6` reading (§3.32,
-p = 0.0234) is trusted as more than a first look.
+p = 0.0234 under the min-rank statistic; 0.0312 re-scored under the
+intersection-union statistic that replaced it on 2026-09-17, see
+`p_i5_gate.py` section 2) is trusted as more than a first look.
+
+STATISTIC NOTE (2026-09-17). The p-values quoted below were computed with
+`joint_rank_pvalue`, which controls only the complete null and is no longer
+P-I5's statistic; the scripts now report `intersection_union_pvalue` as
+`gate` and the min-rank value beside it as `*_min_rank_superseded`. Where
+the committed record stores the per-prompt deltas the re-scored value is
+given; the 2026-09-16 negative-control records store only p-values and
+cannot be re-scored without a model run (later records store the deltas).
 
 **THE VALIDATION FOUND A REAL PROBLEM. §3.32's reading is NOT specific to
 induction, and should not be read as evidence for `P-I5` until this is
@@ -18,17 +28,25 @@ buried under four checks that mostly passed.
    heads has any documented relationship to induction, and both "pass"
    the gate `L3H6` passes.
 
-2. DIAGNOSED, NOT JUST MEASURED. `run_random_vs_random_diagnostic` runs
-   the identical pipeline with BOTH arms drawn as matched-magnitude
-   random directions (two independent draws, neither one a real
-   ablation): `joint_rank_pvalue` (greater) = **0.930** — correctly NOT
-   significant. This rules out a bug in `joint_rank_pvalue` or in the
-   pipeline's mechanics (the statistic is not spuriously anti-conservative
-   in general — §3.31/`p_i5_gate.py`'s synthetic calibration already
-   showed that, and this is the same conclusion on real activations). What
-   it does NOT rule out, and what finding 1 confirms: **mean-ablation of
-   essentially ANY head reliably beats an ISOTROPIC random direction of
-   matched magnitude, independent of what that head does.** A real,
+2. ONE RANDOM-VS-RANDOM DRAW, REPORTED AS WHAT IT IS.
+   `run_random_vs_random_diagnostic` runs the identical pipeline with BOTH
+   arms drawn as matched-magnitude random directions (seed 100 against
+   seed 200, neither one a real ablation). Because both arms are random,
+   `seed_a - seed_b` has no predeclared direction, so only the two-sided
+   reading means anything: min-rank two-sided = **0.031**, intersection-
+   union two-sided = **0.156** (re-scored from the stored deltas); the
+   one-sided 0.930 / 0.965 says nothing either way. One draw is one
+   observation from the null, not a calibration of it — it neither
+   establishes nor rules out a pipeline defect. Establishing that the
+   real-activation pipeline is calibrated needs REPEATED seed-pair draws
+   (a rejection rate over many random-vs-random pairs), which has not
+   been run; the synthetic calibration in `p_i5_gate.py` supports a
+   separate claim about the statistic under its synthetic null. What
+   finding 1 shows, on the two controls measured: **mean-ablation of
+   `L4H6` and of `L5H3` each beats an ISOTROPIC random direction of
+   matched magnitude as decisively as `L3H6` does.** Whether that holds
+   for heads generally is the natural reading and is NOT measured — a
+   representative head sweep would be needed to say so. A real,
    trained direction is structured; concentration of measure in
    `d_head = 64` dimensions makes a uniformly random direction generically
    nearly orthogonal to whatever subspace a downstream reading is
@@ -99,9 +117,15 @@ def run_negative_controls(seed: int = 20260916) -> dict:
         out[label] = {
             "is_target": head == TARGET_HEAD,
             "p_value": result["gate"]["p_value"] if result["gate"] else None,
+            "p_value_min_rank_superseded": (result["gate_min_rank_superseded"]["p_value"]
+                                            if result.get("gate_min_rank_superseded") else None),
             "n_prompts": result["n_prompts"],
             "mean_delta_geometric": float(np.mean(result["delta_geometric"])),
             "mean_delta_logit": float(np.mean(result["delta_logit"])),
+            # Stored so a later statistic can re-score the record without a
+            # model run; the 2026-09-16 records lack these and cannot be.
+            "delta_geometric": list(map(float, result["delta_geometric"])),
+            "delta_logit": list(map(float, result["delta_logit"])),
         }
     return out
 
@@ -155,7 +179,7 @@ def run_random_vs_random_diagnostic(seed_a: int = 100, seed_b: int = 200) -> dic
         MODEL_NAME, TARGET_HEAD, HIDDEN_STATE_INDEX,
         draw_unit_direction, matched_magnitude_random_ablation, _forward,
     )
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, joint_rank_pvalue
+    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue
     from tools.run.induction_rank_sweep import arch_dims, head_means
     import torch
 
@@ -202,8 +226,10 @@ def run_random_vs_random_diagnostic(seed_a: int = 100, seed_b: int = 200) -> dic
 
     dg = np.array(deltas_geo)
     dl = np.array(deltas_logit)
-    gate_greater = joint_rank_pvalue(dg, dl, alternative="greater")
-    gate_two_sided = joint_rank_pvalue(dg, dl, alternative="two-sided")
+    gate_greater = intersection_union_pvalue(dg, dl, alternative="greater")
+    gate_two_sided = intersection_union_pvalue(dg, dl, alternative="two-sided")
+    min_rank_greater = joint_rank_pvalue(dg, dl, alternative="greater")
+    min_rank_two_sided = joint_rank_pvalue(dg, dl, alternative="two-sided")
     return {
         "seed_a": seed_a,
         "seed_b": seed_b,
@@ -212,6 +238,8 @@ def run_random_vs_random_diagnostic(seed_a: int = 100, seed_b: int = 200) -> dic
         "delta_logit": dl.tolist(),
         "p_value_greater": gate_greater["p_value"],
         "p_value_two_sided": gate_two_sided["p_value"],
+        "p_value_greater_min_rank_superseded": min_rank_greater["p_value"],
+        "p_value_two_sided_min_rank_superseded": min_rank_two_sided["p_value"],
     }
 
 
@@ -254,7 +282,7 @@ def run_cosine_cross_check(seed: int = 20260916) -> dict:
         MODEL_NAME, TARGET_HEAD, ABLATION_MODE, HIDDEN_STATE_INDEX,
         draw_unit_direction, matched_magnitude_random_ablation, _forward,
     )
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, joint_rank_pvalue, attainable_floor
+    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
     from tools.run.induction_rank_sweep import arch_dims, head_means, ablate_heads
     import torch
 
@@ -308,15 +336,18 @@ def run_cosine_cross_check(seed: int = 20260916) -> dict:
         committed = json.load(f)
     dl = np.array(committed["delta_logit"])
     if len(dl) != n:
-        gate = None
+        gate = gate_min_rank_superseded = None
     else:
-        gate = joint_rank_pvalue(dg, dl, alternative="greater")
+        gate = intersection_union_pvalue(dg, dl, alternative="greater")
+        gate_min_rank_superseded = joint_rank_pvalue(dg, dl, alternative="greater")
 
     return {
         "metric": "cosine_distance",
         "n_prompts": n,
         "delta_geometric": dg.tolist(),
         "p_value": gate["p_value"] if gate else None,
+        "p_value_min_rank_superseded": (gate_min_rank_superseded["p_value"]
+                                        if gate_min_rank_superseded else None),
         "note": ("delta_logit reused from claims/calibration/p_i5_real_ablation.json "
                  "(same seed, same run) -- the logit readout is unaffected by which "
                  "geometric metric is used."),

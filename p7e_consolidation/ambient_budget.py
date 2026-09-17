@@ -46,7 +46,9 @@ REPO = Path(os.environ.get("METS_REPO", "/run/media/system/WDS_500/Mets"))
 DATA = Path(os.environ.get("METS_DATA", str(REPO / "data")))
 sys.path.insert(0, str(REPO))
 _want = str(REPO / ".venv")
-if not sys.prefix.startswith(_want):
+# Script-time only: modules are importable by tests on runners that are not
+# this machine\'s .venv; a real run still refuses the wrong interpreter.
+if __name__ == "__main__" and not sys.prefix.startswith(_want):
     raise SystemExit(f"wrong interpreter: {sys.prefix!r}, need {_want!r}")
 
 import numpy as np

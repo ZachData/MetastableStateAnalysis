@@ -27,15 +27,24 @@ proves and the tests enumeration-check.
 
 `naive_and_corner` and `joint_rank` — calibrate_naive_and_corner /
 calibrate_joint_rank at n = 6, 8, 10, 12, under a TRUE joint H0 (both axes
-independent noise, zero effect on either). This is the module's central
-finding: the first construction tried (AND-corner) over-rejects by roughly
-4x at every n measured; the fix (min-rank) does not.
+independent noise, zero effect on either). The first construction tried
+(AND-corner) over-rejects by roughly 4x at every n measured; the min-rank
+statistic does not — under THIS null. That null is the intersection of the
+two axes' nulls, and P-I5 is a conjunction whose null is their UNION.
+
+`intersection_union` — calibrate_intersection_union at the same n grid on
+THREE arms: complete null, geometry-null with a real logit effect (the
+falsifier's configuration), and logit-null with a real geometric effect.
+This is the calibration P-I5's statistic needs and the min-rank statistic
+never had; the self-check fails if any arm exceeds nominal (schema 2,
+2026-09-17).
 
 `partial_pass` — partial_pass_risk_demo on the falsifier's own
 configuration (real logit effect, no geometric effect), at the n = 8 the
-measurement grid below actually supports. Quantifies EVALUABILITY.md's
-"two separate one-dimensional tests would let the prediction be scored a
-partial pass" warning.
+measurement grid below actually supports. Records the min-rank statistic's
+rejection rate there — ~0.17-0.19 against nominal 0.05, an uncontrolled
+Type-I rate on a point in the null, which is why the intersection-union
+test replaced it.
 
 `measurement_grid` — count_matched_pairs_by_prompt against a real cached
 Pythia tokenizer (pythia-70m step143000, offline) plus
@@ -73,9 +82,10 @@ from p7_motifs.p_i5_gate import (            # noqa: E402
     count_matched_pairs_by_prompt,
     informative_prompt_count,
     partial_pass_risk_demo,
+    calibrate_intersection_union,
 )
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 OUT_PATH = ROOT / "claims" / "calibration" / "p_i5_joint_null.json"
 CONSTRUCTION_PATH = ROOT / "p7_motifs" / "p_i5_gate.py"
 
@@ -109,10 +119,19 @@ def _measurement_grid() -> dict:
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
     os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
     try:
-        from transformers import AutoTokenizer
-        tok = AutoTokenizer.from_pretrained(
-            "EleutherAI/pythia-70m", revision="step143000",
-        )
+        # Only the optional dependency and the cache lookup may make the grid
+        # "unreachable". A failure in the measurement itself is a defect and
+        # must stop the calibration, not be recorded as an absent cache.
+        try:
+            from transformers import AutoTokenizer
+            tok = AutoTokenizer.from_pretrained(
+                "EleutherAI/pythia-70m", revision="step143000",
+            )
+        except (ImportError, OSError, ValueError) as exc:  # pragma: no cover — environment-dependent
+            return {
+                "reachable": False,
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
         counts = count_matched_pairs_by_prompt(tok)
         n_informative = informative_prompt_count(counts)
         return {
@@ -121,11 +140,6 @@ def _measurement_grid() -> dict:
             "degenerate_prompt_excluded": DEGENERATE_PROMPT,
             "n_informative_prompts": n_informative,
             "reachable": True,
-        }
-    except Exception as exc:  # pragma: no cover — environment-dependent
-        return {
-            "reachable": False,
-            "reason": f"{type(exc).__name__}: {exc}",
         }
     finally:
         for k, v in prev.items():
@@ -163,6 +177,24 @@ def check_record(doc: dict) -> list:
             "logit_only_reject_rate on the falsifier's own configuration."
         )
 
+    iu = doc["intersection_union"]
+    for n, rec in iu.items():
+        for arm, r in rec["arms"].items():
+            rate = r["rejection_rate"]["0.05"]
+            if rate > 0.07:
+                findings.append(
+                    f"intersection_union n={n} arm={arm}: rejection rate at alpha=0.05 "
+                    f"is {rate}, above nominal — the statistic does not control the "
+                    f"union null on this arm."
+                )
+    pp_iu = iu["8"]["arms"]["geometry_null_logit_effect"]["rejection_rate"]["0.05"]
+    if not (pp_iu <= 0.07 < pp["joint_reject_rate"]):
+        findings.append(
+            f"on the falsifier's configuration the min-rank statistic rejects at "
+            f"{pp['joint_reject_rate']} and intersection-union at {pp_iu}; expected "
+            f"the first above nominal and the second at or below it."
+        )
+
     mg = doc["measurement_grid"]
     if mg.get("reachable") and mg.get("n_informative_prompts", 0) < 1:
         findings.append("measurement_grid: reachable but found 0 informative prompts.")
@@ -191,6 +223,18 @@ def main() -> int:
         print(f"n={n:2d}  naive@0.05={naive[str(n)]['rejection_rate']['0.05']:.3f}  "
               f"joint@0.05={joint[str(n)]['rejection_rate']['0.05']:.3f}", flush=True)
 
+    iu = {}
+    for n in N_GRID:
+        iu[str(n)] = calibrate_intersection_union(
+            n_units=n, n_trials=args.replicates, effect=1.0,
+            rng=np.random.default_rng(args.seed),
+        )
+        arms = iu[str(n)]["arms"]
+        print(f"n={n:2d}  IU@0.05  complete={arms['complete_null']['rejection_rate']['0.05']:.3f}  "
+              f"geom-null={arms['geometry_null_logit_effect']['rejection_rate']['0.05']:.3f}  "
+              f"logit-null={arms['logit_null_geometry_effect']['rejection_rate']['0.05']:.3f}",
+              flush=True)
+
     partial_pass = partial_pass_risk_demo(
         n_units=8, n_trials=args.replicates, logit_effect=1.0, alpha=0.05,
         rng=np.random.default_rng(args.seed),
@@ -213,6 +257,7 @@ def main() -> int:
         "floor": _floor_table(),
         "naive_and_corner": naive,
         "joint_rank": joint,
+        "intersection_union": iu,
         "partial_pass": partial_pass,
         "measurement_grid": grid,
         "elapsed_seconds": round(time.time() - t0, 1),

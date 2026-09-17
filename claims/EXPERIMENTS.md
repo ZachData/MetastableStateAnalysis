@@ -36,7 +36,7 @@ One section per phase, one row per registered prediction. `gate` is the
 `module:function` that computes the p-value; an empty gate means no null is
 built, which is what `needs-null` and `measurement` mean in code. The null
 column is a pointer, not the construction — `claims/registry.json`'s
-`null_construction` holds the whole of it, and `POPPER_PLAN.md` §6a–6y holds
+`null_construction` holds the whole of it, and `POPPER_PLAN.md` §6a–6zb holds
 what each one cost to build and what it was wrong about first. `calibrated`
 and `real run` are the registry's `calibration_record` and `real_run_record`:
 each a git-tracked path or nothing, checked by `tools/check_registry.py`, so
@@ -74,7 +74,7 @@ null that was tried and found invalid, kept visible rather than dropped.
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
 |---|---|---|---|---|---|---|---|---|
 | 7-A | `P-I1` | `H-BRIDGE` | e-value | active | `p7_motifs.formation_gate:p_value_p_i1` | `claims/audits/claim_b_p_i1_dry_run.json` | — | Changepoint co-location on the log-step axis, built 2026-08-24. |
-| 7-A/7-D | `P-I5` | `H-BRIDGE` | needs-null | active | `p7_motifs.p_i5_gate:joint_rank_pvalue` | `claims/calibration/p_i5_joint_null.json` | `claims/calibration/p_i5_real_ablation.json` | Permutation null over the matched-magnitude random-direction ablation arm, on a two-dimensional statistic (geometric delta, logit delta). |
+| 7-A/7-D | `P-I5` | `H-BRIDGE` | needs-null | active | `p7_motifs.p_i5_gate:intersection_union_pvalue` | `claims/calibration/p_i5_joint_null.json` | `claims/calibration/p_i5_real_ablation.json` | Permutation null over the matched-magnitude random-direction ablation arm, on a two-dimensional statistic (geometric delta, logit delta). |
 | 7-B | `P-I2` | `H-BRIDGE` | needs-null | active | — | — | — | Two-sample comparison of channel mass between edge types, against the N1/N2 nulls motif_stats.py already gates on. |
 | 7-C | `P-I3` | `H-BRIDGE` | e-value | active | `p7_motifs.cross_head_gate:p_value_p_i3` | `claims/calibration/cross_head_association.json` | — | Correlation with a REQUIRED control arm over non-induction heads; motif_stats.py makes independence_source a positional argument so the arm cannot be… |
 | 7-D | `P-I4` | `H-BRIDGE` | needs-null | active | — | — | — | Matched-magnitude control on moved_fraction; permutation over which edges are labelled motif edges. |

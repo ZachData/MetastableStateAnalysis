@@ -186,7 +186,7 @@ The live `needs-null` rows, in the order their claims matter:
 
 | row | claim | status | relevance | what its null needs |
 |---|---|---|---|---|
-| `P-I5` | H-BRIDGE | active, **parked** | 1.0 | a joint two-dimensional statistic is built and calibrated (`p7_motifs/p_i5_gate.py`); three real-activation control constructions failed to discriminate `L3H6` from uninvolved heads, the third mechanistically explained — `PROJECT.md` §3.31–§3.34. Next step named there: a later-layer geometric readout |
+| `P-I5` | H-BRIDGE | active, **parked** | 1.0 | a joint two-dimensional statistic is built and calibrated on all three arms of its union null (`p7_motifs/p_i5_gate.py`, intersection-union as of 2026-09-17); two real-activation head-comparison controls failed to discriminate `L3H6` from `L4H6`/`L5H3`, and an `L3H6`-only diagnostic explained the readout — `PROJECT.md` §3.31–§3.34. Next step named there: a later-layer geometric readout |
 | `P-I2` | H-BRIDGE | active | 1.0 | two-sample channel mass between edge types, against the N1/N2 nulls `motif_stats.py` already gates on |
 | `P-I4` | H-BRIDGE | active | 1.0 | matched-magnitude control on `moved_fraction`; permutation over which edges are labelled motif edges |
 | `P-I7` | H-BRIDGE | active | 1.0 | design fixed, null to be built and calibrated in its chunk; the 410m artifact is spent |
