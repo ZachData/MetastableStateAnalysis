@@ -136,7 +136,10 @@ def run_sweep(step: int = STEP, layer: int = LAYER, head: int = HEAD,
     """
     from core.lm_loading import load_causal_lm
 
-    model, tokenizer = load_causal_lm(f"pythia-410m-step{step}")
+    model, tokenizer = load_causal_lm(
+        f"pythia-410m-step{step}",
+        device="cpu",
+    )
     model.eval()
 
     A0, B0 = ov_factors(model, layer, head)
