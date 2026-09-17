@@ -12,7 +12,7 @@ needs-null — `P-I5` (built, calibrated, run on real `L3H6`, and **parked**:
 three control constructions failed to discriminate, `PROJECT.md` §3.31–§3.34),
 `P-I2`, `P-I4`, `P-I7` (nothing built), `P-SA1` (instrument frozen). Nulls and
 evidence paths are `claims/registry.json`; the per-phase view is
-`claims/EVALUABILITY.md` "By phase".
+`claims/EXPERIMENTS.md`.
 
 **Last verified:** 2026-08-31 (oracle tier plus the driver — still nothing has executed
 against any model).

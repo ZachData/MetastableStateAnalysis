@@ -6,7 +6,7 @@ in `core/changepoint_colocation.py`, calibrated on a known-answer dry run,
 **not run against real artifacts** — its registered 12-step grid is a subset
 of Phase 7's 19-step sweep, but the 19 control series its row requires do not
 exist). Nulls and evidence paths are `claims/registry.json`; the
-per-phase view is `claims/EVALUABILITY.md` "By phase". Every score in the
+per-phase view is `claims/EXPERIMENTS.md`. Every score in the
 tables below is a measurement, not an e-value.
 
 This phase now covers **two separate studies** against the same question and mostly the same

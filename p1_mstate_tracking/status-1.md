@@ -4,7 +4,7 @@
 `CLAIM-C` (e-value — null built in `replication_gate.py`, calibrated on a
 known-answer dry run, **not run against real artifacts**). Their nulls and
 evidence paths are `claims/registry.json`; the per-phase view is
-`claims/EVALUABILITY.md` "By phase". Nothing in this file is an e-value: the
+`claims/EXPERIMENTS.md`. Nothing in this file is an e-value: the
 verdict tables below are threshold comparisons, and the gate that would turn
 this phase's Pythia sweep into a p-value has not been run on it.
 

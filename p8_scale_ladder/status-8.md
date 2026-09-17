@@ -4,7 +4,7 @@
 **Registered predictions:** none yet. The 70m and 410m rungs are exploratory;
 `1b` and `1.4b` are RESERVED for a prediction that names them before any
 induction measurement is taken there. Until one is registered nothing in this
-phase may carry an e-value (`claims/EVALUABILITY.md` "By phase").
+phase may carry an e-value (`claims/EXPERIMENTS.md`).
 
 **Last verified:** 2026-09-12.
 **Overall:** the de-hardcoding blocker is cleared, the 70m rung is measured on

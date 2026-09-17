@@ -293,8 +293,9 @@ class EProcess:
       Re-using one artifact across predictions is fine on its own -- e-values
       need no independence. What is not fine is registering a prediction after
       looking at that artifact and then adjudicating it against the same
-      artifact. `tools/check_preregistration.py` (item B3) is the only thing
-      that detects this, by comparing git history rather than data.
+      artifact. `tools/check_registry.py`'s `check_preregistration` (item B3) is
+      the only thing that detects this, by comparing git history rather than
+      data.
     * **Admitting an e-value from a null that is not valid.** The product is
       only as valid as its weakest factor. `core/adjudication.py` (item B4)
       gates this by refusing predictions the evaluability audit

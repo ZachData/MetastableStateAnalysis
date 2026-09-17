@@ -117,7 +117,9 @@ session is `PROJECT.md` → `INDEX.md` → the phase you are about to touch.
 | The working agreements (handoff cadence, PR size, when to scan the literature, checking math) | [`CLAUDE.md`](CLAUDE.md) |
 | The six claims and what adjudicates each | [`claims/CLAIMS.md`](claims/CLAIMS.md) |
 | What is pre-registered, its null, its falsifier, its instrument | [`PREDICTIONS.md`](PREDICTIONS.md) (prose), [`claims/registry.json`](claims/registry.json) (machine-checked) |
-| Which predictions may carry an e-value, by phase, with evidence paths | [`claims/EVALUABILITY.md`](claims/EVALUABILITY.md) (generated, current state only) |
+| Which predictions may carry an e-value, and why | [`claims/EVALUABILITY.md`](claims/EVALUABILITY.md) (generated, current state only) |
+| Which phase carries which prediction, its gate, and what evidence stands behind it | [`claims/EXPERIMENTS.md`](claims/EXPERIMENTS.md) (generated) |
+| The per-phase literature review, all sixteen phases | [`docs/LITERATURE.md`](docs/LITERATURE.md) → `<phase>/lit-N.md` |
 | How each null was built — the thirteen dated construction passes | [`claims/EVALUABILITY_LOG.md`](claims/EVALUABILITY_LOG.md) |
 | The adjudication ledger and per-claim E | [`claims/FALSIFICATION.md`](claims/FALSIFICATION.md) (generated; empty as of this writing) |
 | The method plan — CI, the Popperian layer, the particle bridge — and its dated construction log §6a–§6za | [`POPPER_PLAN.md`](POPPER_PLAN.md) |
@@ -244,11 +246,15 @@ enforced.
 
 **Predictions are registered before the code that tests them exists.**
 `claims/registry.json` holds every prediction with its `h0`, `h1`, `falsifier`,
-`instrument`, `phase`, and the commit and date it was registered at. Wording is
-frozen on registration; a change is a dated addendum, never an edit. Since
-2026-09-17 each entry also carries three **evidence paths** — `null_module`,
-`calibration_record`, `real_run_record` — each a git-tracked path or `null`, so
-"a null exists" is a file CI can check rather than a claim in prose.
+`instrument`, and the commit and date it was registered at. Wording is
+frozen on registration; a change is a dated addendum, never an edit. Each
+entry also carries the **phase join** — `phase`, `experiment`, and a `gate`
+(`module:function`) that CI resolves against the tree — and two **evidence
+paths**, `calibration_record` and `real_run_record`, each a git-tracked path
+or `null`, so "this null is built and calibrated" is a file CI can check
+rather than a claim in prose. `claims/EXPERIMENTS.md` is the generated
+phase → prediction → gate → evidence view; `claims/EVALUABILITY.md` is the
+per-prediction one.
 
 **Every prediction names exactly one of six claims** (`claims/CLAIMS.md`):
 `H-RESIST` (trained weights resist collapse), `H-TRANSFER` (it is a property of

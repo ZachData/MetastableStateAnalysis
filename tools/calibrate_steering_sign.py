@@ -467,7 +467,13 @@ def alpha_window(rng: np.random.Generator) -> dict:
                   "above it the rank-1 spike n*alpha^2*v v^T dominates the Gram "
                   "matrix and BOTH arms reduce effective rank for any "
                   "direction."),
-        "_decided": ("ALPHA_SPREAD_FRACTION = 0.1, labelled `placed` per Phase 7 "
+        # Read from the module rather than written out. This string said 0.1
+        # while the shipped constant was 0.2 and `constants.alpha_spread_fraction`
+        # two blocks down reported 0.2 correctly -- so the artifact that IS the
+        # evidence for this constant disagreed with itself about which constant
+        # it had measured.
+        "_decided": (f"ALPHA_SPREAD_FRACTION = {sg_alpha_fraction()}, "
+                     "labelled `placed` per Phase 7 "
                      "adjudication constraint 4. The FRACTION is placed; the "
                      "spread it multiplies is derived from the data."),
         "n_trials_per_row": N_PAIR_TRIALS,
