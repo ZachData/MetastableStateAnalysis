@@ -1,5 +1,8 @@
 # Phase 1b (1h) — STATUS
 
+**Registered predictions:** none. Exploratory by design; nothing in this
+phase may carry an e-value (`claims/EVALUABILITY.md` "By phase").
+
 **Last verified (results below):** run after Phase 1,
 `--phase1-dir results/2026-04-23_18-30-06`. Date not recorded in source.
 

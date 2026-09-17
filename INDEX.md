@@ -5,8 +5,14 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-16)
+## Current priority (updated 2026-09-17)
 
+- **Live thread: the e-value audit, phase by phase (`PROJECT.md` §3.36).**
+  There are no e-values yet — the ledger is empty — so the audit is of
+  classification and evidence. `claims/registry.json` now carries `phase`
+  and three evidence-path fields that CI checks; `claims/EVALUABILITY.md`
+  "By phase" is the view to read; `claims/EVALUABILITY_LOG.md` is the
+  construction diary. Next unit: Phase 1.
 - **Direction (`PROJECT.md` §3.29, 2026-09-13, user): the programme is the
   particle/OT reading — mathematical perspective + optimal transport applied
   to mechanisms the network builds.** Induction heads (the whole thread
