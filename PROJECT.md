@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | a six-PR stack, #36→#41, tip `claude/pairwise-geometric-field` (PR #41, stacked on #40) — see the resume block |
-| Last updated | 2026-09-16 — **§3.30: STEP ONE is done.** `core/dual_reading.py` has `pairwise_geometric_reading`, the field **`P-I5`**'s `null_construction` named as its only blocker. `P-I5` is still `needs-null` — the reading exists, the permutation-null gate over it does not; that gate is the new next action, and every primitive it needs now exists (`core/intervention.py`, `core/functional_distance.py`, this extension). §3.29 (2026-09-13) is the direction decision this serves: the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns. §3.28: the scan that blocked §3.27's registration. |
+| Branch | a seven-PR stack, #36→#42, tip `claude/p-i5-joint-null` (PR #42, stacked on #41) — see the resume block |
+| Last updated | 2026-09-16 — **§3.31: `P-I5`'s joint null, part one.** The obvious joint statistic (an AND-corner over the sign-flip null) over-rejects ~4x under a true joint H0 — found by running it on inputs whose answer is known, not by inspection. Fixed with a Tippett-style minimum-rank statistic, which calibrates correctly AND does what the AND-corner was meant to (rejects at 0.17 vs the logit-axis-alone's 0.79 on the falsifier's own configuration). Real measurement grid: `n = 8` prompts, floor `1/256`. **Still not built: the matched-magnitude random-direction ablation itself** — wiring `core/intervention.py` to real cached checkpoints is the next action. §3.30: the pairwise field (`core/dual_reading.py::pairwise_geometric_reading`) this rests on. §3.29 (2026-09-13): the direction decision — the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,23 +37,29 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-16 — six PRs in a stack; §3.30 closed STEP ONE, the gate is next)
+### Resume here (2026-09-16 — seven PRs in a stack; §3.31 built the joint null's floor and fixed the statistic, the control is next)
 
-**Read this block, then §3.30, then §3.29, then §3.28.** §3.29 is the
-direction decision and it demotes everything below it: the programme is the
-particle/OT reading and the induction thread is an instance of it that is
-now past diminishing returns. §3.30 is this session's close: the pairwise
-geometric field §3.29 named as STEP ONE is built. §3.28 is the
+**Read this block, then §3.31, then §3.30, then §3.29, then §3.28.** §3.29 is
+the direction decision and it demotes everything below it: the programme is
+the particle/OT reading and the induction thread is an instance of it that is
+now past diminishing returns. §3.30 built the pairwise geometric field §3.29
+named as STEP ONE. §3.31 is this session's close: `P-I5`'s joint permutation
+null, floor computed, its first-tried statistic found invalid and replaced,
+the real measurement grid measured — control still unbuilt. §3.28 is the
 pre-registration scan — it reclassifies §3.22's novelty and blocks §3.27's
 registration, so reading §3.20–§3.27 without it will overstate what is new.
 Everything below this block is earlier and is kept as background, not as the
 current state.
 
-**Nothing is running and nothing is uncommitted.** All six branches are
+**Nothing is running and nothing is uncommitted.** All seven branches are
 pushed and in sync with their remotes; the only untracked path is
 `data/hf/` (the HF cache — never `git add -A` under `data/`, its
 `.no_exist/` markers are not gitignored). Gate green on the tip:
-**2278 passed / 5 skipped / 30 deselected**.
+**2321 passed / 5 skipped / 30 deselected** (run under `.venv`, not the
+`mets` conda env — the two interpreters coexist on this machine and only
+`.venv` is what `check.sh gate` and CI actually use; `python -m pytest`
+under the wrong one still runs, silently, which is how a stale count could
+slip in unnoticed).
 
 **The PR stack, oldest first. Each is based on the one above it, so review in
 order and merge in order.**
@@ -66,6 +72,7 @@ order and merge in order.**
 | #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) + its reword |
 | #40 | `claude/l5h2-self-repair` | the `L5H2` puzzle and the self-repair behind it (§3.20–§3.22) |
 | #41 | `claude/pairwise-geometric-field` | §3.30: `pairwise_geometric_reading` in `core/dual_reading.py`, unblocks `P-I5`'s missing field |
+| #42 | `claude/p-i5-joint-null` | §3.31: `P-I5`'s joint null — floor, the AND-corner's failure and its min-rank fix, the real measurement grid |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
@@ -87,21 +94,24 @@ induction heads were the instance and are past diminishing returns. Actions 1
 and 2 serve the frame; 3–6 are the induction thread's leftovers and are
 explicitly *not* the priority.
 
-1. **STEP ONE IS DONE (§3.30, 2026-09-16) — `core/dual_reading.py` has
-   `pairwise_geometric_reading`.** **STEP ONE-B, now the actual next
-   action: build `P-I5`'s permutation-null gate over it.** The registry's
-   `null_construction` for `P-I5` (the particle frame's own differential
-   test; falsifier: *"the transport reading is wrong"*) needs a permutation
-   null over the matched-magnitude random-direction ablation arm, on the
-   **joint** two-dimensional statistic (geometric delta from the new
-   pairwise field, logit delta from `core/functional_distance.py`'s
-   `next_token_kl`) — two separate one-dimensional tests would let the
-   configuration `P-I5` is designed to rule out score a partial pass. Every
-   primitive the gate needs now exists (`core/intervention.py` for the
-   ablation, `core/functional_distance.py` for the logit half,
-   `core/dual_reading.py::pairwise_geometric_reading` for the geometric
-   half); building the gate script and running it against real matched
-   positions puts the project's **first adjudication** in reach against 39
+1. **STEP ONE IS DONE (§3.30) and STEP ONE-B's floor/statistic/grid are
+   done (§3.31, 2026-09-16).** `core/dual_reading.py` has
+   `pairwise_geometric_reading`; `p7_motifs/p_i5_gate.py` has the joint
+   permutation null's floor (`1/2**n`), a validated statistic
+   (`joint_rank_pvalue`, a Tippett-style minimum-rank combination — the
+   first-tried AND-corner over-rejected ~4x and is kept only as
+   `naive_and_corner_pvalue`, retired), and the real measurement grid
+   (`n = 8` prompts, `core.battery_structure.induction_candidates` against
+   `core.config.PROMPTS`). **STEP ONE-C, now the actual next action:
+   build the matched-magnitude random-direction ablation control itself**
+   — draw a random direction of the real ablation's magnitude, run it
+   through `core/intervention.py` on the cached pythia-70m/410m
+   checkpoints, and score both arms with `pairwise_geometric_reading`
+   (geometric) and `core/intervention.py::next_token_kl` (logit — both
+   readouts live in the same module, corrected 2026-09-16) to get real
+   `(delta_geometric, delta_logit)` per prompt. Feed those into
+   `joint_rank_pvalue` and running it against real matched positions puts
+   the project's **first adjudication** in reach against 39
    registrations and zero.
 2. **Then §2.5's isometric path on `L7H8`** — the only *designed* particle
    intervention, still unrun, and now readable against a known mechanism
@@ -3405,6 +3415,56 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.31 `P-I5`'s joint null, part one: the floor, a construction that did not hold, and its fix (2026-09-16)
+
+STEP ONE-B from §3.30's close, taken as far as it goes without touching a
+real activation. Full derivation in `POPPER_PLAN.md` §6x and
+`p7_motifs/p_i5_gate.py`'s own docstring; this is the short version.
+
+**The obvious joint statistic (an AND-corner: both axes' sign-flip sums
+beat the observed) does not hold.** Run on synthetic data under a TRUE
+joint H0 — both `delta_geometric` and `delta_logit` pure independent
+noise, zero effect on either — it rejects at 0.18–0.21 against a nominal
+0.05 across n = 6, 8, 10, 12 (`claims/calibration/p_i5_joint_null.json`).
+Found the way P-ST1 and P6-R2/R4's retired nulls were: by running it on
+inputs whose answer is known, not by inspection. Mechanism: intersecting
+two independently-derived "at least this extreme" sets does not preserve
+the single-dimension exchangeability argument that makes a plain sign-flip
+test valid.
+
+**The fix: rank by the weaker axis, not the intersection.** A
+Tippett-style minimum-rank statistic — `min(rank_geometric, rank_logit)`
+per sign pattern, ranks via `scipy.stats.rankdata` — is a genuine scalar
+function of the sign pattern, so the standard exchangeability argument
+applies directly. Calibrates correctly: 0.040–0.049 at nominal 0.05 across
+the same four n. On the falsifier's own configuration (real logit effect,
+no geometric effect), it also does what the AND-corner was meant to: the
+logit axis alone rejects at 0.79, the joint statistic on the same draws
+rejects at 0.17 — the gap EVALUABILITY.md's "two separate one-dimensional
+tests would let the prediction be scored a partial pass" warning is about,
+made quantitative rather than asserted.
+
+**The measurement grid, real, not synthetic: `core.battery_structure.
+induction_candidates` against `core.config.PROMPTS` under the actual
+cached pythia-70m tokenizer.** Per-prompt matched-pair counts run 1 to
+2873, with `repeated_tokens` at 34,191 (cross-validates against the figure
+`p7_motifs/motif_alphabet.py` already quotes for that prompt).
+`repeated_tokens` excluded per the `P_I1_DOMINANT_PROMPT` convention.
+**Design choice, put to the author before the control is built (matching
+how `P-AB1`'s and `P-I3`'s own matching-unit choices were registered): the
+exchangeable unit is the PROMPT** (pairs inside one prompt share a forward
+pass and would share one random-direction draw), giving **n = 8** and
+floor `1/256`.
+
+**What is still not built:** the matched-magnitude random-direction
+ablation itself — wiring `core/intervention.py`, running it on the cached
+checkpoints, and scoring with `pairwise_geometric_reading` /
+`core/intervention.py::next_token_kl` to get real
+`(delta_geometric, delta_logit)` arrays. Nothing here has touched a real
+activation; `claims/registry.json`'s `P-I5` entry is unchanged.
 
 ---
 
