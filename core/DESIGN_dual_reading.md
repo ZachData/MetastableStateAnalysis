@@ -234,6 +234,94 @@ the caller, not a decision this primitive should make for them).
   primitive returns a reading, not a verdict — verdicts belong in each
   phase's own falsification table, per the plan's methodology section.
 
+## Pairwise geometric field (2026-09-16 extension — unblocks `P-I5`)
+
+Every field above is **per-point**: one vector in, one reading out.
+`claims/registry.json`'s `P-I5` (*"ablating an induction head changes the
+pairwise-distance distribution among the particles it couples — the matched
+positions — not only the logit at the copied token"*) needs a field defined
+on a **pair** of points, and its `null_construction` names the gap exactly:
+*"every current geometric field is per-point and this needs a pairwise
+one."* Written here first, per this document's own rule, before
+`core/dual_reading.py` carries the implementation.
+
+**Scope, stated so it isn't overrun:** this is the missing *reading*, not
+the null. Building the matched-magnitude random-direction ablation arm, the
+permutation test over the two-dimensional (geometric delta, logit delta)
+statistic, and running it against real checkpoints is `P-I5`'s adjudication
+gate — separate, larger, future work that *consumes* this field. Landing
+the field is what turns `needs-null` from "no instrument exists" into "the
+instrument exists, the gate is unbuilt."
+
+**Design choice: generalize by substitution, not by new machinery.** A pair
+of points has exactly one thing a single point doesn't: a displacement,
+`vector_a - vector_b`. Every existing per-point field is a squared-norm
+fraction of the vector against a subspace (`_squared_norm_frac`); the
+pairwise field is the *same* function applied to the displacement instead
+of to the point. No new decomposition is defined — this is substitution,
+not new machinery, so it inherits every existing property (including the
+"fractions need not sum to 1 when `U_pos`/`U_neg`/`U_S`/`U_A` aren't a full
+orthogonal decomposition of `R^d`" caveat already true of `geometric_reading`).
+
+```python
+def pairwise_geometric_reading(
+    vector_a: np.ndarray,        # (d,) — first particle (e.g. the query
+                                  # position an induction head reads from)
+    vector_b: np.ndarray,        # (d,) — second particle (e.g. the position
+                                  # it copies from)
+    projectors: dict | None = None,   # same {"U_pos", "U_neg", "U_S", "U_A"}
+                                  # shape as geometric_reading; None or a
+                                  # missing key -> None for that field
+) -> dict:
+```
+
+```python
+{
+  "raw_distance":              float,        # ||vector_a - vector_b||, the
+                                              # scale-sensitive L2 reading —
+                                              # same raw/normed duality
+                                              # effective_rank already carries
+                                              # (see its mode= caveat above);
+                                              # a caller wanting the
+                                              # magnitude-independent number
+                                              # normalizes both vectors first.
+  "cosine_similarity":         float | None, # None iff either vector has
+                                              # ~zero norm (undefined angle) —
+                                              # same guard as
+                                              # _squared_norm_frac's `denom`
+                                              # check, applied to both inputs.
+  "cosine_distance":           float | None, # 1 - cosine_similarity
+  "distance_attractive_frac":  float | None, # ||U_pos^T(a-b)||^2 / ||a-b||^2
+  "distance_repulsive_frac":   float | None, # ||U_neg^T(a-b)||^2 / ||a-b||^2
+  "distance_real_frac":        float | None, # ||U_S^T(a-b)||^2  / ||a-b||^2
+  "distance_imag_frac":        float | None, # ||U_A^T(a-b)||^2  / ||a-b||^2
+}
+```
+
+**Not folded into `dual_reading()` or `geometric_reading()`.** Those two
+take one vector; overloading them to sometimes take two would make the
+single combined-entry-point's signature ambiguous about which mode it's in
+(exactly the god-function risk this document's "mechanically" section
+guards against). A separate, single-purpose function keeps `dual_reading()`'s
+existing schema and test coverage untouched.
+
+**Not vectorized over many pairs.** `P-I5`'s "distribution" is built by a
+caller invoking this once per matched `(query_position, copied_position)`
+pair and collecting the results — the same division of labour as
+`effective_rank_contribution` (this primitive reads one point/pair;
+aggregating across many is the caller's job, per "What this primitive is,
+mechanically" above) and as `p7d_redundancy/member_subspace_geometry.py`'s
+`cell()` helper, called once per pair in a loop rather than batched. A
+batched form is a real future optimization (`functional_distance.py`'s KL
+matrix shows the pattern: one matmul instead of a pair loop) but is not
+needed to unblock `P-I5`'s gate, which reads a handful of matched pairs per
+prompt, not all pairs.
+
+**Not added to `to_particle_row_fields`.** `ParticleTable`'s schema is one
+row per *point*; a pairwise reading has no single row to attach to without
+inventing a pair-keyed table this project doesn't have yet. `P-I5`'s gate
+consumes `pairwise_geometric_reading()`'s dict directly.
+
 ## Architecture note carried over from the plan's own audit list
 
 The plan's "Architecture compatibility" section already flags this

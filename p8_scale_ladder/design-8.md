@@ -86,10 +86,27 @@ the wording here is a design sketch, not registry text.
    *order* reproduces across differently-seeded models, cascade; if the *window*
    reproduces and the order scrambles, recruitment. **This is the one 7d
    question that always needed a second model.**
-4. **Born aligned, then fanning out.** 410m: alignment present at birth (centered
-   CKA 0.693 vs null 0.128 at step 1000), peaking at step 5000, losing 56 % by
-   143000 **while delta norms grow** — with the max pair pinned at 0.87–0.97 and
-   the min pair falling to −0.19.
+4. **Born aligned, then diverging to a mid-training minimum — reworded
+   2026-09-12, §3.19/`status-8.md`, after the set-level (not one-pair) reread
+   showed the original wording had no room for either rung's actual ending.**
+   Present at birth at both rungs (centered CKA 410m +0.693 vs null +0.128,
+   70m +0.888 vs +0.156, both at step 1000) and diverging afterward on the
+   causally-defined set at both rungs: 410m's fixed-15-pair rank-1 mean peaks
+   at step 5000 (+0.744) and falls 56 % to +0.327 by 143000 while delta norms
+   grow; 70m's six-pair core (`freq`) falls from +0.922 at step 1000 to a
+   minimum of +0.302 at step 32000. **The invariant stops at the minimum —
+   what happens after is not claimed to replicate.** 410m's set ends a locked
+   core plus one inverted-direction defector (`L11H14`: rank-1 mean cosine
+   −0.099, but centered CKA +0.317 against a null of +0.179 — its effect
+   subspace still overlaps the set even as its mean write direction
+   anti-aligns, so write this as "anti-aligned in mean direction", never
+   "orthogonal to the set"). 70m's core instead **re-coheres**: +0.580 by step
+   64000, +0.611 at 143000, all six core pairs moving together, delta norms
+   still growing through it. Measured on one pair (`L2H1`×`L3H6`, 70m's most-
+   aligned pair at every late checkpoint) this looked like non-replication
+   ("70m never separates" — withdrawn); measured on the set, the fan-out
+   replicates (70m separates *more* than 410m by step 16000: +0.321 vs
+   +0.814) and it is the post-minimum fate that does not.
 5. **A low-rank majority with at least one full-rank, anti-ordered member.**
    410m: `r*/d_head` of 1/64, 1/64, 2/64, 12/64, 24/64 — and `L11H14` at 64/64
    with bottom-`r` beating top-`r` at every rank. **The anti-ordered member is

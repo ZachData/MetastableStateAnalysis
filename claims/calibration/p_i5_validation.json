@@ -1,0 +1,94 @@
+{
+  "checkpoint_replication": {
+    "mean_delta_geometric": 0.23332786091175436,
+    "mean_delta_logit": 0.004431644149006391,
+    "model": "pythia-70m-step64000",
+    "n_prompts": 8,
+    "p_value": 0.0078125
+  },
+  "cosine_cross_check": {
+    "delta_geometric": [
+      -0.0004570484161376953,
+      0.010894334782235494,
+      0.003965425523504308,
+      0.009418665989560985,
+      0.014302579457468462,
+      0.02325792102817612,
+      0.005909163983102823,
+      0.02797904166983284
+    ],
+    "metric": "cosine_distance",
+    "n_prompts": 8,
+    "note": "delta_logit reused from claims/calibration/p_i5_real_ablation.json (same seed, same run) -- the logit readout is unaffected by which geometric metric is used.",
+    "p_value": 0.02734375
+  },
+  "negative_controls": {
+    "L3H6": {
+      "is_target": true,
+      "mean_delta_geometric": 0.3912418451408288,
+      "mean_delta_logit": 0.0030961869634341115,
+      "n_prompts": 8,
+      "p_value": 0.0234375
+    },
+    "L4H6": {
+      "is_target": false,
+      "mean_delta_geometric": 0.06068671051597444,
+      "mean_delta_logit": 0.002679711907281165,
+      "n_prompts": 8,
+      "p_value": 0.00390625
+    },
+    "L5H3": {
+      "is_target": false,
+      "mean_delta_geometric": 0.38916470750135945,
+      "mean_delta_logit": 0.0013887267388707093,
+      "n_prompts": 8,
+      "p_value": 0.0390625
+    }
+  },
+  "random_vs_random": {
+    "delta_geometric": [
+      0.000640869140625,
+      -0.014580916403530535,
+      0.01319649935470596,
+      -0.0018688306911757713,
+      -0.05747072056610496,
+      -0.028635794008281867,
+      -0.04254481094277165,
+      -0.0006446535065329217
+    ],
+    "delta_logit": [
+      -2.190794295198916e-05,
+      0.0013386520814714841,
+      -0.00017229869096942445,
+      0.0005575191513747264,
+      0.001322266869516345,
+      0.0033655582449465295,
+      -0.0011100699791245392,
+      0.0004587894077042014
+    ],
+    "n_prompts": 8,
+    "p_value_greater": 0.9296875,
+    "p_value_two_sided": 0.03125,
+    "seed_a": 100,
+    "seed_b": 200
+  },
+  "seed_sensitivity": {
+    "max": 0.0390625,
+    "mean": 0.0203125,
+    "min": 0.0078125,
+    "p_values": [
+      0.0234375,
+      0.015625,
+      0.015625,
+      0.0390625,
+      0.0078125
+    ],
+    "seeds": [
+      20260916,
+      1,
+      2,
+      3,
+      4
+    ]
+  }
+}

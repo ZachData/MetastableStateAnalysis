@@ -16,6 +16,7 @@ import numpy.testing as npt
 
 from core.dual_reading import (
     geometric_reading,
+    pairwise_geometric_reading,
     semantic_reading,
     dual_reading,
     effective_rank_contribution,
@@ -172,6 +173,119 @@ class TestGeometricReading:
         projectors = {"U_pos": _orth_basis(d, 2)}
         result = geometric_reading(np.zeros(d), np.zeros((1, d)), projectors)
         assert result["v_attractive_frac"] is None
+
+
+# ---------------------------------------------------------------------------
+# pairwise_geometric_reading (P-I5's missing field)
+# ---------------------------------------------------------------------------
+
+class TestPairwiseGeometricReading:
+
+    def test_all_fields_present(self):
+        d = 8
+        rng = np.random.default_rng(0)
+        a = rng.standard_normal(d)
+        b = rng.standard_normal(d)
+        projectors = {
+            "U_pos": _orth_basis(d, 2, seed=1),
+            "U_neg": _orth_basis(d, 2, seed=2),
+            "U_S":   _orth_basis(d, 3, seed=3),
+            "U_A":   _orth_basis(d, 3, seed=4),
+        }
+        result = pairwise_geometric_reading(a, b, projectors)
+        for key in ("raw_distance", "cosine_similarity", "cosine_distance",
+                    "distance_attractive_frac", "distance_repulsive_frac",
+                    "distance_real_frac", "distance_imag_frac"):
+            assert key in result
+
+    def test_no_projectors_gives_none_subspace_fractions(self):
+        d = 8
+        rng = np.random.default_rng(0)
+        a = rng.standard_normal(d)
+        b = rng.standard_normal(d)
+
+        result = pairwise_geometric_reading(a, b)
+        assert result["raw_distance"] is not None
+        assert result["cosine_similarity"] is not None
+        assert result["distance_attractive_frac"] is None
+        assert result["distance_repulsive_frac"] is None
+
+    def test_missing_projector_key_gives_none(self):
+        d = 8
+        rng = np.random.default_rng(0)
+        a = rng.standard_normal(d)
+        b = rng.standard_normal(d)
+        projectors = {"U_pos": _orth_basis(d, 2)}  # no U_neg, U_S, U_A
+
+        result = pairwise_geometric_reading(a, b, projectors)
+        assert result["distance_attractive_frac"] is not None
+        assert result["distance_repulsive_frac"] is None
+        assert result["distance_real_frac"] is None
+        assert result["distance_imag_frac"] is None
+
+    def test_identical_points_give_zero_distance_and_none_cosine_delta(self):
+        """a == b -> raw_distance 0, cosine_similarity/distance still
+        well-defined off the points themselves (not the difference), but
+        every subspace fraction of the (zero) difference is None since
+        _squared_norm_frac's zero-denominator guard fires."""
+        d = 8
+        a = np.array([1.0, 2.0, -1.0, 0.5, 0.0, 3.0, -2.0, 1.0])
+        b = a.copy()
+        projectors = {"U_pos": _orth_basis(d, 2)}
+
+        result = pairwise_geometric_reading(a, b, projectors)
+        npt.assert_allclose(result["raw_distance"], 0.0, atol=1e-12)
+        npt.assert_allclose(result["cosine_similarity"], 1.0, atol=1e-10)
+        npt.assert_allclose(result["cosine_distance"], 0.0, atol=1e-10)
+        assert result["distance_attractive_frac"] is None
+
+    def test_zero_vector_gives_none_cosine(self):
+        d = 8
+        a = np.zeros(d)
+        b = np.ones(d)
+        result = pairwise_geometric_reading(a, b)
+        assert result["cosine_similarity"] is None
+        assert result["cosine_distance"] is None
+        # raw_distance is still defined even when cosine isn't
+        assert result["raw_distance"] is not None
+
+    def test_orthogonal_unit_vectors_give_known_geometry(self):
+        d = 8
+        a = np.zeros(d); a[0] = 1.0
+        b = np.zeros(d); b[1] = 1.0
+        result = pairwise_geometric_reading(a, b)
+        npt.assert_allclose(result["cosine_similarity"], 0.0, atol=1e-12)
+        npt.assert_allclose(result["cosine_distance"], 1.0, atol=1e-12)
+        npt.assert_allclose(result["raw_distance"], np.sqrt(2.0), atol=1e-12)
+
+    def test_displacement_entirely_inside_subspace_gives_frac_one(self):
+        """Mirrors geometric_reading's own
+        test_projection_onto_own_subspace_is_one, applied to a-b instead
+        of to a single vector."""
+        d = 8
+        U_pos = _orth_basis(d, 3, seed=1)
+        b = np.zeros(d)
+        a = U_pos @ np.array([1.0, 2.0, -1.5])  # a - b entirely in span(U_pos)
+        projectors = {"U_pos": U_pos}
+
+        result = pairwise_geometric_reading(a, b, projectors)
+        npt.assert_allclose(result["distance_attractive_frac"], 1.0, atol=1e-10)
+
+    def test_matches_squared_norm_frac_of_difference(self):
+        """Cross-check against geometric_reading's own field on the
+        explicit difference vector, rather than trusting a re-derivation."""
+        d = 10
+        rng = np.random.default_rng(7)
+        a = rng.standard_normal(d)
+        b = rng.standard_normal(d)
+        projectors = {"U_pos": _orth_basis(d, 4, seed=3)}
+
+        pair_result = pairwise_geometric_reading(a, b, projectors)
+        diff_result = geometric_reading(a - b, np.zeros((1, d)), projectors)
+        npt.assert_allclose(
+            pair_result["distance_attractive_frac"],
+            diff_result["v_attractive_frac"],
+        )
 
 
 # ---------------------------------------------------------------------------

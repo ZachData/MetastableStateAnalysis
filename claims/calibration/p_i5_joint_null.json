@@ -1,0 +1,211 @@
+{
+  "construction_sha256": "d5d4585e8bf1b2603cb277edeafb36ac2d158ec1acde29793f3c22983e109a39",
+  "elapsed_seconds": 18.1,
+  "floor": {
+    "1": {
+      "greater": 0.5,
+      "two_sided": 1.0
+    },
+    "10": {
+      "greater": 0.0009765625,
+      "two_sided": 0.001953125
+    },
+    "11": {
+      "greater": 0.00048828125,
+      "two_sided": 0.0009765625
+    },
+    "12": {
+      "greater": 0.000244140625,
+      "two_sided": 0.00048828125
+    },
+    "13": {
+      "greater": 0.0001220703125,
+      "two_sided": 0.000244140625
+    },
+    "14": {
+      "greater": 6.103515625e-05,
+      "two_sided": 0.0001220703125
+    },
+    "15": {
+      "greater": 3.0517578125e-05,
+      "two_sided": 6.103515625e-05
+    },
+    "2": {
+      "greater": 0.25,
+      "two_sided": 0.5
+    },
+    "3": {
+      "greater": 0.125,
+      "two_sided": 0.25
+    },
+    "4": {
+      "greater": 0.0625,
+      "two_sided": 0.125
+    },
+    "5": {
+      "greater": 0.03125,
+      "two_sided": 0.0625
+    },
+    "6": {
+      "greater": 0.015625,
+      "two_sided": 0.03125
+    },
+    "7": {
+      "greater": 0.0078125,
+      "two_sided": 0.015625
+    },
+    "8": {
+      "greater": 0.00390625,
+      "two_sided": 0.0078125
+    },
+    "9": {
+      "greater": 0.001953125,
+      "two_sided": 0.00390625
+    }
+  },
+  "generated_by": "tools/calibrate_p_i5_joint_null.py",
+  "joint_rank": {
+    "10": {
+      "n_trials": 3000,
+      "n_units": 10,
+      "rejection_rate": {
+        "0.01": 0.008666666666666666,
+        "0.05": 0.044,
+        "0.1": 0.09166666666666666,
+        "0.2": 0.187
+      }
+    },
+    "12": {
+      "n_trials": 3000,
+      "n_units": 12,
+      "rejection_rate": {
+        "0.01": 0.011,
+        "0.05": 0.04933333333333333,
+        "0.1": 0.10466666666666667,
+        "0.2": 0.19733333333333333
+      }
+    },
+    "6": {
+      "n_trials": 3000,
+      "n_units": 6,
+      "rejection_rate": {
+        "0.01": 0.0,
+        "0.05": 0.04033333333333333,
+        "0.1": 0.082,
+        "0.2": 0.17333333333333334
+      }
+    },
+    "8": {
+      "n_trials": 3000,
+      "n_units": 8,
+      "rejection_rate": {
+        "0.01": 0.005666666666666667,
+        "0.05": 0.03866666666666667,
+        "0.1": 0.08733333333333333,
+        "0.2": 0.19333333333333333
+      }
+    }
+  },
+  "measurement_grid": {
+    "counts": {
+      "camus_letranger": {
+        "n_pairs": 963,
+        "n_tokens": 465
+      },
+      "hdbscan_code": {
+        "n_pairs": 426,
+        "n_tokens": 242
+      },
+      "homer_iliad": {
+        "n_pairs": 2518,
+        "n_tokens": 562
+      },
+      "latex_monograph": {
+        "n_pairs": 2873,
+        "n_tokens": 446
+      },
+      "paper_excerpt": {
+        "n_pairs": 554,
+        "n_tokens": 286
+      },
+      "repeated_tokens": {
+        "n_pairs": 34191,
+        "n_tokens": 265
+      },
+      "short_heterogeneous": {
+        "n_pairs": 1,
+        "n_tokens": 20
+      },
+      "sullivan_ballou": {
+        "n_pairs": 2038,
+        "n_tokens": 482
+      },
+      "wiki_paragraph": {
+        "n_pairs": 1598,
+        "n_tokens": 467
+      }
+    },
+    "degenerate_prompt_excluded": "repeated_tokens",
+    "n_informative_prompts": 8,
+    "reachable": true,
+    "tokenizer": "EleutherAI/pythia-70m@step143000"
+  },
+  "naive_and_corner": {
+    "10": {
+      "n_trials": 3000,
+      "n_units": 10,
+      "rejection_rate": {
+        "0.01": 0.060333333333333336,
+        "0.05": 0.211,
+        "0.1": 0.3373333333333333,
+        "0.2": 0.5066666666666667
+      }
+    },
+    "12": {
+      "n_trials": 3000,
+      "n_units": 12,
+      "rejection_rate": {
+        "0.01": 0.065,
+        "0.05": 0.205,
+        "0.1": 0.341,
+        "0.2": 0.518
+      }
+    },
+    "6": {
+      "n_trials": 3000,
+      "n_units": 6,
+      "rejection_rate": {
+        "0.01": 0.0,
+        "0.05": 0.20333333333333334,
+        "0.1": 0.31766666666666665,
+        "0.2": 0.49333333333333335
+      }
+    },
+    "8": {
+      "n_trials": 3000,
+      "n_units": 8,
+      "rejection_rate": {
+        "0.01": 0.04933333333333333,
+        "0.05": 0.18433333333333332,
+        "0.1": 0.32466666666666666,
+        "0.2": 0.5113333333333333
+      }
+    }
+  },
+  "partial_pass": {
+    "alpha": 0.05,
+    "attainable_floor_one_sided": 0.00390625,
+    "joint_reject_rate": 0.17066666666666666,
+    "logit_effect": 1.0,
+    "logit_only_reject_rate": 0.787,
+    "n_trials": 3000,
+    "n_units": 8
+  },
+  "replicates": 3000,
+  "schema_version": 1,
+  "seed": 20260916,
+  "self_check": {
+    "findings": [],
+    "ok": true
+  }
+}

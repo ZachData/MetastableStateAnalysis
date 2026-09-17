@@ -110,7 +110,7 @@ import torch
 
 from core.lm_loading import load_causal_lm
 from tools.run.induction_rank_sweep import (
-    N_REP, EVAL_SEED, ablated, arch_dims, head_means,
+    N_REP, EVAL_SEED, PROBE_ARMS, ablated, arch_dims, head_means,
 )
 
 from p7d_redundancy.member_formation_curves import ALL_STEPS, batch, catalog_path_for, members
@@ -287,11 +287,21 @@ def main():
                          "mean -- the control for zero-ablation's "
                          "off-distribution bias (status-8.md's A/B)")
     ap.add_argument("--append", action="store_true")
+    ap.add_argument("--probe", default="wide", choices=tuple(PROBE_ARMS),
+                    help="token range the repeated sequences are drawn from. "
+                         "'wide' is every existing number and keeps this "
+                         "comparable with the canonical 13-step 410m "
+                         "trajectory. 'freq' is the less out-of-distribution "
+                         "probe and is the arm to check at a SMALL model's "
+                         "LATE checkpoints, where `wide`'s readout is "
+                         "degenerate -- see PROBE_ARMS and "
+                         "p8_scale_ladder/probe_distribution.py")
     ap.add_argument("--out", default="",
                     help="a non-default --model gets its own default filename "
                          "instead of the 410m one")
     args = ap.parse_args()
     _abl = "" if args.ablation == "ov" else f"_{args.ablation}"
+    _abl += "" if args.probe == "wide" else f"_{args.probe}"
     if args.out:
         out = Path(args.out)
     elif args.model == DEFAULT_MODEL and not _abl:
@@ -315,7 +325,8 @@ def main():
     git_sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"],
                              capture_output=True, text=True).stdout.strip()
     res = {"_what_this_is": __doc__, "git_sha": git_sha, "model": args.model,
-           "ablation": args.ablation,
+           "ablation": args.ablation, "probe": args.probe,
+           "probe_vocab_range": list(PROBE_ARMS[args.probe]),
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "membership_source": source,
            "eval": {"n_seqs": args.seqs, "seed": EVAL_SEED, "n_rep": N_REP,
@@ -329,7 +340,8 @@ def main():
         res["per_step"] = prev["per_step"]
         res["steps"] = sorted(set(prev["steps"]) | set(steps))
 
-    print(f"model:    {args.model}")
+    print(f"model:    {args.model}   probe: {args.probe} "
+          f"{PROBE_ARMS[args.probe]}   ablation: {args.ablation}")
     print(f"members:  {', '.join(names[k] for k in heads)}   ({source})")
     print(f"controls: {', '.join(names[k] for k in ctrls)}   "
           f"(near-median dNLL; they carry the null)")
@@ -351,7 +363,8 @@ def main():
                 f"--controls must name heads that exist at this rung; the "
                 f"410m defaults do not carry over (see --controls help)")
         res["d_model"] = d_model
-        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs)
+        ids = batch(np.random.default_rng(EVAL_SEED), args.seqs,
+                    *PROBE_ARMS[args.probe])
         means = (head_means(model, ids, heads + ctrls, args.chunk)
                  if args.ablation == "mean" else None)
 

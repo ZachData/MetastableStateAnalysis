@@ -1,6 +1,10 @@
 <!-- p7e_consolidation/status-7e.md -->
 # Phase 7e — STATUS
 
+**Registered predictions:** none, and none can be — see "Overall" below.
+Nothing in this phase may carry an e-value (`claims/EVALUABILITY.md` "By
+phase").
+
 **Last verified:** 2026-09-10 (opened this day).
 **Overall:** the phase's gate measurement is **already run and it answered**.
 Consolidation of the aligned core is viable; `L11H14` cannot be folded in. No

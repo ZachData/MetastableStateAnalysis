@@ -4027,8 +4027,344 @@ discovery on existing artifacts, the anchor and the population were both
 chosen after seeing them, and the forking paths of this pass alone include two
 population definitions, four candidate statistics, level versus timing, and
 several checkpoints. None of it may be adjudicated on these artifacts; a
-registration needs a fresh one, and §6x's bottom-up design is the proposal for
-getting one that does not route through a projector-defined population at all.
+registration needs a fresh one, and `PROJECT.md` §3.11's bottom-up design is
+the proposal for getting one that does not route through a projector-defined
+population at all. *(Corrected 2026-09-16: this forward reference named "§6x"
+before that label existed here; the bottom-up programme it points to was
+written into `PROJECT.md` §3.11 rather than into this file. §6x below is
+unrelated — P-I5's joint null, not the bottom-up induction programme.)*
+
+## 6x. `P-I5`'s joint null, part one: the floor, a construction that did not
+    hold, and its fix (2026-09-16)
+
+`p7_motifs/p_i5_gate.py`, `tools/calibrate_p_i5_joint_null.py` ->
+`claims/calibration/p_i5_joint_null.json`. Built in the order
+`claims/EVALUABILITY.md` prescribes for every row naming a matched control —
+floor, then what the statistic degenerates on, then the measurement grid, then
+the control — after `P-AB1` (6q) and `P-I3` (6s). `P-I5` is EVALUABILITY.md's
+own flagged exception: "the first row here whose statistic is two-dimensional,
+which no construction in this project has built," so this pass could reuse
+neither precedent's null verbatim, only their method. The control itself is
+not built in this pass — see the module docstring's closing section for
+exactly what is left.
+
+**Step zero, load-bearing for everything after it: `core/dual_reading.py`
+needed a pairwise geometric field, and did not have one.** `P-I5`'s
+`null_construction` names this as its blocker verbatim ("every current
+geometric field is per-point and this needs a pairwise one"); `core.
+dual_reading.pairwise_geometric_reading` (PR #41, 2026-09-16) closes it by
+substitution — every existing per-point subspace fraction, applied to the
+displacement between two particles instead of to one vector. Full schema in
+`core/DESIGN_dual_reading.md`, written before the implementation per that
+file's own rule.
+
+**1. The attainable floor.** `P-AB1`'s sign-flip justification carries over
+unchanged — under H0 a real ablation direction and a structureless one of
+equal magnitude are exchangeable, so swapping the real/control label is an
+exact symmetry. What's new: the label swap at one unit flips the sign of
+*both* `delta_geometric[i]` and `delta_logit[i]` together, since both come
+from the same (real, control) pair — a single `2**n`-point sign-pattern
+space, not two independent ones. Best-case floor (every unit fully
+informative, same-signed on both axes — the observed pattern becomes the
+unique maximizer of both sums): `1/2**n` one-sided, `2/2**n` two-sided.
+Enumeration-checked for n = 1..15 (`tests/test_p_i5_gate.py::
+TestAttainableFloor`).
+
+**2. What the statistic degenerates on — the first one tried did not hold.**
+The obvious joint statistic is an AND-corner: count the sign patterns with
+*both* `T_g(s) >= T_g_obs` and `T_l(s) >= T_l_obs`. It reduces correctly to a
+plain one-dimensional test when one axis is held at zero, which is exactly
+why the bug was easy to miss — that's the case a first check is likely to
+run. **Run on synthetic data under a TRUE joint H0 (both axes independent
+noise, zero effect on either), it rejects at 0.18–0.21 against a nominal
+0.05 across n = 6, 8, 10, 12** — a ~4x inflation, not a rounding error
+(`claims/calibration/p_i5_joint_null.json`, `naive_and_corner`). Mechanism:
+intersecting two independently-derived "at least this extreme" sets does not
+preserve the uniform-rank property a single exchangeability argument gives
+one dimension — `|A cap B|/2**n` for two independent roughly-half-sized
+random subsets of the same `2**n`-point space is not itself uniformly
+distributed. General fact about the construction, not specific to sign-flip
+nulls, found the way P-ST1 and P6-R2/R4's retired nulls were: by running it
+on inputs whose answer is known (6m's method), not by inspection.
+
+**The fix: rank by the weaker axis.** For every sign pattern, compute each
+axis's own valid ascending rank (ties to the minimum, `scipy.stats.
+rankdata(method="min")`) and combine as `min(rank_g, rank_l)` — a
+Tippett-style minimum-rank statistic. Now a genuine scalar function of the
+sign pattern, computed identically for observed and null alike, so the
+standard single-dimension exchangeability argument applies directly.
+**Calibrates correctly: 0.040–0.049 at nominal 0.05 across the same four n**
+(`joint_rank` in the same file). It also does what the AND-corner was meant
+to: `min` of two ranks is only large when both axes are individually
+extreme, so a pattern with one huge sum and one middling one gets pulled
+down. Measured on the falsifier's own configuration (real logit effect, pure
+noise on the geometric axis, n=8, effect size 1.0): the logit axis alone
+rejects at 0.79 (there IS a real effect — a reader looking at only that axis
+sees strong support); the joint statistic on the SAME draws rejects at 0.17.
+That gap — not the AND-corner's inflated one — is what EVALUABILITY.md's
+"two separate one-dimensional tests would let the prediction be scored a
+partial pass" warning is about, made quantitative.
+
+**Caveat found while testing this, not while designing it: an identically-
+zero axis degenerates the min-rank statistic rather than reducing it** — every
+pattern ties for the minimum rank on a perfectly-flat axis, collapsing the
+combined statistic to that tie regardless of the other axis, so `p = 1.0` no
+matter how extreme the informative axis is. `one_dimensional_pvalue` is a
+separate, real single-axis statistic for exactly this reading; "zero out the
+other axis" only works for the (retired) AND-corner construction.
+
+**3. The measurement grid, and the design choice it forces — put to the
+author before the control is built, matching how `P-AB1`'s prompt-as-unit
+choice and `P-I3`'s `score_and_layer` key were both registered.**
+`count_matched_pairs_by_prompt` runs `core.battery_structure.
+induction_candidates` (the same primitive every `InteractionTable` in this
+project already uses) against `core.config.PROMPTS` under a real cached
+`pythia-70m` step143000 tokenizer. Per-prompt pair counts run from 1
+(`short_heterogeneous`) to 2873 (`latex_monograph`), with `repeated_tokens`
+at 34,191 — reproducing the figure `p7_motifs/motif_alphabet.py::
+relay_strength`'s docstring and the resume block already quote for that
+exact prompt, which cross-validates this measurement against an independent
+prior one rather than trusting a fresh count blind. `repeated_tokens` is
+excluded the same way `P_I1_DOMINANT_PROMPT` is excluded everywhere else in
+this project (every token repeats — a fact about the prompt, not the
+checkpoint).
+
+Per-pair counts in the thousands would make `n` enormous if the exchangeable
+unit were "one matched pair" — but pairs inside one prompt share the same
+forward pass and the same model state, and would share the same
+random-direction draw for the control arm too if that draw is made once per
+prompt. That is `P-AB1`'s finding again (6q: the per-ablation-point reading
+inflated to 0.235 under a shared per-prompt factor where the per-prompt
+reading held at 0.029) — reused rather than re-derived, since the mechanism
+is the same one: many correlated readings inside one prompt masquerading as
+many independent units. **Design choice this step lands on: the exchangeable
+unit is the prompt, one random direction per (prompt, ablation site).**
+Excluding `repeated_tokens`, `n = 8` — floor `1/256` one-sided, comfortably
+below the usual 0.05 working threshold, the same regime `P-AB1` needed six
+prompts to reach. Nothing here commits it to `claims/registry.json`.
+
+**What this pass does not build**, stated so it is not mistaken for more:
+the matched-magnitude random-direction ablation itself — drawing a direction
+of the real ablation's magnitude, running it through `core/intervention.py`
+on the cached checkpoints, and scoring the result with
+`pairwise_geometric_reading` and `core/intervention.py::next_token_kl` (both
+readouts, ablation and logit, live in `core/intervention.py` — corrected
+2026-09-16, see `p7_motifs/p_i5_gate.py`'s docstring for where the earlier
+`core/functional_distance.py` misattribution came from) to produce real
+`(delta_geometric, delta_logit)` arrays. That is the next PR. Nothing in
+this pass has touched a real activation; `P-I5` is unchanged in
+`claims/registry.json`.
+
+## 6y. `P-I5`'s joint null, part two: the control, real activations, a first
+    reading — exploratory, not an adjudication (2026-09-16)
+
+`p7_motifs/p_i5_ablation.py`, `claims/calibration/p_i5_real_ablation.json`.
+Builds the piece 6x's closing section named as not built: the
+matched-magnitude random-direction ablation control, on real cached
+`pythia-70m` activations.
+
+**Target: `L3H6` at `step143000`.** `status-8.md`'s own table names `L3H6`
+as pythia-70m's induction/matcher head (the `L7H8` analogue) and `L2H1` as
+its previous-token partner (the `L5H2` analogue) — `L3H6` is the head whose
+attention pattern *is* the induction match, which is what `P-I5`'s
+"ablating an induction head" names. Ablation mode is `mean`, per the
+resume block's own rule for 8-heads-per-layer rungs
+(`tools/run/induction_rank_sweep.py::ablate_heads`, the shared instrument
+every `p7d_redundancy` script already uses — reused rather than
+reimplemented).
+
+**The control, defined here for the first time in this project** (no prior
+construction of "matched-magnitude random-direction ablation" exists as
+code anywhere in this repo, despite the phrase appearing in `P-I5`'s and
+`P-AB1`'s registry text both): at every position, the real arm replaces
+the target head's `d_head`-dim output slice with its mean (the
+`ablate_heads(mode="mean")` intervention); the control arm replaces the
+same slice with `clean + direction * ||mean - clean||` — same
+per-position displacement magnitude, one FIXED random direction per
+(prompt, ablation site) instead of "regress to the mean". One random draw
+per prompt, not per matched pair, matching 6x's own design choice (the
+exchangeable unit is the prompt).
+
+**Readouts.** Geometric: `pairwise_geometric_reading`'s `raw_distance`
+between the matched (query, key) hidden states, read at
+`hidden_states[L+1]` (the residual stream immediately after the ablated
+layer) — `|distance_ablated - distance_clean|`, absolute value because the
+prediction is about whether ablation moves the particles MORE than a
+matched-magnitude random push, not which direction. Logit:
+`core.intervention.next_token_kl(clean, ablated, position=query-1)` — NOT
+`query`: `induction_candidates`' pairs satisfy `ids[key-1]==ids[query-1]`,
+so the predicted (copied) token is `ids[query]` and the logits that
+predict it sit at `query-1` (HuggingFace convention: `logits[i]` predicts
+`token[i+1]`) — this is "the logit at the copied token" in `P-I5`'s own
+wording. Both readouts are non-negative magnitudes; `Dg_i`/`Dl_i` per
+prompt are the real arm's mean minus the control arm's mean, matching
+`joint_rank_pvalue`'s "greater" alternative.
+
+**First reading, all 8 informative prompts, one run:**
+
+```
+short_heterogeneous    n_pairs=    1  dG=+0.0206  dL=-0.0001
+wiki_paragraph         n_pairs= 1598  dG=+0.3049  dL=+0.0031
+sullivan_ballou        n_pairs= 2038  dG=+0.1376  dL=-0.0000
+paper_excerpt          n_pairs=  554  dG=+0.2711  dL=+0.0017
+homer_iliad            n_pairs= 2518  dG=+0.4702  dL=+0.0024
+hdbscan_code           n_pairs=  426  dG=+0.7771  dL=+0.0133
+camus_letranger        n_pairs=  963  dG=+0.2450  dL=-0.0015
+latex_monograph        n_pairs= 2873  dG=+0.9035  dL=+0.0059
+joint_rank_pvalue: p = 0.0234  (floor = 0.0039)
+```
+
+Seven of eight prompts positive on the geometric axis, six of eight on the
+logit axis — not floor-saturated (`p` is roughly 6x the floor, not at it),
+which is itself informative: the signal is real but not overwhelming at
+`n = 8`.
+
+**This is a first look, not an adjudication, and is not registered as
+one.** `claims/registry.json`'s `P-I5` entry is untouched;
+`claims/adjudications/` stays empty. What is still missing before a number
+from this pipeline could be trusted the way `P-AB1`'s or `P-I3`'s finished
+gates are, stated in the module's own docstring rather than left implicit:
+no positive/negative control pair (e.g. a head with a known-null effect,
+to confirm the pipeline reads ~0 there), one checkpoint only, one random
+direction per prompt with no sensitivity check on the draw, no power
+analysis, and `raw_distance` used without cross-checking against
+`cosine_distance` or a projector-restricted reading. Building that
+validation — the same order `P-AB1` and `P-I3` followed before their
+controls were trusted — is the natural next step if this first reading is
+worth pursuing, named rather than done here per §3.29's own standing
+hazard: depth in one place against sparseness everywhere else.
+
+`tests/test_p_i5_ablation_smoke.py` — 7 tests, run for real against the
+cached checkpoint (`SMOKE_REAL_DEPS=1 pytest -m smoke`, ~20s), not left
+unverified the way most smoke tests in this repo are when a sandbox has no
+network.
+
+## 6z. `P-I5`'s joint null, part three: the validation found a real problem —
+    the control does not discriminate (2026-09-16)
+
+`p7_motifs/p_i5_validation.py`, `claims/calibration/p_i5_validation.json`.
+6y's own closing section named five gaps before the `L3H6` reading
+(p = 0.0234) could be trusted. This closes four of them — and the first
+one closed is the headline result, not a footnote: **the pipeline does not
+discriminate `L3H6` from heads with no documented relationship to
+induction, so 6y's reading is not evidence for `P-I5` as it stands.**
+
+**Negative controls fail.** Ablating `L4H6` (`status-8.md`'s cascade
+table: "below the +0.05 print threshold" — the closest thing to a
+documented near-zero head, and from layer 4, not layer 3, so this isn't
+just `L3H6`'s own noise) gives `joint_rank_pvalue` **p = 0.0039 — the
+exact floor, more extreme than `L3H6`'s own 0.0234.** Ablating `L5H3`
+(arbitrary, final layer, named in no induction-cascade table anywhere in
+this project) gives **p = 0.0391**, the same order of magnitude as
+`L3H6`. Two heads with nothing to do with induction "pass" the gate
+`L3H6` passes.
+
+**Diagnosed, not just measured.** `run_random_vs_random_diagnostic` runs
+the identical pipeline with BOTH arms drawn as independent
+matched-magnitude random directions — neither one a real ablation.
+`joint_rank_pvalue` (greater) = **0.930**: correctly not significant. This
+rules out `joint_rank_pvalue` itself or the pipeline's mechanics being
+generally broken (consistent with 6x's synthetic calibration, which
+already validated the statistic's size on planted data — this is the same
+conclusion reached again on real activations, by a different route). What
+it does not rule out, and what the negative-control failure confirms:
+**mean-ablation of essentially any head reliably beats an isotropic random
+direction of matched magnitude, independent of what that head does.** A
+real, trained direction is structured; concentration of measure in
+`d_head = 64` dimensions makes a uniformly random direction generically
+almost orthogonal to whatever subspace a downstream reading is sensitive
+to, so "structured vs isotropic-random" is close to a free win for the
+structured arm whether or not the structure is induction-relevant. The
+registry's own phrase — "matched-magnitude random-direction ablation" —
+is under-specified in exactly the way that matters here: matching the
+NORM is not enough when the comparison needs to isolate a DIRECTION'S
+relevance, not merely confirm it is a direction at all.
+
+**What did land as expected, and is worth keeping on record even though it
+doesn't rescue the reading.** Seed sensitivity: stable across 5 seeds
+(p = 0.008–0.039, mean 0.020). Checkpoint replication: holds at
+`step64000` (p = 0.0078). `cosine_distance` cross-check: agrees with
+`raw_distance` (p = 0.0273 vs 0.0234). All three answer "is the reading
+stable," not "is the reading specific" — and specificity is exactly what
+the negative controls show is missing.
+
+**What this means for `P-I5`.** `claims/registry.json` is unchanged —
+nothing from 6y or this section was ever close to registration, and this
+finding is exactly why that discipline exists (`CLAUDE.md`'s own rule:
+registration freezes the wording and the statistic before a finding like
+this one can still change the null). The real next step is not running
+the existing pipeline further — more prompts, more checkpoints — but
+fixing what the control compares against: a null distribution for "an
+unstructured direction" needs to be unstructured RELATIVE TO WHATEVER THE
+READING IS SENSITIVE TO, not merely isotropic in the ambient `d_head`-
+dimensional space. Candidates named but not built: draw the control
+direction from the empirical distribution of OTHER heads' own output
+directions at the same site, or from random combinations of directions
+the residual stream already occupies, rather than a fresh Gaussian draw
+each time.
+
+Also moot until the control is fixed: the power analysis 6y already
+flagged as undone. There is no point measuring the power of a test that
+is not yet measuring what it claims to.
+
+## 6za. `P-I5`'s joint null, part four: two more constructions tried, two
+    more failures — and the second one's diagnosis moves the problem from
+    the control to the readout (2026-09-16)
+
+`p7_motifs/p_i5_structured_control.py`,
+`claims/calibration/p_i5_structured_control.json`. 6z named the fix
+(draw the control direction from real structure, not isotropic noise) but
+did not build it. This builds it, and a second, sharper diagnostic —
+neither discriminates, and the second failure has a mechanistic cause
+worth more than either number on its own.
+
+**Construction 1: other-head-direction, magnitude-matched.** Same
+mechanics as 6y's control, but the direction is drawn from a randomly
+chosen OTHER head's own mean output vector (normalized), not `N(0, I)` —
+"random direction" read as "a real direction drawn at random from the
+population this site actually sees," the same move `P-ST1`'s retired null
+made replacing a matched-dimension subspace with a matched-occupancy one
+(6m). **Still fails**: `L4H6` p = 0.0078 (more significant than before),
+`L5H3` p = 0.0156, `L3H6` p = 0.0234 — same pattern as the isotropic
+control.
+
+**Construction 2 (diagnostic): constant-substitution swap.** Both arms use
+full constant substitution (`ablate_heads(mode="mean")`, exactly the real
+arm's own mechanism) — real substitutes `L3H6`'s own mean, control
+substitutes a randomly drawn other head's mean. Not magnitude-matched;
+isolates a sharper question with intervention TYPE held fixed. **Result:
+`delta_geometric` is ~1e-8 for every prompt** (`tests/
+test_p_i5_structured_control_smoke.py` checks this numerically, not just
+in prose) — not a null finding about induction, but a property of the
+READOUT. `pairwise_geometric_reading` reads the full 512-dim residual
+stream at two positions; the ablated head is one fixed 64-dim slice.
+Under constant substitution that slice becomes IDENTICAL at both
+positions regardless of which constant was used, so its contribution to
+their pairwise difference is exactly zero either way. `raw_distance` on
+this layer's own residual stream cannot tell "the right constant" from
+"a wrong constant" under this intervention type — it can only detect
+"was a slice unified across positions," which both arms do identically.
+(This cancellation does not apply to 6z's or construction 1's controls,
+which displace each position by its own magnitude rather than unifying
+them — which is why they show *a* signal, just not a specific one.)
+
+`delta_logit` under construction 2 goes the WRONG way for `P-I5`: negative
+on every prompt — the donor substitution is MORE disruptive to next-token
+prediction than the target's own mean, consistently. Plausibly a
+foreignness effect (a wrong head's mean is further out-of-distribution
+than the target's own mean is) rather than anything about induction.
+
+**What this adds up to.** Three constructions, three failures to
+discriminate, and the third has a mechanistic explanation rather than an
+unexplained number. The open problem now has two parts, not one: what
+control isolates directional relevance (6z's framing), AND whether
+`raw_distance` on the ablated layer's own residual stream has the
+sensitivity this test needs at all, once the intervention removes
+cross-position variance in the ablated slice specifically. A geometric
+readout at a LATER layer — downstream of wherever the ablated slice's
+information would need to propagate through further mixing to matter — is
+the next candidate, named rather than built. `claims/registry.json`'s
+`P-I5` entry is unchanged.
 
 ## 7. What this plan does *not* do
 

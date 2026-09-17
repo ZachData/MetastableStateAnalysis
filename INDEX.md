@@ -5,22 +5,58 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-11)
+## Current priority (updated 2026-09-17)
 
-- **Active work: Phase 8, the Pythia scale ladder.** `p8_scale_ladder/`, opened
-  2026-09-10 — the 7d/7e measurements repeated across model sizes so `n = 1`
-  observations can become population claims. **Rung policy: explore on 70m and
-  410m, RESERVE 1b and 1.4b** (no induction measurement there until a prediction
-  naming them is registered). Read `p8_scale_ladder/literature-8.md` first
-  (2026-09-12 — the verified scan; the phase's original headline question is
-  answered by `2407.10827` and the phase reframes onto the **geometry of the
-  substitution**, with invariant 4 the load-bearing card), then `design-8.md`,
-  then `status-8.md`. **First rung has run** (2026-09-11): the 48-head catalogue and
-  invariants 2/4/5/6 on pythia-70m, each under two ablation modes.
-  **Invariant 5 does not replicate; 2 and 4 do; 6 needs its ceiling-immune
-  instrument.** `compare_rungs.py` holds the threshold-free cross-rung
-  statistics — no absolute bar transfers between rungs, and the first write-up
-  broke that rule before the A/B caught it.
+- **Live thread: the e-value audit, phase by phase (`PROJECT.md` §3.36).**
+  There are no e-values yet — the ledger is empty — so the audit is of
+  classification and evidence. `claims/registry.json` now carries `phase`
+  and three evidence-path fields that CI checks; `claims/EVALUABILITY.md`
+  "By phase" is the view to read; `claims/EVALUABILITY_LOG.md` is the
+  construction diary. Next unit: Phase 1.
+- **Direction (`PROJECT.md` §3.29, 2026-09-13, user): the programme is the
+  particle/OT reading — mathematical perspective + optimal transport applied
+  to mechanisms the network builds.** Induction heads (the whole thread
+  below, Phase 7/7d/7e/8) are the *current instance*, not the object, and are
+  now past diminishing returns as a place to keep digging. The same pass —
+  why did this form, what were the mechanisms, what happened after — is to
+  be run on SAE features, clusters, and other objects next. Read §3.29 before
+  choosing where to work.
+- **Live construction thread, PARKED not closed: `P-I5`'s joint permutation
+  null.** `p7_motifs/p_i5_gate.py` (the statistic — a Tippett-style
+  minimum-rank fix to an AND-corner construction that over-rejected),
+  `p_i5_ablation.py`/`p_i5_validation.py`/`p_i5_structured_control.py` (three
+  real-activation control constructions on pythia-70m `L3H6`, all three
+  failed to discriminate it from uninvolved heads — the third failure
+  mechanistically explained, `PROJECT.md` §3.31–§3.34). Next step named
+  there (a later-layer geometric readout) when this becomes the priority
+  again; `claims/registry.json` untouched throughout.
+- **Just run: §2.5's isometric path on `L7H8` (`PROJECT.md` §3.35,
+  `MATH_SPECTRAL_OT.md` §2.5.6).** The only *designed* particle
+  intervention in this project. Real finding: `t=0` and `t=1` have
+  identical singular values (exact isometry) but the transpose (`t=1`)
+  stays as broken as the fully-symmetric midpoint rather than recovering —
+  read/write alignment carries real causal weight beyond the spectral
+  sign. `core/isometric_path.py` (pure math) / `tools/run/
+  isometric_path_sweep.py` (real-model sweep). Next step named: §2.5.4's
+  second family, holding both subspaces fixed and rotating only the
+  correspondence.
+- **Active work before the direction changed: Phase 8, the Pythia scale
+  ladder.** `p8_scale_ladder/`, opened 2026-09-10 — the 7d/7e measurements
+  repeated across model sizes so `n = 1` observations can become population
+  claims. **Rung policy: explore on 70m and 410m, RESERVE 1b and 1.4b** (no
+  induction measurement there until a prediction naming them is
+  registered). Read `p8_scale_ladder/literature-8.md` first (2026-09-12 —
+  the verified scan; the phase's original headline question is answered by
+  `2407.10827` and the phase reframes onto the **geometry of the
+  substitution**, with invariant 4 the load-bearing card), then
+  `design-8.md`, then `status-8.md`. **First rung has run** (2026-09-11):
+  the 48-head catalogue and invariants 2/4/5/6 on pythia-70m, each under
+  two ablation modes. **Invariant 5 does not replicate; 2 and 4 do; 6 needs
+  its ceiling-immune instrument.** `compare_rungs.py` holds the
+  threshold-free cross-rung statistics — no absolute bar transfers between
+  rungs, and the first write-up broke that rule before the A/B caught it.
+  Not the current priority per §3.29, but not abandoned either — this
+  thread is still where a new rung or invariant would be measured.
 - **Read before running any ablation anywhere:** `status-8.md`'s
   ablation-mode A/B. Zero-ablation's off-distribution bias scales as
   `1/n_heads`, so it distorts at 70m (8 heads/layer) and barely touches 410m

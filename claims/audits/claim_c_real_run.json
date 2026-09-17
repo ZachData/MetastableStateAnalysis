@@ -1,0 +1,59 @@
+{
+  "prediction": "CLAIM-C",
+  "written_at": "2026-09-17T12:14:35-0500",
+  "run_dirs": [
+    "data/phase12/2026-08-31_11-08-06",
+    "data/phase12/2026-08-31_11-42-56",
+    "data/phase12/2026-08-31_12-17-32",
+    "data/phase12/2026-08-31_12-52-44",
+    "data/phase12/2026-08-31_13-27-45",
+    "data/phase12/2026-08-31_14-03-29",
+    "data/phase12/2026-08-31_14-38-22",
+    "data/phase12/2026-08-31_15-13-34",
+    "data/phase12/2026-08-31_15-50-18",
+    "data/phase12/2026-08-31_16-27-24",
+    "data/phase12/2026-08-31_17-05-50",
+    "data/phase12/2026-08-31_17-46-24",
+    "data/phase12/2026-09-01_13-30-37",
+    "data/phase12/2026-09-01_13-44-28",
+    "data/phase12/2026-09-01_14-07-09",
+    "data/phase12/2026-09-01_15-59-26",
+    "data/phase12/2026-09-01_16-48-38",
+    "data/phase12/2026-09-01_17-37-38",
+    "data/phase12/2026-09-01_18-25-12"
+  ],
+  "arms": {
+    "gpt2-large": {
+      "n_prompts": 0,
+      "prompts": []
+    },
+    "gpt2-large-random": {
+      "n_prompts": 0,
+      "prompts": []
+    },
+    "pythia-1.4b-step143000": {
+      "n_prompts": 0,
+      "prompts": []
+    },
+    "pythia-1.4b-random": {
+      "n_prompts": 0,
+      "prompts": []
+    },
+    "pythia-1.4b-step0": {
+      "n_prompts": 0,
+      "prompts": []
+    }
+  },
+  "metrics": [
+    "mass_near_1",
+    "effective_rank",
+    "cluster_membership",
+    "cluster_count",
+    "cka_prev",
+    "fiedler_mean"
+  ],
+  "artifact_hashes": [],
+  "adjudicate": false,
+  "refused": "arm(s) absent from every run directory given: ['gpt2-large', 'gpt2-large-random', 'pythia-1.4b-step143000', 'pythia-1.4b-random']. The gate needs Phase 1 runs of all of ['gpt2-large', 'gpt2-large-random', 'pythia-1.4b-step143000', 'pythia-1.4b-random'] on the metastability prompts; nothing here substitutes one model for another.",
+  "result": null
+}

@@ -242,8 +242,13 @@ def main():
            "probe_vocab_range": list(PROBE_ARMS[args.probe]),
            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
            "membership_source": source,
+           # `vocab_range` is the range ACTUALLY drawn from, not the module
+           # default: it read `[VOCAB_LO, VOCAB_HI]` unconditionally until
+           # 2026-09-12, so a `--probe freq` run recorded `wide`'s range here
+           # while `probe_vocab_range` above recorded the right one. Reporting
+           # only; no number was measured against this field.
            "eval": {"n_seqs": args.seqs, "n_rep": N_REP, "seed": EVAL_SEED,
-                    "vocab_range": [VOCAB_LO, VOCAB_HI],
+                    "vocab_range": list(PROBE_ARMS[args.probe]),
                     "scored_from_position": N_REP - 1},
            "heads": [names[k] for k in heads], "steps": steps,
            "pair": [names[k] for k in pair], "per_step": {}}

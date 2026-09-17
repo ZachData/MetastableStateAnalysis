@@ -405,6 +405,59 @@ and its transpose. The nearest work decomposes attention *scores* rather than
 weights and performs zeroing ablations, not transposition — see `PROJECT.md`
 §3.12-N.
 
+#### 2.5.6 Run for real (2026-09-16) — a real, unexpected asymmetry
+
+`tools/run/isometric_path_sweep.py`, `data/analysis/isometric_path_L7H8_step4000.json`.
+Full rank (`k = 64`) refuses for `L7H8`: its tail singular values are
+numerically zero (down to `~1e-18` relative to the top one — consistent with
+`PROJECT.md` §3.11's own `r* = 1` finding, a single direction already carries
+97% of the head's causal effect), and `Y(0.5) = 0.5(U + V)` is singular to
+machine precision in those directions, refusing exactly at `t = 0.5`. Verified
+directly rather than assumed: truncating to `rank <= 32` clears the refusal
+comfortably (`min sigma_min >= 0.38` at rank 32). The sweep runs at ranks
+1, 8, 16 instead of one — energy and causal relevance diverge for this head
+throughout this project's findings (`r*_SVD << r*_Schur`), so no single
+truncation is obviously "the" fair one, and all three land the same shape.
+
+**The curve is NOT the symmetric dip §2.5.3's framing invites.** Second-copy
+NLL (baseline 0.779, `step4000`) stays near baseline through `t ~ 0.2-0.3`,
+rises through `t = 0.5` (0.91-0.93 — the symmetric-PSD point, the "100%
+attractive" corner), keeps rising to `t ~ 0.7-0.8` (~1.05, the curve's peak),
+and **stays there through `t = 1`** (1.04-1.06) rather than returning toward
+baseline. All three ranks agree on this shape.
+
+**That is the informative part.** `t = 0` and `t = 1` have IDENTICAL singular
+values by construction (§2.5's own exact-isometry guarantee) — both are
+"100% repulsive" in exactly the sense §2.5.3 describes. If the repulsive/
+attractive SIGN alone were what copying needs, `t = 1` should read close to
+baseline, the same as `t = 0`. It does not — cross-checked directly against
+an independently-built `M^T` (bypassing `build_M_t` entirely: `A = V @
+diag(S)`, `B = U^T`), bit-identical NLL (`1.040218472480774` both ways, `2026-
+09-16`). **The read/write alignment — which subspace is read (`V`) and which
+is written (`U`) — is doing real causal work here, not merely the
+attractive/repulsive sign of the spectrum.** `M^T` swaps that alignment while
+preserving the sign exactly, and copying stays broken.
+
+This is precisely the ambiguity §2.5.3 flagged as unresolved by this
+construction ("symmetry and read/write alignment move together along this
+path by construction... shows WHETHER the spectral character is load-bearing,
+not WHICH of the two carries it") — now measured rather than only named. The
+result does not resolve it in either account's favour on its own: it shows
+the naive "sign is everything, alignment is incidental" reading is wrong
+(§2.5.4's second family — `M_R = U R Sigma V^T`, holding both subspaces fixed
+and rotating only the correspondence — is what would isolate alignment from
+sign cleanly; not run here). What it does show, without needing that
+separation: **`L7H8`'s function is not simply "has a repulsive spectrum" — it
+depends on which specific directions play the read and write roles.**
+
+Every run: weights restored exactly (`rel error 0.00e+00`) and baseline
+reproduced bit-for-bit after the full sweep, at every rank — the save/restore
+convention `tools/run/induction_rank_sweep.py`'s own docstring states, held
+to directly rather than assumed.
+
+Exploratory. No `P-*` id names this curve as of 2026-09-16;
+`claims/registry.json` is untouched.
+
 ---
 
 ## 3. Nulls: the counting statistics sit on top of chance
