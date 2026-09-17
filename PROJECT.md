@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | a ten-PR stack, #36→#45, tip `claude/p-i5-structured-control` (PR #45, stacked on #44) — see the resume block |
-| Last updated | 2026-09-16 — **§3.34: two more control constructions, two more failures — and the second one's diagnosis moves the open problem from the control to the readout.** An other-head-direction (structured, not isotropic) control STILL doesn't discriminate `L3H6` from uninvolved heads (`L4H6` p = 0.0078, `L5H3` p = 0.0156). A constant-substitution diagnostic explains a mechanism: full constant substitution makes the ablated 64-dim slice IDENTICAL at both members of a matched (query, key) pair regardless of which constant is used, so `raw_distance` on that layer's own residual stream contributes exactly zero from the ablated slice either way (`delta_geometric` ≈ 1e-8, checked numerically). **The open problem is now two things: what control isolates directional relevance, AND whether the geometric readout even has the sensitivity this test needs at the ablated layer.** A later-layer readout is the next candidate, named not built. `claims/registry.json`'s `P-I5` entry is unchanged throughout. §3.33: the first (isotropic) control's failure. §3.29 (2026-09-13): the direction decision. |
+| Branch | an eleven-PR stack, #36→#46, tip `claude/isometric-path-l7h8` (PR #46, stacked on #45) — see the resume block |
+| Last updated | 2026-09-16 — **§3.35: §2.5's isometric path on `L7H8`, run for real — a genuine asymmetry between `t=0` and `t=1`.** The only *designed* particle intervention in this project, unrun until now. An exact-isometry sweep of `L7H8`'s OV operator from its own spectrum (100% repulsive) through symmetric PSD (100% attractive) to its transpose (100% repulsive again, same singular values). **`t=0` and `t=1` are NOT symmetric despite identical spectra**: second-copy NLL stays near baseline through `t~0.3`, rises through `t=0.5`, peaks near `t~0.8`, and **stays elevated through `t=1`** rather than recovering — cross-checked bit-identical against an independently-built `M^T`. The read/write alignment, not merely the spectral sign, is doing real causal work. Exploratory, `claims/registry.json` untouched. §3.34: the `P-I5` control-construction thread this was switched away from (three failed constructions, flagged as a check-in point) — still open, not abandoned. §3.29 (2026-09-13): the direction decision. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,42 +37,46 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-16 — ten PRs in a stack; §3.34 found the problem is partly the readout, not just the control — CHECK IN BEFORE GOING FURTHER)
+### Resume here (2026-09-16 — eleven PRs in a stack; §3.35 ran the isometric path for real and found a genuine asymmetry)
 
-**Read this block, then §3.34, then §3.33, then §3.32, then §3.31, then
-§3.30, then §3.29, then §3.28.** §3.29 is the direction decision and it
-demotes everything below it: the programme is the particle/OT reading and
-the induction thread is an instance of it that is now past diminishing
-returns — **and this exact thread (`P-I5`'s control) is now a live
-instance of the hazard §3.29 itself names.** §3.30 built the pairwise
-geometric field §3.29 named as STEP ONE. §3.31 built the joint
-permutation null's floor and fixed its statistic. §3.32 got a first
-`L3H6` reading (p = 0.0234, now superseded). §3.33 found the isotropic
-control doesn't discriminate. §3.34 is this session's close: a second,
-structured control ALSO doesn't discriminate, and a diagnostic traces the
-failure to the geometric readout's own mechanics at the ablated layer, not
-only to the control. **Three constructions tried, three failures, the
-third mechanistically explained rather than a fourth blind guess.** §3.28
-is the pre-registration scan — it reclassifies §3.22's novelty and blocks
-§3.27's registration, so reading §3.20–§3.27 without it will overstate
-what is new. Everything below this block is earlier and is kept as
-background, not as the current state.
+**Read this block, then §3.35, then §3.34, then §3.33, then §3.32, then
+§3.31, then §3.30, then §3.29, then §3.28.** §3.29 is the direction
+decision and it demotes everything below it: the programme is the
+particle/OT reading and the induction thread is an instance of it that is
+now past diminishing returns. §3.34 flagged a check-in: `P-I5`'s control
+construction had failed three times running (§3.32–§3.34), the third
+failure mechanistically explained, and the user chose to redirect the
+session to the alternative already queued — §2.5's isometric path
+on `L7H8` — rather than a fourth blind attempt. **§3.35 is that: run for
+real, and it found something.** `t=0` and `t=1` have identical singular
+values by construction (an exact isometry) but read very differently —
+`t=1` (the transpose) stays as broken as the symmetric midpoint rather
+than recovering toward baseline, meaning read/write alignment carries
+real causal weight beyond the spectral sign alone. `P-I5`'s
+control-construction problem (§3.34) is UNRESOLVED, not abandoned — it's
+parked, not closed, and is where a future session returns if `P-I5` is
+picked back up. §3.28 is the pre-registration scan — it reclassifies
+§3.22's novelty and blocks §3.27's registration, so reading §3.20–§3.27
+without it will overstate what is new. Everything below this block is
+earlier and is kept as background, not as the current state.
 
-**Nothing is running and nothing is uncommitted.** All ten branches are
+**Nothing is running and nothing is uncommitted.** All eleven branches are
 pushed and in sync with their remotes; the only untracked path is
 `data/hf/` (the HF cache — never `git add -A` under `data/`, its
 `.no_exist/` markers are not gitignored). Gate green on the tip:
-**2321 passed / 5 skipped / 45 deselected** (run under `.venv`, not the
-`mets` conda env). The 15 new smoke tests across `tests/
+**2332 passed / 5 skipped / 45 deselected** (run under `.venv`, not the
+`mets` conda env). The 15 smoke tests across `tests/
 test_p_i5_ablation_smoke.py`, `tests/test_p_i5_validation_smoke.py`, and
 `tests/test_p_i5_structured_control_smoke.py` are among the deselected —
-they need `SMOKE_REAL_DEPS=1 pytest -m smoke` and were run for real this
-session (all three files, all pass) rather than left unverified. **This
-machine's memory watchdog killed two background runs mid-session**
-(transient — `free -h` showed 24GB+ available both immediately before and
-after) — every real-run script in this thread now checkpoints its JSON
-after every step for exactly this reason; if a future run dies partway,
-read what's on disk before rerunning finished steps.
+they need `SMOKE_REAL_DEPS=1 pytest -m smoke` and were run for real
+earlier this session (all pass) rather than left unverified.
+`tests/test_isometric_path_sweep.py` (11 tests) is pure-tier and IS in
+the 2332 — `core/isometric_path.py` was split out specifically so the
+math didn't need torch to be checkable. **This machine's memory watchdog
+killed two background runs earlier in the session** (transient — `free
+-h` showed 24GB+ available both immediately before and after) — real-run
+scripts in the `P-I5` thread checkpoint their JSON after every step for
+exactly this reason.
 
 **The PR stack, oldest first. Each is based on the one above it, so review in
 order and merge in order.**
@@ -89,6 +93,7 @@ order and merge in order.**
 | #43 | `claude/p-i5-real-ablation` | §3.32: the matched-magnitude random-direction control, real `L3H6` ablation, first reading (p = 0.0234, exploratory) |
 | #44 | `claude/p-i5-validation` | §3.33: validation finds the control does not discriminate — negative controls fail, random-vs-random diagnoses why |
 | #45 | `claude/p-i5-structured-control` | §3.34: two more controls fail; a diagnostic traces the second failure to the geometric readout's own mechanics |
+| #46 | `claude/isometric-path-l7h8` | §3.35: §2.5's isometric path on `L7H8`, run for real — `t=0`/`t=1` asymmetry despite identical spectra |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
@@ -110,30 +115,29 @@ induction heads were the instance and are past diminishing returns. Actions 1
 and 2 serve the frame; 3–6 are the induction thread's leftovers and are
 explicitly *not* the priority.
 
-1. **STEP ONE (§3.30) and STEP ONE-B (§3.31) are done. STEP ONE-C through
-   STEP ONE-F (§3.32–§3.34) have each tried a construction and each
-   failed — the last one mechanistically, not just numerically. THIS IS A
-   CHECK-IN POINT, not a queue of more constructions to try blind.**
-   Three controls (isotropic random, other-head-direction, and the
-   constant-substitution diagnostic) all fail to make `L3H6` read
-   differently from `L4H6`/`L5H3`, uninvolved heads. The third failure is
-   explained: `raw_distance` on the ablated layer's own residual stream is
-   structurally insensitive to WHICH constant replaces a fully-ablated
-   slice, when reading a pairwise distance between two positions that both
-   get the same constant. **The problem is no longer only "what control,"
-   it now includes "does this readout even have the needed sensitivity at
-   this layer."** §3.29's own standing hazard — depth in one place against
-   sparseness everywhere else — is now live on this exact thread: three
-   PRs (#43–#45) spent on one construction that still hasn't produced a
-   trustworthy reading. **Before a fourth construction: is fixing `P-I5`'s
-   instrument still the priority, or does §2.5's isometric `L7H8` path (a
-   *designed* particle intervention with no such control problem) deserve
-   the next session's attention instead?** Not decided here — surfaced for
-   the next session to decide, per §3.29's own reasoning rather than
-   silently pushed past.
-2. **Then §2.5's isometric path on `L7H8`** — the only *designed* particle
-   intervention, still unrun, and now readable against a known mechanism
-   (§3.29).
+1. **`P-I5`'s instrument is PARKED, not closed — pick back up here if
+   `P-I5` becomes the priority again.** STEP ONE (§3.30) and STEP ONE-B
+   (§3.31) are done. STEP ONE-C through STEP ONE-F (§3.32–§3.34) each
+   tried a control construction and each failed — the third
+   mechanistically explained (`raw_distance` on the ablated layer's own
+   residual stream is structurally insensitive to WHICH constant replaces
+   a fully-ablated slice). At the check-in this produced, the user chose
+   to redirect to item 2 below instead of a fourth blind construction —
+   see §3.35. **Next step here, when resumed:** a geometric readout at a
+   LATER layer than the ablated one (downstream of where the ablated
+   slice's information would need to propagate through further mixing),
+   which the constant-substitution cancellation does not obviously apply
+   to. Not attempted yet.
+2. **§2.5's isometric path on `L7H8` — RUN (§3.35, 2026-09-16), and it
+   found something real.** `t=0` and `t=1` have identical singular values
+   (an exact isometry by construction) but `t=1` (the transpose) stays as
+   broken as the symmetric midpoint rather than recovering toward
+   baseline — read/write alignment carries real causal weight beyond the
+   spectral sign. **Next step here:** §2.5.4's second family
+   (`M_R = U R Σ V^T`, holding both subspaces fixed and rotating only the
+   correspondence) is what would cleanly separate symmetry from
+   alignment — this session's result shows alignment matters but not by
+   how much relative to sign, which that construction would answer.
 3. **Do NOT register §3.27** (§3.28): not differential, and CoAx reached the
    statistic first. Invariant 5 remains a clean *unclaimed negative* and is the
    better registration candidate if one is wanted — but per §3.29 the bar is
@@ -3433,6 +3437,57 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.35 §2.5's isometric path on `L7H8`, run for real: a genuine asymmetry between `t=0` and `t=1` (2026-09-16)
+
+Following the check-in at §3.34's close, the next session was pointed at
+the alternative already queued: §2.5's isometric path
+(`MATH_SPECTRAL_OT.md` §2.5), the only *designed* particle intervention
+in this project and unrun until now. `tools/run/isometric_path_sweep.py`
++ `core/isometric_path.py` (pure math, split out so it's testable without
+torch) + `data/analysis/isometric_path_L7H8_step4000.json`. Full
+derivation in `MATH_SPECTRAL_OT.md` §2.5.6; short version here.
+
+**What it is.** `L7H8`'s OV operator `M = U Σ V^T` (thin SVD). A path
+`γ(t)` from `U` to `V` (closed-form polar retraction of the chord) gives
+`M(t) = γ(t) Σ γ(1-t)^T` — an EXACT ISOMETRY at every `t` (same singular
+values, same rank, same energy as `M`), with `M(0) = M`, `M(1) = M^T`,
+`M(1/2)` symmetric PSD. Sweeps `L7H8`'s 100%-repulsive spectrum through
+100%-attractive and back, at matched magnitude — the causal test the
+naive arithmetic-mean pilot (§3.12-M) could not give, because a
+rank-`k` head cannot write its own symmetric part.
+
+**Full rank refuses; truncated ranks don't.** `k=64` fails exactly at
+`t=0.5` — `L7H8`'s tail singular values are numerically zero (consistent
+with §3.11's own `r*=1`), so `Y(0.5)` is singular in those directions.
+Verified directly: rank ≤ 32 clears the refusal comfortably. Ran at ranks
+1, 8, 16 (no single truncation is obviously "the" fair one here) rather
+than picking one.
+
+**The finding: `t=0` and `t=1` are NOT symmetric, though they have
+IDENTICAL singular values by construction.** Second-copy NLL (baseline
+0.78) stays near baseline through `t~0.3`, rises to `t=0.5` (0.91-0.93),
+peaks around `t~0.8` (~1.05), and **stays elevated through `t=1`**
+(1.04-1.06) rather than recovering — all three ranks agree. Cross-checked
+against an independently-built `M^T` (bypassing the path construction
+entirely): bit-identical NLL. **The read/write alignment — which subspace
+is read vs. written — is doing real causal work, not merely the spectral
+sign.** `M^T` preserves `L7H8`'s exact spectrum (100% repulsive, same
+eigenvalues) while swapping that alignment, and copying stays broken.
+
+This is exactly the ambiguity `MATH_SPECTRAL_OT.md` §2.5.3 flagged as
+unresolved by this one path ("shows WHETHER the spectral character is
+load-bearing, not WHICH of the two [symmetry, alignment] carries it") —
+now measured, not just named. It rules out the naive "sign alone
+explains it" reading; separating symmetry from alignment cleanly needs
+§2.5.4's second family (`M_R = U R Σ V^T`, holding both subspaces fixed,
+rotating only the correspondence) — named, not built here.
+
+Every run: weights restored exactly, baseline reproduced bit-for-bit
+after the sweep, at every rank. Exploratory — no `P-*` id names this
+curve, `claims/registry.json` is untouched.
 
 ---
 
