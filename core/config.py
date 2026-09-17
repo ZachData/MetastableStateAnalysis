@@ -348,6 +348,7 @@ MODEL_CONFIGS = {
         "tokenizer_class": AlbertTokenizer,
         "is_albert":       True,
         "random_init":     True,
+        "hf_repo":         "albert-base-v2",   # same defect as gpt2-large-random
     },
     "albert-xlarge-v2": {
         "model_class":     AlbertModel,
@@ -393,6 +394,11 @@ MODEL_CONFIGS = {
         "tokenizer_class": GPT2Tokenizer,
         "is_albert":       False,
         "random_init":     True,
+        # The architecture to load before re-initialising. Without it
+        # load_model resolves the repo id to the key itself and asks the Hub
+        # for "gpt2-large-random", which does not exist — this entry had never
+        # loaded (found 2026-09-17, producing CLAIM-C's reference-random arm).
+        "hf_repo":         "gpt2-large",
     },
     "gpt2-xl": {
         "model_class":     GPT2Model,
