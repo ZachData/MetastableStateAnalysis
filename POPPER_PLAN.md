@@ -4307,6 +4307,65 @@ Also moot until the control is fixed: the power analysis 6y already
 flagged as undone. There is no point measuring the power of a test that
 is not yet measuring what it claims to.
 
+## 6za. `P-I5`'s joint null, part four: two more constructions tried, two
+    more failures — and the second one's diagnosis moves the problem from
+    the control to the readout (2026-09-16)
+
+`p7_motifs/p_i5_structured_control.py`,
+`claims/calibration/p_i5_structured_control.json`. 6z named the fix
+(draw the control direction from real structure, not isotropic noise) but
+did not build it. This builds it, and a second, sharper diagnostic —
+neither discriminates, and the second failure has a mechanistic cause
+worth more than either number on its own.
+
+**Construction 1: other-head-direction, magnitude-matched.** Same
+mechanics as 6y's control, but the direction is drawn from a randomly
+chosen OTHER head's own mean output vector (normalized), not `N(0, I)` —
+"random direction" read as "a real direction drawn at random from the
+population this site actually sees," the same move `P-ST1`'s retired null
+made replacing a matched-dimension subspace with a matched-occupancy one
+(6m). **Still fails**: `L4H6` p = 0.0078 (more significant than before),
+`L5H3` p = 0.0156, `L3H6` p = 0.0234 — same pattern as the isotropic
+control.
+
+**Construction 2 (diagnostic): constant-substitution swap.** Both arms use
+full constant substitution (`ablate_heads(mode="mean")`, exactly the real
+arm's own mechanism) — real substitutes `L3H6`'s own mean, control
+substitutes a randomly drawn other head's mean. Not magnitude-matched;
+isolates a sharper question with intervention TYPE held fixed. **Result:
+`delta_geometric` is ~1e-8 for every prompt** (`tests/
+test_p_i5_structured_control_smoke.py` checks this numerically, not just
+in prose) — not a null finding about induction, but a property of the
+READOUT. `pairwise_geometric_reading` reads the full 512-dim residual
+stream at two positions; the ablated head is one fixed 64-dim slice.
+Under constant substitution that slice becomes IDENTICAL at both
+positions regardless of which constant was used, so its contribution to
+their pairwise difference is exactly zero either way. `raw_distance` on
+this layer's own residual stream cannot tell "the right constant" from
+"a wrong constant" under this intervention type — it can only detect
+"was a slice unified across positions," which both arms do identically.
+(This cancellation does not apply to 6z's or construction 1's controls,
+which displace each position by its own magnitude rather than unifying
+them — which is why they show *a* signal, just not a specific one.)
+
+`delta_logit` under construction 2 goes the WRONG way for `P-I5`: negative
+on every prompt — the donor substitution is MORE disruptive to next-token
+prediction than the target's own mean, consistently. Plausibly a
+foreignness effect (a wrong head's mean is further out-of-distribution
+than the target's own mean is) rather than anything about induction.
+
+**What this adds up to.** Three constructions, three failures to
+discriminate, and the third has a mechanistic explanation rather than an
+unexplained number. The open problem now has two parts, not one: what
+control isolates directional relevance (6z's framing), AND whether
+`raw_distance` on the ablated layer's own residual stream has the
+sensitivity this test needs at all, once the intervention removes
+cross-position variance in the ablated slice specifically. A geometric
+readout at a LATER layer — downstream of wherever the ablated slice's
+information would need to propagate through further mixing to matter — is
+the next candidate, named rather than built. `claims/registry.json`'s
+`P-I5` entry is unchanged.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
