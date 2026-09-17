@@ -6,9 +6,10 @@ tools/check_registry.py — registry validation and the pre-registration gate
 Two checks, in one file because they share a loader and both run in CI tier 0:
 
 **Registry validation.** Schema, uniqueness, claim membership, relevance floor,
-evidence paths (`null_module`, `calibration_record`, `real_run_record` must
-each be null or a git-tracked path that exists -- a boolean saying "built"
-cannot be checked, a path can), and the coverage check that matters most in
+the phase join (`phase`, `experiment`, and a `gate` that must resolve to a
+`module:function` in the tree), evidence paths (`calibration_record`,
+`real_run_record` must each be null or a git-tracked path that exists -- a
+boolean saying "calibrated" cannot be checked, a path can), and the coverage check that matters most in
 practice: every prediction ID that
 appears anywhere in the project's `.py` or `.md` files has a registry entry.
 A prediction discussed in a docstring but absent from the registry is a
@@ -67,9 +68,17 @@ CLAIMS_MD = ROOT / "claims" / "CLAIMS.md"
 ADJUDICATIONS = ROOT / "claims" / "adjudications"
 
 REQUIRED_FIELDS = (
-    "id", "claim", "statement", "h0", "h1", "falsifier", "instrument", "phase",
-    "cost", "evaluable", "null_construction", "null_module",
-    "calibration_record", "real_run_record", "relevance", "source",
+    "id", "claim", "statement", "h0", "h1", "falsifier", "instrument",
+    "cost", "evaluable", "null_construction", "relevance", "source",
+    # The phase join, added 2026-09-16. Descriptive, not frozen: `phase` is the
+    # directory the instrument lives in, `experiment` is the instrument's own id
+    # where it names one, `gate` is the module:function computing the p-value.
+    # Required so that a prediction registered without them is caught here
+    # rather than surfacing later as a hole in claims/EXPERIMENTS.md.
+    "phase", "experiment", "gate",
+    # The evidence paths, added 2026-09-17: git-tracked paths or null, so that
+    # "calibrated" and "run on real artifacts" are checkable rather than claimed.
+    "calibration_record", "real_run_record",
 )
 EVALUABLE_VALUES = ("e-value", "measurement", "needs-null")
 STATUS_VALUES = ("active", "dormant")
@@ -80,7 +89,7 @@ PHASE_VALUES = ("1", "1b", "1c", "2", "2b", "2d", "3", "4", "5", "5b", "5c",
 #: Each is a git-tracked repo-relative path or null. A path can be checked
 #: for existence and tracking; a boolean saying "built" or "run" cannot be
 #: checked at all, which is why these are paths.
-EVIDENCE_FIELDS = ("null_module", "calibration_record", "real_run_record")
+EVIDENCE_FIELDS = ("calibration_record", "real_run_record")
 
 #: Fields frozen once a prediction has been adjudicated (gate rule 2).
 FROZEN_FIELDS = ("statement", "h0", "h1", "falsifier", "null_construction")
@@ -172,6 +181,26 @@ def tracked_files() -> set[str]:
     return set(out.splitlines())
 
 
+def _resolve_gate(gate: str) -> Tuple[bool, str]:
+    """
+    ``(ok, why)`` for a ``"module.path:function"`` gate string.
+
+    Textual rather than by import, because this runs in tier 0 with nothing
+    installed and every gate module imports numpy. A check that cannot run in
+    the tier that gates a merge is not a check.
+    """
+    if ":" not in gate:
+        return False, "not of the form module.path:function"
+    mod, func = gate.split(":", 1)
+    path = ROOT / (mod.replace(".", "/") + ".py")
+    if not path.exists():
+        return False, f"{mod} has no file at {path.relative_to(ROOT)}"
+    src = path.read_text(encoding="utf-8", errors="replace")
+    if not re.search(rf"^def {re.escape(func)}\(", src, re.M):
+        return False, f"{path.relative_to(ROOT)} defines no `{func}`"
+    return True, ""
+
+
 def check_registry(reg: dict, msgs: List[str],
                    tracked: Optional[set[str]] = None) -> None:
     preds = reg.get("predictions", [])
@@ -226,6 +255,27 @@ def check_registry(reg: dict, msgs: List[str],
         if p.get("phase") not in PHASE_VALUES:
             _fail(msgs, f"{where}: phase={p.get('phase')!r} not one of {PHASE_VALUES}")
 
+        # The phase join. A `gate` that does not resolve is the failure mode
+        # worth catching: it reads as "this prediction has an instrument" in
+        # every generated table while pointing at nothing.
+        gate = str(p.get("gate", "")).strip()
+        if gate:
+            ok, why = _resolve_gate(gate)
+            if not ok:
+                _fail(msgs, f"{where}: gate {gate!r} does not resolve — {why}")
+            if ev == "measurement":
+                _fail(msgs, f"{where}: classified 'measurement' (no valid null exists) "
+                            f"but names a gate")
+            elif ev != "e-value":
+                _warn(msgs, f"{where}: names a gate but is classified {ev!r}; "
+                            f"core/adjudication.py will refuse it, so the gate "
+                            f"cannot reach a claim's e-process")
+        elif ev == "e-value" and p.get("status", "active") == "active":
+            _fail(msgs, f"{where}: classified 'e-value' and active but names no gate. "
+                        f"An adjudicable prediction with no module:function computing "
+                        f"its p-value cannot be run, and reads as available in "
+                        f"claims/EXPERIMENTS.md")
+
         for field in EVIDENCE_FIELDS:
             path = p.get(field)
             if path is None:
@@ -240,12 +290,9 @@ def check_registry(reg: dict, msgs: List[str],
                 _fail(msgs, f"{where}: {field}={path!r} is not git-tracked; an "
                             f"artifact only on this machine is not evidence a "
                             f"later reader can check")
-        if p.get("real_run_record") and not p.get("null_module"):
-            _fail(msgs, f"{where}: real_run_record set but null_module is null; a "
+        if p.get("real_run_record") and not gate:
+            _fail(msgs, f"{where}: real_run_record set but no gate is named; a "
                         f"p-value cannot have been produced by a null that is not built")
-        if ev == "measurement" and p.get("null_module"):
-            _fail(msgs, f"{where}: classified 'measurement' (no valid null exists) "
-                        f"but names a null_module")
 
         if ev == "e-value" and not str(p.get("null_construction", "")).strip():
             _fail(msgs, f"{where}: classified 'e-value' with no null_construction stated")
@@ -265,8 +312,26 @@ def check_registry(reg: dict, msgs: List[str],
 
 
 def check_coverage(reg: dict, msgs: List[str]) -> None:
-    """Every prediction ID mentioned in the tree has a registry entry."""
+    """
+    Every prediction ID mentioned in the tree has a registry entry — and every
+    claim CLAIMS.md declares has at least one prediction.
+
+    The second direction was missing until 2026-09-16 and is not symmetric with
+    the first. `check_registry` already fails a prediction naming a claim that
+    is not a CLAIMS.md heading; nothing looked the other way, so a claim could be
+    declared, described at length, and never wired to anything — its e-process
+    holding at E = 1 because no factor exists rather than because none crossed.
+    Those two states are indistinguishable in `FALSIFICATION.md`, which is why
+    this is stated here.
+    """
     registered = {p["id"] for p in reg.get("predictions", []) if "id" in p}
+
+    claimed = {p.get("claim") for p in reg.get("predictions", [])}
+    for claim in sorted(set(declared_claims()) - claimed):
+        _warn(msgs, f"claim {claim!r} is declared in CLAIMS.md and no prediction names "
+                    f"it; its e-process can never move, and an E of 1 from no factors "
+                    f"reads identically to an E of 1 from factors that did not cross")
+
     # The registry stores ASCII ids; the prose uses the Greek letters.
     alias = {"P-γ1": "P-gamma1", "P-γ2": "P-gamma2"}
 
@@ -464,12 +529,12 @@ def print_summary(reg: dict) -> None:
         print(f"\nAdjudicable right now (e-value AND active): "
               f"{len(adjudicable)} -- {[p['id'] for p in adjudicable]}")
 
-    n_built = sum(1 for p in preds if p.get("null_module"))
+    n_built = sum(1 for p in preds if str(p.get("gate", "")).strip())
     n_cal = sum(1 for p in preds if p.get("calibration_record"))
     n_run = sum(1 for p in preds if p.get("real_run_record"))
     print(f"\nEvidence on disk: {n_built} nulls built, {n_cal} calibrated on known-answer")
     print(f"inputs, {n_run} run against real artifacts, {len(adj)} adjudicated. Each count")
-    print("is a set of git-tracked paths, not a flag; see EVALUABILITY.md 'By phase'.")
+    print("is a resolved gate or a git-tracked path, not a flag; see claims/EXPERIMENTS.md.")
 
     n_ev = c["e-value"]
     print(f"\n{n_ev} of {len(preds)} predictions can currently carry an e-value. The other")

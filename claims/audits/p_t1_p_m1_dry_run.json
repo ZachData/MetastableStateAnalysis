@@ -7,7 +7,7 @@
   "p_t1_file": "p2d_operator_activation/table1_predictions.py",
   "p_t1_sha256": "6c6c00d1fbd00d7a65b6dc286f29aa8d542857c190042de2cb907bb91f95c7d0",
   "p_m1_file": "p2d_operator_activation/gradient_flow_condition.py",
-  "p_m1_sha256": "3685ae2b5109959cfe63fea6878c908216801fa94593efb764756c832d1ed20f",
+  "p_m1_sha256": "80edd491e02f18ececd8c6ba82ec6239ef718f69c6f6def82fad77b6ebea2237",
   "alpha": 0.05,
   "alternatives": {
     "P-T1": "greater",
@@ -486,5 +486,5 @@
     "not_measured_here": "this arm asserts a dependence rather than measuring its size. Measuring it needs the real extraction path and a planted mislabelling -- 6h's arm S, one phase over -- and that is an audit rather than a dry run. It is named here so the registry can record it, which is what the other two pairs did.",
     "alpha": 0.05
   },
-  "elapsed_seconds": 28.1
+  "elapsed_seconds": 26.1
 }

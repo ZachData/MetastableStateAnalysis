@@ -1,7 +1,7 @@
 # Phase 2b — STATUS
 
 **Registered predictions:** none. Exploratory by design; nothing in this
-phase may carry an e-value (`claims/EVALUABILITY.md` "By phase").
+phase may carry an e-value (`claims/EXPERIMENTS.md`).
 
 **Naming.** The directory is `p2b_imaginary/`; "Phase 2b" is the name used in
 documentation and cross-phase references. The pre-rewrite artifacts are named

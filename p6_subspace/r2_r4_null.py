@@ -106,6 +106,7 @@ from typing import List, Optional, Sequence
 
 import numpy as np
 
+from core.adjudication import registry_alpha
 from core.nulls import p_from_null
 
 from .subspace_geometry import (
@@ -255,7 +256,16 @@ def attainable_floor_report(n_units: int,
 
 
 def _finish(observed: float, null_values: Sequence[float], unit: str,
-            alpha: float, extra: dict) -> dict:
+            alpha: Optional[float], extra: dict) -> dict:
+    # `alpha` was a literal 0.05 default on both entry points until 2026-09-16,
+    # while the comment on N_NULL_DRAWS above described that number as "the
+    # registry's alpha" and every other gate in the project resolved it from
+    # claims/registry.json at call time. Two of the three were right; the code
+    # was the one that was not, and an edit to the registry would have moved
+    # eight gates' refusal boundaries and left this one at 0.05 with nothing
+    # reporting the divergence. Resolved here rather than in the signatures so
+    # a caller passing `alpha=` explicitly still wins.
+    alpha = registry_alpha() if alpha is None else float(alpha)
     null_values = np.asarray(list(null_values), dtype=np.float64)
     if not np.isfinite(observed):
         raise NullRefused(
@@ -354,7 +364,7 @@ def r2_layer_contrast(v: np.ndarray, u_neg: np.ndarray, u_a: np.ndarray,
 def p_value_p6_r2(directions: Sequence[np.ndarray],
                   channels: Sequence[LayerChannels],
                   unit: str,
-                  alpha: float = 0.05) -> dict:
+                  alpha: Optional[float] = None) -> dict:
     """
     P6-R2's p-value under a matched-dimension random-subspace null.
 
@@ -550,7 +560,7 @@ def p_value_p6_r4(activations: Sequence[np.ndarray],
                   labels: Sequence[Sequence[int]],
                   channels: Sequence[LayerChannels],
                   unit: str,
-                  alpha: float = 0.05) -> dict:
+                  alpha: Optional[float] = None) -> dict:
     """
     P6-R4's p-value: does the real channel carry cluster membership that a
     matched-dimension random subspace does not?

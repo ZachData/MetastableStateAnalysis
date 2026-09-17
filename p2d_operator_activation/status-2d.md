@@ -6,8 +6,7 @@
 run and **not run against real artifacts**. Both sit under `H-OPERATOR` and
 classify the same head's `Wq`, `Wk`, `W_OV` — one defect moves them together,
 which the claim's product would not show. Nulls and evidence paths are
-`claims/registry.json`; the per-phase view is `claims/EVALUABILITY.md` "By
-phase".
+`claims/registry.json`; the per-phase view is `claims/EXPERIMENTS.md`.
 
 **State:** D1, D2, D3, D4 implemented and validated on constructed operators and synthetic
 activations. **Not run against Pythia weights or artifacts.** P-M1 and P-T1 were registered in

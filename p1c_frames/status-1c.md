@@ -5,8 +5,7 @@ point-estimate readings with no null built), `P-H1` (measurement — no valid
 null exists, by Wendel's theorem; report the margin, never a p) and `P-S1`
 (e-value — null in `design_test.py`, calibrated on a known-answer dry run,
 **not run against real artifacts**). Nulls and evidence paths are
-`claims/registry.json`; the per-phase view is `claims/EVALUABILITY.md` "By
-phase".
+`claims/registry.json`; the per-phase view is `claims/EXPERIMENTS.md`.
 
 **State:** all six sub-experiments implemented and validated on synthetic data and on
 configurations with known exact answers, with a driver (`run_1c.py`) and artifact IO

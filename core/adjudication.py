@@ -114,6 +114,52 @@ def load_registry(path: Optional[Path] = None) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def registry_alpha() -> float:
+    """
+    The registry's alpha, so a derived cut is derived from the live value.
+
+    THE DECLARED COPY, AND THE SIX THAT STILL EXIST (2026-09-16)
+
+    Eight gate modules resolve alpha, and until this function existed there was
+    no copy any of them could be said to be a copy *of*. Four carry this exact
+    body under the name `_alpha` (`core/changepoint_colocation.py`,
+    `p1_mstate_tracking/replication_gate.py`, `p7_motifs/cross_head_gate.py`,
+    `p7_motifs/patching_gate.py`), two under the name `registry_alpha`
+    (`p2d_operator_activation/{table1_predictions,gradient_flow_condition}.py`),
+    and two more delegate to the first
+    (`p7_motifs/{steering_gate,formation_gate}.py`). They agree today. What makes
+    the duplication worth naming is that a registry edited from 0.05 to 0.01 has
+    to move all of them together, and nothing checks that it did — while every
+    generated table keeps printing the registry's figure at the top.
+
+    **They were not collapsed into this one in the pass that wrote it, and the
+    reason is the apparatus working as designed.** Each of those files' bytes are
+    pinned by a committed dry run or calibration (`claims/audits/`,
+    `claims/calibration/`), so editing one — even in a comment — correctly
+    invalidates a record that must then be regenerated. Most of them can be
+    regenerated; `claims/audits/p_i1_attainable_floor.json` pins
+    `core/changepoint_colocation.py` and needs `data/analysis/formation_series.json`,
+    which is git-ignored bulk. Collapsing six modules to buy tidiness, at the cost
+    of one evidence record that cannot be rebuilt, is the wrong trade. The right
+    time is the next pass that is already regenerating those records for a
+    scientific reason.
+
+    `p6_subspace/r2_r4_null.py` is the one that was not merely duplicated but
+    wrong — `alpha: float = 0.05` as a default argument, beside a comment calling
+    that number "the registry's alpha" — and it calls this function, because that
+    was a behaviour fix rather than a tidy-up.
+
+    Falls back to `DEFAULT_ALPHA` when the registry cannot be read, because a
+    derived cut with no registry is still better placed at the module default
+    than raising inside a numeric path — and `tools/check_registry.py` fails on
+    an unreadable registry long before any gate runs.
+    """
+    try:
+        return float(load_registry().get("alpha", DEFAULT_ALPHA))
+    except Exception:                          # pragma: no cover - defensive
+        return float(DEFAULT_ALPHA)
+
+
 def registry_entry(prediction_id: str, registry: Optional[dict] = None) -> RegistryEntry:
     reg = registry if registry is not None else load_registry()
     for p in reg.get("predictions", []):

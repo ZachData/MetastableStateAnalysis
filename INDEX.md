@@ -66,9 +66,18 @@ work — that is `PROJECT.md`, which is the file to read first.**
   `p7d_redundancy/` (redundancy catalogue, both open axes closed 2026-09-10) and
   `p7e_consolidation/` (`L11H14`; whether the set collapses into one head). Read
   their `status-7d.md` / `status-7e.md`, then `PROJECT.md` §3.12-V.
-- **Literature scan, 2026-09-10** — `docs/literature_scan_2026-09-10.md`. Leads,
-  not readings. Three of §3.12-V's four headlines are in populated territory;
-  read it before building on them.
+- **Literature review, per phase, 2026-09-16** — **`docs/LITERATURE.md`** is the
+  index; **`<phase>/lit-N.md`** is the review, and **every phase now has one**. Leads,
+  not readings: `arxiv.org` and every other scholarly host are blocked by the session
+  egress proxy, so nothing was read and every citation is marked `[S]` (search summary)
+  or `[N]` (title only). **Read it before building on any phase's headline.** Three
+  results are scooped — Phase 1's developmental arc (`2509.23024`), 7d's second-order
+  ablation instrument (`2607.01940`), and 7d's "behavioural proxies fail" thesis
+  (`2606.05378`) — and two of Phase 1's framing statements are stale. See
+  `PROJECT.md` §3.37.
+- **Literature scan, 2026-09-10** — `docs/literature_scan_2026-09-10.md`. The earlier,
+  narrower scan; covers §3.12-V only. **Superseded in scope, not overturned** — all
+  four of its verdicts are confirmed or sharpened by the 2026-09-16 review.
 - **Phase 7 (original)** — the mechinterp/particle bridge, `P-I1`
   (induction-head formation as a two-stage `relay` motif). See `PROJECT.md` for
   where it stands and what is blocking, and `p7_motifs/design-7.md` for the
@@ -115,14 +124,32 @@ similar names, different instruments. `7a`/`7b`/`7c` remain labels in
 went active and started producing results.
 
 Read `status-N.md` for the current state of a phase. Read `design-N.md` for the reasoning
-that is not visible from the code. `PREDICTIONS.md` is the project-level falsification
-record, separate from any single phase's.
+that is not visible from the code. Read **`lit-N.md`** for what has been done before,
+where the phase is scooped, and what is left to grow — `docs/LITERATURE.md` indexes all
+sixteen. `PREDICTIONS.md` is the project-level falsification record, separate from any
+single phase's.
+
+**Which phase carries which e-value: `claims/EXPERIMENTS.md`.** Generated from
+`claims/registry.json`, it is the phase → experiment → prediction → gate join that this
+index (phases to directories) and `claims/FALSIFICATION.md` (claims to evidence) each hold
+half of. It is also where the three phases with a live instrument and no registered
+prediction are named — **7d, 7e and 8, which are the active work** — together with the two
+adjudicable gates that never had a known-answer dry run (`P-AB1`, `P-I3`) and the one
+declared claim nothing feeds (`H-BUDGET`). See `POPPER_PLAN.md` §6y.
 
 ## Archived phases
 
 Moved to `archive/` on 2026-08-22. Reason in every case: the project moved to Pythia
 checkpoints and to the "particles first" framing, and this code predates both. Not a
 verdict on the work.
+
+Each archived phase also carries a `lit-N.md`: `archive/p3_crosscoder/lit-3.md`,
+`archive/p4_mstate_features/lit-4.md`, `archive/p5c_unclustered/lit-5c.md`. Phases 5,
+5b and 6 keep their reviews beside their study notes in the live top-level directories
+(`p5_single_mstate_analysis/lit-5.md`, `p5b_manifold_steering/lit-5b.md`,
+`p6_subspace/lit-6.md`). **A `lit-N.md` is not a reintroduction trigger** — it records
+what the field has done since, so that a trigger in `FROZEN.md` is evaluated against
+2026-09, not against the date the phase was frozen.
 
 | Phase | Directory | What it found |
 |---|---|---|
@@ -148,6 +175,7 @@ documentation instance of that bug class. Nothing here has been invented to fill
 | `DESIGN_pythia_frames.md` | 11 live files, all in `core/` — `frames.py`, `rope.py`, `qk_offset_null.py`, `battery_structure.py`, `frame_card.py`, `sink_audit.py`, and others | Cited by item number ("see items 5, 8, 12"), so the numbering is load-bearing too |
 | `CHANGES_jlens_adjacent.md` | `p2_eigenspectra/lens_band.py` | |
 | A "2026-07-22 addendum" to `PREDICTIONS.md` | `core/qk_offset_null.py:12` | `PREDICTIONS.md` has no such addendum. The one it does carry (P-T1) is undated in the body and describes a different change |
+| `POPPER_PLAN.md` §6x | `POPPER_PLAN.md:4030`, `PROJECT.md:1636` | Both forward-reference a section that stops at §6w. `PROJECT.md` calls it "where the [design] is" and `POPPER_PLAN.md` calls it "the proposal for getting [a fresh artifact]"; the audit pass that would otherwise have taken the next letter used §6y instead, so the reference stays open rather than silently resolving to the wrong section |
 
 ## In flight on other branches
 
