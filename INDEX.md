@@ -7,20 +7,14 @@ work — that is `PROJECT.md`, which is the file to read first.**
 
 ## Current priority (updated 2026-09-17)
 
-- **Live thread: the e-value audit, phase by phase (`PROJECT.md` §3.36).**
-  There are no e-values yet — the ledger is empty — so the audit is of
-  classification and evidence. `claims/registry.json` now carries `phase`
-  and three evidence-path fields that CI checks; `claims/EVALUABILITY.md`
-  "By phase" is the view to read; `claims/EVALUABILITY_LOG.md` is the
-  construction diary. Next unit: Phase 1.
-- **Direction (`PROJECT.md` §3.29, 2026-09-13, user): the programme is the
-  particle/OT reading — mathematical perspective + optimal transport applied
-  to mechanisms the network builds.** Induction heads (the whole thread
-  below, Phase 7/7d/7e/8) are the *current instance*, not the object, and are
-  now past diminishing returns as a place to keep digging. The same pass —
-  why did this form, what were the mechanisms, what happened after — is to
-  be run on SAE features, clusters, and other objects next. Read §3.29 before
-  choosing where to work.
+- **Live thread: the e-value audit, phase by phase (`PROJECT.md` §3.36,
+  §3.38).** There are no e-values yet — the ledger is empty — so the audit
+  is of classification and evidence. `claims/EXPERIMENTS.md` is the
+  per-phase view to read; `claims/EVALUABILITY.md` the per-prediction one;
+  `claims/EVALUABILITY_LOG.md` the construction diary. **Phase 1 is done**
+  (`CLAIM-C`'s gate refuses on the tree — its arms were never run;
+  `CLAIM-A` has no null) with two decisions pending, and **Phase 1c is
+  the next unit.** Git: `main` is the only branch; PR #53 open.
 - **Live construction thread, PARKED not closed: `P-I5`'s joint permutation
   null.** `p7_motifs/p_i5_gate.py` (the statistic — the intersection-union
   test as of 2026-09-17; the earlier min-rank fix to an over-rejecting
