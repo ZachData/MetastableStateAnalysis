@@ -1,6 +1,20 @@
 <!-- docs/literature_scan_2026-09-10.md -->
 # Literature scan, 2026-09-10 — what of §3.12-V is actually new
 
+> **SUPERSEDED 2026-09-12 by `p8_scale_ladder/literature-8.md`, which fetched
+> every id below and found three of this file's characterisations wrong.** Read
+> that file, not this one, for any decision. Kept for provenance, and because
+> its own verify-before-citing warning was the right instinct.
+>
+> **Corrections, in brief.** (1) No id here was confabulated — all nine resolve.
+> (2) **The SVD follow-up chain does not support §1**: AdaSVD, QSVD and
+> especially CARE (which is GQA→MLA conversion) say nothing about truncation
+> ordering, so the anti-ordered member has *less* cover than §1 concluded, not
+> more. (3) **`2607.01940` is adjacent, not a scoop** — no pairwise matrix, no
+> geometry, no training or scale axis — so §103's "read this first" is wrong;
+> read `2407.10827` instead, which this scan missed and which asks the phase's
+> core question directly.
+
 **Status: LEADS, NOT READINGS.** Four web searches were run and their result
 summaries recorded. **No paper below has been read.** Every arXiv id here must be
 verified before it is cited, argued against, or used to drop a line of work — a
