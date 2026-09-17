@@ -1,11 +1,12 @@
 <!-- p8_scale_ladder/status-8.md -->
 # Phase 8 — STATUS
 
-**Last verified:** 2026-09-11.
-**Overall:** the de-hardcoding blocker is cleared and the first exploration-rung
-measurement is in — the 48-head causal ablation sweep on pythia-70m. Read
-`design-8.md` first — it carries the rung policy, which is the phase's whole
-epistemic value.
+**Last verified:** 2026-09-12.
+**Overall:** the de-hardcoding blocker is cleared, the 70m rung is measured on
+invariants 1/2/4/5/6 under both ablation modes, and invariants 5 and 6 are now
+also read on the `freq` probe — which uncensors invariant 6's matrix and
+confirms invariant 5's failure on a third instrument. Read `design-8.md`
+first — it carries the rung policy, which is the phase's whole epistemic value.
 
 ## What is decided
 
@@ -126,10 +127,13 @@ discipline (§3.12-V3, §3.12-V5).
    `status-8.md`'s fork section describes — **GPU work this box cannot do**.
    Raise it as a scoping decision rather than letting it sit as an open item.
 6. **Register what survives, then measure 1b.** Not before. On the evidence so
-   far the registrable candidates are invariant 5 (fails, sharply and on a
-   matched instrument) and the *born-aligned* half of invariant 4 (holds at
-   both rungs); invariant 6's direction holds but its 70m matrix is half
-   censored, and invariant 2 holds but is nearly unfalsifiable as stated. **Any
+   far the registrable candidates are invariant 5 (fails, sharply, and now on
+   three instruments — both ablation modes and both probes — with its
+   anti-ordered half failing too) and the *born-aligned* half of invariant 4
+   (holds at both rungs); invariant 6's direction holds and on `freq` holds
+   unanimously over every readable 70m cell, though the prev-token × matcher
+   cell stays censored; invariant 2 holds but is nearly unfalsifiable as
+   stated. **Any
    1b prediction must name mean-ablation** — 1b is 8 heads/layer, 70m's
    exposure, not 410m's.
 7. **Not measured, and it is the probe rather than the instrument.** pythia-70m's
@@ -481,12 +485,18 @@ catalogue's own top six). Everything below is now one instrument at both rungs.
 the parts-sum". So the 410m body of work is not an artifact of its ablation
 mode, and the 70m/410m differences below are about the rungs.
 
+> **Updated 2026-09-12** — the two 70m rows marked † were re-read on the `freq`
+> probe (see the section below) and both moved. The `wide` values are kept here
+> because 410m's column is on `wide`; the `freq` values are the better estimate
+> of 70m and are given beside them.
+
 | | pythia-70m | pythia-410m |
 |---|---|---|
-| **invariant 5** — `r*` of members | **24, 64, 64, 64** (4 above noise) | **1, 1, 2, 12, 32, 64** |
+| **invariant 5** — `r*` of members | **24, 64, 64, 64** (4 above noise) — unchanged on `freq` | **1, 1, 2, 12, 32, 64** |
 | sum of the low-rank majority | 216, no majority to sum | **48, inside one head's 64** |
-| **invariant 6** — super-additive cells | 8/15 (5 of the 8 readable) | **12/15** |
-| ceiling-censored cells | **7/15** | **0/15** |
+| **invariant 5** — anti-ordered member | **none** (`L3H1` is *unordered*, not anti-) † | **`L11H14`**, bottom > random > top 11/11 |
+| **invariant 6** — super-additive cells | 8/15 (5 of the 8 readable); on `freq` **8/15, and 0 of 10 readable are sub** † | **12/15** |
+| ceiling-censored cells | **7/15**; on `freq` **5/15**, all of them the `L2H1` row † | **0/15** |
 | **invariant 6** — centered CKA, members vs null | 0.232 / 0.174 (gap 0.058) | **0.552 / 0.246** (gap 0.306) |
 | **energy leg** — joint energy in ambient top-64 | 0.556 | **0.729** |
 | ambient participation ratio | 7.3 of 512 | 20.3 of 1024 |
@@ -636,9 +646,98 @@ the arm `ambient_budget.py`'s docstring has promised as `--text` all along;
 its drawback is little headroom (ICL gap 1.7–1.8), which is why the random
 probe exists in the first place.
 
+### Invariants 5 and 6 on the `freq` probe (2026-09-12) — **the ceiling was the instrument, and both readings change**
+
+The matched read above left two holes, both of them the ceiling: invariant 6's
+70m matrix had **7 of 15 cells censored** under `mean`, and invariant 5's `r*`
+rested on a `d0` the `useful_rank` float32 residue was eating. `--probe freq`
+(ids from `[1000, 5000)`) is the handle on both — it drops 70m's step-16000
+baseline NLL from **5.73 to 2.67**, buying headroom **5.10 → 8.15 nats**.
+`--probe` was ported to `pairwise_interaction_matrix.py` and `useful_rank.py`
+to run this; `wide` stays the default and no existing number moves.
+
+**Invariant 6 — the readable matrix is now unanimous, and `wide` was hiding the
+three biggest cells in it.**
+
+| | `mean`/`wide` | `mean`/`freq` |
+|---|---|---|
+| baseline NLL / headroom | 5.73 / 5.10 | **2.67 / 8.15** |
+| censored cells | 7/15 | **5/15** |
+| readable: super / sub / ~0 | 5 / **2** / 1 | **8 / 0 / 2** |
+
+**Not one readable cell is sub-additive.** The two that were sub under `wide`
+(`L3H1`×`L0H0` −0.035, `L0H0`×`L0H2` −0.067) both involve heads that sit below
+noise under `mean`, and on `freq` they read +0.025 and +0.0007. The `wide`
+read also produced a `ratio_joint_to_parts` of **−6.39** on `L0H0`×`L0H2` — a
+near-zero denominator, not a measurement, and a reminder that the ratio column
+is unreadable wherever `parts_sum ≈ 0`.
+
+**And the three largest interactions in the matrix were censored under `wide`**:
+`L3H1`×`L3H5` **+0.793**, `L3H6`×`L3H1` **+0.736**, `L3H6`×`L3H5` **+0.671**,
+at ratios **1.23–1.31**. These are the three layer-3 cascade heads against each
+other. Every cell pairing one of them with a below-noise layer-0 head sits at
++0.001–0.13. So 70m's readable matrix has **block structure** — a mutually
+super-additive layer-3 core — where 410m's had none. Read only on the four
+heads above noise under `mean`, the three member×member cells are all
+super-additive, which is invariant 6's direction replicating on 70m's own
+members for the first time.
+
+**Still censored, and it is one head.** All five remaining cells are the `L2H1`
+row: at **+6.88** on a 2.67 baseline it exhausts any headroom `freq` buys, so
+`L2H1`×`L3H6` — the direct analogue of 410m's headline prev-token × matcher
+pair — **remains unmeasurable at raw `dNLL` at this rung**. That is not a probe
+choice left to make; it needs §3.12-M's graded readout.
+
+**Invariant 5 — `r*` is probe-invariant, so the failure survives a third
+check.** Four above-noise members, `r*` = **24, 64, 64, 64** on `freq`,
+*identical* to the `mean`/`wide` values, against 410m's 1, 1, 2, 12, 32, 64.
+The float32 residue is also better conditioned (`L3H1` −6.6e-03, `L3H5`
+−3.2e-03 full-rank, against −0.147 for `L0H2` under `wide`), so the negative is
+not a denominator artifact. Invariant 5 does not replicate under either mode or
+either probe.
+
+**The anti-ordered half of invariant 5 also fails, and `status-8.md`'s own
+candidate was the wrong head.** The first pass nominated `L0H0` as "a candidate
+second anti-ordered head, though `--bottom` was not run". Under `mean` `L0H0`'s
+`d0` is **−0.09**, so its recovery fractions are unconditioned garbage (values
+of +63.7 against a control of +31.9) — it is not evidence of anything. The real
+candidate is **`L3H1`**, which sits below its matched-norm control at **11 of
+11 ranks** on both probes, which is how `L11H14` first announced itself.
+
+`--bottom` settles it, and the answer is no:
+
+| head | top-`r` best | bottom-`r` beats random | bottom beats top | class |
+|---|---|---|---|---|
+| `L2H1` | 11/11 | 0/11 | 0/11 | gain-ordered |
+| `L3H6` | 11/11 | 0/11 | 0/11 | gain-ordered |
+| **`L3H1`** | **1/11** | **0/11** | 6/11 | **unordered** |
+| `L11H14` (410m) | 0/11 | 11/11 | 11/11 | anti-ordered |
+
+`L3H1`'s top and bottom curves coincide (r=8: +0.239 vs +0.238; r=24: +0.538 vs
++0.485) and a matched-random subspace beats both. **That is a third class, not
+a second `L11H14`**: the SVD basis carries *no* usefulness ordering rather than
+a reversed one. *Margin caveat — `--controls 2`, and top-vs-random differs by
+only 0.02–0.08, so "top loses to random" is the weak half. The half that kills
+the anti-ordering hypothesis is **bottom beats random 0/11**, which is not
+marginal: for `L3H6` and `L2H1` bottom is worst at every rank by 0.2–0.9.*
+
+**Net: invariant 5 fails at 70m on both halves.** No low-rank majority, and no
+anti-ordered member. `L11H14` stays a **pythia-410m singleton** — which
+strengthens §3.16's reading that invariant 5 is a 410m property rather than an
+induction one, and it is now the *sharpest* form of that negative rather than
+the softest.
+
 ## Reproducing
 
 ```
+pairwise_interaction_matrix.py --model pythia-70m --heads L2H1,L0H0,L3H6,L3H1,L0H2,L3H5 \
+                               --steps 16000 --seqs 8 --chunk 2 --ablation mean --probe freq
+useful_rank.py               --model pythia-70m --heads L2H1,L0H0,L3H6,L3H1,L0H2,L3H5 \
+                               --step 16000 --seqs 8 --chunk 2 --ablation mean --probe freq --controls 2
+useful_rank.py               --model pythia-70m --heads L3H1,L3H6,L2H1 --ablation mean \
+                               --probe freq --controls 2 --bottom \
+                               --out data/analysis/useful_rank_pythia-70m_mean_freq_bottom.json
+
 redundancy_catalog.py        --model pythia-70m --step 16000 --seqs 8 --ablation mean
 useful_rank.py               --model pythia-70m --heads ... --ablation mean --controls 2
 pairwise_interaction_matrix.py --model pythia-70m --heads ... --ablation mean
@@ -656,10 +755,18 @@ survive better as short foreground calls — `member_formation_curves.py` takes
 
 The 7d/7e commands in `p7d_redundancy/status-7d.md` and
 `p7e_consolidation/status-7e.md` are now per-rung commands with a `--model`
-argument. **Only `redundancy_catalog.py` carries `--ablation` so far** — the
-other five runners are still bias-ablation only, so every invariant 2/4/5/6
-number above is on the mode this A/B just showed distorts at 70m's head count,
-and none of them has been re-read under `mean`.
+argument. **All six runners carry `--ablation`**, and the invariant 2/4/5/6
+re-read under `mean` is the section above. *(This paragraph claimed the
+opposite — "only `redundancy_catalog.py` carries `--ablation`… none of them has
+been re-read under `mean`" — from the moment the re-read landed on 2026-09-11
+until 2026-09-12. It is exactly the stale-handoff failure `CLAUDE.md` opens on,
+and it cost a session's start.)*
+
+**`--probe` is on three runners, not six**: `member_formation_curves.py`,
+`pairwise_interaction_matrix.py` and `useful_rank.py` (the last two added
+2026-09-12). `redundancy_catalog.py`, `member_subspace_geometry.py` and
+`ambient_budget.py` are `wide`-only. `wide` remains the default everywhere, so
+no recorded number changes meaning.
 
 **Machine note carried from 7d/7e:** use `--chunk 2` and `OMP_NUM_THREADS=4`;
 those runners were killed for memory twice at `--chunk 4` on this box. Disk is
