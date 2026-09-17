@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | a seven-PR stack, #36→#42, tip `claude/p-i5-joint-null` (PR #42, stacked on #41) — see the resume block |
-| Last updated | 2026-09-16 — **§3.31: `P-I5`'s joint null, part one.** The obvious joint statistic (an AND-corner over the sign-flip null) over-rejects ~4x under a true joint H0 — found by running it on inputs whose answer is known, not by inspection. Fixed with a Tippett-style minimum-rank statistic, which calibrates correctly AND does what the AND-corner was meant to (rejects at 0.17 vs the logit-axis-alone's 0.79 on the falsifier's own configuration). Real measurement grid: `n = 8` prompts, floor `1/256`. **Still not built: the matched-magnitude random-direction ablation itself** — wiring `core/intervention.py` to real cached checkpoints is the next action. §3.30: the pairwise field (`core/dual_reading.py::pairwise_geometric_reading`) this rests on. §3.29 (2026-09-13): the direction decision — the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns. |
+| Branch | an eight-PR stack, #36→#43, tip `claude/p-i5-real-ablation` (PR #43, stacked on #42) — see the resume block |
+| Last updated | 2026-09-16 — **§3.32: `P-I5`'s joint null, part two — the control, real activations, a first reading.** `L3H6` (pythia-70m's induction/matcher head, `status-8.md`) mean-ablated at `step143000`, against a matched-magnitude random-direction control defined for the first time in this project. Real result on all 8 informative prompts: `joint_rank_pvalue` **p = 0.0234** (floor 0.0039 — not floor-saturated). **Explicitly a first look, not an adjudication** — `claims/registry.json`'s `P-I5` entry is unchanged; missing a positive/negative control pair, more than one checkpoint, a random-draw sensitivity check, and a power analysis before it could be trusted the way `P-AB1`/`P-I3`'s finished gates are. §3.31: the statistic this reading uses (a Tippett-style minimum-rank fix to an AND-corner construction that over-rejected ~4x). §3.30: the pairwise field this rests on. §3.29 (2026-09-13): the direction decision. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,29 +37,35 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-16 — seven PRs in a stack; §3.31 built the joint null's floor and fixed the statistic, the control is next)
+### Resume here (2026-09-16 — eight PRs in a stack; §3.32 got a first real reading on `P-I5`, validation is next)
 
-**Read this block, then §3.31, then §3.30, then §3.29, then §3.28.** §3.29 is
-the direction decision and it demotes everything below it: the programme is
-the particle/OT reading and the induction thread is an instance of it that is
-now past diminishing returns. §3.30 built the pairwise geometric field §3.29
-named as STEP ONE. §3.31 is this session's close: `P-I5`'s joint permutation
-null, floor computed, its first-tried statistic found invalid and replaced,
-the real measurement grid measured — control still unbuilt. §3.28 is the
-pre-registration scan — it reclassifies §3.22's novelty and blocks §3.27's
-registration, so reading §3.20–§3.27 without it will overstate what is new.
-Everything below this block is earlier and is kept as background, not as the
-current state.
+**Read this block, then §3.32, then §3.31, then §3.30, then §3.29, then
+§3.28.** §3.29 is the direction decision and it demotes everything below
+it: the programme is the particle/OT reading and the induction thread is
+an instance of it that is now past diminishing returns. §3.30 built the
+pairwise geometric field §3.29 named as STEP ONE. §3.31 built the joint
+permutation null's floor and fixed its statistic (the first-tried
+AND-corner was invalid). §3.32 is this session's close: the
+matched-magnitude random-direction control, built and run against real
+cached `pythia-70m` activations — `L3H6` ablated at `step143000`, joint
+p = 0.0234 on the real 8-prompt grid, **explicitly a first look and not an
+adjudication**. §3.28 is the pre-registration scan — it reclassifies
+§3.22's novelty and blocks §3.27's registration, so reading §3.20–§3.27
+without it will overstate what is new. Everything below this block is
+earlier and is kept as background, not as the current state.
 
-**Nothing is running and nothing is uncommitted.** All seven branches are
+**Nothing is running and nothing is uncommitted.** All eight branches are
 pushed and in sync with their remotes; the only untracked path is
 `data/hf/` (the HF cache — never `git add -A` under `data/`, its
 `.no_exist/` markers are not gitignored). Gate green on the tip:
-**2321 passed / 5 skipped / 30 deselected** (run under `.venv`, not the
+**2321 passed / 5 skipped / 37 deselected** (run under `.venv`, not the
 `mets` conda env — the two interpreters coexist on this machine and only
 `.venv` is what `check.sh gate` and CI actually use; `python -m pytest`
 under the wrong one still runs, silently, which is how a stale count could
-slip in unnoticed).
+slip in unnoticed). The 7 new smoke tests in
+`tests/test_p_i5_ablation_smoke.py` are among the deselected — they need
+`SMOKE_REAL_DEPS=1 pytest -m smoke` and were run for real this session
+(20s, all pass) rather than left unverified.
 
 **The PR stack, oldest first. Each is based on the one above it, so review in
 order and merge in order.**
@@ -73,6 +79,7 @@ order and merge in order.**
 | #40 | `claude/l5h2-self-repair` | the `L5H2` puzzle and the self-repair behind it (§3.20–§3.22) |
 | #41 | `claude/pairwise-geometric-field` | §3.30: `pairwise_geometric_reading` in `core/dual_reading.py`, unblocks `P-I5`'s missing field |
 | #42 | `claude/p-i5-joint-null` | §3.31: `P-I5`'s joint null — floor, the AND-corner's failure and its min-rank fix, the real measurement grid |
+| #43 | `claude/p-i5-real-ablation` | §3.32: the matched-magnitude random-direction control, real `L3H6` ablation, first reading (p = 0.0234, exploratory) |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
@@ -94,24 +101,24 @@ induction heads were the instance and are past diminishing returns. Actions 1
 and 2 serve the frame; 3–6 are the induction thread's leftovers and are
 explicitly *not* the priority.
 
-1. **STEP ONE IS DONE (§3.30) and STEP ONE-B's floor/statistic/grid are
-   done (§3.31, 2026-09-16).** `core/dual_reading.py` has
-   `pairwise_geometric_reading`; `p7_motifs/p_i5_gate.py` has the joint
-   permutation null's floor (`1/2**n`), a validated statistic
-   (`joint_rank_pvalue`, a Tippett-style minimum-rank combination — the
-   first-tried AND-corner over-rejected ~4x and is kept only as
-   `naive_and_corner_pvalue`, retired), and the real measurement grid
-   (`n = 8` prompts, `core.battery_structure.induction_candidates` against
-   `core.config.PROMPTS`). **STEP ONE-C, now the actual next action:
-   build the matched-magnitude random-direction ablation control itself**
-   — draw a random direction of the real ablation's magnitude, run it
-   through `core/intervention.py` on the cached pythia-70m/410m
-   checkpoints, and score both arms with `pairwise_geometric_reading`
-   (geometric) and `core/intervention.py::next_token_kl` (logit — both
-   readouts live in the same module, corrected 2026-09-16) to get real
-   `(delta_geometric, delta_logit)` per prompt. Feed those into
-   `joint_rank_pvalue` and running it against real matched positions puts
-   the project's **first adjudication** in reach against 39
+1. **STEP ONE (§3.30) and STEP ONE-B (§3.31) are done. STEP ONE-C's
+   pipeline is built and has produced a first real reading (§3.32,
+   2026-09-16) — but it is explicitly NOT yet the project's first
+   adjudication.** `L3H6` (pythia-70m's induction/matcher head)
+   mean-ablated at `step143000` against a matched-magnitude
+   random-direction control (defined for the first time in this project,
+   `p7_motifs/p_i5_ablation.py`), scored with `pairwise_geometric_reading`
+   and `core/intervention.py::next_token_kl`, fed into `joint_rank_pvalue`:
+   **p = 0.0234** on all 8 informative prompts, floor 0.0039 (not
+   floor-saturated). **STEP ONE-D, the actual next action: validate the
+   pipeline before trusting that number.** Named gaps, not yet closed: a
+   positive/negative control pair (e.g. a head with a known-null effect,
+   to confirm the pipeline reads ~0 there), more than the one checkpoint
+   (`step143000`) measured, a sensitivity check on the one random
+   direction drawn per prompt, a power analysis, and a cross-check of
+   `raw_distance` against `cosine_distance`/a projector-restricted
+   reading. Only after that would running this against real matched
+   positions put the project's **first adjudication** in reach against 39
    registrations and zero.
 2. **Then §2.5's isometric path on `L7H8`** — the only *designed* particle
    intervention, still unrun, and now readable against a known mechanism
@@ -3415,6 +3422,41 @@ cheap and would resolve it.**
 > matching attention; it has neither score because neither is its job. The
 > joint-ablation super-additivity (§3.12-S) is a separate, still-open
 > question.
+
+---
+
+## 3.32 `P-I5`'s joint null, part two: the control, real activations, a first reading — exploratory, not an adjudication (2026-09-16)
+
+`p7_motifs/p_i5_ablation.py` builds §3.31's missing piece: the
+matched-magnitude random-direction ablation control, on real cached
+`pythia-70m` activations. Full derivation in `POPPER_PLAN.md` §6y; short
+version here.
+
+**Target: `L3H6` at `step143000`** — `status-8.md`'s own table names it
+pythia-70m's induction/matcher head (the `L7H8` analogue), mean-ablated per
+the resume block's 8-heads-per-layer rule, via
+`tools/run/induction_rank_sweep.py::ablate_heads` (reused, not
+reimplemented). **The control, defined here for the first time in this
+project:** same per-position displacement magnitude as the real
+mean-ablation, one fixed random direction per (prompt, ablation site).
+Geometric readout: `pairwise_geometric_reading`'s `raw_distance` on the
+matched (query, key) pair, read right after the ablated layer. Logit
+readout: `core.intervention.next_token_kl` at position `query - 1` (where
+the copied token's own prediction lives, per HuggingFace's `logits[i]`
+predicts `token[i+1]`).
+
+**First reading, all 8 informative prompts: `joint_rank_pvalue`
+`p = 0.0234`** (floor `0.0039` — not floor-saturated). 7/8 prompts positive
+on the geometric axis, 6/8 on the logit axis.
+
+**Explicitly a first look, not an adjudication.** `claims/registry.json`'s
+`P-I5` entry is unchanged; `claims/adjudications/` stays empty. Missing
+before this could be trusted the way `P-AB1`/`P-I3`'s finished gates are:
+a positive/negative control pair, more than one checkpoint, a sensitivity
+check on the random draw, a power analysis, and a cross-check against
+`cosine_distance`/a projector-restricted reading. `tests/
+test_p_i5_ablation_smoke.py` (7 tests) is run for real against the cached
+checkpoint, not left unverified.
 
 ---
 

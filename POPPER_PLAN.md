@@ -4155,6 +4155,90 @@ readouts, ablation and logit, live in `core/intervention.py` — corrected
 this pass has touched a real activation; `P-I5` is unchanged in
 `claims/registry.json`.
 
+## 6y. `P-I5`'s joint null, part two: the control, real activations, a first
+    reading — exploratory, not an adjudication (2026-09-16)
+
+`p7_motifs/p_i5_ablation.py`, `claims/calibration/p_i5_real_ablation.json`.
+Builds the piece 6x's closing section named as not built: the
+matched-magnitude random-direction ablation control, on real cached
+`pythia-70m` activations.
+
+**Target: `L3H6` at `step143000`.** `status-8.md`'s own table names `L3H6`
+as pythia-70m's induction/matcher head (the `L7H8` analogue) and `L2H1` as
+its previous-token partner (the `L5H2` analogue) — `L3H6` is the head whose
+attention pattern *is* the induction match, which is what `P-I5`'s
+"ablating an induction head" names. Ablation mode is `mean`, per the
+resume block's own rule for 8-heads-per-layer rungs
+(`tools/run/induction_rank_sweep.py::ablate_heads`, the shared instrument
+every `p7d_redundancy` script already uses — reused rather than
+reimplemented).
+
+**The control, defined here for the first time in this project** (no prior
+construction of "matched-magnitude random-direction ablation" exists as
+code anywhere in this repo, despite the phrase appearing in `P-I5`'s and
+`P-AB1`'s registry text both): at every position, the real arm replaces
+the target head's `d_head`-dim output slice with its mean (the
+`ablate_heads(mode="mean")` intervention); the control arm replaces the
+same slice with `clean + direction * ||mean - clean||` — same
+per-position displacement magnitude, one FIXED random direction per
+(prompt, ablation site) instead of "regress to the mean". One random draw
+per prompt, not per matched pair, matching 6x's own design choice (the
+exchangeable unit is the prompt).
+
+**Readouts.** Geometric: `pairwise_geometric_reading`'s `raw_distance`
+between the matched (query, key) hidden states, read at
+`hidden_states[L+1]` (the residual stream immediately after the ablated
+layer) — `|distance_ablated - distance_clean|`, absolute value because the
+prediction is about whether ablation moves the particles MORE than a
+matched-magnitude random push, not which direction. Logit:
+`core.intervention.next_token_kl(clean, ablated, position=query-1)` — NOT
+`query`: `induction_candidates`' pairs satisfy `ids[key-1]==ids[query-1]`,
+so the predicted (copied) token is `ids[query]` and the logits that
+predict it sit at `query-1` (HuggingFace convention: `logits[i]` predicts
+`token[i+1]`) — this is "the logit at the copied token" in `P-I5`'s own
+wording. Both readouts are non-negative magnitudes; `Dg_i`/`Dl_i` per
+prompt are the real arm's mean minus the control arm's mean, matching
+`joint_rank_pvalue`'s "greater" alternative.
+
+**First reading, all 8 informative prompts, one run:**
+
+```
+short_heterogeneous    n_pairs=    1  dG=+0.0206  dL=-0.0001
+wiki_paragraph         n_pairs= 1598  dG=+0.3049  dL=+0.0031
+sullivan_ballou        n_pairs= 2038  dG=+0.1376  dL=-0.0000
+paper_excerpt          n_pairs=  554  dG=+0.2711  dL=+0.0017
+homer_iliad            n_pairs= 2518  dG=+0.4702  dL=+0.0024
+hdbscan_code           n_pairs=  426  dG=+0.7771  dL=+0.0133
+camus_letranger        n_pairs=  963  dG=+0.2450  dL=-0.0015
+latex_monograph        n_pairs= 2873  dG=+0.9035  dL=+0.0059
+joint_rank_pvalue: p = 0.0234  (floor = 0.0039)
+```
+
+Seven of eight prompts positive on the geometric axis, six of eight on the
+logit axis — not floor-saturated (`p` is roughly 6x the floor, not at it),
+which is itself informative: the signal is real but not overwhelming at
+`n = 8`.
+
+**This is a first look, not an adjudication, and is not registered as
+one.** `claims/registry.json`'s `P-I5` entry is untouched;
+`claims/adjudications/` stays empty. What is still missing before a number
+from this pipeline could be trusted the way `P-AB1`'s or `P-I3`'s finished
+gates are, stated in the module's own docstring rather than left implicit:
+no positive/negative control pair (e.g. a head with a known-null effect,
+to confirm the pipeline reads ~0 there), one checkpoint only, one random
+direction per prompt with no sensitivity check on the draw, no power
+analysis, and `raw_distance` used without cross-checking against
+`cosine_distance` or a projector-restricted reading. Building that
+validation — the same order `P-AB1` and `P-I3` followed before their
+controls were trusted — is the natural next step if this first reading is
+worth pursuing, named rather than done here per §3.29's own standing
+hazard: depth in one place against sparseness everywhere else.
+
+`tests/test_p_i5_ablation_smoke.py` — 7 tests, run for real against the
+cached checkpoint (`SMOKE_REAL_DEPS=1 pytest -m smoke`, ~20s), not left
+unverified the way most smoke tests in this repo are when a sandbox has no
+network.
+
 ## 7. What this plan does *not* do
 
 - It does not run any science. No chunk here adjudicates a prediction; B6 makes adjudication
