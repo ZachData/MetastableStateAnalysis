@@ -165,7 +165,10 @@ def run(run_dirs: Sequence[Path], *, adjudicate: bool = False,
         found["arms"][REFERENCE_TRAINED], found["arms"][REFERENCE_RANDOM],
         found["arms"][CANDIDATE_TRAINED], found["arms"][CANDIDATE_RANDOM],
         **kwargs)
-    record["refused"] = None
+    record["refused"] = (
+        None if res.get("p_value") is not None
+        else res.get("reason", "CLAIM-C gate returned no p-value")
+    )
     record["result"] = res
     return record
 
