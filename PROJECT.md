@@ -31,7 +31,7 @@ export METS_RESULTS_DIR=$PWD/data/phase12
 export HF_HUB_OFFLINE=1
 export HF_HUB_DISABLE_XET=1
 
-./scripts/check.sh gate     # 2270 passed / 5 skipped / 30 deselected, ~40 s
+./scripts/check.sh gate     # 2368 passed / 5 skipped / 47 deselected, ~40 s (2026-09-17)
 ```
 
 If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
@@ -40,13 +40,48 @@ bug.
 
 ### Resume here (2026-09-17 — the e-value audit is under way; `CLAIM-C`'s first two arms exist, three 1.4b arms remain)
 
-**State on 2026-09-17 evening.** `main` is at PR #53, CI green. The e-value
-audit (§3.36) has Phase 1 closed on both decisions and `CLAIM-C` two arms in;
-the next reading unit is **Phase 1c** (`P-gamma1`, `P-gamma2`, `P-H1`,
-`P-S1`: `p1c_frames/status-1c.md`, `lit-1c.md`, the four registry entries,
-`claims/EXPERIMENTS.md`). The three pythia-1.4b arms are ~2 h each, cached,
-runnable offline one per invocation — `status-1.md` "Remaining" has the exact
-commands; schedule them whenever a window opens, and never stop one mid-arm.
+**This block is the handoff.** Everything a session needs to continue is here
+or one link away; the sections below it are orientation and history.
+
+**Git.** `main` is at PR #53 (`a3f0d40`), CI green. **PR #54 is OPEN** —
+`claude/claim-c-arms` → `main`, from the worktree `../Mets-claim-c` (this
+file's edits were made there). It carries: the `gpt2-large-random` loader
+fix + smoke test, the updated `claims/audits/claim_c_real_run.json`, and
+this handoff. The user merges from GitHub; after the merge, from the main
+tree: `git pull --ff-only && git worktree remove ../Mets-claim-c`. Housekeeping
+still owed on GitHub: delete the merged remote branch
+`claude/coderabbit-p-i5-isometric`. Nothing is running. Only `data/` is
+untracked (the HF cache and run directories — never `git add -A` under it).
+
+**Disk, `data/` (git-ignored, so this is the only record of what exists).**
+- `data/hf`: pythia-410m and -70m as before; **new:** `gpt2-large` (3.1 GB),
+  `EleutherAI/pythia-1.4b` at revisions `step143000` and `step0` (11 GB,
+  fp32 shards). All remaining `CLAIM-C` arms run with `HF_HUB_OFFLINE=1`.
+- `data/phase12/2026-09-17_14-51-40`: the `gpt2-large` arm, 9 prompts.
+- `data/phase12/2026-09-17_16-04-54`: the `gpt2-large-random` arm, 9 prompts.
+- `data/phase12/claim_c_logs/`: per-arm logs with per-prompt timing.
+
+**The e-value audit, where it stands (§3.36).** No prediction has an
+e-value yet. The audit goes phase by phase, one PR per phase:
+
+| phase | state |
+|---|---|
+| 1 (`CLAIM-A`, `CLAIM-C`) | **audited; both decisions taken** (2026-09-17, user). `CLAIM-A` stays `needs-null` behind `CLAIM-C`. `CLAIM-C`: 2 of 5 arms produced; gate refuses on the 1.4b arms |
+| 1c (`P-gamma1`, `P-gamma2`, `P-H1`, `P-S1`) | **NEXT.** Read `p1c_frames/status-1c.md`, `p1c_frames/lit-1c.md`, the four `claims/registry.json` entries and their rows in `claims/EXPERIMENTS.md`; check each classification and its evidence; write findings into `status-1c.md`'s "E-value audit" section and here |
+| 2 / 2d (`CLAIM-B`, `P-T1`, `P-M1`) | after 1c — built and calibrated, unrun; `P-T1`/`P-M1` share an instrument |
+| 5b / 6 | 19 dormant, `P6-R2`/`R4` rebuilt and unrun |
+| 7 | four rows built and calibrated; `P-I1` scored but unrecorded; `P-I5` parked |
+
+**Compute to schedule, independent of the reading work — the three
+pythia-1.4b arms of `CLAIM-C`.** ~2 h each (measured: the gpt2-large pair
+took 65 + 33 min), one per `run_1.py` invocation, each in its own run dir,
+never stopped mid-arm (the scorer takes an arm whole from one directory and
+`run_1.py` cannot resume). Exact commands: `p1_mstate_tracking/status-1.md`
+"Remaining". After each arm, run `tools.score_claim_c` with every run dir
+so far — the refusal record is the ledger of which arms exist — and commit
+the record. When all four required arms are in, the gate produces the
+project's first e-value; `real_run_record` in the registry gets set then,
+and the reading of Phases 2 and 7 depends on the verdict (§3.36).
 
 **Read this block, then §3.36 (its 2026-09-17 decisions block), then §3.38, then §3.35, then §3.34, then §3.33, then §3.32, then
 §3.31, then §3.30, then §3.29, then §3.28.** §3.29 is the direction
@@ -69,43 +104,16 @@ picked back up. §3.28 is the pre-registration scan — it reclassifies
 without it will overstate what is new. Everything below this block is
 earlier and is kept as background, not as the current state.
 
-**Nothing is running and nothing is uncommitted.** All eleven branches are
-pushed and in sync with their remotes; the only untracked path is
-`data/hf/` (the HF cache — never `git add -A` under `data/`, its
-`.no_exist/` markers are not gitignored). Gate green on the tip:
-**2332 passed / 5 skipped / 45 deselected** (run under `.venv`, not the
-`mets` conda env). The 15 smoke tests across `tests/
-test_p_i5_ablation_smoke.py`, `tests/test_p_i5_validation_smoke.py`, and
-`tests/test_p_i5_structured_control_smoke.py` are among the deselected —
-they need `SMOKE_REAL_DEPS=1 pytest -m smoke` and were run for real
-earlier this session (all pass) rather than left unverified.
-`tests/test_isometric_path_sweep.py` (11 tests) is pure-tier and IS in
-the 2332 — `core/isometric_path.py` was split out specifically so the
-math didn't need torch to be checkable. **This machine's memory watchdog
-killed two background runs earlier in the session** (transient — `free
--h` showed 24GB+ available both immediately before and after) — real-run
-scripts in the `P-I5` thread checkpoint their JSON after every step for
-exactly this reason.
+**The 2026-09-16 PR stack (#36–#47, plus #48–#53) is MERGED** — `main`
+carries all of it as of 2026-09-17 and the branches are deleted. The gate
+on the tip is **2368 passed / 5 skipped / 47 deselected** under `.venv`
+(smoke tests need `SMOKE_REAL_DEPS=1 pytest -m smoke`). **This machine's
+memory watchdog has killed background runs before** (transient — 24 GB+
+free either side); long runs go under `setsid nohup python -u …`, log to a
+file, and checkpoint per unit — the `P-I5` scripts per step, `run_1.py` per
+prompt directory.
 
-**The PR stack, oldest first (twelve as of 2026-09-17). Each is based on the one above it, so review in
-order and merge in order.**
-
-| PR | branch | what |
-|---|---|---|
-| #36 | `claude/rescaler-cache-identity-test` → `main` | process tooling, working agreements, 47 sympy checks |
-| #37 | `claude/probe-ceiling-svd-third-class` | `--probe` on two more runners; invariants 5/6 re-read on `freq` |
-| #38 | `claude/fv-head-division-of-labour` | the FV experiment (§3.18) + `tests/test_p7d_fv_score.py` |
-| #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) + its reword |
-| #40 | `claude/l5h2-self-repair` | the `L5H2` puzzle and the self-repair behind it (§3.20–§3.22) |
-| #41 | `claude/pairwise-geometric-field` | §3.30: `pairwise_geometric_reading` in `core/dual_reading.py`, unblocks `P-I5`'s missing field |
-| #42 | `claude/p-i5-joint-null` | §3.31: `P-I5`'s joint null — floor, the AND-corner's failure and its min-rank fix, the real measurement grid |
-| #43 | `claude/p-i5-real-ablation` | §3.32: the matched-magnitude random-direction control, real `L3H6` ablation, first reading (p = 0.0234, exploratory) |
-| #44 | `claude/p-i5-validation` | §3.33: validation finds the control does not discriminate — negative controls fail, random-vs-random diagnoses why |
-| #45 | `claude/p-i5-structured-control` | §3.34: two more controls fail; a diagnostic traces the second failure to the geometric readout's own mechanics |
-| #46 | `claude/isometric-path-l7h8` | §3.35: §2.5's isometric path on `L7H8`, run for real — `t=0`/`t=1` asymmetry despite identical spectra |
-| #47 | `claude/evalue-audit-registry-fields` | §3.36: the e-value audit opens — evidence paths in the registry, `EVALUABILITY.md` as current state, `EVALUABILITY_LOG.md` |
-
-**CodeRabbit will not review any of them on its own** — under 10 stars this
+**CodeRabbit will not review a PR on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
 checkbox ticked by hand on CodeRabbit's first comment. `gh` works here; see the
 git block below.
