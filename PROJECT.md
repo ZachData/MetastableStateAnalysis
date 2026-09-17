@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | a four-PR stack, #36→#39, tip `claude/invariant4-set-level` — see the resume block |
-| Last updated | 2026-09-13 — **invariant 4 reworded in `design-8.md`** (below, and the item this replaces): the wording now stops at the mid-training minimum and states both rungs' post-minimum fates as non-replicating rather than asserting one ending. §3.19 (2026-09-12) — invariant 4 on the SET, not one pair: "70m never separates" withdrawn, 410m is a locked core + one defector, 70m RE-COHERES; §3.18 — the set DIVIDES induction and function-vector roles; §3.17 — the probe is the ceiling handle, and SVD ordering has a THIRD class |
+| Branch | a five-PR stack, #36→#40, tip `claude/l5h2-self-repair` — see the resume block |
+| Last updated | 2026-09-13 — **§3.29 sets the direction and it reorders everything: the programme is the particle/OT reading, induction heads were an instance and are past diminishing returns.** STEP ONE is to give `core/dual_reading.py` a **pairwise geometric field**, which unblocks **`P-I5`** — already registered, the frame's own differential test (falsifier: *"the transport reading is wrong"*), `needs-null` for exactly that missing field — and puts the project's first adjudication in reach against 39 registrations and zero. §3.29 also carries the particle translation of §3.20–§3.28, a W₁-over-TV instrument note, and the registration discipline (frame-level not instance-level; e-process across objects). §3.28: the scan that blocked §3.27's registration. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
@@ -37,12 +37,19 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-12 — four PRs open in a stack; invariant 4 needs rewording BEFORE it is registered)
+### Resume here (2026-09-13 — five PRs open in a stack; §3.29 sets the direction, read it first)
 
-**Read this block, then §3.19, §3.18, §3.17 in that order.** Everything below
-this block is earlier and is kept as background, not as the current state.
+**Read this block, then §3.29, then §3.28.** §3.29 is the direction decision
+and it demotes everything below it: the programme is the particle/OT reading and
+the induction thread is an instance of it that is now past diminishing returns.
+§3.28 is the pre-registration scan — it reclassifies §3.22's novelty and blocks
+§3.27's registration, so reading §3.20–§3.27 without it will overstate what is
+new. The chain is measured end to end;
+what is open is listed below, and none of it is load-bearing for the chain. §3.19–§3.17 are the phase-8 material behind PRs #37–#39.
+Everything below this block is earlier and is kept as background, not as the
+current state.
 
-**Nothing is running and nothing is uncommitted.** All four branches are pushed
+**Nothing is running and nothing is uncommitted.** All five branches are pushed
 and in sync with their remotes; the only untracked path is `data/hf/` (the HF
 cache — never `git add -A` under `data/`, its `.no_exist/` markers are not
 gitignored). Gate green: **2280 passed / 5 skipped / 30 deselected**.
@@ -55,7 +62,8 @@ order and merge in order.**
 | #36 | `claude/rescaler-cache-identity-test` → `main` | process tooling, working agreements, 47 sympy checks |
 | #37 | `claude/probe-ceiling-svd-third-class` | `--probe` on two more runners; invariants 5/6 re-read on `freq` |
 | #38 | `claude/fv-head-division-of-labour` | the FV experiment (§3.18) + `tests/test_p7d_fv_score.py` |
-| #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) |
+| #39 | `claude/invariant4-set-level` | invariant 4 as a set-level trajectory (§3.19) + its reword |
+| #40 | `claude/l5h2-self-repair` | the `L5H2` puzzle and the self-repair behind it (§3.20–§3.22) |
 
 **CodeRabbit will not review any of them on its own** — under 10 stars this
 repo gets no automatic reviews, so each PR needs its **"🔍 Trigger review"**
@@ -71,25 +79,58 @@ inverted-direction defector, 70m **re-coheres**. §3.19 has the measurements
 this rests on; this was the phase's one time-sensitive action (registration
 freezes wording, `CLAUDE.md` trigger 2) and it is now closed.
 
-**What else is open, in rough order.**
+**What is open. READ §3.29 FIRST — it reorders this list and the reason
+matters more than the order.** The programme is the particle/OT reading;
+induction heads were the instance and are past diminishing returns. Actions 1
+and 2 serve the frame; 3–6 are the induction thread's leftovers and are
+explicitly *not* the priority.
 
-1. **Decide what of 1/2/4/5/6 is registrable**, now that invariant 4's wording
-   is fixed. Invariant 5 is a clean *unclaimed negative* and is the other
-   registration candidate; both rungs are exploration, so a registration needs
-   `1b` as its test site and `1b` may not be touched until that prediction
-   exists.
-2. **§3.12-U's `L5H2` puzzle is still open** and §3.16's proposed resolution is
-   dead (§3.18): the head with the largest causal effect on the induction
-   readout has neither an induction score nor an FV score.
-3. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
+1. **STEP ONE — give `core/dual_reading.py` a pairwise geometric field.** This
+   unblocks **`P-I5`**, which is already registered, is the particle frame's own
+   differential test (its falsifier is literally *"the transport reading is
+   wrong"*), and is `needs-null` for exactly one reason the registry states:
+   *"every current geometric field is per-point and this needs a pairwise one."*
+   Unblocking it puts the project's **first adjudication** in reach against 39
+   registrations and zero. `core/functional_distance.py` and
+   `core/intervention.py` already exist; verified 2026-09-13.
+2. **Then §2.5's isometric path on `L7H8`** — the only *designed* particle
+   intervention, still unrun, and now readable against a known mechanism
+   (§3.29).
+3. **Do NOT register §3.27** (§3.28): not differential, and CoAx reached the
+   statistic first. Invariant 5 remains a clean *unclaimed negative* and is the
+   better registration candidate if one is wanted — but per §3.29 the bar is
+   frame-level, and `1b`/`1.4b` are spent only on that.
+4. **§3.12-U's `L5H2` puzzle is closed (§3.20–§3.22, 2026-09-13), and the
+   self-repair behind it is now measured exhaustively.** *(Closed thread — kept
+   for reference, not as an action.)* `L5H2` is a
+   previous-token head, uniquely wired into `L7H8`'s read-space
+   (composition rank 0/112 at z +5.25, where prev-token heads without the wire
+   do nothing), whose ablation breaks `L7H8`'s matching attention — hence
+   neither an induction nor an FV score of its own. §3.12-S's super-additivity
+   is set-wide: **44 heads above +0.1**, led by `L5H9` +3.36, `L9H5` +2.75,
+   `L1H15` +2.35, and **MLP 6 at +6.26, above every head**. Stand-ins split by
+   position — upstream ones partly restore `L7H8`'s attention, downstream ones
+   move it by exactly zero. **MLP 6 is now opened too (§3.23)**: it forms an
+   OR-gate with `L5H2` over `L7H8`'s matching, the repair is *active* (only
+   the direction it rotates to works — the one it already had is worth no more
+   than noise), and it is **not** recomputing the prev-token signal (cos
+   −0.507 to `L5H2`'s own contribution). **§3.24 decodes the direction**: it is
+   aimed at the redundancy set's shared key read-space (six of the top nine of
+   272 downstream heads are members, on a flat per-layer profile) and is not a
+   token signal. **§3.25 closes the per-member attribution** (the rotation
+   moves the heads it points at; misses move least). **Open:** why the
+   output-side compensator class exists at all (`L11H14` is its extreme, and
+   `L5H2`×`L11H14` is the single largest residual against §3.12-V's magnitude
+   rule at both checkpoints while being δ-cosine-orthogonal).
+5. **70m's `L2H1` row stays ceiling-censored on every probe** (§3.17) — the
    analogue of 410m's headline prev-token × matcher pair. It needs §3.12-M's
    graded KL/λ readout, which is still unbuilt and is now blocking two things.
-4. **`--probe` is on three of six runners.** `redundancy_catalog.py`,
+6. **`--probe` is on three of six runners.** `redundancy_catalog.py`,
    `member_subspace_geometry.py` have it as of 2026-09-12 along with
    `member_formation_curves.py`, `pairwise_interaction_matrix.py` and
    `useful_rank.py`; `ambient_budget.py` is still `wide`-only and its docstring
    still promises a `--text` arm that does not exist.
-5. The older threads below (the LoRA tangent, invariant 3's scoping block, the
+7. The older threads below (the LoRA tangent, invariant 3's scoping block, the
    step-1000 circuit) are unchanged by today's work.
 
 **Before launching any cross-rung trajectory**, check the cached grids —
@@ -3348,6 +3389,922 @@ cheap and would resolve it.**
 > experiment produced a better result than it was designed for: the set
 > divides the two roles between different members rather than transitioning
 > between them.** §3.12-U's puzzle stands as a puzzle.
+>
+> **UPDATE 2026-09-13 — see §3.20. Closed on the mechanism**: `L5H2` is a
+> previous-token head whose ablation demonstrably breaks `L7H8`'s own
+> matching attention; it has neither score because neither is its job. The
+> joint-ablation super-additivity (§3.12-S) is a separate, still-open
+> question.
+
+---
+
+## 3.29 DIRECTION (2026-09-13, user) — the programme is the particle/OT reading; induction heads are an instance of it
+
+**Read this before choosing an action.** Stated by the user at the close of the
+session, and it reframes everything above it.
+
+**The goal is the particle interpretation of transformers**, via the
+mathematical perspective and optimal transport, applied to mechanisms the
+network actually builds. Induction heads are the *current instance*, not the
+object. The same pass — **why did this form, what were the mechanisms of its
+forming, what happened after it formed** — is to be run on SAE feature
+decompositions, on the clusters themselves, and on other objects, building a
+developmental trail from the random-matrix start. The standing hazard is
+**depth in one place against sparseness everywhere else**, and this session is
+an example of it.
+
+**Honest accounting of §3.20–§3.28.** Nine commits, essentially all head-level
+causal mechanism on one model, three of them instrument corrections. **None of
+it is expressed in particle or OT language.** It is good plumbing and it drifted
+from the programme. Past the point of diminishing returns on this one object:
+the next session's job is to make the *second* object cheap, not the first one
+more complete.
+
+**The particle/OT translation of what was found**, recorded so the work is not
+lost when the frame changes. An attention head **is** a transport plan —
+row-stochastic, queries onto keys — which is what the softmax produces, not a
+metaphor:
+
+- **The relay is a translation.** `L5H2` at 0.95 on offset −1 is transport by
+  fixed displacement, the simplest OT object available.
+- **The matcher is a near-Monge map.** `L7H8` at 0.934 on offset `j`
+  concentrates nearly all mass on one target per query — an almost
+  deterministic map, not a diffuse plan.
+- **MLP 6's repair is an external field, not an interaction.** It is
+  position-independent, so it cannot change the pairwise coupling; what it
+  changes is the **cost geometry** the coupling is computed in (it projects
+  into the keys' read subspace, §3.24). §3.23's result restates as: the field
+  must point the right way in that geometry, and a field of equal magnitude in
+  the wrong direction is **worse than no field** (8.955 vs 8.002 nats).
+- **Invariant 4 is already the cluster story.** "Born aligned, then diverging to
+  a mid-training minimum" (§3.19), with 70m re-cohering, is cluster formation
+  and dissolution measured inside one causally-defined set. No new phase needed
+  for that link.
+
+**Instrument note, cheap and worth doing: W₁ over TV.** §3.25–§3.27 measure
+attention change with total-variation distance. TV says *the plan changed*;
+**Wasserstein-1 on the position axis says the plan changed by moving mass this
+far**, which for induction is the whole mechanism — mass leaking to `j ± 1`
+versus scattering uniformly are different events and TV cannot separate them.
+Same attention tensors, different reduction, and it puts the readout in the
+frame's own language so later objects inherit it. It would also have separated
+70m's `L0H3` from a real matcher more sharply than TV did.
+
+**Registration discipline, decided here.** The near-miss in §3.27/§3.28 was
+registering an **instance-level** claim ("this relay supports this set"). No
+account on the table predicts otherwise, so the null does no work and a
+reserved rung buys a fact rather than a discrimination. **What the particle/OT
+frame can predict differentially is *shape*** — the trajectory of a transport
+plan's concentration, the attractive/repulsive split at formation, the
+dissipation signature at onset. Three tiers, held strictly:
+
+1. **Exploratory, labelled, no p-value.** Surveys, catalogues, "what is this
+   object". Most work lives here; the repo already does this well.
+2. **Registered frame-level predictions.** Rare, differential, with a null a
+   rival account could beat. Reserved rungs (1b, 1.4b) spent only here.
+3. **An e-process across objects.** One frame-level prediction carried across
+   induction heads → SAE features → clusters, e-values multiplied — anytime
+   valid, and it solves the multiplicity problem that 40 separate entries
+   creates. `claims/EVALUABILITY.md` is the authority on what may enter the
+   product and is **generated from the registry, never hand-edited**. §4's κ/α
+   analysis points the same way: a single-factor claim needs p ≤ 6.25e-4 to
+   validate at the e-threshold, 80× stricter than the gates check — so few,
+   sharp, multiplied.
+
+**39 registrations, 0 adjudications.** The marginal value of a 40th is low and
+of the first adjudication is high. **Do not register §3.27** — not primarily
+because CoAx reached the statistic first (§3.28), but because it is not
+differential.
+
+### The next action, and it is already registered: unblock `P-I5`
+
+`P-I5` is the particle frame's own differential test and it is sitting in the
+registry unbuilt. Its statement: *"Ablating an induction head changes the
+pairwise-distance distribution among the particles it couples (the matched
+positions), not only the logit at the copied token."* Its falsifier is the
+frame itself: *"a large logit effect with a pairwise-distance change
+indistinguishable from the matched control: the head moves the readout without
+moving the particles, **and the transport reading is wrong**."* Adjudicated on
+the **joint** outcome — a geometric effect with no logit effect falsifies it
+equally, in the other direction.
+
+It is `needs-null`, and the registry states the blocker exactly:
+
+> Permutation null over the matched-magnitude random-direction ablation arm, on
+> a two-dimensional statistic (geometric delta, logit delta). The joint form
+> matters: two separate one-dimensional tests would let the prediction be
+> scored a partial pass in the configuration it is designed to rule out.
+> **REQUIRES an extension to `core/dual_reading.py` — every current geometric
+> field is per-point and this needs a pairwise one.**
+
+**So step one is: give `core/dual_reading.py` a pairwise geometric field.**
+Verified 2026-09-13: the module has no pairwise function, and
+`core/functional_distance.py` (the logit readout) and `core/intervention.py`
+(the ablation) both exist. That single extension unblocks the null, which
+unblocks the adjudication, which would be the project's **first** — and it is
+the bridge that makes every later object (SAE features, clusters) expressible
+in the same language instead of needing its own bespoke plumbing.
+
+**Second, and now better set up than it was:** §2.5's isometric path on `L7H8`
+(`M(t) = γ(t)Σγ(1−t)ᵀ`, exact isometry, repulsive → attractive → repulsive) is
+the only *designed* particle intervention and is still unrun. This session made
+it more readable, not less: `L7H8`'s matching is now known to depend on the
+relay plus MLP 6's background field, so the sweep has a mechanism to be read
+against rather than a black box.
+
+---
+
+## 3.28 The pre-registration scan: §3.22's statistic is published, and the MLP result is in the gap (2026-09-13)
+
+Full record in **`docs/literature_scan_2026-09-13.md`**; every id was fetched
+and read as full text, two of them by pulling the PDF and extracting locally
+because the abstract pages answered none of the questions that mattered. Run
+under `CLAUDE.md` **trigger 2** — an entry was about to be proposed off §3.27
+and registration freezes the wording, the statistic and the null. **It changed
+them, which is the whole reason the trigger exists.**
+
+**`2607.01940`, *Conditional Co-Ablation* (Gong et al., NTU, 2 Jul 2026) — the
+paper §3.16 flagged as "read that one first" and nobody read.** Its Definition 1
+is §3.22's statistic: the conditional ablation effect of a unit given an ablated
+set, scored as **the growth of that effect once the primary set is removed**.
+Ours is `dNLL(S+u) − dNLL(S) − dNLL(u)`; theirs is the same second-order object
+in a Fisher energy over logits. Its abstract is §3.22's headline — first-order
+scores *"become misleading when a transformer self-repairs: a dormant backup can
+take over, muting the primary's measured effect while the backup itself appears
+irrelevant on the intact model"* — which is exactly §3.22's `L4H9` (solo
+**−0.001**, marginal **+1.018**), presented there as a finding rather than a
+reproduction. And it runs **induction across eight models in six families,
+Pythia-410M included**, with attribution factors from 2.1× (Pythia-160M) to
+**12× (Pythia-410M)**.
+
+**`2402.15390`, Rushing & Nanda (ICML 2024).** MLP participation in self-repair
+is published: *"changes in the final LayerNorm scaling factor and sparse sets of
+neurons implementing Anti-Erasure"*, on gpt2-small/medium/large and
+pythia-160m/**410m**/1b.
+
+**So four things are reclassified as replication**: §3.22's interaction
+statistic; its misleading-first-order-scores framing; cross-scale recovery of
+induction backups; and MLPs participating in self-repair at all.
+
+**What survives is sharper for sitting in a gap the paper names itself.** CoAx
+is **head-level by construction** — *"the signal is instantiated primarily at
+attention-head granularity"*, head-level CoAx *"does not recover"* the
+MLP-dominated case, its FFN probe is *"preliminary"*, and *"a full FFN-level
+treatment of strongly MLP-mediated self-repair"* is *"left to future work."*
+That is precisely where §3.23–§3.25 sit:
+
+1. **An MLP as the *dominant* backup for one head** — MLP 6 at **+6.26**, above
+   every head including `L7H8`'s +4.07, on a solo effect of +0.14.
+2. **The mechanism is an active rotation of a constant direction** — `mu_clean`
+   restores nothing (0.038, on a par with zero and with noise), `mu_cond`
+   restores 0.643. Neither paper characterises a compensator's residual-stream
+   write at all, and **the published mechanism is a rival hypothesis §3.23
+   already rejects three ways** (identical residual norms under zero vs mean
+   with attention 0.045 vs 0.643; norm-matched random reproducing zero; MLP 5
+   removing as much norm for a fraction of the damage). The direction result is
+   not LayerNorm scaling measured differently.
+3. **The rotation is aimed at the set's shared key read-space and moves the
+   heads it points at** (§3.24, §3.25) — no residual geometry in either paper.
+4. **The attention/TV readouts and the ceiling-immunity argument**, which is what
+   made the 70m port possible where §3.17's ceiling censors every ΔNLL cell.
+   Both papers are output-grounded.
+
+**And one non-hit recorded as a non-hit.** A search summary attributed
+*"many-to-many wiring between previous-token and induction heads"* to
+`2604.01094`; the phrase is not in its abstract and the full text was not
+obtained, so it is logged as **unresolved, not as support**. Quoting it would
+have repeated the 2026-09-10 failure §3.16 exists to prevent.
+
+**Consequence for the registration, and it is a human call.** §3.27's candidate
+— relay support concentrated on the causally-defined set, replicating across
+rungs — is adjacent to CoAx's induction transfer. Not identical (ours is the
+relay's *support* over downstream heads; theirs is *backups of* an ablated
+primary) but close enough that **registering it as worded would claim novelty
+this scan does not support.** The card with literature cover is the
+**MLP-mediated, direction-carried repair**, and it needs its own scan of
+FFN/neuron-level interpretability before anything is frozen. Nothing has been
+written to `claims/registry.json`.
+
+---
+
+## 3.27 What DOES replicate: the relay supports the causally-defined set, at both rungs (2026-09-13)
+
+> **NOVELTY QUALIFIED 2026-09-13 by §3.28.** The cross-rung measurement stands.
+> Its status as a *registration candidate* does not: CoAx (`2607.01940`) reports
+> induction-backup recovery transferring across eight models including
+> Pythia-410M, so "backup structure replicates across scale" is substantially
+> weaker as a novelty claim than this section presents it. **Do not register as
+> worded.**
+
+`p7d_redundancy/relay_support_profile.py`, new. §3.26 closed by admitting the
+replication question as posed "does not quite have a subject" at 70m, because
+70m does not do relay-backed matching. This is the better-posed version, and it
+is the **first positive replication in this thread beyond the relay itself**.
+
+**The question.** 70m's `L2H1` moves the readout by **+6.17 on a 5.73
+baseline**, so *something* depends on it. Naming that something is the 70m
+analogue of §3.20 — and asking it at both rungs on one instrument gives a
+comparison §3.26's table could not, since that had to be assembled from two.
+
+**The instrument needed a measured null, and its absence was caught by the
+positive control.** Raw TV between clean and relay-ablated put `L7H8` at **rank
+191 of 288**, with TV 0.1887 *below* the 0.2400 population median — even though
+§3.20 measured exactly this ablation dropping `L7H8` 0.938 → 0.751. The numbers
+agree (0.189 vs 0.190); the *comparison* fails, because ablating the relay
+moves every downstream head by ~0.24 and a specific 0.19 does not stand out.
+Calibrating each head against **its own sensitivity to generic ablation** (four
+heads drawn outside the catalogue, §3.12-V3's discipline) fixes it: `L7H8` goes
+to **rank 7** at 74x its own null, and `L6H0` to rank 8 at 67x. **Raw TV finds
+a collapse and misses a targeted shift** — which is why
+`mlp_backup_attention_scan.py` passed on raw TV (there `L7H8` goes to 0.045)
+and this did not.
+
+**What replicates:**
+
+| | pythia-410m (`L5H2`) | pythia-70m (`L2H1`) |
+|---|---|---|
+| downstream heads | 288 | 24 |
+| carry half the above-median support | **5** (1.7 %) | **2** (8.3 %) |
+| **top-5 by support that are catalogue top-10** | **5 of 5** | **5 of 5** |
+| Spearman(catalogue ΔNLL, support) | +0.312 (p = 6.2e-08) | **+0.727** (p = 5.7e-05) |
+
+**The relay's support is concentrated, and it lands on the causally-defined
+set — five of five at both rungs.** That is a structural invariant stated over
+a causally-defined population rather than over head names (`design-8.md`:
+"nothing transfers by head name"), and it is a candidate for the phase's
+registrable list.
+
+**What does not: how tightly support tracks causal magnitude.** At 70m the
+support ranking *is* nearly the catalogue ranking — `L3H6` (+2.150) → `L3H1`
+(+1.889) → `L3H5` (+1.248) → `L3H0` (+0.644) in that exact order, ρ = **+0.73**.
+At 410m the two are only loosely related, ρ = **+0.31**: `L8H6` takes the top
+support slot at **632x its null** on a causal effect of +0.212, while `L7H8` —
+five times its causal effect at +1.019 — sits seventh. So at 70m one relay
+supports a small set in order of how much each member matters; at 410m support
+and importance come apart. That is the same decoupling §3.12-V found between
+direction and substitutability, and it fits §3.24's finding that the 410m set
+shares a read-space, so support spreads across the set rather than tracking any
+member's own weight.
+
+**Caveats, named.** 24 downstream heads at 70m against 288 at 410m, so the
+concentration *shares* (8.3 % vs 1.7 %) are not comparable and only the counts
+and the ranking are; the 70m Spearman is over 24 units. The rungs were read on
+different probes (`freq` at 70m per §3.17, `wide` at 410m), which the ratio
+statistic mitigates by calibrating each head within its own rung but does not
+erase. Heads within a layer are not independent (§3.12-G6), so both p-values are
+descriptive. Exploratory; `claims/registry.json` unchanged; both rungs spent
+under `check_registry` rule 3.
+
+---
+
+## 3.26 The chain at 70m: the relay replicates, the circuit around it does not (2026-09-13)
+
+`p7d_redundancy/mlp_backup_attention_scan.py` (new) plus
+`prev_token_profile.py --model pythia-70m`. Detail in
+`p8_scale_ladder/status-8.md` ("The self-repair chain at 70m"). §3.20–§3.25 are
+`n = 1` on pythia-410m, which is spent forever under `check_registry` rule 3, so
+the ladder is the only route by which any of it becomes registrable. 70m is the
+other exploration rung and is free (`design-8.md`'s rung policy; 1b/1.4b stay
+reserved and untouched).
+
+**The blocker first, and the instrument built to get past it.** §3.17 records
+that 70m's `L2H1` costs **+6.88 on a 2.67 baseline**, so it censors its own
+cells against `ln 50304` *even on the `freq` probe* — every ΔNLL interaction in
+§3.22/§3.23 is unavailable at that rung. Attention is immune: a distribution
+over keys is well defined however badly the model is doing. That is what made
+this port possible at all, and it is the first time the ceiling blocker §3.17
+logged has been worked around rather than waited on.
+
+**1. The relay replicates, cleanly.** 70m's `L2H1` carries prev-token attention
+**0.950** (rank 1 of 48, next is 0.347) *and* the largest causal effect in the
+catalogue (**+6.17**) — the same double signature as 410m's `L5H2` (0.970,
+rank 1 of 384, +1.97). Two rungs, same object: a dominant previous-token head
+that is also the most causally load-bearing head in the model.
+
+**2. The matcher does not, and the ordering is inverted.** 70m's only strong
+same-token matcher is **`L0H3` at 0.906 / 0.957** — as high as `L7H8`'s 0.934 —
+but it sits in **layer 0**, *upstream* of the relay, and its catalogue effect is
+**−0.839**: ablating it *improves* the readout. A layer-0 head cannot compose;
+it matches on the embedding directly. So 70m solves same-token matching off the
+embeddings at the bottom of the network while 410m does it seven layers up
+through a relay, and **the relay → matcher ordering that defines the 410m
+circuit is reversed at 70m and cannot exist there.** The offset convention is
+not the explanation: §3.12's Q1 already measured `L7H8` at 93.4 % on exactly `j`
+with nothing at `j+1`, so the instrument describes "attends to an earlier copy
+of my own token" correctly at both rungs. And **no causally-important 70m head
+does induction attention at all** — every head above +1.0 in the catalogue
+scores under 0.024.
+
+**3. The MLP backup does not replicate in its structural form.** At 410m the
+dominant backup is MLP 6, *the first MLP that can see the relay's output* under
+parallel residual, at **d_mean +0.1099** with its argmax head independently
+landing on `L7H8` — 2.1x the next MLP. At 70m, on the same validated
+instrument, step 16000:
+
+| | 410m (relay `L5H2`, layer 5) | 70m (relay `L2H1`, layer 2) |
+|---|---|---|
+| parallel MLP (cannot see the relay) | MLP 5, +0.0377 | **MLP 2, +0.0944 / +0.0528** |
+| first MLP that can see it | **MLP 6, +0.1099** | MLP 3, **−0.0153 / −0.0083** |
+| separation over next best | 2.1x | 1.4–1.8x |
+
+**The ordering inverts.** At 70m the winner is MLP 2, which is *parallel* to
+`L2H1` and so architecturally cannot be responding to its output at all, while
+MLP 3 — the structural analogue of MLP 6 — is **negative on both probes** at
+step 16000. Its targeted consumer is consistently `L3H6`, a catalogue member
+(+2.15), so 70m does have a targeted backup pathway; it is simply not the one
+410m uses.
+
+**Read 16000, not 143000.** At the endpoint the 70m readout is degenerate on
+*both* probes for this instrument — TV saturates (max 0.90–0.98, and every MLP
+0–2 near ceiling), which is §3.15's late-`wide` degeneracy showing up in
+attention rather than only in NLL, and `freq` does not rescue it. Step 16000 is
+the checkpoint that carries the claim, and both probes agree there.
+
+**The honest limitation.** 70m has **6 layers against 410m's 24**, so
+"parallel to the relay" and "the first sublayer that can see it" are one layer
+apart in a network a quarter as deep, and the analogy is geometrically strained
+in a way no amount of care fixes. This is evidence that the *specific*
+MLP-6 structure is 410m's, not induction's — the same verdict §3.16/§3.17
+reached for invariant 5 and `L11H14` — but it is **not** evidence that
+relay-backed matching is absent at 70m, because 70m does not do relay-backed
+matching in the first place (point 2). The replication question as posed does
+not quite have a subject at this rung.
+
+**A methodological finding that cost three iterations and is worth more than
+the port.** The new instrument failed its own 410m positive control twice
+before passing, and both failures would have produced a confident wrong answer
+about 70m:
+
+1. **Mean-ablation is blind by construction to a backup carried by the mean.**
+   §3.15 makes `mean` the control for `zero`'s off-distribution bias, and that
+   is right when the signal is in the variation. MLP 6's signal *is* its mean
+   (§3.23), so mean-ablating it preserves the very thing under test and the
+   scan put MLP 6 at **−0.0160**. **§3.15's rule needs this caveat attached:
+   `mean` is the conservative control only when the mechanism is not itself the
+   mean.**
+2. **Averaging TV over all query positions halved a second-copy-only effect**
+   and pushed `L7H8` below a layer-23 head, so the max statistic nominated the
+   wrong MLP. Restricting to second-copy queries, matching `induction_scores`'
+   own scope, fixed it.
+
+Only after both fixes does the control reproduce MLP 6 *and* identify `L7H8` as
+its target without being told. **A new instrument that has not reproduced a
+known answer is not evidence about a new rung**, and this is the cleanest
+example this project has of that principle paying for itself.
+
+Exploratory; no p-value; `claims/registry.json` unchanged; both rungs spent
+under `check_registry` rule 3.
+
+---
+
+## 3.25 The geometry predicts the function: the rotation moves the heads it points at (2026-09-13)
+
+`p7d_redundancy/rotation_per_head_effect.py`, new. §3.24 showed MLP 6's repair
+direction is aimed at the redundancy set's key read-spaces and flagged the gap
+it could not close: **that is a weight-space measure**, and §3.12-S is this
+project's own finding that weight-space overlap is not function-space overlap.
+This closes it.
+
+**The minimal pair.** Two states differing by exactly the rotation and nothing
+else, both holding a *constant* in MLP 6's slot:
+
+    REF  = `L5H2` ablated, MLP 6 := mu_cond    (rotation present; NLL 2.859)
+    TEST = `L5H2` ablated, MLP 6 := mu_clean   (rotation absent;  NLL 8.955)
+
+**The readout is attention, not loss, and that is forced.** At NLL 8.955 the
+model is a nat from `ln 50304`, so any per-head marginal computed there is
+ceiling-contaminated (§3.14.4-D); an attention distribution stays well defined
+however badly the model is doing. Per head: **total-variation distance** between
+its attention in REF and TEST, averaged over queries and sequences — in [0, 1],
+needing no scale calibration, and role-agnostic, which matters because §3.18
+found the FV-positive members never exceed an induction score of 0.015 and so
+have no induction attention to measure. **Zero check: layers 0–6 return TV
+exactly 0.00e+00** at both checkpoints, as causality requires.
+
+**Members move, non-members do not** (layers > 6, n = 272):
+
+| | members (n=9) | non-members (n=263) | Mann-Whitney |
+|---|---|---|---|
+| step 16000 | **0.2850** | 0.1471 | p = 1.1e-05 |
+| step 143000 | **0.2483** | 0.1201 | p = 1.0e-02 |
+
+Within the layers where the effect is largest, members exceed the non-member
+**maximum** at both checkpoints — layer 7: members 0.353 / 0.281 against a
+non-member max of 0.249 / 0.154; layer 8: 0.321 / 0.323 against 0.265 / 0.225;
+layer 10: 0.321 / 0.318 against 0.289 / 0.231.
+
+**And the geometry predicts the function head by head.** TV against `frac_K`
+from §3.24, over the same 272 heads:
+
+| | raw Spearman | layer-centred Spearman | mean within-layer | layers positive |
+|---|---|---|---|---|
+| 16000 | +0.318 (p = 7.9e-08) | **+0.325** (p = 4.2e-08) | +0.285 | 14 / 17 |
+| 143000 | +0.223 (p = 2.1e-04) | **+0.337** (p = 1.1e-08) | +0.318 | 15 / 17 |
+
+**Controlling for layer strengthens it rather than explaining it away**, which
+is the confound that had to be ruled out: TV rises with depth on its own (per-layer
+medians 0.03 → 0.16), so the raw ranking is contaminated by accumulation, and
+the relationship survives centring each layer on its own median and holds
+*within* individual layers in 14 of 17 and 15 of 17.
+
+**The exceptions are the geometry's own.** `L9H13` — `frac_K` rank #104 / #89,
+i.e. not a targeted head — sits **below** its layer's non-member median at both
+checkpoints (0.113 vs 0.133; 0.062 vs 0.094). `L12H5` (#36 / #43) is barely
+above median at 143000 (0.162 vs 0.141). The members the direction does not
+point at are the members that do not move, which is the prediction rather than
+a rescue.
+
+**Two things not to quote.** The **raw top-TV ranking at 143000 is dominated by
+layers 22–23** (`L23H7` 0.497 and eight more from layers 22–23 above any
+member) — pure accumulation, and the reason the layer-controlled statistics are
+the ones that carry the claim; at 16000, where accumulation is milder, five of
+the top nine are members. And **`L15H14` flips**: above its layer's non-members
+at 16000 (0.264 vs 0.113) and below at 143000 (0.044 vs 0.101). Recorded rather
+than smoothed.
+
+**Where this leaves the thread.** The chain is now complete end to end and each
+link is measured rather than inferred: `L5H2` is a previous-token head wired
+into the matcher's read-space (§3.20); removing it is compensated set-wide
+(§3.21, §3.22); the dominant compensator is MLP 6, which *actively rotates* a
+constant direction (§3.23); that direction is aimed at the redundancy set's
+shared key subspace (§3.24); and it moves precisely those heads (this section).
+No p-value here is an adjudication — heads within a layer are not independent
+(§3.12-G6) and these statistics are descriptive. `claims/registry.json`
+unchanged; pythia-410m spent under `check_registry` rule 3.
+
+---
+
+## 3.24 The repair direction decoded: it is aimed at the redundancy set's shared read-space (2026-09-13)
+
+`p7d_redundancy/mlp6_decode_direction.py`, new. §3.23 closed by naming the
+decode as the obvious next step; this is it. The object is `mu_cond` — MLP 6's
+mean output once `L5H2` is ablated — and in particular the **rotation
+component**, `mu_cond` minus its projection onto `mu_clean`, which §3.23 showed
+carries the entire causal effect (writing `mu_clean` restores nothing, 0.038;
+writing `mu_cond` restores 0.643).
+
+**The LayerNorm guard, first, because it could have invalidated the whole
+thing.** GPT-NeoX LayerNorm subtracts the mean across the hidden dimension, so
+anything along the uniform vector is deleted before `L7H8` reads it.
+`cos(mu, uniform)` is **+0.005 / −0.007** and the share surviving
+mean-subtraction is **1.0000**. Nothing here lives in LayerNorm's null
+direction.
+
+**1. The rotation is aimed at attention read-space.** `W_K` for one head is
+64x1024, so a random direction lands `64/1024 = 0.0625` of its squared norm in
+its rowspace; measured over 200 random directions, **0.0617 ± 0.0100**. Taken
+through the layer's own LayerNorm gain:
+
+| vector | frac in `L7H8`'s K | frac in Q |
+|---|---|---|
+| random null | 0.0617 ± 0.0100 | 0.0616 ± 0.0100 |
+| `mu_clean` | 0.091 / 0.120 | 0.064 / 0.114 |
+| `mu_cond` | 0.220 / 0.237 | 0.144 / 0.197 |
+| **rotation component** | **0.456 / 0.499** | 0.323 / 0.398 |
+
+The component that carries the causal effect puts **~half its energy into a
+64-of-1024 subspace** — 7–8x chance, ~39 sd above the null — while the
+direction MLP 6 already had is ordinary. **K exceeds Q at both checkpoints**
+(0.456 vs 0.323; 0.499 vs 0.398), which is the induction-shaped side.
+
+**2. It is not a token signal.** The logit lens through `W_U` returns noise —
+`'urn'`, `'il'`, `'ats'`, `'abo'` — with **entirely different token sets at the
+two checkpoints**. That is a real negative and it agrees with the geometry: the
+direction is position-independent, so it could not carry per-token match
+content, and it is pointed at the matcher's machinery rather than at the
+vocabulary.
+
+**3. And it is aimed at the SET, not at `L7H8`.** Scoring the rotation into
+every one of the **272 heads downstream of MLP 6**, `L7H8` ranks **5th at step
+16000 and 4th at 143000** — far above the 0.073 median, but not the target.
+The proximity confound is dead on the layer profile, which is flat (per-layer
+medians 0.064–0.081 at 16000, spanning layers 7 to 23). What separates heads is
+membership, not position:
+
+| | members | non-members |
+|---|---|---|
+| within layer 7 | `L7H1`, `L7H8` — median **0.581** | median 0.071 |
+| within layer 8 | `L8H6`, `L8H9` — median **0.650** | median 0.061, max 0.435 |
+
+Global ranks of 272 at step 16000: **`L7H1` #0, `L8H6` #1, `L8H9` #3, `L7H8`
+#5, `L10H9` #6, `L11H14` #8** — six of the top nine are catalogue members, from
+a population where members are ~2 %. The same six lead at 143000.
+
+**The exceptions are consistent, which is the best kind.** The members that are
+*not* in the targeted group are `L12H5` (#36 / #43), `L9H13` (#104 / #89) and
+`L15H14` (#125 / #177) — and `L12H5` is precisely the member that has come out
+uncoupled on every previous measurement: it moved `L7H8`'s attention by exactly
+**0.0000** (§3.20), and it is the largest *negative* residual against §3.12-V's
+magnitude rule (§3.22). A fourth independent instrument putting `L12H5` outside
+the same pathway is a consistency check that was not designed in.
+
+**What this says.** The redundancy set is not merely a collection of heads with
+interchangeable function — **its members share a read-space, and MLP 6's repair
+addresses that shared space rather than any one head.** That is why §3.21/§3.22
+found compensation distributed across several members instead of routed to the
+matcher: the repair is a broadcast into the set's common input subspace. It
+also gives §3.14.2's "a set of heads holding a residual-stream regime" a
+concrete geometric referent.
+
+**The function-space check, because §3.12-S's lesson binds here.** A rowspace
+projection is a **weight-space** measure and weight-space overlap is not
+function-space overlap — the finding that made membership causal in the first
+place. The other members cannot be checked on `L7H8`'s instrument (§3.18:
+their induction attention never exceeds 0.015, so there is nothing to restore),
+so the readout is the **loss**, which aggregates every member's contribution:
+
+| MLP 6's slot, `L5H2` ablated | NLL @ 16000 | NLL @ 143000 |
+|---|---|---|
+| *baseline (`L5H2` ablated, MLP 6 intact)* | *2.551* | *1.761* |
+| zero | 8.002 | 6.701 |
+| norm-matched random constant | 8.09–8.99 | 7.99–8.32 |
+| **`mu_clean`** | **8.955** | **7.153** |
+| **`mu_cond`** | **2.859** | **1.986** |
+
+**One constant vector substitutes for MLP 6's entire position-varying output**,
+recovering to within **0.31 / 0.23 nats** of the baseline and closing ~95 % of
+the 5.45-nat gap that deleting the MLP opens. And `mu_clean` is **worse than
+deleting the MLP outright** (8.955 against 8.002) — the pre-ablation direction
+is not merely useless in the ablated state, it is actively wrong, which is what
+an operating-point term should look like when set to the wrong point. So the
+rotation is load-bearing in function space, not only in geometry.
+
+**The per-member attribution is closed in §3.25**: the rotation moves the
+heads its geometry points at, members exceeding their layer's non-member
+maximum in layers 7/8/10, with TV-vs-`frac_K` surviving layer control
+(Spearman +0.325 / +0.337).
+Exploratory; no p-value; `claims/registry.json` unchanged; pythia-410m spent
+under `check_registry` rule 3.
+
+---
+
+## 3.23 What MLP 6 is doing: active self-repair, by rotating one direction (2026-09-13)
+
+`mlp_relay_role.py`, `mlp6_content_vs_scale.py`, `mlp6_response.py`, all new.
+Detail in `status-7d.md` ("Opening MLP 6"). §3.22 found MLP 6 is `L5H2`'s
+largest stand-in (+6.26, above every head) and closed with "nothing here opens
+the MLP itself". This opens it.
+
+**The architecture makes MLP 6 the unique candidate, and it is a fact not an
+assumption.** pythia-410m has `use_parallel_residual = True` (read off the
+loaded config): at every layer the attention and the MLP read the *same*
+layernormed residual and both write into the next. So **MLP 5 cannot see
+`L5H2`'s output** — it is parallel to it — and **MLP 6 is the first sublayer in
+the network that can**, while writing into the residual `L7H8` reads. Two exact
+validity checks fell out of measuring it: MLPs **7–23 move `L7H8`'s attention by
+exactly 0.0000** (they are at or after the matcher), and MLPs **0–5 have
+`cos(μ_clean, μ_cond) = 1.0000` and per-position change exactly 0.0000** when
+`L5H2` is ablated. The instrument returns exact zero everywhere causality
+requires it.
+
+**1. `L5H2` and MLP 6 are an OR-gate over `L7H8`'s matching.** Either alone is
+dispensable; together they are the whole supply:
+
+| state | `L7H8` induction attention (16000 / 143000) |
+|---|---|
+| clean | 0.938 / 0.947 |
+| `L5H2` ablated | 0.751 / 0.796 |
+| MLP 6 ablated | 0.876 / — |
+| **both** | **0.045 / 0.012** |
+
+That is the attention-level mechanism behind §3.22's +6.26 ΔNLL interaction:
+the super-additivity in the loss is the shadow of the matcher going blind.
+
+**2. It is not scale, and that is established rather than assumed.** §3.15's
+rule puts the burden on `zero`, so three arms answer it. `zero` and `mean`
+leave the residual entering layer 7 at **43.07 vs 43.46** (and 42.83 vs 42.91
+at 143000) — indistinguishable — while giving attention 0.045 vs 0.643. A
+**norm-matched random constant** reproduces `zero` exactly (0.030–0.050 /
+0.011–0.014). And MLP 5 removes as much residual norm as MLP 6 (43.2 vs 43.5)
+while doing a fraction of the damage. Three independent ways of saying the
+collapse is not an off-distribution norm artifact.
+
+**3. The signal is a specific direction, carried by the mean.** MLP 6's output
+is only **25–28 % constant** (‖μ‖ 9.69 against RMS‖out‖ 35.19), yet replacing
+the *entire* output with μ alone retains **0.643 / 0.567** of the matcher's
+attention. Direction-specificity is what separates MLP 6 from its neighbours —
+`mean` minus `random` is **+0.60** for MLP 6, +0.12 for MLP 5, **−0.02** for
+MLP 3.
+
+**4. It is ACTIVE self-repair, not pre-existing redundancy — and this is the
+result worth having.** Every interaction measured in §3.21/§3.22 is equally
+consistent with a component that does exactly the same thing and merely becomes
+load-bearing; §3.16 imported "self-repair" from `2307.15771` without anything
+here separating the two. MLP 6's output **moves** when the relay is ablated:
+its mean rotates to `cos = 0.837` and **grows 21 %** (the only MLP that grows),
+with the change concentrated in the mean — its per-position variation changes
+by 0.19, the *smallest* of MLPs 6–23. The causal version settles it:
+
+| constant written into MLP 6's slot, `L5H2` ablated | 16000 | 143000 |
+|---|---|---|
+| zero | 0.045 | 0.012 |
+| norm-matched random | 0.030–0.050 | 0.011–0.014 |
+| **μ from the CLEAN state** | **0.038** | **0.016** |
+| **μ after responding** | **0.643** | **0.567** |
+
+**The direction MLP 6 already had is worth no more than zero or noise; only the
+direction it moves to restores the matcher.** The response *is* the mechanism.
+And the rotation is small — `cos = 0.837`, about 33° — so the entire difference
+between a blind matcher and a working one lives in the component orthogonal to
+what MLP 6 was already writing.
+
+**5. It is not standing in by writing where `L5H2` wrote.** `cos(μ_cond,
+d_L5H2)` = **−0.507**, the largest magnitude of any MLP and *negative*, against
+0.01–0.14 for the unchanged MLPs 0–5. So "MLP 6 recomputes the prev-token
+signal" is **not** what the data show — a position-independent constant could
+not carry per-token match information in any case. The role is closer to an
+enabling or operating-point term for the matcher than to a re-supply of its
+content.
+
+**Caveats, none of them hidden.** Every `L5H2` ablation in this thread is `ov`
+mode, which §3.15 notes is really a *bias*-ablation; consistent throughout, and
+named. The `mean` arms recompute μ inside the conditional state rather than
+reusing clean-model means, because a clean mean injected into an ablated pass
+is itself an off-distribution constant. `--controls 3` random directions,
+agreeing to ~0.02. **What that direction is: decoded in §3.24** — it is
+aimed at the redundancy set's shared key read-space (6 of the top 9 of 272
+downstream heads are members), and it is not a token signal. Exploratory; no
+p-value; `claims/registry.json`
+unchanged; pythia-410m spent under `check_registry` rule 3.
+
+---
+
+## 3.22 The self-repair, measured exhaustively — and §3.21 was wrong about who does it (2026-09-13)
+
+> **NOVELTY CORRECTED 2026-09-13 by §3.28, same day.** The measurements stand.
+> The *framing* does not: this section's conditional marginal-vs-solo
+> interaction is **CoAx** (`2607.01940`, 2 Jul 2026, Definition 1), and its
+> headline — that single-unit scores mislead under self-repair because a backup
+> looks irrelevant on the intact model — is that paper's central thesis, run on
+> Pythia-410M among eight models. Independently derived here, published first.
+> Read §3.28 before quoting any novelty claim from this section.
+
+Four runners, all new: `backup_sweep_full.py` (every head's marginal cost once
+`L5H2` is gone), `prev_token_profile.py`, `relay_selection_check.py`,
+`mlp_backup_check.py`. Detail in `status-7d.md` ("Tying up the self-repair").
+§3.21 left three things open and closing them **corrected §3.21 itself twice
+and turned up a larger effect than anything in the thread so far.**
+
+**1. §3.21's stand-in list was an artifact of the instrument, and it missed the
+biggest ones.** The full 383-head causal sweep at step 16000 (solo, joint,
+marginal, interaction per head; **solo column reproduces
+`redundancy_catalog.json` bit-for-bit, max |diff| 0.0e+00 over 383 heads**;
+restore exact; 0 of 383 ceiling-contaminated) ranks the stand-ins:
+
+| rank | head | interaction | solo | found by §3.21's attention search? |
+|---|---|---|---|---|
+| 1 | `L7H8` | +4.068 | +1.019 | — (the known pair) |
+| 2 | **`L5H9`** | **+3.356** | +0.035 | **no** |
+| 3 | **`L9H5`** | **+2.745** | +0.030 | **no** |
+| 4 | **`L1H15`** | **+2.351** | +0.040 | **no** |
+| 5 | `L11H14` | +1.944 | +0.190 | yes |
+| 6 | `L8H6` | +1.464 | +0.212 | yes |
+| 15 | `L8H9` | +0.523 | +0.131 | yes |
+
+**The attention search missed all four of the largest and ranked one of its own
+top candidates (`L10H7`) at 377 of 383, with a negative interaction.** Its
+precision and recall were both poor, and the reason is structural: it searched
+for heads whose own *induction-attention* rose, and **a head that backs up
+`L5H2` without being an induction head has no such score to rise.** So
+§3.21's "three redundancy-set members" is withdrawn as a characterisation of
+the stand-in population — it is **44 heads above +0.1**, of which §3.21 named
+three. The set-wide claim survives and is strengthened; the *membership* claim
+does not. This is §3.19's "a single pair is not a set" one level over, and the
+same lesson as §3.12-R/G6/S with a *behavioural* proxy instead of a weights-one.
+
+**2. The MLPs are the largest stand-in in the model, and no one had looked.**
+MLP 6's interaction with `L5H2` is **+6.26** — above `L7H8`'s +4.07 and above
+every head — while its solo effect is **+0.14**, so on the clean model it looks
+irrelevant to induction. It survives every control:
+
+| arm | interaction | headroom |
+|---|---|---|
+| step 16000, `mean`, `wide` | **+6.26** | 1.87 |
+| step 16000, `zero`, `wide` | +5.25 | 2.82 |
+| step 16000, `mean`, `freq` | +5.67 | 3.04 |
+| step 143000, `mean`, `wide` | +5.14 | 3.67 |
+| step 4000, `mean`, `wide` | +1.56 | 2.38 |
+
+argmax over all 24 layers at every checkpoint; MLP 5 is second (+1.43/+1.72)
+and everything from layer 12 up is under 0.25. **And it is specific to
+`L5H2`**: the same MLP against `L7H8` gives **+0.125** and against `L12H5`
+**+0.127** — 50x smaller — and with those sources no MLP anywhere exceeds
++0.25. Architecturally MLP 6 is the sublayer immediately after `L5H2`
+(layer 5) and immediately before `L7H8` (layer 7). **MLP 0 is excluded in
+every arm**: its solo ablation costs +12.5 and puts the joint arm *past*
+`ln V`, so its negative interaction is exactly §3.12-M5's predicted artifact.
+This **overturns the impression §3.12-Q6 left** ("no elevated MLP pathway",
+best rank 44/159 at z +0.57) — that was a weights-only composition score on a
+different question, and the causal interaction finds the model's largest effect
+where the proxy found nothing.
+
+**3. Why `L11H14`? Not by supplying what `L5H2` supplies — and the stand-ins
+split into two classes by layer position.** The obvious hypothesis was that a
+stand-in is a head that can re-supply the prev-token signal. For §3.21's three
+it is dead: `L11H14`, `L8H6`, `L8H9` rank **377th, 380th and 372nd of 384** on
+prev-token attention, *below* the population median. But the sweep's larger
+stand-ins include real prev-token heads (`L5H9` 0.62, `L4H9` 0.81, `L3H1`
+0.71), so the hypothesis is not simply wrong either — it is a **threshold**
+property, and this is a fresh §3.13 case: across 383 heads the rank
+correlation is **zero** (Spearman −0.016, p = 0.75) while the 12 heads above
+prev-token 0.3 have median interaction **+0.444 against the other 371's
++0.0007** (Mann-Whitney p < 1e-5). Pearson (+0.322) splits the difference and
+is the misleading one. Below the threshold prev-token attention predicts
+nothing; above it, it predicts a great deal.
+
+What separates the two classes is **position relative to the matcher**, read
+off a conditional arm (`--background L5H2`, new flag) against a conditional
+null where 6 generic controls move `L7H8`'s attention by ≤ 0.0038:
+
+| stand-in | layer | Δ `L7H8` attention given `L5H2` gone | ΔNLL interaction |
+|---|---|---|---|
+| `L5H9` | 5 | **−0.0870** (23x null) | +3.356 |
+| `L1H15` | 1 | **−0.0671** (18x null) | +2.351 |
+| `L4H9` | 4 | −0.0095 | +1.018 |
+| `L9H5` | 9 | **+0.0000** | +2.745 |
+| `L11H14` | 11 | **+0.0000** | +1.944 |
+
+**Upstream stand-ins partly restore the matching pathway; downstream ones
+cannot and do not.** `L5H9`'s conditional effect is 3.4x its unconditional one
+(−0.025 → −0.087) — it matters *more* to `L7H8` once the relay is gone, which
+is the literal backup signature. `L9H5` and `L11H14` sit past layer 7, carry
+interactions of +2.7 and +1.9, and move `L7H8`'s attention by **exactly
+zero**: they compensate at the readout, not in the circuit. So `L11H14` is an
+output-side compensator, and "why is it the strongest" is now the narrower
+question of why the output-side class exists at all.
+
+**4. What selects `L5H2` as the relay is composition, not its attention
+pattern.** Prev-token capacity is common — 13 heads above 0.3 — so it cannot
+be what makes one head the relay. Scoring every layer-0..6 head's composition
+into `L7H8`'s read-space per head (`relay_selection_check.py`; H1-REVISED
+stored only the population summary, so this comparison was previously
+unanswerable) and pairing it with an ablation:
+
+| head | prev-token | composition rank / z | Δ `L7H8` attention |
+|---|---|---|---|
+| `L5H2` | 0.970 (1st) | **0 / +5.25** | **−0.190** |
+| `L5H9` | 0.616 (4th) | 1 / +3.64 | −0.025 |
+| `L6H0` | 0.005 (381st) | 2 / +3.27 | −0.029 |
+| `L6H13` | 0.429 | 3 / +2.85 | −0.017 |
+| `L4H9` | 0.805 (2nd) | 23 / +0.28 | **+0.0008** |
+| `L3H1` | 0.710 (3rd) | 24 / +0.25 | **+0.0028** |
+
+**Prev-token attention without composition buys nothing** — `L4H9` and `L3H1`
+carry 71–83 % of `L5H2`'s prev-token attention and are within the generic
+control band. Composition without prev-token attention buys a little
+(`L6H0`). `L5H2` is the joint extreme and is **7x the next largest**, so the
+account is conjunctive and strongly super-linear; no functional form is
+claimed. *Report-both caveat:* Pearson(prev-token, composition) is +0.42 but
+Spearman is **+0.12, p = 0.23** — the axes are barely rank-associated and the
+Pearson is driven by `L5H2` being extreme on both, so "these are independent
+axes" is the conservative reading and "composition tracks prev-token" is not
+supported.
+
+**5. Part of §3.21 was already on disk, unread.** `L5H2`×`L11H14` = **+2.1800**
+at step 16000 is in `pairwise_interaction_matrix.json` (2026-09-10), and
+§3.21's run reproduced it to four decimals. The 45-cell matrix already
+contained the whole `L5H2` row, so "which top-10 members are super-additive
+with `L5H2`" was answerable without a forward pass. What was genuinely new in
+§3.21 was `L10H7`/`L10H15` (not in the top 10), step 4000, and the framing.
+Recorded because `CLAUDE.md` opens on this cost and §3.17 logged a prior
+instance. **And reading that matrix against its own regression pays off
+immediately**: §3.12-V's magnitude rule (r² 0.74 at 16000, 0.81 at 143000,
+both reproduced) has **one systematic exception, `L5H2`×`L11H14`** — the
+largest positive residual of all 45 cells at *both* checkpoints (+1.37, +0.97)
+— while its δ-cosine at 143000 is **0.004**, orthogonal. `L11H14` stands in far
+more than either its size or its alignment predicts.
+
+Exploratory throughout; no p-value is claimed as an adjudication (the two
+population tests above are descriptive, on non-independent units);
+`claims/registry.json` unchanged; pythia-410m spent under `check_registry`
+rule 3.
+
+---
+
+## 3.21 The super-additivity is set-wide self-repair, not an `L5H2`×`L7H8` special case (2026-09-13)
+
+> **CORRECTED 2026-09-13 by §3.22, same day.** The set-wide conclusion stands.
+> The *membership* claim below does not: the three members named here are
+> ranks 5, 6 and 15 of a 44-head stand-in population, and the four largest
+> stand-ins — `L5H9`, `L9H5`, `L1H15`, and **MLP 6**, which beats every head —
+> were missed because the search below reads induction-attention, which a
+> non-induction backup does not have. Read §3.22 before quoting this section.
+
+`p7d_redundancy/l5h2_backup_search.py` and `l5h2_backup_causal_check.py`, new
+this session; detail in `status-7d.md` ("Self-repair"). §3.20 closed `L5H2`'s
+mechanism but left its companion open: §3.12-S found the joint ablation of
+`L5H2` + `L7H8` is super-additive (2.2x the sum of parts), the opposite of
+what a direct serial dependency predicts, and named Hydra-effect self-repair
+as the untested standing hypothesis.
+
+**Step 1 — a cheap full-model search.** `induction_scores` batches over every
+head in one attention-output pass, so scoring all 384 heads' own
+induction-attention under baseline and under `L5H2`-ablation costs two
+forward passes per checkpoint (~13 s at 8 seqs). Two things fall out that
+were not being looked for:
+
+- **`L5H2` feeds more than `L7H8`.** `L6H0` — not a redundancy-set member by
+  the causal-ablation criterion, but a strong repeated-random-token induction
+  head in its own right (0.75–0.84 through training) — falls **harder** than
+  `L7H8` at every checkpoint from 2000 on: delta −0.435 at 16000, **−0.485 at
+  143000**, against `L7H8`'s −0.190 / −0.161. `L9H9` and `L9H8` fall too,
+  smaller and fading late. `L5H2` is a hub feeding several matchers, not a
+  private circuit with one.
+- **A consistent riser cluster.** `L10H7`, `L10H15`, and three already-known
+  redundancy-set members — `L11H14`, `L8H6`, `L8H9` — show their OWN
+  induction-attention rise when `L5H2` is ablated, from step 1000 onward.
+  `L10H15` peaks mid-training (+0.118 at 16000); `L10H7` is the dominant riser
+  only at the trained endpoint (+0.136 at 143000). Rising attention is not a
+  causal claim by itself — it says a head *could* be compensating.
+
+**Step 2 — the causal version, on the risers the search actually produced**
+(fixed in advance, not chosen after seeing this run). For each candidate,
+`interaction = dNLL(L5H2 + candidate) − dNLL(L5H2 alone) − dNLL(candidate
+alone)` — the same quantity §3.12-S computed for `L7H8`, now asked of heads
+the attention search surfaced instead of assumed. `L7H8` reproduces to three
+decimals at step 16000 (**+4.1505** here against §3.12-S's **+4.151**), which
+calibrates the method.
+
+| step | `L11H14` | `L8H6` | `L8H9` | `L10H15` | `L10H7` | `L7H8` (control) |
+|---|---|---|---|---|---|---|
+| 4000 | **+1.578** | +0.750 | +0.500 | +0.220 | −0.011 | +1.717 |
+| 16000 | **+2.180** | +1.613 | +0.543 | +0.154 | −0.220 | +4.151 |
+| 143000 | **+1.532** | +0.302 | +0.083 | +0.002 | −0.101 | +3.430 |
+
+**Three of the five candidates show `L7H8`'s own signature.** `L11H14`,
+`L8H6` and `L8H9` are all super-additive with `L5H2` at every checkpoint —
+`L11H14`'s interaction (+1.53 to +2.18) is **8–11x its own solo effect**
+(+0.17 to +0.19), a bigger relative jump than `L7H8`'s own (interaction ~4x
+solo). **The super-additivity is a set-wide property, not a private feature
+of the `L5H2`×`L7H8` pair** — which is what actually reconciles §3.12-S with
+§3.20: `L5H2`'s ablation is compensated for by several members of its own
+redundancy set at once, and the pairwise `L5H2`×`L7H8` arm was only ever
+seeing one of them.
+
+**`L10H15` fades exactly like the set's other members do.** Positive at 4000
+and 16000, vanished by 143000 (+0.002) — the same decay-to-near-zero shape
+§3.12-U found for four of the six original members.
+
+**`L10H7` is the dissociation, and it is worth keeping.** Its attention rose
+at every checkpoint, but its causal interaction is **negative at every
+checkpoint** (−0.01 to −0.22) — sub-additive, the opposite of self-repair.
+Rising attention does not imply rising causal usefulness, which is §3.12-R/G6's
+lesson (weights-only proxies fail to predict causal effect) reproduced one
+level up: here the proxy is a *behavioural* readout (attention), not a
+weight one, and it still fails to predict the causal quantity it looks like
+it should predict.
+
+**What this does and does not settle.** It gives §3.12-S's super-additivity a
+concrete, located mechanism — three named members of the set standing in for
+`L5H2` — rather than leaving "self-repair" as an unlocated citation. It does
+**not** show these three are the *only* contributors (MLPs are untested; the
+384-head search only looked at attention, not at every head's own marginal
+ΔNLL), and it does not explain why `L11H14` — already the set's oddest
+member on four independent axes (§3.19, §7e) — is also its strongest
+stand-in for `L5H2` specifically. Exploratory; no p-value; `claims/registry.json`
+unchanged; pythia-410m spent under `check_registry` rule 3.
+
+---
+
+## 3.20 `L5H2`'s puzzle, closed on the mechanism — not on the additivity (2026-09-13)
+
+`p7d_redundancy/upstream_relay_check.py`, new this session; detail in
+`status-7d.md` ("The upstream-relay check"). §3.16/§3.18 filed a puzzle:
+`L5H2` has the largest single-head causal effect on the readout of any
+redundancy-set member (+1.97 at step 16000, §3.12-T) yet scores near zero on
+both instruments ever pointed at it — the QK-based induction-attention score
+(§3.12-U) and the FV score (§3.18). Both instruments measure `L5H2`'s **own**
+behaviour; neither can see a causal role running through a downstream head.
+Two facts already on disk pointed exactly there and had never been connected:
+`L5H2` is a confirmed previous-token head on its own attention (Stage 0,
+2026-09-07: offset −1 = 0.895, ~49x the 384-head median), and its OV composes
+into `L7H8`'s Q/K read-space at rank 0 of 112 (z ≈ +6), onset step 512–1000
+(§3.12-H1-REVISED, 2026-09-09) — a weights-only quantity that was never tested
+for whether it does anything.
+
+**It does.** Ablating `L5H2`'s OV (restore exact) degrades `L7H8`'s **own**
+induction-attention score at every one of 6 checkpoints, 60–600x more than any
+of 4 generic controls per step: delta −0.0052 (step 1000, floor-limited) to
+**−0.3742** (step 4000, `L7H8`'s own formation window) to −0.16 at the trained
+endpoint, against controls that never move it by more than 0.0032. **The
+sharper control**: `L12H5`, the model's third-largest single-head causal
+effect (+0.42), moves `L7H8`'s attention by **exactly 0.0000** at three
+checkpoints — mattering a lot for the readout is not sufficient to disturb
+`L7H8`; only `L5H2` does, so this is not a "removing something big" artifact.
+
+**This closes the mechanism half**: `L5H2` has no induction score of its own
+because it is a genuine previous-token head, not an induction-position
+attender, and no FV score because that is not its job either — its causal
+weight runs through feeding `L7H8`'s own matching attention, and the
+composition already on disk is now shown to be functional rather than only
+structural. **It does not close §3.12-S's super-additivity** — a dependency
+this direct predicts *sub*-additive joint ablation and S1 found the opposite
+(2.2x the sum of the parts). The standing hypothesis, not yet measured, is
+that the Hydra-effect self-repair §3.16 already invokes for 44/45 pairwise
+cells restores `L7H8`'s effect on the **loss** when `L5H2` alone is ablated,
+without restoring `L7H8`'s **attention pattern** — consistent with why an
+attention-level probe, not an NLL one, is what could still see this. Finding
+the head(s) that do that restoring is the next test if this thread reopens.
 
 ---
 
