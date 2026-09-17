@@ -1,6 +1,19 @@
 <!-- p7_motifs/status-7.md -->
 # Phase 7 — STATUS
 
+**Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
+`P-AB1` (`patching_gate.py`), `P-I1` (`formation_gate.py` +
+`relay_count_null.py`), `P-I3` (`cross_head_gate.py`), each with a null built
+and calibrated, none with a committed run against real artifacts. `P-I1` **has**
+been scored on the real 19-step sweep (p = 0.1414, INSUFFICIENT, 2026-09-04)
+but the record lives in git-ignored `data/analysis/`, so the registry's
+`real_run_record` is empty until a record is committed under `claims/`.
+needs-null — `P-I5` (built, calibrated, run on real `L3H6`, and **parked**:
+three control constructions failed to discriminate, `PROJECT.md` §3.31–§3.34),
+`P-I2`, `P-I4`, `P-I7` (nothing built), `P-SA1` (instrument frozen). Nulls and
+evidence paths are `claims/registry.json`; the per-phase view is
+`claims/EVALUABILITY.md` "By phase".
+
 **Last verified:** 2026-08-31 (oracle tier plus the driver — still nothing has executed
 against any model).
 **Overall:** Design plus build steps 1-8, both halves. The artifact contract, the typed-edge

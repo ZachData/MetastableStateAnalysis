@@ -6,7 +6,10 @@ tools/check_registry.py — registry validation and the pre-registration gate
 Two checks, in one file because they share a loader and both run in CI tier 0:
 
 **Registry validation.** Schema, uniqueness, claim membership, relevance floor,
-and the coverage check that matters most in practice: every prediction ID that
+evidence paths (`null_module`, `calibration_record`, `real_run_record` must
+each be null or a git-tracked path that exists -- a boolean saying "built"
+cannot be checked, a path can), and the coverage check that matters most in
+practice: every prediction ID that
 appears anywhere in the project's `.py` or `.md` files has a registry entry.
 A prediction discussed in a docstring but absent from the registry is a
 prediction with no recorded null, no evaluability classification, and no
@@ -64,11 +67,20 @@ CLAIMS_MD = ROOT / "claims" / "CLAIMS.md"
 ADJUDICATIONS = ROOT / "claims" / "adjudications"
 
 REQUIRED_FIELDS = (
-    "id", "claim", "statement", "h0", "h1", "falsifier", "instrument",
-    "cost", "evaluable", "null_construction", "relevance", "source",
+    "id", "claim", "statement", "h0", "h1", "falsifier", "instrument", "phase",
+    "cost", "evaluable", "null_construction", "null_module",
+    "calibration_record", "real_run_record", "relevance", "source",
 )
 EVALUABLE_VALUES = ("e-value", "measurement", "needs-null")
 STATUS_VALUES = ("active", "dormant")
+#: INDEX.md's phase table, live and archived. A new phase extends this list.
+PHASE_VALUES = ("1", "1b", "1c", "2", "2b", "2d", "3", "4", "5", "5b", "5c",
+                "6", "7", "7d", "7e", "8")
+
+#: Each is a git-tracked repo-relative path or null. A path can be checked
+#: for existence and tracking; a boolean saying "built" or "run" cannot be
+#: checked at all, which is why these are paths.
+EVIDENCE_FIELDS = ("null_module", "calibration_record", "real_run_record")
 
 #: Fields frozen once a prediction has been adjudicated (gate rule 2).
 FROZEN_FIELDS = ("statement", "h0", "h1", "falsifier", "null_construction")
@@ -97,7 +109,8 @@ ID_PATTERN = re.compile(
 
 #: Files that discuss predictions in prose without registering them. Scanning
 #: these for IDs would report the planning documents as unregistered sources.
-SCAN_EXCLUDE = {"POPPER_PLAN.md", "CLAIMS.md", "EVALUABILITY.md", "FALSIFICATION.md"}
+SCAN_EXCLUDE = {"POPPER_PLAN.md", "CLAIMS.md", "EVALUABILITY.md", "EVALUABILITY_LOG.md",
+                "FALSIFICATION.md"}
 
 
 class Problem(Exception):
@@ -152,7 +165,15 @@ def load_adjudications() -> Dict[str, dict]:
 # Check 1 — registry validation
 # ---------------------------------------------------------------------------
 
-def check_registry(reg: dict, msgs: List[str]) -> None:
+def tracked_files() -> set[str]:
+    """Repo-relative paths git knows about; an untracked artifact is not evidence."""
+    out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
+                         text=True, check=False).stdout
+    return set(out.splitlines())
+
+
+def check_registry(reg: dict, msgs: List[str],
+                   tracked: Optional[set[str]] = None) -> None:
     preds = reg.get("predictions", [])
     if not preds:
         _fail(msgs, "registry declares no predictions")
@@ -161,6 +182,8 @@ def check_registry(reg: dict, msgs: List[str]) -> None:
     claims = set(declared_claims())
     seen: set[str] = set()
     r0 = float(reg.get("relevance_threshold", 0.6))
+    if tracked is None:
+        tracked = tracked_files()
 
     for i, p in enumerate(preds):
         where = p.get("id", f"<entry {i}>")
@@ -199,6 +222,30 @@ def check_registry(reg: dict, msgs: List[str]) -> None:
             _fail(msgs, f"{where}: dormant with no dormant_reason; a prediction taken out "
                         f"of circulation without a stated reason is indistinguishable "
                         f"from one quietly dropped")
+
+        if p.get("phase") not in PHASE_VALUES:
+            _fail(msgs, f"{where}: phase={p.get('phase')!r} not one of {PHASE_VALUES}")
+
+        for field in EVIDENCE_FIELDS:
+            path = p.get(field)
+            if path is None:
+                continue
+            if not isinstance(path, str) or not path.strip():
+                _fail(msgs, f"{where}: {field} must be a repo-relative path or null, "
+                            f"got {path!r}")
+                continue
+            if not (ROOT / path).exists():
+                _fail(msgs, f"{where}: {field}={path!r} does not exist")
+            elif path not in tracked:
+                _fail(msgs, f"{where}: {field}={path!r} is not git-tracked; an "
+                            f"artifact only on this machine is not evidence a "
+                            f"later reader can check")
+        if p.get("real_run_record") and not p.get("null_module"):
+            _fail(msgs, f"{where}: real_run_record set but null_module is null; a "
+                        f"p-value cannot have been produced by a null that is not built")
+        if ev == "measurement" and p.get("null_module"):
+            _fail(msgs, f"{where}: classified 'measurement' (no valid null exists) "
+                        f"but names a null_module")
 
         if ev == "e-value" and not str(p.get("null_construction", "")).strip():
             _fail(msgs, f"{where}: classified 'e-value' with no null_construction stated")
@@ -416,6 +463,13 @@ def print_summary(reg: dict) -> None:
         print("the flattering subset of what was actually predicted.")
         print(f"\nAdjudicable right now (e-value AND active): "
               f"{len(adjudicable)} -- {[p['id'] for p in adjudicable]}")
+
+    n_built = sum(1 for p in preds if p.get("null_module"))
+    n_cal = sum(1 for p in preds if p.get("calibration_record"))
+    n_run = sum(1 for p in preds if p.get("real_run_record"))
+    print(f"\nEvidence on disk: {n_built} nulls built, {n_cal} calibrated on known-answer")
+    print(f"inputs, {n_run} run against real artifacts, {len(adj)} adjudicated. Each count")
+    print("is a set of git-tracked paths, not a flag; see EVALUABILITY.md 'By phase'.")
 
     n_ev = c["e-value"]
     print(f"\n{n_ev} of {len(preds)} predictions can currently carry an e-value. The other")

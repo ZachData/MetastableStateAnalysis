@@ -1,6 +1,11 @@
 <!-- p7d_redundancy/status-7d.md -->
 # Phase 7d — STATUS
 
+**Registered predictions:** none. Every number in this phase is a measurement
+on pythia-410m, an artifact that is spent under `check_registry` rule 3 —
+nothing here can be registered after the fact, and nothing in it may carry an
+e-value (`claims/EVALUABILITY.md` "By phase").
+
 **Last verified:** 2026-09-13.
 **Overall:** Q1, Q2 and Q3 are answered on pythia-410m, and **pass 2 (the
 pairwise interaction matrix) and the geometric axis are now answered too**. Q4
