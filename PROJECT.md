@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` carries everything through PR #54 (`1101ca9`). Current work: `claude/claim-c-arms` (worktree `../Mets-claim-c`), **PR #56 open to `main`** — Phase 1c's audit (reviewed as #55, which targeted this branch) plus the HDBSCAN fix and the first real `CLAIM-C` gate run |
-| Last updated | 2026-09-19 — **§3.45: THE E-VALUE AUDIT IS COMPLETE — five units, thirty-five predictions, ZERO e-values. Phase 7 closed it: `P-I1`'s run is finally recorded (`claims/audits/p_i1_real_run.json`, `real_run_record` set) and the `p = 0.1414` four documents quoted is not quotable (0.14 at K=50, 0.89 at K=100, same verdict). The pattern across all five: the instruments are in better shape than the inputs, and where the inputs exist the blocker is a decision nobody has taken — β's convention, `P-T1`'s wording, `P6-R2/R4`'s unit, `P-S1`'s matched-k. None costs a forward pass.** §3.44: phases 5b/6 audited — `P6-R2`'s second arm is the imaginary subspace `U_A`, which NO artifact carries and which §6 wrongly said no registered prediction needed (§6 corrected); `P6-R4`'s inputs do exist and it is blocked on an exchangeable unit the registry never named; four dormant rows read `e-value` with no gate, a blind spot in `check_registry`. Phase 7 is the last unit.** §3.43: Phase 2/2d audited — `P-T1`/`P-M1` are the first gates in the audit whose inputs are ALL present (19/19 operator sets, join verified on real artifacts), blocked only by design (β producer → 1c-B → 2d) and by `P-T1`'s wording omitting half of Table 1 row 2, which must be amended before it runs; `CLAIM-B` needs 19 control series and the sweep has 6, needs 20–30 checkpoints and it has 19.** Disk cleared and rearranged (§5.2/§5.3): the four superseded `CLAIM-C` arm directories and `data/superseded/` deleted, `results/`'s two pilot sweeps MOVED to HDD_1TB and symlinked back (~130 GB), and the 355 GB activation cache deliberately LEFT ALONE — two of §5.3's premises are now stale (pythia-70m is cached with 19 revisions; gpt2-large is cached, so that half is regenerable) but the two that decide it still stand.** §3.42: prompt battery **v2** — twelve rows added (9 → 21 prompts, `CLAIM-C`'s units 8 → 20, hash `1e47918ef77a` → `06790b90dcfe`) to lift a FLOOR, not a finding: at 20 prompts the smallest expressible p is 0.0156 once six rows can move, against 0.0661 at eight. The rule was committed before the text existed and the twelve were chosen blind; v1 and v2 runs are not comparable, and the four arms are being re-run on v2 (~5½ h).** §3.41: `CLAIM-C`'s gate RAN on real checkpoints for the first time and returned `INSUFFICIENT` (no p-value, concordance 23/48 = 47.9%). Not for want of data — four of eight prompts split their metrics 3–3, so the full six-metric row cannot express a p below 0.0661, and the six leave-one-out subsets, where it can, sit at 0.25–0.96. Per metric: `fiedler_mean` 8/8 and `mass_near_1` 7/8 transfer, `cka_prev` 0/8 and `effective_rank` 1/8 invert. Getting there took installing `hdbscan` (never declared, missing since ~2026-08-31, two of six metrics come from it alone), un-forging the zeros the writer wrote in its absence, and re-running all four arms in 2 h 20.** §3.40: Phase 1c audited. All four classifications are correct; three of the four gates cannot be fed by anything on disk — no `geometry.json` carries `beta_eff` (derivable from `attentions.npz` + LN params with no forward pass, demonstrated) and no run directory carries the `kmeans_centroids_L*` `P-S1`'s primary arm reads, while its two arms agree on cluster count in 25 of 175 layer-rows. `P-H1` measured for the first time: the cone condition is feasible at every layer of every prompt, minimum at layer 0. Five decisions wait on the author. **`CLAIM-C`'s last two arms ran (34 and 17 min), and with all four in the gate REFUSES on `cluster_count`: HDBSCAN has never run here, so two of its six registered metrics are dead and only one of them says so.** 2026-09-17 — **§3.36 decisions taken: `CLAIM-C` spends the compute in arm-sized jobs, `CLAIM-A` stays `needs-null`. Two of five arms produced (`gpt2-large` 65 min, `gpt2-large-random` 33 min); the gate now refuses only on the three pythia-1.4b arms, all cached and runnable offline. `gpt2-large-random` had NEVER loaded (no `hf_repo` in its registry entry) — fixed, with a smoke test.** **§3.38: review corrections — `P-I5`'s statistic is now intersection-union (min-rank had a 0.17 Type-I rate on the falsifier's configuration), five overclaims in §3.32–§3.35 narrowed to what was measured, CI on `main` fixed (import-time interpreter guard).** §3.36 Phase 1 audited: `CLAIM-C`'s gate now has plumbing (`tools/score_claim_c.py`) and REFUSES on the tree — gpt2-large and pythia-1.4b have never been run, so the hard stop was bypassed de facto; `CLAIM-A`'s null specified, not built (two decisions pending, §3.36).** **`README.md` added (PR #49): the front door — which document answers which question, layout, phases, the discipline, install and the gate.** §3.36: the e-value audit begins — there are no e-values yet, and the registry now carries evidence paths (`phase`, `null_module`, `calibration_record`, `real_run_record`) that CI checks exist and are tracked. `EVALUABILITY.md` is current state only, with a generated by-phase view; its thirteen dated passes moved verbatim to `claims/EVALUABILITY_LOG.md`; every live `status-N.md` opens with its registered predictions. Next unit: Phase 1c. §3.35 (2026-09-16): §2.5's isometric path on `L7H8` — `t=0`/`t=1` asymmetry despite identical spectra. §3.34: `P-I5`'s control thread, parked. §3.29 (2026-09-13): the direction decision. |
+| Last updated | 2026-09-19 — **§3.46: the v2 battery ran (4 h 51) and `CLAIM-C`'s gate refused a THIRD time — the table is complete (20 prompts, 120 cells, 54 concordant) and the floor is no longer binding, but the homogeneity correction is tabulated only to twelve prompts, so extending the battery invalidated the calibration it depends on. Three refusals in sequence — missing arms, a dead metric, an unreachable floor, an untabulated correction — and none of them a fact about the phenomenology. Extending the curve is ~45 min for n=20 plus ~40 min to regenerate 6–12; deferred by decision.** §3.45: THE E-VALUE AUDIT IS COMPLETE — five units, thirty-five predictions, ZERO e-values. Phase 7 closed it: `P-I1`'s run is finally recorded (`claims/audits/p_i1_real_run.json`, `real_run_record` set) and the `p = 0.1414` four documents quoted is not quotable (0.14 at K=50, 0.89 at K=100, same verdict). The pattern across all five: the instruments are in better shape than the inputs, and where the inputs exist the blocker is a decision nobody has taken — β's convention, `P-T1`'s wording, `P6-R2/R4`'s unit, `P-S1`'s matched-k. None costs a forward pass.** §3.44: phases 5b/6 audited — `P6-R2`'s second arm is the imaginary subspace `U_A`, which NO artifact carries and which §6 wrongly said no registered prediction needed (§6 corrected); `P6-R4`'s inputs do exist and it is blocked on an exchangeable unit the registry never named; four dormant rows read `e-value` with no gate, a blind spot in `check_registry`. Phase 7 is the last unit.** §3.43: Phase 2/2d audited — `P-T1`/`P-M1` are the first gates in the audit whose inputs are ALL present (19/19 operator sets, join verified on real artifacts), blocked only by design (β producer → 1c-B → 2d) and by `P-T1`'s wording omitting half of Table 1 row 2, which must be amended before it runs; `CLAIM-B` needs 19 control series and the sweep has 6, needs 20–30 checkpoints and it has 19.** Disk cleared and rearranged (§5.2/§5.3): the four superseded `CLAIM-C` arm directories and `data/superseded/` deleted, `results/`'s two pilot sweeps MOVED to HDD_1TB and symlinked back (~130 GB), and the 355 GB activation cache deliberately LEFT ALONE — two of §5.3's premises are now stale (pythia-70m is cached with 19 revisions; gpt2-large is cached, so that half is regenerable) but the two that decide it still stand.** §3.42: prompt battery **v2** — twelve rows added (9 → 21 prompts, `CLAIM-C`'s units 8 → 20, hash `1e47918ef77a` → `06790b90dcfe`) to lift a FLOOR, not a finding: at 20 prompts the smallest expressible p is 0.0156 once six rows can move, against 0.0661 at eight. The rule was committed before the text existed and the twelve were chosen blind; v1 and v2 runs are not comparable, and the four arms are being re-run on v2 (~5½ h).** §3.41: `CLAIM-C`'s gate RAN on real checkpoints for the first time and returned `INSUFFICIENT` (no p-value, concordance 23/48 = 47.9%). Not for want of data — four of eight prompts split their metrics 3–3, so the full six-metric row cannot express a p below 0.0661, and the six leave-one-out subsets, where it can, sit at 0.25–0.96. Per metric: `fiedler_mean` 8/8 and `mass_near_1` 7/8 transfer, `cka_prev` 0/8 and `effective_rank` 1/8 invert. Getting there took installing `hdbscan` (never declared, missing since ~2026-08-31, two of six metrics come from it alone), un-forging the zeros the writer wrote in its absence, and re-running all four arms in 2 h 20.** §3.40: Phase 1c audited. All four classifications are correct; three of the four gates cannot be fed by anything on disk — no `geometry.json` carries `beta_eff` (derivable from `attentions.npz` + LN params with no forward pass, demonstrated) and no run directory carries the `kmeans_centroids_L*` `P-S1`'s primary arm reads, while its two arms agree on cluster count in 25 of 175 layer-rows. `P-H1` measured for the first time: the cone condition is feasible at every layer of every prompt, minimum at layer 0. Five decisions wait on the author. **`CLAIM-C`'s last two arms ran (34 and 17 min), and with all four in the gate REFUSES on `cluster_count`: HDBSCAN has never run here, so two of its six registered metrics are dead and only one of them says so.** 2026-09-17 — **§3.36 decisions taken: `CLAIM-C` spends the compute in arm-sized jobs, `CLAIM-A` stays `needs-null`. Two of five arms produced (`gpt2-large` 65 min, `gpt2-large-random` 33 min); the gate now refuses only on the three pythia-1.4b arms, all cached and runnable offline. `gpt2-large-random` had NEVER loaded (no `hf_repo` in its registry entry) — fixed, with a smoke test.** **§3.38: review corrections — `P-I5`'s statistic is now intersection-union (min-rank had a 0.17 Type-I rate on the falsifier's configuration), five overclaims in §3.32–§3.35 narrowed to what was measured, CI on `main` fixed (import-time interpreter guard).** §3.36 Phase 1 audited: `CLAIM-C`'s gate now has plumbing (`tools/score_claim_c.py`) and REFUSES on the tree — gpt2-large and pythia-1.4b have never been run, so the hard stop was bypassed de facto; `CLAIM-A`'s null specified, not built (two decisions pending, §3.36).** **`README.md` added (PR #49): the front door — which document answers which question, layout, phases, the discipline, install and the gate.** §3.36: the e-value audit begins — there are no e-values yet, and the registry now carries evidence paths (`phase`, `null_module`, `calibration_record`, `real_run_record`) that CI checks exist and are tracked. `EVALUABILITY.md` is current state only, with a generated by-phase view; its thirteen dated passes moved verbatim to `claims/EVALUABILITY_LOG.md`; every live `status-N.md` opens with its registered predictions. Next unit: Phase 1c. §3.35 (2026-09-16): §2.5's isometric path on `L7H8` — `t=0`/`t=1` asymmetry despite identical spectra. §3.34: `P-I5`'s control thread, parked. §3.29 (2026-09-13): the direction decision. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -139,18 +139,26 @@ state, and §3.45's closing table for the pattern:
 | 5b / 6 | **audited (2026-09-19, §3.44).** 19 dormant; `P6-R2` is blocked on `U_A`, a channel no artifact carries and §6 says nothing needs; `P6-R4`'s inputs exist and it is blocked on an unregistered exchangeable unit. Four dormant rows read `e-value` with no gate |
 | 7 | **audited (2026-09-19, §3.45) — the audit is COMPLETE.** `P-I1`'s run is now recorded (`real_run_record` set) and the p it was quoted by is not quotable; `P-ST1`/`P-AB1`/`P-I3` built, calibrated, unrun; `P-I5` parked by design |
 
-**Compute RUNNING as this was written: `CLAIM-C`'s four arms on prompt battery
-v2** (§3.42), started 13:40, logs `data/phase12/claim_c_logs/<arm>_v2.log`,
-chain log `rerun_v2_chain.log`. Twenty-one prompts instead of nine, so expect
-roughly 2.3× the v1 costs — about 5½ h for all four. **Check the chain
-finished** (`ALL V2 ARMS DONE`) **and watch free disk**: the four v2 arms will
-take ~30 GB and only 45 GB was free at launch. The four superseded v1
-directories (`2026-09-17_14-51-40`, `2026-09-17_16-04-54`,
-`2026-09-19_09-44-25`, `2026-09-19_10-18-45`) hold 13.3 GB between them and can
-go if it gets tight — but **not** the 2026-09-19 10:51/11:52/12:21/12:54 set,
-which is what `claims/audits/claim_c_real_run.json` hashes. When the chain is
-done, score with the four v2 directories only (arms must come from one battery
-as well as one install) and commit the record.
+**Compute is DONE and nothing is running.** The four `CLAIM-C` arms were
+re-run on prompt battery v2 in **4 h 51** (127 + 63 + 63 + 38 min, against
+~2½ h projected — 21 prompts rather than 9, and v2's twelve are all long):
+`data/phase12/2026-09-19_13-40-48`, `_15-47-26`, `_16-50-41`, `_17-53-27`.
+**These four are the current scoreable set** and the v1-battery four
+(10:51/11:52/12:21/12:54) are superseded but kept, since
+`claims/audits/claim_c_real_run.json` has been overwritten with the v2 result
+and the v1 one now survives only in `git log`.
+
+**The gate refused a THIRD time, on its own calibration — §3.46.** 20 prompts,
+120 cells, 54 concordant, homogeneity 0.875, 240 files hashed: the table is
+complete and the floor is no longer binding. What binds is that the
+homogeneity correction is tabulated only to **twelve** prompts, because
+`tools/calibrate_claim_c_homogeneity.py` was written when eight was the count;
+the gate refuses rather than report an uncorrected p, which is right, because
+the uncorrected null is already measured anticonservative when the sign-rows
+agree — and at 0.875 they largely do. **Extending the table is a calibration
+job the gate itself prescribes**, costed on this machine at ~45 min for the
+n = 20 row plus ~40 min to regenerate rows 6–12, or ~4 h for a contiguous
+6–20. **Decided 2026-09-19 (user): not tonight.**
 
 **Read this block, then §3.40, then §3.36 (its 2026-09-17 decisions block), then §3.38, then §3.35, then §3.34, then §3.33, then §3.32, then
 §3.31, then §3.30, then §3.29, then §3.28.** §3.29 is the direction
@@ -3669,6 +3677,50 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.46 The v2 battery ran, and `CLAIM-C`'s gate refused on its own calibration (2026-09-19)
+
+Detail in `p1_mstate_tracking/status-1.md`, "The v2 battery ran too". All four
+arms re-run on the 21-prompt battery in **4 h 51** — 127 + 63 + 63 + 38 min
+against ~2½ h projected, because v2's twelve additions are all long where v1
+carried a 115-character prompt and the repeated-token control, and HDBSCAN on a
+precomputed distance matrix scales badly with token count.
+
+**The table is now complete and the floor is no longer binding**: 20 prompts,
+120 cells, 54 concordant, sign homogeneity 0.875, 240 artifact files hashed.
+**And the gate refused for a third distinct reason** — `INSUFFICIENT`,
+`hard_stop: true`, no p:
+
+    no homogeneity correction is available, and the correction is what enters
+    the e-value: no calibration curve is tabulated for 20 prompts
+    (tabulated: [6, 7, 8, 9, 10, 11, 12])
+
+`tools/calibrate_claim_c_homogeneity.py` tabulates to twelve because its own
+comment calls that "generous against the eight metastability prompts".
+**Extending the battery invalidated the assumption the calibration was built
+on** — a coupling nothing in the battery-v2 reasoning (§3.42) anticipated,
+because the floor arithmetic and the correction table live in different files
+and only the first was checked. The gate refusing here is the right behaviour:
+reporting the uncorrected p would assert a Type-I guarantee on a null already
+measured to be anticonservative when the prompt sign-rows agree, and at 0.875
+they largely do.
+
+**The three refusals are a sequence, not a repetition.** Arms absent → a metric
+dead in every arm because HDBSCAN was never installed → the floor unreachable
+at eight prompts → the correction untabulated at twenty. Each was fixed and
+revealed the next, and **not one of them was a fact about the phenomenology.**
+That is worth carrying out of today: the instrument had four independent
+defects between it and a number, and they were only ever visible one at a time.
+
+**The fix is prescribed by the gate** ("extend `N_PROMPTS_TABULATED` and
+regenerate rather than running uncorrected") and is calibration, not
+measurement. Costed on this machine from a 400-draw probe: **~45 min for the
+n = 20 row**, ~40 min to regenerate rows 6–12, ~3 h more for a contiguous
+13–20. Per-count seeds are `seed + 1000 * i` on the index in the tuple, so
+appending after 12 leaves 6–12's seeds untouched and a regeneration must
+reproduce them byte-identically — if it does not, that is drift in the gate,
+not in this run. **Decided (2026-09-19, user): not tonight.** The refusal is
+the committed record; `real_run_record` still points at it.
 
 ## 3.45 The e-value audit, Phase 7 — the last unit: `P-I1`'s record written, and a number four documents should not have been quoting (2026-09-19)
 
