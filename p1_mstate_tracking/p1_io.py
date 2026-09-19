@@ -237,8 +237,36 @@ def _save_clustering(results, run_dir):
         agg_counts = {k: v for k, v in agg.items() if k != "mid_labels"}
 
         hdb_labels = hdb.get("labels", [])
-        n_noise    = sum(1 for x in hdb_labels if x == -1)
-        n_tok      = len(hdb_labels) if hdb_labels else results["n_tokens"]
+
+        # No labels means HDBSCAN did not run at all -- clustering.py omits the
+        # block when the package is absent -- NOT that it ran and found no
+        # noise. Writing 0 / 0.0 for that case, which this did until
+        # 2026-09-19, makes CLAIM-C's `cluster_membership` (= 1 -
+        # noise_fraction) read as a measured 1.0 at every layer of every arm
+        # and pass the gate's availability test, which asks only "not missing,
+        # not all-NaN". Its sibling `cluster_count` was null and refused the
+        # prompt honestly; dropping that one alone would have left the gate
+        # running on a silent constant.
+        if hdb_labels:
+            n_noise = sum(1 for x in hdb_labels if x == -1)
+            n_tok   = len(hdb_labels)
+            hdb_out = {
+                "n_clusters":     hdb.get("n_clusters"),
+                "noise_count":    n_noise,
+                "noise_fraction": round(n_noise / n_tok, 4) if n_tok else None,
+                "impl":           hdb.get("impl"),
+                "version":        hdb.get("version"),
+                "params":         hdb.get("params"),
+            }
+        else:
+            hdb_out = {
+                "n_clusters":     None,
+                "noise_count":    None,
+                "noise_fraction": None,
+                "available":      False,
+                "reason":         "HDBSCAN did not run: the hdbscan package "
+                                  "was not importable when this run was made",
+            }
 
         layers_out.append({
             "layer": lr["layer"],
@@ -248,11 +276,7 @@ def _save_clustering(results, run_dir):
                     "best_k":          km.get("best_k"),
                     "best_silhouette": km.get("best_silhouette"),
                 },
-                "hdbscan": {
-                    "n_clusters":     hdb.get("n_clusters"),
-                    "noise_count":    n_noise,
-                    "noise_fraction": round(n_noise / n_tok, 4) if n_tok else None,
-                },
+                "hdbscan": hdb_out,
             },
             "nesting":        lr.get("nesting", {}),
             "pair_agreement": lr.get("pair_agreement", {}),

@@ -332,14 +332,42 @@ would be exactly zero. **So if `cluster_count` were dropped, the gate would run
 on five metrics of which one is a constant** — the dropped-prompt refusal is
 the only thing currently preventing that.
 
-**What it would take, and it is not a flag.** `scikit-learn` 1.9 is already a
-dependency and ships `sklearn.cluster.HDBSCAN`, so nothing needs downloading;
-but swapping implementations changes the metric's provenance and its defaults,
-and the registered statement names the metric set, so **this is a measurement
-decision for the author, not a runtime fallback.** Either way all four arms
-must be re-run, because the metric has to exist in every arm — at the measured
-per-arm costs (65 + 33 + 34 + 17 min) that is **~2.5 h**, not the 6–8 h
-originally feared. The alternative — amend `CLAIM-C` to a five-metric
+**Resolved 2026-09-19 by installing the package, not by substituting one.**
+`scikit-learn` 1.9 ships `sklearn.cluster.HDBSCAN` and would have served, but
+swapping implementations changes what the registered metric means, and it was
+not necessary: **`hdbscan` 0.8.44 has a cp314 wheel**, installs into `.venv`
+under numpy 2.5.2, and runs. It is now named in `requirements/heavy.txt` —
+where it never was, which is why its disappearance was silent — and all four
+arms are being re-run with it present (~2.5 h at the measured per-arm costs of
+65 + 33 + 34 + 17 min, not the 6–8 h originally feared).
+
+**These two metrics are a property of the toolchain, and the toolchain was
+never recorded.** Replaying the 2026-08-12 sweep's own activations through
+both environments on this machine:
+
+| env | python | hdbscan | scikit-learn | numpy | reproduces 2026-08-12? |
+|---|---|---|---|---|---|
+| conda `mets` | 3.10.20 | 0.8.41 | 1.7.2 | 2.2.6 | **exactly, at every layer tried** |
+| `.venv` | 3.14.7 | 0.8.44 | 1.9.0 | 2.5.2 | no — 45 → 41 clusters at layer 12 of `step11000/sullivan_ballou` |
+
+So `results/2026-08-12_05-01-35` was produced under the conda env, and that is
+now checkable rather than remembered. Parameters have not changed since April
+and the algorithm is deterministic within one install, so the difference is the
+toolchain and nothing else. **Consequences, in the order they bite:** the four
+`CLAIM-C` arms must come from ONE install and now do (`.venv`, 0.8.44,
+recorded per layer in `clustering.json`'s `impl` / `version` / `params`);
+`cluster_count` and `cluster_membership` are **not value-comparable between
+`results/2026-08-12` and anything produced in `.venv`**, though nothing
+currently compares them; and what makes this checkable at all is the provenance
+field, which no artifact written before 2026-09-19 carries.
+
+*(Not in the artifact, and worth adding when nothing is mid-flight: the
+`scikit-learn` and `numpy` versions. `pairwise_distances` builds HDBSCAN's
+input, so it is part of the fingerprint. The schema was left alone here because
+changing it between arms of one gate is the exact inconsistency this section is
+about.)*
+
+The alternative that was **not** taken — amend `CLAIM-C` to a five-metric
 statistic — is a registry amendment, and it inherits the constant-metric
 problem above unless `cluster_membership` goes with it.
 
