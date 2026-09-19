@@ -47,7 +47,11 @@ class TestRandomVsRandomDiagnostic:
             assert key in result
         assert 0.0 < result["p_value_greater"] <= 1.0
         assert 0.0 < result["p_value_two_sided"] <= 1.0
-        assert result["n_prompts"] == 8  # 9 prompts minus repeated_tokens
+        from core.config import PROMPTS
+        # The battery is versioned and grows (v2 added twelve on
+        # 2026-09-19); what must hold is that every prompt but the
+        # collapse control is a unit, not that there are eight of them.
+        assert result["n_prompts"] == len(PROMPTS) - 1
 
     def test_different_seed_pairs_give_different_draws(self):
         """Not a claim about the p-value (that's the committed real run's

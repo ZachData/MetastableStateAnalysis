@@ -93,7 +93,7 @@ from core.config import PROMPTS
 # The version string is folded into the hash below, so a bump alone changes
 # every future manifest's prompt_battery_hash even if (by mistake) the text
 # ended up identical to a prior version.
-PROMPT_BATTERY_VERSION = "v1"
+PROMPT_BATTERY_VERSION = "v2"   # v2 = v1 + twelve, 2026-09-19; see the rule above
 
 
 # ---------------------------------------------------------------------------
