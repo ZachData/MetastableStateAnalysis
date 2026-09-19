@@ -158,14 +158,19 @@ def cluster_count_sweep(
         results["hdbscan"] = {
             "n_clusters": n_clusters,
             "labels":     hdb_labels.tolist(),
-            # Provenance, because the numbers are version-dependent and the
-            # version was never recorded. Measured 2026-09-19: 0.8.44 on the
-            # 2026-08-12 sweep's own activations reproduces that sweep's
-            # n_clusters at some layers and not others (45 -> 41 at layer 12 of
-            # step11000/sullivan_ballou), with the parameters unchanged since
-            # April and the algorithm deterministic within one install. Arms
-            # compared by a gate must therefore come from ONE install, and
-            # cross-sweep comparisons of these two metrics need this field.
+            # Provenance, because these two numbers are a property of the
+            # toolchain as much as of the data, and it was never recorded.
+            # MEASURED 2026-09-19, replaying the 2026-08-12 sweep's own
+            # activations: the conda `mets` env (py3.10.20, hdbscan 0.8.41,
+            # scikit-learn 1.7.2, numpy 2.2.6) reproduces that sweep's
+            # n_clusters and noise_fraction EXACTLY at every layer tried, while
+            # `.venv` (py3.14.7, hdbscan 0.8.44, scikit-learn 1.9.0, numpy
+            # 2.5.2) does not -- 45 -> 41 clusters at layer 12 of
+            # step11000/sullivan_ballou. Parameters unchanged since April and
+            # the algorithm deterministic within one install, so the difference
+            # is the toolchain. Arms compared by a gate must therefore come
+            # from ONE install, and cross-sweep comparison of these two metrics
+            # needs this field on both sides.
             "impl":       "hdbscan",
             "version":    _hdbscan_version(),
             "params":     params,
