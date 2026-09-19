@@ -1,0 +1,111 @@
+{
+  "phase": "1c",
+  "predictions": {
+    "A": "P-gamma2",
+    "B": "P-gamma1",
+    "E": "P-H1",
+    "F": "P-S1"
+  },
+  "written_at": "2026-09-19T09:59:39-0500",
+  "run_dirs": [
+    "data/phase12/2026-08-31_11-08-06",
+    "data/phase12/2026-08-31_11-42-56",
+    "data/phase12/2026-08-31_12-17-32",
+    "data/phase12/2026-08-31_12-52-44",
+    "data/phase12/2026-08-31_13-27-45",
+    "data/phase12/2026-08-31_14-03-29",
+    "data/phase12/2026-08-31_14-38-22",
+    "data/phase12/2026-08-31_15-13-34",
+    "data/phase12/2026-08-31_15-50-18",
+    "data/phase12/2026-08-31_16-27-24",
+    "data/phase12/2026-08-31_17-05-50",
+    "data/phase12/2026-08-31_17-46-24",
+    "data/phase12/2026-09-01_13-30-37",
+    "data/phase12/2026-09-01_13-44-28",
+    "data/phase12/2026-09-01_14-07-09",
+    "data/phase12/2026-09-01_15-59-26",
+    "data/phase12/2026-09-01_16-48-38",
+    "data/phase12/2026-09-01_17-37-38",
+    "data/phase12/2026-09-01_18-25-12"
+  ],
+  "n_model_prompt_dirs": 152,
+  "models": [
+    "pythia-410m-step0",
+    "pythia-410m-step1",
+    "pythia-410m-step1000",
+    "pythia-410m-step128",
+    "pythia-410m-step143000",
+    "pythia-410m-step16",
+    "pythia-410m-step16000",
+    "pythia-410m-step2",
+    "pythia-410m-step2000",
+    "pythia-410m-step256",
+    "pythia-410m-step32",
+    "pythia-410m-step32000",
+    "pythia-410m-step4",
+    "pythia-410m-step4000",
+    "pythia-410m-step512",
+    "pythia-410m-step54000",
+    "pythia-410m-step64",
+    "pythia-410m-step8",
+    "pythia-410m-step8000"
+  ],
+  "subexperiments": {
+    "A": {
+      "prediction": "P-gamma2",
+      "runnable": false,
+      "raw_stream": "152/152 carry activations + norms",
+      "h_attn_only": "0/152 carry sublayer streams; the frame-correct variant is nan without them and they need run_1.py --sublayer, i.e. new forward passes",
+      "blocked_by": "no geometry.json carries beta_eff (0/152); it is DERIVABLE from attentions.npz (152/152) plus the checkpoint's LN parameters (core/ln_frame.py + core/beta_eff.py), which needs no forward pass but needs a producer that does not exist"
+    },
+    "B": {
+      "prediction": "P-gamma1",
+      "runnable": false,
+      "per_head_beta": "0/152 carry beta_eff_per_head",
+      "blocked_by": "no geometry.json carries beta_eff (0/152); it is DERIVABLE from attentions.npz (152/152) plus the checkpoint's LN parameters (core/ln_frame.py + core/beta_eff.py), which needs no forward pass but needs a producer that does not exist"
+    },
+    "E": {
+      "prediction": "P-H1",
+      "runnable": true,
+      "note": "inputs are present; p1c_frames/run_1c.py nevertheless SKIPS every run whose beta_used is non-finite, including runs where only E was requested and beta is unused"
+    },
+    "F": {
+      "prediction": "P-S1",
+      "runnable": false,
+      "kmeans_centroids": "0/152 carry kmeans_centroids_L*, which centroids.py::load_centroids reads for the PRIMARY arm; 152/152 carry kmeans_labels_L*",
+      "agglomerative": "152/152 carry agglom_mid_labels_L* \u2014 recomputable with activations, at that method's own cluster count",
+      "hdbscan": "0/152 carry hdbscan_labels_L* in clusters.npz, which is where load_centroids looks; the runner writes hdbscan_labels.json instead"
+    }
+  },
+  "p_s1_arm_agreement": {
+    "trained": "data/phase12/2026-09-01_18-25-12",
+    "step0": "data/phase12/2026-09-01_13-30-37",
+    "prompts": [
+      "camus_letranger",
+      "hdbscan_code",
+      "homer_iliad",
+      "latex_monograph",
+      "paper_excerpt",
+      "repeated_tokens",
+      "sullivan_ballou",
+      "wiki_paragraph"
+    ],
+    "excluded": [
+      "repeated_tokens"
+    ],
+    "methods": {
+      "kmeans_labels": {
+        "layer_rows": 200,
+        "same_m": 45,
+        "layer_rows_excluding_controls": 175,
+        "same_m_excluding_controls": 25
+      },
+      "agglom_mid_labels": {
+        "layer_rows": 200,
+        "same_m": 9,
+        "layer_rows_excluding_controls": 175,
+        "same_m_excluding_controls": 2
+      }
+    }
+  }
+}
