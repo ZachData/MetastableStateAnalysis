@@ -179,8 +179,14 @@ Cheapest-first among `e-value` rows that are active and have a built,
 calibrated null but no run against real artifacts — none of these needs new
 construction, each needs a sweep that satisfies its row in the table below:
 `CLAIM-C`, `P-S1`, `CLAIM-B`, `P-T1`, `P-M1`, `P6-R2`, `P6-R4`, `P-ST1`,
-`P-AB1`, `P-I3`. `P-I1` has been run (p = 0.1414, INSUFFICIENT, 2026-09-04)
-but its record is not yet committed — see the Phase 7 row.
+`P-AB1`, `P-I3`. **`P-I1` has been run and is now RECORDED**
+(`claims/audits/p_i1_real_run.json`, written 2026-09-19; `real_run_record` set):
+verdict INSUFFICIENT, 116 heads on the forming axis, floor 0.0005. **Its
+p-value is not quotable** — 0.14143 at K = 50 and 0.89355 at K = 100, same
+verdict, because 36 heads share one coset of the relay axis (`PROJECT.md`
+§3.7). The robust outputs are the verdict, the observed mean distance
+(~2.018 log-step) and the floor; the "p = 0.1414" this line used to carry was
+quoting the K, not the evidence.
 
 **`P-S1` is cheap only on paper (2026-09-19 audit, `p1c_frames/status-1c.md`).**
 Its row below — both arms clustered to the same count — is unmet on every run

@@ -73,7 +73,7 @@ null that was tried and found invalid, kept visible rather than dropped.
 
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
 |---|---|---|---|---|---|---|---|---|
-| 7-A | `P-I1` | `H-BRIDGE` | e-value | active | `p7_motifs.formation_gate:p_value_p_i1` | `claims/audits/claim_b_p_i1_dry_run.json` | — | Changepoint co-location on the log-step axis, built 2026-08-24. |
+| 7-A | `P-I1` | `H-BRIDGE` | e-value | active | `p7_motifs.formation_gate:p_value_p_i1` | `claims/audits/claim_b_p_i1_dry_run.json` | `claims/audits/p_i1_real_run.json` | Changepoint co-location on the log-step axis, built 2026-08-24. |
 | 7-A/7-D | `P-I5` | `H-BRIDGE` | needs-null | active | `p7_motifs.p_i5_gate:intersection_union_pvalue` | `claims/calibration/p_i5_joint_null.json` | `claims/calibration/p_i5_real_ablation.json` | Permutation null over the matched-magnitude random-direction ablation arm, on a two-dimensional statistic (geometric delta, logit delta). |
 | 7-B | `P-I2` | `H-BRIDGE` | needs-null | active | — | — | — | Two-sample comparison of channel mass between edge types, against the N1/N2 nulls motif_stats.py already gates on. |
 | 7-C | `P-I3` | `H-BRIDGE` | e-value | active | `p7_motifs.cross_head_gate:p_value_p_i3` | `claims/calibration/cross_head_association.json` | — | Correlation with a REQUIRED control arm over non-induction heads; motif_stats.py makes independence_source a positional argument so the arm cannot be… |

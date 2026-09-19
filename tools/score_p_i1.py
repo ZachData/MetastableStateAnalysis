@@ -15,11 +15,14 @@ is not that decision, and this script does not make it for them.
 Usage
 -----
     python3 -m tools.run.relay_null      # writes relay_null_series.json first
-    python3 -m tools.score_p_i1
+    python3 -m tools.score_p_i1          # writes claims/audits/p_i1_real_run.json
 """
+import argparse
+import hashlib
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 REPO = Path(os.environ.get("METS_REPO", "/run/media/system/WDS_500/Mets"))
@@ -31,8 +34,22 @@ from p7_motifs.formation_gate import P_I1_RELAY_OWNER, p_value_p_i1
 
 STEPS = list(REGISTERED_P_I1_SWEEP)
 
+RECORD_PATH = REPO / "claims" / "audits" / "p_i1_real_run.json"
 
-def main() -> int:
+
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return f"{path.name}:{h.hexdigest()[:16]}"
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--no-write", action="store_true",
+                    help=f"do not write {RECORD_PATH.name}")
+    args = ap.parse_args(argv)
     null_path = DATA / "analysis" / "relay_null_series.json"
     behav_path = DATA / "analysis" / "behavioural_series.json"
     if not null_path.exists():
@@ -91,6 +108,36 @@ def main() -> int:
     print(f"\nNOT adjudicated: claims/adjudications/ is untouched by this "
           f"script. adjudicate_p_i1(..., adjudicate=True) is the author's "
           f"call.")
+
+    # The record. Until 2026-09-19 this script printed and returned, so the
+    # only p-value this project had ever produced against real artifacts lived
+    # in stdout and in PROJECT.md's prose, with its inputs under git-ignored
+    # data/. That is the gap §3.36 named and score_claim_c.py's convention
+    # closes: write the record whether or not the number is quotable.
+    record = {
+        "prediction": "P-I1",
+        "written_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "relay_owner": P_I1_RELAY_OWNER,
+        "n_replicates": null["n_replicates"],
+        "seed": null.get("seed"),
+        "steps": STEPS,
+        "n_forming_heads": len(forming_heads),
+        "inputs": [_sha256(null_path), _sha256(behav_path)],
+        "result": res,
+        "p_value_is_not_quotable": (
+            "PROJECT.md §3.7: the p-value is K-dependent — 0.14143 at K = 50 "
+            "and 0.89355 at K = 100, same verdict — because 36 heads share one "
+            "coset of the relay axis. What is robust and IS quotable: the "
+            "verdict INSUFFICIENT at both K, the observed mean distance "
+            "(~2.018 log-step, nowhere near alpha), n_units and the floor. "
+            "Any citation of a single p for P-I1 is quoting the K, not the "
+            "evidence."),
+        "adjudicated": False,
+    }
+    if not args.no_write:
+        RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
+        RECORD_PATH.write_text(json.dumps(record, indent=2) + "\n")
+        print(f"record: {RECORD_PATH.relative_to(REPO)}")
     return 0
 
 
