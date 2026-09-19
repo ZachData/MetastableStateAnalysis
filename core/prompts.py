@@ -26,6 +26,56 @@ exactly the kind of check that silently goes stale). Instead, the hash
 itself is the accountability mechanism: it is recorded in every run's
 manifest, and two runs meant to be comparable are checked for identical
 prompt-battery hashes at analysis time (see verify_same_battery below).
+
+THE v2 EXTENSION RULE — fixed 2026-09-19, BEFORE any text was chosen
+-------------------------------------------------------------------
+This paragraph is committed on its own, ahead of the commit that adds the
+text, so that git shows the rule predates the prompts rather than being
+written around them. That ordering is the whole point: the prompt is
+`CLAIM-C`'s exchangeable unit, so choosing prompts after seeing how they
+behave would be selection, and a gate whose rows were picked that way
+reports nothing.
+
+WHY TWELVE, and why it is not a fact about any prompt. `PROJECT.md` §3.41:
+the gate ran on the eight v1 metastability prompts and could not express a
+p below 0.0661, because six metrics is an EVEN number of cells per row and
+four of the eight rows split exactly 3-3 — a tied row contributes the same
+number to the observed sum and to every null pattern, so it is enumerated
+without ever being counted. Twelve more rows at the same informative rate
+(four in eight) is what brings the design's attainable p back under
+alpha = 0.05. The arithmetic is about the FLOOR of the design, not about
+any measured contrast, which is why it can be acted on without tainting
+the test.
+
+THE RULE.
+  1. Twelve additions. v1's nine prompts keep their keys and their text
+     exactly, so every v1 row remains the same row.
+  2. Six genres, two prompts each — the genres already present among v1's
+     eight metastability prompts: encyclopedic reference, first-person
+     historical letter, technical/scientific exposition, literary
+     narrative (one of the pair non-English, as v1 has), source code,
+     structured markup.
+  3. Per pair, one prompt in v1's short band (1000-1600 characters) and
+     one in its long band (1800-2400). v1's 115-character
+     `short_heterogeneous` stays the only prompt of its size; the
+     extension does not change the battery's length profile.
+  4. Sources fixed by genre in advance: Project Gutenberg public-domain
+     texts for narrative and letters; English Wikipedia for encyclopedic;
+     BSD/MIT-licensed source already installed in this venv for code; an
+     open-access arXiv paper for technical prose; composed LaTeX for
+     markup — matching where v1's own prompts come from.
+  5. Within a source, the passage is the FIRST one meeting the length band
+     from a predetermined anchor (the start of a named chapter, section or
+     function). No candidate is run through a model before inclusion.
+  6. Once any model has been run on v2, no prompt in it may be added,
+     dropped or edited. A prompt that turns out uninformative stays.
+
+CONSEQUENCE, stated rather than discovered later: v1 and v2 runs have
+different battery hashes and `verify_same_battery` will refuse to compare
+them. Every run on disk as of 2026-09-19 is v1, including Phase 1's
+19-checkpoint sweep, so a v2 run is comparable only with other v2 runs.
+This is the mechanism working; it is also a real cost, and it is the reason
+the extension is a deliberate act rather than a convenience.
 """
 
 from __future__ import annotations
