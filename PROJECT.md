@@ -753,6 +753,23 @@ it reports `rotary_ndims=64` where pythia-410m rotates 16.
 
 ### Traps this machine sets
 
+**The gate run from a worktree can test the MAIN tree's code and pass.**
+Forty-four modules define `REPO = Path(os.environ.get("METS_REPO",
+"/run/media/system/WDS_500/Mets"))` — a hardcoded absolute default — and
+twenty-five of them follow it with `sys.path.insert(0, str(REPO))`. Importing
+any one of them puts the main tree at the front of `sys.path` for the rest of
+the process, so everything imported afterwards resolves there instead of in the
+worktree. Whether it bites depends on collection order, which is why it is
+invisible most of the time: on 2026-09-19 `./scripts/check.sh gate` in
+`../Mets-claim-c` reported `cannot import name 'BETA_SUBEXPERIMENTS' from
+'/run/media/system/WDS_500/Mets/p1c_frames/run_1c.py'` — the file being tested
+was in the worktree, the file imported was not. **Run the gate from a worktree
+as `METS_REPO=$PWD ./scripts/check.sh gate`** (2384 passed that way, a
+collection error without it). The real fix is for those modules to resolve
+`REPO` from `Path(__file__).resolve().parents[N]` with the environment variable
+as an override rather than the other way round, as `tools/score_claim_c.py`
+already does; it touches 44 files and has not been done.
+
 **`source .venv/bin/activate` can succeed and give you the wrong interpreter.**
 `activate` carries the absolute `VIRTUAL_ENV` recorded at creation. If the repo
 has moved, it prepends a directory that does not exist, sets the variable, and

@@ -72,13 +72,19 @@ convention the reduction decision nearly dissolves for (SA) and does not for
 "The β reduction, de-blocked" below. *(One checkpoint, one prompt,
 whole-sequence index set; a second prompt could move these.)*
 
-**4. `run_1c.py` refuses β-free sub-experiments for want of β.** Run for real
-with `--subexp E` against the sweep's trained directory: **8 runs, 8 SKIPs, 0
-written**, exit 1, every line "no `beta_eff` and no `--beta-fallback` given". E
-uses no β at all, and neither does F; the `beta_used` finiteness test at
-`p1c_frames/run_1c.py:257` is applied to every run regardless of `--subexp`.
-The fix is to gate it on `{"A", "B"} & subexp`; it is one line and is **not**
-made here, because the audit's job was to find it.
+**4. `run_1c.py` refuses β-free sub-experiments for want of β — FIXED
+2026-09-19.** Run for real with `--subexp E` against the sweep's trained
+directory: **8 runs, 8 SKIPs, 0 written**, exit 1, every line "no `beta_eff`
+and no `--beta-fallback` given". E uses no β at all, and neither does F; the
+`beta_used` finiteness test was applied to every run regardless of `--subexp`.
+`requires_beta()` now names the two sub-experiments that integrate
+`gamma_beta` (`BETA_SUBEXPERIMENTS = {"A", "B"}`), the driver skips only when
+one of those was asked for, and each record carries `beta_required` with
+`beta_source` reading `unavailable` rather than a fallback that was never
+supplied. Re-run against the same directory with **no** `--beta-fallback`:
+**8/8 written, 0 skipped**, and the margins are identical to the fallback run
+— which is the check that the fallback never entered E's numbers in finding 6
+below. `tests/test_run_1c_beta_gate.py` (5, pure).
 
 **5. `P-S1` cannot be fed by any run directory, for three independent
 reasons.**
@@ -154,10 +160,10 @@ session chooses to spend the time.
 `beta_eff_per_head` into `geometry.json` or a side artifact — which unblocks A
 and B except for `h_attn_only`; (b) fix β's scale convention first, since (a)
 freezes it in an artifact; (c) for `P-S1`, re-cluster both arms offline at a
-matched k, or record that the gate stays unfeedable; (d) the one-line
-`run_1c.py` β-gate fix; (e) `run_1.py --sublayer` re-runs, the only item here
-that costs forward passes, and the only route to the frame-correct
-`h_attn_only`.
+matched k, or record that the gate stays unfeedable; (d) ~~the one-line
+`run_1c.py` β-gate fix~~ **done 2026-09-19, finding 4**; (e) `run_1.py
+--sublayer` re-runs, the only item here that costs forward passes, and the only
+route to the frame-correct `h_attn_only`.
 
 ---
 
