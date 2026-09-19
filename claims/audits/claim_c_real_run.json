@@ -1,10 +1,11 @@
 {
   "prediction": "CLAIM-C",
-  "written_at": "2026-09-19T10:20:00-0500",
+  "written_at": "2026-09-19T10:35:50-0500",
   "run_dirs": [
     "data/phase12/2026-09-17_14-51-40",
     "data/phase12/2026-09-17_16-04-54",
-    "data/phase12/2026-09-19_09-44-25"
+    "data/phase12/2026-09-19_09-44-25",
+    "data/phase12/2026-09-19_10-18-45"
   ],
   "arms": {
     "gpt2-large": {
@@ -47,8 +48,17 @@
       ]
     },
     "pythia-1.4b-random": {
-      "n_prompts": 0,
-      "prompts": []
+      "n_prompts": 8,
+      "prompts": [
+        "camus_letranger",
+        "hdbscan_code",
+        "homer_iliad",
+        "latex_monograph",
+        "paper_excerpt",
+        "short_heterogeneous",
+        "sullivan_ballou",
+        "wiki_paragraph"
+      ]
     },
     "pythia-1.4b-step0": {
       "n_prompts": 0,
@@ -65,21 +75,32 @@
   ],
   "artifact_hashes": [
     "007b4f4cc432df6ee4d29972261d241ab0488bc229261d7d42686bd33cd5da5e",
+    "018cb33d12c171b2575571c9bd546a56663be614cfe5f8f69576cfa815584487",
     "07096ef3ba78fc6e5d10e1cd9754e9dcfdbab2e5cdf7368d509b1966eb308ee3",
     "075b7c225109f8ef53d69b163d78205d7c1a483b05b941131b9640ae50fc26d6",
+    "0cf6910bb147bf92d485b0347584f2494445fef02f55dd85a59497a6226004c5",
     "0e086a55aacaaa513c26c397ca5095f318f7abeeab0a6f20111d0fbbd95f4251",
+    "13d5a8d1501921597c0b665704215955416fb383f205ab767375078ba0dfc568",
     "15cf52dab27c0ffbc92c2fb04cc418c6bce784a41e98cbfd2d79e27e85330612",
     "16ce50eaed055c28b05b6a1a0e6aa94edf3475ba654939ea732bcbcbb6e3d139",
     "1f11a8e97865b13866978d198818a79984e72c33e7a2aa5878d37df0241b363b",
+    "281b579a0aea9aca5eaad5437b6f8c285559d4a6f0d78ff5f36306f9d1b3e1f7",
+    "29e620b8805a75e831f8d4700dd622008cc22ae904c14583367af4e331cb8a35",
+    "29f17d7b47b403df32c0e1949ba1414b97fd337f00be5939fc7f3b558e89d92e",
     "2c504d7da943b31c1b2cc0082824b4162fd964c9c5ecfa53bdb6742356182ad9",
+    "2c743425649bfc560841517a9b0434067efb2969fc048dd0f3e201d77db53601",
     "2e714793aaaa77b829236ac51a1d36997577c7790f3e7199a55c775131d8652d",
     "317c08c87fde47f0bf1c50411a877d903ccd5f26d71b7ca864ce360c204966eb",
     "334958362d25856ee82cf3bfb0601d1424e07eefb5128a45755255181f3090b2",
+    "3698b7bb6abe7ed37ea2606b739717c6e85d879210415d6843ec69b249feae74",
     "3bc07282ffdf035938c76e5c36e7671cda8afdb657d3649a011d7e441c7a497b",
+    "3be65b9e86a2c34ea0a2fc7db09f2de9c377b6197fdb7f519adce23ef11039c0",
+    "401df199c81fc62d7ea2a2d084cb6b5b1642783c2ccc52baff1dbdb98821fb08",
     "40dc51b78b358e41ee87425c49fb3f2d40ed77c073dfca8de0be19fad65eba00",
     "418a1d44725adb8a4b6c5701f5c67d7e7490e6e55428df0cf649113e2764112e",
     "43c0599f6ba6ffd24fb6e46426f3ad920be0d1849f12e43050e447ec05080569",
     "45a10cf1e9d55aeda721331923a15ea22d2a581261f416d1e0e1fd52d9ac71d4",
+    "46a1a31c20fa3d2ee88be9de13b941b11e7a6dcd94e0cace6aa8c861c55cb4e1",
     "491156b2cbd33687710e6c922c1c38df9961408942ad012c7e04523bbd7b4ada",
     "49e3102ef5c23661fdd515baa4f0367f639944aa01b33dba09ff8f40afc3d947",
     "4b309e160c8c2914d61ba8af6b6066332863e70e267ef32ef91ff798e14ec22a",
@@ -90,10 +111,13 @@
     "5b6b15c0a76c347486f0bd66c1b9b71211bbc6d3b3efe7edb1742391cfd72484",
     "5ca007b5dd504243b8cca8dd1c890e33bffc266744dcb0bebb9359ec53e1250f",
     "63c177322e7c05c9c0299393e7e77aaf720a648632af97dce543a2b28bf8d31f",
+    "64d566ac482442a3a0270d007b4efc8b19b3c44331c0054ac3be761d16be3362",
     "6511ef3ff21d3bb8298d3881bc0c29c1a81669ad39e31cce4ae615a31a14fb7a",
     "6610fc10b02d9bc66d505e8237c3f1b753b77485150b32a4bbe4f2fd00e2f4cd",
     "6b3dce292dca091b7f72e3e302bf2d85ff0504289b1c08ceafba37e42b2c84cc",
     "6def26480446a8bcd256eb3a71e8131a498057c13eb1c2dc4188f765deb41703",
+    "71ce9d4f177457ac13d25ca41a6e9fb45e11a241eeb5f731afaea906a81ad57e",
+    "75d336ef9b01eeb21b07153b2c245caf7fdc3fddba7515b0aa9a0ab9c0b2cc93",
     "78717187a218ef5dac6b5e2f3910b1bf5da001fa4b2fc443eb3f98490671db9b",
     "7cdada99ecd955db64c7bda2a142533af9126cf76b3b2b7b43452ee55c84944a",
     "7f682ba6b2f944ee17388d290b6c63c2d9cdf8071e8c5d0a8ed043a06a674387",
@@ -101,7 +125,10 @@
     "8558bf48f4140e2d30d3e7372af8385bafbe2186a2b0ff5f1a8483461ccb717c",
     "88bd3ebcb9a40c887cdb69cc83fa00b7ec27cb956f73d0983ed8257302111aad",
     "8ac065700780960d1e318378167570047c6ac8e05e4a5368a85518968d7037f5",
+    "8b5662ed603fa34a6d4cff9fdfaae212629a79f7772637f2c216821273fd6bf1",
+    "900b85795d4cf265872197917999d65f98a567b2e46cc9cf8f0315c67cbbdb8f",
     "91f33eed6db9546685f251d07c4e2c794881120bca175455b4c30bb3f592d59c",
+    "94536e27553b12c250f5be05ad3180a2ee41b06cce49b77ff88ee62a553102c0",
     "9475df3c6a7fa5981f04a0548917b150717e7e9872a710bf9717461e36c5fd42",
     "96493f4ec90f93b57ae7cd84d397c3abc5cb34bf5e3bfbcc5d049a4fb22c3c50",
     "9ac89d8e7ab844dd8ee36b247e5a023d939ceeb8becf618f57b21c551157011f",
@@ -118,11 +145,15 @@
     "b9c25eb6446946b5f994eab594e33287662067e111b327b233794117b4852611",
     "b9c6a224eca2d7d8bd4326f69763117dcd80fb233bd86b41550ba9fc68a03558",
     "bb173581f4e225d6fc81a51150693239a4a19d0b514f5551c6816bc6280fb16c",
+    "be06a3cfd95005d98a6ad6bf3e48ca1bb8aedc6f44debef0ab553e0e621f4de0",
+    "c18aa6e20ea3fb2f0fb83a369745e1a4b396cc16b782f49aa8dee4414109788a",
     "c87257a9379d6d0d36ddff0df44b3e8e1d0dc2b1e52309cf4aa6b0fd400f1b09",
     "cac594c86e667043624ca90f297ceb6b9accf6786aa042e8bcd86e114ba8fcfc",
+    "cbcec68a698fe1702b1d611ed429a198929041d831370c64b7d4ba5858a589eb",
     "d18e846f53387e31f8234620c6f255937cc45740f2041753c92a701f86f8f1ae",
     "d19079867a44922ef3b1debd968ffa023345716c64036e74654510dfd860653c",
     "d3a9aa4eb55860ac45ef4050f02362086eef5875636e48fbe9cc630323a5c058",
+    "d5d6ddc2f69a7acf77afe4665c5601829e34434928a4342353e759ea56efb472",
     "d61922fc42137be801e86c969485aa972087453ba62aab14fd43650a196e6dce",
     "d7b3a4c0cb508f8e3aa819dfe86889136dc7c988fe448f8f2cf253e81a1ae61a",
     "da67ce703169252ac5eb465bc058124b53fd1591b9fa8b12398c8aa9b177bfac",
@@ -135,9 +166,45 @@
     "f00f11fd8ff88a55a4b6780d9651cb19befe5c89283e12fdded6d307ce50a2d7",
     "f39f15072ecdb3e2af050111b1e35004a83f6a63d50ce554381468e620b15e57",
     "f97dacf83bf763110e617708bdddda41920e45cbb97e12b6e7a08f7ba31426d5",
+    "fa63eaa598fba0d7c4ffa0de2377e8fe49aecf3de29c93feaa38744ab5d39136",
+    "fdfe616407982ded700ac1bf88f14d7d018a0f3fc5bb3467fff77cdbf34d01f5",
+    "fe8b0d4e6046c9dfb1df20f17163a1b1f5afdfa7ac1e2872ef53905e2209876c",
     "ff0055722468023edac28d8778f31969ce06410b64fcc38701f05c1fbe85b961"
   ],
   "adjudicate": false,
-  "refused": "arm(s) absent from every run directory given: ['pythia-1.4b-random']. The gate needs Phase 1 runs of all of ['gpt2-large', 'gpt2-large-random', 'pythia-1.4b-step143000', 'pythia-1.4b-random'] on the metastability prompts; nothing here substitutes one model for another.",
-  "result": null
+  "refused": "no prompt has all six metrics in all four arms",
+  "result": {
+    "prompts_used": [],
+    "prompts_dropped": {
+      "camus_letranger": "metric 'cluster_count' unavailable in at least one arm",
+      "hdbscan_code": "metric 'cluster_count' unavailable in at least one arm",
+      "homer_iliad": "metric 'cluster_count' unavailable in at least one arm",
+      "latex_monograph": "metric 'cluster_count' unavailable in at least one arm",
+      "paper_excerpt": "metric 'cluster_count' unavailable in at least one arm",
+      "short_heterogeneous": "metric 'cluster_count' unavailable in at least one arm",
+      "sullivan_ballou": "metric 'cluster_count' unavailable in at least one arm",
+      "wiki_paragraph": "metric 'cluster_count' unavailable in at least one arm"
+    },
+    "metrics": [
+      "mass_near_1",
+      "effective_rank",
+      "cluster_membership",
+      "cluster_count",
+      "cka_prev",
+      "fiedler_mean"
+    ],
+    "n_prompts": 0,
+    "exchangeable_unit": "prompt",
+    "step0_absent_reason": "pythia-1.4b-step0 absent from every run directory",
+    "observed": null,
+    "n_cells": 0,
+    "reason": "no prompt has all six metrics in all four arms",
+    "alpha": 0.05,
+    "p_value": null,
+    "verdict": "INSUFFICIENT",
+    "hard_stop": true,
+    "falsified": false,
+    "reading": "no p-value could be emitted; the gate is unadjudicated and items 9-11 do not proceed",
+    "adjudication": null
+  }
 }

@@ -3,8 +3,8 @@
 **Registered predictions:** `CLAIM-A` (needs-null — construction specified
 below, deliberately not built; decision 2026-09-17) and `CLAIM-C` (e-value —
 null built in `replication_gate.py`, calibrated on a known-answer dry run,
-**two of five arms produced on 2026-09-17, gate still refusing on the three
-pythia-1.4b arms**; see "E-value audit" below). Their nulls and evidence paths
+**all four required arms produced by 2026-09-19, and the gate still refuses —
+on a dead metric rather than a missing arm**; see "E-value audit" below). Their nulls and evidence paths
 are `claims/registry.json`; the per-phase view is `claims/EXPERIMENTS.md`.
 Nothing in this file is an e-value: the verdict tables below are threshold
 comparisons, and the gate that would turn this phase's Pythia sweep into a
@@ -248,6 +248,7 @@ before pythia-1.4b steps 0/8 are on disk. Queued behind `CLAIM-C`'s verdict.
 | `gpt2-large` | `data/phase12/2026-09-17_14-51-40` | 65 min (14:51→15:57) |
 | `gpt2-large-random` | `data/phase12/2026-09-17_16-04-54` | 33 min (16:05→16:38) |
 | `pythia-1.4b-step143000` | `data/phase12/2026-09-19_09-44-25` | **34 min (09:44→10:18)**, 2026-09-19 |
+| `pythia-1.4b-random` | `data/phase12/2026-09-19_10-18-45` | **17 min (10:18→10:35)**, 2026-09-19 |
 
 Per-prompt times are in `data/phase12/claim_c_logs/`. The trained arm ran
 ~5–7 min per long prompt; the random arm is half that. Both are on the 16-core
@@ -282,13 +283,65 @@ The fix is not a registry amendment: the arm is still gpt2-large's
 architecture, orthogonally re-initialised at seed 0 (144 matrices, 2
 embeddings; checksum 105156.8 → 92759.1 in the log).
 
-**The record.** `claims/audits/claim_c_real_run.json` carries **three arms** as
-of 2026-09-19 — `gpt2-large`, `gpt2-large-random`, `pythia-1.4b-step143000`, 8
-metastability prompts each, 72 artifact files hashed — and refuses on
-`pythia-1.4b-random` alone (`step0` is the sensitivity arm and is not in the
-refusal's required list). `real_run_record` in the registry stays null: the
-record is a refusal, not a run that produced the statistic. No arm's contrast
-has been read — the gate is the reader, and it reads all arms at once.
+**The record.** `claims/audits/claim_c_real_run.json` carries **all four
+required arms** as of 2026-09-19 — `gpt2-large`, `gpt2-large-random`,
+`pythia-1.4b-step143000`, `pythia-1.4b-random`, 8 metastability prompts each,
+96 artifact files hashed (`step0` is the sensitivity arm and is not required).
+`real_run_record` in the registry stays null: the record is still a refusal,
+not a run that produced the statistic. No arm's contrast has been read — the
+gate is the reader, and it reads all arms at once.
+
+### The arms are all here and the gate still refuses — on a metric (2026-09-19)
+
+**`REFUSED: no prompt has all six metrics in all four arms`.** Verdict
+`INSUFFICIENT`, `hard_stop: True`, `falsified: False`, all eight prompts
+dropped for the same reason: `metric 'cluster_count' unavailable in at least
+one arm`. Producing the arms was necessary and is not sufficient.
+
+**The blocking metric is dead in every arm, including the two produced on
+2026-09-17.** Measured per arm, prompts with a usable series:
+
+| metric | source | gpt2-large | -random | 1.4b-step143000 | 1.4b-random |
+|---|---|---|---|---|---|
+| `mass_near_1` | `geometry.json: ip_mass_near_1` | 9/9 | 9/9 | 9/9 | 9/9 |
+| `effective_rank` | `geometry.json: effective_rank_normed` | 9/9 | 9/9 | 9/9 | 9/9 |
+| `cluster_membership` | `clustering.json: 1 - hdbscan.noise_fraction` | 9/9 | 9/9 | 9/9 | 9/9 |
+| **`cluster_count`** | `clustering.json: hdbscan.n_clusters` | **0/9** | **0/9** | **0/9** | **0/9** |
+| `cka_prev` | `geometry.json: cka_prev` | 8/9 | 8/9 | 8/9 | 8/9 |
+| `fiedler_mean` | `sinkhorn.json: fiedler_mean` | 9/9 | 9/9 | 9/9 | 9/9 |
+
+*(`cka_prev`'s missing prompt is `repeated_tokens` in every arm — the collapse
+control, which the scorer excludes anyway. It costs nothing.)*
+
+**Why.** `p1_mstate_tracking/clustering.py:33-38` imports the **standalone
+`hdbscan` package** and prints "hdbscan not available — skipping HDBSCAN" when
+the import fails. It is not installed in `.venv` and **is not named in
+`requirements/` at all**, so it has never been installed here; every run in
+`data/phase12` was made without it. `n_clusters` is therefore `null` on every
+layer of every run, and two of `CLAIM-C`'s six registered metrics come from
+that block.
+
+**And only one of the two says so.** The writer emits the HDBSCAN block even
+when HDBSCAN did not run — `{"n_clusters": null, "noise_count": 0,
+"noise_fraction": 0.0}` — so `cluster_membership = 1 - noise_fraction` is
+**exactly 1.0 at every layer of every arm** and passes the gate's availability
+test, which asks only "not missing, not all-NaN". A metric that is structurally
+constant because it was never computed is indistinguishable, to that test, from
+one that was measured and came out flat. Its contrast between any two arms
+would be exactly zero. **So if `cluster_count` were dropped, the gate would run
+on five metrics of which one is a constant** — the dropped-prompt refusal is
+the only thing currently preventing that.
+
+**What it would take, and it is not a flag.** `scikit-learn` 1.9 is already a
+dependency and ships `sklearn.cluster.HDBSCAN`, so nothing needs downloading;
+but swapping implementations changes the metric's provenance and its defaults,
+and the registered statement names the metric set, so **this is a measurement
+decision for the author, not a runtime fallback.** Either way all four arms
+must be re-run, because the metric has to exist in every arm — at the measured
+per-arm costs (65 + 33 + 34 + 17 min) that is **~2.5 h**, not the 6–8 h
+originally feared. The alternative — amend `CLAIM-C` to a five-metric
+statistic — is a registry amendment, and it inherits the constant-metric
+problem above unless `cluster_membership` goes with it.
 
 **Remaining.** All three pythia-1.4b revisions are cached under `data/hf`
 (step143000, step0; `-random` norm-matches step143000), so the remaining arms
@@ -297,12 +350,17 @@ run offline:
 ```bash
 cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
 export HF_HOME=$PWD/data/hf METS_RESULTS_DIR=$PWD/data/phase12 HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1
-python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-random   # one arm per invocation
 python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-step0    # sensitivity arm, optional
 python -m tools.score_claim_c --run-dir data/phase12/2026-09-17_14-51-40 \
     --run-dir data/phase12/2026-09-17_16-04-54 \
-    --run-dir data/phase12/2026-09-19_09-44-25 --run-dir <each new dir>
+    --run-dir data/phase12/2026-09-19_09-44-25 \
+    --run-dir data/phase12/2026-09-19_10-18-45 --run-dir <each new dir>
 ```
+
+All four REQUIRED arms now exist; `step0` is the optional sensitivity arm. But
+the gate refuses on a metric rather than an arm — read the section below before
+spending anything else on this claim, because the four arms above will have to
+be re-run once the HDBSCAN decision is taken.
 
 `-u` matters: without it the log is block-buffered and shows nothing until
 exit. Do not stop an invocation mid-arm. The `-random` arm re-initialises on
