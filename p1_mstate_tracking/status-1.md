@@ -361,6 +361,18 @@ recorded per layer in `clustering.json`'s `impl` / `version` / `params`);
 currently compares them; and what makes this checkable at all is the provenance
 field, which no artifact written before 2026-09-19 carries.
 
+**The re-run changes the HDBSCAN metrics and nothing else, checked rather than
+assumed.** Comparing the 2026-09-17 `gpt2-large` arm against today's re-run of
+the same arm, per metric, over the nine prompts: `mass_near_1`,
+`effective_rank` and `fiedler_mean` are **bit-identical on 9/9 prompts** and
+`cka_prev` on 8/8 (its ninth is `repeated_tokens`, which has none), max
+absolute difference **0** in every case. `cluster_membership` differs on 9/9 —
+it was the forged constant 1.0 and is now measured — and `cluster_count` has no
+old values to compare. So the pipeline is deterministic across the two runs and
+the re-run is a clean swap: the old arms and the new ones differ in exactly the
+two metrics that were dead, which is what makes it safe to discard the old run
+directories rather than keep both.
+
 *(Not in the artifact, and worth adding when nothing is mid-flight: the
 `scikit-learn` and `numpy` versions. `pairwise_distances` builds HDBSCAN's
 input, so it is part of the fingerprint. The schema was left alone here because
