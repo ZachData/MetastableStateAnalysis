@@ -19,6 +19,69 @@ weights and a Phase 1 run at a matching revision.
 **Blocked on Phase 1c-B by design** — see design-2d.md. The $T_{\rm eff}$ result determines
 whether the energy-monotonicity break is the right thing to attribute.
 
+## E-value audit, Phase 2 / 2d (2026-09-19)
+
+Third unit of the audit (`PROJECT.md` §3.43), after Phase 1 and 1c. **Phase 2
+registers nothing of its own** — `claims/EXPERIMENTS.md` calls it "a
+measurement programme [that] supplies the artifacts other phases adjudicate
+on", and that is accurate: its 19-step sweep is the input to 2d and to Phase
+7, not a claim. So this unit is `P-T1`, `P-M1`, and `CLAIM-B`, which the
+registry places in Phase 1 but whose instrument is this sweep.
+
+**`P-T1` and `P-M1` are the first registered gates in the whole audit whose
+inputs are all present.** Checked on disk rather than assumed: **19 of 19**
+`p2_eigenspectra_*` directories carry `ov_weights_*.npz` with the per-head
+`wq_head*`, `wk_head*` and `ov_head*` arrays that `load_operators` refuses
+without — the "legacy behaviour, not recommended" path that omits them was not
+taken. The join was then run for real on `step143000`: **24 operator layers
+paired against 24 of 25 activation layers, 16 heads, d_head 64**, no
+`JoinRefused`. Both of its warnings fired correctly — the 24-vs-25 layer-count
+note, and `RAW FRAME`, because LN parameters were not supplied. That second one
+is the standing instruction: a primary measurement resolves the frame with
+`core.ln_frame.frame_for_hidden_state`, and the raw pairing is a sensitivity
+check only.
+
+**So what blocks 2d is not evidence. It is two things already written down.**
+1. **The design block.** `design-2d.md` holds the phase behind Phase 1c-B:
+   $T_{\rm eff}$ decides whether the energy-monotonicity break is the right
+   thing to attribute. 1c-B is itself blocked on the β producer that does not
+   exist (§3.40), so the dependency chain is β producer → 1c-B → 2d, and no
+   part of it costs a forward pass.
+2. **`P-T1`'s registered wording omits half of its own hypothesis** — finding 1
+   below, unchanged since it was written: Table 1 row 2 requires
+   $\langle Q\varphi_1, K\varphi_1\rangle > 0$ as well as $\lambda_1(V) > 0$
+   simple. Running the gate as worded would falsify a claim the paper does not
+   make. This is the audit's one live registration defect: the amendment is
+   dated and additive, not a silent correction, and it must land **before** the
+   gate is run, because afterwards it is indistinguishable from fitting the
+   wording to the result.
+
+**`CLAIM-B` cannot clear its own floor, and its gate says so before any data.**
+`core/changepoint_colocation.py::p_value_claim_b`'s docstring states two
+refusals as requirements computed before the pilot ran. Both now checked
+against the sweep on disk:
+
+| requirement | on disk | verdict |
+|---|---|---|
+| anchor arms need **19 control series** at α = 0.05 | the sweep measures **6** metrics | cannot clear the floor |
+| registered instrument: a **20–30 checkpoint** cheap-tier sweep | the 410m sweep has **19** checkpoints (0 … 143000) | one short of its own lower bound |
+
+And the grid's third problem is structural rather than countable: on this
+schedule a series with **no** located change lands *inside* the 512–2000
+window, so a null reads as co-location. That is the same shape as `CLAIM-C`'s
+tied rows (§3.41) — a design that cannot come down on one side — arriving by a
+different route. `CLAIM-B` has a built, calibrated gate, a `calibration_record`
+and no path by which this instrument produces a p-value.
+
+**What this unit did not do.** No statistic was computed for any of the three.
+2d's phase block is a design decision recorded by its own author, and running
+the gates to see what they say would be exactly the peek that block exists to
+prevent; `CLAIM-B`'s refusal is established from the grid and the control
+count, which are properties of the instrument, not of the outcome. The
+plumbing `CLAIM-C` needed (`tools/score_claim_c.py`) has no counterpart here
+and was not written, because a scorer that can only ever return "the floor is
+unreachable" is a worse artifact than the two rows above.
+
 ## Validation performed
 
 **D1 recovers constructed regimes.** A head built with $M$ symmetric and $V = M$ classifies as
