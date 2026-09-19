@@ -1,9 +1,10 @@
 {
   "prediction": "CLAIM-C",
-  "written_at": "2026-09-17T16:50:20-0500",
+  "written_at": "2026-09-19T10:20:00-0500",
   "run_dirs": [
-    "/run/media/system/WDS_500/Mets/data/phase12/2026-09-17_14-51-40",
-    "/run/media/system/WDS_500/Mets/data/phase12/2026-09-17_16-04-54"
+    "data/phase12/2026-09-17_14-51-40",
+    "data/phase12/2026-09-17_16-04-54",
+    "data/phase12/2026-09-19_09-44-25"
   ],
   "arms": {
     "gpt2-large": {
@@ -33,8 +34,17 @@
       ]
     },
     "pythia-1.4b-step143000": {
-      "n_prompts": 0,
-      "prompts": []
+      "n_prompts": 8,
+      "prompts": [
+        "camus_letranger",
+        "hdbscan_code",
+        "homer_iliad",
+        "latex_monograph",
+        "paper_excerpt",
+        "short_heterogeneous",
+        "sullivan_ballou",
+        "wiki_paragraph"
+      ]
     },
     "pythia-1.4b-random": {
       "n_prompts": 0,
@@ -55,6 +65,8 @@
   ],
   "artifact_hashes": [
     "007b4f4cc432df6ee4d29972261d241ab0488bc229261d7d42686bd33cd5da5e",
+    "07096ef3ba78fc6e5d10e1cd9754e9dcfdbab2e5cdf7368d509b1966eb308ee3",
+    "075b7c225109f8ef53d69b163d78205d7c1a483b05b941131b9640ae50fc26d6",
     "0e086a55aacaaa513c26c397ca5095f318f7abeeab0a6f20111d0fbbd95f4251",
     "15cf52dab27c0ffbc92c2fb04cc418c6bce784a41e98cbfd2d79e27e85330612",
     "16ce50eaed055c28b05b6a1a0e6aa94edf3475ba654939ea732bcbcbb6e3d139",
@@ -62,6 +74,7 @@
     "2c504d7da943b31c1b2cc0082824b4162fd964c9c5ecfa53bdb6742356182ad9",
     "2e714793aaaa77b829236ac51a1d36997577c7790f3e7199a55c775131d8652d",
     "317c08c87fde47f0bf1c50411a877d903ccd5f26d71b7ca864ce360c204966eb",
+    "334958362d25856ee82cf3bfb0601d1424e07eefb5128a45755255181f3090b2",
     "3bc07282ffdf035938c76e5c36e7671cda8afdb657d3649a011d7e441c7a497b",
     "40dc51b78b358e41ee87425c49fb3f2d40ed77c073dfca8de0be19fad65eba00",
     "418a1d44725adb8a4b6c5701f5c67d7e7490e6e55428df0cf649113e2764112e",
@@ -71,19 +84,31 @@
     "49e3102ef5c23661fdd515baa4f0367f639944aa01b33dba09ff8f40afc3d947",
     "4b309e160c8c2914d61ba8af6b6066332863e70e267ef32ef91ff798e14ec22a",
     "4b39cb01ecef06ae9ab4e39b67fec99ce4072a021ab547f62b7ab62c6d056a90",
+    "4bfc0b4b85b83e0deb2a8860a3cb69dcbf4cfd36c0b195db3b21acc5972734d7",
     "527b36a30a1b8586162e6965c9aaa783dc1359679e02cf6b09aca70df409132b",
+    "57b09dcc44944fce93bb999a254471698a9f32a54fe5d00d84d20a903221a8db",
     "5b6b15c0a76c347486f0bd66c1b9b71211bbc6d3b3efe7edb1742391cfd72484",
+    "5ca007b5dd504243b8cca8dd1c890e33bffc266744dcb0bebb9359ec53e1250f",
     "63c177322e7c05c9c0299393e7e77aaf720a648632af97dce543a2b28bf8d31f",
     "6511ef3ff21d3bb8298d3881bc0c29c1a81669ad39e31cce4ae615a31a14fb7a",
     "6610fc10b02d9bc66d505e8237c3f1b753b77485150b32a4bbe4f2fd00e2f4cd",
     "6b3dce292dca091b7f72e3e302bf2d85ff0504289b1c08ceafba37e42b2c84cc",
     "6def26480446a8bcd256eb3a71e8131a498057c13eb1c2dc4188f765deb41703",
+    "78717187a218ef5dac6b5e2f3910b1bf5da001fa4b2fc443eb3f98490671db9b",
     "7cdada99ecd955db64c7bda2a142533af9126cf76b3b2b7b43452ee55c84944a",
+    "7f682ba6b2f944ee17388d290b6c63c2d9cdf8071e8c5d0a8ed043a06a674387",
+    "82699f1a0341e60807529c4e71d46fbbec338861a9e9e1d732bbfe544ed3486b",
     "8558bf48f4140e2d30d3e7372af8385bafbe2186a2b0ff5f1a8483461ccb717c",
     "88bd3ebcb9a40c887cdb69cc83fa00b7ec27cb956f73d0983ed8257302111aad",
+    "8ac065700780960d1e318378167570047c6ac8e05e4a5368a85518968d7037f5",
     "91f33eed6db9546685f251d07c4e2c794881120bca175455b4c30bb3f592d59c",
+    "9475df3c6a7fa5981f04a0548917b150717e7e9872a710bf9717461e36c5fd42",
     "96493f4ec90f93b57ae7cd84d397c3abc5cb34bf5e3bfbcc5d049a4fb22c3c50",
+    "9ac89d8e7ab844dd8ee36b247e5a023d939ceeb8becf618f57b21c551157011f",
     "9f64bda88a5a1214555a6168457390f2f1e40ac35b013c531a23d7b170b77dda",
+    "a140b599d0821088057481b9443104553b4ab9b3eb31906dd9f582c2cda5827c",
+    "a1bc0705401c65ed658038ae952c2b365546681b7af5d2fe2ab679bade853880",
+    "a5c1686da3f8cca8e96c503c8b2d664391313d2933263c4de51d2acd1970b64b",
     "a687b4181521ff0381260f7b6c3add6d76c0439605fd89114d81d58cb8780f85",
     "af65e7fab904001c775fcbb74a39673fc1822204f00210a5ba05e5b25d84c9c0",
     "b1393278cc7ae6ae6c613610012b5d5d7ae9d3dcbf0aa613c2aa0c3655d5cb55",
@@ -91,19 +116,28 @@
     "b4863ca58fce5380ad696c642682ff02b7efd5363350ca4b4d1f909cf344befa",
     "b900d3f123af9a9d04f8eea2f59c7a6b5ad9f4b06ac1e703e7659ed2ce99f6da",
     "b9c25eb6446946b5f994eab594e33287662067e111b327b233794117b4852611",
+    "b9c6a224eca2d7d8bd4326f69763117dcd80fb233bd86b41550ba9fc68a03558",
     "bb173581f4e225d6fc81a51150693239a4a19d0b514f5551c6816bc6280fb16c",
+    "c87257a9379d6d0d36ddff0df44b3e8e1d0dc2b1e52309cf4aa6b0fd400f1b09",
+    "cac594c86e667043624ca90f297ceb6b9accf6786aa042e8bcd86e114ba8fcfc",
+    "d18e846f53387e31f8234620c6f255937cc45740f2041753c92a701f86f8f1ae",
+    "d19079867a44922ef3b1debd968ffa023345716c64036e74654510dfd860653c",
     "d3a9aa4eb55860ac45ef4050f02362086eef5875636e48fbe9cc630323a5c058",
     "d61922fc42137be801e86c969485aa972087453ba62aab14fd43650a196e6dce",
     "d7b3a4c0cb508f8e3aa819dfe86889136dc7c988fe448f8f2cf253e81a1ae61a",
+    "da67ce703169252ac5eb465bc058124b53fd1591b9fa8b12398c8aa9b177bfac",
     "daa5390bacc0124368185dba580808a1cd7d8110d31da5db04ef6b0dc4a48b41",
     "dc195f6fcb7ea2bb6b66b20c6dbb7d6a7d250bcedd81edeb3fa7fd9d797348d9",
+    "e795bf0d8124fba4eb2b9a5c5659b0929292c0e9148bc0fd5b4fb902fce71550",
     "eb97e15029d5d891bddaa26d94929836420ba44708607b051cfb144ae9c7413d",
     "eda91f771c10d8358ac2c84bebc9014bd1b8530eebaa1fa472124f9a9ede3c8a",
     "efe5af814168c95a41222480d7d82bd04a069eea620f871adab3dc38ae8a2603",
     "f00f11fd8ff88a55a4b6780d9651cb19befe5c89283e12fdded6d307ce50a2d7",
+    "f39f15072ecdb3e2af050111b1e35004a83f6a63d50ce554381468e620b15e57",
+    "f97dacf83bf763110e617708bdddda41920e45cbb97e12b6e7a08f7ba31426d5",
     "ff0055722468023edac28d8778f31969ce06410b64fcc38701f05c1fbe85b961"
   ],
   "adjudicate": false,
-  "refused": "arm(s) absent from every run directory given: ['pythia-1.4b-step143000', 'pythia-1.4b-random']. The gate needs Phase 1 runs of all of ['gpt2-large', 'gpt2-large-random', 'pythia-1.4b-step143000', 'pythia-1.4b-random'] on the metastability prompts; nothing here substitutes one model for another.",
+  "refused": "arm(s) absent from every run directory given: ['pythia-1.4b-random']. The gate needs Phase 1 runs of all of ['gpt2-large', 'gpt2-large-random', 'pythia-1.4b-step143000', 'pythia-1.4b-random'] on the metastability prompts; nothing here substitutes one model for another.",
   "result": null
 }

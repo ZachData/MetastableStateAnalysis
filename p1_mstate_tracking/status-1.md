@@ -247,13 +247,25 @@ before pythia-1.4b steps 0/8 are on disk. Queued behind `CLAIM-C`'s verdict.
 |---|---|---|
 | `gpt2-large` | `data/phase12/2026-09-17_14-51-40` | 65 min (14:51→15:57) |
 | `gpt2-large-random` | `data/phase12/2026-09-17_16-04-54` | 33 min (16:05→16:38) |
+| `pythia-1.4b-step143000` | `data/phase12/2026-09-19_09-44-25` | **34 min (09:44→10:18)**, 2026-09-19 |
 
 Per-prompt times are in `data/phase12/claim_c_logs/`. The trained arm ran
 ~5–7 min per long prompt; the random arm is half that. Both are on the 16-core
 CPU in float32. The 6–8 h estimate for all five arms was extrapolated from
-410m; measured, the two gpt2-large arms cost 1 h 40 min together, so the three
-1.4b arms (2× the parameters, 24 layers at d = 2048) should be roughly 2 h each
-trained and less random — a 3 h window fits one, not two.
+410m; measured, the two gpt2-large arms cost 1 h 40 min together. **The 2 h
+estimate for a 1.4b arm was also high: the trained one took 34 min** — more
+parameters but fewer, cheaper prompt-level analyses than gpt2-large's 36-layer
+sweep — so a 3 h window fits all three.
+
+**A trap that cost the first launch of the 1.4b arm (2026-09-19).**
+`_pythia_entry` sets `tokenizer_revision: None` deliberately, which means the
+tokenizer loads at revision `main` — and `main` was not in the 1.4b cache,
+only `step0` and `step143000` were. Under `HF_HUB_OFFLINE=1` the arm died in
+seconds with `OSError: We couldn't connect to 'https://huggingface.co'`, which
+names no revision and reads like a network fault. pythia-410m has `main`
+cached, which is why nothing had hit it before. Fetching the tokenizer at
+`main` once, online, fixes it; **any new Pythia size needs the same** before
+it can run offline.
 
 **Defect found on the way: `gpt2-large-random` had never loaded.** Its
 `MODEL_CONFIGS` entry carried no `hf_repo` / `pretrained_name`, so
@@ -270,13 +282,13 @@ The fix is not a registry amendment: the arm is still gpt2-large's
 architecture, orthogonally re-initialised at seed 0 (144 matrices, 2
 embeddings; checksum 105156.8 → 92759.1 in the log).
 
-**The record.** `claims/audits/claim_c_real_run.json` now carries both arms —
-8 metastability prompts each, 48 artifact files hashed — and refuses on
-`pythia-1.4b-step143000` and `pythia-1.4b-random` (`step0` is the sensitivity
-arm and is not in the refusal's required list). `real_run_record` in the
-registry stays null: the record is a refusal, not a run that produced the
-statistic. The two arms' contrast was NOT read — the gate is the reader, and it
-reads all arms at once.
+**The record.** `claims/audits/claim_c_real_run.json` carries **three arms** as
+of 2026-09-19 — `gpt2-large`, `gpt2-large-random`, `pythia-1.4b-step143000`, 8
+metastability prompts each, 72 artifact files hashed — and refuses on
+`pythia-1.4b-random` alone (`step0` is the sensitivity arm and is not in the
+refusal's required list). `real_run_record` in the registry stays null: the
+record is a refusal, not a run that produced the statistic. No arm's contrast
+has been read — the gate is the reader, and it reads all arms at once.
 
 **Remaining.** All three pythia-1.4b revisions are cached under `data/hf`
 (step143000, step0; `-random` norm-matches step143000), so the remaining arms
@@ -285,15 +297,18 @@ run offline:
 ```bash
 cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
 export HF_HOME=$PWD/data/hf METS_RESULTS_DIR=$PWD/data/phase12 HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1
-python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-step143000   # one arm per invocation
-python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-random
-python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-step0
+python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-random   # one arm per invocation
+python -u -m p1_mstate_tracking.run_1 --models pythia-1.4b-step0    # sensitivity arm, optional
 python -m tools.score_claim_c --run-dir data/phase12/2026-09-17_14-51-40 \
-    --run-dir data/phase12/2026-09-17_16-04-54 --run-dir <each new dir>
+    --run-dir data/phase12/2026-09-17_16-04-54 \
+    --run-dir data/phase12/2026-09-19_09-44-25 --run-dir <each new dir>
 ```
 
 `-u` matters: without it the log is block-buffered and shows nothing until
-exit. Do not stop an invocation mid-arm.
+exit. Do not stop an invocation mid-arm. The `-random` arm re-initialises on
+load — the log's "96 matrices, 1 embeddings re-init; checksum 173425.590 →
+100442.844" line is what says it actually happened, and is the check that
+`gpt2-large-random`'s defect above would have failed.
 
 ---
 
