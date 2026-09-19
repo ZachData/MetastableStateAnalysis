@@ -383,6 +383,71 @@ The alternative that was **not** taken — amend `CLAIM-C` to a five-metric
 statistic — is a registry amendment, and it inherits the constant-metric
 problem above unless `cluster_membership` goes with it.
 
+### The gate ran, for the first time: INSUFFICIENT at chance concordance (2026-09-19)
+
+All four required arms re-run with HDBSCAN present — `gpt2-large` (61 min),
+`gpt2-large-random` (30), `pythia-1.4b-step143000` (33), `pythia-1.4b-random`
+(17), 2 h 20 in total — and scored together, one install, 96 artifact files
+hashed. **Every prompt is now usable and none is dropped**; the six metrics
+exist in all four arms. `claims/audits/claim_c_real_run.json` is the record and
+`real_run_record` in the registry now points at it: the gate has been run on
+real checkpoints, which is what that field is for, even though it emitted no
+p for the conjunction.
+
+**Verdict `INSUFFICIENT`, `hard_stop: true`, `falsified: false`, `p_value:
+null`.** Two separate reasons, and they say different things:
+
+| subset | concordant / cells | informative rows | smallest p this table can express | p (transfers) | p (inversion) |
+|---|---|---|---|---|---|
+| all six metrics | 23/48 | **4 of 8** | **0.0661** | 0.7510 | 0.5019 |
+| drop `mass_near_1` | 16/40 | 8 of 8 | 0.0078 | 0.9377 | 0.1167 |
+| drop `effective_rank` | 22/40 | 8 of 8 | 0.0078 | 0.2568 | 0.8872 |
+| drop `cluster_membership` | 18/40 | 8 of 8 | 0.0078 | 0.8872 | 0.2568 |
+| drop `cluster_count` | 21/40 | 8 of 8 | 0.0078 | 0.4202 | 0.7237 |
+| drop `cka_prev` | 23/40 | 8 of 8 | 0.0078 | 0.2529 | 0.8872 |
+| drop `fiedler_mean` | 15/40 | 8 of 8 | 0.0078 | 0.9572 | 0.0778 |
+
+1. **The full-set row hits the informative-row floor** the registry warned
+   about. Six metrics is an EVEN number of cells per prompt, and four of the
+   eight prompts split exactly 3–3; such a row contributes the same number to
+   the observed sum and to all 256 null patterns, so it is enumerated without
+   ever being counted. With four movable rows the smallest expressible p is
+   0.0661, above α = 0.05 — the design's own floor over eight prompts is
+   0.0078 and this table cannot reach it. **Every leave-one-out subset has
+   five metrics, an odd count, so no row can tie and all eight are
+   informative** — which is why they all reach 0.0078.
+2. **Where the design can express a small p, the data is nowhere near one.**
+   The six leave-one-out p-values run 0.2529–0.9572 in the transfer direction
+   and 0.0778–0.8872 in the inversion direction; nothing clears α in either
+   tail. Overall concordance is **23/48 = 47.9%**, which is the coin.
+
+**Per-metric, and this is the substance:** concordance across the eight
+prompts is `fiedler_mean` **8/8**, `mass_near_1` **7/8**, `cluster_membership`
+5/8, `cluster_count` 2/8, `effective_rank` **1/8**, `cka_prev` **0/8**. So the
+registered question — does the trained-minus-random contrast transfer from
+`gpt2-large` to `pythia-1.4b` — has no single answer: two metrics transfer
+almost perfectly, two invert almost perfectly, two sit in between. A
+conjunction that demands unanimity across leave-one-out subsets reports
+INSUFFICIENT on exactly this shape, which is the gate working as designed
+rather than failing.
+
+**Read as diagnostics, not as an adjudication.** `claims/adjudications/` is
+untouched, `--adjudicate` was not passed, and the per-metric table above must
+not be used to re-pick the metric set: choosing metrics after seeing which
+ones transfer is the selection the pre-registration exists to prevent. The
+metric set is a registry amendment or it is nothing.
+
+**What could change the answer, and what could not.** More prompts: the floor
+is set by how many rows can move, so extending the battery (a
+`PROMPT_BATTERY_VERSION` bump, `core/prompts.py`) would lift the full-set row
+off 0.0661 — at the current rate of four informative rows per eight prompts,
+about twelve more prompts would be needed for the full set to reach α, and
+they must be chosen without reference to their contrasts. A looser α would
+not: the gate's message says it exactly, "needs prompts that come down on one
+side, not a different threshold". And the leave-one-out rows say the extra
+prompts would have to behave very differently from these eight to move a
+concordance sitting at 47.9%.
+
 **Remaining.** All three pythia-1.4b revisions are cached under `data/hf`
 (step143000, step0; `-random` norm-matches step143000), so the remaining arms
 run offline:
