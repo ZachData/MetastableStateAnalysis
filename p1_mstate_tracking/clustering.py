@@ -30,12 +30,31 @@ from sklearn.decomposition import PCA
 from core.models import layernorm_to_sphere
 from core.config import DISTANCE_THRESHOLDS, K_RANGE
 
+# HDBSCAN is NOT optional colour. Two of CLAIM-C's six registered metrics --
+# `cluster_count` and `cluster_membership` -- are read from this block and from
+# nothing else (p1_mstate_tracking/replication_gate.py:377-384), so a run made
+# without it cannot be scored by that gate no matter how many arms exist. It
+# went missing from this machine's venv between 2026-08-12 and 2026-08-31, was
+# not named in requirements/ to catch it, and every run in data/phase12 is
+# therefore unscoreable. It is now in requirements/heavy.txt.
 try:
     import hdbscan
     HAS_HDBSCAN = True
 except ImportError:
     HAS_HDBSCAN = False
-    print("hdbscan not available — skipping HDBSCAN")
+    print("hdbscan not available — skipping HDBSCAN. CLAIM-C's cluster_count "
+          "and cluster_membership come from HDBSCAN alone, so this run cannot "
+          "feed its gate: pip install -r requirements/heavy.txt")
+
+
+def _hdbscan_version() -> str:
+    """The installed hdbscan's version, or 'unknown' — the package exposes no
+    `__version__`, so this goes through the distribution metadata."""
+    try:
+        from importlib.metadata import version
+        return version("hdbscan")
+    except Exception:
+        return "unknown"
 
 try:
     import umap
@@ -132,12 +151,24 @@ def cluster_count_sweep(
     results["kmeans"]["labels"]          = best_labels.tolist()
 
     if HAS_HDBSCAN:
-        hdb        = hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed")
+        params     = {"min_cluster_size": 2, "metric": "precomputed"}
+        hdb        = hdbscan.HDBSCAN(**params)
         hdb_labels = hdb.fit_predict(cos_dist.astype(np.float64))
         n_clusters = len(set(hdb_labels)) - (1 if -1 in hdb_labels else 0)
         results["hdbscan"] = {
             "n_clusters": n_clusters,
             "labels":     hdb_labels.tolist(),
+            # Provenance, because the numbers are version-dependent and the
+            # version was never recorded. Measured 2026-09-19: 0.8.44 on the
+            # 2026-08-12 sweep's own activations reproduces that sweep's
+            # n_clusters at some layers and not others (45 -> 41 at layer 12 of
+            # step11000/sullivan_ballou), with the parameters unchanged since
+            # April and the algorithm deterministic within one install. Arms
+            # compared by a gate must therefore come from ONE install, and
+            # cross-sweep comparisons of these two metrics need this field.
+            "impl":       "hdbscan",
+            "version":    _hdbscan_version(),
+            "params":     params,
         }
 
     return results
