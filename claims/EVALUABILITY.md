@@ -171,7 +171,7 @@ be made after asking what is being randomised.
 **This section is replaced, not appended.** It holds the one current queue and
 the one current list of what a pilot run must produce; the thirteen earlier
 versions and the passes that produced them are in `EVALUABILITY_LOG.md`.
-Current as of 2026-09-17.
+Current as of 2026-09-19.
 
 ### The queue
 
@@ -182,6 +182,15 @@ construction, each needs a sweep that satisfies its row in the table below:
 `P-AB1`, `P-I3`. `P-I1` has been run (p = 0.1414, INSUFFICIENT, 2026-09-04)
 but its record is not yet committed — see the Phase 7 row.
 
+**`P-S1` is cheap only on paper (2026-09-19 audit, `p1c_frames/status-1c.md`).**
+Its row below — both arms clustered to the same count — is unmet on every run
+directory on disk *and* its reader cannot find centroids there at all: no run
+directory carries `kmeans_centroids_L*`, which is what `load_centroids` reads
+for the primary arm, and `step143000` / `step0` agree on cluster count in 25 of
+175 kmeans layer-rows. Recomputing centroids offline at a matched k settles
+both without a forward pass; until that exists, `P-S1` is a row whose sweep
+cannot be satisfied by re-running the sweep.
+
 The live `needs-null` rows, in the order their claims matter:
 
 | row | claim | status | relevance | what its null needs |
@@ -191,7 +200,7 @@ The live `needs-null` rows, in the order their claims matter:
 | `P-I4` | H-BRIDGE | active | 1.0 | matched-magnitude control on `moved_fraction`; permutation over which edges are labelled motif edges |
 | `P-I7` | H-BRIDGE | active | 1.0 | design fixed, null to be built and calibrated in its chunk; the 410m artifact is spent |
 | `P-SA1` | H-BRIDGE | active | 0.8 | random-subspace null of matched dimension; instrument frozen |
-| `CLAIM-A`, `P-gamma1`, `P-gamma2` | H-RESIST | active | 1.0 | threshold comparisons needing a null over their pass criteria; nothing built |
+| `CLAIM-A`, `P-gamma1`, `P-gamma2` | H-RESIST | active | 1.0 | threshold comparisons needing a null over their pass criteria; nothing built. **And their input is missing before their null is (2026-09-19 audit):** no `geometry.json` carries `beta_eff`, so the two γ rows have no β to evaluate a null at. It is derivable from `attentions.npz` plus the checkpoint's LN parameters with no forward pass; the producer, and β's scale convention, are the decisions in front of it |
 
 Dormant rows (`5b`, most of `6`) convert to nothing while their instrument is
 archived and are not queued.
@@ -210,7 +219,7 @@ Eleven requirements, none of which any existing sweep satisfies except
 | `CLAIM-C` | ≥ 23% of candidate cells dissenting in sign, and ≥ 5 prompts whose usable metrics do not split evenly | what the contrast looks like |
 | `P-ST1` | dim `U_pos` comparable to the dimension the population occupies | the projector's shape |
 | `P-T1` / `P-M1` | enough heads, and enough layers or violations, for the design floor to clear α | how large the run is |
-| `P-S1` | both arms clustered to the same count | how the run is clustered |
+| `P-S1` | both arms clustered to the same count — **unmet on disk: 25 of 175 kmeans layer-rows agree between `step143000` and `step0`, and no run directory carries the `kmeans_centroids_L*` the primary arm reads** (2026-09-19) | how the run is clustered |
 | `P-AB1` | six informative units, an ODD number of ablation points per prompt, and `n + W ≤ L` | the ablation grid |
 | `P-AB1` | an ablation magnitude and fit window keeping BOTH arms inside the power-law regime | the intervention itself |
 | `P-I3` | a head classification that is NOT a cutoff on the behavioural induction score — ≥ 2 induction heads with two control heads below and two above them, within their own layer | how the two arms are defined |

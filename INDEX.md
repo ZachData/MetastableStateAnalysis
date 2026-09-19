@@ -5,14 +5,15 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-17)
+## Current priority (updated 2026-09-19)
 
 - **Live thread: the e-value audit, phase by phase (`PROJECT.md` §3.36).**
   There are no e-values yet — the ledger is empty — so the audit is of
   classification and evidence. `claims/registry.json` now carries `phase`
   and three evidence-path fields that CI checks; `claims/EVALUABILITY.md`
   "By phase" is the view to read; `claims/EVALUABILITY_LOG.md` is the
-  construction diary. Next unit: Phase 1.
+  construction diary. Phases 1 and 1c are audited (§3.36, §3.40);
+  **next unit: Phase 2 / 2d.**
 - **Direction (`PROJECT.md` §3.29, 2026-09-13, user): the programme is the
   particle/OT reading — mathematical perspective + optimal transport applied
   to mechanisms the network builds.** Induction heads (the whole thread
@@ -105,7 +106,7 @@ work — that is `PROJECT.md`, which is the file to read first.**
 |---|---|---|
 | 1 | `p1_mstate_tracking/` | Complete |
 | 1b | `p1b_hemisphere/` | Complete |
-| 1c | `p1c_frames/` | Implemented and validated on synthetic data; **not yet run against Pythia artifacts** |
+| 1c | `p1c_frames/` | Implemented and validated on synthetic data. **Audited 2026-09-19 (§3.40): E run against Pythia artifacts (`P-H1` measured), A/B/F blocked on inputs no run directory carries** |
 | 2 | `p2_eigenspectra/` | Complete; the Pythia rerun is done and the 19-step sweep is on disk |
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |
 | 2d | `p2d_operator_activation/` | Implemented and validated on constructed operators; **not run**. Blocked on Phase 1c-B by design |
