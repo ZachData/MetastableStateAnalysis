@@ -9,9 +9,163 @@ null exists, by Wendel's theorem; report the margin, never a p) and `P-S1`
 
 **State:** all six sub-experiments implemented and validated on synthetic data and on
 configurations with known exact answers, with a driver (`run_1c.py`) and artifact IO
-(`p1c_io.py`) that have been run end to end against a synthetic Phase-1 run directory. **Not yet run against Pythia artifacts** — no result
-rows below, by design. Predictions P-γ1, P-γ2, P-H1 and P-S1 were registered in
+(`p1c_io.py`) that have been run end to end against a synthetic Phase-1 run directory.
+Sub-experiment **E has now been run against Pythia artifacts** (2026-09-19, the audit
+below); A, B, C, D and F have not, and on today's artifacts cannot be — see the audit
+for what each is missing. Predictions P-γ1, P-γ2, P-H1 and P-S1 were registered in
 `PREDICTIONS.md` before this code existed.
+
+## E-value audit, Phase 1c (2026-09-19)
+
+The pass over this phase's four registered predictions (`PROJECT.md` §3.40),
+following Phase 1's (`p1_mstate_tracking/status-1.md`). **All four
+classifications are correct as registered. Three of the four gates cannot be
+fed by any artifact in the tree, and the reasons are artifact keys rather than
+physics.** The machine-readable record is `claims/audits/p1c_inputs.json`,
+written by `tools/audit_p1c_inputs.py` (+ 7 pure tests); it reads keys and
+chooses no statistic, null or clusterer. Run over all **19 pythia-410m
+checkpoint directories, 152 model-prompt directories**:
+
+| sub-exp | prediction | registered class | verdict |
+|---|---|---|---|
+| 1c-A | `P-gamma2` | needs-null | **BLOCKED** — no `beta_eff` anywhere; derivable without a forward pass |
+| 1c-B | `P-gamma1` | needs-null | **BLOCKED** — same, and it needs it per head |
+| 1c-E | `P-H1` | measurement | **RUNNABLE, and run** — the audit's one number |
+| 1c-F | `P-S1` | e-value | **BLOCKED** — three independent artifact reasons, plus the (m, d) refusal |
+
+**1. A and B are blocked on a producer, not on a re-run.** 0/152 `geometry.json`
+carry `beta_eff` — open item 1 below, confirmed on disk rather than assumed —
+while 152/152 carry `activations` + `norms` (so `raw_states` is satisfied) and
+152/152 carry `attentions.npz`. β is therefore **derivable from artifacts
+already written plus the cached checkpoint's LN parameters, with no forward
+pass**: `ln_frame.frame_for_hidden_state` → `ln_frame.ln_frame_gram` →
+`beta_eff.estimate_beta_all_heads`. Demonstrated on `pythia-410m-step143000` /
+`wiki_paragraph`: **16/16 heads valid in every one of the 24 blocks**, median
+R² 0.18, one model load. So "open item 1 is a hard blocker" overstates the
+cost: the blocker is a producer nobody has written.
+**The exception is `h_attn_only`**, the frame-correct step-size variant
+(finding 4 below): it needs the post-sublayer streams, **0/152 directories have
+them**, and they come only from `run_1.py --sublayer` — new forward passes.
+
+**2. β's unit convention is undecided, and it is worth a factor of 8.** With
+the model's own `1/sqrt(head_size)` logit scale applied, measured β on that
+checkpoint over 384 head-rows is median **0.50**, IQR [0.26, 0.75], range
+**[−0.84, 2.19]**, with **0% above 5** and 50% below 0.5. Without it every
+number is 8× larger on this model — and `head_size` is 64 on `gpt2-large` and
+**128 on `pythia-1.4b`**, so a raw-slope β is not comparable across `CLAIM-C`'s
+own arms (`beta_eff.py`'s docstring, problem 3, says exactly this). The
+illustrative [0.5, 5] in `beta_reduction.py` is consistent with the *unscaled*
+convention. **This is a decision to take before the producer writes anything**,
+because γ_β's spread over β is the whole reason the reduction question exists.
+
+**3. The measured β range lies outside the range the monotonicity claim was
+verified on — and the claim survives.** "Monotone in β, 984,246 grid points,
+zero violations" was measured over β ∈ [0.5, 5]; 50% of measured heads are
+below 0.5 and 8% are negative. Re-checked here at t = 3.0 over
+β ∈ [−1, 2.2]: (SA) decreasing and (USA) increasing at both n = 20 and n = 467,
+zero violations. So `residual_bracket`'s bracketing property holds on the range
+the data actually occupies. What changes is the *width*: over the measured
+range the (SA) envelope at n = 467, t = 3 is **0.022** against **0.262** over
+[0.5, 5], while (USA) is **0.634** against **0.445**. Under the scaled
+convention the reduction decision nearly dissolves for (SA) and does not for
+(USA) — which is a reason to fix the convention first, not to re-open
+"The β reduction, de-blocked" below. *(One checkpoint, one prompt,
+whole-sequence index set; a second prompt could move these.)*
+
+**4. `run_1c.py` refuses β-free sub-experiments for want of β — FIXED
+2026-09-19.** Run for real with `--subexp E` against the sweep's trained
+directory: **8 runs, 8 SKIPs, 0 written**, exit 1, every line "no `beta_eff`
+and no `--beta-fallback` given". E uses no β at all, and neither does F; the
+`beta_used` finiteness test was applied to every run regardless of `--subexp`.
+`requires_beta()` now names the two sub-experiments that integrate
+`gamma_beta` (`BETA_SUBEXPERIMENTS = {"A", "B"}`), the driver skips only when
+one of those was asked for, and each record carries `beta_required` with
+`beta_source` reading `unavailable` rather than a fallback that was never
+supplied. Re-run against the same directory with **no** `--beta-fallback`:
+**8/8 written, 0 skipped**, and the margins are identical to the fallback run
+— which is the check that the fallback never entered E's numbers in finding 6
+below. `tests/test_run_1c_beta_gate.py` (5, pure).
+
+**5. `P-S1` cannot be fed by any run directory, for three independent
+reasons.**
+- **The primary arm's input does not exist.** `centroids.py::load_centroids`
+  reads `clusters.npz: kmeans_centroids_L{i}` for kmeans; **0/152 directories
+  carry that key** — including the runs made this week. Every directory carries
+  `kmeans_labels_L*` and `agglom_mid_labels_L*` and nothing else. So "kmeans is
+  the only one whose centroids Phase 1 already persists" ("The clusterer
+  decision", `centroids.py`) **is false on disk**; the writer has never
+  persisted centroids, and the primary arm's stated advantage over the
+  secondary ones is not real.
+- **The HDBSCAN arm looks in the wrong file.** `load_centroids` expects
+  `hdbscan_labels_L{i}` inside `clusters.npz`; the runner writes
+  `hdbscan_labels.json`, and on these runs that file is `{}` because `hdbscan`
+  is not installed in the environment the sweep ran in.
+- **The agglomerative arm runs, at a cluster count that measures the token
+  cloud.** On `step143000` / `wiki_paragraph` it returns m = 209, 207, 187, 83,
+  149 at layers 0, 6, 12, 18, 24 — of 467 tokens — with 30–66% of those
+  clusters singletons under the default `min_size=1`, which the module's own
+  docstring says is "measuring the token cloud, not the cluster structure".
+  Kmeans labels at the same layers give m = 9, 5, 6, 2, 2.
+
+And then the gate's **(m, d) refusal** bites: between `step143000` and
+`step0`, cluster counts agree on **25 of 175 kmeans layer-rows** and **2 of
+175 agglomerative rows** (excluding `repeated_tokens`; 45/200 and 9/200
+including it). That is the registry's own "sixth pre-computed requirement" —
+both arms clustered to the same count — measured for the first time. **The
+cheap route is offline:** centroids can be recomputed from `activations.npz`
+at a matched k with no forward passes, which answers the missing-key problem
+and the refusal at once.
+
+**6. `P-H1` measured — the phase's first real number, and no p-value.** E run
+over all eight prompts of `pythia-410m-step143000` (`hemisphere_profile`,
+causal field; β is irrelevant to E, so a `--beta-fallback` was passed purely to
+get past the skip in finding 4):
+
+| prompt | min margin | at layer | layer-0 margin | final-layer margin |
+|---|---|---|---|---|
+| wiki_paragraph | 0.1316 | 0 | 0.1316 | 0.3083 |
+| homer_iliad | 0.1334 | 0 | 0.1334 | 0.4122 |
+| latex_monograph | 0.1396 | 0 | 0.1396 | 0.3259 |
+| sullivan_ballou | 0.1485 | 0 | 0.1485 | 0.3663 |
+| camus_letranger | 0.1539 | 0 | 0.1539 | 0.3484 |
+| paper_excerpt | 0.1708 | 0 | 0.1708 | 0.3979 |
+| hdbscan_code | 0.1727 | 0 | 0.1727 | 0.4010 |
+| *repeated_tokens (control)* | *0.5003* | *23* | *0.6536* | *0.6951* |
+
+The cone condition is **feasible at every layer of every prompt** — zero
+infeasible layers, so the "layer at which the margin first crosses zero"
+(finding 5 below) does not exist on this checkpoint. Two things the table says
+that the boolean does not: the **minimum is at layer 0 on all seven**
+metastability prompts and the margin *grows* with depth, and the margins sit
+**well above** the i.i.d.-uniform reference for these lengths (0.030 at
+n = 512, finding 5 below) rather than near it. Nothing is adjudicated and
+nothing was written to `claims/` — `P-H1` is a `measurement` row and stays one.
+One caveat, stated rather than buried: these artifacts are the checkpoint sweep
+that ran while `CLAIM-C`'s hard stop was unrun (`PROJECT.md` §3.36), so the
+reading inherits whatever that gate eventually says.
+
+**7. `lit-1c.md`'s one blocking question, answered.** That file is leads-only
+because "arxiv.org and every other scholarly host are blocked by this session's
+egress proxy". **They are not blocked from this machine**, and its flagged
+"first thing to check" — 2604.23740's reported effective step size
+`α · Δτ ≈ 0.025`, which would preempt 1c-A's central number — **is not in the
+paper.** Its full text (ar5iv) contains no "effective step size" and exactly
+one "step size": 0.01, the forward-Euler setting of *their own* synthetic ODE
+experiment. The α ≈ 0.025 line came from a search-engine summary, not from
+this paper. So 1c-A's calibrated step is not preempted by the nearest
+neighbour, and `lit-1c.md` can be upgraded from leads to readings whenever a
+session chooses to spend the time.
+
+**Decisions this leaves to the author.** (a) Write the β producer —
+`beta_eff_per_head` into `geometry.json` or a side artifact — which unblocks A
+and B except for `h_attn_only`; (b) fix β's scale convention first, since (a)
+freezes it in an artifact; (c) for `P-S1`, re-cluster both arms offline at a
+matched k, or record that the gate stays unfeedable; (d) ~~the one-line
+`run_1c.py` β-gate fix~~ **done 2026-09-19, finding 4**; (e) `run_1.py
+--sublayer` re-runs, the only item here that costs forward passes, and the only
+route to the frame-correct `h_attn_only`.
+
+---
 
 ## Implemented
 
@@ -237,7 +391,10 @@ degree needs its own baseline simulation — not because the power is at low $k$
    everything else.
 6. **E should run per layer, not per run.** The reportable object is the depth at which the
    margin first crosses zero. `hemisphere_profile` returns it; nothing yet calls it across the
-   27 checkpoints.
+   27 checkpoints. *(2026-09-19: `run_1c.py:159` does call it per run, so what was missing was
+   the running, not the wiring; done for `step143000`'s eight prompts in the audit above, where
+   the crossing depth does not exist because no layer is infeasible. The other 18 checkpoints
+   are unrun.)*
 
 7. **`--beta-fallback` has no safe default and the driver refuses to invent one.** $\beta$ is
    a measured property of a trained head (paper footnote 2), not a convention. Runs whose

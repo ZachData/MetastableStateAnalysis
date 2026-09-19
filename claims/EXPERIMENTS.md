@@ -49,7 +49,7 @@ null that was tried and found invalid, kept visible rather than dropped.
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
 |---|---|---|---|---|---|---|---|---|
 | item-6 replication gate | `CLAIM-A` | `H-RESIST` | needs-null | active | — | — | — | Needs a null over the three pass criteria jointly. |
-| item-6 replication gate | `CLAIM-C` | `H-TRANSFER` | e-value | active | `p1_mstate_tracking.replication_gate:p_value_claim_c` | `claims/audits/claim_c_dry_run.json` | — | Sign-concordance of the trained-minus-random CONTRAST, built 2026-08-24 in p1_mstate_tracking/replication_gate.py and fixed BEFORE any gate data exis… |
+| item-6 replication gate | `CLAIM-C` | `H-TRANSFER` | e-value | active | `p1_mstate_tracking.replication_gate:p_value_claim_c` | `claims/audits/claim_c_dry_run.json` | `claims/audits/claim_c_real_run.json` | Sign-concordance of the trained-minus-random CONTRAST, built 2026-08-24 in p1_mstate_tracking/replication_gate.py and fixed BEFORE any gate data exis… |
 | item-8 checkpoint pilot | `CLAIM-B` | `H-EMERGE` | e-value | active | `core.changepoint_colocation:p_value_claim_b` | `claims/audits/claim_b_p_i1_dry_run.json` | — | Changepoint co-location on the log-step axis, built 2026-08-24 in core/changepoint_colocation.py and fixed BEFORE any sweep data exists. |
 
 ### Phase 6 — `p6_subspace/`

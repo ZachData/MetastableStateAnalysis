@@ -58,6 +58,24 @@ def _beta_for_run(run: dict, fallback: float) -> float:
     return float(fallback)
 
 
+#: The only sub-experiments that consume beta: A integrates gamma_beta to
+#: t*, B measures the residual against it. C, D, E and F never see it.
+BETA_SUBEXPERIMENTS = frozenset({"A", "B"})
+
+
+def requires_beta(subexp) -> bool:
+    """
+    Does this selection of sub-experiments need a beta at all?
+
+    Asked because the driver used to skip any run without one regardless of
+    what was requested, so `--subexp E` against the real 410m sweep reported
+    8 runs, 8 SKIPs and 0 written — E reads activations and nothing else
+    (2026-09-19 audit, `p1c_frames/status-1c.md`). A missing beta is a real
+    blocker for A and B and is none of F's or E's business.
+    """
+    return bool(BETA_SUBEXPERIMENTS & set(subexp))
+
+
 def run_one(run_dir: Path, subexp: set, beta_fallback: float,
             causal: bool, t_target: float,
             f_method: str = "kmeans", f_tmax: int = 3) -> dict:
@@ -71,8 +89,10 @@ def run_one(run_dir: Path, subexp: set, beta_fallback: float,
 
     beta = _beta_for_run(run, beta_fallback)
     out["beta_used"] = beta
+    out["beta_required"] = requires_beta(subexp)
     out["beta_source"] = ("geometry.json" if geo.get("beta_eff") is not None
-                          else "fallback_flag")
+                          else "fallback_flag" if np.isfinite(beta)
+                          else "unavailable")
 
     X = None
     if {"A", "C"} & subexp:
@@ -253,13 +273,15 @@ def main(argv=None) -> int:
         except Exception as exc:
             print(f"  FAIL {model} / {prompt}: {type(exc).__name__}: {exc}")
             continue
-        if not np.isfinite(res.get("beta_used", np.nan)):
-            print(f"  SKIP {model} / {prompt}: no beta_eff and no "
-                  f"--beta-fallback given")
+        if res["beta_required"] and not np.isfinite(res.get("beta_used", np.nan)):
+            print(f"  SKIP {model} / {prompt}: {sorted(BETA_SUBEXPERIMENTS & subexp)} "
+                  f"need a beta, and geometry.json has no beta_eff and no "
+                  f"--beta-fallback was given")
             continue
         save_p1c(res, args.out / d.name)
         n_ok += 1
-        bits = [f"beta={res['beta_used']:.3f}({res['beta_source']})"]
+        bits = ([f"beta={res['beta_used']:.3f}({res['beta_source']})"]
+                if res["beta_required"] else [])
         if "A" in res:
             bits.append(f"T_eff={res['A']['T_eff_calibrated']:.2f}"
                         f"/t*={res['A']['t_star']:.2f}")
