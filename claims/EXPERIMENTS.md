@@ -159,6 +159,7 @@ would otherwise have to reconstruct from five files.
 | `4` | `archive/p4_mstate_features/` | archived 2026-08-22. `archive/p4_mstate_features/FROZEN.md`. |
 | `5` | `p5_single_mstate_analysis/` | archived 2026-08-22; six code-level blockers, no falsifier registered. |
 | `8` | `p8_scale_ladder/` | UNEXPLAINED — active phase, see the section below. |
+| `10` | `p10_cluster_function/` | pre-design and deliberately unregistered. `notes-10.md` §13 states it: no construction frozen, no `P-*` id, `claims/registry.json` untouched. Its free rows (F0, F1, F11-A0, F12) have RUN, and their records under `data/analysis/` are tier 1, exploratory, and not quotable as adjudications. |
 | `1b` | `p1b_hemisphere/` | hemisphere geometry; its findings feed P-H1 and CLAIM-A rather than carrying a falsifier of their own. |
 | `2b` | `p2b_imaginary/` | imaginary/rotational decomposition; measurement, feeding H-OPERATOR's P-M1 through `rotational_schur.py`. |
 | `5c` | `archive/p5c_unclustered/` | docs only, no code. Cited by `PREDICTIONS.md` claim (a). |

@@ -29,6 +29,12 @@ from core.parking import (
     uniform_causal_attention,
 )
 
+# Tier: numpy and scipy only -- no torch, transformers, sklearn or
+# matplotlib -- so this runs in `scripts/check.sh pure`. Declared, not
+# assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
+
 
 # --- harmonic numbers ------------------------------------------------------
 

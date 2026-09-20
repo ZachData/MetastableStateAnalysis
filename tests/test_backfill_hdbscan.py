@@ -10,6 +10,7 @@ when it fails, and `test_verification_is_wired_to_the_refusal` checks that the
 refusal is actually reachable.
 """
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -27,6 +28,12 @@ from tools.run.backfill_hdbscan import (
     toolchain_fingerprint,
 )
 
+# Tier: numpy and scipy only -- no torch, transformers, sklearn or
+# matplotlib -- so this runs in `scripts/check.sh pure`. Declared, not
+# assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
+
 
 # --- the parameters must not drift from the producer they imitate ---------
 
@@ -34,12 +41,13 @@ def test_params_match_cluster_count_sweep():
     """`HDBSCAN_PARAMS` is copied rather than imported, deliberately, so a
     later edit to `clustering.py` cannot silently change what a backfilled
     directory means. This is the test that makes the copy safe: it fails
-    loudly when the two diverge, instead of the data doing so quietly."""
-    import inspect
+    loudly when the two diverge, instead of the data doing so quietly.
 
-    from p1_mstate_tracking import clustering
-
-    src = inspect.getsource(clustering.cluster_count_sweep)
+    Read as TEXT rather than through `inspect.getsource`, because importing
+    `p1_mstate_tracking.clustering` pulls in scikit-learn and this file is in
+    the pure tier, where CI has it deliberately unimportable."""
+    src = (Path(__file__).resolve().parents[1]
+           / "p1_mstate_tracking" / "clustering.py").read_text()
     assert 'params     = {"min_cluster_size": 2, "metric": "precomputed"}' in src
     assert HDBSCAN_PARAMS == {"min_cluster_size": 2, "metric": "precomputed"}
 

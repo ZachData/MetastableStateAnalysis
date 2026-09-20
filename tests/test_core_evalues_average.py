@@ -25,6 +25,12 @@ from core.evalues import (
     simulate_type_i_error_dependent,
 )
 
+# Tier: numpy and scipy only -- no torch, transformers, sklearn or
+# matplotlib -- so this runs in `scripts/check.sh pure`. Declared, not
+# assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
+
 
 # --- arithmetic ------------------------------------------------------------
 

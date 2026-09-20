@@ -20,6 +20,12 @@ from tools.run.p10_attention_baseline import (
     noise_enrichment,
 )
 
+# Tier: numpy and scipy only -- no torch, transformers, sklearn or
+# matplotlib -- so this runs in `scripts/check.sh pure`. Declared, not
+# assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
+
 
 def _attn(n, n_heads=2, matrix=None):
     m = uniform_causal_attention(n) if matrix is None else matrix

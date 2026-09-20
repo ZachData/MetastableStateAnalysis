@@ -21,6 +21,12 @@ from tools.run.p10_anchor import (
     measure_layer,
 )
 
+# Tier: numpy and scipy only -- no torch, transformers, sklearn or
+# matplotlib -- so this runs in `scripts/check.sh pure`. Declared, not
+# assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
+
 
 def _rng():
     return np.random.default_rng(0)

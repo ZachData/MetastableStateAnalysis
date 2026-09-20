@@ -11,6 +11,12 @@ import pytest
 
 from core.nulls import p_from_null, p_from_null_tolerant
 
+# Tier: numpy and scipy only -- no torch, transformers, sklearn or
+# matplotlib -- so this runs in `scripts/check.sh pure`. Declared, not
+# assumed; see pyproject.toml [tool.pytest.ini_options].markers.
+pytestmark = pytest.mark.pure
+
+
 
 def test_a_fully_degenerate_null_returns_exactly_one():
     """The case that motivated this. Every draw equals the observation to
