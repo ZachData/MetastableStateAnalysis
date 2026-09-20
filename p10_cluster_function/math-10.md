@@ -22,6 +22,17 @@
 > rather than proportional to `(i+1)` — and the `(i+1)` correction therefore
 > leaves a known residual (measured `position_r2_corrected` ≈ 0.32). Both forms
 > are test fixtures in `tests/test_p10_partition_function.py`.
+>
+> **UPDATE 2026-09-20 (later the same day) — `2411.04990` has now been READ,
+> and §7 is what it says.** Three things above change:
+> **§5.1's "0.7476 does not appear in it" is wrong** (it does, for `d = 2`
+> ordinary Rényi centres, as `δ → 0`); **§5.1's `d ≫ 1` verdict applies only to
+> the power-law asymptotic**, not to the exact count law, which is
+> distribution-free and dimension-free in the form this project can evaluate;
+> and **§6 threads 1 and 4 are both answered**. §5.2's `d_eff` manipulation
+> turns out to be **the paper's own conjecture**, which licenses it and removes
+> its novelty. §7 also corrects `notes-10.md` §10.1's gradient-flow hazard in
+> the project's favour. **Read §7 before §5.**
 
 **Five results, four of them symbolically checked, three of them corrections to
 things this repository currently asserts.** Written 2026-09-20 alongside
@@ -36,6 +47,12 @@ Checks, all passing, each stating on its face what it does *not* prove:
 | `tools/math_checks/cone_margin_gamma_gradient.py` | 5/5 | §3 |
 | `tools/math_checks/ari_size_profile_null.py` | 6/6 | §4 |
 | `tools/math_checks/parking_scaling_slope.py` | 8/8 | §5 |
+
+**§7 (2026-09-20) has no check file yet** and says so on its face (§7.6). It is
+the first section here written from a paper read as primary text rather than
+from a search summary, and two of its closed forms — the finite-`n` saturation
+identity and the `δ → c²/β` inversion — are exactly the kind `CLAUDE.md` says
+should be checked mechanically.
 
 ---
 
@@ -208,6 +225,15 @@ looking.**
 
 ## 5. Correction: the parking law is in β and d, not in n — and that makes it a better test
 
+> **PARTLY SUPERSEDED 2026-09-20 by §7, which reads the paper instead of a
+> summary.** The headline — a law in β and dimension, not in `n` — is
+> **confirmed**. Two of the supporting statements are not: the Rényi constant
+> *does* appear in the paper (§7.2(b)), and the `d ≫ 1` objection applies to the
+> asymptotic power law but **not** to the exact count law (§7.2(c)). §5.2's
+> slope test survives as the asymptotic form of §7.2's exact one, and its
+> `d_eff` move is the paper's own conjecture (§7.3). Kept as written because the
+> reasoning that produced F0 is what §7 then had to correct.
+
 ### 5.1 What the field actually says
 
 `lit-1.md` §4 describes the Rényi-parking prediction as *"a density constant
@@ -318,7 +344,8 @@ That reframes three things at once:
 
 Ranked by what a derivation would change. None is attempted here.
 
-1. **Does the `Θ(β^((d−1)/2))` law have an `n` dependence at all?** §5's
+1. **ANSWERED 2026-09-20, see §7.2(a): no — `b = 0`, with a computable
+   finite-`n` saturation correction. Does the `Θ(β^((d−1)/2))` law have an `n` dependence at all?** §5's
    regression carries `b` as a free coefficient because "frequency" is `[S]` and
    might be per-token or a count. `b = 1` versus `b = 0` is a real distinction
    and one reading of the paper settles it.
@@ -329,7 +356,7 @@ Ranked by what a derivation would change. None is attempted here.
 3. **Whether the hemisphere lemma has a subspace form**, `plan-9.md` §4.5's open
    question. Still open, still the one where a plausible-sounding generalisation
    would be easy to believe and wrong.
-4. **The implied-timescale readout under a non-gradient-flow dynamics.**
+4. **ANSWERED 2026-09-20, see §7.4. The implied-timescale readout under a non-gradient-flow dynamics.**
    `plan-9.md` §5.1a records that the masked system is not a mean-field gradient
    flow. A transfer operator needs only a transition structure — but *reversibility*
    is what standard MSM spectral theory assumes, and a causal, non-reversible
@@ -338,3 +365,225 @@ Ranked by what a derivation would change. None is attempted here.
 5. **A closed form for the paid/received square under the mask.** §1 and §2 give
    the two marginals; the joint would say what the content-free square looks
    like, and therefore what an enrichment in each corner means.
+
+---
+
+## 7. The parking law, from the paper rather than from a summary (2026-09-20)
+
+`2411.04990` has been **read as primary text** (`lit-10.md` §11). This section
+replaces §5.1's `[S]`-grade description with the paper's own statements, and
+**§5.1's correction turns out to have over-shot in one place and under-sold the
+result in another.**
+
+### 7.1 The two acceptance rules, verbatim
+
+For a token sequence `(x_j)_{j≥1}` on `S^{d−1}` with geodesic distance `dist`
+and a separation parameter `δ > 0`:
+
+```
+  Rényi centres           (x_{s_j}) :  dist(x_{s_j}, x_{s_i}) > δ   for all i < j
+  strong Rényi centres    (x_{s_j}) :  dist(x_{s_j}, x_i)     > δ   for all i < s_j
+```
+
+The first excludes against previously **accepted centres**; the second excludes
+against **all previous tokens**. Strong ⊂ Rényi. Both are greedy, sequential,
+and defined on **positions and distances alone** — no partition, no clustering
+algorithm, no `β` except through `δ`.
+
+The scale is set by the interaction range: attraction is maximal at distances of
+order `β^{−1/2}` and decays rapidly beyond, so the paper takes
+
+```
+    δ = c · β^{−1/2},     c sufficiently large
+```
+
+**Position is arrival order, and that is the entire reason the correspondence
+exists only under a causal mask.** Token `k` interacts with `j ≤ k`; under full
+attention there is no order and no parking problem. §5.3's claim that *"the
+position axis is not a nuisance variable in this phase, it is the mechanism the
+theory names"* is now confirmed from the source.
+
+### 7.2 The count law is Lemma C.1, and it is exact, distribution-free and dimension-free
+
+For an infinitely long i.i.d. sequence with law `μ` on `S^{d−1}`:
+
+```
+    E[ #strong Rényi centres ]  =  ∫_{S^{d−1}} 1/μ(B_δ(x)) dμ(x)        (C.1)
+                                =  1/σ^{d−1}(B_δ)      [μ spherically harmonic]
+```
+
+with the closed forms `π δ^{−1}` at `d = 2` and `(3 sin²(δ/2))^{−1}` at `d = 3`,
+and growth `δ^{−(d−1)}`. Substituting `δ = cβ^{−1/2}` gives
+`c^{−(d−1)} β^{(d−1)/2}` — **so the `Θ(β^{(d−1)/2})` "frequency" §5.1 quotes is
+not an independent result; it is (C.1)'s small-`δ` asymptotic.**
+
+Three consequences, and each corrects or completes something above.
+
+**(a) `b = 0`. §6 thread 1 is answered.** §5.2's regression carries a free
+coefficient `b` on `log n` because "frequency" was `[S]` and might have been a
+count or a rate. (C.1) is the expected count in an **infinitely long** sequence:
+there is no `n` in the law. The finite-`n` form is the partial sum
+
+```
+    E_n = ∫ Σ_{k=1}^{n} ( 1 − μ(B_δ(x)) )^{k−1} dμ(x)
+```
+
+which increases in `n` and **saturates** at (C.1). So `b = 0` asymptotically,
+with a saturation correction that is itself computable and is largest exactly
+where `δ` is large relative to the cloud — which is the regime a short prompt is
+in. **A fitted `b` materially above 0 is therefore evidence of unsaturation or
+of non-exchangeability, not of a different law**, and that is a better thing for
+`b` to mean than "unknown".
+
+**(b) CORRECTION to §5.1 — the Rényi constant does appear.** §5.1 says *"there
+is no 0.7476 in it"*, on two search summaries. Appendix C.4 says the opposite,
+for the case the summaries were paraphrasing: at `d = 2`, as `δ → 0`, the
+average number of **ordinary** Rényi centres approaches `c·2π/δ` with
+`c ≈ 0.75` the Rényi constant (Dvoretzky–Robbins 1964). `lit-1.md` §4's original
+description was **half right** — the constant is real and it does give an
+expected count — and wrong only in making the count a function of `n` rather
+than of `δ`. The correction to `lit-1.md` should say that, not §5.1's
+over-correction.
+
+**(c) The `d ≫ 1` objection dissolves — for strong centres.** §5.1 rejects the
+prediction as unusable at `d = 1024` because the exponent is 511.5. That is a
+statement about the **asymptotic power law** and it is true. It is false of
+**(C.1) itself**, whose middle expression
+
+```
+    E[ #strong centres ]  =  E_{x∼μ}[ 1 / μ(B_δ(x)) ]
+```
+
+is a **reciprocal local-density average**: estimate `μ(B_δ(x))` as the fraction
+of tokens within geodesic distance `δ` of `x`, average its reciprocal. No
+exponent, no ambient dimension, no `β`, no unit convention — **only `δ`, which
+is a distance and can be swept.** The paper is explicit that this is the
+asymmetry between the two rules: for strong centres the computation *"works for
+any distribution regardless of the dimension"*, while for ordinary centres the
+extension to general distributions *"remain[s] open … particularly in higher
+dimensions (d > 2)"*.
+
+> **So the phase's quantitative test is not the log-log slope. It is
+> observed-vs-(C.1), swept in `δ`, on strong centres.** The slope test (§5.2)
+> survives as the *asymptotic* version of the same statement and keeps its own
+> virtue — it **measures** `d_eff` — but it is no longer the only available form
+> and it is the weaker one, because it needs a `β` and (C.1) does not.
+
+**A reading that falls out for free.** Since `δ = cβ^{−1/2}`, the `δ` at which
+the observed strong-centre count matches (C.1) **reads back `c²/β`**.
+`PROJECT.md` §3.40's undecided factor-of-8 in β's unit convention becomes a
+quantity to measure rather than a decision to take — with the caveat that `c` is
+itself only bounded below (Eq. 2 of the paper: `c > β^{1/2} arccos((−1+√(4β²+1))/(2β))`,
+and `c > 1` suffices for `β > 1`), so what is read back is `c²/β`, not `β`.
+
+### 7.3 `d_eff`: the conjecture is the paper's, and the candidate list was missing one
+
+§5.2 introduces `d_eff` as *"the manipulation that rescues"* the law. **It is
+the paper's own conjecture, not this project's manipulation** (§5, verbatim):
+for general `V` the particles *"rapidly converge to a lower-dimensional subspace
+spanned by `d_1 ≪ d` principal eigenvectors … we conjecture that the number of
+meta-stable clusters should scale as `β^{(d_1−1)/2}`, where the ambient
+dimension `d` is replaced by the effective dimension `d_1`. While a rigorous
+proof of this dimension-reduction remains an open question…"*
+
+Two things follow. **The construction is licensed** — it is not an unsupported
+stretch of the published result. **And it is not novel as a construction**; what
+is unclaimed is the empirical check, which nobody appears to have run.
+
+`2501.10573` supplies the measurement (`lit-10.md` §12.3), and it changes the
+table in §5.2:
+
+| candidate | kind | `d_eff` | predicted slope `a = (d_eff−1)/2` |
+|---|---|---|---|
+| ambient (pythia-410m) | — | 1024 | 511.5 |
+| effective-rank plateau | **linear** (covariance spectrum) | ~225 | 112.0 |
+| ambient participation ratio | **linear** (covariance spectrum) | 22 | 10.5 |
+| **kNN intrinsic dimension** (GRIDE / TLE / ESS) | **manifold** | **≈ 7–15** | **≈ 3–7** |
+| the published check | — | 2 | 0.5 |
+
+> **`d_1` is the dimension of the set the particles lie on, which is a manifold
+> dimension. Effective rank and participation ratio are functionals of a
+> covariance spectrum and measure a different thing.** The theoretically-correct
+> candidate was missing from §5.2's list, it is ~30× smaller than the nearest
+> rival, and it is the only one in a range where the predicted slope is
+> measurable at all.
+
+This gives the regression an **independent comparator**: fit `a` from counts,
+estimate ID directly from the same `activations.npz`, and compare. Agreement
+supports the `d_1` conjecture the paper leaves open; disagreement localises
+which half fails. Neither side needs a forward pass.
+
+### 7.4 CORRECTION to §6 thread 4 — the non-reversible readout has a named tool
+
+§6 item 4 asks whether PCCA+'s sign-structure argument survives a causal,
+non-reversible transition matrix, and answers *"worth deriving before
+building"*. `2601.02932` §5.1.1 answers it directly (`lit-10.md` §13.3):
+for a reversible chain the leading eigenpairs are real and PCCA+ applies; **for
+a non-reversible one, use the singular values and singular vectors, or the
+leading complex eigenvalues and the elements of the real Schur decomposition.**
+
+That paper enforces reversibility with a constrained MLE because its particle
+system *is* a reversible gradient diffusion. **A transformer's depth dynamics is
+not** — depth is one-way, §7.5 shows the masked flow is only sequentially
+gradient, and a split is not the time-reverse of a merge. So:
+
+- `t_i = −τ/log|μ_i|` still reads;
+- the reversibility-constrained estimator must **not** be transported;
+- the correct spectral tool is the **real Schur decomposition**, which this
+  repository already has and which `notes-10.md` §4.2 was looking for an excuse
+  to point at a function-defined operator.
+
+Thread 4 is therefore closed as a derivation question and open as an
+implementation one.
+
+### 7.5 The masked system is a **sequential** gradient flow — a correction in the project's favour
+
+`notes-10.md` §10.1 and `plan-9.md` §5.1a both record that the masked system
+*"cannot be interpreted as a mean-field gradient flow"* and place the Hessian
+framing at risk. The paper says that (§4) **and then says what replaces it**
+(§5.2, Lemma 5.3): the causal dynamics *"is, in fact, a sequential gradient
+flow, where each particle minimizes a slightly different energy"* —
+
+```
+    φ̇_k = − ( 1 / Z_k(φ_1,…,φ_k) ) · ∂E_k(φ_1,…,φ_k)/∂φ_k ,     0 < c < Z_k < C
+```
+
+with, for the frozen-token case (App. C.3),
+
+```
+    E_k(φ_1,…,φ_k) = − ( Σ_{j<k} e^{β(cos(φ_k−φ_j)−1)} + Σ_j a_j e^{β(cos(φ_k−θ_j)−1)} )
+```
+
+**What is absent is a single global potential for the ensemble** — so
+Łojasiewicz does not apply, and neither does any argument that needs one `E_β`
+whose Wasserstein Hessian is the object. **What is present is a per-particle
+energy and a genuine gradient flow in it.** The curvature statement Phase 9
+wants therefore has to be made about `∂²E_k/∂φ_k²`, per token and causally
+ordered, not about an ensemble Hessian. Narrower, specific, and not void.
+
+**And §2's `Z` is this equation's prefactor.** `1/Z_k` multiplies particle `k`'s
+own gradient: large `Z_k` ⇒ slow, small `Z_k` ⇒ cheap to move. `math-1.md`
+§1A.6's metric reading of `Z` is thereby **an equation rather than an
+interpretation**, and `status-10.md` §1.5's parked-vs-pinned argument inherits
+that upgrade. §2's conclusion is unchanged and is the operative one: `Z_k` is
+the **row** normaliser, the mask makes it `(i+1)`-tilted, and **`Z_i/(i+1)` is
+the quantity to read.**
+
+Caveats, stated because the transfer is not free: Lemma 5.3 is proved on `S¹`
+with `Q = K = V = I`, the paper ties weights across layers, and it has no MLP.
+
+### 7.6 What is NOT proved here
+
+- Nothing in §7 is checked symbolically yet. §7.2(a)'s saturation identity and
+  §7.2's `δ → β` inversion are both closed-form and **should** get a
+  `tools/math_checks/` file under `CLAUDE.md`'s rule; §7.3's table is
+  arithmetic on published numbers and does not need one.
+- **None of this is a theorem about Pythia.** Tied weights, no MLP, `V = I`,
+  `d = 2`, `Q = K = I` — §5's results carry all five. The correspondence is a
+  hypothesis to test on a real model, which is the point, not a result to
+  inherit.
+- (C.1) assumes the `X_i` are **i.i.d.** A token sequence is not. **That is not
+  a defect; it is the discriminant** — the gap between the observed strong-centre
+  count and (C.1)'s i.i.d. prediction is precisely "how far this token cloud
+  departs from an exchangeable one", which is `notes-10.md` §3.2's
+  packing-versus-content question with an exact null attached.

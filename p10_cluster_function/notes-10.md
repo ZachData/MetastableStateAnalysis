@@ -184,7 +184,35 @@ What replaces it, from `math-10.md` §5, is better:
   plus positions with no β, no convention decision and no reading of the paper.
   **This is now F0.**
 
-The exact correspondence remains `[S]` and is the top item in `lit-10.md` §10.
+**AMENDMENT 2026-09-20 (third pass) — the paper has now been READ, and the
+correspondence above is not the one it makes.** `lit-10.md` §11 and
+`math-10.md` §7 carry it in full. The four things that change this section:
+
+1. **The nuclei are a geometric object with a definition, not "the earliest
+   member of a cluster".** A *Rényi centre* is a token separated by more than
+   `δ` from every previously accepted centre; a *strong Rényi centre* is one
+   separated by more than `δ` from **every previous token**. Both are greedy
+   sequential acceptance rules on positions and distances, with `δ = cβ^{−1/2}`.
+   Neither mentions clusters. **`hdbscan_labels.json` is not needed to compute
+   them, and F0's statistic is a proxy for them rather than an instance of
+   them** — which is why F0's result (`status-10.md` §1.2) is not evidence
+   against this account.
+2. **The prediction is two-sided.** Strong centres are near-stationary and
+   *undercount* the clusters; ordinary centres drift, merge and disappear but
+   *cover more* of them. A single scalar in one direction cannot express that.
+3. **The count law is exact, distribution-free and dimension-free in the form
+   that matters**: `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))]`, a reciprocal
+   local-density average with no exponent and no `β`. The `d ≫ 1` objection
+   applies only to its small-`δ` power-law asymptotic. **The cheapest real
+   version of this test is therefore observed-vs-predicted count, swept in `δ`,
+   not a log-log slope.**
+4. **The i.i.d. assumption in that law is the discriminant, not a defect.** The
+   gap between the observed strong-centre count and the i.i.d. prediction *is*
+   "how far this token cloud departs from an exchangeable one" — which is this
+   section's packing-versus-content question with an exact null attached.
+
+The exact correspondence was `[S]` and the top item in `lit-10.md` §10; it is
+now `[R]`, and §10's list is superseded by `lit-10.md` §15.
 
 ### 3.3 The turnover question is the phase's other half, and the instrument exists
 
@@ -369,6 +397,18 @@ is a coherent operation, but it should be written as **"cluster the particles
 selected by a direction"**, because the alternative reading — cluster the
 directions — is a different experiment with different mathematics.
 
+**AMENDMENT 2026-09-20 — the distinction has a third rung, and the literature
+sits on it.** `2605.12765` (GUARD-IT) clusters **documents in a
+sentence-transformer embedding space** and steers with one vector per cluster
+(`lit-10.md` §14.1). Those are not particles, not directions in the residual
+stream, and not indexed by position: they are a *corpus* partition, one step
+further from this phase's object than a direction cluster is. The same paper
+reports that swapping the clustering algorithm made no consistent difference to
+its downstream metric — **which is not a rebuttal of `status-10.md` §3's
+reproducibility floor**, because a downstream task can be insensitive to a
+partition that a per-layer statistic is not. Whenever a "clustering" result is
+imported from this literature, say which of the three objects it is about.
+
 **The J-lens is the bridge**, and it is the reason this is worth writing down
 rather than just avoiding: `J_l` maps *any* residual direction into vocabulary
 space. A token's state and a feature's direction can be read in the same units.
@@ -386,6 +426,17 @@ object acted on. Every intervention in this project so far:
 |---|---|---|
 | **weights** | zero- and mean-ablation (7d/7e), rank truncation (`useful_rank`), projecting out a subspace | the `2²` sign factorial (§2.4.2), the isometric path (§2.5), writing `mu_cond` into MLP 6's slot (§3.23) |
 | **metric / geometry** | — | **empty. This is Phase 9.** |
+
+**AMENDMENT 2026-09-20 — the theory supplies an intervention this table has no
+row for.** `2411.04990` Theorem 5.2 freezes the quasi-stationary tokens — *"an
+artificial freezing, analogous to cross-attention in encoder–decoder
+architectures"* — and proves every other token then converges to them. That is
+**additive/active on the particle**, not on the weights and not on the metric:
+a third object column. It is also the only intervention in this phase's
+literature whose *predicted outcome is a theorem*, which makes it the natural
+known-answer dry run that `claims/EXPERIMENTS.md` says two adjudicable gates
+never had. Cost is a forward pass with a per-token stop-gradient/pin, and its
+honest caveat is `V = I_2`, `d = 2`, tied weights, no MLP.
 
 Two things fall out.
 
@@ -490,6 +541,21 @@ Costs and dependencies. Ordering is a proposal; nothing is registered.
 | **F11** | **The attention audit**, `attention-10.md` §6 rows A0–A8. A0 (sink and causal-mask baselines) gates the rest; A2 (the checkpoint axis) and A4 (the population×population mass matrix) carry the most information per unit of work. | no | nothing | the attentional column of §3.1, and **A4 is a direct `H-PARK` vs `H-CAT` test** |
 | **F12** | **`Z_beta,i` per token** — the trained per-token metric, never examined. | no | nothing | parked vs **pinned**: two kinds of stationary that displacement alone cannot separate (`attention-10.md` §5) |
 
+**Rows added 2026-09-20 after `2411.04990`, `2501.10573` and `2601.02932` were
+read as primary text** (`lit-10.md` §11–§13, `math-10.md` §7). Every one of them
+is free, and the first three are what F0 should have been.
+
+| # | experiment | forward pass? | depends on | decides |
+|---|---|---|---|---|
+| **F13** | **The centre scan.** Greedy sequential acceptance over token positions at each layer, **both rules** (Rényi and strong Rényi), **swept in `δ`**. Returns the accepted index sets, their index distribution, and the ARI between "is a centre" and "is a cluster core". | no | nothing | §3.2 as the paper states it. **This is the test F0 was a proxy for** (`lit-10.md` §11.4) |
+| **F14** | **Observed count vs Lemma C.1.** `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))]`, estimated on the same cloud, against the observed count, per layer per `δ`. | no | F13 | **packing versus content, with an exact i.i.d. null** (`math-10.md` §7.2). And the `δ` where they meet reads back `c²/β` |
+| **F15** | **The coverage curve.** Fraction of tokens within `δ` of an accepted centre, as a function of depth — the real-model analogue of the paper's Figure 3, and **its own §6 open problem** (does each centre capture `ω(1)` particles?). | no | F13 | whether centres are attractors at all, which is what "nucleus" has to mean |
+| **F16** | **Intrinsic dimension per layer** (GRIDE / TLE / ESS, `k ≤ 20`) as the manifold-dimension candidate for `d_eff`, against the slope fitted by F0b. | no | nothing | `math-10.md` §7.3. The theoretically-correct `d_eff` and it was missing from the list |
+| **F17** | **The graded block-shuffle null** of `2501.10573` §4 — `b_S = N/4^S`, six levels, unigram-preserving — run on every row that currently has a binary control. | no | nothing | a dose–response curve where the phase has a yes/no, and a baseline for `status-10.md` §3's floor |
+| **F18** | **`V`-spectrum atlas.** Join the project's per-head `λ_max(V)` sign/multiplicity catalogue to `2411.04990` Table 1's five predicted final configurations; the paper measures this on **albert-xlarge-v2**, the model of Phases 1–6. | no | nothing | whether the V-attractive/V-repulsive split predicts configuration, and **where the project's split is prior art rather than its own** |
+| **F19** | **Depth-axis merge intervals and splits.** `2601.02932`: merge intervals grow ~exponentially as clusters are consumed, and splits *"have never been observed"*. A groupby on `cluster_tracking.py`'s births. | no | the particle table | §3.3, from the other axis — and note this is a claim about **depth**, not about training |
+| **F20** | **Frozen-centre intervention** (§6's amendment): pin the strong centres, measure whether the rest converge to them, as Theorem 5.2 predicts. | **yes** | F13 | the only experiment here whose predicted outcome is a theorem — hence the phase's natural known-answer dry run |
+
 > **AMENDMENT 2026-09-20 — all four of those rows have RUN. See
 > `status-10.md`, which is now the phase's entry point; this file stays a
 > pre-design workshop record and is NOT updated with results.** In brief: A0
@@ -508,6 +574,13 @@ Costs and dependencies. Ordering is a proposal; nothing is registered.
 > **§3.2's F0 as written is not what ran.** The row needed a second null, and
 > §4.4's hazard list needed a fourth entry — a **measurement-reproducibility
 > floor** that no size-profile null accounts for. Both are in `status-10.md`.
+
+> **SECOND AMENDMENT, same day — F0 is a proxy, and the real row is F13.**
+> `lit-10.md` §11.4: the paper's nucleus is a token `δ`-separated from every
+> preceding token, not the earliest member of a density cluster. F0's result
+> stands as a fact about its own statistic and is **not** evidence against the
+> parking account. F13–F15 are what the account actually predicts, they need no
+> partition at all, and they are free.
 
 **F0, F1, F11 and F12 are free and unblocked today** — and F0 is now the cheapest of them. F2 costs a directory
 listing. F6 is a rebuild of a validated instrument, not a new one.
@@ -569,9 +642,37 @@ whole value of noticing it:
   Lemma 6.4 ceiling (which is proved from positivity of `a_ij` alone and is
   therefore mask-agnostic), the cone margin, the sign prediction.
 
-**This is `[S]`-grade and must be confirmed by reading `2411.04990`** before
-anything is retracted. It is recorded now because it is the kind of thing that
-gets discovered after a design freezes.
+**RESOLVED 2026-09-20 by reading `2411.04990` — and it resolves in the
+project's favour.** `lit-10.md` §11.5, `math-10.md` §7.5. The paper says both
+halves and the second one never reached this file:
+
+> *"Since our dynamical system is not a gradient flow, the classical Łojasiewicz
+> convergence theorem does not apply. Instead, we establish convergence by
+> observing that the causal dynamics … is, in fact, a **sequential gradient
+> flow, where each particle minimizes a slightly different energy**."*
+
+Lemma 5.3 writes it out: `φ̇_k = −(1/Z_k(φ_1,…,φ_k)) ∂E_k/∂φ_k`, with a family
+of `C¹` energies `E_1,…,E_n` and `0 < c < Z_k < C`.
+
+- **What is absent is a single global potential for the ensemble.** Łojasiewicz
+  does not apply, and neither does any argument needing one `E_β` whose
+  Wasserstein Hessian is the object.
+- **What is present is a per-particle energy and a real gradient flow in it.**
+  So the framing is **not void — it is per-token and causally ordered.** Phase
+  9's curvature claim has to be made about `∂²E_k/∂φ_k²`, which is narrower,
+  more specific, and still a claim.
+- **The prefactor is F12's measurement.** `1/Z_k` multiplies particle `k`'s own
+  gradient, so large `Z` ⇒ slow and small `Z` ⇒ cheap to move. `math-1.md`
+  §1A.6's metric reading of `Z` is now **an equation, not an interpretation**,
+  and `status-10.md` §1.5's parked-not-pinned argument inherits the upgrade.
+- **Everything listed as surviving still survives**, and the transfer-operator
+  readout gains a second reason to be preferred: `2601.02932` §5.1.1 says which
+  spectral tool to use when the chain is not reversible, and a depth dynamics is
+  not (`lit-10.md` §13.3).
+
+**The caveats are the transfer, not the claim**: Lemma 5.3 is proved on `S¹`
+with `Q = K = V = I`, weights tied across layers, no MLP. `plan-9.md` §5.1a
+carries the same correction.
 
 ### 10.2 The rest
 
@@ -613,13 +714,23 @@ gets discovered after a design freezes.
 
 ## 12. Before any of this becomes `design-10.md`
 
+> **AMENDMENT 2026-09-20 — the first item is DONE and it moved three
+> constructions.** Five papers were read as primary text (`lit-10.md`
+> §11–§15): `2411.04990`, `2501.10573`, `2605.12765`, `2505.16831`,
+> `2601.02932`. What changed: F0 is a proxy and F13 is the real row (§3.2);
+> the count law is exact and dimension-free rather than unusable
+> (`math-10.md` §7.2); the gradient-flow hazard resolves in the project's
+> favour (§10.1); `d_eff`'s candidate list was missing the manifold dimension
+> (`math-10.md` §7.3); and eight ladder rows were added (§8). The two items
+> below that remain open are the second and third bullets, plus `2303.06562`
+> and `2607.15495` in `lit-10.md` §15.
+
 `lit-10.md` discharged one question. The searches that would change a
 construction rather than a citation:
 
-- **`2411.04990` read as full text** — the exact parking correspondence (§3.2),
-  and the gradient-flow claim (§10.1). **Two phases depend on this one paper and
-  neither has read it.** Highest priority in the project's whole verification
-  queue.
+- **~~`2411.04990` read as full text~~ — DONE 2026-09-20**, `lit-10.md` §11.
+  The exact parking correspondence (§3.2) and the gradient-flow claim (§10.1)
+  are both `[R]` and both changed what this phase should build.
 - **Has anyone clustered tokens in a lens basis** rather than in the residual
   basis? §4.3 is the phase's central instrument and its novelty is unchecked.
 - **Has the parking prediction been checked empirically** by anyone, on any

@@ -17,6 +17,16 @@ these rows test, `attention-10.md` for row A0's audit, and `PROJECT.md` §3.51
 for the cross-cutting findings (three of which are about the project's
 instruments rather than about clusters).
 
+> **2026-09-20, later the same day: five papers were READ as primary text**
+> (`lit-10.md` §11–§15) — `2411.04990`, `2501.10573`, `2605.12765`,
+> `2505.16831`, `2601.02932`. **No number below changes. One interpretation
+> does, and it is F0's.** The paper's cluster nucleus is a token separated by
+> more than `δ` from *every preceding token* — a geometric acceptance rule on
+> positions and distances, with no partition in it — not the earliest member of
+> a density cluster. **F0 therefore measured a proxy, and its failure is not
+> evidence against the parking account** (`lit-10.md` §11.4). The real row is
+> **F13** and it is free. §4 and §5 below are updated accordingly.
+
 **Decision taken 2026-09-20 (user):** F0 runs **exploratory first**, which caps
 it at tier 1 — the answer was seen before any wording was frozen. If it is ever
 to be the project's first adjudication it needs a fresh axis: 70m, or the 13
@@ -117,6 +127,18 @@ split **fixed** and shuffles only which clustered token carries which id.
 **Both nulls agree.** The restricted null's mean moves only 0.2077 → **0.2311**
 against an observed 0.3164, median p 0.9995, E 0.556. The confound accounts for
 about a fifth of the gap and the effect survives it.
+
+**AMENDMENT 2026-09-20 — what this row does and does not bear on.** Both
+numbers stand; both nulls stand; the confound analysis stands and is still this
+row's main methodological content. What does not stand is the inference from
+here to the parking account. `2411.04990` §5.1 defines a *strong Rényi centre*
+as a token `δ`-separated from **every** preceding token, `δ = cβ^{−1/2}`, and
+its Lemma 5.1 remark claims only that the accepted indices `s_j` *"are mostly
+small"* and that the early ones among them are near-stationary. **A density
+cluster's earliest member is a different object**: it need not be separated
+from anything, and a strong centre need not be in any cluster. §6's line "F0 is
+not an adjudication of the parking account" was written for a weaker reason and
+is true for a stronger one.
 
 ### 1.3 F1, transport — **the identity coupling IS optimal, and parking is a window**
 
@@ -304,6 +326,14 @@ that a statistic aggregated over thousands of units is far less exposed to it.
 | **F10** neuron-basis collapse | blocked on F4 |
 | **F11** attention audit | **A0 RUN.** A1–A8 not run; A0 gated them and has now cleared |
 | **F12** `Z_beta,i` per token | **RUN** |
+| **F13** the centre scan (Rényi + strong Rényi, swept in `δ`) | **new 2026-09-20.** Free, unblocked, and the row F0 was a proxy for |
+| **F14** observed count vs Lemma C.1 | new. Free; needs F13 |
+| **F15** the coverage curve (the paper's Fig. 3, and its own open problem) | new. Free; needs F13 |
+| **F16** intrinsic dimension per layer, as the `d_eff` candidate | new. Free |
+| **F17** the graded block-shuffle null | new. Free |
+| **F18** `V`-spectrum atlas against Table 1 | new. Free |
+| **F19** depth-axis merge intervals and splits | new. Free; needs the particle table |
+| **F20** frozen-centre intervention (Thm 5.2) | new. **Forward pass**; needs F13 |
 
 ---
 
@@ -328,9 +358,42 @@ that a statistic aggregated over thousands of units is far less exposed to it.
 5. **Only then F2/F3**, the J-lens, which is what unblocks F4, F5, F7, F8, F10
    — the functional and causal columns, and the phase's central test.
 
-**Before any of this becomes `design-10.md`:** `notes-10.md` §12 still holds.
-`2411.04990` has not been read as full text by anyone here, and two phases
-depend on it.
+### 5.1 REVISED ORDERING, 2026-09-20, after the papers were read
+
+The list above was written when `2411.04990` was `[S]`. It is now `[R]`
+(`lit-10.md` §11), and **one free row moved to the front.**
+
+1. **F13, the centre scan.** Greedy sequential acceptance over token positions,
+   **both rules**, **swept in `δ`**, per layer. It needs positions and a
+   distance and **not the HDBSCAN partition at all** — so it is the one row in
+   this phase immune to §3's reproducibility floor, and it is the test F0 was
+   standing in for. Free.
+2. **F14 beside it.** `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))]` estimated on
+   the same cloud, against the observed count. The phase's
+   packing-versus-content discriminant **with an exact i.i.d. null and no free
+   parameter but `δ`** (`math-10.md` §7.2) — and the `δ` where the two meet
+   reads back `c²/β`, turning `PROJECT.md` §3.40's undecided convention into a
+   measurement. Free.
+3. **`CLAIM-C`'s two HDBSCAN metrics against the reproducibility floor** —
+   item 1 above, unchanged, and still the only open item bearing on a
+   *registered* prediction. Free.
+4. **F11 rows A1–A8, plus the new A9** (are the strong centres the sinks?
+   `attention-10.md` §6). A2 and A4 still carry the most information per unit of
+   work. Free.
+5. **F16 and F17**, because both are cheap and both improve every row after
+   them: the manifold `d_eff` (`math-10.md` §7.3), and a graded calibrated null
+   to replace the binary controls (`lit-10.md` §12.2).
+6. Then F6, the norm-matched random twin, and only then F2/F3.
+
+**F20 is the phase's natural known-answer dry run** — the only experiment here
+whose predicted outcome is a theorem — and `claims/EXPERIMENTS.md` records that
+two adjudicable gates never had one. It costs a forward pass and it waits on
+F13.
+
+**Before any of this becomes `design-10.md`:** `notes-10.md` §12 as amended.
+`2411.04990` **has now been read**; what remains unread and could still change a
+construction is `2303.06562` (ContraNorm, before any Phase 9 spreading arm) and
+`2607.15495` (the J-lens paper itself) — `lit-10.md` §15.
 
 ---
 
@@ -346,4 +409,10 @@ depend on it.
   structural there.
 - **F0 is not an adjudication of the parking account.** It is a tier-1
   exploratory result that came back against the prediction, on a statistic
-  whose wording was never frozen.
+  whose wording was never frozen — **and, since 2026-09-20, on a statistic that
+  is a proxy for the account's object rather than an instance of it**
+  (`lit-10.md` §11.4). F13 is the row that would adjudicate, and it has not run.
+- **Nothing in the five papers read on 2026-09-20 is a theorem about Pythia.**
+  `2411.04990` ties weights across layers, omits the MLP, and proves its
+  meta-stability results at `V = I`, `Q = K = I`, `d = 2`. The correspondence is
+  a hypothesis to test on a real model; that is the point of testing it.
