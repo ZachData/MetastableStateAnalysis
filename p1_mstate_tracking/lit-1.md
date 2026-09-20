@@ -172,19 +172,37 @@ Ranked by (value × cheapness), with the measurement each needs.
 1. **The Rényi parking prediction for cluster count.** 2411.04990 **[S]** links
    metastable states under causal masking to the Rényi parking problem.
 
-   > **CORRECTED 2026-09-20 (`p10_cluster_function/lit-10.md` §5).** The two
-   > sentences that stood here — that parking gives "a **density constant** (the
-   > Rényi constant ≈ 0.7476) and hence an expected number of occupied cells as a
-   > function of n" — are **wrong on both halves**. The published scaling is
-   > **`Θ(β^((d−1)/2))`** (confirmed at `β^(1/2)` for `d = 2`): a law in **β and
-   > dimension, not in n**, with no 0.7476 in it. At `d = 1024` the exponent is
-   > 511.5 and the prediction is unusable — the same `d ≫ 1` problem `design-1.md`
-   > records for Figure 3. The mechanism the paper supplies is that **early tokens
-   > act as nuclei** for cluster formation. `p10_cluster_function/math-10.md` §5
-   > gives the two tests that survive: a **position-indexed anchor test** (free,
-   > no β) and a **log-log slope regression** whose slope is invariant to β's
-   > unit convention and returns `d_eff = 2a + 1`. Still `[S]`; reading the paper
-   > is the top item in that file's §10. Phase 1 has cluster counts, per
+   > **CORRECTED 2026-09-20 (`p10_cluster_function/lit-10.md` §5), then
+   > CORRECTED AGAIN the same day from the paper itself (`lit-10.md` §11.3,
+   > `math-10.md` §7.2). Read the second correction; the first over-shot.**
+   >
+   > The sentence that originally stood here — that parking gives "a **density
+   > constant** (the Rényi constant ≈ 0.7476) and hence an expected number of
+   > occupied cells as a function of n" — is **half right**, not wrong on both
+   > halves as the first correction claimed.
+   >
+   > - **Wrong: "as a function of n."** There is no `n` in the law. Lemma C.1
+   >   gives the expected count in an *infinitely long* sequence; the finite-`n`
+   >   form saturates at it.
+   > - **Right: the Rényi constant is there.** Appendix C.4 — at `d = 2`, as
+   >   `δ → 0`, the average number of **ordinary** Rényi centres approaches
+   >   `c·2π/δ` with `c ≈ 0.75` (Dvoretzky–Robbins 1964).
+   > - **The scaling is `Θ(β^((d−1)/2))`**, in **β and dimension**. At
+   >   `d = 1024` the exponent is 511.5 — **but that is the small-`δ` power-law
+   >   asymptotic only.** The exact law,
+   >   `E[#strong Rényi centres] = E_{x∼μ}[1/μ(B_δ(x))]`, is
+   >   **distribution-free and dimension-free**: a reciprocal local-density
+   >   average, no exponent, no `β`, only the separation `δ`, which is a
+   >   distance and can simply be swept. **So the `d ≫ 1` objection does not
+   >   kill the prediction for strong centres**, and this growth direction is
+   >   live rather than blocked.
+   > - **The nuclei are geometric objects**, not "the earliest member of a
+   >   cluster": a *strong Rényi centre* is a token separated by more than
+   >   `δ = cβ^{−1/2}` from **every preceding token**. Phase 10's F0 measured
+   >   the cluster-earliest-member proxy and it is not the same statistic
+   >   (`lit-10.md` §11.4).
+   >
+   > `2411.04990` is now **[R]**, not `[S]`. Phase 1 has cluster counts, per
    layer, per prompt length, at 27 checkpoints, already on disk. **Nobody has
    checked a parking-derived cluster-count prediction against a trained
    transformer.** This is re-analysis, costs no forward passes, and it is a
