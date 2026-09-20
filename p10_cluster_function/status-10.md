@@ -13,9 +13,21 @@ rows. All tier 1, exploratory. Two headline rows were **replicated on a second
 sweep with an independently-derived partition** and both hold.
 
 Read `notes-10.md` for what the phase is for, `math-10.md` for the derivations
-these rows test, `attention-10.md` for row A0's audit, and `PROJECT.md` §3.51
-for the cross-cutting findings (three of which are about the project's
+these rows test, `attention-10.md` for row A0's audit, **`handoff-10.md` for the
+cluster-function thread's ordered plan and `questions-10.md` for its
+hypotheses**, and `PROJECT.md` §3.51 for the cross-cutting findings (three of which are about the project's
 instruments rather than about clusters).
+
+> **2026-09-20, a scoped thread opened out of this one: `handoff-10.md`.**
+> The cluster-function question — what clusters are made of, what they do, and
+> whether the drive that forms them is usable as an instrument — has its own
+> ordered plan in **`handoff-10.md`** and its hypotheses in
+> **`questions-10.md`**. It starts at Stage 0, *what is actually in a cluster*,
+> and **that stage found a fourth casualty of the HDBSCAN outage §2 records**:
+> `pair_agreement` — the project's only semantic instrument — wrote a
+> well-formed record of zeros into all 152 WDS directories rather than failing.
+> The pilot sweep's copy is populated in 6 066 of 6 075 layer-records and had
+> never been reported. First read in `handoff-10.md` §0.1.
 
 > **2026-09-20, later the same day: five papers were READ as primary text**
 > (`lit-10.md` §11–§15) — `2411.04990`, `2501.10573`, `2605.12765`,
@@ -237,8 +249,20 @@ still what discriminates.**
 records was never only `CLAIM-C`'s arms, and `docs/AXES.md` listed the artifact
 as present. F0, F5 and F11-A4 all read it.
 
+**A fourth row was hit and nobody noticed — found 2026-09-20, `handoff-10.md`
+§0.2.** `pair_agreement` (`pair_hdbscan_agreement`, the project's **only**
+semantic instrument: mutual-NN pairs tagged against the embedding Gram) is
+computed only when `"labels" in hdb_data`. Through the outage that branch was
+never taken, and the `else` wrote a **well-formed record of zeros and nulls**
+into all 152 directories rather than failing. A silent zero record looks exactly
+like a real one, which is why it survived every check. **The pilot sweep's copy
+is populated — 6 066 of 6 075 layer-records — and had never been reported in any
+markdown file in this repository.** Same bug class as `docs/AXES.md` listing an
+absent artifact as present, and as standing rule 4.
+
 `tools/run/backfill_hdbscan.py` re-derives it from `activations.npz` — no
-forward pass, **152 directories in 69 s**. Mean 47.1 clusters/layer, mean noise
+forward pass, **152 directories in 69 s**. **It does not re-run the analysis**,
+by design (item 3 below), so the WDS sweep still carries no semantic record. Mean 47.1 clusters/layer, mean noise
 fraction 0.389, in line with the pilot's 45–69 and finding 4's 50–55.
 
 Three properties make it usable rather than merely fast:

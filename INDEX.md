@@ -7,6 +7,23 @@ work — that is `PROJECT.md`, which is the file to read first.**
 
 ## Current priority (updated 2026-09-20)
 
+- **A scoped thread is open with its own handoff: `p10_cluster_function/handoff-10.md`
+  (`PROJECT.md` §3.54).** What clusters are made of, what they do, and whether the
+  drive that forms them is usable as an instrument. **Six stages, general →
+  particular; Stages 0–4 cost no forward pass. Start at Stage 0.** Hypotheses in
+  `questions-10.md`; three named project-wide — **H-ANCHOR/BALLAST**,
+  **H-THERMOSTAT**, **H-WARP**. **When it is parked, return to `PROJECT.md`'s
+  "Resume here" block**, which stays authoritative for branch state, `CLAIM-C`,
+  the registry and disk.
+- **A fourth casualty of the HDBSCAN outage, found 2026-09-20 (§3.54.1).**
+  `pair_agreement` — **the project's only semantic instrument** — wrote a
+  well-formed record of zeros into all 152 WDS directories rather than failing.
+  It **degraded instead of refusing**, which is why it survived the outage, the
+  backfill, the audit and two literature passes. The **pilot sweep's copy is
+  populated (6 066 / 6 075 layer-records) and had never been reported**; its
+  first read is the project's first direct evidence on the semantic question
+  (`handoff-10.md` §0.1).
+
 - **READ `p10_cluster_function/lit-10.md` §11 BEFORE building on Phase 9 or
   Phase 10 (`PROJECT.md` §3.52).** `2411.04990` — the paper both phases were
   built on and neither had read — plus four others were read as primary text on
@@ -141,7 +158,7 @@ work — that is `PROJECT.md`, which is the file to read first.**
 | 7e | `p7e_consolidation/` | **Active.** Whether the set collapses into one head; `L11H14`. Gate measurement answered — `status-7e.md` |
 | 8 | `p8_scale_ladder/` | **Active.** The same measurements across the Pythia ladder. 70m rung run 2026-09-11; `compare_rungs.py` is the cross-rung reader. **Read `literature-8.md` before the next measurement** — the verified scan reframes the phase. See `status-8.md`, `PROJECT.md` §3.15–§3.16 |
 | 9 | `p9_metric_intervention/` | **Notes and a plan. PARKED, pre-design, nothing frozen, nothing registered** — intervening on the *metric* the dynamics is read in rather than on the weights. Read `notes-9.md` then `plan-9.md`. **Parked on Phase 10**, whose answer it needs: `plan-9.md` §2–§3 moved there; §2.1a says the functional partition is measurable per layer after all; **§5.1a is RESOLVED (2026-09-20) — the masked system is a *sequential* gradient flow, so the ensemble Hessian framing is void but the per-token curvature claim survives**; **§5.1b is new** — `2601.02932` has built the transfer-operator reduction, and its reversibility-constrained estimator must not be transported to a depth dynamics. §4 onward is unaffected. **Trigger 1 partly discharged via `lit-10.md` §14** — `2605.12765` and `2505.16831` read as primary text; `2303.06562` (ContraNorm) still unread and still blocking any spreading arm |
-| 10 | `p10_cluster_function/` | **The current front. Four ladder rows RUN — read `status-10.md` first** (`PROJECT.md` §3.51). `notes-10.md` (the trash-collection hypothesis, the J-lens, the F0–F12 ladder), `attention-10.md` (the flip audited; **A0 has run, A1–A8 unblocked**), **`math-10.md`** (five derivations, four `tools/math_checks/` files, 28 checks — §1 and §2 now **confirmed on real data**; **§7 added 2026-09-20 from the paper itself and has no check file yet**), **`lit-10.md` (THREE scan passes — §11–§15 are five papers read as PRIMARY TEXT on 2026-09-20, including `2411.04990`; §15 is the remaining queue)**. Runners: `tools/run/p10_attention_baseline.py`, `p10_anchor.py`, `transport.py`, `p10_partition_function.py`, `p10_partition_stability.py`, `backfill_hdbscan.py`. **Trigger 1 discharged for the five papers that mattered** (`lit-10.md` §11–§15); `2303.06562` and `2607.15495` remain. `claims/registry.json` untouched |
+| 10 | `p10_cluster_function/` | **The current front. Four ladder rows RUN — read `status-10.md` first** (`PROJECT.md` §3.51). `notes-10.md` (the trash-collection hypothesis, the J-lens, the F0–F12 ladder), `attention-10.md` (the flip audited; **A0 has run, A1–A8 unblocked**), **`math-10.md`** (five derivations, four `tools/math_checks/` files, 28 checks — §1 and §2 now **confirmed on real data**; **§7 added 2026-09-20 from the paper itself and has no check file yet**), **`lit-10.md` (THREE scan passes — §11–§15 are five papers read as PRIMARY TEXT on 2026-09-20, including `2411.04990`; §15 is the remaining queue)**. **`handoff-10.md`** (the cluster-function thread's ordered plan) and **`questions-10.md`** (its hypotheses). Runners: `tools/run/p10_attention_baseline.py`, `p10_anchor.py`, `transport.py`, `p10_partition_function.py`, `p10_partition_stability.py`, `backfill_hdbscan.py`. **Trigger 1 discharged for the five papers that mattered** (`lit-10.md` §11–§15); `2303.06562` and `2607.15495` remain. `claims/registry.json` untouched |
 
 Shared code lives in `core/`; one-off scripts in `tools/`; tests in `tests/`.
 

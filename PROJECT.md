@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` is at `ded8a06` (PR #57 merged). **Two PRs open, stacked**: **#58** `claude/aca-phase-9-planning-rvzw3x` (Phases 9/10 documentation and math checks, no runner) and **#59** `claude/p10-free-rows` **based on it**, carrying Phase 10's four free rows built, tested and RUN. Both from the worktree `../Mets-p10`. **#60** `claude/p10-literature-read` is based on **#59** and merges `origin/claude/aca-phase-9-planning-rvzw3x` into itself to reconcile two concurrent reads of the same paper. **Merge #58, then #59, then #60.** `claude/attention-collapse-augmentation-qsxwg8` is redundant — its one commit is cherry-picked onto #58 — and should be deleted |
-| Last updated | **2026-09-20.** **§3.52: five papers READ as primary text — `2411.04990`, `2501.10573`, `2601.02932`, `2605.12765`, `2505.16831`, the PDFs supplied by the user, every scholarly host still blocked. No measured number changes; three constructions do.** **(a) The parking nuclei are a GEOMETRIC object** — a *strong Rényi centre* is a token separated by more than `δ = cβ^{−1/2}` from **every preceding token**, a greedy sequential rule on positions and distances with no partition in it — so **F0 measured a proxy and its failure is not evidence against the parking account** (§3.52.1). **(b) The count law is exact, distribution-free and dimension-free**: `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))]`, no exponent and no β, only `δ` — so §3.50's `d ≫ 1` verdict applies to the power-law asymptotic only, and its *"no 0.7476 in it"* is wrong (Appendix C.4 has it, for `d = 2` ordinary centres). The `δ` where observed meets predicted **reads back `c²/β`**, turning §3.40's undecided convention into a measurement. **(c) The gradient-flow hazard resolves in the project's favour**: the masked system IS a gradient flow, a **sequential** one, `φ̇_k = −(1/Z_k)∂E_k/∂φ_k` — a global ensemble potential is void, the per-token curvature claim survives, and **`1/Z_k` is literally F12's measurement**, making `math-1.md` §1A.6's metric reading of `Z` an equation rather than an interpretation. **(d) `math-10.md` §5.2's `d_eff` list was missing the theoretically-correct entry** — the law wants a *manifold* dimension, so kNN intrinsic dimension (**≈ 7–15**), not effective rank (≈ 225). **(e) Two thirds of Phase 9's novelty differentia fail**: GUARD-IT's update is norm-preserving but **not** a rotation and **is** exactly invertible; what survives is **state versus operator**. **(f) Any Phase 9 forgetting claim now needs a relearning arm** (`2505.16831`). **(g) `2411.04990` §B.3 measures `albert-xlarge-v2`'s `V`-spectra** — prior art for this project's V-attractive/V-repulsive split. **Eight ladder rows added (F13–F20), seven free**, and the next free row is now **F13, the centre scan**, which needs no HDBSCAN partition and is therefore immune to §3.51.4's reproducibility floor (§3.52.4, `status-10.md` §5.1). Documentation only — no code, no records, no registry entry. **§3.53 is a concurrent session's read of the same paper, written the same day and merged here; §3.52.5 says where the two differ — on Lemma 5.3, where §3.52 is the more complete reading. §3.53 adds four things §3.52 does not have: Thm 4.1 makes position 0 a theorem and caps `plan-9.md` §4.3; Lemma C.1's saturation IS the carrying-capacity finding; `d₁ = dim L` makes the `d_eff` test differential; and RMSNorm's diagonal is absorbable into `K, Q, V`, so a γ-patch is NOT a read-side lever.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered. `p10_cluster_function/status-10.md` is the phase record; §3.51 carries only what is project-wide.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **F1: the identity coupling is EXACTLY optimal in 99.5 % of 3 648 layer boundaries** (`swap_absorbed_fraction` 0 to machine precision in 3 630 of them), so **every per-layer displacement number this project has recorded is the true `W_2`** rather than the upper bound it was known to be — a validation of a whole class of existing numbers, with no forward pass. Its `swap_fraction` is a duplicate-embedding tie and **not** motion. Straightness *falls* with training, 0.151 → 0.122. (4) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (5) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (6) **The HDBSCAN partition is NOT reproducible run to run** — over 2 600 layer-pairs from two sweeps whose tokens are identical and whose activations differ by at most **7.9e-05**, **16.7 % of label vectors differ**, ARI's 5th percentile is **0.347** and its minimum **0.166**, and cluster count moves by up to **20**. A measurement-reproducibility floor nobody had measured, and `CLAIM-C` reads two of its six registered metrics from this partition alone (§3.51.4). **Both headline rows clear it**: re-run on the pilot sweep's 243 directories with NATIVE labels, A0's corrected gap agrees to two or three decimals at all 13 shared checkpoints and F0's nucleus statistic to three — 0.3164 against 0.3157 (`status-10.md` §3.1). (7) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. (8) **F12 confirms `math-10.md` §2 on real data and independently of β's convention**: raw `log Z` is **99.5 %** position at β = 1, the sink is the **minimum** of raw `Z` (percentile 0.0014) and the **maximum** of corrected `Z` (0.9986), identical to four decimals across the β grid. Its raw clustered-minus-noise sign is **mostly definitional** — +0.465 at step 0 under random weights, because HDBSCAN clusters by the density `Z` measures — and against that baseline **the largest real excursion is NEGATIVE at steps 32–64**, in the same window where F1 finds the strongest kinematic signature. Clustered particles there move less *and* sit below the untrained baseline in `Z`: **parked, not pinned, and a window rather than a property of the trained model** (`status-10.md` §1.5). Gate green at **2 616 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Last updated | **2026-09-20.** **§3.54: a scoped thread opened with its own handoff — `p10_cluster_function/handoff-10.md` (ordered plan, six stages, general → particular, Stages 0–4 free) and `questions-10.md` (hypotheses).** Its Stage 0 found **a fourth casualty of the HDBSCAN outage**: `pair_agreement`, **the project's only semantic instrument**, wrote a well-formed record of zeros into all 152 WDS directories rather than failing — it degraded instead of refusing, which is why it survived the outage, the backfill, the audit and two literature passes. **The pilot sweep's copy is populated in 6 066 of 6 075 layer-records and had never been reported.** First read of it, tier 1: **`ext_sem_same_cluster_frac` is FLAT** across all 27 checkpoints (0.62–0.73) while **`ext_semantic_fraction` falls 0.833 → 0.708, concentrated in steps 512–3000** — tentatively, **training does not change how clusters treat lexically-similar tokens, it changes which tokens are neighbours at all**, and neighbourhoods go from lexical to contextual. That window collides with three other known transitions and the co-location is NOT established. Three hypotheses named project-wide: **H-ANCHOR/BALLAST** (a cluster is one attended anchor plus ignored ballast — HDBSCAN gives membership and never centrality, so this was invisible), **H-THERMOSTAT** (the sink is *how* a trained model resists collapse, by absorbing mass into `Z_k` and lowering coupling — the model already learned a metric intervention, which reframes Phase 9), and **H-WARP** (training is a reparametrisation of the depth clock, separable by curve collapse against `T_eff`). **§3.52: five papers READ as primary text — `2411.04990`, `2501.10573`, `2601.02932`, `2605.12765`, `2505.16831`, the PDFs supplied by the user, every scholarly host still blocked. No measured number changes; three constructions do.** **(a) The parking nuclei are a GEOMETRIC object** — a *strong Rényi centre* is a token separated by more than `δ = cβ^{−1/2}` from **every preceding token**, a greedy sequential rule on positions and distances with no partition in it — so **F0 measured a proxy and its failure is not evidence against the parking account** (§3.52.1). **(b) The count law is exact, distribution-free and dimension-free**: `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))]`, no exponent and no β, only `δ` — so §3.50's `d ≫ 1` verdict applies to the power-law asymptotic only, and its *"no 0.7476 in it"* is wrong (Appendix C.4 has it, for `d = 2` ordinary centres). The `δ` where observed meets predicted **reads back `c²/β`**, turning §3.40's undecided convention into a measurement. **(c) The gradient-flow hazard resolves in the project's favour**: the masked system IS a gradient flow, a **sequential** one, `φ̇_k = −(1/Z_k)∂E_k/∂φ_k` — a global ensemble potential is void, the per-token curvature claim survives, and **`1/Z_k` is literally F12's measurement**, making `math-1.md` §1A.6's metric reading of `Z` an equation rather than an interpretation. **(d) `math-10.md` §5.2's `d_eff` list was missing the theoretically-correct entry** — the law wants a *manifold* dimension, so kNN intrinsic dimension (**≈ 7–15**), not effective rank (≈ 225). **(e) Two thirds of Phase 9's novelty differentia fail**: GUARD-IT's update is norm-preserving but **not** a rotation and **is** exactly invertible; what survives is **state versus operator**. **(f) Any Phase 9 forgetting claim now needs a relearning arm** (`2505.16831`). **(g) `2411.04990` §B.3 measures `albert-xlarge-v2`'s `V`-spectra** — prior art for this project's V-attractive/V-repulsive split. **Eight ladder rows added (F13–F20), seven free**, and the next free row is now **F13, the centre scan**, which needs no HDBSCAN partition and is therefore immune to §3.51.4's reproducibility floor (§3.52.4, `status-10.md` §5.1). Documentation only — no code, no records, no registry entry. **§3.53 is a concurrent session's read of the same paper, written the same day and merged here; §3.52.5 says where the two differ — on Lemma 5.3, where §3.52 is the more complete reading. §3.53 adds four things §3.52 does not have: Thm 4.1 makes position 0 a theorem and caps `plan-9.md` §4.3; Lemma C.1's saturation IS the carrying-capacity finding; `d₁ = dim L` makes the `d_eff` test differential; and RMSNorm's diagonal is absorbable into `K, Q, V`, so a γ-patch is NOT a read-side lever.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered. `p10_cluster_function/status-10.md` is the phase record; §3.51 carries only what is project-wide.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **F1: the identity coupling is EXACTLY optimal in 99.5 % of 3 648 layer boundaries** (`swap_absorbed_fraction` 0 to machine precision in 3 630 of them), so **every per-layer displacement number this project has recorded is the true `W_2`** rather than the upper bound it was known to be — a validation of a whole class of existing numbers, with no forward pass. Its `swap_fraction` is a duplicate-embedding tie and **not** motion. Straightness *falls* with training, 0.151 → 0.122. (4) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (5) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (6) **The HDBSCAN partition is NOT reproducible run to run** — over 2 600 layer-pairs from two sweeps whose tokens are identical and whose activations differ by at most **7.9e-05**, **16.7 % of label vectors differ**, ARI's 5th percentile is **0.347** and its minimum **0.166**, and cluster count moves by up to **20**. A measurement-reproducibility floor nobody had measured, and `CLAIM-C` reads two of its six registered metrics from this partition alone (§3.51.4). **Both headline rows clear it**: re-run on the pilot sweep's 243 directories with NATIVE labels, A0's corrected gap agrees to two or three decimals at all 13 shared checkpoints and F0's nucleus statistic to three — 0.3164 against 0.3157 (`status-10.md` §3.1). (7) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. (8) **F12 confirms `math-10.md` §2 on real data and independently of β's convention**: raw `log Z` is **99.5 %** position at β = 1, the sink is the **minimum** of raw `Z` (percentile 0.0014) and the **maximum** of corrected `Z` (0.9986), identical to four decimals across the β grid. Its raw clustered-minus-noise sign is **mostly definitional** — +0.465 at step 0 under random weights, because HDBSCAN clusters by the density `Z` measures — and against that baseline **the largest real excursion is NEGATIVE at steps 32–64**, in the same window where F1 finds the strongest kinematic signature. Clustered particles there move less *and* sit below the untrained baseline in `Z`: **parked, not pinned, and a window rather than a property of the trained model** (`status-10.md` §1.5). Gate green at **2 616 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up. Rows 6 and 19–22 are `[R]` as of 2026-09-20 (§3.52); everything else is `[S]` or `[N]`** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -114,6 +114,14 @@ permutations with `max_attainable_E` 22.37 on their face:**
 All **tier 1, exploratory, unregistered** and **not quotable as
 adjudications**; `claims/registry.json` is untouched.
 
+> **A scoped thread is open and has its own handoff: `p10_cluster_function/handoff-10.md`.**
+> The cluster-function question — what clusters are made of, what they do, and
+> whether the drive that forms them is usable as an instrument (§3.54). It is
+> **ordered general → particular in six stages, and Stages 0–4 cost no forward
+> pass.** Start at Stage 0. **When that thread is parked, come back to this
+> block**, which stays authoritative for the branch state, `CLAIM-C`, the
+> registry and disk.
+>
 > **Read `p10_cluster_function/status-10.md` first** — it is the phase record:
 > every number, every caveat, how to re-run each row, the ladder's state, and
 > **§5.1, the next-step list as reordered on 2026-09-20.** §3.51 and §3.52 here
@@ -3769,6 +3777,104 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.54 A scoped thread, with its own handoff: what clusters are made of (2026-09-20)
+
+**`p10_cluster_function/handoff-10.md`** is the ordered plan and
+**`questions-10.md`** the hypotheses. Opened out of the §3.52 read, on the
+user's question: *how does the algorithmic drive toward cluster formation
+interact with the structure SGD imposes, and can that drive be used for
+forgetting instead of SGD?* Six stages, general → particular; **Stages 0–4 cost
+no forward pass.** Everything in it is exploratory and unregistered.
+
+This section carries only the two things that are project-wide.
+
+### 3.54.1 A fourth casualty of the HDBSCAN outage, and it is the semantic instrument
+
+`status-10.md` §2 records that `hdbscan_labels.json` was empty in 152/152
+directories and names F0, F5 and F11-A4 as the rows that blocked on it. **There
+is a fourth, and it is worse, because it did not block — it degraded.**
+
+`pair_agreement` (`pair_hdbscan_agreement`, `p1_mstate_tracking/clustering.py`)
+tags mutual nearest-neighbour pairs against the **embedding Gram** as an
+external semantic axis and reports `ext_semantic_fraction` and
+`ext_sem_same_cluster_frac` per layer. **It is this project's only semantic
+instrument.** It runs only when `"labels" in hdb_data`; through the outage that
+branch was never taken, and the `else` wrote a **well-formed record of zeros and
+nulls** into all 152 directories.
+
+> **A silent zero record looks exactly like a real one.** That is why it
+> survived the outage, the backfill, the audit and two literature passes. Same
+> bug class as `docs/AXES.md` listing an absent artifact as present, and the
+> direct instance of standing rule 4's *"refuse rather than degrade."* The
+> backfill deliberately does not re-run the analysis (`status-10.md` §2 item 3),
+> so **the WDS sweep still carries no semantic record.**
+
+**And the pilot sweep's copy is populated — 6 066 of 6 075 layer-records — and
+has never been reported in any markdown file here.** It has been on `HDD_1TB`
+since 2026-08-12.
+
+### 3.54.2 First read of it, and it is the first direct evidence on the semantic question
+
+**Tier 1, exploratory, no null, not registered.** Mean over 8 prompts × 25
+layers per checkpoint, pilot sweep, native labels (`handoff-10.md` §0.1 has the
+table).
+
+- **`ext_sem_same_cluster_frac` is flat** across all 27 checkpoints, 0.62–0.73.
+  *Given* that a pair is lexically similar, it co-clusters about two thirds of
+  the time, and **training does not change that.**
+- **`ext_semantic_fraction` falls, 0.833 → 0.708**, with the drop concentrated
+  between **step 512 and step 3000**.
+
+> **The tentative reading: training does not change how clusters treat
+> lexically-similar tokens — it changes which tokens are neighbours at all.**
+> At initialisation, residual-stream neighbourhoods are largely inherited from
+> token identity; by step143000 ~29 % of mutual-NN pairs are not lexically
+> similar. Neighbourhoods become **contextual rather than lexical.**
+
+**That window is crowded and the co-location must not be asserted as one event.**
+A0's learned attention residual appears at step ~2000–4000; §3.51 puts the energy
+break at 256→512 and the Fiedler zero-crossing at 1000→3000; F1/F12's parked
+window is 32–512. Whether these are one transition or four is exactly what
+`handoff-10.md` Stage 1 exists to answer, and co-occurrence does not settle it.
+
+**Caveats, all load-bearing.** `ext_semantic` is `emb_gram[i,j] > 0.5` — an
+arbitrary cosine threshold, and the decline could be a norm/scale effect rather
+than a structural change, so **the threshold sweep gates the reading.** Mutual-NN
+pairs are ~90 per layer: a small, special subpopulation. The layer axis is
+collapsed. No position control. No null.
+
+### 3.54.3 The three hypotheses worth naming project-wide
+
+All invented 2026-09-20, all conjecture, none literature-checked
+(`questions-10.md` §8).
+
+- **H-ANCHOR/BALLAST** — a cluster is one attended *anchor* plus many ignored
+  *members*, which reconciles Blog 1's attention flip with the theory's claim
+  that centres are attractors. **HDBSCAN gives membership and never centrality**,
+  so this has been structurally invisible to every measurement here. F13 supplies
+  centrality for free.
+- **H-THERMOSTAT** — the attention sink is *how* a trained transformer resists
+  collapse: it absorbs mass into the normaliser `Z_k`, lowering effective
+  pairwise coupling among the rest. **The model has already learned a metric
+  intervention, and the sink is it** — which reframes Phase 9 as doing
+  deliberately what training discovered. Free from `attentions.npz`.
+- **H-WARP** — training acts on the clustering dynamics as a **monotone
+  reparametrisation of the depth clock**, not as a change of structure. Separable
+  by curve collapse against `T_eff`, which `math-1.md` §15 item 3 has called the
+  highest-value unrun quantity at report-only cost since before this phase
+  opened. **The confound is the answer.**
+
+### 3.54.4 Two process consequences
+
+1. **Register F14 before looking.** `status-10.md` records the decision that ran
+   F0 exploratory and capped it at tier 1. With **39 registrations and zero
+   adjudications**, F14 is the second chance at the first adjudication.
+2. **The power ceiling is eight prompts.** `2501.10573` used 2 244. Layer-units
+   within one forward pass are not independent samples; the `average` merger is
+   valid under arbitrary dependence and correspondingly low-powered. **More
+   prompts is the highest-value compute available and it needs no new
+   instrument.**
 
 ## 3.53 `2411.04990` read in full: five changes, and the carrying-capacity finding gets a formula (2026-09-20, concurrent session)
 
