@@ -63,7 +63,8 @@ Everything runs with `HF_HUB_OFFLINE=1`.
 |---|---|---|
 | `attentions.npz` `(n_layers, n_heads, n, n)` | **152/152** | **per-head attention routing, per checkpoint. Largely unexploited** — see `p10_cluster_function/attention-10.md` |
 | `activations` + `norms` | 152/152 | every geometric statistic; the raw stream |
-| `hdbscan_labels.json` | written by the runner | the cluster partition |
+| `hdbscan_labels.json` | **EMPTY in 152/152** | nothing. **Measured 2026-09-20**, no exceptions: every directory was written while `hdbscan` was missing from this machine, so the file is `{}` and `clustering.json`'s hdbscan block reads `{"n_clusters": null, "nesting_summary": "HDBSCAN not available"}`. This entry previously read "written by the runner" |
+| `hdbscan_backfill.json` | **152/152**, written 2026-09-20 | **the cluster partition**, re-derived from `activations.npz` by `tools/run/backfill_hdbscan.py` — no forward pass, 69 s for the sweep, verified bit-identical against 3 pilot directories × 25 layers. Read it through `backfill_hdbscan.read_labels`, which owns the precedence. Mean 47.1 clusters/layer, mean noise fraction 0.389 |
 | `kmeans_labels_L*`, `agglom_mid_labels_L*` | 152/152 | alternative partitions, for frame agreement |
 | `attention_entropy_per_head` | stored per layer by `p1_io.py` | **the row-side attention statistic. Nothing has ever read it against cluster structure** |
 | Phase 2 eigenspectra + `sym_*` / `schur_*` projectors | 19 dirs | the operator channels |
@@ -74,7 +75,23 @@ Everything runs with `HF_HUB_OFFLINE=1`.
 Plus, git-ignored and irreplaceable: the 27-step pilot sweep on `HDD_1TB` (exists
 nowhere else), and the 355 GB Blog-1 activation cache, deliberately left alone.
 
-### 2.3 The prompt axis is narrower than the battery
+### 2.3 `pythia-410m` step0 and step1 are the same weights
+
+**Measured 2026-09-20**, and it is an upstream fact rather than a bug here. The
+HuggingFace revisions `step0` and `step1` resolve to different commits and
+different blob hashes, but **all 292 tensors are bit-identical**, and the
+sweep's activations for the two are bit-identical in turn (`step0` vs `step2`
+differs at 2.4e-07, so the comparison is not saturated).
+
+So the 19-revision checkpoint axis carries **18 distinct points at 410m**, and
+a per-checkpoint average over the sweep double-counts one of them. It is a
+small effect — two adjacent points at the extreme early end — but it is free to
+correct and impossible to notice from the directory names.
+
+Not yet checked at 70m. Anything reading the checkpoint axis as 19 independent
+points should check.
+
+### 2.4 The prompt axis is narrower than the battery
 
 **The battery holds 21 prompts. The Phase-1 sweep ran 8** (19 × 8 = 152). So
 **13 prompts have never been through Phase 1**, and widening that axis is the
@@ -115,7 +132,7 @@ computation nobody can afford.**
 | producer | cost | unblocks |
 |---|---|---|
 | **`beta_eff` writer** | **no forward pass.** `attentions.npz` (152/152) + the checkpoint's LN params → `ln_frame.frame_for_hidden_state` → `ln_frame.ln_frame_gram` → `beta_eff.estimate_beta_all_heads`. Demonstrated on one checkpoint: 16/16 heads valid in all 24 blocks, median R² 0.18, one model load | **`P-gamma1` and `P-gamma2`** (two registered predictions), the temperature axis for everything, and every `gamma_beta` comparison Phase 9 would make. **Gated on a decision: β's unit convention, worth a factor of 8** |
-| **`tools/run/transport.py`** | no forward pass; the code is written and tested | `w2_optimal` vs `w2_identity`, arc length, straightness. Still *"the cheapest open action in the tree"* (§3.39), still uncalled |
+| ~~`tools/run/transport.py`~~ | **WRITTEN 2026-09-20** | `w2_optimal` vs `w2_identity`, arc length, straightness, and the per-particle kinematic split. No longer a gap |
 | **particle-table populator** | no forward pass | `turnover_decomposition` (validated 2026, awaiting data ever since), `particle_biography`, every per-particle aggregate |
 | **operator-derived cluster labels** | no forward pass | `math-6.md` §4 item 4's third frame — the only labelling derived from the operator that generates the dynamics |
 | **a J-lens fit** | backward passes, ~100 prompts, ~3 MB per checkpoint at 70m | per-layer functional partitions; `lens_band.py`'s band onsets stop being upper bounds; Phase 5's Group E |
