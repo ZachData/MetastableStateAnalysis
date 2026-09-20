@@ -309,13 +309,16 @@ that a statistic aggregated over thousands of units is far less exposed to it.
 
 ## 5. What a next session should do, in order
 
-1. **F11 rows A1–A8.** A0 gated them and A0 is done. `attention-10.md` §6 rates
+1. **`CLAIM-C`'s two HDBSCAN metrics against the reproducibility floor** (§3).
+   **The only open item here that bears on a *registered* prediction**, which
+   is why it is first. `tools/run/p10_partition_stability.py` supplies one side
+   — the amount a partition moves when the same measurement is re-run — and
+   what is missing is the other: how far that gate's four arms actually differ
+   on `cluster_count` and `cluster_membership`. §3.41 scored them 2/8 and 5/8,
+   the two weakest of six. Free. **This ordering matches `docs/AXES.md` §7.**
+2. **F11 rows A1–A8.** A0 gated them and A0 is done. `attention-10.md` §6 rates
    **A2** (the checkpoint axis) and **A4** (the population×population mass
    matrix) highest, and calls A4 a direct H-PARK vs H-CAT test. Free.
-2. **Re-run `CLAIM-C`'s two HDBSCAN metrics against the floor** (§3).
-   `tools/run/p10_partition_stability.py` supplies the number; what is missing
-   is the comparison against how far that gate's arms actually differ. Free,
-   and it is the highest-value use of anything built here.
 3. **F6, `turnover_decomposition`.** Validated on synthetic sweeps in 2026 and
    awaiting real data ever since; a rebuild against `core/particles.py`, not a
    lift (`archive/README.md` rule 2). No forward pass.

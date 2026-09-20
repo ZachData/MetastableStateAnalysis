@@ -31,8 +31,17 @@ export METS_RESULTS_DIR=$PWD/data/phase12
 export HF_HUB_OFFLINE=1
 export HF_HUB_DISABLE_XET=1
 
-./scripts/check.sh gate     # 2368 passed / 5 skipped / 47 deselected, ~40 s (2026-09-17)
+./scripts/check.sh gate     # 2616 passed / 5 skipped / 47 deselected, ~55 s (2026-09-20)
 ```
+
+**Two environments, and the difference is load-bearing.** `.venv` is the
+project's interpreter and what every runner's guard asserts. **Anything that
+runs HDBSCAN must use the conda `mets` env instead** —
+`/run/media/system/WDS_500/miniforge3/envs/mets/bin/python` — because it is the
+only install that reproduces this project's historical partitions
+(`p1_mstate_tracking/clustering.py`'s measured note, `PROJECT.md` §3.51.4).
+`tools/run/backfill_hdbscan.py` refuses to run elsewhere rather than writing an
+incomparable partition.
 
 If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
