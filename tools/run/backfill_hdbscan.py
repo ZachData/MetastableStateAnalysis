@@ -386,7 +386,7 @@ def main() -> None:
         (d / OUT_NAME).write_text(json.dumps(record))
         written += 1
         if i % 20 == 0 or i == len(targets):
-            print(f"  [{i}/{len(targets)}] {d.name}  ({time.time() - t0:.0f}s)")
+            print(f"  [{i}/{len(targets)}] {d.name}  ({time.time() - t0:.0f}s)", flush=True)
 
     print(f"wrote {written} backfill records in {time.time() - t0:.0f}s")
 

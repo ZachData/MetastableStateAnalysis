@@ -264,7 +264,7 @@ def main() -> None:
     for i, d in enumerate(targets, 1):
         dirs.append(measure_directory(d, rng, optimal=not args.identity_only))
         if i % 10 == 0 or i == len(targets):
-            print(f"  [{i}/{len(targets)}] {d.name}  ({time.time() - t0:.0f}s)")
+            print(f"  [{i}/{len(targets)}] {d.name}  ({time.time() - t0:.0f}s)", flush=True)
 
     summary = aggregate(dirs)
     record = {

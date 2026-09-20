@@ -225,7 +225,7 @@ def main() -> None:
     for i, (a, b) in enumerate(pairs, 1):
         dirs.append(compare_directory(a, b, with_activations=not args.no_activations))
         if i % 10 == 0 or i == len(pairs):
-            print(f"  [{i}/{len(pairs)}] {a.name}  ({time.time() - t0:.0f}s)")
+            print(f"  [{i}/{len(pairs)}] {a.name}  ({time.time() - t0:.0f}s)", flush=True)
 
     summary = aggregate(dirs)
     record = {
