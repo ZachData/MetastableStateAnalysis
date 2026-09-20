@@ -80,14 +80,27 @@ captured the branch as it stood at that instant; the seven commits after it sat
 unmerged until #57 was opened. Check `git log origin/main..HEAD` in the
 worktree before assuming a PR carries what you wrote.
 
-**Phase 10's free rows have run; their records are under `data/analysis/`.**
-`p10_row_a0.json` (row A0 — 3 646 layer-units), `p10_f0_anchor.json` (F0 — 3 800),
-`p10_f12_z.json` (F12) and `p10_f1_transport.json` (F1). All **tier 1,
-exploratory, unregistered**, and **not quotable as adjudications** —
-`claims/registry.json` is untouched. §3.51 is the reading; the two headlines
-are that **the attention flip is ~94 % causal mask and entirely mask before
-step 2000**, and that **F0's anchor test fails in the direction it was
-predicted to succeed**, under both its nulls.
+**Phase 10's free rows have run. Records under `data/analysis/`, all at 2 000
+permutations with `max_attainable_E` 22.37 on their face:**
+
+| file | row | units |
+|---|---|---|
+| `p10_row_a0.json` | A0, WDS sweep | 3 646 |
+| `p10_row_a0_pilot.json` | A0, **pilot sweep, native labels** | 5 593 |
+| `p10_f0_anchor.json` | F0 | 3 800 |
+| `p10_f1_transport.json` | F1 | 3 648 |
+| `p10_f12_z.json` | F12, three betas | 11 400 |
+| `p10_partition_stability.json` | the reproducibility floor — **no p-value, by design** | 2 600 |
+
+All **tier 1, exploratory, unregistered** and **not quotable as
+adjudications**; `claims/registry.json` is untouched. §3.51 is the reading.
+Four headlines: **the attention flip is ~94 % causal mask and entirely mask
+before step 2000** (and it holds on a second sweep with an independent
+partition, §3.51.8); **F0's anchor test fails in the direction it was predicted
+to succeed** under both nulls; **the identity coupling is exactly optimal in
+99.5 % of layer boundaries**, so every displacement number on record is true
+`W_2`; and **F1 and F12 together read parked rather than pinned, in a window at
+steps 32–512 rather than as a property of the trained model** (§3.51.9).
 
 **Read every `reject: False` in those records against `max_attainable_E`.**
 The averaging merger is deliberately low-powered and the first A0 run used a
