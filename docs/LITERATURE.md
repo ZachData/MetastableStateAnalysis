@@ -36,6 +36,35 @@ attribution in these files is flagged as unreliable for exactly that reason
 **Anyone with network access should work §5 top to bottom.** That is the highest-value
 unblocked task in the project.
 
+### 0.1 Amendment 2026-09-20 — `github.com` IS reachable, and it is a primary source
+
+Measured this time rather than assumed, from a cloud session, and it changes how
+future scans should be run. §5 item 18 guessed it (*"GitHub may be reachable where
+arXiv is not — this is the fastest route"*) and the guess is correct.
+
+| host | `WebFetch` from a cloud session |
+|---|---|
+| `github.com`, `raw.githubusercontent.com` | **reachable** — full README and source text |
+| `arxiv.org` | blocked |
+| `transformer-circuits.pub` | blocked |
+| `huggingface.co` | blocked |
+| `neuronpedia.org` | blocked |
+| `WebSearch` (titles, snippets, summaries) | works |
+
+**So a paper's companion-code repository is readable primary text even when the
+paper is not**, and a finding taken from a README is not `[S]`. Worked in practice:
+`p10_cluster_function/lit-10.md` §1 takes the Jacobian lens's defining equation, its
+fitting corpus size, its API and its licence from `anthropics/jacobian-lens`'s README
+and marks them **[R]**, while everything about the *published lens artifacts* stays
+`[S]` because `huggingface.co` is blocked. **Try the companion repo before settling
+for a search summary**, and use a third mark:
+
+| mark | meaning |
+|---|---|
+| **[R]** | primary text was read — a README, source file or docstring, not a summary |
+
+§5 item 18 should be read as a general method, not as one route to items 2 and 4.
+
 ---
 
 ## 1. The files
@@ -58,6 +87,8 @@ unblocked task in the project.
 | 7d | `p7d_redundancy/lit-7d.md` | Active |
 | 7e | `p7e_consolidation/lit-7e.md` | Active |
 | 8 | `p8_scale_ladder/lit-8.md` | Active |
+| 9 | — | Pre-design, **no scan yet**; `p9_metric_intervention/notes-9.md` §11 and `plan-9.md` §12 name the searches |
+| 10 | `p10_cluster_function/lit-10.md` | Pre-design. **PARTIAL** — one question settled as **[R]** from companion code, the rest named in `notes-10.md` §12. Does not follow the shape below |
 
 Each file has the same shape: what the phase rests on → finding-by-finding verdicts →
 what survives → directions to grow → a verification queue → the search log.

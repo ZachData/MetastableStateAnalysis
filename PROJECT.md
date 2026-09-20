@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` is at `ded8a06` (PR #57 merged). Current work: **`claude/aca-phase-9-planning-rvzw3x`** — Phase 9's planning pass, documentation only. It carries `cf5f7ee` (Phase 9's notes) cherry-picked off `claude/attention-collapse-augmentation-qsxwg8`, which had no PR and is now redundant |
-| Last updated | **2026-09-20.** **§3.47: Phase 9 has a plan (`p9_metric_intervention/plan-9.md`), still pre-design.** Its finding is that the phase cannot start at the intervention: three cluster labellings exist as code, none has been run against the others, and the ARI between the geometric and the functional partition is the most informative unrun number in the tree. Two stale blockers cleared on inspection — the LM head Phase 5c's Group D waited on has existed for some time (`core/lm_loading.py`), and Phase 6's LDA inversion was explained by dimension (24.9 vs 13.2) in a module header that three documents have not caught up with. Nothing run, nothing registered, `CLAUDE.md` trigger 1 still undischarged. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table is the whole result on one screen; the units are §3.36, §3.40, §3.43, §3.44, §3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: twelve prompts added blind under a rule committed first, 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections rather than in this cell. |
+| Last updated | **2026-09-20.** **§3.48: Phase 10 opens — `p10_cluster_function/`, "what clusters are and what they do".** Split out of Phase 9's plan, which could not start at the intervention. Its hypothesis is the user's: **a cluster is trash collection** — a fixed-capacity store of stationary, low-attention particles — made falsifiable as a four-signature concordance, with the Rényi-parking cluster-count prediction (`2411.04990`) as the quantitative arm and the project's best adjudication candidate. **The instrument that changes what is possible is the Jacobian lens** (Gurnee et al. 2026, the paper `lens_band.py` already cites): published Apache-2.0 code, `J_l = E[∂h_final/∂h_l]`, pre-fitted lenses reported for 38 models including `pythia-70m-deduped` **[S]**. It makes the functional partition measurable **per layer**, and `J_l` is a `d × d` operator defined by function rather than by weights — which is what §2.4.6 said the weights do not supply. **Hazard found: `2411.04990` says the causally-masked system is not a mean-field gradient flow, which puts Phase 9's Wasserstein-Hessian framing at risk** (§3.48, `plan-9.md` §5.1a). Also: **`github.com` is reachable from a cloud session while arXiv is not**, so companion code is primary text (`docs/LITERATURE.md` §0.1, new mark **[R]**). **§3.47: Phase 9's plan** (`plan-9.md`), pre-design. Nothing run, nothing registered, trigger 1 undischarged for both phases. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -3679,6 +3679,171 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.48 Phase 10 opens: what clusters are and what they do, and the instrument that makes it answerable (2026-09-20)
+
+`p10_cluster_function/notes-10.md` and `lit-10.md`. **Pre-design** — nothing
+frozen, no `P-*` id, `claims/registry.json` untouched. `CLAUDE.md` trigger 1 is
+**partially** discharged: `lit-10.md` settles one question properly and names what
+it did not scan.
+
+**Why it is a phase and not a subphase of 9.** §3.47's finding was that Phase 9
+cannot start at the intervention. The prerequisite — what a cluster is and does —
+has different instruments (a lens, a partition, a packing prediction, a particle
+table, against a metric patch and a KL readout), a different literature (the
+global-workspace/lens line and the causal-mask theory, against steering and
+unlearning), and `design-5c.md` already recorded the reason not to bundle two
+questions into one phase. **Phase 9 is parked, not closed**; `notes-10.md` §9
+states what each owes the other.
+
+### The hypothesis, made falsifiable
+
+The user's framing: **a cluster may be trash collection** — a compressed cleanup,
+one representation standing for one thing, with many particles put into it to keep
+them stationary. Seven results already on disk point that way and had never been
+read as one argument (`notes-10.md` §2): ~50 % of tokens clustered at any layer;
+**unclustered tokens absorb ≈90 % of attention mass by late layers**; trained
+models route 1.6–2× toward unclustered tokens and ~0.5× toward clustered ones,
+**sign-flipped under random weights**; **carrying capacity invariant at 50–55
+max-alive across all 27 checkpoints while lifespan falls 7.0 → 4.5 and births rise
+113 → 164**; effective rank plateauing at 200–250 across `d_model` 768–1600; and
+the energy plateau carried **entirely by within-cluster pairs**.
+
+Formalised as **four signatures of a parked particle — kinematic, attentional,
+functional, causal — and the hypothesis is that they coincide** (`H-PARK`). The
+rival (`H-CAT`) says they dissociate: clustered particles are quiet but
+load-bearing. **Findings 1–7 establish only the first two signatures; the entire
+discrimination lives in the two columns nobody has measured.**
+
+The quantitative arm is **`2411.04990`'s Rényi-parking correspondence**, which
+predicts a cluster count as a function of `n`. If a cluster is a parking space its
+count is set by packing and is largely content-insensitive; if it is a computed
+category the count tracks content. Phase 1 holds counts per layer, per prompt
+length, at 27 checkpoints, on disk, and **two independent reviews already rate this
+the project's best cheap experiment** (`lit-1.md` §4 item 1: *"do this one
+first"*). `claims/adjudications/` holds zero entries against thirty-nine
+registrations.
+
+### The instrument: the Jacobian lens, and it was already being cited here
+
+`lit-10.md` §1. **Gurnee et al. 2026, *Verbalizable Representations Form a Global
+Workspace in Language Models*** — arXiv **2607.15495** **[S]**,
+`transformer-circuits.pub/2026/workspace`. **This is the same paper
+`p2_eigenspectra/lens_band.py` and `archive/p5_single_mstate_analysis/status-5.md`
+have cited since July, without an arXiv id.** Companion code
+`github.com/anthropics/jacobian-lens`, Apache 2.0, **read as primary text**:
+
+```
+    lens_l(h) = unembed( J_l @ h ),   J_l = E[ ∂h_final / ∂h_l ]
+```
+
+expectation over prompts, source positions and all target positions; the paper's
+lenses use 1000 sequences of 128 tokens and quality **saturates by ~100 prompts**;
+fitting cost is the model's own backward pass and parallelises via
+`JacobianLens.merge`. Pre-fitted lenses for **38 open models** at
+`neuronpedia/jacobian-lens`, reported to include **`pythia-70m-deduped`**, one
+`[d_model, d_model]` fp16 matrix per layer — all **[S]**, since `huggingface.co` is
+blocked from here; **verify on the research machine before building on it.**
+
+Three things it unlocks, and one it does not:
+
+1. **The functional partition becomes measurable per layer.** §3.47 named the
+   geometric-vs-functional ARI the most informative unrun number in the tree, and
+   assumed only a final-layer LM head. `core/functional_distance.py`'s docstring
+   already names "per-layer decoded distributions" as its input, so a J-lens
+   readout drops into that slot **with nothing to change**.
+2. **`J_l` is a `d × d` operator defined by function, not by weights.** Every
+   operator instrument here — the Schur decomposition, the S/A split, `φ`, the
+   attracting/repelling projectors — has only ever been pointed at `M_OV` and
+   `M_QK`. **§2.4.6's standing negative is that no weights-only spectral quantity
+   identifies the copier.** An averaged Jacobian is not weights-only. Running the
+   existing decompositions on it is an import, and it is exploratory.
+3. **`lens_band.py`'s stated deviation becomes a choice.** Its header says the
+   logit lens is used "because no averaged Jacobian has been trained for these
+   checkpoints and training one is deliberately out of scope", and that its
+   detected band **onset is an upper bound** in consequence. Fitting one is now a
+   licensed ~100-prompt procedure; at `d = 512`, 6 layers, a `pythia-70m` lens is
+   ~3 MB per checkpoint. Likewise `status-5.md`'s blocker-4 note lists three
+   routes for Group E and **the J-lens is the one its own source recommends** —
+   the skip-to-output pathology it warns about is specific to correlationally
+   trained affine translators, which an averaged Jacobian is not.
+
+**What it does not unlock: the ladder's own model.** `pythia-70m-deduped` is a
+different training run from `pythia-70m`, every registered 70m decision names the
+latter, and the published lens carries **no checkpoint axis** — which is this
+project's whole object. Borrow it as a separate labelled model, or fit our own per
+checkpoint; those are different pieces of work and `notes-10.md` §4.5 keeps them
+apart. A lens also remains a readout, not ground truth: structural proxies have
+failed against causal ground truth twice here.
+
+### The hazard this turned up, and it lands on Phase 9
+
+**`2411.04990`'s first claim is that the causally-masked system cannot be
+interpreted as a mean-field gradient flow.** Pythia is causal. `docs/LITERATURE.md`
+row 6 already asks whether that voids Phase 2d's framing; **it bears on Phase 9 the
+same way and nobody had said so.** `notes-9.md` §8 and `plan-9.md` §5.1 are built
+on the **Wasserstein Hessian of `E_beta`** — "stretch a subspace" restated as
+"change the curvature of a near-zero eigendirection" — and that restatement
+presupposes the structure the masked theory says is absent.
+
+- **At risk:** the Hessian framing, and any claim that a metric patch moves a
+  curvature.
+- **Survives:** the transfer-operator / implied-timescale / PCCA+ readout, which
+  needs a *transition* structure rather than a gradient-flow one and which
+  `cluster_tracking.py` already half-computes. **This is now a reason to prefer
+  the timescale readout on its own merits.**
+- **Survives:** everything algebraic in `plan-9.md` §4. Lemma 6.4 is proved from
+  positivity of `a_ij` alone, so it is mask-agnostic; so are the congruence and
+  the cone margin.
+
+**`[S]`-grade. Read `2411.04990` before retracting anything** — it is the top item
+in the queue, because two phases depend on that one paper and neither has read it.
+`plan-9.md` carries the amendment inline as §5.1a, with §2.1a for the lens.
+
+### Three distinctions the notes draw that the project had not
+
+1. **Token clusters versus direction clusters.** A particle is a token; an SAE
+   feature or a neuron is a direction. "Form a cluster around a feature" means
+   *cluster the particles the direction selects*, which is a different experiment
+   from clustering the directions. The J-lens is the bridge — `J_l` maps any
+   residual direction into vocabulary space, so a token's state and a feature's
+   direction read in the same units for the first time here.
+2. **The intervention taxonomy** — subtractive/additive × weights/metric — places
+   every intervention the project has run and shows the empty cell (additive ×
+   metric = Phase 9). It also shows a second gap: **there is no subtractive metric
+   intervention either**, and it is the natural matched control for every active
+   `Γ` patch. And writing `mu_cond` into MLP 6's slot (§3.23) is already an
+   additive weights intervention that worked — the closest precedent in the
+   project to what Phase 9 proposes.
+3. **The MLP's object is a direction, and you cannot form a token cluster inside
+   an MLP.** §3.23 already found the object: `mu_cond` restores `L7H8`'s matching
+   (0.643 / 0.567) while `mu_clean` restores nothing (0.038 / 0.016, on a par with
+   zero and with a norm-matched random constant), at `cos = 0.837`, so the effect
+   is entirely in the orthogonal component. Being position-independent it **cannot
+   change the pairwise coupling** — so attention-side and MLP-side augmentation are
+   *different operations*, not one operation at two sites: attention changes who
+   couples to whom, the MLP changes the geometry the coupling is computed in, and
+   **the MLP arm's effect is second-order and delayed by a layer.** A patch
+   measured at its own layer will look like it did nothing.
+
+### The ladder, and a method finding
+
+Eleven rows (`notes-10.md` §8). **F0 (Rényi parking) and F1 (the transport
+observables that still no runner calls) are free and unblocked today**; F2 is a
+directory listing on the research machine; F6 (`turnover_decomposition`) is a
+rebuild of an instrument validated in 2026 against synthetic sweeps and **awaiting
+the real sweep ever since** — and it is the test that separates "the same particles
+cycle faster" from "different particles cluster later", which cluster-level
+statistics cannot.
+
+**Method finding, recorded in `docs/LITERATURE.md` §0.1:** `github.com` and
+`raw.githubusercontent.com` are reachable from a cloud session while `arxiv.org`,
+`transformer-circuits.pub`, `huggingface.co` and `neuronpedia.org` are not. §5 item
+18 guessed this; it is now measured. **A paper's companion repository is primary
+text even when the paper is not**, and a new mark **[R]** distinguishes what was
+actually read from `[S]`. Every future scan should try the companion repo first.
+
+Nothing has been run. `claims/registry.json` untouched.
 
 ## 3.47 Phase 9 gets a plan, and the plan's finding is that the phase cannot start at the intervention (2026-09-20)
 

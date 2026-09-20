@@ -11,6 +11,21 @@ that sits underneath the one the notes answered:
 > **Nothing in this repository establishes what a cluster does.** Until that is
 > settled, every intervention below produces a picture and no claim.
 
+**Superseded in one place, 2026-09-20: tiers 0 and 1 are now Phase 10.**
+§2 and §3 below opened a question large enough to carry its own literature and
+its own registrations, and it has been given its own directory,
+`p10_cluster_function/` (`notes-10.md`, `lit-10.md`; `PROJECT.md` §3.48). Read
+those for the current state of *what a cluster is and does* — §2 and §3 here are
+kept as the argument that produced the phase, not as its live state. Two things
+found there change this document and are marked inline: **§5.1's Wasserstein-Hessian
+framing is at risk under the causal-mask theory** (§5.1a), and **the functional
+labelling §2.1 wanted is measurable per layer after all** (§2.1a). Everything from
+§4 onward — the congruence algebra, the insertion points, the sign prediction — is
+unaffected and stays Phase 9's.
+
+**Phase 9 is parked, not closed.** `notes-10.md` §9 states what each phase owes
+the other.
+
 **This is still not `design-9.md`.** No construction is frozen, no `P-*` id
 names anything here, `claims/registry.json` is untouched, and `CLAUDE.md`
 trigger 1's literature scan remains undischarged — §11 of `notes-9.md` names
@@ -98,6 +113,22 @@ principled cluster definition anywhere in the project."*
 **The single most informative unrun number in this repository is the ARI between
 the geometric and the functional partition.** It costs one forward pass per
 prompt with an LM head and a matmul.
+
+### 2.1a Amendment (2026-09-20): the functional labelling is measurable per layer
+
+Written above as though the only producer were the final-layer LM head, which
+would have given one functional partition per prompt rather than one per layer.
+That is no longer the constraint. **The Jacobian lens** of Gurnee et al. 2026 —
+the paper `p2_eigenspectra/lens_band.py` already cites, with published Apache-2.0
+code — gives `lens_l(h) = unembed(J_l @ h)` with `J_l = E[∂h_final/∂h_l]`, so
+every layer has a decoded distribution per token. `core/functional_distance.py`'s
+docstring already names "per-layer decoded distributions" as its input, so a
+J-lens readout drops into that slot with nothing to change.
+
+`p10_cluster_function/lit-10.md` §1 is the scan, including the four caveats that
+decide how it may be used (`pythia-70m-deduped` is not `pythia-70m`; the
+published lens carries no checkpoint axis; it is an average of a linearization;
+a lens is not ground truth).
 
 ### 2.2 The LM-head blocker is stale, and this matters
 
@@ -446,6 +477,29 @@ and the step has not been taken.
 > subspace" becomes "change the curvature of a near-zero eigendirection," and the
 > predicted effect is a computable shift in an implied timescale** rather than a
 > different integer from HDBSCAN.
+
+### 5.1a Hazard (2026-09-20): the Hessian framing presupposes a gradient flow, and a decoder may not have one
+
+`2411.04990` (*Clustering in Causal Attention Masking*, Karagodin–Polyanskiy–
+Rigollet) states that **the causally-masked system cannot be interpreted as a
+mean-field gradient flow.** Pythia is causal. `docs/LITERATURE.md` row 6 already
+asks whether that voids Phase 2d's gradient-flow framing; **it bears on §5.1 the
+same way and nobody had said so.**
+
+- **At risk:** the Wasserstein-Hessian-of-`E_beta` framing, and with it
+  `notes-9.md` §8's "stretch a subspace = change the curvature of a near-zero
+  eigendirection". That restatement presupposes the structure the masked theory
+  says is absent.
+- **Survives:** the transfer-operator / implied-timescale / PCCA+ readout below.
+  It needs a *transition* structure, not a gradient-flow structure, and
+  `cluster_tracking.py` already computes transitions. **This is now a reason to
+  prefer the timescale readout on its own merits, not only on cost.**
+- **Also survives:** everything in §4. Lemma 6.4 is proved from positivity of
+  `a_ij` alone, so it is mask-agnostic; so are the congruence and the cone margin.
+
+**`[S]`-grade — confirm by reading `2411.04990` before retracting anything.**
+It is the top item in `notes-10.md` §12's queue for exactly this reason: two
+phases depend on that one paper and neither has read it.
 
 ### 5.2 Transport separates spreading from shuffling, and nothing else here does
 
