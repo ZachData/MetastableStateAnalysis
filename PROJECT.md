@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` is at `ded8a06` (PR #57 merged). **Two PRs open, stacked**: **#58** `claude/aca-phase-9-planning-rvzw3x` (Phases 9/10 documentation and math checks, no runner) and **#59** `claude/p10-free-rows` **based on it**, carrying Phase 10's four free rows built, tested and RUN. Both from the worktree `../Mets-p10`. **Merge #58 first.** `claude/attention-collapse-augmentation-qsxwg8` is redundant — its one commit is cherry-picked onto #58 — and should be deleted |
-| Last updated | **2026-09-20.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (4) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (5) **The HDBSCAN partition is NOT reproducible run to run** — over 2 600 layer-pairs from two sweeps whose tokens are identical and whose activations differ by at most **7.9e-05**, **16.7 % of label vectors differ**, ARI's 5th percentile is **0.347** and its minimum **0.166**, and cluster count moves by up to **20**. A measurement-reproducibility floor nobody had measured, and `CLAIM-C` reads two of its six registered metrics from this partition alone (§3.51.7). **Both headline rows clear it**: re-run on the pilot sweep's 243 directories with NATIVE labels, A0's corrected gap agrees to two or three decimals at all 13 shared checkpoints and F0's nucleus statistic to three — 0.3164 against 0.3157 (§3.51.8). (6) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. (7) **F12 confirms `math-10.md` §2 on real data and independently of β's convention**: raw `log Z` is **99.5 %** position at β = 1, the sink is the **minimum** of raw `Z` (percentile 0.0014) and the **maximum** of corrected `Z` (0.9986), identical to four decimals across the β grid. Its raw clustered-minus-noise sign is **mostly definitional** — +0.465 at step 0 under random weights, because HDBSCAN clusters by the density `Z` measures — and against that baseline **the largest real excursion is NEGATIVE at steps 32–64**, in the same window where F1 finds the strongest kinematic signature. Clustered particles there move less *and* sit below the untrained baseline in `Z`: **parked, not pinned, and a window rather than a property of the trained model** (§3.51.9). Gate green at **2 600 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Last updated | **2026-09-20.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (4) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (5) **The HDBSCAN partition is NOT reproducible run to run** — over 2 600 layer-pairs from two sweeps whose tokens are identical and whose activations differ by at most **7.9e-05**, **16.7 % of label vectors differ**, ARI's 5th percentile is **0.347** and its minimum **0.166**, and cluster count moves by up to **20**. A measurement-reproducibility floor nobody had measured, and `CLAIM-C` reads two of its six registered metrics from this partition alone (§3.51.4). **Both headline rows clear it**: re-run on the pilot sweep's 243 directories with NATIVE labels, A0's corrected gap agrees to two or three decimals at all 13 shared checkpoints and F0's nucleus statistic to three — 0.3164 against 0.3157 (`status-10.md` §3.1). (6) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. (7) **F12 confirms `math-10.md` §2 on real data and independently of β's convention**: raw `log Z` is **99.5 %** position at β = 1, the sink is the **minimum** of raw `Z` (percentile 0.0014) and the **maximum** of corrected `Z` (0.9986), identical to four decimals across the β grid. Its raw clustered-minus-noise sign is **mostly definitional** — +0.465 at step 0 under random weights, because HDBSCAN clusters by the density `Z` measures — and against that baseline **the largest real excursion is NEGATIVE at steps 32–64**, in the same window where F1 finds the strongest kinematic signature. Clustered particles there move less *and* sit below the untrained baseline in `Z`: **parked, not pinned, and a window rather than a property of the trained model** (`status-10.md` §1.5). Gate green at **2 600 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -72,7 +72,7 @@ tree's code and fails on anything new. The working invocation is
 `METS_REPO=$PWD METS_DATA=/run/media/system/WDS_500/Mets/data <python> tools/run/...`.
 
 **The HDBSCAN backfill must run in the conda `mets` env, not `.venv`** — see
-§3.51.1. `/run/media/system/WDS_500/miniforge3/envs/mets/bin/python`. The
+`status-10.md` §2. `/run/media/system/WDS_500/miniforge3/envs/mets/bin/python`. The
 script refuses elsewhere rather than writing an incomparable partition.
 
 **A merge mid-session is not a merge of the session.** #56 merged at 18:35 and
@@ -94,18 +94,30 @@ permutations with `max_attainable_E` 22.37 on their face:**
 | `p10_partition_stability.json` | the reproducibility floor — **no p-value, by design** | 2 600 |
 
 All **tier 1, exploratory, unregistered** and **not quotable as
-adjudications**; `claims/registry.json` is untouched. §3.51 is the reading.
+adjudications**; `claims/registry.json` is untouched.
+
+> **Read `p10_cluster_function/status-10.md` first** — it is the phase record:
+> every number, every caveat, how to re-run each row, the ladder's state, and
+> **§5, an ordered next-step list.** §3.51 here carries only what is
+> project-wide.
+
 Four headlines: **the attention flip is ~94 % causal mask and entirely mask
 before step 2000** (and it holds on a second sweep with an independent
-partition, §3.51.8); **F0's anchor test fails in the direction it was predicted
-to succeed** under both nulls; **the identity coupling is exactly optimal in
-99.5 % of layer boundaries**, so every displacement number on record is true
-`W_2`; and **F1 and F12 together read parked rather than pinned, in a window at
-steps 32–512 rather than as a property of the trained model** (§3.51.9).
+partition, `status-10.md` §3.1); **F0's anchor test fails in the direction it
+was predicted to succeed** under both nulls; **the identity coupling is exactly
+optimal in 99.5 % of layer boundaries**, so every displacement number on record
+is true `W_2`; and **F1 and F12 together read parked rather than pinned, in a
+window at steps 32–512 rather than as a property of the trained model**
+(`status-10.md` §1.5).
+
+**The two free things to do next**, both from `status-10.md` §5: **`CLAIM-C`'s
+two HDBSCAN metrics against the reproducibility floor** (§3.51.4 — the only
+open item that bears on a *registered* prediction), and **`attention-10.md`'s
+rows A1–A8**, which A0 gated and has now cleared.
 
 **Read every `reject: False` in those records against `max_attainable_E`.**
 The averaging merger is deliberately low-powered and the first A0 run used a
-draw count that made rejection impossible in principle (§3.51.5). Effect sizes,
+draw count that made rejection impossible in principle (§3.51.2). Effect sizes,
 `median_p` and `frac_below_05` are the informative fields.
 
 **`CLAIM-C`: compute is DONE, and the gate has been run.** All four
@@ -3723,159 +3735,47 @@ cheap and would resolve it.**
 
 ---
 
-## 3.51 Phase 10's free rows RAN — the attention flip is mostly the causal mask, and the anchor test fails in the direction it was supposed to succeed (2026-09-20)
+## 3.51 Phase 10's free rows RAN — and three of the findings are about this project's instruments, not about clusters (2026-09-20)
 
-**The first Phase 10 results measured on real checkpoints.** Four rows of
-`notes-10.md` §8's ladder — F0, F1, F11-A0, F12 — built, tested and run over
-the whole 19-checkpoint `pythia-410m` sweep. All tier 1, exploratory,
-**unregistered**; `claims/registry.json` is untouched and nothing here is
-quotable as an adjudication. Records under `data/analysis/`.
+**`p10_cluster_function/status-10.md` is the phase record and the place to
+start.** Four rows of `notes-10.md` §8's ladder ran on real checkpoints — F0,
+F1, F11-A0 and F12 — plus a producer that unblocked them and a measurement that
+was not on the ladder. All **tier 1, exploratory, unregistered**;
+`claims/registry.json` is untouched and none of it is quotable as an
+adjudication. Seven records under `data/analysis/`, each at 2 000 permutations
+with `max_attainable_E` 22.37 on its face.
 
-### 3.51.1 The blocker nobody had noticed: the sweep has no density partition
+This section carries only what is **project-wide**. The per-row numbers,
+caveats and re-run instructions are in `status-10.md`.
 
-`hdbscan_labels.json` is **`{}` in 152 of 152 directories** of the 410m sweep,
-and `clustering.json` beside it reads `"nesting_summary": "HDBSCAN not
-available"`. Every directory was written during the outage §3.41 records, and
-the outage is wider than that section says — it was never only `CLAIM-C`'s
-arms. `docs/AXES.md` listed the artifact as present. F0, F5 and F11-A4 all read
-it.
+### 3.51.1 The four rows, in one table
 
-`tools/run/backfill_hdbscan.py` re-derives it from `activations.npz` — **no
-forward pass, 152 directories in 69 s**. Three properties make it usable rather
-than merely fast:
+| row | finding | detail |
+|---|---|---|
+| **F11-A0** | the attention flip is **~94 % causal mask** — raw gap 0.592, corrected **0.036** — and **100 % mask at initialisation**, with a learned residual only from step ~2000 | `status-10.md` §1.1 |
+| **F0** | the anchor test **fails in the direction it was predicted to succeed**: nuclei at 0.3164 against a null mean 0.2077, median p 1.00, and it survives a null restricted to the clustered population | §1.2 |
+| **F1** | the identity coupling is **exactly optimal in 99.5 %** of 3 648 boundaries, so **every per-layer displacement number this project has recorded is true `W_2`**, not the upper bound it was known to be | §1.3 |
+| **F12** | `math-10.md` §2 confirmed **β-independently**: raw `log Z` is 99.5 % position, the sink is the *minimum* of raw `Z` and the *maximum* of corrected `Z` | §1.4 |
 
-- **It guards on the toolchain, not the interpreter path**, which is the
-  opposite of every other runner here and correct for this one.
-  `clustering.py` records, measured, that HDBSCAN's output is a property of the
-  install: conda `mets` (py3.10.20, hdbscan 0.8.41, sklearn 1.7.2) reproduces
-  the 2026-08-12 pilot sweep exactly and `.venv` does not. A sweep holding two
-  partitions from two installs has nothing on disk to tell them apart.
-- **It re-verifies every run.** `--verify-pilot` replays N pilot directories
-  that *do* carry labels and refuses to write unless they come back
-  bit-identical. This run: **3 directories × 25 layers, all identical.**
-- **It writes a separate file and touches nothing.** Filling the canonical one
-  would leave `clustering.json` still saying `null` beside it — the shape of
-  inconsistency `b55375e` had to un-write. `read_labels` owns the precedence.
+**Two blockers had to be cleared.** The 410m sweep carried **no density
+partition at all** — `hdbscan_labels.json` empty in **152/152** directories,
+wider than §3.41 records and listed as present in `docs/AXES.md` — and the
+partition turns out not to be reproducible run to run (§3.51.4 below).
 
-Backfilled: mean **47.1** clusters/layer, mean noise fraction **0.389**, in
-line with the pilot's 45–69 and with finding 4's 50–55 carrying capacity.
+**F1 and F12 together read parked rather than pinned**, in a window at steps
+32–512 rather than as a property of the trained model, and held as a hazard
+rather than a result: the density confound is argued from a step-0 baseline
+rather than controlled, and the reading rests on `math-1.md` §1A.6's
+*interpretation* of `Z` as a metric. `status-10.md` §1.5 and §6.
 
-### 3.51.2 Row A0: the flip is ~94 % causal mask, and the residual is developmental
+**Both headline rows were replicated on the pilot sweep** — different forward
+pass, **native** labels rather than the backfill, nine prompts against eight,
+27 checkpoints against 19. A0's corrected gap agrees to two or three decimals
+at all 13 shared checkpoints; F0's statistic agrees to three, **0.3164 against
+0.3157**, with the pilot finding *fewer* clusters per layer (42.8 against
+47.1). `status-10.md` §3.1.
 
-152 directories, **3 646 layer-units**. `math-10.md` §1's content-free baseline
-divided out, per layer, the pairing matching `noise_importance_proxy` exactly.
-
-| | unclustered | clustered | gap |
-|---|---|---|---|
-| raw (as this project reports it) | **1.417×** | **0.825×** | 0.592 |
-| causal-mask-corrected | **1.034×** | **0.998×** | **0.036** |
-
-**6.2 % of the gap survives the correction.** But the sweep mean hides the
-thing that matters, and the per-checkpoint split is why that block exists:
-
-| step | raw gap | corrected gap | surviving | position bias |
-|---|---|---|---|---|
-| 0–16 | 0.26–0.39 | **0.003–0.004** | ~1 % | 0.061–0.088 |
-| 32–512 | 0.10–0.36 | −0.006 to −0.164 | negative | 0.038–0.083 |
-| 4000 | 0.949 | **0.245** | 26 % | 0.035 |
-| 143000 | 1.689 | **0.172** | 10 % | 0.013 |
-
-**At initialisation the flip is ENTIRELY the mask**, exactly as `math-10.md` §1
-predicted — corrected gap 0.004 against a raw 0.26. A residual appears at
-**step ~2000–4000** and persists to 143000, while the position-bias confound
-*falls* with training (0.061 → 0.013). So the learned effect is real in the
-means and roughly a sixth the size the uncorrected number implies, and it does
-not exist before step 2000.
-
-**What may NOT be said from this.** The 5c number was measured on
-`gpt2-large` and ALBERT; this re-measures the same statistic on the 410m sweep
-rather than refuting that one. And **no arm here is a norm-matched random
-twin**, so the trained-versus-random *sign flip* is untouched — step 0 is an
-untrained checkpoint, which is a weaker control than the `-random` arms
-`CLAIM-C` uses, because it shares the initialisation scheme rather than being
-matched to a trained model's norms. It is still the right baseline for a
-developmental read, and §3.51.9 uses it as one for F12; what it cannot do is
-stand in for the twin.
-
-### 3.51.3 F0, the anchor test: nuclei are LATE, and it is not the confound
-
-`2411.04990`'s mechanism says early tokens are the nuclei of cluster formation.
-Direction fixed in code before the sweep was read: **"less"**.
-
-- **observed 0.3164** against a label-permutation null mean of **0.2077**
-- median p = **1.00**, fraction below 0.05 = **0.18 %**, merged E = **0.536**
-- 2 000 draws, ceiling 22.37 — the design could have rejected and did not
-
-Nuclei sit **systematically later** than a position-blind assignment predicts —
-the opposite of the prediction, and not marginally.
-
-**The first version of this result was confounded and the fix is the finding's
-main methodological content.** The ordinary permutation is free to move whole
-clusters between the early and late halves of a sequence. The same sweep has
-clustered tokens sitting later than unclustered ones (`position_bias` +0.051),
-so a late clustered population produces late cluster minima with nothing said
-about nucleation. `core.nulls.label_permutation_null_within` holds the
-clustered/noise split **fixed** and shuffles only which clustered token carries
-which id — the nucleation question proper.
-
-**Both nulls agree.** The restricted null's mean moves only 0.2077 → **0.2311**
-against an observed 0.3164, median p **0.9995**, E **0.556**. The confound
-accounts for about a fifth of the gap and the effect survives it.
-
-### 3.51.4 F1, the transport observables: the identity coupling IS optimal, and the kinematic signature is a mid-training window
-
-The runner `docs/AXES.md` §4 called *"the cheapest open action in the tree"*.
-152 directories, **3 648 layer boundaries**.
-
-**The identity coupling is exactly optimal in 99.5 % of boundaries** —
-`swap_absorbed_fraction` is **0 to machine precision in 3 630 of 3 648**, mean
-**5.2e-05**, largest 7.0e-02. So displacement across a layer is genuinely
-motion of the measure, not tokens changing places, and **every per-layer
-displacement number this project has recorded — all of them identity-coupling
-— IS the true `W_2` rather than the upper bound it was known to be.** That was
-not known; it is a validation of a whole class of existing numbers, obtained
-without a forward pass.
-
-**`swap_fraction` is 0.023–0.041 and is NOT motion.** It rises with training,
-which looks like a finding and is not: at layer 0 a Pythia hidden state is the
-token embedding alone, so repeated tokens have identical vectors and swapping
-their assignments is an exact tie in cost. The assignment takes those swaps
-freely at zero gain. Anyone quoting `swap_fraction` as transport is quoting
-duplicate tokens.
-
-**Straightness is 0.12–0.18 and FALLS with training** — 0.151 at step 0, 0.183
-at step 256, **0.122 at step143000**. Net displacement is a sixth of arc
-length: a long path with little to show for it, which is what dwelling in a
-metastable state looks like measured on the measure rather than inferred from a
-clustering algorithm. The mature model wanders more per unit of progress, not
-less.
-
-**The kinematic signature of `notes-10.md` §3.1 exists, and it is a window
-rather than an end state.** Standardised difference in per-particle step,
-clustered minus noise, two-sided:
-
-| step | clustered − noise | median p | merged E |
-|---|---|---|---|
-| 0–16 | **+0.02 to +0.03** | 0.15–0.17 | 5.2–6.9 |
-| **32–512** | **−0.29 to −0.49** | **0.0005 (the floor)** | **12.9–17.6** |
-| 1000–8000 | −0.05 to +0.04 | 0.011–0.014 | 8.7–10.0 |
-| 16000–32000 | −0.13 to −0.15 | 0.024–0.039 | 8.7–8.8 |
-| 143000 | −0.01 | 0.092 | 7.3 |
-
-At **steps 32–512 clustered particles move markedly less than unclustered
-ones**, and the *median* of 192 units sits at the resolution floor. By
-step143000 the effect is −0.01 and gone. The signature H-PARK is built on is
-strongest in early-middle training and absent in the mature model.
-
-**Read the E column against the ceiling, not against 20.** The largest merged
-e-value this design can produce is **22.37**, and 17.59 at step 256 is the
-closest anything in this session came — with more than half its units at the
-floor. The averaging merger cannot exceed its largest input, so a consistent
-effect across 192 dependent units reports as an E well short of rejection.
-**That is the merger being honest about dependence, not the effect being
-weak**, and it is why `median_p` and `frac_below_05` are reported beside it.
-
-### 3.51.5 Three instrument defects, each of which would have produced a false number
+### 3.51.2 Three instrument defects, each of which would have produced a false number
 
 Found while wiring e-values through the rows, and each is fixed with a test
 that fails on the old behaviour.
@@ -3912,7 +3812,7 @@ Even at 2 000 draws the averaging merger is deliberately low-powered: rejection
 needs nearly every unit at the floor. The informative fields are the effect
 sizes, `median_p` and `frac_below_05`.
 
-### 3.51.6 `pythia-410m` step0 and step1 are the same weights
+### 3.51.3 `pythia-410m` step0 and step1 are the same weights
 
 **All 292 tensors bit-identical upstream**, despite different HF revisions and
 different blob hashes, and the sweep's activations for the two are bit-identical
@@ -3923,7 +3823,7 @@ saturated. Not a runner bug.
 every per-checkpoint average over the sweep double-counts one. Recorded in
 `docs/AXES.md` §2.3. **Not yet checked at 70m.**
 
-### 3.51.7 The HDBSCAN partition is not reproducible run to run, and nothing had measured it
+### 3.51.4 The HDBSCAN partition is not reproducible run to run, and nothing had measured it
 
 Found while cross-checking the backfill, and it is the most consequential thing
 in this section because four rows and one registered gate read the partition.
@@ -3977,171 +3877,11 @@ carried by the aggregate is much less exposed to a per-layer floor than a
 statement about one layer would be, but neither row has been re-run against a
 second partition to check.
 
-**Done for BOTH headline rows — see §3.51.8, and they hold.** A0's corrected
+**Done for BOTH headline rows — see `status-10.md` §3.1, and they hold.** A0's corrected
 gap agrees to two or three decimals at all 13 shared checkpoints; F0's nucleus
 statistic agrees to three (0.3164 against 0.3157). The floor still binds any
 per-layer claim; what the checks establish is that a statistic aggregated over
 thousands of units is far less exposed to it.
-
-### 3.51.8 Both headline rows re-run on a second sweep with an independent partition: they hold
-
-The check §3.51.7 called for, and it is the reason that section's floor does
-not undo §3.51.2. **Row A0 was re-run on the PILOT sweep** — 27 checkpoints,
-243 directories, **5 593 layer-units**, **native `hdbscan_labels.json`** rather
-than the backfill, a different forward pass, and nine prompts instead of eight.
-
-| | WDS sweep (backfilled) | pilot sweep (native) |
-|---|---|---|
-| directories / units | 152 / 3 646 | 243 / 5 593 |
-| raw gap | 0.592 | 0.844 |
-| **corrected gap** | **0.037** | **0.100** |
-| surviving the correction | 6.2 % | 11.9 % |
-| corrected `frac_p_below_05` | 0.210 | 0.220 |
-
-The sweep-level numbers differ because the pilot's checkpoint grid is weighted
-toward late training, where §3.51.2 already showed the residual lives. **At the
-13 checkpoints present in both, the corrected gap agrees to two or three
-decimal places:**
-
-| step | WDS corrected | pilot corrected |
-|---|---|---|
-| 0 | 0.004 | 0.004 |
-| 16 | 0.003 | 0.003 |
-| 256 | −0.072 | −0.055 |
-| 512 | −0.164 | −0.121 |
-| 143000 | **0.172** | **0.230** |
-
-Two independent forward passes, two independently-derived partitions, two
-prompt sets and two checkpoint grids give the same curve: **flat at
-initialisation, dipping negative through steps 32–512, and a substantial
-positive residual at step143000.**
-
-**F0 was given the same treatment, and it agrees more tightly than A0 does.**
-243 directories, **5 835 layer-units**, native labels:
-
-| | WDS (backfilled) | pilot (native) |
-|---|---|---|
-| observed nucleus position | 0.3164 | **0.3157** |
-| ordinary null mean | 0.2077 | 0.2053 |
-| restricted null mean | 0.2311 | 0.2220 |
-| median p (ordinary / restricted) | 1.00 / 0.9995 | 1.00 / 0.9995 |
-| merged E (ordinary / restricted) | 0.536 / 0.556 | 0.550 / 0.569 |
-
-**Three decimal places on the statistic itself**, from two independent forward
-passes, two partitions of different provenance, nine prompts against eight, and
-27 checkpoints against 19 — and the pilot finds fewer clusters per layer (42.8
-against 47.1), so the agreement is not an artifact of a matching size profile.
-Nuclei are late on both.
-
-**So both headline rows clear the reproducibility floor.** That is not a
-general licence: the floor still applies to any PER-LAYER claim, and what these
-two checks establish is that a statistic aggregated over thousands of units is
-far less exposed to it than one layer's number would be.
-
-### 3.51.9 F12: `math-10.md` §2 confirmed on real data, and the parked/pinned answer is NOT the raw sign
-
-152 directories, three betas, **11 400 units**.
-
-**The three structural claims of `math-10.md` §2 hold, and they hold
-independently of β's undecided unit convention.**
-
-| | β = 1 | β = 2 | β = 4 |
-|---|---|---|---|
-| variance of raw `log Z` explained by `log(i+1)` | **0.995** | 0.979 | 0.893 |
-| percentile of position 0 in **raw** `Z` | **0.0014** | 0.0014 | 0.0014 |
-| percentile of position 0 in **corrected** `Z` | **0.9986** | 0.9986 | 0.9986 |
-
-The raw partition function is **99.5 % position** at β = 1. Position 0 — the
-sink — is essentially the **minimum** of raw `Z` and essentially the
-**maximum** once `(i+1)` is divided out. So `math-1.md` §1A.6's "a high-`Z`
-token is one the metric makes expensive to move" **is right about the
-corrected quantity and inverted about the raw one**, exactly as §2 said, and
-`docs/AXES.md` §4's factor-of-8 convention question does not touch it: the sink
-percentiles are identical to four decimals across the β grid.
-
-`position_r2_corrected` is 0.32 rather than 0, which is the **known** residual
-a unit diagonal leaves — sphere-projected states give `Z_i = e^β + i e^{βγ}`,
-affine in `i` rather than proportional to `(i+1)` — and not unexplained
-structure. A test fixture pins both forms.
-
-**Now the part that matters, and the raw sign is a trap.**
-Clustered tokens have **higher** corrected `log Z` than unclustered ones:
-+0.364 standardised, median p at the resolution floor, 79 % of units below
-0.05, E = 14.60 against a ceiling of 22.37. On §1A.6's metric reading that
-reads as *the metric makes them expensive to move* — **pinned**, which is
-H-CAT.
-
-**It is mostly definitional.** HDBSCAN clusters by density on a cosine metric,
-and `Z_i/(i+1)` is the mean of `exp(β⟨x_i, x_j⟩)` over visible tokens — a
-density. A token in a dense neighbourhood has a high corrected `Z` **because
-that is what put it in a cluster**. The evidence that this is what is
-happening: **the effect is +0.465 at step 0**, under random weights, before any
-training, with 86 % of units below 0.05.
-
-**So the informative quantity is the departure from the step-0 baseline**, in
-exactly the trained-versus-random logic the rest of this project uses:
-
-| step | clustered − noise | vs step-0 baseline |
-|---|---|---|
-| 0 (random init) | +0.465 | — |
-| 16 | +0.447 | −0.02 |
-| **32–64** | **−0.12 to −0.14** | **−0.59 to −0.61** |
-| 256–512 | +0.12 to +0.22 | −0.25 to −0.35 |
-| 4000 | +0.336 | −0.13 |
-| 143000 | +0.676 | **+0.21** |
-
-**The largest real excursion is negative, at steps 32–64** — and it lands in
-the same window where F1 found the strongest kinematic signature (steps 32–512,
-−0.29 to −0.49). There, clustered particles **move less AND sit at a lower
-corrected `Z` than the untrained baseline**: the metric is not what is holding
-them still.
-
-> **That is the PARKED signature, not the pinned one**, and it is a window
-> rather than a property of the trained model. By step143000 the kinematic
-> difference is −0.01 (F1) and the metric difference is +0.21 over baseline —
-> neither signature is strong at the end.
-
-**Stated as a hazard, not a result.** The density confound is argued from the
-step-0 value, not proved; a proper control is a norm-matched random twin at
-each checkpoint, which the sweep does not carry. And the whole reading rests on
-§1A.6's interpretation of `Z` as a metric, which is an interpretation and not a
-causal measurement — `notes-10.md` §3.1's causal column is still untouched and
-**F5 is still what discriminates.**
-
-### 3.51.10 What this does and does not do to H-PARK
-
-Nothing yet adjudicates it, and nothing here is registered. Two of §3.1's four
-columns are now measured, and they do not point the same way.
-
-- **Attentional (A0).** Weaker than the evidence ledger implies: mostly mask
-  before step 2000 and a sixth of its reported size after. `attention-10.md`
-  was right to gate the rest of its rows on A0.
-- **Kinematic (F1).** Present and real, but a **window** — clustered particles
-  move markedly less at steps 32–512, and by step143000 the difference is
-  −0.01. If a cluster is a parking space, the parking is a phase the model
-  passes through rather than a property of the trained model.
-- **Functional and causal.** Untouched. **F5 remains what discriminates**, and
-  it needs both.
-
-**F0 runs against the parking account rather than for it**: cluster nuclei are
-late, not early, under both nulls.
-
-**The parked/pinned question, and the full run answers it the other way from
-the smoke run.** F1 says clustered particles move less. F12's raw sign says
-their corrected `Z` is higher, which on §1A.6's metric reading is **pinned** —
-but that sign is **+0.465 at step 0 under random weights**, so it is mostly the
-density HDBSCAN selected for (§3.51.9). Against the step-0 baseline the largest
-real excursion is **negative, at steps 32–64**, and it lands in the same window
-where F1 finds the strongest kinematic signature.
-
-> **Clustered particles there move less AND sit at a lower corrected `Z` than
-> the untrained baseline: the metric is not what is holding them still.** That
-> is **parked**, not pinned — and it is a window rather than a property of the
-> trained model.
-
-`attention-10.md` §5 named this as the distinction displacement alone cannot
-make, and it took both rows to make it. It rests on §1A.6's interpretation of
-`Z` as a metric, which is an interpretation and not a causal measurement.
 
 ## 3.50 The scan, and the math: four check files, three corrections, and a law that is not in `n` (2026-09-20)
 

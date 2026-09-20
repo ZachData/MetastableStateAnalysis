@@ -11,6 +11,13 @@ registrations, and `design-5c.md` already recorded the reason not to bundle two
 questions into one phase. **So it is its own phase, and Phase 9 parks on its
 notes and plan until this one has an answer.**
 
+> **ENTRY POINT, 2026-09-20: read `status-10.md` first.** Four rows of §8's
+> ladder have run on real checkpoints. This file is kept as written — a
+> pre-design workshop record — and results are NOT folded back into it, so
+> anything here about what "is unrun" or "would be measured" is the state
+> before 2026-09-20. `claims/registry.json` is still untouched and nothing that
+> ran is registered.
+
 **This is a workshop record, not a design.** No construction is frozen, no
 instrument is specified to the level `design-10.md` requires, no `P-*` id names
 anything here, and `claims/registry.json` is untouched. `CLAUDE.md` trigger 1 is
@@ -483,6 +490,25 @@ Costs and dependencies. Ordering is a proposal; nothing is registered.
 | **F11** | **The attention audit**, `attention-10.md` §6 rows A0–A8. A0 (sink and causal-mask baselines) gates the rest; A2 (the checkpoint axis) and A4 (the population×population mass matrix) carry the most information per unit of work. | no | nothing | the attentional column of §3.1, and **A4 is a direct `H-PARK` vs `H-CAT` test** |
 | **F12** | **`Z_beta,i` per token** — the trained per-token metric, never examined. | no | nothing | parked vs **pinned**: two kinds of stationary that displacement alone cannot separate (`attention-10.md` §5) |
 
+> **AMENDMENT 2026-09-20 — all four of those rows have RUN. See
+> `status-10.md`, which is now the phase's entry point; this file stays a
+> pre-design workshop record and is NOT updated with results.** In brief: A0
+> found the attention flip is ~94 % causal mask and entirely mask at
+> initialisation; **F0 came back against its own prediction** (nuclei late, not
+> early) under both the ordinary null and a restricted one that had to be added
+> because the ordinary one could not tell nucleation from the clustered/noise
+> position split; F1 found the identity coupling exactly optimal in 99.5 % of
+> boundaries and the kinematic signature to be a **window** at steps 32–512;
+> F12 confirmed §2's masked-`Z` derivation β-independently and, read against a
+> step-0 baseline, joins F1 in saying **parked rather than pinned** — in that
+> same window, not in the trained model. **Two blockers had to be cleared
+> first**: `hdbscan_labels.json` was empty in 152/152 directories, and the
+> partition is not reproducible run to run.
+>
+> **§3.2's F0 as written is not what ran.** The row needed a second null, and
+> §4.4's hazard list needed a fourth entry — a **measurement-reproducibility
+> floor** that no size-profile null accounts for. Both are in `status-10.md`.
+
 **F0, F1, F11 and F12 are free and unblocked today** — and F0 is now the cheapest of them. F2 costs a directory
 listing. F6 is a rebuild of a validated instrument, not a new one.
 
@@ -615,6 +641,12 @@ here.
 ---
 
 ## 13. What this phase is not
+
+> **AMENDMENT 2026-09-20.** Everything in this section still holds — but four
+> rows have now RUN, and **`status-10.md` is the phase's entry point.** This
+> file remains what it says it is: a pre-design workshop record, kept as
+> written so the reasoning that produced the ladder stays legible. Results are
+> not folded back into it.
 
 - Not a design. Nothing is specified to the level `design-10.md` requires.
 - Not a registration. No `P-*` id, and `claims/registry.json` is untouched.

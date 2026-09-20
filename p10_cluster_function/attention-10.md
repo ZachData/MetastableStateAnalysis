@@ -1,6 +1,15 @@
 <!-- p10_cluster_function/attention-10.md -->
 # Phase 10 — Where the attention actually goes
 
+> **UPDATE 2026-09-20 — row A0 has RUN and the gate it imposed has cleared.**
+> Over 3 646 layer-units the raw 1.417× / 0.825× flip becomes **1.034× /
+> 0.998×** once §2.2's structural tilt is divided out: **94 % of the gap is the
+> causal mask, and 100 % of it at initialisation**, with a learned residual
+> appearing only from step ~2000 and the position-bias confound *falling* with
+> training. Replicated on a second sweep with an independently-derived
+> partition. **Rows A1–A8 are unblocked** — `status-10.md` §5 rates A2 and A4
+> highest. Numbers and caveats: `status-10.md` §1.1, `PROJECT.md` §3.51.
+
 **The attentional signature, opened.** `notes-10.md` §3.1 lists four signatures
 of a parked particle and says the discrimination lives in the two nobody has
 measured. This file works the one that *has* been measured, finds that it has

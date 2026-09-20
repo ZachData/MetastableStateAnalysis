@@ -1,6 +1,28 @@
 <!-- p10_cluster_function/math-10.md -->
 # Phase 10 — MATH (derivations, checked)
 
+> **UPDATE 2026-09-20 — §1 and §2 are now CONFIRMED on real checkpoints**, and
+> §4's instruction is superseded by a measured hazard.
+>
+> **§1.** Divide the derived baseline out of the attention flip and 94 % of the
+> gap disappears; at initialisation all of it does (`status-10.md` §1.1).
+> **§2.** Over 11 400 units, raw `log Z` is **99.5 % position** at β = 1, the
+> sink sits at percentile **0.0014** of raw `Z` and **0.9986** of corrected `Z`
+> — identical to four decimals across β ∈ {1, 2, 4}, so the result does NOT
+> depend on the unit convention `docs/AXES.md` §4 flags (`status-10.md` §1.4).
+> `math-1.md` §1A.6 is right about the corrected quantity and inverted about
+> the raw one, as derived.
+> **§4.** The ARI variance argument stands, and a **fourth** hazard was measured
+> that no size-profile null addresses: the partition is not reproducible run to
+> run — 16.7 % of layer label-vectors differ between two sweeps agreeing to
+> 7.9e-05 (`status-10.md` §3).
+>
+> One caveat §2 did not state: sphere-projected activations have a **unit
+> diagonal**, so what they realise is `Z_i = e^β + i e^{βγ}` — affine in `i`
+> rather than proportional to `(i+1)` — and the `(i+1)` correction therefore
+> leaves a known residual (measured `position_r2_corrected` ≈ 0.32). Both forms
+> are test fixtures in `tests/test_p10_partition_function.py`.
+
 **Five results, four of them symbolically checked, three of them corrections to
 things this repository currently asserts.** Written 2026-09-20 alongside
 `lit-10.md`'s second scan, under `CLAUDE.md`'s rule that a closed-form
