@@ -52,30 +52,42 @@ bug.
 **This block is the handoff.** Everything a session needs to continue is here
 or one link away; the sections below it are orientation and history.
 
-**Git. Two PRs are open and the second is stacked on the first.**
-`main` is at **`ded8a06`** (PR #57 merged), CI green.
-- **PR #58 is OPEN** — `claude/aca-phase-9-planning-rvzw3x` → `main`, from the
-  worktree `../Mets-p10`. **Documentation and symbolic checks only**: Phase 9's
-  notes and plan (parked), Phase 10's `notes-10`/`lit-10`/`math-10`/
-  `attention-10`, `docs/AXES.md`, and four `tools/math_checks/` files.
-  4 471 lines, no runner, nothing registered.
-- **PR #59 is OPEN and BASED ON #58, so merge #58 first** —
-  `claude/p10-free-rows`, **targeted at #58's branch rather than at `main`** so
-  its diff is this work alone; GitHub retargets it to `main` when #58 merges.
-  Same worktree. **20 commits, 27 files, +5 986/−47**: Phase 10's four free
-  rows built, tested and **RUN**; the HDBSCAN backfill that unblocked them;
-  the partition-reproducibility measurement; both headline rows replicated on
-  the pilot sweep; three fixes to the e-value/null machinery;
-  `status-10.md`; and §3.51. Gate green at **2 616 passed**.
-- **PR #60 is OPEN and BASED ON #59**, so the stack is #58 → #59 → #60 and it
-  merges bottom-up — `claude/p10-literature-read`, same worktree.
-  **Documentation only, no code**: five papers read as primary text and the
-  eight files they change (§3.52.3). Nothing registered, no runner, no record.
+**Git. ONE PR is open, #60, and it targets `main` — the stack is gone.**
+`main` is at **`13fad11`** (PR #58 merged).
+
+**Read this before trusting any branch name: the merges did not go the way the
+stack was designed.** #58 merged to `main` as `13fad11`. **#59 was then merged
+into the already-merged #58 branch (`95a9dd2`) instead of into `main`**, so
+**`main` carries #58's content and NOT #59's** — the four free rows, their
+runners, `status-10.md` and §3.51 are *not* on `main`.
+
+- **PR #60 is OPEN, `claude/p10-literature-read` → `main`.** Retargeted from
+  `claude/p10-free-rows` on 2026-09-20 after GitHub reported a conflict. **The
+  conflict was never in the content**: the stale base branch had independently
+  re-merged `dc11b92` *after* this branch had already merged and reconciled it,
+  and two independent merges of the same commit conflict by construction.
+  Merging `origin/main` into it is a **content no-op** and was clean.
+- **#60 therefore carries BOTH bodies of work**: #59's four free rows and their
+  runners (it descends from `f4534c5`), plus the five-paper literature read,
+  `questions-10.md`, `handoff-10.md` and §3.52–§3.54. **35 files, +8 674/−128.**
+  Gate green at **2 616 passed**. **Merging #60 is what puts #59's work on
+  `main`.**
+- **Two branches are now superseded and carry nothing unique:**
+  `claude/p10-free-rows` (`96bb414`) and `claude/aca-phase-9-planning-rvzw3x`
+  (`95a9dd2`). Both are ancestors-in-content of #60. Delete them **after** #60
+  merges, not before — and verify with
+  `git log --oneline origin/claude/<name> ^origin/main` once it has.
 - **`claude/attention-collapse-augmentation-qsxwg8` is redundant** — its one
   commit (`cf5f7ee`, Phase 9's notes) was cherry-picked onto #58's branch.
   Delete it rather than opening a PR.
 
-The user merges from GitHub. After both merge, from the main tree:
+**The lesson, and it has now cost twice.** A PR targeted at another PR's branch
+does not retarget itself safely once the base merges; merging it then lands the
+work somewhere that is not `main`. **Target `main` and merge in order**, or
+check `git merge-base --is-ancestor <tip> origin/main` before assuming a merged
+PR's content actually reached `main`.
+
+The user merges from GitHub. After #60 merges, from the main tree:
 `git pull --ff-only && git worktree remove ../Mets-p10`. Only `data/` is
 untracked (the HF cache and run directories — never `git add -A` under it).
 
