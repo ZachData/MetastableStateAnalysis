@@ -282,12 +282,18 @@ def mean_nucleus_position(positions: np.ndarray, labels: Sequence[int]) -> float
 
     WHAT IT DOES NOT CONTROL FOR, and the permutation null does
     -----------------------------------------------------------
-    The minimum of a size-s subset of n positions is small by construction, and
-    the more clusters there are the smaller the mean of their minima. Neither
-    is evidence of anything. Both are held fixed by permuting labels among
-    tokens, which preserves the cluster count and every cluster's size exactly;
-    the null is therefore the right chance baseline and the raw value of this
-    statistic means nothing on its own.
+    The minimum of a size-s subset of n positions falls at about ``n/(s+1)``,
+    so **big clusters start early and small ones start late** whatever the
+    position coupling is -- the driver is the SIZE PROFILE, not the count, and
+    a partition into a few large clusters gives a raw statistic half that of
+    one into many small ones with membership assigned identically at random
+    (measured: 0.10 against 0.20 at n = 300, `test_p10_anchor.py`). None of
+    that is evidence of anything.
+
+    Permuting labels among tokens preserves the cluster count and every
+    cluster's size exactly, so the whole size profile is held fixed and what
+    is left is the position coupling. **The raw value of this statistic means
+    nothing on its own**; only its position in the null does.
     """
     pos = np.asarray(positions, dtype=np.float64)
     lab = np.asarray(labels)

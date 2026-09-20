@@ -261,3 +261,52 @@ def test_no_single_unit_can_reject_at_this_draw_count():
 
     floor = 1.0 / (N_PERMUTATIONS + 1)
     assert calibrate(floor) < 1.0 / DEFAULT_ALPHA
+
+
+# --- the checkpoint axis ---------------------------------------------------
+
+def _ck_row(raw_n=2.0, raw_c=0.6, corr_n=1.15, corr_c=0.98, p=0.5):
+    return {"raw_noise": raw_n, "raw_clustered": raw_c,
+            "corrected_noise": corr_n, "corrected_clustered": corr_c,
+            "position_bias": 0.02, "noise_fraction": 0.39,
+            "raw_p": p, "corrected_p": p, "position_bias_p": p}
+
+
+def test_the_checkpoint_split_exists_because_averaging_hides_development():
+    """The sweep's mean corrected gap is small; the late checkpoints' is not.
+    A row that only reported the mean would have called a real developmental
+    effect no effect."""
+    dirs = [
+        {"checkpoint": 0, "layers": [_ck_row(1.17, 0.92, 1.003, 0.999, p=0.9)]},
+        {"checkpoint": 143000, "layers": [_ck_row(2.28, 0.59, 1.153, 0.981, p=0.001)]},
+    ]
+    got = aggregate(dirs)
+    early = got["by_checkpoint"]["0"]
+    late = got["by_checkpoint"]["143000"]
+    assert early["corrected_gap"] == pytest.approx(0.004, abs=1e-3)
+    assert late["corrected_gap"] == pytest.approx(0.172, abs=1e-3)
+    assert late["corrected_E"] > early["corrected_E"]
+
+
+def test_gap_surviving_correction_is_a_fraction_of_the_raw_gap():
+    dirs = [{"checkpoint": 5, "layers": [_ck_row(1.5, 0.5, 1.1, 0.9)]}]
+    ck = aggregate(dirs)["by_checkpoint"]["5"]
+    assert ck["raw_gap"] == pytest.approx(1.0)
+    assert ck["corrected_gap"] == pytest.approx(0.2)
+    assert ck["gap_surviving_correction"] == pytest.approx(0.2)
+
+
+def test_a_zero_raw_gap_gives_none_not_a_division_by_zero():
+    dirs = [{"checkpoint": 5, "layers": [_ck_row(1.0, 1.0, 1.0, 1.0)]}]
+    assert aggregate(dirs)["by_checkpoint"]["5"]["gap_surviving_correction"] is None
+
+
+def test_checkpoints_sort_numerically():
+    dirs = [{"checkpoint": c, "layers": [_ck_row()]} for c in (0, 8, 512, 143000)]
+    assert list(aggregate(dirs)["by_checkpoint"]) == ["0", "8", "512", "143000"]
+
+
+def test_directories_without_a_checkpoint_do_not_break_the_split():
+    got = aggregate([{"checkpoint": None, "layers": [_ck_row()]}])
+    assert got["by_checkpoint"] == {}
+    assert got["n_units"] == 1

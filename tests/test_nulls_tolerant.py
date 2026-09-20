@@ -98,3 +98,108 @@ def test_non_finite_draws_are_still_dropped_and_counted():
     res = p_from_null_tolerant(2.0, draws)
     assert res["n_null_finite"] == 3
     assert res["n_null_dropped"] == 2
+
+
+# ---------------------------------------------------------------------------
+# `label_permutation_null_within` — the restricted null
+# ---------------------------------------------------------------------------
+
+from core.nulls import label_permutation_null, label_permutation_null_within
+from core.parking import mean_nucleus_position
+
+
+def test_the_restricted_null_never_moves_a_token_in_or_out_of_noise():
+    """Its defining property. The clustered/noise split is what it holds
+    fixed, and the ordinary null is what moves it."""
+    lab = np.array([-1, 0, 0, -1, 1, 1, -1, 2, 2, -1])
+    seen = []
+
+    def spy(fixed, labels):
+        seen.append((labels == -1).tolist())
+        return 0.0
+
+    label_permutation_null_within(np.arange(10.0), lab, spy, n_permutations=30,
+                                  rng=np.random.default_rng(0))
+    assert all(s == (lab == -1).tolist() for s in seen)
+
+
+def test_the_restricted_null_still_preserves_every_cluster_size():
+    lab = np.array([-1, 0, 0, 0, -1, 1, 1, -1, 2, 2])
+    sizes = sorted(np.bincount(lab[lab >= 0]).tolist())
+    seen = []
+
+    def spy(fixed, labels):
+        seen.append(sorted(np.bincount(labels[labels >= 0]).tolist()))
+        return 0.0
+
+    label_permutation_null_within(np.arange(10.0), lab, spy, n_permutations=30,
+                                  rng=np.random.default_rng(0))
+    assert all(s == sizes for s in seen)
+
+
+def test_the_two_nulls_disagree_when_the_populations_differ_in_position():
+    """The case the restricted null exists for: clustered tokens all late.
+    The ordinary null says the nuclei are extraordinarily late, because it is
+    free to move clusters into the early half. The restricted one, which is
+    not, says nothing is going on -- and that is the honest answer about
+    NUCLEATION."""
+    n = 200
+    lab = np.full(n, -1)
+    # Clustered tokens all in the late half, but WHICH cluster each carries is
+    # random among them -- so there is nothing to find about nucleation, and
+    # the only structure is the population split itself.
+    lab[100:] = np.random.default_rng(0).permutation(np.repeat(np.arange(20), 5))
+    pos = np.arange(n, dtype=float)
+    obs = mean_nucleus_position(pos, lab)
+
+    wide = label_permutation_null(pos, lab, mean_nucleus_position,
+                                  n_permutations=400, rng=np.random.default_rng(1))
+    tight = label_permutation_null_within(pos, lab, mean_nucleus_position,
+                                          n_permutations=400,
+                                          rng=np.random.default_rng(1))
+    assert p_from_null_tolerant(obs, wide, alternative="less")["p_value"] > 0.95
+    assert 0.05 < p_from_null_tolerant(obs, tight, alternative="less")["p_value"] < 0.95
+
+
+def test_the_restricted_null_still_detects_real_nucleation():
+    """Power is kept: seed every cluster at the front of the clustered
+    population and the restricted null rejects."""
+    rng = np.random.default_rng(2)
+    n = 300
+    lab = np.full(n, -1)
+    clustered = np.sort(rng.choice(n, size=120, replace=False))
+    for cid in range(20):
+        lab[clustered[cid]] = cid                      # the 20 earliest, seeded
+    rest = clustered[20:]
+    lab[rest] = rng.integers(0, 20, size=rest.size)
+    pos = np.arange(n, dtype=float)
+    draws = label_permutation_null_within(pos, lab, mean_nucleus_position,
+                                          n_permutations=400, rng=rng)
+    res = p_from_null_tolerant(mean_nucleus_position(pos, lab), draws,
+                               alternative="less")
+    assert res["p_value"] < 0.01, res
+
+
+def test_fewer_than_two_clustered_tokens_gives_a_constant_null_not_a_floor():
+    """Nothing can be permuted, so the honest p is 1. Filling the null with the
+    observation is what produces that, via the tie guard."""
+    lab = np.array([-1, -1, 0, -1])
+    pos = np.arange(4.0)
+    draws = label_permutation_null_within(pos, lab, lambda f, l: 0.25,
+                                          n_permutations=50,
+                                          rng=np.random.default_rng(0))
+    assert np.all(draws == 0.25)
+    assert p_from_null_tolerant(0.25, draws, alternative="less")["p_value"] == 1.0
+
+
+def test_a_custom_noise_label_is_honoured():
+    lab = np.array([99, 0, 0, 99, 1, 1])
+    seen = []
+
+    def spy(fixed, labels):
+        seen.append((labels == 99).tolist())
+        return 0.0
+
+    label_permutation_null_within(np.arange(6.0), lab, spy, n_permutations=10,
+                                  rng=np.random.default_rng(0), noise_label=99)
+    assert all(s == [True, False, False, True, False, False] for s in seen)

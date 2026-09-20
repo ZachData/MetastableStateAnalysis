@@ -73,6 +73,7 @@ import json
 import os
 import sys
 import time
+from collections import defaultdict
 from pathlib import Path
 
 REPO = Path(os.environ.get("METS_REPO", "/run/media/system/WDS_500/Mets"))
@@ -91,6 +92,7 @@ from core.parking import (
     relative_to_layer_mean,
 )
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
+from tools.run.p10_anchor import checkpoint_of
 
 #: Permutations per (directory, layer). 400 gives a resolution floor of
 #: 1/401 = 0.0025, which calibrates to an e-value of 9.98 -- below 1/alpha = 20,
@@ -209,6 +211,7 @@ def measure_directory(run_dir: Path, rng) -> dict:
     return {
         "run_dir": run_dir.name,
         "timestamp": run_dir.parent.name,
+        "checkpoint": checkpoint_of(run_dir.name),
         "labels_from": labels_provenance(run_dir),
         "n_heads": int(attn.shape[1]),
         "layers": layers,
@@ -217,7 +220,12 @@ def measure_directory(run_dir: Path, rng) -> dict:
 
 def aggregate(dirs: list) -> dict:
     """Sweep-level readout. Averages the enrichments, and merges the p-values
-    with the dependence-robust merger."""
+    with the dependence-robust merger.
+
+    The per-checkpoint split is not decoration. Averaging over training reads a
+    developmental effect as no effect, and "when" is the axis this project
+    exists for.
+    """
     rows = [l for d in dirs for l in d.get("layers", [])]
     if not rows:
         return {"n_units": 0}
@@ -244,6 +252,36 @@ def aggregate(dirs: list) -> dict:
         out[f"{name}_reject"] = bool(reject)
         out[f"{name}_median_p"] = round(float(np.median(ps)), 4)
         out[f"{name}_frac_p_below_05"] = round(float(np.mean(np.array(ps) < 0.05)), 4)
+
+    by_ckpt = defaultdict(list)
+    for d in dirs:
+        if d.get("checkpoint") is not None:
+            by_ckpt[d["checkpoint"]].extend(d.get("layers", []))
+    out["by_checkpoint"] = {}
+    for step, ls in sorted(by_ckpt.items()):
+        if not ls:
+            continue
+        def mm(key, ls=ls):
+            v = np.array([l[key] for l in ls if np.isfinite(l[key])])
+            return round(float(v.mean()), 4) if v.size else None
+        raw_gap = mm("raw_noise") - mm("raw_clustered")
+        corr_gap = mm("corrected_noise") - mm("corrected_clustered")
+        E, reject = average_p([l["corrected_p"] for l in ls
+                               if np.isfinite(l["corrected_p"])])
+        out["by_checkpoint"][str(step)] = {
+            "n_units": len(ls),
+            "raw_noise": mm("raw_noise"),
+            "raw_clustered": mm("raw_clustered"),
+            "corrected_noise": mm("corrected_noise"),
+            "corrected_clustered": mm("corrected_clustered"),
+            "raw_gap": round(float(raw_gap), 4),
+            "corrected_gap": round(float(corr_gap), 4),
+            "gap_surviving_correction": round(float(corr_gap / raw_gap), 4)
+            if abs(raw_gap) > 1e-9 else None,
+            "position_bias": mm("position_bias"),
+            "corrected_E": round(float(E), 4),
+            "corrected_reject": bool(reject),
+        }
     return out
 
 
