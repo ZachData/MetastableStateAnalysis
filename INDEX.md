@@ -7,13 +7,16 @@ work — that is `PROJECT.md`, which is the file to read first.**
 
 ## Current priority (updated 2026-09-19)
 
-- **Live thread: the e-value audit, phase by phase (`PROJECT.md` §3.36).**
-  There are no e-values yet — the ledger is empty — so the audit is of
-  classification and evidence. `claims/registry.json` now carries `phase`
-  and three evidence-path fields that CI checks; `claims/EVALUABILITY.md`
-  "By phase" is the view to read; `claims/EVALUABILITY_LOG.md` is the
-  construction diary. Phases 1 and 1c are audited (§3.36, §3.40);
-  **next unit: Phase 2 / 2d.**
+- **The e-value audit is COMPLETE (`PROJECT.md` §3.36, §3.40, §3.43–§3.45).**
+  Five units, thirty-nine registered predictions, **zero e-values**. One gate
+  has been run on real checkpoints — `CLAIM-C`, three times, refusing three
+  different ways (§3.41, §3.46) — and one p-value is recorded (`P-I1`,
+  INSUFFICIENT, its p not quotable). **The pattern: the instruments are in
+  better shape than the inputs, and wherever the inputs exist the blocker is a
+  decision nobody has taken** — β's scale convention, `P-T1`'s wording,
+  `P6-R2`/`R4`'s exchangeable unit, `P-S1`'s matched-k clustering. None costs a
+  forward pass. `claims/EXPERIMENTS.md` is the per-phase view;
+  `claims/EVALUABILITY_LOG.md` is the construction diary.
 - **Direction (`PROJECT.md` §3.29, 2026-09-13, user): the programme is the
   particle/OT reading — mathematical perspective + optimal transport applied
   to mechanisms the network builds.** Induction heads (the whole thread
@@ -109,8 +112,9 @@ work — that is `PROJECT.md`, which is the file to read first.**
 | 1c | `p1c_frames/` | Implemented and validated on synthetic data. **Audited 2026-09-19 (§3.40): E run against Pythia artifacts (`P-H1` measured), A/B/F blocked on inputs no run directory carries** |
 | 2 | `p2_eigenspectra/` | Complete; the Pythia rerun is done and the 19-step sweep is on disk |
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |
-| 2d | `p2d_operator_activation/` | Implemented and validated on constructed operators; **not run**. Blocked on Phase 1c-B by design |
-| 7 | `p7_motifs/` | New — mechinterp phenomena as particle motifs. See "Phase 7" below |
+| 2d | `p2d_operator_activation/` | Implemented and validated on constructed operators; **not run**. **Audited 2026-09-19 (§3.43): inputs all present and the join verified on real artifacts** — blocked on Phase 1c-B by design, and on `P-T1`'s wording |
+| 6 | `p6_subspace/` (live) / `archive/p6_subspace/` (frozen) | Ten rows dormant; **`P6-R2` and `P6-R4` active**, their projector path rebuilt live 2026-08-24. **Audited 2026-09-19 (§3.44): `P6-R2` needs `U_A`, which no artifact carries; `P6-R4`'s inputs exist and it needs an exchangeable unit the registry never named.** `status-6.md` |
+| 7 | `p7_motifs/` | New — mechinterp phenomena as particle motifs. **Audited 2026-09-19 (§3.45): `P-I1`'s run is recorded at last; `P-ST1`/`P-AB1`/`P-I3` built, calibrated, unrun; `P-I5` parked.** See "Phase 7" below |
 | 7d | `p7d_redundancy/` | **Active.** The redundancy set — which heads hold the induction regime and when each formed. Q1/Q2/Q3 answered; results in `PROJECT.md` §3.12-S/T/U. Every runner now takes `--model` and `--ablation` |
 | 7e | `p7e_consolidation/` | **Active.** Whether the set collapses into one head; `L11H14`. Gate measurement answered — `status-7e.md` |
 | 8 | `p8_scale_ladder/` | **Active.** The same measurements across the Pythia ladder. 70m rung run 2026-09-11; `compare_rungs.py` is the cross-rung reader. **Read `literature-8.md` before the next measurement** — the verified scan reframes the phase. See `status-8.md`, `PROJECT.md` §3.15–§3.16 |

@@ -86,15 +86,21 @@ A one-paragraph summary as of 2026-09-17; `PROJECT.md`'s header line and
   that is now past diminishing returns. The next objects for the same pass —
   *why did this form, what were the mechanisms, what happened after* — are
   SAE features and the clusters themselves.
-- **The live thread is the e-value audit** (§3.36). There are 39 registered
-  predictions, 12 nulls built and calibrated, one run on real artifacts
-  (exploratory), and **zero adjudications** — the ledger is empty, honestly.
-  The registry now carries evidence paths that CI checks, and the audit is
-  working through the phases in order. Phase 1 is done and its first finding
-  is that `CLAIM-C`'s hard-stop gate — the one every downstream Pythia sweep
-  was supposed to pass through — refuses on everything in the tree, because
-  the `gpt2-large` and `pythia-1.4b` arms it needs were never run. Two
-  decisions are pending there before Phase 1c.
+- **The e-value audit is finished** (§3.36, §3.40, §3.43–§3.45, completed
+  2026-09-19). All **39** registered predictions examined across five units,
+  and **zero e-values** — the ledger is empty, honestly. Its result is not a
+  list of things left to run: **wherever the inputs exist, the blocker is a
+  decision nobody has taken**, and none of the four costs a forward pass —
+  β's scale convention, `P-T1`'s wording, `P6-R2`/`R4`'s exchangeable unit,
+  `P-S1`'s matched-k clustering.
+- **`CLAIM-C`'s hard-stop gate has now been run, three times, and refused
+  three different ways** (§3.41, §3.46): a metric dead in every arm because
+  `hdbscan` was never a declared dependency and the writer forged zeros in its
+  absence; then a floor eight prompts cannot reach; then a homogeneity
+  correction tabulated only to twelve prompts, which extending the battery to
+  twenty invalidated. Each fix revealed the next, and **not one of them was a
+  fact about the phenomenology.** The arms it needed — `gpt2-large` and
+  `pythia-1.4b`, never run before — exist now, twice over.
 - **Parked, not closed:** `P-I5`'s joint permutation null — two
   head-comparison controls failed to discriminate an induction head from two
   uninvolved heads, and a single-head diagnostic explained why the readout

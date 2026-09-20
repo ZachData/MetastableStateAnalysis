@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` carries everything through PR #54 (`1101ca9`). Current work: `claude/claim-c-arms` (worktree `../Mets-claim-c`), **PR #56 open to `main`** — Phase 1c's audit (reviewed as #55, which targeted this branch) plus the HDBSCAN fix and the first real `CLAIM-C` gate run |
-| Last updated | 2026-09-19 — **§3.46: the v2 battery ran (4 h 51) and `CLAIM-C`'s gate refused a THIRD time — the table is complete (20 prompts, 120 cells, 54 concordant) and the floor is no longer binding, but the homogeneity correction is tabulated only to twelve prompts, so extending the battery invalidated the calibration it depends on. Three refusals in sequence — missing arms, a dead metric, an unreachable floor, an untabulated correction — and none of them a fact about the phenomenology. Extending the curve is ~45 min for n=20 plus ~40 min to regenerate 6–12; deferred by decision.** §3.45: THE E-VALUE AUDIT IS COMPLETE — five units, thirty-five predictions, ZERO e-values. Phase 7 closed it: `P-I1`'s run is finally recorded (`claims/audits/p_i1_real_run.json`, `real_run_record` set) and the `p = 0.1414` four documents quoted is not quotable (0.14 at K=50, 0.89 at K=100, same verdict). The pattern across all five: the instruments are in better shape than the inputs, and where the inputs exist the blocker is a decision nobody has taken — β's convention, `P-T1`'s wording, `P6-R2/R4`'s unit, `P-S1`'s matched-k. None costs a forward pass.** §3.44: phases 5b/6 audited — `P6-R2`'s second arm is the imaginary subspace `U_A`, which NO artifact carries and which §6 wrongly said no registered prediction needed (§6 corrected); `P6-R4`'s inputs do exist and it is blocked on an exchangeable unit the registry never named; four dormant rows read `e-value` with no gate, a blind spot in `check_registry`. Phase 7 is the last unit.** §3.43: Phase 2/2d audited — `P-T1`/`P-M1` are the first gates in the audit whose inputs are ALL present (19/19 operator sets, join verified on real artifacts), blocked only by design (β producer → 1c-B → 2d) and by `P-T1`'s wording omitting half of Table 1 row 2, which must be amended before it runs; `CLAIM-B` needs 19 control series and the sweep has 6, needs 20–30 checkpoints and it has 19.** Disk cleared and rearranged (§5.2/§5.3): the four superseded `CLAIM-C` arm directories and `data/superseded/` deleted, `results/`'s two pilot sweeps MOVED to HDD_1TB and symlinked back (~130 GB), and the 355 GB activation cache deliberately LEFT ALONE — two of §5.3's premises are now stale (pythia-70m is cached with 19 revisions; gpt2-large is cached, so that half is regenerable) but the two that decide it still stand.** §3.42: prompt battery **v2** — twelve rows added (9 → 21 prompts, `CLAIM-C`'s units 8 → 20, hash `1e47918ef77a` → `06790b90dcfe`) to lift a FLOOR, not a finding: at 20 prompts the smallest expressible p is 0.0156 once six rows can move, against 0.0661 at eight. The rule was committed before the text existed and the twelve were chosen blind; v1 and v2 runs are not comparable, and the four arms are being re-run on v2 (~5½ h).** §3.41: `CLAIM-C`'s gate RAN on real checkpoints for the first time and returned `INSUFFICIENT` (no p-value, concordance 23/48 = 47.9%). Not for want of data — four of eight prompts split their metrics 3–3, so the full six-metric row cannot express a p below 0.0661, and the six leave-one-out subsets, where it can, sit at 0.25–0.96. Per metric: `fiedler_mean` 8/8 and `mass_near_1` 7/8 transfer, `cka_prev` 0/8 and `effective_rank` 1/8 invert. Getting there took installing `hdbscan` (never declared, missing since ~2026-08-31, two of six metrics come from it alone), un-forging the zeros the writer wrote in its absence, and re-running all four arms in 2 h 20.** §3.40: Phase 1c audited. All four classifications are correct; three of the four gates cannot be fed by anything on disk — no `geometry.json` carries `beta_eff` (derivable from `attentions.npz` + LN params with no forward pass, demonstrated) and no run directory carries the `kmeans_centroids_L*` `P-S1`'s primary arm reads, while its two arms agree on cluster count in 25 of 175 layer-rows. `P-H1` measured for the first time: the cone condition is feasible at every layer of every prompt, minimum at layer 0. Five decisions wait on the author. **`CLAIM-C`'s last two arms ran (34 and 17 min), and with all four in the gate REFUSES on `cluster_count`: HDBSCAN has never run here, so two of its six registered metrics are dead and only one of them says so.** 2026-09-17 — **§3.36 decisions taken: `CLAIM-C` spends the compute in arm-sized jobs, `CLAIM-A` stays `needs-null`. Two of five arms produced (`gpt2-large` 65 min, `gpt2-large-random` 33 min); the gate now refuses only on the three pythia-1.4b arms, all cached and runnable offline. `gpt2-large-random` had NEVER loaded (no `hf_repo` in its registry entry) — fixed, with a smoke test.** **§3.38: review corrections — `P-I5`'s statistic is now intersection-union (min-rank had a 0.17 Type-I rate on the falsifier's configuration), five overclaims in §3.32–§3.35 narrowed to what was measured, CI on `main` fixed (import-time interpreter guard).** §3.36 Phase 1 audited: `CLAIM-C`'s gate now has plumbing (`tools/score_claim_c.py`) and REFUSES on the tree — gpt2-large and pythia-1.4b have never been run, so the hard stop was bypassed de facto; `CLAIM-A`'s null specified, not built (two decisions pending, §3.36).** **`README.md` added (PR #49): the front door — which document answers which question, layout, phases, the discipline, install and the gate.** §3.36: the e-value audit begins — there are no e-values yet, and the registry now carries evidence paths (`phase`, `null_module`, `calibration_record`, `real_run_record`) that CI checks exist and are tracked. `EVALUABILITY.md` is current state only, with a generated by-phase view; its thirteen dated passes moved verbatim to `claims/EVALUABILITY_LOG.md`; every live `status-N.md` opens with its registered predictions. Next unit: Phase 1c. §3.35 (2026-09-16): §2.5's isometric path on `L7H8` — `t=0`/`t=1` asymmetry despite identical spectra. §3.34: `P-I5`'s control thread, parked. §3.29 (2026-09-13): the direction decision. |
+| Last updated | **2026-09-19.** The **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table is the whole result on one screen; the units are §3.36, §3.40, §3.43, §3.44, §3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** — a metric dead in every arm because `hdbscan` was never a declared dependency, then an unreachable floor at eight prompts, then an untabulated homogeneity correction at twenty (§3.41, §3.46). **Prompt battery v2**: twelve prompts added blind under a rule committed first, 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free, two pilot sweeps moved to HDD_1TB, the activation cache left alone (§5.2/§5.3). Earlier entries live in their own §3.x sections rather than in this cell. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -38,32 +38,32 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-19 — Phase 1c audited; `CLAIM-C`'s arms are all in and its gate refuses on a dead metric; two PRs open and one branch unmerged)
+### Resume here (2026-09-19 — the e-value audit is COMPLETE; `CLAIM-C`'s gate has run three times and refused three different ways; PR #57 open)
 
 **This block is the handoff.** Everything a session needs to continue is here
 or one link away; the sections below it are orientation and history.
 
-**Git. Three things are outstanding and none of them is on `main`.**
-`main` is at PR #53 (`a3f0d40`), CI green.
-- **PR #54 is OPEN** — `claude/claim-c-arms` → `main`, from the worktree
-  `../Mets-claim-c`: the `gpt2-large-random` loader fix + smoke test, the
-  updated `claims/audits/claim_c_real_run.json`, and the previous handoff.
-- **PR #55 is OPEN** — `claude/evalue-audit-phase-1c` → `main`, from the
-  worktree `../Mets-1c-audit`, **based on `claude/claim-c-arms`, so merge
-  #54 first**: Phase 1c's audit (§3.40), `tools/audit_p1c_inputs.py` + 7
-  pure tests, and the two records under `claims/audits/`.
-- **`claude/attention-collapse-augmentation-qsxwg8` has NO PR** — one commit
-  from a cloud session on 2026-09-18 opening Phase 9 as notes only
-  (`p9_metric_intervention/notes-9.md`, §3.39). It is based on `main` and
-  numbers its section §3.39; §3.40 was taken here to avoid a second §3.16-style
-  collision. It needs a PR opened, or deleting.
+**Git.** `main` is at **`e238903`** (PR #56 merged 2026-09-19 18:35), CI green.
+- **PR #57 is OPEN** — `claude/claim-c-arms` → `main`, from the worktree
+  `../Mets-claim-c`. Seven commits that landed *after* #56 merged: prompt
+  battery v2's twelve prompts (#56 carried only the rule), the audit's last
+  three phases (2/2d, 5b/6, 7), the v2 gate run, and the disk rearrangement.
+  **Everything this session produced after 18:35 is in #57 and nowhere else.**
+- **`claude/attention-collapse-augmentation-qsxwg8` still has NO PR** — one
+  commit from a cloud session on 2026-09-18 opening Phase 9 as notes only
+  (`p9_metric_intervention/notes-9.md`, §3.39). Based on `main`. It needs a PR
+  opened, or deleting; it is the only unmerged work that is not in #57.
 
-The user merges from GitHub; after each merge, from the main tree:
-`git pull --ff-only && git worktree remove ../<worktree>`. The spent branches
+The user merges from GitHub. After #57 merges, from the main tree:
+`git pull --ff-only && git worktree remove ../Mets-claim-c`. The spent branches
 `claude/coderabbit-p-i5-isometric` and `claude/evalue-audit-phase-1c` were
-deleted on 2026-09-19; `claude/attention-collapse-augmentation-qsxwg8` (Phase
-9's notes, §3.39) is unmerged and still has no PR. Only `data/` is untracked
-(the HF cache and run directories — never `git add -A` under it).
+deleted on 2026-09-19 and `../Mets-1c-audit` is already removed. Only `data/`
+is untracked (the HF cache and run directories — never `git add -A` under it).
+
+**A merge mid-session is not a merge of the session.** #56 merged at 18:35 and
+captured the branch as it stood at that instant; the seven commits after it sat
+unmerged until #57 was opened. Check `git log origin/main..HEAD` in the
+worktree before assuming a PR carries what you wrote.
 
 **Compute is DONE, nothing is running, and the gate has been run.** All four
 required `CLAIM-C` arms were produced, then **re-run on 2026-09-19 with
@@ -126,7 +126,7 @@ Fixed by fetching the tokenizer at `main` once, online; **any new Pythia size
 needs the same** before it can run offline.
 
 **The e-value audit is COMPLETE (§3.36, §3.40, §3.43, §3.44, §3.45).** Five
-units, thirty-five registered predictions, **zero e-values**. One gate has
+units, thirty-nine registered predictions, **zero e-values**. One gate has
 been run on real checkpoints (`CLAIM-C`, INSUFFICIENT) and one p-value is
 now recorded (`P-I1`, INSUFFICIENT, its p not quotable). The per-phase
 state, and §3.45's closing table for the pattern:
@@ -160,8 +160,10 @@ job the gate itself prescribes**, costed on this machine at ~45 min for the
 n = 20 row plus ~40 min to regenerate rows 6–12, or ~4 h for a contiguous
 6–20. **Decided 2026-09-19 (user): not tonight.**
 
-**Read this block, then §3.40, then §3.36 (its 2026-09-17 decisions block), then §3.38, then §3.35, then §3.34, then §3.33, then §3.32, then
-§3.31, then §3.30, then §3.29, then §3.28.** §3.29 is the direction
+**Read this block, then §3.45's closing table (the audit's whole result on one
+screen), then §3.46, §3.41 and §3.42 (what `CLAIM-C` cost and what it
+returned), then the audit units in any order — §3.40, §3.43, §3.44, §3.45 —
+then §3.36, §3.38, §3.35, §3.34, §3.33, §3.32, §3.31, §3.30, §3.29, §3.28.** §3.29 is the direction
 decision and it demotes everything below it: the programme is the
 particle/OT reading and the induction thread is an instance of it that is
 now past diminishing returns. §3.34 flagged a check-in: `P-I5`'s control
@@ -3761,15 +3763,21 @@ opposite of 5b/6's four dormant `e-value` rows (§3.44).
 
 ---
 
-### The audit, finished: five units, thirty-five predictions, zero e-values
+### The audit, finished: five units, thirty-nine predictions, zero e-values
 
 | phase | rows | what stops them |
 |---|---|---|
-| 1 | `CLAIM-A`, `CLAIM-C` | `CLAIM-C` RAN and returned INSUFFICIENT at chance concordance (§3.41); `CLAIM-A` queued behind it |
-| 1c | `P-gamma1/2`, `P-H1`, `P-S1` | inputs no run directory carries — no `beta_eff`, no persisted centroids (§3.40); `P-H1` measured |
-| 2 / 2d | `CLAIM-B`, `P-T1`, `P-M1` | inputs all present; blocked by a design chain and by `P-T1`'s wording. `CLAIM-B` cannot reach α on its instrument (§3.43) |
-| 5b / 6 | 21 rows | `P6-R2` needs a channel nothing measures; `P6-R4` needs an exchangeable unit nobody registered (§3.44) |
-| 7 | 9 rows | four built, calibrated and unrun; `P-I1` now recorded; `P-I5` parked (§3.45) |
+| 1 | 3 — `CLAIM-A`, `CLAIM-B`, `CLAIM-C` | `CLAIM-C` RAN, three times, refusing three different ways (§3.41, §3.46); `CLAIM-B` cannot reach α on its instrument (§3.43); `CLAIM-A` queued behind `CLAIM-C` |
+| 1c | 4 — `P-gamma1/2`, `P-H1`, `P-S1` | inputs no run directory carries — no `beta_eff`, no persisted centroids (§3.40); `P-H1` measured |
+| 2d | 2 — `P-T1`, `P-M1` | inputs all present and the join verified; blocked by a design chain and by `P-T1`'s wording (§3.43) |
+| 5b | 9 | all dormant; four of them read `e-value` with no gate (§3.44) |
+| 6 | 12 | ten dormant. `P6-R2` needs a channel nothing measures; `P6-R4` needs an exchangeable unit nobody registered (§3.44) |
+| 7 | 9 | four built, calibrated and unrun; `P-I1` now recorded; `P-I5` parked by design (§3.45) |
+| **total** | **39** | **zero e-values** |
+
+*(`CLAIM-B` sits in Phase 1 by the registry's `phase` field but is
+instrumented by Phase 2's sweep, which is why §3.43 audits it; Phase 2 itself
+registers nothing.)*
 
 **The pattern, stated once.** Across all five units the instruments are in
 better shape than the inputs, and wherever the inputs exist the blocker is a
@@ -4249,7 +4257,7 @@ The arms' contrast has not been read. **Defect:** `gpt2-large-random`'s
 `hf_repo` added to it and to `albert-base-v2-random`, with
 `tests/test_random_controls_name_base.py` (smoke) guarding the invariant.
 
-**Next unit: Phase 1c** (`P-gamma1`, `P-gamma2`, `P-H1`, `P-S1`). The three
+**Next unit: Phase 1c** (`P-gamma1`, `P-gamma2`, `P-H1`, `P-S1`) — *done, and so is the rest of the audit; see §3.45.* The three
 1.4b arms are compute to schedule, not a unit of reading work.
 
 **Addendum, 2026-09-17 — reconciled with the parallel phase-map (§3.37).**
