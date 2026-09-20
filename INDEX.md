@@ -5,8 +5,9 @@
 archived, and what is referenced but absent. It is not the current state of the
 work — that is `PROJECT.md`, which is the file to read first.**
 
-## Current priority (updated 2026-09-19)
+## Current priority (updated 2026-09-20)
 
+- **Phase 9 is open as notes plus a plan, and is where the direction points (`PROJECT.md` §3.29, §3.47).** `p9_metric_intervention/notes-9.md` then `plan-9.md`. Pre-design: nothing frozen, nothing registered, trigger 1 not discharged. **The plan's finding is that the phase cannot start at the intervention** — three cluster labellings exist as code, none has been run against the others, and `core/functional_distance.py::frame_agreement` was written to score exactly that and has never been called on a real run. Three actions in its ladder are free and unblocked today; one is a registry decision.
 - **The e-value audit is COMPLETE (`PROJECT.md` §3.36, §3.40, §3.43–§3.45).**
   Five units, thirty-nine registered predictions, **zero e-values**. One gate
   has been run on real checkpoints — `CLAIM-C`, three times, refusing three
@@ -118,7 +119,7 @@ work — that is `PROJECT.md`, which is the file to read first.**
 | 7d | `p7d_redundancy/` | **Active.** The redundancy set — which heads hold the induction regime and when each formed. Q1/Q2/Q3 answered; results in `PROJECT.md` §3.12-S/T/U. Every runner now takes `--model` and `--ablation` |
 | 7e | `p7e_consolidation/` | **Active.** Whether the set collapses into one head; `L11H14`. Gate measurement answered — `status-7e.md` |
 | 8 | `p8_scale_ladder/` | **Active.** The same measurements across the Pythia ladder. 70m rung run 2026-09-11; `compare_rungs.py` is the cross-rung reader. **Read `literature-8.md` before the next measurement** — the verified scan reframes the phase. See `status-8.md`, `PROJECT.md` §3.15–§3.16 |
-| 9 | `p9_metric_intervention/` | **Notes only.** Pre-design, nothing frozen, nothing registered — intervening on the *metric* the dynamics is read in rather than on the weights. `CLAUDE.md` trigger 1's literature scan is **not** discharged; `notes-9.md` §11 names the searches. No code yet. Read `notes-9.md` §9 first: it corrects two stale statements about what `core/dissipation.py` computes and what has been run |
+| 9 | `p9_metric_intervention/` | **Notes and a plan. Pre-design, nothing frozen, nothing registered** — intervening on the *metric* the dynamics is read in rather than on the weights. `CLAUDE.md` trigger 1's literature scan is **not** discharged. Read `notes-9.md` (what the lever is, and what already stands in the way) then `plan-9.md` (what a cluster would have to be for the lever to mean anything, the closed-form limits on `Γ`, and a fourteen-row experiment ladder). No code yet. `plan-9.md` §11 and `PROJECT.md` §3.47 carry two stale blockers it cleared |
 
 Shared code lives in `core/`; one-off scripts in `tools/`; tests in `tests/`.
 

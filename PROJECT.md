@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `main` carries everything through PR #54 (`1101ca9`). Current work: `claude/claim-c-arms` (worktree `../Mets-claim-c`), **PR #56 open to `main`** — Phase 1c's audit (reviewed as #55, which targeted this branch) plus the HDBSCAN fix and the first real `CLAIM-C` gate run |
-| Last updated | **2026-09-19.** The **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table is the whole result on one screen; the units are §3.36, §3.40, §3.43, §3.44, §3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** — a metric dead in every arm because `hdbscan` was never a declared dependency, then an unreachable floor at eight prompts, then an untabulated homogeneity correction at twenty (§3.41, §3.46). **Prompt battery v2**: twelve prompts added blind under a rule committed first, 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free, two pilot sweeps moved to HDD_1TB, the activation cache left alone (§5.2/§5.3). Earlier entries live in their own §3.x sections rather than in this cell. |
+| Branch | `main` is at `ded8a06` (PR #57 merged). Current work: **`claude/aca-phase-9-planning-rvzw3x`** — Phase 9's planning pass, documentation only. It carries `cf5f7ee` (Phase 9's notes) cherry-picked off `claude/attention-collapse-augmentation-qsxwg8`, which had no PR and is now redundant |
+| Last updated | **2026-09-20.** **§3.47: Phase 9 has a plan (`p9_metric_intervention/plan-9.md`), still pre-design.** Its finding is that the phase cannot start at the intervention: three cluster labellings exist as code, none has been run against the others, and the ARI between the geometric and the functional partition is the most informative unrun number in the tree. Two stale blockers cleared on inspection — the LM head Phase 5c's Group D waited on has existed for some time (`core/lm_loading.py`), and Phase 6's LDA inversion was explained by dimension (24.9 vs 13.2) in a module header that three documents have not caught up with. Nothing run, nothing registered, `CLAUDE.md` trigger 1 still undischarged. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table is the whole result on one screen; the units are §3.36, §3.40, §3.43, §3.44, §3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: twelve prompts added blind under a rule committed first, 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections rather than in this cell. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -3679,6 +3679,105 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.47 Phase 9 gets a plan, and the plan's finding is that the phase cannot start at the intervention (2026-09-20)
+
+`p9_metric_intervention/plan-9.md`, the continuation of §3.39's `notes-9.md`.
+**Still pre-design** — no construction frozen, no `P-*` id, `claims/registry.json`
+untouched, and `CLAUDE.md` trigger 1 **not** discharged (§12 of the plan adds four
+searches to `notes-9.md` §11, and the first of them — self-repair measured against a
+non-ablation intervention — is the one that decides whether §6.2 is a question at all).
+
+**The user's framing was: use the metric to cause or remove clusters, as a tool —
+for forgetting, for isolating a fact or a mechanism, for spreading a region out so
+it is more independent. The plan takes the prerequisite the framing names
+seriously: nothing here establishes what a cluster does.** Three labellings of the
+same tokens exist as code — geometric (HDBSCAN, run everywhere), functional
+(`core/functional_distance.py`, pairwise KL on decoded next-token distributions,
+**never run**), and mechanistic (`S`-projections, `math-6.md` §4 item 4,
+**never built**). `frame_agreement` was written to score their agreement and has
+never been called on a real run. **The ARI between the geometric and the functional
+partition is the most informative unrun number in this tree**, it costs one forward
+pass per prompt with an LM head and a matmul, and until it exists "cluster" names an
+algorithm's output rather than an object.
+
+Four accounts of what a cluster is are enumerated with what separates them
+(discarded individuation / a computed category / an epiphenomenon of concentration
+/ a capacity ledger), all four consistent with everything on disk, and the
+epiphenomenon outcome is registered as legible rather than as a failure mode —
+`math-5c.md` §4's discipline.
+
+**What the mathematics gives, written down before any run:**
+
+- A gamma-patch is a **two-sided congruence** `W_QK -> Γ' W_QK Γ'`, shared by every
+  head reading that LayerNorm and **symmetric in query and key**. §2.5.6 is the
+  warning: the transpose preserves the spectrum and copying stays broken, so
+  read/write *asymmetry* carries causal weight a congruence cannot express. That is
+  an argument for a write-side arm, not against the phase.
+- **On Pythia the MLP can be excluded exactly.** Parallel residual means two LNs per
+  block reading the same input: `input_layernorm` is attention's metric,
+  `post_attention_layernorm` is the MLP's. "Augment the space in the MLP or in
+  attention" is a clean three-arm factorial here, free, where most architectures
+  give one blurred knob.
+- **Lemma 6.4 survives every gamma** — only positivity of `a_ij` is used, and softmax
+  is positive for any `Γ`. No metric deformation prevents collapse-from-a-hemisphere;
+  resistance must come from `V` or from outside the paper's model.
+- **The cone margin under a candidate patch is free to compute.** `m` needs only `G`,
+  and the patched points are `Γ'x̂ + b` from activations already on disk. But the
+  lemma's rate bound is `α' ≥ (1-α)/(2n e^{2β})` — `n` and `β`, **not `m`** — so the
+  margin governs whether the guarantee applies, not how fast, and the plan says not
+  to claim otherwise.
+- **The best differential prediction**: raising mutual attention within a set
+  converges it if its displacement lies in the attracting subspace and diverges it if
+  in the repelling one. Same intervention, opposite outcome, predicted from the
+  spectrum — against attention-pattern interpretability, which predicts one sign
+  both times. It is simultaneously a test of whether Phase 2's projectors carry any
+  causal information, which §2.4.6 gives real reason to doubt.
+
+**The single question the plan would build the phase around** (§6.2): self-repair has
+only ever been measured against interventions that *remove a component*. §3.29 records
+MLP 6's repair as *"an external field... what it changes is the cost geometry the
+coupling is computed in."* A metric patch **is** a change of cost geometry — so
+intervention and repair would be in the same channel, which ablation cannot test.
+Either answer is publishable and the matched control is obvious.
+
+**Two stale statements found and recorded rather than dropped:**
+
+1. **`archive/p5c_unclustered/status-5c.md` blocker 3 is stale.** "No model in the
+   registry has an LM head" — `core/lm_loading.py` exists, is registry-consistent and
+   revision-pinned, has two live callers (`p2_eigenspectra/vocab_projection.py`,
+   `p7d_redundancy/backup_sweep_full.py`), and supplies
+   `load_causal_lm_from_state_dict` for the random twin. **Phase 5c's Group D — the
+   force-collapse / force-disperse battery with matched controls, which is exactly
+   the experiment Phase 9 wants — is unblocked on this axis and has been for a
+   while.** Its other three blockers are not checked here.
+2. **Phase 6's LDA inversion has been explained and three documents have not caught
+   up.** `p6_subspace/subspace_geometry.py`'s header records
+   `dim(U_A)/dim(U_neg) = 24.9` against an observed alignment ratio of **13.2**
+   (`claims/audits/p6_projector_labels.json`) — the dimension correction is nearly
+   twice the effect it would explain, and the live null holds dimension fixed by
+   construction anyway. `math-6.md` §7.2's "until one of these is done, the inversion
+   is not evidence", `status-6.md`'s summary and `archive/README.md` rule 3's Phase 6
+   bullet all still read as though it were live evidence. **The inversion should stop
+   being quoted as a negative on whether cluster identity is encoded.**
+
+Also carried: `P6-R2` is blocked more deeply than `P6-R4` — its second arm is the
+antisymmetric subspace and **no such projector exists in any of the 19
+`p2_eigenspectra_*` directories**, the rotational channel having been deliberately
+not measured. Phase 9 must not assume one exists.
+
+**The ladder (§8) is fourteen rows with costs and dependencies. Three are free and
+unblocked today** — the transport observables that no runner calls (§3.39's cheapest
+open action, still open), `frame_table.py`'s gamma calibration (sub-experiment D,
+written and never run, and it bounds what an in-distribution patch even means), and
+a paragraph carrying finding 2 above into the documents that are behind. One more is
+a decision rather than a run: `P6-R4`'s exchangeable unit. **Everything involving a
+gamma_beta prediction is gated on β's undecided unit convention, which is worth a
+factor of 8** (§3.40 finding 2) — named as a blocker to raise, not to route around.
+
+Nothing has been run. `claims/registry.json` untouched. The branch
+`claude/attention-collapse-augmentation-qsxwg8` is now redundant: its one commit is
+cherry-picked here and it can be deleted.
 
 ## 3.46 The v2 battery ran, and `CLAIM-C`'s gate refused on its own calibration (2026-09-19)
 
