@@ -12,8 +12,8 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `main` is at `ded8a06` (PR #57 merged). Current work: **`claude/aca-phase-9-planning-rvzw3x`** — Phase 9's planning pass, documentation only. It carries `cf5f7ee` (Phase 9's notes) cherry-picked off `claude/attention-collapse-augmentation-qsxwg8`, which had no PR and is now redundant |
-| Last updated | **2026-09-20.** **§3.50: the literature scan and the derivations — four `tools/math_checks/` files (28 checks, all passing) and three corrections to statements this repo makes.** (1) **The causal mask puts a ~1 600× structural tilt under the attention flip**: content-free, `received(j) = H_n − H_j` with layer mean exactly 1, so the baseline already equals 1.6× at position ≈53 and 0.5× at ≈160 — **the flip is reproducible with zero content** until that is divided out. (2) **`Z_beta,i` reverses under masking**: position 0 is its *minimum*, so the sink is the cheapest token to move, and `math-1.md` §1A.6's 'high-Z = sink' is an unmasked-model statement. (3) **The cone margin's response to a γ patch has a closed form**, `2(uᵀX̂ᵀλ*)(uᵀc(λ*))`, reading only the binding set. (4) **ARI is already centred** — the null is for variance, and its 95th percentile spans 57× across size profiles. (5) **The Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, not in `n`** — `lit-1.md`'s description was wrong on both halves and would have frozen the wrong statistic; what replaces it is better (a free position-indexed **anchor** test, and a **slope** regression invariant to β's undecided unit convention that returns `d_eff = 2a+1`). Phase 9's unlearning novelty narrows to **congruence vs rotation** (GUARD-IT `2605.12765`); ContraNorm `2303.06562` is the spreading arm, published. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. Nothing run on real artifacts, nothing registered, trigger 1 still undischarged. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Branch | `main` is at `ded8a06` (PR #57 merged). **Two PRs open, stacked**: **#58** `claude/aca-phase-9-planning-rvzw3x` (Phases 9/10 documentation and math checks, no runner) and **#59** `claude/p10-free-rows` **based on it**, carrying Phase 10's four free rows built, tested and RUN. Both from the worktree `../Mets-p10`. **Merge #58 first.** `claude/attention-collapse-augmentation-qsxwg8` is redundant — its one commit is cherry-picked onto #58 — and should be deleted |
+| Last updated | **2026-09-20.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (4) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (5) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. Gate green at **2 600 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -38,34 +38,61 @@ If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-19 — the e-value audit is COMPLETE; `CLAIM-C`'s gate has run three times and refused three different ways; PR #57 open)
+### Resume here (2026-09-20 — Phase 10's four free rows have RUN; the attention flip is mostly the causal mask; two PRs open)
 
 **This block is the handoff.** Everything a session needs to continue is here
 or one link away; the sections below it are orientation and history.
 
-**Git.** `main` is at **`e238903`** (PR #56 merged 2026-09-19 18:35), CI green.
-- **PR #57 is OPEN** — `claude/claim-c-arms` → `main`, from the worktree
-  `../Mets-claim-c`. Seven commits that landed *after* #56 merged: prompt
-  battery v2's twelve prompts (#56 carried only the rule), the audit's last
-  three phases (2/2d, 5b/6, 7), the v2 gate run, and the disk rearrangement.
-  **Everything this session produced after 18:35 is in #57 and nowhere else.**
-- **`claude/attention-collapse-augmentation-qsxwg8` still has NO PR** — one
-  commit from a cloud session on 2026-09-18 opening Phase 9 as notes only
-  (`p9_metric_intervention/notes-9.md`, §3.39). Based on `main`. It needs a PR
-  opened, or deleting; it is the only unmerged work that is not in #57.
+**Git. Two PRs are open and the second is stacked on the first.**
+`main` is at **`ded8a06`** (PR #57 merged), CI green.
+- **PR #58 is OPEN** — `claude/aca-phase-9-planning-rvzw3x` → `main`, from the
+  worktree `../Mets-p10`. **Documentation and symbolic checks only**: Phase 9's
+  notes and plan (parked), Phase 10's `notes-10`/`lit-10`/`math-10`/
+  `attention-10`, `docs/AXES.md`, and four `tools/math_checks/` files.
+  4 471 lines, no runner, nothing registered.
+- **PR #59 is OPEN and BASED ON #58, so merge #58 first** —
+  `claude/p10-free-rows` → `main`, same worktree. Phase 10's four free rows
+  **built, tested and RUN**, the HDBSCAN backfill that unblocked them, three
+  fixes to the e-value/null machinery, and §3.51. Gate green at **2 600
+  passed**.
+- **`claude/attention-collapse-augmentation-qsxwg8` is redundant** — its one
+  commit (`cf5f7ee`, Phase 9's notes) was cherry-picked onto #58's branch.
+  Delete it rather than opening a PR.
 
-The user merges from GitHub. After #57 merges, from the main tree:
-`git pull --ff-only && git worktree remove ../Mets-claim-c`. The spent branches
-`claude/coderabbit-p-i5-isometric` and `claude/evalue-audit-phase-1c` were
-deleted on 2026-09-19 and `../Mets-1c-audit` is already removed. Only `data/`
-is untracked (the HF cache and run directories — never `git add -A` under it).
+The user merges from GitHub. After both merge, from the main tree:
+`git pull --ff-only && git worktree remove ../Mets-p10`. Only `data/` is
+untracked (the HF cache and run directories — never `git add -A` under it).
+
+**Run the Phase-10 runners from the worktree with `METS_REPO` pointed at it.**
+Every `tools/run/*.py` derives `sys.path` from `METS_REPO`, which defaults to
+the MAIN tree — so a runner launched from a worktree silently imports the main
+tree's code and fails on anything new. The working invocation is
+`METS_REPO=$PWD METS_DATA=/run/media/system/WDS_500/Mets/data <python> tools/run/...`.
+
+**The HDBSCAN backfill must run in the conda `mets` env, not `.venv`** — see
+§3.51.1. `/run/media/system/WDS_500/miniforge3/envs/mets/bin/python`. The
+script refuses elsewhere rather than writing an incomparable partition.
 
 **A merge mid-session is not a merge of the session.** #56 merged at 18:35 and
 captured the branch as it stood at that instant; the seven commits after it sat
 unmerged until #57 was opened. Check `git log origin/main..HEAD` in the
 worktree before assuming a PR carries what you wrote.
 
-**Compute is DONE, nothing is running, and the gate has been run.** All four
+**Phase 10's free rows have run; their records are under `data/analysis/`.**
+`p10_row_a0.json` (row A0 — 3 646 layer-units), `p10_f0_anchor.json` (F0 — 3 800),
+`p10_f12_z.json` (F12) and `p10_f1_transport.json` (F1). All **tier 1,
+exploratory, unregistered**, and **not quotable as adjudications** —
+`claims/registry.json` is untouched. §3.51 is the reading; the two headlines
+are that **the attention flip is ~94 % causal mask and entirely mask before
+step 2000**, and that **F0's anchor test fails in the direction it was
+predicted to succeed**, under both its nulls.
+
+**Read every `reject: False` in those records against `max_attainable_E`.**
+The averaging merger is deliberately low-powered and the first A0 run used a
+draw count that made rejection impossible in principle (§3.51.4). Effect sizes,
+`median_p` and `frac_below_05` are the informative fields.
+
+**`CLAIM-C`: compute is DONE, and the gate has been run.** All four
 required `CLAIM-C` arms were produced, then **re-run on 2026-09-19 with
 HDBSCAN present** (61 + 30 + 33 + 17 min): `data/phase12/2026-09-19_10-51-00`
 (`gpt2-large`), `_11-52-10` (`gpt2-large-random`), `_12-21-54`
@@ -3679,6 +3706,157 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.51 Phase 10's free rows RAN — the attention flip is mostly the causal mask, and the anchor test fails in the direction it was supposed to succeed (2026-09-20)
+
+**The first Phase 10 results measured on real checkpoints.** Four rows of
+`notes-10.md` §8's ladder — F0, F1, F11-A0, F12 — built, tested and run over
+the whole 19-checkpoint `pythia-410m` sweep. All tier 1, exploratory,
+**unregistered**; `claims/registry.json` is untouched and nothing here is
+quotable as an adjudication. Records under `data/analysis/`.
+
+### 3.51.1 The blocker nobody had noticed: the sweep has no density partition
+
+`hdbscan_labels.json` is **`{}` in 152 of 152 directories** of the 410m sweep,
+and `clustering.json` beside it reads `"nesting_summary": "HDBSCAN not
+available"`. Every directory was written during the outage §3.41 records, and
+the outage is wider than that section says — it was never only `CLAIM-C`'s
+arms. `docs/AXES.md` listed the artifact as present. F0, F5 and F11-A4 all read
+it.
+
+`tools/run/backfill_hdbscan.py` re-derives it from `activations.npz` — **no
+forward pass, 152 directories in 69 s**. Three properties make it usable rather
+than merely fast:
+
+- **It guards on the toolchain, not the interpreter path**, which is the
+  opposite of every other runner here and correct for this one.
+  `clustering.py` records, measured, that HDBSCAN's output is a property of the
+  install: conda `mets` (py3.10.20, hdbscan 0.8.41, sklearn 1.7.2) reproduces
+  the 2026-08-12 pilot sweep exactly and `.venv` does not. A sweep holding two
+  partitions from two installs has nothing on disk to tell them apart.
+- **It re-verifies every run.** `--verify-pilot` replays N pilot directories
+  that *do* carry labels and refuses to write unless they come back
+  bit-identical. This run: **3 directories × 25 layers, all identical.**
+- **It writes a separate file and touches nothing.** Filling the canonical one
+  would leave `clustering.json` still saying `null` beside it — the shape of
+  inconsistency `b55375e` had to un-write. `read_labels` owns the precedence.
+
+Backfilled: mean **47.1** clusters/layer, mean noise fraction **0.389**, in
+line with the pilot's 45–69 and with finding 4's 50–55 carrying capacity.
+
+### 3.51.2 Row A0: the flip is ~94 % causal mask, and the residual is developmental
+
+152 directories, **3 646 layer-units**. `math-10.md` §1's content-free baseline
+divided out, per layer, the pairing matching `noise_importance_proxy` exactly.
+
+| | unclustered | clustered | gap |
+|---|---|---|---|
+| raw (as this project reports it) | **1.417×** | **0.825×** | 0.592 |
+| causal-mask-corrected | **1.034×** | **0.998×** | **0.036** |
+
+**6.2 % of the gap survives the correction.** But the sweep mean hides the
+thing that matters, and the per-checkpoint split is why that block exists:
+
+| step | raw gap | corrected gap | surviving | position bias |
+|---|---|---|---|---|
+| 0–16 | 0.26–0.39 | **0.003–0.004** | ~1 % | 0.061–0.088 |
+| 32–512 | 0.10–0.36 | −0.006 to −0.164 | negative | 0.038–0.083 |
+| 4000 | 0.949 | **0.245** | 26 % | 0.035 |
+| 143000 | 1.689 | **0.172** | 10 % | 0.013 |
+
+**At initialisation the flip is ENTIRELY the mask**, exactly as `math-10.md` §1
+predicted — corrected gap 0.004 against a raw 0.26. A residual appears at
+**step ~2000–4000** and persists to 143000, while the position-bias confound
+*falls* with training (0.061 → 0.013). So the learned effect is real in the
+means and roughly a sixth the size the uncorrected number implies, and it does
+not exist before step 2000.
+
+**What may NOT be said from this.** No arm here is a random twin, so the
+trained-vs-random sign flip is untouched. And the 5c number was measured on
+`gpt2-large` and ALBERT; this re-measures the same statistic on the 410m sweep
+rather than refuting that one.
+
+### 3.51.3 F0, the anchor test: nuclei are LATE, and it is not the confound
+
+`2411.04990`'s mechanism says early tokens are the nuclei of cluster formation.
+Direction fixed in code before the sweep was read: **"less"**.
+
+- **observed 0.3164** against a label-permutation null mean of **0.2077**
+- median p = **1.00**, fraction below 0.05 = **0.08 %**, merged E = **0.535**
+
+Nuclei sit **systematically later** than a position-blind assignment predicts —
+the opposite of the prediction, and not marginally.
+
+**The first version of this result was confounded and the fix is the finding's
+main methodological content.** The ordinary permutation is free to move whole
+clusters between the early and late halves of a sequence. The same sweep has
+clustered tokens sitting later than unclustered ones (`position_bias` +0.051),
+so a late clustered population produces late cluster minima with nothing said
+about nucleation. `core.nulls.label_permutation_null_within` holds the
+clustered/noise split **fixed** and shuffles only which clustered token carries
+which id — the nucleation question proper.
+
+**Both nulls agree.** The restricted null's mean moves only 0.2077 → **0.2311**
+against an observed 0.3164, median p **1.00**, E **0.554**. The confound
+accounts for about a fifth of the gap and the effect survives it.
+
+### 3.51.4 Three instrument defects, each of which would have produced a false number
+
+Found while wiring e-values through the rows, and each is fixed with a test
+that fails on the old behaviour.
+
+1. **`core.evalues.combine` is a PRODUCT, valid only under conditional
+   calibration** (`EProcess`'s own WARNING). Phase 10's units share a model, a
+   text and a forward pass, so the product is invalid over them. Measured cost:
+   at 25 perfectly dependent units the product rejects **19.67 % of the time
+   under the null** against a nominal 5 %. `average` / `average_p` are the
+   arithmetic-mean merger, valid under **arbitrary dependence** by linearity
+   alone (Vovk & Wang 2021), with the price stated: the mean cannot exceed its
+   largest input.
+2. **`p_from_null` compares with an exact `>=` and was decided by rounding
+   noise on a degenerate null.** Where the mask correction explains a layer
+   completely, the corrected value is the same at every token, no permutation
+   can move the enrichment, and the honest p is 1. It returned **0.0025, the
+   resolution floor** — a perfectly explained layer reading as the strongest
+   possible evidence — because ~1.0 differs from ~1.0 in the sixteenth digit.
+   `p_from_null_tolerant` counts near-ties conservatively and flags
+   `degenerate_null`.
+3. **The first full A0 run could not have rejected whatever the data said.**
+   The mean merger cannot exceed its largest input and a Monte-Carlo p cannot
+   go below `1/(n+1)`, so the largest merged e-value a permutation design can
+   EVER produce is `calibrate(1/(n+1))` — **10.01 at 400 draws, against a
+   threshold of 20.** It reported `reject: False` at all 19 checkpoints and
+   that number said nothing. `core.evalues.max_attainable_average_E` computes
+   it, **1 599 draws is the exact minimum**, every runner now runs at 2 000 and
+   records `max_attainable_E` and `design_can_reject` on the face of its
+   artifact. This is `p_from_null`'s own "should I draw more?" versus "could
+   this design have rejected?" applied to the merger.
+
+**Read every `reject: False` in these records against `max_attainable_E`.**
+Even at 2 000 draws the averaging merger is deliberately low-powered: rejection
+needs nearly every unit at the floor. The informative fields are the effect
+sizes, `median_p` and `frac_below_05`.
+
+### 3.51.5 `pythia-410m` step0 and step1 are the same weights
+
+**All 292 tensors bit-identical upstream**, despite different HF revisions and
+different blob hashes, and the sweep's activations for the two are bit-identical
+in turn — while step0 vs step2 differs at 2.4e-07, so the comparison is not
+saturated. Not a runner bug.
+
+**The 19-revision checkpoint axis carries 18 distinct points at 410m**, and
+every per-checkpoint average over the sweep double-counts one. Recorded in
+`docs/AXES.md` §2.3. **Not yet checked at 70m.**
+
+### 3.51.6 What this does and does not do to H-PARK
+
+Nothing yet adjudicates it. The attentional column of `notes-10.md` §3.1 is the
+one these rows touch, and A0's finding is that **it was mostly mask before step
+2000 and is a sixth of its reported size after** — so the column is weaker than
+the evidence ledger implies, and `attention-10.md` was right to gate the rest of
+its rows on A0. F0's answer runs against the parking account rather than for it.
+The functional and causal columns are untouched, and F5 remains what
+discriminates.
 
 ## 3.50 The scan, and the math: four check files, three corrections, and a law that is not in `n` (2026-09-20)
 
