@@ -118,6 +118,7 @@ work — that is `PROJECT.md`, which is the file to read first.**
 | 7d | `p7d_redundancy/` | **Active.** The redundancy set — which heads hold the induction regime and when each formed. Q1/Q2/Q3 answered; results in `PROJECT.md` §3.12-S/T/U. Every runner now takes `--model` and `--ablation` |
 | 7e | `p7e_consolidation/` | **Active.** Whether the set collapses into one head; `L11H14`. Gate measurement answered — `status-7e.md` |
 | 8 | `p8_scale_ladder/` | **Active.** The same measurements across the Pythia ladder. 70m rung run 2026-09-11; `compare_rungs.py` is the cross-rung reader. **Read `literature-8.md` before the next measurement** — the verified scan reframes the phase. See `status-8.md`, `PROJECT.md` §3.15–§3.16 |
+| 9 | `p9_metric_intervention/` | **Notes only.** Pre-design, nothing frozen, nothing registered — intervening on the *metric* the dynamics is read in rather than on the weights. `CLAUDE.md` trigger 1's literature scan is **not** discharged; `notes-9.md` §11 names the searches. No code yet. Read `notes-9.md` §9 first: it corrects two stale statements about what `core/dissipation.py` computes and what has been run |
 
 Shared code lives in `core/`; one-off scripts in `tools/`; tests in `tests/`.
 

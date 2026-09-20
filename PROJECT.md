@@ -4107,6 +4107,53 @@ upgraded from leads to readings whenever a session spends the time.
 audit section: the β producer, β's scale convention, `P-S1`'s matched-k
 re-clustering, the one-line `run_1c.py` fix, and whether to spend forward
 passes on `--sublayer` streams.
+## 3.39 Phase 9 opens as notes only: intervening on the metric rather than the weights (2026-09-18)
+
+`p9_metric_intervention/notes-9.md`. **Pre-design, nothing frozen, nothing
+registered** — `CLAUDE.md` trigger 1 (the scan that runs before a phase's
+constructions freeze) has **not** been discharged, and `notes-9.md` §11 names
+the searches it still needs.
+
+The phase's object: every intervention this project has run acts on *weights*
+(ablation, the §2.4.2 sign factorial, §2.5's isometric path, rank truncation).
+Phase 9's would act on **the geometry the dynamics is read in**. `math-1c.md`
+§6.2 is why it is implementable without new plumbing — `ln_plain` is *exactly*
+sphere projection at constant norm `sqrt(d)`, and what takes the stream off the
+sphere is LN's **learned diagonal**, which attention reads directly. The
+proposed generalisation is `diag(gamma) -> diag(gamma) + U D U^T`: rank-`k`
+anisotropic, one layer, read-side. `MATH_SPECTRAL_OT.md` §6's second spectrum is
+the frame that makes it more than a knob — "stretch a subspace" becomes "change
+the curvature of a near-zero eigendirection of the Wasserstein Hessian", which
+predicts a shift in the implied timescale rather than merely producing one.
+
+**Two stale statements were found while writing it, and are recorded rather than
+silently dropped.**
+
+1. **`MATH_SPECTRAL_OT.md` §5.2's "Nothing in the repository computes it" is no
+   longer true.** `core/dissipation.py` implements `energy_gradient` and the
+   full first-order identity, and §3.8.2 already reports it **run** — Tier A and
+   Tier B over the 19 x 7 grid. The gradient is available as a scoring function
+   today.
+2. **The transport half of that same module has never been run.**
+   `w2_identity`, `w2_optimal`, `sliced_w2`, `wasserstein_arc_length` and
+   `straightness` are implemented and tested, and **no runner in `tools/run/`
+   calls any of them** (verified by grep: only the module and its test mention
+   them). No `W_2`, arc length or straightness appears in `PROJECT.md` or
+   `docs/`. **That is the cheapest open action in the phase** — no forward pass,
+   scipy already a dependency — and the identity-vs-optimal gap is the only
+   instrument here that separates *tokens swapping places* from *genuine motion
+   of the measure*.
+
+Also derived and worth carrying out of the phase: the cone condition cannot fail
+for `n <= d` in general position (Caratheodory; `math-1c.md` §7.2's Wendel note
+is the same fact from the other side), so the hemisphere lever is **gated on
+context length** — unreachable at `d = 1024` with the current prompt grid,
+reachable on pythia-70m (`d = 512`, 2048 window). And Lemma 6.4's "only
+positivity of `a_ij` is used" has a corollary the phase leans on: **the QK
+circuit is powerless against collapse-from-a-hemisphere; resistance must come
+from `V` or from outside the paper's model.**
+
+Nothing has been run. `claims/registry.json` untouched.
 
 ## 3.38 Review corrections after the stack merged: `P-I5`'s statistic, five overclaims, and a red CI (2026-09-17)
 
