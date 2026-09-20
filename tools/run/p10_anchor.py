@@ -89,7 +89,13 @@ sys.path.insert(0, str(REPO))
 
 import numpy as np
 
-from core.evalues import DEFAULT_ALPHA, DEFAULT_KAPPA, average_p, calibrate
+from core.evalues import (
+    DEFAULT_ALPHA,
+    DEFAULT_KAPPA,
+    average_p,
+    calibrate,
+    max_attainable_average_E,
+)
 from core.nulls import (
     label_permutation_null,
     label_permutation_null_within,
@@ -102,7 +108,7 @@ from core.parking import (
 )
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
 
-N_PERMUTATIONS = 400
+N_PERMUTATIONS = 2000
 
 _STEP = re.compile(r"step(\d+)")
 
@@ -304,6 +310,11 @@ def main() -> None:
         "alpha": DEFAULT_ALPHA,
         "merger": "arithmetic mean (core.evalues.average)",
         "resolution_floor_e": round(calibrate(1.0 / (N_PERMUTATIONS + 1)), 3),
+        # "Could this design have rejected at all?" -- a different question
+        # from the resolution floor, and one a permutation null merged by the
+        # mean can answer exactly. See `core.evalues.max_attainable_average_E`.
+        "max_attainable_E": round(max_attainable_average_E(N_PERMUTATIONS)[0], 3),
+        "design_can_reject": bool(max_attainable_average_E(N_PERMUTATIONS)[1]),
         "alternatives": {"nucleus_p": "less", "nucleus_within_p": "less",
                          "position_bias_p": "two-sided"},
         "nulls": {

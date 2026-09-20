@@ -176,3 +176,55 @@ def test_average_beats_product_on_a_shared_statistic():
     assert reject_prod is True          # manufactured
     assert reject_avg is False
     assert E_avg == pytest.approx(calibrate(p))
+
+
+# --- could the design have rejected at all? -------------------------------
+
+from core.evalues import max_attainable_average_E
+
+
+def test_the_ceiling_is_the_calibrated_resolution_floor():
+    E_max, _ = max_attainable_average_E(400)
+    assert E_max == pytest.approx(calibrate(1.0 / 401.0))
+
+
+def test_four_hundred_permutations_cannot_reject_at_the_defaults():
+    """The flaw Phase 10's row A0 found the expensive way: a first full run
+    reporting `reject: False` at every checkpoint, from a design that could not
+    have rejected if every unit had come back maximally extreme."""
+    E_max, can = max_attainable_average_E(400)
+    assert E_max == pytest.approx(10.01, abs=0.01)
+    assert can is False
+
+
+def test_the_exact_threshold_is_1599_draws():
+    """0.5 / sqrt(p) >= 20 needs p <= 1/1600, and a Monte-Carlo floor of
+    1/(n+1) reaches that at n = 1599. Pinned exactly, because "about 1 600" is
+    the kind of number that drifts into a design and makes it incapable."""
+    assert max_attainable_average_E(1598)[1] is False
+    assert max_attainable_average_E(1599)[0] == pytest.approx(20.0)
+    assert max_attainable_average_E(1599)[1] is True
+
+
+def test_the_runners_draw_count_can_reject():
+    """A guard on the actual constants the rows run with, so lowering one
+    silently re-creates the flaw."""
+    from tools.run.p10_anchor import N_PERMUTATIONS as ANCHOR_N
+    from tools.run.p10_attention_baseline import N_PERMUTATIONS as A0_N
+    from tools.run.p10_partition_function import N_PERMUTATIONS as Z_N
+
+    for n in (ANCHOR_N, A0_N, Z_N):
+        assert max_attainable_average_E(n)[1] is True, n
+
+
+def test_the_ceiling_binds_however_many_units_are_merged():
+    """It is a property of the draw count alone. Ten thousand units all at the
+    floor still cannot beat one."""
+    E_max, _ = max_attainable_average_E(2000)
+    merged, _ = average_p([1.0 / 2001.0] * 10_000)
+    assert merged == pytest.approx(E_max)
+
+
+def test_a_bad_draw_count_is_refused():
+    with pytest.raises(EValueError, match="n_permutations"):
+        max_attainable_average_E(0)

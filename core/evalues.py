@@ -615,6 +615,46 @@ def average_p(
     return average([calibrate(p, kappa) for p in p_values], alpha=alpha, weights=weights)
 
 
+def max_attainable_average_E(
+    n_permutations: int,
+    kappa: float = DEFAULT_KAPPA,
+    alpha: float = DEFAULT_ALPHA,
+) -> Tuple[float, bool]:
+    """
+    ``(E_max, can_reject)`` -- the largest merged e-value a permutation design
+    with `n_permutations` draws per unit can produce under `average`, and
+    whether that clears ``1 / alpha``.
+
+    WHY A DESIGN NEEDS TO REPORT THIS
+    ---------------------------------
+    `core.nulls.p_from_null`'s docstring draws the distinction this function
+    exists for: ``resolution`` answers "should I draw more?" and never "could
+    this design have rejected?". For a permutation null merged by the mean,
+    the second question has an exact answer, because two bounds compose:
+
+      * a Monte-Carlo p-value cannot go below ``1 / (n_permutations + 1)``, so
+        no single unit's e-value can exceed ``calibrate`` of that floor; and
+      * the arithmetic mean cannot exceed its largest input.
+
+    So ``E_max = calibrate(1 / (n_permutations + 1))``, **whatever the data and
+    however many units are merged.** At the project's defaults that is 10.01 at
+    400 permutations against a rejection threshold of 20 -- a design that could
+    not have rejected if every unit in the sweep had come back maximally
+    extreme. 1 600 draws is the minimum that clears it.
+
+    Phase 10's rows found this the expensive way: row A0's first full run used
+    400 and reported `reject: False` at every checkpoint, which said nothing
+    about the data. Every runner now records `E_max` on the face of its
+    artifact so a reader can tell "no evidence" from "no design".
+    """
+    if n_permutations < 1:
+        raise EValueError(f"n_permutations must be >= 1; got {n_permutations!r}")
+    if not (0.0 < alpha < 1.0):
+        raise EValueError(f"alpha must lie in (0, 1); got {alpha!r}")
+    E_max = calibrate(1.0 / (n_permutations + 1.0), kappa)
+    return E_max, sufficient_evidence(E_max, alpha)
+
+
 def simulate_type_i_error(
     n_trials: int = 20_000,
     n_experiments: int = 5,

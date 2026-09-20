@@ -253,14 +253,24 @@ def test_aggregate_skips_nan_enrichments_rather_than_poisoning_the_mean():
     assert got["mean_corrected_noise"] == pytest.approx(3.0)
 
 
-def test_no_single_unit_can_reject_at_this_draw_count():
-    """A design property stated in the module and worth pinning: at 400
-    permutations the smallest attainable p calibrates to an e-value below
-    1/alpha, so one lucky layer cannot carry the sweep's verdict."""
-    from core.evalues import DEFAULT_ALPHA, calibrate
+def test_the_design_can_reject_and_one_layer_still_cannot_carry_it():
+    """Two properties that pull in opposite directions and are both needed.
+
+    The draw count must be high enough that the design COULD reject -- at 400
+    permutations the largest attainable merged e-value was 10.01 against a
+    threshold of 20, so `reject: False` said nothing about the data. And one
+    lucky layer must not be able to carry a sweep's verdict. The first is the
+    draw count's job; the second is the MERGER's, because the mean of 3 646
+    units containing one at the ceiling is the ceiling over 3 646."""
+    from core.evalues import DEFAULT_ALPHA, average_p, max_attainable_average_E
+
+    E_max, can_reject = max_attainable_average_E(N_PERMUTATIONS)
+    assert can_reject is True
 
     floor = 1.0 / (N_PERMUTATIONS + 1)
-    assert calibrate(floor) < 1.0 / DEFAULT_ALPHA
+    one_extreme = [floor] + [0.5] * 3645
+    assert average_p(one_extreme)[1] is False
+    assert average_p(one_extreme)[0] < 1.0 / DEFAULT_ALPHA
 
 
 # --- the checkpoint axis ---------------------------------------------------

@@ -82,7 +82,13 @@ sys.path.insert(0, str(REPO))
 
 import numpy as np
 
-from core.evalues import DEFAULT_ALPHA, DEFAULT_KAPPA, average_p, calibrate
+from core.evalues import (
+    DEFAULT_ALPHA,
+    DEFAULT_KAPPA,
+    average_p,
+    calibrate,
+    max_attainable_average_E,
+)
 from core.nulls import label_permutation_null, p_from_null_tolerant
 from core.parking import (
     clustered_position_bias,
@@ -94,13 +100,20 @@ from core.parking import (
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
 from tools.run.p10_anchor import checkpoint_of
 
-#: Permutations per (directory, layer). 400 gives a resolution floor of
-#: 1/401 = 0.0025, which calibrates to an e-value of 9.98 -- below 1/alpha = 20,
-#: so NO SINGLE UNIT CAN REJECT ON ITS OWN at this draw count. That is a
-#: deliberate property, not an oversight: the question is whether the effect is
-#: there across the sweep, and a design where one layer can carry the verdict
-#: is a design that rewards finding the one layer.
-N_PERMUTATIONS = 400
+#: Permutations per (directory, layer). Set by
+#: `core.evalues.max_attainable_average_E`, not by taste: the mean merger
+#: cannot exceed its largest input and a Monte-Carlo p cannot go below
+#: 1/(n+1), so the largest merged e-value this design can EVER produce is
+#: `calibrate(1/(n+1))`. At 400 draws that is 10.01 against a rejection
+#: threshold of 20 -- a design that could not have rejected if every unit in
+#: the sweep had come back maximally extreme, and the first full run of this
+#: row reported `reject: False` at all 19 checkpoints from exactly that.
+#: 1 599 is the minimum that clears it; 2 000 leaves margin.
+#:
+#: One lucky layer still cannot carry the verdict -- that is the merger's job,
+#: not the draw count's, since the mean of 3 646 units holding one at the
+#: ceiling is the ceiling over 3 646.
+N_PERMUTATIONS = 2000
 
 
 def noise_enrichment(values: np.ndarray, labels: np.ndarray) -> float:
@@ -325,6 +338,11 @@ def main() -> None:
         "merger": "arithmetic mean (core.evalues.average) — the units share a "
                   "model, a text and a forward pass, so the product is invalid",
         "resolution_floor_e": round(calibrate(1.0 / (N_PERMUTATIONS + 1)), 3),
+        # "Could this design have rejected at all?" -- a different question
+        # from the resolution floor, and one a permutation null merged by the
+        # mean can answer exactly. See `core.evalues.max_attainable_average_E`.
+        "max_attainable_E": round(max_attainable_average_E(N_PERMUTATIONS)[0], 3),
+        "design_can_reject": bool(max_attainable_average_E(N_PERMUTATIONS)[1]),
         "alternatives": {"corrected_p": "greater", "raw_p": "greater",
                          "position_bias_p": "two-sided"},
         "summary": aggregate(dirs),
