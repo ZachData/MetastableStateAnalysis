@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` is at `ded8a06` (PR #57 merged). **Two PRs open, stacked**: **#58** `claude/aca-phase-9-planning-rvzw3x` (Phases 9/10 documentation and math checks, no runner) and **#59** `claude/p10-free-rows` **based on it**, carrying Phase 10's four free rows built, tested and RUN. Both from the worktree `../Mets-p10`. **Merge #58 first.** `claude/attention-collapse-augmentation-qsxwg8` is redundant — its one commit is cherry-picked onto #58 — and should be deleted |
-| Last updated | **2026-09-20.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (4) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (5) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. Gate green at **2 600 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Last updated | **2026-09-20.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (4) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (5) **The HDBSCAN partition is NOT reproducible run to run** — over 2 600 layer-pairs from two sweeps whose tokens are identical and whose activations differ by at most **7.9e-05**, **16.7 % of label vectors differ**, ARI's 5th percentile is **0.347** and its minimum **0.166**, and cluster count moves by up to **20**. A measurement-reproducibility floor nobody had measured, and `CLAIM-C` reads two of its six registered metrics from this partition alone (§3.51.7). (6) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. Gate green at **2 600 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -3849,6 +3849,64 @@ saturated. Not a runner bug.
 **The 19-revision checkpoint axis carries 18 distinct points at 410m**, and
 every per-checkpoint average over the sweep double-counts one. Recorded in
 `docs/AXES.md` §2.3. **Not yet checked at 70m.**
+
+### 3.51.7 The HDBSCAN partition is not reproducible run to run, and nothing had measured it
+
+Found while cross-checking the backfill, and it is the most consequential thing
+in this section because four rows and one registered gate read the partition.
+
+**The natural experiment.** Two independent Phase-1 sweeps cover the same
+checkpoints and prompts: the 2026-08-12 pilot on `HDD_1TB` with native labels,
+and the 2026-08-31/09-01 sweep whose partition was backfilled. **104
+model-prompt directories overlap, 2 600 layer-pairs.** Their `tokens.txt` are
+identical in every case and their configs match; their activations differ by at
+most **7.9e-05** — ordinary run-to-run float non-determinism, not a difference
+in what was computed. So it is the same question asked twice, differing only by
+numerical noise.
+
+**What comes back** (`data/analysis/p10_partition_stability.json`):
+
+| | value |
+|---|---|
+| label vectors identical | **83.3 %** |
+| ARI, median | 1.0 |
+| ARI, mean | 0.933 |
+| **ARI, 5th percentile** | **0.347** |
+| **ARI, minimum** | **0.166** |
+| ARI with noise dropped, p05 / min | 0.585 / 0.327 |
+| cluster-count \|Δ\|, mean / **max** | 0.58 / **20** |
+| noise-fraction \|Δ\|, mean / max | 0.003 / 0.132 |
+
+**Usually stable, and in about one layer in six it is not.** In the tail the
+two partitions are essentially unrelated — ARI 0.17, cluster count off by 20 —
+from activations agreeing to five decimal places.
+
+**This is a measurement-reproducibility floor, not a null.** There is no
+hypothesis under test and no p-value, deliberately. It is the amount by which a
+partition-derived quantity can differ between two runs that asked the same
+question, and **no null this project has built accounts for it**:
+`notes-10.md` §4.4's size-profile null is about the ARI's variance under random
+labelling, which is a different quantity from its variance under re-measurement.
+
+**What it bears on, and what it does not settle.**
+`CLAIM-C` reads **`cluster_count` and `cluster_membership` from HDBSCAN and
+from nothing else** (`replication_gate.py`), and §3.41's gate run scored those
+two at 2/8 and 5/8 — the two weakest of six. That is now a number that has to
+be read against a floor nobody knew the size of. **It does not follow that the
+gate's result is noise**: the arms there differ by model and by training, not
+by a re-run, and this section measures only the re-run. What follows is that
+the comparison has never been made, and `tools/run/p10_partition_stability.py`
+is what would make it.
+
+The same caution applies inward. Row A0 and F0 both read the partition, and
+both report per-layer statistics aggregated over 3 600+ units — an effect
+carried by the aggregate is much less exposed to a per-layer floor than a
+statement about one layer would be, but neither row has been re-run against a
+second partition to check.
+
+**Cheapest next step**, and it is free: re-run rows A0 and F0 on the PILOT
+sweep's native labels and compare. Same instruments, different partition, no
+forward pass.
 
 ### 3.51.6 What this does and does not do to H-PARK
 
