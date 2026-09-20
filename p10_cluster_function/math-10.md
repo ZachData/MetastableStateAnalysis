@@ -186,6 +186,12 @@ looking.**
 
 ## 5. Correction: the parking law is in β and d, not in n — and that makes it a better test
 
+> **UPGRADED TO `[R]` 2026-09-20.** The paper has since been read in full —
+> `docs/readings/2411.04990.md`. Everything in this section that was inferred
+> from search summaries is confirmed, and **the paper states the `d_eff`
+> rescue in §5.2 below as its own open conjecture.** Three additions are marked
+> inline; a fourth result, Lemma C.1, is §5.4.
+
 ### 5.1 What the field actually says
 
 `lit-1.md` §4 describes the Rényi-parking prediction as *"a density constant
@@ -254,11 +260,78 @@ confirms**, and any of those landing is informative. A bad log-log fit is the
 other informative outcome and the design must report the fit, not only the
 slope.
 
+> **`[R]`: this is the paper's own conjecture, and proving it is open.** §5, p. 6,
+> verbatim: *"For general matrices `V`, our empirical observations suggest that
+> particles rapidly converge to a lower-dimensional subspace spanned by `d₁ ≪ d`
+> principal eigenvectors. Consequently, **we conjecture that the number of
+> meta-stable clusters should rather be `β^((d₁−1)/2)`, where the ambient
+> dimension `d` is replaced by the effective dimension `d₁`.** While a rigorous
+> proof of this dimension-reduction remains an open problem for future
+> investigation..."*
+>
+> So the regression is not a workaround — **it is a direct empirical attack on a
+> named open problem.** And `d₁` is not free: the paper identifies it as the
+> dimension of **`L`, the top eigenspace of `V`**, which Phase 2's `sym_*` /
+> `schur_*` projectors already compute for all 19 checkpoints. **Predict `d₁`
+> from the OV spectrum, then test the slope against it** — that makes it
+> differential rather than exploratory.
+
 **One failure mode, checked:** `k` must be the same for every row in one
 regression, and it is not — `head_size` is 64 on gpt2-large and 128 on
 pythia-1.4b. A cross-model regression on raw β mixes two conventions; in the
 synthetic test that pulls a true slope of 3.25 down to 1.24. **Per-model
 regressions, or fix the convention first.**
+
+### 5.4 Lemma C.1: an exact count that does not grow with `n` — and it is the carrying-capacity finding
+
+`[R]`, App. C.4, checked in `tools/math_checks/parking_center_count.py` (8/8):
+
+```
+    average number of strong Rényi centres  =  1 / σ_{d−1}(B_δ)  ~  1/δ^{d−1}
+```
+
+proved for **any spherically symmetric measure in any dimension** (ordinary
+Rényi centres are much harder above `d = 2`, where the classical `c·2π/δ` with
+`c ≈ 0.75` applies). With `δ = cβ^{-1/2}` this is exactly the `Θ(β^((d−1)/2))`
+frequency, so the paper's two statements are one.
+
+**The property that matters here: it is a limit over an infinite sequence, so
+the count SATURATES in `n`.** More tokens do not buy more centres.
+
+> **Phase 1's unexplained finding is that shape.** Max simultaneously-alive
+> clusters **invariant at 50–55 across all 27 checkpoints** while mean lifespan
+> falls 7.0 → 4.5 and births rise 113 → 164 — a fixed capacity with rising
+> turnover. `lit-1.md` grades it *"Looks new"*; **it is a saturating parking
+> count**, and the 0.7476 constant lives in the `d = 2` *ordinary*-centre
+> formula, not in anything this project measures.
+
+**And inverting it constrains β's undecided convention.** Solving
+`1/σ_{d_eff−1}(B_δ) = 52.5` for `δ`, then `c = δ√β`, at the measured median
+β = 0.50 (scaled) and 4.0 (unscaled, ×8):
+
+| `d_eff` | `c` at β = 0.50 | `c` at β = 4.0 |
+|---|---|---|
+| 2 | 0.042 | 0.120 |
+| 5 | 0.411 | **1.161** |
+| 8 | 0.568 | **1.608** |
+| 22 | 0.793 | **2.242** |
+
+Lemma 5.1 needs **`c > 1`**. **Under the scaled convention no `d_eff` up to 22
+reaches it; under the unscaled convention `d_eff ≥ 5` does.** That is the first
+evidence in this project bearing on the factor-of-8 decision §3.40 flagged as
+undecided.
+
+**Held loosely, and the check says so on its face:** this is a consistency
+calculation under the paper's i.i.d. spherically-symmetric hypothesis, which
+token embeddings do not satisfy; HDBSCAN clusters are neither strong nor
+ordinary Rényi centres by definition; and the count is asymptotic in sequence
+length while `n ∈ [20, 512]`. **It says which `(convention, d_eff)` pairs could
+produce the observed count, not which one does.**
+
+*(One discrepancy recorded, not resolved: App. C.4 prints the `d = 3` count as
+`(3 sin²(δ/2))⁻¹`; the cap area gives `1/sin²(δ/2)`. The factor is constant in
+`δ`, so it moves an intercept and not an exponent — but do not quote an absolute
+`d = 3` count from either form.)*
 
 ### 5.3 The collision with §1, which is the interesting part
 
@@ -289,6 +362,17 @@ That reframes three things at once:
    parked reading, with a mechanism and an arrival order — and it predicts
    cluster membership should correlate with **position distance to the nearest
    early nucleus**, which is again free to check.
+4. **`[R]`: Theorem 4.1 makes position 0 a theorem, not a confound.** With
+   `V = Id` and **arbitrary** `Q, K`, for almost every initial configuration
+   `lim_{t→∞} x_k(t) = x₁(0)` for every `k` — all tokens converge on **the first
+   token's initial position**, which never moves because token 1 is autonomous
+   under the mask. §1's structural tilt and §5's nuclei are two faces of that.
+5. **`[R]`: Lemma 5.1's stationarity time carries the token index.** The
+   sufficient condition is `T_j · s_j < e^{c²/2 − c⁴/(24β)}·ε`, so a centre's
+   quasi-stationary lifetime falls **inversely with its own token index**. The
+   repo measures cluster lifespan (mean 7.0 → 4.5). **Whether lifespan falls with
+   the anchor's position is a free, direct test of the lemma** and nobody has
+   asked it.
 
 ---
 

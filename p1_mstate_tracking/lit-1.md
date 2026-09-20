@@ -183,8 +183,17 @@ Ranked by (value × cheapness), with the measurement each needs.
    > act as nuclei** for cluster formation. `p10_cluster_function/math-10.md` §5
    > gives the two tests that survive: a **position-indexed anchor test** (free,
    > no β) and a **log-log slope regression** whose slope is invariant to β's
-   > unit convention and returns `d_eff = 2a + 1`. Still `[S]`; reading the paper
-   > is the top item in that file's §10. Phase 1 has cluster counts, per
+   > unit convention and returns `d_eff = 2a + 1`.
+   >
+   > **The paper has since been READ IN FULL — `docs/readings/2411.04990.md`,
+   > marked [R].** Every correction above is confirmed, and three things are
+   > added: the `d_eff` form is **the paper's own open conjecture** with
+   > `d₁ = dim L`, the top eigenspace of `V`; **Lemma C.1** gives an exact
+   > distribution-free count `1/σ_{d−1}(B_δ)` that **saturates in `n`** — which is
+   > this phase's own carrying-capacity finding (50–55 invariant) with a formula
+   > attached; and **Theorem 4.1** says all tokens converge to `x₁(0)`, the first
+   > token's initial position, for arbitrary `Q, K`. Item 4 below is also
+   > unblocked by the reading. Phase 1 has cluster counts, per
    layer, per prompt length, at 27 checkpoints, already on disk. **Nobody has
    checked a parking-derived cluster-count prediction against a trained
    transformer.** This is re-analysis, costs no forward passes, and it is a
@@ -195,7 +204,14 @@ Ranked by (value × cheapness), with the measurement each needs.
    already the default; what is missing is that the *comparison object* is still
    2312.10794's unmasked dynamics. 2411.04990's masked system is the frame-correct
    null for every Pythia number this project has produced.
-4. **The trapping timescale as a quantitative prediction.** If 2410.06833 **[S]**
+4. **The trapping timescale as a quantitative prediction. — UNBLOCKED 2026-09-20.**
+   `2411.04990` supplies both ends in ODE units: quasi-stationarity for
+   `T_j·s_j < e^{c²/2 − c⁴/(24β)}·ε` (Lemma 5.1) and final collapse at
+   `t = exp(Ω(√β))`. Phase 1c's `T_eff` is measured in the same units.
+   Note the `s_j`: **a centre's stationary lifetime falls with its own token
+   index**, which is testable against the measured lifespan fall 7.0 → 4.5.
+   The original text follows.
+ If 2410.06833 **[S]**
    gives an exponential trapping time, it is a timescale in the ODE's own units —
    and Phase 1c's `T_eff` is measured in those units. A predicted trapping time
    against a measured integration time is a sharper test than a plateau count.

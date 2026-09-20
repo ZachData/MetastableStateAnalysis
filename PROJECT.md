@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` is at `ded8a06` (PR #57 merged). Current work: **`claude/aca-phase-9-planning-rvzw3x`** — Phase 9's planning pass, documentation only. It carries `cf5f7ee` (Phase 9's notes) cherry-picked off `claude/attention-collapse-augmentation-qsxwg8`, which had no PR and is now redundant |
-| Last updated | **2026-09-20.** **§3.50: the literature scan and the derivations — four `tools/math_checks/` files (28 checks, all passing) and three corrections to statements this repo makes.** (1) **The causal mask puts a ~1 600× structural tilt under the attention flip**: content-free, `received(j) = H_n − H_j` with layer mean exactly 1, so the baseline already equals 1.6× at position ≈53 and 0.5× at ≈160 — **the flip is reproducible with zero content** until that is divided out. (2) **`Z_beta,i` reverses under masking**: position 0 is its *minimum*, so the sink is the cheapest token to move, and `math-1.md` §1A.6's 'high-Z = sink' is an unmasked-model statement. (3) **The cone margin's response to a γ patch has a closed form**, `2(uᵀX̂ᵀλ*)(uᵀc(λ*))`, reading only the binding set. (4) **ARI is already centred** — the null is for variance, and its 95th percentile spans 57× across size profiles. (5) **The Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, not in `n`** — `lit-1.md`'s description was wrong on both halves and would have frozen the wrong statistic; what replaces it is better (a free position-indexed **anchor** test, and a **slope** regression invariant to β's undecided unit convention that returns `d_eff = 2a+1`). Phase 9's unlearning novelty narrows to **congruence vs rotation** (GUARD-IT `2605.12765`); ContraNorm `2303.06562` is the spreading arm, published. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. Nothing run on real artifacts, nothing registered, trigger 1 still undischarged. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Last updated | **2026-09-20.** **§3.51: `2411.04990` is READ** — the paper two phases depended on and neither had read. `docs/readings/2411.04990.md`, marked **[R]**, plus a fifth math check (36 total, all passing). It changes five things: **Theorem 4.1** collapses all tokens to **`x₁(0)`**, the first token's initial position, for **arbitrary `Q, K`** — position 0 is a theorem, not a confound, and no QK-side intervention (γ included) can prevent it; **the `d_eff` regression `math-10.md` derived is the paper's own open conjecture**, with `d₁ = dim L` computable from Phase 2's projectors, making the test differential; **Lemma C.1** gives an exact distribution-free centre count `1/σ_{d−1}(B_δ)` that **saturates in `n`** — which is this project's own unexplained carrying-capacity finding (50–55 invariant) with a formula attached, and inverting it says the **unscaled β convention** is the one that reaches Lemma 5.1's `c > 1`; **RMSNorm's trainable diagonal is absorbable into `K, Q, V`**, so a γ-patch is **not** a read-side lever and `plan-9.md` §4.7's sign test needs a `W_V` arm; and **explicit timescales** unblock `lit-1.md` §4 item 4. F0 is now fully specified and still free. **§3.50: the scan and the derivations**; **§3.49: the attention flip audited** and `docs/AXES.md`; **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. Nothing run on real artifacts, nothing registered. **2026-09-19:** the **e-value audit is COMPLETE** — thirty-nine registered predictions, **zero e-values** (§3.45's table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate refused three ways** (§3.41, §3.46). **Battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -3679,6 +3679,132 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.51 `2411.04990` read in full: five changes, and the carrying-capacity finding gets a formula (2026-09-20)
+
+**`docs/readings/2411.04990.md`** — the reading note, marked **[R]**, from the
+PDF supplied by the user. This was the top item in the verification queue and
+`lit-10.md` §10's own description of it: *"two phases depend on this one paper
+and neither has read it."* New check file
+`tools/math_checks/parking_center_count.py` (8/8); **36 checks across five files,
+all passing.** Nothing run on real artifacts; nothing registered.
+
+**New convention: `docs/readings/<arxiv-id>.md` for papers read as primary text,
+marked `[R]`.** `docs/LITERATURE.md` §0.1 introduced the mark; this is the first
+file to earn it. The PDF itself is not committed — the note is the greppable,
+diffable artifact and the binary is 1.7 MB.
+
+### 1. Theorem 4.1 — position 0 is a theorem, not a confound
+
+With `V = Id` and **arbitrary `Q, K`**, for almost every initial configuration
+the causal dynamics converge to a single cluster and the limit is **`x₁(0)`** —
+the first token's initial position. §3 of the paper: *"the first token is
+evolving fully autonomously without the influence of others."*
+
+Strictly weaker hypotheses than the unmasked results (which need `QᵀK = V` or
+`QᵀK = Id`). **Consequences here:** §3.49's structural attention tilt and
+§3.50's `Z` reversal are two faces of the same autonomy; and **no QK-side
+intervention, γ included, can prevent collapse under `V = Id`** — stronger than
+`plan-9.md` §4.3's hemisphere ceiling, and it needs no hypothesis on the
+configuration at all. `plan-9.md` §4.3 is amended.
+
+Table 1 is the conjectured atlas of final configurations, keyed on `λ_max(V)`
+and its eigenspace `L`. **`plan-9.md` §4.7's sign prediction is that table**,
+which is a conjecture there — so testing it on a trained model is a
+contribution, and the atlas says what to expect in five cases rather than two.
+
+### 2. The `d_eff` regression is the paper's own open conjecture
+
+§3.50 derived a log-log slope regression as a rescue from the `d = 1024`
+problem. The paper states it, §5 p. 6: *"we conjecture that the number of
+meta-stable clusters should rather be `β^((d₁−1)/2)`, where the ambient dimension
+`d` is replaced by the **effective dimension** `d₁` … a rigorous proof of this
+dimension-reduction remains an **open problem**."*
+
+**So the regression is a direct empirical attack on a named open problem, not a
+workaround.** And `d₁` is not free: the paper identifies it as **`dim L`, the top
+eigenspace of `V`** — which Phase 2's `sym_*` / `schur_*` projectors already
+compute for all 19 checkpoints. **Predict `d₁` from the OV spectrum, then test the
+slope against it**, which makes it differential rather than exploratory.
+
+### 3. Lemma C.1 — the carrying-capacity finding, with a formula
+
+> average number of strong Rényi centres = **`1/σ_{d−1}(B_δ) ~ 1/δ^{d−1}`**
+
+proved for **any spherically symmetric measure in any dimension** (ordinary
+Rényi centres are much harder above `d = 2`, where the classical `c·2π/δ` with
+`c ≈ 0.75` applies — **that is where the 0.7476 constant actually lives**, and it
+is not in anything this project measures). With `δ = cβ^{-1/2}` this is exactly
+the `Θ(β^((d−1)/2))` frequency, so the paper's two statements are one.
+
+**It is a limit over an infinite sequence, so the count SATURATES in `n`.**
+
+> **That is Phase 1's unexplained finding.** Max simultaneously-alive clusters
+> **invariant at 50–55 across all 27 checkpoints** while lifespan falls 7.0 → 4.5
+> and births rise 113 → 164 — a fixed capacity with rising turnover, which is
+> the shape a saturating parking count predicts. `lit-1.md` grades it *"Looks
+> new"*; it has a formula.
+
+**And inverting it bears on β's undecided convention.** Solving
+`1/σ_{d_eff−1}(B_δ) = 52.5` and setting `c = δ√β` at the measured medians:
+under the **scaled** convention (β = 0.50) no `d_eff` up to 22 reaches Lemma
+5.1's required `c > 1`; under the **unscaled** convention (β = 4.0) every
+`d_eff ≥ 5` does. **First evidence in this project bearing on the factor-of-8
+decision §3.40 flagged as undecided.** Held loosely and the check says so: an
+i.i.d. isotropic hypothesis token embeddings do not satisfy, HDBSCAN clusters
+are neither centre type by definition, and the count is asymptotic in `n` while
+`n ∈ [20, 512]`.
+
+*(Recorded, not resolved: App. C.4 prints the `d = 3` count as
+`(3 sin²(δ/2))⁻¹`; the cap area gives `1/sin²(δ/2)`. Constant in `δ`, so it moves
+an intercept and not an exponent — but do not quote an absolute `d = 3` count.)*
+
+### 4. A γ-patch is not a read-side lever
+
+§2 of the paper: a trainable RMSNorm diagonal *"can be equivalently achieved by
+**multiplying `K, Q, V` matrices by `D`**."* Pythia's `input_layernorm` feeds
+`W_Q`, `W_K` **and** `W_V`, so **a γ-patch moves the attention pattern and the
+displacement together.** `notes-9.md` §7's three insertion points are **not
+separable by γ**, and **`plan-9.md` §4.7's sign-differential test cannot be run
+with a γ patch alone** — it needs a `W_V`-side arm. This narrows the lever and
+names it: a γ-patch is a **simultaneous QK-congruence and OV-rescale**.
+
+### 5. Timescales, and F0 fully specified
+
+Quasi-stationarity holds for `T_j·s_j < e^{c²/2 − c⁴/(24β)}·ε` (Lemma 5.1);
+final collapse is at `t = exp(Ω(√β))`; and *"the time parameter in our dynamics
+corresponds to network depth."* Phase 1c's `T_eff` is in the same units, so
+**`lit-1.md` §4 item 4 — filed as blocked on reading the paper — is unblocked.**
+Note the `s_j`: **a centre's stationary lifetime falls with its own token
+index**, testable against the measured lifespan fall 7.0 → 4.5.
+
+**F0's definitions are now exact.** Rényi centres are separated from previous
+**centres** (they capture more clustering but move and merge); **strong** Rényi
+centres from **all** previous particles (visually stationary but do not explain
+all clusters). `δ = cβ^{-1/2}` because attraction is maximal at order `β^{-1/2}`;
+the figures use `c = 4` and Lemma 5.1 needs `c > 1`. Arrival order **is token
+order**. And the separation *"extends naturally to distances induced by
+`⟨Qx, Ky⟩`"* — which is `core/ln_frame.py`'s Gram, **the frame attention actually
+reads**. Report **both** centre types; the paper says they behave differently.
+
+### 6. What the paper says it cannot do, and the pointers it opens
+
+Its own §6: Theorem 5.2 gives **no bound on convergence time**, so
+quasi-stationarity does not yet prove meta-stable clustering; a complete theory
+*"would require demonstrating that each Rényi center captures `Ω(n)` particles in
+`O(1)` time"*, and *"even the weaker claim of capturing `ω(1)` particles remains
+unproven."* Practical simplifications: **tied weights across layers** (Pythia is
+not tied) and **the MLP omitted** — *"Incorporating the MLP dynamics … remains a
+significant open challenge"*, which is exactly Phase 10 §7's question.
+
+Five new pointers, one consequential: **Castin, Ablin & Peyré 2024** introduce
+*"a clever reparametrization that allows them to recast causal attention as
+mean-field dynamics."* **If that restores mean-field structure it may restore the
+gradient-flow framing `plan-9.md` §5.1a wrote off** — read before treating that
+hazard as final. Also **Cowsik et al. 2024** (a more realistic architecture
+*including MLP layers*, with accurate final-configuration predictions),
+**`2410.23228`** (Bruno et al.), **Geshkovski et al. 2024a**, and Agrachev &
+Letrouit `2404.08289`.
 
 ## 3.50 The scan, and the math: four check files, three corrections, and a law that is not in `n` (2026-09-20)
 
