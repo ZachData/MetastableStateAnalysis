@@ -91,7 +91,7 @@ predicted to succeed**, under both its nulls.
 
 **Read every `reject: False` in those records against `max_attainable_E`.**
 The averaging merger is deliberately low-powered and the first A0 run used a
-draw count that made rejection impossible in principle (§3.51.4). Effect sizes,
+draw count that made rejection impossible in principle (§3.51.5). Effect sizes,
 `median_p` and `frac_below_05` are the informative fields.
 
 **`CLAIM-C`: compute is DONE, and the gate has been run.** All four
@@ -3802,7 +3802,60 @@ which id — the nucleation question proper.
 against an observed 0.3164, median p **1.00**, E **0.554**. The confound
 accounts for about a fifth of the gap and the effect survives it.
 
-### 3.51.4 Three instrument defects, each of which would have produced a false number
+### 3.51.4 F1, the transport observables: the identity coupling IS optimal, and the kinematic signature is a mid-training window
+
+The runner `docs/AXES.md` §4 called *"the cheapest open action in the tree"*.
+152 directories, **3 648 layer boundaries**.
+
+**The identity coupling is exactly optimal in 99.5 % of boundaries** —
+`swap_absorbed_fraction` is **0 to machine precision in 3 630 of 3 648**, mean
+**5.2e-05**, largest 7.0e-02. So displacement across a layer is genuinely
+motion of the measure, not tokens changing places, and **every per-layer
+displacement number this project has recorded — all of them identity-coupling
+— IS the true `W_2` rather than the upper bound it was known to be.** That was
+not known; it is a validation of a whole class of existing numbers, obtained
+without a forward pass.
+
+**`swap_fraction` is 0.023–0.041 and is NOT motion.** It rises with training,
+which looks like a finding and is not: at layer 0 a Pythia hidden state is the
+token embedding alone, so repeated tokens have identical vectors and swapping
+their assignments is an exact tie in cost. The assignment takes those swaps
+freely at zero gain. Anyone quoting `swap_fraction` as transport is quoting
+duplicate tokens.
+
+**Straightness is 0.12–0.18 and FALLS with training** — 0.151 at step 0, 0.183
+at step 256, **0.122 at step143000**. Net displacement is a sixth of arc
+length: a long path with little to show for it, which is what dwelling in a
+metastable state looks like measured on the measure rather than inferred from a
+clustering algorithm. The mature model wanders more per unit of progress, not
+less.
+
+**The kinematic signature of `notes-10.md` §3.1 exists, and it is a window
+rather than an end state.** Standardised difference in per-particle step,
+clustered minus noise, two-sided:
+
+| step | clustered − noise | median p | merged E |
+|---|---|---|---|
+| 0–16 | **+0.02 to +0.03** | 0.15–0.17 | 5.2–6.9 |
+| **32–512** | **−0.29 to −0.49** | **0.0005 (the floor)** | **12.9–17.6** |
+| 1000–8000 | −0.05 to +0.04 | 0.011–0.014 | 8.7–10.0 |
+| 16000–32000 | −0.13 to −0.15 | 0.024–0.039 | 8.7–8.8 |
+| 143000 | −0.01 | 0.092 | 7.3 |
+
+At **steps 32–512 clustered particles move markedly less than unclustered
+ones**, and the *median* of 192 units sits at the resolution floor. By
+step143000 the effect is −0.01 and gone. The signature H-PARK is built on is
+strongest in early-middle training and absent in the mature model.
+
+**Read the E column against the ceiling, not against 20.** The largest merged
+e-value this design can produce is **22.37**, and 17.59 at step 256 is the
+closest anything in this session came — with more than half its units at the
+floor. The averaging merger cannot exceed its largest input, so a consistent
+effect across 192 dependent units reports as an E well short of rejection.
+**That is the merger being honest about dependence, not the effect being
+weak**, and it is why `median_p` and `frac_below_05` are reported beside it.
+
+### 3.51.5 Three instrument defects, each of which would have produced a false number
 
 Found while wiring e-values through the rows, and each is fixed with a test
 that fails on the old behaviour.
@@ -3839,7 +3892,7 @@ Even at 2 000 draws the averaging merger is deliberately low-powered: rejection
 needs nearly every unit at the floor. The informative fields are the effect
 sizes, `median_p` and `frac_below_05`.
 
-### 3.51.5 `pythia-410m` step0 and step1 are the same weights
+### 3.51.6 `pythia-410m` step0 and step1 are the same weights
 
 **All 292 tensors bit-identical upstream**, despite different HF revisions and
 different blob hashes, and the sweep's activations for the two are bit-identical
@@ -3908,15 +3961,32 @@ second partition to check.
 sweep's native labels and compare. Same instruments, different partition, no
 forward pass.
 
-### 3.51.6 What this does and does not do to H-PARK
+### 3.51.8 What this does and does not do to H-PARK
 
-Nothing yet adjudicates it. The attentional column of `notes-10.md` §3.1 is the
-one these rows touch, and A0's finding is that **it was mostly mask before step
-2000 and is a sixth of its reported size after** — so the column is weaker than
-the evidence ledger implies, and `attention-10.md` was right to gate the rest of
-its rows on A0. F0's answer runs against the parking account rather than for it.
-The functional and causal columns are untouched, and F5 remains what
-discriminates.
+Nothing yet adjudicates it, and nothing here is registered. Two of §3.1's four
+columns are now measured, and they do not point the same way.
+
+- **Attentional (A0).** Weaker than the evidence ledger implies: mostly mask
+  before step 2000 and a sixth of its reported size after. `attention-10.md`
+  was right to gate the rest of its rows on A0.
+- **Kinematic (F1).** Present and real, but a **window** — clustered particles
+  move markedly less at steps 32–512, and by step143000 the difference is
+  −0.01. If a cluster is a parking space, the parking is a phase the model
+  passes through rather than a property of the trained model.
+- **Functional and causal.** Untouched. **F5 remains what discriminates**, and
+  it needs both.
+
+**F0 runs against the parking account rather than for it**: cluster nuclei are
+late, not early, under both nulls.
+
+**One tension worth stating before anyone resolves it prematurely.** F1 says
+clustered particles move less. F12's smoke run said their position-corrected
+`Z` is *higher*, which on `math-1.md` §1A.6's metric reading means the metric
+makes them **expensive** to move — **pinned**, not parked. Those two together
+are the H-CAT reading rather than the H-PARK one, and `attention-10.md` §5
+names exactly this as the distinction displacement alone cannot make. **The
+full F12 run is what settles which**, and until it lands neither should be
+quoted.
 
 ## 3.50 The scan, and the math: four check files, three corrections, and a law that is not in `n` (2026-09-20)
 
