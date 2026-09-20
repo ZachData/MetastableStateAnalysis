@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > remains authoritative for everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-20.
+**Last updated:** 2026-09-20. **First action: Stage 0, more prompts.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -25,26 +25,165 @@ against a described population rather than against an assumption.
 
 | stage | question | cost | gates |
 |---|---|---|---|
-| **0** | **What is actually in a cluster?** | free | everything. Do not skip |
-| **1** | What does the whole 19 × 24 field look like? | free | which axis any later claim lives on |
-| **2** | Is a cluster one anchor plus ballast? | free | the trash-collection question itself |
-| **3** | What is the mechanism — clock, or structure? | free | H-WARP vs H-STRUCT; Blog 1's headline |
-| **4** | Do the weights predict the clusters? | free | the weight↔activation bridge |
-| **5** | What do clusters do for the output? | forward passes | the functional column, H-PARK vs H-CAT |
-| **6** | Can the drive be used as an instrument? | forward passes | Phase 9, forgetting |
+| **0** | **Get more prompts through Phase 1.** 8 → 20 | **forward passes, ~40–74 GB** | the statistical power of every row below |
+| **1** | What is actually in a cluster? | free | everything else. Do not skip |
+| **2** | What does the whole 19 × 24 field look like? | free | which axis any later claim lives on |
+| **3** | Is a cluster one anchor plus ballast? | free | the trash-collection question itself |
+| **4** | What is the mechanism — clock, or structure? | free | H-WARP vs H-STRUCT; Blog 1's headline |
+| **5** | Do the weights predict the clusters? | free | the weight↔activation bridge |
+| **6** | What do clusters do for the output? | forward passes | the functional column, H-PARK vs H-CAT |
+| **7** | Can the drive be used as an instrument? | forward passes | Phase 9, forgetting |
 
-**Stages 0–4 cost no forward pass.** Read that twice before planning compute.
+**Stage 0 is the only compute-heavy item before Stage 6, and it is first on
+purpose.** **Stages 1–5 cost no forward pass**, and every one of them re-runs on
+the enlarged battery for free once Stage 0 lands. Read that twice before
+planning compute.
 
 ---
 
-## Stage 0 — What is in a cluster (START HERE)
+## Stage 0 — More prompts (DO THIS FIRST)
+
+**Why it is first.** Every e-value in this project merges over units that are
+**not independent** — layer-units inside one forward pass share a model, a text
+and a prompt. `core/evalues.py`'s `average` merger is valid under arbitrary
+dependence and correspondingly **low-powered**, which is why `PROJECT.md` §3.41
+records `CLAIM-C` unable to express a p below 0.0661, and every row in this
+handoff would inherit the same ceiling.
+
+> **The exchangeable unit is the PROMPT, and there are eight of them.**
+> `2501.10573` used **2 244**. Prompt count is what buys independence; token
+> count buys within-prompt precision that a dependence-robust merger cannot
+> exploit anyway. **This is the binding constraint on every result below, and it
+> is the one thing here that compute can fix.**
+
+### 0.1 The work is already licensed — do not invent new prompts
+
+`core/prompts.py` is a **versioned battery** with a deterministic
+`PROMPT_BATTERY_HASH` written into every `manifest.json`, plus
+`verify_same_battery` to check two runs at analysis time. It already carries
+**v2 — 21 prompts, hash `06790b90dcfe`** — extended on 2026-09-19 under **a rule
+committed in its own commit, ahead of the text**, precisely so git shows the
+rule predates the prompts (`PROJECT.md` §3.42).
+
+**Phase 1's metastability sweep used 8 of them.** The rest have never been
+through Phase 1:
+
+| | keys |
+|---|---|
+| **In the Phase-1 sweep (8)** | `wiki_paragraph`, `sullivan_ballou`, `paper_excerpt`, `homer_iliad`, `hdbscan_code`, `camus_letranger`, `latex_monograph`, `repeated_tokens` (degenerate control) |
+| **v2, never run through Phase 1 (12)** | `wiki_photosynthesis`, `wiki_byzantium`, `lincoln_letter_short`, `lincoln_letter_long`, `paper_attention`, `paper_svflow`, `quijote_capitulo`, `moby_loomings`, `sklearn_kmeans_code`, `scipy_linkage_code`, `latex_beamer`, `latex_article` |
+| **v1, excluded** | `short_heterogeneous` — **115 characters.** Almost certainly too short to cluster; check before assuming it is usable |
+
+> **Correction to `status-10.md`**, which says *"the 13 battery prompts that have
+> never been through Phase 1"*. It is **12**, plus `short_heterogeneous` at 115
+> characters, which is probably unusable. The 12 are six genres × two prompts,
+> one short-band and one long-band per pair, exactly as the committed rule
+> specifies — including the non-English literary prompt (`quijote_capitulo`),
+> mirroring v1's `camus_letranger`.
+
+**The selection risk is therefore already retired.** These prompts were chosen
+blind, under a written rule, before anyone saw how they behave. **Running them
+is not a new selection decision** — it executes one already taken and already
+committed. That is worth a great deal: it means the enlarged battery **can carry
+a registered prediction**, which the current one cannot without re-making that
+argument from scratch.
+
+**8 → 20 usable prompts: a 2.5× increase in the exchangeable unit.**
+
+### 0.2 The budget, measured on disk today
+
+Per run directory, 410m, ~450-token prompt (measured on
+`pythia-410m-step1_wiki_paragraph`):
+
+| file | size | scales as |
+|---|---|---|
+| `plateau_attentions.npz` | **147.6 MB** | n² |
+| `attentions.npz` | **147.6 MB** | n² |
+| `activations.npz` | 44.3 MB (`(25, n, 1024)` float32) | n |
+| the other ten JSON/npz | ~0.6 MB | — |
+| **total** | **325 MB** | |
+
+**12 prompts × 19 checkpoints = 228 new directories.**
+
+- At 325 MB: **74 GB**. Free on `WDS_500`: **164 GB**. Fits, leaves ~90 GB.
+- Dropping the duplicate below: **~40 GB**. Leaves ~124 GB.
+
+> **`plateau_attentions.npz` is a byte-identical relayout of `attentions.npz` —
+> verified across all 24 layers.** One stores `(24,16,n,n)` under a single key;
+> the other stores 24 arrays `attn_L0…attn_L23` of shape `(16,n,n)`. Same
+> numbers, stored twice, **148 MB per directory**. Across the existing 152
+> directories that is **≈ 22 GB recoverable**, and it halves the storage cost of
+> every new run.
+>
+> **Do not delete before checking which readers use which file** — the plateau
+> path presumably reads the per-layer layout. The cheap fix is to stop writing
+> one for new runs and relayout on load. `PROJECT.md` §5.1's registered-decisions
+> rule applies: a disk decision gets recorded before it is taken.
+
+**Attention storage scales as n², so prefer MORE prompts at the current length
+(~250–600 tokens) over fewer long ones.** A 1024-token prompt costs ~4× the
+attention of a 500-token one for the same single unit of statistical power. This
+runs *against* `2501.10573`'s `N ≥ 500` guidance, and the reason is that they
+wanted per-prompt intrinsic dimension while this project wants independent
+units. **Both are true and they trade off; F16 is the row that will feel it** —
+only `homer_iliad` (512 tokens) currently clears their threshold. Measured
+lengths: `hdbscan_code` 242, `paper_excerpt` 286, `latex_monograph` 446,
+`camus_letranger` 465, `wiki_paragraph` 467, `sullivan_ballou` 482,
+`homer_iliad` 512.
+
+**Compute is unmeasured.** No per-run timing for a Phase-1 410m sweep was found
+anywhere in the tree. `data/phase12/claim_c_logs/` holds per-prompt timing for
+the `CLAIM-C` arms and is the nearest reference. **Time one prompt × one
+checkpoint and multiply** rather than launching 228 runs on an estimate.
+
+### 0.3 How to run it
+
+From the main tree, with the environment from `PROJECT.md` §1:
+
+```bash
+cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
+export HF_HOME=$PWD/data/hf METS_RESULTS_DIR=$PWD/data/phase12
+export HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1
+python -m p1_mstate_tracking.run_1 --models pythia-410m --prompts <key>
+```
+
+Four checks, none optional:
+
+1. **`PROMPT_BATTERY_HASH` must match** between the new runs and the existing
+   152. `core/prompts.py`'s `verify_same_battery` exists for exactly this. If it
+   does not match, the new prompts are not comparable to the old and the point
+   is lost.
+2. **HDBSCAN must be present.** Otherwise `hdbscan_labels.json` is empty *and*
+   `pair_agreement` silently writes zeros — the failure §1.2 documents. Use the
+   conda `mets` env (`/run/media/system/WDS_500/miniforge3/envs/mets/bin/python`),
+   not `.venv`, for anything touching the partition, and **verify on the first
+   directory before launching the rest.**
+3. **Time one, then extrapolate** (§0.2).
+4. **Never `git add` under `data/`.**
+
+### 0.4 What Stage 0 unblocks, and what it does not
+
+**Unblocks:** every row in Stages 1–5 re-runs on 20 prompts for free once the
+artifacts exist; the e-value ceiling moves; and — the point — **a registered
+prediction becomes possible on a battery whose rows were chosen blind.**
+
+**Does not fix:** twenty is not 2 244. The dependence structure *within* a prompt
+is unchanged. And the 12 new prompts share the old eight's checkpoint grid and
+model, so they add independence **in text and nothing else**.
+
+**Stage 0 is done when** 228 directories exist with a matching battery hash, a
+populated `hdbscan_labels.json`, and a populated `pair_agreement`.
+
+---
+
+## Stage 1 — What is in a cluster
 
 **The question:** which tokens end up clustered, and which end up noise? Not a
 hypothesis — a description. The project has a Jacobian-lens plan, transport
 observables, Schur decompositions and an e-value calculus, and the simplest
 descriptive fact about its central object has never been tabulated.
 
-### 0.1 What already exists, and it is more than expected
+### 1.1 What already exists, and it is more than expected
 
 **Corrected while writing this.** The project *does* have a semantic instrument:
 `pair_hdbscan_agreement` (`p1_mstate_tracking/clustering.py`) tags mutual
@@ -98,10 +237,10 @@ by co-occurrence and **must not be asserted from this table.**
 arbitrary cosine threshold, and the decline could be a norm/scale effect on the
 Gram rather than a structural change, so **sweep the threshold before believing
 it**. Mutual-NN pairs are ~90 per layer: a small, special subpopulation, not the
-cloud. The layer axis is collapsed here, which is the mistake Stage 1 exists to
+cloud. The layer axis is collapsed here, which is the mistake Stage 2 exists to
 stop. No position control. No null.
 
-### 0.2 The third casualty of the HDBSCAN outage
+### 1.2 The third casualty of the HDBSCAN outage
 
 `pair_agreement` is computed only when `"labels" in hdb_data`. During the outage
 (`status-10.md` §2, `PROJECT.md` §3.51.4) that branch was never taken, so the
@@ -119,11 +258,11 @@ directories of the WDS sweep rather than failing.
 This is the same bug class as `docs/AXES.md` listing an absent artifact as
 present, and as standing rule 4's *"refuse rather than degrade."*
 
-### 0.3 What to do, in order
+### 1.3 What to do, in order
 
 1. **Sweep the `ext_sem_threshold`** (currently 0.5) over the pilot sweep and
    check whether the 0.833 → 0.708 decline survives. **Free, and it gates
-   everything in §0.1.** If the decline is threshold-dependent it is a scale
+   everything in §1.1.** If the decline is threshold-dependent it is a scale
    artifact and the reading is dead.
 2. **The token-composition table, which still does not exist.** Join
    `tokens.txt` to `hdbscan_labels.json` and report, per layer per checkpoint:
@@ -141,12 +280,12 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    `clustering.json` still says `null` beside it is the shape of inconsistency
    `b55375e` had to un-write.
 
-**Stage 0 is done when** there is a token-composition table with both sweeps and
-a threshold sweep behind §0.1's decline.
+**Stage 1 is done when** there is a token-composition table with both sweeps and
+a threshold sweep behind §1.1's decline.
 
 ---
 
-## Stage 1 — The whole field, before any slice of it
+## Stage 2 — The whole field, before any slice of it
 
 **Why now:** A0's sweep mean hid its own finding (`status-10.md` §1.1), and
 **that is now a pattern rather than an incident** — F12's raw sign is mostly
@@ -159,19 +298,19 @@ field it lives on should be visible.
    `sinkhorn.json`, the cluster counts, the noise fraction. No new computation —
    this is a rendering of artifacts that exist in 152 directories.
 2. **Mark the four known transitions** (`math-1.md` §13.2) on every panel, plus
-   A0's residual onset and §0.1's 512–3000 window. The question the picture
+   A0's residual onset and §1.1's 512–3000 window. The question the picture
    answers: *how many distinct events are there?*
 3. **Never quote a sweep mean again without its checkpoint split.** Worth
    writing into `design-10.md` as a rule when that file exists.
 
-**Stage 1 is done when** one figure sheet shows the whole field and the events
+**Stage 2 is done when** one figure sheet shows the whole field and the events
 are counted rather than assumed.
 
 ---
 
-## Stage 2 — Anchor or ballast: the trash-collection question itself
+## Stage 3 — Anchor or ballast: the trash-collection question itself
 
-`questions-10.md` §0.1. **The highest-value free experiment identified in this
+`questions-10.md` §1.1. **The highest-value free experiment identified in this
 pass.**
 
 1. **F13, the centre scan** (`notes-10.md` §8). Greedy sequential acceptance over
@@ -193,12 +332,12 @@ pass.**
 attention once position is divided out. That kills H-ANCHOR/BALLAST and leaves
 A0's 6 % residual unexplained.
 
-**Stage 2 is done when** the anchor/ballast decomposition has a number and a
+**Stage 3 is done when** the anchor/ballast decomposition has a number and a
 direction, on both sweeps.
 
 ---
 
-## Stage 3 — Mechanism: is training a clock or a structure?
+## Stage 4 — Mechanism: is training a clock or a structure?
 
 Both rows are free and they are independent, so they can run in either order.
 
@@ -219,12 +358,12 @@ Both rows are free and they are independent, so they can run in either order.
    learned structure and becomes the object, which is the more interesting
    outcome.
 
-**Stage 3 is done when** Blog 1's resistance headline has a candidate mechanism
+**Stage 4 is done when** Blog 1's resistance headline has a candidate mechanism
 that is either supported or refused, and the two clocks are separated.
 
 ---
 
-## Stage 4 — Do the weights predict the clusters?
+## Stage 5 — Do the weights predict the clusters?
 
 `questions-10.md` §3. Free; needs Phase 2's projectors, which are on disk for
 all 19 checkpoints.
@@ -246,21 +385,21 @@ all 19 checkpoints.
 > trigger 2 applies — the registration is the last moment a literature fact can
 > still change the statistic.
 
-**Stage 4 is done when** a weights-only quantity has either predicted an
+**Stage 5 is done when** a weights-only quantity has either predicted an
 activation-space count or failed to, on the record, with the wording frozen
 first.
 
 ---
 
-## Stage 5 — What clusters do for the output
+## Stage 6 — What clusters do for the output
 
-First stage that costs forward passes. Everything above should be read first.
+First analysis stage that costs forward passes (Stage 0 aside). Everything above should be read first.
 
 1. **Loss coupling** (`questions-10.md` §4). Per-token surprisal against cluster
    membership, **with position as a covariate**. One forward pass per prompt per
    checkpoint, no backward. **No logits are on disk** — checked.
    The developmental question is the prize: does the clustered/unclustered
-   surprisal gap open at the same step as A0's residual and §0.1's window?
+   surprisal gap open at the same step as A0's residual and §1.1's window?
 2. **Variance decomposition instead of ARI** (`questions-10.md` §5.1).
    Within-cluster vs between-cluster functional spread. **Robust to the
    reproducibility floor in a way F4/F5 as written are not**, and it is the
@@ -274,9 +413,9 @@ First stage that costs forward passes. Everything above should be read first.
 
 ---
 
-## Stage 6 — The drive as an instrument
+## Stage 7 — The drive as an instrument
 
-Phase 9's territory; listed here because Stages 0–5 are what would license it.
+Phase 9's territory; listed here because Stages 1–6 are what would license it.
 
 1. **Switch the lever.** Patch the **attention logits** (that is `β` exactly)
    rather than LayerNorm `γ`, which on Pythia's fused QKV moves the value path
@@ -305,9 +444,10 @@ Phase 9's territory; listed here because Stages 0–5 are what would license it.
 - **The partition is not reproducible run to run** (§3.51.4). Prefer statistics
   that do not need it (Stage 2), aggregate over thousands of units, and report
   both sweeps.
-- **Eight prompts.** The power ceiling on everything (`questions-10.md` §7 item
-  2). More prompts is the highest-value compute available and needs no new
-  instrument.
+- **Eight prompts.** The power ceiling on everything, and **Stage 0 is the plan
+  to lift it to twenty** using prompts already chosen blind under a committed
+  rule (`questions-10.md` §7 item 2). Until Stage 0 lands, read every e-value
+  below against `PROJECT.md` §3.41's floor.
 - **Nothing in the five papers is a theorem about Pythia** — tied weights, no
   MLP, `V = I`, `Q = K = I`, `d = 2`.
 

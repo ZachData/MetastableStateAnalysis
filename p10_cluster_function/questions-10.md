@@ -270,11 +270,26 @@ logit-temperature patch Phase 9's primary instrument and `γ` the secondary.
    2026-09-20). With **39 registrations and zero adjudications**, F14 (observed
    count vs Lemma C.1 — a published prediction, an exact null, one free
    parameter) is the second chance. Do not burn it the same way.
-2. **The power problem is a prompt-count problem.** **Eight prompts.**
-   `2501.10573` used 2 244. Layer-units inside one forward pass are not
-   independent samples of anything; the `average` e-merger is valid under
-   arbitrary dependence and correspondingly low-powered. **More prompts is the
-   highest-value compute available**, and it needs no new instrument.
+2. **The power problem is a prompt-count problem, and it is now the FIRST
+   ACTION** (`handoff-10.md` **Stage 0**). **Eight prompts.** `2501.10573` used
+   2 244. Layer-units inside one forward pass are not independent samples of
+   anything; the `average` e-merger is valid under arbitrary dependence and
+   correspondingly low-powered.
+
+   **The work is already licensed.** `core/prompts.py` carries battery **v2, 21
+   prompts, hash `06790b90dcfe`**, extended under a rule committed ahead of the
+   text (`PROJECT.md` §3.42). Phase 1's sweep used 8; **12 have never been
+   through Phase 1**, and because they were chosen blind under a written rule,
+   **running them is not a new selection decision.** 8 → 20 usable prompts,
+   2.5× the exchangeable unit, and the enlarged battery **can carry a registered
+   prediction** where the current one cannot.
+
+   **Budget, measured:** 12 × 19 = 228 directories at 325 MB = **74 GB** against
+   164 GB free — or **~40 GB** once the verified `plateau_attentions.npz` /
+   `attentions.npz` duplication (148 MB per directory, ≈22 GB across the
+   existing sweep) stops being written twice. **Attention scales n², so more
+   short prompts beat fewer long ones** for this project's purpose, which is
+   independent units rather than per-prompt intrinsic dimension.
 3. **Make the reproducibility floor a standard error, not a caveat.** Re-cluster
    `R` times per directory and report every partition-derived number with a
    re-measurement error bar. `backfill_hdbscan.py` does 152 directories in 69 s.

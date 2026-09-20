@@ -7,10 +7,20 @@ work — that is `PROJECT.md`, which is the file to read first.**
 
 ## Current priority (updated 2026-09-20)
 
+- **NEXT ACTION IS COMPUTE: take the Phase-1 battery from 8 prompts to 20**
+  (`p10_cluster_function/handoff-10.md` **Stage 0**, `PROJECT.md` §3.54.2b).
+  Eight prompts is the exchangeable unit and the power ceiling under which every
+  e-value in Phase 10 sits. **No new prompts are to be invented** — `core/prompts.py`
+  carries v2 (21 prompts, hash `06790b90dcfe`) extended under a rule committed
+  ahead of the text, and **12 have never been through Phase 1**, so running them
+  is not a new selection decision. 228 directories, **74 GB against 164 GB
+  free** (~40 GB once the verified `plateau_attentions`/`attentions`
+  duplication stops being written — **≈22 GB is recoverable today**).
+  **Time one prompt × one checkpoint before launching the rest.**
 - **A scoped thread is open with its own handoff: `p10_cluster_function/handoff-10.md`
   (`PROJECT.md` §3.54).** What clusters are made of, what they do, and whether the
-  drive that forms them is usable as an instrument. **Six stages, general →
-  particular; Stages 0–4 cost no forward pass. Start at Stage 0.** Hypotheses in
+  drive that forms them is usable as an instrument. **Eight stages, general →
+  particular; Stages 1–5 cost no forward pass.** Hypotheses in
   `questions-10.md`; three named project-wide — **H-ANCHOR/BALLAST**,
   **H-THERMOSTAT**, **H-WARP**. **When it is parked, return to `PROJECT.md`'s
   "Resume here" block**, which stays authoritative for branch state, `CLAIM-C`,
@@ -22,7 +32,7 @@ work — that is `PROJECT.md`, which is the file to read first.**
   backfill, the audit and two literature passes. The **pilot sweep's copy is
   populated (6 066 / 6 075 layer-records) and had never been reported**; its
   first read is the project's first direct evidence on the semantic question
-  (`handoff-10.md` §0.1).
+  (`handoff-10.md` §1.1).
 
 - **READ `p10_cluster_function/lit-10.md` §11 BEFORE building on Phase 9 or
   Phase 10 (`PROJECT.md` §3.52).** `2411.04990` — the paper both phases were

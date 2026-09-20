@@ -18,7 +18,12 @@ cluster-function thread's ordered plan and `questions-10.md` for its
 hypotheses**, and `PROJECT.md` §3.51 for the cross-cutting findings (three of which are about the project's
 instruments rather than about clusters).
 
-> **2026-09-20, a scoped thread opened out of this one: `handoff-10.md`.**
+> **2026-09-20, a scoped thread opened out of this one: `handoff-10.md`, and
+> its first action is COMPUTE — Stage 0, taking the Phase-1 battery from 8
+> prompts to 20.** Eight prompts is the power ceiling under which every e-value
+> in this phase sits; the 12 unused v2 prompts were already chosen blind under a
+> committed rule, so running them retires no selection risk that has not already
+> been retired.**
 > The cluster-function question — what clusters are made of, what they do, and
 > whether the drive that forms them is usable as an instrument — has its own
 > ordered plan in **`handoff-10.md`** and its hypotheses in
@@ -27,7 +32,7 @@ instruments rather than about clusters).
 > `pair_agreement` — the project's only semantic instrument — wrote a
 > well-formed record of zeros into all 152 WDS directories rather than failing.
 > The pilot sweep's copy is populated in 6 066 of 6 075 layer-records and had
-> never been reported. First read in `handoff-10.md` §0.1.
+> never been reported. First read in `handoff-10.md` §1.1.
 
 > **2026-09-20, later the same day: five papers were READ as primary text**
 > (`lit-10.md` §11–§15) — `2411.04990`, `2501.10573`, `2605.12765`,
@@ -41,8 +46,17 @@ instruments rather than about clusters).
 
 **Decision taken 2026-09-20 (user):** F0 runs **exploratory first**, which caps
 it at tier 1 — the answer was seen before any wording was frozen. If it is ever
-to be the project's first adjudication it needs a fresh axis: 70m, or the 13
+to be the project's first adjudication it needs a fresh axis: 70m, or the
 battery prompts that have never been through Phase 1.
+
+**Corrected 2026-09-20: it is 12, not 13** — `core/prompts.py`'s v2 battery is
+21 prompts, Phase 1's sweep used 8, and the thirteenth (`short_heterogeneous`,
+115 characters) is almost certainly too short to cluster. **Running those 12 is
+now the first action of the cluster-function thread** — `handoff-10.md` Stage 0,
+which carries the measured storage budget and the four checks. Because they were
+chosen blind under a rule committed ahead of the text (`PROJECT.md` §3.42),
+running them is not a new selection decision, and **the enlarged battery can
+carry a registered prediction where the current one cannot.**
 
 ---
 
