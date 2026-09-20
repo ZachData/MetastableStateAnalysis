@@ -70,8 +70,8 @@ runners, `status-10.md` and §3.51 are *not* on `main`.
 - **#60 therefore carries BOTH bodies of work**: #59's four free rows and their
   runners (it descends from `f4534c5`), plus the five-paper literature read,
   `questions-10.md`, `handoff-10.md` and §3.52–§3.54. **35 files, +8 674/−128.**
-  Gate green at **2 616 passed**. **Merging #60 is what puts #59's work on
-  `main`.**
+  Local gate green at **2 616 passed**; **CI is red for a reason that predates
+  it — see below.** **Merging #60 is what puts #59's work on `main`.**
 - **Two branches are now superseded and carry nothing unique:**
   `claude/p10-free-rows` (`96bb414`) and `claude/aca-phase-9-planning-rvzw3x`
   (`95a9dd2`). Both are ancestors-in-content of #60. Delete them **after** #60
@@ -80,6 +80,36 @@ runners, `status-10.md` and §3.51 are *not* on `main`.
 - **`claude/attention-collapse-augmentation-qsxwg8` is redundant** — its one
   commit (`cf5f7ee`, Phase 9's notes) was cherry-picked onto #58's branch.
   Delete it rather than opening a PR.
+
+**CI ON `main` IS RED, AND IT WAS RED BEFORE #60.** Two tests fail on the
+GitHub runner and pass on this machine:
+
+```
+tests/test_phase2_weights_gptneox.py::TestDecompositionPrecision
+  ::test_float32_schur_does_not_reach_the_projector_tolerance
+  ::test_float32_leaves_acceptance_to_rtol_rather_than_guaranteeing_it
+E  assert np.float32(8.6426735e-07) > 1e-06        # PROJECTOR_TOL
+```
+
+**Diagnosis, and the test anticipated it.** Both assert that a **float32** Schur
+projector residual is *worse* than `PROJECTOR_TOL` — a deliberate tripwire whose
+own docstring says *"If this ever passes, single precision became good enough
+and the promotion below is no longer load-bearing — which is worth being told
+about explicitly."* On the CI runner's BLAS the residual is `8.64e-07`, just
+**inside** the 1e-06 tolerance, so the tripwire fires. On this machine it is
+outside and the gate is green at **2 616 passed**.
+
+> **It is a platform-dependent assertion, not a regression.** `gh run list
+> --branch main` shows `failure` on `13fad11` (#58) and on `ded8a06` (#57), and
+> `success` on `e238903` (#56) — **so it went red with PR #57 and has been red
+> on `main` ever since.** Neither the test nor `core/interactions.py` is in
+> #60's diff (checked). Anywhere this file says "CI green", read it as "the
+> local gate is green".
+
+**Fixing it is its own piece of work and its own PR** — the honest fix is that a
+test asserting float32 is *insufficiently* precise is asserting a property of
+the host's BLAS, so it wants either a machine-dependent marker or a re-derived
+threshold. **Do not fold it into a documentation PR.**
 
 **The lesson, and it has now cost twice.** A PR targeted at another PR's branch
 does not retarget itself safely once the base merges; merging it then lands the
