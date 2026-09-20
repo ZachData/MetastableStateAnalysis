@@ -3773,10 +3773,15 @@ predicted — corrected gap 0.004 against a raw 0.26. A residual appears at
 means and roughly a sixth the size the uncorrected number implies, and it does
 not exist before step 2000.
 
-**What may NOT be said from this.** No arm here is a random twin, so the
-trained-vs-random sign flip is untouched. And the 5c number was measured on
+**What may NOT be said from this.** The 5c number was measured on
 `gpt2-large` and ALBERT; this re-measures the same statistic on the 410m sweep
-rather than refuting that one.
+rather than refuting that one. And **no arm here is a norm-matched random
+twin**, so the trained-versus-random *sign flip* is untouched — step 0 is an
+untrained checkpoint, which is a weaker control than the `-random` arms
+`CLAIM-C` uses, because it shares the initialisation scheme rather than being
+matched to a trained model's norms. It is still the right baseline for a
+developmental read, and §3.51.9 uses it as one for F12; what it cannot do is
+stand in for the twin.
 
 ### 3.51.3 F0, the anchor test: nuclei are LATE, and it is not the confound
 
@@ -3784,7 +3789,8 @@ rather than refuting that one.
 Direction fixed in code before the sweep was read: **"less"**.
 
 - **observed 0.3164** against a label-permutation null mean of **0.2077**
-- median p = **1.00**, fraction below 0.05 = **0.08 %**, merged E = **0.535**
+- median p = **1.00**, fraction below 0.05 = **0.18 %**, merged E = **0.536**
+- 2 000 draws, ceiling 22.37 — the design could have rejected and did not
 
 Nuclei sit **systematically later** than a position-blind assignment predicts —
 the opposite of the prediction, and not marginally.
@@ -3799,7 +3805,7 @@ clustered/noise split **fixed** and shuffles only which clustered token carries
 which id — the nucleation question proper.
 
 **Both nulls agree.** The restricted null's mean moves only 0.2077 → **0.2311**
-against an observed 0.3164, median p **1.00**, E **0.554**. The confound
+against an observed 0.3164, median p **0.9995**, E **0.556**. The confound
 accounts for about a fifth of the gap and the effect survives it.
 
 ### 3.51.4 F1, the transport observables: the identity coupling IS optimal, and the kinematic signature is a mid-training window
