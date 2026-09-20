@@ -172,9 +172,13 @@ Ranked by (value × cheapness), with the measurement each needs.
 1. **The Rényi parking prediction for cluster count.** 2411.04990 **[S]** links
    metastable states under causal masking to the Rényi parking problem.
 
-   > **CORRECTED 2026-09-20 (`p10_cluster_function/lit-10.md` §5), then
-   > CORRECTED AGAIN the same day from the paper itself (`lit-10.md` §11.3,
-   > `math-10.md` §7.2). Read the second correction; the first over-shot.**
+   > **CORRECTED TWICE on 2026-09-20, and read the second correction.** The
+   > first (`p10_cluster_function/lit-10.md` §5) worked from search summaries
+   > and over-shot; the second works from the paper, which was read in full
+   > that day by two routes — **`docs/readings/2411.04990.md`** (the dedicated
+   > reading note) and **`lit-10.md` §11 / `math-10.md` §7** (the same read
+   > inside Phase 10's files). Both are `[R]` and they agree except where
+   > `lit-10.md` §11.5 is noted below.
    >
    > The sentence that originally stood here — that parking gives "a **density
    > constant** (the Rényi constant ≈ 0.7476) and hence an expected number of
@@ -182,28 +186,40 @@ Ranked by (value × cheapness), with the measurement each needs.
    > halves as the first correction claimed.
    >
    > - **Wrong: "as a function of n."** There is no `n` in the law. Lemma C.1
-   >   gives the expected count in an *infinitely long* sequence; the finite-`n`
-   >   form saturates at it.
+   >   gives the expected count in an *infinitely long* sequence, and the
+   >   finite-`n` form **saturates** at it. More tokens do not buy more centres
+   >   once the sphere is full — **which is this project's own carrying-capacity
+   >   finding (max simultaneously-alive clusters invariant at 50–55 across all
+   >   27 checkpoints) with a formula attached.**
    > - **Right: the Rényi constant is there.** Appendix C.4 — at `d = 2`, as
    >   `δ → 0`, the average number of **ordinary** Rényi centres approaches
-   >   `c·2π/δ` with `c ≈ 0.75` (Dvoretzky–Robbins 1964).
+   >   `c·2π/δ` with `c ≈ 0.75` (Dvoretzky–Robbins 1964). It lives in the
+   >   ordinary-centre count, not in anything this project currently measures.
    > - **The scaling is `Θ(β^((d−1)/2))`**, in **β and dimension**. At
    >   `d = 1024` the exponent is 511.5 — **but that is the small-`δ` power-law
    >   asymptotic only.** The exact law,
-   >   `E[#strong Rényi centres] = E_{x∼μ}[1/μ(B_δ(x))]`, is
+   >   `E[#strong Rényi centres] = E_{x∼μ}[1/μ(B_δ(x))] = 1/σ_{d−1}(B_δ)`, is
    >   **distribution-free and dimension-free**: a reciprocal local-density
    >   average, no exponent, no `β`, only the separation `δ`, which is a
    >   distance and can simply be swept. **So the `d ≫ 1` objection does not
    >   kill the prediction for strong centres**, and this growth direction is
    >   live rather than blocked.
+   > - **The `d_eff` form is the paper's own open conjecture**, with
+   >   `d₁ = dim L`, the top eigenspace of `V` — which Phase 2's `sym_*` /
+   >   `schur_*` projectors already identify, on disk for all 19 checkpoints.
+   >   The test is therefore **differential**: predict `d₁` from the OV
+   >   spectrum, then check it against the count.
    > - **The nuclei are geometric objects**, not "the earliest member of a
    >   cluster": a *strong Rényi centre* is a token separated by more than
    >   `δ = cβ^{−1/2}` from **every preceding token**. Phase 10's F0 measured
-   >   the cluster-earliest-member proxy and it is not the same statistic
-   >   (`lit-10.md` §11.4).
+   >   the cluster-earliest-member proxy, which is a different statistic, so
+   >   **F0's failure is not evidence against this account** (`lit-10.md`
+   >   §11.4).
+   > - **Theorem 4.1**: for `V = I_d` and *arbitrary* `Q, K`, all tokens
+   >   converge to `x₁(0)` — the first token's initial position. Item 4 below
+   >   is also unblocked by the reading.
    >
-   > `2411.04990` is now **[R]**, not `[S]`. Phase 1 has cluster counts, per
-   layer, per prompt length, at 27 checkpoints, already on disk. **Nobody has
+   > `2411.04990` is now **[R]**, not `[S]`. Phase 1 has cluster counts, per   layer, per prompt length, at 27 checkpoints, already on disk. **Nobody has
    checked a parking-derived cluster-count prediction against a trained
    transformer.** This is re-analysis, costs no forward passes, and it is a
    quantitative theory-vs-measurement comparison of exactly the kind
@@ -213,7 +229,14 @@ Ranked by (value × cheapness), with the measurement each needs.
    already the default; what is missing is that the *comparison object* is still
    2312.10794's unmasked dynamics. 2411.04990's masked system is the frame-correct
    null for every Pythia number this project has produced.
-4. **The trapping timescale as a quantitative prediction.** If 2410.06833 **[S]**
+4. **The trapping timescale as a quantitative prediction. — UNBLOCKED 2026-09-20.**
+   `2411.04990` supplies both ends in ODE units: quasi-stationarity for
+   `T_j·s_j < e^{c²/2 − c⁴/(24β)}·ε` (Lemma 5.1) and final collapse at
+   `t = exp(Ω(√β))`. Phase 1c's `T_eff` is measured in the same units.
+   Note the `s_j`: **a centre's stationary lifetime falls with its own token
+   index**, which is testable against the measured lifespan fall 7.0 → 4.5.
+   The original text follows.
+ If 2410.06833 **[S]**
    gives an exponential trapping time, it is a timescale in the ODE's own units —
    and Phase 1c's `T_eff` is measured in those units. A predicted trapping time
    against a measured integration time is a sharper test than a plateau count.

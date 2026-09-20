@@ -181,39 +181,51 @@ What replaces it, from `math-10.md` §5, is better:
 - **The anchor test, and it is free today.** The mechanism the paper supplies is
   that **early tokens act as nuclei** for cluster formation. That is a
   per-token, position-indexed prediction checkable against `hdbscan_labels.json`
-  plus positions with no β, no convention decision and no reading of the paper.
-  **This is now F0.**
+  plus positions with no β and no convention decision. **This is now F0.**
 
-**AMENDMENT 2026-09-20 (third pass) — the paper has now been READ, and the
-correspondence above is not the one it makes.** `lit-10.md` §11 and
-`math-10.md` §7 carry it in full. The four things that change this section:
+**AMENDMENT 2026-09-20 (third pass) — the paper has now been READ IN FULL, by
+two routes: `docs/readings/2411.04990.md` (the dedicated reading note) and
+`lit-10.md` §11 / `math-10.md` §7. The correspondence above is not the one it
+makes.** Six things change this section.
 
 1. **The nuclei are a geometric object with a definition, not "the earliest
-   member of a cluster".** A *Rényi centre* is a token separated by more than
-   `δ` from every previously accepted centre; a *strong Rényi centre* is one
-   separated by more than `δ` from **every previous token**. Both are greedy
-   sequential acceptance rules on positions and distances, with `δ = cβ^{−1/2}`.
-   Neither mentions clusters. **`hdbscan_labels.json` is not needed to compute
-   them, and F0's statistic is a proxy for them rather than an instance of
-   them** — which is why F0's result (`status-10.md` §1.2) is not evidence
-   against this account.
-2. **The prediction is two-sided.** Strong centres are near-stationary and
-   *undercount* the clusters; ordinary centres drift, merge and disappear but
-   *cover more* of them. A single scalar in one direction cannot express that.
-3. **The count law is exact, distribution-free and dimension-free in the form
-   that matters**: `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))]`, a reciprocal
-   local-density average with no exponent and no `β`. The `d ≫ 1` objection
-   applies only to its small-`δ` power-law asymptotic. **The cheapest real
-   version of this test is therefore observed-vs-predicted count, swept in `δ`,
-   not a log-log slope.**
-4. **The i.i.d. assumption in that law is the discriminant, not a defect.** The
+   member of a cluster".** A *Rényi centre* satisfies
+   `dist(x_{s_j}, x_{s_i}) > δ` for all `i < j` — separated from previous
+   **centres**; a *strong Rényi centre* satisfies `dist(x_{s_j}, x_i) > δ` for
+   all `i < s_j` — separated from **all previous tokens**, and is a subset of
+   the first. Both are greedy sequential acceptance rules on positions and
+   distances. Neither mentions clusters. **`hdbscan_labels.json` is not needed
+   to compute them, and F0's statistic is a proxy for them rather than an
+   instance of them** — which is why F0's result (`status-10.md` §1.2) is not
+   evidence against this account.
+2. **`δ = c·β^{−1/2}`**, because attraction is maximal at distances of order
+   `β^{−1/2}` and decays rapidly beyond. The paper's figures use `c = 4` and
+   Lemma 5.1 needs `c > 1`. **And the separation *"extends naturally to
+   distances induced by `⟨Qx, Ky⟩`"*** — which is `core/ln_frame.py`'s Gram,
+   the frame attention actually reads, so the scan should be run in both.
+3. **The prediction is two-sided.** Strong centres are near-stationary and
+   *undercount* the clusters; ordinary centres *"better capture the meta-stable
+   clustering effect"* but drift, merge and disappear. A single scalar in one
+   direction cannot express that — **report both types.**
+4. **The count law is exact, distribution-free and dimension-free in the form
+   that matters**: `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))] = 1/σ_{d−1}(B_δ)`,
+   a reciprocal local-density average with no exponent and no `β`. The `d ≫ 1`
+   objection applies only to its small-`δ` power-law asymptotic. **The cheapest
+   real version of this test is observed-vs-predicted count, swept in `δ`, not a
+   log-log slope** — and **it saturates in `n`, which is §2's finding 4 (max
+   alive clusters invariant at 50–55) with a formula attached** (`math-10.md`
+   §5.4, §7.2).
+5. **The i.i.d. assumption in that law is the discriminant, not a defect.** The
    gap between the observed strong-centre count and the i.i.d. prediction *is*
-   "how far this token cloud departs from an exchangeable one" — which is this
-   section's packing-versus-content question with an exact null attached.
+   "how far this token cloud departs from an exchangeable one" — this section's
+   packing-versus-content question with an exact null attached.
+6. **Lemma 5.1's `T_j · s_j` bound predicts a centre's stationary lifetime falls
+   with its token index.** §2's finding 4 measures lifespan (7.0 → 4.5). Whether
+   lifespan falls with the anchor's position is a free, direct test of the
+   lemma, and nobody has looked.
 
 The exact correspondence was `[S]` and the top item in `lit-10.md` §10; it is
 now `[R]`, and §10's list is superseded by `lit-10.md` §15.
-
 ### 3.3 The turnover question is the phase's other half, and the instrument exists
 
 Finding 4 has two readings that cluster-level statistics **cannot** separate,
@@ -526,7 +538,8 @@ Costs and dependencies. Ordering is a proposal; nothing is registered.
 
 | # | experiment | forward pass? | depends on | decides |
 |---|---|---|---|---|
-| **F0** | **The anchor test**: are cluster nuclei early tokens, as the parking reading says? Per-token, position-indexed, against `hdbscan_labels.json` + positions. | no | **nothing** | §3.2 as corrected. Needs no β, no convention decision and no reading of the paper |
+| **F0** | **The anchor test**, now fully specified (§3.2): Rényi and strong Rényi centres at `δ = cβ^{-1/2}` on the layer-0 geometry, both types, `c` swept, in the LN frame. | no | **nothing** | §3.2. The paper is read; the definitions are exact |
+| **F0c** | **Lemma C.1's saturating count** vs the 50–55 carrying capacity, and **Lemma 5.1's index-dependent lifetime** vs the measured lifespan fall 7.0 → 4.5. | no | nothing | `math-10.md` §5.4. Two more free tests the reading opened |
 | **F0b** | **The slope test**: fit `log count ~ a·log β + b·log n`; `d_eff = 2a + 1`. | no | the β producer (`docs/AXES.md` §4) | §3.2. Convention-free in the slope; **measures** `d_eff` rather than confirming a constant |
 | **F1** | **Transport observables** (`w2_identity` vs `w2_optimal`, arc length, `straightness`) on artifacts on disk — still the cheapest open action in the tree, carried over from `notes-9.md` §9. | no | nothing | the kinematic signature of §3.1, and it re-reads every displacement number already recorded |
 | **F2** | **Verify the J-lens artifacts** on the research machine: does `neuronpedia/jacobian-lens` carry `pythia-70m-deduped`, what shape, what revision. | no | HF access (blocked from a cloud session) | whether §4 borrows or fits |

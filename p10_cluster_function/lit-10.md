@@ -180,6 +180,15 @@ Same egress constraints as §0. Everything below is **[S]** unless marked.
 
 ## 5. The Rényi-parking prediction is not a law in `n`, and `lit-1.md` has it wrong
 
+> **SUPERSEDED 2026-09-20 by a full reading: `docs/readings/2411.04990.md`.**
+> Every `[S]` inference below is confirmed, and the paper adds four things the
+> summaries did not carry: Theorem 4.1's limit is **`x₁(0)`**, the first token's
+> initial position, for arbitrary `Q, K`; the `d_eff` rescue is **the paper's own
+> open conjecture** with `d₁ = dim L`; **Lemma C.1** gives an exact
+> distribution-free count that **saturates in `n`**; and §2 remarks that a
+> trainable RMSNorm diagonal is **absorbable into `K, Q, V`**, which corrects
+> `plan-9.md` §7. Read that file, not this section.
+
 Two independent search summaries agree, and they correct the project's standing
 description of this result.
 
@@ -317,10 +326,14 @@ measure, which ContraNorm does not — but the phase must say so.
 
 In priority order. The first two change constructions.
 
-1. **`2411.04990`** — the exact parking statement (what are the cars, the
-   street, a Rényi centre, a strong Rényi centre), whether the count law carries
-   an `n` dependence, and the gradient-flow claim verbatim. **Two phases depend
-   on this one paper and neither has read it.**
+1. ~~**`2411.04990`**~~ — **DONE 2026-09-20**, read in full from the PDF:
+   `docs/readings/2411.04990.md`. It opens five new pointers, of which
+   **Castin, Ablin & Peyré 2024** is the one that could move a decision: a
+   reparametrisation that *"allows them to recast causal attention as mean-field
+   dynamics"*. **If it restores mean-field structure it may restore the
+   gradient-flow framing `plan-9.md` §5.1a wrote off.** Also `2410.23228`
+   (Bruno et al.) and Cowsik et al. 2024, which includes MLP layers — the gap
+   §6 of the paper names and Phase 10 §7's question.
 2. **`2501.10573`** — the geometry/loss correlation and the shuffled-token null.
 3. **`2605.12765`** and **`2505.16831`** — whether §6's rotation-vs-congruence
    distinction is as clean as it looks.
