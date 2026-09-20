@@ -325,6 +325,25 @@ not a one-sided reweighting. Three consequences, each load-bearing:
    not separate the pairwise from the bias contribution will attribute a sink
    effect to a metric effect.
 
+> **CORRECTION 2026-09-20, from reading `2411.04990` in full
+> (`docs/readings/2411.04990.md` §1).** The paper's §2 remarks that a trainable
+> RMSNorm diagonal *"can be equivalently achieved by **multiplying `K, Q, V`
+> matrices by `D`**"*. In Pythia the attention block's `input_layernorm` feeds
+> `W_Q`, `W_K` **and** `W_V` alike, so **a γ-patch there is not a read-side
+> lever — it moves the attention pattern and the displacement together.** Two
+> consequences:
+>
+> - **`notes-9.md` §7's three insertion points are not separable by γ.**
+>   Isolating the write side needs `W_V`'s input scaled directly, which the
+>   LayerNorm does not permit.
+> - **§4.7's sign-differential test cannot be run with a γ patch alone**, since
+>   it turns on separating "who attends to whom" from "where the content pushes
+>   you". It needs a `W_V`-side arm, and the design must add one.
+>
+> This narrows the lever and sharpens it: a γ-patch is a **simultaneous**
+> QK-congruence and OV-rescale, which is a specific, nameable object rather than
+> a vague "metric change".
+
 ### 4.2 On Pythia the MLP can be excluded exactly, and this answers the "MLP or attention" question precisely
 
 Pythia's parallel residual gives **two LayerNorms per block reading the same
@@ -355,6 +374,16 @@ and **only positivity of the attention weights is used** in the proof
 > **No metric deformation can prevent collapse-from-a-hemisphere.** What resists
 > must come from `V` or from outside the paper's model (the MLP, causal masking,
 > RoPE).
+
+**Under causal masking the ceiling is stronger, and needs no hypothesis at all.**
+`2411.04990` Theorem 4.1 (**[R]**): with `V = Id` and **arbitrary** `Q, K`, for
+almost every initial configuration the masked dynamics converge to a single
+cluster, and the limit is **`x₁(0)`** — the first token's initial position, which
+never moves because token 1 is autonomous under the mask. **No hemisphere
+condition is required, and no QK-side intervention, γ included, can prevent it.**
+The paper notes this is strictly weaker in hypotheses than the unmasked results,
+which need `QᵀK = V` or `QᵀK = Id`. It also means the causal mask does **not**
+supply the resistance the sentence above hopes for.
 
 This is the hard ceiling on "use the metric to stop clustering," and it should be
 stated in `design-9.md`'s first paragraph so no result is read as beating it.
