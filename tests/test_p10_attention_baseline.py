@@ -326,3 +326,24 @@ def test_directories_without_a_checkpoint_do_not_break_the_split():
     got = aggregate([{"checkpoint": None, "layers": [_ck_row()]}])
     assert got["by_checkpoint"] == {}
     assert got["n_units"] == 1
+
+
+def test_the_statistic_is_tested_unrounded():
+    """The record rounds to 4 dp for readability; the p-value must not be
+    computed from the rounded value. A 5e-05 rounding error against unrounded
+    null draws is about fifty thousand times the tie tolerance, so draws within
+    it land on whichever side the rounding sent them.
+
+    Checked by construction: a layer whose enrichment rounds DOWN must not get
+    a p-value that a rounded-down observation would have earned. The two
+    differ only when a draw sits in the gap, so this asserts the code path
+    rather than the arithmetic -- the runner must pass the same float it
+    measured."""
+    import inspect
+
+    from tools.run import p10_attention_baseline as mod
+
+    src = inspect.getsource(mod.measure_layer)
+    assert 'p_from_null_tolerant(raw_noise, raw_draws' in src
+    assert 'p_from_null_tolerant(out["raw_noise"]' not in src
+    assert 'p_from_null_tolerant(corrected_noise, draws' in src

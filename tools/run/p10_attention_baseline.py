@@ -155,14 +155,23 @@ def measure_layer(attn_layer, labels, rng) -> dict:
     corrected = mask_corrected_received(attn_layer)
     positions = np.arange(n, dtype=np.float64)
 
+    # Held UNROUNDED, and the rounding happens only on the way into the record.
+    # Testing a statistic rounded to 4 dp against unrounded null draws puts a
+    # 5e-05 error on the comparison -- about fifty thousand times the tie
+    # tolerance -- so a draw within that of the true value lands on whichever
+    # side the rounding sent it. Small, and wrong for no reason.
+    raw_noise = noise_enrichment(raw, labels)
+    corrected_noise = noise_enrichment(corrected, labels)
+    bias = clustered_position_bias(positions, labels)
+
     out = {
         "n_tokens": int(n),
         "noise_fraction": round(float(noise.mean()), 4),
-        "raw_noise": round(float(noise_enrichment(raw, labels)), 4),
+        "raw_noise": round(float(raw_noise), 4),
         "raw_clustered": round(float(clustered_enrichment(raw, labels)), 4),
-        "corrected_noise": round(float(corrected_noise := noise_enrichment(corrected, labels)), 4),
+        "corrected_noise": round(float(corrected_noise), 4),
         "corrected_clustered": round(float(clustered_enrichment(corrected, labels)), 4),
-        "position_bias": round(float(bias := clustered_position_bias(positions, labels)), 4),
+        "position_bias": round(float(bias), 4),
     }
 
     # The flip's own direction, on the corrected statistic. Fixed above.
@@ -183,7 +192,7 @@ def measure_layer(attn_layer, labels, rng) -> dict:
     # And the same for the raw statistic, so the two are comparable on one axis.
     raw_draws = label_permutation_null(raw, labels, noise_enrichment,
                                        n_permutations=N_PERMUTATIONS, rng=rng)
-    out["raw_p"] = float(p_from_null_tolerant(out["raw_noise"], raw_draws,
+    out["raw_p"] = float(p_from_null_tolerant(raw_noise, raw_draws,
                                               alternative="greater")["p_value"])
 
     # The confound, two-sided.
