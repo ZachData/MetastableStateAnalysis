@@ -5,7 +5,7 @@
 `P-AB1` (`patching_gate.py`), `P-I1` (`formation_gate.py` +
 `relay_count_null.py`), `P-I3` (`cross_head_gate.py`), each with a null built
 and calibrated, none with a committed run against real artifacts. `P-I1` **has**
-been scored on the real 19-step sweep (p = 0.1414, INSUFFICIENT, 2026-09-04)
+been scored on the real 19-step sweep (INSUFFICIENT, 2026-09-04; the p is K-dependent and not quotable — 0.14143 at K = 50, 0.89355 at K = 100, §3.7 — and the run is recorded in `claims/audits/p_i1_real_run.json` as of 2026-09-19)
 but the record lives in git-ignored `data/analysis/`, so the registry's
 `real_run_record` is empty until a record is committed under `claims/`.
 needs-null — `P-I5` (built, calibrated, run on real `L3H6`, and **parked**:
@@ -24,6 +24,67 @@ producer and now the driver exist and pass their oracle tier. The driver has bee
 end to end against synthetic Phase 1 / Phase 2 artifacts and a real tokenizer, and
 produces a contract-valid `interaction_table.npz`; it has not been run against a real
 forward pass, which is step 9. No prediction is adjudicated.
+
+## E-value audit, Phase 7 (2026-09-19)
+
+The audit's **last** unit (`PROJECT.md` §3.45), after phases 1, 1c, 2/2d and
+5b/6. Nine registered rows, all `active` — the largest live phase in the
+registry and the only one where gates have been pointed at real artifacts.
+
+| row | evaluable | gate | calibrated | run on real artifacts |
+|---|---|---|---|---|
+| `P-I1` | e-value | `formation_gate:p_value_p_i1` | ✓ | **✓ — recorded 2026-09-19** |
+| `P-ST1` | e-value | `steering_gate:p_value_p_st1` | ✓ | — |
+| `P-AB1` | e-value | `patching_gate:p_value_p_ab1` | ✓ | — |
+| `P-I3` | e-value | `cross_head_gate:p_value_p_i3` | ✓ | — |
+| `P-I5` | **needs-null** | `p_i5_gate:intersection_union_pvalue` | ✓ | ✓ (exploratory) |
+| `P-SA1`, `P-I2`, `P-I4`, `P-I7` | needs-null | — | — | — |
+
+**1. `P-I1`'s record now exists, and writing it is this unit's one change to
+the tree.** `tools/score_p_i1.py` printed its result and returned — so the only
+p-value this project had ever produced against real artifacts lived in stdout
+and in `PROJECT.md`'s prose, with both inputs under git-ignored `data/`. That
+is precisely the gap §3.36 named. The script now writes
+`claims/audits/p_i1_real_run.json` with the full result, the sweep, the seed,
+the replicate count and a sha256 of each input, following
+`tools/score_claim_c.py`'s record-either-way convention; `real_run_record` is
+set. Re-run today it reproduces: **verdict INSUFFICIENT, 116 forming heads, 0
+skipped, floor 0.00050, mean distance 2.018 log-step.**
+
+*`check_registry` refused the entry until the record was `git add`-ed* —
+"an artifact only on this machine is not evidence a later reader can check" —
+which is the §3.36 rule doing exactly its job, caught live.
+
+**2. Four documents quoted a number §3.7 says is not quotable.**
+`claims/EVALUABILITY.md`, this file, `PREDICTIONS.md` and §3.36 all carried
+"p = 0.1414" as *the* `P-I1` result. §3.7 measured the p at two null sizes and
+found **0.14143 at K = 50 against 0.89355 at K = 100 — same verdict** —
+because 36 heads share one coset of the relay axis, and concluded in terms:
+"§3.6's p = 0.1414 is not a quotable number, and neither is 0.8936." The four
+citations are annotated rather than deleted; what they should have carried is
+the verdict, the mean distance and the floor, all of which are robust. **A
+p-value that moves by 0.75 with the replicate count is a statement about K.**
+
+**3. `P-I5` is the registry's one internal contradiction, and it is
+deliberate.** It is classified `needs-null` while naming a gate *and* carrying
+a `real_run_record`; `check_registry` warns that `core/adjudication.py` will
+refuse it, so the gate cannot reach a claim's e-process. That is correct and
+wanted — §3.31–§3.34 built the joint statistic, then found the control does not
+discriminate, so the row is parked with its instrument visible rather than
+quietly downgraded. Worth stating plainly because the warning will keep
+appearing: **it is a flag, not a defect**, and it clears only when the parked
+control problem is solved or the row is retired.
+
+**4. The four `needs-null` rows without gates are the honest ones.** `P-SA1`,
+`P-I2`, `P-I4` and `P-I7` name no gate and claim no calibration, which is the
+classification agreeing with the tree — the opposite of phases 5b/6's four
+dormant `e-value` rows with nothing behind them (§3.44).
+
+**What this unit did not do.** `P-ST1`, `P-AB1` and `P-I3` were not run.
+Each is built, calibrated and unrun, and each needs a sweep satisfying its own
+pre-computed requirement (`EVALUABILITY.md`, "What the pilot must produce") —
+running them to see what comes out is the peek every other unit of this audit
+has refused.
 
 ## Verdict table
 

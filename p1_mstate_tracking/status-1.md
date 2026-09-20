@@ -383,6 +383,63 @@ The alternative that was **not** taken — amend `CLAIM-C` to a five-metric
 statistic — is a registry amendment, and it inherits the constant-metric
 problem above unless `cluster_membership` goes with it.
 
+### The v2 battery ran too, and the gate refused on its own calibration (2026-09-19)
+
+All four arms re-run on prompt battery v2 (21 prompts), one invocation each:
+
+| arm | run directory | wall time |
+|---|---|---|
+| `gpt2-large` | `data/phase12/2026-09-19_13-40-48` | 127 min (13:40→15:47) |
+| `gpt2-large-random` | `data/phase12/2026-09-19_15-47-26` | 63 min (15:47→16:50) |
+| `pythia-1.4b-step143000` | `data/phase12/2026-09-19_16-50-41` | 63 min (16:50→17:53) |
+| `pythia-1.4b-random` | `data/phase12/2026-09-19_17-53-27` | 38 min (17:53→18:31) |
+
+**4 h 51 total, against the ~2½ h projected** — 21 prompts rather than 9, and
+the v2 additions are longer on average than v1's mix (v1 carried a
+115-character prompt and the repeated-token control; v2's twelve are all
+1000–1950). HDBSCAN on a precomputed distance matrix is the part that scales
+worst with token count.
+
+**Scored, and refused for a third distinct reason:**
+
+    REFUSED: no homogeneity correction is available, and the correction is
+    what enters the e-value: no calibration curve is tabulated for 20 prompts
+    (tabulated: [6, 7, 8, 9, 10, 11, 12]).
+
+`INSUFFICIENT`, `hard_stop: true`, `falsified: false`, no p. **20 prompts, 120
+cells, 54 concordant, sign homogeneity 0.875, 240 artifact files hashed** — the
+table is complete and the floor is no longer the binding constraint. What binds
+now is that `tools/calibrate_claim_c_homogeneity.py` tabulates the correction
+only to twelve prompts, because its own comment says the upper end was "generous
+against the eight metastability prompts". **Extending the battery invalidated
+that assumption**, and the gate refuses rather than reporting an uncorrected p —
+correctly, since the uncorrected null is already measured to be anticonservative
+when the prompt sign-rows agree, which at 0.875 they largely do.
+
+**The three refusals in order, because they are a sequence and not a repetition:**
+arms absent → a metric dead in every arm (HDBSCAN) → the floor unreachable at
+eight prompts → **the correction untabulated at twenty**. Each one was fixed and
+revealed the next. None was a fact about the phenomenology.
+
+**The fix is prescribed by the gate itself** — "extend `N_PROMPTS_TABULATED`
+and regenerate rather than running uncorrected" — and it is a calibration job,
+not a measurement one. Measured cost on this machine (400-draw probe,
+extrapolated to the tool's own per-count budget):
+
+| row | full budget | projected |
+|---|---|---|
+| n = 12 | 40 000 draws | ~6 min |
+| n = 20 | 40 000 draws | **~45 min** |
+| regenerating rows 6–12 | as stored | ~40 min |
+| contiguous 13–20 | — | **~3 h** on top of the regen |
+
+Per-count seeds are `seed + 1000 * i` on the **index** in
+`N_PROMPTS_TABULATED`, so appending counts after 12 leaves rows 6–12 with
+their original seeds; a regeneration must reproduce them byte-identically, and
+if it does not, that is a finding about drift in the gate rather than about
+this run. **Decision (2026-09-19, user): not tonight.** The record stands as a
+refusal and the extension waits.
+
 ### The gate ran, for the first time: INSUFFICIENT at chance concordance (2026-09-19)
 
 All four required arms re-run with HDBSCAN present — `gpt2-large` (61 min),

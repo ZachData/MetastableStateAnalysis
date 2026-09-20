@@ -20,7 +20,7 @@ two real gaps below.
 | **Phase 2 eigenspectra** — 19 steps, `ov_projectors_*.npz` / `ov_decomp_*.npz` / `ov_weights_*.npz` / `p2_eigenspectra_cross_run.json` | `data/phase12/p2_eigenspectra_2026-08-31_*/`, `…_2026-09-01_*/` | **NOT RECORDED** — no manifest, no `experiment.txt`, no `git_sha` in any file. Directory mtime only. | dir mtime 2026-08-31 → 2026-09-01 |
 | **Phase 7 interaction tables** — 19 | `data/phase7/step*/interaction_table.npz` | generated under `f395127` / `bbf7c0c` (manifest `git_sha`); 17 of 19 `.npz` **rewritten 2026-09-03 12:xx** by the recompression pass (`45b8429`), 2 (`step16000`, `step32000`) still carry 2026-09-01 mtimes | gen 2026-09-01, recompress 2026-09-03 |
 | **analysis JSONs** — `curve.json`, `formation_series.json`, `behavioural_series.json`, `relay_null_series.json` | `data/analysis/` | rebuilt 2026-09-03 → 2026-09-04 on top of the above | — |
-| **pre-float64 Phase 7 tables** | `data/superseded/phase7_float32/` (1.1 GB) | moved aside 2026-09-03 | handled correctly |
+| **pre-float64 Phase 7 tables** | ~~`data/superseded/phase7_float32/` (1.1 GB)~~ **deleted 2026-09-19** | moved aside 2026-09-03 | handled correctly, then cleared — superseded by the float64 tables this audit verified, and the audit itself is the record that they existed |
 
 All four Phase-1 run commits are **linear ancestors of HEAD** (`git merge-base
 --is-ancestor` = true for each) — no orphaned branch, no rebased-away history.

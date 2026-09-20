@@ -579,7 +579,7 @@ Phase 2 projectors exist in this repository.
 INSUFFICIENT.** This paragraph is unchanged above because it is now stale for
 `P-I1` specifically and not for the others, which this pass did not touch.
 `tools/score_p_i1.py`, on the real 19-step sweep, the real behavioural series,
-and the relay-count null `PROJECT.md` §3.4 registers: **p = 0.1414**,
+and the relay-count null `PROJECT.md` §3.4 registers: **p = 0.1414 at K = 50, 0.89355 at K = 100 — the same verdict from both, and §3.7 records that neither is a quotable number**,
 attainable floor 0.0005, 116 heads scored (0 skipped — every forming head's
 above-null excess still located a rise), verdict **INSUFFICIENT**. Neither
 endpoint failure mode fires: 0 heads above-null at step 0, and the 2 heads
