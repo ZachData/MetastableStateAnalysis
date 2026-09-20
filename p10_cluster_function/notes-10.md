@@ -103,7 +103,7 @@ argument leaning on it inherits that.
 | signature | statement | instrument | built? |
 |---|---|---|---|
 | **kinematic** | its displacement per layer is small relative to the layer's | `core/dissipation.py` `tangential_velocity`, `w2_*` | yes |
-| **attentional** | it receives below-average attention | `noise_importance_proxy.py`'s measure (finding 3) | yes, archived |
+| **attentional** | it receives below-average attention | `p1_mstate_tracking/visualization/noise_importance_proxy.py` (finding 3) | yes, **live** — and **unaudited**, see `attention-10.md` |
 | **functional** | its readout is *not disposed to make the model say anything* — low-norm, high-entropy, unchanging across layers | **J-lens** (§4) | **the new one** |
 | **causal** | resampling or ablating it costs little next-token KL | `core/intervention.py` + `core/lm_loading.py` | yes |
 
@@ -119,6 +119,17 @@ argument leaning on it inherits that.
 These are separable on the four-way concordance and nothing weaker separates
 them. Note that findings 1–7 establish only the first two signatures; **the
 entire discrimination lives in the two columns nobody has measured.**
+
+**Amendment 2026-09-20 — the attentional column is not as solid as this table
+implies.** `attention-10.md` audits it and finds four unchecked confounds, two
+of them structural: position 0 is the sink and is unclustered by construction,
+and the causal mask gives early tokens a mechanical advantage that the statistic
+does not divide out. The measure is also a mean summed over all heads, and it
+has never run on Pythia or on a checkpoint axis — though `attentions.npz` sits
+in **152/152** directories of the 410m sweep, so the developmental version is
+free. **Read `attention-10.md` before quoting the flip**, and treat the
+attentional signature as one column to be re-established rather than as one
+already in hand.
 
 ### 3.2 The quantitative form: Rényi parking
 
@@ -431,9 +442,15 @@ Costs and dependencies. Ordering is a proposal; nothing is registered.
 | **F8** | **Operator decomposition of `J_l`** — Schur, S/A split, `φ`, the attracting/repelling projectors — against the same decompositions of `M_OV`. | no | F3 | §4.2. Exploratory, labelled, and cheap |
 | **F9** | **MLP object collapse**: project MLP 6's output onto / out of `span(mu_cond)`. | yes | nothing | §7.2 item 1 |
 | **F10** | **Neuron-basis collapse** and its effect on token clusters. | yes | F4 | §7.2 item 2 — whether the two senses of "cluster" are related |
+| **F11** | **The attention audit**, `attention-10.md` §6 rows A0–A8. A0 (sink and causal-mask baselines) gates the rest; A2 (the checkpoint axis) and A4 (the population×population mass matrix) carry the most information per unit of work. | no | nothing | the attentional column of §3.1, and **A4 is a direct `H-PARK` vs `H-CAT` test** |
+| **F12** | **`Z_beta,i` per token** — the trained per-token metric, never examined. | no | nothing | parked vs **pinned**: two kinds of stationary that displacement alone cannot separate (`attention-10.md` §5) |
 
-**F0 and F1 are free and unblocked today.** F2 costs a directory listing. F6 is a
-rebuild of a validated instrument, not a new one.
+**F0, F1, F11 and F12 are free and unblocked today.** F2 costs a directory
+listing. F6 is a rebuild of a validated instrument, not a new one.
+
+**`docs/AXES.md` is the grid this ladder draws on** — which axes exist, which
+cells are populated, which producers do not exist, and the ten rules that
+constrain combining them.
 
 **Standing constraint, inherited** (`MATH_SPECTRAL_OT.md` §6.1): a new subphase
 directory importing existing outputs read-only. Nothing is added as a stage

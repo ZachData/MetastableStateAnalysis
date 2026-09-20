@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` is at `ded8a06` (PR #57 merged). Current work: **`claude/aca-phase-9-planning-rvzw3x`** — Phase 9's planning pass, documentation only. It carries `cf5f7ee` (Phase 9's notes) cherry-picked off `claude/attention-collapse-augmentation-qsxwg8`, which had no PR and is now redundant |
-| Last updated | **2026-09-20.** **§3.48: Phase 10 opens — `p10_cluster_function/`, "what clusters are and what they do".** Split out of Phase 9's plan, which could not start at the intervention. Its hypothesis is the user's: **a cluster is trash collection** — a fixed-capacity store of stationary, low-attention particles — made falsifiable as a four-signature concordance, with the Rényi-parking cluster-count prediction (`2411.04990`) as the quantitative arm and the project's best adjudication candidate. **The instrument that changes what is possible is the Jacobian lens** (Gurnee et al. 2026, the paper `lens_band.py` already cites): published Apache-2.0 code, `J_l = E[∂h_final/∂h_l]`, pre-fitted lenses reported for 38 models including `pythia-70m-deduped` **[S]**. It makes the functional partition measurable **per layer**, and `J_l` is a `d × d` operator defined by function rather than by weights — which is what §2.4.6 said the weights do not supply. **Hazard found: `2411.04990` says the causally-masked system is not a mean-field gradient flow, which puts Phase 9's Wasserstein-Hessian framing at risk** (§3.48, `plan-9.md` §5.1a). Also: **`github.com` is reachable from a cloud session while arXiv is not**, so companion code is primary text (`docs/LITERATURE.md` §0.1, new mark **[R]**). **§3.47: Phase 9's plan** (`plan-9.md`), pre-design. Nothing run, nothing registered, trigger 1 undischarged for both phases. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Last updated | **2026-09-20.** **§3.49: the attention flip is audited and `docs/AXES.md` opens.** The flip — trained models routing 1.6–2× toward unclustered tokens, ~0.5× toward clustered, sign-flipped under random weights — is a **per-token ratio**, so the random case putting mass in proportion to population is exactly a numbers game, as the measurement itself says. **Four things have never been checked and two are structural**: position 0 is the sink and is unclustered by construction, and the causal mask gives early tokens a `1/j` advantage the statistic does not divide out. It is also a mean summed over all heads, and it has never run on Pythia. **`attentions.npz` is in 152/152 directories of the 410m sweep**, so the per-head, per-checkpoint version is free and has been since 2026-09-01. New: `p10_cluster_function/attention-10.md` (the audit, the paid/received 2×2 that separates sink/parked/carrier, the population×population mass matrix that tests `H-PARK` directly, and **`Z_beta,i`** — the trained per-token metric `math-1.md` §15 says nothing has ever looked at) and **`docs/AXES.md`** (the measurement grid: seven axes, what is populated, six producers that do not exist, ten rules for combining rungs, and fourteen questions never asked). **§3.48: Phase 10 opens** — `p10_cluster_function/`, what clusters are and what they do, with the trash-collection hypothesis as a four-signature concordance and the **Jacobian lens** as the instrument. **§3.47: Phase 9's plan**, parked on Phase 10. Nothing run, nothing registered, trigger 1 undischarged for both phases. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -3679,6 +3679,138 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.49 The attention flip, audited — and the measurement grid nobody had drawn (2026-09-20)
+
+`p10_cluster_function/attention-10.md` and **`docs/AXES.md`**. Pre-design,
+nothing registered.
+
+### The flip, and the reading of the random case is right
+
+`p1_mstate_tracking/visualization/noise_importance_proxy.py` — **live, not
+archived** (`notes-10.md` §3.1 said archived; corrected). Per layer it computes
+attention received per token, diagonal zeroed, summed over heads and queries,
+**divided by the layer mean**. Trained gpt2-large: unclustered **~1.6×**,
+clustered **~0.5×**; ALBERT-base **>2× / ~0.5×**; random: **near parity**.
+
+**Because the statistic is a per-token ratio, population size is already divided
+out** — so "near parity" under random weights means attention is roughly uniform
+and mass therefore follows population, which is precisely the numbers-game
+reading. Multiplying back: 1.6× on ~45 % of tokens is ~72 % of the mass, >2× is
+~90 %, which is `math-1.md` §13.1's independently stated *"≈90 % of attention
+mass on ≈50 % of tokens by late layers"*. **Two instruments, one number.**
+
+### Four things never checked, two of them structural
+
+1. **Position 0 is the sink and is unclustered by construction.** NeoX prepends
+   no BOS, so position 0 carries a norm **one to two orders above the bulk**
+   (§2.5 of `math-1.md`) — exactly what HDBSCAN calls noise.
+   `_received_attention` zeroes only the diagonal. **`core/sink_audit.py` exists
+   to decide this class of question** — enrichment against a structural
+   baseline, three-outcome rule stated before the numbers — **and has never been
+   pointed at the flip.**
+2. **The causal mask gives early tokens a mechanical `1/j` advantage.** A token
+   at position `j` is visible to `n − j` queries; `received` sums over queries
+   without normalising by how many could have attended. **If the unclustered
+   population skews early — and position 0 is the extreme case — part of the
+   flip is the mask.** `sinkhorn.py` already builds the mask-only uniform
+   baseline for a per-head Fiedler purpose and classifies **on the deviation**;
+   the same object, one population level up. **This is the sharpest of the four
+   and nothing in the flip's measurement carries it.**
+3. **It is a mean.** §3.13 is this project's own section on that: exploratory
+   work reports a mean **and** an extremum, always. 1.6× over ~120 tokens is
+   equally consistent with a broad shift and with one token at 40×.
+   `compare_rungs.py`'s participation ratio / top-k share / gini are the
+   threshold-free shape statistics, already written.
+4. **Never run on Pythia, never on a checkpoint axis.** And
+   `claims/audits/p1c_inputs.json` says **152/152 directories carry
+   `attentions.npz`** — the full `(n_layers, n_heads, n, n)` tensor, 19
+   checkpoints × 8 prompts. **The flip's developmental curve costs no forward
+   pass and has been available since 2026-09-01.** Four known transitions to
+   co-locate against — under `changepoint_colocation`'s matched-control null,
+   with the falsifier named first, because the registered permutation null for
+   this class was measured and rejects under H0 at 0.32–0.45.
+
+Already settled: **punctuation is ruled out** (same clustered/unclustered ratio
+under random weights). Named and unchecked: **token frequency**
+(`docs/LITERATURE.md` §6 item 10) — a genuine alternative explanation for the
+whole finding.
+
+### What the tensor answers that the scalar cannot
+
+- **Which heads divert.** Summed over heads today; per-head is free, and at 410m
+  it joins to 7d's 384-head causal sweep and to `attention_entropy_per_head`,
+  **stored since Phase 1 and never read against cluster structure**.
+- **The population×population mass matrix.** The scalar flip is the column sums;
+  the off-diagonal is what discriminates. **`H-PARK` predicts low, undifferentiated
+  clustered→clustered attention; `H-CAT` predicts high and structured.** 5c
+  already has the *inner-product* version of this decomposition — within-cluster
+  cohesion high and flat, the energy plateau carried entirely by within-cluster
+  pairs — and **high cohesion with low mutual attention is the signature of
+  parking.** Nobody has put the two side by side and they are the same shape.
+- **Attention paid vs received.** The flip is a column statistic; nothing here
+  has looked at the row side by population. The 2×2 separates **sink** (receives
+  much, pays nothing), **parked** (inert both ways) and **carrier**
+  (individuated and in use) — three things the received-only statistic cannot
+  tell apart.
+
+### `Z_beta,i`: a trained per-token metric nobody has examined
+
+`math-1.md` §1A.6: *"the partition function is not noise to be normalized away —
+it is a metric... a high-`Z` token (a sink) is one the metric makes expensive to
+move"*, and **"nothing in this project has looked at `Z_beta,i` as a per-token
+quantity at all"** (§15, open question 12).
+
+**Phase 9's lever `Γ` is a per-channel metric; `Z_beta,i` is a per-token one** —
+together the two cheap metric levers the architecture already contains, and `Z`
+is measurable from artifacts on disk with no intervention. It **separates the two
+kinds of stationary**: a *parked* particle is still because nothing pushes it, a
+*pinned* one because the metric makes it expensive to move. That resolves the
+sink confound with a measurement rather than an exclusion rule — strictly better,
+since excluding position 0 discards the particle whose behaviour is most
+informative. **Caution carried:** `Z_beta,i` is particle `i`'s **row** normaliser
+while a sink is a **column** phenomenon; §1A.6's identification is asserted, not
+measured, and the paid/received 2×2 is its test.
+
+### `docs/AXES.md` — the map from questions to data
+
+New file, project-wide, referenced from `INDEX.md`. `INDEX.md` maps phases to
+directories; **this maps questions to data**, because the project keeps
+rediscovering that an expensive-sounding question is already answerable and that
+a cheap-sounding one needs a producer nobody wrote.
+
+Seven axes (model, checkpoint, prompt, layer, head, token, frame) plus three that
+behave like axes and get forgotten (sub-layer channel, ablation mode, the random
+twin). What is populated, what each axis buys, and **six producers that do not
+exist** — chief among them the **`beta_eff` writer**, which needs *no forward
+pass* (`attentions.npz` + LN params → `ln_frame` → `beta_eff`, demonstrated at
+16/16 heads in all 24 blocks) and unblocks **two registered predictions** plus
+every `gamma_beta` comparison Phase 9 would make. It is gated on one human
+decision: **β's unit convention, worth a factor of 8.**
+
+**The prompt axis is narrower than the battery.** 21 prompts in `core/config.py`;
+**the Phase-1 sweep ran 8**. So 13 have never been through Phase 1 — and it
+matters for one test specifically: **the Rényi-parking prediction is a cluster
+count as a function of `n`**, so prompt length is its independent variable.
+**Eight points against twenty-one, over a wider `n` range, is the cheapest way to
+strengthen the project's best adjudication candidate.**
+
+Ten rules for combining axes are collected in one place for the first time — no
+absolute threshold transfers between rungs; normalised depth, no band; ablation
+mode named not defaulted; the rung policy and its untaken rule 4; prompts on one
+model are not independent; mean-and-extremum; margin not boolean; sinks audited
+not assumed away; co-location needs a matched control and a falsifier first; a
+non-ladder sub-study is its own ground.
+
+**Fourteen questions never asked**, ten of them free. If only four were done:
+the parking law (§3.48); the attention audit and its trajectory, **A0 first**;
+the β producer; and a Phase-1 clustering sweep on **70m** — 6 layers, `d = 512`,
+19 revisions already on disk, the cheapest new compute in the project and the
+only item that gives everything above it a second rung. **Check before assuming
+it is new:** Phase 8 ran the head catalogue and invariants at 70m, which is
+head-level ablation, not a clustering run.
+
+Nothing has been run. `claims/registry.json` untouched.
 
 ## 3.48 Phase 10 opens: what clusters are and what they do, and the instrument that makes it answerable (2026-09-20)
 
