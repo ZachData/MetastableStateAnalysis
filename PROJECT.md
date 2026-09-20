@@ -51,7 +51,9 @@ or one link away; the sections below it are orientation and history.
   `attention-10`, `docs/AXES.md`, and four `tools/math_checks/` files.
   4 471 lines, no runner, nothing registered.
 - **PR #59 is OPEN and BASED ON #58, so merge #58 first** —
-  `claude/p10-free-rows` → `main`, same worktree. Phase 10's four free rows
+  `claude/p10-free-rows`, **targeted at #58's branch rather than at `main`** so
+  its diff is this work alone; GitHub retargets it to `main` when #58 merges.
+  Same worktree. Phase 10's four free rows
   **built, tested and RUN**, the HDBSCAN backfill that unblocked them, three
   fixes to the e-value/null machinery, and §3.51. Gate green at **2 600
   passed**.
