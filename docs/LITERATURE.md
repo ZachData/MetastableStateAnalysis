@@ -36,6 +36,35 @@ attribution in these files is flagged as unreliable for exactly that reason
 **Anyone with network access should work §5 top to bottom.** That is the highest-value
 unblocked task in the project.
 
+### 0.1 Amendment 2026-09-20 — `github.com` IS reachable, and it is a primary source
+
+Measured this time rather than assumed, from a cloud session, and it changes how
+future scans should be run. §5 item 18 guessed it (*"GitHub may be reachable where
+arXiv is not — this is the fastest route"*) and the guess is correct.
+
+| host | `WebFetch` from a cloud session |
+|---|---|
+| `github.com`, `raw.githubusercontent.com` | **reachable** — full README and source text |
+| `arxiv.org` | blocked |
+| `transformer-circuits.pub` | blocked |
+| `huggingface.co` | blocked |
+| `neuronpedia.org` | blocked |
+| `WebSearch` (titles, snippets, summaries) | works |
+
+**So a paper's companion-code repository is readable primary text even when the
+paper is not**, and a finding taken from a README is not `[S]`. Worked in practice:
+`p10_cluster_function/lit-10.md` §1 takes the Jacobian lens's defining equation, its
+fitting corpus size, its API and its licence from `anthropics/jacobian-lens`'s README
+and marks them **[R]**, while everything about the *published lens artifacts* stays
+`[S]` because `huggingface.co` is blocked. **Try the companion repo before settling
+for a search summary**, and use a third mark:
+
+| mark | meaning |
+|---|---|
+| **[R]** | primary text was read — a README, source file or docstring, not a summary |
+
+§5 item 18 should be read as a general method, not as one route to items 2 and 4.
+
 ---
 
 ## 1. The files
@@ -58,6 +87,8 @@ unblocked task in the project.
 | 7d | `p7d_redundancy/lit-7d.md` | Active |
 | 7e | `p7e_consolidation/lit-7e.md` | Active |
 | 8 | `p8_scale_ladder/lit-8.md` | Active |
+| 9 | — | Pre-design, **no scan yet**; `p9_metric_intervention/notes-9.md` §11 and `plan-9.md` §12 name the searches |
+| 10 | `p10_cluster_function/lit-10.md` | Pre-design. **PARTIAL** — one question settled as **[R]** from companion code, the rest named in `notes-10.md` §12. Does not follow the shape below |
 
 Each file has the same shape: what the phase rests on → finding-by-finding verdicts →
 what survives → directions to grow → a verification queue → the search log.
@@ -176,7 +207,7 @@ down from a machine with arXiv access.**
 | 3 | **2509.23024** *Tracing the Representation Geometry…* | Whether Phase 1's arc is a replication, and **whether they normalise before RankMe** (`lit-1.md` §3.1) |
 | 4 | **2606.05378** *Pattern Selectivity is Not Task-Causal Structure* | How much of 7d's headline thesis survives |
 | 5 | **2410.06833** *Dynamic metastability in the self-attention model* | Whether "Problem 1 is open" must be retracted from `design-1.md` |
-| 6 | **2411.04990** *Clustering in Causal Attention Masking* | The frame-correct theory for a decoder; the **Rényi parking** cluster-count prediction (`lit-1.md` §4.1); whether 2d's gradient-flow framing is void |
+| 6 | ~~**2411.04990** *Clustering in Causal Attention Masking*~~ **— READ 2026-09-20, `docs/readings/2411.04990.md` [R]**. Not a gradient flow (verbatim, §4); Thm 4.1 collapses all tokens to `x₁(0)` for arbitrary `Q,K`; the parking law is `Θ(β^((d−1)/2))` with the `d_eff` form as the paper's own open conjecture; Lemma C.1's count saturates in `n`; RMSNorm's diagonal is absorbable into `K,Q,V`. Opens five new pointers, **Castin–Ablin–Peyré 2024** the most consequential |
 | 7 | **2510.06477** *Attention Sinks and Compression Valleys…* | Whether our normed-frame correction is a contribution (`lit-1.md` §3.1) |
 | 8 | **2207.00112** FWSVD | Whether anti-optimality is a contribution (`lit-7e.md` §5.1) |
 | 9 | **2511.16893** *Predicting the Formation of Induction Heads* | A free external adjudication on the formation window (`lit-7.md` §4.1, `lit-8.md` §4.1) |
@@ -199,7 +230,7 @@ none needs new forward passes unless marked.
 
 | # | Experiment | Phase | Why |
 |---|---|---|---|
-| 1 | **Rényi-parking cluster-count prediction** vs measured cluster counts at 27 checkpoints | 1 | A published quantitative theory prediction, never checked on a trained model. `claims/adjudications/` holds zero entries |
+| 1 | **Rényi-parking prediction** vs measurements at 27 checkpoints — **restated 2026-09-20**, see `p10_cluster_function/lit-10.md` §5: the law is `Θ(β^((d−1)/2))`, in **β and dimension, not in n**, and the 0.7476 constant does not appear. The two tests that survive are a position-indexed **anchor** test (free) and a log-log **slope** regression returning `d_eff` (`math-10.md` §5) | 1, 10 | A published quantitative theory prediction, never checked on a trained model. `claims/adjudications/` holds zero entries |
 | 2 | **Re-report the developmental arc in the normed frame** | 1 | Turns a scooped finding into a frame correction on two published papers |
 | 3 | **Formation-point equation** (batch size, context size) vs the measured `(512, 2000]` window, at 70m and 410m | 7, 8 | Free external adjudication; two rungs of evidence already exist |
 | 4 | **`PR_M` / `coupling_efficiency` vs 7d's 384-head causal sweep** | 2d, 7d | The one instrument that could rescue a structural proxy for causal effect, after `‖OV‖_F` failed at r² = 0.001 |
