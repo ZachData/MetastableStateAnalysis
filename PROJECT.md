@@ -13,7 +13,7 @@ and every number in it is measured on this machine.
 | | |
 |---|---|
 | Branch | `main` is at `ded8a06` (PR #57 merged). Current work: **`claude/aca-phase-9-planning-rvzw3x`** — Phase 9's planning pass, documentation only. It carries `cf5f7ee` (Phase 9's notes) cherry-picked off `claude/attention-collapse-augmentation-qsxwg8`, which had no PR and is now redundant |
-| Last updated | **2026-09-20.** **§3.49: the attention flip is audited and `docs/AXES.md` opens.** The flip — trained models routing 1.6–2× toward unclustered tokens, ~0.5× toward clustered, sign-flipped under random weights — is a **per-token ratio**, so the random case putting mass in proportion to population is exactly a numbers game, as the measurement itself says. **Four things have never been checked and two are structural**: position 0 is the sink and is unclustered by construction, and the causal mask gives early tokens a `1/j` advantage the statistic does not divide out. It is also a mean summed over all heads, and it has never run on Pythia. **`attentions.npz` is in 152/152 directories of the 410m sweep**, so the per-head, per-checkpoint version is free and has been since 2026-09-01. New: `p10_cluster_function/attention-10.md` (the audit, the paid/received 2×2 that separates sink/parked/carrier, the population×population mass matrix that tests `H-PARK` directly, and **`Z_beta,i`** — the trained per-token metric `math-1.md` §15 says nothing has ever looked at) and **`docs/AXES.md`** (the measurement grid: seven axes, what is populated, six producers that do not exist, ten rules for combining rungs, and fourteen questions never asked). **§3.48: Phase 10 opens** — `p10_cluster_function/`, what clusters are and what they do, with the trash-collection hypothesis as a four-signature concordance and the **Jacobian lens** as the instrument. **§3.47: Phase 9's plan**, parked on Phase 10. Nothing run, nothing registered, trigger 1 undischarged for both phases. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). **`P-I1`'s run is recorded at last** (§3.45). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Last updated | **2026-09-20.** **§3.50: the literature scan and the derivations — four `tools/math_checks/` files (28 checks, all passing) and three corrections to statements this repo makes.** (1) **The causal mask puts a ~1 600× structural tilt under the attention flip**: content-free, `received(j) = H_n − H_j` with layer mean exactly 1, so the baseline already equals 1.6× at position ≈53 and 0.5× at ≈160 — **the flip is reproducible with zero content** until that is divided out. (2) **`Z_beta,i` reverses under masking**: position 0 is its *minimum*, so the sink is the cheapest token to move, and `math-1.md` §1A.6's 'high-Z = sink' is an unmasked-model statement. (3) **The cone margin's response to a γ patch has a closed form**, `2(uᵀX̂ᵀλ*)(uᵀc(λ*))`, reading only the binding set. (4) **ARI is already centred** — the null is for variance, and its 95th percentile spans 57× across size profiles. (5) **The Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, not in `n`** — `lit-1.md`'s description was wrong on both halves and would have frozen the wrong statistic; what replaces it is better (a free position-indexed **anchor** test, and a **slope** regression invariant to β's undecided unit convention that returns `d_eff = 2a+1`). Phase 9's unlearning novelty narrows to **congruence vs rotation** (GUARD-IT `2605.12765`); ContraNorm `2303.06562` is the spreading arm, published. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. Nothing run on real artifacts, nothing registered, trigger 1 still undischarged. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
 | **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
@@ -3679,6 +3679,179 @@ cheap and would resolve it.**
 > question.
 
 ---
+
+## 3.50 The scan, and the math: four check files, three corrections, and a law that is not in `n` (2026-09-20)
+
+`p10_cluster_function/math-10.md` (the derivations), `lit-10.md` §§5–10 (the
+second scan pass), and four new `tools/math_checks/` files — **28 checks, all
+passing**, each stating on its face what it does not prove. Nothing run on real
+artifacts; nothing registered.
+
+| file | checks | subject |
+|---|---|---|
+| `causal_mask_attention_baseline.py` | 9 | the mask's structural tilt; `Z_beta,i` |
+| `cone_margin_gamma_gradient.py` | 5 | the γ-patch derivative of the cone margin |
+| `ari_size_profile_null.py` | 6 | what a size-profile null buys |
+| `parking_scaling_slope.py` | 8 | the parking law's convention-free slope |
+
+### 1. The attention flip sits on a structural tilt three orders of magnitude wide
+
+Content-free — attention uniform within the causal triangle — position `j` is
+visible to `n − j` queries and
+
+```
+    received(j) = H_n − H_j ,   Σ_j received(j) = n
+```
+
+so **the layer mean is exactly 1 and `received(j)` *is* the "× layer average"
+quantity `noise_importance_proxy.py` reports.** Baseline and measurement are
+directly comparable with no rescaling. At the battery's `n = 264`: **6.155×** at
+position 0, **0.691×** at the median, **0.0038×** at the last token — about
+**1 600×**, before content.
+
+**The observed 1.6× / 0.5× is a factor of 3.2 inside that, and is reproducible
+with zero content**: the baseline already equals 1.6× at position ≈ **53** and
+0.5× at ≈ **160**. The two values also pin the split to `f = 5/11 ≈ 45 %`, which
+`status-5c` independently reports — an internal-consistency check, not evidence
+of content. **So `attention-10.md`'s row A0 is not tidying: until the mask
+baseline is divided out the flip is not known to measure anything.**
+
+Free corollary: content-free row entropy is exactly `log(i+1)`, layer mean
+`log(n!)/n` = **4.590 nats** at `n = 264`. `attention_entropy_per_head` is stored
+for the whole sweep and **the deviation from `log(i+1)` is the content**; the raw
+value is mostly position.
+
+### 2. `Z_beta,i` reverses under masking, and `math-1.md` §1A.6 is an unmasked statement
+
+In the concentration regime: **unmasked** `Z_i = n·e^{βγ}`, position-independent —
+so a spread is content and "a high-`Z` token (a sink) is expensive to move"
+reads fine. **Masked**, row `i` sums over `j ≤ i`, so `Z_i = (i+1)·e^{βγ}` and
+**position 0 is the minimum.** Meanwhile `received(j)` decreases by exactly
+`1/(j+1)` per step.
+
+> **The two mask baselines are anti-aligned. The sink is simultaneously the
+> largest received attention and the smallest `Z` — on the metric reading, the
+> *cheapest* token to move.** §1A.6's identification should be labelled as
+> holding for the unmasked model. **Measure `Z_i/(i+1)`.**
+
+This sharpens the paid/received square rather than weakening it: the sink is a
+**specific corner** (low `Z`, high received), distinct from parked (low both) and
+carrier (high both).
+
+### 3. The cone margin's response to a γ patch, in closed form
+
+`plan-9.md` §4.4 asserted this was free to compute. It is, and here it is. With
+`Γ → Γ + εuuᵀ`, by Danskin at a unique minimiser `λ*`:
+
+```
+    d(m²)/dε |_{ε=0}  =  2 · (uᵀ X̂ᵀ λ*) · (uᵀ c(λ*))
+```
+
+checked against a full re-solve by central differences at `(6,4)` and `(9,5)`,
+relative error `< 1e-9`. **It reads the binding set and nothing else** — `λ*` is
+supported on the binding tokens, so a patch aimed where no binding token sits has
+**zero first-order effect however large its `D`**. Second order is `s(λ*)²‖u‖² ≥ 0`
+at fixed `λ*`. Danskin needs a **unique** minimiser, and the degenerate case is
+exactly the near-zero-margin configuration `math-1c.md` §7.2 calls informative —
+**a runner must report whether `λ*` was unique.**
+
+### 4. Correction: the ARI is already centred
+
+`plan-9.md` §2.3 and `notes-10.md` §4.4 asked for a size-profile null to remove a
+bias. **The adjusted Rand index already subtracts exactly that expectation**, so
+`E[ARI] = 0` under that null by construction — Monte Carlo at three regimes,
+including 200 + 8×8, all within 4 SE of zero.
+
+**The instruction survives, its reason changes: the null is for the variance.**
+Null 95th percentiles: **+0.009** balanced, **+0.092** one giant cluster,
+**+0.002** giant-vs-balanced — a **57× range**. So **a fixed ARI threshold is not
+comparable across layers, checkpoints or models**, which is `compare_rungs.py`'s
+no-absolute-threshold rule one level up, on the axis where HDBSCAN's size profile
+is what moves. And a hazard no adjustment touches: **HDBSCAN noise is not a
+cluster**, `ignore_noise` changes what `N` means, and 40–50 % of tokens are noise.
+
+### 5. Correction: the parking law is in β and `d`, not in `n` — and the test improves
+
+`lit-1.md` §4 item 1 described the prediction as *"a density constant (the Rényi
+constant ≈ 0.7476) and hence an expected number of occupied cells as a function of
+n"*, and two reviews rate checking it the project's best cheap experiment.
+**Both halves are wrong.** Two independent search summaries **[S]** give the
+frequency of Rényi and strong-Rényi centers as **`Θ(β^((d−1)/2))`** (confirmed at
+`β^(1/2)` for `d = 2`) — a law in **β and dimension**, with no 0.7476 in it. At
+`d = 1024` the exponent is **511.5** and the prediction is unusable: the `d ≫ 1`
+problem `design-1.md` already records for Figure 3, inherited. **Registering F0 on
+the old reading would have frozen the wrong statistic** — `CLAUDE.md` trigger 2,
+firing at trigger-1 time. `lit-1.md` and `docs/LITERATURE.md` §6 are corrected in
+place.
+
+What replaces it is better:
+
+- **The anchor test, free today.** The mechanism the paper supplies is that
+  **early tokens act as nuclei** for cluster formation. A per-token,
+  position-indexed prediction, checkable against `hdbscan_labels.json` plus
+  positions with **no β, no convention decision and no reading of the paper**.
+  This is now F0.
+- **The slope test.** Fit `log count ~ a·log β + b·log n`. A constant rescale of β
+  moves the **intercept, not the slope**, so `a` is **invariant to β's undecided
+  unit convention** — checked symbolically and by recovery on synthetic data
+  (fits on β and 8β agree to `1e-9`). **A test that looked blocked on that
+  decision is not.** And `d_eff = 2a + 1` **measures** the effective dimension the
+  clustering behaves as: the candidates on disk (ambient 1024, rank plateau ~225,
+  participation ratio 22) predict slopes five orders of magnitude apart. One
+  failure mode, checked: `head_size` is 64 on gpt2-large and 128 on pythia-1.4b,
+  so a **cross-model regression on raw β mixes conventions** and biases the
+  slope — per-model regressions, or fix the convention first.
+
+**And the collision worth keeping.** Parking says early tokens are nuclei; §1 says
+the mask makes early tokens attention-rich. Two consequences of one mask, and
+Phase 10 currently treats one as a finding and the other as a confound.
+**Position is not a nuisance variable in this phase — it is the mechanism the
+theory names.**
+
+### 6. What the scan did to Phase 9
+
+- **Unlearning: the genus is occupied, the differentia survives narrowly.**
+  `2605.12765` (GUARD-IT) is training-free, gradient-free, *"entirely in
+  activation space"*, executing unlearning as *"a controlled geometric
+  transformation"* — **pure rotations preserving the activation norm.** A rotation
+  is an **isometry**; a γ-patch is a **congruence** (§4.1's `W_QK → Γ'W_QKΓ'`),
+  which is the one thing an isometry is not. Rewrite the claim to that, not to
+  the category. And `2505.16831` (*Unlearning Isn't Deletion*) is **support** for
+  `notes-9.md` §2's release-not-deletion rule — with the consequence that any
+  Phase 9 unlearning result must be tested for reversibility.
+- **Spreading is a comparison, not a discovery.** `2303.06562` **ContraNorm** is
+  a normalisation-layer modification that spreads representations apart — the
+  closest published object to a Phase 9 metric intervention. Read before
+  `design-9.md`. Also `2410.07799`, and `2602.09297` (*Laplacian Heads*, the
+  deliberate-smoothing direction, i.e. the cluster-forming arm from the other
+  side).
+- **§6.2 still looks open.** Every self-repair route the field names is an
+  **ablation** route; nothing surfaced measures repair against a non-removing
+  intervention. `[S]` only, so it stays queued rather than registered.
+- **The gradient-flow hazard is confirmed twice.** *"This modification translates
+  into an interacting particle system that cannot be interpreted as a mean-field
+  gradient flow."* §3.48's `plan-9.md` §5.1a stands.
+
+### 7. Two neighbours, and a queue
+
+- **`2501.10573`, *The Geometry of Tokens in Internal Representations*** — **the
+  closest neighbour Phase 10 has.** Empirical measure, *"the mean-field
+  interacting picture"*, intrinsic dimension / neighbourhood overlap / cosine
+  similarity per layer, a measured **correlation between token geometry and
+  next-token cross-entropy**, and a **shuffled-token control** this project
+  should consider adopting as a null.
+- **`2601.02932`, *Data-driven Reduction of Transfer Operators for Particle
+  Clustering Dynamics*** **[N]** — the title is `plan-9.md` §5.1's construction.
+  Searches for PCCA+ / implied timescales on **transformer representations**
+  returned molecular dynamics, behaviour and climate and **nothing on
+  transformers**, so that move looks open.
+
+`lit-10.md` §10 is the reading queue, in priority order. **`2411.04990` is
+first — two phases depend on that one paper and neither has read it.** A thread
+not pulled and worth flagging: standard MSM spectral theory assumes
+**reversibility**, and a causal transition matrix is not reversible;
+`t_i = −1/log|λ_i|` still reads, but PCCA+'s sign-structure argument may not
+(`math-10.md` §6 item 4).
 
 ## 3.49 The attention flip, audited — and the measurement grid nobody had drawn (2026-09-20)
 

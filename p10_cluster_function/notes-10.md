@@ -153,9 +153,31 @@ already on disk. It costs no forward pass. And `claims/adjudications/` holds
 **zero entries against thirty-nine registrations** — a published quantitative
 prediction tested against measurement is exactly the missing artifact.
 
-**Blocked on one reading.** The exact correspondence — what plays the role of a
-cell, of car length, whether the count is per layer or asymptotic — is `[S]` and
-a Phase 10 prediction needs it. `lit-1.md` §5 already queues it.
+**Corrected 2026-09-20, and the correction improves the test.** `lit-10.md` §5's
+second scan finds the description above — inherited from `lit-1.md` §4 — is wrong
+on both halves. The published scaling is **`Θ(β^((d−1)/2))`**, a law in **β and
+dimension, not in `n`**, and the Rényi constant 0.7476 does not appear in it. At
+`d = 1024` the exponent is 511.5 and the prediction is unusable — the `d ≫ 1`
+problem `design-1.md` already records for Figure 3. **Registering F0 on the old
+reading would have frozen the wrong statistic**, which is what `CLAUDE.md`
+trigger 2 exists to prevent.
+
+What replaces it, from `math-10.md` §5, is better:
+
+- **The slope test.** Fit `log count ~ a·log β + b·log n`. The coefficient
+  `a = (d_eff − 1)/2` is **invariant to β's undecided unit convention** — a
+  constant factor moves the intercept, not the slope — so a test that looked
+  blocked on that decision is not. And it **measures** the effective dimension
+  the clustering behaves as rather than confirming a number: the candidates
+  already on disk (ambient 1024, effective-rank plateau ~225, participation
+  ratio 22) predict slopes five orders of magnitude apart.
+- **The anchor test, and it is free today.** The mechanism the paper supplies is
+  that **early tokens act as nuclei** for cluster formation. That is a
+  per-token, position-indexed prediction checkable against `hdbscan_labels.json`
+  plus positions with no β, no convention decision and no reading of the paper.
+  **This is now F0.**
+
+The exact correspondence remains `[S]` and is the top item in `lit-10.md` §10.
 
 ### 3.3 The turnover question is the phase's other half, and the instrument exists
 
@@ -206,7 +228,7 @@ table: register the outcome that embarrasses the phase.
 
 ## 4. The instrument that changes what is possible: the Jacobian lens
 
-`lit-10.md` §1 is the scan. The short version, and then what it unlocks.
+`lit-10.md` §1 is the scan. The short version, and then what it unlocks. **`math-10.md` is this phase's derivations**, four symbolic-check files, three of them corrections to statements this repository currently makes.
 
 ### 4.1 What it is
 
@@ -273,11 +295,26 @@ whole phase lives on.
 
 ### 4.4 Chance, and the null this needs before any ARI is quoted
 
-Unchanged from `plan-9.md` §2.3 and it is the phase's main statistical hazard.
-Two labellings both dominated by one giant cluster agree at high ARI for reasons
-with nothing to do with content. **Before any ARI is quoted, the same comparisons
-must be run against label permutations that preserve the observed cluster-size
-profile** — sizes fixed, membership shuffled. `core/nulls.py` is where it belongs.
+**Corrected 2026-09-20 — the instruction stands, the reason was wrong.**
+This section previously said a size-profile-preserving null was needed to remove
+a bias. `math-10.md` §4 shows the **adjusted** Rand index already subtracts
+exactly that expectation, so `E[ARI] = 0` under that null by construction,
+whatever the size profiles — confirmed by Monte Carlo at three regimes including
+a 200 + 8×8 giant-cluster profile.
+
+**The null is needed for the variance, not the centering — and the variance is
+where the real problem was.** Measured 95th percentiles under the null: **+0.009**
+(balanced), **+0.092** (one giant cluster), **+0.002** (giant vs balanced). A
+**57× range**. An ARI of 0.05 is unremarkable under one profile and a strong
+signal under another, so **a fixed ARI threshold is not comparable across
+layers, checkpoints or models** — `compare_rungs.py`'s no-absolute-threshold rule
+one level up, on an axis where HDBSCAN's size profile is exactly what moves.
+Build the null in `core/nulls.py` for the p-value.
+
+**And a hazard no adjustment touches: HDBSCAN noise is not a cluster.** Treating
+`−1` as one cluster versus dropping those points gives different ARIs on the same
+data, `adjusted_rand_index(ignore_noise=...)` exposes the choice, and 40–50 % of
+tokens are noise. **Fix it before looking.**
 
 This project has been eaten by a scale/dimension confound three times
 (`math-2b.md` §2.3's energy-vs-dimension, `math-6.md` §7.2's alignment-vs-dimension,
@@ -431,7 +468,8 @@ Costs and dependencies. Ordering is a proposal; nothing is registered.
 
 | # | experiment | forward pass? | depends on | decides |
 |---|---|---|---|---|
-| **F0** | **Rényi-parking cluster count** against 27 checkpoints of counts already on disk. | no | reading `2411.04990` properly | §3.2. The project's first adjudication, and its best-rated cheap experiment in two independent reviews |
+| **F0** | **The anchor test**: are cluster nuclei early tokens, as the parking reading says? Per-token, position-indexed, against `hdbscan_labels.json` + positions. | no | **nothing** | §3.2 as corrected. Needs no β, no convention decision and no reading of the paper |
+| **F0b** | **The slope test**: fit `log count ~ a·log β + b·log n`; `d_eff = 2a + 1`. | no | the β producer (`docs/AXES.md` §4) | §3.2. Convention-free in the slope; **measures** `d_eff` rather than confirming a constant |
 | **F1** | **Transport observables** (`w2_identity` vs `w2_optimal`, arc length, `straightness`) on artifacts on disk — still the cheapest open action in the tree, carried over from `notes-9.md` §9. | no | nothing | the kinematic signature of §3.1, and it re-reads every displacement number already recorded |
 | **F2** | **Verify the J-lens artifacts** on the research machine: does `neuronpedia/jacobian-lens` carry `pythia-70m-deduped`, what shape, what revision. | no | HF access (blocked from a cloud session) | whether §4 borrows or fits |
 | **F3** | **Fit a J-lens on `pythia-70m`**, one checkpoint first, then the axis. ~100 prompts, ~3 MB per checkpoint. | yes (backward) | F2 | **the developmental J-space nobody appears to have** |
@@ -445,7 +483,7 @@ Costs and dependencies. Ordering is a proposal; nothing is registered.
 | **F11** | **The attention audit**, `attention-10.md` §6 rows A0–A8. A0 (sink and causal-mask baselines) gates the rest; A2 (the checkpoint axis) and A4 (the population×population mass matrix) carry the most information per unit of work. | no | nothing | the attentional column of §3.1, and **A4 is a direct `H-PARK` vs `H-CAT` test** |
 | **F12** | **`Z_beta,i` per token** — the trained per-token metric, never examined. | no | nothing | parked vs **pinned**: two kinds of stationary that displacement alone cannot separate (`attention-10.md` §5) |
 
-**F0, F1, F11 and F12 are free and unblocked today.** F2 costs a directory
+**F0, F1, F11 and F12 are free and unblocked today** — and F0 is now the cheapest of them. F2 costs a directory
 listing. F6 is a rebuild of a validated instrument, not a new one.
 
 **`docs/AXES.md` is the grid this ladder draws on** — which axes exist, which

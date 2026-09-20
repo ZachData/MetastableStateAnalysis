@@ -100,9 +100,29 @@ all**. So received attention has a built-in `1/j` tilt before any content enters
 **If the unclustered population skews early — and the sink at position 0 is the
 extreme case of exactly that — the flip is partly an artifact of the mask.**
 
+**Derived and checked, 2026-09-20 (`math-10.md` §1,
+`tools/math_checks/causal_mask_attention_baseline.py`).** Content-free — uniform
+within the causal triangle — the baseline is exactly
+
+```
+    received(j) = H_n − H_j ,   and   Σ_j received(j) = n
+```
+
+so the layer mean is **exactly 1** and `received(j)` *is* the "× layer average"
+quantity the flip reports. At the battery's `n = 264` it runs from **6.155×** at
+position 0 through **0.691×** at the median to **0.0038×** at the last token —
+**about 1 600×, before any content enters.** The observed contrast is 1.6× against
+0.5×, a factor of 3.2 sitting inside that.
+
+**And the observed numbers are reproducible with zero content**: the baseline
+already equals 1.6× at position ≈ 53 and 0.5× at position ≈ 160. A partition whose
+unclustered members average early reproduces the flip exactly with nothing
+learned. (The two reported values also pin the split to `f = 5/11 ≈ 45 %`, which
+`status-5c` independently reports — an internal-consistency check, not evidence.)
+
 The fix is the same shape as `sink_audit`'s: report received attention **against
 its structural baseline**, here `received[key] / (number of queries that can see
-key)`, or equivalently against the mask-only uniform baseline. `sinkhorn.py`
+key)`, or equivalently against `H_n − H_j`. `sinkhorn.py`
 already builds precisely that object for a different purpose — *"a content-free
 attention (uniform within the causal triangle)"*, used as a per-head Fiedler
 baseline, with classification done **on the deviation, not the raw value**. The
@@ -306,13 +326,22 @@ Why it matters here:
 3. **It is the natural weight for every per-particle aggregate in the project.**
    `core/particles.py`'s table has a column for it that nobody has filled.
 
-**A caution to carry into the design.** `Z_beta,i = Σ_j exp(β⟨x_i, x_j⟩)` is
-particle `i`'s **row** normaliser — the query side — while a sink is defined by
-its **column**. The identification in §1A.6 is plausible (a high-norm token has
-large inner products with everything, so both its row sum and its column mass are
-large) but it is **asserted, not measured**, and in the LN frame — where
-`ln_plain` restores constant norm `sqrt(d)` — the argument for it is weaker. §4.3
-is the test.
+**Resolved 2026-09-20, and it reverses (`math-10.md` §2).** `Z_beta,i` is
+particle `i`'s **row** normaliser while a sink is a **column** phenomenon, and
+the mask acts on the two in opposite directions. In the concentration regime:
+**unmasked**, `Z_i = n·e^{βγ}` is position-independent, so any spread is content
+and §1A.6's reading is reasonable — **masked**, `Z_i = (i+1)·e^{βγ}` is linear in
+position and **position 0 is the minimum.** Meanwhile `received(j)` **decreases**
+in position, by exactly `1/(j+1)` per step.
+
+> **So under a causal mask the sink is simultaneously the largest received
+> attention and the smallest `Z` — on the metric reading, the *cheapest* token to
+> move, not the most expensive. §1A.6's identification is an unmasked-model
+> statement and Pythia is masked.**
+
+This sharpens rather than weakens §4.3: the sink occupies a **specific corner**
+of the paid/received square (low `Z`, high received), distinct from parked (low
+both) and carrier (high both). **Measure `Z_i/(i+1)`, not `Z_i`.**
 
 ---
 

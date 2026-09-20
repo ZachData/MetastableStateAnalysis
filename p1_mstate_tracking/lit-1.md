@@ -170,9 +170,21 @@ the energy axis attached, is worth more than the sentence it replaces.
 Ranked by (value × cheapness), with the measurement each needs.
 
 1. **The Rényi parking prediction for cluster count.** 2411.04990 **[S]** links
-   metastable states under causal masking to the Rényi parking problem. Parking
-   gives a **density constant** (the Rényi constant ≈ 0.7476) and hence an expected
-   number of occupied cells as a function of n. Phase 1 has cluster counts, per
+   metastable states under causal masking to the Rényi parking problem.
+
+   > **CORRECTED 2026-09-20 (`p10_cluster_function/lit-10.md` §5).** The two
+   > sentences that stood here — that parking gives "a **density constant** (the
+   > Rényi constant ≈ 0.7476) and hence an expected number of occupied cells as a
+   > function of n" — are **wrong on both halves**. The published scaling is
+   > **`Θ(β^((d−1)/2))`** (confirmed at `β^(1/2)` for `d = 2`): a law in **β and
+   > dimension, not in n**, with no 0.7476 in it. At `d = 1024` the exponent is
+   > 511.5 and the prediction is unusable — the same `d ≫ 1` problem `design-1.md`
+   > records for Figure 3. The mechanism the paper supplies is that **early tokens
+   > act as nuclei** for cluster formation. `p10_cluster_function/math-10.md` §5
+   > gives the two tests that survive: a **position-indexed anchor test** (free,
+   > no β) and a **log-log slope regression** whose slope is invariant to β's
+   > unit convention and returns `d_eff = 2a + 1`. Still `[S]`; reading the paper
+   > is the top item in that file's §10. Phase 1 has cluster counts, per
    layer, per prompt length, at 27 checkpoints, already on disk. **Nobody has
    checked a parking-derived cluster-count prediction against a trained
    transformer.** This is re-analysis, costs no forward passes, and it is a

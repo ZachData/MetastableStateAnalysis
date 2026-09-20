@@ -152,6 +152,14 @@ table and §8's ladder puts it near the front.
 
 ### 2.3 Chance, and the trap in reading an ARI
 
+**Amended 2026-09-20 — the instruction below stands, its reason was wrong.**
+`math-10.md` §4 shows the **adjusted** Rand index already subtracts the
+expectation under the size-profile-preserving null, so `E[ARI] = 0` by
+construction. **The null is needed for the variance, not the centering** — and
+the variance is the real problem: measured 95th percentiles under the null range
+**+0.002 to +0.092** across plausible size profiles, a **57× spread**, so a fixed
+ARI threshold is not comparable across layers, checkpoints or models.
+
 Two labellings both dominated by a single giant cluster will agree at high ARI
 for reasons that have nothing to do with content. Before any ARI is quoted, the
 same three comparisons must be run against label permutations *within the
@@ -564,6 +572,24 @@ narrower and better:
 > switch off*, which is a different product from weight editing and has a
 > different threat model.
 
+**Amended 2026-09-20 (`lit-10.md` §6): the genus is occupied and the differentia
+is narrower than this.** `2605.12765` (GUARD-IT) is training-free, gradient-free,
+*"entirely in activation space"*, and executes unlearning as *"a controlled
+geometric transformation"* — specifically **pure rotations in the residual
+stream, preserving the activation norm**. So inference-time geometric unlearning
+exists. **What survives is exact and worth stating precisely: a rotation is an
+isometry; a γ-patch is a congruence** (§4.1's `W_QK → Γ'W_QK Γ'`), which is the
+one thing an isometry is not. The claim to rewrite is *"we change the metric,
+not the coordinates"*, not *"nobody does inference-time editing"*.
+
+**And `2505.16831` (*Unlearning Isn't Deletion*, ICML 2026) is support, not a
+threat** — models *"appear to forget while their original behavior is easily
+restored"*, information *"merely suppressed rather than genuinely erased"*. That
+is `notes-9.md` §2's release-not-deletion rule, reached independently, with an
+evaluation framework attached. **Any Phase 9 unlearning result must be tested for
+reversibility** or it measures the thing that paper says is routinely
+mismeasured. All `[S]`.
+
 The falsifier is clean: a metric patch that suppresses a behaviour but that a
 matched-magnitude random patch suppresses equally has shown nothing.
 
@@ -809,10 +835,21 @@ a construction rather than a citation:
   patch is reversible and weight-preserving, and that claim is unverified.
 - **Self-repair / Hydra Effect against non-ablation interventions.** §6.2 is the
   phase's best question *only if* nobody has already measured repair against a
-  geometry-changing intervention. This search is the one that most deserves to be
-  run first.
-- **Oversmoothing and rank-collapse mitigation at inference time** —
-  Dong–Cordonnier–Loukas and successors. §6.4's repair arm may be populated.
+  geometry-changing intervention. **Scanned 2026-09-20 (`lit-10.md` §7): every
+  route the field names is an ablation route**, and the landscape summarises as
+  self-repair *"affects the interpretation of every ablation experiment"*, with
+  the automation methods working by joint ablation or by de-biasing a node's own
+  score. **The question looks open** — but on `[S]` evidence only, which is too
+  weak to register against, so it stays queued.
+- **Oversmoothing and rank-collapse mitigation at inference time** — **scanned
+  2026-09-20 (`lit-10.md` §8) and it is populated.** `2303.06562` **ContraNorm**
+  is *a normalisation-layer modification that spreads representations apart* —
+  the closest published object to a Phase 9 metric intervention, and it must be
+  read before `design-9.md` freezes anything. Also `2410.07799` (*Mind the Gap*,
+  spectral analysis of rank collapse) and `2602.09297` (*Laplacian Heads*, the
+  deliberate-smoothing direction — i.e. the cluster-*forming* arm from the other
+  side). **§6.4 is a comparison, not a discovery**; its value is predicting the
+  effect from `gamma_beta` and reading it on the measure, which those do not.
 - **Transfer-operator / PCCA+ / implied-timescale methods applied to transformer
   representations.** §5.1 is load-bearing and is imported wholesale from
   molecular dynamics; whether it has been tried here matters for positioning.

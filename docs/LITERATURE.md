@@ -230,7 +230,7 @@ none needs new forward passes unless marked.
 
 | # | Experiment | Phase | Why |
 |---|---|---|---|
-| 1 | **Rényi-parking cluster-count prediction** vs measured cluster counts at 27 checkpoints | 1 | A published quantitative theory prediction, never checked on a trained model. `claims/adjudications/` holds zero entries |
+| 1 | **Rényi-parking prediction** vs measurements at 27 checkpoints — **restated 2026-09-20**, see `p10_cluster_function/lit-10.md` §5: the law is `Θ(β^((d−1)/2))`, in **β and dimension, not in n**, and the 0.7476 constant does not appear. The two tests that survive are a position-indexed **anchor** test (free) and a log-log **slope** regression returning `d_eff` (`math-10.md` §5) | 1, 10 | A published quantitative theory prediction, never checked on a trained model. `claims/adjudications/` holds zero entries |
 | 2 | **Re-report the developmental arc in the normed frame** | 1 | Turns a scooped finding into a frame correction on two published papers |
 | 3 | **Formation-point equation** (batch size, context size) vs the measured `(512, 2000]` window, at 70m and 410m | 7, 8 | Free external adjudication; two rungs of evidence already exist |
 | 4 | **`PR_M` / `coupling_efficiency` vs 7d's 384-head causal sweep** | 2d, 7d | The one instrument that could rescue a structural proxy for causal effect, after `‖OV‖_F` failed at r² = 0.001 |
