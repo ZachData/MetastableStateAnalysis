@@ -12,10 +12,10 @@ and every number in it is measured on this machine.
 
 | | |
 |---|---|
-| Branch | `main` is at `ded8a06` (PR #57 merged). Current work: **`claude/aca-phase-9-planning-rvzw3x`** — Phase 9's planning pass, documentation only. It carries `cf5f7ee` (Phase 9's notes) cherry-picked off `claude/attention-collapse-augmentation-qsxwg8`, which had no PR and is now redundant |
-| Last updated | **2026-09-20.** **§3.51: `2411.04990` is READ** — the paper two phases depended on and neither had read. `docs/readings/2411.04990.md`, marked **[R]**, plus a fifth math check (36 total, all passing). It changes five things: **Theorem 4.1** collapses all tokens to **`x₁(0)`**, the first token's initial position, for **arbitrary `Q, K`** — position 0 is a theorem, not a confound, and no QK-side intervention (γ included) can prevent it; **the `d_eff` regression `math-10.md` derived is the paper's own open conjecture**, with `d₁ = dim L` computable from Phase 2's projectors, making the test differential; **Lemma C.1** gives an exact distribution-free centre count `1/σ_{d−1}(B_δ)` that **saturates in `n`** — which is this project's own unexplained carrying-capacity finding (50–55 invariant) with a formula attached, and inverting it says the **unscaled β convention** is the one that reaches Lemma 5.1's `c > 1`; **RMSNorm's trainable diagonal is absorbable into `K, Q, V`**, so a γ-patch is **not** a read-side lever and `plan-9.md` §4.7's sign test needs a `W_V` arm; and **explicit timescales** unblock `lit-1.md` §4 item 4. F0 is now fully specified and still free. **§3.50: the scan and the derivations**; **§3.49: the attention flip audited** and `docs/AXES.md`; **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. Nothing run on real artifacts, nothing registered. **2026-09-19:** the **e-value audit is COMPLETE** — thirty-nine registered predictions, **zero e-values** (§3.45's table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate refused three ways** (§3.41, §3.46). **Battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
+| Branch | `main` is at `ded8a06` (PR #57 merged). **Two PRs open, stacked**: **#58** `claude/aca-phase-9-planning-rvzw3x` (Phases 9/10 documentation and math checks, no runner) and **#59** `claude/p10-free-rows` **based on it**, carrying Phase 10's four free rows built, tested and RUN. Both from the worktree `../Mets-p10`. **#60** `claude/p10-literature-read` is based on **#59** and merges `origin/claude/aca-phase-9-planning-rvzw3x` into itself to reconcile two concurrent reads of the same paper. **Merge #58, then #59, then #60.** `claude/attention-collapse-augmentation-qsxwg8` is redundant — its one commit is cherry-picked onto #58 — and should be deleted |
+| Last updated | **2026-09-20.** **NEXT ACTION IS COMPUTE — §3.54.2b: take the Phase-1 battery from 8 prompts to 20 (`handoff-10.md` Stage 0).** Eight prompts is the exchangeable unit and the power ceiling under which every e-value here sits (§3.41's p ≥ 0.0661 floor); `2501.10573` used 2 244. **No new prompts are to be invented**: `core/prompts.py` already carries v2, 21 prompts, hash `06790b90dcfe`, extended under a rule committed ahead of the text (§3.42), and **12 of them have never been through Phase 1** — so running them is not a new selection decision, and the enlarged battery **can carry a registered prediction where the current one cannot**. (`status-10.md`'s "13" was wrong; the 13th is `short_heterogeneous` at 115 chars.) **Budget measured**: 228 new directories × 325 MB = **74 GB** against **164 GB free**, and **`plateau_attentions.npz` is a verified byte-identical relayout of `attentions.npz`** — 148 MB per directory, **≈22 GB recoverable**, which takes the new-run cost to ~40 GB. Attention scales n², so **more short prompts beat fewer long ones**. Compute is unmeasured: **time one prompt × one checkpoint first.** **§3.54: a scoped thread opened with its own handoff — `p10_cluster_function/handoff-10.md` (ordered plan, **eight** stages, general → particular, Stages 1–5 free) and `questions-10.md` (hypotheses).** Its Stage 1 (*what is actually in a cluster*) found **a fourth casualty of the HDBSCAN outage**: `pair_agreement`, **the project's only semantic instrument**, wrote a well-formed record of zeros into all 152 WDS directories rather than failing — it degraded instead of refusing, which is why it survived the outage, the backfill, the audit and two literature passes. **The pilot sweep's copy is populated in 6 066 of 6 075 layer-records and had never been reported.** First read of it, tier 1: **`ext_sem_same_cluster_frac` is FLAT** across all 27 checkpoints (0.62–0.73) while **`ext_semantic_fraction` falls 0.833 → 0.708, concentrated in steps 512–3000** — tentatively, **training does not change how clusters treat lexically-similar tokens, it changes which tokens are neighbours at all**, and neighbourhoods go from lexical to contextual. That window collides with three other known transitions and the co-location is NOT established. Three hypotheses named project-wide: **H-ANCHOR/BALLAST** (a cluster is one attended anchor plus ignored ballast — HDBSCAN gives membership and never centrality, so this was invisible), **H-THERMOSTAT** (the sink is *how* a trained model resists collapse, by absorbing mass into `Z_k` and lowering coupling — the model already learned a metric intervention, which reframes Phase 9), and **H-WARP** (training is a reparametrisation of the depth clock, separable by curve collapse against `T_eff`). **§3.52: five papers READ as primary text — `2411.04990`, `2501.10573`, `2601.02932`, `2605.12765`, `2505.16831`, the PDFs supplied by the user, every scholarly host still blocked. No measured number changes; three constructions do.** **(a) The parking nuclei are a GEOMETRIC object** — a *strong Rényi centre* is a token separated by more than `δ = cβ^{−1/2}` from **every preceding token**, a greedy sequential rule on positions and distances with no partition in it — so **F0 measured a proxy and its failure is not evidence against the parking account** (§3.52.1). **(b) The count law is exact, distribution-free and dimension-free**: `E[#strong centres] = E_{x∼μ}[1/μ(B_δ(x))]`, no exponent and no β, only `δ` — so §3.50's `d ≫ 1` verdict applies to the power-law asymptotic only, and its *"no 0.7476 in it"* is wrong (Appendix C.4 has it, for `d = 2` ordinary centres). The `δ` where observed meets predicted **reads back `c²/β`**, turning §3.40's undecided convention into a measurement. **(c) The gradient-flow hazard resolves in the project's favour**: the masked system IS a gradient flow, a **sequential** one, `φ̇_k = −(1/Z_k)∂E_k/∂φ_k` — a global ensemble potential is void, the per-token curvature claim survives, and **`1/Z_k` is literally F12's measurement**, making `math-1.md` §1A.6's metric reading of `Z` an equation rather than an interpretation. **(d) `math-10.md` §5.2's `d_eff` list was missing the theoretically-correct entry** — the law wants a *manifold* dimension, so kNN intrinsic dimension (**≈ 7–15**), not effective rank (≈ 225). **(e) Two thirds of Phase 9's novelty differentia fail**: GUARD-IT's update is norm-preserving but **not** a rotation and **is** exactly invertible; what survives is **state versus operator**. **(f) Any Phase 9 forgetting claim now needs a relearning arm** (`2505.16831`). **(g) `2411.04990` §B.3 measures `albert-xlarge-v2`'s `V`-spectra** — prior art for this project's V-attractive/V-repulsive split. **Eight ladder rows added (F13–F20), seven free**, and the next free row is now **F13, the centre scan**, which needs no HDBSCAN partition and is therefore immune to §3.51.4's reproducibility floor (§3.52.4, `status-10.md` §5.1). Documentation only — no code, no records, no registry entry. **§3.53 is a concurrent session's read of the same paper, written the same day and merged here; §3.52.5 says where the two differ — on Lemma 5.3, where §3.52 is the more complete reading. §3.53 adds four things §3.52 does not have: Thm 4.1 makes position 0 a theorem and caps `plan-9.md` §4.3; Lemma C.1's saturation IS the carrying-capacity finding; `d₁ = dim L` makes the `d_eff` test differential; and RMSNorm's diagonal is absorbable into `K, Q, V`, so a γ-patch is NOT a read-side lever.** **§3.51: Phase 10's four free rows RAN on real checkpoints — the first Phase 10 results, all tier 1 and unregistered. `p10_cluster_function/status-10.md` is the phase record; §3.51 carries only what is project-wide.** (1) **Row A0: the attention flip is ~94 % causal mask.** Over 3 646 layer-units the raw 1.417× / 0.825× gap of 0.592 becomes **0.036** once `math-10.md` §1's content-free baseline is divided out — and split by checkpoint, it is **ENTIRELY mask at initialisation** (corrected gap 0.004 at step 0) with a residual appearing only at **step ~2000–4000** and persisting (0.172 at step143000), while the position-bias confound *falls* with training. (2) **F0's anchor test fails in the direction it was predicted to succeed**: nuclei sit at **0.316 against a null 0.208**, median p = 1.00 at alternative 'less' — and it survives the confound, since a null restricted to the clustered population only moves the null mean to 0.231. (3) **F1: the identity coupling is EXACTLY optimal in 99.5 % of 3 648 layer boundaries** (`swap_absorbed_fraction` 0 to machine precision in 3 630 of them), so **every per-layer displacement number this project has recorded is the true `W_2`** rather than the upper bound it was known to be — a validation of a whole class of existing numbers, with no forward pass. Its `swap_fraction` is a duplicate-embedding tie and **not** motion. Straightness *falls* with training, 0.151 → 0.122. (4) **The 410m sweep had NO density partition at all** — `hdbscan_labels.json` is `{}` in **152/152** directories, wider than §3.41 records and listed as present in `docs/AXES.md`; backfilled in 69 s from `activations.npz`, verified bit-identical against the pilot. (5) **Three instrument defects, each of which would have produced a false number**: `core.evalues.combine` is a product and rejects **19.67 %** of the time under the null at 25 dependent units (→ `average`, valid under arbitrary dependence); `p_from_null` returned the **resolution floor** on a degenerate null decided by rounding noise (→ `p_from_null_tolerant`); and the first full A0 run **could not have rejected whatever the data said**, because the largest merged e-value a 400-draw design can produce is 10.01 against a threshold of 20 (→ `max_attainable_average_E`, 1 599 draws is the minimum, runners now at 2 000). (6) **The HDBSCAN partition is NOT reproducible run to run** — over 2 600 layer-pairs from two sweeps whose tokens are identical and whose activations differ by at most **7.9e-05**, **16.7 % of label vectors differ**, ARI's 5th percentile is **0.347** and its minimum **0.166**, and cluster count moves by up to **20**. A measurement-reproducibility floor nobody had measured, and `CLAIM-C` reads two of its six registered metrics from this partition alone (§3.51.4). **Both headline rows clear it**: re-run on the pilot sweep's 243 directories with NATIVE labels, A0's corrected gap agrees to two or three decimals at all 13 shared checkpoints and F0's nucleus statistic to three — 0.3164 against 0.3157 (`status-10.md` §3.1). (7) **`pythia-410m` step0 and step1 are the same weights** — all 292 tensors bit-identical upstream — so the checkpoint axis carries **18 distinct points, not 19**. (8) **F12 confirms `math-10.md` §2 on real data and independently of β's convention**: raw `log Z` is **99.5 %** position at β = 1, the sink is the **minimum** of raw `Z` (percentile 0.0014) and the **maximum** of corrected `Z` (0.9986), identical to four decimals across the β grid. Its raw clustered-minus-noise sign is **mostly definitional** — +0.465 at step 0 under random weights, because HDBSCAN clusters by the density `Z` measures — and against that baseline **the largest real excursion is NEGATIVE at steps 32–64**, in the same window where F1 finds the strongest kinematic signature. Clustered particles there move less *and* sit below the untrained baseline in `Z`: **parked, not pinned, and a window rather than a property of the trained model** (`status-10.md` §1.5). Gate green at **2 616 passed**. **§3.50: the literature scan and the derivations** — four `tools/math_checks/` files (28 checks) and three corrections to statements this repo makes, including that the Rényi-parking law is `Θ(β^((d−1)/2))`, in β and dimension, **not in `n`**. **§3.49: the attention flip audited** and **`docs/AXES.md`** opened. **§3.48: Phase 10 opens**; **§3.47: Phase 9's plan**, parked on it. **2026-09-19:** the **e-value audit is COMPLETE** — five units, thirty-nine registered predictions, **zero e-values** (§3.45's closing table; units §3.36, §3.40, §3.43–§3.45). **`CLAIM-C`'s gate ran three times and refused three different ways** (§3.41, §3.46). **Prompt battery v2**: 9 → 21 (§3.42). Disk: 44 → 188 GB free (§5.2/§5.3). Earlier entries live in their own §3.x sections. |
 | Structural map | `INDEX.md` — which phase lives in which directory, and what is archived |
-| **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up** |
+| **Prior work, per phase** | **`docs/LITERATURE.md` — the index; `<phase>/lit-N.md` — the review. Read before writing anything up. Rows 6 and 19–22 are `[R]` as of 2026-09-20 (§3.52); everything else is `[S]` or `[N]`** |
 | Method and construction log | `POPPER_PLAN.md` §6a–§6t |
 | Pre-registered predictions | `PREDICTIONS.md`, `claims/registry.json` |
 | What can carry an e-value | `claims/EVALUABILITY.md` (current state, by phase); `claims/EVALUABILITY_LOG.md` (how each null was built) |
@@ -31,41 +31,189 @@ export METS_RESULTS_DIR=$PWD/data/phase12
 export HF_HUB_OFFLINE=1
 export HF_HUB_DISABLE_XET=1
 
-./scripts/check.sh gate     # 2368 passed / 5 skipped / 47 deselected, ~40 s (2026-09-17)
+./scripts/check.sh gate     # 2616 passed / 5 skipped / 47 deselected, ~55 s (2026-09-20)
 ```
+
+**Two environments, and the difference is load-bearing.** `.venv` is the
+project's interpreter and what every runner's guard asserts. **Anything that
+runs HDBSCAN must use the conda `mets` env instead** —
+`/run/media/system/WDS_500/miniforge3/envs/mets/bin/python` — because it is the
+only install that reproduces this project's historical partitions
+(`p1_mstate_tracking/clustering.py`'s measured note, `PROJECT.md` §3.51.4).
+`tools/run/backfill_hdbscan.py` refuses to run elsewhere rather than writing an
+incomparable partition.
 
 If the gate is green the tree is consistent. If it fails on a `sha256` mismatch,
 a module carrying a record's hash was edited — see §6.3, it is a chore and not a
 bug.
 
-### Resume here (2026-09-19 — the e-value audit is COMPLETE; `CLAIM-C`'s gate has run three times and refused three different ways; PR #57 open)
+### Resume here (2026-09-20 — Phase 10's four free rows have RUN; the attention flip is mostly the causal mask; two PRs open)
 
 **This block is the handoff.** Everything a session needs to continue is here
 or one link away; the sections below it are orientation and history.
 
-**Git.** `main` is at **`e238903`** (PR #56 merged 2026-09-19 18:35), CI green.
-- **PR #57 is OPEN** — `claude/claim-c-arms` → `main`, from the worktree
-  `../Mets-claim-c`. Seven commits that landed *after* #56 merged: prompt
-  battery v2's twelve prompts (#56 carried only the rule), the audit's last
-  three phases (2/2d, 5b/6, 7), the v2 gate run, and the disk rearrangement.
-  **Everything this session produced after 18:35 is in #57 and nowhere else.**
-- **`claude/attention-collapse-augmentation-qsxwg8` still has NO PR** — one
-  commit from a cloud session on 2026-09-18 opening Phase 9 as notes only
-  (`p9_metric_intervention/notes-9.md`, §3.39). Based on `main`. It needs a PR
-  opened, or deleting; it is the only unmerged work that is not in #57.
+**Git. ONE PR is open, #60, and it targets `main` — the stack is gone.**
+`main` is at **`13fad11`** (PR #58 merged).
 
-The user merges from GitHub. After #57 merges, from the main tree:
-`git pull --ff-only && git worktree remove ../Mets-claim-c`. The spent branches
-`claude/coderabbit-p-i5-isometric` and `claude/evalue-audit-phase-1c` were
-deleted on 2026-09-19 and `../Mets-1c-audit` is already removed. Only `data/`
-is untracked (the HF cache and run directories — never `git add -A` under it).
+**Read this before trusting any branch name: the merges did not go the way the
+stack was designed.** #58 merged to `main` as `13fad11`. **#59 was then merged
+into the already-merged #58 branch (`95a9dd2`) instead of into `main`**, so
+**`main` carries #58's content and NOT #59's** — the four free rows, their
+runners, `status-10.md` and §3.51 are *not* on `main`.
+
+- **PR #60 is OPEN, `claude/p10-literature-read` → `main`.** Retargeted from
+  `claude/p10-free-rows` on 2026-09-20 after GitHub reported a conflict. **The
+  conflict was never in the content**: the stale base branch had independently
+  re-merged `dc11b92` *after* this branch had already merged and reconciled it,
+  and two independent merges of the same commit conflict by construction.
+  Merging `origin/main` into it is a **content no-op** and was clean.
+- **#60 therefore carries BOTH bodies of work**: #59's four free rows and their
+  runners (it descends from `f4534c5`), plus the five-paper literature read,
+  `questions-10.md`, `handoff-10.md` and §3.52–§3.54. **35 files, +8 674/−128.**
+  Local gate green at **2 616 passed**; **CI is red for a reason that predates
+  it — see below.** **Merging #60 is what puts #59's work on `main`.**
+- **Two branches are now superseded and carry nothing unique:**
+  `claude/p10-free-rows` (`96bb414`) and `claude/aca-phase-9-planning-rvzw3x`
+  (`95a9dd2`). Both are ancestors-in-content of #60. Delete them **after** #60
+  merges, not before — and verify with
+  `git log --oneline origin/claude/<name> ^origin/main` once it has.
+- **`claude/attention-collapse-augmentation-qsxwg8` is redundant** — its one
+  commit (`cf5f7ee`, Phase 9's notes) was cherry-picked onto #58's branch.
+  Delete it rather than opening a PR.
+
+**CI ON `main` IS RED, AND IT WAS RED BEFORE #60.** Two tests fail on the
+GitHub runner and pass on this machine:
+
+```
+tests/test_phase2_weights_gptneox.py::TestDecompositionPrecision
+  ::test_float32_schur_does_not_reach_the_projector_tolerance
+  ::test_float32_leaves_acceptance_to_rtol_rather_than_guaranteeing_it
+E  assert np.float32(8.6426735e-07) > 1e-06        # PROJECTOR_TOL
+```
+
+**Diagnosis, and the test anticipated it.** Both assert that a **float32** Schur
+projector residual is *worse* than `PROJECTOR_TOL` — a deliberate tripwire whose
+own docstring says *"If this ever passes, single precision became good enough
+and the promotion below is no longer load-bearing — which is worth being told
+about explicitly."* On the CI runner's BLAS the residual is `8.64e-07`, just
+**inside** the 1e-06 tolerance, so the tripwire fires. On this machine it is
+outside and the gate is green at **2 616 passed**.
+
+> **It is a platform-dependent assertion, not a regression.** `gh run list
+> --branch main` shows `failure` on `13fad11` (#58) and on `ded8a06` (#57), and
+> `success` on `e238903` (#56) — **so it went red with PR #57 and has been red
+> on `main` ever since.** Neither the test nor `core/interactions.py` is in
+> #60's diff (checked). Anywhere this file says "CI green", read it as "the
+> local gate is green".
+
+**Fixing it is its own piece of work and its own PR** — the honest fix is that a
+test asserting float32 is *insufficiently* precise is asserting a property of
+the host's BLAS, so it wants either a machine-dependent marker or a re-derived
+threshold. **Do not fold it into a documentation PR.**
+
+**The lesson, and it has now cost twice.** A PR targeted at another PR's branch
+does not retarget itself safely once the base merges; merging it then lands the
+work somewhere that is not `main`. **Target `main` and merge in order**, or
+check `git merge-base --is-ancestor <tip> origin/main` before assuming a merged
+PR's content actually reached `main`.
+
+The user merges from GitHub. After #60 merges, from the main tree:
+`git pull --ff-only && git worktree remove ../Mets-p10`. Only `data/` is
+untracked (the HF cache and run directories — never `git add -A` under it).
+
+**`../Mets-claim-c` is a spent worktree** at `6a804c2` on `claude/claim-c-arms`,
+a branch merged in PR #57. `git worktree remove ../Mets-claim-c` whenever
+convenient; nothing depends on it.
+
+**Run the Phase-10 runners from the worktree with `METS_REPO` pointed at it.**
+Every `tools/run/*.py` derives `sys.path` from `METS_REPO`, which defaults to
+the MAIN tree — so a runner launched from a worktree silently imports the main
+tree's code and fails on anything new. The working invocation is
+`METS_REPO=$PWD METS_DATA=/run/media/system/WDS_500/Mets/data <python> tools/run/...`.
+
+**The HDBSCAN backfill must run in the conda `mets` env, not `.venv`** — see
+`status-10.md` §2. `/run/media/system/WDS_500/miniforge3/envs/mets/bin/python`. The
+script refuses elsewhere rather than writing an incomparable partition.
 
 **A merge mid-session is not a merge of the session.** #56 merged at 18:35 and
 captured the branch as it stood at that instant; the seven commits after it sat
 unmerged until #57 was opened. Check `git log origin/main..HEAD` in the
 worktree before assuming a PR carries what you wrote.
 
-**Compute is DONE, nothing is running, and the gate has been run.** All four
+**Phase 10's free rows have run. Records under `data/analysis/`, all at 2 000
+permutations with `max_attainable_E` 22.37 on their face:**
+
+| file | row | units |
+|---|---|---|
+| `p10_row_a0.json` | A0, WDS sweep | 3 646 |
+| `p10_row_a0_pilot.json` | A0, **pilot sweep, native labels** | 5 593 |
+| `p10_f0_anchor.json` | F0 | 3 800 |
+| `p10_f0_anchor_pilot.json` | F0, **pilot sweep, native labels** | 5 835 |
+| `p10_f1_transport.json` | F1 | 3 648 |
+| `p10_f12_z.json` | F12, three betas | 11 400 |
+| `p10_partition_stability.json` | the reproducibility floor — **no p-value, by design** | 2 600 |
+
+All **tier 1, exploratory, unregistered** and **not quotable as
+adjudications**; `claims/registry.json` is untouched.
+
+> **A scoped thread is open and has its own handoff: `p10_cluster_function/handoff-10.md`.**
+> The cluster-function question — what clusters are made of, what they do, and
+> whether the drive that forms them is usable as an instrument (§3.54). **Eight
+> stages, general → particular. Stages 1–5 cost no forward pass.**
+>
+> **START AT STAGE 0, WHICH IS COMPUTE: take the Phase-1 battery from 8 prompts
+> to 20** (§3.54.2b). Eight prompts is the power ceiling under which every
+> e-value in this phase sits. The 12 unused v2 battery prompts were already
+> chosen blind under a rule committed ahead of the text, so running them is not
+> a new selection decision — and the enlarged battery can carry a **registered**
+> prediction where the current one cannot. 228 directories, ~74 GB against
+> 164 GB free, ~40 GB if the verified `plateau_attentions` duplication stops
+> being written. **Time one prompt × one checkpoint before launching the rest.** **When that thread is parked, come back to this
+> block**, which stays authoritative for the branch state, `CLAIM-C`, the
+> registry and disk.
+>
+> **Read `p10_cluster_function/status-10.md` first** — it is the phase record:
+> every number, every caveat, how to re-run each row, the ladder's state, and
+> **§5.1, the next-step list as reordered on 2026-09-20.** §3.51 and §3.52 here
+> carry only what is project-wide.
+>
+> **Then read `lit-10.md` §11.** `2411.04990` has been read as primary text at
+> last, and it is the paper both Phase 9 and Phase 10 were built on. It changes
+> what F0 means, what the count law is, and whether the Hessian framing is
+> void (§3.52).
+
+Four headlines: **the attention flip is ~94 % causal mask and entirely mask
+before step 2000** (and it holds on a second sweep with an independent
+partition, `status-10.md` §3.1); **F0's anchor test fails in the direction it
+was predicted to succeed** under both nulls; **the identity coupling is exactly
+optimal in 99.5 % of layer boundaries**, so every displacement number on record
+is true `W_2`; and **F1 and F12 together read parked rather than pinned, in a
+window at steps 32–512 rather than as a property of the trained model**
+(`status-10.md` §1.5).
+
+**The free things to do next, REORDERED 2026-09-20 by §3.52** — the full list
+is `status-10.md` §5.1:
+
+1. **F13, the centre scan.** Greedy sequential acceptance over token positions,
+   both rules (Rényi and strong Rényi), **swept in `δ`**, per layer. It needs
+   positions and a distance and **not the HDBSCAN partition at all** — the one
+   row in this phase immune to §3.51.4's floor, and the test F0 was standing in
+   for. Free.
+2. **F14 beside it** — observed count against Lemma C.1's
+   `E_{x∼μ}[1/μ(B_δ(x))]`, the packing-versus-content discriminant with an
+   exact i.i.d. null and no free parameter but `δ`. Free.
+3. **`CLAIM-C`'s two HDBSCAN metrics against the reproducibility floor**
+   (§3.51.4) — still the only open item that bears on a *registered*
+   prediction. Free.
+4. **`attention-10.md`'s rows A1–A8, plus the new A9** (are the strong centres
+   the sinks?), which A0 gated and has now cleared. Free.
+
+**Read every `reject: False` in those records against `max_attainable_E`.**
+The averaging merger is deliberately low-powered and the first A0 run used a
+draw count that made rejection impossible in principle (§3.51.2). Effect sizes,
+`median_p` and `frac_below_05` are the informative fields.
+
+**`CLAIM-C`: compute is DONE, and the gate has been run.** All four
 required `CLAIM-C` arms were produced, then **re-run on 2026-09-19 with
 HDBSCAN present** (61 + 30 + 33 + 17 min): `data/phase12/2026-09-19_10-51-00`
 (`gpt2-large`), `_11-52-10` (`gpt2-large-random`), `_12-21-54`
@@ -3680,7 +3828,173 @@ cheap and would resolve it.**
 
 ---
 
-## 3.51 `2411.04990` read in full: five changes, and the carrying-capacity finding gets a formula (2026-09-20)
+## 3.54 A scoped thread, with its own handoff: what clusters are made of (2026-09-20)
+
+**`p10_cluster_function/handoff-10.md`** is the ordered plan and
+**`questions-10.md`** the hypotheses. Opened out of the §3.52 read, on the
+user's question: *how does the algorithmic drive toward cluster formation
+interact with the structure SGD imposes, and can that drive be used for
+forgetting instead of SGD?* **Eight stages, general → particular. Stage 0 is
+compute and is first (§3.54.2b); Stages 1–5 cost no forward pass**, and every
+one of them re-runs on the enlarged battery for free once Stage 0 lands. Everything in it is exploratory and unregistered.
+
+This section carries only the two things that are project-wide.
+
+### 3.54.1 A fourth casualty of the HDBSCAN outage, and it is the semantic instrument
+
+`status-10.md` §2 records that `hdbscan_labels.json` was empty in 152/152
+directories and names F0, F5 and F11-A4 as the rows that blocked on it. **There
+is a fourth, and it is worse, because it did not block — it degraded.**
+
+`pair_agreement` (`pair_hdbscan_agreement`, `p1_mstate_tracking/clustering.py`)
+tags mutual nearest-neighbour pairs against the **embedding Gram** as an
+external semantic axis and reports `ext_semantic_fraction` and
+`ext_sem_same_cluster_frac` per layer. **It is this project's only semantic
+instrument.** It runs only when `"labels" in hdb_data`; through the outage that
+branch was never taken, and the `else` wrote a **well-formed record of zeros and
+nulls** into all 152 directories.
+
+> **A silent zero record looks exactly like a real one.** That is why it
+> survived the outage, the backfill, the audit and two literature passes. Same
+> bug class as `docs/AXES.md` listing an absent artifact as present, and the
+> direct instance of standing rule 4's *"refuse rather than degrade."* The
+> backfill deliberately does not re-run the analysis (`status-10.md` §2 item 3),
+> so **the WDS sweep still carries no semantic record.**
+
+**And the pilot sweep's copy is populated — 6 066 of 6 075 layer-records — and
+has never been reported in any markdown file here.** It has been on `HDD_1TB`
+since 2026-08-12.
+
+### 3.54.2 First read of it, and it is the first direct evidence on the semantic question
+
+**Tier 1, exploratory, no null, not registered.** Mean over 8 prompts × 25
+layers per checkpoint, pilot sweep, native labels (`handoff-10.md` §1.1 has the
+table).
+
+- **`ext_sem_same_cluster_frac` is flat** across all 27 checkpoints, 0.62–0.73.
+  *Given* that a pair is lexically similar, it co-clusters about two thirds of
+  the time, and **training does not change that.**
+- **`ext_semantic_fraction` falls, 0.833 → 0.708**, with the drop concentrated
+  between **step 512 and step 3000**.
+
+> **The tentative reading: training does not change how clusters treat
+> lexically-similar tokens — it changes which tokens are neighbours at all.**
+> At initialisation, residual-stream neighbourhoods are largely inherited from
+> token identity; by step143000 ~29 % of mutual-NN pairs are not lexically
+> similar. Neighbourhoods become **contextual rather than lexical.**
+
+**That window is crowded and the co-location must not be asserted as one event.**
+A0's learned attention residual appears at step ~2000–4000; §3.51 puts the energy
+break at 256→512 and the Fiedler zero-crossing at 1000→3000; F1/F12's parked
+window is 32–512. Whether these are one transition or four is exactly what
+`handoff-10.md` Stage 1 exists to answer, and co-occurrence does not settle it.
+
+**Caveats, all load-bearing.** `ext_semantic` is `emb_gram[i,j] > 0.5` — an
+arbitrary cosine threshold, and the decline could be a norm/scale effect rather
+than a structural change, so **the threshold sweep gates the reading.** Mutual-NN
+pairs are ~90 per layer: a small, special subpopulation. The layer axis is
+collapsed. No position control. No null.
+
+### 3.54.2b FIRST ACTION: the Phase-1 battery goes from 8 prompts to 20
+
+**Decided 2026-09-20 (user).** `handoff-10.md` **Stage 0**, and it is the only
+compute-heavy item before Stage 6.
+
+**Why first.** Every e-value in this project merges over units that are not
+independent — layer-units inside one forward pass share a model, a text and a
+prompt. The `average` merger is valid under arbitrary dependence and
+correspondingly low-powered, which is why §3.41 records `CLAIM-C` unable to
+express a p below 0.0661. **The exchangeable unit is the prompt, and there are
+eight.** `2501.10573` used 2 244. **Prompt count is the binding constraint on
+every result in this phase and the one thing compute can fix.**
+
+**No new prompts are to be invented, and that is the point.** `core/prompts.py`
+carries battery **v2 — 21 prompts, hash `06790b90dcfe`** — extended 2026-09-19
+under **a rule committed in its own commit ahead of the text** (§3.42). Phase 1's
+metastability sweep used **8** of them. **Twelve have never been through Phase
+1**, and because they were chosen blind under a written rule, **running them is
+not a new selection decision.** That is what makes the enlarged battery able to
+carry a **registered** prediction where the current one cannot.
+
+> **Correction to `status-10.md`, which said "13".** It is **12**; the
+> thirteenth is `short_heterogeneous` at **115 characters**, almost certainly
+> too short to cluster. The 12 are six genres × two prompts, one short-band and
+> one long-band per pair, exactly as the committed rule specifies.
+
+**8 → 20 usable prompts — 2.5× the exchangeable unit.**
+
+**Budget, measured on disk 2026-09-20.** Per run directory at ~450 tokens:
+`plateau_attentions.npz` **147.6 MB** + `attentions.npz` **147.6 MB** +
+`activations.npz` 44.3 MB + ten small files = **325 MB**, of which **91 % is
+attention**. 12 × 19 = **228 directories = 74 GB** against **164 GB free**.
+
+> **`plateau_attentions.npz` is a byte-identical relayout of `attentions.npz`,
+> verified across all 24 layers** — `(24,16,n,n)` under one key versus 24 arrays
+> `attn_L0…attn_L23` of `(16,n,n)`. Same numbers stored twice, **148 MB per
+> directory, ≈ 22 GB across the existing 152.** Halving it takes the new-run
+> cost to ~40 GB. **Do not delete before checking which readers use which
+> layout**, and record the decision before taking it — §5.1's rule.
+
+**Attention scales as n², so more short prompts beat fewer long ones** for this
+project's purpose. That runs *against* `2501.10573`'s `N ≥ 500` guidance, because
+they wanted per-prompt intrinsic dimension and this project wants independent
+units; both are true and they trade off. **F16 is the row that will feel it** —
+of the current eight only `homer_iliad` (512 tokens) clears their threshold.
+
+**Compute is unmeasured** — no per-run timing for a Phase-1 410m sweep exists in
+the tree. **Time one prompt × one checkpoint and multiply** before launching 228
+runs.
+
+**Four checks, none optional** (`handoff-10.md` §0.3): matching
+`PROMPT_BATTERY_HASH` via `verify_same_battery`; HDBSCAN present, in the conda
+`mets` env, **verified on the first directory** — otherwise both
+`hdbscan_labels.json` and `pair_agreement` silently degrade, per §3.54.1; time
+one first; never `git add` under `data/`.
+
+### 3.54.3 The three hypotheses worth naming project-wide
+
+All invented 2026-09-20, all conjecture, none literature-checked
+(`questions-10.md` §8).
+
+- **H-ANCHOR/BALLAST** — a cluster is one attended *anchor* plus many ignored
+  *members*, which reconciles Blog 1's attention flip with the theory's claim
+  that centres are attractors. **HDBSCAN gives membership and never centrality**,
+  so this has been structurally invisible to every measurement here. F13 supplies
+  centrality for free.
+- **H-THERMOSTAT** — the attention sink is *how* a trained transformer resists
+  collapse: it absorbs mass into the normaliser `Z_k`, lowering effective
+  pairwise coupling among the rest. **The model has already learned a metric
+  intervention, and the sink is it** — which reframes Phase 9 as doing
+  deliberately what training discovered. Free from `attentions.npz`.
+- **H-WARP** — training acts on the clustering dynamics as a **monotone
+  reparametrisation of the depth clock**, not as a change of structure. Separable
+  by curve collapse against `T_eff`, which `math-1.md` §15 item 3 has called the
+  highest-value unrun quantity at report-only cost since before this phase
+  opened. **The confound is the answer.**
+
+### 3.54.4 Two process consequences
+
+1. **Register F14 before looking.** `status-10.md` records the decision that ran
+   F0 exploratory and capped it at tier 1. With **39 registrations and zero
+   adjudications**, F14 is the second chance at the first adjudication.
+2. **The power ceiling is eight prompts.** `2501.10573` used 2 244. Layer-units
+   within one forward pass are not independent samples; the `average` merger is
+   valid under arbitrary dependence and correspondingly low-powered. **More
+   prompts is the highest-value compute available and it needs no new
+   instrument.**
+
+## 3.53 `2411.04990` read in full: five changes, and the carrying-capacity finding gets a formula (2026-09-20, concurrent session)
+
+> **Renumbered on merge, and read with §3.52.** This section was written in a
+> concurrent session against PR #58's branch, where §3.51 was still free; PR
+> #59 had already taken that number. **§3.52 is a companion read of the same
+> paper plus four others, done the same day** — the two agree on everything
+> below **except item 3's gradient-flow verdict**, where §3.52.1 and
+> `lit-10.md` §11.5 are the later and more complete reading: Lemma 5.3 says
+> the causal dynamics **is** a *sequential* gradient flow. Four findings here
+> are **not** in §3.52 and are the reason this section is kept whole: Theorem
+> 4.1's consequence for `plan-9.md` §4.3, Lemma C.1 as the carrying-capacity
+> formula, `d₁ = dim L`, and the RMSNorm absorption.
 
 **`docs/readings/2411.04990.md`** — the reading note, marked **[R]**, from the
 PDF supplied by the user. This was the top item in the verification queue and
@@ -3805,6 +4119,386 @@ hazard as final. Also **Cowsik et al. 2024** (a more realistic architecture
 *including MLP layers*, with accurate final-configuration predictions),
 **`2410.23228`** (Bruno et al.), **Geshkovski et al. 2024a**, and Agrachev &
 Letrouit `2404.08289`.
+
+## 3.52 Five papers READ as primary text — and the one the project most depended on changes three constructions (2026-09-20)
+
+**The user supplied PDFs for five of the six papers in
+`p10_cluster_function/lit-10.md` §10's verification queue.** Every scholarly
+host is still blocked from a session, so this is the first time any of them has
+been read rather than searched. The full reads are `lit-10.md` §11–§15 and the
+derivations are `math-10.md` §7; this section carries only what is
+project-wide. **No measured number anywhere in this repository changes.** Three
+constructions do, and one registered-adjacent framing is un-blocked.
+
+| paper | grade before | grade now | what it moved |
+|---|---|---|---|
+| **2411.04990** *Clustering in Causal Attention Masking* | `[S]` | **`[R]`** | F0, the count law, the gradient-flow hazard, and a prior-art claim |
+| **2501.10573** *The Intrinsic Dimension of Prompts…* | `[S]`, wrong title | **`[R]`** | the `d_eff` candidate list; a graded null |
+| **2601.02932** *Data-driven Reduction of Transfer Operators…* | `[N]` | **`[R]`** | `plan-9.md` §5.1's architecture, and one thing not to copy |
+| **2605.12765** *GUARD-IT* | `[S]` | **`[R]`** | two thirds of Phase 9's novelty differentia |
+| **2505.16831** *Unlearning Isn't Deletion* | `[S]` | **`[R]`** | a required arm and a four-diagnostic panel |
+
+Still unread and still able to change a construction: **2303.06562**
+(ContraNorm) and **2607.15495** (the J-lens paper itself).
+
+### 3.52.1 `2411.04990`: the parking correspondence, and F0 measured a proxy
+
+**The correspondence, exactly.** The street is `S^{d−1}` with geodesic distance;
+**arrival order is token position**, which is why the analogy exists only under
+a causal mask; the car length is `δ = cβ^{−1/2}`, the range beyond which the
+attractive force decays. A **Rényi centre** is a token separated by more than
+`δ` from every previously accepted centre; a **strong Rényi centre** is one
+separated by more than `δ` from **every preceding token**. Both are greedy
+sequential acceptance rules on positions and distances. **Neither mentions
+clusters.**
+
+> **F0 therefore does not test this claim.** `tools/run/p10_anchor.py` computes
+> the mean normalised position of each HDBSCAN cluster's **earliest member** —
+> a defensible proxy, and a different object: a cluster's earliest member need
+> not be `δ`-separated from anything, and a strong centre need not be in any
+> cluster. **§3.51's headline that "F0 fails in the direction it was predicted
+> to succeed" stands as a fact about that statistic and is not evidence against
+> the parking account.** `status-10.md` §6 already said F0 was not an
+> adjudication; it is true for a stronger reason than the one given.
+
+**The count law is better than the scan believed, and §3.50's correction
+over-shot.** §3.50 records the law as `Θ(β^((d−1)/2))` with *"no 0.7476 in
+it"*. The scaling is right. The constant claim is wrong — Appendix C.4 gives
+`c·2π/δ` with `c ≈ 0.75` for `d = 2` ordinary centres as `δ → 0`
+(Dvoretzky–Robbins 1964). **And the `d ≫ 1` verdict applies only to the
+power-law asymptotic.** Lemma C.1's exact form,
+
+```
+    E[ #strong Rényi centres ]  =  E_{x∼μ}[ 1 / μ(B_δ(x)) ]
+```
+
+is a reciprocal local-density average: **distribution-free, dimension-free, no
+exponent, no `β`** — only `δ`, which is a distance and can be swept. The paper
+says so explicitly, and says the analogous computation for *ordinary* centres
+remains open above `d = 2`. So the phase's quantitative test is
+observed-count-versus-(C.1), not a log-log slope, and **the i.i.d. assumption in
+(C.1) is the discriminant rather than a defect** — the gap between observed and
+predicted *is* how far a token cloud departs from exchangeable, which is
+`notes-10.md` §3.2's packing-versus-content question with an exact null
+attached. A bonus: since `δ = cβ^{−1/2}`, the `δ` at which they meet **reads
+back `c²/β`**, turning §3.40's undecided factor-of-8 convention into a
+measurement.
+
+**The gradient-flow hazard resolves in the project's favour.** `notes-10.md`
+§10.1 and `plan-9.md` §5.1a both recorded, `[S]`-grade, that the masked system
+*"cannot be interpreted as a mean-field gradient flow"*, and put the
+Wasserstein-Hessian framing at risk. The paper says that **and then says what
+replaces it** (Lemma 5.3): the causal dynamics is a **sequential gradient
+flow**,
+
+```
+    φ̇_k = − ( 1 / Z_k(φ_1,…,φ_k) ) · ∂E_k(φ_1,…,φ_k)/∂φ_k
+```
+
+— a different energy per particle, causally ordered. **What is void is a single
+global potential for the ensemble** (so Łojasiewicz, and "the eigenvector sign
+structure *is* the partition", do not transfer). **What survives is the
+curvature claim in per-token form**, about `∂²E_k/∂φ_k²`. And `1/Z_k` is
+**literally the prefactor on particle `k`'s own gradient** — which is F12's
+measurement, and makes `math-1.md` §1A.6's reading of `Z` as a metric an
+equation rather than an interpretation. `status-10.md` §1.5's
+parked-versus-pinned argument inherits that upgrade.
+
+**Prior art this project should not claim as its own.** §B.3 of the paper
+measures the **`V`-matrix spectra of `albert-xlarge-v2`** — the model of Phases
+1–6 — finds most heads have real `λ_max`, finds heads 1 and 6 with **negative**
+`λ_max`, and notes Gaussian initialisation puts the spectrum far from the left
+half-plane, so a negative `λ_max` is learned. That is the V-attractive /
+V-repulsive split, published, on this project's model. Table 1 additionally maps
+`(sign λ_max, multiplicity)` to five predicted final configurations, which is a
+free join against the project's head catalogue.
+
+**Every transfer is bounded by four simplifications the paper names**: tied
+weights across layers, **no MLP** (*"a significant open challenge"*), and for
+the meta-stability results `V = I`, `Q = K = I`, `d = 2`. **Nothing here is a
+theorem about Pythia.**
+
+### 3.52.2 The other four, in one paragraph each
+
+**`2501.10573`** — note the **v2 title change**; `lit-10.md` §9 records the v1
+title. It measures per-layer, per-prompt **intrinsic dimension** with three kNN
+estimators on four models including Pythia 6.9B, and finds `ρ(log ID, surprisal)
+≈ 0.6–0.8` at `p < 0.01`. Two things for this project. **The `d_eff` candidate
+list in `math-10.md` §5.2 was missing the theoretically-correct entry**: the
+parking law wants a *manifold* dimension, effective rank and participation ratio
+are functionals of a covariance spectrum, and a kNN ID estimator gives **≈ 7–15
+rather than ≈ 225** — the difference between a predicted slope that is
+measurable and one that is not. And its **graded block-shuffle null** (`b_S =
+N/4^S`, six levels, unigram-preserving, calibrated by BLEU and BERTScore) is a
+dose–response curve where this project has binary controls.
+
+**`2601.02932`** — `plan-9.md` §5.1's construction, built: Perron–Frobenius →
+concentrations → coarse partition → Diffusion Maps → Ulam → implied timescales,
+PCCA+, MFPT, transition-path theory. **The state is the empirical measure, not
+the particle**, which `cluster_tracking.py` is not. It independently reaches
+§3.29's programme — a **translation-invariant Wasserstein** metric is necessary
+once cluster centres drift, where `L²` fails — and `core/dissipation.py` already
+has that machinery, unrun. **The one thing not to copy is its
+reversibility-constrained estimator**: their system is a reversible gradient
+diffusion and a depth dynamics is not. Their own §5.1.1 names the alternative —
+singular values, or the **real Schur decomposition** — which is this
+repository's existing instrument, and which closes `math-10.md` §6's thread 4.
+
+**`2605.12765` (GUARD-IT)** — occupies the genus Phase 9 claimed, and **two
+thirds of the differentia `lit-10.md` §6 drew do not survive the paper**. Its
+Eq. 8, `h′ = (h − αv̂)·‖h‖/‖h − αv̂‖`, is **norm-preserving but not a
+rotation** (a nonlinear input-dependent self-map of a sphere), and it **is**
+exactly invertible in closed form — so neither "isometry versus congruence" nor
+"exactly invertible" separates the two. **What survives is cleaner: state
+versus operator.** GUARD-IT moves `h`; a γ-patch is a congruence on `W_QK`,
+changing how every *pair* is compared. GUARD-IT selects by **content** (a
+similarity gate, and it does nothing when the gate is empty); a γ-patch selects
+by **geometry** and always applies. `notes-9.md` §8 is rewritten to make that
+claim.
+
+**`2505.16831` (ICML 2026)** — *"models can appear to forget while their
+original behavior is easily restored through minimal fine-tuning."* **Any Phase
+9 forgetting result now needs a relearning arm**, or it measures the thing this
+paper says is routinely mismeasured; `notes-9.md` §2's *"collapse is a release
+operation, not a deletion one"* is the same claim and should cite it. Its
+four-diagnostic panel — PCA similarity, PCA shift, **linear CKA**, FIM diagonal,
+run on forget / retain / *unrelated* probe sets — is built for exactly the
+situation `CLAIM-C` hit in §3.41, where six metrics disagreed; one of its four
+is `cka_prev`, the metric that scored 0/8. It also carries a **Davis–Kahan
+bound**, `cos∠(c^orig, c^upd) ≈ 1 − O(‖E‖/(λ₁−λ₂))`, which gates a
+PC-direction readout on the **eigengap** — this project computes eigengaps
+everywhere and has never gated a spectral readout on one. A
+`tools/math_checks/` item.
+
+### 3.52.3 What this changes in the tree
+
+Documentation only; no code, no records, no registry entry.
+
+- **`p10_cluster_function/lit-10.md`** — §11–§15, the five reads, marked `[R]`.
+- **`p10_cluster_function/math-10.md`** — new **§7**; §5 marked partly
+  superseded; §6 threads 1 and 4 marked answered. **§7 has no symbolic check
+  file yet and says so** — its two closed forms (the finite-`n` saturation
+  identity, the `δ → c²/β` inversion) are the kind `CLAUDE.md` says should get
+  one.
+- **`p10_cluster_function/notes-10.md`** — §3.2, §5, §6, §10.1 and §12 amended;
+  **eight ladder rows added (F13–F20)**, seven of them free.
+- **`p10_cluster_function/status-10.md`** — F0's reading amended, the ladder
+  extended, and **§5.1, a revised next-step ordering**.
+- **`p10_cluster_function/attention-10.md`** — §5 upgraded from interpretation
+  to equation; row **A9** added.
+- **`p9_metric_intervention/plan-9.md`** — §5.1a resolved, **§5.1b** added, two
+  readout rows added.
+- **`p9_metric_intervention/notes-9.md`** — §8's Hessian claim corrected to its
+  per-token form and its novelty claim rewritten.
+- **`p1_mstate_tracking/lit-1.md`** §4 item 1 and **`docs/LITERATURE.md`** rows
+  6 and 19–22 corrected.
+
+### 3.52.4 The next free row is no longer the one §3.51 named
+
+`status-10.md` §5.1 has the revised order. The change: **F13, the centre scan**
+— greedy sequential acceptance over token positions, both rules, swept in `δ`,
+per layer — moves to the front. It needs positions and a distance and **not the
+HDBSCAN partition at all**, which makes it the one row in this phase **immune
+to §3.51.4's reproducibility floor**, and it is the test F0 was standing in for.
+**F14** (observed count versus Lemma C.1) sits beside it. `CLAIM-C`'s two
+HDBSCAN metrics against the floor is now third, unchanged and still the only
+open item bearing on a *registered* prediction.
+
+### 3.52.5 Two sessions read the same paper on the same day, and they differ in one place
+
+`2411.04990` was read twice on 2026-09-20 by concurrent sessions: **§3.53 /
+`docs/readings/2411.04990.md`**, and **§3.52 / `lit-10.md` §11 / `math-10.md`
+§7**. Recorded here because a reader will otherwise find two `[R]` accounts and
+no statement of how they relate.
+
+**They agree on everything except the gradient-flow verdict.** §3.53 item 3
+quotes §4 of the paper — *"our system (CSA) does not have a gradient-flow
+structure and thus techniques of Łojasiewicz are not applicable"* — and
+concludes that `plan-9.md` §5.1a's hazard is **confirmed**, with hierarchy
+replacing the lost structure.
+
+> **That is the paper's §4 and not its last word.** §5.2 and **Lemma 5.3** say:
+> *"Since our dynamical system is not a gradient flow, the classical Łojasiewicz
+> convergence theorem does not apply. Instead, we establish convergence by
+> observing that the causal dynamics (both with and without frozen tokens) is,
+> in fact, a **sequential gradient flow, where each particle minimizes a
+> slightly different energy**."* — with the flow written out,
+> `φ̇_k = −(1/Z_k(φ_1,…,φ_k)) ∂E_k/∂φ_k`, and the `E_k` given explicitly in
+> App. C.3.
+>
+> **So the hazard is narrowed rather than confirmed.** A single global potential
+> for the ensemble is void; a per-particle energy and a genuine gradient flow in
+> it are present. §3.52.1, `lit-10.md` §11.5, `math-10.md` §7.5 and
+> `plan-9.md` §5.1a carry the resolved version, and it is the one to use.
+
+**What §3.53 has that §3.52 does not**, and none of it is contradicted:
+Theorem 4.1's consequence for `plan-9.md` §4.3 (no QK-side intervention can
+prevent collapse under `V = I_d`); **Lemma C.1's saturation as the formula for
+the 50–55 carrying-capacity invariant**, which is the better join of the two;
+`d₁ = dim L` making the `d_eff` test differential against Phase 2's projectors;
+**RMSNorm's diagonal absorbable into `K, Q, V`**, so a γ-patch is not a
+read-side lever and `plan-9.md` §4.7 needs a `W_V` arm; Lemma 5.1's `T_j·s_j`
+bound; the `⟨Qx, Ky⟩` generalisation of the separation; explicit timescales; and
+the Castin–Ablin–Peyré pointer, which may restore mean-field structure and
+should be read before the hazard above is treated as final.
+
+**What §3.52 has that §3.53 does not**: the other four papers, Lemma 5.3, the
+observation that **F0 measured a proxy**, the re-correction of the 0.7476 claim,
+and the kNN intrinsic dimension as the manifold `d_eff`.
+
+**A process note, since this is the second time.** `CLAUDE.md`'s concurrent-work
+hazard is real: two sessions sharing this tree did the same read an hour apart,
+and only the merge surfaced it. The cheap prevention is the convention §3.53
+introduces — **`docs/readings/<arxiv-id>.md`, one file per paper read** — which
+makes a duplicate read a merge conflict rather than two divergent accounts.
+
+## 3.51 Phase 10's free rows RAN — and three of the findings are about this project's instruments, not about clusters (2026-09-20)
+
+**`p10_cluster_function/status-10.md` is the phase record and the place to
+start.** Four rows of `notes-10.md` §8's ladder ran on real checkpoints — F0,
+F1, F11-A0 and F12 — plus a producer that unblocked them and a measurement that
+was not on the ladder. All **tier 1, exploratory, unregistered**;
+`claims/registry.json` is untouched and none of it is quotable as an
+adjudication. Seven records under `data/analysis/`, each at 2 000 permutations
+with `max_attainable_E` 22.37 on its face.
+
+This section carries only what is **project-wide**. The per-row numbers,
+caveats and re-run instructions are in `status-10.md`.
+
+### 3.51.1 The four rows, in one table
+
+| row | finding | detail |
+|---|---|---|
+| **F11-A0** | the attention flip is **~94 % causal mask** — raw gap 0.592, corrected **0.036** — and **100 % mask at initialisation**, with a learned residual only from step ~2000 | `status-10.md` §1.1 |
+| **F0** | the anchor test **fails in the direction it was predicted to succeed**: nuclei at 0.3164 against a null mean 0.2077, median p 1.00, and it survives a null restricted to the clustered population | §1.2 |
+| **F1** | the identity coupling is **exactly optimal in 99.5 %** of 3 648 boundaries, so **every per-layer displacement number this project has recorded is true `W_2`**, not the upper bound it was known to be | §1.3 |
+| **F12** | `math-10.md` §2 confirmed **β-independently**: raw `log Z` is 99.5 % position, the sink is the *minimum* of raw `Z` and the *maximum* of corrected `Z` | §1.4 |
+
+**Two blockers had to be cleared.** The 410m sweep carried **no density
+partition at all** — `hdbscan_labels.json` empty in **152/152** directories,
+wider than §3.41 records and listed as present in `docs/AXES.md` — and the
+partition turns out not to be reproducible run to run (§3.51.4 below).
+
+**F1 and F12 together read parked rather than pinned**, in a window at steps
+32–512 rather than as a property of the trained model, and held as a hazard
+rather than a result: the density confound is argued from a step-0 baseline
+rather than controlled, and the reading rests on `math-1.md` §1A.6's
+*interpretation* of `Z` as a metric. `status-10.md` §1.5 and §6.
+
+**Both headline rows were replicated on the pilot sweep** — different forward
+pass, **native** labels rather than the backfill, nine prompts against eight,
+27 checkpoints against 19. A0's corrected gap agrees to two or three decimals
+at all 13 shared checkpoints; F0's statistic agrees to three, **0.3164 against
+0.3157**, with the pilot finding *fewer* clusters per layer (42.8 against
+47.1). `status-10.md` §3.1.
+
+### 3.51.2 Three instrument defects, each of which would have produced a false number
+
+Found while wiring e-values through the rows, and each is fixed with a test
+that fails on the old behaviour.
+
+1. **`core.evalues.combine` is a PRODUCT, valid only under conditional
+   calibration** (`EProcess`'s own WARNING). Phase 10's units share a model, a
+   text and a forward pass, so the product is invalid over them. Measured cost:
+   at 25 perfectly dependent units the product rejects **19.67 % of the time
+   under the null** against a nominal 5 %. `average` / `average_p` are the
+   arithmetic-mean merger, valid under **arbitrary dependence** by linearity
+   alone (Vovk & Wang 2021), with the price stated: the mean cannot exceed its
+   largest input.
+2. **`p_from_null` compares with an exact `>=` and was decided by rounding
+   noise on a degenerate null.** Where the mask correction explains a layer
+   completely, the corrected value is the same at every token, no permutation
+   can move the enrichment, and the honest p is 1. It returned **0.0025, the
+   resolution floor** — a perfectly explained layer reading as the strongest
+   possible evidence — because ~1.0 differs from ~1.0 in the sixteenth digit.
+   `p_from_null_tolerant` counts near-ties conservatively and flags
+   `degenerate_null`.
+3. **The first full A0 run could not have rejected whatever the data said.**
+   The mean merger cannot exceed its largest input and a Monte-Carlo p cannot
+   go below `1/(n+1)`, so the largest merged e-value a permutation design can
+   EVER produce is `calibrate(1/(n+1))` — **10.01 at 400 draws, against a
+   threshold of 20.** It reported `reject: False` at all 19 checkpoints and
+   that number said nothing. `core.evalues.max_attainable_average_E` computes
+   it, **1 599 draws is the exact minimum**, every runner now runs at 2 000 and
+   records `max_attainable_E` and `design_can_reject` on the face of its
+   artifact. This is `p_from_null`'s own "should I draw more?" versus "could
+   this design have rejected?" applied to the merger.
+
+**Read every `reject: False` in these records against `max_attainable_E`.**
+Even at 2 000 draws the averaging merger is deliberately low-powered: rejection
+needs nearly every unit at the floor. The informative fields are the effect
+sizes, `median_p` and `frac_below_05`.
+
+### 3.51.3 `pythia-410m` step0 and step1 are the same weights
+
+**All 292 tensors bit-identical upstream**, despite different HF revisions and
+different blob hashes, and the sweep's activations for the two are bit-identical
+in turn — while step0 vs step2 differs at 2.4e-07, so the comparison is not
+saturated. Not a runner bug.
+
+**The 19-revision checkpoint axis carries 18 distinct points at 410m**, and
+every per-checkpoint average over the sweep double-counts one. Recorded in
+`docs/AXES.md` §2.3. **Not yet checked at 70m.**
+
+### 3.51.4 The HDBSCAN partition is not reproducible run to run, and nothing had measured it
+
+Found while cross-checking the backfill, and it is the most consequential thing
+in this section because four rows and one registered gate read the partition.
+
+**The natural experiment.** Two independent Phase-1 sweeps cover the same
+checkpoints and prompts: the 2026-08-12 pilot on `HDD_1TB` with native labels,
+and the 2026-08-31/09-01 sweep whose partition was backfilled. **104
+model-prompt directories overlap, 2 600 layer-pairs.** Their `tokens.txt` are
+identical in every case and their configs match; their activations differ by at
+most **7.9e-05** — ordinary run-to-run float non-determinism, not a difference
+in what was computed. So it is the same question asked twice, differing only by
+numerical noise.
+
+**What comes back** (`data/analysis/p10_partition_stability.json`):
+
+| | value |
+|---|---|
+| label vectors identical | **83.3 %** |
+| ARI, median | 1.0 |
+| ARI, mean | 0.933 |
+| **ARI, 5th percentile** | **0.347** |
+| **ARI, minimum** | **0.166** |
+| ARI with noise dropped, p05 / min | 0.585 / 0.327 |
+| cluster-count \|Δ\|, mean / **max** | 0.58 / **20** |
+| noise-fraction \|Δ\|, mean / max | 0.003 / 0.132 |
+
+**Usually stable, and in about one layer in six it is not.** In the tail the
+two partitions are essentially unrelated — ARI 0.17, cluster count off by 20 —
+from activations agreeing to five decimal places.
+
+**This is a measurement-reproducibility floor, not a null.** There is no
+hypothesis under test and no p-value, deliberately. It is the amount by which a
+partition-derived quantity can differ between two runs that asked the same
+question, and **no null this project has built accounts for it**:
+`notes-10.md` §4.4's size-profile null is about the ARI's variance under random
+labelling, which is a different quantity from its variance under re-measurement.
+
+**What it bears on, and what it does not settle.**
+`CLAIM-C` reads **`cluster_count` and `cluster_membership` from HDBSCAN and
+from nothing else** (`replication_gate.py`), and §3.41's gate run scored those
+two at 2/8 and 5/8 — the two weakest of six. That is now a number that has to
+be read against a floor nobody knew the size of. **It does not follow that the
+gate's result is noise**: the arms there differ by model and by training, not
+by a re-run, and this section measures only the re-run. What follows is that
+the comparison has never been made, and `tools/run/p10_partition_stability.py`
+is what would make it.
+
+The same caution applies inward. Row A0 and F0 both read the partition, and
+both report per-layer statistics aggregated over 3 600+ units — an effect
+carried by the aggregate is much less exposed to a per-layer floor than a
+statement about one layer would be, but neither row has been re-run against a
+second partition to check.
+
+**Done for BOTH headline rows — see `status-10.md` §3.1, and they hold.** A0's corrected
+gap agrees to two or three decimals at all 13 shared checkpoints; F0's nucleus
+statistic agrees to three (0.3164 against 0.3157). The floor still binds any
+per-layer claim; what the checks establish is that a statistic aggregated over
+thousands of units is far less exposed to it.
 
 ## 3.50 The scan, and the math: four check files, three corrections, and a law that is not in `n` (2026-09-20)
 
@@ -6824,6 +7518,30 @@ per claim**, not a better calibrator.
    computed feasible set (`POPPER_PLAN.md` §6r).
 6. **`P-I3`'s matching** — `"score_and_layer"`, registered 2026-08-30 with both
    sides measured (§6s).
+
+### 5.1b UNTAKEN disk decision: `plateau_attentions.npz` duplicates `attentions.npz` (found 2026-09-20)
+
+**Measured, not inferred.** In every Phase-1 run directory both files are
+written and they hold the **same numbers in two layouts**:
+
+| file | layout | size at n ≈ 467 |
+|---|---|---|
+| `attentions.npz` | one key `attentions`, `(24, 16, n, n)` float32 | 147.6 MB |
+| `plateau_attentions.npz` | 24 keys `attn_L0…attn_L23`, each `(16, n, n)` | 147.6 MB |
+
+**Verified byte-identical across all 24 layers** on
+`pythia-410m-step1_wiki_paragraph`. Together they are **91 % of a 325 MB run
+directory**; `activations.npz` is 44.3 MB and the ten other files ~0.6 MB.
+
+- **≈ 22 GB recoverable** across the existing 152 directories.
+- **Halves the storage cost of every new run** — §3.54.2b's Stage 0 goes from
+  74 GB to ~40 GB.
+
+**NOT ACTED ON, deliberately.** Which reader uses which layout has not been
+established, and the plateau path presumably wants the per-layer one. The cheap
+fix is to stop *writing* one for new runs and relayout on load, not to delete
+what exists. **Per §5.1's rule, this gets recorded before it is taken** — it is
+recorded here and it is still open.
 
 ### 5.2 `results/`'s 132 GB must be kept — and as of 2026-09-19 it is kept on the HDD
 

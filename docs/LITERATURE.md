@@ -207,8 +207,7 @@ down from a machine with arXiv access.**
 | 3 | **2509.23024** *Tracing the Representation Geometry…* | Whether Phase 1's arc is a replication, and **whether they normalise before RankMe** (`lit-1.md` §3.1) |
 | 4 | **2606.05378** *Pattern Selectivity is Not Task-Causal Structure* | How much of 7d's headline thesis survives |
 | 5 | **2410.06833** *Dynamic metastability in the self-attention model* | Whether "Problem 1 is open" must be retracted from `design-1.md` |
-| 6 | ~~**2411.04990** *Clustering in Causal Attention Masking*~~ **— READ 2026-09-20, `docs/readings/2411.04990.md` [R]**. Not a gradient flow (verbatim, §4); Thm 4.1 collapses all tokens to `x₁(0)` for arbitrary `Q,K`; the parking law is `Θ(β^((d−1)/2))` with the `d_eff` form as the paper's own open conjecture; Lemma C.1's count saturates in `n`; RMSNorm's diagonal is absorbable into `K,Q,V`. Opens five new pointers, **Castin–Ablin–Peyré 2024** the most consequential |
-| 7 | **2510.06477** *Attention Sinks and Compression Valleys…* | Whether our normed-frame correction is a contribution (`lit-1.md` §3.1) |
+| ~~6~~ | **2411.04990** *Clustering in Causal Attention Masking* | **READ IN FULL 2026-09-20 — `[R]`. Two reading records, both primary: `docs/readings/2411.04990.md` and `p10_cluster_function/lit-10.md` §11 / `math-10.md` §7.** Thm 4.1 collapses all tokens to `x₁(0)` for arbitrary `Q, K`; the parking law is `Θ(β^((d−1)/2))` with the `d_eff` form as the paper's **own open conjecture** (`d₁ = dim L`); **Lemma C.1's exact count is distribution-free and saturates in `n`**, which is this project's carrying-capacity finding with a formula; **RMSNorm's diagonal is absorbable into `K, Q, V`**, so Phase 9's γ is not a read-side lever. **On 2d's gradient-flow framing the two records differ and `lit-10.md` §11.5 is the later one**: §4 says no gradient flow, but Lemma 5.3 says the causal dynamics **is a *sequential* gradient flow** with a per-particle energy — so Łojasiewicz fails and the per-token curvature claim survives. §B.3 also measures `albert-xlarge-v2`'s `V`-spectra, prior art for this project's V-attractive/V-repulsive split. Opens five pointers, **Castin–Ablin–Peyré 2024** the most consequential || 7 | **2510.06477** *Attention Sinks and Compression Valleys…* | Whether our normed-frame correction is a contribution (`lit-1.md` §3.1) |
 | 8 | **2207.00112** FWSVD | Whether anti-optimality is a contribution (`lit-7e.md` §5.1) |
 | 9 | **2511.16893** *Predicting the Formation of Induction Heads* | A free external adjudication on the formation window (`lit-7.md` §4.1, `lit-8.md` §4.1) |
 | 10 | **2605.05115** *Manifold Steering…* | **Blocking for all of Phase 5b** |
@@ -220,6 +219,16 @@ down from a machine with arXiv access.**
 | 16 | **2307.15771** *The Hydra Effect* | The ~70 % restoration figure, for a like-for-like comparison |
 | 17 | **2312.10794** *A mathematical perspective on Transformers*, **Bull. AMS 62(3) 2025** | Project-wide citation fix; whether theorem numbers moved |
 | 18 | `github.com/skydancerosel/spectral-probe-circuits` | **Code, not a paper.** GitHub may be reachable where arXiv is not — this is the fastest route to items 2 and 4 |
+| 19 | **2501.10573** *The Intrinsic Dimension of Prompts in Internal Representations of LLMs* | **READ 2026-09-20 — `[R]`.** Note the **v2 title change** (v1 was *The Geometry of Tokens…*). Supplies the **manifold** `d_eff` the parking law wants (kNN ID ≈ 7–15, not effective rank ≈ 225), a **graded block-shuffle null**, and ID↔surprisal at `ρ ≈ 0.6–0.8` on Pythia among four models. Code: `github.com/RitAreaSciencePark/token_geometry` |
+| 20 | **2601.02932** *Data-driven Reduction of Transfer Operators for Particle Clustering Dynamics* | **READ 2026-09-20 — `[R]`.** `plan-9.md` §5.1's construction, built: concentrations → Diffusion Maps → Ulam → implied timescales / PCCA+ / TPT. Names the **translation-invariant Wasserstein** metric as necessary once centres drift, and — the load-bearing caveat — **its reversibility-constrained estimator must not be transported to a depth dynamics**; use singular values or the Schur decomposition |
+| 21 | **2605.12765** *GUARD-IT: Inference-Time Unlearning via Gated Activation Redirection* | **READ 2026-09-20 — `[R]`.** Occupies the genus Phase 9 claimed. Its Eq. 8 is **norm-preserving but not a rotation**, and it **is** exactly invertible — so two thirds of `lit-10.md` §6's differentia fail. What survives: **state versus operator** (`lit-10.md` §14.1) |
+| 22 | **2505.16831** *Unlearning Isn't Deletion* (ICML 2026) | **READ 2026-09-20 — `[R]`.** Four-regime reversibility taxonomy plus a four-diagnostic representation-level panel (PCA similarity/shift, linear CKA, FIM). **Any Phase 9 forgetting claim needs a relearning arm.** Carries a Davis–Kahan bound gating PC-direction readouts on the eigengap. Code: `github.com/XiaoyuXU1/Representational_Analysis_Tools` |
+
+**Items 6, 19–22 were read as primary text on 2026-09-20** (the user supplied
+PDFs; every scholarly host is still blocked from a session — see
+`p10_cluster_function/lit-10.md` §0.1 for the egress table). The full reads are
+`lit-10.md` §11–§15; this table carries only what is cross-phase. **Item 6 was
+the project's top verification-queue entry and two phases depended on it.**
 
 ---
 

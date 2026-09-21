@@ -256,6 +256,20 @@ using, and it makes a *quantitative* prediction — stretching along a slow
 direction should move the implied timescale `t_i = -1/log|lambda_i|` by a
 computable amount.
 
+> **CORRECTION 2026-09-20, from reading `2411.04990` — the ensemble form of
+> this is not available under a causal mask, and the per-token form is.**
+> `plan-9.md` §5.1a, `math-10.md` §7.5, `lit-10.md` §11.5. The masked dynamics
+> has **no single global potential**, so "the Wasserstein Hessian of `E_beta`",
+> "the number of small eigenvalues counts the metastable states" and "the sign
+> structure of the eigenvectors *is* the partition" do not transfer as written.
+> What the paper proves instead is that the causal dynamics is a **sequential
+> gradient flow**, `phi_k' = -(1/Z_k) dE_k/dphi_k`, with a different energy
+> `E_k` per particle. **So the curvature claim survives in per-token form** —
+> about `d^2 E_k / d phi_k^2`, causally ordered — and that is what this section
+> should say. Narrower, more specific, still testable. The `1/Z_k` prefactor is
+> the quantity Phase 10's F12 measured, which makes `math-1.md` §1A.6's metric
+> reading of `Z` an equation rather than an interpretation.
+
 **This is also the honest answer to "is any of this new?"** The intervention is
 not: SAE feature clamping, activation steering, concept erasure (LEACE) and
 representation engineering are all populated, and scaling a feature's activation
@@ -263,8 +277,41 @@ is routine practice. What is not populated is treating the rescale as a **metric
 deformation the collapse dynamics runs in**, and **predicting its effect on
 cluster structure from the theory before running it.** The comparative advantage
 is `gamma_beta(t)`, the monotonicity envelope, a measured null and an energy
-functional with a closed-form gradient — not the knob. *(Novelty claim
-unverified; see §11.)*
+functional with a closed-form gradient — not the knob.
+
+> **REWRITTEN 2026-09-20 after `2605.12765` (GUARD-IT) was read as primary
+> text** — `lit-10.md` §14.1. `lit-10.md` §6's earlier `[S]`-grade reading put
+> the differentia on *"GUARD-IT applies a rotation, which is an isometry; a
+> gamma-patch is a congruence"*. **Two thirds of that does not survive contact
+> with the paper, and what remains is cleaner.**
+>
+> - **GUARD-IT's Eq. 8 is not a rotation.** It is
+>   `h' = (h - alpha*v_hat) * ||h|| / ||h - alpha*v_hat||`: a nonlinear,
+>   input-dependent self-map of the sphere of radius `||h||`. Norm preservation
+>   is exact; "pure rotation in the residual stream" is the paper's prose, and
+>   §6 repeated it.
+> - **"Exactly invertible" is not a differentia either.** Given `v_hat` and
+>   `alpha`, Eq. 8 inverts in closed form (`||h|| = ||h'||` is known, and the
+>   remaining scale is the positive root of a quadratic). Any part of this
+>   phase's novelty claim resting on invertibility should be **dropped**.
+> - **What survives is an object-level distinction, and it is sharper.**
+>   GUARD-IT acts on the **state** `h`; a gamma-patch acts on the **bilinear
+>   form** `W_QK` — a congruence, `plan-9.md` §4.1. One moves where this token
+>   is; the other changes how *every pair* of tokens is compared. GUARD-IT
+>   selects by **content** (a similarity gate over forget-corpus embeddings,
+>   and it does nothing at all when the gate is empty); a gamma-patch selects by
+>   **geometry** and always applies. **State versus operator is the claim to
+>   make.**
+>
+> **And `2505.16831` (ICML 2026) adds a requirement, not a threat.** Task-level
+> metrics *"can be misleading, as models can appear to forget while their
+> original behavior is easily restored through minimal fine-tuning"*. **Any
+> Phase 9 forgetting result must carry a relearning arm** or it measures the
+> thing that paper says is routinely mismeasured. Their four-regime taxonomy
+> (reversible/irreversible x catastrophic/non-catastrophic, Definition 2.1) is
+> the frame; §2's *"collapse is a release operation, not a deletion one"* is the
+> same claim from the other side and should cite it. `plan-9.md` §5.3 carries
+> the readout rows.
 
 ---
 

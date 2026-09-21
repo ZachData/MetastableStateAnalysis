@@ -63,7 +63,8 @@ Everything runs with `HF_HUB_OFFLINE=1`.
 |---|---|---|
 | `attentions.npz` `(n_layers, n_heads, n, n)` | **152/152** | **per-head attention routing, per checkpoint. Largely unexploited** — see `p10_cluster_function/attention-10.md` |
 | `activations` + `norms` | 152/152 | every geometric statistic; the raw stream |
-| `hdbscan_labels.json` | written by the runner | the cluster partition |
+| `hdbscan_labels.json` | **EMPTY in 152/152** | nothing. **Measured 2026-09-20**, no exceptions: every directory was written while `hdbscan` was missing from this machine, so the file is `{}` and `clustering.json`'s hdbscan block reads `{"n_clusters": null, "nesting_summary": "HDBSCAN not available"}`. This entry previously read "written by the runner" |
+| `hdbscan_backfill.json` | **152/152**, written 2026-09-20 | **the cluster partition**, re-derived from `activations.npz` by `tools/run/backfill_hdbscan.py` — no forward pass, 69 s for the sweep, verified bit-identical against 3 pilot directories × 25 layers. Read it through `backfill_hdbscan.read_labels`, which owns the precedence. Mean 47.1 clusters/layer, mean noise fraction 0.389 |
 | `kmeans_labels_L*`, `agglom_mid_labels_L*` | 152/152 | alternative partitions, for frame agreement |
 | `attention_entropy_per_head` | stored per layer by `p1_io.py` | **the row-side attention statistic. Nothing has ever read it against cluster structure** |
 | Phase 2 eigenspectra + `sym_*` / `schur_*` projectors | 19 dirs | the operator channels |
@@ -74,7 +75,23 @@ Everything runs with `HF_HUB_OFFLINE=1`.
 Plus, git-ignored and irreplaceable: the 27-step pilot sweep on `HDD_1TB` (exists
 nowhere else), and the 355 GB Blog-1 activation cache, deliberately left alone.
 
-### 2.3 The prompt axis is narrower than the battery
+### 2.3 `pythia-410m` step0 and step1 are the same weights
+
+**Measured 2026-09-20**, and it is an upstream fact rather than a bug here. The
+HuggingFace revisions `step0` and `step1` resolve to different commits and
+different blob hashes, but **all 292 tensors are bit-identical**, and the
+sweep's activations for the two are bit-identical in turn (`step0` vs `step2`
+differs at 2.4e-07, so the comparison is not saturated).
+
+So the 19-revision checkpoint axis carries **18 distinct points at 410m**, and
+a per-checkpoint average over the sweep double-counts one of them. It is a
+small effect — two adjacent points at the extreme early end — but it is free to
+correct and impossible to notice from the directory names.
+
+Not yet checked at 70m. Anything reading the checkpoint axis as 19 independent
+points should check.
+
+### 2.4 The prompt axis is narrower than the battery
 
 **The battery holds 21 prompts. The Phase-1 sweep ran 8** (19 × 8 = 152). So
 **13 prompts have never been through Phase 1**, and widening that axis is the
@@ -115,7 +132,7 @@ computation nobody can afford.**
 | producer | cost | unblocks |
 |---|---|---|
 | **`beta_eff` writer** | **no forward pass.** `attentions.npz` (152/152) + the checkpoint's LN params → `ln_frame.frame_for_hidden_state` → `ln_frame.ln_frame_gram` → `beta_eff.estimate_beta_all_heads`. Demonstrated on one checkpoint: 16/16 heads valid in all 24 blocks, median R² 0.18, one model load | **`P-gamma1` and `P-gamma2`** (two registered predictions), the temperature axis for everything, and every `gamma_beta` comparison Phase 9 would make. **Gated on a decision: β's unit convention, worth a factor of 8** |
-| **`tools/run/transport.py`** | no forward pass; the code is written and tested | `w2_optimal` vs `w2_identity`, arc length, straightness. Still *"the cheapest open action in the tree"* (§3.39), still uncalled |
+| ~~`tools/run/transport.py`~~ | **WRITTEN 2026-09-20** | `w2_optimal` vs `w2_identity`, arc length, straightness, and the per-particle kinematic split. No longer a gap |
 | **particle-table populator** | no forward pass | `turnover_decomposition` (validated 2026, awaiting data ever since), `particle_biography`, every per-particle aggregate |
 | **operator-derived cluster labels** | no forward pass | `math-6.md` §4 item 4's third frame — the only labelling derived from the operator that generates the dynamics |
 | **a J-lens fit** | backward passes, ~100 prompts, ~3 MB per checkpoint at 70m | per-layer functional partitions; `lens_band.py`'s band onsets stop being upper bounds; Phase 5's Group E |
@@ -166,18 +183,24 @@ Recorded because each was learned by breaking it.
 Ranked by (information × cheapness). Everything above the line reads artifacts
 already on disk.
 
+**Status 2026-09-20: #3, #4 and #5 are DONE, and #1's premise was corrected.**
+`p10_cluster_function/status-10.md` has the results; the rows marked **done**
+below are struck from the ranking rather than deleted, so a reader can see what
+the answers were.
+
 | # | question | cost | where |
 |---|---|---|---|
-| 1 | **Cluster count vs the Rényi packing law, as a function of `n`**, at 27 checkpoints | free | `lit-1.md` §4.1; rated best-cheap twice, never run |
-| 2 | **Where does attention actually go** — per head, per population, paid vs received, and the population×population mass matrix | free | `attention-10.md` §4 |
-| 3 | **The attention flip on the checkpoint axis**, and whether its sign crossing co-locates with the four known transitions | free | `attention-10.md` §2.4 |
-| 4 | **`Z_beta,i` per token** — the trained per-token metric, and whether high-`Z` is the sink | free | `attention-10.md` §5 |
-| 5 | **Transport**: how much displacement is genuine motion of the measure vs tokens swapping places | free | `notes-9.md` §9 |
-| 6 | **Turnover**: same particles cycling faster, or different particles clustering later | free | `math-5.md` §8.1 |
+| 1 | ~~Cluster count vs the Rényi packing law **as a function of `n`**~~ — **the premise was wrong.** The law is `Θ(β^((d−1)/2))`, in β and dimension, not in `n` (`lit-10.md` §5). What replaced it is the **anchor test**, and it **RAN**: nuclei are *late*, not early, against the prediction, under two nulls | free | `status-10.md` §1.2 |
+| 2 | **Where does attention actually go** — per head, per population, paid vs received, and the population×population mass matrix | free | `attention-10.md` §4. **Now unblocked** — A0 has cleared |
+| 3 | ~~The attention flip on the checkpoint axis~~ — **DONE.** It is **~94 % causal mask**, 100 % at initialisation, with a learned residual only from step ~2000 | free | `status-10.md` §1.1 |
+| 4 | ~~`Z_beta,i` per token~~ — **DONE.** Raw `log Z` is **99.5 % position**; the sink is the *minimum* of raw `Z` and the *maximum* of corrected `Z`, β-independently | free | `status-10.md` §1.4 |
+| 5 | ~~Transport~~ — **DONE.** The identity coupling is **exactly optimal in 99.5 %** of boundaries, so every displacement number on record is true `W_2` | free | `status-10.md` §1.3 |
+| 6 | **Turnover**: same particles cycling faster, or different particles clustering later | free | `math-5.md` §8.1. **Still the best unrun free row** |
 | 7 | **Geometric vs functional partition agreement**, per layer | a lens fit or an LM-head pass | `notes-10.md` §4.3 |
 | 8 | **Which heads divert attention**, joined to 7d's 384-head causal sweep | free | `attention-10.md` §4.1 |
 | 9 | **Token frequency** as a confound for cluster membership *and* for received attention | free | `docs/LITERATURE.md` §6 item 10 |
 | 10 | **Per-head attention entropy against cluster structure** — stored since Phase 1, never read | free | §2.2 |
+| **15** | **Does `CLAIM-C`'s concordance clear the partition's own reproducibility floor?** Two of its six registered metrics come from HDBSCAN alone, and re-running the same measurement moves the partition in **16.7 %** of layers | free | **`status-10.md` §3 — the highest-value free item in this table** |
 | — | | | |
 | 11 | **The 13 unrun prompts through Phase 1's clustering**, to widen the `n` axis | forward passes | §2.3 — strengthens #1 |
 | 12 | **A Phase-1 clustering sweep on 70m** across its 19 revisions | forward passes, the cheapest in the project | gives #1–#10 a second rung |
@@ -193,18 +216,33 @@ project could add.
 
 ## 7. If only four things were done
 
-1. **#1, the parking law.** A published quantitative prediction against a
-   measurement already on disk. `claims/adjudications/` holds **zero entries
-   against thirty-nine registrations**, and this is the shortest path to the
-   first.
-2. **#2 + #3, the attention audit and its trajectory** — but **`attention-10.md`
-   §6's A0 first**, because the sink and causal-mask baselines decide whether
-   there is a finding to plot.
-3. **#14, the β producer.** No forward pass, unblocks two registered
-   predictions, and supplies the temperature axis every other phase wants.
-   Gated on one human decision (β's unit convention).
-4. **#12, a 70m clustering sweep.** The only item that turns single-model
-   observations into two-rung ones for everything above it.
+**Rewritten 2026-09-20**, because three of the previous four were done and one
+of them dissolved. The old list read: the parking law, the attention audit with
+A0 first, the β producer, a 70m clustering sweep. **A0 is done**, the parking
+law's premise turned out to be wrong and its replacement ran, and what those
+two exposed reorders the rest.
 
-The first three are re-analysis. The fourth is the cheapest new compute in the
-project.
+1. **#15, `CLAIM-C` against the partition's reproducibility floor.** Free, and
+   the only item here that bears on a *registered* prediction. Two of that
+   claim's six metrics come from a partition that moves in 16.7 % of layers
+   between two runs of the same measurement, and the comparison has never been
+   made. `tools/run/p10_partition_stability.py` supplies one side of it.
+2. **#2, the rest of the attention audit.** A0 cleared the gate it imposed, so
+   A1–A8 are unblocked; `attention-10.md` §6 rates **A2** (the checkpoint axis)
+   and **A4** (the population×population mass matrix) highest, and A4 is a
+   direct H-PARK vs H-CAT test. Free.
+3. **#6, turnover.** Validated on synthetic sweeps in 2026 and waiting for real
+   data ever since. A groupby, not an experiment — rebuilt against
+   `core/particles.py` under `archive/README.md` rule 2, not lifted. Free.
+4. **#12, a 70m clustering sweep**, unchanged and still the cheapest new
+   compute in the project — and now with a second use: it is a **fresh axis**,
+   which is what F0 would need to be registered rather than exploratory
+   (`status-10.md`, the 2026-09-20 decision).
+
+**#14, the β producer, drops out of the top four** and not because it got
+cheaper: F12 measured its headline result at β ∈ {1, 2, 4} and got the **same
+answer to four decimals at every one** (`status-10.md` §1.4), so the unit
+convention does not gate that question the way it was assumed to. It still
+gates `P-gamma1`/`P-gamma2`.
+
+The first three are re-analysis. The fourth is the cheapest new compute.

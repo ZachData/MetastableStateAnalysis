@@ -172,29 +172,54 @@ Ranked by (value × cheapness), with the measurement each needs.
 1. **The Rényi parking prediction for cluster count.** 2411.04990 **[S]** links
    metastable states under causal masking to the Rényi parking problem.
 
-   > **CORRECTED 2026-09-20 (`p10_cluster_function/lit-10.md` §5).** The two
-   > sentences that stood here — that parking gives "a **density constant** (the
-   > Rényi constant ≈ 0.7476) and hence an expected number of occupied cells as a
-   > function of n" — are **wrong on both halves**. The published scaling is
-   > **`Θ(β^((d−1)/2))`** (confirmed at `β^(1/2)` for `d = 2`): a law in **β and
-   > dimension, not in n**, with no 0.7476 in it. At `d = 1024` the exponent is
-   > 511.5 and the prediction is unusable — the same `d ≫ 1` problem `design-1.md`
-   > records for Figure 3. The mechanism the paper supplies is that **early tokens
-   > act as nuclei** for cluster formation. `p10_cluster_function/math-10.md` §5
-   > gives the two tests that survive: a **position-indexed anchor test** (free,
-   > no β) and a **log-log slope regression** whose slope is invariant to β's
-   > unit convention and returns `d_eff = 2a + 1`.
+   > **CORRECTED TWICE on 2026-09-20, and read the second correction.** The
+   > first (`p10_cluster_function/lit-10.md` §5) worked from search summaries
+   > and over-shot; the second works from the paper, which was read in full
+   > that day by two routes — **`docs/readings/2411.04990.md`** (the dedicated
+   > reading note) and **`lit-10.md` §11 / `math-10.md` §7** (the same read
+   > inside Phase 10's files). Both are `[R]` and they agree except where
+   > `lit-10.md` §11.5 is noted below.
    >
-   > **The paper has since been READ IN FULL — `docs/readings/2411.04990.md`,
-   > marked [R].** Every correction above is confirmed, and three things are
-   > added: the `d_eff` form is **the paper's own open conjecture** with
-   > `d₁ = dim L`, the top eigenspace of `V`; **Lemma C.1** gives an exact
-   > distribution-free count `1/σ_{d−1}(B_δ)` that **saturates in `n`** — which is
-   > this phase's own carrying-capacity finding (50–55 invariant) with a formula
-   > attached; and **Theorem 4.1** says all tokens converge to `x₁(0)`, the first
-   > token's initial position, for arbitrary `Q, K`. Item 4 below is also
-   > unblocked by the reading. Phase 1 has cluster counts, per
-   layer, per prompt length, at 27 checkpoints, already on disk. **Nobody has
+   > The sentence that originally stood here — that parking gives "a **density
+   > constant** (the Rényi constant ≈ 0.7476) and hence an expected number of
+   > occupied cells as a function of n" — is **half right**, not wrong on both
+   > halves as the first correction claimed.
+   >
+   > - **Wrong: "as a function of n."** There is no `n` in the law. Lemma C.1
+   >   gives the expected count in an *infinitely long* sequence, and the
+   >   finite-`n` form **saturates** at it. More tokens do not buy more centres
+   >   once the sphere is full — **which is this project's own carrying-capacity
+   >   finding (max simultaneously-alive clusters invariant at 50–55 across all
+   >   27 checkpoints) with a formula attached.**
+   > - **Right: the Rényi constant is there.** Appendix C.4 — at `d = 2`, as
+   >   `δ → 0`, the average number of **ordinary** Rényi centres approaches
+   >   `c·2π/δ` with `c ≈ 0.75` (Dvoretzky–Robbins 1964). It lives in the
+   >   ordinary-centre count, not in anything this project currently measures.
+   > - **The scaling is `Θ(β^((d−1)/2))`**, in **β and dimension**. At
+   >   `d = 1024` the exponent is 511.5 — **but that is the small-`δ` power-law
+   >   asymptotic only.** The exact law,
+   >   `E[#strong Rényi centres] = E_{x∼μ}[1/μ(B_δ(x))] = 1/σ_{d−1}(B_δ)`, is
+   >   **distribution-free and dimension-free**: a reciprocal local-density
+   >   average, no exponent, no `β`, only the separation `δ`, which is a
+   >   distance and can simply be swept. **So the `d ≫ 1` objection does not
+   >   kill the prediction for strong centres**, and this growth direction is
+   >   live rather than blocked.
+   > - **The `d_eff` form is the paper's own open conjecture**, with
+   >   `d₁ = dim L`, the top eigenspace of `V` — which Phase 2's `sym_*` /
+   >   `schur_*` projectors already identify, on disk for all 19 checkpoints.
+   >   The test is therefore **differential**: predict `d₁` from the OV
+   >   spectrum, then check it against the count.
+   > - **The nuclei are geometric objects**, not "the earliest member of a
+   >   cluster": a *strong Rényi centre* is a token separated by more than
+   >   `δ = cβ^{−1/2}` from **every preceding token**. Phase 10's F0 measured
+   >   the cluster-earliest-member proxy, which is a different statistic, so
+   >   **F0's failure is not evidence against this account** (`lit-10.md`
+   >   §11.4).
+   > - **Theorem 4.1**: for `V = I_d` and *arbitrary* `Q, K`, all tokens
+   >   converge to `x₁(0)` — the first token's initial position. Item 4 below
+   >   is also unblocked by the reading.
+   >
+   > `2411.04990` is now **[R]**, not `[S]`. Phase 1 has cluster counts, per   layer, per prompt length, at 27 checkpoints, already on disk. **Nobody has
    checked a parking-derived cluster-count prediction against a trained
    transformer.** This is re-analysis, costs no forward passes, and it is a
    quantitative theory-vs-measurement comparison of exactly the kind

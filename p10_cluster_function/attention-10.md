@@ -1,6 +1,15 @@
 <!-- p10_cluster_function/attention-10.md -->
 # Phase 10 — Where the attention actually goes
 
+> **UPDATE 2026-09-20 — row A0 has RUN and the gate it imposed has cleared.**
+> Over 3 646 layer-units the raw 1.417× / 0.825× flip becomes **1.034× /
+> 0.998×** once §2.2's structural tilt is divided out: **94 % of the gap is the
+> causal mask, and 100 % of it at initialisation**, with a learned residual
+> appearing only from step ~2000 and the position-bias confound *falling* with
+> training. Replicated on a second sweep with an independently-derived
+> partition. **Rows A1–A8 are unblocked** — `status-10.md` §5 rates A2 and A4
+> highest. Numbers and caveats: `status-10.md` §1.1, `PROJECT.md` §3.51.
+
 **The attentional signature, opened.** `notes-10.md` §3.1 lists four signatures
 of a parked particle and says the discrimination lives in the two nobody has
 measured. This file works the one that *has* been measured, finds that it has
@@ -339,6 +348,24 @@ in position, by exactly `1/(j+1)` per step.
 > move, not the most expensive. §1A.6's identification is an unmasked-model
 > statement and Pythia is masked.**
 
+**Upgraded 2026-09-20 — the metric reading is now an equation, not an
+interpretation.** `2411.04990` Lemma 5.3, read as primary text (`lit-10.md`
+§11.5, `math-10.md` §7.5), gives the causal dynamics as a **sequential gradient
+flow**:
+
+```
+    φ̇_k = − ( 1 / Z_k(φ_1,…,φ_k) ) · ∂E_k(φ_1,…,φ_k)/∂φ_k ,   0 < c < Z_k < C
+```
+
+`1/Z_k` is literally the prefactor on particle `k`'s own gradient. Large `Z_k` ⇒
+small velocity per unit energy gradient; small `Z_k` ⇒ cheap to move. That is
+`math-1.md` §1A.6's claim with an equation behind it, and it is the reading
+`status-10.md` §1.5's parked-versus-pinned argument rests on — so that argument
+is better founded than it was when written, though still resting on an
+*interpretation of what `E_k` is* for a real model. Three caveats travel with
+it: Lemma 5.3 is proved on `S¹` with `Q = K = V = I`, weights tied across
+layers, no MLP. **The conclusion below is unchanged and is the operative one.**
+
 This sharpens rather than weakens §4.3: the sink occupies a **specific corner**
 of the paid/received square (low `Z`, high received), distinct from parked (low
 both) and carrier (high both). **Measure `Z_i/(i+1)`, not `Z_i`.**
@@ -359,6 +386,7 @@ All rows read artifacts already on disk unless marked. Slots into
 | **A4** | **The population×population mass matrix**, per layer per head, beside 5c's inner-product decomposition. | free | §4.2. **The direct `H-PARK` vs `H-CAT` test on the attentional signature** |
 | **A5** | **Paid versus received 2×2.** | free | §4.3. Separates sink / parked / carrier |
 | **A6** | **`Z_beta,i` per token**, and whether high-`Z` is the sink. | free | §5 |
+| **A9** | **Are the strong Rényi centres the sinks?** `notes-10.md` §8's F13 produces the accepted index set; cross it with received attention, with `Z_i/(i+1)`, and with the §4.3 paid/received square. | free | **new 2026-09-20.** The theory says centres are attractors and §2.1 says position 0 is the sink; whether they are the same tokens has never been asked, and `2411.04990` Thm 4.1 makes `x_1(0)` the asymptotic attractor |
 | **A7** | **Token-frequency regression** on cluster membership and on received attention. | free | §2.5, the named unchecked confound |
 | **A8** | **Cross-rung replication**, threshold-free, on normalised depth. | cheap | §4.4, §7 |
 

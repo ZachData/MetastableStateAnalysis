@@ -534,9 +534,96 @@ same way and nobody had said so.**
 - **Also survives:** everything in §4. Lemma 6.4 is proved from positivity of
   `a_ij` alone, so it is mask-agnostic; so are the congruence and the cone margin.
 
-**`[S]`-grade — confirm by reading `2411.04990` before retracting anything.**
-It is the top item in `notes-10.md` §12's queue for exactly this reason: two
-phases depend on that one paper and neither has read it.
+**RESOLVED 2026-09-20 — the paper was read, and the hazard is smaller and more
+specific than this section says.** `lit-10.md` §11.5, `math-10.md` §7.5.
+
+The paper states the negative half (§4: *"our (CSA) does not have a
+gradient-flow structure and thus techniques of Łojasiewicz are not
+applicable"*) **and then states what replaces it** (§5.2, Lemma 5.3):
+
+> *"Since our dynamical system is not a gradient flow … Instead, we establish
+> convergence by observing that the causal dynamics (both with and without
+> frozen tokens) is, in fact, a **sequential gradient flow, where each particle
+> minimizes a slightly different energy**."*
+
+```
+    φ̇_k = − ( 1 / Z_k(φ_1,…,φ_k) ) · ∂E_k(φ_1,…,φ_k)/∂φ_k ,   0 < c < Z_k < C
+```
+
+and App. C.3 writes the `E_k` down for the frozen-token case:
+`E_k = −( Σ_{j<k} e^{β(cos(φ_k−φ_j)−1)} + Σ_j a_j e^{β(cos(φ_k−θ_j)−1)} )`.
+
+**What is void and what is not:**
+
+- **Void: one global `E_β` for the ensemble.** Any argument that needs a single
+  potential whose Wasserstein Hessian is the object — including "the number of
+  small eigenvalues counts the metastable states" and "the sign structure of the
+  eigenvectors *is* the partition" as `notes-9.md` §8 states them — does not
+  transfer as written. Łojasiewicz does not apply.
+- **Not void: the curvature claim itself.** There is a per-particle energy and a
+  genuine gradient flow in it. The claim Phase 9 can still make is about
+  `∂²E_k/∂φ_k²` — **per token, causally ordered** — which is narrower, more
+  specific, and testable. `notes-9.md` §8 should be rewritten to make *that*
+  claim rather than the ensemble one.
+- **Bonus: `1/Z_k` is the prefactor, and Phase 10 has measured it.** Large `Z_k`
+  ⇒ slow; small ⇒ cheap to move. That is `math-1.md` §1A.6's metric reading of
+  `Z` as an equation rather than an interpretation, and it is what
+  `status-10.md` §1.5's parked-versus-pinned reading rests on. Under the mask
+  `Z_k` is `(i+1)`-tilted, so the quantity is `Z_i/(i+1)` (`math-10.md` §2).
+- **The transfer caveats are the real limit**, not the gradient-flow question:
+  Lemma 5.3 is proved on `S¹` with `Q = K = V = I`, weights **tied across
+  layers**, and **no MLP** — the paper names the last as *"a significant open
+  challenge"* (§6). Pythia has none of those properties.
+
+And the timescale readout keeps its preference for a second, independent
+reason — see §5.1b.
+
+### 5.1b The transfer-operator construction has been built — and it names one thing this phase must NOT copy (2026-09-20)
+
+`2601.02932`, *Data-driven Reduction of Transfer Operators for Particle
+Clustering Dynamics* (Wehlitz, Pavliotis, Schütte, Winkelmann), read as primary
+text: `lit-10.md` §13. **§5.1's construction, built, in a neighbouring field.**
+
+**The architecture to copy.** Perron–Frobenius on particle configurations →
+Galerkin projection onto **discretised concentrations** → Galerkin projection
+onto a **coarse partition of concentration space** → estimate the reduced
+operator from data. Data-driven half: **Diffusion Maps** with the anisotropic
+normalisation (`α = 1`, which removes the sampling-density artifact and leaves
+the intrinsic geometry) → embed → partition by uniform grid or K-means Voronoi
+→ **Ulam's method** transition counts at lag `τ` → implied timescales
+`T_i = −τ/log μ_i`, **PCCA+**, MFPT, transition-path committors.
+
+> **The state is the empirical measure, not the particle.** That is the move
+> §5.1 does not currently make. `cluster_tracking.py` builds transitions between
+> *particle→cluster assignments*; this builds them between *whole
+> configurations*. They are different operators and the plan should say which
+> one it means.
+
+**A validation this project should notice.** They find the metric choice
+decides what the embedding sees, and that a pointwise `L²` distance fails once
+cluster centres drift and merge — *"the `L²`-metric is not suitable, since
+cluster centers may drift and merge … we use the translation-invariant
+Wasserstein distance"*. **That is `PROJECT.md` §3.29's programme reached
+independently and for a measured reason**, and `core/dissipation.py` already has
+`w2_identity`, `w2_optimal`, `sliced_w2`, `wasserstein_arc_length` and
+`straightness` — §5.3 lists them as *built, unrun*.
+
+**And the thing not to copy.** They enforce reversibility with a constrained MLE
+(detailed balance, Eqs. 21–25), and they are entitled to: their particle system
+is a reversible gradient diffusion w.r.t. a Gibbs measure. **A transformer's
+depth dynamics is not reversible** — depth is one-way, the masked flow is only
+*sequentially* gradient (§5.1a), and a split is not the time-reverse of a merge.
+Their §5.1.1 says what to do instead:
+
+> *"For non-reversible processes, one has to analyze its **singular values** and
+> the related singular vectors, or the leading complex-valued eigenvalues and
+> respective elements of the **Schur decomposition**."*
+
+So: **`t_i = −τ/log|μ_i|` still reads; the reversibility-constrained estimator
+must not be transported; PCCA+'s sign-structure argument is the part at risk;
+and the real Schur decomposition — which this repository already has — is the
+named tool.** That closes `math-10.md` §6 thread 4 as a derivation question and
+opens it as an implementation one.
 
 ### 5.2 Transport separates spreading from shuffling, and nothing else here does
 
@@ -568,6 +655,26 @@ anywhere in `PROJECT.md` or `docs/`.
 | `gamma_beta` envelope residual | does the theory's clock predict it | free | `gamma_ode.py`; **gated on §4.6's β decision** |
 | effective rank (normed), PR | capacity | free | `core/metrics.py`; budget claim carries §3-H4's debt |
 | `cluster_count`, `cluster_membership` | what HDBSCAN thinks | cheap | the *weakest* row here; never the primary |
+| **PCA similarity + PCA shift + linear CKA + FIM diagonal**, and **mean PCA distance** as the scalar | representational drift, **and whether it is reversible** | free (probe set) | **added 2026-09-20** from `2505.16831` (ICML 2026), read as primary text; code at `github.com/XiaoyuXU1/Representational_Analysis_Tools` |
+| **relearning arm** (budget matched to the intervened set) | **reversible or not** — the axis that paper says task metrics cannot see | fine-tune | **added 2026-09-20.** Not optional for any Phase 9 forgetting claim; see §6.1 |
+
+**Three notes on the two added rows** (`lit-10.md` §14.2):
+
+1. **They reach for a panel for the reason `CLAIM-C` found the hard way.**
+   *"Relying on PCA similarity alone can obscure subtle effects; employing both
+   avoids overlooking fine-grained distinctions."* `CLAIM-C` returned
+   INSUFFICIENT because its six metrics disagreed (`PROJECT.md` §3.41) —
+   **disagreement among complementary diagnostics is what that panel is designed
+   for**, and one of its four is linear CKA, which is `cka_prev`, the metric
+   that scored 0/8.
+2. **All diagnostics are run on forget / retain / *unrelated* probe sets**, to
+   separate a targeted change from general representational degradation. The
+   matched-control discipline this project already has, one axis wider.
+3. **A closed-form gate on when a PC-direction readout is trustworthy**, via
+   Davis–Kahan: `cos∠(c^orig, c^upd) ≈ 1 − O(‖E‖/(λ_1 − λ_2))` — trustworthy
+   only in proportion to the **eigengap**. This project computes eigengaps
+   everywhere and has never gated a spectral readout on one. It is a
+   `tools/math_checks/` item under `CLAUDE.md`'s rule.
 
 ---
 

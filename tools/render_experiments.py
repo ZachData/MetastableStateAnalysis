@@ -86,6 +86,11 @@ PHASES_WITHOUT_PREDICTIONS = {
     "7d": "UNEXPLAINED — active phase, see the section below.",
     "7e": "UNEXPLAINED — active phase, see the section below.",
     "8": "UNEXPLAINED — active phase, see the section below.",
+    "10": "pre-design and deliberately unregistered. `notes-10.md` §13 states "
+          "it: no construction frozen, no `P-*` id, `claims/registry.json` "
+          "untouched. Its free rows (F0, F1, F11-A0, F12) have RUN, and their "
+          "records under `data/analysis/` are tier 1, exploratory, and not "
+          "quotable as adjudications.",
 }
 
 #: Which `claims/audits/*.json` is a known-answer dry run, as opposed to a

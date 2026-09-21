@@ -326,3 +326,137 @@ def p_from_null(
             "p_m1_attainable_floor."),
     })
     return out
+
+
+def label_permutation_null_within(
+    fixed: np.ndarray,
+    labels: np.ndarray,
+    metric_fn: Callable[[np.ndarray, np.ndarray], float],
+    n_permutations: int = 200,
+    rng: Optional[np.random.Generator] = None,
+    noise_label: int = -1,
+) -> np.ndarray:
+    """
+    `label_permutation_null`, restricted to the NON-NOISE positions.
+
+    The ordinary version permutes labels among all tokens, so it answers "is
+    this labelling special among all relabellings of the same sizes". That is
+    the right question for a cluster-conditioned statistic, and the wrong one
+    the moment the clustered and unclustered populations differ systematically
+    in whatever `fixed` holds -- because then any statistic computed over
+    clusters inherits that difference whole.
+
+    FOUND, not anticipated (2026-09-20). Phase 10's F0 asks whether cluster
+    nuclei are early tokens. Against the ordinary null the answer came back
+    "no, they are systematically LATE". But the same sweep shows clustered
+    tokens sitting later than unclustered ones on average, and if the clustered
+    population as a whole is late then its clusters' earliest members are late
+    for that reason alone, with nothing said about nucleation.
+
+    This null holds the clustered/noise split FIXED and shuffles only which
+    clustered token carries which cluster id. It therefore asks the question
+    F0 actually means: **given which tokens are clustered, are the cluster
+    seeds early?** Run both; they answer different questions and disagreeing is
+    informative rather than a problem.
+
+    Parameters
+    ----------
+    fixed : array held constant across permutations and passed to `metric_fn`
+        as its first argument (positions, activations, a received-attention
+        vector -- whatever the statistic reads).
+    labels : (n_tokens,) int array, ``noise_label`` for unclustered.
+    metric_fn : callable, ``(fixed, labels) -> float``.
+    n_permutations : number of independent restricted permutations.
+    noise_label : the value marking unclustered tokens. Default -1, HDBSCAN's.
+
+    Returns
+    -------
+    (n_permutations,) array of the metric under the restricted null. When
+    fewer than two positions are non-noise there is nothing to permute and the
+    array is filled with the observed value, so a caller's p-value comes back
+    at 1 rather than at a floor -- the same refusal-to-invent-evidence rule
+    `p_from_null_tolerant` follows.
+    """
+    rng = _rng_or(rng)
+    labels = np.asarray(labels)
+    idx = np.flatnonzero(labels != noise_label)
+
+    out = np.empty(n_permutations, dtype=np.float64)
+    if idx.size < 2:
+        out[:] = float(metric_fn(fixed, labels))
+        return out
+
+    for i in range(n_permutations):
+        permuted = labels.copy()
+        permuted[idx] = labels[idx][rng.permutation(idx.size)]
+        out[i] = metric_fn(fixed, permuted)
+    return out
+
+
+def p_from_null_tolerant(
+    observed: float,
+    null_values: np.ndarray,
+    alternative: str = "greater",
+    rtol: float = 1e-9,
+) -> dict:
+    """
+    `p_from_null` with a tie tolerance, for statistics whose null can be
+    DEGENERATE at floating-point resolution.
+
+    WHY THIS EXISTS
+    ---------------
+    `p_from_null` compares draws to the observation with an exact `>=`. That is
+    correct for a continuous statistic, and wrong in one specific and easily
+    missed case: when the statistic cannot actually vary under the null, so
+    every draw equals the observation up to the last few bits of the mantissa,
+    and the comparison is then decided by rounding noise rather than by data.
+
+    FOUND, not anticipated (2026-09-20). Phase 10's row A0 divides the causal
+    mask's structural tilt out of received attention. On a content-free
+    attention matrix the corrected value is exactly 1 at every token, so every
+    permutation of the labels gives an enrichment of exactly 1 -- the honest
+    answer is p = 1, "the labels explain nothing". `p_from_null` instead
+    returned **0.0025, the resolution floor**, because ~1.0 differs from ~1.0
+    in the sixteenth digit and half the draws fell on the convenient side. A
+    perfectly explained layer read as the strongest possible evidence.
+
+    THE RULE
+    --------
+    A draw within ``tol = rtol * scale`` of the observation counts as a TIE and
+    is counted as NOT LESS EXTREME -- it goes into the numerator. That is the
+    conservative direction in every `alternative`: ties raise the p-value, so
+    the failure mode is missing a real effect rather than inventing one. A
+    fully degenerate null snaps entirely onto the observation and returns
+    exactly p = 1, which is the right answer and a loud one.
+
+    ``scale`` is ``max(|observed|, max|draw|, 1.0)``, so the tolerance is
+    relative for large statistics and absolute for ones near zero. The default
+    ``rtol = 1e-9`` sits seven orders above float64 noise and far below any
+    effect this project would call one.
+
+    Adds ``n_ties`` and ``degenerate_null`` to `p_from_null`'s record, so a
+    result that came back p = 1 because nothing could vary is distinguishable
+    afterwards from one that came back p = 1 because the effect was absent.
+    """
+    if rtol < 0.0:
+        raise ValueError(f"rtol must be non-negative; got {rtol!r}")
+
+    draws = np.asarray(null_values, dtype=np.float64)
+    finite = draws[np.isfinite(draws)]
+    if finite.size == 0:
+        # Let p_from_null raise its own message rather than duplicating it.
+        return p_from_null(observed, draws, alternative=alternative)
+
+    scale = max(abs(float(observed)), float(np.max(np.abs(finite))), 1.0)
+    tol = rtol * scale
+    near = np.abs(finite - float(observed)) <= tol
+
+    snapped = draws.astype(np.float64, copy=True)
+    finite_idx = np.flatnonzero(np.isfinite(draws))
+    snapped[finite_idx[near]] = float(observed)
+
+    out = p_from_null(observed, snapped, alternative=alternative)
+    out["n_ties"] = int(near.sum())
+    out["tie_tolerance"] = float(tol)
+    out["degenerate_null"] = bool(near.all())
+    return out

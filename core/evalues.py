@@ -493,6 +493,168 @@ def combine(
     return E, sufficient_evidence(E, alpha)
 
 
+def average(
+    e_values: Sequence[float],
+    alpha: float = DEFAULT_ALPHA,
+    weights: Optional[Sequence[float]] = None,
+) -> Tuple[float, bool]:
+    """
+    ``(E, reject)`` for a set of e-values merged by their (weighted) MEAN --
+    the merger that is valid under ARBITRARY DEPENDENCE.
+
+    WHY THIS EXISTS, AND WHEN IT IS THE ONLY CORRECT CHOICE
+    -------------------------------------------------------
+    `combine` and `EProcess` take the PRODUCT, and a product is an e-value only
+    when each factor is calibrated conditional on everything already seen
+    (`EProcess`'s WARNING). That condition holds for a *sequence* of distinct
+    predictions adjudicated in order. It does NOT hold when one statistic is
+    computed many times over overlapping slices of the same artifacts -- every
+    layer of every prompt of every checkpoint of one sweep -- because those
+    units share a model, a text and a forward pass, and nothing makes unit k
+    conditionally calibrated given units 1..k-1. Multiplying them is the
+    arithmetic form of counting one experiment many times, and it is the
+    easiest way in this codebase to manufacture an enormous E from noise.
+
+    The mean has no such precondition. If each ``e_i`` satisfies ``E[e_i] <= 1``
+    under the null, then by linearity of expectation
+
+        E[ sum_i w_i e_i ]  =  sum_i w_i E[e_i]  <=  sum_i w_i  =  1
+
+    for any non-negative weights summing to 1, **whatever the joint
+    distribution of the e_i**. Linearity does not care about dependence, which
+    is the entire point (Vovk & Wang 2021, "E-values: Calibration, combination
+    and applications", Ann. Statist. 49(3); the arithmetic mean is their
+    essentially admissible symmetric merger for arbitrary dependence).
+
+    The price is power, and it is a real price: the mean cannot exceed the
+    largest e-value it is given, so no amount of weakly-informative units will
+    push it past ``1/alpha``. That is not a defect to work around. A merger
+    that could would be extracting evidence the dependent units do not contain.
+
+    Parameters
+    ----------
+    e_values : sequence of float
+        E-values, each already calibrated and each non-negative. These are
+        e-values, NOT p-values -- pass p-values through `calibrate` first.
+    alpha : float
+        Nominal level; ``reject`` is ``E >= 1 / alpha``.
+    weights : sequence of float, optional
+        Non-negative weights, normalised internally to sum to 1. MUST NOT
+        depend on the e-values: weighting by the data is a selection and voids
+        the bound. Default is uniform.
+
+    Returns
+    -------
+    (E, reject) : (float, bool)
+        The merged e-value and the decision at ``alpha``.
+
+    Raises
+    ------
+    EValueError
+        On an empty sequence, a negative or NaN e-value, a negative or NaN
+        weight, a weight vector of the wrong length, or weights summing to
+        zero. Refusing rather than repairing, for the reason `calibrate`
+        gives: a repaired input yields a number that looks ordinary in the
+        artifact and cannot be told apart later from a real one.
+
+    Notes
+    -----
+    ``math.inf`` among the inputs propagates: the mean of a set containing an
+    infinite e-value is infinite, which is correct and loud.
+    """
+    if not (0.0 < alpha < 1.0):
+        raise EValueError(f"alpha must lie in (0, 1); got {alpha!r}")
+
+    es = [float(e) for e in e_values]
+    if not es:
+        raise EValueError("cannot average an empty set of e-values")
+    for e in es:
+        if math.isnan(e):
+            raise EValueError("e-value is NaN; refusing to average")
+        if e < 0.0:
+            raise EValueError(f"e-values must be non-negative; got {e!r}")
+
+    if weights is None:
+        ws = [1.0] * len(es)
+    else:
+        ws = [float(w) for w in weights]
+        if len(ws) != len(es):
+            raise EValueError(
+                f"weights has length {len(ws)}, e_values has length {len(es)}"
+            )
+        for w in ws:
+            if math.isnan(w) or w < 0.0:
+                raise EValueError(f"weights must be non-negative and finite; got {w!r}")
+
+    total = math.fsum(ws)
+    if not (total > 0.0) or not math.isfinite(total):
+        raise EValueError(f"weights must sum to a positive finite value; got {total!r}")
+
+    if any(math.isinf(e) and w > 0.0 for e, w in zip(es, ws)):
+        return math.inf, True
+
+    # Zero-weight terms are dropped rather than multiplied: 0.0 * inf is NaN,
+    # and a unit the caller excluded should not be able to poison the sum.
+    E = math.fsum(w * e for w, e in zip(ws, es) if w > 0.0) / total
+    return E, sufficient_evidence(E, alpha)
+
+
+def average_p(
+    p_values: Sequence[float],
+    kappa: float = DEFAULT_KAPPA,
+    alpha: float = DEFAULT_ALPHA,
+    weights: Optional[Sequence[float]] = None,
+) -> Tuple[float, bool]:
+    """
+    `average` applied to p-values, calibrating each one first.
+
+    The dependence-robust counterpart of `combine`, and the right default for
+    aggregating one statistic measured across many overlapping slices of the
+    same sweep. See `average` for why the product is wrong there.
+    """
+    return average([calibrate(p, kappa) for p in p_values], alpha=alpha, weights=weights)
+
+
+def max_attainable_average_E(
+    n_permutations: int,
+    kappa: float = DEFAULT_KAPPA,
+    alpha: float = DEFAULT_ALPHA,
+) -> Tuple[float, bool]:
+    """
+    ``(E_max, can_reject)`` -- the largest merged e-value a permutation design
+    with `n_permutations` draws per unit can produce under `average`, and
+    whether that clears ``1 / alpha``.
+
+    WHY A DESIGN NEEDS TO REPORT THIS
+    ---------------------------------
+    `core.nulls.p_from_null`'s docstring draws the distinction this function
+    exists for: ``resolution`` answers "should I draw more?" and never "could
+    this design have rejected?". For a permutation null merged by the mean,
+    the second question has an exact answer, because two bounds compose:
+
+      * a Monte-Carlo p-value cannot go below ``1 / (n_permutations + 1)``, so
+        no single unit's e-value can exceed ``calibrate`` of that floor; and
+      * the arithmetic mean cannot exceed its largest input.
+
+    So ``E_max = calibrate(1 / (n_permutations + 1))``, **whatever the data and
+    however many units are merged.** At the project's defaults that is 10.01 at
+    400 permutations against a rejection threshold of 20 -- a design that could
+    not have rejected if every unit in the sweep had come back maximally
+    extreme. 1 600 draws is the minimum that clears it.
+
+    Phase 10's rows found this the expensive way: row A0's first full run used
+    400 and reported `reject: False` at every checkpoint, which said nothing
+    about the data. Every runner now records `E_max` on the face of its
+    artifact so a reader can tell "no evidence" from "no design".
+    """
+    if n_permutations < 1:
+        raise EValueError(f"n_permutations must be >= 1; got {n_permutations!r}")
+    if not (0.0 < alpha < 1.0):
+        raise EValueError(f"alpha must lie in (0, 1); got {alpha!r}")
+    E_max = calibrate(1.0 / (n_permutations + 1.0), kappa)
+    return E_max, sufficient_evidence(E_max, alpha)
+
+
 def simulate_type_i_error(
     n_trials: int = 20_000,
     n_experiments: int = 5,
@@ -523,3 +685,46 @@ def simulate_type_i_error(
     log_e = math.log(kappa) + (kappa - 1.0) * np.log(p)
     log_E = log_e.sum(axis=1)
     return float(np.mean(log_E >= math.log(1.0 / alpha)))
+
+
+def simulate_type_i_error_dependent(
+    n_trials: int = 20_000,
+    n_experiments: int = 25,
+    alpha: float = DEFAULT_ALPHA,
+    kappa: float = DEFAULT_KAPPA,
+    seed: int = 0,
+    merger: str = "average",
+) -> float:
+    """
+    Empirical Type-I error under MAXIMAL dependence: every experiment in a
+    trial sees the *same* p-value.
+
+    Exists because `average`'s whole justification is that it survives a joint
+    distribution the product cannot, and a justification this project relies on
+    should be measured on this machine rather than cited. The adversarial case
+    is the simplest one: re-measuring a single statistic n times and calling it
+    n experiments, which is exactly the failure mode `average`'s docstring
+    warns about for sweeps.
+
+    ``merger`` is ``"average"`` (the arithmetic mean, arbitrary dependence) or
+    ``"product"`` (what `combine` does). The test suite asserts the first stays
+    at or below ``alpha`` while the second does not, at n_experiments = 25.
+
+    Returns the empirical rejection rate under the null.
+    """
+    import numpy as np
+
+    if merger not in ("average", "product"):
+        raise EValueError(f"merger must be 'average' or 'product'; got {merger!r}")
+
+    rng = np.random.default_rng(seed)
+    # One p-value per trial, repeated n_experiments times: the perfectly
+    # dependent case. Uniform p is valid under the null by construction.
+    p = rng.uniform(size=n_trials)
+    e = kappa * p ** (kappa - 1.0)
+    if merger == "average":
+        E = e                      # the mean of n copies of e is e
+    else:
+        E = e ** n_experiments     # the product of n copies
+    return float(np.mean(E >= 1.0 / alpha))
+
