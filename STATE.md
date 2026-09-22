@@ -39,8 +39,13 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | branch | PR | what | state |
 |---|---|---|---|
 | `claude/float32-tripwire-ci` | #61 | CI flake fix (float32 tripwire at d=1024) | green, awaiting merge |
-| `claude/p10-stage0` | — | Stage 0 timing probe + battery finding in `handoff-10.md` | pushed; PR when Stage 0 lands |
 | `claude/workflow-state-lessons` | #62 | this file, `LESSONS.md`, CLAUDE.md start/stop protocol, lint rule 6 | open |
+| `claude/ci-matrix-and-alerts` | #63 | pure tier on py3.10 + py3.14; nightly-smoke failure opens an issue | CI was pending at handoff: check it |
+| `claude/p10-stage0` | #64 | Stage 0 timing probe + battery finding in `handoff-10.md` | open, docs only |
+
+Suggested merge order: #61, #62, #63, #64 (independent; #62 and #61 both touch
+`PROJECT.md` in different hunks). After merging, confirm each with
+`git merge-base --is-ancestor`.
 
 Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 `claude/aca-phase-9-planning-rvzw3x`, `claude/attention-collapse-augmentation-qsxwg8`.
@@ -55,6 +60,17 @@ Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 
 ## Machine and environments
 
+**Moving to a new machine (2026-09-22).** Everything below is the OLD local box
+(Fedora, `/run/media/system/WDS_500`). On a new box: git has all code and docs;
+**`data/` does not travel with git** — the HF cache (70 GB), the 152 WDS run
+dirs, CLAIM-C's scoreable arms (hashed by `claims/audits/claim_c_real_run.json`),
+the Stage 0 probe `data/phase12/2026-09-22_16-43-47`, and `data/analysis/`'s
+Phase 10 records all live only on the old box (pilot sweep: HDD_1TB). Rebuild
+the conda `mets` env with the exact versions in `p1_mstate_tracking/clustering.py`'s
+toolchain note (py3.10.20, hdbscan 0.8.41, sklearn 1.7.2, numpy 2.2.6), or new
+partitions will not match historical ones. Rewrite this section for the new box.
+
+
 | | |
 |---|---|
 | Repo | `/run/media/system/WDS_500/Mets` (main tree, stays on `main`) |
@@ -63,7 +79,7 @@ Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 | conda `mets` | `/run/media/system/WDS_500/miniforge3/envs/mets/bin/python`. **Anything that runs HDBSCAN** (only install that reproduces historical partitions). Has CUDA; set `CUDA_VISIBLE_DEVICES=""` to match every run on disk (CPU) |
 | Env vars | `HF_HOME=<main>/data/hf HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1 METS_RESULTS_DIR=<main>/data/phase12` |
 | From a worktree | also `METS_REPO=$PWD METS_DATA=<main>/data`, else runners import the main tree's code |
-| Gate | `./scripts/check.sh` (with `.venv` on PATH) → 2616 passed, ~55 s |
+| Gate | `./scripts/check.sh` (with `.venv` on PATH) → 2622 passed, ~55 s |
 | Phase-1 run cost | 410m, CPU, ~400 tokens: ~200 s, ~260 MB per prompt × checkpoint |
 | Disk | 164 GB free on WDS_500 (2026-09-22). `data/` is never `git add`ed |
 
