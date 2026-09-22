@@ -55,15 +55,24 @@ jobs:
         run: ./scripts/check.sh lint
 
   pure:
-    name: tier 1 — pure tests
+    name: tier 1 — pure tests (py${{ matrix.python }})
     runs-on: ubuntu-latest
     needs: lint
+    strategy:
+      # The two interpreters this project actually runs on, not a third one
+      # nobody uses (it was 3.11): 3.10 is the conda `mets` env that produces
+      # the HDBSCAN partitions, 3.14 is `.venv`. LESSONS.md lesson 4 -- a
+      # toolchain difference that CI never exercises is a result that differs
+      # by machine without anything failing.
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.14"]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python }}
           cache: pip
           cache-dependency-path: requirements/*.txt
 

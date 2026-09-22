@@ -19,6 +19,10 @@ concurrency:
   group: smoke-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  issues: write   # the failure-alert step below
+
 jobs:
   smoke:
     name: tier 2 — smoke
@@ -59,3 +63,23 @@ jobs:
         # the phase test suites. Deselecting `heavy` keeps out the tests that
         # need real run artifacts, which no CI runner has.
         run: pytest -m "not heavy" -q
+
+      - name: Open or update an issue when the nightly run fails
+        # Nightly smoke failed 2026-09-19 -> 22 and nobody saw it: a scheduled
+        # run's red lands on no PR and in nobody's view. An open issue is
+        # visible in `gh issue list` and on the repo page, and CLAUDE.md's start
+        # protocol checks for it. One issue, commented on per failure, closed by
+        # hand once fixed -- not one issue per night.
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create nightly-smoke --color B60205 --description "Nightly smoke tier is red" --force
+          n=$(gh issue list --label nightly-smoke --state open --json number -q '.[0].number')
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body "Still failing: $RUN_URL"
+          else
+            gh issue create --label nightly-smoke --title "Nightly smoke tier is failing" \
+              --body "The scheduled smoke run failed: $RUN_URL. Close this once it is green again."
+          fi
