@@ -40,7 +40,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 |---|---|---|---|
 | `claude/float32-tripwire-ci` | #61 | CI flake fix (float32 tripwire at d=1024) | green, awaiting merge |
 | `claude/p10-stage0` | — | Stage 0 timing probe + battery finding in `handoff-10.md` | pushed; PR when Stage 0 lands |
-| `claude/workflow-state-lessons` | — | this file, `LESSONS.md`, CLAUDE.md protocol | in progress |
+| `claude/workflow-state-lessons` | #62 | this file, `LESSONS.md`, CLAUDE.md start/stop protocol, lint rule 6 | open |
 
 Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 `claude/aca-phase-9-planning-rvzw3x`, `claude/attention-collapse-augmentation-qsxwg8`.
