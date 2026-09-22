@@ -333,12 +333,52 @@ def _project_py_files() -> Iterable[Path]:
             yield py
 
 
+# ---------------------------------------------------------------------------
+# Rule 6 — the startup docs stay small enough to be read
+# ---------------------------------------------------------------------------
+
+RULE_6_WHY = """\
+LESSONS.md lessons 1 and 9. PROJECT.md grew to 485 KB (~120k tokens) while
+calling itself the file to read first; too big to read carefully, so stale
+lines in it survived and the next session acted on them. STATE.md replaced its
+resume block as the one startup read, and is printed into every session by a
+hook -- so its size is a per-session token cost, and a cap is what keeps it an
+overwrite-in-place summary rather than a second append-only diary."""
+
+#: (file, max lines, must carry a "Last updated" line)
+DOC_CAPS = (
+    ("STATE.md",  150, True),
+    ("CLAUDE.md", 120, False),
+)
+
+_LAST_UPDATED = re.compile(r"\*\*Last updated:\*\*\s*\d{4}-\d{2}-\d{2}")
+
+
+def rule_startup_doc_caps(lint: Linter) -> None:
+    for name, max_lines, needs_date in DOC_CAPS:
+        path = ROOT / name
+        if not path.is_file():
+            lint.error("startup-doc-cap", path, 0, "missing; CLAUDE.md's start protocol reads it")
+            continue
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if len(lines) > max_lines:
+            lint.error(
+                "startup-doc-cap", path, max_lines + 1,
+                f"{len(lines)} lines, cap {max_lines}: move detail to the file it "
+                f"belongs in and point to it, rather than trimming facts",
+            )
+        if needs_date and not any(_LAST_UPDATED.search(l) for l in lines[:10]):
+            lint.error("startup-doc-cap", path, 1,
+                       "no '**Last updated:** YYYY-MM-DD' in the first 10 lines")
+
+
 RULES = [
     ("orphan-module",         rule_no_orphan_modules,        RULE_1_WHY),
     ("test-tier-marker",      rule_test_tier_markers,        RULE_2_WHY),
     ("hand-synced-constant",  rule_no_hand_synced_constants, RULE_3_WHY),
     ("stale-status",          rule_status_doc_staleness,     RULE_4_WHY),
     ("threshold-provenance",  rule_threshold_provenance,     RULE_5_WHY),
+    ("startup-doc-cap",       rule_startup_doc_caps,         RULE_6_WHY),
 ]
 
 

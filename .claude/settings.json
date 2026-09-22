@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"$CLAUDE_PROJECT_DIR/STATE.md\" 2>/dev/null || echo 'STATE.md missing: say so before starting work (CLAUDE.md, Start step 1).'"
+          }
+        ]
+      }
+    ]
+  }
+}

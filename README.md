@@ -120,7 +120,9 @@ session is `PROJECT.md` → `INDEX.md` → the phase you are about to touch.
 | Question | File |
 |---|---|
 | What is this, in plain English, no cross-references | [`OVERVIEW.md`](OVERVIEW.md) |
-| **Where does the work stand, what is blocking, what is registered, how do I reproduce a number** | [`PROJECT.md`](PROJECT.md) — **read first** |
+| **Where does the work stand right now, what is blocking** | [`STATE.md`](STATE.md) — **read first** |
+| **What went wrong before, and the rule it produced** | [`LESSONS.md`](LESSONS.md) |
+| **What is registered, how do I reproduce a number, the full history** | [`PROJECT.md`](PROJECT.md) |
 | Which phase lives in which directory; what is archived; what is referenced but absent | [`INDEX.md`](INDEX.md) |
 | The working agreements (handoff cadence, PR size, when to scan the literature, checking math) | [`CLAUDE.md`](CLAUDE.md) |
 | The six claims and what adjudicates each | [`claims/CLAIMS.md`](claims/CLAIMS.md) |

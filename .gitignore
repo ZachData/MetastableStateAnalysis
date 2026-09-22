@@ -22,6 +22,8 @@
 !*.ini
 !*.yml
 !*.yaml
+# The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
+!.claude/settings.json
 !*.sh
 !requirements/*.txt
 

@@ -1,7 +1,13 @@
 <!-- PROJECT.md -->
 # PROJECT — the living state of this repository
 
-The file to read first, and the one to keep current. It answers: what machine
+> **2026-09-22: this is now the RECORD, not the startup file.** Start from
+> **`STATE.md`** (≤ 150 lines, printed at session start). The "Resume here"
+> blocks below are frozen history — `CLAUDE.md`'s stop protocol no longer
+> edits them. New project-wide results still land here as §3.x sections.
+> At ~485 KB, grep this file; do not read it whole (`LESSONS.md` lesson 9).
+
+The long-form record. It answers: what machine
 this runs on, where the work stands, what is blocking, what has been registered
 and may not be re-decided, and how to reproduce anything.
 

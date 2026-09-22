@@ -1,8 +1,8 @@
 <!-- OVERVIEW.md -->
 # What this project is, and where it stands
 
-This is the plain-English companion to `PROJECT.md`, which is the file to read if you
-need to actually run something. This one is for understanding what's going on and why,
+This is the plain-English companion to `STATE.md` (where the work stands now) and
+`PROJECT.md` (the long-form record, and how to run things). This one is for understanding what's going on and why,
 without the cross-references and machine-checkable detail. It's a snapshot as of
 September 2026 — the technical files are the ones that stay current day to day.
 
