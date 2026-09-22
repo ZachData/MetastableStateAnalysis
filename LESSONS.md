@@ -168,6 +168,10 @@ table row would do, and results re-narrated in several places.
 **The rule now.** `STATE.md` is the only startup read; everything else is
 opened on demand. Numbers go in tables; one claim per line; a result is written
 once and pointed to. Grep large files, don't read them. Status: 📋 + ✅ cap.
+2026-09-22: `docs/index/` gives `PROJECT.md` and `POPPER_PLAN.md` a line-range
+index (✅ `--check` in `check.sh`). `scripts/hooks/guard_large_read.py` refuses an
+unbounded `Read` of any doc over 40 KB (⚠️ not yet registered in
+`.claude/settings.json`; that needs the user). Basis: `docs/agent_context_scan_2026-09-22.md`.
 
 ## 10. Tangents: interesting findings that hijack the plan
 

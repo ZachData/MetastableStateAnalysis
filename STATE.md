@@ -35,13 +35,16 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    (#57, #58). Enabling "require CI to pass" is a GitHub setting.
 4. **Where Stage 0 and all data work run.** Not this container: no Hugging Face,
    22 GB free, ephemeral (Machine section). Options: the old box as before, or a
-   persistent box with ≥ 120 GB free and HF access. Data plan: the PR from branch `claude/metastable-machine-setup-685wsl`.
+   persistent box with ≥ 120 GB free and HF access. Data plan: PR #65's description.
+5. **Register the large-read hook.** `scripts/hooks/guard_large_read.py` is built and
+   tested; wiring it into `.claude/settings.json` (PreToolUse, matcher `Read`) was
+   refused to Claude as self-modification. Snippet: PR #65's description.
 
 ## Open PRs and branches
 
-None open. #61–#64 merged 2026-09-22; `main` CI run 502 (`c7a5864`) green on
+#65 (`claude/metastable-machine-setup-685wsl`): this machine's setup + the token
+work below. #61–#64 merged 2026-09-22; `main` CI run 502 (`c7a5864`) green on
 tier 0, py3.10 and py3.14. Nightly smoke last red 2026-09-22 (Blocked item 2).
-This session's branch: `claude/metastable-machine-setup-685wsl` (this section).
 
 Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 `claude/aca-phase-9-planning-rvzw3x`, `claude/attention-collapse-augmentation-qsxwg8`.
@@ -52,6 +55,7 @@ Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 - e-value audit: complete, 39 registered predictions, zero e-values — §3.45.
 - Phase 10 free rows (tier 1): attention flip ~94 % causal mask; F0 fails; identity coupling optimal 99.5 %; HDBSCAN partition not reproducible (ARI p5 0.347) — `status-10.md`.
 - Literature: five papers read as primary text — `lit-10.md` §11–15, `PROJECT.md` §3.52.
+- Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, item 5). Next: A3 split `handoff-10.md` by stage; A4 Stop protocol → skill, claims rules → path rule.
 - Registry: untouched since the audit. Nothing in Phase 10 is registered.
 
 ## Machine and environments
@@ -93,6 +97,6 @@ plus `METS_REPO=$PWD METS_DATA=<main>/data` from a worktree; 164 GB free; Phase-
 | Phase → directory | `INDEX.md` |
 | Phase detail, numbers, how to re-run | `<phase>/status-N.md` |
 | Scoped plan for the active thread | `p10_cluster_function/handoff-10.md` |
-| History, reasoning, the §3.x record | `PROJECT.md` (large — grep, don't read) |
+| History, reasoning, the §3.x record | `PROJECT.md` via `docs/index/PROJECT.idx.md` (line ranges; never read whole) |
 | Registered predictions | `claims/registry.json`, `PREDICTIONS.md` |
 | What went wrong and the rule it produced | `LESSONS.md` |

@@ -122,6 +122,9 @@ long-form record behind it.**
   `p7d_redundancy/` (redundancy catalogue, both open axes closed 2026-09-10) and
   `p7e_consolidation/` (`L11H14`; whether the set collapses into one head). Read
   their `status-7d.md` / `status-7e.md`, then `PROJECT.md` §3.12-V.
+- **`docs/index/`** (2026-09-22) — generated line-range indexes of `PROJECT.md` and
+  `POPPER_PLAN.md` (`tools/build_doc_index.py`; `--check` in `check.sh`). Read a
+  section by `offset`/`limit`, never the whole file. Why: `docs/agent_context_scan_2026-09-22.md`.
 - **Literature review, per phase, 2026-09-16** — **`docs/LITERATURE.md`** is the
   index; **`<phase>/lit-N.md`** is the review, and **every phase now has one**. Leads,
   not readings: `arxiv.org` and every other scholarly host are blocked by the session

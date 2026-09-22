@@ -29,7 +29,8 @@ below exists.
 - **Name the input.** A recorded result states the exact input set (battery
   hash, key list, env) it ran on.
 - **Write once.** A number lives in one file; others point to it. Tables over
-  paragraphs, one claim per line. Grep `PROJECT.md`; never read it whole.
+  paragraphs, one claim per line. For `PROJECT.md` and `POPPER_PLAN.md`, open
+  `docs/index/<name>.idx.md` and read one section by line range; never read them whole.
 - **Math.** Closed-form claims get a `sympy` check in `tools/math_checks/`,
   noting what it does *not* prove. Empirical numbers get their producer re-run
   (`PROJECT.md` §7).
