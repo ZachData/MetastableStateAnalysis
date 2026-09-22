@@ -307,12 +307,21 @@ class TestDecompositionPrecision:
     depended on where in the matrix it landed — Phase 7 refused step 2 of
     the registered sweep and accepted steps 1 and 4 on projectors that were
     equally non-idempotent.
+
+    Why d = 1024, the width the defect was measured at. float32 roundoff in
+    P@P - P grows with d, and at d = 128 it sits ON the tolerance rather
+    than above it: across 8 seeds, OpenBLAS kernels Prescott / Sandybridge /
+    Haswell / Zen and 1 or 4 threads it spans 6.3e-07 .. 1.4e-06, and the
+    GitHub runner drew 8.6e-07 — so the tripwire below fired on the host's
+    BLAS, not on anything in this repository. At d = 1024 the same sweep
+    gives float32 3.3e-06 .. 5.1e-06 (>= 3.3x clear of PROJECTOR_TOL) and
+    float64 ~2e-15. What that sweep does NOT prove: a BLAS outside those
+    kernels could land lower; the margin is measured, not derived.
     """
 
-    def _projector(self, dtype):
+    def _projector(self, dtype, d=1024):
         from scipy.linalg import schur
         rng = np.random.default_rng(0)
-        d = 128
         A = (rng.standard_normal((d, d)) / np.sqrt(d)).astype(dtype)
         _, Z = schur(A, output="real")
         Zs = Z[:, : d // 2]
@@ -361,8 +370,8 @@ class TestDecompositionPrecision:
         accepted or refused depending on where it sits relative to |P|.
         float32 lands in exactly that band and float64 does not, which is
         the whole difference: one is decided by placement, the other by
-        margin. Asserting a flat refusal for float32 would be wrong — at
-        d=128 it is accepted, at d=1024 on real weights step 2 was not.
+        margin. Asserting a flat refusal for float32 would be wrong — on
+        real d=1024 weights steps 1 and 4 were accepted and step 2 was not.
         """
         from core.interactions import PROJECTOR_TOL
         f32 = np.abs(np.subtract(*(lambda P: (P @ P, P))(self._projector(np.float32)))).max()
