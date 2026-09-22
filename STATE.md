@@ -40,7 +40,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 |---|---|---|---|
 | `claude/float32-tripwire-ci` | #61 | CI flake fix (float32 tripwire at d=1024) | green, awaiting merge |
 | `claude/workflow-state-lessons` | #62 | this file, `LESSONS.md`, CLAUDE.md start/stop protocol, lint rule 6 | open |
-| `claude/ci-matrix-and-alerts` | #63 | pure tier on py3.10 + py3.14; nightly-smoke failure opens an issue | CI was pending at handoff: check it |
+| `claude/ci-matrix-and-alerts` | #63 | pure tier on py3.10 + py3.14; nightly-smoke failure opens an issue | py3.14 green; py3.10 hit the known float32 flake (8.64e-07, fixed by #61). Merge #61 first, then re-run #63 |
 | `claude/p10-stage0` | #64 | Stage 0 timing probe + battery finding in `handoff-10.md` | open, docs only |
 
 Suggested merge order: #61, #62, #63, #64 (independent; #62 and #61 both touch
