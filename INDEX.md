@@ -3,7 +3,8 @@
 
 **This file is the structural map: which phase lives in which directory, what is
 archived, and what is referenced but absent. It is not the current state of the
-work — that is `PROJECT.md`, which is the file to read first.**
+work — that is `STATE.md`, which is the file to read first; `PROJECT.md` is the
+long-form record behind it.**
 
 ## Current priority (updated 2026-09-20)
 
