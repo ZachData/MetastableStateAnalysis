@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > remains authoritative for everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-20. **First action: Stage 0, more prompts.**
+**Last updated:** 2026-09-22 — Stage 0 probed and timed; check 1 (battery hash) cannot pass as written, decision open in §0.2. **First action: Stage 0, more prompts.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -135,6 +135,36 @@ lengths: `hdbscan_code` 242, `paper_excerpt` 286, `latex_monograph` 446,
 anywhere in the tree. `data/phase12/claim_c_logs/` holds per-prompt timing for
 the `CLAIM-C` arms and is the nearest reference. **Time one prompt × one
 checkpoint and multiply** rather than launching 228 runs on an estimate.
+
+> **Measured 2026-09-22 — and the paragraph above was wrong about timing.**
+> Every `manifest.json` carries `wall_time_seconds`: the 152 WDS directories
+> took **median 116 s, 43–400 s, 5.8 h in total**, all `device: cpu`, run from a
+> container (`experiment.txt` shows `/mnt/mets/...`) before HDBSCAN was present.
+> **Probe:** `wiki_byzantium` × `step143000` in the conda `mets` env with
+> `CUDA_VISIBLE_DEVICES=""` (CPU, matching every run on disk) — **203 s in the
+> manifest, 3 min 51 s with model load, 3.2 GB RSS, ~4.7 cores, 264 MB on disk
+> at 403 tokens.** Kept at `data/phase12/2026-09-22_16-43-47` (log in
+> `data/phase12/stage0_logs/timing_probe.log`). Checks 2 and 3 pass on it:
+> battery hash `06790b90dcfe`, `hdbscan_labels.json` populated (25 layers,
+> 41–49 clusters), `pair_agreement` populated per layer with real mutual pairs.
+>
+> **Token counts, pythia tokenizer:** the 12 new prompts are 190–614 tokens
+> (`latex_article` 614, `scipy_linkage_code` 527); the old 8 are 242–562.
+> Scaling the probe by n² for attention and n for activations: **12 new × 19 =
+> ~57 GB** (~33 GB without the plateau duplicate); **re-running the old 8 × 19
+> under v2 would add ~43 GB**. Either fits in 164 GB **without taking §5.1b's
+> duplication decision**, so Stage 0 does not force it.
+>
+> **Check 1 cannot pass as written.** All 152 WDS directories are battery
+> **v1, `1e47918ef77a`**; a new run writes **v2, `06790b90dcfe`**, and this
+> module's own docstring says *"a v2 run is comparable only with other v2
+> runs"*. What *is* established: **v1's nine texts are byte-identical inside
+> v2** — `compute_prompt_battery_hash(v2 minus the twelve, "v1")` reproduces
+> `1e47918ef77a` exactly. **Open, for the user:** run only the 12 (8 v1 + 12 v2
+> directories, comparability resting on that text identity and on two
+> toolchains), or all 20 under v2 in one install (one hash, native partition and
+> native `pair_agreement` throughout — which also retires §1.2's zeroed WDS
+> record). **Nothing beyond the probe has been launched.**
 
 ### 0.3 How to run it
 
