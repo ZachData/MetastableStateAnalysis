@@ -20,6 +20,9 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-09-22: STATE.md's move note planned for a new *local* box (rebuild conda,
+  re-download HF cache). The new box was a cloud container where conda channels
+  and `huggingface.co` are blocked and 22 GB is free. Check the box before planning for it.
 - 2026-09-22: the handoff said PR #60 was open (it had merged), that "no
   Phase-1 timing exists anywhere" (every `manifest.json` has
   `wall_time_seconds`), and set a battery-hash check that could not pass
@@ -92,17 +95,20 @@ set it ran on (battery hash, key list) and refuses on a mismatch. Status:
   a fix. Fixed in #61 by testing at d=1024, where the margin is ≥ 3.3×.
 - `238b503`: tier 0 went red because a module imported numpy at scope — passed
   on every dev machine, all of which have numpy.
-- CI runs Python 3.11; the local envs are 3.14 (`.venv`) and 3.10 (conda). CI
-  tests an interpreter nobody uses.
+- CI ran Python 3.11; the local envs are 3.14 (`.venv`) and 3.10 (conda). Fixed
+  by #63 (matrix py3.10 + py3.14).
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
-it. Status: 📋; ⚠️ CI Python matrix not yet changed.
+it. Status: 📋; ✅ CI matrix matches the local interpreters (#63).
 
 ## 5. Nobody watches CI, and nothing stops a red merge
 
 **Instances.** `main` has **no branch protection**. #57 and #58 were merged
 with CI red. Nightly smoke failed 2026-09-19 → 22 unnoticed.
+
+2026-09-22: #63 (the py3.10 matrix) merged without the re-run STATE.md asked
+for after #61; the first py3.10 run with #61 in was on `main` itself (green).
 
 **The rule now.** At session start, check `gh run list` for `main` and the
 nightly smoke. Status: 📋 `CLAUDE.md` start protocol; ⚠️ branch protection
