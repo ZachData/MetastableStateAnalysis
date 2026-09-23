@@ -107,6 +107,11 @@ it. Status: 📋; ✅ CI matrix matches the local interpreters (#63).
 **Instances.** `main` has **no branch protection**. #57 and #58 were merged
 with CI red. Nightly smoke failed 2026-09-19 → 22 unnoticed.
 
+2026-09-22: **CodeRabbit reviewed nothing from #50 to #68.** Every PR carried
+its notice "does not receive automatic reviews because it has fewer than 10
+stars", while `CLAUDE.md` said "CodeRabbit reviews PRs". Found by `/challenge-pr`
+on #68. Rule: comment `@coderabbitai review` on every PR (Stop step 8).
+
 2026-09-22: #63 (the py3.10 matrix) merged without the re-run STATE.md asked
 for after #61; the first py3.10 run with #61 in was on `main` itself (green).
 

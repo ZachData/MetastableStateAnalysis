@@ -7,7 +7,8 @@ context: fork
 agent: general-purpose
 background: false
 effort: high
-allowed-tools: Bash(gh *) Bash(git *) Bash(ls *) Bash(grep *) Bash(python *) Bash(python3 *) Read Grep Glob Write
+allowed-tools: Bash(gh pr view *) Bash(gh pr diff *) Bash(gh pr comment *) Bash(gh run list *) Bash(gh run view *) Bash(git fetch *) Bash(git show *) Bash(git log *) Bash(git diff *) Bash(git grep *) Bash(git rev-parse *) Bash(ls *) Bash(grep *) Read Grep Glob
+disallowed-tools: Edit NotebookEdit
 ---
 
 # Challenge PR #$pr
@@ -17,14 +18,18 @@ have none of the author's reasoning, only what the PR says about itself and
 what the repository shows. That is deliberate: the job is to catch what the
 author could not see because they already believed the design was right.
 
-CodeRabbit already reviews line by line. **Do not duplicate it.** Your subject
-is **intent and choice**: was this the right thing to build, built the right
-way, and does it do what it claims?
+Your subject is **intent and choice**: was this the right thing to build,
+built the right way, and does it do what it claims? **Do not assume anyone
+else has checked the lines.** CodeRabbit reviews this repo only when triggered
+(fewer than 10 stars: no automatic reviews), so a line-level defect you
+notice on the way is in scope. Report it rather than leaving it to someone else.
 
 ## The PR, as it describes itself
 
-!`gh pr view $pr --json number,title,author,headRefName,baseRefName,body,additions,deletions,commits --template '#{{.number}} {{.title}}  ({{.headRefName}} -> {{.baseRefName}}, +{{.additions}}/-{{.deletions}}, {{len .commits}} commits)
-{{.body}}'`
+!`gh pr view $pr --json number,title,headRefName,headRefOid,baseRefName,additions,deletions --template '#{{.number}} {{.title}}  ({{.headRefName}} -> {{.baseRefName}}, +{{.additions}}/-{{.deletions}})
+HEAD UNDER REVIEW: {{.headRefOid}}'`
+
+!`gh pr view $pr --json body --jq .body | awk '/^## Worth challenging/{skip=1; print "## Worth challenging\n(withheld until you have written your own alternatives -- step 3)"; next} /^## /{skip=0} !skip'`
 
 ## Files touched
 
@@ -44,8 +49,15 @@ One line each on what each costs and what it risks. This is what makes the
 review adversarial rather than a read-through: once you have seen the author's
 design you will anchor on it.
 
-**3. Now read the diff** (`gh pr diff $pr`; for a large one, read file by file)
-and the code around it. Answer:
+**3. Now read the author's doubts, then the diff.** First the full description
+(`gh pr view $pr`, including "Worth challenging"). Note where the author's
+doubts match yours and where they missed one. Then the diff (`gh pr diff $pr`).
+
+**Read the PR's code, never the working tree**: the tree you are in may be
+`main` or another branch. `git fetch origin pull/$pr/head` once, then
+`git show FETCH_HEAD:<path>` for any file; check `git rev-parse FETCH_HEAD`
+equals the HEAD UNDER REVIEW above. Never check out, reset or switch; this
+tree may be the author's, mid-work. Answer:
 - Does it do what the description claims? List every gap between claim and
   implementation, with `file:line`.
 - Which of your alternatives did it pick, or is it a fourth? Steelman it
@@ -74,11 +86,11 @@ ones most often broken:
 
 ## Output
 
-Post exactly one comment on the PR with `gh pr comment $pr --body-file <file>`
-(write the file in your scratchpad or `/tmp`), in this shape:
+Post exactly one comment on the PR with `gh pr comment $pr --body-file -`,
+feeding the body on stdin (a heredoc), in this shape:
 
 ```
-## Adversarial review (fresh context, /challenge-pr)
+## Adversarial review (fresh context, /challenge-pr) — reviewed at `<HEAD UNDER REVIEW, 7 chars>`
 
 **Verdict:** accept | accept with changes | rethink — one sentence why.
 
@@ -104,5 +116,8 @@ review. Aim for a few findings you can stand behind, not a long list. Explain
 the reasoning behind each finding, not only the conclusion: the user reads
 these to learn the trade-offs.
 
-**Do not** edit files, push, approve, request changes or merge. Your only
-write is the one comment. Return the comment's URL and the verdict line.
+**Do not** edit or create files, push, approve, request changes or merge.
+Your only write is the one comment. The tool list above enforces most of this
+(no `Edit`, no `Write`, only read-only `git`/`gh` subcommands plus
+`gh pr comment`). Any other command asks the user for approval first; do not
+ask for one that writes. Return the comment's URL and the verdict line.
