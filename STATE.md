@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-23 (#69 review follow-up) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-23 (#72 merged; Stage 0 chunk 1 done) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -16,13 +16,14 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | | |
 |---|---|
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
-| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 was started 2026-09-22 21:20 and killed: no runs done** (no `stage0_index.json`; 4 orphaned step143000 dirs in `data/phase12/2026-09-22_21-20-26`, which `status` counts and readers must not glob). Runbook `handoff-10.md` §0.3 |
+| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 not started.** Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
 | Next after it | Stage 1: `ext_sem_threshold` sweep, then the token-composition table |
 
 ## Blocked on the user
 
-1. **Relaunch Stage 0 chunk 1** (`handoff-10.md` §0.3) from `../Mets-stage0`
-   at pin `64a4087`.
+1. **Launch Stage 0 chunk 2** (chunk 1 ended 10:31; still check `pgrep` first):
+   `handoff-10.md` §0.3's chunk-2 block (same pin, `flock`, optional
+   `systemd-inhibit`).
 2. **P-I5 runs on whatever battery is current.** `p7_motifs/p_i5_ablation.py`
    iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the
    8 its calibration record used. Nightly smoke red since 2026-09-19 because
@@ -36,12 +37,16 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-`claude/archive-followup`: fixes from `/challenge-pr` on #69. **`main` CI red since #69
-merged (`6ab3508`, `84ed1b1`)**: its own new test failed; this PR fixes it. #69, #71 merged 2026-09-23.
-Nightly smoke last red 2026-09-22 (Blocked item 2). Current state: `./scripts/status.sh`.
+#73 `claude/stage0-chunk1`: Stage 0 chunk 1 status (this update). #72 (fix for main's
+red test from #69, plus #69's review answers), #71, #69 merged 2026-09-23; main CI
+green on `fb06944`. `../Mets-work` and `claude/archive-followup` removed; 6 merged
+remote branches deleted 2026-09-23. Nightly smoke red (Blocked item 2).
+Current state: `./scripts/status.sh`.
 
-Superseded remote branches, safe to delete: `claude/p10-free-rows`,
-`claude/aca-phase-9-planning-rvzw3x`, `claude/attention-collapse-augmentation-qsxwg8`.
+**For a decision: 3 remote branches fail `merge-base --is-ancestor`**, so not deleted:
+`claude/p10-free-rows`, `claude/aca-phase-9-planning-rvzw3x` (content merged via
+#58/#59; only merge commits remain), `claude/attention-collapse-augmentation-qsxwg8`
+(`cf5f7ee`'s notes carried into main by `d282bfb`; main's `notes-9.md` is a superset).
 
 ## Where things stand (one line each; detail behind the pointer)
 

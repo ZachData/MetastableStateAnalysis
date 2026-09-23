@@ -204,11 +204,41 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > first chunk starts.
 >
 > **2026-09-22:** run tree created at `64a4087` (the #68 merge, which carries
-> #67), so **`$PIN` = `64a4087`**. Chunk 1 started 21:20 and was killed; no
-> invocation finished, so `stage0_index.json` was never written and no run
-> counts. It left 4 orphaned `step143000` directories in
-> `data/phase12/2026-09-22_21-20-26` (no `pair_agreement.json`) — exactly the
-> case the index exists for. Relaunch with the same commands.
+> #67), so **`$PIN` = `64a4087`**. Chunk 1 started 21:20 (pid 13350; 144 runs
+> in 29 invocations).
+>
+> **2026-09-23 correction:** chunk 1 was **not** killed. The box suspended
+> 21:52:45–05:13:37 (`journalctl`, "PM: suspend exit"); the process froze and
+> resumed, and the invocation spanning the suspend finished `rc 0, 5/5`. The
+> earlier note read a paused process as a dead one. At 07:30, **65 runs
+> indexed** in 13 invocation dirs, all populated (every `hdbscan_labels.json`
+> non-empty with real clusters, e.g. step143000 homer_iliad layer 12: labels
+> −1…10 over 512 tokens; every `pair_agreement.json` mostly non-zero). The
+> `2026-09-22_21-20-26` directories are complete and indexed, not orphans.
+> **The budget is awake time**: `_run_chunk` uses `time.monotonic()`, which
+> Linux stops during suspend, so the hard stop moved from 07:20 to ≈ 14:41. At
+> ~10 min per invocation it should finish all 144 ≈ 10:30. **It did: `chunk
+> end` at 10:31:52, 29/29 invocations `rc 0`, 144 runs indexed, every
+> `hdbscan_labels.json` and `pair_agreement.json` non-empty.** Runs are faster
+> than the probe estimate, so chunk 2's `plan` (which re-fits) may take more
+> than 144 and Stage 0 may need 2 chunks, not 3.
+>
+> **Chunk 2 and later: launch only when no driver is alive.** The log's last
+> line is not enough: a driver that dies abnormally writes no stop line, and a
+> suspended one looks stalled. Chunk 1 holds no lock, so `pgrep` is the guard
+> for it; `flock` guards every chunk from 2 on. `systemd-inhibit` holds off
+> suspend only while the command runs (no machine setting changes); drop it
+> if you want the box to sleep.
+>
+> ```bash
+> pgrep -af 'tools.run.stage0_chunk' && echo "DRIVER ALIVE: do not launch"
+> tail -3 $METS_RESULTS_DIR/stage0_logs/chunk_*.log   # expect a stop line
+> $PY -m tools.run.stage0_chunk --pin $PIN plan       # 380 − done left
+> nohup systemd-inhibit --what=sleep:idle --why=stage0 \
+>   flock -n $METS_RESULTS_DIR/stage0_logs/.driver.lock \
+>   $PY -m tools.run.stage0_chunk --pin $PIN run --budget-hours 10 \
+>   > /dev/null 2>&1 &
+> ```
 
 The original single-run instructions, from the main tree, with the environment from `archive/PROJECT-start-here.md`:
 
@@ -532,12 +562,6 @@ before it.
 
 ## Parked
 
-- **Stale remote branches beyond `STATE.md`'s list** (found 2026-09-22, archive
-  batch): `claude/ci-matrix-and-alerts`, `claude/claim-c-arms`,
-  `claude/float32-tripwire-ci`, `claude/metastable-machine-setup-685wsl`,
-  `claude/p10-literature-read`, `claude/p10-stage0` are still on `origin`. Why:
-  may be merged leftovers. Cost: one `merge-base` check each. Changes: only
-  which branches are safe to delete.
 - **`lit-8.md` never cites `literature-8.md`** (found in the same batch): the
   later leads-only file does not know the earlier fetched readings exist. Why:
   a reader of `lit-8.md` misses 18 verified ids. Cost: one line. Changes:
