@@ -16,13 +16,13 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | | |
 |---|---|
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
-| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 RUNNING since 2026-09-22 21:20** (pid 13350). It was never killed: the box suspended overnight and the process resumed. First-output check passed. Progress, expected end and the awake-time budget: `handoff-10.md` §0.3 (the runbook) |
+| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 not started.** Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
 | Next after it | Stage 1: `ext_sem_threshold` sweep, then the token-composition table |
 
 ## Blocked on the user
 
-1. **Launch Stage 0 chunk 2** once no driver is alive (`pgrep`, not just the
-   log): `handoff-10.md` §0.3's chunk-2 block (same pin, `flock`, optional
+1. **Launch Stage 0 chunk 2** (chunk 1 ended 10:31; still check `pgrep` first):
+   `handoff-10.md` §0.3's chunk-2 block (same pin, `flock`, optional
    `systemd-inhibit`).
 2. **P-I5 runs on whatever battery is current.** `p7_motifs/p_i5_ablation.py`
    iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the

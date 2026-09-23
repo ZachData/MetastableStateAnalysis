@@ -217,7 +217,9 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > `2026-09-22_21-20-26` directories are complete and indexed, not orphans.
 > **The budget is awake time**: `_run_chunk` uses `time.monotonic()`, which
 > Linux stops during suspend, so the hard stop moved from 07:20 to ≈ 14:41. At
-> ~10 min per invocation it should finish all 144 ≈ 10:30. Runs are faster
+> ~10 min per invocation it should finish all 144 ≈ 10:30. **It did: `chunk
+> end` at 10:31:52, 29/29 invocations `rc 0`, 144 runs indexed, every
+> `hdbscan_labels.json` and `pair_agreement.json` non-empty.** Runs are faster
 > than the probe estimate, so chunk 2's `plan` (which re-fits) may take more
 > than 144 and Stage 0 may need 2 chunks, not 3.
 >
