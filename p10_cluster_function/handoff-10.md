@@ -211,13 +211,32 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > 21:52:45–05:13:37 (`journalctl`, "PM: suspend exit"); the process froze and
 > resumed, and the invocation spanning the suspend finished `rc 0, 5/5`. The
 > earlier note read a paused process as a dead one. At 07:30, **65 runs
-> indexed**, all populated (every `hdbscan_labels.json` non-empty with real
-> clusters; every `pair_agreement.json` 130 values, 73–108 non-zero). The
+> indexed** in 13 invocation dirs, all populated (every `hdbscan_labels.json`
+> non-empty with real clusters, e.g. step143000 homer_iliad layer 12: labels
+> −1…10 over 512 tokens; every `pair_agreement.json` mostly non-zero). The
 > `2026-09-22_21-20-26` directories are complete and indexed, not orphans.
 > **The budget is awake time**: `_run_chunk` uses `time.monotonic()`, which
 > Linux stops during suspend, so the hard stop moved from 07:20 to ≈ 14:41. At
-> ~10 min per invocation it should finish all 144 ≈ 10:30. Chunk 2: same
-> commands, once chunk 1's log shows it stopped; `plan` should report 236 left.
+> ~10 min per invocation it should finish all 144 ≈ 10:30. Runs are faster
+> than the probe estimate, so chunk 2's `plan` (which re-fits) may take more
+> than 144 and Stage 0 may need 2 chunks, not 3.
+>
+> **Chunk 2 and later: launch only when no driver is alive.** The log's last
+> line is not enough: a driver that dies abnormally writes no stop line, and a
+> suspended one looks stalled. Chunk 1 holds no lock, so `pgrep` is the guard
+> for it; `flock` guards every chunk from 2 on. `systemd-inhibit` holds off
+> suspend only while the command runs (no machine setting changes); drop it
+> if you want the box to sleep.
+>
+> ```bash
+> pgrep -af 'tools.run.stage0_chunk' && echo "DRIVER ALIVE: do not launch"
+> tail -3 $METS_RESULTS_DIR/stage0_logs/chunk_*.log   # expect a stop line
+> $PY -m tools.run.stage0_chunk --pin $PIN plan       # 380 − done left
+> nohup systemd-inhibit --what=sleep:idle --why=stage0 \
+>   flock -n $METS_RESULTS_DIR/stage0_logs/.driver.lock \
+>   $PY -m tools.run.stage0_chunk --pin $PIN run --budget-hours 10 \
+>   > /dev/null 2>&1 &
+> ```
 
 The original single-run instructions, from the main tree, with the environment from `archive/PROJECT-start-here.md`:
 
@@ -551,9 +570,3 @@ before it.
   later leads-only file does not know the earlier fetched readings exist. Why:
   a reader of `lit-8.md` misses 18 verified ids. Cost: one line. Changes:
   nothing measured.
-- **Idle suspend during chunks** (found 2026-09-23, chunk 1): the box
-  suspended 32 min into chunk 1, for 7 h 21 m. Why: a suspend costs wall-clock time
-  (the awake-time budget stretches past the block the machine is free) and an
-  invocation straddles it. Cost: prefix the `nohup` line with
-  `systemd-inhibit --what=sleep:idle --why=stage0`. Changes: when chunks end,
-  not what they produce.
