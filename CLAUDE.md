@@ -61,8 +61,25 @@ Do these without being asked, in this order, in the same commit as the work:
    `~/.claude/projects/<project>/<session>.jsonl`). Over 2× the running median
    total context → add a line saying why.
 8. Run `./scripts/check.sh` (it includes the doc caps), commit, push, and
-   **open a PR** if the unit is coherent on its own. Then tell the user the
-   PR link and what is now blocked on them.
+   **open a PR** if the unit is coherent on its own. Put a **"Worth
+   challenging"** section in its description: the choices you are least sure
+   of and the alternatives you rejected. Then comment **`@coderabbitai
+   review`** on it: CodeRabbit does not review this repo automatically (fewer
+   than 10 stars), and it reviewed nothing between #50 and #68 while this
+   file assumed it did.
+9. **Invoke `/challenge-pr <N>`** on the PR you just opened. It runs in a
+   forked subagent with no conversation history, reviews intent and design
+   choices, and posts one PR comment naming the commit it reviewed. Pass it
+   only the number; do not brief it, because the point is that it has not
+   seen your reasoning. When it returns, answer every finding **on the PR**:
+   fix it (and push), or reply saying why not. Fixes pushed here re-open
+   steps 1–3 if they change what those files say. Then tell the user the PR
+   link, the verdict, and what is now blocked on them. **The user decides
+   disagreements; neither side's argument settles one.** From a terminal, the
+   same review runs as a separate instance, from any checkout (it reads the PR
+   via `pull/<N>/head`, not the working tree): `claude -p "/challenge-pr <N>"`.
+   Known gap: its tokens are in a subagent transcript that
+   `tools/session_cost.py` does not count.
 
 Sessions end abruptly (context, watchdog, sleep), so do not batch these to
 the end of the session.
