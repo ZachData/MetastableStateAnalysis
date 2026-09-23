@@ -57,6 +57,11 @@ Status: 📋 protocol in `CLAUDE.md`; ✅ size cap by `tools/lint_repo.py`;
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-22, #69: `/challenge-pr` could not run after `d5d6218`. Its
+  `gh pr view … | awk …` step fails the skill's own `allowed-tools` (no
+  `awk`), and `claude -p "/challenge-pr N"` then exits 0 with no output and
+  no PR comment. Fixed by hiding the section in `gh`'s `--jq` (no pipe).
+  After any review run, check the PR actually has the comment.
 - `pair_agreement` — the project's only semantic instrument — wrote zeros into
   all 152 WDS directories while HDBSCAN was missing (§3.54.1). Survived the
   outage, the backfill, an audit and two literature passes.

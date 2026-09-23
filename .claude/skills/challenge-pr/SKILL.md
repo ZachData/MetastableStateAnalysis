@@ -29,7 +29,7 @@ notice on the way is in scope. Report it rather than leaving it to someone else.
 !`gh pr view $pr --json number,title,headRefName,headRefOid,baseRefName,additions,deletions --template '#{{.number}} {{.title}}  ({{.headRefName}} -> {{.baseRefName}}, +{{.additions}}/-{{.deletions}})
 HEAD UNDER REVIEW: {{.headRefOid}}'`
 
-!`gh pr view $pr --json body --jq .body | awk '/^## Worth challenging/{skip=1; print "## Worth challenging\n(withheld until you have written your own alternatives -- step 3)"; next} /^## /{skip=0} !skip'`
+!`gh pr view $pr --json body --jq '.body | split("\n## ") | map(if startswith("Worth challenging") then "Worth challenging\n(withheld until you have written your own alternatives -- step 3)\n" else . end) | join("\n## ")'`
 
 ## Files touched
 
