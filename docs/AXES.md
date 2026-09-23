@@ -9,7 +9,7 @@ attention entropies nothing reads — and because the opposite also happens: a
 cheap-sounding question turns out to need a producer nobody has written.
 
 Written 2026-09-20 out of Phase 10 (`PROJECT.md` §3.49). **Not a plan and not a
-priority list** — `INDEX.md`'s Current priority block is that. This is the map
+priority list** — `STATE.md` is that. This is the map
 you consult before deciding something costs a forward pass.
 
 ---
