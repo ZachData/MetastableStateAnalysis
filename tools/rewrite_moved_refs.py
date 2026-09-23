@@ -50,6 +50,9 @@ MOVED = "archive/MOVED.md"
 GENERATED = frozenset({
     "claims/EVALUABILITY.md", "claims/FALSIFICATION.md", "claims/EXPERIMENTS.md",
 })
+#: Old citations each generated file is known to keep: text quoted verbatim
+#: from `claims/registry.json`, which is never edited. Only a change is reported.
+GENERATED_EXPECTED = {"claims/EVALUABILITY.md": 5}
 TEXT_SUFFIXES = (".md", ".py", ".sh", ".yml", ".yaml", ".toml", ".ini", ".txt")
 
 _PINNED_KEY = re.compile(r'"[a-z0-9_]*_file"\s*:\s*"([^"]+)"')
@@ -62,6 +65,10 @@ def pinned_files(root: Path = ROOT) -> set[str]:
         out.update(_PINNED_KEY.findall(rec.read_text(encoding="utf-8")))
     return out
 
+
+#: Section lists left alone because an id in them did not move with the rest;
+#: `main` reports them so a person decides.
+SKIPPED: list[str] = []
 
 _ROW = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|")
 
@@ -93,9 +100,11 @@ def absent_table(root: Path = ROOT) -> set[str]:
 
 
 def live_files(root: Path = ROOT) -> list[str]:
-    """Tracked text files a rewrite may touch."""
-    tracked = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True,
-                             text=True, check=True).stdout.split("\n")
+    """Text files a rewrite may touch: tracked, or untracked and not ignored."""
+    # Tracked plus untracked-not-ignored: what `git add -A` would commit. In CI
+    # the second half is empty; locally it keeps a pre-`git add` run honest.
+    tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+                             cwd=root, capture_output=True, text=True, check=True).stdout.split("\n")
     pinned = pinned_files(root)
     return [f for f in tracked if f and f.endswith(TEXT_SUFFIXES)
             and not f.startswith(("archive/", "data/"))
@@ -129,17 +138,29 @@ def build_rules(rows, live: list[str], root: Path = ROOT):
         ofile, osec = (s.strip() for s in old.split("§"))
         nfile, _, nsec = (s.strip() for s in new.partition("§"))
         stem = re.escape(ofile[:-3] if ofile.endswith(".md") else ofile)
-        marker = r"(§\s*|items?\s+" + ("|" if osec[:1].isalpha() else "") + ")"
-        rx = re.compile(r"(?<![\w./-])(`?)" + stem + r"(?:\.md)?\1(\s*)" + marker
-                        + re.escape(osec) + r"((?:\.\d+)*)(?![\w])")
+        # A bare id needs a same-line space before it; `items` needs every
+        # listed id moved to the same file, else the match is left alone.
+        marker = r"(§\s*|items?[ \t]+" + ("|(?<=[ \t])" if osec[:1].isalpha() else "") + ")"
+        rx = re.compile(r"(?<![\w./-])(`?)" + stem + r"(?:\.md)?\1([ \t]*|\s+(?=§|items?\s))"
+                        + marker + re.escape(osec) + r"((?:\.\d+)*)(?![\w])"
+                        + r"((?:,?[ \t]+(?:and[ \t]+)?[A-Z]\d+)*)")
 
-        def repl(m, nfile=nfile, nsec=nsec, osec=osec):
-            sp, mk, subsec = m.group(2) or " ", m.group(3) or "§", m.group(4)
+        def repl(m, nfile=nfile, nsec=nsec, osec=osec, ofile=ofile, rows=rows):
+            sp, mk, subsec, more = m.group(2) or " ", m.group(3) or "§", m.group(4), m.group(5)
+            if more:
+                same = {n.partition("§")[0].strip() for o, n in rows
+                        if o.split("§")[0].strip() == ofile}
+                moved_ids = {o.split("§")[1].strip() for o, n in rows
+                             if o.split("§")[0].strip() == ofile
+                             and n.partition("§")[0].strip() == nfile}
+                if len(same) > 1 or not set(re.findall(r"[A-Z]\d+", more)) <= moved_ids:
+                    SKIPPED.append(m.group(0))
+                    return m.group(0)        # a listed id stayed or went elsewhere
             if nsec:
                 tail = f"{sp}{mk}{nsec}{subsec}"
             else:
                 tail = f"{sp}{mk}{osec}{subsec}" if subsec else ""
-            return f"{m.group(1)}{nfile}{m.group(1)}{tail}"
+            return f"{m.group(1)}{nfile}{m.group(1)}{tail}{more}"
         rules.append((rx, repl, ofile[:-3] if ofile.endswith(".md") else ofile))
     return rules
 
@@ -149,8 +170,15 @@ def rewrite(text: str, rules) -> tuple[str, int]:
     for rx, new, needle in rules:
         if needle not in text:
             continue
-        text, n = rx.subn(new, text)
-        total += n
+        changed = 0
+
+        def counted(m, new=new):
+            nonlocal changed
+            out = new(m) if callable(new) else m.expand(new)
+            changed += out != m.group(0)
+            return out
+        text = rx.sub(counted, text)
+        total += changed
     return text, total
 
 
@@ -163,10 +191,11 @@ def main(argv: list[str] | None = None) -> int:
     for f in sorted(GENERATED):           # report, never write: regenerate instead
         path = ROOT / f
         n = rewrite(path.read_text(), rules)[1] if path.is_file() else 0
-        if n:
-            print(f"   !  {f}: {n} old citation(s), not rewritten. Renderer or hand-kept "
-                  f"prose: fix at the source and regenerate. Quoted registry text: "
-                  f"stays (the Moved table covers it)")
+        if n != GENERATED_EXPECTED.get(f, 0):
+            print(f"   !  {f}: {n} old citation(s), expected "
+                  f"{GENERATED_EXPECTED.get(f, 0)} (quoted registry text, which stays). "
+                  f"A new one is renderer or hand-kept prose: fix at the source and "
+                  f"regenerate, then update GENERATED_EXPECTED.")
     grand = 0
     for f in live:
         path = ROOT / f
@@ -180,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{n:4d}  {f}")
             if args.write:
                 path.write_text(new)
+    for s in SKIPPED:
+        print(f"   ?  left alone, ids in it moved to different places: {s!r}")
     print(f"{grand} citation(s) {'rewritten' if args.write else 'would be rewritten'}")
     return 0
 

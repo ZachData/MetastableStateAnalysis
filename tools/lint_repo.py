@@ -447,11 +447,13 @@ def _map_rows(section: str) -> set[str]:
 
 
 def _tracked() -> list[Path] | None:
-    """`git ls-files` under ROOT, or None outside a git checkout (test trees).
-    The rule reads the tracked set so it sees what CI sees: an untracked or
-    git-ignored file must not decide a local run (`LESSONS.md` lesson 3)."""
+    """Files `git add -A` would commit (tracked + untracked-not-ignored), or
+    None outside a git checkout (test trees). In CI that is exactly the
+    checkout; locally a new, not-yet-added file is still checked, and an
+    ignored one never decides a run (`LESSONS.md` lesson 3)."""
     try:
-        out = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True,
+        out = subprocess.run(["git", "ls-files", "-z", "--cached", "--others",
+                              "--exclude-standard"], cwd=ROOT, capture_output=True,
                              check=True).stdout.decode("utf-8").split("\0")
     except (OSError, subprocess.CalledProcessError):
         return None

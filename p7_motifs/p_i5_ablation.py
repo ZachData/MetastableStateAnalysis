@@ -22,7 +22,7 @@ about ablating "an induction head", and the matcher is that head: it is
 the one whose attention pattern IS the induction match, not the relay that
 merely supplies it a previous-token signal.
 
-ABLATION MODE: mean, not zero. `archive/PROJECT-start-here.md`'s resume block states the rule
+ABLATION MODE: mean, not zero. `PROJECT.md` §3.14.3 states the rule
 this module follows without re-deriving it: "Zero-ablation's off-distribution
 bias scales as 1/n_heads, so it distorts at 70m (8 heads/layer)... a
 prediction... should name mean-ablation." `tools/run/induction_rank_sweep.py::

@@ -28,6 +28,7 @@ MOVED = """\
 | `docs/SCAN.md` | `archive/docs/SCAN.md` | 2026-09-22 |
 | `BIG.md §1` | `archive/BIG-start.md` | 2026-09-22 |
 | `PLAN.md §B3` | `archive/PLAN-done.md §B3` | 2026-09-22 |
+| `PLAN.md §B4` | `archive/PLAN-done.md §B4` | 2026-09-22 |
 
 ## Absent
 
@@ -99,6 +100,18 @@ def test_rewrite_paths_sections_and_idempotence(tmp_path):
     assert n == 8
     assert rw.rewrite(once, rules) == (once, 0)
     assert rw.absent_table(tmp_path) == {"NEVER.md"}
+
+
+def test_a_list_or_a_line_break_is_not_rewritten_blind(tmp_path):
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "archive" / "MOVED.md").write_text(MOVED, encoding="utf-8")
+    rules = rw.build_rules(rw.moved_table(tmp_path), live=["doc.md"], root=tmp_path)
+    # B6 did not move: rewriting "items B3 and B6" would send B6 to the archive.
+    for text in ("PLAN.md items B3 and B6\n", "PLAN.md §B3, B6\n",
+                 "see PLAN.md\nB3 is next\n", "PLAN.mdB3\n"):
+        assert rw.rewrite(text, rules) == (text, 0), text
+    # A § after a wrapped line is still a citation.
+    assert rw.rewrite("`PLAN.md`\n§B3\n", rules)[1] == 1
 
 
 def test_a_recreated_old_path_is_skipped_and_flagged(tmp_path, monkeypatch):
