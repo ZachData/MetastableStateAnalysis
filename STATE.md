@@ -39,11 +39,14 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 #73 `claude/stage0-chunk1`: Stage 0 chunk 1 status (this update). #72 (fix for main's
 red test from #69, plus #69's review answers), #71, #69 merged 2026-09-23; main CI
-on `fb06944` was running at merge time. After #72: remove `../Mets-work` and its branch.
-Nightly smoke red (Blocked item 2). Current state: `./scripts/status.sh`.
+green on `fb06944`. `../Mets-work` and `claude/archive-followup` removed; 6 merged
+remote branches deleted 2026-09-23. Nightly smoke red (Blocked item 2).
+Current state: `./scripts/status.sh`.
 
-Superseded remote branches, safe to delete: `claude/p10-free-rows`,
-`claude/aca-phase-9-planning-rvzw3x`, `claude/attention-collapse-augmentation-qsxwg8`.
+**For a decision: 3 remote branches fail `merge-base --is-ancestor`**, so not deleted:
+`claude/p10-free-rows`, `claude/aca-phase-9-planning-rvzw3x` (content merged via
+#58/#59; only merge commits remain), `claude/attention-collapse-augmentation-qsxwg8`
+(`cf5f7ee`'s notes carried into main by `d282bfb`; main's `notes-9.md` is a superset).
 
 ## Where things stand (one line each; detail behind the pointer)
 

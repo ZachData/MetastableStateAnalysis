@@ -562,12 +562,6 @@ before it.
 
 ## Parked
 
-- **Stale remote branches beyond `STATE.md`'s list** (found 2026-09-22, archive
-  batch): `claude/ci-matrix-and-alerts`, `claude/claim-c-arms`,
-  `claude/float32-tripwire-ci`, `claude/metastable-machine-setup-685wsl`,
-  `claude/p10-literature-read`, `claude/p10-stage0` are still on `origin`. Why:
-  may be merged leftovers. Cost: one `merge-base` check each. Changes: only
-  which branches are safe to delete.
 - **`lit-8.md` never cites `literature-8.md`** (found in the same batch): the
   later leads-only file does not know the earlier fetched readings exist. Why:
   a reader of `lit-8.md` misses 18 verified ids. Cost: one line. Changes:
