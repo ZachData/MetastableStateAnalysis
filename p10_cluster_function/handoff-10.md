@@ -168,7 +168,38 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 
 ### 0.3 How to run it
 
-From the main tree, with the environment from `PROJECT.md` §1:
+> **Decided 2026-09-22: option B** — all 20 prompts × 19 checkpoints = **380
+> runs under v2 from one pinned commit**, in **10-hour chunks** (the machine is
+> available in blocks). Driver: **`tools/run/stage0_chunk.py`**. It re-reads
+> what is done from disk each time (v2 hash + pinned `git_sha` + populated
+> partition + populated `pair_agreement`), so it is resumable with no ledger;
+> it plans only what fits the budget, kills the running invocation at the
+> deadline, and stops the chunk if the first invocation comes back
+> unpopulated. **Plan at the conservative probe estimate: 3 chunks** (147 +
+> 147 + 86 runs, ~25 h with a 1.25× margin); it re-fits from the sweep's own
+> manifests after 5 runs. The 09-22 probe does **not** count (other commit).
+>
+> ```bash
+> # once, after the driver's PR merges: a run tree pinned at that merge commit
+> cd /run/media/system/WDS_500/Mets && git fetch -q
+> PIN=$(git rev-parse origin/main)
+> git worktree add --detach ../Mets-stage0 $PIN
+> # each chunk
+> cd ../Mets-stage0
+> export HF_HOME=/run/media/system/WDS_500/Mets/data/hf \
+>        METS_RESULTS_DIR=/run/media/system/WDS_500/Mets/data/phase12 \
+>        HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1
+> PY=/run/media/system/WDS_500/miniforge3/envs/mets/bin/python
+> $PY -m tools.run.stage0_chunk --pin $PIN plan
+> nohup $PY -m tools.run.stage0_chunk --pin $PIN run --budget-hours 10 \
+>   > /dev/null 2>&1 &     # log: $METS_RESULTS_DIR/stage0_logs/chunk_*.log
+> ```
+>
+> `../Mets-stage0` is a **run tree, not a task worktree**: detached, never
+> edited, removed when Stage 0 is done. Record `$PIN` in `STATE.md` when the
+> first chunk starts.
+
+The original single-run instructions, from the main tree, with the environment from `PROJECT.md` §1:
 
 ```bash
 cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
