@@ -1,10 +1,10 @@
 """
-tests/test_lint_cited_md_paths.py — tools/lint_repo.py rule 7 (cited-md-path)
+tests/test_lint_cited_md_paths.py — tools/lint_repo.py's `cited-md-path` rule
 and tools/rewrite_moved_refs.py, which share archive/MOVED.md.
 
 The rule must fire on a dangling citation, not only pass on the real tree
-(LESSONS.md lesson 2), and the rewrite must be idempotent and leave `§1.5`
-alone when it moves `§1`.
+(LESSONS.md lesson 2), and the rewrite must be idempotent, move `§1.5` with
+`§1`, and leave `§10` alone.
 """
 import sys
 from pathlib import Path
@@ -85,16 +85,29 @@ def _tree_again_without_row(tmp_path, monkeypatch):
 def test_rewrite_paths_sections_and_idempotence(tmp_path):
     (tmp_path / "archive").mkdir()
     (tmp_path / "archive" / "MOVED.md").write_text(MOVED, encoding="utf-8")
-    rules = rw.build_rules(rw.moved_table(tmp_path), live=["doc.md"])
+    rules = rw.build_rules(rw.moved_table(tmp_path), live=["doc.md"], root=tmp_path)
     text = ("`OLD_PLAN.md` §6; BIG.md §1 and `BIG.md` §1.5 and BIG.md §10; "
-            "`PLAN.md` §B3, PLAN §B3, PLAN.md item B3, PLAN.md §B30\n")
+            "`PLAN.md` §B3, PLAN §B3, PLAN.md item B3, PLAN.md items B3 and B4, "
+            "PLAN.md B3, PLAN.md §B30\n")
     once, n = rw.rewrite(text, rules)
-    assert once == ("`archive/OLD_PLAN.md` §6; archive/BIG-start.md and `BIG.md` §1.5 "
-                    "and BIG.md §10; `archive/PLAN-done.md` §B3, archive/PLAN-done.md §B3, "
-                    "archive/PLAN-done.md item B3, PLAN.md §B30\n")
-    assert n == 5
+    # §1.5 is inside §1, so it moves and keeps its label; §10 and §B30 do not.
+    assert once == ("`archive/OLD_PLAN.md` §6; archive/BIG-start.md and "
+                    "`archive/BIG-start.md` §1.5 and BIG.md §10; "
+                    "`archive/PLAN-done.md` §B3, archive/PLAN-done.md §B3, "
+                    "archive/PLAN-done.md item B3, archive/PLAN-done.md items B3 and B4, "
+                    "archive/PLAN-done.md §B3, PLAN.md §B30\n")  # bare id gains §
+    assert n == 8
     assert rw.rewrite(once, rules) == (once, 0)
     assert rw.absent_table(tmp_path) == {"NEVER.md"}
+
+
+def test_a_recreated_old_path_is_skipped_and_flagged(tmp_path, monkeypatch):
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "SCAN.md").write_text("new file\n", encoding="utf-8")
+    msgs = _tree(tmp_path, monkeypatch, "see `docs/SCAN.md`\n")
+    assert any("exists again" in m for m in msgs)
+    rules = rw.build_rules(rw.moved_table(tmp_path), live=["doc.md"], root=tmp_path)
+    assert rw.rewrite("see `docs/SCAN.md`\n", rules) == ("see `docs/SCAN.md`\n", 0)
 
 
 def test_the_real_tree_has_nothing_left_to_rewrite():

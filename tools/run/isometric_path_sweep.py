@@ -1,7 +1,7 @@
 """
 tools/run/isometric_path_sweep.py — §2.5's isometric path on `L7H8`
 (`MATH_SPECTRAL_OT.md` §2.5), run for real. The only *designed* particle
-intervention in this project (`PROJECT.md`'s resume block, item 2 as of
+intervention in this project (`archive/PROJECT-start-here.md`'s resume block, item 2 as of
 2026-09-16) and still unrun before this module.
 
 WHAT §2.5 BUILDS, IN ONE PARAGRAPH. `L7H8`'s OV operator `M = A @ B`

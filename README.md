@@ -442,7 +442,7 @@ forgotten at least twice:
 - **PRs open at natural boundaries** — an invariant read, a defect fixed, a
   runner parametrised — sized for a reviewer, not for a commit count. The
   current work is a stack of PRs, each based on the one before, reviewed and
-  merged in order; `PROJECT.md`'s resume block carries the table. CodeRabbit
+  merged in order; `archive/PROJECT-start-here.md`'s resume block carries the table. CodeRabbit
   reviews PRs but does not trigger on its own for this repo, so each PR's
   "Trigger review" box is ticked by hand.
 - **Literature scans at two triggers only:** when a phase opens, before its

@@ -118,7 +118,7 @@ is different, and must be defended on these grounds:
 
 ### 4.1 Run the `schur` vs `svd` basis comparison. It is free and it is still unrun.
 
-`PROJECT.md`'s resume block and `design-7e.md` both name it: the `schur` basis orders
+`archive/PROJECT-start-here.md`'s resume block and `design-7e.md` both name it: the `schur` basis orders
 by **eigenvalue** rather than gain and **carries a sign**, so it may not inherit the
 defect. Weights-only, no forward passes. Until it is done, a stated hold sits on an
 instrument the project uses. **Cheapest item in this file and it has been cheap for a

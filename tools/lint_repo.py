@@ -9,28 +9,29 @@ rule stops it recurring rather than catching it again by hand.
 The standing rules (this docstring is their home since 2026-09-22; they were
 §6 of `archive/UPDATE_PLAN.md`, which keeps the history):
 
-1. **If a quantity appears in a report, it is persisted.** D2's per-head
+S1. **If a quantity appears in a report, it is persisted.** D2's per-head
    Fiedler existed only in the session that produced it.
-2. **Every data-dependent fallback records the branch it took.** On a model
+S2. **Every data-dependent fallback records the branch it took.** On a model
    where no eigengap ever exists, the fallback *is* the metric.
-3. **Every gate records which quantity it read and whether it passed**, per
+S3. **Every gate records which quantity it read and whether it passed**, per
    layer. A gate reading a constant that may since have changed cannot be
    reconstructed from the artifact.
-4. **Refuse rather than degrade.** No unit-norm substitute for missing norms,
+S4. **Refuse rather than degrade.** No unit-norm substitute for missing norms,
    no inferred revision, no invented beta, no silent raw-frame fallback. A
    number from mismatched inputs is worse than no number: it is unfalsifiable
    from the output alone.
-5. **Anchors need a non-symmetric arm.** A trace contraction that was wrong
+S5. **Anchors need a non-symmetric arm.** A trace contraction that was wrong
    for every non-symmetric M passed its M = I anchor (`archive/UPDATE_PLAN.md`
    §5.6).
-6. **A threshold that has not been derived from a distribution is labelled as
+S6. **A threshold that has not been derived from a distribution is labelled as
    placed, not calibrated** -- in the code, next to the value.
-7. **No hand-synced constants** (`archive/UPDATE_PLAN.md` §4): a
+S7. **No hand-synced constants** (`archive/UPDATE_PLAN.md` §4): a
    constant duplicated across modules with a comment asking editors to keep
    it in step is a defect; parse the one definition instead.
 
-Rules 1-5 are review rules, not machine checks. Rule 6 is `threshold-provenance`
-below, rule 7 `hand-synced-constant`.
+S1-S5 are review rules, not machine checks; S6 is `threshold-provenance` below
+and S7 `hand-synced-constant`. "Rule N" further down numbers the checks
+(`--list`), not these.
 
 Design constraints, both deliberate:
 
@@ -56,6 +57,7 @@ import argparse
 import ast
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -225,7 +227,7 @@ def rule_test_tier_markers(lint: Linter) -> None:
 # ---------------------------------------------------------------------------
 
 RULE_3_WHY = """\
-Standing rule 7 (module docstring): a numeric constant duplicated across
+Standing rule S7 (module docstring): a numeric constant duplicated across
 modules with a comment asking editors to keep it in step is a defect, not a
 convention. The project already hit it -- checkpoint_scalars.py carried a
 hand-synced copy of ENERGY_VIOLATION_REL_TOL, fixed by parsing the constant out
@@ -311,7 +313,7 @@ def rule_status_doc_staleness(lint: Linter) -> None:
 # ---------------------------------------------------------------------------
 
 RULE_5_WHY = """\
-Standing rule 6 (module docstring): 'A threshold that has not been derived from
+Standing rule S6 (module docstring): 'A threshold that has not been derived from
 a distribution is labelled as placed, not calibrated -- in the code, next to the
 value.' archive/UPDATE_PLAN.md §5.7 is why: Q_k cannot be compared against a fixed tolerance because
 E[Q_k] = 1/n exactly for i.i.d. points, so every large-n configuration reads as
@@ -444,7 +446,26 @@ def _map_rows(section: str) -> set[str]:
     return out
 
 
+def _tracked() -> list[Path] | None:
+    """`git ls-files` under ROOT, or None outside a git checkout (test trees).
+    The rule reads the tracked set so it sees what CI sees: an untracked or
+    git-ignored file must not decide a local run (`LESSONS.md` lesson 3)."""
+    try:
+        out = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True,
+                             check=True).stdout.decode("utf-8").split("\0")
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    if not (ROOT / ".git").exists():
+        return None
+    return [ROOT / f for f in out if f and (ROOT / f).is_file()]
+
+
 def _walk(skip: frozenset) -> Iterable[Path]:
+    tracked = _tracked()
+    if tracked is not None:
+        yield from (p for p in tracked
+                    if not set(p.relative_to(ROOT).parts[:-1]) & skip)
+        return
     for d, dirs, files in os.walk(ROOT):
         dirs[:] = sorted(x for x in dirs if x not in skip and not x.endswith(".egg-info"))
         for f in sorted(files):
@@ -454,7 +475,13 @@ def _walk(skip: frozenset) -> Iterable[Path]:
 def rule_cited_md_paths(lint: Linter) -> None:
     names = {p.name for p in _walk(frozenset({".git", ".venv", "venv", "data", "__pycache__"}))
              if p.suffix == ".md"}
-    known = _map_rows("Moved") | _map_rows("Absent")
+    moved = _map_rows("Moved")
+    known = moved | _map_rows("Absent")
+    for old in sorted(moved):
+        if "/" in old and (ROOT / old).exists():
+            lint.error("cited-md-path", ROOT / MOVED_MAP, 0,
+                       f"Moved row `{old}` exists again: its citations may mean the "
+                       f"new file; delete the row or rename one of them")
     for path in _walk(_CITE_SKIP_DIRS):
         rel = path.relative_to(ROOT).as_posix()
         if path.suffix not in _CITE_SUFFIXES or rel == MOVED_MAP:

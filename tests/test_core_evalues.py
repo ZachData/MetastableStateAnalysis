@@ -1,5 +1,5 @@
 """
-tests/test_core_evalues.py — the adjudication kernel (POPPER_PLAN.md B1).
+tests/test_core_evalues.py — the adjudication kernel (archive/POPPER_PLAN-done.md §B1).
 
 `core/evalues.py` is the only piece of the Popperian workstream with a proof
 attached, and every downstream number inherits its correctness. So the tests
