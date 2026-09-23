@@ -511,6 +511,28 @@ def rule_cited_md_paths(lint: Linter) -> None:
                            f"(Moved: say where it went; Absent: say why it is cited)")
 
 
+# ---------------------------------------------------------------------------
+# Rule 8 — phase cards are complete, point somewhere, and are not stale
+# ---------------------------------------------------------------------------
+
+RULE_8_WHY = """\
+Seventeen phases and no one-screen answer, per phase, to what it asked, what it
+found and what superseded it (docs/PHASE_REVIEW.md "Why"): the same question
+was asked twice (Phase 5c's attention flip, Phase 10 A0) and archived results
+went uncited. Each status-N.md now opens with a card (docs/phase_card.md). The
+rule fails a card with a missing or TODO field, a result with no pointer or a
+pointer that resolves to nothing, an "After Phase 10" item with no cost, or a
+card whose own status file, or the status file of a phase it depends on, has
+changed since its review (hashes, not dates, so it works on a shallow clone).
+The checks live in tools/render_phases.py, beside the parser they share."""
+
+
+def rule_phase_cards(lint: Linter) -> None:
+    import render_phases                      # tools/, standard library only
+    for rel, line, message in render_phases.card_findings(ROOT):
+        lint.error("phase-card", ROOT / rel, line, message)
+
+
 RULES = [
     ("orphan-module",         rule_no_orphan_modules,        RULE_1_WHY),
     ("test-tier-marker",      rule_test_tier_markers,        RULE_2_WHY),
@@ -519,6 +541,7 @@ RULES = [
     ("threshold-provenance",  rule_threshold_provenance,     RULE_5_WHY),
     ("startup-doc-cap",       rule_startup_doc_caps,         RULE_6_WHY),
     ("cited-md-path",         rule_cited_md_paths,           RULE_7_WHY),
+    ("phase-card",            rule_phase_cards,              RULE_8_WHY),
 ]
 
 

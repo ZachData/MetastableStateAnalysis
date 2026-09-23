@@ -19,6 +19,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-22 | Archive batch + `cited-md-path` lint (measured before the commit/PR calls) | 63 | 188k | 7.9M | 40k | #69 |
 | 2026-09-23 | Stage 0 chunk 1: found running, first-output check (measured before the commit/PR calls) | 24 | 75k | 1.4M | 9k | #73 |
 | 2026-09-23 | Phase-review plan + 12-prompt holdout (measured before the commit/PR calls) | 23 | 93k | 1.7M | 20k | #74 |
+| 2026-09-23 | Phase review session 1: card template, `render_phases.py`, lint `phase-card`, Phase 1 card (measured before the commit/PR calls) | 38 | 170k | 4.8M | 45k | #75 |
 
 ## Over 2× median, and why
 
@@ -29,3 +30,7 @@ running median of the rows above it gets a line under the table saying why.
   for the new lint, a gate failure (the rewrite had touched three hash-pinned
   gate files) and two full gate runs. Context re-read on each of 63 calls,
   not tool output (40k), is the cost, as lesson 9 predicts.
+- 2026-09-23 phase review session 1 (4.8M, 2.5× the 1.95M median): the unit
+  asked for one card, which means reading all of `status-1.md` (725 lines,
+  ~25k tokens) plus the INDEX block being deleted, and that stays in context
+  for every later call. Cards 1b + 1c in one session will cost about the same.

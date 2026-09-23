@@ -15,8 +15,9 @@ what it found, what superseded it, and what it left open. Three costs follow:
    branch; steering in 3 (`archive/p3_crosscoder/steering.py`) vs 5b vs 7 `P-ST1`.
 2. **Losing leads.** Archived phases carry open results (Phase 6's LDA
    inversion, Phase 4's "sparsity was the confound") that no plan cites.
-3. **Stale maps.** `INDEX.md` lines 9–163 are a "Current priority" block
-   dated 2026-09-20 that duplicates `STATE.md`.
+3. **Stale maps.** `INDEX.md` carried a "Current priority" block dated
+   2026-09-20 that duplicated `STATE.md` (deleted in session 1; every line
+   had another home).
 
 ## Decisions (user, 2026-09-23)
 
@@ -36,27 +37,31 @@ what it found, what superseded it, and what it left open. Three costs follow:
    is extended) scored on the 410m v2 runs before Phase 10 registers?
 4. **Release.** If nothing gets registered by some point, what frees the 12?
    Until then exploration stays at 8 prompts, only 7 of them natural text.
+5. **What makes a card stale** (`/challenge-pr` on #75, finding 1). Today a
+   card goes stale only on its own status file and its dependencies' status
+   files. Most corrections land elsewhere (`PROJECT.md` §3.x, later phases'
+   other files). Should the stamp also hash every section a card's pointers
+   name? That is more complete, and it goes stale on more unrelated edits.
+   Must be settled before session 2 so that no card is written twice.
 
-## The card (fixed fields, one line each, pointers not numbers)
+## The card
 
-| field | content |
-|---|---|
-| Question | the question the phase asked, in one sentence, in the particle/OT vocabulary |
-| Inputs | model(s), checkpoints, battery hash, run dirs; "none" if never run |
-| Results | one line per result, each with its pointer (`§`, file, audit JSON) |
-| Superseded / wrong | what later work corrected, with the pointer |
-| Registry | prediction ids and their state, or "none, because …" |
-| Depends on / feeds | phase ids |
-| Open threads | unanswered questions the phase itself raised |
-| After Phase 10 | candidate experiments, each with cost (forward pass or free) |
+Fields, format, what the lint checks and how to clear a stale card:
+`docs/phase_card.md` (the template). The table the cards generate:
+`docs/PHASES.md`. Numbers stay where they already live ("write once"); the
+card points.
 
-Numbers stay where they already live ("write once"); the card points.
+**Workflow per card session:** copy the skeleton, fill it from the status
+file (and the files it cites), `python3 tools/render_phases.py --stamp <id>`,
+`python3 tools/render_phases.py`, `./scripts/check.sh lint`. Adding a card
+whose Depends on names a carded phase means updating that phase's Feeds too;
+the lint checks both ends.
 
 ## Sessions (one unit each; `CLAUDE.md` "one session per unit")
 
 | # | unit | state |
 |---|---|---|
-| 1 | Card template in `docs/`, generator `tools/render_phases.py` → the phase table, lint rule: card present, fields filled, pointers resolve, and **stale when the phase or any phase in its "Depends on" has a newer result commit** (the 2026-09-22 dependency-staleness lint). Pilot on Phase 1; delete `INDEX.md`'s stale priority block | open |
+| 1 | Card template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card` (fields filled, pointers resolve, and **stale when the phase's status file or any file in its "Depends on" changed since the review**, by content hash rather than commit). Phase 1 card done; `INDEX.md`'s priority block deleted | **done** 2026-09-23 |
 | 2 | Cards: 1b, 1c | open |
 | 3 | Cards: 2, 2b, 2d, 6 (live `status-6.md`; `P6-R2`/`R4` active, same claim `H-OPERATOR`) | open |
 | 4 | Cards: archived 3, 4, 5, 5b, 5c and frozen 6 (`archive/p6_subspace/status-6.md`); the Phase 1d and viz branches → keep / revive / drop | open |
@@ -102,3 +107,11 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    (`data/phase12/2026-09-19_*`, `claims/audits/claim_c_real_run.json`).
    Why: a rule only in docs has been missed before (`LESSONS.md`). Cost:
    small, `core/` + tests. Changes: whether the confirmation set survives Stage 1.
+   **Not built in session 1** (2026-09-23): Stage 0 has chunks 2 and 3 to go
+   (about 20 h, chunk 2 not launched), so Stage 1 was not close.
+2. **A gate run from `../Mets-work` printed a warning from the main tree's
+   `p1c_frames/integration_time.py`** (`tests/test_run_1c_beta_gate.py`),
+   though `import p1c_frames` resolves to the worktree. Why: if some test
+   imports or spawns from the main tree, worktree gates test `main`'s code, not
+   the branch's. Cost: one look at that test's subprocess/env. Changes: whether
+   any worktree gate result so far can be trusted for package code.

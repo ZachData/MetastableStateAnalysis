@@ -20,6 +20,13 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-09-23 (phase review session 1): the SessionStart hook printed the main
+  tree's `STATE.md`, and the main tree was 9 commits behind `origin/main`
+  (nobody pulls it after a GitHub merge). It said chunk 1 was killed and
+  `claude/archive-followup` was open; both were stale. Start step 1's
+  "older than `origin/main`" check caught it. A fix that removes the check:
+  have the hook `git fetch` and print `git show origin/main:STATE.md`
+  (a `.claude/settings.json` edit, so it is the user's to make).
 - 2026-09-23: STATE.md and `handoff-10.md` said Stage 0 chunk 1 "was killed:
   no runs done". The box had suspended; the process resumed and ran on. The
   next session was told to relaunch, and would have started a second chunk

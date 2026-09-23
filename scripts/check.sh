@@ -81,6 +81,11 @@ _lint_commands() {
   python3 tools/render_falsification.py --check
 
   echo
+  echo "=== tier 0: docs/PHASES.md in step with the phase cards ==="
+  # The cards themselves (fields, pointers, staleness) are lint rule phase-card.
+  python3 tools/render_phases.py --check
+
+  echo
   echo "=== tier 0: docs/index/ in step with PROJECT.md, POPPER_PLAN.md ==="
   # A stale index sends a session to the wrong line range; after editing either
   # document, run `python3 tools/build_doc_index.py`.
