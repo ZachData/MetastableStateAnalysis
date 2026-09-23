@@ -17,8 +17,8 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 |---|---|
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
 | Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 not started.** Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
-| Next after it | Holdout guard (`docs/PHASE_REVIEW.md` Parked 1), then Stage 1 on the **8 v1 prompts only**: `ext_sem_threshold` sweep, then the token-composition table. **The 12 new v2 prompts are held out** as the confirmation set until registrations are frozen (user, 2026-09-23; `handoff-10.md` §0.4) |
-| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 8 sessions — `docs/PHASE_REVIEW.md`. Next: session 1 (card template + generator + lint, pilot on Phase 1) |
+| Next after it | Holdout guard (`docs/PHASE_REVIEW.md` Parked 1), then Stage 1 on the **8 v1 prompts only**: `ext_sem_threshold` sweep, then the token-composition table. **The 12 new v2 prompts are held out on 410m** as the confirmation set until registrations are frozen (user, 2026-09-23; `handoff-10.md` §0.4). Partly seen already via `CLAIM-C` on 1.4b/gpt2-large; scope, count, order and release are open for the user (`docs/PHASE_REVIEW.md` "Open") |
+| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`. Next: session 1 (card template + generator + lint, pilot on Phase 1) |
 
 ## Blocked on the user
 
@@ -51,7 +51,7 @@ Current state: `./scripts/status.sh`.
 
 ## Where things stand (one line each; detail behind the pointer)
 
-- `CLAIM-C`: gate ran, **INSUFFICIENT**, p floor 0.0661 at 8 prompts — `PROJECT.md` §3.41, §3.46.
+- `CLAIM-C`: gate ran, **INSUFFICIENT** twice: p floor 0.0661 at 8 prompts (§3.41); at 20 v2 prompts on 1.4b + gpt2-large the floor is 0.0002 but the homogeneity correction is untabulated past 12 (§3.46). Fix ~45 min of calibration, deferred by the user.
 - e-value audit: complete, 39 registered predictions, zero e-values — §3.45.
 - Phase 10 free rows (tier 1): attention flip ~94 % causal mask; F0 fails; identity coupling optimal 99.5 %; HDBSCAN partition not reproducible (ARI p5 0.347) — `status-10.md`.
 - Literature: five papers read as primary text — `lit-10.md` §11–15, `PROJECT.md` §3.52.

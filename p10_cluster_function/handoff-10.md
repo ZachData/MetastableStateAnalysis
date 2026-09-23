@@ -268,12 +268,17 @@ Four checks, none optional:
 **Unblocks:** the e-value ceiling moves; and — the point — **a registered
 prediction becomes possible on a battery whose rows were chosen blind.**
 
-> **Held out (user, 2026-09-23).** The 12 v2 prompts never run through Phase 1
+> **Held out (user, 2026-09-23).** The 12 v2 prompts new to the **410m sweep**
 > are Phase 10's **confirmation set**. Stage 0 runs all 20, but Stages 1–5 read
 > **only the 8 v1 prompts** until the predictions scored on the 12 are in
-> `claims/registry.json`. Reading them first spends the project's only held-out
-> set. Checking that Stage 0's outputs are *populated* is not reading them.
-> Plan: `docs/PHASE_REVIEW.md`; the code guard is parked there (item 1).
+> `claims/registry.json`. Checking that Stage 0's outputs are *populated* is not
+> reading them.
+> **They are not fully unseen.** `CLAIM-C` ran all 20 on pythia-1.4b and
+> gpt2-large, trained and random (`PROJECT.md` §3.46; `data/phase12/2026-09-19_*`).
+> `claims/audits/claim_c_real_run.json` carries per-prompt cluster count,
+> membership, effective rank and Fiedler for the 12. So they are blind only for
+> 410m measures that those runs did not compute. Open for the user: scope,
+> 12 vs 20, order, release (`docs/PHASE_REVIEW.md` "Open").
 
 **Does not fix:** twenty is not 2 244. The dependence structure *within* a prompt
 is unchanged. And the 12 new prompts share the old eight's checkpoint grid and

@@ -152,11 +152,14 @@ needs the user to enable it on GitHub.
   dependent units (§3.51.2).
 - Several registered nulls turned out invalid on construction: `73f566c`
   (CLAIM-B/P-I1), `a735c07` (P-ST1), `9510d8f` (P-I3), `98d168b` (F0).
-- 2026-09-23, caught before any read: `handoff-10.md` §0.4 said Stages 1–5
-  re-run on all 20 prompts "for free" and, two lines later, that the point of
-  Stage 0 was registering on prompts chosen blind. Exploring on the 12 would
-  have spent the only held-out set. Now held out (`docs/PHASE_REVIEW.md`).
-  Rule: **name the confirmation set before new data lands**, not at registration.
+- 2026-09-23: `handoff-10.md` §0.4 said Stages 1–5 re-run on all 20 prompts
+  "for free" and, two lines later, that the point of Stage 0 was registering
+  on prompts chosen blind. Now held out on 410m (`docs/PHASE_REVIEW.md`). The
+  same PR then called the 12 "never seen"; `/challenge-pr` found `CLAIM-C` had
+  already run them on 1.4b and gpt2-large (§3.46), so they are only partly blind.
+  Rule: **name the confirmation set before new data lands, and list every run
+  that has already touched it.** Status: 📋 until the guard (`PHASE_REVIEW.md`
+  Parked 1) lands.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
