@@ -265,9 +265,15 @@ Four checks, none optional:
 
 ### 0.4 What Stage 0 unblocks, and what it does not
 
-**Unblocks:** every row in Stages 1–5 re-runs on 20 prompts for free once the
-artifacts exist; the e-value ceiling moves; and — the point — **a registered
+**Unblocks:** the e-value ceiling moves; and — the point — **a registered
 prediction becomes possible on a battery whose rows were chosen blind.**
+
+> **Held out (user, 2026-09-23).** The 12 v2 prompts never run through Phase 1
+> are Phase 10's **confirmation set**. Stage 0 runs all 20, but Stages 1–5 read
+> **only the 8 v1 prompts** until the predictions scored on the 12 are in
+> `claims/registry.json`. Reading them first spends the project's only held-out
+> set. Checking that Stage 0's outputs are *populated* is not reading them.
+> Plan: `docs/PHASE_REVIEW.md`; the code guard is parked there (item 1).
 
 **Does not fix:** twenty is not 2 244. The dependence structure *within* a prompt
 is unchanged. And the 12 new prompts share the old eight's checkpoint grid and
@@ -546,10 +552,10 @@ Phase 9's territory; listed here because Stages 1–6 are what would license it.
 - **The partition is not reproducible run to run** (§3.51.4). Prefer statistics
   that do not need it (Stage 2), aggregate over thousands of units, and report
   both sweeps.
-- **Eight prompts.** The power ceiling on everything, and **Stage 0 is the plan
-  to lift it to twenty** using prompts already chosen blind under a committed
-  rule (`questions-10.md` §7 item 2). Until Stage 0 lands, read every e-value
-  below against `PROJECT.md` §3.41's floor.
+- **Eight prompts.** The power ceiling on exploration, and it stays there:
+  Stage 0's 12 new prompts (chosen blind under a committed rule,
+  `questions-10.md` §7 item 2) are **held out for confirmation** (§0.4), not
+  pooled. Read every exploratory e-value against `PROJECT.md` §3.41's floor.
 - **Nothing in the five papers is a theorem about Pythia** — tied weights, no
   MLP, `V = I`, `Q = K = I`, `d = 2`.
 

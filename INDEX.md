@@ -186,6 +186,7 @@ Shared code lives in `core/`; one-off scripts in `tools/`; tests in `tests/`.
 populated, which producers do not exist, and what has never been asked). `docs/LITERATURE.md` —
 the per-phase prior-work index, and §0.1's note on which hosts a scan can actually reach.
 `docs/readings/` — papers read as primary text, one file per arXiv id, marked **[R]**.
+`docs/PHASE_REVIEW.md` — the phase-by-phase review thread (one card per phase, the duplicate map, the e-value plan).
 
 `p7d_redundancy/` and `p7_motifs/` are different programmes and are easy to
 confuse. `p7_motifs/` is the motif/relay line behind `P-I1`; `p7d_redundancy/`
