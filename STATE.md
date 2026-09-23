@@ -55,7 +55,7 @@ Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 - e-value audit: complete, 39 registered predictions, zero e-values — §3.45.
 - Phase 10 free rows (tier 1): attention flip ~94 % causal mask; F0 fails; identity coupling optimal 99.5 %; HDBSCAN partition not reproducible (ARI p5 0.347) — `status-10.md`.
 - Literature: five papers read as primary text — `lit-10.md` §11–15, `PROJECT.md` §3.52.
-- Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, item 5). Next: A3 split `handoff-10.md` by stage; A4 Stop protocol → skill, claims rules → path rule.
+- Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, item 5). Measured on the 2026-09-22 session's own transcript: 147 calls, ~19.0M context tokens re-read (avg ~129k/call, peak 214k) vs ~34k of tool output. Session length is the cost driver, not file size. Next PR: `tools/session_cost.py` + a per-unit cost log in the Stop protocol, `scripts/status.sh` (one-line CI/smoke/PR status), and `CLAUDE.md` lines: one session per unit of work, batch calls, edit tracked docs with Edit and not shell. Then A3 (split `handoff-10.md` by stage) and A4 (Stop protocol → skill, claims rules → path rule). Needs the user: archive `PROJECT.md` §1's old resume blocks (~880 lines) and finished `POPPER_PLAN.md` sections?
 - Registry: untouched since the audit. Nothing in Phase 10 is registered.
 
 ## Machine and environments
