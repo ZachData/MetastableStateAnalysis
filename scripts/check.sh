@@ -79,6 +79,12 @@ _lint_commands() {
   echo
   echo "=== tier 0: FALSIFICATION.md in step with the ledger ==="
   python3 tools/render_falsification.py --check
+
+  echo
+  echo "=== tier 0: docs/index/ in step with PROJECT.md, POPPER_PLAN.md ==="
+  # A stale index sends a session to the wrong line range; after editing either
+  # document, run `python3 tools/build_doc_index.py`.
+  python3 tools/build_doc_index.py --check
 }
 
 run_pure() {

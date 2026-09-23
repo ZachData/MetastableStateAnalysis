@@ -118,8 +118,10 @@ ID_PATTERN = re.compile(
 
 #: Files that discuss predictions in prose without registering them. Scanning
 #: these for IDs would report the planning documents as unregistered sources.
+#: `POPPER_PLAN.idx.md` is generated from POPPER_PLAN.md's headings
+#: (tools/build_doc_index.py), so it inherits that file's exclusion.
 SCAN_EXCLUDE = {"POPPER_PLAN.md", "CLAIMS.md", "EVALUABILITY.md", "EVALUABILITY_LOG.md",
-                "FALSIFICATION.md"}
+                "FALSIFICATION.md", "POPPER_PLAN.idx.md"}
 
 
 class Problem(Exception):
