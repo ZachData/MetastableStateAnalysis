@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 tools/check_registry.py — registry validation and the pre-registration gate
-(POPPER_PLAN.md items B2 and B3).
+(archive/POPPER_PLAN-done.md items B2 and B3).
 
 Two checks, in one file because they share a loader and both run in CI tier 0:
 

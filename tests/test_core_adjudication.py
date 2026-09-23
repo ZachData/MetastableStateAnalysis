@@ -1,5 +1,5 @@
 """
-tests/test_core_adjudication.py — the emission layer (POPPER_PLAN.md B4).
+tests/test_core_adjudication.py — the emission layer (archive/POPPER_PLAN-done.md §B4).
 
 The refusals are the part worth testing hardest. `core/evalues.py` has a proof
 behind it; this module has a *policy* behind it, and a policy only holds if the

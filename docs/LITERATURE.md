@@ -244,7 +244,7 @@ none needs new forward passes unless marked.
 | 3 | **Formation-point equation** (batch size, context size) vs the measured `(512, 2000]` window, at 70m and 410m | 7, 8 | Free external adjudication; two rungs of evidence already exist |
 | 4 | **`PR_M` / `coupling_efficiency` vs 7d's 384-head causal sweep** | 2d, 7d | The one instrument that could rescue a structural proxy for causal effect, after `‖OV‖_F` failed at r² = 0.001 |
 | 5 | **The copying score vs `frac_repulsive`** (token basis vs residual basis) | 2 | The score itself is **already computed** — `PROJECT.md` §3.12-O, all 384 heads, eight checkpoints. What is uncrossed is the residual-basis column, which §3.12-N4 says need not share a sign. Both are on disk |
-| 6 | **`schur` vs `svd` basis on `L11H14`** | 7e | Weights-only, already named in `PROJECT.md`'s resume block, still unrun, and a stated hold sits on an instrument until it is done |
+| 6 | **`schur` vs `svd` basis on `L11H14`** | 7e | Weights-only, already named in `archive/PROJECT-start-here.md`'s resume block, still unrun, and a stated hold sits on an instrument until it is done |
 | 7 | **Selectivity screen vs causal membership, per checkpoint** (confusion matrix) | 7d | `lit-7d.md` §4.1 — the project's sharpest live disagreement with a published method |
 | 8 | **Re-run `cone_collapse.py` with BOS excluded** | 1b | If universal cone-collapse is one token's norm, that is a publishable negative on our own result |
 | 9 | **Run `border_vs_noise` and read it** | 1b, 5c | The Phase 5c boundary question has an answer waiting in a Phase 1b output |

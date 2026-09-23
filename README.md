@@ -436,15 +436,15 @@ real ERE.
 The habits are in [`CLAUDE.md`](CLAUDE.md), written down because each was
 forgotten at least twice:
 
-- **`PROJECT.md` is updated when a unit of work closes**, not in a sweep at
-  session end. Sessions end abruptly; that file is what the next one starts
-  from. Phase detail goes in the phase's `status-N.md`.
+- **`STATE.md` is overwritten when a unit of work closes** (`CLAUDE.md`,
+  Stop), not in a sweep at session end. Sessions end abruptly; that file is
+  what the next one starts from. Phase detail goes in the phase's `status-N.md`.
 - **PRs open at natural boundaries** — an invariant read, a defect fixed, a
-  runner parametrised — sized for a reviewer, not for a commit count. The
-  current work is a stack of PRs, each based on the one before, reviewed and
-  merged in order; `PROJECT.md`'s resume block carries the table. CodeRabbit
-  reviews PRs but does not trigger on its own for this repo, so each PR's
-  "Trigger review" box is ticked by hand.
+  runner parametrised — sized for a reviewer, not for a commit count. Every PR
+  targets `main`, never another PR's branch (`CLAUDE.md`, Git and PRs); open
+  ones are listed in `STATE.md`. CodeRabbit does not trigger on its own for
+  this repo, so each PR gets an `@coderabbitai review` comment, and every PR
+  gets a `/challenge-pr` review.
 - **Literature scans at two triggers only:** when a phase opens, before its
   `design-N.md` freezes the constructions; and before an entry lands in the
   registry, since registration freezes the wording. Scans live in `docs/` and

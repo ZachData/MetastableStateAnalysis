@@ -83,6 +83,13 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-09-23, #69: the PR said "2661 passed"; CI said 1 failed, and `main`
+  went red on merge (no branch protection, lesson 5). The gate ran before
+  `git add`, so `tools/rewrite_moved_refs.py` was untracked and its new test
+  (which reads `git ls-files`) never saw it; its docstring matched its own
+  rule. The lint, meanwhile, walked the filesystem. Rule: run the gate after
+  `git add`, and a check reads the tracked set, as CI does. Found by
+  `/challenge-pr`, not by the author.
 - 2026-09-22: battery v2 (8 → 20 metastability prompts) landed 2026-09-19.
   `p7_motifs/p_i5_ablation.py` iterates whatever `core.config.PROMPTS` holds,
   and its calibration record stores no battery hash — so the **registered**

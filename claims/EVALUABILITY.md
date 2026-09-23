@@ -1,6 +1,6 @@
 # EVALUABILITY.md — which predictions can carry an e-value, and which cannot
 
-POPPER_PLAN.md item B5. Generated from `claims/registry.json`; regenerate with
+`archive/POPPER_PLAN-done.md` item B5. Generated from `claims/registry.json`; regenerate with
 `python tools/render_evaluability.py` rather than editing by hand.
 
 ## Why this document is the important one
@@ -25,7 +25,7 @@ generated) is classified into exactly one of three states, and
 than emitting a neutral one. That refusal is an instance of
 the project's own standing rule 4: *"Refuse rather than degrade. A number from
 mismatched inputs is worse than no number: it is unfalsifiable from the output
-alone."* (`UPDATE_PLAN.md` §6.)
+alone."* (`archive/UPDATE_PLAN.md` §6.)
 
 ## The three states
 
@@ -42,7 +42,7 @@ here is a queued chunk.
 **`measurement`** — no valid null exists, and forcing one would manufacture
 evidence. The honest output is a number with an interval. `P-H1` is the clearest
 case: Wendel's theorem gives probability 1 for $d > n$, which all eight prompts
-satisfy, and `UPDATE_PLAN.md` §5.7 already calls the boolean "nearly vacuous".
+satisfy, and `archive/UPDATE_PLAN.md` §5.7 already calls the boolean "nearly vacuous".
 An e-value here would be evidence extracted from a theorem rather than from
 data.
 
