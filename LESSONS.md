@@ -167,7 +167,10 @@ table row would do, and results re-narrated in several places.
 
 **The rule now.** `STATE.md` is the only startup read; everything else is
 opened on demand. Numbers go in tables; one claim per line; a result is written
-once and pointed to. Grep large files, don't read them. Status: 📋 + ✅ cap.
+once and pointed to. Grep large files, don't read them. One session per unit
+of work. Every unit's cost goes in `docs/cost_log.md` (`tools/session_cost.py`);
+**a unit costing more than 2× the running median total context gets a line
+saying why.** Status: 📋 + ✅ cap.
 2026-09-22: `docs/index/` gives `PROJECT.md` and `POPPER_PLAN.md` a line-range
 index (✅ `--check` in `check.sh`). `scripts/hooks/guard_large_read.py` refuses an
 unbounded `Read` of any doc over 40 KB (⚠️ not yet registered in

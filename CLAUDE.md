@@ -10,9 +10,8 @@ below exists.
 
 1. Read `STATE.md` (already in context via the hook). If it is missing or
    older than the newest commit on `origin/main`, say so first.
-2. `git fetch` and check: is `main` CI green, is the nightly smoke green,
-   which PRs are open? (`gh run list --branch main --limit 3`,
-   `gh run list --workflow smoke.yml --limit 1`, `gh pr list`). Report any red.
+2. `git fetch`, then `./scripts/status.sh`: one line each for `main` CI, the
+   nightly smoke and open PRs. Report any red.
 3. Verify any claim from `STATE.md` you are about to act on against the tree
    (merged? exists? populated?). Docs have been wrong about all three.
 4. Work in the task worktree `../Mets-work` on a fresh branch from
@@ -20,6 +19,13 @@ below exists.
 
 ## While working
 
+- **One session per unit of work.** After the Stop protocol, start a fresh
+  session; context re-read every call, not file size, is the cost driver
+  (`LESSONS.md` lesson 9).
+- **Batch independent checks** into one call (one shell command, or parallel
+  tool calls), not one call each.
+- **Edit tracked docs with the Edit tool**, not `sed`/heredoc rewrites: a
+  shell edit makes the harness re-inject the whole file into context.
 - **Tangent triage.** Classify every surprise as a defect (fix now), confound
   (attach to the current item) or discovery (park one line under "Parked"
   in the active thread's handoff, with why / cost / which decision it could
@@ -50,7 +56,11 @@ Do these without being asked, in this order, in the same commit as the work:
 5. **`PROJECT.md`** only for a project-wide result, as a new §3.x section.
    Never edit its "Resume here" block; `STATE.md` replaced it.
 6. **`INDEX.md`** only if a directory or phase was added or moved.
-7. Run `./scripts/check.sh` (it includes the doc caps), commit, push, and
+7. **`docs/cost_log.md`**: `python tools/session_cost.py <transcript> --row
+   "<unit>" --pr "#N"` and append the row (transcript:
+   `~/.claude/projects/<project>/<session>.jsonl`). Over 2× the running median
+   total context → add a line saying why.
+8. Run `./scripts/check.sh` (it includes the doc caps), commit, push, and
    **open a PR** if the unit is coherent on its own. Then tell the user the
    PR link and what is now blocked on them.
 
