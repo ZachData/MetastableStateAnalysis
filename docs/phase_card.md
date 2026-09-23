@@ -36,6 +36,13 @@ the change touches it, then run `python3 tools/render_phases.py --stamp <phase>`
 and `python3 tools/render_phases.py`. The stamp records that someone looked.
 It does not check what they concluded.
 
+**What staleness does not see.** It goes one hop: a change to phase A stales
+the cards that depend on A, not the cards that depend on those. It also only
+watches status files. A correction recorded in a later phase's other files or
+in `PROJECT.md` §3.x, which is where most corrections land, does not stale the
+card it corrects. Until that is decided (PR #75, finding 1), each card
+session re-reads the Superseded pointers of the cards it depends on.
+
 Phases without a card are listed in `docs/PHASES.md` as "no card yet" and are
 not checked.
 

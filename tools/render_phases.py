@@ -213,7 +213,9 @@ class _Resolver:
         return self._headings[path]
 
     def has_section(self, path: Path, sec: str) -> bool:
-        pat = re.compile(rf"^#+\s.*?(?<![0-9.]){re.escape(sec)}(?![0-9])")
+        # The number must open the heading: "### 3.41 …", "## 3. …", "### §3.2 …".
+        # Anywhere-in-heading let §12 match a date and §7 a `7d` (#75 review).
+        pat = re.compile(rf"^#+\s+(?:\*\*)?§?{re.escape(sec)}(?![0-9]|\.[0-9])")
         return any(pat.match(h) for h in self.headings(path))
 
     def has_heading(self, path: Path, title: str) -> bool:
@@ -227,7 +229,11 @@ def _check_pointers(text: str, base: Path, res: _Resolver) -> Tuple[bool, List[s
         cited, sec, title, bare = m.groups()
         if bare:
             found = True
-            if not res.has_section(res.root / "PROJECT.md", bare):
+            before = text[:m.start()].rstrip()
+            if before.endswith(".md"):
+                bad.append(f"§{bare} follows an unbackticked file name, so it would be read "
+                           f"as PROJECT.md §{bare}; backtick the file or drop the §")
+            elif not res.has_section(res.root / "PROJECT.md", bare):
                 bad.append(f"§{bare} (no such heading in PROJECT.md)")
             continue
         if not _PATHLIKE.match(cited):
@@ -404,10 +410,16 @@ def stamp(pid: str, root: Path = ROOT, today: Optional[str] = None) -> str:
             raise SystemExit(f"{ph.path}: depends on unknown phase '{dep}'")
         deps.append(f"{dep}@{body_hash(phases[dep].text)}")
     lines = ph.text.splitlines(keepends=True)
-    for key, value in (("Depends on", ", ".join(deps) or "none"),
-                       ("Reviewed", f"{today} · body `{body_hash(ph.text)}`")):
-        n = ph.card.lines[key] - 1
-        lines[n] = f"- **{key}:** {value}\n"
+    # A field runs from its own line to the next field's (or the end marker),
+    # so a value wrapped over several lines is replaced whole. Last field
+    # first, so the earlier line numbers still hold.
+    end_line = ph.text[:ph.text.find(CARD_END)].count("\n") + 1
+    starts = sorted(ph.card.lines.values()) + [end_line]
+    for key, value in (("Reviewed", f"{today} · body `{body_hash(ph.text)}`"),
+                       ("Depends on", ", ".join(deps) or "none")):
+        n = ph.card.lines[key]
+        nxt = next(s for s in starts if s > n)
+        lines[n - 1:nxt - 1] = [f"- **{key}:** {value}\n"]
     text = "".join(lines)
     (root / ph.path).write_text(text, encoding="utf-8")
     return text

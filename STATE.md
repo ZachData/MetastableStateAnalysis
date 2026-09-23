@@ -38,7 +38,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-`claude/phase-cards`: phase review session 1 (PR to open). #74 (phase-review plan), #73,
+`claude/phase-cards`: phase review session 1 (PR #75). #74 (phase-review plan), #73,
 #72, #71, #69 merged 2026-09-23; their branches and worktrees deleted
 (`../Mets-work` now holds `claude/phase-cards`). Nightly smoke red (Blocked item 2).
 Current state: `./scripts/status.sh`.

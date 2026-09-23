@@ -6,19 +6,19 @@
 - **Question:** Do tokens, read as particles on the sphere moving through depth, pass through metastable multi-cluster states before they collapse, as the identity-weight model predicts, and does that survive learned weights and training?
 - **Inputs:** `pythia-410m`: pilot of 27 checkpoints × 8 v1 prompts (battery v1, `1e47918ef77a`) plus the `repeated_tokens` control; the 19-checkpoint sweep (152 dirs). `CLAIM-C` arms: `gpt2-large`, `pythia-1.4b` trained and random, on v1 and on v2 (`06790b90dcfe`), hashed in `claims/audits/claim_c_real_run.json`. The 2026-04-23 GPT-2/BERT/ALBERT run is gone from disk
 - **Results:**
-  - Plateaus in all 216 pilot runs, at d = 1024, where the paper's own numerics say the metastable band is gone; whether the detector sees the paper's object is open — `status-1.md` "Before the verdict table"
+  - Plateaus in every pilot run, at the model's width d = 1024, where the paper's own numerics say the metastable band is gone; whether the detector sees the paper's object is open — `status-1.md` "Before the verdict table"
   - A developmental arc with four transitions at four different steps (late-layer collapse 8→16, energy break 256→512, plateau onset turns content-driven at 512, Fiedler sign 1k–3k) — `status-1.md` "The developmental arc"
   - Energy regime attractive at init, repulsive from step 256; reverses the GPT-2 run — `status-1.md` "Verdict table"
   - Claim (a) splits (energy and rank come apart in time); claim (b) holds for two of three markers, rank does not co-locate — `status-1.md` "PREDICTIONS.md adjudication"
   - Cluster carrying capacity invariant across training while turnover rises; `repeated_tokens` collapse is undone by training — `status-1.md` "Verdict table"
-  - `CLAIM-C` gate: INSUFFICIENT at chance concordance on 8 prompts (§3.41); refused at 20 v2 prompts on an untabulated homogeneity correction (§3.46)
+  - `CLAIM-C` gate: INSUFFICIENT at chance concordance on the v1 prompts (§3.41); refused on the v2 prompts for want of a tabulated homogeneity correction (§3.46)
   - HDBSCAN output depends on the install: the conda env reproduces the 2026-08-12 sweep exactly and `.venv` does not — `status-1.md` "The arms are all here and the gate still refuses"
 - **Superseded / wrong:**
   - Several verdict columns read the wrong quantity (raw-frame rank, per-head Fiedler, dead spectral k, rank gates on raw rank; D1–D10) — `status-1.md` "Measurement defects"
   - "Metastability is an open problem" may be stale (`2410.06833`), and the causal mask is now part of the theory (`2411.04990`) — `lit-1.md` §1.2, `lit-1.md` §1.3
   - The developmental arc is not new: Pythia's warmup-collapse / expansion / consolidation phases are published (`2509.23024`) — `lit-1.md` §2
   - Open item 3 is answered: step0 and step1 are the same weights, so the axis has one point fewer (§3.51)
-  - The step-size definition item 0 relies on (MATH.md §8, a file that does not exist) understates the effective integration time about 5.7×, which bears on open item 0 — `p1c_frames/status-1c.md` "Findings from implementation, before any data"
+  - The step-size definition open item 0 relies on (from MATH.md, a file that does not exist) understates the effective integration time several-fold, in the direction that favours "never integrates far enough" — `p1c_frames/status-1c.md` "Findings from implementation, before any data"
   - Cluster counts carry a re-measurement floor: the HDBSCAN partition is not reproducible run to run — `p10_cluster_function/status-10.md` §3
   - The carrying-capacity invariant has a formula now (Lemma C.1) — `p10_cluster_function/math-10.md` §5.4
 - **Registry:** `CLAIM-C` e-value, active, real run recorded, INSUFFICIENT, not adjudicated; `CLAIM-A` needs-null, construction specified and not built (`claims/EXPERIMENTS.md`)
@@ -33,8 +33,8 @@
 - **After Phase 10:**
   - Re-report D1, D3 and D10 on normed rank, with the rank thresholds re-derived on that scale (free)
   - Attribute the late severity decline to attention vs FFN through the parallel-residual decomposition (free where `sublayer_streams` exist)
-  - Fill the checkpoint gaps named in "Checkpoint schedule": 10, 12, 24, 48, 384, 768, 2000, 25k, 30k (forward pass, 410m, all prompts)
-  - Extend `CLAIM-C`'s homogeneity calibration past 12 prompts and rescore the v2 arms (free, ~45 min CPU; order against the holdout is `docs/PHASE_REVIEW.md` "Open" 3)
+  - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
+  - Extend `CLAIM-C`'s homogeneity calibration to the v2 prompt count and rescore the v2 arms (free, CPU calibration, cost in §3.46; order against the holdout is `docs/PHASE_REVIEW.md` "Open" 3)
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
 - **Reviewed:** 2026-09-23 · body `c5b6802fd7`
 <!-- /phase-card -->

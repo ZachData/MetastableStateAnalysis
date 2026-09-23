@@ -166,6 +166,31 @@ def test_a_frozen_copy_gets_its_own_id(repo):
     assert "| 1-frozen |" in rp.render(repo)
 
 
+@pytest.mark.parametrize("heading, sec", [
+    ("### 9.1 Notes from 2026-09-12", "12"),     # a number inside a date
+    ("## The `7d` line", "7"),                   # a phase name in a code span
+    ("### 3.41 A section", "3"),                 # a parent that does not exist
+])
+def test_a_section_number_must_open_its_heading(repo, heading, sec):
+    (repo / "PROJECT.md").write_text(f"# P\n\n### 3.41 A section\n\n{heading}\n",
+                                     encoding="utf-8")
+    _edit(repo, "1", "and §3.41", f"and §{sec}")
+    assert any(f"§{sec} (no such heading" in m for m in _msgs(repo))
+
+
+def test_a_section_after_an_unbackticked_file_is_refused(repo):
+    _edit(repo, "1", "and §3.41", "and MATH.md §3.41")
+    assert any("unbackticked file name" in m for m in _msgs(repo))
+
+
+def test_stamp_replaces_a_field_wrapped_over_lines(repo):
+    _edit(repo, "2", "- **Depends on:** 1@", "- **Depends on:** 1,\n  1@")
+    rp.stamp("2", repo)
+    text = (repo / "p2" / "status-2.md").read_text(encoding="utf-8")
+    assert "\n  1@" not in text
+    assert _msgs(repo) == []
+
+
 def test_a_template_with_wrong_fields_is_refused(repo):
     t = repo / rp.TEMPLATE
     t.write_text(t.read_text(encoding="utf-8").replace("- **Feeds:** none\n", ""),
