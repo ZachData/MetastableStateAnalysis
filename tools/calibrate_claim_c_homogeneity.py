@@ -685,7 +685,7 @@ def rejection_rate_at(quantiles: Sequence[float], p: float) -> float:
     The reading rule lives in `replication_gate.rejection_rate_at` rather than
     here, and is imported rather than restated: the gate is the consumer, and
     two copies of "how a stored rate is read" could disagree without anything
-    noticing -- which is the shape of defect UPDATE_PLAN.md standing rule 4 is
+    noticing -- which is the shape of defect archive/UPDATE_PLAN.md standing rule 4 is
     about. This wrapper only supplies the levels.
     """
     from p1_mstate_tracking.replication_gate import rejection_rate_at as _read

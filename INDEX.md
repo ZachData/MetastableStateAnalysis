@@ -23,9 +23,8 @@ long-form record behind it.**
   drive that forms them is usable as an instrument. **Eight stages, general →
   particular; Stages 1–5 cost no forward pass.** Hypotheses in
   `questions-10.md`; three named project-wide — **H-ANCHOR/BALLAST**,
-  **H-THERMOSTAT**, **H-WARP**. **When it is parked, return to `PROJECT.md`'s
-  "Resume here" block**, which stays authoritative for branch state, `CLAIM-C`,
-  the registry and disk.
+  **H-THERMOSTAT**, **H-WARP**. **When it is parked, return to `STATE.md`**,
+  which is authoritative for branch state, `CLAIM-C`, the registry and disk.
 - **A fourth casualty of the HDBSCAN outage, found 2026-09-20 (§3.54.1).**
   `pair_agreement` — **the project's only semantic instrument** — wrote a
   well-formed record of zeros into all 152 WDS directories rather than failing.
@@ -124,7 +123,7 @@ long-form record behind it.**
   their `status-7d.md` / `status-7e.md`, then `PROJECT.md` §3.12-V.
 - **`docs/index/`** (2026-09-22) — generated line-range indexes of `PROJECT.md` and
   `POPPER_PLAN.md` (`tools/build_doc_index.py`; `--check` in `check.sh`). Read a
-  section by `offset`/`limit`, never the whole file. Why: `docs/agent_context_scan_2026-09-22.md`.
+  section by `offset`/`limit`, never the whole file. Why: `archive/docs/agent_context_scan_2026-09-22.md`.
 - **Literature review, per phase, 2026-09-16** — **`docs/LITERATURE.md`** is the
   index; **`<phase>/lit-N.md`** is the review, and **every phase now has one**. Leads,
   not readings: `arxiv.org` and every other scholarly host are blocked by the session
@@ -134,7 +133,7 @@ long-form record behind it.**
   ablation instrument (`2607.01940`), and 7d's "behavioural proxies fail" thesis
   (`2606.05378`) — and two of Phase 1's framing statements are stale. See
   `PROJECT.md` §3.37.
-- **Literature scan, 2026-09-10** — `docs/literature_scan_2026-09-10.md`. The earlier,
+- **Literature scan, 2026-09-10** — `archive/docs/literature_scan_2026-09-10.md`. The earlier,
   narrower scan; covers §3.12-V only. **Superseded in scope, not overturned** — all
   four of its verdicts are confirmed or sharpened by the 2026-09-16 review.
 - **Phase 7 (original)** — the mechinterp/particle bridge, `P-I1`
@@ -142,7 +141,14 @@ long-form record behind it.**
   where it stands and what is blocking, and `p7_motifs/design-7.md` for the
   translation table.
 - **Phase 2's Pythia rerun is complete.** The 19-step registered sweep is on
-  disk; `PROJECT.md` §1 has the layout.
+  disk; `archive/PROJECT-start-here.md` has the layout.
+- **Archive batch, 2026-09-22.** Moved under `archive/` at their old paths:
+  `archive/UPDATE_PLAN.md`, `archive/PROJECT-start-here.md` (the old "Resume
+  here" blocks), `archive/POPPER_PLAN-done.md` (the finished chunks),
+  `archive/core/CHANGES.md`, `archive/p1b_hemisphere/CHANGES-1b.md`,
+  `archive/p2b_imaginary/PLAN_2b.md` and six dated one-offs in `archive/docs/`.
+  **`archive/MOVED.md` is the old → new map**; lint rule `cited-md-path` fails
+  on any cited `.md` path that neither exists nor is in it.
 - **Everything after Phase 2 has been archived.** Phases 3, 4, 5, 5b, 5c and 6 moved to
   `archive/` on 2026-08-22. They are not maintained, not imported by anything live, and
   their tests are not collected. Their findings stand and stay citable — see
@@ -238,7 +244,7 @@ documentation instance of that bug class. Nothing here has been invented to fill
 
 | Referenced file | Cited by | Notes |
 |---|---|---|
-| `MATH.md` | 12 live files — `PREDICTIONS.md`, `UPDATE_PLAN.md`, `core/metrics.py`, `p1_mstate_tracking/{design-1,status-1}.md`, `p1c_frames/*` | The most load-bearing absence. Cited for §3.2's collapse-time table, §8's step-size definition, §9.1/§9.3 — all of which Phase 1c validates against |
+| `MATH.md` | 12 live files — `PREDICTIONS.md`, `archive/UPDATE_PLAN.md`, `core/metrics.py`, `p1_mstate_tracking/{design-1,status-1}.md`, `p1c_frames/*` | The most load-bearing absence. Cited for §3.2's collapse-time table, §8's step-size definition, §9.1/§9.3 — all of which Phase 1c validates against |
 | `DESIGN_pythia_frames.md` | 11 live files, all in `core/` — `frames.py`, `rope.py`, `qk_offset_null.py`, `battery_structure.py`, `frame_card.py`, `sink_audit.py`, and others | Cited by item number ("see items 5, 8, 12"), so the numbering is load-bearing too |
 | `CHANGES_jlens_adjacent.md` | `p2_eigenspectra/lens_band.py` | |
 | A "2026-07-22 addendum" to `PREDICTIONS.md` | `core/qk_offset_null.py:12` | `PREDICTIONS.md` has no such addendum. The one it does carry (P-T1) is undated in the body and describes a different change |
@@ -255,7 +261,7 @@ Not on `main`, and not reflected in the tables above:
 2026-09-10 cleanup deleted 21 branches around them.** Both are from August and
 ~93 commits behind `main`, so branch age and commit count will keep suggesting
 they are stale; this section is the reason they are not.
-`docs/deleted-branches-2026-09-10.md` records what went and how to restore it.
+`archive/docs/deleted-branches-2026-09-10.md` records what went and how to restore it.
 
 ## Phase 7 — the mechinterp/particle bridge
 

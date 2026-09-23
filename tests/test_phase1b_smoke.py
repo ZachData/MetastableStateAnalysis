@@ -43,7 +43,7 @@ def test_phase1b_per_run_json_and_md_written(tiny_phase1b_dir):
     stem = f"{model_name.replace('/','_')}_{prompt_key}" (run_1b.py
     _run_standard). Exact filenames, not a glob, since a silent stem
     mismatch here would be exactly the artifact-contract bug class this
-    tier exists to catch. Prefix is phase1b_, not phase1h_ (CHANGES-1b.md:
+    tier exists to catch. Prefix is phase1b_, not phase1h_ (archive/p1b_hemisphere/CHANGES-1b.md:
     the Phase 1b revision renamed the artifact prefix intentionally).
     """
     json_path = tiny_phase1b_dir / f"phase1b_{STEM}.json"

@@ -122,7 +122,7 @@ Two conventions for the interaction weights, and it matters which a given theore
 
 Several of the sharper results (monotonicity, the gradient-flow structure) hold for **(SA)**;
 assuming otherwise is exactly the class of citation error `design-1.md` records having made and
-corrected. `UPDATE_PLAN.md` §5.10 records why this is not academic: the concentration curve
+corrected. `archive/UPDATE_PLAN.md` §5.10 records why this is not academic: the concentration curve
 $\gamma_\beta(t)$ (§1.5) is monotone *decreasing* in $\beta$ under (SA) and monotone
 *increasing* under (USA) — verified over ~984k grid points per model, zero violations on the
 (SA) side. Using the surrogate as a stand-in gets the **sign** of the $\beta$-dependence
@@ -203,7 +203,7 @@ Easy to conflate, and the conflation has already cost this project one retracted
   $d \ge n$ on Pythia ($d = 1024$, $n \le 512$), so the hypothesis holds *everywhere* and the
   rate is a live, untested prediction — nothing in the current metric set measures a rate at
   all (§15). Note this is also the theorem that Phase 5 mis-cites for an unrelated
-  intra-cluster-mass claim (`UPDATE_PLAN.md` §1).
+  intra-cluster-mass claim (`archive/UPDATE_PLAN.md` §1).
 - **Theorem 6.9 / the curve $\gamma_\beta(t)$ — concentration when $d \gg n$.** As $d\to\infty$
   with $n$ fixed, *every* pairwise inner product concentrates onto a single deterministic curve
   $\gamma_\beta(t)$ solving a scalar ODE (integrated numerically by Phase 1c's `gamma_ode.py`).
@@ -911,7 +911,7 @@ two decades. So:
 
 The prediction (**P-γ2**) is deliberately stated in the direction that would hurt.
 
-Two calibration findings from `UPDATE_PLAN.md` worth carrying:
+Two calibration findings from `archive/UPDATE_PLAN.md` worth carrying:
 
 - **`MATH.md` §8's step definition understates $T_{\text{eff}}$ by ~5.7×.** It writes $h_\ell =
   \lVert P^\perp(\Delta x_\ell)\rVert/\lVert x_\ell\rVert$ where the numerator is the sphere

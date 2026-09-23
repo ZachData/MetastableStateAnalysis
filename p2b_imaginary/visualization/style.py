@@ -52,7 +52,7 @@ that chain is unavailable. The mirror is pinned by
 whenever both are importable — a fallback that can silently disagree is worse
 than no fallback. The NAME GRAMMAR is not mirrored: `core/model_family.py` is
 stdlib-only and is imported directly, which is why it was moved there
-(`PLAN_2b.md` item 5).
+(`archive/p2b_imaginary/PLAN_2b.md` item 5).
 """
 
 from __future__ import annotations

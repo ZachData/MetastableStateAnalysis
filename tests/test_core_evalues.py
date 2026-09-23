@@ -8,7 +8,7 @@ supermartingale inequality, Type-I control under both fixed-horizon and
 optional stopping -- rather than only spot values.
 
 Two of these follow the project's standing rule 5 ("anchors need a
-non-symmetric arm", `UPDATE_PLAN.md` §6, from the wrong-trace-contraction
+non-symmetric arm", `archive/UPDATE_PLAN.md` §6, from the wrong-trace-contraction
 defect in §5.6): a calibrator test that only checks the uniform case tests
 almost nothing, because the interesting failure is a conservative p-value
 distribution where E[e] should be strictly below 1. Both arms are here.

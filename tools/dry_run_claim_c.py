@@ -136,7 +136,7 @@ RUN IT
     python3 -m tools.dry_run_claim_c --summary
 
 Committed rather than recomputed for the same reason as the other three
-artifacts (`docs/CI_BASELINE.md`): about five minutes is far too slow for a
+artifacts (`archive/docs/CI_BASELINE.md`): about five minutes is far too slow for a
 gate people wait on. `tests/test_claim_c_dry_run.py` pins the record, pins the
 sha256 of both files it describes, and re-derives the headline boundary from
 scratch in milliseconds so the pinned number is checked and not merely stored.

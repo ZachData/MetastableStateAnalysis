@@ -20,6 +20,11 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-09-22 (archive batch): `INDEX.md` listed 3 cited-but-absent `.md` files,
+  found by hand. A lint pass found 95 dangling citations of 15 names, and two
+  of them were plain wrong paths (`MATH_INDEX.md` gave `p5c_unclustered/` for
+  a file in `p5_single_mstate_analysis/`; a path split across a line break in
+  `status-2.md`). Now lint rule `cited-md-path` + `archive/MOVED.md`.
 - 2026-09-22: STATE.md's move note planned for a new *local* box (rebuild conda,
   re-download HF cache). The new box was a cloud container where conda channels
   and `huggingface.co` are blocked and 22 GB is free. Check the box before planning for it.
@@ -184,7 +189,7 @@ saying why.** Status: 📋 + ✅ cap.
 2026-09-22: `docs/index/` gives `PROJECT.md` and `POPPER_PLAN.md` a line-range
 index (✅ `--check` in `check.sh`). `scripts/hooks/guard_large_read.py` refuses an
 unbounded `Read` of any doc over 40 KB (⚠️ not yet registered in
-`.claude/settings.json`; that needs the user). Basis: `docs/agent_context_scan_2026-09-22.md`.
+`.claude/settings.json`; that needs the user). Basis: `archive/docs/agent_context_scan_2026-09-22.md`.
 
 ## 10. Tangents: interesting findings that hijack the plan
 

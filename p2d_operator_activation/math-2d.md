@@ -198,7 +198,7 @@ using $C = C^{1/2}C^{1/2}$ for the symmetric PSD covariance. The correct contrac
 `((C@M) * (M@C)).sum()`, and the non-negativity is now a runtime guard rather than a hoped-for
 property.
 
-**The general lesson, stated in `UPDATE_PLAN.md` §5.6 and worth carrying everywhere:**
+**The general lesson, stated in `archive/UPDATE_PLAN.md` §5.6 and worth carrying everywhere:**
 
 > **An anchor that only tests the identity case tests almost nothing about a bilinear form.
 > Every anchor in this project should have a non-symmetric arm.**

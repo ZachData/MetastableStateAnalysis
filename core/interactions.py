@@ -117,7 +117,7 @@ def _as_basis(U, d: int, name: str = "projector") -> np.ndarray:
     projector, so passing a (d, d) projector to a function expecting a
     basis silently returns the right answer. It returns a *wrong* answer,
     equally silently, for any square matrix that is neither. That is
-    UPDATE_PLAN.md 5.6's failure mode exactly — a contraction that agreed
+    archive/UPDATE_PLAN.md 5.6's failure mode exactly — a contraction that agreed
     with the truth at the anchor and was wrong for every real head — so
     the shape is checked and named here rather than trusted.
     """

@@ -9,7 +9,7 @@ from a search engine's summary of the page, which is weaker evidence than an abs
 and much weaker than a paper. Verify before citing, arguing against, or dropping a
 line of work. §5 is the queue.
 
-**Why this file exists.** `docs/literature_scan_2026-09-10.md` covered §3.12-V only —
+**Why this file exists.** `archive/docs/literature_scan_2026-09-10.md` covered §3.12-V only —
 the 7d/7e/8 territory. Every other phase was building on citations chosen when the
 phase was designed, some of them two years old, with no check on what the field did
 since. This is Phase 1's check.

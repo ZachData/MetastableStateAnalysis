@@ -5,7 +5,7 @@
 cross-phase findings that no single phase's file could state, and the single ranked
 queue of what to read.
 
-**Produced 2026-09-16.** Extends `docs/literature_scan_2026-09-10.md`, which covered
+**Produced 2026-09-16.** Extends `archive/docs/literature_scan_2026-09-10.md`, which covered
 §3.12-V (the 7d/7e/8 territory) only and which remains valid — every one of its four
 verdicts is confirmed or sharpened below.
 
@@ -28,7 +28,7 @@ than a paper. The marks used throughout:
 | **[N]** | id and title appeared in a result list only; no summary text was seen |
 
 **Nothing is marked "read", because nothing was.** This is the same discipline
-`docs/literature_scan_2026-09-10.md` set, for the same reason, and it is not optional:
+`archive/docs/literature_scan_2026-09-10.md` set, for the same reason, and it is not optional:
 a search summary can misattribute a finding to the wrong paper, and at least one
 attribution in these files is flagged as unreliable for exactly that reason
 (`lit-1c.md` §5.3).

@@ -7,7 +7,7 @@ no ordering, and the trajectory that is Phase 1's and Phase 2's actual
 headline result could not be expressed at all. Every figure here is on the
 step axis.
 
-The class answers `PLAN_2b.md`'s open questions 1 and 3 directly:
+The class answers `archive/p2b_imaginary/PLAN_2b.md`'s open questions 1 and 3 directly:
 
   1. Does the complex fraction have a developmental trajectory? If it sits
      at ~0.98 from step 0, "84-97% complex" says nothing about training.
@@ -20,7 +20,7 @@ The class answers `PLAN_2b.md`'s open questions 1 and 3 directly:
 
 Every statistic here comes from `p2b_report`. `flatness` in particular is
 CALLED, not reimplemented: its scale was got wrong twice while it was being
-written (see `PLAN_2b.md`, "A scale error found while demonstrating the
+written (see `archive/p2b_imaginary/PLAN_2b.md`, "A scale error found while demonstrating the
 report") and a second implementation in a figure module would be a third
 chance to get it wrong.
 """

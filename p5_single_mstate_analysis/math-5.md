@@ -134,7 +134,7 @@ that cluster tokens sit primarily in the attractive subspace during stable phase
 **Theorem 6.3 makes no such prediction.** It is the $d \ge n$ exponential-rate result
 (`math-1.md` §1.5): convergence to a single cluster at rate $O(e^{-\beta})$, given the cone
 condition. It says nothing about intra-cluster mass or about which eigen-subspace tokens occupy.
-`UPDATE_PLAN.md` §1 flags this mis-citation at four sites (`v_alignment.py:185-196`,
+`archive/UPDATE_PLAN.md` §1 flags this mis-citation at four sites (`v_alignment.py:185-196`,
 `run_5.py:535-542`, `design-5.md:57`, `status-5.md:14`) and leaves it for a decision.
 
 So the "mild tension" is **a tension with a claim the paper does not make** — structurally the

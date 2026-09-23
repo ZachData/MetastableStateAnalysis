@@ -1,11 +1,36 @@
 #!/usr/bin/env python3
 """
-tools/lint_repo.py — tier-0 repo hygiene (POPPER_PLAN.md item A5).
+tools/lint_repo.py — tier-0 repo hygiene (archive/POPPER_PLAN-done.md item A5).
 
-Encodes the project's own standing rules (`UPDATE_PLAN.md` §6) as machine
-checks. Every rule here exists because a defect of that shape already cost
-real work in this repo; the rule stops it recurring rather than catching it
-again by hand.
+Encodes the project's own standing rules as machine checks. Every rule here
+exists because a defect of that shape already cost real work in this repo; the
+rule stops it recurring rather than catching it again by hand.
+
+The standing rules (this docstring is their home since 2026-09-22; they were
+§6 of `archive/UPDATE_PLAN.md`, which keeps the history):
+
+1. **If a quantity appears in a report, it is persisted.** D2's per-head
+   Fiedler existed only in the session that produced it.
+2. **Every data-dependent fallback records the branch it took.** On a model
+   where no eigengap ever exists, the fallback *is* the metric.
+3. **Every gate records which quantity it read and whether it passed**, per
+   layer. A gate reading a constant that may since have changed cannot be
+   reconstructed from the artifact.
+4. **Refuse rather than degrade.** No unit-norm substitute for missing norms,
+   no inferred revision, no invented beta, no silent raw-frame fallback. A
+   number from mismatched inputs is worse than no number: it is unfalsifiable
+   from the output alone.
+5. **Anchors need a non-symmetric arm.** A trace contraction that was wrong
+   for every non-symmetric M passed its M = I anchor (`archive/UPDATE_PLAN.md`
+   §5.6).
+6. **A threshold that has not been derived from a distribution is labelled as
+   placed, not calibrated** -- in the code, next to the value.
+7. **No hand-synced constants** (`archive/UPDATE_PLAN.md` §4): a
+   constant duplicated across modules with a comment asking editors to keep
+   it in step is a defect; parse the one definition instead.
+
+Rules 1-5 are review rules, not machine checks. Rule 6 is `threshold-provenance`
+below, rule 7 `hand-synced-constant`.
 
 Design constraints, both deliberate:
 
@@ -29,6 +54,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -199,7 +225,7 @@ def rule_test_tier_markers(lint: Linter) -> None:
 # ---------------------------------------------------------------------------
 
 RULE_3_WHY = """\
-Standing rule from UPDATE_PLAN.md §4: a numeric constant duplicated across
+Standing rule 7 (module docstring): a numeric constant duplicated across
 modules with a comment asking editors to keep it in step is a defect, not a
 convention. The project already hit it -- checkpoint_scalars.py carried a
 hand-synced copy of ENERGY_VIOLATION_REL_TOL, fixed by parsing the constant out
@@ -285,9 +311,9 @@ def rule_status_doc_staleness(lint: Linter) -> None:
 # ---------------------------------------------------------------------------
 
 RULE_5_WHY = """\
-Standing rule 6 (UPDATE_PLAN.md §6): 'A threshold that has not been derived from
+Standing rule 6 (module docstring): 'A threshold that has not been derived from
 a distribution is labelled as placed, not calibrated -- in the code, next to the
-value.' §5.7 is why: Q_k cannot be compared against a fixed tolerance because
+value.' archive/UPDATE_PLAN.md §5.7 is why: Q_k cannot be compared against a fixed tolerance because
 E[Q_k] = 1/n exactly for i.i.d. points, so every large-n configuration reads as
 a spherical design under an absolute threshold. An unlabelled threshold gives a
 reader no way to tell a measured cut from a guessed one. Warning-level: the
@@ -372,6 +398,90 @@ def rule_startup_doc_caps(lint: Linter) -> None:
                        "no '**Last updated:** YYYY-MM-DD' in the first 10 lines")
 
 
+# ---------------------------------------------------------------------------
+# Rule 7 — every cited .md path resolves, or the archive map says where it went
+# ---------------------------------------------------------------------------
+
+RULE_7_WHY = """\
+A citation that resolves to nothing is the documentation form of "refuse
+rather than degrade": the reader follows it, finds nothing, and either stops
+or guesses. INDEX.md already listed three such absences found by hand, and
+the 2026-09-22 archive batch moved ten files and sixteen sections that live
+docs and code cite. So: every `.md` path cited in a live file (outside
+archive/, data/ and tests/, whose fixtures name files that do not exist on
+purpose) must exist, or be in archive/MOVED.md's Moved table (old -> new), or
+in its Absent table with the reason it is cited anyway. A bare file name
+resolves if any file in the tree has that name; a path with a directory
+resolves from the repo root or from the citing file's directory.
+`tools/rewrite_moved_refs.py` applies the Moved table to live files."""
+
+MOVED_MAP = "archive/MOVED.md"
+
+#: Not walked: frozen, data, test fixtures, tool caches. archive/ is still
+#: indexed for bare-name resolution.
+_CITE_SKIP_DIRS = frozenset({
+    ".git", ".venv", "venv", "data", "archive", "tests", "__pycache__",
+    "node_modules", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+})
+_CITE_SUFFIXES = (".md", ".py", ".sh", ".yml", ".yaml", ".toml", ".ini")
+_CITED_MD = re.compile(r"(?<![\w./<{}-])((?:[\w.-]+/)*[\w-]+(?:\.[\w-]+)*\.md)(?![\w/-])")
+#: `status-N.md`, `lit-N.md`: a pattern naming a family of files, not a file.
+_PLACEHOLDER = re.compile(r"(?:^|[-_/])[NX](?:\.|/)")
+
+
+def _map_rows(section: str) -> set[str]:
+    path = ROOT / MOVED_MAP
+    if not path.is_file():
+        return set()
+    out, inside = set(), False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            inside = line.strip() == f"## {section}"
+            continue
+        m = re.match(r"^\|\s*`([^`]+)`\s*\|", line) if inside else None
+        if m and "§" not in m.group(1):
+            out.add(m.group(1))
+    return out
+
+
+def _walk(skip: frozenset) -> Iterable[Path]:
+    for d, dirs, files in os.walk(ROOT):
+        dirs[:] = sorted(x for x in dirs if x not in skip and not x.endswith(".egg-info"))
+        for f in sorted(files):
+            yield Path(d) / f
+
+
+def rule_cited_md_paths(lint: Linter) -> None:
+    names = {p.name for p in _walk(frozenset({".git", ".venv", "venv", "data", "__pycache__"}))
+             if p.suffix == ".md"}
+    known = _map_rows("Moved") | _map_rows("Absent")
+    for path in _walk(_CITE_SKIP_DIRS):
+        rel = path.relative_to(ROOT).as_posix()
+        if path.suffix not in _CITE_SUFFIXES or rel == MOVED_MAP:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for n, line in enumerate(text.splitlines(), 1):
+            for m in _CITED_MD.finditer(line):
+                cited = m.group(1)[2:] if m.group(1).startswith("./") else m.group(1)
+                head = cited.split("/", 1)[0]
+                if _PLACEHOLDER.search(cited) or ("/" in cited and "." in head
+                                                  and not head.startswith(".")):
+                    continue                     # a family pattern, or a URL host
+                if "/" in cited:
+                    if (ROOT / cited).is_file() or (path.parent / cited).is_file():
+                        continue
+                elif cited in names:
+                    continue
+                if cited in known:
+                    continue
+                lint.error("cited-md-path", path, n,
+                           f"`{cited}` does not exist and is not in {MOVED_MAP} "
+                           f"(Moved: say where it went; Absent: say why it is cited)")
+
+
 RULES = [
     ("orphan-module",         rule_no_orphan_modules,        RULE_1_WHY),
     ("test-tier-marker",      rule_test_tier_markers,        RULE_2_WHY),
@@ -379,6 +489,7 @@ RULES = [
     ("stale-status",          rule_status_doc_staleness,     RULE_4_WHY),
     ("threshold-provenance",  rule_threshold_provenance,     RULE_5_WHY),
     ("startup-doc-cap",       rule_startup_doc_caps,         RULE_6_WHY),
+    ("cited-md-path",         rule_cited_md_paths,           RULE_7_WHY),
 ]
 
 

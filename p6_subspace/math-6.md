@@ -9,7 +9,7 @@ question Phase 2b's null left open:
 > rotational subspace does.** A subspace orthogonal to clustering dynamics is free to carry other
 > computation without interfering with the attractor structure.
 
-**Before anything else: this phase's stated premise has been withdrawn.** `design-6.md` opens with
+**Before anything else: this phase's stated premise has been withdrawn.** `archive/p6_subspace/design-6.md` opens with
 "Phase 2b established that the antisymmetric component $A$ is dynamically neutral — removing it
 from OV leaves energy violations unchanged; the symmetric component $S$ carries 100% of violation
 causality." That is the `elim_rotation = 0.0` result, and `math-2b.md` §3.1 shows it was **an

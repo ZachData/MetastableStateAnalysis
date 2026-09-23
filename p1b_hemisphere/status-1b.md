@@ -6,7 +6,7 @@ phase may carry an e-value (`claims/EXPERIMENTS.md`).
 **Last verified (results below):** run after Phase 1,
 `--phase1-dir results/2026-04-23_18-30-06`. Date not recorded in source.
 
-**Code state:** revised. See `CHANGES-1b.md`. The code has moved ahead of the
+**Code state:** revised. See `archive/p1b_hemisphere/CHANGES-1b.md`. The code has moved ahead of the
 results — **the verdict table below reflects the pre-revision run and has not
 been reproduced.** Two of its rows are retracted outright and two are
 reinterpreted. Nothing here should be cited until a rerun.

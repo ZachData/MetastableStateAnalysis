@@ -5,7 +5,7 @@ tools/calibrate_steering_sign.py — what P-ST1's construction does, measured.
 is the one that works, and the evidence behind the four decisions inside it.
 Generated offline and committed to `claims/calibration/steering_sign.json`,
 same arrangement as `claims/calibration/changepoint_colocation.json`
-(`docs/CI_BASELINE.md`): the gate reads none of it at runtime, so a lost file
+(`archive/docs/CI_BASELINE.md`): the gate reads none of it at runtime, so a lost file
 breaks nothing — what it would lose is the reason the gate is built this way,
 which is the thing this project keeps finding it cannot reconstruct later.
 

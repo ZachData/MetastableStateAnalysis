@@ -11,7 +11,7 @@ rule in `CLAUDE.md` covers those.
 Why a hook and not prose: "grep PROJECT.md, never read it whole" lived in
 prose (`LESSONS.md` lessons 1 and 9), and the Claude Code docs say to use a
 PreToolUse hook for anything that must hold regardless of what Claude decides
-(`docs/agent_context_scan_2026-09-22.md`).
+(`archive/docs/agent_context_scan_2026-09-22.md`).
 
 Registered in `.claude/settings.json` under hooks.PreToolUse, matcher "Read".
 Fails open: bad input, or a file it cannot stat, allows the read.

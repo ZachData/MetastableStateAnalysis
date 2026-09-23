@@ -33,7 +33,7 @@ so on the (constant) `rotation_neutral` verdict neither was reachable at all.
 `--blocks` names what to run; nothing gates anything else.
 
 Blocks 2, 3 and 4 are deliberately absent from `BLOCKS` until their maths is
-redefined — see `PLAN_2b.md` items 10-12. Wiring a block whose result is
+redefined — see `archive/p2b_imaginary/PLAN_2b.md` items 10-12. Wiring a block whose result is
 degenerate by construction is what produced the previous status table.
 """
 
@@ -122,7 +122,7 @@ def run_block_1a(ov_data: dict, out_dir: Path, *, top_k_planes: int = 0,
 
     No activations, no forward pass, no prompts. This is the cheapest thing in
     the phase and the one that answers whether the 84-97% complex fraction has
-    a developmental trajectory at all — see `PLAN_2b.md` open question 1.
+    a developmental trajectory at all — see `archive/p2b_imaginary/PLAN_2b.md` open question 1.
     """
     res = schur_block.analyze_rotational_spectrum(
         ov_data,
@@ -524,7 +524,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         raise SystemExit(
             f"run_2b: unknown block(s) {unknown}. Available: {BLOCKS}. "
             "Blocks 2, 3 and 4 are deliberately unwired until their maths is "
-            "redefined — see PLAN_2b.md items 10-12."
+            "redefined — see archive/p2b_imaginary/PLAN_2b.md items 10-12."
         )
 
     betas = [float(b) for b in args.betas.split(",") if b.strip()]

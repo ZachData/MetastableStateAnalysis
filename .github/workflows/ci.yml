@@ -1,10 +1,10 @@
-# ci.yml — the gating tiers (POPPER_PLAN.md item A4).
+# ci.yml — the gating tiers (archive/POPPER_PLAN-done.md item A4).
 #
 # Two jobs, deliberately ordered cheapest-first so a hygiene failure does not
 # wait behind a test run:
 #
 #   lint  — tier 0. No dependencies at all. Repo-hygiene rules that encode the
-#           project's own standing rules (UPDATE_PLAN.md §6), plus the
+#           project's own standing rules (archive/UPDATE_PLAN.md §6), plus the
 #           Popperian record checks once claims/ exists. Seconds.
 #   pure  — tier 1. numpy + scipy + pytest, no torch. The gating test tier.
 #

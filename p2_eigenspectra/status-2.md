@@ -294,8 +294,8 @@ it lands.
 
 ## 2026-09-06 — what the dissipation identity and the co-location panel add
 
-Two Phase-7-driven analyses built on Phase 2's on-disk artifacts (`docs/dissipation_
-checkpoint_axis_scoping.md`, `PROJECT.md` §3.8; `data/analysis/dissipation_series.json`,
+Two Phase-7-driven analyses built on Phase 2's on-disk artifacts (`docs/dissipation_checkpoint_axis_scoping.md`,
+`PROJECT.md` §3.8; `data/analysis/dissipation_series.json`,
 `colocation_panel.*`, `dissipation_panel.*`). All on the registered 19-step P-I1 sweep,
 which is a superset of this phase's grid. Three things bear on the open items above.
 
@@ -399,7 +399,7 @@ fourth instrument, same location.
 
 ### (d) Provenance gap in this phase's artifacts
 
-`docs/results_provenance_audit_2026-09-05.md` §3.1: the `p2_eigenspectra_*` run
+`archive/docs/results_provenance_audit_2026-09-05.md` §3.1: the `p2_eigenspectra_*` run
 directories carry **no manifest, no `git_sha`, no timestamp** in any file — provenance is
 directory mtime only (2026-08-31 / 2026-09-01). Phase 1's runner writes a full
 `manifest.json`; this phase's does not. Every module that produced the OV artifacts is

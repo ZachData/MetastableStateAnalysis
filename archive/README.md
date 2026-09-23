@@ -52,6 +52,16 @@ real results and real blocker diagnoses that stay citable:
   0.067 on real repulsive, 0/49 layers in the predicted direction), still
   carrying two live explanations, neither ruled out.
 
+## Documents archived 2026-09-22
+
+A second, document-only batch: `UPDATE_PLAN.md`, `PROJECT.md` §1 (as
+`PROJECT-start-here.md`), the DONE chunks of `POPPER_PLAN.md` (as
+`POPPER_PLAN-done.md`), `core/CHANGES.md`, `p1b_hemisphere/CHANGES-1b.md`,
+`p2b_imaginary/PLAN_2b.md` and six dated `docs/` one-offs, each at its old
+path under `archive/`. Frozen like the rest: live citations were rewritten by
+`tools/rewrite_moved_refs.py`; these files' own citations were not.
+**`MOVED.md` is the old → new map** and `tools/lint_repo.py` reads it.
+
 ## Reintroduction
 
 Phases 3 and 4 carry an explicit trigger; see the `FROZEN.md` in each. The

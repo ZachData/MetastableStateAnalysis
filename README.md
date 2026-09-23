@@ -76,8 +76,8 @@ The plain-English version of this story, with no cross-references, is
 
 ## 2. Where the work stands
 
-A one-paragraph summary as of 2026-09-17; `PROJECT.md`'s header line and
-"Resume here" block are the authority and will be newer than this.
+A one-paragraph summary as of 2026-09-17; `STATE.md` is the authority and
+will be newer than this.
 
 - **The programme is the particle / optimal-transport reading** (`PROJECT.md`
   §3.29, a user decision on 2026-09-13). Induction heads are the *current
@@ -135,25 +135,24 @@ session is `PROJECT.md` → `INDEX.md` → the phase you are about to touch.
 | The method plan — CI, the Popperian layer, the particle bridge — and its dated construction log §6a–§6za | [`POPPER_PLAN.md`](POPPER_PLAN.md) |
 | The mathematics, phase by phase, and the six recurring failure patterns | [`MATH_INDEX.md`](MATH_INDEX.md) → each phase's `math-N.md` |
 | Spectral analysis, optimal transport, and the "second spectrum" argument | [`MATH_SPECTRAL_OT.md`](MATH_SPECTRAL_OT.md) (symbolically checked, §7.4 of `PROJECT.md`) |
-| The Pythia-transition plan and the six standing rules (§6) | [`UPDATE_PLAN.md`](UPDATE_PLAN.md) |
+| The standing rules | `tools/lint_repo.py` docstring (history: [`archive/UPDATE_PLAN.md`](archive/UPDATE_PLAN.md) §6) |
 | Paper / blog sketches and the prior art each sits against | [`PUBLICATION_IDEAS.md`](PUBLICATION_IDEAS.md) |
 | Why a phase is built the way it is | `<phase>/design-N.md` |
 | A phase's current state, opening with its registered predictions | `<phase>/status-N.md` |
-| Literature scans, the results-provenance audit, the CI baseline, deleted branches | [`docs/`](docs/) |
+| Dated one-offs (literature scans, the provenance audit, the CI baseline, deleted branches) | [`archive/docs/`](archive/docs/); old → new paths in [`archive/MOVED.md`](archive/MOVED.md) |
 | What changed and when | `git log` |
 
 Two conventions worth knowing: many `.md` files open with an
 `<!-- filename -->` comment so they identify themselves when pasted; and
 `PROJECT.md`'s §3 is numbered in the order things were *learned*, not in file
-order — §3.36 sits above §3.35, and the "Resume here" block says which to read
-in which order.
+order — §3.36 sits above §3.35; `docs/index/PROJECT.idx.md` lists them.
 
 ## 4. Repository layout
 
 ```
 Mets/
 ├── README.md, OVERVIEW.md, PROJECT.md, INDEX.md, CLAUDE.md   # the front matter (§3)
-├── PREDICTIONS.md, POPPER_PLAN.md, UPDATE_PLAN.md
+├── PREDICTIONS.md, POPPER_PLAN.md
 ├── MATH_INDEX.md, MATH_SPECTRAL_OT.md, PUBLICATION_IDEAS.md
 │
 ├── core/                      # shared library — the particle schema, metrics,
@@ -288,7 +287,7 @@ The reason for the classification is arithmetic, not philosophy: one invalid
 null in a product voids the Type-I guarantee for every other factor, silently.
 `core/adjudication.py` *refuses* to emit an e-value for the latter two states
 rather than emitting a neutral one — the project's standing rule 4, **refuse
-rather than degrade** (`UPDATE_PLAN.md` §6).
+rather than degrade** (`archive/UPDATE_PLAN.md` §6).
 
 **Adjudication is sequential and anytime-valid.** The e-process follows POPPER
 (Huang et al., 2025): a claim is supported when its accumulated $E \geq 1/\alpha
@@ -400,7 +399,7 @@ with real torch). Tier 1 runs with the heavy modules **shadowed by packages
 that raise `ImportError`**, not merely uninstalled, for the same reason.
 
 The gate on the current tip: **2332 passed / 5 skipped / 45 deselected**.
-`docs/CI_BASELINE.md` records what the suite did before CI existed — zero
+`archive/docs/CI_BASELINE.md` records what the suite did before CI existed — zero
 tests collected — so that green means something.
 
 ## 9. Reproducing a number
@@ -454,7 +453,7 @@ forgotten at least twice:
   `tools/math_checks/`, and each check states what it does *not* prove. Four
   of the six corrections owed to the source math were the kind these catch.
 
-Three standing rules from `UPDATE_PLAN.md` §6 that shape most of the code: a
+Three standing rules from `archive/UPDATE_PLAN.md` §6 that shape most of the code: a
 quantity that appears in a report is persisted; every data-dependent fallback
 records the branch it took; and a threshold not derived from a distribution is
 labelled *placed*, not *calibrated*, in the code next to the value.
@@ -480,6 +479,6 @@ the 1b and 1.4b rungs are reserved for a prediction that names them first.
   live phase runs on.
 - The induction-head literature and the verified scans that position this
   project against it: `p8_scale_ladder/literature-8.md`,
-  `docs/literature_scan_2026-09-10.md`, `docs/literature_scan_2026-09-13.md`.
+  `archive/docs/literature_scan_2026-09-10.md`, `archive/docs/literature_scan_2026-09-13.md`.
 - `MATH_SPECTRAL_OT.md` §8 and `PUBLICATION_IDEAS.md` carry the wider
   reference lists.

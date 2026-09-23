@@ -97,7 +97,7 @@ from p2b_imaginary.rotational_rescaled import (
 # ── Phase 2b rewrite (commit beb20d4) compatibility shims ──────────────────
 # Three functions this file originally tested were withdrawn from
 # rotational_schur.py in that rewrite. ffn_rotation.py and
-# rotation_hemisphere.py were NOT updated to match (PLAN_2b.md items 12/13
+# rotation_hemisphere.py were NOT updated to match (archive/p2b_imaginary/PLAN_2b.md items 12/13
 # track that as separate, not-yet-done work) -- they still expect the old
 # (d, d)-projector-dict shape build_rotation_plane_projectors used to
 # produce. These shims reconstruct that shape / those names purely for
