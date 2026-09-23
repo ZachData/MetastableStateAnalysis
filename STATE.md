@@ -36,7 +36,9 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-`claude/p10-stage0-driver`: the Stage 0 chunk driver. #61–#66 merged 2026-09-22;
+#67 `claude/p10-stage0-driver`: the Stage 0 chunk driver (challenged; all five findings fixed).
+#68 `claude/challenge-pr-skill`: `/challenge-pr`, fresh-context adversarial PR review, run
+on every PR per `CLAUDE.md` Stop step 9 (headless: `claude -p "/challenge-pr N"`). #61–#66 merged 2026-09-22;
 `main` CI green at `4270a64`. Nightly smoke last red 2026-09-22 (Blocked item 2). Current state: `./scripts/status.sh`.
 
 Superseded remote branches, safe to delete: `claude/p10-free-rows`,
