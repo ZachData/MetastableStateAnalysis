@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > remains authoritative for everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-22 — Stage 0 probed and timed; check 1 (battery hash) cannot pass as written, decision open in §0.2. **First action: Stage 0, more prompts.**
+**Last updated:** 2026-09-22 — Stage 0: option B decided, chunk driver built (#67), runbook in §0.3. **First action: launch chunk 1 once #67 merges.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -174,18 +174,22 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > what is done from disk each time (v2 hash + pinned `git_sha` + populated
 > partition + populated `pair_agreement`), so it is resumable with no ledger;
 > it plans only what fits the budget, kills the running invocation at the
-> deadline, and stops the chunk if the first invocation comes back
-> unpopulated. **Plan at the conservative probe estimate: 3 chunks** (147 +
-> 147 + 86 runs, ~25 h with a 1.25× margin); it re-fits from the sweep's own
-> manifests after 5 runs. The 09-22 probe does **not** count (other commit).
+> deadline, and stops the chunk if any invocation comes back unpopulated.
+> **A kill loses the whole invocation** (`pair_agreement.json` is written only
+> at its end), so invocations are capped at **5 prompts** (≤ ~20 min lost).
+> **Plan at the conservative probe estimate: 3 chunks** (144 + 144 + 92 runs,
+> ~25 h with a 1.25× margin); it re-fits from the sweep's own manifests after 5
+> runs. The 09-22 probe does **not** count (other commit). **Readers select
+> Stage 0's runs through `$METS_RESULTS_DIR/stage0_logs/stage0_index.json`**,
+> never by globbing hash + sha: a killed invocation leaves orphaned directories
+> that match both (`status` counts them).
 >
 > ```bash
 > # once, after the driver's PR merges: a run tree pinned at that merge commit
 > cd /run/media/system/WDS_500/Mets && git fetch -q
-> PIN=$(git rev-parse origin/main)
-> git worktree add --detach ../Mets-stage0 $PIN
-> # each chunk
-> cd ../Mets-stage0
+> git worktree add --detach ../Mets-stage0 origin/main
+> # each chunk -- PIN comes from the run tree itself, never from origin/main
+> cd /run/media/system/WDS_500/Mets-stage0 && PIN=$(git rev-parse HEAD)
 > export HF_HOME=/run/media/system/WDS_500/Mets/data/hf \
 >        METS_RESULTS_DIR=/run/media/system/WDS_500/Mets/data/phase12 \
 >        HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1

@@ -13,8 +13,18 @@ the disk: what is done is re-read from `METS_RESULTS_DIR` on every invocation.
 A (checkpoint, prompt) pair is done iff some run directory holds a
 `manifest.json` for it whose battery hash is v2 **and** whose `git_sha` is the
 pinned commit, with a populated `hdbscan_labels.json` and a populated
-`pair_agreement` entry. A chunk killed mid-run leaves a directory with no
-manifest (it is written last), which therefore does not count and is re-run.
+`pair_agreement` entry.
+
+**A kill loses the whole invocation, not one prompt.** `run_1` writes
+`pair_agreement.json` once, after *every* prompt of the invocation
+(`run_1.py`, `aggregate_global_artifacts`), so an invocation killed at the
+deadline leaves finished-looking run directories that are not done, and all
+its prompts re-run. Invocations are therefore capped at
+`MAX_PROMPTS_PER_INVOCATION` prompts, bounding the loss to ~20 min while
+keeping model-load overhead at a few percent (found by `/challenge-pr` on #67).
+Those orphaned directories match the v2 hash and the pinned sha, so **readers
+must select Stage 0's 380 directories through `stage0_index.json`**, which the
+driver rewrites after every invocation, never by globbing hash + sha.
 
 **Pinned commit.** `--pin` must equal `HEAD` of the tree the runs are launched
 from, and that tree must be clean — `run_1` writes `git rev-parse HEAD` into
@@ -27,10 +37,10 @@ invocation at the deadline. Estimates start from the 2026-09-22 probe
 (`wiki_byzantium` × step143000: 203 s at 404 tokens, `handoff-10.md` §0.2) and
 are re-fitted from this sweep's own manifests as soon as it has some.
 
-**Fail fast.** After the first invocation of a chunk, checks 2 and 3 of
-`handoff-10.md` §0.3 are re-read off disk; a run that came back with an empty
-partition or a zeroed `pair_agreement` stops the chunk rather than being
-followed by 379 more (`LESSONS.md`: an instrument that degrades instead of
+**Fail fast.** After every invocation, checks 2 and 3 of `handoff-10.md` §0.3
+are re-read off disk; an invocation that produced no complete run (empty
+partition, zeroed `pair_agreement`, or a crash) stops the chunk rather than
+being followed by the rest (`LESSONS.md`: an instrument that degrades instead of
 refusing).
 
     # what would the next chunk do, and how many chunks remain?
@@ -61,11 +71,13 @@ MODEL_FAMILY = "pythia-410m"
 
 # The 19 checkpoints of the WDS sweep (`data/phase12/2026-08-31_*`,
 # `2026-09-01_*`), in the order they are run: the ends first, so a sweep that
-# stops early still spans the training axis. step0 and step1 are the same
+# stops early still spans the training axis. step143000 leads because the
+# 09-22 probe already passed there, so a failure of the first invocation is
+# the toolchain's, not the checkpoint's; step0 (random weights) is atypical. step0 and step1 are the same
 # weights upstream (PROJECT.md §3.51 (7)) and both are run anyway, to keep the
 # grid identical to the 152 v1 directories.
 CHECKPOINTS: Tuple[int, ...] = (
-    0, 143000, 1000, 8000, 64, 32000, 256, 2000, 16, 4000,
+    143000, 0, 1000, 8000, 64, 32000, 256, 2000, 16, 4000,
     1, 2, 4, 8, 32, 128, 512, 16000, 54000,
 )
 
@@ -74,9 +86,13 @@ EXCLUDED_PROMPTS = frozenset({"short_heterogeneous"})
 
 BATTERY_HASH_V2 = "06790b90dcfe"
 
-# The probe (handoff-10.md §0.2): 203 s in the manifest at 404 tokens.
+# The probe (handoff-10.md §0.2): 203 s in the manifest at 403 tokens.
 PROBE_SECONDS = 203.0
-PROBE_TOKENS = 404
+PROBE_TOKENS = 403
+# Bounds what a deadline kill throws away (module docstring). Placed, not
+# calibrated: 5 × ~3.5 min ≈ 20 min lost at worst, load ≈ 30 s per 5 runs.
+MAX_PROMPTS_PER_INVOCATION = 5
+INDEX_NAME = "stage0_index.json"
 # Model load + V-spectrum per invocation: 3 min 51 s wall minus 203 s.
 LOAD_SECONDS = 30.0
 # Attention is n², activations n; between the two the probe cannot tell, so
@@ -113,9 +129,11 @@ def _populated_pair_agreement(exp_dir: Path, prompt: str) -> bool:
     return total > 0
 
 
-def _n_tokens(run_dir: Path) -> int:
+def _n_tokens(run_dir: Path, manifest: dict) -> int:
+    if manifest.get("n_tokens"):
+        return int(manifest["n_tokens"])
     try:
-        return len((run_dir / "tokens.txt").read_text().split("\n"))
+        return len((run_dir / "tokens.txt").read_text().splitlines())
     except OSError:
         return 0
 
@@ -139,7 +157,7 @@ def scan_done(results_dir: Path, pin: str) -> Dict[Tuple[int, str], Done]:
             continue
         done[(int(step), prompt)] = Done(int(step), prompt, run_dir,
                                          float(m.get("wall_time_seconds") or 0.0),
-                                         _n_tokens(run_dir))
+                                         _n_tokens(run_dir, m))
     return done
 
 
@@ -174,26 +192,30 @@ def todo(prompts: Sequence[str], done: Dict[Tuple[int, str], Done]
 
 def plan_chunk(remaining: List[Tuple[int, List[str]]], n_tokens: Dict[str, int],
                scale: float, budget_s: float) -> List[Tuple[int, List[str]]]:
-    """Greedy: whole checkpoints in order, then the prompts of the next that fit.
+    """Greedy, in order: invocations of at most MAX_PROMPTS_PER_INVOCATION
+    prompts of one checkpoint, each paying one model load, until the next
+    prompt would not fit.
 
-    One invocation per checkpoint amortises the model load over its prompts.
-    Prompts are never reordered within a checkpoint, so a partly-run
-    checkpoint is finished by the next chunk rather than skipped.
+    Returns a list of invocations (a checkpoint may appear several times).
+    Prompts are never reordered, so a partly-run checkpoint is finished by the
+    next chunk rather than skipped.
     """
     chunk, used = [], 0.0
     for step, prompts in remaining:
-        taken, cost = [], LOAD_SECONDS
-        for p in prompts:
-            c = estimate_seconds(n_tokens[p], scale)
-            if used + cost + c > budget_s:
-                break
-            taken.append(p)
-            cost += c
-        if taken:
-            chunk.append((step, taken))
-            used += cost
-        if len(taken) < len(prompts):
-            break
+        for i in range(0, len(prompts), MAX_PROMPTS_PER_INVOCATION):
+            batch = prompts[i:i + MAX_PROMPTS_PER_INVOCATION]
+            taken, cost = [], LOAD_SECONDS
+            for p in batch:
+                c = estimate_seconds(n_tokens[p], scale)
+                if used + cost + c > budget_s:
+                    break
+                taken.append(p)
+                cost += c
+            if taken:
+                chunk.append((step, taken))
+                used += cost
+            if len(taken) < len(batch):
+                return chunk
     return chunk
 
 
@@ -209,6 +231,31 @@ def n_chunks_left(remaining, n_tokens, scale, budget_s) -> int:
         rem = [(s, [p for p in ps if (s, p) not in taken]) for s, ps in rem]
         rem = [(s, ps) for s, ps in rem if ps]
     return count
+
+
+def write_index(results_dir: Path, pin: str, done: Dict[Tuple[int, str], Done]) -> Path:
+    """The canonical list of Stage 0's run directories: what readers select by."""
+    path = results_dir / "stage0_logs" / INDEX_NAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    runs = {f"{s}|{p}": str(d.run_dir) for (s, p), d in sorted(done.items())}
+    path.write_text(json.dumps({"pin": pin, "prompt_battery_hash": BATTERY_HASH_V2,
+                                "n_runs": len(runs), "runs": runs}, indent=1))
+    return path
+
+
+def orphans(results_dir: Path, pin: str, done: Dict[Tuple[int, str], Done]) -> List[Path]:
+    """Pinned v2 run directories that are not the done run for their pair."""
+    canonical = {d.run_dir for d in done.values()}
+    out = []
+    for manifest in sorted(results_dir.glob(f"*/{MODEL_FAMILY}-step*_*/manifest.json")):
+        try:
+            m = json.loads(manifest.read_text())
+        except (OSError, ValueError):
+            continue
+        if (m.get("prompt_battery_hash") == BATTERY_HASH_V2 and m.get("git_sha") == pin
+                and manifest.parent not in canonical):
+            out.append(manifest.parent)
+    return out
 
 
 def chunk_seconds(chunk, n_tokens, scale) -> float:
@@ -259,11 +306,10 @@ def _run_chunk(chunk, pin, results_dir, budget_s, hard_stop, log_dir) -> int:
     stamp = time.strftime("%Y-%m-%d_%H-%M-%S")
     deadline = time.monotonic() + budget_s
     env = dict(os.environ, CUDA_VISIBLE_DEVICES="")
-    first = True
     with open(log_dir / f"chunk_{stamp}.log", "a") as fh:
         _log(fh, f"chunk start, pin {pin[:12]}, budget {budget_s / 3600:.1f} h, "
-                 f"{sum(len(p) for _, p in chunk)} runs over {len(chunk)} checkpoints")
-        for step, prompts in chunk:
+                 f"{sum(len(p) for _, p in chunk)} runs in {len(chunk)} invocations")
+        for i, (step, prompts) in enumerate(chunk):
             left = deadline - time.monotonic()
             if left <= LOAD_SECONDS:
                 _log(fh, "budget exhausted before step%d; stopping" % step)
@@ -271,8 +317,11 @@ def _run_chunk(chunk, pin, results_dir, budget_s, hard_stop, log_dir) -> int:
             cmd = [sys.executable, "-m", "p1_mstate_tracking.run_1",
                    "--models", f"{MODEL_FAMILY}-step{step}", "--prompts", *prompts]
             _log(fh, f"step{step}: {len(prompts)} prompts: {' '.join(prompts)}")
-            with open(log_dir / f"chunk_{stamp}_step{step}.out", "w") as out:
+            with open(log_dir / f"chunk_{stamp}_{i:03d}_step{step}.out", "w") as out:
+                # cwd pinned to this file's tree: `-m` imports from cwd, and a
+                # run from the wrong tree would record the wrong code (LESSONS 2)
                 proc = subprocess.Popen(cmd, env=env, stdout=out,
+                                        cwd=Path(__file__).resolve().parents[2],
                                         stderr=subprocess.STDOUT,
                                         start_new_session=True)
                 try:
@@ -280,18 +329,20 @@ def _run_chunk(chunk, pin, results_dir, budget_s, hard_stop, log_dir) -> int:
                 except subprocess.TimeoutExpired:
                     os.killpg(proc.pid, signal.SIGTERM)
                     proc.wait()
-                    _log(fh, f"step{step}: killed at the deadline; its unfinished "
-                             "prompts have no manifest and will re-run next chunk")
+                    _log(fh, f"step{step}: killed at the deadline; all "
+                             f"{len(prompts)} prompts of this invocation re-run next "
+                             "chunk (pair_agreement.json is written only at its end)")
+                    write_index(results_dir, pin, scan_done(results_dir, pin))
                     return 0
             done = scan_done(results_dir, pin)
+            write_index(results_dir, pin, done)
             got = [p for p in prompts if (step, p) in done]
             _log(fh, f"step{step}: rc {rc}, {len(got)}/{len(prompts)} complete")
-            if first and not got:
-                _log(fh, "FIRST INVOCATION PRODUCED NO COMPLETE RUN (empty partition, "
+            if not got:
+                _log(fh, "INVOCATION PRODUCED NO COMPLETE RUN (empty partition, "
                          "zeroed pair_agreement, or a crash) -- stopping the chunk. "
                          "See the .out file.")
                 return 2
-            first = False
         _log(fh, "chunk end")
     return 0
 
@@ -312,6 +363,10 @@ def main(argv=None) -> int:
     done = scan_done(results_dir, a.pin)
     total = len(CHECKPOINTS) * len(prompts)
     print(f"Stage 0: {len(done)}/{total} done at pin {a.pin[:12]}")
+    orph = orphans(results_dir, a.pin, done)
+    if orph:
+        print(f"  {len(orph)} orphaned run dirs (killed invocations; not in "
+              f"{INDEX_NAME}, safe to delete once Stage 0 is done)")
     if a.action == "status":
         return 0
 
@@ -323,11 +378,11 @@ def main(argv=None) -> int:
         return 0
     chunk = plan_chunk(remaining, n_tokens, scale, budget_s)
     print(f"scale {scale:.0f} s @ {PROBE_TOKENS} tok ({'probe' if len(done) < MIN_REFIT else 'refit'}); "
-          f"this chunk: {sum(len(p) for _, p in chunk)} runs, "
+          f"this chunk: {sum(len(p) for _, p in chunk)} runs in {len(chunk)} invocations, "
           f"~{chunk_seconds(chunk, n_tokens, scale) / 3600:.1f} h estimated; "
           f"chunks left incl. this: {n_chunks_left(remaining, n_tokens, scale, budget_s)}")
     for step, ps in chunk:
-        print(f"  step{step}: {len(ps)} prompts")
+        print(f"  step{step}: {' '.join(ps)}")
     if a.action == "plan":
         return 0
 

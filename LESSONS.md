@@ -192,3 +192,23 @@ the tangent's result lives only in prose.
 
 At each stage boundary, rank parked items by (chance it changes a decision) ÷
 cost, and pull the top one or two into the plan. Status: 📋 `CLAUDE.md`.
+
+## 11. The author's own review cannot see what the author believes
+
+**What happens.** A design is checked by the session that built it, which
+re-reads it through the reasoning that produced it. Where that reasoning holds
+a wrong premise, the check inherits it.
+
+**Instances.**
+- 2026-09-22, #67: the Stage 0 driver said a deadline kill re-runs only "its
+  unfinished prompts". `run_1` writes `pair_agreement.json` once, after the
+  whole invocation, so a kill threw away up to a checkpoint's worth (~1.4 h)
+  of finished runs and left orphan directories matching the hash and sha. The
+  author's gate was green; a fresh-context `/challenge-pr` found it on its
+  first run, `file:line` included.
+- Before `/challenge-pr` existed, the 2026-09-12 merge was 51 commits with no
+  second reader at all (why the PR-size rule exists).
+
+**The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
+design, not lines) and the author answers each finding on the PR; the user
+settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
