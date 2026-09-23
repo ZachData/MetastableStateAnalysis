@@ -1,5 +1,5 @@
 """
-core/evalues.py — the Popperian adjudication kernel (POPPER_PLAN.md item B1).
+core/evalues.py — the Popperian adjudication kernel (archive/POPPER_PLAN-done.md item B1).
 
 Implements the statistical core of POPPER (Huang, Jin, Li, Li, Candès &
 Leskovec, "Automated Hypothesis Validation with Agentic Sequential
@@ -91,7 +91,7 @@ Two consequences that are easy to miss and change how results read
   0.340 on TargetVal-IL2. `core/adjudication.py` must therefore refuse to emit
   an e-value for a prediction whose null is not established, rather than
   emitting a neutral one -- an instance of the project's standing rule 4,
-  "refuse rather than degrade" (`UPDATE_PLAN.md` §6).
+  "refuse rather than degrade" (`archive/UPDATE_PLAN.md` §6).
 
 References
 ----------

@@ -46,7 +46,7 @@ than "we replicated the paper," and it is one no purely theoretical paper in thi
 
 Two things have to happen before this is submittable, and both are already the top of the
 open-question register. First, **P-γ2** — measure $T_{\rm eff}$ against $t^\ast \approx 4.2$.
-`UPDATE_PLAN.md` §5.2 found the obvious step-size definition understates $T_{\rm eff}$ by ~5.7×,
+`archive/UPDATE_PLAN.md` §5.2 found the obvious step-size definition understates $T_{\rm eff}$ by ~5.7×,
 in exactly the direction that would turn "trained weights resist collapse" into "the network never
 integrates far enough to collapse in the first place," which is a much duller finding. The
 prediction is stated so that the outcome that would hurt is the one predicted, every input is on

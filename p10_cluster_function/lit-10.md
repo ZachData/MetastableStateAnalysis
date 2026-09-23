@@ -106,7 +106,7 @@ it.** The check is one `huggingface_hub` listing and costs nothing.
 
 **`pythia-70m-deduped` is not `pythia-70m`.** They are different training runs on
 different corpora. This repository's ladder holds `pythia-70m` (19 revisions,
-step0 → step143000, `PROJECT.md` §1) and every registered 70m decision names
+step0 → step143000, `archive/PROJECT-start-here.md`) and every registered 70m decision names
 that model. A lens fitted to deduped activations is **not** licensed on
 `pythia-70m` without a check, and the published lens presumably corresponds to a
 single final revision, so **it carries no checkpoint axis at all** — which is the

@@ -1,4 +1,4 @@
-# smoke.yml — tier 2 (POPPER_PLAN.md item A4).
+# smoke.yml — tier 2 (archive/POPPER_PLAN-done.md item A4).
 #
 # Real torch and transformers, real forward passes on tiny HF models. Nightly
 # and on demand; NOT required for merge, because it depends on the HF Hub being

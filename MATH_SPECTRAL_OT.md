@@ -797,7 +797,7 @@ not a new subphase.
 Reported, not fixed — both need an owner's decision, and both are the kind of correction
 `status-2b.md` insists be made explicitly rather than silently.
 
-1. **`p6_subspace/design-6.md` rests on the withdrawn Phase 2b result.** Its first paragraph reads:
+1. **`archive/p6_subspace/design-6.md` rests on the withdrawn Phase 2b result.** Its first paragraph reads:
    "Phase 2b established that the antisymmetric/imaginary component A is dynamically neutral —
    removing it from OV leaves energy violations unchanged; the symmetric/real component S carries
    100% of violation causality." `status-2b.md` withdrew that as an orthogonal-invariance identity

@@ -5,7 +5,7 @@ Why: `PROJECT.md` is ~120k tokens and `POPPER_PLAN.md` ~70k. A session that
 needs one section otherwise greps and then reads around the hits, or pages
 through the file. The index gives every heading its start line, its length
 and an approximate token cost, so the next step is one `Read` with
-`offset`/`limit` (`LESSONS.md` lesson 9; `docs/agent_context_scan_2026-09-22.md`).
+`offset`/`limit` (`LESSONS.md` lesson 9; `archive/docs/agent_context_scan_2026-09-22.md`).
 
 Output: `docs/index/<STEM>.idx.md`, one per document in `DOCS`. Generated; do
 not edit by hand. `--check` fails when a committed index is stale, so CI keeps

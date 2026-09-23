@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 tools/render_falsification.py — generate claims/FALSIFICATION.md
-(POPPER_PLAN.md item B7).
+(archive/POPPER_PLAN-done.md item B7).
 
 Builds, per claim, the ordered table of adjudicated predictions with p, e, the
 running E, and the decision at alpha — replacing the hand-maintained verdict

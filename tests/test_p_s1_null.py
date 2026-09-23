@@ -110,7 +110,7 @@ class TestStatistic:
 
     def test_standardisation_stops_k1_dominating(self):
         """
-        UPDATE_PLAN.md 5.8 measured the null band narrowing from ~0.17 at k=1
+        archive/UPDATE_PLAN.md 5.8 measured the null band narrowing from ~0.17 at k=1
         to ~0.002 at k=3. An unstandardised sum is therefore dominated by k=1
         and discards the degrees that are more sensitive in relative terms.
 

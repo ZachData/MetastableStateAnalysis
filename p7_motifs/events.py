@@ -35,7 +35,7 @@ The five events
 
 Layer 0 has no previous layer. Its events are NaN/False by construction
 and are reported that way rather than dropped, for the same reason
-UPDATE_PLAN.md 5.9 gives about layer 0's violation indicator: dropping it
+archive/UPDATE_PLAN.md 5.9 gives about layer 0's violation indicator: dropping it
 would misalign every series built alongside it.
 """
 

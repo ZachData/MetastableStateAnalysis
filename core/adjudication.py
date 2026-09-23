@@ -1,5 +1,5 @@
 """
-core/adjudication.py — the emission layer (POPPER_PLAN.md item B4).
+core/adjudication.py — the emission layer (archive/POPPER_PLAN-done.md item B4).
 
 The thin layer between a science module that produced a p-value and the
 falsification ledger in `claims/`. It does four things and refuses to do a
@@ -12,7 +12,7 @@ fifth:
 
 What it will not do is emit a number when the inputs do not support one. Three
 refusals, all instances of the project's standing rule 4 ("refuse rather than
-degrade" -- `UPDATE_PLAN.md` §6):
+degrade" -- `archive/UPDATE_PLAN.md` §6):
 
 **No registry entry -> refuse.** An unregistered prediction has no recorded
 null, no evaluability classification, and no pre-registration timestamp, so its

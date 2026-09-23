@@ -42,7 +42,7 @@ Three more that behave like axes and are easy to forget:
 
 ## 2. What is on disk
 
-From `PROJECT.md` §1 and `claims/audits/p1c_inputs.json` (which enumerated keys
+From `archive/PROJECT-start-here.md` and `claims/audits/p1c_inputs.json` (which enumerated keys
 across all 19 `pythia-410m` run directories and 152 model-prompt directories).
 
 ### 2.1 Weights

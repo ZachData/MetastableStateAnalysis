@@ -2,7 +2,7 @@
 
 The figure catalogue for `p2b_imaginary/visualization/`, and the tracker for
 building it. Companion to `status-2b.md` (what the phase found, and what it
-withdrew), `design-2b.md` (why it was built the way it was) and `PLAN_2b.md`
+withdrew), `design-2b.md` (why it was built the way it was) and `archive/p2b_imaginary/PLAN_2b.md`
 (what is being rebuilt). This file answers a fourth question: **what does
 Phase 2b look like**, and which parts of it can be drawn from the artifacts
 the phase actually writes.
@@ -78,7 +78,7 @@ that `p2b_report` already computes its interval widths in. See
 it without inheriting Phase 1's plotting dependencies.
 
 **A missing input is a skipped figure, not a crash.** Blocks 2, 3 and 4 are
-unwired by design (`PLAN_2b.md` items 10–12), nulls are opt-in
+unwired by design (`archive/p2b_imaginary/PLAN_2b.md` items 10–12), nulls are opt-in
 (`--with-nulls`), Block 1b needs Phase 1 activations that a weights-only
 (`--blocks 1a`) sweep never touches, and a single-checkpoint run has no
 trajectory. Every figure declares what it needs and no-ops with a printed
@@ -157,7 +157,7 @@ single-checkpoint directory skips the whole class with that reason.
 
 | # | Figure | Shows | Source | Status |
 |---|---|---|---|---|
-| T1 | `complex_fraction_trajectory` | The complex energy fraction vs log-step with the across-layer spread as a band, and `range_excess_over_noise` printed on the panel. **`PLAN_2b.md` open question 1's figure.** A 27-point series drawn from pure noise has a range of ~4 standard errors by construction, so the figure draws that expectation rather than letting a wiggle read as a trajectory. | `p2b_report.collect_trajectory` | done |
+| T1 | `complex_fraction_trajectory` | The complex energy fraction vs log-step with the across-layer spread as a band, and `range_excess_over_noise` printed on the panel. **`archive/p2b_imaginary/PLAN_2b.md` open question 1's figure.** A 27-point series drawn from pure noise has a range of ~4 standard errors by construction, so the figure draws that expectation rather than letting a wiggle read as a trajectory. | `p2b_report.collect_trajectory` | done |
 | T2 | `tracked_statistics_panel` | Every entry in `TRACKED_STATISTICS` as small multiples on a shared step axis, each with its own spread band and flatness verdict. One image, the whole Block 1a trajectory question. | `p2b_report` | done |
 | T3 | `depth_step_heatmap` | Layer × step heatmaps for the four per-layer scalars that have a trajectory question attached (complex fraction, Henrici, θ, repulsive fraction). Depth and training on the same picture, which is the only place a *localized* event can appear at all. | `block1a.per_layer` | done |
 | T4 | `layer_race` | Every layer's own trajectory as a thin line coloured by depth, with the across-layer mean bold. Distinguishes "the model moved" from "three layers moved and the mean followed them". | `block1a.per_layer` | done |
@@ -173,7 +173,7 @@ None of them computes a statistic.
 
 | # | Figure | Shows | Source | Status |
 |---|---|---|---|---|
-| R1 | `flatness_bars` | `range_excess_over_noise` per tracked statistic against the 1.0 line, with `range_in_spreads` beside it as the second, substantive comparison. **The number the phase's first open question turns on**, and the one whose scale was got wrong twice while it was being written (see `PLAN_2b.md`, "A scale error found while demonstrating the report"). | `p2b_report.flatness` | done |
+| R1 | `flatness_bars` | `range_excess_over_noise` per tracked statistic against the 1.0 line, with `range_in_spreads` beside it as the second, substantive comparison. **The number the phase's first open question turns on**, and the one whose scale was got wrong twice while it was being written (see `archive/p2b_imaginary/PLAN_2b.md`, "A scale error found while demonstrating the report"). | `p2b_report.flatness` | done |
 | R2 | `interval_ranking` | Every interval's `delta_in_spreads`, ranked, with the dated `KNOWN_TRANSITIONS` spans marked in place. A large move means little if every interval has one; this is where "2nd of 26" and "17th of 26" become visible. | `p2b_report.interval_deltas` | done |
 | R3 | `event_alignment` | Statistic × dated-event heatmap of `delta_in_spreads`, each cell annotated with its `interval_rank`, and `not_bracketed` cells hatched rather than drawn as zero. The phase's rule that an unbracketed span is unanswerable, enforced in the rendering. | `p2b_report.align_to_transitions` | done |
 | R4 | `co_movement` | Two trajectories on their shared step grid, plus their interval-to-interval agreement — the less trend-sensitive reading. Defaults to Henrici against the repulsive fraction; `--external` supplies a real series from another phase (Phase 2's `frac_repulsive`) through `p2b_report.external_trajectory`. The caveat is printed on the figure, not just in the docstring. | `p2b_report.co_movement` | done |
@@ -272,7 +272,7 @@ JSON and send only `bases` to an npz — the split `p1b` made for its axes.*
 
 <a id="g4"></a>
 **G4 — per-head circuit results.** `head_circuits.py` is landed and tested
-(`PLAN_2b.md` item 19) and is not called by `run_2b.py`, so no artifact
+(`archive/p2b_imaginary/PLAN_2b.md` item 19) and is not called by `run_2b.py`, so no artifact
 carries `summed_vs_per_head`, `head_agreement`, or any per-head spectrum.
 This is the gap with the most figures behind it: the phase's headline is a
 statistic of `ov_total = Σ_h ov_per_head`, an operator the model never forms,
@@ -343,7 +343,7 @@ thing this package is not for.
 
 One more worth naming even though no figure needs it closed: Block 1b's
 activations are in the **`l2_sphere` frame, not the LN frame attention
-actually reads** (`frame_spec_for_activations`, and `PLAN_2b.md`'s deferred
+actually reads** (`frame_spec_for_activations`, and `archive/p2b_imaginary/PLAN_2b.md`'s deferred
 item). Every Block 1b figure in this package prints the frame kind in its
 subtitle rather than leaving it implicit, because the claim being tested is
 about the operator attention applies and the frame is a live caveat on it.
@@ -362,7 +362,7 @@ is a mirror, not a second convention: the smoke test asserts the two agree
 elementwise whenever both are importable, so they cannot drift. The name
 grammar itself is not mirrored — `core/model_family.py` is stdlib-only and is
 imported directly, which is the reason it was moved there in the first place
-(`PLAN_2b.md` item 5).
+(`archive/p2b_imaginary/PLAN_2b.md` item 5).
 
 ---
 
@@ -415,7 +415,7 @@ tests the fixture.
   the phase has had three definitions of "rotational fraction" in one file
   once already.
 - **Blocks 2, 3 and 4.** Unwired by design until their maths is redefined
-  (`PLAN_2b.md` items 10–12), and Block 3 and Block 4 are degenerate as
+  (`archive/p2b_imaginary/PLAN_2b.md` items 10–12), and Block 3 and Block 4 are degenerate as
   written — a full-rank "imaginary projector" and a curvature that is
   identically 1. There is nothing to draw and drawing it would be worse than
   the gap.

@@ -30,7 +30,7 @@ identity was known.**
   decomposition**".
 
 Every one of those is in `math-2b.md` or `rotational_schur.py`. **The third bullet is
-the thing.** `PLAN_2b.md` opens:
+the thing.** `archive/p2b_imaginary/PLAN_2b.md` opens:
 
 > Block 1b's headline — `elim_rotation = 0.0` in 35/35 runs, read as "rotation is
 > dynamically neutral" — is an algebraic identity. `A = (V − Vᵀ)/2` is real
@@ -45,7 +45,7 @@ about a lead*. Verify before treating it as prior art.
 **What this does not change:** the withdrawal stands on its own algebra and does not
 need external support. What it changes is the framing — "we discovered our result was
 an identity" becomes "we rediscovered an identity the field states up front", which
-is a weaker claim to novelty and a stronger claim to rigour. `PLAN_2b.md` item 1 is
+is a weaker claim to novelty and a stronger claim to rigour. `archive/p2b_imaginary/PLAN_2b.md` item 1 is
 already correct; this file is the citation it lacked.
 
 ---
@@ -66,7 +66,7 @@ already correct; this file is the citation it lacked.
 
 ## 3. The trap this phase fell into is a publishable object
 
-`PLAN_2b.md`'s withdrawal is an instance of a general failure mode:
+`archive/p2b_imaginary/PLAN_2b.md`'s withdrawal is an instance of a general failure mode:
 
 > **A causal test whose readout is invariant under the intervention it applies will
 > return a clean null at machine precision, and the null will look like a finding.**

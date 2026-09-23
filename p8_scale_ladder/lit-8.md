@@ -6,7 +6,7 @@ below has been read**; `arxiv.org` and every other scholarly host are blocked by
 session's egress proxy. Marks: **[S]** search-engine summary read, **[N]** title and
 id only.
 
-**Supersedes** `docs/literature_scan_2026-09-10.md` §3 for this phase, which said the
+**Supersedes** `archive/docs/literature_scan_2026-09-10.md` §3 for this phase, which said the
 ladder's frame survives but flagged that 2606.02378 uses Pythia-1B. **It does, and so
 does a second paper by the same group.** The rung policy needs an explicit amendment
 and it is proposed in §3.

@@ -85,7 +85,7 @@ Phase 1 speculative narrative.
 This section records where the design above was wrong or has been
 superseded. It is appended rather than edited in place so the original
 reasoning stays legible next to what replaced it. Full detail in
-`CHANGES-1b.md`.
+`archive/p1b_hemisphere/CHANGES-1b.md`.
 
 ## The two-test framing of Block 0 and Block 3 was one test
 

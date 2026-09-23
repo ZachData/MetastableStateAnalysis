@@ -225,6 +225,6 @@ first: it needs the motif alphabet calibrated before "how attractor-organized" m
 - **Every gate records what it read and whether it passed** (standing rule 3), and any
   threshold not derived from a distribution is labelled *placed*, not calibrated, in the code
   next to the value (standing rule 6).
-- **Anchors need a non-symmetric arm** (standing rule 5). `UPDATE_PLAN.md` §5.6 is the
+- **Anchors need a non-symmetric arm** (standing rule 5). `archive/UPDATE_PLAN.md` §5.6 is the
   cautionary case: a wrong trace contraction that agreed with the truth at `M = I` and at
   every symmetric `M`, passing its anchor while being wrong for every real head.

@@ -44,7 +44,7 @@ THE FOUR ARMS, AND WHY THERE ARE FOUR
   L  labelling.   Planted OV matrices with KNOWN real-positive, real-negative,
                   rotation and kernel structure in a random orthonormal basis.
                   Each bucket must recover its planted span. This is the check
-                  design-6.md asked for.
+                  archive/p6_subspace/design-6.md asked for.
 
   C  counts.      Bucket DIMENSIONS on non-normal OV matrices, against a
                   classification derived independently from `np.linalg.eigvals`

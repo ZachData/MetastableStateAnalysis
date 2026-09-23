@@ -6,7 +6,7 @@ below has been read**; `arxiv.org` and every other scholarly host are blocked by
 session's egress proxy. Marks: **[S]** search-engine summary read, **[N]** title and
 id only.
 
-**Extends** `docs/literature_scan_2026-09-10.md` §1 (the SVD-ordering question), which
+**Extends** `archive/docs/literature_scan_2026-09-10.md` §1 (the SVD-ordering question), which
 was the sharpest part of that scan and is the sharpest part of this phase.
 
 **The headline: the compression literature says SVD ordering is *suboptimal* and has

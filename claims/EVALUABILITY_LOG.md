@@ -55,7 +55,7 @@ and no exchangeable unit is registered.
 Three things generalise from it:
 
 **A prerequisite is not a footnote.** `status-6.md` item 5 listed a projector
-mislabelling as a live alternative explanation and `design-6.md` pre-registered
+mislabelling as a live alternative explanation and `archive/p6_subspace/design-6.md` pre-registered
 ruling it out *first*. Nothing had. `tools/audit_p6_projector_labels.py` does,
 and reports RULED-OUT — but the audit's own sensitivity arm caught its first
 labelling check being **incapable of failing** on one of the two bug classes,

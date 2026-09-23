@@ -6,7 +6,7 @@ below has been read**; `arxiv.org` and every other scholarly host are blocked by
 session's egress proxy. Marks: **[S]** search-engine summary read, **[N]** title and
 id only.
 
-**Supersedes and extends** `docs/literature_scan_2026-09-10.md` §2 and §3 for this
+**Supersedes and extends** `archive/docs/literature_scan_2026-09-10.md` §2 and §3 for this
 phase. That scan's verdict — super-additive co-ablation is the self-repair signature,
 not a new phenomenon — **is confirmed and sharpened here**, and the nearest neighbour
 is confirmed to exist and to be exactly what the scan feared.
@@ -101,7 +101,7 @@ distinctive residue is:
 - **The negative methodological results**: structural proxies fail, behavioural
   proxies fail and invert, and causal membership is the only defensible definition.
 
-`docs/literature_scan_2026-09-10.md` ranked that second item first among survivors.
+`archive/docs/literature_scan_2026-09-10.md` ranked that second item first among survivors.
 **This scan agrees and raises it**, because §4.1 turns it from "our method is better"
 into "a June 2026 paper's head-selection method is measurably wrong on our model."
 

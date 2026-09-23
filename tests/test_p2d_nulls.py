@@ -217,7 +217,7 @@ class TestPM1:
 
     def test_records_the_series_convention(self):
         """
-        UPDATE_PLAN.md 5.9: a violation is a per-boundary INDICATOR, not a
+        archive/UPDATE_PLAN.md 5.9: a violation is a per-boundary INDICATOR, not a
         per-layer count. The record says which convention it got rather than
         leaving it to be inferred.
         """
