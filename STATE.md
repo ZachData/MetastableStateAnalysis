@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-22 (Stage 0 chunk driver, option B) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-23 (/challenge-pr fix) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -86,6 +86,7 @@ plus `METS_REPO=$PWD METS_DATA=<main>/data` from a worktree; 164 GB free; Phase-
 - Target PRs at `main`, never at another PR's branch. Check merges with `git merge-base --is-ancestor <tip> origin/main`.
 - An instrument that returns zeros/empty on a missing dependency is a bug: check a populated output on the FIRST run before launching the rest.
 - Before trusting any "exists / doesn't exist / is green" in a doc, check the tree (`ls`, `gh run list`, manifests). Docs have been wrong about each.
+- A headless `claude -p "/challenge-pr N"` that exits 0 has not necessarily reviewed anything: check the PR has the comment (`LESSONS.md` lesson 2).
 
 ## Map (open only what the task needs)
 
