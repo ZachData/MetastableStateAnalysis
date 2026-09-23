@@ -20,6 +20,11 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-09-23: STATE.md and `handoff-10.md` said Stage 0 chunk 1 "was killed:
+  no runs done". The box had suspended; the process resumed and ran on. The
+  next session was told to relaunch, and would have started a second chunk
+  beside the live one. `pgrep` before launching found it. A process that went
+  quiet is not a dead process: check `pgrep` and the log, not the last note.
 - 2026-09-22 (archive batch): `INDEX.md` listed 3 cited-but-absent `.md` files,
   found by hand. A lint pass found 95 dangling citations of 15 names, and two
   of them were plain wrong paths (`MATH_INDEX.md` gave `p5c_unclustered/` for

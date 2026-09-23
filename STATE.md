@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-23 (#69 archive batch merged; /challenge-pr fix) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-23 07:30 (Stage 0 chunk 1 found running; first output checked) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -16,13 +16,13 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | | |
 |---|---|
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
-| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 was started 2026-09-22 21:20 and killed: no runs done** (no `stage0_index.json`; 4 orphaned step143000 dirs in `data/phase12/2026-09-22_21-20-26`, which `status` counts and readers must not glob). Runbook `handoff-10.md` §0.3 |
+| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 RUNNING since 2026-09-22 21:20** (pid 13350; planned 144 runs / 29 invocations). It was never killed: the box suspended 21:52–05:13 and the process resumed. **65 runs indexed at 07:30**; first-output check passed (every indexed `hdbscan_labels.json` non-empty with real clusters, every `pair_agreement.json` mostly non-zero, all listed in `stage0_logs/stage0_index.json`). Budget is **awake** time (`time.monotonic`), so hard stop ≈ **14:41**; expected to finish all 144 ≈ 10:30. Runbook `handoff-10.md` §0.3 |
 | Next after it | Stage 1: `ext_sem_threshold` sweep, then the token-composition table |
 
 ## Blocked on the user
 
-1. **Relaunch Stage 0 chunk 1** (`handoff-10.md` §0.3) from `../Mets-stage0`
-   at pin `64a4087`.
+1. **Launch Stage 0 chunk 2** once chunk 1's log says it stopped
+   (`handoff-10.md` §0.3; same commands, same pin). `plan` should show 236 left.
 2. **P-I5 runs on whatever battery is current.** `p7_motifs/p_i5_ablation.py`
    iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the
    8 its calibration record used. Nightly smoke red since 2026-09-19 because
@@ -36,9 +36,10 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-#71 `claude/challenge-pr-jq`: `/challenge-pr` fix (it could not run since `d5d6218`). #69 (archive batch) merged
-2026-09-23 unreviewed: run `/challenge-pr 69` once #71 merges. #67, #68 merged 2026-09-22.
-Nightly smoke last red 2026-09-22 (Blocked item 2). Current state: `./scripts/status.sh`.
+#72 `claude/archive-followup` (open, CI green): fixes main's red CI, answers #69's
+/challenge-pr findings. `claude/stage0-chunk1`: chunk 1 status (this update). #71, #69
+merged 2026-09-23. Main CI red at `84ed1b1` until #72 merges; nightly smoke red
+(Blocked item 2). Current state: `./scripts/status.sh`.
 
 Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 `claude/aca-phase-9-planning-rvzw3x`, `claude/attention-collapse-augmentation-qsxwg8`.
