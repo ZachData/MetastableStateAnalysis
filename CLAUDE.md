@@ -54,7 +54,8 @@ Do these without being asked, in this order, in the same commit as the work:
 4. **`LESSONS.md`**: if anything went wrong (a stale doc, a silent failure,
    a wrong assumption, a wasted run), add the instance under its pattern.
 5. **`PROJECT.md`** only for a project-wide result, as a new §3.x section.
-   Never edit its "Resume here" block; `STATE.md` replaced it.
+   Its old "Resume here" blocks are archived (`archive/PROJECT-start-here.md`);
+   `STATE.md` replaced them.
 6. **`INDEX.md`** only if a directory or phase was added or moved.
 7. **`docs/cost_log.md`**: `python tools/session_cost.py <transcript> --row
    "<unit>" --pr "#N"` and append the row (transcript:

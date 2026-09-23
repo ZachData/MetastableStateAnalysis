@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 tools/render_evaluability.py — regenerate the table in claims/EVALUABILITY.md
-from claims/registry.json (POPPER_PLAN.md item B5).
+from claims/registry.json (archive/POPPER_PLAN-done.md item B5).
 
 The prose in EVALUABILITY.md is written by hand and preserved verbatim; only
 the blocks under the `## The count`, `## By phase` and `## The table` headings

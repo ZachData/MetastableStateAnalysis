@@ -1,6 +1,6 @@
 # CLAIMS.md — the main hypotheses, and what each one is adjudicated by
 
-POPPER_PLAN.md item B2. Written 2026-08-23.
+archive/POPPER_PLAN-done.md item B2. Written 2026-08-23.
 
 Every registered prediction names exactly one claim below. A claim's e-process
 is the product of the e-values from *its* predictions and nothing else
@@ -62,7 +62,7 @@ row. **So this claim carries a pre-computed requirement too:** both arms must
 be clustered to the same count rather than each to its own best `k`.
 
 **The sharpest threat to this claim is internal, and already recorded.**
-`UPDATE_PLAN.md` §5.2 found that `MATH.md` §8's step-size definition
+`archive/UPDATE_PLAN.md` §5.2 found that `MATH.md` §8's step-size definition
 understates $T_\text{eff}$ by ~5.7×, in the direction that would make the
 headline an artifact of depth rather than of learned weights. P-γ2 is stated so
 that the outcome that would hurt is the one predicted.
@@ -73,7 +73,7 @@ that the outcome that would hurt is the one predicted.
 `pythia-1.4b-random` does not reproduce `gpt2-large-random` phenomenology, nor
 checkpoint 143,000 the trained one.
 
-Instruments: the replication gate (`UPDATE_PLAN.md` execution-order item 6).
+Instruments: the replication gate (`archive/UPDATE_PLAN.md` execution-order item 6).
 Predictions: `CLAIM-C`.
 
 **This claim carries a hard stop.** `PREDICTIONS.md`: "If this fails, no
@@ -428,7 +428,7 @@ claim's**, so two e-values that one defect moves together multiply into one
 product — the specific way a claim's E inflates without anyone editing a
 number, which is `EVALUABILITY.md`'s opening argument. Both entries now say so.
 
-The same pass also settled `status-6.md` item 5, which `design-6.md` had
+The same pass also settled `status-6.md` item 5, which `archive/p6_subspace/design-6.md` had
 pre-registered as the prerequisite: the Schur block labelling is **correct**,
 verified on planted structure and against an independently derived spectrum,
 with two deliberate mislabellings caught. See `POPPER_PLAN.md` §6h.

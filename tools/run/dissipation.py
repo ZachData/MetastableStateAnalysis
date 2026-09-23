@@ -34,7 +34,7 @@ REPO = Path(os.environ.get("METS_REPO", "/run/media/system/WDS_500/Mets"))
 DATA = Path(os.environ.get("METS_DATA", str(REPO / "data")))
 sys.path.insert(0, str(REPO))
 
-# --- venv trap (PROJECT.md §1): assert the interpreter, never trust activate ---
+# --- venv trap (archive/PROJECT-start-here.md): assert the interpreter, never trust activate ---
 _want_prefix = str(REPO / ".venv")
 # Script-time only: modules are importable by tests on runners that are not
 # this machine\'s .venv; a real run still refuses the wrong interpreter.

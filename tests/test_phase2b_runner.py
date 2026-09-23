@@ -234,7 +234,7 @@ class TestErrorsAreNotSwallowed(_Sweep):
                          "--phase1-dir", str(self.phase1),
                          "--output-dir", str(self.out),
                          "--blocks", "1a,3"])
-        self.assertIn("PLAN_2b.md", str(cm.exception))
+        self.assertIn("archive/p2b_imaginary/PLAN_2b.md", str(cm.exception))
 
 
 # ---------------------------------------------------------------------------

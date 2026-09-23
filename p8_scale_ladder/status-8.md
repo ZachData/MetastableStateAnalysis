@@ -70,7 +70,7 @@ old fork protocol.**
 
 ## Literature scan — read before measuring
 
-`docs/literature_scan_2026-09-10.md`. **Leads, not readings**; no paper has been
+`archive/docs/literature_scan_2026-09-10.md`. **Leads, not readings**; no paper has been
 read and every arXiv id needs verifying. Three of §3.12-V's four headlines are in
 populated territory: SVD-ordering-is-a-poor-importance-proxy is **FWSVD, 2022**
 (2207.00112); super-additive co-ablation is the **Hydra-effect self-repair

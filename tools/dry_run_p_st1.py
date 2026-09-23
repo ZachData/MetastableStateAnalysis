@@ -89,7 +89,7 @@ RUN IT
     python3 -m tools.dry_run_p_st1 --check
     python3 -m tools.dry_run_p_st1 --summary
 
-Committed rather than recomputed, for the reason `docs/CI_BASELINE.md` gives
+Committed rather than recomputed, for the reason `archive/docs/CI_BASELINE.md` gives
 for the other artifacts. `tests/test_p_st1_dry_run.py` pins the record together
 with the sha256 of the gate and of the calibration it is read beside, so the
 record going stale is a failure rather than a silence.

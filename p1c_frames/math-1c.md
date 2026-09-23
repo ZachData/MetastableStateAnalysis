@@ -848,7 +848,7 @@ break is even the right thing to attribute.
 | `run_1c.py`, `p1c_io.py` | — | Driver and artifact IO |
 | `tools/preflight_1c.py` | — | Artifact-readiness gate; reports per-sub-experiment runnability with blocking reasons |
 
-**Validation that actually constrains** (from `UPDATE_PLAN.md` §5): the ODE reproduces all 28
+**Validation that actually constrains** (from `archive/UPDATE_PLAN.md` §5): the ODE reproduces all 28
 collapse-table entries to 0.005; the step estimator recovers an injected Euler step **exactly**;
 the Gegenbauer code recovers $t = 3$ for the octahedron and $t = 5$ for the icosahedron; Wendel
 reproduces the textbook $n{=}3, d{=}2 \to 0.75$; the cone margin gives $\cos 30°$ on a $30°$ cone.

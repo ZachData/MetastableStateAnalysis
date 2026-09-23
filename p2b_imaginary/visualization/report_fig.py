@@ -24,7 +24,7 @@ Three refusals are built into `p2b_report` and are visible in these figures:
     claim.
 
 `flatness`' own scale was got wrong twice while it was being written (see
-`PLAN_2b.md`, "A scale error found while demonstrating the report"): first
+`archive/p2b_imaginary/PLAN_2b.md`, "A scale error found while demonstrating the report"): first
 against the raw layer spread, which is the wrong scale by ~sqrt(n_layers),
 then against one standard error, which calls almost every flat trajectory a
 transition because a 21-point noise series has a range of ~3.8 standard

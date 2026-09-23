@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check.sh — what CI runs, runnable locally (POPPER_PLAN.md item A6).
+# scripts/check.sh — what CI runs, runnable locally (archive/POPPER_PLAN-done.md item A6).
 #
 # CI calls this script rather than reimplementing its commands, so "passes
 # locally, fails in CI" cannot be a difference between two copies of the same

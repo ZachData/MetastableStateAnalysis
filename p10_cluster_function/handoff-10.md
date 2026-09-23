@@ -7,11 +7,11 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 2026-09-20 after five papers were read as primary text (`lit-10.md` §11–§15).
 
 > **When this thread is active, start here.** When it closes or is parked, go
-> back to **`PROJECT.md`'s "Resume here" block**, which is the main line and
-> remains authoritative for everything else — `CLAIM-C`, the e-value audit, the
+> back to **`STATE.md`**, which is the main line and is authoritative for
+> everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-22 — Stage 0: option B decided, chunk driver built (#67), runbook in §0.3. **First action: launch chunk 1 once #67 merges.**
+**Last updated:** 2026-09-22 — Stage 0: #67 merged, pin `64a4087`; chunk 1 started and killed the same evening with **no runs done**. **First action: relaunch chunk 1 (§0.3).**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -202,8 +202,15 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > `../Mets-stage0` is a **run tree, not a task worktree**: detached, never
 > edited, removed when Stage 0 is done. Record `$PIN` in `STATE.md` when the
 > first chunk starts.
+>
+> **2026-09-22:** run tree created at `64a4087` (the #68 merge, which carries
+> #67), so **`$PIN` = `64a4087`**. Chunk 1 started 21:20 and was killed; no
+> invocation finished, so `stage0_index.json` was never written and no run
+> counts. It left 4 orphaned `step143000` directories in
+> `data/phase12/2026-09-22_21-20-26` (no `pair_agreement.json`) — exactly the
+> case the index exists for. Relaunch with the same commands.
 
-The original single-run instructions, from the main tree, with the environment from `PROJECT.md` §1:
+The original single-run instructions, from the main tree, with the environment from `archive/PROJECT-start-here.md`:
 
 ```bash
 cd /run/media/system/WDS_500/Mets && source .venv/bin/activate
@@ -518,7 +525,20 @@ Phase 9's territory; listed here because Stages 1–6 are what would license it.
 
 ## Returning to the main line
 
-`PROJECT.md`'s **"Resume here"** block. It carries the branch and PR state, the
-`CLAIM-C` position, disk, and the project-wide next steps; §3.52 and §3.53 carry
+**`STATE.md`**. It carries the branch and PR state, the `CLAIM-C` position,
+disk, and the project-wide next steps; `PROJECT.md` §3.52 and §3.53 carry
 the literature read this thread grew out of, and §3.51 the four rows that ran
 before it.
+
+## Parked
+
+- **Stale remote branches beyond `STATE.md`'s list** (found 2026-09-22, archive
+  batch): `claude/ci-matrix-and-alerts`, `claude/claim-c-arms`,
+  `claude/float32-tripwire-ci`, `claude/metastable-machine-setup-685wsl`,
+  `claude/p10-literature-read`, `claude/p10-stage0` are still on `origin`. Why:
+  may be merged leftovers. Cost: one `merge-base` check each. Changes: only
+  which branches are safe to delete.
+- **`lit-8.md` never cites `literature-8.md`** (found in the same batch): the
+  later leads-only file does not know the earlier fetched readings exist. Why:
+  a reader of `lit-8.md` misses 18 verified ids. Cost: one line. Changes:
+  nothing measured.

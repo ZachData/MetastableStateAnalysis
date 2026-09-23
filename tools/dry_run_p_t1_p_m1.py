@@ -128,7 +128,7 @@ T1_DESIGNS: Tuple[Tuple[int, int], ...] = (
     (2, 3), (3, 5), (3, 9), (4, 8), (5, 7), (6, 18), (8, 16), (12, 36))
 
 #: (n_layers, n_violations). gpt2-large has 36 layers and pythia-1.4b has 24;
-#: `UPDATE_PLAN.md` 5.9 makes the violation series a per-boundary INDICATOR, so
+#: `archive/UPDATE_PLAN.md` 5.9 makes the violation series a per-boundary INDICATOR, so
 #: a model that mostly does not violate gives a small count -- again the live
 #: case rather than a stress test.
 M1_DESIGNS: Tuple[Tuple[int, int], ...] = (

@@ -4,7 +4,7 @@
 **Status: READINGS, not leads.** Every arXiv id in §1–§5 was **fetched** and its
 abstract read; the ones that were not are quarantined in §6.2 and must not be
 cited until they are. This is the standard
-`docs/literature_scan_2026-09-10.md` set for itself and could not meet — that
+`archive/docs/literature_scan_2026-09-10.md` set for itself and could not meet — that
 file recorded nine ids from four search summaries with **no paper opened**, and
 three of its characterisations turn out to be wrong (§4).
 

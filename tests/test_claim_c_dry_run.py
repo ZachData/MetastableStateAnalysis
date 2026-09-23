@@ -91,7 +91,7 @@ class TestTheRecordExists(unittest.TestCase):
             f"{RECORD_PATH} is missing. Regenerate with "
             f"`python3 -m tools.dry_run_claim_c --write` (~5 minutes). It is "
             f"committed rather than computed on demand for the same reason as "
-            f"the other three artifacts in docs/CI_BASELINE.md.")
+            f"the other three artifacts in archive/docs/CI_BASELINE.md.")
 
     def test_schema_version(self):
         self.assertEqual(_record()["schema_version"], RECORD_SCHEMA_VERSION)

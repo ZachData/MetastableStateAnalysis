@@ -151,7 +151,7 @@ lesson: a diffed artifact is not where new keys go). Schema:
 ```
 _what_this_is, steps, prompts_scored (7), carried_beside ("repeated_tokens"),
 beta, frame ("l2_sphere"), projector_source, git_sha, hf_revision_scheme,
-lib_versions {torch, transformers, numpy, scipy},          # PROJECT.md §1 trap
+lib_versions {torch, transformers, numpy, scipy},          # archive/PROJECT-start-here.md trap
 per_step_layer: { "<step>|<prompt>|<layerℓ>": {
     first_order, actual_delta_E, residual, relative_residual, step_size,
     d_attn, d_ffn, attn_share, sum_check_channel,           # Tier B only
@@ -180,7 +180,7 @@ rather than head granularity.
 ## 5. What would have to be registered before this adjudicates anything
 
 Nothing here is a prediction yet. To take the dissipation co-location series
-into `claims/adjudications/` it would need, per POPPER_PLAN §C2's pattern:
+into `claims/adjudications/` it would need, per archive/POPPER_PLAN-done.md §C2's pattern:
 
 - a `claims/registry.json` entry with a **differential falsifier** (what the
   particle account says that the standard account does not, where they disagree
@@ -201,7 +201,7 @@ e-value.
 
 ## 6. Risks / gotchas
 
-- **venv trap** (PROJECT.md §1): the runner asserts `sys.prefix` and
+- **venv trap** (archive/PROJECT-start-here.md): the runner asserts `sys.prefix` and
   torch/transformers versions, never trusts `activate`.
 - **No library versions in the phase-7 manifest** (§1, already cost one
   checkpoint): the artifact records `lib_versions` explicitly.

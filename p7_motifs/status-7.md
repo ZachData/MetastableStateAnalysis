@@ -206,7 +206,7 @@ interpretable.
    ~7 GB at d=1024 and ~27 GB at d=2048. `projection_fractions` was written expecting
    (d, r) orthonormal columns. It happens to return the right answer for a valid projector
    (‖Pᵀf‖² = ‖Pf‖² when P is symmetric idempotent) and would have returned a plausible
-   wrong answer for any square matrix that is not one — `UPDATE_PLAN.md` §5.6's failure mode
+   wrong answer for any square matrix that is not one — `archive/UPDATE_PLAN.md` §5.6's failure mode
    exactly. It now accepts all three forms and *validates* rather than assuming, refusing a
    square matrix that is neither basis nor projector.
 5. **`schur_*` vs `sym_*` is a choice, not a default.** Phase 2 stores both splits; Phase 2b's

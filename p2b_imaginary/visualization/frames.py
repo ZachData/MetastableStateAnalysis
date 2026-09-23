@@ -91,7 +91,7 @@ def _header(js: dict, ck: Checkpoint, prompt: str) -> str:
     which holds L2-normalized vectors — the `l2_sphere` frame, not the LN
     frame attention actually reads. The claim being tested is about the
     operator attention applies, so the frame is a live caveat on every number
-    here and `PLAN_2b.md` carries it as a deferred item.
+    here and `archive/p2b_imaginary/PLAN_2b.md` carries it as a deferred item.
     """
     frame = (js.get("frame") or {}).get("kind", "?")
     beta = reference_beta(js)

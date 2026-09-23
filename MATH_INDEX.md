@@ -13,7 +13,7 @@ Written to be read with the source open. Each lives in its phase's directory:
 | `p2d_operator_activation/math-2d.md` | 2d | 440 | The paper's *hypotheses*, finally checked: gradient-flow condition, operator-conditioned rank, Table 1 |
 | `p5_single_mstate_analysis/math-5.md` | 5 | 456 | One cluster end to end; the particle table; the blocker class |
 | `p5b_manifold_steering/math-5b.md` | 5b | 329 | Manifold isometry; Hellinger/Fisher–Rao geometry; pre-registration done right |
-| `p5c_unclustered/math-5c.md` | 5c | 337 | The unclustered population; the rank-budget hypothesis; the attention flip |
+| `p5_single_mstate_analysis/math-5c.md` | 5c | 337 | The unclustered population; the rank-budget hypothesis; the attention flip |
 | `p6_subspace/math-6.md` | 6 | 386 | The S/A division-of-labour hypothesis; the inverted first run |
 
 Phases 2c, 3 and 4 are out of scope per `INDEX.md` (2026-07-18) and have no document.
@@ -161,7 +161,7 @@ Found while verifying the docs. Each is an error in the repo, not in these docum
 | `p5b/isometry_test.py:26` | Hellinger range given as $[0,1/\sqrt2]$; it is $[0,1]$ |
 | `p2b/rotational_schur.py:340-342` | Henrici described as the squared Frobenius norm of $T$'s strict upper triangle — true for the *complex* Schur form, false for the real one this phase uses ($d{=}6$: 12.26 vs 19.08) |
 | `p2_eigenspectra/verdict_v2.py:61` | V-score range given as $\approx[-0.15, 1.0]$; the three positive weights sum to $0.85$, so $1.0$ is unattainable |
-| `UPDATE_PLAN.md` §5.6 | Claims the buggy trace contraction coincides "at $M = I$ **and at any symmetric $M$**" — false; $\mathrm{tr}(MCMC)\ne\mathrm{tr}(M^2C^2)$ for symmetric non-commuting $M$ (28.36 vs 43.76). Only $M = I$ |
+| `archive/UPDATE_PLAN.md` §5.6 | Claims the buggy trace contraction coincides "at $M = I$ **and at any symmetric $M$**" — false; $\mathrm{tr}(MCMC)\ne\mathrm{tr}(M^2C^2)$ for symmetric non-commuting $M$ (28.36 vs 43.76). Only $M = I$ |
 | `p1_io.py` | `load_cluster_tracking` (the correct Phase 1 event reader) currently lives in `p5/anchors.py` and belongs here as a sibling of `load_phase1_run` |
 | `README_phase6.md` | Header says "Not started"; one model has been run |
 | `readme-phase2c.md` | Same stale header |

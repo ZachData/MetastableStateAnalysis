@@ -7,7 +7,7 @@ downstream motif count:
   1. projection_fractions' NaN-vs-zero distinction. "No projector was
      supplied" and "this force has no component there" must not collapse
      into the same number (standing rule 4).
-  2. The non-symmetric anchor arm. UPDATE_PLAN.md 5.6 is the cautionary
+  2. The non-symmetric anchor arm. archive/UPDATE_PLAN.md 5.6 is the cautionary
      case: a wrong contraction that agreed with the truth at M = I and at
      every symmetric M, passing its anchor while being wrong for every
      real head. So every projector check here has an arm whose answer

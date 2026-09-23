@@ -63,7 +63,7 @@ the shuffle. A RELAY is a composition of two such edges across two heads,
 joined by "stage 1's target equals stage 2's source" — position equality
 across two INDEPENDENT random draws — and getting that composition's exact
 null distribution analytically risks exactly the class of subtle error this
-project's own history warns about (UPDATE_PLAN.md §5.6; `core/interactions.py`
+project's own history warns about (archive/UPDATE_PLAN.md §5.6; `core/interactions.py`
 projector-shape bug). So this module does not re-derive relay-composition
 math: it draws K shuffled replicates of the real table and reruns
 `motif_alphabet.find_relays` / `formation_curve.per_head_relay_strength`

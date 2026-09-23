@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-22 (Stage 0 chunk driver, option B) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-22 (archive batch; chunk 1 killed) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -16,13 +16,13 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | | |
 |---|---|
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
-| Current stage | Stage 0, **option B decided 2026-09-22**: all 20 prompts × 19 checkpoints (380 runs) under v2 from one pinned commit, in 10-h chunks via `tools/run/stage0_chunk.py` — plan says **3 chunks**. **First chunk starts 2026-09-23**, after the driver PR merges; runbook `handoff-10.md` §0.3 |
+| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 was started 2026-09-22 21:20 and killed: no runs done** (no `stage0_index.json`; 4 orphaned step143000 dirs in `data/phase12/2026-09-22_21-20-26`, which `status` counts and readers must not glob). Runbook `handoff-10.md` §0.3 |
 | Next after it | Stage 1: `ext_sem_threshold` sweep, then the token-composition table |
 
 ## Blocked on the user
 
-1. **Merge the Stage 0 driver PR**, then launch chunk 1 (§0.3). The pin is
-   that merge commit; record it here when chunk 1 starts.
+1. **Relaunch Stage 0 chunk 1** (`handoff-10.md` §0.3) from `../Mets-stage0`
+   at pin `64a4087`.
 2. **P-I5 runs on whatever battery is current.** `p7_motifs/p_i5_ablation.py`
    iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the
    8 its calibration record used. Nightly smoke red since 2026-09-19 because
@@ -36,10 +36,9 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-#67 `claude/p10-stage0-driver`: the Stage 0 chunk driver (challenged; all five findings fixed).
-#68 `claude/challenge-pr-skill`: `/challenge-pr`, fresh-context adversarial PR review, run
-on every PR per `CLAUDE.md` Stop step 9 (headless: `claude -p "/challenge-pr N"`). #61–#66 merged 2026-09-22;
-`main` CI green at `4270a64`. Nightly smoke last red 2026-09-22 (Blocked item 2). Current state: `./scripts/status.sh`.
+`claude/archive-batch`: the 2026-09-22 archive batch (PR number in `./scripts/status.sh`).
+#67 (Stage 0 driver) and #68 (`/challenge-pr`) merged 2026-09-22, `main` at `64a4087`, CI green.
+Nightly smoke last red 2026-09-22 (Blocked item 2). Current state: `./scripts/status.sh`.
 
 Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 `claude/aca-phase-9-planning-rvzw3x`, `claude/attention-collapse-augmentation-qsxwg8`.
@@ -50,7 +49,10 @@ Superseded remote branches, safe to delete: `claude/p10-free-rows`,
 - e-value audit: complete, 39 registered predictions, zero e-values — §3.45.
 - Phase 10 free rows (tier 1): attention flip ~94 % causal mask; F0 fails; identity coupling optimal 99.5 %; HDBSCAN partition not reproducible (ARI p5 0.347) — `status-10.md`.
 - Literature: five papers read as primary text — `lit-10.md` §11–15, `PROJECT.md` §3.52.
-- Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, Blocked item 4). Measured on the 2026-09-22 session's own transcript: 147 calls, ~19.0M context tokens re-read (avg ~129k/call, peak 214k) vs ~34k of tool output. Session length is the cost driver, not file size. Built since: `tools/session_cost.py` (calls, context, tool output off a transcript), `docs/cost_log.md` (one row per unit; Stop step 7; lesson 9's 2×-median rule), `scripts/status.sh` (Start step 2), and `CLAUDE.md` "While working" lines (one session per unit, batch calls, Edit not shell). Next: A3 (split `handoff-10.md` by stage) and A4 (Stop protocol → skill, claims rules → path rule). Needs the user: archive `PROJECT.md` §1's old resume blocks (~880 lines) and finished `POPPER_PLAN.md` sections?
+- Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `archive/docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, Blocked item 4). Measured on the 2026-09-22 session's own transcript: 147 calls, ~19.0M context tokens re-read (avg ~129k/call, peak 214k) vs ~34k of tool output. Session length is the cost driver, not file size. Built since: `tools/session_cost.py` (calls, context, tool output off a transcript), `docs/cost_log.md` (one row per unit; Stop step 7; lesson 9's 2×-median rule), `scripts/status.sh` (Start step 2), and `CLAUDE.md` "While working" lines (one session per unit, batch calls, Edit not shell). Next: A3 (split `handoff-10.md` by stage) and A4 (Stop protocol → skill, claims rules → path rule).
+- Archive batch (2026-09-22): PROJECT's §1, UPDATE_PLAN, POPPER_PLAN's DONE chunks, three CHANGES/PLAN files, six `docs/` one-offs → `archive/`; map `archive/MOVED.md`, lint rule `cited-md-path`, rewriter `tools/rewrite_moved_refs.py`. `literature-8.md` kept (not a duplicate of `lit-8.md`).
+- **Decided 2026-09-22: no per-phase STATE/PROJECT files.** Instead: a header on each `status-N.md`, a generated phase table, and a dependency-staleness lint — **the next PR**.
+- Carried from `archive/UPDATE_PLAN.md`: BLOCKED re-derive `DEGENERATE_RANK_THRESHOLD` / `FIEDLER_ACTIVE_RANK_THRESHOLD` on the normed scale (needs the sweep's normed-rank distribution); BLOCKED persist per-head Fiedler (`p1_io._save_sinkhorn` fixed, needs a rerun; fold into the next forward pass, `status-1.md`); BLOCKED `geometry.json` must carry `beta_eff_per_head` (`status-1c.md`); OPEN run Phase 1c/2d on artifacts (`tools/preflight_1c.py` first; `INDEX.md` 1c/2d rows).
 - Registry: untouched since the audit. Nothing in Phase 10 is registered.
 
 ## Machine and environments
