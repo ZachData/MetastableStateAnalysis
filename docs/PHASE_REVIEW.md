@@ -37,6 +37,12 @@ what it found, what superseded it, and what it left open. Three costs follow:
    is extended) scored on the 410m v2 runs before Phase 10 registers?
 4. **Release.** If nothing gets registered by some point, what frees the 12?
    Until then exploration stays at 8 prompts, only 7 of them natural text.
+5. **What makes a card stale** (`/challenge-pr` on #75, finding 1). Today a
+   card goes stale only on its own status file and its dependencies' status
+   files. Most corrections land elsewhere (`PROJECT.md` §3.x, later phases'
+   other files). Should the stamp also hash every section a card's pointers
+   name? That is more complete, and it goes stale on more unrelated edits.
+   Must be settled before session 2 so that no card is written twice.
 
 ## The card
 
