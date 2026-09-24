@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-24 (phase review session 8: card 10, rebased onto #86's Corrections-scoped dependencies; chunk 2 still running) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-24 (phase review session 9: synthesis, `docs/PHASE_SYNTHESIS.md`; the review's 9 sessions are done; chunk 2 still running, at step128 at 11:33) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -18,7 +18,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
 | Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 RUNNING** (started 2026-09-24 05:35:20, driver pid 23468 under `flock` + `systemd-inhibit`; plan 233 runs in 48 invocations, ~9.9 h after re-fitting, so **chunk 3 is the last**, 3 runs). Log `data/phase12/stage0_logs/chunk_2026-09-24_05-35-20.log`. Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
 | Next after it | Holdout guard (`docs/PHASE_REVIEW.md` Parked 1), then Stage 1 on the **8 v1 prompts only**: `ext_sem_threshold` sweep, then the token-composition table. **The 12 new v2 prompts are held out on 410m** as the confirmation set until registrations are frozen (user, 2026-09-23; `handoff-10.md` §0.4). Partly seen already via `CLAIM-C` on 1.4b/gpt2-large; scope, count, order and release are open for the user (`docs/PHASE_REVIEW.md` "Open") |
-| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`; its sessions table holds each session's findings. **Sessions 1–8 done**: cards for 1 through 10 (`docs/PHASES.md`; 9's is in a new `status-9.md`: parked, nothing run under its name, its E0 ran as Phase 10's F1; 10's routes 3 corrections and fixes `handoff-10.md` §0.4's stale "228 directories" done-line to option B's 380), template `docs/phase_card.md`, lint rule `phase-card`. Standing rules from it: a correction to an earlier phase adds a line to its `## Corrections received` (user, 2026-09-23); deleted code may go if its intent stays (user, 2026-09-24; `LESSONS.md` lesson 12). Decided: the 2d pilot is quarantined and unseen; `P-T1`/`P-M1` get a fresh manifested run (`status-2d.md`). For the user before Phase 10 registers: `docs/PHASE_REVIEW.md` Parked 8 (410m's induction axis is spent). Session 6 found `P-I5`'s 70m target `L3H6` is not a matcher (Phase 8, 2026-09-13; routed to `status-7.md`). Next: session 9 (synthesis: duplicate map, after-Phase-10 list, e-value plan). Holdout guard not built: due before Stage 1, which can start once chunk 3 ends |
+| Parallel thread | Phase review, docs-only — `docs/PHASE_REVIEW.md`; its sessions table holds each session's findings. **All 9 sessions done.** Session 9's synthesis is `docs/PHASE_SYNTHESIS.md`: 19 duplicate questions, a ranked after-Phase-10 list (top: β's convention, `CLAIM-C`'s calibration to 20, `P-S1` at matched k), attainable E per adjudicable row (only `CLAIM-C`, `P-AB1` depend on prompt count; `CLAIM-C` at 8 prompts tops out at E 1.94), and memos for the four open decisions. Found: `P-S1`'s gate defaults to 500 draws (E_max 11.2, Parked 1 there), and `core/beta_eff.py` and `status-1c.md` name β's ×8 ends oppositely. Sessions 1–8: cards for 1 through 10 (`docs/PHASES.md`; 9's is in a new `status-9.md`: parked, nothing run under its name, its E0 ran as Phase 10's F1; 10's routes 3 corrections and fixes `handoff-10.md` §0.4's stale "228 directories" done-line to option B's 380), template `docs/phase_card.md`, lint rule `phase-card`. Standing rules from it: a correction to an earlier phase adds a line to its `## Corrections received` (user, 2026-09-23); deleted code may go if its intent stays (user, 2026-09-24; `LESSONS.md` lesson 12). Decided: the 2d pilot is quarantined and unseen; `P-T1`/`P-M1` get a fresh manifested run (`status-2d.md`). For the user before Phase 10 registers: `docs/PHASE_REVIEW.md` Parked 8 (410m's induction axis is spent). Session 6 found `P-I5`'s 70m target `L3H6` is not a matcher (Phase 8, 2026-09-13; routed to `status-7.md`). Next in this thread: nothing scheduled; the user's decisions in `docs/PHASE_SYNTHESIS.md` §3.2–3.3. Holdout guard not built: due before Stage 1, which can start once chunk 3 ends |
 
 ## Blocked on the user
 
@@ -55,10 +55,14 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    finding 1). A line routed to Phase 1 stales its 13 carded readers, and the
    gate stays red until each is re-stamped. Either the correcting PR does
    all of them, or the lint only warns and each reader's next review clears it.
+9. **β's scale convention and `P-S1`'s matched-k rule**, both open in code;
+   memos and recommendations in `docs/PHASE_SYNTHESIS.md` §3.2. Also there
+   (§3.3): recommended order, freeze Phase 10's registrations before rescoring
+   `CLAIM-C`, since it only matters on the held-out prompts ("Open" 3).
 
 ## Open PRs and branches
 
-`claude/phase-cards-10`: phase review session 8, in `../Mets-work` (#84; merged `origin/main` after #86 and re-stamped card 9). #86 merged 2026-09-24, its branch and `../Mets-work-2` removed. #85 merged 2026-09-24, branch deleted. #83 merged 2026-09-24, its branch and worktree removed. #82, #81, #80 merged 2026-09-24.
+`claude/phase-review-synthesis`: phase review session 9, in `../Mets-work`. #84 merged 2026-09-24, its branch and worktree removed. #86 merged 2026-09-24, its branch and `../Mets-work-2` removed. #85 merged 2026-09-24, branch deleted. #83 merged 2026-09-24, its branch and worktree removed. #82, #81, #80 merged 2026-09-24.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:

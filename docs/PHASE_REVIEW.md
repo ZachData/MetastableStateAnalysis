@@ -83,12 +83,15 @@ the lint checks both ends.
 | 6 | Card: 8, depending on 7d, 7e; feeding 7 (`P-I5`'s target came from `status-8.md`, so 7 now depends on 8) and 10. Each of the 30 Phase 8 outputs on disk (`data/analysis/`, 2026-09-11 to 09-13) is a run `status-8.md` describes; nothing on disk measures 1b or 1.4b on the induction axis. Found: `P-I5`'s target, 70m `L3H6`, was chosen as "the `L7H8` analogue" (§3.32) three days after `status-8.md` found 70m has no relay-fed matcher (routed to `status-7.md`; `LESSONS.md` lesson 1). Fixed in place: "Reproducing" undercounted the runners that take `--probe`; the "Literature scan" section now points to its two successors; README's Phase 8 row. Routed 3 corrections (§3.16, `lit-8.md` §3) | **done** 2026-09-24 |
 | 7 | Card: 9, in a new `p9_metric_intervention/status-9.md` (card, `plan-9.md` §8's ladder state, corrections received), depending on 1c, 2, 7d, 7e, 8, 10 and feeding 10; those five gained 9 in Feeds (1c's "no status file" note dropped). A status file makes a phase: `tools/render_experiments.py` needed a no-predictions entry for 9. Nothing has run under Phase 9's name and nothing on disk is its. Found: E5 was stale when written (unit decided 2026-08-25), E0 ran as Phase 10's F1 ten hours later and was never passed back (`LESSONS.md` lesson 1), E4's "measured" ratio is a planted-construction chance ratio, E3's force-collapse / force-disperse arms reached no phase, and `notes-9.md` §7 and `plan-9.md` §4.7 still called the γ-patch read-side after §4.1's correction. Pointers added in place; 7 corrections routed. `/challenge-pr` on #83 corrected three of these | **done** 2026-09-24 |
 | 8 | Card: 10, depending on 1, 5c, 7d, 7e, 8, 9 (each already listed 10 in Feeds) and feeding 9. Everything on disk under Phase 10's name is already in `status-10.md`: seven `data/analysis/p10_*.json` records and the backfill (§0, §2). Stage 0's dirs are selected through `stage0_index.json` (235/380 at session time). Found: `handoff-10.md` §0.4's done-line still said 228 new directories (option A), not option B's 380; its "Last updated" still said to relaunch chunk 1; `status-10.md` §0 still said runners default `METS_REPO` to the main tree (outdated by Parked 2's fix). All three fixed in place. Routed 3 corrections (§3.51.3's step 0 = step 1, the holdout, the `METS_REPO` fix) into a new `## Corrections received`. Restamped 9: 10's body changed, and nothing in 9's card rests on the change | **done** 2026-09-24 |
-| 9 | Synthesis: the duplicate-question map, the ranked after-Phase-10 list, the e-value plan below | open |
+| 9 | Synthesis, in `docs/PHASE_SYNTHESIS.md`: 19 duplicate questions, a 16-rank after-Phase-10 list, the e-value plan's four items (attainable E per adjudicable row, with `tools/math_checks/evalue_unit_count.py`; the four decisions checked against code; Phase 10's route; native e-values as a proposal), and the routing rule scored against the Superseded lists (37 of 44 external items routed; the 7 others explained). Found: only `CLAIM-C` and `P-AB1` are exchangeable over prompts; `CLAIM-C` at 8 prompts tops out at E 1.94, so its rescore only matters on the held-out 12 or all 20; `P-S1`'s gate defaults to 500 draws (E_max 11.2); calibration records call p ≤ 0.05 "sufficient"; `core/beta_eff.py` and `status-1c.md` name the ends of β's factor 8 oppositely. Routed 1 correction to 1c (restamped 1c, 2d, 9) | **done** 2026-09-24 |
 
 Before the first Stage 1 read: **the holdout guard** (Parked item 1). It is not
 a review session but it is due before Stage 1 starts, not after session 9.
 
 ## The e-value plan (session 9, or its own session)
+
+**Done in session 9: `docs/PHASE_SYNTHESIS.md` §3** holds the results. What
+follows is the plan as written, kept for its reasoning.
 
 The machinery exists: `core/evalues.py` (p→e calibrator, e-process; `average`
 for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
@@ -181,6 +184,8 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    Changes: e-value plan item 2. Also for the user: both `P6-R2`/`R4` registry
    `notes` still say no unit is registered, and quarantining
    `results/p2d_pilot` could join Parked 1's guard list.
+   **Checked in session 9:** both are genuinely open in code, and β's two
+   sources name its ends oppositely (`docs/PHASE_SYNTHESIS.md` §3.2).
 8. **Does any Phase 10 registration read the induction axis on 410m?**
    `p8_scale_ladder/design-8.md` marks `pythia-410m` spent on the induction
    axis (7d/7e; rung policy = `check_registry` rule 3 applied forward), and
