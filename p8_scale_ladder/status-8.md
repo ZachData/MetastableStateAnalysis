@@ -24,7 +24,7 @@
   - The "Literature scan" section's 2026-09-10 source is superseded: the headline question is already answered in the literature, and no SVD paper covers invariant 5's anti-ordering — §3.16
   - "Reproducing" said `--probe` was on three runners; `member_subspace_geometry.py` has it too, and invariant 4's `freq` column used it (fixed 2026-09-24) — `p8_scale_ladder/status-8.md` "Reproducing"
 - **Registry:** none, because 70m and 410m are exploration rungs and `pythia-1b` / `pythia-1.4b` are reserved until a prediction naming them is registered (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 8 as an active phase with no prediction. `P-I7` (`H-BRIDGE`, active) is satisfiable on either reserved rung. `design-8.md` asked for a recorded call on whether 70m goes to `P-I7` before exploration, and exploration ran on 2026-09-11 without one, so 70m is spent for it by default. With 1b measured by outside groups, `P-I7` and any invariant registration now compete for 1.4b, which is the user's call
-- **Depends on:** 7d, 7e
+- **Depends on:** 7d@19b7d835b7, 7e@0c1071db50
 - **Feeds:** 7, 9, 10
 - **Open threads:**
   - Invariant 3 needs a dense, faithful axis: a 70m retrain from step 512 on Pythia's published data order, GPU work this box cannot do — `p8_scale_ladder/status-8.md` "What is open — in order"

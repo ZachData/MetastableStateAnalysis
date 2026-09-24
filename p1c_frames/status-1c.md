@@ -20,7 +20,7 @@
   - Validation cites section 3.2 of MATH.md, a file that does not exist — `INDEX.md` "Referenced, not present"
   - The energy-trajectory PNGs bake a wrong citation into three suptitles — `math-1c.md` §11
 - **Registry:** `P-gamma1`, `P-gamma2` needs-null, blocked (no `beta_eff` in any run dir); `P-H1` measurement, measured on one checkpoint, not adjudicated; `P-S1` e-value, active, dry run only, blocked on inputs (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1
+- **Depends on:** 1@d881a84e97
 - **Feeds:** 2d, 9
 - **Open threads:**
   - β's scale convention, to decide before any producer freezes it in an artifact

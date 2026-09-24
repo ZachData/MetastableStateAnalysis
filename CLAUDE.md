@@ -52,7 +52,8 @@ Do these without being asked, in this order, in the same commit as the work:
    unit corrects an *earlier* phase (a result, a definition, a citation),
    also add one line under that phase's `## Corrections received`: date,
    what changed, pointer. Corrections flow backwards, and this line is what
-   makes the earlier phase's card go stale (`docs/phase_card.md`).
+   makes the earlier phase's card go stale, and every card that reads that
+   phase (`docs/phase_card.md`).
 3. **The active thread's handoff** (e.g. `p10_cluster_function/handoff-10.md`):
    stage state, Parked items.
 4. **`LESSONS.md`**: if anything went wrong (a stale doc, a silent failure,
