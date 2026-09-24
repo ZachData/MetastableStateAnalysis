@@ -92,6 +92,12 @@ world moves, nobody updates the line, and the next session acts on it.
 - 2026-09-12: §3.15 still ended on an open hedge the next commit had closed.
 - 2026-09-09: `cf700f9` corrected a git line the commit before made stale.
 - At least nine commits in the history exist only to correct a handoff.
+- 2026-09-24: Phase 3's headline null (decoder→V 0.484 / 0.501) has been
+  quoted in `INDEX.md`, `README.md` and `design-7.md` since April, and the only
+  Phase 3 runs on disk hold an error where that number should be
+  (`archive/p3_crosscoder/status-3.md` "Runs on disk"). A result without a named
+  run directory cannot be re-checked. The card sessions have now found five
+  runs that were unrecorded or cannot be produced from what is on disk.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -259,6 +265,7 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   unmerged (#56 → #57).
 - The repo's `github_key` is dead; `GIT_SSH_COMMAND` pointing at it fails.
 - Two Claude sessions shared one working tree.
+- A cleanup deleted branches it had been told to keep: lesson 12.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
@@ -319,3 +326,38 @@ a wrong premise, the check inherits it.
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user
 settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
+
+## 12. Deleted, then needed
+
+**What happens.** Something is deleted (a branch, a file, a run directory) and
+a later session needs it. The code is usually the cheap part to lose, since
+tooling has moved on and a revival would rewrite it anyway. The expensive part
+is the *intent*: why it was built, what it was meant to test, and what building
+it taught. When the only copy of that is inside the deleted thing, it goes too.
+
+**Log every instance here**, newest first: what was deleted, when, what needed
+it, and what was recovered.
+
+**Instances.**
+- 2026-09-23 → needed 2026-09-24: the "delete every branch except `main`"
+  cleanup took `claude/particle-methods-comparison-vpuads` (Phase 1d, 5 069
+  lines) and `claude/visualize-mets-results-sl2ya5` (one 255-line tool), both
+  listed in `INDEX.md` as "do not delete". The check ran on the 3 non-ancestor
+  branches, not on that list. Needed next day: 1d is the obvious tool for Phase
+  10's "HDBSCAN partition not reproducible" (`status-10.md` §3). Recovered from
+  two unpushed local `dead/*` tags: 1d's design, status, findings and the text
+  of its never-registered `P-C1`–`P-C4` now sit in `archive/p1d_cluster_ensemble/`,
+  and the viz tool's purpose sits in `INDEX.md`. The code was let go (user,
+  2026-09-24).
+- 2026-09-24, found not needed yet: Phase 3's headline run (decoder→V
+  0.484 / 0.501) is on no drive; only an earlier partial run survives
+  (`archive/p3_crosscoder/status-3.md` "Runs on disk"). The intent survived in
+  `status-3.md` and `design-3.md`; the evidence did not (lesson 1).
+
+**The rule now.** Code may be deleted; intent may not. Before deleting
+anything with work in it that exists nowhere else, move its design/status docs
+(why it exists, what it tests, what it found, any predictions written) to
+`main`, under `archive/` if frozen, with a `FROZEN.md` saying where the code
+went and when to rebuild. A list that says "do not delete" is checked by the
+cleanup itself, not by memory. Status: ⚠️ prose only; a cleanup is rare enough
+that a lint is not proposed.

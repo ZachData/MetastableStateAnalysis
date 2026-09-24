@@ -1,5 +1,54 @@
 # Phase 3 — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Do the features a sparse cross-layer dictionary (crosscoder) learns on the residual stream line up with the value operator's attractive and repulsive eigen-subspaces, and do the long-lived ones carry the particles' metastable clusters?
+- **Inputs:** `albert-xlarge-v2` and `gpt2-large`, trained weights only, no checkpoints, no Pythia; BatchTopK crosscoder, k = 64; battery not recorded. The only runs on disk (main tree `results/phase3/`, 2026-04-21) **back only 1 of the verdict table's 7 rows** (bimodality); the other six are errors or absent there — `archive/p3_crosscoder/status-3.md` "Runs on disk"
+- **Results:**
+  - Decoder directions align with V at chance in both models, and feature lifetime does not predict alignment (no producing run on disk) — `archive/p3_crosscoder/status-3.md` "Verdict table"
+  - Feature lifetimes are bimodal on ALBERT, not on GPT-2 (the one row the runs on disk reproduce) — `archive/p3_crosscoder/status-3.md` "Verdict table"
+  - Steering along features moved no merge on ALBERT; on GPT-2 the eval prompts had no merge to move (no producing run on disk) — `archive/p3_crosscoder/status-3.md` "Verdict table"
+  - The null is close to a property of the instrument: a sparse objective makes decoder columns near-orthogonal, and those align with any fixed subspace at chance — `archive/p3_crosscoder/lit-3.md` §1
+- **Superseded / wrong:**
+  - Read as "no geometric structure at the feature level"; the literature reads it as the sparse objective's own geometry, and Phase 4's dense autoencoder recovered alignment on ALBERT — `archive/p3_crosscoder/status-3.md` "Corrections received"
+  - "A `FROZEN.md` stating this trigger is still pending": written 2026-08-22 — `archive/p3_crosscoder/FROZEN.md`
+- **Registry:** none, because the phase ran before the registry existed and was archived 2026-08-22 (`claims/EXPERIMENTS.md`)
+- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d
+- **Feeds:** 4
+- **Open threads:**
+  - Which run produced the six rows other than bimodality (decoder→V 0.484 / 0.501 among them)? Not the two on disk — `archive/p3_crosscoder/status-3.md` "Runs on disk"
+  - Cross-term feature weighting and induction tagging never ran (Phase 2's `cross_term_results` not passed; `pair_agreement` empty) — `archive/p3_crosscoder/status-3.md` "Known blockers (low priority, frozen)"
+  - The reintroduction trigger's first half (activation caches at ≥ 4 checkpoints) is met once Stage 0 lands 19 checkpoints of 410m; its second half (a particle question that needs a dictionary) is not — `archive/p3_crosscoder/FROZEN.md`
+- **After Phase 10:**
+  - None proposed. If a question needs a dictionary, use Phase 4's dense low-rank autoencoder, not a sparse one (free: trains on saved activations, CPU)
+- **Reviewed:** 2026-09-24 · body `e34a8d8c72`
+<!-- /phase-card -->
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
+
+- 2026-09-16 · the null is the sparse objective's near-orthogonality, not an absence of structure; Phase 4 Track 3 is the informative arm · `archive/p3_crosscoder/lit-3.md` §1
+
+## Runs on disk (checked 2026-09-24)
+
+Main tree `results/phase3/` (untracked) holds two runs, both 2026-04-21:
+`albert-xlarge-v2_2026-04-21_13-27-04` and `gpt2-large_2026-04-21_13-28-01`
+(`analysis_results.json`, `crosscoder_config.json`, `cross_phase/`). Their
+feature-lifetime bimodality coefficients match the verdict table below
+(0.622 / 0.514), **the only one of the table's 7 rows they reproduce.**
+`v_subspace_alignment` and `lifetime_vs_alignment` are
+`{"error": "v_projectors not in artifacts"}`;
+`ffn_repulsive_feature_alignment` and `decoder_violation_projection` are
+errors too; there is no steering or pair-tracking output at all. Of the 18
+analysis keys, 10 are errors in both runs. So six rows below (decoder→V,
+lifetime×V, violation projection, FFN alignment, steering, pair tracking) came
+from a later run (the table was last verified 2026-04-29) that is on none of
+this box's three drives. Nothing for Phases 4, 5, 5b, 5c or the frozen Phase 6
+is on them either.
+
 **Last verified:** 2026-04-29
 **Overall:** Complete. Both models run. **Overall verdict: null.** Per the transition plan,
 this phase is being frozen in place (relocated untouched, `FROZEN.md` to be added) rather

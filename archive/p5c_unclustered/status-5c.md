@@ -1,5 +1,43 @@
 # Phase 5c — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** What do the particles that never join a cluster (HDBSCAN noise) do: are they a population the trained network uses, and does clustering have a rank budget that they sit outside?
+- **Inputs:** `gpt2-large` and `albert-base-v2`, trained and random weights; standalone visualisation scripts over Phase 1 outputs; no package, no manifest, date and battery not recorded, no run dir on this box's drives (checked 2026-09-24)
+- **Results:**
+  - The attention flip: in trained models unclustered particles receive more attention than the layer average and clustered ones less; under random weights the sign reverses — `archive/p5c_unclustered/status-5c.md` "Preliminary findings (correlational, no interventions run)"
+  - The punctuation fraction is not a trained signal: random weights give the same ratio — `archive/p5c_unclustered/status-5c.md` "Preliminary findings (correlational, no interventions run)"
+  - The energy plateau is carried by within-cluster pairs — `archive/p5c_unclustered/status-5c.md` "Preliminary findings (correlational, no interventions run)"
+- **Superseded / wrong:**
+  - On `pythia-410m` the flip is about 94 % causal mask: dividing out a content-free baseline leaves about 6 % of the gap. A different model, so not a refutation of the GPT-2/ALBERT number — `p10_cluster_function/status-10.md` §1.1
+  - An ALBERT random-vs-trained ratio was misread as random weights resisting collapse more — `p5_single_mstate_analysis/math-5c.md` §2.2
+  - Blockers 2 and 3 (GPT-2 hooks never fire; no model with an LM head) were closed by the `causal_tests.py` migration and `core/lm_loading.py` — `archive/p5_single_mstate_analysis/status-5.md` "v2 follow-up: causal_tests.py migration — DONE (item 3 aftermath, closed)"
+- **Registry:** none, because Groups C and D were designed and never registered (`claims/CLAIMS.md`)
+- **Depends on:** 1@6a6e6a3c1a
+- **Feeds:** 10
+- **Open threads:**
+  - Token frequency confounds both stories: regress membership on log frequency, per layer and checkpoint, first — `archive/p5c_unclustered/lit-5c.md` §1
+  - Position 0 is the attention sink and unclustered by construction — `p10_cluster_function/attention-10.md` §2.1
+  - Group D (force-collapse, force-disperse) is not written; every primitive it needs exists
+  - The rank plateau needs re-establishing on normed rank before the budget test — `p5_single_mstate_analysis/math-5c.md` §9
+- **After Phase 10:**
+  - The frequency regression on the 410m sweep, v1 prompt keys only (free)
+  - Group C, the rank-budget test across populations (free: reuses effective-rank code)
+  - Group D (forward pass: one per intervention × prompt × checkpoint)
+- **Reviewed:** 2026-09-24 · body `31eefb5696`
+<!-- /phase-card -->
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
+
+- 2026-07-18 · blockers 2 and 3 closed by the `causal_tests.py` migration and `core/lm_loading.py` · `archive/p5_single_mstate_analysis/status-5.md` "v2 follow-up: causal_tests.py migration — DONE (item 3 aftermath, closed)"
+- 2026-08-23 · the ALBERT two-timescale ratio is plateau duration, not collapse resistance · `p5_single_mstate_analysis/math-5c.md` §2.2
+- 2026-09-16 · token frequency confounds both stories · `archive/p5c_unclustered/lit-5c.md` §1
+- 2026-09-20 · the flip on `pythia-410m` is ~94 % causal mask · `p10_cluster_function/status-10.md` §1.1
+
 **v2 plan reframe — read this before anything below.** The transition plan's opening section
 ("Framing: particles first") elevates this phase's central object — the unclustered
 population — to be the organizing unit for the *entire* transition project, not just this

@@ -19,7 +19,7 @@
   - The code and the pilot's own report cite cone collapse as "Theorem 6.3"; it is Lemma 6.4 (for a decision) — `archive/UPDATE_PLAN.md` §0
 - **Registry:** none, because the phase is exploratory by design; its findings feed `P-H1` and `CLAIM-A` instead (`claims/EXPERIMENTS.md`)
 - **Depends on:** 1@6a6e6a3c1a
-- **Feeds:** 4, 5, 5c, 6-frozen, 7
+- **Feeds:** 7
 - **Open threads:**
   - Cone collapse against a null: `--n-null` has never been run, so how much is n versus d_eff is unknown — `status-1b.md` "R3. Cone-collapse is unquantified against any null"
   - The relative classifier needs a null too: its 0.90 cutoff is a reporting convention, and "separated" falls as the cloud concentrates — `status-1b.md` "The 2026-08-17 Pythia pilot"
@@ -32,7 +32,7 @@
   - Adopt `hull_min_norm` for the margin (free, code)
   - Thread LN frames through `run_1b` and test whether the axis attenuates (free, code and CPU)
   - Run on the Stage 0 sweep's 8 v1 prompts (free once Stage 0 lands; the 12 held-out prompts stay out)
-- **Reviewed:** 2026-09-23 · body `6e39b06e9c`
+- **Reviewed:** 2026-09-24 · body `6e39b06e9c`
 <!-- /phase-card -->
 
 ## Corrections received
