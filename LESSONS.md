@@ -330,7 +330,11 @@ needs the user to enable it on GitHub.
   #93 then built the matched version (a kNN lexical cluster at the same layer:
   +0.21 under deciles) and found the carry table averaged 7 prompts in one
   column against 8 in the other (a "17 %" that was 5 %). A contrast between
-  two groups is taken over the units that have both.
+  two groups is taken over the units that have both. The fix itself repeated
+  it one level down (#94's review): the class-only reference returned None for
+  small classes, so it averaged over fewer tokens than the value beside it
+  (`homer_iliad` L24: 1 of 190). A test with 40 bins over a 40-member pool
+  could not fail.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

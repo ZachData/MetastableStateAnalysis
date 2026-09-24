@@ -632,8 +632,8 @@ before it.
   produce. Cost: its clusters by position, from the §1.7 record's inputs.
   Changes: whether position is the second thing HDBSCAN counts.
 - **Done 2026-09-24: are §1.9's trained depth clusters lexical or
-  contextual?** Both checks were run, plus post hoc lexical (kNN) and ceiling
-  controls (`status-10.md` §1.10). The class grouping is computed early in
+  contextual?** Both checks were run, plus post hoc lexical (kNN) and class-only
+  references (`status-10.md` §1.10). The class grouping is computed early in
   training and mostly embedding-given when trained.
 - **Is the computed class grouping context, or a per-token feature?**
   (discovery, from §1.10, 2026-09-24). At step 512, depth clusters are +0.20

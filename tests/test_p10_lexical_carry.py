@@ -50,21 +50,19 @@ def test_emb_same_averages_zero_given_one_same_class_member():
 
 
 def test_planted_structures_move_their_own_lift():
-    n = 41
+    # 400 pool members, so 40 bins hold 10 each and the 40-bin lift can be non-zero
+    n = 401
     pool = np.arange(1, n)
-    cls = np.array(["a"] + ["a", "b"] * 20, dtype=object)
-    # class only: co-members are same class, embedding flat within class
-    row = np.linspace(0, 1, n)
     rng = np.random.default_rng(1)
-    row[1:] = rng.permutation(row[1:])
-    co = np.array([p for p in pool if cls[p] == "a"][:8])
+    cls = np.array(["a"] + ["a", "b"] * 200, dtype=object)
+    row = rng.permutation(np.linspace(0, 1, n))       # class independent of embedding
+    co = rng.choice([p for p in pool if cls[p] == "a"], 20, replace=False)
     r = split_stats(0, co, pool, row, cls)
-    assert r["class_given_emb"] > 0.3
-    # embedding only: co-members are the 8 nearest, classes independent of row
-    near = pool[np.argsort(-row[pool])][:8]
+    assert r["class_given_emb_40"] > 0.3               # class-only: survives 40 bins
+    near = pool[np.argsort(-row[pool])][:20]
     r = split_stats(0, near, pool, row, cls)
-    assert r["emb_given_class"] > 0.3
-    assert abs(r["class_given_emb_40"]) < 0.1
+    assert r["emb_given_class"] > 0.3                  # embedding-only
+    assert abs(r["class_given_emb_40"]) < 0.15
 
 
 def test_pool_must_hold_the_co_members():
@@ -92,11 +90,12 @@ def test_ceiling_matches_enumerated_same_class_sets():
     want = np.mean([split_stats(0, np.array(c), pool, row, cls)["class_given_emb"]
                     for c in combinations(same, k)])
     got = control_stats(0, k, pool, row, cls)
-    assert got["class_given_emb_ceil"] == pytest.approx(want)
+    assert got["class_given_emb_classonly"] == pytest.approx(want)
     near = pool[np.argsort(-row[pool])][:k]
     assert got["class_given_emb_knn"] == pytest.approx(
         split_stats(0, near, pool, row, cls)["class_given_emb"])
-    assert control_stats(0, len(same) + 1, pool, row, cls)["class_given_emb_ceil"] is None
+    # k larger than the class: same value (it does not depend on k)
+    assert control_stats(0, len(same) + 1, pool, row, cls)["class_given_emb_classonly"] == pytest.approx(want)
 
 
 def test_carry_groups_use_only_runs_with_both():

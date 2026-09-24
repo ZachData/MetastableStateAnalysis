@@ -88,9 +88,11 @@ depth vs trained L0 at the same bin count, L0 being the lexical reference.
 
 After `/challenge-pr` on #93: ``*_knn`` scores the same CGE on a purely lexical
 cluster of the same size at the same layer (the focal token's k nearest in its
-own layer 0), a matched lexical reference in place of L0; ``*_ceil`` scores it on
-a class-only cluster (k same-class tokens, in expectation), the most the
-measure could show. The carry groups are averaged over runs that have both
+own layer 0), a matched lexical reference in place of L0; ``*_classonly`` scores
+it on a class-only cluster (same-class tokens, the embedding ignored, in
+expectation): a reference for what pure class grouping scores, not a maximum.
+(Named ``*_ceil`` in schema 3, where it was None for a class with < k members,
+which averaged it over fewer tokens than the observed value; #94's review.) The carry groups are averaged over runs that have both
 groups (``n_runs_carry``); the first version mixed 7 and 8 prompts.
 
 TIER 1, EXPLORATORY, NOT REGISTERED. Nothing here touches `claims/registry.json`.
@@ -123,8 +125,9 @@ N_BINS = 10
 FINER_BINS = (20, 40)   # post hoc sensitivity (docstring, "CHANGED AFTER THE FIRST RUN")
 CGE = ("class_given_emb", *(f"class_given_emb_{b}" for b in FINER_BINS))
 # after /challenge-pr on #93: CGE on a purely lexical cluster (the focal token's k nearest in
-# its own layer 0) and on a class-only one (k same-class tokens), the matched reference and ceiling
-CONTROLS = tuple(f"{c}_{kind}" for kind in ("knn", "ceil") for c in CGE)
+# its own layer 0) and on a class-only one (same-class tokens, the embedding ignored): the matched
+# lexical reference and a class-only reference (an expectation, not a maximum)
+CONTROLS = tuple(f"{c}_{kind}" for kind in ("knn", "classonly") for c in CGE)
 SPLIT = ("emb_given_class", "class_given_emb", "emb_same", "emb_cross",
          *CGE[1:], *CONTROLS)
 CARRY = ("self_cos", "self_pct", "self_top1")
@@ -160,24 +163,21 @@ def split_stats(f: int, co: np.ndarray, pool: np.ndarray, own_row: np.ndarray,
 
 
 def control_stats(f: int, k: int, pool: np.ndarray, own_row: np.ndarray, cls: np.ndarray) -> dict:
-    """CGE for a purely lexical k-cluster (f's k nearest in its own layer 0) and a
-    class-only one (in expectation, k same-class pool members; None if the class has < k)."""
+    """CGE for a purely lexical k-cluster (f's k nearest in its own layer 0) and for a
+    class-only one (the expectation over same-class pool members; it does not depend on k)."""
     near = pool[np.argsort(-own_row[pool], kind="stable")[:k]]
     knn = split_stats(f, near, pool, own_row, cls)
-    same = pool[cls[pool] == cls[f]]
     out = {f"{c}_knn": knn[c] for c in CGE}
-    if len(same) < k:
-        return out | {f"{c}_ceil": None for c in CGE}
-    # the lift is linear in the co-members, so the mean over all k-subsets of `same` is
+    # the lift is linear in the co-members, so the mean over all k-subsets of them is
     # the mean over single same-class members: 1 - the same-class share of each one's bin
     p_pool = midrank_pct(own_row[pool], own_row[pool])
     s_pool = cls[pool] == cls[f]
-    ceil = {}
+    ref = {}
     for c, nb in zip(CGE, (N_BINS, *FINER_BINS)):
         bins = np.minimum((p_pool * nb).astype(int), nb - 1)
         share = np.bincount(bins, weights=s_pool, minlength=nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
-        ceil[f"{c}_ceil"] = float(1.0 - share[bins[s_pool]].mean())
-    return out | ceil
+        ref[f"{c}_classonly"] = None if not s_pool.any() else float(1.0 - share[bins[s_pool]].mean())
+    return out | ref
 
 
 def carry_stats(acts: np.ndarray, layer: int, positions: list) -> dict:
@@ -324,7 +324,7 @@ def main() -> None:
     inputs = sorted((f"{s}|{k}", str(p)) for (s, k), p in runs.items())
     summary = summarise(results)
     record = {
-        "schema": "p10_s1_lexical_carry/3",
+        "schema": "p10_s1_lexical_carry/4",
         "row": "Stage 1, §1.9 parked: class effect lexical carry or contextual",
         "tier": "1 (exploratory, unregistered, descriptive; no null)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

@@ -45,7 +45,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `27efc09213`
+- **Reviewed:** 2026-09-24 · body `2bc7328622`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -619,8 +619,8 @@ the layer mean, so no single cluster carries a cell.
 ### 1.10 §1.9's class effect, lexical or not — **early in training the network computes it; trained, it is mostly what the embedding already groups**
 
 Tier 1, descriptive, no null. Reader `tools/run/p10_lexical_carry.py --v1-only`,
-record `data/analysis/p10_s1_lexical_carry.json` (schema 3, after
-`/challenge-pr` on #93). **Input:** as §1.9: 152 v1 runs through
+record `data/analysis/p10_s1_lexical_carry.json` (schema 4, after
+`/challenge-pr` on #93 and #94). **Input:** as §1.9: 152 v1 runs through
 `stage0_index.json`, pin `64a4087`, battery `06790b90dcfe`, inputs
 `c558b210c08f`, tokenizer `c24618a1b3e6`. 4 min on 16 cores. Same focal tokens
 and all-positions draw as §1.9. Both checks were parked in `handoff-10.md`.
@@ -641,21 +641,22 @@ depends partly on the previous token.
 deciles. It cannot work: a purely lexical cluster of the same size at the same
 layer (each focal token's k nearest in its own layer 0, `*_knn`) scores +0.21
 at trained L12 under it, more than the observed +0.15. At 40 bins that lexical
-control is +0.04 at L12. The observed value is read against it, and against a
-class-only cluster's score (`*_ceil`, the most the measure can show). The
-pre-stated 10-bin reading ("above step 0", Δ +0.13 at the layer mean) is
-recorded but does not settle it. Trained L0, the first reference used, agrees
-with the kNN control at 40 bins (+0.03 / +0.03).
+control is +0.04 at L12. The observed value is read against it, and beside a
+class-only cluster's expected score (`*_classonly`: same-class tokens, the
+embedding ignored; a reference, not a maximum: one run exceeds it, and per
+prompt it runs 0.04–0.44). The pre-stated 10-bin reading ("above step 0",
+Δ +0.13 at the layer mean) is recorded but does not settle it. Trained L0, the
+first reference used, agrees with the kNN control at 40 bins (+0.03 / +0.03).
 
 `class_given_emb` at 40 bins: observed / lexical control (kNN) / class-only
-ceiling. Step 0 is observed −0.04 to +0.01, kNN −0.04 to −0.01, ceiling ≈ 0.28
-at every layer. 10 bins, observed / kNN, in brackets:
+reference. Step 0 is observed −0.04 to +0.01, kNN −0.04 to −0.01, class-only
+0.28–0.30 at every layer. 10 bins, observed / kNN, in brackets:
 
 | step | L12 | L24 | layer mean |
 |---|---|---|---|
-| 512 | **+0.20** / −0.00 / 0.31 (+0.28 / +0.04) | **+0.20** / −0.00 / 0.30 (+0.27 / +0.05) | +0.20 / +0.00 / 0.31 |
-| 2000 | +0.12 / +0.04 / 0.26 (+0.20 / +0.14) | +0.13 / +0.02 / 0.29 (+0.19 / +0.11) | +0.13 / +0.04 / 0.27 |
-| 143000 | **+0.04** / +0.04 / 0.25 (+0.15 / +0.21) | **+0.07** / +0.02 / 0.25 (+0.15 / +0.13) | +0.05 / +0.03 / 0.25 |
+| 512 | **+0.20** / −0.00 / 0.32 (+0.28 / +0.04) | **+0.20** / −0.00 / 0.30 (+0.27 / +0.05) | +0.20 / +0.00 / 0.31 |
+| 2000 | +0.12 / +0.04 / 0.27 (+0.20 / +0.14) | +0.13 / +0.02 / 0.30 (+0.19 / +0.11) | +0.13 / +0.04 / 0.28 |
+| 143000 | **+0.04** / +0.04 / 0.26 (+0.15 / +0.21) | **+0.07** / +0.02 / 0.26 (+0.15 / +0.13) | +0.05 / +0.03 / 0.25 |
 
 Carry, focal (clustered unique) / unclustered unique, `self_pct` · `self_top1`,
 over the 7 prompts with both groups (`repeated_tokens` has no focal token):
@@ -670,15 +671,17 @@ over the 7 prompts with both groups (`repeated_tokens` has no focal token):
 Δ +0.11 L12, `emb_cross` Δ +0.02.
 
 - **Step 512: the network computes the class grouping.** The embedding
-  barely groups by class yet (§1.9: same_class lift at L0 +0.07; here the kNN
-  control ≈ 0 at every layer). Depth clusters are +0.20 same-class beyond
-  embedding similarity, two thirds of the ceiling (0.31). This check cannot
+  barely groups by class yet: §1.9's same_class lift at L0 is +0.07, and a
+  lexical kNN cluster scores +0.04 / +0.05 at L12 / L24 under deciles, against
+  +0.21 / +0.13 trained. Depth clusters are +0.20 same-class beyond embedding
+  similarity at 40 bins, about two thirds of the class-only reference (0.31). This check cannot
   say whether the source is context or a per-token feature computed after
   layer 0.
 - **Trained: mostly what the embedding already groups.** At 40 bins, L12's
   +0.04 is on the lexical control (+0.04). L24's +0.07 is +0.05 above its
-  control (+0.02), on the floor. The ceiling stays 0.25, so the measure could
-  have shown more. Two to three of 7 prompts carry the L24 excess
+  control (+0.02), on the floor. Taken the pre-stated way, each against its
+  step-0 value, the L24 excess is +0.04, inside the floor. The class-only
+  reference stays 0.26, so the measure could have shown more. Two to three of 7 prompts carry the L24 excess
   (`latex_monograph` +0.23, `hdbscan_code` +0.16, `camus_letranger` +0.08; the
   rest −0.03 to +0.01).
 - **Not individual carry, which is a narrower claim.** Clustered unique tokens
