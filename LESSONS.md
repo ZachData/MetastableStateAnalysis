@@ -311,6 +311,14 @@ needs the user to enable it on GitHub.
   unique tokens it is "unclear" at all 18. Same rule as above, one level down: a confound
   defined by position in the sequence is not removed by a filter on order.
   Exclude on the symmetric property (copy count), not on "came first".
+- 2026-09-24 (Stage 1 co-membership, #92): the pre-stated reading was
+  Δ = lift(step) − lift(step 0), and the headline property scored co-members
+  in the *trained* embedding. Step 0's clusters come from an unrelated random
+  embedding, so their lift there is ~0 by construction; the Δ tracked the
+  embedding converging, not the clusters. `/challenge-pr` caught it. Scored in
+  each run's own embedding, step 0 is already +0.20, and the trained increment
+  is +0.12, not +0.32. Rule: a baseline must be measured in a frame that could
+  have shown the effect at that baseline.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

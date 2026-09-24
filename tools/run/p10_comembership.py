@@ -47,7 +47,8 @@ different mechanism there). The reading is **delta = lift(step) -
 lift(step 0)** per property, at layers 0, 12, 24 and the layer mean. Step 0's
 lifts are the instrument's baseline (§1.8(a)), not a finding. A delta is
 "above step 0" iff > +0.05, "below" iff < -0.05, else "as step 0". The 0.05
-is a floor under noise from 8 prompts, not a test: no null, no e-value.
+is a floor under noise from 8 prompts (7 contribute: `repeated_tokens` has
+no focal token), not a test: no null, no e-value.
 
 What each reading would mean:
 - ``copy_share`` / ``no_copy`` above step 0 at trained deep layers: unique
@@ -61,6 +62,25 @@ What each reading would mean:
 
 ``emb_pct`` at layer 0 of step 143000 is circular (that layer's partition was
 made from that geometry); read it at depth or at other steps.
+
+CHANGED AFTER `/challenge-pr` ON #92 (post hoc, 2026-09-24; the rule above is kept)
+-------------------------------------------------------------------------------
+- **The frozen-frame ``emb_pct`` has no valid step-0 baseline.** Step 0's
+  clusters come from a random embedding unrelated to the trained one, so their
+  lift in the trained frame is ~0 by construction, and its delta mixes "the
+  embedding moved toward its final form" with "clusters follow the embedding".
+  Its delta is recorded but its reading is ``n/a (frozen frame)``.
+  ``emb_pct_own`` is added: the same statistic in each run's **own** layer 0,
+  which has a valid step-0 baseline. At layer 0 it is circular at every step.
+  At depth, a step-0 lift says clusters follow the token's own (random)
+  embedding carried in the residual, which is the lexical reading.
+- **A second expectation**: a draw from the prompt's **clustered** positions
+  only (``*_cl``), beside the draw from all of them, because §1.7 found class
+  predicts clustered vs noise, so the all-positions draw mixes that in. The
+  pre-stated reading uses the all-positions draw; both are recorded.
+- ``n_clusters``: distinct clusters behind the focal tokens of a run-layer,
+  since a cluster of many unique tokens counts once per member.
+- ``deltas`` refuses when step 0 is absent rather than using the earliest step.
 
 TIER 1, EXPLORATORY, NOT REGISTERED. Descriptive, no null. Nothing here
 touches `claims/registry.json`.
@@ -96,8 +116,10 @@ from tools.run.p10_ext_sem_threshold import FROZEN_STEP, layer0_gram, load_index
 from tools.run.p10_token_composition import (
     CompositionError, find_tokenizer, load_vocab, token_features)
 
-PROPS = ("copy_share", "no_copy", "adjacent", "same_class", "emb_pct")
-DELTA_FLOOR = 0.05
+PROPS = ("copy_share", "no_copy", "adjacent", "same_class", "emb_pct", "emb_pct_own")
+NOT_READ = {"emb_pct": "n/a (frozen frame)"}   # no valid step-0 baseline (docstring)
+POOLS = ("", "_cl")                             # expectation drawn from all others / clustered others
+DELTA_FLOOR = 0.05  # placed, not calibrated: a floor under noise from 7 prompts, no null behind it
 PICK_LAYERS = (0, 12, 24)
 
 
@@ -116,34 +138,46 @@ def midrank_pct(values: np.ndarray, x: np.ndarray) -> np.ndarray:
 
     (#less + (#equal - 1) / 2) / (m - 1): over all of `values` it averages exactly 0.5.
     """
+    if len(values) == 1:        # a one-position pool: the draw is forced
+        return np.full(len(x), 0.5)
     s = np.sort(values)
     lo = np.searchsorted(s, x, side="left")
     hi = np.searchsorted(s, x, side="right")
     return (lo + (hi - lo - 1) / 2) / (len(values) - 1)
 
 
-def focal_stats(f: int, members: np.ndarray, is_copy: np.ndarray, cls: np.ndarray,
-                emb_row: np.ndarray) -> dict:
-    """Observed and expected values of the five properties for one focal token f."""
-    n = len(is_copy)
-    others = np.delete(np.arange(n), f)
+def focal_stats(f: int, members: np.ndarray, pool: np.ndarray, is_copy: np.ndarray,
+                cls: np.ndarray, emb_rows: dict) -> dict:
+    """Observed and expected values for one focal token f, the draw taken from `pool`.
+
+    `pool`: the positions a random co-member set is drawn from (f excluded, and
+    every co-member in it). `emb_rows`: {property: f's row of that frame's Gram}.
+    """
     co = members[members != f]
     k = len(co)
-    adj = [p for p in (f - 1, f + 1) if 0 <= p < n]
-    n_copy_others = int(is_copy[others].sum())
-    return {
+    n = len(pool)
+    if f in pool or not np.isin(co, pool).all():
+        raise CompositionError(f"position {f}: pool must hold every co-member and not f")
+    adj = [p for p in (f - 1, f + 1) if p in set(pool.tolist())]
+    n_copy = int(is_copy[pool].sum())
+    out = {
         "k": k,
-        "copy_share": (float(is_copy[co].mean()), n_copy_others / (n - 1)),
-        "no_copy": (float(not is_copy[co].any()), p_none(n - 1, n_copy_others, k)),
-        "adjacent": (float(np.isin(adj, co).any()), 1.0 - p_none(n - 1, len(adj), k)),
-        "same_class": (float((cls[co] == cls[f]).mean()), float((cls[others] == cls[f]).mean())),
-        "emb_pct": (float(midrank_pct(emb_row[others], emb_row[co]).mean()), 0.5),
+        "copy_share": (float(is_copy[co].mean()), n_copy / n),
+        "no_copy": (float(not is_copy[co].any()), p_none(n, n_copy, k)),
+        "adjacent": (float(np.isin(adj, co).any()), 1.0 - p_none(n, len(adj), k)),
+        "same_class": (float((cls[co] == cls[f]).mean()), float((cls[pool] == cls[f]).mean())),
     }
+    for name, row in emb_rows.items():
+        out[name] = (float(midrank_pct(row[pool], row[co]).mean()), 0.5)
+    return out
 
 
 def measure_run(run_dir: Path, vocab: dict, added: set, frozen_gram: np.ndarray,
-                frozen_tokens: np.ndarray) -> dict:
-    """{layer: {prop: [obs, exp, lift], 'k', 'n_focal'}} for one run."""
+                frozen_tokens: np.ndarray, own_gram: np.ndarray = None) -> dict:
+    """{layer: {prop: [obs, exp, lift, obs_cl, exp_cl, lift_cl], 'k', 'n_focal', 'n_clusters'}}.
+
+    `own_gram` defaults to the run's own layer-0 Gram (read from activations.npz).
+    """
     prov = labels_provenance(run_dir)
     if prov != "native":
         raise CompositionError(f"{run_dir.name}: labels are {prov}, not native")
@@ -155,8 +189,11 @@ def measure_run(run_dir: Path, vocab: dict, added: set, frozen_gram: np.ndarray,
         raise CompositionError(f"{run_dir.name}: noise at every layer (an empty partition, not a result)")
     if len(frozen_tokens) != len(tokens) or (frozen_tokens != tokens).any():
         raise CompositionError(f"{run_dir.name}: tokens differ from the frozen frame's run")
-    if frozen_gram.shape != (len(tokens), len(tokens)):
-        raise CompositionError(f"{run_dir.name}: frozen Gram is {frozen_gram.shape}, {len(tokens)} tokens")
+    if own_gram is None:
+        own_gram = layer0_gram(run_dir)
+    for name, g in (("frozen", frozen_gram), ("own", own_gram)):
+        if g.shape != (len(tokens), len(tokens)):
+            raise CompositionError(f"{run_dir.name}: {name} Gram is {g.shape}, {len(tokens)} tokens")
     feats = token_features(tokens, vocab, added)
     is_copy = np.array([f["copies"] != "unique" for f in feats])
     cls = np.array([f["cls"] for f in feats], dtype=object)
@@ -165,15 +202,25 @@ def measure_run(run_dir: Path, vocab: dict, added: set, frozen_gram: np.ndarray,
     for layer, lab in sorted(labels.items()):
         if len(lab) != len(tokens):
             raise CompositionError(f"{run_dir.name} layer {layer}: {len(lab)} labels, {len(tokens)} tokens")
-        rows = [focal_stats(f, np.flatnonzero(lab == lab[f]), is_copy, cls, frozen_gram[f])
-                for f in unique_pos if lab[f] != -1]
-        rec = {"n_focal": len(rows), "n_unique": len(unique_pos)}
-        if rows:
-            rec["k"] = float(np.mean([r["k"] for r in rows]))
+        focal = [f for f in unique_pos if lab[f] != -1]
+        clustered = np.flatnonzero(lab != -1)
+        rows = {pool: [] for pool in POOLS}
+        for f in focal:
+            members = np.flatnonzero(lab == lab[f])
+            emb = {"emb_pct": frozen_gram[f], "emb_pct_own": own_gram[f]}
+            rows[""].append(focal_stats(f, members, np.delete(np.arange(len(tokens)), f),
+                                        is_copy, cls, emb))
+            rows["_cl"].append(focal_stats(f, members, clustered[clustered != f], is_copy, cls, emb))
+        rec = {"n_focal": len(focal), "n_unique": len(unique_pos),
+               "n_clusters": len({int(lab[f]) for f in focal})}
+        if focal:
+            rec["k"] = float(np.mean([r["k"] for r in rows[""]]))
             for p in PROPS:
-                o = float(np.mean([r[p][0] for r in rows]))
-                e = float(np.mean([r[p][1] for r in rows]))
-                rec[p] = [o, e, o - e]
+                rec[p] = []
+                for pool in POOLS:
+                    o = float(np.mean([r[p][0] for r in rows[pool]]))
+                    e = float(np.mean([r[p][1] for r in rows[pool]]))
+                    rec[p] += [o, e, o - e]
         out[layer] = rec
     return out
 
@@ -183,8 +230,11 @@ def _mean(xs):
     return float(np.mean(xs)) if xs else None
 
 
+STAT_NAMES = tuple(f"{x}{pool}" for pool in POOLS for x in ("obs", "exp", "lift"))
+
+
 def summarise(results: dict) -> dict:
-    """{subset: {step: {layer|'mean': {prop: {obs, exp, lift}, k, n_runs, focal_frac}}}}."""
+    """{subset: {step: {layer|'mean': {prop: {obs, exp, lift, *_cl}, k, n_runs, focal_frac, n_clusters}}}}."""
     out = {}
     for subset, keep in {"all": lambda k: True,
                          "without_repeated_tokens": lambda k: k != "repeated_tokens"}.items():
@@ -198,24 +248,24 @@ def summarise(results: dict) -> dict:
                 by[L] = {"n_runs": len(rs),
                          "focal_frac": _mean(r[L]["n_focal"] / r[L]["n_unique"]
                                              for r in runs if L in r and r[L]["n_unique"]),
-                         "k": _mean(r["k"] for r in rs)}
+                         "k": _mean(r["k"] for r in rs),
+                         "n_clusters": _mean(r[L]["n_clusters"] for r in runs if L in r and r[L]["n_focal"])}
                 for p in PROPS:
-                    by[L][p] = {name: _mean(r[p][i] for r in rs)
-                                for i, name in enumerate(("obs", "exp", "lift"))}
-            by["mean"] = {"focal_frac": _mean(by[L]["focal_frac"] for L in layers),
-                          "k": _mean(by[L]["k"] for L in layers)}
+                    by[L][p] = {name: _mean(r[p][i] for r in rs) for i, name in enumerate(STAT_NAMES)}
+            by["mean"] = {x: _mean(by[L][x] for L in layers) for x in ("focal_frac", "k", "n_clusters")}
             for p in PROPS:
-                by["mean"][p] = {name: _mean(by[L][p][name] for L in layers)
-                                 for name in ("obs", "exp", "lift")}
+                by["mean"][p] = {name: _mean(by[L][p][name] for L in layers) for name in STAT_NAMES}
             out[subset][s] = by
     return out
 
 
 def deltas(summary: dict) -> dict:
-    """The pre-stated reading: lift(step) - lift(step 0), with its word."""
+    """The pre-stated reading: lift(step) - lift(step 0), with its word, for both draws."""
     out = {}
     for subset, steps in summary.items():
-        base = steps[min(steps)]
+        if 0 not in steps:
+            raise CompositionError(f"{subset}: no step 0, the baseline every delta is taken against")
+        base = steps[0]
         out[subset] = {}
         for s, by in steps.items():
             out[subset][s] = {}
@@ -224,11 +274,15 @@ def deltas(summary: dict) -> dict:
                     continue
                 out[subset][s][L] = {}
                 for p in PROPS:
-                    a, b = by[L][p]["lift"], base[L][p]["lift"]
-                    d = None if a is None or b is None else a - b
-                    word = ("unavailable" if d is None else "above step 0" if d > DELTA_FLOOR
-                            else "below step 0" if d < -DELTA_FLOOR else "as step 0")
-                    out[subset][s][L][p] = {"delta": d, "reading": word}
+                    out[subset][s][L][p] = {}
+                    for pool in POOLS:
+                        a, b = by[L][p][f"lift{pool}"], base[L][p][f"lift{pool}"]
+                        d = None if a is None or b is None else a - b
+                        word = ("unavailable" if d is None else NOT_READ.get(p) or
+                                ("above step 0" if d > DELTA_FLOOR
+                                 else "below step 0" if d < -DELTA_FLOOR else "as step 0"))
+                        out[subset][s][L][p][f"delta{pool}"] = d
+                        out[subset][s][L][p][f"reading{pool}"] = word
     return out
 
 
@@ -267,7 +321,7 @@ def main() -> None:
     summary = summarise(results)
     reading = deltas(summary)
     record = {
-        "schema": "p10_s1_comembership/1",
+        "schema": "p10_s1_comembership/2",
         "row": "Stage 1 — what clustered unique tokens cluster with, against step 0",
         "tier": "1 (exploratory, unregistered, descriptive; no null)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -284,7 +338,8 @@ def main() -> None:
         "holdout": holdout,
         "criterion": f"delta = lift(step) - lift(step 0) per property; above/below step 0 iff "
                      f"|delta| > {DELTA_FLOOR}; lift = mean observed - mean expected under a "
-                     "uniform draw of the same size from the prompt's other positions",
+                     "uniform draw of the same size from the prompt's other positions (*_cl: from its "
+                     "other clustered positions); emb_pct (frozen frame) is not read against step 0",
         "summary": summary,
         "reading": reading,
         "inputs": inputs,
@@ -295,14 +350,17 @@ def main() -> None:
     out.write_text(json.dumps(record, indent=1))
     print(f"\nwrote {out}  (inputs {record['inputs_sha256']})")
     for subset in summary:
-        print(f"\n{subset}: obs / exp (lift) per property; layers " + ", ".join(map(str, PICK_LAYERS)) + ", mean")
+        print(f"\n{subset}: obs / exp (lift | lift, clustered draw) per property; layers "
+              + ", ".join(map(str, PICK_LAYERS)) + ", mean")
         for s, by in summary[subset].items():
             for L in [*PICK_LAYERS, "mean"]:
                 if L not in by:
                     continue
                 x = by[L]
-                print(f"  step{s:>6} L{L!s:>4} focal {x['focal_frac']:.2f} k {x['k']:.1f}  " + "  ".join(
-                    f"{p} {x[p]['obs']:.2f}/{x[p]['exp']:.2f} ({x[p]['lift']:+.2f})" for p in PROPS))
+                print(f"  step{s:>6} L{L!s:>4} focal {x['focal_frac']:.2f} k {x['k']:.1f} "
+                      f"clusters {x['n_clusters']:.1f}  " + "  ".join(
+                          f"{p} {x[p]['obs']:.2f}/{x[p]['exp']:.2f} ({x[p]['lift']:+.2f}|{x[p]['lift_cl']:+.2f})"
+                          for p in PROPS))
 
 
 if __name__ == "__main__":

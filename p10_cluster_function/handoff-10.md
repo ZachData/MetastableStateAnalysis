@@ -412,11 +412,11 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    question narrows to: what do the clustered unique tokens cluster *with*,
    against step 0 as the baseline? Re-run at 152 runs: done (`status-10.md` §1.7).
    **2b. The co-membership reader, DONE 2026-09-24** (`status-10.md` §1.9;
-   `tools/run/p10_comembership.py`). At init a clustered unique token sits with
-   whatever is near, copies at chance. Trained, it sits with tokens the trained
-   embedding calls similar (all 7 prompts), with its class, and with copy groups
-   less than chance; adjacency is a smaller, depth-only part. Emerges over steps
-   64–2000.
+   `tools/run/p10_comembership.py`; revised after `/challenge-pr` on #92). At
+   init, clusters at depth already follow each token's own random embedding
+   carried in the residual. Training adds class (Δ +0.20, by step 512) and moves
+   unique tokens away from copy groups. Own-embedding similarity adds only
+   +0.12, and adjacency a depth-only share.
 3. **Report both sweeps.** The pilot has native labels; the WDS sweep has
    backfilled ones. Agreement across them is the §3.51.4 check that every
    partition-derived claim now owes.
@@ -623,16 +623,16 @@ before it.
   L2–L22. Why: a count that arises without repeats, which pure noise does not
   produce. Cost: its clusters by position, from the §1.7 record's inputs.
   Changes: whether position is the second thing HDBSCAN counts.
-- **Is §1.9's embedding similarity semantic, or the token's own embedding
-  carried in the residual?** (confound on §1.9, found 2026-09-24). `emb_pct`
-  scores co-members by their cosine in the trained layer-0 embedding; at depth
-  a cluster could form on that similarity because the residual still carries
-  each token's embedding, with no contextual content. Two cheap checks on the
-  same inputs: each focal token's cosine between its layer-L state and its own
-  layer-0 state (near 1 at L12 would make the cluster lexical), and `emb_pct`
-  split into same-class and cross-class co-members. Why: it decides
-  whether §1.9 is the semantic answer or a lexical one. Cost: one reader
-  option, seconds to run. Changes: what Stage 3 (trash collection) is asked of.
+- **Are §1.9's trained depth clusters lexical or contextual?** (confound on
+  §1.9, 2026-09-24). At step 0 depth clusters follow each token's own random
+  embedding (`emb_pct_own` +0.22 at L12), so the residual carries it. The
+  trained lift is +0.33, and the class effect may be the same carry, since
+  same-class tokens are embedding-similar. Two cheap checks on the same
+  inputs: each focal token's cosine between its layer-L state and its own
+  layer-0 state, and `emb_pct_own` split into same-class and cross-class
+  co-members. Why: it decides whether §1.9's class effect is semantic or
+  lexical. Cost: one reader option, seconds to run. Changes: what Stage 3
+  (trash collection) is asked of.
 - **The `p10_*` readers' default selection now mixes sweeps** (confound, found
   building the holdout guard, 2026-09-24): `--pattern pythia-410m-*` over
   `data/phase12` globs the Phase 1 sweep (152), Stage 0's v1 dirs (135 at 12:40)
