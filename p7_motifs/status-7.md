@@ -19,7 +19,7 @@
   - `P-I5`'s min-rank statistic controlled only the complete null; replaced by intersection-union, `L3H6` 0.0234 → 0.0312, five overclaims withdrawn — §3.38
   - `design-7.md` carries "cone collapse is universal" from a 1b result that 1b says not to cite — `p1b_hemisphere/status-1b.md`
 - **Registry:** nine `H-BRIDGE` rows, all `active`, none adjudicated. `P-I1` e-value, real run recorded, INSUFFICIENT; `P-ST1`, `P-AB1`, `P-I3` e-value, built, calibrated, unrun (`P-AB1` and `P-I3` have no known-answer dry run); `P-I5` needs-null with a gate and a real-run record, parked, and it iterates the live battery (`STATE.md` Blocked 2); `P-I2`, `P-I4`, `P-I7` nothing built; `P-SA1` instrument frozen — `claims/EXPERIMENTS.md`
-- **Depends on:** 1@6a6e6a3c1a, 1b@6e39b06e9c, 2@27c0fbe55d
+- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d
 - **Feeds:** none
 - **Open threads:**
   - The rotational channel is not wired: `U_S`/`U_A` absent and `real_frac`/`imag_frac` NaN in every table — `p7_motifs/status-7.md` "Build order"
@@ -30,7 +30,7 @@
   - Check whether the 19 tables on disk meet `P-I3`'s and `P-AB1`'s pre-computed requirements, without scoring them (free)
   - Decide `P-I5`'s battery: pin to the v1 keys or re-register (free, the user's decision)
   - Wire the rotational channel from 2b's Schur blocks and rebuild the tables (forward pass: `run_7.py`, about 16 min per checkpoint × 19)
-- **Reviewed:** 2026-09-24 · body `c945f486c3`
+- **Reviewed:** 2026-09-24 · body `359a89b435`
 <!-- /phase-card -->
 
 **Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
@@ -130,7 +130,7 @@ has refused.
 
 ## Verdict table
 
-No adjudicated verdicts. The four registered predictions (P-I1, P-I2, P-I3, P-I4 — see `PREDICTIONS.md`)
+No adjudicated verdicts. The table covers the four original rows of the nine (P-I1, P-I2, P-I3, P-I4 — see `PREDICTIONS.md`); all nine
 are outstanding, and by construction they were registered before any Phase 7 code was
 written, matching the discipline used for Phase 1c and Phase 2d.
 
@@ -175,8 +175,8 @@ interpretable.
    activations, attention and the composed OV circuit, with the projectors `p7_io` supplies.
    31 tests, including an end-to-end planted relay that goes producer → alphabet → event
    level, which is the seam a individually-correct producer can still fail at (transposed
-   indices, wrong offset sign, pair types keyed the other way). It has not been run against a
-   real forward pass — that is the smoke tier.
+   indices, wrong offset sign, pair types keyed the other way). When written it had not been
+   run against a real forward pass; step 10's sweep has since run it ("Corrections received").
 8. **`run_7.py`** — DONE (2026-08-31). The driver, and the first thing in this phase
    with a caller: it joins a Phase 1 run directory (activations on the L2 sphere plus
    their norms, and the attention tensor) to a Phase 2 decomposition (composed OV
@@ -216,7 +216,7 @@ interpretable.
    motif side is built from — and the two arms would share a selection step the
    pairing null cannot separate.
 9. **Smoke tier** — one prompt, two checkpoints, tiny GPT-NeoX, end to end.
-10. **The checkpoint sweep.** Not before.
+10. **The checkpoint sweep.** Not before. **Done** 2026-09-01 to 09-03, all 19 steps (`data/phase7/`).
 
 ## Findings from implementation
 

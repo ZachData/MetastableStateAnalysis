@@ -15,14 +15,13 @@
   - `L5H2` is a previous-token relay feeding `L7H8`'s matching attention — `p7d_redundancy/status-7d.md` "The upstream-relay check"
   - The exhaustive self-repair sweep: MLP 6 is the largest stand-in, and the attention search had missed the four largest — `p7d_redundancy/status-7d.md` "Tying up the self-repair"
   - `L5H2` and MLP 6 are an OR-gate; MLP 6's repair is an active rotation aimed at the set's key read-space, and it moves the heads it points at — `p7d_redundancy/status-7d.md` "Opening MLP 6", "Geometry predicts function"
-  - The 410m results are mode-invariant: `mean` reproduces the `ov` numbers — §3.15
+  - The catalogue, `r*`, ambient energy, pairwise matrix, formation curves and geometry are mode-invariant at 410m: `mean` reproduces the `ov` numbers. The FV experiment, the self-repair sweep and the MLP 6 work were not rerun, and `mean` cannot see MLP 6's mechanism (§3.26) — §3.15
 - **Superseded / wrong:**
   - "The stand-ins are those three members" was superseded by the exhaustive sweep — `p7d_redundancy/status-7d.md` "Tying up the self-repair"
   - `ov` "zero-ablation" leaves the value bias, so it is a bias-ablation; immaterial, a hook zero reproduces it bitwise — §3.15
   - `mean` is not the conservative control when the mechanism is itself the mean (MLP 6); found at 70m — §3.26
   - The `wide` probe's token range is out of distribution; `freq` is the better probe, added as an arm — §3.15, §3.17
-  - "Spent under `check_registry` rule 3": rule 3 is a per-artifact warning; the spent status is the rung policy — `p7d_redundancy/status-7d.md` "Corrections received"
-- **Registry:** none, because every measurement is on `pythia-410m`, which the rung policy keeps for exploration only (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 7d as a live instrument with no prediction
+- **Registry:** none, because every measurement is on `pythia-410m`, which the rung policy (`check_registry` rule 3 applied forward) keeps for exploration only (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 7d as a live instrument with no prediction
 - **Depends on:** none
 - **Feeds:** 7e, 8, 10
 - **Open threads:**
@@ -35,7 +34,7 @@
   - `L11H14`'s step-1000 copying score (free: weights only)
   - The step-1000 pair on the graded readout, KL or λ, instead of raw dNLL (forward pass: one checkpoint)
   - Per-member attribution of MLP 6's rotation to `L7H1` / `L8H6` / `L8H9` (forward pass: two checkpoints)
-- **Reviewed:** 2026-09-24 · body `a3b51a0ed1`
+- **Reviewed:** 2026-09-24 · body `751b162e22`
 <!-- /phase-card -->
 
 **Registered predictions:** none. Every number in this phase is a measurement
@@ -70,7 +69,6 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
 - 2026-09-11 · 410m is mode-invariant: `mean` reruns reproduce the `ov` catalogue, `r*` and interaction ratio · `p8_scale_ladder/status-8.md` "The matched cross-rung read"
 - 2026-09-12 · a ceiling-contaminated cell should be retried on `freq` before it is called unmeasurable · §3.17
 - 2026-09-13 · `mean` is blind to a mechanism carried by its own mean (MLP 6), so it is not always the conservative control · §3.26
-- 2026-09-24 · "spent under `check_registry` rule 3" misnames the source: rule 3 warns when a later-registered prediction reuses the same artifact hash; the spent status is the rung policy · `p8_scale_ladder/design-8.md`
 
 ## What is answered
 

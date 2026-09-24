@@ -85,7 +85,7 @@ the lint checks both ends.
 | 3a | Parked 5 for 2 / 2b / 2d; cards 2, 2b. Found three unrecorded runs: the 2b pilot (run 2026-08-14 and rerun 2026-08-17, recorded in `status-2b.md`), the 2d pilot (same two dates; it computed the `P-M1` / `P-T1` statistics on real artifacts; recorded in `status-2d.md`, values not opened, for the user) and the 243-run Phase 2 sweep (2026-08-13) that holds Study B's numbers, whose decompose columns contradict "Degenerate columns" (`status-2.md` "Phase 2 runs on disk") | **done** 2026-09-23 |
 | 3b | Cards 2d, 6. The user decided the 2d pilot (unseen, quarantined, fresh scoring run only). Found that two of the 2026-09-19 audit's four "blocking decisions" were already taken: `P-T1`'s amendment landed 2026-08-11 and the P6 unit was registered `model` 2026-08-25 (routed to both `## Corrections received`). 1b's Feeds now names `6-frozen`; live 6 reads 1, 2, 2b | **done** 2026-09-23 |
 | 4 | Cards: archived 3, 4, 5, 5b, 5c and frozen 6; live 6 now depends on frozen 6; 1b's advice-only Feeds (4, 5, 5c, 6-frozen) removed. Found: Phase 3's only runs on disk reproduce 1 of its 7 verdict rows (bimodality), so the headline null's producer is not on this box (`archive/p3_crosscoder/status-3.md` "Runs on disk"); nothing for 4, 5, 5b, 5c or frozen 6 is on disk. Routed 12 corrections (5c: the flip is mostly causal mask on 410m). Fixed INDEX/README's stale "two live explanations" and branch lines. The branches went to the user as "Open" 6, archived-card staleness as "Open" 7 | **done** 2026-09-24 |
-| 5 | Cards: 7, 7d, 7e. 7 depends on 1, 1b, 2 (1's Feeds gained 7); 7e on 7d. Found: `status-7.md` still said nothing had run, while all 19 `data/phase7/` tables (410m, v1 battery) and `P-I1`'s score existed; fixed in place and routed. `P-I5`'s real run was on 70m `L3H6`, not 410m. Routed 17 corrections, most from §3.15 / §3.17 / §3.26 and `status-8.md`'s mode-invariance reruns (410m results hold under `mean`). New: Parked 8, 9 | **done** 2026-09-24 |
+| 5 | Cards: 7, 7d, 7e. 7 depends on 1, 2 (1's Feeds gained 7; 1b's advice-only edge to 7 dropped, as in session 4); 7e on 7d. Found: `status-7.md` still said nothing had run, while all 19 `data/phase7/` tables (410m, v1 battery) and `P-I1`'s score existed; fixed in place and routed. `P-I5`'s real run was on 70m `L3H6`, not 410m. Routed 15 corrections, most from §3.15 / §3.17 / §3.26 and `status-8.md`'s `mean` reruns (410m holds under `mean` for the catalogue, `r*`, matrix, formation, geometry; FV, self-repair and MLP 6 were not rerun). New: Parked 8, 9 | **done** 2026-09-24 |
 | 6 | Card: 8 | open |
 | 7 | Card: 9 (no status file yet: create one in `p9_metric_intervention/` for the card), checked against 10 (`notes-10.md` §9). Then add 9 to Phase 2's Feeds (`plan-9.md` reads Phase 2's `sym_*` artifacts; the lint refused it while 9 had no status file), and to 7d's and 7e's (`plan-9.md` and `notes-9.md` read both) | open |
 | 8 | Card: 10 | open |
@@ -187,18 +187,15 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    Changes: e-value plan item 2. Also for the user: both `P6-R2`/`R4` registry
    `notes` still say no unit is registered, and quarantining
    `results/p2d_pilot` could join Parked 1's guard list.
-8. **Phase 10's confirmation set sits on a model the rung policy calls
-   spent.** `p8_scale_ladder/design-8.md` marks `pythia-410m` "spent (7d/7e)
-   — exploratory forever"; the Phase 10 holdout plans registered predictions
-   scored on 410m's 12 new prompts. `design-8.md`'s own 1.4b paragraph treats
-   "spent" as per-axis (1.4b is "clean on the axis this phase uses"), so the
-   two agree if Phase 10's registered quantities are off the induction axis,
-   but nothing says so. `attention-10.md` A3 joins Phase 10 to 7d's 384-head
-   causal sweep, which is on it. Also, 7d and 7e cite "`check_registry` rule 3"
-   for 410m being spent; rule 3 is a per-artifact-hash warning (routed to both).
-   Why: a registration the rung policy disowns is worth less than the user
-   thinks. Cost: one paragraph in `handoff-10.md` §0.4. Changes: "Open" (scope
-   of the holdout); for the user before Phase 10 registers anything.
+8. **Does any Phase 10 registration read the induction axis on 410m?**
+   `p8_scale_ladder/design-8.md` marks `pythia-410m` spent on the induction
+   axis (7d/7e; rung policy = `check_registry` rule 3 applied forward), and
+   the Phase 10 holdout plans registered predictions scored on 410m. Cluster
+   quantities are off that axis, so the two agree, unless a registration uses
+   7d's 384-head causal sweep, which `attention-10.md` A3 joins to. Why: such a
+   registration would be scored on an axis the policy calls spent. Cost: one
+   line in `handoff-10.md` §0.4 when registrations are drafted. Changes: which
+   Phase 10 rows may be registered on 410m.
 9. **`claims/FALSIFICATION.md` shows `P-I5` as "null not yet constructed".**
    Its generator writes that for every needs-null row; `P-I5`'s null is built,
    calibrated and run, and fails for another reason (§3.33–§3.34). Why: the

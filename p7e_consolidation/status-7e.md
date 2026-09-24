@@ -14,9 +14,8 @@
 - **Superseded / wrong:**
   - The five low-rank members sum to 48 under `mean`, not 40 (`L8H6` 24 → 32); the conclusion stands — `p8_scale_ladder/status-8.md` "The matched cross-rung read"
   - The gain-ordered / anti-ordered dichotomy has a third, unordered class (70m `L3H1`) — §3.17
-  - "Spent under `check_registry` rule 3" misnames the source — `p7e_consolidation/status-7e.md` "Corrections received"
 - **Registry:** none, because `pythia-410m` is exploration-only under the rung policy (`p8_scale_ladder/design-8.md`) and every measurement after surgery would be on a modified model — `p7e_consolidation/status-7e.md`
-- **Depends on:** 7d@a3b51a0ed1
+- **Depends on:** 7d@751b162e22
 - **Feeds:** 8, 10
 - **Open threads:**
   - `schur` vs `svd` on `L11H14`: decides whether `induction_rank_sweep`'s `svd` basis is compromised — `p7e_consolidation/status-7e.md` "What is open"
@@ -29,7 +28,7 @@
   - OV-core principal angles between members (free: weights only)
   - `r*` across checkpoints (forward pass: about 35 min per checkpoint)
   - The core consolidation with probe NLL, natural-text loss, a flattened interaction matrix and restore-exactness (forward pass plus weight surgery)
-- **Reviewed:** 2026-09-24 · body `bca8b5b06c`
+- **Reviewed:** 2026-09-24 · body `c2a68fb3db`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none can be — see "Overall" below.
@@ -54,7 +53,6 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
 - 2026-09-11 · under `mean` at 8 sequences `r*` reproduces for five of six members; `L8H6` moves 24 → 32, so the low-rank five sum to 48, still inside 64 · `p8_scale_ladder/status-8.md` "The matched cross-rung read"
 - 2026-09-11 · every `ov` ablation here is a bias-ablation; immaterial · §3.15
 - 2026-09-12 · SVD ordering has three classes, not two: "below its control" does not diagnose anti-ordering, only `--bottom` does · §3.17
-- 2026-09-24 · "spent under `check_registry` rule 3" misnames the source: rule 3 is a per-artifact warning; the spent status is the rung policy · `p8_scale_ladder/design-8.md`
 
 ## What is answered
 
