@@ -296,8 +296,8 @@ needs the user to enable it on GitHub.
 - 2026-09-24 (Stage 1 step 2): the token-composition criterion was pre-stated
   on "non-repeat" tokens to drop lesson-6's cosine-1 pile, but "non-repeat"
   (no *earlier* copy) keeps first copies, which have twins *later* in the
-  prompt. The criterion read "consistent" at 12 of 19 steps; on unique tokens
-  it is "unclear" at all 19. Same rule as above, one level down: a confound
+  prompt. The criterion read "consistent" at 11 of 18 distinct checkpoints; on
+  unique tokens it is "unclear" at all 18. Same rule as above, one level down: a confound
   defined by position in the sequence is not removed by a filter on order.
   Exclude on the symmetric property (copy count), not on "came first".
 

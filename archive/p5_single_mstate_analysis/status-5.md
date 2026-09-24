@@ -17,7 +17,7 @@
   - Blocker 5 (identical Group F values) is a metric artifact, so "causal robustness scales with size" does not stand; blocker 3 was descoped, blocker 6 is moot — `archive/p5_single_mstate_analysis/PHASE5_PYTHIA.md` "3. Blocker ledger (the original six)"
   - Blocker 4's fix (train the tuned lens) would give a subtly wrong answer: skip-to-output — `archive/p5_single_mstate_analysis/status-5.md` "Note on blocker 4 (2026-07-19): tuned-lens skip-to-output pathology"
 - **Registry:** none, because no falsifier was registered before the phase was archived 2026-08-22 (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1@d7c7e735e4, 2@5e9fc59e62, 2b@69b0e40a60, 4@57a288fdfe
+- **Depends on:** 1@d9236160c9, 2@5e9fc59e62, 2b@69b0e40a60, 4@57a288fdfe
 - **Feeds:** none
 - **Open threads:**
   - Merge geometry (Group B's central output) never ran: `merge_verdict` was `n/a` in all six models — `archive/p5_single_mstate_analysis/PHASE5_PYTHIA.md` "3. Blocker ledger (the original six)"

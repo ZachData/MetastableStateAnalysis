@@ -12,7 +12,7 @@
   - Track 3 is the informative half of the Phase 3/4 pair; the literature has since named the mechanism — `archive/p4_mstate_features/lit-4.md`
 - **Superseded / wrong:** none
 - **Registry:** none, because the phase ran before the registry existed and was archived 2026-08-22 (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1@d7c7e735e4, 2@5e9fc59e62, 3@90dd9dc18e
+- **Depends on:** 1@d9236160c9, 2@5e9fc59e62, 3@90dd9dc18e
 - **Feeds:** 5
 - **Open threads:**
   - GPT-2's Track 3 null: regime B (FFN-mediated) not concentrating into a V-aligned subspace, or the instrument? — `archive/p4_mstate_features/status-4.md` "Downstream implications (binding on later phases)"
