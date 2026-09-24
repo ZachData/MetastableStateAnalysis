@@ -5,7 +5,7 @@
 ## Card
 
 - **Question:** What are the particles' metastable clusters made of and what do they do: is a cluster a parking lot that the metric makes cheap to leave but where particles stay, or a category with a functional and causal role, and can the drive that forms clusters be used as an instrument?
-- **Inputs:** `pythia-410m` only. The Phase 1 sweep (152 dirs, 19 checkpoints × 8 v1 prompts, battery `1e47918ef77a`), with HDBSCAN labels backfilled from its activations, and the pilot sweep on `HDD_1TB` (243 dirs, 27 checkpoints, native labels) as the second measurement. Seven records at 2 000 permutations: `data/analysis/p10_*.json`. Stage 0 (option B): 20 v2 prompts × 19 checkpoints = 380 runs, battery `06790b90dcfe`, pin `64a4087`, selected only through `data/phase12/stage0_logs/stage0_index.json`: 235 indexed on 2026-09-24, chunk 2 running, chunk 3 the last. The 12 new prompts are held out (Registry)
+- **Inputs:** `pythia-410m` only. The Phase 1 sweep (152 dirs, 19 checkpoints × 8 v1 prompts, battery `1e47918ef77a`), with HDBSCAN labels backfilled from its activations, and the pilot sweep on `HDD_1TB` (243 dirs, 27 checkpoints, native labels) as the second measurement. Seven records at 2 000 permutations: `data/analysis/p10_*.json`. Stage 0 (option B): 20 v2 prompts × 19 checkpoints = 380 runs, battery `06790b90dcfe`, pin `64a4087`, selected only through `data/phase12/stage0_logs/stage0_index.json`; progress lives in `p10_cluster_function/handoff-10.md` §0.3. The 12 new prompts are held out (Registry)
 - **Results:**
   - The trained-model attention flip toward unclustered tokens is ~94 % causal mask on 410m: all mask at initialisation, with a learned residual from step ~2000–4000 that persists — `p10_cluster_function/status-10.md` §1.1
   - F0: the earliest member of a density cluster sits late, not early, against the prediction, and the within-cluster restricted null leaves the effect in place. It measured a proxy for the paper's strong Rényi centre, so it is not evidence on the parking account — `p10_cluster_function/status-10.md` §1.2, `p10_cluster_function/lit-10.md` §11.4
@@ -23,7 +23,7 @@
   - §3.53's "no gradient-flow structure": Lemma 5.3 makes the causal dynamics a sequential gradient flow — §3.52.5
   - `handoff-10.md` §0.4's "Stages 1–5 re-run on all 20 prompts for free", which contradicted registering on prompts chosen blind: the 12 are held out on 410m — `p10_cluster_function/handoff-10.md` §0.4, `docs/PHASE_REVIEW.md` "Decisions"
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
-- **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"), on the 12 held-out prompts, which are only partly blind: `CLAIM-C` ran them on 1.4b and gpt2-large. Scope, count, order and release are the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
+- **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
 - **Depends on:** 1@6a6e6a3c1a, 5c@31eefb5696, 7d@751b162e22, 7e@c2a68fb3db, 8@3d5370b5b5, 9@300c78784e
 - **Feeds:** 9
 - **Open threads:**
@@ -38,7 +38,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `62e11b8b7b`
+- **Reviewed:** 2026-09-24 · body `8d9aa06175`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -501,6 +501,6 @@ construction is `2303.06562` (ContraNorm, before any Phase 9 spreading arm) and
 Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
 step 2; `docs/phase_card.md`). Backfilled 2026-09-24 when the card was written.
 
-- 2026-09-20 · 410m's step 0 and step 1 are the same weights, so the "0–16" rows of §1.1, §1.3 and §1.4 average over one duplicated checkpoint · §3.51.3
+- 2026-09-20 · 410m's step 0 and step 1 are the same weights, so every count or pooled statistic over checkpoints here counts one checkpoint twice: the unit counts (3 648 = 19 × 8 × 24, 11 400 = 3 × 19 × 8 × 25, A0's 3 646), sweep means and merged E. Min–max ranges such as the "0–16" rows are unchanged · §3.51.3
 - 2026-09-23 · the 12 new v2 prompts are held out on 410m, not pooled into Stages 1–5, so the header's "the enlarged battery can carry a registered prediction" holds only for the 12; they are partly seen already via `CLAIM-C` on 1.4b and gpt2-large · `docs/PHASE_REVIEW.md` "Decisions", `p10_cluster_function/handoff-10.md` §0.4
 - 2026-09-24 · §0's "`METS_REPO` defaults to the MAIN tree" stopped being true: every runner now defaults to its own checkout (fixed in place) · `docs/PHASE_REVIEW.md` "Parked"
