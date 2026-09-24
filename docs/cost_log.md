@@ -57,3 +57,4 @@ running median of the rows above it gets a line under the table saying why.
   took four gate runs and a bisect. Peak context 280k on each later call is
   the cost. The row covers the whole transcript, so #78's row is partly
   double-counted here.
+| 2026-09-24 | Phase review session 8: card 10; chunk 2 checked, still running (measured before the commit/PR calls) | 28 | 130k | 2.7M | 40k | #84 |
