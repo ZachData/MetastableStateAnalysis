@@ -64,11 +64,13 @@ world moves, nobody updates the line, and the next session acts on it.
   an "X is undecided" claim is checked against the code constant and the
   registry's structured field, not against a notes field.
 - 2026-09-24 (phase review session 7): `plan-9.md` (2026-09-20) listed E5,
-  `P6-R4`'s unit, as a decision for a human (taken 2026-08-25), and E0,
-  transport, as "free, unrun" (it ran that day as Phase 10's F1). Its §11
-  also said nobody had noticed 5c's LM-head blocker had closed; 5c recorded
-  that in July. A plan written from the tree three days earlier was already
-  stale on 3 of its ladder's 14 rows. Same rule.
+  `P6-R4`'s unit, as a decision for a human; it had been taken 2026-08-25.
+  Its E0 (transport) ran as Phase 10's F1 about ten hours after the plan was
+  written, and nobody passed that back, so the plan said "unrun" for four
+  days. Same rule, plus: a result that answers another phase's ladder row
+  gets a pointer in that row. (`/challenge-pr` on #83 corrected my first
+  count here, which also charged the plan with a 5c claim that was right
+  when written.)
 - 2026-09-23 (phase review session 3a): I wrote that the 243-run Phase 2 sweep on disk
   "is not the Study B" `status-2.md` describes, from three columns that
   differed, into the card, `STATE.md` and this file. `/challenge-pr` on #77
