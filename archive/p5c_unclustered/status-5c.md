@@ -14,7 +14,7 @@
   - An ALBERT random-vs-trained ratio was misread as random weights resisting collapse more — `p5_single_mstate_analysis/math-5c.md` §2.2
   - Blockers 2 and 3 (GPT-2 hooks never fire; no model with an LM head) were closed by the `causal_tests.py` migration and `core/lm_loading.py` — `archive/p5_single_mstate_analysis/status-5.md` "v2 follow-up: causal_tests.py migration — DONE (item 3 aftermath, closed)"
 - **Registry:** none, because Groups C and D were designed and never registered (`claims/CLAIMS.md`)
-- **Depends on:** 1@6a6e6a3c1a, 1b@6e39b06e9c
+- **Depends on:** 1@6a6e6a3c1a
 - **Feeds:** 10
 - **Open threads:**
   - Token frequency confounds both stories: regress membership on log frequency, per layer and checkpoint, first — `archive/p5c_unclustered/lit-5c.md` §1

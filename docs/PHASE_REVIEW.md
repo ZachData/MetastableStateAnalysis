@@ -47,11 +47,17 @@ what it found, what superseded it, and what it left open. Three costs follow:
      refs/tags/dead/particle-methods-comparison-vpuads
      refs/tags/dead/visualize-mets-results-sl2ya5`). Tags do not show as
      branches, so they keep the cleanup's goal.
-   - **Phase 1d (`010448c`, 5 069 lines, 16 files): keep, revive after Stage 1.**
-     It tunes seven clusterer families per layer against a whole-pipeline null
-     and builds a consensus, which is the direct answer to Phase 10's finding
-     that the HDBSCAN partition is not reproducible run to run
-     (`p10_cluster_function/status-10.md` §3). Revival cost: a rebase across
+   - **Phase 1d (`010448c`, 5 069 lines, 16 files): keep; measure before
+     reviving.** It tunes seven clusterer families per layer against a
+     whole-pipeline null and builds a consensus. Whether that helps with Phase
+     10's finding that the HDBSCAN partition is not reproducible run to run
+     (`p10_cluster_function/status-10.md` §3) is not known: Phase 10 measured
+     drift between two near-identical re-runs, and 1d tunes against
+     subsampling, a different noise (`/challenge-pr` on #80). That can be
+     measured from the tag in a scratch checkout, without rebasing: run 1d on
+     the two sweeps' overlapping dirs and compare its consensus ARI with
+     HDBSCAN's. The result decides revival and whether it comes before Stage 1
+     (Stage 1 would then read a tuned partition). Revival cost: a rebase across
      351 commits (274 without merges) (conflicts in `INDEX.md`, `PREDICTIONS.md`,
      `core/artifacts.py`, `status-1.md`); its equivalence tests import
      `p1_visualization`, now `p1_mstate_tracking/visualization`; and its
@@ -64,6 +70,16 @@ what it found, what superseded it, and what it left open. Three costs follow:
      `results/` dir per phase to that phase's plotting entry point; results
      now live in `data/phase12/` with manifests, nothing depends on it, and
      rewriting it would cost less than rebasing it. The pushed tag is the record.
+7. **Should archived cards go stale when a live phase they read changes?**
+   (`/challenge-pr` on #80, finding 1.) Under the settled rule ("Decisions") they
+   do, so each edit to `status-1.md` (16 commits in September) now also forces
+   a re-stamp of up to five frozen cards whose April runs cannot change. #80
+   already cut the edges that were advice, not data (1b → 4, 5, 5c, 6-frozen;
+   4 → 6-frozen). Proposed: a card under `archive/` lists its dependencies
+   without a hash, so the table still shows the edge but a live edit never
+   stales it; a change to the archived phase's own file still does. Cost: a
+   few lines in `tools/render_phases.py` plus a test. It changes a rule you
+   settled, so it's your call.
 
 ## The card
 
@@ -89,7 +105,7 @@ the lint checks both ends.
 | 2 | Cards: 1b, 1c. Also: "Open" 5 settled (corrections routed to `## Corrections received`, Phase 1 backfilled); found an unrecorded post-revision Phase 1b Pythia run from 2026-08-17 and recorded it in `status-1b.md` | **done** 2026-09-23 |
 | 3a | Parked 5 for 2 / 2b / 2d; cards 2, 2b. Found three unrecorded runs: the 2b pilot (run 2026-08-14 and rerun 2026-08-17, recorded in `status-2b.md`), the 2d pilot (same two dates; it computed the `P-M1` / `P-T1` statistics on real artifacts; recorded in `status-2d.md`, values not opened, for the user) and the 243-run Phase 2 sweep (2026-08-13) that holds Study B's numbers, whose decompose columns contradict "Degenerate columns" (`status-2.md` "Phase 2 runs on disk") | **done** 2026-09-23 |
 | 3b | Cards 2d, 6. The user decided the 2d pilot (unseen, quarantined, fresh scoring run only). Found that two of the 2026-09-19 audit's four "blocking decisions" were already taken: `P-T1`'s amendment landed 2026-08-11 and the P6 unit was registered `model` 2026-08-25 (routed to both `## Corrections received`). 1b's Feeds now names `6-frozen`; live 6 reads 1, 2, 2b | **done** 2026-09-23 |
-| 4 | Cards: archived 3, 4, 5, 5b, 5c and frozen 6; live 6 now depends on frozen 6. Found: Phase 3's only runs on disk hold no V-alignment result, so its headline null's producer is not on this box (`archive/p3_crosscoder/status-3.md` "Runs on disk"); nothing for 4, 5, 5b, 5c or frozen 6 is on disk. Routed 12 corrections (5c: the flip is mostly causal mask on 410m). Fixed INDEX/README's stale "two live explanations" and branch lines. The branches went to the user as "Open" 6 | **done** 2026-09-24 |
+| 4 | Cards: archived 3, 4, 5, 5b, 5c and frozen 6; live 6 now depends on frozen 6; 1b's advice-only Feeds (4, 5, 5c, 6-frozen) removed. Found: Phase 3's only runs on disk reproduce 1 of its 7 verdict rows (bimodality), so the headline null's producer is not on this box (`archive/p3_crosscoder/status-3.md` "Runs on disk"); nothing for 4, 5, 5b, 5c or frozen 6 is on disk. Routed 12 corrections (5c: the flip is mostly causal mask on 410m). Fixed INDEX/README's stale "two live explanations" and branch lines. The branches went to the user as "Open" 6, archived-card staleness as "Open" 7 | **done** 2026-09-24 |
 | 5 | Cards: 7, 7d, 7e | open |
 | 6 | Card: 8 | open |
 | 7 | Card: 9 (no status file yet: create one in `p9_metric_intervention/` for the card), checked against 10 (`notes-10.md` §9). Then add 9 to Phase 2's Feeds (`plan-9.md` reads Phase 2's `sym_*` artifacts; the lint refused it while 9 had no status file) | open |

@@ -22,6 +22,11 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Blocked on the user
 
+0. **Urgent, one command: push the two `dead/*` tags.** Phase 1d and the viz
+   CLI exist only as unpushed local tags on one disk since the 2026-09-23
+   cleanup deleted their branches from GitHub:
+   `git push origin refs/tags/dead/particle-methods-comparison-vpuads refs/tags/dead/visualize-mets-results-sl2ya5`.
+   Keep/revive/drop comes later (item 7).
 1. **Launch Stage 0 chunk 3** once chunk 2 logs `chunk end` (≈ 15:30 on
    2026-09-24 if the box stays awake): `handoff-10.md` §0.3's guarded block.
    `pgrep -af` matches its own shell; use `pgrep -f 'python -m tools.run.stage0_chunk'`.
@@ -45,10 +50,10 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    heads lack a bandwidth scan? (`status-2d.md` "The 2026-08 Pythia pilot
    (quarantined)".) And 10 `data/analysis/` scripts still default to the main
    tree; Claude does not `git add` under `data/`, so they're yours to change.
-7. **The Phase 1d and viz branches exist only as two local tags** (`dead/*`,
-   local box), since the 2026-09-23 cleanup deleted them from GitHub. Push the
-   tags, then keep/revive/drop each: `docs/PHASE_REVIEW.md` "Open" 6
-   (recommended: revive 1d after Stage 1, drop the viz CLI).
+7. **Keep/revive/drop the Phase 1d and viz tags** (item 0), and **whether
+   archived cards should go stale on live edits**: `docs/PHASE_REVIEW.md`
+   "Open" 6–7 (recommended: measure 1d from the tag before deciding; drop the
+   viz CLI; hashless edges for archived cards).
 
 ## Open PRs and branches
 

@@ -12,9 +12,10 @@
   - Track A and the dissociation test produced no data (prerequisites never populated) — `archive/p6_subspace/status-6.md` "Known blockers"
 - **Superseded / wrong:**
   - The design's premise, that Phase 2b showed the rotational part dynamically neutral, was withdrawn as an identity forced by construction; the hypothesis survives on its own terms — `p6_subspace/math-6.md` §0
-  - The inversion's "two live explanations": the labelling error is ruled out, and neither is assessable until the comparison is normalised by subspace dimension; chance-normalised, the numbers point the predicted way — `p6_subspace/math-6.md` §7.2
+  - The inversion's "two live explanations": the labelling error is ruled out by a planted-structure audit — `claims/audits/p6_projector_labels.json`
+  - Neither explanation is assessable until the comparison is normalised by subspace dimension — `p6_subspace/math-6.md` §7.2; at ALBERT's shape the dimension ratio exceeds the alignment ratio, and chance-normalised the numbers point the predicted way — `claims/audits/p6_projector_labels.json`
 - **Registry:** twelve `P6-*` rows; the ten on this instrument are `dormant`; `P6-R2` and `P6-R4` were rebuilt live and belong to the live card — `p6_subspace/status-6.md`
-- **Depends on:** 1@6a6e6a3c1a, 1b@6e39b06e9c, 2@27c0fbe55d, 2b@b925d63da4, 4@69c4ec094a
+- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d, 2b@b925d63da4
 - **Feeds:** 6
 - **Open threads:**
   - Per-layer $\dim U_A$ and $\dim U_{\rm neg}$: computed on every run, never reported, and the one ratio that decides the inversion — `MATH_INDEX.md`

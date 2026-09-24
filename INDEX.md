@@ -77,7 +77,7 @@ what the field has done since, so that a trigger in `FROZEN.md` is evaluated aga
 | 5 | `archive/p5_single_mstate_analysis/` | Complete for 6 models; 6 code-level blockers. Carries the tuned-lens skip-to-output note |
 | 5b | `archive/p5b_manifold_steering/` | Built and tested, never run |
 | 5c | `archive/p5c_unclustered/` | Docs only, no code. Its attention-flip result is cited in `PREDICTIONS.md` claim (a) |
-| 6 | `archive/p6_subspace/` | Partial run, ALBERT only. The LDA-alignment inversion (0.887 imaginary vs 0.067 real repulsive) is unresolved: the labelling explanation is ruled out, and the comparison is not dimension-normalised (`p6_subspace/math-6.md` §7.2) |
+| 6 | `archive/p6_subspace/` | Partial run, ALBERT only. The LDA-alignment inversion (0.887 imaginary vs 0.067 real repulsive) is unresolved: the labelling explanation is ruled out (`claims/audits/p6_projector_labels.json`), and the comparison is not dimension-normalised (`p6_subspace/math-6.md` §7.2) |
 
 Phase 2c was described in earlier versions of this index and has never existed on disk.
 
