@@ -92,7 +92,9 @@ world moves, nobody updates the line, and the next session acts on it.
   (a `.claude/settings.json` edit, so it is the user's to make).
   **Again 2026-09-24:** 20 commits behind (#84–#90); the hook's `STATE.md`
   said chunk 3 was the user's to launch and listed parked items since done.
-  The same Start check caught it; the hook fix is still unmade.
+  The same Start check caught it; the hook fix is still unmade. **Third time,
+  2026-09-24 (after #91):** the main tree sat at `21391c2`, 26 commits behind (#84–#91);
+  the hook's `STATE.md` said chunk 2 was running and Stage 1 not started.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed

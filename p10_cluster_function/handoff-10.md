@@ -401,8 +401,8 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    mostly a repeat count (repeats have cosine 1 at layer 0, no position
    embedding). §1.1's decline is the repeat share falling. The non-repeat pairs
    that replace the repeats become similar in the trained embedding, so
-   "lexical → contextual" is backwards on this measure. Re-run at 152 runs once
-   Stage 0 completes.
+   "lexical → contextual" is backwards on this measure. **Re-run at 152 runs
+   2026-09-24:** every earlier number unchanged.
 2. ~~**The token-composition table**~~ **DONE 2026-09-24 on Stage 0's v1
    runs** (`status-10.md` §1.7, which holds the numbers;
    `tools/run/p10_token_composition.py`). Clustered vs noise is mostly copy
@@ -410,9 +410,13 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    effect in the trained model's deep layers. Among unique tokens BPE rank does
    not predict it; class does, weakly and against trash collection. The
    question narrows to: what do the clustered unique tokens cluster *with*,
-   against step 0 as the baseline? That is a new reader (co-member copies,
-   classes, positions), not in this list. Re-run at 152 runs once Stage 0
-   completes.
+   against step 0 as the baseline? Re-run at 152 runs: done (`status-10.md` §1.7).
+   **2b. The co-membership reader, DONE 2026-09-24** (`status-10.md` §1.9;
+   `tools/run/p10_comembership.py`). At init a clustered unique token sits with
+   whatever is near, copies at chance. Trained, it sits with tokens the trained
+   embedding calls similar (all 7 prompts), with its class, and with copy groups
+   less than chance; adjacency is a smaller, depth-only part. Emerges over steps
+   64–2000.
 3. **Report both sweeps.** The pilot has native labels; the WDS sweep has
    backfilled ones. Agreement across them is the §3.51.4 check that every
    partition-derived claim now owes.
@@ -619,6 +623,16 @@ before it.
   L2–L22. Why: a count that arises without repeats, which pure noise does not
   produce. Cost: its clusters by position, from the §1.7 record's inputs.
   Changes: whether position is the second thing HDBSCAN counts.
+- **Is §1.9's embedding similarity semantic, or the token's own embedding
+  carried in the residual?** (confound on §1.9, found 2026-09-24). `emb_pct`
+  scores co-members by their cosine in the trained layer-0 embedding; at depth
+  a cluster could form on that similarity because the residual still carries
+  each token's embedding, with no contextual content. Two cheap checks on the
+  same inputs: each focal token's cosine between its layer-L state and its own
+  layer-0 state (near 1 at L12 would make the cluster lexical), and `emb_pct`
+  split into same-class and cross-class co-members. Why: it decides
+  whether §1.9 is the semantic answer or a lexical one. Cost: one reader
+  option, seconds to run. Changes: what Stage 3 (trash collection) is asked of.
 - **The `p10_*` readers' default selection now mixes sweeps** (confound, found
   building the holdout guard, 2026-09-24): `--pattern pythia-410m-*` over
   `data/phase12` globs the Phase 1 sweep (152), Stage 0's v1 dirs (135 at 12:40)

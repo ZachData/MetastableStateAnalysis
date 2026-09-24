@@ -18,6 +18,7 @@
   - `pair_agreement`'s "ext_semantic" count is mostly a repeat count on Pythia (repeats have cosine 1 at layer 0). Over training the repeat share of mutual-NN pairs falls, and the non-repeat pairs that replace them become similar in the trained embedding. No null — `p10_cluster_function/status-10.md` §1.6
   - Which tokens are clustered is mostly copy count at init and in shallow layers (`min_cluster_size=2`, copies coincide at layer 0), and a moderate effect in the trained model's deep layers. Among unique tokens BPE rank does not predict it; class does, weakly and against trash collection. No null — `p10_cluster_function/status-10.md` §1.7
   - At step 0 layer 0 the partition is what HDBSCAN makes of Gaussian noise with planted duplicates (twins noise at 0.14, singletons clustered at 0.43). At layer 0 the cluster count tracks the prompt's repeated token types at every checkpoint (7-prompt mean ratio 0.92–1.01; per run 0.78–1.24), and ≥ 63 % of clusters at any layer hold a repeat. Phase 1's `max_alive` falls at layer 0 in 92 of 133 runs, mean 57–63 at every step against 59.7 repeated types: on these runs the carrying capacity is mostly a repeat count. `repeated_tokens` is a different mechanism (~50 deep-layer clusters). No null — `p10_cluster_function/status-10.md` §1.8
+  - Clustered unique tokens at init sit with whatever is near, copies at chance. In the trained model they sit with tokens the trained embedding calls similar (co-member cosine percentile +0.32 over a random draw, against step 0's +0.00; all 7 prompts at L12), with their own class, and with copy groups less than chance; adjacency adds a smaller share, at depth only. Emerges over steps 64–2000. No null — `p10_cluster_function/status-10.md` §1.9
   - Lemma C.1's saturation is a formula for Phase 1's 50–55 carrying capacity — `p10_cluster_function/math-10.md` §5.4, §3.53
 - **Superseded / wrong:**
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -34,7 +35,7 @@
   - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint, so F12's density confound and the parked window are argued, not controlled — `p10_cluster_function/status-10.md` §5
-  - What do the clustered unique tokens cluster with, measured against step 0 since part of the rate is there at random init? Step 1 is to be re-run at 152 runs (step 2 was, `p10_cluster_function/status-10.md` §1.7), and the pilot sweep is unread — `p10_cluster_function/handoff-10.md` §1.3
+  - Is the trained co-members' embedding similarity semantic, or the residual still carrying each token's own embedding? How much of it is class? The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.9, `p10_cluster_function/handoff-10.md` §1.3
   - Does the pilot's 27-checkpoint "50–55" `max_alive` also fall at layer 0? And what sets `repeated_tokens`' ~50 deep-layer clusters? — `p10_cluster_function/status-10.md` §1.8
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
@@ -43,7 +44,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `7cc236f380`
+- **Reviewed:** 2026-09-24 · body `5f2637f900`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -116,7 +117,7 @@ carry a registered prediction where the current one cannot.**
 | the HDBSCAN backfill | `tools/run/backfill_hdbscan.py` | deps |
 | row A0 | `tools/run/p10_attention_baseline.py` | — |
 | F0 | `tools/run/p10_anchor.py` | — |
-| Stage 1 steps 1, 2 | `tools/run/p10_ext_sem_threshold.py`, `tools/run/p10_token_composition.py` (read only `stage0_index.json`) | — |
+| Stage 1 steps 1, 2, co-membership | `tools/run/p10_ext_sem_threshold.py`, `tools/run/p10_token_composition.py`, `tools/run/p10_comembership.py` (read only `stage0_index.json`) | — |
 | F1 | `tools/run/transport.py` | — |
 | F12 | `tools/run/p10_partition_function.py` | — |
 | the reproducibility floor | `tools/run/p10_partition_stability.py` | — |
@@ -325,7 +326,11 @@ Tier 1, descriptive, no null. Reader `tools/run/p10_ext_sem_threshold.py
 Stage 0 through `stage0_index.json` (pin `64a4087`, battery `06790b90dcfe`),
 8 v1 prompts × 17 steps = 136 runs (16000 and 54000 were not yet indexed;
 chunk 2 was running), inputs sha256 `61127896b17d`. Every run reproduced its
-stored `n_ext_semantic` at 0.5 exactly, per layer.
+stored `n_ext_semantic` at 0.5 exactly, per layer. **Re-run at 152/152 on
+2026-09-24** (inputs `c558b210c08f`, the same set as §1.7's re-run): all 2036
+summary numbers of the 136-run record are unchanged, 236 are new (steps 16000
+and 54000), and the verdicts are the same (frozen dead, self mixed). The table
+below has no row for either new step, so it stands.
 
 Means over 8 prompts × 25 layers. "Repeat": the pair is two copies of one token.
 Non-repeat columns use the **frozen** frame (layer 0 of step 143000), against
@@ -532,6 +537,67 @@ prompts other than `repeated_tokens` (59.7 repeated types per prompt):
 - **Caveats.** No null. The HDBSCAN floor (§3) applies. Means over 7 prompts
   hide their spread. "Holds a repeat" does not mean "is a copy group": at L0
   only 0.33–0.49 of clusters are a single token type.
+
+### 1.9 What clustered unique tokens cluster with — **at init, what noise gives; trained, tokens the trained embedding calls similar and of their class, not copy groups**
+
+Tier 1, descriptive, no null. Reader `tools/run/p10_comembership.py --v1-only`,
+record `data/analysis/p10_s1_comembership.json`. **Input:** the 152 v1 runs
+through `stage0_index.json` (pin `64a4087`, battery `06790b90dcfe`), inputs
+`c558b210c08f`, tokenizer.json `c24618a1b3e6`, native labels only.
+
+Focal token: a clustered unique token (one copy in the prompt) at position > 0.
+For each, five properties of its co-members against a uniform random draw of
+the same size from the rest of the prompt (exact expectations); lift =
+observed − expected, per run-layer, then the mean over prompts. The reading,
+fixed in the docstring before the run: Δ = lift(step) − lift(step 0), "above"
+or "below" step 0 past ±0.05. `repeated_tokens` has 1 unique token, never
+clustered, so it contributes nothing here: the 7-prompt and 8-prompt lifts are
+identical.
+
+Lift at layer 0 / 12 / 24 · mean over 25 layers. Expected values at L12: copy_share 0.65, no_copy ≈ 0.13, adjacent 0.02, same_class ≈ 0.51, emb_pct 0.50.
+
+| step | copy_share | no_copy | adjacent | same_class | emb_pct |
+|---|---|---|---|---|---|
+| 0 | −0.05 / −0.02 / +0.00 · −0.03 | +0.15 / +0.14 / +0.11 · +0.13 | +0.02 / +0.10 / +0.10 · +0.08 | +0.04 / +0.07 / +0.02 · +0.06 | −0.01 / +0.04 / −0.01 · +0.00 |
+| 64 | −0.06 / −0.03 / −0.13 · −0.05 | +0.16 / +0.10 / +0.21 · +0.13 | +0.00 / +0.02 / +0.02 · +0.04 | +0.04 / +0.19 / +0.22 · +0.17 | −0.01 / +0.12 / +0.05 · +0.09 |
+| 512 | −0.07 / −0.19 / −0.20 · −0.17 | +0.18 / +0.28 / +0.21 · +0.24 | +0.02 / +0.04 / +0.09 · +0.06 | +0.07 / +0.33 / +0.33 · +0.33 | +0.03 / +0.29 / +0.26 · +0.29 |
+| 2000 | −0.13 / −0.23 / −0.17 · −0.21 | +0.23 / +0.35 / +0.26 · +0.32 | −0.01 / +0.26 / +0.17 · +0.17 | +0.29 / +0.31 / +0.28 · +0.32 | +0.34 / +0.35 / +0.21 · +0.34 |
+| 16000 | −0.13 / −0.24 / −0.13 · −0.17 | +0.25 / +0.33 / +0.18 · +0.28 | −0.01 / +0.20 / +0.19 · +0.14 | +0.30 / +0.29 / +0.24 · +0.30 | +0.45 / +0.34 / +0.17 · +0.35 |
+| 143000 | −0.13 / −0.19 / −0.08 · −0.15 | +0.25 / +0.31 / +0.12 · +0.26 | −0.01 / +0.20 / +0.19 · +0.13 | +0.29 / +0.26 / +0.23 · +0.27 | +0.47 / +0.33 / +0.17 · +0.32 |
+
+Share of unique tokens clustered (layer mean, 7 prompts): 0.21 at step 0, 0.30 at step 143000.
+
+- **At init, what noise gives.** Step 0's lifts are small except `no_copy`
+  (+0.13) and depth adjacency (+0.10 at L12, L24). Copy share is at chance
+  (−0.03): a clustered unique token at init is glued to whatever is nearby,
+  copy groups included, as §1.8(a) found. 24 % of them sit in a cluster with
+  no copies, which planted noise also makes (317 of 1307 clusters there are
+  background only).
+- **Trained, they cluster away from copy groups and with each other.** Copy
+  share falls below chance (Δ −0.12 at the layer mean at step 143000), and
+  clusters of unique tokens only rise (Δ +0.13). The step-0 glue is not what
+  the trained model's clustered unique tokens are.
+- **Trained, they cluster with tokens the trained embedding calls similar.**
+  `emb_pct` Δ is +0.32 at the layer mean and +0.29 at L12, and it holds per
+  prompt: at step 143000 L12 the lift is +0.26 to +0.40 in all 7 prompts,
+  against −0.02 to +0.14 at step 0. Same class rises too (Δ +0.21), but its
+  per-prompt spread is wide (+0.03 to +0.60 at L12).
+- **Position is a smaller, depth-only part.** Adjacent co-members rise at L12
+  and L24 (lift +0.20, +0.19; Δ +0.10, +0.09) and not at L0. At L12, 22 % of
+  focal tokens have a neighbour in their cluster against 2 % by chance, so
+  most co-members are not neighbours.
+- **When:** mostly steps 64–2000, the window in which §1.6 found the
+  non-repeat mutual pairs becoming embedding-similar. Same class moves first
+  (step 64, L12–L24), then `emb_pct`.
+- **Caveats.** No null beyond the random draw; no e-value. `emb_pct` is in the
+  frozen frame (layer 0 of step 143000), so at layer 0 of the late steps it is
+  circular, and at depth it cannot tell a semantic neighbourhood from the
+  residual stream still carrying each token's own embedding (Parked in
+  `handoff-10.md`). Class and embedding similarity are not separated. At L24
+  of the trained model one cluster holds most of the prompt in some runs (mean
+  k 76 at step 143000; `homer_iliad` has 190 focal tokens there), so their
+  lifts are near 0 and the L24 column is weaker than it looks. The HDBSCAN
+  floor (§3) applies. Only Stage 0's v1 runs; the pilot sweep is §1.3 step 3.
 
 ---
 
