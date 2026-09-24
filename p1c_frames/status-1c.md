@@ -1,5 +1,55 @@
 # Phase 1c — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Does a trained network integrate the identity-weight particle dynamics far enough to reach the collapse time t*, in which direction does it depart from the paper's field (the γ_β residual), and do the geometric preconditions (the cone, the sphere frame, spherical designs) hold on real activations?
+- **Inputs:** All six sub-experiments on synthetic and known-answer configurations. Real data for E only: `pythia-410m-step143000`, 8 of the v1 battery's 9 prompts (battery `1e47918ef77a`, without `short_heterogeneous`), 2026-09-19, `claims/audits/p1c_e_hemisphere.json`. Input audit (keys only) over the 19-checkpoint sweep, 152 dirs, `claims/audits/p1c_inputs.json`. A 2026-08-17 pilot attempt skipped every run for want of β
+- **Results:**
+  - The γ_β ODE reproduces the paper's collapse-time table and the step estimator recovers an injected step — `status-1c.md` "Validation performed"
+  - Phase 1's step-size definition understates the effective integration time about 5.7×, which makes `P-gamma2` close to confirmed by construction under it — `status-1c.md` "Findings from implementation, before any data"
+  - γ_β is monotone in β, so the head-to-layer reduction becomes a bracket rather than a choice; it survives on the measured β range — `status-1c.md` "The $\beta$ reduction, de-blocked", `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
+  - `P-S1`'s ratio is flat across centroid count m, so clusterings need not match on m; the effect-size floor it lacked is added — `status-1c.md` "The clusterer question, settled", `status-1c.md` "The effect-size floor P-S1 was missing"
+  - `P-H1` measured: the cone is feasible at every layer on step 143000, the margin is smallest at layer 0 and grows with depth, well above the i.i.d. reference — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
+  - A, B and F are blocked by missing artifact keys, not physics; β is derivable with no forward pass, and its scale convention is worth a factor of 8 and undecided — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
+- **Superseded / wrong:**
+  - "kmeans is the only clusterer whose centroids Phase 1 persists" is false on disk: 0/152 directories carry centroids — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
+  - "Open item 1 is a hard blocker" overstates it: β is derivable from existing artifacts — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
+  - `lit-1c.md`'s "scholarly hosts are blocked" and its α·Δτ ≈ 0.025 preemption are both false — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
+  - The Euler-discretisation reading is published, not new — §3.37
+  - Validation cites section 3.2 of MATH.md, a file that does not exist — `INDEX.md` "Referenced, not present"
+  - The energy-trajectory PNGs bake a wrong citation into three suptitles — `math-1c.md` §11
+- **Registry:** `P-gamma1`, `P-gamma2` needs-null, blocked (no `beta_eff` in any run dir); `P-H1` measurement, measured on one checkpoint, not adjudicated; `P-S1` e-value, active, dry run only, blocked on inputs (`claims/EXPERIMENTS.md`)
+- **Depends on:** 1@6a6e6a3c1a
+- **Feeds:** 2d
+- **Open threads:**
+  - β's scale convention, to decide before any producer freezes it in an artifact
+  - `P-S1`: re-cluster both arms offline at a matched k, or record the gate as unfeedable
+  - `h_attn_only`, the frame-correct step, needs sublayer streams no run directory has
+  - Causal vs non-causal field, never compared
+  - The cone margin's response to a γ patch is closed-form, but only where the minimiser is unique; a runner must report that — §3.50
+  - Phase 9 builds on 1c's instruments (`p9_metric_intervention/notes-9.md`); it has no status file, so it is not under Feeds
+- **After Phase 10:**
+  - Write the β producer (`beta_eff_per_head` into geometry.json) once the convention is fixed; unblocks A and B (free, CPU, one model load per checkpoint)
+  - Run E over all 19 checkpoints × the 8 v1 prompts (free)
+  - Re-cluster at matched k from `activations.npz` and run `P-S1` (free)
+  - `run_1.py --sublayer` reruns for `h_attn_only` (forward pass, 410m)
+  - Regenerate the energy-trajectory PNGs (free)
+- **Reviewed:** 2026-09-23 · body `c39567cf1e`
+<!-- /phase-card -->
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-23.
+
+- 2026-09-16 · the Euler-discretisation reading is published · §3.37
+- 2026-09-19 · A/B/F blocked by artifact keys; kmeans centroids not persisted; `lit-1c.md`'s preemption lead is false · §3.40
+- 2026-09-20 · closed-form cone-margin response to a γ patch; needs a unique minimiser · §3.50
+- 2026-09-20 · the cone condition cannot fail for n ≤ d in general position (the same fact as finding 5's Wendel note) · §3.39
+- 2026-08-22 · validation cites MATH.md, a file that does not exist · `INDEX.md` "Referenced, not present"
+- 2026-08-23 · the energy-trajectory PNGs bake a wrong citation into three suptitles · `math-1c.md` §11
+
 **Registered predictions:** `P-gamma1`, `P-gamma2` (needs-null — bracket and
 point-estimate readings with no null built), `P-H1` (measurement — no valid
 null exists, by Wendel's theorem; report the margin, never a p) and `P-S1`

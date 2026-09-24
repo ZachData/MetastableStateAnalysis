@@ -26,6 +26,7 @@ what it found, what superseded it, and what it left open. Three costs follow:
 | Where a phase review lands | A **card** at the top of its `status-N.md`; a phase table in `docs/` generated from the cards (built in session 1); a lint keeps them current. This is the "next PR" decided 2026-09-22 (`STATE.md`) |
 | The 12 v2 prompts new to the 410m sweep | **Held out** as Phase 10's confirmation set. Stage 0 still runs all 20; Stages 1–5 read only the 8 v1 prompts until registrations are frozen (`p10_cluster_function/handoff-10.md` §0.4). **Partly seen already**: `CLAIM-C` ran them on 1.4b and gpt2-large (`PROJECT.md` §3.46), so see "Open" |
 | Order vs Stage 0 | In parallel |
+| What makes a card stale ("Open" 5, settled) | **Route corrections to the corrected phase.** A correction to an earlier phase adds a line to that phase's `## Corrections received`, which the existing body hash already covers (`CLAUDE.md` Stop step 2, `docs/phase_card.md`). Rejected: hashing the sections the pointers name. That watches only sections a card already cites, and each of Phase 1's 7 corrections arrived in a section no card cited yet, so it would have caught none of them (`LESSONS.md` lesson 1). Later: a warning lint for unrouted corrections (Parked 3); score the rules against the Superseded lists once several phases have cards (session 9) |
 
 ## Open (for the user, from `/challenge-pr` on #74)
 
@@ -37,12 +38,7 @@ what it found, what superseded it, and what it left open. Three costs follow:
    is extended) scored on the 410m v2 runs before Phase 10 registers?
 4. **Release.** If nothing gets registered by some point, what frees the 12?
    Until then exploration stays at 8 prompts, only 7 of them natural text.
-5. **What makes a card stale** (`/challenge-pr` on #75, finding 1). Today a
-   card goes stale only on its own status file and its dependencies' status
-   files. Most corrections land elsewhere (`PROJECT.md` §3.x, later phases'
-   other files). Should the stamp also hash every section a card's pointers
-   name? That is more complete, and it goes stale on more unrelated edits.
-   Must be settled before session 2 so that no card is written twice.
+5. ~~What makes a card stale~~: settled 2026-09-23, see "Decisions".
 
 ## The card
 
@@ -52,7 +48,10 @@ Fields, format, what the lint checks and how to clear a stale card:
 card points.
 
 **Workflow per card session:** copy the skeleton, fill it from the status
-file (and the files it cites), `python3 tools/render_phases.py --stamp <id>`,
+file (and the files it cites), grep for the phase outside its directory and
+route any correction found there into its `## Corrections received`,
+look in the main tree's `results/` and `data/` for runs the status file does
+not mention, `python3 tools/render_phases.py --stamp <id>`,
 `python3 tools/render_phases.py`, `./scripts/check.sh lint`. Adding a card
 whose Depends on names a carded phase means updating that phase's Feeds too;
 the lint checks both ends.
@@ -62,7 +61,7 @@ the lint checks both ends.
 | # | unit | state |
 |---|---|---|
 | 1 | Card template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card` (fields filled, pointers resolve, and **stale when the phase's status file or any file in its "Depends on" changed since the review**, by content hash rather than commit). Phase 1 card done; `INDEX.md`'s priority block deleted | **done** 2026-09-23 |
-| 2 | Cards: 1b, 1c | open |
+| 2 | Cards: 1b, 1c. Also: "Open" 5 settled (corrections routed to `## Corrections received`, Phase 1 backfilled); found an unrecorded post-revision Phase 1b Pythia run from 2026-08-17 and recorded it in `status-1b.md` | **done** 2026-09-23 |
 | 3 | Cards: 2, 2b, 2d, 6 (live `status-6.md`; `P6-R2`/`R4` active, same claim `H-OPERATOR`) | open |
 | 4 | Cards: archived 3, 4, 5, 5b, 5c and frozen 6 (`archive/p6_subspace/status-6.md`); the Phase 1d and viz branches → keep / revive / drop | open |
 | 5 | Cards: 7, 7d, 7e | open |
@@ -115,3 +114,23 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    imports or spawns from the main tree, worktree gates test `main`'s code, not
    the branch's. Cost: one look at that test's subprocess/env. Changes: whether
    any worktree gate result so far can be trusted for package code.
+3. **Warn on unrouted corrections.** A lint warning (not a failure) when a
+   commit adds text outside a carded phase's directory that names the phase,
+   by path **or in prose** ("Phase 1b", `p1b_`), and that phase's
+   `## Corrections received` did not change. Why: the routing rule
+   ("Decisions") depends on people remembering it, and prose rules get
+   forgotten (`LESSONS.md` lesson 1). Prose matching would have found 4 of
+   the 5 external sources routed into Phase 1's list; path matching alone
+   finds fewer (`/challenge-pr` on #76). Cost: a diff scan in
+   `tools/lint_repo.py`, noisy on prose. **When to decide:** the card
+   sessions only backfill, so they cannot show whether the rule is followed.
+   Check at the first 3 corrections written after 2026-09-23 (Phase 10
+   Stage 1 will produce them) whether each was routed.
+4. ~~Is step 2 also step 0's weights?~~ No: answered by `/challenge-pr` on
+   #76 from the 1b pilot's saved axes (step 1 bitwise equal to step 0, step 2
+   differs).
+5. **Grep every phase's results/ for unrecorded runs.** The 1b pilot sat on
+   disk for five weeks with its status file saying nothing had been rerun.
+   `p2b_pilot` and `p2d_pilot` are there too. Why: a card built only from its
+   status file inherits the same blind spot. Cost: `ls` plus one manifest each.
+   Changes: session 3's 2b and 2d cards; do it at the start of that session.

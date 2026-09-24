@@ -20,6 +20,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-23 | Stage 0 chunk 1: found running, first-output check (measured before the commit/PR calls) | 24 | 75k | 1.4M | 9k | #73 |
 | 2026-09-23 | Phase-review plan + 12-prompt holdout (measured before the commit/PR calls) | 23 | 93k | 1.7M | 20k | #74 |
 | 2026-09-23 | Phase review session 1: card template, `render_phases.py`, lint `phase-card`, Phase 1 card (measured before the commit/PR calls) | 38 | 170k | 4.8M | 45k | #75 |
+| 2026-09-23 | Phase review session 2: cards 1b, 1c, correction routing, unrecorded 1b run (measured before the challenge-pr calls) | 50 | 154k | 5.2M | 35k | #76 |
 
 ## Over 2× median, and why
 
@@ -34,3 +35,7 @@ running median of the rows above it gets a line under the table saying why.
   asked for one card, which means reading all of `status-1.md` (725 lines,
   ~25k tokens) plus the INDEX block being deleted, and that stays in context
   for every later call. Cards 1b + 1c in one session will cost about the same.
+- 2026-09-23 phase review session 2 (5.2M, 2.4× the 2.2M median): as
+  predicted above, plus a rule decision taken mid-session ("Open" 5) and an
+  unrecorded 1b run found and read. Two cards and a rule change per session
+  is about the ceiling; session 3 has four cards and should be split.

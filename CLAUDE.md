@@ -48,7 +48,11 @@ Do these without being asked, in this order, in the same commit as the work:
 1. **`STATE.md`**: overwrite what changed (Now, Blocked, Open PRs, Where
    things stand) and bump **Last updated**. Keep it ≤ 150 lines; move detail
    out rather than trimming facts.
-2. **The phase's `status-N.md`**: numbers, caveats, how to re-run.
+2. **The phase's `status-N.md`**: numbers, caveats, how to re-run. If the
+   unit corrects an *earlier* phase (a result, a definition, a citation),
+   also add one line under that phase's `## Corrections received`: date,
+   what changed, pointer. Corrections flow backwards, and this line is what
+   makes the earlier phase's card go stale (`docs/phase_card.md`).
 3. **The active thread's handoff** (e.g. `p10_cluster_function/handoff-10.md`):
    stage state, Parked items.
 4. **`LESSONS.md`**: if anything went wrong (a stale doc, a silent failure,

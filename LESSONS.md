@@ -20,6 +20,24 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-09-23 (phase review session 2): the card staleness lint (#75) watched
+  a card's own status file and the phases it **depends on**, and those are
+  upstream. Of the 7 corrections on Phase 1's card, 3 came from phases
+  Phase 1 **feeds** (`status-1c.md`, `status-10.md`, `math-10.md`) and 1 from
+  `PROJECT.md` §3.51. None of them touched `status-1.md`, so the lint could
+  not see them. Hashing the sections the pointers name would have caught
+  none either: that watches only sections a card already cites, and each
+  correction arrived in a section nothing cited yet.
+  `/challenge-pr` on #75 flagged the gap, and counting Phase 1's list settled
+  it. The rule was designed by argument; the card's own data answered it.
+  Fix: a correction to an earlier phase adds one line to that phase's
+  `## Corrections received`, so the existing hash sees it.
+- 2026-09-23 (same session): `status-1b.md` said "Nothing has been rerun"
+  for five weeks while a populated post-revision Pythia run (243 runs,
+  2026-08-17) sat in the main tree's `results/p1b_pilot`. The only mention was
+  a disk-inventory line in `PROJECT.md`. Found by `find` while filling the
+  card's Inputs field. Rule: a card session checks `results/` and `data/` for
+  the phase's runs, not just its status file (`docs/PHASE_REVIEW.md` workflow).
 - 2026-09-23 (phase review session 1): the SessionStart hook printed the main
   tree's `STATE.md`, and the main tree was 9 commits behind `origin/main`
   (nobody pulls it after a GitHub merge). It said chunk 1 was killed and
@@ -60,7 +78,10 @@ for ("update all the MD files"), and which files was never defined.
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
 point to it. Updating it is step 1 of the stop protocol, not a request.
-Status: 📋 protocol in `CLAUDE.md`; ✅ size cap by `tools/lint_repo.py`;
+A correction to an earlier phase is also routed to that phase's status file
+(`## Corrections received`), where its card's staleness hash sees it.
+Status: 📋 routing in `CLAUDE.md` Stop step 2; ⚠️ nothing checks that it was
+done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `CLAUDE.md`; ✅ size cap by `tools/lint_repo.py`;
 ✅ `STATE.md` printed at session start by `.claude/settings.json`'s hook.
 
 ## 2. Instruments that degrade silently instead of refusing

@@ -1,15 +1,105 @@
 # Phase 1b (1h) — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** When Phase 1's token cloud shows k = 2 structure, is it the antipodal two-hemisphere split that would escape the paper's collapse-from-a-hemisphere lemma, or a direction of contrast inside one cone that still collapses?
+- **Inputs:** Pre-revision: the 2026-04-23 GPT-2 / ALBERT Phase 1 run, gone from disk. Post-revision: a `pythia-410m` pilot of 27 checkpoints × 9 v1 prompts (battery `1e47918ef77a`), 243 runs on 2026-08-17 at code `3aeab20`, with no null (`n_null = 0`), read from Phase 1's 2026-08-12 pilot; output in the main tree's untracked results/p1b_pilot — `status-1b.md` "The 2026-08-17 Pythia pilot"
+- **Results:**
+  - Every layer of every run sits in one open half-space (cone collapse); no antipodal split, in both runs — `status-1b.md` "The 2026-08-17 Pythia pilot"
+  - No antipodes: the antipodal rule reads 0 %. The relative classifier reads "separated" in most layers, but a single unclustered cone also reads "separated", so that reading is not yet evidence of a two-way split — `status-1b.md` "The 2026-08-17 Pythia pilot"
+  - The activation-space Fiedler axis is PC1 at most layers, so downstream uses of it are using PC1 — `status-1b.md` "The 2026-08-17 Pythia pilot"
+  - The bipartition's token identity persists across layers — `status-1b.md` "R4. Zero events was partly foreclosed"
+  - HDBSCAN's unclustered tokens are barely the Fiedler-boundary tokens (border-vs-noise AUC near chance) — `status-1b.md` "The 2026-08-17 Pythia pilot"
+- **Superseded / wrong:**
+  - The pre-revision verdict table: Block 0's null and Block 3's positive were one test run twice, the ALBERT row was a path bug, and Block 1's zero events were foreclosed by construction — `status-1b.md` "Retractions and reinterpretations"
+  - Cone collapse is not new: it is the anisotropy / common-direction literature's narrow cone — `lit-1b.md` §2
+  - In the full d = 1024 stream the cone condition cannot fail for n ≤ d, so a full-dimension test would be free. The pilot tested the top 64 PCs, and a collapse verdict there lifts to full d, so the result holds at full d. It is informative only where n > 64: 8 of 9 prompts; `short_heterogeneous` (n = 20) runs in 19 dimensions, where collapse is near certain. Still no null — §3.39
+  - `normalized_margin` is not scale-free as documented; 1c's exact margin `hull_min_norm` is the comparable one — `math-1b.md` §7.1
+  - The code and the pilot's own report cite cone collapse as "Theorem 6.3"; it is Lemma 6.4 (for a decision) — `archive/UPDATE_PLAN.md` §0
+- **Registry:** none, because the phase is exploratory by design; its findings feed `P-H1` and `CLAIM-A` instead (`claims/EXPERIMENTS.md`)
+- **Depends on:** 1@6a6e6a3c1a
+- **Feeds:** 4, 5, 5c, 6, 7
+- **Open threads:**
+  - Cone collapse against a null: `--n-null` has never been run, so how much is n versus d_eff is unknown — `status-1b.md` "R3. Cone-collapse is unquantified against any null"
+  - The relative classifier needs a null too: its 0.90 cutoff is a reporting convention, and "separated" falls as the cloud concentrates — `status-1b.md` "The 2026-08-17 Pythia pilot"
+  - Does the axis attenuate in the LN frame? Blocked: LN frames are not threaded through `run_1b` — `math-1b.md` §7.2
+  - The pilot ran persistence on the legacy `regime` key, so R4's foreclosure still applies to it
+  - Blocks 5 and 6 need Phase 2 OV artifacts; layer 0 (pre-LN) is still averaged into per-model means
+  - `p7_motifs/design-7.md` carries "cone collapse is universal" as a constraint, from a result this file said not to cite
+- **After Phase 10:**
+  - Rerun the pilot with `--n-null` and `regime_key="regime_relative"` (free: reads Phase 1 dirs, about 22 min CPU)
+  - Adopt `hull_min_norm` for the margin (free, code)
+  - Thread LN frames through `run_1b` and test whether the axis attenuates (free, code and CPU)
+  - Run on the Stage 0 sweep's 8 v1 prompts (free once Stage 0 lands; the 12 held-out prompts stay out)
+- **Reviewed:** 2026-09-23 · body `6e39b06e9c`
+<!-- /phase-card -->
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-23.
+
+- 2026-08-23 · adopt 1c's `hull_min_norm`: two phases solve one margin problem two ways · `MATH_INDEX.md` "Structural fixes before the next run"
+- 2026-09-16 · cone collapse is a rediscovery of the anisotropy literature · `lit-1b.md` §2
+- 2026-09-16 · "Theorem 6.3" should be Lemma 6.4 (open: `math-1b.md` says "Lemma 6.4, feeding Theorem 6.3") · `archive/UPDATE_PLAN.md` §0
+- 2026-09-20 · the cone condition cannot fail for n ≤ d in general position; the hemisphere lever is gated on context length · §3.39
+
 **Registered predictions:** none. Exploratory by design; nothing in this
 phase may carry an e-value (`claims/EXPERIMENTS.md`).
 
 **Last verified (results below):** run after Phase 1,
 `--phase1-dir results/2026-04-23_18-30-06`. Date not recorded in source.
+**Superseded in part:** a post-revision run on the Pythia pilot exists
+(2026-08-17), see "The 2026-08-17 Pythia pilot" below.
 
 **Code state:** revised. See `archive/p1b_hemisphere/CHANGES-1b.md`. The code has moved ahead of the
 results — **the verdict table below reflects the pre-revision run and has not
 been reproduced.** Two of its rows are retracted outright and two are
 reinterpreted. Nothing here should be cited until a rerun.
+
+---
+
+## The 2026-08-17 Pythia pilot (found on disk 2026-09-23)
+
+Not recorded anywhere in the repo until the phase-review card session: the
+only mention was a line in `PROJECT.md`'s disk inventory. **Input:**
+`pythia-410m`, 27 pilot checkpoints × 9 v1 prompts (8 plus
+`short_heterogeneous`), battery `1e47918ef77a`, 243 runs, `--from-phase1`
+over the 2026-08-12 Phase 1 pilot, `frame = l2_sphere`, cone test in the top 64 PCs (`pca_n_components = 64`, per-run JSON), `n_null = 0`,
+`regime_key = regime`, code `3aeab20` (after the revision, and no
+`p1b_hemisphere/*.py` change since). 1309 s wall. **Output:**
+results/p1b_pilot in the main tree (untracked; `phase1b_cross_run.md` is the
+summary, `manifest.json` id `f3fdac3a27c3`). Populated: 976 files, every
+table filled.
+
+What it shows, read from `phase1b_cross_run.md`:
+
+| quantity | reading |
+|---|---|
+| cone collapse | 100 % of layers at every checkpoint |
+| strong (antipodal) bipartition | 0 % everywhere, except 1.3 % at step 120000 |
+| separated (relative classifier) | 23 % (step 16) to 95 % (step 7000); dips at step 8–16 and at step 19000–60000 |
+| mean normalized margin | 0.49 (step 3000) to 0.86 (step 16) |
+| mean axis rotation per layer | rises with training, 0.08 rad (step 16) to 0.47 (step 120000) |
+| border-vs-noise AUC | 0.51–0.60, falling with training |
+| axis redundancy | `pc1`: the Fiedler axis is PC1 at most layers |
+| identity persistence, HDBSCAN nesting | both True |
+| cone vs null | not run (`n_null = 0`) |
+
+Steps 0 and 1 have bitwise-identical axes (the same weights, §3.51). Step 2
+differs slightly (axes by 3e-4), so it is a separate point.
+
+**What it does not settle:** R3 (no null) and R4 (persistence ran on the
+legacy `regime` key). **Nor R1.** The relative classifier calls a layer
+"separated" when its separation ratio is ≤ 0.90, a cutoff
+`bipartition_detect.py` calls "a reporting convention". `/challenge-pr` on
+#76 ran `analyze_bipartition` on a single Gaussian shifted into a cone, with
+no clusters: it read "separated" in 8 of 8 layers, and isotropic noise read 6
+of 6. Across the 27 checkpoints, "separated %" correlates −0.76 with
+concentration. So the 0 % antipodal figure is a structural null, as R1 said,
+but "separated" may be measuring spread, not a split. It needs a null of its
+own.
 
 ---
 
@@ -105,7 +195,10 @@ fired in the recorded run; the tie-break is now pinned.
 
 ## Open blockers
 
-1. **Nothing has been rerun.** Every result above predates the revision.
+1. ~~**Nothing has been rerun.**~~ Wrong since 2026-08-17: the Pythia pilot
+   above ran on the revised code, without the null (R3) or the relative
+   persistence key (R4). The verdict table's GPT-2/ALBERT rows are still
+   unreproduced.
 2. Blocks 5 (mechanism vs OV/PCA/embedding/heads) and 6 (semantic MI) still
    require Phase 2 OV decomposition artifacts.
 3. Model-touching paths are **unverified**: `--fast`, `--from-phase1`,
