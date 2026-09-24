@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-22 — Stage 0: #67 merged, pin `64a4087`; chunk 1 started and killed the same evening with **no runs done**. **First action: relaunch chunk 1 (§0.3).**
+**Last updated:** 2026-09-24 — Stage 0 at pin `64a4087`: chunk 1 done (144 runs), chunk 2 running since 05:35 (235 of 380 indexed at 09:20), chunk 3 the last. **First action: launch chunk 3 once chunk 2 logs `chunk end` (§0.3).**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -291,7 +291,8 @@ prediction becomes possible on a battery whose rows were chosen blind.**
 is unchanged. And the 12 new prompts share the old eight's checkpoint grid and
 model, so they add independence **in text and nothing else**.
 
-**Stage 0 is done when** 228 directories exist with a matching battery hash, a
+**Stage 0 is done when** all 380 runs of option B (§0.3; 228 of them the
+12 new prompts) are in `stage0_index.json` with a matching battery hash, a
 populated `hdbscan_labels.json`, and a populated `pair_agreement`.
 
 ---

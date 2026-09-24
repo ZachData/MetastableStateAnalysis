@@ -20,6 +20,12 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-09-24 (phase review session 8): `handoff-10.md`, the active thread's
+  runbook, still said "relaunch chunk 1" two days and one chunk later, and
+  its Stage 0 done-line still counted option A's 228 directories after
+  option B (380 runs) was decided in §0.3 of the same file. `STATE.md` had
+  been kept current each time; the handoff header had not. Rule: Stop step 3
+  covers the handoff's header and done-lines, not only its body.
 - 2026-09-23 (phase review session 2): the card staleness lint (#75) watched
   a card's own status file and the phases it **depends on**, and those are
   upstream. Of the 7 corrections on Phase 1's card, 3 came from phases
