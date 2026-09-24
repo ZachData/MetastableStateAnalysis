@@ -103,6 +103,7 @@ def test_manifest_carries_the_p1_battery(tmp_path):
     assert m["prompt_battery_hash"] == "abc123"
     assert m["prompt_key"] == "wiki_paragraph"
     assert m["phase"] == "2d" and m["scored"] is False
+    assert m["activation_revision"] == "step0"
     assert "git_sha" in m and "git_dirty" in m
 
 
@@ -150,4 +151,4 @@ def test_main_refuses_when_the_p1_run_has_no_manifest(tmp_path, monkeypatch):
                       "--p1-run", str(p1), "--revision", "step0",
                       "--out", str(tmp_path / "out"), "--raw-frame"])
     assert rc == 4
-    assert not (tmp_path / "out" / p1.name / "p2d.json").exists()
+    assert not (tmp_path / "out" / p1.name).exists()

@@ -186,6 +186,31 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_smoke)
 
 
+def pytest_sessionfinish(session, exitstatus):
+    """
+    Fail the run if any project module was imported from another checkout.
+
+    A gate run from a worktree imported the main tree's copy of every package
+    loaded after a runner put the main tree at `sys.path[0]` (2026-09-24,
+    `tests/test_no_hardcoded_repo.py`). That test forbids the hard-coded
+    default; this catches every other route, including an exported
+    `METS_REPO` pointing at another tree.
+    """
+    root = Path(__file__).resolve().parents[1]
+    tops = {p.name for p in root.iterdir()
+            if p.is_dir() and (p / "__init__.py").exists()}
+    foreign = sorted(
+        f"{name} <- {f}" for name, mod in list(sys.modules.items())
+        if name.split(".")[0] in tops
+        and isinstance(f := getattr(mod, "__file__", None), str)
+        and not Path(f).resolve().is_relative_to(root))
+    if foreign:
+        sys.stderr.write(
+            "\nFOREIGN PROJECT MODULES (imported from outside " f"{root}):\n  "
+            + "\n  ".join(foreign[:20]) + "\n")
+        session.exitstatus = 1
+
+
 
 # ===========================================================================
 # 3. Shared fixtures

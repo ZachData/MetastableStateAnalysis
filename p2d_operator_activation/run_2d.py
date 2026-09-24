@@ -62,8 +62,21 @@ class ManifestRefused(RuntimeError):
     """The Phase 1 input has no provenance to carry into this run's manifest."""
 
 
+def p1_provenance(p1_run: Path) -> dict:
+    """The Phase 1 run's manifest, or `ManifestRefused`. Checked before any work."""
+    from core.io import load_manifest
+    p1 = load_manifest(p1_run)
+    if not p1 or not p1.get("prompt_battery_hash"):
+        raise ManifestRefused(
+            f"{p1_run} has no manifest.json with a prompt_battery_hash. A 2d "
+            f"run on it could not say which battery it measured. Use a Phase 1 "
+            f"run that records one.")
+    return p1
+
+
 def build_manifest(out_dir: Path, *, p1_run: Path, model: str, revision: str,
-                   config: dict, wall_time_seconds: float) -> dict:
+                   config: dict, wall_time_seconds: float,
+                   activation_revision: str = None) -> dict:
     """
     Write this run's `manifest.json`, carrying the Phase 1 input's provenance.
 
@@ -75,14 +88,9 @@ def build_manifest(out_dir: Path, *, p1_run: Path, model: str, revision: str,
     battery hash). `git_dirty` is recorded because a sha from a modified tree
     does not name the code that ran.
     """
-    from core.io import get_git_sha, load_manifest, write_manifest
+    from core.io import get_git_sha, write_manifest
 
-    p1 = load_manifest(p1_run)
-    if not p1 or not p1.get("prompt_battery_hash"):
-        raise ManifestRefused(
-            f"{p1_run} has no manifest.json with a prompt_battery_hash. A 2d "
-            f"run on it could not say which battery it measured. Use a Phase 1 "
-            f"run that records one.")
+    p1 = p1_provenance(p1_run)
     repo = Path(__file__).resolve().parents[1]
     try:
         import subprocess
@@ -102,6 +110,7 @@ def build_manifest(out_dir: Path, *, p1_run: Path, model: str, revision: str,
         git_sha=get_git_sha(repo),
         config=config,
         extra={"phase": "2d", "git_dirty": dirty, "scored": False,
+               "activation_revision": activation_revision or revision,
                "p1_run": str(p1_run), "p1_manifest_id": p1.get("manifest_id"),
                "p1_git_sha": p1.get("git_sha")},
     )
@@ -329,8 +338,14 @@ def main(argv=None) -> int:
           "monotonicity break may not be the right thing to attribute.\n")
 
     # Before anything is loaded: a registry key whose revision disagrees with
-    # --revision is refused here rather than three modules deep.
+    # --revision is refused here rather than three modules deep, and so is a
+    # Phase 1 input with no provenance, before the analysis is spent on it.
     hf_repo = resolve_hf_repo(args.model, args.revision)
+    try:
+        p1_provenance(args.p1_run)
+    except ManifestRefused as exc:
+        print(f"MANIFEST REFUSED: {exc}", file=sys.stderr)
+        return 4
 
     try:
         ops = load_operators(args.p2_dir, args.model)
@@ -424,15 +439,14 @@ def main(argv=None) -> int:
     out_dir = args.out / args.p1_run.name
     config = {k: (str(v) if isinstance(v, Path) else v)
               for k, v in vars(args).items()}
-    try:
-        build_manifest(out_dir, p1_run=args.p1_run, model=args.model,
-                       revision=args.revision, config=config,
-                       wall_time_seconds=time.monotonic() - t0)
-    except ManifestRefused as exc:
-        print(f"MANIFEST REFUSED: {exc}", file=sys.stderr)
-        return 4
     from p1c_frames.p1c_io import save_p1c
     save_p1c(res, out_dir, name="p2d")
+    # Last, so a manifest marks a complete run: a crash before this leaves
+    # a p2d.json with no manifest, which a scorer refuses.
+    build_manifest(out_dir, p1_run=args.p1_run, model=args.model,
+                   revision=args.revision, config=config,
+                   wall_time_seconds=time.monotonic() - t0,
+                   activation_revision=act_rev)
 
     # Structural facts only. No verdict, rate, count by regime or p-value:
     # those are the registered gates' outputs (module docstring).

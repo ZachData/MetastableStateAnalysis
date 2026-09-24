@@ -40,8 +40,11 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    Amending the notes is a registry edit, so it is yours. The same goes for whether
    `model` fits Pythia before `P6-R4` runs (`docs/PHASE_REVIEW.md` Parked 6).
 6. **Which runs `P-T1` / `P-M1` are scored on** (checkpoints, prompts, pooled or
-   per run) is not in the registry; decide before the fresh 2d run
-   (`status-2d.md` "The 2026-08 Pythia pilot (quarantined)").
+   per run) is not in the registry; decide before the fresh 2d run. Also:
+   should `p_value_p_t1` refuse, rather than report "0 candidates", when
+   heads lack a bandwidth scan? (`status-2d.md` "The 2026-08 Pythia pilot
+   (quarantined)".) And 10 `data/analysis/` scripts still default to the main
+   tree; Claude does not `git add` under `data/`, so they're yours to change.
 
 ## Open PRs and branches
 

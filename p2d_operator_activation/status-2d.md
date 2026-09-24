@@ -30,7 +30,7 @@
   - The fresh run on the 410m sweep in the LN frame, v1 prompt keys only, once 1c-B unblocks (free: weights and Phase 1 activations on disk)
   - Tolerance sensitivity scan, reclassifying from the saved per-head records (free)
   - Head ablation for `P-M1` (forward pass: one per head × checkpoint)
-- **Reviewed:** 2026-09-24 · body `e719a852da`
+- **Reviewed:** 2026-09-24 · body `4b23c8427e`
 <!-- /phase-card -->
 
 **Registered predictions:** `P-T1` (e-value — label-permutation null in
@@ -82,11 +82,15 @@ top-level `stability`. Fed those records, the gate would have skipped every head
 | scoring | none. No adjudicator or gate is called (an AST test pins it); scoring is a separate call on `p_value_p_t1` / `p_value_p_m1` over the runs the registration names |
 | stdout | structural facts only: head count, frame, revision, output path |
 | D3 | always runs the bandwidth scan, stored as top-level `stability`; a degenerate projection is stored as `stable_n_modes: None`, so the gate counts it `n_undetermined` |
-| manifest | `core.io.write_manifest`: git sha, `git_dirty`, battery hash and prompt key **from the Phase 1 run's manifest**, `scored: false`. No Phase 1 manifest or hash → exit 4, nothing written |
+| manifest | `core.io.write_manifest`: git sha, `git_dirty`, battery hash and prompt key **from the Phase 1 run's manifest**, activation revision, `scored: false`. The Phase 1 manifest is checked **before** any analysis (none or no hash → exit 4, nothing written), and `manifest.json` is written **last**, so it marks a complete run |
 | `--bw-scan` | removed (always on) |
 
-Tests: `tests/test_run_2d.py`. **Still open before scoring:** which runs the gates are scored on
-(checkpoint(s), prompts, pooled or per run) is a registration question, not settled here. The
+Tests: `tests/test_run_2d.py`. **Still open before scoring, both for the user:** (1) which runs
+the gates are scored on (checkpoint(s), prompts, pooled or per run) is a registration question,
+not settled here. (2) `p_value_p_t1` itself still skips a head with no `stability` and then
+returns "need both arms: 0 candidates"; a run made without D3 (the default `--subexp` is D1 D2)
+would still produce that. Making the gate refuse instead changes how a registered gate refuses,
+not what it computes (`/challenge-pr` on #79). The
 fresh run itself is still blocked on 1c-B by design.
 
 **Found 2026-09-23: `run_2d.py` did run on Pythia, on 2026-08-17.** Found by
