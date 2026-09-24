@@ -22,6 +22,7 @@
   - Cluster counts carry a re-measurement floor: the HDBSCAN partition is not reproducible run to run — `p10_cluster_function/status-10.md` §3
   - Which tokens HDBSCAN clusters is mostly their copy count at init and in shallow layers, so early partitions partly reflect the prompt's repeat structure — `p10_cluster_function/status-10.md` §1.7
   - The carrying-capacity invariant has a formula now (Lemma C.1) — `p10_cluster_function/math-10.md` §5.4
+  - The carrying-capacity invariant as a property of the dynamics: on Stage 0's v1 runs `max_alive` falls at layer 0 (the embedding) in 92 of 133 runs, mean 57–63 at every step against 59.7 repeated token types per prompt, which training cannot change. Whether the pilot's "50–55" does the same is open — `p10_cluster_function/status-10.md` §1.8
   - `ext_sem_frac`'s decline (D6) as "neighbour structure decouples from embedding geometry": the stored count is mostly repeat pairs at cosine 1, and the non-repeat remainder moves toward the trained embedding — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** `CLAIM-C` e-value, active, real run recorded, INSUFFICIENT, not adjudicated; `CLAIM-A` needs-null, construction specified and not built (`claims/EXPERIMENTS.md`)
 - **Depends on:** none
@@ -32,13 +33,14 @@
   - Is the step 8→16 collapse a training event or an LR-warmup artifact?
   - Why late-training energy severity falls while violation counts hold
   - Per-head Fiedler is not persisted; D2 needs a rerun
+  - Does the pilot's 27-checkpoint `max_alive` also fall at layer 0? — `p10_cluster_function/handoff-10.md` "Parked"
 - **After Phase 10:**
   - Re-report D1, D3 and D10 on normed rank, with the rank thresholds re-derived on that scale (free)
   - Attribute the late severity decline to attention vs FFN through the parallel-residual decomposition (free where `sublayer_streams` exist)
   - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
   - Extend `CLAIM-C`'s homogeneity calibration to the v2 prompt count and rescore the v2 arms (free, CPU calibration, cost in §3.46; order against the holdout is `docs/PHASE_REVIEW.md` "Open" 3)
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
-- **Reviewed:** 2026-09-24 · body `2a30e80d19`
+- **Reviewed:** 2026-09-24 · body `3923681417`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -54,6 +56,7 @@ Superseded list.
 - 2026-09-20 · the carrying-capacity invariant has a formula (Lemma C.1) · `p10_cluster_function/math-10.md` §5.4
 - 2026-09-24 · on Pythia `ext_sem_frac` is mostly the share of mutual-NN pairs that are the same token (layer 0 has no position embedding, so repeats have cosine 1). Through step 2000 it equals that share exactly; D6 bites only on the non-repeat remainder, which needs its own reading · `p10_cluster_function/status-10.md` §1.6
 - 2026-09-24 · whether a token is clustered or noise (`min_cluster_size=2`) is set mostly by its copy count in the prompt at init and in shallow layers, less so in the trained model's deep layers. Measured as rates, not counts; whether cluster counts track repeated types is parked · `p10_cluster_function/status-10.md` §1.7, `p10_cluster_function/handoff-10.md` "Parked"
+- 2026-09-24 · the carrying-capacity invariant is, on Stage 0's v1 runs, mostly a repeat count at the embedding layer: `max_alive` falls at layer 0 in 92 of 133 runs (7 prompts, `repeated_tokens` aside), mean 57–63 at every step against 59.7 repeated token types per prompt, which training cannot change. The pilot's "50–55" is not re-read · `p10_cluster_function/status-10.md` §1.8
 
 **Registered predictions:** `CLAIM-A` (needs-null — construction specified
 below, deliberately not built; decision 2026-09-17) and `CLAIM-C` (e-value —

@@ -231,7 +231,7 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > if you want the box to sleep.
 >
 > ```bash
-> pgrep -f 'python -m tools.run.stage0_chunk' && echo "DRIVER ALIVE: do not launch"
+> pgrep -f '[p]ython -m tools.run.stage0_chunk' && echo "DRIVER ALIVE: do not launch"
 > tail -3 $METS_RESULTS_DIR/stage0_logs/chunk_*.log   # expect a stop line
 > $PY -m tools.run.stage0_chunk --pin $PIN plan       # 380 − done left
 > nohup systemd-inhibit --what=sleep:idle --why=stage0 \
@@ -246,6 +246,15 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > `pgrep -af 'tools.run.stage0_chunk'` printed "DRIVER ALIVE" with no driver
 > running: run through `bash -c`, it matches its own shell's command line.
 > The guard above now matches only the python process.
+>
+> **2026-09-24: chunk 2 ended 14:50:39** (`chunk end`). **Chunk 3 launched
+> 15:35:56** (driver pid 731975): 377/380 done, plan 3 runs (step54000:
+> `scipy_linkage_code`, `latex_beamer`, `latex_article`) in 1 invocation. The
+> guard above still printed "DRIVER ALIVE" with no driver: when the whole block
+> runs as one `bash -c`, the pattern is in that shell's command line too. The
+> bracket `[p]ython` fixes it (the regex matches `python`, its own text
+> `[p]ython` does not). **Chunk 3 ended 15:58:27, `rc 0, 3/3`: Stage 0 is
+> 380/380 done** (`plan`: "nothing left"). Run tree `../Mets-stage0` removed.
 
 The original single-run instructions, from the main tree, with the environment from `archive/PROJECT-start-here.md`:
 
@@ -593,23 +602,23 @@ before it.
 
 ## Parked
 
-- **How much of "copy count" is HDBSCAN's, not the model's** (discovery,
-  `/challenge-pr` on #90, 2026-09-24). At step 0 layer 0, 26 of 205 2-copy
-  tokens are noise although their twin is the identical vector, while 3–5-copy
-  groups are clustered every time. That is how `min_cluster_size=2` selects
-  size-2 groups from the condensed tree, not a property of the model. Why: it
-  sets how "copy count dominates" (`status-10.md` §1.7) should be worded, and
-  whether the next reader must model copies as an instrument effect. Cost:
-  minutes. A known-answer run with duplicates planted in Gaussian noise
-  (n ≈ 400, d = 1024), in the conda `mets` env. Changes: the wording of §1.7,
-  and whether step 0 alone is a sufficient baseline for the next reader.
-- **Cluster counts vs repeated token types** (discovery, same review). The
-  reviewer's rough check: HDBSCAN's per-prompt cluster count ≈ the number of
-  token types occurring ≥ 2 times, at step 0 *and* 143000, with
-  `repeated_tokens` the exception. Not measured in the repo. Why: if it holds,
-  Phase 1's cluster counts (carrying capacity 50–55) are largely a
-  repeat-structure count. Cost: one column in `p10_token_composition.py`.
-  Changes: Phase 1's carrying-capacity reading.
+- **Done 2026-09-24, both #90 review items** (`status-10.md` §1.8): planted
+  duplicates reproduce step 0 layer 0's rates (so they are the instrument's, and
+  step 0 is the baseline the next reader needs); cluster count ≈ repeated types
+  at L0 at every checkpoint, lower in trained deep layers.
+- **Does the pilot's "50–55" carrying capacity also sit at layer 0?**
+  (discovery, from §1.8 and `/challenge-pr` on #91). On Stage 0's v1 runs
+  `max_alive` is mostly a repeat count at the embedding layer (92 of 133 runs
+  peak at L0, mean 57–63). The "50–55" came from the pilot's 27 checkpoints,
+  and what it averaged over is not recorded. Why: it decides whether Phase 1's
+  finding survives at all, and whether Lemma C.1 (`math-10.md` §5.4) has
+  anything left to explain. Cost: one pass over the pilot's labels on
+  `HDD_1TB`. Changes: Phase 1's carrying-capacity result.
+- **What makes `repeated_tokens`' ~50 deep-layer clusters** (discovery, same):
+  1 repeated type, 2 clusters at L0, `max_alive` 41–65 peaking anywhere in
+  L2–L22. Why: a count that arises without repeats, which pure noise does not
+  produce. Cost: its clusters by position, from the §1.7 record's inputs.
+  Changes: whether position is the second thing HDBSCAN counts.
 - **The `p10_*` readers' default selection now mixes sweeps** (confound, found
   building the holdout guard, 2026-09-24): `--pattern pythia-410m-*` over
   `data/phase12` globs the Phase 1 sweep (152), Stage 0's v1 dirs (135 at 12:40)

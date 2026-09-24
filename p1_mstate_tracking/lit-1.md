@@ -103,7 +103,7 @@ prediction about exactly the quantity Phase 1's cluster tracking counts. See §4
 | `repeated_tokens`: init leaves a degenerate input degenerate (mass 0.948), step 143000 actively separates it (0.379), onset ~11k–13k | Nothing found | **Looks new** |
 | Plateau onset flips weight-level → content-driven at exactly step 512 | Nothing found under that description | **Looks new** |
 | Fiedler deviation crosses zero at 1000–3000 | Nothing found; but the instrument is vacuous as built (defect D2) | Moot until D2 is fixed |
-| Cluster carrying capacity invariant (50–55) while turnover rises | Nothing found | **Looks new**, and is the quantity the Rényi-parking link in §1.3 would predict |
+| Cluster carrying capacity invariant (50–55) while turnover rises | Nothing found | **Looks new**, and is the quantity the Rényi-parking link in §1.3 would predict. *2026-09-24: on Stage 0's runs it is mostly a repeated-token count at the embedding layer, `p10_cluster_function/status-10.md` §1.8* |
 
 ---
 

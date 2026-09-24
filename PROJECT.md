@@ -3110,6 +3110,10 @@ slope against it**, which makes it differential rather than exploratory.
 
 ### 3. Lemma C.1 — the carrying-capacity finding, with a formula
 
+> **2026-09-24:** on Stage 0's 410m v1 runs the "carrying capacity" is mostly a
+> count of the prompt's repeated tokens at the embedding layer, which needs no
+> formula (`p10_cluster_function/status-10.md` §1.8). Read what follows with that.
+
 > average number of strong Rényi centres = **`1/σ_{d−1}(B_δ) ~ 1/δ^{d−1}`**
 
 proved for **any spherically symmetric measure in any dimension** (ordinary

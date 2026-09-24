@@ -64,3 +64,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-24 | Holdout guard, core/holdout.py (measured before the commit/PR calls) | 37 | 115k | 3.2M | 25k | #88 |
 | 2026-09-24 | Stage 1 step 1: ext_sem_threshold sweep (measured before the commit/PR calls) | 35 | 128k | 3.1M | 27k | #89 |
 | 2026-09-24 | Stage 1 step 2: token-composition table (measured before the commit/PR calls) | 41 | 136k | 3.9M | 30k | #90 |
+| 2026-09-24 | Stage 1 step 2 parked checks: planted duplicates, count vs repeated types; chunk 3 launch (measured before the commit/PR calls) | 45 | 136k | 4.2M | 30k | #91 |
