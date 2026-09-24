@@ -134,6 +134,10 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-24 (phase review session 6): `check.sh lint | tail -1 && git commit
+  && git push` pushed `3240dfe` with 2 lint errors, because the pipe returns
+  `tail`'s status, not the lint's. Fixed in `47e1820`. Capture the exit code
+  (`> file; rc=$?`) before gating a commit on it.
 - 2026-09-24: `run_2d.py` nested the bandwidth scan under `modality` and ran it
   only with `--bw-scan`, but `p_value_p_t1` reads a top-level `stability` and
   skips heads without it. Scored on the runner's records, `P-T1` would have
