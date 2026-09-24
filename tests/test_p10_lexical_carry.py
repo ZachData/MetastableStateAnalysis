@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from tools.run.p10_lexical_carry import (
-    SPLIT, carry_stats, deltas, measure_run, split_stats, summarise)
+    SPLIT, carry_stats, control_stats, deltas, measure_run, split_stats, summarise)
 from tools.run.p10_token_composition import CompositionError
 
 # Tier: numpy only -- runs in `scripts/check.sh pure`.
@@ -64,7 +64,7 @@ def test_planted_structures_move_their_own_lift():
     near = pool[np.argsort(-row[pool])][:8]
     r = split_stats(0, near, pool, row, cls)
     assert r["emb_given_class"] > 0.3
-    assert abs(r["class_given_emb"]) < 0.3 + 1e-9
+    assert abs(r["class_given_emb_40"]) < 0.1
 
 
 def test_pool_must_hold_the_co_members():
@@ -82,6 +82,31 @@ def test_carry_is_one_when_layer_is_layer_0():
     assert c["self_cos"] == pytest.approx(1.0) and c["self_top1"] == 1.0
     assert c["self_pct"] == pytest.approx(1.0)
     assert carry_stats(acts, 1, [])["self_pct"] is None
+
+
+def test_ceiling_matches_enumerated_same_class_sets():
+    row, cls = _setup()
+    pool = np.arange(1, len(row))
+    same = [c for c in pool if cls[c] == cls[0]]
+    k = 2
+    want = np.mean([split_stats(0, np.array(c), pool, row, cls)["class_given_emb"]
+                    for c in combinations(same, k)])
+    got = control_stats(0, k, pool, row, cls)
+    assert got["class_given_emb_ceil"] == pytest.approx(want)
+    near = pool[np.argsort(-row[pool])][:k]
+    assert got["class_given_emb_knn"] == pytest.approx(
+        split_stats(0, near, pool, row, cls)["class_given_emb"])
+    assert control_stats(0, len(same) + 1, pool, row, cls)["class_given_emb_ceil"] is None
+
+
+def test_carry_groups_use_only_runs_with_both():
+    a = _rec(0.9)
+    b = _rec(0.1)
+    b[0]["focal"] = {"self_cos": None, "self_pct": None, "self_top1": None, "n": 0}
+    b[0]["unclustered"]["self_pct"] = 0.0
+    s = summarise({(0, "x"): a, (0, "y"): b})
+    assert s[0][0]["n_runs_carry"] == 1
+    assert s[0][0]["unclustered"]["self_pct"] == pytest.approx(0.5)
 
 
 def _rec(v):

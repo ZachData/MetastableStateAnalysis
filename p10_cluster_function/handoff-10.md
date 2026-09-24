@@ -418,12 +418,13 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    unique tokens away from copy groups. Own-embedding similarity adds only
    +0.12, and adjacency a depth-only share.
    **2c. Lexical or not, DONE 2026-09-24** (`status-10.md` §1.10;
-   `tools/run/p10_lexical_carry.py`). Not carry: clustered unique tokens keep
-   *less* of their own layer-0 vector than unclustered ones. At step 512 the
-   class effect is computed (+0.20 beyond embedding similarity, and the
-   embedding has no class yet). Trained, it is mostly what the embedding
-   already groups (at L12, +0.04 against a +0.03 lexical reference at 40
-   bins). The pre-stated decile control lacked a positive control; it was added post hoc.
+   `tools/run/p10_lexical_carry.py`; revised after `/challenge-pr` on #93). At
+   step 512 the network computes the class grouping (+0.20 beyond own-embedding
+   similarity; a purely lexical kNN cluster scores ≈ 0). Trained, it is mostly
+   what the embedding already groups: at 40 bins L12 is +0.04 against a
+   +0.04 lexical control, and L24 is +0.05 above its control. The pre-stated
+   decile control could not work (the lexical control scores +0.21 under it);
+   the fix was added post hoc.
 3. **Report both sweeps.** The pilot has native labels; the WDS sweep has
    backfilled ones. Agreement across them is the §3.51.4 check that every
    partition-derived claim now owes.
@@ -631,15 +632,17 @@ before it.
   produce. Cost: its clusters by position, from the §1.7 record's inputs.
   Changes: whether position is the second thing HDBSCAN counts.
 - **Done 2026-09-24: are §1.9's trained depth clusters lexical or
-  contextual?** Both checks were run, plus a post hoc bin-count control
-  (`status-10.md` §1.10). Not carry. The class grouping is computed early and
-  mostly embedding-given when trained.
+  contextual?** Both checks were run, plus post hoc lexical (kNN) and ceiling
+  controls (`status-10.md` §1.10). The class grouping is computed early in
+  training and mostly embedding-given when trained.
 - **Is the computed class grouping context, or a per-token feature?**
   (discovery, from §1.10, 2026-09-24). At step 512, depth clusters are +0.20
   same-class beyond the embedding, which has no class yet. §1.10 removes only
   the token's own layer-0 vector, so a feature an early MLP computes per token
   would look the same as context. Test: shuffle or truncate each prompt's
-  context and re-cluster the same tokens. Why: "a cluster is a category" (Stage
+  context and re-cluster the same tokens, keeping each token's class from the
+  original order (word start vs continuation depends on the previous token).
+  Class is orthographic, so neither outcome makes it semantic. Why: "a cluster is a category" (Stage
   3) needs context, not a per-token lookup. Cost: forward passes on shuffled v1
   prompts at a few steps (≈ 200 s each, CPU). Changes: whether Stage 3's
   category reading has anything contextual left to explain.

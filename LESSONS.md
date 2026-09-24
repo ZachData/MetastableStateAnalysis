@@ -326,7 +326,11 @@ needs the user to enable it on GitHub.
   bins it read +0.03, and the trained depth effect dropped from +0.15 to
   +0.04–0.07. Caught before the write-up, by looking at the L0 row. Rule: a
   control that claims to remove X needs a positive control, a place where the
-  effect is X by construction. Run the reading there first.
+  effect is X by construction. Run the reading there first. `/challenge-pr` on
+  #93 then built the matched version (a kNN lexical cluster at the same layer:
+  +0.21 under deciles) and found the carry table averaged 7 prompts in one
+  column against 8 in the other (a "17 %" that was 5 %). A contrast between
+  two groups is taken over the units that have both.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

@@ -86,6 +86,13 @@ s is in its bin's share, which shrinks the lift by ~1/bin size, 10 at 40
 bins, and keeps a random draw's expectation at exactly 0), and the comparison
 depth vs trained L0 at the same bin count, L0 being the lexical reference.
 
+After `/challenge-pr` on #93: ``*_knn`` scores the same CGE on a purely lexical
+cluster of the same size at the same layer (the focal token's k nearest in its
+own layer 0), a matched lexical reference in place of L0; ``*_ceil`` scores it on
+a class-only cluster (k same-class tokens, in expectation), the most the
+measure could show. The carry groups are averaged over runs that have both
+groups (``n_runs_carry``); the first version mixed 7 and 8 prompts.
+
 TIER 1, EXPLORATORY, NOT REGISTERED. Nothing here touches `claims/registry.json`.
 
 Run:
@@ -114,8 +121,12 @@ from tools.run.p10_token_composition import (
 
 N_BINS = 10
 FINER_BINS = (20, 40)   # post hoc sensitivity (docstring, "CHANGED AFTER THE FIRST RUN")
+CGE = ("class_given_emb", *(f"class_given_emb_{b}" for b in FINER_BINS))
+# after /challenge-pr on #93: CGE on a purely lexical cluster (the focal token's k nearest in
+# its own layer 0) and on a class-only one (k same-class tokens), the matched reference and ceiling
+CONTROLS = tuple(f"{c}_{kind}" for kind in ("knn", "ceil") for c in CGE)
 SPLIT = ("emb_given_class", "class_given_emb", "emb_same", "emb_cross",
-         *(f"class_given_emb_{b}" for b in FINER_BINS))
+         *CGE[1:], *CONTROLS)
 CARRY = ("self_cos", "self_pct", "self_top1")
 GROUPS = ("focal", "unclustered")
 
@@ -141,12 +152,32 @@ def split_stats(f: int, co: np.ndarray, pool: np.ndarray, own_row: np.ndarray,
 
     out = {
         "emb_given_class": float(p_co.mean() - np.mean([mean_p[bool(s)] for s in s_co])),
-        "class_given_emb": class_given(N_BINS),
-        **{f"class_given_emb_{b}": class_given(b) for b in FINER_BINS},
+        **{c: class_given(nb) for c, nb in zip(CGE, (N_BINS, *FINER_BINS))},
         "emb_same": float(p_co[s_co].mean() - mean_p[True]) if s_co.any() else None,
         "emb_cross": float(p_co[~s_co].mean() - mean_p[False]) if (~s_co).any() else None,
     }
     return out
+
+
+def control_stats(f: int, k: int, pool: np.ndarray, own_row: np.ndarray, cls: np.ndarray) -> dict:
+    """CGE for a purely lexical k-cluster (f's k nearest in its own layer 0) and a
+    class-only one (in expectation, k same-class pool members; None if the class has < k)."""
+    near = pool[np.argsort(-own_row[pool], kind="stable")[:k]]
+    knn = split_stats(f, near, pool, own_row, cls)
+    same = pool[cls[pool] == cls[f]]
+    out = {f"{c}_knn": knn[c] for c in CGE}
+    if len(same) < k:
+        return out | {f"{c}_ceil": None for c in CGE}
+    # the lift is linear in the co-members, so the mean over all k-subsets of `same` is
+    # the mean over single same-class members: 1 - the same-class share of each one's bin
+    p_pool = midrank_pct(own_row[pool], own_row[pool])
+    s_pool = cls[pool] == cls[f]
+    ceil = {}
+    for c, nb in zip(CGE, (N_BINS, *FINER_BINS)):
+        bins = np.minimum((p_pool * nb).astype(int), nb - 1)
+        share = np.bincount(bins, weights=s_pool, minlength=nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
+        ceil[f"{c}_ceil"] = float(1.0 - share[bins[s_pool]].mean())
+    return out | ceil
 
 
 def carry_stats(acts: np.ndarray, layer: int, positions: list) -> dict:
@@ -197,8 +228,9 @@ def measure_run(run_dir: Path, vocab: dict, added: set, acts: np.ndarray = None)
         rows = []
         for f in focal:
             members = np.flatnonzero(lab == lab[f])
-            rows.append(split_stats(f, members[members != f], np.delete(everyone, f),
-                                    own_gram[f], cls))
+            co, pool = members[members != f], np.delete(everyone, f)
+            rows.append(split_stats(f, co, pool, own_gram[f], cls)
+                        | control_stats(f, len(co), pool, own_gram[f], cls))
         for p in SPLIT:
             rec[p] = _mean(r[p] for r in rows) if rows else None
         out[layer] = rec
@@ -218,8 +250,12 @@ def summarise(results: dict) -> dict:
         for L in layers:
             rs = [r[L] for r in runs if L in r]
             by[L] = {p: _mean(r[p] for r in rs) for p in SPLIT}
+            # carry groups over the same runs: only those with both groups (#93 review:
+            # repeated_tokens has unclustered unique tokens but never a focal one)
+            both = [r for r in rs if all(r[g]["n"] for g in GROUPS)]
+            by[L]["n_runs_carry"] = len(both)
             for g in GROUPS:
-                by[L][g] = {c: _mean(r[g][c] for r in rs) for c in CARRY}
+                by[L][g] = {c: _mean(r[g][c] for r in both) for c in CARRY}
             by[L]["carry_gap"] = {c: _mean(r["focal"][c] - r["unclustered"][c] for r in rs
                                            if r["focal"][c] is not None and r["unclustered"][c] is not None)
                                   for c in CARRY}
@@ -279,15 +315,16 @@ def main() -> None:
     for n, (step, key) in enumerate(sorted(runs), 1):
         results[(step, key)] = measure_run(runs[(step, key)], vocab, added)
         if n == 1:   # refuse rather than degrade: the first output must be populated
-            L = max(results[(step, key)])
-            print(f"  first run {step}|{key} L{L}: {results[(step, key)][L]}")
+            rec = results[(step, key)]
+            if not any(r["n_focal"] and r["class_given_emb"] is not None for r in rec.values()):
+                raise CompositionError(f"first run {step}|{key}: no layer has a focal token with a lift")
         if n % 40 == 0 or n == len(runs):
             print(f"  [{n}/{len(runs)}] step{step} {key}  ({time.time() - t0:.0f}s)", flush=True)
 
     inputs = sorted((f"{s}|{k}", str(p)) for (s, k), p in runs.items())
     summary = summarise(results)
     record = {
-        "schema": "p10_s1_lexical_carry/2",
+        "schema": "p10_s1_lexical_carry/3",
         "row": "Stage 1, §1.9 parked: class effect lexical carry or contextual",
         "tier": "1 (exploratory, unregistered, descriptive; no null)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -313,10 +350,9 @@ def main() -> None:
         for L in [*PICK_LAYERS, "mean"]:
             x = by[L]
             f = lambda v: "  n/a" if v is None else f"{v:+.2f}"
+            g = lambda v: " n/a" if v is None else f"{v:.2f}"
             print(f"  step{s:>6} L{L!s:>4} " + " ".join(f"{p.replace('class_given_emb', 'cge')} {f(x[p])}" for p in SPLIT)
-                  + "  self_pct foc/unc " + f"{x['focal']['self_pct'] or 0:.2f}/{x['unclustered']['self_pct'] or 0:.2f}"
-                  + " top1 " + f"{x['focal']['self_top1'] or 0:.2f}/{x['unclustered']['self_top1'] or 0:.2f}"
-                  + " cos " + f"{x['focal']['self_cos'] or 0:.2f}/{x['unclustered']['self_cos'] or 0:.2f}")
+                  + "".join(f"  {c} foc/unc {g(x['focal'][c])}/{g(x['unclustered'][c])}" for c in CARRY))
 
 
 if __name__ == "__main__":
