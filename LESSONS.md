@@ -272,7 +272,7 @@ needs the user to enable it on GitHub.
   Parked 1) lands.
 - 2026-09-24 (phase review session 9): the rule below reached the Phase 10
   runners, not the registered gates. `P-S1`'s gate defaults to 500 draws
-  (E_max 11.2), and its dry run said "the floor is attainable" because it
+  (too few for E ≥ 20), and its dry run said "the floor is attainable" because it
   tested p ≤ α = 0.05, which is E ≈ 2.2. `steering_sign.json` and
   `cross_head_association.json` use the same "clears α" test. Rule: a floor
   check compares against **E ≥ 20, i.e. p ≤ 1/1600**, not against α

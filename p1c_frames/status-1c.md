@@ -35,7 +35,7 @@
   - Re-cluster at matched k from `activations.npz` and run `P-S1` (free)
   - `run_1.py --sublayer` reruns for `h_attn_only` (forward pass, 410m)
   - Regenerate the energy-trajectory PNGs (free)
-- **Reviewed:** 2026-09-24 · body `7ebce2bd06`
+- **Reviewed:** 2026-09-24 · body `798d9ab647`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -49,7 +49,7 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-23.
 - 2026-09-20 · the cone condition cannot fail for n ≤ d in general position (the same fact as finding 5's Wendel note) · §3.39
 - 2026-08-22 · validation cites MATH.md, a file that does not exist · `INDEX.md` "Referenced, not present"
 - 2026-08-23 · the energy-trajectory PNGs bake a wrong citation into three suptitles · `math-1c.md` §11
-- 2026-09-24 · `P-S1`'s gate defaults to 500 null draws, so E ≤ 11.2 and it cannot reach E ≥ 20 alone (the dry run's "floor is attainable" tests p ≤ α); and finding 2 below calls the ×8 β the non-comparable "raw slope" while `core/beta_eff.py` calls it the comparable one · `docs/PHASE_SYNTHESIS.md` "3.1 Attainable E per adjudicable row"
+- 2026-09-24 · `P-S1`'s gate defaults to 500 null draws, so E ≤ 11.2 and it cannot reach E ≥ 20 alone (the dry run's "floor is attainable" tests p ≤ α); and finding 2 below calls the ×8 β the non-comparable "raw slope" while `core/beta_eff.py` calls it the comparable one · `docs/PHASE_SYNTHESIS.md` "3.1 Attainable E per adjudicable row", `docs/PHASE_SYNTHESIS.md` "3.2 The remaining decisions, checked against the code first (Parked 7)"
 
 **Registered predictions:** `P-gamma1`, `P-gamma2` (needs-null — bracket and
 point-estimate readings with no null built), `P-H1` (measurement — no valid
