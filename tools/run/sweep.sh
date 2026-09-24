@@ -38,7 +38,7 @@
 # `cd` into nothing rather than by saying so. REPO and DATA take the
 # environment's value if set, and the scratchpad follows the caller.
 
-REPO="${METS_REPO:-/run/media/system/WDS_500/Mets}"
+REPO="${METS_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"  # this checkout
 # Everything generated now lives under the repo, so there is no second volume
 # to name. METS_VOL is gone deliberately: it named /run/media/system/HDD_1TB/
 # vm_storage, which named a VM that no longer exists -- the same mistake as

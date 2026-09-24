@@ -117,6 +117,15 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    imports or spawns from the main tree, worktree gates test `main`'s code, not
    the branch's. Cost: one look at that test's subprocess/env. Changes: whether
    any worktree gate result so far can be trusted for package code.
+   **Found and fixed 2026-09-24:** 47 runners defaulted `METS_REPO` to the
+   main tree and ran `sys.path.insert(0, REPO)` at import. Collecting
+   `tests/test_backfill_hdbscan.py` put the main tree first, so **every
+   worktree gate imported main's copy of each package not yet loaded**. Now
+   each defaults to its own checkout; `tests/test_no_hardcoded_repo.py` pins
+   it. Past worktree gates tested a mix of branch and main code; a PR merged
+   green on one may not have been green on its own code. Rerunning old gates
+   is not planned: main has the fix now, and CI (a single checkout) was never
+   affected.
 3. **Warn on unrouted corrections.** A lint warning (not a failure) when a
    commit adds text outside a carded phase's directory that names the phase,
    by path **or in prose** ("Phase 1b", `p1b_`), and that phase's

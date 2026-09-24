@@ -19,7 +19,7 @@ import os
 import sys
 from pathlib import Path
 
-REPO = Path(os.environ.get("METS_REPO", "/run/media/system/WDS_500/Mets"))
+REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[2])))  # this checkout, not a hard-coded main tree
 # One root. The generated tree moved under the repo on 2026-09-03; the old
 # METS_VOL named a VM's scratch volume, which is the class of path that broke
 # this script and sweep.sh when the mounts changed.

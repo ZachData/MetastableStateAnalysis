@@ -4,7 +4,7 @@
 ## Card
 
 - **Question:** Do the heads' operators sit where the paper's dynamics are a gradient flow ($Q^\top K$ symmetric, $V = Q^\top K$) or in one of Table 1's rows, and do the particles' energy-monotonicity violations fall in the layers whose heads leave that regime?
-- **Inputs:** designed for Phase 2's `pythia-410m` 19-checkpoint weights (`wq_head*` / `wk_head*` / `ov_head*` in `ov_weights_*.npz`) joined to Phase 1 activations in the LN frame; validated on constructed operators only. One unrecorded pilot, 27 pilot-schedule checkpoints × 2 prompts, LN frame, run 2026-08-14 and rerun 2026-08-17, no manifest, **quarantined, values unopened** (user, 2026-09-23) — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
+- **Inputs:** designed for Phase 2's `pythia-410m` 19-checkpoint weights (`wq_head*` / `wk_head*` / `ov_head*` in `ov_weights_*.npz`) joined to Phase 1 activations in the LN frame; validated on constructed operators only. One unrecorded pilot, 27 pilot-schedule checkpoints × 2 prompts, LN frame, run 2026-08-14 and rerun 2026-08-17, no manifest, **quarantined, values unopened and never seen** (user, 2026-09-23, confirmed 2026-09-24) — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
 - **Results:**
   - D1–D4 recover constructed regimes, rows and bounds, and every join guard fires — `p2d_operator_activation/status-2d.md` "Validation performed"
   - The operator/activation join runs on real artifacts (24 of 25 layers, 16 heads) and both its warnings fire — `p2d_operator_activation/status-2d.md` "E-value audit, Phase 2 / 2d (2026-09-19)"
@@ -13,6 +13,7 @@
   - Signed OV/QK alignment separates `repulsive_aligned` heads, which confirm the paper, from unstructured ones — `p2d_operator_activation/status-2d.md` "Findings from implementation"
 - **Superseded / wrong:**
   - "Not run against Pythia": the pilot ran twice in August — `p2d_operator_activation/status-2d.md` "Corrections received"
+  - The runner adjudicated and printed verdicts, and its D3 records would have starved `p_value_p_t1`; now measurement only, with a manifest — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
   - The 2026-09-19 audit called `P-T1`'s wording an open defect; the amendment landed 2026-08-11, before any run — `PREDICTIONS.md` "Addendum — P-T1 amended"
   - `adjudicate_p_t1` reads a single-bandwidth mode count, against the amendment; `p_value_p_t1` implements the amendment — `POPPER_PLAN.md`
   - The reported p floors (0.100, 0.083) were the call's, not the design's, off by 200× and 167× — `claims/EVALUABILITY.md`
@@ -24,13 +25,12 @@
   - Is the gradient-flow framing void for a causal decoder (2411.04990)? — `p9_metric_intervention/plan-9.md`
   - `simple_tol` / `align_tol` are placed, not derived; centred vs uncentred covariance — `p2d_operator_activation/status-2d.md` "Open before running"
   - `P-M1` refuses when head-to-layer aggregates disagree in sign: per-layer energies may not resolve a per-head claim
-  - The August runner printed a `P-T1` verdict per run; does that change the user's "unseen" decision? — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
+  - Which runs the registered gates are scored on (checkpoints, prompts, pooled or per run) — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
 - **After Phase 10:**
-  - `run_2d.py`: write a manifest, score through `p_value_p_t1` / `p_value_p_m1`, stop printing verdicts (free, code only) — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
-  - Then the fresh run on the 410m sweep in the LN frame, v1 prompt keys only, once 1c-B unblocks (free: weights and Phase 1 activations on disk)
+  - The fresh run on the 410m sweep in the LN frame, v1 prompt keys only, once 1c-B unblocks (free: weights and Phase 1 activations on disk)
   - Tolerance sensitivity scan, reclassifying from the saved per-head records (free)
   - Head ablation for `P-M1` (forward pass: one per head × checkpoint)
-- **Reviewed:** 2026-09-23 · body `a326e32143`
+- **Reviewed:** 2026-09-24 · body `4b23c8427e`
 <!-- /phase-card -->
 
 **Registered predictions:** `P-T1` (e-value — label-permutation null in
@@ -60,21 +60,38 @@ whether the energy-monotonicity break is the right thing to attribute.
 sha, battery hash, frame). The amendment the question below asked about had already landed on
 2026-08-11 (see "Corrections received"), so both August runs came after it.
 
-**Two facts found after the decision** (`/challenge-pr` on #78). They are for the user; the
-decision stands until they say otherwise:
+**Two facts found after the decision** (`/challenge-pr` on #78). Put to the user, who
+**confirmed the decision on 2026-09-24: "I never looked at the output."** It stands:
 - **The August runner printed a verdict.** `run_2d.py` at `6f01f6b` (2026-08-14, the code
   both runs used) prints `P-T1: <verdict>` to stdout for every run (line 369). Whoever
-  launched the 54 runs may have seen 54 verdicts, even though nobody opened a file. The
-  current `run_2d.py` still prints it.
+  launched the 54 runs may have seen 54 verdicts, even though nobody opened a file. Fixed
+  2026-09-24 (below).
 - **Part of the adjudication design came after the pilot.** The amendment's rules (both row-2
   conditions, a control arm, `stable_n_modes` only) date from 2026-08-11. The registry's
   fixed statistic and null (`null_construction`) were recorded 2026-08-23, after both runs.
 
-**The fresh run needs code first.** `run_2d.py` writes no manifest (no git sha, no battery
-hash). It scores `P-T1` with `adjudicate_p_t1` (line 357), a single-bandwidth mode count that
-contradicts the amendment, not with the registered gate `p_value_p_t1`, and `P-M1` with
-`adjudicate_p_m1`, not `p_value_p_m1`. Before the fresh run: add a manifest, route both through
-their registered gates, and stop printing verdicts.
+**The runner, fixed 2026-09-24: measurement only.** Until then `run_2d.py` wrote no manifest,
+scored `P-T1` with `adjudicate_p_t1` (a single-bandwidth mode count that contradicts the
+amendment) and `P-M1` with `adjudicate_p_m1`, and printed the verdict. It also stored the
+bandwidth scan under `modality.stability` and only with `--bw-scan`, but `p_value_p_t1` reads a
+top-level `stability`. Fed those records, the gate would have skipped every head and reported
+"need both arms: 0 candidates" instead of refusing. Now:
+
+| | |
+|---|---|
+| scoring | none. No adjudicator or gate is called (an AST test pins it); scoring is a separate call on `p_value_p_t1` / `p_value_p_m1` over the runs the registration names |
+| stdout | structural facts only: head count, frame, revision, output path |
+| D3 | always runs the bandwidth scan, stored as top-level `stability`; a degenerate projection is stored as `stable_n_modes: None`, so the gate counts it `n_undetermined` |
+| manifest | `core.io.write_manifest`: git sha, `git_dirty`, battery hash and prompt key **from the Phase 1 run's manifest**, activation revision, `scored: false`. The Phase 1 manifest is checked **before** any analysis (none or no hash → exit 4, nothing written), and `manifest.json` is written **last**, so it marks a complete run |
+| `--bw-scan` | removed (always on) |
+
+Tests: `tests/test_run_2d.py`. **Still open before scoring, both for the user:** (1) which runs
+the gates are scored on (checkpoint(s), prompts, pooled or per run) is a registration question,
+not settled here. (2) `p_value_p_t1` itself still skips a head with no `stability` and then
+returns "need both arms: 0 candidates"; a run made without D3 (the default `--subexp` is D1 D2)
+would still produce that. Making the gate refuse instead changes how a registered gate refuses,
+not what it computes (`/challenge-pr` on #79). The
+fresh run itself is still blocked on 1c-B by design.
 
 **Found 2026-09-23: `run_2d.py` did run on Pythia, on 2026-08-17.** Found by
 `docs/PHASE_REVIEW.md` Parked 5; nothing in the repo recorded it. Main tree

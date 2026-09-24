@@ -23,6 +23,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-23 | Phase review session 2: cards 1b, 1c, correction routing, unrecorded 1b run (measured before the challenge-pr calls) | 50 | 154k | 5.2M | 35k | #76 |
 | 2026-09-23 | Phase review session 3a: Parked 5 for 2 / 2b / 2d, cards 2, 2b (measured before the commit/PR calls) | 46 | 157k | 4.7M | 41k | #77 |
 | 2026-09-23 | Phase review session 3b: cards 2d, 6; 2d pilot decided; branch cleanup (measured before the commit/PR calls) | 42 | 147k | 3.7M | 37k | #78 |
+| 2026-09-24 | `run_2d` measurement only + worktree-gate `sys.path` fix; chunk 2 launched (whole transcript, includes #78's later calls; measured before the commit/PR calls) | 116 | 280k | 20.0M | 69k | #79 |
 
 ## Over 2× median, and why
 
@@ -45,3 +46,10 @@ running median of the rows above it gets a line under the table saying why.
   planned (2 cards), but Parked 5 found three unrecorded runs, each needing
   its own reads (JSON structure, provenance, a second disk). The ceiling holds:
   two cards plus a disk check per session.
+- 2026-09-24 `run_2d` + gate fix (20.0M, about 5× the median): **not one
+  unit.** The session was never cleared after #78 (its review answers, the
+  branch cleanup), then took three more units at once on request: launch
+  chunk 2, fix `run_2d.py`, and the worktree-gate defect it exposed, which
+  took four gate runs and a bisect. Peak context 280k on each later call is
+  the cost. The row covers the whole transcript, so #78's row is partly
+  double-counted here.

@@ -114,6 +114,26 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-24: `run_2d.py` nested the bandwidth scan under `modality` and ran it
+  only with `--bw-scan`, but `p_value_p_t1` reads a top-level `stability` and
+  skips heads without it. Scored on the runner's records, `P-T1` would have
+  come back "need both arms: 0 candidates", which reads as a finding about
+  the model. The unit tests fed the gate hand-built records, never the
+  runner's. Found by reading the runner against the gate while swapping in
+  the gate. Rule: test a gate on its producer's actual output
+  (`tests/test_run_2d.py`), not only on fixtures.
+- 2026-09-24: every gate run from a worktree partly tested `main`. 47 runners
+  defaulted `METS_REPO` to the main tree and inserted it at `sys.path[0]` on
+  import; collecting one test that imported a runner switched every later
+  first import to main's copy. It surfaced only because a new test failed
+  against the old `run_2d.py` while passing alone. Parked 2 had seen one symptom
+  (a main-tree warning) on 2026-09-23 and deferred it. Rule: a default path
+  is the file's own checkout, never an absolute path to another tree
+  (`tests/test_no_hardcoded_repo.py`).
+- 2026-09-24 (same runner): it adjudicated its own registered gates and
+  printed `P-T1: <verdict>` per run, so a pilot could put the outcome on a
+  terminal before anyone decided to look. A runner for a registered
+  prediction now measures only, and an AST test forbids it calling a gate.
 - 2026-09-22, #69: `/challenge-pr` could not run after `d5d6218`. Its
   `gh pr view … | awk …` step fails the skill's own `allowed-tools` (no
   `awk`), and `claude -p "/challenge-pr N"` then exits 0 with no output and
