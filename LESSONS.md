@@ -350,6 +350,14 @@ a wrong premise, the check inherits it.
   of finished runs and left orphan directories matching the hash and sha. The
   author's gate was green; a fresh-context `/challenge-pr` found it on its
   first run, `file:line` included.
+- 2026-09-24, #85: dropping the dependency hashes, the author wrote that a
+  correction "reaches a reader through its own `## Corrections received`",
+  though no rule puts a line there. The evidence also could not bear on the
+  question: "the hashes caught none of Phase 1's 7 corrections" is true by
+  construction, because Phase 1 depends on nothing. The user settled a
+  binary question (hash the whole file or nothing) without being offered the
+  middle option: hash only the Corrections section. `/challenge-pr` found
+  all three. #85 had already merged by then, so the fix went into a follow-up PR.
 - Before `/challenge-pr` existed, the 2026-09-12 merge was 51 commits with no
   second reader at all (why the PR-size rule exists).
 

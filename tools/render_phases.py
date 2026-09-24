@@ -20,10 +20,10 @@ What `card_findings` checks (lint rule `phase-card` calls it):
 * **staleness**, by content rather than by commit: the card records a short
   hash of its own status file with the card cut out. Any change to that body
   since the review makes the card stale until someone re-reads the change and
-  runs `--stamp <phase>`. Depends on lists phase ids with **no hash**: a
-  change to a phase this one reads does not stale this card (user,
-  2026-09-24; a correction reaches a card through the corrected phase's own
-  `## Corrections received`, `docs/phase_card.md`);
+  runs `--stamp <phase>`. Each Depends on entry is `<phase>@<hash>`, a hash
+  of only that phase's `## Corrections received` section: a correction
+  routed to a phase stales every card that reads it, one hop, while any
+  other edit there does not (user, 2026-09-24, `docs/phase_card.md`);
 * Depends on / Feeds agree between two phases that both have cards.
 
 Phases without a card are listed in the table as such and not checked, so
@@ -68,6 +68,8 @@ _FIELD_LINE = re.compile(r"^- \*\*([^*]+):\*\*\s*(.*)$")
 _ITEM_LINE = re.compile(r"^  - (.*)$")
 _REVIEWED = re.compile(r"^(\d{4}-\d{2}-\d{2}) · body `([0-9a-f]{10})`$")
 _PHASE_ID = re.compile(r"^[0-9]+[a-z]?(?:-frozen)?$")
+_DEP = re.compile(r"^([0-9]+[a-z]?(?:-frozen)?)@([0-9a-f]{10})$")
+CORRECTIONS = "## Corrections received"
 _NONE = re.compile(r"^none\b", re.IGNORECASE)
 _COST = re.compile(r"\((?:free|forward pass)[^)]*\)", re.IGNORECASE)
 #: `path` optionally followed by §N or "Heading".
@@ -172,6 +174,36 @@ def body_hash(text: str) -> str:
         text = text[:span[0]] + text[span[1] + len(CARD_END):]
     text = re.sub(r"\n{3,}", "\n\n", text.replace("\r\n", "\n")).strip()
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:10]
+
+
+def corrections_hash(text: str) -> str:
+    """sha256 of the `## Corrections received` section (empty if absent),
+    normalised as in `body_hash`. What a reader's Depends on entry watches."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    sec: List[str] = []
+    inside = False
+    for line in lines:
+        if line.strip() == CORRECTIONS:
+            inside = True
+        elif inside and line.startswith("## "):
+            break
+        elif inside:
+            sec.append(line)
+    body = re.sub(r"\n{3,}", "\n\n", "\n".join(sec)).strip()
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()[:10]
+
+
+def corrections_heading_problems(text: str) -> List[str]:
+    """A near-miss or repeated Corrections heading would hash as empty or
+    partial, and its readers would never go stale; refuse it instead."""
+    exact = [l for l in text.splitlines() if l.strip() == CORRECTIONS]
+    near = [l.strip() for l in text.splitlines()
+            if re.match(r"^#+\s*corrections?\s+received\b", l.strip(), re.IGNORECASE)
+            and l.strip() != CORRECTIONS]
+    out = [f"heading '{n}' should read exactly '{CORRECTIONS}'" for n in near]
+    if len(exact) > 1:
+        out.append(f"'{CORRECTIONS}' appears {len(exact)} times; merge them into one")
+    return out
 
 
 def _ids(value: str) -> List[str]:
@@ -330,14 +362,33 @@ def card_findings(root: Path = ROOT) -> List[Tuple[str, int, str]]:
                              f"`tools/render_phases.py --stamp {ph.id}`"))
 
         for dep in _ids(card.fields["Depends on"][0]):
-            if "@" in dep:
-                findings.append((rel, at["Depends on"], f"'{dep}': dependencies carry no hash since "
-                                                        f"2026-09-24; `--stamp {ph.id}` drops it"))
-            elif not _PHASE_ID.match(dep) or dep not in phases:
-                findings.append((rel, at["Depends on"], f"no phase '{dep}'"))
+            dm = _DEP.match(dep)
+            if not dm:
+                findings.append((rel, at["Depends on"], f"'{dep}': write each dependency as <phase>@<hash> "
+                                                        f"(`--stamp {ph.id}` fills the hashes)"))
+            elif dm.group(1) not in phases:
+                findings.append((rel, at["Depends on"], f"no phase '{dm.group(1)}'"))
+            elif dm.group(2) != corrections_hash(phases[dm.group(1)].text):
+                up = phases[dm.group(1)]
+                since = m.group(1) if m else "<Reviewed date>"
+                findings.append((rel, at["Depends on"],
+                                 f"STALE: phase {up.id}'s {CORRECTIONS} does not match this card's "
+                                 f"hash (a correction was routed there, or the hash predates "
+                                 f"2026-09-24); read `git log -p --since={since} -- {up.path}`, "
+                                 f"fix this card if it is touched, then `--stamp {ph.id}`"))
         for fed in _ids(card.fields["Feeds"][0]):
             if not _PHASE_ID.match(fed) or fed not in phases:
                 findings.append((rel, at["Feeds"], f"no phase '{fed}'"))
+
+    # A phase whose Corrections section is watched: the carded ones and every
+    # dependency target, carded or not.
+    watched = {p.id for p in phases.values() if p.card}
+    for p in phases.values():
+        if p.card and "Depends on" in p.card.fields:
+            watched |= {d.split("@")[0] for d in _ids(p.card.fields["Depends on"][0])}
+    for pid in sorted(watched & set(phases)):
+        for msg in corrections_heading_problems(phases[pid].text):
+            findings.append((str(phases[pid].path), 1, msg))
 
     # Depends on / Feeds agree where both ends have a card.
     carded = {p.id: p for p in phases.values() if p.card and not _check_shape(p.card)}
@@ -390,7 +441,7 @@ def render(root: Path = ROOT) -> str:
 
 
 def stamp(pid: str, root: Path = ROOT, today: Optional[str] = None) -> str:
-    """Rewrite phase `pid`'s Reviewed line, and its Depends on as bare ids."""
+    """Rewrite phase `pid`'s Reviewed line, and its Depends on hashes."""
     phases = discover(root)
     if pid not in phases:
         raise SystemExit(f"no phase '{pid}'; known: {', '.join(phases)}")
@@ -403,7 +454,7 @@ def stamp(pid: str, root: Path = ROOT, today: Optional[str] = None) -> str:
         dep = d.split("@")[0]
         if dep not in phases:
             raise SystemExit(f"{ph.path}: depends on unknown phase '{dep}'")
-        deps.append(dep)
+        deps.append(f"{dep}@{corrections_hash(phases[dep].text)}")
     lines = ph.text.splitlines(keepends=True)
     # A field runs from its own line to the next field's (or the end marker),
     # so a value wrapped over several lines is replaced whole. Last field

@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-24 (phase cards: dependencies carry no hash, so each card stales only on its own file; "Open" 7 settled) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-24 (phase cards: a dependency hashes only the upstream `## Corrections received`, so a routed correction stales its readers and nothing else does; "Open" 7 revised after #85's review) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -51,10 +51,14 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 7. **Which rung for `P-I7` and the first Phase 8 registration.** 70m went to
    exploration without the recorded call `design-8.md` asked for; 1b is
    measured by outside groups; so both compete for 1.4b (`status-8.md` card).
+8. **Who re-reads the reader cards after a routed correction** (#86 review,
+   finding 1). A line routed to Phase 1 stales its 13 carded readers, and the
+   gate stays red until each is re-stamped. Either the correcting PR does
+   all of them, or the lint only warns and each reader's next review clears it.
 
 ## Open PRs and branches
 
-`claude/hashless-card-deps` (in `../Mets-work-2`): card dependencies without hashes. #84 (`claude/phase-cards-10`, card 10, in `../Mets-work`) open; whichever merges second needs a rebase (both touch card 9's Depends on and this file). #83 merged 2026-09-24. #82 merged 2026-09-24, its branch deleted. #81 merged 2026-09-24, its branch deleted. #80 merged 2026-09-24.
+`claude/corrections-scoped-deps` (in `../Mets-work-2`): each dependency hashes only the upstream Corrections section (follows #85, merged 2026-09-24, branch deleted). #84 (`claude/phase-cards-10`, card 10, in `../Mets-work`) open; whichever merges second needs a rebase and `--stamp 9`, because #84 gives `status-10.md` a Corrections section, and card 9 reads 10. #83 merged 2026-09-24. #82 merged 2026-09-24, its branch deleted. #81 merged 2026-09-24, its branch deleted. #80 merged 2026-09-24.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
