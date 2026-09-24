@@ -39,37 +39,16 @@ what it found, what superseded it, and what it left open. Three costs follow:
 4. **Release.** If nothing gets registered by some point, what frees the 12?
    Until then exploration stays at 8 prompts, only 7 of them natural text.
 5. ~~What makes a card stale~~: settled 2026-09-23, see "Decisions".
-6. **The Phase 1d and viz branches: keep, revive or drop?** (session 4.) Both
-   were deleted from GitHub in the 2026-09-23 cleanup; their tips survive only
-   as local tags on the local box (`INDEX.md` "Off `main`"). One disk failure
-   loses them. Claude's recommendation:
-   - **First, either way: push the two `dead/*` tags** (`git push origin
-     refs/tags/dead/particle-methods-comparison-vpuads
-     refs/tags/dead/visualize-mets-results-sl2ya5`). Tags do not show as
-     branches, so they keep the cleanup's goal.
-   - **Phase 1d (`010448c`, 5 069 lines, 16 files): keep; measure before
-     reviving.** It tunes seven clusterer families per layer against a
-     whole-pipeline null and builds a consensus. Whether that helps with Phase
-     10's finding that the HDBSCAN partition is not reproducible run to run
-     (`p10_cluster_function/status-10.md` §3) is not known: Phase 10 measured
-     drift between two near-identical re-runs, and 1d tunes against
-     subsampling, a different noise (`/challenge-pr` on #80). That can be
-     measured from the tag in a scratch checkout, without rebasing: run 1d on
-     the two sweeps' overlapping dirs and compare its consensus ARI with
-     HDBSCAN's. The result decides revival and whether it comes before Stage 1
-     (Stage 1 would then read a tuned partition). Revival cost: a rebase across
-     351 commits (274 without merges) (conflicts in `INDEX.md`, `PREDICTIONS.md`,
-     `core/artifacts.py`, `status-1.md`); its equivalence tests import
-     `p1_visualization`, now `p1_mstate_tracking/visualization`; and its
-     `P-C1`–`P-C4` were written only into the branch's `PREDICTIONS.md`,
-     never into `claims/registry.json`, and would now be scored on Phase 1
-     runs already looked at, so they return as tier 1 or re-register on the
-     held-out 12. Not before Stage 1, because Stage 1's own partition choice
-     is what it would change.
-   - **Viz CLI (`d1c75ac`, one 255-line file): drop.** It routes the newest
-     `results/` dir per phase to that phase's plotting entry point; results
-     now live in `data/phase12/` with manifests, nothing depends on it, and
-     rewriting it would cost less than rebasing it. The pushed tag is the record.
+6. ~~The Phase 1d and viz branches: keep, revive or drop?~~ **Settled
+   2026-09-24 (user): let the code go, keep the intent.** Tooling has moved on,
+   so a revival would rewrite anyway. 1d's design, status, findings and
+   `P-C1`–`P-C4` text are now in `archive/p1d_cluster_ensemble/` (`FROZEN.md`
+   says when to rebuild: when Phase 10 needs a partition it can trust, after
+   first measuring whether tuning reduces the run-to-run drift of
+   `p10_cluster_function/status-10.md` §3, which is not the noise 1d tuned
+   against). The viz tool's purpose is in `INDEX.md` "Deleted code whose intent
+   is kept". Pushing the local `dead/*` tags is optional. The deletion is
+   `LESSONS.md` lesson 12.
 7. **Should archived cards go stale when a live phase they read changes?**
    (`/challenge-pr` on #80, finding 1.) Under the settled rule ("Decisions") they
    do, so each edit to `status-1.md` (16 commits in September) now also forces

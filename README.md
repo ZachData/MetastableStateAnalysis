@@ -242,9 +242,9 @@ the findings**; `archive/README.md` states the policy once.
 | 5c `p5c_unclustered` | Docs only. Trained models route attention *toward* unclustered tokens at 1.6–2×, sign-flipped against random weights. On `pythia-410m` about 94 % of that gap is the causal mask (`p10_cluster_function/status-10.md` §1.1) |
 | 6 `p6_subspace` | LDA-alignment inversion (0.887 imaginary vs 0.067 real repulsive), unresolved: not dimension-normalised (`p6_subspace/math-6.md` §7.2) |
 
-Two more pieces of work exist nowhere else, Phase 1d (clusterer comparison) and
-a cross-phase visualisation CLI, now as local tags only: `INDEX.md` "Off `main`:
-work that exists nowhere else".
+Two more pieces of work, Phase 1d (clusterer comparison) and a cross-phase
+visualisation CLI, lost their code in a 2026-09-23 cleanup; why each existed is
+kept: `INDEX.md` "Deleted code whose intent is kept".
 
 ## 6. The discipline: predictions, nulls, e-values
 
