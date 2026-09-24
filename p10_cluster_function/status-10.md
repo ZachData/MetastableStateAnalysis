@@ -16,6 +16,7 @@
   - The HDBSCAN partition is not reproducible run to run (ARI 5th percentile 0.347). A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1
   - 410m's step 0 and step 1 are the same weights, so the checkpoint axis has 18 distinct points — §3.51.3
   - `pair_agreement`'s "ext_semantic" count is mostly a repeat count on Pythia (repeats have cosine 1 at layer 0). Over training the repeat share of mutual-NN pairs falls, and the non-repeat pairs that replace them become similar in the trained embedding. No null — `p10_cluster_function/status-10.md` §1.6
+  - Which tokens are clustered is mostly copy count (`min_cluster_size=2`, copies coincide at layer 0). Among unique tokens neither BPE rank nor class predicts it, so trash collection gets no support from composition. No null — `p10_cluster_function/status-10.md` §1.7
   - Lemma C.1's saturation is a formula for Phase 1's 50–55 carrying capacity — `p10_cluster_function/math-10.md` §5.4, §3.53
 - **Superseded / wrong:**
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -25,14 +26,14 @@
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
   - `handoff-10.md` §1.1's reading that neighbourhoods go "lexical → contextual": on Stage 0's v1 runs they go from repeats to repeats plus embedding-similar tokens — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
-- **Depends on:** 1@2627291497, 5c@e75b33ae46, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
+- **Depends on:** 1@d7c7e735e4, 5c@e75b33ae46, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
 - **Feeds:** 9
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
   - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint, so F12's density confound and the parked window are argued, not controlled — `p10_cluster_function/status-10.md` §5
-  - What are clusters made of by token class and repeat/non-repeat (Stage 1 step 2)? Step 1 is to be re-run at 152 runs once Stage 0 completes — `p10_cluster_function/handoff-10.md` §1.3
+  - What do the clustered unique tokens (~26 % in the trained model) cluster with, since neither rank nor class predicts which? Stage 1 steps 1–2 are to be re-run at 152 runs once Stage 0 completes, and the pilot sweep is unread — `p10_cluster_function/handoff-10.md` §1.3
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
   - The `p10_*` readers' default glob now mixes the Phase 1 sweep with Stage 0's v1 dirs. The holdout guard (`core/holdout.py`) removes only the 12. Stage 1's reader selects through Stage 0's index; the older readers still glob — `p10_cluster_function/handoff-10.md` "Parked", `p10_cluster_function/status-10.md` §0
@@ -40,7 +41,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `b1bb7ff419`
+- **Reviewed:** 2026-09-24 · body `391f68db55`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -113,6 +114,7 @@ carry a registered prediction where the current one cannot.**
 | the HDBSCAN backfill | `tools/run/backfill_hdbscan.py` | deps |
 | row A0 | `tools/run/p10_attention_baseline.py` | — |
 | F0 | `tools/run/p10_anchor.py` | — |
+| Stage 1 steps 1, 2 | `tools/run/p10_ext_sem_threshold.py`, `tools/run/p10_token_composition.py` (read only `stage0_index.json`) | — |
 | F1 | `tools/run/transport.py` | — |
 | F12 | `tools/run/p10_partition_function.py` | — |
 | the reproducibility floor | `tools/run/p10_partition_stability.py` | — |
@@ -364,6 +366,68 @@ the non-repeat pairs of the same prompt. Base rate of cos > 0.2 in that frame: 0
   tags only (the tokens-vs-pairs check is separate). Re-run when Stage 0
   completes (152 v1 runs). The pilot sweep (§1.1's source) was not re-read; it
   is §1.3 step 3.
+
+### 1.7 Stage 1 step 2, the token-composition table — **copy count decides it; among unique tokens frequency does nothing**
+
+Tier 1, descriptive, no null. Reader `tools/run/p10_token_composition.py
+--v1-only`, record `data/analysis/p10_s1_token_composition.json` (full cells:
+feature × level × copies, per layer per step, pooled and prompt-balanced).
+**Input:** Stage 0 through `stage0_index.json` (pin `64a4087`, battery
+`06790b90dcfe`), 149 v1 runs: 8 prompts × 19 steps less 3 at step 54000
+(chunk 2 running). Inputs sha256 `564020cf46e1`, tokenizer.json `c24618a1b3e6`,
+native labels only.
+
+"Clustered" = HDBSCAN label ≠ −1. Rates are per prompt per layer, then averaged.
+Copies: *unique* (one copy in the prompt), *first* (first of several), *repeat*
+(has an earlier copy; §1.3's column). Rank = token id = BPE merge index + 245, a
+frequency proxy.
+
+| step | noise rate | unique | 2 copies | 3–5 copies | 6–20 copies | unique, rank < 1k | unique, rank ≥ 20k | unique word_start | unique punct |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | 0.389 | 0.179 | 0.381 | **1.000** | 0.945 | 0.171 | 0.209 | 0.196 | 0.237 |
+| 64 | 0.416 | 0.117 | 0.298 | 0.999 | 0.953 | 0.157 | 0.102 | 0.145 | 0.108 |
+| 512 | 0.340 | 0.250 | 0.416 | 0.955 | 0.975 | 0.270 | 0.276 | 0.268 | 0.289 |
+| 2000 | 0.355 | 0.277 | 0.489 | 0.900 | 0.882 | 0.242 | 0.310 | 0.321 | 0.290 |
+| 8000 | 0.392 | 0.258 | 0.472 | 0.861 | 0.820 | 0.243 | 0.262 | 0.288 | 0.233 |
+| 143000 | 0.397 | 0.257 | 0.456 | 0.801 | 0.782 | 0.238 | 0.271 | 0.291 | **0.146** |
+
+(2 copies: the first copy; the later one is within 0.03. 3–5 and 6–20: later copies.)
+
+| step | pre-stated, non-repeat: freq / class contrast | post hoc, unique only: freq / class |
+|---|---|---|
+| 0 | +0.132 / +0.059 | −0.015 / +0.078 |
+| 64 | +0.222 / +0.035 | +0.076 / −0.022 |
+| 512 | +0.172 / +0.161 | +0.031 / +0.060 |
+| 2000 | +0.088 / +0.095 | −0.037 / +0.007 |
+| 8000 | +0.113 / +0.133 | +0.015 / −0.027 |
+| 143000 | +0.089 / +0.108 | +0.000 / −0.130 |
+
+- **Clustered vs noise is mostly copy count.** HDBSCAN runs at
+  `min_cluster_size=2` (`p1_mstate_tracking/clustering.py`), and copies of one
+  token coincide at layer 0. At step 0 every token with 3–5 copies is
+  clustered, a pair of copies 0.38, a unique token 0.18. Training erodes the
+  copy groups (3–5 copies: 1.000 → 0.801) and lifts unique tokens (0.18 → 0.26),
+  mostly by step 512. The whole-prompt noise rate barely moves (0.34–0.42).
+- **The pre-stated trash-collection criterion reads "consistent" at 12 of 19
+  steps, but twins carry it.** Its non-repeat set keeps first copies, which
+  have cosine-1 twins later in the prompt, and high-frequency tokens recur
+  more. Among **unique** tokens the verdict is "unclear" at all 19 steps: the
+  frequency contrast is within ±0.08 at every step and 0.000 at step 143000.
+  Rank < 1k is the *least* clustered unique bin from step 2000 on.
+- **Late in training, unique punctuation is less clustered than word starts**
+  (0.146 vs 0.291 at step 143000), the opposite of trash collection. Thin: 28
+  unique punctuation tokens and 3 unique whitespace tokens across the 8 prompts.
+  Unique numerals climb to 0.55, the highest class (30 tokens, 4 prompts).
+- **What this does to the semantic question.** It narrows it. About a quarter of
+  unique tokens are clustered in the trained model, and neither frequency nor
+  class predicts which. The next step is to ask what they cluster *with*:
+  their co-members' copies, classes and positions. That is a new reader, not
+  this table.
+- **Caveats.** No null. Layers averaged; the per-layer cells are in the record.
+  The HDBSCAN floor (§3, ARI p5 0.347) applies to every rate. Rank is merge
+  order, not corpus frequency. `repeated_tokens` has no unique word starts, so
+  the unique contrasts rest on 7 prompts. Only Stage 0 was read. The pilot
+  sweep (§1.3 step 3) and the 152-run re-run are still owed.
 
 ---
 

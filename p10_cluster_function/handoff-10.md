@@ -394,15 +394,15 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    that replace the repeats become similar in the trained embedding, so
    "lexical → contextual" is backwards on this measure. Re-run at 152 runs once
    Stage 0 completes.
-2. **The token-composition table, which still does not exist.** Carry
-   repeat/non-repeat (a token with an earlier copy in the prompt) as a column:
-   step 1 shows it drives the only semantic number the project had. Join
-   `tokens.txt` to `hdbscan_labels.json` and report, per layer per checkpoint:
-   clustered vs noise composition by **frequency rank**, by whitespace /
-   punctuation / subword-continuation / alphabetic class, and by within-prompt
-   repetition count. Trash collection predicts clusters dominated by
-   high-frequency, low-information tokens. **This is a table, it costs nothing,
-   and it either makes the semantic question concrete or retires it.**
+2. ~~**The token-composition table**~~ **DONE 2026-09-24 on Stage 0's v1
+   runs** (`status-10.md` §1.7, which holds the numbers;
+   `tools/run/p10_token_composition.py`). Clustered vs noise is mostly copy
+   count (`min_cluster_size=2`; at step 0 every token with 3–5 copies is
+   clustered). Among unique tokens neither BPE rank nor class predicts it, so
+   trash collection gets no support here. The question narrows to: what do
+   the clustered unique tokens (~26 % in the trained model) cluster *with*?
+   That is a new reader (co-member copies, classes, positions), not in this
+   list. Re-run at 152 runs once Stage 0 completes.
 3. **Report both sweeps.** The pilot has native labels; the WDS sweep has
    backfilled ones. Agreement across them is the §3.51.4 check that every
    partition-derived claim now owes.

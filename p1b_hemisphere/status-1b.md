@@ -18,7 +18,7 @@
   - `normalized_margin` is not scale-free as documented; 1c's exact margin `hull_min_norm` is the comparable one — `math-1b.md` §7.1
   - The code and the pilot's own report cite cone collapse as "Theorem 6.3"; it is Lemma 6.4 (for a decision) — `archive/UPDATE_PLAN.md` §0
 - **Registry:** none, because the phase is exploratory by design; its findings feed `P-H1` and `CLAIM-A` instead (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1@2627291497
+- **Depends on:** 1@d7c7e735e4
 - **Feeds:** none
 - **Open threads:**
   - Cone collapse against a null: `--n-null` has never been run, so how much is n versus d_eff is unknown — `status-1b.md` "R3. Cone-collapse is unquantified against any null"
