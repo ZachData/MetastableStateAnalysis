@@ -21,14 +21,13 @@
   - The energy-trajectory PNGs bake a wrong citation into three suptitles — `math-1c.md` §11
 - **Registry:** `P-gamma1`, `P-gamma2` needs-null, blocked (no `beta_eff` in any run dir); `P-H1` measurement, measured on one checkpoint, not adjudicated; `P-S1` e-value, active, dry run only, blocked on inputs (`claims/EXPERIMENTS.md`)
 - **Depends on:** 1@6a6e6a3c1a
-- **Feeds:** 2d
+- **Feeds:** 2d, 9
 - **Open threads:**
   - β's scale convention, to decide before any producer freezes it in an artifact
   - `P-S1`: re-cluster both arms offline at a matched k, or record the gate as unfeedable
   - `h_attn_only`, the frame-correct step, needs sublayer streams no run directory has
   - Causal vs non-causal field, never compared
   - The cone margin's response to a γ patch is closed-form, but only where the minimiser is unique; a runner must report that — §3.50
-  - Phase 9 builds on 1c's instruments (`p9_metric_intervention/notes-9.md`); it has no status file, so it is not under Feeds
 - **After Phase 10:**
   - Write the β producer (`beta_eff_per_head` into geometry.json) once the convention is fixed; unblocks A and B (free, CPU, one model load per checkpoint)
   - Run E over all 19 checkpoints × the 8 v1 prompts (free)

@@ -27,6 +27,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-24 | Phase review session 4: cards 3, 4, 5, 5b, 5c, 6-frozen; the 1d/viz branches (measured before the commit/PR calls) | 57 | 181k | 7.2M | 47k | #80 |
 | 2026-09-24 | Phase review session 5: cards 7, 7d, 7e (measured before the commit/PR calls) | 41 | 171k | 4.9M | 48k | #81 |
 | 2026-09-24 | Phase review session 6: card 8; chunk 2 checked, still running (measured before the commit/PR calls) | 32 | 148k | 3.6M | 46k | #82 |
+| 2026-09-24 | Phase review session 7: card 9; chunk 2 checked, still running (measured before the commit/PR calls) | 45 | 154k | 5.1M | 46k | #83 |
 
 ## Over 2× median, and why
 

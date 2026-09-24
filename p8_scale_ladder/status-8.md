@@ -25,7 +25,7 @@
   - "Reproducing" said `--probe` was on three runners; `member_subspace_geometry.py` has it too, and invariant 4's `freq` column used it (fixed 2026-09-24) — `p8_scale_ladder/status-8.md` "Reproducing"
 - **Registry:** none, because 70m and 410m are exploration rungs and `pythia-1b` / `pythia-1.4b` are reserved until a prediction naming them is registered (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 8 as an active phase with no prediction. `P-I7` (`H-BRIDGE`, active) is satisfiable on either reserved rung. `design-8.md` asked for a recorded call on whether 70m goes to `P-I7` before exploration, and exploration ran on 2026-09-11 without one, so 70m is spent for it by default. With 1b measured by outside groups, `P-I7` and any invariant registration now compete for 1.4b, which is the user's call
 - **Depends on:** 7d@751b162e22, 7e@c2a68fb3db
-- **Feeds:** 7, 10
+- **Feeds:** 7, 9, 10
 - **Open threads:**
   - Invariant 3 needs a dense, faithful axis: a 70m retrain from step 512 on Pythia's published data order, GPU work this box cannot do — `p8_scale_ladder/status-8.md` "What is open — in order"
   - The `L2H1`×`L3H6` cell (relay × top member; `L3H6` is not a matcher, so this is not 410m's prev-token × matcher cell) is unmeasurable at raw ΔNLL on either probe; it needs a graded readout — `p8_scale_ladder/status-8.md` "Invariants 5 and 6 on the `freq` probe"

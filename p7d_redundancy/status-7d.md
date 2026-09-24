@@ -23,7 +23,7 @@
   - The `wide` probe's token range is out of distribution; `freq` is the better probe, added as an arm — §3.15, §3.17
 - **Registry:** none, because every measurement is on `pythia-410m`, which the rung policy (`check_registry` rule 3 applied forward) keeps for exploration only (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 7d as a live instrument with no prediction
 - **Depends on:** none
-- **Feeds:** 7e, 8, 10
+- **Feeds:** 7e, 8, 9, 10
 - **Open threads:**
   - Q4 (structure per member) and Q5 (classes), mostly on disk and unread — `p7d_redundancy/status-7d.md` "What is open"
   - The step-1000 circuit (`L5H2` + `L11H14`, no `L7H8`); its pilot's sub-additive sign is outside the readout's range — `p7d_redundancy/status-7d.md` "The pilot that must not be over-read"

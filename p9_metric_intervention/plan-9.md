@@ -469,6 +469,9 @@ integrate `gamma_beta` to `c · T_eff` and compare. Two conditions on reading it
 
 ### 4.7 Sign: the same intervention has opposite geometric outcomes, and Phase 2 predicts which
 
+> **Corrected 2026-09-20 (§4.1):** a γ-patch is not read-side; this test needs
+> a `W_V`-side arm.
+
 Read-side `Γ` changes *who attends to whom*. It does not change *where the
 attended-to content pushes you* — that is `V`. `V = −I_d` flips the sign of the
 whole Lyapunov identity exactly (`math-1.md` §1A.2), and Phase 2 supplies
@@ -842,7 +845,8 @@ as dynamical localisers** — consistent with two prior failures here and with
 6. **Does late-layer distinguishability recover under a mid-layer stretch?**
    (§6.4.) Bears on whether collapse is chosen or suffered.
 7. **How much of each layer's displacement is genuine motion of the measure
-   versus tokens swapping places?** (§5.2.) Free, unrun, and it re-reads every
+   versus tokens swapping places?** (§5.2.) **Answered 2026-09-20 as Phase 10's
+   F1: almost none is swapping** (`status-10.md` §1.3). Free, and it re-reads every
    displacement number already on disk.
 8. **Do implied timescales move as predicted under a metric patch?** (§5.1.) The
    difference between a knob and a phase.
@@ -868,12 +872,12 @@ Ordering is a proposal. Nothing here is registered and nothing here is frozen.
 
 | # | experiment | forward pass? | depends on | falsifies / decides |
 |---|---|---|---|---|
-| **E0** | **Transport observables on artifacts already on disk.** `tools/run/transport.py`, on the pattern of `tools/run/dissipation.py`. Identity-vs-optimal gap, arc length, straightness, per layer per checkpoint. | no | nothing | gives every existing displacement number a spread/shuffle decomposition |
+| **E0** | **Transport observables on artifacts already on disk.** `tools/run/transport.py`, on the pattern of `tools/run/dissipation.py`. Identity-vs-optimal gap, arc length, straightness, per layer per checkpoint. **Run 2026-09-20 as Phase 10's F1** (`status-10.md` §1.3). | no | nothing | gives every existing displacement number a spread/shuffle decomposition |
 | **E1** | **`γ` calibration.** Run `frame_table.py` (sub-exp D) on Pythia: dynamic range per layer, `sphere_license`, `bias_energy_floor`. | no | nothing | bounds "in-distribution patch"; a wide range means Phase 1's sphere metrics carry a distortion |
 | **E2** | **Three-frame agreement.** geometric / functional / `S`-derived labellings + ARI, against a size-profile-preserving null. | yes (LM head) | `core/lm_loading.py` (unblocked, §2.2) | H3. **The tier-0 gate.** |
 | **E3** | **Cluster-as-function battery.** Phase 5c Group D, revived: centroid substitution, force-collapse, force-disperse, each with its matched control, on trained model and random twin. Readout: next-token KL / CE delta. | yes | E2 | H1 vs H2 vs H3 |
 | **E4** | **Carry Phase 6's chance-relative correction into the Phase 9 record.** The instrument is rebuilt (`subspace_geometry.py`, `normalized_alignment`) and the ratio is measured (24.9 vs 13.2); what is missing is that no document outside that module's header says the inversion has been explained. A note, not a run. | no | nothing | stops H2 being dismissed on a withdrawn reading |
-| **E5** | **`P6-R4`'s exchangeable unit.** A registry decision, not a run. | no | a human call | the one Phase 6 row whose inputs exist today |
+| **E5** | **`P6-R4`'s exchangeable unit.** A registry decision, not a run. **Already taken 2026-08-25: `model`** (`status-6.md` "Corrections received"). | no | a human call | the one Phase 6 row whose inputs exist today |
 | **E6** | **The metric patch itself.** `Γ → Γ + U D Uᵀ`, one LayerNorm, sweep `D`; three arms — attention-LN only, MLP-LN only, both (§4.2). Full readout panel (§5.3), `gamma_beta` prediction written down first. | yes | E1, E2, and §4.6's β decision | whether the lever moves anything beyond a matched random patch |
 | **E7** | **The sign-differential test.** Same patch on sets whose displacement lies in the attracting vs the repelling subspace. | yes | E6 | §4.7; and whether Phase 2's projectors carry causal information at all |
 | **E8** | **Repair-channel test.** Metric patch vs matched-magnitude ablation, same target, measured for self-repair. | yes | E6 | §6.2 — the phase's best question |
