@@ -7,14 +7,14 @@
 - **Inputs:** Pre-revision: the 2026-04-23 GPT-2 / ALBERT Phase 1 run, gone from disk. Post-revision: a `pythia-410m` pilot of 27 checkpoints × 9 v1 prompts (battery `1e47918ef77a`), 243 runs on 2026-08-17 at code `3aeab20`, with no null (`n_null = 0`), read from Phase 1's 2026-08-12 pilot; output in the main tree's untracked results/p1b_pilot — `status-1b.md` "The 2026-08-17 Pythia pilot"
 - **Results:**
   - Every layer of every run sits in one open half-space (cone collapse); no antipodal split, in both runs — `status-1b.md` "The 2026-08-17 Pythia pilot"
-  - The k = 2 axis is contrast, not antipodes: the relative classifier reads "separated" in most layers at most checkpoints, while the antipodal rule reads 0 % — `status-1b.md` "The 2026-08-17 Pythia pilot"
+  - No antipodes: the antipodal rule reads 0 %. The relative classifier reads "separated" in most layers, but a single unclustered cone also reads "separated", so that reading is not yet evidence of a two-way split — `status-1b.md` "The 2026-08-17 Pythia pilot"
   - The activation-space Fiedler axis is PC1 at most layers, so downstream uses of it are using PC1 — `status-1b.md` "The 2026-08-17 Pythia pilot"
   - The bipartition's token identity persists across layers — `status-1b.md` "R4. Zero events was partly foreclosed"
   - HDBSCAN's unclustered tokens are barely the Fiedler-boundary tokens (border-vs-noise AUC near chance) — `status-1b.md` "The 2026-08-17 Pythia pilot"
 - **Superseded / wrong:**
   - The pre-revision verdict table: Block 0's null and Block 3's positive were one test run twice, the ALBERT row was a path bug, and Block 1's zero events were foreclosed by construction — `status-1b.md` "Retractions and reinterpretations"
   - Cone collapse is not new: it is the anisotropy / common-direction literature's narrow cone — `lit-1b.md` §2
-  - In the full d = 1024 stream the cone condition cannot fail for n ≤ d, so a full-dimension cone verdict is free. The pilot tested the top 64 PCs (`pca_n_components = 64`, n > 64), where it can fail and a collapse verdict lifts to full d; the result holds only in that reduced form, still without a null — §3.39
+  - In the full d = 1024 stream the cone condition cannot fail for n ≤ d, so a full-dimension test would be free. The pilot tested the top 64 PCs, and a collapse verdict there lifts to full d, so the result holds at full d. It is informative only where n > 64: 8 of 9 prompts; `short_heterogeneous` (n = 20) runs in 19 dimensions, where collapse is near certain. Still no null — §3.39
   - `normalized_margin` is not scale-free as documented; 1c's exact margin `hull_min_norm` is the comparable one — `math-1b.md` §7.1
   - The code and the pilot's own report cite cone collapse as "Theorem 6.3"; it is Lemma 6.4 (for a decision) — `archive/UPDATE_PLAN.md` §0
 - **Registry:** none, because the phase is exploratory by design; its findings feed `P-H1` and `CLAIM-A` instead (`claims/EXPERIMENTS.md`)
@@ -22,6 +22,7 @@
 - **Feeds:** 4, 5, 5c, 6, 7
 - **Open threads:**
   - Cone collapse against a null: `--n-null` has never been run, so how much is n versus d_eff is unknown — `status-1b.md` "R3. Cone-collapse is unquantified against any null"
+  - The relative classifier needs a null too: its 0.90 cutoff is a reporting convention, and "separated" falls as the cloud concentrates — `status-1b.md` "The 2026-08-17 Pythia pilot"
   - Does the axis attenuate in the LN frame? Blocked: LN frames are not threaded through `run_1b` — `math-1b.md` §7.2
   - The pilot ran persistence on the legacy `regime` key, so R4's foreclosure still applies to it
   - Blocks 5 and 6 need Phase 2 OV artifacts; layer 0 (pre-LN) is still averaged into per-model means
@@ -31,7 +32,7 @@
   - Adopt `hull_min_norm` for the margin (free, code)
   - Thread LN frames through `run_1b` and test whether the axis attenuates (free, code and CPU)
   - Run on the Stage 0 sweep's 8 v1 prompts (free once Stage 0 lands; the 12 held-out prompts stay out)
-- **Reviewed:** 2026-09-23 · body `a101a586b1`
+- **Reviewed:** 2026-09-23 · body `6e39b06e9c`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -43,7 +44,6 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-23.
 - 2026-09-16 · cone collapse is a rediscovery of the anisotropy literature · `lit-1b.md` §2
 - 2026-09-16 · "Theorem 6.3" should be Lemma 6.4 (open: `math-1b.md` says "Lemma 6.4, feeding Theorem 6.3") · `archive/UPDATE_PLAN.md` §0
 - 2026-09-20 · the cone condition cannot fail for n ≤ d in general position; the hemisphere lever is gated on context length · §3.39
-- 2026-09-23 · this file said nothing had been rerun; a post-revision Pythia pilot ran on 2026-08-17 · `status-1b.md` "The 2026-08-17 Pythia pilot"
 
 **Registered predictions:** none. Exploratory by design; nothing in this
 phase may carry an e-value (`claims/EXPERIMENTS.md`).
@@ -87,11 +87,19 @@ What it shows, read from `phase1b_cross_run.md`:
 | identity persistence, HDBSCAN nesting | both True |
 | cone vs null | not run (`n_null = 0`) |
 
-Steps 0, 1 and 2 give identical rows to three decimals (§3.51 found step0 =
-step1; step 2 is parked in `docs/PHASE_REVIEW.md`). **What it does not
-settle:** R3 (no null) and R4 (persistence ran on the legacy `regime` key).
-R1 is answered: the relative classifier ran and reads "separated" at most
-layers, so the 0 % antipodal figure was a structural null, as R1 said.
+Steps 0 and 1 have bitwise-identical axes (the same weights, §3.51). Step 2
+differs slightly (axes by 3e-4), so it is a separate point.
+
+**What it does not settle:** R3 (no null) and R4 (persistence ran on the
+legacy `regime` key). **Nor R1.** The relative classifier calls a layer
+"separated" when its separation ratio is ≤ 0.90, a cutoff
+`bipartition_detect.py` calls "a reporting convention". `/challenge-pr` on
+#76 ran `analyze_bipartition` on a single Gaussian shifted into a cone, with
+no clusters: it read "separated" in 8 of 8 layers, and isotropic noise read 6
+of 6. Across the 27 checkpoints, "separated %" correlates −0.76 with
+concentration. So the 0 % antipodal figure is a structural null, as R1 said,
+but "separated" may be measuring spread, not a split. It needs a null of its
+own.
 
 ---
 

@@ -4,7 +4,7 @@
 ## Card
 
 - **Question:** Does a trained network integrate the identity-weight particle dynamics far enough to reach the collapse time t*, in which direction does it depart from the paper's field (the γ_β residual), and do the geometric preconditions (the cone, the sphere frame, spherical designs) hold on real activations?
-- **Inputs:** All six sub-experiments on synthetic and known-answer configurations. Real data for E only: `pythia-410m-step143000`, 8 v1 prompts (battery `1e47918ef77a`), 2026-09-19, `claims/audits/p1c_e_hemisphere.json`. Input audit (keys only) over the 19-checkpoint sweep, 152 dirs, `claims/audits/p1c_inputs.json`. A 2026-08-17 pilot attempt skipped every run for want of β
+- **Inputs:** All six sub-experiments on synthetic and known-answer configurations. Real data for E only: `pythia-410m-step143000`, 8 of the v1 battery's 9 prompts (battery `1e47918ef77a`, without `short_heterogeneous`), 2026-09-19, `claims/audits/p1c_e_hemisphere.json`. Input audit (keys only) over the 19-checkpoint sweep, 152 dirs, `claims/audits/p1c_inputs.json`. A 2026-08-17 pilot attempt skipped every run for want of β
 - **Results:**
   - The γ_β ODE reproduces the paper's collapse-time table and the step estimator recovers an injected step — `status-1c.md` "Validation performed"
   - Phase 1's step-size definition understates the effective integration time about 5.7×, which makes `P-gamma2` close to confirmed by construction under it — `status-1c.md` "Findings from implementation, before any data"
@@ -35,7 +35,7 @@
   - Re-cluster at matched k from `activations.npz` and run `P-S1` (free)
   - `run_1.py --sublayer` reruns for `h_attn_only` (forward pass, 410m)
   - Regenerate the energy-trajectory PNGs (free)
-- **Reviewed:** 2026-09-23 · body `38ef563634`
+- **Reviewed:** 2026-09-23 · body `c39567cf1e`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -47,6 +47,8 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-23.
 - 2026-09-19 · A/B/F blocked by artifact keys; kmeans centroids not persisted; `lit-1c.md`'s preemption lead is false · §3.40
 - 2026-09-20 · closed-form cone-margin response to a γ patch; needs a unique minimiser · §3.50
 - 2026-09-20 · the cone condition cannot fail for n ≤ d in general position (the same fact as finding 5's Wendel note) · §3.39
+- 2026-08-22 · validation cites MATH.md, a file that does not exist · `INDEX.md` "Referenced, not present"
+- 2026-08-23 · the energy-trajectory PNGs bake a wrong citation into three suptitles · `math-1c.md` §11
 
 **Registered predictions:** `P-gamma1`, `P-gamma2` (needs-null — bracket and
 point-estimate readings with no null built), `P-H1` (measurement — no valid

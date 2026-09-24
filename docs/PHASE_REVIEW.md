@@ -26,7 +26,7 @@ what it found, what superseded it, and what it left open. Three costs follow:
 | Where a phase review lands | A **card** at the top of its `status-N.md`; a phase table in `docs/` generated from the cards (built in session 1); a lint keeps them current. This is the "next PR" decided 2026-09-22 (`STATE.md`) |
 | The 12 v2 prompts new to the 410m sweep | **Held out** as Phase 10's confirmation set. Stage 0 still runs all 20; Stages 1–5 read only the 8 v1 prompts until registrations are frozen (`p10_cluster_function/handoff-10.md` §0.4). **Partly seen already**: `CLAIM-C` ran them on 1.4b and gpt2-large (`PROJECT.md` §3.46), so see "Open" |
 | Order vs Stage 0 | In parallel |
-| What makes a card stale ("Open" 5, settled) | **Route corrections to the corrected phase.** A correction to an earlier phase adds a line to that phase's `## Corrections received`, which the existing body hash already covers (`CLAUDE.md` Stop step 2, `docs/phase_card.md`). Rejected: hashing the sections the pointers name, which would have caught none of Phase 1's 7 corrections because each pointer was written with its correction (`LESSONS.md` lesson 1). Later: a warning lint for unrouted corrections (Parked 3); score the rules against the Superseded lists once several phases have cards (session 9) |
+| What makes a card stale ("Open" 5, settled) | **Route corrections to the corrected phase.** A correction to an earlier phase adds a line to that phase's `## Corrections received`, which the existing body hash already covers (`CLAUDE.md` Stop step 2, `docs/phase_card.md`). Rejected: hashing the sections the pointers name. That watches only sections a card already cites, and each of Phase 1's 7 corrections arrived in a section no card cited yet, so it would have caught none of them (`LESSONS.md` lesson 1). Later: a warning lint for unrouted corrections (Parked 3); score the rules against the Superseded lists once several phases have cards (session 9) |
 
 ## Open (for the user, from `/challenge-pr` on #74)
 
@@ -115,19 +115,20 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    the branch's. Cost: one look at that test's subprocess/env. Changes: whether
    any worktree gate result so far can be trusted for package code.
 3. **Warn on unrouted corrections.** A lint warning (not a failure) when a
-   commit adds text naming a carded phase's directory or status file outside
-   that directory, and the phase's `## Corrections received` did not change.
-   Why: the routing rule ("Decisions") depends on people remembering it, and
-   prose rules get forgotten (`LESSONS.md` lesson 1). Cost: small, a diff scan
-   in `tools/lint_repo.py`; misses corrections that name the phase only in
-   prose ("Phase 1"), which is most of them. Changes: whether the routing rule
-   needs a check at all; decide after sessions 3–5 show how often it is missed.
-4. **Is step 2 also step 0's weights?** Phase 1b's pilot gives steps 0, 1 and 2
-   identical rows to three decimals (`p1b_hemisphere/status-1b.md` "The
-   2026-08-17 Pythia pilot"); §3.51 found only step0 = step1. Why: if step 2
-   is the same weights too, the checkpoint axis loses a second point. Cost:
-   hash two cached HF snapshots, minutes. Changes: Phase 1's and Stage 0's
-   early-step readings.
+   commit adds text outside a carded phase's directory that names the phase,
+   by path **or in prose** ("Phase 1b", `p1b_`), and that phase's
+   `## Corrections received` did not change. Why: the routing rule
+   ("Decisions") depends on people remembering it, and prose rules get
+   forgotten (`LESSONS.md` lesson 1). Prose matching would have found 4 of
+   the 5 external sources routed into Phase 1's list; path matching alone
+   finds fewer (`/challenge-pr` on #76). Cost: a diff scan in
+   `tools/lint_repo.py`, noisy on prose. **When to decide:** the card
+   sessions only backfill, so they cannot show whether the rule is followed.
+   Check at the first 3 corrections written after 2026-09-23 (Phase 10
+   Stage 1 will produce them) whether each was routed.
+4. ~~Is step 2 also step 0's weights?~~ No: answered by `/challenge-pr` on
+   #76 from the 1b pilot's saved axes (step 1 bitwise equal to step 0, step 2
+   differs).
 5. **Grep every phase's results/ for unrecorded runs.** The 1b pilot sat on
    disk for five weeks with its status file saying nothing had been rerun.
    `p2b_pilot` and `p2d_pilot` are there too. Why: a card built only from its

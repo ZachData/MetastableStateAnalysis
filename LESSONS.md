@@ -26,7 +26,8 @@ world moves, nobody updates the line, and the next session acts on it.
   Phase 1 **feeds** (`status-1c.md`, `status-10.md`, `math-10.md`) and 1 from
   `PROJECT.md` §3.51. None of them touched `status-1.md`, so the lint could
   not see them. Hashing the sections the pointers name would have caught
-  none either, because each pointer was written with its correction.
+  none either: that watches only sections a card already cites, and each
+  correction arrived in a section nothing cited yet.
   `/challenge-pr` on #75 flagged the gap, and counting Phase 1's list settled
   it. The rule was designed by argument; the card's own data answered it.
   Fix: a correction to an earlier phase adds one line to that phase's
