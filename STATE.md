@@ -51,6 +51,10 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 7. **Which rung for `P-I7` and the first Phase 8 registration.** 70m went to
    exploration without the recorded call `design-8.md` asked for; 1b is
    measured by outside groups; so both compete for 1.4b (`status-8.md` card).
+8. **Who re-reads the reader cards after a routed correction** (#86 review,
+   finding 1). A line routed to Phase 1 stales its 13 carded readers, and the
+   gate stays red until each is re-stamped. Either the correcting PR does
+   all of them, or the lint only warns and each reader's next review clears it.
 
 ## Open PRs and branches
 

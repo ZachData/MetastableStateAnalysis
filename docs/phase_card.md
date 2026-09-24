@@ -55,7 +55,9 @@ status file carries, outside the card, a section
 and whoever writes a correction to an earlier phase adds a line there
 (`CLAUDE.md` Stop step 2). The line changes the body hash, so the card goes
 stale, and it changes the Corrections hash, so every card that reads this
-phase goes stale too. Settled by the user 2026-09-23 (`docs/PHASE_REVIEW.md` "Decisions").
+phase goes stale too. The heading must be exact and appear once: a
+near-miss (`## Corrections Received`) or a second copy is refused, since
+it would hash as empty and silence the readers. Settled by the user 2026-09-23 (`docs/PHASE_REVIEW.md` "Decisions").
 It relies on people following the rule: nothing checks that a correction was
 routed.
 

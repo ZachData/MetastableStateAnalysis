@@ -193,6 +193,19 @@ def corrections_hash(text: str) -> str:
     return hashlib.sha256(body.encode("utf-8")).hexdigest()[:10]
 
 
+def corrections_heading_problems(text: str) -> List[str]:
+    """A near-miss or repeated Corrections heading would hash as empty or
+    partial, and its readers would never go stale; refuse it instead."""
+    exact = [l for l in text.splitlines() if l.strip() == CORRECTIONS]
+    near = [l.strip() for l in text.splitlines()
+            if re.match(r"^#+\s*corrections?\s+received\b", l.strip(), re.IGNORECASE)
+            and l.strip() != CORRECTIONS]
+    out = [f"heading '{n}' should read exactly '{CORRECTIONS}'" for n in near]
+    if len(exact) > 1:
+        out.append(f"'{CORRECTIONS}' appears {len(exact)} times; merge them into one")
+    return out
+
+
 def _ids(value: str) -> List[str]:
     return [] if _NONE.match(value) else [v.strip() for v in value.split(",") if v.strip()]
 
@@ -357,13 +370,25 @@ def card_findings(root: Path = ROOT) -> List[Tuple[str, int, str]]:
                 findings.append((rel, at["Depends on"], f"no phase '{dm.group(1)}'"))
             elif dm.group(2) != corrections_hash(phases[dm.group(1)].text):
                 up = phases[dm.group(1)]
+                since = m.group(1) if m else "<Reviewed date>"
                 findings.append((rel, at["Depends on"],
-                                 f"STALE: phase {up.id}'s {CORRECTIONS} ({up.path}) changed since "
-                                 f"this card was reviewed; read the new lines, fix this card if "
-                                 f"they touch it, then `--stamp {ph.id}`"))
+                                 f"STALE: phase {up.id}'s {CORRECTIONS} does not match this card's "
+                                 f"hash (a correction was routed there, or the hash predates "
+                                 f"2026-09-24); read `git log -p --since={since} -- {up.path}`, "
+                                 f"fix this card if it is touched, then `--stamp {ph.id}`"))
         for fed in _ids(card.fields["Feeds"][0]):
             if not _PHASE_ID.match(fed) or fed not in phases:
                 findings.append((rel, at["Feeds"], f"no phase '{fed}'"))
+
+    # A phase whose Corrections section is watched: the carded ones and every
+    # dependency target, carded or not.
+    watched = {p.id for p in phases.values() if p.card}
+    for p in phases.values():
+        if p.card and "Depends on" in p.card.fields:
+            watched |= {d.split("@")[0] for d in _ids(p.card.fields["Depends on"][0])}
+    for pid in sorted(watched & set(phases)):
+        for msg in corrections_heading_problems(phases[pid].text):
+            findings.append((str(phases[pid].path), 1, msg))
 
     # Depends on / Feeds agree where both ends have a card.
     carded = {p.id: p for p in phases.values() if p.card and not _check_shape(p.card)}

@@ -160,6 +160,30 @@ def test_text_after_the_corrections_section_is_not_watched(repo):
     assert not any("STALE: phase 1" in m for m in _msgs(repo))
 
 
+def test_stamping_a_card_does_not_stale_its_readers(repo):
+    _edit(repo, "1", "Do particles cluster?", "Do particles cluster, and when?")
+    rp.stamp("1", repo, today="2026-09-25")
+    assert _msgs(repo) == []                                # 2 reads 1: no cascade
+
+
+def test_a_corrections_section_added_later_stales_readers(repo):
+    _edit(repo, "1", "## Corrections received\n\n- 2026-09-20 · an early fix · `status-1.md`\n", "")
+    rp.stamp("1", repo)
+    rp.stamp("2", repo)
+    assert _msgs(repo) == []
+    _edit(repo, "1", "## Later", "## Corrections received\n\n- 2026-09-24 · new\n\n## Later")
+    assert any("STALE: phase 1's" in m for m in _msgs(repo))
+
+
+@pytest.mark.parametrize("old, new, expect", [
+    ("## Corrections received", "## Corrections Received", "should read exactly"),
+    ("## Later", "## Corrections received", "appears 2 times"),
+])
+def test_a_misspelled_or_repeated_corrections_heading_is_refused(repo, old, new, expect):
+    _edit(repo, "1", old, new)
+    assert any(expect in m for m in _msgs(repo))
+
+
 def test_a_bare_dependency_is_refused_and_stamp_fills_the_hash(repo):
     path = repo / "p2" / "status-2.md"
     dep_line = next(l for l in path.read_text(encoding="utf-8").splitlines() if "Depends on" in l)
