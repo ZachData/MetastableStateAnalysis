@@ -4227,7 +4227,7 @@ opposite of 5b/6's four dormant `e-value` rows (§3.44).
 | 1c | 4 — `P-gamma1/2`, `P-H1`, `P-S1` | inputs no run directory carries — no `beta_eff`, no persisted centroids (§3.40); `P-H1` measured |
 | 2d | 2 — `P-T1`, `P-M1` | inputs all present and the join verified; blocked by a design chain and by `P-T1`'s wording (§3.43) |
 | 5b | 9 | all dormant; four of them read `e-value` with no gate (§3.44) |
-| 6 | 12 | ten dormant. `P6-R2` needs a channel nothing measures; `P6-R4` needs an exchangeable unit nobody registered (§3.44) |
+| 6 | 12 | ten dormant. `P6-R2` needs a channel nothing measures; `P6-R4` needs an exchangeable unit nobody registered (§3.44; wrong, it was registered 2026-08-25 — correction below) |
 | 7 | 9 | four built, calibrated and unrun; `P-I1` now recorded; `P-I5` parked by design (§3.45) |
 | **total** | **39** | **zero e-values** |
 
@@ -4242,6 +4242,14 @@ exchangeable unit, `P-S1`'s matched-k clustering. **None of those costs a
 forward pass.** The compute this project has spent recently — five `CLAIM-C`
 arms twice over — bought one INSUFFICIENT; the decisions above are what the
 remaining thirty-four rows are actually waiting on.
+
+> **Correction, 2026-09-23 (phase review session 3b).** Two of these four had
+> already been taken. `P-T1`'s amendment landed with the code on 2026-08-11
+> (`cfd7f5b`), and `P6-R2`/`R4`'s unit was registered as `model` on 2026-08-25
+> (§3.43 and §3.44 below repeat the error). The other two have not been
+> checked against the code yet (`docs/PHASE_REVIEW.md` Parked 7). Detail:
+> the `## Corrections received` of `p2d_operator_activation/status-2d.md` and
+> `p6_subspace/status-6.md`.
 
 **What the audit changed, rather than observed:** `tools/audit_p1c_inputs.py`
 and its record; `tools/score_claim_c.py`'s four arms re-run under a declared

@@ -24,11 +24,13 @@
   - Is the gradient-flow framing void for a causal decoder (2411.04990)? — `p9_metric_intervention/plan-9.md`
   - `simple_tol` / `align_tol` are placed, not derived; centred vs uncentred covariance — `p2d_operator_activation/status-2d.md` "Open before running"
   - `P-M1` refuses when head-to-layer aggregates disagree in sign: per-layer energies may not resolve a per-head claim
+  - The August runner printed a `P-T1` verdict per run; does that change the user's "unseen" decision? — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
 - **After Phase 10:**
-  - The fresh, manifested `run_2d.py` on the 410m sweep in the LN frame, v1 prompt keys only, once 1c-B unblocks (free: weights and Phase 1 activations on disk)
+  - `run_2d.py`: write a manifest, score through `p_value_p_t1` / `p_value_p_m1`, stop printing verdicts (free, code only) — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
+  - Then the fresh run on the 410m sweep in the LN frame, v1 prompt keys only, once 1c-B unblocks (free: weights and Phase 1 activations on disk)
   - Tolerance sensitivity scan, reclassifying from the saved per-head records (free)
   - Head ablation for `P-M1` (forward pass: one per head × checkpoint)
-- **Reviewed:** 2026-09-23 · body `c624c33000`
+- **Reviewed:** 2026-09-23 · body `a326e32143`
 <!-- /phase-card -->
 
 **Registered predictions:** `P-T1` (e-value — label-permutation null in
@@ -58,6 +60,22 @@ whether the energy-monotonicity break is the right thing to attribute.
 sha, battery hash, frame). The amendment the question below asked about had already landed on
 2026-08-11 (see "Corrections received"), so both August runs came after it.
 
+**Two facts found after the decision** (`/challenge-pr` on #78). They are for the user; the
+decision stands until they say otherwise:
+- **The August runner printed a verdict.** `run_2d.py` at `6f01f6b` (2026-08-14, the code
+  both runs used) prints `P-T1: <verdict>` to stdout for every run (line 369). Whoever
+  launched the 54 runs may have seen 54 verdicts, even though nobody opened a file. The
+  current `run_2d.py` still prints it.
+- **Part of the adjudication design came after the pilot.** The amendment's rules (both row-2
+  conditions, a control arm, `stable_n_modes` only) date from 2026-08-11. The registry's
+  fixed statistic and null (`null_construction`) were recorded 2026-08-23, after both runs.
+
+**The fresh run needs code first.** `run_2d.py` writes no manifest (no git sha, no battery
+hash). It scores `P-T1` with `adjudicate_p_t1` (line 357), a single-bandwidth mode count that
+contradicts the amendment, not with the registered gate `p_value_p_t1`, and `P-M1` with
+`adjudicate_p_m1`, not `p_value_p_m1`. Before the fresh run: add a manifest, route both through
+their registered gates, and stop printing verdicts.
+
 **Found 2026-09-23: `run_2d.py` did run on Pythia, on 2026-08-17.** Found by
 `docs/PHASE_REVIEW.md` Parked 5; nothing in the repo recorded it. Main tree
 `results/p2d_pilot/` (untracked, 60 MB): 54 `p2d.json` files, `pythia-410m` × 27
@@ -82,7 +100,7 @@ step 2; `docs/phase_card.md`).
 - 2026-08 · `adjudicate_p_t1` reads a single-bandwidth mode count, contradicting the amendment's `stable_n_modes` rule; `p_value_p_t1` follows the amendment · `POPPER_PLAN.md`
 - 2026-09-20 · the causally-masked system is not a mean-field gradient flow (2411.04990), which may void this phase's gradient-flow framing · `p9_metric_intervention/plan-9.md`
 - 2026-09-23 · "not run against Pythia" was wrong: a pilot ran 2026-08-14 and 2026-08-17 · `docs/PHASE_REVIEW.md`
-- 2026-09-23 · the 2026-09-19 audit (below; `PROJECT.md` §3.43) called `P-T1`'s wording an open registration defect. The dated addendum landed with the code on 2026-08-11 (`cfd7f5b`) and the registry's statement already carries both row-2 conditions, so it was closed before any run · `PREDICTIONS.md` "Addendum — P-T1 amended"
+- 2026-09-23 · the 2026-09-19 audit (below; `PROJECT.md` §3.43) called `P-T1`'s wording an open registration defect. The addendum (no date in its text; "recorded when the Phase 2d code was written, before any run") landed with the code on 2026-08-11 (`cfd7f5b`) and the registry's statement already carries both row-2 conditions, so it was closed before any run · `PREDICTIONS.md` "Addendum — P-T1 amended"
 
 ## E-value audit, Phase 2 / 2d (2026-09-19)
 

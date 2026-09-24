@@ -79,7 +79,7 @@ a review session but it is due before Stage 1 starts, not after session 9.
 The machinery exists: `core/evalues.py` (p→e calibrator, e-process; `average`
 for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
 `core/adjudication.py` (ledger), 39 registered, 11 adjudicable, 0 adjudicated
-(`claims/EXPERIMENTS.md`). What is missing is **power and two decisions**, not code.
+(`claims/EXPERIMENTS.md`). What is missing is **power and at most two decisions**, not code.
 
 1. **Attainable-E table at 8, 12 and 20 prompts.** With κ = 0.5 one prediction
    alone needs p ≤ 1/1600 for E ≥ 20. `CLAIM-C`'s floor was 0.0661 at 8
@@ -87,11 +87,11 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    size: a CLAIM-C-shaped design there needs ≥ 11 informative prompts, a
    margin of one. Per adjudicable row, via `max_attainable_average_E`; rows
    that cannot reach 20 say so before anyone runs them.
-2. **The two blocking decisions**, one short memo each for the user: β's
-   scale convention, `P-S1`'s matched-k clustering. Plus `P-I5`'s battery
-   (`STATE.md` Blocked 2) and whether `P6-R4`'s unit `model` fits Pythia
-   (Parked 6). The audit's other two, `P-T1`'s wording and the P6 unit, had
-   been decided in August (session 3b).
+2. **The remaining blocking decisions**, one short memo each for the user,
+   after checking each against the code first (Parked 7): β's scale
+   convention and `P-S1`'s matched-k clustering. Plus `P-I5`'s battery
+   (`STATE.md` Blocked 2) and Parked 6. The audit's other two, `P-T1`'s
+   wording and the P6 unit, had been decided in August (session 3b).
 3. **Phase 10's route into the registry.** Which tier-1 findings graduate,
    and in what order relative to existing rows scored on the 410m v2 runs
    ("Open" 3). F14 is already named the one to register (`handoff-10.md`
@@ -142,13 +142,15 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    (`2026-08-12_05-01-35` and `p2_eigenspectra_2026-08-13_05-13-52` read empty
    only without following their symlinks to HDD_1TB) and `phase3`. The later
    card sessions still check their own phase's dirs.
-6. **Does `P6-R4`'s registered unit `model` fit Pythia?** The registry's case
-   for it is ALBERT's weight tying: one OV, one projector pair, so one draw of
-   subspaces shared across layers. Pythia has a different OV per layer. Why:
-   it decides whether `P6-R4`, the one P6 row with inputs, can run on the 410m
-   sweep as registered. Cost: reading `r2_r4_null.py` and POPPER_PLAN 6l, then a
-   memo. It is the user's to decide, and it must be settled before any P6 run.
-   Changes: e-value plan item 2.
+6. **What does `P6-R4`'s unit `model` mean on Pythia?** Validity is not the
+   question: `r2_r4_null.py`'s recorded table has `model` at nominal across
+   the whole dependence range, independent layers (ρ = 0) included, so it is
+   conservative for Pythia's untied layers too (`/challenge-pr` on #78).
+   Still open: `model` draws one set of subspaces shared across layers, and
+   Pythia's per-layer channel dimensions differ, so what "the same draw" means
+   there is unstated. Cost: read how `unit="model"` seeds per layer (line
+   ~218), then a memo. It must be settled before any P6 run. Changes: e-value
+   plan item 2.
 7. **Check the audit's remaining "decisions" against the code before writing
    memos.** Two of its four (`P-T1` wording, P6 unit) had been settled in
    August; the audit read registry `notes` and prose, not code. β's scale

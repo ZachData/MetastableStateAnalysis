@@ -90,10 +90,9 @@ will be newer than this.
   2026-09-19). All **39** registered predictions examined across five units,
   and **zero e-values** — the ledger is empty, honestly. Its result is not a
   list of things left to run: **wherever the inputs exist, the blocker is a
-  decision nobody has taken**, and none costs a forward pass — β's scale
-  convention and `P-S1`'s matched-k clustering. (It also listed `P-T1`'s
-  wording and `P6-R2`/`R4`'s exchangeable unit; both had been decided in
-  August — `status-2d.md`, `status-6.md` "Corrections received".)
+  decision nobody has taken**, and none costs a forward pass. Of the four it
+  named, two had been decided in August (`PROJECT.md` §3.45 correction); β's
+  scale convention and `P-S1`'s matched-k clustering are not yet checked.
 - **`CLAIM-C`'s hard-stop gate has now been run, three times, and refused
   three different ways** (§3.41, §3.46): a metric dead in every arm because
   `hdbscan` was never a declared dependency and the writer forged zeros in its
