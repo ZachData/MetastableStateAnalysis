@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-24 (phase review session 8: card 10; chunk 2 still running, 235/380 indexed at 09:20) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-24 (phase review session 8: card 10, rebased onto #86's Corrections-scoped dependencies; chunk 2 still running) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -48,16 +48,17 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    heads lack a bandwidth scan? (`status-2d.md` "The 2026-08 Pythia pilot
    (quarantined)".) And 10 `data/analysis/` scripts still default to the main
    tree; Claude does not `git add` under `data/`, so they're yours to change.
-7. **Whether archived cards should go stale on live edits**:
-   `docs/PHASE_REVIEW.md` "Open" 7 (recommended: hashless edges for archived
-   cards).
-8. **Which rung for `P-I7` and the first Phase 8 registration.** 70m went to
+7. **Which rung for `P-I7` and the first Phase 8 registration.** 70m went to
    exploration without the recorded call `design-8.md` asked for; 1b is
    measured by outside groups; so both compete for 1.4b (`status-8.md` card).
+8. **Who re-reads the reader cards after a routed correction** (#86 review,
+   finding 1). A line routed to Phase 1 stales its 13 carded readers, and the
+   gate stays red until each is re-stamped. Either the correcting PR does
+   all of them, or the lint only warns and each reader's next review clears it.
 
 ## Open PRs and branches
 
-`claude/phase-cards-10`: phase review session 8, in `../Mets-work`. #83 merged 2026-09-24, its branch and worktree removed. #82 merged 2026-09-24, its branch deleted. #81 merged 2026-09-24, its branch deleted. #80 merged 2026-09-24.
+`claude/phase-cards-10`: phase review session 8, in `../Mets-work` (#84; merged `origin/main` after #86 and re-stamped card 9). #86 merged 2026-09-24, its branch and `../Mets-work-2` removed. #85 merged 2026-09-24, branch deleted. #83 merged 2026-09-24, its branch and worktree removed. #82, #81, #80 merged 2026-09-24.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:

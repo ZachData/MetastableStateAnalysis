@@ -15,7 +15,7 @@ and not per-phase STATE files: `docs/PHASE_REVIEW.md`.
 | Results | one sub-item per result, each with its pointer | ≥ 1 item; each has a pointer that resolves |
 | Superseded / wrong | what later work corrected, one sub-item each, with the pointer; or "none" | each item has a pointer that resolves |
 | Registry | prediction ids and their state, or "none, because …" | filled |
-| Depends on | phases whose results this card reads, as `<phase>@<hash>`; or "none" | hashes current (below) |
+| Depends on | phases whose results this card reads, comma-separated `<phase>@<hash>`, written by `--stamp`; or "none" | each id is a phase; each hash matches that phase's `## Corrections received` |
 | Feeds | phases that read this one's results, comma-separated; or "none" | agrees with their Depends on, once they have cards |
 | Open threads | questions the phase itself raised and did not answer | filled |
 | After Phase 10 | candidate experiments, each tagged *(free)* or *(forward pass …)* | every item has its cost |
@@ -29,8 +29,14 @@ under `data/` are accepted unchecked, since no checkout carries them.
 finding in words and points.
 
 **Staleness.** The body hash is a hash of the status file with the card cut
-out. If anything in the file outside the card changes, or anything in the file
-of a phase listed under Depends on, the card is **stale** and the gate fails.
+out. If anything in the file outside the card changes, the card is **stale**
+and the gate fails. Each Depends on entry is `<phase>@<hash>`, and that hash
+covers **only** the upstream phase's `## Corrections received` section
+(user, 2026-09-24, `docs/PHASE_REVIEW.md` "Decisions"). So an ordinary edit
+to a phase stales only that phase's own card, and phases can be edited
+independently. A correction routed to a phase (below) also stales every
+card that reads it, one hop. Stamping a card never touches a Corrections
+section, so two phases that read each other do not re-stamp each other.
 To clear it: read what changed (`git log -p -- <status file>`), fix the card if
 the change touches it, then run `python3 tools/render_phases.py --stamp <phase>`
 and `python3 tools/render_phases.py`. The stamp records that someone looked.
@@ -48,14 +54,19 @@ status file carries, outside the card, a section
 
 and whoever writes a correction to an earlier phase adds a line there
 (`CLAUDE.md` Stop step 2). The line changes the body hash, so the card goes
-stale. Settled by the user 2026-09-23 (`docs/PHASE_REVIEW.md` "Decisions").
+stale, and it changes the Corrections hash, so every card that reads this
+phase goes stale too. The heading must be exact and appear once: a
+near-miss (`## Corrections Received`) or a second copy is refused, since
+it would hash as empty and silence the readers. Settled by the user 2026-09-23 (`docs/PHASE_REVIEW.md` "Decisions").
 It relies on people following the rule: nothing checks that a correction was
 routed.
 
-**What staleness does not see.** It goes one hop: a change to phase A stales
-the cards that depend on A, not the cards that depend on those. And a
-correction nobody routed stays invisible, so each card session still greps
-for the phase outside its directory (`p1b_`, "Phase 1b") before stamping.
+**What staleness does not see.** A change to phase A outside its
+`## Corrections received`: the phases reading A stay current, even if the
+change matters to them. A correction two hops away: if A is corrected and B
+reads A, B's card goes stale, but C, which reads only B, does not until
+someone routes a line to B. And a correction nobody routed stays invisible, so each card session still greps for the phase
+outside its directory (`p1b_`, "Phase 1b") before stamping.
 
 Phases without a card are listed in `docs/PHASES.md` as "no card yet" and are
 not checked.

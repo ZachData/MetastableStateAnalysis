@@ -42,7 +42,9 @@ CARD = """\
 
 def _status(pid, deps="none", feeds="none", card=CARD):
     return (f"# Phase {pid} — STATUS\n\n" + card.format(id=pid, deps=deps, feeds=feeds)
-            + "\n## Findings\n\nbody text\n")
+            + "\n## Findings\n\nbody text\n"
+            + "\n## Corrections received\n\n- 2026-09-20 · an early fix · `status-1.md`\n"
+            + "\n## Later\n\nmore text\n")
 
 
 @pytest.fixture
@@ -134,13 +136,67 @@ def test_an_edit_inside_the_card_does_not(repo):
     assert _msgs(repo) == []
 
 
-def test_a_dependency_edit_makes_the_dependent_stale(repo):
+def test_a_dependency_edit_stales_only_its_own_card(repo):
     _edit(repo, "1", "body text", "a new result")
     msgs = _msgs(repo)
-    assert any("STALE: phase 1" in m for m in msgs)       # on phase 2's card
+    assert any("STALE: status-1.md changed" in m for m in msgs)
+    assert not any("STALE: phase 1" in m for m in msgs)    # phase 2 reads 1
+    rp.stamp("1", repo)
+    assert _msgs(repo) == []
+
+
+def test_a_correction_to_a_dependency_stales_its_readers(repo):
+    _edit(repo, "1", "- 2026-09-20 · an early fix", "- 2026-09-24 · a new fix\n- 2026-09-20 · an early fix")
+    msgs = _msgs(repo)
+    assert any("STALE: phase 1's ## Corrections received" in m for m in msgs)
+    rp.stamp("1", repo)                                     # the corrected phase's own review
+    assert any("STALE: phase 1's" in m for m in _msgs(repo))
+    rp.stamp("2", repo)                                     # the reader's review
+    assert _msgs(repo) == []
+
+
+def test_text_after_the_corrections_section_is_not_watched(repo):
+    _edit(repo, "1", "more text", "an ordinary edit")
+    assert not any("STALE: phase 1" in m for m in _msgs(repo))
+
+
+def test_stamping_a_card_does_not_stale_its_readers(repo):
+    _edit(repo, "1", "Do particles cluster?", "Do particles cluster, and when?")
+    rp.stamp("1", repo, today="2026-09-25")
+    assert _msgs(repo) == []                                # 2 reads 1: no cascade
+
+
+def test_a_corrections_section_added_later_stales_readers(repo):
+    _edit(repo, "1", "## Corrections received\n\n- 2026-09-20 · an early fix · `status-1.md`\n", "")
     rp.stamp("1", repo)
     rp.stamp("2", repo)
     assert _msgs(repo) == []
+    _edit(repo, "1", "## Later", "## Corrections received\n\n- 2026-09-24 · new\n\n## Later")
+    assert any("STALE: phase 1's" in m for m in _msgs(repo))
+
+
+@pytest.mark.parametrize("old, new, expect", [
+    ("## Corrections received", "## Corrections Received", "should read exactly"),
+    ("## Later", "## Corrections received", "appears 2 times"),
+])
+def test_a_misspelled_or_repeated_corrections_heading_is_refused(repo, old, new, expect):
+    _edit(repo, "1", old, new)
+    assert any(expect in m for m in _msgs(repo))
+
+
+def test_a_bare_dependency_is_refused_and_stamp_fills_the_hash(repo):
+    path = repo / "p2" / "status-2.md"
+    dep_line = next(l for l in path.read_text(encoding="utf-8").splitlines() if "Depends on" in l)
+    _edit(repo, "2", dep_line, "- **Depends on:** 1")
+    assert any("write each dependency as <phase>@<hash>" in m for m in _msgs(repo))
+    rp.stamp("2", repo)
+    assert dep_line in path.read_text(encoding="utf-8")
+    assert _msgs(repo) == []
+
+
+def test_a_dependency_on_an_unknown_phase_is_refused(repo):
+    _edit(repo, "2", "- **Depends on:** 1", "- **Depends on:** 1, 42")
+    assert any("no phase '42'" in m for m in _msgs(repo))
 
 
 def test_feeds_and_depends_on_must_agree(repo):
@@ -187,7 +243,7 @@ def test_stamp_replaces_a_field_wrapped_over_lines(repo):
     _edit(repo, "2", "- **Depends on:** 1@", "- **Depends on:** 1,\n  1@")
     rp.stamp("2", repo)
     text = (repo / "p2" / "status-2.md").read_text(encoding="utf-8")
-    assert "\n  1@" not in text
+    assert "\n  1\n" not in text
     assert _msgs(repo) == []
 
 

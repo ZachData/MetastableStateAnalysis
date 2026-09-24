@@ -15,7 +15,7 @@
   - `elim_signed = 1.0` (35/35) was scored under a different counting rule with truncation discarded, and is not re-adjudicated — `p2b_imaginary/status-2b.md` "Known issues"
   - Block 2 was gated on the withdrawn constant, so "correctly never triggered" does not hold — `p2b_imaginary/status-2b.md` "Verdict table"
 - **Registry:** none, because the phase is exploratory by design; nothing in it may carry an e-value (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d
+- **Depends on:** 1@d881a84e97, 2@5e9fc59e62
 - **Feeds:** 2, 5, 6, 6-frozen
 - **Open threads:**
   - The pilot's original-frame violation layers disagree with Phase 1's on 150 of 243 records under the same rule on paper — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
