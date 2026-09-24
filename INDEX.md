@@ -77,7 +77,7 @@ what the field has done since, so that a trigger in `FROZEN.md` is evaluated aga
 | 5 | `archive/p5_single_mstate_analysis/` | Complete for 6 models; 6 code-level blockers. Carries the tuned-lens skip-to-output note |
 | 5b | `archive/p5b_manifold_steering/` | Built and tested, never run |
 | 5c | `archive/p5c_unclustered/` | Docs only, no code. Its attention-flip result is cited in `PREDICTIONS.md` claim (a) |
-| 6 | `archive/p6_subspace/` | Partial run, ALBERT only. The LDA-alignment inversion (0.887 imaginary vs 0.067 real repulsive) is unresolved, two live explanations |
+| 6 | `archive/p6_subspace/` | Partial run, ALBERT only. The LDA-alignment inversion (0.887 imaginary vs 0.067 real repulsive) is unresolved: the labelling explanation is ruled out, and the comparison is not dimension-normalised (`p6_subspace/math-6.md` §7.2) |
 
 Phase 2c was described in earlier versions of this index and has never existed on disk.
 
@@ -96,17 +96,16 @@ documentation instance of that bug class. Nothing here has been invented to fill
 | A "2026-07-22 addendum" to `PREDICTIONS.md` | `core/qk_offset_null.py:12` | `PREDICTIONS.md` has no such addendum. The one it does carry (P-T1) is undated in the body and describes a different change |
 | `POPPER_PLAN.md` §6x | `POPPER_PLAN.md:4030`, `PROJECT.md:1636` | Both forward-reference a section that stops at §6w. `PROJECT.md` calls it "where the [design] is" and `POPPER_PLAN.md` calls it "the proposal for getting [a fresh artifact]"; the audit pass that would otherwise have taken the next letter used §6y instead, so the reference stays open rather than silently resolving to the wrong section |
 
-## In flight on other branches
+## Off `main`: work that exists nowhere else
 
 Not on `main`, and not reflected in the tables above:
 
-- **Phase 1d** — clusterer comparison, `origin/claude/particle-methods-comparison-vpuads`.
-- **Cross-phase visualization CLI** — `origin/claude/visualize-mets-results-sl2ya5`.
+- **Phase 1d**: clusterer comparison, tag `dead/particle-methods-comparison-vpuads` (`010448c`).
+- **Cross-phase visualization CLI**: tag `dead/visualize-mets-results-sl2ya5` (`d1c75ac`).
 
-**These two are the only branches carrying work that exists nowhere else, and a
-2026-09-10 cleanup deleted 21 branches around them.** Both are from August and
-~93 commits behind `main`, so branch age and commit count will keep suggesting
-they are stale; this section is the reason they are not.
+**Both branches were deleted from GitHub in the 2026-09-23 cleanup.** Their tips
+survive only as these two tags, in the local box's clone (not pushed). What to
+do with each: `docs/PHASE_REVIEW.md` "Open".
 `archive/docs/deleted-branches-2026-09-10.md` records what went and how to restore it.
 
 ## Phase 7 — the mechinterp/particle bridge

@@ -23,7 +23,7 @@
   - The carrying-capacity invariant has a formula now (Lemma C.1) — `p10_cluster_function/math-10.md` §5.4
 - **Registry:** `CLAIM-C` e-value, active, real run recorded, INSUFFICIENT, not adjudicated; `CLAIM-A` needs-null, construction specified and not built (`claims/EXPERIMENTS.md`)
 - **Depends on:** none
-- **Feeds:** 1b, 1c, 2, 2b, 2d, 6, 10
+- **Feeds:** 1b, 1c, 2, 2b, 2d, 3, 4, 5, 5b, 5c, 6, 6-frozen, 10
 - **Open threads:**
   - Effective integration time against the collapse time t*, never measured (`P-gamma2`, Phase 1c A/B) — `status-1.md` "Blockers / open items" item 0
   - Which of the two readings of the d = 1024 plateaus holds (Phase 1c B)

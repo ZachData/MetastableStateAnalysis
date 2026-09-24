@@ -92,6 +92,12 @@ world moves, nobody updates the line, and the next session acts on it.
 - 2026-09-12: §3.15 still ended on an open hedge the next commit had closed.
 - 2026-09-09: `cf700f9` corrected a git line the commit before made stale.
 - At least nine commits in the history exist only to correct a handoff.
+- 2026-09-24: Phase 3's headline null (decoder→V 0.484 / 0.501) has been
+  quoted in `INDEX.md`, `README.md` and `design-7.md` since April, and the only
+  Phase 3 runs on disk hold an error where that number should be
+  (`archive/p3_crosscoder/status-3.md` "Runs on disk"). A result without a named
+  run directory cannot be re-checked. The card sessions have now found five
+  runs that were unrecorded or cannot be produced from what is on disk.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -259,6 +265,11 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   unmerged (#56 → #57).
 - The repo's `github_key` is dead; `GIT_SSH_COMMAND` pointing at it fails.
 - Two Claude sessions shared one working tree.
+- 2026-09-23: the "delete every branch except `main`" cleanup took the two
+  branches `INDEX.md` "In flight" said must not be deleted (Phase 1d, the viz
+  CLI). Their tips survive only as unpushed local tags on one disk; the check
+  ran on the 3 non-ancestor branches and not on that list. Found in phase
+  review session 4 (`docs/PHASE_REVIEW.md` "Open" 6).
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD

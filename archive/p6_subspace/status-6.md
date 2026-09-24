@@ -1,5 +1,38 @@
 # Phase 6 — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Does the value operator split the residual stream into channels with different jobs: does the direction separating the clusters lie in the real repulsive subspace $U_{\rm neg}$ rather than the rotational $U_A$, do heads doubly dissociate, and do plateaus contract in the real subspace?
+- **Inputs:** `albert-xlarge-v2` only, trained weights, run "2026-04-xx"; battery not recorded; no run dir on this box's drives (checked 2026-09-24)
+- **Results:**
+  - The cluster-separating (LDA) direction sits in $U_A$, not $U_{\rm neg}$, in every layer; probes agree — `archive/p6_subspace/status-6.md` "Verdict table (albert-xlarge-v2 only — no other model tested)"
+  - Plateaus mostly contract in the real subspace, as predicted; merges do not expand it — `archive/p6_subspace/status-6.md` "Verdict table (albert-xlarge-v2 only — no other model tested)"
+  - The projector labels are right: planted real/imaginary structure is recovered and deliberate mislabelings are caught — `claims/audits/p6_projector_labels.json`
+  - Track A and the dissociation test produced no data (prerequisites never populated) — `archive/p6_subspace/status-6.md` "Known blockers"
+- **Superseded / wrong:**
+  - The design's premise, that Phase 2b showed the rotational part dynamically neutral, was withdrawn as an identity forced by construction; the hypothesis survives on its own terms — `p6_subspace/math-6.md` §0
+  - The inversion's "two live explanations": the labelling error is ruled out, and neither is assessable until the comparison is normalised by subspace dimension; chance-normalised, the numbers point the predicted way — `p6_subspace/math-6.md` §7.2
+- **Registry:** twelve `P6-*` rows; the ten on this instrument are `dormant`; `P6-R2` and `P6-R4` were rebuilt live and belong to the live card — `p6_subspace/status-6.md`
+- **Depends on:** 1@6a6e6a3c1a, 1b@6e39b06e9c, 2@27c0fbe55d, 2b@b925d63da4, 4@69c4ec094a
+- **Feeds:** 6
+- **Open threads:**
+  - Per-layer $\dim U_A$ and $\dim U_{\rm neg}$: computed on every run, never reported, and the one ratio that decides the inversion — `MATH_INDEX.md`
+  - ALBERT ties weights, so the 49 layers are one projector seen 49 times, not 49 measurements — `archive/p6_subspace/status-6.md` "Known blockers"
+- **After Phase 10:**
+  - Nothing on this instrument: the live `P6-R2` / `P6-R4` rows carry the question to Pythia, where layers are untied (free: see the live card)
+- **Reviewed:** 2026-09-24 · body `3a4b24279a`
+<!-- /phase-card -->
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
+
+- 2026-08-22 · the design rests on Phase 2b's withdrawn neutrality result · `MATH_SPECTRAL_OT.md` "7. Two stale claims found while writing this"
+- 2026-08-23 · the LDA comparison is not dimension-normalised, and the correction is larger than the effect · `p6_subspace/math-6.md` §7.2
+- 2026-08-24 · the projector-label audit rules out explanation (a) · `claims/audits/p6_projector_labels.json`
+
 **Last verified:** run date recorded only as "2026-04-xx" in source (incomplete timestamp —
 backfill exact date from `phase6_report.txt` file metadata if needed).
 **Overall: PARTIAL RUN, MISLABELED AS "NOT STARTED."** `README_phase6.md`'s header says "Not

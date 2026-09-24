@@ -1,6 +1,42 @@
 <!-- p5_single_mstate_analysis/status-5.md -->
 # Phase 5 — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Followed end to end, is one metastable cluster a coherent object, do the paper's predictions hold at the level of that one cluster (attractive-subspace pull, merge geometry), and which heads and FFNs hold it together?
+- **Inputs:** Study A: `gpt2-xl`, `gpt2-large`, `gpt2-medium`, `bert-base-uncased`, `albert-xlarge-v2`, `albert-base-v2`, trained weights; Phase 1, 2 and 4 artifacts; run date and battery not recorded; no run dir on this box's drives (checked 2026-09-24). Study B, a Pythia rebuild, was built and unit-tested 2026-08-06 with no run recorded — `archive/p5_single_mstate_analysis/PHASE5_PYTHIA.md`
+- **Results:**
+  - Every cluster in every model is locally rotational: the symmetric/antisymmetric split of its motion is never symmetric-dominated — `archive/p5_single_mstate_analysis/status-5.md` "Verdict table (cross-model architecture-level findings)"
+  - The centroid's attractive/repulsive split is about even in every model — `archive/p5_single_mstate_analysis/status-5.md` "Verdict table (cross-model architecture-level findings)"
+  - One attractor head dominates each cluster's cohesion; whether FFN or attention holds the cluster depends on architecture — `archive/p5_single_mstate_analysis/status-5.md` "Verdict table (cross-model architecture-level findings)"
+- **Superseded / wrong:**
+  - The even split was read as tension with Theorem 6.3; the theorem is mis-cited at four sites and predicts no such dominance — `p5_single_mstate_analysis/math-5.md` §3.2
+  - The selection score's arithmetic does not close (reported 9.000 against a 5.0 ceiling with two criteria dead), and every group is conditioned on the selected object — `p5_single_mstate_analysis/math-5.md` §1.2
+  - The effective-β numbers are the broken ones — `p5_single_mstate_analysis/math-5.md` §3.3
+  - Blocker 5 (identical Group F values) is a metric artifact, so "causal robustness scales with size" does not stand; blocker 3 was descoped, blocker 6 is moot — `archive/p5_single_mstate_analysis/PHASE5_PYTHIA.md` "3. Blocker ledger (the original six)"
+  - Blocker 4's fix (train the tuned lens) would give a subtly wrong answer: skip-to-output — `archive/p5_single_mstate_analysis/status-5.md` "Note on blocker 4 (2026-07-19): tuned-lens skip-to-output pathology"
+- **Registry:** none, because no falsifier was registered before the phase was archived 2026-08-22 (`claims/EXPERIMENTS.md`)
+- **Depends on:** 1@6a6e6a3c1a, 1b@6e39b06e9c, 2@27c0fbe55d, 2b@b925d63da4, 4@69c4ec094a
+- **Feeds:** none
+- **Open threads:**
+  - Merge geometry (Group B's central output) never ran: `merge_verdict` was `n/a` in all six models — `archive/p5_single_mstate_analysis/PHASE5_PYTHIA.md` "3. Blocker ledger (the original six)"
+  - Head rankings rest on an inward-mass fallback, not the OV mechanism (blocker 2, partly fixed)
+  - Study B was built and never run; the tiers and particle-join instruments exist — `archive/p5_single_mstate_analysis/PHASE5_PYTHIA.md` "10. Changelog"
+- **After Phase 10:**
+  - Recompute the selection score with the fixed event reader and check the same trajectory wins (free)
+  - Study B on the 410m sweep, v1 prompt keys only, anchors at step 0 and 143000 (free: activations and weights on disk)
+- **Reviewed:** 2026-09-24 · body `c5e373a4be`
+<!-- /phase-card -->
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
+
+- 2026-08-06 · blocker ledger: 1's root cause found, 3 descoped, 5 a metric artifact, 6 moot · `archive/p5_single_mstate_analysis/PHASE5_PYTHIA.md` "3. Blocker ledger (the original six)"
+- 2026-08-23 · the selection score does not close; Theorem 6.3 mis-cited; effective β broken · `p5_single_mstate_analysis/math-5.md` §11
+
 **Last verified:** not recorded in source (after Phase 4, 2026-05-04)
 **Overall:** Complete for 6 models (gpt2-xl, gpt2-large, gpt2-medium, bert-base-uncased,
 albert-xlarge-v2, albert-base-v2). Groups D, E, and merge geometry are partially or fully
