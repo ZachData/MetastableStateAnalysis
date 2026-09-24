@@ -90,6 +90,15 @@ world moves, nobody updates the line, and the next session acts on it.
   "older than `origin/main`" check caught it. A fix that removes the check:
   have the hook `git fetch` and print `git show origin/main:STATE.md`
   (a `.claude/settings.json` edit, so it is the user's to make).
+  **Again 2026-09-24:** 20 commits behind (#84–#90); the hook's `STATE.md`
+  said chunk 3 was the user's to launch and listed parked items since done.
+  The same Start check caught it; the hook fix is still unmade.
+- 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
+  tools.run.stage0_chunk'` "now matches only the python process". Run inside
+  one `bash -c` with the rest of the block, it matched that shell and printed
+  "DRIVER ALIVE" with no driver. A guard's own fix was not tested the way it is
+  run. `[p]ython` in the pattern matches the driver, and the pattern's own
+  text does not match it.
 - 2026-09-23: STATE.md and `handoff-10.md` said Stage 0 chunk 1 "was killed:
   no runs done". The box had suspended; the process resumed and ran on. The
   next session was told to relaunch, and would have started a second chunk

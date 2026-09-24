@@ -13,6 +13,7 @@ import pytest
 
 from tools.run.p10_token_composition import (
     CompositionError,
+    cluster_count_summary,
     contrast_verdict,
     decode,
     measure_run,
@@ -113,3 +114,23 @@ def test_contrast_verdict_rule():
     assert contrast_verdict([{0: layer(0.2, 0.5, 0.2, 0.5)}])["trash_collection"] == "against"
     assert contrast_verdict([{0: layer(0.5, 0.2, 0.2, 0.5)}])["trash_collection"] == "unclear"
     assert contrast_verdict([{0: layer(None, 0.2, 0.5, 0.2)}])["trash_collection"] == "unavailable"
+
+
+def test_cluster_count_columns(tmp_path):
+    # tokens The cat sat . cat: one repeated type (cat)
+    d = _run(tmp_path, {"0": [-1, 0, -1, -1, 0], "1": [1, 0, 1, -1, 0]})
+    cc = measure_run(d, VOCAB, ADDED)["cluster_count"]
+    assert cc["n_repeated_types"] == 1
+    assert cc["by_layer"][0] == {"n_clusters": 1, "single_type": 1, "holds_repeat": 1}
+    assert cc["by_layer"][1] == {"n_clusters": 2, "single_type": 1, "holds_repeat": 1}
+
+
+def test_cluster_count_summary_drops_repeated_tokens():
+    def run(n_rep, n_cl):
+        return {"cluster_count": {"n_repeated_types": n_rep,
+                                  "by_layer": {0: {"n_clusters": n_cl, "single_type": n_cl,
+                                                   "holds_repeat": 0}}}}
+    s = cluster_count_summary({"a": run(4, 4), "repeated_tokens": run(10, 1)})
+    assert s["all"][0]["ratio"] == pytest.approx((1.0 + 0.1) / 2)
+    assert s["without_repeated_tokens"][0]["ratio"] == pytest.approx(1.0)
+    assert s["without_repeated_tokens"]["n_runs"] == 1

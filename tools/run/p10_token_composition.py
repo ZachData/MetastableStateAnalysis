@@ -61,6 +61,19 @@ is set mostly by copy count: HDBSCAN runs with ``min_cluster_size=2`` (and
 clustered. The same two contrasts are therefore also computed on ``unique``
 tokens only, with their own verdict under the same rule. Both are in the record.
 
+CLUSTER COUNT VS REPEATED TYPES (added 2026-09-24, parked from `/challenge-pr` on #90)
+------------------------------------------------------------------------------------
+The reviewer's rough check: a run's HDBSCAN cluster count is about the number
+of token types occurring >= 2 times. Per run per layer: ``n_clusters``,
+``n_repeated_types`` (ids with count >= 2), and ``single_type`` (clusters whose
+members are all one token id) and ``holds_repeat`` (clusters holding >= 2
+copies of some id). Summarised per step and layer as means over runs of
+``n_clusters / n_repeated_types`` and of the two cluster fractions, with and
+without ``repeated_tokens`` (the reviewer's exception). If the ratio is near 1
+and most clusters hold a repeat, Phase 1's cluster counts are largely a count
+of repeated types. `tools/run/p10_hdbscan_planted.py` is the known answer for
+structureless input.
+
 TIER 1, EXPLORATORY, NOT REGISTERED. Descriptive, no null. Nothing here
 touches `claims/registry.json`.
 
@@ -274,7 +287,20 @@ def measure_run(run_dir: Path, vocab: dict, added: set = frozenset()) -> dict:
                 "ws_punct": rate(lambda f: f["cls"] in ("whitespace", "punct")),
                 "word_start": rate(lambda f: f["cls"] == "word_start"),
             }
-    return {"cells": out, "contrast": contrast, "provenance": prov, "n_tokens": len(tokens),
+    ids = np.array([f["id"] for f in feats])
+    uniq, cnt = np.unique(ids, return_counts=True)
+    n_rep_types = int((cnt >= 2).sum())
+    counts = {"n_repeated_types": n_rep_types, "by_layer": {}}
+    for layer, lab in sorted(labels.items()):
+        ks = sorted(set(lab.tolist()) - {-1})
+        member_ids = [ids[lab == k] for k in ks]
+        counts["by_layer"][layer] = {
+            "n_clusters": len(ks),
+            "single_type": sum(1 for m in member_ids if len(set(m.tolist())) == 1),
+            "holds_repeat": sum(1 for m in member_ids if len(m) > len(set(m.tolist()))),
+        }
+    return {"cells": out, "contrast": contrast, "cluster_count": counts,
+            "provenance": prov, "n_tokens": len(tokens),
             "noise_rate": {layer: float((lab == -1).mean()) for layer, lab in labels.items()}}
 
 
@@ -308,7 +334,7 @@ def contrast_verdict(per_run: list) -> dict:
 def aggregate(results: dict) -> dict:
     """results: {(step, key): measure_run output}."""
     steps = sorted({s for s, _ in results})
-    pooled, balanced, contrasts = {}, {}, {}
+    pooled, balanced, contrasts, cluster_count = {}, {}, {}, {}
     for s in steps:
         runs = {k: r for (st, k), r in results.items() if st == s}
         layers = sorted({L for r in runs.values() for L in r["cells"]})
@@ -337,7 +363,29 @@ def aggregate(results: dict) -> dict:
         c["noise_rate"] = _mean(x for r in runs.values() for x in r["noise_rate"].values())
         c["n_runs"] = len(runs)
         contrasts[s] = c
-    return {"by_step": contrasts, "balanced": balanced, "pooled": pooled}
+        cluster_count[s] = cluster_count_summary(runs)
+    return {"by_step": contrasts, "balanced": balanced, "pooled": pooled,
+            "cluster_count": cluster_count}
+
+
+def cluster_count_summary(runs: dict) -> dict:
+    """{all|without_repeated_tokens: {layer: means over runs}} for one step; runs: {key: measure_run}."""
+    out = {}
+    for subset, keep in {"all": lambda k: True,
+                         "without_repeated_tokens": lambda k: k != "repeated_tokens"}.items():
+        rs = [r["cluster_count"] for k, r in runs.items() if keep(k)]
+        layers = sorted({L for r in rs for L in r["by_layer"]})
+        out[subset] = {"n_runs": len(rs),
+                       "n_repeated_types": _mean(r["n_repeated_types"] for r in rs)}
+        for L in layers:
+            ls = [(r["n_repeated_types"], r["by_layer"][L]) for r in rs if L in r["by_layer"]]
+            out[subset][L] = {
+                "n_clusters": _mean(x["n_clusters"] for _, x in ls),
+                "ratio": _mean(x["n_clusters"] / n for n, x in ls if n),
+                "single_type_frac": _mean(x["single_type"] / x["n_clusters"] for _, x in ls if x["n_clusters"]),
+                "holds_repeat_frac": _mean(x["holds_repeat"] / x["n_clusters"] for _, x in ls if x["n_clusters"]),
+            }
+    return out
 
 
 def main() -> None:
@@ -393,6 +441,7 @@ def main() -> None:
         "summary": summary,
         "inputs": inputs,
         "runs": {f"{s}|{k}": {"contrast": r["contrast"], "noise_rate": r["noise_rate"],
+                              "cluster_count": r["cluster_count"],
                               "n_tokens": r["n_tokens"],
                               "cells": {L: {"|".join(ck): v for ck, v in cells.items()}
                                         for L, cells in r["cells"].items()}}
@@ -406,6 +455,15 @@ def main() -> None:
         print(f"  step{s:>6}: " + "   ".join(
             f"{sub}: freq {c[sub]['freq_contrast']:+.3f} class {c[sub]['class_contrast']:+.3f} "
             f"-> {c[sub]['trash_collection']}" for sub in CONTRAST_SUBSETS))
+    print("\ncluster count vs repeated types (without repeated_tokens; layers 0 / mid / last):")
+    for s, cc in summary["cluster_count"].items():
+        w = cc["without_repeated_tokens"]
+        Ls = sorted(k for k in w if isinstance(k, int))
+        pick = [Ls[0], Ls[len(Ls) // 2], Ls[-1]]
+        print(f"  step{s:>6}: repeated types {w['n_repeated_types']:.1f}  " + "  ".join(
+            f"L{L}: clusters {w[L]['n_clusters']:.1f} ratio {w[L]['ratio']:.2f} "
+            f"hold-repeat {w[L]['holds_repeat_frac']:.2f} single-type {w[L]['single_type_frac']:.2f}"
+            for L in pick))
 
 
 if __name__ == "__main__":
