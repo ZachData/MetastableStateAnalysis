@@ -1,5 +1,36 @@
 # Phase 2d — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Do the heads' operators sit where the paper's dynamics are a gradient flow ($Q^\top K$ symmetric, $V = Q^\top K$) or in one of Table 1's rows, and do the particles' energy-monotonicity violations fall in the layers whose heads leave that regime?
+- **Inputs:** designed for Phase 2's `pythia-410m` 19-checkpoint weights (`wq_head*` / `wk_head*` / `ov_head*` in `ov_weights_*.npz`) joined to Phase 1 activations in the LN frame; validated on constructed operators only. One unrecorded pilot, 27 pilot-schedule checkpoints × 2 prompts, LN frame, run 2026-08-14 and rerun 2026-08-17, no manifest, **quarantined, values unopened** (user, 2026-09-23) — `p2d_operator_activation/status-2d.md` "The 2026-08 Pythia pilot (quarantined)"
+- **Results:**
+  - D1–D4 recover constructed regimes, rows and bounds, and every join guard fires — `p2d_operator_activation/status-2d.md` "Validation performed"
+  - The operator/activation join runs on real artifacts (24 of 25 layers, 16 heads) and both its warnings fire — `p2d_operator_activation/status-2d.md` "E-value audit, Phase 2 / 2d (2026-09-19)"
+  - Histogram peak-counting is not a modality test; a mode count must survive a bandwidth scan — `p2d_operator_activation/status-2d.md` "Findings from implementation"
+  - A trace contraction wrong everywhere except at symmetric $M$, caught by a non-negativity check; anchors need a non-symmetric arm — `p2d_operator_activation/status-2d.md` "Findings from implementation"
+  - Signed OV/QK alignment separates `repulsive_aligned` heads, which confirm the paper, from unstructured ones — `p2d_operator_activation/status-2d.md` "Findings from implementation"
+- **Superseded / wrong:**
+  - "Not run against Pythia": the pilot ran twice in August — `p2d_operator_activation/status-2d.md` "Corrections received"
+  - The 2026-09-19 audit called `P-T1`'s wording an open defect; the amendment landed 2026-08-11, before any run — `PREDICTIONS.md` "Addendum — P-T1 amended"
+  - `adjudicate_p_t1` reads a single-bandwidth mode count, against the amendment; `p_value_p_t1` implements the amendment — `POPPER_PLAN.md`
+  - The reported p floors (0.100, 0.083) were the call's, not the design's, off by 200× and 167× — `claims/EVALUABILITY.md`
+- **Registry:** `P-T1`, `P-M1` (`H-OPERATOR`), `active`, e-value gates calibrated on one shared dry run (`claims/audits/p_t1_p_m1_dry_run.json`), not adjudicated. Scored only on a fresh run with a manifest; the August pilot is not a scoring input (user, 2026-09-23)
+- **Depends on:** 1@6a6e6a3c1a, 1c@c39567cf1e, 2@27c0fbe55d
+- **Feeds:** none
+- **Open threads:**
+  - Blocked by design on Phase 1c-B's $T_{\rm eff}$, which waits on a β producer that does not exist — `p2d_operator_activation/design-2d.md`
+  - Is the gradient-flow framing void for a causal decoder (2411.04990)? — `p9_metric_intervention/plan-9.md`
+  - `simple_tol` / `align_tol` are placed, not derived; centred vs uncentred covariance — `p2d_operator_activation/status-2d.md` "Open before running"
+  - `P-M1` refuses when head-to-layer aggregates disagree in sign: per-layer energies may not resolve a per-head claim
+- **After Phase 10:**
+  - The fresh, manifested `run_2d.py` on the 410m sweep in the LN frame, v1 prompt keys only, once 1c-B unblocks (free: weights and Phase 1 activations on disk)
+  - Tolerance sensitivity scan, reclassifying from the saved per-head records (free)
+  - Head ablation for `P-M1` (forward pass: one per head × checkpoint)
+- **Reviewed:** 2026-09-23 · body `c624c33000`
+<!-- /phase-card -->
+
 **Registered predictions:** `P-T1` (e-value — label-permutation null in
 `table1_predictions.py`) and `P-M1` (e-value — layer-permutation null in
 `gradient_flow_condition.py`), both calibrated on one shared known-answer dry
@@ -9,10 +40,25 @@ which the claim's product would not show. Nulls and evidence paths are
 `claims/registry.json`; the per-phase view is `claims/EXPERIMENTS.md`.
 
 **State:** D1, D2, D3, D4 implemented and validated on constructed operators and synthetic
-activations. **Not run against Pythia weights or artifacts.** P-M1 and P-T1 were registered in
-`PREDICTIONS.md` before this code existed.
+activations. **No scoring run against Pythia**; one unscored pilot ran in August and is
+quarantined (below). P-M1 and P-T1 were registered in `PREDICTIONS.md` before this code
+existed; `P-T1`'s amendment landed with the code, 2026-08-11 (`cfd7f5b`).
 
-**Correction, 2026-09-23: `run_2d.py` did run on Pythia, on 2026-08-17.** Found by
+**Driver complete** as of this revision: LN frame resolution (`resolve_ln_params`) and P-M1's
+violation counts (`violation_counts`) are wired, so `run_2d.py` runs end to end given Phase 2
+weights and a Phase 1 run at a matching revision.
+
+**Blocked on Phase 1c-B by design** — see design-2d.md. The $T_{\rm eff}$ result determines
+whether the energy-monotonicity break is the right thing to attribute.
+
+## The 2026-08 Pythia pilot (quarantined)
+
+**Decided by the user, 2026-09-23:** nobody read these values; the files stay unopened and are
+**not a scoring input**. `P-T1` / `P-M1` are scored only on a fresh run with a manifest (git
+sha, battery hash, frame). The amendment the question below asked about had already landed on
+2026-08-11 (see "Corrections received"), so both August runs came after it.
+
+**Found 2026-09-23: `run_2d.py` did run on Pythia, on 2026-08-17.** Found by
 `docs/PHASE_REVIEW.md` Parked 5; nothing in the repo recorded it. Main tree
 `results/p2d_pilot/` (untracked, 60 MB): 54 `p2d.json` files, `pythia-410m` × 27
 pilot-schedule checkpoints × 2 prompts (`short_heterogeneous`, `wiki_paragraph`), written
@@ -22,18 +68,21 @@ statistics were computed at least twice. **LN frame** in all 54 (so not the raw-
 one warning each (24 operator vs 25 activation layers). No manifest, no `git_sha`, no battery
 hash. Each file carries `p_m1` (verdict, per-layer regime lists, correlation aggregates) and
 `p_t1` (verdict, trimodal / unimodal / equally-spaced rates on candidates and controls): the
-**statistics** the two registered gates score, though not their e-values. It ran before the
-2026-09-19 audit's `P-T1` amendment. **The values were not opened** when this was recorded
-(only key names and provenance fields were read), and nothing says whether anyone read them in
-August. Whether this counts as the peek the design block exists to prevent, and what it means
-for scoring `P-T1` / `P-M1`, is **for the user** (`STATE.md` Blocked).
+**statistics** the two registered gates score, though not their e-values. It ran after
+`P-T1`'s amendment (2026-08-11), not before it as first written here. **The values were not
+opened** when this was recorded (only key names and provenance fields were read). Whether this
+counted as the peek the design block exists to prevent was put to the user and decided above.
 
-**Driver complete** as of this revision: LN frame resolution (`resolve_ln_params`) and P-M1's
-violation counts (`violation_counts`) are wired, so `run_2d.py` runs end to end given Phase 2
-weights and a Phase 1 run at a matching revision.
+## Corrections received
 
-**Blocked on Phase 1c-B by design** — see design-2d.md. The $T_{\rm eff}$ result determines
-whether the energy-monotonicity break is the right thing to attribute.
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`).
+
+- 2026-08-27 · the reported p floors were the call's (`1/(n_draws+1)`), not the design's, off by 200× (`P-T1`) and 167× (`P-M1`) · `POPPER_PLAN.md` "6p. The last three dry runs: P-S1, P-T1 and P-M1, and a floor that was never the design's (2026-08-27)"
+- 2026-08 · `adjudicate_p_t1` reads a single-bandwidth mode count, contradicting the amendment's `stable_n_modes` rule; `p_value_p_t1` follows the amendment · `POPPER_PLAN.md`
+- 2026-09-20 · the causally-masked system is not a mean-field gradient flow (2411.04990), which may void this phase's gradient-flow framing · `p9_metric_intervention/plan-9.md`
+- 2026-09-23 · "not run against Pythia" was wrong: a pilot ran 2026-08-14 and 2026-08-17 · `docs/PHASE_REVIEW.md`
+- 2026-09-23 · the 2026-09-19 audit (below; `PROJECT.md` §3.43) called `P-T1`'s wording an open registration defect. The dated addendum landed with the code on 2026-08-11 (`cfd7f5b`) and the registry's statement already carries both row-2 conditions, so it was closed before any run · `PREDICTIONS.md` "Addendum — P-T1 amended"
 
 ## E-value audit, Phase 2 / 2d (2026-09-19)
 
@@ -71,6 +120,7 @@ check only.
    dated and additive, not a silent correction, and it must land **before** the
    gate is run, because afterwards it is indistinguishable from fitting the
    wording to the result.
+   **Wrong (2026-09-23):** it had landed, 2026-08-11 — see "Corrections received".
 
 **`CLAIM-B` cannot clear its own floor, and its gate says so before any data.**
 `core/changepoint_colocation.py::p_value_claim_b`'s docstring states two

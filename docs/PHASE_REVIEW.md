@@ -63,7 +63,7 @@ the lint checks both ends.
 | 1 | Card template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card` (fields filled, pointers resolve, and **stale when the phase's status file or any file in its "Depends on" changed since the review**, by content hash rather than commit). Phase 1 card done; `INDEX.md`'s priority block deleted | **done** 2026-09-23 |
 | 2 | Cards: 1b, 1c. Also: "Open" 5 settled (corrections routed to `## Corrections received`, Phase 1 backfilled); found an unrecorded post-revision Phase 1b Pythia run from 2026-08-17 and recorded it in `status-1b.md` | **done** 2026-09-23 |
 | 3a | Parked 5 for 2 / 2b / 2d; cards 2, 2b. Found three unrecorded runs: the 2b pilot (run 2026-08-14 and rerun 2026-08-17, recorded in `status-2b.md`), the 2d pilot (same two dates; it computed the `P-M1` / `P-T1` statistics on real artifacts; recorded in `status-2d.md`, values not opened, for the user) and the 243-run Phase 2 sweep (2026-08-13) that holds Study B's numbers, whose decompose columns contradict "Degenerate columns" (`status-2.md` "Phase 2 runs on disk") | **done** 2026-09-23 |
-| 3b | Cards: 2d, 6 (live `status-6.md`; `P6-R2`/`R4` active, same claim `H-OPERATOR`). 2d's card waits on the user's answer about its pilot | open |
+| 3b | Cards 2d, 6. The user decided the 2d pilot (unseen, quarantined, fresh scoring run only). Found that two of the 2026-09-19 audit's four "blocking decisions" were already taken: `P-T1`'s amendment landed 2026-08-11 and the P6 unit was registered `model` 2026-08-25 (routed to both `## Corrections received`). 1b's Feeds now names `6-frozen`; live 6 reads 1, 2, 2b | **done** 2026-09-23 |
 | 4 | Cards: archived 3, 4, 5, 5b, 5c and frozen 6 (`archive/p6_subspace/status-6.md`); the Phase 1d and viz branches → keep / revive / drop | open |
 | 5 | Cards: 7, 7d, 7e | open |
 | 6 | Card: 8 | open |
@@ -79,7 +79,7 @@ a review session but it is due before Stage 1 starts, not after session 9.
 The machinery exists: `core/evalues.py` (p→e calibrator, e-process; `average`
 for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
 `core/adjudication.py` (ledger), 39 registered, 11 adjudicable, 0 adjudicated
-(`claims/EXPERIMENTS.md`). What is missing is **power and four decisions**, not code.
+(`claims/EXPERIMENTS.md`). What is missing is **power and two decisions**, not code.
 
 1. **Attainable-E table at 8, 12 and 20 prompts.** With κ = 0.5 one prediction
    alone needs p ≤ 1/1600 for E ≥ 20. `CLAIM-C`'s floor was 0.0661 at 8
@@ -87,9 +87,11 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    size: a CLAIM-C-shaped design there needs ≥ 11 informative prompts, a
    margin of one. Per adjudicable row, via `max_attainable_average_E`; rows
    that cannot reach 20 say so before anyone runs them.
-2. **The four blocking decisions**, one short memo each for the user: β's
-   scale convention, `P-T1`'s wording, `P6-R2`/`R4`'s exchangeable unit,
-   `P-S1`'s matched-k clustering. Plus `P-I5`'s battery (`STATE.md` Blocked 2).
+2. **The two blocking decisions**, one short memo each for the user: β's
+   scale convention, `P-S1`'s matched-k clustering. Plus `P-I5`'s battery
+   (`STATE.md` Blocked 2) and whether `P6-R4`'s unit `model` fits Pythia
+   (Parked 6). The audit's other two, `P-T1`'s wording and the P6 unit, had
+   been decided in August (session 3b).
 3. **Phase 10's route into the registry.** Which tier-1 findings graduate,
    and in what order relative to existing rows scored on the 410m v2 runs
    ("Open" 3). F14 is already named the one to register (`handoff-10.md`
@@ -140,3 +142,17 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    (`2026-08-12_05-01-35` and `p2_eigenspectra_2026-08-13_05-13-52` read empty
    only without following their symlinks to HDD_1TB) and `phase3`. The later
    card sessions still check their own phase's dirs.
+6. **Does `P6-R4`'s registered unit `model` fit Pythia?** The registry's case
+   for it is ALBERT's weight tying: one OV, one projector pair, so one draw of
+   subspaces shared across layers. Pythia has a different OV per layer. Why:
+   it decides whether `P6-R4`, the one P6 row with inputs, can run on the 410m
+   sweep as registered. Cost: reading `r2_r4_null.py` and POPPER_PLAN 6l, then a
+   memo. It is the user's to decide, and it must be settled before any P6 run.
+   Changes: e-value plan item 2.
+7. **Check the audit's remaining "decisions" against the code before writing
+   memos.** Two of its four (`P-T1` wording, P6 unit) had been settled in
+   August; the audit read registry `notes` and prose, not code. β's scale
+   convention and `P-S1`'s matched-k may be the same. Cost: a grep each.
+   Changes: e-value plan item 2. Also for the user: both `P6-R2`/`R4` registry
+   `notes` still say no unit is registered, and quarantining
+   `results/p2d_pilot` could join Parked 1's guard list.

@@ -45,7 +45,18 @@ world moves, nobody updates the line, and the next session acts on it.
   declined to compute their statistics to avoid a peek, while 54 files on
   disk already held those statistics in the LN frame. An audit that reads the
   docs and the registry cannot see a run nobody wrote down; `ls results/` can.
-- 2026-09-23 (same session): I wrote that the 243-run Phase 2 sweep on disk
+- 2026-09-23 (phase review session 3b): the 2026-09-19 e-value audit listed
+  four "blocking decisions nobody has taken". Two had been taken in August:
+  `P-T1`'s amendment landed 2026-08-11 with the code (`PREDICTIONS.md`
+  addendum, registry statement), and the P6 unit was registered `model`
+  2026-08-25 (`r2_r4_null.py`, registry `null_construction`). The audit read
+  each entry's stale `notes` field and its own phase prose. The error then
+  spread to README, `EVALUABILITY.md`, `INDEX.md`, `docs/PHASE_REVIEW.md` and
+  STATE Blocked 5, which asked the user whether "the amendment can still
+  land". Found while filling the cards' Registry field against the code. Rule:
+  an "X is undecided" claim is checked against the code constant and the
+  registry's structured field, not against a notes field.
+- 2026-09-23 (phase review session 3a): I wrote that the 243-run Phase 2 sweep on disk
   "is not the Study B" `status-2.md` describes, from three columns that
   differed, into the card, `STATE.md` and this file. `/challenge-pr` on #77
   recomputed the per-step totals and found the same measurements, differing

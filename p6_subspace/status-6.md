@@ -1,5 +1,31 @@
 # Phase 6 — STATUS (live instrument only)
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Does the value operator split the residual stream into channels that do different jobs, so that the direction separating the particles' clusters lies in the real repulsive subspace $U_{\rm neg}$ rather than the rotational $U_A$ (`P6-R2`), and projecting onto the symmetric part alone keeps cluster membership (`P6-R4`)?
+- **Inputs:** none; the live instrument has never run on real activations. Synthetic calibration (`claims/audits/p6_r2_r4_dry_run.json`) and the projector-label audit (`claims/audits/p6_projector_labels.json`). On disk for `P6-R4`: 19 `p2_eigenspectra_*` dirs of `sym_*` projectors, Phase 1 activations and cluster labels; no Phase 6 run dir in `results/` or `data/` (checked 2026-09-23). The frozen ALBERT study is `6-frozen`
+- **Results:**
+  - Projector path and matched-dimension random-subspace null rebuilt live, with gates for `P6-R2` and `P6-R4` — `p6_subspace/r2_r4_null.py`
+  - `P6-R2` cannot run: no artifact carries an antisymmetric/rotational subspace, by the project's own choice — `p6_subspace/status-6.md` "E-value audit, Phases 5b / 6 (2026-09-19)"
+  - `P6-R4` is the one row in the phase whose inputs exist today — `p6_subspace/status-6.md` "E-value audit, Phases 5b / 6 (2026-09-19)"
+  - Four dormant rows are classified e-value with no gate, a blind spot in `tools/check_registry.py` — `p6_subspace/status-6.md` "E-value audit, Phases 5b / 6 (2026-09-19)"
+- **Superseded / wrong:**
+  - The audit said both active rows lacked a registered exchangeable unit and `P6-R4` was blocked on it alone; the unit was registered as `model` on 2026-08-25 — `p6_subspace/status-6.md` "Corrections received"
+- **Registry:** twelve `P6-*` rows under `H-OPERATOR`: ten `dormant`; `P6-R2`, `P6-R4` `active`, e-value, gated and calibrated, unit `model`, never run. Both registry `notes` fields still say no unit is registered (stale; the user's to amend)
+- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d, 2b@b925d63da4
+- **Feeds:** none
+- **Open threads:**
+  - Does unit `model` fit Pythia? It was argued from ALBERT's weight tying (one OV, one projector pair); Pythia has a different OV per layer — `p6_subspace/r2_r4_null.py`
+  - `P6-R2` needs $U_A$: wire `p7_io.rotational_channel_from_blocks`, or amend the row
+  - The frozen study's LDA inversion (0.887 with $U_A$ vs 0.067 with $U_{\rm neg}$) is unresolved — `archive/p6_subspace/status-6.md`
+- **After Phase 10:**
+  - `P6-R4` on the 410m sweep, v1 prompt keys only, after the unit question (free: projectors and activations on disk)
+  - Produce $U_A$ from saved OV weights, then `P6-R2` (free, weights only)
+  - Registry check: an `e-value` row naming no gate warns unless `dormant` (free)
+- **Reviewed:** 2026-09-23 · body `ddd1bc3049`
+<!-- /phase-card -->
+
 **Registered predictions:** twelve `P6-*` rows under `H-OPERATOR`. Ten are
 `dormant` — their instrument is `archive/p6_subspace/`, frozen 2026-08-22 and
 not maintained, imported or collected. Two are `active`: **`P6-R2`** and
@@ -11,6 +37,13 @@ record (`claims/audits/p6_r2_r4_dry_run.json`); neither has been run.
 
 This file covers the live instrument. The frozen phase's own history stays in
 `archive/`.
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`).
+
+- 2026-09-23 · findings 2 and 3 below (`PROJECT.md` §3.44) are wrong about the unit: `P6-R2` / `P6-R4`'s exchangeable unit was **registered as `model`** by the author on 2026-08-25, before any real p-value (`r2_r4_null.py` `REGISTERED_EXCHANGEABLE_UNIT`, the registry's `null_construction`, `POPPER_PLAN.md` 6l, `1cf825f`). The audit read the entries' stale `notes` field, which still says no unit is registered. So `P6-R4` has inputs, a gate and a unit · `POPPER_PLAN.md` "6l. CLAIM-C's cell-drop dimension, and the floor that was never tight (2026-08-25)"
 
 ## E-value audit, Phases 5b / 6 (2026-09-19)
 
@@ -44,6 +77,9 @@ the project decided not to measure. Reviving it means either producing the
 antisymmetric projectors (`p7_io.rotational_channel_from_blocks` is the named,
 unwired seam) or amending the prediction — and the second is a registry
 amendment, not a convenience.
+
+**Findings 2 and 3 are wrong (2026-09-23): the unit was registered, `model`,
+on 2026-08-25. See "Corrections received".**
 
 **2. Both active rows are missing a registered exchangeable unit, and the gate
 refuses rather than choosing one.** `EXCHANGEABLE_UNITS = ("model", "layer")`

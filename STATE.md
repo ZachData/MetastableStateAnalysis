@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-23 (phase review session 3a: cards 2, 2b; three unrecorded runs found) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-23 (phase review session 3b: cards 2d, 6; 2d pilot decided; two audit "gaps" already closed) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -18,7 +18,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
 | Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 not started.** Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
 | Next after it | Holdout guard (`docs/PHASE_REVIEW.md` Parked 1), then Stage 1 on the **8 v1 prompts only**: `ext_sem_threshold` sweep, then the token-composition table. **The 12 new v2 prompts are held out on 410m** as the confirmation set until registrations are frozen (user, 2026-09-23; `handoff-10.md` §0.4). Partly seen already via `CLAIM-C` on 1.4b/gpt2-large; scope, count, order and release are open for the user (`docs/PHASE_REVIEW.md` "Open") |
-| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`. **Sessions 1–2 done**: template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card`; phases 1, 1b, 1c carded. **New rule (user, 2026-09-23):** a correction to an earlier phase adds a line to that phase's `## Corrections received` (`CLAUDE.md` Stop step 2), so its card goes stale. Session 2 found an unrecorded post-revision **Phase 1b Pythia run** (2026-08-17, main tree `results/p1b_pilot`), now in `status-1b.md`. **Session 3a** carded 2 and 2b and found three more unrecorded runs: the 2b pilot (in `status-2b.md`), the 2d pilot (Blocked 5) and the source of `status-2.md`'s Study B numbers (the 2026-08-13 sweep, whose decompose columns contradict "Degenerate columns"). Next: session 3b (cards 2d, 6), after Blocked 5. Holdout guard not built: Stage 1 not close |
+| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`. **Sessions 1–2 done**: template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card`; phases 1, 1b, 1c carded. **New rule (user, 2026-09-23):** a correction to an earlier phase adds a line to that phase's `## Corrections received` (`CLAUDE.md` Stop step 2), so its card goes stale. Session 2 found an unrecorded post-revision **Phase 1b Pythia run** (2026-08-17, main tree `results/p1b_pilot`), now in `status-1b.md`. **Session 3a** carded 2 and 2b and found three more unrecorded runs: the 2b pilot (in `status-2b.md`), the 2d pilot and the source of `status-2.md`'s Study B numbers (the 2026-08-13 sweep, whose decompose columns contradict "Degenerate columns"). **Session 3b** carded 2d and 6. **2d pilot decided (user, 2026-09-23):** unseen, quarantined, not a scoring input; `P-T1`/`P-M1` get a fresh manifested run. Found: `P-T1`'s amendment had landed 2026-08-11 and the P6 unit was registered `model` 2026-08-25, so the audit's "four blocking decisions" are two (`docs/PHASE_REVIEW.md` Parked 6–7). Next: session 4 (archived 3, 4, 5, 5b, 5c, frozen 6). Holdout guard not built: Stage 1 not close |
 
 ## Blocked on the user
 
@@ -35,27 +35,21 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 4. **Register the large-read hook.** `scripts/hooks/guard_large_read.py` is built and
    tested; wiring it into `.claude/settings.json` (PreToolUse, matcher `Read`) was
    refused to Claude as self-modification. Snippet: PR #65's description.
-5. **`P-T1` / `P-M1` statistics already exist on real data.** `run_2d.py` ran on
-   2026-08-14 and again on 2026-08-17 over the same dirs (main tree
-   `results/p2d_pilot/`, 27 checkpoints × 2 prompts, LN frame), before the
-   2026-09-19 `P-T1` amendment, and wrote both gates' statistics.
-   Claude did not open the values. Decide: does this count as the
-   peek, can the amendment still land, and are the two gates scored on these
-   runs, fresh ones, or not at all? `p2d_operator_activation/status-2d.md` "State".
+5. **`P6-R2`/`R4` registry `notes` say no unit is registered**; the
+   structured `null_construction` and the code say `model` (2026-08-25).
+   Amending the notes is a registry edit, so it is yours. The same goes for whether
+   `model` fits Pythia before `P6-R4` runs (`docs/PHASE_REVIEW.md` Parked 6).
 
 ## Open PRs and branches
 
-`claude/phase-cards-1b-1c`: phase review session 2 (#76, open).
-`claude/phase-cards-2-2b`: session 3a, **built on #76's tip** (the card template
-changed there), in `../Mets-work-3a`; its PR targets `main` and shows #76's
-commits until #76 merges. #75, #74, #73, #72, #71, #69 merged 2026-09-23; their
-branches and worktrees deleted (`../Mets-work` holds `claude/phase-cards-1b-1c`). Nightly smoke red (Blocked item 2).
+`claude/phase-cards-2d-6`: session 3b, in `../Mets-work`. #77, #76 merged
+2026-09-23. **Branch cleanup done 2026-09-23 (user asked):** every remote and
+local branch except `main` deleted, the 3 non-ancestors included, after checking them:
+two held only merge commits with no hand resolution, and `cf5f7ee`'s 352 added
+lines are in main verbatim except 4 that main has since rewritten.
+`../Mets-work-3a` removed. The main tree's `main` is behind `origin/main`
+(fast-forward refused to Claude). Nightly smoke red (Blocked item 2).
 Current state: `./scripts/status.sh`.
-
-**For a decision: 3 remote branches fail `merge-base --is-ancestor`**, so not deleted:
-`claude/p10-free-rows`, `claude/aca-phase-9-planning-rvzw3x` (content merged via
-#58/#59; only merge commits remain), `claude/attention-collapse-augmentation-qsxwg8`
-(`cf5f7ee`'s notes carried into main by `d282bfb`; main's `notes-9.md` is a superset).
 
 ## Where things stand (one line each; detail behind the pointer)
 
@@ -65,10 +59,10 @@ Current state: `./scripts/status.sh`.
 - Literature: five papers read as primary text — `lit-10.md` §11–15, `PROJECT.md` §3.52.
 - Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `archive/docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, Blocked item 4). Measured on the 2026-09-22 session's own transcript: 147 calls, ~19.0M context tokens re-read (avg ~129k/call, peak 214k) vs ~34k of tool output. Session length is the cost driver, not file size. Built since: `tools/session_cost.py` (calls, context, tool output off a transcript), `docs/cost_log.md` (one row per unit; Stop step 7; lesson 9's 2×-median rule), `scripts/status.sh` (Start step 2), and `CLAUDE.md` "While working" lines (one session per unit, batch calls, Edit not shell). Next: A3 (split `handoff-10.md` by stage) and A4 (Stop protocol → skill, claims rules → path rule).
 - Archive batch (2026-09-22): PROJECT's §1, UPDATE_PLAN, POPPER_PLAN's DONE chunks, three CHANGES/PLAN files, six `docs/` one-offs → `archive/`; map `archive/MOVED.md`, lint rule `cited-md-path`, rewriter `tools/rewrite_moved_refs.py`. `literature-8.md` kept (not a duplicate of `lit-8.md`).
-- **Decided 2026-09-22: no per-phase STATE/PROJECT files.** Instead: a card on each `status-N.md`, a generated phase table, and a staleness lint — built (session 1); 1 of 18 status files carded (`docs/PHASES.md`).
+- **Decided 2026-09-22: no per-phase STATE/PROJECT files.** Instead: a card on each `status-N.md`, a generated phase table, and a staleness lint — built (session 1); 7 of 18 status files carded (1, 1b, 1c, 2, 2b, 2d, 6; `docs/PHASES.md`).
 - Carried from `archive/UPDATE_PLAN.md`: BLOCKED re-derive `DEGENERATE_RANK_THRESHOLD` / `FIEDLER_ACTIVE_RANK_THRESHOLD` on the normed scale (needs the sweep's normed-rank distribution); BLOCKED persist per-head Fiedler (`p1_io._save_sinkhorn` fixed, needs a rerun; fold into the next forward pass, `status-1.md`); BLOCKED `geometry.json` must carry `beta_eff_per_head` (`status-1c.md`); OPEN run Phase 1c/2d on artifacts (`tools/preflight_1c.py` first; `INDEX.md` 1c/2d rows); OPEN regenerate the energy-trajectory PNGs (wrong citation baked into suptitles, `math-1c.md:869`).
 - Also from `archive/UPDATE_PLAN.md`, **for a decision**: §0 left `status-2.md:74,231` and Phase 1b's "Theorem 6.3" for cone collapse (live in `p1b_hemisphere/p1b_report.py:496,503`; the plan says Lemma 6.4, `math-1b.md:38` says "Lemma 6.4, feeding Theorem 6.3", so possibly fine). §4 not doing yet: the 1.4B sweep (gated on claim (c)), new checkpoints, BBGKY, diffusive regularisation, the β→∞ limit.
-- Registry: untouched since the audit. Nothing in Phase 10 is registered.
+- Registry: untouched since the audit. Nothing in Phase 10 is registered. `results/p2d_pilot` (main tree) is quarantined: do not open (user, 2026-09-23; `status-2d.md`).
 
 ## Machine and environments
 

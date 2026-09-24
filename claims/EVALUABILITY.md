@@ -176,14 +176,19 @@ Current as of 2026-09-19, after the audit.
 **The audit finished 2026-09-19** (`PROJECT.md` §3.36, §3.40, §3.43–§3.45).
 Five units, thirty-nine predictions, **zero e-values**, and its result is not
 a queue item: **wherever the inputs exist, the blocker is a decision nobody
-has taken.** Four of them, none costing a forward pass —
+has taken.** Two of them, neither costing a forward pass —
 
 | decision | unblocks | where |
 |---|---|---|
 | β's scale convention, then a producer writing `beta_eff_per_head` | 1c-A, 1c-B, and 2d behind them | §3.40, §3.43 |
-| `P-T1`'s wording — Table 1 row 2 needs ⟨Qφ₁, Kφ₁⟩ > 0 too | `P-T1` | §3.43 |
-| `P6-R2`/`P6-R4`'s exchangeable unit (`model` or `layer`) | `P6-R4` today; `P6-R2` also needs `U_A`, which nothing measures | §3.44 |
 | `P-S1`'s matched-k re-clustering, offline from `activations.npz` | `P-S1` | §3.40 |
+
+The audit listed two more that had already been taken (found 2026-09-23):
+`P-T1`'s wording was amended 2026-08-11
+(`p2d_operator_activation/status-2d.md` "Corrections received"), and
+`P6-R2`/`P6-R4`'s unit was registered as `model` 2026-08-25
+(`p6_subspace/status-6.md` "Corrections received"). `P6-R2` still needs `U_A`,
+which nothing measures.
 
 `CLAIM-C` is the one row that has been run: three times, refusing three
 different ways, most recently on a homogeneity correction tabulated only to
