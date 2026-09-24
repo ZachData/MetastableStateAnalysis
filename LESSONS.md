@@ -38,14 +38,19 @@ world moves, nobody updates the line, and the next session acts on it.
   a disk-inventory line in `PROJECT.md`. Found by `find` while filling the
   card's Inputs field. Rule: a card session checks `results/` and `data/` for
   the phase's runs, not just its status file (`docs/PHASE_REVIEW.md` workflow).
-- 2026-09-23 (phase review session 3a): the same 2026-08-17 batch also ran
-  Phase 2b and Phase 2d on Pythia, and neither status file said so.
-  `status-2d.md` said `P-T1` / `P-M1` were "not run against real artifacts",
-  and the 2026-09-19 audit declined to compute their statistics to avoid a
-  peek, while 54 files on disk already held those statistics in the LN frame.
-  And `status-2.md`'s Study B run dir was "TBD": the only 243-run sweep on
-  disk disagrees with its tables on three columns. An audit that reads the
+- 2026-09-23 (phase review session 3a): the same batch (run 2026-08-14,
+  rerun 2026-08-17 over the same dirs) also ran Phase 2b and Phase 2d on
+  Pythia, and neither status file said so. `status-2d.md` said `P-T1` /
+  `P-M1` were "not run against real artifacts", and the 2026-09-19 audit
+  declined to compute their statistics to avoid a peek, while 54 files on
+  disk already held those statistics in the LN frame. An audit that reads the
   docs and the registry cannot see a run nobody wrote down; `ls results/` can.
+- 2026-09-23 (same session): I wrote that the 243-run Phase 2 sweep on disk
+  "is not the Study B" `status-2.md` describes, from three columns that
+  differed, into the card, `STATE.md` and this file. `/challenge-pr` on #77
+  recomputed the per-step totals and found the same measurements, differing
+  only in the decompose columns. Rule: before calling two runs different,
+  compare the columns that should agree, not only the ones that differ.
 - 2026-09-23 (phase review session 1): the SessionStart hook printed the main
   tree's `STATE.md`, and the main tree was 9 commits behind `origin/main`
   (nobody pulls it after a GitHub merge). It said chunk 1 was killed and

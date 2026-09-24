@@ -7,7 +7,7 @@
 - **Inputs:** GPT-2 / ALBERT / BERT study, 35 runs, verified 2026-04-29 (pre-rewrite `phase2i_*` artifacts). Post-rewrite: a `pythia-410m` pilot of 27 pilot-schedule checkpoints × 9 prompts of v1 battery `1e47918ef77a`, β = 1.0, blocks 1a and 1b, no nulls, 2026-08-17 at code `3aeab20`, on Phase 2's 2026-08-13 weights and Phase 1's 2026-08-12 activations; output in the main tree's untracked results/p2b_pilot — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
 - **Results:**
   - The OV spectrum is mostly complex pairs (84–97.5 % rotational energy across 7 architectures), with no null and three definitions of "rotational fraction" — `p2b_imaginary/status-2b.md` "Verdict table"
-  - On Pythia the complex fraction sits at the random-matrix value from step 0 and drops a little (about 0.035) across steps 256–1000; Henrici rises after step 5000 — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
+  - On Pythia the complex fraction sits at its initialisation value to step 128 and drops a little (about 0.035) across steps 256–1000; Henrici rises after step 5000 — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
   - Signed-only rescaling does not rescue Phase 2's inert rescaled frame: where comparable (steps 256–5000) both rates are mostly negative; from step 7000 the frames score different transitions and are refused — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
   - Blocks 3 and 4 are degenerate as written (the projector is the identity; the curvature regressor is constant) — `p2b_imaginary/status-2b.md` "Verdict table"
 - **Superseded / wrong:**
@@ -15,7 +15,7 @@
   - `elim_signed = 1.0` (35/35) was scored under a different counting rule with truncation discarded, and is not re-adjudicated — `p2b_imaginary/status-2b.md` "Known issues"
   - Block 2 was gated on the withdrawn constant, so "correctly never triggered" does not hold — `p2b_imaginary/status-2b.md` "Verdict table"
 - **Registry:** none, because the phase is exploratory by design; nothing in it may carry an e-value (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1@6a6e6a3c1a, 2@5f0e6731e1
+- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d
 - **Feeds:** 2, 6
 - **Open threads:**
   - The pilot's original-frame violation layers disagree with Phase 1's on 150 of 243 records under the same rule on paper — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
@@ -27,7 +27,7 @@
   - Explain the Phase 1 cross-check disagreement (free, reads the pilot and the 2026-08-12 run)
   - Rerun Block 1a with nulls (free, weights only)
   - Weight ablation `W_OV := S` through `core/intervention.py` (forward pass: one per checkpoint × prompt)
-- **Reviewed:** 2026-09-23 · body `a1db9930af`
+- **Reviewed:** 2026-09-23 · body `b925d63da4`
 <!-- /phase-card -->
 
 **Registered predictions:** none. Exploratory by design; nothing in this
@@ -64,7 +64,7 @@ Found by `docs/PHASE_REVIEW.md` Parked 5. Nothing in the repo recorded it.
 | | |
 |---|---|
 | Output | main tree `results/p2b_pilot/` (untracked, 8.1 MB): `phase2b_results.json`, `phase2b_summary.txt`, one dir per checkpoint with `manifest.json` |
-| Run | 2026-08-17 07:45 → 08:13, 1664 s, 0 failures, no missing checkpoints |
+| Run | 2026-08-17 07:45 → 08:13, 1664 s, 0 failures, no missing checkpoints. **At least the second run into this dir:** the dirs were created 2026-08-14 07:07 → 07:34 (the same duration), and the 08-17 files overwrote those (`stat`; seen by `/challenge-pr` on #77). The 08-14 outputs are gone |
 | Code | `3aeab20` (merge of #8, 2026-08-15, after the rewrite `beb20d4`) |
 | Inputs | `pythia-410m`, 27 pilot-schedule checkpoints (0 … 143000), 9 prompts of v1 battery `1e47918ef77a` (the 8 plus `repeated_tokens`), β = 1.0 only, blocks 1a and 1b, no nulls (`with_nulls: false`). Weights from Phase 2's `p2_eigenspectra_2026-08-13_05-13-52`, activations from a Phase 1 run root (the manifest does not name it; the only 27-step Phase 1 run on disk is `2026-08-12_05-01-35`). Both now on HDD_1TB, symlinked into `results/` (`PROJECT.md` §5.2) |
 | Counting rule | the project's: relative 1e-3, normed-rank gate at 2.0, `l2_sphere` frame |
