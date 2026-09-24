@@ -216,10 +216,11 @@ def main() -> None:
         context="p10_partition_stability")
     pairs = []
     for pd in pilot_dirs:
-        found, _ = refuse_held_out(
+        found, rec = refuse_held_out(
             (d for ts in sorted(root.glob("*")) if ts.is_dir()
              for d in [ts / pd.name] if d.is_dir()),
             allow=args.allow_holdout, context="p10_partition_stability")
+        holdout["n_held_out"] += rec["n_held_out"]
         matches = [d for d in found if read_labels(d)]
         if matches:
             pairs.append((pd, matches[0]))

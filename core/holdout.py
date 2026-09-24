@@ -6,9 +6,9 @@ twelve prompts v2 added to the battery are Phase 10's confirmation set.
 Stage 0 runs all twenty on pythia-410m, but Stages 1-5 read only the eight
 v1 metastability prompts until the predictions scored on the twelve are in
 `claims/registry.json`. A rule kept only in docs has been missed before
-(`LESSONS.md`), so every Phase 10 reader (`tools/run/p10_*.py`) passes its
-inputs through `refuse_held_out` before opening them, and
-`tests/test_holdout.py` fails if one does not.
+(`LESSONS.md`), so every runner that reads `data/phase12` passes its inputs
+through `refuse_held_out` before opening them, or is exempt for a stated
+reason, and `tests/test_holdout.py` fails if one is neither.
 
 What counts as held out, by path alone:
 
@@ -25,13 +25,17 @@ What counts as held out, by path alone:
    `pair_agreement.json` or `llm_cross_run_report.txt` pools every prompt of
    that invocation.
 4. `CLAIM-C`'s per-prompt record, `claim_c_real_run.json`, which carries
-   cluster count, membership, effective rank and Fiedler for the twelve.
+   cluster count, membership, effective rank and Fiedler for the twelve, and
+   Stage 0's `stage0_logs/*.out` / `*.log`, which print per-prompt values.
+
+Rules 3 and 4 are "pooled": they hold v1 values too, so `--v1-only` refuses
+them rather than drop them; a reader of one keeps only `V1_PROMPT_KEYS`.
 
 Checking that a Stage 0 output is populated is not reading it
 (`handoff-10.md` §0.4), so producers (`stage0_chunk.py`,
 `backfill_hdbscan.py`) and `CLAIM-C`'s own scorer are not guarded.
 
-A reader refuses by default; `--v1-only` drops held-out inputs, and
+A reader refuses by default; `--v1-only` drops held-out per-prompt inputs, and
 `--allow-holdout` reads them, which is for after the user releases the set
 (`docs/PHASE_REVIEW.md` "Open"). Either way the output record says so.
 
@@ -75,6 +79,10 @@ V1_PROMPT_KEYS = frozenset({
 })
 
 HELD_OUT_FILES = frozenset({"claim_c_real_run.json"})
+# Stage 0's per-invocation logs print effective rank and spectral k per prompt.
+# stage0_index.json (paths only, no values) is the selection source and stays open.
+LOG_DIRS = frozenset({"stage0_logs"})
+LOG_SUFFIXES = frozenset({".out", ".log"})
 
 
 def _token_re(keys: frozenset) -> "re.Pattern[str]":
@@ -108,34 +116,43 @@ def _names_held_out(name: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
-def held_out_reason(path: PathLike) -> Optional[str]:
-    """Why `path` is held out, or None if it is not."""
-    path = Path(path)
+def _classify(path: Path) -> Optional[Tuple[str, str]]:
+    """(kind, reason) or None. kind "prompt" is one held-out prompt's own
+    output, safe to drop whole; kind "pooled" mixes held-out and v1 prompts,
+    so dropping it would lose v1 values and reading it would leak."""
     if path.name in HELD_OUT_FILES:
-        return f"{path.name} carries per-prompt values for the twelve"
+        return "pooled", f"{path.name} carries per-prompt values for the twelve"
+    if path.parent.name in LOG_DIRS and path.suffix in LOG_SUFFIXES:
+        return "pooled", f"a {path.parent.name} log, which prints held-out values"
 
     if path.is_dir():
         pk = _manifest_key(path)
         if pk is not None:
             if pk in HELD_OUT_PROMPT_KEYS:
-                return f"run directory for held-out prompt {pk!r} (manifest)"
+                return "prompt", f"run directory for held-out prompt {pk!r} (manifest)"
             return None       # a v1 run, by its own manifest
         # A directory that pools held-out runs, e.g. a timestamp directory.
         for child in path.iterdir():
             if child.is_dir() and _names_held_out(child.name):
-                return f"contains held-out run {child.name}"
+                return "pooled", f"contains held-out run {child.name}"
 
     key = _names_held_out(path.name)
     if key is not None:
-        return f"named for held-out prompt {key!r}"
+        return "prompt", f"named for held-out prompt {key!r}"
 
     # A pooled file beside a held-out run: pair_agreement.json and the like.
     # A file named for a v1 prompt is per-prompt, so it is not pooled.
     if path.is_file() and not _V1_TOKEN.search(path.name):
         for sib in path.parent.iterdir():
             if sib.is_dir() and _names_held_out(sib.name):
-                return f"beside held-out run {sib.name}, so it may pool it"
+                return "pooled", f"beside held-out run {sib.name}, so it may pool it"
     return None
+
+
+def held_out_reason(path: PathLike) -> Optional[str]:
+    """Why `path` is held out, or None if it is not."""
+    c = _classify(Path(path))
+    return c[1] if c else None
 
 
 def refuse_held_out(
@@ -159,20 +176,26 @@ def refuse_held_out(
     paths = [Path(p) for p in paths]
     hits = []
     for p in paths:
-        reason = held_out_reason(p)
-        if reason is not None:
-            hits.append((p, reason))
+        c = _classify(p)
+        if c is not None:
+            hits.append((p, c[0], c[1]))
     who = context or "reader"
-    if hits and not (allow or drop):
-        shown = "\n".join(f"  {p}: {r}" for p, r in hits[:5])
-        more = f"\n  ... and {len(hits) - 5} more" if len(hits) > 5 else ""
+    blocking = [h for h in hits if not allow and not (drop and h[1] == "prompt")]
+    if blocking:
+        shown = "\n".join(f"  {p}: {r}" for p, _, r in blocking[:5])
+        more = f"\n  ... and {len(blocking) - 5} more" if len(blocking) > 5 else ""
+        pooled = any(k == "pooled" for _, k, _ in blocking)
         raise HoldoutError(
-            f"{who}: {len(hits)} input(s) are Phase 10's held-out "
+            f"{who}: {len(blocking)} input(s) are Phase 10's held-out "
             f"confirmation set (core/holdout.py):\n{shown}{more}\n"
-            "Pass --v1-only to drop them, or --allow-holdout once the user "
-            "has released the set."
+            + ("A pooled input mixes held-out and v1 prompts, so --v1-only "
+               "cannot drop it without losing v1 values: read it per prompt "
+               "key, keeping only V1_PROMPT_KEYS. "
+               if pooled else "Pass --v1-only to drop them. ")
+            + "--allow-holdout reads everything, once the user has released "
+            "the set."
         )
-    held = {p for p, _ in hits}
+    held = {p for p, _, _ in hits}
     kept = [p for p in paths if p not in held] if drop else paths
     if hits:
         verb = "dropped" if drop else "reading"

@@ -82,6 +82,7 @@ from core.dissipation import (
     w2_optimal,
     wasserstein_arc_length,
 )
+from core.holdout import add_holdout_args, refuse_held_out
 from core.evalues import (
     DEFAULT_ALPHA,
     DEFAULT_KAPPA,
@@ -246,14 +247,15 @@ def main() -> None:
                          "cannot report swap_absorbed_fraction, which is the "
                          "number this row exists for")
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_f1_transport.json"))
+    add_holdout_args(ap)
     args = ap.parse_args()
 
     root = Path(args.root)
-    targets = sorted(
-        d for ts in sorted(root.glob("*")) if ts.is_dir()
-        for d in sorted(ts.glob(args.pattern))
-        if d.is_dir() and (d / "activations.npz").exists()
-    )
+    candidates, holdout = refuse_held_out(
+        (d for ts in sorted(root.glob("*")) if ts.is_dir()
+         for d in sorted(ts.glob(args.pattern)) if d.is_dir()),
+        allow=args.allow_holdout, drop=args.v1_only, context="transport")
+    targets = sorted(d for d in candidates if (d / "activations.npz").exists())
     if args.limit:
         targets = targets[: args.limit]
     print(f"{len(targets)} directories, optimal coupling: {not args.identity_only}")
@@ -273,6 +275,7 @@ def main() -> None:
         "tier": "1 (exploratory, unregistered)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "root": str(root),
+        "holdout": holdout,
         "optimal_coupling": not args.identity_only,
         "n_permutations": N_PERMUTATIONS,
         "seed": args.seed,

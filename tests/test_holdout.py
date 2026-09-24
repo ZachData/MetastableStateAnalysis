@@ -103,14 +103,53 @@ def test_refuse_drop_allow(tmp_path):
         refuse_held_out([v1], allow=True, drop=True)
 
 
-def test_every_phase10_reader_is_guarded():
-    """A new tools/run/p10_*.py (Stage 1 onwards) must screen its inputs."""
-    readers = sorted((REPO / "tools" / "run").glob("p10_*.py"))
+# Runners that read data/phase12 without the guard, and why that is safe.
+EXEMPT = {
+    "backfill_hdbscan.py": "producer: writes labels, checks they are populated",
+    "stage0_chunk.py": "producer: runs Stage 0 and indexes it",
+    "dissipation.py": "fixed v1 prompt list (SCORED_PROMPTS + repeated_tokens)",
+    "dissipation_sublayer.py": "fixed v1 prompt list (SCORED_PROMPTS + repeated_tokens)",
+    "relay_null.py": "prompts come from Phase 7's v1 motif table",
+    "ov_per_head.py": "reads OV weights (p2_eigenspectra_*), no prompt data",
+    "induction_rank_sweep.py": "reads OV weights (p2_eigenspectra_*), no prompt data",
+    "induction_composition_whitening.py": "reads OV weights; its PROMPTS pass "
+        "is the live-battery issue in STATE.md Blocked 2",
+}
+
+
+def test_every_phase12_reader_is_guarded_or_exempt():
+    """A new runner over data/phase12 (Stage 1 onwards) must screen its inputs
+    or say here why it need not."""
+    readers = sorted(p for p in (REPO / "tools" / "run").glob("*.py")
+                     if "phase12" in p.read_text())
     assert readers
-    unguarded = [p.name for p in readers
-                 if "refuse_held_out(" not in p.read_text()
-                 or "add_holdout_args(ap)" not in p.read_text()]
-    assert not unguarded, f"Phase 10 readers without the holdout guard: {unguarded}"
+    guarded = {p.name for p in readers
+               if ("refuse_held_out(" in p.read_text()
+                   and "add_holdout_args(ap)" in p.read_text())
+               or "HELD_OUT_PROMPT_KEYS" in p.read_text()}
+    names = {p.name for p in readers}
+    assert not names - guarded - set(EXEMPT), \
+        f"runners over data/phase12 with no holdout guard: {sorted(names - guarded - set(EXEMPT))}"
+    assert not set(EXEMPT) & guarded, "guarded now: drop from EXEMPT"
+    assert set(EXEMPT) <= names, f"stale EXEMPT entries: {sorted(set(EXEMPT) - names)}"
+    assert all(n in guarded for n in names if n.startswith("p10_") or n == "transport.py")
+
+
+def test_pooled_inputs_are_not_dropped_silently(tmp_path):
+    ts = tmp_path / "2026-09-24_05-35-20"
+    _run(ts, "pythia-410m-step0_moby_loomings")
+    v1 = _run(ts, "pythia-410m-step0_homer_iliad")
+    pooled = ts / "pair_agreement.json"
+    pooled.write_text("{}")
+    with pytest.raises(HoldoutError, match="per prompt"):
+        refuse_held_out([v1, pooled], drop=True)
+    logs = tmp_path / "stage0_logs"
+    logs.mkdir()
+    for n in ("chunk_x_001_step16.out", "chunk_x.log", "stage0_index.json"):
+        (logs / n).write_text("")
+    assert held_out_reason(logs / "chunk_x_001_step16.out")
+    assert held_out_reason(logs / "chunk_x.log")
+    assert held_out_reason(logs / "stage0_index.json") is None
 
 
 def test_a_reader_refuses_by_default(tmp_path, monkeypatch):

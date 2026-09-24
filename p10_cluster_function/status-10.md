@@ -39,7 +39,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `f63187c4b0`
+- **Reviewed:** 2026-09-24 · body `d485bfaeb3`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -135,12 +135,16 @@ METS_REPO=$PWD METS_DATA=/run/media/system/WDS_500/Mets/data \
 
 **The conda `mets` env, not `.venv`,** for anything touching HDBSCAN — §2.
 
-**The holdout guard (2026-09-24).** Readers refuse held-out inputs by default.
-`--v1-only` drops them and `--allow-holdout` reads them; both are recorded under
-`"holdout"` in the output record. It holds out: a run dir for one of the 12 keys (any
-model; by `manifest.json` `prompt_key`, else by name), any file named for one,
-a pooled file beside such a run dir (`pair_agreement.json`), and
-`claim_c_real_run.json`. Dry run on `data/phase12` at 12:40, chunk 2 mid-step512,
+**The holdout guard (2026-09-24).** Readers (the four `p10_*` and F1's
+`transport.py`) refuse held-out inputs by default. `--v1-only` drops per-prompt ones
+and `--allow-holdout` reads them; both are recorded under `"holdout"` in the output
+record. It holds out: a run dir for one of the 12 keys (any model; by
+`manifest.json` `prompt_key`, else by name), any file named for one, and three
+**pooled** kinds that `--v1-only` refuses rather than drops, because they hold v1
+values too: a file beside such a run dir (`pair_agreement.json`),
+`claim_c_real_run.json`, and `stage0_logs/*.out|*.log`. P-I1's `behavioural.py` refuses
+the 12 outright. The other runners over `data/phase12` are exempt, each for a reason
+listed in `tests/test_holdout.py`. Dry run on `data/phase12` at 12:40, chunk 2 mid-step512,
 reading names and manifest `prompt_key` only: 632 `pythia-410m-*` dirs, 193 held
 out, 439 kept. Of the 8 `2026-09-19_*` `CLAIM-C` dirs, the four v2 ones (21 run dirs
 each, 48 held out in total) are flagged, and so is each one's `pair_agreement.json`; the four

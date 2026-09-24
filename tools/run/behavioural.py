@@ -67,6 +67,7 @@ import numpy as np
 from core.battery_structure import induction_candidates, tokenize_prompt
 from core.changepoint_colocation import REGISTERED_P_I1_SWEEP
 from core.config import PROMPTS
+from core.holdout import HELD_OUT_PROMPT_KEYS
 
 STEPS = list(REGISTERED_P_I1_SWEEP)
 
@@ -127,6 +128,15 @@ def battery_prompts() -> list:
         }
         present = here if present is None else (present & here)
     prompts = sorted(present)
+    # P-I1 was calibrated on the v1 battery. Scoring a registered row on the
+    # twelve is "Open" 3 in docs/PHASE_REVIEW.md, the user's call; until then
+    # refuse rather than let Stage 0's runs widen the battery by default.
+    held = sorted(set(prompts) & HELD_OUT_PROMPT_KEYS)
+    if held:
+        raise BehaviouralArmRefused(
+            f"held-out prompts have a full sweep: {held}. Whether P-I1 is "
+            "scored on them is undecided (core/holdout.py, "
+            "docs/PHASE_REVIEW.md \"Open\" 3)")
     unknown = [p for p in prompts if p not in PROMPTS]
     if unknown:
         raise BehaviouralArmRefused(f"not battery keys: {unknown}")

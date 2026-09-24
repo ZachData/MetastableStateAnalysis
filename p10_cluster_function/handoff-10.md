@@ -280,8 +280,12 @@ prediction becomes possible on a battery whose rows were chosen blind.**
 > **only the 8 v1 prompts** until the predictions scored on the 12 are in
 > `claims/registry.json`. Checking that Stage 0's outputs are *populated* is not
 > reading them. **Enforced in code (2026-09-24):** `core/holdout.py`. Every
-> `tools/run/p10_*.py` refuses held-out inputs unless given `--v1-only` (drop them) or
-> `--allow-holdout`, and a test fails any reader that skips it (`status-10.md` §0).
+> runner over `data/phase12` refuses held-out inputs, or is exempt for a stated
+> reason; the Phase 10 readers take `--v1-only` (drop them) or `--allow-holdout`,
+> and a test fails any runner that is neither (`status-10.md` §0). **One 410m
+> value is already in a doc:** §0.3's timing probe records `wiki_byzantium`'s
+> HDBSCAN cluster count (41–49 per layer), the quantity F14 would use; weigh it
+> under "Open" 1.
 > **They are not fully unseen.** `CLAIM-C` ran all 20 on pythia-1.4b and
 > gpt2-large, trained and random (`PROJECT.md` §3.46; `data/phase12/2026-09-19_*`).
 > `claims/audits/claim_c_real_run.json` carries per-prompt cluster count,
