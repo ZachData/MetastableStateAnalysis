@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-23 (phase review session 1: cards, `docs/PHASES.md`, lint `phase-card`) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-23 (phase review session 2: cards 1b, 1c; corrections routed to `## Corrections received`) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -18,7 +18,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
 | Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 not started.** Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
 | Next after it | Holdout guard (`docs/PHASE_REVIEW.md` Parked 1), then Stage 1 on the **8 v1 prompts only**: `ext_sem_threshold` sweep, then the token-composition table. **The 12 new v2 prompts are held out on 410m** as the confirmation set until registrations are frozen (user, 2026-09-23; `handoff-10.md` §0.4). Partly seen already via `CLAIM-C` on 1.4b/gpt2-large; scope, count, order and release are open for the user (`docs/PHASE_REVIEW.md` "Open") |
-| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`. **Session 1 done**: template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card` (a card goes stale when its status file or a dependency's changes), Phase 1 carded. Next: session 2 (cards 1b, 1c). Holdout guard not built: Stage 1 not close |
+| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`. **Sessions 1–2 done**: template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card`; phases 1, 1b, 1c carded. **New rule (user, 2026-09-23):** a correction to an earlier phase adds a line to that phase's `## Corrections received` (`CLAUDE.md` Stop step 2), so its card goes stale. Session 2 found an unrecorded post-revision **Phase 1b Pythia run** (2026-08-17, main tree `results/p1b_pilot`), now in `status-1b.md`. Next: session 3 (cards 2, 2b, 2d, 6; first check `results/p2b_pilot`, `p2d_pilot`, Parked 5). Holdout guard not built: Stage 1 not close |
 
 ## Blocked on the user
 
@@ -38,9 +38,9 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-`claude/phase-cards`: phase review session 1 (PR #75). #74 (phase-review plan), #73,
+`claude/phase-cards-1b-1c`: phase review session 2 (PR below). #75, #74, #73,
 #72, #71, #69 merged 2026-09-23; their branches and worktrees deleted
-(`../Mets-work` now holds `claude/phase-cards`). Nightly smoke red (Blocked item 2).
+(`../Mets-work` now holds `claude/phase-cards-1b-1c`). Nightly smoke red (Blocked item 2).
 Current state: `./scripts/status.sh`.
 
 **For a decision: 3 remote branches fail `merge-base --is-ancestor`**, so not deleted:

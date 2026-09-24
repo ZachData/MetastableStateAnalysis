@@ -36,8 +36,20 @@
   - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
   - Extend `CLAIM-C`'s homogeneity calibration to the v2 prompt count and rescore the v2 arms (free, CPU calibration, cost in §3.46; order against the holdout is `docs/PHASE_REVIEW.md` "Open" 3)
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
-- **Reviewed:** 2026-09-23 · body `c5b6802fd7`
+- **Reviewed:** 2026-09-23 · body `6a6e6a3c1a`
 <!-- /phase-card -->
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-23 from the card's
+Superseded list.
+
+- 2026-08-11 · the step-size definition open item 0 relies on understates T_eff ~5.7× · `p1c_frames/status-1c.md` "Findings from implementation, before any data"
+- 2026-09-16 · "metastability is open" may be stale; the causal mask is now in the theory; the developmental arc is published · `lit-1.md` §1.2, `lit-1.md` §2
+- 2026-09-20 · step0 and step1 are the same weights · §3.51
+- 2026-09-20 · the HDBSCAN partition is not reproducible run to run, so cluster counts carry a floor · `p10_cluster_function/status-10.md` §3
+- 2026-09-20 · the carrying-capacity invariant has a formula (Lemma C.1) · `p10_cluster_function/math-10.md` §5.4
 
 **Registered predictions:** `CLAIM-A` (needs-null — construction specified
 below, deliberately not built; decision 2026-09-17) and `CLAIM-C` (e-value —

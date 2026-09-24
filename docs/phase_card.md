@@ -36,12 +36,26 @@ the change touches it, then run `python3 tools/render_phases.py --stamp <phase>`
 and `python3 tools/render_phases.py`. The stamp records that someone looked.
 It does not check what they concluded.
 
+**Corrections received: how a later correction reaches the card.** Most
+corrections to a phase are written by a *later* phase, in its own files or
+in `PROJECT.md` §3.x, and never touch the corrected phase's status file.
+(Phase 1's first card: 4 of its 7 corrections came from there.) So each
+status file carries, outside the card, a section
+
+    ## Corrections received
+
+    - 2026-09-20 · what was corrected, in words · `pointer`
+
+and whoever writes a correction to an earlier phase adds a line there
+(`CLAUDE.md` Stop step 2). The line changes the body hash, so the card goes
+stale. Settled by the user 2026-09-23 (`docs/PHASE_REVIEW.md` "Decisions").
+It relies on people following the rule: nothing checks that a correction was
+routed.
+
 **What staleness does not see.** It goes one hop: a change to phase A stales
-the cards that depend on A, not the cards that depend on those. It also only
-watches status files. A correction recorded in a later phase's other files or
-in `PROJECT.md` §3.x, which is where most corrections land, does not stale the
-card it corrects. Until that is decided (PR #75, finding 1), each card
-session re-reads the Superseded pointers of the cards it depends on.
+the cards that depend on A, not the cards that depend on those. And a
+correction nobody routed stays invisible, so each card session still greps
+for the phase outside its directory (`p1b_`, "Phase 1b") before stamping.
 
 Phases without a card are listed in `docs/PHASES.md` as "no card yet" and are
 not checked.
