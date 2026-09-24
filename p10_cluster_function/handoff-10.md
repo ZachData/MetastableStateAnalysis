@@ -253,7 +253,8 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > guard above still printed "DRIVER ALIVE" with no driver: when the whole block
 > runs as one `bash -c`, the pattern is in that shell's command line too. The
 > bracket `[p]ython` fixes it (the regex matches `python`, its own text
-> `[p]ython` does not).
+> `[p]ython` does not). **Chunk 3 ended 15:58:27, `rc 0, 3/3`: Stage 0 is
+> 380/380 done** (`plan`: "nothing left"). Run tree `../Mets-stage0` removed.
 
 The original single-run instructions, from the main tree, with the environment from `archive/PROJECT-start-here.md`:
 
