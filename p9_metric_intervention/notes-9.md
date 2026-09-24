@@ -214,6 +214,10 @@ frame.
 
 ## 7. Three insertion points, and they are not equivalent
 
+> **Corrected 2026-09-20** (`plan-9.md` §4.1, `docs/readings/2411.04990.md`):
+> a γ-patch on `input_layernorm` feeds `W_Q`, `W_K` and `W_V` alike, so it
+> cannot separate these points. The read side alone needs a different lever.
+
 - **Read-side (before QK).** Changes the attention *pattern*: inner products in
   the stretched subspace shrink relative to everything else, logits shift, those
   tokens attend to each other less. This is "increase the distance so they

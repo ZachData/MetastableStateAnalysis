@@ -63,6 +63,14 @@ world moves, nobody updates the line, and the next session acts on it.
   land". Found while filling the cards' Registry field against the code. Rule:
   an "X is undecided" claim is checked against the code constant and the
   registry's structured field, not against a notes field.
+- 2026-09-24 (phase review session 7): `plan-9.md` (2026-09-20) listed E5,
+  `P6-R4`'s unit, as a decision for a human; it had been taken 2026-08-25.
+  Its E0 (transport) ran as Phase 10's F1 about ten hours after the plan was
+  written, and nobody passed that back, so the plan said "unrun" for four
+  days. Same rule, plus: a result that answers another phase's ladder row
+  gets a pointer in that row. (`/challenge-pr` on #83 corrected my first
+  count here, which also charged the plan with a 5c claim that was right
+  when written.)
 - 2026-09-23 (phase review session 3a): I wrote that the 243-run Phase 2 sweep on disk
   "is not the Study B" `status-2.md` describes, from three columns that
   differed, into the card, `STATE.md` and this file. `/challenge-pr` on #77
@@ -284,6 +292,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
 - The repo's `github_key` is dead; `GIT_SSH_COMMAND` pointing at it fails.
 - Two Claude sessions shared one working tree.
 - A cleanup deleted branches it had been told to keep: lesson 12.
+- 2026-09-24: an Edit deleting one card line returned a transient
+  "no verdict" error; after the retry, two card lines were joined
+  (`status-1c.md`; cause not established). The `phase-card` lint caught it.
+  After an error on an edit, read the lines before retrying.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD

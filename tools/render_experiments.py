@@ -86,6 +86,9 @@ PHASES_WITHOUT_PREDICTIONS = {
     "7d": "UNEXPLAINED — active phase, see the section below.",
     "7e": "UNEXPLAINED — active phase, see the section below.",
     "8": "UNEXPLAINED — active phase, see the section below.",
+    "9": "parked, pre-design and deliberately unregistered. `plan-9.md` §13 "
+         "states it: no construction frozen, no `P-*` id. Nothing has run under "
+         "its name; its E0 ran as Phase 10's F1.",
     "10": "pre-design and deliberately unregistered. `notes-10.md` §13 states "
           "it: no construction frozen, no `P-*` id, `claims/registry.json` "
           "untouched. Its free rows (F0, F1, F11-A0, F12) have RUN, and their "
