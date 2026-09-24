@@ -63,6 +63,7 @@ sys.path.insert(0, str(REPO))
 import numpy as np
 
 from core.functional_distance import adjusted_rand_index
+from core.holdout import add_holdout_args, refuse_held_out
 from tools.run.backfill_hdbscan import read_labels
 from tools.run.p10_anchor import checkpoint_of
 
@@ -202,18 +203,25 @@ def main() -> None:
                          "pair of activation stacks)")
     ap.add_argument("--out",
                     default=str(DATA / "analysis" / "p10_partition_stability.json"))
+    add_holdout_args(ap)
     args = ap.parse_args()
 
     pilot, root = Path(args.pilot), Path(args.root)
     if not pilot.exists():
         raise SystemExit(f"pilot sweep not mounted at {pilot}")
 
+    pilot_dirs, holdout = refuse_held_out(
+        (pd for pd in sorted(pilot.glob(args.pattern)) if pd.is_dir()),
+        allow=args.allow_holdout, drop=args.v1_only,
+        context="p10_partition_stability")
     pairs = []
-    for pd in sorted(pilot.glob(args.pattern)):
-        if not pd.is_dir():
-            continue
-        matches = [d for ts in sorted(root.glob("*")) if ts.is_dir()
-                   for d in [ts / pd.name] if d.is_dir() and read_labels(d)]
+    for pd in pilot_dirs:
+        found, rec = refuse_held_out(
+            (d for ts in sorted(root.glob("*")) if ts.is_dir()
+             for d in [ts / pd.name] if d.is_dir()),
+            allow=args.allow_holdout, context="p10_partition_stability")
+        holdout["n_held_out"] += rec["n_held_out"]
+        matches = [d for d in found if read_labels(d)]
         if matches:
             pairs.append((pd, matches[0]))
     if args.limit:
@@ -236,6 +244,7 @@ def main() -> None:
                 "hypothesis test. There is no p-value here by design.",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "sweep_a": str(pilot), "sweep_b": str(root),
+        "holdout": holdout,
         "labels_a": "native (hdbscan_labels.json)",
         "labels_b": "backfilled (tools/run/backfill_hdbscan.py)",
         "summary": summary,

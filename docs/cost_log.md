@@ -61,3 +61,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-24 | Card dependencies without hashes ("Open" 7), same transcript as #84 (measured before the commit/PR calls) | 47 | 163k | 5.4M | 49k | #85 |
 | 2026-09-24 | Card deps: hash only the upstream Corrections section (option A, after #85's review; measured before the commit/PR calls) | 23 | 85k | 1.5M | 18k | #86 |
 | 2026-09-24 | Phase review session 9: synthesis (measured before the commit/PR calls) | 49 | 165k | 5.7M | 45k | #87 |
+| 2026-09-24 | Holdout guard, core/holdout.py (measured before the commit/PR calls) | 37 | 115k | 3.2M | 25k | #88 |
