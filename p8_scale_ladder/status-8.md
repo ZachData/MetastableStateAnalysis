@@ -5,7 +5,7 @@
 ## Card
 
 - **Question:** Which of the structural signatures 7d/7e found in `pythia-410m`'s induction set (a small heavy-tailed membership, one formation window, alignment at birth then divergence, a low-rank majority with one anti-ordered member, one super-additive set) are properties of induction and which are properties of that one model, read on a second rung of the Pythia ladder?
-- **Inputs:** published `pythia-70m` (all 48 heads) plus `pythia-410m` re-run under `mean` to match; weights-only head ablation `ov` (a bias-ablation), `zero` and `mean`; probes `wide`, `freq` and (in `probe_distribution.py` only) `text`; 8 sequences; step 16000, plus the matched grid 256–143000 (and 64000 at 70m). No battery prompts. The sister project's 70m retrain fork is cited, not read. Outputs `data/analysis/*pythia-70m*.json` and `*_pythia-410m_mean*.json`, git-ignored, 2026-09-11 to 09-13. Rerun lines: `p8_scale_ladder/status-8.md` "Reproducing"
+- **Inputs:** published `pythia-70m` (all 48 heads) plus `pythia-410m` re-run under `mean` to match; weights-only head ablation `ov` (a bias-ablation), `zero` and `mean`; probes `wide`, `freq` and (in `probe_distribution.py` only) `text`; 8 sequences; step 16000, plus the matched grid 256–143000 (and 64000 at 70m). No battery prompts. The sister project's 70m retrain fork is cited, not read. Outputs `data/analysis/*pythia-70m*.json`, `*pythia-410m*mean*.json`, `probe_distribution.json` and `p8_rung_comparison.json`, git-ignored, 2026-09-11 to 09-13. Rerun lines: `p8_scale_ladder/status-8.md` "Reproducing"
 - **Results:**
   - Invariant 1 replicates in shape: under `mean` both rungs put their effect in about two effective heads, and about 15 % of heads clear each rung's own bulk — `p8_scale_ladder/status-8.md` "The ablation-mode A/B"
   - The ablation mode's effect depends on scale: 410m is mode-invariant, 70m (one head = 1/8 of a layer) is not, so a 1b prediction must name `mean` — `p8_scale_ladder/status-8.md` "The ablation-mode A/B", "The matched cross-rung read"
@@ -23,21 +23,21 @@
   - 70m's "11/15 sub-additive" was manufactured sub-additivity at the ceiling; `L0H0` as a second anti-ordered head was a denominator artifact — `p8_scale_ladder/status-8.md` "Invariants 5 and 6 on the `freq` probe"
   - The "Literature scan" section's 2026-09-10 source is superseded: the headline question is already answered in the literature, and no SVD paper covers invariant 5's anti-ordering — §3.16
   - "Reproducing" said `--probe` was on three runners; `member_subspace_geometry.py` has it too, and invariant 4's `freq` column used it (fixed 2026-09-24) — `p8_scale_ladder/status-8.md` "Reproducing"
-- **Registry:** none, because 70m and 410m are exploration rungs and `pythia-1b` / `pythia-1.4b` are reserved until a prediction naming them is registered (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 8 as an active phase with no prediction. `P-I7` (`H-BRIDGE`, active) is satisfiable on either reserved rung; whether to spend 70m on it first is an unrecorded human call
+- **Registry:** none, because 70m and 410m are exploration rungs and `pythia-1b` / `pythia-1.4b` are reserved until a prediction naming them is registered (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 8 as an active phase with no prediction. `P-I7` (`H-BRIDGE`, active) is satisfiable on either reserved rung. `design-8.md` asked for a recorded call on whether 70m goes to `P-I7` before exploration, and exploration ran on 2026-09-11 without one, so 70m is spent for it by default. With 1b measured by outside groups, `P-I7` and any invariant registration now compete for 1.4b, which is the user's call
 - **Depends on:** 7d@751b162e22, 7e@c2a68fb3db
 - **Feeds:** 7, 10
 - **Open threads:**
   - Invariant 3 needs a dense, faithful axis: a 70m retrain from step 512 on Pythia's published data order, GPU work this box cannot do — `p8_scale_ladder/status-8.md` "What is open — in order"
-  - The `L2H1`×`L3H6` cell (70m's prev-token × matcher analogue) is unmeasurable at raw ΔNLL on either probe; it needs a graded readout — `p8_scale_ladder/status-8.md` "Invariants 5 and 6 on the `freq` probe"
+  - The `L2H1`×`L3H6` cell (relay × top member; `L3H6` is not a matcher, so this is not 410m's prev-token × matcher cell) is unmeasurable at raw ΔNLL on either probe; it needs a graded readout — `p8_scale_ladder/status-8.md` "Invariants 5 and 6 on the `freq` probe"
   - `ambient_budget.py`'s docstring promises a `--text` arm; the flag still does not exist
   - Why 70m's core re-coheres between steps 32000 and 64000
   - Which invariants to register and on which rung: `pythia-1b` is now measured on the induction axis by two outside groups, so 1.4b is the cleaner reserved rung; the "externally spent" rule 4 was proposed, not taken — `p8_scale_ladder/lit-8.md` §3
 - **After Phase 10:**
   - The formation-point equation predicts the same formation step at every Pythia rung; score it against 70m and 410m's recorded windows (free) — §3.37
   - Invariant 4's set-level trajectory on 410m under `freq`, so both rungs' columns share a probe (forward pass: the matched 9-step grid, 410m)
-  - The `L2H1`×`L3H6` cell on a graded readout, KL or λ (forward pass: one 70m checkpoint)
+  - The `L2H1`×`L3H6` relay × top-member cell on a graded readout, KL or λ, to complete invariant 6's 70m matrix (forward pass: one 70m checkpoint)
   - A registered invariant-4 or invariant-5 prediction on `pythia-1.4b`, registered first (forward pass: the matched grid on 1.4b; plan `HF_HOME` for disk first)
-- **Reviewed:** 2026-09-24 · body `4eb48a7cfc`
+- **Reviewed:** 2026-09-24 · body `3d5370b5b5`
 <!-- /phase-card -->
 
 **Registered predictions:** none yet. The 70m and 410m rungs are exploratory;
@@ -339,6 +339,12 @@ Ablating these heads makes the second-copy prediction *easier*, which is a
 real finding to carry into invariant 6 (redundancy-set direction-coupling) —
 it should not be waved off as noise; `−3.34` is far outside anything readable
 as a null at 8 sequences.
+
+> **Role labels below are the sister project's (PMS), not this project's.**
+> On attention (2026-09-13, "The self-repair chain at 70m") `L3H6`'s induction
+> score is 0.009 at steps 16000 and 143000; 70m's only strong same-token
+> matcher is `L0H3`, in layer 0 (`data/analysis/prev_token_profile_pythia-70m.json`,
+> `wide`). Do not cite this table for "70m's matcher".
 
 **Independent cross-validation of the sister project's cascade — unprompted,
 different method entirely.** The sister project (`PROJECT.md` §3.9-A) located
@@ -749,8 +755,9 @@ members for the first time.
 
 **Still censored, and it is one head.** All five remaining cells are the `L2H1`
 row: at **+6.88** on a 2.67 baseline it exhausts any headroom `freq` buys, so
-`L2H1`×`L3H6` — the direct analogue of 410m's headline prev-token × matcher
-pair — **remains unmeasurable at raw `dNLL` at this rung**. That is not a probe
+`L2H1`×`L3H6` — the relay × top-member pair, in the position of 410m's headline
+prev-token × matcher pair, though `L3H6` is not a matcher (see "The self-repair
+chain at 70m") — **remains unmeasurable at raw `dNLL` at this rung**. That is not a probe
 choice left to make; it needs §3.12-M's graded readout.
 
 **Invariant 5 — `r*` is probe-invariant, so the failure survives a third

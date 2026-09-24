@@ -29,7 +29,10 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the
    8 its calibration record used. Nightly smoke red since 2026-09-19 because
    of it. 14 live files iterate the live battery. Needs a decision: pin
-   P-I5 to v1's keys, or re-register.
+   P-I5 to v1's keys, or re-register. **Also its target:** the registered
+   statement says "an induction head", and its real run's `L3H6` (70m) has
+   induction score 0.009; 70m's matcher is `L0H3` (`status-7.md` "Corrections
+   received", 2026-09-24).
 3. **Branch protection on `main`** is off; red CI has been merged
    (#57, #58). Enabling "require CI to pass" is a GitHub setting.
 4. **Register the large-read hook.** `scripts/hooks/guard_large_read.py` is built and
@@ -48,10 +51,13 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 7. **Whether archived cards should go stale on live edits**:
    `docs/PHASE_REVIEW.md` "Open" 7 (recommended: hashless edges for archived
    cards).
+8. **Which rung for `P-I7` and the first Phase 8 registration.** 70m went to
+   exploration without the recorded call `design-8.md` asked for; 1b is
+   measured by outside groups; so both compete for 1.4b (`status-8.md` card).
 
 ## Open PRs and branches
 
-`claude/phase-cards-8`: phase review session 6, in `../Mets-work`. #81 merged 2026-09-24, its branch deleted. #80 merged 2026-09-24.
+`claude/phase-cards-8`: #82, phase review session 6, in `../Mets-work`. #81 merged 2026-09-24, its branch deleted. #80 merged 2026-09-24.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
@@ -69,7 +75,7 @@ Current state: `./scripts/status.sh`.
 - Literature: five papers read as primary text — `lit-10.md` §11–15, `PROJECT.md` §3.52.
 - Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `archive/docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, Blocked item 4). Measured on the 2026-09-22 session's own transcript: 147 calls, ~19.0M context tokens re-read (avg ~129k/call, peak 214k) vs ~34k of tool output. Session length is the cost driver, not file size. Built since: `tools/session_cost.py` (calls, context, tool output off a transcript), `docs/cost_log.md` (one row per unit; Stop step 7; lesson 9's 2×-median rule), `scripts/status.sh` (Start step 2), and `CLAUDE.md` "While working" lines (one session per unit, batch calls, Edit not shell). Next: A3 (split `handoff-10.md` by stage) and A4 (Stop protocol → skill, claims rules → path rule).
 - Archive batch (2026-09-22): PROJECT's §1, UPDATE_PLAN, POPPER_PLAN's DONE chunks, three CHANGES/PLAN files, six `docs/` one-offs → `archive/`; map `archive/MOVED.md`, lint rule `cited-md-path`, rewriter `tools/rewrite_moved_refs.py`. `literature-8.md` kept (not a duplicate of `lit-8.md`).
-- **Decided 2026-09-22: no per-phase STATE/PROJECT files.** Instead: a card on each `status-N.md`, a generated phase table, and a staleness lint — built (session 1); 16 of 19 rows carded (`docs/PHASES.md`); left: 1d (archived), 8, 10, and 9 once it has a status file.
+- **Decided 2026-09-22: no per-phase STATE/PROJECT files.** Instead: a card on each `status-N.md`, a generated phase table, and a staleness lint — built (session 1); 17 of 19 rows carded (`docs/PHASES.md`); left: 1d (archived), 10, and 9 once it has a status file.
 - Carried from `archive/UPDATE_PLAN.md`: BLOCKED re-derive `DEGENERATE_RANK_THRESHOLD` / `FIEDLER_ACTIVE_RANK_THRESHOLD` on the normed scale (needs the sweep's normed-rank distribution); BLOCKED persist per-head Fiedler (`p1_io._save_sinkhorn` fixed, needs a rerun; fold into the next forward pass, `status-1.md`); BLOCKED `geometry.json` must carry `beta_eff_per_head` (`status-1c.md`); OPEN run Phase 1c/2d on artifacts (`tools/preflight_1c.py` first; `INDEX.md` 1c/2d rows); OPEN regenerate the energy-trajectory PNGs (wrong citation baked into suptitles, `math-1c.md:869`).
 - Also from `archive/UPDATE_PLAN.md`, **for a decision**: §0 left `status-2.md:74,231` and Phase 1b's "Theorem 6.3" for cone collapse (live in `p1b_hemisphere/p1b_report.py:496,503`; the plan says Lemma 6.4, `math-1b.md:38` says "Lemma 6.4, feeding Theorem 6.3", so possibly fine). §4 not doing yet: the 1.4B sweep (gated on claim (c)), new checkpoints, BBGKY, diffusive regularisation, the β→∞ limit.
 - Registry: untouched since the audit. Nothing in Phase 10 is registered. `results/p2d_pilot` (main tree) is quarantined: do not open (user, 2026-09-23; `status-2d.md`).

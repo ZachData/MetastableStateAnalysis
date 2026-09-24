@@ -20,7 +20,7 @@
   - `design-7.md` carries "cone collapse is universal" from a 1b result that 1b says not to cite — `p1b_hemisphere/status-1b.md`
   - `P-I5`'s target `L3H6` was chosen as 70m's `L7H8` analogue, but 70m has no relay-fed matcher (its matcher is `L0H3`, layer 0) — `p8_scale_ladder/status-8.md` "The self-repair chain at 70m"
 - **Registry:** nine `H-BRIDGE` rows, all `active`, none adjudicated. `P-I1` e-value, real run recorded, INSUFFICIENT; `P-ST1`, `P-AB1`, `P-I3` e-value, built, calibrated, unrun (`P-AB1` and `P-I3` have no known-answer dry run); `P-I5` needs-null with a gate and a real-run record, parked, and it iterates the live battery (`STATE.md` Blocked 2); `P-I2`, `P-I4`, `P-I7` nothing built; `P-SA1` instrument frozen — `claims/EXPERIMENTS.md`
-- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d, 8@4eb48a7cfc
+- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d, 8@3d5370b5b5
 - **Feeds:** none
 - **Open threads:**
   - The rotational channel is not wired: `U_S`/`U_A` absent and `real_frac`/`imag_frac` NaN in every table — `p7_motifs/status-7.md` "Build order"
@@ -29,9 +29,9 @@
   - `P-ST1`, `P-AB1`, `P-I3` each need a sweep meeting its own pre-computed requirement — `claims/EVALUABILITY.md`
 - **After Phase 10:**
   - Check whether the 19 tables on disk meet `P-I3`'s and `P-AB1`'s pre-computed requirements, without scoring them (free)
-  - Decide `P-I5`'s battery: pin to the v1 keys or re-register (free, the user's decision)
+  - Decide `P-I5`'s battery (pin to the v1 keys or re-register) and its target (`L3H6` is not an induction head by attention score) (free, the user's decision)
   - Wire the rotational channel from 2b's Schur blocks and rebuild the tables (forward pass: `run_7.py`, about 16 min per checkpoint × 19)
-- **Reviewed:** 2026-09-24 · body `2aaba1bfe9`
+- **Reviewed:** 2026-09-24 · body `01ebf7f87d`
 <!-- /phase-card -->
 
 **Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
@@ -67,7 +67,7 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
 - 2026-09-19 · `P-I1`'s run record committed; four documents had quoted p = 0.1414 · §3.45
 - 2026-09-19 · `P-I5` iterates the live battery, so since v2 it gates on 20 prompts, not the 8 it was calibrated on · `LESSONS.md`
 - 2026-09-23 · `design-7.md`'s "cone collapse is universal" rests on a 1b result 1b says not to cite · `p1b_hemisphere/status-1b.md`
-- 2026-09-24 · `P-I5`'s target, 70m `L3H6`, was picked as "the `L7H8` analogue" (§3.32, 2026-09-16), but Phase 8 had found on 2026-09-13 that 70m has no relay-fed matcher: no head above +1.0 has induction score over 0.024, and the only strong matcher is `L0H3`, in layer 0. Found by the Phase 8 card review; recorded, not acted on · `p8_scale_ladder/status-8.md` "The self-repair chain at 70m"
+- 2026-09-24 · `P-I5`'s target, 70m `L3H6`, was picked as "the `L7H8` analogue" (§3.32, 2026-09-16), but Phase 8 had found on 2026-09-13 that 70m has no relay-fed matcher: no head above +1.0 has induction score over 0.024, and the only strong matcher is `L0H3`, in layer 0. `L3H6`'s induction score is 0.009 at both 16000 and 143000, `P-I5`'s own step (`wide`, `data/analysis/prev_token_profile_pythia-70m.json`); `P-I5` says "ablating an induction head". Found by the Phase 8 card review; recorded, not acted on · `p8_scale_ladder/status-8.md` "The self-repair chain at 70m"
 
 ## E-value audit, Phase 7 (2026-09-19)
 
