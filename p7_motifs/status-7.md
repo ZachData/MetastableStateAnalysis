@@ -20,7 +20,7 @@
   - `design-7.md` carries "cone collapse is universal" from a 1b result that 1b says not to cite — `p1b_hemisphere/status-1b.md`
   - `P-I5`'s target `L3H6` was chosen as 70m's `L7H8` analogue, but 70m has no relay-fed matcher (its matcher is `L0H3`, layer 0) — `p8_scale_ladder/status-8.md` "The self-repair chain at 70m"
 - **Registry:** nine `H-BRIDGE` rows, all `active`, none adjudicated. `P-I1` e-value, real run recorded, INSUFFICIENT; `P-ST1`, `P-AB1`, `P-I3` e-value, built, calibrated, unrun (`P-AB1` and `P-I3` have no known-answer dry run); `P-I5` needs-null with a gate and a real-run record, parked, and it iterates the live battery (`STATE.md` Blocked 2); `P-I2`, `P-I4`, `P-I7` nothing built; `P-SA1` instrument frozen — `claims/EXPERIMENTS.md`
-- **Depends on:** 1@d35ef28264, 2@5e9fc59e62, 8@8cc3fb223c
+- **Depends on:** 1@2627291497, 2@5e9fc59e62, 8@8cc3fb223c
 - **Feeds:** none
 - **Open threads:**
   - The rotational channel is not wired: `U_S`/`U_A` absent and `real_frac`/`imag_frac` NaN in every table — `p7_motifs/status-7.md` "Build order"

@@ -20,6 +20,7 @@ from tools.run.p10_ext_sem_threshold import (
     measure_layer,
     measure_run,
     offdiag_sorted,
+    read_tokens,
     verdicts,
 )
 
@@ -43,6 +44,11 @@ def _write_run(tmp_path, name, act0, pairs, labels, n_ext=None):
           for i, j in pairs]
     if n_ext is None:
         n_ext = int(sum(gram[i, j] > 0.5 for i, j in pairs))
+    toks = [f"t{k}" for k in range(len(act0))]
+    for i, j in pairs:
+        if i == 0:
+            toks[j] = toks[i]
+    (d / "tokens.txt").write_text("".join(f"{k:>3}  {t}\n" for k, t in enumerate(toks)))
     (d / "clustering.json").write_text(json.dumps({"layers": [{
         "layer": 0, "pair_agreement": {
             "mutual_pairs": mp, "n_ext_semantic": n_ext, "ext_sem_threshold": 0.5}}]}))
@@ -127,3 +133,47 @@ def test_aggregate_means_over_prompts_and_layers(tmp_path):
     s = aggregate(results)["by_step"]["self"][0]
     want = np.mean([results[(0, k)]["self"][0]["ext_semantic_fraction"]["abs_0.5"] for k in "pq"])
     assert s["n_runs"] == 2 and s["ext_semantic_fraction"]["abs_0.5"] == pytest.approx(want)
+
+
+def test_tokens_txt_round_trips_its_writer_format(tmp_path):
+    d = tmp_path / "r"
+    d.mkdir()
+    (d / "tokens.txt").write_text("  0  \u0120part\n  1  ,\n  2  \u0120part\n")
+    assert list(read_tokens(d)) == ["\u0120part", ",", "\u0120part"]
+
+
+def test_repeats_at_cosine_one_do_not_leak_into_the_non_repeat_block(tmp_path):
+    """The real data's case: repeated tokens share one vector, a pile at cos 1.
+    Most mutual pairs are repeats; the non-repeat block must see only the rest,
+    and rank them against non-repeat pairs, not the pile."""
+    rng = np.random.default_rng(3)
+    base = _unit(rng, 6, 16)
+    a = base[[0, 0, 0, 0, 1, 1, 1, 2, 3, 4, 5, 5]]      # heavy repetition
+    toks = ["a", "a", "a", "a", "b", "b", "b", "c", "d", "e", "f", "f"]
+    d = tmp_path / "r"
+    d.mkdir()
+    np.savez_compressed(d / "activations.npz", activations=a[None])
+    (d / "tokens.txt").write_text("".join(f"{k:>3}  {t}\n" for k, t in enumerate(toks)))
+    pairs = [(0, 1), (4, 5), (10, 11), (7, 8)]           # three repeats, one not
+    g = a @ a.T
+    mp = [{"i": i, "j": j, "tok_i": toks[i], "tok_j": toks[j], "cross_method_tag": "noise"}
+          for i, j in pairs]
+    (d / "clustering.json").write_text(json.dumps({"layers": [{"layer": 0, "pair_agreement": {
+        "mutual_pairs": mp, "ext_sem_threshold": 0.5,
+        "n_ext_semantic": int(sum(g[i, j] > 0.5 for i, j in pairs))}}]}))
+    out = measure_run(d, _frames(d))
+    lr = out["self"][0]
+    assert lr["identical_token_fraction"] == 0.75
+    assert lr["non_repeat"]["n"] == 1
+    # the all-pairs 0.9 quantile sits in the pile; the non-repeat one does not
+    assert np.quantile(offdiag_sorted(g), 0.9) > 0.999
+    nr_rank = lr["non_repeat"]["mean_percentile"]
+    assert 0.0 <= nr_rank < 1.0 and lr["non_repeat"]["frac_above_q"]["q_0.99"] in (0.0, 1.0)
+
+
+def test_a_tokens_file_that_disagrees_with_the_stored_pairs_is_refused(tmp_path):
+    a = _unit(np.random.default_rng(0), 12, 3)
+    d = _write_run(tmp_path, "r", a, [(0, 1), (2, 3)], [0] * 12)
+    (d / "tokens.txt").write_text("".join(f"{k:>3}  x\n" for k in range(12)))
+    with pytest.raises(ReproductionError):
+        measure_run(d, _frames(d))

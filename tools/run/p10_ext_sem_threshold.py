@@ -51,13 +51,17 @@ WHAT THE FIRST RUN FOUND (post hoc, 2026-09-24; the criterion above is unchanged
 ---------------------------------------------------------------------------------
 The criterion assumed a continuous cosine. It is not: Pythia adds no position
 embedding before layer 0, so two occurrences of one token have cosine exactly 1
-and every other mutual pair sits below 0.32 through step 2000 (below 0.80 at
-143000). Through step 2000 "ext_semantic" **is** "same token", at every
-absolute cut from 0.2 to 0.9 and in both frames. The verdicts the criterion
-returns (``self`` mixed, ``frozen`` dead) turn on quantile cuts over a
-two-valued variable and are recorded, not read. The columns that carry the
-finding are ``identical_token_fraction`` and ``non_identical_above_stored``
-(`status-10.md` §1.6).
+in every frame, and early in training every other mutual pair sits far below
+0.5. The mutual pairs are a **mixture** of repeats (a pile at 1) and non-repeats
+(continuous), and the stored statistic mostly counts the pile. The criterion's
+verdicts are computed as written and recorded. Which cut decides each verdict is
+in the record (`summary.verdict.*.decline`); read that, not the verdict word.
+Two further flaws, both from the pile: a quantile over **all** off-diagonal
+pairs lands inside it when a prompt repeats a lot (`repeated_tokens`), and so
+does the all-pairs percentile rank. The ``non_repeat`` block is added for this
+reason. It takes cuts, quantiles and ranks over non-repeat pairs only, beside
+their base rate in the prompt. That block and ``identical_token_fraction``
+carry the finding (numbers: `status-10.md` §1.6 only).
 
 TIER 1, EXPLORATORY, NOT REGISTERED. Descriptive, no null, not quotable as an
 adjudication. Nothing here touches `claims/registry.json`.
@@ -142,12 +146,52 @@ def mutual_pairs(run_dir: Path) -> list:
     return out
 
 
+def read_tokens(run_dir: Path) -> np.ndarray:
+    """tokens.txt is `{index:>3}  {token}` per line (p1_io._save_tokens)."""
+    out = []
+    for n, line in enumerate((run_dir / "tokens.txt").read_text().split("\n")):
+        if not line.strip():
+            continue
+        idx, _, tok = line.lstrip().partition("  ")
+        if int(idx) != len(out):
+            raise ReproductionError(f"{run_dir.name}: tokens.txt line {n} is index {idx}")
+        out.append(tok)
+    return np.array(out, dtype=object)
+
+
+def non_repeat_offdiag(tokens: np.ndarray) -> tuple:
+    """Upper-triangle indices of the pairs whose two tokens differ."""
+    iu = np.triu_indices(len(tokens), k=1)
+    keep = tokens[iu[0]] != tokens[iu[1]]
+    return iu[0][keep], iu[1][keep]
+
+
+def measure_non_repeat(sims: np.ndarray, sorted_nr: np.ndarray) -> dict:
+    """The non-repeat mutual pairs against the non-repeat pairs of the prompt.
+
+    Repeats sit at cosine 1 in every frame, so any cut or rank over the full
+    off-diagonal distribution lands in that pile when a prompt repeats a lot
+    and splits it by float rounding. Here both sides exclude them.
+    """
+    if len(sims) == 0:
+        return {"n": 0, "frac_above": None, "frac_above_q": None, "mean_percentile": None}
+    return {
+        "n": int(len(sims)),
+        "frac_above": {f"abs_{t:g}": float((sims > t).mean()) for t in ABS_THRESHOLDS},
+        "frac_above_q": {f"q_{q:g}": float((sims > np.quantile(sorted_nr, q)).mean())
+                         for q in QUANTILES},
+        "mean_percentile": float((np.searchsorted(sorted_nr, sims, side="left")
+                                  / len(sorted_nr)).mean()),
+    }
+
+
 def measure_layer(sims: np.ndarray, same: np.ndarray, sorted_offdiag: np.ndarray,
-                  ident: np.ndarray = None) -> dict:
+                  ident: np.ndarray = None, sorted_nr: np.ndarray = None) -> dict:
     """Fractions for one layer's mutual pairs under one frame.
 
     `ident` marks pairs of the same token string: at layer 0 these have cosine
     1 in any frame, since Pythia adds no position embedding before layer 0.
+    `sorted_nr` is the frame's sorted cosines over non-repeat pairs.
     """
     cuts = {f"abs_{t:g}": t for t in ABS_THRESHOLDS}
     cuts.update({f"q_{q:g}": float(np.quantile(sorted_offdiag, q)) for q in QUANTILES})
@@ -163,6 +207,8 @@ def measure_layer(sims: np.ndarray, same: np.ndarray, sorted_offdiag: np.ndarray
         out["identical_token_fraction"] = float(ident.mean())
         out["identical_same_cluster_frac"] = float(same[ident].mean()) if ident.any() else None
         out["non_identical_above_stored"] = float((~ident & (sims > STORED_THRESHOLD)).mean())
+        if sorted_nr is not None:
+            out["non_repeat"] = measure_non_repeat(sims[~ident], sorted_nr)
     return out
 
 
@@ -178,14 +224,25 @@ def measure_run(run_dir: Path, frames: dict) -> dict:
             raise ReproductionError(
                 f"{run_dir.name} layer {L['layer']}: rebuilt {n} ext_semantic pairs, "
                 f"stored {L['stored_n_ext_semantic']}")
+    tokens = read_tokens(run_dir)
+    for L in layers:
+        if not np.array_equal(L["ident"], tokens[L["i"]] == tokens[L["j"]]):
+            raise ReproductionError(f"{run_dir.name}: tokens.txt disagrees with the stored pairs")
+    ri, rj = non_repeat_offdiag(tokens)
     out = {}
+    base = {}
     for fname, (gram, srt) in frames.items():
+        if gram.shape[0] != len(tokens):
+            raise ReproductionError(f"{run_dir.name}: frame {fname} has {gram.shape[0]} tokens")
+        nr = np.sort(gram[ri, rj])
+        base[fname] = {f"abs_{t:g}": float((nr > t).mean()) for t in ABS_THRESHOLDS}
         out[fname] = [dict(layer=L["layer"],
-                           **measure_layer(gram[L["i"], L["j"]], L["same"], srt, L["ident"]))
+                           **measure_layer(gram[L["i"], L["j"]], L["same"], srt, L["ident"], nr))
                       for L in layers]
     out["gram_percentile_of_0.5"] = {
         fname: float(np.searchsorted(srt, STORED_THRESHOLD) / len(srt))
         for fname, (_, srt) in frames.items()}
+    out["non_repeat_base_above"] = base
     return out
 
 
@@ -196,7 +253,7 @@ def _mean(xs):
 
 def aggregate(results: dict) -> dict:
     """results: {(step, key): measure_run output}. Means over prompts x layers."""
-    frames = sorted({f for r in results.values() for f in r if f != "gram_percentile_of_0.5"})
+    frames = sorted({f for r in results.values() for f, v in r.items() if isinstance(v, list)})
     steps = sorted({s for s, _ in results})
     by_step = {}
     for f in frames:
@@ -204,6 +261,16 @@ def aggregate(results: dict) -> dict:
         for s in steps:
             recs = [lr for (st, _), r in results.items() if st == s for lr in r[f]]
             cuts = recs[0]["ext_semantic_fraction"].keys()
+            nr = [lr["non_repeat"] for lr in recs if lr.get("non_repeat", {}).get("n")]
+            bases = [r["non_repeat_base_above"][f] for (st, _), r in results.items()
+                     if st == s and "non_repeat_base_above" in r]
+            non_repeat = {
+                "n_layer_records": len(nr),
+                "frac_above": {c: _mean(x["frac_above"][c] for x in nr) for c in cuts if c.startswith("abs_")},
+                "frac_above_q": {c: _mean(x["frac_above_q"][c] for x in nr) for c in cuts if c.startswith("q_")},
+                "mean_percentile": _mean(x["mean_percentile"] for x in nr),
+                "base_above": {c: _mean(b[c] for b in bases) for c in cuts if c.startswith("abs_")},
+            } if nr else None
             by_step[f][s] = {
                 "n_runs": sum(1 for (st, _) in results if st == s),
                 "ext_semantic_fraction": {c: _mean(lr["ext_semantic_fraction"][c] for lr in recs) for c in cuts},
@@ -214,6 +281,7 @@ def aggregate(results: dict) -> dict:
                     "non_identical_above_stored")},
                 "gram_percentile_of_0.5": _mean(r["gram_percentile_of_0.5"][f]
                                                 for (st, _), r in results.items() if st == s),
+                "non_repeat": non_repeat,
             }
     return {"by_step": by_step, "verdict": verdicts(by_step)}
 

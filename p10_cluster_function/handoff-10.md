@@ -388,11 +388,12 @@ present, and as standing rule 4's *"refuse rather than degrade."*
 ### 1.3 What to do, in order
 
 1. ~~**Sweep the `ext_sem_threshold`**~~ **DONE 2026-09-24 on Stage 0's v1
-   runs** (`status-10.md` §1.6). The threshold never acts. "ext_semantic" is
-   "the two tokens are the same token" (cosine 1 at layer 0, no position
-   embedding), so §1.1's decline is the share of mutual-NN pairs that are repeats,
-   0.875 → 0.696. §1.1's "lexical → contextual" survives only as "repeat →
-   non-repeat". Re-run at 152 runs once Stage 0 completes.
+   runs** (`status-10.md` §1.6, which holds the numbers). The stored count is
+   mostly a repeat count (repeats have cosine 1 at layer 0, no position
+   embedding). §1.1's decline is the repeat share falling. The non-repeat pairs
+   that replace the repeats become similar in the trained embedding, so
+   "lexical → contextual" is backwards on this measure. Re-run at 152 runs once
+   Stage 0 completes.
 2. **The token-composition table, which still does not exist.** Carry
    repeat/non-repeat (a token with an earlier copy in the prompt) as a column:
    step 1 shows it drives the only semantic number the project had. Join
