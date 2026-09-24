@@ -12,6 +12,22 @@ which the claim's product would not show. Nulls and evidence paths are
 activations. **Not run against Pythia weights or artifacts.** P-M1 and P-T1 were registered in
 `PREDICTIONS.md` before this code existed.
 
+**Correction, 2026-09-23: `run_2d.py` did run on Pythia, on 2026-08-17.** Found by
+`docs/PHASE_REVIEW.md` Parked 5; nothing in the repo recorded it. Main tree
+`results/p2d_pilot/` (untracked, 60 MB): 54 `p2d.json` files, `pythia-410m` × 27
+pilot-schedule checkpoints × 2 prompts (`short_heterogeneous`, `wiki_paragraph`), written
+2026-08-17 08:18 → 12:42 **over an earlier run**: the dirs were created 2026-08-14 07:39 →
+12:01 and their files overwritten on 08-17 (`stat`; seen by `/challenge-pr` on #77), so the
+statistics were computed at least twice. **LN frame** in all 54 (so not the raw-frame sensitivity check),
+one warning each (24 operator vs 25 activation layers). No manifest, no `git_sha`, no battery
+hash. Each file carries `p_m1` (verdict, per-layer regime lists, correlation aggregates) and
+`p_t1` (verdict, trimodal / unimodal / equally-spaced rates on candidates and controls): the
+**statistics** the two registered gates score, though not their e-values. It ran before the
+2026-09-19 audit's `P-T1` amendment. **The values were not opened** when this was recorded
+(only key names and provenance fields were read), and nothing says whether anyone read them in
+August. Whether this counts as the peek the design block exists to prevent, and what it means
+for scoring `P-T1` / `P-M1`, is **for the user** (`STATE.md` Blocked).
+
 **Driver complete** as of this revision: LN frame resolution (`resolve_ln_params`) and P-M1's
 violation counts (`violation_counts`) are wired, so `run_2d.py` runs end to end given Phase 2
 weights and a Phase 1 run at a matching revision.
