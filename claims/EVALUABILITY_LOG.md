@@ -50,7 +50,8 @@ The apparatus is nonetheless live. Phase 6's projector path was **rebuilt** in
 is salvaged by copying), which is what taking the two entries out of `dormant`
 required, and both now carry a matched-dimension random-subspace null. They are
 `e-value` and `active`. **No p-value is emitted**: no run artifacts exist here,
-and no exchangeable unit is registered.
+and no exchangeable unit is registered. *(True on 2026-08-24; the unit was
+registered as `model` the next day, `POPPER_PLAN.md` 6l. Noted 2026-09-23.)*
 
 Three things generalise from it:
 
