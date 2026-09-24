@@ -19,6 +19,7 @@
   - Which tokens are clustered is mostly copy count at init and in shallow layers (`min_cluster_size=2`, copies coincide at layer 0), and a moderate effect in the trained model's deep layers. Among unique tokens BPE rank does not predict it; class does, weakly and against trash collection. No null — `p10_cluster_function/status-10.md` §1.7
   - At step 0 layer 0 the partition is what HDBSCAN makes of Gaussian noise with planted duplicates (twins noise at 0.14, singletons clustered at 0.43). At layer 0 the cluster count tracks the prompt's repeated token types at every checkpoint (7-prompt mean ratio 0.92–1.01; per run 0.78–1.24), and ≥ 63 % of clusters at any layer hold a repeat. Phase 1's `max_alive` falls at layer 0 in 92 of 133 runs, mean 57–63 at every step against 59.7 repeated types: on these runs the carrying capacity is mostly a repeat count. `repeated_tokens` is a different mechanism (~50 deep-layer clusters). No null — `p10_cluster_function/status-10.md` §1.8
   - Clustered unique tokens, against step 0: at init, clusters at depth already follow each token's own (random) embedding carried in the residual. Training adds their own class (Δ +0.20 over a random draw, by step 512) and moves them away from copy groups. Own-embedding similarity adds only +0.12, and adjacency a depth-only share. No null — `p10_cluster_function/status-10.md` §1.9
+  - That class effect is not carry of each token's own layer-0 vector: clustered unique tokens keep less of it than unclustered ones. At step 512 it is computed (+0.20 beyond embedding similarity). Trained, it is mostly what the embedding already groups, given a positive control added post hoc. Context vs per-token feature is not separated. No null — `p10_cluster_function/status-10.md` §1.10
   - Lemma C.1's saturation is a formula for Phase 1's 50–55 carrying capacity — `p10_cluster_function/math-10.md` §5.4, §3.53
 - **Superseded / wrong:**
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -35,7 +36,7 @@
   - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint, so F12's density confound and the parked window are argued, not controlled — `p10_cluster_function/status-10.md` §5
-  - Are trained depth clusters still each token's own embedding (lexical) or contextual? How much of the class effect is embedding similarity? The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.9, `p10_cluster_function/handoff-10.md` §1.3
+  - Is the class grouping computed early in training context, or a per-token feature from an early layer? A context-shuffle test would separate them. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.10, `p10_cluster_function/handoff-10.md` Parked
   - Does the pilot's 27-checkpoint "50–55" `max_alive` also fall at layer 0? And what sets `repeated_tokens`' ~50 deep-layer clusters? — `p10_cluster_function/status-10.md` §1.8
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
@@ -44,7 +45,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `d5073bffd7`
+- **Reviewed:** 2026-09-24 · body `770c5b3be5`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -611,9 +612,80 @@ the layer mean, so no single cluster carries a cell.
   in some runs (mean k 76 at step 143000; `homer_iliad` has 190 focal tokens
   there), so their lifts are near 0 and the L24 column is weaker than it
   looks. Whether trained depth clusters are still the token's own embedding
-  (lexical) or contextual is not answered here (Parked in `handoff-10.md`).
+  (lexical) or contextual is not answered here (§1.10 answers part of it).
   The HDBSCAN floor (§3) applies. Only Stage 0's v1 runs; the pilot sweep is
   §1.3 step 3.
+
+### 1.10 §1.9's class effect, lexical or not — **not carry; early it is computed, trained it is mostly what the embedding already groups**
+
+Tier 1, descriptive, no null. Reader `tools/run/p10_lexical_carry.py --v1-only`,
+record `data/analysis/p10_s1_lexical_carry.json` (schema 2). **Input:** as §1.9:
+152 v1 runs through `stage0_index.json`, pin `64a4087`, battery
+`06790b90dcfe`, inputs `c558b210c08f`, tokenizer `c24618a1b3e6`. 2 min on 16
+cores. Same focal tokens and all-positions draw as §1.9. Both checks were parked in
+`handoff-10.md`.
+
+- **Carry** (`self_pct`): the percentile of cos(x_L[i], x_0[i]) among
+  cos(x_L[i], x_0[j]). This removes the common direction. Raw `self_cos` is
+  0.05 at L12, trained.
+- **Split**: `class_given_emb` is the same-class lift with each co-member
+  redrawn from its own-embedding similarity bin, so class is measured beyond
+  similarity. `emb_given_class` is the reverse: similarity with each
+  co-member redrawn within its own class, so similarity is measured beyond
+  class.
+
+**Post hoc, and it decides the reading.** The pre-stated control used
+deciles. At trained **L0**, where the partition is built from the embedding and
+the result is lexical by construction, 10-bin `class_given_emb` is +0.18. That
+is as large as at depth. With 40 bins it is +0.03. So I read depth against
+trained L0 at 40 bins as the lexical reference. The pre-stated 10-bin reading
+("above step 0", Δ +0.13 at the layer mean) is recorded but does not settle it.
+
+`class_given_emb` lift at 10 / 20 / 40 bins (step 0 is ≈ 0 at every bin count and layer, −0.04 to +0.04):
+
+| step | L0 (lexical ref.) | L12 | L24 | layer mean |
+|---|---|---|---|---|
+| 512 | +0.03 / +0.01 / −0.01 | +0.28 / +0.24 / **+0.20** | +0.27 / +0.25 / **+0.20** | +0.28 / +0.24 / +0.20 |
+| 2000 | +0.15 / +0.11 / +0.07 | +0.20 / +0.17 / +0.12 | +0.19 / +0.16 / +0.13 | +0.21 / +0.17 / +0.13 |
+| 143000 | +0.18 / +0.08 / +0.03 | +0.15 / +0.08 / **+0.04** | +0.15 / +0.11 / **+0.07** | +0.16 / +0.09 / +0.05 |
+
+Carry, focal (clustered unique) / unclustered unique, `self_pct` · `self_top1`:
+
+| step | L12 | L24 |
+|---|---|---|
+| 0 | 0.97 / 0.97 · 0.43 / 0.51 | 0.90 / 0.80 · 0.20 / 0.18 |
+| 512 | 0.82 / 0.85 · 0.08 / 0.23 | 0.66 / 0.69 · 0.02 / 0.15 |
+| 143000 | 0.84 / 0.90 · 0.13 / 0.30 | 0.62 / 0.75 · 0.00 / 0.17 |
+
+`emb_given_class` Δ at step 143000: +0.07 L12, −0.02 L24, +0.08 mean. `emb_same`
+Δ +0.11 L12, `emb_cross` Δ +0.02.
+
+- **Not carry of the token's own vector.** The pre-stated reading 3 was that
+  clustered tokens keep more of their own layer-0 vector. They keep less:
+  `self_pct` gap −0.04 at L12 and −0.10 at L24, trained, against ≈ 0 at step 0.
+  At trained L24 no clustered unique token retrieves its own layer-0 vector
+  first, against 17 % of the unclustered ones.
+- **Early in training the class effect is not in the embedding.** At step 512
+  the embedding does not group by class (L0 ≈ 0). Yet depth clusters are
+  +0.20 same-class beyond embedding similarity at 40 bins. Something the
+  network computes does the grouping. This check cannot say whether that is
+  context or a per-token feature computed after layer 0.
+- **Trained, most of it is what the embedding already groups.** At 40 bins, L12's +0.04 is at the lexical
+  reference (+0.03). L24's +0.07 is +0.04 above it, under the floor. As the
+  embedding learns class (L0 rises from step 2000), the extra computed part
+  shrinks. Two to three of 7 prompts carry what remains (40-bin L24:
+  `latex_monograph` +0.23, `hdbscan_code` +0.16, `camus_letranger` +0.08; the
+  rest −0.03 to +0.01).
+- **Within class, embedding neighbours at mid-depth only.** `emb_given_class`
+  Δ is above step 0 at L12 (+0.07) and as step 0 at L24. The embedding
+  preference is among same-class co-members (`emb_same` +0.11, `emb_cross`
+  +0.02).
+- **Caveats.** Binning always leaves some similarity inside a bin: 40 bins
+  still leave +0.03 at L0, and each co-member's own s shrinks a 40-bin lift by
+  ~10 %. "Not the own layer-0 vector" is not "contextual". Position, attention
+  and features computed per token are not separated. A context-shuffle test
+  would separate them (Parked in `handoff-10.md`). The floor, no null and
+  HDBSCAN (§3) apply as in §1.9.
 
 ---
 

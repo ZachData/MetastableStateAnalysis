@@ -319,6 +319,14 @@ needs the user to enable it on GitHub.
   each run's own embedding, step 0 is already +0.20, and the trained increment
   is +0.12, not +0.32. Rule: a baseline must be measured in a frame that could
   have shown the effect at that baseline.
+- 2026-09-24 (§1.10, lexical vs contextual): the pre-stated control held
+  embedding similarity to within a decile and read a positive "class beyond
+  embedding" as not lexical. At trained layer 0, where the partition is built
+  from the embedding, the same control read +0.18, as large as at depth. At 40
+  bins it read +0.03, and the trained depth effect dropped from +0.15 to
+  +0.04–0.07. Caught before the write-up, by looking at the L0 row. Rule: a
+  control that claims to remove X needs a positive control, a place where the
+  effect is X by construction. Run the reading there first.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
