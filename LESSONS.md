@@ -92,7 +92,9 @@ world moves, nobody updates the line, and the next session acts on it.
   (a `.claude/settings.json` edit, so it is the user's to make).
   **Again 2026-09-24:** 20 commits behind (#84–#90); the hook's `STATE.md`
   said chunk 3 was the user's to launch and listed parked items since done.
-  The same Start check caught it; the hook fix is still unmade.
+  The same Start check caught it; the hook fix is still unmade. **Third time,
+  2026-09-24 (after #91):** the main tree sat at `21391c2`, 26 commits behind (#84–#91);
+  the hook's `STATE.md` said chunk 2 was running and Stage 1 not started.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed
@@ -309,6 +311,14 @@ needs the user to enable it on GitHub.
   unique tokens it is "unclear" at all 18. Same rule as above, one level down: a confound
   defined by position in the sequence is not removed by a filter on order.
   Exclude on the symmetric property (copy count), not on "came first".
+- 2026-09-24 (Stage 1 co-membership, #92): the pre-stated reading was
+  Δ = lift(step) − lift(step 0), and the headline property scored co-members
+  in the *trained* embedding. Step 0's clusters come from an unrelated random
+  embedding, so their lift there is ~0 by construction; the Δ tracked the
+  embedding converging, not the clusters. `/challenge-pr` caught it. Scored in
+  each run's own embedding, step 0 is already +0.20, and the trained increment
+  is +0.12, not +0.32. Rule: a baseline must be measured in a frame that could
+  have shown the effect at that baseline.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
