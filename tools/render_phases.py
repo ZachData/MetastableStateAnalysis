@@ -18,9 +18,12 @@ What `card_findings` checks (lint rule `phase-card` calls it):
   Paths under `data/` are not checked (no checkout has them);
 * each "After Phase 10" item states its cost (free, or forward pass);
 * **staleness**, by content rather than by commit: the card records a short
-  hash of its own status file with the card cut out, and one per phase it
-  depends on. Any change to those bodies since the review makes the card
-  stale until someone re-reads the change and runs `--stamp <phase>`;
+  hash of its own status file with the card cut out. Any change to that body
+  since the review makes the card stale until someone re-reads the change and
+  runs `--stamp <phase>`. Depends on lists phase ids with **no hash**: a
+  change to a phase this one reads does not stale this card (user,
+  2026-09-24; a correction reaches a card through the corrected phase's own
+  `## Corrections received`, `docs/phase_card.md`);
 * Depends on / Feeds agree between two phases that both have cards.
 
 Phases without a card are listed in the table as such and not checked, so
@@ -64,7 +67,6 @@ POINTER_FIELDS = ("Results", "Superseded / wrong")
 _FIELD_LINE = re.compile(r"^- \*\*([^*]+):\*\*\s*(.*)$")
 _ITEM_LINE = re.compile(r"^  - (.*)$")
 _REVIEWED = re.compile(r"^(\d{4}-\d{2}-\d{2}) · body `([0-9a-f]{10})`$")
-_DEP = re.compile(r"^([0-9]+[a-z]?(?:-frozen)?)@([0-9a-f]{10})$")
 _PHASE_ID = re.compile(r"^[0-9]+[a-z]?(?:-frozen)?$")
 _NONE = re.compile(r"^none\b", re.IGNORECASE)
 _COST = re.compile(r"\((?:free|forward pass)[^)]*\)", re.IGNORECASE)
@@ -327,19 +329,12 @@ def card_findings(root: Path = ROOT) -> List[Tuple[str, int, str]]:
                              f"{m.group(1)}; read what changed, update the card, then "
                              f"`tools/render_phases.py --stamp {ph.id}`"))
 
-        deps_raw = card.fields["Depends on"][0]
-        for dep in _ids(deps_raw):
-            dm = _DEP.match(dep)
-            if not dm:
-                findings.append((rel, at["Depends on"], f"'{dep}': write each dependency as <phase>@<hash> "
-                                                        f"(`--stamp {ph.id}` fills the hashes)"))
-            elif dm.group(1) not in phases:
-                findings.append((rel, at["Depends on"], f"no phase '{dm.group(1)}'"))
-            elif dm.group(2) != body_hash(phases[dm.group(1)].text):
-                findings.append((rel, at["Depends on"],
-                                 f"STALE: phase {dm.group(1)} "
-                                 f"({phases[dm.group(1)].path}) has changed since this card was "
-                                 f"reviewed; read what changed, then `--stamp {ph.id}`"))
+        for dep in _ids(card.fields["Depends on"][0]):
+            if "@" in dep:
+                findings.append((rel, at["Depends on"], f"'{dep}': dependencies carry no hash since "
+                                                        f"2026-09-24; `--stamp {ph.id}` drops it"))
+            elif not _PHASE_ID.match(dep) or dep not in phases:
+                findings.append((rel, at["Depends on"], f"no phase '{dep}'"))
         for fed in _ids(card.fields["Feeds"][0]):
             if not _PHASE_ID.match(fed) or fed not in phases:
                 findings.append((rel, at["Feeds"], f"no phase '{fed}'"))
@@ -395,7 +390,7 @@ def render(root: Path = ROOT) -> str:
 
 
 def stamp(pid: str, root: Path = ROOT, today: Optional[str] = None) -> str:
-    """Rewrite phase `pid`'s Reviewed line and its dependency hashes."""
+    """Rewrite phase `pid`'s Reviewed line, and its Depends on as bare ids."""
     phases = discover(root)
     if pid not in phases:
         raise SystemExit(f"no phase '{pid}'; known: {', '.join(phases)}")
@@ -408,7 +403,7 @@ def stamp(pid: str, root: Path = ROOT, today: Optional[str] = None) -> str:
         dep = d.split("@")[0]
         if dep not in phases:
             raise SystemExit(f"{ph.path}: depends on unknown phase '{dep}'")
-        deps.append(f"{dep}@{body_hash(phases[dep].text)}")
+        deps.append(dep)
     lines = ph.text.splitlines(keepends=True)
     # A field runs from its own line to the next field's (or the end marker),
     # so a value wrapped over several lines is replaced whole. Last field

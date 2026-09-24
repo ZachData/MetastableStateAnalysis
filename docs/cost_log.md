@@ -57,3 +57,4 @@ running median of the rows above it gets a line under the table saying why.
   took four gate runs and a bisect. Peak context 280k on each later call is
   the cost. The row covers the whole transcript, so #78's row is partly
   double-counted here.
+| 2026-09-24 | Card dependencies without hashes ("Open" 7), same transcript as #84 (measured before the commit/PR calls) | 47 | 163k | 5.4M | 49k | #85 |

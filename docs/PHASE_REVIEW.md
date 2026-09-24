@@ -27,6 +27,7 @@ what it found, what superseded it, and what it left open. Three costs follow:
 | The 12 v2 prompts new to the 410m sweep | **Held out** as Phase 10's confirmation set. Stage 0 still runs all 20; Stages 1–5 read only the 8 v1 prompts until registrations are frozen (`p10_cluster_function/handoff-10.md` §0.4). **Partly seen already**: `CLAIM-C` ran them on 1.4b and gpt2-large (`PROJECT.md` §3.46), so see "Open" |
 | Order vs Stage 0 | In parallel |
 | What makes a card stale ("Open" 5, settled) | **Route corrections to the corrected phase.** A correction to an earlier phase adds a line to that phase's `## Corrections received`, which the existing body hash already covers (`CLAUDE.md` Stop step 2, `docs/phase_card.md`). Rejected: hashing the sections the pointers name. That watches only sections a card already cites, and each of Phase 1's 7 corrections arrived in a section no card cited yet, so it would have caught none of them (`LESSONS.md` lesson 1). Later: a warning lint for unrouted corrections (Parked 3); score the rules against the Superseded lists once several phases have cards (session 9) |
+| Do cards go stale when a phase they read changes? ("Open" 7, settled 2026-09-24, user) | **No, for every card, not only archived ones.** Depends on lists bare phase ids; a card goes stale only on its own status file. Why: the dependency hashes forced re-stamps that changed nothing (card 9 after card 10, session 8; five frozen cards on each `status-1.md` edit, session 4) and caught none of Phase 1's 7 real corrections, which arrived through routing (`LESSONS.md` lesson 1). Cost accepted: a change to phase A that nobody routes to A's readers no longer flags them |
 
 ## Open (for the user, from `/challenge-pr` on #74)
 
@@ -49,16 +50,9 @@ what it found, what superseded it, and what it left open. Three costs follow:
    against). The viz tool's purpose is in `INDEX.md` "Deleted code whose intent
    is kept". Pushing the local `dead/*` tags is optional. The deletion is
    `LESSONS.md` lesson 12.
-7. **Should archived cards go stale when a live phase they read changes?**
-   (`/challenge-pr` on #80, finding 1.) Under the settled rule ("Decisions") they
-   do, so each edit to `status-1.md` (16 commits in September) now also forces
-   a re-stamp of up to five frozen cards whose April runs cannot change. #80
-   already cut the edges that were advice, not data (1b → 4, 5, 5c, 6-frozen;
-   4 → 6-frozen). Proposed: a card under `archive/` lists its dependencies
-   without a hash, so the table still shows the edge but a live edit never
-   stales it; a change to the archived phase's own file still does. Cost: a
-   few lines in `tools/render_phases.py` plus a test. It changes a rule you
-   settled, so it's your call.
+7. ~~Should archived cards go stale when a live phase they read changes?~~
+   **Settled 2026-09-24 (user), wider than proposed:** no card goes stale on
+   a phase it reads, archived or live. See "Decisions".
 
 ## The card
 
