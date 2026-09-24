@@ -58,7 +58,7 @@ import os
 import sys
 from pathlib import Path
 
-REPO = Path(os.environ.get("METS_REPO", "/run/media/system/WDS_500/Mets"))
+REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[2])))  # this checkout, not a hard-coded main tree
 DATA = Path(os.environ.get("METS_DATA", str(REPO / "data")))
 sys.path.insert(0, str(REPO))
 

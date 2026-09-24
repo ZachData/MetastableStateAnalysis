@@ -41,7 +41,10 @@ import os
 import sys
 from pathlib import Path
 
-REPO = Path(os.environ.get("METS_REPO", "/run/media/system/WDS_500/Mets"))
+# Default to THIS checkout, not a hard-coded main tree: importing this module
+# used to put the main tree first on sys.path, so a worktree's test run
+# imported main's code for every package not yet loaded (2026-09-24).
+REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[1])))
 DATA = Path(os.environ.get("METS_DATA", str(REPO / "data")))
 sys.path.insert(0, str(REPO))
 

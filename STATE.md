@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-23 (phase review session 3b: cards 2d, 6; 2d pilot decided; two audit "gaps" already closed) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-24 (Stage 0 chunk 2 launched; `run_2d.py` measurement only; 2d "unseen" confirmed) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -16,15 +16,15 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | | |
 |---|---|
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
-| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 not started.** Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
+| Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 RUNNING** (started 2026-09-24 05:35:20, driver pid 23468 under `flock` + `systemd-inhibit`; plan 233 runs in 48 invocations, ~9.9 h after re-fitting, so **chunk 3 is the last**, 3 runs). Log `data/phase12/stage0_logs/chunk_2026-09-24_05-35-20.log`. Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
 | Next after it | Holdout guard (`docs/PHASE_REVIEW.md` Parked 1), then Stage 1 on the **8 v1 prompts only**: `ext_sem_threshold` sweep, then the token-composition table. **The 12 new v2 prompts are held out on 410m** as the confirmation set until registrations are frozen (user, 2026-09-23; `handoff-10.md` §0.4). Partly seen already via `CLAIM-C` on 1.4b/gpt2-large; scope, count, order and release are open for the user (`docs/PHASE_REVIEW.md` "Open") |
-| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`. **Sessions 1–2 done**: template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card`; phases 1, 1b, 1c carded. **New rule (user, 2026-09-23):** a correction to an earlier phase adds a line to that phase's `## Corrections received` (`CLAUDE.md` Stop step 2), so its card goes stale. Session 2 found an unrecorded post-revision **Phase 1b Pythia run** (2026-08-17, main tree `results/p1b_pilot`), now in `status-1b.md`. **Session 3a** carded 2 and 2b and found three more unrecorded runs: the 2b pilot (in `status-2b.md`), the 2d pilot and the source of `status-2.md`'s Study B numbers (the 2026-08-13 sweep, whose decompose columns contradict "Degenerate columns"). **Session 3b** carded 2d and 6. **2d pilot decided (user, 2026-09-23):** unseen, quarantined, not a scoring input; `P-T1`/`P-M1` get a fresh manifested run. Found: `P-T1`'s amendment had landed 2026-08-11 and the P6 unit was registered `model` 2026-08-25, so the audit's "four blocking decisions" are at most two, not yet checked (`PROJECT.md` §3.45 correction; `docs/PHASE_REVIEW.md` Parked 6–7). **The August runner printed each run's P-T1 verdict to stdout** (Blocked 6). Next: session 4 (archived 3, 4, 5, 5b, 5c, frozen 6). Holdout guard not built: Stage 1 not close |
+| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`. **Sessions 1–2 done**: template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card`; phases 1, 1b, 1c carded. **New rule (user, 2026-09-23):** a correction to an earlier phase adds a line to that phase's `## Corrections received` (`CLAUDE.md` Stop step 2), so its card goes stale. Session 2 found an unrecorded post-revision **Phase 1b Pythia run** (2026-08-17, main tree `results/p1b_pilot`), now in `status-1b.md`. **Session 3a** carded 2 and 2b and found three more unrecorded runs: the 2b pilot (in `status-2b.md`), the 2d pilot and the source of `status-2.md`'s Study B numbers (the 2026-08-13 sweep, whose decompose columns contradict "Degenerate columns"). **Session 3b** carded 2d and 6. **2d pilot decided (user, 2026-09-23):** unseen, quarantined, not a scoring input; `P-T1`/`P-M1` get a fresh manifested run. Found: `P-T1`'s amendment had landed 2026-08-11 and the P6 unit was registered `model` 2026-08-25, so the audit's "four blocking decisions" are at most two, not yet checked (`PROJECT.md` §3.45 correction; `docs/PHASE_REVIEW.md` Parked 6–7). The August runner printed each run's P-T1 verdict to stdout; **the user confirmed 2026-09-24 they never looked**, so "unseen" stands. `run_2d.py` is now measurement only (manifest, gate-ready records, no verdicts; `status-2d.md`). Next: session 4 (archived 3, 4, 5, 5b, 5c, frozen 6). Holdout guard not built: Stage 1 not close |
 
 ## Blocked on the user
 
-1. **Launch Stage 0 chunk 2** (chunk 1 ended 10:31; still check `pgrep` first):
-   `handoff-10.md` §0.3's chunk-2 block (same pin, `flock`, optional
-   `systemd-inhibit`).
+1. **Launch Stage 0 chunk 3** once chunk 2 logs `chunk end` (≈ 15:30 on
+   2026-09-24 if the box stays awake): `handoff-10.md` §0.3's guarded block.
+   `pgrep -af` matches its own shell; use `pgrep -f 'python -m tools.run.stage0_chunk'`.
 2. **P-I5 runs on whatever battery is current.** `p7_motifs/p_i5_ablation.py`
    iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the
    8 its calibration record used. Nightly smoke red since 2026-09-19 because
@@ -39,15 +39,16 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    structured `null_construction` and the code say `model` (2026-08-25).
    Amending the notes is a registry edit, so it is yours. The same goes for whether
    `model` fits Pythia before `P6-R4` runs (`docs/PHASE_REVIEW.md` Parked 6).
-6. **Does the 2d "unseen" decision still hold?** Found after you decided: the
-   August `run_2d.py` printed `P-T1: <verdict>` for each of the 54 runs, and
-   the registry's P-T1 statistic/null were fixed 2026-08-23, after the pilot.
-   `status-2d.md` "The 2026-08 Pythia pilot (quarantined)".
+6. **Which runs `P-T1` / `P-M1` are scored on** (checkpoints, prompts, pooled or
+   per run) is not in the registry; decide before the fresh 2d run
+   (`status-2d.md` "The 2026-08 Pythia pilot (quarantined)").
 
 ## Open PRs and branches
 
-`claude/phase-cards-2d-6`: session 3b, in `../Mets-work`. #77, #76 merged
-2026-09-23. **Branch cleanup done 2026-09-23 (user asked):** every remote and
+`claude/p2d-runner-gates`: `run_2d.py` measurement only, **plus the worktree-gate
+fix** (47 runners put the main tree on `sys.path`, so worktree gates partly
+tested `main`; `docs/PHASE_REVIEW.md` Parked 2), in `../Mets-work`.
+#78, #77, #76 merged. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
 two held only merge commits with no hand resolution, and `cf5f7ee`'s 352 added
 lines are in main verbatim except 4 that main has since rewritten.
@@ -96,6 +97,7 @@ plus `METS_REPO=$PWD METS_DATA=<main>/data` from a worktree; 164 GB free; Phase-
 
 ## Hazards that bite (the full list with history is `LESSONS.md`)
 
+- Worktree script runs: `METS_REPO` now defaults to the script's own checkout, so set `METS_DATA=<main>/data` or it reads the worktree's empty `data/`.
 - On the old box another Claude session may be live in the main tree: work in `../Mets-work`. Everywhere: `git fetch` and recheck HEAD before every commit.
 - Push with the default SSH key; never set `GIT_SSH_COMMAND`.
 - Target PRs at `main`, never at another PR's branch. Check merges with `git merge-base --is-ancestor <tip> origin/main`.

@@ -231,7 +231,7 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 > if you want the box to sleep.
 >
 > ```bash
-> pgrep -af 'tools.run.stage0_chunk' && echo "DRIVER ALIVE: do not launch"
+> pgrep -f 'python -m tools.run.stage0_chunk' && echo "DRIVER ALIVE: do not launch"
 > tail -3 $METS_RESULTS_DIR/stage0_logs/chunk_*.log   # expect a stop line
 > $PY -m tools.run.stage0_chunk --pin $PIN plan       # 380 − done left
 > nohup systemd-inhibit --what=sleep:idle --why=stage0 \
@@ -239,6 +239,13 @@ checkpoint and multiply** rather than launching 228 runs on an estimate.
 >   $PY -m tools.run.stage0_chunk --pin $PIN run --budget-hours 10 \
 >   > /dev/null 2>&1 &
 > ```
+>
+> **2026-09-24: chunk 2 launched 05:35:20** with the block above (driver pid
+> 23468). `plan` re-fitted to 125 s per run at 403 tokens: **233 runs in 48
+> invocations, ~9.9 h**, leaving 3 runs for chunk 3. The old guard
+> `pgrep -af 'tools.run.stage0_chunk'` printed "DRIVER ALIVE" with no driver
+> running: run through `bash -c`, it matches its own shell's command line.
+> The guard above now matches only the python process.
 
 The original single-run instructions, from the main tree, with the environment from `archive/PROJECT-start-here.md`:
 

@@ -22,12 +22,24 @@ bind, and D1's attribution of the monotonicity break is attributing
 something that was not going to happen. The driver prints that reminder
 rather than enforcing it, since a sensitivity run before 1c-B is
 legitimate — it just should not be reported as an attribution.
+
+MEASUREMENT ONLY; IT SCORES NOTHING (2026-09-24). `P-T1` and `P-M1` are
+registered, and this driver computes their inputs, so it must not also show
+their outcome. Until then it called `adjudicate_p_t1` / `adjudicate_p_m1` and
+printed `P-T1: <verdict>` for every run, which is how the 2026-08 pilot put 54
+verdicts on a terminal (`status-2d.md` "The 2026-08 Pythia pilot
+(quarantined)"). Now it writes per-head records and the violation series,
+shaped for the registered gates (`table1_predictions.p_value_p_t1`,
+`gradient_flow_condition.p_value_p_m1`), plus a `manifest.json`, and prints
+only structural facts. Scoring is a separate, deliberate call on the gates, on
+the runs the registration names.
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -36,14 +48,63 @@ from .p2d_io import (
     load_operators, join, revision_from_run, JoinRefused, resolve_ln_params,
     extraction_convention,
 )
-from .gradient_flow_condition import head_regime, adjudicate_p_m1
+from .gradient_flow_condition import head_regime
 from .operator_pairing import (
     token_covariance, operator_conditioned_rank, generalized_energy,
     monotonicity_compare,
 )
 from .table1_predictions import (
-    classify_ov_row, projection_modality, modality_stability, adjudicate_p_t1,
+    classify_ov_row, projection_modality, modality_stability,
 )
+
+
+class ManifestRefused(RuntimeError):
+    """The Phase 1 input has no provenance to carry into this run's manifest."""
+
+
+def build_manifest(out_dir: Path, *, p1_run: Path, model: str, revision: str,
+                   config: dict, wall_time_seconds: float) -> dict:
+    """
+    Write this run's `manifest.json`, carrying the Phase 1 input's provenance.
+
+    The battery hash and prompt key come from the Phase 1 run's own manifest:
+    the activations are what used a battery, and a hash typed on the command
+    line could name a different one. Refuses when that manifest or its hash is
+    missing, since a 2d run that cannot say which battery it measured cannot be
+    selected for scoring (the 2026-08 pilot had no manifest, no `git_sha` and no
+    battery hash). `git_dirty` is recorded because a sha from a modified tree
+    does not name the code that ran.
+    """
+    from core.io import get_git_sha, load_manifest, write_manifest
+
+    p1 = load_manifest(p1_run)
+    if not p1 or not p1.get("prompt_battery_hash"):
+        raise ManifestRefused(
+            f"{p1_run} has no manifest.json with a prompt_battery_hash. A 2d "
+            f"run on it could not say which battery it measured. Use a Phase 1 "
+            f"run that records one.")
+    repo = Path(__file__).resolve().parents[1]
+    try:
+        import subprocess
+        dirty = bool(subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=repo, capture_output=True, text=True, timeout=5,
+            check=True).stdout.strip())
+    except Exception:
+        dirty = None
+    return write_manifest(
+        out_dir, model=model,
+        prompt_battery_hash=p1["prompt_battery_hash"],
+        wall_time_seconds=wall_time_seconds,
+        hf_revision=revision,
+        checkpoint_step=p1.get("checkpoint_step"),
+        prompt_key=p1.get("prompt_key"),
+        git_sha=get_git_sha(repo),
+        config=config,
+        extra={"phase": "2d", "git_dirty": dirty, "scored": False,
+               "p1_run": str(p1_run), "p1_manifest_id": p1.get("manifest_id"),
+               "p1_git_sha": p1.get("git_sha")},
+    )
 
 
 def resolve_hf_repo(model_name: str, revision: str) -> str:
@@ -136,9 +197,15 @@ def violation_counts(run: dict, beta: float) -> tuple:
                  "layer0_is_zero_by_construction": True}
 
 
-def analyse(joined: dict, subexp: set, betas, center_cov: bool,
-            bw_scan: bool) -> dict:
-    """Run the selected sub-experiments over every (layer, head) pair."""
+def analyse(joined: dict, subexp: set, betas, center_cov: bool) -> dict:
+    """
+    Run the selected sub-experiments over every (layer, head) pair.
+
+    D3 always runs the bandwidth scan and stores it as the record's top-level
+    `stability`, which is where `p_value_p_t1` reads `stable_n_modes`. It used
+    to be optional (`--bw-scan`) and nested under `modality`, so the gate would
+    have skipped every head and reported "no candidates" rather than refusing.
+    """
     out = {"frame": joined["frame"], "revision": joined["revision"],
            "warnings": list(joined["warnings"]),
            "d_head": joined["d_head"], "per_head": [],
@@ -169,8 +236,12 @@ def analyse(joined: dict, subexp: set, betas, center_cov: bool,
                 cls = classify_ov_row(h["ov"], M)
                 phi1 = cls.pop("phi1")
                 mod = projection_modality(Y, phi1)
-                if bw_scan and not mod.get("degenerate"):
-                    mod["stability"] = modality_stability(Y, phi1)
+                # A degenerate projection has no mode count at any bandwidth:
+                # recorded as undetermined, so the gate counts it in
+                # `n_undetermined` instead of never seeing the head.
+                rec["stability"] = (
+                    {"stable_n_modes": None, "degenerate": True}
+                    if mod.get("degenerate") else modality_stability(Y, phi1))
                 rec["table1"] = cls
                 rec["row2_candidate"] = cls["row2_candidate"]
                 rec["modality"] = mod
@@ -224,9 +295,6 @@ def main(argv=None) -> int:
                          "anisotropic cloud, so PR_M can read ~1 purely "
                          "because every token shares a direction. Run both "
                          "where kappa_1 is large.")
-    ap.add_argument("--bw-scan", action="store_true",
-                    help="D3 bandwidth-stability scan. Slower, and P-T1 "
-                         "should be adjudicated on the stable count only.")
     ap.add_argument("--ln-which", default="attn", choices=["attn", "ffn"],
                     help="which sublayer's LN frame. 'attn' is the states "
                          "the QK circuit reads and is what every "
@@ -255,6 +323,7 @@ def main(argv=None) -> int:
                          "the LN'd states. A sensitivity check, never the "
                          "primary measurement.")
     args = ap.parse_args(argv)
+    t0 = time.monotonic()
 
     print("NOTE: Phase 2d is sequenced after 1c-B. If T_eff << t*, the "
           "monotonicity break may not be the right thing to attribute.\n")
@@ -345,28 +414,30 @@ def main(argv=None) -> int:
         print(f"  warning: {w}")
 
     res = analyse(joined, set(args.subexp), args.betas,
-                  center_cov=not args.uncentered_cov, bw_scan=args.bw_scan)
+                  center_cov=not args.uncentered_cov)
 
     if "D1" in args.subexp:
+        # P-M1's second input, stored for the gate; not correlated here.
         viols, vinfo = violation_counts(run, args.pm1_beta)
         res["violation_counts"] = {"per_layer": viols, **vinfo}
-        res["p_m1"] = (adjudicate_p_m1(res["per_head"], viols) if viols
-                       else {"verdict": f"no usable energy series: "
-                                        f"{vinfo.get('note')}"})
-    if "D3" in args.subexp:
-        res["p_t1"] = adjudicate_p_t1(res["per_head"])
 
-    args.out.mkdir(parents=True, exist_ok=True)
+    out_dir = args.out / args.p1_run.name
+    config = {k: (str(v) if isinstance(v, Path) else v)
+              for k, v in vars(args).items()}
+    try:
+        build_manifest(out_dir, p1_run=args.p1_run, model=args.model,
+                       revision=args.revision, config=config,
+                       wall_time_seconds=time.monotonic() - t0)
+    except ManifestRefused as exc:
+        print(f"MANIFEST REFUSED: {exc}", file=sys.stderr)
+        return 4
     from p1c_frames.p1c_io import save_p1c
-    save_p1c(res, args.out / args.p1_run.name, name="p2d")
+    save_p1c(res, out_dir, name="p2d")
 
-    n_gf = sum(1 for r in res["per_head"] if r.get("in_gradient_flow_regime"))
+    # Structural facts only. No verdict, rate, count by regime or p-value:
+    # those are the registered gates' outputs (module docstring).
     print(f"\n{len(res['per_head'])} heads, frame={res['frame']}, "
-          f"rev={res['revision']}")
-    if "D1" in args.subexp:
-        print(f"  in gradient-flow regime: {n_gf}")
-    if "D3" in args.subexp:
-        print(f"  P-T1: {res['p_t1']['verdict']}")
+          f"rev={res['revision']} -> {out_dir}")
     return 0
 
 
