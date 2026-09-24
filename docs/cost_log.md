@@ -21,6 +21,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-23 | Phase-review plan + 12-prompt holdout (measured before the commit/PR calls) | 23 | 93k | 1.7M | 20k | #74 |
 | 2026-09-23 | Phase review session 1: card template, `render_phases.py`, lint `phase-card`, Phase 1 card (measured before the commit/PR calls) | 38 | 170k | 4.8M | 45k | #75 |
 | 2026-09-23 | Phase review session 2: cards 1b, 1c, correction routing, unrecorded 1b run (measured before the challenge-pr calls) | 50 | 154k | 5.2M | 35k | #76 |
+| 2026-09-23 | Phase review session 3a: Parked 5 for 2 / 2b / 2d, cards 2, 2b (measured before the commit/PR calls) | 46 | 157k | 4.7M | 41k | #77 |
 
 ## Over 2× median, and why
 
@@ -39,3 +40,7 @@ running median of the rows above it gets a line under the table saying why.
   predicted above, plus a rule decision taken mid-session ("Open" 5) and an
   unrecorded 1b run found and read. Two cards and a rule change per session
   is about the ceiling; session 3 has four cards and should be split.
+- 2026-09-23 phase review session 3a (4.7M, about 2× the median): split as
+  planned (2 cards), but Parked 5 found three unrecorded runs, each needing
+  its own reads (JSON structure, provenance, a second disk). The ceiling holds:
+  two cards plus a disk check per session.

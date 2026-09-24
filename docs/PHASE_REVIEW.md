@@ -62,11 +62,12 @@ the lint checks both ends.
 |---|---|---|
 | 1 | Card template `docs/phase_card.md`, generator `tools/render_phases.py` → `docs/PHASES.md`, lint rule `phase-card` (fields filled, pointers resolve, and **stale when the phase's status file or any file in its "Depends on" changed since the review**, by content hash rather than commit). Phase 1 card done; `INDEX.md`'s priority block deleted | **done** 2026-09-23 |
 | 2 | Cards: 1b, 1c. Also: "Open" 5 settled (corrections routed to `## Corrections received`, Phase 1 backfilled); found an unrecorded post-revision Phase 1b Pythia run from 2026-08-17 and recorded it in `status-1b.md` | **done** 2026-09-23 |
-| 3 | Cards: 2, 2b, 2d, 6 (live `status-6.md`; `P6-R2`/`R4` active, same claim `H-OPERATOR`) | open |
+| 3a | Parked 5 for 2 / 2b / 2d; cards 2, 2b. Found three unrecorded runs: the 2b pilot (2026-08-17, recorded in `status-2b.md`), the 2d pilot (2026-08-17, computed the `P-M1` / `P-T1` statistics on real artifacts; recorded in `status-2d.md`, values not opened, for the user) and a 243-run Phase 2 sweep (2026-08-13) that disagrees with Study B's tables on three columns (`status-2.md` "Phase 2 runs on disk") | **done** 2026-09-23 |
+| 3b | Cards: 2d, 6 (live `status-6.md`; `P6-R2`/`R4` active, same claim `H-OPERATOR`). 2d's card waits on the user's answer about its pilot | open |
 | 4 | Cards: archived 3, 4, 5, 5b, 5c and frozen 6 (`archive/p6_subspace/status-6.md`); the Phase 1d and viz branches → keep / revive / drop | open |
 | 5 | Cards: 7, 7d, 7e | open |
 | 6 | Card: 8 | open |
-| 7 | Card: 9 (no status file yet: create one in `p9_metric_intervention/` for the card), checked against 10 (`notes-10.md` §9) | open |
+| 7 | Card: 9 (no status file yet: create one in `p9_metric_intervention/` for the card), checked against 10 (`notes-10.md` §9). Then add 9 to Phase 2's Feeds (`plan-9.md` reads Phase 2's `sym_*` artifacts; the lint refused it while 9 had no status file) | open |
 | 8 | Card: 10 | open |
 | 9 | Synthesis: the duplicate-question map, the ranked after-Phase-10 list, the e-value plan below | open |
 
@@ -134,3 +135,8 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    `p2b_pilot` and `p2d_pilot` are there too. Why: a card built only from its
    status file inherits the same blind spot. Cost: `ls` plus one manifest each.
    Changes: session 3's 2b and 2d cards; do it at the start of that session.
+   **Done for 2 / 2b / 2d (session 3a, 2026-09-23)**: all three had unrecorded
+   runs (row 3a). Main tree `results/` also holds two empty dirs
+   (`2026-08-12_05-01-35` and `p2_eigenspectra_2026-08-13_05-13-52` read empty
+   only without following their symlinks to HDD_1TB) and `phase3`. The later
+   card sessions still check their own phase's dirs.

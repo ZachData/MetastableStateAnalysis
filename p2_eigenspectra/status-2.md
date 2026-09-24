@@ -1,6 +1,41 @@
 <!-- p2_eigenspectra/status-2.md -->
 # Phase 2 — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Is the sign structure of the value operator's spectrum (its attractive and repulsive eigen-subspaces) what drives the energy-monotonicity violations Phase 1 sees, and when in training does the monotone energy of Theorem 3.4 break?
+- **Inputs:** Study A: GPT-2 / ALBERT / BERT, 35 runs, 2026-04-28 (dir gone). Study B: `pythia-410m`, 27 pilot-schedule checkpoints × 9 prompts of v1 battery `1e47918ef77a`, β = 1.0, summary dated 2026-08-04 (dir gone). On disk: a different 243-run sweep of 2026-08-13 (HDD_1TB) and the 19-step `P-I1` sweep of 2026-08-31 / 09-01 (`data/phase12/`), none with a manifest — `p2_eigenspectra/status-2.md` "Phase 2 runs on disk (checked 2026-09-23)"
+- **Results:**
+  - Monotone energy holds exactly at steps 8–64 (zero violations on all 9 prompts) and breaks between step 128 and step 512 — `p2_eigenspectra/status-2.md` "Headline result"
+  - Violation count and violation attribution are separate curves; `frac_repulsive`'s late decay is a threshold-count effect, and the energy behind the violations stays repulsive-dominated — `p2_eigenspectra/status-2.md` "2026-09-06 — what the dissipation identity"
+  - The 512 → 1000 interval carries the sweep's largest single move (normed rank) and halves the forward-Euler residual — `p2_eigenspectra/status-2.md` "second act at 512 → 1000"
+  - Rescaling by V does almost nothing on Pythia (full V removes 2.1 % of violations); signed-only rescaling does not rescue it at steps 256–5000 — `p2_eigenspectra/status-2.md` "The rescaled frame does essentially nothing", `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
+  - Study A: in GPT-era models V's mixed-sign spectrum is causal for violations, through attention in the larger models and through the FFN in the smaller — `p2_eigenspectra/status-2.md` "Study A — pre-Pythia"
+- **Superseded / wrong:**
+  - The "rotational interference" explanation of the inert rescaled frame: its evidence was an identity — `p2b_imaginary/status-2b.md` "What this changes elsewhere"
+  - `channel`, `frac_ffn_amplifies_rep` and `v_score` are not measurements on Pythia, and Study A and B scores do not compare — `p2_eigenspectra/status-2.md` "Degenerate columns"
+  - The 40000–100000 verdict flip is a threshold landing, not a regime change — `p2_eigenspectra/status-2.md` "Headline result"
+  - Claim (b)'s window: onset is earlier than predicted and finished where it was expected to start — `p2_eigenspectra/status-2.md` "Prediction adjudication"
+  - Next experiment 4 (densify 128–512) cannot be done: no released checkpoint lies there that the sweep lacks — `p2_eigenspectra/status-2.md` "Next experiments, in order"
+  - The only 243-run sweep on disk disagrees with Study B's tables on three columns — `p2_eigenspectra/status-2.md` "Phase 2 runs on disk (checked 2026-09-23)"
+- **Registry:** Phase 2 registers nothing of its own. Its sweep is the instrument of `CLAIM-B` (e-value, active, calibrated on a dry run, not run on real artifacts, cannot clear its own floor: 6 of 19 control series, 19 of 20–30 checkpoints) — `p2d_operator_activation/status-2d.md` "E-value audit, Phase 2 / 2d (2026-09-19)"
+- **Depends on:** 1@6a6e6a3c1a, 2b@a1db9930af
+- **Feeds:** 2b, 2d, 6, 7
+- **Open threads:**
+  - V1–V5, the verification items, are open for Phase 2's own code; the 2b pilot answers V1 and V2 only for 2b's frames
+  - Which run is Study B? Reconcile the tables here with the 2026-08-13 sweep, and decide whether its populated `channel` column means anything
+  - No Phase 2 run dir carries a manifest — `p2_eigenspectra/status-2.md` "(d) Provenance gap"
+  - The parallel-residual attribution (not extraction) module; Study A's Regime B cannot be tested on Pythia without it
+  - The 120000–143000 rebound, the sign structure of the OV-norm confound, and whether the prompt-order inversion is token count
+- **After Phase 10:**
+  - Close V1–V5 from the artifacts on disk (free)
+  - Rebuild Study B's tables from the 2026-08-13 sweep and diff them against this file (free, reads HDD_1TB)
+  - Give `run_2.py` Phase 1's manifest contract (free, code)
+  - Per-channel attribution through the dissipation identity instead of leave-one-in (free, code; inputs exist)
+- **Reviewed:** 2026-09-23 · body `5f0e6731e1`
+<!-- /phase-card -->
+
 **Registered predictions:** `CLAIM-B` (e-value — changepoint co-location null
 in `core/changepoint_colocation.py`, calibrated on a known-answer dry run,
 **not run against real artifacts** — its registered 12-step grid is a subset
@@ -17,7 +52,39 @@ figure in the same table.
 | Study | Scope | Last verified | State |
 |---|---|---|---|
 | A — pre-Pythia | GPT-2 / ALBERT / BERT, 35 model×prompt runs | 2026-04-28 (`results/p2_eigenspectra_2026-04-28_13-22-34`) | Closed as reported, frozen |
-| B — Pythia checkpoints | `pythia-410m`, 27 checkpoints × 9 prompts = 243 runs | 2026-08-04 (source: `p2_eigenspectra_cross_run_summary.txt`; run dir **TBD — fill in**) | Runs complete, **five verification items open before any result is load-bearing** |
+| B — Pythia checkpoints | `pythia-410m`, 27 checkpoints × 9 prompts = 243 runs | 2026-08-04 (source: `p2_eigenspectra_cross_run_summary.txt`; run dir **not on disk**, see "Phase 2 runs on disk") | Runs complete, **five verification items open before any result is load-bearing** |
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-23 when the card was written.
+
+- 2026-08-11 · the "rotational interference" explanation of the inert rescaled frame lost its evidence: `rotation_neutral` was an orthogonal-invariance identity · `p2b_imaginary/status-2b.md` "What this changes elsewhere"
+- 2026-08-17 (found 2026-09-23) · next experiment 2 (signed-only rescaling on Pythia) ran: no frame truncates, both rates mostly negative at steps 256–5000, refused from step 7000 on · `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
+- 2026-08-23 · `decompose.py` now extracts the attention and FFN streams on a parallel-residual model, so the extraction half of "Not yet done" is done; the attribution half is not · `MATH_SPECTRAL_OT.md` "What the identity buys"
+
+## Phase 2 runs on disk (checked 2026-09-23)
+
+| run | where | what | provenance |
+|---|---|---|---|
+| Study A, `p2_eigenspectra_2026-04-28_13-22-34` | **not found** on WDS_500 or HDD_1TB | 35 GPT-2 / ALBERT / BERT runs | the tables in this file only |
+| Study B as recorded here (2026-08-04 summary) | **not found** | 27 × 9 | the tables in this file only |
+| `p2_eigenspectra_2026-08-13_05-13-52` | HDD_1TB `Mets_archive/`, symlinked into the main tree's `results/` (`PROJECT.md` §5.2) | 27 pilot-schedule checkpoints × 9 v1 prompts = 243 runs, cross-run summary, OV weights / projectors / decomps per step | directory mtime only |
+| 19 × `p2_eigenspectra_2026-08-31_*` … `2026-09-01_*` | main tree `data/phase12/` | the 19-step `P-I1` sweep, one checkpoint × 8 v1 prompts each, OV artifacts | directory mtime only ("(d) Provenance gap") |
+
+**The 2026-08-13 sweep is not the Study B these tables describe.** Its
+`falsification` tally is `V_repulsive_local` 136, `no_violations` 90,
+`FFN_independent` 12, `mixed_or_unattributed` 5; Study B's table has 17
+`mixed_or_unattributed` and no `FFN_independent`. Its `channel` column reads
+`FFN` 140, `mixed` 91, `attention` 12, and `frac_ffn_amplifies_rep` is
+populated; "Degenerate columns" says both were empty in all 243 runs. So the
+decompose path returned numbers here. Whether those numbers mean anything is
+open: the 2026-08-23 correction above records the parallel-residual
+*extraction* as already on main by then (whether before or after this run was
+not checked), and the *attribution* as still the sequential leave-one-in
+scheme. Until that is settled, Study B's tables are
+the record of a run that is gone, and the run on disk says something different
+about three columns.
 
 ---
 
@@ -151,7 +218,8 @@ cannot separate them:
 - **Overcorrection.** `improvement = max(0, n_phase1 − n_rescaled)` (`analysis_p2.py:153`)
   clips negatives. A zero may be hiding rescaling that makes violations *worse* — the exact
   failure mode flagged for ALBERT in status-2b caveat 1.
-- **Rotational interference.** Phase 2b established that OV is 84–97% rotational energy but
+- ~~**Rotational interference.**~~ *(Withdrawn: its evidence was an identity. See
+  "Corrections received".)* Phase 2b established that OV is 84–97% rotational energy but
   the *signed* component carries 100% of causal weight. Phase 2's rescaled frame uses full V.
   Signed-only rescaling on Pythia is the discriminating experiment.
 
@@ -276,7 +344,10 @@ it lands.
    0.20 `v_score` term.
 4. **Dense checkpoints between 128 and 512.** The whole onset happens inside one order of
    magnitude with three sampled points. This is where the pilot sweep's reserved adaptive
-   slots should go. **Follow-on (2026-09-06): the 512 → 1000 interval wants the same
+   slots should go. *(2026-09-23: there is nothing to add. Pythia-410M's released steps
+   between 128 and 512 are 128, 256, 512 (`core/pythia_registry.py::PYTHIA_ALL_STEPS`), and
+   the sweep has all three. The same retrain-or-other-family limit as the 512 → 1000 note
+   below applies.)* **Follow-on (2026-09-06): the 512 → 1000 interval wants the same
    treatment** — see the dated section below — but Pythia-410M has **no released checkpoint
    between step 512 and step 1000** (log schedule to 512, then every 1000), so this one
    cannot be filled from the mirror. Any densification there needs a retrain or a different
