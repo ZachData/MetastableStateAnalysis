@@ -15,6 +15,10 @@ in ANY dimension.
 
 Two properties make it worth a check rather than a citation.
 
+(2026-09-24: on Stage 0's 410m runs that finding is mostly a count of the
+prompt's repeated tokens at the embedding layer, `p10_cluster_function/status-10.md`
+Sec 1.8, so the match below may be to a repeat count, not to centres.)
+
 1. It SATURATES IN n. The count is a limit over an infinite sequence, so more
    tokens do not buy more centres. Phase 1's unexplained finding -- max
    simultaneously-alive clusters invariant at 50-55 across all 27 checkpoints,

@@ -605,13 +605,19 @@ before it.
   duplicates reproduce step 0 layer 0's rates (so they are the instrument's, and
   step 0 is the baseline the next reader needs); cluster count ≈ repeated types
   at L0 at every checkpoint, lower in trained deep layers.
-- **Is the carrying capacity a repeat count?** (discovery, from §1.8). Why:
-  7 of 8 prompts say the ~50 clusters track repeated types, which cannot change
-  with training; `repeated_tokens` has 1 repeated type and still ~50 deep-layer
-  clusters. Cost: one pass over the Phase 1 sweep's `max_alive` against
-  repeated types per prompt, plus a look at `repeated_tokens`' deep clusters by
-  position. Changes: Phase 1's carrying-capacity reading and whether Lemma C.1
-  (`math-10.md` §5.4) is its explanation.
+- **Does the pilot's "50–55" carrying capacity also sit at layer 0?**
+  (discovery, from §1.8 and `/challenge-pr` on #91). On Stage 0's v1 runs
+  `max_alive` is mostly a repeat count at the embedding layer (92 of 133 runs
+  peak at L0, mean 57–63). The "50–55" came from the pilot's 27 checkpoints,
+  and what it averaged over is not recorded. Why: it decides whether Phase 1's
+  finding survives at all, and whether Lemma C.1 (`math-10.md` §5.4) has
+  anything left to explain. Cost: one pass over the pilot's labels on
+  `HDD_1TB`. Changes: Phase 1's carrying-capacity result.
+- **What makes `repeated_tokens`' ~50 deep-layer clusters** (discovery, same):
+  1 repeated type, 2 clusters at L0, `max_alive` 41–65 peaking anywhere in
+  L2–L22. Why: a count that arises without repeats, which pure noise does not
+  produce. Cost: its clusters by position, from the §1.7 record's inputs.
+  Changes: whether position is the second thing HDBSCAN counts.
 - **The `p10_*` readers' default selection now mixes sweeps** (confound, found
   building the holdout guard, 2026-09-24): `--pattern pythia-410m-*` over
   `data/phase12` globs the Phase 1 sweep (152), Stage 0's v1 dirs (135 at 12:40)

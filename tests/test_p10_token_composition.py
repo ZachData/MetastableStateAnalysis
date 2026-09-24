@@ -123,14 +123,16 @@ def test_cluster_count_columns(tmp_path):
     assert cc["n_repeated_types"] == 1
     assert cc["by_layer"][0] == {"n_clusters": 1, "single_type": 1, "holds_repeat": 1}
     assert cc["by_layer"][1] == {"n_clusters": 2, "single_type": 1, "holds_repeat": 1}
+    assert cc["max_alive"] == 2 and cc["max_alive_layers"] == [1]
 
 
 def test_cluster_count_summary_drops_repeated_tokens():
     def run(n_rep, n_cl):
-        return {"cluster_count": {"n_repeated_types": n_rep,
-                                  "by_layer": {0: {"n_clusters": n_cl, "single_type": n_cl,
+        return {"cluster_count": {"n_repeated_types": n_rep, "max_alive": n_cl,
+                                  "max_alive_layers": [0], "by_layer": {0: {"n_clusters": n_cl, "single_type": n_cl,
                                                    "holds_repeat": 0}}}}
     s = cluster_count_summary({"a": run(4, 4), "repeated_tokens": run(10, 1)})
     assert s["all"][0]["ratio"] == pytest.approx((1.0 + 0.1) / 2)
     assert s["without_repeated_tokens"][0]["ratio"] == pytest.approx(1.0)
     assert s["without_repeated_tokens"]["n_runs"] == 1
+    assert s["all"]["max_alive_at_layer0"] == 2 and s["without_repeated_tokens"]["max_alive"] == 4

@@ -403,6 +403,13 @@ a wrong premise, the check inherits it.
   binary question (hash the whole file or nothing) without being offered the
   middle option: hash only the Corrections section. `/challenge-pr` found
   all three. #85 had already merged by then, so the fix went into a follow-up PR.
+- 2026-09-24, #91: the author parked "is the carrying capacity a repeat count?"
+  as needing a pass over Phase 1's data, and called it "a competing reading".
+  `max_alive` is the maximum over layers of the per-layer count that #91's
+  own record stored, and 20 lines of reading it answered the question (it peaks
+  at the embedding in 92 of 133 runs). The author also read `repeated_tokens`
+  as evidence against, when it is a different mechanism. Before parking a
+  test, check whether the data already written answers it.
 - Before `/challenge-pr` existed, the 2026-09-12 merge was 51 commits with no
   second reader at all (why the PR-size rule exists).
 

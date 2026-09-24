@@ -21,7 +21,7 @@
   - The energy-trajectory PNGs bake a wrong citation into three suptitles — `math-1c.md` §11
   - `P-S1`'s "floor is attainable" is a p ≤ α test; at the gate's default 500 draws E ≤ 11.2, so it cannot decide alone. And finding 2's "raw-slope β" is the number `core/beta_eff.py` calls comparable — `docs/PHASE_SYNTHESIS.md` "3.1 Attainable E per adjudicable row", `docs/PHASE_SYNTHESIS.md` "3.2 The remaining decisions, checked against the code first (Parked 7)"
 - **Registry:** `P-gamma1`, `P-gamma2` needs-null, blocked (no `beta_eff` in any run dir); `P-H1` measurement, measured on one checkpoint, not adjudicated; `P-S1` e-value, active, dry run only, blocked on inputs (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1@54c1f37216
+- **Depends on:** 1@30c0d54cc5
 - **Feeds:** 2d, 9
 - **Open threads:**
   - β's scale convention, to decide before any producer freezes it in an artifact

@@ -69,7 +69,10 @@ of token types occurring >= 2 times. Per run per layer: ``n_clusters``,
 members are all one token id) and ``holds_repeat`` (clusters holding >= 2
 copies of some id). Summarised per step and layer as means over runs of
 ``n_clusters / n_repeated_types`` and of the two cluster fractions, with and
-without ``repeated_tokens`` (the reviewer's exception). If the ratio is near 1
+without ``repeated_tokens`` (the reviewer's exception). Also Phase 1's
+``max_alive`` (`cluster_tracking.py`: the most clusters at any one layer) and
+the layer where it falls, so the carrying capacity is read off the same
+labels (added after `/challenge-pr` on #91). If the ratio is near 1
 and most clusters hold a repeat, Phase 1's cluster counts are largely a count
 of repeated types. `tools/run/p10_hdbscan_planted.py` is the known answer for
 structureless input.
@@ -299,6 +302,9 @@ def measure_run(run_dir: Path, vocab: dict, added: set = frozenset()) -> dict:
             "single_type": sum(1 for m in member_ids if len(set(m.tolist())) == 1),
             "holds_repeat": sum(1 for m in member_ids if len(m) > len(set(m.tolist()))),
         }
+    per_layer = {L: x["n_clusters"] for L, x in counts["by_layer"].items()}
+    counts["max_alive"] = max(per_layer.values())
+    counts["max_alive_layers"] = [L for L, c in per_layer.items() if c == counts["max_alive"]]
     return {"cells": out, "contrast": contrast, "cluster_count": counts,
             "provenance": prov, "n_tokens": len(tokens),
             "noise_rate": {layer: float((lab == -1).mean()) for layer, lab in labels.items()}}
@@ -376,7 +382,9 @@ def cluster_count_summary(runs: dict) -> dict:
         rs = [r["cluster_count"] for k, r in runs.items() if keep(k)]
         layers = sorted({L for r in rs for L in r["by_layer"]})
         out[subset] = {"n_runs": len(rs),
-                       "n_repeated_types": _mean(r["n_repeated_types"] for r in rs)}
+                       "n_repeated_types": _mean(r["n_repeated_types"] for r in rs),
+                       "max_alive": _mean(r["max_alive"] for r in rs),
+                       "max_alive_at_layer0": sum(1 for r in rs if min(r["max_alive_layers"]) == 0)}
         for L in layers:
             ls = [(r["n_repeated_types"], r["by_layer"][L]) for r in rs if L in r["by_layer"]]
             out[subset][L] = {
@@ -460,7 +468,8 @@ def main() -> None:
         w = cc["without_repeated_tokens"]
         Ls = sorted(k for k in w if isinstance(k, int))
         pick = [Ls[0], Ls[len(Ls) // 2], Ls[-1]]
-        print(f"  step{s:>6}: repeated types {w['n_repeated_types']:.1f}  " + "  ".join(
+        print(f"  step{s:>6}: repeated types {w['n_repeated_types']:.1f}  max_alive {w['max_alive']:.1f} "
+              f"(at L0 in {w['max_alive_at_layer0']}/{w['n_runs']})  " + "  ".join(
             f"L{L}: clusters {w[L]['n_clusters']:.1f} ratio {w[L]['ratio']:.2f} "
             f"hold-repeat {w[L]['holds_repeat_frac']:.2f} single-type {w[L]['single_type_frac']:.2f}"
             for L in pick))

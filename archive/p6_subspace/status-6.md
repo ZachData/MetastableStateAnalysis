@@ -15,7 +15,7 @@
   - The inversion's "two live explanations": the labelling error is ruled out by a planted-structure audit — `claims/audits/p6_projector_labels.json`
   - Neither explanation is assessable until the comparison is normalised by subspace dimension — `p6_subspace/math-6.md` §7.2; at ALBERT's shape the dimension ratio exceeds the alignment ratio, and chance-normalised the numbers point the predicted way — `claims/audits/p6_projector_labels.json`
 - **Registry:** twelve `P6-*` rows; the ten on this instrument are `dormant`; `P6-R2` and `P6-R4` were rebuilt live and belong to the live card — `p6_subspace/status-6.md`
-- **Depends on:** 1@54c1f37216, 2@5e9fc59e62, 2b@69b0e40a60
+- **Depends on:** 1@30c0d54cc5, 2@5e9fc59e62, 2b@69b0e40a60
 - **Feeds:** 6
 - **Open threads:**
   - Per-layer $\dim U_A$ and $\dim U_{\rm neg}$: computed on every run, never reported, and the one ratio that decides the inversion — `MATH_INDEX.md`
