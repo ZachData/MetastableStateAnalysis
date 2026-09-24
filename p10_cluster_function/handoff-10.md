@@ -387,11 +387,15 @@ present, and as standing rule 4's *"refuse rather than degrade."*
 
 ### 1.3 What to do, in order
 
-1. **Sweep the `ext_sem_threshold`** (currently 0.5) over the pilot sweep and
-   check whether the 0.833 → 0.708 decline survives. **Free, and it gates
-   everything in §1.1.** If the decline is threshold-dependent it is a scale
-   artifact and the reading is dead.
-2. **The token-composition table, which still does not exist.** Join
+1. ~~**Sweep the `ext_sem_threshold`**~~ **DONE 2026-09-24 on Stage 0's v1
+   runs** (`status-10.md` §1.6). The threshold never acts. "ext_semantic" is
+   "the two tokens are the same token" (cosine 1 at layer 0, no position
+   embedding), so §1.1's decline is the share of mutual-NN pairs that are repeats,
+   0.875 → 0.696. §1.1's "lexical → contextual" survives only as "repeat →
+   non-repeat". Re-run at 152 runs once Stage 0 completes.
+2. **The token-composition table, which still does not exist.** Carry
+   repeat/non-repeat (a token with an earlier copy in the prompt) as a column:
+   step 1 shows it drives the only semantic number the project had. Join
    `tokens.txt` to `hdbscan_labels.json` and report, per layer per checkpoint:
    clustered vs noise composition by **frequency rank**, by whitespace /
    punctuation / subword-continuation / alphabetic class, and by within-prompt
@@ -594,7 +598,9 @@ before it.
   guard only removes the 12. Why: a re-run of F0/F12/A0 or Stage 1 would pool two
   batteries. Cost: select through `stage0_index.json` (or `core/run_discovery`
   with a battery-hash check) when Stage 1's first reader is written. Changes:
-  what every Stage 1 table is computed on.
+  what every Stage 1 table is computed on. **Done for Stage 1** (2026-09-24):
+  `p10_ext_sem_threshold.py` reads only the index. The older `p10_*` readers
+  still glob; fix them when they are next re-run.
 - **`lit-8.md` never cites `literature-8.md`** (found in the same batch): the
   later leads-only file does not know the earlier fetched readings exist. Why:
   a reader of `lit-8.md` misses 18 verified ids. Cost: one line. Changes:

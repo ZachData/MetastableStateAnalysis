@@ -281,6 +281,14 @@ needs the user to enable it on GitHub.
   `cross_head_association.json` use the same "clears α" test. Rule: a floor
   check compares against **E ≥ 20, i.e. p ≤ 1/1600**, not against α
   (`docs/PHASE_SYNTHESIS.md` §3.1).
+- 2026-09-24 (Stage 1 step 1): `handoff-10.md` §1.1 called `ext_semantic` the
+  project's "semantic instrument", and the threshold sweep's pre-stated verdict
+  was built on a continuous cosine. On Pythia layer 0 the variable takes two
+  values: repeats of one token sit at cosine 1, everything else below 0.32
+  through step 2000. So the threshold had nothing to act on, and the verdict's
+  quantile cuts judged a two-valued variable. Rule: **before fixing a criterion
+  on a statistic, histogram its input once**, on one run. A look at the
+  distribution is not a look at the result.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

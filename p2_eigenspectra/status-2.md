@@ -21,7 +21,7 @@
   - Next experiment 4 (densify 128–512) cannot be done: no released checkpoint lies there that the sweep lacks — `p2_eigenspectra/status-2.md` "Next experiments, in order"
   - "Degenerate columns" (`channel`, `frac_ffn_amplifies_rep` empty in all 243) does not hold for the sweep on disk, which reproduces Study B otherwise; which is right is open — `p2_eigenspectra/status-2.md` "Phase 2 runs on disk (checked 2026-09-23)"
 - **Registry:** Phase 2 registers nothing of its own. Its sweep is the instrument of `CLAIM-B` (e-value, active, calibrated on a dry run, not run on real artifacts, cannot clear its own floor: 6 of 19 control series, 19 of 20–30 checkpoints) — `p2d_operator_activation/status-2d.md` "E-value audit, Phase 2 / 2d (2026-09-19)"
-- **Depends on:** 1@d881a84e97, 2b@69b0e40a60
+- **Depends on:** 1@d35ef28264, 2b@69b0e40a60
 - **Feeds:** 2b, 2d, 3, 4, 5, 5b, 6, 6-frozen, 7, 9
 - **Open threads:**
   - V1–V5, the verification items, are open for Phase 2's own code; the 2b pilot answers V1 and V2 only for 2b's frames
@@ -34,7 +34,7 @@
   - Read the 2026-08-13 sweep's decompose columns against the parallel-residual extraction's date and decide whether "Degenerate columns" still stands (free, reads HDD_1TB)
   - Give `run_2.py` Phase 1's manifest contract (free, code)
   - Per-channel attribution through the dissipation identity instead of leave-one-in (free, code; inputs exist)
-- **Reviewed:** 2026-09-23 · body `27c0fbe55d`
+- **Reviewed:** 2026-09-24 · body `27c0fbe55d`
 <!-- /phase-card -->
 
 **Registered predictions:** `CLAIM-B` (e-value — changepoint co-location null

@@ -36,7 +36,7 @@
   - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
   - Extend `CLAIM-C`'s homogeneity calibration to the v2 prompt count and rescore the v2 arms (free, CPU calibration, cost in §3.46; order against the holdout is `docs/PHASE_REVIEW.md` "Open" 3)
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
-- **Reviewed:** 2026-09-23 · body `6a6e6a3c1a`
+- **Reviewed:** 2026-09-24 · body `e0c7a440e9`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -50,6 +50,7 @@ Superseded list.
 - 2026-09-20 · step0 and step1 are the same weights · §3.51
 - 2026-09-20 · the HDBSCAN partition is not reproducible run to run, so cluster counts carry a floor · `p10_cluster_function/status-10.md` §3
 - 2026-09-20 · the carrying-capacity invariant has a formula (Lemma C.1) · `p10_cluster_function/math-10.md` §5.4
+- 2026-09-24 · on Pythia `ext_sem_frac` is the share of mutual-NN pairs that are the same token (layer 0 has no position embedding, so repeats have cosine 1 and nothing else passes 0.5 before step 4000). D6's frame worry does not apply to it, and it is not a semantic measure · `p10_cluster_function/status-10.md` §1.6
 
 **Registered predictions:** `CLAIM-A` (needs-null — construction specified
 below, deliberately not built; decision 2026-09-17) and `CLAIM-C` (e-value —
