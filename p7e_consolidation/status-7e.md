@@ -15,7 +15,7 @@
   - The five low-rank members sum to 48 under `mean`, not 40 (`L8H6` 24 → 32); the conclusion stands — `p8_scale_ladder/status-8.md` "The matched cross-rung read"
   - The gain-ordered / anti-ordered dichotomy has a third, unordered class (70m `L3H1`) — §3.17
 - **Registry:** none, because `pythia-410m` is exploration-only under the rung policy (`p8_scale_ladder/design-8.md`) and every measurement after surgery would be on a modified model — `p7e_consolidation/status-7e.md`
-- **Depends on:** 7d@751b162e22
+- **Depends on:** 7d
 - **Feeds:** 8, 9, 10
 - **Open threads:**
   - `schur` vs `svd` on `L11H14`: decides whether `induction_rank_sweep`'s `svd` basis is compromised — `p7e_consolidation/status-7e.md` "What is open"

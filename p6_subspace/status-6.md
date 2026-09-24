@@ -13,7 +13,7 @@
 - **Superseded / wrong:**
   - The audit said both active rows lacked a registered exchangeable unit and `P6-R4` was blocked on it alone; the unit was registered as `model` on 2026-08-25 — `p6_subspace/status-6.md` "Corrections received"
 - **Registry:** twelve `P6-*` rows under `H-OPERATOR`: ten `dormant`; `P6-R2`, `P6-R4` `active`, e-value, gated and calibrated, unit `model`, never run. Both registry `notes` fields still say no unit is registered (stale; the user's to amend)
-- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d, 2b@b925d63da4, 6-frozen@3a4b24279a
+- **Depends on:** 1, 2, 2b, 6-frozen
 - **Feeds:** none
 - **Open threads:**
   - Does unit `model` fit Pythia? It was argued from ALBERT's weight tying (one OV, one projector pair); Pythia has a different OV per layer — `p6_subspace/r2_r4_null.py`

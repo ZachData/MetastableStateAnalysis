@@ -134,13 +134,26 @@ def test_an_edit_inside_the_card_does_not(repo):
     assert _msgs(repo) == []
 
 
-def test_a_dependency_edit_makes_the_dependent_stale(repo):
+def test_a_dependency_edit_stales_only_its_own_card(repo):
     _edit(repo, "1", "body text", "a new result")
     msgs = _msgs(repo)
-    assert any("STALE: phase 1" in m for m in msgs)       # on phase 2's card
+    assert any("STALE: status-1.md changed" in m for m in msgs)
+    assert not any("status-2.md" in m for m in msgs)       # phase 2 reads 1
     rp.stamp("1", repo)
-    rp.stamp("2", repo)
     assert _msgs(repo) == []
+
+
+def test_a_hashed_dependency_is_refused_and_stamp_drops_it(repo):
+    _edit(repo, "2", "- **Depends on:** 1", "- **Depends on:** 1@0123456789")
+    assert any("carry no hash" in m for m in _msgs(repo))
+    rp.stamp("2", repo)
+    assert "- **Depends on:** 1\n" in (repo / "p2" / "status-2.md").read_text(encoding="utf-8")
+    assert _msgs(repo) == []
+
+
+def test_a_dependency_on_an_unknown_phase_is_refused(repo):
+    _edit(repo, "2", "- **Depends on:** 1", "- **Depends on:** 1, 42")
+    assert any("no phase '42'" in m for m in _msgs(repo))
 
 
 def test_feeds_and_depends_on_must_agree(repo):
@@ -184,10 +197,10 @@ def test_a_section_after_an_unbackticked_file_is_refused(repo):
 
 
 def test_stamp_replaces_a_field_wrapped_over_lines(repo):
-    _edit(repo, "2", "- **Depends on:** 1@", "- **Depends on:** 1,\n  1@")
+    _edit(repo, "2", "- **Depends on:** 1\n", "- **Depends on:** 1,\n  1\n")
     rp.stamp("2", repo)
     text = (repo / "p2" / "status-2.md").read_text(encoding="utf-8")
-    assert "\n  1@" not in text
+    assert "\n  1\n" not in text
     assert _msgs(repo) == []
 
 
