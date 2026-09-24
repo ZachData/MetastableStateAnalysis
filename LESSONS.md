@@ -105,6 +105,13 @@ world moves, nobody updates the line, and the next session acts on it.
   (`archive/p3_crosscoder/status-3.md` "Runs on disk"). A result without a named
   run directory cannot be re-checked. The card sessions have now found five
   runs that were unrecorded or cannot be produced from what is on disk.
+- 2026-09-24 (phase review session 6): `P-I5`'s target (§3.32, 2026-09-16)
+  was chosen from `status-8.md`'s 2026-09-11 table as "70m's `L7H8`
+  analogue". A later section of the same file (2026-09-13) had already found
+  70m has no relay-fed matcher. The reader cited one section of a file that
+  its own later sections contradict. The same file's "Reproducing" also
+  undercounted which runners take `--probe`, which one `grep` settles. Both
+  were found only because the card session reads the whole status file.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -127,6 +134,10 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-24 (phase review session 6): `check.sh lint | tail -1 && git commit
+  && git push` pushed `3240dfe` with 2 lint errors, because the pipe returns
+  `tail`'s status, not the lint's. Fixed in `47e1820`. Capture the exit code
+  (`> file; rc=$?`) before gating a commit on it.
 - 2026-09-24: `run_2d.py` nested the bandwidth scan under `modality` and ran it
   only with `--bw-scan`, but `p_value_p_t1` reads a top-level `stability` and
   skips heads without it. Scored on the runner's records, `P-T1` would have

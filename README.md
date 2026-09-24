@@ -221,7 +221,7 @@ its registered predictions), and usually a `math-N.md` (the derivations).
 | 7 | `p7_motifs/` | The bridge: mechinterp phenomena as particle **motifs** — typed-edge interaction tables, the motif alphabet, `P-I1` (induction as a two-stage `relay`) | `P-I1` ran end to end and scored INSUFFICIENT (not falsified, not validated). The co-location frame was retired for a construction-level circularity (§3.10); `P-I5`, the frame's own differential test, is parked |
 | 7d | `p7d_redundancy/` | Which heads hold the induction regime on `pythia-410m`, when each formed, how they interact (single- and pairwise ablation) | Q1–Q3 answered, both open axes closed. The `L5H2` puzzle closed on MLP 6's *active* self-repair (§3.20–§3.25) |
 | 7e | `p7e_consolidation/` | Whether the redundancy set collapses into one head (`L11H14`) | Gate measurement answered: the aligned core can consolidate; `L11H14` cannot be folded in. No surgery performed |
-| 8 | `p8_scale_ladder/` | The 7d/7e measurements repeated across Pythia sizes so `n = 1` becomes a population | 70m rung run. Invariants 2 and 4 replicate, 5 does not, 6 needs a ceiling-immune instrument. **1b and 1.4b are reserved** for a registered prediction |
+| 8 | `p8_scale_ladder/` | The 7d/7e measurements repeated across Pythia sizes so `n = 1` becomes a population | 70m rung run. Invariants 1 and 2 replicate, 4 replicates up to its minimum (the fates differ), 5 does not, 6's direction does. Card: `p8_scale_ladder/status-8.md`. **1b and 1.4b are reserved** for a registered prediction |
 
 Phase 6's directory survives at the top level only for the rebuilt
 `P6-R2`/`P6-R4` null (`p6_subspace/r2_r4_null.py`); its original study is in
