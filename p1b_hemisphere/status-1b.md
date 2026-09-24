@@ -14,7 +14,7 @@
 - **Superseded / wrong:**
   - The pre-revision verdict table: Block 0's null and Block 3's positive were one test run twice, the ALBERT row was a path bug, and Block 1's zero events were foreclosed by construction — `status-1b.md` "Retractions and reinterpretations"
   - Cone collapse is not new: it is the anisotropy / common-direction literature's narrow cone — `lit-1b.md` §2
-  - The cone condition cannot fail for n ≤ d in general position, so "100 % cone collapse" at d = 1024 is close to guaranteed, not a finding about transformers — §3.39
+  - In the full d = 1024 stream the cone condition cannot fail for n ≤ d, so a full-dimension cone verdict is free. The pilot tested the top 64 PCs (`pca_n_components = 64`, n > 64), where it can fail and a collapse verdict lifts to full d; the result holds only in that reduced form, still without a null — §3.39
   - `normalized_margin` is not scale-free as documented; 1c's exact margin `hull_min_norm` is the comparable one — `math-1b.md` §7.1
   - The code and the pilot's own report cite cone collapse as "Theorem 6.3"; it is Lemma 6.4 (for a decision) — `archive/UPDATE_PLAN.md` §0
 - **Registry:** none, because the phase is exploratory by design; its findings feed `P-H1` and `CLAIM-A` instead (`claims/EXPERIMENTS.md`)
@@ -31,7 +31,7 @@
   - Adopt `hull_min_norm` for the margin (free, code)
   - Thread LN frames through `run_1b` and test whether the axis attenuates (free, code and CPU)
   - Run on the Stage 0 sweep's 8 v1 prompts (free once Stage 0 lands; the 12 held-out prompts stay out)
-- **Reviewed:** 2026-09-23 · body `902d0cb1e0`
+- **Reviewed:** 2026-09-23 · body `a101a586b1`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -66,7 +66,7 @@ Not recorded anywhere in the repo until the phase-review card session: the
 only mention was a line in `PROJECT.md`'s disk inventory. **Input:**
 `pythia-410m`, 27 pilot checkpoints × 9 v1 prompts (8 plus
 `short_heterogeneous`), battery `1e47918ef77a`, 243 runs, `--from-phase1`
-over the 2026-08-12 Phase 1 pilot, `frame = l2_sphere`, `n_null = 0`,
+over the 2026-08-12 Phase 1 pilot, `frame = l2_sphere`, cone test in the top 64 PCs (`pca_n_components = 64`, per-run JSON), `n_null = 0`,
 `regime_key = regime`, code `3aeab20` (after the revision, and no
 `p1b_hemisphere/*.py` change since). 1309 s wall. **Output:**
 results/p1b_pilot in the main tree (untracked; `phase1b_cross_run.md` is the
