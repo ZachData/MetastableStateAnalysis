@@ -270,6 +270,13 @@ needs the user to enable it on GitHub.
   Rule: **name the confirmation set before new data lands, and list every run
   that has already touched it.** Status: 📋 until the guard (`PHASE_REVIEW.md`
   Parked 1) lands.
+- 2026-09-24 (phase review session 9): the rule below reached the Phase 10
+  runners, not the registered gates. `P-S1`'s gate defaults to 500 draws
+  (too few for E ≥ 20), and its dry run said "the floor is attainable" because it
+  tested p ≤ α = 0.05, which is E ≈ 2.2. `steering_sign.json` and
+  `cross_head_association.json` use the same "clears α" test. Rule: a floor
+  check compares against **E ≥ 20, i.e. p ≤ 1/1600**, not against α
+  (`docs/PHASE_SYNTHESIS.md` §3.1).
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
