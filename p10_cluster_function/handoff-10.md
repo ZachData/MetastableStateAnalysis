@@ -417,6 +417,13 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    carried in the residual. Training adds class (Δ +0.20, by step 512) and moves
    unique tokens away from copy groups. Own-embedding similarity adds only
    +0.12, and adjacency a depth-only share.
+   **2c. Lexical or not, DONE 2026-09-24** (`status-10.md` §1.10;
+   `tools/run/p10_lexical_carry.py`). Not carry: clustered unique tokens keep
+   *less* of their own layer-0 vector than unclustered ones. At step 512 the
+   class effect is computed (+0.20 beyond embedding similarity, and the
+   embedding has no class yet). Trained, it is mostly what the embedding
+   already groups (at L12, +0.04 against a +0.03 lexical reference at 40
+   bins). The pre-stated decile control lacked a positive control; it was added post hoc.
 3. **Report both sweeps.** The pilot has native labels; the WDS sweep has
    backfilled ones. Agreement across them is the §3.51.4 check that every
    partition-derived claim now owes.
@@ -623,16 +630,19 @@ before it.
   L2–L22. Why: a count that arises without repeats, which pure noise does not
   produce. Cost: its clusters by position, from the §1.7 record's inputs.
   Changes: whether position is the second thing HDBSCAN counts.
-- **Are §1.9's trained depth clusters lexical or contextual?** (confound on
-  §1.9, 2026-09-24). At step 0 depth clusters follow each token's own random
-  embedding (`emb_pct_own` +0.22 at L12), so the residual carries it. The
-  trained lift is +0.33, and the class effect may be the same carry, since
-  same-class tokens are embedding-similar. Two cheap checks on the same
-  inputs: each focal token's cosine between its layer-L state and its own
-  layer-0 state, and `emb_pct_own` split into same-class and cross-class
-  co-members. Why: it decides whether §1.9's class effect is semantic or
-  lexical. Cost: one reader option, seconds to run. Changes: what Stage 3
-  (trash collection) is asked of.
+- **Done 2026-09-24: are §1.9's trained depth clusters lexical or
+  contextual?** Both checks were run, plus a post hoc bin-count control
+  (`status-10.md` §1.10). Not carry. The class grouping is computed early and
+  mostly embedding-given when trained.
+- **Is the computed class grouping context, or a per-token feature?**
+  (discovery, from §1.10, 2026-09-24). At step 512, depth clusters are +0.20
+  same-class beyond the embedding, which has no class yet. §1.10 removes only
+  the token's own layer-0 vector, so a feature an early MLP computes per token
+  would look the same as context. Test: shuffle or truncate each prompt's
+  context and re-cluster the same tokens. Why: "a cluster is a category" (Stage
+  3) needs context, not a per-token lookup. Cost: forward passes on shuffled v1
+  prompts at a few steps (≈ 200 s each, CPU). Changes: whether Stage 3's
+  category reading has anything contextual left to explain.
 - **The `p10_*` readers' default selection now mixes sweeps** (confound, found
   building the holdout guard, 2026-09-24): `--pattern pythia-410m-*` over
   `data/phase12` globs the Phase 1 sweep (152), Stage 0's v1 dirs (135 at 12:40)
