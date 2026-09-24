@@ -281,6 +281,18 @@ needs the user to enable it on GitHub.
   `cross_head_association.json` use the same "clears α" test. Rule: a floor
   check compares against **E ≥ 20, i.e. p ≤ 1/1600**, not against α
   (`docs/PHASE_SYNTHESIS.md` §3.1).
+- 2026-09-24 (Stage 1 step 1): `handoff-10.md` §1.1 called `ext_semantic` the
+  project's "semantic instrument", and the threshold sweep's pre-stated verdict
+  was built on a continuous cosine. On Pythia layer 0 the mutual pairs are a
+  mixture: repeats of one token in a pile at cosine 1, the rest continuous and,
+  through step 2000, below 0.32. So the 0.5 cut had nothing to act on early,
+  and the all-pairs quantile cuts landed in the pile. The first write-up then
+  overclaimed the other way ("says nothing about semantics") and misstated which
+  cut drove each verdict. `/challenge-pr` on #89 caught both; the repeat /
+  non-repeat split showed the remainder carries a signal. Rule: **before fixing
+  a criterion on a statistic, histogram its input once**, on one run, and split
+  a mixture before summarising it. A look at the distribution is not a look at
+  the result.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

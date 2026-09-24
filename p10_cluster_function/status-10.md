@@ -15,7 +15,7 @@
   - The 410m sweep had no density partition in 152 of 152 dirs, and `pair_agreement`, the only semantic instrument, wrote well-formed zero records. The backfill re-derives the labels, bit-checked against the pilot, and does not rerun the analysis — `p10_cluster_function/status-10.md` §2, `p10_cluster_function/handoff-10.md` §1.2
   - The HDBSCAN partition is not reproducible run to run (ARI 5th percentile 0.347). A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1
   - 410m's step 0 and step 1 are the same weights, so the checkpoint axis has 18 distinct points — §3.51.3
-  - First look at `pair_agreement` on the pilot: the chance that a lexically similar pair shares a cluster is flat over training, while the share of mutual-NN pairs that are lexically similar falls between steps 512 and 3000. No null, and the threshold was not swept — `p10_cluster_function/handoff-10.md` §1.1
+  - `pair_agreement`'s "ext_semantic" count is mostly a repeat count on Pythia (repeats have cosine 1 at layer 0). Over training the repeat share of mutual-NN pairs falls, and the non-repeat pairs that replace them become similar in the trained embedding. No null — `p10_cluster_function/status-10.md` §1.6
   - Lemma C.1's saturation is a formula for Phase 1's 50–55 carrying capacity — `p10_cluster_function/math-10.md` §5.4, §3.53
 - **Superseded / wrong:**
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -23,23 +23,24 @@
   - §3.53's "no gradient-flow structure": Lemma 5.3 makes the causal dynamics a sequential gradient flow — §3.52.5
   - `handoff-10.md` §0.4's "Stages 1–5 re-run on all 20 prompts for free", which contradicted registering on prompts chosen blind: the 12 are held out on 410m — `p10_cluster_function/handoff-10.md` §0.4, `docs/PHASE_REVIEW.md` "Decisions"
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
+  - `handoff-10.md` §1.1's reading that neighbourhoods go "lexical → contextual": on Stage 0's v1 runs they go from repeats to repeats plus embedding-similar tokens — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
-- **Depends on:** 1@d881a84e97, 5c@e75b33ae46, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
+- **Depends on:** 1@2627291497, 5c@e75b33ae46, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
 - **Feeds:** 9
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
   - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint, so F12's density confound and the parked window are argued, not controlled — `p10_cluster_function/status-10.md` §5
-  - Does `pair_agreement`'s decline survive a threshold sweep, and what are clusters made of by token class (Stage 1)? — `p10_cluster_function/handoff-10.md` §1.3
+  - What are clusters made of by token class and repeat/non-repeat (Stage 1 step 2)? Step 1 is to be re-run at 152 runs once Stage 0 completes — `p10_cluster_function/handoff-10.md` §1.3
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
-  - The `p10_*` readers' default glob now mixes the Phase 1 sweep with Stage 0's v1 dirs. The holdout guard (`core/holdout.py`) removes only the 12, so Stage 1's first reader has to select through Stage 0's index — `p10_cluster_function/handoff-10.md` "Parked", `p10_cluster_function/status-10.md` §0
+  - The `p10_*` readers' default glob now mixes the Phase 1 sweep with Stage 0's v1 dirs. The holdout guard (`core/holdout.py`) removes only the 12. Stage 1's reader selects through Stage 0's index; the older readers still glob — `p10_cluster_function/handoff-10.md` "Parked", `p10_cluster_function/status-10.md` §0
 - **After Phase 10:**
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `d485bfaeb3`
+- **Reviewed:** 2026-09-24 · body `b1bb7ff419`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -312,6 +313,57 @@ checkpoint, which the sweep does not carry. And the whole reading rests on
 §1A.6's **interpretation** of `Z` as a metric, not on a causal measurement.
 **`notes-10.md` §3.1's functional and causal columns are untouched and F5 is
 still what discriminates.**
+
+### 1.6 Stage 1 step 1, the `ext_sem_threshold` sweep — **mostly repeats; the rest become embedding-similar**
+
+Tier 1, descriptive, no null. Reader `tools/run/p10_ext_sem_threshold.py
+--v1-only`, record `data/analysis/p10_s1_ext_sem_threshold.json`. **Input:**
+Stage 0 through `stage0_index.json` (pin `64a4087`, battery `06790b90dcfe`),
+8 v1 prompts × 17 steps = 136 runs (16000 and 54000 were not yet indexed;
+chunk 2 was running), inputs sha256 `61127896b17d`. Every run reproduced its
+stored `n_ext_semantic` at 0.5 exactly, per layer.
+
+Means over 8 prompts × 25 layers. "Repeat": the pair is two copies of one token.
+Non-repeat columns use the **frozen** frame (layer 0 of step 143000), against
+the non-repeat pairs of the same prompt. Base rate of cos > 0.2 in that frame: 0.145.
+
+| step | repeat share | `ext_semantic_fraction` @0.5 (self) | non-repeat: cos > 0.2 | non-repeat: mean percentile | same-cluster among repeats |
+|---|---|---|---|---|---|
+| 0 | 0.875 | 0.875 | 0.010 | 0.37 | 0.700 |
+| 64 | 0.914 | 0.914 | 0.079 | 0.44 | 0.704 |
+| 512 | 0.839 | 0.839 | 0.311 | 0.69 | 0.743 |
+| 2000 | 0.769 | 0.769 | 0.425 | 0.79 | 0.722 |
+| 8000 | 0.733 | 0.747 | 0.477 | 0.80 | 0.703 |
+| 143000 | 0.696 | 0.735 | 0.483 | 0.78 | 0.697 |
+
+- **The stored statistic is mostly a repeat count.** Pythia adds no position
+  embedding before layer 0, so repeats have cosine exactly 1 in every frame.
+  In the self frame, no non-repeat mutual pair passes 0.5 before step 4000,
+  so through step 2000 `ext_semantic_fraction` @0.5 *equals* the repeat share.
+  After that the cut starts to act: at step 143000 the 0.1 and 0.5 cuts
+  differ by 0.15 and self vs frozen by up to 0.03 in between.
+- **The repeat share falls 0.875 → 0.696**, mostly between steps 64 and 4000,
+  after a rise to 0.914 at step 64. The same-cluster rate among repeats is flat.
+- **The non-repeat pairs that replace them become embedding-similar.** Take
+  the trained model's layer-0 embedding as the reference. At init, the
+  non-repeat mutual pairs sit *below* the typical pair (percentile 0.37). From
+  step ~1000 they sit near the 80th percentile, and half have cos > 0.2 against
+  a 0.145 base rate. The rise is steps 64–2000. **§1.1's "lexical →
+  contextual" is backwards on this measure:** neighbourhoods go from "same
+  token" to "same token or a token the trained embedding calls similar".
+  Whether that similarity is semantic is step 2's question.
+- **The pre-stated verdicts.** Self is "mixed" because of the 0.1 cut, below
+  the non-repeat range. Frozen is "dead" because of the all-pairs median cut,
+  which sits in the continuous part. Both are in the record. Neither answers
+  §1.3's scale question, which the split above answers. The all-pairs quantile
+  and rank columns land in the cosine-1 pile when a prompt repeats a lot, so
+  the non-repeat block replaces them (`LESSONS.md` lesson 6).
+- **Caveats.** No null. Layer 0 is 1 of the 25 layers averaged, and there the
+  mutual-NN graph comes from the frame's own Gram. The stored-count gate at 0.5
+  could not have failed on the cosines, since none sit near 0.5; it checks the
+  tags only (the tokens-vs-pairs check is separate). Re-run when Stage 0
+  completes (152 v1 runs). The pilot sweep (§1.1's source) was not re-read; it
+  is §1.3 step 3.
 
 ---
 
