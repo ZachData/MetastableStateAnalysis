@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-24 (phase review session 5: cards 7, 7d, 7e; chunk 2 still running) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-24 (phase review session 6: card 8; chunk 2 still running) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -18,7 +18,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 | Active thread | Phase 10, cluster function — `p10_cluster_function/handoff-10.md` |
 | Current stage | Stage 0, option B: all 20 prompts × 19 checkpoints (380 runs) under v2, in 10-h chunks via `tools/run/stage0_chunk.py`, **3 chunks** planned. **Pin `64a4087`** (run tree `../Mets-stage0`). **Chunk 1 DONE** (2026-09-22 21:20 → 2026-09-23 10:31; survived an overnight suspend): 144/380 runs indexed, all populated. **Chunk 2 RUNNING** (started 2026-09-24 05:35:20, driver pid 23468 under `flock` + `systemd-inhibit`; plan 233 runs in 48 invocations, ~9.9 h after re-fitting, so **chunk 3 is the last**, 3 runs). Log `data/phase12/stage0_logs/chunk_2026-09-24_05-35-20.log`. Detail and the guarded launch block: `handoff-10.md` §0.3 (the runbook) |
 | Next after it | Holdout guard (`docs/PHASE_REVIEW.md` Parked 1), then Stage 1 on the **8 v1 prompts only**: `ext_sem_threshold` sweep, then the token-composition table. **The 12 new v2 prompts are held out on 410m** as the confirmation set until registrations are frozen (user, 2026-09-23; `handoff-10.md` §0.4). Partly seen already via `CLAIM-C` on 1.4b/gpt2-large; scope, count, order and release are open for the user (`docs/PHASE_REVIEW.md` "Open") |
-| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`; its sessions table holds each session's findings. **Sessions 1–5 done**: cards for 1 through 7e (`docs/PHASES.md`), template `docs/phase_card.md`, lint rule `phase-card`. Standing rules from it: a correction to an earlier phase adds a line to its `## Corrections received` (user, 2026-09-23); deleted code may go if its intent stays (user, 2026-09-24; `LESSONS.md` lesson 12). Decided: the 2d pilot is quarantined and unseen; `P-T1`/`P-M1` get a fresh manifested run (`status-2d.md`). For the user before Phase 10 registers: `docs/PHASE_REVIEW.md` Parked 8 (410m's induction axis is spent). Next: session 6 (8). Holdout guard not built: Stage 1 not close |
+| Parallel thread | Phase review, docs-only: a card per phase, a generated phase table, duplicate map, after-Phase-10 list, e-value plan. 9 sessions — `docs/PHASE_REVIEW.md`; its sessions table holds each session's findings. **Sessions 1–6 done**: cards for 1 through 8 (`docs/PHASES.md`), template `docs/phase_card.md`, lint rule `phase-card`. Standing rules from it: a correction to an earlier phase adds a line to its `## Corrections received` (user, 2026-09-23); deleted code may go if its intent stays (user, 2026-09-24; `LESSONS.md` lesson 12). Decided: the 2d pilot is quarantined and unseen; `P-T1`/`P-M1` get a fresh manifested run (`status-2d.md`). For the user before Phase 10 registers: `docs/PHASE_REVIEW.md` Parked 8 (410m's induction axis is spent). Session 6 found `P-I5`'s 70m target `L3H6` is not a matcher (Phase 8, 2026-09-13; routed to `status-7.md`). Next: session 7 (9). Holdout guard not built: Stage 1 not close |
 
 ## Blocked on the user
 
@@ -51,7 +51,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-`claude/phase-cards-7`: #81, phase review session 5, in `../Mets-work`. #80 merged 2026-09-24, its branch deleted.
+`claude/phase-cards-8`: phase review session 6, in `../Mets-work`. #81 merged 2026-09-24, its branch deleted. #80 merged 2026-09-24.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:

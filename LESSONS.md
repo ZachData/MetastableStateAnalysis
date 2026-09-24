@@ -105,6 +105,13 @@ world moves, nobody updates the line, and the next session acts on it.
   (`archive/p3_crosscoder/status-3.md` "Runs on disk"). A result without a named
   run directory cannot be re-checked. The card sessions have now found five
   runs that were unrecorded or cannot be produced from what is on disk.
+- 2026-09-24 (phase review session 6): `P-I5`'s target (§3.32, 2026-09-16)
+  was chosen from `status-8.md`'s 2026-09-11 table as "70m's `L7H8`
+  analogue". A later section of the same file (2026-09-13) had already found
+  70m has no relay-fed matcher. The reader cited one section of a file that
+  its own later sections contradict. The same file's "Reproducing" also
+  undercounted which runners take `--probe`, which one `grep` settles. Both
+  were found only because the card session reads the whole status file.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
