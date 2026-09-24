@@ -34,11 +34,12 @@
   - Does `pair_agreement`'s decline survive a threshold sweep, and what are clusters made of by token class (Stage 1)? — `p10_cluster_function/handoff-10.md` §1.3
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
+  - The `p10_*` readers' default glob now mixes the Phase 1 sweep with Stage 0's v1 dirs. The holdout guard (`core/holdout.py`) removes only the 12, so Stage 1's first reader has to select through Stage 0's index — `p10_cluster_function/handoff-10.md` "Parked", `p10_cluster_function/status-10.md` §0
 - **After Phase 10:**
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-24 · body `8d9aa06175`
+- **Reviewed:** 2026-09-24 · body `f63187c4b0`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -104,6 +105,7 @@ carry a registered prediction where the current one cannot.**
 
 | what | where | tier |
 |---|---|---|
+| the holdout guard | `core/holdout.py` — `refuse_held_out`, `add_holdout_args`; every `tools/run/p10_*.py` calls it, and `tests/test_holdout.py` fails any that does not | pure |
 | statistics + content-free baselines | `core/parking.py` | pure |
 | the arbitrary-dependence e-merger | `core/evalues.py` — `average`, `average_p`, `max_attainable_average_E` | pure |
 | tie-tolerant p, restricted null | `core/nulls.py` — `p_from_null_tolerant`, `label_permutation_null_within` | pure |
@@ -132,6 +134,19 @@ METS_REPO=$PWD METS_DATA=/run/media/system/WDS_500/Mets/data \
 ```
 
 **The conda `mets` env, not `.venv`,** for anything touching HDBSCAN — §2.
+
+**The holdout guard (2026-09-24).** Readers refuse held-out inputs by default.
+`--v1-only` drops them and `--allow-holdout` reads them; both are recorded under
+`"holdout"` in the output record. It holds out: a run dir for one of the 12 keys (any
+model; by `manifest.json` `prompt_key`, else by name), any file named for one,
+a pooled file beside such a run dir (`pair_agreement.json`), and
+`claim_c_real_run.json`. Dry run on `data/phase12` at 12:40, chunk 2 mid-step512,
+reading names and manifest `prompt_key` only: 632 `pythia-410m-*` dirs, 193 held
+out, 439 kept. Of the 8 `2026-09-19_*` `CLAIM-C` dirs, the four v2 ones (21 run dirs
+each, 48 held out in total) are flagged, and so is each one's `pair_agreement.json`; the four
+v1-only ones (9 each) are not. **The records above predate the guard and Stage 0.**
+Re-running a reader on the default `--pattern pythia-410m-*` now also globs Stage 0's
+v1 dirs beside the Phase 1 sweep (handoff Parked).
 
 ---
 

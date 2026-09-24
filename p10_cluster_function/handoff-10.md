@@ -279,7 +279,9 @@ prediction becomes possible on a battery whose rows were chosen blind.**
 > are Phase 10's **confirmation set**. Stage 0 runs all 20, but Stages 1–5 read
 > **only the 8 v1 prompts** until the predictions scored on the 12 are in
 > `claims/registry.json`. Checking that Stage 0's outputs are *populated* is not
-> reading them.
+> reading them. **Enforced in code (2026-09-24):** `core/holdout.py`. Every
+> `tools/run/p10_*.py` refuses held-out inputs unless given `--v1-only` (drop them) or
+> `--allow-holdout`, and a test fails any reader that skips it (`status-10.md` §0).
 > **They are not fully unseen.** `CLAIM-C` ran all 20 on pythia-1.4b and
 > gpt2-large, trained and random (`PROJECT.md` §3.46; `data/phase12/2026-09-19_*`).
 > `claims/audits/claim_c_real_run.json` carries per-prompt cluster count,
@@ -581,6 +583,14 @@ before it.
 
 ## Parked
 
+- **The `p10_*` readers' default selection now mixes sweeps** (confound, found
+  building the holdout guard, 2026-09-24): `--pattern pythia-410m-*` over
+  `data/phase12` globs the Phase 1 sweep (152), Stage 0's v1 dirs (135 at 12:40)
+  and the `p2_eigenspectra_*` dirs, so one (prompt, step) can appear twice. The
+  guard only removes the 12. Why: a re-run of F0/F12/A0 or Stage 1 would pool two
+  batteries. Cost: select through `stage0_index.json` (or `core/run_discovery`
+  with a battery-hash check) when Stage 1's first reader is written. Changes:
+  what every Stage 1 table is computed on.
 - **`lit-8.md` never cites `literature-8.md`** (found in the same batch): the
   later leads-only file does not know the earlier fetched readings exist. Why:
   a reader of `lit-8.md` misses 18 verified ids. Cost: one line. Changes:

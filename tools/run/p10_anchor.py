@@ -101,6 +101,7 @@ from core.nulls import (
     label_permutation_null_within,
     p_from_null_tolerant,
 )
+from core.holdout import add_holdout_args, refuse_held_out
 from core.parking import (
     cluster_nuclei,
     clustered_position_bias,
@@ -277,12 +278,16 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_f0_anchor.json"))
+    add_holdout_args(ap)
     args = ap.parse_args()
 
     root = Path(args.root)
+    candidates, holdout = refuse_held_out(
+        (d for ts in sorted(root.glob("*")) if ts.is_dir()
+         for d in sorted(ts.glob(args.pattern)) if d.is_dir()),
+        allow=args.allow_holdout, drop=args.v1_only, context="p10_anchor")
     targets = sorted(
-        d for ts in sorted(root.glob("*")) if ts.is_dir()
-        for d in sorted(ts.glob(args.pattern)) if d.is_dir() and read_labels(d)
+        d for d in candidates if read_labels(d)
     )
     if args.limit:
         targets = targets[: args.limit]
@@ -304,6 +309,7 @@ def main() -> None:
                 "anything, by decision; not quotable as an adjudication)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "root": str(root),
+        "holdout": holdout,
         "n_permutations": N_PERMUTATIONS,
         "seed": args.seed,
         "kappa": DEFAULT_KAPPA,

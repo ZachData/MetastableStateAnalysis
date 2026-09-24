@@ -100,6 +100,7 @@ from core.evalues import (
     max_attainable_average_E,
 )
 from core.nulls import label_permutation_null, p_from_null_tolerant
+from core.holdout import add_holdout_args, refuse_held_out
 from core.parking import (
     log_partition_function,
     log_position_corrected_partition_function,
@@ -294,13 +295,17 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_f12_z.json"))
+    add_holdout_args(ap)
     args = ap.parse_args()
 
     root = Path(args.root)
+    candidates, holdout = refuse_held_out(
+        (d for ts in sorted(root.glob("*")) if ts.is_dir()
+         for d in sorted(ts.glob(args.pattern)) if d.is_dir()),
+        allow=args.allow_holdout, drop=args.v1_only, context="p10_partition_function")
     targets = sorted(
-        d for ts in sorted(root.glob("*")) if ts.is_dir()
-        for d in sorted(ts.glob(args.pattern)) if d.is_dir()
-        and (d / "activations.npz").exists() and read_labels(d)
+        d for d in candidates
+        if (d / "activations.npz").exists() and read_labels(d)
     )
     if args.limit:
         targets = targets[: args.limit]
@@ -321,6 +326,7 @@ def main() -> None:
         "tier": "1 (exploratory, unregistered)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "root": str(root),
+        "holdout": holdout,
         "betas": BETAS,
         "n_permutations": N_PERMUTATIONS,
         "seed": args.seed,

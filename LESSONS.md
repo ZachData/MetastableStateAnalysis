@@ -229,6 +229,10 @@ set it ran on (battery hash, key list) and refuses on a mismatch. Status:
   on every dev machine, all of which have numpy.
 - CI ran Python 3.11; the local envs are 3.14 (`.venv`) and 3.10 (conda). Fixed
   by #63 (matrix py3.10 + py3.14).
+- 2026-09-24: `tests/conftest.py` replaces `core.config` with a stub whose
+  `PROMPTS` has 2 keys, so a test that imports `PROMPTS` checks the stub, not the
+  battery. `test_holdout.py` failed on that and now reads the keys from
+  `core/config.py` with `ast`. Any test asserting on the real battery has to do the same.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to

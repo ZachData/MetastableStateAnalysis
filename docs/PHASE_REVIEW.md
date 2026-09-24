@@ -129,6 +129,8 @@ for dependent units, since a product over-rejected, `LESSONS.md` lesson 6),
    small, `core/` + tests. Changes: whether the confirmation set survives Stage 1.
    **Not built in session 1** (2026-09-23): Stage 0 has chunks 2 and 3 to go
    (about 20 h, chunk 2 not launched), so Stage 1 was not close.
+   **Built 2026-09-24:** `core/holdout.py`, wired into all four
+   `tools/run/p10_*.py`; how it works and what it caught are in `status-10.md` §0.
 2. **A gate run from `../Mets-work` printed a warning from the main tree's
    `p1c_frames/integration_time.py`** (`tests/test_run_1c_beta_gate.py`),
    though `import p1c_frames` resolves to the worktree. Why: if some test
