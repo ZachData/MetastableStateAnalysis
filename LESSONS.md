@@ -45,6 +45,13 @@ world moves, nobody updates the line, and the next session acts on it.
   declined to compute their statistics to avoid a peek, while 54 files on
   disk already held those statistics in the LN frame. An audit that reads the
   docs and the registry cannot see a run nobody wrote down; `ls results/` can.
+- 2026-09-24 (phase review session 5): the same pattern a fourth time, the
+  other way round. `status-7.md` said "still nothing has executed against any
+  model" and listed `P-I1` as "not run" for three weeks after all 19
+  `data/phase7/` tables were written and `P-I1` scored on them. The runs *were*
+  recorded, in `PROJECT.md` §2, §3.6 and the provenance audit; the status file
+  was never told. Its header even contradicted its own audit section below it.
+  Same fix: the phase's `## Corrections received`, and `ls data/phase<N>/`.
 - 2026-09-23 (phase review session 3b): the 2026-09-19 e-value audit listed
   four "blocking decisions nobody has taken". Two had been taken in August:
   `P-T1`'s amendment landed 2026-08-11 with the code (`PREDICTIONS.md`

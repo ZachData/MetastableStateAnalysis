@@ -1,6 +1,43 @@
 <!-- p7d_redundancy/status-7d.md -->
 # Phase 7d — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Which of `pythia-410m`'s 384 heads carry the induction readout causally, when did each form, do they act as one redundant set or several, and how are their writes arranged in the residual stream the particles move in?
+- **Inputs:** `pythia-410m`, 1 to 23 checkpoints per runner, weights-only head/MLP ablation (`ov`, which is a bias-ablation, and `mean`), repeated-random-token probe (`wide`), 8–16 sequences; no battery prompts. The FV run adds four word-pair tasks. Outputs `data/analysis/*.json`, git-ignored; each section names its file, and the `mean` reruns (2026-09-11/12) are `*_pythia-410m_mean*.json`. Rerun lines: `p7d_redundancy/status-7d.md` "Reproducing"
+- **Results:**
+  - The set is small and heavy-tailed: about 4 substantial members and 10 with any effect, of 384, spread over layers 5–15 — `p7d_redundancy/status-7d.md` "Q1 — membership"
+  - The members did not form together; the window is (512, 4000] — `p7d_redundancy/status-7d.md` "Q2 — **no, they did not form together.**"
+  - One redundant set, not several; most of the pairwise interaction is the product of the two solo effects — `p7d_redundancy/status-7d.md` "Pass 2"
+  - Born aligned, then one head (`L11H14`) leaves a locked core; redundancy survives the separation — `p7d_redundancy/status-7d.md` "The geometry"
+  - Division of labour: one member does induction, four carry function vectors, none does both — `p7d_redundancy/status-7d.md` "The FV-head experiment"
+  - `L5H2` is a previous-token relay feeding `L7H8`'s matching attention — `p7d_redundancy/status-7d.md` "The upstream-relay check"
+  - The exhaustive self-repair sweep: MLP 6 is the largest stand-in, and the attention search had missed the four largest — `p7d_redundancy/status-7d.md` "Tying up the self-repair"
+  - `L5H2` and MLP 6 are an OR-gate; MLP 6's repair is an active rotation aimed at the set's key read-space, and it moves the heads it points at — `p7d_redundancy/status-7d.md` "Opening MLP 6", "Geometry predicts function"
+  - The 410m results are mode-invariant: `mean` reproduces the `ov` numbers — §3.15
+- **Superseded / wrong:**
+  - "The stand-ins are those three members" was superseded by the exhaustive sweep — `p7d_redundancy/status-7d.md` "Tying up the self-repair"
+  - `ov` "zero-ablation" leaves the value bias, so it is a bias-ablation; immaterial, a hook zero reproduces it bitwise — §3.15
+  - `mean` is not the conservative control when the mechanism is itself the mean (MLP 6); found at 70m — §3.26
+  - The `wide` probe's token range is out of distribution; `freq` is the better probe, added as an arm — §3.15, §3.17
+  - "Spent under `check_registry` rule 3": rule 3 is a per-artifact warning; the spent status is the rung policy — `p7d_redundancy/status-7d.md` "Corrections received"
+- **Registry:** none, because every measurement is on `pythia-410m`, which the rung policy keeps for exploration only (`p8_scale_ladder/design-8.md`); `claims/EXPERIMENTS.md` lists 7d as a live instrument with no prediction
+- **Depends on:** none
+- **Feeds:** 7e, 8, 10
+- **Open threads:**
+  - Q4 (structure per member) and Q5 (classes), mostly on disk and unread — `p7d_redundancy/status-7d.md` "What is open"
+  - The step-1000 circuit (`L5H2` + `L11H14`, no `L7H8`); its pilot's sub-additive sign is outside the readout's range — `p7d_redundancy/status-7d.md` "The pilot that must not be over-read"
+  - Why `L11H14` is the strongest output-side stand-in for `L5H2`; per-member attribution of MLP 6's rotation is unrun — `p7d_redundancy/status-7d.md` "Decoding the repair direction"
+  - `L6H0`, not a member, falls harder than `L7H8` when `L5H2` is ablated: a second downstream matcher, unfollowed — `p7d_redundancy/status-7d.md` "Self-repair (2026-09-13)"
+- **After Phase 10:**
+  - Q4 from the sweeps already on disk (`qk_symmetry_sweep`, `ov_per_head_series`, `copying_score_sweep`, `behavioural_series`) (free)
+  - `L11H14`'s step-1000 copying score (free: weights only)
+  - The step-1000 pair on the graded readout, KL or λ, instead of raw dNLL (forward pass: one checkpoint)
+  - Per-member attribution of MLP 6's rotation to `L7H1` / `L8H6` / `L8H9` (forward pass: two checkpoints)
+- **Reviewed:** 2026-09-24 · body `a3b51a0ed1`
+<!-- /phase-card -->
+
 **Registered predictions:** none. Every number in this phase is a measurement
 on pythia-410m, an artifact that is spent under `check_registry` rule 3 —
 nothing here can be registered after the fact, and nothing in it may carry an
@@ -22,6 +59,18 @@ predicts function").
 Nothing is registered and nothing can be — every measurement here is on an
 artifact spent under `check_registry` rule 3. Restore checks are exact
 (`0.0e+00`) on every run reported below.
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
+
+- 2026-09-11 · every `ov` ablation here is a bias-ablation (the value bias stays); immaterial, a hook zero reproduces it bitwise · §3.15
+- 2026-09-11 · the `wide` probe's random ids are out of distribution; the numbers here are all on `wide`, and `freq` is the better arm · §3.15
+- 2026-09-11 · 410m is mode-invariant: `mean` reruns reproduce the `ov` catalogue, `r*` and interaction ratio · `p8_scale_ladder/status-8.md` "The matched cross-rung read"
+- 2026-09-12 · a ceiling-contaminated cell should be retried on `freq` before it is called unmeasurable · §3.17
+- 2026-09-13 · `mean` is blind to a mechanism carried by its own mean (MLP 6), so it is not always the conservative control · §3.26
+- 2026-09-24 · "spent under `check_registry` rule 3" misnames the source: rule 3 warns when a later-registered prediction reuses the same artifact hash; the spent status is the rung policy · `p8_scale_ladder/design-8.md`
 
 ## What is answered
 
