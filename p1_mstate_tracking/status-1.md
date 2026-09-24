@@ -20,6 +20,7 @@
   - Open item 3 is answered: step0 and step1 are the same weights, so the axis has one point fewer (§3.51)
   - The step-size definition open item 0 relies on (from MATH.md, a file that does not exist) understates the effective integration time several-fold, in the direction that favours "never integrates far enough" — `p1c_frames/status-1c.md` "Findings from implementation, before any data"
   - Cluster counts carry a re-measurement floor: the HDBSCAN partition is not reproducible run to run — `p10_cluster_function/status-10.md` §3
+  - Which tokens HDBSCAN clusters is mostly their copy count at init and in shallow layers, so early partitions partly reflect the prompt's repeat structure — `p10_cluster_function/status-10.md` §1.7
   - The carrying-capacity invariant has a formula now (Lemma C.1) — `p10_cluster_function/math-10.md` §5.4
   - `ext_sem_frac`'s decline (D6) as "neighbour structure decouples from embedding geometry": the stored count is mostly repeat pairs at cosine 1, and the non-repeat remainder moves toward the trained embedding — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** `CLAIM-C` e-value, active, real run recorded, INSUFFICIENT, not adjudicated; `CLAIM-A` needs-null, construction specified and not built (`claims/EXPERIMENTS.md`)
@@ -37,7 +38,7 @@
   - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
   - Extend `CLAIM-C`'s homogeneity calibration to the v2 prompt count and rescore the v2 arms (free, CPU calibration, cost in §3.46; order against the holdout is `docs/PHASE_REVIEW.md` "Open" 3)
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
-- **Reviewed:** 2026-09-24 · body `f22ce424bd`
+- **Reviewed:** 2026-09-24 · body `2a30e80d19`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -52,6 +53,7 @@ Superseded list.
 - 2026-09-20 · the HDBSCAN partition is not reproducible run to run, so cluster counts carry a floor · `p10_cluster_function/status-10.md` §3
 - 2026-09-20 · the carrying-capacity invariant has a formula (Lemma C.1) · `p10_cluster_function/math-10.md` §5.4
 - 2026-09-24 · on Pythia `ext_sem_frac` is mostly the share of mutual-NN pairs that are the same token (layer 0 has no position embedding, so repeats have cosine 1). Through step 2000 it equals that share exactly; D6 bites only on the non-repeat remainder, which needs its own reading · `p10_cluster_function/status-10.md` §1.6
+- 2026-09-24 · whether a token is clustered or noise (`min_cluster_size=2`) is set mostly by its copy count in the prompt at init and in shallow layers, less so in the trained model's deep layers. Measured as rates, not counts; whether cluster counts track repeated types is parked · `p10_cluster_function/status-10.md` §1.7, `p10_cluster_function/handoff-10.md` "Parked"
 
 **Registered predictions:** `CLAIM-A` (needs-null — construction specified
 below, deliberately not built; decision 2026-09-17) and `CLAIM-C` (e-value —

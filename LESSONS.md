@@ -293,6 +293,13 @@ needs the user to enable it on GitHub.
   a criterion on a statistic, histogram its input once**, on one run, and split
   a mixture before summarising it. A look at the distribution is not a look at
   the result.
+- 2026-09-24 (Stage 1 step 2): the token-composition criterion was pre-stated
+  on "non-repeat" tokens to drop lesson-6's cosine-1 pile, but "non-repeat"
+  (no *earlier* copy) keeps first copies, which have twins *later* in the
+  prompt. The criterion read "consistent" at 11 of 18 distinct checkpoints; on
+  unique tokens it is "unclear" at all 18. Same rule as above, one level down: a confound
+  defined by position in the sequence is not removed by a filter on order.
+  Exclude on the symmetric property (copy count), not on "came first".
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

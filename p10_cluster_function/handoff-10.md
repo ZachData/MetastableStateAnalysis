@@ -394,15 +394,16 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    that replace the repeats become similar in the trained embedding, so
    "lexical → contextual" is backwards on this measure. Re-run at 152 runs once
    Stage 0 completes.
-2. **The token-composition table, which still does not exist.** Carry
-   repeat/non-repeat (a token with an earlier copy in the prompt) as a column:
-   step 1 shows it drives the only semantic number the project had. Join
-   `tokens.txt` to `hdbscan_labels.json` and report, per layer per checkpoint:
-   clustered vs noise composition by **frequency rank**, by whitespace /
-   punctuation / subword-continuation / alphabetic class, and by within-prompt
-   repetition count. Trash collection predicts clusters dominated by
-   high-frequency, low-information tokens. **This is a table, it costs nothing,
-   and it either makes the semantic question concrete or retires it.**
+2. ~~**The token-composition table**~~ **DONE 2026-09-24 on Stage 0's v1
+   runs** (`status-10.md` §1.7, which holds the numbers;
+   `tools/run/p10_token_composition.py`). Clustered vs noise is mostly copy
+   count at init and in shallow layers (`min_cluster_size=2`), and a moderate
+   effect in the trained model's deep layers. Among unique tokens BPE rank does
+   not predict it; class does, weakly and against trash collection. The
+   question narrows to: what do the clustered unique tokens cluster *with*,
+   against step 0 as the baseline? That is a new reader (co-member copies,
+   classes, positions), not in this list. Re-run at 152 runs once Stage 0
+   completes.
 3. **Report both sweeps.** The pilot has native labels; the WDS sweep has
    backfilled ones. Agreement across them is the §3.51.4 check that every
    partition-derived claim now owes.
@@ -592,6 +593,23 @@ before it.
 
 ## Parked
 
+- **How much of "copy count" is HDBSCAN's, not the model's** (discovery,
+  `/challenge-pr` on #90, 2026-09-24). At step 0 layer 0, 26 of 205 2-copy
+  tokens are noise although their twin is the identical vector, while 3–5-copy
+  groups are clustered every time. That is how `min_cluster_size=2` selects
+  size-2 groups from the condensed tree, not a property of the model. Why: it
+  sets how "copy count dominates" (`status-10.md` §1.7) should be worded, and
+  whether the next reader must model copies as an instrument effect. Cost:
+  minutes. A known-answer run with duplicates planted in Gaussian noise
+  (n ≈ 400, d = 1024), in the conda `mets` env. Changes: the wording of §1.7,
+  and whether step 0 alone is a sufficient baseline for the next reader.
+- **Cluster counts vs repeated token types** (discovery, same review). The
+  reviewer's rough check: HDBSCAN's per-prompt cluster count ≈ the number of
+  token types occurring ≥ 2 times, at step 0 *and* 143000, with
+  `repeated_tokens` the exception. Not measured in the repo. Why: if it holds,
+  Phase 1's cluster counts (carrying capacity 50–55) are largely a
+  repeat-structure count. Cost: one column in `p10_token_composition.py`.
+  Changes: Phase 1's carrying-capacity reading.
 - **The `p10_*` readers' default selection now mixes sweeps** (confound, found
   building the holdout guard, 2026-09-24): `--pattern pythia-410m-*` over
   `data/phase12` globs the Phase 1 sweep (152), Stage 0's v1 dirs (135 at 12:40)

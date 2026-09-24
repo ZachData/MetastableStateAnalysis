@@ -12,7 +12,7 @@
   - The main arm must not run before an ordered-concept positive control: unordered HDBSCAN centroids are a substitution the paper never tested, so a null would be uninterpretable — `PROJECT.md` "One design change this review proposes outright"
   - Blocker 1 (no logits): an LM-head loader at the pinned revision now exists — `archive/p5_single_mstate_analysis/status-5.md` "v2 follow-up: causal_tests.py migration — DONE (item 3 aftermath, closed)"
 - **Registry:** nine `P5b-*` rows, all `dormant` since the phase was archived; `P5b-B2`'s threshold comes from the paper's reported numbers, not a null — `claims/EXPERIMENTS.md`
-- **Depends on:** 1@2627291497, 2@5e9fc59e62
+- **Depends on:** 1@d9236160c9, 2@5e9fc59e62
 - **Feeds:** none
 - **Open threads:**
   - The steering literature moved past the paper, and the causal-chain claim lost a link — `p5b_manifold_steering/lit-5b.md` §3

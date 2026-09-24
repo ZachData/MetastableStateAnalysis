@@ -18,7 +18,7 @@
   - `adjudicate_p_t1` reads a single-bandwidth mode count, against the amendment; `p_value_p_t1` implements the amendment — `POPPER_PLAN.md`
   - The reported p floors (0.100, 0.083) were the call's, not the design's, off by 200× and 167× — `claims/EVALUABILITY.md`
 - **Registry:** `P-T1`, `P-M1` (`H-OPERATOR`), `active`, e-value gates calibrated on one shared dry run (`claims/audits/p_t1_p_m1_dry_run.json`), not adjudicated. Scored only on a fresh run with a manifest; the August pilot is not a scoring input (user, 2026-09-23)
-- **Depends on:** 1@2627291497, 1c@11c2f3840c, 2@5e9fc59e62
+- **Depends on:** 1@d9236160c9, 1c@11c2f3840c, 2@5e9fc59e62
 - **Feeds:** none
 - **Open threads:**
   - Blocked by design on Phase 1c-B's $T_{\rm eff}$, which waits on a β producer that does not exist — `p2d_operator_activation/design-2d.md`

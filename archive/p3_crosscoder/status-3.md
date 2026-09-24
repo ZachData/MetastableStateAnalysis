@@ -14,7 +14,7 @@
   - Read as "no geometric structure at the feature level"; the literature reads it as the sparse objective's own geometry, and Phase 4's dense autoencoder recovered alignment on ALBERT — `archive/p3_crosscoder/status-3.md` "Corrections received"
   - "A `FROZEN.md` stating this trigger is still pending": written 2026-08-22 — `archive/p3_crosscoder/FROZEN.md`
 - **Registry:** none, because the phase ran before the registry existed and was archived 2026-08-22 (`claims/EXPERIMENTS.md`)
-- **Depends on:** 1@2627291497, 2@5e9fc59e62
+- **Depends on:** 1@d9236160c9, 2@5e9fc59e62
 - **Feeds:** 4
 - **Open threads:**
   - Which run produced the six rows other than bimodality (decoder→V 0.484 / 0.501 among them)? Not the two on disk — `archive/p3_crosscoder/status-3.md` "Runs on disk"
