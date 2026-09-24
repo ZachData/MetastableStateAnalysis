@@ -25,6 +25,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-23 | Phase review session 3b: cards 2d, 6; 2d pilot decided; branch cleanup (measured before the commit/PR calls) | 42 | 147k | 3.7M | 37k | #78 |
 | 2026-09-24 | `run_2d` measurement only + worktree-gate `sys.path` fix; chunk 2 launched (whole transcript, includes #78's later calls; measured before the commit/PR calls) | 116 | 280k | 20.0M | 69k | #79 |
 | 2026-09-24 | Phase review session 4: cards 3, 4, 5, 5b, 5c, 6-frozen; the 1d/viz branches (measured before the commit/PR calls) | 57 | 181k | 7.2M | 47k | #80 |
+| 2026-09-24 | Phase review session 5: cards 7, 7d, 7e (measured before the commit/PR calls) | 41 | 171k | 4.9M | 48k | #81 |
 
 ## Over 2× median, and why
 

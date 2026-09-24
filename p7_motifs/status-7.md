@@ -1,13 +1,44 @@
 <!-- p7_motifs/status-7.md -->
 # Phase 7 — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Is a named mechinterp phenomenon, induction, the same object as a motif in the particles' typed interaction graph (a two-stage relay of attention forces, split into the value operator's sign channels), and does that motif form on the checkpoint axis when the behaviour does?
+- **Inputs:** `pythia-410m`, the registered 19 checkpoints (step 0 to 143000), the v1 8-prompt battery (`camus_letranger+hdbscan_code+homer_iliad+latex_monograph+paper_excerpt+repeated_tokens+sullivan_ballou+wiki_paragraph`), `schur` sign channel, top 16 edges per target, rotational channel absent: `data/phase7/step*/interaction_table.npz` (generated 2026-09-01, 17 of 19 recompressed 2026-09-03: `archive/docs/results_provenance_audit_2026-09-05.md`). `P-I1` scored on `data/analysis/relay_null_series.json` and `data/analysis/behavioural_series.json`, hashed in `claims/audits/p_i1_real_run.json`. `P-I5` ran on `pythia-70m` step 143000, `L3H6`, `mean` ablation, 8 prompts (`claims/calibration/p_i5_real_ablation.json`)
+- **Results:**
+  - `P-I1` on the real 19-step sweep: INSUFFICIENT, 116 forming heads, mean distance about 2 log-steps, floor 0.0005; its p moves with the replicate count and is not quotable — `claims/audits/p_i1_real_run.json`, §3.7
+  - The raw relay count is almost entirely the prompt's own induction-pair supply, so the gate scores an above-null excess from a relay-count null built for it — §3
+  - `P-I5` built, calibrated and run, then parked: the control does not tell `L3H6` from other heads, and a single-head diagnostic explains the readout — §3.33, §3.34
+  - The build, oracle tier through the driver: artifact contract, typed-edge primitive, motif alphabet, statistics, IO, events, producer, `run_7.py` — `p7_motifs/status-7.md` "Build order"
+  - `P-I3`'s registered null permutes a label that is a function of the correlated score; replaced by a matched-control null that enumerates — `p7_motifs/status-7.md` "Findings from implementation"
+  - A mean+kσ hub rule cannot find a hub at n ≤ 4; an absent projector is not a zero channel; a missing null is not a cleared one — `p7_motifs/status-7.md` "Findings from implementation"
+- **Superseded / wrong:**
+  - This file said nothing had run against a model and listed `P-I1` as "not run"; all 19 tables were written by 2026-09-03 and `P-I1` scored 2026-09-04 — `p7_motifs/status-7.md` "Corrections received"
+  - "p = 0.1414" was quoted as `P-I1`'s result in four documents; it is 0.14 at K = 50 and 0.89 at K = 100 — §3.45
+  - `P-I5`'s min-rank statistic controlled only the complete null; replaced by intersection-union, `L3H6` 0.0234 → 0.0312, five overclaims withdrawn — §3.38
+  - `design-7.md` carries "cone collapse is universal" from a 1b result that 1b says not to cite — `p1b_hemisphere/status-1b.md`
+- **Registry:** nine `H-BRIDGE` rows, all `active`, none adjudicated. `P-I1` e-value, real run recorded, INSUFFICIENT; `P-ST1`, `P-AB1`, `P-I3` e-value, built, calibrated, unrun (`P-AB1` and `P-I3` have no known-answer dry run); `P-I5` needs-null with a gate and a real-run record, parked, and it iterates the live battery (`STATE.md` Blocked 2); `P-I2`, `P-I4`, `P-I7` nothing built; `P-SA1` instrument frozen — `claims/EXPERIMENTS.md`
+- **Depends on:** 1@6a6e6a3c1a, 2@27c0fbe55d
+- **Feeds:** none
+- **Open threads:**
+  - The rotational channel is not wired: `U_S`/`U_A` absent and `real_frac`/`imag_frac` NaN in every table — `p7_motifs/status-7.md` "Build order"
+  - Whether the battery supplies enough induction pairs on the NeoX tokenizer was never checked (`core/battery_structure.py`) — `p7_motifs/status-7.md` "Known blockers"
+  - `P-I5`'s problem moved from the control to the readout; no construction found yet — §3.34
+  - `P-ST1`, `P-AB1`, `P-I3` each need a sweep meeting its own pre-computed requirement — `claims/EVALUABILITY.md`
+- **After Phase 10:**
+  - Check whether the 19 tables on disk meet `P-I3`'s and `P-AB1`'s pre-computed requirements, without scoring them (free)
+  - Decide `P-I5`'s battery: pin to the v1 keys or re-register (free, the user's decision)
+  - Wire the rotational channel from 2b's Schur blocks and rebuild the tables (forward pass: `run_7.py`, about 16 min per checkpoint × 19)
+- **Reviewed:** 2026-09-24 · body `359a89b435`
+<!-- /phase-card -->
+
 **Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
 `P-AB1` (`patching_gate.py`), `P-I1` (`formation_gate.py` +
 `relay_count_null.py`), `P-I3` (`cross_head_gate.py`), each with a null built
-and calibrated, none with a committed run against real artifacts. `P-I1` **has**
-been scored on the real 19-step sweep (INSUFFICIENT, 2026-09-04; the p is K-dependent and not quotable — 0.14143 at K = 50, 0.89355 at K = 100, §3.7 — and the run is recorded in `claims/audits/p_i1_real_run.json` as of 2026-09-19)
-but the record lives in git-ignored `data/analysis/`, so the registry's
-`real_run_record` is empty until a record is committed under `claims/`.
+and calibrated. `P-ST1`, `P-AB1` and `P-I3` have no run against real artifacts. `P-I1` **has**
+been scored on the real 19-step sweep (INSUFFICIENT, 2026-09-04; the p is K-dependent and not quotable — 0.14143 at K = 50, 0.89355 at K = 100, §3.7), and the run is recorded in `claims/audits/p_i1_real_run.json`, which the registry's
+`real_run_record` points to (2026-09-19; "E-value audit" below).
 needs-null — `P-I5` (built, calibrated, run on real `L3H6`, and **parked**:
 two head-comparison controls failed to discriminate it from `L4H6`/`L5H3` and a
 single-head diagnostic explained the readout, `PROJECT.md` §3.31–§3.34; statistic
@@ -16,14 +47,25 @@ corrected to intersection-union 2026-09-17),
 evidence paths are `claims/registry.json`; the per-phase view is
 `claims/EXPERIMENTS.md`.
 
-**Last verified:** 2026-08-31 (oracle tier plus the driver — still nothing has executed
-against any model).
+**Last verified:** 2026-08-31 for the build; the runs since are in "Corrections received".
 **Overall:** Design plus build steps 1-8, both halves. The artifact contract, the typed-edge
 primitive, the motif alphabet, the statistics, the IO layer, the event level, the
-producer and now the driver exist and pass their oracle tier. The driver has been run
-end to end against synthetic Phase 1 / Phase 2 artifacts and a real tokenizer, and
-produces a contract-valid `interaction_table.npz`; it has not been run against a real
-forward pass, which is step 9. No prediction is adjudicated.
+producer and now the driver exist and pass their oracle tier. The driver was then run
+on real Pythia artifacts, the full 19-step sweep, 2026-08-31 to 09-03 (`data/phase7/`),
+and `P-I1` was scored on it. No prediction is adjudicated.
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
+
+- 2026-09-04 · the driver ran on all 19 `pythia-410m` checkpoints (`data/phase7/step*/`, v1 battery) and `P-I1` was scored; this file kept saying nothing had run · §2
+- 2026-09-05 · `P-I1`'s p is not quotable: 0.14143 at K = 50, 0.89355 at K = 100 · §3.7
+- 2026-09-05 · the tables' provenance: generated 2026-09-01 under `f395127` / `bbf7c0c`, 17 of 19 rewritten 2026-09-03 by a recompression pass · `archive/docs/results_provenance_audit_2026-09-05.md`
+- 2026-09-17 · `P-I5`'s statistic is intersection-union, not min-rank; five overclaims withdrawn · §3.38
+- 2026-09-19 · `P-I1`'s run record committed; four documents had quoted p = 0.1414 · §3.45
+- 2026-09-19 · `P-I5` iterates the live battery, so since v2 it gates on 20 prompts, not the 8 it was calibrated on · `LESSONS.md`
+- 2026-09-23 · `design-7.md`'s "cone collapse is universal" rests on a 1b result 1b says not to cite · `p1b_hemisphere/status-1b.md`
 
 ## E-value audit, Phase 7 (2026-09-19)
 
@@ -88,13 +130,13 @@ has refused.
 
 ## Verdict table
 
-No verdicts. The four registered predictions (P-I1, P-I2, P-I3, P-I4 — see `PREDICTIONS.md`)
+No adjudicated verdicts. The table covers the four original rows of the nine (P-I1, P-I2, P-I3, P-I4 — see `PREDICTIONS.md`); all nine
 are outstanding, and by construction they were registered before any Phase 7 code was
 written, matching the discipline used for Phase 1c and Phase 2d.
 
 | Prediction | State |
 |---|---|
-| P-I1 (co-emergence of motif and behavior) | not run |
+| P-I1 (co-emergence of motif and behavior) | scored 2026-09-04, INSUFFICIENT, not adjudicated (`claims/audits/p_i1_real_run.json`) |
 | P-I2 (channel asymmetry between stages) | not run |
 | P-I3 (cross-head association, control arm required) | not run — gate built 2026-08-30 |
 | P-I4 (event consequence) | not run |
@@ -133,8 +175,8 @@ interpretable.
    activations, attention and the composed OV circuit, with the projectors `p7_io` supplies.
    31 tests, including an end-to-end planted relay that goes producer → alphabet → event
    level, which is the seam a individually-correct producer can still fail at (transposed
-   indices, wrong offset sign, pair types keyed the other way). It has not been run against a
-   real forward pass — that is the smoke tier.
+   indices, wrong offset sign, pair types keyed the other way). When written it had not been
+   run against a real forward pass; step 10's sweep has since run it ("Corrections received").
 8. **`run_7.py`** — DONE (2026-08-31). The driver, and the first thing in this phase
    with a caller: it joins a Phase 1 run directory (activations on the L2 sphere plus
    their norms, and the attention tensor) to a Phase 2 decomposition (composed OV
@@ -174,7 +216,7 @@ interpretable.
    motif side is built from — and the two arms would share a selection step the
    pairing null cannot separate.
 9. **Smoke tier** — one prompt, two checkpoints, tiny GPT-NeoX, end to end.
-10. **The checkpoint sweep.** Not before.
+10. **The checkpoint sweep.** Not before. **Done** 2026-09-01 to 09-03, all 19 steps (`data/phase7/`).
 
 ## Findings from implementation
 

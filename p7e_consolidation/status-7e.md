@@ -1,6 +1,36 @@
 <!-- p7e_consolidation/status-7e.md -->
 # Phase 7e — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Can the redundancy set's causal effect be folded into one head's rank-64 OV budget, and can `L11H14`, the member that leaves the set's locked core, be folded in with the rest?
+- **Inputs:** `pythia-410m`, steps 16000 and 143000 (ambient budget) and 16000 (useful rank), 16 sequences, `wide` probe, `ov` ablation, the six canonical members with matched-norm random controls: `data/analysis/ambient_budget.json`, `data/analysis/useful_rank.json`, `data/analysis/useful_rank_bottom.json`; `mean` rerun at 8 sequences `data/analysis/useful_rank_pythia-410m_mean.json`. Rerun lines: `p7e_consolidation/status-7e.md` "Reproducing"
+- **Results:**
+  - Energy fails: only 73–78 % of the set's joint effect energy fits one head's budget, and the effect lives in low-variance directions outside the ambient trunk, refuting the design's opening argument — `p7e_consolidation/status-7e.md` "The capacity question"
+  - Usefulness passes: five members need rank 1–24 each and sum to 40 ≤ 64, so the aligned core can consolidate — `p7e_consolidation/status-7e.md` "Useful rank"
+  - `L11H14` is anti-ordered: keeping its top singular direction is worse than deleting the head, so it cannot be folded in — `p7e_consolidation/status-7e.md` "is anti-ordered, measured directly"
+  - Hold on an instrument: an SVD-ordered `r*` misleads on such heads — `p7e_consolidation/status-7e.md` "The hold this places on an instrument elsewhere"
+- **Superseded / wrong:**
+  - The five low-rank members sum to 48 under `mean`, not 40 (`L8H6` 24 → 32); the conclusion stands — `p8_scale_ladder/status-8.md` "The matched cross-rung read"
+  - The gain-ordered / anti-ordered dichotomy has a third, unordered class (70m `L3H1`) — §3.17
+- **Registry:** none, because `pythia-410m` is exploration-only under the rung policy (`p8_scale_ladder/design-8.md`) and every measurement after surgery would be on a modified model — `p7e_consolidation/status-7e.md`
+- **Depends on:** 7d@751b162e22
+- **Feeds:** 8, 10
+- **Open threads:**
+  - `schur` vs `svd` on `L11H14`: decides whether `induction_rank_sweep`'s `svd` basis is compromised — `p7e_consolidation/status-7e.md` "What is open"
+  - Principal angles between members' top-`r*` OV subspaces, to turn "40 ≤ 64" into a union number
+  - The consolidation surgery itself, with its four checks — `p7e_consolidation/design-7e.md`
+  - `r*` at checkpoints other than 16000; `r*` is grid-resolved
+  - Why `L11H14` is full-rank and anti-ordered
+- **After Phase 10:**
+  - `schur` vs `svd` ordering on `L11H14` (free: weights only)
+  - OV-core principal angles between members (free: weights only)
+  - `r*` across checkpoints (forward pass: about 35 min per checkpoint)
+  - The core consolidation with probe NLL, natural-text loss, a flattened interaction matrix and restore-exactness (forward pass plus weight surgery)
+- **Reviewed:** 2026-09-24 · body `c2a68fb3db`
+<!-- /phase-card -->
+
 **Registered predictions:** none, and none can be — see "Overall" below.
 Nothing in this phase may carry an e-value (`claims/EXPERIMENTS.md`).
 
@@ -14,6 +44,15 @@ second and independent bar. Restore checks exact (`0.0e+00`) on every run below.
 
 Read `design-7e.md` for why the phase exists and what would falsify it, and
 `PROJECT.md` §3.12-V for the numbers in their 7d context.
+
+## Corrections received
+
+Corrections to this phase written elsewhere, one line each (`CLAUDE.md` Stop
+step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
+
+- 2026-09-11 · under `mean` at 8 sequences `r*` reproduces for five of six members; `L8H6` moves 24 → 32, so the low-rank five sum to 48, still inside 64 · `p8_scale_ladder/status-8.md` "The matched cross-rung read"
+- 2026-09-11 · every `ov` ablation here is a bias-ablation; immaterial · §3.15
+- 2026-09-12 · SVD ordering has three classes, not two: "below its control" does not diagnose anti-ordering, only `--bottom` does · §3.17
 
 ## What is answered
 

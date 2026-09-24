@@ -19,7 +19,7 @@
   - The code and the pilot's own report cite cone collapse as "Theorem 6.3"; it is Lemma 6.4 (for a decision) — `archive/UPDATE_PLAN.md` §0
 - **Registry:** none, because the phase is exploratory by design; its findings feed `P-H1` and `CLAIM-A` instead (`claims/EXPERIMENTS.md`)
 - **Depends on:** 1@6a6e6a3c1a
-- **Feeds:** 7
+- **Feeds:** none
 - **Open threads:**
   - Cone collapse against a null: `--n-null` has never been run, so how much is n versus d_eff is unknown — `status-1b.md` "R3. Cone-collapse is unquantified against any null"
   - The relative classifier needs a null too: its 0.90 cutoff is a reporting convention, and "separated" falls as the cloud concentrates — `status-1b.md` "The 2026-08-17 Pythia pilot"
