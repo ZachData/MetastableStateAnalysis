@@ -89,11 +89,53 @@ only:
   95 % singletons, which the trivial filter lets through: **a defect**
   (`lit-1d.md` option A0). The scan gives the options (§5) and a recommendation
   for the user; `design-1d.md` stays unchanged until the user picks one.
+- **A0 fixed 2026-09-25** (see "A0: the singleton bound" below). Agglomerative
+  leaves its finest threshold at L12 / L18, not at L0.
 - The driver's `P-C1`–`P-C4` lines are unregistered and meaningless on one run
   and a quick grid; they are now printed and stored under
   `verdicts_status: "UNREGISTERED, tier 1: not adjudications"`.
 - The scratch agreement read that prompted the revival is in
   `p10_cluster_function/handoff-10.md` "Parked" (first item), not repeated here.
+
+### A0: the singleton bound (2026-09-25)
+
+**Change.** `partition_summary` now calls a partition trivial when more than
+`TRIVIAL_SINGLETON_SHARE = 0.5` of all tokens are singletons (placed, a
+majority rule; `selection.py`). It is the other end of `TRIVIAL_DOMINANCE`.
+HDBSCAN's refusals (-1) are not counted. **Input:** the same run, layers, grid
+and defaults as "First real run". **Output:** `data/p1d/smoke_a0_2026-09-25/`.
+**Re-run:** the command above with `--out <main>/data/p1d/smoke_a0_2026-09-25`.
+
+| layer | agglomerative before | after | consensus k before → after | ARI(consensus before, after) | core / halo / contested before → after |
+|---|---|---|---|---|---|
+| 0 | 0.05 (k 215, 31 % singletons) | **unchanged** | 4 → 4 | 1.00 | 3/263/201 → 3/263/201 |
+| 12 | 0.05 (k 452, 95 %) | 0.25 (k 291, 43 %, stab 0.95) | 5 → 4 | 0.99 | 0/111/356 → **257**/88/122 |
+| 18 | 0.05 (k 434, 89 %) | 0.25 (k 176, 15 %, stab 0.82) | 5 → 4 | 1.00 | 0/237/230 → 26/391/50 |
+
+- **The pick changes where the bound bites (L12, L18), not at L0.** L0's
+  pick is token identity: 215 clusters for exactly 215 distinct L0 vectors,
+  since layer 0 is the embedding and repeated tokens are identical (checked
+  on `activations.npz`; `/challenge-pr` on #100, finding 2). No trivial
+  branch can see that. Whether L0 belongs in 1d's readouts is for the user.
+  A0 removes the extreme case; it does not give agglomerative a scale. That
+  is still D / C (`lit-1d.md` §5).
+- A `ward, k = 2` grid point now enters the top 3 (admitted at L12, stability
+  0.70; refused at L18). Stage 1 had not reached it before.
+- **The consensus partition hardly moves; the grading moves a lot.** At L12,
+  core goes from 0 to 257 tokens. The mechanism is in the ensemble's voting,
+  and A0 does not remove it (`/challenge-pr` on #100, finding 1). A singleton
+  votes *against* grouping on every pair it touches, while an HDBSCAN -1
+  abstains. Each family's vote is weighted by its raw stability
+  (`selection_weights`), which is highest for fine partitions. The reviewer
+  rebuilt the observed ensemble without agglomerative, against the stored
+  core threshold (the null thresholds were not recomputed, so this gives the
+  direction only): core goes 3 → 178 at L0, 257 → 457 at L12, 26 → 285 at L18.
+  **Core / halo / contested counts are not a usable readout** until singleton
+  voting and the weights are decided. That is a design question for
+  `design-1d.md`, together with D.
+- The unregistered `P-C4` line flipped from "CONFIRMED 2/2" to "FALSIFIED 1/2"
+  (`P-C3` 0 % → 7 %). These are tier 1 lines, not adjudications. The flip
+  shows how little one run on the quick grid supports them.
 
 **Registry.** `P-C1`–`P-C4` (`predictions-1d.md`) were never registered and
 cannot be scored blind on the v1 runs already examined. They return as tier 1,

@@ -109,7 +109,7 @@ from .constants import SUBSTANTIAL_CLUSTER_SIZE
 from .methods import LayerData, fit, param_grid
 
 # ---------------------------------------------------------------------------
-# Thresholds. Both PLACED, not calibrated — there is no distribution to
+# Thresholds. All PLACED, not calibrated — there is no distribution to
 # derive either from before the phase runs, which is exactly why they are
 # named here with the label on them rather than buried at a call site.
 # ---------------------------------------------------------------------------
@@ -134,6 +134,17 @@ NULL_ALPHA = 0.05
 #: A partition where one cluster holds this much of the token set is a
 #: relabeling of "everything", whatever its stability.
 TRIVIAL_DOMINANCE = 0.95
+
+#: A partition where more than this share of all tokens sit in clusters
+#: of one has clustered a minority of the cloud: the other end of
+#: TRIVIAL_DOMINANCE ("everything apart" rather than "everything
+#: together"). Without it agglomerative's finest threshold passed at
+#: L12 with 452 clusters for 467 tokens, 95 % singletons, and won
+#: stage 1 on a stability of 1.00 that says only that singletons
+#: reproduce (`lit-1d.md` §1 row 2, option A0). 0.5 is a majority rule,
+#: placed, not calibrated. HDBSCAN's refusals (-1) are not counted here;
+#: see `assigned_fraction`.
+TRIVIAL_SINGLETON_SHARE = 0.5
 
 #: Fraction of tokens each subsample keeps.
 SUBSAMPLE_FRACTION = 0.8
@@ -190,6 +201,10 @@ def partition_summary(
     elif out["largest_fraction"] > TRIVIAL_DOMINANCE:
         out["trivial_reason"] = (
             f"one cluster holds {out['largest_fraction']:.2f} of all tokens"
+        )
+    elif out["singleton_fraction"] > TRIVIAL_SINGLETON_SHARE:
+        out["trivial_reason"] = (
+            f"{out['singleton_fraction']:.2f} of all tokens are singletons"
         )
     else:
         out["trivial"] = False
@@ -535,9 +550,9 @@ def sweep_family(
                                     n_repeats=n_repeats, seed=seed)
                 if not shape["trivial"]
                 # A trivial partition's stability is meaningless and its
-                # fits are not free; skipping them is the one shortcut
-                # taken here, and it can only remove candidates that the
-                # gate would reject anyway.
+                # fits are not free, so it is skipped. This is a filter,
+                # not a shortcut: the gate admitted a 95 %-singleton
+                # partition before TRIVIAL_SINGLETON_SHARE existed.
                 else {"mean_ari": float("nan"), "std_ari": float("nan"),
                       "per_repeat": [], "n_repeats_usable": 0,
                       "n_overlap_mean": 0.0, "fraction": SUBSAMPLE_FRACTION,
@@ -606,6 +621,7 @@ def select_family(
         "alpha": alpha, "seed": seed,
         "subsample_fraction": SUBSAMPLE_FRACTION,
         "trivial_dominance": TRIVIAL_DOMINANCE,
+        "trivial_singleton_share": TRIVIAL_SINGLETON_SHARE,
         "substantial_cluster_size": SUBSTANTIAL_CLUSTER_SIZE,
     }
 

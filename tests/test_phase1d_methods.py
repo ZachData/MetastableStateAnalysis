@@ -318,6 +318,21 @@ class TestPartitionSummary:
         assert out["k_substantial"] == 2
         assert out["trivial"] and "holds" in out["trivial_reason"]
 
+    def test_mostly_singletons_is_trivial(self):
+        # The L12 smoke shape: enough substantial clusters, no dominant
+        # one, but most tokens alone (lit-1d.md option A0).
+        labels = np.concatenate([np.repeat([0, 1, 2], 4), np.arange(3, 16)])
+        out = partition_summary(labels, substantial=4)
+        assert out["k_substantial"] == 3
+        assert out["singleton_fraction"] == pytest.approx(13 / 25)
+        assert out["trivial"] and "singletons" in out["trivial_reason"]
+
+    def test_a_singleton_minority_is_not_trivial(self):
+        labels = np.concatenate([np.repeat([0, 1, 2], 4), np.arange(3, 14)])
+        out = partition_summary(labels, substantial=4)
+        assert out["singleton_fraction"] == pytest.approx(11 / 23)
+        assert not out["trivial"]
+
     def test_a_genuine_partition_is_not_trivial(self):
         out = partition_summary(np.repeat([0, 1, 2], 10), substantial=4)
         assert not out["trivial"]
