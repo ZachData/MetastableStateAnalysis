@@ -73,6 +73,10 @@ Stage 0's runs, selected **only** through `stage0_logs/stage0_index.json`
 by `core.holdout`. The record names the index's pin, battery hash, and the
 sha256 of the sorted (key, path) list read.
 
+``--run-root DIR`` reads one flat run root instead (the pilot sweep on
+`HDD_1TB`), keyed by each run's `manifest.json` and refused if it mixes
+batteries; ``--prompts`` keeps named keys. Comparison: `p10_s1_compare.py`.
+
 Run:
     python tools/run/p10_ext_sem_threshold.py --v1-only
 """
@@ -113,6 +117,60 @@ def load_index(path: Path) -> dict:
         runs[(int(step), key)] = Path(v)
     return {"pin": d.get("pin"), "prompt_battery_hash": d.get("prompt_battery_hash"),
             "runs": runs}
+
+
+def load_run_root(root: Path, model: str = "pythia-410m") -> dict:
+    """The same shape as ``load_index``, for one flat run root such as the pilot
+    sweep: every ``<model>-step*`` dir with a ``manifest.json``, keyed by its
+    manifest. Refuses a run dir without a manifest, and a root that mixes
+    batteries or repeats a (step, prompt). Non-dirs (the pilot's pngs) are skipped."""
+    runs, batteries, shas = {}, set(), set()
+    for d in sorted(root.glob(f"{model}-step*")):
+        if not d.is_dir():
+            continue
+        m = d / "manifest.json"
+        if not m.is_file():
+            sys.exit(f"{d}: run dir without manifest.json")
+        man = json.loads(m.read_text())
+        k = (int(man["checkpoint_step"]), man["prompt_key"])
+        if k in runs:
+            sys.exit(f"{root}: two runs for {k}: {runs[k]} and {d}")
+        runs[k] = d
+        batteries.add(man.get("prompt_battery_hash"))
+        shas.add(man.get("git_sha"))
+    if len(batteries) != 1:
+        sys.exit(f"{root}: {len(batteries)} prompt batteries {sorted(map(str, batteries))}; need one")
+    steps, keys = {s for s, _ in runs}, {k for _, k in runs}
+    holes = sorted((s, k) for s in steps for k in keys if (s, k) not in runs)
+    if holes:  # a step mean over fewer prompts is not the same row; say so, do not fill
+        print(f"WARNING {root}: {len(holes)} (step, prompt) cells missing, e.g. {holes[:3]}",
+              file=sys.stderr)
+    return {"pin": ",".join(sorted(map(str, shas))), "prompt_battery_hash": batteries.pop(),
+            "runs": runs}
+
+
+def add_input_args(ap, default_index: Path) -> None:
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--index", default=str(default_index))
+    g.add_argument("--run-root", help="a flat run root (the pilot sweep) instead of the index")
+    ap.add_argument("--prompts", help="comma-separated prompt keys to keep (default: all)")
+
+
+def load_input(args) -> dict:
+    """``--run-root`` or ``--index``, then ``--prompts``; names the source."""
+    if args.run_root:
+        idx = load_run_root(Path(args.run_root))
+        idx["source"] = str(args.run_root)
+    else:
+        idx = load_index(Path(args.index))
+        idx["source"] = str(args.index)
+    if args.prompts:
+        keep = set(args.prompts.split(","))
+        unknown = keep - {k for _, k in idx["runs"]}
+        if unknown:
+            sys.exit(f"--prompts: not in the input: {sorted(unknown)}")
+        idx["runs"] = {sk: p for sk, p in idx["runs"].items() if sk[1] in keep}
+    return idx
 
 
 def layer0_gram(run_dir: Path) -> np.ndarray:
@@ -312,12 +370,12 @@ def verdicts(by_step: dict) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--index", default=str(DATA / "phase12" / "stage0_logs" / "stage0_index.json"))
+    add_input_args(ap, DATA / "phase12" / "stage0_logs" / "stage0_index.json")
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_s1_ext_sem_threshold.json"))
     add_holdout_args(ap)
     args = ap.parse_args()
 
-    idx = load_index(Path(args.index))
+    idx = load_input(args)
     kept, holdout = refuse_held_out(
         sorted(idx["runs"].values()), allow=args.allow_holdout, drop=args.v1_only,
         context="p10_ext_sem_threshold")
@@ -350,7 +408,7 @@ def main() -> None:
         "row": "Stage 1 step 1 — does the ext_semantic_fraction decline survive the threshold?",
         "tier": "1 (exploratory, unregistered, descriptive; no null)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "index": str(args.index),
+        "index": idx["source"],
         "index_pin": idx["pin"],
         "prompt_battery_hash": idx["prompt_battery_hash"],
         "inputs_sha256": hashlib.sha256(json.dumps(inputs).encode()).hexdigest()[:12],

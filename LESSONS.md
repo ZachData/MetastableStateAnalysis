@@ -20,6 +20,16 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-09-25 (Stage 1 step 3): `handoff-10.md` §1.1's table, the number that
+  launched Stage 1, said "mean over 8 prompts". It was 9: the pilot has
+  `short_heterogeneous`, which Stage 0 does not. Nothing broke, because §1.6
+  re-derived from source; found only when a 9-prompt pilot run reproduced
+  every value. Also: this session's printed `STATE.md` was the main tree's,
+  12 merges behind `origin/main` (the fast-forward is refused to Claude), and
+  the handoff header still said "launch chunk 3" a day after Stage 0
+  finished. Rule: Start step 1's "older than `origin/main`" check reads
+  `git show origin/main:STATE.md`, not the printed copy; a first-look table
+  names its input set (Name the input).
 - 2026-09-24 (phase review session 8): `handoff-10.md`, the active thread's
   runbook, still said "relaunch chunk 1" two days and one chunk later, and
   its Stage 0 done-line still counted option A's 228 directories after
@@ -415,6 +425,14 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-09-25, #95: I found Stage 0 bit-identical to the WDS backfill and
+  wrote that §3's floor was "between the pilot and today", with "sensitivity or
+  toolchain" parked as open. The evidence was already on disk: at steps 0–1000
+  the two sweeps' activations differ by ≤ 2.5e-7 and partitions still differ,
+  and §2's backfill had matched the pilot's labels with today's code.
+  `/challenge-pr` caught it. I had looked only at the largest gap (8e-5, at
+  step 143000) and not at the gap per step. Rule: before calling an
+  explanation open, split the evidence by the variable it depends on.
 - 2026-09-22, #67: the Stage 0 driver said a deadline kill re-runs only "its
   unfinished prompts". `run_1` writes `pair_agreement.json` once, after the
   whole invocation, so a kill threw away up to a checkpoint's worth (~1.4 h)

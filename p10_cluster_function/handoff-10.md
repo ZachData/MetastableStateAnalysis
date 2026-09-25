@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-24 — Stage 0 at pin `64a4087`: chunk 1 done (144 runs), chunk 2 running since 05:35 (235 of 380 indexed at 09:20), chunk 3 the last. **First action: launch chunk 3 once chunk 2 logs `chunk end` (§0.3).**
+**Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 have not been run on the pilot. **Next: §1.9–§1.10 on the pilot, the context-shuffle test (both Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -333,7 +333,9 @@ layer. It runs inside `analysis_p1.py` and its output is stored in every
 > `HDD_1TB`.
 
 **First look, 2026-09-20 — tier 1, exploratory, no null, not registered.**
-Mean over 8 prompts × 25 layers per checkpoint, pilot sweep, native labels:
+Mean over ~~8~~ **9** prompts (`short_heterogeneous` included; corrected
+2026-09-25, `status-10.md` §1.11, which reproduces every value below) × 25
+layers per checkpoint, pilot sweep, native labels:
 
 | step | `ext_sem_same_cluster_frac` | `ext_semantic_fraction` |
 |---|---|---|
@@ -425,9 +427,14 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    +0.04 lexical control, and L24 is +0.05 above its control. The pre-stated
    decile control could not work (the lexical control scores +0.21 under it);
    the fix was added post hoc.
-3. **Report both sweeps.** The pilot has native labels; the WDS sweep has
-   backfilled ones. Agreement across them is the §3.51.4 check that every
-   partition-derived claim now owes.
+3. ~~**Report both sweeps.**~~ **DONE 2026-09-25** (`status-10.md` §1.11,
+   which holds the numbers; `tools/run/p10_s1_compare.py`). Stage 0's labels
+   are bit-identical to the WDS backfill's, so the pilot is the only
+   independent sweep. Steps 1 and 2 on the pilot agree with Stage 0 to ≤ 0.004
+   at all 13 shared steps, and its 14 extra steps sit between Stage 0's.
+   §1.1's table was 9 prompts, not 8. Not run on the pilot: 2b and 2c, which
+   carry the per-layer claims (Parked). The partition moves under ~2e-7 of
+   activation noise, so §3's floor is run to run, not pilot vs today.
 4. **Do not fix `pair_agreement` on the WDS sweep by re-running `analysis_p1.py`**
    without reading `status-10.md` §2 first — the toolchain guard and the
    `read_labels` precedence rule both apply, and filling a canonical file while
@@ -625,7 +632,18 @@ before it.
   and what it averaged over is not recorded. Why: it decides whether Phase 1's
   finding survives at all, and whether Lemma C.1 (`math-10.md` §5.4) has
   anything left to explain. Cost: one pass over the pilot's labels on
-  `HDD_1TB`. Changes: Phase 1's carrying-capacity result.
+  `HDD_1TB`. Changes: Phase 1's carrying-capacity result. **Half-answered
+  2026-09-25** (`status-10.md` §1.11, `p10_s1_compare.py`'s last table): on the
+  pilot's own labels, without `repeated_tokens`, `max_alive` is 57–63 at all 27
+  steps (the same as Stage 0 in 92 of 104 shared runs), peaking at L0 in 2–7 of
+  7 runs. So these 7 prompts do not give "50–55" on either sweep. Left: which
+  average did (`short_heterogeneous`, `repeated_tokens`, or another statistic).
+- **§1.9–§1.10 on the pilot** (confound, from `/challenge-pr` on #95,
+  2026-09-25). The per-layer claims are the ones the floor binds, and §1.11
+  tested only layer-averaged tables. Why: Stage 1's headline rests on them.
+  Cost: the same `--run-root`/`--prompts` switch in `p10_comembership.py` and
+  `p10_lexical_carry.py`, then one run each. Changes: whether §1.9–§1.10 hold
+  on a second partition of the same activations.
 - **What makes `repeated_tokens`' ~50 deep-layer clusters** (discovery, same):
   1 repeated type, 2 clusters at L0, `max_alive` 41–65 peaking anywhere in
   L2–L22. Why: a count that arises without repeats, which pure noise does not

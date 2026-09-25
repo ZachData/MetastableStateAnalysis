@@ -67,3 +67,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-24 | Stage 1 step 2 parked checks: planted duplicates, count vs repeated types; chunk 3 launch (measured before the commit/PR calls) | 45 | 136k | 4.2M | 30k | #91 |
 | 2026-09-24 | Stage 1 co-membership reader; step 1 re-run at 152 (measured before the commit/PR calls) | 22 | 123k | 1.9M | 29k | #92 |
 | 2026-09-24 | §1.9 parked: lexical vs contextual (§1.10) (measured before the commit/PR calls) | 23 | 118k | 1.9M | 25k | #93 |
+| 2026-09-25 | Stage 1 step 3: the pilot sweep (§1.11) (measured before the commit/PR calls) | 54 | 156k | 5.6M | 38k | #95 |
