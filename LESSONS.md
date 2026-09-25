@@ -460,6 +460,12 @@ a wrong premise, the check inherits it.
   sameness. The reviewer's own step-32 count ("8 of 25 layers") was wrong
   too, and re-running it gave 29 run-layers in 16. A "holds" claim should
   state what it was compared on. Check a reviewer's numbers before quoting them.
+- 2026-09-25, #97: the author called the pilot's below-baseline `Z` to ~7000
+  "new". The WDS record's 1000–8000 rows, printed in the author's own
+  comparison table, already showed it; §1.4's table had left those rows out,
+  and the author compared against the doc, not the record. The same PR repeated
+  #96's mistake: per-unit agreement counted identical cells. Before calling a
+  result new, check the earlier *record*, not the earlier write-up.
 - Before `/challenge-pr` existed, the 2026-09-12 merge was 51 commits with no
   second reader at all (why the PR-size rule exists).
 
