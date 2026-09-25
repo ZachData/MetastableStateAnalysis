@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 have not been run on the pilot. **Next: §1.9–§1.10 on the pilot, the context-shuffle test (both Parked), or Stage 2.**
+**Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12). **Next: the context-shuffle test (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -638,12 +638,15 @@ before it.
   steps (the same as Stage 0 in 92 of 104 shared runs), peaking at L0 in 2–7 of
   7 runs. So these 7 prompts do not give "50–55" on either sweep. Left: which
   average did (`short_heterogeneous`, `repeated_tokens`, or another statistic).
-- **§1.9–§1.10 on the pilot** (confound, from `/challenge-pr` on #95,
-  2026-09-25). The per-layer claims are the ones the floor binds, and §1.11
-  tested only layer-averaged tables. Why: Stage 1's headline rests on them.
-  Cost: the same `--run-root`/`--prompts` switch in `p10_comembership.py` and
-  `p10_lexical_carry.py`, then one run each. Changes: whether §1.9–§1.10 hold
-  on a second partition of the same activations.
+- **Done 2026-09-25: §1.9–§1.10 on the pilot** (`status-10.md` §1.12). They
+  hold: 3 103 / 3 120 and 383 / 384 per-layer readings agree, and all but one
+  disagreement is a flip at the ±0.05 floor.
+- **§1.3 and §1.5's steps 32–64 on the pilot** (discovery, `/challenge-pr` on
+  #96, 2026-09-25). Step 32 is the least stable step between the two
+  partitions (29 run-layers differ, then 15 at step 16, 13 at 64, ≤ 8
+  elsewhere). Why: F1/F12's
+  "parked, not pinned" window is there. Cost: one run each with `--run-root`.
+  Changes: whether that reading survives HDBSCAN's float-noise instability.
 - **What makes `repeated_tokens`' ~50 deep-layer clusters** (discovery, same):
   1 repeated type, 2 clusters at L0, `max_alive` 41–65 peaking anywhere in
   L2–L22. Why: a count that arises without repeats, which pure noise does not

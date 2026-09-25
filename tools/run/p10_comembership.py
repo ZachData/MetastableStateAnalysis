@@ -93,6 +93,9 @@ screened by `core.holdout`. Labels and tokens as in
 refused). The frozen frame's run must have the same tokens. The record names
 the index pin, battery hash, inputs sha256 and tokenizer sha256.
 
+``--run-root DIR`` reads one flat run root instead (the pilot sweep on
+`HDD_1TB`), as `p10_ext_sem_threshold.load_input`; ``--prompts`` keeps named keys.
+
 Run:
     python tools/run/p10_comembership.py --v1-only
 """
@@ -112,7 +115,7 @@ import numpy as np
 
 from core.holdout import add_holdout_args, refuse_held_out
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
-from tools.run.p10_ext_sem_threshold import FROZEN_STEP, layer0_gram, load_index, read_tokens
+from tools.run.p10_ext_sem_threshold import FROZEN_STEP, layer0_gram, add_input_args, load_input, read_tokens
 from tools.run.p10_token_composition import (
     CompositionError, find_tokenizer, load_vocab, token_features)
 
@@ -288,7 +291,7 @@ def deltas(summary: dict) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--index", default=str(DATA / "phase12" / "stage0_logs" / "stage0_index.json"))
+    add_input_args(ap, DATA / "phase12" / "stage0_logs" / "stage0_index.json")
     ap.add_argument("--hf-home", default=os.environ.get("HF_HOME", str(DATA / "hf")))
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_s1_comembership.json"))
     add_holdout_args(ap)
@@ -296,7 +299,7 @@ def main() -> None:
 
     tok_path = find_tokenizer(Path(args.hf_home))
     vocab, added = load_vocab(tok_path)
-    idx = load_index(Path(args.index))
+    idx = load_input(args)
     kept, holdout = refuse_held_out(
         sorted(idx["runs"].values()), allow=args.allow_holdout, drop=args.v1_only,
         context="p10_comembership")
@@ -325,7 +328,7 @@ def main() -> None:
         "row": "Stage 1 — what clustered unique tokens cluster with, against step 0",
         "tier": "1 (exploratory, unregistered, descriptive; no null)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "index": str(args.index),
+        "index": idx["source"],
         "index_pin": idx["pin"],
         "prompt_battery_hash": idx["prompt_battery_hash"],
         "inputs_sha256": hashlib.sha256(json.dumps(inputs).encode()).hexdigest()[:12],

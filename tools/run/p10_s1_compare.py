@@ -10,6 +10,12 @@ each sweep, one row per step, marking steps the other sweep lacks. It computes
 nothing new: every number is a field of a record, so the table cannot drift
 from its producer.
 
+``--per-layer`` does the same for §1.9 (`p10_comembership.py`) and §1.10
+(`p10_lexical_carry.py`), whose claims are per layer: their table columns for
+both sweeps, then, over the shared steps, how many per-layer "above / below /
+as step 0" readings agree and the largest gap in the value read, with each
+disagreement listed.
+
 Refuses two records of one kind whose prompt sets differ: a step mean over
 different prompts is not a comparison.
 
@@ -23,7 +29,7 @@ vs the WDS backfill (the battery-``1e47918ef77a`` Phase 1 dirs under
 TIER 1, EXPLORATORY, NOT REGISTERED. Descriptive, no null.
 
 Run:
-    python tools/run/p10_s1_compare.py [--raw --v1-only]
+    python tools/run/p10_s1_compare.py [--raw --v1-only] [--per-layer]
 """
 import argparse
 import json
@@ -52,6 +58,9 @@ TOK_CELLS = (("unique", "all|all|unique"), ("2 copies", "count|2|first"),
 def load(kind: str) -> dict:
     recs = {sw: json.loads((A / f"p10_s1_{kind}{suf}.json").read_text())
             for sw, suf in SWEEPS.items()}
+    for r in recs.values():  # lexical_carry names neither prompts nor steps; its inputs do
+        r.setdefault("prompts", sorted({k.split("|")[1] for k, _ in r["inputs"]}))
+        r.setdefault("steps", sorted({int(k.split("|")[0]) for k, _ in r["inputs"]}))
     prompts = {sw: tuple(r["prompts"]) for sw, r in recs.items()}
     if len(set(prompts.values())) != 1:
         sys.exit(f"{kind}: prompt sets differ: {prompts}")
@@ -78,8 +87,12 @@ def main() -> None:
     from core.holdout import add_holdout_args
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--raw", action="store_true", help="also compare labels and activations run by run")
+    ap.add_argument("--per-layer", action="store_true", help="§1.9-§1.10: co-membership and lexical carry")
     add_holdout_args(ap)
     args = ap.parse_args()
+    if args.per_layer:
+        per_layer()
+        return
     ext = load("ext_sem_threshold")
     tok = load("token_composition")
     for sw in SWEEPS:
@@ -105,6 +118,75 @@ def main() -> None:
                lambda r, s: r["summary"]["cluster_count"][s]["without_repeated_tokens"]["max_alive_at_layer0"]])
     if args.raw:
         raw(tok, args)
+
+
+COMEM_PROPS = ("same_class", "copy_share", "no_copy", "adjacent", "emb_pct_own")
+LEX_COLS = (("cge40", "class_given_emb_40"), ("knn40", "class_given_emb_40_knn"),
+            ("only40", "class_given_emb_40_classonly"), ("egc", "emb_given_class"))
+
+
+def _agreement(recs: dict, cells) -> None:
+    """cells: [(name, reading-getter, value-getter)], each (record, step, layer) -> x.
+    Over shared steps and every layer both records hold."""
+    a, b = recs.values()
+    shared = sorted(set(map(str, a["steps"])) & set(map(str, b["steps"])) - {"0"}, key=int)
+    for name, word, val in cells:
+        n = agree = 0
+        gap, off = 0.0, []
+        for st in shared:
+            for L in a["reading_layers"](st):
+                wa, wb = word(a, st, L), word(b, st, L)
+                if wa is None or wb is None:
+                    continue
+                n += 1
+                agree += wa == wb
+                va, vb = val(a, st, L), val(b, st, L)
+                gap = max(gap, abs(va - vb))
+                if wa != wb:
+                    off.append(f"{st}/L{L} {va:+.3f}|{vb:+.3f}")
+        print(f"  {name:<22} {agree}/{n} agree, max |Δ value| {gap:.3f}"
+              + (f"; differ: {', '.join(off)}" if off else ""))
+
+
+def per_layer() -> None:
+    com = load("comembership")
+    lex = load("lexical_carry")
+    for sw in SWEEPS:
+        print(f"{sw}: comembership inputs {com[sw]['inputs_sha256']} ({com[sw]['n_runs']} runs), "
+              f"lexical_carry inputs {lex[sw]['inputs_sha256']} ({lex[sw]['n_runs']} runs)")
+    L_ = ("0", "12", "24", "mean")
+    print("\n§1.9 lift, all-positions draw, L0 L12 L24 mean, " + " | ".join(SWEEPS))
+    for prop in COMEM_PROPS:
+        print(f" {prop}")
+        rows(com, [lambda r, s, L=L, p=prop: r["summary"]["all"][s][L][p]["lift"] for L in L_])
+    print("\n§1.10 class_given_emb at 40 bins: observed, kNN control, class-only; emb_given_class (10 bins)")
+    for L in ("12", "24", "mean"):
+        print(f" L{L}")
+        rows(lex, [lambda r, s, L=L, k=k: r["summary"][s][L][k] for _, k in LEX_COLS])
+    print("\n§1.10 carry self_pct, focal / unclustered, L12 L24")
+    rows(lex, [lambda r, s, L=L, g=g: r["summary"][s][L][g]["self_pct"]
+               for L in ("12", "24") for g in ("focal", "unclustered")])
+
+    print("\nper-layer readings vs step 0 (±0.05), pilot vs stage0, shared steps > 0")
+    # the record's "reading" holds L0/L12/L24/mean only; the per-layer claim is every
+    # layer, so the delta is re-derived from the lifts with the reader's own floor
+    from tools.run.p10_comembership import DELTA_FLOOR
+    print(f" §1.9, all 25 layers and the mean, all-positions draw / clustered draw (floor {DELTA_FLOOR})")
+    delta = lambda r, s, L, p, d: (r["summary"]["all"][s][L][p]["lift" + d]
+                                   - r["summary"]["all"]["0"][L][p]["lift" + d])
+    for r in com.values():
+        r["reading_layers"] = lambda st, r=r: list(r["summary"]["all"][st])
+    _agreement(com, [(f"{p}{d}",
+                      lambda r, s, L, p=p, d=d: (delta(r, s, L, p, d) > DELTA_FLOOR)
+                      - (delta(r, s, L, p, d) < -DELTA_FLOOR),
+                      lambda r, s, L, p=p, d=d: delta(r, s, L, p, d))
+                     for p in COMEM_PROPS for d in ("", "_cl")])
+    print(" §1.10, L0 L12 L24 mean")
+    for r in lex.values():
+        r["reading_layers"] = lambda st, r=r: list(r["reading"][st])
+    names = [k for _, k in LEX_COLS] + ["class_given_emb", "emb_same", "emb_cross", "carry_gap.self_pct"]
+    _agreement(lex, [(k, lambda r, s, L, k=k: r["reading"][s][L][k]["reading"],
+                      lambda r, s, L, k=k: r["reading"][s][L][k]["delta"]) for k in names])
 
 
 def _pair_stats(pairs: dict, labels) -> dict:
