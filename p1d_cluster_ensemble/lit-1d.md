@@ -84,7 +84,7 @@ abstracts, 2026-09-25. Nothing here is registered; no data was opened.
 
 | option | what | from | cost | risk |
 |---|---|---|---|---|
-| A0 | *Added after `/challenge-pr` on #99.* Bound the share of singletons in `selection.py`'s trivial filter, then re-run the smoke | row 2 | minutes | the bound is a new constant to choose; it fixes agglomerative's end only |
+| A0 | *Added after `/challenge-pr` on #99.* Bound the share of singletons in `selection.py`'s trivial filter, then re-run the smoke | row 2 | minutes | the bound is a new constant to choose; it fixes agglomerative's end only. **Done 2026-09-25** (bound 0.5; `status-1d.md` "A0") |
 | A | Keep 1d; rank every grid point by **normalised** stability (observed ÷ null, or most significant against it) instead of raw | von Luxburg §2; Fridlyand–Dudoit | null for every grid point: ×(n_grid / top_m) of today's stage 2 | **undefined where the null mean is 0, and ties at the floor p** (row 1a). It can move k to the grid's other end. Needs a wider grid and more null draws. Still one scale per family |
 | B | Matched k: compare families at equal cluster count | Jeub et al.; `docs/PHASE_SYNTHESIS.md` (`P-S1` at matched k) | cheap | HDBSCAN and modularity have no k; matching on the output count is post hoc |
 | C | Theory scale: every distance-taking family (agglomerative threshold, Rényi centres, vMF mean shift) at `δ = cβ_eff^{-1/2}` | 2411.04990 | cheap | β's ×8 convention is undecided (Blocked 9), a factor √8 ≈ 2.8 in δ; `c` is free (the paper uses 4) |
