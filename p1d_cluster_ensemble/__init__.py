@@ -30,8 +30,10 @@ Sub-experiments:
     D  comparison.py  persistence prediction                        P-C4
     E  p1d_io.py      particle-table export                          [R]
 
-Predictions P-C1..P-C4 were registered in PREDICTIONS.md before this code
-existed. P-C4 is the phase's own falsification: if graded confidence does
+Predictions P-C1..P-C4 were written (in the August branch's PREDICTIONS.md,
+now `predictions-1d.md`) before this code existed, and were NEVER entered in
+`claims/registry.json`. Wherever a docstring below says "registered", read
+"written in advance"; every verdict this package prints is tier 1. P-C4 is the phase's own falsification: if graded confidence does
 not out-predict the binary flag, the conglomeration is presentation, and
 that is the sentence the status doc will carry.
 """

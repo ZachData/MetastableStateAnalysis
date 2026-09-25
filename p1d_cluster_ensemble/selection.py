@@ -280,22 +280,44 @@ def separation_score(labels: np.ndarray, data: LayerData) -> float:
     p1_visualization/cluster_methods.py, and it is the fairer question
     about the clusters a method does commit to.
 
-    NaN when fewer than two clusters survive that exclusion, when every
-    surviving token is its own cluster (silhouette is undefined there, and
-    sklearn raises), or when fewer than three tokens survive — not 0.0,
+    NaN when the partition is degenerate (`is_degenerate`) — not 0.0,
     which would read as "no separation" rather than "not measurable".
-    The all-singletons case is what a fine grid point makes of a null draw
-    (first real run, 2026-09-25: 467 labels for 467 tokens); `calibrate`
-    drops NaN null draws, which raises the p floor rather than lowering p.
+    The null side does not keep the NaN: see `null_distributions`.
     """
     labels = np.asarray(labels)
-    keep = labels >= 0
-    sub = labels[keep]
-    n_labels = np.unique(sub).size
-    if sub.size < 3 or n_labels < 2 or n_labels >= sub.size:
+    if is_degenerate(labels):
         return float("nan")
+    keep = labels >= 0
     D = data.cos_dist[np.ix_(np.flatnonzero(keep), np.flatnonzero(keep))]
-    return float(silhouette_score(D, sub, metric="precomputed"))
+    return float(silhouette_score(D, labels[keep], metric="precomputed"))
+
+
+def is_degenerate(labels: np.ndarray) -> bool:
+    """
+    True when the assigned tokens form no measurable partition: fewer than
+    three of them, fewer than two clusters, or every one its own cluster
+    (silhouette is undefined there, and sklearn raises). The last is what
+    a fine grid point makes of a null draw (first real run, 2026-09-25:
+    467 labels for 467 tokens).
+    """
+    sub = np.asarray(labels)
+    sub = sub[sub >= 0]
+    n_labels = np.unique(sub).size
+    return bool(sub.size < 3 or n_labels < 2 or n_labels >= sub.size)
+
+
+#: What a degenerate null draw scores. The null asks "how much separation
+#: and reproducible structure does this method manufacture out of a
+#: structureless cloud with these marginals"; a draw where it builds no
+#: partition at all manufactured none, so it scores the floor of each
+#: statistic rather than being dropped. Dropping it (the August code, via
+#: `calibrate`'s finite filter) silenced exactly the families that behave
+#: best on noise: on the first real run agglomerative at thresholds
+#: 0.05 / 0.25 had 0 of 20 usable draws and abstained at every layer, and
+#: HDBSCAN at L18 kept 18, a p floor of 0.053 above alpha 0.05, so it could
+#: not pass (`/challenge-pr` on #98, finding 1).
+DEGENERATE_NULL_SEPARATION = -1.0   # silhouette's lower bound
+DEGENERATE_NULL_STABILITY = 0.0     # ARI at chance
 
 
 def calibrate(observed: float, null_values: np.ndarray, alpha: float = NULL_ALPHA) -> Dict:
@@ -352,16 +374,26 @@ def null_distributions(
 
     The separation pass is roughly 1/(2*n_repeats) of the cost of the
     stability pass: one fit per draw against 2*n_repeats.
+
+    A draw where the full-cloud fit is degenerate (`is_degenerate`) scores
+    `DEGENERATE_NULL_SEPARATION` / `DEGENERATE_NULL_STABILITY` instead of
+    NaN, so every draw counts. Only the null side does this: a degenerate
+    *observed* partition is still refused as not measurable by the gate.
     """
     def _stability(shuffled: np.ndarray) -> float:
         null_data = LayerData.from_normed(shuffled)
+        if is_degenerate(fit(family, params, null_data, seed=seed)):
+            return DEGENERATE_NULL_STABILITY
         return subsample_stability(
             family, params, null_data, n_repeats=n_repeats, seed=seed,
         )["mean_ari"]
 
     def _separation(shuffled: np.ndarray) -> float:
         null_data = LayerData.from_normed(shuffled)
-        return separation_score(fit(family, params, null_data, seed=seed), null_data)
+        labels = fit(family, params, null_data, seed=seed)
+        if is_degenerate(labels):
+            return DEGENERATE_NULL_SEPARATION
+        return separation_score(labels, null_data)
 
     stab = shuffled_dimension_null(
         data.normed, _stability, n_shuffles=int(n_null), renormalize=True,
@@ -439,6 +471,14 @@ def apply_gate(cand: Candidate, alpha: float = NULL_ALPHA) -> Candidate:
     elif not sep.get("usable"):
         sep_ok, sep_branch = False, "separation_null_unusable"
         reasons.append("no usable separation null draws — no calibration possible")
+    elif sep["p_floor"] > alpha:
+        # Too few usable draws for any outcome to pass. Refuse under its own
+        # branch, so it cannot read as "not separated" (#98 review, finding 1).
+        sep_ok, sep_branch = False, "separation_null_too_few"
+        reasons.append(
+            f"only {sep['n_null']} usable separation null draws: p floor "
+            f"{sep['p_floor']:.3f} > alpha {alpha} — the gate could not pass"
+        )
     else:
         sep_branch = "separation_rank_test"
         sep_ok = bool(sep["p_value"] <= alpha and sep["observed"] > sep["null_mean"])

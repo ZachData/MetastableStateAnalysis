@@ -169,6 +169,14 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-25, Phase 1d's gate: a null draw where a method builds no partition
+  was dropped as NaN, which silently raised the p floor. On the first real
+  run, agglomerative at fine thresholds had 0 of 20 usable draws and HDBSCAN
+  at L18 had 18 (floor 0.053 > alpha 0.05). Both "abstained", and the first
+  write-up reported those abstentions as findings about the data. Caught by
+  `/challenge-pr` on #98, then confirmed from the kept output. Rule: a gate
+  whose reachable p floor exceeds alpha refuses under its own branch; an
+  outcome the method cannot fail is not data.
 - 2026-09-24 (phase review session 6): `check.sh lint | tail -1 && git commit
   && git push` pushed `3240dfe` with 2 lint errors, because the pipe returns
   `tail`'s status, not the lint's. Fixed in `47e1820`. Capture the exit code

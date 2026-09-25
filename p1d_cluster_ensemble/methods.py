@@ -162,9 +162,15 @@ def hdbscan_backend() -> dict:
     if _BACKEND_CACHE is not None:
         return _BACKEND_CACHE
     try:
-        import hdbscan as _h
-        _BACKEND_CACHE = {"name": "hdbscan", "available": True,
-                          "version": getattr(_h, "__version__", "unknown")}
+        import hdbscan as _h  # noqa: F401 — availability check
+        # The package has no __version__; read the distribution metadata,
+        # as p1_mstate_tracking/clustering.py::_hdbscan_version does.
+        try:
+            from importlib.metadata import version as _dist_version
+            _v = _dist_version("hdbscan")
+        except Exception:
+            _v = "unknown"
+        _BACKEND_CACHE = {"name": "hdbscan", "available": True, "version": _v}
         return _BACKEND_CACHE
     except ImportError:
         pass

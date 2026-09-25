@@ -6,12 +6,7 @@
 **Why now (user, 2026-09-25):** Phase 10's experiments are on hold until the
 project can say what a cluster is, because every Phase 10 row reads one
 HDBSCAN partition and that choice is a confound in all of them. Evidence
-that it is (a scratch look at the stored labels, not a recorded result;
-`p10_cluster_function/handoff-10.md` "Parked"): on the 8 v1 prompts,
-HDBSCAN's count stays at 35–52 at every step and layer while average-linkage
-at a fixed cosine distance of 0.35 goes from ~177 to 36 across depth at
-step 512. The two agree at layer 0 (ARI 0.75–0.81, noise excluded) and part
-in the trained model's deep layers (0.21 at step 143000, L18).
+that it is: `p10_cluster_function/handoff-10.md` "Parked", first item.
 
 **What was done to revive it.** The code was deleted on 2026-09-23 with its
 branch and survived in the local tag `dead/particle-methods-comparison-vpuads`
@@ -24,7 +19,7 @@ things had drifted:
 | `PHASE1D` was never on `main`'s `core/artifacts.py` | re-registered, verbatim from the tag |
 | the holdout guard (`core/holdout.py`, 2026-09-24) did not exist | `run_1d.py` refuses the 12 held-out prompts; `--v1-only` / `--allow-holdout` |
 
-127 tests pass (1d's 109 plus `test_core_artifacts.py`), conda `mets`.
+1d's 112 tests pass, conda `mets` (the full gate: `./scripts/check.sh`).
 Paths in the sections below are the tag's: `p1_visualization/` is now
 `p1_mstate_tracking/visualization/`.
 
@@ -44,37 +39,53 @@ first real run should measure that drift too.
 **Input:** `pythia-410m-step143000_wiki_paragraph` (v1; Stage 0 pin `64a4087`,
 through `data/phase12/stage0_logs/stage0_index.json`), layers 0 / 12 / 18,
 467 tokens, `--grid quick`, defaults otherwise (`n_null 20`, `top_m 3`,
-`alpha 0.05`, seed 0), conda `mets`, hdbscan package backend. Output in a
-scratch directory, not kept. **Cost:** 442 s wall, 5 556 s CPU (~13 cores),
-280 MB RSS: about 150 s per layer, so one run at all 25 layers is about an hour
-on the quick grid. The first attempt crashed (the `separation_score` defect).
+`alpha 0.05`, seed 0), conda `mets`, `hdbscan` 0.8.41. **Output kept:**
+`data/p1d/smoke_2026-09-25/`. **Re-run:**
 
-Every array is populated (consensus labels, confidence, population at all 3
-layers). What it shows, from one run, so for design only:
+    METS_DATA=<main>/data python -m p1d_cluster_ensemble.run_1d --v1-only \
+      --results <main>/data/phase12/2026-09-22_21-20-26/pythia-410m-step143000_wiki_paragraph \
+      --out <main>/data/p1d/smoke_2026-09-25 --layers 0 12 18 --grid quick
 
-| layer | families admitted | abstained | consensus strength | core / halo / contested |
-|---|---|---|---|---|
-| 0 | 5 | agglomerative, gmm | 0.27 | 0 / 0 / 467 |
-| 12 | 6 | agglomerative | 0.40 | 0 / 253 / 214 |
-| 18 | 5 | agglomerative, **hdbscan** | 0.41 | 39 / 76 / 352 |
+**Cost:** 519 s wall, 6 618 s CPU (~13 cores), 280 MB RSS: about 170 s per
+layer, so one run at all 25 layers is about 70 min on the quick grid.
 
-- **The ensemble mixes scales, and that is the next design question.**
-  Ranked by subsample stability, every centroid family picks k = 2 or 3 (the
-  coarsest split is the most reproducible), while HDBSCAN keeps about 50 small
-  clusters. Co-association averaged over both compares two different
-  questions, so low consensus here says little about agreement. A cluster
-  needs a stated scale: compare families at matched scale (matched k or
-  matched `δ`), or read the families as levels of one hierarchy.
-- **HDBSCAN at `min_cluster_size=2` fails its matched null at trained L18**
-  (neither of its top 2 grid points clears separation and stability), and it
-  is the selected setting at L0 and L12. One run; worth checking across runs.
-- **Agglomerative abstains at every layer** on the quick grid. The quick grid
-  may be too coarse for it; not yet checked.
-- The driver prints `P-C1`–`P-C4` verdicts. They are unregistered, and on one
-  run and a quick grid they mean nothing; do not quote them.
-- `hdbscan_backend` records `version: unknown` (the package has no
-  `__version__`); `p1_mstate_tracking/clustering.py::_hdbscan_version` reads
-  the distribution metadata and should be reused.
+**Two defects before it ran clean.** (1) `separation_score` crashed when a
+null draw came back as one cluster per token. (2) After that fix, `calibrate`
+dropped such draws as NaN, which silenced the families that behave best on
+noise: agglomerative at thresholds 0.05 / 0.25 had 0 of 20 usable draws and
+abstained at every layer, and HDBSCAN at L18 kept 18 draws, a p floor of 0.053
+above alpha, so it could not pass. **The first version of this section
+reported both abstentions as findings; they were the gate's.** Now a
+degenerate null draw scores the floor (separation −1, stability 0), and a p
+floor above alpha refuses under its own branch (`/challenge-pr` on #98,
+finding 1; `selection.py` `DEGENERATE_NULL_*`).
+
+Every array is populated. What the run shows, from one run, so for design
+only:
+
+| layer | families admitted | abstained | consensus strength | consensus k | core / halo / contested |
+|---|---|---|---|---|---|
+| 0 | 6 | gmm | 0.25 | 4 | 3 / 263 / 201 |
+| 12 | 7 | — | 0.38 | 5 | 0 / 111 / 356 |
+| 18 | 7 | — | 0.36 | 5 | 0 / 237 / 230 |
+
+- **Ranking by subsample stability picks each family's extreme scale.**
+  k-means, spherical k-means, spectral and GMM take k = 2 (spectral k = 3 at
+  L18), their coarsest option. Agglomerative takes threshold 0.05, its
+  finest, where most tokens are singletons and a partition reproduces
+  trivially. HDBSCAN takes `min_cluster_size` 5 at L0 / L12 and the shipped 2
+  at L18. Co-association averaged over these compares different questions, so
+  consensus strength 0.25–0.38 says little about agreement. Stability's pull
+  toward trivial scales is a known property (Ben-David, von Luxburg & Pál
+  2006, raised in the review). **Before 1d is used to define a cluster, it
+  needs a stated scale:** families compared at matched k or matched `δ`, or
+  read as levels of one hierarchy. That redesign reopens `design-1d.md`, so it
+  triggers a literature scan first (`CLAUDE.md` "Literature scans").
+- The driver's `P-C1`–`P-C4` lines are unregistered and meaningless on one run
+  and a quick grid; they are now printed and stored under
+  `verdicts_status: "UNREGISTERED, tier 1: not adjudications"`.
+- The scratch agreement read that prompted the revival is in
+  `p10_cluster_function/handoff-10.md` "Parked" (first item), not repeated here.
 
 **Registry.** `P-C1`–`P-C4` (`predictions-1d.md`) were never registered and
 cannot be scored blind on the v1 runs already examined. They return as tier 1,
@@ -94,8 +105,8 @@ that is still the first question.
 **State then:** all five sub-experiments implemented and validated on synthetic data with known
 answers, with a driver (`run_1d.py`) and artifact IO (`p1d_io.py`) that have been run end to
 end against a synthetic Phase-1 run directory. **Not yet run against Pythia artifacts** — no
-result rows below, by design. Predictions P-C1, P-C2, P-C3 and P-C4 were registered in
-`PREDICTIONS.md` before this code existed.
+result rows below, by design. Predictions P-C1, P-C2, P-C3 and P-C4 were written in the
+branch's `PREDICTIONS.md` before this code existed (never entered in the registry).
 
 **Cost:** [R] throughout. Reads `activations.npz` and re-clusters; no weights, no forward
 pass. Runnable against any existing Phase 1 run directory today.

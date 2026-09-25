@@ -2,7 +2,7 @@
 # Phase 1d — DESIGN
 
 Why this phase is built the way it is. For its current state and what has been validated, see
-`status-1d.md`; for the registered predictions, `PREDICTIONS.md` (P-C1..P-C4).
+`status-1d.md`; for the predictions (written in advance, never registered), `predictions-1d.md` (P-C1..P-C4).
 
 ## The problem
 

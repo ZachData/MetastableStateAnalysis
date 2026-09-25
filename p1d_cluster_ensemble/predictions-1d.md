@@ -1,4 +1,9 @@
-# Phase 1d registered predictions
+# Phase 1d predictions (written before the code; never registered)
+
+> **Not in `claims/registry.json`.** Written in the August branch's
+> `PREDICTIONS.md` and never entered in the registry; the v1 runs have since
+> been examined, so they cannot be scored blind on them
+> (`p1d_cluster_ensemble/status-1d.md` "Registry").
 
 Committed **before any Phase 1d code is written or run**, same rule as above: this is a
 re-analysis of artifacts already on disk, and the outcome that would be most convenient — "the

@@ -60,6 +60,10 @@ from .selection import (
 )
 
 SUBEXPERIMENTS = ("A", "B", "C", "D", "E")
+
+#: P-C1..P-C4 were written in advance but never entered in claims/registry.json,
+#: and the v1 runs have been examined since; every verdict is tier 1.
+VERDICTS_STATUS = "UNREGISTERED, tier 1: not adjudications"
 _REQUIRES = {"A": set(), "B": {"A"}, "C": {"A", "B"}, "D": {"A", "B"}, "E": {"A", "B"}}
 
 
@@ -266,6 +270,8 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
 
     out["phase1_agreement"] = phase1_agreement_layers(run_dir)
     out["verdicts"] = _adjudicate(out, per_layer_arrays, stages, args)
+    out["verdicts_status"] = VERDICTS_STATUS
+    out["holdout"] = getattr(args, "holdout_record", None)
     return {"results": out, "arrays": per_layer_arrays,
             "identity": identity, "tokens": run["tokens"]}
 
@@ -386,7 +392,7 @@ def summary_text(results: Dict) -> str:
             else f"Phase 1 agreement layers: unavailable — {agreement.get('reason')}"
         )
     lines.append("")
-    lines.append("Verdicts")
+    lines.append(f"Verdicts ({VERDICTS_STATUS})")
     for name, verdict in results.get("verdicts", {}).items():
         lines.append(f"  {name}: {verdict.get('verdict', '(none)')}")
     return "\n".join(lines) + "\n"
@@ -454,8 +460,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     # The 12 v2 prompts are the confirmation set (core/holdout.py): refuse
     # them unless --v1-only drops them or the user has released them.
-    runs, _ = refuse_held_out(discover_runs(args.results),
-                              allow=args.allow_holdout, drop=args.v1_only)
+    runs, args.holdout_record = refuse_held_out(
+        discover_runs(args.results), allow=args.allow_holdout, drop=args.v1_only)
     if not runs:
         print(f"no run directory under {args.results} contains activations.npz; "
               f"Phase 1d has nothing to re-cluster", file=sys.stderr)

@@ -38,7 +38,7 @@ from p1d_cluster_ensemble.methods import (
     spherical_kmeans,
 )
 from p1d_cluster_ensemble.selection import (
-    Candidate, apply_gate, calibrate, partition_summary, select_family,
+    Candidate, apply_gate, calibrate, is_degenerate, partition_summary, select_family,
     separation_score, subsample_stability, sweep_family,
 )
 
@@ -422,6 +422,30 @@ class TestGate:
         null = np.array([1.0, 1.0] + [0.85] * 18)
         cand = self._candidate(0.9, np.full(20, 0.3), 1.0, null)
         assert cand.admissible
+
+    def test_too_few_usable_draws_refuse_under_their_own_branch(self):
+        # 18 usable draws: p floor 1/19 = 0.053 > 0.05, so nothing can pass.
+        # It must say so, not read as "not separated" (#98 review, finding 1).
+        cand = self._candidate(0.9, np.full(18, 0.1), 0.9, np.full(20, 0.4))
+        assert not cand.admissible
+        assert cand.branch.startswith("separation_null_too_few")
+        assert "could not pass" in cand.reason
+
+    def test_degenerate_null_draws_count_as_the_floor(self, structureless):
+        # A threshold so fine that every structureless draw comes back as
+        # singletons: the first real run's agglomerative case. Every draw
+        # must count, at the floor, rather than be dropped.
+        from p1d_cluster_ensemble.selection import (
+            DEGENERATE_NULL_SEPARATION, DEGENERATE_NULL_STABILITY,
+            null_distributions,
+        )
+        params = {"linkage": "average", "threshold": 1e-6}
+        assert is_degenerate(fit("agglomerative", params, structureless, seed=0))
+        nulls = null_distributions("agglomerative", params, structureless,
+                                   n_null=5, n_repeats=1, seed=0)
+        assert np.all(nulls["separation"] == DEGENERATE_NULL_SEPARATION)
+        assert np.all(nulls["stability"] == DEGENERATE_NULL_STABILITY)
+        assert calibrate(0.3, nulls["separation"])["n_null"] == 5
 
     def test_gate_refuses_before_nulls_are_computed(self):
         cand = Candidate(family="kmeans", params={"k": 2},
