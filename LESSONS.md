@@ -425,6 +425,14 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-09-25, #95: I found Stage 0 bit-identical to the WDS backfill and
+  wrote that §3's floor was "between the pilot and today", with "sensitivity or
+  toolchain" parked as open. The evidence was already on disk: at steps 0–1000
+  the two sweeps' activations differ by ≤ 2.5e-7 and partitions still differ,
+  and §2's backfill had matched the pilot's labels with today's code.
+  `/challenge-pr` caught it. I had looked only at the largest gap (8e-5, at
+  step 143000) and not at the gap per step. Rule: before calling an
+  explanation open, split the evidence by the variable it depends on.
 - 2026-09-22, #67: the Stage 0 driver said a deadline kill re-runs only "its
   unfinished prompts". `run_1` writes `pair_agreement.json` once, after the
   whole invocation, so a kill threw away up to a checkpoint's worth (~1.4 h)

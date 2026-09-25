@@ -13,11 +13,19 @@ from its producer.
 Refuses two records of one kind whose prompt sets differ: a step mean over
 different prompts is not a comparison.
 
+``--raw`` also reads the run dirs the records name (numpy + sklearn, and
+`HDD_1TB` mounted). It produces §1.11's input and label numbers: the largest
+activation gap, identical label vectors (overall, per layer, per step), ARI,
+equal ``max_alive``, for pilot vs Stage 0 on the shared runs, and for Stage 0
+vs the WDS backfill (the battery-``1e47918ef77a`` Phase 1 dirs under
+``data/phase12``, labels through ``read_labels``).
+
 TIER 1, EXPLORATORY, NOT REGISTERED. Descriptive, no null.
 
 Run:
-    python tools/run/p10_s1_compare.py
+    python tools/run/p10_s1_compare.py [--raw --v1-only]
 """
+import argparse
 import json
 import os
 import sys
@@ -66,6 +74,12 @@ def rows(recs: dict, cells) -> None:
 
 
 def main() -> None:
+    sys.path.insert(0, str(REPO))
+    from core.holdout import add_holdout_args
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--raw", action="store_true", help="also compare labels and activations run by run")
+    add_holdout_args(ap)
+    args = ap.parse_args()
     ext = load("ext_sem_threshold")
     tok = load("token_composition")
     for sw in SWEEPS:
@@ -89,6 +103,57 @@ def main() -> None:
                lambda r, s: r["summary"]["by_step"][s]["unique"]["class_contrast"],
                lambda r, s: r["summary"]["cluster_count"][s]["without_repeated_tokens"]["max_alive"],
                lambda r, s: r["summary"]["cluster_count"][s]["without_repeated_tokens"]["max_alive_at_layer0"]])
+    if args.raw:
+        raw(tok, args)
+
+
+def _pair_stats(pairs: dict, labels) -> dict:
+    """pairs: {(step, key): (dir_a, dir_b)}; labels: dir -> {layer: array}."""
+    import numpy as np
+    from sklearn.metrics import adjusted_rand_score
+    gap, by_step, by_layer, aris, n_same, n, alive_eq = {}, {}, {}, [], 0, 0, 0
+    for (st, key), (a, b) in sorted(pairs.items()):
+        xa = np.load(a / "activations.npz")["activations"]
+        xb = np.load(b / "activations.npz")["activations"]
+        gap[st] = max(gap.get(st, 0.0), float(np.abs(xa - xb).max()))
+        la, lb = labels(a), labels(b)
+        count = lambda l: max(len(set(v.tolist()) - {-1}) for v in l.values())
+        alive_eq += count(la) == count(lb)
+        for L in la:
+            same = bool(np.array_equal(la[L], lb[L]))
+            n += 1
+            n_same += same
+            by_step[st] = by_step.get(st, 0) + (not same)
+            by_layer[L] = by_layer.get(L, 0) + same
+            aris.append(adjusted_rand_score(la[L], lb[L]))
+    return {"n_runs": len(pairs), "n": n, "identical": n_same, "differ_by_step": by_step,
+            "identical_by_layer": by_layer, "gap_by_step": gap, "alive_eq": alive_eq,
+            "ari_p5": float(np.percentile(aris, 5)), "ari_min": float(min(aris))}
+
+
+def raw(tok: dict, args) -> None:
+    from core.holdout import refuse_held_out
+    from tools.run.backfill_hdbscan import read_labels
+    runs = {sw: {(int(k.split("|")[0]), k.split("|")[1]): Path(p) for k, p in r["inputs"]}
+            for sw, r in tok.items()}
+    s0 = runs["stage0"]
+    wds = {}
+    for m in sorted((DATA / "phase12").glob("2026-*/pythia-410m-step*/manifest.json")):
+        man = json.loads(m.read_text())
+        if m.parent not in s0.values() and man.get("prompt_battery_hash") == "1e47918ef77a":
+            wds[(int(man["checkpoint_step"]), man["prompt_key"])] = m.parent
+    kept, _ = refuse_held_out(sorted(wds.values()), allow=args.allow_holdout, drop=args.v1_only, context="p10_s1_compare")
+    wds = {k: p for k, p in wds.items() if p in set(kept)}
+    for name, other in (("pilot vs stage0", runs["pilot"]), ("wds backfill vs stage0", wds)):
+        pairs = {k: (other[k], s0[k]) for k in sorted(set(other) & set(s0))}
+        st = _pair_stats(pairs, read_labels)
+        print(f"\n{name}: {st['n_runs']} runs, {st['identical']}/{st['n']} layer-records identical, "
+              f"ARI p5 {st['ari_p5']:.3f} min {st['ari_min']:.3f}, equal max_alive {st['alive_eq']}/{st['n_runs']}")
+        print("  identical by layer: " + " ".join(str(st["identical_by_layer"][L])
+                                                  for L in sorted(st["identical_by_layer"])))
+        print("  per step: max |Δact| / differing layer-records")
+        for s in sorted(st["gap_by_step"]):
+            print(f"    {s:>7}: {st['gap_by_step'][s]:.1e} / {st['differ_by_step'].get(s, 0)}")
 
 
 if __name__ == "__main__":

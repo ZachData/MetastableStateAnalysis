@@ -221,3 +221,11 @@ def test_prompts_filter_keeps_only_named_keys_and_refuses_unknown(tmp_path):
     assert set(idx["runs"]) == {(0, "k2")} and idx["source"] == str(tmp_path)
     with pytest.raises(SystemExit):
         load_input(argparse.Namespace(run_root=str(tmp_path), index=None, prompts="k2,nope"))
+
+
+def test_run_root_refuses_a_run_dir_without_a_manifest(tmp_path):
+    from tools.run.p10_ext_sem_threshold import load_run_root
+    _manifest_dir(tmp_path, "pythia-410m-step0_a", 0, "k1")
+    (tmp_path / "pythia-410m-step512_b").mkdir()
+    with pytest.raises(SystemExit):
+        load_run_root(tmp_path)

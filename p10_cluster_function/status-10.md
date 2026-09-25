@@ -13,8 +13,8 @@
   - F12: raw `log Z` is almost all position. The sink is the minimum of raw `Z` and the maximum of corrected `Z` at every β tried, so the β-unit convention does not touch it. The raw clustered-minus-noise sign is already present at step 0, because HDBSCAN clusters by density — `p10_cluster_function/status-10.md` §1.4
   - F1 and F12 together read "parked, not pinned" at steps 32–64, a window the trained model passes through. This rests on reading `Z` as a metric, and the density confound is argued from step 0, not controlled — `p10_cluster_function/status-10.md` §1.5
   - The 410m sweep had no density partition in 152 of 152 dirs, and `pair_agreement`, the only semantic instrument, wrote well-formed zero records. The backfill re-derives the labels, bit-checked against the pilot, and does not rerun the analysis — `p10_cluster_function/status-10.md` §2, `p10_cluster_function/handoff-10.md` §1.2
-  - The HDBSCAN partition is not reproducible between the 2026-08 pilot and today (ARI 5th percentile 0.347, activations ≤ 8e-5 apart); a fresh run of today's pipeline reproduces it bit for bit. A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1, `p10_cluster_function/status-10.md` §1.11
-  - Stage 1 steps 1 and 2 on the pilot agree with Stage 0 to ≤ 0.004 at all 13 shared steps; the handoff's first-look table averaged 9 prompts, not 8. No null — `p10_cluster_function/status-10.md` §1.11
+  - The HDBSCAN partition is not reproducible run to run (ARI 5th percentile 0.347): it moves when activations differ by ~2e-7, one float32 rounding step. Today's pipeline repeats itself bit for bit only because it is deterministic on one machine. A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1, `p10_cluster_function/status-10.md` §1.11
+  - Stage 1 steps 1 and 2 on the pilot agree with Stage 0 to ≤ 0.004 at all 13 shared steps; the handoff's first-look table averaged 9 prompts, not 8. The per-layer co-membership and lexical-carry claims were not run on it. No null — `p10_cluster_function/status-10.md` §1.11
   - 410m's step 0 and step 1 are the same weights, so the checkpoint axis has 18 distinct points — §3.51.3
   - `pair_agreement`'s "ext_semantic" count is mostly a repeat count on Pythia (repeats have cosine 1 at layer 0). Over training the repeat share of mutual-NN pairs falls, and the non-repeat pairs that replace them become similar in the trained embedding. No null — `p10_cluster_function/status-10.md` §1.6
   - Which tokens are clustered is mostly copy count at init and in shallow layers (`min_cluster_size=2`, copies coincide at layer 0), and a moderate effect in the trained model's deep layers. Among unique tokens BPE rank does not predict it; class does, weakly and against trash collection. No null — `p10_cluster_function/status-10.md` §1.7
@@ -46,7 +46,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-25 · body `e8b132bdcc`
+- **Reviewed:** 2026-09-25 · body `78f7692a64`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -711,18 +711,19 @@ sweep `HDD_1TB/Mets_archive/2026-08-12_05-01-35` (native labels, battery
 8 v1 keys: 8 × 27 steps = 216 runs, inputs sha256 `c183a7fcbd9e`, beside Stage 0's
 152 v1 runs (`c558b210c08f`, §1.6–§1.7). Records `data/analysis/p10_s1_ext_sem_threshold_pilot.json`,
 `p10_s1_token_composition_pilot.json`. Side by side: `tools/run/p10_s1_compare.py`
-(prints every row; it reproduces §1.6 and §1.7's Stage 0 columns exactly). Every
+(prints every row; it reproduces §1.6 and §1.7's Stage 0 columns exactly; its
+`--raw` mode produces every label and activation number in this section). Every
 pilot run reproduced its stored `n_ext_semantic` at 0.5.
 
 **The inputs are the same, so only the labels can differ.** On the 104 (step,
 prompt) runs both sweeps hold (13 steps × 8 prompts), `tokens.txt` is identical
-and activations differ by ≤ 8e-5 (2e-7 at step 0). Stage 0's native labels are
-**bit-identical to the WDS backfill's** in all 3 800 layer-records of the 152 v1
-runs, and so are its activations. So "the WDS sweep" and Stage 0 are one
-measurement, and the pilot is the independent one. Pilot vs Stage 0 labels: 2 175
-of 2 600 layer-records identical (104/104 at layer 0, 79–90 at every other layer),
-ARI p5 0.347, min 0.166, which is §3's floor on the same pairs. `max_alive` is
-equal in 92 of 104 runs.
+and activations differ by ≤ 2.5e-7 up to step 1000 and ≤ 7.9e-5 at step 143000.
+Stage 0's native labels are **bit-identical to the WDS backfill's** in all 3 800
+layer-records of the 152 v1 runs, and so are its activations. So "the WDS sweep"
+and Stage 0 are one measurement, and the pilot is the only second one. Pilot vs
+Stage 0 labels: 2 165 of 2 600 layer-records identical (104/104 at layer 0,
+79–90 at every other layer), ARI p5 0.347, min 0.166, which is §3's floor on the
+same pairs. `max_alive` is equal in 92 of 104 runs.
 
 | on the 13 shared steps, max \|pilot − Stage 0\| | value |
 |---|---|
@@ -748,24 +749,33 @@ Pilot-only steps (3000, 5000 … 19000, 40000 … 120000), so the 14 not in Stag
   (0.74 → 0.70), non-repeat similarity is flattest at steps 17 000–40 000 (0.52–0.53),
   and unique punctuation falls from 0.23 at step 3000 to ~0.14 by step 15 000.
   The class contrast goes negative after step 2000 and stays there.
-- **Why the tables agree while 16 % of partitions differ.** The differences are
-  small (mean |Δ n_clusters| ≤ 0.8 per layer), none are at layer 0, and every
-  column is a mean over thousands of tokens. §3.1 found the same for A0 and F0.
-  Any per-layer claim remains exposed to the floor.
+- **What the agreement tests, and what it does not** (after `/challenge-pr`
+  on #95). Four of §1.6's five columns never read a label (they read the
+  mutual pairs and the embedding), so they could not have differed. The label
+  columns (same-cluster among repeats, all of §1.7) average over layers. The
+  partitions differ in 17 % of layer-records, but the differences are small
+  (mean |Δ n_clusters| ≤ 0.8 per layer), none are at layer 0, and every column
+  is a mean over thousands of tokens. §3.1 found the same for A0 and F0. The
+  per-layer claims, which are §1.9–§1.10's, are **not** tested here.
 - **§1.1's source table is 9 prompts, not 8.** Run over all 9 pilot prompts
   (`short_heterogeneous` included; inputs `1b32908600b1`,
   `p10_s1_ext_sem_threshold_pilot_all9.json`), the reader reproduces every
   §1.1 value: 0.833 / 0.856 / 0.788 / 0.752 / 0.692 / 0.723 / 0.708, and the
   same-cluster column. `handoff-10.md` §1.1 said 8. The 8-prompt pilot starts at
   0.875, as Stage 0 does.
-- **What the floor is, re-read.** §3 calls it "run to run". A fresh run of the
-  current pipeline (Stage 0 vs the WDS backfill) reproduces activations and
-  labels bit for bit. The floor sits between the 2026-08 pilot and today, whose
-  activations differ by ≤ 8e-5. Whether HDBSCAN is that sensitive or the
-  toolchain changed is not separated (Parked in `handoff-10.md`).
+- **The floor is HDBSCAN moving under float noise** (corrected after
+  `/challenge-pr` on #95; the first version said the floor was "between the
+  pilot and today", which was wrong). At steps 0–1000 the two sweeps'
+  activations differ by ≤ 2.5e-7, about one float32 rounding step, and 24–60
+  of each step's 200 layer-records still differ. The toolchain did not change:
+  the backfill re-clustered the pilot's own activations with today's code and
+  matched its labels (§2). That today's pipeline repeats itself bit for bit
+  (Stage 0 vs the WDS backfill) shows only that it is deterministic on this
+  machine. A change of thread count, library build or hardware would bring
+  the floor back.
 - **Caveats.** No null. The pilot's 9th prompt is left out of the tables so the
   step means compare. The co-membership and lexical-carry readers (§1.9–§1.10)
-  were not run on the pilot.
+  were not run on the pilot, and they carry the per-layer claims.
 
 ---
 
@@ -811,10 +821,10 @@ Three properties make it usable rather than merely fast:
 
 ## 3. The measurement that was not on the ladder
 
-**The HDBSCAN partition is not reproducible run to run** — *narrowed
-2026-09-25 (§1.11): between the 2026-08 pilot and today. A fresh run of today's
-pipeline (Stage 0) reproduces the WDS backfill's activations and labels bit for
-bit.* Two independent
+**The HDBSCAN partition is not reproducible run to run** — *confirmed
+2026-09-25 (§1.11): up to step 1000 the activations differ by ≤ 2.5e-7, and
+24–60 of each step's 200 layer-records still differ. Today's pipeline repeats
+itself bit for bit only because it is deterministic on one machine.* Two independent
 Phase-1 sweeps cover the same checkpoints and prompts; their `tokens.txt` are
 identical in all 104 overlapping directories and their activations differ by at
 most **7.9e-05**. Over **2 600 layer-pairs**:

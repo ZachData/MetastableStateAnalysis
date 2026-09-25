@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by its own criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). **Next: the context-shuffle test (Parked), or Stage 2.**
+**Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 have not been run on the pilot. **Next: §1.9–§1.10 on the pilot, the context-shuffle test (both Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -432,7 +432,9 @@ present, and as standing rule 4's *"refuse rather than degrade."*
    are bit-identical to the WDS backfill's, so the pilot is the only
    independent sweep. Steps 1 and 2 on the pilot agree with Stage 0 to ≤ 0.004
    at all 13 shared steps, and its 14 extra steps sit between Stage 0's.
-   §1.1's table was 9 prompts, not 8. Not run on the pilot: 2b and 2c.
+   §1.1's table was 9 prompts, not 8. Not run on the pilot: 2b and 2c, which
+   carry the per-layer claims (Parked). The partition moves under ~2e-7 of
+   activation noise, so §3's floor is run to run, not pilot vs today.
 4. **Do not fix `pair_agreement` on the WDS sweep by re-running `analysis_p1.py`**
    without reading `status-10.md` §2 first — the toolchain guard and the
    `read_labels` precedence rule both apply, and filling a canonical file while
@@ -636,14 +638,12 @@ before it.
   steps (the same as Stage 0 in 92 of 104 shared runs), peaking at L0 in 2–7 of
   7 runs. So these 7 prompts do not give "50–55" on either sweep. Left: which
   average did (`short_heterogeneous`, `repeated_tokens`, or another statistic).
-- **Pilot vs today: HDBSCAN sensitivity or a toolchain change?** (discovery,
-  §1.11, 2026-09-25). Today's pipeline reproduces itself bit for bit. The pilot's
-  activations are ≤ 8e-5 away, and 16 % of its partitions differ (none at L0).
-  Why: if 1e-4 of float noise moves a partition, §3's floor binds every re-run on
-  other hardware; if it is a version change, it binds only cross-toolchain
-  comparisons. Cost: re-cluster the pilot's 104 shared runs with today's
-  `clustering.py` (the backfill path) and compare against both label sets.
-  Changes: how §3's floor is read.
+- **§1.9–§1.10 on the pilot** (confound, from `/challenge-pr` on #95,
+  2026-09-25). The per-layer claims are the ones the floor binds, and §1.11
+  tested only layer-averaged tables. Why: Stage 1's headline rests on them.
+  Cost: the same `--run-root`/`--prompts` switch in `p10_comembership.py` and
+  `p10_lexical_carry.py`, then one run each. Changes: whether §1.9–§1.10 hold
+  on a second partition of the same activations.
 - **What makes `repeated_tokens`' ~50 deep-layer clusters** (discovery, same):
   1 repeated type, 2 clusters at L0, `max_alive` 41–65 peaking anywhere in
   L2–L22. Why: a count that arises without repeats, which pure noise does not

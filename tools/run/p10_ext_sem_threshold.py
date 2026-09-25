@@ -122,12 +122,15 @@ def load_index(path: Path) -> dict:
 def load_run_root(root: Path, model: str = "pythia-410m") -> dict:
     """The same shape as ``load_index``, for one flat run root such as the pilot
     sweep: every ``<model>-step*`` dir with a ``manifest.json``, keyed by its
-    manifest. Refuses a root that mixes batteries or repeats a (step, prompt)."""
+    manifest. Refuses a run dir without a manifest, and a root that mixes
+    batteries or repeats a (step, prompt). Non-dirs (the pilot's pngs) are skipped."""
     runs, batteries, shas = {}, set(), set()
     for d in sorted(root.glob(f"{model}-step*")):
+        if not d.is_dir():
+            continue
         m = d / "manifest.json"
         if not m.is_file():
-            continue
+            sys.exit(f"{d}: run dir without manifest.json")
         man = json.loads(m.read_text())
         k = (int(man["checkpoint_step"]), man["prompt_key"])
         if k in runs:
@@ -137,6 +140,11 @@ def load_run_root(root: Path, model: str = "pythia-410m") -> dict:
         shas.add(man.get("git_sha"))
     if len(batteries) != 1:
         sys.exit(f"{root}: {len(batteries)} prompt batteries {sorted(map(str, batteries))}; need one")
+    steps, keys = {s for s, _ in runs}, {k for _, k in runs}
+    holes = sorted((s, k) for s in steps for k in keys if (s, k) not in runs)
+    if holes:  # a step mean over fewer prompts is not the same row; say so, do not fill
+        print(f"WARNING {root}: {len(holes)} (step, prompt) cells missing, e.g. {holes[:3]}",
+              file=sys.stderr)
     return {"pin": ",".join(sorted(map(str, shas))), "prompt_battery_hash": batteries.pop(),
             "runs": runs}
 
