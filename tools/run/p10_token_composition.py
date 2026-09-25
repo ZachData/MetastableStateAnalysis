@@ -89,6 +89,10 @@ are noise at every layer is refused, not averaged in. The record names the
 index pin, battery hash, the sha256 of the sorted (key, path) list read, and
 the tokenizer.json sha256.
 
+``--run-root DIR`` reads one flat run root instead (the pilot sweep on
+`HDD_1TB`), keyed by each run's `manifest.json` and refused if it mixes
+batteries; ``--prompts`` keeps named keys. Comparison: `p10_s1_compare.py`.
+
 Run:
     python tools/run/p10_token_composition.py --v1-only
 """
@@ -110,7 +114,7 @@ import numpy as np
 
 from core.holdout import add_holdout_args, refuse_held_out
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
-from tools.run.p10_ext_sem_threshold import load_index, read_tokens
+from tools.run.p10_ext_sem_threshold import add_input_args, load_input, read_tokens
 
 RANK_BINS = (1000, 5000, 20000)           # [0,1000) [1000,5000) [5000,20000) [20000,)
 COUNT_BINS = (1, 2, 5, 20)                # 1, 2, 3-5, 6-20, 21+
@@ -398,7 +402,7 @@ def cluster_count_summary(runs: dict) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--index", default=str(DATA / "phase12" / "stage0_logs" / "stage0_index.json"))
+    add_input_args(ap, DATA / "phase12" / "stage0_logs" / "stage0_index.json")
     ap.add_argument("--hf-home", default=os.environ.get("HF_HOME", str(DATA / "hf")))
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_s1_token_composition.json"))
     add_holdout_args(ap)
@@ -406,7 +410,7 @@ def main() -> None:
 
     tok_path = find_tokenizer(Path(args.hf_home))
     vocab, added = load_vocab(tok_path)
-    idx = load_index(Path(args.index))
+    idx = load_input(args)
     kept, holdout = refuse_held_out(
         sorted(idx["runs"].values()), allow=args.allow_holdout, drop=args.v1_only,
         context="p10_token_composition")
@@ -429,7 +433,7 @@ def main() -> None:
         "row": "Stage 1 step 2 — which tokens are clustered and which are noise",
         "tier": "1 (exploratory, unregistered, descriptive; no null)",
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "index": str(args.index),
+        "index": idx["source"],
         "index_pin": idx["pin"],
         "prompt_battery_hash": idx["prompt_battery_hash"],
         "inputs_sha256": hashlib.sha256(json.dumps(inputs).encode()).hexdigest()[:12],

@@ -177,3 +177,47 @@ def test_a_tokens_file_that_disagrees_with_the_stored_pairs_is_refused(tmp_path)
     (d / "tokens.txt").write_text("".join(f"{k:>3}  x\n" for k in range(12)))
     with pytest.raises(ReproductionError):
         measure_run(d, _frames(d))
+
+
+# --- --run-root: the pilot sweep as a second input (handoff-10.md §1.3 step 3) ---
+
+def _manifest_dir(root, name, step, key, battery="b1", sha="s1"):
+    d = root / name
+    d.mkdir(parents=True)
+    (d / "manifest.json").write_text(json.dumps(
+        {"checkpoint_step": step, "prompt_key": key, "prompt_battery_hash": battery, "git_sha": sha}))
+    return d
+
+
+def test_run_root_keys_by_manifest_and_skips_non_run_entries(tmp_path):
+    from tools.run.p10_ext_sem_threshold import load_run_root
+    a = _manifest_dir(tmp_path, "pythia-410m-step0_whatever", 0, "k1")
+    b = _manifest_dir(tmp_path, "pythia-410m-step512_other", 512, "k2")
+    (tmp_path / "pythia-410m-step0_k1.png").write_text("")       # the pilot root holds pngs
+    idx = load_run_root(tmp_path)
+    assert idx["runs"] == {(0, "k1"): a, (512, "k2"): b}
+    assert idx["prompt_battery_hash"] == "b1" and idx["pin"] == "s1"
+
+
+@pytest.mark.parametrize("second", [
+    dict(step=512, key="k2", battery="b2"),        # two batteries
+    dict(step=0, key="k1", battery="b1"),          # one (step, prompt) twice
+])
+def test_run_root_refuses_a_mixed_root(tmp_path, second):
+    from tools.run.p10_ext_sem_threshold import load_run_root
+    _manifest_dir(tmp_path, "pythia-410m-step0_a", 0, "k1")
+    _manifest_dir(tmp_path, "pythia-410m-step0_b", **second)
+    with pytest.raises(SystemExit):
+        load_run_root(tmp_path)
+
+
+def test_prompts_filter_keeps_only_named_keys_and_refuses_unknown(tmp_path):
+    import argparse
+    from tools.run.p10_ext_sem_threshold import load_input
+    _manifest_dir(tmp_path, "pythia-410m-step0_a", 0, "k1")
+    _manifest_dir(tmp_path, "pythia-410m-step0_b", 0, "k2")
+    ns = argparse.Namespace(run_root=str(tmp_path), index=None, prompts="k2")
+    idx = load_input(ns)
+    assert set(idx["runs"]) == {(0, "k2")} and idx["source"] == str(tmp_path)
+    with pytest.raises(SystemExit):
+        load_input(argparse.Namespace(run_root=str(tmp_path), index=None, prompts="k2,nope"))
