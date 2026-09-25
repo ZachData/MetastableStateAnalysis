@@ -11,7 +11,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
-**Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12). **Next: the context-shuffle test (Parked), or Stage 2.**
+**Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
 
@@ -641,12 +641,19 @@ before it.
 - **Done 2026-09-25: §1.9–§1.10 on the pilot** (`status-10.md` §1.12). They
   hold: 3 103 / 3 120 and 383 / 384 per-layer readings agree, and all but one
   disagreement is a flip at the ±0.05 floor.
-- **§1.3 and §1.5's steps 32–64 on the pilot** (discovery, `/challenge-pr` on
-  #96, 2026-09-25). Step 32 is the least stable step between the two
-  partitions (29 run-layers differ, then 15 at step 16, 13 at 64, ≤ 8
-  elsewhere). Why: F1/F12's
-  "parked, not pinned" window is there. Cost: one run each with `--run-root`.
-  Changes: whether that reading survives HDBSCAN's float-noise instability.
+- **Done 2026-09-25: §1.3 and §1.5's steps 32–64 on the pilot** (`status-10.md`
+  §1.13). They hold: per-step means within 0.006 (F1) and 0.008 (F12), and no
+  unit changes sign at step 32. The pilot's extra steps put `Z` below the
+  step-0 baseline up to ~7000, and F1 has a smaller negative residual at
+  3000–100 000.
+- **Matching clusters across checkpoints** (discovery, user's question,
+  2026-09-25). Every Phase 10 row compares per-checkpoint statistics; none
+  follows a cluster from one checkpoint to the next, so "a cluster changes
+  meaning" cannot be told apart from "a new cluster replaces it". Why: the
+  user asked how clusters evolve across checkpoints. Cost: a matcher over
+  labels at the same layer between adjacent steps (same text, so tokens
+  align); no forward pass. Changes: whether §1.9–§1.10's drift happens within
+  clusters or between them.
 - **What makes `repeated_tokens`' ~50 deep-layer clusters** (discovery, same):
   1 repeated type, 2 clusters at L0, `max_alive` 41–65 peaking anywhere in
   L2–L22. Why: a count that arises without repeats, which pure noise does not

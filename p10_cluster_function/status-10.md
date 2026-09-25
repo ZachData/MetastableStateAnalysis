@@ -12,6 +12,7 @@
   - F1: the identity coupling is the optimal transport plan at 3 630 of 3 648 layer boundaries, so every per-layer displacement on record is the true `W_2`. `swap_fraction` counts repeated tokens, not motion. Clustered particles move less than noise only in a window, steps 32–512 — `p10_cluster_function/status-10.md` §1.3
   - F12: raw `log Z` is almost all position. The sink is the minimum of raw `Z` and the maximum of corrected `Z` at every β tried, so the β-unit convention does not touch it. The raw clustered-minus-noise sign is already present at step 0, because HDBSCAN clusters by density — `p10_cluster_function/status-10.md` §1.4
   - F1 and F12 together read "parked, not pinned" at steps 32–64, a window the trained model passes through. This rests on reading `Z` as a metric, and the density confound is argued from step 0, not controlled — `p10_cluster_function/status-10.md` §1.5
+  - F1 and F12 on the pilot's partition: per-step means within 0.006 and 0.008 at the 13 shared steps, and no unit changes sign at step 32, the least stable step. The pilot's extra steps put `Z` below the step-0 baseline from 32 to ~7000 and leave F1 a smaller negative residual (+0.01 to −0.15) at 3000–100 000. Same activations clustered twice — `p10_cluster_function/status-10.md` §1.13
   - The 410m sweep had no density partition in 152 of 152 dirs, and `pair_agreement`, the only semantic instrument, wrote well-formed zero records. The backfill re-derives the labels, bit-checked against the pilot, and does not rerun the analysis — `p10_cluster_function/status-10.md` §2, `p10_cluster_function/handoff-10.md` §1.2
   - The HDBSCAN partition is not reproducible run to run (ARI 5th percentile 0.347): it moves when activations differ by ~2e-7, one float32 rounding step. Today's pipeline repeats itself bit for bit only because it is deterministic on one machine. A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1, `p10_cluster_function/status-10.md` §1.11
   - Stage 1 steps 1 and 2 on the pilot agree with Stage 0 to ≤ 0.004 at all 13 shared steps; the handoff's first-look table averaged 9 prompts, not 8. No null — `p10_cluster_function/status-10.md` §1.11
@@ -47,7 +48,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-25 · body `c1b6112cae`
+- **Reviewed:** 2026-09-25 · body `fd608c5b7d`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -830,6 +831,45 @@ record holds those four layers only.
   instability moves these claims, and here it moves them little. It is not a
   second model, a second prompt set or a null. The ±0.05 floor stays placed,
   not calibrated.
+
+### 1.13 F1 and F12 on the pilot sweep — **the 32–64 window holds on the second partition; the pilot's extra steps stretch its tail**
+
+Tier 1, the same statistics and nulls as §1.3–§1.4 (2 000 permutations).
+`handoff-10.md` Parked (from `/challenge-pr` on #96). **Inputs:** the pilot's
+216 v1 runs, the same set as §1.11 (`HDD_1TB/Mets_archive/2026-08-12_05-01-35`
+minus `short_heterogeneous`, native labels), reached through a symlink root
+because `transport.py` and `p10_partition_function.py` take `--root`/`--pattern`
+and no prompt list. Git `10e44ea`, `--v1-only`. Records
+`data/analysis/p10_f1_transport_pilot.json` (5 184 boundaries, 9 min) and
+`p10_f12_z_pilot.json` (16 200 units, 21 min, 16 cores), beside §1.3–§1.4's
+`p10_f1_transport.json` and `p10_f12_z.json` (152 runs, the same 8 prompts).
+
+| on the 13 shared steps | F1 clustered − noise step | F12 clustered − noise |
+|---|---|---|
+| max \|pilot − WDS\|, per-step mean | 0.006 | 0.008 |
+| step 32, WDS / pilot | −0.294 / −0.290 | −0.122 / −0.118 (vs step 0: −0.587 / −0.588) |
+| step 64, WDS / pilot | −0.317 / −0.318 | −0.141 / −0.145 (vs step 0: −0.606 / −0.615) |
+| per unit, same sign | 2 491 / 2 496 (step 32: 192 / 192) | 7 800 / 7 800 (step 32: 600 / 600) |
+| per unit, same side of p = 0.05 | 2 464 / 2 496 (step 32: 189 / 192) | 7 754 / 7 800 (step 32: 596 / 600) |
+| largest single-unit move | 0.37 (step 64) | 0.60 (step 64) |
+
+- **§1.3's and §1.5's numbers hold on the second partition.** Step 32, the least
+  stable step between the partitions (§1.12), moves no unit's sign in either
+  row. Single units move by up to 0.4–0.6; the per-step means do not.
+- **The pilot's 14 extra steps stretch the tail, both rows.** F1: after the
+  32–512 window (−0.28 to −0.49 on both sweeps), 11 of the 12 steps from 3000
+  to 100 000 sit at +0.01 to −0.15 (median p 0.01–0.035), then +0.044 at 120 000
+  and −0.017 at 143 000. So "−0.01 at 143 000" is the endpoint of a smaller,
+  noisy residual, not a clean exit. F12 against step 0: −0.19 at 3000, −0.13 at
+  5000, −0.04 at 7000, above baseline from 9000 (+0.04 to +0.21). Below the
+  baseline therefore lasts from 32 to about 7000, not only to 512.
+- **What changes in §1.5.** "Clustered particles move less and sit below the
+  step-0 `Z`" is strongest at 32–512 and fades out by ~7000. The *negative raw
+  sign* is still 32–64 only (+0.03 at 128). The reading still rests on `Z` as a
+  metric and still has no norm-matched twin.
+- **What this shows.** The same activations clustered twice (§1.11): it bounds
+  HDBSCAN's float-noise instability on these two rows, and it is small. It is
+  not a second model, a second prompt set, or the missing control.
 
 ---
 
