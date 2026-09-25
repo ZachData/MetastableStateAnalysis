@@ -112,17 +112,27 @@ and defaults as "First real run". **Output:** `data/p1d/smoke_a0_2026-09-25/`.
 | 12 | 0.05 (k 452, 95 %) | 0.25 (k 291, 43 %, stab 0.95) | 5 → 4 | 0.99 | 0/111/356 → **257**/88/122 |
 | 18 | 0.05 (k 434, 89 %) | 0.25 (k 176, 15 %, stab 0.82) | 5 → 4 | 1.00 | 0/237/230 → 26/391/50 |
 
-- **The pick changes where the bound bites (L12, L18), not at L0,** where
-  all three average-linkage thresholds give ~200 clusters and ≤ 31 %
-  singletons, so stability still takes the finest. A0 removes the extreme
-  case; it does not give agglomerative a scale. That is still D / C
-  (`lit-1d.md` §5).
+- **The pick changes where the bound bites (L12, L18), not at L0.** L0's
+  pick is token identity: 215 clusters for exactly 215 distinct L0 vectors,
+  since layer 0 is the embedding and repeated tokens are identical (checked
+  on `activations.npz`; `/challenge-pr` on #100, finding 2). No trivial
+  branch can see that. Whether L0 belongs in 1d's readouts is for the user.
+  A0 removes the extreme case; it does not give agglomerative a scale. That
+  is still D / C (`lit-1d.md` §5).
 - A `ward, k = 2` grid point now enters the top 3 (admitted at L12, stability
   0.70; refused at L18). Stage 1 had not reached it before.
 - **The consensus partition hardly moves; the grading moves a lot.** At L12,
-  core goes from 0 to 257 tokens. One family's degenerate partition was enough to
-  change which tokens 1d calls core. That makes the core / halo / contested
-  counts a fragile readout until the scale question is settled.
+  core goes from 0 to 257 tokens. The mechanism is in the ensemble's voting,
+  and A0 does not remove it (`/challenge-pr` on #100, finding 1). A singleton
+  votes *against* grouping on every pair it touches, while an HDBSCAN -1
+  abstains. Each family's vote is weighted by its raw stability
+  (`selection_weights`), which is highest for fine partitions. The reviewer
+  rebuilt the observed ensemble without agglomerative, against the stored
+  core threshold (the null thresholds were not recomputed, so this gives the
+  direction only): core goes 3 → 178 at L0, 257 → 457 at L12, 26 → 285 at L18.
+  **Core / halo / contested counts are not a usable readout** until singleton
+  voting and the weights are decided. That is a design question for
+  `design-1d.md`, together with D.
 - The unregistered `P-C4` line flipped from "CONFIRMED 2/2" to "FALSIFIED 1/2"
   (`P-C3` 0 % → 7 %). These are tier 1 lines, not adjudications. The flip
   shows how little one run on the quick grid supports them.

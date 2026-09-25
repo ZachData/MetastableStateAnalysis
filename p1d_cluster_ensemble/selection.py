@@ -109,7 +109,7 @@ from .constants import SUBSTANTIAL_CLUSTER_SIZE
 from .methods import LayerData, fit, param_grid
 
 # ---------------------------------------------------------------------------
-# Thresholds. Both PLACED, not calibrated — there is no distribution to
+# Thresholds. All PLACED, not calibrated — there is no distribution to
 # derive either from before the phase runs, which is exactly why they are
 # named here with the label on them rather than buried at a call site.
 # ---------------------------------------------------------------------------
@@ -550,9 +550,9 @@ def sweep_family(
                                     n_repeats=n_repeats, seed=seed)
                 if not shape["trivial"]
                 # A trivial partition's stability is meaningless and its
-                # fits are not free; skipping them is the one shortcut
-                # taken here, and it can only remove candidates that the
-                # gate would reject anyway.
+                # fits are not free, so it is skipped. This is a filter,
+                # not a shortcut: the gate admitted a 95 %-singleton
+                # partition before TRIVIAL_SINGLETON_SHARE existed.
                 else {"mean_ari": float("nan"), "std_ari": float("nan"),
                       "per_repeat": [], "n_repeats_usable": 0,
                       "n_overlap_mean": 0.0, "fraction": SUBSAMPLE_FRACTION,
