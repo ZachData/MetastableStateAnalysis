@@ -15,7 +15,7 @@
   - The 410m sweep had no density partition in 152 of 152 dirs, and `pair_agreement`, the only semantic instrument, wrote well-formed zero records. The backfill re-derives the labels, bit-checked against the pilot, and does not rerun the analysis — `p10_cluster_function/status-10.md` §2, `p10_cluster_function/handoff-10.md` §1.2
   - The HDBSCAN partition is not reproducible run to run (ARI 5th percentile 0.347): it moves when activations differ by ~2e-7, one float32 rounding step. Today's pipeline repeats itself bit for bit only because it is deterministic on one machine. A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1, `p10_cluster_function/status-10.md` §1.11
   - Stage 1 steps 1 and 2 on the pilot agree with Stage 0 to ≤ 0.004 at all 13 shared steps; the handoff's first-look table averaged 9 prompts, not 8. No null — `p10_cluster_function/status-10.md` §1.11
-  - The per-layer co-membership and lexical-carry claims hold on the pilot's partition: 3 103 of 3 120 and 383 of 384 per-layer readings agree, all but one disagreement a flip at the ±0.05 floor, and every quoted cell is within 0.005. Same activations clustered twice, so this bounds HDBSCAN's instability only. No null — `p10_cluster_function/status-10.md` §1.12
+  - The per-layer co-membership and lexical-carry claims hold on the pilot's partition: 3 103 of 3 120 and 383 of 384 per-layer readings agree, all but one disagreement a flip at the ±0.05 floor, and every quoted cell at a shared step (the trained model: 143000 only) is within 0.005. Most cells are bit-identical: 100 of 2 600 run-layers have a different partition. Same activations clustered twice, so this bounds HDBSCAN's instability only. No null — `p10_cluster_function/status-10.md` §1.12
   - 410m's step 0 and step 1 are the same weights, so the checkpoint axis has 18 distinct points — §3.51.3
   - `pair_agreement`'s "ext_semantic" count is mostly a repeat count on Pythia (repeats have cosine 1 at layer 0). Over training the repeat share of mutual-NN pairs falls, and the non-repeat pairs that replace them become similar in the trained embedding. No null — `p10_cluster_function/status-10.md` §1.6
   - Which tokens are clustered is mostly copy count at init and in shallow layers (`min_cluster_size=2`, copies coincide at layer 0), and a moderate effect in the trained model's deep layers. Among unique tokens BPE rank does not predict it; class does, weakly and against trash collection. No null — `p10_cluster_function/status-10.md` §1.7
@@ -47,7 +47,7 @@
   - Rebuild a cluster ensemble (1d's intent) only after measuring whether tuning reduces §3's run-to-run drift (free: the two sweeps' activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-25 · body `6e5b043c06`
+- **Reviewed:** 2026-09-25 · body `c1b6112cae`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -796,15 +796,30 @@ record holds those four layers only.
 | §1.9: 5 properties × 2 draws × 26 layers × 12 steps | 3 103 / 3 120 | ≤ 0.021; copy_share and no_copy up to 0.052 |
 | §1.10: 8 quantities × 4 layers × 12 steps | 383 / 384 | ≤ 0.020 |
 
-- **The numbers §1.9 and §1.10 quote are the same on the pilot.** At step 143000
-  and step 512, every cell of their tables is within 0.005: same_class lift
+- **The numbers §1.9 and §1.10 quote are the same on the pilot, at the steps
+  both sweeps have.** Shared: 0, 1, 2, 4 … 1000 and 143000. The steps §1.9 and
+  §1.10 also quote (2000, 16000) are not in the pilot. At steps 0, 64, 512 and
+  143000, every quoted cell is within 0.005: same_class lift
   +0.29 / +0.26 / +0.23 at L0 / 12 / 24, `class_given_emb` at 40 bins +0.20 at
   step 512 against kNN ≈ 0, trained L12 +0.04 on +0.04, L24 +0.07 on +0.01–0.02,
-  carry `self_pct` 0.84 / 0.88 at L12 and 0.61 / 0.72 at L24.
+  carry `self_pct` 0.84 / 0.88 at L12 and 0.61 / 0.72 at L24. 11 of the 12
+  shared steps > 0 are ≤ 1000, so the trained-model claims get one step
+  (143000) on the second partition.
+- **Most of the agreement is identical cells.** 100 of 2 600 run-layers (13
+  steps × 8 prompts × 25 layers; none in `repeated_tokens`) have a different
+  partition; the rest are bit-identical. Where one does change, a single prompt's value moves by up to
+  0.36 (`latex_monograph`, step 32, L12, `copy_share`). The per-prompt numbers
+  §1.9–§1.10 quote hold within 0.027 at 143000 (`/challenge-pr` on #96).
 - **The 18 disagreements are threshold flips.** In 17 both Δs are within
   0.011 of ±0.05. The one real gap is step 32 L12 (no_copy Δ −0.071 vs −0.030;
-  copy_share_cl and emb_cross flip in the same cell): one layer at one step,
-  inside §1.9's steps 32–512 window. No claim rests on it.
+  copy_share_cl and emb_cross flip in the same cell). Step 32 is the least
+  stable step (`/challenge-pr` on #96): 29 run-layers differ there, in 16 of 25
+  layers, against 15 at step 16, 13 at step 64 and ≤ 8 at every other shared
+  step. It is inside §1.9's 32–512 window and the
+  32–64 window §1.3 and §1.5 rest on (parked, `handoff-10.md`).
+- **§1.10 at all 26 layers** (`/challenge-pr` on #96, the reviewer's own code
+  over the records): 7 disagreements in 2 184 cells, all at the floor. The
+  table above counts the 4 layers the record's reading holds.
 - **The pilot's extra steps fill in §1.10's decline.** `class_given_emb` at 40
   bins, layer mean: 0.20 at step 512, 0.09 at 3000, 0.055 at 13 000–19 000,
   0.05 from 40 000 on; the kNN control is 0.015–0.03 throughout. L24 is

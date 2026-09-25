@@ -641,6 +641,12 @@ before it.
 - **Done 2026-09-25: §1.9–§1.10 on the pilot** (`status-10.md` §1.12). They
   hold: 3 103 / 3 120 and 383 / 384 per-layer readings agree, and all but one
   disagreement is a flip at the ±0.05 floor.
+- **§1.3 and §1.5's steps 32–64 on the pilot** (discovery, `/challenge-pr` on
+  #96, 2026-09-25). Step 32 is the least stable step between the two
+  partitions (29 run-layers differ, then 15 at step 16, 13 at 64, ≤ 8
+  elsewhere). Why: F1/F12's
+  "parked, not pinned" window is there. Cost: one run each with `--run-root`.
+  Changes: whether that reading survives HDBSCAN's float-noise instability.
 - **What makes `repeated_tokens`' ~50 deep-layer clusters** (discovery, same):
   1 repeated type, 2 clusters at L0, `max_alive` 41–65 peaking anywhere in
   L2–L22. Why: a count that arises without repeats, which pure noise does not

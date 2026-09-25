@@ -454,6 +454,12 @@ a wrong premise, the check inherits it.
   at the embedding in 92 of 133 runs). The author also read `repeated_tokens`
   as evidence against, when it is a different mechanism. Before parking a
   test, check whether the data already written answers it.
+- 2026-09-25, #96: the author wrote "every quoted cell is within 0.005" when
+  the pilot lacks two of the quoted steps. "3 103 / 3 120 agree" also hid
+  that 96% of run-layers were bit-identical, so the count mostly measured
+  sameness. The reviewer's own step-32 count ("8 of 25 layers") was wrong
+  too, and re-running it gave 29 run-layers in 16. A "holds" claim should
+  state what it was compared on. Check a reviewer's numbers before quoting them.
 - Before `/challenge-pr` existed, the 2026-09-12 merge was 51 commits with no
   second reader at all (why the PR-size rule exists).
 
