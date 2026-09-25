@@ -642,10 +642,15 @@ before it.
   hold: 3 103 / 3 120 and 383 / 384 per-layer readings agree, and all but one
   disagreement is a flip at the ±0.05 floor.
 - **Done 2026-09-25: §1.3 and §1.5's steps 32–64 on the pilot** (`status-10.md`
-  §1.13). They hold: per-step means within 0.006 (F1) and 0.008 (F12), and no
-  unit changes sign at step 32. The pilot's extra steps put `Z` below the
-  step-0 baseline up to ~7000, and F1 has a smaller negative residual at
-  3000–100 000.
+  §1.13). They hold: per-step means within 0.005 (F1) and 0.008 (F12), and no
+  changed unit flips sign at step 32. Below-baseline `Z` lasts past 512 on both
+  sweeps (§1.4's table now shows it).
+- **Per-directory seeds for the `p10_*` nulls** (discovery, `/challenge-pr` on
+  #97, 2026-09-25). `transport.py` and `p10_partition_function.py` seed one
+  generator per sweep, so a unit's p depends on directory order and is not
+  comparable across sweeps. Why: any per-unit p comparison between the two
+  sweeps. Cost: seed from (seed, run_dir) in each runner; re-run changes every
+  stored p slightly. Changes: nothing on record (§1.13 compares values only).
 - **Matching clusters across checkpoints** (discovery, user's question,
   2026-09-25). Every Phase 10 row compares per-checkpoint statistics; none
   follows a cluster from one checkpoint to the next, so "a cluster changes
@@ -683,7 +688,9 @@ before it.
   with a battery-hash check) when Stage 1's first reader is written. Changes:
   what every Stage 1 table is computed on. **Done for Stage 1** (2026-09-24):
   `p10_ext_sem_threshold.py` reads only the index. The older `p10_*` readers
-  still glob; fix them when they are next re-run.
+  still glob; fix them when they are next re-run *on `data/phase12`*. §1.13
+  re-ran `transport.py` and `p10_partition_function.py` on the pilot through an
+  explicit symlink root, which pools nothing, so left them as they are.
 - **`lit-8.md` never cites `literature-8.md`** (found in the same batch): the
   later leads-only file does not know the earlier fetched readings exist. Why:
   a reader of `lit-8.md` misses 18 verified ids. Cost: one line. Changes:
