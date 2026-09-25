@@ -16,8 +16,9 @@ abstracts, 2026-09-25. Nothing here is registered; no data was opened.
 
 | # | finding | mark | changes |
 |---|---|---|---|
-| 1 | 1d's stage 1 ranks candidates by **raw** subsample stability. The literature's standard warning is that raw instability "trivially scales with k, regardless of what the underlying data structure is", so the argmax is "meaningless" unless each candidate is **normalised** by its own null (von Luxburg 2010 §2) | [R] | the defect behind the extreme scales has a named, standard fix |
-| 2 | Stability's other trivial solution: "if we change the data set too little … we will observe trivial stability" (same §2). Agglomerative at its finest threshold, with most tokens singletons, is this case | [R] | same fix; the scale also needs a lower bound |
+| 1 | 1d's stage 1 ranks candidates by **raw** subsample stability. The literature's standard warning is that raw instability "trivially scales with k, regardless of what the underlying data structure is", so the argmax is "meaningless" unless each candidate is **normalised** by its own null (von Luxburg 2010 §2) | [R] | a standard remedy exists, but **on 1d's data it does not work as stated** (row 1a). `design-1d.md` §"The gate is asymmetric" keeps raw stability on purpose, because its null reaches the ceiling |
+| 1a | *Added after `/challenge-pr` on #99.* Since #98, a degenerate null draw scores stability 0, and the null mean is exactly 0 for agglomerative at 0.05 / 0.25 and for HDBSCAN `mcs=5` at L12 / L18. The ratio is then infinite, and ranking by significance ties them at the floor p (1/21). On the stored quick-grid candidates, ranking by observed/null moves k-means off k = 2, but twice onto k = 4, **the other end of the grid** (the review's table, PR #99) | data, smoke run | normalisation can trade one extreme scale for the other. The grid must extend past both ends before A means anything |
+| 2 | *Revised after `/challenge-pr` on #99.* Agglomerative's perfect stability is **not** von Luxburg's "perturbation too small". At L12 its pick is k = 452 of 467 tokens, 95 % singletons, and that passes `selection.py`'s trivial filter, which bounds the dominant cluster but not the share of singletons | checked in `p1d_results.json` | **a code defect**, cheaper to fix than any of A–D (option A0) |
 | 3 | Consensus clustering finds "apparently stable clusters" in unimodal data with no clusters (Şenbabaoğlu et al. 2014) | [S] | 1d's per-family null gate is necessary. A consensus-level statistic (PAC) also needs its own null |
 | 4 | Multiscale methods do not pick one scale. They sweep a resolution parameter and keep the scales where partitions are **robust** (Markov stability; Jeub et al. 2018; ToMATo persistence; Fred–Jain lifetime) | [S] | option D below |
 | 5 | The theory supplies its own scale: `δ = c β^{-1/2}` (2411.04990 §5.1; the paper's simulations use `c = 4`) | [P] `docs/readings/2411.04990.md` | option C, but it inherits β's open ×8 convention (STATE Blocked 9) |
@@ -52,7 +53,7 @@ abstracts, 2026-09-25. Nothing here is registered; no data was opened.
 | The data exist: every run stores `attentions.npz`, shape `(24, 16, n, n)` float32 (checked on `pythia-410m-step143000_wiki_paragraph`, n = 467, 158 MB) | checked |
 | Attention is row-stochastic, so each layer is a Markov chain on tokens. A window of w layers is the product `Π (½I + ½Ā_ℓ)` (rollout, with the residual as the ½I term). w is Markov time, so "2 or 3 layers" is a resolution parameter, and Markov stability's plateau rule selects among windows | literature [S]; not built |
 | **Sink.** GPT-NeoX adds no BOS token, so position 0 takes the sink role (`p10_cluster_function/attention-10.md` §2.1). Raw attention communities would be a star around it. Drop the sink column and renormalise, using `core/sink_audit.py`'s machinery | known here |
-| **Causal.** Aᵢⱼ = 0 for j > i, so the graph is directed and early tokens can only receive. Symmetrise (A + Aᵀ), or use co-attention A Aᵀ ("attend to the same tokens"), or directed Markov stability. These answer different questions | open choice |
+| **Causal.** Aᵢⱼ = 0 for j > i, so the graph is directed and early tokens can only receive. Symmetrise (A + Aᵀ), or use co-attention A Aᵀ ("attend to the same tokens"). These answer different questions. **Directed Markov stability is degenerate as it stands:** a lower-triangular row-stochastic chain has its whole stationary distribution on token 0, so it needs a teleportation term (`/challenge-pr` on #99, finding 5) | open choice |
 | **Attention weight is not force.** In the particle picture, j moves i by `Aᵢⱼ · P_{xᵢ}(V xⱼ)`. The weight alone ignores V and the 16 heads' different V | caveat |
 | **What it adds over distance.** Attention is `softmax(⟨Q xᵢ, K xⱼ⟩/√d_h)`, a function of geometry. If `QᵀK` were a scaled identity, attention communities would equal cosine clusters at scale β^{-1/2}, so **where they differ measures what QK does beyond cosine**. That makes it a family with a different bias (an interaction, not a distance), and the one closest to the theory's own coupling | recommendation |
 
@@ -83,17 +84,22 @@ abstracts, 2026-09-25. Nothing here is registered; no data was opened.
 
 | option | what | from | cost | risk |
 |---|---|---|---|---|
-| A | Keep 1d; rank every grid point by **normalised** stability (observed ÷ null, or most significant against it) instead of raw | von Luxburg §2; Fridlyand–Dudoit | null for every grid point: ×(n_grid / top_m) of today's stage 2 | still one scale per family; the families still ask different questions |
+| A0 | *Added after `/challenge-pr` on #99.* Bound the share of singletons in `selection.py`'s trivial filter, then re-run the smoke | row 2 | minutes | the bound is a new constant to choose; it fixes agglomerative's end only |
+| A | Keep 1d; rank every grid point by **normalised** stability (observed ÷ null, or most significant against it) instead of raw | von Luxburg §2; Fridlyand–Dudoit | null for every grid point: ×(n_grid / top_m) of today's stage 2 | **undefined where the null mean is 0, and ties at the floor p** (row 1a). It can move k to the grid's other end. Needs a wider grid and more null draws. Still one scale per family |
 | B | Matched k: compare families at equal cluster count | Jeub et al.; `docs/PHASE_SYNTHESIS.md` (`P-S1` at matched k) | cheap | HDBSCAN and modularity have no k; matching on the output count is post hoc |
 | C | Theory scale: every distance-taking family (agglomerative threshold, Rényi centres, vMF mean shift) at `δ = cβ_eff^{-1/2}` | 2411.04990 | cheap | β's ×8 convention is undecided (Blocked 9), a factor √8 ≈ 2.8 in δ; `c` is free (the paper uses 4) |
 | D | Hierarchy: report the merge tree over a scale sweep and keep the robust scales (plateaus, persistence, lifetime), with C's δ marked on it | §2 | moderate | a set of scales, not one answer. The Phase 10 readers would need to say which level they read |
 
-**Recommendation (for the user to decide):** D as the frame, C to mark the theory's
-point on it, and A's normalisation as the gate for any scale reported. The primary
-object would be §3's `φ_β` landscape swept over β around `β_eff`, with its wells and
-merge tree, plus §2.1's attention-window communities as the interaction family. The
-current seven families become checks at matched scale. **Blocked on the user first:
-β's convention (Blocked 9).** C and §3 both read β, and the ×8 moves the answer.
+**Recommendation (for the user to decide; reordered after `/challenge-pr` on #99).**
+First, **A0**, which is a defect fix, not a design choice. Second, the question 1d was
+revived for, whether tuning reduces the float-noise drift, which none of A–D blocks.
+Third, **D** as the frame and **C** to mark the theory's point on it: §3's `φ_β`
+landscape swept over β around `β_eff`, with its wells and merge tree, plus §2.1's
+attention-window communities (symmetrised) as the interaction family. The seven families
+become checks at matched scale. **A** is not recommended as stated (row 1a).
+**Blocked on the user before C and §3: β's convention (Blocked 9).** Both read β, and
+the ×8 changes the answer. D + C turns 1d from "is HDBSCAN a good choice" into "what
+is a cluster". That change is the user's to make, not the scan's.
 
 ## 6. Queue (not read)
 
