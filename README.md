@@ -16,8 +16,8 @@ lives, how to run it, and which of the many documents answers which question.
 It is deliberately light on results, because results live in files that are
 kept current and this one is a map.
 
-**Snapshot: 2026-09-17.** For the current state of the work, read
-[`PROJECT.md`](PROJECT.md) — always, and first.
+Here's a blogpost about some of the early findings of this work! 
+https://www.lesswrong.com/posts/2dA7phbYZGPjhTj9q/transformers-resist-their-own-architecture
 
 ---
 
