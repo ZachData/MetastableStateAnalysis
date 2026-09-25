@@ -12,6 +12,7 @@ long-form record behind it.**
 |---|---|---|
 | 1 | `p1_mstate_tracking/` | Complete |
 | 1b | `p1b_hemisphere/` | Complete |
+| 1d | `p1d_cluster_ensemble/` | **The active thread since 2026-09-25**: what a cluster is, before Phase 10 resumes. Seven tuned clustering families, a graded consensus, `P-C1`–`P-C4` (never registered). Code restored from its tag; read `status-1d.md` "Revived 2026-09-25" first |
 | 1c | `p1c_frames/` | Implemented and validated on synthetic data. **Audited 2026-09-19 (§3.40): E run against Pythia artifacts (`P-H1` measured), A/B/F blocked on inputs no run directory carries** |
 | 2 | `p2_eigenspectra/` | Complete; the Pythia rerun is done and the 19-step sweep is on disk |
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |
@@ -103,9 +104,8 @@ is let go; the reason it existed stays (user, 2026-09-24). Until someone deletes
 them, the code can still be read from local, unpushed tags.
 
 - **Phase 1d**, clusterer comparison (`010448c`, tag
-  `dead/particle-methods-comparison-vpuads`): design, status, findings and its
-  never-registered `P-C1`–`P-C4` are in `archive/p1d_cluster_ensemble/`
-  (`FROZEN.md` first).
+  `dead/particle-methods-comparison-vpuads`): **code restored 2026-09-25**
+  and live again in `p1d_cluster_ensemble/` (row 1d above).
 - **Cross-phase visualization CLI**, `tools/visualize_latest.py` (`d1c75ac`,
   tag `dead/visualize-mets-results-sl2ya5`). Why it existed: each phase's
   `visualization` package has its own entry point and input flag and refuses

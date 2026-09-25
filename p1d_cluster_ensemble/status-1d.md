@@ -1,11 +1,112 @@
 <!-- p1d_cluster_ensemble/status-1d.md -->
 # Phase 1d — STATUS
 
-**State:** all five sub-experiments implemented and validated on synthetic data with known
+## Revived 2026-09-25: the active thread
+
+**Why now (user, 2026-09-25):** Phase 10's experiments are on hold until the
+project can say what a cluster is, because every Phase 10 row reads one
+HDBSCAN partition and that choice is a confound in all of them. Evidence
+that it is: `p10_cluster_function/handoff-10.md` "Parked", first item.
+
+**What was done to revive it.** The code was deleted on 2026-09-23 with its
+branch and survived in the local tag `dead/particle-methods-comparison-vpuads`
+(`010448c`, 2026-08-20). It was restored from the tag, not rewritten. Three
+things had drifted:
+
+| drift | fix |
+|---|---|
+| `clustering.py` now calls `HDBSCAN(**params)`; the test read inline kwargs | the test reads the `params` literal (`tests/test_phase1d_methods.py`) |
+| `PHASE1D` was never on `main`'s `core/artifacts.py` | re-registered, verbatim from the tag |
+| the holdout guard (`core/holdout.py`, 2026-09-24) did not exist | `run_1d.py` refuses the 12 held-out prompts; `--v1-only` / `--allow-holdout` |
+
+1d's 112 tests pass, conda `mets` (the full gate: `./scripts/check.sh`).
+Paths in the sections below are the tag's: `p1_visualization/` is now
+`p1_mstate_tracking/visualization/`.
+
+**What 1d answers, and what it does not.** It tunes seven families per layer
+against subsample stability with a whole-pipeline null, and grades each token
+by how many tuned families agree (core / halo / contested). That settles
+"is HDBSCAN at `min_cluster_size=2` a good choice, and which tokens does the
+choice matter for". It does not by itself supply the theory's definitions: the
+fixed-scale one (strong Rényi centres at separation `δ`, F13/F14 in
+`p10_cluster_function/math-10.md` §7) and the persistence one (tokens staying
+together over a window of layers). Tuning was also against subsampling, not
+the float-noise re-run that moves HDBSCAN (`p10_cluster_function/status-10.md` §3), so the
+first real run should measure that drift too.
+
+### First real run: a smoke test, not a result
+
+**Input:** `pythia-410m-step143000_wiki_paragraph` (v1; Stage 0 pin `64a4087`,
+through `data/phase12/stage0_logs/stage0_index.json`), layers 0 / 12 / 18,
+467 tokens, `--grid quick`, defaults otherwise (`n_null 20`, `top_m 3`,
+`alpha 0.05`, seed 0), conda `mets`, `hdbscan` 0.8.41. **Output kept:**
+`data/p1d/smoke_2026-09-25/`. **Re-run:**
+
+    METS_DATA=<main>/data python -m p1d_cluster_ensemble.run_1d --v1-only \
+      --results <main>/data/phase12/2026-09-22_21-20-26/pythia-410m-step143000_wiki_paragraph \
+      --out <main>/data/p1d/smoke_2026-09-25 --layers 0 12 18 --grid quick
+
+**Cost:** 519 s wall, 6 618 s CPU (~13 cores), 280 MB RSS: about 170 s per
+layer, so one run at all 25 layers is about 70 min on the quick grid.
+
+**Two defects before it ran clean.** (1) `separation_score` crashed when a
+null draw came back as one cluster per token. (2) After that fix, `calibrate`
+dropped such draws as NaN, which silenced the families that behave best on
+noise: agglomerative at thresholds 0.05 / 0.25 had 0 of 20 usable draws and
+abstained at every layer, and HDBSCAN at L18 kept 18 draws, a p floor of 0.053
+above alpha, so it could not pass. **The first version of this section
+reported both abstentions as findings; they were the gate's.** Now a
+degenerate null draw scores the floor (separation −1, stability 0), and a p
+floor above alpha refuses under its own branch (`/challenge-pr` on #98,
+finding 1; `selection.py` `DEGENERATE_NULL_*`).
+
+Every array is populated. What the run shows, from one run, so for design
+only:
+
+| layer | families admitted | abstained | consensus strength | consensus k | core / halo / contested |
+|---|---|---|---|---|---|
+| 0 | 6 | gmm | 0.25 | 4 | 3 / 263 / 201 |
+| 12 | 7 | — | 0.38 | 5 | 0 / 111 / 356 |
+| 18 | 7 | — | 0.36 | 5 | 0 / 237 / 230 |
+
+- **Ranking by subsample stability picks each family's extreme scale.**
+  k-means, spherical k-means, spectral and GMM take k = 2 (spectral k = 3 at
+  L18), their coarsest option. Agglomerative takes threshold 0.05, its
+  finest, where most tokens are singletons and a partition reproduces
+  trivially. HDBSCAN takes `min_cluster_size` 5 at L0 / L12 and the shipped 2
+  at L18. Co-association averaged over these compares different questions, so
+  consensus strength 0.25–0.38 says little about agreement. Stability's pull
+  toward trivial scales is a known property (Ben-David, von Luxburg & Pál
+  2006, raised in the review). **Before 1d is used to define a cluster, it
+  needs a stated scale:** families compared at matched k or matched `δ`, or
+  read as levels of one hierarchy. That redesign reopens `design-1d.md`, so it
+  triggers a literature scan first (`CLAUDE.md` "Literature scans").
+- The driver's `P-C1`–`P-C4` lines are unregistered and meaningless on one run
+  and a quick grid; they are now printed and stored under
+  `verdicts_status: "UNREGISTERED, tier 1: not adjudications"`.
+- The scratch agreement read that prompted the revival is in
+  `p10_cluster_function/handoff-10.md` "Parked" (first item), not repeated here.
+
+**Registry.** `P-C1`–`P-C4` (`predictions-1d.md`) were never registered and
+cannot be scored blind on the v1 runs already examined. They return as tier 1,
+or get registered fresh against the held-out prompts (the user's call).
+
+## Deleted and restored (was `FROZEN.md`)
+
+Code deleted 2026-09-23 in a branch cleanup that should have skipped it
+(`LESSONS.md` lesson 12); the docs were kept in `archive/p1d_cluster_ensemble/`
+from 2026-09-24 and moved back here on 2026-09-25. The rule then (user,
+2026-09-24): code may go if its intent stays. `FROZEN.md` asked a rebuild to
+"first measure whether tuning reduces *that* drift" (the float-noise one);
+that is still the first question.
+
+## As built in August
+
+**State then:** all five sub-experiments implemented and validated on synthetic data with known
 answers, with a driver (`run_1d.py`) and artifact IO (`p1d_io.py`) that have been run end to
 end against a synthetic Phase-1 run directory. **Not yet run against Pythia artifacts** — no
-result rows below, by design. Predictions P-C1, P-C2, P-C3 and P-C4 were registered in
-`PREDICTIONS.md` before this code existed.
+result rows below, by design. Predictions P-C1, P-C2, P-C3 and P-C4 were written in the
+branch's `PREDICTIONS.md` before this code existed (never entered in the registry).
 
 **Cost:** [R] throughout. Reads `activations.npz` and re-clusters; no weights, no forward
 pass. Runnable against any existing Phase 1 run directory today.

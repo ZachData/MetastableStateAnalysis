@@ -169,6 +169,14 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-25, Phase 1d's gate: a null draw where a method builds no partition
+  was dropped as NaN, which silently raised the p floor. On the first real
+  run, agglomerative at fine thresholds had 0 of 20 usable draws and HDBSCAN
+  at L18 had 18 (floor 0.053 > alpha 0.05). Both "abstained", and the first
+  write-up reported those abstentions as findings about the data. Caught by
+  `/challenge-pr` on #98, then confirmed from the kept output. Rule: a gate
+  whose reachable p floor exceeds alpha refuses under its own branch; an
+  outcome the method cannot fail is not data.
 - 2026-09-24 (phase review session 6): `check.sh lint | tail -1 && git commit
   && git push` pushed `3240dfe` with 2 lint errors, because the pipe returns
   `tail`'s status, not the lint's. Fixed in `47e1820`. Capture the exit code
@@ -485,6 +493,14 @@ it taught. When the only copy of that is inside the deleted thing, it goes too.
 it, and what was recovered.
 
 **Instances.**
+- 2026-09-25, the same Phase 1d, **code needed after all**: the user put
+  Phase 10 on hold to settle what a cluster is. The tag still held all 5 069
+  lines, so restoring took three small drift fixes and the gate stayed intact.
+  A rewrite would have cost days. The first real layer then crashed
+  (`separation_score` on a null draw with one cluster per token), a case no
+  synthetic fixture produced (lesson 2's rule: run on real output first).
+  Keep `dead/*` tags until the phase is either revived or formally dropped
+  (`p1d_cluster_ensemble/status-1d.md` "Revived 2026-09-25").
 - 2026-09-23 → needed 2026-09-24: the "delete every branch except `main`"
   cleanup took `claude/particle-methods-comparison-vpuads` (Phase 1d, 5 069
   lines) and `claude/visualize-mets-results-sl2ya5` (one 255-line tool), both

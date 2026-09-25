@@ -74,7 +74,7 @@ CALIBRATION = ROOT / "claims" / "calibration"
 PHASES_WITHOUT_PREDICTIONS = {
     "1b": "hemisphere geometry; its findings feed P-H1 and CLAIM-A rather than "
           "carrying a falsifier of their own.",
-    "1d": "code deleted 2026-09-23; intent kept (design, status, `P-C1`–`P-C4` text, never registered). `archive/p1d_cluster_ensemble/FROZEN.md`.",
+    "1d": "code restored 2026-09-25 from its tag after a 2026-09-23 deletion; `P-C1`–`P-C4` written, never registered, and cannot be scored blind on the v1 runs already seen. `p1d_cluster_ensemble/status-1d.md`.",
     "2": "eigenspectra; the 19-step Pythia sweep is a measurement programme and "
          "supplies the artifacts other phases adjudicate on.",
     "2b": "imaginary/rotational decomposition; measurement, feeding H-OPERATOR's "

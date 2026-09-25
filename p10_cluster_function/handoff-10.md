@@ -11,6 +11,12 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
+> **ON HOLD since 2026-09-25 (user):** no new Phase 10 experiments until the
+> project can say what a cluster is. Every row here reads one HDBSCAN
+> partition, and that is a confound. The work moved to Phase 1d
+> (`p1d_cluster_ensemble/status-1d.md`). Resume here once 1d says which
+> partition, or which graded membership, Phase 10's claims should be re-read on.
+
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
 is untouched. Nothing here may be quoted as an adjudication.
@@ -621,6 +627,17 @@ before it.
 
 ## Parked
 
+- **HDBSCAN's cluster count is nearly flat; a fixed-scale count is not**
+  (discovery, 2026-09-25, a scratch read of stored labels, no null, not a
+  recorded result). 8 v1 prompts, steps 0 / 512 / 143000, layers 0–24 by 6:
+  HDBSCAN finds 35–52 clusters everywhere, while Phase 1's own average-linkage
+  labels at cosine distance 0.35 go 177 → 36 across depth at step 512. They
+  agree at L0 (ARI 0.75–0.81, noise excluded) and part in the trained deep
+  layers (0.21 at 143000 L18). k-means (k ≤ 9) sits at another scale entirely.
+  Why: a density-relative method returns similar counts whatever the geometry
+  does, so Phase 1's "carrying capacity invariant across training" may be
+  partly the instrument's. Cost: taken up by Phase 1d. Changes: Phase 1's
+  carrying-capacity result, and every Phase 10 per-layer claim.
 - **Done 2026-09-24, both #90 review items** (`status-10.md` §1.8): planted
   duplicates reproduce step 0 layer 0's rates (so they are the instrument's, and
   step 0 is the baseline the next reader needs); cluster count ≈ repeated types

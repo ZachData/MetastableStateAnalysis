@@ -57,6 +57,11 @@ running median of the rows above it gets a line under the table saying why.
   took four gate runs and a bisect. Peak context 280k on each later call is
   the cost. The row covers the whole transcript, so #78's row is partly
   double-counted here.
+- 2026-09-25 Phase 1d revival (10.7M, about 3× the ~3.1M median): **two
+  units in one session.** #97's cleanup and an investigation of what a cluster
+  is (reading Phase 1, 1d and 10's cluster history, plus a scratch agreement
+  read), then, on request, the 1d restore: two gate runs, a crashed first real
+  run, a defect fix and a 7-minute re-run. Peak context ~200k on the later calls.
 | 2026-09-24 | Phase review session 8: card 10; chunk 2 checked, still running (measured before the commit/PR calls) | 28 | 130k | 2.7M | 40k | #84 |
 | 2026-09-24 | Card dependencies without hashes ("Open" 7), same transcript as #84 (measured before the commit/PR calls) | 47 | 163k | 5.4M | 49k | #85 |
 | 2026-09-24 | Card deps: hash only the upstream Corrections section (option A, after #85's review; measured before the commit/PR calls) | 23 | 85k | 1.5M | 18k | #86 |
@@ -70,3 +75,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-25 | Stage 1 step 3: the pilot sweep (§1.11) (measured before the commit/PR calls) | 54 | 156k | 5.6M | 38k | #95 |
 | 2026-09-25 | §1.9–§1.10 on the pilot sweep (§1.12) (measured before the commit/PR calls) | 34 | 124k | 3.0M | 32k | #96 |
 | 2026-09-25 | F1/F12's 32–64 window on the pilot sweep (§1.13) (measured before the commit/PR calls) | 32 | 110k | 2.5M | 27k | #97 |
+| 2026-09-25 | Phase 1d restored from its tag, first real run; Phase 10 on hold (measured before the commit/PR calls) | 83 | 197k | 10.7M | 55k | #98 |
