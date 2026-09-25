@@ -485,6 +485,14 @@ it taught. When the only copy of that is inside the deleted thing, it goes too.
 it, and what was recovered.
 
 **Instances.**
+- 2026-09-25, the same Phase 1d, **code needed after all**: the user put
+  Phase 10 on hold to settle what a cluster is. The tag still held all 5 069
+  lines, so restoring took three small drift fixes and the gate stayed intact.
+  A rewrite would have cost days. The first real layer then crashed
+  (`separation_score` on a null draw with one cluster per token), a case no
+  synthetic fixture produced (lesson 2's rule: run on real output first).
+  Keep `dead/*` tags until the phase is either revived or formally dropped
+  (`p1d_cluster_ensemble/status-1d.md` "Revived 2026-09-25").
 - 2026-09-23 → needed 2026-09-24: the "delete every branch except `main`"
   cleanup took `claude/particle-methods-comparison-vpuads` (Phase 1d, 5 069
   lines) and `claude/visualize-mets-results-sl2ya5` (one 255-line tool), both

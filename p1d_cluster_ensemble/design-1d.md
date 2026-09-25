@@ -97,7 +97,7 @@ included:
   full-set partition is one of the two every time.
 - **Separation**: silhouette on the same cosine distances. The index just called unusable,
   which it is *against an absolute threshold*. Against a matched baseline it becomes exactly
-  the construction UPDATE_PLAN.md §5.7 already forced on $Q_k$: "adjudicated on the ratio to a
+  the construction archive/UPDATE_PLAN.md §5.7 already forced on $Q_k$: "adjudicated on the ratio to a
   matched random baseline", because $E[Q_k] = 1/n$ makes every large-$n$ configuration look
   like a spherical design under a fixed cutoff. Same disease, same cure.
 
@@ -218,7 +218,7 @@ partition at both layers and never from HDBSCAN, because scoring a graded annota
 target one of the two predictors defined would rig the comparison.
 
 ΔAUC is read two ways, and the verdict refuses when they disagree — the same discipline
-UPDATE_PLAN.md §5.2 forced on $T_{\rm eff}$, where three definitions of a step size straddled
+archive/UPDATE_PLAN.md §5.2 forced on $T_{\rm eff}$, where three definitions of a step size straddled
 the threshold. The registered instrument is a paired sign-flip permutation test on the per-pair
 concordance differences; the pairs share particles, so its p-value is approximate and
 anti-conservative, which is stated in the artifact next to the number rather than hidden. A
