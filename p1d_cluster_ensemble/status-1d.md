@@ -81,6 +81,14 @@ only:
   needs a stated scale:** families compared at matched k or matched `δ`, or
   read as levels of one hierarchy. That redesign reopens `design-1d.md`, so it
   triggers a literature scan first (`CLAUDE.md` "Literature scans").
+  **Scan done 2026-09-25: `lit-1d.md`.** Stage 1's ranking on raw stability is
+  the known defect (von Luxburg 2010 §2: raw instability scales with k
+  whatever the data). The standard remedy, normalising by the null, fails
+  here: the null mean is 0 at the fine end, and it can move k to the grid's
+  other end (`/challenge-pr` on #99). Agglomerative's pick at L12 is k = 452,
+  95 % singletons, which the trivial filter lets through: **a defect**
+  (`lit-1d.md` option A0). The scan gives the options (§5) and a recommendation
+  for the user; `design-1d.md` stays unchanged until the user picks one.
 - The driver's `P-C1`–`P-C4` lines are unregistered and meaningless on one run
   and a quick grid; they are now printed and stored under
   `verdicts_status: "UNREGISTERED, tier 1: not adjudications"`.

@@ -105,6 +105,8 @@ world moves, nobody updates the line, and the next session acts on it.
   The same Start check caught it; the hook fix is still unmade. **Third time,
   2026-09-24 (after #91):** the main tree sat at `21391c2`, 26 commits behind (#84–#91);
   the hook's `STATE.md` said chunk 2 was running and Stage 1 not started.
+  **Fourth, 2026-09-25 (after #98):** the main tree was 3 commits behind, and the hook's
+  `STATE.md` still named Phase 10 as the active thread; Start step 1 caught it.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed
@@ -474,6 +476,12 @@ a wrong premise, the check inherits it.
   and the author compared against the doc, not the record. The same PR repeated
   #96's mistake: per-unit agreement counted identical cells. Before calling a
   result new, check the earlier *record*, not the earlier write-up.
+- 2026-09-25, #99: the literature scan recommended "normalise stability by its
+  null" as the textbook fix without trying it on the smoke run's stored
+  candidates, which were already on disk. The reviewer did try it: the ratio is
+  infinite where the null mean is 0, and it moved k to the grid's other end. A
+  remedy taken from the literature gets checked against the data already in hand
+  before it is recommended.
 - Before `/challenge-pr` existed, the 2026-09-12 merge was 51 commits with no
   second reader at all (why the PR-size rule exists).
 
