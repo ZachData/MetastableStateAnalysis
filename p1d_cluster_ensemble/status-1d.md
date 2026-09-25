@@ -81,6 +81,12 @@ only:
   needs a stated scale:** families compared at matched k or matched `δ`, or
   read as levels of one hierarchy. That redesign reopens `design-1d.md`, so it
   triggers a literature scan first (`CLAUDE.md` "Literature scans").
+  **Scan done 2026-09-25: `lit-1d.md`.** Stage 1's ranking on raw stability is
+  the known defect (von Luxburg 2010 §2: raw instability scales with k
+  whatever the data). The textbook fix is to rank on stability normalised by
+  its own null, which 1d computes today only for the `top_m` candidates. It
+  gives four options (§5) and a recommendation for the user; `design-1d.md` is
+  unchanged until the user picks one.
 - The driver's `P-C1`–`P-C4` lines are unregistered and meaningless on one run
   and a quick grid; they are now printed and stored under
   `verdicts_status: "UNREGISTERED, tier 1: not adjudications"`.
