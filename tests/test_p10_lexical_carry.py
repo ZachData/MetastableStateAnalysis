@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from tools.run.p10_lexical_carry import (
-    SPLIT, carry_stats, deltas, measure_run, split_stats, summarise)
+    SPLIT, carry_stats, control_stats, deltas, measure_run, split_stats, summarise)
 from tools.run.p10_token_composition import CompositionError
 
 # Tier: numpy only -- runs in `scripts/check.sh pure`.
@@ -50,21 +50,19 @@ def test_emb_same_averages_zero_given_one_same_class_member():
 
 
 def test_planted_structures_move_their_own_lift():
-    n = 41
+    # 400 pool members, so 40 bins hold 10 each and the 40-bin lift can be non-zero
+    n = 401
     pool = np.arange(1, n)
-    cls = np.array(["a"] + ["a", "b"] * 20, dtype=object)
-    # class only: co-members are same class, embedding flat within class
-    row = np.linspace(0, 1, n)
     rng = np.random.default_rng(1)
-    row[1:] = rng.permutation(row[1:])
-    co = np.array([p for p in pool if cls[p] == "a"][:8])
+    cls = np.array(["a"] + ["a", "b"] * 200, dtype=object)
+    row = rng.permutation(np.linspace(0, 1, n))       # class independent of embedding
+    co = rng.choice([p for p in pool if cls[p] == "a"], 20, replace=False)
     r = split_stats(0, co, pool, row, cls)
-    assert r["class_given_emb"] > 0.3
-    # embedding only: co-members are the 8 nearest, classes independent of row
-    near = pool[np.argsort(-row[pool])][:8]
+    assert r["class_given_emb_40"] > 0.3               # class-only: survives 40 bins
+    near = pool[np.argsort(-row[pool])][:20]
     r = split_stats(0, near, pool, row, cls)
-    assert r["emb_given_class"] > 0.3
-    assert abs(r["class_given_emb"]) < 0.3 + 1e-9
+    assert r["emb_given_class"] > 0.3                  # embedding-only
+    assert abs(r["class_given_emb_40"]) < 0.15
 
 
 def test_pool_must_hold_the_co_members():
@@ -82,6 +80,32 @@ def test_carry_is_one_when_layer_is_layer_0():
     assert c["self_cos"] == pytest.approx(1.0) and c["self_top1"] == 1.0
     assert c["self_pct"] == pytest.approx(1.0)
     assert carry_stats(acts, 1, [])["self_pct"] is None
+
+
+def test_ceiling_matches_enumerated_same_class_sets():
+    row, cls = _setup()
+    pool = np.arange(1, len(row))
+    same = [c for c in pool if cls[c] == cls[0]]
+    k = 2
+    want = np.mean([split_stats(0, np.array(c), pool, row, cls)["class_given_emb"]
+                    for c in combinations(same, k)])
+    got = control_stats(0, k, pool, row, cls)
+    assert got["class_given_emb_classonly"] == pytest.approx(want)
+    near = pool[np.argsort(-row[pool])][:k]
+    assert got["class_given_emb_knn"] == pytest.approx(
+        split_stats(0, near, pool, row, cls)["class_given_emb"])
+    # k larger than the class: same value (it does not depend on k)
+    assert control_stats(0, len(same) + 1, pool, row, cls)["class_given_emb_classonly"] == pytest.approx(want)
+
+
+def test_carry_groups_use_only_runs_with_both():
+    a = _rec(0.9)
+    b = _rec(0.1)
+    b[0]["focal"] = {"self_cos": None, "self_pct": None, "self_top1": None, "n": 0}
+    b[0]["unclustered"]["self_pct"] = 0.0
+    s = summarise({(0, "x"): a, (0, "y"): b})
+    assert s[0][0]["n_runs_carry"] == 1
+    assert s[0][0]["unclustered"]["self_pct"] == pytest.approx(0.5)
 
 
 def _rec(v):
