@@ -383,6 +383,17 @@ needs the user to enable it on GitHub.
   reporting counts of an event type, **print the sizes of the units the
   counts are over**, and build one fixture where the event must occur
   (here, a 4-token piece leaving 60) to check the instrument can see it.
+- 2026-09-26 (1d link null, #105): #104's revised headlines, "merges
+  outnumber splits at L0–L7" and "tangles are the most common change",
+  were reported before any null and did not hold up against one
+  (`status-1d.md` "The link counts against a size-preserving null…").
+  The first write-up of #105 then overclaimed twice. It called beating an
+  independent null "persistence survives", when neighbouring layers carry
+  over by construction. It called the merge excess "caused by" the falling
+  cluster count, when the null's event mix differs from the real one (292
+  births vs 48) and only failed to separate the two. `/challenge-pr` caught
+  both. Rule: **no depth pattern is reported before its null has run, and
+  a null that anything with carry-over beats supports no positive claim.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

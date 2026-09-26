@@ -92,3 +92,10 @@ running median of the rows above it gets a line under the table saying why.
   all 8 prompts re-run, write-up rewritten. Peak context 447k by the end.
   The revision should have been a fresh session with the review as its
   prompt (lesson 9).
+| 2026-09-26 | 1d merge-tree link null + token 0 dropped, `/challenge-pr` answers, and the Phase 1d explainer page (whole transcript, before the final commit) | 65 | 207k | 8.1M | 205k | #105 |
+
+- #105 is 2.1× the running median (3.8M). Two units shared one session.
+  The null, its review answers, and a user-requested explainer page (an
+  artifact, not in the repo: data extraction, design skills, one
+  screenshot) all ran on the same context. The page should have been its
+  own session (lesson 9).
