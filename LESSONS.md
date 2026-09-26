@@ -355,6 +355,11 @@ needs the user to enable it on GitHub.
   small classes, so it averaged over fewer tokens than the value beside it
   (`homer_iliad` L24: 1 of 190). A test with 40 bins over a 40-member pool
   could not fail.
+- 2026-09-25: Phase 10 §3's reproducibility floor (ARI p5 0.347) was pooled
+  over 8 prompts and quoted for five days as the partition's floor. It was
+  almost all one prompt, `repeated_tokens` (`status-1d.md` "Float-noise drift"). A
+  tail percentile over pooled units reports the worst unit as the whole
+  battery. Break a floor or tail down by prompt before quoting it.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
@@ -484,6 +489,12 @@ a wrong premise, the check inherits it.
   before it is recommended.
 - Before `/challenge-pr` existed, the 2026-09-12 merge was 51 commits with no
   second reader at all (why the PR-size rule exists).
+- 2026-09-25 (#101): the drift write-up said "the stable families are all
+  coarse" from memory of the smoke run, and "tuned HDBSCAN carried the
+  collapse" from one weight moving. The reviewer read the stored picks
+  (agglomerative k median 162), and a swap test showed no single family moves
+  it. A mechanism claim about a record gets its swap or ablation run before
+  it is written down.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

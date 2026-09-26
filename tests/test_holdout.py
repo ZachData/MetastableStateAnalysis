@@ -110,6 +110,8 @@ EXEMPT = {
     "dissipation.py": "fixed v1 prompt list (SCORED_PROMPTS + repeated_tokens)",
     "dissipation_sublayer.py": "fixed v1 prompt list (SCORED_PROMPTS + repeated_tokens)",
     "relay_null.py": "prompts come from Phase 7's v1 motif table",
+    "p1d_drift_checks.py": "fixed v1 prompt list (V1_PROMPT_KEYS minus "
+        "short_heterogeneous); --fine/--swap read 1d outputs run with --v1-only",
     "ov_per_head.py": "reads OV weights (p2_eigenspectra_*), no prompt data",
     "induction_rank_sweep.py": "reads OV weights (p2_eigenspectra_*), no prompt data",
     "induction_composition_whitening.py": "reads OV weights; its PROMPTS pass "
