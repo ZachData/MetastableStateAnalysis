@@ -24,11 +24,12 @@ Depends NOT on Phase 2, and needs no model weights and no forward pass.
 Runnable against any existing Phase 1 run directory.
 
 Sub-experiments:
-    A  selection.py   tune every family per layer                    [R]
-    B  ensemble.py    consensus + calibrated per-particle confidence [R]
-    C  comparison.py  the shipped partition and its refusals   P-C2, P-C3
-    D  comparison.py  persistence prediction                        P-C4
-    E  p1d_io.py      particle-table export                          [R]
+    A  selection.py    tune every family per layer                    [R]
+    B  ensemble.py     consensus + calibrated per-particle confidence [R]
+    C  comparison.py   the shipped partition and its refusals   P-C2, P-C3
+    D  comparison.py   persistence prediction                        P-C4
+    E  p1d_io.py       particle-table export                          [R]
+    F  merge_tree.py   merge tree over scales, cross-layer linking    [R]
 
 Predictions P-C1..P-C4 were written (in the August branch's PREDICTIONS.md,
 now `predictions-1d.md`) before this code existed, and were NEVER entered in
@@ -66,6 +67,10 @@ from .p1d_io import (
     P1D_SCHEMA_VERSION, build_particle_table, layer_activations, load_run,
     run_identity, save_p1d,
 )
+from .merge_tree import (
+    LINK_MEASURES, MERGE_TREE_LINKAGES, labels_at_delta, layer_link_chain,
+    layer_merge_tree, link_layer_pair, substantial_labels,
+)
 
 __all__ = [
     "DISTANCE_THRESHOLDS", "K_VALUES", "SHIPPED_HDBSCAN_PARAMS",
@@ -85,4 +90,7 @@ __all__ = [
     "noise_rescue", "persistence_target", "shipped_comparison",
     "P1D_SCHEMA_VERSION", "build_particle_table", "layer_activations",
     "load_run", "run_identity", "save_p1d",
+    "LINK_MEASURES", "MERGE_TREE_LINKAGES", "labels_at_delta",
+    "layer_link_chain", "layer_merge_tree", "link_layer_pair",
+    "substantial_labels",
 ]

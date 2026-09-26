@@ -11,10 +11,23 @@ Sub-experiments
     C  the shipped partition and its refusals      comparison.py  (P-C2, P-C3)
     D  persistence prediction                      comparison.py  (P-C4)
     E  export the particle table                   p1d_io.py
+    F  merge tree over scales, cross-layer linking merge_tree.py
 
-B needs A, C and D need B, E needs B. Prerequisites are pulled in
-automatically and the expansion is recorded in the artifact, so a result
-never silently depends on a step the command line did not name.
+B needs A, C and D need B, E needs B. F needs nothing — it reads
+`activations.npz` directly and does not tune, gate, or ensemble
+anything, so `--subexp F` alone is cheap where A's grid sweep is not.
+Prerequisites are pulled in automatically and the expansion is recorded
+in the artifact, so a result never silently depends on a step the
+command line did not name.
+
+F is tier 1, descriptive, and not one of P-C1..P-C4: it does not enter
+`verdicts`. It reads the full agglomerative hierarchy per layer as
+cluster count against distance threshold (option D, `lit-1d.md` §5),
+takes each layer's longest-lived plateau with at least two substantial
+clusters as that layer's partition (smaller clusters become outliers,
+-1), and links neighbouring layers' partitions by token containment,
+counting merges, splits and both-at-once "tangles" per boundary
+(`merge_tree.py`).
 
 WHAT THIS DELIBERATELY DOES NOT DO
 
@@ -48,8 +61,8 @@ import numpy as np
 
 from core.holdout import add_holdout_args, refuse_held_out
 
-from . import comparison, ensemble
-from .constants import SHIPPED_HDBSCAN_PARAMS
+from . import comparison, ensemble, merge_tree as merge_tree_mod
+from .constants import SHIPPED_HDBSCAN_PARAMS, SUBSTANTIAL_CLUSTER_SIZE
 from .methods import LayerData, available_families, fit, hdbscan_backend
 from .p1d_io import (
     build_particle_table, layer_activations, load_run, phase1_agreement_layers,
@@ -59,12 +72,13 @@ from .selection import (
     NULL_ALPHA, select_all_families, selected_labels, selection_weights,
 )
 
-SUBEXPERIMENTS = ("A", "B", "C", "D", "E")
+SUBEXPERIMENTS = ("A", "B", "C", "D", "E", "F")
 
 #: P-C1..P-C4 were written in advance but never entered in claims/registry.json,
 #: and the v1 runs have been examined since; every verdict is tier 1.
 VERDICTS_STATUS = "UNREGISTERED, tier 1: not adjudications"
-_REQUIRES = {"A": set(), "B": {"A"}, "C": {"A", "B"}, "D": {"A", "B"}, "E": {"A", "B"}}
+_REQUIRES = {"A": set(), "B": {"A"}, "C": {"A", "B"}, "D": {"A", "B"}, "E": {"A", "B"},
+             "F": set()}
 
 
 def expand_subexperiments(requested: Sequence[str]) -> List[str]:
@@ -119,6 +133,29 @@ def null_confidences(
     return out
 
 
+def _add_merge_tree(result: Dict, data: LayerData, args: argparse.Namespace) -> None:
+    """
+    F: the merge tree over scales, and this layer's contribution to the
+    cross-layer link chain. Independent of A/B/C/D — reads `data`
+    directly — so it runs (and is cheap) even on a `--subexp F` request
+    that skips the tuning grid entirely.
+    """
+    tree = merge_tree_mod.layer_merge_tree(
+        data, linkage=args.merge_tree_linkage, top_n=args.merge_tree_top_n,
+        min_size=args.merge_tree_min_size)
+    Z = tree.pop("_Z", None)
+    result["merge_tree"] = tree
+    if Z is not None and tree.get("robust"):
+        top = tree["robust"][0]
+        labels = merge_tree_mod.substantial_labels(
+            merge_tree_mod.labels_at_delta(Z, data.n, top["delta_lo"]),
+            args.merge_tree_min_size)
+        result["merge_tree"]["top_plateau"] = top
+        result.setdefault("_arrays", {})["merge_tree_labels"] = labels
+    else:
+        result["merge_tree"]["top_plateau"] = None
+
+
 def process_layer(
     data: LayerData,
     families: Sequence[str],
@@ -128,6 +165,15 @@ def process_layer(
 ) -> Dict:
     """One layer: tune (A), ensemble (B), shipped comparison + rescue (C)."""
     result: Dict[str, object] = {"n_tokens": data.n}
+
+    if "F" in stages:
+        _add_merge_tree(result, data, args)
+
+    if "A" not in stages:
+        # F reads `data` directly and needs none of the tuning grid, so a
+        # bare `--subexp F` must not pay for it — this is the whole reason
+        # F has no entry in `_REQUIRES`.
+        return result
 
     selection = select_all_families(
         data, list(families), grid=args.grid, n_repeats=args.n_repeats,
@@ -176,7 +222,10 @@ def process_layer(
         "mean_confidence": float(np.nanmean(built["confidence"]))
         if built["confidence"].size else float("nan"),
     }
-    result["_arrays"] = {
+    # setdefault().update(), not assignment: _add_merge_tree (F) may already
+    # have put merge_tree_labels here, and stage F runs before A/B so it
+    # must not be clobbered by this block running after it.
+    result.setdefault("_arrays", {}).update({
         "co_association": built["co_association"]["C"],
         "consensus_labels": built["consensus"]["labels"],
         "confidence": built["confidence"],
@@ -185,7 +234,7 @@ def process_layer(
         "refusal_fraction": built["refusal_fraction"],
         "population": population,
         "n_families": np.full(data.n, built["n_families"], dtype=np.int32),
-    }
+    })
 
     if "C" in stages and shipped is not None and shipped.size == data.n:
         result["_arrays"]["hdbscan_label"] = np.asarray(shipped, dtype=np.int64)
@@ -246,6 +295,11 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
             "alpha": args.alpha, "noise_policy": args.noise_policy,
             "seed": args.seed, "layer_stride": args.layer_stride,
             "save_surface": args.save_surface,
+            "merge_tree_linkage": args.merge_tree_linkage,
+            "merge_tree_top_n": args.merge_tree_top_n,
+            "merge_tree_min_size": args.merge_tree_min_size,
+            "link_measure": args.link_measure,
+            "link_min_overlap": args.link_min_overlap,
         },
         "per_layer": {},
         "skipped": {},
@@ -269,6 +323,18 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
             _print_layer(layer, res)
 
     out["phase1_agreement"] = phase1_agreement_layers(run_dir)
+    if "F" in stages:
+        labels_by_layer = {l: arrs["merge_tree_labels"]
+                           for l, arrs in per_layer_arrays.items()
+                           if "merge_tree_labels" in arrs}
+        out["layer_links"] = (
+            merge_tree_mod.layer_link_chain(labels_by_layer, layers=layers,
+                                            min_overlap=args.link_min_overlap,
+                                            measure=args.link_measure)
+            if len(labels_by_layer) >= 2 else
+            {"skipped": "fewer than two layers had a robust plateau "
+                        "(two or more substantial clusters)"}
+        )
     out["verdicts"] = _adjudicate(out, per_layer_arrays, stages, args)
     out["verdicts_status"] = VERDICTS_STATUS
     out["holdout"] = getattr(args, "holdout_record", None)
@@ -346,10 +412,29 @@ def _adjudicate(out: Dict, arrays: Dict[int, Dict[str, np.ndarray]],
 # Reporting
 # ---------------------------------------------------------------------------
 
+def _merge_tree_suffix(res: Dict) -> str:
+    tree = res.get("merge_tree")
+    if not tree:
+        return ""
+    top, longest = tree.get("top_plateau"), tree.get("longest_any")
+    blob = (f"  longest: k={longest['k']} ({longest['k_substantial']} substantial, "
+            f"{longest['n_outliers']} outliers) life={longest['lifetime']:.3f}"
+            if longest else "")
+    if not top:
+        return "  merge-tree: no plateau with 2+ substantial clusters" + blob
+    return (f"  merge-tree: k={top['k_substantial']}+{top['n_outliers']} outliers over "
+            f"delta [{top['delta_lo']:.3f}, {top['delta_hi']:.3f}) "
+            f"life={top['lifetime']:.3f}" + blob)
+
+
 def _print_layer(layer: int, res: Dict) -> None:
     ens = res.get("ensemble")
+    if ens is None and "abstained" not in res:
+        print(f"  L{layer:<3d} n={res['n_tokens']:<4d} (no tuning requested)"
+              + _merge_tree_suffix(res))
+        return
     if not ens:
-        print(f"  L{layer:<3d} every family abstained")
+        print(f"  L{layer:<3d} every family abstained" + _merge_tree_suffix(res))
         return
     print(f"  L{layer:<3d} n={res['n_tokens']:<4d} "
           f"families={ens['n_families']} "
@@ -359,7 +444,8 @@ def _print_layer(layer: int, res: Dict) -> None:
           f"{ens['population_counts']['core']}/"
           f"{ens['population_counts']['halo']}/"
           f"{ens['population_counts']['contested']}"
-          + (f"  abstained: {','.join(res['abstained'])}" if res["abstained"] else ""))
+          + (f"  abstained: {','.join(res['abstained'])}" if res["abstained"] else "")
+          + _merge_tree_suffix(res))
 
 
 def summary_text(results: Dict) -> str:
@@ -391,6 +477,25 @@ def summary_text(results: Dict) -> str:
             if agreement.get("available")
             else f"Phase 1 agreement layers: unavailable — {agreement.get('reason')}"
         )
+    links = results.get("layer_links")
+    if links:
+        lines.append("")
+        if links.get("skipped"):
+            lines.append(f"Layer links: skipped — {links['skipped']}")
+        else:
+            lines.append(f"Layer links ({links['measure']} >= {links['min_overlap']}), "
+                         f"{links['n_skipped']} boundaries skipped, "
+                         f"totals: {links['totals']}")
+            for b in links["boundaries"]:
+                if "skipped" in b:
+                    lines.append(f"  L{b['layer_from']}->L{b['layer_to']}: "
+                                 f"skipped — {b['skipped']}")
+                    continue
+                lines.append(
+                    f"  L{b['layer_from']}->L{b['layer_to']}: "
+                    f"{b['n_clusters_a']}->{b['n_clusters_b']} clusters, "
+                    f"{b['counts']}")
+
     lines.append("")
     lines.append(f"Verdicts ({VERDICTS_STATUS})")
     for name, verdict in results.get("verdicts", {}).items():
@@ -437,6 +542,20 @@ def build_parser() -> argparse.ArgumentParser:
                         "(large: n_grid entries per family per layer)")
     p.add_argument("--no-save-matrices", action="store_true",
                    help="omit the co-association matrices from p1d_ensemble.npz")
+    p.add_argument("--merge-tree-linkage", choices=merge_tree_mod.MERGE_TREE_LINKAGES,
+                   default="average", help="linkage for stage F's merge tree (option D)")
+    p.add_argument("--merge-tree-top-n", type=int, default=5,
+                   help="robust plateaus kept per layer, ranked by lifetime")
+    p.add_argument("--merge-tree-min-size", type=int, default=SUBSTANTIAL_CLUSTER_SIZE,
+                   help="tokens a cluster needs to count as substantial; smaller "
+                        "clusters are outliers (-1) in stage F's partition")
+    p.add_argument("--link-measure", choices=merge_tree_mod.LINK_MEASURES,
+                   default="containment",
+                   help="overlap measure for stage F's cross-layer links; Jaccard "
+                        "cannot register a small piece leaving a large cluster")
+    p.add_argument("--link-min-overlap", type=float, default=None,
+                   help="edge threshold on --link-measure (default: 0.5 containment, "
+                        "0.1 Jaccard)")
     p.add_argument("--verbose", action="store_true")
     add_holdout_args(p)
     return p
