@@ -1,0 +1,333 @@
+<title>Phase 1d Null Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#12161c; --ink-2:#4d5663; --ink-3:#7c8592;
+  --rule:#dde1e7; --rule-2:#eceef2; --focus:#2a78d6;
+  --f-raw:#2a78d6; --f-centred:#eb6834; --f-centred_norogue:#1baf7a;
+  --pos:#1c5cab; --neg:#c23b3a; --mid:#f0efec;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+  --other:#b9bec6; --noise:#e3e6ea;
+  --seq-lo:#cde2fb; --seq-hi:#104281;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#141618; --panel:#1b1d20; --ink:#f3f4f6; --ink-2:#c1c6cd; --ink-3:#8e959f;
+    --rule:#30343a; --rule-2:#24272b; --focus:#3987e5;
+    --f-raw:#3987e5; --f-centred:#d95926; --f-centred_norogue:#199e70;
+    --pos:#5598e7; --neg:#e66767; --mid:#383835;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --other:#5b6068; --noise:#2c3035; --seq-lo:#184f95; --seq-hi:#cde2fb;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#141618; --panel:#1b1d20; --ink:#f3f4f6; --ink-2:#c1c6cd; --ink-3:#8e959f;
+  --rule:#30343a; --rule-2:#24272b; --focus:#3987e5;
+  --f-raw:#3987e5; --f-centred:#d95926; --f-centred_norogue:#199e70;
+  --pos:#5598e7; --neg:#e66767; --mid:#383835;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --other:#5b6068; --noise:#2c3035; --seq-lo:#184f95; --seq-hi:#cde2fb;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+header{display:grid;gap:6px;margin-bottom:18px}
+.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+h1{font:600 26px/1.15 var(--sans);margin:0;text-wrap:balance}
+h2{font:600 19px/1.2 var(--sans);margin:0;text-wrap:balance}
+h3{font:600 13px/1.3 var(--sans);margin:0;color:var(--ink-2)}
+p{margin:0;max-width:72ch;color:var(--ink-2)}
+p b{color:var(--ink);font-weight:600}
+code{font:12.5px var(--mono)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--rule);
+  padding-block:10px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.ctl{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--panel)}
+.seg button{font:500 12px var(--sans);color:var(--ink-2);background:none;border:0;padding:5px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible,select:focus-visible,.cell:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+select{font:500 12px var(--sans);color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:4px 6px}
+section{display:grid;gap:14px;padding-block:26px;border-top:1px solid var(--rule)}
+section:first-of-type{border-top:0;padding-top:4px}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+.scroll{overflow-x:auto}
+table.ov{border-collapse:separate;border-spacing:3px;font:12px var(--mono);font-variant-numeric:tabular-nums}
+table.ov th{font:500 11px var(--sans);color:var(--ink-3);text-align:left;padding:2px 6px;white-space:nowrap}
+table.ov td.cell{min-width:92px;padding:6px 8px;border-radius:4px;cursor:pointer;color:var(--ink);border:1px solid transparent}
+table.ov td.cell[aria-selected="true"]{border-color:var(--ink)}
+table.ov td .sub{display:block;color:var(--ink-3);font-size:10.5px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-2);align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.ramp{display:inline-block;width:120px;height:9px;border-radius:2px;vertical-align:-1px;margin:0 6px}
+svg text{fill:var(--ink-3);font:10.5px var(--mono)}
+svg .lab{fill:var(--ink-2);font:11px var(--sans)}
+.tip{position:fixed;pointer-events:none;z-index:20;background:var(--ink);color:var(--bg);font:12px/1.4 var(--mono);
+  padding:6px 8px;border-radius:5px;max-width:300px;opacity:0;transition:opacity .08s}
+.strip{font:12.5px/1.9 var(--mono);max-height:260px;overflow:auto;padding:8px;border:1px solid var(--rule-2);border-radius:6px}
+.strip span{padding:1px 0;border-bottom:3px solid transparent;white-space:pre-wrap}
+.note{font-size:12px;color:var(--ink-3)}
+.pending{padding:18px;border:1px dashed var(--rule);border-radius:8px;color:var(--ink-3)}
+.kpis{display:flex;flex-wrap:wrap;gap:22px}
+.kpi b{display:block;font:600 20px var(--sans);color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi span{font-size:12px;color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){.tip{transition:none}}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Mets · Phase 1d · pythia-410m · 8 v1 prompts · tier 1, unregistered</span>
+  <h1>Is the structure in the tokens, the frame, or the null?</h1>
+  <p>Each result here is a real run read against a null, and the null against a <b>calibration on the same inputs</b> (one null draw treated as data). Colour is z with <b>positive = more structure than the null</b>; outlined cells are in the null's 2.5 % tail on that side.</p>
+</header>
+
+<div class="bar" role="toolbar" aria-label="Filters">
+  <div class="ctl">Checkpoint <span class="seg" id="c-step"></span></div>
+  <div class="ctl">Tokens <span class="seg" id="c-tok"></span></div>
+  <div class="ctl">Showing <span class="seg" id="c-kind"></span></div>
+</div>
+
+<section id="frames">
+  <div><span class="eyebrow">Gaussian null · #106</span><h2>Which frame shows the most structure?</h2></div>
+  <p>Records in the lumpier tail, real vs calibration, layers 1–24 × 7 prompts (<code>repeated_tokens</code> out, as in the report). The excess over calibration is what counts; a frame whose calibration also fires is not at nominal level. Pick a cell to map it by layer.</p>
+  <div class="panel scroll"><table class="ov" id="g-ov"></table></div>
+  <div class="legend" id="g-leg"></div>
+  <div class="grid3" id="g-heat"></div>
+  <div class="grid2">
+    <div class="panel"><h3>Effective dimensions left by each frame</h3><div id="g-dim"></div></div>
+    <div class="panel"><h3>Share of each token on the shared mean direction (removed by centring)</h3><div id="g-share"></div></div>
+  </div>
+</section>
+
+<section id="shape">
+  <div><span class="eyebrow">Looking at it</span><h2>The tokens, and a Gaussian with their covariance</h2></div>
+  <p>Top two principal components of the unit rows in the chosen frame, beside one draw of that frame's own Gaussian. Hover a token to read it.</p>
+  <div class="bar" style="position:static;border:0;margin:0;padding:0">
+    <div class="ctl">Prompt <select id="s-prompt"></select></div>
+    <div class="ctl">Layer <span class="seg" id="s-layer"></span></div>
+    <div class="ctl">Frame <span class="seg" id="s-frame"></span></div>
+    <div class="ctl">Colour <span class="seg" id="s-col"></span></div>
+  </div>
+  <div class="legend" id="s-leg"></div>
+  <div class="grid2">
+    <div class="panel"><h3 id="s-t1">Tokens</h3><svg id="s-real" viewBox="0 0 400 320" style="width:100%;height:auto" role="img" aria-label="token projection"></svg></div>
+    <div class="panel"><h3>One Gaussian draw, same covariance</h3><svg id="s-draw" viewBox="0 0 400 320" style="width:100%;height:auto" role="img" aria-label="Gaussian draw projection"></svg></div>
+  </div>
+</section>
+
+<section id="attn">
+  <div><span class="eyebrow">Item (3) · attention communities</span><h2>Who attends to whom, against three nulls</h2></div>
+  <div id="a-body"></div>
+</section>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), NS="http://www.w3.org/2000/svg";
+const tip=$("#tip");
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const x=Math.min(e.clientX+14,innerWidth-310);tip.style.left=x+"px";tip.style.top=(e.clientY+14)+"px";}
+function hideTip(){tip.style.opacity=0;}
+function el(tag,attrs,parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n;}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function seg(host,opts,val,on){host.innerHTML="";opts.forEach(([v,l])=>{const b=document.createElement("button");b.type="button";b.textContent=l;b.setAttribute("aria-pressed",String(v===val));b.onclick=()=>{[...host.children].forEach(c=>c.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");on(v);};host.appendChild(b);});}
+function median(a){a=a.filter(v=>v!=null&&isFinite(v)).sort((x,y)=>x-y);if(!a.length)return null;const m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function q(a,p){a=a.filter(v=>v!=null&&isFinite(v)).sort((x,y)=>x-y);if(!a.length)return null;const i=(a.length-1)*p,lo=Math.floor(i);return a[lo]+(a[Math.min(lo+1,a.length-1)]-a[lo])*(i-lo);}
+function divColor(z){if(z==null)return "var(--panel)";const t=Math.max(-1,Math.min(1,z/6));const pct=Math.round(Math.abs(t)*100);return `color-mix(in oklab, ${t>=0?"var(--pos)":"var(--neg)"} ${pct}%, var(--mid))`;}
+function seqColor(t){t=Math.max(0,Math.min(1,t));return `color-mix(in oklab, var(--seq-hi) ${Math.round(t*100)}%, var(--seq-lo))`;}
+const FRAME_LABEL={raw:"raw",centred:"centred",centred_norogue:"no-rogue"};
+const G_LABEL={ci2:"2-means index",nn1:"nearest-neighbour distance",hdb_k:"HDBSCAN group count",hdb_noise:"HDBSCAN noise share",mt_k:"merge-tree clusters",mt_life:"merge-tree plateau lifetime"};
+const A_LABEL={Q:"modularity",lam2:"spectral gap λ₂ (low = split)",ari_raw:"agreement with raw k-means",ari_centred:"agreement with centred k-means",ari_centred_norogue:"agreement with no-rogue k-means",k4:"communities of ≥ 4 tokens",contig:"position contiguity",local:"weight within 3 positions"};
+const NULL_LABEL={A:"A · model's QK on a Gaussian",B:"B · position-preserving shuffle",C:"C · idealised cosine head"};
+const EXCL="repeated_tokens";
+let D=null, st={step:"step143000",tok:"dedupe",kind:"real",gstat:"ci2",gframe:"centred",prompt:null,layer:12,sframe:"centred",col:"hdb",astat:"Q",anull:"A",agraph:"w1_mutual",aprompt:null,alayer:12};
+try{const s=JSON.parse(localStorage.getItem("p1d-atlas")||"{}");Object.assign(st,s);}catch(e){}
+function save(){try{localStorage.setItem("p1d-atlas",JSON.stringify(st));}catch(e){}}
+const tokCache={};
+async function tokens(step,prompt){const k=step+"_"+prompt;if(!tokCache[k]){try{const r=await fetch("tokens_"+k+".json");tokCache[k]=await r.json();}catch(e){tokCache[k]=null;}}return tokCache[k];}
+
+/* ---------- counting ---------- */
+function tally(cells,prompts){let n=0,t=0;for(const p of prompts){const row=cells&&cells[p];if(!row)continue;for(const L in row){if(+L<1)continue;const c=row[L];if(c[0]==null)continue;n++;t+=c[1];}}return {n,t};}
+function prompts(){return D.gauss.prompts.filter(p=>p!==EXCL);}
+
+/* ---------- section 1: frames ---------- */
+function drawGaussOverview(){
+  const tb=$("#g-ov"),g=D.gauss;tb.innerHTML="";
+  const hr=tb.insertRow();hr.appendChild(Object.assign(document.createElement("th"),{textContent:"statistic (lumpier side)"}));
+  D.frames.forEach(f=>{const th=document.createElement("th");th.innerHTML=`<span class="sw" style="background:var(--f-${f})"></span>${FRAME_LABEL[f]}`;hr.appendChild(th);});
+  D.g_stats.forEach(s=>{
+    const tr=tb.insertRow();const th=document.createElement("th");th.textContent=G_LABEL[s];tr.appendChild(th);
+    D.frames.forEach(f=>{
+      const real=tally(g.cells[`${st.tok}|real|${st.step}|${f}|${s}`],prompts()),cal=tally(g.cells[`${st.tok}|cal|${st.step}|${f}|${s}`],prompts());
+      const td=tr.insertCell();td.className="cell";td.tabIndex=0;
+      const ex=real.n?(real.t/real.n-(cal.n?cal.t/cal.n:0)):0;
+      td.style.background=ex>0?seqColor(ex*1.4):"var(--panel)";if(ex>0.45)td.style.color="var(--bg)";
+      td.innerHTML=`${real.t} / ${cal.t}<span class="sub" style="${ex>0.45?"color:var(--bg)":""}">of ${real.n} · excess ${(ex*100).toFixed(0)} %</span>`;
+      td.setAttribute("aria-selected",String(s===st.gstat&&f===st.gframe));
+      td.setAttribute("aria-label",`${G_LABEL[s]}, ${FRAME_LABEL[f]}: ${real.t} real and ${cal.t} calibration records in the tail of ${real.n}`);
+      const pick=()=>{st.gstat=s;st.gframe=f;save();drawGauss();};td.onclick=pick;td.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick();}};
+    });
+  });
+  $("#g-leg").innerHTML=`Cells: <b>real / calibration</b> tail counts. Shade: excess share<span class="ramp" style="background:linear-gradient(90deg,${seqColor(0)},${seqColor(1)})"></span>0 → 70 %+. Heatmaps: z<span class="ramp" style="background:linear-gradient(90deg,${divColor(-6)},${divColor(0)},${divColor(6)})"></span>−6 (less structure) · 0 · +6 (more)`;
+}
+function heat(host,title,color,cells,rowsP,nL,fmt){
+  const W=360,rowH=18,left=108,top=16,cw=(W-left-6)/nL,H=top+rowH*rowsP.length+22;
+  const box=document.createElement("div");box.className="panel";box.innerHTML=`<h3>${title}</h3>`;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,style:"width:100%;height:auto",role:"img","aria-label":title},box);
+  rowsP.forEach((p,i)=>{const t=el("text",{x:left-6,y:top+i*rowH+rowH*0.68,"text-anchor":"end",class:"lab"},svg);t.textContent=p.length>16?p.slice(0,15)+"…":p;
+    for(let L=0;L<nL;L++){const c=cells&&cells[p]&&cells[p][L];const z=c?c[0]:null;
+      const r=el("rect",{x:left+L*cw+0.5,y:top+i*rowH+0.5,width:Math.max(cw-1,1),height:rowH-1,rx:2,fill:divColor(z),stroke:c&&c[1]?color:"none","stroke-width":c&&c[1]?1.6:0},svg);
+      r.addEventListener("mousemove",e=>showTip(e,`${esc(p)} · L${L}<br>z ${z==null?"–":z.toFixed(2)}${c&&c[1]?" · in tail":""}${fmt?fmt(p,L):""}`));r.addEventListener("mouseleave",hideTip);}
+  });
+  for(let L=0;L<nL;L+=4){const t=el("text",{x:left+L*cw+cw/2,y:H-6,"text-anchor":"middle"},svg);t.textContent="L"+L;}
+  host.appendChild(box);
+}
+function drawGaussHeat(){
+  const host=$("#g-heat");host.innerHTML="";
+  D.frames.forEach(f=>{const cells=D.gauss.cells[`${st.tok}|${st.kind}|${st.step}|${f}|${st.gstat}`];
+    heat(host,`${FRAME_LABEL[f]} · ${G_LABEL[st.gstat]}${st.kind==="cal"?" · calibration":""}`,`var(--f-${f})`,cells,D.gauss.prompts,25);});
+}
+function lines(host,series,yLabel,yMax,fmtY){
+  host.innerHTML="";const W=420,H=190,l=40,r=74,t=10,b=24;const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,style:"width:100%;height:auto",role:"img","aria-label":yLabel},host);
+  const x=L=>l+(W-l-r)*L/24,y=v=>t+(H-t-b)*(1-v/yMax);
+  for(let k=0;k<=4;k++){const v=yMax*k/4;el("line",{x1:l,x2:W-r,y1:y(v),y2:y(v),stroke:"var(--rule-2)"},svg);const tx=el("text",{x:l-5,y:y(v)+3,"text-anchor":"end"},svg);tx.textContent=fmtY(v);}
+  [0,6,12,18,24].forEach(L=>{const tx=el("text",{x:x(L),y:H-6,"text-anchor":"middle"},svg);tx.textContent="L"+L;});
+  const ends=[];
+  series.forEach(s=>{const pts=s.v.map((v,L)=>v==null?null:[x(L),y(Math.min(v,yMax))]).filter(Boolean);if(!pts.length)return;
+    if(s.band){const up=s.band.map((b,L)=>b&&[x(L),y(Math.min(b[1],yMax))]).filter(Boolean),dn=s.band.map((b,L)=>b&&[x(L),y(Math.max(b[0],0))]).filter(Boolean).reverse();
+      el("path",{d:"M"+up.concat(dn).map(p=>p.join(",")).join("L")+"Z",fill:s.color,"fill-opacity":0.14,stroke:"none"},svg);}
+    el("path",{d:"M"+pts.map(p=>p.join(",")).join("L"),fill:"none",stroke:s.color,"stroke-width":2,"stroke-dasharray":s.dash||"","stroke-linejoin":"round"},svg);
+    const last=pts[pts.length-1];el("circle",{cx:last[0],cy:last[1],r:3,fill:s.color,stroke:"var(--panel)","stroke-width":2},svg);ends.push({y:last[1],x:last[0],s});});
+  ends.sort((a,b)=>a.y-b.y);let prev=-99;ends.forEach(e=>{const yy=Math.max(e.y+3,prev+12);prev=yy;const tx=el("text",{x:e.x+7,y:yy,class:"lab"},svg);tx.textContent=e.s.label;});
+  const hit=el("rect",{x:l,y:t,width:W-l-r,height:H-t-b,fill:"transparent"},svg);const cross=el("line",{y1:t,y2:H-b,stroke:"var(--ink-3)","stroke-width":1,opacity:0},svg);
+  hit.addEventListener("mousemove",e=>{const bb=svg.getBoundingClientRect();const px=(e.clientX-bb.left)*W/bb.width;const L=Math.max(0,Math.min(24,Math.round((px-l)/(W-l-r)*24)));cross.setAttribute("x1",x(L));cross.setAttribute("x2",x(L));cross.setAttribute("opacity",0.5);
+    showTip(e,`L${L}<br>`+series.map(s=>`${esc(s.label)}: ${s.v[L]==null?"–":fmtY(s.v[L])}`).join("<br>"));});
+  hit.addEventListener("mouseleave",()=>{cross.setAttribute("opacity",0);hideTip();});
+}
+function drawGaussGeom(){
+  const dims=[],shares=[];
+  D.frames.forEach(f=>{const g=D.gauss.geometry[`${st.tok}|${st.step}|${f}`]||{};const v=[],s=[];
+    for(let L=0;L<25;L++){const xs=prompts().map(p=>g[p]&&g[p][L]).filter(Boolean);v.push(median(xs.map(a=>a[1])));s.push(median(xs.map(a=>a[0])));}
+    dims.push({label:FRAME_LABEL[f],color:`var(--f-${f})`,v});if(f==="raw")shares.push({label:"raw",color:"var(--f-raw)",v:s});});
+  const ym=Math.max(...dims.flatMap(d=>d.v).filter(v=>v!=null));lines($("#g-dim"),dims,"effective dimensions",Math.ceil(ym/20)*20,v=>v.toFixed(0));
+  lines($("#g-share"),shares,"mean-direction share",0.8,v=>v.toFixed(2));
+}
+function drawGauss(){drawGaussOverview();drawGaussHeat();drawGaussGeom();}
+
+/* ---------- section 2: projections ---------- */
+async function drawShape(){
+  const T=await tokens(st.step,st.prompt);const R=$("#s-real"),G=$("#s-draw");R.innerHTML="";G.innerHTML="";
+  if(!T){R.innerHTML='<text x="20" y="40">Token file missing.</text>';return;}
+  const P=T.proj[`${st.layer}|${st.sframe}`];if(!P)return;
+  const n=T.tokens.length,hdb=P.hdb;const sizes={};hdb.forEach(h=>{if(h>=0)sizes[h]=(sizes[h]||0)+1;});
+  const top=Object.keys(sizes).sort((a,b)=>sizes[b]-sizes[a]).slice(0,3).map(Number);
+  const color=i=>{if(st.col==="pos")return seqColor(i/(n-1));if(st.col==="rep")return T.repeat[i]?"var(--s2)":"var(--other)";
+    const h=hdb[i];if(h<0)return "var(--noise)";const k=top.indexOf(h);return k>=0?`var(--s${k+1})`:"var(--other)";};
+  const leg=$("#s-leg");const ng=Object.keys(sizes).length,noise=hdb.filter(h=>h<0).length;
+  if(st.col==="pos")leg.innerHTML=`Position<span class="ramp" style="background:linear-gradient(90deg,${seqColor(0)},${seqColor(1)})"></span>0 → ${n-1}`;
+  else if(st.col==="rep")leg.innerHTML=`<span><span class="sw" style="background:var(--s2)"></span>repeat of an earlier string (${T.repeat.reduce((a,b)=>a+b,0)})</span><span><span class="sw" style="background:var(--other)"></span>first occurrence</span>`;
+  else leg.innerHTML=top.map((h,k)=>`<span><span class="sw" style="background:var(--s${k+1})"></span>group ${k+1} · ${sizes[h]} tokens</span>`).join("")+`<span><span class="sw" style="background:var(--other)"></span>other ${Math.max(ng-3,0)} groups</span><span><span class="sw" style="background:var(--noise)"></span>noise ${noise}</span><span class="note">HDBSCAN, min_cluster_size 2, in this frame</span>`;
+  $("#s-t1").textContent=`Tokens · ${st.prompt} · L${st.layer} · ${FRAME_LABEL[st.sframe]}`;
+  const all=P.real.concat(P.draw);const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const sx=v=>16+368*(v-x0)/((x1-x0)||1),sy=v=>304-288*(v-y0)/((y1-y0)||1);
+  const order=[...Array(n).keys()].sort((a,b)=>(hdb[a]<0)-(hdb[b]<0)).reverse();
+  order.forEach(i=>{const c=el("circle",{cx:sx(P.real[i][0]),cy:sy(P.real[i][1]),r:3.6,fill:color(i),stroke:"var(--panel)","stroke-width":0.8},R);
+    c.addEventListener("mousemove",e=>showTip(e,`#${i} ${esc(JSON.stringify(T.tokens[i]))}<br>${hdb[i]<0?"noise":"group of "+sizes[hdb[i]]}${T.repeat[i]?" · repeat":""}`));c.addEventListener("mouseleave",hideTip);});
+  P.draw.forEach((p,i)=>el("circle",{cx:sx(p[0]),cy:sy(p[1]),r:3.6,fill:st.col==="pos"?seqColor(i/(n-1)):"var(--other)",stroke:"var(--panel)","stroke-width":0.8},G));
+}
+function setupShape(){
+  const sel=$("#s-prompt");sel.innerHTML="";D.gauss.prompts.forEach(p=>{const o=document.createElement("option");o.value=p;o.textContent=p;sel.appendChild(o);});
+  if(!D.gauss.prompts.includes(st.prompt))st.prompt=D.gauss.prompts.includes("wiki_paragraph")?"wiki_paragraph":D.gauss.prompts[0];
+  sel.value=st.prompt;sel.onchange=()=>{st.prompt=sel.value;save();drawShape();};
+  if(!D.proj_layers.includes(st.layer))st.layer=12;
+  seg($("#s-layer"),D.proj_layers.map(L=>[L,"L"+L]),st.layer,v=>{st.layer=v;save();drawShape();});
+  seg($("#s-frame"),D.frames.map(f=>[f,FRAME_LABEL[f]]),st.sframe,v=>{st.sframe=v;save();drawShape();});
+  seg($("#s-col"),[["hdb","HDBSCAN group"],["pos","position"],["rep","repeated string"]],st.col,v=>{st.col=v;save();drawShape();});
+}
+
+/* ---------- section 3: attention ---------- */
+function drawAttn(){
+  const A=D.attn,body=$("#a-body");
+  if(!A){body.innerHTML='<div class="pending">The attention-null run has not finished; this section fills in when its outputs are published.</div>';return;}
+  const gp=A.graphs.map(g=>{const [w,s]=g.split("_");return [g,`${w.replace("w","window ")} · ${s==="coattn"?"co-attention":"mutual"}`];});
+  body.innerHTML=`
+  <p>Graph: head-averaged attention, sink dropped, rolled out over 1–3 layers, made undirected as <b>mutual</b> (i and j attend to each other) or <b>co-attention</b> (they attend to the same tokens); Leiden communities. Nulls: <b>A</b> feeds a Gaussian with the tokens' covariance through the model's own LN1, QK and rotary; <b>B</b> shuffles each offset diagonal (keeps recency, destroys content); <b>C</b> replaces each head by the theory's <code>softmax(β⟨u,v⟩)</code> with its fitted β.</p>
+  <div class="bar" style="position:static;border:0;margin:0;padding:0"><div class="ctl">Statistic <select id="a-stat"></select></div></div>
+  <div class="panel scroll"><table class="ov" id="a-ov"></table></div>
+  <div class="grid2"><div id="a-heat"></div><div class="panel"><h3>Real value vs the null's mean, median over prompts</h3><div id="a-val"></div></div></div>
+  <div class="grid2">
+    <div class="panel"><h3>Do attention communities match any frame's clusters? (ARI, k-means at the same k)</h3><div id="a-ari"></div><p class="note">Solid: real. Dashed: null A's mean agreement for the same frame.</p></div>
+    <div class="panel"><h3>β per head on the unit LN1 frame (median, IQR over heads × prompts)</h3><div id="a-beta"></div><div id="a-r2"></div></div>
+  </div>
+  <div class="panel"><div class="bar" style="position:static;border:0;margin:0 0 8px;padding:0">
+    <div class="ctl">Prompt <select id="a-prompt"></select></div><div class="ctl">Layer <select id="a-layer"></select></div><div class="ctl">Graph <select id="a-graph"></select></div></div>
+    <h3 id="a-st">Communities along the text</h3><div class="strip" id="a-strip"></div><div class="legend" id="a-sleg"></div></div>`;
+  const ss=$("#a-stat");D.a_stats.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=A_LABEL[s];ss.appendChild(o);});ss.value=st.astat;ss.onchange=()=>{st.astat=ss.value;save();drawAttnParts();};
+  const gs=$("#a-graph");gp.forEach(([g,l])=>{const o=document.createElement("option");o.value=g;o.textContent=l;gs.appendChild(o);});gs.value=st.agraph;gs.onchange=()=>{st.agraph=gs.value;save();drawAttnParts();};
+  const ps=$("#a-prompt");D.gauss.prompts.forEach(p=>{const o=document.createElement("option");o.value=p;o.textContent=p;ps.appendChild(o);});
+  if(!st.aprompt||!D.gauss.prompts.includes(st.aprompt))st.aprompt="wiki_paragraph";ps.value=st.aprompt;ps.onchange=()=>{st.aprompt=ps.value;save();drawStrip();};
+  const ls=$("#a-layer");for(let L=0;L<24;L++){const o=document.createElement("option");o.value=L;o.textContent="L"+L;ls.appendChild(o);}ls.value=st.alayer;ls.onchange=()=>{st.alayer=+ls.value;save();drawStrip();};
+  drawAttnParts();
+}
+function drawAttnParts(){
+  const A=D.attn,tb=$("#a-ov");tb.innerHTML="";const hr=tb.insertRow();hr.appendChild(Object.assign(document.createElement("th"),{textContent:"graph"}));
+  ["A","B","C"].forEach(nl=>{const th=document.createElement("th");th.textContent=NULL_LABEL[nl];hr.appendChild(th);});
+  A.graphs.forEach(g=>{const tr=tb.insertRow();const th=document.createElement("th");th.textContent=g.replace("_"," · ");tr.appendChild(th);
+    ["A","B","C"].forEach(nl=>{const real=tally(A.cells[`${st.tok}|real|${st.step}|${nl}|${g}|${st.astat}`],prompts()),cal=tally(A.cells[`${st.tok}|cal|${st.step}|${nl}|${g}|${st.astat}`],prompts());
+      const td=tr.insertCell();td.className="cell";td.tabIndex=0;const ex=real.n?(real.t/real.n-(cal.n?cal.t/cal.n:0)):0;
+      td.style.background=ex>0?seqColor(ex*1.4):"var(--panel)";if(ex>0.45)td.style.color="var(--bg)";
+      td.innerHTML=real.n?`${real.t} / ${cal.t}<span class="sub" style="${ex>0.45?"color:var(--bg)":""}">of ${real.n} · excess ${(ex*100).toFixed(0)} %</span>`:"–";
+      td.setAttribute("aria-selected",String(g===st.agraph&&nl===st.anull));
+      const pick=()=>{st.agraph=g;st.anull=nl;save();$("#a-graph").value=g;drawAttnParts();drawStrip();};td.onclick=pick;td.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick();}};});});
+  const h=$("#a-heat");h.innerHTML="";
+  heat(h,`${NULL_LABEL[st.anull]} · ${st.agraph.replace("_"," · ")} · ${A_LABEL[st.astat]}${st.kind==="cal"?" · calibration":""}`,"var(--ink)",A.cells[`${st.tok}|${st.kind}|${st.step}|${st.anull}|${st.agraph}|${st.astat}`],D.gauss.prompts,24);
+  const vals=A.values[`${st.tok}|${st.kind}|${st.step}|${st.agraph}`]||{};
+  const med=key=>{const v=[];for(let L=0;L<25;L++)v.push(median(prompts().map(p=>vals[p]&&vals[p][L]&&vals[p][L][key])));return v;};
+  if(["Q","ari_raw","ari_centred","ari_centred_norogue"].includes(st.astat)){
+    const ser=[{label:"real",color:"var(--s1)",v:med(st.astat)},{label:"null "+st.anull,color:"var(--ink-3)",dash:"4 3",v:med(st.anull+"_"+st.astat)}];
+    if(st.astat==="Q")ser.push({label:"cosine head",color:"var(--s2)",dash:"2 3",v:med("K_Q")});
+    const ym=Math.max(0.1,...ser.flatMap(s=>s.v).filter(v=>v!=null));lines($("#a-val"),ser,A_LABEL[st.astat],Math.ceil(ym*10)/10,v=>v.toFixed(2));
+  } else {const ser=[{label:"real",color:"var(--s1)",v:med(st.astat)}];const ym=Math.max(1e-3,...ser[0].v.filter(v=>v!=null));lines($("#a-val"),ser,A_LABEL[st.astat],ym*1.1,v=>ym>2?v.toFixed(0):v.toFixed(2));}
+  const ari=[];D.frames.forEach(f=>{ari.push({label:FRAME_LABEL[f],color:`var(--f-${f})`,v:med("ari_"+f)});ari.push({label:"",color:`var(--f-${f})`,dash:"4 3",v:med("A_ari_"+f)});});
+  const am=Math.max(0.05,...ari.flatMap(s=>s.v).filter(v=>v!=null));lines($("#a-ari"),ari,"ARI",Math.ceil(am*20)/20,v=>v.toFixed(2));
+  const B=A.betas[`${st.tok}|${st.kind}|${st.step}`]||{};const bm=[],bb=[],rm=[],rb=[];
+  for(let L=0;L<24;L++){const all=[],r2=[];prompts().forEach(p=>{const x=B[p]&&B[p][L];if(x){all.push(...x.beta);r2.push(...x.r2);}});bm.push(median(all));bb.push(all.length?[q(all,.25),q(all,.75)]:null);rm.push(median(r2));rb.push(r2.length?[q(r2,.25),q(r2,.75)]:null);}
+  const bmax=Math.max(1,...bb.filter(Boolean).map(b=>b[1]));
+  lines($("#a-beta"),[{label:"β",color:"var(--s1)",v:bm,band:bb}],"beta",Math.ceil(bmax),v=>v.toFixed(1));
+  lines($("#a-r2"),[{label:"R²",color:"var(--s3)",v:rm,band:rb}],"R2",1,v=>v.toFixed(2));
+  drawStrip();
+}
+async function drawStrip(){
+  const T=await tokens(st.step,st.aprompt),box=$("#a-strip"),leg=$("#a-sleg");box.innerHTML="";leg.innerHTML="";
+  $("#a-st").textContent=`Communities along the text · ${st.aprompt} · L${st.alayer} · ${st.agraph.replace("_"," · ")} · all tokens`;
+  const lab=T&&T.communities&&T.communities[String(st.alayer)]&&T.communities[String(st.alayer)][st.agraph];
+  if(!lab){box.textContent="No community labels for this run (step 0 and step 143000 both carry them once the run is published).";return;}
+  const order=[];lab.forEach(c=>{if(!order.includes(c))order.push(c);});const slot=c=>{const k=order.indexOf(c);return k<8?`var(--s${k+1})`:"var(--other)";};
+  const frag=document.createDocumentFragment();const s0=document.createElement("span");s0.textContent=T.tokens[0];s0.style.color="var(--ink-3)";s0.title="position 0: the sink, not in the graph";frag.appendChild(s0);
+  lab.forEach((c,i)=>{const sp=document.createElement("span");sp.textContent=T.tokens[i+1];sp.style.borderBottomColor=slot(c);
+    sp.addEventListener("mousemove",e=>showTip(e,`#${i+1} ${esc(JSON.stringify(T.tokens[i+1]))}<br>community ${order.indexOf(c)+1}`));sp.addEventListener("mouseleave",hideTip);frag.appendChild(sp);});
+  box.appendChild(frag);
+  const sizes=order.map(c=>lab.filter(x=>x===c).length);
+  leg.innerHTML=order.slice(0,8).map((c,k)=>`<span><span class="sw" style="background:var(--s${k+1})"></span>${k+1} · ${sizes[k]} tokens</span>`).join("")+(order.length>8?`<span><span class="sw" style="background:var(--other)"></span>${order.length-8} more</span>`:"")+`<span class="note">numbered by first appearance</span>`;
+}
+
+/* ---------- boot ---------- */
+function drawAll(){drawGauss();drawShape();drawAttn();}
+fetch("summary.json").then(r=>r.json()).then(d=>{D=d;
+  if(!D.gauss.steps.includes(st.step))st.step=D.gauss.steps[D.gauss.steps.length-1];
+  seg($("#c-step"),D.gauss.steps.map(s=>[s,s.replace("step","step ")]),st.step,v=>{st.step=v;save();drawAll();});
+  seg($("#c-tok"),[["dedupe","first occurrences"],["all","all tokens"]],st.tok,v=>{st.tok=v;save();drawGauss();drawAttn();});
+  seg($("#c-kind"),[["real","real"],["cal","calibration"]],st.kind,v=>{st.kind=v;save();drawGaussHeat();drawAttn();});
+  setupShape();drawAll();
+}).catch(e=>{document.querySelector(".wrap").insertAdjacentHTML("beforeend",`<div class="pending">summary.json did not load: ${esc(e)}</div>`);});
+})();
+</script>

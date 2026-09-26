@@ -321,7 +321,7 @@ def summarise(records: List[Dict], alpha: float = 0.025) -> List[Dict]:
                 for s, c in per_s.items():
                     if s not in TAIL:
                         continue
-                    key = (r["step"], null, g, band_of(r["layer"]), s)
+                    key = (r["step"], null, g, r.get("band") or band_of(r["layer"]), s)
                     row = rows.setdefault(key, {"step": key[0], "null": null, "graph": g,
                                                 "band": key[3], "stat": s, "n": 0,
                                                 "tail": 0, "z": [], "obs": [], "null_mean": []})
@@ -405,13 +405,52 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         for L in (args.layers if args.layers else range(n_blocks)):
             jobs.append((str(r), int(L), args.n_draws, args.seed, args.calibrate,
                          args.dedupe_strings, str(args.weights), tuple(args.nulls)))
+    # Each finished record is written at once, so a stopped run resumes where it
+    # stopped (a 3 h run lost everything to a stop on 2026-09-26). A part is
+    # reused only if its settings match this call's.
+    parts = args.out.with_suffix(".parts")
+    parts.mkdir(parents=True, exist_ok=True)
+    settings = {"n_draws": args.n_draws, "seed": args.seed, "calibrate": bool(args.calibrate),
+                "dedupe_strings": bool(args.dedupe_strings), "nulls": list(args.nulls)}
+    (parts / "settings.json").write_text(json.dumps(settings))
+
+    def part_of(job) -> Path:
+        return parts / f"{Path(job[0]).parent.name}__{Path(job[0]).name}__L{job[1]}.json"
+
+    done, todo = [], []
+    for j in jobs:
+        p = part_of(j)
+        if p.exists():
+            rec = json.loads(p.read_text())
+            if rec.get("_settings") == settings:
+                done.append(rec)
+                continue
+        todo.append(j)
+    print(f"  {len(done)} of {len(jobs)} layer-records already done; running {len(todo)}", flush=True)
+
+    def keep(job, rec):
+        rec["_settings"] = settings
+        tmp = part_of(job).with_suffix(".tmp")
+        tmp.write_text(json.dumps(rec))
+        tmp.replace(part_of(job))
+        done.append(rec)
+        if len(done) % 12 == 0 or len(done) == len(jobs):
+            print(f"  {len(done)}/{len(jobs)} done ({time.time() - t0:.0f} s this call)", flush=True)
+
     t0 = time.time()
-    if args.workers > 1:
+    if args.workers > 1 and todo:
         from multiprocessing import get_context
+        by_key = {(j[0], j[1]): j for j in todo}
         with get_context("spawn").Pool(args.workers) as pool:
-            records = pool.map(_job, jobs, chunksize=1)
+            for rec in pool.imap_unordered(_job, todo, chunksize=1):
+                keep(by_key[(rec["run_dir"], rec["layer"])], rec)
     else:
-        records = [_job(j) for j in jobs]
+        for job in todo:
+            keep(job, _job(job))
+    order = {(j[0], j[1]): i for i, j in enumerate(jobs)}
+    records = sorted(done, key=lambda r: order[(r["run_dir"], r["layer"])])
+    for r in records:
+        r.pop("_settings", None)
     out = {"n_draws": args.n_draws, "seed": args.seed, "nulls": list(args.nulls),
            "windows": list(WINDOWS), "symmetrisations": list(SYMMETRISATIONS),
            "calibrate": bool(args.calibrate), "dedupe_strings": bool(args.dedupe_strings),

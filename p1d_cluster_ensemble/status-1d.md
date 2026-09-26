@@ -772,6 +772,80 @@ same. Tier 1, unregistered.
     lifetime is compared. Cost: ~1 h. Changes: whether `mt_life` can be
     read at all.
 
+Parked 10 is decided: next section.
+
+### Attention communities against three nulls (item 3; IN PROGRESS, 2026-09-26)
+
+**State: code built and tested, full run stopped by the user after 3 h with
+nothing written; resumable now.** No result below is a finding yet.
+
+**What.** Item (3), with Parked 10 decided (user, 2026-09-26: "all tests and
+all nulls"). Graph per (run, layer, window w = 1–3): head-averaged attention,
+sink (position 0) dropped as a node and rows renormalised, rolled out as
+`prod(I/2 + M/2)`, made undirected as `mutual` `(R+Rᵀ)/2` and `coattn`
+`R Rᵀ`; Leiden on weighted modularity (igraph). Statistics: modularity `Q`,
+λ₂ of the normalised Laplacian, community counts, position contiguity, weight
+within 3 positions, and ARI with k-means at the same k in each of #106's
+three frames (the "which frame does attention agree with" readout).
+`attention_graph.py`, `attention_null.py`, `neox_block.py`, report
+`attention_null_report.py`, page builder `viz_page.py` + `viz/index.html`.
+
+**"The same null" (Parked 10), answered:** the model's own block applied to
+#106's null. Nothing in it needs β.
+
+| null | construction | answers |
+|---|---|---|
+| A | Gaussian with the kept non-sink tokens' covariance (`gaussian_draw`, raw frame), rows at their real tokens' norms, the real sink row at position 0, read by the checkpoint's own LN1/QKV/rotary; for w > 1 carried through the real blocks, not redrawn | communities beyond what this layer's attention makes of a structureless cloud |
+| B | each offset diagonal shuffled across rows, *relative to uniform* (`A[i,j]·(i+1)`), rows renormalised | beyond recency / positional heads |
+| C | the theory's head `softmax(β_h⟨u_i,u_j⟩)` on unit LN1 rows, β_h fitted per head to the real attention, on A's propagated draws; plus C-real, the same head on the real tokens (`ari_kernel`) | beyond the idealised cosine coupling |
+| control | step 0, all of the above | does training create it |
+
+Calibration: the real run replaced by one null-A draw (seed offset), everything
+refitted: #106's convention.
+
+**Checks passed before the run.** The reimplemented block reproduces the stored
+attention (max abs 1e-7 to 1.5e-3, largest at L18/L23) and the next residual
+(rel ≤ 3.3e-5) on `wiki_paragraph` at both checkpoints (`--verify` refuses
+otherwise); it matches transformers' `GPTNeoXLayer` on a random tiny config
+(`tests/test_phase1d_neox_block_smoke.py`). 13 unit tests.
+
+**Defect found and fixed before the run.** Null B first shuffled raw weights.
+On step 0's near-uniform attention (`1/(i+1)` per row) that moved early rows'
+large weights onto late rows and made the shuffle *more* modular than the
+real matrix (Q 0.23 vs 0.14, smoke run). Fixed by shuffling relative to
+uniform; uniform attention is now a fixed point (test).
+
+**β, measured on the way (bears on Blocked 9).** On the unit LN1 frame the
+slope of the softmax's own input (`core/beta_eff.py`'s `beta_raw`, row fixed
+effects, offset control, no `attn_scale`) on `pythia-410m-step143000` /
+`wiki_paragraph` (run `2026-09-01_18-25-12`, the one `status-1c.md` finding 2
+used, sink included as `estimate_beta_all_heads` does): median **4.00**, IQR
+[2.05, 6.01], range [−6.70, 17.52], R² median 0.18, 384 head-rows.
+**Divided by 8 it is finding 2's numbers to the digit** (0.50, [0.26, 0.75],
+[−0.84, 2.19]). The code's `attn_scale = 1/8` path gives 32.02. So "scaled"
+0.50 divides the model's `1/√d_h` out a second time; `beta_raw` is already
+the β of `softmax(β⟨u_i,u_j⟩)`. On the Stage 0 run of the same prompt,
+without the sink: 4.44 [2.54, 6.68]; per layer, medians 1.3–8.0, R² falls
+from ~0.25 (L1–16) to 0.06–0.12 (L18–23). Correction routed to
+`status-1c.md` and `status-10.md` (math-10 §5.4's inversion reads "c > 1";
+the exact bound is `c_min(β)`, 0.809 at β = 0.5 and 0.978 at β = 4:
+`tools/math_checks/lemma51_c_bound.py`, 8/8). Which number to *adopt* is
+Blocked 9, still the user's.
+
+**Smoke look (L12, 3 draws; not a result).** step143000: communities are
+contiguous stretches of text (98.5 % of adjacent tokens share one), ARI with
+k-means in any frame 0.03–0.07; `Q` 0.46 real vs 0.44 under null A; the
+cosine head gives 0.09–0.17. step 0: β ≈ 0, R² ≈ 0; real ≈ cosine head (ARI 0.95).
+
+**To resume** (`<main>/data/p1d/attention_null_2026-09-26/`, weights exported
+there; code at this branch's head). `run_all.sh` runs the four configurations
+(`null`, `calibrate`, `null_dedupe`, `calibrate_dedupe`; 100 draws, 14
+workers) and skips any whose JSON exists; within one, finished layer-records
+are in `<name>.parts/` and are reused if their settings match. The first
+configuration ran > 3 h without finishing (384 layer-records): budget ≥ 12 h
+for all four, or cut draws. Then `attention_null_report.py` per pair, then
+`viz_page.py --gauss … --attn … --out <dir>` for the page.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it
