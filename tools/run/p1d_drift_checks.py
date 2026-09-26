@@ -14,15 +14,17 @@
    rule, all layers) and ARI < 1 at layers >= 1. Reads only
    ``hdbscan_labels.json``; roots are ignored.
 4. ``--matched PROMPT``: centroid and linkage families forced to HDBSCAN's k
-   on both sweeps (the Parked item from /challenge-pr on #101).
-5. ``--ties PROMPT``: near-duplicate pairs and nearest-neighbour ties per record,
-   and where HDBSCAN's A-vs-B co-membership disagreements sit in distance.
+   on both sweeps (the Parked item from /challenge-pr on #101), with a seed
+   control: k-means on sweep A at seed 0 against seed 1.
+5. ``--precision PROMPT``: shipped HDBSCAN (``min_cluster_size=2``) on cosine
+   distances computed in float64 from the same stored activations, A against
+   B, and against A's stored (float32-distance) labels (/challenge-pr on #102).
 
     python -m tools.run.p1d_drift_checks <root_a> <root_b> --fine
     python -m tools.run.p1d_drift_checks <root_a> <root_b> --swap 32 repeated_tokens 6
     METS_DATA=<main>/data python -m tools.run.p1d_drift_checks - - --baseline
     python -m tools.run.p1d_drift_checks <root_a> <root_b> --matched repeated_tokens
-    python -m tools.run.p1d_drift_checks <root_a> <root_b> --ties repeated_tokens
+    python -m tools.run.p1d_drift_checks <root_a> <root_b> --precision repeated_tokens
 """
 from __future__ import annotations
 
@@ -96,12 +98,21 @@ def _k(lab: np.ndarray) -> int:
     return len(set(lab.tolist()) - {-1})
 
 
+def _runs(a: Path, prompt: str) -> list[str]:
+    runs = sorted(p.name for p in a.iterdir() if p.name.endswith(f"_{prompt}") and (p / "p1d_results.json").exists())
+    if not runs:
+        raise SystemExit(f"no run under {a} ends in _{prompt}")
+    return runs
+
+
 def matched(a: Path, b: Path, prompt: str) -> None:
     """Every record of PROMPT: fit the centroid and linkage families at the k
     of A's tuned HDBSCAN and of A's shipped HDBSCAN, on both sweeps, and report
     ARI(A, B) beside HDBSCAN's own. HDBSCAN is read from the stored labels
     (noise kept as a label, as §3 does); its ARI on the tokens both sweeps
-    assign is printed too, to tell moved clusters from moved noise."""
+    assign is printed too, to tell moved clusters from moved noise. ``km seed``
+    is k-means on A alone, seed 0 against seed 1: a fixed seed can hide an
+    unstable partition. Distances are 1d's (float32 cosine, then float64)."""
     from sklearn.cluster import AgglomerativeClustering, KMeans
     from p1d_cluster_ensemble import methods, p1d_io
     fits = {
@@ -111,63 +122,60 @@ def matched(a: Path, b: Path, prompt: str) -> None:
             n_clusters=k, linkage="average", metric="precomputed").fit_predict(d.cos_dist),
         "ward": lambda d, k: AgglomerativeClustering(n_clusters=k, linkage="ward").fit_predict(d.normed),
     }
-    runs = sorted(p.name for p in a.iterdir() if p.name.endswith(prompt) and (p / "p1d_results.json").exists())
-    print(f"{'step':>6s} {'L':>2s} {'maxdD':>7s} {'ref':8s} {'kA/kB':>7s} {'HDB':>6s} {'HDB asg':>7s} "
-          + " ".join(f"{f:>10s}" for f in fits))
+    runs = _runs(a, prompt)
+    print(f"{'step':>6s} {'L':>2s} {'ref':8s} {'kA/kB':>7s} {'HDB':>6s} {'HDB asg':>7s} "
+          + " ".join(f"{f:>10s}" for f in fits) + f" {'km seed':>8s}")
     for run in runs:
         ra, rb = _res(a, run), _res(b, run)
         la, lb = (p1d_io.load_run(Path(r["run_dir"])) for r in (ra, rb))
         for L in sorted(ra["per_layer"], key=int):
             da, db = (methods.LayerData.from_normed(p1d_io.layer_activations(x, int(L))) for x in (la, lb))
-            dD = float(np.abs(da.cos_dist - db.cos_dist).max())
             refs = {"tuned": [np.asarray(r["per_layer"][L]["selection"]["hdbscan"]["selected_labels"])
                               for r in (ra, rb)],
                     "shipped": [np.asarray(x["shipped_hdbscan"][int(L)]) for x in (la, lb)]}
+            head = f"{run.split('step')[1].split('_')[0]:>6s} {L:>2s}"
             for name, (ha, hb) in refs.items():
                 if ha.ndim == 0 or hb.ndim == 0:  # tuned HDBSCAN abstained on a sweep
-                    print(f"{run.split('step')[1].split('_')[0]:>6s} {L:>2s} {dD:7.1e} {name:8s} abstained")
+                    print(f"{head} {name:8s} abstained")
                     continue
                 both = (ha >= 0) & (hb >= 0)
                 k = max(2, _k(ha))
                 row = [ari(fits[f](da, k), fits[f](db, k)) for f in fits]
-                print(f"{run.split('step')[1].split('_')[0]:>6s} {L:>2s} {dD:7.1e} {name:8s} "
-                      f"{_k(ha):3d}/{_k(hb):<3d} {ari(ha, hb):6.3f} {ari(ha[both], hb[both]):7.3f} "
-                      + " ".join(f"{v:10.3f}" for v in row), flush=True)
+                seed = ari(fits["kmeans"](da, k), KMeans(n_clusters=k, n_init=10, random_state=1).fit_predict(da.normed))
+                print(f"{head} {name:8s} {_k(ha):3d}/{_k(hb):<3d} {ari(ha, hb):6.3f} {ari(ha[both], hb[both]):7.3f} "
+                      + " ".join(f"{v:10.3f}" for v in row) + f" {seed:8.3f}", flush=True)
 
 
-def ties(a: Path, b: Path, prompt: str, near: float = 1e-4, tie: float = 1e-6) -> None:
-    """Per record of PROMPT, on sweep A: the share of token pairs closer than
-    NEAR (cosine distance), and of tokens whose first and second nearest
-    neighbours differ by less than TIE (the float noise's size). Then, for
-    shipped and tuned HDBSCAN, the token pairs whose co-membership differs
-    between A and B (noise is never a co-member), and how many of them are
-    closer than NEAR. Descriptive: it locates the disagreement, it does not
-    show that the ties cause it."""
-    from p1d_cluster_ensemble import methods, p1d_io
-    for run in sorted(p.name for p in a.iterdir() if p.name.endswith(prompt) and (p / "p1d_results.json").exists()):
-        ra, rb = _res(a, run), _res(b, run)
-        la, lb = (p1d_io.load_run(Path(r["run_dir"])) for r in (ra, rb))
-        for L in sorted(ra["per_layer"], key=int):
-            d = methods.LayerData.from_normed(p1d_io.layer_activations(la, int(L))).cos_dist
-            iu = np.triu_indices_from(d, 1)
-            dd = d[iu]
-            nn = np.sort(d + 9 * np.eye(len(d)), axis=1)[:, :2]
-            head = f"{run.split('step')[1].split('_')[0]:>6s} L{L:<2s}"
-            print(f"{head} pairs<{near:g} {np.mean(dd < near):.2f}  NN ties<{tie:g} "
-                  f"{np.mean(nn[:, 1] - nn[:, 0] < tie):.2f}  median d {np.median(dd):.1e}")
-            refs = {"shipped": (la["shipped_hdbscan"][int(L)], lb["shipped_hdbscan"][int(L)]),
-                    "tuned": tuple(np.asarray(r["per_layer"][L]["selection"]["hdbscan"]["selected_labels"])
-                                   for r in (ra, rb))}
-            for name, (ha, hb) in refs.items():
-                if ha.ndim == 0 or hb.ndim == 0:
-                    continue
-                co = lambda h: (h[:, None] == h[None, :]) & (h[:, None] >= 0)
-                dis = (co(ha) != co(hb))[iu]
-                if dis.any():
-                    print(f"{head}   {name:8s} disagreeing pairs {dis.sum():5d}, "
-                          f"share <{near:g} {np.mean(dd[dis] < near):.2f}, median d {np.median(dd[dis]):.1e}")
-                else:
-                    print(f"{head}   {name:8s} no disagreeing pairs")
+def _cos64(x: np.ndarray) -> np.ndarray:
+    x = np.asarray(x, dtype=np.float64)
+    x = x / np.linalg.norm(x, axis=1, keepdims=True)
+    d = np.clip(1.0 - x @ x.T, 0.0, None)
+    d = 0.5 * (d + d.T)
+    np.fill_diagonal(d, 0.0)
+    return d
+
+
+def precision(a: Path, b: Path, prompt: str) -> None:
+    """Every record of PROMPT: shipped HDBSCAN (``min_cluster_size=2``, the
+    ``hdbscan`` package) refit on float64 cosine distances from the same stored
+    float32 activations. Prints ARI(A, B) for the stored labels and for the
+    float64 refit, ARI(A's float64 refit, A's stored labels), and both k. The
+    stored labels were fitted on distances computed in float32
+    (``p1_mstate_tracking/clustering.py``, ``1 - x.y`` loses digits when
+    ``x.y`` is near 1). Noise is kept as a label."""
+    import hdbscan
+    from p1d_cluster_ensemble import p1d_io
+    fit = lambda d: hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed").fit_predict(d)
+    runs = _runs(a, prompt)
+    print(f"{'step':>6s} {'L':>2s} {'stored A~B':>10s} {'f64 A~B':>8s} {'f64~stored (A)':>14s} {'k stored/f64':>12s}")
+    for run in runs:
+        la, lb = (p1d_io.load_run(Path(_res(r, run)["run_dir"])) for r in (a, b))
+        for L in sorted(_res(a, run)["per_layer"], key=int):
+            L = int(L)
+            fa, fb = (fit(_cos64(p1d_io.layer_activations(x, L))) for x in (la, lb))
+            sa, sb = la["shipped_hdbscan"][L], lb["shipped_hdbscan"][L]
+            print(f"{run.split('step')[1].split('_')[0]:>6s} {L:>2d} {ari(sa, sb):10.3f} {ari(fa, fb):8.3f} "
+                  f"{ari(fa, sa):14.3f} {_k(sa):5d}/{_k(fa):<6d}", flush=True)
 
 
 def baseline() -> None:
@@ -203,12 +211,12 @@ def main() -> None:
     p.add_argument("--swap", nargs=3, metavar=("STEP", "PROMPT", "LAYER"))
     p.add_argument("--baseline", action="store_true")
     p.add_argument("--matched", metavar="PROMPT")
-    p.add_argument("--ties", metavar="PROMPT")
+    p.add_argument("--precision", metavar="PROMPT")
     args = p.parse_args()
     if args.matched:
         matched(args.a, args.b, args.matched)
-    if args.ties:
-        ties(args.a, args.b, args.ties)
+    if args.precision:
+        precision(args.a, args.b, args.precision)
     if args.fine:
         fine(args.a)
     if args.swap:

@@ -495,6 +495,15 @@ a wrong premise, the check inherits it.
   (agglomerative k median 162), and a swap test showed no single family moves
   it. A mechanism claim about a record gets its swap or ablation run before
   it is written down.
+- 2026-09-25 (#102), the next unit: the matched-k write-up named the mechanism
+  "methods that hang on distance order" from a check that only *located* the
+  disagreements (in near-tie pairs, which is where every co-membership on that
+  prompt sits anyway: the base rate). It read "k-means never moves" without a
+  seed control. The PR's own "Worth challenging" said no intervention had been
+  run. The reviewer ran the cheapest one, float64 distances, and the drift
+  vanished: float32 cancellation in `1 - x·y`, upstream of every method. When
+  the PR's own caveat names a missing intervention that costs minutes, run it
+  before opening the PR.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

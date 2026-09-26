@@ -224,9 +224,8 @@ noise as a label, as §3 does.
   | all 8 (§3's 2 600) | 435 of 2 600 | 0.166 | |
 
   Counting ARI < 1 at layers ≥ 1 instead gives 307 of 312 and 118 of 2 184,
-  because two `repeated_tokens` pairs differ in label numbering only. My
-  mechanism, not tested: that prompt repeats one short sequence, so many
-  distances are near-ties and float noise breaks them.
+  because two `repeated_tokens` pairs differ in label numbering only. The
+  mechanism, tested since: float32 distances (next section, `--precision`).
 - **1d does not reproduce itself exactly on the same input.** The
   `stage0_rerun/` control (6 records: `wiki_paragraph` 143000,
   `camus_letranger` 32) gave k-means ARI 0.991 once, grade agreement 0.998
@@ -242,55 +241,59 @@ records. Whether 1d "reduces the drift" can't be told apart from what its
 stable families pick (coarse k, or identical strings), so it waits on D / C,
 and on the matched-k check on `repeated_tokens`.
 
-### Matched k on `repeated_tokens` (2026-09-25; was Parked above)
+### Matched k on `repeated_tokens`, and the float32 defect it led to (2026-09-25)
 
-**Question.** On `repeated_tokens`, is the drift a property of density methods
-or of the fine scale they pick? **Input:** the 9 `repeated_tokens` records of
-the drift run (steps 32 / 512 / 143000 × L6 / 12 / 18), both sweeps, stored
-activations; control: the 9 `wiki_paragraph` records. k is A's (Stage 0's)
-HDBSCAN cluster count, tuned and shipped, applied on both sweeps. Code at
-`c61147e` + this unit's producer. **Re-run:** `python -m
-tools.run.p1d_drift_checks <out>/stage0 <out>/pilot --matched repeated_tokens`
-(and `--ties repeated_tokens`; ~2 min each).
+**Question** (Parked above). On `repeated_tokens`, is the drift a property of
+density methods or of the fine scale they pick? **Input:** the 9
+`repeated_tokens` records of the drift run (steps 32 / 512 / 143000 × L6 / 12 /
+18), both sweeps, stored activations (float32); control: the 9
+`wiki_paragraph` records. Code at `c61147e` + this unit's producer, conda
+`mets`, `hdbscan` 0.8.41. **Re-run** (~2 min each): `python -m
+tools.run.p1d_drift_checks <out>/stage0 <out>/pilot --matched repeated_tokens`,
+and `--precision repeated_tokens`.
 
-ARI(Stage 0, pilot) at matched k, `repeated_tokens`, 16 rows (tuned HDBSCAN
-abstained on a sweep at 143000 L12 / L18):
+**Answer: neither. The drift is float32 rounding in the distance step, upstream
+of every method** (found by `/challenge-pr` on #102; the first version of this
+section named a method-level mechanism, withdrawn). Phase 1's stored labels and
+1d's `LayerData` compute cosine distance in float32
+(`p1_mstate_tracking/clustering.py` `cluster_tokens`, `pairwise_distances` on
+float32 rows; `methods.py` `LayerData.from_normed`). `1 - x·y` loses its
+significant digits when `x·y` is near 1, which is where `repeated_tokens`'
+tokens sit. Shipped HDBSCAN refit on float64 distances from the same stored
+activations (`--precision`):
 
-| method | rows at ARI 1 | min ARI |
-|---|---|---|
-| HDBSCAN (stored labels, noise a label) | 3 of 16 | 0.223 |
-| k-means (`n_init` 10) | 16 | 1.000 |
-| Ward | 16 | 1.000 |
-| spherical k-means (one init) | 10 | 0.623 |
-| average linkage, cosine | 9 | 0.513 |
+| step | L6 / 12 / 18: stored A~B | float64 A~B | float64 ~ stored (A) | k stored → float64 |
+|---|---|---|---|---|
+| 32 | 0.240 / 0.495 / 0.320 | 1 / 1 / 1 | 0.067 / 0.082 / 0.146 | 62→30, 48→27, 53→27 |
+| 512 | 0.485 / 0.688 / 0.699 | 1 / 1 / 1 | 0.279 / 0.337 / 0.656 | 50→24, 46→26, 37→25 |
+| 143000 | 0.708 / 0.914 / 0.979 | 1 / 1 / 0.982 | 0.728 / 0.772 / 0.778 | 42→39, 43→42, 40→46 |
 
-At k up to 62, k-means and Ward never move, so **the drift is not the fine
-scale**. Average linkage moves as much as HDBSCAN at shipped k (0.51–0.99).
-It is not density either: it is the methods whose output hangs on the order
-of individual pairwise distances. On `wiki_paragraph` every method, HDBSCAN
-included, gives ARI 1 in 17 of 18 rows (min 0.988), at the same float noise
-(max |ΔD| 5e-7 to 2e-5 on both prompts).
+`wiki_paragraph`: float64 and stored labels are identical (ARI 1 in all 9),
+and both sweeps agree (1 in 8, 0.988 in 1, the same in both precisions).
 
-**Where the disagreement sits** (`--ties`). At steps 32 and 512 the whole
-`repeated_tokens` prompt is nearly one point: median pairwise cosine distance
-2e-4 to 8e-4 (`wiki_paragraph`: 0.16–0.74), 24–42 % of pairs closer than
-1e-4, and 68–89 % of tokens have their two nearest neighbours tied within
-1e-6. Shipped HDBSCAN finds 34–62 clusters inside that cloud. Of the token
-pairs whose co-membership differs between the sweeps, 85–100 % are closer
-than 1e-4 (median 1e-6, the noise's size), in 8 of 9 records; the ninth
-(143000 L6) is 24 %, median 2.8e-4, still 100 × below that layer's median.
-This locates the drift inside near-duplicate clumps; it does not show that
-the ties cause it (no intervention).
+- **The stored `repeated_tokens` partitions are mostly rounding.** At steps
+  32 and 512 the float64 partition shares little with the stored one (ARI
+  0.07–0.66) and has about half as many clusters. The other six v1 prompts are
+  unchecked; `wiki_paragraph`'s stored labels are exact.
+- **Matched k (`--matched`) does not separate method from scale, as first
+  read.** At Stage 0's HDBSCAN k, k-means and Ward give ARI 1 across sweeps in
+  16 of 16 rows, average linkage in 9 (min 0.51), spherical k-means (5 inits)
+  in 10 (min 0.62), all on 1d's float32-derived distances. But k-means on one
+  sweep, seed 0 against seed 1, agrees at 0.54–1.00 on `repeated_tokens` and
+  **0.38–0.75 on `wiki_paragraph`**: at k ≈ 10–60 the k-means partition is
+  seed-dependent everywhere, and "never moves" was the fixed seed. Average
+  linkage's movement is probably the same float32 distances; not re-run on
+  float64.
+- **Withdrawn:** that the prompt is "one point" at early steps and its
+  clusters name no structure. Float64 still finds 24–30 clusters, and whether
+  their spread counts as one point depends on the scale `δ`, which waits on
+  β's convention (Blocked 9). The reviewer reports the stored clusters at 32
+  / 512 are runs of consecutive positions; not checked here.
 
-**Reading.** The float-noise drift is not a disagreement about structure.
-It is methods that always return a partition splitting a near-point cloud at
-arbitrary places. HDBSCAN's `min_cluster_size` is a count, not a distance,
-so nothing in it says "these points are too close to separate". That is the
-case for a stated scale `δ` (C) and for reading partitions as a hierarchy
-(D), where a clump of diameter 1e-4 merges below any `δ` worth stating.
-It also bears on Phase 10 (routed below): `repeated_tokens` at early steps is
-full collapse in the theory's sense, and its 40–60 HDBSCAN clusters are not
-clusters at any scale the theory names.
+**What it changes.** Phase 10 §3's floor (ARI p5 0.347, almost all
+`repeated_tokens`) is mostly this defect, not HDBSCAN's sensitivity (routed to
+`status-10.md`). The fix (float64 distances in `clustering.py` and 1d's
+`LayerData`) changes stored labels, so it is its own unit with a re-run of §3.
 
 **Registry.** `P-C1`–`P-C4` (`predictions-1d.md`) were never registered and
 cannot be scored blind on the v1 runs already examined. They return as tier 1,
