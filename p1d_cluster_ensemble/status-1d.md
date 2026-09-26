@@ -624,18 +624,23 @@ HDBSCAN, `min_cluster_size=2`, float64 cosine), and `mt_k` / `mt_life`
 (Stage 0, `2026-09-23_05-52-32`, `2026-09-23_06-02-15`), all 25 layers,
 every token, 200 draws, seed 0, conda `mets`. **Deduped:** the same with
 each token string's first occurrence only (125–273 tokens;
-`repeated_tokens` has 3 strings and is skipped). **Calibration:** each
-layer replaced by one draw of its own Gaussian, null refitted, L0/6/12/18/24,
-100 draws. The code is this PR's. The full run predates the `--calibrate` /
-`--dedupe-strings` flags, whose default path is unchanged. **Output:**
-`data/p1d/gaussian_null_2026-09-26/{null,null_dedupe,calibrate}.{json,txt}`.
-**Re-run** (~24 / 6 / 2 min at 14 workers; `$RUNS` = the 16 directories
-listed in `null.json` `inputs`):
+`repeated_tokens` has 3 strings and is skipped). **Calibration**, one per
+input set (all tokens; deduped): each layer is replaced by one draw of its own
+Gaussian and the null refitted to it, all 25 layers, 100 draws. The code is
+this PR's. The full run predates the `--calibrate` / `--dedupe-strings` flags,
+whose default path is unchanged. **Output:**
+`data/p1d/gaussian_null_2026-09-26/`: `null`, `null_dedupe`, `calibrate`,
+`calibrate_dedupe` (`.json` + `.txt`), and the tables below in
+`report_{full,dedupe}.txt`. **Re-run** (~24 / 6 / 12 / 4 min at 14
+workers, report ~1 min; `$RUNS` = the 16 directories in `null.json`
+`inputs`):
 
     OMP_NUM_THREADS=1 python -m p1d_cluster_ensemble.gaussian_null --v1-only \
       --n-draws 200 --workers 14 --runs $RUNS [--dedupe-strings] \
-      --out <main>/data/p1d/gaussian_null_2026-09-26/null.json
-    # calibration: --calibrate --n-draws 100 --layers 0 6 12 18 24
+      --out <main>/data/p1d/gaussian_null_2026-09-26/null[_dedupe].json
+    # calibration: the same with --calibrate --n-draws 100, out calibrate[_dedupe].json
+    python -m p1d_cluster_ensemble.gaussian_null_report --null null_dedupe.json \
+      --calibrate calibrate_dedupe.json --out report_dedupe.json
 
 **The geometry the frames remove** (the previous session's quick look,
 now measured; raw frame, 7 prompts without `repeated_tokens`):
@@ -648,92 +653,124 @@ now measured; raw frame, 7 prompts without `repeated_tokens`):
 | 143000 | L17–24 | 0.35–0.66 | 0.06–0.32 | 125 (49 of 56) | 21 / 23 / 30 |
 | 0 | L1–24 | 0.13–0.58 | 0.006–0.021 | none stable | 48–53 / 44–45 / same |
 
-**Calibration: the null is not at nominal level for every statistic.**
-Rate of records in the "lumpier" 2.5 % tail when the null is true (80 per
-frame), and the median z there:
+**Calibration: the null is not at nominal level, and it depends on the
+input set.** Records in the lumpier 2.5 % tail when the null is true,
+step143000, L1–24, 7 prompts (168 per cell; `report_{full,dedupe}.txt`).
+Step 0's calibrations put at most 12 of 168 in any tail.
 
-| statistic | raw | centred | centred_norogue |
+| statistic | all tokens: raw / centred / no-rogue | deduped: raw / centred / no-rogue |
+|---|---|---|
+| `ci2` lower | 13 / 42 / 27 (centred L17–24: 35 of 56) | 1 / 5 / 2 |
+| `nn1` lower | 6 / 19 / 8 (median z +3.1 to +4.6) | 0 / 0 / 0 (median z +6.2 to +8.8) |
+| `hdb_k` upper | 0 / 0 / 2 | 0 / 1 / 0 |
+| `mt_k` upper | 1 / 0 / 0 | 0 / 1 / 0 |
+| `mt_life` upper | 7 / 17 / 10 | 6 / 4 / 7 |
+| `hdb_noise` lower | 7 / 4 / 2 | 4 / 1 / 4 |
+
+So each real result is read against the calibration on **its own inputs**.
+`gaussian_null_report.py` refuses any other pairing. The module's first docstring called the plug-in
+bias conservative. It is not, for `ci2` on all tokens.
+
+**Results, deduped** (the reading; L1–24, 7 prompts, 168 records per cell;
+tail = records in the lumpier 2.5 %, real / calibration; z = median, calibration in brackets):
+
+| statistic | frame | step143000: tail, z | step143000 L17–24 (of 56): tail | step 0: tail |
+|---|---|---|---|---|
+| `ci2` | raw | 45 / 1, −1.20 [+0.49] | 23 / 1 | 0 / 0 |
+| `ci2` | centred | 57 / 5, −1.27 [+0.27] | 42 / 5 | 0 / 0 |
+| `ci2` | no-rogue | 28 / 2, −0.73 [+0.77] | 19 / 2 | 0 / 0 |
+| `nn1` | raw | 168 / 0, −15.3 [+6.2] | 56 / 0 | 0 / 0 |
+| `nn1` | centred | 168 / 0, −19.4 [+7.9] | 56 / 0 | 0 / 0 |
+| `hdb_k` (median obs vs null) | raw | 67 / 0, 5 vs 3.2 | 23 / 0 | 1 / 2 |
+| `hdb_k` (median obs vs null) | centred | 109 / 1, 20 vs 6.1 | 43 / 0 | 2 / 3 |
+| `mt_k` (median obs vs null) | centred | 2 / 1, 2 vs 2.6 | 0 / 1 | 4 / 5 |
+| `mt_life` | raw | 9 / 6 | 6 / 2 | 59 / 1 |
+| `mt_life` | centred | 38 / 4, +0.96 [+0.35] | 17 / 4 | 59 / 1 |
+| `hdb_noise` | raw | 37 / 4 | 16 / 2 | 2 / 1 |
+
+**Results, all tokens** (centred; tail real / calibration): `ci2` 165 / 10
+at step 0, 149 / 42 at step143000. `nn1` 168 / 0 and 168 / 19. `hdb_k` 168
+/ 7 (63 vs 5.4 groups) and 168 / 0 (53 vs 4.3). `mt_k` 167 / 0 (20 vs 2.1)
+and 21 / 0 (2 vs 2.1). `mt_life` 168 / 12 and 37 / 17.
+
+**What a token's nearest neighbour is** (centred, median over
+prompt-layers L1–24 [max]; `report_*.txt` has raw, which agrees):
+
+| | same string | adjacent position | within 3 positions |
 |---|---|---|---|
-| `ci2` lower tail | 6 %, z −0.3 | 25 %, z −1.2 | 21 %, z −1.0 |
-| `nn1` lower tail | 1 %, z +4.5 | 11 %, z +2.5 | 10 %, z +3.4 |
-| `hdb_k` upper tail | 0 %, z −0.3 | 0 %, z −0.3 | 1 %, z −0.4 |
-| `mt_k` upper tail | 2.5 %, z −0.5 | 0 %, z −0.3 | 0 %, z −0.3 |
-| `mt_life` upper tail | 5 %, z +0.2 | 10 %, z +0.8 | 6 %, z +0.5 |
-
-So read each real z against the calibration's z, not the nominal p. The
-module's first docstring called the plug-in bias conservative; for `ci2`
-in the centred frames it is not.
-
-**Results** (L1–24, 7 prompts without `repeated_tokens`, 168 records per cell;
-median z, calibration z in brackets; "tail" = records in the lumpier 2.5 %):
-
-| statistic | frame | step 0, all tokens | step 143000, all tokens | step 0, deduped | step 143000, deduped |
-|---|---|---|---|---|---|
-| `ci2` | raw | −5.3 [−0.3], 149 | −3.3, 140 | +1.0, 0 | −1.2, 45 |
-| `ci2` | centred | −8.8 [−1.2], 165 | −3.6, 149 | +1.2, 0 | −1.3, 57 |
-| `nn1` | raw | −103 [+4.5], 168 | −48, 168 | +16, 0 | **−15, 168** |
-| `nn1` | centred | −65 [+2.5], 168 | −59, 168 | +20, 0 | **−19, 168** |
-| `hdb_k` (obs vs null mean) | centred | 63 vs 5.4, 168 | 53 vs 4.3, 168 | 18 vs 10.5, 2 | **20 vs 6.1, 109** |
-| `mt_k` | centred | 20 vs 2.1, 167 | 2 vs 2.1, 21 | 2 vs 10.4, 4 | 2 vs 2.6, 2 |
-| `mt_life` | centred | +23.6 [+0.8], 168 | +1.0, 37 | +1.6, 59 | +1.0, 38 |
-
-`centred_norogue` tracks `centred` in every cell (full tables in the `.txt`
-files). `hdb_noise` is near the null everywhere (median z −1.1 to +1.3).
-Deduped step143000 raw has 9–16 of 56 per band in its lower tail
-(calibration 4 %).
+| step 0, all tokens | 0.66 (0.56–0.75) | 0.01 | 0.06 |
+| step143000, all tokens | 0.52 (0.26–0.75) | 0.15 [0.48] | 0.22 |
+| step 0, deduped | — | 0.04 | 0.08 |
+| step143000, deduped | — | 0.19 [0.44] | 0.30 [0.49] |
 
 - **With every token, both checkpoints beat the null, and step 0 beats it
-  harder.** That is token identity. A token's nearest neighbour is another
-  copy of the same string for 56–75 % of tokens at step 0, flat over all
-  25 layers. At step143000 it is 69 → 43 % from L0 to L24 on `wiki_paragraph`. A Gaussian cannot make
-  duplicates, so any tokenised text beats this null.
-- **Deduped, step 0 is Gaussian or more spread** on every statistic. The
-  untrained model's lumpiness is exactly its repeated strings.
-- **Deduped, step143000 is lumpier than its covariance only locally.**
-  Nearest neighbours are closer in all 168 records (z −15 to −22 against
-  calibration +2.5 to +4.5), and HDBSCAN finds 20 clusters where the
-  Gaussian gives 6 (centred). The HDBSCAN excess grows with depth: 22 / 44 / 43 of 56
-  records in the tail at L1–8 / L9–16 / L17–24 (centred). Centring is what shows it:
-  raw 22–23 of 56 in every band.
-- **No global structure beyond the covariance.** `ci2` is at its
-  calibration level (z −1.3 vs −1.2). **The merge tree's 2-cluster pick
-  and its lifetime are what a Gaussian with the same covariance gives**
-  (`mt_k` 2 vs 2.1–2.6; `mt_life` at calibration), with or without
-  duplicates. The "exactly 2 clusters in 112 of 176" of the merge-tree
-  section is not evidence of two clusters.
+  harder.** That is token identity: at step 0 a token's nearest neighbour is
+  the same string for 56–75 % of tokens, flat over all 25 layers. A
+  Gaussian cannot make duplicates, so any tokenised text beats this null.
+- **Deduped, step 0 is at its calibration** on `ci2`, `nn1`, `hdb_k`,
+  `mt_k` and `hdb_noise`. **The exception is `mt_life`:** the top plateau outlives
+  the Gaussian's in 59 of 168 records (calibration 1), 37 of 56 at L17–24
+  raw. So this negative control is not clean for lifetime, and step143000's
+  lifetime excess (38 / 4 centred) cannot be read as learned structure.
+- **Deduped, step143000 is lumpier locally.** Nearest neighbours are
+  closer in all 168 records, and HDBSCAN finds 20 groups where the Gaussian
+  gives 6 (centred). The HDBSCAN excess rises with depth: 22 / 44 / 43 of 56 at
+  L1–8 / L9–16 / L17–24. **Part of it is position:** 30 % of nearest
+  neighbours are within 3 positions (19 % adjacent), against 8 % (4 %) at
+  step 0. About 70 % are farther.
+- **Deduped, step143000 also has a global 2-means excess, at late
+  layers, in every frame:** 42 of 56 records at L17–24 centred
+  (calibration 5), 23 raw (1), 19 no-rogue (2). The median z are small
+  (−1.2 to −2.5) but consistent. **The merge tree's 2-cluster pick is what
+  the Gaussian gives** (`mt_k` 2 vs 2.1–3.3, tail 0–6 vs 0–1), so the
+  "exactly 2 clusters in 112 of 176" of the merge-tree section is not by
+  itself evidence of two clusters.
 
-**Answer.** Yes, but only locally. Once repeated strings are removed, the
-trained model's tokens have closer neighbours and more small HDBSCAN groups
-than a Gaussian with their covariance, in every frame, more so with depth.
-Nothing global (2-means, the merge tree's plateau) exceeds that
-Gaussian. The untrained model has no structure beyond token identity.
-Phase 10's `min_cluster_size=2` partitions on all tokens are mostly
-token identity at step 0 (63 groups vs 5 for its Gaussian) and still carry it at
+**Answer.** Yes. Once repeated strings are removed, the trained model's tokens are lumpier than a
+Gaussian with their covariance in every frame. The excess is local (closer
+neighbours and more small HDBSCAN groups, partly sequence position) and,
+at L17–24, a 2-means split beyond the calibration. The merge tree's
+2-cluster pick is Gaussian-typical. The untrained model has nothing beyond
+token identity except a merge-tree lifetime excess nobody has explained.
+Phase 10's `min_cluster_size=2` partitions on all tokens are mostly token
+identity at step 0 (63 groups vs 5 for its Gaussian) and still carry it at
 step143000.
 
+*Revised after `/challenge-pr` on #106.* The first write-up said "only
+locally; nothing global". It read deduped results against an all-token
+calibration pooled over 5 layers, whose centred `ci2` tail fires 35 of 56 at
+L17–24. With the calibration on the same inputs, the late 2-means excess is
+there in every frame.
+
 **Caveats.** One seed, one checkpoint pair, one model. Plug-in covariance,
-with `ci2` and `nn1` off nominal level (table above). The first occurrence of
-each string is kept, which favours early positions. "Closer neighbours
-than a Gaussian" is not "clusters": a curve or any low-dimensional sheet
-does the same (Parked 7). Tier 1, unregistered.
+not at nominal level (table above). The calibration is one pseudo-draw per
+record at 100 draws, against 200 for the real runs. The first occurrence of each string is kept,
+which favours early positions. "Closer neighbours than a Gaussian" is not
+"clusters": position already explains 30 %, and a curve or sheet does the
+same. Tier 1, unregistered.
 
 **Parked** (discoveries, not followed):
-7. What the deduped step143000 close pairs are: adjacent positions,
-   case or sub-word variants of one word, or something else. Why: it decides
-   whether the local excess is clusters or sequence and lexical structure.
-   Cost: ~30 min on `null_dedupe.json`'s inputs. Changes: whether
-   HDBSCAN's small groups mean anything past token identity.
+7. The deduped step143000 close pairs beyond position: case or sub-word
+   variants of one word, or something else. Why: whether the local excess
+   is clusters or lexical and sequence structure. Cost: ~30 min on
+   `report_dedupe.json`'s inputs. Changes: whether HDBSCAN's small groups
+   mean anything past token identity and position.
 8. SHC (`lit-1d.md` §7 row 2): this null at every merge-tree node, FWER-controlled.
    Why: it would test the tree's nodes, not only its top plateau. Cost: a
    few hours. Changes: which merges, if any, are more than Gaussian.
-9. A null at nominal level (SigClust's soft-thresholded eigenvalues, or
-   calibrating each record by its own pseudo-data). Why: `ci2`'s lower tail
-   fires 25 % under the null in the centred frames. Cost: ~2 h. Changes:
-   only borderline `ci2` cells; none of the answer above rests on one.
+9. A null at nominal level (SigClust's soft-thresholded eigenvalues). Why:
+   the all-token calibration fires 25 % on centred `ci2`. Cost: ~2 h.
+   Changes: only needed if all-token results matter; the deduped
+   calibration is near nominal for `ci2`.
 10. What "the same null" means for item (3). Attention communities are read off
     attention matrices, which a Gaussian draw does not have. A kernel
     `softmax(β x·y)` on the draws needs β, which is Blocked 9. Needs the
     user's call when item (3) opens.
+11. Step 0's deduped merge-tree lifetime excess (59 of 168, calibration 1).
+    Why: an untrained model should not beat this null, so it is either
+    structure at init (position through the causal mask?) or a defect in how
+    lifetime is compared. Cost: ~1 h. Changes: whether `mt_life` can be
+    read at all.
 
 ## Deleted and restored (was `FROZEN.md`)
 

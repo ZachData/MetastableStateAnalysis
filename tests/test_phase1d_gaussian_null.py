@@ -100,10 +100,10 @@ class TestNull:
         assert rec["stats"]["mt_life"]["p_upper"] <= 0.05
 
     def test_a_gaussian_cloud_does_not(self):
-        # Only the lumpier tail is asserted. The plug-in null is biased
-        # towards lumpy (its draws' spectrum spreads more than the data's),
-        # so at this small n a true Gaussian lands in the null's *upper*
-        # ci2 tail; `--calibrate` measures the bias at real sizes.
+        # Only the lumpier tail is asserted. At this small n a true Gaussian
+        # lands in the null's *upper* ci2 tail; at real sizes the centred
+        # frames err the other way (lower tail too often). Neither is at
+        # nominal level: `--calibrate` measures it per input.
         rng = np.random.default_rng(3)
         Y = _unit(rng.standard_normal((80, 30)) * np.linspace(3, 0.5, 30) + 4.0)
         rec = null_record(Y, "raw", n_draws=39, seed=0)
@@ -137,3 +137,17 @@ def test_calibrate_replaces_the_tokens():
 def test_first_occurrences_keep_order_and_the_first_copy():
     from p1d_cluster_ensemble.gaussian_null import first_occurrences
     assert first_occurrences(["a", "b", "a", "c", "b"]).tolist() == [0, 1, 3]
+
+
+def test_report_refuses_a_calibration_with_other_inputs():
+    from p1d_cluster_ensemble.gaussian_null_report import table
+    rec = null_record(_two_blobs(), "raw", n_draws=9, seed=0, keep_draws=False)
+    rec.update(step="step143000", layer=3, prompt="p")
+    real = {"records": [rec], "dedupe_strings": True}
+    with pytest.raises(ValueError):
+        table(real, {"records": [rec], "calibrate": True, "dedupe_strings": False})
+    with pytest.raises(ValueError):
+        table(real, {"records": [rec], "dedupe_strings": True})
+    rows = table(real, {"records": [rec], "calibrate": True, "dedupe_strings": True})
+    ci2 = [r for r in rows if r["stat"] == "ci2" and r["band"] == "L1-8"]
+    assert ci2[0]["real"]["n"] == 1 and ci2[0]["cal"]["n"] == 1

@@ -29,12 +29,14 @@ renormalisation (`tests/test_phase1d_gaussian_null.py`).
 
 **Not calibrated at nominal level.** SigClust shrinks the HDLSS
 eigenvalues; this uses the plug-in covariance, and ``--calibrate``
-measures what that costs (`status-1d.md` "Matched-covariance Gaussian
-null"): on renormed Gaussian pseudo-data the ``ci2`` lower tail fires in
-6 % (raw) to 25 % (centred) of records instead of 2.5 %, and ``nn1`` sits
-at median z +2.5 to +4.5. ``hdb_k``, ``hdb_noise`` and ``mt_k`` are
-calibrated; ``mt_life``'s upper tail fires 5-10 %. Read real results
-against the calibration's z, not the nominal p. Tier 1: exploratory,
+measures what that costs. Some statistics are far off nominal level (the
+numbers are in `status-1d.md` "Matched-covariance Gaussian null"), so
+real results are read against a calibration on the same inputs
+(`gaussian_null_report.py` refuses any other), not against the nominal p.
+
+``mt_k`` / ``mt_life`` are 0 when a layer has no robust plateau: an
+ordinal encoding ("no plateau" ranks below any plateau), so their tail
+counts are meaningful and their z less so. Tier 1: exploratory,
 unregistered.
 """
 

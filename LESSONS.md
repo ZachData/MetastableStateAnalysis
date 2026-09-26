@@ -394,7 +394,7 @@ needs the user to enable it on GitHub.
   births vs 48) and only failed to separate the two. `/challenge-pr` caught
   both. Rule: **no depth pattern is reported before its null has run, and
   a null that anything with carry-over beats supports no positive claim.**
-- 2026-09-26 (1d Gaussian null): two cases in one unit. (a) A matched-covariance
+- 2026-09-26 (1d Gaussian null): three cases in one unit. (a) A matched-covariance
   Gaussian cannot make duplicate vectors, so any tokenised text beats it.
   The untrained model beat it harder than the trained one, which was a
   sign of token identity, not of structure. Deduplicating strings removed all of step 0's
@@ -402,8 +402,14 @@ needs the user to enable it on GitHub.
   module's docstring called the plug-in covariance's bias "conservative",
   reasoned but not measured. A calibration run (the null applied to its own
   Gaussian draws) found `ci2`'s lower tail firing 25 % in the centred
-  frames, not 2.5 %. Rule: **a new null gets a calibration run on data
-  where it is true before any real result is read, and a negative control
+  frames, not 2.5 %. (c) The deduped results were then read against that
+  calibration, which had run on all tokens pooled over 5 layers. It was on
+  different inputs, and it fires 35 of 56 at L17–24. That hid a late 2-means excess and
+  produced a wrong "nothing global" headline (`/challenge-pr` on #106).
+  `gaussian_null_report.py` now refuses a calibration on other inputs.
+  Rule: **a new null gets a calibration run on data where it is true, on
+  the same inputs and bands as the result it will be read against, before
+  any real result is read, and a negative control
   (here step 0) that should not beat it.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
