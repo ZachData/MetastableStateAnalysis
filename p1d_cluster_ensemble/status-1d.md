@@ -435,7 +435,7 @@ resembling L0's scale.
 **Merges and splits against depth, over 24 boundaries per prompt (120
 total).** Splits are almost entirely absent: 2 of 120 boundary
 components, both in one prompt (`sullivan_ballou`, L15→L16 and L23→L24,
-one component each, both well past the embedding). Merges are 30 of
+one component each, both well past the embedding). Merges are 29 of
 120, and all but one sit at the L0→L1 or L1→L2 boundary — where token
 identity is coarsening into the small partition the rest of the network
 keeps — the exception is one merge at `paper_excerpt`'s L13→L14.
