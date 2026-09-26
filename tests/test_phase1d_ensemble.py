@@ -554,12 +554,14 @@ class TestDriverEndToEnd:
         bundle = run_one(phase1_run, args)
         results = bundle["results"]
 
-        assert results["stages"] == ["A", "B", "C", "D", "E"]
+        assert results["stages"] == ["A", "B", "C", "D", "E", "F"]
         assert results["layers"] == [0, 1, 2]
         assert set(results["verdicts"]) == {"P-C1", "P-C2", "P-C3", "P-C4"}
         for name, verdict in results["verdicts"].items():
             assert verdict["verdict"].startswith(name), verdict["verdict"]
         assert results["phase1_agreement"]["layers"] == [0, 1]
+        assert set(results["per_layer"]["0"]["merge_tree"]) >= {"plateaus", "robust", "branch"}
+        assert results["layer_links"]["layers"] == [0, 1, 2]
 
         out_dir = tmp_path / "out" / phase1_run.name
         save_p1d(out_dir, results, bundle["arrays"])
@@ -575,6 +577,26 @@ class TestDriverEndToEnd:
         assert expand_subexperiments(["D"]) == ["A", "B", "D"]
         assert expand_subexperiments(["A"]) == ["A"]
         assert expand_subexperiments(["E", "C"]) == ["A", "B", "C", "E"]
+        assert expand_subexperiments(["F"]) == ["F"], (
+            "F reads activations directly and must stay cheap on its own")
+
+    def test_subexp_f_alone_skips_tuning_and_still_produces_a_merge_tree(
+        self, phase1_run, tmp_path,
+    ):
+        from p1d_cluster_ensemble.run_1d import build_parser, run_one
+
+        args = build_parser().parse_args([
+            "--results", str(phase1_run), "--out", str(tmp_path / "out"),
+            "--subexp", "F", "--grid", "quick",
+        ])
+        bundle = run_one(phase1_run, args)
+        results = bundle["results"]
+        assert results["stages"] == ["F"]
+        assert results["verdicts"] == {}
+        assert "ensemble" not in results["per_layer"]["0"]
+        for layer, res in results["per_layer"].items():
+            assert "merge_tree" in res
+        assert results["layer_links"]["layers"] == [0, 1, 2]
 
     def test_discover_runs_only_returns_directories_this_phase_can_use(self, tmp_path):
         from p1d_cluster_ensemble.run_1d import discover_runs

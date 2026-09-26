@@ -194,6 +194,8 @@ PHASE1D = {
             "consensus_labels_L{layer}": "(n_tokens,) int",
             "confidence_L{layer}": "(n_tokens,) float",
             "population_L{layer}": "(n_tokens,) <U — core/halo/contested",
+            "merge_tree_labels_L{layer}": "(n_tokens,) int — sub-experiment F, "
+                "only when the layer had a non-trivial robust plateau",
         },
         description=(
             "Per-layer ensemble arrays, keyed '{name}_L{layer}'. The "

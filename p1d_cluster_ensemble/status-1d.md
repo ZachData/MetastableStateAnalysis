@@ -382,6 +382,127 @@ record's per-layer `ari_b_stored_vs_refit` (side b = Stage 0), over L ≥ 1.
    Cost: ~3 h. Changes: whether tuning matters for stability at all, now
    that the input noise is gone.
 
+### Merge tree over scales, and clusters linked across layers (2026-09-26)
+
+**What.** Option D (`lit-1d.md` §5), the item the user ordered first from
+1d's "Next": read each layer's full agglomerative hierarchy as cluster
+count `k` against distance threshold `delta`, keep the longest-lived
+plateau per layer as that layer's partition, and link neighbouring
+layers' partitions by shared-token Jaccard overlap, classifying every
+linked group as stable / merge / split / tangle (`merge_tree.py`, new
+sub-experiment F, no prerequisites — reads `activations.npz` directly,
+no tuning). **Not done:** marking C's `delta = c*beta_eff^-1/2` on the
+curve, which waits on beta's convention (Blocked 9).
+
+**Input.** 5 of the 8 v1 prompts (whichever this results directory
+holds): `homer_iliad` (512 tok), `paper_excerpt` (286), `repeated_tokens`
+(265), `sullivan_ballou` (482), `wiki_paragraph` (467); pythia-410m,
+step143000, all 25 layers, `data/phase12/2026-09-22_21-20-26/`, default
+linkage (average), `min_overlap 0.1`. Code at this PR's head, conda
+`mets`. **Output:** `data/p1d/merge_tree_2026-09-26/`. **Re-run** (2.9 s
+for all 5, wall):
+
+    METS_DATA=<main>/data python -m p1d_cluster_ensemble.run_1d --v1-only \
+      --results <main>/data/phase12/2026-09-22_21-20-26 \
+      --out <main>/data/p1d/merge_tree_2026-09-26 --subexp F
+
+**A defect found building this: `--subexp F` was not actually cheap.**
+`process_layer` ran the full tuning grid (stage A) regardless of
+`stages`, because nothing gated it — the only genuinely skippable stage
+was B. A `--subexp F` smoke run on real data (L0/12/18) took 2m51s wall
+/ 39 min CPU, confirming it was paying for the untuned grid every time.
+Fixed: `process_layer` now returns before stage A when `"A" not in
+stages`; the same command now runs in 0.9s for one layer, 2.9s for all 5
+prompts at all 25 layers. Caught before any number below was reported,
+not after: the smoke run's output directory was discarded once the fix
+landed.
+
+**k against depth (top plateau per layer).** L0 is token identity in
+every prompt except `repeated_tokens` (which starts at k=3 already,
+consistent with its near-duplicate tokens): 273/163/3/232/215 clusters
+respectively. By L2 every prompt has collapsed to k in 2-5 and stays
+there (2-7) for the remaining 22 layers — no prompt returns to anything
+resembling L0's scale.
+
+| prompt | n | k(L0) | k(L1) | k(L2) | k range, L2-24 |
+|---|---|---|---|---|---|
+| homer_iliad | 512 | 273 | 272 | 2 | 2-6 |
+| paper_excerpt | 286 | 163 | 157 | 4 | 2-7 |
+| repeated_tokens | 265 | 3 | 3 | 3 | 2-3 |
+| sullivan_ballou | 482 | 232 | 232 | 2 | 2-7 |
+| wiki_paragraph | 467 | 215 | 166 | 3 | 2-4 |
+
+**Merges and splits against depth, over 24 boundaries per prompt (120
+total).** Splits are almost entirely absent: 2 of 120 boundary
+components, both in one prompt (`sullivan_ballou`, L15→L16 and L23→L24,
+one component each, both well past the embedding). Merges are 30 of
+120, and all but one sit at the L0→L1 or L1→L2 boundary — where token
+identity is coarsening into the small partition the rest of the network
+keeps — the exception is one merge at `paper_excerpt`'s L13→L14.
+Everywhere else the top-plateau's k moves only by births and deaths
+(small clusters appearing or disappearing between adjacent layers),
+never by a further merge or split, once the initial coarsening is done.
+
+| prompt | merges (total / at L0-L2) | splits (total, boundary) | stable | births | deaths |
+|---|---|---|---|---|---|
+| homer_iliad | 1 / 1 | 0 | 316 | 16 | 285 |
+| paper_excerpt | 7 / 6 | 0 | 209 | 20 | 171 |
+| repeated_tokens | 0 / 0 | 0 | 60 | 3 | 4 |
+| sullivan_ballou | 0 / 0 | 2 (L15-16, L23-24) | 278 | 19 | 246 |
+| wiki_paragraph | 21 / 21 | 0 | 186 | 14 | 189 |
+
+- **Most L0/L1 "deaths" are a threshold artefact of the scale mismatch,
+  not tokens leaving structure.** L0's clusters are mostly small (467
+  tokens in 215 clusters at `wiki_paragraph`, many near-singleton), and
+  L1's top plateau is already coarse; an L0 cluster below
+  `min_overlap=0.1` Jaccard with every L1 cluster registers as a death
+  even when its tokens are still present somewhere in the coarse
+  partition — that is what "death" means for this reading (the scale
+  does not persist), not that the tokens vanished. Whether this changes
+  at a lower `--link-min-jaccard` is not checked here (Parked).
+- **Zero splits is not guaranteed by construction.** Each layer's
+  plateau comes from an independent hierarchy fit to that layer's own
+  geometry, not a continuation of the previous layer's; a genuine
+  one-prev-to-many-curr split is possible and does happen twice, in one
+  prompt. That it is otherwise absent is an empirical statement about
+  how the top-plateau scale evolves with depth for these 5 prompts, not
+  a property of the method.
+- **This reads one plateau per layer — the longest-lived one — which is
+  a design choice, not the only one.** A layer can have several robust
+  plateaus (`top_n` keeps up to 5); a boundary read at a different
+  plateau on either side could show mergers or splits this table does
+  not. `robust` is stored per layer in the artifact for exactly this
+  reason.
+- **Caveats.** One checkpoint (step143000), 5 of 8 v1 prompts (the 3 not
+  present in this results directory — `camus_letranger`, `hdbscan_code`,
+  `latex_monograph` — are not run here), one linkage (average), tier 1,
+  descriptive, no null. `repeated_tokens`'s stored labels are
+  float32-derived noise at fine scales ("Float64 distances" above), but
+  this reading is coarse (k <= 3 throughout) and computed on 1d's own
+  float64 `LayerData`, not the stored labels, so that defect does not
+  apply here.
+
+**Answer, for this design.** Depth does distinguish merges from splits:
+merges (when they happen at all) cluster at the embedding-to-early-layer
+transition, where token identity is coarsening into the scale the rest
+of the network holds; splits are rare and, in the one prompt that has
+them, occur only after L15. Whether that pattern holds on prompts this
+run does not cover, or at a different `min_overlap`, is not tested here.
+
+**Parked** (discoveries, not followed):
+1. Mark C's `delta = c*beta_eff^-1/2` on the merge-tree curve. Why:
+   waits on beta's convention (Blocked 9). Cost: cheap once decided.
+   Changes: whether the theory's predicted scale sits inside or outside
+   the robust plateau at each layer.
+2. Re-run at a lower `--link-min-jaccard` to see whether L0/L1's mass
+   "deaths" are mostly the threshold artefact described above or a real
+   discontinuity. Cost: minutes (F is now cheap). Changes: the
+   merge/split/death balance at the two most volatile boundaries.
+3. Run F on the 3 v1 prompts not present in this results directory
+   (`camus_letranger`, `hdbscan_code`, `latex_monograph`), and at other
+   checkpoints, before trusting "merges cluster near the embedding" as
+   more than a first read.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it
