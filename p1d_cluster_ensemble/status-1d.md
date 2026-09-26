@@ -605,6 +605,136 @@ sink; it is what absolute lifetime makes of one or two far tokens.
    count, so it cannot rank the depth pattern. Cost: an hour. Changes:
    whether any merge/split asymmetry is left beyond the cluster-count fall.
 
+### Matched-covariance Gaussian null: are tokens lumpier than their covariance explains? (2026-09-26)
+
+**What.** A new unit before item (3), at the user's call (2026-09-26). The null is
+SigClust's (`lit-1d.md` §7): one Gaussian with the tokens' own mean and
+plug-in covariance, `n` draws per layer, renormed, then clustered by the
+same routes as the tokens (`gaussian_null.py`). There are three frames:
+`raw` (L2-normed, as 1d does now), `centred` (mean direction projected
+out, renormed) and `centred_norogue` (the 3 coordinates with the largest
+`m_i²` zeroed first; Timkey & van Schijndel's measure). The Gaussian is refitted in
+each frame. The six statistics: `ci2` (SigClust's 2-means index), `nn1` (mean cosine
+distance to the nearest token), `hdb_k` / `hdb_noise` (Phase 1's shipped
+HDBSCAN, `min_cluster_size=2`, float64 cosine), and `mt_k` / `mt_life`
+(stage F's top robust plateau: substantial clusters, lifetime).
+
+**Input.** The 8 v1 prompts, pythia-410m, step143000 (Stage 0,
+`2026-09-22_21-20-26`, `2026-09-22_21-41-17`, git `64a4087`) and step 0
+(Stage 0, `2026-09-23_05-52-32`, `2026-09-23_06-02-15`), all 25 layers,
+every token, 200 draws, seed 0, conda `mets`. **Deduped:** the same with
+each token string's first occurrence only (125–273 tokens;
+`repeated_tokens` has 3 strings and is skipped). **Calibration:** each
+layer replaced by one draw of its own Gaussian, null refitted, L0/6/12/18/24,
+100 draws. The code is this PR's. The full run predates the `--calibrate` /
+`--dedupe-strings` flags, whose default path is unchanged. **Output:**
+`data/p1d/gaussian_null_2026-09-26/{null,null_dedupe,calibrate}.{json,txt}`.
+**Re-run** (~24 / 6 / 2 min at 14 workers; `$RUNS` = the 16 directories
+listed in `null.json` `inputs`):
+
+    OMP_NUM_THREADS=1 python -m p1d_cluster_ensemble.gaussian_null --v1-only \
+      --n-draws 200 --workers 14 --runs $RUNS [--dedupe-strings] \
+      --out <main>/data/p1d/gaussian_null_2026-09-26/null.json
+    # calibration: --calibrate --n-draws 100 --layers 0 6 12 18 24
+
+**The geometry the frames remove** (the previous session's quick look,
+now measured; raw frame, 7 prompts without `repeated_tokens`):
+
+| step | band | mean-direction share `(y·m̂)²` | top-3 rogue coords, mean-square share | commonest top rogue coord | effective dims raw / centred / no-rogue (median) |
+|---|---|---|---|---|---|
+| 143000 | L0 | 0.08–0.17 | 0.03–0.08 | 443 | 47 / 44 / 45 |
+| 143000 | L1–8 | 0.28–0.50 | 0.18–0.46 | 278 (49 of 56) | 58 / 57 / 62 |
+| 143000 | L9–16 | 0.29–0.50 | 0.14–0.39 | 966 (40 of 56) | 64 / 66 / 75 |
+| 143000 | L17–24 | 0.35–0.66 | 0.06–0.32 | 125 (49 of 56) | 21 / 23 / 30 |
+| 0 | L1–24 | 0.13–0.58 | 0.006–0.021 | none stable | 48–53 / 44–45 / same |
+
+**Calibration: the null is not at nominal level for every statistic.**
+Rate of records in the "lumpier" 2.5 % tail when the null is true (80 per
+frame), and the median z there:
+
+| statistic | raw | centred | centred_norogue |
+|---|---|---|---|
+| `ci2` lower tail | 6 %, z −0.3 | 25 %, z −1.2 | 21 %, z −1.0 |
+| `nn1` lower tail | 1 %, z +4.5 | 11 %, z +2.5 | 10 %, z +3.4 |
+| `hdb_k` upper tail | 0 %, z −0.3 | 0 %, z −0.3 | 1 %, z −0.4 |
+| `mt_k` upper tail | 2.5 %, z −0.5 | 0 %, z −0.3 | 0 %, z −0.3 |
+| `mt_life` upper tail | 5 %, z +0.2 | 10 %, z +0.8 | 6 %, z +0.5 |
+
+So read each real z against the calibration's z, not the nominal p. The
+module's first docstring called the plug-in bias conservative; for `ci2`
+in the centred frames it is not.
+
+**Results** (L1–24, 7 prompts without `repeated_tokens`, 168 records per cell;
+median z, calibration z in brackets; "tail" = records in the lumpier 2.5 %):
+
+| statistic | frame | step 0, all tokens | step 143000, all tokens | step 0, deduped | step 143000, deduped |
+|---|---|---|---|---|---|
+| `ci2` | raw | −5.3 [−0.3], 149 | −3.3, 140 | +1.0, 0 | −1.2, 45 |
+| `ci2` | centred | −8.8 [−1.2], 165 | −3.6, 149 | +1.2, 0 | −1.3, 57 |
+| `nn1` | raw | −103 [+4.5], 168 | −48, 168 | +16, 0 | **−15, 168** |
+| `nn1` | centred | −65 [+2.5], 168 | −59, 168 | +20, 0 | **−19, 168** |
+| `hdb_k` (obs vs null mean) | centred | 63 vs 5.4, 168 | 53 vs 4.3, 168 | 18 vs 10.5, 2 | **20 vs 6.1, 109** |
+| `mt_k` | centred | 20 vs 2.1, 167 | 2 vs 2.1, 21 | 2 vs 10.4, 4 | 2 vs 2.6, 2 |
+| `mt_life` | centred | +23.6 [+0.8], 168 | +1.0, 37 | +1.6, 59 | +1.0, 38 |
+
+`centred_norogue` tracks `centred` in every cell (full tables in the `.txt`
+files). `hdb_noise` is near the null everywhere (median z −1.1 to +1.3).
+Deduped step143000 raw has 9–16 of 56 per band in its lower tail
+(calibration 4 %).
+
+- **With every token, both checkpoints beat the null, and step 0 beats it
+  harder.** That is token identity. A token's nearest neighbour is another
+  copy of the same string for 56–75 % of tokens at step 0, flat over all
+  25 layers. At step143000 it is 69 → 43 % from L0 to L24 on `wiki_paragraph`. A Gaussian cannot make
+  duplicates, so any tokenised text beats this null.
+- **Deduped, step 0 is Gaussian or more spread** on every statistic. The
+  untrained model's lumpiness is exactly its repeated strings.
+- **Deduped, step143000 is lumpier than its covariance only locally.**
+  Nearest neighbours are closer in all 168 records (z −15 to −22 against
+  calibration +2.5 to +4.5), and HDBSCAN finds 20 clusters where the
+  Gaussian gives 6 (centred). The HDBSCAN excess grows with depth: 22 / 44 / 43 of 56
+  records in the tail at L1–8 / L9–16 / L17–24 (centred). Centring is what shows it:
+  raw 22–23 of 56 in every band.
+- **No global structure beyond the covariance.** `ci2` is at its
+  calibration level (z −1.3 vs −1.2). **The merge tree's 2-cluster pick
+  and its lifetime are what a Gaussian with the same covariance gives**
+  (`mt_k` 2 vs 2.1–2.6; `mt_life` at calibration), with or without
+  duplicates. The "exactly 2 clusters in 112 of 176" of the merge-tree
+  section is not evidence of two clusters.
+
+**Answer.** Yes, but only locally. Once repeated strings are removed, the
+trained model's tokens have closer neighbours and more small HDBSCAN groups
+than a Gaussian with their covariance, in every frame, more so with depth.
+Nothing global (2-means, the merge tree's plateau) exceeds that
+Gaussian. The untrained model has no structure beyond token identity.
+Phase 10's `min_cluster_size=2` partitions on all tokens are mostly
+token identity at step 0 (63 groups vs 5 for its Gaussian) and still carry it at
+step143000.
+
+**Caveats.** One seed, one checkpoint pair, one model. Plug-in covariance,
+with `ci2` and `nn1` off nominal level (table above). The first occurrence of
+each string is kept, which favours early positions. "Closer neighbours
+than a Gaussian" is not "clusters": a curve or any low-dimensional sheet
+does the same (Parked 7). Tier 1, unregistered.
+
+**Parked** (discoveries, not followed):
+7. What the deduped step143000 close pairs are: adjacent positions,
+   case or sub-word variants of one word, or something else. Why: it decides
+   whether the local excess is clusters or sequence and lexical structure.
+   Cost: ~30 min on `null_dedupe.json`'s inputs. Changes: whether
+   HDBSCAN's small groups mean anything past token identity.
+8. SHC (`lit-1d.md` §7 row 2): this null at every merge-tree node, FWER-controlled.
+   Why: it would test the tree's nodes, not only its top plateau. Cost: a
+   few hours. Changes: which merges, if any, are more than Gaussian.
+9. A null at nominal level (SigClust's soft-thresholded eigenvalues, or
+   calibrating each record by its own pseudo-data). Why: `ci2`'s lower tail
+   fires 25 % under the null in the centred frames. Cost: ~2 h. Changes:
+   only borderline `ci2` cells; none of the answer above rests on one.
+10. What "the same null" means for item (3). Attention communities are read off
+    attention matrices, which a Gaussian draw does not have. A kernel
+    `softmax(β x·y)` on the draws needs β, which is Blocked 9. Needs the
+    user's call when item (3) opens.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it

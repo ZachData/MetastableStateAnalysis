@@ -394,6 +394,17 @@ needs the user to enable it on GitHub.
   births vs 48) and only failed to separate the two. `/challenge-pr` caught
   both. Rule: **no depth pattern is reported before its null has run, and
   a null that anything with carry-over beats supports no positive claim.**
+- 2026-09-26 (1d Gaussian null): two cases in one unit. (a) A matched-covariance
+  Gaussian cannot make duplicate vectors, so any tokenised text beats it.
+  The untrained model beat it harder than the trained one, which was a
+  sign of token identity, not of structure. Deduplicating strings removed all of step 0's
+  excess (`status-1d.md` "Matched-covariance Gaussian null"). (b) The
+  module's docstring called the plug-in covariance's bias "conservative",
+  reasoned but not measured. A calibration run (the null applied to its own
+  Gaussian draws) found `ci2`'s lower tail firing 25 % in the centred
+  frames, not 2.5 %. Rule: **a new null gets a calibration run on data
+  where it is true before any real result is read, and a negative control
+  (here step 0) that should not beat it.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
