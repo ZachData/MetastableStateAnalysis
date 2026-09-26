@@ -242,11 +242,55 @@ records. Whether 1d "reduces the drift" can't be told apart from what its
 stable families pick (coarse k, or identical strings), so it waits on D / C,
 and on the matched-k check on `repeated_tokens`.
 
-**Parked** (discovery, from `/challenge-pr` on #101): matched-k on
-`repeated_tokens`. Force agglomerative and k-means to tuned HDBSCAN's k on
-both sweeps. Why: it is the one prompt where scale and method are confounded.
-Cost: minutes, stored activations. Changes: whether density methods alone
-drift at a matched scale, which bears on the weighting decision and on D.
+### Matched k on `repeated_tokens` (2026-09-25; was Parked above)
+
+**Question.** On `repeated_tokens`, is the drift a property of density methods
+or of the fine scale they pick? **Input:** the 9 `repeated_tokens` records of
+the drift run (steps 32 / 512 / 143000 × L6 / 12 / 18), both sweeps, stored
+activations; control: the 9 `wiki_paragraph` records. k is A's (Stage 0's)
+HDBSCAN cluster count, tuned and shipped, applied on both sweeps. Code at
+`c61147e` + this unit's producer. **Re-run:** `python -m
+tools.run.p1d_drift_checks <out>/stage0 <out>/pilot --matched repeated_tokens`
+(and `--ties repeated_tokens`; ~2 min each).
+
+ARI(Stage 0, pilot) at matched k, `repeated_tokens`, 16 rows (tuned HDBSCAN
+abstained on a sweep at 143000 L12 / L18):
+
+| method | rows at ARI 1 | min ARI |
+|---|---|---|
+| HDBSCAN (stored labels, noise a label) | 3 of 16 | 0.223 |
+| k-means (`n_init` 10) | 16 | 1.000 |
+| Ward | 16 | 1.000 |
+| spherical k-means (one init) | 10 | 0.623 |
+| average linkage, cosine | 9 | 0.513 |
+
+At k up to 62, k-means and Ward never move, so **the drift is not the fine
+scale**. Average linkage moves as much as HDBSCAN at shipped k (0.51–0.99).
+It is not density either: it is the methods whose output hangs on the order
+of individual pairwise distances. On `wiki_paragraph` every method, HDBSCAN
+included, gives ARI 1 in 17 of 18 rows (min 0.988), at the same float noise
+(max |ΔD| 5e-7 to 2e-5 on both prompts).
+
+**Where the disagreement sits** (`--ties`). At steps 32 and 512 the whole
+`repeated_tokens` prompt is nearly one point: median pairwise cosine distance
+2e-4 to 8e-4 (`wiki_paragraph`: 0.16–0.74), 24–42 % of pairs closer than
+1e-4, and 68–89 % of tokens have their two nearest neighbours tied within
+1e-6. Shipped HDBSCAN finds 34–62 clusters inside that cloud. Of the token
+pairs whose co-membership differs between the sweeps, 85–100 % are closer
+than 1e-4 (median 1e-6, the noise's size), in 8 of 9 records; the ninth
+(143000 L6) is 24 %, median 2.8e-4, still 100 × below that layer's median.
+This locates the drift inside near-duplicate clumps; it does not show that
+the ties cause it (no intervention).
+
+**Reading.** The float-noise drift is not a disagreement about structure.
+It is methods that always return a partition splitting a near-point cloud at
+arbitrary places. HDBSCAN's `min_cluster_size` is a count, not a distance,
+so nothing in it says "these points are too close to separate". That is the
+case for a stated scale `δ` (C) and for reading partitions as a hierarchy
+(D), where a clump of diameter 1e-4 merges below any `δ` worth stating.
+It also bears on Phase 10 (routed below): `repeated_tokens` at early steps is
+full collapse in the theory's sense, and its 40–60 HDBSCAN clusters are not
+clusters at any scale the theory names.
 
 **Registry.** `P-C1`–`P-C4` (`predictions-1d.md`) were never registered and
 cannot be scored blind on the v1 runs already examined. They return as tier 1,

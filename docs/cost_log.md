@@ -79,3 +79,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-25 | Phase 1d literature scan: scale selection, attention-window and well definitions (`lit-1d.md`) (measured before the commit/PR calls) | 24 | 124k | 2.1M | 37k | #99 |
 | 2026-09-25 | Phase 1d A0: singleton bound in the trivial filter, smoke re-run (measured before the commit/PR calls) | 27 | 96k | 2.0M | 23k | #100 |
 | 2026-09-25 | Phase 1d float-noise drift, Stage 0 vs pilot, 72 layer-records (measured before the commit/PR calls) | 45 | 119k | 3.9M | 25k | #101 |
+| 2026-09-25 | Phase 1d matched k and near-tie location on `repeated_tokens` (measured before the commit/PR calls) | 23 | 105k | 1.8M | 25k | #102 |
