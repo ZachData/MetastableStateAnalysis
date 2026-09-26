@@ -112,7 +112,9 @@ def cluster_count_sweep(
     """
     normed   = _to_normed(activations)
     n        = normed.shape[0]
-    results  = {"agglomerative": {}, "kmeans": {}}
+    # Every distance below (agglomerative, silhouette, HDBSCAN) is float64;
+    # results written before 2026-09-26 were float32 and carry no such field.
+    results  = {"agglomerative": {}, "kmeans": {}, "distance_dtype": "float64"}
 
     cos_dist   = cosine_distance_matrix(normed)   # float64: see its docstring
     thresholds = list(thresholds)

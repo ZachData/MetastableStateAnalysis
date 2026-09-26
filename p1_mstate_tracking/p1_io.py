@@ -257,6 +257,8 @@ def _save_clustering(results, run_dir):
                 "impl":           hdb.get("impl"),
                 "version":        hdb.get("version"),
                 "params":         hdb.get("params"),
+                # Absent (None) means float32: written before 2026-09-26.
+                "distance_dtype": hdb.get("distance_dtype"),
             }
         else:
             hdb_out = {
@@ -271,6 +273,7 @@ def _save_clustering(results, run_dir):
         layers_out.append({
             "layer": lr["layer"],
             "clustering": {
+                "distance_dtype": cl.get("distance_dtype"),
                 "agglomerative": agg_counts,
                 "kmeans": {
                     "best_k":          km.get("best_k"),

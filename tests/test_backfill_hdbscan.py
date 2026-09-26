@@ -20,6 +20,7 @@ from tools.run.backfill_hdbscan import (
     OUT_NAME,
     REFERENCE_TOOLCHAIN,
     discover,
+    labels_distance_dtype,
     labels_provenance,
     needs_backfill,
     read_labels,
@@ -185,6 +186,28 @@ def test_provenance_names_the_route(tmp_path):
     assert labels_provenance(_run_dir(tmp_path, "b", labels={"0": [1]})) == "native"
     assert labels_provenance(_run_dir(tmp_path, "c", labels={})) == "absent"
     assert labels_provenance(_run_dir(tmp_path, "d")) == "absent"
+
+
+
+def test_distance_dtype_defaults_to_float32_when_unrecorded(tmp_path):
+    """Everything written before 2026-09-26 carries no field and was float32."""
+    assert labels_distance_dtype(_run_dir(tmp_path, "a", labels={}, backfill=True)) == "float32"
+    assert labels_distance_dtype(_run_dir(tmp_path, "b", labels={"0": [1]})) == "float32"
+
+
+def test_distance_dtype_is_read_from_the_backfill_record(tmp_path):
+    d = _run_dir(tmp_path, "a", labels={})
+    (d / OUT_NAME).write_text(json.dumps({"labels": {"0": [1]}, "distance_dtype": "float64"}))
+    assert labels_distance_dtype(d) == "float64"
+
+
+def test_distance_dtype_native_needs_every_layer_float64(tmp_path):
+    d = _run_dir(tmp_path, "a", labels={"0": [1], "1": [1]})
+    lay = lambda dt: {"clustering": {"distance_dtype": dt}}
+    (d / "clustering.json").write_text(json.dumps({"layers": [lay("float64"), lay("float64")]}))
+    assert labels_distance_dtype(d) == "float64"
+    (d / "clustering.json").write_text(json.dumps({"layers": [lay("float64"), lay(None)]}))
+    assert labels_distance_dtype(d) == "float32"
 
 
 # --- the summary ----------------------------------------------------------

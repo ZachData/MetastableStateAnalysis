@@ -128,6 +128,7 @@ def compare_directory(dir_a: Path, dir_b: Path, with_activations: bool = True,
                       refit: bool = False) -> dict:
     labels = refit_labels if refit else read_labels
     la, lb = labels(dir_a), labels(dir_b)
+    stored_b = read_labels(dir_b) if refit else {}
     shared = sorted(set(la) & set(lb))
     layers = []
     for layer in shared:
@@ -135,6 +136,10 @@ def compare_directory(dir_a: Path, dir_b: Path, with_activations: bool = True,
             continue
         rec = compare_labels(la[layer], lb[layer])
         rec["layer"] = int(layer)
+        if layer in stored_b and stored_b[layer].shape == lb[layer].shape:
+            # How far side b's stored (float32-era) labels are from its refit.
+            rec["ari_b_stored_vs_refit"] = round(float(
+                adjusted_rand_index(stored_b[layer], lb[layer])), 6)
         layers.append(rec)
 
     out = {
@@ -217,8 +222,9 @@ def main() -> None:
     ap.add_argument("--refit", action="store_true",
                     help="re-derive both sides' labels from activations.npz on "
                          "float64 distances instead of reading the stored ones")
-    ap.add_argument("--out",
-                    default=str(DATA / "analysis" / "p10_partition_stability.json"))
+    ap.add_argument("--out", default=None,
+                    help="default: data/analysis/p10_partition_stability.json, "
+                         "or p10_partition_stability_f64.json with --refit")
     add_holdout_args(ap)
     args = ap.parse_args()
 
@@ -269,7 +275,9 @@ def main() -> None:
         "summary": summary,
         "directories": dirs,
     }
-    out = Path(args.out)
+    out = Path(args.out or DATA / "analysis" / (
+        "p10_partition_stability_f64.json" if args.refit
+        else "p10_partition_stability.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(record, indent=1))
     print(f"\nwrote {out}")

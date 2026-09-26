@@ -306,10 +306,13 @@ or get registered fresh against the held-out prompts (the user's call).
 (float64 rows, `1 - x·y`, clipped, symmetric, zero diagonal), used by
 `clustering.py` `cluster_count_sweep` (HDBSCAN, agglomerative, and the k-means
 silhouette, now on the precomputed matrix), 1d's `LayerData`,
-`backfill_hdbscan.labels_for_activations` and `p1d_drift_checks --precision`.
-`clustering.py` and the backfill now record `distance_dtype: "float64"`. The
-backfill keeps the float32 route (`distance_dtype="float32"`) only for
-`--verify-pilot`, which still replays 3 pilot directories 25/25 identical.
+`backfill_hdbscan.labels_for_activations`, `p1d_drift_checks --precision` and
+`p10_hdbscan_planted`. `clustering.json` (per layer and in its HDBSCAN block)
+and backfill records now say `distance_dtype: "float64"`;
+`backfill_hdbscan.labels_distance_dtype(run_dir)` reads it and returns
+`"float32"` for anything unrecorded. The backfill keeps the float32 route only
+for `--verify-pilot`, which still replays 3 pilot directories 25/25 identical;
+its record says it verified the toolchain on that route, not the float64 labels.
 Not changed: k-means still fits on float32 rows; Gram-matrix readers
 (`multiscale_nesting`) do not subtract from 1 and are not affected. **Stored
 labels are not rewritten**: everything in `data/phase12` and the pilot is
@@ -322,7 +325,8 @@ still float32-derived.
 0.8.41. **Re-run:** `python tools/run/p10_partition_stability.py --v1-only
 [--refit] --out …` (47 s stored, 2 min 24 s refit, 16 cores); records
 `data/analysis/p10_partition_stability_{stored,f64}_2026-09-26.json`. The
-stored run reproduces §3's numbers exactly.
+stored run reproduces §3's numbers exactly. The last column below is the f64
+record's per-layer `ari_b_stored_vs_refit` (side b = Stage 0), over L ≥ 1.
 
 | over 2 600 layer-records | stored (float32) | refit (float64) |
 |---|---|---|
@@ -348,7 +352,11 @@ stored run reproduces §3's numbers exactly.
   difference, not rounding), and 15 are `repeated_tokens` (4 are both). One is far off:
   step 8, `repeated_tokens`, L4, ARI 0.471 (37 vs 46 clusters) on activations
   1.7e-7 apart. So HDBSCAN on `repeated_tokens` still has near-ties at
-  float64, rarely.
+  float64, rarely. **Not float64 cancellation** (`/challenge-pr` on #103
+  asked): on that record, `1 - x·y` in float64 agrees with ½‖x̂ − ŷ‖² from
+  direct differences (`scipy` `pdist`) to ≤ 2.2e-15, relative ≤ 2e-8 at the
+  smallest distance (1.7e-8); refit on the direct route, labels are identical
+  (ARI 1) and A~B stays 0.471.
 - **Stage 0's stored `repeated_tokens` partitions are rounding, at every step
   and layer ≥ 1**: ARI to their float64 refit averages 0.230, p5 −0.044.
   The other 7 prompts' stored labels are the float64 labels up to small

@@ -234,6 +234,10 @@ def verify_against_pilot(n_dirs: int, rng_seed: int = 0) -> dict:
 
     return {
         "ran": True,
+        # The pilot's labels are float32-era, so this replays that route. It
+        # checks the toolchain; it does not check float64 labels written
+        # beside it.
+        "route": "float32 distances (legacy); verifies the toolchain only",
         "source": str(PILOT),
         "n_dirs": len(per_dir),
         "per_dir": per_dir,
@@ -296,6 +300,28 @@ def read_labels(run_dir) -> dict:
             return {}
         return {int(k): np.asarray(v, dtype=np.int32) for k, v in raw.items()}
     return {}
+
+
+def labels_distance_dtype(run_dir) -> str:
+    """``"float64"`` or ``"float32"``: the precision of the cosine distances
+    the partition `read_labels` returns was fitted on. Anything that does not
+    record it was written before 2026-09-26, on float32. Mixing the two in one
+    comparison mixes rounding into it (`p1d_cluster_ensemble/status-1d.md`
+    "Float64 distances, and Phase 10 §3's floor re-run on them")."""
+    run_dir = Path(run_dir)
+    bf = run_dir / OUT_NAME
+    if bf.exists():
+        return json.loads(bf.read_text()).get("distance_dtype", "float32")
+    cj = run_dir / "clustering.json"
+    if cj.exists():
+        try:
+            layers = json.loads(cj.read_text()).get("layers", [])
+        except json.JSONDecodeError:
+            layers = []
+        dt = {(l.get("clustering") or {}).get("distance_dtype") for l in layers}
+        if dt == {"float64"}:
+            return "float64"
+    return "float32"
 
 
 def labels_provenance(run_dir) -> str:
