@@ -14,7 +14,9 @@ A family that abstains on one side and not the other counts as a pick change,
 with no ARI. Noise (-1) is kept as a label, as the baseline in §3 does.
 
     python -m tools.run.p1d_drift <root_a> <root_b> [--json out.json]
-    python -m tools.run.p1d_drift <root_a> <root_b> --self   # same input twice
+
+With ``root_b`` a re-run of the same inputs (``stage0_rerun/``), every
+difference is 1d's own run-to-run noise.
 """
 from __future__ import annotations
 
@@ -47,11 +49,16 @@ def _layer(res: dict, arr: dict, L: str) -> dict:
     }
 
 
+def _moved(v) -> bool:
+    return v is not None and v < 1
+
+
 def compare(a: Path, b: Path) -> list[dict]:
-    rows = []
+    rows, unpaired = [], []
     for run in sorted(p for p in a.iterdir() if (p / "p1d_results.json").exists()):
         other = b / run.name
         if not (other / "p1d_results.json").exists():
+            unpaired.append(run.name)
             continue
         ra, aa = _load(run)
         rb, ab = _load(other)
@@ -76,13 +83,15 @@ def compare(a: Path, b: Path) -> list[dict]:
                               "k": [int(len(set(p[1].tolist()) - {-1})),
                                     int(len(set(q[1].tolist()) - {-1}))]}
             rows.append(row)
+    if unpaired:
+        print(f"{len(unpaired)} run(s) in {a} have no partner in {b}: {', '.join(unpaired)}")
     return rows
 
 
 def summarise(rows: list[dict]) -> None:
     fams = sorted({k for r in rows for k, v in r.items() if isinstance(v, dict)})
     strata = {"all": rows,
-              "shipped moved": [r for r in rows if (r["shipped"] or 1) < 1],
+              "shipped moved": [r for r in rows if _moved(r["shipped"])],
               "shipped identical": [r for r in rows if r["shipped"] == 1]}
     for name, rs in strata.items():
         if not rs:
@@ -107,8 +116,8 @@ def summarise(rows: list[dict]) -> None:
         by[r["step"]].append(r)
     print("\nper step: shipped moved / consensus moved / any family pick changed")
     for s, rs in sorted(by.items()):
-        print(f"  {s:>6d}: {sum((r['shipped'] or 1) < 1 for r in rs)}/{len(rs)}  "
-              f"{sum((r['consensus'] or 1) < 1 for r in rs)}/{len(rs)}  "
+        print(f"  {s:>6d}: {sum(_moved(r['shipped']) for r in rs)}/{len(rs)}  "
+              f"{sum(_moved(r['consensus']) for r in rs)}/{len(rs)}  "
               f"{sum(any(not r[f]['same_pick'] for f in fams if f in r) for r in rs)}/{len(rs)}")
 
 
@@ -117,8 +126,6 @@ def main() -> None:
     p.add_argument("a", type=Path)
     p.add_argument("b", type=Path)
     p.add_argument("--json", type=Path)
-    p.add_argument("--self", action="store_true",
-                   help="a and b are the same input; any difference is 1d's own nondeterminism")
     args = p.parse_args()
     rows = compare(args.a, args.b)
     if not rows:

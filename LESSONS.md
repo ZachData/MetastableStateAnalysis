@@ -357,8 +357,7 @@ needs the user to enable it on GitHub.
   could not fail.
 - 2026-09-25: Phase 10 §3's reproducibility floor (ARI p5 0.347) was pooled
   over 8 prompts and quoted for five days as the partition's floor. It was
-  one prompt: `repeated_tokens` moved in 307 of 312 layer-pairs, and the other
-  7 prompts never went below 0.925 (`status-1d.md` "Float-noise drift"). A
+  almost all one prompt, `repeated_tokens` (`status-1d.md` "Float-noise drift"). A
   tail percentile over pooled units reports the worst unit as the whole
   battery. Break a floor or tail down by prompt before quoting it.
 

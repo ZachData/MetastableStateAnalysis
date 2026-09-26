@@ -9,6 +9,7 @@ DATA=${METS_DATA:?set METS_DATA=<main tree>/data}
 PY=${METS_PY:-python}
 PILOT=/run/media/system/HDD_1TB/Mets_archive/2026-08-12_05-01-35
 OUT=$1; shift
+mkdir -p "$OUT/logs"
 STEPS=${*:-"143000 512 32"}
 LAYERS="6 12 18"
 KEYS="wiki_paragraph camus_letranger hdbscan_code homer_iliad latex_monograph paper_excerpt repeated_tokens sullivan_ballou"
