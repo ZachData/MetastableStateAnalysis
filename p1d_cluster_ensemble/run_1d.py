@@ -283,6 +283,9 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
     if drop and stages != ["F"]:
         raise ValueError(f"--drop-tokens needs --subexp F alone; stages {stages} "
                          f"compare against shipped labels over every token")
+    bad = [t for t in drop if not 0 <= t < int(acts.shape[1])]
+    if bad:
+        raise ValueError(f"--drop-tokens {bad} outside 0..{int(acts.shape[1]) - 1}")
     kept = np.setdiff1d(np.arange(int(acts.shape[1])), drop)
 
     out: Dict[str, object] = {

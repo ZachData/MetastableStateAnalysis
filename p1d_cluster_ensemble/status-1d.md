@@ -553,39 +553,50 @@ statistics that could have gone either way.
 | L8–L15 | tangle share of non-stable | 0.328 | 0.958 [0.912, 1] | 1.0 (lower 0.0005) | identical |
 | L16–L23 | tangle share of non-stable | 0.426 | 0.974 [0.939, 1] | 1.0 (lower 0.0005) | identical |
 
-- **The L0–L7 merge excess does not survive as a finding about links.**
-  Random partitions with the same sizes have *more* merges per split
-  (0.68) than the real ones (0.61): cluster counts fall with depth in
-  L0–L7, and that alone makes merges outnumber splits. The raw
-  difference beats the null (p 0.06, or 0.001 without token 0) only
-  because the null turns most events into tangles, leaving it fewer
-  merges and fewer splits. What is real is the fall in cluster count, a
-  per-layer fact, not the linking.
-- **The late-layer tangle rate is below the null, not above it.** Size
-  alone makes nearly every change a tangle; the real layers have a third
-  as many and 61–75 stable links per band where the null has none. So
-  "tangles are the most common change" is what the blob-plus-outliers
-  sizes produce, and it is not evidence of reshuffling; the partitions are
-  far more persistent than their sizes require.
-- **Token 0 does not make the blob.** Without it, 194 of 199 chosen
-  partitions are identical to the full ones (the 5 that differ are L0–L7),
-  L8–L23 link counts are identical, and the blob is still the longest-lived
-  scale in 104 of 192 layer-records (126 with it): one cluster holding at
-  least 97 % of tokens (outliers 0.2–2.8 %), plus 1–5 small groups. The
-  net 22 is mostly plateaus that were "everything except token 0": 23 records stop being blobs and 1 becomes one; 21 of the 23
-  were "everything plus one outlier token". Two-cluster picks: 110 of
-  176 (112 with it).
+- **The L0–L7 merge excess is not distinguishable from this null.** The
+  raw difference beats it (p 0.06, or 0.001 without token 0); the merge
+  fraction does not (0.61 real, 0.68 null). Neither comparison is clean:
+  the null's events are of a different kind (292 births against 48 real;
+  its "merges" are small random groups that happen to fall inside a large
+  cluster). What needs no null: cluster counts fall across L0–L7 (net 100
+  substantial clusters fewer over 63 boundaries; 25 falling, 18 rising,
+  20 flat), which by itself favours merges. Whether any merge/split
+  asymmetry is left beyond that fall is open (Parked 6).
+- **The late-layer tangle share is below the null, not above it.** Size
+  alone makes nearly every change a tangle (0.96–0.97); the real share is
+  0.33–0.43. So "tangles are the most common change" is not evidence of
+  reshuffling.
+- **Persistence beats this null, and that is not evidence that clusters
+  are real.** Neighbouring layers of a residual stream are nearly the same
+  vectors, so any clustering of them carries over, and a null that
+  relabels each layer independently is beaten by any carry-over. The late
+  bands have about one stable link per boundary (136 over 128), mostly
+  the large cluster mapping to itself; of the 108 late boundaries with a
+  2-cluster side, 43 have no stable link.
+- **Token 0 is not special; the blob plateau is set by one or two far
+  tokens.** Without token 0, 194 of 199 chosen partitions are identical
+  (the 5 that differ are L0–L7), L8–L23 link counts are identical, and the
+  blob is still the longest-lived scale in 104 of 192 layer-records (126
+  with it). 23 records stop being blobs and 1 becomes one; 21 of the 23
+  were "everything plus one outlier token". Of the 104 left, 41 are
+  "everything plus one token" and 73 have at most 2 outlier tokens: under
+  absolute lifetime, any single far-away token makes "all the rest" a
+  long-lived plateau, and another token takes the sink's place. This is
+  Parked 3's case against ranking by absolute lifetime. Two-cluster picks:
+  110 of 176 (112 with it).
 - **Caveats.** This null is weak by design: it keeps nothing across
   layers, so it can say a pattern is size-driven, not that the rest is
   dynamics. One checkpoint, one linkage, min size 4 and containment 0.5
-  placed, tier 1.
+  placed, tier 1. Revised after `/challenge-pr` on #105, which found the
+  first write-up claimed persistence as a positive result and the
+  cluster-count fall as a tested cause.
 
-**Answer.** Neither headline of the previous section survives as a
-statement about how clusters change with depth: the merge excess is the
-falling cluster count, and the tangle rate is below what sizes alone give.
-What does survive is persistence: real partitions keep their clusters
-across neighbouring layers far more than size-matched random ones, at
-every depth. The blob is not the sink.
+**Answer.** Neither depth headline of the previous section is supported:
+the merge excess cannot be separated from the falling cluster count under
+this null, and the tangle share is below what sizes alone give. Nothing
+here is positive evidence about clusters: beating an independent null is
+what any carry-over between neighbouring layers does. The blob is not the
+sink; it is what absolute lifetime makes of one or two far tokens.
 
 **Parked** (discoveries, not followed):
 6. A null that keeps cross-layer persistence and randomises only the

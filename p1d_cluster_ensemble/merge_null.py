@@ -147,6 +147,16 @@ def structure(prompt: Dict) -> Dict:
 
 def run(prompt_dirs: Sequence[Path], n_draws: int, seed: int) -> Dict:
     prompts = [load_prompt(d) for d in sorted(prompt_dirs)]
+    # One pooled null needs one link rule and one token set: the header
+    # reports a single setting, and per_prompt is keyed by name.
+    names = [p["name"] for p in prompts]
+    if len(set(names)) != len(names):
+        raise ValueError(f"a prompt appears twice (two input directories?): {names}")
+    rules = {(p["measure"], p["min_overlap"],
+              tuple(p["results"]["settings"].get("drop_tokens") or []))
+             for p in prompts}
+    if len(rules) > 1:
+        raise ValueError(f"inputs mix link settings or dropped tokens: {sorted(rules)}")
     obs_band = {name: 0 for name, _, _ in BANDS}
     null_band = {name: 0 for name, _, _ in BANDS}
     per_prompt = {}

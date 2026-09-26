@@ -659,6 +659,35 @@ class TestDriverEndToEnd:
         with pytest.raises(ValueError, match="re-linked counts"):
             merge_null.run([out_dir], n_draws=5, seed=0)
 
+    def test_drop_tokens_refuses_positions_outside_the_prompt(self, phase1_run, tmp_path):
+        from p1d_cluster_ensemble.run_1d import build_parser, run_one
+        for bad in ("-1", "100000"):
+            args = build_parser().parse_args([
+                "--results", str(phase1_run), "--out", str(tmp_path / "out"),
+                "--subexp", "F", "--drop-tokens", bad])
+            with pytest.raises(ValueError, match="outside"):
+                run_one(phase1_run, args)
+
+    def test_merge_null_refuses_to_pool_mixed_settings_or_a_prompt_twice(
+        self, phase1_run, tmp_path,
+    ):
+        from p1d_cluster_ensemble import merge_null
+        from p1d_cluster_ensemble.run_1d import build_parser, run_one
+
+        dirs = {}
+        for tag, extra in (("full", []), ("drop0", ["--drop-tokens", "0"])):
+            bundle = run_one(phase1_run, build_parser().parse_args([
+                "--results", str(phase1_run), "--out", str(tmp_path / tag),
+                "--subexp", "F", *extra]))
+            dirs[tag] = tmp_path / tag / phase1_run.name
+            save_p1d(dirs[tag], bundle["results"], bundle["arrays"])
+        with pytest.raises(ValueError, match="twice"):
+            merge_null.run([dirs["full"], dirs["drop0"]], n_draws=2, seed=0)
+        renamed = tmp_path / "another_prompt"
+        dirs["drop0"].rename(renamed)
+        with pytest.raises(ValueError, match="mix"):
+            merge_null.run([dirs["full"], renamed], n_draws=2, seed=0)
+
     def test_merge_null_statistics_leave_an_empty_band_undefined(self):
         from p1d_cluster_ensemble import merge_null
         stats = merge_null.statistics(np.array([[5, 0, 0, 0, 0, 0], [1, 2, 1, 1, 0, 0]]))
