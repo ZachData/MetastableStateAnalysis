@@ -137,6 +137,79 @@ and defaults as "First real run". **Output:** `data/p1d/smoke_a0_2026-09-25/`.
   (`P-C3` 0 % → 7 %). These are tier 1 lines, not adjudications. The flip
   shows how little one run on the quick grid supports them.
 
+### Float-noise drift: does tuning reduce it? (2026-09-25)
+
+**Question.** The shipped HDBSCAN partition moves between two sweeps whose
+activations differ only by float noise (`p10_cluster_function/status-10.md`
+§3). Does 1d's output move less? Tier 1, descriptive, no null.
+
+**Input.** 8 v1 prompts (V1 minus `short_heterogeneous`) × steps 32 / 512 /
+143000 × layers 6 / 12 / 18 = **72 layer-records**, each run through 1d twice:
+on Stage 0 (`stage0_index.json`, pin `64a4087`, battery `06790b90dcfe`) and on
+the pilot (`HDD_1TB/Mets_archive/2026-08-12_05-01-35`). Steps and layers were
+fixed before any 1d output was read: 32 has the most baseline drift, 512 and
+143000 are the ones Phase 10 reads. L0 is left out (identical in both sweeps).
+`--grid quick`, defaults otherwise, seed 0, conda `mets`, code at `ac1e188`.
+**Output:** `data/p1d/drift_2026-09-25/` (`stage0/`, `pilot/`, `stage0_rerun/`,
+`drift_stage0_vs_pilot.json`, `drift_self.json`). **Re-run:**
+`METS_DATA=<main>/data METS_PY=<conda mets python> tools/run/p1d_drift_batch.sh
+<main>/data/p1d/drift_2026-09-25` (~9 min per
+run, 5.7 h total, skips done runs), then
+`python -m tools.run.p1d_drift <out>/stage0 <out>/pilot`. ARI keeps HDBSCAN
+noise as a label, as §3 does.
+
+| partition (72 records) | moved | ARI mean | p5 | min |
+|---|---|---|---|---|
+| shipped HDBSCAN (`mcs=2`) | 13 | 0.950 | 0.601 | 0.240 |
+| tuned HDBSCAN | 7 of 70 | 0.969 | 0.886 | 0.223 |
+| graph modularity | 6 of 71 | 0.994 | 0.991 | 0.615 |
+| k-means | 1 of 71 | 1.000 | 1.000 | 0.991 |
+| agglomerative, spherical k-means, spectral, GMM | 0 | 1.000 | 1.000 | 1.000 |
+| **consensus** | **1** | 0.989 | 1.000 | **0.193** |
+| core / halo / contested grade, share of tokens agreeing | 7 | 0.990 | 0.984 | 0.642 |
+
+(A count "of n" leaves out records where the family abstained on both sides.)
+
+- **Every family picks the same parameters on both sweeps, in all 72
+  records.** The tuning stage itself does not drift.
+- **Tuning HDBSCAN does not fix HDBSCAN's drift.** Where the shipped partition
+  moved (13 records), tuned HDBSCAN, mostly at `min_cluster_size` 5, moved in 7
+  of 11, with p5 0.28 against the shipped partition's 0.29.
+- **The consensus moves once in 72, against 13 for shipped HDBSCAN, but this
+  does not show that tuning makes it stable.** The families that never move
+  are the ones at k = 2–5, the coarse end ("First real run"). A coarse
+  partition is stable almost by construction, so the scale question (D / C)
+  is still open.
+- **When the consensus moves, it moves a lot.** At `repeated_tokens` step 32
+  L6 its ARI is 0.193 (shipped: 0.240). Tuned HDBSCAN moved (ARI 0.22). Its
+  weight, which is its raw subsample stability, went 0.388 → 0.471, the
+  Mirkin cut went 0.465 → 0.439, and a 70-token cluster merged into the big
+  one (sizes 193/70/1/1 → 251/12/1/1). One family's drift reaches the
+  consensus twice, through its labels and through its weight. This is the
+  weighting from `/challenge-pr` on #100, finding 1.
+- **The drift is one prompt.** 9 of the 13 moved records, and every moved
+  consensus or grade, are `repeated_tokens`. On the other 7 prompts the
+  shipped partition moved in 4 of 63 records (ARI ≥ 0.925), and 1d's
+  consensus never moved. The full §3 baseline agrees: `repeated_tokens`
+  moved in 307 of 312 layer-pairs (p5 0.243), and the other 7 prompts in 118
+  of 2 184 (min 0.925). Why: that prompt repeats one short sequence, so many
+  distances are near-ties, and float noise decides them.
+- **1d does not reproduce itself exactly on the same input.** The
+  `stage0_rerun/` control (6 records: `wiki_paragraph` 143000,
+  `camus_letranger` 32) gave k-means ARI 0.991 once, grade agreement 0.998
+  once, and everything else identical. Seeds are fixed per call, so this is
+  float summation order, likely threaded k-means. It is below every
+  between-sweep effect above except k-means' single 0.991, which is
+  within it.
+
+**Answer, for this design.** On the 7 prompts without mass repeats,
+the shipped partition's drift is already small (ARI ≥ 0.925), and 1d's
+consensus does not move at all. On `repeated_tokens` the drift is large for
+every density family, tuned or not. The consensus carries it through once in
+9 records, amplified by the stability weights. Whether 1d "reduces the drift"
+can't be separated from the scale it picks, so this waits on D / C and on the
+weighting decision.
+
 **Registry.** `P-C1`–`P-C4` (`predictions-1d.md`) were never registered and
 cannot be scored blind on the v1 runs already examined. They return as tier 1,
 or get registered fresh against the held-out prompts (the user's call).
