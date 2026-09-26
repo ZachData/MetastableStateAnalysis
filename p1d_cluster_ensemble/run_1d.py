@@ -277,6 +277,14 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
     families = [f for f in (args.families or available_families())
                 if f in available_families()]
 
+    # Dropping tokens (e.g. 0, the attention sink) is for F alone: every
+    # other stage compares against shipped labels over all tokens.
+    drop = sorted({int(t) for t in (getattr(args, "drop_tokens", None) or [])})
+    if drop and stages != ["F"]:
+        raise ValueError(f"--drop-tokens needs --subexp F alone; stages {stages} "
+                         f"compare against shipped labels over every token")
+    kept = np.setdiff1d(np.arange(int(acts.shape[1])), drop)
+
     out: Dict[str, object] = {
         "run_dir": str(run_dir),
         "identity": identity,
@@ -300,7 +308,10 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
             "merge_tree_min_size": args.merge_tree_min_size,
             "link_measure": args.link_measure,
             "link_min_overlap": args.link_min_overlap,
+            "drop_tokens": drop,
         },
+        # Row i of every saved label array is this token of the prompt.
+        "kept_tokens": kept.tolist() if drop else None,
         "per_layer": {},
         "skipped": {},
     }
@@ -312,8 +323,9 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
 
     per_layer_arrays: Dict[int, Dict[str, np.ndarray]] = {}
     for layer in layers:
-        data = LayerData.from_normed(layer_activations(run, layer))
-        shipped = run["shipped_hdbscan"].get(layer)
+        X = layer_activations(run, layer)
+        data = LayerData.from_normed(X[kept] if drop else X)
+        shipped = None if drop else run["shipped_hdbscan"].get(layer)
         res = process_layer(data, families, shipped, args, stages)
         arrays = res.pop("_arrays", None)
         if arrays is not None:
@@ -556,6 +568,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--link-min-overlap", type=float, default=None,
                    help="edge threshold on --link-measure (default: 0.5 containment, "
                         "0.1 Jaccard)")
+    p.add_argument("--drop-tokens", nargs="+", type=int, default=None,
+                   help="token positions to leave out before building stage F's "
+                        "tree (e.g. 0, the attention sink); --subexp F only")
     p.add_argument("--verbose", action="store_true")
     add_holdout_args(p)
     return p

@@ -24,7 +24,7 @@ from sklearn.metrics import adjusted_rand_score
 
 from p1d_cluster_ensemble.merge_tree import (
     MERGE_TREE_LINKAGES, labels_at_delta, layer_link_chain, layer_merge_tree,
-    link_layer_pair, substantial_labels,
+    link_chain_null, link_counts, link_layer_pair, substantial_labels,
 )
 from p1d_cluster_ensemble.methods import LayerData
 
@@ -322,3 +322,56 @@ class TestLayerLinkChain:
         merged = np.where(prev == 1, 0, prev)
         chain = layer_link_chain({0: prev, 1: merged, 2: merged})
         assert chain["totals"] == _counts(stable=1 + 2, merge=1)
+
+
+# ---------------------------------------------------------------------------
+# The null for the link counts
+# ---------------------------------------------------------------------------
+
+class TestLinkCountsNull:
+
+    @pytest.mark.parametrize("measure", ["containment", "jaccard"])
+    def test_fast_counts_equal_link_layer_pair_on_random_partitions(self, measure):
+        rng = np.random.default_rng(3)
+        for trial in range(300):
+            n = int(rng.integers(5, 50))
+            a = rng.integers(-1, int(rng.integers(1, 7)), n)
+            b = a.copy() if trial % 2 else rng.integers(-1, int(rng.integers(1, 7)), n)
+            b[rng.random(n) < 0.2] = -1
+            for mo in (None, 0.3, 0.7):
+                ref = link_layer_pair(a, b, min_overlap=mo, measure=measure)["counts"]
+                assert link_counts(a, b, min_overlap=mo, measure=measure).tolist() == \
+                    [ref[k] for k in KINDS]
+
+    def test_an_empty_side_is_all_births_or_deaths(self):
+        a = np.array([0, 0, 1, 1, -1])
+        assert link_counts(a, -np.ones(5, int)).tolist() == [0, 0, 0, 0, 0, 2]
+        assert link_counts(-np.ones(5, int), a).tolist() == [0, 0, 0, 0, 2, 0]
+
+    def test_each_draw_keeps_every_layers_cluster_sizes(self, monkeypatch):
+        import p1d_cluster_ensemble.merge_tree as mt
+        seen = []
+        real = mt.link_counts
+        monkeypatch.setattr(mt, "link_counts",
+                            lambda a, b, **kw: (seen.append((a, b)), real(a, b, **kw))[1])
+        chain = {0: np.repeat([0, 1, 2, -1], [6, 4, 3, 2]), 1: np.repeat([0, -1], [12, 3])}
+        link_chain_null(chain, n_draws=5, seed=0)
+        for a, b in seen:
+            assert sorted(np.unique(a, return_counts=True)[1]) == [2, 3, 4, 6]
+            assert sorted(np.unique(b, return_counts=True)[1]) == [3, 12]
+
+    def test_a_persistent_planted_chain_is_stable_and_its_null_is_not(self):
+        labels = np.repeat(np.arange(8), 6)
+        chain = {l: labels for l in range(4)}
+        assert layer_link_chain(chain)["totals"]["stable"] == 3 * 8
+        null = link_chain_null(chain, n_draws=50, seed=1)
+        assert null["counts"].shape == (50, 3, len(KINDS))
+        assert null["counts"][..., KINDS.index("stable")].mean() < 8 / 4
+
+    def test_seeded_draws_repeat_and_skipped_boundaries_are_left_out(self):
+        labels = np.repeat([0, 1, 2], 5)
+        chain = {0: labels, 1: labels, 3: labels}
+        a = link_chain_null(chain, layers=[0, 1, 2, 3], n_draws=10, seed=[0, 4])
+        b = link_chain_null(chain, layers=[0, 1, 2, 3], n_draws=10, seed=[0, 4])
+        assert a["boundaries"] == [[0, 1]]
+        np.testing.assert_array_equal(a["counts"], b["counts"])

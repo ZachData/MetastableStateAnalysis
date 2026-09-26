@@ -506,6 +506,94 @@ lives at is still undecided.
    question. Cost: minutes. Changes: the blob count.
 5. Other checkpoints (steps 32, 512 have the most drift history).
 
+Parked 2 and 4 are done: next section.
+
+### The link counts against a size-preserving null, and without token 0 (2026-09-26)
+
+**What.** Parked 2 and 4 above, one unit (user, 2026-09-26). **Null:**
+each draw permutes every layer's saved partition independently, which
+keeps each layer's cluster sizes and outlier count and destroys which
+tokens share a cluster across layers, then links as stage F does
+(`merge_tree.link_chain_null`; `link_counts` is a contingency-table
+version of `link_layer_pair`'s counts, equal on every tested input).
+`merge_null.py` re-links the saved partitions, refuses unless the counts
+equal what the run wrote, pools the 8 prompts draw by draw and bands by
+`layer_from`. **Token 0:** `run_1d --drop-tokens 0` (stage F only; other
+stages compare against shipped labels over every token) rebuilds each
+tree without it.
+
+**Input.** The 8 v1 prompts of the previous section, pythia-410m
+step143000, 25 layers; full: `data/p1d/merge_tree_2026-09-26/`; without
+token 0: `data/p1d/merge_tree_drop0_2026-09-26/`. 2000 draws, seed 0,
+containment >= 0.5, conda `mets`. **Output:**
+`data/p1d/merge_null_2026-09-26/null_{full,drop0}.{json,txt}`.
+**Re-run** (~5 s for the trees, ~85 s per null):
+
+    for R in 2026-09-22_21-20-26 2026-09-22_21-41-17; do
+      METS_DATA=<main>/data python -m p1d_cluster_ensemble.run_1d --v1-only \
+        --results <main>/data/phase12/$R --subexp F --drop-tokens 0 \
+        --out <main>/data/p1d/merge_tree_drop0_2026-09-26
+    done
+    python -m p1d_cluster_ensemble.merge_null --v1-only --n-draws 2000 \
+      --in <main>/data/p1d/merge_tree_2026-09-26 \
+      --out <main>/data/p1d/merge_null_2026-09-26/null_full.json
+
+**The null is structureless in a specific way.** With a blob of 91–96 %
+of tokens on both sides, almost any small cluster is >= 50 % inside the
+other layer's blob, so every cluster links through it: from L8 the null
+makes one tangle per boundary (63.5 of 64) and no stable links (0.005).
+Every observed count below differs from it at p = 0.0005 (the floor at
+2000 draws), so "beats the null" is only informative for the two
+statistics that could have gone either way.
+
+| band | statistic | observed | null mean [2.5 %, 97.5 %] | p (upper) | without token 0: observed, null mean, p (upper) |
+|---|---|---|---|---|---|
+| L0–L7 | merge − split | 12 (33 − 21) | 8.0 [4, 12] | 0.061 | 17 (36 − 19), 7.9, 0.001 |
+| L0–L7 | merge / (merge + split) | 0.611 | 0.679 [0.579, 0.789] | 0.89 | 0.655, 0.693, 0.70 |
+| L8–L15 | tangle share of non-stable | 0.328 | 0.958 [0.912, 1] | 1.0 (lower 0.0005) | identical |
+| L16–L23 | tangle share of non-stable | 0.426 | 0.974 [0.939, 1] | 1.0 (lower 0.0005) | identical |
+
+- **The L0–L7 merge excess does not survive as a finding about links.**
+  Random partitions with the same sizes have *more* merges per split
+  (0.68) than the real ones (0.61): cluster counts fall with depth in
+  L0–L7, and that alone makes merges outnumber splits. The raw
+  difference beats the null (p 0.06, or 0.001 without token 0) only
+  because the null turns most events into tangles, leaving it fewer
+  merges and fewer splits. What is real is the fall in cluster count, a
+  per-layer fact, not the linking.
+- **The late-layer tangle rate is below the null, not above it.** Size
+  alone makes nearly every change a tangle; the real layers have a third
+  as many and 61–75 stable links per band where the null has none. So
+  "tangles are the most common change" is what the blob-plus-outliers
+  sizes produce, and it is not evidence of reshuffling; the partitions are
+  far more persistent than their sizes require.
+- **Token 0 does not make the blob.** Without it, 194 of 199 chosen
+  partitions are identical to the full ones (the 5 that differ are L0–L7),
+  L8–L23 link counts are identical, and the blob is still the longest-lived
+  scale in 104 of 192 layer-records (126 with it): one cluster holding at
+  least 97 % of tokens (outliers 0.2–2.8 %), plus 1–5 small groups. The
+  net 22 is mostly plateaus that were "everything except token 0": 23 records stop being blobs and 1 becomes one; 21 of the 23
+  were "everything plus one outlier token". Two-cluster picks: 110 of
+  176 (112 with it).
+- **Caveats.** This null is weak by design: it keeps nothing across
+  layers, so it can say a pattern is size-driven, not that the rest is
+  dynamics. One checkpoint, one linkage, min size 4 and containment 0.5
+  placed, tier 1.
+
+**Answer.** Neither headline of the previous section survives as a
+statement about how clusters change with depth: the merge excess is the
+falling cluster count, and the tangle rate is below what sizes alone give.
+What does survive is persistence: real partitions keep their clusters
+across neighbouring layers far more than size-matched random ones, at
+every depth. The blob is not the sink.
+
+**Parked** (discoveries, not followed):
+6. A null that keeps cross-layer persistence and randomises only the
+   event (e.g. move k random tokens between clusters per layer, k matched
+   to the observed churn). Why: the independent null is beaten on every
+   count, so it cannot rank the depth pattern. Cost: an hour. Changes:
+   whether any merge/split asymmetry is left beyond the cluster-count fall.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it

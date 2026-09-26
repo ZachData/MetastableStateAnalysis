@@ -601,6 +601,72 @@ class TestDriverEndToEnd:
             assert "merge_tree" in res
         assert results["layer_links"]["layers"] == [0, 1, 2]
 
+    def test_drop_tokens_leaves_them_out_of_stage_f_and_records_which(
+        self, phase1_run, tmp_path,
+    ):
+        from p1d_cluster_ensemble.run_1d import build_parser, run_one
+
+        full = run_one(phase1_run, build_parser().parse_args([
+            "--results", str(phase1_run), "--out", str(tmp_path / "a"),
+            "--subexp", "F"]))["results"]
+        bundle = run_one(phase1_run, build_parser().parse_args([
+            "--results", str(phase1_run), "--out", str(tmp_path / "b"),
+            "--subexp", "F", "--drop-tokens", "0"]))
+        results = bundle["results"]
+        n = full["per_layer"]["0"]["n_tokens"]
+        assert results["settings"]["drop_tokens"] == [0]
+        assert results["kept_tokens"] == list(range(1, n))
+        assert full["kept_tokens"] is None
+        for res in results["per_layer"].values():
+            assert res["n_tokens"] == n - 1
+        for arrays in bundle["arrays"].values():
+            assert arrays["merge_tree_labels"].shape == (n - 1,)
+
+    def test_drop_tokens_refuses_stages_that_read_shipped_labels(self, phase1_run, tmp_path):
+        from p1d_cluster_ensemble.run_1d import build_parser, run_one
+        args = build_parser().parse_args([
+            "--results", str(phase1_run), "--out", str(tmp_path / "out"),
+            "--subexp", "A", "F", "--drop-tokens", "0"])
+        with pytest.raises(ValueError, match="--subexp F alone"):
+            run_one(phase1_run, args)
+
+    def test_merge_null_reads_what_stage_f_wrote_and_refuses_a_mismatch(
+        self, phase1_run, tmp_path,
+    ):
+        import json
+        from p1d_cluster_ensemble import merge_null
+        from p1d_cluster_ensemble.run_1d import build_parser, run_one
+
+        bundle = run_one(phase1_run, build_parser().parse_args([
+            "--results", str(phase1_run), "--out", str(tmp_path / "out"),
+            "--subexp", "F"]))
+        out_dir = tmp_path / "out" / phase1_run.name
+        save_p1d(out_dir, bundle["results"], bundle["arrays"])
+
+        out = merge_null.run([out_dir], n_draws=20, seed=0)
+        linked = [b for b in bundle["results"]["layer_links"]["boundaries"]
+                  if "skipped" not in b]
+        observed = sum(out["bands"][name]["stable"]["observed"] for name in out["bands"])
+        assert observed == sum(b["counts"]["stable"] for b in linked)
+        assert out["n_prompts"] == 1
+        assert "L0-L7" in out["bands"] and out["bands"]["L0-L7"]["merge"]["n_draws"] == 20
+
+        path = out_dir / "p1d_results.json"
+        res = json.loads(path.read_text())
+        first = next(b for b in res["layer_links"]["boundaries"] if "skipped" not in b)
+        first["counts"]["stable"] += 1
+        path.write_text(json.dumps(res))
+        with pytest.raises(ValueError, match="re-linked counts"):
+            merge_null.run([out_dir], n_draws=5, seed=0)
+
+    def test_merge_null_statistics_leave_an_empty_band_undefined(self):
+        from p1d_cluster_ensemble import merge_null
+        stats = merge_null.statistics(np.array([[5, 0, 0, 0, 0, 0], [1, 2, 1, 1, 0, 0]]))
+        assert np.isnan(stats["merge_fraction"][0]) and np.isnan(stats["tangle_share"][0])
+        assert stats["merge_fraction"][1] == pytest.approx(2 / 3)
+        assert stats["tangle_share"][1] == pytest.approx(1 / 4)
+        assert merge_null.compare(float("nan"), stats["merge_fraction"])["undefined"]
+
     def test_discover_runs_only_returns_directories_this_phase_can_use(self, tmp_path):
         from p1d_cluster_ensemble.run_1d import discover_runs
         usable = _write_phase1_run(tmp_path)

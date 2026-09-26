@@ -332,3 +332,97 @@ def layer_link_chain(labels_by_layer: Dict[int, np.ndarray],
     return {"layers": layers, "measure": measure, "min_overlap": float(min_overlap),
             "n_skipped": len(boundaries) - len(linked),
             "boundaries": boundaries, "totals": totals}
+
+
+# ---------------------------------------------------------------------------
+# Part 3 — a null for the link counts
+# ---------------------------------------------------------------------------
+
+def link_counts(labels_a: np.ndarray, labels_b: np.ndarray,
+                min_overlap: Optional[float] = None,
+                measure: str = "containment") -> np.ndarray:
+    """
+    `link_layer_pair(...)["counts"]` as a `(len(_KINDS),)` int array, from a
+    contingency table instead of Python sets. The null's inner loop; the
+    two must agree exactly (`tests/test_phase1d_merge_tree.py`
+    `TestLinkCountsNull`).
+    """
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+
+    if measure not in LINK_MEASURES:
+        raise ValueError(f"unknown link measure {measure!r}; use one of {LINK_MEASURES}")
+    if min_overlap is None:
+        min_overlap = DEFAULT_MIN_OVERLAP[measure]
+    la = np.asarray(labels_a)
+    lb = np.asarray(labels_b)
+    if la.shape != lb.shape:
+        raise ValueError(f"layer pair must share token count; got "
+                         f"{la.shape} vs {lb.shape}")
+    ids_a, size_a = np.unique(la[la >= 0], return_counts=True)
+    ids_b, size_b = np.unique(lb[lb >= 0], return_counts=True)
+    na, nb = ids_a.size, ids_b.size
+    out = np.zeros(len(_KINDS), dtype=np.int64)
+    if na == 0 or nb == 0:
+        out[_KINDS.index("death")] = na
+        out[_KINDS.index("birth")] = nb
+        return out
+
+    both = (la >= 0) & (lb >= 0)
+    ia = np.searchsorted(ids_a, la[both])
+    ib = np.searchsorted(ids_b, lb[both])
+    inter = np.bincount(ia * nb + ib, minlength=na * nb).reshape(na, nb)
+    sa = size_a[:, None].astype(float)
+    sb = size_b[None, :].astype(float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        score = (inter / np.minimum(sa, sb) if measure == "containment"
+                 else inter / (sa + sb - inter))
+    ea, eb = np.nonzero((inter > 0) & (score >= min_overlap))
+
+    graph = coo_matrix((np.ones(ea.size), (ea, na + eb)), shape=(na + nb, na + nb))
+    n_comp, comp = connected_components(graph, directed=False)
+    n_prev = np.bincount(comp[:na], minlength=n_comp)
+    n_curr = np.bincount(comp[na:], minlength=n_comp)
+    for i, cond in enumerate((
+            (n_prev == 1) & (n_curr == 1),   # stable
+            (n_prev > 1) & (n_curr == 1),    # merge
+            (n_prev == 1) & (n_curr > 1),    # split
+            (n_prev > 1) & (n_curr > 1),     # tangle
+            (n_prev == 0) & (n_curr > 0),    # birth
+            (n_prev > 0) & (n_curr == 0))):  # death
+        out[i] = int(cond.sum())
+    return out
+
+
+def link_chain_null(labels_by_layer: Dict[int, np.ndarray],
+                    layers: Optional[Sequence[int]] = None,
+                    n_draws: int = 1000, seed=0,
+                    min_overlap: Optional[float] = None,
+                    measure: str = "containment") -> Dict:
+    """
+    Link counts on a structureless sequence of partitions with the same
+    cluster sizes: each draw permutes every layer's labels independently
+    (one permutation per layer, so both boundaries a layer sits on see the
+    same relabelling), then links consecutive layers as `layer_link_chain`
+    does. What it keeps: each layer's multiset of cluster sizes and its
+    outlier count. What it destroys: which tokens share a cluster across
+    layers, the only thing a link reads.
+
+    Returns `counts`, shape `(n_draws, n_linked_boundaries, len(_KINDS))`,
+    with `boundaries` naming each linked `(layer_from, layer_to)` in order;
+    skipped boundaries are left out, as in `layer_link_chain`'s totals.
+    `seed` is anything `np.random.default_rng` takes.
+    """
+    layers = sorted(labels_by_layer) if layers is None else list(layers)
+    pairs = [(h, t) for h, t in zip(layers, layers[1:])
+             if h in labels_by_layer and t in labels_by_layer]
+    used = sorted({l for p in pairs for l in p})
+    rng = np.random.default_rng(seed)
+    counts = np.zeros((max(0, int(n_draws)), len(pairs), len(_KINDS)), dtype=np.int64)
+    for d in range(counts.shape[0]):
+        perm = {l: rng.permutation(np.asarray(labels_by_layer[l])) for l in used}
+        for j, (h, t) in enumerate(pairs):
+            counts[d, j] = link_counts(perm[h], perm[t], min_overlap=min_overlap,
+                                       measure=measure)
+    return {"kinds": list(_KINDS), "boundaries": [list(p) for p in pairs],
+            "measure": measure, "n_draws": int(counts.shape[0]), "counts": counts}
