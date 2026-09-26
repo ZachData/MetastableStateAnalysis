@@ -24,7 +24,7 @@
   - `plan-9.md` §8's E4 calls the 24.9-vs-13.2 ratio "measured": 24.9 is the chance ratio at ALBERT's shape from a planted construction, and the April run's per-layer dimensions were never reported — `claims/audits/p6_projector_labels.json`, `archive/p6_subspace/status-6.md`
   - `plan-9.md` §2.3's reason for the size-profile null: the ARI is already centred, the null is for its variance (amended inline) — `p10_cluster_function/math-10.md` §4
 - **Registry:** none, because nothing is designed: no `P-*` id names anything here. `plan-9.md` §9 marks E7 (sign test) and E8 (repair channel) as the only tier-2 candidates and bars reserved rungs (1b, 1.4b)
-- **Depends on:** 1c@11c2f3840c, 2@5e9fc59e62, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 10@a84b61952a
+- **Depends on:** 1c@11c2f3840c, 2@5e9fc59e62, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 10@e26920c229
 - **Feeds:** 10
 - **Open threads:**
   - β's unit convention (a factor of 8) gates every `gamma_beta` prediction the phase would make; it is a decision, not a computation — `p9_metric_intervention/plan-9.md` §4.6
@@ -39,7 +39,7 @@
   - E9: implied timescales from `cluster_tracking.py`'s transitions, against Phase 10's reproducibility floor (free)
   - E10: the cone margin at `n > d` and its binding set on `pythia-70m` (forward pass: 70m at 2048 tokens)
   - E6 + E8: the γ-patch with a `W_V` arm and a matched random patch, then patch vs matched ablation for self-repair (forward pass: one LayerNorm on 70m or 410m, swept `D`; needs E1, β's convention and Phase 10's F4)
-- **Reviewed:** 2026-09-25 · body `300c78784e`
+- **Reviewed:** 2026-09-26 · body `300c78784e`
 <!-- /phase-card -->
 
 This file exists so Phase 9 has a card (`docs/PHASE_REVIEW.md` session 7).

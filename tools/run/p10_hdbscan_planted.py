@@ -51,7 +51,7 @@ REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[2])
 DATA = Path(os.environ.get("METS_DATA", str(REPO / "data")))
 
 import numpy as np
-from sklearn.metrics import pairwise_distances
+from core.metrics import cosine_distance_matrix
 
 N_BG = 250
 D = 1024
@@ -74,9 +74,7 @@ def plant(rng, n_bg: int = N_BG, d: int = D, groups: dict = GROUPS):
 
 def partition(X: np.ndarray) -> np.ndarray:
     import hdbscan
-    normed = X / np.linalg.norm(X, axis=1, keepdims=True)
-    cos_dist = np.clip(pairwise_distances(normed, metric="cosine"), 0, None)
-    return hdbscan.HDBSCAN(**PARAMS).fit_predict(cos_dist.astype(np.float64))
+    return hdbscan.HDBSCAN(**PARAMS).fit_predict(cosine_distance_matrix(X))
 
 
 def score(labels: np.ndarray, g: np.ndarray, sizes: list) -> dict:

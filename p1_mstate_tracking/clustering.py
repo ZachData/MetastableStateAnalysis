@@ -24,9 +24,10 @@ import numpy as np
 import torch
 
 from sklearn.cluster import KMeans, AgglomerativeClustering
-from sklearn.metrics import pairwise_distances, silhouette_score
+from sklearn.metrics import silhouette_score
 from sklearn.decomposition import PCA
 
+from core.metrics import cosine_distance_matrix
 from core.models import layernorm_to_sphere
 from core.config import DISTANCE_THRESHOLDS, K_RANGE
 
@@ -111,9 +112,11 @@ def cluster_count_sweep(
     """
     normed   = _to_normed(activations)
     n        = normed.shape[0]
-    results  = {"agglomerative": {}, "kmeans": {}}
+    # Every distance below (agglomerative, silhouette, HDBSCAN) is float64;
+    # results written before 2026-09-26 were float32 and carry no such field.
+    results  = {"agglomerative": {}, "kmeans": {}, "distance_dtype": "float64"}
 
-    cos_dist   = np.clip(pairwise_distances(normed, metric="cosine"), 0, None)
+    cos_dist   = cosine_distance_matrix(normed)   # float64: see its docstring
     thresholds = list(thresholds)
     mid_idx    = len(thresholds) // 2
     mid_thresh = float(thresholds[mid_idx])
@@ -140,7 +143,7 @@ def cluster_count_sweep(
             labels = km.fit_predict(normed)
             if len(set(labels)) < 2:
                 continue
-            sil = silhouette_score(normed, labels, metric="cosine")
+            sil = silhouette_score(cos_dist, labels, metric="precomputed")
             if sil > best_sil:
                 best_sil   = sil
                 best_k     = k
@@ -153,7 +156,7 @@ def cluster_count_sweep(
     if HAS_HDBSCAN:
         params     = {"min_cluster_size": 2, "metric": "precomputed"}
         hdb        = hdbscan.HDBSCAN(**params)
-        hdb_labels = hdb.fit_predict(cos_dist.astype(np.float64))
+        hdb_labels = hdb.fit_predict(cos_dist)
         n_clusters = len(set(hdb_labels)) - (1 if -1 in hdb_labels else 0)
         results["hdbscan"] = {
             "n_clusters": n_clusters,
@@ -174,6 +177,9 @@ def cluster_count_sweep(
             "impl":       "hdbscan",
             "version":    _hdbscan_version(),
             "params":     params,
+            # float32 before 2026-09-26; labels from the two differ where
+            # tokens nearly coincide (core.metrics.cosine_distance_matrix).
+            "distance_dtype": "float64",
         }
 
     return results

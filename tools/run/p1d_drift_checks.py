@@ -146,15 +146,6 @@ def matched(a: Path, b: Path, prompt: str) -> None:
                       + " ".join(f"{v:10.3f}" for v in row) + f" {seed:8.3f}", flush=True)
 
 
-def _cos64(x: np.ndarray) -> np.ndarray:
-    x = np.asarray(x, dtype=np.float64)
-    x = x / np.linalg.norm(x, axis=1, keepdims=True)
-    d = np.clip(1.0 - x @ x.T, 0.0, None)
-    d = 0.5 * (d + d.T)
-    np.fill_diagonal(d, 0.0)
-    return d
-
-
 def precision(a: Path, b: Path, prompt: str) -> None:
     """Every record of PROMPT: shipped HDBSCAN (``min_cluster_size=2``, the
     ``hdbscan`` package) refit on float64 cosine distances from the same stored
@@ -164,6 +155,7 @@ def precision(a: Path, b: Path, prompt: str) -> None:
     (``p1_mstate_tracking/clustering.py``, ``1 - x.y`` loses digits when
     ``x.y`` is near 1). Noise is kept as a label."""
     import hdbscan
+    from core.metrics import cosine_distance_matrix
     from p1d_cluster_ensemble import p1d_io
     fit = lambda d: hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed").fit_predict(d)
     runs = _runs(a, prompt)
@@ -172,7 +164,7 @@ def precision(a: Path, b: Path, prompt: str) -> None:
         la, lb = (p1d_io.load_run(Path(_res(r, run)["run_dir"])) for r in (a, b))
         for L in sorted(_res(a, run)["per_layer"], key=int):
             L = int(L)
-            fa, fb = (fit(_cos64(p1d_io.layer_activations(x, L))) for x in (la, lb))
+            fa, fb = (fit(cosine_distance_matrix(p1d_io.layer_activations(x, L))) for x in (la, lb))
             sa, sb = la["shipped_hdbscan"][L], lb["shipped_hdbscan"][L]
             print(f"{run.split('step')[1].split('_')[0]:>6s} {L:>2d} {ari(sa, sb):10.3f} {ari(fa, fb):8.3f} "
                   f"{ari(fa, sa):14.3f} {_k(sa):5d}/{_k(fa):<6d}", flush=True)
