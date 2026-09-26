@@ -90,6 +90,24 @@ def gram_matrix(activations) -> np.ndarray:
     return normed @ normed.T
 
 
+def cosine_distance_matrix(activations) -> np.ndarray:
+    """
+    ``1 - cos`` between every pair of rows, in float64: clipped at 0,
+    symmetric, zero diagonal. The one route every clustering here takes.
+
+    float64 because ``1 - x·y`` cancels when ``x·y`` is near 1: in float32
+    the distance keeps only the digits left after that cancellation, so
+    ~2e-7 of activation noise re-orders the smallest distances and HDBSCAN's
+    partition with them (`p1d_cluster_ensemble/status-1d.md` "Matched k on
+    `repeated_tokens`, and the float32 defect").
+    """
+    normed = l2_normalize(activations)
+    d = np.clip(1.0 - normed @ normed.T, 0.0, None)
+    d = 0.5 * (d + d.T)
+    np.fill_diagonal(d, 0.0)
+    return d
+
+
 def pairwise_upper(G: np.ndarray) -> np.ndarray:
     """Upper-triangle (k=1) values of a pre-computed Gram matrix G."""
     n = G.shape[0]

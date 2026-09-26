@@ -75,7 +75,7 @@ import numpy as np
 
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.decomposition import PCA
-from sklearn.metrics import pairwise_distances
+from core.metrics import cosine_distance_matrix
 from sklearn.mixture import GaussianMixture
 
 from .constants import DISTANCE_THRESHOLDS, K_VALUES
@@ -117,7 +117,7 @@ class LayerData:
     only is the kind of error that produces a plausible wrong number.
     """
     normed: np.ndarray      # (n, d) float32, rows unit-norm
-    cos_dist: np.ndarray    # (n, n) float64, symmetric, zero diagonal
+    cos_dist: np.ndarray    # (n, n) float64, symmetric, zero diagonal, computed in float64
 
     @classmethod
     def from_normed(cls, normed: np.ndarray) -> "LayerData":
@@ -127,10 +127,9 @@ class LayerData:
         norms = np.linalg.norm(X, axis=1, keepdims=True)
         if not np.allclose(norms, 1.0, atol=1e-3):
             X = X / np.maximum(norms, 1e-12)
-        D = np.clip(pairwise_distances(X, metric="cosine"), 0.0, None).astype(np.float64)
-        D = 0.5 * (D + D.T)
-        np.fill_diagonal(D, 0.0)
-        return cls(normed=X, cos_dist=D)
+        # From float64 rows, not float32 then cast: the cast kept float32's
+        # cancellation error (status-1d.md "the float32 defect").
+        return cls(normed=X, cos_dist=cosine_distance_matrix(X))
 
     @property
     def n(self) -> int:

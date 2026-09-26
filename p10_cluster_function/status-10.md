@@ -14,7 +14,7 @@
   - F1 and F12 together read "parked, not pinned" at steps 32–64, a window the trained model passes through. This rests on reading `Z` as a metric, and the density confound is argued from step 0, not controlled — `p10_cluster_function/status-10.md` §1.5
   - F1 and F12 on the pilot's partition: per-step means within 0.005 and 0.008 at the shared steps, and no changed unit flips sign at step 32, the least stable step (50/50, 159/159). Below-baseline `Z` lasts past 512 on both sweeps (to 4000 on WDS, non-monotonically to 11 000 on the pilot), which F12's baseline table had left out. Same activations clustered twice — `p10_cluster_function/status-10.md` §1.13
   - The 410m sweep had no density partition in 152 of 152 dirs, and `pair_agreement`, the only semantic instrument, wrote well-formed zero records. The backfill re-derives the labels, bit-checked against the pilot, and does not rerun the analysis — `p10_cluster_function/status-10.md` §2, `p10_cluster_function/handoff-10.md` §1.2
-  - The HDBSCAN partition is not reproducible run to run (ARI 5th percentile 0.347, almost all from one prompt, `repeated_tokens`: `p1d_cluster_ensemble/status-1d.md` "Float-noise drift"): it moves when activations differ by ~2e-7, one float32 rounding step. On `repeated_tokens` the cause is float32 cosine distances: refit on float64 from the same activations, the two sweeps agree at ARI 1 in 8 of 9 records checked, and the stored partitions there are mostly rounding (`p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"). Today's pipeline repeats itself bit for bit only because it is deterministic on one machine. A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1, `p10_cluster_function/status-10.md` §1.11
+  - The stored HDBSCAN partition's run-to-run floor (ARI 5th percentile 0.347, almost all `repeated_tokens`) is float32 cosine distances: refit on float64 from the same activations, the two sweeps agree at ARI p5 1.000 over all 2 600 layer-records (99.1 % identical), and Stage 0's stored `repeated_tokens` labels are rounding (ARI to float64, mean 0.23); the other 7 prompts' stored labels hold (mean ≥ 0.998). Stored labels are still float32-derived, so every reader pooling `repeated_tokens` includes one noise prompt in eight (`p1d_cluster_ensemble/status-1d.md` "Float64 distances, and Phase 10 §3's floor re-run on them"). A0 and F0 hold on the second sweep; per-layer claims stay exposed — `p10_cluster_function/status-10.md` §3, `p10_cluster_function/status-10.md` §3.1, `p10_cluster_function/status-10.md` §1.11
   - Stage 1 steps 1 and 2 on the pilot agree with Stage 0 to ≤ 0.004 at all 13 shared steps; the handoff's first-look table averaged 9 prompts, not 8. No null — `p10_cluster_function/status-10.md` §1.11
   - The per-layer co-membership and lexical-carry claims hold on the pilot's partition: 3 103 of 3 120 and 383 of 384 per-layer readings agree, all but one disagreement a flip at the ±0.05 floor, and every quoted cell at a shared step (the trained model: 143000 only) is within 0.005. Most cells are bit-identical: 100 of 2 600 run-layers have a different partition. Same activations clustered twice, so this bounds HDBSCAN's instability only. No null — `p10_cluster_function/status-10.md` §1.12
   - 410m's step 0 and step 1 are the same weights, so the checkpoint axis has 18 distinct points — §3.51.3
@@ -48,7 +48,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-09-25 · body `c66c6466e9`
+- **Reviewed:** 2026-09-26 · body `8666e052de`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -951,6 +951,13 @@ most **7.9e-05**. Over **2 600 layer-pairs**:
 | ARI noise-dropped, p05 / min | 0.585 / 0.327 |
 | cluster-count \|Δ\| mean / **max** | 0.58 / **20** |
 
+**Superseded 2026-09-26: this floor is the float32-distance defect.** Refit on
+float64 distances from the same activations, the same 2 600 pairs agree at ARI
+p5 1.000 (99.1 % identical), and Stage 0's stored `repeated_tokens` labels are
+rounding (ARI to their float64 refit, mean 0.23). The table above is the stored,
+float32-derived labels. Numbers and re-run: `p1d_cluster_ensemble/status-1d.md`
+"Float64 distances, and Phase 10 §3's floor re-run on them".
+
 **A measurement-reproducibility floor, not a null** — no hypothesis, no
 p-value, by design. No null this project has built accounts for it:
 `notes-10.md` §4.4's size-profile null is about ARI's variance under random
@@ -1105,4 +1112,5 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24 when the card was written.
 - 2026-09-23 · the 12 new v2 prompts are held out on 410m, not pooled into Stages 1–5, so the header's "the enlarged battery can carry a registered prediction" holds only for the 12; they are partly seen already via `CLAIM-C` on 1.4b and gpt2-large · `docs/PHASE_REVIEW.md` "Decisions", `p10_cluster_function/handoff-10.md` §0.4
 - 2026-09-24 · §0's "`METS_REPO` defaults to the MAIN tree" stopped being true: every runner now defaults to its own checkout (fixed in place) · `docs/PHASE_REVIEW.md` "Parked"
 - 2026-09-25 · §3's floor is almost all one prompt, `repeated_tokens`; the other 7 v1 prompts' minimum ARI is far higher. The per-layer caution in §3.1 binds `repeated_tokens`, and much less the rest. Per-prompt table and producer (`tools/run/p1d_drift_checks.py --baseline`) · `p1d_cluster_ensemble/status-1d.md` "Float-noise drift"
+- 2026-09-26 · §3's floor is the float32-distance defect, not HDBSCAN: on float64 distances ARI p5 is 1.000 over the same 2 600 pairs. Stage 0's stored `repeated_tokens` labels are rounding (mean ARI 0.23 to float64), so every reader here that pools that prompt's stored labels carries one noise prompt in eight; not re-run · `p1d_cluster_ensemble/status-1d.md` "Float64 distances, and Phase 10 §3's floor re-run on them"
 - 2026-09-25 · §3's `repeated_tokens` drift is float32 cancellation in the cosine-distance step (`clustering.py`), not HDBSCAN's sensitivity: refit on float64 from the same activations, the sweeps agree at ARI 1 in 8 of 9 records (0.982), and the stored partitions at steps 32 / 512 share ARI 0.07–0.66 with the float64 ones. Every row that reads `repeated_tokens`' stored labels reads rounding; `wiki_paragraph`'s are exact; the other six prompts unchecked · `p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"

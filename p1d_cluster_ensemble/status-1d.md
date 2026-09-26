@@ -274,7 +274,8 @@ and both sweeps agree (1 in 8, 0.988 in 1, the same in both precisions).
 - **The stored `repeated_tokens` partitions are mostly rounding.** At steps
   32 and 512 the float64 partition shares little with the stored one (ARI
   0.07–0.66) and has about half as many clusters. The other six v1 prompts are
-  unchecked; `wiki_paragraph`'s stored labels are exact.
+  unchecked; `wiki_paragraph`'s stored labels are exact. (All 8 checked
+  since: next section.)
 - **Matched k (`--matched`) does not separate method from scale, as first
   read.** At Stage 0's HDBSCAN k, k-means and Ward give ARI 1 across sweeps in
   16 of 16 rows, average linkage in 9 (min 0.51), spherical k-means (5 inits)
@@ -298,6 +299,80 @@ and both sweeps agree (1 in 8, 0.988 in 1, the same in both precisions).
 **Registry.** `P-C1`–`P-C4` (`predictions-1d.md`) were never registered and
 cannot be scored blind on the v1 runs already examined. They return as tier 1,
 or get registered fresh against the held-out prompts (the user's call).
+
+### Float64 distances, and Phase 10 §3's floor re-run on them (2026-09-26)
+
+**Fix.** One route for cosine distance, `core.metrics.cosine_distance_matrix`
+(float64 rows, `1 - x·y`, clipped, symmetric, zero diagonal), used by
+`clustering.py` `cluster_count_sweep` (HDBSCAN, agglomerative, and the k-means
+silhouette, now on the precomputed matrix), 1d's `LayerData`,
+`backfill_hdbscan.labels_for_activations` and `p1d_drift_checks --precision`.
+`clustering.py` and the backfill now record `distance_dtype: "float64"`. The
+backfill keeps the float32 route (`distance_dtype="float32"`) only for
+`--verify-pilot`, which still replays 3 pilot directories 25/25 identical.
+Not changed: k-means still fits on float32 rows; Gram-matrix readers
+(`multiscale_nesting`) do not subtract from 1 and are not affected. **Stored
+labels are not rewritten**: everything in `data/phase12` and the pilot is
+still float32-derived.
+
+**Input.** The 104 (step, prompt) directories both sweeps hold: 8 v1 prompts ×
+13 steps, pilot `HDD_1TB/Mets_archive/2026-08-12_05-01-35` against Stage 0
+(`data/phase12`), 2 600 layer-records, activations differing by ≤ 7.9e-5
+(≤ 2.5e-7 up to step 1000). Code at this PR's head, conda `mets`, hdbscan
+0.8.41. **Re-run:** `python tools/run/p10_partition_stability.py --v1-only
+[--refit] --out …` (47 s stored, 2 min 24 s refit, 16 cores); records
+`data/analysis/p10_partition_stability_{stored,f64}_2026-09-26.json`. The
+stored run reproduces §3's numbers exactly.
+
+| over 2 600 layer-records | stored (float32) | refit (float64) |
+|---|---|---|
+| label vectors identical | 83.3 % | **99.1 %** (23 differ) |
+| ARI mean / p5 / min | 0.933 / 0.347 / 0.166 | 0.9997 / **1.000** / 0.471 |
+| ARI noise-dropped p5 / min | 0.585 / 0.327 | 1.000 / 0.477 |
+| cluster-count \|Δ\| mean / max | 0.58 / 20 | 0.008 / 9 |
+
+| prompt (325 records each; ARI over L ≥ 1) | stored: not identical, p5, min | float64: not identical, p5, min | Stage 0 stored ~ float64: mean, p5, min |
+|---|---|---|---|
+| camus_letranger | 10, 1.000, 0.941 | 3, 1.000, 0.988 | 1.000, 1.000, 0.941 |
+| hdbscan_code | 4, 1.000, 0.978 | 2, 1.000, 0.979 | 1.000, 1.000, 0.999 |
+| homer_iliad | 40, 0.990, 0.929 | 0 | 0.998, 0.990, 0.946 |
+| latex_monograph | 25, 0.993, 0.925 | 0 | 0.999, 0.996, 0.920 |
+| paper_excerpt | 1, 1.000, 0.961 | 0 | 1.000, 1.000, 0.961 |
+| **repeated_tokens** | **309, 0.243, 0.166** | **15, 1.000, 0.471** | **0.230, −0.044, −0.064** |
+| sullivan_ballou | 27, 0.994, 0.950 | 1, 1.000, 0.994 | 0.999, 1.000, 0.945 |
+| wiki_paragraph | 19, 1.000, 0.957 | 2, 1.000, 0.988 | 1.000, 1.000, 0.969 |
+
+- **The floor was the float32 defect.** On float64 distances the two sweeps
+  agree at ARI p5 1.0. Of the 23 records that still differ, 10 are at step
+  143000, where the activations themselves differ by 2e-5 to 8e-5 (an input
+  difference, not rounding), and 15 are `repeated_tokens` (4 are both). One is far off:
+  step 8, `repeated_tokens`, L4, ARI 0.471 (37 vs 46 clusters) on activations
+  1.7e-7 apart. So HDBSCAN on `repeated_tokens` still has near-ties at
+  float64, rarely.
+- **Stage 0's stored `repeated_tokens` partitions are rounding, at every step
+  and layer ≥ 1**: ARI to their float64 refit averages 0.230, p5 −0.044.
+  The other 7 prompts' stored labels are the float64 labels up to small
+  moves (mean ≥ 0.998, min 0.920). The previous section checked 9
+  `repeated_tokens` records; this is all 325, and the other six prompts.
+- **What it changes.** Every Phase 10 reader that pools `repeated_tokens`
+  stored labels includes one prompt in eight whose partition is noise. The
+  readers are not re-run here (Phase 10 is on hold); the labels would first
+  have to be re-derived at float64 (Parked below). 1d's own drift run
+  (72 records, "Float-noise drift") used float32-derived `LayerData`
+  distances and is not re-run either.
+- **Caveats.** One pair of sweeps, one machine; no null (a floor, as §3).
+  ARI treats noise as a cluster (the noise-dropped column agrees).
+
+**Parked** (discoveries, not followed):
+1. Re-derive stored labels at float64 (a new `hdbscan_f64.json` per
+   directory, or `read_labels` refitting), then re-run Phase 10's
+   label readers. Why: `repeated_tokens` rows are noise. Cost: minutes for
+   labels, readers an unknown hour or so. Changes: whether any Phase 10 row
+   that pools prompts moves; decide when Phase 10 resumes.
+2. Re-run 1d's drift (72 records) on float64 `LayerData`. Why: its
+   "families never move / HDBSCAN moves" reading was on float32 distances.
+   Cost: ~3 h. Changes: whether tuning matters for stability at all, now
+   that the input noise is gone.
 
 ## Deleted and restored (was `FROZEN.md`)
 

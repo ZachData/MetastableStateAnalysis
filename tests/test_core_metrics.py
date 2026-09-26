@@ -24,6 +24,7 @@ import pytest
 from core.metrics import (
     l2_normalize,
     gram_matrix,
+    cosine_distance_matrix,
     pairwise_upper,
     pairwise_inner_products_from_gram,
     interaction_energy,
@@ -317,3 +318,52 @@ class TestRemainingMetrics:
         assert len(pairs) == 5
         deltas = [d for (_, _, d) in pairs]
         assert deltas == sorted(deltas)  # most negative first
+
+
+class TestCosineDistanceMatrix:
+    """float64 cosine distances (status-1d.md "the float32 defect")."""
+
+    def _near(self, d=1024, angles=(1e-5, 2e-5, 4e-5), seed=0):
+        # One base point and copies at small, known angles from it. The
+        # distances 1 - cos(a) ~ a^2/2 are 5e-11 .. 8e-10, under float32's
+        # epsilon (1.2e-7), so float32 cannot order them.
+        rng = np.random.default_rng(seed)
+        x = rng.standard_normal(d); x /= np.linalg.norm(x)
+        u = rng.standard_normal(d); u -= (u @ x) * x; u /= np.linalg.norm(u)
+        rows = [x] + [np.cos(a) * x + np.sin(a) * u for a in angles]
+        return np.array(rows), np.array(angles)
+
+    def test_shape_symmetry_diagonal_sign(self):
+        X = np.random.default_rng(1).standard_normal((20, 16))
+        D = cosine_distance_matrix(X)
+        assert D.dtype == np.float64 and D.shape == (20, 20)
+        assert np.array_equal(D, D.T)
+        assert np.all(np.diag(D) == 0.0) and np.all(D >= 0.0)
+
+    def test_matches_definition(self):
+        X = np.random.default_rng(2).standard_normal((12, 8))
+        N = X / np.linalg.norm(X, axis=1, keepdims=True)
+        want = 1.0 - N @ N.T
+        np.fill_diagonal(want, 0.0)
+        assert np.allclose(cosine_distance_matrix(X), want, atol=1e-15)
+
+    def test_orders_distances_float32_cannot(self):
+        X, angles = self._near()
+        got = cosine_distance_matrix(X)[0, 1:]
+        assert np.all(np.diff(got) > 0)
+        assert np.allclose(got, 1.0 - np.cos(angles), rtol=1e-3)
+        # The defect this replaces: the same rows in float32 lose the order.
+        X32 = X.astype(np.float32)
+        old = 1.0 - (X32 @ X32.T)[0, 1:]
+        assert not np.all(np.diff(old) > 0)
+
+    def test_float32_input_is_computed_in_float64(self):
+        X, _ = self._near()
+        X32 = X.astype(np.float32)
+        D = cosine_distance_matrix(X32)
+        assert D.dtype == np.float64
+        N = X32.astype(np.float64)
+        N /= np.linalg.norm(N, axis=1, keepdims=True)
+        want = np.clip(1.0 - N @ N.T, 0.0, None)
+        np.fill_diagonal(want, 0.0)
+        assert np.allclose(D, want, atol=1e-15)

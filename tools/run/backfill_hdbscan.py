@@ -76,6 +76,8 @@ sys.path.insert(0, str(REPO))
 
 import numpy as np
 
+from core.metrics import cosine_distance_matrix
+
 #: The install `clustering.py` measured as reproducing the pilot sweep exactly.
 REFERENCE_TOOLCHAIN = {
     "python": "3.10",
@@ -134,23 +136,33 @@ def toolchain_divergence(fp: dict) -> list:
 # The computation
 # ---------------------------------------------------------------------------
 
-def labels_for_activations(acts: np.ndarray) -> dict:
+def labels_for_activations(acts: np.ndarray, distance_dtype: str = "float64") -> dict:
     """
     ``{layer_index: [labels]}`` for a (n_layers, n_tokens, d) sphere-projected
     stack, by the same route `cluster_count_sweep` takes: cosine distance,
-    clipped at 0, HDBSCAN on the precomputed matrix in float64.
+    clipped at 0, HDBSCAN on the precomputed matrix.
+
+    ``distance_dtype="float32"`` is the route every label written before
+    2026-09-26 took (float32 distances, cast to float64 for HDBSCAN). It exists
+    only so `verify_against_pilot` can replay those labels bit for bit; new
+    labels use float64 (`core.metrics.cosine_distance_matrix`).
     """
     import hdbscan
-    from sklearn.metrics import pairwise_distances
 
     if acts.ndim != 3:
         raise ValueError(f"activations must be (n_layers, n, d); got {acts.shape}")
+    if distance_dtype not in ("float32", "float64"):
+        raise ValueError(f"distance_dtype must be float32 or float64; got {distance_dtype!r}")
 
     out = {}
     for layer in range(acts.shape[0]):
-        X = np.asarray(acts[layer], dtype=np.float32)
-        cos_dist = np.clip(pairwise_distances(X, metric="cosine"), 0, None)
-        lab = hdbscan.HDBSCAN(**HDBSCAN_PARAMS).fit_predict(cos_dist.astype(np.float64))
+        if distance_dtype == "float64":
+            cos_dist = cosine_distance_matrix(acts[layer])
+        else:
+            from sklearn.metrics import pairwise_distances
+            X = np.asarray(acts[layer], dtype=np.float32)
+            cos_dist = np.clip(pairwise_distances(X, metric="cosine"), 0, None).astype(np.float64)
+        lab = hdbscan.HDBSCAN(**HDBSCAN_PARAMS).fit_predict(cos_dist)
         out[layer] = np.asarray(lab, dtype=np.int32)
     return out
 
@@ -202,7 +214,10 @@ def verify_against_pilot(n_dirs: int, rng_seed: int = 0) -> dict:
     for d in picked:
         acts = np.load(d / "activations.npz")["activations"]
         historical = json.loads((d / "hdbscan_labels.json").read_text())
-        got = labels_for_activations(acts)
+        # The pilot's labels were written on the float32 route, so that is the
+        # route that must reproduce them; this checks the toolchain, not the
+        # precision.
+        got = labels_for_activations(acts, distance_dtype="float32")
         layers_identical = sum(
             1 for layer, lab in got.items()
             if str(layer) in historical
@@ -375,6 +390,7 @@ def main() -> None:
             "why": "the directory was written while hdbscan was missing from "
                    "this machine; see the module docstring",
             "params": HDBSCAN_PARAMS,
+            "distance_dtype": "float64",
             "toolchain": fp,
             "toolchain_divergence": divergence,
             "pilot_verification": verification,

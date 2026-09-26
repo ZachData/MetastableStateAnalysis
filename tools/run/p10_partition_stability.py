@@ -47,6 +47,11 @@ supplies the number that would let someone check.
 
 Run:
     python tools/run/p10_partition_stability.py --out data/analysis/p10_partition_stability.json
+
+``--refit`` re-derives both sides' labels from their ``activations.npz`` on
+float64 distances (`backfill_hdbscan.labels_for_activations`) instead of
+reading the stored ones, which were fitted on float32 distances. Same pairs,
+same record shape; the record's ``labels_a`` / ``labels_b`` say which.
 """
 import argparse
 import json
@@ -64,7 +69,7 @@ import numpy as np
 
 from core.functional_distance import adjusted_rand_index
 from core.holdout import add_holdout_args, refuse_held_out
-from tools.run.backfill_hdbscan import read_labels
+from tools.run.backfill_hdbscan import labels_for_activations, read_labels
 from tools.run.p10_anchor import checkpoint_of
 
 #: The sweep that carries NATIVE labels, written while `hdbscan` was installed.
@@ -113,8 +118,16 @@ def activation_divergence(dir_a: Path, dir_b: Path):
     return float(d.max()), float(d.mean())
 
 
-def compare_directory(dir_a: Path, dir_b: Path, with_activations: bool = True) -> dict:
-    la, lb = read_labels(dir_a), read_labels(dir_b)
+def refit_labels(run_dir: Path) -> dict:
+    """Labels re-derived from the directory's activations, float64 distances."""
+    acts = np.load(Path(run_dir) / "activations.npz")["activations"]
+    return labels_for_activations(acts, distance_dtype="float64")
+
+
+def compare_directory(dir_a: Path, dir_b: Path, with_activations: bool = True,
+                      refit: bool = False) -> dict:
+    labels = refit_labels if refit else read_labels
+    la, lb = labels(dir_a), labels(dir_b)
     shared = sorted(set(la) & set(lb))
     layers = []
     for layer in shared:
@@ -201,6 +214,9 @@ def main() -> None:
     ap.add_argument("--no-activations", action="store_true",
                     help="skip the input-divergence measurement (it reads every "
                          "pair of activation stacks)")
+    ap.add_argument("--refit", action="store_true",
+                    help="re-derive both sides' labels from activations.npz on "
+                         "float64 distances instead of reading the stored ones")
     ap.add_argument("--out",
                     default=str(DATA / "analysis" / "p10_partition_stability.json"))
     add_holdout_args(ap)
@@ -231,7 +247,8 @@ def main() -> None:
     t0 = time.time()
     dirs = []
     for i, (a, b) in enumerate(pairs, 1):
-        dirs.append(compare_directory(a, b, with_activations=not args.no_activations))
+        dirs.append(compare_directory(a, b, with_activations=not args.no_activations,
+                                      refit=args.refit))
         if i % 10 == 0 or i == len(pairs):
             print(f"  [{i}/{len(pairs)}] {a.name}  ({time.time() - t0:.0f}s)", flush=True)
 
@@ -245,8 +262,10 @@ def main() -> None:
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "sweep_a": str(pilot), "sweep_b": str(root),
         "holdout": holdout,
-        "labels_a": "native (hdbscan_labels.json)",
-        "labels_b": "backfilled (tools/run/backfill_hdbscan.py)",
+        "labels_a": ("refit, float64 distances" if args.refit
+                     else "native (hdbscan_labels.json)"),
+        "labels_b": ("refit, float64 distances" if args.refit
+                     else "backfilled (tools/run/backfill_hdbscan.py)"),
         "summary": summary,
         "directories": dirs,
     }

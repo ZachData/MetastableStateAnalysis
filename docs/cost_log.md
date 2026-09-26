@@ -80,3 +80,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-25 | Phase 1d A0: singleton bound in the trivial filter, smoke re-run (measured before the commit/PR calls) | 27 | 96k | 2.0M | 23k | #100 |
 | 2026-09-25 | Phase 1d float-noise drift, Stage 0 vs pilot, 72 layer-records (measured before the commit/PR calls) | 45 | 119k | 3.9M | 25k | #101 |
 | 2026-09-25 | Phase 1d matched k and near-tie location on `repeated_tokens` (measured before the commit/PR calls) | 23 | 105k | 1.8M | 25k | #102 |
+| 2026-09-26 | Phase 1d float64 cosine distances, Phase 10 §3 floor re-run on all 8 v1 prompts (measured before the commit/PR calls) | 40 | 117k | 3.2M | 29k | #103 |
