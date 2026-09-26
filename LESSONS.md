@@ -518,6 +518,12 @@ a wrong premise, the check inherits it.
   of finished runs and left orphan directories matching the hash and sha. The
   author's gate was green; a fresh-context `/challenge-pr` found it on its
   first run, `file:line` included.
+- 2026-09-26, 1d item (3): the same shape again, before any review could see
+  it. `attention_null.py` collected every layer-record in `pool.map` and wrote
+  once at the end; the user stopped the run after 3 h and all of it was lost.
+  The #67 instance was in this file. Rule: any batch over ~10 min writes each
+  finished unit as it lands and resumes from them, before its first launch
+  (fixed: per-record parts, `imap_unordered`).
 - 2026-09-24, #85: dropping the dependency hashes, the author wrote that a
   correction "reaches a reader through its own `## Corrections received`",
   though no rule puts a line there. The evidence also could not bear on the
