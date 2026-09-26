@@ -109,6 +109,17 @@ is a cluster". That change is the user's to make, not the scan's.
 - `2601.21366` (localisation of the mean-field landscape with the MLP) and `2608.08922` (clustered attractors; its "overlap gap" condition may be a testable separation criterion). Both were [N] in `p1_mstate_tracking/lit-1.md`.
 - Fridlyand & Dudoit 2002 (Clest): the test form of normalisation.
 
+## 7. A matched-covariance Gaussian null (added 2026-09-26)
+
+Scan for the unit "are tokens lumpier than their covariance explains" (user,
+2026-09-26; `status-1d.md` "Matched-covariance Gaussian null"). Web search, 3 queries.
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | SigClust defines "one cluster" as data from a single Gaussian. It compares the 2-means cluster index (within-SS / total-SS) to its distribution under a Gaussian with the data's covariance. For HDLSS data it does not use the plug-in covariance: invariance plus a factor model with a background-noise floor (Liu, Hayes, Nobel & Marron 2008, JASA 103:1281) | [S] | the null and the primary statistic (`ci2`). 1d uses the plug-in covariance and measures its bias (`--calibrate`) instead of estimating the floor |
+| 2 | SHC applies SigClust's test at every node of a hierarchical tree from the root down, with FWER control (Kimes, Liu, Hayes & Marron 2017, Biometrics 73:811; R `sigclust2`) | [S] | the natural next step for stage F's merge tree; not done here |
+| 3 | 1–3 "rogue dimensions" dominate cosine similarity in contextual LMs. Their contribution to the expected cosine is `E[u_i v_i]`. Standardising or removing them changes similarity-based conclusions (Timkey & van Schijndel 2021, EMNLP) | [S] | the `centred_norogue` frame and its rogue measure `m_i²` |
+
 ## Sources
 
 - von Luxburg 2010 — https://arxiv.org/abs/1007.1075
@@ -127,3 +138,6 @@ is a cluster". That change is the user's to make, not the scan's.
 - Erel et al. 2025 — https://arxiv.org/abs/2507.17657
 - Álvarez-López, Geshkovski & Ruiz-Balet 2026 — https://arxiv.org/abs/2601.21366
 - Gao, Yang & Chen 2026 — https://arxiv.org/abs/2608.08922
+- Liu, Hayes, Nobel & Marron 2008 (SigClust) — https://www.tandfonline.com/doi/abs/10.1198/016214508000000454
+- Kimes, Liu, Hayes & Marron 2017 (SHC) — https://academic.oup.com/biometrics/article/73/3/811/7537682
+- Timkey & van Schijndel 2021 — https://aclanthology.org/2021.emnlp-main.372/

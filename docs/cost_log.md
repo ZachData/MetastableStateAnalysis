@@ -99,3 +99,10 @@ running median of the rows above it gets a line under the table saying why.
   artifact, not in the repo: data extraction, design skills, one
   screenshot) all ran on the same context. The page should have been its
   own session (lesson 9).
+| 2026-09-26 | 1d matched-covariance Gaussian null: three frames, calibration and dedupe runs (whole transcript, before challenge-pr) | 67 | 185k | 8.8M | 38k | #106 |
+
+- #106 is 2.3× the running median (3.9M). The unit grew twice inside
+  itself, both times on a confound of its own result: the calibration run
+  (the null was off nominal level) and the dedupe run (token identity
+  explained step 0). Three background runs were waited on across turns,
+  each re-reading the context on return.
