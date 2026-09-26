@@ -68,8 +68,8 @@ from .p1d_io import (
     run_identity, save_p1d,
 )
 from .merge_tree import (
-    MERGE_TREE_LINKAGES, labels_at_delta, layer_link_chain, layer_merge_tree,
-    link_layer_pair,
+    LINK_MEASURES, MERGE_TREE_LINKAGES, labels_at_delta, layer_link_chain,
+    layer_merge_tree, link_layer_pair, substantial_labels,
 )
 
 __all__ = [
@@ -90,6 +90,7 @@ __all__ = [
     "noise_rescue", "persistence_target", "shipped_comparison",
     "P1D_SCHEMA_VERSION", "build_particle_table", "layer_activations",
     "load_run", "run_identity", "save_p1d",
-    "MERGE_TREE_LINKAGES", "labels_at_delta", "layer_link_chain",
-    "layer_merge_tree", "link_layer_pair",
+    "LINK_MEASURES", "MERGE_TREE_LINKAGES", "labels_at_delta",
+    "layer_link_chain", "layer_merge_tree", "link_layer_pair",
+    "substantial_labels",
 ]

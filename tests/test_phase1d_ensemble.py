@@ -593,7 +593,10 @@ class TestDriverEndToEnd:
         results = bundle["results"]
         assert results["stages"] == ["F"]
         assert results["verdicts"] == {}
-        assert "ensemble" not in results["per_layer"]["0"]
+        # "selection" is stage A's output: its presence means the tuning grid
+        # ran, which is the defect this test exists to catch.
+        for res in results["per_layer"].values():
+            assert "selection" not in res and "ensemble" not in res
         for layer, res in results["per_layer"].items():
             assert "merge_tree" in res
         assert results["layer_links"]["layers"] == [0, 1, 2]

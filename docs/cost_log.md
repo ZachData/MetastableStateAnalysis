@@ -81,15 +81,14 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-25 | Phase 1d float-noise drift, Stage 0 vs pilot, 72 layer-records (measured before the commit/PR calls) | 45 | 119k | 3.9M | 25k | #101 |
 | 2026-09-25 | Phase 1d matched k and near-tie location on `repeated_tokens` (measured before the commit/PR calls) | 23 | 105k | 1.8M | 25k | #102 |
 | 2026-09-26 | Phase 1d float64 cosine distances, Phase 10 §3 floor re-run on all 8 v1 prompts (measured before the commit/PR calls) | 40 | 117k | 3.2M | 29k | #103 |
-| 2026-09-26 | Phase 1d merge tree over scales, cross-layer linking, F stage-gating fix (measured before the commit/PR calls) | 112 | 337k | 24.8M | 81k | #104 |
+| 2026-09-26 | Phase 1d merge tree over scales, cross-layer linking, F stage-gating fix, and its same-session revision after a second review (whole transcript; measured before the final commit) | 190 | 447k | 54.6M | 101k | #104 |
 
-- 2026-09-26 Phase 1d merge tree + cross-layer linking (24.8M, about 6.8×
-  the 3.65M running median): a new module plus its own test file (24 tests,
-  one built from a 101-token hand-verified construction to cross-check
-  against `p1_mstate_tracking.cluster_tracking`), a Start-protocol recovery
-  (worktree vs main tree, `LESSONS.md` lesson 8), and a defect found and
-  fixed mid-unit (`--subexp F` silently paying for the full tuning grid),
-  each needing its own real-data re-run to confirm. Peak context 337k on the
-  later calls, from `status-1d.md` (553 lines) and several source files
-  staying in context for the whole session. This was explicitly one unit
-  ("1+2, one unit" per STATE.md), not two sessions merged.
+- 2026-09-26 Phase 1d merge tree (54.6M, about 15× the 3.65M running
+  median): **one unit built twice in one session.** The first pass (24.8M
+  at its PR) was a new module and tests, a worktree-vs-main-tree recovery
+  and the F stage-gating defect. Its headline was then found to be an
+  artefact (`LESSONS.md` lesson 6, 2026-09-26) and the unit was redone on
+  the same transcript: new plateau rule, containment linking, tie fix,
+  all 8 prompts re-run, write-up rewritten. Peak context 447k by the end.
+  The revision should have been a fresh session with the review as its
+  prompt (lesson 9).

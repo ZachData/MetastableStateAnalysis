@@ -23,10 +23,11 @@ command line did not name.
 F is tier 1, descriptive, and not one of P-C1..P-C4: it does not enter
 `verdicts`. It reads the full agglomerative hierarchy per layer as
 cluster count against distance threshold (option D, `lit-1d.md` §5),
-picks each layer's longest-lived plateau as that layer's partition, and
-links neighbouring layers' partitions by shared token membership,
-counting merges, splits, and the rarer both-at-once "tangle" per
-boundary (`merge_tree.py`).
+takes each layer's longest-lived plateau with at least two substantial
+clusters as that layer's partition (smaller clusters become outliers,
+-1), and links neighbouring layers' partitions by token containment,
+counting merges, splits and both-at-once "tangles" per boundary
+(`merge_tree.py`).
 
 WHAT THIS DELIBERATELY DOES NOT DO
 
@@ -61,7 +62,7 @@ import numpy as np
 from core.holdout import add_holdout_args, refuse_held_out
 
 from . import comparison, ensemble, merge_tree as merge_tree_mod
-from .constants import SHIPPED_HDBSCAN_PARAMS
+from .constants import SHIPPED_HDBSCAN_PARAMS, SUBSTANTIAL_CLUSTER_SIZE
 from .methods import LayerData, available_families, fit, hdbscan_backend
 from .p1d_io import (
     build_particle_table, layer_activations, load_run, phase1_agreement_layers,
@@ -140,12 +141,15 @@ def _add_merge_tree(result: Dict, data: LayerData, args: argparse.Namespace) -> 
     that skips the tuning grid entirely.
     """
     tree = merge_tree_mod.layer_merge_tree(
-        data, linkage=args.merge_tree_linkage, top_n=args.merge_tree_top_n)
+        data, linkage=args.merge_tree_linkage, top_n=args.merge_tree_top_n,
+        min_size=args.merge_tree_min_size)
     Z = tree.pop("_Z", None)
     result["merge_tree"] = tree
     if Z is not None and tree.get("robust"):
         top = tree["robust"][0]
-        labels = merge_tree_mod.labels_at_delta(Z, data.n, top["delta_lo"])
+        labels = merge_tree_mod.substantial_labels(
+            merge_tree_mod.labels_at_delta(Z, data.n, top["delta_lo"]),
+            args.merge_tree_min_size)
         result["merge_tree"]["top_plateau"] = top
         result.setdefault("_arrays", {})["merge_tree_labels"] = labels
     else:
@@ -293,7 +297,9 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
             "save_surface": args.save_surface,
             "merge_tree_linkage": args.merge_tree_linkage,
             "merge_tree_top_n": args.merge_tree_top_n,
-            "link_min_jaccard": args.link_min_jaccard,
+            "merge_tree_min_size": args.merge_tree_min_size,
+            "link_measure": args.link_measure,
+            "link_min_overlap": args.link_min_overlap,
         },
         "per_layer": {},
         "skipped": {},
@@ -322,11 +328,12 @@ def run_one(run_dir: Path, args: argparse.Namespace) -> Dict:
                            for l, arrs in per_layer_arrays.items()
                            if "merge_tree_labels" in arrs}
         out["layer_links"] = (
-            merge_tree_mod.layer_link_chain(labels_by_layer,
-                                            min_overlap=args.link_min_jaccard)
+            merge_tree_mod.layer_link_chain(labels_by_layer, layers=layers,
+                                            min_overlap=args.link_min_overlap,
+                                            measure=args.link_measure)
             if len(labels_by_layer) >= 2 else
-            {"skipped": "fewer than two layers had a merge-tree partition "
-                        "(a layer with no non-trivial plateau contributes none)"}
+            {"skipped": "fewer than two layers had a robust plateau "
+                        "(two or more substantial clusters)"}
         )
     out["verdicts"] = _adjudicate(out, per_layer_arrays, stages, args)
     out["verdicts_status"] = VERDICTS_STATUS
@@ -409,12 +416,15 @@ def _merge_tree_suffix(res: Dict) -> str:
     tree = res.get("merge_tree")
     if not tree:
         return ""
-    top = tree.get("top_plateau")
+    top, longest = tree.get("top_plateau"), tree.get("longest_any")
+    blob = (f"  longest: k={longest['k']} ({longest['k_substantial']} substantial, "
+            f"{longest['n_outliers']} outliers) life={longest['lifetime']:.3f}"
+            if longest else "")
     if not top:
-        return "  merge-tree: no non-trivial plateau"
-    return (f"  merge-tree: k={top['k']} over delta "
-            f"[{top['delta_lo']:.3f}, {top['delta_hi']:.3f}) "
-            f"lifetime={top['lifetime']:.3f}")
+        return "  merge-tree: no plateau with 2+ substantial clusters" + blob
+    return (f"  merge-tree: k={top['k_substantial']}+{top['n_outliers']} outliers over "
+            f"delta [{top['delta_lo']:.3f}, {top['delta_hi']:.3f}) "
+            f"life={top['lifetime']:.3f}" + blob)
 
 
 def _print_layer(layer: int, res: Dict) -> None:
@@ -473,9 +483,14 @@ def summary_text(results: Dict) -> str:
         if links.get("skipped"):
             lines.append(f"Layer links: skipped — {links['skipped']}")
         else:
-            lines.append(f"Layer links (min Jaccard {links['min_overlap']}), "
+            lines.append(f"Layer links ({links['measure']} >= {links['min_overlap']}), "
+                         f"{links['n_skipped']} boundaries skipped, "
                          f"totals: {links['totals']}")
             for b in links["boundaries"]:
+                if "skipped" in b:
+                    lines.append(f"  L{b['layer_from']}->L{b['layer_to']}: "
+                                 f"skipped — {b['skipped']}")
+                    continue
                 lines.append(
                     f"  L{b['layer_from']}->L{b['layer_to']}: "
                     f"{b['n_clusters_a']}->{b['n_clusters_b']} clusters, "
@@ -531,9 +546,16 @@ def build_parser() -> argparse.ArgumentParser:
                    default="average", help="linkage for stage F's merge tree (option D)")
     p.add_argument("--merge-tree-top-n", type=int, default=5,
                    help="robust plateaus kept per layer, ranked by lifetime")
-    p.add_argument("--link-min-jaccard", type=float, default=0.1,
-                   help="minimum token-overlap Jaccard for stage F's cross-layer link "
-                        "graph; matches p1_mstate_tracking.cluster_tracking's default")
+    p.add_argument("--merge-tree-min-size", type=int, default=SUBSTANTIAL_CLUSTER_SIZE,
+                   help="tokens a cluster needs to count as substantial; smaller "
+                        "clusters are outliers (-1) in stage F's partition")
+    p.add_argument("--link-measure", choices=merge_tree_mod.LINK_MEASURES,
+                   default="containment",
+                   help="overlap measure for stage F's cross-layer links; Jaccard "
+                        "cannot register a small piece leaving a large cluster")
+    p.add_argument("--link-min-overlap", type=float, default=None,
+                   help="edge threshold on --link-measure (default: 0.5 containment, "
+                        "0.1 Jaccard)")
     p.add_argument("--verbose", action="store_true")
     add_holdout_args(p)
     return p

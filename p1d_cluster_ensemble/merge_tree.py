@@ -2,38 +2,42 @@
 p1d_cluster_ensemble/merge_tree.py — cluster count against scale, and
 clusters linked across neighbouring layers by shared tokens.
 
-This is option D from the literature scan (`lit-1d.md` §5): instead of
-picking one scale per family (what `selection.py`'s stability ranking
-was shown to do, always at an extreme — `status-1d.md` "First real
-run"), read the full agglomerative hierarchy as a step function of
-cluster count against distance threshold `delta`, and call a scale
-"robust" when it survives an interval of `delta` rather than existing at
-one grid point (Fred & Jain's lifetime; ToMATo's persistence;
-`lit-1d.md` finding 4). **Not done here:** marking the theory's own
-`delta = c * beta_eff^-1/2` on this curve (option C) waits on beta's
-scale convention (STATE.md "Blocked" item 9); a robust plateau is
-reported by its own (delta_lo, delta_hi), with no claim about where the
-theory would place it.
+This is option D from the literature scan (`lit-1d.md` §5): read the full
+agglomerative hierarchy of one layer as a step function of cluster count
+against distance threshold `delta`, and call a scale robust when it
+survives an interval of `delta` (Fred & Jain's lifetime; ToMATo's
+persistence; `lit-1d.md` finding 4). **Not done here:** marking the
+theory's `delta = c * beta_eff^-1/2` on this curve (option C), which waits
+on beta's scale convention (STATE.md "Blocked" item 9).
 
-The second half links each layer's chosen partition to its neighbour's
-by shared token membership and classifies each linked group as stable,
-a merge, a split, or (when both happen in the same group) a tangle —
-counting merges against splits as a function of depth. This is a fresh,
-symmetric implementation rather than a call into
-`p1_mstate_tracking.cluster_tracking`, for a concrete reason: that
-tracker (`match_layer_pair`) does Hungarian one-to-one matching to pick
-a single "primary" trajectory per cluster, so an unmatched later-layer
-cluster that overlaps an already-matched one is silently a "birth" —
-split information the Hungarian match structurally cannot report. This
-module reads connected components of the overlap graph instead, which
-has no primary/secondary asymmetry and reports splits as a first-class
-outcome alongside merges. It is a different reading of the same kind of
-question, not a copy of that module's code, and the two agree on which
-groups are births/deaths (`tests/test_phase1d_merge_tree.py`
-`TestAgreesWithClusterTracking`).
+Two properties of the real data shaped the reading (`status-1d.md` "Merge
+tree over scales..."):
 
-Both halves are tier 1: descriptive readouts of one v1 run, not
-adjudications. Nothing here is registered.
+- **Longest lifetime alone picks an extreme.** On Pythia layers >= 2 the
+  longest-lived plateau is one cluster holding 91-96 % of tokens plus a few
+  outliers (often token 0, the attention sink); at L0 it is the exact
+  token-identity partition. Counting clusters there counts outliers. So a
+  plateau is only a candidate when at least two of its clusters have
+  `SUBSTANTIAL_CLUSTER_SIZE` tokens, and every plateau reports how many
+  substantial clusters and how many outlier tokens it has. The plain
+  longest-lived plateau is still reported (`longest_any`), since "one blob
+  plus outliers" is itself the finding at that scale.
+- **Jaccard cannot see a small piece leave a large cluster.** One token
+  leaving 460 has Jaccard 1/460, so a Jaccard-thresholded link records a
+  birth, never a split. Links are classified on containment (overlap over
+  the smaller cluster's size) by default; Jaccard is kept as an option and
+  stored on every edge.
+
+The second half links each layer's partition to its neighbour's and
+classifies each connected group of the overlap graph as stable, merge,
+split or tangle (both at once). It is a fresh implementation rather than a
+call into `p1_mstate_tracking.cluster_tracking`, whose Hungarian one-to-one
+match picks a primary trajectory per cluster and so cannot report a split:
+an unmatched later cluster overlapping a matched one becomes a birth. On
+Jaccard inputs with no split, the two agree on births, deaths and merge
+groups (`tests/test_phase1d_merge_tree.py` `TestAgreesWithClusterTracking`).
+
+Both halves are tier 1: descriptive readouts, not adjudications.
 """
 
 from __future__ import annotations
@@ -43,130 +47,168 @@ from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 
+from .constants import SUBSTANTIAL_CLUSTER_SIZE
 from .methods import LayerData
 
-#: Linkages comparable at a shared distance-threshold scale. Ward is
-#: excluded for the same reason methods.py's agglomerative family fits
-#: it on coordinates instead of the precomputed matrix: its merge cost
-#: is a variance increase, not a cosine distance, so a Ward height is
-#: not on the same axis as an average/complete/single height and a
-#: merge tree mixing them would plot two different units on one curve.
+#: Linkages whose merge heights are cosine distances. Ward is excluded for
+#: the reason methods.py fits it on coordinates: its height is a variance
+#: increase, not a distance, so it would put a second unit on the same axis.
 MERGE_TREE_LINKAGES = ("average", "complete", "single")
+
+#: Merge heights closer than this are one tie group (identical token
+#: vectors merge at ~1e-16, not exactly 0). PLACED: far above float64
+#: rounding of a clipped cosine distance, far below any real gap.
+HEIGHT_TIE_TOL = 1e-12
+
+LINK_MEASURES = ("containment", "jaccard")
+
+#: PLACED defaults. Containment 0.5: most of the smaller cluster lies in
+#: the other. Jaccard 0.1: p1_mstate_tracking.cluster_tracking's default.
+DEFAULT_MIN_OVERLAP = {"containment": 0.5, "jaccard": 0.1}
 
 
 # ---------------------------------------------------------------------------
 # Part 1 — the merge tree over scales
 # ---------------------------------------------------------------------------
 
-def layer_merge_tree(data: LayerData, linkage: str = "average", top_n: int = 5) -> Dict:
+def layer_merge_tree(data: LayerData, linkage: str = "average", top_n: int = 5,
+                     min_size: int = SUBSTANTIAL_CLUSTER_SIZE) -> Dict:
     """
-    One layer's full agglomerative hierarchy, read as a step function of
-    cluster count `k` against distance threshold `delta`.
+    One layer's full agglomerative hierarchy as plateaus of constant `k`.
 
-    Every plateau (a run of `delta` over which `k` does not change) is
-    reported, ordered by `delta_lo`. The two ends are always trivial and
-    marked as such rather than dropped: `k == n_tokens` is "no merge has
-    happened yet" (the resolution floor, not a cluster reading), and
-    `k == 1` is "everything has merged" (`delta_hi` and `lifetime` are
-    +inf, which `p1d_io._sanitize` writes as JSON `null`). `robust` is
-    the non-trivial plateaus ranked by lifetime, descending, truncated
-    to `top_n` — the reading `lit-1d.md` recommends in place of one
-    family's stability-ranked pick.
+    Merges whose heights tie (within `HEIGHT_TIE_TOL`) are applied together,
+    so every plateau has positive width and cutting at its `delta_lo`
+    reproduces its `k`. Each plateau carries `k_substantial` (clusters with
+    at least `min_size` tokens) and `n_outliers` (tokens in smaller ones).
 
-    Returns a dict with `n_tokens`, `linkage`, `branch`, `plateaus`,
-    `robust`, and `_Z` — the raw scipy linkage matrix, kept only for
-    `labels_at_delta` within the same process and stripped by the
-    caller before anything is written to `p1d_results.json` (it is
-    reproducible from `activations.npz` plus this module, the same
-    "re-run rather than store" convention the rest of this phase's
-    per-run artifacts follow).
+    Trivial, and never robust: the first plateau (`delta_lo` in the tie
+    group at 0: singletons, or exact duplicates merged — at L0 that is token
+    identity) and `k == 1`. `robust` is the non-trivial plateaus with
+    `k_substantial >= 2`, by lifetime, descending, at most `top_n`.
+    `longest_any` is the longest non-trivial plateau with no size condition.
+
+    `_Z` is the scipy linkage matrix for `labels_at_delta` in the same
+    process; callers strip it before writing JSON (it is reproducible from
+    `activations.npz`).
     """
     if linkage not in MERGE_TREE_LINKAGES:
         raise ValueError(f"unknown merge-tree linkage {linkage!r}; use one of "
-                          f"{MERGE_TREE_LINKAGES}")
+                         f"{MERGE_TREE_LINKAGES}")
     n = data.n
-    empty = {"n_tokens": n, "linkage": linkage, "n_merges": 0,
-              "plateaus": [], "robust": [], "_Z": None}
+    empty = {"n_tokens": n, "linkage": linkage, "min_size": int(min_size),
+             "n_merges": 0, "plateaus": [], "robust": [], "longest_any": None,
+             "_Z": None}
     if n < 2:
         return {**empty, "branch": "n<2"}
+
     if n == 2:
-        # scipy refuses a 1x1 condensed distance matrix; the one possible
-        # merge is exact, not a fit.
-        d01 = float(data.cos_dist[0, 1])
-        Z = np.array([[0.0, 1.0, max(d01, 0.0), 2.0]])
-        plateaus = _plateaus_from_heights(np.array([max(d01, 0.0)]), n)
-        return {"n_tokens": n, "linkage": linkage, "branch": "two_tokens",
-                "n_merges": 1, "plateaus": plateaus,
-                "robust": _robust(plateaus, top_n), "_Z": Z}
+        # scipy refuses a 1x1 condensed matrix; the one merge is exact.
+        Z = np.array([[0.0, 1.0, max(float(data.cos_dist[0, 1]), 0.0), 2.0]])
+        branch = "two_tokens"
+    else:
+        try:
+            from scipy.cluster.hierarchy import linkage as _linkage
+            from scipy.spatial.distance import squareform
+        except ImportError:
+            return {**empty, "branch": "scipy_unavailable"}
+        D = np.asarray(data.cos_dist, dtype=np.float64)
+        D = np.clip(0.5 * (D + D.T), 0.0, None)
+        np.fill_diagonal(D, 0.0)
+        try:
+            Z = _linkage(squareform(D, checks=False), method=linkage)
+        except (ValueError, RuntimeError):
+            return {**empty, "branch": "linkage_failed"}
+        if np.any(np.diff(Z[:, 2]) < -HEIGHT_TIE_TOL):
+            return {**empty, "branch": "non_monotone_heights"}
+        branch = "plateaus"
 
-    try:
-        from scipy.cluster.hierarchy import linkage as _linkage
-        from scipy.spatial.distance import squareform
-    except ImportError:
-        return {**empty, "branch": "scipy_unavailable"}
+    plateaus = _plateaus(Z, n, int(min_size))
+    nontrivial = [p for p in plateaus if not p["trivial"]]
+    robust = sorted((p for p in nontrivial if p["k_substantial"] >= 2),
+                    key=lambda p: p["lifetime"], reverse=True)[:max(0, int(top_n))]
+    longest = max(nontrivial, key=lambda p: p["lifetime"]) if nontrivial else None
+    return {"n_tokens": n, "linkage": linkage, "min_size": int(min_size),
+            "branch": branch, "n_merges": int(Z.shape[0]), "plateaus": plateaus,
+            "robust": robust, "longest_any": longest, "_Z": Z}
 
-    D = np.asarray(data.cos_dist, dtype=np.float64)
-    D = 0.5 * (D + D.T)
-    np.fill_diagonal(D, 0.0)
-    D = np.clip(D, 0.0, None)
-    try:
-        Z = _linkage(squareform(D, checks=False), method=linkage)
-    except (ValueError, RuntimeError):
-        return {**empty, "branch": "linkage_failed"}
 
+def _plateaus(Z: np.ndarray, n: int, min_size: int) -> List[Dict]:
+    """Walk the merges in order, one tie group at a time, tracking sizes."""
     heights = np.asarray(Z[:, 2], dtype=float)
-    # average/complete/single are monotone by construction; a small
-    # negative step is float noise in the distance matrix, not a real
-    # inversion, and is clipped rather than silently accepted or raising
-    # on data this phase otherwise treats as fine (status-1d.md "the
-    # float32 defect" is exactly the kind of thing a raise here would
-    # have caught earlier).
-    if np.any(np.diff(heights) < -1e-9):
-        return {**empty, "branch": "non_monotone_heights", "_Z": Z}
-    heights = np.maximum.accumulate(heights)
+    size = {i: 1 for i in range(n)}
+    n_sub = n if min_size <= 1 else 0
+    n_out = 0 if min_size <= 1 else n
 
-    plateaus = _plateaus_from_heights(heights, n)
-    return {"n_tokens": n, "linkage": linkage, "branch": "plateaus",
-            "n_merges": int(heights.size), "plateaus": plateaus,
-            "robust": _robust(plateaus, top_n), "_Z": Z}
+    def _drop(s: int) -> None:
+        nonlocal n_sub, n_out
+        if s >= min_size:
+            n_sub -= 1
+        else:
+            n_out -= s
 
+    def _add(s: int) -> None:
+        nonlocal n_sub, n_out
+        if s >= min_size:
+            n_sub += 1
+        else:
+            n_out += s
 
-def _plateaus_from_heights(heights: np.ndarray, n: int) -> List[Dict]:
-    """heights: sorted, nondecreasing merge heights, length n-1."""
+    # tie groups: [start, end) row ranges; the first group is the one at ~0
+    groups: List[List[int]] = []
+    i, m = 0, heights.size
+    while i < m:
+        j = i + 1
+        while j < m and heights[j] - heights[i] <= HEIGHT_TIE_TOL:
+            j += 1
+        groups.append([i, j])
+        i = j
+    if not groups or heights[0] > HEIGHT_TIE_TOL:
+        groups.insert(0, [0, 0])  # no zero-height merges: floor is all singletons
+
     plateaus: List[Dict] = []
-    boundaries = np.concatenate([[0.0], heights])
-    for i in range(len(boundaries)):
-        k = n - i
-        delta_lo = float(boundaries[i])
-        delta_hi = float(boundaries[i + 1]) if i + 1 < len(boundaries) else math.inf
-        lifetime = delta_hi - delta_lo
+    done = 0
+    for g, (start, end) in enumerate(groups):
+        for row in range(start, end):
+            a, b = int(Z[row, 0]), int(Z[row, 1])
+            sa, sb = size.pop(a), size.pop(b)
+            _drop(sa)
+            _drop(sb)
+            size[n + row] = sa + sb
+            _add(sa + sb)
+        done = end
+        delta_lo = float(heights[end - 1]) if end > start else 0.0
+        delta_hi = (float(heights[groups[g + 1][0]]) if g + 1 < len(groups)
+                    else math.inf)
+        k = n - done
         plateaus.append({
-            "k": int(k), "delta_lo": delta_lo, "delta_hi": delta_hi,
-            "lifetime": lifetime, "trivial": bool(k == n or k == 1),
+            "k": int(k), "k_substantial": int(n_sub), "n_outliers": int(n_out),
+            "delta_lo": delta_lo, "delta_hi": delta_hi,
+            "lifetime": delta_hi - delta_lo,
+            "trivial": bool(g == 0 or k == 1),
         })
     return plateaus
 
 
-def _robust(plateaus: Sequence[Dict], top_n: int) -> List[Dict]:
-    candidates = [p for p in plateaus if not p["trivial"]]
-    candidates.sort(key=lambda p: p["lifetime"], reverse=True)
-    return candidates[:max(0, int(top_n))]
-
-
 def labels_at_delta(Z: np.ndarray, n_tokens: int, delta: float) -> np.ndarray:
     """
-    (n_tokens,) int32 labels from cutting a merge tree at `delta`.
-
-    `delta` should be a plateau's own `delta_lo` (a merge height, or 0.0
-    for the all-singletons plateau): `fcluster`'s distance criterion
-    keeps every merge at height <= t, so cutting at a plateau's own
-    lower edge reproduces exactly the `k` that plateau reports, with no
-    off-by-one from cutting mid-interval.
+    (n_tokens,) int32 labels from cutting the tree at `delta`. Use a
+    plateau's own `delta_lo`: `fcluster` keeps every merge at height <= t,
+    and `delta_lo` is the top of that plateau's tie group.
     """
     if n_tokens < 2:
         return np.zeros(n_tokens, dtype=np.int32)
     from scipy.cluster.hierarchy import fcluster
-    return (fcluster(Z, t=float(delta), criterion="distance").astype(np.int32) - 1)
+    return fcluster(Z, t=float(delta), criterion="distance").astype(np.int32) - 1
+
+
+def substantial_labels(labels: np.ndarray, min_size: int = SUBSTANTIAL_CLUSTER_SIZE
+                       ) -> np.ndarray:
+    """Labels with every cluster smaller than `min_size` set to -1 (outlier)."""
+    labels = np.asarray(labels, dtype=np.int32).copy()
+    ids, counts = np.unique(labels[labels >= 0], return_counts=True)
+    small = ids[counts < min_size]
+    labels[np.isin(labels, small)] = -1
+    return labels
 
 
 # ---------------------------------------------------------------------------
@@ -177,48 +219,41 @@ _KINDS = ("stable", "merge", "split", "tangle", "birth", "death")
 
 
 def link_layer_pair(labels_a: np.ndarray, labels_b: np.ndarray,
-                     min_overlap: float = 0.1) -> Dict:
+                    min_overlap: Optional[float] = None,
+                    measure: str = "containment") -> Dict:
     """
-    Link layer `a`'s clusters to layer `b`'s by Jaccard overlap of token
-    membership, read as connected components of the (cluster_a,
-    cluster_b) overlap graph rather than a one-to-one match.
+    Link layer `a`'s clusters to layer `b`'s by token overlap, read as
+    connected components of the overlap graph. Tokens labelled -1 are
+    outliers and belong to no cluster on that side.
 
-    A component with `n_prev` layer-`a` clusters and `n_curr` layer-`b`
-    clusters is:
+    An edge needs `measure >= min_overlap`, where containment is
+    |A & B| / min(|A|, |B|) and Jaccard is |A & B| / |A | B|. Both are stored
+    on every edge as [a, b, jaccard, containment]. A component with
+    `n_prev` a-clusters and `n_curr` b-clusters is
 
-        stable  n_prev == 1 and n_curr == 1   (same tokens, both sides)
-        merge   n_prev >  1 and n_curr == 1   (several a-clusters -> one)
-        split   n_prev == 1 and n_curr >  1   (one a-cluster -> several)
-        tangle  n_prev >  1 and n_curr >  1   (both at once)
+        stable  1 and 1        merge   >1 and 1
+        split   1 and >1       tangle  >1 and >1  (not forced into either)
 
-    A tangle is reported as its own kind, not forced into a merge or a
-    split count: several a-clusters partially recombining into several
-    b-clusters is neither operation and counting it as one would be a
-    modelling choice this module does not make silently.
-
-    An a-cluster (b-cluster) with no edge above `min_overlap` is a
-    death (birth) — no noise label enters this reading, unlike
-    `p1_mstate_tracking.cluster_tracking`'s HDBSCAN-labels case, because
-    the input here is an agglomerative cut, which partitions every
-    token; a birth or death means the scale itself does not persist to
-    the next layer, not that tokens left structure.
+    and a cluster with no edge is a death (a side) or birth (b side): its
+    scale does not persist to the neighbouring layer.
     """
+    if measure not in LINK_MEASURES:
+        raise ValueError(f"unknown link measure {measure!r}; use one of {LINK_MEASURES}")
+    if min_overlap is None:
+        min_overlap = DEFAULT_MIN_OVERLAP[measure]
     labels_a = np.asarray(labels_a)
     labels_b = np.asarray(labels_b)
     if labels_a.shape != labels_b.shape:
         raise ValueError(f"layer pair must share token count; got "
-                          f"{labels_a.shape} vs {labels_b.shape}")
+                         f"{labels_a.shape} vs {labels_b.shape}")
 
-    ids_a = sorted(int(c) for c in set(labels_a.tolist()))
-    ids_b = sorted(int(c) for c in set(labels_b.tolist()))
+    ids_a = sorted(int(c) for c in set(labels_a.tolist()) if c >= 0)
+    ids_b = sorted(int(c) for c in set(labels_b.tolist()) if c >= 0)
     sets_a = {c: set(np.flatnonzero(labels_a == c).tolist()) for c in ids_a}
     sets_b = {c: set(np.flatnonzero(labels_b == c).tolist()) for c in ids_b}
 
-    def key_a(c: int) -> str: return f"a{c}"
-    def key_b(c: int) -> str: return f"b{c}"
-
-    adj: Dict[str, set] = {key_a(c): set() for c in ids_a}
-    adj.update({key_b(c): set() for c in ids_b})
+    adj: Dict[str, set] = {f"a{c}": set() for c in ids_a}
+    adj.update({f"b{c}": set() for c in ids_b})
     edges: List[List] = []
     for a in ids_a:
         sa = sets_a[a]
@@ -227,12 +262,12 @@ def link_layer_pair(labels_a: np.ndarray, labels_b: np.ndarray,
             inter = len(sa & sb)
             if inter == 0:
                 continue
-            union = len(sa) + len(sb) - inter
-            jac = inter / union if union else 0.0
-            if jac >= min_overlap:
-                edges.append([a, b, float(jac)])
-                adj[key_a(a)].add(key_b(b))
-                adj[key_b(b)].add(key_a(a))
+            jac = inter / (len(sa) + len(sb) - inter)
+            con = inter / min(len(sa), len(sb))
+            if (con if measure == "containment" else jac) >= min_overlap:
+                edges.append([a, b, float(jac), float(con)])
+                adj[f"a{a}"].add(f"b{b}")
+                adj[f"b{b}"].add(f"a{a}")
 
     components: List[Dict] = []
     seen: set = set()
@@ -253,45 +288,47 @@ def link_layer_pair(labels_a: np.ndarray, labels_b: np.ndarray,
             kind = "birth"
         elif not curr:
             kind = "death"
-        elif len(prev) == 1 and len(curr) == 1:
-            kind = "stable"
-        elif len(prev) > 1 and len(curr) == 1:
-            kind = "merge"
-        elif len(prev) == 1 and len(curr) > 1:
-            kind = "split"
+        elif len(prev) == 1:
+            kind = "stable" if len(curr) == 1 else "split"
         else:
-            kind = "tangle"
+            kind = "merge" if len(curr) == 1 else "tangle"
         components.append({"prev": prev, "curr": curr, "kind": kind})
 
-    counts = {kind: sum(1 for c in components if c["kind"] == kind) for kind in _KINDS}
     return {
         "n_clusters_a": len(ids_a), "n_clusters_b": len(ids_b),
-        "min_overlap": float(min_overlap),
-        "edges": edges, "components": components, "counts": counts,
+        "n_outliers_a": int((labels_a < 0).sum()),
+        "n_outliers_b": int((labels_b < 0).sum()),
+        "measure": measure, "min_overlap": float(min_overlap),
+        "edges": edges, "components": components,
+        "counts": {kind: sum(c["kind"] == kind for c in components) for kind in _KINDS},
     }
 
 
 def layer_link_chain(labels_by_layer: Dict[int, np.ndarray],
-                      min_overlap: float = 0.1) -> Dict:
+                     layers: Optional[Sequence[int]] = None,
+                     min_overlap: Optional[float] = None,
+                     measure: str = "containment") -> Dict:
     """
-    `link_layer_pair` over every neighbouring pair in the layers that
-    have a partition — "neighbouring" in the sorted key set actually
-    supplied (e.g. a smoke run's L0/L12/L18), not necessarily adjacent
-    transformer layers, since 1d is routinely run at a stride or an
-    explicit layer list. The `layer_from` on each boundary is the depth
-    "counting merges against splits with depth" reads against; whether
-    merges start to dominate splits (or vice versa) at greater depth is
-    left to be read off this table; not computed as a trend statistic
-    here, since a stride run has too few boundaries for one to mean
-    anything (`status-1d.md` "Merge tree and layer links").
+    `link_layer_pair` over consecutive entries of `layers` (default: the
+    sorted keys). A boundary where either side has no partition is recorded
+    as skipped, not bridged: linking L5 to L7 across a missing L6 would read
+    two layers of change as one.
     """
-    layers = sorted(labels_by_layer)
+    layers = sorted(labels_by_layer) if layers is None else list(layers)
+    if min_overlap is None:
+        min_overlap = DEFAULT_MIN_OVERLAP.get(measure, 0.0)
     boundaries: List[Dict] = []
     for here, nxt in zip(layers, layers[1:]):
+        if here not in labels_by_layer or nxt not in labels_by_layer:
+            boundaries.append({"layer_from": here, "layer_to": nxt,
+                               "skipped": "no robust plateau on one side"})
+            continue
         link = link_layer_pair(labels_by_layer[here], labels_by_layer[nxt],
-                               min_overlap=min_overlap)
+                               min_overlap=min_overlap, measure=measure)
         boundaries.append({"layer_from": here, "layer_to": nxt, **link})
 
-    totals = {kind: sum(b["counts"][kind] for b in boundaries) for kind in _KINDS}
-    return {"layers": layers, "min_overlap": float(min_overlap),
+    linked = [b for b in boundaries if "skipped" not in b]
+    totals = {kind: sum(b["counts"][kind] for b in linked) for kind in _KINDS}
+    return {"layers": layers, "measure": measure, "min_overlap": float(min_overlap),
+            "n_skipped": len(boundaries) - len(linked),
             "boundaries": boundaries, "totals": totals}

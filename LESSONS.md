@@ -371,6 +371,18 @@ needs the user to enable it on GitHub.
   almost all one prompt, `repeated_tokens` (`status-1d.md` "Float-noise drift"). A
   tail percentile over pooled units reports the worst unit as the whole
   battery. Break a floor or tail down by prompt before quoting it.
+- 2026-09-26 (#104, 1d merge tree, first version): "splits almost absent,
+  merges at L0→L2" was produced by the instrument twice over. The
+  longest-lived plateau at layers >= 2 is one cluster with 91–96 % of
+  tokens plus outliers, and a Jaccard >= 0.1 link cannot register a piece
+  leaving a large cluster (1/460), so every split it could have seen was
+  a birth; the L0→L2 "merges" were the pick jumping from token identity to
+  the blob. The PR's own 101-token test encoded the blindness (a straggler
+  labelled "birth") and passed. `/challenge-pr` accepted the claim; a
+  second read of the saved labels' cluster sizes caught it. Rule: before
+  reporting counts of an event type, **print the sizes of the units the
+  counts are over**, and build one fixture where the event must occur
+  (here, a 4-token piece leaving 60) to check the instrument can see it.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
@@ -406,9 +418,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
 - 2026-09-26: Claude created `../Mets-work` per the Start protocol, then read
   and edited four files by their absolute `/Mets/...` path anyway — the
   worktree existed but every tool call still named the main tree. Caught only
-  because a later shell command's cwd reset (see lesson 9's pattern:
-  per-call state does not persist the way it looks like it should) surfaced
-  `git status` on the main tree showing the same files as modified. Fixed by
+  because an import check run from the worktree failed (the new module was
+  not there); `git status` then showed the edits on the main tree. Bash cwd
+  also resets between calls here, so a `cd` in one call does not carry to
+  the next. Fixed by
   copying the changed/new files into the worktree and `git checkout --` on
   the main tree before continuing. Creating a worktree does not make it the
   default target of anything; every Read/Edit/Write/Bash path in the task
