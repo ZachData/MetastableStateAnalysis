@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-26 (Phase 1d matched-covariance Gaussian null) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-27 (fleet box onboarded: venv + HF cache in S3) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -65,7 +65,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-**#106 (`claude/p1d-gaussian-null`, in `../Mets-work`): open.** #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
+**#107 (`rvm-onboard`, fleet onboarding, in `../Mets-work`): open.** #106 merged 2026-09-26. #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
@@ -110,6 +110,16 @@ hashed by `claims/audits/claim_c_real_run.json`, `data/phase12/`, pilot sweep on
 | Can run here | tests, lint, docs, math checks, anything not needing weights or `data/` |
 | Cannot run here | any forward pass (no weights reachable), Stage 0 (57–100 GB > 22 GB), anything reading the 152 WDS dirs or CLAIM-C arms |
 
+**Fleet box** (research-vm-infra; EC2 t4g.small, aarch64, 2 vCPU, 1.8 GB,
+no swap, repo at `/home/ubuntu/MetastableStateAnalysis`, config
+`infra/rvm.env`). Set up 2026-09-27; gate and smoke ran on `c5b56fd` (+ docs-only #107):
+| | |
+|---|---|
+| venv | `/home/ubuntu/venv`, py3.10 (uv), torch 2.14.0+cpu, transformers 4.57.6, numpy 2.2.6, scipy 1.15.3, sklearn 1.7.2, **hdbscan 0.8.44** (built from source; no aarch64 wheel; the `mets` env has 0.8.41). S3 key `envs/aarch64/py3.10/MetastableStateAnalysis/9c0773c95606ad6f.tar.zst` (275 MB); boots restore it |
+| Gate | `PATH=~/venv/bin:$PATH ./scripts/check.sh` → 2773 passed, **4 failed** (aarch64 numerics; `LESSONS.md` 4), 145 s |
+| Smoke | `SMOKE_REAL_DEPS=1 pytest -m smoke` → 52 passed, 1 failed (P-I5, Blocked 2). OOM without swap; 24 min with 4 GB swap |
+| S3 | bucket holds only this project (Lora_inductionhead's objects deleted 2026-09-27 on the user's instruction); `caches/huggingface/` = pythia-70m + tiny smoke models |
+
 Local box: conda `mets` at `/run/media/system/WDS_500/miniforge3/envs/mets/bin/python`
 with `CUDA_VISIBLE_DEVICES=""`; env `HF_HOME=<main>/data/hf HF_HUB_OFFLINE=1 HF_HUB_DISABLE_XET=1 METS_RESULTS_DIR=<main>/data/phase12`,
 plus `METS_REPO=$PWD METS_DATA=<main>/data` from a worktree; 164 GB free; Phase-1 run ≈ 200 s, 260 MB per prompt × checkpoint (410m, CPU).
@@ -130,6 +140,7 @@ plus `METS_REPO=$PWD METS_DATA=<main>/data` from a worktree; 164 GB free; Phase-
 |---|---|
 | Phase → directory | `INDEX.md` |
 | Phase detail, numbers, how to re-run | `<phase>/status-N.md` |
+| Wall time / peak memory / disk per job (container sizing) | `docs/compute_profile.md` |
 | Scoped plan for the active thread | `p10_cluster_function/handoff-10.md` |
 | History, reasoning, the §3.x record | `PROJECT.md` via `docs/index/PROJECT.idx.md` (line ranges; never read whole) |
 | Registered predictions | `claims/registry.json`, `PREDICTIONS.md` |
