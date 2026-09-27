@@ -106,3 +106,4 @@ running median of the rows above it gets a line under the table saying why.
   (the null was off nominal level) and the dedupe run (token identity
   explained step 0). Three background runs were waited on across turns,
   each re-reading the context on return.
+| 2026-09-27 | fleet onboarding: venv built and published to S3, HF cache pushed, `rvm.env` un-ignored, Lora objects deleted (whole transcript, before the commit) | 53 | 107k | 4.3M | 23k | rvm-onboard PR |

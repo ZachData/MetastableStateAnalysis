@@ -275,6 +275,12 @@ set it ran on (battery hash, key list) and refuses on a mismatch. Status:
   `PROMPTS` has 2 keys, so a test that imports `PROMPTS` checks the stub, not the
   battery. `test_holdout.py` failed on that and now reads the keys from
   `core/config.py` with `ast`. Any test asserting on the real battery has to do the same.
+- 2026-09-27: on the fleet box (aarch64, OpenBLAS `neoversen1`, py3.10) the
+  gate has 4 failures that CI's x86 py3.10 passes: an eigenvalue count at
+  `1e-10` (7 vs 6, `test_phase2b_schur.py`), an energy fraction on an exact
+  tie (1.0 vs 0.0, `test_phase2b_head_circuits.py`), a corrected R² 0.18 vs
+  < 0.05 (`test_p10_partition_function.py`), and a refusal whose branch
+  (ties vs draws) flips (`test_p_i1_attainable_floor.py`). CI has no ARM leg.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
@@ -455,6 +461,11 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   default target of anything; every Read/Edit/Write/Bash path in the task
   must be re-anchored to it explicitly, and it is worth one `pwd`-equivalent
   check right after `git worktree add` to confirm before the first edit.
+- 2026-09-27: the fleet-onboarding commit `cbff98f` ("Add infra/") contained
+  only `infra/prompt.md`; the deny-by-default `.gitignore` dropped
+  `infra/rvm.env` without a word, so a booted instance would have run on the
+  fleet defaults (py3.12, `pip install -e '.[dev]'`, an extra that does not
+  exist). After committing a new file type, `git show --stat HEAD` must list it.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
