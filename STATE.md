@@ -112,7 +112,7 @@ hashed by `claims/audits/claim_c_real_run.json`, `data/phase12/`, pilot sweep on
 
 **Fleet box** (research-vm-infra; EC2 t4g.small, aarch64, 2 vCPU, 1.8 GB,
 no swap, repo at `/home/ubuntu/MetastableStateAnalysis`, config
-`infra/rvm.env`). Set up 2026-09-27:
+`infra/rvm.env`). Set up 2026-09-27; gate and smoke ran on `c5b56fd` (+ docs-only #107):
 | | |
 |---|---|
 | venv | `/home/ubuntu/venv`, py3.10 (uv), torch 2.14.0+cpu, transformers 4.57.6, numpy 2.2.6, scipy 1.15.3, sklearn 1.7.2, **hdbscan 0.8.44** (built from source; no aarch64 wheel; the `mets` env has 0.8.41). S3 key `envs/aarch64/py3.10/MetastableStateAnalysis/9c0773c95606ad6f.tar.zst` (275 MB); boots restore it |
