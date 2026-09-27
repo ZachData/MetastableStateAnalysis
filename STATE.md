@@ -140,6 +140,7 @@ plus `METS_REPO=$PWD METS_DATA=<main>/data` from a worktree; 164 GB free; Phase-
 |---|---|
 | Phase → directory | `INDEX.md` |
 | Phase detail, numbers, how to re-run | `<phase>/status-N.md` |
+| Wall time / peak memory / disk per job (container sizing) | `docs/compute_profile.md` |
 | Scoped plan for the active thread | `p10_cluster_function/handoff-10.md` |
 | History, reasoning, the §3.x record | `PROJECT.md` via `docs/index/PROJECT.idx.md` (line ranges; never read whole) |
 | Registered predictions | `claims/registry.json`, `PREDICTIONS.md` |
