@@ -841,10 +841,14 @@ cosine head gives 0.09–0.17. step 0: β ≈ 0, R² ≈ 0; real ≈ cosine head
 there; code at this branch's head). `run_all.sh` runs the four configurations
 (`null`, `calibrate`, `null_dedupe`, `calibrate_dedupe`; 100 draws, 14
 workers) and skips any whose JSON exists; within one, finished layer-records
-are in `<name>.parts/` and are reused if their settings match. The first
-configuration ran > 3 h without finishing (384 layer-records): budget ≥ 12 h
-for all four, or cut draws. Then `attention_null_report.py` per pair, then
-`viz_page.py --gauss … --attn … --out <dir>` for the page.
+are in `<name>.parts/` and are reused if their settings match. **Progress
+(stopped by the user 2026-09-27 19:44):** `null.json` DONE (384/384, 6.5 h at
+14 workers, ~1 400 s per full-length record); `calibrate` 126/384 in
+`calibrate.parts/` (~5 h left); `null_dedupe`, `calibrate_dedupe` not started
+(shorter prompts, expected several times faster). Relaunch: `run_all.sh >>
+run_all.log` in the background; it logs `N/384 done` every 12 records. Then
+`attention_null_report.py` per pair, then `viz_page.py --gauss … --attn …
+--out <dir>` for the page.
 
 ## Deleted and restored (was `FROZEN.md`)
 
