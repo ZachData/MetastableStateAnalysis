@@ -607,6 +607,11 @@ sink; it is what absolute lifetime makes of one or two far tokens.
 
 ### Matched-covariance Gaussian null: are tokens lumpier than their covariance explains? (2026-09-26)
 
+*Later (2026-09-28, #108):* this null draws each position independently, so
+structure that is only smooth along the sequence beats it; untrained step 0
+beats the same null in item (3). A position-keeping residual null is Parked
+under "Attention communities against three nulls".
+
 **What.** A new unit before item (3), at the user's call (2026-09-26). The null is
 SigClust's (`lit-1d.md` §7): one Gaussian with the tokens' own mean and
 plug-in covariance, `n` draws per layer, renormed, then clustered by the
@@ -850,19 +855,22 @@ noted.
 
 | # | finding | numbers (step143000, w1 mutual; all tokens · deduped) |
 |---|---|---|
-| 1 | **Only null A is at level.** B and C fire on their own calibration for Q, λ₂, k₄, local (cal tails 100–161 of 161), so against them only real-vs-calibration can be read, and there the real run is *not* more extreme | Q vs B: 127/161 · 117/161; vs C: 156/161 · 155/161. For the ARI statistics B and C are near level (cal 1–13) |
-| 2 | **Attention on the real tokens is not more modular than the model's own attention on a matched Gaussian;** at L17–23, and at L1–8 deduped, it is less | Q median 0.407 vs null A 0.421, tail 26/1 · 0.360 vs 0.392, 10/1. L17–23: 0.333 vs 0.388 (1/0). λ₂ agrees (higher real = less split) |
+| 1 | **No null is shown to be at level on real inputs.** A's calibration passes by construction (a null-A draw tested against null A); the step-0 control is the real test, and A fails it (rows 2, 7). B and C fire even on a null-A draw for Q, λ₂, k₄, local (cal 100–161 of 161), so against them only real-vs-calibration reads, and there the real run is *not* more extreme. For ARI, B's calibration is 1–13 of 161 at step143000 but 28 of 161 at step 0 | Q vs B: 127/161 · 117/161; vs C: 156/161 · 155/161 |
+| 2 | **Modularity against A fires in both tails**, more often the lower: in more records real attention is *less* modular than on the matched Gaussian than more (medians 0.407 vs 0.421 · 0.360 vs 0.392). Step 0 also beats A's upper tail (34 vs 1), so A is not a clean null for Q either | Q vs A, upper / lower tail, real (cal): 26/62 (1/0) · 10/68 (1/2); step 0: 34/15 (1/3) |
 | 3 | **Communities are contiguous stretches of text, and so are the null's.** Contiguity is the block's (causal mask, recency), not the tokens' | contig 0.967 vs 0.961 (11/3) · 0.948 vs 0.952 (2/2) |
-| 4 | **Attention communities agree with the residual's k-means beyond the Gaussian, rising with depth, but weakly** (ARI ≤ 0.13). Same in all three frames, so not the mean direction or the rogue coordinates | ARI centred, L1–8 / L9–16 / L17–23: 0.006 / 0.026 / 0.089 (tails 23/7, 41/3, 45/2) · 0.032 / 0.078 / 0.114 (42/1, 44/0, 43/2); null A ≈ 0.001 throughout |
-| 5 | Part of 4 is position: null B (content destroyed, recency kept) already agrees at ~0.015–0.039; the excess over B is modest | ARI centred vs B: 0.028 vs 0.015 (46/7) · 0.068 vs 0.039 (39/5) |
+| 4 | **Against A, agreement with the residual's k-means rises with depth, but A fires on position alone** (A draws each position independently, so its ARI is ≈ 0 by construction; untrained step 0 beats it in 59/161 records, 148/161 deduped). Row 4 against A is therefore not evidence of content | ARI centred vs A, L1–8 / L9–16 / L17–23: 0.006 / 0.026 / 0.089 (23/7, 41/3, 45/2) · 0.032 / 0.078 / 0.114 (42/1, 44/0, 43/2) |
+| 5 | **Against B (position kept, content destroyed), a trained excess remains only at L17–23, about half the size**, and step 0 is not clean there either | step143000 vs B, L17–23: 0.089 vs 0.046, 21/49 (cal 1) · 0.114 vs 0.052, 16/49 (2). Step 0 vs B, L17–23: 13/49 (7) · 7/49 (3). L1–8 and L9–16: 10/56, 15/56 (cal 4, 2) |
 | 6 | **The idealised cosine head (C-real: `softmax(β_h⟨u_i,u_j⟩)` on the real unit LN1 rows) reproduces little of the trained block's community structure and none of its locality** | Q 0.156 vs real 0.407; weight within 3 positions 0.037 vs 0.193; ARI(real, C-real) 0.22 · 0.27 |
-| 7 | **Step 0: nothing but position.** Attention is near-uniform, so real ≈ C-real (ARI 0.94) and Q equals null A's to 3 decimals. Deduped, communities agree with k-means at ARI 0.29 vs null A's 0, but null B reproduces it (0.29): at step 0 both follow position (the residual is a causal running mean) | Q 0.138 vs 0.138 (34/1, medians equal) · ARI centred deduped 0.295: vs A 148/2, vs B 19/13 |
+| 7 | **Step 0: position.** Attention is near-uniform, so real ≈ C-real (ARI 0.94). Deduped, communities agree with k-means at ARI 0.29 vs A's 0, and B reproduces it (0.29): both follow position (the residual is a causal running mean). Deduped B shuffles diagonals of the *kept-token* index, not true offsets, so deduped B keeps recency only approximately | ARI centred deduped 0.295: vs A 148/2, vs B 19/13 |
 
-So attention gives one check independent of HDBSCAN that #106's late
-structure is real: at L17–23 the model's own attention groups tokens more like
-the residual's k-means than it does on a matched Gaussian (row 4), the layers
-where #106 found its 2-means excess. It does *not* find more community
-structure than the block imposes on structureless input (row 2), and the
+*Revised after `/challenge-pr` on #108* (findings 1, 2, 5, 6 there; Claude
+verified each on the reports). The first write-up read row 4 against A as an
+independent check of #106; A (and #106's Gaussian, which shares the blind
+spot) cannot tell position from content. What survives: against B, at
+L17–23 only, trained attention groups tokens more like the residual's k-means
+than position alone does (row 5, 21/49 vs cal 1, but step 0 13/49 vs 7): a
+weak, late corroboration of #106's 2-means excess, not an independent
+confirmation. Modularity gives no evidence either way (row 2), and the
 particle picture's cosine head is a poor model of who attends to whom (row 6).
 
 **β for Blocked 9 (recommendation; the decision is the user's).** Adopt
@@ -883,7 +891,11 @@ about a fifth of the log-attention variance, a tenth late.
 
 So β ≈ 4 on 410m across prompts (the `wiki_paragraph`-only 4.00 / 4.44 above
 holds), and step 0 has no β to speak of (R² ≈ 0). With β ≈ 4, C's
-`δ = cβ^{-1/2}` is ≈ 0.5c, with `c_min(4) = 0.978`.
+`δ = cβ^{-1/2}` is ≈ 0.5c, with `c_min(4) = 0.978`. **Caveat (#108 review,
+finding 4):** the fit controls position offset only linearly, and the median
+pools heads with negative slopes and near-zero R². Recency heads could inflate
+the slope; a refit with per-offset terms (Parked below) should precede
+adopting the number. The convention (`beta_raw`, not ÷ 8) does not depend on it.
 
 **Defect fixed after the run.** `summarise` computed z whenever the null SD
 was > 0, so constant draws with float-noise SDs (~1e-16) gave z ≈ 1e13
@@ -898,6 +910,15 @@ attention grid overflowing to 8 800 px (`section>*{min-width:0}`).
   form. Cost: one more null (bilinear `W_QK` head, no rotary) on the same
   inputs, ~3 h. Could change whether the cosine head is the idealisation
   Phase 10's F13/F14 should be read against.
+- β refit with per-offset fixed effects (one dummy per offset ≤ some window,
+  instead of the linear term), and the median over heads with R² above a
+  floor. Cost: real attention only, no draws, well under an hour. Changes the
+  *number* in Blocked 9's recommendation (≈ 4), not the convention.
+- A null that keeps position and randomises content in the *residual*, not
+  the attention (e.g. A's Gaussian given the real rows' positional mean, or
+  a within-prompt position-block shuffle of rows). Cost: A's machinery, ~7 h
+  per configuration. It is the judge row 5 needs, and #106's frames lack it
+  too. Could change whether 1d counts attention as corroborating #106.
 
 **How to re-run.** `run_all.sh` in the output directory (resumable: skips
 finished configurations, reuses `<name>.parts/` when settings match), then

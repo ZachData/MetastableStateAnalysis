@@ -596,6 +596,12 @@ a wrong premise, the check inherits it.
   vanished: float32 cancellation in `1 - x·y`, upstream of every method. When
   the PR's own caveat names a missing intervention that costs minutes, run it
   before opening the PR.
+- 2026-09-28 (#108): the write-up read "beats null A" as content evidence
+  while its own step-0 row beat A too (59/161, 148/161 deduped): the negative
+  control had failed and was written up as "nothing but position". It also
+  called A "at level" from a calibration that is A against itself, and
+  counted only Q's upper tail. When the negative control beats a null, the
+  null is the finding.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user
