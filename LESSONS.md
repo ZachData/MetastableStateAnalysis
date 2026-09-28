@@ -477,6 +477,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   `infra/rvm.env` without a word, so a booted instance would have run on the
   fleet defaults (py3.12, `pip install -e '.[dev]'`, an extra that does not
   exist). After committing a new file type, `git show --stat HEAD` must list it.
+- 2026-09-28 (#108): `./scripts/check.sh | tail -2 && git commit … && git
+  push` committed and pushed `72ccbc0` over a red gate (3 phase-card errors):
+  the pipeline's status is `tail`'s. Fixed in the next commit. Chain a commit
+  on `check.sh`'s own exit code (redirect to a log, then grep it).
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
