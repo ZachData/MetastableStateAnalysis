@@ -329,7 +329,8 @@ def summarise(records: List[Dict], alpha: float = 0.025) -> List[Dict]:
                     row["tail"] += int(c[TAIL[s]] <= alpha)
                     row["obs"].append(c["obs"])
                     row["null_mean"].append(c["null_mean"])
-                    if c["null_sd"] > 0:
+                    # constant draws carry float-noise SDs (~1e-16): z would be ~1e13
+                    if c["null_sd"] > 1e-9 * max(1.0, abs(c["null_mean"])):
                         row["z"].append((c["obs"] - c["null_mean"]) / c["null_sd"])
     out = []
     for row in rows.values():

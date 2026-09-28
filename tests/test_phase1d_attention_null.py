@@ -188,3 +188,10 @@ def test_summarise_counts_the_stronger_tail():
     assert (r["null"], r["graph"], r["band"], r["stat"], r["n"], r["tail"]) == \
         ("A", "w1_mutual", "L1-8", "Q", 2, 1)
     assert r["median_z"] == pytest.approx(10.0)
+
+
+def test_summarise_skips_z_on_float_noise_sd():
+    from p1d_cluster_ensemble.attention_null import summarise
+    rec = {"step": "s", "layer": 3, "stats": {"B": {"w1_mutual": {"contig": {
+        "obs": 0.97, "null_mean": 0.99, "null_sd": 1.1e-16, "p_upper": 1.0, "p_lower": 0.01}}}}}
+    assert np.isnan(summarise([rec])[0]["median_z"])

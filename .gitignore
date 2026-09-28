@@ -28,6 +28,9 @@
 !.claude/settings.json
 !*.sh
 !requirements/*.txt
+# The research-vm fleet's contract for this repo (infra/prompt.md). Without it a
+# booted instance silently falls back to the fleet defaults (py3.12, `.[dev]`).
+!infra/rvm.env
 
 # The prediction registry and its adjudication records are the project's
 # falsification ledger, not run output -- they are tracked deliberately.

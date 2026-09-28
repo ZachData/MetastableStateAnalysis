@@ -149,6 +149,10 @@ world moves, nobody updates the line, and the next session acts on it.
   its own later sections contradict. The same file's "Reproducing" also
   undercounted which runners take `--probe`, which one `grep` settles. Both
   were found only because the card session reads the whole status file.
+- 2026-09-28 (1d item 3): the session prompt said the attention-null run
+  "has finished (four JSONs)"; the directory held one, `calibrate` stopped at
+  126/384, the other two never started. Start step 3 (check the tree) caught
+  it before any report was written against a missing calibration.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -231,6 +235,13 @@ well-formed but empty/zero result. It looks exactly like a real result.
   get their producer re-run"), not by the test suite. A flag that claims to
   scope work down needs a timing check against real-sized input, not just a
   correctness test against a fixture small enough to hide the waste.
+- 2026-09-28, 1d's page and report (item 3): both were built before the data
+  existed and never rendered on it. On the real outputs the attention grid
+  overflowed to 8 800 px (a grid item's `min-width:auto`), the page had no
+  charset, and `summarise` reported z ≈ 1e13 on null SDs of float noise.
+  Caught by looking at the page once and reading the report before writing
+  it up. A viewer or report is part of the instrument: open its first real
+  output, as for a batch.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
@@ -275,6 +286,12 @@ set it ran on (battery hash, key list) and refuses on a mismatch. Status:
   `PROMPTS` has 2 keys, so a test that imports `PROMPTS` checks the stub, not the
   battery. `test_holdout.py` failed on that and now reads the keys from
   `core/config.py` with `ast`. Any test asserting on the real battery has to do the same.
+- 2026-09-27: on the fleet box (aarch64, OpenBLAS `neoversen1`, py3.10) the
+  gate has 4 failures that CI's x86 py3.10 passes: an eigenvalue count at
+  `1e-10` (7 vs 6, `test_phase2b_schur.py`), an energy fraction on an exact
+  tie (1.0 vs 0.0, `test_phase2b_head_circuits.py`), a corrected R² 0.18 vs
+  < 0.05 (`test_p10_partition_function.py`), and a refusal whose branch
+  (ties vs draws) flips (`test_p_i1_attainable_floor.py`). CI has no ARM leg.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
@@ -455,6 +472,11 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   default target of anything; every Read/Edit/Write/Bash path in the task
   must be re-anchored to it explicitly, and it is worth one `pwd`-equivalent
   check right after `git worktree add` to confirm before the first edit.
+- 2026-09-27: the fleet-onboarding commit `cbff98f` ("Add infra/") contained
+  only `infra/prompt.md`; the deny-by-default `.gitignore` dropped
+  `infra/rvm.env` without a word, so a booted instance would have run on the
+  fleet defaults (py3.12, `pip install -e '.[dev]'`, an extra that does not
+  exist). After committing a new file type, `git show --stat HEAD` must list it.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD

@@ -774,10 +774,14 @@ same. Tier 1, unregistered.
 
 Parked 10 is decided: next section.
 
-### Attention communities against three nulls (item 3; IN PROGRESS, 2026-09-26)
+### Attention communities against three nulls (item 3; DONE 2026-09-28)
 
-**State: code built and tested, full run stopped by the user after 3 h with
-nothing written; resumable now.** No result below is a finding yet.
+**State: run complete; results under "Results" below.** 4 configurations ×
+384 layer-records, 100 draws; output `<main>/data/p1d/attention_null_2026-09-26/`,
+reports `report{,_dedupe}.{json,txt}`; code `8aab3cf` (since then only
+`summarise`'s z guard changed, which moves no tail count). Page:
+`viz_page.py`, published as a private artifact
+(https://claude.ai/artifact/XYbhuwAvMkfkWgv27v9qVR).
 
 **What.** Item (3), with Parked 10 decided (user, 2026-09-26: "all tests and
 all nulls"). Graph per (run, layer, window w = 1–3): head-averaged attention,
@@ -832,23 +836,77 @@ the exact bound is `c_min(β)`, 0.809 at β = 0.5 and 0.978 at β = 4:
 `tools/math_checks/lemma51_c_bound.py`, 8/8). Which number to *adopt* is
 Blocked 9, still the user's.
 
-**Smoke look (L12, 3 draws; not a result).** step143000: communities are
-contiguous stretches of text (98.5 % of adjacent tokens share one), ARI with
-k-means in any frame 0.03–0.07; `Q` 0.46 real vs 0.44 under null A; the
-cosine head gives 0.09–0.17. step 0: β ≈ 0, R² ≈ 0; real ≈ cosine head (ARI 0.95).
+**Input of the results.** 8 v1 prompts × `pythia-410m` step143000 and step 0
+× L0–23 × windows 1–3: the 16 run dirs `run_all.sh` lists (Phase 12
+`2026-09-22_21-20-26`, `2026-09-22_21-41-17`, `2026-09-23_05-52-32`,
+`2026-09-23_06-02-15`). Tables exclude `repeated_tokens` (skipped when
+deduped), so a cell at L1–23 is 7 prompts × 23 layers = 161 records. "Tail" =
+real's p ≤ 0.025 on the stronger side; every count reads **real /
+calibration** (one null-A draw as data, same dedupe setting; #106's rule).
+Headline graph: window 1, `mutual`; `coattn` and w2–3 agree in sign unless
+noted.
 
-**To resume** (`<main>/data/p1d/attention_null_2026-09-26/`, weights exported
-there; code at this branch's head). `run_all.sh` runs the four configurations
-(`null`, `calibrate`, `null_dedupe`, `calibrate_dedupe`; 100 draws, 14
-workers) and skips any whose JSON exists; within one, finished layer-records
-are in `<name>.parts/` and are reused if their settings match. **Progress
-(stopped by the user 2026-09-27 19:44):** `null.json` DONE (384/384, 6.5 h at
-14 workers, ~1 400 s per full-length record); `calibrate` 126/384 in
-`calibrate.parts/` (~5 h left); `null_dedupe`, `calibrate_dedupe` not started
-(shorter prompts, expected several times faster). Relaunch: `run_all.sh >>
-run_all.log` in the background; it logs `N/384 done` every 12 records. Then
-`attention_null_report.py` per pair, then `viz_page.py --gauss … --attn …
---out <dir>` for the page.
+**Results.**
+
+| # | finding | numbers (step143000, w1 mutual; all tokens · deduped) |
+|---|---|---|
+| 1 | **Only null A is at level.** B and C fire on their own calibration for Q, λ₂, k₄, local (cal tails 100–161 of 161), so against them only real-vs-calibration can be read, and there the real run is *not* more extreme | Q vs B: 127/161 · 117/161; vs C: 156/161 · 155/161. For the ARI statistics B and C are near level (cal 1–13) |
+| 2 | **Attention on the real tokens is not more modular than the model's own attention on a matched Gaussian;** at L17–23, and at L1–8 deduped, it is less | Q median 0.407 vs null A 0.421, tail 26/1 · 0.360 vs 0.392, 10/1. L17–23: 0.333 vs 0.388 (1/0). λ₂ agrees (higher real = less split) |
+| 3 | **Communities are contiguous stretches of text, and so are the null's.** Contiguity is the block's (causal mask, recency), not the tokens' | contig 0.967 vs 0.961 (11/3) · 0.948 vs 0.952 (2/2) |
+| 4 | **Attention communities agree with the residual's k-means beyond the Gaussian, rising with depth, but weakly** (ARI ≤ 0.13). Same in all three frames, so not the mean direction or the rogue coordinates | ARI centred, L1–8 / L9–16 / L17–23: 0.006 / 0.026 / 0.089 (tails 23/7, 41/3, 45/2) · 0.032 / 0.078 / 0.114 (42/1, 44/0, 43/2); null A ≈ 0.001 throughout |
+| 5 | Part of 4 is position: null B (content destroyed, recency kept) already agrees at ~0.015–0.039; the excess over B is modest | ARI centred vs B: 0.028 vs 0.015 (46/7) · 0.068 vs 0.039 (39/5) |
+| 6 | **The idealised cosine head (C-real: `softmax(β_h⟨u_i,u_j⟩)` on the real unit LN1 rows) reproduces little of the trained block's community structure and none of its locality** | Q 0.156 vs real 0.407; weight within 3 positions 0.037 vs 0.193; ARI(real, C-real) 0.22 · 0.27 |
+| 7 | **Step 0: nothing but position.** Attention is near-uniform, so real ≈ C-real (ARI 0.94) and Q equals null A's to 3 decimals. Deduped, communities agree with k-means at ARI 0.29 vs null A's 0, but null B reproduces it (0.29): at step 0 both follow position (the residual is a causal running mean) | Q 0.138 vs 0.138 (34/1, medians equal) · ARI centred deduped 0.295: vs A 148/2, vs B 19/13 |
+
+So attention gives one check independent of HDBSCAN that #106's late
+structure is real: at L17–23 the model's own attention groups tokens more like
+the residual's k-means than it does on a matched Gaussian (row 4), the layers
+where #106 found its 2-means excess. It does *not* find more community
+structure than the block imposes on structureless input (row 2), and the
+particle picture's cosine head is a poor model of who attends to whom (row 6).
+
+**β for Blocked 9 (recommendation; the decision is the user's).** Adopt
+`beta_raw`: the slope of the softmax's own input on **unit LN1 rows**, i.e.
+the β of `softmax(β⟨u_i,u_j⟩)` that the particle dynamics sees, with no
+`attn_scale` division (that divides the model's `1/√d_h` out a second time;
+"β, measured on the way" above). `docs/PHASE_SYNTHESIS.md` §3.2 leaned the
+same way. Always report R² beside it, per band: the cosine kernel explains
+about a fifth of the log-attention variance, a tenth late.
+
+| step143000, 7 prompts × 16 heads, sink not a key | β median | IQR | R² median |
+|---|---|---|---|
+| L1–23, all tokens (n = 2576) | **3.88** | [1.92, 5.94] | 0.18 |
+| L1–23, deduped | 4.67 | [2.63, 6.86] | 0.15 |
+| L1–8 · L9–16 · L17–23, all tokens | 4.65 · 4.30 · 2.47 | | 0.22 · 0.21 · 0.10 |
+| L0 | 0.96 | [−0.93, 2.90] | 0.30 |
+| step 0, L1–23 | 0.004 | [−0.13, 0.14] | 0.007 |
+
+So β ≈ 4 on 410m across prompts (the `wiki_paragraph`-only 4.00 / 4.44 above
+holds), and step 0 has no β to speak of (R² ≈ 0). With β ≈ 4, C's
+`δ = cβ^{-1/2}` is ≈ 0.5c, with `c_min(4) = 0.978`.
+
+**Defect fixed after the run.** `summarise` computed z whenever the null SD
+was > 0, so constant draws with float-noise SDs (~1e-16) gave z ≈ 1e13
+(`contig`, step 0, B/C). Now skipped below 1e-9 relative; test added. Tail
+counts were never affected. **Page fixes:** no charset (mojibake) and the
+attention grid overflowing to 8 800 px (`section>*{min-width:0}`).
+
+**Parked** (discoveries, not followed):
+- Token strings on the page are raw byte-level BPE (`Ġ`, `Ã«`). Cosmetic; ~10
+  lines in `viz_page.token_file`; changes no decision.
+- Row 6's gap could be the missing rotary / per-head `W_QK`, not the kernel's
+  form. Cost: one more null (bilinear `W_QK` head, no rotary) on the same
+  inputs, ~3 h. Could change whether the cosine head is the idealisation
+  Phase 10's F13/F14 should be read against.
+
+**How to re-run.** `run_all.sh` in the output directory (resumable: skips
+finished configurations, reuses `<name>.parts/` when settings match), then
+`attention_null_report.py --null <n>.json --calibrate <c>.json --out
+report[_dedupe].json` per pair, then `viz_page.py --gauss
+<main>/data/p1d/gaussian_null_2026-09-26 --attn <this dir> --out <dir>` and
+copy `viz/index.html` beside it. Wall time at 14 workers: `null` 6.5 h,
+`calibrate` 7.1 h (two sittings: 126 then 258 records), each deduped
+configuration 1.4 h.
 
 ## Deleted and restored (was `FROZEN.md`)
 
