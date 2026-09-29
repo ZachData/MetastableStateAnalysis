@@ -1012,6 +1012,58 @@ copy `viz/index.html` beside it. Wall time at 14 workers: `null` 6.5 h,
 `calibrate` 7.1 h (two sittings: 126 then 258 records), each deduped
 configuration 1.4 h.
 
+### Long prompts (IN PROGRESS, branch `claude/p1d-long-prompts`)
+
+**What.** `lit-1d.md` §4's "length first": v1 prompts continued to Pythia's
+context (2048), v1 text as an exact prefix, so under causal attention the
+long run's first `n_v1` tokens reproduce the stored v1 run and length is the
+only change (user, 2026-09-29: extend from source; Gaussian null, merge tree
+and β on step143000 + step 0; runs on `/run/media/system/HDD_1TB/mets_data`).
+Rule committed alone first (`ca787de`, `p1d_cluster_ensemble/long_prompts.py`
+docstring), texts after, before any model run.
+
+**Built (texts committed, no forward pass yet).** Long prompts hash
+`91e85cc95888`; `long_prompts/provenance.json` has sources and counts.
+
+| long key | v1 → long tokens | source |
+|---|---|---|
+| `wiki_paragraph_long` | 467 → 1840 | Wikipedia rev 1371774901 (next paragraph would pass 2048) |
+| `sullivan_ballou_long` | 482 → 1032 | Wikisource rev 15675430; the letter ends |
+| `hdbscan_code_long` | 242 → 2025 | hdbscan 0.8.41 `plots.py` |
+| `latex_monograph_long` | 446 → 2036 | composed continuation, starts on a new line (tokenizer) |
+
+Refused by the rule: `paper_excerpt` (v1 not verbatim in arXiv
+2312.10794v5: math and citations removed by hand) and `repeated_tokens`
+(v1's trailing lone space merges with any continuation). `homer_iliad` and
+`camus_letranger` were dropped up front (copyright).
+
+**Next steps, in order.**
+1. A lean extractor (not `run_1`, whose Sinkhorn/spectral/UMAP pass is slow
+   at 2048 and unused by 1d): load the checkpoint (`core.models`), forward
+   with **no 512 cap** (below), write only `activations.npz` (+ `norms`),
+   `attentions.npz`, `geometry.json` (`tokens`), `manifest.json` (prompt
+   hash = `long_prompts_hash()`), via Phase 1's own save helpers in
+   `p1_mstate_tracking/p1_io.py` so the format matches.
+2. 4 prompts × `pythia-410m` step143000 and step 0 to `mets_data`. Check
+   the first run's output is populated before launching the rest.
+3. Prefix check on the runs: the long run's first `n_v1` rows vs the stored
+   v1 run (Phase 12 dirs in `attention_null_2026-09-26/run_all.sh`), activations
+   and attention, max abs diff.
+4. The holdout filter (`core/holdout.py` V1 token regex) must admit
+   `<v1>_long` run dirs under `--v1-only`; check before the analyses.
+5. Gaussian null (`gaussian_null.py`), merge tree (`merge_tree.py`, `--subexp
+   F`) and β (`beta_refit.py`'s estimator) on the long runs, each with its
+   step-0 control and the same calibration rule.
+
+**Parked** (discoveries, not followed):
+- **The 512-token cap.** `core/models.py` `extract_activations` (and 9 other
+  call sites) tokenizes with `truncation=True, max_length=512`, silently.
+  `homer_iliad` is 562 tokens, so every stored `homer_iliad` run is its first
+  512 tokens (consistent across checkpoints; no doc said so). v2's held-out
+  `scipy_linkage_code` (527) and `latex_article` (614) would be cut too. Cost:
+  a note per affected phase, and a loud record (or refusal) of truncation in
+  the extractor. Could change any claim quoting `homer_iliad`'s length.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it

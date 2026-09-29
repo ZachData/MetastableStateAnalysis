@@ -250,6 +250,13 @@ well-formed but empty/zero result. It looks exactly like a real result.
   `git status` (the test file unmodified). Rule: after adding a test, see it
   fail without the fix before quoting it; and never put an edit behind a
   `&&` whose failure is easy to miss.
+- 2026-09-29, 1d long prompts: `core/models.py` tokenizes every prompt with
+  `truncation=True, max_length=512`, silently. `homer_iliad` is 562 tokens,
+  so every stored run of it is its first 512, and no doc said so (found
+  only because the long prompts needed the cap raised). The same day,
+  `STATE.md` said 164 GB free where 72 GB was, which would have sized the
+  long runs wrong. Rule: a length cap in an extractor records or refuses,
+  never trims; and a resource figure in `STATE.md` carries its date.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
