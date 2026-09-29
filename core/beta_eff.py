@@ -204,6 +204,103 @@ def estimate_beta_from_gram(
     }
 
 
+def _group_demean(values, groups, n_groups) -> np.ndarray:
+    """Subtract each group's mean (groups are 0..n_groups-1)."""
+    cnt = np.bincount(groups, minlength=n_groups)
+    s = np.bincount(groups, weights=values, minlength=n_groups)
+    return values - (s / np.maximum(cnt, 1))[groups]
+
+
+def _two_way_demean(v, rows, bins, n_rows, n_bins, tol=1e-10, max_iter=5000) -> np.ndarray:
+    """
+    Project out row and offset-bin fixed effects by alternating projections
+    (the method behind reghdfe). Converges to the residual of an OLS on both
+    sets of dummies; refuses rather than return a half-converged answer.
+    """
+    out = np.asarray(v, dtype=np.float64).copy()
+    scale = max(float(np.abs(out).max()), 1e-300)
+    for _ in range(max_iter):
+        prev = out
+        out = _group_demean(_group_demean(out, rows, n_rows), bins, n_bins)
+        if float(np.abs(out - prev).max()) <= tol * scale:
+            return out
+    raise RuntimeError(f"two-way demeaning did not converge in {max_iter} iterations")
+
+
+def estimate_beta_offset_fe(
+    attn_head,
+    gram,
+    indices,
+    positions=None,
+    offset_window: int | None = None,
+) -> dict:
+    """
+    ``beta_raw`` with per-offset fixed effects instead of a linear offset term.
+
+    Model: ``log A_ij = beta * s_ij + a_i + g(i - j) + e_ij``, with ``a_i``
+    the row's normaliser (as in `estimate_beta_from_gram`) and ``g`` free:
+    one dummy per offset ``1 .. offset_window - 1``, then one pooled bin with
+    a linear slope inside it for offsets ``>= offset_window``. ``None`` gives
+    every offset its own dummy. A recency head's log-attention is not linear
+    in offset; a linear control leaves the curvature on the slope whenever
+    similarity also varies with offset.
+
+    ``indices`` select rows/columns of ``attn_head`` and ``gram``;
+    ``positions`` (same length as the matrices) maps them to sequence
+    positions, which set causality and offset (default: the index itself).
+
+    Returns beta_raw; r2, within-row R² of the whole model (comparable to
+    `estimate_beta_from_gram`'s); partial_r2, the share of what the row and
+    offset effects leave that similarity explains; n_pairs; n_offset_bins.
+    """
+    idx = np.asarray(indices, dtype=np.int64)
+    pos = idx if positions is None else np.asarray(positions, dtype=np.int64)[idx]
+    empty = {"beta_raw": float("nan"), "r2": float("nan"), "partial_r2": float("nan"),
+             "n_pairs": 0, "n_offset_bins": 0}
+    if idx.size < 3:
+        return {**empty, "note": "too few tokens (<3)"}
+    A = np.asarray(attn_head, dtype=np.float64)[np.ix_(idx, idx)]
+    G = np.asarray(gram, dtype=np.float64)[np.ix_(idx, idx)]
+    rows, cols = causal_pairs(pos)
+    a = A[rows, cols]
+    keep = a > 0.0
+    if keep.sum() < MIN_PAIRS:
+        return {**empty, "note": "too few non-zero causal pairs"}
+    rows, cols, a = rows[keep], cols[keep], a[keep]
+    y = np.log(np.clip(a, LOG_FLOOR, None))
+    s = G[rows, cols]
+    d = (pos[rows] - pos[cols]).astype(np.int64)          # >= 1
+    W = int(d.max()) + 1 if offset_window is None else int(offset_window)
+    _, bins = np.unique(np.minimum(d, W), return_inverse=True)
+    _, rws = np.unique(rows, return_inverse=True)
+    n_r, n_b = int(rws.max()) + 1, int(bins.max()) + 1
+
+    def dm(v):
+        return _two_way_demean(v, rws, bins, n_r, n_b)
+
+    y_t, s_t = dm(y), dm(s)
+    if np.std(s_t) < 1e-9:
+        return {**empty, "note": "similarity has no variance after fixed effects"}
+    X = s_t[:, None]
+    tail = np.where(d >= W, d, 0).astype(np.float64)
+    if np.std(tail) > 1e-9:
+        t_t = dm(tail)
+        if np.std(t_t) > 1e-9:
+            X = np.column_stack([s_t, t_t])
+    coef, *_ = np.linalg.lstsq(X, y_t, rcond=None)
+    ssr_full = float(np.sum((y_t - X @ coef) ** 2))
+    if X.shape[1] > 1:
+        c0, *_ = np.linalg.lstsq(X[:, 1:], y_t, rcond=None)
+        ssr_red = float(np.sum((y_t - X[:, 1:] @ c0) ** 2))
+    else:
+        ssr_red = float(np.sum(y_t ** 2))
+    ss_row = float(np.sum(_within_row_demean(y, rows) ** 2))
+    return {"beta_raw": float(coef[0]),
+            "r2": 1.0 - ssr_full / ss_row if ss_row > 0 else float("nan"),
+            "partial_r2": 1.0 - ssr_full / ssr_red if ssr_red > 0 else float("nan"),
+            "n_pairs": int(y.size), "n_offset_bins": n_b, "note": ""}
+
+
 def _empty(note: str) -> dict:
     return {"beta": float("nan"), "beta_raw": float("nan"), "offset_coeff": None,
             "n_pairs": 0, "r2": float("nan"),

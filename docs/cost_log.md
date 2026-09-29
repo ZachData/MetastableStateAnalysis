@@ -117,3 +117,4 @@ running median of the rows above it gets a line under the table saying why.
   condensed-table mode in `attention_null_report.py` would have saved the
   first part.
 | 2026-09-29 | FUTURE_IDEAS.md: literature scan, how training selects weights (docs only) | 23 | 147k | 2.6M | 33k | #109 |
+| 2026-09-29 | 1d β refit: per-offset fixed effects + R² floor; #109 conflict resolution and merge; page read for explanation (whole transcript, before challenge-pr) | 49 | 165k | 5.3M | 44k | #TBD |
