@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-29 (β refit with per-offset fixed effects, Phase 1d; `FUTURE_IDEAS.md` merged as #109) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-29 (CI: deps tier now runs on every push; it had run nowhere for 10+ nights, `LESSONS.md` 5) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -28,7 +28,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 2. **P-I5 runs on whatever battery is current.** `p7_motifs/p_i5_ablation.py`
    iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the
    8 its calibration record used. Nightly smoke red since 2026-09-19 because
-   of it. 14 live files iterate the live battery. Needs a decision: pin
+   of it (it also skipped the nightly deps step; no longer). 14 live files iterate the live battery. Needs a decision: pin
    P-I5 to v1's keys, or re-register. **Also its target:** the registered
    statement says "an induction head", and its real run's `L3H6` (70m) has
    induction score 0.009; 70m's matcher is `L0H3` (`status-7.md` "Corrections
@@ -36,7 +36,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    takes every prompt with a full 19-step sweep, so after chunk 3 that would include the 12.
    Since #88 it refuses them until you decide (`docs/PHASE_REVIEW.md` "Open" 3).
 3. **Branch protection on `main`** is off; red CI has been merged
-   (#57, #58). Enabling "require CI to pass" is a GitHub setting.
+   (#57, #58). Require `lint`, both `pure` legs and `deps` (a GitHub setting).
 4. **Register the large-read hook.** `scripts/hooks/guard_large_read.py` is built and
    tested; wiring it into `.claude/settings.json` (PreToolUse, matcher `Read`) was
    refused to Claude as self-modification. Snippet: PR #65's description.
@@ -67,7 +67,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-**#110 follow-up (`claude/p1d-beta-refit-guards`, in `../Mets-work`: CodeRabbit's two guards, the page's reading guide): PR #111 open.** #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
+**CI: deps tier on every push (`claude/modest-cannon-c3t3j9`, in `../Mets-work`): PR open.** #113 (triage) open, another session's. #111, #112 merged. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
@@ -75,7 +75,7 @@ two held only merge commits with no hand resolution, and `cf5f7ee`'s 352 added
 lines are in main verbatim except 4 that main has since rewritten.
 `../Mets-work-3a` removed. The main tree's `main` was fast-forwarded to `origin/main` on 2026-09-24
 (`21391c2`). Nightly smoke red (Blocked item 2).
-Current state: `./scripts/status.sh`.
+Current state: `./scripts/status.sh` (without `gh` it reads the public API; exit 1 = could not see).
 
 ## Where things stand (one line each; detail behind the pointer)
 
@@ -134,7 +134,7 @@ plus `METS_REPO=$PWD METS_DATA=<main>/data` from a worktree; 164 GB free; Phase-
 - Push with the default SSH key; never set `GIT_SSH_COMMAND`.
 - Target PRs at `main`, never at another PR's branch. Check merges with `git merge-base --is-ancestor <tip> origin/main`.
 - An instrument that returns zeros/empty on a missing dependency is a bug: check a populated output on the FIRST run before launching the rest.
-- Before trusting any "exists / doesn't exist / is green" in a doc, check the tree (`ls`, `gh run list`, manifests). Docs have been wrong about each.
+- Before trusting any "exists / doesn't exist / is green" in a doc, check the tree (`ls`, `./scripts/status.sh`, manifests). Docs have been wrong about each. A red step skips the steps after it: "smoke red" hid the deps tier for 10 nights.
 - A headless `claude -p "/challenge-pr N"` that exits 0 has not necessarily reviewed anything: check the PR has the comment (`LESSONS.md` lesson 2).
 
 ## Map (open only what the task needs)

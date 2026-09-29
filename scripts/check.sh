@@ -5,16 +5,19 @@
 # locally, fails in CI" cannot be a difference between two copies of the same
 # command list.
 #
-#   ./scripts/check.sh          tier 0 + tier 1 — what gates a merge
+#   ./scripts/check.sh          tier 0 + tier 1 — the fast part of the merge gate
 #   ./scripts/check.sh lint     tier 0 only; needs no dependencies at all, and
 #                               is RUN with them unimportable so that stays true
 #   ./scripts/check.sh pure     tier 1 only; needs requirements/test.txt
 #   ./scripts/check.sh iso      tier 1 with heavy deps forced absent (what CI has)
-#   ./scripts/check.sh all      adds the deps tier; needs requirements/heavy.txt
+#   ./scripts/check.sh deps     tier 3 only; needs requirements/heavy.txt. CPU
+#                               torch is enough: no test needs a GPU. CI runs it
+#                               on every push (ci.yml job `deps`)
+#   ./scripts/check.sh all      lint + iso + deps
 #
-# The pure tier runs in ~10 seconds against 1532 tests with torch,
-# transformers, scikit-learn and matplotlib all absent. That speed is the
-# point: a gate people wait on is a gate people route around.
+# The pure tier ran 2782 tests in 72 s (2026-09-29) with torch, transformers,
+# scikit-learn and matplotlib all absent. That speed is the point: a gate
+# people wait on is a gate people route around.
 
 set -euo pipefail
 
@@ -121,7 +124,14 @@ run_deps() {
   echo "=== tier 3: deps tests (needs torch/transformers/sklearn/matplotlib) ==="
   # `heavy` needs real run artifacts no runner has; `smoke` needs the HF Hub
   # and runs in its own workflow.
-  python3 -m pytest -m "deps" -q
+  #
+  # Refuse rather than degrade: tests/conftest.py's pytest_ignore_collect drops
+  # every deps-tier module when torch, sklearn or matplotlib is missing, and the
+  # hdbscan/igraph tests importorskip. Either way the run would "pass" having
+  # tested nothing, so check the imports first.
+  python3 -c "import torch, transformers, sklearn, matplotlib, hdbscan, igraph" \
+    || { echo "deps tier: requirements/heavy.txt not importable; refusing to run a tier that would test nothing" >&2; exit 1; }
+  python3 -m pytest -m "deps" -q -rs
 }
 
 case "$TARGET" in
@@ -129,8 +139,9 @@ case "$TARGET" in
   pure) run_pure ;;
   gate) run_lint; run_pure_isolated ;;
   iso)  run_pure_isolated ;;
+  deps) run_deps ;;
   all)  run_lint; run_pure_isolated; run_deps ;;
-  *)    echo "usage: $0 [lint|pure|iso|gate|all]" >&2; exit 2 ;;
+  *)    echo "usage: $0 [lint|pure|iso|deps|gate|all]" >&2; exit 2 ;;
 esac
 
 echo
