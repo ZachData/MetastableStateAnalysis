@@ -149,6 +149,10 @@ world moves, nobody updates the line, and the next session acts on it.
   its own later sections contradict. The same file's "Reproducing" also
   undercounted which runners take `--probe`, which one `grep` settles. Both
   were found only because the card session reads the whole status file.
+- 2026-09-28 (1d item 3): the session prompt said the attention-null run
+  "has finished (four JSONs)"; the directory held one, `calibrate` stopped at
+  126/384, the other two never started. Start step 3 (check the tree) caught
+  it before any report was written against a missing calibration.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -231,6 +235,13 @@ well-formed but empty/zero result. It looks exactly like a real result.
   get their producer re-run"), not by the test suite. A flag that claims to
   scope work down needs a timing check against real-sized input, not just a
   correctness test against a fixture small enough to hide the waste.
+- 2026-09-28, 1d's page and report (item 3): both were built before the data
+  existed and never rendered on it. On the real outputs the attention grid
+  overflowed to 8 800 px (a grid item's `min-width:auto`), the page had no
+  charset, and `summarise` reported z ≈ 1e13 on null SDs of float noise.
+  Caught by looking at the page once and reading the report before writing
+  it up. A viewer or report is part of the instrument: open its first real
+  output, as for a batch.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
@@ -466,6 +477,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   `infra/rvm.env` without a word, so a booted instance would have run on the
   fleet defaults (py3.12, `pip install -e '.[dev]'`, an extra that does not
   exist). After committing a new file type, `git show --stat HEAD` must list it.
+- 2026-09-28 (#108): `./scripts/check.sh | tail -2 && git commit … && git
+  push` committed and pushed `72ccbc0` over a red gate (3 phase-card errors):
+  the pipeline's status is `tail`'s. Fixed in the next commit. Chain a commit
+  on `check.sh`'s own exit code (redirect to a log, then grep it).
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
@@ -529,6 +544,12 @@ a wrong premise, the check inherits it.
   of finished runs and left orphan directories matching the hash and sha. The
   author's gate was green; a fresh-context `/challenge-pr` found it on its
   first run, `file:line` included.
+- 2026-09-26, 1d item (3): the same shape again, before any review could see
+  it. `attention_null.py` collected every layer-record in `pool.map` and wrote
+  once at the end; the user stopped the run after 3 h and all of it was lost.
+  The #67 instance was in this file. Rule: any batch over ~10 min writes each
+  finished unit as it lands and resumes from them, before its first launch
+  (fixed: per-record parts, `imap_unordered`).
 - 2026-09-24, #85: dropping the dependency hashes, the author wrote that a
   correction "reaches a reader through its own `## Corrections received`",
   though no rule puts a line there. The evidence also could not bear on the
@@ -579,6 +600,12 @@ a wrong premise, the check inherits it.
   vanished: float32 cancellation in `1 - x·y`, upstream of every method. When
   the PR's own caveat names a missing intervention that costs minutes, run it
   before opening the PR.
+- 2026-09-28 (#108): the write-up read "beats null A" as content evidence
+  while its own step-0 row beat A too (59/161, 148/161 deduped): the negative
+  control had failed and was written up as "nothing but position". It also
+  called A "at level" from a calibration that is A against itself, and
+  counted only Q's upper tail. When the negative control beats a null, the
+  null is the finding.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

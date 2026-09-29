@@ -107,4 +107,13 @@ running median of the rows above it gets a line under the table saying why.
   explained step 0). Three background runs were waited on across turns,
   each re-reading the context on return.
 | 2026-09-27 | fleet onboarding: venv built and published to S3, HF cache pushed, `rvm.env` un-ignored, Lora objects deleted (whole transcript, before the commit) | 53 | 107k | 4.3M | 23k | #107 |
+| 2026-09-28 | 1d item (3) finished: resumed the stopped run, reports, page, write-up, β recommendation (whole transcript, before challenge-pr) | 66 | 200k | 8.0M | 354k | #108 |
+
+- #108 is 2.05× the running median (3.9M). Three parts: the report is 1 469
+  lines per pair, condensed by hand into four scratch tables (most of the
+  354k tool output); the page's first render found a layout defect, so the
+  30 KB `index.html` was read whole and screenshotted twice; and the 7-hour
+  run was waited on across turns, each return re-reading the context. A
+  condensed-table mode in `attention_null_report.py` would have saved the
+  first part.
 | 2026-09-29 | FUTURE_IDEAS.md: literature scan, how training selects weights (docs only) | 23 | 147k | 2.6M | 33k | #109 |

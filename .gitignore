@@ -22,6 +22,8 @@
 !*.ini
 !*.yml
 !*.yaml
+# Page templates the viz builders fill (p1d_cluster_ensemble/viz_page.py); their data is never tracked.
+!*/viz/index.html
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
 !.claude/settings.json
 !*.sh
