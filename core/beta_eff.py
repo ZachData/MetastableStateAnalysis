@@ -91,12 +91,11 @@ def structural_zero_fraction(A) -> float:
 
 def _within_row_demean(values, rows) -> np.ndarray:
     """Subtract each query row's mean. The fixed-effects transform."""
+    # One pass (bincount), not a mask per row: that was O(rows x pairs), and
+    # at 2048 tokens it made one layer's fit take minutes (`status-1d.md`).
     v = np.asarray(values, dtype=np.float64)
-    out = np.empty_like(v)
-    for r in np.unique(rows):
-        m = rows == r
-        out[m] = v[m] - v[m].mean()
-    return out
+    _, g = np.unique(rows, return_inverse=True)
+    return _group_demean(v, g, int(g.max()) + 1 if g.size else 0)
 
 
 def estimate_beta_from_gram(
@@ -230,6 +229,40 @@ def _two_way_demean(v, rows, bins, n_rows, n_bins, tol=1e-10, max_iter=5000) -> 
     raise RuntimeError(f"two-way demeaning did not converge in {max_iter} iterations")
 
 
+def _two_way_demean_exact(v, rows, bins, n_rows, n_bins) -> np.ndarray:
+    """
+    The same projection as `_two_way_demean`, solved directly. On a causal
+    design (row i sees offsets 1..i) alternating projections converge slowly:
+    at n ~ 2048 one head took minutes and risked the iteration cap (the long
+    prompts, `status-1d.md`). Here the row effects are eliminated in closed
+    form and the offset effects solve the ``n_bins``-square Schur complement,
+    with one bin pinned to 0 (the constant is shared by both sets of dummies).
+    ``v`` may be (m,) or (m, k); every column is projected.
+    """
+    from scipy.linalg import cho_factor, cho_solve, LinAlgError
+    V = np.asarray(v, dtype=np.float64)
+    one = V.ndim == 1
+    V = V[:, None] if one else V
+    n_r = np.bincount(rows, minlength=n_rows).astype(np.float64)
+    n_b = np.bincount(bins, minlength=n_bins).astype(np.float64)
+    C = np.bincount(rows * n_bins + bins, minlength=n_rows * n_bins).reshape(n_rows, n_bins)
+    C = C.astype(np.float64)
+    inv_r = 1.0 / np.maximum(n_r, 1.0)
+    sr = np.stack([np.bincount(rows, weights=V[:, j], minlength=n_rows) for j in range(V.shape[1])], 1)
+    sb = np.stack([np.bincount(bins, weights=V[:, j], minlength=n_bins) for j in range(V.shape[1])], 1)
+    S = np.diag(n_b) - C.T @ (inv_r[:, None] * C)
+    rhs = sb - C.T @ (inv_r[:, None] * sr)
+    theta_b = np.zeros((n_bins, V.shape[1]))
+    if n_bins > 1:
+        try:
+            theta_b[:-1] = cho_solve(cho_factor(S[:-1, :-1]), rhs[:-1])
+        except LinAlgError:              # a disconnected design: fall back to least squares
+            theta_b = np.linalg.lstsq(S, rhs, rcond=None)[0]
+    theta_r = inv_r[:, None] * (sr - C @ theta_b)
+    out = V - theta_r[rows] - theta_b[bins]
+    return out[:, 0] if one else out
+
+
 def estimate_beta_offset_fe(
     attn_head,
     gram,
@@ -280,16 +313,12 @@ def estimate_beta_offset_fe(
     _, rws = np.unique(rows, return_inverse=True)
     n_r, n_b = int(rws.max()) + 1, int(bins.max()) + 1
 
-    def dm(v):
-        return _two_way_demean(v, rws, bins, n_r, n_b)
-
-    y_t, s_t = dm(y), dm(s)
+    tail = np.where(d >= W, d, 0).astype(np.float64)
+    y_t, s_t, t_t = _two_way_demean_exact(np.column_stack([y, s, tail]), rws, bins, n_r, n_b).T
     if np.std(s_t) < 1e-9:
         return {**empty, "note": "similarity has no variance after fixed effects"}
     X = s_t[:, None]
-    tail = np.where(d >= W, d, 0).astype(np.float64)
     if np.std(tail) > 1e-9:
-        t_t = dm(tail)
         if np.std(t_t) > 1e-9:
             X = np.column_stack([s_t, t_t])
     # Similarity collinear with the tail slope leaves beta unidentified;

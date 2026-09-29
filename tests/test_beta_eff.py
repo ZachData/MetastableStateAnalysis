@@ -268,7 +268,7 @@ class TestAllHeads:
 # Per-offset fixed effects (status-1d.md "β refit")
 # ---------------------------------------------------------------------------
 
-from core.beta_eff import _two_way_demean, estimate_beta_offset_fe  # noqa: E402
+from core.beta_eff import _two_way_demean, _two_way_demean_exact, estimate_beta_offset_fe  # noqa: E402
 
 
 def _walk(n=60, d=D, step=0.4, seed=1):
@@ -338,6 +338,20 @@ class TestOffsetFixedEffects:
         D_ = np.column_stack([np.eye(7)[rows], np.eye(5)[bins]])
         coef, *_ = np.linalg.lstsq(D_, v, rcond=None)
         assert np.allclose(_two_way_demean(v, rows, bins, 7, 5, tol=1e-13), v - D_ @ coef,
+                           atol=1e-9)
+        V = np.column_stack([v, rng.normal(size=200)])
+        assert np.allclose(_two_way_demean_exact(V, rows, bins, 7, 5)[:, 0], v - D_ @ coef,
+                           atol=1e-9)
+
+    def test_exact_demean_on_a_causal_design(self):
+        """Rows see offsets 1..i: the design the iterative version is slow on."""
+        n = 30
+        i, j = np.tril_indices(n, -1)
+        rows, bins = i - 1, (i - j) - 1
+        v = np.random.default_rng(1).normal(size=rows.size)
+        D_ = np.column_stack([np.eye(n - 1)[rows], np.eye(n - 1)[bins]])
+        coef, *_ = np.linalg.lstsq(D_, v, rcond=None)
+        assert np.allclose(_two_way_demean_exact(v, rows, bins, n - 1, n - 1), v - D_ @ coef,
                            atol=1e-9)
 
 
