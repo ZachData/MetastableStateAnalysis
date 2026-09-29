@@ -254,12 +254,14 @@ def estimate_beta_offset_fe(
 
     Returns beta_raw; r2, within-row R² of the whole model (comparable to
     `estimate_beta_from_gram`'s); partial_r2, the share of what the row and
-    offset effects leave that similarity explains; n_pairs; n_offset_bins.
+    offset effects leave that similarity explains; n_pairs; n_offset_bins;
+    design_sv_ratio, the smallest over largest singular value of the
+    column-normalised (similarity, tail) design (NaN with no tail column).
     """
     idx = np.asarray(indices, dtype=np.int64)
     pos = idx if positions is None else np.asarray(positions, dtype=np.int64)[idx]
     empty = {"beta_raw": float("nan"), "r2": float("nan"), "partial_r2": float("nan"),
-             "n_pairs": 0, "n_offset_bins": 0}
+             "n_pairs": 0, "n_offset_bins": 0, "design_sv_ratio": float("nan")}
     if idx.size < 3:
         return {**empty, "note": "too few tokens (<3)"}
     A = np.asarray(attn_head, dtype=np.float64)[np.ix_(idx, idx)]
@@ -292,10 +294,13 @@ def estimate_beta_offset_fe(
             X = np.column_stack([s_t, t_t])
     # Similarity collinear with the tail slope leaves beta unidentified;
     # lstsq would return the minimum-norm split instead of refusing.
+    sv_ratio = float("nan")
     if X.shape[1] > 1:
         sv = np.linalg.svd(X / np.linalg.norm(X, axis=0), compute_uv=False)
-        if sv[-1] < COLLINEAR_SV * sv[0]:
-            return {**empty, "note": "similarity collinear with the offset tail; beta unidentified"}
+        sv_ratio = float(sv[-1] / sv[0])
+        if sv_ratio < COLLINEAR_SV:
+            return {**empty, "design_sv_ratio": sv_ratio,
+                    "note": "similarity collinear with the offset tail; beta unidentified"}
     coef, *_ = np.linalg.lstsq(X, y_t, rcond=None)
     ssr_full = float(np.sum((y_t - X @ coef) ** 2))
     if X.shape[1] > 1:
@@ -307,7 +312,8 @@ def estimate_beta_offset_fe(
     return {"beta_raw": float(coef[0]),
             "r2": 1.0 - ssr_full / ss_row if ss_row > 0 else float("nan"),
             "partial_r2": 1.0 - ssr_full / ssr_red if ssr_red > 0 else float("nan"),
-            "n_pairs": int(y.size), "n_offset_bins": n_b, "note": ""}
+            "n_pairs": int(y.size), "n_offset_bins": n_b,
+            "design_sv_ratio": sv_ratio, "note": ""}
 
 
 def _empty(note: str) -> dict:

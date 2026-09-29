@@ -49,3 +49,18 @@ def test_duplicate_fitted_head_is_mismatched(tmp_path):
 def test_finite_on_one_side_is_mismatched(tmp_path):
     r = check_reproduction([_fit(0, float("nan"))], _stored(tmp_path, [1.0]))
     assert r["n_mismatched"] == 1 and r["n_compared"] == 0
+
+
+def test_summary_counts_a_refused_head_per_variant():
+    """A head one variant refused (NaN) leaves that variant's count, not the row's."""
+    from p1d_cluster_ensemble.beta_refit import VARIANTS, summarise
+    heads = []
+    for h in range(3):
+        r = {"step": "step1", "prompt": "p", "layer": 5, "head": h, "dedupe": False,
+             "linear_r2": 0.1, "fe_full_r2": 0.2, "fe_full_pr2": 0.1}
+        for v in VARIANTS:
+            r[v] = float(h + 1)
+        heads.append(r)
+    heads[0]["fe_w4"] = float("nan")
+    row = next(r for r in summarise(heads) if r["band"] == "L1-8" and r["floor"] == 0.0)
+    assert row["n"] == 3 and row["fe_w4"][3] == 2 and row["fe_full"][3] == 3
