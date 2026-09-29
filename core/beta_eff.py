@@ -45,6 +45,9 @@ import numpy as np
 
 MIN_PAIRS = 6
 LOG_FLOOR = 1e-12
+#: PLACED. Smallest singular-value ratio of the column-normalised design
+#: (similarity, offset tail) accepted by `estimate_beta_offset_fe`.
+COLLINEAR_SV = 1e-6
 
 
 # ---------------------------------------------------------------------------
@@ -287,6 +290,12 @@ def estimate_beta_offset_fe(
         t_t = dm(tail)
         if np.std(t_t) > 1e-9:
             X = np.column_stack([s_t, t_t])
+    # Similarity collinear with the tail slope leaves beta unidentified;
+    # lstsq would return the minimum-norm split instead of refusing.
+    if X.shape[1] > 1:
+        sv = np.linalg.svd(X / np.linalg.norm(X, axis=0), compute_uv=False)
+        if sv[-1] < COLLINEAR_SV * sv[0]:
+            return {**empty, "note": "similarity collinear with the offset tail; beta unidentified"}
     coef, *_ = np.linalg.lstsq(X, y_t, rcond=None)
     ssr_full = float(np.sum((y_t - X @ coef) ** 2))
     if X.shape[1] > 1:

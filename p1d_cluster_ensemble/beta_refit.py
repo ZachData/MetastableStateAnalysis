@@ -92,7 +92,10 @@ def _job(args) -> List[Dict]:
 
 
 def check_reproduction(recs: List[Dict], stored: Path) -> Dict:
-    """Max |linear − #108's stored β| over the heads both have."""
+    """
+    Max |linear − #108's stored β| over the heads both have. A head on one
+    side only, fitted twice, or finite on one side only counts as mismatched.
+    """
     d = json.loads(stored.read_text())
     ref = {}
     for r in d["records"]:
@@ -100,8 +103,12 @@ def check_reproduction(recs: List[Dict], stored: Path) -> Dict:
             continue
         for h, b in enumerate(r["betas"][0]):
             ref[(r["step"], r["prompt"], r["layer"], h)] = b["beta"]
-    mine = {(x["step"], x["prompt"], x["layer"], x["head"]): x["linear"] for x in recs}
-    diffs, mismatched = [], 0
+    keys = [(x["step"], x["prompt"], x["layer"], x["head"]) for x in recs]
+    mine = dict(zip(keys, (x["linear"] for x in recs)))
+    # Every fitted head must be one #108 recorded, once: an unmatched head
+    # would reach the summary unchecked.
+    mismatched = (len(keys) - len(mine)) + sum(k not in ref for k in mine)
+    diffs = []
     for k, b in ref.items():
         stored_ok = b is not None and np.isfinite(b)
         new = mine.get(k)

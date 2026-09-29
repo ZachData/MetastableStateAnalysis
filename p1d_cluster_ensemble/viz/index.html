@@ -81,6 +81,25 @@ svg .lab{fill:var(--ink-2);font:11px var(--sans)}
 .kpi b{display:block;font:600 20px var(--sans);color:var(--ink);font-variant-numeric:tabular-nums}
 .kpi span{font-size:12px;color:var(--ink-3)}
 @media (prefers-reduced-motion:reduce){.tip{transition:none}}
+/* reading guide */
+.guide-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));gap:12px;margin-bottom:18px}
+.guide-top .panel{display:grid;gap:10px;align-content:start}
+.guide-top ol,.guide-top ul,details.guide ul,details.guide ol{margin:0;padding-left:20px;display:grid;gap:5px;color:var(--ink-2);max-width:72ch}
+.guide-top li b,details.guide li b{color:var(--ink);font-weight:600}
+.key{display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:center;font-size:12.5px;color:var(--ink-2)}
+.key .demo{font:12px var(--mono);font-variant-numeric:tabular-nums;padding:5px 8px;border-radius:4px;border:1px solid transparent;color:var(--ink);white-space:nowrap}
+.key .demo .sub{display:block;color:var(--ink-3);font-size:10.5px}
+.key .z{display:inline-block;width:22px;height:16px;border-radius:2px;vertical-align:middle}
+details.guide{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 14px}
+details.guide summary{cursor:pointer;font:600 13px var(--sans);color:var(--ink)}
+details.guide summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+details.guide[open] summary{margin-bottom:10px}
+details.guide .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px 22px}
+details.guide h4{font:600 12px var(--sans);color:var(--ink);margin:0 0 6px}
+table.stat{border-collapse:collapse;font-size:12.5px;color:var(--ink-2)}
+table.stat td,table.stat th{padding:4px 10px 4px 0;text-align:left;vertical-align:top;border-top:1px solid var(--rule-2)}
+table.stat th{font:500 11px var(--sans);color:var(--ink-3);border-top:0}
+table.stat td:first-child{color:var(--ink);white-space:nowrap}
 </style>
 
 <div class="wrap">
@@ -89,6 +108,43 @@ svg .lab{fill:var(--ink-2);font:11px var(--sans)}
   <h1>Is the structure in the tokens, the frame, or the null?</h1>
   <p>Each result here is a real run read against a null, and the null against a <b>calibration on the same inputs</b> (one null draw treated as data). Colour is z with <b>positive = more structure than the null</b>; outlined cells are in the null's 2.5 % tail on that side.</p>
 </header>
+
+<div class="guide-top" id="guide">
+  <div class="panel">
+    <span class="eyebrow">How to read this page</span>
+    <p><b>One rule.</b> Every result is the real data against a <b>null</b>: a fake version of the data with no structure built in. Some nulls report structure where there is none, so each is also run on a <b>calibration</b>: one null draw treated as the data, where there is nothing to find. What counts is <b>real minus calibration</b>, never the real count alone.</p>
+    <ol>
+      <li>In a table, look for a large <b>excess</b>, not a large first number.</li>
+      <li>Switch <b>Checkpoint</b> to step 0. An effect that survives there was not learned: it comes from the architecture, position or identical tokens.</li>
+      <li>Switch <b>Tokens</b> to all tokens. An effect that appears only there is repeated strings.</li>
+      <li>Click the cell. The heatmaps show which layers and prompts carry it.</li>
+      <li>Switch <b>Showing</b> to calibration. That is what "nothing there" looks like for this statistic.</li>
+      <li>Use the scatter plots for intuition only.</li>
+    </ol>
+    <p><b>What survives, so far:</b> trained tokens are lumpier locally than the Gaussian in every frame; a 2-way split appears late (2-means excess at L17–24); against null B, attention communities agree with that split only at L17–23.</p>
+  </div>
+  <div class="panel">
+    <span class="eyebrow">Key</span>
+    <div class="key">
+      <span class="demo" style="background:color-mix(in oklab, var(--seq-hi) 92%, var(--seq-lo));color:var(--bg)">42 / 5<span class="sub" style="color:var(--bg)">of 56 · excess 66 %</span></span>
+      <span><b>Table cell.</b> Of 56 records (one prompt at one layer), 42 real and 5 calibration landed in the null's 2.5 % tail on the more-structure side. Excess = 42/56 − 5/56. Darker blue = larger excess; white = none.</span>
+      <span><span class="z" style="background:color-mix(in oklab, var(--neg) 100%, var(--mid))"></span><span class="z" style="background:var(--mid)"></span><span class="z" style="background:color-mix(in oklab, var(--pos) 100%, var(--mid))"></span></span>
+      <span><b>Heatmap fill is z</b>, the distance from the null's mean in null standard deviations. Blue = more structure than the null, beige = about the same, red = less (smoother than random). Colour stops deepening at ±6.</span>
+      <span><span class="z" style="background:color-mix(in oklab, var(--pos) 55%, var(--mid));outline:1.6px solid var(--f-centred);outline-offset:-1.6px"></span></span>
+      <span><b>Outlined heatmap cell:</b> in the null's 2.5 % tail on the structure side (frame colour in section 1, ink in section 3). A red cell is never outlined. Fill and outline can disagree: z assumes a symmetric null, the outline ranks the actual draws.</span>
+      <span class="demo" style="border-color:var(--ink);background:var(--panel)">selected</span>
+      <span><b>Dark border on a table cell:</b> the one the heatmaps below are drawing. Click a cell, or Tab to it and press Enter.</span>
+      <span class="demo" style="background:var(--panel);border-color:var(--rule)">&nbsp;</span>
+      <span><b>Blank heatmap cell:</b> no z. The record was skipped (e.g. <code>repeated_tokens</code> with first occurrences) or the null's draws did not vary.</span>
+    </div>
+    <ul>
+      <li><b>Checkpoint:</b> step 143000 is the trained model; step 0 is untrained, the negative control.</li>
+      <li><b>Tokens:</b> first occurrences drops every repeat of a string. It changes the tables, heatmaps and line charts, not the scatter plots or the text strip.</li>
+      <li><b>Showing:</b> real or calibration, for the heatmaps and the attention charts. The tables always show both.</li>
+      <li>Your choices, and which guide panels are open, are remembered in this browser.</li>
+    </ul>
+  </div>
+</div>
 
 <div class="bar" role="toolbar" aria-label="Filters">
   <div class="ctl">Checkpoint <span class="seg" id="c-step"></span></div>
@@ -99,6 +155,31 @@ svg .lab{fill:var(--ink-2);font:11px var(--sans)}
 <section id="frames">
   <div><span class="eyebrow">Gaussian null · #106</span><h2>Which frame shows the most structure?</h2></div>
   <p>Records in the lumpier tail, real vs calibration, layers 1–24 × 7 prompts (<code>repeated_tokens</code> out, as in the report). The excess over calibration is what counts; a frame whose calibration also fires is not at nominal level. Pick a cell to map it by layer.</p>
+  <details class="guide" id="guide-frames" open><summary>How to read this section</summary><div class="cols">
+    <div><h4>The null</h4><ul>
+      <li>For each prompt and layer: a Gaussian with the tokens' own mean and covariance, 200 draws of the same size, each normalised and clustered exactly as the tokens are.</li>
+      <li>A statistic the tokens beat is structure the covariance alone does not explain.</li>
+    </ul><h4 style="margin-top:10px">The frames (columns)</h4><ul>
+      <li><b>raw</b> (blue): each token vector scaled to length 1.</li>
+      <li><b>centred</b> (orange): the direction all tokens share is removed, then rescaled. That shared direction makes everything look alike.</li>
+      <li><b>no-rogue</b> (green): the 3 coordinates that dominate the shared direction are zeroed first, then centred.</li>
+    </ul></div>
+    <div><h4>The statistics (rows), and which side counts as structure</h4>
+      <div class="scroll"><table class="stat"><tr><th>row</th><th>structure is</th><th>what it measures</th></tr>
+      <tr><td>2-means index</td><td>lower</td><td>spread left inside the best 2-way split</td></tr>
+      <tr><td>nearest-neighbour distance</td><td>lower</td><td>mean distance to each token's closest other token</td></tr>
+      <tr><td>HDBSCAN group count</td><td>higher</td><td>groups found by Phase 1's clusterer</td></tr>
+      <tr><td>HDBSCAN noise share</td><td>lower</td><td>share of tokens left unassigned</td></tr>
+      <tr><td>merge-tree clusters</td><td>higher</td><td>clusters at the most stable scale (0 = none found)</td></tr>
+      <tr><td>merge-tree plateau lifetime</td><td>higher</td><td>how long that scale lasts as you zoom out</td></tr></table></div>
+    </div>
+    <div><h4>Heatmaps and line charts</h4><ul>
+      <li>Heatmaps: rows are the 8 prompts, columns layers L0 (embedding) to L24. They include <code>repeated_tokens</code>; the table counts leave it out.</li>
+      <li><b>Effective dimensions</b>: how many directions the cloud really spreads across, (Σλ)² / Σλ² of its variances. Median over prompts; centring raises it.</li>
+      <li><b>Mean-direction share</b>: how much of each raw token vector lies along the shared direction. High = everything points the same way.</li>
+      <li>Both line charts show real data only; hover for values.</li>
+    </ul></div>
+  </div></details>
   <div class="panel scroll"><table class="ov" id="g-ov"></table></div>
   <div class="legend" id="g-leg"></div>
   <div class="grid3" id="g-heat"></div>
@@ -117,6 +198,19 @@ svg .lab{fill:var(--ink-2);font:11px var(--sans)}
     <div class="ctl">Frame <span class="seg" id="s-frame"></span></div>
     <div class="ctl">Colour <span class="seg" id="s-col"></span></div>
   </div>
+  <details class="guide" id="guide-shape" open><summary>How to read this section</summary><div class="cols">
+    <div><ul>
+      <li><b>Left:</b> every token, flattened onto the two directions of greatest spread. <b>Right:</b> one Gaussian draw on the same two directions and the same axes.</li>
+      <li>This is 2 dimensions out of about 1 000. Clusters can hide in the others, and flattening can make lumps that are not there. Treat it as a picture, not evidence.</li>
+      <li>Always all tokens, whatever the Tokens switch says.</li>
+    </ul></div>
+    <div><ul>
+      <li><b>HDBSCAN group:</b> the 3 largest groups in blue, orange and green; other groups grey; unassigned tokens pale. The grouping uses Phase 1's setting (<code>min_cluster_size=2</code>), the choice 1d is testing.</li>
+      <li><b>position:</b> light at the start of the text, dark at the end. A smooth gradient means position drives the shape.</li>
+      <li><b>repeated string:</b> orange = seen earlier in the prompt. Tight orange clumps are the same word repeated.</li>
+      <li>Hover shows the token. <code>Ġ</code> marks a leading space.</li>
+    </ul></div>
+  </div></details>
   <div class="legend" id="s-leg"></div>
   <div class="grid2">
     <div class="panel"><h3 id="s-t1">Tokens</h3><svg id="s-real" viewBox="0 0 400 320" style="width:100%;height:auto" role="img" aria-label="token projection"></svg></div>
@@ -126,6 +220,29 @@ svg .lab{fill:var(--ink-2);font:11px var(--sans)}
 
 <section id="attn">
   <div><span class="eyebrow">Item (3) · attention communities</span><h2>Who attends to whom, against three nulls</h2></div>
+  <details class="guide" id="guide-attn" open><summary>How to read this section</summary><div class="cols">
+    <div><h4>The three nulls</h4><ul>
+      <li><b>A</b>, the model's own attention on Gaussian tokens. <b>It fires on position alone</b>: the untrained model beats it. Beating A is not evidence of content.</li>
+      <li><b>B</b>, each offset diagonal shuffled. Keeps how much a token looks 1, 2, 3… back; destroys which content attends to which. <b>The fair judge for content.</b></li>
+      <li><b>C</b>, each head replaced by the theory's softmax(β⟨u,v⟩) with its fitted β.</li>
+      <li>Records: layers 1–23 × 7 prompts = 161. Against B and C some statistics fire on almost all of the calibration too; there only the excess means anything.</li>
+    </ul></div>
+    <div><h4>The statistics, and which side counts as structure</h4>
+      <div class="scroll"><table class="stat"><tr><th>statistic</th><th>structure is</th><th>what it measures</th></tr>
+      <tr><td>modularity</td><td>higher</td><td>how cleanly the graph splits into communities</td></tr>
+      <tr><td>spectral gap λ₂</td><td>lower</td><td>how close the graph is to falling in two</td></tr>
+      <tr><td>agreement with k-means</td><td>higher</td><td>ARI between communities and that frame's k-means at the same k; 0 = chance, 1 = identical</td></tr>
+      <tr><td>communities of ≥ 4</td><td>higher</td><td>how many substantial communities</td></tr>
+      <tr><td>position contiguity</td><td>higher</td><td>communities as unbroken stretches of text</td></tr>
+      <tr><td>weight within 3 positions</td><td>higher</td><td>share of attention going ≤ 3 tokens back</td></tr></table></div>
+    </div>
+    <div><h4>The charts</h4><ul>
+      <li><b>Real value vs the null's mean:</b> solid = real, dashed = the chosen null's mean, dotted (modularity only) = the idealised cosine head on the real tokens. Medians over prompts.</li>
+      <li><b>Agreement chart:</b> one colour per frame; solid = real, dashed = null A. A's agreement is near 0 by construction, so part of the gap is position.</li>
+      <li><b>β per head:</b> median with the middle 50 % shaded; R² below. This is #108's fit with a straight-line offset term. The 2026-09-29 refit with one term per offset gives <b>3.46 [1.55, 5.57]</b> over L1–23, 12 % lower, mostly at L9–16 (<code>status-1d.md</code> "β refit").</li>
+      <li><b>Communities along the text:</b> each token underlined in its community's colour (first 8 by first appearance, the rest grey); the sink is greyed. Long single-colour runs are recency, and the nulls show them too.</li>
+    </ul></div>
+  </div></details>
   <div id="a-body"></div>
 </section>
 </div>
@@ -321,6 +438,12 @@ async function drawStrip(){
   const sizes=order.map(c=>lab.filter(x=>x===c).length);
   leg.innerHTML=order.slice(0,8).map((c,k)=>`<span><span class="sw" style="background:var(--s${k+1})"></span>${k+1} · ${sizes[k]} tokens</span>`).join("")+(order.length>8?`<span><span class="sw" style="background:var(--other)"></span>${order.length-8} more</span>`:"")+`<span class="note">numbered by first appearance</span>`;
 }
+
+/* ---------- guide panels: remember open/closed per viewer ---------- */
+document.querySelectorAll("details.guide").forEach(d=>{
+  try{const g=JSON.parse(localStorage.getItem("p1d-atlas-guide")||"{}");if(d.id in g)d.open=g[d.id];}catch(e){}
+  d.addEventListener("toggle",()=>{try{const g=JSON.parse(localStorage.getItem("p1d-atlas-guide")||"{}");g[d.id]=d.open;localStorage.setItem("p1d-atlas-guide",JSON.stringify(g));}catch(e){}});
+});
 
 /* ---------- boot ---------- */
 function drawAll(){drawGauss();drawShape();drawAttn();}

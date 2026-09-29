@@ -339,3 +339,13 @@ class TestOffsetFixedEffects:
         coef, *_ = np.linalg.lstsq(D_, v, rcond=None)
         assert np.allclose(_two_way_demean(v, rows, bins, 7, 5, tol=1e-13), v - D_ @ coef,
                            atol=1e-9)
+
+
+def test_offset_fe_refuses_similarity_collinear_with_the_tail():
+    """offset_window=1 pools every offset; a Gram linear in offset is then the tail."""
+    n = 30
+    off = np.arange(n)[:, None] - np.arange(n)[None, :]
+    G = 1.0 - 0.01 * np.abs(off)
+    A = _softmax_with_profile(G, BETA_TRUE, lambda d: -0.1 * d)
+    r = estimate_beta_offset_fe(A, G, np.arange(n), offset_window=1)
+    assert np.isnan(r["beta_raw"]) and "collinear" in r["note"]

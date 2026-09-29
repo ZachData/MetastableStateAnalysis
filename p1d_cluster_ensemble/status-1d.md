@@ -920,6 +920,13 @@ neither query nor key, `repeated_tokens` out; code
 `data/p1d/beta_refit_2026-09-29/` (`beta_refit.txt`, all bands, both token
 sets). The `linear` variant reproduces #108's stored βs (6 112 heads, max
 |Δ| 5e-6, 0 finite-on-one-side; the driver refuses otherwise). 6 min at 10 workers.
+*Guards added after CodeRabbit on #110 (follow-up PR):* the estimator refuses
+when similarity is collinear with the offset tail (column-normalised
+singular-value ratio < 1e-6), and the reproduction gate refuses any fitted
+head #108 did not record, or recorded twice. Re-run with both
+(`beta_refit_2026-09-29/rerun_guards/`): summary identical, 6 112 compared,
+0 mismatched. The page (link in STATE) now has a reading guide and carries
+the refit's β beside #108's.
 
 | step143000, L1–23, 7 prompts × 16 heads, all tokens | heads | linear | fe_w16 | fe_full |
 |---|---|---|---|---|
