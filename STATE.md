@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-29 (β refit with per-offset fixed effects, Phase 1d; `FUTURE_IDEAS.md` merged as #109) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-29 (triage of all phases and where effort goes, `docs/TRIAGE_2026-09.md`; long-prompt rule merged as #112) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -67,7 +67,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-**#110 follow-up (`claude/p1d-beta-refit-guards`, in `../Mets-work`: CodeRabbit's two guards, the page's reading guide): PR #111 open.** #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
+**Triage (`claude/intelligent-fermat-w4ug56`, docs only: `docs/TRIAGE_2026-09.md`): PR open, see `./scripts/status.sh`.** #112 (long-prompt rule) merged 2026-09-29. #111 merged 2026-09-29. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
@@ -79,7 +79,7 @@ Current state: `./scripts/status.sh`.
 
 ## Where things stand (one line each; detail behind the pointer)
 
-- Weight side (how Adam selects Pythia's weights): **not studied**; scan + 9 ranked directions in `FUTURE_IDEAS.md` (2026-09-29, abstract-level). Cheapest: D1, weights only.
+- **Triage 2026-09-29 (proposal, not decided): `docs/TRIAGE_2026-09.md`.** Flagship = the anti-collapse force on the training axis (energy, β, T_eff, attention vs MLP), gated on Blocked 9; second paper = 1d written up as a null-model audit; local-object phases (3/4, 5, 7–8) set aside for low value, 1c/2d only for being blocked. Weight side: `FUTURE_IDEAS.md` D1/D3/D4 (weights only) set against the energy break and the OV repulsive phase at 1000–2000 (`PROJECT.md` §3.12 A).
 - `CLAIM-C`: gate ran, **INSUFFICIENT** twice: p floor 0.0661 at 8 prompts (§3.41); at 20 v2 prompts on 1.4b + gpt2-large the floor is 0.0002 but the homogeneity correction is untabulated past 12 (§3.46). Fix ~45 min of calibration, deferred by the user.
 - e-value audit: complete, 39 registered predictions, zero e-values — §3.45.
 - Phase 10 free rows (tier 1): attention flip ~94 % causal mask; F0 fails; identity coupling optimal 99.5 %; HDBSCAN's run-to-run floor (ARI p5 0.347) was float32 distances; on float64 it is 1.000, and stored `repeated_tokens` labels are rounding (`status-1d.md` "Float64 distances…") — `status-10.md`.
