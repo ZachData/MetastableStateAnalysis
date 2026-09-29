@@ -282,7 +282,10 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (battery hash, key list) and refuses on a mismatch. Status:
-⚠️ open; decision on P-I5 is with the user (`STATE.md`).
+✅ P-I5 (2026-09-29, `p_i5_gate.p_i5_battery`: its 8 prompts by hash, and a
+test that no P-I5 module iterates `PROMPTS`); ⚠️ not audited: the other live
+files that iterate `PROMPTS` (`git grep 'PROMPTS.items()'`), e.g.
+`p7_motifs/run_7.py`, `tools/score_claim_c.py`, `tools/run/behavioural.py`.
 
 ## 4. Tests that assert a property of the machine, not of the code
 

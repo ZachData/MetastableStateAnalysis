@@ -120,7 +120,12 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-29 | 1d β refit: per-offset fixed effects + R² floor; #109 conflict resolution and merge; page read for explanation (whole transcript, before challenge-pr) | 49 | 165k | 5.3M | 44k | #110 |
 | 2026-09-29 | #110 follow-up: CodeRabbit guards (collinearity, reproduction coverage) + page reading guide (whole transcript incl. #110, before challenge-pr) | 99 | 246k | 15.6M | 56k | #111 |
 | 2026-09-29 | CI: deps tier on every push, status.sh without gh, pyproject-packages rule (whole transcript incl. the planning survey, before challenge-pr) | 71 | 199k | 9.9M | 38k | #114 |
+| 2026-09-29 | P-I5 battery pin (whole transcript incl. #114 and its two review rounds, before challenge-pr) | 171 | 377k | 38.8M | 88k | #115 |
 
+- #115's row is cumulative: #114's review rounds (CodeRabbit, /challenge-pr,
+  a pinned-env venv) and this unit both ran in #114's session, so per-call
+  context reached 377k. This unit's share is ~28.9M, ~7× the median. Lesson
+  9 at its clearest: the next unit starts a fresh session.
 - #114 is 2.4× the running median (4.05M): one session held the user's
   open planning question (a survey of CI, tests, registry and lessons, with
   test runs) and then the implementation. Two units' reading in one context.

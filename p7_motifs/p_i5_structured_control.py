@@ -224,13 +224,11 @@ def run_prompt(model, tokenizer, text: str, rng: np.random.Generator, target_hea
 
 def run_all_on_loaded_model(model, tokenizer, target_head: tuple, seed: int = 20260916) -> dict:
     from core.config import PROMPTS
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
+    from p7_motifs.p_i5_gate import p_i5_battery, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
 
     rng = np.random.default_rng(seed)
     per_prompt = {}
-    for key, text in PROMPTS.items():
-        if key == DEGENERATE_PROMPT:
-            continue
+    for key, text in p_i5_battery(PROMPTS):
         result = run_prompt(model, tokenizer, text, rng, target_head)
         if result is not None:
             per_prompt[key] = result
@@ -297,7 +295,7 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
     from core.dual_reading import pairwise_geometric_reading
     from core.intervention import next_token_kl
     from p7_motifs.p_i5_ablation import MODEL_NAME, ABLATION_MODE, _forward
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue
+    from p7_motifs.p_i5_gate import p_i5_battery, intersection_union_pvalue, joint_rank_pvalue
     from tools.run.induction_rank_sweep import head_means, ablate_heads
     import torch
 
@@ -307,9 +305,7 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
     pool = [h for h in all_heads(model) if h != target_head]
 
     deltas_geo, deltas_logit = [], []
-    for key, text in PROMPTS.items():
-        if key == DEGENERATE_PROMPT:
-            continue
+    for key, text in p_i5_battery(PROMPTS):
         clean = _forward(model, tokenizer, text)
         pairs = induction_candidates(clean["ids"])
         if not pairs:

@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-29 (CI: deps tier now runs on every push; it had run nowhere for 10+ nights, `LESSONS.md` 5) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-29 (P-I5 pinned to its calibrated 8 prompts; #114, the deps tier on every push, merged) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -25,11 +25,10 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 1. *(Cleared 2026-09-24: chunk 3 launched by Claude at 15:35. Kept so the
    numbers below stay stable.)* Guard for any later driver:
    `pgrep -f '[p]ython -m tools.run.stage0_chunk'` (the bracket stops it matching itself).
-2. **P-I5 runs on whatever battery is current.** `p7_motifs/p_i5_ablation.py`
-   iterates `core.config.PROMPTS`; since v2 it gates on 20 prompts, not the
-   8 its calibration record used. Nightly smoke red since 2026-09-19 because
-   of it (it also skipped the nightly deps step; no longer). 14 live files iterate the live battery. Needs a decision: pin
-   P-I5 to v1's keys, or re-register. **Also its target:** the registered
+2. **P-I5's target.** Its battery is pinned (2026-09-29, user's call): every
+   P-I5 loop reads its calibrated 8 prompts (`p_i5_gate.p_i5_battery`, hash
+   `e77b5528f536`) and refuses on a change, so the live battery can keep
+   growing; this clears the nightly smoke's `20 == 8`. **Still open, its target:** the registered
    statement says "an induction head", and its real run's `L3H6` (70m) has
    induction score 0.009; 70m's matcher is `L0H3` (`status-7.md` "Corrections
    received", 2026-09-24). **Same question for `P-I1`:** `tools/run/behavioural.py`
@@ -67,7 +66,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-**CI: deps tier on every push (`claude/modest-cannon-c3t3j9`, in `../Mets-work`): PR #114 open.** #113 (triage) open, another session's. #111, #112 merged. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
+**P-I5 battery pin (`claude/modest-cannon-c3t3j9`, in `../Mets-work`): PR open.** #113 (triage) open, another session's. #114 (deps tier on every push) merged 2026-09-29; its remote branch could not be deleted from the cloud container (proxy), so this PR reuses the name. #111, #112 merged. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
