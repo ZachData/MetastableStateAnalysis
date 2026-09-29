@@ -224,7 +224,7 @@ def run_prompt(model, tokenizer, text: str, rng: np.random.Generator, target_hea
 
 def run_all_on_loaded_model(model, tokenizer, target_head: tuple, seed: int = 20260916) -> dict:
     from core.config import PROMPTS
-    from p7_motifs.p_i5_gate import p_i5_battery, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
+    from p7_motifs.p_i5_gate import P_I5_BATTERY_HASH, p_i5_battery, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
 
     rng = np.random.default_rng(seed)
     per_prompt = {}
@@ -242,6 +242,7 @@ def run_all_on_loaded_model(model, tokenizer, target_head: tuple, seed: int = 20
     return {
         "target_head": list(target_head),
         "seed": seed,
+        "battery_hash": P_I5_BATTERY_HASH,
         "n_prompts": n,
         "per_prompt": per_prompt,
         "delta_geometric": delta_geometric.tolist(),
@@ -295,7 +296,7 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
     from core.dual_reading import pairwise_geometric_reading
     from core.intervention import next_token_kl
     from p7_motifs.p_i5_ablation import MODEL_NAME, ABLATION_MODE, _forward
-    from p7_motifs.p_i5_gate import p_i5_battery, intersection_union_pvalue, joint_rank_pvalue
+    from p7_motifs.p_i5_gate import P_I5_BATTERY_HASH, p_i5_battery, intersection_union_pvalue, joint_rank_pvalue
     from tools.run.induction_rank_sweep import head_means, ablate_heads
     import torch
 
@@ -344,6 +345,7 @@ def run_constant_substitution_diagnostic(target_head: tuple, seed: int = 2026091
     gate_min_rank_superseded = joint_rank_pvalue(dg, dl, alternative="greater") if len(dg) >= 1 else None
     return {
         "target_head": list(target_head),
+        "battery_hash": P_I5_BATTERY_HASH,
         "n_prompts": len(dg),
         "delta_geometric": dg.tolist(),
         "delta_logit": dl.tolist(),
@@ -373,6 +375,7 @@ def run_negative_controls(seed: int = 20260916) -> dict:
             "p_value": result["gate"]["p_value"] if result["gate"] else None,
             "p_value_min_rank_superseded": (result["gate_min_rank_superseded"]["p_value"]
                                             if result.get("gate_min_rank_superseded") else None),
+            "battery_hash": result["battery_hash"],
             "n_prompts": result["n_prompts"],
             "mean_delta_geometric": float(np.mean(result["delta_geometric"])),
             "mean_delta_logit": float(np.mean(result["delta_logit"])),

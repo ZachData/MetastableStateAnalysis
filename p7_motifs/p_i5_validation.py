@@ -119,6 +119,7 @@ def run_negative_controls(seed: int = 20260916) -> dict:
             "p_value": result["gate"]["p_value"] if result["gate"] else None,
             "p_value_min_rank_superseded": (result["gate_min_rank_superseded"]["p_value"]
                                             if result.get("gate_min_rank_superseded") else None),
+            "battery_hash": result["battery_hash"],
             "n_prompts": result["n_prompts"],
             "mean_delta_geometric": float(np.mean(result["delta_geometric"])),
             "mean_delta_logit": float(np.mean(result["delta_logit"])),
@@ -179,7 +180,7 @@ def run_random_vs_random_diagnostic(seed_a: int = 100, seed_b: int = 200) -> dic
         MODEL_NAME, TARGET_HEAD, HIDDEN_STATE_INDEX,
         draw_unit_direction, matched_magnitude_random_ablation, _forward,
     )
-    from p7_motifs.p_i5_gate import p_i5_battery, intersection_union_pvalue, joint_rank_pvalue
+    from p7_motifs.p_i5_gate import P_I5_BATTERY_HASH, p_i5_battery, intersection_union_pvalue, joint_rank_pvalue
     from tools.run.induction_rank_sweep import arch_dims, head_means
     import torch
 
@@ -231,6 +232,7 @@ def run_random_vs_random_diagnostic(seed_a: int = 100, seed_b: int = 200) -> dic
     return {
         "seed_a": seed_a,
         "seed_b": seed_b,
+        "battery_hash": P_I5_BATTERY_HASH,
         "n_prompts": len(deltas_geo),
         "delta_geometric": dg.tolist(),
         "delta_logit": dl.tolist(),
@@ -254,6 +256,7 @@ def run_checkpoint_replication(seed: int = 20260916) -> dict:
     return {
         "model": SECOND_CHECKPOINT_MODEL,
         "p_value": result["gate"]["p_value"] if result["gate"] else None,
+        "battery_hash": result["battery_hash"],
         "n_prompts": result["n_prompts"],
         "mean_delta_geometric": float(np.mean(result["delta_geometric"])),
         "mean_delta_logit": float(np.mean(result["delta_logit"])),
@@ -280,7 +283,7 @@ def run_cosine_cross_check(seed: int = 20260916) -> dict:
         MODEL_NAME, TARGET_HEAD, ABLATION_MODE, HIDDEN_STATE_INDEX,
         draw_unit_direction, matched_magnitude_random_ablation, _forward,
     )
-    from p7_motifs.p_i5_gate import p_i5_battery, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
+    from p7_motifs.p_i5_gate import P_I5_BATTERY_HASH, p_i5_battery, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
     from tools.run.induction_rank_sweep import arch_dims, head_means, ablate_heads
     import torch
 
@@ -339,6 +342,7 @@ def run_cosine_cross_check(seed: int = 20260916) -> dict:
 
     return {
         "metric": "cosine_distance",
+        "battery_hash": P_I5_BATTERY_HASH,
         "n_prompts": n,
         "delta_geometric": dg.tolist(),
         "p_value": gate["p_value"] if gate else None,

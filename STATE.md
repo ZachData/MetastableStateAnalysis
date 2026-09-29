@@ -28,7 +28,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 2. **P-I5's target.** Its battery is pinned (2026-09-29, user's call): every
    P-I5 loop reads its calibrated 8 prompts (`p_i5_gate.p_i5_battery`, hash
    `e77b5528f536`) and refuses on a change, so the live battery can keep
-   growing; this clears the nightly smoke's `20 == 8`. **Still open, its target:** the registered
+   growing. Both P-I5 smoke assertions on prompt count now read the pin; the next nightly is their first real run. **Still open, its target:** the registered
    statement says "an induction head", and its real run's `L3H6` (70m) has
    induction score 0.009; 70m's matcher is `L0H3` (`status-7.md` "Corrections
    received", 2026-09-24). **Same question for `P-I1`:** `tools/run/behavioural.py`

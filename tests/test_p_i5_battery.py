@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 from core.holdout import V1_PROMPT_KEYS  # noqa: E402
 from p7_motifs.p_i5_gate import (  # noqa: E402
-    DEGENERATE_PROMPT, P_I5_BATTERY_HASH, p_i5_battery,
+    DEGENERATE_PROMPT, P_I5_BATTERY_HASH, P_I5_PROMPT_KEYS, p_i5_battery,
 )
 
 #: v1's order, the order claims/calibration/p_i5_real_ablation.json ran in.
@@ -47,6 +47,25 @@ def test_the_real_battery_gives_the_calibrated_8_in_order():
     assert [k for k, _ in battery] == CALIBRATED_ORDER
     assert all(text == prompts[k] for k, text in battery)
     assert set(CALIBRATED_ORDER) == V1_PROMPT_KEYS - {DEGENERATE_PROMPT}
+
+
+def test_the_pinned_order_is_the_real_run_records_order():
+    # The record is written with sort_keys=True, so per_prompt is alphabetical;
+    # the run order survives in the delta_geometric array. Map it back.
+    import json
+    record = json.loads((REPO / "claims" / "calibration" / "p_i5_real_ablation.json")
+                        .read_text(encoding="utf-8"))
+    by_value = {v["delta_geometric"]: k for k, v in record["per_prompt"].items()}
+    assert len(by_value) == len(record["per_prompt"])      # values are distinct
+    run_order = [by_value[x] for x in record["delta_geometric"]]
+    assert run_order == list(P_I5_PROMPT_KEYS) == CALIBRATED_ORDER
+
+
+def test_a_reordered_battery_still_runs_in_the_calibrated_order():
+    # The hash sorts keys, so it cannot see order; P_I5_PROMPT_KEYS does.
+    prompts = _real_prompts()
+    reordered = dict(reversed(list(prompts.items())))
+    assert [k for k, _ in p_i5_battery(reordered)] == CALIBRATED_ORDER
 
 
 def test_new_prompts_anywhere_do_not_change_it():
@@ -99,8 +118,7 @@ def test_run_all_on_loaded_model_runs_the_8(module, monkeypatch):
     assert result["n_prompts"] == 8
     assert list(result["per_prompt"]) == CALIBRATED_ORDER
     assert seen == [real[k] for k in CALIBRATED_ORDER]
-    if module.endswith("ablation"):
-        assert result["battery_hash"] == P_I5_BATTERY_HASH
+    assert result["battery_hash"] == P_I5_BATTERY_HASH
 
 
 def test_no_p_i5_module_iterates_the_live_battery():

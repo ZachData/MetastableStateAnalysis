@@ -282,8 +282,9 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (battery hash, key list) and refuses on a mismatch. Status:
-✅ P-I5 (2026-09-29, `p_i5_gate.p_i5_battery`: its 8 prompts by hash, and a
-test that no P-I5 module iterates `PROMPTS`); ⚠️ not audited: the other live
+✅ P-I5 (2026-09-29, `p_i5_gate.p_i5_battery`: its 8 prompts by key tuple
+(order) and hash (texts), `battery_hash` in every P-I5 producer's output, and
+a test that no P-I5 module iterates `PROMPTS`); ⚠️ not audited: the other live
 files that iterate `PROMPTS` (`git grep 'PROMPTS.items()'`), e.g.
 `p7_motifs/run_7.py`, `tools/score_claim_c.py`, `tools/run/behavioural.py`.
 
@@ -510,6 +511,13 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   push` committed and pushed `72ccbc0` over a red gate (3 phase-card errors):
   the pipeline's status is `tail`'s. Fixed in the next commit. Chain a commit
   on `check.sh`'s own exit code (redirect to a log, then grep it).
+- 2026-09-29 (#115): `git log --diff-filter=A -1 -- <record>` in the cloud
+  container named `2225beb` as the commit that added P-I5's real-run record,
+  and the code comment cited it. The clone is shallow (`git rev-parse
+  --is-shallow-repository` → true) and `2225beb` is its boundary: every file
+  "is added" there. The record was added at `bff93d7`, before battery v2. The
+  hash happened to match at both. Found by `/challenge-pr`. On a shallow
+  clone, ask the API for history (`/commits?path=`), not `git log`.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
