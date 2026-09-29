@@ -771,6 +771,13 @@ same. Tier 1, unregistered.
     structure at init (position through the causal mask?) or a defect in how
     lifetime is compared. Cost: ~1 h. Changes: whether `mt_life` can be
     read at all.
+12. *(2026-09-29, from `FUTURE_IDEAS.md` §3 D8; possibly a confound, the
+    user decides whether to attach.)* The rogue coordinates and the token-0
+    sink both have optimiser-level explanations in the literature (Adam's
+    diagonal preconditioning; weight decay). Why: part of what 1d reads as
+    structure may be Adam-induced coordinates. Cost: reading, then a null
+    that drops outlier coordinates (1d already drops 3). Changes: whether
+    1d's cluster definition must be stated modulo optimiser artefacts.
 
 ## Deleted and restored (was `FROZEN.md`)
 

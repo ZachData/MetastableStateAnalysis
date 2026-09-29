@@ -107,3 +107,4 @@ running median of the rows above it gets a line under the table saying why.
   explained step 0). Three background runs were waited on across turns,
   each re-reading the context on return.
 | 2026-09-27 | fleet onboarding: venv built and published to S3, HF cache pushed, `rvm.env` un-ignored, Lora objects deleted (whole transcript, before the commit) | 53 | 107k | 4.3M | 23k | #107 |
+| 2026-09-29 | FUTURE_IDEAS.md: literature scan, how training selects weights (docs only) | 23 | 147k | 2.6M | 33k | #109 |
