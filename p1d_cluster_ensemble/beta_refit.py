@@ -40,7 +40,7 @@ from core.holdout import add_holdout_args, refuse_held_out
 
 from .attention_graph import fit_betas, unit_ln_rows
 from .attention_null import _step_prompt, blocks_for, run_checkpoint
-from .gaussian_null import MIN_TOKENS, band_of, first_occurrences, run_tokens
+from .gaussian_null import MIN_TOKENS, first_occurrences, run_tokens
 
 WINDOWS_FE = (4, 16, 64, None)
 VARIANTS = ("linear",) + tuple(f"fe_w{w}" if w else "fe_full" for w in WINDOWS_FE)
@@ -50,6 +50,11 @@ FLOORS = (0.0, 0.01, 0.05, 0.10)
 EXCLUDE = ("repeated_tokens",)
 #: Largest |linear β − stored β| accepted as a reproduction (stored rounded to 5 dp).
 REPRO_TOL = 1e-4
+
+
+def _band(layer: int) -> str:
+    """Attention blocks 0-23, in the bands the 1d reports use."""
+    return "L0" if layer == 0 else ("L1-8" if layer <= 8 else ("L9-16" if layer <= 16 else "L17-23"))
 
 
 def _job(args) -> List[Dict]:
@@ -87,12 +92,16 @@ def _job(args) -> List[Dict]:
                 r = estimate_beta_offset_fe(A[h], G, idx, positions=seq, offset_window=w)
                 k = f"fe_w{w}" if w else "fe_full"
                 rec[k], rec[k + "_r2"], rec[k + "_pr2"] = r["beta_raw"], r["r2"], r["partial_r2"]
+                rec[k + "_svr"] = r["design_sv_ratio"]
             out.append(rec)
     return out
 
 
 def check_reproduction(recs: List[Dict], stored: Path) -> Dict:
-    """Max |linear − #108's stored β| over the heads both have."""
+    """
+    Max |linear − #108's stored β| over the heads both have. A head on one
+    side only, fitted twice, or finite on one side only counts as mismatched.
+    """
     d = json.loads(stored.read_text())
     ref = {}
     for r in d["records"]:
@@ -100,8 +109,12 @@ def check_reproduction(recs: List[Dict], stored: Path) -> Dict:
             continue
         for h, b in enumerate(r["betas"][0]):
             ref[(r["step"], r["prompt"], r["layer"], h)] = b["beta"]
-    mine = {(x["step"], x["prompt"], x["layer"], x["head"]): x["linear"] for x in recs}
-    diffs, mismatched = [], 0
+    keys = [(x["step"], x["prompt"], x["layer"], x["head"]) for x in recs]
+    mine = dict(zip(keys, (x["linear"] for x in recs)))
+    # Every fitted head must be one #108 recorded, once: an unmatched head
+    # would reach the summary unchecked.
+    mismatched = (len(keys) - len(mine)) + sum(k not in ref for k in mine)
+    diffs = []
     for k, b in ref.items():
         stored_ok = b is not None and np.isfinite(b)
         new = mine.get(k)
@@ -120,8 +133,7 @@ def summarise(recs: List[Dict]) -> List[Dict]:
     for r in recs:
         if r["prompt"] in EXCLUDE:
             continue
-        # Attention has blocks 0-23; band_of's last band is named for the residual's 25.
-        bands = [band_of(r["layer"]).replace("L17-24", "L17-23")] + (["L1-23"] if r["layer"] >= 1 else [])
+        bands = [_band(r["layer"])] + (["L1-23"] if r["layer"] >= 1 else [])
         for b in bands:
             groups.setdefault((r["dedupe"], r["step"], b), []).append(r)
     for (dedupe, step, band), rs in sorted(groups.items()):
@@ -133,8 +145,10 @@ def summarise(recs: List[Dict]) -> List[Dict]:
             for v in VARIANTS:
                 b = np.array([r[v] for r in sel], dtype=float)
                 b = b[np.isfinite(b)]
+                # A head a variant refused (NaN) drops out of that variant only;
+                # its own count says so.
                 row[v] = ([float(np.median(b)), float(np.percentile(b, 25)),
-                           float(np.percentile(b, 75))] if b.size else None)
+                           float(np.percentile(b, 75)), int(b.size)] if b.size else None)
             row["linear_r2_median"] = float(np.nanmedian([r["linear_r2"] for r in sel])) if sel else None
             row["fe_full_r2_median"] = float(np.nanmedian([r["fe_full_r2"] for r in sel])) if sel else None
             row["fe_full_pr2_median"] = float(np.nanmedian([r["fe_full_pr2"] for r in sel])) if sel else None
@@ -148,7 +162,7 @@ def text(rows: List[Dict], repro: Dict) -> str:
              + " | R² lin, R² full, partial R² full"]
     for r in rows:
         cells = " | ".join("—" if r[v] is None else f"{r[v][0]:.2f} [{r[v][1]:.2f}, {r[v][2]:.2f}]"
-                           for v in VARIANTS)
+                           + ("" if r[v][3] == r["n"] else f" (n={r[v][3]})") for v in VARIANTS)
         lines.append(f"{'dd' if r['dedupe'] else 'all'} {r['step']} {r['band']} "
                      f"{r['floor']:.2f} {r['n']}/{r['n_all']} | {cells} | "
                      + ", ".join("—" if r[k] is None else f"{r[k]:.3f}" for k in

@@ -242,6 +242,14 @@ well-formed but empty/zero result. It looks exactly like a real result.
   Caught by looking at the page once and reading the report before writing
   it up. A viewer or report is part of the instrument: open its first real
   output, as for a batch.
+- 2026-09-29, #110 follow-up: one shell call ran `sed … && cat >> test.py
+  <<EOF … && pytest`. The `sed` failed on its delimiter, so the `&&` chain
+  skipped the append, and the pytest in a *separate* line still ran and
+  passed (32 = the old 27 + the 5 in a new file). I told the user the new
+  collinearity test "hits the guard" when it did not exist. Caught at
+  `git status` (the test file unmodified). Rule: after adding a test, see it
+  fail without the fix before quoting it; and never put an edit behind a
+  `&&` whose failure is easy to miss.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

@@ -118,3 +118,10 @@ running median of the rows above it gets a line under the table saying why.
   first part.
 | 2026-09-29 | FUTURE_IDEAS.md: literature scan, how training selects weights (docs only) | 23 | 147k | 2.6M | 33k | #109 |
 | 2026-09-29 | 1d β refit: per-offset fixed effects + R² floor; #109 conflict resolution and merge; page read for explanation (whole transcript, before challenge-pr) | 49 | 165k | 5.3M | 44k | #110 |
+| 2026-09-29 | #110 follow-up: CodeRabbit guards (collinearity, reproduction coverage) + page reading guide (whole transcript incl. #110, before challenge-pr) | 99 | 246k | 15.6M | 56k | #111 |
+
+- #111's row is cumulative: it includes #110's 5.3M, so this unit's share is
+  ~10.3M, ~2.6× the running median. The user continued in #110's session
+  instead of clearing (their call, 2026-09-29), so every call re-read ~200k
+  of #110's context, including the page's 30 KB source and a verbose
+  explanation of it. Lesson 9 again: the cost is the carried context.
