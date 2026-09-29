@@ -903,6 +903,68 @@ finding 4):** the fit controls position offset only linearly, and the median
 pools heads with negative slopes and near-zero R². Recency heads could inflate
 the slope; a refit with per-offset terms (Parked below) should precede
 adopting the number. The convention (`beta_raw`, not ÷ 8) does not depend on it.
+*Done 2026-09-29: next paragraph.*
+
+**β refit: per-offset fixed effects and an R² floor (2026-09-29).**
+`core.beta_eff.estimate_beta_offset_fe` replaces the linear offset term with
+one dummy per offset (`fe_full`), or per offset below W with a linear tail
+(`fe_w4/16/64`); row fixed effects as before, row and offset effects
+projected out by alternating projections. On synthetic recency heads whose
+similarity falls with offset it returns the planted β exactly where the
+linear control does not (`tests/test_beta_eff.py`). The floor tried was
+`fe_full`'s partial R² (the share of what row and offset effects leave that
+similarity explains); finding 2 says why it cannot pick the number. **Input:** #108's 16 run dirs (`run_all.sh` in
+`data/p1d/attention_null_2026-09-26/`), each layer's own attention, sink
+neither query nor key, `repeated_tokens` out; code
+`p1d_cluster_ensemble/beta_refit.py`; output
+`data/p1d/beta_refit_2026-09-29/` (`beta_refit.txt`, all bands, both token
+sets). The `linear` variant reproduces #108's stored βs (6 112 heads, max
+|Δ| 5e-6, 0 finite-on-one-side; the driver refuses otherwise). 6 min at 10 workers.
+
+| step143000, L1–23, 7 prompts × 16 heads, all tokens | heads | linear | fe_w16 | fe_full |
+|---|---|---|---|---|
+| **all heads** | 2576 | 3.88 [1.92, 5.94] | 3.51 [1.58, 5.62] | **3.46 [1.55, 5.57]** |
+| all heads, by band L1–8 · L9–16 · L17–23 | 896 · 896 · 784 | 4.65 · 4.30 · 2.47 | | 4.36 · 3.65 · 2.37 |
+| deduped, all heads | 2576 | 4.67 | 4.24 | 4.15 [2.08, 6.35] |
+| heads with ≤ 5 % of pairs log-clipped (1e-12) | 2300 | | | 3.57 |
+| step 0, all heads | 2576 | 0.00 | 0.00 | 0.00 [−0.13, 0.14] |
+| *truncated on partial R² ≥ 0.02 · 0.05 · 0.10 (not estimates: finding 2)* | 1738 · 1175 · 642 | | | *4.77 · 5.78 · 7.27* |
+
+1. **The offset control moves the number by about a tenth.** Per head,
+   `fe_full − linear` is −0.14 median [−0.46, −0.02]; most of it is taken by
+   the first four offsets (fe_w4 3.61). It is concentrated at L9–16 (4.30 →
+   3.65); late layers barely move (2.47 → 2.37). The recency worry was right
+   in sign, small in size.
+2. **A floor on partial R² is a floor on |β|, so it cannot pick the number.**
+   With one regressor left after the fixed effects, a head's partial R² is
+   `β̂² · Σs̃² / Σỹ²`, and `Σs̃²` is shared by a layer's 16 heads (same Gram,
+   same pairs). Within a (prompt, layer), |β| and partial R² rank heads
+   alike (Spearman median 0.92). The floored medians (4.77 → 5.78 → 7.27)
+   are truncation of the β distribution, not a measurement of a subset.
+   The first write-up read this arithmetic as "heads that run the kernel
+   have steeper slopes" and "β is steadier across depth once floored";
+   both are withdrawn. The review's precision-selected 1 175 heads give 2.87
+   (reviewer's number, not re-run here).
+3. **Step 0 does not calibrate a floor either.** Its largest partial R² is
+   0.0483 (p99 0.0198), so "0.05, the smallest floor step 0 fails" was
+   placed just above one head. It does show step 0 has no kernel: β 0.00,
+   partial R² median 0.001.
+4. **Log-clipping at 1e-12 is smaller than the offset effect.** 4.5 % of
+   kept pairs are clipped (mean over heads); 276 of 2 576 heads have > 5 %,
+   median β 2.39 vs 3.57 for the rest. Dropping them moves the median to
+   3.57 (+3 %); heads with no clipping at all give 3.45.
+5. **For C's δ = cβ^{-1/2}:** β = 3.46 gives δ ≈ 0.54c (#108's 3.88 gave
+   0.51c). The per-band spread (2.37–4.36) moves δ by a factor 1.36 between
+   early and late layers, more than the offset control does.
+
+**Recommendation for Blocked 9 (the number; the decision is the user's):**
+keep the convention (`beta_raw`, unit LN1 frame), fit with per-offset fixed
+effects, and report the **all-head distribution per band**, headline
+**β = 3.5 [1.6, 5.6]** (L1–23), not a floored subset. #108's 3.88 was 12 %
+high from the offset control. A subset of "kernel heads" needs a criterion
+that does not use β̂ (e.g. ablation: Parked below). *Revised after
+`/challenge-pr` on #110:* the first version recommended 5.8 on heads with
+partial R² ≥ 0.05 (findings 2–3 withdraw it).
 
 **Defect fixed after the run.** `summarise` computed z whenever the null SD
 was > 0, so constant draws with float-noise SDs (~1e-16) gave z ≈ 1e13
@@ -917,10 +979,12 @@ attention grid overflowing to 8 800 px (`section>*{min-width:0}`).
   form. Cost: one more null (bilinear `W_QK` head, no rotary) on the same
   inputs, ~3 h. Could change whether the cosine head is the idealisation
   Phase 10's F13/F14 should be read against.
-- β refit with per-offset fixed effects (one dummy per offset ≤ some window,
-  instead of the linear term), and the median over heads with R² above a
-  floor. Cost: real attention only, no draws, well under an hour. Changes the
-  *number* in Blocked 9's recommendation (≈ 4), not the convention.
+- ~~β refit with per-offset fixed effects and an R² floor.~~ Done 2026-09-29
+  ("β refit" above).
+- A β-free way to pick the heads that run the particle kernel (ablation, or
+  each head's share of the update's norm), so a subset β can be read without
+  truncating on β̂. Cost: one forward pass per ablation set. Could change
+  whether the all-head β is the one C's δ should use.
 - A null that keeps position and randomises content in the *residual*, not
   the attention (e.g. A's Gaussian given the real rows' positional mean, or
   a within-prompt position-block shuffle of rows). Cost: A's machinery, ~7 h

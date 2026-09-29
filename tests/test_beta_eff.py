@@ -262,3 +262,80 @@ class TestAllHeads:
         out = estimate_beta_all_heads(A, G, np.arange(N))
         assert out["n_valid_heads"] == 1
         assert out["cluster_mean_beta"] == pytest.approx(6.0, abs=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# Per-offset fixed effects (status-1d.md "β refit")
+# ---------------------------------------------------------------------------
+
+from core.beta_eff import _two_way_demean, estimate_beta_offset_fe  # noqa: E402
+
+
+def _walk(n=60, d=D, step=0.4, seed=1):
+    """Unit rows drifting along the sequence: similarity falls with offset."""
+    rng = np.random.default_rng(seed)
+    X = [rng.normal(size=d)]
+    for _ in range(n - 1):
+        X.append(X[-1] / np.linalg.norm(X[-1]) + step * rng.normal(size=d))
+    X = np.array(X)
+    return X / np.linalg.norm(X, axis=1, keepdims=True)
+
+
+def _softmax_with_profile(gram, beta, profile):
+    """Causal softmax of ``beta * s_ij + profile(i - j)``."""
+    n = gram.shape[0]
+    off = np.arange(n)[:, None] - np.arange(n)[None, :]
+    S = beta * gram + profile(np.maximum(off, 0))
+    S = np.where(off >= 0, S, -np.inf)
+    S = S - S.max(axis=1, keepdims=True)
+    A = np.exp(S)
+    return A / A.sum(axis=1, keepdims=True)
+
+
+class TestOffsetFixedEffects:
+
+    def test_recovers_beta_under_a_recency_bump(self):
+        """
+        A recency head whose similarity also falls with offset: the linear
+        offset control leaves the bump's curvature on the slope, the
+        per-offset dummies absorb it.
+        """
+        U = _walk()
+        G = U @ U.T
+        A = _softmax_with_profile(G, BETA_TRUE, lambda d: 4.0 * np.exp(-d / 2.0))
+        idx = np.arange(G.shape[0])
+        lin = estimate_beta_from_gram(A, G, idx)["beta_raw"]
+        fe = estimate_beta_offset_fe(A, G, idx)
+        assert abs(fe["beta_raw"] - BETA_TRUE) < 1e-6
+        assert fe["partial_r2"] > 0.999
+        assert abs(lin - BETA_TRUE) > 0.1          # the bias this fixes
+
+    def test_window_exact_when_profile_is_linear_past_it(self):
+        U = _walk(seed=2)
+        G = U @ U.T
+        W = 8
+        prof = lambda d: np.where(d < W, 3.0 * np.exp(-d), -0.05 * d)  # noqa: E731
+        A = _softmax_with_profile(G, BETA_TRUE, prof)
+        fe = estimate_beta_offset_fe(A, G, np.arange(G.shape[0]), offset_window=W)
+        assert abs(fe["beta_raw"] - BETA_TRUE) < 1e-6
+        assert fe["n_offset_bins"] == W
+
+    def test_positions_map_a_subset(self):
+        """A deduped subset: offsets come from positions, not the subset's index."""
+        U = _walk(seed=3)
+        G = U @ U.T
+        A = _softmax_with_profile(G, BETA_TRUE, lambda d: 2.0 * np.exp(-d / 3.0))
+        keep = np.arange(0, G.shape[0], 2)
+        sub = np.ix_(keep, keep)
+        fe = estimate_beta_offset_fe(A[sub], G[sub], np.arange(keep.size), positions=keep)
+        assert abs(fe["beta_raw"] - BETA_TRUE) < 1e-6
+
+    def test_two_way_demean_equals_dummy_ols(self):
+        rng = np.random.default_rng(0)
+        rows = rng.integers(0, 7, 200)
+        bins = rng.integers(0, 5, 200)
+        v = rng.normal(size=200)
+        D_ = np.column_stack([np.eye(7)[rows], np.eye(5)[bins]])
+        coef, *_ = np.linalg.lstsq(D_, v, rcond=None)
+        assert np.allclose(_two_way_demean(v, rows, bins, 7, 5, tol=1e-13), v - D_ @ coef,
+                           atol=1e-9)
