@@ -17,4 +17,5 @@ How to measure: `/usr/bin/time -v <cmd> 2> time.log`, then read
 | ≤ 2026-09-24 | Phase-1 run, one prompt × checkpoint (410m, CPU) | v1 battery | local box | ≈ 200 s | unmeasured | 260 MB output | `STATE.md`, local box |
 | 2026-09-25 | 1d tuning, one layer, quick grid | smoke, L0/12/18 | local box | ~170 s / layer | unmeasured | — | `p1d_cluster_ensemble/status-1d.md` "First real run" |
 | 2026-09-26 | 1d merge tree (sub-experiment F), one prompt | 8 v1 prompts, step143000 | local box | ~1 s / prompt | unmeasured | — | `status-1d.md` |
+| 2026-09-28 | 1d attention nulls, `run_all.sh` (4 configurations, 100 draws, `--workers 14`) | 8 v1 prompts × step143000, step 0 × L0–23 | local box | `null` 6.5 h, `calibrate` 7.1 h, each deduped 1.4 h | unmeasured | 65 MB JSON + parts | `status-1d.md` "Attention communities…" |
 | — | Stage 0 (Phase 10), whole | 410m, 19 checkpoints | local box | unmeasured here | unmeasured | 57–100 GB | `STATE.md`; needs ≥ 100 GB ephemeral storage |

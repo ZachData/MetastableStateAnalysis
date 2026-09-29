@@ -20,11 +20,12 @@
   - Validation cites section 3.2 of MATH.md, a file that does not exist — `INDEX.md` "Referenced, not present"
   - The energy-trajectory PNGs bake a wrong citation into three suptitles — `math-1c.md` §11
   - `P-S1`'s "floor is attainable" is a p ≤ α test; at the gate's default 500 draws E ≤ 11.2, so it cannot decide alone. And finding 2's "raw-slope β" is the number `core/beta_eff.py` calls comparable — `docs/PHASE_SYNTHESIS.md` "3.1 Attainable E per adjudicable row", `docs/PHASE_SYNTHESIS.md` "3.2 The remaining decisions, checked against the code first (Parked 7)"
+  - Finding 2's β 0.50 is `beta_raw` ÷ 8, a second division by the model's `1/√d_h`; `beta_raw` on unit LN1 rows (≈ 4 on 410m, R² ≈ 0.18) is already the β of `softmax(β⟨u_i,u_j⟩)`. The factor is computed; which number to adopt is still the user's — `p1d_cluster_ensemble/status-1d.md` "Attention communities against three nulls"
 - **Registry:** `P-gamma1`, `P-gamma2` needs-null, blocked (no `beta_eff` in any run dir); `P-H1` measurement, measured on one checkpoint, not adjudicated; `P-S1` e-value, active, dry run only, blocked on inputs (`claims/EXPERIMENTS.md`)
 - **Depends on:** 1@30c0d54cc5
 - **Feeds:** 2d, 9
 - **Open threads:**
-  - β's scale convention, to decide before any producer freezes it in an artifact
+  - β's scale convention, to decide before any producer freezes it in an artifact (recommendation: `beta_raw`, after a per-offset refit; STATE Blocked 9)
   - `P-S1`: re-cluster both arms offline at a matched k, or record the gate as unfeedable
   - `h_attn_only`, the frame-correct step, needs sublayer streams no run directory has
   - Causal vs non-causal field, never compared
@@ -35,7 +36,7 @@
   - Re-cluster at matched k from `activations.npz` and run `P-S1` (free)
   - `run_1.py --sublayer` reruns for `h_attn_only` (forward pass, 410m)
   - Regenerate the energy-trajectory PNGs (free)
-- **Reviewed:** 2026-09-24 · body `798d9ab647`
+- **Reviewed:** 2026-09-28 · body `aa618fa468`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -50,6 +51,7 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-23.
 - 2026-08-22 · validation cites MATH.md, a file that does not exist · `INDEX.md` "Referenced, not present"
 - 2026-08-23 · the energy-trajectory PNGs bake a wrong citation into three suptitles · `math-1c.md` §11
 - 2026-09-24 · `P-S1`'s gate defaults to 500 null draws, so E ≤ 11.2 and it cannot reach E ≥ 20 alone (the dry run's "floor is attainable" tests p ≤ α); and finding 2 below calls the ×8 β the non-comparable "raw slope" while `core/beta_eff.py` calls it the comparable one · `docs/PHASE_SYNTHESIS.md` "3.1 Attainable E per adjudicable row", `docs/PHASE_SYNTHESIS.md` "3.2 The remaining decisions, checked against the code first (Parked 7)"
+- 2026-09-26 · finding 2's β 0.50 (410m, `wiki_paragraph`) is `beta_raw` ÷ 8: `beta_raw` on unit LN1 rows is 4.00 [2.05, 6.01], reproduced to the digit, and is already the β of `softmax(β⟨u_i,u_j⟩)` (the fit sees the model's `1/√d_h`); across 7 prompts, 3.88 [1.92, 5.94], R² 0.18 · `p1d_cluster_ensemble/status-1d.md` "Attention communities against three nulls" ("β, measured on the way", "β for Blocked 9")
 
 **Registered predictions:** `P-gamma1`, `P-gamma2` (needs-null — bracket and
 point-estimate readings with no null built), `P-H1` (measurement — no valid
