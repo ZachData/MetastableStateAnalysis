@@ -115,19 +115,19 @@ table.stat td:first-child{color:var(--ink);white-space:nowrap}
     <p><b>One rule.</b> Every result is the real data against a <b>null</b>: a fake version of the data with no structure built in. Some nulls report structure where there is none, so each is also run on a <b>calibration</b>: one null draw treated as the data, where there is nothing to find. What counts is <b>real minus calibration</b>, never the real count alone.</p>
     <ol>
       <li>In a table, look for a large <b>excess</b>, not a large first number.</li>
-      <li>Switch <b>Checkpoint</b> to step 0. An effect that survives there was not learned: it comes from the architecture, position or identical tokens.</li>
+      <li>Switch <b>Checkpoint</b> to step 0. An effect that survives there was not learned: it comes from the architecture, position or identical tokens. The converse does not hold: training can also learn a position code, so an effect absent at step 0 is not yet content.</li>
       <li>Switch <b>Tokens</b> to all tokens. An effect that appears only there is repeated strings.</li>
       <li>Click the cell. The heatmaps show which layers and prompts carry it.</li>
       <li>Switch <b>Showing</b> to calibration. That is what "nothing there" looks like for this statistic.</li>
       <li>Use the scatter plots for intuition only.</li>
     </ol>
-    <p><b>What survives, so far:</b> trained tokens are lumpier locally than the Gaussian in every frame; a 2-way split appears late (2-means excess at L17–24); against null B, attention communities agree with that split only at L17–23.</p>
+    <p><b>Where it stands:</b> nothing here yet separates learned content from position. Trained tokens beat the Gaussian locally in every frame and show a 2-means excess at L17–24, but the Gaussian, like null A, keeps no position, so both may be position. Against null B, which keeps position, attention agrees with the residual's 2-way split only at L17–23, weakly, and step 0 shows part of it too. The null that would settle it (position kept, content randomised in the residual) is Parked in <code>status-1d.md</code>.</p>
   </div>
   <div class="panel">
     <span class="eyebrow">Key</span>
     <div class="key">
-      <span class="demo" style="background:color-mix(in oklab, var(--seq-hi) 92%, var(--seq-lo));color:var(--bg)">42 / 5<span class="sub" style="color:var(--bg)">of 56 · excess 66 %</span></span>
-      <span><b>Table cell.</b> Of 56 records (one prompt at one layer), 42 real and 5 calibration landed in the null's 2.5 % tail on the more-structure side. Excess = 42/56 − 5/56. Darker blue = larger excess; white = none.</span>
+      <span class="demo" style="background:color-mix(in oklab, var(--seq-hi) 92%, var(--seq-lo));color:var(--bg)">120 / 9<span class="sub" style="color:var(--bg)">of 168 · excess 66 %</span></span>
+      <span><b>Table cell.</b> A record is one prompt at one layer: 168 in section 1 (7 prompts × layers 1–24), 161 in section 3 (layers 1–23). Here 120 real and 9 calibration records landed in the null's 2.5 % tail on the more-structure side. Excess = 120/168 − 9/168. Darker blue = larger excess; white = none.</span>
       <span><span class="z" style="background:color-mix(in oklab, var(--neg) 100%, var(--mid))"></span><span class="z" style="background:var(--mid)"></span><span class="z" style="background:color-mix(in oklab, var(--pos) 100%, var(--mid))"></span></span>
       <span><b>Heatmap fill is z</b>, the distance from the null's mean in null standard deviations. Blue = more structure than the null, beige = about the same, red = less (smoother than random). Colour stops deepening at ±6.</span>
       <span><span class="z" style="background:color-mix(in oklab, var(--pos) 55%, var(--mid));outline:1.6px solid var(--f-centred);outline-offset:-1.6px"></span></span>
@@ -223,7 +223,7 @@ table.stat td:first-child{color:var(--ink);white-space:nowrap}
   <details class="guide" id="guide-attn" open><summary>How to read this section</summary><div class="cols">
     <div><h4>The three nulls</h4><ul>
       <li><b>A</b>, the model's own attention on Gaussian tokens. <b>It fires on position alone</b>: the untrained model beats it. Beating A is not evidence of content.</li>
-      <li><b>B</b>, each offset diagonal shuffled. Keeps how much a token looks 1, 2, 3… back; destroys which content attends to which. <b>The fair judge for content.</b></li>
+      <li><b>B</b>, each offset diagonal shuffled. Keeps how much a token looks 1, 2, 3… back; destroys which content attends to which. The closest thing here to a content test, <b>but not a clean one</b>: it fires on the calibration (a null-A draw) for modularity, λ₂, community count and locality, and step 0 beats it at L17–23 too.</li>
       <li><b>C</b>, each head replaced by the theory's softmax(β⟨u,v⟩) with its fitted β.</li>
       <li>Records: layers 1–23 × 7 prompts = 161. Against B and C some statistics fire on almost all of the calibration too; there only the excess means anything.</li>
     </ul></div>
