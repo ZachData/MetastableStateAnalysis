@@ -606,6 +606,15 @@ a wrong premise, the check inherits it.
   called A "at level" from a calibration that is A against itself, and
   counted only Q's upper tail. When the negative control beats a null, the
   null is the finding.
+- 2026-09-29 (#110): the β refit recommended 5.8, the median over heads with
+  partial R² ≥ 0.05. With one regressor left, partial R² is `β̂²·Σs̃²/Σỹ²`
+  and `Σs̃²` is shared within a layer, so the floor selected on |β̂|: the
+  floored medians were truncation. The write-up read the arithmetic as two
+  findings (steeper kernel heads, steadier depth profile), and "step 0 fails
+  0.05" was one head below the cut. The PR's own "Worth challenging" named
+  the floor without writing out what partial R² is made of. Before
+  selecting units on a fit statistic, write the statistic in terms of the
+  estimate; if the estimate is in it, the selection is on the outcome.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

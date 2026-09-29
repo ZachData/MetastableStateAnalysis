@@ -100,10 +100,18 @@ def check_reproduction(recs: List[Dict], stored: Path) -> Dict:
             continue
         for h, b in enumerate(r["betas"][0]):
             ref[(r["step"], r["prompt"], r["layer"], h)] = b["beta"]
-    diffs = [abs(x["linear"] - ref[k]) for x in recs
-             if (k := (x["step"], x["prompt"], x["layer"], x["head"])) in ref
-             and ref[k] is not None and np.isfinite(x["linear"])]
-    return {"n_compared": len(diffs), "max_abs_diff": float(max(diffs)) if diffs else None}
+    mine = {(x["step"], x["prompt"], x["layer"], x["head"]): x["linear"] for x in recs}
+    diffs, mismatched = [], 0
+    for k, b in ref.items():
+        stored_ok = b is not None and np.isfinite(b)
+        new = mine.get(k)
+        new_ok = new is not None and np.isfinite(new)
+        if stored_ok and new_ok:
+            diffs.append(abs(new - b))
+        elif stored_ok or (k in mine and new_ok):
+            mismatched += 1          # finite on one side only, or a stored head not refitted
+    return {"n_compared": len(diffs), "n_mismatched": mismatched,
+            "max_abs_diff": float(max(diffs)) if diffs else None}
 
 
 def summarise(recs: List[Dict]) -> List[Dict]:
@@ -178,7 +186,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         for part in ex.map(_job, jobs):
             recs.extend(part)
     repro = check_reproduction([r for r in recs if not r["dedupe"]], args.stored)
-    if not repro["n_compared"] or repro["max_abs_diff"] > REPRO_TOL:
+    if not repro["n_compared"] or repro["n_mismatched"] or repro["max_abs_diff"] > REPRO_TOL:
         print(f"refusing: linear fit does not reproduce #108's βs: {repro}", file=sys.stderr)
         return 1
     rows = summarise(recs)
