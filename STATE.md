@@ -108,7 +108,7 @@ hashed by `claims/audits/claim_c_real_run.json`, `data/phase12/`, pilot sweep on
 | Network | Allowed: PyPI, GitHub. **Blocked: `huggingface.co`, `conda.anaconda.org`, `download.pytorch.org`** (environment network policy) |
 | `mets` env | venv `/home/user/mets`, **pip, not conda** (conda channels blocked): py3.10.20 (`/usr/bin/python3.10`), numpy 2.2.6, scikit-learn 1.7.2, hdbscan 0.8.41 (manylinux wheel), scipy 1.15.3, torch 2.14.0+cu130 (PyPI), transformers 4.57.6. The four pinned versions match `clustering.py`'s note; **whether it reproduces historical partitions is untested** (no activations here to replay) |
 | `.venv` (py3.14) | not built; the `mets` venv runs the gate |
-| Gate | `PATH=/home/user/mets/bin:$PATH ./scripts/check.sh` → 2622 passed, 5 skipped, 83 s |
+| Gate | `./scripts/check.sh` → 2794 passed, 5 skipped, 69 s (2026-09-29, system py3.11); deps tier: `check.sh deps` after `pip install torch -r requirements/heavy.txt` (PyPI CUDA wheel; CPU index blocked) |
 | `data/` | only the tracked `data/analysis/*.py`. No HF cache, no run dirs |
 | Can run here | tests, lint, docs, math checks, anything not needing weights or `data/` |
 | Cannot run here | any forward pass (no weights reachable), Stage 0 (57–100 GB > 22 GB), anything reading the 152 WDS dirs or CLAIM-C arms |

@@ -15,9 +15,9 @@
 #                               on every push (ci.yml job `deps`)
 #   ./scripts/check.sh all      lint + iso + deps
 #
-# The pure tier ran 2782 tests in 72 s (2026-09-29) with torch, transformers,
-# scikit-learn and matplotlib all absent. That speed is the point: a gate
-# people wait on is a gate people route around.
+# The pure tier runs in about a minute with torch, transformers, scikit-learn
+# and matplotlib all absent. That speed is the point: a gate people wait on is
+# a gate people route around.
 
 set -euo pipefail
 
@@ -121,15 +121,17 @@ run_pure_isolated() {
 
 run_deps() {
   echo
-  echo "=== tier 3: deps tests (needs torch/transformers/sklearn/matplotlib) ==="
+  echo "=== tier 3: deps tests (needs torch/sklearn/matplotlib/hdbscan/igraph) ==="
   # `heavy` needs real run artifacts no runner has; `smoke` needs the HF Hub
   # and runs in its own workflow.
   #
   # Refuse rather than degrade: tests/conftest.py's pytest_ignore_collect drops
   # every deps-tier module when torch, sklearn or matplotlib is missing, and the
   # hdbscan/igraph tests importorskip. Either way the run would "pass" having
-  # tested nothing, so check the imports first.
-  python3 -c "import torch, transformers, sklearn, matplotlib, hdbscan, igraph" \
+  # tested nothing, so check the imports first. Not transformers: outside
+  # SMOKE_REAL_DEPS=1 the conftest replaces it with a MagicMock, so this tier
+  # never touches the real package (the smoke tier does).
+  python3 -c "import torch, sklearn, matplotlib, hdbscan, igraph" \
     || { echo "deps tier: requirements/heavy.txt not importable; refusing to run a tier that would test nothing" >&2; exit 1; }
   python3 -m pytest -m "deps" -q -rs
 }

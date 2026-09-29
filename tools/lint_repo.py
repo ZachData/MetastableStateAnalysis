@@ -546,22 +546,51 @@ current phase). On 2026-09-29 it was missing p1d_cluster_ensemble, the active
 phase. Only `pip install -e .` notices, and nothing ran that. The rule compares
 the list with the directories that actually carry an __init__.py."""
 
-_PYPROJECT_PACKAGES = re.compile(r"^packages\s*=\s*\[(.*?)\]", re.S | re.M)
+_TOML_HEADER = re.compile(r"^[ \t]*\[\[?[ \t]*([^\]\s]+)[ \t]*\]\]?[ \t]*(?:#.*)?$", re.M)
+_PACKAGES_KEY = re.compile(r"^[ \t]*packages[ \t]*=[ \t]*\[(.*?)\]", re.S | re.M)
+_TOML_STRING = re.compile(r"""(["'])(.*?)\1""")
+
+
+def _setuptools_packages_scan(text: str) -> tuple:
+    """(names, line) of `packages` inside the [tool.setuptools] table, or
+    (None, line-or-0). Scoped to that table: the first `packages` array
+    anywhere in the file may belong to another tool (CodeRabbit on #114).
+    Standard library only, for 3.10 (the `mets` env), where tomllib is absent."""
+    headers = list(_TOML_HEADER.finditer(text))
+    for i, h in enumerate(headers):
+        if h.group(1) != "tool.setuptools":
+            continue
+        end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
+        m = _PACKAGES_KEY.search(text, h.end(), end)
+        line = text[:(m or h).start()].count("\n") + 1
+        if m is None:
+            return None, line
+        body = "\n".join(l.split("#", 1)[0] for l in m.group(1).splitlines())
+        return {s for _, s in _TOML_STRING.findall(body)}, line
+    return None, 0
+
+
+def _setuptools_packages(text: str) -> tuple:
+    """tomllib where it exists (3.11+, CI's tier 0); the scoped scan otherwise.
+    The scan always supplies the line number."""
+    names, line = _setuptools_packages_scan(text)
+    try:
+        import tomllib
+    except ImportError:
+        return names, line
+    value = tomllib.loads(text).get("tool", {}).get("setuptools", {}).get("packages")
+    return (set(value) if isinstance(value, list) else None), line
 
 
 def rule_pyproject_packages(lint: Linter) -> None:
     path = ROOT / "pyproject.toml"
     if not path.is_file():
         return
-    text = path.read_text(encoding="utf-8")
-    m = _PYPROJECT_PACKAGES.search(text)
-    if m is None:
-        lint.error("pyproject-packages", path, 0,
-                   "no `packages = [...]` list found under [tool.setuptools]")
+    declared, line = _setuptools_packages(path.read_text(encoding="utf-8"))
+    if declared is None:
+        lint.error("pyproject-packages", path, line,
+                   "no explicit `packages = [...]` list under [tool.setuptools]")
         return
-    line = text[:m.start()].count("\n") + 1
-    body = "\n".join(l.split("#", 1)[0] for l in m.group(1).splitlines())
-    declared = set(re.findall(r'"([^"]+)"', body))
     live = set(live_packages())
     for name in sorted(live - declared):
         lint.error("pyproject-packages", path, line,

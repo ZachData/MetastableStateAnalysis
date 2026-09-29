@@ -63,6 +63,40 @@ def test_commented_out_entry_is_not_declared(tmp_path, monkeypatch):
     assert len(msgs) == 1 and "'p2'" in msgs[0]
 
 
+def test_only_the_setuptools_table_is_read(tmp_path, monkeypatch):
+    # CodeRabbit on #114: the first `packages` array in the file used to win.
+    monkeypatch.setattr(lint_repo, "ROOT", tmp_path)
+    for name in ("core", "p1d_new"):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "__init__.py").write_text("", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.example]\npackages = ["core", "p1d_new"]\n\n'
+        '[tool.setuptools]\npackages = ["core"]\n', encoding="utf-8")
+    lint = lint_repo.Linter()
+    lint_repo.rule_pyproject_packages(lint)
+    msgs = [f.message for f in lint.findings]
+    assert len(msgs) == 1 and "'p1d_new'" in msgs[0]
+
+
+@pytest.mark.parametrize("text, names, line", [
+    ('[tool.example]\npackages = ["a", "b"]\n\n[tool.setuptools]\npackages = ["a"]\n',
+     {"a"}, 5),
+    ("[tool.setuptools]\npackages = [\n  'a',  # one\n  \"b\",\n]\n", {"a", "b"}, 2),
+    ('[tool.setuptools]\nzip-safe = false\n\n[tool.other]\npackages = ["a"]\n',
+     None, 1),
+    ('[project]\nname = "x"\n', None, 0),
+])
+def test_scan_matches_the_setuptools_table(text, names, line):
+    # The scan is the 3.10 path (no tomllib); CI's py3.10 leg runs the rule on it.
+    assert lint_repo._setuptools_packages_scan(text) == (names, line)
+    try:
+        import tomllib
+    except ImportError:
+        return
+    ref = tomllib.loads(text).get("tool", {}).get("setuptools", {}).get("packages")
+    assert (set(ref) if isinstance(ref, list) else None) == names
+
+
 def test_archive_and_nested_packages_are_not_live(tmp_path, monkeypatch):
     monkeypatch.setattr(lint_repo, "ROOT", tmp_path)
     for rel in ("archive", "archive/p3_old", "core", "core/sub"):

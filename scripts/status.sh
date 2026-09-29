@@ -28,7 +28,8 @@ slug = sys.argv[1]
 
 def get(path):
     r = subprocess.run(
-        ["curl", "-sSf", "-H", "Accept: application/vnd.github+json",
+        ["curl", "-sSf", "--connect-timeout", "10", "--max-time", "30",
+         "-H", "Accept: application/vnd.github+json",
          f"https://api.github.com/repos/{slug}/{path}"],
         capture_output=True, text=True)
     if r.returncode:
@@ -69,18 +70,20 @@ if ! command -v gh >/dev/null 2>&1 || ! gh auth status >/dev/null 2>&1; then
   exit $?
 fi
 
+rc=0
 run_line() {  # $1 label, rest: gh run list filters
   local label="$1"; shift
   local out
   out=$(gh run list "$@" --limit 1 \
     --json status,conclusion,headSha,createdAt,url \
     -q '.[0] | "\(if .status == "completed" then .conclusion else .status end) \(.headSha[0:7]) \(.createdAt) \(.url)"' 2>&1) \
-    || out="gh error: ${out%%$'\n'*}"
+    || { out="gh error: ${out%%$'\n'*}"; rc=1; }
   echo "$label ${out:-no runs}"
 }
 
 run_line "main CI:     " --branch main --workflow ci.yml
 run_line "nightly smoke:" --workflow smoke.yml --event schedule
 prs=$(gh pr list --state open --json number,title \
-  -q 'map("#\(.number) \(.title)") | join("; ")' 2>&1) || prs="gh error: ${prs%%$'\n'*}"
+  -q 'map("#\(.number) \(.title)") | join("; ")' 2>&1) || { prs="gh error: ${prs%%$'\n'*}"; rc=1; }
 echo "open PRs:      ${prs:-none}"
+exit "$rc"
