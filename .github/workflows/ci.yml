@@ -1,12 +1,14 @@
 # ci.yml — the gating tiers (archive/POPPER_PLAN-done.md item A4).
 #
-# Two jobs, deliberately ordered cheapest-first so a hygiene failure does not
+# Three jobs, deliberately ordered cheapest-first so a hygiene failure does not
 # wait behind a test run:
 #
 #   lint  — tier 0. No dependencies at all. Repo-hygiene rules that encode the
 #           project's own standing rules (archive/UPDATE_PLAN.md §6), plus the
 #           Popperian record checks once claims/ exists. Seconds.
 #   pure  — tier 1. numpy + scipy + pytest, no torch. The gating test tier.
+#   deps  — tier 3. CPU torch + requirements/heavy.txt, no network beyond pip,
+#           no model download. Every test marked `deps`.
 #
 # The smoke tier (real torch, tiny HF models, network) lives in smoke.yml and
 # is NOT required for merge — it is slower and depends on the Hub being up.
@@ -25,6 +27,11 @@ on:
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+# Read-only token: every job here only checks out and tests, and the deps job
+# runs freshly downloaded packages (torch, transformers, ...) on it.
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -101,3 +108,48 @@ jobs:
         # failure was `pytest` vs `python -m pytest` (sys.path), and the second
         # was a stub bug invisible on any machine with real torch installed.
         run: ./scripts/check.sh iso
+
+  deps:
+    # Until 2026-09-29 the deps tier ran only as the last step of the nightly
+    # smoke job, which is skipped whenever the smoke step before it fails. The
+    # smoke step failed every night from 2026-09-19 (P-I5, STATE.md Blocked 2),
+    # so the whole tier -- including every Phase 1d test -- ran nowhere while
+    # the active phase was being built. It needs no GPU and no Hub, so it runs
+    # here, on every push.
+    name: tier 3 — deps (CPU torch, py3.10)
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # 3.10: the conda `mets` env and the fleet box, i.e. where the
+          # partitions the deps tests guard are actually produced.
+          python-version: "3.10"
+          cache: pip
+          # Its own key. With `requirements/*.txt` it shared the pure py3.10
+          # job's key, restored that 61 MB cache and never saved its own, so
+          # the ~200 MB torch wheel downloaded on every run.
+          cache-dependency-path: |
+            requirements/heavy.txt
+            requirements/constraints-mets.txt
+
+      - name: Install heavy tier (CPU torch, `mets` versions)
+        # CPU index first: the plain PyPI torch wheel is the CUDA build
+        # (~4.9 GB unpacked) and no test needs a GPU. The -r below then finds
+        # torch already satisfied. `-c`: numpy, scikit-learn and hdbscan at the
+        # `mets` env's versions (requirements/constraints-mets.txt says why);
+        # the nightly smoke job installs the latest instead.
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -c requirements/constraints-mets.txt -r requirements/heavy.txt
+          pip list 2>/dev/null | grep -iE '^(torch|transformers|numpy|scipy|scikit-learn|hdbscan|igraph|matplotlib) '
+
+      - name: Run deps tier
+        # check.sh refuses if any heavy import fails, because conftest would
+        # otherwise drop every deps module at collection and the step would
+        # pass having run nothing.
+        run: ./scripts/check.sh deps

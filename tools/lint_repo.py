@@ -65,22 +65,23 @@ from typing import Iterable, List
 
 ROOT = Path(__file__).resolve().parent.parent
 
-#: Directories that are Python packages of this project.
-#: LIVE packages only. Phases 3, 4, 5, 5b, 5c and 6 moved to archive/ on
-#: 2026-08-22 and are deliberately absent: archive/README.md's first rule is
-#: "not maintained, not imported, not collected", and linting them would
-#: reintroduce exactly the maintenance the archive exists to end.
-PACKAGE_DIRS = (
-    "core", "tools", "tests",
-    "p1_mstate_tracking", "p1b_hemisphere", "p1c_frames",
-    "p2_eigenspectra", "p2b_imaginary", "p2d_operator_activation",
-    # p6_subspace is live again as of 2026-08-24: the projector path was
-    # REBUILT here against core/particles.py (archive/README.md rule 2 --
-    # nothing is salvaged by copying) so that P6-R2 and P6-R4 could come out of
-    # `dormant`. archive/p6_subspace/ stays frozen and stays out of this list.
-    "p6_subspace",
-    "p7_motifs",
-)
+def live_packages(root: Path | None = None) -> tuple:
+    """Top-level directories with an `__init__.py`: the project's LIVE
+    packages. archive/ holds no `__init__.py` at its top, and its phases sit
+    one level down, so they are never picked up: archive/README.md's first rule
+    is "not maintained, not imported, not collected".
+
+    Derived, not listed. Until 2026-09-29 this was a hand-kept tuple that had
+    stopped at p7_motifs, so rules 1, 3, 4 and 5 had never read p1d, p7d, p7e
+    or p8 (the active phase included). Rule 9 checks pyproject.toml against it."""
+    root = ROOT if root is None else root
+    return tuple(sorted(p.parent.name for p in root.glob("*/__init__.py")
+                        if p.parent.name != "archive"))
+
+
+#: Directories the rules below walk: the live packages plus tests/ (which has
+#: no `__init__.py`).
+PACKAGE_DIRS = live_packages() + ("tests",)
 
 #: The tier markers pytest.ini registers. Rule 2 requires exactly one.
 #: `deps` was missing here while being a registered marker, so every
@@ -533,6 +534,75 @@ def rule_phase_cards(lint: Linter) -> None:
         lint.error("phase-card", ROOT / rel, line, message)
 
 
+# ---------------------------------------------------------------------------
+# Rule 9 — pyproject.toml declares exactly the live packages
+# ---------------------------------------------------------------------------
+
+RULE_9_WHY = """\
+pyproject.toml's [tool.setuptools] packages is a hand-kept list, and its own
+comment records it going stale three times (archived phases left in, a
+directory with no __init__.py declared, p7_motifs missing while it held the
+current phase). On 2026-09-29 it was missing p1d_cluster_ensemble, the active
+phase. Only `pip install -e .` notices, and nothing ran that. The rule compares
+the list with the directories that actually carry an __init__.py."""
+
+_TOML_HEADER = re.compile(r"^[ \t]*\[\[?[ \t]*([^\]\s]+)[ \t]*\]\]?[ \t]*(?:#.*)?$", re.M)
+_PACKAGES_KEY = re.compile(r"^[ \t]*packages[ \t]*=[ \t]*\[(.*?)\]", re.S | re.M)
+_TOML_STRING = re.compile(r"""(["'])(.*?)\1""")
+
+
+def _setuptools_packages_scan(text: str) -> tuple:
+    """(names, line) of `packages` inside the [tool.setuptools] table, or
+    (None, line-or-0). Scoped to that table: the first `packages` array
+    anywhere in the file may belong to another tool (CodeRabbit on #114).
+    Standard library only, for 3.10 (the `mets` env), where tomllib is absent."""
+    headers = list(_TOML_HEADER.finditer(text))
+    for i, h in enumerate(headers):
+        if h.group(1) != "tool.setuptools":
+            continue
+        end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
+        m = _PACKAGES_KEY.search(text, h.end(), end)
+        line = text[:(m or h).start()].count("\n") + 1
+        if m is None:
+            return None, line
+        body = "\n".join(l.split("#", 1)[0] for l in m.group(1).splitlines())
+        return {s for _, s in _TOML_STRING.findall(body)}, line
+    return None, 0
+
+
+def _setuptools_packages(text: str) -> tuple:
+    """tomllib where it exists (3.11+, CI's tier 0); the scoped scan otherwise.
+    The scan always supplies the line number."""
+    names, line = _setuptools_packages_scan(text)
+    try:
+        import tomllib
+    except ImportError:
+        return names, line
+    value = tomllib.loads(text).get("tool", {}).get("setuptools", {}).get("packages")
+    return (set(value) if isinstance(value, list) else None), line
+
+
+def rule_pyproject_packages(lint: Linter) -> None:
+    path = ROOT / "pyproject.toml"
+    if not path.is_file():
+        return
+    declared, line = _setuptools_packages(path.read_text(encoding="utf-8"))
+    if declared is None:
+        lint.error("pyproject-packages", path, line,
+                   "no explicit `packages = [...]` list under [tool.setuptools]")
+        return
+    live = set(live_packages())
+    for name in sorted(live - declared):
+        lint.error("pyproject-packages", path, line,
+                   f"{name!r} has an __init__.py but is not in packages; "
+                   f"an install of this project ships without it")
+    for name in sorted(declared - live):
+        lint.error("pyproject-packages", path, line,
+                   f"{name!r} is in packages but is not a live package "
+                   f"(no {name}/__init__.py); `pip install -e .` fails or "
+                   f"declares a non-package")
+
+
 RULES = [
     ("orphan-module",         rule_no_orphan_modules,        RULE_1_WHY),
     ("test-tier-marker",      rule_test_tier_markers,        RULE_2_WHY),
@@ -542,6 +612,7 @@ RULES = [
     ("startup-doc-cap",       rule_startup_doc_caps,         RULE_6_WHY),
     ("cited-md-path",         rule_cited_md_paths,           RULE_7_WHY),
     ("phase-card",            rule_phase_cards,              RULE_8_WHY),
+    ("pyproject-packages",    rule_pyproject_packages,       RULE_9_WHY),
 ]
 
 

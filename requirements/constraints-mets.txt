@@ -1,0 +1,15 @@
+# constraints-mets.txt — the per-push `deps` job's package versions.
+#
+# The versions the conda `mets` env holds, which p1_mstate_tracking/clustering.py
+# (the HDBSCAN provenance note) MEASURED to reproduce the 2026-08-12 sweep's
+# partitions exactly; hdbscan 0.8.44 / scikit-learn 1.9 / numpy 2.5 did not.
+# ci.yml's `deps` job installs with `-c` this file, so a PR is tested on the
+# toolchain the partitions come from. The nightly smoke job does not, so it
+# still reports what the latest releases do.
+#
+# Constraints, not requirements: nothing here is installed unless
+# requirements/heavy.txt asks for it. Change a pin only with a re-measurement
+# like the one in clustering.py.
+numpy==2.2.6
+scikit-learn==1.7.2
+hdbscan==0.8.41
