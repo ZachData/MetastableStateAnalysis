@@ -275,15 +275,15 @@ def run_all_on_loaded_model(
     head.
     """
     from core.config import PROMPTS
-    from p7_motifs.p_i5_gate import DEGENERATE_PROMPT, intersection_union_pvalue, joint_rank_pvalue, attainable_floor
+    from p7_motifs.p_i5_gate import (
+        P_I5_BATTERY_HASH, p_i5_battery, intersection_union_pvalue, joint_rank_pvalue, attainable_floor,
+    )
 
     hidden_state_index = target_head[0] + 1
     rng = np.random.default_rng(seed)
 
     per_prompt = {}
-    for key, text in PROMPTS.items():
-        if key == DEGENERATE_PROMPT:
-            continue
+    for key, text in p_i5_battery(PROMPTS):
         result = run_prompt(model, tokenizer, text, rng, target_head=target_head,
                              hidden_state_index=hidden_state_index)
         if result is not None:
@@ -300,6 +300,7 @@ def run_all_on_loaded_model(
         "target_head": list(target_head),
         "ablation_mode": ABLATION_MODE,
         "seed": seed,
+        "battery_hash": P_I5_BATTERY_HASH,
         "n_prompts": n,
         "per_prompt": per_prompt,
         "delta_geometric": delta_geometric.tolist(),

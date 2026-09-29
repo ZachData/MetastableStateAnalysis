@@ -677,8 +677,52 @@ def partial_pass_risk_demo(
 #: about the prompt, not about a checkpoint. See module docstring section 3.
 DEGENERATE_PROMPT = "repeated_tokens"
 
+#: P-I5's calibrated input, in its calibrated order: v1's nine metastability
+#: prompts minus DEGENERATE_PROMPT, the 8 that
+#: claims/calibration/p_i5_real_ablation.json ran on (n_prompts 8), in the
+#: order its delta arrays hold them. Order is part of the input: the
+#: random-direction draws are consumed prompt by prompt from one generator.
+#: Pinned 2026-09-29: every P-I5 loop used to read whatever core.config.PROMPTS
+#: held, so battery v2 (2026-09-19) silently made the gate a 20-prompt test
+#: under an 8-prompt calibration, and the nightly smoke went red on it
+#: (LESSONS.md lesson 3; STATE.md Blocked 2). The live battery keeps growing;
+#: a registered gate on a larger battery is a new registration.
+P_I5_PROMPT_KEYS = (
+    "short_heterogeneous", "wiki_paragraph", "sullivan_ballou", "paper_excerpt",
+    "homer_iliad", "hdbscan_code", "camus_letranger", "latex_monograph",
+)
 
-def count_matched_pairs_by_prompt(tokenizer, min_offset: int = 2) -> dict:
+#: core.prompts.compute_prompt_battery_hash(<the 8>, version="v1"): the texts
+#: (it sorts keys, so the order is P_I5_PROMPT_KEYS's job). The same value at
+#: bff93d7 (2026-09-16), the commit that added the real-run record, when the
+#: battery was still v1's nine.
+P_I5_BATTERY_HASH = "e77b5528f536"
+
+
+def p_i5_battery(prompts: dict) -> list:
+    """[(key, text)] of P-I5's 8 prompts, in P_I5_PROMPT_KEYS's order
+    whatever `prompts`' own order. Refuses, rather than running a different
+    test, if a prompt is missing or any text differs from the calibrated one.
+    """
+    from core.prompts import compute_prompt_battery_hash
+
+    missing = [k for k in P_I5_PROMPT_KEYS if k not in prompts]
+    if missing:
+        raise ValueError(
+            f"P-I5's battery needs {missing}, absent from the prompts given; "
+            f"refusing rather than running P-I5 on a different set")
+    chosen = [(k, prompts[k]) for k in P_I5_PROMPT_KEYS]
+    got = compute_prompt_battery_hash(dict(chosen), version="v1")
+    if got != P_I5_BATTERY_HASH:
+        raise ValueError(
+            f"P-I5's battery hashes to {got}, not the calibrated "
+            f"{P_I5_BATTERY_HASH}: a v1 prompt's text changed. Refusing; a "
+            f"changed input is a new registration, not the same test")
+    return chosen
+
+
+def count_matched_pairs_by_prompt(tokenizer, min_offset: int = 2,
+                                  prompts: Optional[dict] = None) -> dict:
     """
     Real (not synthetic) measurement: how many induction-matched (query,
     key) position pairs core.battery_structure.induction_candidates finds
@@ -689,12 +733,16 @@ def count_matched_pairs_by_prompt(tokenizer, min_offset: int = 2) -> dict:
     Returns
     -------
     dict: {prompt_key: {"n_tokens": int, "n_pairs": int}}
+
+    `prompts` defaults to core.config.PROMPTS; P-I5's calibration passes its
+    pinned battery (p_i5_battery) plus DEGENERATE_PROMPT.
     """
-    from core.config import PROMPTS
     from core.battery_structure import induction_candidates
+    if prompts is None:
+        from core.config import PROMPTS as prompts
 
     out = {}
-    for key, text in PROMPTS.items():
+    for key, text in prompts.items():
         ids = [int(i) for i in tokenizer(text)["input_ids"]]
         pairs = induction_candidates(ids, min_offset=min_offset)
         out[key] = {"n_tokens": len(ids), "n_pairs": len(pairs)}
