@@ -34,6 +34,19 @@ def test_long_prompts_stay_out_of_the_battery():
     assert not set(lp.load()) & set(PROMPTS)
 
 
+def test_holdout_filter_admits_long_run_dirs(tmp_path):
+    import json
+    from core.holdout import refuse_held_out
+    dirs = []
+    for key in lp.load():
+        d = tmp_path / f"pythia-410m-step0_{key}"
+        d.mkdir()
+        (d / "manifest.json").write_text(json.dumps({"prompt_key": key}))
+        dirs.append(d)
+    kept, rec = refuse_held_out(dirs, drop=True)
+    assert kept == dirs and rec["n_held_out"] == 0
+
+
 def test_join_refuses_an_ambiguous_ending():
     with pytest.raises(ValueError):
         lp._after("abc end of it. xyz end of it. more", "start. end of it.", "k")

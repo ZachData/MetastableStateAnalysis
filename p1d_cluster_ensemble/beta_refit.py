@@ -174,8 +174,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--runs", type=Path, nargs="+", required=True)
     ap.add_argument("--weights", type=Path, required=True)
-    ap.add_argument("--stored", type=Path, required=True,
-                    help="#108's null.json (all tokens), whose βs the linear fit must reproduce")
+    ap.add_argument("--stored", type=Path, default=None,
+                    help="#108's null.json (all tokens), whose βs the linear fit must reproduce; "
+                         "omit only for inputs #108 never fitted (the long prompts), and the "
+                         "output records the check as not run")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--resummarise", action="store_true",
@@ -199,12 +201,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     with ProcessPoolExecutor(max_workers=args.workers) as ex:
         for part in ex.map(_job, jobs):
             recs.extend(part)
-    repro = check_reproduction([r for r in recs if not r["dedupe"]], args.stored)
-    if not repro["n_compared"] or repro["n_mismatched"] or repro["max_abs_diff"] > REPRO_TOL:
+    if args.stored is None:
+        repro = {"not_run": "no --stored: #108 has no βs for these inputs; the estimator "
+                            "reproduced #108 on the v1 runs (status-1d.md \"β refit\")"}
+    else:
+        repro = check_reproduction([r for r in recs if not r["dedupe"]], args.stored)
+    if args.stored is not None and (not repro["n_compared"] or repro["n_mismatched"]
+                                    or repro["max_abs_diff"] > REPRO_TOL):
         print(f"refusing: linear fit does not reproduce #108's βs: {repro}", file=sys.stderr)
         return 1
     rows = summarise(recs)
-    out = {"runs": [str(r) for r in runs], "stored": str(args.stored), "reproduction": repro,
+    out = {"runs": [str(r) for r in runs], "stored": args.stored and str(args.stored),
+           "reproduction": repro,
            "variants": list(VARIANTS), "floors": list(FLOORS), "exclude": list(EXCLUDE),
            "seconds": round(time.time() - t0, 1), "summary": rows, "heads": recs}
     args.out.parent.mkdir(parents=True, exist_ok=True)
