@@ -236,10 +236,14 @@ def build_all(cache: Path, out: Path = HERE) -> Dict:
     return rec
 
 
+def load_provenance() -> Dict:
+    """``provenance.json`` as built: counts and sources per long key."""
+    return json.loads((HERE / "provenance.json").read_text())
+
+
 def load() -> Dict[str, str]:
     """The built long prompts, ``{key: text}``."""
-    rec = json.loads((HERE / "provenance.json").read_text())
-    return {k: (HERE / f"{k}.txt").read_text() for k in rec["prompts"]}
+    return {k: (HERE / f"{k}.txt").read_text() for k in load_provenance()["prompts"]}
 
 
 def long_prompts_hash() -> str:

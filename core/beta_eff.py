@@ -106,6 +106,7 @@ def estimate_beta_from_gram(
     attn_scale: float | None = None,
     row_fixed_effects: bool = True,
     control_offset: bool = True,
+    max_offset: int | None = None,
 ) -> dict:
     """
     Effective beta for one head.
@@ -122,6 +123,8 @@ def estimate_beta_from_gram(
                 by it, making the value comparable across architectures with
                 different head widths. When None the raw slope is returned
                 and `scale_applied` is False.
+    max_offset: keep only pairs at most this many positions apart (None:
+                all), e.g. to fit a long prompt on a short prompt's offsets.
 
     Returns dict with beta, beta_raw, n_pairs, r2, offset_coeff,
     structural_zero_fraction, scale_applied, note.
@@ -160,6 +163,11 @@ def estimate_beta_from_gram(
         d = (idx[cols] - idx[rows]).astype(np.float64)
     else:
         d = np.asarray(offsets, dtype=np.float64)[np.ix_(idx, idx)][rows, cols]
+    if max_offset is not None:
+        m = np.abs(d) <= max_offset
+        if m.sum() < MIN_PAIRS:
+            return _empty(f"only {int(m.sum())} pairs within max_offset {max_offset}")
+        rows, y, s, d = rows[m], y[m], s[m], d[m]
 
     # Design matrix. Row fixed effects are applied by demeaning rather than by
     # dummy columns: a cluster can have hundreds of rows, and the demeaned
@@ -269,6 +277,7 @@ def estimate_beta_offset_fe(
     indices,
     positions=None,
     offset_window: int | None = None,
+    max_offset: int | None = None,
 ) -> dict:
     """
     ``beta_raw`` with per-offset fixed effects instead of a linear offset term.
@@ -284,6 +293,7 @@ def estimate_beta_offset_fe(
     ``indices`` select rows/columns of ``attn_head`` and ``gram``;
     ``positions`` (same length as the matrices) maps them to sequence
     positions, which set causality and offset (default: the index itself).
+    ``max_offset`` keeps only pairs at most that many positions apart.
 
     Returns beta_raw; r2, within-row R² of the whole model (comparable to
     `estimate_beta_from_gram`'s); partial_r2, the share of what the row and
@@ -300,6 +310,9 @@ def estimate_beta_offset_fe(
     A = np.asarray(attn_head, dtype=np.float64)[np.ix_(idx, idx)]
     G = np.asarray(gram, dtype=np.float64)[np.ix_(idx, idx)]
     rows, cols = causal_pairs(pos)
+    if max_offset is not None:
+        near = (pos[rows] - pos[cols]) <= max_offset
+        rows, cols = rows[near], cols[near]
     a = A[rows, cols]
     keep = a > 0.0
     if keep.sum() < MIN_PAIRS:

@@ -276,6 +276,16 @@ def run_tokens(run_dir: Path) -> List[str]:
     return [str(t) for t in geo.get("tokens") or []]
 
 
+def input_fingerprint(run_dir, names: Sequence[str]) -> Dict[str, List[int]]:
+    """``{name: [size, mtime_ns]}`` of a run's input files (missing: None),
+    so a resumed batch does not reuse parts fitted on other inputs."""
+    out = {}
+    for n in names:
+        p = Path(run_dir) / n
+        out[n] = [p.stat().st_size, p.stat().st_mtime_ns] if p.exists() else None
+    return out
+
+
 def _job(args: Tuple) -> Dict:
     run_dir, layer, frame, n_draws, seed, calibrate, dedupe = args
     acts = np.load(Path(run_dir) / "activations.npz")["activations"]
@@ -385,11 +395,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # Each finished record is written at once, so a stopped run resumes where
     # it stopped (as `attention_null`; the long prompts lost ~5 h of this
     # stage to a shutdown on 2026-09-29). A part is reused only if its
-    # settings match this call's.
+    # settings and its run's input files (size, mtime) match this call's.
     parts = args.out.with_suffix(".parts")
     parts.mkdir(parents=True, exist_ok=True)
     settings = {"n_draws": args.n_draws, "seed": args.seed, "calibrate": bool(args.calibrate),
                 "dedupe_strings": bool(args.dedupe_strings), "n_rogue": N_ROGUE}
+    fingerprints = {str(r): input_fingerprint(r, ("activations.npz", "geometry.json")) for r in runs}
 
     def part_of(job) -> Path:
         return parts / f"{Path(job[0]).parent.name}__{Path(job[0]).name}__L{job[1]}__{job[2]}.json"
@@ -399,14 +410,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         p = part_of(j)
         if p.exists():
             rec = json.loads(p.read_text())
-            if rec.get("_settings") == settings:
+            if rec.get("_settings") == {**settings, "input": fingerprints[j[0]]}:
                 done.append(rec)
                 continue
         todo.append(j)
     print(f"  {len(done)} of {len(jobs)} records already done; running {len(todo)}", flush=True)
 
     def keep(job, rec):
-        rec["_settings"] = settings
+        rec["_settings"] = {**settings, "input": fingerprints[job[0]]}
         tmp = part_of(job).with_suffix(".tmp")
         tmp.write_text(json.dumps(rec))
         tmp.replace(part_of(job))
