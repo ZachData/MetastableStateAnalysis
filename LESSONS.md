@@ -632,6 +632,16 @@ a wrong premise, the check inherits it.
   expected to outlive the user's attention runs under
   `systemd-inhibit --what=sleep:idle` (here attached afterwards to the
   chain's PID with `tail --pid=<pid> -f /dev/null`, so it ends with the chain).
+- 2026-09-30, #118: the author read "long − v1" as the length effect and
+  quoted "L17–23 falls ~40 % in every prompt" for Blocked 9. `/challenge-pr`
+  saw that the long fit adds pairs at offsets v1 never had (28–78 %). On v1's
+  offsets the paired fall went from −0.49 to −0.17, and the headline from 2.80
+  to 3.12 (v1 3.16). The "~40 %" was also a ratio of medians, not the paired
+  change. The same review found `status-1d.md` saying `beta_refit` resumed
+  only on matching settings, which it never checked. Rule: when a comparison
+  changes n, name every other thing that changes with n (here the offset
+  range, and in the Gaussian null the power) and hold it fixed before
+  quoting the difference as length.
 - 2026-09-24, #85: dropping the dependency hashes, the author wrote that a
   correction "reaches a reader through its own `## Corrections received`",
   though no rule puts a line there. The evidence also could not bear on the
