@@ -1012,7 +1012,7 @@ copy `viz/index.html` beside it. Wall time at 14 workers: `null` 6.5 h,
 `calibrate` 7.1 h (two sittings: 126 then 258 records), each deduped
 configuration 1.4 h.
 
-### Long prompts (IN PROGRESS, branch `claude/p1d-long-prompts`; step 5 running)
+### Long prompts (DONE 2026-09-30; branch `claude/p1d-long-prompts`)
 
 **What.** `lit-1d.md` §4's "length first": v1 prompts continued to Pythia's
 context (2048), v1 text as an exact prefix, so under causal attention the
@@ -1037,7 +1037,7 @@ Refused by the rule: `paper_excerpt` (v1 not verbatim in arXiv
 (v1's trailing lone space merges with any continuation). `homer_iliad` and
 `camus_letranger` were dropped up front (copyright).
 
-**Steps 1–4 DONE 2026-09-29; step 5 half done** (code on the branch;
+**Steps 1–4 DONE 2026-09-29; step 5 DONE 2026-09-30** (code on the branch;
 outputs `<main>/data/p1d/long_prompts_2026-09-29/`, runs
 `/run/media/system/HDD_1TB/mets_data/p1d_long/2026-09-29/`, ~0.9 GB each).
 
@@ -1049,7 +1049,7 @@ outputs `<main>/data/p1d/long_prompts_2026-09-29/`, runs
 | 4 holdout | done | `refuse_held_out(..., drop=True)` keeps all 8; `run_1d.discover_runs` finds 8; test added |
 | 5 merge tree + link null | done | below |
 | 5 Gaussian null | done (deduped 2026-09-29, all tokens 2026-09-30) | below |
-| 5 β | **running** since 2026-09-30 16:24, last stage of `run_chunk.sh` | estimator sped up first (below) |
+| 5 β | done 2026-09-30 | below; estimator sped up first |
 
 **Merge tree (`--subexp F`) and its link null** (2000 draws, per group of
 the same 4 prompts; `merge_null/{long,v1}_step{143000,0}.{json,txt}`; v1
@@ -1163,26 +1163,60 @@ box is 8 cores / 16 threads, so 15 workers is the ceiling. All-token null
 (600 records × 201 fits) ≈ 9 h, its calibration ≈ 4.5 h; deduped prompts
 are 339–699 tokens (`hdbscan_code`, `sullivan_ballou`, `latex_monograph`,
 `wiki_paragraph`: 339 / 418 / 547 / 699), so each deduped stage is roughly
-a tenth. β ≈ 75 min per all-token run at n ≈ 2000, 16 jobs at 3 workers
-(RAM: ~7.5 GB per worker, the attention array) ≈ 4–5 h. **Total left ≈
-16–18 h: two ~10 h chunks.**
+a tenth. β forecast 4–5 h (16 jobs at 3 workers, ~7.5 GB RAM per worker).
+**Measured:** `null` 20:45 → 12:17 less the 8 h suspend (~7.5 h),
+`calibrate` 4.1 h, β **1.0 h** (3667 s; the forecast was one head timed on
+a loaded box).
 
-**Resume (each chunk; the Gaussian stages are done, next is β):** `setsid nohup <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
+**Re-run** (resumable; `LESSONS.md` 11): `setsid nohup systemd-inhibit
+--what=sleep:idle <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
 >> <same>/run_chunk.log 2>&1 &`. It skips finished stages (`<stage>.json`
 present), resumes a stopped one from `<stage>.parts/`, and runs in order
-`null_dedupe`, `calibrate_dedupe`, `null`, `calibrate`, then β. Progress:
-`<stage>.log` prints `k/600 done` every 25 records. Launched 2026-09-29
-19:52 (`null_dedupe`). The box suspended 21:20–05:16 (`null` at 45/600);
-since 2026-09-30 05:25 a `systemd-inhibit --what=sleep:idle` lock holds it
-awake until `run_chunk.sh` exits (`systemd-inhibit --list`); a relaunch
-needs its own (`LESSONS.md` 11). Measured 25 records per ~1435 s: `null`
-≈ 14:00, `calibrate` ≈ 18:30, β ≈ 23:00 on 2026-09-30.
+`null_dedupe`, `calibrate_dedupe`, `null`, `calibrate`, then β. The box
+suspended 2026-09-29 21:20–05:16 (`null` at 45/600) because nothing held
+it awake. Reports: `python -m p1d_cluster_ensemble.gaussian_null_report
+--null <O>/gaussian_null/null{,_dedupe}.json --calibrate
+<O>/gaussian_null/calibrate{,_dedupe}.json --out <O>/gaussian_null/report{,_dedupe}.json`;
+`python -m p1d_cluster_ensemble.beta_long_compare --long <O>/beta/beta_refit.json
+--v1 <main>/data/p1d/beta_refit_2026-09-29/beta_refit.json --out <O>/beta/vs_v1.json`.
 
-**Then:** reports with `gaussian_null_report` on the long outputs, against
-v1's on the same 4 prompts (already built: `gaussian_null/v1_same4/report{,_dedupe}.{json,txt}`,
-v1 records filtered to the 4 keys); β medians per step and band against
-#110's stored heads for the same 4 prompts (`beta_refit_2026-09-29/beta_refit.json`,
-no refit needed); then the Stop protocol and one PR.
+**β at length: DONE 2026-09-30** (`beta/beta_refit.{json,txt}`, `beta/vs_v1.{json,txt}`;
+all 5 variants, 16 jobs, 6144 head-fits; no `--stored` reproduction, since #108 never fitted
+these inputs; the estimator reproduced #108 on v1 and matched #110 to 1e-14 after the
+speed-up). Against #110's heads for the **same 4 prompts** (not #110's 7-prompt 3.46),
+`fe_full`, step143000, floor 0, 1472 heads (L1–23) or 512 / 512 / 448 per band; paired =
+long − v1 on the same head:
+
+| tokens | band | v1 median [IQR] | long | paired median [IQR] | heads up |
+|---|---|---|---|---|---|
+| all | L1–23 | 3.16 [1.36, 5.36] | **2.80** [0.78, 5.56] | −0.24 [−1.22, 0.64] | 617 / 1472 |
+| all | L1–8 | 3.89 | 4.12 | −0.04 | 247 / 512 |
+| all | L9–16 | 3.55 | 3.25 | −0.23 | 222 / 512 |
+| all | L17–23 | 2.19 | **1.35** | −0.49 | 148 / 448 |
+| deduped | L1–23 | 3.91 | 3.93 | −0.12 | 682 / 1472 |
+| deduped | L9–16 | 4.70 | 5.51 | +0.47 | 336 / 512 |
+| deduped | L17–23 | 2.58 | **1.36** | −0.77 | 119 / 448 |
+
+Step 0: 0.01 on both sides, paired 0.00, half the heads up: the estimator does not drift with n.
+`linear` moves the same way (all tokens L1–23: 3.59 → 3.09).
+
+Paired median per prompt (`fe_full`, step143000, all tokens; L1–8 · L9–16 · L17–23):
+`hdbscan_code` −1.52 · −2.03 · −0.48; `latex_monograph` **+1.95 · +2.43** · −0.06;
+`sullivan_ballou` −0.01 · +0.05 · −0.37; `wiki_paragraph` −0.21 · −0.72 · −0.95.
+
+- **L17–23 falls with length in every prompt** (all tokens and deduped; deduped −0.43 to
+  −1.17), and the pooled late median drops by ~40 % (2.19 → 1.35). This is the one
+  length effect on β the 4 prompts agree on.
+- **At L1–16 the shift is the prompt's, not length's:** `latex_monograph` rises by ~2,
+  `hdbscan_code` falls by ~2, the pooled median cancels. `latex_monograph`'s continuation
+  is composed, not a source text (table above), and `hdbscan_code`'s is 1800 tokens of
+  code, so the continuation's content is confounded with its length here.
+- **For Blocked 9 (β's convention):** the headline is not length-invariant. On the same 4
+  prompts it is 3.16 at v1 length and 2.80 at ~2000 tokens, carried by the late band.
+  A single β per model needs its prompt length stated; per band, the late band is
+  length-dependent.
+- Tier 1, 4 prompts, one checkpoint pair; heads within a prompt are not independent,
+  so the "heads up" counts are descriptive, not a test.
 
 **Parked** (discoveries, not followed):
 - **The 512-token cap.** `core/models.py` `extract_activations` (and 9 other
