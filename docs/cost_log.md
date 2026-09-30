@@ -120,9 +120,51 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-29 | 1d β refit: per-offset fixed effects + R² floor; #109 conflict resolution and merge; page read for explanation (whole transcript, before challenge-pr) | 49 | 165k | 5.3M | 44k | #110 |
 | 2026-09-29 | #110 follow-up: CodeRabbit guards (collinearity, reproduction coverage) + page reading guide (whole transcript incl. #110, before challenge-pr) | 99 | 246k | 15.6M | 56k | #111 |
 | 2026-09-29 | Triage of all phases, FUTURE_IDEAS tie-in, `docs/TRIAGE_2026-09.md` (docs only; before commit and challenge-pr) | 33 | 217k | 5.1M | 66k | #113 |
+| 2026-09-29 | CI: deps tier on every push, status.sh without gh, pyproject-packages rule (whole transcript incl. the planning survey, before challenge-pr) | 71 | 199k | 9.9M | 38k | #114 |
+| 2026-09-29 | P-I5 battery pin (whole transcript incl. #114 and its two review rounds, before challenge-pr) | 171 | 377k | 38.8M | 88k | #115 |
+| 2026-09-30 | Battery-consumer audit + run_7 token check (after #115's merge wake, before challenge-pr) | 72 | 208k | 10.8M | 49k | #116 |
+| 2026-09-30 | Mutation testing of core/evalues.py (whole transcript incl. #114–#116 and #116's CodeRabbit round, before challenge-pr) | 416 | 641k | 122.1M | 232k | #117 |
 
+- #117's row is cumulative over the #114/#115 session, which kept being
+  resumed: #116's CodeRabbit round and this unit both ran at 400–640k per
+  call. Its share is roughly 122.1 − 38.8 (#115's row) − 10.8 (#116's row)
+  ≈ 72M, ~17× the median, the worst in this log. Every call re-read two
+  merged PRs' worth of context. Lesson 9, not optional: the next unit is a
+  fresh session, started from the handoff prompt in #117's description.
+- #116 is 2.5× the running median (4.3M). This was a fresh session after
+  `/clear`, so none of it is carried context. The cost was the audit
+  itself: slices of ~20 consumer files, STATE.md in full, and the Phase 7
+  tests, each re-read by every later call (~150k average over 72 calls).
+  An audit over 30 files could go to one `Explore` subagent that returns
+  only the table.
+- #115's row is cumulative: #114's review rounds (CodeRabbit, /challenge-pr,
+  a pinned-env venv) and this unit both ran in #114's session, so per-call
+  context reached 377k. This unit's share is ~28.9M, ~7× the median. Lesson
+  9 at its clearest: the next unit starts a fresh session.
+- #114 is 2.4× the running median (4.05M): one session held the user's
+  open planning question (a survey of CI, tests, registry and lessons, with
+  test runs) and then the implementation. Two units' reading in one context.
 - #111's row is cumulative: it includes #110's 5.3M, so this unit's share is
   ~10.3M, ~2.6× the running median. The user continued in #110's session
   instead of clearing (their call, 2026-09-29), so every call re-read ~200k
   of #110's context, including the page's 30 KB source and a verbose
   explanation of it. Lesson 9 again: the cost is the carried context.
+| 2026-09-29 | 1d long prompts, part 1: rule + 4 texts (whole transcript incl. #110, #111; in progress) | 180 | 360k | 40.4M | 79k | branch |
+
+- Cumulative again: this part's share is 40.4M − 15.6M ≈ 24.8M, ~6× the
+  running median, for a rule and four texts. The session carried #110 and
+  #111 (peak context 360k), and each source fetch, tokenizer check and
+  permission-classifier outage was a call re-reading all of it. Lesson 9:
+  the unit should have started in a fresh session, as the user then chose.
+| 2026-09-29 | 1d long prompts, part 2: extractor, 8 runs, prefix, merge tree, deduped Gaussian null, β speed-up | 153 | 254k | 26.2M | 64k | #118 |
+| 2026-09-30 | 1d long prompts, part 3: all-token Gaussian null + β at length, reports, Stop, /challenge-pr fixes | 108 | 212k | 14.1M | 49k | #118 |
+
+- Part 2: 26.2M, ~5.6× the running median (4.7M). One session held the
+  extractor, 8 forward passes, the prefix check, the merge tree and its null,
+  the deduped Gaussian null, and two defect fixes found mid-run (β's O(n²)
+  estimator, the all-or-nothing drivers), with context growing to 254k and
+  re-read on each of 153 calls. Each defect was its own unit (lesson 9).
+- Part 3: 14.1M, ~3× the median. 65 calls (6.3M) to the PR; answering
+  `/challenge-pr` (a new offset-matched β fit, the resume defect, a solver
+  check) took 43 more at ~200k context each. Continuing in the same session
+  kept the PR's reasoning in context but paid for re-reading it.

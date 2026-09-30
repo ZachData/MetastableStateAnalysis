@@ -1012,6 +1012,273 @@ copy `viz/index.html` beside it. Wall time at 14 workers: `null` 6.5 h,
 `calibrate` 7.1 h (two sittings: 126 then 258 records), each deduped
 configuration 1.4 h.
 
+### Long prompts (DONE 2026-09-30; branch `claude/p1d-long-prompts`)
+
+**What.** `lit-1d.md` §4's "length first": v1 prompts continued to Pythia's
+context (2048), v1 text as an exact prefix, so under causal attention the
+long run's first `n_v1` tokens reproduce the stored v1 run and length is the
+only change (user, 2026-09-29: extend from source; Gaussian null, merge tree
+and β on step143000 + step 0; runs on `/run/media/system/HDD_1TB/mets_data`).
+Rule committed alone first (`ca787de`, `p1d_cluster_ensemble/long_prompts.py`
+docstring), texts after, before any model run.
+
+**Built (texts committed, no forward pass yet).** Long prompts hash
+`91e85cc95888`; `long_prompts/provenance.json` has sources and counts.
+
+| long key | v1 → long tokens | source |
+|---|---|---|
+| `wiki_paragraph_long` | 467 → 1840 | Wikipedia rev 1371774901 (next paragraph would pass 2048) |
+| `sullivan_ballou_long` | 482 → 1032 | Wikisource rev 15675430; the letter ends |
+| `hdbscan_code_long` | 242 → 2025 | hdbscan 0.8.41 `plots.py` |
+| `latex_monograph_long` | 446 → 2036 | composed continuation, starts on a new line (tokenizer) |
+
+Refused by the rule: `paper_excerpt` (v1 not verbatim in arXiv
+2312.10794v5: math and citations removed by hand) and `repeated_tokens`
+(v1's trailing lone space merges with any continuation). `homer_iliad` and
+`camus_letranger` were dropped up front (copyright).
+
+**Steps 1–4 DONE 2026-09-29; step 5 DONE 2026-09-30** (code on the branch;
+outputs `<main>/data/p1d/long_prompts_2026-09-29/`, runs
+`/run/media/system/HDD_1TB/mets_data/p1d_long/2026-09-29/`, ~0.9 GB each).
+
+| step | state | result |
+|---|---|---|
+| 1 extractor | done | `extract_long.py`: `load_model`, tokenize **without truncation** (refuses a count ≠ `provenance.json`'s or > 2048), write through `p1_io`'s `_save_tokens/_geometry/_activations/_attentions` + `write_manifest` (`prompt_key` = long key, `long_prompts_hash`; `geometry.json` `layers` empty) |
+| 2 runs | done | 8 runs (4 prompts × step143000, step 0), 26–112 s each, peak RSS 15.7 GB. First run checked populated before the rest: unit rows, finite, attention rows sum to 1 (max err 1.8e-6), causal half zero |
+| 3 prefix | done | `prefix_check.json`. 6 of 8 **bit-identical** to the stored v1 run (activations, norms, attention; tokens equal; no prefix row attends past `n_v1`). `hdbscan_code` differs at float noise: step143000 act 6.3e-5, attention 3.7e-3; step 0 1e-7. Embedding identical; the difference starts at 1e-7 in L1 from token 121 and grows with depth: reduction order, not the prefix |
+| 4 holdout | done | `refuse_held_out(..., drop=True)` keeps all 8; `run_1d.discover_runs` finds 8; test added |
+| 5 merge tree + link null | done | below |
+| 5 Gaussian null | done (deduped 2026-09-29, all tokens 2026-09-30) | below |
+| 5 β | done 2026-09-30 | below; estimator sped up first |
+
+**Merge tree (`--subexp F`) and its link null** (2000 draws, per group of
+the same 4 prompts; `merge_null/{long,v1}_step{143000,0}.{json,txt}`; v1
+step-0 trees were not stored before, so built here: `merge_tree_v1_step0/`).
+Structure counts, summed over the 4 prompts:
+
+| group | blob layers (L1–24) | two-cluster picks (L3–24) | token 0 out (L1–24) |
+|---|---|---|---|
+| v1 step143000 | 69/96 | 51/88 | 71/96 |
+| long step143000 | **43/96** | 52/88 | 61/96 |
+| v1 step 0 | 12/96 | 0/88 | 91/96 |
+| long step 0 | 5/96 | 8/88 | 83/96 |
+
+- **Length halves the blob at step143000** (69 → 43 of 96; per prompt
+  18→10, 20→12, 18→16, 13→5): the longest-lived scale is less often one
+  cluster plus outliers. The ≥ 2-cluster pick is still exactly 2 about as
+  often (51 vs 52 of 88), so the scale question is unchanged.
+- **Links against the null, same reading as v1's:** no merge excess
+  (L0–L7 merge fraction 0.74 vs null 0.93, *below*; v1 same 4 prompts
+  0.61 vs 0.67); late tangle share far below the null (L8–15 0.45, L16–23
+  0.87 vs ≥ 0.99; v1 0.36, 0.48). Late layers tangle more at length (26 of
+  30 L16–23 events vs 14 of 29).
+- Step 0: almost every link is stable (2782 of 2785 at L0–L7): its
+  partitions are fine-grained and repeat layer to layer.
+
+**Gaussian null, deduped: DONE 2026-09-29** (`gaussian_null/{null,calibrate,report}_dedupe.*`;
+200 / 100 draws, seed 0, all 3 frames, 25 layers, 8 runs, 339–699 tokens kept; v1 on the
+same 4 prompts: `gaussian_null/v1_same4/report_dedupe.*`). Centred frame, records in the
+lumpier tail / the same on its calibration, of 32 per band:
+
+| stat | step | band | v1 | long |
+|---|---|---|---|---|
+| ci2 (2-means) | 143000 | L1–8 | 0 / 0 | **12 / 0** |
+| ci2 | 143000 | L9–16 | 5 / 0 | **14 / 0** |
+| ci2 | 143000 | L17–24 | 20 / 4 | 31 / **24** |
+| hdb_k (HDBSCAN groups) | 143000 | L1–8 · L9–16 · L17–24 | 16 · 25 · 29 / 0 | **31 · 28 · 30** / 0 |
+| nn1 (nearest neighbour) | 143000 | L1–8 · L9–16 · L17–24 | 32 · 32 · 32 / 0 | 32 · 32 · 32 / 0 · 0 · **15** |
+| mt_life | 0 | L9–16 · L17–24 | 20 · 25 / 0 | 26 · 29 / 0 |
+| ci2, hdb_k, nn1 | 0 | all | ≤ 1 / ≤ 1 | ≤ 1 / ≤ 1, except hdb_k L17–24 8 / 1 |
+
+- **The 2-means excess at L1–16 is mostly power** (*revised after `/challenge-pr` on
+  #118*): the counts rise (12 and 14 of 32, calibration 0; v1 0 and 5), but the effect,
+  median per record of obs − null mean, is unchanged at L9–16 (−0.0035 v1, −0.0038
+  long) while z doubles (−0.97 → −1.96) on 339–699 kept tokens. Only L1–8 grows
+  (−0.0007 → −0.0028, ~4×). HDBSCAN groups: effect 13–16 → 30–52 groups (group counts
+  scale with n too). A count of records past a tail is not an effect size. At L17–24 **the calibration itself fires**
+  (24 of 32), so this null is off nominal there at this length, and v1's late 2-means
+  excess cannot be read on long prompts with it.
+- **More HDBSCAN groups than the Gaussian at every depth** (28–31 of 32, cal 0); v1 had
+  16 at L1–8. Step 0 stays at its calibration (except hdb_k L17–24, 8 vs 1).
+- Closer nearest neighbours: all records, both lengths; calibration clean except long
+  L17–24 (15). A nearest neighbour within 3 positions is *less* common at length
+  (median 0.23 vs 0.31, step143000 centred): more tokens to choose from.
+- Step 0's merge-tree lifetime excess (Parked 11) persists and grows (26, 29 of 32).
+- Tier 1, one checkpoint pair, 4 prompts.
+
+**Gaussian null, all tokens: DONE 2026-09-30** (`gaussian_null/{null,calibrate,report}.*`;
+200 / 100 draws, seed 0, 600 records each, 0 skipped, 1032–2036 tokens; v1 on the same 4
+prompts: `gaussian_null/v1_same4/report.*`). Centred frame, lumpier tail / calibration,
+of 32 per band (L1–8 · L9–16 · L17–24):
+
+| stat | step | v1 | long |
+|---|---|---|---|
+| ci2 | 143000 | 26 · 25 · 29 / 3 · 2 · 18 | 32 · 32 · 32 / **20 · 12 · 31** |
+| ci2 | 0 | 32 · 32 · 32 / 6 · 4 · 0 | 32 · 32 · 32 / **32 · 26 · 25** |
+| nn1 | 143000 | 32 · 32 · 32 / 0 · 0 · 14 | 32 · 32 · 32 / **8 · 10 · 29** |
+| nn1 | 0 | 32 · 32 · 32 / 0 | 32 · 32 · 32 / 8 · 9 · 12 |
+| hdb_k (median groups, null ≈ 4) | 143000 | 57 · 59 · 47, all 32 / 0 | **234 · 243 · 204**, all 32 / 0 · 0 · 1 |
+| hdb_k | 0 | 63 · 62 · 59, all 32 / ≤ 3 | **288 · 280 · 282**, all 32 / 0 |
+| mt_k (median, null ≈ 2) | 0 | 21, 31–32 / 0 | 92, all 32 / 0 |
+| mt_life | 143000 | 2 · 4 · 11 / 2 · 0 · 6 | 10 · 8 · 11 / 3 · 4 · 12 |
+
+- **On all tokens at length the null is off nominal for ci2 and nn1:** the calibration
+  (each token replaced by one draw of its own Gaussian) lands in the lumpier tail in 12–32
+  of 32 records per band. v1's all-token calibration fired only at L17–24 (ci2 18, nn1 14);
+  the deduped long run only at L17–24 (ci2 24, nn1 15). The miscalibration grows with n.
+  So neither statistic can be read on all tokens at 2048 (Parked below).
+- **What stays readable is token identity.** HDBSCAN groups (cal 0–1) and the merge
+  tree's k: step 0 beats the null *more* than step143000 at every depth (288 vs 234 groups
+  at L1–8; mt_k 92 vs 2–3), as #106 found at v1 length. At length a token's nearest
+  neighbour is more often the same string (median 0.68 vs 0.55 at step143000, 0.79 vs 0.67
+  at step 0; L1–24 centred), so the identity channel grows with the prompt.
+- Trained-only signals are marginal: mt_life 8–11 of 32 vs cal 3–12; mt_k 4–6 vs ≤ 1.
+- Nearest neighbour within 3 positions (step143000, centred, L1–24 median): 0.11 long vs
+  0.23 v1 (deduped: 0.23 vs 0.31).
+- **Reading:** length does not change #106's all-token verdict (identity), and at 2048
+  the deduped table above is the one to read.
+
+**Defects found and fixed on the way** (both would have made step 5 take
+days, or lose work):
+1. **β's estimator did not scale to 2048 tokens.** `_within_row_demean`
+   looped over rows with a mask over all pairs (O(rows × pairs); 965 s for
+   one layer's linear fit at n = 2025), and `_two_way_demean`'s alternating
+   projections converge slowly on a causal design (378 s per layer, near its
+   iteration cap). Now: one `bincount` pass, and an exact two-way solve
+   (row effects in closed form, offset effects by Cholesky on the Schur
+   complement, one bin pinned). **Identical βs:** on #110's stored heads
+   (2 runs, both steps, all tokens and deduped, 1536 heads × 5 variants)
+   max |Δβ| ≤ 1.2e-14. ~2 s (linear) / ~3 s (fe_full) per head at n = 2025.
+   Tests: exact = dummy OLS on a random and a causal design.
+2. **`gaussian_null` and `beta_refit` were all-or-nothing** (`pool.map`,
+   `ex.map`), though `attention_null` had been fixed for this on 2026-09-26
+   (`LESSONS.md` 11). A shutdown on 2026-09-29 cost ~5 h of the Gaussian
+   null's all-token stage (~290 of 600 records, from bytes read) and ~4 h
+   of β. Both now write a part per record / per (run, dedupe) job and
+   resume (`<out>.parts/`; draws are seeded per record, so a resumed run
+   gives the same numbers). *Corrected after `/challenge-pr` on #118:* this
+   line said parts are reused only with matching settings; `beta_refit`
+   reused any part. Now both check settings and the run's input files (size,
+   mtime); `beta_refit` also the weights, `max_offset` and `core/beta_eff.py`'s
+   hash; pre-settings parts are refitted (tests in `test_phase1d_beta_refit.py`).
+3. `beta_refit --stored` may be omitted only when every run is a long prompt
+   (enforced since #118's review; it was optional for any input); the output
+   records `reproduction: {"not_run": ...}`.
+4. Exact solver checked at length (#118 finding 5): against the iterative
+   `_two_way_demean` on `hdbscan_code_long` step143000 (n = 2025), L20 h0, h7
+   and L10 h3, windows 4 and full: max |Δβ| 4.4e-15
+   (`beta/solver_check.json`).
+
+**Cost, measured.** Gaussian null at n ≈ 1800: ~3 s per draw per record
+under full load (k-means `n_init=10` ~40 %, cosine distances, HDBSCAN,
+linkage, the draw), + ~5 s per record for the frame's decomposition. The
+box is 8 cores / 16 threads, so 15 workers is the ceiling. All-token null
+(600 records × 201 fits) ≈ 9 h, its calibration ≈ 4.5 h; deduped prompts
+are 339–699 tokens (`hdbscan_code`, `sullivan_ballou`, `latex_monograph`,
+`wiki_paragraph`: 339 / 418 / 547 / 699), so each deduped stage is roughly
+a tenth. β forecast 4–5 h (16 jobs at 3 workers, ~7.5 GB RAM per worker).
+**Measured:** `null` 20:45 → 12:17 less the 8 h suspend (~7.5 h),
+`calibrate` 4.1 h, β **1.0 h** (3667 s; the forecast was one head timed on
+a loaded box).
+
+**Re-run** (resumable; `LESSONS.md` 11): `setsid nohup systemd-inhibit
+--what=sleep:idle <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
+>> <same>/run_chunk.log 2>&1 &`. It skips finished stages (`<stage>.json`
+present), resumes a stopped one from `<stage>.parts/`, and runs in order
+`null_dedupe`, `calibrate_dedupe`, `null`, `calibrate`, then β. The box
+suspended 2026-09-29 21:20–05:16 (`null` at 45/600) because nothing held
+it awake. Reports: `python -m p1d_cluster_ensemble.gaussian_null_report
+--null <O>/gaussian_null/null{,_dedupe}.json --calibrate
+<O>/gaussian_null/calibrate{,_dedupe}.json --out <O>/gaussian_null/report{,_dedupe}.json`;
+`python -m p1d_cluster_ensemble.beta_long_compare --long <O>/beta/beta_refit.json
+--v1 <main>/data/p1d/beta_refit_2026-09-29/beta_refit.json --out <O>/beta/vs_v1.json`.
+
+**β at length: DONE 2026-09-30** (`beta/beta_refit.{json,txt}`, `beta/vs_v1.{json,txt}`;
+all 5 variants, 16 jobs, 6144 head-fits; no `--stored` reproduction, since #108 never fitted
+these inputs; the estimator reproduced #108 on v1 and matched #110 to 1e-14 after the
+speed-up). Against #110's heads for the **same 4 prompts** (not #110's 7-prompt 3.46),
+`fe_full`, step143000, floor 0, 1472 heads (L1–23) or 512 / 512 / 448 per band; paired =
+long − v1 on the same head:
+
+| tokens | band | v1 median [IQR] | long | paired median [IQR] | heads up |
+|---|---|---|---|---|---|
+| all | L1–23 | 3.16 [1.36, 5.36] | **2.80** [0.78, 5.56] | −0.24 [−1.22, 0.64] | 617 / 1472 |
+| all | L1–8 | 3.89 | 4.12 | −0.04 | 247 / 512 |
+| all | L9–16 | 3.55 | 3.25 | −0.23 | 222 / 512 |
+| all | L17–23 | 2.19 | **1.35** | −0.49 | 148 / 448 |
+| deduped | L1–23 | 3.91 | 3.93 | −0.12 | 682 / 1472 |
+| deduped | L9–16 | 4.70 | 5.51 | +0.47 | 336 / 512 |
+| deduped | L17–23 | 2.58 | **1.36** | −0.77 | 119 / 448 |
+
+Step 0: 0.01 on both sides, paired 0.00, half the heads up: the estimator does not drift with n.
+`linear` moves the same way (all tokens L1–23: 3.59 → 3.09).
+
+Paired median per prompt (`fe_full`, step143000, all tokens; L1–8 · L9–16 · L17–23):
+`hdbscan_code` −1.52 · −2.03 · −0.48; `latex_monograph` **+1.95 · +2.43** · −0.06;
+`sullivan_ballou` −0.01 · +0.05 · −0.37; `wiki_paragraph` −0.21 · −0.72 · −0.95.
+
+**Most of the late fall is the offset mix, not length** (*revised after `/challenge-pr`
+on #118*, finding 1). At full length 28–78 % of fitted pairs sit at offsets v1 never had,
+and at L17–23 similarity explains ~2 % of what the fixed effects leave, so the slope moves
+with the pair mix. Refit on the long runs with only the offsets their v1 prefix contains
+(`beta_refit --max-offset-v1`, offset ≤ n_v1 − 2; `beta_offset_matched/{beta_refit,vs_v1}.*`,
+16 jobs, 1 h):
+
+| tokens | band | v1 | long, all offsets: paired, up | long, v1's offsets: paired, up |
+|---|---|---|---|---|
+| all | L1–23 | 3.16 | −0.24, 617 / 1472 | **−0.05**, 716 / 1472 (median 3.12) |
+| all | L17–23 | 2.19 | −0.49, 148 / 448 | **−0.17**, 201 / 448 (median 1.88) |
+| deduped | L9–16 | 4.70 | +0.47, 336 / 512 | +0.77, 385 / 512 |
+| deduped | L17–23 | 2.58 | −0.77, 119 / 448 | −0.29, 183 / 448 |
+
+Per prompt, v1's offsets, all tokens, L17–23: `hdbscan_code` +0.04, `latex_monograph` +0.23,
+`sullivan_ballou` −0.19, `wiki_paragraph` −0.55. Step 0 stays at 0 (paired −0.01).
+
+- **L17–23:** about two thirds of the paired fall (−0.49 → −0.17) is pairs at offsets v1
+  did not have. On v1's offsets it no longer falls in every prompt; the rest is mostly
+  `wiki_paragraph`. The first write-up's "falls ~40 % in every prompt" compared two medians
+  (the paired change was −22 %) and read the offset mix as length: withdrawn.
+- **At L1–16 the shift is the prompt's, not length's**, with or without the offset match
+  (`latex_monograph` +2 to +3, `hdbscan_code` −1.5 to −2 all tokens; the pooled median
+  cancels). `latex_monograph`'s continuation is composed, not a source text, and
+  `hdbscan_code`'s is 1800 tokens of code: content and length are confounded per prompt.
+- Step 0 staying flat does not clear the offset question (a zero slope stays zero on any
+  pair set); it only shows the estimator has no drift with n.
+- **For Blocked 9 (β's convention):** on v1's offsets the headline hardly moves with length
+  (3.16 → 3.12); on all offsets it is 2.80. So β should be quoted with the **offset range**
+  it was fitted on; prompt length matters through that range. A length curve (truncate
+  each long run at several n, no forward pass needed) is Parked below.
+- Tier 1, 4 prompts, one checkpoint pair; heads within a prompt are not independent,
+  so the "heads up" counts are descriptive, not a test.
+
+**Parked** (discoveries, not followed):
+- **The 512-token cap.** `core/models.py` `extract_activations` (and 9 other
+  call sites) tokenizes with `truncation=True, max_length=512`, silently.
+  `homer_iliad` is 562 tokens, so every stored `homer_iliad` run is its first
+  512 tokens (consistent across checkpoints; no doc said so). v2's held-out
+  `scipy_linkage_code` (527) and `latex_article` (614) would be cut too. Cost:
+  a note per affected phase, and a loud record (or refusal) of truncation in
+  the extractor. Could change any claim quoting `homer_iliad`'s length.
+- **The Gaussian null's calibration drifts with n.** One Gaussian draw per
+  token, re-tested against a Gaussian refitted to it, lands in the lumpier
+  ci2 / nn1 tail in 12–32 of 32 records at 1032–2036 tokens (all tokens), vs
+  0–18 at 242–482 (v1). Why: untested (a guess is that re-estimating the
+  covariance from the calibration sample shifts the spectrum at this n/d;
+  d = 1024). Cost: a synthetic check across n on known Gaussians, ~1 h. Could
+  change: whether this null is usable for any all-token claim past ~500
+  tokens, and how far the deduped L17–24 calibration (24 of 32) is the same
+  effect.
+- **β as a function of length** (#118 finding 1's second half). Under causal
+  attention a long run's first n tokens are the n-token run, so fitting each
+  long run truncated at several n (e.g. 256, 512, 1024, full), on all offsets
+  and on a fixed offset range, gives a length curve with no forward pass.
+  Cost: `beta_refit` with a row cap, ~1–2 h compute. Could change: whether
+  β's convention (Blocked 9) names a length, an offset range, or both.
+- **Deduped Gaussian null at v1's token count** (#118 finding 2). Subsample
+  each long deduped run to its v1 run's kept count and re-run the null, so
+  counts compare at equal power. Cost: a `--subsample` option and ~1 h. Could
+  change: whether L1–8's ~4× larger 2-means effect is length or sample size.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it

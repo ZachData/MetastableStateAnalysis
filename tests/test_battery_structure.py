@@ -11,12 +11,15 @@ import numpy as np
 import pytest
 
 from core.battery_structure import (
+    TokenizationMismatch,
     analyze_prompt,
     assert_battery_structure,
     battery_summary_lines,
     induction_candidates,
+    phase1_tokens,
     same_content_candidates,
     tokenize_prompt,
+    verified_prompt_ids,
     verify_battery_structure,
 )
 
@@ -46,6 +49,10 @@ class FakeTokenizer:
         if self._prepend and self.bos_token_id is not None:
             ids = [self.bos_token_id] + ids
         return {"input_ids": ids}
+
+    def convert_ids_to_tokens(self, ids):
+        words = {i: w for w, i in self._vocab.items()}
+        return [words[i] for i in ids]
 
     def __len__(self):
         return len(self._vocab) + 100
@@ -318,3 +325,31 @@ class TestBatteryVerification:
         text = "\n".join(battery_summary_lines(rep))
         assert "NO (position 0 is a content token)" in text
         assert "uniform" in text
+
+
+class TestAgainstAStoredRun:
+    """`tokens.txt` read back, and the live text checked against it."""
+
+    def test_round_trips_phase1s_writer_past_index_999(self, tmp_path):
+        from p1_mstate_tracking.p1_io import _save_tokens
+        toks = [f"t{i}" for i in range(1004)] + ["Ġtwo  spaces", ""]
+        _save_tokens({"tokens": toks}, tmp_path)
+        assert phase1_tokens(tmp_path) == toks
+
+    def test_a_skipped_index_is_refused(self, tmp_path):
+        (tmp_path / "tokens.txt").write_text("  0  a\n  2  b\n")
+        with pytest.raises(TokenizationMismatch):
+            phase1_tokens(tmp_path)
+
+    def test_a_longer_text_is_cut_to_the_run(self):
+        tok = FakeTokenizer()
+        ids = verified_prompt_ids(tok, "a b c d e", ["a", "b", "c"])
+        assert tok.convert_ids_to_tokens(ids) == ["a", "b", "c"]
+
+    def test_a_changed_token_is_refused(self):
+        with pytest.raises(TokenizationMismatch, match="token 1"):
+            verified_prompt_ids(FakeTokenizer(), "a x c", ["a", "b", "c"])
+
+    def test_a_shorter_text_is_refused(self):
+        with pytest.raises(TokenizationMismatch):
+            verified_prompt_ids(FakeTokenizer(), "a b", ["a", "b", "c"])

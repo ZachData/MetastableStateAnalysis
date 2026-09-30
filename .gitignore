@@ -24,6 +24,10 @@
 !*.yaml
 # Page templates the viz builders fill (p1d_cluster_ensemble/viz_page.py); their data is never tracked.
 !*/viz/index.html
+# Phase 1d's long prompt texts, their provenance and the composed LaTeX (p1d_cluster_ensemble/long_prompts.py). Inputs, not run output.
+!p1d_cluster_ensemble/long_prompts/*.txt
+!p1d_cluster_ensemble/long_prompts/*.tex
+!p1d_cluster_ensemble/long_prompts/provenance.json
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
 !.claude/settings.json
 !*.sh
@@ -49,3 +53,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+
+# mutmut working copy (pyproject.toml [tool.mutmut])
+/mutants/
+# The reviewed list of equivalent mutants (tools/mutation_check.py).
+!tools/mutation_accepted.json
