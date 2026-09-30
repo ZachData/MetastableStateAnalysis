@@ -1,0 +1,117 @@
+\documentclass[11pt,a4paper]{
+article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{microtype}
+
+% Define page geometry
+\geometry{
+    a4paper,
+    total={165mm,247mm},
+    left=22mm,
+    top=25mm,
+}
+
+% Define custom corporate/academic color palette
+\definecolor{primary}{RGB}{26, 54, 93}     % Deep slate blue
+\definecolor{secondary}{RGB}{43, 108, 176} % Accent blue
+\definecolor{textdark}{RGB}{45, 55, 72}    % Dark grey for text body
+
+\makeatletter
+\newcommand{\globalcolor}[1]{%
+  \color{#1}\global\let\default@color\current@color
+}
+\makeatother
+\AtBeginDocument{\globalcolor{textdark}}
+
+% Section styling
+\titleformat{\section}
+  {\color{primary}\normalfont\Large\bfseries}
+  {\thesection}{1em}{}[{\color{secondary}\titrule[1pt]}]
+
+\titleformat{\subsection}
+  {\color{secondary}\normalfont\large\bfseries}
+  {\thesubsection}{1em}{}
+
+% Custom styling for title
+\title{
+    \vspace{-1.5cm}
+    \Huge \textbf{\color{primary}{The Principle of Least Action}} \\
+    \large \textit{\color{secondary}{A Foundational Formulation of Classical Mechanics}}
+}
+\author{\textbf{Expository Physics Monograph}}
+\date{\small \today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+The \textbf{Principle of Least Action}---more accurately termed the \textit{Principle of 
+Stationary Action}---states that the path a mechanical system actually follows between two fixed configurations is the one for which a single scalar quantity, the \emph{action}, is stationary with respect to all small variations of the path. Its appeal is twofold. First, it replaces the vectorial bookkeeping of forces with one scalar functional, so that constraints and changes of coordinates are handled with little effort. Second, it exposes the link between symmetries and conserved quantities, a link that survives the passage to field theory and to quantum mechanics.
+
+\section{Configuration Space and the Action}
+Consider a system with $n$ degrees of freedom described by generalized coordinates $q = (q_1, \ldots, q_n)$. A \textit{path} is a smooth map $t \mapsto q(t)$ defined on an interval $[t_1, t_2]$. The dynamics are encoded in the \textbf{Lagrangian}
+\begin{equation}
+    L(q, \dot{q}, t) = T(q, \dot{q}) - V(q, t),
+\end{equation}
+where $T$ is the kinetic energy and $V$ the potential energy. The \textbf{action} of a path is the functional
+\begin{equation}
+    S[q] = \int_{t_1}^{t_2} L\big(q(t), \dot{q}(t), t\big)\, dt .
+\end{equation}
+Hamilton's principle asserts that among all paths with prescribed endpoints $q(t_1) = q^{(1)}$ and $q(t_2) = q^{(2)}$, the physical one satisfies $\delta S = 0$.
+
+\subsection{Variations with Fixed Endpoints}
+Let $q(t)$ be a candidate path and let $\eta(t)$ be an arbitrary smooth function with $\eta(t_1) = \eta(t_2) = 0$. For a small parameter $\varepsilon$ we form the varied path $q_\varepsilon(t) = q(t) + \varepsilon\, \eta(t)$. The first variation of the action is
+\begin{equation}
+    \delta S = \left. \frac{d}{d\varepsilon} S[q_\varepsilon] \right|_{\varepsilon = 0}
+    = \int_{t_1}^{t_2} \sum_{k=1}^{n} \left( \frac{\partial L}{\partial q_k} \eta_k + \frac{\partial L}{\partial \dot{q}_k} \dot{\eta}_k \right) dt .
+\end{equation}
+Integrating the second term by parts and using the vanishing of $\eta$ at the endpoints gives
+\begin{equation}
+    \delta S = \int_{t_1}^{t_2} \sum_{k=1}^{n} \left( \frac{\partial L}{\partial q_k} - \frac{d}{dt} \frac{\partial L}{\partial \dot{q}_k} \right) \eta_k \, dt .
+\end{equation}
+
+\section{The Euler--Lagrange Equations}
+Since $\eta$ is arbitrary, the fundamental lemma of the calculus of variations implies that $\delta S = 0$ for every admissible variation if and only if
+\begin{equation}
+    \frac{d}{dt} \frac{\partial L}{\partial \dot{q}_k} - \frac{\partial L}{\partial q_k} = 0, \qquad k = 1, \ldots, n.
+\end{equation}
+These are the \textbf{Euler--Lagrange equations}. They are second-order ordinary differential equations, and they take the same form in every system of generalized coordinates, which is the main practical advantage of the formalism.
+
+\subsection{Example: The Free Particle}
+For a particle of mass $m$ moving freely in three dimensions, $L = \tfrac{1}{2} m |\dot{\mathbf{x}}|^2$. The Euler--Lagrange equations reduce to $m \ddot{\mathbf{x}} = 0$, so the particle moves in a straight line at constant speed. The action of the true path is in this case a genuine minimum among all paths with the same endpoints.
+
+\subsection{Example: The Harmonic Oscillator}
+For a mass $m$ attached to a spring of stiffness $k$, the Lagrangian is
+\begin{equation}
+    L = \tfrac{1}{2} m \dot{x}^2 - \tfrac{1}{2} k x^2 ,
+\end{equation}
+and the Euler--Lagrange equation reads $m \ddot{x} + k x = 0$, whose solutions oscillate with angular frequency $\omega = \sqrt{k/m}$. Here the action is stationary but need not be a minimum: when the time interval $t_2 - t_1$ exceeds half a period, $\pi / \omega$, the true path is a saddle point of $S$. This is why the word \textit{stationary} is preferred to \textit{least}.
+
+\section{Symmetries and Conservation Laws}
+If the Lagrangian does not depend explicitly on a coordinate $q_k$, that coordinate is called \textbf{cyclic}, and the Euler--Lagrange equation gives at once
+\begin{equation}
+    \frac{d}{dt} p_k = 0, \qquad p_k \equiv \frac{\partial L}{\partial \dot{q}_k},
+\end{equation}
+so the conjugate momentum $p_k$ is conserved. More generally, \textbf{Noether's theorem} states that every continuous one-parameter family of transformations leaving the action invariant yields a conserved quantity. Invariance under spatial translations gives conservation of linear momentum, invariance under rotations gives conservation of angular momentum, and invariance under translations in time gives conservation of the energy function
+\begin{equation}
+    E = \sum_{k=1}^{n} \dot{q}_k \frac{\partial L}{\partial \dot{q}_k} - L ,
+\end{equation}
+which equals $T + V$ whenever the kinetic energy is a homogeneous quadratic function of the velocities.
+
+\section{The Hamiltonian Formulation}
+The Legendre transform exchanges the velocities $\dot{q}_k$ for the momenta $p_k$ and defines the \textbf{Hamiltonian}
+\begin{equation}
+    H(q, p, t) = \sum_{k=1}^{n} p_k \dot{q}_k - L(q, \dot{q}, t).
+\end{equation}
+Stationarity of the phase-space action $\int \left( \sum_k p_k \dot{q}_k - H \right) dt$ under independent variations of $q$ and $p$ leads to Hamilton's equations,
+\begin{equation}
+    \dot{q}_k = \frac{\partial H}{\partial p_k}, \qquad \dot{p}_k = -\frac{\partial H}{\partial q_k},
+\end{equation}
+a system of $2n$ first-order equations. The flow they generate preserves phase-space volume (Liouville's theorem), a property that underlies statistical mechanics.
+
+\section{Concluding Remarks}

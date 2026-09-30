@@ -40,7 +40,7 @@ from core.holdout import add_holdout_args, refuse_held_out
 
 from .attention_graph import fit_betas, unit_ln_rows
 from .attention_null import _step_prompt, blocks_for, run_checkpoint
-from .gaussian_null import MIN_TOKENS, first_occurrences, run_tokens
+from .gaussian_null import MIN_TOKENS, first_occurrences, input_fingerprint, run_tokens
 
 WINDOWS_FE = (4, 16, 64, None)
 VARIANTS = ("linear",) + tuple(f"fe_w{w}" if w else "fe_full" for w in WINDOWS_FE)
@@ -59,7 +59,7 @@ def _band(layer: int) -> str:
 
 def _job(args) -> List[Dict]:
     from core.beta_eff import estimate_beta_offset_fe
-    run_dir, wroot, dedupe = args
+    run_dir, wroot, dedupe, max_offset = args
     run_dir = Path(run_dir)
     step, prompt = _step_prompt(run_dir)
     z = np.load(run_dir / "activations.npz")
@@ -84,17 +84,59 @@ def _job(args) -> List[Dict]:
         U = unit_ln_rows(X, B.ln1_w, B.ln1_b, B.eps)
         G = U @ U.T
         idx = np.arange(1, seq.size)
-        lin = fit_betas(A, U, idx, seq)
+        lin = fit_betas(A, U, idx, seq, max_offset=max_offset)
         for h in range(A.shape[0]):
             rec = {"step": step, "prompt": prompt, "layer": L, "head": h, "dedupe": bool(dedupe),
                    "linear": lin[h]["beta"], "linear_r2": lin[h]["r2"]}
             for w in WINDOWS_FE:
-                r = estimate_beta_offset_fe(A[h], G, idx, positions=seq, offset_window=w)
+                r = estimate_beta_offset_fe(A[h], G, idx, positions=seq, offset_window=w,
+                                            max_offset=max_offset)
                 k = f"fe_w{w}" if w else "fe_full"
                 rec[k], rec[k + "_r2"], rec[k + "_pr2"] = r["beta_raw"], r["r2"], r["partial_r2"]
                 rec[k + "_svr"] = r["design_sv_ratio"]
             out.append(rec)
     return out
+
+
+def v1_max_offset(run_dir: Path) -> int:
+    """
+    The largest offset a long run's v1 prefix contains: its v1 run keeps
+    positions 1 .. n_v1 - 1 (token 0 is the sink), so n_v1 - 2. Refuses a run
+    that is not a long prompt.
+    """
+    from .long_prompts import load_provenance
+    _, prompt = _step_prompt(Path(run_dir))
+    prov = load_provenance()["prompts"]
+    if prompt not in prov:
+        raise ValueError(f"{prompt!r} is not a long prompt; --max-offset-v1 needs one")
+    return int(prov[prompt]["n_v1_tokens"]) - 2
+
+
+def part_settings(job) -> Dict:
+    """What a stored part must match to be reused: the weights, the fit's
+    settings, the estimator's source and the run's input files."""
+    import hashlib
+    est = Path(__file__).resolve().parents[1] / "core" / "beta_eff.py"
+    return {"weights": str(job[1]), "dedupe": bool(job[2]), "max_offset": job[3],
+            "windows": [w for w in WINDOWS_FE],
+            "estimator_sha1": hashlib.sha1(est.read_bytes()).hexdigest(),
+            "input": input_fingerprint(job[0], ("activations.npz", "attentions.npz"))}
+
+
+def reuse_part(path: Path, job) -> Optional[List[Dict]]:
+    """A stored part's records if its settings match ``job``'s, else None
+    (missing, a pre-settings list, or fitted under other settings or inputs)."""
+    stored = json.loads(path.read_text()) if path.exists() else None
+    if isinstance(stored, dict) and stored.get("_settings") == part_settings(job):
+        return stored["records"]
+    return None
+
+
+def needs_stored(runs: Sequence[Path]) -> bool:
+    """True unless every run is a long prompt, which #108 never fitted."""
+    from .long_prompts import load_provenance
+    long_keys = set(load_provenance()["prompts"])
+    return any(_step_prompt(Path(r))[1] not in long_keys for r in runs)
 
 
 def check_reproduction(recs: List[Dict], stored: Path) -> Dict:
@@ -174,10 +216,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--runs", type=Path, nargs="+", required=True)
     ap.add_argument("--weights", type=Path, required=True)
-    ap.add_argument("--stored", type=Path, required=True,
-                    help="#108's null.json (all tokens), whose βs the linear fit must reproduce")
+    ap.add_argument("--stored", type=Path, default=None,
+                    help="#108's null.json (all tokens), whose βs the linear fit must reproduce; "
+                         "may be omitted only when every run is a long prompt (#108 never fitted "
+                         "them), and the output records the check as not run")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    ap.add_argument("--max-offset-v1", action="store_true",
+                    help="long runs only: fit each on the pairs its v1 prefix could contain "
+                         "(offset <= n_v1 - 2), to separate length from the offset mix")
     ap.add_argument("--resummarise", action="store_true",
                     help="rebuild the summary from --out's stored heads; no fits")
     add_holdout_args(ap)
@@ -193,18 +240,53 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not runs:
         print("refusing: no runs", file=sys.stderr)
         return 1
+    if args.stored is None and needs_stored(runs):
+        print("refusing: --stored is required unless every run is a long prompt", file=sys.stderr)
+        return 1
     t0 = time.time()
-    jobs = [(str(r), str(args.weights), dd) for dd in (False, True) for r in runs]
+    jobs = [(str(r), str(args.weights), dd, v1_max_offset(r) if args.max_offset_v1 else None)
+            for dd in (False, True) for r in runs]
+    # One part file per (run, dedupe) job, written as it finishes, so a
+    # stopped run resumes (as `attention_null` and `gaussian_null`). A part
+    # is reused only if `part_settings` match; anything else is refitted.
+    parts = args.out.with_suffix(".parts")
+    parts.mkdir(parents=True, exist_ok=True)
+
+    def part_of(job) -> Path:
+        return parts / f"{Path(job[0]).parent.name}__{Path(job[0]).name}__dd{int(job[2])}.json"
+
     recs: List[Dict] = []
-    with ProcessPoolExecutor(max_workers=args.workers) as ex:
-        for part in ex.map(_job, jobs):
+    todo = []
+    for j in jobs:
+        part = reuse_part(part_of(j), j)
+        if part is None:
+            todo.append(j)
+        else:
             recs.extend(part)
-    repro = check_reproduction([r for r in recs if not r["dedupe"]], args.stored)
-    if not repro["n_compared"] or repro["n_mismatched"] or repro["max_abs_diff"] > REPRO_TOL:
+    print(f"  {len(jobs) - len(todo)} of {len(jobs)} jobs already done", flush=True)
+    with ProcessPoolExecutor(max_workers=args.workers) as ex:
+        futs = {ex.submit(_job, j): j for j in todo}
+        from concurrent.futures import as_completed
+        for f in as_completed(futs):
+            part = f.result()
+            tmp = part_of(futs[f]).with_suffix(".tmp")
+            tmp.write_text(json.dumps({"_settings": part_settings(futs[f]), "records": part}))
+            tmp.replace(part_of(futs[f]))
+            recs.extend(part)
+            print(f"  done {futs[f][0]} dedupe={futs[f][2]} ({time.time() - t0:.0f} s)", flush=True)
+    recs.sort(key=lambda r: (r["dedupe"], r["step"], r["prompt"], r["layer"], r["head"]))
+    if args.stored is None:
+        repro = {"not_run": "no --stored: #108 has no βs for these inputs; the estimator "
+                            "reproduced #108 on the v1 runs (status-1d.md \"β refit\")"}
+    else:
+        repro = check_reproduction([r for r in recs if not r["dedupe"]], args.stored)
+    if args.stored is not None and (not repro["n_compared"] or repro["n_mismatched"]
+                                    or repro["max_abs_diff"] > REPRO_TOL):
         print(f"refusing: linear fit does not reproduce #108's βs: {repro}", file=sys.stderr)
         return 1
     rows = summarise(recs)
-    out = {"runs": [str(r) for r in runs], "stored": str(args.stored), "reproduction": repro,
+    out = {"runs": [str(r) for r in runs], "stored": args.stored and str(args.stored),
+           "reproduction": repro, "max_offset_v1": bool(args.max_offset_v1),
            "variants": list(VARIANTS), "floors": list(FLOORS), "exclude": list(EXCLUDE),
            "seconds": round(time.time() - t0, 1), "summary": rows, "heads": recs}
     args.out.parent.mkdir(parents=True, exist_ok=True)

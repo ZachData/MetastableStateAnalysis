@@ -64,3 +64,47 @@ def test_summary_counts_a_refused_head_per_variant():
     heads[0]["fe_w4"] = float("nan")
     row = next(r for r in summarise(heads) if r["band"] == "L1-8" and r["floor"] == 0.0)
     assert row["n"] == 3 and row["fe_w4"][3] == 2 and row["fe_full"][3] == 3
+
+
+# --- resume only on matching settings and inputs (#118 review, finding 3) ---
+
+from p1d_cluster_ensemble.beta_refit import needs_stored, part_settings, reuse_part  # noqa: E402
+
+
+def _run(tmp_path, name="pythia-410m-step0_wiki_paragraph_long"):
+    r = tmp_path / "runs" / name
+    r.mkdir(parents=True)
+    (r / "activations.npz").write_bytes(b"a")
+    (r / "attentions.npz").write_bytes(b"b")
+    return r
+
+
+def _write(path, job, recs):
+    path.write_text(json.dumps({"_settings": part_settings(job), "records": recs}))
+
+
+def test_part_reused_only_under_its_own_settings(tmp_path):
+    r = _run(tmp_path)
+    job = (str(r), "/w", False, None)
+    p = tmp_path / "part.json"
+    _write(p, job, [{"x": 1}])
+    assert reuse_part(p, job) == [{"x": 1}]
+    assert reuse_part(p, (str(r), "/other", False, None)) is None      # weights
+    assert reuse_part(p, (str(r), "/w", False, 465)) is None           # max offset
+    (r / "attentions.npz").write_bytes(b"changed")                     # input
+    assert reuse_part(p, job) is None
+
+
+def test_pre_settings_part_is_refitted(tmp_path):
+    r = _run(tmp_path)
+    p = tmp_path / "part.json"
+    p.write_text(json.dumps([{"x": 1}]))
+    assert reuse_part(p, (str(r), "/w", False, None)) is None
+    assert reuse_part(tmp_path / "missing.json", (str(r), "/w", False, None)) is None
+
+
+def test_stored_required_unless_every_run_is_long(tmp_path):
+    from pathlib import Path
+    long = Path("x/pythia-410m-step0_wiki_paragraph_long")
+    assert not needs_stored([long])
+    assert needs_stored([long, Path("x/pythia-410m-step0_wiki_paragraph")])
