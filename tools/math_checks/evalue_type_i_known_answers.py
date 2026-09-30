@@ -12,7 +12,10 @@ p ~ Uniform(0, 1) under the null:
       p <= (kappa * alpha**(1/n))**(1/(1 - kappa)), 0.1967 at n = 25,
       alpha = 1/20, kappa = 1/2 (RATE_PRODUCT_25);
   (d) the tests' tolerances are at least 3.2 standard errors of a binomial
-      proportion at their trial counts.
+      proportion at their trial counts;
+  (e) two independent p's merged by the mean, alpha = kappa = 1/2, reject iff
+      p1**-1/2 + p2**-1/2 >= 8, with probability 41/896 + 3 log 7 / 1024 =
+      0.0515 (RATE_MEAN_2); the max would reject at 1 - (15/16)**2 = 0.121.
 
 What this does NOT prove: that the code computes these (the tests measure
 that, by simulation, through EProcess, average_p and combine); (b) for any
@@ -67,8 +70,21 @@ rate_prod = p_prod.subs({alpha: sp.Rational(1, 20), kappa: half})
 record("(c) RATE_PRODUCT_25 = 0.1967 to 4 d.p.", abs(float(rate_prod) - 0.1967) < 5e-5,
        f"{float(rate_prod)}")
 
+# (e) a = p^(-1/2) has P(a >= t) = t^-2 on [1, inf), density 2 a^-3; the mean
+# of e = a/2 over two reaches 1/alpha = 2 iff a1 + a2 >= 8, and a2 >= 1.
+a = sp.symbols("a", positive=True)
+rate_mean_2 = 1 - sp.integrate(2 * a ** -3 * (1 - (8 - a) ** -2), (a, 1, 7))
+record("(e) mean of two: 41/896 + 3 log 7 / 1024",
+       sp.simplify(rate_mean_2 - (sp.Rational(41, 896) + 3 * sp.log(7) / 1024)) == 0)
+record("(e) RATE_MEAN_2 = 0.0515 to 4 d.p.", abs(float(rate_mean_2) - 0.0515) < 5e-5,
+       f"{float(rate_mean_2)}")
+rate_max_2 = 1 - (1 - rate_1) ** 2
+record("(e) the max rejects at 31/256, far from the mean",
+       rate_max_2 == sp.Rational(31, 256) and float(rate_max_2 - rate_mean_2) > 0.05)
+
 # (d) tolerance / SE for each (rate, n_trials, tolerance) in the tests.
 for name, rate, trials, tol in [("RATE_1, helper", rate_1, 40_000, 0.004),
+                                ("RATE_MEAN_2, average_p", rate_mean_2, 40_000, 0.0037),
                                 ("RATE_1, EProcess", rate_1, 40_000, 0.0045),
                                 ("RATE_2, EProcess", rate_2, 40_000, 0.0045),
                                 ("RATE_1, average_p", rate_1, 10_000, 0.008),

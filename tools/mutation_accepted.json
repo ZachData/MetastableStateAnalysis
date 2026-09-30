@@ -4,7 +4,7 @@
       "-E = math.inf if log_E > 709.0 else math.exp(log_E)",
       "+E = math.inf if log_E >= 709.0 else math.exp(log_E)"
     ],
-    "context": "5fb2834f9f79",
+    "context": "823ecc8ea269",
     "why": "Accepted, not equivalent. At log E exactly 709.0 (probed: combine([1e-206, 1e-206, 2.3133678048249353e-206])) the original returns exp(709) = 8.2e307 and the mutant inf; both reject. Killing it would pin the arbitrary cutoff. What is required is no OverflowError past log(DBL_MAX) ~ 709.78 (test_combine_saturates_just_past_the_float_max)."
   },
   "core.evalues.x_max_attainable_average_E__mutmut_6": {
@@ -12,7 +12,7 @@
       "-if not (0.0 < alpha < 1.0):",
       "+if not (0.0 <= alpha < 1.0):"
     ],
-    "context": "e536acb95937",
+    "context": "ebb0f29afd39",
     "why": "Accepted, not equivalent. A redundant early alpha check: probed at alpha = 0, sufficient_evidence further down refuses with the same message. Only when kappa is also invalid does the refusal name kappa instead of alpha (EValueError either way); killing it would pin the order of two refusals."
   },
   "core.evalues.x_max_attainable_average_E__mutmut_7": {
@@ -20,7 +20,7 @@
       "-if not (0.0 < alpha < 1.0):",
       "+if not (0.0 < alpha <= 1.0):"
     ],
-    "context": "e536acb95937",
+    "context": "ebb0f29afd39",
     "why": "Accepted, not equivalent. A redundant early alpha check: probed at alpha = 1, sufficient_evidence further down refuses with the same message. Only when kappa is also invalid does the refusal name kappa instead of alpha (EValueError either way); killing it would pin the order of two refusals."
   },
   "core.evalues.x_max_attainable_average_E__mutmut_8": {
@@ -28,7 +28,7 @@
       "-if not (0.0 < alpha < 1.0):",
       "+if not (0.0 < alpha < 2.0):"
     ],
-    "context": "e536acb95937",
+    "context": "ebb0f29afd39",
     "why": "Accepted, not equivalent. A redundant early alpha check: probed at alpha = 1.5, sufficient_evidence further down refuses with the same message. Only when kappa is also invalid does the refusal name kappa instead of alpha (EValueError either way); killing it would pin the order of two refusals."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_25": {
@@ -36,7 +36,7 @@
       "-if log_p >= 0.0:",
       "+if log_p > 0.0:"
     ],
-    "context": "ea4b1381ff9b",
+    "context": "c16617a7508c",
     "why": "Equivalent: at log_p == 0 both branches return 1.0 (exp(0) = 1, clipped to 1). Probed with log_p exactly 0.0 (alpha = kappa = 0.5, log_E_prior = log 4), and at log_E_prior inf and NaN."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_26": {
@@ -44,7 +44,7 @@
       "-if log_p >= 0.0:",
       "+if log_p >= 1.0:"
     ],
-    "context": "ea4b1381ff9b",
+    "context": "c16617a7508c",
     "why": "Equivalent: for 0 <= log_p < 1, exp(log_p) >= 1 is clipped to 1.0, the early return's value. Probed at log_E_prior 5.2 and 6.0 and at log_p exactly 0.0: 1.0 both."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_33": {
@@ -52,15 +52,15 @@
       "-return float(min(1.0, max(0.0, math.exp(log_p))))",
       "+return float(min(2.0, max(0.0, math.exp(log_p))))"
     ],
-    "context": "ea4b1381ff9b",
-    "why": "Equivalent: this line is reached only with log_p < 0, or NaN (which max(0.0, nan) maps to 0.0), so exp(log_p) < 1 and the upper clip never binds. Probed at the defaults and at log_E_prior 2.99, -inf and NaN."
+    "context": "c16617a7508c",
+    "why": "Equivalent: this line is reached only with log_p < 0, or NaN (which max(0.0, nan) maps to 0.0: a defect, since a NaN prior should refuse; parked in STATE), so exp(log_p) < 1 and the upper clip never binds. Probed at the defaults and at log_E_prior 2.99, -inf and NaN."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_40": {
     "diff": [
       "-return 0.0",
       "+return 1.0"
     ],
-    "context": "ea4b1381ff9b",
+    "context": "c16617a7508c",
     "why": "Unreachable: the try is entered only with log_p < 0 or NaN, and math.exp of those cannot overflow (the branch is marked `pragma: no cover - defensive`). Probed at log_E_prior -1e308 and -inf and at alpha = kappa = 1e-300: 0.0 both, so the except never ran."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_1": {
@@ -68,23 +68,23 @@
       "-n_trials: int = 20_000,",
       "+n_trials: int = 20001,"
     ],
-    "context": "dd009f5bc030",
-    "why": "Accepted, not equivalent. Changes the helper's default n_trials, so its output for a caller that relies on it (probed: 0.004 vs 0.0039998). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
+    "context": "ccfdbeb193ea",
+    "why": "Accepted, not equivalent. Changes the helper's default n_trials, so its output for a caller that relies on it (probed: 0.004 vs 0.0039998). No caller outside tests relies on it (tests/test_mutation_check.py test_simulation_helpers_have_no_caller_outside_tests); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_2": {
     "diff": [
       "-n_experiments: int = 5,",
       "+n_experiments: int = 6,"
     ],
-    "context": "dd009f5bc030",
-    "why": "Accepted, not equivalent. Changes the helper's default n_experiments, so its output for a caller that relies on it (probed: 0.003 vs 0.0045 at 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
+    "context": "ccfdbeb193ea",
+    "why": "Accepted, not equivalent. Changes the helper's default n_experiments, so its output for a caller that relies on it (probed: 0.003 vs 0.0045 at 2000 trials). No caller outside tests relies on it (tests/test_mutation_check.py test_simulation_helpers_have_no_caller_outside_tests); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_20": {
     "diff": [
       "-return float(np.mean(log_E >= math.log(1.0 / alpha)))",
       "+return float(np.mean(log_E > math.log(1.0 / alpha)))"
     ],
-    "context": "dd009f5bc030",
+    "context": "ccfdbeb193ea",
     "why": "Equivalent: log E is continuous under uniform p, so a tie at the threshold has probability zero. Probed: identical rates at 20 000 trials, alpha 0.05 and 0.5, seeds 0-2."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_3": {
@@ -92,31 +92,31 @@
       "-seed: int = 0,",
       "+seed: int = 1,"
     ],
-    "context": "dd009f5bc030",
-    "why": "Accepted, not equivalent. Changes the helper's default seed, so its output for a caller that relies on it (probed: 0.003 vs 0.0025 at 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
+    "context": "ccfdbeb193ea",
+    "why": "Accepted, not equivalent. Changes the helper's default seed, so its output for a caller that relies on it (probed: 0.003 vs 0.0025 at 2000 trials). No caller outside tests relies on it (tests/test_mutation_check.py test_simulation_helpers_have_no_caller_outside_tests); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_1": {
     "diff": [
       "-n_trials: int = 20_000,",
       "+n_trials: int = 20001,"
     ],
-    "context": "67aafd5f0b18",
-    "why": "Accepted, not equivalent. Changes the helper's default n_trials, so its output for a caller that relies on it (probed: 0.00085 vs 0.00084996). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
+    "context": "db968b1698b9",
+    "why": "Accepted, not equivalent. Changes the helper's default n_trials, so its output for a caller that relies on it (probed: 0.00085 vs 0.00084996). No caller outside tests relies on it (tests/test_mutation_check.py test_simulation_helpers_have_no_caller_outside_tests); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_2": {
     "diff": [
       "-n_experiments: int = 25,",
       "+n_experiments: int = 26,"
     ],
-    "context": "67aafd5f0b18",
-    "why": "Accepted, not equivalent. Changes the helper's default n_experiments, so its output for a caller that relies on it (probed: 0.2035 vs 0.206 for the product at 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
+    "context": "db968b1698b9",
+    "why": "Accepted, not equivalent. Changes the helper's default n_experiments, so its output for a caller that relies on it (probed: 0.2035 vs 0.206 for the product at 2000 trials). No caller outside tests relies on it (tests/test_mutation_check.py test_simulation_helpers_have_no_caller_outside_tests); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_29": {
     "diff": [
       "-return float(np.mean(E >= 1.0 / alpha))",
       "+return float(np.mean(E > 1.0 / alpha))"
     ],
-    "context": "67aafd5f0b18",
+    "context": "db968b1698b9",
     "why": "Equivalent: E is continuous under uniform p, so a tie at 1/alpha has probability zero. Probed: identical rates at 20 000 trials, alpha 0.05 and 0.5, seeds 0-1, both mergers."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_3": {
@@ -124,7 +124,7 @@
       "-seed: int = 0,",
       "+seed: int = 1,"
     ],
-    "context": "67aafd5f0b18",
-    "why": "Accepted, not equivalent. Changes the helper's default seed, so its output for a caller that relies on it (probed: 0.0645 vs 0.0605 at alpha 0.5, 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
+    "context": "db968b1698b9",
+    "why": "Accepted, not equivalent. Changes the helper's default seed, so its output for a caller that relies on it (probed: 0.0645 vs 0.0605 at alpha 0.5, 2000 trials). No caller outside tests relies on it (tests/test_mutation_check.py test_simulation_helpers_have_no_caller_outside_tests); killing it would pin a constant."
   }
 }

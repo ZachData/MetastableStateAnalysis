@@ -175,6 +175,11 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-30, `tools/mutation_check.py --write` (#119): a test failing in
+  mutmut's clean run left all 413 mutants "not checked", and `--write`
+  rewrote the accept list from that run as `{}`, discarding 16 reviewed
+  reasons (restored from a copy). It now refuses to write while any mutant
+  is untested.
 - 2026-09-25, Phase 1d's gate: a null draw where a method builds no partition
   was dropped as NaN, which silently raised the p floor. On the first real
   run, agglomerative at fine thresholds had 0 of 20 usable draws and HDBSCAN
@@ -606,7 +611,10 @@ a wrong premise, the check inherits it.
   more and turned 10 into "accepted, not equivalent", each naming the input
   that tells them apart. Rule: **an equivalence reason names the probe that
   was run**, and the list is keyed on the code the reason rests on
-  (`tools/mutation_check.py`, `context`).
+  (`tools/mutation_check.py`, `context`). The next round (`/challenge-pr` on
+  #119) repeated the pattern: #119 said a changed registry alpha makes every
+  stored decision fail `--verify`, and it does so only where a decision
+  flips. The probe that would have shown it was one line.
 - 2026-09-25, #95: I found Stage 0 bit-identical to the WDS backfill and
   wrote that §3's floor was "between the pilot and today", with "sensitivity or
   toolchain" parked as open. The evidence was already on disk: at steps 0–1000

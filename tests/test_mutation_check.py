@@ -98,6 +98,18 @@ def test_an_untested_mutant_fails(state):
     assert state in p
 
 
+def test_write_refuses_a_run_that_tested_nothing(tmp_path, monkeypatch):
+    # A failing clean run leaves every mutant "not checked". Rewriting from it
+    # emptied the list once (2026-09-30); now it refuses and keeps the file.
+    listed = tmp_path / "accepted.json"
+    listed.write_text('{"%s": {"diff": [], "context": "", "why": "kept"}}' % M1)
+    monkeypatch.setattr(mc, "ACCEPTED", listed)
+    monkeypatch.setattr(mc, "_mutmut", lambda *a: f"    {M1}: not checked\n"
+                        if a[0] == "results" else "")
+    assert mc.main(["--write"]) == 1
+    assert '"kept"' in listed.read_text()
+
+
 # -- rewrite: which reasons --write carries ------------------------------------
 
 def test_rewrite_keeps_a_reason_whose_diff_and_context_are_unchanged():
@@ -170,6 +182,45 @@ def test_context_follows_self_calls_within_the_class():
     assert mc.context_hash(_changed("return True", "return False"), ("P", "run")) != base
 
 
+@pytest.mark.parametrize("old, new", [
+    ("def helper(x):\n", 'def helper(x):\n    """Is x positive?"""\n'),
+    ("    def check(self):\n", '    def check(self):\n        """\n        Always.\n        """\n'),
+    ("return x > 0", "return x > 0  # strictly"),
+    ("def f(x):\n", "# the entry point\n\ndef f(x):\n"),
+])
+def test_context_ignores_docstrings_comments_and_blank_lines(old, new):
+    for qual in [("f",), ("P", "run")]:
+        assert mc.context_hash(_changed(old, new), qual) == mc.context_hash(SRC, qual)
+
+
+def test_simulation_helpers_have_no_caller_outside_tests():
+    # The premise of the six accepted simulation-default entries ("no caller
+    # outside tests relies on it"): callers are what context_hash cannot see.
+    import ast
+    import subprocess
+
+    def uses(text):     # a name, attribute or import, not a mention in prose
+        if "simulate_type_i_error" not in text:
+            return False
+        return any(getattr(n, a, "").startswith("simulate_type_i_error")
+                   for n in ast.walk(ast.parse(text))
+                   for a in ("id", "attr", "name") if isinstance(getattr(n, a, None), str))
+    try:
+        out = subprocess.run(["git", "ls-files", "*.py"], cwd=mc.ROOT,
+                             capture_output=True, text=True, check=True).stdout
+    except Exception:
+        pytest.skip("not a git checkout")
+    files = [f for f in out.split()
+             if not f.startswith(("tests/", "archive/", "data/")) and f != "core/evalues.py"]
+    assert len(files) > 100, "git ls-files found almost nothing; not the repo root?"
+    callers = [f for f in files if uses((mc.ROOT / f).read_text(encoding="utf-8"))]
+    assert uses("from core.evalues import (x,\n    simulate_type_i_error)")
+    assert uses("r = ev.simulate_type_i_error_dependent(n)")
+    assert not uses('"""the helpers simulate_type_i_error*"""')
+    assert callers == [], (f"{callers} call a simulation helper: the accepted default "
+                           f"mutants in tools/mutation_accepted.json need a new reason")
+
+
 def test_the_committed_list_is_complete_and_current():
     import json
     accepted = json.loads(mc.ACCEPTED.read_text(encoding="utf-8"))
@@ -180,4 +231,7 @@ def test_the_committed_list_is_complete_and_current():
         assert entry["diff"] and entry["why"].strip()
         assert not entry["why"].startswith(("TODO", "RECONFIRM")), name
         # Without mutmut: the code each reason was argued from is unchanged.
-        assert entry["context"] == contexts[name], f"{name}: code changed since review"
+        # This runs in the pure tier, so an edit that stales a reason fails
+        # every tier-1 run, not only the (unrequired) Mutation workflow.
+        assert entry["context"] == contexts[name], (
+            f"{name}: the code this reason rests on changed. {mc.REMEDY}")

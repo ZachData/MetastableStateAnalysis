@@ -10,7 +10,9 @@
 # count: STATE.md.
 #
 # Runs when the module, its tests or the list change, and weekly. About a
-# minute. Not required for merge (yet): see STATE.md.
+# minute. Not required for merge (yet): see STATE.md. Separately, the pure
+# tier (tests/test_mutation_check.py) fails without mutmut when the code an
+# accepted reason rests on changes, so a stale reason cannot merge unseen.
 
 name: Mutation
 

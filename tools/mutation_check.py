@@ -16,9 +16,11 @@ script fails when:
   * the code the reason was argued from has changed. An equivalence usually
     rests on more than the mutated line (an early return further down, a
     check in a callee), so each entry records `context`: a hash of the
-    mutated function's source and of every function in the module it names,
-    transitively (methods of its own class through `self.`/`cls.`). It does
-    not cover module constants or code outside the module;
+    mutated function's code and of every function in the module it names,
+    transitively (methods of its own class through `self.`/`cls.`).
+    Docstrings, comments and blank lines do not count. It does not cover
+    module constants, code outside the module, or callers (a reason that
+    rests on who calls a function needs its own test);
   * a listed mutant no longer survives (a stale entry: delete it);
   * any mutant ended in a state other than killed or survived (timeout,
     suspicious, not checked), which means the run did not test it;
@@ -40,9 +42,11 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import io
 import json
 import subprocess
 import sys
+import tokenize
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +54,9 @@ ACCEPTED = ROOT / "tools" / "mutation_accepted.json"
 OK_STATES = {"killed", "survived"}
 TODO = "TODO: kill with a test, or say why it is equivalent"
 RECONFIRM = "RECONFIRM (the code changed since this was reviewed): "
+REMEDY = ("Run `mutmut run`, then `python tools/mutation_check.py --write`; re-read each "
+          "RECONFIRM reason against the new code (probe it on the mutant) and delete the "
+          "prefix. Do not paste in the new hash.")
 
 
 def parse_results(text: str) -> dict:
@@ -76,9 +83,34 @@ def split_name(name: str) -> tuple:
     return module.replace(".", "/") + ".py", qual
 
 
+def _code_lines(source: str, tree: ast.Module) -> list:
+    """`source`'s lines with comments and docstrings blanked: the code a reason rests on.
+
+    Line numbers from the AST and COMMENT tokens are the same on every Python
+    this repo supports, so the result is too (unlike `ast.dump`/`ast.unparse`
+    or the full token stream, which changed for f-strings in 3.12).
+    """
+    lines = source.splitlines()
+    for tok in tokenize.generate_tokens(io.StringIO(source).readline):
+        if tok.type == tokenize.COMMENT:
+            row, col = tok.start
+            lines[row - 1] = lines[row - 1][:col]
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if (isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+                and body and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+                and body[0].lineno > getattr(node, "lineno", 0)):
+            for i in range(body[0].lineno - 1, body[0].end_lineno):
+                lines[i] = ""
+    return [l.rstrip() for l in lines]
+
+
 def context_hash(source: str, qual: tuple) -> str:
-    """Hash of the function `qual` in `source` and of the module functions it names."""
+    """Hash of the code of function `qual` in `source` and of the module functions it names."""
     tree = ast.parse(source)
+    code = _code_lines(source, tree)
     defs = (ast.FunctionDef, ast.AsyncFunctionDef)
     funcs = {n.name: n for n in tree.body if isinstance(n, defs)}
     classes = {n.name: {m.name: m for m in n.body if isinstance(m, defs)}
@@ -102,8 +134,9 @@ def context_hash(source: str, qual: tuple) -> str:
                 todo.append((q[0], sub.attr))
     h = hashlib.sha256()
     for q in sorted(seen):
-        h.update(".".join(q).encode() + b"\0")
-        h.update(ast.get_source_segment(source, node(q)).encode() + b"\0")
+        n = node(q)
+        text = "\n".join(l for l in code[n.lineno - 1:n.end_lineno] if l.strip())
+        h.update(".".join(q).encode() + b"\0" + text.encode() + b"\0")
     return h.hexdigest()[:12]
 
 
@@ -136,7 +169,7 @@ def problems(states: dict, diffs: dict, accepted: dict, contexts: dict) -> list:
                        + "\n    ".join(diffs.get(name, [])))
         elif entry.get("context") != contexts.get(name):
             out.append(f"{name}: its function, or one it calls, changed since the "
-                       f"reason was written; `--write` marks it RECONFIRM")
+                       f"reason was written. {REMEDY}")
         elif not why or why.startswith("TODO"):
             out.append(f"{name}: accepted without a reason")
         elif why.startswith("RECONFIRM"):
@@ -187,6 +220,13 @@ def main(argv=None) -> int:
     contexts = contexts_for(diffs)
     accepted = json.loads(ACCEPTED.read_text(encoding="utf-8")) if ACCEPTED.exists() else {}
 
+    untested = sum(s not in OK_STATES for s in states.values())
+    if args.write and untested:
+        # A failed clean run leaves every mutant "not checked"; rewriting from
+        # it would empty the list and discard every reviewed reason.
+        print(f"mutation_check: refusing --write: {untested} of {len(states)} mutants "
+              f"were not tested; fix the run first", file=sys.stderr)
+        return 1
     if args.write:
         accepted = rewrite(diffs, contexts, accepted)
         ACCEPTED.write_text(json.dumps(accepted, indent=2, ensure_ascii=False) + "\n",

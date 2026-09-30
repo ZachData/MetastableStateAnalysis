@@ -303,9 +303,12 @@ class TestLedger:
         assert verify_ledger(ledger, registry) == []
         # Each record's own kappa is replayed, not the registry's current one,
         assert verify_ledger(ledger, {**registry, "kappa": 0.5}) == []
-        # while alpha is the registry's: at 0.05 the stored decision fails replay.
+        # while alpha is the registry's current one. A changed alpha is caught
+        # only where it flips a stored decision, as at 0.05 here; nothing
+        # compares the record's stored alpha (STATE, Parked).
         assert any("claim_decision_after" in p
                    for p in verify_ledger(ledger, {**registry, "alpha": 0.05}))
+        assert verify_ledger(ledger, {**registry, "alpha": 0.3}) == []
 
     def test_verify_clean_ledger(self, registry, ledger):
         adjudicate("T-OK1", 0.02, ["h"], registry=registry, adjudications_dir=ledger)

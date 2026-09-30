@@ -280,6 +280,7 @@ def test_from_record_of_an_empty_claim_is_empty():
 RATE_1 = 0.0625        # one experiment: (alpha * kappa)^(1/(1-kappa))
 RATE_2 = 0.0806        # two experiments, kappa 1/2: (1 + 2 log 8) / 64
 RATE_PRODUCT_25 = 0.1967   # 25 copies of one p, product, alpha 0.05
+RATE_MEAN_2 = 0.0515   # mean of two independent e-values: 41/896 + 3 log 7 / 1024
 
 
 def _uniform_ps(n, seed):
@@ -322,6 +323,16 @@ def test_average_p_keeps_the_rate_under_maximal_dependence():
     prod = sum(combine([p] * 25)[1] for p in ps) / len(ps)
     assert avg == pytest.approx(RATE_1, abs=0.008)
     assert prod == pytest.approx(RATE_PRODUCT_25, abs=0.013)
+
+
+def test_average_p_rejects_two_independent_p_values_at_the_mean_s_rate():
+    # On equal inputs the mean, the max and the median agree, so the test
+    # above cannot see the merger. Here they differ: the mean rejects iff
+    # p1^-1/2 + p2^-1/2 >= 8 (0.0515); the max, not valid under dependence,
+    # at 1 - (15/16)^2 = 0.121; the product (combine) at RATE_2 = 0.0806.
+    ps = _uniform_ps(80_000, seed=8)
+    rate = sum(average_p(ps[i:i + 2], alpha=0.5)[1] for i in range(0, len(ps), 2)) / 40_000
+    assert rate == pytest.approx(RATE_MEAN_2, abs=0.0037)
 
 
 def test_the_simulations_are_seeded():
