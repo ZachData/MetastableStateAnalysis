@@ -1108,7 +1108,7 @@ a tenth. β ≈ 75 min per all-token run at n ≈ 2000, 16 jobs at 3 workers
 (RAM: ~7.5 GB per worker, the attention array) ≈ 4–5 h. **Total left ≈
 16–18 h: two ~10 h chunks.**
 
-**Resume (each chunk):** `setsid nohup <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
+**Resume (each chunk; the deduped stages are done, next is `null`):** `setsid nohup <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
 >> <same>/run_chunk.log 2>&1 &`. It skips finished stages (`<stage>.json`
 present), resumes a stopped one from `<stage>.parts/`, and runs in order
 `null_dedupe`, `calibrate_dedupe`, `null`, `calibrate`, then β. Progress:
