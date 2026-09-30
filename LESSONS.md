@@ -250,6 +250,13 @@ well-formed but empty/zero result. It looks exactly like a real result.
   `git status` (the test file unmodified). Rule: after adding a test, see it
   fail without the fix before quoting it; and never put an edit behind a
   `&&` whose failure is easy to miss.
+- 2026-09-29, 1d long prompts: `core/models.py` tokenizes every prompt with
+  `truncation=True, max_length=512`, silently. `homer_iliad` is 562 tokens,
+  so every stored run of it is its first 512, and no doc said so (found
+  only because the long prompts needed the cap raised). The same day,
+  `STATE.md` said 164 GB free where 72 GB was, which would have sized the
+  long runs wrong. Rule: a length cap in an extractor records or refuses,
+  never trims; and a resource figure in `STATE.md` carries its date.
 - 2026-09-29: `tools/lint_repo.py`'s `PACKAGE_DIRS` was a hand-kept tuple that
   stopped at `p7_motifs`, so four of its rules had never read `p1d`, `p7d`,
   `p7e` or `p8`, and `pyproject.toml` did not declare `p1d_cluster_ensemble`.
@@ -627,6 +634,34 @@ a wrong premise, the check inherits it.
   The #67 instance was in this file. Rule: any batch over ~10 min writes each
   finished unit as it lands and resumes from them, before its first launch
   (fixed: per-record parts, `imap_unordered`).
+- 2026-09-29, 1d long prompts: the third time. The fix went into
+  `attention_null.py` only; `gaussian_null.py` (built the same day) and
+  `beta_refit.py` kept an all-or-nothing `pool.map` / `ex.map`, and Claude
+  launched both at 2048 tokens (hours each) without checking them against
+  the rule above. A shutdown then cost ~5 h of the Gaussian null and ~4 h of
+  β. The estimate that made it seem safe was one record at one layer on a
+  lightly loaded box (~2 h forecast; the run was on course for ~9 h). Rule
+  addition: before launching a batch, grep its driver for `pool.map` /
+  `ex.map` / a single write at the end; a fix to one driver is applied to
+  every driver with the same shape (fixed here: both, per-record parts).
+- 2026-09-30, 1d long prompts: resumable is not running. The chain was
+  launched 2026-09-29 20:45 with nothing holding the box awake; KDE's idle
+  suspend took it at 21:20 and it woke at 05:16: ~8 h of a ~18 h chain lost
+  (45 of 600 records done by morning), and the 2026-09-23 instance (lesson 1)
+  had already shown this box suspends under load. Rule addition: a batch
+  expected to outlive the user's attention runs under
+  `systemd-inhibit --what=sleep:idle` (here attached afterwards to the
+  chain's PID with `tail --pid=<pid> -f /dev/null`, so it ends with the chain).
+- 2026-09-30, #118: the author read "long − v1" as the length effect and
+  quoted "L17–23 falls ~40 % in every prompt" for Blocked 9. `/challenge-pr`
+  saw that the long fit adds pairs at offsets v1 never had (28–78 %). On v1's
+  offsets the paired fall went from −0.49 to −0.17, and the headline from 2.80
+  to 3.12 (v1 3.16). The "~40 %" was also a ratio of medians, not the paired
+  change. The same review found `status-1d.md` saying `beta_refit` resumed
+  only on matching settings, which it never checked. Rule: when a comparison
+  changes n, name every other thing that changes with n (here the offset
+  range, and in the Gaussian null the power) and hold it fixed before
+  quoting the difference as length.
 - 2026-09-24, #85: dropping the dependency hashes, the author wrote that a
   correction "reaches a reader through its own `## Corrections received`",
   though no rule puts a line there. The evidence also could not bear on the

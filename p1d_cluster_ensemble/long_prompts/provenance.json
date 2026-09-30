@@ -1,0 +1,69 @@
+{
+ "rule_commit": "ca787de",
+ "max_tokens": 2048,
+ "tokenizer": "EleutherAI/pythia-410m",
+ "refused": {
+  "paper_excerpt": "v1's excerpt is not verbatim in arXiv 2312.10794v5 (inline math and citations removed by hand); rule 5 refuses",
+  "repeated_tokens": "v1 ends in a lone space token; every continuation of its '. ' pattern merges with it, so rule 2 refuses"
+ },
+ "prompts": {
+  "wiki_paragraph_long": {
+   "key": "wiki_paragraph_long",
+   "n_tokens": 1840,
+   "n_v1_tokens": 467,
+   "units_used": 11,
+   "units_available": 137,
+   "source_exhausted": false,
+   "v1_key": "wiki_paragraph",
+   "source": {
+    "url": "https://en.wikipedia.org/w/api.php?action=query&prop=extracts|revisions&rvprop=ids|timestamp&explaintext=1&exsectionformat=wiki&titles=Charlotte_Bront%C3%AB&format=json&formatversion=2",
+    "file": "/run/media/system/HDD_1TB/mets_data/long_prompts_sources/wiki_paragraph.json",
+    "revision": {
+     "revid": 1371774901,
+     "parentid": 1371374101,
+     "timestamp": "2026-08-28T10:55:37Z"
+    }
+   }
+  },
+  "sullivan_ballou_long": {
+   "key": "sullivan_ballou_long",
+   "n_tokens": 1032,
+   "n_v1_tokens": 482,
+   "units_used": 8,
+   "units_available": 8,
+   "source_exhausted": true,
+   "v1_key": "sullivan_ballou",
+   "source": {
+    "url": "https://en.wikisource.org/w/api.php?action=parse&page=Letter_from_Captain_Sullivan_Ballou_to_His_Wife_Sarah&prop=wikitext|revid&format=json&formatversion=2",
+    "file": "/run/media/system/HDD_1TB/mets_data/long_prompts_sources/sullivan_ballou.json",
+    "revision": 15675430
+   }
+  },
+  "hdbscan_code_long": {
+   "key": "hdbscan_code_long",
+   "n_tokens": 2025,
+   "n_v1_tokens": 242,
+   "units_used": 142,
+   "units_available": 1223,
+   "source_exhausted": false,
+   "v1_key": "hdbscan_code",
+   "source": {
+    "file": "/run/media/system/WDS_500/miniforge3/envs/mets/lib/python3.10/site-packages/hdbscan/plots.py",
+    "version": "0.8.41"
+   }
+  },
+  "latex_monograph_long": {
+   "key": "latex_monograph_long",
+   "n_tokens": 2036,
+   "n_v1_tokens": 446,
+   "units_used": 64,
+   "units_available": 67,
+   "source_exhausted": false,
+   "v1_key": "latex_monograph",
+   "source": {
+    "file": "/run/media/system/WDS_500/Mets-work/p1d_cluster_ensemble/long_prompts/latex_monograph_continuation.tex",
+    "note": "composed (rule 5)"
+   }
+  }
+ }
+}
