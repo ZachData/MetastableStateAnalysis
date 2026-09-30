@@ -31,7 +31,7 @@
   - Check whether the 19 tables on disk meet `P-I3`'s and `P-AB1`'s pre-computed requirements, without scoring them (free)
   - Decide `P-I5`'s target (`L3H6` is not an induction head by attention score; 70m's matcher is `L0H3`): a new registration on `L0H3` on a named battery version, or withdraw (free, the user's decision). Its battery is pinned (2026-09-29)
   - Wire the rotational channel from 2b's Schur blocks and rebuild the tables (forward pass: `run_7.py`, about 16 min per checkpoint × 19)
-- **Reviewed:** 2026-09-30 · body `af0c8b4342`
+- **Reviewed:** 2026-09-30 · body `68b2290d90`
 <!-- /phase-card -->
 
 **Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
@@ -302,9 +302,11 @@ interpretable.
    (`analyze_prompt(..., ids=)`), after the token check, so a changed text is refused rather
    than skipped. The manifest also records, per prompt, the run dir, the sha256 of its
    `tokens.txt` and the Phase 1 manifest id; a Phase 1 manifest whose checkpoint disagrees
-   with `--model`'s is refused (not checked when either is unrecorded). Tests:
-   `tests/test_p7_run_7.py::TestLiveTextAgainstTheRun` (10; 9 fail on the pre-#116 driver, the
-   tenth guards the truncation case), plus 5 in `tests/test_battery_structure.py`.
+   with `--model`'s is refused (not checked when either is unrecorded). And `run_7.py`
+   now screens its run dirs with `core.holdout.refuse_held_out` (`--v1-only`,
+   `--allow-holdout`); it had no guard, and Stage 0 wrote Phase 1 runs for the twelve. Tests:
+   `tests/test_p7_run_7.py::TestLiveTextAgainstTheRun` (11; 10 fail on the pre-#116 driver,
+   the eleventh guards the truncation case), plus 5 in `tests/test_battery_structure.py`.
 
 ## Two things the producer settled
 

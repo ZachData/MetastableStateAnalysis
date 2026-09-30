@@ -279,7 +279,21 @@ def main(argv=None) -> int:
     ap.add_argument("--revision", default=None,
                     help="HF revision, recorded in the manifest. Not used to "
                          "load anything here — the weights came from Phase 2.")
+    from core.holdout import HoldoutError, add_holdout_args, refuse_held_out
+    add_holdout_args(ap)
     args = ap.parse_args(argv)
+
+    # The Phase 1 runs are data/phase12 inputs, screened like every other
+    # reader's (core/holdout.py): a held-out prompt's run is refused, or
+    # dropped under --v1-only.
+    try:
+        kept, holdout = refuse_held_out(
+            [d for _, d in args.prompt], allow=args.allow_holdout,
+            drop=args.v1_only, context="run_7")
+    except HoldoutError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    args.prompt = [(k, d) for k, d in args.prompt if Path(d) in set(kept)]
 
     t0 = time.time()
     from p1c_frames.p1c_io import load_run
@@ -434,6 +448,7 @@ def main(argv=None) -> int:
                # What each table row was read from: the run, the exact
                # tokens its pairs index, and the Phase 1 provenance.
                "inputs": inputs,
+               "holdout": holdout,
                "prompts_skipped": skipped,
                "p2_source": ov["source"]},
     )

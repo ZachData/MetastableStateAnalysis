@@ -44,11 +44,13 @@ the n = 20 row is calibrated (`docs/PHASE_SYNTHESIS.md` §3.1), adding a
 prompt would change the test again. Pin it the way P-I5 is pinned, or
 accept growth with a recalibration per count.
 
+**Fixed beside the audit:** `run_7.py` had no holdout guard
+(`tests/test_holdout.py` scans `tools/run/` only), though it reads Phase 1
+runs and Stage 0 wrote runs for the twelve. It now screens its run dirs
+with `refuse_held_out` and takes `--v1-only` / `--allow-holdout` (#116,
+after `/challenge-pr`).
+
 **Parked** (discoveries, not followed):
-- `run_7.py` takes `KEY=DIR` for any key and has no holdout guard;
-  `tests/test_holdout.py` scans `tools/run/` only. Cost: one
-  `refuse_held_out` call plus a test. Could change: whether a Phase 7
-  table built on 410m can read the twelve.
 - `p1_io._load_tokens` and `core/artifacts.py`'s `tokens` spec say
   `tokens.txt` is tab-separated; the writer uses two spaces, so the
   loader returns whole lines (`"  0  tok"`). Cost: switch it to

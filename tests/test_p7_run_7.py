@@ -495,6 +495,23 @@ class TestLiveTextAgainstTheRun:
         want = hashlib.sha256((run / "tokens.txt").read_bytes()).hexdigest()
         assert want in rec and "p1abc" in rec and str(run) in rec
 
+    def test_a_held_out_prompts_run_is_refused_or_dropped(
+            self, tmp_path, battery):
+        """core/holdout.py: Phase 10's twelve stay unread until released."""
+        n = _n_tokens(USABLE_TEXT)
+        ok = _write_phase1(tmp_path, "usable_prompt", n)
+        held = _write_phase1(tmp_path, "wiki_byzantium", n,
+                             tokens=USABLE_TEXT.split())
+        p2 = _write_phase2(tmp_path)
+        runs = [("usable_prompt", ok), ("wiki_byzantium", held)]
+        assert _run(tmp_path, p2, runs) == 1
+        assert not (tmp_path / "out" / "interaction_table.npz").exists()
+
+        assert _run(tmp_path, p2, runs, "--v1-only") == 0
+        man = json.load(open(tmp_path / "out" / "manifest.json"))
+        assert man["prompts_used"] == ["usable_prompt"]
+        assert man["holdout"]["n_dropped"] == 1
+
     def test_the_manifest_hashes_the_texts_it_used(self, tmp_path, battery):
         """It recorded the sorted key list, which a text edited under an
         unchanged key would not change."""
