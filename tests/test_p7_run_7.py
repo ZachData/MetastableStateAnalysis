@@ -452,6 +452,49 @@ class TestLiveTextAgainstTheRun:
         t = InteractionTable.load(tmp_path / "out" / "interaction_table.npz")
         assert int(np.max(t.columns["target"])) < n
 
+    def test_a_truncated_run_is_judged_on_its_prefix(self, tmp_path, battery):
+        """The full text is usable; the 4 tokens the run holds carry no
+        induction pair. Judged on the text, this ran and typed every edge
+        `neither`: a null indistinguishable from a negative."""
+        run = _write_phase1(tmp_path, "usable_prompt", 4)
+        p2 = _write_phase2(tmp_path)
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 1
+        assert not (tmp_path / "out" / "interaction_table.npz").exists()
+
+    def test_a_changed_text_is_refused_before_the_gate_can_skip_it(
+            self, tmp_path, battery):
+        """Skipped, a drifted prompt would leave a table on the others."""
+        n_ok, n_bad = _n_tokens(USABLE_TEXT), _n_tokens(DEGENERATE_TEXT)
+        ok = _write_phase1(tmp_path, "usable_prompt", n_ok)
+        bad = _write_phase1(tmp_path, "degenerate_prompt", n_bad, seed=5)
+        p2 = _write_phase2(tmp_path)
+        battery["degenerate_prompt"] = DEGENERATE_TEXT.replace(".", ":")
+        assert _run(tmp_path, p2, [("usable_prompt", ok),
+                                   ("degenerate_prompt", bad)]) == 1
+
+    def test_a_checkpoint_disagreement_is_refused(self, tmp_path, battery):
+        n = _n_tokens(USABLE_TEXT)
+        run = _write_phase1(tmp_path, "usable_prompt", n)
+        p2 = _write_phase2(tmp_path)
+        json.dump({"checkpoint_step": 2000}, open(run / "manifest.json", "w"))
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 1
+        json.dump({"checkpoint_step": 1000}, open(run / "manifest.json", "w"))
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 0
+
+    def test_the_manifest_names_what_each_prompt_was_read_from(
+            self, tmp_path, battery):
+        import hashlib
+        n = _n_tokens(USABLE_TEXT)
+        run = _write_phase1(tmp_path, "usable_prompt", n)
+        p2 = _write_phase2(tmp_path)
+        json.dump({"checkpoint_step": 1000, "manifest_id": "p1abc"},
+                  open(run / "manifest.json", "w"))
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 0
+        got = json.load(open(tmp_path / "out" / "manifest.json"))
+        rec = json.dumps(got)
+        want = hashlib.sha256((run / "tokens.txt").read_bytes()).hexdigest()
+        assert want in rec and "p1abc" in rec and str(run) in rec
+
     def test_the_manifest_hashes_the_texts_it_used(self, tmp_path, battery):
         """It recorded the sorted key list, which a text edited under an
         unchanged key would not change."""

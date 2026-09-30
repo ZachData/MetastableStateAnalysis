@@ -284,7 +284,12 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   key list as its "battery hash". A text edited under an unchanged key would
   have moved every pair with nothing failing. Latent (no text has changed);
   `status-7.md` finding 9. The input can change by *growing* or by an
-  *edited text*; P-I5's pin only covered the first.
+  *edited text*; P-I5's pin only covered the first. `/challenge-pr` then
+  found the audit's own blind spots: the degeneracy gate still judged the
+  full text while the pairs read the run's prefix, and a grep for
+  `PROMPTS` cannot see code that stamps the live hash without reading the
+  battery (`p2b_io.py`) or that edits `PROMPTS` after hashing it
+  (`run_1 --length-sweep`). An audit by grep covers only what it greps for.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a

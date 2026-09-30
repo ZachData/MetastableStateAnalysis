@@ -64,6 +64,7 @@ with no usable prompt yields a null indistinguishable from a real negative.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import sys
 import time
 from pathlib import Path
@@ -294,7 +295,7 @@ def main(argv=None) -> int:
 
     step = resolve_checkpoint_step(args.model)
     tokenizer = None
-    tables, skipped, used = [], [], []
+    tables, skipped, used, inputs = [], [], [], {}
 
     for prompt_key, run_dir in args.prompt:
         run = load_run(run_dir)
@@ -318,21 +319,13 @@ def main(argv=None) -> int:
         if tokenizer is None:
             tokenizer = load_tokenizer(args.model)
 
-        report = analyze_prompt(tokenizer, prompt_key, PROMPTS[prompt_key])
-        try:
-            check_prompt_admissible(report, prompt_key)
-        except DegeneratePrompt as exc:
-            print(f"  SKIP {prompt_key}: {exc}")
-            skipped.append({"prompt": prompt_key, "verdict": report["verdict"],
-                            "flags": report["flags"]})
-            continue
-
         from core.battery_structure import (
             TokenizationMismatch, induction_candidates, phase1_tokens,
             same_content_candidates, verified_prompt_ids)
         # The pairs index the run's activations, so they are built from the
         # tokens the run was extracted on, checked against the live text,
-        # not from whatever the live text tokenises to today.
+        # not from whatever the live text tokenises to today. Checked before
+        # the admissibility gate, so a changed text is refused, not skipped.
         try:
             ids = verified_prompt_ids(tokenizer, PROMPTS[prompt_key],
                                       phase1_tokens(run_dir))
@@ -341,6 +334,28 @@ def main(argv=None) -> int:
                   f"index a different tokenisation than {run_dir}.",
                   file=sys.stderr)
             return 1
+
+        from core.io import load_manifest
+        p1 = load_manifest(run_dir) or {}
+        p1_step = p1.get("checkpoint_step")
+        if p1_step is not None and step is not None and int(p1_step) != int(step):
+            print(f"{run_dir}: its manifest says checkpoint {p1_step}, "
+                  f"--model {args.model} is checkpoint {step}. Every edge would "
+                  f"carry the wrong training step.", file=sys.stderr)
+            return 1
+
+        # On the ids the run holds: a run cut at extraction is judged on its
+        # prefix, which is all the pairs can index.
+        report = analyze_prompt(tokenizer, prompt_key, PROMPTS[prompt_key],
+                                ids=ids)
+        try:
+            check_prompt_admissible(report, prompt_key)
+        except DegeneratePrompt as exc:
+            print(f"  SKIP {prompt_key}: {exc}")
+            skipped.append({"prompt": prompt_key, "verdict": report["verdict"],
+                            "flags": report["flags"]})
+            continue
+
         ind = induction_candidates(ids)
         pairs = {"induction": ind,
                  "strict": induction_candidates(ids, strict=True),
@@ -373,6 +388,14 @@ def main(argv=None) -> int:
             print(f"{prompt_key}: {exc}", file=sys.stderr)
             return 1
         used.append(prompt_key)
+        inputs[prompt_key] = {
+            "run_dir": str(run_dir),
+            "tokens_txt_sha256": hashlib.sha256(
+                (Path(run_dir) / "tokens.txt").read_bytes()).hexdigest(),
+            "n_tokens": len(ids),
+            "p1_manifest_id": p1.get("manifest_id"),
+            "p1_prompt_battery_hash": p1.get("prompt_battery_hash"),
+        }
         print(f"  {prompt_key}: {report['n_tokens']} tokens, "
               f"{len(ind)} induction pairs")
 
@@ -408,6 +431,9 @@ def main(argv=None) -> int:
         extra={"phase": "7",
                "rotational_channel": "absent",
                "prompts_used": used,
+               # What each table row was read from: the run, the exact
+               # tokens its pairs index, and the Phase 1 provenance.
+               "inputs": inputs,
                "prompts_skipped": skipped,
                "p2_source": ov["source"]},
     )

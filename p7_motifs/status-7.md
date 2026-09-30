@@ -31,7 +31,7 @@
   - Check whether the 19 tables on disk meet `P-I3`'s and `P-AB1`'s pre-computed requirements, without scoring them (free)
   - Decide `P-I5`'s target (`L3H6` is not an induction head by attention score; 70m's matcher is `L0H3`): a new registration on `L0H3` on a named battery version, or withdraw (free, the user's decision). Its battery is pinned (2026-09-29)
   - Wire the rotational channel from 2b's Schur blocks and rebuild the tables (forward pass: `run_7.py`, about 16 min per checkpoint × 19)
-- **Reviewed:** 2026-09-29 · body `e148174a94`
+- **Reviewed:** 2026-09-30 · body `af0c8b4342`
 <!-- /phase-card -->
 
 **Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
@@ -294,10 +294,17 @@ interpretable.
    run's `tokens.txt` token for token (a longer text is cut to the run's width, which is
    Phase 1's 512-token truncation), `tokens.txt` must match the activations' width, and the
    manifest hashes the texts used (`core.battery_structure.verified_prompt_ids`,
-   `phase1_tokens`). Tests: `tests/test_p7_run_7.py::TestLiveTextAgainstTheRun` (5 of 6 fail
-   on the old driver; the sixth guards the truncation case), plus 5 in
-   `tests/test_battery_structure.py`. Found by the battery-consumer audit,
-   `docs/battery_consumers.md`.
+   `phase1_tokens`). Found by the battery-consumer audit, `docs/battery_consumers.md`.
+   *After `/challenge-pr` on #116:* the admissibility gate judged the full live text while
+   the pairs index only the run's prefix, so a run cut at extraction to a prefix with no
+   induction pair passed and typed every edge `neither` (only `homer_iliad` is cut at 512
+   today; its prefix is usable). The gate now runs on the verified ids
+   (`analyze_prompt(..., ids=)`), after the token check, so a changed text is refused rather
+   than skipped. The manifest also records, per prompt, the run dir, the sha256 of its
+   `tokens.txt` and the Phase 1 manifest id; a Phase 1 manifest whose checkpoint disagrees
+   with `--model`'s is refused (not checked when either is unrecorded). Tests:
+   `tests/test_p7_run_7.py::TestLiveTextAgainstTheRun` (10; 9 fail on the pre-#116 driver, the
+   tenth guards the truncation case), plus 5 in `tests/test_battery_structure.py`.
 
 ## Two things the producer settled
 

@@ -104,6 +104,11 @@ def tokenize_prompt(tokenizer, text: str) -> dict:
     """
     enc = tokenizer(text)
     raw = enc["input_ids"] if hasattr(enc, "keys") else enc
+    return _id_record(tokenizer, raw)
+
+
+def _id_record(tokenizer, raw) -> dict:
+    """`tokenize_prompt`'s record for ids already in hand."""
     ids = [int(i) for i in raw]
     bos = getattr(tokenizer, "bos_token_id", None)
     has_bos = bool(ids and bos is not None and ids[0] == bos)
@@ -230,14 +235,21 @@ def pair_offsets(pairs) -> np.ndarray:
 # Per-prompt verdict
 # ---------------------------------------------------------------------------
 
-def analyze_prompt(tokenizer, name: str, text: str, min_offset: int = 2) -> dict:
+def analyze_prompt(tokenizer, name: str, text: str, min_offset: int = 2,
+                   ids=None) -> dict:
     """
     Full structural report for one prompt under one tokenizer.
 
     Returns a dict carrying the counts, the degeneracy flags, and a verdict
     of "usable" / "degenerate" / "insufficient" for induction analysis.
+
+    `ids`, when given, is what is analysed instead of `text`'s own
+    tokenisation: the ids a stored run actually holds (`verified_prompt_ids`),
+    which are a prefix of the text's when the run was truncated at extraction.
+    The verdict has to be about the tokens the pairs will index.
     """
-    tok = tokenize_prompt(tokenizer, text)
+    tok = (tokenize_prompt(tokenizer, text) if ids is None
+           else _id_record(tokenizer, ids))
     ids = tok["ids"]
 
     ind = induction_candidates(ids, min_offset, strict=False)
