@@ -115,7 +115,7 @@ EXEMPT = {
     "ov_per_head.py": "reads OV weights (p2_eigenspectra_*), no prompt data",
     "induction_rank_sweep.py": "reads OV weights (p2_eigenspectra_*), no prompt data",
     "induction_composition_whitening.py": "reads OV weights; its PROMPTS pass "
-        "is the live-battery issue in STATE.md Blocked 2",
+        "is a tier-1 row of docs/battery_consumers.md",
 }
 
 

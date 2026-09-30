@@ -257,6 +257,11 @@ well-formed but empty/zero result. It looks exactly like a real result.
   `STATE.md` said 164 GB free where 72 GB was, which would have sized the
   long runs wrong. Rule: a length cap in an extractor records or refuses,
   never trims; and a resource figure in `STATE.md` carries its date.
+- 2026-09-29: `tools/lint_repo.py`'s `PACKAGE_DIRS` was a hand-kept tuple that
+  stopped at `p7_motifs`, so four of its rules had never read `p1d`, `p7d`,
+  `p7e` or `p8`, and `pyproject.toml` did not declare `p1d_cluster_ensemble`.
+  Both lists are now checked against the directories with an `__init__.py`
+  (rule `pyproject-packages`). A lint's scope is an input too.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
@@ -281,10 +286,25 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   four nights with nobody noticing. 14 live files iterate the live battery.
 - `6de78d0`: a cache asserted by identity, which scipy 1.18 showed it never did.
 - `0ef60d0`: transformers 5 broke the smoke tier; pinned `<5`.
+- 2026-09-29, the audit: `run_7.py` (Phase 7's producer, read by four
+  registered rows) rebuilt pair positions from the live text and recorded a
+  key list as its "battery hash". A text edited under an unchanged key would
+  have moved every pair with nothing failing. Latent (no text has changed);
+  `status-7.md` finding 9. The input can change by *growing* or by an
+  *edited text*; P-I5's pin only covered the first. `/challenge-pr` then
+  found the audit's own blind spots: the degeneracy gate still judged the
+  full text while the pairs read the run's prefix, and a grep for
+  `PROMPTS` cannot see code that stamps the live hash without reading the
+  battery (`p2b_io.py`) or that edits `PROMPTS` after hashing it
+  (`run_1 --length-sweep`). An audit by grep covers only what it greps for.
 
 **The rule now.** Anything whose result is recorded names the exact input
-set it ran on (battery hash, key list) and refuses on a mismatch. Status:
-⚠️ open; decision on P-I5 is with the user (`STATE.md`).
+set it ran on (a hash of the texts, not a key list) and refuses on a
+mismatch. Code that rebuilds positions from the live text also checks them
+against the run's `tokens.txt` (`core.battery_structure.verified_prompt_ids`).
+Status per file: `docs/battery_consumers.md` (audit 2026-09-29; P-I5 and
+`run_7.py` fixed, `CLAIM-C`'s growth is the user's call, three tier-1 files
+not fixed).
 
 ## 4. Tests that assert a property of the machine, not of the code
 
@@ -325,8 +345,21 @@ on #68. Rule: comment `@coderabbitai review` on every PR (Stop step 8).
 2026-09-22: #63 (the py3.10 matrix) merged without the re-run STATE.md asked
 for after #61; the first py3.10 run with #61 in was on `main` itself (green).
 
-**The rule now.** At session start, check `gh run list` for `main` and the
-nightly smoke. Status: 📋 `CLAUDE.md` start protocol; ⚠️ branch protection
+2026-09-29: **the deps tier ran in no CI for 10+ nights.** PR CI ran lint and
+pure only; the deps tier (770 tests, every Phase 1d test among them) ran as the nightly smoke
+job's last step, which GitHub skips when an earlier step fails, and the smoke
+step had failed every night since 2026-09-19 on the known P-I5 red (Blocked
+2). The issue said "smoke is red"; nothing said "and the tier behind it did
+not run". Meanwhile `scripts/status.sh` printed "check by hand" and exited 0
+in every cloud session (no `gh`), so start step 2 reported nothing. Found when
+the user asked why PR CI was so fast. The tests passed once run (770 passed,
+1 skipped, 176 s, CPU torch 2.14, cloud container, 2026-09-29). Fixed: a `deps` job in
+`ci.yml` on every push, the nightly step runs `!cancelled()`, `status.sh`
+falls back to the public API and exits 1 when it cannot see.
+
+**The rule now.** At session start, `./scripts/status.sh` for `main` and the
+nightly smoke; a known red step must not gate the steps after it. Status: 📋
+`CLAUDE.md` start protocol; ✅ deps tier on every push; ⚠️ branch protection
 needs the user to enable it on GitHub.
 
 ## 6. Statistical designs that could not have rejected
@@ -496,6 +529,13 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   push` committed and pushed `72ccbc0` over a red gate (3 phase-card errors):
   the pipeline's status is `tail`'s. Fixed in the next commit. Chain a commit
   on `check.sh`'s own exit code (redirect to a log, then grep it).
+- 2026-09-29 (#115): `git log --diff-filter=A -1 -- <record>` in the cloud
+  container named `2225beb` as the commit that added P-I5's real-run record,
+  and the code comment cited it. The clone is shallow (`git rev-parse
+  --is-shallow-repository` → true) and `2225beb` is its boundary: every file
+  "is added" there. The record was added at `bff93d7`, before battery v2. The
+  hash happened to match at both. Found by `/challenge-pr`. On a shallow
+  clone, ask the API for history (`/commits?path=`), not `git log`.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD

@@ -62,6 +62,13 @@ jobs:
         # Everything that needs real torch but is not a smoke test: the bulk of
         # the phase test suites. Deselecting `heavy` keeps out the tests that
         # need real run artifacts, which no CI runner has.
+        #
+        # `!cancelled()`: this step used to be skipped whenever the smoke step
+        # above failed, so one known failure (P-I5, red since 2026-09-19) hid
+        # this whole step for 10+ nights. ci.yml's `deps` job now covers the
+        # tier on every push; this run adds the nights with no push, against
+        # whatever dependency versions pip resolves that night.
+        if: ${{ !cancelled() }}
         run: pytest -m "not heavy" -q
 
       - name: Open or update an issue when the nightly run fails

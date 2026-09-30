@@ -48,10 +48,11 @@ class TestRandomVsRandomDiagnostic:
         assert 0.0 < result["p_value_greater"] <= 1.0
         assert 0.0 < result["p_value_two_sided"] <= 1.0
         from core.config import PROMPTS
-        # The battery is versioned and grows (v2 added twelve on
-        # 2026-09-19); what must hold is that every prompt but the
-        # collapse control is a unit, not that there are eight of them.
-        assert result["n_prompts"] == len(PROMPTS) - 1
+        from p7_motifs.p_i5_gate import P_I5_BATTERY_HASH, p_i5_battery
+        # The live battery grows (v2 added twelve on 2026-09-19); P-I5 reads
+        # its pinned 8 (p_i5_gate.P_I5_PROMPT_KEYS), each a unit.
+        assert result["n_prompts"] == len(p_i5_battery(PROMPTS))
+        assert result["battery_hash"] == P_I5_BATTERY_HASH
 
     def test_different_seed_pairs_give_different_draws(self):
         """Not a claim about the p-value (that's the committed real run's

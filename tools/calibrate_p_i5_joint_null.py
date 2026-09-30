@@ -81,6 +81,8 @@ from p7_motifs.p_i5_gate import (            # noqa: E402
     calibrate_naive_and_corner,
     count_matched_pairs_by_prompt,
     informative_prompt_count,
+    P_I5_BATTERY_HASH,
+    p_i5_battery,
     partial_pass_risk_demo,
     calibrate_intersection_union,
 )
@@ -132,12 +134,18 @@ def _measurement_grid() -> dict:
                 "reachable": False,
                 "reason": f"{type(exc).__name__}: {exc}",
             }
-        counts = count_matched_pairs_by_prompt(tok)
+        # P-I5's pinned 8 plus the degenerate prompt it excludes, not the live
+        # battery (which reached 20 on 2026-09-19 and keeps growing).
+        from core.config import PROMPTS
+        grid = dict(p_i5_battery(PROMPTS))
+        grid[DEGENERATE_PROMPT] = PROMPTS[DEGENERATE_PROMPT]
+        counts = count_matched_pairs_by_prompt(tok, prompts=grid)
         n_informative = informative_prompt_count(counts)
         return {
             "tokenizer": "EleutherAI/pythia-70m@step143000",
             "counts": counts,
             "degenerate_prompt_excluded": DEGENERATE_PROMPT,
+            "battery_hash": P_I5_BATTERY_HASH,
             "n_informative_prompts": n_informative,
             "reachable": True,
         }

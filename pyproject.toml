@@ -66,12 +66,15 @@ heavy = [
 # And the failure that costs something rather than just erroring: a NEW phase's
 # package not being added. p7_motifs was missing while holding the current
 # phase's code, so an install of this project shipped without it.
+# p1d_cluster_ensemble repeated that on 2026-09-29. tools/lint_repo.py rule
+# `pyproject-packages` (tier 0) now fails the build in either direction.
 packages = [
     "core",
     "tools",
     "p1_mstate_tracking",
     "p1b_hemisphere",
     "p1c_frames",
+    "p1d_cluster_ensemble",
     "p2_eigenspectra",
     "p2b_imaginary",
     "p2d_operator_activation",
