@@ -575,6 +575,14 @@ a wrong premise, the check inherits it.
   addition: before launching a batch, grep its driver for `pool.map` /
   `ex.map` / a single write at the end; a fix to one driver is applied to
   every driver with the same shape (fixed here: both, per-record parts).
+- 2026-09-30, 1d long prompts: resumable is not running. The chain was
+  launched 2026-09-29 20:45 with nothing holding the box awake; KDE's idle
+  suspend took it at 21:20 and it woke at 05:16: ~8 h of a ~18 h chain lost
+  (45 of 600 records done by morning), and the 2026-09-23 instance (lesson 1)
+  had already shown this box suspends under load. Rule addition: a batch
+  expected to outlive the user's attention runs under
+  `systemd-inhibit --what=sleep:idle` (here attached afterwards to the
+  chain's PID with `tail --pid=<pid> -f /dev/null`, so it ends with the chain).
 - 2026-09-24, #85: dropping the dependency hashes, the author wrote that a
   correction "reaches a reader through its own `## Corrections received`",
   though no rule puts a line there. The evidence also could not bear on the

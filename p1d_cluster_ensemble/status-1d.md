@@ -1140,7 +1140,11 @@ a tenth. β ≈ 75 min per all-token run at n ≈ 2000, 16 jobs at 3 workers
 present), resumes a stopped one from `<stage>.parts/`, and runs in order
 `null_dedupe`, `calibrate_dedupe`, `null`, `calibrate`, then β. Progress:
 `<stage>.log` prints `k/600 done` every 25 records. Launched 2026-09-29
-19:52 (`null_dedupe`).
+19:52 (`null_dedupe`). The box suspended 21:20–05:16 (`null` at 45/600);
+since 2026-09-30 05:25 a `systemd-inhibit --what=sleep:idle` lock holds it
+awake until `run_chunk.sh` exits (`systemd-inhibit --list`); a relaunch
+needs its own (`LESSONS.md` 11). Measured 25 records per ~1435 s: `null`
+≈ 14:00, `calibrate` ≈ 18:30, β ≈ 23:00 on 2026-09-30.
 
 **Then:** reports with `gaussian_null_report` on the long outputs, against
 v1's on the same 4 prompts (already built: `gaussian_null/v1_same4/report{,_dedupe}.{json,txt}`,
