@@ -1075,6 +1075,33 @@ Structure counts, summed over the 4 prompts:
 - Step 0: almost every link is stable (2782 of 2785 at L0–L7): its
   partitions are fine-grained and repeat layer to layer.
 
+**Gaussian null, deduped: DONE 2026-09-29** (`gaussian_null/{null,calibrate,report}_dedupe.*`;
+200 / 100 draws, seed 0, all 3 frames, 25 layers, 8 runs, 339–699 tokens kept; v1 on the
+same 4 prompts: `gaussian_null/v1_same4/report_dedupe.*`). Centred frame, records in the
+lumpier tail / the same on its calibration, of 32 per band:
+
+| stat | step | band | v1 | long |
+|---|---|---|---|---|
+| ci2 (2-means) | 143000 | L1–8 | 0 / 0 | **12 / 0** |
+| ci2 | 143000 | L9–16 | 5 / 0 | **14 / 0** |
+| ci2 | 143000 | L17–24 | 20 / 4 | 31 / **24** |
+| hdb_k (HDBSCAN groups) | 143000 | L1–8 · L9–16 · L17–24 | 16 · 25 · 29 / 0 | **31 · 28 · 30** / 0 |
+| nn1 (nearest neighbour) | 143000 | L1–8 · L9–16 · L17–24 | 32 · 32 · 32 / 0 | 32 · 32 · 32 / 0 · 0 · **15** |
+| mt_life | 0 | L9–16 · L17–24 | 20 · 25 / 0 | 26 · 29 / 0 |
+| ci2, hdb_k, nn1 | 0 | all | ≤ 1 / ≤ 1 | ≤ 1 / ≤ 1, except hdb_k L17–24 8 / 1 |
+
+- **The 2-means excess moves earlier with length:** at L1–16 it appears (12 and 14 of
+  32, calibration 0), where v1 had 0 and 5. At L17–24 **the calibration itself fires**
+  (24 of 32), so this null is off nominal there at this length, and v1's late 2-means
+  excess cannot be read on long prompts with it.
+- **More HDBSCAN groups than the Gaussian at every depth** (28–31 of 32, cal 0); v1 had
+  16 at L1–8. Step 0 stays at its calibration (except hdb_k L17–24, 8 vs 1).
+- Closer nearest neighbours: all records, both lengths; calibration clean except long
+  L17–24 (15). A nearest neighbour within 3 positions is *less* common at length
+  (median 0.23 vs 0.31, step143000 centred): more tokens to choose from.
+- Step 0's merge-tree lifetime excess (Parked 11) persists and grows (26, 29 of 32).
+- Tier 1, one checkpoint pair, 4 prompts. The all-token stages are still to run.
+
 **Defects found and fixed on the way** (both would have made step 5 take
 days, or lose work):
 1. **β's estimator did not scale to 2048 tokens.** `_within_row_demean`
