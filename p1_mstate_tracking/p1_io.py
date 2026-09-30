@@ -473,7 +473,7 @@ def _save_layer_metrics_csv(results, run_dir):
 
 
 def _save_tokens(results, run_dir):
-    with open(run_dir / "tokens.txt", "w") as f:
+    with open(run_dir / "tokens.txt", "w", encoding="utf-8") as f:
         for i, tok in enumerate(results["tokens"]):
             f.write(f"{i:3d}  {tok}\n")
 

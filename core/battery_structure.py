@@ -136,7 +136,7 @@ def phase1_tokens(run_dir) -> list:
     from pathlib import Path
     path = Path(run_dir) / "tokens.txt"
     out = []
-    for n, line in enumerate(path.read_text().split("\n")):
+    for n, line in enumerate(path.read_text(encoding="utf-8").split("\n")):
         if not line.strip():
             continue
         idx, sep, tok = line.lstrip().partition("  ")

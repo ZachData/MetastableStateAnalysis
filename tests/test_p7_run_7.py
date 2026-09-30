@@ -512,6 +512,35 @@ class TestLiveTextAgainstTheRun:
         assert man["prompts_used"] == ["usable_prompt"]
         assert man["holdout"]["n_dropped"] == 1
 
+    def test_a_held_out_key_on_a_v1_run_is_refused_or_dropped(
+            self, tmp_path, battery):
+        """CodeRabbit on #116: the directory screen reads the run's own
+        manifest, so a v1 run passed under a held-out key got through, and
+        the table would read the held-out prompt's text."""
+        n = _n_tokens(USABLE_TEXT)
+        ok = _write_phase1(tmp_path, "usable_prompt", n)
+        v1_run = _write_phase1(tmp_path, "some_v1_run", n,
+                               tokens=USABLE_TEXT.split())
+        p2 = _write_phase2(tmp_path)
+        runs = [("usable_prompt", ok), ("wiki_byzantium", v1_run)]
+        assert _run(tmp_path, p2, runs) == 1
+        assert not (tmp_path / "out" / "interaction_table.npz").exists()
+
+        assert _run(tmp_path, p2, runs, "--v1-only") == 0
+        man = json.load(open(tmp_path / "out" / "manifest.json"))
+        assert man["prompts_used"] == ["usable_prompt"]
+        assert man["holdout"]["n_dropped"] == 1
+
+    def test_a_repeated_prompt_key_is_refused(self, tmp_path, battery):
+        """CodeRabbit on #116: `inputs[key]` holds one run's provenance, so a
+        second run under the same key left the manifest naming only the last."""
+        n = _n_tokens(USABLE_TEXT)
+        ok = _write_phase1(tmp_path, "usable_prompt", n)
+        p2 = _write_phase2(tmp_path)
+        runs = [("usable_prompt", ok), ("usable_prompt", ok)]
+        assert _run(tmp_path, p2, runs) == 1
+        assert not (tmp_path / "out" / "interaction_table.npz").exists()
+
     def test_the_manifest_hashes_the_texts_it_used(self, tmp_path, battery):
         """It recorded the sorted key list, which a text edited under an
         unchanged key would not change."""

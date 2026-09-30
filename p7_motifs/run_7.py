@@ -279,13 +279,33 @@ def main(argv=None) -> int:
     ap.add_argument("--revision", default=None,
                     help="HF revision, recorded in the manifest. Not used to "
                          "load anything here — the weights came from Phase 2.")
-    from core.holdout import HoldoutError, add_holdout_args, refuse_held_out
+    from core.holdout import (
+        HELD_OUT_PROMPT_KEYS, HoldoutError, add_holdout_args, refuse_held_out,
+    )
     add_holdout_args(ap)
     args = ap.parse_args(argv)
 
+    # One run per key: `inputs[key]` records one run's provenance, so a
+    # repeated key would put two runs' rows under the last one's record.
+    keys = [k for k, _ in args.prompt]
+    repeated = sorted({k for k in keys if keys.count(k) > 1})
+    if repeated:
+        print(f"run_7: --prompt keys given more than once: {repeated}",
+              file=sys.stderr)
+        return 1
+
     # The Phase 1 runs are data/phase12 inputs, screened like every other
     # reader's (core/holdout.py): a held-out prompt's run is refused, or
-    # dropped under --v1-only.
+    # dropped under --v1-only. The key is screened as well as the directory:
+    # `--prompt wiki_byzantium=<a v1 run>` passes the directory screen on its
+    # own manifest, but the table would read the held-out prompt's text.
+    held_keys = sorted(k for k in keys if k in HELD_OUT_PROMPT_KEYS)
+    if held_keys and not args.allow_holdout and not args.v1_only:
+        print(f"run_7: --prompt keys {held_keys} are Phase 10's held-out "
+              f"confirmation set (core/holdout.py). Pass --v1-only to drop "
+              f"them. --allow-holdout reads everything, once the user has "
+              f"released the set.", file=sys.stderr)
+        return 1
     try:
         kept, holdout = refuse_held_out(
             [d for _, d in args.prompt], allow=args.allow_holdout,
@@ -293,7 +313,12 @@ def main(argv=None) -> int:
     except HoldoutError as exc:
         print(exc, file=sys.stderr)
         return 1
-    args.prompt = [(k, d) for k, d in args.prompt if Path(d) in set(kept)]
+    kept = set(kept)
+    before = len(args.prompt)
+    args.prompt = [(k, d) for k, d in args.prompt
+                   if Path(d) in kept
+                   and (args.allow_holdout or k not in HELD_OUT_PROMPT_KEYS)]
+    holdout["n_dropped"] = before - len(args.prompt)
 
     t0 = time.time()
     from p1c_frames.p1c_io import load_run
