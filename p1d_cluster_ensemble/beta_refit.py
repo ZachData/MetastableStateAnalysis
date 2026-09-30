@@ -197,10 +197,33 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
     t0 = time.time()
     jobs = [(str(r), str(args.weights), dd) for dd in (False, True) for r in runs]
+    # One part file per (run, dedupe) job, written as it finishes, so a
+    # stopped run resumes (as `attention_null` and `gaussian_null`).
+    parts = args.out.with_suffix(".parts")
+    parts.mkdir(parents=True, exist_ok=True)
+
+    def part_of(job) -> Path:
+        return parts / f"{Path(job[0]).parent.name}__{Path(job[0]).name}__dd{int(job[2])}.json"
+
     recs: List[Dict] = []
+    todo = []
+    for j in jobs:
+        if part_of(j).exists():
+            recs.extend(json.loads(part_of(j).read_text()))
+        else:
+            todo.append(j)
+    print(f"  {len(jobs) - len(todo)} of {len(jobs)} jobs already done", flush=True)
     with ProcessPoolExecutor(max_workers=args.workers) as ex:
-        for part in ex.map(_job, jobs):
+        futs = {ex.submit(_job, j): j for j in todo}
+        from concurrent.futures import as_completed
+        for f in as_completed(futs):
+            part = f.result()
+            tmp = part_of(futs[f]).with_suffix(".tmp")
+            tmp.write_text(json.dumps(part))
+            tmp.replace(part_of(futs[f]))
             recs.extend(part)
+            print(f"  done {futs[f][0]} dedupe={futs[f][2]} ({time.time() - t0:.0f} s)", flush=True)
+    recs.sort(key=lambda r: (r["dedupe"], r["step"], r["prompt"], r["layer"], r["head"]))
     if args.stored is None:
         repro = {"not_run": "no --stored: #108 has no βs for these inputs; the estimator "
                             "reproduced #108 on the v1 runs (status-1d.md \"β refit\")"}

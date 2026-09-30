@@ -382,13 +382,55 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 jobs.append((str(r), int(L), f, args.n_draws, args.seed, args.calibrate,
                              args.dedupe_strings))
 
+    # Each finished record is written at once, so a stopped run resumes where
+    # it stopped (as `attention_null`; the long prompts lost ~5 h of this
+    # stage to a shutdown on 2026-09-29). A part is reused only if its
+    # settings match this call's.
+    parts = args.out.with_suffix(".parts")
+    parts.mkdir(parents=True, exist_ok=True)
+    settings = {"n_draws": args.n_draws, "seed": args.seed, "calibrate": bool(args.calibrate),
+                "dedupe_strings": bool(args.dedupe_strings), "n_rogue": N_ROGUE}
+
+    def part_of(job) -> Path:
+        return parts / f"{Path(job[0]).parent.name}__{Path(job[0]).name}__L{job[1]}__{job[2]}.json"
+
+    done, todo = [], []
+    for j in jobs:
+        p = part_of(j)
+        if p.exists():
+            rec = json.loads(p.read_text())
+            if rec.get("_settings") == settings:
+                done.append(rec)
+                continue
+        todo.append(j)
+    print(f"  {len(done)} of {len(jobs)} records already done; running {len(todo)}", flush=True)
+
+    def keep(job, rec):
+        rec["_settings"] = settings
+        tmp = part_of(job).with_suffix(".tmp")
+        tmp.write_text(json.dumps(rec))
+        tmp.replace(part_of(job))
+        done.append(rec)
+        if len(done) % 25 == 0 or len(done) == len(jobs):
+            print(f"  {len(done)}/{len(jobs)} done ({time.time() - t0:.0f} s this call)", flush=True)
+
+    def key(rec):
+        return rec["run_dir"], rec["layer"], rec["info"]["frame"]
+
     t0 = time.time()
-    if args.workers > 1:
+    if args.workers > 1 and todo:
         from multiprocessing import get_context
+        by_key = {(j[0], j[1], j[2]): j for j in todo}
         with get_context("spawn").Pool(args.workers) as pool:
-            records = pool.map(_job, jobs, chunksize=1)
+            for rec in pool.imap_unordered(_job, todo, chunksize=1):
+                keep(by_key[key(rec)], rec)
     else:
-        records = [_job(j) for j in jobs]
+        for job in todo:
+            keep(job, _job(job))
+    order = {(j[0], j[1], j[2]): i for i, j in enumerate(jobs)}
+    records = sorted(done, key=lambda r: order[key(r)])
+    for r in records:
+        r.pop("_settings", None)
     out = {"n_draws": args.n_draws, "seed": args.seed, "n_rogue": N_ROGUE,
            "calibrate": bool(args.calibrate), "dedupe_strings": bool(args.dedupe_strings),
            "frames": args.frames, "holdout": record, "inputs": [str(r) for r in runs],
