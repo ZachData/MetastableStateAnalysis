@@ -93,3 +93,23 @@ packages = [
 # a markers block in this file would look authoritative while being ignored.
 # That is not hypothetical -- it happened when main's pytest.ini merged with
 # this file's markers block, and every tier marker silently unregistered.
+
+# ---------------------------------------------------------------------------
+# mutmut (mutation testing; .github/workflows/mutation.yml, weekly)
+# ---------------------------------------------------------------------------
+# Scope: the e-value core, which carries the Type-I guarantee every registered
+# prediction is scored under. A surviving mutant is a change to that code the
+# tests would not notice.
+[tool.mutmut]
+source_paths = ["core"]
+only_mutate = ["core/evalues.py"]
+pytest_add_cli_args_test_selection = [
+    "tests/test_core_evalues.py",
+    "tests/test_core_evalues_average.py",
+    "tests/test_core_adjudication.py",
+    "tests/test_core_evalues_contract.py",
+]
+also_copy = ["tests", "tools", "claims", "pytest.ini"]
+# The mutated copy imports mutmut's trampoline at module scope, which the
+# stdlib-only test correctly rejects; it guards the real module, not the copy.
+pytest_add_cli_args = ["-k", "not TestTierZeroIsStdlibOnly"]

@@ -1,0 +1,6 @@
+# mutation tier — .github/workflows/mutation.yml, tools/mutation_check.py.
+# Pinned exactly: mutant names (and so tools/mutation_accepted.json) depend on
+# the mutmut version's operators and numbering. Bump it together with a fresh
+# `mutmut run` and `python tools/mutation_check.py --write` review.
+-r test.txt
+mutmut==3.8.0
