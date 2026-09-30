@@ -565,6 +565,16 @@ a wrong premise, the check inherits it.
   The #67 instance was in this file. Rule: any batch over ~10 min writes each
   finished unit as it lands and resumes from them, before its first launch
   (fixed: per-record parts, `imap_unordered`).
+- 2026-09-29, 1d long prompts: the third time. The fix went into
+  `attention_null.py` only; `gaussian_null.py` (built the same day) and
+  `beta_refit.py` kept an all-or-nothing `pool.map` / `ex.map`, and Claude
+  launched both at 2048 tokens (hours each) without checking them against
+  the rule above. A shutdown then cost ~5 h of the Gaussian null and ~4 h of
+  β. The estimate that made it seem safe was one record at one layer on a
+  lightly loaded box (~2 h forecast; the run was on course for ~9 h). Rule
+  addition: before launching a batch, grep its driver for `pool.map` /
+  `ex.map` / a single write at the end; a fix to one driver is applied to
+  every driver with the same shape (fixed here: both, per-record parts).
 - 2026-09-24, #85: dropping the dependency hashes, the author wrote that a
   correction "reaches a reader through its own `## Corrections received`",
   though no rule puts a line there. The evidence also could not bear on the

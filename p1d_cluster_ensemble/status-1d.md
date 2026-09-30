@@ -1012,7 +1012,7 @@ copy `viz/index.html` beside it. Wall time at 14 workers: `null` 6.5 h,
 `calibrate` 7.1 h (two sittings: 126 then 258 records), each deduped
 configuration 1.4 h.
 
-### Long prompts (IN PROGRESS, branch `claude/p1d-long-prompts`)
+### Long prompts (IN PROGRESS, branch `claude/p1d-long-prompts`; step 5 running)
 
 **What.** `lit-1d.md` §4's "length first": v1 prompts continued to Pythia's
 context (2048), v1 text as an exact prefix, so under causal attention the
@@ -1037,23 +1037,89 @@ Refused by the rule: `paper_excerpt` (v1 not verbatim in arXiv
 (v1's trailing lone space merges with any continuation). `homer_iliad` and
 `camus_letranger` were dropped up front (copyright).
 
-**Next steps, in order.**
-1. A lean extractor (not `run_1`, whose Sinkhorn/spectral/UMAP pass is slow
-   at 2048 and unused by 1d): load the checkpoint (`core.models`), forward
-   with **no 512 cap** (below), write only `activations.npz` (+ `norms`),
-   `attentions.npz`, `geometry.json` (`tokens`), `manifest.json` (prompt
-   hash = `long_prompts_hash()`), via Phase 1's own save helpers in
-   `p1_mstate_tracking/p1_io.py` so the format matches.
-2. 4 prompts × `pythia-410m` step143000 and step 0 to `mets_data`. Check
-   the first run's output is populated before launching the rest.
-3. Prefix check on the runs: the long run's first `n_v1` rows vs the stored
-   v1 run (Phase 12 dirs in `attention_null_2026-09-26/run_all.sh`), activations
-   and attention, max abs diff.
-4. The holdout filter (`core/holdout.py` V1 token regex) must admit
-   `<v1>_long` run dirs under `--v1-only`; check before the analyses.
-5. Gaussian null (`gaussian_null.py`), merge tree (`merge_tree.py`, `--subexp
-   F`) and β (`beta_refit.py`'s estimator) on the long runs, each with its
-   step-0 control and the same calibration rule.
+**Steps 1–4 DONE 2026-09-29; step 5 half done** (code on the branch;
+outputs `<main>/data/p1d/long_prompts_2026-09-29/`, runs
+`/run/media/system/HDD_1TB/mets_data/p1d_long/2026-09-29/`, ~0.9 GB each).
+
+| step | state | result |
+|---|---|---|
+| 1 extractor | done | `extract_long.py`: `load_model`, tokenize **without truncation** (refuses a count ≠ `provenance.json`'s or > 2048), write through `p1_io`'s `_save_tokens/_geometry/_activations/_attentions` + `write_manifest` (`prompt_key` = long key, `long_prompts_hash`; `geometry.json` `layers` empty) |
+| 2 runs | done | 8 runs (4 prompts × step143000, step 0), 26–112 s each, peak RSS 15.7 GB. First run checked populated before the rest: unit rows, finite, attention rows sum to 1 (max err 1.8e-6), causal half zero |
+| 3 prefix | done | `prefix_check.json`. 6 of 8 **bit-identical** to the stored v1 run (activations, norms, attention; tokens equal; no prefix row attends past `n_v1`). `hdbscan_code` differs at float noise: step143000 act 6.3e-5, attention 3.7e-3; step 0 1e-7. Embedding identical; the difference starts at 1e-7 in L1 from token 121 and grows with depth: reduction order, not the prefix |
+| 4 holdout | done | `refuse_held_out(..., drop=True)` keeps all 8; `run_1d.discover_runs` finds 8; test added |
+| 5 merge tree + link null | done | below |
+| 5 Gaussian null | **running** | resumable chain `run_chunk.sh` (below) |
+| 5 β | **queued** after the Gaussian null in the same chain | estimator sped up first (below) |
+
+**Merge tree (`--subexp F`) and its link null** (2000 draws, per group of
+the same 4 prompts; `merge_null/{long,v1}_step{143000,0}.{json,txt}`; v1
+step-0 trees were not stored before, so built here: `merge_tree_v1_step0/`).
+Structure counts, summed over the 4 prompts:
+
+| group | blob layers (L1–24) | two-cluster picks (L3–24) | token 0 out (L1–24) |
+|---|---|---|---|
+| v1 step143000 | 69/96 | 51/88 | 71/96 |
+| long step143000 | **43/96** | 52/88 | 61/96 |
+| v1 step 0 | 12/96 | 0/88 | 91/96 |
+| long step 0 | 5/96 | 8/88 | 83/96 |
+
+- **Length halves the blob at step143000** (69 → 43 of 96; per prompt
+  18→10, 20→12, 18→16, 13→5): the longest-lived scale is less often one
+  cluster plus outliers. The ≥ 2-cluster pick is still exactly 2 about as
+  often (51 vs 52 of 88), so the scale question is unchanged.
+- **Links against the null, same reading as v1's:** no merge excess
+  (L0–L7 merge fraction 0.74 vs null 0.93, *below*; v1 same 4 prompts
+  0.61 vs 0.67); late tangle share far below the null (L8–15 0.45, L16–23
+  0.87 vs ≥ 0.99; v1 0.36, 0.48). Late layers tangle more at length (26 of
+  30 L16–23 events vs 14 of 29).
+- Step 0: almost every link is stable (2782 of 2785 at L0–L7): its
+  partitions are fine-grained and repeat layer to layer.
+
+**Defects found and fixed on the way** (both would have made step 5 take
+days, or lose work):
+1. **β's estimator did not scale to 2048 tokens.** `_within_row_demean`
+   looped over rows with a mask over all pairs (O(rows × pairs); 965 s for
+   one layer's linear fit at n = 2025), and `_two_way_demean`'s alternating
+   projections converge slowly on a causal design (378 s per layer, near its
+   iteration cap). Now: one `bincount` pass, and an exact two-way solve
+   (row effects in closed form, offset effects by Cholesky on the Schur
+   complement, one bin pinned). **Identical βs:** on #110's stored heads
+   (2 runs, both steps, all tokens and deduped, 1536 heads × 5 variants)
+   max |Δβ| ≤ 1.2e-14. ~2 s (linear) / ~3 s (fe_full) per head at n = 2025.
+   Tests: exact = dummy OLS on a random and a causal design.
+2. **`gaussian_null` and `beta_refit` were all-or-nothing** (`pool.map`,
+   `ex.map`), though `attention_null` had been fixed for this on 2026-09-26
+   (`LESSONS.md` 11). A shutdown on 2026-09-29 cost ~5 h of the Gaussian
+   null's all-token stage (~290 of 600 records, from bytes read) and ~4 h
+   of β. Both now write a part per record / per (run, dedupe) job and
+   resume (`<out>.parts/`; parts reused only with matching settings; draws
+   are seeded per record, so a resumed run gives the same numbers).
+3. `beta_refit --stored` is optional for inputs #108 never fitted; the
+   output records `reproduction: {"not_run": ...}` instead of refusing.
+
+**Cost, measured.** Gaussian null at n ≈ 1800: ~3 s per draw per record
+under full load (k-means `n_init=10` ~40 %, cosine distances, HDBSCAN,
+linkage, the draw), + ~5 s per record for the frame's decomposition. The
+box is 8 cores / 16 threads, so 15 workers is the ceiling. All-token null
+(600 records × 201 fits) ≈ 9 h, its calibration ≈ 4.5 h; deduped prompts
+are 339–699 tokens (`hdbscan_code`, `sullivan_ballou`, `latex_monograph`,
+`wiki_paragraph`: 339 / 418 / 547 / 699), so each deduped stage is roughly
+a tenth. β ≈ 75 min per all-token run at n ≈ 2000, 16 jobs at 3 workers
+(RAM: ~7.5 GB per worker, the attention array) ≈ 4–5 h. **Total left ≈
+16–18 h: two ~10 h chunks.**
+
+**Resume (each chunk):** `setsid nohup <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
+>> <same>/run_chunk.log 2>&1 &`. It skips finished stages (`<stage>.json`
+present), resumes a stopped one from `<stage>.parts/`, and runs in order
+`null_dedupe`, `calibrate_dedupe`, `null`, `calibrate`, then β. Progress:
+`<stage>.log` prints `k/600 done` every 25 records. Launched 2026-09-29
+19:52 (`null_dedupe`).
+
+**Then:** reports with `gaussian_null_report` on the long outputs, against
+v1's on the same 4 prompts (already built: `gaussian_null/v1_same4/report{,_dedupe}.{json,txt}`,
+v1 records filtered to the 4 keys); β medians per step and band against
+#110's stored heads for the same 4 prompts (`beta_refit_2026-09-29/beta_refit.json`,
+no refit needed); then the Stop protocol and one PR.
 
 **Parked** (discoveries, not followed):
 - **The 512-token cap.** `core/models.py` `extract_activations` (and 9 other
