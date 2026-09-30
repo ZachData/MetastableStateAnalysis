@@ -11,26 +11,35 @@ script fails when:
 
   * a mutant survives that is not in the list;
   * a listed mutant's diff is not the one that was reviewed. Mutant names are
-    numbered per function, so an edit to `core/evalues.py` renumbers them, and
-    a name alone could silently accept a different change. The list is keyed
-    by name *and* diff for that reason;
+    numbered per function, so an edit to a function renumbers its mutants,
+    and a name alone could silently accept a different change;
+  * the code the reason was argued from has changed. An equivalence usually
+    rests on more than the mutated line (an early return further down, a
+    check in a callee), so each entry records `context`: a hash of the
+    mutated function's source and of every function in the module it names,
+    transitively (methods of its own class through `self.`/`cls.`). It does
+    not cover module constants or code outside the module;
   * a listed mutant no longer survives (a stale entry: delete it);
   * any mutant ended in a state other than killed or survived (timeout,
     suspicious, not checked), which means the run did not test it;
-  * an entry's reason is empty or TODO.
+  * an entry's reason is empty, TODO, or RECONFIRM.
 
 After editing `core/evalues.py`, run `mutmut run` and then
-`python tools/mutation_check.py --write`. That rewrites the list with each
-survivor's current diff, keeps reasons whose diff is unchanged, and marks
-the rest TODO for review. Kill a survivor with a test where it is a real
-gap; accept it only with a reason (`tests/test_core_evalues_contract.py`
-records how the first run's 110 survivors went to 22).
+`python tools/mutation_check.py --write`. That rewrites the list: a reason
+whose diff and context are unchanged is kept; one whose diff is unchanged but
+whose context changed (including the same change renumbered within its
+function) is kept behind a RECONFIRM prefix, to be re-read against the new
+code and the prefix deleted; anything else is TODO. Kill a survivor with a
+test where it is a real gap; accept it only with a reason, and probe the
+boundary the reason names before writing it (`LESSONS.md` lesson 6).
 
 Standard library only. Needs `mutmut` on PATH and a finished `mutmut run`.
 """
 from __future__ import annotations
 
 import argparse
+import ast
+import hashlib
 import json
 import subprocess
 import sys
@@ -39,6 +48,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ACCEPTED = ROOT / "tools" / "mutation_accepted.json"
 OK_STATES = {"killed", "survived"}
+TODO = "TODO: kill with a test, or say why it is equivalent"
+RECONFIRM = "RECONFIRM (the code changed since this was reviewed): "
 
 
 def parse_results(text: str) -> dict:
@@ -57,14 +68,65 @@ def diff_lines(show_text: str) -> list:
             if l[:1] in "+-" and not l.startswith(("+++", "---"))]
 
 
-def problems(states: dict, diffs: dict, accepted: dict) -> list:
-    """Everything that should fail the check. `diffs` covers the survivors."""
+def split_name(name: str) -> tuple:
+    """`core.evalues.xǁEProcessǁadd__mutmut_3` -> ("core/evalues.py", ("EProcess", "add"))."""
+    module, _, rest = name.rpartition(".")
+    func = rest.rsplit("__mutmut_", 1)[0]
+    qual = tuple(func[2:].split("ǁ")) if func.startswith("xǁ") else (func[2:],)
+    return module.replace(".", "/") + ".py", qual
+
+
+def context_hash(source: str, qual: tuple) -> str:
+    """Hash of the function `qual` in `source` and of the module functions it names."""
+    tree = ast.parse(source)
+    defs = (ast.FunctionDef, ast.AsyncFunctionDef)
+    funcs = {n.name: n for n in tree.body if isinstance(n, defs)}
+    classes = {n.name: {m.name: m for m in n.body if isinstance(m, defs)}
+               for n in tree.body if isinstance(n, ast.ClassDef)}
+
+    def node(q):
+        return funcs[q[0]] if len(q) == 1 else classes[q[0]][q[1]]
+
+    seen, todo = set(), [tuple(qual)]
+    while todo:
+        q = todo.pop()
+        if q in seen:
+            continue
+        seen.add(q)
+        for sub in ast.walk(node(q)):
+            if isinstance(sub, ast.Name) and sub.id in funcs:
+                todo.append((sub.id,))
+            elif (len(q) == 2 and isinstance(sub, ast.Attribute)
+                  and isinstance(sub.value, ast.Name) and sub.value.id in ("self", "cls")
+                  and sub.attr in classes[q[0]]):
+                todo.append((q[0], sub.attr))
+    h = hashlib.sha256()
+    for q in sorted(seen):
+        h.update(".".join(q).encode() + b"\0")
+        h.update(ast.get_source_segment(source, node(q)).encode() + b"\0")
+    return h.hexdigest()[:12]
+
+
+def contexts_for(names) -> dict:
+    """{mutant name: context_hash} against the unmutated source under ROOT."""
+    sources, out = {}, {}
+    for name in names:
+        path, qual = split_name(name)
+        if path not in sources:
+            sources[path] = (ROOT / path).read_text(encoding="utf-8")
+        out[name] = context_hash(sources[path], qual)
+    return out
+
+
+def problems(states: dict, diffs: dict, accepted: dict, contexts: dict) -> list:
+    """Everything that should fail the check. `diffs`, `contexts` cover the survivors."""
     out = []
     for name, state in sorted(states.items()):
         if state not in OK_STATES:
             out.append(f"{name}: {state} (not tested; rerun `mutmut run`)")
     for name in sorted(n for n, s in states.items() if s == "survived"):
         entry = accepted.get(name)
+        why = (entry or {}).get("why", "").strip()
         if entry is None:
             out.append(f"{name}: survived and is not reviewed:\n    "
                        + "\n    ".join(diffs.get(name, [])))
@@ -72,11 +134,36 @@ def problems(states: dict, diffs: dict, accepted: dict) -> list:
             out.append(f"{name}: survived, but its diff is not the reviewed one "
                        f"(renumbered after an edit?). Now:\n    "
                        + "\n    ".join(diffs.get(name, [])))
-        elif not entry.get("why", "").strip() or entry["why"].startswith("TODO"):
+        elif entry.get("context") != contexts.get(name):
+            out.append(f"{name}: its function, or one it calls, changed since the "
+                       f"reason was written; `--write` marks it RECONFIRM")
+        elif not why or why.startswith("TODO"):
             out.append(f"{name}: accepted without a reason")
+        elif why.startswith("RECONFIRM"):
+            out.append(f"{name}: re-read the reason against the changed code, "
+                       f"then delete the RECONFIRM prefix")
     for name in sorted(set(accepted) - {n for n, s in states.items() if s == "survived"}):
         out.append(f"{name}: listed as accepted but no longer survives; delete it")
     return out
+
+
+def rewrite(diffs: dict, contexts: dict, accepted: dict) -> dict:
+    """The list for this run's survivors, carrying each reviewed reason it can."""
+    new = {}
+    for name, d in sorted(diffs.items()):
+        path_qual = split_name(name)
+        same = accepted.get(name)
+        if not same or same.get("diff") != d:
+            # The same change renumbered within its function, if there is one.
+            same = next((e for n, e in sorted(accepted.items())
+                         if split_name(n) == path_qual and e.get("diff") == d), None)
+        why = (same or {}).get("why", "").strip()
+        if not why or why.startswith("TODO"):
+            why = TODO
+        elif same.get("context") != contexts[name]:
+            why = RECONFIRM + why.removeprefix(RECONFIRM)
+        new[name] = {"diff": d, "context": contexts[name], "why": why}
+    return new
 
 
 def _mutmut(*args: str) -> str:
@@ -88,7 +175,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--write", action="store_true",
                     help="rewrite tools/mutation_accepted.json from this run "
-                         "(keeps reasons whose diff is unchanged, TODO otherwise)")
+                         "(keeps reviewed reasons, RECONFIRM or TODO otherwise)")
     args = ap.parse_args(argv)
 
     states = parse_results(_mutmut("results", "--all", "true"))
@@ -97,19 +184,16 @@ def main(argv=None) -> int:
         return 1
     diffs = {n: diff_lines(_mutmut("show", n))
              for n, s in states.items() if s == "survived"}
+    contexts = contexts_for(diffs)
     accepted = json.loads(ACCEPTED.read_text(encoding="utf-8")) if ACCEPTED.exists() else {}
 
     if args.write:
-        new = {}
-        for name, d in sorted(diffs.items()):
-            old = accepted.get(name, {})
-            why = old.get("why", "") if old.get("diff") == d else ""
-            new[name] = {"diff": d, "why": why or "TODO: kill with a test, or say why it is equivalent"}
-        ACCEPTED.write_text(json.dumps(new, indent=2, ensure_ascii=False) + "\n",
+        accepted = rewrite(diffs, contexts, accepted)
+        ACCEPTED.write_text(json.dumps(accepted, indent=2, ensure_ascii=False) + "\n",
                             encoding="utf-8")
-        print(f"wrote {ACCEPTED.relative_to(ROOT)}: {len(new)} survivors")
+        print(f"wrote {ACCEPTED.relative_to(ROOT)}: {len(accepted)} survivors")
 
-    found = problems(states, diffs, accepted if not args.write else new)
+    found = problems(states, diffs, accepted, contexts)
     n_killed = sum(s == "killed" for s in states.values())
     print(f"mutation_check: {n_killed}/{len(states)} killed, "
           f"{len(diffs)} survived, {len(found)} problem(s)")

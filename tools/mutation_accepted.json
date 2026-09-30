@@ -1,156 +1,130 @@
 {
-  "core.evalues.x_average__mutmut_24": {
-    "diff": [
-      "-ws = [1.0] * len(es)",
-      "+ws = [2.0] * len(es)"
-    ],
-    "why": "Equivalent: default weights are divided by their sum, so any constant weight gives the same mean."
-  },
-  "core.evalues.x_average__mutmut_3": {
-    "diff": [
-      "-if not (0.0 < alpha < 1.0):",
-      "+if not (0.0 <= alpha < 1.0):"
-    ],
-    "why": "Equivalent: a redundant early check. With alpha at 0, 1 or above 1 the function still refuses, with the same message, in sufficient_evidence further down (tests/test_core_evalues_contract.py test_alpha_is_refused_at_both_ends_everywhere)."
-  },
-  "core.evalues.x_average__mutmut_4": {
-    "diff": [
-      "-if not (0.0 < alpha < 1.0):",
-      "+if not (0.0 < alpha <= 1.0):"
-    ],
-    "why": "Equivalent: a redundant early check. With alpha at 0, 1 or above 1 the function still refuses, with the same message, in sufficient_evidence further down (tests/test_core_evalues_contract.py test_alpha_is_refused_at_both_ends_everywhere)."
-  },
-  "core.evalues.x_average__mutmut_47": {
-    "diff": [
-      "-if any(math.isinf(e) and w > 0.0 for e, w in zip(es, ws)):",
-      "+if any(math.isinf(e) and w > 1.0 for e, w in zip(es, ws)):"
-    ],
-    "why": "Equivalent: the early return only shortcuts. An infinite e-value with a positive weight makes the weighted fsum infinite anyway, and sufficient_evidence(inf) is True, so (inf, True) either way."
-  },
-  "core.evalues.x_average__mutmut_5": {
-    "diff": [
-      "-if not (0.0 < alpha < 1.0):",
-      "+if not (0.0 < alpha < 2.0):"
-    ],
-    "why": "Equivalent: a redundant early check. With alpha at 0, 1 or above 1 the function still refuses, with the same message, in sufficient_evidence further down (tests/test_core_evalues_contract.py test_alpha_is_refused_at_both_ends_everywhere)."
-  },
   "core.evalues.x_combine__mutmut_15": {
     "diff": [
       "-E = math.inf if log_E > 709.0 else math.exp(log_E)",
       "+E = math.inf if log_E >= 709.0 else math.exp(log_E)"
     ],
-    "why": "Equivalent in practice: the cutoff only has to sit at or below log(DBL_MAX) ~ 709.78. Distinguishing 709 from 709.0 inclusive needs a log E of exactly 709.0. The overflow itself is tested (test_combine_saturates_to_infinity_instead_of_overflowing)."
-  },
-  "core.evalues.x_combine__mutmut_16": {
-    "diff": [
-      "-E = math.inf if log_E > 709.0 else math.exp(log_E)",
-      "+E = math.inf if log_E > 710.0 else math.exp(log_E)"
-    ],
-    "why": "Equivalent in practice: any cutoff at or below ~709.78 avoids OverflowError. Telling 709 from 710 needs log E in (709, 710], i.e. subnormal p-values. The overflow itself is tested."
+    "context": "5fb2834f9f79",
+    "why": "Accepted, not equivalent. At log E exactly 709.0 (probed: combine([1e-206, 1e-206, 2.3133678048249353e-206])) the original returns exp(709) = 8.2e307 and the mutant inf; both reject. Killing it would pin the arbitrary cutoff. What is required is no OverflowError past log(DBL_MAX) ~ 709.78 (test_combine_saturates_just_past_the_float_max)."
   },
   "core.evalues.x_max_attainable_average_E__mutmut_6": {
     "diff": [
       "-if not (0.0 < alpha < 1.0):",
       "+if not (0.0 <= alpha < 1.0):"
     ],
-    "why": "Equivalent: a redundant early check. With alpha at 0, 1 or above 1 the function still refuses, with the same message, in sufficient_evidence further down (tests/test_core_evalues_contract.py test_alpha_is_refused_at_both_ends_everywhere)."
+    "context": "e536acb95937",
+    "why": "Accepted, not equivalent. A redundant early alpha check: probed at alpha = 0, sufficient_evidence further down refuses with the same message. Only when kappa is also invalid does the refusal name kappa instead of alpha (EValueError either way); killing it would pin the order of two refusals."
   },
   "core.evalues.x_max_attainable_average_E__mutmut_7": {
     "diff": [
       "-if not (0.0 < alpha < 1.0):",
       "+if not (0.0 < alpha <= 1.0):"
     ],
-    "why": "Equivalent: a redundant early check. With alpha at 0, 1 or above 1 the function still refuses, with the same message, in sufficient_evidence further down (tests/test_core_evalues_contract.py test_alpha_is_refused_at_both_ends_everywhere)."
+    "context": "e536acb95937",
+    "why": "Accepted, not equivalent. A redundant early alpha check: probed at alpha = 1, sufficient_evidence further down refuses with the same message. Only when kappa is also invalid does the refusal name kappa instead of alpha (EValueError either way); killing it would pin the order of two refusals."
   },
   "core.evalues.x_max_attainable_average_E__mutmut_8": {
     "diff": [
       "-if not (0.0 < alpha < 1.0):",
       "+if not (0.0 < alpha < 2.0):"
     ],
-    "why": "Equivalent: a redundant early check. With alpha at 0, 1 or above 1 the function still refuses, with the same message, in sufficient_evidence further down (tests/test_core_evalues_contract.py test_alpha_is_refused_at_both_ends_everywhere)."
+    "context": "e536acb95937",
+    "why": "Accepted, not equivalent. A redundant early alpha check: probed at alpha = 1.5, sufficient_evidence further down refuses with the same message. Only when kappa is also invalid does the refusal name kappa instead of alpha (EValueError either way); killing it would pin the order of two refusals."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_25": {
     "diff": [
       "-if log_p >= 0.0:",
       "+if log_p > 0.0:"
     ],
-    "why": "Equivalent: at log_p == 0 both branches return 1.0 (exp(0) = 1, clipped to 1)."
+    "context": "ea4b1381ff9b",
+    "why": "Equivalent: at log_p == 0 both branches return 1.0 (exp(0) = 1, clipped to 1). Probed with log_p exactly 0.0 (alpha = kappa = 0.5, log_E_prior = log 4), and at log_E_prior inf and NaN."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_26": {
     "diff": [
       "-if log_p >= 0.0:",
       "+if log_p >= 1.0:"
     ],
-    "why": "Equivalent: for 0 <= log_p < 1, exp(log_p) >= 1 is clipped to 1.0, the same as the early return."
+    "context": "ea4b1381ff9b",
+    "why": "Equivalent: for 0 <= log_p < 1, exp(log_p) >= 1 is clipped to 1.0, the early return's value. Probed at log_E_prior 5.2 and 6.0 and at log_p exactly 0.0: 1.0 both."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_33": {
     "diff": [
       "-return float(min(1.0, max(0.0, math.exp(log_p))))",
       "+return float(min(2.0, max(0.0, math.exp(log_p))))"
     ],
-    "why": "Equivalent: this line is reached only with log_p < 0, so exp(log_p) < 1 and the upper clip never binds."
+    "context": "ea4b1381ff9b",
+    "why": "Equivalent: this line is reached only with log_p < 0, or NaN (which max(0.0, nan) maps to 0.0), so exp(log_p) < 1 and the upper clip never binds. Probed at the defaults and at log_E_prior 2.99, -inf and NaN."
   },
   "core.evalues.x_required_p_for_rejection__mutmut_40": {
     "diff": [
       "-return 0.0",
       "+return 1.0"
     ],
-    "why": "Unreachable: math.exp of a negative number cannot overflow (the branch is marked `pragma: no cover - defensive`)."
+    "context": "ea4b1381ff9b",
+    "why": "Unreachable: the try is entered only with log_p < 0 or NaN, and math.exp of those cannot overflow (the branch is marked `pragma: no cover - defensive`). Probed at log_E_prior -1e308 and -inf and at alpha = kappa = 1e-300: 0.0 both, so the except never ran."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_1": {
     "diff": [
       "-n_trials: int = 20_000,",
       "+n_trials: int = 20001,"
     ],
-    "why": "Default of a simulation helper: every test passes n_trials explicitly."
+    "context": "dd009f5bc030",
+    "why": "Accepted, not equivalent. Changes the helper's default n_trials, so its output for a caller that relies on it (probed: 0.004 vs 0.0039998). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_2": {
     "diff": [
       "-n_experiments: int = 5,",
       "+n_experiments: int = 6,"
     ],
-    "why": "Default of a simulation helper: every test passes n_experiments explicitly."
+    "context": "dd009f5bc030",
+    "why": "Accepted, not equivalent. Changes the helper's default n_experiments, so its output for a caller that relies on it (probed: 0.003 vs 0.0045 at 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_20": {
     "diff": [
       "-return float(np.mean(log_E >= math.log(1.0 / alpha)))",
       "+return float(np.mean(log_E > math.log(1.0 / alpha)))"
     ],
-    "why": "Equivalent: log E is continuous under uniform p, so a tie at the threshold has probability zero."
+    "context": "dd009f5bc030",
+    "why": "Equivalent: log E is continuous under uniform p, so a tie at the threshold has probability zero. Probed: identical rates at 20 000 trials, alpha 0.05 and 0.5, seeds 0-2."
   },
   "core.evalues.x_simulate_type_i_error__mutmut_3": {
     "diff": [
       "-seed: int = 0,",
       "+seed: int = 1,"
     ],
-    "why": "Default of a simulation helper: which seed is the default does not matter, only that one is used (test_the_simulations_are_seeded)."
+    "context": "dd009f5bc030",
+    "why": "Accepted, not equivalent. Changes the helper's default seed, so its output for a caller that relies on it (probed: 0.003 vs 0.0025 at 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_1": {
     "diff": [
       "-n_trials: int = 20_000,",
       "+n_trials: int = 20001,"
     ],
-    "why": "Default of a simulation helper: every test passes n_trials explicitly."
+    "context": "67aafd5f0b18",
+    "why": "Accepted, not equivalent. Changes the helper's default n_trials, so its output for a caller that relies on it (probed: 0.00085 vs 0.00084996). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_2": {
     "diff": [
       "-n_experiments: int = 25,",
       "+n_experiments: int = 26,"
     ],
-    "why": "Default of a simulation helper: every test passes n_experiments explicitly."
+    "context": "67aafd5f0b18",
+    "why": "Accepted, not equivalent. Changes the helper's default n_experiments, so its output for a caller that relies on it (probed: 0.2035 vs 0.206 for the product at 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_29": {
     "diff": [
       "-return float(np.mean(E >= 1.0 / alpha))",
       "+return float(np.mean(E > 1.0 / alpha))"
     ],
-    "why": "Equivalent: E is continuous under uniform p, so a tie at 1/alpha has probability zero."
+    "context": "67aafd5f0b18",
+    "why": "Equivalent: E is continuous under uniform p, so a tie at 1/alpha has probability zero. Probed: identical rates at 20 000 trials, alpha 0.05 and 0.5, seeds 0-1, both mergers."
   },
   "core.evalues.x_simulate_type_i_error_dependent__mutmut_3": {
     "diff": [
       "-seed: int = 0,",
       "+seed: int = 1,"
     ],
-    "why": "Default of a simulation helper: which seed is the default does not matter, only that one is used (test_the_simulations_are_seeded)."
+    "context": "67aafd5f0b18",
+    "why": "Accepted, not equivalent. Changes the helper's default seed, so its output for a caller that relies on it (probed: 0.0645 vs 0.0605 at alpha 0.5, 2000 trials). No caller outside tests relies on it (`git grep simulate_type_i_error`); killing it would pin a constant."
   }
 }

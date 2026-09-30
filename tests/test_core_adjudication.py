@@ -35,7 +35,7 @@ from core.adjudication import (
     registry_entry,
     verify_ledger,
 )
-from core.evalues import calibrate
+from core.evalues import calibrate, log_calibrate
 
 
 # ---------------------------------------------------------------------------
@@ -282,6 +282,30 @@ class TestLedger:
         adjudicate("T-OK2", 0.4, ["h"], registry=registry, adjudications_dir=ledger)
         proc = claim_process("H-TEST", ledger, registry)
         assert proc.E == pytest.approx(calibrate(0.02) * calibrate(0.4))
+
+    def test_replay_keeps_a_non_default_alpha_and_kappa(self, registry, ledger):
+        """
+        `claim_process` and `verify_ledger` rebuild through
+        `EProcess(alpha=<registry alpha>)` + `add(kappa=<record kappa>)`. At
+        the defaults (0.05, 0.5) a replay that dropped either would still
+        agree with the record. At p = 0.012, kappa 0.3 gives e ~ 6.6 and
+        kappa 0.5 gives ~ 4.6, either side of 1/alpha = 5, so each decides.
+        """
+        registry.update(kappa=0.3, alpha=0.2)
+        rec = adjudicate("T-OK1", 0.012, ["h"], registry=registry, adjudications_dir=ledger)
+        assert (rec["kappa"], rec["alpha"]) == (0.3, 0.2)
+        assert rec["claim_log_E_after"] == pytest.approx(log_calibrate(0.012, 0.3))
+        assert rec["claim_decision_after"] == "reject_null"
+
+        proc = claim_process("H-TEST", ledger, registry)
+        assert proc.alpha == 0.2 and [a.kappa for a in proc.adjudications] == [0.3]
+        assert proc.decision() == "reject_null"
+        assert verify_ledger(ledger, registry) == []
+        # Each record's own kappa is replayed, not the registry's current one,
+        assert verify_ledger(ledger, {**registry, "kappa": 0.5}) == []
+        # while alpha is the registry's: at 0.05 the stored decision fails replay.
+        assert any("claim_decision_after" in p
+                   for p in verify_ledger(ledger, {**registry, "alpha": 0.05}))
 
     def test_verify_clean_ledger(self, registry, ledger):
         adjudicate("T-OK1", 0.02, ["h"], registry=registry, adjudications_dir=ledger)

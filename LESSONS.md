@@ -470,14 +470,25 @@ needs the user to enable it on GitHub.
   any real result is read, and a negative control
   (here step 0) that should not beat it.**
 - 2026-09-30, the tests themselves: mutation testing of `core/evalues.py`
-  (the e-value core) killed 303 of 413 mutants. The Type-I test asserted
-  only `rate <= alpha`, so a simulation that never rejects passed it; three
-  mutants did exactly that. `from_record`, which tier 0's ledger replay is
-  built on, could ignore the stored alpha and kappa, and `next_p_needed`
-  the evidence already accumulated, with every test green. The same
-  pattern one level up: a check that cannot fail is not a check. Fixed by
-  a known-answer case (one experiment rejects at `(alpha*kappa)^(1/(1-kappa))`)
-  and argument round-trips (`tests/test_core_evalues_contract.py`, 391/413).
+  (the e-value core) killed 303 of 413 mutants on its first run (#117; the
+  current count is in `STATE.md`). The test of the helper
+  `simulate_type_i_error` asserted only `rate <= alpha`, so a helper that
+  never rejects passed it; three mutants did exactly that.
+  `EProcess.from_record` could ignore the stored alpha and kappa, and
+  `next_p_needed` the evidence already accumulated, with every test green.
+  The same pattern one level up: a check that cannot fail is not a check.
+  Fixed by known-answer rates (`tests/test_core_evalues_contract.py`). #117
+  pinned them only on the helper, which re-derives the calibrator in numpy.
+  After `/challenge-pr` on #117 they are pinned through `EProcess` and
+  `average_p`, the code that scores. #117 also said tier 0's ledger replay
+  is built on `from_record`. It is not: `core/adjudication.py` rebuilds
+  through `EProcess` + `add`, and no production code calls `from_record`.
+- 2026-09-30, a kill by chance: `test_the_simulations_are_seeded` compared
+  two rates of 2000 booleans. An unseeded helper matches itself about 4 % of
+  the time, and in one run it survived. A mutation run is stochastic wherever
+  a test is. Fixed with five seeds at alpha 0.5; two consecutive runs now
+  give identical states. Rule: **a test that kills a mutant only most of
+  the time is a flaky test, and gets fixed like one.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
@@ -587,6 +598,15 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-09-30, #117's mutation accept list: 4 of 22 "equivalent" survivors
+  were killable (`/challenge-pr`). One reason called `average`'s alpha check
+  redundant; it is the only guard on the early return for an infinite
+  e-value. Each reason had been argued, not run. Running every remaining
+  reason's boundary against the live mutant (`MUTANT_UNDER_TEST`) killed 2
+  more and turned 10 into "accepted, not equivalent", each naming the input
+  that tells them apart. Rule: **an equivalence reason names the probe that
+  was run**, and the list is keyed on the code the reason rests on
+  (`tools/mutation_check.py`, `context`).
 - 2026-09-25, #95: I found Stage 0 bit-identical to the WDS backfill and
   wrote that §3's floor was "between the pilot and today", with "sensitivity or
   toolchain" parked as open. The evidence was already on disk: at steps 0–1000

@@ -1,25 +1,31 @@
 """
 tests/test_core_evalues_contract.py — what mutation testing found untested in
-`core/evalues.py` (2026-09-30, `mutmut`, pyproject.toml [tool.mutmut]).
+`core/evalues.py` (`mutmut`, pyproject.toml [tool.mutmut]; history in
+`LESSONS.md` lesson 6, the current count in `STATE.md`).
 
-The first run killed 303 of 413 mutants. Of the 110 that survived, most were
-not equivalent. The code could be changed in these ways without any test
-noticing:
+Most of the first run's survivors were not equivalent. The code could be
+changed in these ways without any test noticing:
 
   * every refusal boundary: kappa and alpha at 0 or 1, p above 1 in
-    `log_calibrate`, a None input (TypeError instead of EValueError);
+    `log_calibrate`, a None input (TypeError instead of EValueError), and
+    `average`'s alpha check, which is the only guard on its early return for
+    an infinite e-value;
   * every non-default argument: `EProcess.add` could drop `kappa`,
     `decision` and `next_p_needed` could ignore their `alpha`,
     `next_p_needed` could forget the evidence already accumulated, and
     `combine`, `average_p` and `max_attainable_average_E` could ignore
     `kappa`, `alpha` and `weights`;
-  * the record: `from_record` could ignore the stored `alpha` and `kappa`,
-    and `to_record` could write the threshold as `alpha` instead of
-    `1/alpha`. Tier 0's ledger replay (`python -m core.adjudication
-    --verify`) is built on that round trip;
-  * the Type-I simulation: its test checks `rate <= alpha` only, so a
-    broken simulation that never rejects passes. Three mutants did exactly
-    that. The known-answer case below pins the rate itself.
+  * `EProcess.to_record` / `from_record`: `from_record` could ignore the
+    stored `alpha` and `kappa`, and `to_record` could write the threshold as
+    `alpha` instead of `1/alpha`. Neither has a production caller: the ledger
+    replay (`python -m core.adjudication --verify`) rebuilds through
+    `EProcess(alpha=...)` + `add(kappa=...)`, and its non-default test is in
+    `tests/test_core_adjudication.py`;
+  * the Type-I rate: the simulation helper's test checked `rate <= alpha`
+    only, so a helper that never rejects passed. The helper re-derives the
+    calibrator in numpy, so its known answer pins the helper; the same
+    answers are pinned below through `EProcess` and `average_p`, the code
+    that scores.
 
 Each test names what it kills. The survivors left are listed with a reason in
 `tools/mutation_accepted.json`, and `tools/mutation_check.py` fails on any
@@ -95,6 +101,12 @@ def test_alpha_is_refused_at_both_ends_everywhere(alpha):
         required_p_for_rejection(alpha=alpha)
     with pytest.raises(EValueError, match=msg):
         average([1.0], alpha=alpha)
+    # An infinite e-value returns (inf, True) before sufficient_evidence is
+    # reached, so average's own alpha check is the only guard on that path.
+    with pytest.raises(EValueError, match=msg):
+        average([math.inf], alpha=alpha)
+    with pytest.raises(EValueError, match=msg):
+        average_p([0.0], alpha=alpha)
     with pytest.raises(EValueError, match=msg):
         max_attainable_average_E(100, alpha=alpha)
     with pytest.raises(EValueError, match=msg):
@@ -120,6 +132,18 @@ def test_a_zero_e_value_is_a_valid_input():
     # e = 0 is the strongest possible support for the null, not an error.
     E, _ = average([0.0, 2.0])
     assert E == pytest.approx(1.0)
+
+
+def test_the_mean_of_one_e_value_is_that_e_value_up_to_the_float_max():
+    # Scaling the default weights (by 2, say) overflows w * e to inf here.
+    assert average([1e308]) == (1e308, True)
+
+
+def test_an_infinite_e_value_decides_the_mean_whatever_else_is_in_the_set():
+    # The early return for an infinite e-value with positive weight is what
+    # stops math.fsum from summing the rest: 1e308 + 1e308 raises
+    # OverflowError ("intermediate overflow") even beside an inf.
+    assert average([math.inf, 1e308, 1e308]) == (math.inf, True)
 
 
 def test_one_permutation_is_the_smallest_design():
@@ -204,7 +228,10 @@ def test_max_attainable_uses_its_kappa_and_alpha():
 
 
 # ---------------------------------------------------------------------------
-# The record: what tier 0's ledger replay is built on
+# The record. No production code calls to_record / from_record: the ledger
+# replay rebuilds through EProcess + add (core/adjudication.py claim_process,
+# verify_ledger), tested at non-default alpha and kappa in
+# tests/test_core_adjudication.py. These pin the round trip as written.
 # ---------------------------------------------------------------------------
 
 def _proc():
@@ -247,19 +274,69 @@ def test_from_record_of_an_empty_claim_is_empty():
 # The simulations: a Type-I test that cannot fail is not a test
 # ---------------------------------------------------------------------------
 
+# Closed forms: tools/math_checks/evalue_type_i_known_answers.py. Each rate is
+# measured at alpha = 0.5 so it is large enough to see; each tolerance is
+# about 3.3 standard errors at its trial count.
+RATE_1 = 0.0625        # one experiment: (alpha * kappa)^(1/(1-kappa))
+RATE_2 = 0.0806        # two experiments, kappa 1/2: (1 + 2 log 8) / 64
+RATE_PRODUCT_25 = 0.1967   # 25 copies of one p, product, alpha 0.05
+
+
+def _uniform_ps(n, seed):
+    import numpy as np
+    return np.random.default_rng(seed).uniform(size=n).tolist()
+
+
 def test_one_experiment_rejects_at_the_closed_form_rate():
     # With one experiment, e >= 1/alpha  <=>  p <= (alpha * kappa)^(1/(1-kappa)).
     # At alpha = 0.5, kappa = 0.5 that is 0.0625: large enough to measure, so a
     # simulation that never rejects, or rejects at the wrong threshold, fails.
+    # This pins the numpy helper, which re-derives the calibrator; the tests
+    # below pin the same answers through the code that scores.
     rate = simulate_type_i_error(n_trials=40_000, n_experiments=1,
                                  alpha=0.5, kappa=0.5, seed=5)
-    assert rate == pytest.approx(0.0625, abs=0.004)
+    assert rate == pytest.approx(RATE_1, abs=0.004)
+
+
+@pytest.mark.parametrize("n_experiments, want", [(1, RATE_1), (2, RATE_2)])
+def test_the_e_process_rejects_at_the_closed_form_rate(n_experiments, want):
+    # EProcess.add + decision(), as core/adjudication.py uses them. Two
+    # experiments check the accumulation: a process that kept only its last
+    # factor would reject at RATE_1.
+    ps = _uniform_ps(40_000 * n_experiments, seed=6)
+    rejected = 0
+    for i in range(0, len(ps), n_experiments):
+        proc = EProcess(claim="c", alpha=0.5)
+        for j, p in enumerate(ps[i:i + n_experiments]):
+            proc.add(f"P-{j}", p, kappa=0.5)
+        rejected += proc.decision() == "reject_null"
+    assert rejected / 40_000 == pytest.approx(want, abs=0.0045)
+
+
+def test_average_p_keeps_the_rate_under_maximal_dependence():
+    # 25 copies of one p per trial. average_p's mean of 25 equal e-values is
+    # that e-value, so it rejects at the one-experiment rate; the product of
+    # the same copies (combine) rejects at 0.197 against a nominal 0.05.
+    ps = _uniform_ps(10_000, seed=7)
+    avg = sum(average_p([p] * 25, alpha=0.5)[1] for p in ps) / len(ps)
+    prod = sum(combine([p] * 25)[1] for p in ps) / len(ps)
+    assert avg == pytest.approx(RATE_1, abs=0.008)
+    assert prod == pytest.approx(RATE_PRODUCT_25, abs=0.013)
 
 
 def test_the_simulations_are_seeded():
+    # Each rate is a mean of a few thousand booleans, so two unseeded runs
+    # agree by chance: at 2000 trials and alpha 0.05, about 4 % of the time,
+    # which let an unseeded helper survive one mutation run. At alpha 0.5
+    # over five seeds the chance is below 1e-8.
     assert simulate_type_i_error(n_trials=2000) == simulate_type_i_error(n_trials=2000)
     assert (simulate_type_i_error_dependent(n_trials=2000)
             == simulate_type_i_error_dependent(n_trials=2000))
+    for seed in range(5):
+        assert (simulate_type_i_error(n_trials=4000, alpha=0.5, seed=seed)
+                == simulate_type_i_error(n_trials=4000, alpha=0.5, seed=seed))
+        assert (simulate_type_i_error_dependent(n_trials=4000, alpha=0.5, seed=seed)
+                == simulate_type_i_error_dependent(n_trials=4000, alpha=0.5, seed=seed))
 
 
 def test_the_dependent_simulation_defaults_to_the_average():
@@ -273,3 +350,9 @@ def test_combine_saturates_to_infinity_instead_of_overflowing():
     # Three p = 1e-300 give log E ~ 1034, past what math.exp can return.
     E, reject = combine([1e-300] * 3)
     assert E == math.inf and reject is True
+
+
+def test_combine_saturates_just_past_the_float_max():
+    # Three ordinary doubles give log E ~ 709.9, between log(DBL_MAX) ~ 709.78
+    # and 710: a cutoff at 710 would call math.exp there and overflow.
+    assert combine([7.26e-207] * 3) == (math.inf, True)
