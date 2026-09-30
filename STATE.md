@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-30 (battery-consumer audit, `docs/battery_consumers.md`; `run_7.py` now checks the live text against each run's tokens; #115 merged) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-30 (mutation testing of `core/evalues.py`: 303 → 391 of 413 mutants killed; #116 merged; nightly smoke green) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -28,14 +28,14 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 2. **P-I5's target.** Its battery is pinned (2026-09-29, user's call): every
    P-I5 loop reads its calibrated 8 prompts (`p_i5_gate.p_i5_battery`, hash
    `e77b5528f536`) and refuses on a change, so the live battery can keep
-   growing. Both P-I5 smoke assertions on prompt count now read the pin; the next nightly is their first real run. **Still open, its target:** the registered
+   growing. The nightly smoke is green on it (2026-09-30, first since 09-19; issue #70 closed). **Still open, its target:** the registered
    statement says "an induction head", and its real run's `L3H6` (70m) has
    induction score 0.009; 70m's matcher is `L0H3` (`status-7.md` "Corrections
    received", 2026-09-24). **Same question for `P-I1`:** `tools/run/behavioural.py`
    takes every prompt with a full 19-step sweep, so after chunk 3 that would include the 12.
    Since #88 it refuses them until you decide (`docs/PHASE_REVIEW.md` "Open" 3).
 3. **Branch protection on `main`** is off; red CI has been merged
-   (#57, #58). Require `lint`, both `pure` legs and `deps` (a GitHub setting).
+   (#57, #58). Require `lint`, both `pure` legs and `deps`: tick "Require status checks", type `tier` in its search box.
 4. **Register the large-read hook.** `scripts/hooks/guard_large_read.py` is built and
    tested; wiring it into `.claude/settings.json` (PreToolUse, matcher `Read`) was
    refused to Claude as self-modification. Snippet: PR #65's description.
@@ -67,14 +67,13 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-**Battery-consumer audit + `run_7.py` token check (`claude/modest-cannon-c3t3j9`, in `../Mets-work`): PR open.** #115 (P-I5 battery pin) merged 2026-09-29, CI green; its worktree removed, the branch name reused (its remote could not be deleted from the cloud container). #113 (triage) open, another session's. #114 (deps tier on every push) merged 2026-09-29. #111, #112 merged. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
+**Mutation testing of `core/evalues.py` (`claude/modest-cannon-c3t3j9`, in `../Mets-work`): PR open.** #116 (battery-consumer audit, `run_7` token check) merged 2026-09-30. #115 (P-I5 battery pin) merged 2026-09-29, CI green; its worktree removed, the branch name reused (its remote could not be deleted from the cloud container). #113 (triage) open, another session's. #114 (deps tier on every push) merged 2026-09-29. #111, #112 merged. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
 two held only merge commits with no hand resolution, and `cf5f7ee`'s 352 added
 lines are in main verbatim except 4 that main has since rewritten.
-`../Mets-work-3a` removed. The main tree's `main` was fast-forwarded to `origin/main` on 2026-09-24
-(`21391c2`). Nightly smoke red (Blocked item 2).
+`../Mets-work-3a` removed. The main tree's `main` was fast-forwarded to `origin/main` on 2026-09-24 (`21391c2`). Nightly smoke green since 2026-09-30.
 Current state: `./scripts/status.sh` (without `gh` it reads the public API; exit 1 = could not see).
 
 ## Where things stand (one line each; detail behind the pointer)
@@ -82,6 +81,7 @@ Current state: `./scripts/status.sh` (without `gh` it reads the public API; exit
 - Weight side (how Adam selects Pythia's weights): **not studied**; scan + 9 ranked directions in `FUTURE_IDEAS.md` (2026-09-29, abstract-level). Cheapest: D1, weights only.
 - `CLAIM-C`: gate ran, **INSUFFICIENT** twice: p floor 0.0661 at 8 prompts (§3.41); at 20 v2 prompts on 1.4b + gpt2-large the floor is 0.0002 but the homogeneity correction is untabulated past 12 (§3.46). Fix ~45 min of calibration, deferred by the user.
 - e-value audit: complete, 39 registered predictions, zero e-values — §3.45.
+- Mutation testing (`mutmut`, `.github/workflows/mutation.yml`): `core/evalues.py` 391/413 killed (was 303); the 22 left are reviewed in `tools/mutation_accepted.json`. Found: `from_record` could drop the stored alpha/kappa, `next_p_needed` the prior evidence, the Type-I test could not fail. Next candidates: `core/adjudication.py`, `core/nulls.py`.
 - Phase 10 free rows (tier 1): attention flip ~94 % causal mask; F0 fails; identity coupling optimal 99.5 %; HDBSCAN's run-to-run floor (ARI p5 0.347) was float32 distances; on float64 it is 1.000, and stored `repeated_tokens` labels are rounding (`status-1d.md` "Float64 distances…") — `status-10.md`.
 - Literature: five papers read as primary text — `lit-10.md` §11–15, `PROJECT.md` §3.52.
 - Token cost (2026-09-22): scan of Claude Code docs + 5 papers (abstracts only) — `archive/docs/agent_context_scan_2026-09-22.md`. Built: `docs/index/` (section indexes), large-read hook (unregistered, Blocked item 4). Measured on the 2026-09-22 session's own transcript: 147 calls, ~19.0M context tokens re-read (avg ~129k/call, peak 214k) vs ~34k of tool output. Session length is the cost driver, not file size. Built since: `tools/session_cost.py` (calls, context, tool output off a transcript), `docs/cost_log.md` (one row per unit; Stop step 7; lesson 9's 2×-median rule), `scripts/status.sh` (Start step 2), and `CLAUDE.md` "While working" lines (one session per unit, batch calls, Edit not shell). Next: A3 (split `handoff-10.md` by stage) and A4 (Stop protocol → skill, claims rules → path rule).

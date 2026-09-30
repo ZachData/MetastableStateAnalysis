@@ -122,7 +122,14 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-29 | CI: deps tier on every push, status.sh without gh, pyproject-packages rule (whole transcript incl. the planning survey, before challenge-pr) | 71 | 199k | 9.9M | 38k | #114 |
 | 2026-09-29 | P-I5 battery pin (whole transcript incl. #114 and its two review rounds, before challenge-pr) | 171 | 377k | 38.8M | 88k | #115 |
 | 2026-09-30 | Battery-consumer audit + run_7 token check (after #115's merge wake, before challenge-pr) | 72 | 208k | 10.8M | 49k | #116 |
+| 2026-09-30 | Mutation testing of core/evalues.py (whole transcript incl. #114–#116 and #116's CodeRabbit round, before challenge-pr) | 416 | 641k | 122.1M | 232k | #117 |
 
+- #117's row is cumulative over the #114/#115 session, which kept being
+  resumed: #116's CodeRabbit round and this unit both ran at 400–640k per
+  call. Its share is roughly 122.1 − 38.8 (#115's row) − 10.8 (#116's row)
+  ≈ 72M, ~17× the median, the worst in this log. Every call re-read two
+  merged PRs' worth of context. Lesson 9, not optional: the next unit is a
+  fresh session, started from the handoff prompt in #117's description.
 - #116 is 2.5× the running median (4.3M). This was a fresh session after
   `/clear`, so none of it is carried context. The cost was the audit
   itself: slices of ~20 consumer files, STATE.md in full, and the Phase 7
