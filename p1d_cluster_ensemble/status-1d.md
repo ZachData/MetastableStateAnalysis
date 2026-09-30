@@ -1090,8 +1090,12 @@ lumpier tail / the same on its calibration, of 32 per band:
 | mt_life | 0 | L9–16 · L17–24 | 20 · 25 / 0 | 26 · 29 / 0 |
 | ci2, hdb_k, nn1 | 0 | all | ≤ 1 / ≤ 1 | ≤ 1 / ≤ 1, except hdb_k L17–24 8 / 1 |
 
-- **The 2-means excess moves earlier with length:** at L1–16 it appears (12 and 14 of
-  32, calibration 0), where v1 had 0 and 5. At L17–24 **the calibration itself fires**
+- **The 2-means excess at L1–16 is mostly power** (*revised after `/challenge-pr` on
+  #118*): the counts rise (12 and 14 of 32, calibration 0; v1 0 and 5), but the effect,
+  median per record of obs − null mean, is unchanged at L9–16 (−0.0035 v1, −0.0038
+  long) while z doubles (−0.97 → −1.96) on 339–699 kept tokens. Only L1–8 grows
+  (−0.0007 → −0.0028, ~4×). HDBSCAN groups: effect 13–16 → 30–52 groups (group counts
+  scale with n too). A count of records past a tail is not an effect size. At L17–24 **the calibration itself fires**
   (24 of 32), so this null is off nominal there at this length, and v1's late 2-means
   excess cannot be read on long prompts with it.
 - **More HDBSCAN groups than the Gaussian at every depth** (28–31 of 32, cal 0); v1 had
@@ -1151,10 +1155,19 @@ days, or lose work):
    (`LESSONS.md` 11). A shutdown on 2026-09-29 cost ~5 h of the Gaussian
    null's all-token stage (~290 of 600 records, from bytes read) and ~4 h
    of β. Both now write a part per record / per (run, dedupe) job and
-   resume (`<out>.parts/`; parts reused only with matching settings; draws
-   are seeded per record, so a resumed run gives the same numbers).
-3. `beta_refit --stored` is optional for inputs #108 never fitted; the
-   output records `reproduction: {"not_run": ...}` instead of refusing.
+   resume (`<out>.parts/`; draws are seeded per record, so a resumed run
+   gives the same numbers). *Corrected after `/challenge-pr` on #118:* this
+   line said parts are reused only with matching settings; `beta_refit`
+   reused any part. Now both check settings and the run's input files (size,
+   mtime); `beta_refit` also the weights, `max_offset` and `core/beta_eff.py`'s
+   hash; pre-settings parts are refitted (tests in `test_phase1d_beta_refit.py`).
+3. `beta_refit --stored` may be omitted only when every run is a long prompt
+   (enforced since #118's review; it was optional for any input); the output
+   records `reproduction: {"not_run": ...}`.
+4. Exact solver checked at length (#118 finding 5): against the iterative
+   `_two_way_demean` on `hdbscan_code_long` step143000 (n = 2025), L20 h0, h7
+   and L10 h3, windows 4 and full: max |Δβ| 4.4e-15
+   (`beta/solver_check.json`).
 
 **Cost, measured.** Gaussian null at n ≈ 1800: ~3 s per draw per record
 under full load (k-means `n_init=10` ~40 %, cosine distances, HDBSCAN,
@@ -1204,17 +1217,37 @@ Paired median per prompt (`fe_full`, step143000, all tokens; L1–8 · L9–16 �
 `hdbscan_code` −1.52 · −2.03 · −0.48; `latex_monograph` **+1.95 · +2.43** · −0.06;
 `sullivan_ballou` −0.01 · +0.05 · −0.37; `wiki_paragraph` −0.21 · −0.72 · −0.95.
 
-- **L17–23 falls with length in every prompt** (all tokens and deduped; deduped −0.43 to
-  −1.17), and the pooled late median drops by ~40 % (2.19 → 1.35). This is the one
-  length effect on β the 4 prompts agree on.
-- **At L1–16 the shift is the prompt's, not length's:** `latex_monograph` rises by ~2,
-  `hdbscan_code` falls by ~2, the pooled median cancels. `latex_monograph`'s continuation
-  is composed, not a source text (table above), and `hdbscan_code`'s is 1800 tokens of
-  code, so the continuation's content is confounded with its length here.
-- **For Blocked 9 (β's convention):** the headline is not length-invariant. On the same 4
-  prompts it is 3.16 at v1 length and 2.80 at ~2000 tokens, carried by the late band.
-  A single β per model needs its prompt length stated; per band, the late band is
-  length-dependent.
+**Most of the late fall is the offset mix, not length** (*revised after `/challenge-pr`
+on #118*, finding 1). At full length 28–78 % of fitted pairs sit at offsets v1 never had,
+and at L17–23 similarity explains ~2 % of what the fixed effects leave, so the slope moves
+with the pair mix. Refit on the long runs with only the offsets their v1 prefix contains
+(`beta_refit --max-offset-v1`, offset ≤ n_v1 − 2; `beta_offset_matched/{beta_refit,vs_v1}.*`,
+16 jobs, 1 h):
+
+| tokens | band | v1 | long, all offsets: paired, up | long, v1's offsets: paired, up |
+|---|---|---|---|---|
+| all | L1–23 | 3.16 | −0.24, 617 / 1472 | **−0.05**, 716 / 1472 (median 3.12) |
+| all | L17–23 | 2.19 | −0.49, 148 / 448 | **−0.17**, 201 / 448 (median 1.88) |
+| deduped | L9–16 | 4.70 | +0.47, 336 / 512 | +0.77, 385 / 512 |
+| deduped | L17–23 | 2.58 | −0.77, 119 / 448 | −0.29, 183 / 448 |
+
+Per prompt, v1's offsets, all tokens, L17–23: `hdbscan_code` +0.04, `latex_monograph` +0.23,
+`sullivan_ballou` −0.19, `wiki_paragraph` −0.55. Step 0 stays at 0 (paired −0.01).
+
+- **L17–23:** about two thirds of the paired fall (−0.49 → −0.17) is pairs at offsets v1
+  did not have. On v1's offsets it no longer falls in every prompt; the rest is mostly
+  `wiki_paragraph`. The first write-up's "falls ~40 % in every prompt" compared two medians
+  (the paired change was −22 %) and read the offset mix as length: withdrawn.
+- **At L1–16 the shift is the prompt's, not length's**, with or without the offset match
+  (`latex_monograph` +2 to +3, `hdbscan_code` −1.5 to −2 all tokens; the pooled median
+  cancels). `latex_monograph`'s continuation is composed, not a source text, and
+  `hdbscan_code`'s is 1800 tokens of code: content and length are confounded per prompt.
+- Step 0 staying flat does not clear the offset question (a zero slope stays zero on any
+  pair set); it only shows the estimator has no drift with n.
+- **For Blocked 9 (β's convention):** on v1's offsets the headline hardly moves with length
+  (3.16 → 3.12); on all offsets it is 2.80. So β should be quoted with the **offset range**
+  it was fitted on; prompt length matters through that range. A length curve (truncate
+  each long run at several n, no forward pass needed) is Parked below.
 - Tier 1, 4 prompts, one checkpoint pair; heads within a prompt are not independent,
   so the "heads up" counts are descriptive, not a test.
 
@@ -1235,6 +1268,16 @@ Paired median per prompt (`fe_full`, step143000, all tokens; L1–8 · L9–16 �
   change: whether this null is usable for any all-token claim past ~500
   tokens, and how far the deduped L17–24 calibration (24 of 32) is the same
   effect.
+- **β as a function of length** (#118 finding 1's second half). Under causal
+  attention a long run's first n tokens are the n-token run, so fitting each
+  long run truncated at several n (e.g. 256, 512, 1024, full), on all offsets
+  and on a fixed offset range, gives a length curve with no forward pass.
+  Cost: `beta_refit` with a row cap, ~1–2 h compute. Could change: whether
+  β's convention (Blocked 9) names a length, an offset range, or both.
+- **Deduped Gaussian null at v1's token count** (#118 finding 2). Subsample
+  each long deduped run to its v1 run's kept count and re-run the null, so
+  counts compare at equal power. Cost: a `--subsample` option and ~1 h. Could
+  change: whether L1–8's ~4× larger 2-means effect is length or sample size.
 
 ## Deleted and restored (was `FROZEN.md`)
 
