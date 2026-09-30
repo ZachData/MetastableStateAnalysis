@@ -104,6 +104,11 @@ def tokenize_prompt(tokenizer, text: str) -> dict:
     """
     enc = tokenizer(text)
     raw = enc["input_ids"] if hasattr(enc, "keys") else enc
+    return _id_record(tokenizer, raw)
+
+
+def _id_record(tokenizer, raw) -> dict:
+    """`tokenize_prompt`'s record for ids already in hand."""
     ids = [int(i) for i in raw]
     bos = getattr(tokenizer, "bos_token_id", None)
     has_bos = bool(ids and bos is not None and ids[0] == bos)
@@ -113,6 +118,62 @@ def tokenize_prompt(tokenizer, text: str) -> dict:
         "n_distinct": len(set(ids)),
         "has_bos": has_bos,
     }
+
+
+class TokenizationMismatch(ValueError):
+    """The live battery text does not reproduce a stored run's tokens."""
+
+
+def phase1_tokens(run_dir) -> list:
+    """
+    A Phase 1 run's `tokens.txt`, back to token strings.
+
+    The writer is `p1_io._save_tokens`, `f"{i:3d}  {tok}"`. The index field
+    is 3 wide only up to 999, so each line is split at the first two-space
+    gap after the index, not at a fixed column, and each index is checked
+    against its position.
+    """
+    from pathlib import Path
+    path = Path(run_dir) / "tokens.txt"
+    out = []
+    for n, line in enumerate(path.read_text(encoding="utf-8").split("\n")):
+        if not line.strip():
+            continue
+        idx, sep, tok = line.lstrip().partition("  ")
+        if not sep or not idx.isdigit() or int(idx) != len(out):
+            raise TokenizationMismatch(
+                f"{path} line {n} is {line!r}, not entry {len(out)}")
+        out.append(tok)
+    return out
+
+
+def verified_prompt_ids(tokenizer, text: str, stored_tokens) -> list:
+    """
+    `text`'s token ids, cut to a stored run's width and checked token for
+    token against that run's `tokens.txt`.
+
+    Anything that builds positions (pair sets) from the live battery text and
+    reads them against a stored run's activations or attention needs this:
+    if the text changed after the run, the positions index a different
+    tokenisation and nothing downstream can tell. Phase 1 truncates at
+    extraction (`core/models.py`, 512 tokens), so a longer live tokenisation
+    is cut to the run's width; a shorter one, or any differing token, is
+    refused.
+    """
+    stored = list(stored_tokens)
+    ids = tokenize_prompt(tokenizer, text)["ids"]
+    if len(ids) < len(stored):
+        raise TokenizationMismatch(
+            f"the text tokenises to {len(ids)} ids, the run holds "
+            f"{len(stored)} tokens")
+    ids = ids[:len(stored)]
+    got = list(tokenizer.convert_ids_to_tokens(ids))
+    if got != stored:
+        first = next(i for i, (a, b) in enumerate(zip(got, stored)) if a != b)
+        raise TokenizationMismatch(
+            f"token {first} is {got[first]!r} now and {stored[first]!r} in "
+            f"the run: the text changed after the run was extracted")
+    return ids
 
 
 # ---------------------------------------------------------------------------
@@ -174,14 +235,21 @@ def pair_offsets(pairs) -> np.ndarray:
 # Per-prompt verdict
 # ---------------------------------------------------------------------------
 
-def analyze_prompt(tokenizer, name: str, text: str, min_offset: int = 2) -> dict:
+def analyze_prompt(tokenizer, name: str, text: str, min_offset: int = 2,
+                   ids=None) -> dict:
     """
     Full structural report for one prompt under one tokenizer.
 
     Returns a dict carrying the counts, the degeneracy flags, and a verdict
     of "usable" / "degenerate" / "insufficient" for induction analysis.
+
+    `ids`, when given, is what is analysed instead of `text`'s own
+    tokenisation: the ids a stored run actually holds (`verified_prompt_ids`),
+    which are a prefix of the text's when the run was truncated at extraction.
+    The verdict has to be about the tokens the pairs will index.
     """
-    tok = tokenize_prompt(tokenizer, text)
+    tok = (tokenize_prompt(tokenizer, text) if ids is None
+           else _id_record(tokenizer, ids))
     ids = tok["ids"]
 
     ind = induction_candidates(ids, min_offset, strict=False)

@@ -64,6 +64,7 @@ with no usable prompt yields a null indistinguishable from a real negative.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import sys
 import time
 from pathlib import Path
@@ -278,7 +279,46 @@ def main(argv=None) -> int:
     ap.add_argument("--revision", default=None,
                     help="HF revision, recorded in the manifest. Not used to "
                          "load anything here — the weights came from Phase 2.")
+    from core.holdout import (
+        HELD_OUT_PROMPT_KEYS, HoldoutError, add_holdout_args, refuse_held_out,
+    )
+    add_holdout_args(ap)
     args = ap.parse_args(argv)
+
+    # One run per key: `inputs[key]` records one run's provenance, so a
+    # repeated key would put two runs' rows under the last one's record.
+    keys = [k for k, _ in args.prompt]
+    repeated = sorted({k for k in keys if keys.count(k) > 1})
+    if repeated:
+        print(f"run_7: --prompt keys given more than once: {repeated}",
+              file=sys.stderr)
+        return 1
+
+    # The Phase 1 runs are data/phase12 inputs, screened like every other
+    # reader's (core/holdout.py): a held-out prompt's run is refused, or
+    # dropped under --v1-only. The key is screened as well as the directory:
+    # `--prompt wiki_byzantium=<a v1 run>` passes the directory screen on its
+    # own manifest, but the table would read the held-out prompt's text.
+    held_keys = sorted(k for k in keys if k in HELD_OUT_PROMPT_KEYS)
+    if held_keys and not args.allow_holdout and not args.v1_only:
+        print(f"run_7: --prompt keys {held_keys} are Phase 10's held-out "
+              f"confirmation set (core/holdout.py). Pass --v1-only to drop "
+              f"them. --allow-holdout reads everything, once the user has "
+              f"released the set.", file=sys.stderr)
+        return 1
+    try:
+        kept, holdout = refuse_held_out(
+            [d for _, d in args.prompt], allow=args.allow_holdout,
+            drop=args.v1_only, context="run_7")
+    except HoldoutError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    kept = set(kept)
+    before = len(args.prompt)
+    args.prompt = [(k, d) for k, d in args.prompt
+                   if Path(d) in kept
+                   and (args.allow_holdout or k not in HELD_OUT_PROMPT_KEYS)]
+    holdout["n_dropped"] = before - len(args.prompt)
 
     t0 = time.time()
     from p1c_frames.p1c_io import load_run
@@ -294,7 +334,7 @@ def main(argv=None) -> int:
 
     step = resolve_checkpoint_step(args.model)
     tokenizer = None
-    tables, skipped, used = [], [], []
+    tables, skipped, used, inputs = [], [], [], {}
 
     for prompt_key, run_dir in args.prompt:
         run = load_run(run_dir)
@@ -318,7 +358,35 @@ def main(argv=None) -> int:
         if tokenizer is None:
             tokenizer = load_tokenizer(args.model)
 
-        report = analyze_prompt(tokenizer, prompt_key, PROMPTS[prompt_key])
+        from core.battery_structure import (
+            TokenizationMismatch, induction_candidates, phase1_tokens,
+            same_content_candidates, verified_prompt_ids)
+        # The pairs index the run's activations, so they are built from the
+        # tokens the run was extracted on, checked against the live text,
+        # not from whatever the live text tokenises to today. Checked before
+        # the admissibility gate, so a changed text is refused, not skipped.
+        try:
+            ids = verified_prompt_ids(tokenizer, PROMPTS[prompt_key],
+                                      phase1_tokens(run_dir))
+        except (OSError, TokenizationMismatch) as exc:
+            print(f"{prompt_key}: {exc}. Pairs built from the live text would "
+                  f"index a different tokenisation than {run_dir}.",
+                  file=sys.stderr)
+            return 1
+
+        from core.io import load_manifest
+        p1 = load_manifest(run_dir) or {}
+        p1_step = p1.get("checkpoint_step")
+        if p1_step is not None and step is not None and int(p1_step) != int(step):
+            print(f"{run_dir}: its manifest says checkpoint {p1_step}, "
+                  f"--model {args.model} is checkpoint {step}. Every edge would "
+                  f"carry the wrong training step.", file=sys.stderr)
+            return 1
+
+        # On the ids the run holds: a run cut at extraction is judged on its
+        # prefix, which is all the pairs can index.
+        report = analyze_prompt(tokenizer, prompt_key, PROMPTS[prompt_key],
+                                ids=ids)
         try:
             check_prompt_admissible(report, prompt_key)
         except DegeneratePrompt as exc:
@@ -327,9 +395,6 @@ def main(argv=None) -> int:
                             "flags": report["flags"]})
             continue
 
-        from core.battery_structure import (
-            induction_candidates, same_content_candidates)
-        ids = [int(i) for i in (tokenizer(PROMPTS[prompt_key])["input_ids"])]
         ind = induction_candidates(ids)
         pairs = {"induction": ind,
                  "strict": induction_candidates(ids, strict=True),
@@ -345,6 +410,10 @@ def main(argv=None) -> int:
 
         try:
             X_all = raw_activations(run)
+            if X_all.shape[1] != len(ids):
+                raise RunRefused(
+                    f"tokens.txt holds {len(ids)} tokens but the activations "
+                    f"have {X_all.shape[1]}. The run is not one extraction.")
             tables.extend(edges_for_prompt(
                 model=args.model, prompt_key=prompt_key, X_all=X_all,
                 attentions=attentions, ov=ov, weights_dir=args.p2_dir,
@@ -358,6 +427,14 @@ def main(argv=None) -> int:
             print(f"{prompt_key}: {exc}", file=sys.stderr)
             return 1
         used.append(prompt_key)
+        inputs[prompt_key] = {
+            "run_dir": str(run_dir),
+            "tokens_txt_sha256": hashlib.sha256(
+                (Path(run_dir) / "tokens.txt").read_bytes()).hexdigest(),
+            "n_tokens": len(ids),
+            "p1_manifest_id": p1.get("manifest_id"),
+            "p1_prompt_battery_hash": p1.get("prompt_battery_hash"),
+        }
         print(f"  {prompt_key}: {report['n_tokens']} tokens, "
               f"{len(ind)} induction pairs")
 
@@ -373,11 +450,16 @@ def main(argv=None) -> int:
     table.save(out_p)
     print(f"\n{len(table)} edges over {len(used)} prompt(s) -> {out_p}")
 
+    from core.config import PROMPTS
     from core.io import get_git_sha, write_manifest
+    from core.prompts import compute_prompt_battery_hash
     write_manifest(
         args.out,
         model=args.model,
-        prompt_battery_hash="+".join(sorted(used)),
+        # A hash of the texts actually used, not a key list: a changed text
+        # under an unchanged key must change it.
+        prompt_battery_hash=compute_prompt_battery_hash(
+            {k: PROMPTS[k] for k in used}),
         wall_time_seconds=time.time() - t0,
         hf_revision=args.revision,
         checkpoint_step=step,
@@ -388,6 +470,10 @@ def main(argv=None) -> int:
         extra={"phase": "7",
                "rotational_channel": "absent",
                "prompts_used": used,
+               # What each table row was read from: the run, the exact
+               # tokens its pairs index, and the Phase 1 provenance.
+               "inputs": inputs,
+               "holdout": holdout,
                "prompts_skipped": skipped,
                "p2_source": ov["source"]},
     )

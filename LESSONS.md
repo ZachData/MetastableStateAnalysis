@@ -279,14 +279,25 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   four nights with nobody noticing. 14 live files iterate the live battery.
 - `6de78d0`: a cache asserted by identity, which scipy 1.18 showed it never did.
 - `0ef60d0`: transformers 5 broke the smoke tier; pinned `<5`.
+- 2026-09-29, the audit: `run_7.py` (Phase 7's producer, read by four
+  registered rows) rebuilt pair positions from the live text and recorded a
+  key list as its "battery hash". A text edited under an unchanged key would
+  have moved every pair with nothing failing. Latent (no text has changed);
+  `status-7.md` finding 9. The input can change by *growing* or by an
+  *edited text*; P-I5's pin only covered the first. `/challenge-pr` then
+  found the audit's own blind spots: the degeneracy gate still judged the
+  full text while the pairs read the run's prefix, and a grep for
+  `PROMPTS` cannot see code that stamps the live hash without reading the
+  battery (`p2b_io.py`) or that edits `PROMPTS` after hashing it
+  (`run_1 --length-sweep`). An audit by grep covers only what it greps for.
 
 **The rule now.** Anything whose result is recorded names the exact input
-set it ran on (battery hash, key list) and refuses on a mismatch. Status:
-✅ P-I5 (2026-09-29, `p_i5_gate.p_i5_battery`: its 8 prompts by key tuple
-(order) and hash (texts), `battery_hash` in every P-I5 producer's output, and
-a test that no P-I5 module iterates `PROMPTS`); ⚠️ not audited: the other live
-files that iterate `PROMPTS` (`git grep 'PROMPTS.items()'`), e.g.
-`p7_motifs/run_7.py`, `tools/score_claim_c.py`, `tools/run/behavioural.py`.
+set it ran on (a hash of the texts, not a key list) and refuses on a
+mismatch. Code that rebuilds positions from the live text also checks them
+against the run's `tokens.txt` (`core.battery_structure.verified_prompt_ids`).
+Status per file: `docs/battery_consumers.md` (audit 2026-09-29; P-I5 and
+`run_7.py` fixed, `CLAIM-C`'s growth is the user's call, three tier-1 files
+not fixed).
 
 ## 4. Tests that assert a property of the machine, not of the code
 
