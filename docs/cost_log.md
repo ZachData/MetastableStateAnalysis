@@ -148,3 +148,11 @@ running median of the rows above it gets a line under the table saying why.
   #111 (peak context 360k), and each source fetch, tokenizer check and
   permission-classifier outage was a call re-reading all of it. Lesson 9:
   the unit should have started in a fresh session, as the user then chose.
+| 2026-09-29 | 1d long prompts, part 2: extractor, 8 runs, prefix, merge tree, deduped Gaussian null, β speed-up | 153 | 254k | 26.2M | 64k | #118 |
+| 2026-09-30 | 1d long prompts, part 3: all-token Gaussian null + β at length, reports, Stop | 65 | 147k | 6.3M | 35k | #118 |
+
+- Part 2: 26.2M, ~5.6× the running median (4.7M). One session held the
+  extractor, 8 forward passes, the prefix check, the merge tree and its null,
+  the deduped Gaussian null, and two defect fixes found mid-run (β's O(n²)
+  estimator, the all-or-nothing drivers), with context growing to 254k and
+  re-read on each of 153 calls. Each defect was its own unit (lesson 9).
