@@ -123,15 +123,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-29 | P-I5 battery pin (whole transcript incl. #114 and its two review rounds, before challenge-pr) | 171 | 377k | 38.8M | 88k | #115 |
 | 2026-09-30 | Battery-consumer audit + run_7 token check (after #115's merge wake, before challenge-pr) | 72 | 208k | 10.8M | 49k | #116 |
 | 2026-09-30 | Mutation testing of core/evalues.py (whole transcript incl. #114–#116 and #116's CodeRabbit round, before challenge-pr) | 416 | 641k | 122.1M | 232k | #117 |
-| 2026-09-30 | Answers to /challenge-pr on #117: 397/413 killed, reasons probed, accept list keyed on context (measured before the challenge round) | 59 | 246k | 10.5M | 53k | #119 |
 
-- #119 is 2.3× the running median (4.5M). A fresh session after `/clear`,
-  so none of it is carried. The first call was 63k; context grew to 250k
-  because #117's five findings needed `core/evalues.py`, both test files,
-  the adjudication replay and the accept list read before any edit, and
-  the probe round's output (17 mutants) stayed in context for every later
-  call. The probe output could have gone to a file with only the DIFF
-  lines printed.
 - #117's row is cumulative over the #114/#115 session, which kept being
   resumed: #116's CodeRabbit round and this unit both ran at 400–640k per
   call. Its share is roughly 122.1 − 38.8 (#115's row) − 10.8 (#116's row)
@@ -175,3 +167,13 @@ running median of the rows above it gets a line under the table saying why.
   `/challenge-pr` (a new offset-matched β fit, the resume defect, a solver
   check) took 43 more at ~200k context each. Continuing in the same session
   kept the PR's reasoning in context but paid for re-reading it.
+
+| 2026-09-30 | Answers to /challenge-pr on #117: 397/413 killed, reasons probed, accept list keyed on context (measured before #119's own challenge round) | 59 | 246k | 10.5M | 53k | #119 |
+
+- #119 is 2.2× the running median. A fresh session after `/clear`, so none
+  of it is carried. The first call was 63k; context grew to 250k because
+  #117's five findings needed `core/evalues.py`, both test files, the
+  adjudication replay and the accept list read before any edit, and the
+  probe round's output (17 mutants) stayed in context for every later
+  call. The probe output could have gone to a file with only the DIFF
+  lines printed.
