@@ -228,7 +228,7 @@ def unit_ln_rows(X: np.ndarray, gamma: np.ndarray, bias: np.ndarray, eps: float)
 
 
 def fit_betas(A_layer: np.ndarray, U: np.ndarray, keep: np.ndarray,
-              positions: np.ndarray) -> List[Dict]:
+              positions: np.ndarray, max_offset: Optional[int] = None) -> List[Dict]:
     """
     Each head's β on the unit LN1 frame, over the non-sink rows ``keep``.
 
@@ -244,7 +244,7 @@ def fit_betas(A_layer: np.ndarray, U: np.ndarray, keep: np.ndarray,
     offsets = pos[None, :] - pos[:, None]
     out = []
     for h in range(A_layer.shape[0]):
-        r = estimate_beta_from_gram(A_layer[h], G, keep, offsets=offsets)
+        r = estimate_beta_from_gram(A_layer[h], G, keep, offsets=offsets, max_offset=max_offset)
         out.append({"beta": r["beta"], "r2": r["r2"], "offset_coeff": r["offset_coeff"],
                     "n_pairs": r["n_pairs"], "note": r["note"]})
     return out

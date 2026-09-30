@@ -268,7 +268,7 @@ class TestAllHeads:
 # Per-offset fixed effects (status-1d.md "β refit")
 # ---------------------------------------------------------------------------
 
-from core.beta_eff import _two_way_demean, estimate_beta_offset_fe  # noqa: E402
+from core.beta_eff import _two_way_demean, _two_way_demean_exact, estimate_beta_offset_fe  # noqa: E402
 
 
 def _walk(n=60, d=D, step=0.4, seed=1):
@@ -339,6 +339,20 @@ class TestOffsetFixedEffects:
         coef, *_ = np.linalg.lstsq(D_, v, rcond=None)
         assert np.allclose(_two_way_demean(v, rows, bins, 7, 5, tol=1e-13), v - D_ @ coef,
                            atol=1e-9)
+        V = np.column_stack([v, rng.normal(size=200)])
+        assert np.allclose(_two_way_demean_exact(V, rows, bins, 7, 5)[:, 0], v - D_ @ coef,
+                           atol=1e-9)
+
+    def test_exact_demean_on_a_causal_design(self):
+        """Rows see offsets 1..i: the design the iterative version is slow on."""
+        n = 30
+        i, j = np.tril_indices(n, -1)
+        rows, bins = i - 1, (i - j) - 1
+        v = np.random.default_rng(1).normal(size=rows.size)
+        D_ = np.column_stack([np.eye(n - 1)[rows], np.eye(n - 1)[bins]])
+        coef, *_ = np.linalg.lstsq(D_, v, rcond=None)
+        assert np.allclose(_two_way_demean_exact(v, rows, bins, n - 1, n - 1), v - D_ @ coef,
+                           atol=1e-9)
 
 
 def test_offset_fe_refuses_similarity_collinear_with_the_tail():
@@ -349,3 +363,40 @@ def test_offset_fe_refuses_similarity_collinear_with_the_tail():
     A = _softmax_with_profile(G, BETA_TRUE, lambda d: -0.1 * d)
     r = estimate_beta_offset_fe(A, G, np.arange(n), offset_window=1)
     assert np.isnan(r["beta_raw"]) and "collinear" in r["note"]
+
+
+# --- max_offset: fit on near pairs only (#118 review, finding 1) ---
+
+def _causal_head(n=40, d=6, seed=3):
+    rng = np.random.default_rng(seed)
+    U = rng.normal(size=(n, d))
+    U /= np.linalg.norm(U, axis=1, keepdims=True)
+    G = U @ U.T
+    off = np.arange(n)[:, None] - np.arange(n)[None, :]
+    logits = 2.0 * G - 0.1 * np.abs(off)
+    logits = np.where(off >= 0, logits, -np.inf)
+    A = np.exp(logits - logits.max(axis=1, keepdims=True))
+    return A / A.sum(axis=1, keepdims=True), G, off
+
+
+def test_max_offset_equals_zeroing_far_pairs():
+    from core.beta_eff import estimate_beta_from_gram, estimate_beta_offset_fe
+    A, G, off = _causal_head()
+    idx = np.arange(1, A.shape[0])
+    A_near = np.where(off <= 10, A, 0.0)          # zero attention is dropped by both fits
+    for w in (4, None):
+        a = estimate_beta_offset_fe(A, G, idx, offset_window=w, max_offset=10)
+        b = estimate_beta_offset_fe(A_near, G, idx, offset_window=w)
+        assert a["beta_raw"] == pytest.approx(b["beta_raw"], abs=1e-12)
+        assert a["n_pairs"] == b["n_pairs"] < estimate_beta_offset_fe(A, G, idx, offset_window=w)["n_pairs"]
+    a = estimate_beta_from_gram(A, G, idx, max_offset=10)
+    b = estimate_beta_from_gram(A_near, G, idx)
+    assert a["beta_raw"] == pytest.approx(b["beta_raw"], abs=1e-12) and a["n_pairs"] == b["n_pairs"]
+
+
+def test_max_offset_past_the_prompt_changes_nothing():
+    from core.beta_eff import estimate_beta_offset_fe
+    A, G, _ = _causal_head()
+    idx = np.arange(1, A.shape[0])
+    assert (estimate_beta_offset_fe(A, G, idx, max_offset=10_000)["beta_raw"]
+            == estimate_beta_offset_fe(A, G, idx)["beta_raw"])
