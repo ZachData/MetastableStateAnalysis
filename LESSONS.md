@@ -476,6 +476,15 @@ needs the user to enable it on GitHub.
   the same inputs and bands as the result it will be read against, before
   any real result is read, and a negative control
   (here step 0) that should not beat it.**
+- 2026-09-30, the tests themselves: mutation testing of `core/evalues.py`
+  (the e-value core) killed 303 of 413 mutants. The Type-I test asserted
+  only `rate <= alpha`, so a simulation that never rejects passed it; three
+  mutants did exactly that. `from_record`, which tier 0's ledger replay is
+  built on, could ignore the stored alpha and kappa, and `next_p_needed`
+  the evidence already accumulated, with every test green. The same
+  pattern one level up: a check that cannot fail is not a check. Fixed by
+  a known-answer case (one experiment rejects at `(alpha*kappa)^(1/(1-kappa))`)
+  and argument round-trips (`tests/test_core_evalues_contract.py`, 391/413).
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

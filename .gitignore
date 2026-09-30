@@ -53,3 +53,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+
+# mutmut working copy (pyproject.toml [tool.mutmut])
+/mutants/
+# The reviewed list of equivalent mutants (tools/mutation_check.py).
+!tools/mutation_accepted.json

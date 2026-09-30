@@ -1,0 +1,77 @@
+# mutation.yml — mutation testing of the e-value core (core/evalues.py).
+#
+# The fast tiers say the tests pass; this says whether they would notice the
+# code being wrong. mutmut (pyproject.toml [tool.mutmut]) makes ~400 small
+# changes to core/evalues.py, the module that carries the Type-I guarantee
+# every registered prediction is scored under, and runs its tests against
+# each. tools/mutation_check.py then fails on any change that survived and
+# is not in tools/mutation_accepted.json with a reviewed reason.
+#
+# The first run (2026-09-30) killed 303 of 413: the tests did not notice
+# ignored alpha/kappa arguments, a from_record that dropped the stored alpha
+# and kappa (the ledger replay's round trip), or a Type-I simulation that
+# never rejects. tests/test_core_evalues_contract.py closed those: 391/413,
+# the other 22 reviewed as equivalent.
+#
+# Runs when the module, its tests or the list change, and weekly. About a
+# minute. Not required for merge (yet): see STATE.md.
+
+name: Mutation
+
+on:
+  pull_request:
+    paths:
+      - "core/evalues.py"
+      - "tests/test_core_evalues*.py"
+      - "tests/test_core_adjudication.py"
+      - "tools/mutation_check.py"
+      - "tools/mutation_accepted.json"
+      - "requirements/mutation.txt"
+      - "pyproject.toml"
+      - ".github/workflows/mutation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "core/evalues.py"
+      - "tests/test_core_evalues*.py"
+      - "tests/test_core_adjudication.py"
+      - "tools/mutation_check.py"
+      - "tools/mutation_accepted.json"
+      - "requirements/mutation.txt"
+      - "pyproject.toml"
+      - ".github/workflows/mutation.yml"
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: mutation — core/evalues.py
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements/mutation.txt
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/mutation.txt
+
+      - name: Run mutmut
+        run: mutmut run --max-children 4
+
+      - name: Every survivor reviewed
+        run: python tools/mutation_check.py
