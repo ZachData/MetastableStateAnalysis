@@ -115,6 +115,62 @@ def tokenize_prompt(tokenizer, text: str) -> dict:
     }
 
 
+class TokenizationMismatch(ValueError):
+    """The live battery text does not reproduce a stored run's tokens."""
+
+
+def phase1_tokens(run_dir) -> list:
+    """
+    A Phase 1 run's `tokens.txt`, back to token strings.
+
+    The writer is `p1_io._save_tokens`, `f"{i:3d}  {tok}"`. The index field
+    is 3 wide only up to 999, so each line is split at the first two-space
+    gap after the index, not at a fixed column, and each index is checked
+    against its position.
+    """
+    from pathlib import Path
+    path = Path(run_dir) / "tokens.txt"
+    out = []
+    for n, line in enumerate(path.read_text().split("\n")):
+        if not line.strip():
+            continue
+        idx, sep, tok = line.lstrip().partition("  ")
+        if not sep or not idx.isdigit() or int(idx) != len(out):
+            raise TokenizationMismatch(
+                f"{path} line {n} is {line!r}, not entry {len(out)}")
+        out.append(tok)
+    return out
+
+
+def verified_prompt_ids(tokenizer, text: str, stored_tokens) -> list:
+    """
+    `text`'s token ids, cut to a stored run's width and checked token for
+    token against that run's `tokens.txt`.
+
+    Anything that builds positions (pair sets) from the live battery text and
+    reads them against a stored run's activations or attention needs this:
+    if the text changed after the run, the positions index a different
+    tokenisation and nothing downstream can tell. Phase 1 truncates at
+    extraction (`core/models.py`, 512 tokens), so a longer live tokenisation
+    is cut to the run's width; a shorter one, or any differing token, is
+    refused.
+    """
+    stored = list(stored_tokens)
+    ids = tokenize_prompt(tokenizer, text)["ids"]
+    if len(ids) < len(stored):
+        raise TokenizationMismatch(
+            f"the text tokenises to {len(ids)} ids, the run holds "
+            f"{len(stored)} tokens")
+    ids = ids[:len(stored)]
+    got = list(tokenizer.convert_ids_to_tokens(ids))
+    if got != stored:
+        first = next(i for i, (a, b) in enumerate(zip(got, stored)) if a != b)
+        raise TokenizationMismatch(
+            f"token {first} is {got[first]!r} now and {stored[first]!r} in "
+            f"the run: the text changed after the run was extracted")
+    return ids
+
+
 # ---------------------------------------------------------------------------
 # Pair structure
 # ---------------------------------------------------------------------------

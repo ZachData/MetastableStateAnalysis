@@ -328,8 +328,19 @@ def main(argv=None) -> int:
             continue
 
         from core.battery_structure import (
-            induction_candidates, same_content_candidates)
-        ids = [int(i) for i in (tokenizer(PROMPTS[prompt_key])["input_ids"])]
+            TokenizationMismatch, induction_candidates, phase1_tokens,
+            same_content_candidates, verified_prompt_ids)
+        # The pairs index the run's activations, so they are built from the
+        # tokens the run was extracted on, checked against the live text,
+        # not from whatever the live text tokenises to today.
+        try:
+            ids = verified_prompt_ids(tokenizer, PROMPTS[prompt_key],
+                                      phase1_tokens(run_dir))
+        except (OSError, TokenizationMismatch) as exc:
+            print(f"{prompt_key}: {exc}. Pairs built from the live text would "
+                  f"index a different tokenisation than {run_dir}.",
+                  file=sys.stderr)
+            return 1
         ind = induction_candidates(ids)
         pairs = {"induction": ind,
                  "strict": induction_candidates(ids, strict=True),
@@ -345,6 +356,10 @@ def main(argv=None) -> int:
 
         try:
             X_all = raw_activations(run)
+            if X_all.shape[1] != len(ids):
+                raise RunRefused(
+                    f"tokens.txt holds {len(ids)} tokens but the activations "
+                    f"have {X_all.shape[1]}. The run is not one extraction.")
             tables.extend(edges_for_prompt(
                 model=args.model, prompt_key=prompt_key, X_all=X_all,
                 attentions=attentions, ov=ov, weights_dir=args.p2_dir,
@@ -373,11 +388,16 @@ def main(argv=None) -> int:
     table.save(out_p)
     print(f"\n{len(table)} edges over {len(used)} prompt(s) -> {out_p}")
 
+    from core.config import PROMPTS
     from core.io import get_git_sha, write_manifest
+    from core.prompts import compute_prompt_battery_hash
     write_manifest(
         args.out,
         model=args.model,
-        prompt_battery_hash="+".join(sorted(used)),
+        # A hash of the texts actually used, not a key list: a changed text
+        # under an unchanged key must change it.
+        prompt_battery_hash=compute_prompt_battery_hash(
+            {k: PROMPTS[k] for k in used}),
         wall_time_seconds=time.time() - t0,
         hf_revision=args.revision,
         checkpoint_step=step,

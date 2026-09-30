@@ -19,7 +19,7 @@
   - `P-I5`'s min-rank statistic controlled only the complete null; replaced by intersection-union, `L3H6` 0.0234 → 0.0312, five overclaims withdrawn — §3.38
   - `design-7.md` carries "cone collapse is universal" from a 1b result that 1b says not to cite — `p1b_hemisphere/status-1b.md`
   - `P-I5`'s target `L3H6` was chosen as 70m's `L7H8` analogue, but 70m has no relay-fed matcher (its matcher is `L0H3`, layer 0) — `p8_scale_ladder/status-8.md` "The self-repair chain at 70m"
-- **Registry:** nine `H-BRIDGE` rows, all `active`, none adjudicated. `P-I1` e-value, real run recorded, INSUFFICIENT; `P-ST1`, `P-AB1`, `P-I3` e-value, built, calibrated, unrun (`P-AB1` and `P-I3` have no known-answer dry run); `P-I5` needs-null with a gate and a real-run record, parked; since 2026-09-29 every P-I5 loop reads its calibrated 8 prompts (`p_i5_gate.p_i5_battery`, hash `e77b5528f536`, refuses on a change), not the live battery; `P-I2`, `P-I4`, `P-I7` nothing built; `P-SA1` instrument frozen — `claims/EXPERIMENTS.md`
+- **Registry:** nine `H-BRIDGE` rows, all `active`, none adjudicated. `P-I1` e-value, real run recorded, INSUFFICIENT; `P-ST1`, `P-AB1`, `P-I3` e-value, built, calibrated, unrun (`P-AB1` and `P-I3` have no known-answer dry run); `P-I5` needs-null with a gate and a real-run record, parked; since 2026-09-29 every P-I5 loop reads its calibrated 8 prompts (`p_i5_gate.p_i5_battery`, hash `e77b5528f536`, refuses on a change), not the live battery, and `run_7.py` refuses a live text that does not reproduce the run's `tokens.txt` (finding 9); `P-I2`, `P-I4`, `P-I7` nothing built; `P-SA1` instrument frozen — `claims/EXPERIMENTS.md`
 - **Depends on:** 1@30c0d54cc5, 2@5e9fc59e62, 8@8cc3fb223c
 - **Feeds:** none
 - **Open threads:**
@@ -31,7 +31,7 @@
   - Check whether the 19 tables on disk meet `P-I3`'s and `P-AB1`'s pre-computed requirements, without scoring them (free)
   - Decide `P-I5`'s target (`L3H6` is not an induction head by attention score; 70m's matcher is `L0H3`): a new registration on `L0H3` on a named battery version, or withdraw (free, the user's decision). Its battery is pinned (2026-09-29)
   - Wire the rotational channel from 2b's Schur blocks and rebuild the tables (forward pass: `run_7.py`, about 16 min per checkpoint × 19)
-- **Reviewed:** 2026-09-24 · body `01ebf7f87d`
+- **Reviewed:** 2026-09-29 · body `e148174a94`
 <!-- /phase-card -->
 
 **Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
@@ -284,6 +284,20 @@ interpretable.
    head can be straddled and the design floor is 1.000, decidable before an edge is counted.
    `p7_motifs/patching_gate.py` (P-AB1, 2026-08-27) is the other gate built since this list
    was last written.
+9. **`run_7.py` built its pairs from the live battery text and never checked them against
+   the run it read (2026-09-29).** The induction, strict and same-content pairs are positions
+   in `tokenizer(PROMPTS[key])`; the forces are read off the run's activations and attention.
+   A text edited after extraction would move every pair onto other tokens, with all shapes
+   still agreeing. The manifest's `prompt_battery_hash` was the sorted key list, which an
+   edited text leaves unchanged. Latent: no v1 text has changed (#115 compared `bff93d7`
+   with now), so the 19 tables on disk are unaffected. Now the live text must reproduce the
+   run's `tokens.txt` token for token (a longer text is cut to the run's width, which is
+   Phase 1's 512-token truncation), `tokens.txt` must match the activations' width, and the
+   manifest hashes the texts used (`core.battery_structure.verified_prompt_ids`,
+   `phase1_tokens`). Tests: `tests/test_p7_run_7.py::TestLiveTextAgainstTheRun` (5 of 6 fail
+   on the old driver; the sixth guards the truncation case), plus 5 in
+   `tests/test_battery_structure.py`. Found by the battery-consumer audit,
+   `docs/battery_consumers.md`.
 
 ## Two things the producer settled
 

@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-09-29 (P-I5 pinned to its calibrated 8 prompts; #114, the deps tier on every push, merged) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-09-30 (battery-consumer audit, `docs/battery_consumers.md`; `run_7.py` now checks the live text against each run's tokens; #115 merged) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -61,12 +61,13 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
    measured recommendation** (`status-1d.md` "β refit"): `beta_raw`, unit LN1,
    per-offset fixed effects, all heads, per band; headline β = 3.5 [1.6, 5.6].
    No β-free way to pick "kernel heads" yet (Parked there).
-   §3.1: `CLAIM-C`'s rescore will most likely refuse (sign homogeneity above
-   what 12 prompts could survive); it does not touch 410m.
+   §3.1: `CLAIM-C`'s rescore will most likely refuse (sign homogeneity above what
+   12 prompts could survive; not 410m). Its scorer reads every live metastability
+   key (20 now): pin it like P-I5, or recalibrate per count (`docs/battery_consumers.md`).
 
 ## Open PRs and branches
 
-**P-I5 battery pin (`claude/modest-cannon-c3t3j9`, in `../Mets-work`): PR open.** #113 (triage) open, another session's. #114 (deps tier on every push) merged 2026-09-29; its remote branch could not be deleted from the cloud container (proxy), so this PR reuses the name. #111, #112 merged. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
+**Battery-consumer audit + `run_7.py` token check (`claude/modest-cannon-c3t3j9`, in `../Mets-work`): PR open.** #115 (P-I5 battery pin) merged 2026-09-29, CI green; its worktree removed, the branch name reused (its remote could not be deleted from the cloud container). #113 (triage) open, another session's. #114 (deps tier on every push) merged 2026-09-29. #111, #112 merged. #110 merged 2026-09-29, its branch and worktree removed. #109 (`FUTURE_IDEAS.md`, docs only) merged 2026-09-29 at the user's request, for later discussion; its branch removed. #108 merged 2026-09-29, its branch and worktree removed. #107 (`rvm-onboard`) merged 2026-09-27. #106 merged 2026-09-26, its branch and worktree removed (main tree at `c5b56fd`). #105 merged 2026-09-26, its branch and worktree removed (main tree at `3e1e9c7`). #104 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `ed4aaf3`). #103 merged 2026-09-26, its branch and worktree removed (main tree fast-forwarded to `f46ef3b`). #102 merged 2026-09-26, its branch and worktree removed. #101 merged 2026-09-25, its branch and worktree removed. #100 merged 2026-09-25, its branch and worktree removed. #99 merged 2026-09-25, its branch and worktree removed. #98 merged 2026-09-25, its branch and worktree removed. #97 merged 2026-09-25, its branch and worktree removed; #96, #95 merged 2026-09-25, branches and worktrees removed. #80–#94 merged 2026-09-24, branches and worktrees removed.
 #79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
 `claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and
 local branch except `main` deleted, the 3 non-ancestors included, after checking them:
@@ -107,7 +108,7 @@ hashed by `claims/audits/claim_c_real_run.json`, `data/phase12/`, pilot sweep on
 | Network | Allowed: PyPI, GitHub. **Blocked: `huggingface.co`, `conda.anaconda.org`, `download.pytorch.org`** (environment network policy) |
 | `mets` env | venv `/home/user/mets`, **pip, not conda** (conda channels blocked): py3.10.20 (`/usr/bin/python3.10`), numpy 2.2.6, scikit-learn 1.7.2, hdbscan 0.8.41 (manylinux wheel), scipy 1.15.3, torch 2.14.0+cu130 (PyPI), transformers 4.57.6. The four pinned versions match `clustering.py`'s note; **whether it reproduces historical partitions is untested** (no activations here to replay) |
 | `.venv` (py3.14) | not built; the `mets` venv runs the gate |
-| Gate | `./scripts/check.sh` → 2794 passed, 5 skipped, 69 s (2026-09-29, system py3.11); deps tier: `check.sh deps` after `pip install torch -r requirements/heavy.txt` (PyPI CUDA wheel; CPU index blocked) |
+| Gate | `./scripts/check.sh` → 2815 passed, 5 skipped, 70 s (2026-09-30, system py3.11); deps tier: `check.sh deps` after `pip install torch -r requirements/heavy.txt` (PyPI CUDA wheel; CPU index blocked) |
 | `data/` | only the tracked `data/analysis/*.py`. No HF cache, no run dirs |
 | Can run here | tests, lint, docs, math checks, anything not needing weights or `data/` |
 | Cannot run here | any forward pass (no weights reachable), Stage 0 (57–100 GB > 22 GB), anything reading the 152 WDS dirs or CLAIM-C arms |

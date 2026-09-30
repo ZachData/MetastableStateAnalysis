@@ -55,6 +55,10 @@ class FakeTokenizer:
         return {"input_ids": [self._vocab.setdefault(w, len(self._vocab))
                               for w in text.split()]}
 
+    def convert_ids_to_tokens(self, ids):
+        words = {i: w for w, i in self._vocab.items()}
+        return [words[i] for i in ids]
+
 
 #: A text with genuine induction structure under a word-level tokenizer:
 #: repeated bigrams, several distinct offsets, and non-induction repeats to
@@ -65,14 +69,21 @@ USABLE_TEXT = (
     "omicron gamma delta pi rho alpha beta sigma tau gamma delta upsilon"
 )
 DEGENERATE_TEXT = ". . . . . . . . . . . . . . . . . . . ."
+TEXTS = {"usable_prompt": USABLE_TEXT, "degenerate_prompt": DEGENERATE_TEXT}
 
 
 def _write_phase1(tmp_path, key, n_tokens, *, keep_embedding=True,
                   n_states=None, with_norms=True, n_layers=N_LAYERS,
-                  n_heads=N_HEADS, n_attn_tokens=None, seed=0):
+                  n_heads=N_HEADS, n_attn_tokens=None, seed=0, tokens=None):
     rng = np.random.default_rng(seed)
     run = tmp_path / "p1" / f"{MODEL}_{key}"
     run.mkdir(parents=True, exist_ok=True)
+
+    # What the run was extracted on, in p1_io._save_tokens's format.
+    if tokens is None:
+        tokens = TEXTS[key].split()[:n_tokens]
+    (run / "tokens.txt").write_text(
+        "".join(f"{i:3d}  {t}\n" for i, t in enumerate(tokens)))
 
     if n_states is None:
         n_states = n_layers + 1 if keep_embedding else n_layers
@@ -126,7 +137,7 @@ def battery(monkeypatch):
     # package carries no `config` attribute for the dotted form to reach.
     import core.config as cfg
 
-    prompts = {"usable_prompt": USABLE_TEXT, "degenerate_prompt": DEGENERATE_TEXT}
+    prompts = dict(TEXTS)
     monkeypatch.setattr(cfg, "PROMPTS", prompts, raising=False)
     # MODEL_CONFIGS is {} under the stub, so the registry lookup has to be
     # supplied here for the checkpoint_step threading to be observable.
@@ -393,6 +404,65 @@ class TestJoinRefusals:
         p2 = _write_phase2(tmp_path)
         (p2 / f"ov_weights_{MODEL}.npz").unlink()
         assert _run(tmp_path, p2, [("usable_prompt", run)]) == 1
+
+
+class TestLiveTextAgainstTheRun:
+    """The pairs come from the live battery text and are read against a
+    stored run. A text edited after the run moves every pair onto other
+    tokens while every shape still agrees."""
+
+    def test_a_text_changed_after_the_run_is_refused(self, tmp_path, battery):
+        n = _n_tokens(USABLE_TEXT)
+        run = _write_phase1(tmp_path, "usable_prompt", n)
+        p2 = _write_phase2(tmp_path)
+        battery["usable_prompt"] = USABLE_TEXT.replace("epsilon", "omega", 1)
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 1
+        assert not (tmp_path / "out" / "interaction_table.npz").exists()
+
+    def test_a_text_shorter_than_the_run_is_refused(self, tmp_path, battery):
+        n = _n_tokens(USABLE_TEXT)
+        run = _write_phase1(tmp_path, "usable_prompt", n)
+        p2 = _write_phase2(tmp_path)
+        battery["usable_prompt"] = " ".join(USABLE_TEXT.split()[:-3])
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 1
+
+    def test_a_run_without_tokens_txt_is_refused(self, tmp_path, battery):
+        n = _n_tokens(USABLE_TEXT)
+        run = _write_phase1(tmp_path, "usable_prompt", n)
+        (run / "tokens.txt").unlink()
+        p2 = _write_phase2(tmp_path)
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 1
+
+    def test_tokens_and_activations_of_different_widths_are_refused(
+            self, tmp_path, battery):
+        n = _n_tokens(USABLE_TEXT)
+        run = _write_phase1(tmp_path, "usable_prompt", n,
+                            tokens=USABLE_TEXT.split()[:n - 2])
+        p2 = _write_phase2(tmp_path)
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 1
+
+    def test_a_run_truncated_at_extraction_is_read_to_its_width(
+            self, tmp_path, battery):
+        """Phase 1 cuts at 512 tokens, so a live text longer than the run
+        is the run's prefix, not a mismatch."""
+        n = _n_tokens(USABLE_TEXT) - 6
+        run = _write_phase1(tmp_path, "usable_prompt", n)
+        p2 = _write_phase2(tmp_path)
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 0
+        t = InteractionTable.load(tmp_path / "out" / "interaction_table.npz")
+        assert int(np.max(t.columns["target"])) < n
+
+    def test_the_manifest_hashes_the_texts_it_used(self, tmp_path, battery):
+        """It recorded the sorted key list, which a text edited under an
+        unchanged key would not change."""
+        from core.prompts import compute_prompt_battery_hash
+        n = _n_tokens(USABLE_TEXT)
+        run = _write_phase1(tmp_path, "usable_prompt", n)
+        p2 = _write_phase2(tmp_path)
+        assert _run(tmp_path, p2, [("usable_prompt", run)]) == 0
+        man = json.load(open(tmp_path / "out" / "manifest.json"))
+        assert man["prompt_battery_hash"] == compute_prompt_battery_hash(
+            {"usable_prompt": USABLE_TEXT})
 
 
 class TestPromptArgument:
