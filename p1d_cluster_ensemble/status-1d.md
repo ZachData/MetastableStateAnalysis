@@ -1048,8 +1048,8 @@ outputs `<main>/data/p1d/long_prompts_2026-09-29/`, runs
 | 3 prefix | done | `prefix_check.json`. 6 of 8 **bit-identical** to the stored v1 run (activations, norms, attention; tokens equal; no prefix row attends past `n_v1`). `hdbscan_code` differs at float noise: step143000 act 6.3e-5, attention 3.7e-3; step 0 1e-7. Embedding identical; the difference starts at 1e-7 in L1 from token 121 and grows with depth: reduction order, not the prefix |
 | 4 holdout | done | `refuse_held_out(..., drop=True)` keeps all 8; `run_1d.discover_runs` finds 8; test added |
 | 5 merge tree + link null | done | below |
-| 5 Gaussian null | **running** | resumable chain `run_chunk.sh` (below) |
-| 5 β | **queued** after the Gaussian null in the same chain | estimator sped up first (below) |
+| 5 Gaussian null | done (deduped 2026-09-29, all tokens 2026-09-30) | below |
+| 5 β | **running** since 2026-09-30 16:24, last stage of `run_chunk.sh` | estimator sped up first (below) |
 
 **Merge tree (`--subexp F`) and its link null** (2000 draws, per group of
 the same 4 prompts; `merge_null/{long,v1}_step{143000,0}.{json,txt}`; v1
@@ -1100,7 +1100,39 @@ lumpier tail / the same on its calibration, of 32 per band:
   L17–24 (15). A nearest neighbour within 3 positions is *less* common at length
   (median 0.23 vs 0.31, step143000 centred): more tokens to choose from.
 - Step 0's merge-tree lifetime excess (Parked 11) persists and grows (26, 29 of 32).
-- Tier 1, one checkpoint pair, 4 prompts. The all-token stages are still to run.
+- Tier 1, one checkpoint pair, 4 prompts.
+
+**Gaussian null, all tokens: DONE 2026-09-30** (`gaussian_null/{null,calibrate,report}.*`;
+200 / 100 draws, seed 0, 600 records each, 0 skipped, 1032–2036 tokens; v1 on the same 4
+prompts: `gaussian_null/v1_same4/report.*`). Centred frame, lumpier tail / calibration,
+of 32 per band (L1–8 · L9–16 · L17–24):
+
+| stat | step | v1 | long |
+|---|---|---|---|
+| ci2 | 143000 | 26 · 25 · 29 / 3 · 2 · 18 | 32 · 32 · 32 / **20 · 12 · 31** |
+| ci2 | 0 | 32 · 32 · 32 / 6 · 4 · 0 | 32 · 32 · 32 / **32 · 26 · 25** |
+| nn1 | 143000 | 32 · 32 · 32 / 0 · 0 · 14 | 32 · 32 · 32 / **8 · 10 · 29** |
+| nn1 | 0 | 32 · 32 · 32 / 0 | 32 · 32 · 32 / 8 · 9 · 12 |
+| hdb_k (median groups, null ≈ 4) | 143000 | 57 · 59 · 47, all 32 / 0 | **234 · 243 · 204**, all 32 / 0 · 0 · 1 |
+| hdb_k | 0 | 63 · 62 · 59, all 32 / ≤ 3 | **288 · 280 · 282**, all 32 / 0 |
+| mt_k (median, null ≈ 2) | 0 | 21, 31–32 / 0 | 92, all 32 / 0 |
+| mt_life | 143000 | 2 · 4 · 11 / 2 · 0 · 6 | 10 · 8 · 11 / 3 · 4 · 12 |
+
+- **On all tokens at length the null is off nominal for ci2 and nn1:** the calibration
+  (each token replaced by one draw of its own Gaussian) lands in the lumpier tail in 12–32
+  of 32 records per band. v1's all-token calibration fired only at L17–24 (ci2 18, nn1 14);
+  the deduped long run only at L17–24 (ci2 24, nn1 15). The miscalibration grows with n.
+  So neither statistic can be read on all tokens at 2048 (Parked below).
+- **What stays readable is token identity.** HDBSCAN groups (cal 0–1) and the merge
+  tree's k: step 0 beats the null *more* than step143000 at every depth (288 vs 234 groups
+  at L1–8; mt_k 92 vs 2–3), as #106 found at v1 length. At length a token's nearest
+  neighbour is more often the same string (median 0.68 vs 0.55 at step143000, 0.79 vs 0.67
+  at step 0; L1–24 centred), so the identity channel grows with the prompt.
+- Trained-only signals are marginal: mt_life 8–11 of 32 vs cal 3–12; mt_k 4–6 vs ≤ 1.
+- Nearest neighbour within 3 positions (step143000, centred, L1–24 median): 0.11 long vs
+  0.23 v1 (deduped: 0.23 vs 0.31).
+- **Reading:** length does not change #106's all-token verdict (identity), and at 2048
+  the deduped table above is the one to read.
 
 **Defects found and fixed on the way** (both would have made step 5 take
 days, or lose work):
@@ -1135,7 +1167,7 @@ a tenth. β ≈ 75 min per all-token run at n ≈ 2000, 16 jobs at 3 workers
 (RAM: ~7.5 GB per worker, the attention array) ≈ 4–5 h. **Total left ≈
 16–18 h: two ~10 h chunks.**
 
-**Resume (each chunk; the deduped stages are done, next is `null`):** `setsid nohup <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
+**Resume (each chunk; the Gaussian stages are done, next is β):** `setsid nohup <main>/data/p1d/long_prompts_2026-09-29/run_chunk.sh
 >> <same>/run_chunk.log 2>&1 &`. It skips finished stages (`<stage>.json`
 present), resumes a stopped one from `<stage>.parts/`, and runs in order
 `null_dedupe`, `calibrate_dedupe`, `null`, `calibrate`, then β. Progress:
@@ -1160,6 +1192,15 @@ no refit needed); then the Stop protocol and one PR.
   `scipy_linkage_code` (527) and `latex_article` (614) would be cut too. Cost:
   a note per affected phase, and a loud record (or refusal) of truncation in
   the extractor. Could change any claim quoting `homer_iliad`'s length.
+- **The Gaussian null's calibration drifts with n.** One Gaussian draw per
+  token, re-tested against a Gaussian refitted to it, lands in the lumpier
+  ci2 / nn1 tail in 12–32 of 32 records at 1032–2036 tokens (all tokens), vs
+  0–18 at 242–482 (v1). Why: untested (a guess is that re-estimating the
+  covariance from the calibration sample shifts the spectrum at this n/d;
+  d = 1024). Cost: a synthetic check across n on known Gaussians, ~1 h. Could
+  change: whether this null is usable for any all-token claim past ~500
+  tokens, and how far the deduped L17–24 calibration (24 of 32) is the same
+  effect.
 
 ## Deleted and restored (was `FROZEN.md`)
 
