@@ -1795,6 +1795,45 @@ centred null fails. The β ≥ 16 regime the design aimed at was never reached.
   by a different selection rule. Cost < 1 h on the stored snapshots. Could change: the
   definition's selection rule.
 
+### The M = 32 cut on the long prompts (Blocked 11′; 2026-10-01; branch `claude/p1d-long-m32`)
+
+**Decision (user, 2026-10-01, with #125 in hand):** "absolute position ≥ 32" joins the
+definition *provisionally* (`design-1d.md` row "tokens"), on condition that step 0 passes a
+test the cut was not set on. This is that test. Rule written and committed before any run.
+
+**Input.** The 8 long runs (`/run/media/system/HDD_1TB/mets_data/p1d_long/2026-09-29/`,
+4 prompts × step143000 / step 0, long prompts hash `91e85cc95888`), L1–24, both frames,
+`admit run --n-draws 200 --seed 0`, both `min_cluster_size` arms, real and `--calibrate`,
+at M = 32 and at M = 0. A band is 32 records (4 prompts × 8 layers). Deduped, the runs keep
+339–699 tokens, under the ~1000 where the deduped null was seen to drift (`design-1d.md`
+row "scope"); the calibration is still the reference.
+
+**What is new and what is not.** Positions below `n_v1` (467, 482, 242, 446) reproduce the v1
+runs that set the cut (6 of 8 bit-identical, `prefix_check.json`). The fresh part is the
+continuation: 1373, 550, 1783 and 1590 tokens. The null and its calibration are refitted on
+the longer deduped set, so even groups inside the prefix face a different bar.
+
+**Rule** (primary: `excess`, `min_cluster_size` 2; 6 cells = 2 frames × 3 bands):
+
+| step 0 at M = 32, per cell | reading |
+|---|---|
+| admits in ≤ 3 of 32 records (`RELEASE_BOUND`, the report's own control condition) | pass |
+| admits in > 3, and in more records than its calibration | fail |
+| admits in > 3, calibration in at least as many | unreadable (null off nominal at length) |
+
+The cut **holds** if all 6 cells pass and **fails** if any cell fails; otherwise it is
+reported cell by cell as partial. On a fail the decision goes back to the user (a cut fixed by
+a rule, or option (a)).
+
+**Can the test fail?** M = 0 on the same runs is the check. On v1, step 0 at M = 0 admitted in
+43 · 54 · 56 of 56 records (centred). If step 0 at M = 0 admits in ≤ 3 of 32 in most centred
+cells on the long runs, the instrument does not see the opening at length, and an M = 32 pass
+is not read.
+
+**Reported, not part of the verdict:** `min_cluster_size` 4, `log_life`, step143000 at both
+M, where step 0's admitted groups at M = 32 sit (inside `[32, n_v1)` or past `n_v1`), and
+#123's position check on them.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it
