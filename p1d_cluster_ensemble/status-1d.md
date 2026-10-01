@@ -1861,9 +1861,16 @@ real / calibration:
 - **The sensitivity arm is the mechanism, moved to the cut.** All 14 of step 0's admitted
   centred arm-4 groups (13 at L17–24, 1 at L9–16) hold position 32, the first token the cut
   keeps, and all 14 are positional (`p_near` ≤ 0.05). They come from 2 of 4 prompts
-  (`hdbscan_code` 8 records, `wiki_paragraph` 5), 33–81 members, 55–75 % of them among the
-  first |g| kept tokens, median position 50–140. As at M = 8 on v1, the opening moves with the
-  cut: a fixed position does not remove it.
+  (`hdbscan_code` 8 records, `wiki_paragraph` 5; per prompt, 2 of 4 against calibration 0),
+  33–81 members, 55–75 % of them among the first |g| kept tokens, median position 50–140.
+  As at M = 8 on v1, the opening moves with the cut. *Location (pre-stated, added after
+  `/challenge-pr` on #126, finding 3):* 13 of the 14 also hold members past `n_v1`, 2–28 per
+  group, as late as position ~2000, so they are an opening core plus scattered late tokens,
+  like #123's parked "step 0's late members".
+- **Counted per prompt** (`/challenge-pr` on #126, finding 2): the primary fail's 4 records are
+  3 prompts (one pair, ` help` / ` always` at 208 / 832, is admitted at L20 and L21), and the
+  same cell's calibration admitted in 4 of 56 on v1 at M = 32. Records are 8 adjacent layers
+  of one prompt, so a per-record bound overstates both cells.
 - **Why v1 passed at 32 and long does not** (a reading, not tested): an opening run of ~30
   tokens is 12–29 % of v1's 103–248 kept tokens at M = 32 and 5–9 % of the long runs' 317–671,
   so at length it is a small dense part of a larger cloud, which is what beats the cloud's own
@@ -1886,18 +1893,26 @@ real / calibration:
 **Reading.** By the rule committed before the run, the cut fails, and the decision goes back to
 the user. The primary-arm fail alone would be a weak reason (one record over the bound, not
 the opening). The sensitivity arm is the strong one: the opening re-forms at the first kept
-token, as it did at M = 8 on v1, so the cut moved the effect rather than removing it. A
-mechanism for that (from #123's prefix average, not tested here): tokens just past any cut M
-still attend to positions 0..M−1, which are a share M / (t + 1) of their prefix, so the
-first ~M kept tokens after the cut share a large common component whatever M is. If so, no
-fixed cut removes it; a larger M only makes the remainder longer.
+token, as it did at M = 8 on v1, so the cut moved the effect rather than removing it. It
+also weakens as M grows (v1, arm 2: 153 groups at M = 0, 9 at 8, 0 at 32; long, arm 4 centred
+L17–24: 32 records at M = 0, 13 at 32). *Revised after `/challenge-pr` on #126 (finding 1,
+agreed):* the first version said a larger cut moves the opening "whatever M is". From #123's
+prefix average, tokens just past M share positions 0..M−1, a share M / (t + 1) of their
+prefix, but the average of M near-orthogonal values has norm ~1/√M, so the shared pull falls
+with M. What the data support is that the cut that removes the opening depends on prompt
+length: 32 does on v1, not at ~2000 tokens. A larger M (128 was proposed) is untested, and
+picking it on the long runs would repeat the tuning-on-the-control problem one level up.
 
 **For the user (Blocked 11″):** the cut is not in the definition. Options: (a) the
 position-keeping null (~7 h on v1; the long runs would add about as much again), which judges
-every group, trained ones included, against a null that keeps position; a cut chosen by a
-rule fixed in advance, which the mechanism above says will move the effect again; or a
-group-level rule (for example, drop groups holding the first kept token), post hoc on this
-run and needing another test set. Recommendation: (a).
+every group, trained ones included, against a null that keeps position. It addresses the
+opening, **not** the primary cell that failed (raw L17–24: non-positional pairs, `/challenge-pr`
+on #126 finding 2), so under (a) that cell stays as it is. A cut that scales with length, or a
+rule fixed in advance, tested on data it was not set on (no third set of prompts exists yet).
+A group-level rule (for example, drop groups holding the first kept token), post hoc on this
+run. Also open: whether the control and release bound count prompts rather than layer-records.
+Recommendation: (a), with the raw L17–24 cell read as the noise level of the deduped null at
+length.
 
 ## Deleted and restored (was `FROZEN.md`)
 

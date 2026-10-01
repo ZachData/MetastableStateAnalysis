@@ -563,7 +563,8 @@ needs the user to enable it on GitHub.
   with the cut, and 32 was still read as "removes it" because at v1 length nothing was left to
   admit. Rule: **when an effect is anchored to a boundary the fix defines (the first kept
   token), moving the boundary moves the effect; check at the new boundary, on data the fix
-  was not tuned on, before calling it removed.**
+  was not tuned on, before calling it removed.** (The first write-up then overstated the
+  other way, "whatever M is"; the effect also weakens with M, `/challenge-pr` on #126.)
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
