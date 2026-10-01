@@ -1795,6 +1795,125 @@ centred null fails. The β ≥ 16 regime the design aimed at was never reached.
   by a different selection rule. Cost < 1 h on the stored snapshots. Could change: the
   definition's selection rule.
 
+### The M = 32 cut on the long prompts (Blocked 11′; 2026-10-01; branch `claude/p1d-long-m32`)
+
+**Decision (user, 2026-10-01, with #125 in hand):** "absolute position ≥ 32" joins the
+definition *provisionally* (`design-1d.md` row "tokens"), on condition that step 0 passes a
+test the cut was not set on. This is that test. Rule written and committed before any run.
+
+**Input.** The 8 long runs (`/run/media/system/HDD_1TB/mets_data/p1d_long/2026-09-29/`,
+4 prompts × step143000 / step 0, long prompts hash `91e85cc95888`), L1–24, both frames,
+`admit run --n-draws 200 --seed 0`, both `min_cluster_size` arms, real and `--calibrate`,
+at M = 32 and at M = 0. A band is 32 records (4 prompts × 8 layers). Deduped, the runs keep
+339–699 tokens, under the ~1000 where the deduped null was seen to drift (`design-1d.md`
+row "scope"); the calibration is still the reference.
+
+**What is new and what is not.** Positions below `n_v1` (467, 482, 242, 446) reproduce the v1
+runs that set the cut (6 of 8 bit-identical, `prefix_check.json`). The fresh part is the
+continuation: 1373, 550, 1783 and 1590 tokens. The null and its calibration are refitted on
+the longer deduped set, so even groups inside the prefix face a different bar.
+
+**Rule** (primary: `excess`, `min_cluster_size` 2; 6 cells = 2 frames × 3 bands):
+
+| step 0 at M = 32, per cell | reading |
+|---|---|
+| admits in ≤ 3 of 32 records (`RELEASE_BOUND`, the report's own control condition) | pass |
+| admits in > 3, and in more records than its calibration | fail |
+| admits in > 3, calibration in at least as many | unreadable (null off nominal at length) |
+
+The cut **holds** if all 6 cells pass and **fails** if any cell fails; otherwise it is
+reported cell by cell as partial. On a fail the decision goes back to the user (a cut fixed by
+a rule, or option (a)).
+
+**Can the test fail?** M = 0 on the same runs is the check. On v1, step 0 at M = 0 admitted in
+43 · 54 · 56 of 56 records (centred). If step 0 at M = 0 admits in ≤ 3 of 32 in most centred
+cells on the long runs, the instrument does not see the opening at length, and an M = 32 pass
+is not read.
+
+**Reported, not part of the verdict:** `min_cluster_size` 4, `log_life`, step143000 at both
+M, where step 0's admitted groups at M = 32 sit (inside `[32, n_v1)` or past `n_v1`), and
+#123's position check on them.
+
+**Output:** `data/p1d/long_m32_2026-10-01/` (`{real,calibrate,report}_m{32,0}.*`,
+`position_m32.{json,txt}`, `run_all.sh`, `run.log`, `verdict.py` applies the rule; `pilot/`
+is the one-record populated check). Code: `claude/p1d-long-m32` at `f6c8ea4`, no code change; env: conda `mets`, local
+box, `OMP_NUM_THREADS=1`, 14 workers. **Re-run:** `run_all.sh` (~25 min per pass, 4 passes),
+then `python -m p1d_cluster_ensemble.position_check --real real_m32.json --out
+position_m32.json` (~15 min beside the batch).
+
+**Result: the cut fails** (rule above). Step 0 at M = 32, `excess`, records admitting of 32,
+real / calibration:
+
+| arm | frame | L1–8 | L9–16 | L17–24 |
+|---|---|---|---|---|
+| **2 (primary)** | centred | 0 / 0 | 0 / 0 | 0 / 0 |
+| **2 (primary)** | raw | 0 / 0 | 0 / 1 | **4 / 0: fail** |
+| 4 | centred | 0 / 0 | 1 / 2 | **13 / 0** |
+| 4 | raw | 0 / 0 | 3 / 0 | 1 / 0 |
+
+`log_life` agrees: centred L17–24 6 / 0 (arm 2), 18 / 0 (arm 4); arm 4 centred L9–16 8 / 1.
+
+- **The primary fail is marginal and not the opening.** Its 7 admitted groups are pairs and one
+  group of 5 (`latex_monograph`, `sullivan_ballou`, `wiki_paragraph`, L19–22), p 0.015–0.05,
+  members far apart (e.g. positions 208 and 832); position check: 0 positional, 0 holding the
+  first kept token. One cell over the bound by one record, so by the rule it fails, and nothing
+  in it looks like the mechanism the cut was for.
+- **The sensitivity arm is the mechanism, moved to the cut.** All 14 of step 0's admitted
+  centred arm-4 groups (13 at L17–24, 1 at L9–16) hold position 32, the first token the cut
+  keeps, and all 14 are positional (`p_near` ≤ 0.05). They come from 2 of 4 prompts
+  (`hdbscan_code` 8 records, `wiki_paragraph` 5; per prompt, 2 of 4 against calibration 0),
+  33–81 members, 55–75 % of them among the first |g| kept tokens, median position 50–140.
+  As at M = 8 on v1, the opening moves with the cut. *Location (pre-stated, added after
+  `/challenge-pr` on #126, finding 3):* 13 of the 14 also hold members past `n_v1`, 2–28 per
+  group, as late as position ~2000, so they are an opening core plus scattered late tokens,
+  like #123's parked "step 0's late members".
+- **Counted per prompt** (`/challenge-pr` on #126, finding 2): the primary fail's 4 records are
+  3 prompts (one pair, ` help` / ` always` at 208 / 832, is admitted at L20 and L21), and the
+  same cell's calibration admitted in 4 of 56 on v1 at M = 32. Records are 8 adjacent layers
+  of one prompt, so a per-record bound overstates both cells.
+- **Why v1 passed at 32 and long does not** (a reading, not tested): an opening run of ~30
+  tokens is 12–29 % of v1's 103–248 kept tokens at M = 32 and 5–9 % of the long runs' 317–671,
+  so at length it is a small dense part of a larger cloud, which is what beats the cloud's own
+  Gaussian. A run that is most of the cloud cannot (#125's reading 3). If so, the cut passed on
+  v1 partly because v1 is short. Against it: across prompts the share does not order the
+  failures (`hdbscan_code`, the smallest long cloud at 317, fails; `latex_monograph` at 525
+  and `sullivan_ballou` at 387 do not); within each prompt, long is larger than v1.
+- **Trained admission survives at length:** step143000 admits in 27–32 of 32 records per
+  cell (arm 2; calibration 2 · 2 · 9 centred, 6 · 2 · 10 raw). Released at M = 32: arm 2
+  centred L1–8, L9–16 and raw L9–16; arm 4 centred L1–8, L9–16 and raw L1–8, L9–16. L17–24 is
+  withheld in both frames (calibration 9–13 of 32: the deduped null is off nominal late at
+  length). Position check, admitted vs not (arm 2, centred): positional 13 vs 19 %, 41 vs 40 %,
+  39 vs 35 %; first kept 1–2 %.
+- **The test could fail (M = 0 on the same runs):** step 0 admits in 22 / 2 · 31 / 0 · 32 / 0
+  (centred) and 13 / 0 · 18 / 0 · 19 / 1 (raw) records, arm 2; arm 4 centred 23 / 0 · 30 / 1 ·
+  32 / 0. All 85 centred arm-2 groups hold position 0 (median 38 members). So the instrument
+  sees the opening at length, and the cut takes arm 2 from there to 0 · 0 · 0 centred; arm 4 at
+  L17–24 goes from 32 to 13.
+
+**Reading.** By the rule committed before the run, the cut fails, and the decision goes back to
+the user. The primary-arm fail alone would be a weak reason (one record over the bound, not
+the opening). The sensitivity arm is the strong one: the opening re-forms at the first kept
+token, as it did at M = 8 on v1, so the cut moved the effect rather than removing it. It
+also weakens as M grows (v1, arm 2: 153 groups at M = 0, 9 at 8, 0 at 32; long, arm 4 centred
+L17–24: 32 records at M = 0, 13 at 32). *Revised after `/challenge-pr` on #126 (finding 1,
+agreed):* the first version said a larger cut moves the opening "whatever M is". From #123's
+prefix average, tokens just past M share positions 0..M−1, a share M / (t + 1) of their
+prefix, but the average of M near-orthogonal values has norm ~1/√M, so the shared pull falls
+with M. What the data support is that the cut that removes the opening depends on prompt
+length: 32 does on v1, not at ~2000 tokens. A larger M (128 was proposed) is untested, and
+picking it on the long runs would repeat the tuning-on-the-control problem one level up.
+
+**For the user (Blocked 11″):** the cut is not in the definition. Options: (a) the
+position-keeping null (~7 h on v1; the long runs would add about as much again), which judges
+every group, trained ones included, against a null that keeps position. It addresses the
+opening, **not** the primary cell that failed (raw L17–24: non-positional pairs, `/challenge-pr`
+on #126 finding 2), so under (a) that cell stays as it is. A cut that scales with length, or a
+rule fixed in advance, tested on data it was not set on (no third set of prompts exists yet).
+A group-level rule (for example, drop groups holding the first kept token), post hoc on this
+run. Also open: whether the control and release bound count prompts rather than layer-records.
+Recommendation: (a), with the raw L17–24 cell read as the noise level of the deduped null at
+length.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it
