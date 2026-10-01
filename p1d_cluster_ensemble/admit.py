@@ -324,30 +324,46 @@ def rank_p(obs: float, null_max: np.ndarray) -> float:
 
 def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
                  min_cluster_sizes: Sequence[int] = MIN_CLUSTER_SIZES,
-                 alpha: float = ALPHA, calibrate: bool = False) -> Dict:
+                 alpha: float = ALPHA, calibrate: bool = False, null_kind: str = "gaussian",
+                 positions: Optional[Sequence[int]] = None) -> Dict:
     """
     One (layer, frame): every level-set HDBSCAN group, its statistics, p
     and verdict, per ``min_cluster_size`` arm; the shipped call's labels and
     `shipped_check` beside them; and, per draw, the null's maxima and group
     counts (ours and the shipped call's).
 
-    ``calibrate`` replaces the rows by one draw of their own Gaussian, as
-    `gaussian_null.null_record` does; the draws are then the same ones
-    `gaussian_null` makes for this seed.
+    ``calibrate`` replaces the rows by one draw of their own null, as
+    `gaussian_null.null_record` does, and refits the null to it; for the
+    Gaussian the draws are then the same ones `gaussian_null` makes for this
+    seed. ``null_kind`` other than ``"gaussian"`` keeps a per-token mean
+    (`position_null`, Blocked 11″) and needs the rows' absolute ``positions``.
     """
+    from . import position_null
     if frame not in FRAMES:
         raise ValueError(f"unknown frame {frame!r}; use one of {FRAMES}")
+    if null_kind != "gaussian" and positions is None:
+        raise ValueError(f"null {null_kind!r} needs the rows' positions")
+    pos = np.arange(len(Y)) if positions is None else np.asarray(positions)
     Z, info = frame_vectors(Y, frame)
     Zs = span_coordinates(Z)
     if calibrate:
-        Zs = span_coordinates(gaussian_draw(Zs, np.random.default_rng(seed + CALIBRATE_SEED_OFFSET)))
+        cal_rng = np.random.default_rng(seed + CALIBRATE_SEED_OFFSET)
+        if null_kind == "gaussian":
+            Zs = span_coordinates(gaussian_draw(Zs, cal_rng))
+        else:
+            mu, R, _ = position_null.fit(Zs, pos, null_kind)
+            Zs = span_coordinates(position_null.draw(mu, R, cal_rng))
         info = {**info, "calibrate": True}
+    if null_kind != "gaussian":
+        mu, R, fit_info = position_null.fit(Zs, pos, null_kind)
+        fit_info.pop("cv", None)
+        info = {**info, "position_null": fit_info}
     obs = {m: layer_groups(Zs, m) for m in min_cluster_sizes}
     null = {m: {"k": [], "shipped_k": [], "shipped_tie_artefacts": [],
                 **{s: [] for s in STATISTICS}} for m in min_cluster_sizes}
     rng = np.random.default_rng(seed)
     for _ in range(int(n_draws)):
-        X = gaussian_draw(Zs, rng)
+        X = gaussian_draw(Zs, rng) if null_kind == "gaussian" else position_null.draw(mu, R, rng)
         for m in min_cluster_sizes:
             _, rows, check = layer_groups(X, m)
             null[m]["k"].append(len(rows))
@@ -381,7 +397,8 @@ def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
 # ---------------------------------------------------------------------------
 
 def _job(args: Tuple) -> Dict:
-    run_dir, layer, frame, n_draws, seed, calibrate, min_position = args
+    run_dir, layer, frame, n_draws, seed, calibrate, min_position = args[:7]
+    null_kind = args[7] if len(args) > 7 else "gaussian"
     acts = np.load(Path(run_dir) / "activations.npz")["activations"]
     tokens = run_tokens(Path(run_dir))
     if len(tokens) != acts.shape[1]:
@@ -397,7 +414,8 @@ def _job(args: Tuple) -> Dict:
         return {**base, "skipped": f"{keep.size} distinct strings < {MIN_TOKENS}",
                 "info": {"frame": frame}}
     t0 = time.time()
-    rec = admit_record(acts[layer][keep], frame, n_draws, seed, calibrate=calibrate)
+    rec = admit_record(acts[layer][keep], frame, n_draws, seed, calibrate=calibrate,
+                       null_kind=null_kind, positions=keep)
     rec.update(base)
     rec["seconds"] = round(time.time() - t0, 2)
     return rec
@@ -419,6 +437,9 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--min-position", type=int, default=0,
                     help="diagnostic arm: test only kept tokens at absolute position >= this "
                          "(drops the prompt's opening; `status-1d.md` \"Position\")")
+    ap.add_argument("--null", default="gaussian", choices=("gaussian", "prefix", "smooth"),
+                    help="gaussian (#122), or keep position: prefix (primary) / smooth "
+                         "(`position_null`, `status-1d.md` \"Blocked 11″ decided\")")
     add_holdout_args(ap)
     args = ap.parse_args(argv)
 
@@ -430,7 +451,8 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         print(f"refusing: no runs, or missing activations.npz / geometry.json in {missing}",
               file=sys.stderr)
         return 1
-    jobs = [(str(r), int(L), f, args.n_draws, args.seed, args.calibrate, args.min_position)
+    jobs = [(str(r), int(L), f, args.n_draws, args.seed, args.calibrate, args.min_position,
+             args.null)
             for r in runs for L in args.layers for f in args.frames]
 
     # Resumable as `gaussian_null`: each record is written as it finishes and
@@ -439,7 +461,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     parts.mkdir(parents=True, exist_ok=True)
     settings = {"n_draws": args.n_draws, "seed": args.seed, "calibrate": bool(args.calibrate),
                 "alpha": ALPHA, "min_cluster_sizes": list(MIN_CLUSTER_SIZES),
-                "min_position": args.min_position}
+                "min_position": args.min_position, "null": args.null}
     fingerprints = {str(r): input_fingerprint(r, ("activations.npz", "geometry.json"))
                     for r in runs}
 
@@ -508,6 +530,9 @@ def _cell(recs: List[Dict], arm: str, stat: str) -> Dict:
     adm = [g for g in groups if g[f"admitted_{stat}"]]
     return {"n": len(recs),
             "records_admitting": int(sum(r["arms"][arm]["n_admitted"][stat] > 0 for r in recs)),
+            "prompts": len({r["prompt"] for r in recs}),
+            "prompts_admitting": len({r["prompt"] for r in recs
+                                      if r["arms"][arm]["n_admitted"][stat] > 0}),
             "groups": len(groups), "admitted": len(adm),
             "shipped_groups": int(sum(r["arms"][arm]["shipped"]["k"] for r in recs)),
             "shipped_tie_artefacts": int(sum(r["arms"][arm]["shipped"]["tie_artefacts"]
@@ -529,9 +554,9 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
     """
     if not cal.get("calibrate") or real.get("calibrate"):
         raise ValueError("need a real file and a --calibrate file, in that order")
-    for k in ("seed", "alpha", "min_cluster_sizes", "n_draws", "min_position"):
-        if real.get(k, 0 if k == "min_position" else None) != cal.get(
-                k, 0 if k == "min_position" else None):
+    default = {"min_position": 0, "null": "gaussian"}
+    for k in ("seed", "alpha", "min_cluster_sizes", "n_draws", "min_position", "null"):
+        if real.get(k, default.get(k)) != cal.get(k, default.get(k)):
             raise ValueError(f"real and calibration differ in {k}; a calibration is "
                              "only read against its own settings")
     if {Path(p).name for p in real["inputs"]} != {Path(p).name for p in cal["inputs"]}:
@@ -610,17 +635,19 @@ def table_text(rows: List[Dict]) -> str:
              f"calibration and the {CONTROL_STEP} control each admit in <= {RELEASE_BOUND:.0%} "
              "of records (the control itself is never released).",
              "rec = records with >= 1 admitted group; adm = admitted groups (pairs); "
-             "grp = all HDBSCAN groups"]
+             "grp = all HDBSCAN groups; prm = prompts with >= 1 admitting record / prompts"]
     head = None
     for r in rows:
         if (r["stat"], r["arm"]) != head:
             head = (r["stat"], r["arm"])
             lines.append(f"\n[{r['stat']}, min_cluster_size {r['arm']}]  step        frame    band    "
-                         f"  n | real rec  adm (pairs)   grp | cal rec  adm   grp | release")
+                         f"  n | real rec  adm (pairs)   grp prm | cal rec  adm   grp prm | release")
         a, c = r["real"], r["cal"]
         lines.append(f"  {'':<34}{r['step']:<11} {r['frame']:<8} {r['band']:<7} {a['n']:>3} | "
                      f"{a['records_admitting']:>8} {a['admitted']:>4} ({a['admitted_pairs']:>4}) "
-                     f"{a['groups']:>5} | {c['records_admitting']:>7} {c['admitted']:>4} {c['groups']:>5} | "
+                     f"{a['groups']:>5} {a['prompts_admitting']:>1}/{a['prompts']:<1} | "
+                     f"{c['records_admitting']:>7} {c['admitted']:>4} {c['groups']:>5} "
+                     f"{c['prompts_admitting']:>1}/{c['prompts']:<1} | "
                      f"{'yes' if r['released'] else 'no: ' + r['withheld']}")
     return "\n".join(lines)
 
