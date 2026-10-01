@@ -306,7 +306,11 @@ def _job(args: Tuple) -> Dict:
     step, prompt = _step_prompt(Path(run_dir))
     t0 = time.time()
     data = LayerData.from_normed(layer_activations(run, layer))
-    rec = layer_record(data, settings)
+    try:
+        rec = layer_record(data, settings)
+    except Exception as exc:
+        # A pool's traceback does not say which job raised; this does.
+        raise RuntimeError(f"vote_rules failed on {run_dir} L{layer}: {exc!r}") from exc
     rec.update({"run_dir": str(run_dir), "step": step, "prompt": prompt,
                 "layer": int(layer), "band": band_of(int(layer)), "n_tokens": data.n,
                 "seconds": round(time.time() - t0, 1)})

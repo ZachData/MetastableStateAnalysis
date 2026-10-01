@@ -175,6 +175,16 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-09-30, a library's output: scipy 1.15's average linkage returned a
+  tree that merged a node with itself (a tied co-association, 1d's vote
+  rules; `status-1d.md` "Vote rules"). `consensus_partition` never checked
+  the tree; `fcluster` happened to, and raised. The same tree reaches the
+  visualisation's `consensus_order`, whose `except ValueError` turns it
+  into an unsorted heatmap without a word. The batch died 24 of 48 in, and
+  the pool's traceback did not name the record, so finding the input took a
+  re-run under a wrapper. Rule: validate what a library returns when its
+  failure has a shape (`is_valid_linkage`), and a batch job's error names
+  its input.
 - 2026-09-25, Phase 1d's gate: a null draw where a method builds no partition
   was dropped as NaN, which silently raised the p floor. On the first real
   run, agglomerative at fine thresholds had 0 of 20 usable draws and HDBSCAN
