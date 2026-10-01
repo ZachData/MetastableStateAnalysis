@@ -210,3 +210,4 @@ running median of the rows above it gets a line under the table saying why.
   to 320k and every wait re-read it; about 15 calls were polls or waits on the batch, and
   the batch had to be restarted once (the float-floor defect). The lit scan + design was
   a natural PR boundary that was not taken, because the run was in the same request.
+| 2026-10-01 | 1d Blocked 11′: M = 32 cut on the long prompts (before challenge-pr) | 69 | 143k | 7.2M | 32k | #126 |
