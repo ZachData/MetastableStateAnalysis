@@ -1921,8 +1921,10 @@ The cut is not in the definition. Its form, fixed before any code or run:
 
 | | |
 |---|---|
-| primary | `x_t = μ̂_t + ε`, `μ̂_t` = the record's mean plus one fitted coefficient times the *causal* running mean of the kept rows before `t` (#123's mechanism: near-uniform attention makes early tokens share a prefix average); `ε` drawn as `gaussian_draw` draws, from the residual's covariance; unit rows. With the coefficient forced to 0 it is `gaussian_draw`, draw for draw (a test). |
-| sensitivity arm | `μ̂_t` = leave-one-out Gaussian kernel smoother over absolute position, bandwidth by leave-one-out CV on a grid ending at "no position" |
+| primary | `x_t = μ̂_t + ε`, in the frame's span coordinates. `μ̂_t = Z̄ + c (P_t − P̄)`, with `P_t` the *causal* running mean of the kept rows before `t` (the first kept row gets `P̄`), `c` one least-squares scalar per record **on the centred regressor** (#123's mechanism: near-uniform attention makes early tokens share a prefix average). `ε = G R / √n` as in `gaussian_draw`, `R = Z − μ̂` the *regression* residual (mean 0 by construction); unit rows. With `c` forced to 0 it is `gaussian_draw`, draw for draw (a test). *Clarified after `/challenge-pr` on #127, finding 1:* uncentred, `P_t` is nearly `Z̄` in the raw frame and `c` collapses (0.03 on step-0 `wiki_paragraph`; centred 0.24–0.33). |
+| sensitivity arm | `μ̂_t` = leave-one-out Gaussian kernel smoother over **log(1 + absolute position)**, bandwidth by leave-one-out CV on a grid ending at "no position". *Changed after `/challenge-pr` on #127, finding 3:* on absolute position CV picks 24–93 tokens, wider than the opening; the prefix pull falls as `M / (t + 1)`, so log position is the mechanism's scale (it also fitted better in 4 of 4 step-0 records the reviewer tried) |
+| rule (fixed before the run; finding 4) | the verdict is the primary's step 0, `excess`, `min_cluster_size` 2, 6 cells (2 frames × 3 bands) of 56 records, #126's table: ≤ 5 records admitting (`RELEASE_BOUND`) pass; > 5 and more than its calibration fail; otherwise unreadable. All 6 pass = the null controls position, and trained cells are read through `admit report`'s release rule. Any fail: the decision returns to the user. The arm is reported beside it; where it and the primary disagree, the primary decides and the disagreement is reported. Can it fail: step 0 under the plain Gaussian at M = 0 admitted in 43 · 54 · 56 (centred) |
+| known risk (finding 2) | one pooled `c` is fitted mostly where there is no opening. On step 0 the reviewer found `c` 0.21–0.34 pooled (centred, R² < 1 %) against 0.38–0.58 on the first 32 kept rows (R² 4–12 %) and ≤ 0 past 32, so the null may reproduce only about half the opening's shift, and step 0 could fail on the fit rather than the mechanism. Not redesigned before seeing the run. On a step-0 fail the report gives `c` on the first 32 kept rows beside the pooled one, as a diagnosis, not a rescue |
 | calibration | one draw of the same null as pseudo-data, the null refitted to it (as `--calibrate`) |
 | input, first run | v1 (#122's 14 runs, M = 0), then the long runs |
 | counting | the verdict stays per layer-record (comparable with #122–#126); a per-prompt count is reported beside it |
@@ -1940,10 +1942,14 @@ cosine set): `hdbscan` 0.8.41 (`min_samples` 2) and scikit-learn 1.7.2 `HDBSCAN`
 setting (`min_samples` 3: sklearn counts the point itself) each change their clustering in
 **26 of 30** row orders; a repeat on one order is identical. Scratch checks beside it (not
 committed): 11 of 30 for 3 Euclidean blobs with `hdbscan`, group count 2–5 across orders;
-sklearn 9–18 tie-artefact groups per order; `level_set_hdbscan` 0 of 10. Known
-upstream only as a suspicion: scikit-learn-contrib/hdbscan #241 (2018, open; the maintainer:
-"Perhaps there are some ties in distances"); nothing found on scikit-learn's tracker. Reporting
-it (comment on #241, issue on scikit-learn) is the user's call; draft in
+sklearn 9–18 tie-artefact groups per order; `level_set_hdbscan` 0 of 10. **Known upstream
+as a symptom, not diagnosed or fixed** (*corrected after `/challenge-pr` on #127, finding 5*):
+scikit-learn-contrib/hdbscan #265 (2018, open) is the exact row-order report (duplicate points,
+Jaccard); on #409 (2020, open) a commenter names non-unique MST edge weights; on #241 (column
+order) the maintainer guessed ties. New from 1d: ties come from core distances, so they are
+the rule even without duplicates; a measure (groups never a graph component); a tested fix;
+scikit-learn has it too (nothing found on its tracker). Reporting it (a comment on #265, an
+issue on scikit-learn) is the user's call; draft in
 `docs/upstream/hdbscan_ties.md`, repro `tools/hdbscan_tie_repro.py`.
 
 **Where 1d stands** (each row's numbers are in the section named; this table is the summary

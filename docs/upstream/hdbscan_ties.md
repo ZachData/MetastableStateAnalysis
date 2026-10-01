@@ -1,17 +1,22 @@
 # Draft: HDBSCAN's clusters depend on row order (tied mutual-reachability edges)
 
 **Status: draft, not posted.** Posting is the user's call (`STATE.md` Blocked 12).
-Two targets: a comment on scikit-learn-contrib/hdbscan #241 ("HDBSCAN clustering results
-depend on column order", 2018, open), and a new issue on scikit-learn (`sklearn.cluster.HDBSCAN`
-shares the tree code). Evidence: `p1d_cluster_ensemble/status-1d.md` "Admission" and
-"Blocked 11″ decided". Repro: `tools/hdbscan_tie_repro.py`.
+Two targets: a comment on scikit-learn-contrib/hdbscan #265 ("HDBSCAN gives different
+clustering results if the order of the dataframe rows changes", 2018, open; related: #409,
+where a commenter names non-unique MST edge weights, and #241, column order, where the
+maintainer guessed ties), and a new issue on scikit-learn (`sklearn.cluster.HDBSCAN` shares
+the tree code), linking #265. What is new here: the cause is structural (core distances), a
+measure, a tested fix, and scikit-learn reproduces it. Evidence:
+`p1d_cluster_ensemble/status-1d.md` "Admission" and "Blocked 11″ decided". Repro:
+`tools/hdbscan_tie_repro.py`.
 
 ---
 
 **Title:** Clustering changes with row order when mutual-reachability distances tie (which is
 common, not an edge case)
 
-**Summary.** The same points in a different row order give a different clustering. Repeated
+**Summary.** Following up #265 and #409 with a diagnosis and a fix. The same points in a
+different row order give a different clustering, without duplicate points. Repeated
 fits on one order are identical, so this isn't randomness. In our data (cosine distances
 between transformer hidden states, `min_cluster_size=2`, `min_samples=2`) a large share of
 returned clusters are not connected components of the thresholded mutual-reachability graph
