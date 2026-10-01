@@ -180,7 +180,7 @@ def cos_to_first(run_dir: Path, layers: Sequence[int], frame: str = "centred") -
     acts = np.load(Path(run_dir) / "activations.npz")["activations"]
     keep = first_occurrences(run_tokens(Path(run_dir)))
     out = {}
-    for L in layers:
+    for L in (L for L in layers if L < acts.shape[0]):
         Z, _ = frame_vectors(acts[L][keep].astype(np.float64), frame)
         c = Z @ Z[0]
         out[int(L)] = [float(c[(keep >= a) & (keep < b)].mean()) if np.any((keep >= a) & (keep < b))
@@ -210,7 +210,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     runs = sorted({r["run_dir"] for r in d["records"]})
     probe = {}
     for rd in runs:
-        probe[rd] = {"attention_tv_to_uniform": attention_uniformity(Path(rd)),
+        # `admit run` needs no attentions; their absence is recorded, not fatal.
+        has_attn = (Path(rd) / "attentions.npz").exists()
+        probe[rd] = {"attention_tv_to_uniform": (attention_uniformity(Path(rd)) if has_attn
+                                                 else "unavailable: no attentions.npz"),
                      "cos_to_first_centred": cos_to_first(Path(rd), (4, 12, 20))}
     out = {"real": str(args.real), "n_draws": args.n_draws, "seed": args.seed, "near": NEAR,
            "alpha": ALPHA, "stat": args.stat, "min_position": d.get("min_position", 0),

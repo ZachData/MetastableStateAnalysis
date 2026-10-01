@@ -68,3 +68,23 @@ def test_check_file_and_summarise():
     assert summ[True]["n"] == 1 and summ[True]["positional"] == 1.0
     assert summ[False]["has_first_kept"] == 0.0
     assert summ[True]["mostly_near"] == 1.0 and summ[False]["mostly_near"] == 0.0
+
+
+def test_cli_writes_report_without_attentions(tmp_path):
+    import json
+    from p1d_cluster_ensemble.admit import _job
+    from p1d_cluster_ensemble.position_check import main
+    d = tmp_path / "2026-01-01_00-00-00" / "pythia-410m-step143000_wiki_paragraph"
+    d.mkdir(parents=True)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((40, 12))
+    X[-8:] = 5 * np.eye(12)[1] + 0.1 * rng.standard_normal((8, 12))
+    np.savez(d / "activations.npz", activations=np.stack([X, X]).astype(np.float32))
+    (d / "geometry.json").write_text(json.dumps({"tokens": [f"t{i}" for i in range(40)]}))
+    real = tmp_path / "real.json"
+    real.write_text(json.dumps({"records": [_job((str(d), 1, "raw", 9, 0, False, 0))]}))
+    out = tmp_path / "pos.json"
+    assert main(["--real", str(real), "--out", str(out), "--n-draws", "50"]) == 0
+    rep = json.loads(out.read_text())
+    assert rep["runs"][str(d)]["attention_tv_to_uniform"].startswith("unavailable")
+    assert rep["groups"] and out.with_suffix(".txt").exists()
