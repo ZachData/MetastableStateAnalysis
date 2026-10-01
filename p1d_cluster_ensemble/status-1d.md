@@ -1279,6 +1279,107 @@ Per prompt, v1's offsets, all tokens, L17–23: `hdbscan_code` +0.04, `latex_mon
   counts compare at equal power. Cost: a `--subsample` option and ~1 h. Could
   change: whether L1–8's ~4× larger 2-means effect is length or sample size.
 
+### Vote rules: can a weighting make the grading usable? (DONE 2026-09-30; branch `claude/p1d-vote-rules`)
+
+**Question.** The weighting decision A0 left open (`/challenge-pr` on #100,
+finding 1): core / halo / contested is not a usable readout until it is
+decided (a) what a token outside a family's substantial structure does on a
+pair (now: HDBSCAN's -1 abstains, another family's singleton votes "apart";
+`refusal_fraction` already calls them the same refusal) and (b) how votes
+are weighted (now: raw stability, highest at k = 2 and at fine scales).
+
+**Rules compared**, all on the same tuned labels and null draws
+(`p1d_cluster_ensemble/vote_rules.py` docstring): noise `current` /
+`abstain_small` (every cluster < 4 tokens abstains) / `singleton` (-1 votes
+"apart") × weights `stability` / `uniform` / `kappa` (stability above its own
+null, Cohen's form). Thresholds recomputed under each rule. **Reading fixed
+before the batch** (docstring): primary = single-family sway (drop one
+family, nulls too; worst case over families of the core-set Jaccard, plus,
+added after the one-record smoke, the worst Spearman of per-token
+confidence); guard = dominance (consensus ARI to one family ≥ 0.95).
+
+**Input.** 8 v1 prompts × step143000 / step 0 (410m; the 16 runs in
+`data/p1d/gaussian_null_2026-09-26/null.json` `inputs`) × L6 / 12 / 18 = 48
+layer-records; quick grid, seed 0, 5 repeats, 20 gate nulls, 10 confidence
+nulls; code `2a176a4` (24 records from the first batch, which died there,
+and 3 from the diagnostic re-run, the same code under a wrapper that only
+acts on failure) and `631473c` (21; differs only on an invalid tree, which
+would have crashed). Parts are reused on matching settings and inputs, not
+on the code version. The reference rule reproduces A0's
+stored `wiki_paragraph` L12 exactly (core 257 / halo 88 / contested 122).
+Output `<main>/data/p1d/vote_rules_2026-09-30/vote_rules.{json,txt}`.
+
+**Result: no rule passes.** Medians over 24 records per step:
+
+| step143000 | worst core J | veto (J < 0.5) | worst conf. ρ | dom. ≥ 0.95 | empty core | core share | k |
+|---|---|---|---|---|---|---|---|
+| current · stability (run_1d's) | 0.00 | 23 | 0.12 | 9 | 5 | 0.38 | 4 |
+| current · uniform | 0.10 | 23 | 0.08 | 7 | 6 | 0.41 | 6 |
+| current · kappa | 0.04 | 23 | −0.01 | 11 | 4 | 0.48 | 4 |
+| abstain_small · stability | 0.00 | 22 | 0.34 | 14 | 13 | 0.00 | 3 |
+| abstain_small · uniform | 0.00 | 22 | 0.22 | 13 | 11 | 0.02 | 3 |
+| abstain_small · kappa | 0.00 | 23 | 0.46 | 14 | 12 | 0.00 | 3 |
+| singleton · stability | 0.05 | 23 | 0.14 | 7 | 5 | 0.52 | 6 |
+| singleton · uniform | 0.20 | 22 | 0.32 | 4 | 3 | 0.47 | 10 |
+| singleton · kappa | 0.21 | 21 | 0.28 | 8 | 5 | 0.62 | 7 |
+
+- **Under every rule, one family's removal replaces the core set** in 21–23 of
+  24 trained records, and the per-token confidence ranking after the worst
+  drop agrees with the full one at ρ ≤ 0.46 (median). The same holds in each
+  band (L6 / 12 / 18 separately: J ≤ 0.47, ρ ≤ 0.38 for the three rules
+  broken out). Step 0 is no better (14–21 vetoes, ρ 0.28–0.55).
+- **No one family is the culprit:** the worst drop is k-means, HDBSCAN or
+  agglomerative about equally often (53 / 49 / 47 of 216 rule-records).
+- **`abstain_small`, the design's own reading of a refusal, turns the
+  consensus into k-means** (dominance ≥ 0.95 in 13–14 of 24) and empties the
+  trained core in 11–13 of 24, while **step 0's core share is 0.95–1.00**:
+  under it the untrained model is graded far more clustered than the trained
+  one. *Revised after `/challenge-pr` on #120:* that contrast is the null
+  threshold, not the vote: its median core threshold is 0.32 at step 0 and
+  0.83 trained (the first write-up guessed token identity).
+- What the rules do change: the consensus k (3 to 10) and the core share
+  (0 to 0.62). A choice among them moves the readout without stabilising it.
+
+**Reading.** No weighting or noise rule tried makes the grading usable.
+*Revised after `/challenge-pr` on #120:* why is a hypothesis, not a
+finding. The first write-up said the cause is the scale mix (a k = 2 vote
+beside k ≈ 100–280 votes; `lit-1d.md` §1, option D). In a planted-caps toy
+the mix is enough to cause sway and matched scale passes
+(`tests/test_phase1d_vote_rules.py`), but 41 of 48 records mix k ≤ 4 with
+k ≥ 50, so this batch cannot separate the two. The one near-matched slice
+(step 0 `repeated_tokens`, every family at k 2–5) still sways: worst ρ
+−0.18 / 0.69 / 0.53 at L6 / 12 / 18, consensus ARI 0.03–0.30, though that
+prompt has 3 distinct strings. **For the user:** retire core / halo /
+contested as 1d's product (P-C4, unregistered, would score noise), or first
+build a matched-scale vote and ask again, with no evidence yet that it
+would pass on Pythia. Claude recommends retiring it; the per-family gate,
+the merge tree and the nulls are the parts that have held.
+
+**Fixed on the way (a defect).** scipy 1.15's average linkage returned an
+invalid tree (a node merged with itself) on a tied co-association (446
+tokens, 27 row types, 10 values; a null draw under a leave-one-out rule).
+`consensus_partition` did not check, `fcluster` raised, and the batch died
+24 of 48 in. It now rebuilds an invalid tree on distances rounded to 12
+decimals, and refuses if that is invalid too; a valid tree is untouched
+(`ensemble.py`, regression case inline in `tests/test_phase1d_ensemble.py`;
+`LESSONS.md` 2). The failure depends on token order (0 of 20 permutations
+reproduce it); on tied matrices the consensus is not unique either (other
+orders give ARI 0.97–1.0 at the same objective; `/challenge-pr` on #120).
+
+**Re-run** (~25 min at 14 workers, resumable):
+
+    OMP_NUM_THREADS=1 python -m p1d_cluster_ensemble.vote_rules --v1-only \
+      --workers 14 --runs $RUNS --out <main>/data/p1d/vote_rules_2026-09-30/vote_rules.json
+
+**Parked** (discoveries, not followed):
+- **The grading's null.** Thresholds come from the shuffled-dimension null,
+  which #106 and #108 showed is beaten by position and token identity alone.
+  Cost: swap in the Gaussian null per draw, ~1 h. Could change: only matters
+  if the grading is kept.
+- **`consensus_order` (visualisation) on an invalid tree** returns an
+  unsorted heatmap without saying so (`cluster_methods.py`). Cost: minutes.
+  Could change: no number, only a figure's ordering.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it

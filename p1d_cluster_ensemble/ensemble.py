@@ -57,6 +57,9 @@ import numpy as np
 from .constants import SUBSTANTIAL_CLUSTER_SIZE
 
 NOISE_POLICIES = ("singleton", "exclude")
+#: PLACED: decimals `consensus_partition` rounds distances to when scipy's
+#: average linkage returns an invalid tree; 8 to 14 all repair the one case seen.
+LINKAGE_ROUND_DECIMALS = 12
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +230,7 @@ def consensus_partition(C: np.ndarray) -> Dict[str, object]:
                 "cut_height": 0.0, "objective_curve": [], "branch": "n<3"}
 
     try:
-        from scipy.cluster.hierarchy import fcluster, linkage
+        from scipy.cluster.hierarchy import fcluster, is_valid_linkage, linkage
         from scipy.spatial.distance import squareform
     except ImportError:
         labels = np.arange(n, dtype=np.int32)
@@ -246,6 +249,25 @@ def consensus_partition(C: np.ndarray) -> Dict[str, object]:
         return {"labels": labels, "n_clusters": n, "objective": _mirkin(C, labels),
                 "cut_height": 0.0, "objective_curve": [],
                 "branch": "linkage_failed_singletons"}
+    branch = "mirkin_cut"
+    if not is_valid_linkage(Z):
+        # scipy 1.15's average linkage can return a tree that merges a node
+        # with itself when the co-association has many exact ties
+        # (status-1d.md "Vote rules": 446 tokens, 27 row types, 10 distinct
+        # values; fcluster then raises). The failure depends on token order
+        # (0 of 20 permutations of that matrix reproduce it), and rounding
+        # repairs it by perturbing the merge distances the nearest-neighbour
+        # chain compares, not by removing sub-ulp noise (D had none). On
+        # tied matrices the partition is not unique anyway: other orders
+        # give ARI 0.97-1.0 at the same objective. Runs only when the
+        # unrounded tree is invalid, so every valid tree is unchanged;
+        # still invalid after it, refuse.
+        Z = linkage(squareform(np.round(D, LINKAGE_ROUND_DECIMALS), checks=False),
+                    method="average")
+        if not is_valid_linkage(Z):
+            raise ValueError("average linkage is invalid on this co-association even "
+                             f"with distances rounded to {LINKAGE_ROUND_DECIMALS} decimals")
+        branch = "mirkin_cut_rounded"
 
     heights = np.unique(np.concatenate([[0.0], Z[:, 2]]))
     curve: List[Tuple[float, float]] = []
@@ -264,7 +286,7 @@ def consensus_partition(C: np.ndarray) -> Dict[str, object]:
         "objective": float(objective),
         "cut_height": float(cut),
         "objective_curve": curve,
-        "branch": "mirkin_cut",
+        "branch": branch,
     }
 
 
