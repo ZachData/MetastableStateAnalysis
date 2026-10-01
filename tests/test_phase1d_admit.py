@@ -15,7 +15,7 @@ import pytest
 pytestmark = pytest.mark.deps
 
 from p1d_cluster_ensemble.admit import (
-    NOT_ADMITTED, NOT_TESTED, RELEASE_BOUND, _job, _mst, admit_record, branch,
+    NOT_ADMITTED, NOT_TESTED, _job, _mst, admit_record, branch,
     condense_and_select, fit_hdbscan, labels_out, layer_groups, level_set_hdbscan,
     mutual_reachability, rank_p, shipped_check, table,
 )
@@ -197,6 +197,20 @@ class TestAdmission:
                 hits[arm] += rec["arms"][arm]["n_admitted"]["excess"] > 0
         assert all(h <= 0.05 * n_rec for h in hits.values()), hits
 
+    def test_pure_gaussian_more_dims_than_points(self):
+        """The real regime (n < d, centred): 30 records of 40 points in 80
+        dimensions. Measured while building (60 records, B = 19, and 120 x
+        300, B = 39): 0-1 admitting records, both arms and statistics."""
+        n_rec, hits = 30, {"2": 0, "4": 0}
+        for s in range(n_rec):
+            rng = np.random.default_rng(5000 + s)
+            X = rng.standard_normal((40, 80)) * np.geomspace(3.0, 0.1, 80)
+            X[:, 0] += 2.0
+            rec = admit_record(_unit(X), "centred", 19, s)
+            for arm in hits:
+                hits[arm] += rec["arms"][arm]["n_admitted"]["excess"] > 0
+        assert all(h <= 0.05 * n_rec for h in hits.values()), hits
+
     def test_draws_are_gaussian_nulls(self):
         """Same seed, same draws: the shipped call's group counts equal
         `gaussian_null`'s hdb_k."""
@@ -209,61 +223,86 @@ class TestAdmission:
             assert a["arms"]["2"]["shipped"]["k"] == g["stats"]["hdb_k"]["obs"]
 
 
-def _fake_run(tmp_path, step, tokens, n_layers=3, seed=0):
+def _fake_run(tmp_path, step, tokens, cap=True, n_layers=3, seed=0):
     d = tmp_path / "2026-01-01_00-00-00" / f"pythia-410m-{step}_wiki_paragraph"
     d.mkdir(parents=True)
     rng = np.random.default_rng(seed)
-    X = np.vstack([_background(len(tokens) - 8, seed=seed), _cap(1, 8, 0.2, seed=seed + 1)])
+    X = _background(len(tokens), seed=seed)
+    if cap:
+        X[-8:] = _cap(1, 8, 0.2, seed=seed + 1)
     acts = np.stack([X + 0.01 * rng.standard_normal(X.shape) for _ in range(n_layers)])
     np.savez(d / "activations.npz", activations=acts.astype(np.float32))
     (d / "geometry.json").write_text(json.dumps({"tokens": tokens}))
     return d
 
 
+def _files(tmp_path, control_cap):
+    """Real and calibration files over a trained run (planted cap) and its
+    step-0 control (a cap only if ``control_cap``), L1, raw frame."""
+    tokens = [f"t{i}" for i in range(60)]
+    tokens[5] = tokens[3]                        # a later occurrence, not tested
+    runs = [_fake_run(tmp_path / "a", "step143000", tokens),
+            _fake_run(tmp_path / "b", "step0", tokens, cap=control_cap, seed=7)]
+    settings = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4], "n_draws": 19,
+                "inputs": [str(r) for r in runs]}
+    real = [_job((str(r), 1, "raw", 19, 0, False)) for r in runs]
+    cal = [_job((str(r), 1, "raw", 19, 0, True)) for r in runs]
+    return {**settings, "records": real}, {**settings, "calibrate": True, "records": cal}
+
+
+def _cell_of(rows, step):
+    return next(r for r in rows if r["stat"] == "excess" and r["arm"] == "2"
+                and r["step"] == step)
+
+
 class TestDriverAndReport:
-    def test_job_dedupes_and_report_releases(self, tmp_path):
-        tokens = [f"t{i}" for i in range(60)]
-        tokens[5] = tokens[3]                    # a later occurrence, not tested
-        run_dir = _fake_run(tmp_path, "step143000", tokens)
-        real = _job((str(run_dir), 1, "raw", 19, 0, False))
-        cal = _job((str(run_dir), 1, "raw", 19, 0, True))
-        assert real["n_kept"] == 59 and 5 not in real["keep"]
-        assert real["arms"]["2"]["n_admitted"]["excess"] >= 1
-        settings = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4],
-                    "inputs": [str(run_dir)]}
-        R, Cal = {**settings, "records": [real]}, {**settings, "calibrate": True, "records": [cal]}
+    def test_released_when_calibration_and_control_pass(self, tmp_path):
+        R, Cal = _files(tmp_path, control_cap=False)
+        trained = R["records"][0]
+        assert trained["n_kept"] == 59 and 5 not in trained["keep"]
         rows = table(R, Cal)
-        cell = next(r for r in rows if r["stat"] == "excess" and r["arm"] == "2")
+        cell = _cell_of(rows, "step143000")
         assert cell["band"] == "L1-8" and cell["real"]["records_admitting"] == 1
-        assert cell["released"] == (cell["cal"]["records_admitting"] <= RELEASE_BOUND)
-        out = labels_out(R, rows)
-        rec = next(r for r in out["records"] if r["arm"] == 2)
-        if cell["released"]:
-            lab = np.array(rec["labels"])
-            assert lab.size == 60 and lab[5] == NOT_TESTED
-            assert set(lab[real["keep"]]) <= {NOT_ADMITTED} | {
-                g["label"] for g in real["arms"]["2"]["groups"] if g["admitted_excess"]}
-        else:
-            assert "withheld" in rec
+        assert cell["cal"]["records_admitting"] == 0
+        assert _cell_of(rows, "step0")["real"]["records_admitting"] == 0
+        assert cell["released"] and cell["withheld"] is None
+        assert _cell_of(rows, "step0")["withheld"] == "the control step"
+        out = {(r["step"], r["arm"]): r for r in labels_out(R, rows)["records"]}
+        lab = np.array(out[("step143000", 2)]["labels"])
+        admitted = {g["label"] for g in trained["arms"]["2"]["groups"] if g["admitted_excess"]}
+        assert lab.size == 60 and lab[5] == NOT_TESTED
+        assert set(lab[trained["keep"]]) == {NOT_ADMITTED} | admitted
+        assert "labels" not in out[("step0", 2)]
+
+    def test_withheld_when_control_admits(self, tmp_path):
+        R, Cal = _files(tmp_path, control_cap=True)
+        rows = table(R, Cal)
+        cell = _cell_of(rows, "step143000")
+        assert cell["cal"]["records_admitting"] == 0
+        assert not cell["released"] and "step0 control admits in 1 of 1" in cell["withheld"]
+
+    def test_withheld_without_a_control(self, tmp_path):
+        R, Cal = _files(tmp_path, control_cap=False)
+        for d in (R, Cal):
+            d["records"], d["inputs"] = d["records"][:1], d["inputs"][:1]
+        cell = _cell_of(table(R, Cal), "step143000")
+        assert not cell["released"] and "no step0 control" in cell["withheld"]
 
     def test_withheld_when_calibration_over_admits(self, tmp_path):
-        run_dir = _fake_run(tmp_path, "step0", [f"t{i}" for i in range(60)])
-        real = _job((str(run_dir), 1, "raw", 19, 0, False))
-        settings = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4],
-                    "inputs": [str(run_dir)]}
-        # A calibration that admits in every record: nothing may be released.
-        rows = table({**settings, "records": [real]},
-                     {**settings, "calibrate": True, "records": [real]})
-        assert not any(r["released"] for r in rows)
-        assert all("withheld" in r for r in labels_out({**settings, "records": [real]},
-                                                       rows)["records"])
+        R, _ = _files(tmp_path, control_cap=False)
+        # A calibration that admits wherever the real file does.
+        rows = table(R, {**R, "calibrate": True})
+        cell = _cell_of(rows, "step143000")
+        assert not cell["released"] and cell["withheld"].startswith("calibration admits")
 
     def test_refuses_mismatched_calibration(self):
-        base = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4], "inputs": ["a/x"],
-                "records": []}
+        rec = {"step": "step0", "prompt": "x", "layer": 1, "info": {"frame": "raw"}}
+        base = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4], "n_draws": 19,
+                "inputs": ["a/x"], "records": [rec]}
         with pytest.raises(ValueError, match="calibrate"):
             table(base, base)
-        with pytest.raises(ValueError, match="seed"):
-            table(base, {**base, "calibrate": True, "seed": 1})
-        with pytest.raises(ValueError, match="prompt sets"):
-            table(base, {**base, "calibrate": True, "inputs": ["a/y"]})
+        for k, v, msg in (("seed", 1, "seed"), ("n_draws", 20, "n_draws"),
+                          ("inputs", ["a/y"], "prompt sets"),
+                          ("records", [{**rec, "layer": 2}], "different")):
+            with pytest.raises(ValueError, match=msg):
+                table(base, {**base, "calibrate": True, k: v})

@@ -29,7 +29,7 @@ Every row is from `status-1d.md`; v1 = the 8 v1 prompts on 410m.
 | Merge tree (option D) | held as a readout | the longest-lived scale is one blob + outliers in 126 of 192 records; the ≥ 2-cluster pick is Gaussian-typical ("Merge tree", "Gaussian null") |
 | Merge-tree lifetime `mt_life` | **fails its control** | untrained step 0, deduped, beats the Gaussian in 59 of 168 records (calibration 1); unexplained (Parked 11) |
 | Matched-covariance Gaussian null, deduped | held at v1 length | step 0 at its calibration on `ci2`, `nn1`, `hdb_k`, `hdb_noise`. Off nominal past ~1000 tokens (Parked: "drifts with n") |
-| HDBSCAN groups vs that null (`hdb_k`) | **the cleanest local signal** | step143000 20 groups vs 6 (centred), 109 of 168 records past the tail, calibration 1, step 0 2 (calibration 3); at length 28–31 of 32 per band, calibration 0 |
+| HDBSCAN groups vs that null (`hdb_k`) | **the cleanest local signal** | step143000 20 groups vs 6 (centred), 109 of 168 records past the tail, calibration 1, step 0 2 (calibration 3); at length 28–31 of 32 per band, calibration 0. *Weaker than it reads (2026-10-01, `/challenge-pr` on #122, `status-1d.md` "Admission"):* step 0 is above its null mean in 160 of 168 records (calibration 85) and passed the tail test only on a null twice as wide; ~40 % of the shipped groups counted are tie artefacts |
 | Global 2-means excess (`ci2`) | late only | L17–24, 42 of 56 records (calibration 5); not readable at length (calibration fires 24 of 32) |
 | Position | a confound, partly measured | 30 % of deduped nearest neighbours within 3 positions (8 % at step 0); no residual null keeps position (Parked) |
 | Attention communities vs null B | weak, late | a trained excess only at L17–23 ("Attention communities") |

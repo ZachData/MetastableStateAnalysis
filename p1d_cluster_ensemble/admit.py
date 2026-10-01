@@ -36,8 +36,11 @@ The frames, the draw, the deduplication and ``--calibrate`` are
 for the same seed. As there, the null is not at nominal level everywhere,
 so real counts are read against a calibration on the same inputs
 (``report``, which refuses any other) and labels are released per (step,
-frame, arm, band) only if that band's calibration admits in at most
-``RELEASE_BOUND`` of its records.
+frame, arm, band) only if that band's calibration, and the same band of the
+step-0 control, each admit in at most ``RELEASE_BOUND`` of their records
+(`table`); the control's own labels are never released. The bound treats
+a band's 56 records (7 prompts x 8 adjacent layers) as if independent,
+which they are not.
 
 Label codes in ``labels.json``: ``>= 0`` an admitted group (its
 level-set HDBSCAN label); ``-1`` not tested (a later occurrence of a string, dropped by
@@ -72,6 +75,8 @@ ALPHA = 0.05
 #: PLACED: a band's labels are released only if its calibration admits in at
 #: most this share of records (2 alpha).
 RELEASE_BOUND = 2 * ALPHA
+#: The untrained checkpoint: no learned content, so it must not admit.
+CONTROL_STEP = "step0"
 BANDS = ("L1-8", "L9-16", "L17-24")
 NOT_TESTED, NOT_ADMITTED = -1, -2
 
@@ -505,15 +510,31 @@ def _cell(recs: List[Dict], arm: str, stat: str) -> Dict:
 
 
 def table(real: Dict, cal: Dict) -> List[Dict]:
-    """Per (statistic, arm, step, frame, band): real against its own calibration."""
+    """
+    Per (statistic, arm, step, frame, band): real against its own
+    calibration, and whether the cell's labels may be released.
+
+    A cell is released only if (1) its calibration admits in at most
+    ``RELEASE_BOUND`` of its records, (2) it is not the control step, and
+    (3) the control step, same statistic / arm / frame / band, also admits
+    in at most ``RELEASE_BOUND`` of its records. A file without the control
+    releases nothing. ``withheld`` says which condition failed.
+    """
     if not cal.get("calibrate") or real.get("calibrate"):
         raise ValueError("need a real file and a --calibrate file, in that order")
-    for k in ("seed", "alpha", "min_cluster_sizes"):
+    for k in ("seed", "alpha", "min_cluster_sizes", "n_draws"):
         if real.get(k) != cal.get(k):
             raise ValueError(f"real and calibration differ in {k}; a calibration is "
                              "only read against its own settings")
     if {Path(p).name for p in real["inputs"]} != {Path(p).name for p in cal["inputs"]}:
         raise ValueError("real and calibration were run on different prompt sets")
+
+    def keys(d):
+        return {(r["step"], r["prompt"], r["layer"], r["info"]["frame"]) for r in d["records"]}
+
+    if keys(real) != keys(cal):
+        raise ValueError("real and calibration cover different (step, prompt, layer, frame) "
+                         f"records ({len(keys(real) ^ keys(cal))} differ)")
 
     def select(d, step, frame, band):
         return [r for r in d["records"] if r["step"] == step
@@ -525,14 +546,26 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
             for step in sorted({r["step"] for r in real["records"]}):
                 for frame in FRAMES:
                     for band in BANDS:
-                        rr, cc = select(real, step, frame, band), select(cal, step, frame, band)
-                        if not rr:
-                            continue
-                        c = _cell(cc, arm, stat)
-                        released = bool(c["n"] and c["records_admitting"] <= RELEASE_BOUND * c["n"])
-                        rows.append({"stat": stat, "arm": arm, "step": step, "frame": frame,
-                                     "band": band, "real": _cell(rr, arm, stat), "cal": c,
-                                     "released": released})
+                        rr = select(real, step, frame, band)
+                        if rr:
+                            rows.append({"stat": stat, "arm": arm, "step": step, "frame": frame,
+                                         "band": band, "real": _cell(rr, arm, stat),
+                                         "cal": _cell(select(cal, step, frame, band), arm, stat)})
+    control = {(r["stat"], r["arm"], r["frame"], r["band"]): r["real"]
+               for r in rows if r["step"] == CONTROL_STEP}
+    for r in rows:
+        c, k = r["cal"], control.get((r["stat"], r["arm"], r["frame"], r["band"]))
+        if c["records_admitting"] > RELEASE_BOUND * c["n"]:
+            why = f"calibration admits in {c['records_admitting']} of {c['n']} records"
+        elif r["step"] == CONTROL_STEP:
+            why = "the control step"
+        elif k is None:
+            why = f"no {CONTROL_STEP} control in this file"
+        elif k["records_admitting"] > RELEASE_BOUND * k["n"]:
+            why = f"{CONTROL_STEP} control admits in {k['records_admitting']} of {k['n']} records"
+        else:
+            why = None
+        r["released"], r["withheld"] = why is None, why
     return rows
 
 
@@ -546,10 +579,7 @@ def labels_out(real: Dict, rows: List[Dict], stat: str = "excess") -> Dict:
             base = {"run_dir": r["run_dir"], "step": r["step"], "prompt": r["prompt"],
                     "layer": r["layer"], "frame": r["info"]["frame"], "arm": int(arm)}
             if cell is None or not cell["released"]:
-                c = cell["cal"] if cell else None
-                out.append({**base, "withheld": (
-                    f"calibration admits in {c['records_admitting']} of {c['n']} records "
-                    f"> {RELEASE_BOUND:.0%}" if c else "no calibration for this cell")})
+                out.append({**base, "withheld": cell["withheld"] if cell else "no cell"})
                 continue
             lab = np.full(r["n_tokens"], NOT_TESTED, dtype=int)
             lab[r["keep"]] = NOT_ADMITTED
@@ -558,7 +588,7 @@ def labels_out(real: Dict, rows: List[Dict], stat: str = "excess") -> Dict:
                 if g[f"admitted_{stat}"]:
                     lab[keep[g["members"]]] = g["label"]
             out.append({**base, "labels": lab.tolist()})
-    return {"statistic": stat, "codes": {">=0": "admitted group (HDBSCAN label)",
+    return {"statistic": stat, "codes": {">=0": "admitted group (level-set HDBSCAN label)",
                                          str(NOT_TESTED): "not tested (later occurrence, deduped)",
                                          str(NOT_ADMITTED): "tested, not admitted"},
             "release_bound": RELEASE_BOUND, "records": out}
@@ -566,7 +596,8 @@ def labels_out(real: Dict, rows: List[Dict], stat: str = "excess") -> Dict:
 
 def table_text(rows: List[Dict]) -> str:
     lines = [f"Admission (max statistic, alpha {ALPHA}) against calibration; release if "
-             f"calibration admits in <= {RELEASE_BOUND:.0%} of records.",
+             f"calibration and the {CONTROL_STEP} control each admit in <= {RELEASE_BOUND:.0%} "
+             "of records (the control itself is never released).",
              "rec = records with >= 1 admitted group; adm = admitted groups (pairs); "
              "grp = all HDBSCAN groups"]
     head = None
@@ -579,7 +610,7 @@ def table_text(rows: List[Dict]) -> str:
         lines.append(f"  {'':<34}{r['step']:<11} {r['frame']:<8} {r['band']:<7} {a['n']:>3} | "
                      f"{a['records_admitting']:>8} {a['admitted']:>4} ({a['admitted_pairs']:>4}) "
                      f"{a['groups']:>5} | {c['records_admitting']:>7} {c['admitted']:>4} {c['groups']:>5} | "
-                     f"{'yes' if r['released'] else 'WITHHELD'}")
+                     f"{'yes' if r['released'] else 'no: ' + r['withheld']}")
     return "\n".join(lines)
 
 

@@ -1477,15 +1477,30 @@ admitted group, of 56 per cell (full table, both statistics and arms:
 `min_cluster_size` 4 and `log_life` show the same step-0 failure (centred
 39–56 of 56 per band, calibration 0–8).
 
-**Why step 0 fails: the prompt's opening.** Every step-0 admitted group in
-the centred frame (153 of 153, `min_cluster_size` 2) contains position 0:
-the first kept tokens of the prompt (`def get _ plot data ( self ,` …), 4–50
-members; raw, 44 of 65. Post hoc, not a result: records admitting a group
+**Why step 0 fails: groups anchored at the prompt's opening.** Every step-0
+admitted group in the centred frame (153 of 153, `min_cluster_size` 2)
+contains position 0 and is mostly early tokens, but only 4 of 153 are an exact
+run of the first kept tokens (`def get _ plot data ( self ,` …): the median
+group has 94 % of its members in the first quarter of the kept tokens, and 64
+of 153 have a member past the halfway point; 4–50 members. Raw: 44 of 65
+contain position 0. Those late members are the cheapest clue to what the
+group is (*revised after `/challenge-pr` on #122*: the first write-up called
+it the "opening stretch"). Post hoc, not a result: records admitting a group
 *without* position 0 are 0 of 56 per band at step 0 centred (raw 5–10), and
 45–53 (raw 48–54) at step143000, whose admitted groups contain position 0
 in 21 of 990 centred (14 of 715 raw) and look like content (first names;
 two-digit numbers; `a few days`). Why the untrained model's opening tokens
 form a group is not checked.
+
+**Step 0 was never at its Gaussian on `hdb_k`** (`/challenge-pr` on #122,
+verified on `gaussian_null_2026-09-26/null_dedupe.json`, centred, 7 prompts,
+L1–24): step 0's shipped group count is above its null mean in 160 of 168
+records, against 85 of 168 in its calibration. It "passed" (2 records in the
+2.5 % tail) only because its null is about twice as wide as step143000's
+(median sd 8.6 vs 4.1). So admission's step-0 failure is not new, and the
+premise in `design-1d.md` ("`hdb_k` passed step 0") is weaker than written
+(row marked there). If step 0 is lumpier than its Gaussian beyond the
+opening too, the opening alone cannot settle Blocked 11.
 
 **The shipped call** (`min_cluster_size` 2, real records): 42 % of
 step143000's groups (1 873 of 4 502) and 53 % of step 0's are tie artefacts,
@@ -1494,18 +1509,24 @@ p10 −0.06. At `min_cluster_size` 4, 37–47 %, median ARI 0.97–0.98. Routed 
 `status-10.md`: about two in five of the groups Phase 10 reads exist only
 through hdbscan's tie order.
 
-**Labels.** `report_labels.json` releases by the calibration rule only; it
-does not know the step-0 control failed. **No label set is for use** until
-the opening-stretch question is settled.
+**Labels.** *Fixed after `/challenge-pr` on #122:* the first report released
+by the calibration rule only (1 064 of 1 344 label records, step 0's
+included). `table` now also withholds a band when the step-0 control's same
+band admits in more than 10 % of its records, never releases the control,
+and releases nothing from a file without it; it also refuses a calibration
+with different draws or records. Re-run: **0 of 1 344 released.** The 10 %
+bound treats a band's 56 records (7 prompts × 8 adjacent layers) as
+independent, which they are not; release turns on 3 vs 6 records.
 
-**Next (the user's call):** what to do about position before any trained
-reading. (a) The position-keeping residual null (Parked under "Attention
-communities", ~7 h): the design's pre-written consequence for positional
-groups, and it would also test the trained groups. (b) Cheaper first: build
-step 2's position check on these groups, plus why step 0's opening clusters
-(the first positions' residuals at init). Claude's recommendation: (b) first,
-since it costs under an hour and says whether (a) is needed beyond the
-opening.
+**Next (the user's call, Blocked 11):** what to do about position before any
+trained reading. (a) The position-keeping residual null (Parked under
+"Attention communities", ~7 h): the design's pre-written consequence for
+positional groups, and it would also test the trained groups. (b) Cheaper
+first: build step 2's position check on these groups, plus why step 0's
+groups form (their late members; the first positions' residuals at init).
+Claude's recommendation: (b) first, under an hour, *but* with step 0 above
+its Gaussian on `hdb_k` in 160 of 168 records, (b) may show that step 0's
+excess is not only the opening, in which case (a) is needed.
 
 **Parked** (discoveries, not followed):
 - **Phase 1's stored labels and every `hdb_k` count carry tie artefacts.**
@@ -1513,9 +1534,6 @@ opening.
   ~40 % of them artefacts on both sides. Why: the excess 1d started from may
   shrink or grow. Cost: a re-run of `gaussian_null` with level-set counts,
   ~10 min. Could change: the design's starting premise.
-- **`labels_out` should withhold when the step-0 control fails**, not only on
-  calibration. Cost: 20 min with a test. Could change: nothing until labels
-  are used.
 
 ## Deleted and restored (was `FROZEN.md`)
 
