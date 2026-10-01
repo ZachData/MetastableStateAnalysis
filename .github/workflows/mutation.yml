@@ -5,16 +5,14 @@
 # changes to core/evalues.py, the module that carries the Type-I guarantee
 # every registered prediction is scored under, and runs its tests against
 # each. tools/mutation_check.py then fails on any change that survived and
-# is not in tools/mutation_accepted.json with a reviewed reason.
-#
-# The first run (2026-09-30) killed 303 of 413: the tests did not notice
-# ignored alpha/kappa arguments, a from_record that dropped the stored alpha
-# and kappa (the ledger replay's round trip), or a Type-I simulation that
-# never rejects. tests/test_core_evalues_contract.py closed those: 391/413,
-# the other 22 reviewed as equivalent.
+# is not in tools/mutation_accepted.json with a reason reviewed against the
+# current code. What the tests were missing: LESSONS.md lesson 6; the current
+# count: STATE.md.
 #
 # Runs when the module, its tests or the list change, and weekly. About a
-# minute. Not required for merge (yet): see STATE.md.
+# minute. Not required for merge (yet): see STATE.md. Separately, the pure
+# tier (tests/test_mutation_check.py) fails without mutmut when the code an
+# accepted reason rests on changes, so a stale reason cannot merge unseen.
 
 name: Mutation
 
@@ -58,6 +56,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # nothing here pushes; the job runs PR code
 
       - uses: actions/setup-python@v5
         with:
