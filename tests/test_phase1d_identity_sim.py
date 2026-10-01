@@ -190,3 +190,15 @@ def test_admit_job_refuses_when_a_null_draw_collapses(tmp_path):
     np.savez(traj, snaps=X[None], times=np.array([0.0]), keep=np.arange(30))
     rec = sim._admit_job((str(traj), 0, "raw", 50, 0, False, "p"))
     assert "null draw" in rec["skipped"]
+
+
+def test_admit_job_reraises_other_errors(tmp_path, monkeypatch):
+    def boom(*a, **k):
+        raise ValueError("something else entirely, with zero in it")
+    monkeypatch.setattr(sim, "admit_record", boom)
+    rng = np.random.default_rng(0)
+    traj = tmp_path / "t.npz"
+    np.savez(traj, snaps=sim._unit(rng.standard_normal((24, 5)))[None], times=np.array([0.0]),
+             keep=np.arange(24))
+    with pytest.raises(ValueError, match="something else"):
+        sim._admit_job((str(traj), 0, "raw", 3, 0, False, "p"))

@@ -390,6 +390,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-01, 1d's identity-weights positive control (#125): the design put β = 16 and 64
+  in the grid so the theory would have several clusters to recover, and kept one time grid
+  (`t` ≤ 16) for every β, on the claim that the collapse time is "nearly free of β". The
+  table cited for that stops at β = 5. The run's own (6.9) reference times were `inf` at
+  16 and 64 and 21–24 at 8, so those trajectories could not move inside the grid, and the
+  regime the control was built for was never reached. The numbers that showed it were
+  computed and stored before the batch, and not read until the review (`/challenge-pr`
+  on #125, finding 2). Rule: a time or sample grid shared across a parameter sweep is
+  checked against the sweep's own reference scale at every value, before the batch.
 - A0's first run: 400 permutation draws → largest possible merged e-value 10.01
   against a threshold of 20. It could not reject whatever the data said
   (§3.51.2).

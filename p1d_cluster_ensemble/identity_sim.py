@@ -63,6 +63,9 @@ ETA = 1e-3
 #: PLACED: a snapshot whose smallest pairwise 1 - cos is below this is not
 #: admitted (admission reads float32 rows; collapsed pairs become ties at 0).
 FLOAT_FLOOR = 1e-9
+#: The level-set code's refusals of a pair at distance 0 (`admit.level_set_hdbscan`,
+#: `admit._mst`): the only errors `_admit_job` records as a skipped snapshot.
+NULL_REFUSALS = ("a zero distance between distinct rows", "a zero or missing edge")
 #: PLACED: dt is halved until no snapshot's Gram moves by more than this.
 GRAM_TOL = 1e-6
 MAX_HALVINGS = 6
@@ -376,7 +379,7 @@ def _admit_job(args: Tuple) -> Dict:
         # snapshot's Gaussian draws are as tight as it is, and the level-set
         # code refuses a draw with a pair below float32 resolution. Refused
         # here too, with the reason, rather than dropped.
-        if "zero" not in str(e):
+        if not any(m in str(e) for m in NULL_REFUSALS):
             raise
         return {**base, "skipped": f"a null draw fell below float resolution ({e})",
                 "min_dist": md}

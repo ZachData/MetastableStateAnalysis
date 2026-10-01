@@ -227,12 +227,15 @@ covers. It does not say Pythia's admitted groups are those clusters. Time here i
 not depth.
 
 **Run 2026-10-01** (`status-1d.md` "Identity-weights positive control"). Against the rows
-above: the positive control is not passed and mostly not readable (rows 2–3: from L0 the
-theory makes one global cluster; the centred calibration fires on collapsing clouds; in
-raw, HDBSCAN-EOM finds cores, not clusters). The opening row is met for an *admitted
-group*, not for a theory cluster as written: causal, β ≤ 1, `t` 1–2, 5–7 of 7 step-0
-prompts, calibration 0, none under the full mask or at β = 3.46. The token match to
-step 0's real groups (the last row) holds, but a first-|g|-tokens baseline does as well.
+above: the positive control was read once and failed at the group step (raw, several
+theory clusters, calibration 0: recall 0.39); elsewhere the theory makes one global
+cluster and the centred calibration fires. The time grid was wrong for β ≥ 8: the claim
+that `t*` is nearly free of β holds only up to β ≈ 3.5 (`inf` at 16 and 64), so the regime
+this design aimed at was never reached. The opening row is met for an *admitted group*,
+not for a theory cluster as written: causal, β ≤ 1, `t` 1–2, 5–7 of 7 step-0 prompts,
+calibration 0, none at β = 3.46 (the full mask cannot make a positional group from
+position-free rows, so that control is trivially passed). The token match to step 0's
+real groups holds, but a first-|g|-tokens baseline does as well.
 
 ## Kept from August: the tuned families and their gate
 
