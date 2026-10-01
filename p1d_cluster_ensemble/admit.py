@@ -45,7 +45,8 @@ which they are not.
 Label codes in ``labels.json``: ``>= 0`` an admitted group (its
 level-set HDBSCAN label); ``-1`` not tested (a later occurrence of a string, dropped by
 deduplication); ``-2`` tested and not in an admitted group (HDBSCAN noise,
-or a group that did not beat the null). Tier 1: exploratory, unregistered.
+or a group that did not beat the null); ``-3`` not tested because it sits before
+``--min-position`` (the file's ``min_position`` says where). Tier 1: exploratory, unregistered.
 """
 
 from __future__ import annotations
@@ -78,7 +79,7 @@ RELEASE_BOUND = 2 * ALPHA
 #: The untrained checkpoint: no learned content, so it must not admit.
 CONTROL_STEP = "step0"
 BANDS = ("L1-8", "L9-16", "L17-24")
-NOT_TESTED, NOT_ADMITTED = -1, -2
+NOT_TESTED, NOT_ADMITTED, BEFORE_MIN_POSITION = -1, -2, -3
 
 
 # ---------------------------------------------------------------------------
@@ -380,16 +381,18 @@ def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
 # ---------------------------------------------------------------------------
 
 def _job(args: Tuple) -> Dict:
-    run_dir, layer, frame, n_draws, seed, calibrate = args
+    run_dir, layer, frame, n_draws, seed, calibrate, min_position = args
     acts = np.load(Path(run_dir) / "activations.npz")["activations"]
     tokens = run_tokens(Path(run_dir))
     if len(tokens) != acts.shape[1]:
         raise ValueError(f"{run_dir}: {len(tokens)} token strings for "
                          f"{acts.shape[1]} activation rows; refusing to dedupe")
     keep = first_occurrences(tokens)
+    keep = keep[keep >= int(min_position)]
     step, prompt = _step_prompt(Path(run_dir))
     base = {"run_dir": str(run_dir), "step": step, "prompt": prompt, "layer": int(layer),
-            "n_tokens": int(acts.shape[1]), "n_kept": int(keep.size), "keep": keep.tolist()}
+            "n_tokens": int(acts.shape[1]), "n_kept": int(keep.size), "keep": keep.tolist(),
+            "min_position": int(min_position)}
     if keep.size < MIN_TOKENS:
         return {**base, "skipped": f"{keep.size} distinct strings < {MIN_TOKENS}",
                 "info": {"frame": frame}}
@@ -413,6 +416,9 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--calibrate", action="store_true",
                     help="run on one Gaussian draw of each layer instead of the tokens")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    ap.add_argument("--min-position", type=int, default=0,
+                    help="diagnostic arm: test only kept tokens at absolute position >= this "
+                         "(drops the prompt's opening; `status-1d.md` \"Position\")")
     add_holdout_args(ap)
     args = ap.parse_args(argv)
 
@@ -424,7 +430,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         print(f"refusing: no runs, or missing activations.npz / geometry.json in {missing}",
               file=sys.stderr)
         return 1
-    jobs = [(str(r), int(L), f, args.n_draws, args.seed, args.calibrate)
+    jobs = [(str(r), int(L), f, args.n_draws, args.seed, args.calibrate, args.min_position)
             for r in runs for L in args.layers for f in args.frames]
 
     # Resumable as `gaussian_null`: each record is written as it finishes and
@@ -432,7 +438,8 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     parts = args.out.with_suffix(".parts")
     parts.mkdir(parents=True, exist_ok=True)
     settings = {"n_draws": args.n_draws, "seed": args.seed, "calibrate": bool(args.calibrate),
-                "alpha": ALPHA, "min_cluster_sizes": list(MIN_CLUSTER_SIZES)}
+                "alpha": ALPHA, "min_cluster_sizes": list(MIN_CLUSTER_SIZES),
+                "min_position": args.min_position}
     fingerprints = {str(r): input_fingerprint(r, ("activations.npz", "geometry.json"))
                     for r in runs}
 
@@ -522,8 +529,9 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
     """
     if not cal.get("calibrate") or real.get("calibrate"):
         raise ValueError("need a real file and a --calibrate file, in that order")
-    for k in ("seed", "alpha", "min_cluster_sizes", "n_draws"):
-        if real.get(k) != cal.get(k):
+    for k in ("seed", "alpha", "min_cluster_sizes", "n_draws", "min_position"):
+        if real.get(k, 0 if k == "min_position" else None) != cal.get(
+                k, 0 if k == "min_position" else None):
             raise ValueError(f"real and calibration differ in {k}; a calibration is "
                              "only read against its own settings")
     if {Path(p).name for p in real["inputs"]} != {Path(p).name for p in cal["inputs"]}:
@@ -582,6 +590,7 @@ def labels_out(real: Dict, rows: List[Dict], stat: str = "excess") -> Dict:
                 out.append({**base, "withheld": cell["withheld"] if cell else "no cell"})
                 continue
             lab = np.full(r["n_tokens"], NOT_TESTED, dtype=int)
+            lab[:r.get("min_position", 0)] = BEFORE_MIN_POSITION
             lab[r["keep"]] = NOT_ADMITTED
             keep = np.asarray(r["keep"])
             for g in r["arms"][arm]["groups"]:
@@ -590,7 +599,9 @@ def labels_out(real: Dict, rows: List[Dict], stat: str = "excess") -> Dict:
             out.append({**base, "labels": lab.tolist()})
     return {"statistic": stat, "codes": {">=0": "admitted group (level-set HDBSCAN label)",
                                          str(NOT_TESTED): "not tested (later occurrence, deduped)",
-                                         str(NOT_ADMITTED): "tested, not admitted"},
+                                         str(NOT_ADMITTED): "tested, not admitted",
+                                         str(BEFORE_MIN_POSITION): "not tested (before min_position)"},
+            "min_position": real.get("min_position", 0),
             "release_bound": RELEASE_BOUND, "records": out}
 
 

@@ -31,7 +31,7 @@ Every row is from `status-1d.md`; v1 = the 8 v1 prompts on 410m.
 | Matched-covariance Gaussian null, deduped | held at v1 length | step 0 at its calibration on `ci2`, `nn1`, `hdb_k`, `hdb_noise`. Off nominal past ~1000 tokens (Parked: "drifts with n") |
 | HDBSCAN groups vs that null (`hdb_k`) | **the cleanest local signal** | step143000 20 groups vs 6 (centred), 109 of 168 records past the tail, calibration 1, step 0 2 (calibration 3); at length 28–31 of 32 per band, calibration 0. *Weaker than it reads (2026-10-01, `/challenge-pr` on #122, `status-1d.md` "Admission"):* step 0 is above its null mean in 160 of 168 records (calibration 85) and passed the tail test only on a null twice as wide; ~40 % of the shipped groups counted are tie artefacts |
 | Global 2-means excess (`ci2`) | late only | L17–24, 42 of 56 records (calibration 5); not readable at length (calibration fires 24 of 32) |
-| Position | a confound, partly measured | 30 % of deduped nearest neighbours within 3 positions (8 % at step 0); no residual null keeps position (Parked) |
+| Position | a confound, partly measured | 30 % of deduped nearest neighbours within 3 positions (8 % at step 0); no residual null keeps position (Parked). *2026-10-01 (`status-1d.md` "Position"):* step 0's admitted groups are the prompt's opening (near-uniform attention at init); with positions < 32 left out step 0 admits nothing (cut chosen on the control), though its group count keeps a small excess. Positional tilts are common in trained groups at L9–24 (~45 % flagged, admitted or not) but mostly slight (10–18 % mostly near pairs) |
 | Attention communities vs null B | weak, late | a trained excess only at L17–23 ("Attention communities") |
 | Theory's scale `δ = cβ^{-1/2}` | waits | β's convention is Blocked 9 |
 
@@ -66,7 +66,7 @@ per-group excess density exceeds what the tokens' own Gaussian produces anywhere
 
 | choice | value | why, and what was rejected |
 |---|---|---|
-| tokens | first occurrence of each string (`--dedupe-strings`) | all-token results are token identity: step 0 beats the null harder than step143000. Later occurrences get label −1, "not tested"; a nearest-group assignment for them is a separate, flagged column if Phase 10 needs one. `repeated_tokens` (3 strings) drops out, so the batch is 7 prompts |
+| tokens | first occurrence of each string (`--dedupe-strings`) | all-token results are token identity: step 0 beats the null harder than step143000. Later occurrences get label −1, "not tested"; a nearest-group assignment for them is a separate, flagged column if Phase 10 needs one. `repeated_tokens` (3 strings) drops out, so the batch is 7 prompts. **Proposed, the user's call (2026-10-01):** also leave out absolute positions < 32 (`admit run --min-position 32`), the cut under which step 0 admits nothing; 32 was chosen after seeing 8, on the control itself, so the control still needs a test at a cut it did not set (`status-1d.md` "Position") |
 | frame | centred (shared mean direction projected out, renormed); raw reported beside | raw cosine is dominated by the mean direction and rogue coordinates (`lit-1d.md` §7 row 3). **Chosen after seeing the data:** centred is where `hdb_k`'s excess was largest (20 vs 6 groups; raw 5 vs 3.2), so raw is reported with equal weight |
 | algorithm | HDBSCAN, float64 cosine, `min_cluster_size` 2, EOM selection, **on the level-set tree**: every mutual-reachability edge of one weight merged at once (`admit.level_set_hdbscan`). The shipped call's labels, tie artefacts and ARI to these are written beside every record | *Changed while building (2026-10-01, `status-1d.md` "Admission"; was: the shipped call, so Phase 10's comparison is direct).* hdbscan's binary tree orders tied edges by processing order, and with mutual reachability ties are the rule, so its groups and their `S_C` depend on unrelated rows: the two-group invariance check failed on it (3.6 %), and it glued a stray row to a planted cap. Handed hdbscan's own tree, the level-set code reproduces hdbscan exactly, so tie merging is the only difference. Phase 10's comparison becomes shipped vs level-set labels, measured per record. `min_cluster_size` 4 (`SUBSTANTIAL_CLUSTER_SIZE`) is the sensitivity arm |
 | per-group statistic | **`S_C / |C|`**: the group's stability (Σ over members of λ_p − λ_birth, λ = 1 / mutual-reachability distance) over its size, from the level-set tree; sensitivity arm: log-lifetime `log(λ_death / λ_birth)` | depends only on the group's own branch of the tree. **Rejected: `cluster_persistence_`** (`/challenge-pr` on #121, finding 1, verified): hdbscan divides `S_C / |C|` by the tree's largest λ, set by the tightest group anywhere in the layer. A planted 6-point group scored 0.75 alone, 0.13 and 0.012 when an unrelated tighter group was added; since trained tokens have far closer nearest neighbours than their null, real groups would be scored down and the null would win. Also rejected: merge-tree lifetime (fails step 0) |
@@ -103,7 +103,7 @@ first record's output should show.
 
 | check | what it answers | built? |
 |---|---|---|
-| Position: span, share of member pairs within 3 positions, contiguous-run flag, each against random groups of the same size drawn from the kept positions | is the group a stretch of text rather than a content group. Kept first occurrences sit early in the prompt, so the baseline is the kept positions, not all positions | the nearest-neighbour version is in `gaussian_null`; per group, no |
+| Position: span, share of member pairs within 3 positions, contiguous-run flag, each against random groups of the same size drawn from the kept positions | is the group a stretch of text rather than a content group. Kept first occurrences sit early in the prompt, so the baseline is the kept positions, not all positions | yes, `position_check.py` (2026-10-01) |
 | Subsample stability, cluster-wise: mean best-match Jaccard over 80 % subsamples (Hennig 2007) | does the group come back | `selection.py` has partition-level stability only |
 | Recovery by the tuned families at the group's own k | is it an HDBSCAN artefact | families yes; matching per group no |
 | Cross-layer persistence: containment links (`merge_tree.py`) | does it last over a window of layers (the theory's persistence reading) | linker yes |
@@ -140,6 +140,7 @@ Each is its own unit and PR.
    record's output before the batch. Cost: the deduped Gaussian null took 6 + 4 min
    at 14 workers, so under an hour.
 2. **Checks** on the admitted groups, the table above minus the theory scale.
+   Position row built and run 2026-10-01 (`status-1d.md` "Position"); the other rows are not.
 3. **The theory scale**, when Blocked 9 is decided.
 4. **Phase 10 re-read** on the admitted labels: the user's call, since Phase 10 is on hold.
 
