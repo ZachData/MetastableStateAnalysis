@@ -108,6 +108,46 @@ class TestCoAssociation:
 # Consensus partition
 # ---------------------------------------------------------------------------
 
+# The co-association on which scipy 1.15's average linkage returned an
+# invalid tree (a node merged with itself; status-1d.md "Vote rules"): a
+# null draw, leave-one-family-out, 446 tokens. Every row is one of 27 types,
+# every entry one of 10 values, so it is stored as a type per token
+# (base 62) and a 27 x 27 table of value indices.
+_TIED_VALUES = [0.0, 0.28824954649987994, 0.35522493260223076, 0.35652552089788936, 0.4990863452989297, 0.5009136547010703, 0.6434744791021106, 0.6447750673977692, 0.7117504535001201, 1.0]
+_TIED_TYPES = (
+    "001200234567650839092a0330b00026b7076360c55d3260e3353a630f730306036g3097"
+    "09260067h30c5i000655i353i0j6506963k26506kl36535003350c63376603306070a5da"
+    "5f0220270503366076032m97386j500d38e3700e370n62550230907c305l302200307533"
+    "335357556000003o005076005p08330330b33395733353e2730430700607l3366j053673"
+    "3033g0056f90360fe37hc2653535gk538c0069303d9e65c1303k36009f5d5q3603g77305"
+    "35060050363060606073690q33365370307e5f06ak9606350fgi57bj00030530j0603630"
+    "66005350039000"
+)
+_TIED_TABLE = (
+    "990055505459555955555955099990035503438373873335833088009500454500044000"
+    "440044500005900050500000000004000500530099543083833788375333233550099545"
+    "095955599555555455554055909055599555995599055005544090540400044000000900"
+    "534035909033788333885388033445500050904000400000400544530089543093833388"
+    "735333633980035503439333833335833088530089547083933388335333233574035908"
+    "033398373885388033534035908033389333885388037980075503438333933375833088"
+    "570089543083873398335333233530089543083833389335337273534035908073388333"
+    "985388133534075908033388733895388033550455505055555555559555055980035503"
+    "438333833335973088534035908033388333885798033534035908033388337885389073"
+    "005524090560200022100000900980035503438333837335837098980035503438337833"
+    "335833089"
+)
+
+
+def _tied_coassociation():
+    import string
+    alphabet = string.digits + string.ascii_letters
+    types = np.array([alphabet.index(c) for c in _TIED_TYPES])
+    table = np.array([int(c) for c in _TIED_TABLE]).reshape(27, 27)
+    C = np.asarray(_TIED_VALUES)[table][types][:, types]
+    np.fill_diagonal(C, 1.0)
+    return C
+
+
 class TestConsensusPartition:
 
     def test_recovers_the_partition_a_clean_matrix_encodes(self):
@@ -136,6 +176,21 @@ class TestConsensusPartition:
     def test_degenerate_sizes_report_their_branch(self):
         assert ensemble.consensus_partition(np.zeros((0, 0)))["branch"] == "empty"
         assert ensemble.consensus_partition(np.ones((2, 2)))["branch"] == "n<3"
+
+    def test_an_invalid_scipy_tree_is_rebuilt_on_rounded_distances(self):
+        from scipy.cluster.hierarchy import is_valid_linkage, linkage
+        from scipy.spatial.distance import squareform
+        C = _tied_coassociation()
+        assert C.shape == (446, 446)
+        D = np.clip(1.0 - C, 0.0, None)
+        np.fill_diagonal(D, 0.0)
+        raw_valid = is_valid_linkage(linkage(squareform(D, checks=False), method="average"))
+        out = ensemble.consensus_partition(C)
+        # Which branch depends on the installed scipy; the partition must
+        # be a real one either way, not fcluster's ValueError.
+        assert out["branch"] == ("mirkin_cut" if raw_valid else "mirkin_cut_rounded")
+        assert out["labels"].shape == (446,)
+        assert out["objective"] <= min(j for _, j in out["objective_curve"]) + 1e-12
 
 
 # ---------------------------------------------------------------------------
