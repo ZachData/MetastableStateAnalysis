@@ -1589,32 +1589,56 @@ of 56 per band, real / calibration; full tables in the reports):
   calibration 0–4 (centred). At M = 32 `report_m32` releases labels for
   centred L1–8, L9–16, L17–24 and raw L1–8 (`excess`, arm 2). The 10 % bound
   still treats 56 adjacent-layer records as independent.
-- **Position check on trained groups (M = 32, centred, arm 2):** admitted
-  groups are positional in 15 % (L1–8), 47 % (L9–16), 40 % (L17–24); the
-  groups *not* admitted, 19 %, 45 %, 32 %. Admission does not select for
-  position; about half of all trained groups at L9–24 are runs of nearby
-  tokens, whatever their verdict. M = 0 gives the same shares (19 · 49 · 44 %).
-  "Positional" is not "not content": a phrase is both (`a few days`).
-- **Step 0's group-count excess** (#122: above its null mean in 160 of 168)
-  is mostly the opening. Level-set k above the null mean, step 0 centred: 163,
-  135, 101 of 168 at M = 0, 8, 32 against calibrations of 93, 113, 78 (median z
-  +0.80, +0.55, +0.48 vs +0.20, +0.68, −0.08). A small remainder, inside the
-  calibration's own swing between arms; not resolved. Step143000: median z
-  +4.0, +3.9, +3.6.
+- **Position check on trained groups (M = 32, centred, arm 2), admitted vs
+  not, by band:**
 
-**Reading.** (b) settled what (a) was for at step 0: its failure is the
-opening, through near-uniform attention at init, and it vanishes when the
-first 32 positions are left out. The design's stop rule then no longer
-fires, and the trained excess stands against a passing control. What it does
-*not* settle is content vs position for the trained groups: about half at
-L9–24 are positional by this test, and only a position-keeping null (option
-(a)) could say whether the rest beat position.
+  | | L1–8 | L9–16 | L17–24 |
+  |---|---|---|---|
+  | positional (`p_near` ≤ 0.05) | 15 vs 19 % | 47 vs 45 % | 40 vs 32 % |
+  | mostly near (≥ half of pairs within 3) | 1 vs 9 % | 10 vs 18 % | 14 vs 11 % |
 
-**For the user (Blocked 11 replaced):** whether "tokens at absolute position
-≥ 32" joins the definition (`design-1d.md`, row "tokens"), with 32 chosen
-post hoc. Alternatives: a cut chosen by a rule (where step 0's centred cosine
-to position 0 falls to its late-token level, ~16 here, which M = 8 shows is
-not enough at `min_cluster_size` 4), or option (a).
+  Admission does not select for position (also within size buckets,
+  `/challenge-pr` on #123). *Revised after that review:* the first write-up
+  said "about half are runs of nearby tokens". `p_near` is a significance
+  flag, and it fires on slight tilts in large groups (of the flagged admitted
+  groups, 42–71 % have under a quarter of their pairs near). Only 1–14 % of
+  admitted groups are mostly near pairs. Neither column measures *how*
+  positional a group is: step 0's opening groups, positional by construction,
+  are mostly near in 0–9 % (a 30-token opening spans ~40 positions). M = 0
+  gives the same positional shares (19 · 49 · 44 %). "Positional" is not "not
+  content": a phrase is both (`a few days`), and so is a topic that stays in
+  one paragraph.
+- **Step 0's group count is still above its null at M = 32**, against that
+  M's own calibration: level-set k above the null mean in 101 of 168 records
+  vs 78 in calibration (median z +0.48 vs −0.08). M = 0: 163 vs 93 (+0.80 vs
+  +0.20); M = 8: 135 vs 113 (+0.55 vs +0.68). The opening is most of #122's
+  160 of 168, not all. *Revised after `/challenge-pr` on #123:* the first
+  write-up waved the remainder off with the calibration's swing between arms,
+  which is the wrong reference. Unexplained. Step143000: median z +4.0, +3.9,
+  +3.6.
+
+**Reading.** (b) settled step 0's *admission* failure: it is the opening,
+through near-uniform attention at init, and at M = 32 step 0 admits nothing.
+Two limits. M = 32 was picked because step 0 admits nothing there, so "the
+control passes at 32" holds by construction (`/challenge-pr` on #123, finding
+3): the control has been used to set the cut and has not yet been tested at
+it. And step 0's group *count* keeps a small excess at M = 32. Content vs
+position for the trained groups is not settled either, but it matters less
+than the first write-up said: positional tilts are common and mostly slight.
+Only a position-keeping null (option (a)) would measure it.
+
+**For the user (Blocked 11′):** whether "tokens at absolute position ≥ 32"
+joins the definition (`design-1d.md`, row "tokens"). If it does, the control
+needs a test the cut was not tuned on. Candidates: step 0 at M = 32 on the
+long prompts (`data/p1d/long_prompts_2026-09-29/`; expected: admits at most
+its calibration; the deduped null drifts past ~1000 tokens, so read it
+against its own calibration), or a cut fixed by a rule before running it.
+The rule would be where step 0's centred cosine to position 0 reaches its
+late-token level, ~16 here; M = 8 shows that may fail at `min_cluster_size`
+4. Or option (a).
+Labels at M = 32 mark positions before the cut `-3` ("not tested, before
+`min_position`") and the file carries `min_position` (*fixed after the
+review:* they were `-1`, the deduplication code).
 
 **Parked** (discoveries, not followed):
 - **Step 0's late members.** At M = 0, step-0 groups carry 326 members past
@@ -1623,8 +1647,8 @@ not enough at `min_cluster_size` 4), or option (a).
   embedding's similarity to the group's opening (median percentile 0.54).
   Why: they are the one part of step 0's groups the prefix average does not
   explain. Cost: < 1 h. Could change: whether the opening is the whole story.
-- **Trained groups holding position 0** (5–18 % of admitted groups at M = 32
-  hold the first *kept* token, which is position 32 or later, so not the sink).
+- **Trained groups holding the first kept token** (5–18 % of admitted groups
+  at M = 32; that token sits at position 32 or later, so it is not the sink).
   Not followed.
 
 ## Deleted and restored (was `FROZEN.md`)

@@ -529,6 +529,15 @@ needs the user to enable it on GitHub.
   groups exist only through tie order (`status-1d.md` "Admission"). Rule: **a
   library's output is a function of its input only where the input has no
   ties; check how ties are broken before scoring anything it builds.**
+- 2026-10-01, `position_check.py` (#123): "about half of trained groups are
+  runs of nearby tokens" came from a per-group significance flag (`p_near` ≤
+  0.05), and that flag fires on slight tilts in large groups. Only 1–14 % of
+  the flagged admitted groups were mostly near pairs. `/challenge-pr` caught
+  it. Separately, the cut M = 32 was chosen on the step-0 control, so "the
+  control passes at 32" held by construction. Rules: **a share of groups
+  passing a test is not a share of groups that have the property; report an
+  effect size beside it. A control used to tune a choice has not tested that
+  choice.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

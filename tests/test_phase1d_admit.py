@@ -321,3 +321,20 @@ class TestMinPosition:
         R, Cal = _files(tmp_path, control_cap=False)
         with pytest.raises(ValueError, match="min_position"):
             table({**R, "min_position": 8}, Cal)
+
+    def test_labels_mark_the_dropped_opening(self, tmp_path):
+        from p1d_cluster_ensemble.admit import BEFORE_MIN_POSITION
+        tokens = [f"t{i}" for i in range(60)]
+        tokens[20] = tokens[3]                   # repeat of a string first seen before the cut
+        runs = [_fake_run(tmp_path / "a", "step143000", tokens),
+                _fake_run(tmp_path / "b", "step0", tokens, cap=False, seed=7)]
+        s = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4], "n_draws": 19,
+             "min_position": 10, "inputs": [str(r) for r in runs]}
+        R = {**s, "records": [_job((str(r), 1, "raw", 19, 0, False, 10)) for r in runs]}
+        Cal = {**s, "calibrate": True,
+               "records": [_job((str(r), 1, "raw", 19, 0, True, 10)) for r in runs]}
+        out = labels_out(R, table(R, Cal))
+        assert out["min_position"] == 10
+        lab = np.array(next(r for r in out["records"]
+                            if r["step"] == "step143000" and r["arm"] == 2)["labels"])
+        assert set(lab[:10]) == {BEFORE_MIN_POSITION} and lab[20] == NOT_TESTED

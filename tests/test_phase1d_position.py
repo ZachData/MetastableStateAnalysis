@@ -30,14 +30,14 @@ def test_near_share_hand_example():
 
 def test_a_run_of_text_is_positional_and_contiguous():
     g = group_position(range(100, 110), KEPT, _null(10))
-    assert g["contiguous"] and not g["has_first"]
+    assert g["contiguous"] and not g["has_first_kept"]
     assert g["p_near"] <= ALPHA and g["p_span"] <= ALPHA
 
 
 def test_first_and_contiguous_read_kept_indices():
     # Kept indices 0..4 are positions 0..4: the opening, contiguous.
     g = group_position([3, 0, 4, 1, 2], KEPT, _null(5))
-    assert g["has_first"] and g["contiguous"] and g["span"] == 4
+    assert g["has_first_kept"] and g["contiguous"] and g["span"] == 4
     # Indices 60, 61 are positions 60 and 63: contiguous kept tokens, 3 apart.
     g = group_position([60, 61], KEPT, _null(2))
     assert g["contiguous"] and g["span"] == 3 and g["near_share"] == 1.0
@@ -63,7 +63,8 @@ def test_check_file_and_summarise():
                {"size": 3, "members": [5, 90, 150], "admitted_excess": False,
                 "admitted_log_life": False}]}}}
     rows = check_file({"records": [rec]}, n_draws=500)
-    assert [r["has_first"] for r in rows] == [True, False]
+    assert [r["has_first_kept"] for r in rows] == [True, False]
     summ = {(s["admitted"]): s for s in summarise(rows)}
     assert summ[True]["n"] == 1 and summ[True]["positional"] == 1.0
-    assert summ[False]["has_first"] == 0.0
+    assert summ[False]["has_first_kept"] == 0.0
+    assert summ[True]["mostly_near"] == 1.0 and summ[False]["mostly_near"] == 0.0

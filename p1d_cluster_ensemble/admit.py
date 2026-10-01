@@ -45,7 +45,8 @@ which they are not.
 Label codes in ``labels.json``: ``>= 0`` an admitted group (its
 level-set HDBSCAN label); ``-1`` not tested (a later occurrence of a string, dropped by
 deduplication); ``-2`` tested and not in an admitted group (HDBSCAN noise,
-or a group that did not beat the null). Tier 1: exploratory, unregistered.
+or a group that did not beat the null); ``-3`` not tested because it sits before
+``--min-position`` (the file's ``min_position`` says where). Tier 1: exploratory, unregistered.
 """
 
 from __future__ import annotations
@@ -78,7 +79,7 @@ RELEASE_BOUND = 2 * ALPHA
 #: The untrained checkpoint: no learned content, so it must not admit.
 CONTROL_STEP = "step0"
 BANDS = ("L1-8", "L9-16", "L17-24")
-NOT_TESTED, NOT_ADMITTED = -1, -2
+NOT_TESTED, NOT_ADMITTED, BEFORE_MIN_POSITION = -1, -2, -3
 
 
 # ---------------------------------------------------------------------------
@@ -589,6 +590,7 @@ def labels_out(real: Dict, rows: List[Dict], stat: str = "excess") -> Dict:
                 out.append({**base, "withheld": cell["withheld"] if cell else "no cell"})
                 continue
             lab = np.full(r["n_tokens"], NOT_TESTED, dtype=int)
+            lab[:r.get("min_position", 0)] = BEFORE_MIN_POSITION
             lab[r["keep"]] = NOT_ADMITTED
             keep = np.asarray(r["keep"])
             for g in r["arms"][arm]["groups"]:
@@ -597,7 +599,9 @@ def labels_out(real: Dict, rows: List[Dict], stat: str = "excess") -> Dict:
             out.append({**base, "labels": lab.tolist()})
     return {"statistic": stat, "codes": {">=0": "admitted group (level-set HDBSCAN label)",
                                          str(NOT_TESTED): "not tested (later occurrence, deduped)",
-                                         str(NOT_ADMITTED): "tested, not admitted"},
+                                         str(NOT_ADMITTED): "tested, not admitted",
+                                         str(BEFORE_MIN_POSITION): "not tested (before min_position)"},
+            "min_position": real.get("min_position", 0),
             "release_bound": RELEASE_BOUND, "records": out}
 
 

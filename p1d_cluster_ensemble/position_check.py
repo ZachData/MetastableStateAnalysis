@@ -12,13 +12,17 @@ Per group of an `admit.py` file (every group, admitted or not, both arms):
 - ``near_share``: share of member pairs within ``NEAR`` positions (the
   per-group form of `gaussian_null`'s "nearest neighbour within 3");
 - ``contiguous``: the members are an unbroken run of kept tokens;
-- ``has_first``: the group holds the first kept token (position 0);
+- ``has_first_kept``: the group holds the first kept token (position 0, or
+  the first kept position at or after ``--min-position``);
 - ``p_near`` / ``p_span``: rank p against ``N_DRAWS`` random groups of the
   same size drawn from the *same record's kept positions* (kept first
   occurrences sit early in the prompt, so all positions would be the wrong
   baseline). ``p_near`` is the upper tail, ``p_span`` the lower.
 
-A group is *positional* at ``p_near <= ALPHA``. That is a description, not
+A group is *positional* at ``p_near <= ALPHA``: a significance flag, not an
+effect size, so a large group with a slight tilt toward nearby members is
+flagged too (`/challenge-pr` on #123). ``mostly_near`` (``near_share >=
+MOSTLY_NEAR``) is the effect-size column beside it. Both are descriptions, not
 a gate (`design-1d.md`: a failed check is reported, never a veto). About 5 %
 of groups would be flagged by chance; `summarise` puts the not-admitted
 groups beside the admitted ones for that reason.
@@ -47,6 +51,9 @@ NEAR = 3
 #: PLACED: per-group level of the position test; descriptive, not a gate.
 ALPHA = 0.05
 N_DRAWS = 2000
+#: PLACED: a group "mostly of nearby tokens" has at least this share of its
+#: member pairs within ``NEAR`` positions.
+MOSTLY_NEAR = 0.5
 #: Position bins for `cos_to_first` (absolute positions, half-open).
 POSITION_BINS = ((1, 4), (4, 16), (16, 64), (64, 200), (200, 2048))
 
@@ -83,7 +90,7 @@ def group_position(members: Sequence[int], kept: np.ndarray, null: Dict[str, np.
     B = null["span"].size
     return {"span": span, "near_share": near,
             "contiguous": bool(np.all(np.diff(m) == 1)),
-            "has_first": bool(m[0] == 0),
+            "has_first_kept": bool(m[0] == 0),
             "first_quarter_share": float(np.mean(m < kept.size / 4)),
             "p_near": float((1 + np.sum(null["near_share"] >= near)) / (B + 1)),
             "p_span": float((1 + np.sum(null["span"] <= span)) / (B + 1))}
@@ -132,22 +139,23 @@ def summarise(rows: List[Dict], stat: str = "excess") -> List[Dict]:
                         "positional": float(np.mean([r["p_near"] <= ALPHA for r in sel])),
                         "compact_span": float(np.mean([r["p_span"] <= ALPHA for r in sel])),
                         "contiguous": float(np.mean([r["contiguous"] for r in sel])),
-                        "has_first": float(np.mean([r["has_first"] for r in sel])),
+                        "mostly_near": float(np.mean([r["near_share"] >= MOSTLY_NEAR for r in sel])),
+                        "has_first_kept": float(np.mean([r["has_first_kept"] for r in sel])),
                         "median_size": float(np.median([r["size"] for r in sel]))})
     return out
 
 
 def summary_text(summ: List[Dict], title: str) -> str:
     lines = [title, "",
-             "arm step       frame   band   adm    n  positional  compact  contig  has_pos0  med size"]
+             "arm step       frame   band   adm    n  positional  mostly_near  compact  contig  first_kept  med size"]
     for s in summ:
         if not s["n"]:
             lines.append(f"{s['arm']:>3} {s['step']:<10} {s['frame']:<7} {s['band']:<6} "
                          f"{'yes' if s['admitted'] else 'no':<4} {0:>4}")
             continue
         lines.append(f"{s['arm']:>3} {s['step']:<10} {s['frame']:<7} {s['band']:<6} "
-                     f"{'yes' if s['admitted'] else 'no':<4} {s['n']:>4}  {s['positional']:>10.2f}  "
-                     f"{s['compact_span']:>7.2f}  {s['contiguous']:>6.2f}  {s['has_first']:>8.2f}  "
+                     f"{'yes' if s['admitted'] else 'no':<4} {s['n']:>4}  {s['positional']:>10.2f}  {s['mostly_near']:>11.2f}  "
+                     f"{s['compact_span']:>7.2f}  {s['contiguous']:>6.2f}  {s['has_first_kept']:>10.2f}  "
                      f"{s['median_size']:>8.1f}")
     return "\n".join(lines)
 
