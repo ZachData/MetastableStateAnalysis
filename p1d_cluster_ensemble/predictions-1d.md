@@ -74,3 +74,13 @@ is easier to write with the prediction already on record.
 
 Not yet adjudicated. Phase 1c, Phase 1d and Phase 2d code exists and is validated on synthetic
 data; no sub-experiment has been run against Pythia artifacts.
+
+## Addendum 2026-09-30: P-C1, P-C3, P-C4 retired
+
+The user retired the graded readout (STATE Blocked 10, decided after
+`status-1d.md` "Vote rules": under all 9 vote rules, dropping one family replaces
+the trained core set in 21–23 of 24 records). **P-C3** and **P-C4** read the
+grading, and **P-C1** reads consensus strength over families at mixed scales, so
+all three are retired unscored; none was registered. **P-C2** stays as a
+descriptive question (tuned vs shipped HDBSCAN). What 1d tests instead:
+`design-1d.md` "The proposed definition".

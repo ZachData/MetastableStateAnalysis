@@ -188,3 +188,5 @@ running median of the rows above it gets a line under the table saying why.
   ~150–220k per call. The PR fixes belonged in their own session, and the
   batch's failure would have been one call cheaper had `_job` named its
   input from the start.
+
+| 2026-09-30 | 1d design revised (grading retired, per-group definition; before Stop and challenge-pr) | 32 | 133k | 3.1M | 36k | #121 |

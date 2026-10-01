@@ -1,273 +1,185 @@
 <!-- p1d_cluster_ensemble/design-1d.md -->
 # Phase 1d — DESIGN
 
-Why this phase is built the way it is. For its current state and what has been validated, see
-`status-1d.md`; for the predictions (written in advance, never registered), `predictions-1d.md` (P-C1..P-C4).
+**Revised 2026-09-30** after Blocked 10 (user: retire the graded readout). The August
+design (a tuned seven-family ensemble whose vote grades every token core / halo /
+contested) is at `git show 30ccbb4:p1d_cluster_ensemble/design-1d.md`. What survives
+from it is in "Kept from August" below. Numbers live in `status-1d.md`; this file
+says why the phase is built the way it is. Literature: `lit-1d.md` (§8 for this
+revision). Tier 1 throughout: nothing here is registered.
 
-## The problem
+## The question
 
-Every cluster-conditioned result in this project rests on one line:
+Phase 10 is on hold until the project can say what a cluster is (user, 2026-09-25).
+Every Phase 10 row reads one partition, `HDBSCAN(min_cluster_size=2)` on cosine
+distance, chosen by nobody. 1d's job is to replace "whatever that call returns" with
+a definition that states its null, its scale, and what it controls for, so that
+Phase 10's rows can be re-read on it and their sensitivity to the choice measured.
 
-```python
-hdb = hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed")
-```
+## What the evidence allows (2026-09-25 to 09-30)
 
-`p1_mstate_tracking/clustering.py`. `min_cluster_size=2` is the library minimum, everything
-else is a library default, and nobody chose either — they are what you get when you call the
-constructor. Cluster tracking, cluster orthogonality, the merge counts, Phase 5's cluster
-selection, Phase 5c's entire object of study (the tokens this call labels `-1`), and Phase 6's
-`labels >= 0` masks all inherit that one setting.
+Every row is from `status-1d.md`; v1 = the 8 v1 prompts on 410m.
 
-Phase 1 does compute three other partitions, and `p1_visualization/cluster_methods.py` already
-measures whether they agree. But those three are *also* untuned: KMeans at a
-silhouette-selected k, average linkage at whichever threshold happens to sit in the middle of
-the sweep, and the sign of the Fiedler vector. So the existing agreement statistic compares
-four sets of library defaults. It is a real measurement — four different inductive biases
-landing in the same place is evidence — but it is not the measurement people read it as, which
-is "the methods agree, therefore the clusters are real".
-
-Two distinct questions follow, and the phase is built to keep them separate:
-
-1. **Is the shipped setting the right one?** A tuning question about HDBSCAN. (P-C2)
-2. **Does a conglomeration of tuned methods say something the categorical label cannot?**
-   A question about what kind of object a cluster annotation should be. (P-C1, P-C3, P-C4)
-
-## Why a separate directory
-
-The same reason `p1c_frames` is one: a unit of work that is the whole run at once rather than
-one forward pass, its own falsification structure, and no forward passes. It is [R] throughout
-— it reads `activations.npz` and re-clusters. It could have been a module inside
-`p1_mstate_tracking`, but the sweep is expensive enough to be scheduled separately from
-anything, and folding it into `analysis_p1`'s per-layer loop would make every future Phase 1
-run pay for it.
-
-It is deliberately **not** in the visualization package, even though the nearest existing code
-lives there. `cluster_methods.py` reads what Phase 1 wrote; this phase re-runs the clustering.
-Those are different cost classes and different kinds of claim.
-
-## Seven families, and why each earns a vote
-
-The consensus is only as good as the diversity of biases entering it. Six centroid methods
-would produce a consensus about centroids. The registry is chosen to span:
-
-| family | bias | what it can see that the others cannot |
+| piece | verdict | why |
 |---|---|---|
-| `hdbscan` | density, with refusal | variable-density clusters; can decline to assign |
-| `kmeans` | Euclidean centroids at fixed k | the shipped comparison arm |
-| `spherical_kmeans` | cosine centroids at fixed k | the k-means whose objective is the geometry we actually use |
-| `agglomerative` | linkage at a distance | scale structure — a plateau across thresholds is a claim HDBSCAN structurally cannot make |
-| `spectral` | graph cut on an affinity | clusters that are connected but not compact |
-| `gmm` | a likelihood | shape and overlap; the only member scored without a distance |
-| `graph_modularity` | community structure | no centre, no radius, no k — the strongest check that clusters are not just blobs |
+| Graded vote (core / halo / contested) | **failed, retired** | dropping one family replaces the trained core set in 21–23 of 24 records under all 9 vote rules ("Vote rules") |
+| Consensus partition | **failed** | its k moves 3–10 with the vote rule; `abstain_small` makes it k-means ("Vote rules") |
+| Per-family stability ranking | picks extremes | k = 2 for centroid families, finest threshold for agglomerative ("First real run"); normalising by the null moves k to the other end (`lit-1d.md` row 1a) |
+| Per-family null gate | held | the gate itself works once degenerate draws score the floor ("First real run") |
+| Merge tree (option D) | held as a readout | the longest-lived scale is one blob + outliers in 126 of 192 records; the ≥ 2-cluster pick is Gaussian-typical ("Merge tree", "Gaussian null") |
+| Merge-tree lifetime `mt_life` | **fails its control** | untrained step 0, deduped, beats the Gaussian in 59 of 168 records (calibration 1); unexplained (Parked 11) |
+| Matched-covariance Gaussian null, deduped | held at v1 length | step 0 at its calibration on `ci2`, `nn1`, `hdb_k`, `hdb_noise`. Off nominal past ~1000 tokens (Parked: "drifts with n") |
+| HDBSCAN groups vs that null (`hdb_k`) | **the cleanest local signal** | step143000 20 groups vs 6 (centred), 109 of 168 records past the tail, calibration 1, step 0 2 (calibration 3); at length 28–31 of 32 per band, calibration 0 |
+| Global 2-means excess (`ci2`) | late only | L17–24, 42 of 56 records (calibration 5); not readable at length (calibration fires 24 of 32) |
+| Position | a confound, partly measured | 30 % of deduped nearest neighbours within 3 positions (8 % at step 0); no residual null keeps position (Parked) |
+| Attention communities vs null B | weak, late | a trained excess only at L17–23 ("Attention communities") |
+| Theory's scale `δ = cβ^{-1/2}` | waits | β's convention is Blocked 9 |
 
-`spherical_kmeans` and `graph_modularity` are implemented here (neither is in sklearn). The
-first is a 40-line fix to a real mismatch: Phase 1 runs Euclidean k-means on L2-normed rows,
-where the *assignment* step is equivalent to cosine but the centroid update leaves the sphere.
-The second is Clauset-Newman-Moore greedy modularity on a mutual-kNN cosine graph. Mutual
-rather than plain kNN because plain kNN forces every token to have degree ≥ k, handing an
-isolated token a community regardless of geometry — the graph family needs to be able to make
-HDBSCAN's refusal in its own idiom, and a singleton community is how it does.
+Two things follow. A cluster definition has to be **per group**, not per token
+(the token grading is what failed), and it has to rest on a statistic that passes
+the step-0 control, which today means HDBSCAN's groups and not the merge tree's
+lifetime.
 
-**Deliberately absent: UMAP-then-cluster.** Available (Phase 1 already optionally imports
-`umap-learn`) and excluded, because clustering a 2-D embedding measures the embedding's
-inductive bias — neighbour-preserving by construction — and would enter the consensus as a
-second vote for whatever the density methods already say.
+## Decision: the graded readout is retired (Blocked 10, user, 2026-09-30)
 
-## What "tuned" means, and why not an internal index
+Retired as 1d's product: `confidence`, `mean_recall` / `min_recall`,
+`refusal_fraction`, the core / halo / contested trichotomy, and the consensus
+partition as a cluster definition. With them go the three predictions that read
+them, `P-C1` (consensus strength), `P-C3` (noise tokens above the confidence
+threshold) and `P-C4` (graded vs binary on persistence): `predictions-1d.md`
+addendum 2026-09-30. They were never registered and the v1 runs have been seen.
 
-Every standard way to pick a clustering hyperparameter fails on this data, and the project
-already knows why. From `cluster_methods.py`:
+Not retired: the code. `ensemble.py` and `vote_rules.py` stay because the
+`vote_rules` result is re-runnable only with them, and `run_1d.py` still writes the
+columns (labelled tier 1). Removing them from `run_1d`'s output and from
+`core.particles` is a cleanup unit, not this one (lesson 12: intent archived here).
 
-> K_RANGE starts at 2, so best_k=2 is a floor, not a finding. In the collapsed regime all
-> tokens are near-collinear and any 2-way split scores a silhouette of ~0.1-0.3 from geometry
-> alone.
+The alternative the user did not take, a matched-scale vote, stays open in one
+sentence: in a planted-caps toy matched scale passes, but the one near-matched slice
+of real data still sways, so there was no evidence it would pass on Pythia.
 
-That is not specific to silhouette. Every internal index is a ratio of within- to
-between-cluster spread, and a collapsed cloud has a perfectly good best split at every k.
-Tuning on one would produce methods tuned to the collapse.
+## The proposed definition: a group that beats its covariance
 
-Two statistics are used instead, both calibrated against `core.nulls.shuffled_dimension_null`
-— same per-dimension marginals, same token count, cross-token geometry destroyed,
-re-normalized onto the sphere, **whole pipeline re-run on it**, distance matrix and fit
-included:
+**At layer ℓ of run r, a cluster is an HDBSCAN group of deduped tokens whose
+persistence exceeds what the tokens' own Gaussian produces anywhere.**
 
-- **Stability**: mean ARI between two independent 80% subsamples on their overlap
-  (Ben-Hur/Elisseeff/Guyon). Two independent draws rather than subsample-versus-full, because
-  comparing against the full-set partition rewards a method for being insensitive — the
-  full-set partition is one of the two every time.
-- **Separation**: silhouette on the same cosine distances. The index just called unusable,
-  which it is *against an absolute threshold*. Against a matched baseline it becomes exactly
-  the construction archive/UPDATE_PLAN.md §5.7 already forced on $Q_k$: "adjudicated on the ratio to a
-  matched random baseline", because $E[Q_k] = 1/n$ makes every large-$n$ configuration look
-  like a spherical design under a fixed cutoff. Same disease, same cure.
+| choice | value | why, and what was rejected |
+|---|---|---|
+| tokens | first occurrence of each string (`--dedupe-strings`) | all-token results are token identity: step 0 beats the null harder than step143000. Later occurrences get label −1, "not tested"; a nearest-group assignment for them is a separate, flagged column if Phase 10 needs one |
+| frame | centred (shared mean direction projected out, renormed); raw reported beside | raw cosine is dominated by the mean direction and rogue coordinates (`lit-1d.md` §7 row 3); centred is the frame `hdb_k`'s excess was read in |
+| algorithm | HDBSCAN, float64 cosine, `min_cluster_size` 2, EOM selection | the shipped call, so Phase 10's comparison is direct: which of the groups it already reads are real. `min_cluster_size` 4 (`SUBSTANTIAL_CLUSTER_SIZE`) is the sensitivity arm |
+| per-group statistic | `cluster_persistence_` | HDBSCAN's own measure of how long a group survives over scales; per group, so no vote. Rejected: merge-tree lifetime (fails step 0) |
+| null | matched-covariance Gaussian in the same frame, same n, renormed (`gaussian_null.py`), 200 draws | the null 1d has calibrated; SigClust's (`lit-1d.md` §7) |
+| threshold | the 95th percentile, over draws, of **each draw's maximum** persistence | a max statistic: under the null, P(any group admitted) ≤ 0.05 per record, whatever the group count. Rejected: a per-group percentile (`lit-1d.md` §8 row 1), which admits ~5 % of the dozens of groups a Gaussian draw makes |
+| reading | admitted groups per record, against the same rule run on `--calibrate` inputs (each layer replaced by a draw of its own Gaussian) | the null is not at nominal level everywhere; 1d reads every result against a calibration on its own inputs (`gaussian_null_report.py` refuses any other) |
+| control | step 0, same prompts and layers | an untrained model has token identity (removed by dedup) and position through the causal mask, and no learned content |
+| scope | v1 length (242–482 tokens) | the deduped null drifts with n past ~1000 tokens; long prompts wait on that check |
 
-### The gate is asymmetric, and that is the arguable decision
+**Why HDBSCAN and not a new method.** The aim is a definition, not a better
+clusterer. Keeping the shipped algorithm and adding a null makes the change to
+Phase 10 one thing (a group must beat its covariance) instead of several, and
+`hdb_k` is the statistic that has already passed the controls.
 
-Separation is the significance test. Stability is a floor (may not be worse than the null's
-mean) and the ranking criterion. They are not symmetric because **stability is bounded and its
-null saturates**: on three cleanly planted caps, spectral clustering scores a perfect 1.00
-while some structureless draws also score 1.00, which is a rank-test failure by ties alone for
-a partition that recovers the planted structure exactly. Requiring significance from a
-statistic whose null piles up on the ceiling discards true structure — and the expensive error
-here is the false negative, because an abstaining family removes an entire inductive bias from
-the consensus.
+**Why a max statistic, and what it costs.** It controls the per-record error
+without a top-down stop, which matters here: SHC (`lit-1d.md` §8 row 2) stops at a
+Gaussian-typical root, and at L1–16 the root is Gaussian-typical while the local
+groups are not. The cost is power for small groups: one large, long-lived Gaussian
+group per draw sets the bar for all. Size bands (a max per band) are the first
+thing to try if small groups never pass.
 
-Each still catches what the other cannot: stability alone admits structureless data (k-means at
-k=2 on i.i.d. sphere points is highly reproducible — the split is a real property of the
-sample, just not a cluster); separation alone admits a partition nobody could reproduce (a
-linkage peeling different outliers off each subsample scores a fine silhouette on what it did
-assign).
+**Placed, not calibrated:** α = 0.05 per record; 200 draws; `min_cluster_size`
+2 / 4; the 1000-token scope edge. Each is written into the artifact.
 
-### Rank test, not N-sigma
+## Checks reported beside each admitted group (no votes)
 
-The decision is made on $p = (1 + \#\{\text{null} \ge \text{observed}\}) / (n_{\rm null} + 1)$,
-not on the N-sigma summary this project reports elsewhere. Both statistics are bounded above,
-and on data with real structure the observation sits at the bound, where a z-score is
-compressed by the null's spread: measured, not hypothesised — k-means at k=3 on three planted
-caps scores 1.00 against a null mean of 0.65, which is 1.75σ while exceeding 19 of 20 null
-draws. `z_score` is still computed and written into every artifact so these numbers stay
-readable next to the project's other null comparisons; it is just not what decides.
+| check | what it answers | built? |
+|---|---|---|
+| Position: span, share of member pairs within 3 positions, contiguous-run flag | is the group a stretch of text rather than a content group | the nearest-neighbour version is in `gaussian_null`; per group, no |
+| Subsample stability, cluster-wise: mean best-match Jaccard over 80 % subsamples (Hennig 2007) | does the group come back | `selection.py` has partition-level stability only |
+| Recovery by the tuned families at the group's own k | is it an HDBSCAN artefact | families yes; matching per group no |
+| Cross-layer persistence: containment links (`merge_tree.py`) | does it last over a window of layers (the theory's persistence reading) | linker yes |
+| Attention community overlap, read against null B | does the model's attention treat it as a unit | null B yes (`attention_null.py`) |
+| Theory scale: does `δ = cβ^{-1/2}` fall inside the group's height interval | is the group at the scale the theory names | waits on Blocked 9 |
 
-The consequence is a hard constraint the driver enforces rather than absorbs: with
-$n_{\rm null}$ draws the smallest attainable p is $1/(n_{\rm null}+1)$, so an alpha below that
-makes every outcome predetermined. `select_family` raises instead of running such a sweep.
+A group that fails a check is still admitted; the check is reported with it. Making
+any check a gate is a later decision, made on its own numbers.
 
-### Two stages, and what that approximation costs
+## Outcomes, written before the run
 
-Computing nulls for every grid point costs `n_grid x n_null x n_repeats` fits. Stage 1 ranks
-the grid by stability alone; stage 2 computes the gates for the top `top_m` only. A candidate
-ranked 4th that would have passed while the top 3 fail is never examined. That is a real
-approximation, and `top_m` is written into the artifact rather than the search being described
-as exhaustive.
+From `hdb_k`'s excess, expected (not registered): admitted groups at step143000
+in most records at L9–24, few at L1–8; step 0 at its calibration; a large share of
+admitted groups positional. The outcomes that would change the plan:
 
-### No multiplicity correction, stated rather than fixed
+| outcome | reading | consequence |
+|---|---|---|
+| step143000 admits no more than its calibration | HDBSCAN's group-count excess is many weak groups, none individually beyond the Gaussian | try size bands; if still nothing, at v1 length a cluster is not distinguishable from its covariance group by group, and Phase 10 has nothing to condition on |
+| step 0 admits beyond its calibration | the control fails, as `mt_life` did | stop; find why (position?) before any trained reading |
+| admitted groups are mostly positional | the groups are text stretches | a residual null that keeps position (Parked, ~7 h) before calling anything content |
+| admitted, non-positional, recovered by other families | a cluster in the sense Phase 10 needs | Phase 10 re-reads its rows on the admitted labels (the user decides when Phase 10 resumes) |
 
-The gate is applied per (family, candidate, layer) and is not corrected for multiplicity. At
-alpha = 0.05 with 7 families and `top_m` gated candidates each, roughly `0.05 * 7 * top_m`
-false admissions per layer are expected, and the validation run shows exactly that rate. A
-Bonferroni correction is available by passing a smaller `--alpha`, but it is not the default,
-because at alpha/3 the required `n_null` triples and the sweep is already the expensive part.
-What protects the reading instead: a lone family's vote is weighted by its stability, and the
-abstention pattern is reported next to every consensus statistic. **A single family clearing
-the gate at one layer is not evidence of structure, and no verdict in this phase treats it as
-such.**
+## Build order
 
-## The ensemble
+Each is its own unit and PR.
 
-### One vote per family
+1. **Admission** (`p1d_cluster_ensemble/admit.py`, new sub-experiment). Synthetic
+   first: planted caps in a Gaussian background are admitted; a pure Gaussian input
+   admits in ≤ 5 % of records. Then 8 v1 prompts × step143000 / step 0 × L1–24, real
+   and `--calibrate`, centred and raw, `min_cluster_size` 2 and 4. Open the first
+   record's output before the batch. Cost: the deduped Gaussian null took 6 + 4 min
+   at 14 workers, so under an hour.
+2. **Checks** on the admitted groups, the table above minus the theory scale.
+3. **The theory scale**, when Blocked 9 is decided.
+4. **Phase 10 re-read** on the admitted labels: the user's call, since Phase 10 is on hold.
 
-Registered as an adjudication constraint (PREDICTIONS.md, Phase 1d constraint 1) rather than
-left as an implementation detail, because six agglomerative linkages voting against one
-HDBSCAN is a rigged consensus and which families are included must not be a post-hoc choice.
+Prerequisites not on this list, Parked in `status-1d.md`: the Gaussian null's drift
+with n (needed before long prompts), Parked 11 (step 0's lifetime excess; needed
+before the merge tree's lifetime is read again), a position-keeping residual null.
 
-### Weighted, and abstaining
+## Kept from August: the tuned families and their gate
 
-Families vote in proportion to the reproducibility of their selected setting — one that cleared
-the floor at 0.3 and one that reproduces at 0.95 are not the same evidence — and a family that
-failed the gate at a layer does not vote there at all. The number that did vote is carried
-alongside every consensus statistic: an agreement among two families is not the same
-measurement as an agreement among seven.
+Still in the code, still used for `P-C2` (is `min_cluster_size=2` the
+stability-optimal HDBSCAN setting; descriptive, unregistered) and for the recovery
+check above. The August text (git pointer at the top) has the full argument.
 
-### The consensus partition has no k
+**Seven families, one bias each:** `hdbscan` (density, can refuse), `kmeans`
+(Euclidean centroids), `spherical_kmeans` (cosine centroids; implemented here),
+`agglomerative` (linkage at a distance), `spectral` (graph cut), `gmm` (likelihood),
+`graph_modularity` (Clauset–Newman–Moore on a mutual-kNN cosine graph; mutual so an
+isolated token can stay a singleton). UMAP-then-cluster is excluded: it would vote
+twice for what density methods already say.
 
-Average linkage on $(1-C)$, cut at the height minimizing $\sum_{i<j} (C_{ij} - 1[i \sim j])^2$
-— the Mirkin/consensus objective against a soft target. Every merge height is a candidate, so
-the number of clusters is *derived*. A consensus whose k came from the same family of
-assumptions its members made would not be a consensus.
+**Tuning is not on an internal index.** Every within/between ratio has a good split
+at every k on a collapsed cloud. Instead, two statistics against the
+shuffled-dimension null with the whole pipeline re-run on each draw: **stability**
+(mean ARI of two independent 80 % subsamples on their overlap) as a floor and the
+ranking, and **separation** (cosine silhouette) as the significance test. The gate is
+asymmetric because stability's null piles up at the ceiling. Decided on the rank p
+`(1 + #{null ≥ obs}) / (n_null + 1)`, not on z, since both statistics are bounded and
+z is compressed at the bound; `select_family` refuses an alpha below `1/(n_null+1)`.
+Two stages (rank on stability, gate the top `top_m`), stated as an approximation; no
+multiplicity correction, stated. A degenerate null draw scores the floor; a partition
+over 50 % singletons is trivial (A0).
 
-### What the co-association matrix is not
-
-It is not a ground truth. It is an aggregation of biases: if five of seven families assume
-clusters are blobs, the consensus finds blobs. What it buys is that no *single* method's bias
-can be blamed for a structure that survives it. Every statement this phase makes about $C$ is
-an aggregation statement; the only claims calibrated against a null are the per-particle ones.
-
-## The graded annotation — the actual product
-
-The categorical label answers "is this token in a cluster" with a bit. The phase replaces it
-with four numbers per particle, exported into `core.particles.ParticleTable`:
-
-- `confidence` — mean co-association with its own consensus cluster minus the best mean with
-  any other. A silhouette in *co-association* space, so the units are "fraction of the weighted
-  method vote". Near 0 means the methods are split about where this particle goes, which is a
-  statement the categorical label cannot make at all.
-- `mean_recall` / `min_recall` — the disagreement structure confidence compresses. A low min
-  with a high mean says one family specifically dissents; that is a different situation from
-  every family being half-right.
-- `refusal_fraction` — the fraction of families leaving the particle outside substantial
-  structure, where "refused" and "placed in a cluster of two" count the same. This is what
-  makes "unclustered" comparable across families that have no noise label; without it every
-  non-density method looks like it placed 100% of tokens in structure by construction.
-
-The trichotomy `core` / `halo` / `contested` comes from percentiles of the confidence
-distribution measured on matched-null draws of the *same ensemble at the same settings*. The
-percentiles (95th, 50th) are placed and labelled as such; the values they produce are
-calibrated. **`halo` is the population the binary split has nowhere to put** — particles the
-methods mostly agree about, but not at a level structureless data could not reach.
-
-For Phase 5c, whose object of study is the unclustered population, this turns the selector from
-`cluster_label < 0` into `population="contested"` or a threshold on a continuous column.
-
-## Why P-C4 is the phase's own falsification
-
-Everything above is descriptive. A tuned method is not a result; a prettier annotation is not a
-result. The claim that earns the phase is that the graded annotation carries information the
-categorical one does not — and the only honest test is to have both predict the same held-out
-thing. That thing is layer-to-layer consensus persistence, computed from the consensus
-partition at both layers and never from HDBSCAN, because scoring a graded annotation against a
-target one of the two predictors defined would rig the comparison.
-
-ΔAUC is read two ways, and the verdict refuses when they disagree — the same discipline
-archive/UPDATE_PLAN.md §5.2 forced on $T_{\rm eff}$, where three definitions of a step size straddled
-the threshold. The registered instrument is a paired sign-flip permutation test on the per-pair
-concordance differences; the pairs share particles, so its p-value is approximate and
-anti-conservative, which is stated in the artifact next to the number rather than hidden. A
-particle-level bootstrap respects that dependence and is the conservative reading.
-
-If ΔAUC lands inside the null band, the correct write-up is "the ensemble adds nothing
-measurable", and that sentence is easier to write with the prediction already on record.
+**What changed since August:** ranking on raw stability picks each family's extreme
+scale, so a family's selected setting is not a scale claim (table above), and the
+shuffled-dimension null is beaten by position and token identity alone (#106, #108),
+so a passed gate is not evidence of content. The gate is a filter on the families,
+not a cluster definition.
 
 ## Duplication, deliberately incurred
 
-`co_association`, `noise_as_singletons`, `consensus_strength` and the Phase 1 agreement-layer
-criterion all exist in `p1_visualization/cluster_methods.py`. They are re-implemented here
-because that module lives inside the visualization package, whose `__init__` imports the whole
-figure pipeline, and this phase must stay importable in a numpy/scipy/sklearn environment.
+`co_association`, `noise_as_singletons`, `consensus_strength` and the agreement-layer
+criterion are also in `p1_mstate_tracking/visualization/cluster_methods.py`.
+`tests/test_phase1d_ensemble.py` asserts the two agree; constants are read from that
+module's source with `ast`. With the vote retired, promoting these to `core/` is no
+longer planned; the copies go with the cleanup unit.
 
-The duplication is not left to a comment. `tests/test_phase1d_ensemble.py` asserts the two
-implementations agree — co-association under both noise policies, the singleton relabeling, and
-the agreement-layer set against `cluster_count_table` — skipping only where the visualization
-package cannot be imported. The KMeans trust-gate constants are not copied at all: they are
-read out of that module's source with `ast`, the same mechanism `checkpoint_scalars.py` uses
-for `ENERGY_VIOLATION_REL_TOL`, so a rename raises at import instead of leaving a stale
-literal working. `DISTANCE_THRESHOLDS` and `K_RANGE` are read out of `core/config.py` the same
-way, since importing it would drag in torch and transformers.
+## What this phase does not do
 
-**If this phase outlives its first run, all of it belongs in `core/`** — the same argument that
-produced `core/population.py` after five call sites independently wrote `labels >= 0`.
-
-## Cost
-
-The sweep is quadratic in the wrong places: `n_grid x (1 + 2*n_repeats)` fits per family per
-layer, plus `top_m x n_null x (1 + 2*n_null_repeats)` for the gates. On a 24-layer run with a
-few hundred tokens the full grid is hours, not minutes. The knobs that move it, in order:
-`--layer-stride`, `--grid quick`, `--n-null`, `--top-m`. All are written into the artifact,
-because a selection made under `--grid quick` is a different claim from one made over the full
-grid.
-
-## What this phase deliberately does not do
-
-- **It does not re-run Phase 1.** Nothing it produces overwrites a Phase 1 artifact, and
-  `cluster_label` in its particle table is the *consensus* label with HDBSCAN's carried
-  alongside as `extra__hdbscan_label`. A consumer that wants the shipped partition must ask for
-  it by name.
-- **It does not retro-fit downstream results.** If P-C2 confirms, the consequence is that
-  every cluster-conditioned number was computed on a partition nobody chose — deciding what to
-  do about that is a scheduling question for whoever reads the verdict, not something this
-  phase acts on.
-- **It does not adjudicate inside the loop that computes its inputs.** The adjudicators take
-  already-computed per-layer results, so the compute step can be rerun without re-deciding
-  anything.
-- **It does not add figures.** The arrays a figure would need are persisted
-  (`p1d_ensemble.npz`); a `visualization/` submodule is the obvious next step and is not part
-  of this pass.
+- **It does not re-run Phase 1 or rewrite stored labels.** Admission writes its own
+  labels beside the shipped ones.
+- **It does not re-read Phase 10.** That is build step 4, and the user's call.
+- **It does not register anything.** The v1 runs have been seen; a registered
+  version would need runs nobody has looked at (the 12 held-out prompts are the
+  user's to release).
+- **It does not make a check a gate** until that check has its own numbers.

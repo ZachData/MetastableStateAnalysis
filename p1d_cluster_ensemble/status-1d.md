@@ -1380,6 +1380,33 @@ orders give ARI 0.97–1.0 at the same objective; `/challenge-pr` on #120).
   unsorted heatmap without saying so (`cluster_methods.py`). Cost: minutes.
   Could change: no number, only a figure's ordering.
 
+### Design revised: the grading retired, a per-group definition proposed (2026-09-30; branch `claude/p1d-design`)
+
+**Decision (user, 2026-09-30, Blocked 10):** core / halo / contested is retired
+as 1d's product, with the consensus partition as a definition and `P-C1`,
+`P-C3`, `P-C4` (`predictions-1d.md` addendum). The "Grading's null" item
+Parked above is moot. Docs only; no code or data changed.
+
+**`design-1d.md` rewritten.** It proposes the definition 1d tests next: an
+HDBSCAN group (`min_cluster_size` 2, float64 cosine, centred frame, deduped
+tokens) is a cluster when its persistence exceeds the 95th percentile of the
+per-draw *maximum* persistence under the matched-covariance Gaussian, read
+against its `--calibrate` run, with step 0 as the control, at v1 length. It
+rests on `hdb_k` because that is the statistic that passed step 0; the merge
+tree's lifetime did not (Parked 11). Checks (position, cluster-wise stability,
+family recovery, cross-layer links, attention, theory scale) are reported
+beside each group, not voted. Literature: `lit-1d.md` §8 (3 searches;
+SHC's top-down stop and Gao–Bien–Witten's isotropic test rejected there).
+
+**Next:** build step 1, `admit.py` (synthetic first, then 8 v1 prompts ×
+step143000 / step 0 × L1–24, real and calibration; under an hour of compute).
+
+**Parked** (discoveries, not followed):
+- **Cleanup of the retired columns.** `run_1d.py`, `p1d_io.py`,
+  `core/artifacts.py` and `tools/run/p1d_drift.py` still read or write
+  `confidence` / core / halo / contested. Cost: an hour with tests. Could
+  change: nothing measured; it stops a later reader taking them as live.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it
