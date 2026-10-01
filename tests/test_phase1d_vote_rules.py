@@ -102,6 +102,7 @@ class TestReferenceIsRun1d:
         ours = [ensemble.build(d, weights=selection_weights(selection))["confidence"]
                 for d in draws]
         theirs = null_confidences(planted, selection, n_draws=3, seed=0)
+        assert len(ours) == len(theirs) == 3
         for a, b in zip(ours, theirs):
             np.testing.assert_allclose(a, b)
 
