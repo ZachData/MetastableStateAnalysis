@@ -178,3 +178,13 @@ running median of the rows above it gets a line under the table saying why.
   probe round's output (17 mutants) stayed in context for every later
   call. The probe output could have gone to a file with only the DIFF
   lines printed.
+
+| 2026-09-30 | 1d vote rules: 9 rules x 48 records, scipy invalid-tree fix; also #119/#113 conflict resolution (whole transcript, before challenge-pr) | 108 | 224k | 16.5M | 55k | #120 |
+
+- #120 is ~3.8× the running median. A fresh session after `/clear`, but it
+  held two units: making #119 and #113 mergeable (two gate runs) and then
+  the vote rules. The batch crashed halfway on a scipy defect, so the
+  diagnosis (wrapper, re-run, matrix encoding, regression test) ran at
+  ~150–220k per call. The PR fixes belonged in their own session, and the
+  batch's failure would have been one call cheaper had `_job` named its
+  input from the start.
