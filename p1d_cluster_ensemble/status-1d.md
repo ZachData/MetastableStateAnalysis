@@ -1927,6 +1927,35 @@ The cut is not in the definition. Its form, fixed before any code or run:
 | known risk (finding 2) | one pooled `c` is fitted mostly where there is no opening. On step 0 the reviewer found `c` 0.21–0.34 pooled (centred, R² < 1 %) against 0.38–0.58 on the first 32 kept rows (R² 4–12 %) and ≤ 0 past 32, so the null may reproduce only about half the opening's shift, and step 0 could fail on the fit rather than the mechanism. Not redesigned before seeing the run. On a step-0 fail the report gives `c` on the first 32 kept rows beside the pooled one, as a diagnosis, not a rescue |
 | calibration | one draw of the same null as pseudo-data, the null refitted to it (as `--calibrate`) |
 | input, first run | v1 (#122's 14 runs, M = 0), then the long runs |
+
+**The form above fails its synthetic positive control, so the real run was not made**
+(2026-10-01, same session; code on branch `claude/p1d-position-null-run`, `c085dba`, not for
+merge; scripts `p1d_cluster_ensemble/scratch_checks/syn{4,5,6}.py` there). Synthetic opening:
+`Y_t = E_t + 6 · mean(V_0..V_t)`, n 150, d 300, `E`, `V` iid N(0, I), the mechanism of #123
+with nothing else in it. Records admitting a group that holds position 0, of 10 seeds, 39
+draws, `excess`, `min_cluster_size` 2:
+
+| null | raw | centred |
+|---|---|---|
+| Gaussian (#122) | 7 | — |
+| prefix, as committed (fit and draw on unit rows) | 7 | 10 |
+| **oracle**: the true positional mean, drawn as committed | **7** | — |
+| oracle mean, each row keeps its own residual norm | 0 | — |
+| prefix, fit and draw on the un-normalised rows, then the frame | 2 | 3 |
+| smooth (log position), fit and draw on the un-normalised rows | **0** | **0** |
+| pure noise (`Y = E`), the last two | 0 | 0 |
+
+**Why.** Even the true mean fails, so the defect is the draw, not only the fit. Unit rows make
+the noise heteroscedastic: an early token's shared component inflates its norm, so after
+normalisation its own noise is a small share, while the committed draw gives every token the
+pooled residual covariance and spreads the opening wider than it is. Fitting and drawing
+before normalisation, where the mechanism is additive and the noise even, and applying the
+frame to each draw, fixes it for the smoother. The prefix fit still under-fits (`c` ≈ 0.5),
+which is finding 2 showing on data with a known answer. **For the user (Blocked 11‴):** adopt
+"fit and draw on the un-normalised activations, then the frame" (recommended: it is a defect
+of the committed form, found on a synthetic, not on the control), and make the smoother the
+primary with the prefix as the arm, since only the smoother passes the synthetic. Then the
+build adds these synthetics as tests and runs v1 (~12 min a pass).
 | counting | the verdict stays per layer-record (comparable with #122–#126); a per-prompt count is reported beside it |
 
 **Correction to the cost.** The "~7 h" quoted for (a) since #108 is `attention_null`'s, which
