@@ -42,7 +42,8 @@ Rules (``NOISE_RULES`` x ``WEIGHT_RULES``):
    over families: the Jaccard of the core set with and without it, and the
    ARI of the consensus partition. The design says what an ensemble buys
    is that "no single method's bias can be blamed for a structure that
-   survives it" (`design-1d.md` "What the co-association matrix is not");
+   survives it" (August `design-1d.md` "What the co-association matrix is
+   not", at `30ccbb4`; retired with the grading 2026-09-30);
    a rule under which one family's removal replaces the core set is a
    veto, not a vote. Median over trained (step143000) records.
 2. Guard: **dominance**, the largest ARI between the consensus and any

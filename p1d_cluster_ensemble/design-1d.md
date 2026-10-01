@@ -36,9 +36,10 @@ Every row is from `status-1d.md`; v1 = the 8 v1 prompts on 410m.
 | Theory's scale `δ = cβ^{-1/2}` | waits | β's convention is Blocked 9 |
 
 Two things follow. A cluster definition has to be **per group**, not per token
-(the token grading is what failed), and it has to rest on a statistic that passes
-the step-0 control, which today means HDBSCAN's groups and not the merge tree's
-lifetime.
+(the token grading is what failed), and it has to start from the readout that
+passed the step-0 control, which today is HDBSCAN's group count and not the merge
+tree's lifetime. The per-group statistic below has **not** been through that
+control yet; the step-0 stop rule in "Outcomes" covers it.
 
 ## Decision: the graded readout is retired (Blocked 10, user, 2026-09-30)
 
@@ -61,40 +62,48 @@ of real data still sways, so there was no evidence it would pass on Pythia.
 ## The proposed definition: a group that beats its covariance
 
 **At layer ℓ of run r, a cluster is an HDBSCAN group of deduped tokens whose
-persistence exceeds what the tokens' own Gaussian produces anywhere.**
+per-group excess density exceeds what the tokens' own Gaussian produces anywhere.**
 
 | choice | value | why, and what was rejected |
 |---|---|---|
-| tokens | first occurrence of each string (`--dedupe-strings`) | all-token results are token identity: step 0 beats the null harder than step143000. Later occurrences get label −1, "not tested"; a nearest-group assignment for them is a separate, flagged column if Phase 10 needs one |
-| frame | centred (shared mean direction projected out, renormed); raw reported beside | raw cosine is dominated by the mean direction and rogue coordinates (`lit-1d.md` §7 row 3); centred is the frame `hdb_k`'s excess was read in |
+| tokens | first occurrence of each string (`--dedupe-strings`) | all-token results are token identity: step 0 beats the null harder than step143000. Later occurrences get label −1, "not tested"; a nearest-group assignment for them is a separate, flagged column if Phase 10 needs one. `repeated_tokens` (3 strings) drops out, so the batch is 7 prompts |
+| frame | centred (shared mean direction projected out, renormed); raw reported beside | raw cosine is dominated by the mean direction and rogue coordinates (`lit-1d.md` §7 row 3). **Chosen after seeing the data:** centred is where `hdb_k`'s excess was largest (20 vs 6 groups; raw 5 vs 3.2), so raw is reported with equal weight |
 | algorithm | HDBSCAN, float64 cosine, `min_cluster_size` 2, EOM selection | the shipped call, so Phase 10's comparison is direct: which of the groups it already reads are real. `min_cluster_size` 4 (`SUBSTANTIAL_CLUSTER_SIZE`) is the sensitivity arm |
-| per-group statistic | `cluster_persistence_` | HDBSCAN's own measure of how long a group survives over scales; per group, so no vote. Rejected: merge-tree lifetime (fails step 0) |
+| per-group statistic | **`S_C / |C|`**: the group's stability (Σ over members of λ_p − λ_birth, λ = 1 / mutual-reachability distance) over its size, read from `condensed_tree_`; sensitivity arm: log-lifetime `log(λ_death / λ_birth)` | depends only on the group's own branch of the tree. **Rejected: `cluster_persistence_`** (`/challenge-pr` on #121, finding 1, verified): hdbscan divides `S_C / |C|` by the tree's largest λ, set by the tightest group anywhere in the layer. A planted 6-point group scored 0.75 alone, 0.13 and 0.012 when an unrelated tighter group was added; since trained tokens have far closer nearest neighbours than their null, real groups would be scored down and the null would win. Also rejected: merge-tree lifetime (fails step 0) |
 | null | matched-covariance Gaussian in the same frame, same n, renormed (`gaussian_null.py`), 200 draws | the null 1d has calibrated; SigClust's (`lit-1d.md` §7) |
-| threshold | the 95th percentile, over draws, of **each draw's maximum** persistence | a max statistic: under the null, P(any group admitted) ≤ 0.05 per record, whatever the group count. Rejected: a per-group percentile (`lit-1d.md` §8 row 1), which admits ~5 % of the dozens of groups a Gaussian draw makes |
-| reading | admitted groups per record, against the same rule run on `--calibrate` inputs (each layer replaced by a draw of its own Gaussian) | the null is not at nominal level everywhere; 1d reads every result against a calibration on its own inputs (`gaussian_null_report.py` refuses any other) |
+| threshold | the 95th percentile, over draws, of **each draw's maximum** of the statistic | a max statistic: under the null, P(any group admitted) ≤ 0.05 per record, whatever the group count. Rejected: a per-group percentile (`lit-1d.md` §8 row 1), which admits ~5 % of the dozens of groups a Gaussian draw makes |
+| counts | admitted groups per record, against the same rule run on `--calibrate` inputs (each layer replaced by a draw of its own Gaussian) | the null is not at nominal level everywhere; 1d reads every result against a calibration on its own inputs (`gaussian_null_report.py` refuses any other) |
+| labels | released per (step, frame, band L1–8 / 9–16 / 17–24) only if that band's calibration admits in ≤ 10 % of its records (2α, placed); otherwise the band's labels are withheld and say why | Phase 10 needs labels, not counts. A band whose null over-admits gives labels with an unknown error rate: refuse rather than degrade |
 | control | step 0, same prompts and layers | an untrained model has token identity (removed by dedup) and position through the causal mask, and no learned content |
 | scope | v1 length (242–482 tokens) | the deduped null drifts with n past ~1000 tokens; long prompts wait on that check |
 
 **Why HDBSCAN and not a new method.** The aim is a definition, not a better
 clusterer. Keeping the shipped algorithm and adding a null makes the change to
 Phase 10 one thing (a group must beat its covariance) instead of several, and
-`hdb_k` is the statistic that has already passed the controls.
+HDBSCAN's group count is the readout that has already passed the controls.
 
 **Why a max statistic, and what it costs.** It controls the per-record error
 without a top-down stop, which matters here: SHC (`lit-1d.md` §8 row 2) stops at a
 Gaussian-typical root, and at L1–16 the root is Gaussian-typical while the local
-groups are not. The cost is power for small groups: one large, long-lived Gaussian
-group per draw sets the bar for all. Size bands (a max per band) are the first
-thing to try if small groups never pass.
+groups are not. The cost is power: the densest Gaussian group in each draw (likely
+a close pair) sets the bar for every real group, of any size. Size bands (a max
+per band) are the first thing to try if larger groups never pass.
 
 **Placed, not calibrated:** α = 0.05 per record; 200 draws; `min_cluster_size`
-2 / 4; the 1000-token scope edge. Each is written into the artifact.
+2 / 4; the 2α label-release bound; the 1000-token scope edge. Each is written
+into the artifact.
+
+**Not yet measured:** how far real layers sit above their null draws in plain
+nearest-neighbour density is known (`nn1`, every record); how far the per-group
+statistic sits is not. `S_C / |C|` is in units of 1/distance, so it rewards tight
+groups, including pairs; whether it admits mostly pairs is the first thing the
+first record's output should show.
 
 ## Checks reported beside each admitted group (no votes)
 
 | check | what it answers | built? |
 |---|---|---|
-| Position: span, share of member pairs within 3 positions, contiguous-run flag | is the group a stretch of text rather than a content group | the nearest-neighbour version is in `gaussian_null`; per group, no |
+| Position: span, share of member pairs within 3 positions, contiguous-run flag, each against random groups of the same size drawn from the kept positions | is the group a stretch of text rather than a content group. Kept first occurrences sit early in the prompt, so the baseline is the kept positions, not all positions | the nearest-neighbour version is in `gaussian_null`; per group, no |
 | Subsample stability, cluster-wise: mean best-match Jaccard over 80 % subsamples (Hennig 2007) | does the group come back | `selection.py` has partition-level stability only |
 | Recovery by the tuned families at the group's own k | is it an HDBSCAN artefact | families yes; matching per group no |
 | Cross-layer persistence: containment links (`merge_tree.py`) | does it last over a window of layers (the theory's persistence reading) | linker yes |
@@ -123,7 +132,9 @@ Each is its own unit and PR.
 
 1. **Admission** (`p1d_cluster_ensemble/admit.py`, new sub-experiment). Synthetic
    first: planted caps in a Gaussian background are admitted; a pure Gaussian input
-   admits in ≤ 5 % of records. Then 8 v1 prompts × step143000 / step 0 × L1–24, real
+   admits in ≤ 5 % of records; **a looser planted group's statistic and verdict do
+   not change when an unrelated tighter group is added** (the defect that ruled out
+   `cluster_persistence_`). Then 7 v1 prompts × step143000 / step 0 × L1–24, real
    and `--calibrate`, centred and raw, `min_cluster_size` 2 and 4. Open the first
    record's output before the batch. Cost: the deduped Gaussian null took 6 + 4 min
    at 14 workers, so under an hour.

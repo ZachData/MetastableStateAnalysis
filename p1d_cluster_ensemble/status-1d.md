@@ -1389,17 +1389,24 @@ Parked above is moot. Docs only; no code or data changed.
 
 **`design-1d.md` rewritten.** It proposes the definition 1d tests next: an
 HDBSCAN group (`min_cluster_size` 2, float64 cosine, centred frame, deduped
-tokens) is a cluster when its persistence exceeds the 95th percentile of the
-per-draw *maximum* persistence under the matched-covariance Gaussian, read
-against its `--calibrate` run, with step 0 as the control, at v1 length. It
-rests on `hdb_k` because that is the statistic that passed step 0; the merge
-tree's lifetime did not (Parked 11). Checks (position, cluster-wise stability,
+tokens) is a cluster when its excess density `S_C / |C|` exceeds the 95th
+percentile of the per-draw *maximum* under the matched-covariance Gaussian,
+read against its `--calibrate` run, with step 0 as the control, at v1 length.
+It starts from `hdb_k` because that readout passed step 0; the merge tree's
+lifetime did not (Parked 11). *Revised after `/challenge-pr` on #121:* the
+first version used hdbscan's `cluster_persistence_`, which divides by the
+largest λ in the whole tree, so one tight group elsewhere scores every other
+group down (verified: a planted 6-point group 0.75 alone, 0.012 beside a tighter
+one). Also added: a label-release rule per band, `repeated_tokens` dropping
+out under dedup (7 prompts), and the centred frame marked as chosen after
+seeing the data. Checks (position, cluster-wise stability,
 family recovery, cross-layer links, attention, theory scale) are reported
 beside each group, not voted. Literature: `lit-1d.md` §8 (3 searches;
 SHC's top-down stop and Gao–Bien–Witten's isotropic test rejected there).
 
-**Next:** build step 1, `admit.py` (synthetic first, then 8 v1 prompts ×
-step143000 / step 0 × L1–24, real and calibration; under an hour of compute).
+**Next:** build step 1, `admit.py` (synthetic first, including the
+two-group invariance case; then 7 v1 prompts × step143000 / step 0 × L1–24,
+real and calibration; under an hour of compute).
 
 **Parked** (discoveries, not followed):
 - **Cleanup of the retired columns.** `run_1d.py`, `p1d_io.py`,
@@ -1572,7 +1579,10 @@ registered `core.artifacts` specs.
 
 ## Falsification table
 
-Empty by design — nothing has been run. The registered predictions and their falsifiers are in
-`PREDICTIONS.md`; the adjudicators (`comparison.adjudicate_p_c1..p_c4`) write their verdicts
-into `p1d_results.json` under `verdicts`, and every verdict string names its own prediction id
-so a reader cannot mistake which claim was decided.
+Empty, and nothing here will be adjudicated. P-C1–P-C4 were never registered
+(`predictions-1d.md`); P-C1, P-C3 and P-C4 were retired 2026-09-30 with the
+grading (addendum there), and P-C2 stays a descriptive question. The
+adjudicators (`comparison.adjudicate_p_c1..p_c4`) still write lines into
+`p1d_results.json` under `verdicts`, stored as `"UNREGISTERED, tier 1: not
+adjudications"`; removing the retired three is the cleanup Parked under
+"Design revised".
