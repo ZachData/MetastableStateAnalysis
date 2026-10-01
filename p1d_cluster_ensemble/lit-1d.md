@@ -108,6 +108,7 @@ is a cluster". That change is the user's to make, not the scan's.
 - `2507.17657`: how it handles causal masks, and whether its metastable sets use PCCA or eigengaps.
 - `2601.21366` (localisation of the mean-field landscape with the MLP) and `2608.08922` (clustered attractors; its "overlap gap" condition may be a testable separation criterion). Both were [N] in `p1_mstate_tracking/lit-1.md`.
 - Fridlyand & Dudoit 2002 (Clest): the test form of normalisation.
+- The 2026-10-01 mean-field reading list (`docs/readings/meanfield_reading_list_2026-10-01.md` §1, §4): theory of the step-0 control (`2604.01978`, `2601.21942`), position under causal attention (`2605.09213`), a cluster as a KDE mode at bandwidth `β^{-1/2}` with a count (`2412.09080`). All [S]; PDFs asked for.
 
 ## 7. A matched-covariance Gaussian null (added 2026-09-26)
 

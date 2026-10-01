@@ -93,7 +93,7 @@ assumption is the bridge the user is asking about; it is not a result.
 |---|---|---|
 | Classic | Wide-network training = Wasserstein gradient flow of the parameter distribution | Mei, Montanari & Nguyen 2018; Chizat & Bach 2018 |
 | **Coupled flow for transformers** | Two mean-field objects: token distribution `μ_t` moving through **depth** (McKean–Vlasov, the Geshkovski object) and attention-parameter distribution `ρ_s` moving through **training time** (Wasserstein gradient flow of the risk). Well-posed; global convergence for shallow single-layer attention under log-Sobolev | 2608.25055 |
-| Deep and wide training | Training infinitely deep and wide transformers | Barboni, 2605.17660 |
+| Deep and wide training | Training infinitely deep and wide transformers | Barboni, de Hoop, Furuya, Peyré, 2605.17660 |
 | ICL, mean-field | Non-convex mean-field dynamics on the attention landscape; saddles avoided | Kim & Suzuki, ICML 2024 |
 | Training breaks clustering | Trained FFN makes tokens leave the clustered regime near the last layers | Isobe, Inoue & Imaizumi, 2605.07772 (already in PUBLICATION_IDEAS.md) |
 
@@ -214,8 +214,8 @@ Phase 10 rows may cite identity-weight theorems at all (D1).
 - *Susceptibilities and Patterning: A Primer on Linear Response in Bayesian Learning*, [2605.07980](https://arxiv.org/abs/2605.07980)
 - Gordon et al., *Towards Spectroscopy: Susceptibility Clusters in Language Models*, [2601.12703](https://arxiv.org/abs/2601.12703); Timaeus, *Finding Interpretable Structure in Pythia-1.4B* (2026-04-21, timaeus.co/research)
 - *Dead Directions: Geometric Singular Learning*, [2606.05957](https://arxiv.org/abs/2606.05957); follow-ups [2607.00603](https://arxiv.org/abs/2607.00603), [2606.21158](https://arxiv.org/abs/2606.21158), 2606.19491
-- *A Mean-Field Theory of Transformers: Well-Posedness of the Coupled Data–Parameter Dynamics and Global Convergence of Training*, [2608.25055](https://arxiv.org/abs/2608.25055)
-- Barboni, *Training Infinitely Deep and Wide Transformers*, [2605.17660](https://arxiv.org/abs/2605.17660)
+- Herty, Liu, *A Mean-Field Theory of Transformers: Well-Posedness of the Coupled Data–Parameter Dynamics and Global Convergence of Training*, [2608.25055](https://arxiv.org/abs/2608.25055) (authors from the 2026-10-01 reading list, `docs/readings/meanfield_reading_list_2026-10-01.md`)
+- Barboni, de Hoop, Furuya, Peyré, *Training Infinitely Deep and Wide Transformers*, [2605.17660](https://arxiv.org/abs/2605.17660)
 - Kim & Suzuki, *Transformers Learn Nonlinear Features In Context: Nonconvex Mean-field Dynamics on the Attention Landscape*, [ICML 2024](https://proceedings.mlr.press/v235/kim24af.html)
 - Isobe, Inoue & Imaizumi, *Training-Induced Escape from Token Clustering*, [2605.07772](https://arxiv.org/abs/2605.07772)
 - Noci et al., *Signal Propagation in Transformers: … Rank Collapse*, [2206.03126](https://arxiv.org/abs/2206.03126); *The Shaped Transformer*, [2306.17759](https://arxiv.org/abs/2306.17759) — the random-init end: token covariance follows an SDE in depth

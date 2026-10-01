@@ -1650,6 +1650,12 @@ review:* they were `-1`, the deduplication code).
 - **Trained groups holding the first kept token** (5–18 % of admitted groups
   at M = 32; that token sits at position 32 or later, so it is not the sink).
   Not followed.
+- **Theory for the control and the cut** (2026-10-01 reading list,
+  `docs/readings/meanfield_reading_list_2026-10-01.md` §1 rows 1–2, [S]):
+  2604.01978 and 2601.21942 analyse random-weight transformers, which is step 0;
+  2605.09213 gives a closed-form primacy profile under causal attention. Why:
+  either could fix Blocked 11′'s cut, or the control's expectation, before
+  running. Cost: reading, once the PDFs are supplied. Could change: Blocked 11′.
 
 ## Deleted and restored (was `FROZEN.md`)
 
