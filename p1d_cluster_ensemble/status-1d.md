@@ -1834,6 +1834,66 @@ is not read.
 M, where step 0's admitted groups at M = 32 sit (inside `[32, n_v1)` or past `n_v1`), and
 #123's position check on them.
 
+**Output:** `data/p1d/long_m32_2026-10-01/` (`{real,calibrate,report}_m{32,0}.*`,
+`position_m32.{json,txt}`, `run_all.sh`, `run.log`; `pilot/` is the one-record populated
+check). Code: `claude/p1d-long-m32` at `f6c8ea4`, no code change; env: conda `mets`, local
+box, `OMP_NUM_THREADS=1`, 14 workers. **Re-run:** `run_all.sh` (~25 min per pass, 4 passes),
+then `python -m p1d_cluster_ensemble.position_check --real real_m32.json --out
+position_m32.json` (~15 min beside the batch).
+
+**Result: the cut fails** (rule above). Step 0 at M = 32, `excess`, records admitting of 32,
+real / calibration:
+
+| arm | frame | L1–8 | L9–16 | L17–24 |
+|---|---|---|---|---|
+| **2 (primary)** | centred | 0 / 0 | 0 / 0 | 0 / 0 |
+| **2 (primary)** | raw | 0 / 0 | 0 / 1 | **4 / 0: fail** |
+| 4 | centred | 0 / 0 | 1 / 2 | **13 / 0** |
+| 4 | raw | 0 / 0 | 3 / 0 | 1 / 0 |
+
+`log_life` agrees: centred L17–24 6 / 0 (arm 2), 18 / 0 (arm 4); arm 4 centred L9–16 8 / 1.
+
+- **The primary fail is marginal and not the opening.** Its 7 admitted groups are pairs and one
+  group of 5 (`latex_monograph`, `sullivan_ballou`, `wiki_paragraph`, L19–22), p 0.015–0.05,
+  members far apart (e.g. positions 208 and 832); position check: 0 positional, 0 holding the
+  first kept token. One cell over the bound by one record, so by the rule it fails, and nothing
+  in it looks like the mechanism the cut was for.
+- **The sensitivity arm is the mechanism, moved to the cut.** All 14 of step 0's admitted
+  centred arm-4 groups (13 at L17–24, 1 at L9–16) hold position 32, the first token the cut
+  keeps, and all 14 are positional (`p_near` ≤ 0.05). They come from 2 of 4 prompts
+  (`hdbscan_code` 8 records, `wiki_paragraph` 5), 33–81 members, 55–75 % of them among the
+  first |g| kept tokens, median position 50–140. As at M = 8 on v1, the opening moves with the
+  cut: a fixed position does not remove it.
+- **Why v1 passed at 32 and long does not** (a reading, not tested): an opening run of ~30
+  tokens is 12–29 % of v1's 103–248 kept tokens at M = 32 and 5–9 % of the long runs' 317–671,
+  so at length it is a small dense part of a larger cloud, which is what beats the cloud's own
+  Gaussian. A run that is most of the cloud cannot (#125's reading 3). If so, the cut passed on
+  v1 partly because v1 is short. Against it: across prompts the share does not order the
+  failures (`hdbscan_code`, the smallest long cloud at 317, fails; `latex_monograph` at 525
+  and `sullivan_ballou` at 387 do not); within each prompt, long is larger than v1.
+- **Trained admission survives at length:** step143000 admits in 27–32 of 32 records per
+  cell (arm 2; calibration 2 · 2 · 9 centred, 6 · 2 · 10 raw). Released at M = 32: arm 2
+  centred L1–8, L9–16 and raw L9–16; arm 4 centred L1–8, L9–16 and raw L1–8, L9–16. L17–24 is
+  withheld in both frames (calibration 9–13 of 32: the deduped null is off nominal late at
+  length). Position check, admitted vs not (arm 2, centred): positional 13 vs 19 %, 41 vs 40 %,
+  39 vs 35 %; first kept 1–2 %.
+
+**Reading.** By the rule committed before the run, the cut fails, and the decision goes back to
+the user. The primary-arm fail alone would be a weak reason (one record over the bound, not
+the opening). The sensitivity arm is the strong one: the opening re-forms at the first kept
+token, as it did at M = 8 on v1, so the cut moved the effect rather than removing it. A
+mechanism for that (from #123's prefix average, not tested here): tokens just past any cut M
+still attend to positions 0..M−1, which are a share M / (t + 1) of their prefix, so the
+first ~M kept tokens after the cut share a large common component whatever M is. If so, no
+fixed cut removes it; a larger M only makes the remainder longer.
+
+**For the user (Blocked 11″):** the cut is not in the definition. Options: (a) the
+position-keeping null (~7 h on v1; the long runs would add about as much again), which judges
+every group, trained ones included, against a null that keeps position; a cut chosen by a
+rule fixed in advance, which the mechanism above says will move the effect again; or a
+group-level rule (for example, drop groups holding the first kept token), post hoc on this
+run and needing another test set. Recommendation: (a).
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it

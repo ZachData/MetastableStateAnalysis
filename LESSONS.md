@@ -557,6 +557,13 @@ needs the user to enable it on GitHub.
   passing a test is not a share of groups that have the property; report an
   effect size beside it. A control used to tune a choice has not tested that
   choice.**
+- 2026-10-01, the M = 32 cut on the long prompts: that rule's test, run with its pass rule
+  committed first, failed. Step 0 admitted again at length, and the groups it admitted held
+  position 32, the first token the cut kept. M = 8 on v1 had already shown the opening moving
+  with the cut, and 32 was still read as "removes it" because at v1 length nothing was left to
+  admit. Rule: **when an effect is anchored to a boundary the fix defines (the first kept
+  token), moving the boundary moves the effect; check at the new boundary, on data the fix
+  was not tuned on, before calling it removed.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
