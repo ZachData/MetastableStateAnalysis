@@ -190,3 +190,10 @@ running median of the rows above it gets a line under the table saying why.
   input from the start.
 
 | 2026-09-30 | 1d design revised (grading retired, per-group definition; before Stop and challenge-pr) | 32 | 133k | 3.1M | 36k | #121 |
+| 2026-10-01 | 1d admission build step 1 (level-set HDBSCAN; before challenge-pr) | 90 | 267k | 16.1M | 62k | #122 |
+
+- #122 is 3.2× the running median (5.1M). Why: the invariance test found
+  hdbscan's tie-order defect mid-build, which took three rounds (canonical
+  tree, per-group branch, then level-set HDBSCAN with EOM validated against
+  hdbscan's own tree) before the batch, and STATE's 30 kB hook output was read
+  twice at the start (once through a persisted-output wrapper).
