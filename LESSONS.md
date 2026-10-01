@@ -175,6 +175,16 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-01, a guard on the input that did not cover its null: 1d's
+  identity simulator refuses snapshots whose smallest `1 − cos` is below a
+  float floor, but a nearly collapsed snapshot's matched-covariance Gaussian
+  draws are as tight as it is, and one fell below float32 resolution. The
+  level-set code refused (good), but the batch died at its first record, and
+  the pool's traceback again did not name the input (the 2026-09-30 rule,
+  not applied to the new driver). It now records the snapshot as skipped
+  with the reason. Rule: a floor on an input bounds everything derived from
+  it at the same scale (its null draws, its calibration), or is checked
+  there too.
 - 2026-09-30, a library's output: scipy 1.15's average linkage returned a
   tree that merged a node with itself (a tied co-association, 1d's vote
   rules; `status-1d.md` "Vote rules"). `consensus_partition` never checked

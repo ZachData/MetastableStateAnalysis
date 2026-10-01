@@ -202,3 +202,11 @@ running median of the rows above it gets a line under the table saying why.
 
 - #123 is ~1.4× the running median: under 2×. STATE's hook output was again
   persisted and read three times at the start (30 kB, 150 lines of long cells).
+
+| 2026-10-01 | 1d identity-weights positive control: lit scan, design, simulator, admission (before challenge-pr) | 101 | 320k | 20.5M | 86k | #124 |
+
+- #124 is over 2× the running median total context (20.5M). Why: one prompt asked for
+  three units' worth (lit scan, design, simulator plus a 1.5 h batch), so context grew
+  to 320k and every wait re-read it; about 15 calls were polls or waits on the batch, and
+  the batch had to be restarted once (the float-floor defect). The lit scan + design was
+  a natural PR boundary that was not taken, because the run was in the same request.

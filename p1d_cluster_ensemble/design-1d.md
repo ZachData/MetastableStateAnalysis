@@ -226,6 +226,14 @@ about 1 h. Open the first record before the batch.
 covers. It does not say Pythia's admitted groups are those clusters. Time here is
 not depth.
 
+**Run 2026-10-01** (`status-1d.md` "Identity-weights positive control"). Against the rows
+above: the positive control is not passed and mostly not readable (rows 2–3: from L0 the
+theory makes one global cluster; the centred calibration fires on collapsing clouds; in
+raw, HDBSCAN-EOM finds cores, not clusters). The opening row is met for an *admitted
+group*, not for a theory cluster as written: causal, β ≤ 1, `t` 1–2, 5–7 of 7 step-0
+prompts, calibration 0, none under the full mask or at β = 3.46. The token match to
+step 0's real groups (the last row) holds, but a first-|g|-tokens baseline does as well.
+
 ## Kept from August: the tuned families and their gate
 
 Still in the code, still used for `P-C2` (is `min_cluster_size=2` the
