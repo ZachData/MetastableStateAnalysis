@@ -1651,6 +1651,150 @@ review:* they were `-1`, the deduplication code).
   at M = 32; that token sits at position 32 or later, so it is not the sink).
   Not followed.
 
+### Identity-weights positive control (build step 1b; 2026-10-01; branch `claude/p1d-identity`)
+
+**What.** `design-1d.md` "Identity-weights positive control", written and committed
+(`53b0738`) before any run; literature `lit-1d.md` §9. The theory's causal dynamics
+(2411.04990's (CSA), `Q = K = V = I`, self included, sphere, no MLP / RoPE / LN) and
+the full-mask control, run from Phase 1's deduped L0 rows, then admission and #123's
+position check on every snapshot. Code `p1d_cluster_ensemble/identity_sim.py`
+(`simulate` / `admit` / `report`), 24 tests (`tests/test_phase1d_identity_sim.py`:
+the full mask from orthogonal starts follows `gamma_ode`'s (6.9) to 1e-6, the causal pair
+is (6.9) at half speed, Thm 4.1, the span reduction exact to 1e-10, the float floor),
+sympy check `tools/math_checks/identity_sim_closed_form.py`.
+
+**Input.** #122's 14 run directories (7 v1 prompts × step143000 / step 0), L0, deduped
+(125–273 tokens); β ∈ {0, 0.2, 0.43, 1, 2, 3.46, 5.57, 8, 16, 64}; `t` ∈ {0, 0.5, 1, 2,
+4, 8, 16}; causal and full; admission 200 draws, seed 0, both frames, `min_cluster_size`
+2 / 4; theory clusters at η = 1e-3 (1e-2, 1e-4 stored). **Output:**
+`data/p1d/identity_sim_2026-10-01/` (`simulate.parts/`, `traj/`, `admit_{real,calibrate}.parts/`,
+`report.{json,txt}`, `run_all.sh`, `run.log`). 280 trajectories, all converged (`dt` halved
+until no Gram moved > 1e-6). 3 388 snapshot-frames each real and calibration; 274 / 276
+below the float floor, all at `t = 16` (collapsed). **Re-run:** `run_all.sh` (~1.5 h at 14
+workers: simulate 10 min, admission ~35 min per pass). Code: `claude/p1d-identity` at
+`53b0738` plus the uncommitted `identity_sim.py` (committed as `5abd28e`; the report fields
+added during the batch do not touch admission); env: conda `mets` on the local box,
+`OMP_NUM_THREADS=1`, 14 workers.
+
+**Fixed on the way.** The float floor (`1 − cos` ≥ 1e-9) bounded the snapshot, not its
+null: a nearly collapsed snapshot's Gaussian draws are as tight as it is, one fell below
+float32 resolution, and the level-set code refused (`LESSONS.md` 2). Such records are now
+skipped with the reason (56 real). And (6.9)'s reference times used `collapse_time`'s step
+halving, which never converges where γ never reaches the target (150 s per test); one fixed
+step now.
+
+**What the theory does from L0.** Deduped L0 rows are near-orthogonal at both checkpoints
+(cosine to position 0 ≈ 0; closest pair `1 − cos` 0.18–0.38 trained, 0.87–0.89 step 0), so this is
+the `d ≥ n` regime of Thm 6.9: one global collapse, not several metastable clusters.
+η-components appear only at `t ≥ 8`, one per record, at β ≤ 5.57; at β ≥ 16 the Gram does
+not move by `t = 16` (self-attention takes the weight). Several theory clusters exist only
+at β = 8 (step143000, `t = 16`: 5 clusters, the largest 45 % of tokens). The grid's
+multi-cluster regime is that one cell.
+
+*Revised after `/challenge-pr` on #125 (finding 2, verified):* the design said the
+collapse time is nearly free of β, but `collapse_time_table` stops at β = 5. The run's own
+(6.9) reference times are `t_0.9` ≈ 3.5–4.1 for β ≤ 3.46, 5.6–5.8 at 5.57, 21–24 at 8 and
+`inf` at 16 and 64. So β ≥ 8 was past the time grid by construction, and the regime the
+positive control was designed for (16, 64) was never reached, not tested and failed
+(`LESSONS.md` 6).
+
+**Positive control: not passed, and mostly not readable** (design outcome rows 2 and 3).
+
+Both masks, `min_cluster_size` 4, records with a theory cluster, by the largest theory
+cluster's share of tokens (post hoc strata). *Revised after `/challenge-pr` on #125
+(finding 3, verified):* the first table was causal only and did not say so; it left out the
+full mask at β = 8, `t = 8`, the run's richest multi-cluster cell.
+
+| largest theory cluster | centred: records / recall / calibration admitting | raw: records / recall / calibration admitting |
+|---|---|---|
+| < 0.5 of tokens (several clusters) | 11 / 0.39 / 7 | **11 / 0.39 / 0**: the one readable multi-cluster cell |
+| 0.5–0.95 | 30 / 0.68 / 26 | 30 / 0.23 / 0 |
+| ≥ 0.95 (the whole cloud, nearly) | 254 / 0.63 / 163 | 198 / 0.06 / 2 of 195 with a calibration |
+
+Recall against *every* HDBSCAN group, admitted or not (post hoc), is the same except raw
+≥ 0.95 (0.18).
+
+1. **The matched Gaussian is not a valid null for a collapsing cloud in the centred
+   frame**: its own draws admit (196 of 295 records). So the centred column is not read.
+   This is a confound for trained admission too, not only a side note (`/challenge-pr` on
+   #125, finding 4): #122's own centred calibration admits in 11 of 56 records at
+   step143000 L17–24. Whether those are collapse-like layers is not checked.
+2. **Where the null is quiet (raw), the losses are in the group step, not the null**:
+   recall against any group is barely higher. Inside a collapsing theory cluster distances
+   still span 1e-9 to 1e-3, `S_C/|C|` is in units of 1 / distance, and EOM selects the
+   innermost cores (a 166-token theory cluster's best match is 0.3).
+3. **A cluster that is the whole cloud cannot beat the cloud's own Gaussian**, by
+   construction (full mask, `t = 8`: recall 0 in both frames). That is the definition
+   working as stated, and it means the theory's main object here, global collapse, is
+   outside what admission can see.
+
+**The opening: at small β, identity dynamics make an admitted group that is the prompt's
+opening** (centred, `min_cluster_size` 2; records with an admitted group holding
+position 0, of 7; calibration on the same snapshots in brackets):
+
+| step 0, causal | t = 0.5 | t = 1 | t = 2 |
+|---|---|---|---|
+| β = 0 | 0 (0) | 6 (0): median 24 tokens, 83 % among the first \|g\| kept | 7 (0): 46 tokens, 94 % |
+| β = 0.43 (÷ 8) | 0 (0) | 5 (0): 22, 82 % | 7 (0): 42, 93 % |
+| β = 1 | 0 (0) | 0 (0) | 7 (0): 45, 92 % |
+| β = 3.46 (`beta_raw`) | 0 | 0 | 0 (none by `t = 16` either) |
+| **full mask**, any β ≤ 3.46 | 0 | 0 | 0 |
+
+At `min_cluster_size` 4: 4–5 of 7 at `t = 1`, 7 of 7 at `t = 2` (calibration ≤ 1). The
+groups' span is short for their size (`p_span` ≤ 0.05 in 67–86 %). Cosine to `x₁` at kept
+ranks 1–8 vs the second half: 0.31 vs 0.04 at `t = 1`, β = 0 (primacy, `lit-1d.md` §9 row
+4). Raw frame: only 1–2 of 7. Later (`t ≥ 4`) the calibration fires and the cells are not
+read.
+
+- **The full-mask control cannot fail here** (`/challenge-pr` on #125, finding 1): L0 rows
+  carry no position and the full mask treats every position alike, so no positional group
+  can form under it. Its zero says only that the position comes from the mask.
+- **The design's row as written is not met.** It said "one *theory cluster* holding
+  position 0". The η-components never isolate the opening: when they form (`t ≥ 8`) they
+  are the bulk, and position 0 joins last (the late tokens share one prefix average and
+  collapse onto each other first). The opening shows as a forming group that admission
+  sees, not a collapsed one.
+- **Against step 0's real groups holding position 0** (`data/p1d/admit_2026-10-01`, best
+  over L1–24): Jaccard 0.57–0.82 in all 7 prompts at `t = 2` (β 0 or 0.43). *But a
+  first-|g|-kept-tokens set of the same size matches as well* (0.57–0.85 at `t = 2`; post hoc
+  baseline), so the token-level match adds nothing beyond "both are opening runs of about
+  the same size".
+- **Step143000** also grows an opening group at β ≤ 1 by `t = 2` (7 of 7, 73–84 %
+  opening), none at β = 3.46. Its L0 already admits groups at `t = 0` (7 of 7 records in both
+  frames, calibration 0; step 0's L0: 0 of 7). In 5 of 7 (centred) one holds position 0,
+  with 7 tokens, 14 % opening, and it persists unchanged under the full mask, so deduped trained L0 is not featureless.
+
+**Reading.** *Revised after `/challenge-pr` on #125 (finding 1, agreed):* the first
+version said step 0's failed control is "the theory's own first-forming cluster" and that
+the cut "removes a cluster the theory predicts". Neither holds. The papers do not say which
+tokens join first (`lit-1d.md` §9 row 1), the run's own ground truth (η-components) never
+isolates the opening, and the only instrument calling it a cluster is admission, the thing
+under test, readable at `t` 1–2 only. What the run does show: #123's mechanism needs
+nothing but the causal mask and near-uniform attention. With every learned weight removed,
+small-β dynamics from step 0's embeddings make a group that admission admits, that is the
+opening, of the size step 0's real groups have; at β = 3.46 they do not. Step 0's fitted β
+is ≈ 0 ("β refit"). So the opening is a mask effect that any definition run on causal
+dynamics will meet, which supports cutting it (Blocked 11′) at least as much as keeping
+it. At β = 3.46 the opening
+does not form within `t ≤ 16`, so on this toy the ÷ 8 convention behaves like step 0 and
+`beta_raw` does not. That says nothing about which convention is Pythia's (Blocked 9):
+trained attention is far from uniform. As a positive control for the definition: **read
+once, and failed at the group step.** The one cell where several theory clusters exist and
+the null holds (raw, < 0.5 stratum, 11 records, calibration 0) has recall 0.39, the same
+against every HDBSCAN group, so EOM finds the clusters' cores, not the clusters. Elsewhere
+the theory makes one global cluster, which admission cannot see by construction, and the
+centred null fails. The β ≥ 16 regime the design aimed at was never reached.
+
+**Parked** (discoveries, not followed):
+- **Simulated time tracks depth for step 0.** The real layer that best matches the
+  simulated opening is L8–20 at `t = 1` and L15–24 at `t = 2`. Why: a time ↔ depth map
+  for step 0 is the `T_eff` that Phase 1c never measured on these runs. Cost < 1 h. Could
+  change: whether a snapshot can be called "layer ℓ".
+- **EOM selects the innermost cores of a collapsing cluster.** A leaf-selection or
+  `cluster_selection_epsilon` arm would show whether the theory's clusters are recovered
+  by a different selection rule. Cost < 1 h on the stored snapshots. Could change: the
+  definition's selection rule.
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it
