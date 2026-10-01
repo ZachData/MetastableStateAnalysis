@@ -1835,8 +1835,8 @@ M, where step 0's admitted groups at M = 32 sit (inside `[32, n_v1)` or past `n_
 #123's position check on them.
 
 **Output:** `data/p1d/long_m32_2026-10-01/` (`{real,calibrate,report}_m{32,0}.*`,
-`position_m32.{json,txt}`, `run_all.sh`, `run.log`; `pilot/` is the one-record populated
-check). Code: `claude/p1d-long-m32` at `f6c8ea4`, no code change; env: conda `mets`, local
+`position_m32.{json,txt}`, `run_all.sh`, `run.log`, `verdict.py` applies the rule; `pilot/`
+is the one-record populated check). Code: `claude/p1d-long-m32` at `f6c8ea4`, no code change; env: conda `mets`, local
 box, `OMP_NUM_THREADS=1`, 14 workers. **Re-run:** `run_all.sh` (~25 min per pass, 4 passes),
 then `python -m p1d_cluster_ensemble.position_check --real real_m32.json --out
 position_m32.json` (~15 min beside the batch).
@@ -1877,6 +1877,11 @@ real / calibration:
   withheld in both frames (calibration 9–13 of 32: the deduped null is off nominal late at
   length). Position check, admitted vs not (arm 2, centred): positional 13 vs 19 %, 41 vs 40 %,
   39 vs 35 %; first kept 1–2 %.
+- **The test could fail (M = 0 on the same runs):** step 0 admits in 22 / 2 · 31 / 0 · 32 / 0
+  (centred) and 13 / 0 · 18 / 0 · 19 / 1 (raw) records, arm 2; arm 4 centred 23 / 0 · 30 / 1 ·
+  32 / 0. All 85 centred arm-2 groups hold position 0 (median 38 members). So the instrument
+  sees the opening at length, and the cut takes arm 2 from there to 0 · 0 · 0 centred; arm 4 at
+  L17–24 goes from 32 to 13.
 
 **Reading.** By the rule committed before the run, the cut fails, and the decision goes back to
 the user. The primary-arm fail alone would be a weak reason (one record over the bound, not
