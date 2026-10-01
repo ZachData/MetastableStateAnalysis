@@ -1709,7 +1709,7 @@ full mask at β = 8, `t = 8`, the run's richest multi-cluster cell.
 |---|---|---|
 | < 0.5 of tokens (several clusters) | 11 / 0.39 / 7 | **11 / 0.39 / 0**: the one readable multi-cluster cell |
 | 0.5–0.95 | 30 / 0.68 / 26 | 30 / 0.23 / 0 |
-| ≥ 0.95 (the whole cloud, nearly) | 254 / 0.63 / 163 | 198 / 0.06 / 2 |
+| ≥ 0.95 (the whole cloud, nearly) | 254 / 0.63 / 163 | 198 / 0.06 / 2 of 195 with a calibration |
 
 Recall against *every* HDBSCAN group, admitted or not (post hoc), is the same except raw
 ≥ 0.95 (0.18).

@@ -626,7 +626,8 @@ def summary_text(rep: Dict) -> str:
         for arm in (4, 2):
             out.append(f"\n## Recovery, {frame}, min_cluster_size {arm}, eta {rep['eta']}. "
                        "Per t: records with a theory cluster >= arm / mean recall over them / "
-                       "records admitting (real) / records admitting (calibration). "
+                       "records admitting (real) / records admitting (calibration, 'of m' where only m "
+                       "have one). "
                        "'-' = every record skipped (float floor)")
             for step in ("step0", "step143000"):
                 for mask in MASKS:
@@ -641,7 +642,12 @@ def summary_text(rep: Dict) -> str:
                                 continue
                             wt = [r["recall"] for r in ok if r["n_theory"] > 0]
                             adm = sum(r["n_admitted"] > 0 for r in ok)
-                            cal = sum((r["cal_admitted"] or 0) > 0 for r in ok)
+                            # calibration over the records that have one (its snapshot
+                            # can be skipped where the real one is not): "-" if none
+                            have = [r for r in ok if r["cal_admitted"] is not None]
+                            cal = (f"{sum(r['cal_admitted'] > 0 for r in have)}"
+                                   + ("" if len(have) == len(ok) else f" of {len(have)}")
+                                   if have else "-")
                             rec = f"{np.mean(wt):.2f}" if wt else "  - "
                             line.append(f"{len(wt)}/{rec}/{adm}/{cal}".rjust(16))
                         out.append(f"  b={b:<5}" + "".join(line))
