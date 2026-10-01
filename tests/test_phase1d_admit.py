@@ -245,8 +245,8 @@ def _files(tmp_path, control_cap):
             _fake_run(tmp_path / "b", "step0", tokens, cap=control_cap, seed=7)]
     settings = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4], "n_draws": 19,
                 "inputs": [str(r) for r in runs]}
-    real = [_job((str(r), 1, "raw", 19, 0, False)) for r in runs]
-    cal = [_job((str(r), 1, "raw", 19, 0, True)) for r in runs]
+    real = [_job((str(r), 1, "raw", 19, 0, False, 0)) for r in runs]
+    cal = [_job((str(r), 1, "raw", 19, 0, True, 0)) for r in runs]
     return {**settings, "records": real}, {**settings, "calibrate": True, "records": cal}
 
 
@@ -306,3 +306,18 @@ class TestDriverAndReport:
                           ("records", [{**rec, "layer": 2}], "different")):
             with pytest.raises(ValueError, match=msg):
                 table(base, {**base, "calibrate": True, k: v})
+
+
+class TestMinPosition:
+    def test_drops_the_opening_and_keeps_dedup(self, tmp_path):
+        tokens = [f"t{i}" for i in range(60)]
+        tokens[12] = tokens[3]                   # later occurrence of a dropped string
+        run = _fake_run(tmp_path, "step0", tokens, cap=False)
+        rec = _job((str(run), 1, "raw", 5, 0, False, 10))
+        assert rec["min_position"] == 10 and min(rec["keep"]) == 10
+        assert 12 not in rec["keep"] and rec["n_kept"] == 49
+
+    def test_report_refuses_a_calibration_at_another_min_position(self, tmp_path):
+        R, Cal = _files(tmp_path, control_cap=False)
+        with pytest.raises(ValueError, match="min_position"):
+            table({**R, "min_position": 8}, Cal)

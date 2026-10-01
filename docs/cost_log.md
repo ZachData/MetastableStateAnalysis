@@ -197,3 +197,8 @@ running median of the rows above it gets a line under the table saying why.
   tree, per-group branch, then level-set HDBSCAN with EOM validated against
   hdbscan's own tree) before the batch, and STATE's 30 kB hook output was read
   twice at the start (once through a persisted-output wrapper).
+
+| 2026-10-01 | 1d position check, Blocked 11 (b), plus a strategy read of the triage (before challenge-pr) | 62 | 167k | 7.0M | 42k | #123 |
+
+- #123 is ~1.4× the running median: under 2×. STATE's hook output was again
+  persisted and read three times at the start (30 kB, 150 lines of long cells).

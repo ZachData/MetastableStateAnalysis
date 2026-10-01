@@ -1518,7 +1518,7 @@ with different draws or records. Re-run: **0 of 1 344 released.** The 10 %
 bound treats a band's 56 records (7 prompts × 8 adjacent layers) as
 independent, which they are not; release turns on 3 vs 6 records.
 
-**Next (the user's call, Blocked 11):** what to do about position before any
+**Next (the user's call, Blocked 11; the user chose (b), done 2026-10-01: "Position" below):** what to do about position before any
 trained reading. (a) The position-keeping residual null (Parked under
 "Attention communities", ~7 h): the design's pre-written consequence for
 positional groups, and it would also test the trained groups. (b) Cheaper
@@ -1534,6 +1534,98 @@ excess is not only the opening, in which case (a) is needed.
   ~40 % of them artefacts on both sides. Why: the excess 1d started from may
   shrink or grow. Cost: a re-run of `gaussian_null` with level-set counts,
   ~10 min. Could change: the design's starting premise.
+
+### Position: step 0's failure is the prompt's opening (Blocked 11 option (b); 2026-10-01; branch `claude/p1d-position`)
+
+**What.** The user's option (b) for Blocked 11: build step 2's position check
+(`position_check.py`, `design-1d.md` "Checks", position row) and find what
+step 0's groups are. Two instruments. (1) Per group, `span`, `near_share`
+(member pairs within 3 positions), `contiguous`, `has_first`, each against
+2 000 random same-size groups drawn from the *same record's kept positions*;
+*positional* = `p_near` ≤ 0.05 (descriptive, ~5 % by chance). (2) A
+diagnostic arm in admission, `admit run --min-position M`: only kept tokens
+at absolute position ≥ M are tested (dedup unchanged; nulls and calibration
+refitted on the same subset). M = 8, then M = 32 after seeing 8 (two values
+tried, both shown; **post hoc**).
+
+**Input.** #122's inputs, unchanged (14 run directories, 7 v1 prompts ×
+step143000 / step 0, L1–24, centred and raw, 200 draws, seed 0). Code:
+`claude/p1d-position` from `f1deefb`. **Output:** `data/p1d/admit_drop_2026-10-01/`
+(`{real,calibrate,report}_m{8,32}.*`, `run_all.sh`), `data/p1d/position_2026-10-01/`
+(`position_m{0,8,32}.{json,txt}`; m0 reads `admit_2026-10-01/real.json`).
+**Re-run:** `run_all.sh` (~25 min at 14 workers), then
+`python -m p1d_cluster_ensemble.position_check --real <real file> --out <json>`
+(~2 min each).
+
+**Why step 0 groups the opening.** At init attention is near-uniform over
+the prefix: median total-variation distance to uniform over 0..t is 0.11–0.15
+per layer at step 0 vs 0.55–0.99 at step143000 (all 7 prompts;
+`position_m0.json` `runs`). So position t's attention output is the
+mean of the first t + 1 value vectors, and position 0's share of it is
+1 / (t + 1): early positions share the first few tokens' values. The centred
+cosine to position 0 at step 0 falls from 0.27–0.52 (t 1–3) to 0.05–0.30
+(t 4–15) and −0.02–0.07 at t 16–63 (7 prompts × L4 / 12 / 20; step143000
+0.03–0.35, 0.01–0.13, −0.03–0.08). The mechanism is read off the
+attention, not tested by intervention.
+
+**Results** (`excess`, `min_cluster_size` 2, records with ≥ 1 admitted group
+of 56 per band, real / calibration; full tables in the reports):
+
+| M | step | centred L1–8 · 9–16 · 17–24 | raw L1–8 · 9–16 · 17–24 |
+|---|---|---|---|
+| 0 (#122) | 0 | 43 · 54 · 56 / 0 · 0 · 0 | 13 · 24 · 25 / 0 · 0 · 0 |
+| 8 | 0 | 0 · 2 · 7 / 0 · 0 · 0 | 0 · 1 · 0 / 0 · 0 · 0 |
+| 32 | 0 | **0 · 0 · 0** / 0 · 0 · 0 | **0 · 0 · 0** / 0 · 0 · 4 |
+| 0 (#122) | 143000 | 52 · 53 · 45 / 0 · 3 · 11 | 53 · 51 · 54 / 8 · 5 · 13 |
+| 32 | 143000 | **53 · 54 · 45** / 0 · 0 · 4 | 51 · 52 · 53 / 4 · 6 · 12 |
+
+- **Step 0's admitted groups are the opening.** At M = 0 all 153 centred ones
+  are positional and hold position 0; step 0's *other* groups are positional
+  in 2–5 % (chance). At M = 8 the survivors (9 at `min_cluster_size` 2, 76 at
+  4) all hold the new first kept token: the effect moves with the cut and
+  weakens, as a prefix average predicts. At M = 32 step 0 admits nothing on
+  `excess` in either arm or frame (`log_life`: at most 1 record per cell).
+- **Trained admission survives the cut**: 45–54 of 56 records per band,
+  calibration 0–4 (centred). At M = 32 `report_m32` releases labels for
+  centred L1–8, L9–16, L17–24 and raw L1–8 (`excess`, arm 2). The 10 % bound
+  still treats 56 adjacent-layer records as independent.
+- **Position check on trained groups (M = 32, centred, arm 2):** admitted
+  groups are positional in 15 % (L1–8), 47 % (L9–16), 40 % (L17–24); the
+  groups *not* admitted, 19 %, 45 %, 32 %. Admission does not select for
+  position; about half of all trained groups at L9–24 are runs of nearby
+  tokens, whatever their verdict. M = 0 gives the same shares (19 · 49 · 44 %).
+  "Positional" is not "not content": a phrase is both (`a few days`).
+- **Step 0's group-count excess** (#122: above its null mean in 160 of 168)
+  is mostly the opening. Level-set k above the null mean, step 0 centred: 163,
+  135, 101 of 168 at M = 0, 8, 32 against calibrations of 93, 113, 78 (median z
+  +0.80, +0.55, +0.48 vs +0.20, +0.68, −0.08). A small remainder, inside the
+  calibration's own swing between arms; not resolved. Step143000: median z
+  +4.0, +3.9, +3.6.
+
+**Reading.** (b) settled what (a) was for at step 0: its failure is the
+opening, through near-uniform attention at init, and it vanishes when the
+first 32 positions are left out. The design's stop rule then no longer
+fires, and the trained excess stands against a passing control. What it does
+*not* settle is content vs position for the trained groups: about half at
+L9–24 are positional by this test, and only a position-keeping null (option
+(a)) could say whether the rest beat position.
+
+**For the user (Blocked 11 replaced):** whether "tokens at absolute position
+≥ 32" joins the definition (`design-1d.md`, row "tokens"), with 32 chosen
+post hoc. Alternatives: a cut chosen by a rule (where step 0's centred cosine
+to position 0 falls to its late-token level, ~16 here, which M = 8 shows is
+not enough at `min_cluster_size` 4), or option (a).
+
+**Parked** (discoveries, not followed):
+- **Step 0's late members.** At M = 0, step-0 groups carry 326 members past
+  position 64 (~2 per group, the same strings across layers: `perfectly`,
+  `on`, `me`). Not their norm (median percentile 0.47–0.60) and not their
+  embedding's similarity to the group's opening (median percentile 0.54).
+  Why: they are the one part of step 0's groups the prefix average does not
+  explain. Cost: < 1 h. Could change: whether the opening is the whole story.
+- **Trained groups holding position 0** (5–18 % of admitted groups at M = 32
+  hold the first *kept* token, which is position 32 or later, so not the sink).
+  Not followed.
 
 ## Deleted and restored (was `FROZEN.md`)
 

@@ -613,6 +613,12 @@ saying why.** Status: 📋 + ✅ cap.
 index (✅ `--check` in `check.sh`). `scripts/hooks/guard_large_read.py` refuses an
 unbounded `Read` of any doc over 40 KB (⚠️ not yet registered in
 `.claude/settings.json`; that needs the user). Basis: `archive/docs/agent_context_scan_2026-09-22.md`.
+2026-10-01 (#122, #123): `STATE.md` is within its 150-line cap but 31 kB, because
+the "Current stage" cell is one ~10 kB line. The startup hook's output goes over
+the harness's inline limit, gets persisted to a file, and the session reads it
+2–3 times to see it (wrapper, wrapper again, then `Read` in chunks). The line cap
+does not bound bytes. ⚠️ Fix not done: a byte cap in the tier-0 lint, and the
+stage history moved to `status-1d.md`.
 
 ## 10. Tangents: interesting findings that hijack the plan
 
