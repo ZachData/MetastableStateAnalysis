@@ -511,6 +511,16 @@ needs the user to enable it on GitHub.
   a test is. Fixed with five seeds at alpha 0.5; two consecutive runs now
   give identical states. Rule: **a test that kills a mutant only most of
   the time is a flaky test, and gets fixed like one.**
+- 2026-09-30, #121 (design only, caught before code): 1d's per-group test
+  named hdbscan's `cluster_persistence_`, which divides by the largest λ in
+  the whole tree. Real layers have far tighter nearest neighbours than their
+  Gaussian null, so every real group would be scored down against null groups
+  that are not: a test biased toward "nothing beats the null". The planned
+  synthetic check (one planted group) could not have shown it, since that
+  group sets the maximum itself. `/challenge-pr` found it; a planted pair
+  confirmed it (0.75 alone, 0.012 beside a tighter group). Rule: **read how a
+  library normalises a statistic before testing it against a null, and the
+  synthetic check must include a second, unrelated structure.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

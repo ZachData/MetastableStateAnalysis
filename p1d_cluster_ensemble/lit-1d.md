@@ -120,6 +120,18 @@ Scan for the unit "are tokens lumpier than their covariance explains" (user,
 | 2 | SHC applies SigClust's test at every node of a hierarchical tree from the root down, with FWER control (Kimes, Liu, Hayes & Marron 2017, Biometrics 73:811; R `sigclust2`) | [S] | the natural next step for stage F's merge tree; not done here |
 | 3 | 1–3 "rogue dimensions" dominate cosine similarity in contextual LMs. Their contribution to the expected cosine is `E[u_i v_i]`. Standardising or removing them changes similarity-based conclusions (Timkey & van Schijndel 2021, EMNLP) | [S] | the `centred_norogue` frame and its rogue measure `m_i²` |
 
+## 8. Testing one cluster at a time (added 2026-09-30)
+
+Scan for `design-1d.md`'s revision (Blocked 10 decided: the graded vote is retired, so a
+cluster is admitted one group at a time against a null). Web search, 3 queries.
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | HDBSCAN's per-cluster `cluster_persistence_` has been gated against noise: run HDBSCAN on many noise datasets and admit a real cluster whose persistence exceeds a high percentile (99.7th) of the noise persistences (`2501.16294`, stellar populations) | [S] | the shape of the admission rule `design-1d.md` proposes, with three changes: the noise is the matched-covariance Gaussian (§7), not uniform; the threshold is a quantile of each draw's **maximum**, so the error rate is per record, not per cluster; and the statistic is `S_C / |C|`, not `cluster_persistence_`, which hdbscan divides by the tree-wide maximum λ (`/challenge-pr` on #121) |
+| 2 | SHC tests each node of the tree top-down and stops at the first non-significant node (Kimes et al. 2017; §7 row 2) | [S] | rejected as the definition: 1d's local excess (HDBSCAN groups, `status-1d.md`) sits under a root that is Gaussian-typical at L1–16, and a top-down stop would never reach it |
+| 3 | Selective inference after hierarchical clustering gives an exact test of two clusters' mean difference, but under an isotropic Gaussian with known variance (Gao, Bien & Witten 2022, JASA; k-means extension Chen & Witten) | [S] | not usable as stated: the residual's covariance is far from σ²I (rogue coordinates, §7 row 3). Named so a reviewer can propose it with that caveat |
+| 4 | A permutation test of each dendrogram split against permuted memberships (Park et al. 2009, PMC3023458) | [S] | a membership permutation keeps the geometry, so it tests the algorithm's consistency, not structure beyond covariance |
+
 ## Sources
 
 - von Luxburg 2010 — https://arxiv.org/abs/1007.1075
@@ -141,3 +153,6 @@ Scan for the unit "are tokens lumpier than their covariance explains" (user,
 - Liu, Hayes, Nobel & Marron 2008 (SigClust) — https://www.tandfonline.com/doi/abs/10.1198/016214508000000454
 - Kimes, Liu, Hayes & Marron 2017 (SHC) — https://academic.oup.com/biometrics/article/73/3/811/7537682
 - Timkey & van Schijndel 2021 — https://aclanthology.org/2021.emnlp-main.372/
+- HDBSCAN persistence against noise (stellar populations) — https://arxiv.org/abs/2501.16294
+- Gao, Bien & Witten 2022 (selective inference, hierarchical clustering) — https://www.semanticscholar.org/paper/181289c336f649356d91af4af3548eab84bb8b2e
+- Park et al. 2009 (permutation test for cluster significance) — https://pmc.ncbi.nlm.nih.gov/articles/PMC3023458/
