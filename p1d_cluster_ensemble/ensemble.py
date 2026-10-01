@@ -254,10 +254,14 @@ def consensus_partition(C: np.ndarray) -> Dict[str, object]:
         # scipy 1.15's average linkage can return a tree that merges a node
         # with itself when the co-association has many exact ties
         # (status-1d.md "Vote rules": 446 tokens, 27 row types, 10 distinct
-        # values; fcluster then raises). Rounding D removes the sub-ulp
-        # differences between tied entries that break it. It runs only when
-        # the unrounded tree is invalid, so every tree that was valid before
-        # is unchanged; still invalid after it, refuse.
+        # values; fcluster then raises). The failure depends on token order
+        # (0 of 20 permutations of that matrix reproduce it), and rounding
+        # repairs it by perturbing the merge distances the nearest-neighbour
+        # chain compares, not by removing sub-ulp noise (D had none). On
+        # tied matrices the partition is not unique anyway: other orders
+        # give ARI 0.97-1.0 at the same objective. Runs only when the
+        # unrounded tree is invalid, so every valid tree is unchanged;
+        # still invalid after it, refuse.
         Z = linkage(squareform(np.round(D, LINKAGE_ROUND_DECIMALS), checks=False),
                     method="average")
         if not is_valid_linkage(Z):

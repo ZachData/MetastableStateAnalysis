@@ -1301,8 +1301,11 @@ confidence); guard = dominance (consensus ARI to one family ≥ 0.95).
 **Input.** 8 v1 prompts × step143000 / step 0 (410m; the 16 runs in
 `data/p1d/gaussian_null_2026-09-26/null.json` `inputs`) × L6 / 12 / 18 = 48
 layer-records; quick grid, seed 0, 5 repeats, 20 gate nulls, 10 confidence
-nulls; code `2a176a4` (27 records) and `631473c` (21; differs only on an
-invalid tree, which would have crashed). The reference rule reproduces A0's
+nulls; code `2a176a4` (24 records from the first batch, which died there,
+and 3 from the diagnostic re-run, the same code under a wrapper that only
+acts on failure) and `631473c` (21; differs only on an invalid tree, which
+would have crashed). Parts are reused on matching settings and inputs, not
+on the code version. The reference rule reproduces A0's
 stored `wiki_paragraph` L12 exactly (core 257 / halo 88 / contested 122).
 Output `<main>/data/p1d/vote_rules_2026-09-30/vote_rules.{json,txt}`.
 
@@ -1331,22 +1334,26 @@ Output `<main>/data/p1d/vote_rules_2026-09-30/vote_rules.{json,txt}`.
   consensus into k-means** (dominance ≥ 0.95 in 13–14 of 24) and empties the
   trained core in 11–13 of 24, while **step 0's core share is 0.95–1.00**:
   under it the untrained model is graded far more clustered than the trained
-  one. The likely reason (not tested) is token identity, as in #106: at step
-  0 the k = 2 families agree on string-identical tokens the null cannot
-  reproduce.
+  one. *Revised after `/challenge-pr` on #120:* that contrast is the null
+  threshold, not the vote: its median core threshold is 0.32 at step 0 and
+  0.83 trained (the first write-up guessed token identity).
 - What the rules do change: the consensus k (3 to 10) and the core share
   (0 to 0.62). A choice among them moves the readout without stabilising it.
 
-**Reading.** Weighting is not what makes the grading unusable. The trichotomy
-is a pooled-null threshold on a confidence that mixes a k = 2 vote (0–6
-families at k = 2 per record) with fine-scale votes, so each family's
-partial view decides which side of the threshold a block falls. That is the
-scale problem (`lit-1d.md` §1, option D) reappearing in the vote, not a
-weighting problem. **For the user:** retire core / halo / contested as 1d's
-product (P-C4, unregistered, would score noise), or first make the ensemble
-vote at one matched scale and ask this again. Claude recommends retiring
-it; the per-family gate, the merge tree and the nulls are the parts that
-have held.
+**Reading.** No weighting or noise rule tried makes the grading usable.
+*Revised after `/challenge-pr` on #120:* why is a hypothesis, not a
+finding. The first write-up said the cause is the scale mix (a k = 2 vote
+beside k ≈ 100–280 votes; `lit-1d.md` §1, option D). In a planted-caps toy
+the mix is enough to cause sway and matched scale passes
+(`tests/test_phase1d_vote_rules.py`), but 41 of 48 records mix k ≤ 4 with
+k ≥ 50, so this batch cannot separate the two. The one near-matched slice
+(step 0 `repeated_tokens`, every family at k 2–5) still sways: worst ρ
+−0.18 / 0.69 / 0.53 at L6 / 12 / 18, consensus ARI 0.03–0.30, though that
+prompt has 3 distinct strings. **For the user:** retire core / halo /
+contested as 1d's product (P-C4, unregistered, would score noise), or first
+build a matched-scale vote and ask again, with no evidence yet that it
+would pass on Pythia. Claude recommends retiring it; the per-family gate,
+the merge tree and the nulls are the parts that have held.
 
 **Fixed on the way (a defect).** scipy 1.15's average linkage returned an
 invalid tree (a node merged with itself) on a tied co-association (446
@@ -1355,7 +1362,9 @@ tokens, 27 row types, 10 values; a null draw under a leave-one-out rule).
 24 of 48 in. It now rebuilds an invalid tree on distances rounded to 12
 decimals, and refuses if that is invalid too; a valid tree is untouched
 (`ensemble.py`, regression case inline in `tests/test_phase1d_ensemble.py`;
-`LESSONS.md` 2).
+`LESSONS.md` 2). The failure depends on token order (0 of 20 permutations
+reproduce it); on tied matrices the consensus is not unique either (other
+orders give ARI 0.97–1.0 at the same objective; `/challenge-pr` on #120).
 
 **Re-run** (~25 min at 14 workers, resumable):
 

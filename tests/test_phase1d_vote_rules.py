@@ -133,6 +133,21 @@ class TestRecord:
         assert quiet["n_clusters"] == 3
         assert quiet["worst_consensus_ari"] == pytest.approx(1.0)
 
+    def test_at_matched_scale_no_single_family_sways_the_consensus(self, planted):
+        # The criterion can pass: every family at the caps' scale (k = 3).
+        # #120's review: what fails on Pythia may be the scale mix, which
+        # this does not show; it shows only that the drop-one test is not
+        # unpassable by construction.
+        params = {"kmeans": {"k": 3}, "spherical_kmeans": {"k": 3},
+                  "agglomerative": {"linkage": "average", "threshold": 0.3}}
+        sel = _selection(planted, params,
+                         stability={f: 0.9 for f in params}, null_mean={f: 0.5 for f in params})
+        draws = null_draw_labels(planted, params, n_draws=2, seed=0)
+        rec = rule_record(_labels(sel), draws, sel, *REFERENCE)
+        assert rec["n_clusters"] == 3
+        assert rec["worst_consensus_ari"] == pytest.approx(1.0)
+        assert rec["worst_confidence_spearman"] > 0.9
+
     def test_a_zero_weight_family_does_not_vote(self, planted, selection):
         params = {f: r["selected"]["params"] for f, r in selection.items()}
         draws = null_draw_labels(planted, params, n_draws=2, seed=0)
