@@ -132,6 +132,23 @@ cluster is admitted one group at a time against a null). Web search, 3 queries.
 | 3 | Selective inference after hierarchical clustering gives an exact test of two clusters' mean difference, but under an isotropic Gaussian with known variance (Gao, Bien & Witten 2022, JASA; k-means extension Chen & Witten) | [S] | not usable as stated: the residual's covariance is far from σ²I (rogue coordinates, §7 row 3). Named so a reviewer can propose it with that caveat |
 | 4 | A permutation test of each dendrogram split against permuted memberships (Park et al. 2009, PMC3023458) | [S] | a membership permutation keeps the geometry, so it tests the algorithm's consistency, not structure beyond covariance |
 
+## 9. The identity-weights positive control (added 2026-10-01)
+
+Scan before `design-1d.md`'s "Identity-weights positive control" freezes (trigger 1). The
+user named two papers: read `2605.09213`, re-read `2411.04990`'s causal results. Both
+came from arXiv HTML through a fetch summarizer (mark [H]: primary text, but read through
+a summarizer, so equations are as quoted and the rest is paraphrase). Plus 2 web searches.
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | `2411.04990`'s (CSA): `ẋ_k = P_{x_k}( Σ_{j≤k} e^{β⟨Qx_k,Kx_j⟩} V x_j / Z_k )`, **self included**, `Z_k` the softmax partition over `j ≤ k`. The first token is autonomous. Thm 4.1: with `V = I` and any `Q, K, β`, every token converges to `x₁(0)`. No rate, no early-vs-late speed statement (checked: "not addressed") | [H], agrees with [P] `docs/readings/2411.04990.md` | the simulator is this equation with `Q = K = V = I`. Thm 4.1 is a test (`x₁` never moves; all tokens approach `x₁(0)`). Nothing in the paper predicts *which* tokens join `x₁` first, so the opening question is open, not answered by the theory |
+| 2 | Its simulations are `d = 2`, `n = 200`, `β = 64` (Figs 2–3) and `d = 3`, `n = 32`, `β = 9`, `T = 5000` (Fig 1). Metastable clusters are seeded by strong Rényi centres at `δ = 4β^{-1/2}`. Nothing is shown in high `d` | [H] | at Pythia's β (0.43 or 3.46, Blocked 9) `δ = 4β^{-1/2}` is 6.1 or 2.2 rad. That is past the sphere's diameter, or near it, so the theory predicts **one centre, `x₁`**, at real β. A grid that only spans real β cannot test whether admission recovers multi-cluster states, so it extends to 64 |
+| 3 | `2605.09213` (Duerinckx, Geshkovski, Rossi, v1 2026-05-09) studies a **different** causal model: angles on the circle, `θ̇_j = (1/Z_{N,j}) Σ_{k<j} e^{−λ(j−k)/N} w'_β(θ_j − θ_k)`, `w_β = e^{β cos θ}`, **no self term**, and `Z` sums only the ALiBi weights (no softmax partition). Proves a mean-field limit `f(t, σ, θ)` indexed by relative position `σ = j/N`, rate `N^{-δ∧1/2} e^{Ct}` | [H] | its closed forms (Bessel `I₁` correlations) are for that model, so they **cannot** test our simulator. What transfers is the frame: position `σ` is a coordinate of the limiting object, i.e. in the theory, causal dynamics *are* position-indexed |
+| 4 | Its primacy mechanism: early tokens are "repeatedly reused by later ones", `sup_k Σ_j ω_{j,k} ≃ log N`. Lost-in-the-middle (U-shaped retrieval: primacy, recency, a unique interior minimum) holds under `t · sup_n a_n ≤ min{3 − √3, 2(1 − e^{−λ})}`, i.e. **short times**. Its Fig. 3 (`N = 64`, `β = λ = 1`) shows drift toward `θ₁` plus coherence among the latest tokens | [H] | a named prediction for the opening question: at small β and short `t`, the first tokens' pull dominates. The simulator records `cos(x_k(t), x₁(t))` by position, so it can show primacy (and, without ALiBi, no recency term) directly |
+| 5 | The open problem it states is our object: `ẋ_j = (1/Z) Σ_{k<j} exp(β⟨Q(t)x_j, K(t)x_k⟩ − λ(j−k)/N) P^⊥_{x_j}(V(t)x_k)` with general, time-dependent `Q, K, V`; "RoPE-type encodings fall beyond the present theory" | [H] | Pythia (RoPE, MLP, 24 untied layers) is outside both papers. The positive control tests the definition on the case the theory covers, not Pythia |
+| 6 | Attention sinks trace to a "variance discrepancy" from value aggregation under the causal mask: the first token attends only to itself, later tokens average a growing prefix, so the first token stays a high-variance outlier (`2605.06611`, Li, Jiang, Sun, Hu, 2026-05). Random-init transformers already have "extreme token preferences" and an attention-sink-linked "positional discrepancy" (`2602.05927`, Li, Tong, Wang, Hu, 2026-02) | [S] | the same mechanism #123 read off step 0's stored attention (near-uniform attention, so early positions share the first tokens' value vectors). The simulator at β = 0 is that mechanism with nothing else in it |
+| 7 | Not found: any paper that runs the identity-weight dynamics from a real model's embeddings and asks whether a cluster definition recovers the clusters it makes (2 searches; weak evidence) | [S] | — |
+
 ## Sources
 
 - von Luxburg 2010 — https://arxiv.org/abs/1007.1075
@@ -156,3 +173,7 @@ cluster is admitted one group at a time against a null). Web search, 3 queries.
 - HDBSCAN persistence against noise (stellar populations) — https://arxiv.org/abs/2501.16294
 - Gao, Bien & Witten 2022 (selective inference, hierarchical clustering) — https://www.semanticscholar.org/paper/181289c336f649356d91af4af3548eab84bb8b2e
 - Park et al. 2009 (permutation test for cluster significance) — https://pmc.ncbi.nlm.nih.gov/articles/PMC3023458/
+- Duerinckx, Geshkovski & Rossi 2026 (kinetic theory, lost in the middle) — https://arxiv.org/abs/2605.09213 (HTML v1)
+- Karagodin, Polyanskiy & Rigollet 2024 (causal attention masking) — https://arxiv.org/html/2411.04990v2
+- Li, Jiang, Sun & Hu 2026 (attention sink, variance discrepancy) — https://arxiv.org/abs/2605.06611
+- Li, Tong, Wang & Hu 2026 (transformers born biased) — https://arxiv.org/abs/2602.05927
