@@ -1404,15 +1404,136 @@ family recovery, cross-layer links, attention, theory scale) are reported
 beside each group, not voted. Literature: `lit-1d.md` §8 (3 searches;
 SHC's top-down stop and Gao–Bien–Witten's isotropic test rejected there).
 
-**Next:** build step 1, `admit.py` (synthetic first, including the
-two-group invariance case; then 7 v1 prompts × step143000 / step 0 × L1–24,
-real and calibration; under an hour of compute).
+**Next:** build step 1, `admit.py`: done, "Admission" below.
 
 **Parked** (discoveries, not followed):
 - **Cleanup of the retired columns.** `run_1d.py`, `p1d_io.py`,
   `core/artifacts.py` and `tools/run/p1d_drift.py` still read or write
   `confidence` / core / halo / contested. Cost: an hour with tests. Could
   change: nothing measured; it stops a later reader taking them as live.
+
+### Admission: build step 1 (2026-10-01; branch `claude/p1d-admit`)
+
+**What.** `admit.py`, `design-1d.md` build step 1: per layer, HDBSCAN groups
+of deduped tokens, each scored by `S_C / |C|` (and `log_life`) against the
+per-draw maximum under the matched-covariance Gaussian (`gaussian_null.py`'s
+frames, draws and `--calibrate`, unchanged; same seed, same draws). α = 0.05
+per record, 200 draws, `min_cluster_size` 2 and 4, centred and raw.
+
+**A defect in the shipped call, found by the invariance check.** The design's
+synthetic check (a looser planted group must keep its statistic when an
+unrelated tighter group is added) failed on hdbscan's condensed tree:
+`S_C / |C|` moved 29.59 → 30.66, the same 8 members. The cause is ties:
+hdbscan's core distance at `min_samples` 2 is the *second* other neighbour
+(checked against its single-linkage tree), so a point's core distance is the
+weight of several of its mutual-reachability edges; 13 of 115 MST edges tied
+in the test input. hdbscan's binary tree orders a tie by processing order,
+which other rows change: once it made a 3 + 2 "split" at one λ, once the same
+points fell out one by one. It also glued a stray background row to the tight
+planted cap (9 members), a set that is never a component of the graph at any
+distance. **Fix:** HDBSCAN on the level-set tree (every edge of one weight
+merged at once; `level_set_hdbscan`). Handed hdbscan's *own* binary tree,
+the same condensing + EOM code reproduces hdbscan's labels and
+`cluster_persistence_` × max λ in 400 of 400 fits (1 257 groups), so tie
+merging is the only difference. Groups are now level-set ones; the shipped
+call's labels, tie artefacts (`shipped_check`: groups that are never a
+component, brute-force checked) and ARI to ours are written beside each
+record. `design-1d.md`'s algorithm row is changed and marked.
+
+**Synthetic** (`tests/test_phase1d_admit.py`, 17 tests): planted caps admitted
+on both arms, background not; invariance holds to 1e-12 with the verdict
+unchanged, while hdbscan's own persistence for the same group falls 0.785 →
+0.040; pure anisotropic Gaussian, null refitted (plug-in), 100 records,
+B = 39, n 60 and 150: `excess` admits in 0–3 % of records, `log_life` 0–6 %
+(one cell 6/100, `min_cluster_size` 4, n 150). First real record
+(`wiki_paragraph`, step143000, L12, centred) opened before the batch: shipped
+k 30 and null mean 7.425 equal `null_dedupe.json`'s `hdb_k` for that record;
+20 level-set groups, 12 admitted, sizes 4–14, not pairs.
+
+**Input.** 7 v1 prompts (`repeated_tokens` has 3 strings), pythia-410m,
+step143000 (Stage 0, `2026-09-22_21-20-26`, `2026-09-22_21-41-17`) and step 0
+(`2026-09-23_05-52-32`, `2026-09-23_06-02-15`): the 14 directories in
+`real.json` `inputs`; deduped (125–273 tokens); L1–24; conda `mets`, hdbscan
+0.8.41; code on `claude/p1d-admit` from `c3fdd2e`. Calibration: same, each
+layer one Gaussian draw of itself, 200 draws. **Output:**
+`data/p1d/admit_2026-10-01/`: `real.json`, `calibrate.json` (672 records each,
+none skipped), `report.{json,txt}`, `report_labels.json`, `run_all.sh`.
+**Re-run** (~6 + 6 min at 14 workers, resumable): `run_all.sh` there
+(`admit run --v1-only --n-draws 200 --workers 14 [--calibrate]`, then
+`admit report`).
+
+**Result: the step-0 control fails, so nothing trained is read** (the
+design's stop rule). `excess`, `min_cluster_size` 2, records with ≥ 1
+admitted group, of 56 per cell (full table, both statistics and arms:
+`report.txt`):
+
+| step | frame | L1–8 | L9–16 | L17–24 | calibration (same order) |
+|---|---|---|---|---|---|
+| 0 | centred | 43 | 54 | 56 | 0 · 0 · 0 |
+| 0 | raw | 13 | 24 | 25 | 0 · 0 · 0 |
+| 143000 | centred | 52 | 53 | 45 | 0 · 3 · 11 |
+| 143000 | raw | 53 | 51 | 54 | 8 · 5 · 13 |
+
+`min_cluster_size` 4 and `log_life` show the same step-0 failure (centred
+39–56 of 56 per band, calibration 0–8).
+
+**Why step 0 fails: groups anchored at the prompt's opening.** Every step-0
+admitted group in the centred frame (153 of 153, `min_cluster_size` 2)
+contains position 0 and is mostly early tokens, but only 4 of 153 are an exact
+run of the first kept tokens (`def get _ plot data ( self ,` …): the median
+group has 94 % of its members in the first quarter of the kept tokens, and 64
+of 153 have a member past the halfway point; 4–50 members. Raw: 44 of 65
+contain position 0. Those late members are the cheapest clue to what the
+group is (*revised after `/challenge-pr` on #122*: the first write-up called
+it the "opening stretch"). Post hoc, not a result: records admitting a group
+*without* position 0 are 0 of 56 per band at step 0 centred (raw 5–10), and
+45–53 (raw 48–54) at step143000, whose admitted groups contain position 0
+in 21 of 990 centred (14 of 715 raw) and look like content (first names;
+two-digit numbers; `a few days`). Why the untrained model's opening tokens
+form a group is not checked.
+
+**Step 0 was never at its Gaussian on `hdb_k`** (`/challenge-pr` on #122,
+verified on `gaussian_null_2026-09-26/null_dedupe.json`, centred, 7 prompts,
+L1–24): step 0's shipped group count is above its null mean in 160 of 168
+records, against 85 of 168 in its calibration. It "passed" (2 records in the
+2.5 % tail) only because its null is about twice as wide as step143000's
+(median sd 8.6 vs 4.1). So admission's step-0 failure is not new, and the
+premise in `design-1d.md` ("`hdb_k` passed step 0") is weaker than written
+(row marked there). If step 0 is lumpier than its Gaussian beyond the
+opening too, the opening alone cannot settle Blocked 11.
+
+**The shipped call** (`min_cluster_size` 2, real records): 42 % of
+step143000's groups (1 873 of 4 502) and 53 % of step 0's are tie artefacts,
+about two thirds of them pairs; median ARI to the level-set labels 0.82,
+p10 −0.06. At `min_cluster_size` 4, 37–47 %, median ARI 0.97–0.98. Routed to
+`status-10.md`: about two in five of the groups Phase 10 reads exist only
+through hdbscan's tie order.
+
+**Labels.** *Fixed after `/challenge-pr` on #122:* the first report released
+by the calibration rule only (1 064 of 1 344 label records, step 0's
+included). `table` now also withholds a band when the step-0 control's same
+band admits in more than 10 % of its records, never releases the control,
+and releases nothing from a file without it; it also refuses a calibration
+with different draws or records. Re-run: **0 of 1 344 released.** The 10 %
+bound treats a band's 56 records (7 prompts × 8 adjacent layers) as
+independent, which they are not; release turns on 3 vs 6 records.
+
+**Next (the user's call, Blocked 11):** what to do about position before any
+trained reading. (a) The position-keeping residual null (Parked under
+"Attention communities", ~7 h): the design's pre-written consequence for
+positional groups, and it would also test the trained groups. (b) Cheaper
+first: build step 2's position check on these groups, plus why step 0's
+groups form (their late members; the first positions' residuals at init).
+Claude's recommendation: (b) first, under an hour, *but* with step 0 above
+its Gaussian on `hdb_k` in 160 of 168 records, (b) may show that step 0's
+excess is not only the opening, in which case (a) is needed.
+
+**Parked** (discoveries, not followed):
+- **Phase 1's stored labels and every `hdb_k` count carry tie artefacts.**
+  `gaussian_null`'s `hdb_k` excess (20 vs 6 groups) counts shipped groups,
+  ~40 % of them artefacts on both sides. Why: the excess 1d started from may
+  shrink or grow. Cost: a re-run of `gaussian_null` with level-set counts,
+  ~10 min. Could change: the design's starting premise.
 
 ## Deleted and restored (was `FROZEN.md`)
 

@@ -521,6 +521,14 @@ needs the user to enable it on GitHub.
   confirmed it (0.75 alone, 0.012 beside a tighter group). Rule: **read how a
   library normalises a statistic before testing it against a null, and the
   synthetic check must include a second, unrelated structure.**
+- 2026-10-01, `admit.py`: that rule's check paid off at once. With the second
+  structure added, the looser group's `S_C` still moved (3.6 %), because
+  hdbscan's tree orders *tied* edges by processing order, and with mutual
+  reachability ties are the rule. The project had read hdbscan's labels as a
+  function of the geometry since Phase 1; on deduped v1 tokens ~40 % of its
+  groups exist only through tie order (`status-1d.md` "Admission"). Rule: **a
+  library's output is a function of its input only where the input has no
+  ties; check how ties are broken before scoring anything it builds.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
