@@ -168,3 +168,13 @@ running median of the rows above it gets a line under the table saying why.
   `/challenge-pr` (a new offset-matched β fit, the resume defect, a solver
   check) took 43 more at ~200k context each. Continuing in the same session
   kept the PR's reasoning in context but paid for re-reading it.
+
+| 2026-09-30 | Answers to /challenge-pr on #117: 397/413 killed, reasons probed, accept list keyed on context (measured before #119's own challenge round) | 59 | 246k | 10.5M | 53k | #119 |
+
+- #119 is 2.2× the running median. A fresh session after `/clear`, so none
+  of it is carried. The first call was 63k; context grew to 250k because
+  #117's five findings needed `core/evalues.py`, both test files, the
+  adjudication replay and the accept list read before any edit, and the
+  probe round's output (17 mutants) stayed in context for every later
+  call. The probe output could have gone to a file with only the DIFF
+  lines printed.
