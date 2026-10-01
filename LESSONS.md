@@ -399,6 +399,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-01, 1d's position-keeping null (#127): its form was fixed, reviewed and given a
+  pass/fail rule before anyone drew from it on data with a known answer. A synthetic opening
+  showed that even the true positional mean, drawn as specified on unit rows, admits the
+  opening in 7 of 10 seeds (the draw gives early tokens the pooled noise). The real run
+  would have "failed the control" for a reason the rule could not tell apart from the
+  mechanism. Rule: a null's form is frozen only after an oracle version of it passes a
+  synthetic of the effect it is meant to absorb.
 - 2026-10-01, 1d's identity-weights positive control (#125): the design put β = 16 and 64
   in the grid so the theory would have several clusters to recover, and kept one time grid
   (`t` ≤ 16) for every β, on the claim that the collapse time is "nearly free of β". The
