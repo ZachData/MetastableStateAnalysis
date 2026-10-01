@@ -6,9 +6,9 @@ repo; its own "verified" means checked through citing pages, not read. **Nothing
 `[R]`.** Every scholarly host is blocked from the cloud session (arxiv, export.arxiv,
 semanticscholar, openreview, alphaxiv, crossref, papers.nips.cc, proceedings.iclr.cc,
 proceedings.mlr.press, mlanthology, pith.science, bytez, researchgate, github.io: all
-refused on 2026-10-01). Marks as in `docs/LITERATURE.md` §0: **[S]** a search summary
-was read this session; **[L]** the claim comes from the supplied list only (weaker than
-[S]: no summary of the paper's page was seen by Claude).
+refused on 2026-10-01). Marks: **[S]**, **[N]**, **[R]** as in `docs/LITERATURE.md` §0 ([S] here: a search
+summary was read this session). **[L]** is defined here only: the claim comes from the
+supplied list, and no summary of the paper's page was seen (weaker than [S]).
 
 The project's verification queue is `docs/LITERATURE.md` §5; this file's §4 is the
 mean-field addition to it, and is not repeated there.
@@ -22,12 +22,12 @@ and 9). None of it is a result; each row names what reading the paper could deci
 
 | # | Papers | Project item | What reading could decide | Mark |
 |---|---|---|---|---|
-| 1 | **2604.01978** *Homogenized Transformers* (Koubbi, Geshkovski, Rigollet): weights resampled independently across layers and heads, "as at initialization"; joint depth/step/heads scaling gives an Itô SDE on the sphere with logistic collapse. **2601.21942** *Clustering in Deep Stochastic Transformers* (Fedorov, Sander, Elie, Marion, Laurière; ICML 2026): random value matrices at init; for two tokens a phase transition in interaction strength and dimension, antipodal configurations attract with positive probability. **2604.26898** (Agazzi et al.): synchronization by common noise | 1d's **step-0 control** (`p1d_cluster_ensemble/status-1d.md` "Position"). Step 0 *is* the random-weight model these papers analyse | What an untrained Pythia should do at d = 1024, n ≈ 467, β ≈ 0, stated before looking. That is an expectation for the control that the control did not set, which Blocked 11′ lacks | [S] 2604.01978, 2601.21942; [L] 2604.26898 |
-| 2 | **2605.09213** *Kinetic theory for Transformers and the lost-in-the-middle phenomenon* (Duerinckx, Geshkovski, Rossi): causal attention as a non-exchangeable particle system; for iid uniform tokens the correlation equation is solved in closed form, retrieval profile U-shaped (primacy, recency, one interior minimum under a smallness condition). With **2411.04990** Thm 4.1 (`docs/readings/2411.04990.md`, [R]): all tokens collapse to `x₁(0)` | 1d's **position finding**: step 0's admitted groups are the prompt's opening; the cut M = 32 was picked on the control (Blocked 11′) | A primacy profile in closed form is a candidate **rule-fixed cut**, set before running, which is one of Blocked 11′'s two options. Open: whether iid-uniform tokens with fixed weights resemble Pythia at step 0 | [S] |
+| 1 | **2604.01978** *Homogenized Transformers* (Koubbi, Geshkovski, Rigollet): weights resampled independently across layers and heads, "as at initialization"; joint depth/step/heads scaling gives an Itô SDE on the sphere with logistic collapse. **2601.21942** *Clustering in Deep Stochastic Transformers* (Fedorov, Sander, Elie, Marion, Laurière; ICML 2026): random value matrices at init; for two tokens a phase transition in interaction strength and dimension, antipodal configurations attract with positive probability. **2604.26898** (Agazzi et al.): synchronization by common noise | 1d's **step-0 control** (`p1d_cluster_ensemble/status-1d.md` "Position"). Step 0 *is* the random-weight model these papers analyse | What an untrained Pythia should do at d = 1024, n ≈ 467, β ≈ 0, stated before looking. Secondary for Blocked 11′: `status-1d.md` already has the mechanism (near-uniform attention, position 0's share 1/(t+1)), and a cut derived from it, or step 0 at M = 32 on the long prompts, is cheaper than reading (`/challenge-pr` on #124) | [S] 2604.01978, 2601.21942; [L] 2604.26898 |
+| 2 | **2605.09213** *Kinetic theory for Transformers and the lost-in-the-middle phenomenon* (Duerinckx, Geshkovski, Rossi): causal attention as a non-exchangeable particle system; for iid uniform tokens the correlation equation is solved in closed form, retrieval profile U-shaped (primacy, recency, one interior minimum under a smallness condition). With **2411.04990** Thm 4.1 (`docs/readings/2411.04990.md`, [R]): all tokens collapse to `x₁(0)` | 1d's **position finding**: step 0's admitted groups are the prompt's opening; the cut M = 32 was picked on the control (Blocked 11′) | Whether a closed-form primacy profile agrees with the prefix-average account `status-1d.md` already gives. Not the route to Blocked 11′: that account yields a rule-fixed cut without the paper. Open: whether iid-uniform tokens with fixed weights resemble Pythia at step 0 | [S] |
 | 3 | **2412.09080** *On the number of modes of Gaussian kernel density estimators* (Geshkovski, Rigollet, Sun): Gaussian KDE with bandwidth `β^{-1/2}`; expected modes on the line `Θ(√(β log β))` for `n^c ≲ β ≲ n^{2−c}`; stated motive: how many clusters a transformer is drawn to in a metastable state (mean-shift ↔ self-attention) | 1d's **"the theory's own definition"** (`STATE.md` Now, last line; `p1d_cluster_ensemble/lit-1d.md` §3 `φ_β` wells, C's `δ = cβ^{-1/2}`) | A published definition of a metastable cluster as a KDE mode at bandwidth `β^{-1/2}`, with a count to compare against. 1D and Gaussian samples only; whether a d = 1024 version exists is a reading question | [S] |
-| 4 | **2410.23228**, **2509.25040** (Bruno, Pasqualotto, Agazzi): metastable clusters from the linearisation around uniform, periodicity set by β; with β ∝ N, collapse, clustering, slow pairwise merging | 1d count; already queued in `lit-1d.md` §6 | Gated on **Blocked 9**: [L] gives "~√β clusters". At `beta_raw` ≈ 3.5, √β ≈ 1.9; at `beta_raw`/8 ≈ 0.43, √β ≈ 0.66. The ×8 decides whether the order of magnitude is 2 or under 1, and the merge tree's ≥ 2-cluster pick is exactly 2 in 112 of 176 records. Not a test until the constants are read: Blocked 9's convention now also decides whether this comparison is possible | [S] 2410.23228; repo [S] 2509.25040 |
+| 4 | **2410.23228**, **2509.25040** (Bruno, Pasqualotto, Agazzi): metastable clusters from the linearisation around uniform, periodicity set by β; with β ∝ N, collapse, clustering, slow pairwise merging | 1d count; already queued in `lit-1d.md` §6 | Whether their count ("~√β clusters", [L]) has a d = 1024 form with known constants; `lit-1d.md` §6 already asks this of the Gegenbauer index. Any comparison with 1d's counts also needs β's convention (**Blocked 9**). No number is set beside a measurement here until both are known | [S] 2410.23228; repo [S] 2509.25040 |
 | 5 | **2601.21366** *Perceptrons and localization of attention's mean-field landscape* (Álvarez-López, Geshkovski, Ruiz-Balet; ICML 2026 spotlight): with the MLP block, critical points are generically atomic and localised. [L]: cluster mass ≤ ≈ 0.5742, heavy atoms ∝ √β | 1d merge tree: "one cluster plus outliers" in 126 of 192 layer-records (`status-1d.md` "Merge tree…") | If the mass bound holds in their model, Pythia's longest-lived scale is far from its stationary points. A contrast to state, not a test: their object is stationary measures of an idealised flow, ours is layer snapshots | [S]; bound [L] |
-| 6 | **2510.05554** *Critical attention scaling* (S. Chen, Z. Lin, Polyanskiy, Rigollet; ICLR 2026): critical `β_n = log n`; below, all tokens collapse; above, attention tends to identity. **2605.08505** *Scaling Limits of Long-Context Transformers* (Bruno, S. Chen, Z. Lin, Polyanskiy, Rigollet): `β*_n ≍ n^{2/(d−1)}` for uniform keys on `S^{d−1}`; sub-critical, critical, super-critical regimes | 1d long prompts (`status-1d.md` "Long prompts"): β 3.12 on v1's offsets at ~2000 tokens vs 3.46 at v1 length; the blob halves with length (69 → 43 of 96 layers) | Pythia has no length-dependent scaling, so these predict a fixed β drifting sub-critical as n grows. The measured blob moves the other way, which is worth reading before either is said. `n^{2/(d−1)}` ≈ 1 at d = 1024; if an intrinsic dimension of 7–15 (`docs/LITERATURE.md` §5 item 19) stands in for d − 1, it is 2.3–8.8 at these n, which overlaps the measured β (3.5 [1.6, 5.6]; whether the two scales are commensurate is itself Blocked 9's question). Also resolves `p1c_frames/lit-1c.md` §5 item 3's attribution | [S] |
+| 6 | **2510.05554** *Critical attention scaling* (S. Chen, Z. Lin, Polyanskiy, Rigollet; ICLR 2026): critical `β_n = log n`; below, all tokens collapse; above, attention tends to identity. **2605.08505** *Scaling Limits of Long-Context Transformers* (Bruno, S. Chen, Z. Lin, Polyanskiy, Rigollet): `β*_n ≍ n^{2/(d−1)}` for uniform keys on `S^{d−1}`; sub-critical, critical, super-critical regimes | 1d long prompts (`status-1d.md` "Long prompts"): β 3.12 on v1's offsets at ~2000 tokens vs 3.46 at v1 length; the blob halves with length (69 → 43 of 96 layers) | Which critical scale applies to a model with no length-dependent scaling, and in which units. The two disagree at d = 1024 (`log n` is 6–8 at these n, `n^{2/(d−1)}` ≈ 1), so neither places Pythia's β until the constants and the role of dimension are read. Also bears on `p1c_frames/lit-1c.md` §5 item 3's attribution | [S] |
 | 7 | **2510.22026** *Normalization in Attention Dynamics* (Karagodin, Ge, Polyanskiy, Rigollet; NeurIPS 2025): normalization as a speed factor in one particle ODE across Post-, Pre-, Mix-, Peri-LN, nGPT. [L]: Post-LN exponential, Pre-LN ~1/t² contraction | Any depth-rate statement (Phase 1 energy, 1c's `T_eff`). Pythia is Pre-LN with parallel attention and MLP | Which contraction law a depth-rate fit should be compared with | [S]; rates [L] |
 | 8 | Training-dynamics mean field (list §b–d): **2608.25055** Herty–Liu, **2605.17660** Barboni–de Hoop–Furuya–Peyré, 2410.23610, 2402.01258, 2606.10469, 2405.15712, 2607.05735 | `FUTURE_IDEAS.md` D7; `docs/TRIAGE_2026-09.md` flagship (training axis) | Not the active thread. Only 2608.25055 and 2605.17660 are in the repo | [L] |
 
@@ -52,10 +52,13 @@ structure of multi-head attention), 2501.10573 (intrinsic dimension of prompts, 
 | 2312.10794 | 16 files (project-wide citation) |
 | 2411.04990 | 29 files; `docs/readings/2411.04990.md` is [R] |
 | 2410.06833 | `PROJECT.md`, `p1_mstate_tracking/lit-1.md`, `PUBLICATION_IDEAS.md` (+3) |
-| 2410.23228, 2509.25040 | `p1d_cluster_ensemble/lit-1d.md` §6 queue; `p10_cluster_function/lit-10.md` |
+| 2410.23228 | `p1d_cluster_ensemble/lit-1d.md` §6 queue, `p10_cluster_function/lit-10.md`, `PROJECT.md`, `PUBLICATION_IDEAS.md`, `docs/readings/2411.04990.md` |
+| 2509.25040 | `p1d_cluster_ensemble/lit-1d.md` only |
 | 2601.21366, 2608.08922, 2601.21942 | `p1_mstate_tracking/lit-1.md` [N]; first two also `lit-1d.md` §6 |
-| 2605.10931, 2605.08505 | `p1c_frames/lit-1c.md` |
-| 2604.26085, 2607.24502 | `p2_eigenspectra/lit-2.md`, `p2b_imaginary/lit-2b.md`, `p6_subspace/lit-6.md` [N] |
+| 2605.10931 | `p1c_frames/lit-1c.md`, `PUBLICATION_IDEAS.md` |
+| 2605.08505 | `p1c_frames/lit-1c.md` only |
+| 2604.26085 | `p2_eigenspectra/lit-2.md`, `p2b_imaginary/lit-2b.md` [N] |
+| 2607.24502 | `p2b_imaginary/lit-2b.md`, `p6_subspace/lit-6.md` [N], `docs/LITERATURE.md` §5, `PUBLICATION_IDEAS.md` |
 | 2305.05465 | `lit-1.md`, `lit-1d.md`, `PUBLICATION_IDEAS.md` |
 | 2512.01868, 2110.11773, 2501.18322, 2411.04551, 2510.22026, 2510.05554, 2605.09213 | `PUBLICATION_IDEAS.md` only |
 | 2608.25055, 2605.17660 | `FUTURE_IDEAS.md` only |
@@ -64,7 +67,8 @@ The other 39 are new to the repo. **Corrections and confirmations made by this u
 
 - `p1c_frames/lit-1c.md` §5 item 3 flagged `β*_n ≍ n^{2/(d−1)}` → 2605.08505 as an
   unreliable attribution. A search summary of 2605.08505's own page now gives that
-  result and the authors: confirmed at [S], edited there.
+  result and the authors. Consistent at [S], not independent confirmation: both are
+  search summaries. Edited there to say so; it stays a reading item.
 - `p1d_cluster_ensemble/lit-1d.md` names 2608.08922's authors "Gao, Yang & Chen", which
   the list leaves unchecked. Search: Qucheng Gao, Zuyi Yang, Xiao Chen [S]. Agrees.
 - `FUTURE_IDEAS.md` cited 2608.25055 without authors and 2605.17660 as "Barboni" alone;
@@ -84,8 +88,8 @@ Supplied PDFs are read in full and recorded as `docs/readings/<id>.md` (as 2411.
 
 | rank | id | why first |
 |---|---|---|
-| 1 | 2604.01978 Homogenized Transformers | Theory of the step-0 control (row 1) |
-| 2 | 2605.09213 Kinetic theory / lost-in-the-middle | Candidate rule-fixed position cut for Blocked 11′ (row 2) |
+| 1 | 2604.01978 Homogenized Transformers | Theory of the step-0 control (row 1); secondary for Blocked 11′ |
+| 2 | 2605.09213 Kinetic theory / lost-in-the-middle | Position under causal attention, against `status-1d.md`'s prefix-average account (row 2) |
 | 3 | 2412.09080 Modes of Gaussian KDEs | A theory definition and count for "what a cluster is" (row 3) |
 | 4 | 2509.25040, 2410.23228 Bruno–Pasqualotto–Agazzi | The count's constants; already in `lit-1d.md` §6 (row 4) |
 | 5 | 2601.21366 Perceptrons and localization | Mass bound and atom count with the MLP (row 5) |
