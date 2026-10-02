@@ -831,6 +831,13 @@ a wrong premise, the check inherits it.
   the floor without writing out what partial R² is made of. Before
   selecting units on a fit statistic, write the statistic in terms of the
   estimate; if the estimate is in it, the selection is on the outcome.
+- 2026-10-01 (#124, reading list): the count of already-cited ids came from
+  a script and was right; the "where" table beside it was typed from memory
+  of an earlier grep and named the wrong file for 5 ids. Two rows set
+  constant-free scalings (√β, `n^{2/(d−1)}`) next to measured numbers. A
+  review found both. Generate a cross-reference table from the grep that
+  produced its count, and put no number from an unread paper beside a
+  measurement.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

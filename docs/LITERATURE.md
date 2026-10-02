@@ -230,6 +230,11 @@ PDFs; every scholarly host is still blocked from a session — see
 `lit-10.md` §11–§15; this table carries only what is cross-phase. **Item 6 was
 the project's top verification-queue entry and two phases depended on it.**
 
+**2026-10-01: a user-supplied mean-field reading list** (61 arXiv ids, 39 new to the
+repo) is cross-referenced in `docs/readings/meanfield_reading_list_2026-10-01.md`.
+Its §4 ranks 8 PDFs to read, led by the theory of 1d's step-0 control (2604.01978)
+and of position under causal attention (2605.09213). Those rows are not repeated here.
+
 ---
 
 ## 6. The cheap, high-value experiments this review surfaced
