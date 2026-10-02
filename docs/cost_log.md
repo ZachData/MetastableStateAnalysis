@@ -219,3 +219,7 @@ running median of the rows above it gets a line under the table saying why.
   Over 2× the median (5.1M): build, three runs and the write-up in one session, and ~25 calls were
   background-run notifications (one per finished passage), each re-reading the full context. A
   monitor that reports only the end of each stage would have cut most of them.
+| 2026-10-02 | 1d unit 2: architecture null, first check (runner, 50 step-0 models, check + its power) (before challenge-pr) | 81 | 194k | 11.4M | 46k | #131 |
+  Over 2× the median: build, a hung pilot (fork pool; LESSONS 2) and a ~65 min batch in one
+  session; ~12 calls were monitor / watcher notifications (milestones, expiries). One watcher
+  on the batch's end would have done.

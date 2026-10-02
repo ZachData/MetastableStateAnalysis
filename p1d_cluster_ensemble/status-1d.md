@@ -2004,6 +2004,7 @@ step 0, which does not yet separate learned content from learned position.
 | does the per-group definition pass its control? | no: step 0 admits the prompt's opening (near-uniform attention); a fixed cut at 32 removes it on v1 but not at length; the position-keeping null (11‴) fails all 6 cells | "Admission", "Position", "The M = 32 cut on the long prompts", "Position-keeping null" |
 | do trained groups survive the opening's removal? | yes, at v1 and at length (L17–24 withheld: the null is off nominal there) | same |
 | content or position? | not the start of the context: moved behind a preamble, trained groups mostly move with the passage (centred size 2: 0.95 / 0.89 / 0.74 by band; fixed bar 0.5: 0.89 / 0.81 / 0.65), step 0's do not (0.28 / 0.09 / 0.08), its opening is opening-bound in 7 of 7 passages. Relative positions mean a preamble cannot test absolute position. "Learned" is unit 2's | "Unit 1: move the text" |
+| can random re-inits stand in for Pythia's init? | yes at step 0: the 10 real inits (pythia-410m + PolyPythias seeds 1–9) sit among 40 Pythia-σ re-inits in all 24 first-check cells (largest share 0.143, bound 0.20); the check is lenient by construction (held-out re-inits: 0–0.16). Trained cells not read yet | "Unit 2: the architecture null" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2228,6 +2229,72 @@ fixed bar); trained groups mostly do, less so late (L17–24) and under the `\n\
 passes the gate on `first_checks.json`), then `python -m p1d_cluster_ensemble.move_text
 report --out <dir>`. Tests: `tests/test_phase1d_move_text.py`,
 `tests/test_phase1d_designed_prompts.py`. **Next: unit 2 (architecture null).**
+
+### Unit 2: the architecture null — first check (2026-10-02; branch `claude/p1d-arch-null`)
+
+**Built:** `arch_null.py` (`e464c9f`, before any record; operational readings in
+`design-1d.md` "Unit 2"): Pythia-σ re-init (`reinit_model`; refuses a tensor off its σ),
+PolyPythias loading, per-cloud `z_G` of `hdb_k_2`, `hdb_k_4`, `nn1`, `ci2` against 100
+draws of the cloud's own Gaussian (common random numbers across models), per-group `s`,
+the first check. **Inputs:** step 0 of `pythia-410m` (seed 0) and
+`pythia-410m-seed{1..9}`; re-inits 0–39; the 7 deduped v1 prompts (first 512 tokens),
+L1–24, centred and raw. 50 models × 7 prompts × 48 records = 16,800 clouds, 77–80 s per
+model at 14 workers (~65 min). Output `data/p1d/arch_null_2026-10-02/`
+(`run_first_check.sh`, `first_check.json`, `first_check_power.json`, `token_sets.json`).
+
+**The real inits are Pythia's init.** All 10: weight SDs 0.01974–0.01978 (small) and
+0.00260–0.00261 (wang), every bias 0, every LayerNorm (1, 0): the re-inits' recipe.
+**T2 found nothing** at step 0 in any of the 50 models (largest norm ratio 1.35×, at
+position 0), so every model reads one token set per prompt (T1, T3 only).
+
+**First check: pass in all 24 cells** (share of the 70 (seed, prompt) band-median ranks in
+the re-inits' outer 10 %; pass ≤ 0.20):
+
+| statistic | centred L1–8 / 9–16 / 17–24 | raw L1–8 / 9–16 / 17–24 |
+|---|---|---|
+| `hdb_k_2` | 0.00 / 0.00 / 0.00 | 0.00 / 0.01 / 0.00 |
+| `hdb_k_4` (arm) | 0.00 / 0.00 / 0.04 | 0.00 / 0.01 / 0.06 |
+| `nn1` | 0.00 / 0.01 / 0.01 | 0.00 / 0.00 / 0.00 |
+| `ci2` | 0.01 / 0.01 / 0.13 | 0.03 / 0.09 / 0.14 |
+
+The raw statistics agree too (centred medians, init vs re-init: `hdb_k_2` 13 / 12, 11 / 11,
+11 / 11 by band; `nn1` and `ci2` equal to the third decimal). Seeds 3 and 4 (PolyPythias'
+outliers) are not apart from the rest: `ci2` centred L17–24 per-seed median ranks run
+0.26–0.80, seed 4 at the top (0.80), seed 3 at 0.65, seeds 7 and 9 at 0.71–0.74.
+
+**How much the check can see** (from the stored records, `first_check_power.json`). The
+band median pulls each rank toward 0.5, so the statistic is small under the null: 4 folds
+of 10 re-inits held out as pseudo-real against the other 30 give at most 0.00–0.16 per
+cell. The real inits sit within that in 21 of 24 cells (above it: `ci2` raw L17–24 0.143
+vs 0.100, `hdb_k_4` centred and raw L17–24 0.043 / 0.057 vs 0.014 / 0.029; 4 folds only).
+Read per layer (no median), real inits fall in the outer 10 % at 0.06–0.14 against
+0.12–0.13 for held-out re-inits (above 0.10 from ties at N = 30). **Reading:** the check
+passes with room, but the bound of 0.20 only fails a gross mismatch; the per-layer reading
+is the stronger evidence that the re-inits stand in for Pythia's init, and it agrees.
+
+**Caveats.** (1) `nn1`'s z is +17 to +27 at both kinds of init: step-0 tokens are farther
+from their neighbours than their Gaussian's. That is a property of every init, not a
+difference between them, and only comparisons across models are read. (2) `ci2` is the
+statistic nearest the bound, late, and leans low (real inits slightly lumpier): 6–7 low
+against 3 high at L17–24.
+
+**What the trained cells must settle first** (not decided; both are in the PR's
+"Worth challenging"):
+1. **T2 across the trained comparison.** The union "over any run being compared" now takes
+   the trained runs' massive tokens (seed 0: the first `\n` in `hdbscan_code` and
+   `latex_monograph`; seeds 1–9 unread), so those prompts' token sets change and their
+   re-init and real-init clouds must be recomputed on the new set (~minutes per model).
+   The step-0 records stay valid for prompts whose set does not change.
+2. **Which tail the per-cloud rank p reads.** The design writes p = (1 + #{inits ≥ obs}) /
+   (N + 1) for every statistic, but `nn1` and `ci2` are lumpier when *lower*
+   (`gaussian_null.LUMPIER`), so read literally their p asks "is trained less lumpy than
+   init". Recommendation: orient by `LUMPIER` (lower tail for `nn1`, `ci2`), upper for
+   `hdb_k`, and report both tails.
+
+**Re-run:** `data/p1d/arch_null_2026-10-02/run_first_check.sh` from the worktree root
+(resumable: `norms`, `run`, `check`). Tests: `tests/test_phase1d_arch_null.py` (the re-init
+test needs `SMOKE_REAL_DEPS=1`). PolyPythias `step143000` seeds 1–9 are in the HF cache,
+unopened. **Next: unit 2's trained cells, after the two points above.**
 
 ## Deleted and restored (was `FROZEN.md`)
 

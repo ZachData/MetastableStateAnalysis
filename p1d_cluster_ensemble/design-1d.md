@@ -168,6 +168,18 @@ own Gaussian draws: 420 clouds × 24 layers × 2 frames × 2 sizes ≈ 40 k admi
 at 100 draws each, ~4 M level-set fits; at #122's rate (~270 k fits in ~10 min at 14
 workers) about 2.5 h. 100 draws, not 200, is **placed** for cost. Estimates.
 
+**Operational readings for the first check** (in `arch_null.py`, committed `e464c9f`
+before any record was written):
+
+| reading | value |
+|---|---|
+| `nn1` | `gaussian_null.lumpiness`' `nn1`: the **mean** cosine distance to the nearest other token (the table above says "median nearest-neighbour cosine"; the code name was kept, so `nn1` means one thing in 1d) |
+| `hdb_k` | level-set HDBSCAN's group count (`admit.level_set_hdbscan`, admission's route), at size 2 (primary) and 4 (arm), not the shipped call with its tie order |
+| draws | 100 per cloud; the same draw seed for the same (prompt, layer, frame) in every model (common random numbers); `ci2`'s KMeans at `random_state` 0 |
+| `z_G` | (obs − draw mean) / draw SD; a draw SD of 0 gives no z, and a cell with any missing z does not pass |
+| rank in the re-inits | mid-rank fraction `u` (share below, ties half); "outer 10 %" is two-sided, `u` < 0.05 or > 0.95 |
+| T2 comparison | the step being checked: the step-0 check takes the union over the 10 real inits and the 40 re-inits only, so it reads no trained run (as unit 1) |
+
 ### Unit 3: one family on a continuous scale
 
 | choice | value | why, and what was rejected |
