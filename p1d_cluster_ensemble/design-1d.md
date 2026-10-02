@@ -123,7 +123,7 @@ admitted groups positional. The outcomes that would change the plan:
 |---|---|---|
 | step143000 admits no more than its calibration | HDBSCAN's group-count excess is many weak groups, none individually beyond the Gaussian | try size bands; if still nothing, at v1 length a cluster is not distinguishable from its covariance group by group, and Phase 10 has nothing to condition on |
 | step 0 admits beyond its calibration | the control fails, as `mt_life` did | stop; find why (position?) before any trained reading |
-| admitted groups are mostly positional | the groups are text stretches | a residual null that keeps position (Parked, ~7 h) before calling anything content |
+| admitted groups are mostly positional | the groups are text stretches | a residual null that keeps position before calling anything content (chosen 2026-10-01, Blocked 11″; form and cost in `status-1d.md` "Blocked 11″ decided") |
 | admitted, non-positional, recovered by other families | a cluster in the sense Phase 10 needs | Phase 10 re-reads its rows on the admitted labels (the user decides when Phase 10 resumes) |
 
 ## Build order

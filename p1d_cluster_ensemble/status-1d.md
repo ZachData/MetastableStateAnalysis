@@ -1914,6 +1914,102 @@ run. Also open: whether the control and release bound count prompts rather than 
 Recommendation: (a), with the raw L17–24 cell read as the noise level of the deduped null at
 length.
 
+### Blocked 11″ decided, and where 1d stands (2026-10-01; docs only, nothing run)
+
+**Decision (user, 2026-10-01, with #126 in hand):** option (a), the position-keeping null.
+The cut is not in the definition. Its form, fixed before any code or run:
+
+| | |
+|---|---|
+| primary | `x_t = μ̂_t + ε`, in the frame's span coordinates. `μ̂_t = Z̄ + c (P_t − P̄)`, with `P_t` the *causal* running mean of the kept rows before `t` (the first kept row gets `P̄`), `c` one least-squares scalar per record **on the centred regressor** (#123's mechanism: near-uniform attention makes early tokens share a prefix average). `ε = G R / √n` as in `gaussian_draw`, `R = Z − μ̂` the *regression* residual (mean 0 by construction); unit rows. With `c` forced to 0 it is `gaussian_draw`, draw for draw (a test). *Clarified after `/challenge-pr` on #127, finding 1:* uncentred, `P_t` is nearly `Z̄` in the raw frame and `c` collapses (0.03 on step-0 `wiki_paragraph`; centred 0.24–0.33). |
+| sensitivity arm | `μ̂_t` = leave-one-out Gaussian kernel smoother over **log(1 + absolute position)**, bandwidth by leave-one-out CV on a grid ending at "no position". *Changed after `/challenge-pr` on #127, finding 3:* on absolute position CV picks 24–93 tokens, wider than the opening; the prefix pull falls as `M / (t + 1)`, so log position is the mechanism's scale (it also fitted better in 4 of 4 step-0 records the reviewer tried) |
+| rule (fixed before the run; finding 4) | the verdict is the primary's step 0, `excess`, `min_cluster_size` 2, 6 cells (2 frames × 3 bands) of 56 records, #126's table: ≤ 5 records admitting (`RELEASE_BOUND`) pass; > 5 and more than its calibration fail; otherwise unreadable. All 6 pass = the null controls position, and trained cells are read through `admit report`'s release rule. Any fail: the decision returns to the user. The arm is reported beside it; where it and the primary disagree, the primary decides and the disagreement is reported. Can it fail: step 0 under the plain Gaussian at M = 0 admitted in 43 · 54 · 56 (centred) |
+| known risk (finding 2) | one pooled `c` is fitted mostly where there is no opening. On step 0 the reviewer found `c` 0.21–0.34 pooled (centred, R² < 1 %) against 0.38–0.58 on the first 32 kept rows (R² 4–12 %) and ≤ 0 past 32, so the null may reproduce only about half the opening's shift, and step 0 could fail on the fit rather than the mechanism. Not redesigned before seeing the run. On a step-0 fail the report gives `c` on the first 32 kept rows beside the pooled one, as a diagnosis, not a rescue |
+| calibration | one draw of the same null as pseudo-data, the null refitted to it (as `--calibrate`) |
+| input, first run | v1 (#122's 14 runs, M = 0), then the long runs |
+
+**The form above fails its synthetic positive control, so the real run was not made**
+(2026-10-01, same session; code on branch `claude/p1d-position-null-run`, `c085dba`, not for
+merge; scripts `p1d_cluster_ensemble/scratch_checks/syn{4,5,6}.py` there). Synthetic opening:
+`Y_t = E_t + 6 · mean(V_0..V_t)`, n 150, d 300, `E`, `V` iid N(0, I), the mechanism of #123
+with nothing else in it. Records admitting a group that holds position 0, of 10 seeds, 39
+draws, `excess`, `min_cluster_size` 2:
+
+| null | raw | centred |
+|---|---|---|
+| Gaussian (#122) | 7 | — |
+| prefix, as committed (fit and draw on unit rows) | 7 | 10 |
+| **oracle**: the true positional mean, drawn as committed | **7** | — |
+| oracle mean, each row keeps its own residual norm | 0 | — |
+| prefix, fit and draw on the un-normalised rows, then the frame | 2 | 3 |
+| smooth (log position), fit and draw on the un-normalised rows | **0** | **0** |
+| pure noise (`Y = E`), the last two | 0 | 0 |
+
+**Why.** Even the true mean fails, so the defect is the draw, not only the fit. Unit rows make
+the noise heteroscedastic: an early token's shared component inflates its norm, so after
+normalisation its own noise is a small share, while the committed draw gives every token the
+pooled residual covariance and spreads the opening wider than it is. Fitting and drawing
+before normalisation, where the mechanism is additive and the noise even, and applying the
+frame to each draw, fixes it for the smoother. The prefix fit still under-fits (`c` ≈ 0.5),
+which is finding 2 showing on data with a known answer. **For the user (Blocked 11‴):** adopt
+"fit and draw on the un-normalised activations, then the frame" (recommended: it is a defect
+of the committed form, found on a synthetic, not on the control), and make the smoother the
+primary with the prefix as the arm, since only the smoother passes the synthetic. Then the
+build adds these synthetics as tests and runs v1 (~12 min a pass).
+| counting | the verdict stays per layer-record (comparable with #122–#126); a per-prompt count is reported beside it |
+
+**Correction to the cost.** The "~7 h" quoted for (a) since #108 is `attention_null`'s, which
+pushes every draw through the model's own block. Admission's null is a Gaussian draw
+(`admit.admit_record` → `gaussian_null.gaussian_draw`), and (a) changes only that draw, so it
+costs about one admission pass: ~6 min real + ~6 min calibration per model on v1 (#122's
+timings). Also: the Parked variant "a within-prompt position-block shuffle of rows" cannot work
+for admission. `S_C / |C|` depends only on the point set, which a row shuffle leaves unchanged.
+
+**HDBSCAN's tie order upstream** (from #122's defect; seconds, conda `mets`). Same points,
+rows permuted, labels mapped back (`tools/hdbscan_tie_repro.py`, standalone, a 200 × 1024
+cosine set): `hdbscan` 0.8.41 (`min_samples` 2) and scikit-learn 1.7.2 `HDBSCAN` at the matched
+setting (`min_samples` 3: sklearn counts the point itself) each change their clustering in
+**26 of 30** row orders; a repeat on one order is identical. Scratch checks beside it (not
+committed): 11 of 30 for 3 Euclidean blobs with `hdbscan`, group count 2–5 across orders;
+sklearn 9–18 tie-artefact groups per order; `level_set_hdbscan` 0 of 10. **Known upstream
+as a symptom, not diagnosed or fixed** (*corrected after `/challenge-pr` on #127, finding 5*):
+scikit-learn-contrib/hdbscan #265 (2018, open) is the exact row-order report (duplicate points,
+Jaccard); on #409 (2020, open) a commenter names non-unique MST edge weights; on #241 (column
+order) the maintainer guessed ties. New from 1d: ties come from core distances, so they are
+the rule even without duplicates; a measure (groups never a graph component); a tested fix;
+scikit-learn has it too (nothing found on its tracker). Reporting it (a comment on #265, an
+issue on scikit-learn) is the user's call; draft in
+`docs/upstream/hdbscan_ties.md`, repro `tools/hdbscan_tie_repro.py`.
+
+**Where 1d stands** (each row's numbers are in the section named; this table is the summary
+`STATE.md` points to). Three sources of structure, and what separates them: the *algorithm*
+(HDBSCAN finds groups in noise; tie artefacts), separated by the calibration; the
+*architecture*, not learned (identical strings; the prompt's opening through the causal mask
+at init), separated by deduplication and the step-0 control; *learned*, step143000 against
+step 0, which does not yet separate learned content from learned position.
+
+| question | answer now | section |
+|---|---|---|
+| is the trained cloud lumpier than its covariance? | yes, locally, at every depth and length; step 0 not, once deduped | "Matched-covariance Gaussian null", "Long prompts" |
+| is the token grading (core / halo / contested) usable? | no: dropping one family replaces the core set under all 9 vote rules; retired (Blocked 10), code kept | "Vote rules", "Design revised" |
+| is HDBSCAN's shipped call reproducible? | no: on float32 it drifted (fixed, float64); its tied edges are ordered by row order, 42 % of trained groups are tie artefacts (replaced by the level-set tree) | "Float64 distances", "Admission" |
+| does the per-group definition pass its control? | not yet: step 0 admits the prompt's opening (near-uniform attention); a fixed cut at 32 removes it on v1 but not at length | "Admission", "Position", "The M = 32 cut on the long prompts" |
+| do trained groups survive the opening's removal? | yes, at v1 and at length (L17–24 withheld: the null is off nominal there) | same |
+| content or position? | open: (a) above answers it | this section |
+| does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
+| attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
+| β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
+
+**Standing directions from the user** (moved here from `STATE.md` on 2026-10-01, where they
+were the only record): 2026-09-25, the priority is more ways to check that a cluster is real
+and not an HDBSCAN artefact; D (hierarchy across scales) and C (`δ = cβ^{-1/2}` marked on it)
+yes, C waiting on β's convention (Blocked 9); prompts to maximum length yes (done, "Long
+prompts"); whether L0 (token identity: 215 clusters = 215 distinct embedding vectors) stays in
+1d is the user's call. 2026-09-26: the order of next items, (3) first (done). Not yet taken up:
+C's `δ` on the merge tree (Parked above), and the theory's own definitions (fixed-scale F13/F14,
+`p10_cluster_function/math-10.md` §7; persistence across layers). Open beside 11″: is 1d done
+enough to write up (`docs/TRIAGE_2026-09.md` §4.2)?
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it

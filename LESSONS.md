@@ -153,6 +153,15 @@ world moves, nobody updates the line, and the next session acts on it.
   "has finished (four JSONs)"; the directory held one, `calibrate` stopped at
   126/384, the other two never started. Start step 3 (check the tree) caught
   it before any report was written against a missing calibration.
+- 2026-10-01 (1d Blocked 11″): option (a) was quoted at "~7 h" in `STATE.md`,
+  `design-1d.md` and `status-1d.md` across four decisions (#108 to #126). The
+  figure was `attention_null`'s (the model's block on every draw); the
+  admission null it would replace is a Gaussian draw, ~12 min a pass on v1.
+  Found only on opening `admit.py` to build it. The same session found that
+  `STATE.md`'s "Now" cell (~30 KB, one table row) was the only record of the
+  user's 2026-09-25 directions for 1d: a 150-line cap counted lines, not bytes.
+  Moved to `status-1d.md`. Rule: a cost carried into a decision names the
+  code path it was measured on.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -390,6 +399,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-01, 1d's position-keeping null (#127): its form was fixed, reviewed and given a
+  pass/fail rule before anyone drew from it on data with a known answer. A synthetic opening
+  showed that even the true positional mean, drawn as specified on unit rows, admits the
+  opening in 7 of 10 seeds (the draw gives early tokens the pooled noise). The real run
+  would have "failed the control" for a reason the rule could not tell apart from the
+  mechanism. Rule: a null's form is frozen only after an oracle version of it passes a
+  synthetic of the effect it is meant to absorb.
 - 2026-10-01, 1d's identity-weights positive control (#125): the design put β = 16 and 64
   in the grid so the theory would have several clusters to recover, and kept one time grid
   (`t` ≤ 16) for every β, on the claim that the collapse time is "nearly free of β". The
