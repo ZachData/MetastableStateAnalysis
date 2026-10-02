@@ -399,6 +399,16 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-02, 1d's position-keeping null, 11‴ form: the fix ("fit and draw on the
+  un-normalised rows") was recommended on a synthetic whose rows all have similar norms.
+  On trained Pythia, token 0's massive activation (~45× the median norm at L6–18) is then
+  ~0.92 of every draw's noise, so trained L9–16 can never admit (0 of 56): a null that
+  could not reject, on the cells it was built to read. The first real record showed it
+  in seconds (per-draw maximum `excess` ~21 vs ~0.05). The same null passed its synthetic
+  (0 / 10) and failed the real control (27–40 of 56 centred): the synthetic carried only
+  the mechanism the null models. Rule: before recommending a change of space for a null,
+  print the inputs' norm profile in that space on every checkpoint it will read; and a
+  passed synthetic is a precondition, never evidence the real control will pass.
 - 2026-10-01, 1d's position-keeping null (#127): its form was fixed, reviewed and given a
   pass/fail rule before anyone drew from it on data with a known answer. A synthetic opening
   showed that even the true positional mean, drawn as specified on unit rows, admits the
