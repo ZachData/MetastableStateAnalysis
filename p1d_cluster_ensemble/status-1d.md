@@ -1993,9 +1993,9 @@ step 0, which does not yet separate learned content from learned position.
 | is the trained cloud lumpier than its covariance? | yes, locally, at every depth and length; step 0 not, once deduped | "Matched-covariance Gaussian null", "Long prompts" |
 | is the token grading (core / halo / contested) usable? | no: dropping one family replaces the core set under all 9 vote rules; retired (Blocked 10), code kept | "Vote rules", "Design revised" |
 | is HDBSCAN's shipped call reproducible? | no: on float32 it drifted (fixed, float64); its tied edges are ordered by row order, 42 % of trained groups are tie artefacts (replaced by the level-set tree) | "Float64 distances", "Admission" |
-| does the per-group definition pass its control? | not yet: step 0 admits the prompt's opening (near-uniform attention); a fixed cut at 32 removes it on v1 but not at length | "Admission", "Position", "The M = 32 cut on the long prompts" |
+| does the per-group definition pass its control? | no: step 0 admits the prompt's opening (near-uniform attention); a fixed cut at 32 removes it on v1 but not at length; the position-keeping null (11‴) fails all 6 cells | "Admission", "Position", "The M = 32 cut on the long prompts", "Position-keeping null" |
 | do trained groups survive the opening's removal? | yes, at v1 and at length (L17–24 withheld: the null is off nominal there) | same |
-| content or position? | open: (a) above answers it | this section |
+| content or position? | open: option (a) did not answer it (its control fails; on trained L9–16 its draws are token 0's massive activation) | "Position-keeping null" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2009,6 +2009,72 @@ prompts"); whether L0 (token identity: 215 clusters = 215 distinct embedding vec
 C's `δ` on the merge tree (Parked above), and the theory's own definitions (fixed-scale F13/F14,
 `p10_cluster_function/math-10.md` §7; persistence across layers). Open beside 11″: is 1d done
 enough to write up (`docs/TRIAGE_2026-09.md` §4.2)?
+
+### Position-keeping null (Blocked 11‴; 2026-10-02; branch `claude/p1d-position-null-v1`)
+
+**Decision (user, 2026-10-02):** adopt 11‴: fit and draw on the un-normalised activations,
+then apply the frame; the smoother is primary, the prefix fit the arm; the synthetics become
+tests; then run v1. The verdict rule is 11″'s, unchanged, read on the new primary.
+
+**Built.** `position_null.py` (`fit` / `draw` / `apply_frame`), `admit run --null
+{smooth,prefix}`; raw rows are `norms × activations` (`activations.npz` stores unit rows and
+the norms, `p1_io`). `tests/test_phase1d_position_null.py` (17 tests): the synthetic opening of
+the section above, now with the 11‴ form: smooth admits it in **0 / 10** seeds raw and centred,
+#122's Gaussian 7 / 10 raw (the test can fail), pure noise 0 / 10 for both nulls; prefix 2 / 10
+raw, 3 / 10 centred (recorded, not asserted). Also: `gaussian` kind = `gaussian_draw(renorm =
+False)` draw for draw; `apply_frame` = `frame_vectors`' rows; the driver fits on raw rows.
+
+**Input.** #122's 14 v1 runs (7 prompts × step143000 / step 0, the `RUNS` of
+`data/p1d/admit_2026-10-01/run_all.sh`), deduped, M = 0, L1–24, both frames, 200 draws, seed
+0, both `min_cluster_size` arms, real and `--calibrate`; git `45ced15`, conda `mets`.
+**Output:** `data/p1d/position_null_2026-10-02/{smooth,prefix}/` (`real.json`,
+`calibrate.json`, 672 records each, none skipped; `report.{json,txt}`), `run_all.sh`,
+`run.log`. **Re-run:** `run_all.sh` there (~7 min a pass at 14 workers, 4 passes, resumable).
+
+**Result: the control fails, all 6 cells, on both nulls.** Step 0, `excess`,
+`min_cluster_size` 2, records admitting of 56 (calibration in brackets); the rule: ≤ 5 pass,
+> 5 and above its calibration fail:
+
+| null | centred L1–8 | L9–16 | L17–24 | raw L1–8 | L9–16 | L17–24 |
+|---|---|---|---|---|---|---|
+| Gaussian (#122, unit rows) | 43 (0) | 54 (0) | 56 (0) | 13 (0) | 24 (0) | 25 (0) |
+| **smooth (primary)** | **27 (2)** | **30 (12)** | **40 (10)** | **10 (0)** | **20 (0)** | **24 (1)** |
+| prefix (arm) | 40 (0) | 53 (0) | 56 (0) | 14 (0) | 24 (0) | 24 (0) |
+
+Per prompt (smooth): 7 · 7 · 6 of 7 centred, 4 · 5 · 5 raw. `min_cluster_size` 4 fails too
+(centred 36 · 41 · 46, raw 9 · 24 · 23). The primary and the arm agree on the verdict.
+**What is admitted is still the opening:** under smooth, all 97 admitted centred groups hold
+position 0 and all 97 are groups #122 admitted; raw, all 56 start below position 8 (39 hold
+0), and 55 of 56 are #122's. The smoother does fit position (CV picks `h` 0.68 on log position
+in 136 of 168 records, R² ~2 %); the prefix's `c` is 0.46 median (0.02–0.64).
+
+**Why (diagnosis, not a rescue; nothing refitted).** The step-0 residual looks like the
+synthetic's: early / late residual norm 0.97–1.03, mean cosine among early residuals −0.02 to
+−0.06, adjacent early residuals −0.01 to −0.08 (7 prompts × L4/12/20). But on 6 admitted
+records (centred) the real opening is tighter than the same tokens in the null's draws
+(within-group cosine distance 0.80–0.88 vs 0.86–0.92, 1.5–6 SD), and the *rest* of the tokens
+are farther from their nearest neighbour than in the draws (median 0.82–0.86 vs 0.73–0.77).
+So the fitted mean carries only part of the opening's shift (finding 2's risk, now on the
+smoother), and the real background is more spread out than its Gaussian, which the
+opening's group is measured against. The smooth calibration is itself off nominal centred
+at L9–24 (12, 10 of 56).
+
+**Confound: trained layers are not readable under this null.** Fitting before
+normalisation hands token 0's massive activation (norm ~45× the median at L6–18, step143000
+`wiki_paragraph`) to every draw: one row's share of the drawn noise (`resid_top_share`,
+written per record) is median 0.92 at L9–16, 0.70 at L17–24 (step 0: ≤ 0.02). Each draw is
+then mostly ±one direction, its groups are very tight (per-draw maximum `excess` ~21–27 vs
+~0.05–0.09 at step 0, `wiki_paragraph` L12), and **step143000 admits in 0 of 56 records at
+L9–16** under both nulls. That zero is the null, not the model. The release rule withholds
+every trained cell anyway (the control fails), so nothing trained is read.
+
+**What this does not show.** That no position-keeping null can pass: the two tried keep the
+mean only. The diagnosis was read on the control the null was set against, so a null designed
+from it would be post hoc on the same 56-record cells.
+
+**For the user (Blocked 11⁗).** Option (a) as built does not separate the opening from
+learned structure, and step 0 on v1 has now set or tested four constructions (Gaussian, cut
+at 8 / 32, two position nulls). The options are in `STATE.md`.
 
 ## Deleted and restored (was `FROZEN.md`)
 
