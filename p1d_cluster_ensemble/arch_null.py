@@ -299,36 +299,49 @@ def cloud_record(Y: np.ndarray, frame: str, n_draws: int, seed) -> Dict:
 # One model: forward every prompt, then every (prompt, layer, frame)
 # ---------------------------------------------------------------------------
 
-_G: Dict = {}   # set before the pool forks: hidden states, kept positions, seed
+#: Threading variables pinned to 1 in each worker. The workers are spawned,
+#: not forked: forked after torch's forward pass, KMeans' OpenMP hung every
+#: worker at load 0 (2026-10-02).
+_ONE_THREAD = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
-def _job(args: Tuple[str, int, str]) -> Tuple[str, Dict]:
-    prompt, L, frame = args
-    kept = np.asarray(_G["sets"][prompt]["kept"])
-    seed = [_G["seed"], V1_PASSAGES.index(prompt), L, FRAMES.index(frame)]
-    rec = cloud_record(_G["hidden"][prompt][L][kept], frame, _G["n_draws"], seed)
+def _job(args: Tuple[str, int, str, np.ndarray, np.ndarray, int, int]) -> Tuple[str, Dict]:
+    prompt, L, frame, Y, kept, seed, n_draws = args
+    rec = cloud_record(Y, frame, n_draws, [seed, V1_PASSAGES.index(prompt), L, FRAMES.index(frame)])
     for a in rec["arms"].values():
         for g in a["groups"]:
             g["members"] = kept[g["members"]].tolist()
     return prompt, {"layer": L, "frame": frame, **rec}
 
 
+def make_pool(workers: int):
+    """A spawn pool whose workers each use one BLAS / OpenMP thread (None for one worker)."""
+    if workers <= 1:
+        return None
+    import multiprocessing as mp
+    old = {v: os.environ.get(v) for v in _ONE_THREAD}
+    os.environ.update({v: "1" for v in _ONE_THREAD})
+    try:
+        return mp.get_context("spawn").Pool(workers)
+    finally:
+        for v, x in old.items():
+            if x is None:
+                os.environ.pop(v, None)
+            else:
+                os.environ[v] = x
+
+
 def run_model(model, ids: Dict[str, List[int]], sets: Dict[str, Dict], keys: Sequence[str],
-              workers: int, seed: int, n_draws: int) -> Dict[str, Dict]:
+              pool, seed: int, n_draws: int) -> Dict[str, Dict]:
     hidden, t0 = {}, time.monotonic()
     for k in keys:
         hidden[k], _ = forward(model, ids[k])
     t_fwd = time.monotonic() - t0
-    _G.clear()
-    _G.update(hidden=hidden, sets=sets, seed=seed, n_draws=n_draws)
-    jobs = [(k, L, f) for k in keys for L in LAYERS for f in FRAMES]
-    if workers > 1:
-        import multiprocessing as mp
-        with mp.get_context("fork").Pool(workers) as pool:
-            res = pool.map(_job, jobs, chunksize=1)
-    else:
-        res = [_job(j) for j in jobs]
-    _G.clear()
+    jobs = []
+    for k in keys:
+        kept = np.asarray(sets[k]["kept"])
+        jobs += [(k, L, f, hidden[k][L][kept], kept, seed, n_draws) for L in LAYERS for f in FRAMES]
+    res = pool.map(_job, jobs, chunksize=1) if pool is not None else [_job(j) for j in jobs]
     out = {k: {"layers": [], "seconds_forward_all": round(t_fwd, 1)} for k in keys}
     for k, r in res:
         out[k]["layers"].append(r)
@@ -514,6 +527,7 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
                          "frames": FRAMES, "min_cluster_sizes": MIN_CLUSTER_SIZES, "alpha": ALPHA,
                          "v1_max_tokens": V1_MAX_TOKENS, "comparison": comp}}
     mids = args.only or model_ids(args.models)
+    pool = make_pool(args.workers)
     for mid in mids:
         d = args.out / args.step / _mfile(mid)
         todo = [k for k in keys if not (d / f"{k}.json").exists()]
@@ -523,7 +537,7 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
         t0 = time.monotonic()
         model = load(mid, args.step)
         check_config(model)
-        res = run_model(model, ids, sets, todo, args.workers, args.seed, args.n_draws)
+        res = run_model(model, ids, sets, todo, pool, args.seed, args.n_draws)
         del model
         d.mkdir(parents=True, exist_ok=True)
         for k, r in res.items():
@@ -531,6 +545,9 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
                      kept=sets[k]["kept"], massive=sets[k]["massive"], meta=meta)
             (d / f"{k}.json").write_text(json.dumps(r) + "\n")
         print(f"done {mid} {len(todo)} prompts {time.monotonic() - t0:.0f} s", flush=True)
+    if pool is not None:
+        pool.close()
+        pool.join()
     return 0
 
 
