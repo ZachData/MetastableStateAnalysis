@@ -9,6 +9,8 @@ from collections import Counter
 
 import pytest
 
+pytestmark = pytest.mark.pure
+
 from p1d_cluster_ensemble import designed_prompts as dp
 
 #: Frozen 2026-10-02 before any forward pass. A change here is a new prompt set.
