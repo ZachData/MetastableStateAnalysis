@@ -815,6 +815,7 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     toks = {k: tok.convert_ids_to_tokens(ids[k]) for k in ids}
     sets = token_sets(toks, {m: {k: {int(p): tuple(v) for p, v in t.items()}
                                  for k, t in n["massive"].items()} for m, n in norms.items()})
+    (args.out / args.step).mkdir(parents=True, exist_ok=True)
     (args.out / args.step / "token_sets.json").write_text(json.dumps(
         {"comparison": comp, "sets": sets}, indent=1) + "\n")
     meta = {"git": _git_head(), "step": args.step, "seed": args.seed, "n_draws": args.n_draws,
