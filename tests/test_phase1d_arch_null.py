@@ -267,6 +267,7 @@ def test_group_rule_bar_is_the_re_inits_95th_max_and_replication_counts_seeds():
     summ = an.group_summary(rows, rep, range(10))
     c = [r for r in summ if (r["frame"], r["band"], r["size"]) == ("centred", "L1-8", 2)][0]
     assert c["seed0_learned"] == 1 and c["seed0_replicating"] == 1 and c["replicating_in_opening"] == 1
+    assert rep[0]["span_over_size"] == 1.0 and c["replicating_contiguous"] == 1
     # Refusal where the size's hdb_k cell failed.
     rows = an.group_rules(trained, bars, {("hdb_k_2", "centred", "L1-8")})
     assert all(r["learned"] is None for r in rows if r["layer"] == 1 and r["frame"] == "centred")

@@ -668,6 +668,7 @@ def replication(rows: Sequence[Dict], seeds: Sequence[int], base: int = 0) -> Li
                 for sd in seeds if sd != base}
         hits = [sd for sd, j in best.items() if j >= REPLICATE_JACCARD]
         out.append({**{k: r[k] for k in ("prompt", "layer", "frame", "size", "members", "s", "bar")},
+                    "span_over_size": round((max(r["members"]) - min(r["members"]) + 1) / len(r["members"]), 2),
                     "best_jaccard": {sd: round(j, 3) for sd, j in best.items()}, "hits": hits,
                     "replicates": len(hits) >= REPLICATE_GROUP_SEEDS})
     return out
@@ -691,6 +692,7 @@ def group_summary(rows: Sequence[Dict], rep: Sequence[Dict], seeds: Sequence[int
                             "seed0_learned": len(rp), "seed0_replicating": len(ok),
                             "hits_by_seed": {sd: sum(sd in r["hits"] for r in rp) for sd in seeds if sd != 0},
                             "replicating_in_opening": sum(min(r["members"]) < OPENING for r in ok),
+                            "replicating_contiguous": sum(r["span_over_size"] == 1 for r in ok),
                             "replicating_median_size": float(np.median([len(r["members"]) for r in ok])) if ok else None})
     return out
 
@@ -937,6 +939,9 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
            "failed_cells": sorted(failed), "alpha": ALPHA, "tails": LUMPIER_TAIL,
            "replicate": {"jaccard": REPLICATE_JACCARD, "group_seeds": REPLICATE_GROUP_SEEDS,
                          "cloud_seeds": REPLICATE_CLOUD_SEEDS}, "flagged_seeds": FLAGGED_SEEDS,
+           # Reported beside the rules (added after the first read; rules unchanged): median z_G
+           # by kind, since "beyond the re-inits" is not "lumpier than its own Gaussian".
+           "median_z": {"step0": raw_table(recs0), "trained": raw_table(rect, kinds=("init",))},
            "cloud_summary": csum, "group_summary": gsum, "seed0_learned_groups": rep}
     (args.out / "trained.json").write_text(json.dumps(res, indent=1) + "\n")
     (args.out / "trained_rows.json").write_text(json.dumps({"cloud": crows, "group": grows}) + "\n")
@@ -954,6 +959,7 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
         print(f"  {r['frame']:8s} {r['band']:7s} size {r['size']}: groups s0 {r['groups_by_seed'][0]:3d} "
               f"admitted s0 {r['admitted_by_seed'][0]:3d} learned {' '.join(f'{v:3d}' for v in r['learned_by_seed'].values())}"
               f" | repl {r['seed0_replicating']}/{r['seed0_learned']} (opening {r['replicating_in_opening']}, "
+              f"contiguous {r['replicating_contiguous']}, "
               f"median size {r['replicating_median_size']}){' REFUSED' if r['refused'] else ''}")
     return 0
 
