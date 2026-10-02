@@ -336,7 +336,10 @@ def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
     `gaussian_null.null_record` does, and refits the null to it; for the
     Gaussian the draws are then the same ones `gaussian_null` makes for this
     seed. ``null_kind`` other than ``"gaussian"`` keeps a per-token mean
-    (`position_null`, Blocked 11″) and needs the rows' absolute ``positions``.
+    (`position_null`, Blocked 11‴): ``Y`` must then be the *un-normalised*
+    rows, the null is fitted and drawn on them, and the frame is applied to
+    each draw (and to the calibration's pseudo-data) afterwards; it needs
+    the rows' absolute ``positions``.
     """
     from . import position_null
     if frame not in FRAMES:
@@ -346,24 +349,27 @@ def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
     pos = np.arange(len(Y)) if positions is None else np.asarray(positions)
     Z, info = frame_vectors(Y, frame)
     Zs = span_coordinates(Z)
-    if calibrate:
-        cal_rng = np.random.default_rng(seed + CALIBRATE_SEED_OFFSET)
-        if null_kind == "gaussian":
-            Zs = span_coordinates(gaussian_draw(Zs, cal_rng))
-        else:
-            mu, R, _ = position_null.fit(Zs, pos, null_kind)
-            Zs = span_coordinates(position_null.draw(mu, R, cal_rng))
-        info = {**info, "calibrate": True}
     if null_kind != "gaussian":
-        mu, R, fit_info = position_null.fit(Zs, pos, null_kind)
+        Ys = span_coordinates(Y)
+        if calibrate:
+            mu, R, _ = position_null.fit(Ys, pos, null_kind)
+            Ys = span_coordinates(position_null.draw(
+                mu, R, np.random.default_rng(seed + CALIBRATE_SEED_OFFSET)))
+            Zs = span_coordinates(position_null.apply_frame(Ys, frame))
+        mu, R, fit_info = position_null.fit(Ys, pos, null_kind)
         fit_info.pop("cv", None)
         info = {**info, "position_null": fit_info}
+    elif calibrate:
+        Zs = span_coordinates(gaussian_draw(Zs, np.random.default_rng(seed + CALIBRATE_SEED_OFFSET)))
+    if calibrate:
+        info = {**info, "calibrate": True}
     obs = {m: layer_groups(Zs, m) for m in min_cluster_sizes}
     null = {m: {"k": [], "shipped_k": [], "shipped_tie_artefacts": [],
                 **{s: [] for s in STATISTICS}} for m in min_cluster_sizes}
     rng = np.random.default_rng(seed)
     for _ in range(int(n_draws)):
-        X = gaussian_draw(Zs, rng) if null_kind == "gaussian" else position_null.draw(mu, R, rng)
+        X = (gaussian_draw(Zs, rng) if null_kind == "gaussian" else
+             position_null.apply_frame(position_null.draw(mu, R, rng), frame))
         for m in min_cluster_sizes:
             _, rows, check = layer_groups(X, m)
             null[m]["k"].append(len(rows))
@@ -399,7 +405,12 @@ def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
 def _job(args: Tuple) -> Dict:
     run_dir, layer, frame, n_draws, seed, calibrate, min_position = args[:7]
     null_kind = args[7] if len(args) > 7 else "gaussian"
-    acts = np.load(Path(run_dir) / "activations.npz")["activations"]
+    with np.load(Path(run_dir) / "activations.npz") as z:
+        acts = z["activations"]
+        if null_kind != "gaussian":
+            # Position nulls fit and draw before normalisation (Blocked 11‴):
+            # raw = norms * activations (`p1_io`).
+            acts = acts.astype(np.float64) * z["norms"].astype(np.float64)[..., None]
     tokens = run_tokens(Path(run_dir))
     if len(tokens) != acts.shape[1]:
         raise ValueError(f"{run_dir}: {len(tokens)} token strings for "
@@ -432,14 +443,15 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--n-draws", type=int, default=200)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--calibrate", action="store_true",
-                    help="run on one Gaussian draw of each layer instead of the tokens")
+                    help="run on one draw of each layer's own null (refitted to it) instead of the tokens")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--min-position", type=int, default=0,
                     help="diagnostic arm: test only kept tokens at absolute position >= this "
                          "(drops the prompt's opening; `status-1d.md` \"Position\")")
-    ap.add_argument("--null", default="gaussian", choices=("gaussian", "prefix", "smooth"),
-                    help="gaussian (#122), or keep position: prefix (primary) / smooth "
-                         "(`position_null`, `status-1d.md` \"Blocked 11″ decided\")")
+    ap.add_argument("--null", default="gaussian", choices=("gaussian", "smooth", "prefix"),
+                    help="gaussian (#122), or keep position, fitted and drawn before "
+                         "normalisation: smooth (primary) / prefix (arm) (`position_null`, "
+                         "`status-1d.md` \"Position-keeping null\")")
     add_holdout_args(ap)
     args = ap.parse_args(argv)
 
