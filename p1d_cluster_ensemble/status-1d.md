@@ -2118,18 +2118,22 @@ definition; their code and results stay (each is a row in "Where 1d stands").
 
 **Done.** Scan: `lit-1d.md` §10. Rules for units 1–4 and the token rules (T1–T5):
 `design-1d.md` "The programme". Nothing was run on a model; three checks were read off
-the tree and are the scan's [M] rows (inputs named there):
+the tree. Their numbers and inputs are the scan's [M] rows (`lit-1d.md` §10):
 
-| check | result | changes |
+| check | row | changes |
 |---|---|---|
-| PolyPythias 410m on the Hub | seeds 1–9 have `step0` and `step143000`; seeds 3, 4 are the paper's outliers | unit 2 has 10 real inits and 10 trained endpoints |
-| Pythia-410m `step0` weight σ | small_init 0.0198, wang_init 0.0026 on `attention.dense` and `dense_4h_to_h`; transformers' `init_weights()` uses 0.02 everywhere | unit 2's re-init writes Pythia's two σ; `init_weights()` rejected |
-| norm / median, v1 deduped batch | position 0 20–50× at L8–20 in 7 of 7 trained prompts; the first `\n` 18–41× in 2 of 7; bulk ≤ ~3×; step 0 ≤ 1.3× | T1 excludes position 0 everywhere; T2 excludes any token over 10× in any compared run |
+| PolyPythias 410m on the Hub | 1, 1a | unit 2 has 10 real inits and 10 trained endpoints |
+| Pythia-410m `step0` weight σ against transformers' `init_weights()` | 2a | unit 2's re-init writes Pythia's two σ; `init_weights()` rejected |
+| norm / median on the v1 deduped batch | 4a | T1 excludes position 0 everywhere; T2 excludes any token over 10× in any compared run |
 
-**For the user, before unit 1 runs:** the design's "Worth challenging" choices are in its
-PR. Most consequential: T1 drops position 0 at step 0 too, which changes the control
-four constructions were judged on; and unit 3's family is the merge tree, not Markov
-stability. **Next: unit 1 (move the text).**
+**`/challenge-pr` on #129** (accept with changes; answered on the PR; every finding taken):
+cross-model statistics are standardised within each cloud against its own Gaussian first
+(`design-1d.md` "Within-cloud scale"); unit 2's fallback refuses rather than reading a
+p-floor, and its first check is per band; `sullivan_ballou`'s continuation (550 tokens) is
+too short for P = 1000 and is dropped as a preamble; unit 1 reads "moves" against each
+group's own subsample floor, classifies groups per preamble (moves / preamble-dependent /
+opening-bound / context-bound), keeps one token set at every P, and runs the designed
+prompts first. **Next: unit 1 (move the text).**
 
 ## Deleted and restored (was `FROZEN.md`)
 

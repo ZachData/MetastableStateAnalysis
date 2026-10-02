@@ -591,6 +591,13 @@ needs the user to enable it on GitHub.
   token), moving the boundary moves the effect; check at the new boundary, on data the fix
   was not tuned on, before calling it removed.** (The first write-up then overstated the
   other way, "whatever M is"; the effect also weakens with M, `/challenge-pr` on #126.)
+- 2026-10-02 (#129, unit 0 design, caught by `/challenge-pr` before any run): unit 2's
+  fallback to the 10 real inits kept three "rank p ≤ 0.05" rules, whose floor at N = 10 is
+  1/11 = 0.091. Every cell would have read "not learned". The same design compared raw
+  `S_C / |C|` (units of 1 / distance) between trained and random-init clouds, so it would
+  have measured tightness, not groups. Rule unchanged: **compute the floor of every rule
+  under every fallback the design names**, and before comparing a statistic across
+  models, write down its units.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
@@ -831,6 +838,12 @@ a wrong premise, the check inherits it.
   the floor without writing out what partial R² is made of. Before
   selecting units on a fit statistic, write the statistic in terms of the
   estimate; if the estimate is in it, the selection is on the outcome.
+- 2026-10-02 (#129): the design said the long-prompt continuations were "long
+  enough for 1000 tokens" without opening `provenance.json` (`sullivan_ballou`'s
+  is 550). It also cited a 0.5 Jaccard bar as "the identity control's recall",
+  which was 0.39. Both were written from memory of a file. A claim about a
+  committed file's contents gets checked against the file in the same session
+  it is written.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

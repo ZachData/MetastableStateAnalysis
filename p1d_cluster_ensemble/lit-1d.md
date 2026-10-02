@@ -105,7 +105,7 @@ is a cluster". That change is the user's to make, not the scan's.
 
 - Ben-David, von Luxburg & Pál 2006 as primary text (the PDF host failed); Lange et al. 2004 (PubMed blocked by a captcha).
 - `2509.25040` and `2410.23228` as primary text: whether the Gegenbauer index gives a count for d = 1024 at Pythia's β.
-- `2507.17657`: how it handles causal masks, and whether its metastable sets use PCCA or eigengaps.
+- ~~`2507.17657`: how it handles causal masks, and whether its metastable sets use PCCA or eigengaps.~~ Read 2026-10-02, §10 row 10.
 - `2601.21366` (localisation of the mean-field landscape with the MLP) and `2608.08922` (clustered attractors; its "overlap gap" condition may be a testable separation criterion). Both were [N] in `p1_mstate_tracking/lit-1.md`.
 - Fridlyand & Dudoit 2002 (Clest): the test form of normalisation.
 
