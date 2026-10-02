@@ -272,3 +272,21 @@ def test_group_rule_bar_is_the_re_inits_95th_max_and_replication_counts_seeds():
     rows = an.group_rules(trained, bars, {("hdb_k_2", "centred", "L1-8")})
     assert all(r["learned"] is None for r in rows if r["layer"] == 1 and r["frame"] == "centred")
     assert an.replication(rows, range(10)) == []
+
+
+def test_group_bars_refuse_a_non_finite_bar():
+    """3+ re-inits whose largest s is infinite make the linear quantile NaN (#132 finding 3)."""
+    re = [f"reinit:{i}" for i in range(40)]
+    recs0 = [_grec(r, {(1, "centred", 2): [([1, 2], None if i < 3 else 1.0)]}) for i, r in enumerate(re)]
+    with pytest.raises(ValueError, match="non-finite"):
+        an.group_bars(recs0, re)
+
+
+def test_position_tightness_ranks_a_run_tight_and_a_spread_group_loose():
+    kept = {"wiki_paragraph": list(range(1, 201))}
+    rep = [{"prompt": "wiki_paragraph", "members": [50, 51, 52, 53]},
+           {"prompt": "wiki_paragraph", "members": [1, 70, 140, 200]}]
+    an.position_tightness(rep, kept)
+    assert rep[0]["spread_pct"] < 0.01 and rep[0]["close3"]
+    assert rep[1]["spread_pct"] > 0.9 and not rep[1]["close3"]
+    assert 0 < rep[0]["close3_random"] < 0.5 and not rep[0]["bulk"]

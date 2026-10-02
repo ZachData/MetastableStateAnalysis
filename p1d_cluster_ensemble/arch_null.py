@@ -617,7 +617,13 @@ def group_bars(recs0: Sequence[Dict], reinits: Sequence[str]) -> Dict[Tuple, flo
     bad = {k: len(v) for k, v in mx.items() if len(v) != len(reinits)}
     if bad:
         raise ValueError(f"group bars need every re-init: {list(bad.items())[:3]}")
-    return {k: float(np.quantile(np.asarray(v), 1 - ALPHA)) for k, v in mx.items()}
+    bars = {k: float(np.quantile(np.asarray(v), 1 - ALPHA)) for k, v in mx.items()}
+    # 3+ infinite maxima make numpy's linear quantile NaN (inf - inf); NaN would mark every
+    # group not learned without a word (`/challenge-pr` on #132, finding 3). Refuse instead.
+    bad = [k for k, v in bars.items() if not np.isfinite(v)]
+    if bad:
+        raise ValueError(f"refusing: a non-finite group bar at {bad[:3]} ({len(bad)} in all)")
+    return bars
 
 
 def group_rules(trained: Sequence[Dict], bars: Dict[Tuple, float], failed: set) -> List[Dict]:
@@ -674,6 +680,32 @@ def replication(rows: Sequence[Dict], seeds: Sequence[int], base: int = 0) -> Li
     return out
 
 
+#: A group covering at least this share of its prompt's kept tokens is "bulk" (reported apart).
+BULK_SHARE = 0.25
+#: Random same-size groups per replicating group for `position_tightness`.
+TIGHT_DRAWS = 2000
+
+
+def position_tightness(rep: Sequence[Dict], kept: Dict[str, Sequence[int]], seed: int = 0) -> None:
+    """
+    Per group in ``rep`` (in place): its position spread (max − min) as a
+    percentile among ``TIGHT_DRAWS`` random groups of the same size from the
+    prompt's kept positions (``spread_pct``; small = tighter than chance),
+    whether two members are within 3 positions (``close3``) and the random
+    groups' rate of that (``close3_random``), and ``bulk``
+    (`/challenge-pr` on #132, finding 1: contiguity alone cannot test position).
+    """
+    rng = np.random.default_rng(seed)
+    for r in rep:
+        pos = np.asarray(kept[r["prompt"]])
+        m = np.sort(np.asarray(r["members"]))
+        R = np.sort(np.stack([rng.choice(pos, m.size, replace=False) for _ in range(TIGHT_DRAWS)]), axis=1)
+        r["spread_pct"] = round(float(np.mean(R[:, -1] - R[:, 0] <= m[-1] - m[0])), 4)
+        r["close3"] = bool(np.diff(m).min() <= 3)
+        r["close3_random"] = round(float(np.mean(np.diff(R, axis=1).min(axis=1) <= 3)), 4)
+        r["bulk"] = bool(m.size >= BULK_SHARE * pos.size)
+
+
 def group_summary(rows: Sequence[Dict], rep: Sequence[Dict], seeds: Sequence[int]) -> List[Dict]:
     """Per (frame, band, size): groups, admitted, learned (per seed), seed 0's learned that replicate."""
     out = []
@@ -693,6 +725,12 @@ def group_summary(rows: Sequence[Dict], rep: Sequence[Dict], seeds: Sequence[int
                             "hits_by_seed": {sd: sum(sd in r["hits"] for r in rp) for sd in seeds if sd != 0},
                             "replicating_in_opening": sum(min(r["members"]) < OPENING for r in ok),
                             "replicating_contiguous": sum(r["span_over_size"] == 1 for r in ok),
+                            "replicating_bulk": sum(bool(r.get("bulk")) for r in ok),
+                            "replicating_learned_not_admitted": sum(r["s"] is not None and r["s"] <= 1 for r in ok),
+                            "replicating_spread_top5": sum(r.get("spread_pct", 1.0) <= 0.05 for r in ok),
+                            "replicating_close3": sum(bool(r.get("close3")) for r in ok),
+                            "replicating_close3_random_mean": round(float(np.mean([r["close3_random"] for r in ok])), 3)
+                            if ok and "close3_random" in ok[0] else None,
                             "replicating_median_size": float(np.median([len(r["members"]) for r in ok])) if ok else None})
     return out
 
@@ -902,6 +940,24 @@ def check_cmd(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
+def input_names(ids: Dict[str, List[int]]) -> Dict:
+    """
+    The exact inputs (`CLAUDE.md` "Name the input"; `/challenge-pr` on #132,
+    finding 5): sha256 of each prompt's token ids as run, and each
+    checkpoint's HF snapshot commit as cached (None if the cache has no ref).
+    """
+    import hashlib
+    hub = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub"
+    snap = {}
+    for sd in (0, *POLY_SEEDS):
+        for st in ("step0", TRAINED_STEP):
+            ref = hub / f"models--{repo_of(sd).replace('/', '--')}" / "refs" / st
+            snap[f"{repo_of(sd)}@{st}"] = ref.read_text().strip() if ref.exists() else None
+    return {"prompt_token_sha256": {k: hashlib.sha256(json.dumps(v).encode()).hexdigest()[:16]
+                                    for k, v in ids.items()},
+            "snapshots": snap}
+
+
 def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     """The trained cells; refuses unless the first check was re-run on the trained union's records."""
     ap = argparse.ArgumentParser(prog="arch_null read")
@@ -929,6 +985,7 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     csum = cloud_summary(crows, seeds)
     grows = group_rules(rect, group_bars(recs0, reinits), failed)
     rep = replication(grows, seeds)
+    position_tightness([r for r in rep if r["replicates"]], {r["prompt"]: r["kept"] for r in rect})
     gsum = group_summary(grows, rep, seeds)
     tok = _tok()
     ids = prompt_ids(tok)
@@ -936,6 +993,7 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     for r in rep:
         r["tokens"] = [strs[r["prompt"]][i] for i in r["members"]]
     res = {"git": _git_head(), "records_git": sorted({r["meta"]["git"] for r in recs0 + rect}),
+           "inputs": input_names(ids),
            "failed_cells": sorted(failed), "alpha": ALPHA, "tails": LUMPIER_TAIL,
            "replicate": {"jaccard": REPLICATE_JACCARD, "group_seeds": REPLICATE_GROUP_SEEDS,
                          "cloud_seeds": REPLICATE_CLOUD_SEEDS}, "flagged_seeds": FLAGGED_SEEDS,
@@ -959,7 +1017,9 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
         print(f"  {r['frame']:8s} {r['band']:7s} size {r['size']}: groups s0 {r['groups_by_seed'][0]:3d} "
               f"admitted s0 {r['admitted_by_seed'][0]:3d} learned {' '.join(f'{v:3d}' for v in r['learned_by_seed'].values())}"
               f" | repl {r['seed0_replicating']}/{r['seed0_learned']} (opening {r['replicating_in_opening']}, "
-              f"contiguous {r['replicating_contiguous']}, "
+              f"contiguous {r['replicating_contiguous']}, spread top 5 % {r['replicating_spread_top5']}, "
+              f"close3 {r['replicating_close3']} (random {r['replicating_close3_random_mean']}), "
+              f"bulk {r['replicating_bulk']}, s<=1 {r['replicating_learned_not_admitted']}, "
               f"median size {r['replicating_median_size']}){' REFUSED' if r['refused'] else ''}")
     return 0
 
