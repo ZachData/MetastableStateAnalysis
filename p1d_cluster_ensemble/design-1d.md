@@ -102,6 +102,20 @@ step143000: their category / entity groups should **move**. If they do not, the
 readout cannot see content that moves, and v1 is not read until that is understood.
 These are not v1 cells; reading them first is the point.
 
+**Operational reading, fixed 2026-10-02 before any forward pass** (`move_text.py`
+docstring holds the full text; the designed prompts' rule is in `designed_prompts.py`,
+committed alone before the runner):
+
+| point | reading |
+|---|---|
+| T2's "runs being compared" | every condition of one (passage, step); not across steps, so the step-0 check reads no trained run |
+| T3 in the passage cloud | first occurrence **within the passage**, so the token set is the same at every P; the whole-sequence cloud dedupes over the whole sequence |
+| `homer_iliad` | its first 512 tokens (of 562), what every v1 run read; P = 0 reproduces the stored v1 activations (max abs 3e-8, wiki and homer, step 0) |
+| opening group | the P = 0 group holding the earliest kept passage offset, if it holds an offset < 8 |
+| (c) holds | under every preamble, at every P > 0, primary join, the whole-sequence cloud's earliest kept position is in a group |
+| step-0 verdict | centred, size 2, per passage the opening group's modal class over L1–24: **pass** if opening-bound in ≥ 4 of 7 passages; **stop** if moves in ≥ 4; else neither (the user reads it) |
+| gate | `run` refuses a trained v1 step until both checks pass in `first_checks.json`, unless overridden with a reason written into every record |
+
 **Outcomes** (not registered):
 
 | outcome | reading | consequence |

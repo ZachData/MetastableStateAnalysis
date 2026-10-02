@@ -215,3 +215,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-01 | 1d Blocked 11″ recorded; STATE trimmed; HDBSCAN upstream draft (docs only) | 43 | 178k | 5.1M | 52k | #127 |
 | 2026-10-02 | 1d position-keeping null, 11‴ form, run on v1 (before challenge-pr) | 58 | 174k | 7.1M | 43k | #128 |
 | 2026-10-02 | 1d Blocked 11⁗ unit 0: lit scan + design (programme rules, token rules); #124 merge fix (before challenge-pr) | 47 | 161k | 4.8M | 46k | #129 |
+| 2026-10-02 | 1d unit 1: move the text (designed prompts, runner, both first checks, trained v1) (before challenge-pr) | 93 | 203k | 13.2M | 39k | #130 |
+  Over 2× the median (5.1M): build, three runs and the write-up in one session, and ~25 calls were
+  background-run notifications (one per finished passage), each re-reading the full context. A
+  monitor that reports only the end of each stage would have cut most of them.

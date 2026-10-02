@@ -2003,7 +2003,7 @@ step 0, which does not yet separate learned content from learned position.
 | is HDBSCAN's shipped call reproducible? | no: on float32 it drifted (fixed, float64); its tied edges are ordered by row order, 42 % of trained groups are tie artefacts (replaced by the level-set tree) | "Float64 distances", "Admission" |
 | does the per-group definition pass its control? | no: step 0 admits the prompt's opening (near-uniform attention); a fixed cut at 32 removes it on v1 but not at length; the position-keeping null (11‴) fails all 6 cells | "Admission", "Position", "The M = 32 cut on the long prompts", "Position-keeping null" |
 | do trained groups survive the opening's removal? | yes, at v1 and at length (L17–24 withheld: the null is off nominal there) | same |
-| content or position? | open: option (a) did not answer it (its control fails; on trained L9–16 its draws are token 0's massive activation). Next: 11⁗'s programme, rules fixed in `design-1d.md` "The programme" (unit 0 done) | "Position-keeping null", "Unit 0" |
+| content or position? | not the start of the context: moved behind a preamble, trained groups mostly move with the passage (centred size 2: 0.95 / 0.89 / 0.74 by band; fixed bar 0.5: 0.89 / 0.81 / 0.65), step 0's do not (0.28 / 0.09 / 0.08), its opening is opening-bound in 7 of 7 passages. Relative positions mean a preamble cannot test absolute position. "Learned" is unit 2's | "Unit 1: move the text" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2142,6 +2142,92 @@ too short for P = 1000 and is dropped as a preamble; unit 1 reads "moves" agains
 group's own subsample floor, classifies groups per preamble (moves / preamble-dependent /
 opening-bound / context-bound), keeps one token set at every P, and runs the designed
 prompts first. **Next: unit 1 (move the text).**
+
+### Unit 1: move the text (2026-10-02; branch `claude/p1d-move-text`)
+
+**Built, in this order (git shows it):** the three designed-content prompts and their
+readout rule, frozen alone before any forward pass (`designed_prompts.py`, hash
+`ae6a4312126c`, `4c3fded`); the runner with its first-check rules and gate (`move_text.py`,
+`9718cb7`; operational readings in `design-1d.md` "Unit 1"); then the runs. P = 0
+reproduces the stored v1 activations (max abs 3e-8, step 0, wiki and homer).
+**Inputs:** 410m `step0` / `step143000`; the 7 v1 passages (`homer_iliad` at its first 512
+of 562 tokens, as every v1 run read it); preambles = continuations of `wiki_paragraph`,
+`hdbscan_code`, `latex_monograph` (`LONG_PROMPTS_HASH` in each record); P 0 / 50 / 300 /
+1000; joins EOD (primary) and `\n\n`; L1–24, both frames, sizes 2 and 4. 290 forward passes,
+~16 min wall at 14 workers. Output `data/p1d/move_text_2026-10-02/` (`run_first_checks.sh`,
+`first_checks.json`, `report.json`); activations for P ∈ {0, 1000}, first preamble, EOD on
+`HDD_1TB/mets_data/p1d_move_text_2026-10-02/`.
+
+**T2 found** (> 10× median at L2–20): at step 0 nothing; at step143000 passage offset 0 in
+every passage (ratio 46–50; excluded anyway) and the first `\n` in `hdbscan_code` (offset 34)
+and `latex_monograph` (offset 10), ratio 41, dropped from every condition of those passages.
+
+**First check 1, designed prompts (step143000, centred, size 2): pass.**
+
+| prompt | content groups at P = 0 (L1–24) | step 0 baseline | classified: moves / other | share moves |
+|---|---|---|---|---|
+| category list | 75 | 1 | 56 / 10 (1 floor 0) | 0.85 |
+| prose / code | 257 | 68 | 101 / 12 (91 floor 0) | 0.89 |
+| entities | **0** | 13 | — | — |
+
+The category list gives clean groups (24 animals, 24 body parts, 11–23 colours) at most
+layers, which move. **The entity prediction failed**: the trained model puts all three
+people's name and title tokens into one group (e.g. L4: teacher 2, sailor 3, surgeon 3),
+names-as-a-kind, not one group per person. Step 0's 13 are not entities: they are its
+opening group (~20 tokens), which holds the three early "teacher" names; rule 1's purity
+is over labelled members only (`LESSONS.md` 6).
+
+**First check 2, step 0's opening (v1, centred, size 2): pass.** The opening group is
+opening-bound in 18–23 of 24 layers in every passage (7 of 7 modal). It is specific: of
+step 0's other classified groups, 74 of 374 move (178 context-bound, 122 preamble-dependent;
+336 floor 0 set apart, finding 1 below): at step 0 almost nothing moves, and the opening
+differs from the rest by sitting at the start. Its members' cosine to P = 0 at P = 1000 is
+0.88 (median), against ≥ 0.97 for all tokens, and its best Jaccard at P > 0 is 0.14
+against a floor `J0` of 0.59.
+
+**Trained v1 (read after both checks passed, through the gate).** Stable P = 0 groups by
+class, pooled over the 7 passages and the band's layers (not independent). **Corrected after
+`/challenge-pr` on #130, finding 1:** a stable group can have floor `J0 = 0`, and then "best
+Jaccard ≥ J0" cannot fail; 336 of step 0's first 412 "moves" were such groups. They are now
+counted apart (`floor 0`, `move_text.group_classes`), and a fixed bar of 0.5 is reported
+beside. Recomputed from the stored records (no new forward pass); the pre-fix files are kept
+as `*_before_floor_fix.json`.
+
+| frame / size | band | step 0: classified, share moves (own floor / bar 0.5) | step143000: classified, share moves (own floor / bar 0.5) | floor 0, step 0 / step143000 | `\n\n` arm, step143000 (own / 0.5) | cos P=1000 vs 0, step 0 / step143000 |
+|---|---|---|---|---|---|---|
+| centred / 2 | L1–8 | 156, 0.28 / 0.10 | 347, **0.95 / 0.89** | 99 / 156 | 0.91 / 0.79 | 0.99 / 0.99 |
+| centred / 2 | L9–16 | 205, 0.09 / 0.02 | 370, **0.89 / 0.81** | 116 / 134 | 0.84 / 0.68 | 0.98 / 0.99 |
+| centred / 2 | L17–24 | 171, 0.08 / 0.00 | 231, **0.74 / 0.65** | 121 / 128 | 0.60 / 0.46 | 0.97 / 0.98 |
+| centred / 4 | L17–24 | 40, 0.00 / 0.00 | 110, 0.46 / 0.58 | 16 / 9 | — | 0.97 / 0.98 |
+| raw / 2 | L1–8, 9–16, 17–24 | 0.31, 0.16, 0.07 (own) | 0.95, 0.92, 0.75 (own) | — | — | — |
+
+Opening-bound at step143000: 0, 0, 2 (centred / 2 by band). The trained opening group, after
+T1: no opening group at most layers in 4 passages, *moves* in 2, unstable in 1 (modal). The
+first checks are unchanged by the fix (step 0: 7 of 7 opening-bound; designed: 0.85 and 0.89
+of classified content groups move, 1 and 91 floor-0 content groups set apart).
+**Reading: design outcome row 1.** Step 0's groups do not move (0–28 % by band, ≤ 10 % at the
+fixed bar); trained groups mostly do, less so late (L17–24) and under the `\n\n` join.
+
+**Caveats, in order of weight.**
+1. **Per-token cosine does not measure the push** (finding 2). Step 0 and trained states move
+   about equally (median cosine to P = 0 ≥ 0.96 in every band, both steps, both joins), yet
+   step 0's groups break and trained groups survive: a group's survival depends on its
+   spacing in its own cloud, not on how far each state moved. *Retracted:* the first
+   write-up's "moves is near the default" read this cosine as the push and was carried by
+   the floor-0 defect. A matched-cosine random-direction baseline (finding 2) is not built.
+2. **What a preamble can test** (finding 3). Pythia's positions are relative, so a preamble
+   tests attachment to the start of the context, not absolute position; after EOD a trained
+   model can treat the passage as a new document. The `\n\n` join, where it continues one
+   context, is the harder test: 0.84 / 0.60 move at L9–16 / L17–24 against EOD's 0.89 / 0.74.
+3. **The designed check shows "moves" fires on content, not that it selects content**
+   (finding 4): their non-content groups also move. Specificity rests on step 0 (above).
+4. Size 4 at L17–24 moves about half the time; pooled shares count dependent records; the
+   step-0 check's T2 union is per step (step 0 had no massive token).
+
+**Re-run:** `data/p1d/move_text_2026-10-02/run_first_checks.sh` (resumable; the trained step
+passes the gate on `first_checks.json`), then `python -m p1d_cluster_ensemble.move_text
+report --out <dir>`. Tests: `tests/test_phase1d_move_text.py`,
+`tests/test_phase1d_designed_prompts.py`. **Next: unit 2 (architecture null).**
 
 ## Deleted and restored (was `FROZEN.md`)
 

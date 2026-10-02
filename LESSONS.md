@@ -598,6 +598,18 @@ needs the user to enable it on GitHub.
   have measured tightness, not groups. Rule unchanged: **compute the floor of every rule
   under every fallback the design names**, and before comparing a statistic across
   models, write down its units.
+- 2026-10-02 (#130, unit 1, move the text; caught by `/challenge-pr`): "moves" was "best
+  Jaccard ≥ the group's own subsample floor J0", and a group could be stable (median ≥ 0.5)
+  with J0 = 0, which no match can fail: 336 of step 0's 412 "moves" were such groups. The
+  author then explained the inflated step-0 share with a story (the preamble barely moves
+  the states, median cosine ≥ 0.96, so "moves" is the default) and wrote it into STATE and
+  the PR as the main caveat. With the floor fixed, step 0 moves 0.08–0.28 by band against
+  trained 0.74–0.95, at equal cosine. Rules: **a rule that compares against a data-driven
+  threshold has a test for the threshold's degenerate value (0, 1, empty)**, and **a number
+  that surprises gets its producer checked before it gets an explanation**. Same unit,
+  frozen designed-prompt rule 1 measured purity over labelled members only, so step 0's
+  ~20-token opening group, holding the three early "teacher" names, counted as 13 entity
+  content groups: a purity rule names its denominator.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
