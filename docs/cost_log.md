@@ -204,3 +204,13 @@ running median of the rows above it gets a line under the table saying why.
   persisted and read three times at the start (30 kB, 150 lines of long cells).
 
 | 2026-10-01 | Mean-field reading list cross-referenced (docs only, before challenge-pr) | 29 | 170k | 3.7M | 32k | #124 |
+| 2026-10-01 | 1d identity-weights positive control: lit scan, design, simulator, admission (before challenge-pr) | 101 | 320k | 20.5M | 86k | #125 |
+
+- #125 is over 2× the running median total context (20.5M). Why: one prompt asked for
+  three units' worth (lit scan, design, simulator plus a 1.5 h batch), so context grew
+  to 320k and every wait re-read it; about 15 calls were polls or waits on the batch, and
+  the batch had to be restarted once (the float-floor defect). The lit scan + design was
+  a natural PR boundary that was not taken, because the run was in the same request.
+| 2026-10-01 | 1d Blocked 11′: M = 32 cut on the long prompts (before challenge-pr) | 69 | 143k | 7.2M | 32k | #126 |
+| 2026-10-01 | 1d Blocked 11″ recorded; STATE trimmed; HDBSCAN upstream draft (docs only) | 43 | 178k | 5.1M | 52k | #127 |
+| 2026-10-02 | 1d position-keeping null, 11‴ form, run on v1 (before challenge-pr) | 58 | 174k | 7.1M | 43k | #128 |

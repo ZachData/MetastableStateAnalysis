@@ -153,6 +153,15 @@ world moves, nobody updates the line, and the next session acts on it.
   "has finished (four JSONs)"; the directory held one, `calibrate` stopped at
   126/384, the other two never started. Start step 3 (check the tree) caught
   it before any report was written against a missing calibration.
+- 2026-10-01 (1d Blocked 11″): option (a) was quoted at "~7 h" in `STATE.md`,
+  `design-1d.md` and `status-1d.md` across four decisions (#108 to #126). The
+  figure was `attention_null`'s (the model's block on every draw); the
+  admission null it would replace is a Gaussian draw, ~12 min a pass on v1.
+  Found only on opening `admit.py` to build it. The same session found that
+  `STATE.md`'s "Now" cell (~30 KB, one table row) was the only record of the
+  user's 2026-09-25 directions for 1d: a 150-line cap counted lines, not bytes.
+  Moved to `status-1d.md`. Rule: a cost carried into a decision names the
+  code path it was measured on.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -175,6 +184,16 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-01, a guard on the input that did not cover its null: 1d's
+  identity simulator refuses snapshots whose smallest `1 − cos` is below a
+  float floor, but a nearly collapsed snapshot's matched-covariance Gaussian
+  draws are as tight as it is, and one fell below float32 resolution. The
+  level-set code refused (good), but the batch died at its first record, and
+  the pool's traceback again did not name the input (the 2026-09-30 rule,
+  not applied to the new driver). It now records the snapshot as skipped
+  with the reason. Rule: a floor on an input bounds everything derived from
+  it at the same scale (its null draws, its calibration), or is checked
+  there too.
 - 2026-09-30, a library's output: scipy 1.15's average linkage returned a
   tree that merged a node with itself (a tied co-association, 1d's vote
   rules; `status-1d.md` "Vote rules"). `consensus_partition` never checked
@@ -380,6 +399,32 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-02, 1d's position-keeping null, 11‴ form: the fix ("fit and draw on the
+  un-normalised rows") was recommended on a synthetic whose rows all have similar norms.
+  On trained Pythia, token 0's massive activation (~45× the median norm at L6–18) is then
+  ~0.92 of every draw's noise, so trained L9–16 can never admit (0 of 56): a null that
+  could not reject, on the cells it was built to read. The first real record showed it
+  in seconds (per-draw maximum `excess` ~21 vs ~0.05). The same null passed its synthetic
+  (0 / 10) and failed the real control (27–40 of 56 centred): the synthetic carried only
+  the mechanism the null models. Rule: before recommending a change of space for a null,
+  print the inputs' norm profile in that space on every checkpoint it will read; and a
+  passed synthetic is a precondition, never evidence the real control will pass.
+- 2026-10-01, 1d's position-keeping null (#127): its form was fixed, reviewed and given a
+  pass/fail rule before anyone drew from it on data with a known answer. A synthetic opening
+  showed that even the true positional mean, drawn as specified on unit rows, admits the
+  opening in 7 of 10 seeds (the draw gives early tokens the pooled noise). The real run
+  would have "failed the control" for a reason the rule could not tell apart from the
+  mechanism. Rule: a null's form is frozen only after an oracle version of it passes a
+  synthetic of the effect it is meant to absorb.
+- 2026-10-01, 1d's identity-weights positive control (#125): the design put β = 16 and 64
+  in the grid so the theory would have several clusters to recover, and kept one time grid
+  (`t` ≤ 16) for every β, on the claim that the collapse time is "nearly free of β". The
+  table cited for that stops at β = 5. The run's own (6.9) reference times were `inf` at
+  16 and 64 and 21–24 at 8, so those trajectories could not move inside the grid, and the
+  regime the control was built for was never reached. The numbers that showed it were
+  computed and stored before the batch, and not read until the review (`/challenge-pr`
+  on #125, finding 2). Rule: a time or sample grid shared across a parameter sweep is
+  checked against the sweep's own reference scale at every value, before the batch.
 - A0's first run: 400 permutation draws → largest possible merged e-value 10.01
   against a threshold of 20. It could not reject whatever the data said
   (§3.51.2).
@@ -538,6 +583,14 @@ needs the user to enable it on GitHub.
   passing a test is not a share of groups that have the property; report an
   effect size beside it. A control used to tune a choice has not tested that
   choice.**
+- 2026-10-01, the M = 32 cut on the long prompts: that rule's test, run with its pass rule
+  committed first, failed. Step 0 admitted again at length, and the groups it admitted held
+  position 32, the first token the cut kept. M = 8 on v1 had already shown the opening moving
+  with the cut, and 32 was still read as "removes it" because at v1 length nothing was left to
+  admit. Rule: **when an effect is anchored to a boundary the fix defines (the first kept
+  token), moving the boundary moves the effect; check at the new boundary, on data the fix
+  was not tuned on, before calling it removed.** (The first write-up then overstated the
+  other way, "whatever M is"; the effect also weakens with M, `/challenge-pr` on #126.)
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

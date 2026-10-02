@@ -78,6 +78,10 @@ ALPHA = 0.05
 RELEASE_BOUND = 2 * ALPHA
 #: The untrained checkpoint: no learned content, so it must not admit.
 CONTROL_STEP = "step0"
+#: PLACED after the v1 run (`/challenge-pr` on #128, finding 1): a position null
+#: whose drawn noise is more than this share one row's is withheld, not read.
+#: Step 0 sits at <= 0.02; trained L9-16 at ~0.92 (token 0's massive activation).
+RESID_TOP_BOUND = 0.5
 BANDS = ("L1-8", "L9-16", "L17-24")
 NOT_TESTED, NOT_ADMITTED, BEFORE_MIN_POSITION = -1, -2, -3
 
@@ -324,30 +328,52 @@ def rank_p(obs: float, null_max: np.ndarray) -> float:
 
 def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
                  min_cluster_sizes: Sequence[int] = MIN_CLUSTER_SIZES,
-                 alpha: float = ALPHA, calibrate: bool = False) -> Dict:
+                 alpha: float = ALPHA, calibrate: bool = False, null_kind: str = "gaussian",
+                 positions: Optional[Sequence[int]] = None) -> Dict:
     """
     One (layer, frame): every level-set HDBSCAN group, its statistics, p
     and verdict, per ``min_cluster_size`` arm; the shipped call's labels and
     `shipped_check` beside them; and, per draw, the null's maxima and group
     counts (ours and the shipped call's).
 
-    ``calibrate`` replaces the rows by one draw of their own Gaussian, as
-    `gaussian_null.null_record` does; the draws are then the same ones
-    `gaussian_null` makes for this seed.
+    ``calibrate`` replaces the rows by one draw of their own null, as
+    `gaussian_null.null_record` does, and refits the null to it; for the
+    Gaussian the draws are then the same ones `gaussian_null` makes for this
+    seed. ``null_kind`` other than ``"gaussian"`` keeps a per-token mean
+    (`position_null`, Blocked 11‴): ``Y`` must then be the *un-normalised*
+    rows, the null is fitted and drawn on them, and the frame is applied to
+    each draw (and to the calibration's pseudo-data) afterwards; it needs
+    the rows' absolute ``positions``.
     """
+    from . import position_null
     if frame not in FRAMES:
         raise ValueError(f"unknown frame {frame!r}; use one of {FRAMES}")
+    if null_kind != "gaussian" and positions is None:
+        raise ValueError(f"null {null_kind!r} needs the rows' positions")
+    pos = np.arange(len(Y)) if positions is None else np.asarray(positions)
     Z, info = frame_vectors(Y, frame)
     Zs = span_coordinates(Z)
-    if calibrate:
+    if null_kind != "gaussian":
+        Ys = span_coordinates(Y)
+        if calibrate:
+            mu, R, _ = position_null.fit(Ys, pos, null_kind)
+            Ys = span_coordinates(position_null.draw(
+                mu, R, np.random.default_rng(seed + CALIBRATE_SEED_OFFSET)))
+            Zs = span_coordinates(position_null.apply_frame(Ys, frame))
+        mu, R, fit_info = position_null.fit(Ys, pos, null_kind)
+        fit_info.pop("cv", None)
+        info = {**info, "position_null": fit_info}
+    elif calibrate:
         Zs = span_coordinates(gaussian_draw(Zs, np.random.default_rng(seed + CALIBRATE_SEED_OFFSET)))
+    if calibrate:
         info = {**info, "calibrate": True}
     obs = {m: layer_groups(Zs, m) for m in min_cluster_sizes}
     null = {m: {"k": [], "shipped_k": [], "shipped_tie_artefacts": [],
                 **{s: [] for s in STATISTICS}} for m in min_cluster_sizes}
     rng = np.random.default_rng(seed)
     for _ in range(int(n_draws)):
-        X = gaussian_draw(Zs, rng)
+        X = (gaussian_draw(Zs, rng) if null_kind == "gaussian" else
+             position_null.apply_frame(position_null.draw(mu, R, rng), frame))
         for m in min_cluster_sizes:
             _, rows, check = layer_groups(X, m)
             null[m]["k"].append(len(rows))
@@ -381,8 +407,14 @@ def admit_record(Y: np.ndarray, frame: str, n_draws: int, seed: int,
 # ---------------------------------------------------------------------------
 
 def _job(args: Tuple) -> Dict:
-    run_dir, layer, frame, n_draws, seed, calibrate, min_position = args
-    acts = np.load(Path(run_dir) / "activations.npz")["activations"]
+    run_dir, layer, frame, n_draws, seed, calibrate, min_position = args[:7]
+    null_kind = args[7] if len(args) > 7 else "gaussian"
+    with np.load(Path(run_dir) / "activations.npz") as z:
+        acts = z["activations"]
+        if null_kind != "gaussian":
+            # Position nulls fit and draw before normalisation (Blocked 11‴):
+            # raw = norms * activations (`p1_io`).
+            acts = acts.astype(np.float64) * z["norms"].astype(np.float64)[..., None]
     tokens = run_tokens(Path(run_dir))
     if len(tokens) != acts.shape[1]:
         raise ValueError(f"{run_dir}: {len(tokens)} token strings for "
@@ -397,7 +429,8 @@ def _job(args: Tuple) -> Dict:
         return {**base, "skipped": f"{keep.size} distinct strings < {MIN_TOKENS}",
                 "info": {"frame": frame}}
     t0 = time.time()
-    rec = admit_record(acts[layer][keep], frame, n_draws, seed, calibrate=calibrate)
+    rec = admit_record(acts[layer][keep], frame, n_draws, seed, calibrate=calibrate,
+                       null_kind=null_kind, positions=keep)
     rec.update(base)
     rec["seconds"] = round(time.time() - t0, 2)
     return rec
@@ -414,11 +447,17 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--n-draws", type=int, default=200)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--calibrate", action="store_true",
-                    help="run on one Gaussian draw of each layer instead of the tokens")
+                    help="run on one draw of each layer's own null (refitted to it) instead of the tokens")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--min-position", type=int, default=0,
                     help="diagnostic arm: test only kept tokens at absolute position >= this "
                          "(drops the prompt's opening; `status-1d.md` \"Position\")")
+    ap.add_argument("--null", default="gaussian", choices=("gaussian", "smooth", "prefix",
+                                                              "flat"),
+                    help="gaussian (#122), or keep position, fitted and drawn before "
+                         "normalisation: smooth (primary) / prefix (arm) / flat (no "
+                         "position; the comparator) (`position_null`, "
+                         "`status-1d.md` \"Position-keeping null\")")
     add_holdout_args(ap)
     args = ap.parse_args(argv)
 
@@ -430,7 +469,8 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         print(f"refusing: no runs, or missing activations.npz / geometry.json in {missing}",
               file=sys.stderr)
         return 1
-    jobs = [(str(r), int(L), f, args.n_draws, args.seed, args.calibrate, args.min_position)
+    jobs = [(str(r), int(L), f, args.n_draws, args.seed, args.calibrate, args.min_position,
+             args.null)
             for r in runs for L in args.layers for f in args.frames]
 
     # Resumable as `gaussian_null`: each record is written as it finishes and
@@ -439,7 +479,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     parts.mkdir(parents=True, exist_ok=True)
     settings = {"n_draws": args.n_draws, "seed": args.seed, "calibrate": bool(args.calibrate),
                 "alpha": ALPHA, "min_cluster_sizes": list(MIN_CLUSTER_SIZES),
-                "min_position": args.min_position}
+                "min_position": args.min_position, "null": args.null}
     fingerprints = {str(r): input_fingerprint(r, ("activations.npz", "geometry.json"))
                     for r in runs}
 
@@ -508,12 +548,17 @@ def _cell(recs: List[Dict], arm: str, stat: str) -> Dict:
     adm = [g for g in groups if g[f"admitted_{stat}"]]
     return {"n": len(recs),
             "records_admitting": int(sum(r["arms"][arm]["n_admitted"][stat] > 0 for r in recs)),
+            "prompts": len({r["prompt"] for r in recs}),
+            "prompts_admitting": len({r["prompt"] for r in recs
+                                      if r["arms"][arm]["n_admitted"][stat] > 0}),
             "groups": len(groups), "admitted": len(adm),
             "shipped_groups": int(sum(r["arms"][arm]["shipped"]["k"] for r in recs)),
             "shipped_tie_artefacts": int(sum(r["arms"][arm]["shipped"]["tie_artefacts"]
                                              for r in recs)),
             "admitted_pairs": int(sum(g["size"] == 2 for g in adm)),
-            "admitted_median_size": float(np.median([g["size"] for g in adm])) if adm else None}
+            "admitted_median_size": float(np.median([g["size"] for g in adm])) if adm else None,
+            "one_row_null": int(sum(r["info"].get("position_null", {}).get("resid_top_share", 0.0)
+                                    > RESID_TOP_BOUND for r in recs))}
 
 
 def table(real: Dict, cal: Dict) -> List[Dict]:
@@ -521,7 +566,9 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
     Per (statistic, arm, step, frame, band): real against its own
     calibration, and whether the cell's labels may be released.
 
-    A cell is released only if (1) its calibration admits in at most
+    A cell is released only if (0) no record's position null gives one row
+    more than ``RESID_TOP_BOUND`` of the drawn noise (such a null is mostly
+    one direction and cannot reject: trained L9-16, token 0), (1) its calibration admits in at most
     ``RELEASE_BOUND`` of its records, (2) it is not the control step, and
     (3) the control step, same statistic / arm / frame / band, also admits
     in at most ``RELEASE_BOUND`` of its records. A file without the control
@@ -529,9 +576,9 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
     """
     if not cal.get("calibrate") or real.get("calibrate"):
         raise ValueError("need a real file and a --calibrate file, in that order")
-    for k in ("seed", "alpha", "min_cluster_sizes", "n_draws", "min_position"):
-        if real.get(k, 0 if k == "min_position" else None) != cal.get(
-                k, 0 if k == "min_position" else None):
+    default = {"min_position": 0, "null": "gaussian"}
+    for k in ("seed", "alpha", "min_cluster_sizes", "n_draws", "min_position", "null"):
+        if real.get(k, default.get(k)) != cal.get(k, default.get(k)):
             raise ValueError(f"real and calibration differ in {k}; a calibration is "
                              "only read against its own settings")
     if {Path(p).name for p in real["inputs"]} != {Path(p).name for p in cal["inputs"]}:
@@ -563,7 +610,10 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
                for r in rows if r["step"] == CONTROL_STEP}
     for r in rows:
         c, k = r["cal"], control.get((r["stat"], r["arm"], r["frame"], r["band"]))
-        if c["records_admitting"] > RELEASE_BOUND * c["n"]:
+        if r["real"]["one_row_null"]:
+            why = (f"one row owns > {RESID_TOP_BOUND:.0%} of the null's noise in "
+                   f"{r['real']['one_row_null']} of {r['real']['n']} records")
+        elif c["records_admitting"] > RELEASE_BOUND * c["n"]:
             why = f"calibration admits in {c['records_admitting']} of {c['n']} records"
         elif r["step"] == CONTROL_STEP:
             why = "the control step"
@@ -610,17 +660,19 @@ def table_text(rows: List[Dict]) -> str:
              f"calibration and the {CONTROL_STEP} control each admit in <= {RELEASE_BOUND:.0%} "
              "of records (the control itself is never released).",
              "rec = records with >= 1 admitted group; adm = admitted groups (pairs); "
-             "grp = all HDBSCAN groups"]
+             "grp = all HDBSCAN groups; prm = prompts with >= 1 admitting record / prompts"]
     head = None
     for r in rows:
         if (r["stat"], r["arm"]) != head:
             head = (r["stat"], r["arm"])
             lines.append(f"\n[{r['stat']}, min_cluster_size {r['arm']}]  step        frame    band    "
-                         f"  n | real rec  adm (pairs)   grp | cal rec  adm   grp | release")
+                         f"  n | real rec  adm (pairs)   grp prm | cal rec  adm   grp prm | release")
         a, c = r["real"], r["cal"]
         lines.append(f"  {'':<34}{r['step']:<11} {r['frame']:<8} {r['band']:<7} {a['n']:>3} | "
                      f"{a['records_admitting']:>8} {a['admitted']:>4} ({a['admitted_pairs']:>4}) "
-                     f"{a['groups']:>5} | {c['records_admitting']:>7} {c['admitted']:>4} {c['groups']:>5} | "
+                     f"{a['groups']:>5} {a['prompts_admitting']:>1}/{a['prompts']:<1} | "
+                     f"{c['records_admitting']:>7} {c['admitted']:>4} {c['groups']:>5} "
+                     f"{c['prompts_admitting']:>1}/{c['prompts']:<1} | "
                      f"{'yes' if r['released'] else 'no: ' + r['withheld']}")
     return "\n".join(lines)
 
