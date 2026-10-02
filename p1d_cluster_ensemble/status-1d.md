@@ -2005,7 +2005,7 @@ step 0, which does not yet separate learned content from learned position.
 | do trained groups survive the opening's removal? | yes, at v1 and at length (L17–24 withheld: the null is off nominal there) | same |
 | content or position? | not the start of the context: moved behind a preamble, trained groups mostly move with the passage (centred size 2: 0.95 / 0.89 / 0.74 by band; fixed bar 0.5: 0.89 / 0.81 / 0.65), step 0's do not (0.28 / 0.09 / 0.08), its opening is opening-bound in 7 of 7 passages. Relative positions mean a preamble cannot test absolute position. "Learned" is unit 2's | "Unit 1: move the text" |
 | can random re-inits stand in for Pythia's init? | yes at step 0, carried by the weights (same σ, untruncated Gaussian, float16-valued); the cloud check passes all 24 cells (largest share 0.143, bound 0.20) but fails only a gross mismatch (≥ ~1.5 SD), with a small late lean it cannot resolve; re-run on the trained union's token sets, it passes again (`ci2` raw L17–24 0.171) | "Unit 2: the architecture null — first check", "Unit 2: the trained cells" |
-| is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), content not position (6 of 515 contiguous), and lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1. Whether any is formed by depth rather than carried from the embedding is open | "Unit 2: the trained cells" |
+| is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2326,7 +2326,10 @@ the re-inits' 95th-percentile largest `s`), `replication`, `read`. Records stamp
 re-inits, step143000 of `pythia-410m` and `pythia-410m-seed{1..9}`; the 7 deduped v1 prompts
 (first 512 tokens), L1–24, centred and raw, 100 Gaussian draws per cloud, 60 models × 7
 prompts × 48 records. Output `data/p1d/arch_null_trained_2026-10-02/` (`run_trained.sh`,
-`first_check.json`, `trained.json` md5 `e889460a`, `trained_rows.json`, `read.log`).
+`first_check.json`, `trained.json` md5 `ad32ca99`, `trained_rows.json`, `read.log`).
+`trained.json` `inputs` names the inputs: sha256 of each prompt's token ids and each
+checkpoint's HF snapshot (added after `/challenge-pr` on #132, finding 5; the per-record
+files, as #131's, carry neither).
 
 **T2 on the 60-model union adds each prompt's first delimiter** (first `.`, or first `\n`
 in `hdbscan_code` / `latex_monograph`), massive (ratio 10–54) in 9 of the 10 trained seeds
@@ -2373,9 +2376,18 @@ group in ≥ 6 of 9 other seeds):
 | raw | L9–16 | 468 / 287 / 206 / **72** | 125 / 107 / 81 / 17 |
 | raw | L17–24 | 378 / 223 / 163 / **31** | 130 / 87 / 52 / 9 |
 
-515 of seed 0's 1,350 learned groups replicate. **They are content, not position:** 6 of
-the 515 are contiguous runs, the median span is 30× the group's size, and 89 have a member in
-the opening (offset < 8). By token they are lexical-semantic classes, many already at
+515 of seed 0's 1,350 learned groups replicate. *Corrected after `/challenge-pr` on #132,
+finding 1* (the first write-up said "content, not position", from contiguity, which a random
+group almost never has and so cannot test). **They are not runs, but they are tighter in
+position than chance:** 6 of 515 are contiguous, yet 162 (31 %) have a position spread in the
+tightest 5 % of 2,000 random same-size groups from the prompt's kept tokens, and 330 (64 %)
+have two members within 3 positions (random: 25–37 % at size 2, 50–71 % at size 4;
+`position_tightness`, per cell in `trained.json`). Text puts related words near each other,
+so this does not make them positional; whether they are is unit 1's test, not this one's. 89
+have a member in the opening (offset < 8); 15 are **bulk** (≥ 25 % of the prompt's kept
+tokens, up to ~140), not word classes, and are counted in the 515. "Learned" is not a subset
+of `s > 1`: 30 of the 1,350 learned groups (9 of the 515) have `s ≤ 1`, beyond the inits'
+bar but not their own Gaussian's. By token most are lexical-semantic classes, many already at
 L1–2: {years, year, months}, {novelist, poet, novel, literature, collection, poems}, {never,
 Never, not, always}, {was, is, were}, {did, does, do}, {sister, siblings, sisters}, {king,
 gods, god}, number tokens in `latex_monograph`, French function words in `camus_letranger`.
@@ -2387,26 +2399,30 @@ Seeds 3 and 4 learn about twice as many groups at L17–24 (centred size 2: 129,
 
 **What this answers, and what it does not.** By the outcome table (`design-1d.md` "Unit 2"):
 trained beyond the inits and replicating across seeds, in every band, so learned structure
-is there; per group it is concentrated early. The learned, replicating groups look like
-**word-class similarity carried from the embedding**, present at L1, which the particle
-picture's clustering (tokens drawn together by attention over depth) does not predict to be
-strongest early. Whether any learned group is the dynamics' rather than the embedding's is not
-answered here: a group present at L1 and kept is not evidence of clustering by attention.
-That reading is the reviewer's to challenge.
+is there; per group it is concentrated early. Many replicating groups are lexical-semantic
+classes present at L1, which suggests the embedding's word classes; *revised after
+`/challenge-pr` on #132, finding 2:* Pythia's embedding carries no position, so a pure
+embedding class should have chance-level position spread, and these are tighter than chance.
+So the groups are not simply the embedding's: L1 has had one attention layer. **Open:**
+which groups exist at L0 (the embedding output, in the same forward pass), which L1 adds, and
+which form later. A group present at L1 and kept is not by itself evidence of clustering by
+attention over depth.
 
 **Caveats.** (1) The first check's late lean (`ci2` raw L17–24 0.171 of 0.20) is where the
 late cells are read; the late `ci2` excess (repl 49–54) could carry some of it. (2) The
 per-cloud rule saturates: at N = 40, p ≤ 0.05 is "at most one re-init as far", and the
 trained `nn1` is 22–28 SD past the re-inits (median, by band and frame), so the rule says trained ≠ init and nothing finer.
 (3) Replication matches groups at the same (prompt, layer, frame, size) only. (4) 410m only;
-v1's 7 prompts.
+v1's 7 prompts. (5) `group_bars` used numpy's linear quantile, which is NaN with 3+ infinite
+re-init maxima; none occurred (0 of 45,231 group rows), and it now refuses (#132 finding 3).
 
 **Re-run:** `data/p1d/arch_null_trained_2026-10-02/run_trained.sh` from the worktree root
 (resumable: `run` step 0, `check --union trained`, `run` step143000, `read`; norms from
 `arch_null_2026-10-02/`). Tests: `tests/test_phase1d_arch_null.py`. **Next:** unit 1's groups
 that move ∩ this unit's learned and replicating groups (the candidate definition in the
-outcome table), with a per-layer origin reading (present at L1 or formed later) so the
-embedding's groups are told apart from groups formed with depth; then unit 3.
+outcome table), with a per-layer origin reading **from L0** (the embedding output) so the
+embedding's groups are told apart from groups formed with depth, and the 15 bulk groups
+reported apart; then unit 3.
 
 ## Deleted and restored (was `FROZEN.md`)
 
