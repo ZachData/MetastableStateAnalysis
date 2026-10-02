@@ -149,6 +149,29 @@ a summarizer, so equations are as quoted and the rest is paraphrase). Plus 2 web
 | 6 | Attention sinks trace to a "variance discrepancy" from value aggregation under the causal mask: the first token attends only to itself, later tokens average a growing prefix, so the first token stays a high-variance outlier (`2605.06611`, Li, Jiang, Sun, Hu, 2026-05). Random-init transformers already have "extreme token preferences" and an attention-sink-linked "positional discrepancy" (`2602.05927`, Li, Tong, Wang, Hu, 2026-02) | [S] | the same mechanism #123 read off step 0's stored attention (near-uniform attention, so early positions share the first tokens' value vectors). The simulator at β = 0 is that mechanism with nothing else in it |
 | 7 | Not found: any paper that runs the identity-weight dynamics from a real model's embeddings and asks whether a cluster definition recovers the clusters it makes (2 searches; weak evidence) | [S] | — |
 
+## 10. The Blocked 11⁗ programme: intervention, architecture null, scale spectrum (added 2026-10-02)
+
+Scan for unit 0 of the programme in `status-1d.md` "Blocked 11⁗ decided" (trigger 1:
+`design-1d.md`'s "Programme" section freezes after it). 8 web searches, 5 fetches
+(marks as §9; **[M]** = measured in this repo for this scan, input named). No forward
+pass was run and no admission output was opened.
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | PolyPythias (`2503.09543`, ICLR 2025): 9 extra seeds of 14m, 31m, 70m, 160m and **410m**, same code, hyperparameters and standard (non-deduplicated) Pile as Pythia; a seed changes **both** the weight init and the data order (decoupled seeds only at 160m); the original run is seed 0. At 410m, **seeds 3 and 4 are outliers** (loss spikes, ≥ 2 SD below the mean on downstream tasks) | [H] | unit 2 has 10 real 410m inits and 10 trained endpoints. Seeds 3, 4 are kept and flagged, not dropped |
+| 1a | `EleutherAI/pythia-410m-seed{1,9}` each list 155 revisions on the Hub, `step0` and `step143000` among them; the repo's `pythia-410m` is the standard-Pile model (same as PolyPythias) | [M] Hub API, 2026-10-02 | both checkpoints reachable from the local box; ~18 more checkpoints in the HF cache |
+| 2 | Pythia's init: `small_init` σ = √(2 / 5d) for the embeddings, QKV and the MLP's first matrix; `wang_init` σ = 2 / (L√d) for the attention output (`dense`) and the MLP's `dense_4h_to_h` (Pythia / GPT-NeoX-20B papers) | [S] | a re-init must use these two σ |
+| 2a | Measured on the cached `pythia-410m` `step0`: σ 0.01974–0.01978 (embed, QKV, `h_to_4h`, unembed; √(2/5120) = 0.019764) and 0.00260–0.00261 (`dense`, `4h_to_h`; 2/(24·32) = 0.002604), every bias 0, every LayerNorm (1, 0). **transformers' `GPTNeoXPreTrainedModel._init_weights` draws σ = `initializer_range` = 0.02 for every Linear**, so `model.init_weights()` gives the two output projections 7.7× Pythia's σ | [M] | unit 2's re-init writes the two σ itself; `_init_weights` is not a Pythia init. Normality of the draws is assumed, not checked |
+| 3 | Attention sinks form at **absolute position 0**, not on a token: re-sampling the first token keeps the sink, and fixing the first two moves it to position 2. Pythia is in the study; the sink is present at 14m and stronger with size in Pythia. The first token's hidden-state norm is large from an early block (Gu et al., `2410.10781`, ICLR 2025) | [H] | unit 1 moves the passage off position 0, so the sink stays with the preamble. The token-0 rule below excludes a position, not a string |
+| 4 | Massive activations: a few activations orders of magnitude above the rest, on the starting token **and the first delimiter (`.` or `\n`)**, acting as input-independent biases (Sun, Chen, Kolter & Liu, `2402.17762`, COLM 2024) | [S] | look for a second massive token, not just position 0 (row 4a) |
+| 4a | Norm over the layer's median (step143000: median over positions ≥ 1; step 0: all positions), the 7 deduped-batch v1 prompts, `data/phase12/2026-09-01_18-25-12` (step143000) and `2026-09-01_13-30-37` (step 0): **position 0 is 20–50× at L8–20 in all 7 trained prompts; the first `\n` (Ċ) is a second massive token in 2 of 7** (`hdbscan_code` position 34, `latex_monograph` position 10; 18–41× at L8–20); every other token ≤ ~3×. **Step 0: maximum 1.30×, at position 0, in all 7** | [M] | the rule is a norm bound, placed at 10× in the gap between ~3× and 18× |
+| 5 | Random-init transformers already show a first-token "positional discrepancy" (variance decays ∝ 1/√i along the sequence, seed-independent) and a **seed-dependent** token preference (contraction along a random direction; different seeds favour different tokens) (`2602.05927`; RoPE GPT-2 and LLaMA-2 nano / 1.2B, not Pythia) | [H] | the positional part is what step 0's opening showed; the seed-dependent part is why unit 2 needs several inits rather than one step 0 |
+| 6 | Random-weight models as the control for interpretability claims: automated interpretability metrics score random and trained transformers alike (`2501.17727`, ICLR 2026) | [S] | precedent for unit 2's question; no paper found that uses a set of re-initialisations as the null for clusters in the residual stream (3 searches; weak evidence) |
+| 7 | Position invariance by intervention: SHAPE (`2109.05644`) feeds one input at offsets k ∈ {0, 100, 250, 500} and averages, per position, the cosine of hidden states across offsets | [S] | unit 1's per-token readout (cosine of a passage token's state at preamble P against P = 0). No paper found that asks whether *clusters* move with the text (2 searches) |
+| 8 | Pythia's training sequences are packed 2049-token windows; documents are joined by an end-of-document token, a window rarely starts at a document start, and attention crosses document boundaries | [S] (Pythia repo / paper) | text at a non-zero position after an EOD token is the training distribution. Unit 1's primary join is `<|endoftext|>`; a plain `\n\n` join is the arm |
+| 9 | Markov stability on point clouds (Liu & Barahona, `1909.04491`): build a CkNN graph (k = 7, δ ≈ 1.5–2.4), scan Markov time, call a scale robust where the VI between partitions at nearby times is a low block and the VI across Louvain runs at one time is low; results stable over a range of the graph parameter. PyGenStability (`2303.05385`) implements it. Persistent homology of a multiscale clustering (`2305.04281`) and hierarchical planted-partition benchmarks (Jeub et al. 2018, §2) test such methods on nested planted structure | [S]; Liu & Barahona's parameters from its PDF's method lines (grepped, not read whole) | the alternative to the merge tree for unit 3; rejected as primary in `design-1d.md` (its scale is Markov time, not an angle, and it adds a graph parameter and Louvain randomness) |
+| 10 | Attention-as-Markov-chain metastability (`2507.17657`): λ₂ of the row-stochastic matrix, products across layers; **causal masks are not discussed**; vision models only | [H] | closes §6's queue item: nothing in it handles a lower-triangular chain, so §2.1's teleportation caveat stands |
+
 ## Sources
 
 - von Luxburg 2010 — https://arxiv.org/abs/1007.1075
@@ -177,3 +200,13 @@ a summarizer, so equations are as quoted and the rest is paraphrase). Plus 2 web
 - Karagodin, Polyanskiy & Rigollet 2024 (causal attention masking) — https://arxiv.org/html/2411.04990v2
 - Li, Jiang, Sun & Hu 2026 (attention sink, variance discrepancy) — https://arxiv.org/abs/2605.06611
 - Li, Tong, Wang & Hu 2026 (transformers born biased) — https://arxiv.org/abs/2602.05927
+- van der Wal et al. 2025 (PolyPythias) — https://arxiv.org/abs/2503.09543
+- Biderman et al. 2023 (Pythia; init, packing) — https://arxiv.org/abs/2304.01373, https://github.com/EleutherAI/pythia
+- Black et al. 2022 (GPT-NeoX-20B; small_init, wang_init) — https://arxiv.org/abs/2204.06745
+- Gu et al. 2025 (when attention sink emerges) — https://arxiv.org/abs/2410.10781
+- Sun, Chen, Kolter & Liu 2024 (massive activations) — https://arxiv.org/abs/2402.17762
+- Automated interpretability metrics, trained vs random — https://arxiv.org/abs/2501.17727
+- Kiyono et al. 2021 (SHAPE) — https://arxiv.org/abs/2109.05644
+- Liu & Barahona 2020 (graph-based clustering via Markov stability) — https://arxiv.org/abs/1909.04491
+- Arnaudon et al. 2023 (PyGenStability) — https://arxiv.org/abs/2303.05385
+- Schindler & Barahona 2023 (persistent homology of multiscale clustering) — https://arxiv.org/abs/2305.04281

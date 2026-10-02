@@ -213,3 +213,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-01 | 1d Blocked 11′: M = 32 cut on the long prompts (before challenge-pr) | 69 | 143k | 7.2M | 32k | #126 |
 | 2026-10-01 | 1d Blocked 11″ recorded; STATE trimmed; HDBSCAN upstream draft (docs only) | 43 | 178k | 5.1M | 52k | #127 |
 | 2026-10-02 | 1d position-keeping null, 11‴ form, run on v1 (before challenge-pr) | 58 | 174k | 7.1M | 43k | #128 |
+| 2026-10-02 | 1d Blocked 11⁗ unit 0: lit scan + design (programme rules, token rules); #124 merge fix (before challenge-pr) | 47 | 161k | 4.8M | 46k | #129 |
