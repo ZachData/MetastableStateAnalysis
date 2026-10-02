@@ -736,6 +736,17 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-02, #131 (1d unit 2's first check), two premises `/challenge-pr` broke:
+  (1) the power reading ranked real inits against 40 re-inits and held-out ones
+  against 30, then compared their outer-10 % shares, whose tie-driven baselines
+  differ (0.098 vs 0.13); the write-up called it "the stronger evidence, and it
+  agrees". Ranked against the same 30, real runs 0.08–0.17 against ~0.13:
+  consistent, not tight. The analysis was an unsaved script, so nobody could
+  re-run it; it is now `arch_null.power`. (2) The re-inits were float32 while
+  every real init is float16-valued (`pythia-410m`'s float32 `step0` included);
+  the session had read that checkpoint's dtype and checked only that it said
+  float32. Rule: a comparison of rates states that both sides share the reference
+  set; an "init matches init" claim checks precision, not just σ.
 - 2026-09-30, #117's mutation accept list: 4 of 22 "equivalent" survivors
   were killable (`/challenge-pr`). One reason called `average`'s alpha check
   redundant; it is the only guard on the early return for an infinite

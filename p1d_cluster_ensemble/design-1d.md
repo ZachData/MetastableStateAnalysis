@@ -179,6 +179,15 @@ before any record was written):
 | `z_G` | (obs − draw mean) / draw SD; a draw SD of 0 gives no z, and a cell with any missing z does not pass |
 | rank in the re-inits | mid-rank fraction `u` (share below, ties half); "outer 10 %" is two-sided, `u` < 0.05 or > 0.95 |
 | T2 comparison | the step being checked: the step-0 check takes the union over the 10 real inits and the 40 re-inits only, so it reads no trained run (as unit 1) |
+| re-init precision | each draw rounded to float16 (every real init is float16-valued; `/challenge-pr` on #131, finding 3) |
+
+**For the trained cells** (written 2026-10-02, after `/challenge-pr` on #131 and before
+any `step143000` record is opened; author and reviewer agree, the user may overrule):
+
+| reading | value |
+|---|---|
+| primary tail of the per-cloud rank p | the lumpier tail, `gaussian_null.LUMPIER`: p = (1 + #{re-inits ≤ obs}) / (N + 1) for `nn1` and `ci2` (lumpier is lower), (1 + #{re-inits ≥ obs}) / (N + 1) for `hdb_k` (more groups). The other tail is reported, not read. The table above writes ≥ for every statistic, which for `nn1` / `ci2` would ask "less lumpy than init" |
+| token sets | T2's union over every model of the trained comparison (10 trained, 10 real inits, 40 re-inits); every prompt whose kept set changes is recomputed for every model, and the first check is re-run on the recomputed records before a trained cell is read |
 
 ### Unit 3: one family on a continuous scale
 
