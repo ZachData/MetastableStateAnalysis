@@ -9,7 +9,7 @@ from collections import Counter
 
 import pytest
 
-pytestmark = pytest.mark.pure
+pytestmark = pytest.mark.deps
 
 from p1d_cluster_ensemble import designed_prompts as dp
 

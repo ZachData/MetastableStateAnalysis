@@ -598,6 +598,17 @@ needs the user to enable it on GitHub.
   have measured tightness, not groups. Rule unchanged: **compute the floor of every rule
   under every fallback the design names**, and before comparing a statistic across
   models, write down its units.
+- 2026-10-02 (unit 1, move the text; found reading the run, not by a reviewer): "does the
+  group move with the passage" was designed without asking how far the intervention moves
+  the states. With Pythia's relative positions, a preamble left passage tokens' states
+  at median cosine ≥ 0.96 to their P = 0 states (both steps, both joins, P = 1000), so "moves" was
+  close to the default and only a failure to move was informative (step 0's opening group:
+  member cosine 0.88, it breaks). Same unit, frozen designed-prompt rule 1 measured purity
+  over labelled members only, so step 0's ~20-token opening group, which happens to hold
+  the three early "teacher" names, counted as 13 entity content groups. Rule: **before an
+  intervention test, state the readout under "the intervention changed nothing" and
+  under "it changed everything", and measure the perturbation (b) beside the verdict**;
+  a purity rule names its denominator (all members, not only labelled ones).
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

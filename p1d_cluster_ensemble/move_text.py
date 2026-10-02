@@ -595,9 +595,73 @@ def check(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
+def band(layer: int) -> str:
+    return "L1-8" if layer <= 8 else "L9-16" if layer <= 16 else "L17-24"
+
+
+def class_table(recs: Sequence[Dict], key: str = "class") -> List[Dict]:
+    """
+    Stable P = 0 groups by class, per (frame, size, band), pooled over
+    passages and the band's layers (records are not independent), with the
+    median of (b)'s per-token cosine at P = 1000, primary join.
+    """
+    cells: Dict[Tuple, Dict] = {}
+    for r in recs:
+        for lay in r["layers"]:
+            for mcs, m in lay["mcs"].items():
+                c = cells.setdefault((lay["frame"], int(mcs), band(lay["layer"])),
+                                     {"classes": Counter(), "unstable": 0, "groups": 0, "cos": []})
+                for g in m["groups"]:
+                    c["groups"] += 1
+                    if not g["stable"]:
+                        c["unstable"] += 1
+                    elif key in g:
+                        c["classes"][g[key]] += 1
+            lay_cos = [v["median"] for cid, v in lay["cos"].items()
+                       if f"|{max(P_VALUES)}|{PRIMARY_JOIN}" in cid]
+            for mcs in lay["mcs"]:
+                cells[(lay["frame"], int(mcs), band(lay["layer"]))]["cos"] += lay_cos
+    out = []
+    for (frame, mcs, b), c in sorted(cells.items()):
+        n = sum(c["classes"].values())
+        out.append({"frame": frame, "mcs": mcs, "band": b, "groups": c["groups"],
+                    "unstable": c["unstable"], "classified": n,
+                    **{k: c["classes"][k] for k in CLASSES},
+                    "share_moves": round(c["classes"]["moves"] / n, 3) if n else None,
+                    "cos_P1000_median": round(float(np.median(c["cos"])), 3) if c["cos"] else None})
+    return out
+
+
+def report(argv: Optional[Sequence[str]] = None) -> int:
+    ap = argparse.ArgumentParser(prog="move_text report")
+    ap.add_argument("--out", type=Path, required=True)
+    args = ap.parse_args(argv)
+    res = {}
+    for step in MODELS:
+        recs = [r for r in _load_dir(args.out / step) if r["passage"] in V1_PASSAGES]
+        if len(recs) != len(V1_PASSAGES):
+            continue
+        res[step] = {"classes": class_table(recs), "classes_nl2": class_table(recs, "class_nl2"),
+                     "opening": {f"{f}/{m}": opening_table(recs, f, m)
+                                 for f in FRAMES for m in MIN_CLUSTER_SIZES},
+                     "massive": {r["passage"]: r["massive"] for r in recs},
+                     "git": sorted({r["meta"]["git"] for r in recs})}
+    (args.out / "report.json").write_text(json.dumps(res, indent=1) + "\n")
+    cols = ("frame", "mcs", "band", "groups", "unstable", "classified", *CLASSES,
+            "share_moves", "cos_P1000_median")
+    for step, v in res.items():
+        print(f"== {step}  (primary join; stable groups by class)")
+        print("  " + " ".join(f"{c[:12]:>12s}" for c in cols))
+        for row in v["classes"]:
+            print("  " + " ".join(f"{str(row[c])[:12]:>12s}" for c in cols))
+        print(f"   opening group, centred / 2: " + json.dumps(
+            {p: x["modal"] for p, x in v["opening"]["centred/2"].items()}))
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"run": run, "check": check}
+    cmds = {"run": run, "check": check, "report": report}
     if not argv or argv[0] not in cmds:
         print(f"usage: move_text {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2

@@ -139,3 +139,15 @@ def test_verdicts():
     t = {p: {"modal": "context-bound"} for p in "abcdefg"}
     assert mt.step0_verdict(t) == "neither"
     assert mt.designed_verdict({"x": {"classified": {}}}).startswith("fail")
+
+
+def test_class_table_pools_stable_groups_by_band():
+    g = lambda cls, stable=True: {"stable": stable, "class": cls, "class_nl2": "moves"}
+    lay = lambda L, gs: {"layer": L, "frame": "centred", "cos": {f"a|{max(mt.P_VALUES)}|eod": {"median": 0.9}},
+                         "mcs": {"2": {"groups": gs}}}
+    recs = [{"layers": [lay(1, [g("moves"), g("context-bound")]), lay(9, [g("moves"), g(None, False)])]}]
+    t = {r["band"]: r for r in mt.class_table(recs)}
+    assert t["L1-8"]["share_moves"] == 0.5 and t["L1-8"]["context-bound"] == 1
+    assert t["L9-16"]["unstable"] == 1 and t["L9-16"]["classified"] == 1
+    assert t["L1-8"]["cos_P1000_median"] == 0.9
+    assert mt.class_table(recs, "class_nl2")[0]["share_moves"] == 1.0
