@@ -273,6 +273,40 @@ def classify(moves_by_preamble: Dict[str, bool], opening: bool, c_holds: bool) -
     return "opening-bound" if (opening and c_holds) else "context-bound"
 
 
+#: A stable group whose own floor is 0 cannot fail "best Jaccard >= J0", so it
+#: is not classified against its floor (`/challenge-pr` on #130, finding 1:
+#: 336 of step 0's 412 "moves" had J0 = 0).
+FLOOR_ZERO = "floor 0"
+#: The fixed bar reported beside the own-floor rule (finding 1), placed.
+FIXED_BAR = 0.5
+
+
+def group_classes(m: Dict, join: str = PRIMARY_JOIN, bar: Optional[float] = None) -> List[str]:
+    """
+    Each P = 0 group's class from a record's stored Jaccards: against its
+    own floor ``J0`` (``bar`` None; ``J0 == 0`` gives `FLOOR_ZERO`) or against
+    a fixed ``bar``. Unstable groups are ``"unstable"``. Recomputed here, not
+    read from the record's ``class`` field, which runs before the fix wrote
+    with zero floors passing.
+    """
+    out = []
+    for i, g in enumerate(m["groups"]):
+        if not g["stable"]:
+            out.append("unstable")
+            continue
+        thr = g["J0"] if bar is None else bar
+        if bar is None and thr <= 0:
+            out.append(FLOOR_ZERO)
+            continue
+        mv: Dict[str, bool] = {}
+        for cid, pc in m["conditions"].items():
+            src, _, j = cid.split("|")
+            if j == join:
+                mv[src] = mv.get(src, True) and pc["best_jaccard"][i] >= thr
+        out.append(classify(mv, g["opening"], m["c_holds"]) if mv else "unclassified")
+    return out
+
+
 # ---------------------------------------------------------------------------
 # One (layer, frame) of one (step, passage): every condition, both sizes
 # ---------------------------------------------------------------------------
@@ -335,22 +369,14 @@ def _layer_job(args: Tuple[int, str]) -> Dict:
             per_cond[c["id"]] = pc
         c_holds = bool(per_cond) and all(
             pc["whole"]["earliest_in_group"] for cid, pc in per_cond.items() if "whole" in pc)
-        for i, r in enumerate(recs):
-            if not r["stable"] or not per_cond:
-                continue
+        m = {"groups": recs, "opening_group": open_i, "c_holds": c_holds, "conditions": per_cond}
+        if per_cond:
             for j in JOINS:
-                mv = {}
-                for c in conds[1:]:
-                    if c["join"] != j:
-                        continue
-                    ok = per_cond[c["id"]]["best_jaccard"][i] >= r["J0"]
-                    mv[c["preamble"]] = mv.get(c["preamble"], True) and ok
                 key = "class" if j == PRIMARY_JOIN else f"class_{j}"
-                r[key] = classify(mv, r["opening"], c_holds)
-                if j == PRIMARY_JOIN:
-                    r["moves_by_preamble"] = mv
-        out["mcs"][str(mcs)] = {"groups": recs, "opening_group": open_i, "c_holds": c_holds,
-                                "conditions": per_cond}
+                for r, cls in zip(recs, group_classes(m, j)):
+                    if r["stable"]:
+                        r[key] = cls
+        out["mcs"][str(mcs)] = m
     out["cos"] = {cid: {"median": float(np.median(v)), "p10": float(np.percentile(v, 10)),
                         "p90": float(np.percentile(v, 90))} for cid, v in cos_rec.items()}
     return out
@@ -428,8 +454,9 @@ def _modal(classes: List[str]) -> str:
     return c.most_common(1)[0][0] if c else "none"
 
 
-def opening_table(recs: Sequence[Dict], frame: str = "centred", mcs: int = 2) -> Dict[str, Dict]:
-    """Per passage: the opening group's class per layer, its counts, and the modal class."""
+def opening_table(recs: Sequence[Dict], frame: str = "centred", mcs: int = 2,
+                  bar: Optional[float] = None) -> Dict[str, Dict]:
+    """Per passage: the opening group's class per layer (`group_classes`), its counts, the modal class."""
     out = {}
     for r in recs:
         per = []
@@ -438,12 +465,7 @@ def opening_table(recs: Sequence[Dict], frame: str = "centred", mcs: int = 2) ->
                 continue
             m = lay["mcs"][str(mcs)]
             i = m["opening_group"]
-            if i is None:
-                per.append("no opening group")
-            elif not m["groups"][i]["stable"]:
-                per.append("unstable")
-            else:
-                per.append(m["groups"][i]["class"])
+            per.append("no opening group" if i is None else group_classes(m, bar=bar)[i])
         out[r["passage"]] = {"by_layer": per, "counts": dict(Counter(per)), "modal": _modal(per)}
     return out
 
@@ -457,21 +479,25 @@ def step0_verdict(table: Dict[str, Dict]) -> str:
     return "neither"
 
 
-def designed_table(recs: Sequence[Dict], frame: str = "centred", mcs: int = 2) -> Dict[str, Dict]:
-    """Per designed prompt: stable content groups by class (rule 2) and all content groups."""
+def designed_table(recs: Sequence[Dict], frame: str = "centred", mcs: int = 2,
+                   bar: Optional[float] = None) -> Dict[str, Dict]:
+    """Per designed prompt: content groups, the stable ones by class (rule 2), and floor-0 ones apart."""
     out = {}
     for r in recs:
-        cls, n_content = Counter(), 0
+        cls, n_content, n_zero = Counter(), 0, 0
         for lay in r["layers"]:
             if lay["frame"] != frame:
                 continue
-            for g in lay["mcs"][str(mcs)]["groups"]:
+            m = lay["mcs"][str(mcs)]
+            for g, c in zip(m["groups"], group_classes(m, bar=bar)):
                 if g.get("content") is None:
                     continue
                 n_content += 1
-                if g["stable"] and "class" in g:
-                    cls[g["class"]] += 1
-        out[r["passage"]] = {"content_groups": n_content, "classified": dict(cls),
+                if c == FLOOR_ZERO:
+                    n_zero += 1
+                elif c in CLASSES:
+                    cls[c] += 1
+        out[r["passage"]] = {"content_groups": n_content, "classified": dict(cls), "floor_zero": n_zero,
                              "share_moves": cls["moves"] / sum(cls.values()) if cls else None}
     return out
 
@@ -599,34 +625,30 @@ def band(layer: int) -> str:
     return "L1-8" if layer <= 8 else "L9-16" if layer <= 16 else "L17-24"
 
 
-def class_table(recs: Sequence[Dict], key: str = "class") -> List[Dict]:
+def class_table(recs: Sequence[Dict], join: str = PRIMARY_JOIN, bar: Optional[float] = None) -> List[Dict]:
     """
-    Stable P = 0 groups by class, per (frame, size, band), pooled over
-    passages and the band's layers (records are not independent), with the
-    median of (b)'s per-token cosine at P = 1000, primary join.
+    Stable P = 0 groups by class (`group_classes`: own floor, or a fixed
+    ``bar``), per (frame, size, band), pooled over passages and the band's
+    layers (records are not independent), with floor-0 groups counted apart
+    and the median of (b)'s per-token cosine at P = 1000, primary join.
     """
     cells: Dict[Tuple, Dict] = {}
     for r in recs:
         for lay in r["layers"]:
-            for mcs, m in lay["mcs"].items():
-                c = cells.setdefault((lay["frame"], int(mcs), band(lay["layer"])),
-                                     {"classes": Counter(), "unstable": 0, "groups": 0, "cos": []})
-                for g in m["groups"]:
-                    c["groups"] += 1
-                    if not g["stable"]:
-                        c["unstable"] += 1
-                    elif key in g:
-                        c["classes"][g[key]] += 1
             lay_cos = [v["median"] for cid, v in lay["cos"].items()
                        if f"|{max(P_VALUES)}|{PRIMARY_JOIN}" in cid]
-            for mcs in lay["mcs"]:
-                cells[(lay["frame"], int(mcs), band(lay["layer"]))]["cos"] += lay_cos
+            for mcs, m in lay["mcs"].items():
+                c = cells.setdefault((lay["frame"], int(mcs), band(lay["layer"])),
+                                     {"classes": Counter(), "groups": 0, "cos": []})
+                c["groups"] += len(m["groups"])
+                c["classes"].update(group_classes(m, join, bar))
+                c["cos"] += lay_cos
     out = []
     for (frame, mcs, b), c in sorted(cells.items()):
-        n = sum(c["classes"].values())
+        n = sum(c["classes"][k] for k in CLASSES)
         out.append({"frame": frame, "mcs": mcs, "band": b, "groups": c["groups"],
-                    "unstable": c["unstable"], "classified": n,
-                    **{k: c["classes"][k] for k in CLASSES},
+                    "unstable": c["classes"]["unstable"], "floor_zero": c["classes"][FLOOR_ZERO],
+                    "classified": n, **{k: c["classes"][k] for k in CLASSES},
                     "share_moves": round(c["classes"]["moves"] / n, 3) if n else None,
                     "cos_P1000_median": round(float(np.median(c["cos"])), 3) if c["cos"] else None})
     return out
@@ -641,19 +663,23 @@ def report(argv: Optional[Sequence[str]] = None) -> int:
         recs = [r for r in _load_dir(args.out / step) if r["passage"] in V1_PASSAGES]
         if len(recs) != len(V1_PASSAGES):
             continue
-        res[step] = {"classes": class_table(recs), "classes_nl2": class_table(recs, "class_nl2"),
+        res[step] = {"classes": class_table(recs), "classes_nl2": class_table(recs, "nl2"),
+                     "classes_fixed_bar": class_table(recs, bar=FIXED_BAR),
+                     "classes_nl2_fixed_bar": class_table(recs, "nl2", FIXED_BAR),
                      "opening": {f"{f}/{m}": opening_table(recs, f, m)
                                  for f in FRAMES for m in MIN_CLUSTER_SIZES},
                      "massive": {r["passage"]: r["massive"] for r in recs},
                      "git": sorted({r["meta"]["git"] for r in recs})}
     (args.out / "report.json").write_text(json.dumps(res, indent=1) + "\n")
-    cols = ("frame", "mcs", "band", "groups", "unstable", "classified", *CLASSES,
+    cols = ("frame", "mcs", "band", "groups", "unstable", "floor_zero", "classified", *CLASSES,
             "share_moves", "cos_P1000_median")
     for step, v in res.items():
         print(f"== {step}  (primary join; stable groups by class)")
         print("  " + " ".join(f"{c[:12]:>12s}" for c in cols))
         for row in v["classes"]:
             print("  " + " ".join(f"{str(row[c])[:12]:>12s}" for c in cols))
+        print(f"   fixed bar {FIXED_BAR}, share moves: " + json.dumps(
+            {f"{x['frame']}/{x['mcs']}/{x['band']}": x["share_moves"] for x in v["classes_fixed_bar"]}))
         print(f"   opening group, centred / 2: " + json.dumps(
             {p: x["modal"] for p, x in v["opening"]["centred/2"].items()}))
     return 0

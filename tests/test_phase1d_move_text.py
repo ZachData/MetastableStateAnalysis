@@ -141,13 +141,33 @@ def test_verdicts():
     assert mt.designed_verdict({"x": {"classified": {}}}).startswith("fail")
 
 
+def _m(groups, jac, c_holds=False):
+    """A stored record: ``groups`` (J0, stable, opening), ``jac[cid] = [best Jaccard per group]``."""
+    return {"groups": [{"J0": j0, "stable": st, "opening": op} for j0, st, op in groups],
+            "c_holds": c_holds, "conditions": {cid: {"best_jaccard": v} for cid, v in jac.items()}}
+
+
+def test_a_zero_floor_is_not_a_pass():
+    # finding 1 on #130: with J0 = 0, "best Jaccard >= J0" holds for any match
+    m = _m([(0.0, True, False), (0.6, True, False), (0.6, False, False)],
+           {"a|5|eod": [0.0, 0.7, 0.9], "b|5|eod": [0.1, 0.65, 0.9], "a|5|nl2": [0.0, 0.0, 0.0]})
+    assert mt.group_classes(m) == [mt.FLOOR_ZERO, "moves", "unstable"]
+    assert mt.group_classes(m, bar=0.5) == ["context-bound", "moves", "unstable"]
+    assert mt.group_classes(m, join="nl2") == [mt.FLOOR_ZERO, "context-bound", "unstable"]
+
+
 def test_class_table_pools_stable_groups_by_band():
-    g = lambda cls, stable=True: {"stable": stable, "class": cls, "class_nl2": "moves"}
-    lay = lambda L, gs: {"layer": L, "frame": "centred", "cos": {f"a|{max(mt.P_VALUES)}|eod": {"median": 0.9}},
-                         "mcs": {"2": {"groups": gs}}}
-    recs = [{"layers": [lay(1, [g("moves"), g("context-bound")]), lay(9, [g("moves"), g(None, False)])]}]
-    t = {r["band"]: r for r in mt.class_table(recs)}
+    lay = lambda L, m: {"layer": L, "frame": "centred",
+                        "cos": {f"a|{max(mt.P_VALUES)}|eod": {"median": 0.9}}, "mcs": {"2": m}}
+    m1 = _m([(0.5, True, False), (0.5, True, False), (0.0, True, False)],
+            {"a|5|eod": [0.9, 0.1, 0.9], "a|5|nl2": [0.9, 0.9, 0.9]})
+    m9 = _m([(0.5, True, False), (0.5, False, False)], {"a|5|eod": [0.9, 0.9]})
+    t = {r["band"]: r for r in mt.class_table([{"layers": [lay(1, m1), lay(9, m9)]}])}
     assert t["L1-8"]["share_moves"] == 0.5 and t["L1-8"]["context-bound"] == 1
+    assert t["L1-8"]["floor_zero"] == 1 and t["L1-8"]["classified"] == 2
     assert t["L9-16"]["unstable"] == 1 and t["L9-16"]["classified"] == 1
     assert t["L1-8"]["cos_P1000_median"] == 0.9
-    assert mt.class_table(recs, "class_nl2")[0]["share_moves"] == 1.0
+    nl2 = {r["band"]: r for r in mt.class_table([{"layers": [lay(1, m1)]}], "nl2")}
+    assert nl2["L1-8"]["share_moves"] == 1.0
+    fixed = {r["band"]: r for r in mt.class_table([{"layers": [lay(1, m1)]}], bar=0.5)}
+    assert fixed["L1-8"]["floor_zero"] == 0 and fixed["L1-8"]["moves"] == 2
