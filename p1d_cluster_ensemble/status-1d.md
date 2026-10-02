@@ -2094,6 +2094,26 @@ from it would be post hoc on the same 56-record cells.
 learned structure, and step 0 on v1 has now set or tested four constructions (Gaussian, cut
 at 8 / 32, two position nulls). The options are in `STATE.md`.
 
+### Blocked 11⁗ decided: stop modelling nulls; intervene, use the architecture as the null, one scale axis (2026-10-02; docs only)
+
+**Why the route changes.** Each null so far modelled one non-learned source (covariance,
+token identity, the opening, token 0's massive activation) and met the next. The opening is
+a real cluster at init; "is it a cluster" and "is it learned" were being asked of one null.
+**Decision (user, 2026-10-02, "let's do it all"):** the programme below, one unit each, in
+this order. The smoother's estimator fix (11⁗ (ii)) is not taken up; (i), the write-up,
+waits for the programme.
+
+| # | unit | what it answers | first check |
+|---|---|---|---|
+| 0 | **literature scan + `design-1d.md` revision** (the trigger in `CLAUDE.md`): rules for 1–4 fixed before any run; how token 0 / attention sinks are handled, once, for every method | — | PolyPythias' sizes and seeds (410m?), Pythia's init scheme, prior position-invariance tests, Markov stability, massive-activation practice |
+| 1 | **move the text**: the same v1 passages after unrelated preambles of several lengths (e.g. 0, 50, 300, 1000 tokens), step 0 and step143000 | content vs position, by intervention: a cluster is a set of tokens the model keeps together when they move | step 0's opening moves to the preamble |
+| 2 | **architecture null**: the same prompts through N random initialisations (re-init, or PolyPythias step 0); per-cloud standardised statistic against that spread; PolyPythias trained seeds as a replication check if available | a step-0 control that passes by construction; does a cluster replicate across training seeds | real step 0 ranks as a typical draw (else the init does not match) |
+| 3 | **scale spectrum**: one family on a continuous scale (merge tree or Markov stability), per scale: subsampling stability, excess over (2), invariance under (1); other families compared only at matched scale; `δ = cβ^{-1/2}` marked when Blocked 9 allows | plateaus ("robust scales") instead of micro / meso / macro picked by seven families | the synthetic below shows its planted plateaus |
+| 4 | **positive controls**: designed-content prompts (lists, interleaved code / prose, repeated entities) and a multi-scale synthetic with the opening mechanism | does the tool find what it should, at the right scale, and not position | — |
+
+Supersedes the cut, the position nulls and the seven-family consensus as the route to a
+definition; their code and results stay (each is a row in "Where 1d stands").
+
 ## Deleted and restored (was `FROZEN.md`)
 
 Code deleted 2026-09-23 in a branch cleanup that should have skipped it
