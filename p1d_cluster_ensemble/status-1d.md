@@ -2003,7 +2003,7 @@ step 0, which does not yet separate learned content from learned position.
 | is HDBSCAN's shipped call reproducible? | no: on float32 it drifted (fixed, float64); its tied edges are ordered by row order, 42 % of trained groups are tie artefacts (replaced by the level-set tree) | "Float64 distances", "Admission" |
 | does the per-group definition pass its control? | no: step 0 admits the prompt's opening (near-uniform attention); a fixed cut at 32 removes it on v1 but not at length; the position-keeping null (11‴) fails all 6 cells | "Admission", "Position", "The M = 32 cut on the long prompts", "Position-keeping null" |
 | do trained groups survive the opening's removal? | yes, at v1 and at length (L17–24 withheld: the null is off nominal there) | same |
-| content or position? | open: option (a) did not answer it (its control fails; on trained L9–16 its draws are token 0's massive activation) | "Position-keeping null" |
+| content or position? | open: option (a) did not answer it (its control fails; on trained L9–16 its draws are token 0's massive activation). Next: 11⁗'s programme, rules fixed in `design-1d.md` "The programme" (unit 0 done) | "Position-keeping null", "Unit 0" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2121,6 +2121,27 @@ waits for the programme.
 
 Supersedes the cut, the position nulls and the seven-family consensus as the route to a
 definition; their code and results stay (each is a row in "Where 1d stands").
+
+### Unit 0: literature scan and design (2026-10-02; docs only; branch `claude/p1d-unit0-design`)
+
+**Done.** Scan: `lit-1d.md` §10. Rules for units 1–4 and the token rules (T1–T5):
+`design-1d.md` "The programme". Nothing was run on a model; three checks were read off
+the tree. Their numbers and inputs are the scan's [M] rows (`lit-1d.md` §10):
+
+| check | row | changes |
+|---|---|---|
+| PolyPythias 410m on the Hub | 1, 1a | unit 2 has 10 real inits and 10 trained endpoints |
+| Pythia-410m `step0` weight σ against transformers' `init_weights()` | 2a | unit 2's re-init writes Pythia's two σ; `init_weights()` rejected |
+| norm / median on the v1 deduped batch | 4a | T1 excludes position 0 everywhere; T2 excludes any token over 10× in any compared run |
+
+**`/challenge-pr` on #129** (accept with changes; answered on the PR; every finding taken):
+cross-model statistics are standardised within each cloud against its own Gaussian first
+(`design-1d.md` "Within-cloud scale"); unit 2's fallback refuses rather than reading a
+p-floor, and its first check is per band; `sullivan_ballou`'s continuation (550 tokens) is
+too short for P = 1000 and is dropped as a preamble; unit 1 reads "moves" against each
+group's own subsample floor, classifies groups per preamble (moves / preamble-dependent /
+opening-bound / context-bound), keeps one token set at every P, and runs the designed
+prompts first. **Next: unit 1 (move the text).**
 
 ## Deleted and restored (was `FROZEN.md`)
 

@@ -1,6 +1,11 @@
 <!-- p1d_cluster_ensemble/design-1d.md -->
 # Phase 1d — DESIGN
 
+**Revised 2026-10-02** after Blocked 11⁗ (user: stop modelling nulls; intervene, use
+the architecture as the null, one scale axis): section "The programme" below fixes the
+rules for units 1–4 before any of them runs; literature `lit-1d.md` §10. The
+per-group admission against a Gaussian ("The proposed definition") is no longer the
+route to a definition; it stays as a reported column.
 **Revised 2026-09-30** after Blocked 10 (user: retire the graded readout). The August
 design (a tuned seven-family ensemble whose vote grades every token core / halo /
 contested) is at `git show 30ccbb4:p1d_cluster_ensemble/design-1d.md`. What survives
@@ -15,6 +20,173 @@ Every Phase 10 row reads one partition, `HDBSCAN(min_cluster_size=2)` on cosine
 distance, chosen by nobody. 1d's job is to replace "whatever that call returns" with
 a definition that states its null, its scale, and what it controls for, so that
 Phase 10's rows can be re-read on it and their sensitivity to the choice measured.
+
+## The programme (Blocked 11⁗; rules fixed 2026-10-02, before any run)
+
+**Why.** Four constructed nulls (Gaussian, cut at 8 / 32, two position nulls) each
+removed one non-learned source and met the next (`status-1d.md` "Blocked 11⁗
+decided"). Two questions were being asked of one null; the programme separates them:
+
+| question | answered by | not by |
+|---|---|---|
+| **is it learned?** | unit 2: the same statistic on the same prompt through many random inits of the same architecture | a model of the residual (the four nulls) |
+| **is it content, not position?** | unit 1: move the passage and see whether the group moves with it | a position-keeping null |
+| **is it a cluster, and at what scale?** | unit 3: one family on a continuous scale, robust plateaus, subsampling stability | seven families voting at seven scales |
+| **can the tool see what it should?** | unit 4: inputs with known answers | — |
+
+Inputs throughout: the 7 deduped v1 prompts on 410m (not `repeated_tokens`; the 12 v2
+prompts stay held out), step 0 and step143000, L1–24, both frames (centred primary, raw
+beside), `min_cluster_size` 2 primary and 4 as the arm wherever HDBSCAN is used. Every
+number below marked **placed** is chosen, not derived, and is written into the artifact.
+
+### Token rules, once, for every unit and every method
+
+| rule | value | why (`lit-1d.md` §10) |
+|---|---|---|
+| T1. position 0 | **excluded from every cloud in every condition** (step 0, trained, inits, seeds, every preamble length), before the frame, centring, any null fit, any graph; its norm ratio and its nearest token are written beside each record | the sink is a position, not a token (row 3); position 0 carries a massive activation in every trained v1 prompt (row 4a) and is most of the position null's noise (`status-1d.md` "Position-keeping null"). Excluded at step 0 too, where it is not massive (row 4a), so every comparison is on one token set |
+| T2. other massive tokens | a token whose norm exceeds **10×** its layer's median at any of L2–20 in **any** run being compared is excluded from **all** of them, and listed (position, string, maximum ratio) | a second massive token (the first `\n`) exists in some trained prompts, and a gap separates massive tokens from the bulk (row 4a). Taking the union over runs keeps one token set per prompt. 10× is **placed** in that gap. **L2–20, placed:** row 4a read L1, 4, 8, 12, 16, 20, 24; the massive tokens are already above the bulk at L4 and gone at L24, and none was massive at L1. L21–23 were not read, so a token massive only there would be missed |
+| T3. duplicates | first occurrence of each string, as admission (`--dedupe-strings`) | unchanged: token identity |
+| T4. attention-based graphs | the columns of T1–T2 tokens dropped and rows renormalised | `lit-1d.md` §2.1; repo practice (`core/sink_audit.py`) |
+| T5. where a rule cannot apply | the record refuses and says why; nothing is read on a cloud that still holds a T1–T2 token | refuse rather than degrade |
+
+T1 changes step 0's opening group (under the smooth null, all 97 admitted centred
+step-0 groups held position 0). That is intended: what is left of the opening without
+the sink is what units 1 and 2 test.
+
+**Within-cloud scale, once, for every comparison across models** (*added after
+`/challenge-pr` on #129, finding 1*). Trained and untrained clouds differ in overall
+tightness and anisotropy, so a raw statistic (`S_C / |C|` is in 1 / distance; `nn1` is
+a distance) compared across them measures that difference, not groups. Every statistic
+compared between clouds of different models is first standardised **inside its own
+cloud against that cloud's matched-covariance Gaussian** (`gaussian_null.py`, same
+frame, same n): per cloud, `z_G` = (obs − Gaussian mean) / Gaussian SD; per group, `s`
+= `S_C / |C|` ÷ the 95th percentile of the Gaussian draws' maximum `S_C / |C|`
+(admission's threshold, so `s > 1` is admission's verdict). Only `z_G` and `s` are
+compared across models. Rejected: dividing distances by the cloud's median distance,
+which removes scale but not anisotropy.
+
+### Unit 1: move the text
+
+| choice | value | why, and what was rejected |
+|---|---|---|
+| passage | each of the 7 v1 texts, unchanged | the token sets already read |
+| preamble | the first `P` tokens of the **continuation** (text after the v1 passage) of each long prompt whose continuation has ≥ 1000 tokens, skipping the passage's own: `wiki_paragraph` (1373), `hdbscan_code` (1783), `latex_monograph` (1590) (`long_prompts/provenance.json`). So 3 preambles for `camus_letranger`, `homer_iliad`, `paper_excerpt`, `sullivan_ballou`, and 2 for the other three | committed, rule-fixed text (`long_prompts.py`), unrelated to the passage, several preambles so no one preamble's content is the result. *Fixed after `/challenge-pr` on #129, finding 3:* `sullivan_ballou`'s continuation is 550 tokens, too short for P = 1000, and is not used. Rejected: a repeated filler token (atypical; the sink can vanish on repeated tokens, `lit-1d.md` §10 row 3) |
+| P | 0, 50, 300, 1000 tokens. **P = 0 is the passage alone, no join token** | from the 11⁗ table; ≤ 1512 tokens with the passage, inside 2048 |
+| join (P > 0) | **`<|endoftext|>`** (primary), `\n\n` (arm) | Pythia trains on packed documents joined by EOD with attention across them (row 8), so the passage after EOD is in distribution. The arm asks whether one context changes it |
+| cloud | the passage's tokens only, indexed by passage offset; T1–T3 on the whole sequence, **and passage offset 0 excluded at every P** | one token set at every P (*fixed after finding 6*: at P = 0 offset 0 is position 0, which T1 removes). A whole-sequence cloud (preamble + passage) is reported beside, to see where the opening went |
+| clustering | admission's level-set HDBSCAN groups (`admit.layer_groups`) on each cloud; no null draws. Unit 3 repeats readout (a) on the merge tree | this unit asks whether groups move, not whether they are significant (unit 2) |
+| readout per (passage, layer, frame), **per preamble and join** | (a) for each group at P = 0, its best-Jaccard group at each P > 0; (b) per passage token, the cosine of its state at P against P = 0 (SHAPE's readout); (c) in the whole-sequence cloud, the group holding the earliest kept position | (a) is the question; (b) separates "the group moved" from "every state moved"; (c) is the first check. Pooled counts are reported beside, never instead |
+| noise floor | each P = 0 group's own cluster-wise stability: its best-match Jaccards over 50 subsamples of 80 % of the passage tokens (Hennig 2007); the floor `J₀` is their 10th percentile. A group whose median is < 0.5 is **unstable at P = 0** and not classified | *added after finding 4*: the group step finds cores, not whole clusters (identity control, recall 0.39), so a fixed Jaccard bar could call a content group position-bound. The 10th percentile and 0.5 are **placed** |
+| moves (per preamble) | best-match Jaccard ≥ `J₀` at every P > 0 under that preamble, primary join | a group is compared to its own noise, not to a fixed bar |
+
+**Classes, per stable P = 0 group** (*added after finding 5*). In Pythia, position enters
+only through the prefix (RoPE is relative; the sink and the causal averaging are what
+being first means), so "fails to move" can be the start of the context or the
+preamble's content:
+
+| class | rule |
+|---|---|
+| **moves** | moves under every preamble (3 of 3, or 2 of 2) |
+| **preamble-dependent** | moves under some preambles, not others: content of the context, not position |
+| **opening-bound** | moves under none, holds passage offsets < 8, and (c) finds a group at the preamble's start |
+| **context-bound** | moves under none, any other group |
+
+**First check (step 0, before any trained cell is read).** Step 0's opening group
+(passage offsets < 8, after T1) is opening-bound in most passages, and (c) finds a group
+at the preamble's start. **If step 0's opening moves with the text instead**, the opening
+is not position: stop and report before reading step143000.
+
+**Second first check (*added after finding 7*).** Unit 4's three designed-content prompts
+are written and committed at the start of unit 1, and run through it first, at
+step143000: their category / entity groups should **move**. If they do not, the
+readout cannot see content that moves, and v1 is not read until that is understood.
+These are not v1 cells; reading them first is the point.
+
+**Outcomes** (not registered):
+
+| outcome | reading | consequence |
+|---|---|---|
+| step 0 opening-bound, trained groups mostly move | trained groups are content | unit 2 asks whether they are learned |
+| trained groups mostly opening- or context-bound | trained structure is the start of the context, or the preamble's pull | the groups that move are the candidates; the rest are labelled by class, not dropped |
+| many preamble-dependent | groups depend on what precedes the passage | reported per preamble; a definition must name its context |
+| at P = 0 the group exists only with the sink (gone under T1 at every P) | the opening was the sink | say so; step 0's control failures were T1's token |
+
+**Cost.** P = 0: 7 passages × 2 steps = 14 passes. P > 0: 3 P × 2 joins × (4 passages × 3
++ 3 × 2 preambles) × 2 steps = 216. With the designed prompts (3 × 19 at step143000), ~290
+forward passes of ≤ 1512 tokens, hidden states only (no attention stored): under an hour on
+CPU. Readouts are computed in-process; activations are kept only for P ∈ {0, 1000}, the
+first preamble, the EOD join (≤ 25 × 1.5k × 1024 float32 ≈ 150 MB each, ~2 GB on
+`HDD_1TB`). Estimates, not measured.
+
+### Unit 2: the architecture as the null
+
+| choice | value | why, and what was rejected |
+|---|---|---|
+| init draws | (i) PolyPythias `pythia-410m-seed{1..9}` `step0` plus `pythia-410m` `step0` (seed 0): 10 real inits; (ii) **40 re-inits** of the same config at Pythia's two σ (`lit-1d.md` §10 row 2a: small_init for the embeddings, QKV, `dense_h_to_4h` and the unembedding; wang_init for `attention.dense` and `dense_4h_to_h`), biases 0, LayerNorm (1, 0), seeds 0–39, never written to disk | (i) is Pythia's own init (row 1). (ii) gives a rank resolution (i) cannot: p ≥ 1/11 with 10, ≥ 1/41 with 40. **Rejected: transformers' `init_weights()`**, which is not Pythia's init (row 2a). 40 is **placed** (it was 100; cut because each cloud now needs its own Gaussian draws) |
+| statistics | per cloud: `z_G` of HDBSCAN's group count (`hdb_k`), of the median nearest-neighbour cosine (`nn1`) and of the 2-means index (`ci2`); per group: `s` (section "Within-cloud scale") | *changed after `/challenge-pr` on #129, finding 1:* raw statistics would compare trained tightness with init tightness. Each is now its excess over its own covariance, and that excess is what is compared with the inits' |
+| rule, per cloud | rank p = (1 + #{inits ≥ obs}) / (N + 1) of the trained `z_G` among the re-inits' `z_G`, per (prompt, layer, frame) | the same form as every 1d null |
+| rule, per group | **learned** if `s` exceeds the 95th percentile, over the re-inits, of each init cloud's **maximum** `s` | admission's max statistic, one level up: beyond its covariance by more than any init's group is beyond its own |
+| also reported | `s > 1` (admission's Gaussian verdict) per group | "beyond its covariance" stays a column |
+| replication | PolyPythias `step143000`, seeds 1–9. A seed-0 group replicates in seed s if its best-Jaccard learned group there has Jaccard ≥ 0.5; it **replicates** if it does in ≥ 6 of 9 seeds. A per-cloud excess replicates if rank p ≤ 0.05 in ≥ 8 of 10 seeds. Seeds 3, 4 are kept and flagged (outliers, row 1) | **placed**. Token sets match across seeds (same tokenizer, same prompt) |
+
+**First check (before any trained cell is read).** The 10 real step-0 clouds must look
+like re-inits, **per (statistic, band L1–8 / 9–16 / 17–24, frame)**: in each such cell,
+the share of the 70 real-seed ranks (10 seeds × 7 prompts, pooled over the band's layers by
+taking each seed's median rank) that fall in the outer 10 % of the re-inits is ≤ 20 %
+(2× nominal, **placed**). *Changed after finding 2:* pooled over every cell, one bad band
+could hide. A cell that fails falls back to the 10 real inits, and there **every rank-p
+rule refuses** ("unresolvable at N = 10": p ≥ 0.091 > 0.05); `z` against the 10 is
+reported, not read as a verdict. Step 0 is then a control that passes by construction, as
+11⁗ intended.
+
+**Outcomes** (not registered):
+
+| outcome | reading | consequence |
+|---|---|---|
+| trained beyond the inits, replicating across seeds, in a band | learned structure there | the candidate definition: unit 1's groups that move ∩ unit 2's learned |
+| trained beyond the inits but not replicating | learned, seed-specific | reported; not a definition Phase 10 can use across seeds |
+| trained within the inits | at this resolution, training does not make groups beyond their covariance more than init does | 1d says so; the per-group question waits on unit 3's scale |
+| a cell refuses (fallback) | the re-init does not match Pythia there | that cell is unread; the mismatch is a finding about the re-init |
+
+**Cost.** ~18 checkpoints into the HF cache (~1 GB each; 72 GB free on 2026-09-29).
+Forward passes: 7 × (40 + 10 + 10) = 420 at ≤ 512 tokens, minutes. Each cloud needs its
+own Gaussian draws: 420 clouds × 24 layers × 2 frames × 2 sizes ≈ 40 k admission records
+at 100 draws each, ~4 M level-set fits; at #122's rate (~270 k fits in ~10 min at 14
+workers) about 2.5 h. 100 draws, not 200, is **placed** for cost. Estimates.
+
+### Unit 3: one family on a continuous scale
+
+| choice | value | why, and what was rejected |
+|---|---|---|
+| family | **average-linkage merge tree on cosine distance** (`merge_tree.layer_merge_tree`), cut at each δ of a grid | built; deterministic; its scale is a cosine distance, the units of the theory's `δ = cβ^{-1/2}`. **Rejected as primary: Markov stability** on a CkNN graph (`lit-1d.md` §10 row 9): its scale is Markov time, it adds a graph parameter and Louvain randomness. It is the named alternative if the merge tree finds no plateau |
+| grid | 40 log-spaced cut heights from 0.01 to 1.5 in cosine distance **÷ the cloud's median pairwise cosine distance**; the absolute δ of each cut is stored beside it | **placed**. *Changed after `/challenge-pr` on #129, finding 1:* a fixed absolute δ compares trained clouds with init clouds whose distances are mostly near 1. The theory's `δ` is placed on each cloud's own axis |
+| per scale | (a) Hennig's cluster-wise stability: mean best-match Jaccard over 50 subsamples of 80 %; (b) the substantial cluster count (≥ `SUBSTANTIAL_CLUSTER_SIZE` tokens) as `z_G` against 50 Gaussian draws of the same cloud at the same relative scale, then ranked among unit 2's re-inits' `z_G`; (c) for passage partitions, the Jaccard between P = 0 and P = 1000 (unit 1), against the same noise floor as unit 1 | (a) "is it a cluster", (b) "is it learned", (c) "is it content", each at every scale |
+| robust scale | ≥ 3 consecutive grid points with the same substantial count, mean cluster-wise stability ≥ 0.75, and (b)'s rank p ≤ 0.05 (refuses in a unit-2 fallback cell) | **placed**; 0.75 is Hennig's (2007) "stable" bound, not his 0.85 "highly stable" |
+| other families | compared to the merge tree only at matched scale: a family's partition against the merge-tree cut with the nearest substantial count | the seven-family consensus is retired as a definition |
+| theory scale | `δ = cβ^{-1/2}` marked on the grid when Blocked 9 is decided | waits |
+
+**First check.** On unit 4's multi-scale synthetic (below), the planted plateaus are
+found at both planted scales (ARI ≥ 0.8 to the planted labels, **placed**) and no
+plateau is found on a single Gaussian of the same covariance. Built in unit 3, before
+any real input.
+
+### Unit 4: positive controls
+
+| control | what | pass |
+|---|---|---|
+| multi-scale synthetic | n = 400 on S^1023: 3 groups of 3 sub-groups (von Mises–Fisher, two planted angular spreads), 25 % background; then the opening mechanism applied: each row mixed with the mean of the rows before it (`identity_sim`'s β = 0 dynamics at small `t`) | unit 3 finds both planted scales; the opening group forms; re-ordering the rows moves it and leaves the planted groups (unit 1's logic) |
+| designed-content prompts | 3 new prompts, frozen in a file committed **before** any forward pass on them (at the start of unit 1, which runs them first): a list interleaving three categories, prose interleaved with code, a narrative that repeats a few named entities | at step143000, groups that hold one category / one entity, learned under unit 2 and moving under unit 1; at step 0, not. A prediction, not registered |
+
+The designed prompts are new text, not v2: whether they join a battery is the user's.
+
+### Order, and what is superseded
+
+Units run 1 → 2 → 3 → 4, each its own PR; unit 1 writes and runs the designed prompts
+first (*changed after `/challenge-pr` on #129, finding 7*: the group step failed its last
+positive control, so "moves" is shown to fire on known content before it is read on v1);
+unit 3 builds the synthetic its first check needs; unit 4 reads the rest. The cut, the two position nulls and the per-group Gaussian admission stay as
+code and as rows in `status-1d.md` "Where 1d stands"; none is the route to a
+definition. "Build order" below is the pre-11⁗ plan, kept for its history.
 
 ## What the evidence allows (2026-09-25 to 09-30)
 
