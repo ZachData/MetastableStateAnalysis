@@ -168,6 +168,27 @@ own Gaussian draws: 420 clouds × 24 layers × 2 frames × 2 sizes ≈ 40 k admi
 at 100 draws each, ~4 M level-set fits; at #122's rate (~270 k fits in ~10 min at 14
 workers) about 2.5 h. 100 draws, not 200, is **placed** for cost. Estimates.
 
+**Operational readings for the first check** (in `arch_null.py`, committed `e464c9f`
+before any record was written):
+
+| reading | value |
+|---|---|
+| `nn1` | `gaussian_null.lumpiness`' `nn1`: the **mean** cosine distance to the nearest other token (the table above says "median nearest-neighbour cosine"; the code name was kept, so `nn1` means one thing in 1d) |
+| `hdb_k` | level-set HDBSCAN's group count (`admit.level_set_hdbscan`, admission's route), at size 2 (primary) and 4 (arm), not the shipped call with its tie order |
+| draws | 100 per cloud; the same draw seed for the same (prompt, layer, frame) in every model (common random numbers); `ci2`'s KMeans at `random_state` 0 |
+| `z_G` | (obs − draw mean) / draw SD; a draw SD of 0 gives no z, and a cell with any missing z does not pass |
+| rank in the re-inits | mid-rank fraction `u` (share below, ties half); "outer 10 %" is two-sided, `u` < 0.05 or > 0.95 |
+| T2 comparison | the step being checked: the step-0 check takes the union over the 10 real inits and the 40 re-inits only, so it reads no trained run (as unit 1) |
+| re-init precision | each draw rounded to float16 (every real init is float16-valued; `/challenge-pr` on #131, finding 3) |
+
+**For the trained cells** (written 2026-10-02, after `/challenge-pr` on #131 and before
+any `step143000` record is opened; author and reviewer agree, the user may overrule):
+
+| reading | value |
+|---|---|
+| primary tail of the per-cloud rank p | the lumpier tail, `gaussian_null.LUMPIER`: p = (1 + #{re-inits ≤ obs}) / (N + 1) for `nn1` and `ci2` (lumpier is lower), (1 + #{re-inits ≥ obs}) / (N + 1) for `hdb_k` (more groups). The other tail is reported, not read. The table above writes ≥ for every statistic, which for `nn1` / `ci2` would ask "less lumpy than init" |
+| token sets | T2's union over every model of the trained comparison (10 trained, 10 real inits, 40 re-inits); every prompt whose kept set changes is recomputed for every model, and the first check is re-run on the recomputed records before a trained cell is read |
+
 ### Unit 3: one family on a continuous scale
 
 | choice | value | why, and what was rejected |

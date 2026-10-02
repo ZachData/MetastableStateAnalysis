@@ -107,6 +107,8 @@ world moves, nobody updates the line, and the next session acts on it.
   the hook's `STATE.md` said chunk 2 was running and Stage 1 not started.
   **Fourth, 2026-09-25 (after #98):** the main tree was 3 commits behind, and the hook's
   `STATE.md` still named Phase 10 as the active thread; Start step 1 caught it.
+  **Fifth, 2026-10-02 (after #130):** 5 commits behind; the hook's `STATE.md` said unit 0
+  was in a PR and unit 1 next, when unit 1 had merged. Caught by Start step 1.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed
@@ -184,6 +186,15 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-02, a pool that hangs instead of failing: 1d unit 2's runner
+  (`arch_null.py`) copied unit 1's fork pool, forked after torch's forward
+  pass, and added KMeans (`ci2`). Every worker sat at load 0 for 10 minutes
+  with no output and no error; it looked like a slow run. Unit 1 never hit
+  it (no OpenMP in its workers); `gaussian_null.py` had used spawn all along.
+  Now a spawn pool with one BLAS / OpenMP thread per worker, each job given
+  its own cloud: 77 s per model. Rule: a fork pool after torch is fine only
+  while the workers use no OpenMP; otherwise spawn. A pilot on one input is
+  also how to find a hang: watch the load, not just the output.
 - 2026-10-01, a guard on the input that did not cover its null: 1d's
   identity simulator refuses snapshots whose smallest `1 − cos` is below a
   float floor, but a nearly collapsed snapshot's matched-covariance Gaussian
@@ -725,6 +736,17 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-02, #131 (1d unit 2's first check), two premises `/challenge-pr` broke:
+  (1) the power reading ranked real inits against 40 re-inits and held-out ones
+  against 30, then compared their outer-10 % shares, whose tie-driven baselines
+  differ (0.098 vs 0.13); the write-up called it "the stronger evidence, and it
+  agrees". Ranked against the same 30, real runs 0.08–0.17 against ~0.13:
+  consistent, not tight. The analysis was an unsaved script, so nobody could
+  re-run it; it is now `arch_null.power`. (2) The re-inits were float32 while
+  every real init is float16-valued (`pythia-410m`'s float32 `step0` included);
+  the session had read that checkpoint's dtype and checked only that it said
+  float32. Rule: a comparison of rates states that both sides share the reference
+  set; an "init matches init" claim checks precision, not just σ.
 - 2026-09-30, #117's mutation accept list: 4 of 22 "equivalent" survivors
   were killable (`/challenge-pr`). One reason called `average`'s alpha check
   redundant; it is the only guard on the early return for an infinite
