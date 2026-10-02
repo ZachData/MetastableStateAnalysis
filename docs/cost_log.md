@@ -223,3 +223,4 @@ running median of the rows above it gets a line under the table saying why.
   Over 2× the median: build, a hung pilot (fork pool; LESSONS 2), a ~65 min batch, and a second
   ~55 min batch after /challenge-pr (float16 re-inits) in one session; ~12 calls were monitor /
   watcher notifications (milestones, expiries). One watcher on each batch's end would have done.
+| 2026-10-02 | 1d unit 2: trained cells (T2 over 60 models, 50 step-0 models recomputed, check re-run, 10 trained seeds, rules + replication; before /challenge-pr) | 51 | 161k | 5.7M | 35k | #132 |

@@ -2004,7 +2004,8 @@ step 0, which does not yet separate learned content from learned position.
 | does the per-group definition pass its control? | no: step 0 admits the prompt's opening (near-uniform attention); a fixed cut at 32 removes it on v1 but not at length; the position-keeping null (11‴) fails all 6 cells | "Admission", "Position", "The M = 32 cut on the long prompts", "Position-keeping null" |
 | do trained groups survive the opening's removal? | yes, at v1 and at length (L17–24 withheld: the null is off nominal there) | same |
 | content or position? | not the start of the context: moved behind a preamble, trained groups mostly move with the passage (centred size 2: 0.95 / 0.89 / 0.74 by band; fixed bar 0.5: 0.89 / 0.81 / 0.65), step 0's do not (0.28 / 0.09 / 0.08), its opening is opening-bound in 7 of 7 passages. Relative positions mean a preamble cannot test absolute position. "Learned" is unit 2's | "Unit 1: move the text" |
-| can random re-inits stand in for Pythia's init? | yes at step 0, carried by the weights (same σ, untruncated Gaussian, float16-valued); the cloud check passes all 24 cells (largest share 0.143, bound 0.20) but fails only a gross mismatch (≥ ~1.5 SD), with a small late lean it cannot resolve. Trained cells not read yet | "Unit 2: the architecture null — first check" |
+| can random re-inits stand in for Pythia's init? | yes at step 0, carried by the weights (same σ, untruncated Gaussian, float16-valued); the cloud check passes all 24 cells (largest share 0.143, bound 0.20) but fails only a gross mismatch (≥ ~1.5 SD), with a small late lean it cannot resolve; re-run on the trained union's token sets, it passes again (`ci2` raw L17–24 0.171) | "Unit 2: the architecture null — first check", "Unit 2: the trained cells" |
+| is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), content not position (6 of 515 contiguous), and lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1. Whether any is formed by depth rather than carried from the embedding is open | "Unit 2: the trained cells" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2313,7 +2314,99 @@ written before any `step143000` record is opened; the user may overrule):
 `tests/test_phase1d_arch_null.py` (the re-init test needs `SMOKE_REAL_DEPS=1`).
 PolyPythias `step143000` seeds 1–9 are in the HF cache, unopened. **Next: unit 2's trained
 cells** (T2 union over 60 models, recompute changed prompts, re-run the check, then the
-per-cloud and per-group rules and replication).
+per-cloud and per-group rules and replication). *Done: next section.*
+
+### Unit 2: the trained cells (2026-10-02; branch `claude/p1d-arch-null-trained`)
+
+**Built before any trained cloud** (`57f12b1`; readings in `design-1d.md` "Operational
+readings for the trained cells"): T2 over a named comparison (`--union first|trained`),
+`cloud_rules` (rank p in the lumpier tail), `group_bars` / `group_rules` (learned = `s` above
+the re-inits' 95th-percentile largest `s`), `replication`, `read`. Records stamped `cddcba7`
+(`57f12b1` plus a missing `mkdir`). **Inputs:** step 0 of the 10 real inits and 40 float16
+re-inits, step143000 of `pythia-410m` and `pythia-410m-seed{1..9}`; the 7 deduped v1 prompts
+(first 512 tokens), L1–24, centred and raw, 100 Gaussian draws per cloud, 60 models × 7
+prompts × 48 records. Output `data/p1d/arch_null_trained_2026-10-02/` (`run_trained.sh`,
+`first_check.json`, `trained.json` md5 `e889460a`, `trained_rows.json`, `read.log`).
+
+**T2 on the 60-model union adds each prompt's first delimiter** (first `.`, or first `\n`
+in `hdbscan_code` / `latex_monograph`), massive (ratio 10–54) in 9 of the 10 trained seeds
+(seed 3 none; seeds 0, 1 on `\n` only; seed 4 in one prompt). Every kept set loses one token,
+so all 50 step-0 models were recomputed (~65 min) on the new sets.
+
+**First check re-run on the recomputed records: pass in all 24 cells**, so no rule refuses.
+The late lean grew: `ci2` raw L17–24 0.171 (was 0.143; bound 0.20), per layer 0.200 against
+the held-out re-inits' 0.122; `hdb_k_4` raw L17–24 0.057. Every other cell ≤ 0.10.
+
+**Per cloud** (`(prompt, layer)`s of 56 per band with p ≤ 0.05, lumpier tail; "repl" =
+beyond in ≥ 8 of 10 seeds; median `z_G`: re-init / trained):
+
+| statistic | frame | L1–8 repl | L9–16 repl | L17–24 repl | median `z_G` L1–8 / 9–16 / 17–24, re-init → trained |
+|---|---|---|---|---|---|
+| `hdb_k_2` | centred | 43 | 46 | 42 | 0.6 → 3.0, 0.8 → 3.8, 0.9 → 5.5 |
+| `hdb_k_2` | raw | 26 | 27 | 19 | −0.6 → 3.5, −0.3 → 4.0, −0.3 → 3.2 |
+| `hdb_k_4` | centred | 22 | 19 | 12 | 0.2 → 2.5, 0.3 → 3.2, 0.5 → 3.0 |
+| `hdb_k_4` | raw | 21 | 26 | 12 | 0.0 → 2.8, 0.7 → 2.2, 1.0 → 2.0 |
+| `nn1` | centred | 56 | 56 | 56 | 26.8 → −18.5, 20.1 → −21.0, 17.1 → −15.9 |
+| `nn1` | raw | 56 | 56 | 56 | 21.7 → −11.9, 15.5 → −18.1, 13.3 → −14.4 |
+| `ci2` | centred | 56 | 45 | 54 | 5.8 → −0.4, 1.2 → −1.0, 0.3 → −2.5 |
+| `ci2` | raw | 53 | 46 | 49 | 5.3 → −0.9, 0.9 → −0.9, 0.2 → −1.9 |
+
+Per-seed counts (in `read.log`) agree across seeds; seeds 3 and 4 are not apart. **Reading:**
+every trained cloud is beyond the inits on `nn1` and nearly every one on `ci2`, but the
+two say different things. On `nn1`, inits are far *less* lumpy than their Gaussian
+(z +13 to +27) and trained clouds far *more* (−12 to −21). On `ci2`, the trained clouds are
+near their own Gaussian (−0.4 to −2.5) and the excess over the inits is mostly the inits'
+anti-lumpiness at L1–8 (+5.8). **"Beyond the inits" is not "lumpier than its covariance"**;
+both columns are in `trained.json` (`median_z`). `hdb_k_4`: 201 of 3,360 trained records
+have no z (their Gaussian's size-4 count does not vary: 0 at raw L1–8, 2 at centred L9–24)
+and count as not beyond, so its replication counts are lower bounds.
+
+**Per group** (seed 0; "learned" = `s` above its bar; "repl" = Jaccard ≥ 0.5 with a learned
+group in ≥ 6 of 9 other seeds):
+
+| frame | band | size 2: groups / `s > 1` / learned / repl | size 4: groups / `s > 1` / learned / repl |
+|---|---|---|---|
+| centred | L1–8 | 764 / 356 / 277 / **170** | 242 / 114 / 49 / 28 |
+| centred | L9–16 | 889 / 431 / 145 / **41** | 249 / 110 / 16 / 10 |
+| centred | L17–24 | 590 / 227 / 69 / **17** | 183 / 82 / 8 / 2 |
+| raw | L1–8 | 381 / 230 / 206 / **92** | 95 / 80 / 78 / 26 |
+| raw | L9–16 | 468 / 287 / 206 / **72** | 125 / 107 / 81 / 17 |
+| raw | L17–24 | 378 / 223 / 163 / **31** | 130 / 87 / 52 / 9 |
+
+515 of seed 0's 1,350 learned groups replicate. **They are content, not position:** 6 of
+the 515 are contiguous runs, the median span is 30× the group's size, and 89 have a member in
+the opening (offset < 8). By token they are lexical-semantic classes, many already at
+L1–2: {years, year, months}, {novelist, poet, novel, literature, collection, poems}, {never,
+Never, not, always}, {was, is, were}, {did, does, do}, {sister, siblings, sisters}, {king,
+gods, god}, number tokens in `latex_monograph`, French function words in `camus_letranger`.
+Learned and replicating groups **thin with depth** (centred size 2: 36 % / 16 % / 12 % of
+groups learned, 61 % / 28 % / 25 % of those replicating, by band): late layers have as many
+groups beyond their covariance (`s > 1`), but fewer beyond what an init's cloud reaches.
+Seeds 3 and 4 learn about twice as many groups at L17–24 (centred size 2: 129, 111 against
+52–69); their hits on seed 0's groups are like the rest's.
+
+**What this answers, and what it does not.** By the outcome table (`design-1d.md` "Unit 2"):
+trained beyond the inits and replicating across seeds, in every band, so learned structure
+is there; per group it is concentrated early. The learned, replicating groups look like
+**word-class similarity carried from the embedding**, present at L1, which the particle
+picture's clustering (tokens drawn together by attention over depth) does not predict to be
+strongest early. Whether any learned group is the dynamics' rather than the embedding's is not
+answered here: a group present at L1 and kept is not evidence of clustering by attention.
+That reading is the reviewer's to challenge.
+
+**Caveats.** (1) The first check's late lean (`ci2` raw L17–24 0.171 of 0.20) is where the
+late cells are read; the late `ci2` excess (repl 49–54) could carry some of it. (2) The
+per-cloud rule saturates: at N = 40, p ≤ 0.05 is "at most one re-init as far", and the
+trained `nn1` is 22–28 SD past the re-inits (median, by band and frame), so the rule says trained ≠ init and nothing finer.
+(3) Replication matches groups at the same (prompt, layer, frame, size) only. (4) 410m only;
+v1's 7 prompts.
+
+**Re-run:** `data/p1d/arch_null_trained_2026-10-02/run_trained.sh` from the worktree root
+(resumable: `run` step 0, `check --union trained`, `run` step143000, `read`; norms from
+`arch_null_2026-10-02/`). Tests: `tests/test_phase1d_arch_null.py`. **Next:** unit 1's groups
+that move ∩ this unit's learned and replicating groups (the candidate definition in the
+outcome table), with a per-layer origin reading (present at L1 or formed later) so the
+embedding's groups are told apart from groups formed with depth; then unit 3.
 
 ## Deleted and restored (was `FROZEN.md`)
 
