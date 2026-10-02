@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-10-02 (1d position-keeping null on v1 fails the step-0 control; 11⁗ decided: a five-unit programme (intervention, architecture null, scale spectrum, positive controls); #127, #128 merged; unit 0 of the programme (lit scan + design) in a PR; #124 brought up to `main`) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-10-02 (1d position-keeping null on v1 fails the step-0 control; 11⁗ decided: a five-unit programme (intervention, architecture null, scale spectrum, positive controls); #127, #128 merged; #124 merged; unit 0 of the programme (lit scan + design) in a PR) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
@@ -66,14 +66,12 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 10. *(Decided 2026-09-30: retire core/halo/contested; `design-1d.md` rewritten. Kept so the numbers above stay stable.)*
 11. *(Decided 2026-10-01: (b), done; 11′: keep M = 32 if step 0 passes on the long prompts, it did not; 11″: option (a), the position-keeping null, per-prompt counts beside the per-record verdict; 11‴ (2026-10-02): fit and draw before normalisation, smoother primary; run, fails all 6 cells. `status-1d.md` "Position-keeping null"; 11⁗ (2026-10-02): stop modelling nulls, run the five-unit programme in `status-1d.md` "Blocked 11⁗ decided": 0 lit scan + design, 1 move the text, 2 architecture null (random inits / PolyPythias), 3 scale spectrum, 4 positive controls. The estimator fix and the write-up are not taken up.)* Unit 0's design is fixed once #129 merges (its "Worth challenging" names the calls to check before unit 1 runs: T1 drops position 0 at step 0 too; the merge tree, not Markov stability, for unit 3).
 12. **Report HDBSCAN's tie order upstream?** Both `hdbscan` and scikit-learn's `HDBSCAN` change their clusters when the same points come in another row order (`status-1d.md` "Blocked 11″ decided"). Known upstream as a symptom (hdbscan #265, #409), never diagnosed or fixed. Draft: a comment on #265 and a new scikit-learn issue (`docs/upstream/hdbscan_ties.md`). Posting is public, so it is yours.
+13. **PDFs for the mean-field reading list**, ranked in its §4 (`docs/readings/meanfield_reading_list_2026-10-01.md`): 2604.01978, 2605.09213, 2412.09080 first. Scholarly hosts are blocked from the session.
 
 ## Open PRs and branches
 
-**Open: this unit (`claude/p1d-unit0-design`, in `../Mets-work`, docs only) and #124 (mean-field reading list, docs only; `main` merged into it 2026-10-02, mergeable).** Every other PR through #128 is merged; #128's branch and worktree, and the WIP `claude/p1d-position-null-run` (same patch as `c25dac8` on main), deleted 2026-10-02; main tree at `dfc62fe` (merge history: `git log --merges`). Remote branches left that no open PR uses: `claude/intelligent-fermat-w4ug56`, `claude/modest-cannon-c3t3j9`, `claude/p1d-attention-communities`, `rvm-onboard` (not checked; delete only after `git merge-base --is-ancestor`).
-#79 (`run_2d.py` measurement only + worktree-gate fix), #78, #77, #76 merged;
-`claude/p2d-runner-gates` deleted. **Branch cleanup done 2026-09-23 (user asked):** every remote and local branch except `main` deleted, the 3 non-ancestors included, after checking them: two held only merge commits with no hand resolution, and `cf5f7ee`'s 352 added
-lines are in main verbatim except 4 that main has since rewritten.
-`../Mets-work-3a` removed. The main tree's `main` was fast-forwarded to `origin/main` on 2026-09-24 (`21391c2`). Nightly smoke green since 2026-09-30.
+**Open: this unit (`claude/p1d-unit0-design`, in `../Mets-work`, docs only).** Every other PR through #128 is merged, #124 included (2026-10-02); #128's branch and worktree, and the WIP `claude/p1d-position-null-run` (same patch as `c25dac8` on main), deleted 2026-10-02; main tree at `153f6d4` (merge history: `git log --merges`). Remote branches left that no open PR uses: `claude/intelligent-fermat-w4ug56`, `claude/modest-cannon-c3t3j9`, `claude/p1d-attention-communities`, `rvm-onboard` (not checked; delete only after `git merge-base --is-ancestor`).
+Branch cleanup of 2026-09-23 (user asked; every branch but `main`, after checking each): `git log` of that date. Nightly smoke green since 2026-09-30.
 Current state: `./scripts/status.sh` (without `gh` it reads the public API; exit 1 = could not see).
 
 ## Where things stand (one line each; detail behind the pointer)

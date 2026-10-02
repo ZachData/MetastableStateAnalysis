@@ -838,6 +838,13 @@ a wrong premise, the check inherits it.
   the floor without writing out what partial R² is made of. Before
   selecting units on a fit statistic, write the statistic in terms of the
   estimate; if the estimate is in it, the selection is on the outcome.
+- 2026-10-01 (#124, reading list): the count of already-cited ids came from
+  a script and was right; the "where" table beside it was typed from memory
+  of an earlier grep and named the wrong file for 5 ids. Two rows set
+  constant-free scalings (√β, `n^{2/(d−1)}`) next to measured numbers. A
+  review found both. Generate a cross-reference table from the grep that
+  produced its count, and put no number from an unread paper beside a
+  measurement.
 - 2026-10-02 (#129): the design said the long-prompt continuations were "long
   enough for 1000 tokens" without opening `provenance.json` (`sullivan_ballou`'s
   is 550). It also cited a 0.5 Jaccard bar as "the identity control's recall",

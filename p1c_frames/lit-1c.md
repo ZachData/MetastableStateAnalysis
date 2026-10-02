@@ -124,9 +124,11 @@ null that might be wrong.
 1. **2604.23740** — is its spherical Euler discretisation the same object as ours,
    and is `α · Δτ ≈ 0.025` a measured effective step size?
 2. **2411.04990** — does the masked theory have a `γ_β` analogue?
-3. The `β*_n ≍ n^{2/(d−1)}` result — **find its actual paper**; it came from a
-   search summary attributed to the long-context scaling-limits line
-   (**2605.08505** **[N]**), and the attribution is not reliable.
+3. The `β*_n ≍ n^{2/(d−1)}` result — **attribution consistent at [S] 2026-10-01** (a second
+   search summary, so not independent of the first): a search summary of **2605.08505**'s own page (*Scaling Limits of Long-Context
+   Transformers*, Bruno, S. Chen, Z. Lin, Polyanskiy, Rigollet) gives it for uniform
+   keys on `S^{d−1}`, with sub-critical, critical and super-critical regimes
+   (`docs/readings/meanfield_reading_list_2026-10-01.md` §1 row 6). Only the paper settles it.
 4. **2605.10931** — what exactly concentrates, and at what rate.
 5. **2406.07247** — whether DMFT predicts metastable lifetimes we could compare
    `T_eff` against.

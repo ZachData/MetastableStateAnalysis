@@ -203,6 +203,7 @@ running median of the rows above it gets a line under the table saying why.
 - #123 is ~1.4× the running median: under 2×. STATE's hook output was again
   persisted and read three times at the start (30 kB, 150 lines of long cells).
 
+| 2026-10-01 | Mean-field reading list cross-referenced (docs only, before challenge-pr) | 29 | 170k | 3.7M | 32k | #124 |
 | 2026-10-01 | 1d identity-weights positive control: lit scan, design, simulator, admission (before challenge-pr) | 101 | 320k | 20.5M | 86k | #125 |
 
 - #125 is over 2× the running median total context (20.5M). Why: one prompt asked for
