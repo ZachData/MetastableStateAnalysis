@@ -189,6 +189,20 @@ any `step143000` record is opened; author and reviewer agree, the user may overr
 | primary tail of the per-cloud rank p | the lumpier tail, `gaussian_null.LUMPIER`: p = (1 + #{re-inits ≤ obs}) / (N + 1) for `nn1` and `ci2` (lumpier is lower), (1 + #{re-inits ≥ obs}) / (N + 1) for `hdb_k` (more groups). The other tail is reported, not read. The table above writes ≥ for every statistic, which for `nn1` / `ci2` would ask "less lumpy than init" |
 | token sets | T2's union over every model of the trained comparison (10 trained, 10 real inits, 40 re-inits); every prompt whose kept set changes is recomputed for every model, and the first check is re-run on the recomputed records before a trained cell is read |
 
+**Operational readings for the trained cells** (in `arch_null.py` `cloud_rules`,
+`group_rules`, `replication`, `read`, committed before any `step143000` cloud record
+was written; the step143000 norms were read for T2 only):
+
+| reading | value |
+|---|---|
+| T2 on the trained union | the norms add **one position per prompt: its first delimiter** (first `.` in five prompts, first `\n` in `hdbscan_code` and `latex_monograph`), massive in seeds 0 (`\n` only), 1 (`\n` only), 2, 4 (`camus_letranger` only), 5–9; seed 3 none. Every prompt's kept set changes, so **all 50 step-0 models are recomputed** (records in `data/p1d/arch_null_trained_2026-10-02/`; the first check's records stay where they were) |
+| per-cloud verdict | **beyond** if p ≤ 0.05 in the lumpier tail; at N = 40 that is at most one re-init as far as the trained z (p = 1/41 or 2/41). Also reported: the other tail's p, and the trained z among the re-inits' z (`z_vs_reinits`) |
+| per-group bar | per (prompt, layer, frame, size): the 95th percentile (numpy's linear) over the 40 re-inits of each re-init cloud's largest `s`; a cloud with no group gives 0, a group whose own Gaussian had none (`s` undefined, q95 = 0) counts as ∞ on both sides |
+| a failed first-check cell | its per-cloud rule refuses (z among the 10 real inits reported); the **per-group** rule of size m refuses in a (band, frame) where `hdb_k_m` fails (**placed**: `s` itself is not in the first check, and `hdb_k_m` is the statistic of the same level-set groups) |
+| group replication | seed 0's learned group against the **learned** groups of each other seed at the same (prompt, layer, frame, size); seeds 3, 4 count like the rest, and hits are listed per seed so their weight shows |
+| cloud replication | per (prompt, layer, frame, statistic): beyond in ≥ 8 of the 10 seeds |
+| opening | a replicating group with any member at offset < 8 is counted as in the opening (as unit 1) |
+
 ### Unit 3: one family on a continuous scale
 
 | choice | value | why, and what was rejected |

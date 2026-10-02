@@ -29,10 +29,12 @@ Token rules (`design-1d.md` "Token rules"), and how they are read here:
 - T1: position 0 is in no cloud.
 - T2: a position whose norm exceeds ``MASSIVE_RATIO`` x its layer's median
   (over all positions) at any of L2–20 in **any model of the comparison**
-  is dropped from every model's cloud of that prompt (`token_sets`). The
-  comparison is the ``step`` being run: the step-0 first check takes the
-  union over the 10 real inits and the re-inits only, so it reads no
-  trained run (as unit 1).
+  is dropped from every model's cloud of that prompt (`token_sets`). Two
+  comparisons (`comparison_models`): ``first``, the step-0 first check,
+  takes the union over the 10 real inits and the re-inits only, so it reads
+  no trained run (as unit 1); ``trained`` adds the 10 trained seeds at
+  ``TRAINED_STEP``, and its step-0 records are recomputed on that union and
+  the first check re-run on them before a trained cell is read.
 - T3: first occurrence of each string (one tokenizer, so one token set per
   prompt across models).
 
@@ -43,6 +45,12 @@ re-inits' at every (prompt, layer) by its mid-rank fraction ``u``; per
 if at most ``FIRST_CHECK_BOUND`` of those 70 medians fall in the outer
 ``OUTER`` of the re-inits (``u < OUTER/2`` or ``u > 1 − OUTER/2``). A cell
 that fails falls back to the 10 real inits, where every rank-p rule refuses.
+
+**Trained cells** (`read`; `design-1d.md` "For the trained cells"): per
+(seed, prompt, layer, frame, statistic) the rank p of the trained ``z_G``
+among the re-inits' in the lumpier tail (`LUMPIER_TAIL`), and per level-set
+group the learned rule (``s`` above the 95th percentile over the re-inits of
+each re-init cloud's largest ``s``); replication across the 10 seeds.
 
 Tier 1: exploratory, unregistered.
 """
@@ -82,6 +90,21 @@ FLAGGED_SEEDS = (3, 4)
 #: First check, placed (`design-1d.md`).
 OUTER = 0.10
 FIRST_CHECK_BOUND = 0.20
+#: The trained step read against the inits, and the T2 comparisons (`comparison_models`).
+TRAINED_STEP = "step143000"
+UNIONS = ("first", "trained")
+#: Primary tail of the per-cloud rank p: the lumpier one (`gaussian_null.LUMPIER`;
+#: more groups for ``hdb_k``). The other tail is reported, not read.
+LUMPIER_TAIL = {"hdb_k_2": "higher", "hdb_k_4": "higher", "nn1": "lower", "ci2": "lower"}
+_OTHER_TAIL = {"higher": "lower", "lower": "higher"}
+#: Replication, placed (`design-1d.md` "Unit 2"): a seed-0 group's best match in
+#: another seed at Jaccard >= this, in >= `REPLICATE_GROUP_SEEDS` of the 9 others;
+#: a per-cloud excess at p <= ALPHA in >= `REPLICATE_CLOUD_SEEDS` of all 10.
+REPLICATE_JACCARD = 0.5
+REPLICATE_GROUP_SEEDS = 6
+REPLICATE_CLOUD_SEEDS = 8
+#: Offsets that count as the prompt's opening (as unit 1).
+OPENING = 8
 BASE_REPO = "EleutherAI/pythia-410m"
 
 # Pythia's init (`lit-1d.md` §10 rows 2, 2a), by parameter name.
@@ -487,6 +510,192 @@ def raw_table(recs: Sequence[Dict], kinds=("init", "reinit")) -> List[Dict]:
 
 
 # ---------------------------------------------------------------------------
+# The trained cells (`design-1d.md` "For the trained cells")
+# ---------------------------------------------------------------------------
+
+def rank_p(obs: float, ref: Sequence[float], tail: str) -> float:
+    """(1 + #{``ref`` at least as far as ``obs`` in ``tail``}) / (N + 1)."""
+    ref = np.asarray(ref, dtype=np.float64)
+    n = np.sum(ref >= obs) if tail == "higher" else np.sum(ref <= obs)
+    return float((1 + n) / (ref.size + 1))
+
+
+def failed_cells(check_rows: Sequence[Dict]) -> set:
+    """The (statistic, frame, band) cells whose first check did not pass."""
+    return {(r["stat"], r["frame"], r["band"]) for r in check_rows if r["verdict"] != "pass"}
+
+
+def _z_against(o: float, ref: Sequence[float]) -> Optional[float]:
+    ref = np.asarray(ref, dtype=np.float64)
+    sd = float(ref.std(ddof=1))
+    return None if sd <= 0 else round(float((o - ref.mean()) / sd), 3)
+
+
+def cloud_rules(z0: Dict[Tuple, float], zt: Dict[Tuple, float], reinits: Sequence[str],
+                inits: Sequence[str], failed: set, prompts: Sequence[str] = V1_PASSAGES) -> List[Dict]:
+    """
+    Per (trained seed, prompt, layer, frame, statistic): the trained ``z_G``
+    (``zt``, keyed by the seed's init id) ranked among the re-inits' step-0
+    ``z_G`` (``z0``) in the lumpier tail (``p``; ``beyond`` if p <= ALPHA)
+    and the other (``p_other``), and its z among the re-inits'. In a cell
+    that failed the first check the rule refuses and z among the 10 real
+    inits is reported instead; a missing z anywhere is ``missing``.
+    """
+    rows = []
+    for mid in inits:
+        for p in prompts:
+            for L in LAYERS:
+                for f in FRAMES:
+                    for s in STATS:
+                        o = zt.get((mid, p, L, f, s))
+                        ref = [z0.get((r, p, L, f, s)) for r in reinits]
+                        row = {"seed": int(mid.split(":")[1]), "prompt": p, "layer": L, "frame": f,
+                               "stat": s, "z": o, "p": None, "p_other": None}
+                        if o is None or any(v is None for v in ref):
+                            row["verdict"] = "missing"
+                        elif (s, f, band(L)) in failed:
+                            ini = [z0.get((r, p, L, f, s)) for r in inits]
+                            row.update(verdict="refuses (unresolvable at N = 10)",
+                                       z_vs_inits=None if None in ini else _z_against(o, ini))
+                        else:
+                            t = LUMPIER_TAIL[s]
+                            pp = rank_p(o, ref, t)
+                            row.update(p=round(pp, 4), p_other=round(rank_p(o, ref, _OTHER_TAIL[t]), 4),
+                                       z_vs_reinits=_z_against(o, ref),
+                                       verdict="beyond" if pp <= ALPHA else "within")
+                        rows.append(row)
+    return rows
+
+
+def cloud_summary(rows: Sequence[Dict], seeds: Sequence[int]) -> List[Dict]:
+    """
+    Per (statistic, frame, band): beyond counts per seed (of the band's
+    prompt x layer), the (prompt, layer)s beyond in >= `REPLICATE_CLOUD_SEEDS`
+    seeds, the other tail's count, and median z (trained ``z_G``, z among re-inits).
+    """
+    cells: Dict[Tuple, List[Dict]] = {}
+    for r in rows:
+        cells.setdefault((r["stat"], r["frame"], band(r["layer"])), []).append(r)
+    out = []
+    for s in STATS:
+        for f in FRAMES:
+            for b in BANDS:
+                rs = cells.get((s, f, b), [])
+                by_pl: Dict[Tuple, int] = {}
+                for r in rs:
+                    by_pl[(r["prompt"], r["layer"])] = by_pl.get((r["prompt"], r["layer"]), 0) + (r["verdict"] == "beyond")
+                zs = [r["z"] for r in rs if r["z"] is not None]
+                zr = [r["z_vs_reinits"] for r in rs if r.get("z_vs_reinits") is not None]
+                out.append({"stat": s, "frame": f, "band": b, "tail": LUMPIER_TAIL[s],
+                            "n_per_seed": len(by_pl),
+                            "beyond_by_seed": {sd: sum(r["verdict"] == "beyond" for r in rs if r["seed"] == sd)
+                                               for sd in seeds},
+                            "other_tail_by_seed": {sd: sum(r["p_other"] is not None and r["p_other"] <= ALPHA
+                                                           for r in rs if r["seed"] == sd) for sd in seeds},
+                            "n_replicating": sum(v >= REPLICATE_CLOUD_SEEDS for v in by_pl.values()),
+                            "n_refused": sum(r["verdict"].startswith("refuses") for r in rs),
+                            "n_missing": sum(r["verdict"] == "missing" for r in rs),
+                            "median_z_trained": round(float(np.median(zs)), 2) if zs else None,
+                            "median_z_vs_reinits": round(float(np.median(zr)), 2) if zr else None})
+    return out
+
+
+def _max_s(groups: Sequence[Dict]) -> float:
+    """A cloud's largest ``s``: 0 with no group; inf for a group whose Gaussian had none (``s`` None)."""
+    return max((math.inf if g["s"] is None else g["s"] for g in groups), default=0.0)
+
+
+def group_bars(recs0: Sequence[Dict], reinits: Sequence[str]) -> Dict[Tuple, float]:
+    """``{(prompt, layer, frame, size): bar}``: the 95th percentile, over the re-inits, of each re-init cloud's largest ``s``."""
+    mx: Dict[Tuple, List[float]] = {}
+    for r in recs0:
+        if r["model"] not in reinits:
+            continue
+        for lay in r["layers"]:
+            for m, a in lay["arms"].items():
+                mx.setdefault((r["prompt"], lay["layer"], lay["frame"], int(m)), []).append(_max_s(a["groups"]))
+    bad = {k: len(v) for k, v in mx.items() if len(v) != len(reinits)}
+    if bad:
+        raise ValueError(f"group bars need every re-init: {list(bad.items())[:3]}")
+    return {k: float(np.quantile(np.asarray(v), 1 - ALPHA)) for k, v in mx.items()}
+
+
+def group_rules(trained: Sequence[Dict], bars: Dict[Tuple, float], failed: set) -> List[Dict]:
+    """
+    Per trained level-set group: ``s``, ``s > 1`` (admission's verdict),
+    and ``learned`` (``s`` > its bar). The rule refuses (``learned`` None)
+    where the size's ``hdb_k`` cell failed the first check.
+    """
+    rows = []
+    for r in trained:
+        sd = int(r["model"].split(":")[1])
+        for lay in r["layers"]:
+            L, f = lay["layer"], lay["frame"]
+            for m, a in lay["arms"].items():
+                bar = bars[(r["prompt"], L, f, int(m))]
+                refuse = (f"hdb_k_{m}", f, band(L)) in failed
+                for g in a["groups"]:
+                    s = math.inf if g["s"] is None else g["s"]
+                    rows.append({"seed": sd, "prompt": r["prompt"], "layer": L, "frame": f, "size": int(m),
+                                 "members": g["members"], "s": None if g["s"] is None else round(s, 4),
+                                 "bar": round(bar, 4), "admitted": s > 1,
+                                 "learned": None if refuse else bool(s > bar)})
+    return rows
+
+
+def jaccard(a: Sequence[int], b: Sequence[int]) -> float:
+    a, b = set(a), set(b)
+    return len(a & b) / len(a | b) if a | b else 0.0
+
+
+def replication(rows: Sequence[Dict], seeds: Sequence[int], base: int = 0) -> List[Dict]:
+    """
+    Every learned group of seed ``base``, with its best Jaccard against the
+    learned groups of each other seed at the same (prompt, layer, frame,
+    size); a hit is >= `REPLICATE_JACCARD`; it **replicates** with hits in
+    >= `REPLICATE_GROUP_SEEDS` seeds.
+    """
+    learned: Dict[Tuple, List[List[int]]] = {}
+    for r in rows:
+        if r["learned"]:
+            learned.setdefault((r["seed"], r["prompt"], r["layer"], r["frame"], r["size"]), []).append(r["members"])
+    out = []
+    for r in rows:
+        if r["seed"] != base or not r["learned"]:
+            continue
+        key = (r["prompt"], r["layer"], r["frame"], r["size"])
+        best = {sd: max((jaccard(r["members"], g) for g in learned.get((sd, *key), [])), default=0.0)
+                for sd in seeds if sd != base}
+        hits = [sd for sd, j in best.items() if j >= REPLICATE_JACCARD]
+        out.append({**{k: r[k] for k in ("prompt", "layer", "frame", "size", "members", "s", "bar")},
+                    "best_jaccard": {sd: round(j, 3) for sd, j in best.items()}, "hits": hits,
+                    "replicates": len(hits) >= REPLICATE_GROUP_SEEDS})
+    return out
+
+
+def group_summary(rows: Sequence[Dict], rep: Sequence[Dict], seeds: Sequence[int]) -> List[Dict]:
+    """Per (frame, band, size): groups, admitted, learned (per seed), seed 0's learned that replicate."""
+    out = []
+    for f in FRAMES:
+        for b in BANDS:
+            for m in MIN_CLUSTER_SIZES:
+                rs = [r for r in rows if r["frame"] == f and band(r["layer"]) == b and r["size"] == m]
+                rp = [r for r in rep if r["frame"] == f and band(r["layer"]) == b and r["size"] == m]
+                ok = [r for r in rp if r["replicates"]]
+                out.append({"frame": f, "band": b, "size": m,
+                            "refused": any(r["learned"] is None for r in rs),
+                            "groups_by_seed": {sd: sum(r["seed"] == sd for r in rs) for sd in seeds},
+                            "admitted_by_seed": {sd: sum(r["seed"] == sd and r["admitted"] for r in rs) for sd in seeds},
+                            "learned_by_seed": {sd: sum(r["seed"] == sd and bool(r["learned"]) for r in rs)
+                                                for sd in seeds},
+                            "seed0_learned": len(rp), "seed0_replicating": len(ok),
+                            "hits_by_seed": {sd: sum(sd in r["hits"] for r in rp) for sd in seeds if sd != 0},
+                            "replicating_in_opening": sum(min(r["members"]) < OPENING for r in ok),
+                            "replicating_median_size": float(np.median([len(r["members"]) for r in ok])) if ok else None})
+    return out
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -544,19 +753,37 @@ def norms_cmd(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
-def _load_norms(out: Path, step: str, mids: Sequence[str]) -> Dict[str, Dict]:
-    d = out / step / "norms"
-    missing = [m for m in mids if not (d / f"{_mfile(m)}.json").exists()]
+def _load_norms(root: Path, pairs: Sequence[Tuple[str, str]]) -> Dict[str, Dict]:
+    """Every comparison member's norms record, by `label`; refuses if any is missing."""
+    f = {label(st, m): root / st / "norms" / f"{_mfile(m)}.json" for st, m in pairs}
+    missing = [k for k, v in f.items() if not v.exists()]
     if missing:
         raise SystemExit(f"refusing: T2 needs every model's norms; missing {missing}")
-    return {m: json.loads((d / f"{_mfile(m)}.json").read_text()) for m in mids}
+    return {k: json.loads(v.read_text()) for k, v in f.items()}
 
 
-def comparison_models(step: str) -> List[str]:
-    """The models whose T2 union fixes a step's token sets: step 0 reads no trained run."""
-    if step != "step0":
-        raise NotImplementedError("trained steps: after the first check (`design-1d.md` Unit 2)")
-    return model_ids("all")
+def comparison_models(union: str) -> List[Tuple[str, str]]:
+    """
+    The (step, model) pairs whose T2 union fixes the token sets: ``first``
+    (the step-0 first check) reads no trained run; ``trained`` adds the 10
+    trained seeds at ``TRAINED_STEP`` (`design-1d.md` "For the trained cells").
+    """
+    first = [("step0", m) for m in model_ids("all")]
+    if union == "first":
+        return first
+    if union == "trained":
+        return [(TRAINED_STEP, m) for m in model_ids("init")] + first
+    raise ValueError(union)
+
+
+def label(step: str, mid: str) -> str:
+    """A comparison member's name: the model id at step 0 (as the first check wrote it), else ``step/model``."""
+    return mid if step == "step0" else f"{step}/{mid}"
+
+
+def steps_of(union: str) -> Tuple[str, ...]:
+    """The steps a comparison's records are run at."""
+    return ("step0",) if union == "first" else ("step0", TRAINED_STEP)
 
 
 def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
@@ -570,15 +797,21 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--torch-threads", type=int, default=None)
+    ap.add_argument("--union", choices=UNIONS, default="first",
+                    help="the T2 comparison (`comparison_models`)")
+    ap.add_argument("--norms", type=Path, default=None, help="root of <step>/norms (default --out)")
     args = ap.parse_args(argv)
+    if args.step not in steps_of(args.union):
+        raise SystemExit(f"refusing: step {args.step} is not in the {args.union!r} comparison")
     import torch
     if args.torch_threads:
         torch.set_num_threads(args.torch_threads)
     tok = _tok()
     ids = prompt_ids(tok)
     keys = args.keys or list(ids)
-    comp = comparison_models(args.step)
-    norms = _load_norms(args.out, args.step, comp)
+    pairs = comparison_models(args.union)
+    comp = [label(st, m) for st, m in pairs]
+    norms = _load_norms(args.norms or args.out, pairs)
     toks = {k: tok.convert_ids_to_tokens(ids[k]) for k in ids}
     sets = token_sets(toks, {m: {k: {int(p): tuple(v) for p, v in t.items()}
                                  for k, t in n["massive"].items()} for m, n in norms.items()})
@@ -587,8 +820,8 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     meta = {"git": _git_head(), "step": args.step, "seed": args.seed, "n_draws": args.n_draws,
             "settings": {"massive_ratio": MASSIVE_RATIO, "massive_layers": [MASSIVE_LAYERS[0], MASSIVE_LAYERS[-1]],
                          "frames": FRAMES, "min_cluster_sizes": MIN_CLUSTER_SIZES, "alpha": ALPHA,
-                         "v1_max_tokens": V1_MAX_TOKENS, "comparison": comp}}
-    mids = args.only or model_ids(args.models)
+                         "v1_max_tokens": V1_MAX_TOKENS, "union": args.union, "comparison": comp}}
+    mids = args.only or model_ids("init" if args.step != "step0" else args.models)
     pool = make_pool(args.workers)
     for mid in mids:
         d = args.out / args.step / _mfile(mid)
@@ -613,22 +846,32 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
-def load_records(out: Path, step: str, mids: Sequence[str]) -> List[Dict]:
+def load_records(out: Path, step: str, mids: Sequence[str], union: Optional[str] = None) -> List[Dict]:
+    """
+    Every existing record of ``mids`` at ``step``. With ``union``, refuses a
+    record whose T2 comparison is not that union's (a record of the other
+    union has other token sets).
+    """
     recs = []
+    want = None if union is None else [label(st, m) for st, m in comparison_models(union)]
     for m in mids:
         for k in V1_PASSAGES:
             f = out / step / _mfile(m) / f"{k}.json"
             if f.exists():
-                recs.append(json.loads(f.read_text()))
+                r = json.loads(f.read_text())
+                if want is not None and r["meta"]["settings"]["comparison"] != want:
+                    raise SystemExit(f"refusing: {f} was run on another T2 comparison than {union!r}")
+                recs.append(r)
     return recs
 
 
 def check_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="arch_null check")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--union", choices=UNIONS, default="first")
     args = ap.parse_args(argv)
     inits, reinits = model_ids("init"), model_ids("reinit")
-    recs = load_records(args.out, "step0", inits + reinits)
+    recs = load_records(args.out, "step0", inits + reinits, args.union)
     want = len(V1_PASSAGES) * (len(inits) + len(reinits))
     if len(recs) != want:
         print(f"refusing: {len(recs)} of {want} step-0 records", file=sys.stderr)
@@ -638,7 +881,7 @@ def check_cmd(argv: Optional[Sequence[str]] = None) -> int:
     (args.out / "first_check_power.json").write_text(json.dumps(pw, indent=1) + "\n")
     res = {"rows": rows, "raw": raw_table(recs), "git": sorted({r["meta"]["git"] for r in recs}),
            "n_draws": sorted({r["meta"]["n_draws"] for r in recs}),
-           "bound": FIRST_CHECK_BOUND, "outer": OUTER, "flagged_seeds": FLAGGED_SEEDS}
+           "bound": FIRST_CHECK_BOUND, "outer": OUTER, "flagged_seeds": FLAGGED_SEEDS, "union": args.union}
     (args.out / "first_check.json").write_text(json.dumps(res, indent=1) + "\n")
     print(f"first check: share of (init, prompt) band-median ranks in the re-inits' outer "
           f"{OUTER:.0%}; pass <= {FIRST_CHECK_BOUND:.0%}")
@@ -656,9 +899,67 @@ def check_cmd(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
+def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
+    """The trained cells; refuses unless the first check was re-run on the trained union's records."""
+    ap = argparse.ArgumentParser(prog="arch_null read")
+    ap.add_argument("--out", type=Path, required=True)
+    args = ap.parse_args(argv)
+    fc_file = args.out / "first_check.json"
+    if not fc_file.exists() or json.loads(fc_file.read_text()).get("union") != "trained":
+        print("refusing: run `check --union trained` on the recomputed step-0 records first", file=sys.stderr)
+        return 1
+    inits, reinits = model_ids("init"), model_ids("reinit")
+    seeds = [int(m.split(":")[1]) for m in inits]
+    recs0 = load_records(args.out, "step0", inits + reinits, "trained")
+    rect = load_records(args.out, TRAINED_STEP, inits, "trained")
+    if len(recs0) != len(V1_PASSAGES) * (len(inits) + len(reinits)) or len(rect) != len(V1_PASSAGES) * len(inits):
+        print(f"refusing: {len(recs0)} step-0 and {len(rect)} trained records", file=sys.stderr)
+        return 1
+    check = first_check(recs0, reinits, inits)
+    stored = {(r["stat"], r["frame"], r["band"]): r["verdict"]
+              for r in json.loads(fc_file.read_text())["rows"]}
+    if stored != {(r["stat"], r["frame"], r["band"]): r["verdict"] for r in check}:
+        print("refusing: the stored first check does not match these records", file=sys.stderr)
+        return 1
+    failed = failed_cells(check)
+    crows = cloud_rules(z_table(recs0), z_table(rect), reinits, inits, failed)
+    csum = cloud_summary(crows, seeds)
+    grows = group_rules(rect, group_bars(recs0, reinits), failed)
+    rep = replication(grows, seeds)
+    gsum = group_summary(grows, rep, seeds)
+    tok = _tok()
+    ids = prompt_ids(tok)
+    strs = {k: tok.convert_ids_to_tokens(v) for k, v in ids.items()}
+    for r in rep:
+        r["tokens"] = [strs[r["prompt"]][i] for i in r["members"]]
+    res = {"git": _git_head(), "records_git": sorted({r["meta"]["git"] for r in recs0 + rect}),
+           "failed_cells": sorted(failed), "alpha": ALPHA, "tails": LUMPIER_TAIL,
+           "replicate": {"jaccard": REPLICATE_JACCARD, "group_seeds": REPLICATE_GROUP_SEEDS,
+                         "cloud_seeds": REPLICATE_CLOUD_SEEDS}, "flagged_seeds": FLAGGED_SEEDS,
+           "cloud_summary": csum, "group_summary": gsum, "seed0_learned_groups": rep}
+    (args.out / "trained.json").write_text(json.dumps(res, indent=1) + "\n")
+    (args.out / "trained_rows.json").write_text(json.dumps({"cloud": crows, "group": grows}) + "\n")
+    print(f"failed first-check cells (rules refuse there): {sorted(failed) or 'none'}")
+    print(f"per cloud: (prompt, layer)s beyond the re-inits (p <= {ALPHA}, lumpier tail) per seed 0..9; "
+          f"replicating = beyond in >= {REPLICATE_CLOUD_SEEDS} of 10")
+    for r in csum:
+        print(f"  {r['stat']:8s} {r['frame']:8s} {r['band']:7s} of {r['n_per_seed']:2d}: "
+              f"{' '.join(f'{v:2d}' for v in r['beyond_by_seed'].values())} | repl {r['n_replicating']:2d} "
+              f"| other tail s0 {r['other_tail_by_seed'][0]:2d} | z {r['median_z_trained']} "
+              f"vs re-inits {r['median_z_vs_reinits']} refused {r['n_refused']} missing {r['n_missing']}")
+    print(f"per group: learned per seed 0..9; seed 0's learned replicating "
+          f"(Jaccard >= {REPLICATE_JACCARD} in >= {REPLICATE_GROUP_SEEDS} of 9)")
+    for r in gsum:
+        print(f"  {r['frame']:8s} {r['band']:7s} size {r['size']}: groups s0 {r['groups_by_seed'][0]:3d} "
+              f"admitted s0 {r['admitted_by_seed'][0]:3d} learned {' '.join(f'{v:3d}' for v in r['learned_by_seed'].values())}"
+              f" | repl {r['seed0_replicating']}/{r['seed0_learned']} (opening {r['replicating_in_opening']}, "
+              f"median size {r['replicating_median_size']}){' REFUSED' if r['refused'] else ''}")
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"norms": norms_cmd, "run": run_cmd, "check": check_cmd}
+    cmds = {"norms": norms_cmd, "run": run_cmd, "check": check_cmd, "read": read_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: arch_null {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2
