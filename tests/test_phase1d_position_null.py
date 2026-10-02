@@ -40,9 +40,15 @@ class TestSyntheticOpening:
 
     def test_the_gaussian_admits_the_opening(self):
         # #122's null (unit rows): the failure this null exists to remove.
-        # Observed 7 / 10 raw, 10 / 10 centred; this is what makes the next
-        # test able to fail.
+        # Observed 7 / 10 raw, 10 / 10 centred.
         assert sum(_admits(_opening(s), "raw", "gaussian", s) for s in SEEDS) >= 5
+
+    def test_flat_admits_the_opening_centred(self):
+        # The matched comparator: the same draw before normalisation, no
+        # position (`/challenge-pr` on #128, finding 2). Observed 6 / 10
+        # centred, so the centred smooth test below can fail; raw it is only
+        # 2 / 10, and the raw smooth test separates them by one seed.
+        assert sum(_admits(_opening(s), "centred", "flat", s) for s in SEEDS) >= 4
 
     @pytest.mark.parametrize("frame", ["raw", "centred"])
     def test_smooth_null_does_not(self, frame):
@@ -63,9 +69,9 @@ class TestSyntheticOpening:
 
 
 class TestAlgebra:
-    def test_gaussian_kind_is_gaussian_draw_unnormalised(self):
+    def test_flat_kind_is_gaussian_draw_unnormalised(self):
         Y = _opening(1)[:40]
-        mu, R, _ = pn.fit(Y, np.arange(40), "gaussian")
+        mu, R, _ = pn.fit(Y, np.arange(40), "flat")
         a = pn.draw(mu, R, np.random.default_rng(5))
         b = gaussian_draw(Y, np.random.default_rng(5), renorm=False)
         np.testing.assert_allclose(a, b, atol=1e-12)
@@ -134,3 +140,35 @@ def test_driver_fits_on_raw_rows(tmp_path):
     assert 7 not in rec["keep"]
     assert rec["info"]["position_null"] == want["info"]["position_null"]
     assert rec["arms"]["2"]["null"]["excess"] == want["arms"]["2"]["null"]["excess"]
+
+
+def _raw_run(root, step, Y):
+    d = root / "2026-01-01_00-00-00" / f"pythia-410m-{step}_wiki_paragraph"
+    d.mkdir(parents=True)
+    norms = np.linalg.norm(Y, axis=1)
+    np.savez(d / "activations.npz", activations=_unit_rows(Y)[None].repeat(2, 0).astype(np.float32),
+             norms=norms[None].repeat(2, 0).astype(np.float32))
+    (d / "geometry.json").write_text(json.dumps({"tokens": [f"t{i}" for i in range(len(Y))]}))
+    return d
+
+
+def test_report_withholds_a_one_row_null(tmp_path):
+    # `/challenge-pr` on #128, finding 1: trained L9-16's null is token 0's
+    # massive activation, admits nothing, and its calibration admits nothing
+    # either, so only `RESID_TOP_BOUND` stops it being released as "0".
+    from p1d_cluster_ensemble.admit import table
+    trained = _opening(9, 0.0)[:60]
+    trained[0] *= 40.0
+    runs = [_raw_run(tmp_path / "a", "step143000", trained),
+            _raw_run(tmp_path / "b", "step0", _opening(10, 0.0)[:60])]
+    settings = {"seed": 0, "alpha": 0.05, "min_cluster_sizes": [2, 4], "n_draws": 3,
+                "null": "smooth", "inputs": [str(r) for r in runs]}
+    real = [_job((str(r), 1, "raw", 3, 0, False, 0, "smooth")) for r in runs]
+    cal = [_job((str(r), 1, "raw", 3, 0, True, 0, "smooth")) for r in runs]
+    rows = table({**settings, "records": real}, {**settings, "calibrate": True, "records": cal})
+    cell = next(r for r in rows if r["step"] == "step143000" and r["stat"] == "excess"
+                and r["arm"] == "2")
+    assert not cell["released"] and cell["withheld"].startswith("one row owns")
+    ctrl = next(r for r in rows if r["step"] == "step0" and r["stat"] == "excess"
+                and r["arm"] == "2")
+    assert ctrl["real"]["one_row_null"] == 0

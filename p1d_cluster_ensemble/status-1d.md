@@ -2065,8 +2065,26 @@ normalisation hands token 0's massive activation (norm ~45× the median at L6–
 written per record) is median 0.92 at L9–16, 0.70 at L17–24 (step 0: ≤ 0.02). Each draw is
 then mostly ±one direction, its groups are very tight (per-draw maximum `excess` ~21–27 vs
 ~0.05–0.09 at step 0, `wiki_paragraph` L12), and **step143000 admits in 0 of 56 records at
-L9–16** under both nulls. That zero is the null, not the model. The release rule withholds
-every trained cell anyway (the control fails), so nothing trained is read.
+L9–16** under both nulls. That zero is the null, not the model, and its calibration (0 of
+56) cannot catch it. *Fixed after `/challenge-pr` on #128, finding 1:* `admit report` now
+withholds any cell with a record above `RESID_TOP_BOUND` = 0.5 (placed after this run; step 0
+≤ 0.02): every step143000 cell, in 21 · 56 · 39 of 56 records by band (reports re-made, records
+unchanged). Nothing trained is read.
+
+**The synthetic's comparator** (*after `/challenge-pr` on #128, finding 2*): #122's Gaussian
+differs from `smooth` both in where it draws and in keeping no position. The matched one,
+`--null flat` (no position, drawn before normalisation), admits the synthetic opening in 6 /
+10 centred and 2 / 10 raw (reviewer's run). So the centred test carries the evidence (6 → 0);
+raw separates the two by one seed. Now `test_flat_admits_the_opening_centred`.
+
+**The primary fails its own calibration** (*finding 3*): centred L9–16 / L17–24 admit in 12 /
+10 of 56 on pseudo-data drawn from the null's own model, which points at the estimator as
+well as the data. The reviewer found that the leave-one-out mean used for the draw (CV's
+candidate, not refitted in-sample) recovers ~39 % of token 0's positional shift on the
+synthetic at `h` 0.68, against ~68 % in-sample; the synthetic still passes at 0.68, so it is
+not shown to cause the real failure. A fix can be judged first on its own calibration
+(pseudo-data, no real control needed) and then on a fresh control, which makes option (ii)
+less post hoc than first written.
 
 **What this does not show.** That no position-keeping null can pass: the two tried keep the
 mean only. The diagnosis was read on the control the null was set against, so a null designed

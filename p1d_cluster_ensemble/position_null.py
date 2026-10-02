@@ -25,8 +25,10 @@ drawn on unit rows, admitted a synthetic opening in 7 of 10 seeds.
   ``P_t`` the causal running mean of the kept rows before ``t`` (the first
   kept row gets ``mean(P[1:])``), ``c`` one least-squares scalar on the
   centred regressor. It under-fits the synthetic opening (c ~ 0.5).
-- ``gaussian``: ``mu_t = mean(Y)``: `gaussian_draw` with ``renorm=False``,
-  draw for draw (a test), i.e. #122's null moved before normalisation.
+- ``flat``: ``mu_t = mean(Y)``: `gaussian_draw` with ``renorm=False``,
+  draw for draw (a test), i.e. #122's null moved before normalisation. The
+  comparator that differs from ``smooth`` only in keeping no position
+  (`/challenge-pr` on #128, finding 2).
 
 ``R`` is the regression residual, centred, so the draw has the residual's
 covariance around a mean that keeps position. All fits act on rows, so they
@@ -43,7 +45,7 @@ import numpy as np
 
 from .gaussian_null import _unit_rows, mean_direction
 
-NULLS = ("gaussian", "smooth", "prefix")
+NULLS = ("flat", "smooth", "prefix")
 #: PLACED (`status-1d.md` "Blocked 11″ decided"): bandwidths on log(1 + position).
 SMOOTH_BANDWIDTHS = tuple(float(h) for h in np.geomspace(0.02, 4.0, 16))
 
@@ -100,7 +102,7 @@ def fit(Y: np.ndarray, positions: Sequence[int], null: str) -> Tuple[np.ndarray,
     Y = np.asarray(Y, dtype=np.float64)
     if len(positions) != Y.shape[0] or np.any(np.diff(np.asarray(positions)) <= 0):
         raise ValueError("positions must be one strictly increasing position per row")
-    if null == "gaussian":
+    if null == "flat":
         mu, info = np.broadcast_to(Y.mean(axis=0), Y.shape).copy(), {}
     elif null == "prefix":
         mu, info = fit_prefix(Y)

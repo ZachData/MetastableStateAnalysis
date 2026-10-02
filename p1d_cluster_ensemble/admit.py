@@ -78,6 +78,10 @@ ALPHA = 0.05
 RELEASE_BOUND = 2 * ALPHA
 #: The untrained checkpoint: no learned content, so it must not admit.
 CONTROL_STEP = "step0"
+#: PLACED after the v1 run (`/challenge-pr` on #128, finding 1): a position null
+#: whose drawn noise is more than this share one row's is withheld, not read.
+#: Step 0 sits at <= 0.02; trained L9-16 at ~0.92 (token 0's massive activation).
+RESID_TOP_BOUND = 0.5
 BANDS = ("L1-8", "L9-16", "L17-24")
 NOT_TESTED, NOT_ADMITTED, BEFORE_MIN_POSITION = -1, -2, -3
 
@@ -448,9 +452,11 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--min-position", type=int, default=0,
                     help="diagnostic arm: test only kept tokens at absolute position >= this "
                          "(drops the prompt's opening; `status-1d.md` \"Position\")")
-    ap.add_argument("--null", default="gaussian", choices=("gaussian", "smooth", "prefix"),
+    ap.add_argument("--null", default="gaussian", choices=("gaussian", "smooth", "prefix",
+                                                              "flat"),
                     help="gaussian (#122), or keep position, fitted and drawn before "
-                         "normalisation: smooth (primary) / prefix (arm) (`position_null`, "
+                         "normalisation: smooth (primary) / prefix (arm) / flat (no "
+                         "position; the comparator) (`position_null`, "
                          "`status-1d.md` \"Position-keeping null\")")
     add_holdout_args(ap)
     args = ap.parse_args(argv)
@@ -550,7 +556,9 @@ def _cell(recs: List[Dict], arm: str, stat: str) -> Dict:
             "shipped_tie_artefacts": int(sum(r["arms"][arm]["shipped"]["tie_artefacts"]
                                              for r in recs)),
             "admitted_pairs": int(sum(g["size"] == 2 for g in adm)),
-            "admitted_median_size": float(np.median([g["size"] for g in adm])) if adm else None}
+            "admitted_median_size": float(np.median([g["size"] for g in adm])) if adm else None,
+            "one_row_null": int(sum(r["info"].get("position_null", {}).get("resid_top_share", 0.0)
+                                    > RESID_TOP_BOUND for r in recs))}
 
 
 def table(real: Dict, cal: Dict) -> List[Dict]:
@@ -558,7 +566,9 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
     Per (statistic, arm, step, frame, band): real against its own
     calibration, and whether the cell's labels may be released.
 
-    A cell is released only if (1) its calibration admits in at most
+    A cell is released only if (0) no record's position null gives one row
+    more than ``RESID_TOP_BOUND`` of the drawn noise (such a null is mostly
+    one direction and cannot reject: trained L9-16, token 0), (1) its calibration admits in at most
     ``RELEASE_BOUND`` of its records, (2) it is not the control step, and
     (3) the control step, same statistic / arm / frame / band, also admits
     in at most ``RELEASE_BOUND`` of its records. A file without the control
@@ -600,7 +610,10 @@ def table(real: Dict, cal: Dict) -> List[Dict]:
                for r in rows if r["step"] == CONTROL_STEP}
     for r in rows:
         c, k = r["cal"], control.get((r["stat"], r["arm"], r["frame"], r["band"]))
-        if c["records_admitting"] > RELEASE_BOUND * c["n"]:
+        if r["real"]["one_row_null"]:
+            why = (f"one row owns > {RESID_TOP_BOUND:.0%} of the null's noise in "
+                   f"{r['real']['one_row_null']} of {r['real']['n']} records")
+        elif c["records_admitting"] > RELEASE_BOUND * c["n"]:
             why = f"calibration admits in {c['records_admitting']} of {c['n']} records"
         elif r["step"] == CONTROL_STEP:
             why = "the control step"
