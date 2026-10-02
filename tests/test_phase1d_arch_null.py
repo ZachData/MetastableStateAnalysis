@@ -53,6 +53,9 @@ def test_reinit_draws_every_parameter_at_its_pythia_sigma():
         else:
             assert float(p.std()) == pytest.approx(sig[c], rel=5 / math.sqrt(2 * p.numel())), name
     assert seen == {"zero", "one", "small", "wang"}
+    # Every drawn weight is a float16 value, as every real init's is (#131 finding 3).
+    w0 = dict(m.named_parameters())["gpt_neox.layers.0.attention.dense.weight"]
+    assert bool((w0.half().float() == w0).all())
     # Same seed, same weights; another seed, others.
     a = dict(an.reinit_model(cfg, 3).named_parameters())
     b = dict(an.reinit_model(cfg, 4).named_parameters())
@@ -134,6 +137,33 @@ def test_first_check_passes_when_the_inits_are_re_inits():
 def test_first_check_fails_a_shifted_init_and_counts_the_side():
     rows = an.first_check(_recs(shift=3.0), [f"reinit:{i}" for i in range(40)], an.model_ids("init"))
     assert all(r["verdict"].startswith("fail") and r["n_high"] > r["n_low"] for r in rows)
+
+
+def test_first_check_sensitivity_is_between_1_and_1_5_sd():
+    """
+    What the placed rule can see, with layers independent (`/challenge-pr` on
+    #131): every real init shifted by 1 SD of the re-inits' z still passes
+    every cell; 1.5 SD fails most. Correlated layers shrink the band median
+    less, so real layers can only make it more sensitive than this.
+    """
+    re = [f"reinit:{i}" for i in range(40)]
+    one = an.first_check(_recs(shift=1.0), re, an.model_ids("init"))
+    more = an.first_check(_recs(shift=1.5), re, an.model_ids("init"))
+    assert all(r["verdict"] == "pass" for r in one)
+    assert sum(r["verdict"] == "pass" for r in more) <= 2
+
+
+def test_power_ranks_held_out_and_real_against_the_same_references():
+    recs = _recs(n_re=40)
+    pw = an.power(recs, [f"reinit:{i}" for i in range(40)], an.model_ids("init"))
+    assert len(pw) == len(an.STATS) * len(an.FRAMES) * len(an.BANDS)
+    assert all(p["n_ref"] == 30 for p in pw)
+    # Same distribution: per-layer shares agree, near 2 x 2/31 at N = 30.
+    for p in pw:
+        assert abs(p["layer_share_real_mean"] - p["layer_share_heldout_mean"]) < 0.06
+        assert 0.07 < p["layer_share_heldout_mean"] < 0.20
+    with pytest.raises(ValueError, match="folds"):
+        an.power(_recs(n_re=30), [f"reinit:{i}" for i in range(30)], an.model_ids("init"))
 
 
 def test_first_check_fails_a_cell_with_a_missing_z():

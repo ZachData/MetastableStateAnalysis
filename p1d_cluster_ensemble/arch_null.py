@@ -115,8 +115,11 @@ def reinit_model(config, seed: int):
     """
     A ``GPTNeoXForCausalLM`` of ``config`` with every parameter redrawn at
     Pythia's σ from ``torch.Generator(seed)`` (biases 0, LayerNorm (1, 0)),
-    in `named_parameters` order; eval mode, eager attention. Refuses if any
-    weight's sample SD is off its σ by more than ``SIGMA_TOLERANCE``
+    in `named_parameters` order, each draw rounded to float16 and held in
+    float32 (every real init is float16-valued: PolyPythias store float16,
+    and ``pythia-410m``'s float32 ``step0`` holds float16 values;
+    `/challenge-pr` on #131, finding 3); eval mode, eager attention. Refuses
+    if any weight's sample SD is off its σ by more than ``SIGMA_TOLERANCE``
     (or 5 standard errors).
     """
     import torch
@@ -133,7 +136,7 @@ def reinit_model(config, seed: int):
             elif c == "one":
                 p.fill_(1.0)
             else:
-                p.copy_(torch.randn(p.shape, generator=g, dtype=torch.float32) * sig[c])
+                p.copy_((torch.randn(p.shape, generator=g, dtype=torch.float32) * sig[c]).half().float())
                 sd = float(p.std())
                 if abs(sd / sig[c] - 1) > max(SIGMA_TOLERANCE, 5 / math.sqrt(2 * p.numel())):
                     raise ValueError(f"{name}: SD {sd:.5g} vs σ {sig[c]:.5g}")
@@ -411,6 +414,61 @@ def first_check(recs: Sequence[Dict], reinits: Sequence[str], inits: Sequence[st
     return rows
 
 
+def layer_outer_share(z: Dict[Tuple, float], mids: Sequence[str], ref: Sequence[str], stat: str,
+                      frame: str, band_name: str, prompts: Sequence[str] = V1_PASSAGES) -> float:
+    """Per-layer reading (no band median): share of (model, prompt, layer) mid-ranks in the outer ``OUTER``."""
+    out = []
+    for m in mids:
+        for p in prompts:
+            for L in LAYERS:
+                if band(L) != band_name:
+                    continue
+                o, r = z.get((m, p, L, frame, stat)), [z.get((x, p, L, frame, stat)) for x in ref]
+                if o is None or any(v is None for v in r):
+                    continue
+                u = mid_rank(o, np.asarray(r))
+                out.append(u < OUTER / 2 or u > 1 - OUTER / 2)
+    return float(np.mean(out)) if out else float("nan")
+
+
+#: Held-out folds for `power`: re-inits split into this many pseudo-real sets.
+POWER_FOLDS = 4
+
+
+def power(recs: Sequence[Dict], reinits: Sequence[str], inits: Sequence[str]) -> List[Dict]:
+    """
+    How much the first check can see (`/challenge-pr` on #131, findings 1–2).
+    Per fold, ``len(inits)`` re-inits are held out as pseudo-real and ranked
+    against the remaining re-inits, and the real inits are ranked against
+    **the same** remaining set, so both are read at one reference size. Per
+    cell: the check's statistic (band medians) and the per-layer share, for
+    held-out and real, averaged over folds (and the held-out maximum).
+    """
+    z = z_table(recs)
+    k = len(inits)
+    folds = [list(reinits[i * k:(i + 1) * k]) for i in range(POWER_FOLDS)]
+    if len(reinits) < POWER_FOLDS * k:
+        raise ValueError(f"{len(reinits)} re-inits do not make {POWER_FOLDS} folds of {k}")
+    cells: Dict[Tuple, Dict[str, List[float]]] = {}
+    for f in folds:
+        ref = [r for r in reinits if r not in f]
+        held = {(r["stat"], r["frame"], r["band"]): r["share_outer"] for r in first_check(recs, ref, f)}
+        real = {(r["stat"], r["frame"], r["band"]): r["share_outer"] for r in first_check(recs, ref, inits)}
+        for key in held:
+            c = cells.setdefault(key, {"held": [], "real": [], "held_layer": [], "real_layer": []})
+            c["held"].append(held[key])
+            c["real"].append(real[key])
+            c["held_layer"].append(layer_outer_share(z, f, ref, *key))
+            c["real_layer"].append(layer_outer_share(z, inits, ref, *key))
+    return [{"stat": s, "frame": fr, "band": b, "n_ref": len(reinits) - k,
+             "median_share_heldout_mean": round(float(np.mean(c["held"])), 3),
+             "median_share_heldout_max": round(float(np.max(c["held"])), 3),
+             "median_share_real_mean": round(float(np.mean(c["real"])), 3),
+             "layer_share_heldout_mean": round(float(np.mean(c["held_layer"])), 3),
+             "layer_share_real_mean": round(float(np.mean(c["real_layer"])), 3)}
+            for (s, fr, b), c in cells.items()]
+
+
 def raw_table(recs: Sequence[Dict], kinds=("init", "reinit")) -> List[Dict]:
     """Per (statistic, band, frame, kind): median observed value and median z, for reading beside the check."""
     cells: Dict[Tuple, Dict[str, List[float]]] = {}
@@ -433,9 +491,13 @@ def raw_table(recs: Sequence[Dict], kinds=("init", "reinit")) -> List[Dict]:
 # ---------------------------------------------------------------------------
 
 def _git_head() -> str:
+    """HEAD, with ``-dirty`` if a tracked file differs from it (`/challenge-pr` on #131, finding 4)."""
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
-                                       cwd=Path(__file__).parent, text=True).strip()
+        d = Path(__file__).parent
+        head = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=d, text=True).strip()
+        dirty = subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"],
+                                        cwd=d, text=True).strip()
+        return head + ("-dirty" if dirty else "")
     except Exception:
         return "unknown"
 
@@ -572,6 +634,8 @@ def check_cmd(argv: Optional[Sequence[str]] = None) -> int:
         print(f"refusing: {len(recs)} of {want} step-0 records", file=sys.stderr)
         return 1
     rows = first_check(recs, reinits, inits)
+    pw = power(recs, reinits, inits)
+    (args.out / "first_check_power.json").write_text(json.dumps(pw, indent=1) + "\n")
     res = {"rows": rows, "raw": raw_table(recs), "git": sorted({r["meta"]["git"] for r in recs}),
            "n_draws": sorted({r["meta"]["n_draws"] for r in recs}),
            "bound": FIRST_CHECK_BOUND, "outer": OUTER, "flagged_seeds": FLAGGED_SEEDS}
@@ -583,6 +647,12 @@ def check_cmd(argv: Optional[Sequence[str]] = None) -> int:
               f"outer={r['n_outer']:2d} (low {r['n_low']}, high {r['n_high']}) "
               f"share={r['share_outer'] if r['share_outer'] is None else round(r['share_outer'], 3)} "
               f"median_u={r['median_u'] if r['median_u'] is None else round(r['median_u'], 3)}  {r['verdict']}")
+    print(f"power ({POWER_FOLDS} folds; held-out and real ranked against the same {pw[0]['n_ref']} re-inits):")
+    for p in pw:
+        print(f"  {p['stat']:8s} {p['frame']:8s} {p['band']:7s} median share held-out mean "
+              f"{p['median_share_heldout_mean']:.3f} max {p['median_share_heldout_max']:.3f} real "
+              f"{p['median_share_real_mean']:.3f} | per layer held-out {p['layer_share_heldout_mean']:.3f} "
+              f"real {p['layer_share_real_mean']:.3f}")
     return 0
 
 
