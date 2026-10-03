@@ -174,6 +174,119 @@ def test_first_check_fails_a_cell_with_a_missing_z():
     assert bad[0]["verdict"].startswith("fail")
 
 
-def test_trained_steps_wait_for_the_first_check():
-    with pytest.raises(NotImplementedError):
+def test_comparisons_first_reads_no_trained_run_trained_adds_the_10_seeds():
+    first = an.comparison_models("first")
+    assert len(first) == 50 and {st for st, _ in first} == {"step0"}
+    # The first check's records named their comparison by bare model id.
+    assert [an.label(*x) for x in first] == an.model_ids("all")
+    tr = an.comparison_models("trained")
+    assert len(tr) == 60 and tr[:10] == [(an.TRAINED_STEP, m) for m in an.model_ids("init")]
+    assert an.label(*tr[0]) == f"{an.TRAINED_STEP}/init:0"
+    assert an.steps_of("first") == ("step0",)
+    with pytest.raises(ValueError):
         an.comparison_models("step143000")
+
+
+def test_rank_p_reads_the_named_tail():
+    ref = np.arange(40, dtype=float)
+    assert an.rank_p(100.0, ref, "higher") == pytest.approx(1 / 41)
+    assert an.rank_p(100.0, ref, "lower") == pytest.approx(1.0)
+    assert an.rank_p(-1.0, ref, "lower") == pytest.approx(1 / 41)
+    assert an.rank_p(0.0, ref, "lower") == pytest.approx(2 / 41)    # ties count against
+
+
+def _trained(shift_by_stat, seed=1):
+    """Trained records for the 10 seeds: z ~ N(0, 1) shifted per statistic (re-init scale)."""
+    rng = np.random.default_rng(seed)
+    out = []
+    for mid in an.model_ids("init"):
+        for p in an.V1_PASSAGES:
+            lays = []
+            for L in an.LAYERS:
+                for f in an.FRAMES:
+                    lays.append({"layer": L, "frame": f, "stats": {
+                        s: {"obs": 0.0, "z": float(rng.standard_normal() + shift_by_stat.get(s, 0.0))}
+                        for s in an.STATS}})
+            out.append({"model": mid, "prompt": p, "layers": lays})
+    return out
+
+
+def test_cloud_rules_find_the_lumpier_shift_and_only_in_its_tail():
+    recs0 = _recs()
+    re = [f"reinit:{i}" for i in range(40)]
+    # Lumpier: more hdb_k groups (up), lower ci2 (down). nn1 shifted the wrong way.
+    rows = an.cloud_rules(an.z_table(recs0), an.z_table(_trained({"hdb_k_2": 6, "ci2": -6, "nn1": 6})),
+                          re, an.model_ids("init"), set())
+    summ = {(r["stat"], r["frame"], r["band"]): r for r in an.cloud_summary(rows, range(10))}
+    for b in an.BANDS:
+        assert summ[("hdb_k_2", "centred", b)]["n_replicating"] == 56
+        assert summ[("ci2", "raw", b)]["n_replicating"] == 56
+        assert summ[("nn1", "raw", b)]["n_replicating"] == 0          # less lumpy: other tail
+        assert summ[("nn1", "raw", b)]["other_tail_by_seed"][0] == 56
+        assert summ[("hdb_k_4", "raw", b)]["n_replicating"] <= 2      # null: ~5 % per seed, rarely 8 of 10
+
+
+def test_cloud_rules_refuse_in_a_failed_cell():
+    recs0 = _recs()
+    re = [f"reinit:{i}" for i in range(40)]
+    rows = an.cloud_rules(an.z_table(recs0), an.z_table(_trained({"ci2": -6})), re, an.model_ids("init"),
+                          {("ci2", "raw", "L17-24")})
+    hit = [r for r in rows if r["stat"] == "ci2" and r["frame"] == "raw" and r["layer"] >= 17]
+    assert hit and all(r["verdict"].startswith("refuses") and r["p"] is None for r in hit)
+    assert all(r["z_vs_inits"] < -2 for r in hit)
+    other = [r for r in rows if r["stat"] == "ci2" and r["frame"] == "raw" and r["layer"] < 17]
+    assert all(r["verdict"] == "beyond" for r in other)
+
+
+def _grec(mid, groups_by_key):
+    """A record with level-set groups only: ``groups_by_key[(layer, frame, size)] = [(members, s), ...]``."""
+    lays = []
+    for L in (1, 20):
+        for f in an.FRAMES:
+            lays.append({"layer": L, "frame": f, "arms": {str(m): {"groups": [
+                {"members": mem, "s": s} for mem, s in groups_by_key.get((L, f, m), [])]}
+                for m in an.MIN_CLUSTER_SIZES}})
+    return {"model": mid, "prompt": "wiki_paragraph", "layers": lays}
+
+
+def test_group_rule_bar_is_the_re_inits_95th_max_and_replication_counts_seeds():
+    re = [f"reinit:{i}" for i in range(40)]
+    # Re-init clouds' largest s: 0.0 .. 3.9 at L1 centred size 2; none elsewhere.
+    recs0 = [_grec(r, {(1, "centred", 2): [([1, 2], i / 10), ([5, 6], 0.01)]}) for i, r in enumerate(re)]
+    bars = an.group_bars(recs0, re)
+    assert bars[("wiki_paragraph", 1, "centred", 2)] == pytest.approx(np.quantile(np.arange(40) / 10, 0.95))
+    assert bars[("wiki_paragraph", 20, "raw", 4)] == 0.0
+    # Seed 0's group {3,4,5} (s 9) is matched in seeds 1-6 ({3,4} J = 2/3) and not in 7-9 ({3,9} J = 1/4).
+    trained = [_grec(f"init:{sd}", {(1, "centred", 2): [([3, 4, 5] if sd == 0 else [3, 4] if sd <= 6 else [3, 9], 9.0),
+                                                        ([10, 11], 1.5)]}) for sd in range(10)]
+    rows = an.group_rules(trained, bars, set())
+    s0 = [r for r in rows if r["seed"] == 0]
+    assert [(r["members"], r["admitted"], r["learned"]) for r in s0] == [([3, 4, 5], True, True), ([10, 11], True, False)]
+    rep = an.replication(rows, range(10))
+    assert len(rep) == 1 and rep[0]["hits"] == [1, 2, 3, 4, 5, 6] and rep[0]["replicates"]
+    summ = an.group_summary(rows, rep, range(10))
+    c = [r for r in summ if (r["frame"], r["band"], r["size"]) == ("centred", "L1-8", 2)][0]
+    assert c["seed0_learned"] == 1 and c["seed0_replicating"] == 1 and c["replicating_in_opening"] == 1
+    assert rep[0]["span_over_size"] == 1.0 and c["replicating_contiguous"] == 1
+    # Refusal where the size's hdb_k cell failed.
+    rows = an.group_rules(trained, bars, {("hdb_k_2", "centred", "L1-8")})
+    assert all(r["learned"] is None for r in rows if r["layer"] == 1 and r["frame"] == "centred")
+    assert an.replication(rows, range(10)) == []
+
+
+def test_group_bars_refuse_a_non_finite_bar():
+    """3+ re-inits whose largest s is infinite make the linear quantile NaN (#132 finding 3)."""
+    re = [f"reinit:{i}" for i in range(40)]
+    recs0 = [_grec(r, {(1, "centred", 2): [([1, 2], None if i < 3 else 1.0)]}) for i, r in enumerate(re)]
+    with pytest.raises(ValueError, match="non-finite"):
+        an.group_bars(recs0, re)
+
+
+def test_position_tightness_ranks_a_run_tight_and_a_spread_group_loose():
+    kept = {"wiki_paragraph": list(range(1, 201))}
+    rep = [{"prompt": "wiki_paragraph", "members": [50, 51, 52, 53]},
+           {"prompt": "wiki_paragraph", "members": [1, 70, 140, 200]}]
+    an.position_tightness(rep, kept)
+    assert rep[0]["spread_pct"] < 0.01 and rep[0]["close3"]
+    assert rep[1]["spread_pct"] > 0.9 and not rep[1]["close3"]
+    assert 0 < rep[0]["close3_random"] < 0.5 and not rep[0]["bulk"]

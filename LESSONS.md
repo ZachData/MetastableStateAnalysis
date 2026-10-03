@@ -342,6 +342,11 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   `PROMPTS` cannot see code that stamps the live hash without reading the
   battery (`p2b_io.py`) or that edits `PROMPTS` after hashing it
   (`run_1 --length-sweep`). An audit by grep covers only what it greps for.
+- 2026-10-02, 1d unit 2 trained cells: `arch_null run` wrote `token_sets.json`
+  into `<out>/<step>/` without creating it; in the first check, `norms` had
+  always made that directory first. A new `--out` crashed the batch at launch
+  (cost: one relaunch and a fix commit, `cddcba7`). A stage that writes
+  makes its own directory; no test ran `run` on a fresh `--out`.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a
