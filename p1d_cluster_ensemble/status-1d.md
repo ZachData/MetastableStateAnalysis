@@ -2006,6 +2006,7 @@ step 0, which does not yet separate learned content from learned position.
 | content or position? | not the start of the context: moved behind a preamble, trained groups mostly move with the passage (centred size 2: 0.95 / 0.89 / 0.74 by band; fixed bar 0.5: 0.89 / 0.81 / 0.65), step 0's do not (0.28 / 0.09 / 0.08), its opening is opening-bound in 7 of 7 passages. Relative positions mean a preamble cannot test absolute position. "Learned" is unit 2's | "Unit 1: move the text" |
 | can random re-inits stand in for Pythia's init? | yes at step 0, carried by the weights (same σ, untruncated Gaussian, float16-valued); the cloud check passes all 24 cells (largest share 0.143, bound 0.20) but fails only a gross mismatch (≥ ~1.5 SD), with a small late lean it cannot resolve; re-run on the trained union's token sets, it passes again (`ci2` raw L17–24 0.171) | "Unit 2: the architecture null — first check", "Unit 2: the trained cells" |
 | is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
+| the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). Raw size 2 is the other way (54 of 79 formed). "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2422,7 +2423,85 @@ re-init maxima; none occurred (0 of 45,231 group rows), and it now refuses (#132
 that move ∩ this unit's learned and replicating groups (the candidate definition in the
 outcome table), with a per-layer origin reading **from L0** (the embedding output) so the
 embedding's groups are told apart from groups formed with depth, and the 15 bulk groups
-reported apart; then unit 3.
+reported apart; then unit 3. *Done: next section.*
+
+### The candidates, and where each comes from (2026-10-02; branch `claude/p1d-origin-reading`)
+
+**Built, in this order:** the readings (`design-1d.md` "The candidates, and where each comes
+from", `fbea433`, before any run); `move_text run --kept-from` and `candidates.py` (`l0`,
+`read`; `a768b5b`). **Inputs:** 410m seed 0, step0 and step143000; the 7 v1 passages (first
+512 tokens) on **unit 2's trained token set** (`arch_null_trained_2026-10-02/step0/token_sets.json`,
+sha256 `b1eaa3abb679b36d`); unit 2's records as they are; L0–24, both frames, sizes 2 and 4.
+Output `data/p1d/candidates_2026-10-02/` (`run_candidates.sh`, `unit1/` (the re-run),
+`l0_*.json`, `candidates.json` md5 `575c9ae4`, `candidate_rows.json`, `run.log`); ~20 min.
+
+**Unit 1 re-run on that set** (it drops each prompt's first delimiter too). Both first checks
+pass again: step 0's opening is opening-bound in 7 of 7 passages; the designed records were
+copied unchanged (their set is not in unit 2's comparison). Share of classified groups that
+move, centred size 2 by band: trained 0.95 / 0.90 / 0.71 (was 0.95 / 0.89 / 0.74), step 0
+0.23 / 0.10 / 0.04 (was 0.28 / 0.09 / 0.08). **Joins hold exactly:** every one of 2 × 7 × 96
+records has the same member sets in unit 1 and unit 2; L1 from `l0`'s forward pass equals
+unit 1's; the 515 replicating groups are reproduced.
+
+**Unit 1 class of the learned, replicating groups** (seed 0, trained, centred size 2, not bulk;
+group-layer records, pooled over prompts):
+
+| band | learned + replicating | moves | floor 0 / unstable | preamble-dep. / context-bound | not learned: moves / classified |
+|---|---|---|---|---|---|
+| L1–8 | 170 | **130** | 17 / 16 | 4 / 3 | 136 / 145 |
+| L9–16 | 41 | **38** | 1 / 0 | 0 / 2 | 236 / 265 |
+| L17–24 | 17 | **13** | 1 / 3 | 0 / 0 | 113 / 166 |
+
+Nearly every learned, replicating group that unit 1 can classify moves (181 of 190). So does
+most of everything else: **"moves" removes almost nothing among stable trained groups.** The
+candidates are, in effect, the learned, replicating groups that have a non-zero noise floor.
+
+**Origin of the candidates** (centred size 2; distinct = distinct member sets per prompt, each
+at its smallest ℓ₀):
+
+| | carried (ℓ₀ = 0) | formed at L1 | formed later (ℓ₀ ≥ 2) | all |
+|---|---|---|---|---|
+| distinct candidates | **71** | 4 | 45 | **120** |
+| … first a candidate at L1–8 / L9–16 / L17–24 | 71 / 0 / 0 | 4 / 0 / 0 | 16 / 20 / 9 | 91 / 20 / 9 |
+| group-layer records, L1–8 / L9–16 / L17–24 | 108 / 3 / 0 | 4 / 2 / 0 | 18 / 33 / 13 | 130 / 38 / 13 |
+| distinct, other arms: centred 4 / raw 2 / raw 4 | 7 / 25 / 0 | 2 / 0 / 3 | 12 / 54 / 21 | 21 / 79 / 24 |
+
+By prompt: `wiki_paragraph` 45, `hdbscan_code` 19, `homer_iliad` 17, `sullivan_ballou` 12,
+`latex_monograph` 12, `paper_excerpt` 11, `camus_letranger` 4. Carried candidates are the
+embedding's word classes: {Charlotte, Emily, Anne, Jane, Maria}, {sister, siblings, sisters},
+{six, five, three, two}, {was, is, has, were, became}, number tokens. As records they persist
+a median 8 layers (run ends at L7, median).
+
+**Step 0, beside:** 0 replicating groups, so 0 candidates. Of its 647 centred size-2 groups at
+L1–8, **2 are carried** (73 formed at L1): at init, L0's groups do not survive one block. So
+"carried" is a trained property (the trained embedding's classes kept through the trained
+stack), not something any init does.
+
+**Reading: design outcome row 1, "most carried"** (71 of 120 = 59 %; 120 ≥ 20, so not "few").
+In the primary arm the candidate definition mostly picks out the embedding's word classes,
+carried through L1–8. The 49 formed at L1 or later are concentrated where the carried ones
+stop: every candidate first seen at L9–24 (29) is formed later.
+
+**Caveats, in order of weight.**
+1. **"Formed later" includes carried classes that grew.** 14 of the 45 were present at L0 and
+   broke before re-forming. Among formed-later records, 77 % were present (Jaccard ≥ 0.5) at
+   some layer before their origin. The examples are the carried classes plus new members:
+   {novelist, poet, novel} + {published, literature, collection}. A fixed Jaccard bar of 0.5
+   splits a group that gains members from its own past, so the 45 are an upper bound on groups
+   formed from nothing. A containment reading (is the L0 class a subset?) is not built.
+2. **The reading depends on the frame.** In raw size 2 the formed groups are the majority
+   (54 of 79, 25 carried). The design fixed centred size 2 as primary, and the reading is
+   stated on it; it is not frame-free.
+3. "Moves" barely filters (above). The candidate set rests on unit 2's learned and
+   replicating rules and on unit 1's noise floor, not on movement.
+4. One seed's groups (seed 0) on 7 prompts; group-layer records are dependent, and the
+   distinct counts are not independent either (one class can appear in several prompts).
+   `wiki_paragraph` holds 45 of the 120.
+
+**Re-run:** `data/p1d/candidates_2026-10-02/run_candidates.sh` from the worktree root
+(resumable). Tests: `tests/test_phase1d_candidates.py`. **Next: unit 3** (one family on a
+continuous scale), which reads the candidates' scale. Per the outcome table, Phase 10's rows
+are re-read with formed candidates kept apart from carried ones.
 
 ## Deleted and restored (was `FROZEN.md`)
 

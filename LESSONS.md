@@ -109,6 +109,8 @@ world moves, nobody updates the line, and the next session acts on it.
   `STATE.md` still named Phase 10 as the active thread; Start step 1 caught it.
   **Fifth, 2026-10-02 (after #130):** 5 commits behind; the hook's `STATE.md` said unit 0
   was in a PR and unit 1 next, when unit 1 had merged. Caught by Start step 1.
+  **Sixth, 2026-10-02 (after #132):** 15 commits behind (#130–#132); the hook's `STATE.md`
+  said unit 1 was next. Caught by Start step 1; the session worked from `origin/main`.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed
@@ -716,6 +718,12 @@ the harness's inline limit, gets persisted to a file, and the session reads it
 2–3 times to see it (wrapper, wrapper again, then `Read` in chunks). The line cap
 does not bound bytes. ⚠️ Fix not done: a byte cap in the tier-0 lint, and the
 stage history moved to `status-1d.md`.
+2026-10-02 (#131, and again in the candidates unit): a `Monitor` that emits one line per
+finished passage turns a ~20 min batch into ~20 notifications. Each one is a call that
+re-reads the whole context. #131's cost row already said "one watcher on each batch's end
+would have done", and the next unit made the same choice. Rule: after checking the first
+output by hand, watch only the batch's end and its failure signatures (`refusing`,
+`Traceback`, `Killed`), not per-item progress.
 
 ## 10. Tangents: interesting findings that hijack the plan
 
