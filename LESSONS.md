@@ -628,6 +628,12 @@ needs the user to enable it on GitHub.
   frozen designed-prompt rule 1 measured purity over labelled members only, so step 0's
   ~20-token opening group, holding the three early "teacher" names, counted as 13 entity
   content groups: a purity rule names its denominator.
+- 2026-10-02 (#132's answer, retracted by `/challenge-pr` on #133): "the replicating groups
+  are tighter in position than chance, so they are not simply the embedding's classes". The
+  embedding has no position, but text does: groups carried unchanged from L0 are tighter
+  than chance too (median spread percentile 0.23). The test could not have told the two apart,
+  and nobody ran it on a known embedding class first. Rule: **before reading a statistic as
+  evidence against X, compute it on a case known to be X**.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

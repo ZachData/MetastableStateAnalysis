@@ -2006,7 +2006,7 @@ step 0, which does not yet separate learned content from learned position.
 | content or position? | not the start of the context: moved behind a preamble, trained groups mostly move with the passage (centred size 2: 0.95 / 0.89 / 0.74 by band; fixed bar 0.5: 0.89 / 0.81 / 0.65), step 0's do not (0.28 / 0.09 / 0.08), its opening is opening-bound in 7 of 7 passages. Relative positions mean a preamble cannot test absolute position. "Learned" is unit 2's | "Unit 1: move the text" |
 | can random re-inits stand in for Pythia's init? | yes at step 0, carried by the weights (same σ, untruncated Gaussian, float16-valued); the cloud check passes all 24 cells (largest share 0.143, bound 0.20) but fails only a gross mismatch (≥ ~1.5 SD), with a small late lean it cannot resolve; re-run on the trained union's token sets, it passes again (`ci2` raw L17–24 0.171) | "Unit 2: the architecture null — first check", "Unit 2: the trained cells" |
 | is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
-| the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). Raw size 2 is the other way (54 of 79 formed). "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
+| the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; which set Phase 10 uses is the user's. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
@@ -2404,7 +2404,12 @@ is there; per group it is concentrated early. Many replicating groups are lexica
 classes present at L1, which suggests the embedding's word classes; *revised after
 `/challenge-pr` on #132, finding 2:* Pythia's embedding carries no position, so a pure
 embedding class should have chance-level position spread, and these are tighter than chance.
-So the groups are not simply the embedding's: L1 has had one attention layer. **Open:**
+~~So the groups are not simply the embedding's: L1 has had one attention layer.~~ *Retracted
+after `/challenge-pr` on #133, finding 2:* the inference does not hold. Candidates carried
+unchanged from L0 are also tighter than chance (`position_tightness`: median spread
+percentile 0.23, 16 of 71 in the tightest 5 %), because text puts related words near each
+other. Position spread cannot tell an embedding class from a formed one; the origin reading
+can ("The candidates, and where each comes from"). **Open (answered there):**
 which groups exist at L0 (the embedding output, in the same forward pass), which L1 adds, and
 which form later. A group present at L1 and kept is not by itself evidence of clustering by
 attention over depth.
@@ -2479,8 +2484,28 @@ stack), not something any init does.
 
 **Reading: design outcome row 1, "most carried"** (71 of 120 = 59 %; 120 ≥ 20, so not "few").
 In the primary arm the candidate definition mostly picks out the embedding's word classes,
-carried through L1–8. The 49 formed at L1 or later are concentrated where the carried ones
-stop: every candidate first seen at L9–24 (29) is formed later.
+carried through L1–8. The 49 formed at L1 or later sit where the carried ones stop; that
+every candidate first seen at L9–24 (29) is formed later is close to forced by the rule
+(presence at every layer back to L0; only 32 of 882 trained L9–16 records are carried at all;
+`/challenge-pr` on #133, finding 4).
+
+**The verdict turns on replication** (*added after `/challenge-pr` on #133, finding 1*; the
+rows below the first were computed after the run, from `candidate_rows.json`, with the same
+code). Unit 2's outcome table says "moves ∩ learned"; this unit's readings added "replicates"
+so a definition carries across seeds. Distinct, centred size 2, not bulk:
+
+| definition | distinct | carried | formed at L1 | formed later | outcome row |
+|---|---|---|---|---|---|
+| moves ∧ learned ∧ replicates (**fixed primary**) | 120 | 71 | 4 | 45 | most carried |
+| moves ∧ learned (the outcome table's words) | 205 | 81 | 8 | **116** | **most formed later** |
+| learned ∧ replicates (any unit 1 class) | 147 | 89 | 6 | 52 | most carried |
+
+Replication is what selects the embedding's classes. At L1–8 the share carried rises with
+the filter: 12 % of groups that are not learned, 29 % of learned-only, 82 % of learned and
+replicating (reviewer's count). Groups formed with depth are mostly seed-specific. So
+"most carried" is a statement about the definition *across seeds*. A definition for one
+seed's checkpoints (Phase 10 reads `pythia-410m` only) has 124 formed groups, not 49.
+**Which set Phase 10 re-reads is the user's** (`STATE.md` Blocked 14).
 
 **Caveats, in order of weight.**
 1. **"Formed later" includes carried classes that grew.** 14 of the 45 were present at L0 and
@@ -2493,7 +2518,8 @@ stop: every candidate first seen at L9–24 (29) is formed later.
    (54 of 79, 25 carried). The design fixed centred size 2 as primary, and the reading is
    stated on it; it is not frame-free.
 3. "Moves" barely filters (above). The candidate set rests on unit 2's learned and
-   replicating rules and on unit 1's noise floor, not on movement.
+   replicating rules and on unit 1's noise floor, not on movement: at L1–8, `floor 0` and
+   `unstable` remove 33 of 170 learned, replicating groups, "moves" another 7.
 4. One seed's groups (seed 0) on 7 prompts; group-layer records are dependent, and the
    distinct counts are not independent either (one class can appear in several prompts).
    `wiki_paragraph` holds 45 of the 120.
