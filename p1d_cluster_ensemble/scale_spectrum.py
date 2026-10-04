@@ -26,11 +26,12 @@ SUBSTANTIAL_CLUSTER_SIZE`` tokens, and of ``>= 2``; design "The re-run"):
   that reader is not built here. The count's rank p (the first check's
   failed (b)) is kept beside as ``p_count``.
 
-A **robust plateau** (`robust_plateaus`; Blocked 16) is a run of ``>= MIN_RUN``
+A **robust plateau** (`robust_plateaus`; Blocked 16, 17) is a run of ``>= MIN_RUN``
 consecutive admissible grid points (``k >= 2``, stability ``>= STABLE``, (b)
 informative and rank p ``<= ALPHA``) whose cuts all have ARI ``>= CONT_ARI`` to
-the run's first cut. (b) is informative where ``>= MIN_INFORMATIVE`` of the
-draws have a cluster of the arm's size.
+the run's first cut, over the tokens in clusters of the arm's size at that first
+cut. (b) is informative where ``>= MIN_INFORMATIVE`` of the draws have a cluster
+of the arm's size.
 
 **The multi-scale synthetic** (`synthetic`; unit 4's row): 3 groups x 3
 sub-groups from von Mises–Fisher draws on S^1023 (two planted spreads, set
@@ -41,8 +42,10 @@ then T1 (position 0 dropped). The spreads are exact in expectation: for
 independent draws ``E[x·y] = E[x]·E[y]``, so two points of one sub-group
 have mean cosine ``ρ_f²`` and two of sibling sub-groups ``ρ_f² ρ_c²``.
 
-**First check** (`first_check`, design "The multi-seed run"): on each of
-``SEEDS``, in the centred frame, each planted scale (3 groups; 9 sub-groups
+**First check** (`first_check`, design "The fresh-seed run"): on each of the
+first ``N_PRESENT`` **present** seeds from ``SEED_START`` (`present_seeds`: both
+planted windows, `planted_window`, span ``>= PRESENT_SPAN``, from trees alone,
+before any spectrum), in the centred frame, each planted scale (3 groups; 9 sub-groups
 plus the opening, `opening_extent`) is found by a main-arm robust plateau
 whose ARI to the planted labels is ``>= ARI_BAR`` at every point. Pass: on
 ``>= MIN_SEEDS_PASS`` seeds, and at most ``MAX_GAUSSIAN_PLATEAUS`` of the
@@ -107,10 +110,16 @@ ARI_BAR = 0.8
 CONT_ARI = 0.9
 MIN_INFORMATIVE_FRAC = 0.1
 GATING_ARM = "main"
-SEEDS = tuple(range(2, 12))
 N_GAUSSIAN_PER_SEED = 5
 MIN_SEEDS_PASS = 8
-#: At most this many of the len(SEEDS) x N_GAUSSIAN_PER_SEED Gaussian clouds with a plateau.
+#: Blocked 17 (design "The fresh-seed run"; seeds 0-11 have been seen).
+SEED_START, SEED_STOP, N_PRESENT = 12, 52, 10
+#: The smallest window span sure to hold MIN_RUN points of the grid: (1.5 / 0.01)^(3/39)
+#: = 150^(1/13) ~ 1.4703 (`tools/math_checks/grid_resolution_span.py`).
+PRESENT_SPAN = (GRID_HI / GRID_LO) ** (MIN_RUN / (GRID_N - 1))
+#: The window measurement's grid (trees only).
+WINDOW_N_GRID = 400
+#: At most this many of the N_PRESENT x N_GAUSSIAN_PER_SEED Gaussian clouds with a plateau.
 MAX_GAUSSIAN_PLATEAUS = 2
 #: Seed offsets for independent streams within one seed.
 _SUB, _NULL, _GAUSS = 1, 2, 100
@@ -423,11 +432,12 @@ def spectrum(Y: np.ndarray, frame: str, seed: int, n_sub: int = N_SUBSAMPLES,
 
 
 def robust_plateaus(rows: Sequence[Dict], labels: Sequence[np.ndarray], use_p: bool = True,
-                    p_key: str = "p") -> List[Dict]:
+                    p_key: str = "p", min_size: int = SUBSTANTIAL_CLUSTER_SIZE) -> List[Dict]:
     """
     Runs of ``>= MIN_RUN`` consecutive admissible grid points whose cuts (``labels``) all
-    have ARI ``>= CONT_ARI`` to the run's first cut, built left to right; at a break the
-    next run starts at the breaking point. Admissible: ``k_sub >= MIN_K``, stability
+    have ARI ``>= CONT_ARI`` to the run's first cut over the tokens that are, at that first
+    cut, in clusters of ``>= min_size`` tokens (the arm's size; Blocked 17), built left to
+    right; at a break the next run starts at the breaking point. Admissible: ``k_sub >= MIN_K``, stability
     ``>= STABLE`` and, if ``use_p``, ``rows[p_key] <= ALPHA`` (and, for (b) itself,
     ``informative``).
     """
@@ -445,17 +455,21 @@ def robust_plateaus(rows: Sequence[Dict], labels: Sequence[np.ndarray], use_p: b
             out.append({"start": start, "end": end, "k_sub": ks[0], "k_lo": min(ks), "k_hi": max(ks),
                         "r_lo": rows[start]["r"], "r_hi": rows[end]["r"]})
 
-    start = None
+    def clustered(g: int) -> np.ndarray:
+        _, inv, counts = np.unique(labels[g], return_inverse=True, return_counts=True)
+        return counts[inv] >= min_size
+
+    start, mask = None, None
     for g in range(len(rows)):
         if not ok(rows[g]):
             if start is not None:
                 close(start, g - 1)
             start = None
         elif start is None:
-            start = g
-        elif adjusted_rand_score(labels[start], labels[g]) < CONT_ARI:
+            start, mask = g, clustered(g)
+        elif adjusted_rand_score(labels[start][mask], labels[g][mask]) < CONT_ARI:
             close(start, g - 1)
-            start = g
+            start, mask = g, clustered(g)
     if start is not None:
         close(start, len(rows) - 1)
     return out
@@ -515,8 +529,9 @@ def read_synthetic(syn: Dict, frame: str, seed: int) -> Dict:
     arms = {}
     for a in ARMS:
         rows = spec["rows"][a]
-        pl = planted_ari(spec, robust_plateaus(rows, labels), planted)
-        wo = planted_ari(spec, robust_plateaus(rows, labels, use_p=False), planted)
+        size = ARMS[a]
+        pl = planted_ari(spec, robust_plateaus(rows, labels, min_size=size), planted)
+        wo = planted_ari(spec, robust_plateaus(rows, labels, use_p=False, min_size=size), planted)
         ks, st = spec["_null"][a]
         arms[a] = {"plateaus": pl, "plateaus_without_b": wo, "found": found_scales(pl),
                    "found_without_b": found_scales(wo),
@@ -533,9 +548,10 @@ def read_gaussian(Y: np.ndarray, frame: str, seed: int, i: int) -> Dict:
     spec = spectrum(G, frame, seed + 1000 * (i + 1))
     labels = spec["_labels"]
     return {"draw": i, "spectrum": _public(spec),
-            "arms": {a: {"plateaus": robust_plateaus(spec["rows"][a], labels),
-                         "plateaus_without_b": robust_plateaus(spec["rows"][a], labels, use_p=False)}
-                     for a in ARMS}}
+            "arms": {a: {"plateaus": robust_plateaus(spec["rows"][a], labels, min_size=size),
+                         "plateaus_without_b": robust_plateaus(spec["rows"][a], labels, use_p=False,
+                                                               min_size=size)}
+                     for a, size in ARMS.items()}}
 
 
 def _one_thread() -> None:
@@ -557,9 +573,9 @@ def clopper_pearson_lower(x: int, n: int, level: float = 0.95) -> float:
     return 0.0 if x == 0 else float(beta.ppf(1 - level, x, n - x + 1))
 
 
-def first_check(seeds: Sequence[int] = SEEDS, jobs: int = 1, log=print) -> Dict:
+def first_check(seeds: Sequence[int], jobs: int = 1, log=print) -> Dict:
     """
-    Design "The multi-seed run": per seed, the synthetic (both frames),
+    Design "The multi-seed run" on ``seeds`` (the present seeds, `present_seeds`): per seed, the synthetic (both frames),
     ``N_GAUSSIAN_PER_SEED`` Gaussian clouds per frame, and beside it the ``d_f`` ladder
     and t = 0 (centred). Each cloud is one job with its own seeded streams, so ``jobs``
     does not change a number.
@@ -594,9 +610,12 @@ def first_check(seeds: Sequence[int] = SEEDS, jobs: int = 1, log=print) -> Dict:
                 rs["beside"][key[2]].update(rec)
             else:
                 rs["frames"][key[2]]["gaussians"][key[3]] = rec
-            msg = "; ".join(f"{a} {_plateau_str(r['plateaus'])}"
-                            + (f" found {r['found']}" if "found" in r else "")
-                            for a, r in rec["arms"].items())
+            rows = rec["spectrum"]["rows"][GATING_ARM]
+            msg = (f"{GATING_ARM} rows with stability {sum(r['stability'] is not None for r in rows)}"
+                   f"/{len(rows)}, (b) informative {sum(r['informative'] for r in rows)}; "
+                   + "; ".join(f"{a} {_plateau_str(r['plateaus'])}"
+                               + (f" found {r['found']}" if "found" in r else "")
+                               for a, r in rec["arms"].items()))
             log(f"[{done}/{len(tasks)} {time.time() - t0:.0f}s] {' '.join(map(str, key))}: {msg}", flush=True)
     summary: Dict = {}
     for f in FRAMES:
@@ -633,7 +652,7 @@ def first_check(seeds: Sequence[int] = SEEDS, jobs: int = 1, log=print) -> Dict:
 WINDOW_SEEDS = tuple(range(1000, 1040))
 
 
-def planted_window(seed: int, n_grid: int = 400, frame: str = "centred") -> Dict:
+def planted_window(seed: int, n_grid: int = WINDOW_N_GRID, frame: str = "centred") -> Dict:
     """
     Trees only (no stability, no draws): over ``n_grid`` log-spaced r from ``GRID_LO`` to
     ``GRID_HI``, the longest interval of consecutive r whose cut has ARI >= ``ARI_BAR`` to
@@ -662,6 +681,31 @@ def planted_window(seed: int, n_grid: int = 400, frame: str = "centred") -> Dict
         out[name] = ({"span": float(grid[b] / grid[a]), "r_lo": float(grid[a]), "r_hi": float(grid[b])}
                      if n else {"span": 0.0, "r_lo": None, "r_hi": None})
     return out
+
+
+def is_present(window: Dict) -> bool:
+    """Both planted windows span at least ``PRESENT_SPAN`` (design row "presence")."""
+    return all(window[nm]["span"] >= PRESENT_SPAN for nm in ("coarse", "fine"))
+
+
+def present_seeds(start: int = SEED_START, stop: int = SEED_STOP, n: int = N_PRESENT,
+                  log=print) -> Dict:
+    """
+    Seeds ``start``, ``start + 1``, ... in order, each read by `planted_window` alone (no
+    spectrum), until ``n`` are present. Refuses (``RuntimeError``) if ``start..stop-1``
+    hold fewer than ``n``.
+    """
+    present, absent = [], []
+    for seed in range(int(start), int(stop)):
+        w = planted_window(seed)
+        (present if is_present(w) else absent).append(w)
+        log(f"window seed {seed}: coarse {w['coarse']['span']:.3f}, fine {w['fine']['span']:.3f}, "
+            f"J {w['opening_extent']} -> {'present' if is_present(w) else 'ABSENT'}", flush=True)
+        if len(present) == n:
+            return {"present_span": PRESENT_SPAN, "seeds": [w["seed"] for w in present],
+                    "present": present, "absent": absent}
+    raise RuntimeError(f"only {len(present)} present seeds in {start}..{stop - 1}; "
+                       f"need {n} (design 'The fresh-seed run': refuse)")
 
 
 def windows_cmd(argv: Sequence[str]) -> int:
@@ -705,20 +749,31 @@ def _git_head() -> str:
 def synthetic_cmd(argv: Sequence[str]) -> int:
     ap = argparse.ArgumentParser(prog="scale_spectrum synthetic")
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--seeds", type=int, nargs="+", default=list(SEEDS))
+    ap.add_argument("--seeds", type=int, nargs="+", default=None,
+                    help="read exactly these seeds (no presence step); default: the first "
+                         f"{N_PRESENT} present seeds from {SEED_START}")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
     git = _git_head()
+    presence = None
+    if a.seeds is None:
+        presence = present_seeds()
+        (a.out / "presence.json").write_text(json.dumps({"git": git, **presence}, indent=1))
+        a.seeds = presence["seeds"]
+        print(f"present seeds {a.seeds}; absent {[w['seed'] for w in presence['absent']]}", flush=True)
     rec = first_check(a.seeds, a.jobs)
     rec["git"] = git
+    rec["presence"] = presence
     rec["constants"] = {"grid": [GRID_LO, GRID_HI, GRID_N], "n_subsamples": N_SUBSAMPLES,
                         "subsample_frac": SUBSAMPLE_FRAC, "n_draws": N_DRAWS, "stable": STABLE,
                         "alpha": ALPHA, "min_run": MIN_RUN, "min_k": MIN_K, "arms": ARMS,
                         "ari_bar": ARI_BAR, "cont_ari": CONT_ARI,
                         "min_informative_frac": MIN_INFORMATIVE_FRAC, "gating_arm": GATING_ARM,
                         "n_gaussian_per_seed": N_GAUSSIAN_PER_SEED, "min_seeds_pass": MIN_SEEDS_PASS,
-                        "max_gaussian_plateaus": MAX_GAUSSIAN_PLATEAUS}
+                        "max_gaussian_plateaus": MAX_GAUSSIAN_PLATEAUS, "present_span": PRESENT_SPAN,
+                        "window_n_grid": WINDOW_N_GRID, "seed_start": SEED_START,
+                        "seed_stop": SEED_STOP, "n_present": N_PRESENT}
     (a.out / "first_check.json").write_text(json.dumps(rec, indent=1))
     print(f"first check ({GATING_ARM} arm, centred): {'PASS' if rec['pass'] else 'FAIL'} "
           f"({rec['seconds']} s; {a.out / 'first_check.json'})")
