@@ -225,4 +225,4 @@ running median of the rows above it gets a line under the table saying why.
   watcher notifications (milestones, expiries). One watcher on each batch's end would have done.
 | 2026-10-02 | 1d unit 2: trained cells (T2 over 60 models, 50 step-0 models recomputed, check re-run, 10 trained seeds, rules + replication; before /challenge-pr) | 51 | 161k | 5.7M | 35k | #132 |
 | 2026-10-02 | 1d candidates: unit 1 re-run on unit 2's token set, L0 groups, moves ∩ learned ∩ replicating, origin from L0 (before /challenge-pr) | 66 | 195k | 9.3M | 52k | #133 |
-| 2026-10-04 | 1d unit 3: multi-scale synthetic, merge-tree spectrum, first check (fails on (b)'s tail; before /challenge-pr) | 52 | 185k | 6.7M | 38k | #TBD |
+| 2026-10-04 | 1d unit 3: multi-scale synthetic, merge-tree spectrum, first check (fails on (b)'s tail; before /challenge-pr) | 52 | 185k | 6.7M | 38k | #134 |
