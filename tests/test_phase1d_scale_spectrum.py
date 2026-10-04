@@ -97,6 +97,18 @@ class TestStability:
         assert st[0] is None
         assert st[1] == pytest.approx(1.0)
 
+    def test_a_lone_survivor_does_not_count(self):
+        # a, b at cosine distance 0.01; c at 0.04 from a, 0.089 from b. At delta 0.05
+        # the cut is {a, b}, {c}; the subsample {a, c} joins a to c (Jaccard 1/2 under the
+        # old rule), but has one survivor of {a, b} and is not counted.
+        th = np.array([0.0, np.arccos(0.99), -np.arccos(0.96)])
+        X = np.c_[np.cos(th), np.sin(th)]
+        data = LayerData.from_normed(X)
+        lab = labels_at_delta(ss._tree(data), 3, 0.05)
+        assert lab[0] == lab[1] != lab[2]
+        st = ss.hennig_stability(data, [lab], [0.05], np.random.default_rng(0), n_sub=30, min_size=2)
+        assert st == [pytest.approx(1.0)]
+
     def test_rank_p(self):
         assert ss.rank_p_higher(5, np.array([1, 2, 5, 6])) == pytest.approx(3 / 5)
         assert ss.rank_p_higher(9, np.zeros(49)) == pytest.approx(1 / 50)
@@ -106,44 +118,70 @@ class TestSpectrum:
     def test_rows_and_found(self):
         X, lab = _two_blobs()
         spec = ss.spectrum(X, "raw", 0, n_sub=5, n_draws=5)
-        assert len(spec["rows"]) == ss.GRID_N == len(spec["_labels"])
-        ks = [r["k"] for r in spec["rows"]]
+        assert set(spec["rows"]) == set(ss.ARMS)
+        rows = spec["rows"]["main"]
+        assert len(rows) == ss.GRID_N == len(spec["_labels"])
+        ks = [r["k"] for r in rows]
         assert ks == sorted(ks, reverse=True)
-        assert all(r["delta"] == pytest.approx(r["r"] * spec["median"]) for r in spec["rows"])
-        pl = [{"start": g, "end": g} for g, r in enumerate(spec["rows"]) if r["k_sub"] == 2]
+        assert all(r["delta"] == pytest.approx(r["r"] * spec["median"]) for r in rows)
+        assert all(r["p"] == 1.0 for r in rows if r["stability"] is None)
+        pl = [{"start": g, "end": g} for g, r in enumerate(rows) if r["k_sub"] == 2]
         assert pl
         out = ss.planted_ari(spec, pl, {"coarse": lab})
         assert ss.found_scales(out, ("coarse",)) == {"coarse": True}
 
+    def test_size2_arm_counts_at_least_the_main_arm(self):
+        X, _ = _two_blobs()
+        spec = ss.spectrum(X, "raw", 0, n_sub=3, n_draws=3)
+        assert all(a["k_sub"] >= m["k_sub"] for a, m in zip(spec["rows"]["size2"], spec["rows"]["main"]))
+
 
 class TestOnAKnownClusteredCloud:
     """LESSONS 6 (2026-10-04): a tail is computed on a known clustered cloud first.
-    Pins the first check's finding: on the synthetic without the opening, stability
-    and count find both planted scales, and (b)'s count tail rejects them."""
+    On the synthetic without the opening (seed 0, seen): stability and count find both
+    planted scales; the count's tail (the first check's (b), ``p_count``) rejects the
+    coarse one, where the Gaussian has as many pieces or more; option 1's stability tail
+    (Blocked 15) keeps both. 20 draws, so the smallest rank p (1/21) is below ALPHA: at
+    10 (this test before the re-run) no plateau could pass any tail."""
 
-    def test_count_tail_rejects_planted_scales_that_stability_finds(self):
+    @pytest.fixture(scope="class")
+    def read(self):
+        assert 1 / 21 <= ss.ALPHA < 1 / 11
         s = ss.synthetic(0, open_t=0.0)
-        spec = ss.spectrum(s["Y"], "centred", 0, n_sub=10, n_draws=10)
-        planted = {"coarse": s["coarse"], "fine": s["fine"]}
-        without = ss.planted_ari(spec, ss.robust_plateaus(spec["rows"], use_p=False), planted)
+        spec = ss.spectrum(s["Y"], "centred", 0, n_sub=10, n_draws=20)
+        return spec, {"coarse": s["coarse"], "fine": s["fine"]}
+
+    def test_count_tail_rejects_planted_scales_that_stability_finds(self, read):
+        spec, planted = read
+        rows = spec["rows"]["main"]
+        without = ss.planted_ari(spec, ss.robust_plateaus(rows, use_p=False), planted)
         assert ss.found_scales(without) == {"coarse": True, "fine": True}
-        with_b = ss.planted_ari(spec, ss.robust_plateaus(spec["rows"]), planted)
-        assert ss.found_scales(with_b) == {"coarse": False, "fine": False}
+        count = ss.planted_ari(spec, ss.robust_plateaus(rows, p_key="p_count"), planted)
+        assert ss.found_scales(count)["coarse"] is False
+
+    def test_stability_tail_keeps_them(self, read):
+        spec, planted = read
+        pl = ss.planted_ari(spec, ss.robust_plateaus(spec["rows"]["main"]), planted)
+        assert ss.found_scales(pl) == {"coarse": True, "fine": True}
 
 
-class TestOption1Helpers:
-    rows = [{"r": 0.1, "k_sub": 0, "stability": None, "p": 1.0},
-            {"r": 0.2, "k_sub": 3, "stability": 0.9, "p": 1.0}]
-    st = np.array([[np.nan, np.nan], [np.nan, 0.95], [np.nan, 0.5]])
-    ks = np.array([[0, 0], [0, 3], [0, 3]])
+class TestArmRows:
+    grid = np.array([0.1, 0.2])
+    labels = [np.arange(6), np.array([0, 0, 0, 0, 1, 2])]
+    null_st = np.array([[np.nan, np.nan], [np.nan, 0.95], [np.nan, 0.5]])
+    null_k = np.array([[0, 0], [0, 1], [0, 1]])
 
-    def test_empty_draw_rules(self):
-        zero = ss.option1_rows(self.rows, self.st, "zero")
-        drop = ss.option1_rows(self.rows, self.st, "drop")
-        assert zero[0]["p"] == drop[0]["p"] == 1.0  # no substantial cluster: no p
-        assert zero[1]["p"] == pytest.approx(2 / 4)  # refs 0, 0.95, 0.5
-        assert drop[1]["p"] == pytest.approx(2 / 3)  # refs 0.95, 0.5
+    def test_empty_draw_scores_zero_and_empty_cut_has_p_one(self):
+        rows = ss.arm_rows(self.grid, [0.01, 0.02], self.labels, [None, 0.9],
+                           self.null_k, self.null_st, 4)
+        assert rows[0]["p"] == 1.0 and rows[0]["z"] is None
+        assert rows[1]["k_sub"] == 1
+        assert rows[1]["p"] == pytest.approx(2 / 4)  # refs 0, 0.95, 0.5
+        assert rows[1]["null_n_empty"] == 1
+        assert rows[1]["p_count"] == pytest.approx(3 / 4)  # refs 0, 1, 1
 
     def test_matched_count(self):
-        m = ss.matched_count(self.rows, self.ks, self.st, 3)
-        assert (m["synthetic_min"], m["n_draws_with_k"], m["draw_max"], m["n_draws_at_or_above"]) == (0.9, 2, 0.95, 1)
+        rows = [{"k_sub": 0, "stability": None}, {"k_sub": 3, "stability": 0.9}]
+        ks = np.array([[0, 0], [0, 3], [0, 3]])
+        m = ss.matched_count(rows, ks, self.null_st, 3)
+        assert (m["cloud_min"], m["n_draws_with_k"], m["draw_max"], m["n_draws_at_or_above"]) == (0.9, 2, 0.95, 1)
