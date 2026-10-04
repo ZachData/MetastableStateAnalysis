@@ -47,7 +47,7 @@ class TestRankRows:
         refs[:2, 0] = 2.0  # two at or above
         refs[2:5, 0] = 1.0
         (r,) = sr.rank_rows([_row(2.0)], refs)
-        assert r["p"] == pytest.approx(3 / 41) and r["n_ref"] == 40 and r["informative"]
+        assert r["p_rank"] == pytest.approx(3 / 41) and r["n_ref"] == 40 and r["informative"]
         assert r["p_gauss"] == 0.5
 
     def test_one_at_or_above_passes_both_arms(self):
@@ -55,21 +55,43 @@ class TestRankRows:
             refs = np.zeros((n, 1))
             refs[0, 0] = 5.0
             (r,) = sr.rank_rows([_row(1.0)], refs)
-            assert r["p"] <= ss.ALPHA
+            assert r["p_rank"] <= ss.ALPHA
 
     def test_dropped_refs_shrink_n_and_below_min_ref_refuses(self):
         refs = np.zeros((40, 1))
         refs[:10, 0] = np.nan
         (r,) = sr.rank_rows([_row(1.0)], refs)
-        assert r["n_ref"] == 30 and r["informative"] and r["p"] == pytest.approx(1 / 31)
+        assert r["n_ref"] == 30 and r["informative"] and r["p_rank"] == pytest.approx(1 / 31)
         refs[:11, 0] = np.nan
         (r,) = sr.rank_rows([_row(1.0)], refs)
-        assert r["n_ref"] == 29 and not r["informative"] and r["p"] == 1.0
+        assert r["n_ref"] == 29 and not r["informative"] and r["p"] == r["p_rank"] == 1.0
 
     @pytest.mark.parametrize("row", [_row(None), _row(3.0, informative=False), _row(None, stability=None)])
     def test_own_z_undefined_or_uninformative_is_not_admissible(self, row):
         (r,) = sr.rank_rows([row], np.zeros((40, 1)))
         assert not r["informative"] and r["p"] == 1.0
+
+
+class TestConjunction:
+    """Option 4 (Blocked 19): (b) is p_gauss <= alpha and the rank among the references <= alpha."""
+
+    @pytest.mark.parametrize("p_gauss, top, admitted", [(0.01, False, True), (0.5, False, False),
+                                                        (0.01, True, False), (0.5, True, False)])
+    def test_both_terms_must_pass(self, p_gauss, top, admitted):
+        refs = np.zeros((40, 1))
+        if top:
+            refs[:10, 0] = 5.0  # the cloud is not above its references
+        (r,) = sr.rank_rows([_row(1.0, p=p_gauss)], refs)
+        assert r["p"] == max(p_gauss, r["p_rank"])
+        assert (r["p"] <= ss.ALPHA) is admitted
+
+    def test_references_without_a_cluster_leave_the_gaussian_reader(self):
+        # The pilot's fine scales: every re-init all singletons, so the rank is 1/41 < alpha
+        # and admission is p_gauss's alone.
+        for p_gauss in (0.02, 0.04, 0.06):
+            (r,) = sr.rank_rows([_row(-3.0, p=p_gauss)], np.full((40, 1), -np.inf))
+            assert r["p_rank"] == pytest.approx(1 / 41)
+            assert (r["p"] <= ss.ALPHA) is (p_gauss <= ss.ALPHA)
 
 
 class TestMinRun:
@@ -141,8 +163,8 @@ class TestLoadSets:
         assert sr.load_sets(f)["wiki_paragraph"] == [1, 2, 3]
 
 
-def _cloud(z, n_tok=10):
-    rows = [{"r": float(g), "k_sub": 2, "stability": 0.9, "z": z, "informative": True, "p": 0.5,
+def _cloud(z, n_tok=10, p_gauss=0.01):
+    rows = [{"r": float(g), "k_sub": 2, "stability": 0.9, "z": z, "informative": True, "p": p_gauss,
              "null_stab_mean": 0.5} for g in range(ss.GRID_N)]
     return {"rows": {a: rows for a in ss.ARMS}}, np.tile(np.repeat([0, 1], n_tok // 2), (ss.GRID_N, 1))
 
@@ -206,3 +228,49 @@ class TestReadCloud:
         assert set(rec["rows"]) == set(ss.ARMS)
         assert len(rec["rows"]["main"]) == ss.GRID_N
         assert any(r["z"] is not None for r in rec["rows"]["main"])
+
+
+class TestGate:
+    def test_cells_per_band_distinct_trained_and_fixed(self):
+        from p1d_cluster_ensemble.move_text import band
+        cells = sr.gate_cells()
+        assert len(cells) == len(set(cells)) == sr.GATE_N == 50
+        assert [sum(band(L) == b for _, _, L in cells) for b in sr.BANDS] == list(sr.GATE_PER_BAND)
+        assert {m for m, _, _ in cells} <= set(INITS)
+        assert sr.gate_cells() == cells and sr.gate_cells(seed=1) != cells
+
+    def test_cloud_is_a_populated_gaussian_not_the_input(self):
+        rng = np.random.default_rng(0)
+        Y = np.vstack([rng.normal(size=(15, 32)) + 6 * rng.normal(size=32) for _ in range(3)])
+        rec, lab = sr.gate_cloud(Y, 0)
+        own, _ = sr.read_cloud(Y, sr.GATE_SEED + 1)
+        assert lab.shape == (ss.GRID_N, 45)
+        assert any(r["z"] is not None for r in rec["rows"]["main"])
+        assert rec["median"] != own["median"]
+        assert sr.gate_cloud(Y, 0)[0]["median"] == rec["median"]
+
+    def _rec(self, p_gauss, z=1.0):
+        rec, lab = _cloud(z, p_gauss=p_gauss)
+        pl = [{"start": 0}] if p_gauss <= ss.ALPHA else []
+        rec["beside"] = {a: {"plateaus_gauss": pl, "plateaus_without_b": [{"start": 0}]} for a in ss.ARMS}
+        return rec, lab
+
+    def test_plateaus_need_both_terms(self):
+        low = {a: np.zeros((40, ss.GRID_N)) for a in ss.ARMS}
+        high = {a: np.full((40, ss.GRID_N), 5.0) for a in ss.ARMS}
+        pl = sr.gate_plateaus(*self._rec(0.01), low)["main"]
+        assert pl["conjunction"] and pl["gauss_only"] and pl["rank_only"] and pl["n_ref_min"] == 40
+        pl = sr.gate_plateaus(*self._rec(0.01), high)["main"]
+        assert not pl["conjunction"] and pl["gauss_only"] and not pl["rank_only"]
+        pl = sr.gate_plateaus(*self._rec(0.5), low)["main"]
+        assert not pl["conjunction"] and not pl["gauss_only"] and pl["rank_only"] and pl["without_b"]
+
+    def test_verdict_counts_the_main_conjunction(self):
+        cells = sr.gate_cells()
+        hit = {a: {"conjunction": [1], "gauss_only": [1], "rank_only": [], "without_b": [1]} for a in ss.ARMS}
+        miss = {a: {"conjunction": [], "gauss_only": [], "rank_only": [], "without_b": [1]} for a in ss.ARMS}
+        for n_hit, ok in ((2, True), (3, False)):
+            v = sr.gate_verdict(cells, [hit] * n_hit + [miss] * (len(cells) - n_hit))
+            assert v["hits"] == n_hit and v["pass"] is ok
+            assert v["counts"]["main"]["without_b"]["all"] == 50
+            assert v["counts"]["main"]["conjunction"]["L1-8"] == n_hit
