@@ -417,6 +417,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-04, 1d unit 3, the real-input reader's step 1 (specificity on the step-0 inits):
+  placed, reviewed (#138) and costed without looking at a step-0 cloud through the grid it
+  would be read on. Step-0 tokens are nearly orthogonal (median cosine distance 1.006), so
+  every merge falls in 2–3 of the 40 points of `r × median`: a 3-point plateau has room in
+  0 of 56 clouds in L1–8, so "≤ 5 % of re-init clouds with a plateau" could not fail. The
+  pilot the design's order row required showed it in 30 s (`z_G` at 1–4 of 40 points). Rule:
+  **before a negative check's bound is placed, read one cloud of the reference set through
+  the instrument and count how many of its points can carry the event; if few can, the
+  bound tests the grid, not the rule.**
 - 2026-10-04, 1d unit 3: the design's rule (b) read "more substantial clusters than the
   matched Gaussian at the same relative cut" as lumpier. On the multi-scale synthetic the
   Gaussian soon cuts into as many or more pieces (8–30) than the planted structure (3 or 10)

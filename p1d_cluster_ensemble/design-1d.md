@@ -372,6 +372,12 @@ reading does not start until this passes.
 | cost (estimate) | 50 × 7 × 24 = 8,400 clouds. The synthetic ran 160 clouds of n = 399 in 546 s on 14 workers; the kept sets hold 123–271 tokens (mean ≈ 200), so scaled by (n / 399)², **~2 h on 14 workers**; the forward passes take minutes | *corrected after finding 3:* first written at n ≈ 510 (13 h); the kept sets are the deduped v1 prompts after T2 |
 | order | build with tests; pilot one model × one prompt × L1–24 and open its output (`z_G` populated at every `r`) before the rest | the populated-not-present rule |
 
+*Built 2026-10-04 (`scale_real.py`); **not run**: the pilot shows a step-0 cloud's whole merge
+tree in 2–3 points of the relative grid, so the rate pass cannot fail on re-inits, and where
+they have no cluster (b) admits any trained one. The "missing z" row's SD-0 drop was changed
+after `/challenge-pr` on #139 (finding 1: such a reference takes its sign). `status-1d.md`
+"The real-input reader, step 1: built"; the choice is `STATE.md` Blocked 19.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |

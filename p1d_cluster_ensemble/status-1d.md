@@ -2008,7 +2008,7 @@ step 0, which does not yet separate learned content from learned position.
 | is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
 | the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; Phase 10 uses the set without it (user, 2026-10-04), the replicating set stays the cross-seed definition. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
-| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Under Blocked 17 on fresh present seeds: 7 of 10 again (coarse 10, fine 7). **Accepted as measured (Blocked 18, option 1):** a found plateau's partition is the claim, a missing one weak evidence; real input waits on a specificity check among the inits | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11"; "Unit 3 on fresh seeds"; `design-1d.md` "Blocked 18 decided" |
+| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Under Blocked 17 on fresh present seeds: 7 of 10 again (coarse 10, fine 7). **Accepted as measured (Blocked 18, option 1):** a found plateau's partition is the claim, a missing one weak evidence; real input waits on a specificity check among the inits. **That check, built and piloted: step-0 clouds' merges all fall within r ≈ 0.5–1.0, so it cannot fail (Blocked 19)** | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11"; "Unit 3 on fresh seeds"; "The real-input reader, step 1: built"; `design-1d.md` "Blocked 18 decided" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -2851,6 +2851,81 @@ other 39), centred; pass: ≤ 5 % of re-init clouds with a plateau in every band
 (estimate). The trained reading waits on it. Revised after `/challenge-pr` on #138 (all five
 findings taken: no-cluster references count below; rate gated on the re-inits, failure
 response placed; cost; sensitivity is the synthetic reader's, the real reader's is unit 4's).
+
+### The real-input reader, step 1: built; the pilot shows step-0 clouds cannot fail it (2026-10-04; branch `claude/p1d-specificity`)
+
+**Built:** `scale_real.py` (`run`: forward each step-0 model, `scale_spectrum.spectrum`
+per centred cloud, seed per (prompt, layer) in every model, rows and cut labels stored per
+(model, prompt); `read`: (b) re-ranked among the reference set with the design's missing-z
+rules, plateaus, the per-band rate pass with `MIN_RUN` raised to 5, the 1,000-subset route
+test, the beside rows; `resolution`: trees only, below), `robust_plateaus(min_run=)`, and
+`tests/test_phase1d_scale_real.py`. **Not run:** the 50-model batch. **Input:** the kept
+tokens of `data/p1d/arch_null_trained_2026-10-02/step0/token_sets.json` (sha256 prefix
+`b1eaa3abb679b36d`), the 7 v1 prompts, centred.
+
+**Pilot (the design's order row):** `reinit:0..4` and `init:0` × `wiki_paragraph` × L1–24,
+at `b20094c` (clean; the first pilot at `ea22cba-dirty` is kept in
+`data/p1d/scale_real_pilot_dirty_2026-10-04/`), output `data/p1d/scale_real_pilot_2026-10-04/`;
+~25 s per model-prompt on 14 workers, so the batch is **~3 h**, not ~2 h. Output present, but
+**`z_G` is defined at 1–4 of 40 grid points per layer** (main arm), not at every `r`. The
+first main-arm cluster appears at r 0.69 (median over the 5 re-inits' 120 clouds; minimum
+0.61; size-2 arm 0.54, min 0.42); above r ≈ 1.0 the cloud is one cluster. That is the cloud,
+not a bug: step-0 tokens are nearly orthogonal (median centred cosine distance 1.006), so the
+whole merge tree sits in a few points of `r × median`.
+
+**Resolution, trees only** (`scale_real resolution`; `resolution.{json,log}` in the pilot
+directory; identical at both commits): per cloud, the grid points whose cut has ≥ 2 main-arm
+clusters; a plateau needs `MIN_RUN` = 3 of them in a row, so "≥ 3 points" is an upper bound
+on room for one. "Non-trivial" = neither all singletons nor one cluster (any merge, so it
+starts below the first ≥ 4-token cluster).
+
+| model | L1–8: median points (max); clouds with ≥ 3 | L9–16 | L17–24 | non-trivial cuts span r |
+|---|---|---|---|---|
+| reinit:0, reinit:1 @ step 0 | 1 (2); 0 of 56 | 1 (2–3); 0–1 of 56 | 2 (3); 3–7 of 56 | ≈ 0.5–1.0 |
+| init:0, init:5 @ step 0 | 1 (1); 0 of 56 | 1 (2); 0 of 56 | 2 (3); 1–3 of 56 | ≈ 0.54–1.0 |
+| init:0, init:5 @ step143000 | 3–4 (7); 50–56 of 56 | 4–5 (8); 56 of 56 | 9–10 (16–22); 56 of 56 | ≈ 0.09–1.02 |
+
+**What this means.** (1) The step's rate pass (≤ 5 % of re-init clouds with a plateau) is
+met by the grid alone in L1–16 and nearly so in L17–24, whatever (b) does: the check cannot
+fail where it is meant to test (b). (2) The trained reading meets the mirror image: below
+the first re-init clusters (main arm r ≈ 0.6) every re-init is all singletons, and a
+reference with no cluster counts as below (#138 finding 1), so any trained cluster there gets
+p = 1/41 whatever its own `z_G` (the synthetic's "without (b)": 29 of 50 Gaussians with a
+plateau). The relative grid (#129 finding 1) puts each cloud on its own median, but a step-0
+cloud's distances have almost no spread around it. Classified as a **defect of the step's
+design** (a check that could not have rejected; `LESSONS.md` 6), so the batch was not
+launched.
+
+**`/challenge-pr` on #139 (accept with changes; answered on the PR):** (1) **taken, code:**
+a reference whose `z_G` is undefined because its draws' SD is 0 was dropped (the design row),
+but that includes a reference **with** a cluster whose 50 draws have none, the one furthest
+above its covariance. Across the 5 pilot re-inits (main arm) that is 36 of 120 clouds at
+r 0.61 and 65 of 120 at 0.69: dropping them would leave ~18 of 40 references at 0.69, below
+`MIN_REF`. Now `ref_values` gives such a reference +inf (−inf if below its draws), dropping
+only a tie (every cut one cluster at stability 1, r ≥ 1.02). A change to the design's row
+after review, as #138's finding 1 was. (2) **taken, as option 4 below:** require the
+Gaussian rank too (`p_gauss` ≤ α and the reference rank ≤ α). Not considered in #138 or
+before. (3) **taken, against option 1:** a step-0 cloud's merges span a factor ~2 in r, so
+40 points over it are near-duplicate cuts (a run of 3 costs about one point's 5 %), and "the
+same grid position" compares a trained r ≈ 0.15 cut with a re-init r ≈ 0.55 one; nothing in
+option 1 replaces raising `MIN_RUN` there. (4) **taken:** tests for `plateau_table`'s reference
+sets (a re-init is not its own reference) and `load_run`'s refusals. (5) **taken:** pilot
+re-run clean; numbers live here, `STATE.md` and `design-1d.md` point.
+
+**Options (`STATE.md` Blocked 19; the user's), revised after #139's review.** Under 2–4 the
+step-0 batch (~3 h) is still needed: the trained reading ranks against its re-init `z_G`.
+
+| option | what | for | against |
+|---|---|---|---|
+| **4 (recommended)** | (b) on real input is the conjunction: `p_gauss` ≤ α (the reader the synthetic checked) **and** the rank among the re-inits ≤ α. Step 1's gate becomes: 50 matched-covariance Gaussian clouds of trained clouds (a sample across bands) read through the conjunction, ≤ 2 of 50 with a main-arm plateau (the synthetic's bound, ~1 min); the step-0 batch runs for the re-init `z_G` and its rate is reported beside, not gated | where the re-inits have no structure (r ≲ 0.6) the reading is the synthetic-checked reader, so no reader change, no synthetic re-run, `PRESENT_SPAN` stands; where they do, the rank still controls for the architecture (the pilot re-init has `p_gauss` 0.02 at r ≈ 0.9 in all 24 layers); the gate tests specificity at the trained clouds' own scales | specificity at fine scales rests on Gaussian clouds, not on clouds with nothing learned; a new gate placed after a result; "learned" means nothing below r ≈ 0.6 (said with every reading there) |
+| 1 | grid on each cloud's own merge range (40 heights between its first and last non-trivial merge); synthetic first check re-run (~10 min), then this step (~3 h) | the step-0 check could fail | near-duplicate cuts on step-0 clouds and mismatched absolute scales (review finding 3); reader change after a result; `PRESENT_SPAN` re-derived |
+| 2 | keep the grid; (b) needs ≥ 4 of the references (10 %, as (iv)) with a cluster of the arm's size | small; mirrors (iv) | the check still cannot fail; the trained reading keeps r ≈ 0.6–1.0 (2–3 points), almost nothing |
+| 3 | run as designed (~3 h), report the pass with this bound beside it | no change | a pass that says nothing about (b); trained clusters below r ≈ 0.6 admitted on rank 1/41 even below their own Gaussian |
+
+**Re-run:** pilot, `python -m p1d_cluster_ensemble.scale_real run --out <dir> --only
+reinit:0 --keys wiki_paragraph --workers 14`; probe, `... scale_real resolution --out <dir>
+--models reinit:0@step0 init:0@step143000 ...`, from the worktree root with the local-box env
+(`STATE.md` "Machine").
 
 ## Deleted and restored (was `FROZEN.md`)
 
