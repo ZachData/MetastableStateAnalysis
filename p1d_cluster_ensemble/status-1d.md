@@ -2536,8 +2536,11 @@ are re-read with formed candidates kept apart from carried ones.
 `9d486c6`, before any run); `scale_spectrum.py` and `tests/test_phase1d_scale_spectrum.py`
 (`ede7a05`). **Input:** the synthetic only, seed 0 (no model, no prompt). Output
 `data/p1d/scale_synthetic_2026-10-04/` (`first_check.json` at `ede7a05`, `run.log`; post hoc:
-`posthoc.py`, `posthoc_without_b.json`); 50 s. **Re-run:** `python -m
-p1d_cluster_ensemble.scale_spectrum synthetic --out <dir> --seed 0` from the worktree root.
+`posthoc.json` at `b7c1473`, `posthoc.log`); 50 s + 77 s. **Re-run:** `python -m
+p1d_cluster_ensemble.scale_spectrum synthetic --out <dir> --seed 0`, then `... posthoc --out
+<dir> --seed 0`, from the worktree root. *(The post hoc numbers first came from an untracked
+script under `data/`; moved into `scale_spectrum.posthoc` after `/challenge-pr` on #134,
+finding 2, and re-run: same numbers.)*
 
 **Construction probe, run before the readings were fixed** (the opening alone, no unit 3 code;
 fixed-angle stand-in for vMF; centred; mean pairwise cosine distance). It set `t`:
@@ -2574,7 +2577,7 @@ Gaussian gets a *lower* `z_G` there too. Stability has the right direction: synt
 substantial clusters). At r 0.25–0.28 the Gaussians reach 0.84–0.87, so the margin is
 smaller at fine scales.
 
-**Post hoc, not a pass** (computed after the fail, same seeds; `posthoc_without_b.json`):
+**Post hoc, not a pass** (computed after the fail, same seeds; `posthoc.json`):
 without (b), the robust runs and their minimum ARI over the run.
 
 | synthetic | runs (k_sub, r) | min ARI of each run to its planted scale | both scales? |
@@ -2588,16 +2591,42 @@ So without (b): the centred frame passes on seed 0; the opening costs the fine r
 end (0.22 → 0.32) and adds a 10th cluster; the fine scale is lost once `d_c / d_f` ≤ 2 (with
 the opening); the raw frame cannot be read at t = 2.
 
+**Option 1 on seed 0, post hoc** (*added after `/challenge-pr` on #134, finding 1*; the same 50
+draws, each with its own 50 subsamples). A draw whose cut has no substantial cluster has no
+stability; two rules: **zero** (it scores 0) or **drop** (left out; p = 1 if none left).
+
+| centred, t = 2 | zero | drop |
+|---|---|---|
+| runs found (k_sub, r) | 10 at 0.32–0.47; 3 at 0.79–1.02 | the same |
+| both planted scales | yes | yes |
+| p at r 0.12–0.19 (Gaussian draws have no substantial cluster) | 0.02 | 1.0 |
+| p at r 0.25 / 0.28 / 0.32–0.61 | 0.33 / 0.08 / 0.02 | 0.63 / 0.09 / 0.02 |
+
+Raw: nothing under either. **At matched count** instead of matched r (each draw's largest
+stability at any r where it has the same k_sub): k = 10, 25 of 50 draws reach that count, max
+0.82, median 0.75, 0 at or above the synthetic's weakest 0.94; **k = 3, 43 draws, max 0.93,
+median 0.65, 2 at or above the synthetic's weakest 0.90** (at r 1.02, where the background
+has merged in). So at matched count the coarse margin is thin; at matched r it is not.
+
 **Options (`STATE.md` Blocked 15; the user's):**
 
 | option | what | for | against |
 |---|---|---|---|
-| **1 (recommended)** | (b) := the cut's mean cluster-wise stability, `z_G` against the Gaussian draws' stability at the same r, higher tail; on the synthetic its rank among the draws, on real input ranked among the re-inits' `z_G` as designed | the direction is "more cluster-like than the covariance" by construction; the table above shows the gap | stability on every draw: ~50× the cost per cloud at 50 × 50 (20 draws × 20 subsamples ≈ 8×); smaller margin at fine r |
-| 2 | drop (b) from the plateau rule (count + stability only); read "learned" per plateau among re-inits apart | simplest; seed 0 passes post hoc | "beyond covariance" then rests on the run length and count constancy; 0 Gaussian plateaus on 5 draws is the only evidence |
+| **1 (recommended)** | (b) := the cut's mean cluster-wise stability, rank p (higher tail) against the Gaussian draws' stability at the same r, **empty draw scores 0**; on real input its `z_G` ranked among the re-inits' as designed | the direction is "more cluster-like than the covariance" by construction; on seed 0 it finds both scales; "zero" keeps the small-r signal where only the cloud has clusters ("drop" gives p = 1 there) | stability on every draw: ~50× the cost per cloud at 50 × 50 (20 draws × 20 subsamples ≈ 8×). At matched count the coarse margin is thin (2 of 43); same r is the design's comparison, matched count would be a second reading beside it |
+| 2 | drop (b) from the plateau rule (count + stability only); read "learned" per plateau among re-inits apart | simplest; seed 0 passes post hoc | "beyond covariance" then rests on the run length and count constancy, i.e. on the Gaussian check alone |
 | 3 | two-sided count p | — | rejected: a count that differs either way is not a direction |
 
-Either way the first check is re-run on **seed 1** with the rule fixed first (seed 0 has been
-seen). Raw stays beside: at t = 2 it cannot pass under any of the three.
+**For either option** (*added after `/challenge-pr` on #134*): the first check is re-run on
+**seed 1** with the rule fixed first (seed 0 has been seen); the Gaussian negative check takes
+**50** Gaussian clouds, not 5 (0 of 5 only bounds the false-plateau rate below ~45 %; the check
+costs ~3 s per cloud; finding 3), with a pass bound placed before the run. Raw stays beside: at
+t = 2 it cannot pass under any of the three. **Open, the user's (finding 4):** the plateau
+count reads clusters of ≥ `SUBSTANTIAL_CLUSTER_SIZE` = 4 tokens, but the candidates are
+level-set groups from size 2 (examples have 3 tokens) and the planted sub-groups have 33. So
+unit 3 as designed asks at what scale the cloud's large structure sits, not at what scale
+the candidates live. A size-2 arm (k counted from size 2) or a per-candidate reading (the
+range of r over which a candidate is one cluster of the cut) would ask the second; neither is
+in the design.
 **Next: Blocked 15, then the re-run; no real input until a first check passes.**
 
 ## Deleted and restored (was `FROZEN.md`)
