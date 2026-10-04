@@ -2008,6 +2008,7 @@ step 0, which does not yet separate learned content from learned position.
 | is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
 | the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; which set Phase 10 uses is the user's. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
+| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15 | "Unit 3: the synthetic and its first check" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -2528,6 +2529,76 @@ seed's checkpoints (Phase 10 reads `pythia-410m` only) has 124 formed groups, no
 (resumable). Tests: `tests/test_phase1d_candidates.py`. **Next: unit 3** (one family on a
 continuous scale), which reads the candidates' scale. Per the outcome table, Phase 10's rows
 are re-read with formed candidates kept apart from carried ones.
+
+### Unit 3: the synthetic and its first check (2026-10-04; branch `claude/p1d-unit3-scale`)
+
+**Built, in this order:** the readings (`design-1d.md` "The synthetic and the first check",
+`9d486c6`, before any run); `scale_spectrum.py` and `tests/test_phase1d_scale_spectrum.py`
+(`ede7a05`). **Input:** the synthetic only, seed 0 (no model, no prompt). Output
+`data/p1d/scale_synthetic_2026-10-04/` (`first_check.json` at `ede7a05`, `run.log`; post hoc:
+`posthoc.py`, `posthoc_without_b.json`); 50 s. **Re-run:** `python -m
+p1d_cluster_ensemble.scale_spectrum synthetic --out <dir> --seed 0` from the worktree root.
+
+**Construction probe, run before the readings were fixed** (the opening alone, no unit 3 code;
+fixed-angle stand-in for vMF; centred; mean pairwise cosine distance). It set `t`:
+
+| `identity_sim` β = 0, t | 0 | 0.5 | 1 | **2** | 4 | 8 |
+|---|---|---|---|---|---|---|
+| positions 1–4 | 0.87 | 0.74 | 0.60 | **0.32** | 0.04 | 0.00 |
+| within a sub-group | 0.19 | 0.20 | 0.20 | **0.27** | 0.73 | 0.93 |
+| between sibling sub-groups | 0.52 | 0.53 | 0.53 | **0.57** | 0.82 | 0.93 |
+
+At t ≥ 4 every row is pulled onto the prefix mean and the planted groups are gone. The
+residual form `x + λ·mean(prefix)` never put positions 1–4 below a sub-group's spread for
+any λ ≤ 8 (0.40 against 0.24 at λ = 4). On the run's vMF synthetic at t = 2: opening 0.39,
+within 0.25, between 0.55 (centred), so the rule holds. In raw the cloud collapses (median
+0.15, within 0.03, between 0.07, opening 0.20).
+
+**Result: the first check FAILS.** Centred, neither planted scale is found; raw, neither; the
+5 Gaussians have 0 plateaus in both frames. **(b) fails, and it is (b)'s direction:**
+
+| centred, t = 2 | r | k_sub | stability | Gaussian draws' k_sub (mean ± SD) | rank p |
+|---|---|---|---|---|---|
+| fine (9 sub-groups + 1) | 0.32 / 0.37 / 0.42 / 0.47 | 10 | 0.98 / 0.96 / 0.94 / 0.95 | 4.8 / 8.0 / 11.0 / 12.3 (± 1.4–1.7) | 0.02 / 0.20 / 0.82 / 0.94 |
+| coarse (3 groups) | 0.79 / 0.90 / 1.02 | 3 | 0.98 / 0.98 / 0.90 | 14.0 / 8.5 / 2.8 | 1.0 / 1.0 / 0.77 |
+
+Once the cut is past the scale where the matched Gaussian has no substantial cluster, the
+Gaussian soon has **as many or more** substantial pieces than the planted structure (centred
+8–15 from r 0.37 against 10, and 8–14 against 3; raw 17–30 against 3). A higher substantial
+count at a fixed relative cut does not mean lumpier, so (b)'s higher tail could not have
+accepted either planted scale. p ≤ 0.05 holds only at small r, where the Gaussian has none.
+**This is the design row's defect, not only the synthetic's stand-in:** on real input (b) is
+the count's `z_G` ranked among re-inits, and a cloud with fewer, tighter groups than its
+Gaussian gets a *lower* `z_G` there too. Stability has the right direction: synthetic
+0.94–0.98 against the 5 Gaussian clouds' 0.43–0.83 at r 0.32–0.90 (where they have ≥ 2
+substantial clusters). At r 0.25–0.28 the Gaussians reach 0.84–0.87, so the margin is
+smaller at fine scales.
+
+**Post hoc, not a pass** (computed after the fail, same seeds; `posthoc_without_b.json`):
+without (b), the robust runs and their minimum ARI over the run.
+
+| synthetic | runs (k_sub, r) | min ARI of each run to its planted scale | both scales? |
+|---|---|---|---|
+| t = 2, centred | 10 at 0.32–0.47; 3 at 0.79–1.02 | fine 0.92; coarse 0.99 | yes |
+| t = 2, raw | none (each planted count holds 2 grid points) | — | no |
+| t = 0, centred | 9 at 0.22–0.42; 3 at 0.54–1.02 | fine 1.00; coarse 1.00 | yes |
+| `d_f` = 0.20 / 0.25 / 0.30 | 3 at 0.79–1.02 / 4 at 0.61–0.90 / 4 at 0.69–0.90 | coarse 0.93 / 0.93 / 0.94 | coarse only |
+
+So without (b): the centred frame passes on seed 0; the opening costs the fine run its lower
+end (0.22 → 0.32) and adds a 10th cluster; the fine scale is lost once `d_c / d_f` ≤ 2 (with
+the opening); the raw frame cannot be read at t = 2.
+
+**Options (`STATE.md` Blocked 15; the user's):**
+
+| option | what | for | against |
+|---|---|---|---|
+| **1 (recommended)** | (b) := the cut's mean cluster-wise stability, `z_G` against the Gaussian draws' stability at the same r, higher tail; on the synthetic its rank among the draws, on real input ranked among the re-inits' `z_G` as designed | the direction is "more cluster-like than the covariance" by construction; the table above shows the gap | stability on every draw: ~50× the cost per cloud at 50 × 50 (20 draws × 20 subsamples ≈ 8×); smaller margin at fine r |
+| 2 | drop (b) from the plateau rule (count + stability only); read "learned" per plateau among re-inits apart | simplest; seed 0 passes post hoc | "beyond covariance" then rests on the run length and count constancy; 0 Gaussian plateaus on 5 draws is the only evidence |
+| 3 | two-sided count p | — | rejected: a count that differs either way is not a direction |
+
+Either way the first check is re-run on **seed 1** with the rule fixed first (seed 0 has been
+seen). Raw stays beside: at t = 2 it cannot pass under any of the three.
+**Next: Blocked 15, then the re-run; no real input until a first check passes.**
 
 ## Deleted and restored (was `FROZEN.md`)
 

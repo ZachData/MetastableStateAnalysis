@@ -7,6 +7,8 @@ from p1d_cluster_ensemble import scale_spectrum as ss
 from p1d_cluster_ensemble.methods import LayerData
 from p1d_cluster_ensemble.merge_tree import labels_at_delta
 
+pytestmark = pytest.mark.deps
+
 
 class TestVmf:
     @pytest.mark.parametrize("d,kappa", [(3, 0.7), (10, 5.0), (64, 40.0), (1024, 800.0)])

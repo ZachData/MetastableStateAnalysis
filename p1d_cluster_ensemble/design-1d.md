@@ -276,6 +276,12 @@ is the reason for `t` below: `status-1d.md` "Unit 3: the synthetic and its first
 | **pass** | centred: both planted scales found and 0 plateaus on all 5 Gaussians | refuse rather than degrade: unit 3 reads no real input until it passes |
 | beside, not the pass | raw frame; the Gaussians' runs that meet the count and stability parts **without (b)** (if there are some, (b) carries the negative check, and that is said); a ladder `d_f` ∈ {0.20, 0.25, 0.30} at `d_c` = 0.40 (where it breaks); the same synthetic at t = 0 (what the opening costs) | |
 
+*Ran 2026-10-04: **fails**. (b), the substantial count against the Gaussian, has the wrong
+tail: past its smallest scales the matched Gaussian cuts into as many or more substantial
+pieces than the planted structure, so neither planted scale can pass (b). The defect is in
+the "per scale" (b) row above, not only here. Options and numbers: `status-1d.md` "Unit 3:
+the synthetic and its first check"; the choice is `STATE.md` Blocked 15.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |
