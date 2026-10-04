@@ -381,9 +381,9 @@ def read_synthetic(syn: Dict, frame: str, seed: int) -> Dict:
     spec = spectrum(syn["Y"], frame, seed)
     planted = {"coarse": syn["coarse"], "fine": syn["fine"]}
     plateaus = planted_ari(spec, robust_plateaus(spec["rows"]), planted)
-    return {"spectrum": _public(spec), "plateaus": plateaus,
-            "plateaus_without_b": robust_plateaus(spec["rows"], use_p=False),
-            "found": found_scales(plateaus)}
+    without = planted_ari(spec, robust_plateaus(spec["rows"], use_p=False), planted)
+    return {"spectrum": _public(spec), "plateaus": plateaus, "plateaus_without_b": without,
+            "found": found_scales(plateaus), "found_without_b": found_scales(without)}
 
 
 def read_gaussians(syn: Dict, frame: str, seed: int) -> List[Dict]:
@@ -432,6 +432,95 @@ def first_check(seed: int = 0, log=print) -> Dict:
 
 
 # ---------------------------------------------------------------------------
+# Post hoc, after the first check failed (Blocked 15's evidence; not a pass)
+# ---------------------------------------------------------------------------
+
+def stability_null(Y: np.ndarray, frame: str, seed: int, n_draws: int = N_DRAWS,
+                   n_sub: int = N_SUBSAMPLES) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Option 1's null: per matched-covariance draw (the same draws as `spectrum`'s,
+    same stream) and grid point, ``k_sub`` and Hennig stability (NaN where the
+    draw's cut has no substantial cluster). Shapes (n_draws, GRID_N).
+    """
+    Z, _ = frame_vectors(Y, frame)
+    Zs = span_coordinates(Z)
+    grid = relative_grid()
+    rng = np.random.default_rng([seed, _NULL])
+    ks = np.zeros((int(n_draws), grid.size), dtype=int)
+    st = np.full((int(n_draws), grid.size), np.nan)
+    for i in range(int(n_draws)):
+        G = LayerData.from_normed(gaussian_draw(Zs, rng))
+        Zg, mg = _tree(G), _median_distance(G)
+        deltas = [float(r * mg) for r in grid]
+        labels = [labels_at_delta(Zg, G.n, d) for d in deltas]
+        ks[i] = [substantial_count(lab) for lab in labels]
+        s = hennig_stability(G, labels, deltas, np.random.default_rng([seed, _SUB, i]), n_sub)
+        st[i] = [np.nan if v is None else v for v in s]
+    return ks, st
+
+
+def option1_rows(rows: Sequence[Dict], st: np.ndarray, empty: str) -> List[Dict]:
+    """``rows`` with ``p`` replaced by the rank p (higher tail) of the cut's stability
+    among the draws' at the same grid point. ``empty``: "zero" scores a draw with no
+    substantial cluster 0; "drop" leaves it out (p = 1 if none is left)."""
+    out = []
+    for g, row in enumerate(rows):
+        ref = st[:, g]
+        ref = np.nan_to_num(ref, nan=0.0) if empty == "zero" else ref[~np.isnan(ref)]
+        p = (1.0 if row["stability"] is None or ref.size == 0
+             else rank_p_higher(row["stability"], ref))
+        out.append({**row, "p": p})
+    return out
+
+
+def matched_count(rows: Sequence[Dict], ks: np.ndarray, st: np.ndarray, k: int) -> Dict:
+    """Per draw, its largest stability over grid points where it has ``k`` substantial
+    clusters; against the synthetic's smallest stability over its own points at ``k``."""
+    obs = [r["stability"] for r in rows if r["k_sub"] == k and r["stability"] is not None]
+    per_draw = [float(np.nanmax(st[i, ks[i] == k])) for i in range(ks.shape[0])
+                if np.any((ks[i] == k) & ~np.isnan(st[i]))]
+    lo = min(obs) if obs else None
+    return {"k": int(k), "synthetic_min": lo, "n_draws_with_k": len(per_draw),
+            "draw_max": max(per_draw) if per_draw else None,
+            "draw_median": float(np.median(per_draw)) if per_draw else None,
+            "n_draws_at_or_above": (int(sum(v >= lo for v in per_draw)) if lo is not None else None)}
+
+
+def posthoc(seed: int = 0, log=print) -> Dict:
+    """
+    Blocked 15's numbers, all on seeds already seen: the runs found without (b)
+    with their ARI (main synthetic both frames, t = 0, the ladder), and option 1
+    on the main synthetic (both empty-draw rules; matched count beside).
+    """
+    out: Dict = {"seed": int(seed), "without_b": {}, "option1": {}}
+    variants = [("t=2", {}, f) for f in FRAMES] + [("t=0", {"open_t": 0.0}, "centred")]
+    variants += [(f"d_fine={d}", {"d_fine": d}, "centred") for d in LADDER_D_FINE]
+    syns: Dict[str, Dict] = {}
+    for name, kw, frame in variants:
+        key = f"{name} {frame}"
+        syn = syns.setdefault(name, synthetic(seed, **kw))
+        rec = read_synthetic(syn, frame, seed)
+        out["without_b"][key] = {"plateaus": rec["plateaus_without_b"], "found": rec["found_without_b"]}
+        log(f"without (b) {key}: {[(p['k_sub'], round(p['r_lo'], 3), round(p['r_hi'], 3), round(p['ari_coarse_min'], 2), round(p['ari_fine_min'], 2)) for p in rec['plateaus_without_b']]}")
+        if name != "t=2":
+            continue
+        spec = spectrum(syn["Y"], frame, seed)
+        ks, st = stability_null(syn["Y"], frame, seed)
+        planted = {"coarse": syn["coarse"], "fine": syn["fine"]}
+        o1 = {"null_k_sub": ks.tolist(), "null_stability": np.where(np.isnan(st), None, st).tolist()}
+        for empty in ("zero", "drop"):
+            rows = option1_rows(spec["rows"], st, empty)
+            pl = planted_ari(spec, robust_plateaus(rows), planted)
+            o1[empty] = {"p": [r["p"] for r in rows], "plateaus": pl, "found": found_scales(pl)}
+            log(f"option 1 ({empty}) {frame}: {[(p['k_sub'], round(p['r_lo'], 3), round(p['r_hi'], 3)) for p in pl]} found {found_scales(pl)}")
+        o1["matched_count"] = [matched_count(spec["rows"], ks, st, k)
+                               for k in sorted({p["k_sub"] for p in out["without_b"][key]["plateaus"]})]
+        log(f"matched count {frame}: {o1['matched_count']}")
+        out["option1"][frame] = o1
+    return out
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -465,9 +554,24 @@ def synthetic_cmd(argv: Sequence[str]) -> int:
     return 0 if rec["pass"] else 1
 
 
+def posthoc_cmd(argv: Sequence[str]) -> int:
+    ap = argparse.ArgumentParser(prog="scale_spectrum posthoc")
+    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--seed", type=int, default=0)
+    a = ap.parse_args(argv)
+    a.out.mkdir(parents=True, exist_ok=True)
+    t0 = time.time()
+    rec = posthoc(a.seed)
+    rec["git"] = _git_head()
+    rec["seconds"] = round(time.time() - t0, 1)
+    (a.out / "posthoc.json").write_text(json.dumps(rec, indent=1))
+    print(f"posthoc written ({rec['seconds']} s; {a.out / 'posthoc.json'})")
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"synthetic": synthetic_cmd}
+    cmds = {"synthetic": synthetic_cmd, "posthoc": posthoc_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: scale_spectrum {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2

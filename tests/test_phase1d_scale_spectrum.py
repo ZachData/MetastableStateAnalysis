@@ -114,3 +114,36 @@ class TestSpectrum:
         assert pl
         out = ss.planted_ari(spec, pl, {"coarse": lab})
         assert ss.found_scales(out, ("coarse",)) == {"coarse": True}
+
+
+class TestOnAKnownClusteredCloud:
+    """LESSONS 6 (2026-10-04): a tail is computed on a known clustered cloud first.
+    Pins the first check's finding: on the synthetic without the opening, stability
+    and count find both planted scales, and (b)'s count tail rejects them."""
+
+    def test_count_tail_rejects_planted_scales_that_stability_finds(self):
+        s = ss.synthetic(0, open_t=0.0)
+        spec = ss.spectrum(s["Y"], "centred", 0, n_sub=10, n_draws=10)
+        planted = {"coarse": s["coarse"], "fine": s["fine"]}
+        without = ss.planted_ari(spec, ss.robust_plateaus(spec["rows"], use_p=False), planted)
+        assert ss.found_scales(without) == {"coarse": True, "fine": True}
+        with_b = ss.planted_ari(spec, ss.robust_plateaus(spec["rows"]), planted)
+        assert ss.found_scales(with_b) == {"coarse": False, "fine": False}
+
+
+class TestOption1Helpers:
+    rows = [{"r": 0.1, "k_sub": 0, "stability": None, "p": 1.0},
+            {"r": 0.2, "k_sub": 3, "stability": 0.9, "p": 1.0}]
+    st = np.array([[np.nan, np.nan], [np.nan, 0.95], [np.nan, 0.5]])
+    ks = np.array([[0, 0], [0, 3], [0, 3]])
+
+    def test_empty_draw_rules(self):
+        zero = ss.option1_rows(self.rows, self.st, "zero")
+        drop = ss.option1_rows(self.rows, self.st, "drop")
+        assert zero[0]["p"] == drop[0]["p"] == 1.0  # no substantial cluster: no p
+        assert zero[1]["p"] == pytest.approx(2 / 4)  # refs 0, 0.95, 0.5
+        assert drop[1]["p"] == pytest.approx(2 / 3)  # refs 0.95, 0.5
+
+    def test_matched_count(self):
+        m = ss.matched_count(self.rows, self.ks, self.st, 3)
+        assert (m["synthetic_min"], m["n_draws_with_k"], m["draw_max"], m["n_draws_at_or_above"]) == (0.9, 2, 0.95, 1)
