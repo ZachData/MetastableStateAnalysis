@@ -2722,11 +2722,11 @@ distance 0.09–0.46 against within 0.25–0.30.
 
 | seed | coarse | fine |
 |---|---|---|
-| 7 | the planted partition holds from r 0.79 (planted-only consecutive ARI 1.00), but the background's merges at r 0.90 drop the all-token ARI to 0.73, leaving 2 points | (b) admits from 0.365; the run breaks at 0.42→0.47 (ARI 0.76): 2 points |
+| 7 | the planted partition holds from r 0.79 (planted-only consecutive ARI 1.00), but the background's merges at r 0.90 drop the all-token ARI to 0.73, leaving 2 points | **(b)**, not resolution: the cuts at r 0.32–0.42 match the planted partition (ARI 0.80–0.82) and hold together, but (b)'s p is 0.078 at 0.32, so the run is 0.37–0.42, 2 points *(corrected after `/challenge-pr` on #136, finding 1; first written as a 2-point window)* |
 | 8 | same, all-token ARI 0.75 at 0.90 | (b) admits from 0.365; fine ARI ≥ 0.8 only at 0.37–0.42: 2 points |
 | 9 | same, 0.75 at 0.90 | found (0.32–0.42) |
 
-So the planted ranges are 3–4 grid points wide after the opening (centred within ≈ 0.27,
+So, on these seeds, the planted ranges are 3–4 grid points wide after the opening (centred within ≈ 0.27,
 between ≈ 0.57, about 6 grid steps apart, of which the partition is exactly the planted one
 over 3–4). `MIN_RUN` = 3 sits at the instrument's resolution. The construction placed the
 spreads "so each plateau spans ≥ 4 grid points" by construction distances; that was never
@@ -2738,16 +2738,33 @@ do not count): **both scales on 8 of 10** (coarse 10, fine 8; seeds 7, 8 still l
 Gaussians 0 of 50. At the bar, not above it: at a true rate of 0.8, ≥ 8 of 10 fresh seeds
 happens with probability 0.68 (0.38 at 0.7, 0.93 at 0.9).
 
-**Options (`STATE.md` Blocked 17; the user's):**
+**The control's margin, measured** (*added after `/challenge-pr` on #136, finding 2*, which
+showed the first recommendation's r-span ≥ 1.3 on an 80-point grid was stricter than today's
+rule, 3 of today's points spanning 1.293, and unmeasured). `scale_spectrum windows` (`a4f72d4`):
+per seed, from trees alone, the longest r-interval (400-point grid) whose cut has ARI ≥ 0.8 to
+each planted labelling, as a span `r_hi / r_lo`. **Throwaway seeds 1000–1039** (never a check's
+seeds); output `data/p1d/scale_windows_2026-10-04/windows.json`.
+
+| scale | min | p10 | median | narrower than 1.47 (a 40-point grid always holds 3 points) |
+|---|---|---|---|---|
+| coarse | 1.59 | 1.82 | 2.00 | 0 of 40 |
+| fine | 0 | 1.53 | 1.83 | **3 of 40**: 2 with no fine window at all (seeds 1006, 1024: the opening destroys the scale), 1 at 1.37 |
+
+So the coarse misses were the all-token ARI alone, never resolution; the fine scale is absent
+or narrower than the grid resolves on ~1 seed in 13, a property of the synthetic, not of the
+spectrum; and the rest of the fine misses are (b) at the window's edge (seed 7). Seeds 7 and 8
+have fine spans 1.385 (reviewer's measurement), under 1.47.
+
+**Options (`STATE.md` Blocked 17; the user's), revised after #136's review:**
 
 | option | what | for | against |
 |---|---|---|---|
-| **1 (recommended)** | (a) continuity over the tokens in the arm's clusters at the run's first cut; **and** (b) the grid at 80 points (same ends), `MIN_RUN` as a span in r (the run's `r_hi / r_lo` ≥ 1.3, about 3 of today's points); re-run on fresh seeds 12–21, everything else fixed | (a) measures what the plateau means (the clusters there hold), applies to real input (no planted labels); (b) addresses the fine misses, which are resolution, and the grid dependence #135 raised | two changes after seeing data; (b) doubles the per-scale cost (~25 min run); the 1.3 is placed now |
-| 2 | (a) alone, seeds 12–21 | one change | post hoc it reaches 8 of 10 exactly; a fresh run passes ~2 times in 3 even if that is its true rate |
-| 3 | accept 7 of 10 as the instrument's measured sensitivity and go to real input, reporting that a planted scale is missed in ≥ 1 of 10 seeds | specificity is the part that protects against false structure: 0 of 50 | moves the bar after the result; on real input a missed scale reads as "no structure there" |
-| 4 | widen the planted gap | — | rejected: changes the synthetic until the instrument passes |
+| **1 (recommended)** | (a) continuity over the tokens in the arm's clusters at the run's first cut; the 40-point grid and `MIN_RUN` = 3 kept; **sensitivity scored on seeds where both planted scales are present at the grid's resolution** (window span ≥ 1.47, measured from trees before any spectrum): seeds from 12 upward, skipping absent ones, until 10 present; pass ≥ 8 of 10 and ≤ 2 of 50 Gaussians, as before | (a) is what the plateau means and needs no planted labels; presence separates what the synthetic offers from what the instrument finds, and 1.47 comes from the grid, not from a failure; it states the instrument's resolution for real input (scales narrower than a span of 1.47 may be missed) | on seeds 2–11 it would drop 7 and 8 (spans 1.385), which failed: it was placed after seeing them, though from the grid's geometry; (b)-edge misses still count |
+| 2 | (a) alone, seeds 12–21 as drawn | one change | windows absent or narrow on ~1 seed in 13 and (b) edges count against it: a fresh run passes ~2 times in 3 |
+| 3 | accept 7 of 10 as measured sensitivity | specificity 0 of 50 is what guards against false structure | moves the bar after the result |
+| 4 | widen the planted gap; an 80-point grid with an r-span bar | — | rejected: the first changes the synthetic until the instrument passes; the second is stricter than today's rule (#136, finding 2) |
 
-**Next: Blocked 17, then a first check on seeds 12–21; no real input until one passes.**
+**Next: Blocked 17, then a first check on fresh seeds from 12; no real input until one passes.**
 
 ## Deleted and restored (was `FROZEN.md`)
 

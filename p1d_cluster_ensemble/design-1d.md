@@ -314,9 +314,11 @@ code.** Every row of "The re-run" holds except these:
 
 *Ran 2026-10-04 on seeds 2–11: **fails, 7 of 10** (needs 8); Gaussians 0 of 50. Coarse is
 lost when the background's merges near r 0.9 pull the all-token ARI below 0.9 (the planted
-partition holds); fine is lost where its window is 2 grid points. The defect is the "robust
-plateau (i)" row's all-token ARI and the grid's resolution. `status-1d.md` "Unit 3 on seeds
-2–11"; the choice is `STATE.md` Blocked 17.*
+partition holds); fine is lost at (b)'s edge (seed 7) or where its window is narrower than
+the grid resolves (seed 8). The defect is the "robust plateau (i)" row's all-token ARI; the
+"seeds and pass" row counts seeds where the synthetic offers no resolvable fine scale (3 of
+40 throwaway seeds). `status-1d.md` "Unit 3 on seeds 2–11"; the choice is `STATE.md`
+Blocked 17.*
 
 ### Unit 4: positive controls
 
