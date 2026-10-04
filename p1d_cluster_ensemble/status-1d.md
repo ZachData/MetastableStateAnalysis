@@ -2008,7 +2008,7 @@ step 0, which does not yet separate learned content from learned position.
 | is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
 | the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; which set Phase 10 uses is the user's. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
-| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15 | "Unit 3: the synthetic and its first check" |
+| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Fix is Blocked 16 | "Unit 3: the synthetic and its first check"; "Unit 3 re-run" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -2627,7 +2627,58 @@ unit 3 as designed asks at what scale the cloud's large structure sits, not at w
 the candidates live. A size-2 arm (k counted from size 2) or a per-candidate reading (the
 range of r over which a candidate is one cluster of the cut) would ask the second; neither is
 in the design.
-**Next: Blocked 15, then the re-run; no real input until a first check passes.**
+*Blocked 15 decided 2026-10-04 (option 1, ≤ 2 of 50, a size-2 arm); the re-run is the next section.*
+
+### Unit 3 re-run: seed 1 under Blocked 15 (2026-10-04; branch `claude/p1d-unit3-rerun`)
+
+**Built, in this order:** the rules (`design-1d.md` "The re-run", `a2afa0f`, before any code);
+`scale_spectrum.py` with option 1's (b) inside the spectrum, both arms, the `|C ∩ S| ≥ 2` rule,
+50 Gaussian clouds run in parallel (`c7137b9`, before the run). The seed-0 post hoc code is
+removed (numbers above; code at `b7c1473`). **Input:** the synthetic only, **seed 1** (unseen
+before this run), 50 draws × 50 subsamples per cloud, 106 clouds. Output
+`data/p1d/scale_rerun_seed1_2026-10-04/` (`first_check.json` at `c7137b9`, `run.log`); 282 s
+on 14 workers. **Re-run:** `python -m p1d_cluster_ensemble.scale_spectrum synthetic --out <dir>
+--seed 1 --jobs 14` from the worktree root.
+
+**Result: FAILS, both arms, and not on (b).**
+
+| centred, seed 1 | main arm | size-2 arm |
+|---|---|---|
+| planted scales found | neither | neither |
+| robust plateaus (k, r) | none | (2, 0.04–0.05), ARI 0 (the opening) |
+| Gaussian clouds with a plateau | **0 of 50** | **0 of 50** |
+| the same without (b) | 1 of 50 | 2 of 50 |
+| beside, t = 0 (no opening) | both found: 9 at 0.28–0.47, 3 at 0.54–1.02 | both found |
+| beside, `d_f` 0.20 / 0.25 / 0.30 | none / coarse (4 at 0.69–0.90) / none | none |
+| raw | coarse found (5 at 0.47–0.69); 0 of 50 Gaussians | none |
+
+**Why (main arm, centred).** (b) and stability are not what fails: p = 0.02 and stability
+0.90–0.99 at every r from 0.28 to 1.02 except 0.25. Each planted partition is there. Fine ARI
+0.87 / 0.90 / 0.90 / 0.90 / 0.80 at r 0.28–0.47; coarse 0.91 / 0.88 / 0.88 / 0.86 / 0.86 at
+r 0.61–1.02. **The substantial count never holds for 3 points there:** 13, 12, 12, 10, 9
+(fine); 4, 3, 4, 3, 3 (coarse). On seed 1 the opening is far tighter than on seed 0 (positions
+1–4 at 0.14 centred, against 0.39; within a sub-group 0.27). It pulls 2–4 early tokens out of
+several sub-groups into fringe clusters of 4–10 tokens, which merge into sub-groups or cross
+the size-4 bar between consecutive cuts (at r 0.79 a 4-token fringe of sub-groups 3 and 5
+appears, then merges). The size-2 arm counts more of these and churns more. **The defect is
+the "robust plateau" row's "same count"**: a count is not a partition, and small clusters
+move it while the partition barely changes. Real clouds have such a fringe too (token 0's
+neighbours, the opening), so the rule is not only the synthetic's problem.
+
+**Post hoc, not a pass** (seed 1, now seen; 3 of the 50 Gaussian clouds): the ARI between
+consecutive cuts (all tokens). Synthetic: 0.97, 1.00, 0.94, 0.90 at fine r 0.28–0.42; 0.96,
+0.99, 0.88 at coarse r 0.61–0.79. Gaussians: 0.37–0.82 at every r from 0.22 to 0.90.
+
+**Options (`STATE.md` Blocked 16; the user's):**
+
+| option | what | for | against |
+|---|---|---|---|
+| **1 (recommended)** | the plateau's "same count" := **consecutive-cut ARI ≥ 0.9** (all tokens) at every step of the run, k ≥ 2 at every point; stability and (b) unchanged; re-run on seed 2 | asks whether the partition holds, which is the plateau's meaning; post hoc it separates (synthetic ≥ 0.90 in both planted ranges except one step at 0.88, Gaussians ≤ 0.82) | 0.9 is placed after seeing seed 1 (the coarse range has one step at 0.88, so at 0.9 its run is 3 points, the minimum); a bar on ARI is one more placed number |
+| 2 | count only clusters whose own stability is ≥ 0.75 | keeps "a count" | fringe groups made by the opening are tight and may be stable: may not fix it |
+| 3 | count clusters of ≥ a fraction of n (e.g. 5 %) | removes fringe from the main arm | defeats the size-2 arm, which exists to see small groups |
+| 4 | a gentler opening (t = 1) | — | rejected: changes the synthetic until the instrument passes |
+
+**Next: Blocked 16, then a re-run on seed 2; no real input until a first check passes.**
 
 ## Deleted and restored (was `FROZEN.md`)
 

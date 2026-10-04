@@ -295,6 +295,12 @@ a size-2 arm), fixed before the run.** Every row above holds except these:
 | seed | **1** (seed 0 has been seen) | — |
 | beside, not the pass | per robust plateau, **matched count**: each draw's largest stability at any `r` where it has the same count, against the plateau's smallest; raw frame (50 Gaussians too); runs without (b); the `d_f` ladder and t = 0 (centred, both arms) | matched count is a second reading of "beyond the covariance", not a rule: on seed 0 its coarse margin was thin (2 of 43) |
 
+*Ran 2026-10-04 on seed 1: **fails**, both arms, and not on (b): the Gaussian side holds
+(0 of 50, both arms) and (b) and stability pass at both planted ranges, but the count
+never holds for 3 grid points there. Fringe clusters that the opening pulls out of the
+sub-groups cross the size bar or merge between cuts. The defect is in the "robust plateau"
+row's "same count". `status-1d.md` "Unit 3 re-run"; the choice is `STATE.md` Blocked 16.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |
