@@ -282,6 +282,25 @@ pieces than the planted structure, so neither planted scale can pass (b). The de
 the "per scale" (b) row above, not only here. Options and numbers: `status-1d.md` "Unit 3:
 the synthetic and its first check"; the choice is `STATE.md` Blocked 15.*
 
+**The re-run: Blocked 15 decided (user, 2026-10-04: option 1, a Gaussian bound of 2 of 50,
+a size-2 arm), fixed before the run.** Every row above holds except these:
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| (b), every arm, synthetic and real | the cut's mean cluster-wise stability, rank p (higher tail) among the **same 50 matched-covariance draws'** stability at the same `r` (each draw's own tree, cut at `r` × its own median, its own 50 subsamples); **a draw whose cut has no cluster of the arm's size scores 0**; `z_G` stored (None when the draws' SD is 0). On real input this `z_G` is what is ranked among unit 2's re-inits, as the "per scale" row says | option 1 of Blocked 15. **Rejected:** "drop" for an empty draw (p = 1 where only the cloud has clusters, the strongest case); the count's tail (the first check's failure; kept beside as `p_count`, not read); two-sided count p |
+| (a) a subsample counts | for cluster C only when **\|C ∩ S\| ≥ 2** | one survivor carries no co-membership: under the old row a pair with one survivor scored 1 whenever the survivor stayed a singleton. Changes the size ≥ 4 arm by little (a 4-token C has < 3 % of subsamples with < 2 survivors) |
+| arms | **main**: clusters of ≥ `SUBSTANTIAL_CLUSTER_SIZE` = 4 tokens (count, stability, (b) all over them), as designed; **size 2**: the same with ≥ 2 tokens | `/challenge-pr` on #134, finding 4: the main arm reads the cloud's large structure; the candidates are 2–3-token groups. **What the synthetic cannot show:** whether the size-2 arm finds 2–3-token groups (none are planted). It shows whether the arm still finds the planted scales and whether it makes false plateaus on Gaussians |
+| no plateau on a Gaussian | **50** matched-covariance Gaussian clouds (seeds `[seed, 100 + i]`, i < 50), each read like the synthetic with its own 50 draws; **pass bound: ≤ 2 of 50 with a robust plateau**, per arm | 0 of 5 bounded the false-plateau rate only below ~45 % (#134, finding 3); 2 of 50 is ≈ 4 %, at α. **Rejected:** 0 of 50 (one stray plateau fails an otherwise sound instrument) |
+| pass, per arm | centred: both planted scales found and ≤ 2 of 50 Gaussians with a plateau | the main arm's pass opens unit 3's real-input reader for the large structure. The size-2 arm's pass is necessary, not sufficient, for reading the candidates' scale: a planted small-group control comes first |
+| seed | **1** (seed 0 has been seen) | — |
+| beside, not the pass | per robust plateau, **matched count**: each draw's largest stability at any `r` where it has the same count, against the plateau's smallest; raw frame (50 Gaussians too); runs without (b); the `d_f` ladder and t = 0 (centred, both arms) | matched count is a second reading of "beyond the covariance", not a rule: on seed 0 its coarse margin was thin (2 of 43) |
+
+*Ran 2026-10-04 on seed 1: **fails**, both arms, and not on (b): the Gaussian side holds
+(0 of 50, both arms) and (b) and stability pass at both planted ranges, but the count
+never holds for 3 grid points there. Fringe clusters that the opening pulls out of the
+sub-groups cross the size bar or merge between cuts. The defect is in the "robust plateau"
+row's "same count". `status-1d.md` "Unit 3 re-run"; the choice is `STATE.md` Blocked 16.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |

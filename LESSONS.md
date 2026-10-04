@@ -643,6 +643,12 @@ needs the user to enable it on GitHub.
   than chance too (median spread percentile 0.23). The test could not have told the two apart,
   and nobody ran it on a known embedding class first. Rule: **before reading a statistic as
   evidence against X, compute it on a case known to be X**.
+- 2026-10-04 (#134's pinning test, found while re-running unit 3): `TestOnAKnownClusteredCloud`
+  asserted "(b)'s count tail rejects both planted scales" with 10 Gaussian draws, so the
+  smallest rank p was 1/11 = 0.09 > α: no tail could have accepted anything, and the test
+  pinned the floor, not the direction. At 20 draws the count tail accepts the fine scale (where
+  the Gaussian has no cluster) and rejects only the coarse one. Rule: **a test that asserts a
+  rejection asserts first that acceptance was attainable** (`1/(N+1) <= ALPHA`).
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
