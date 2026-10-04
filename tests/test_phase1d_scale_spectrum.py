@@ -50,33 +50,92 @@ class TestSynthetic:
 
 def _rows(spec):
     """(k_sub, stability, p) triples to rows."""
-    return [{"r": float(i), "k_sub": k, "stability": s, "p": p} for i, (k, s, p) in enumerate(spec)]
+    return [{"r": float(i), "k_sub": k, "stability": s, "p": p, "informative": True}
+            for i, (k, s, p) in enumerate(spec)]
+
+
+_A = np.repeat([0, 1], 50)
+
+
+def _moved(m):
+    """_A with its first m tokens moved to cluster 1."""
+    lab = _A.copy()
+    lab[:m] = 1
+    return lab
+
+
+def _pl(rows, labels=None, **kw):
+    return ss.robust_plateaus(rows, labels if labels is not None else [_A] * len(rows), **kw)
 
 
 class TestRobustPlateaus:
     def test_run_of_three_found_two_not(self):
         rows = _rows([(3, .9, .01)] * 3 + [(0, None, 1.0)] + [(4, .9, .01)] * 2)
-        out = ss.robust_plateaus(rows)
-        assert [(p["start"], p["end"], p["k_sub"]) for p in out] == [(0, 2, 3)]
+        assert [(p["start"], p["end"], p["k_sub"]) for p in _pl(rows)] == [(0, 2, 3)]
 
-    def test_count_change_splits_a_run(self):
+    def test_a_count_change_alone_does_not_split_a_run(self):
         rows = _rows([(3, .9, .01)] * 2 + [(4, .9, .01)] * 3)
-        assert [(p["start"], p["end"]) for p in ss.robust_plateaus(rows)] == [(2, 4)]
+        assert [(p["start"], p["end"], p["k_lo"], p["k_hi"]) for p in _pl(rows)] == [(0, 4, 3, 4)]
 
     def test_each_condition_breaks_it(self):
         base = [(3, .9, .01)] * 5
         for bad in [(3, .74, .01), (3, .9, .06), (1, .9, .01), (3, None, .01)]:
             rows = _rows(base[:2] + [bad] + base[3:])
-            assert ss.robust_plateaus(rows) == []
+            assert _pl(rows) == []
+
+    def test_uninformative_b_breaks_it_only_with_b(self):
+        rows = _rows([(3, .9, .01)] * 3)
+        rows[1]["informative"] = False
+        assert _pl(rows) == []
+        assert len(_pl(rows, use_p=False)) == 1
 
     def test_without_b_ignores_p(self):
         rows = _rows([(3, .9, .5)] * 3)
-        assert ss.robust_plateaus(rows) == []
-        assert len(ss.robust_plateaus(rows, use_p=False)) == 1
+        assert _pl(rows) == []
+        assert len(_pl(rows, use_p=False)) == 1
 
     def test_run_at_the_end(self):
         rows = _rows([(0, None, 1.0)] + [(2, .8, .02)] * 3)
-        assert [(p["start"], p["end"]) for p in ss.robust_plateaus(rows)] == [(1, 3)]
+        assert [(p["start"], p["end"]) for p in _pl(rows)] == [(1, 3)]
+
+    def test_drift_is_anchored_to_the_first_cut(self):
+        from sklearn.metrics import adjusted_rand_score as ari
+        labs = [_moved(m) for m in range(11)]
+        assert all(ari(x, y) >= ss.CONT_ARI for x, y in zip(labs, labs[1:]))  # each step small
+        assert ari(labs[0], labs[-1]) < ss.CONT_ARI  # the ends apart
+        out = _pl(_rows([(2, .9, .01)] * 11), labs)
+        assert len(out) >= 2 and out[0]["start"] == 0  # one run over all 11 would drift
+        assert all(q["start"] == p["end"] + 1 for p, q in zip(out, out[1:]))
+        assert all(ari(labs[p["start"]], labs[g]) >= ss.CONT_ARI
+                   for p in out for g in range(p["start"], p["end"] + 1))
+
+
+class TestOpening:
+    def test_extent_and_label(self):
+        rng = np.random.default_rng(0)
+        Y = rng.standard_normal((60, 20))
+        fine = np.repeat(np.arange(3), 20)
+        Y = np.vstack([Y[fine == c] for c in range(3)])  # tight groups by construction below
+        Y += 4 * np.repeat(np.eye(20)[:3], 20, axis=0)
+        perm = rng.permutation(60)
+        Y, fine = Y[perm], fine[perm]
+        Y[:5] = Y[0] + 0.01 * rng.standard_normal((5, 20))  # a tight opening of 5
+        Y /= np.linalg.norm(Y, axis=1, keepdims=True)
+        J = ss.opening_extent(Y, fine)
+        assert J >= 5
+        lab = ss.planted_labels({"Y": Y, "fine": fine, "coarse": fine})
+        assert np.all(lab["fine"][:J] == 3) and np.array_equal(lab["fine"][J:], fine[J:])
+        assert np.array_equal(lab["coarse"], fine)
+
+    def test_no_opening_without_the_flow(self):
+        s = ss.synthetic(0, open_t=0.0)
+        assert ss.opening_extent(s["Y"], s["fine"]) == 0
+
+
+def test_clopper_pearson_lower():
+    assert ss.clopper_pearson_lower(0, 10) == 0.0
+    assert ss.clopper_pearson_lower(10, 10) == pytest.approx(0.05 ** 0.1)
+    assert 0.55 < ss.clopper_pearson_lower(9, 10) < 0.65
 
 
 def _two_blobs(n=40, d=30, spread=0.1, seed=0):
@@ -166,14 +225,15 @@ class TestOnAKnownClusteredCloud:
     def test_count_tail_rejects_planted_scales_that_stability_finds(self, read):
         spec, planted = read
         rows = spec["rows"]["main"]
-        without = ss.planted_ari(spec, ss.robust_plateaus(rows, use_p=False), planted)
+        labels = spec["_labels"]
+        without = ss.planted_ari(spec, ss.robust_plateaus(rows, labels, use_p=False), planted)
         assert ss.found_scales(without) == {"coarse": True, "fine": True}
-        count = ss.planted_ari(spec, ss.robust_plateaus(rows, p_key="p_count"), planted)
+        count = ss.planted_ari(spec, ss.robust_plateaus(rows, labels, p_key="p_count"), planted)
         assert ss.found_scales(count)["coarse"] is False
 
     def test_stability_tail_keeps_them(self, read):
         spec, planted = read
-        pl = ss.planted_ari(spec, ss.robust_plateaus(spec["rows"]["main"]), planted)
+        pl = ss.planted_ari(spec, ss.robust_plateaus(spec["rows"]["main"], spec["_labels"]), planted)
         assert ss.found_scales(pl) == {"coarse": True, "fine": True}
 
 
@@ -191,6 +251,20 @@ class TestArmRows:
         assert rows[1]["p"] == pytest.approx(2 / 4)  # refs 0, 0.95, 0.5
         assert rows[1]["null_n_empty"] == 1
         assert rows[1]["p_count"] == pytest.approx(3 / 4)  # refs 0, 1, 1
+
+    def test_informative_needs_a_tenth_of_the_draws(self):
+        lab = [np.array([0, 0, 0, 0, 1, 2])]
+        for n_full, want in [(4, False), (5, True)]:
+            st = np.full((50, 1), np.nan)
+            st[:n_full] = 0.5
+            row = ss.arm_rows(np.array([0.1]), [0.01], lab, [0.9], np.zeros((50, 1), int), st, 4)[0]
+            assert row["informative"] is want
+
+    def test_a_row_without_the_flag_refuses(self):
+        rows = _rows([(3, .9, .01)] * 3)
+        del rows[1]["informative"]
+        with pytest.raises(KeyError):
+            _pl(rows)
 
     def test_matched_count(self):
         rows = [{"k_sub": 0, "stability": None}, {"k_sub": 3, "stability": 0.9}]

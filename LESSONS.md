@@ -649,6 +649,13 @@ needs the user to enable it on GitHub.
   pinned the floor, not the direction. At 20 draws the count tail accepts the fine scale (where
   the Gaussian has no cluster) and rejects only the coarse one. Rule: **a test that asserts a
   rejection asserts first that acceptance was attainable** (`1/(N+1) <= ALPHA`).
+- 2026-10-04 (unit 3, three fails in one day): the synthetic's spreads were placed "so each
+  planted plateau spans ≥ 4 grid points" from construction distances, and `MIN_RUN` = 3 was
+  set beside it; nobody measured how many cuts actually reproduce each planted partition.
+  After the opening it is 3–4, so every rule since sat at the grid's resolution and a seed
+  passed or failed on where grid points fell (seeds 2–11: 7 of 10). Rule: **a positive
+  control's margin is measured in the instrument's own units (here, grid points over which
+  the cut equals the planted partition) across seeds, before a run-length bar is placed**.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

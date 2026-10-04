@@ -26,9 +26,11 @@ SUBSTANTIAL_CLUSTER_SIZE`` tokens, and of ``>= 2``; design "The re-run"):
   that reader is not built here. The count's rank p (the first check's
   failed (b)) is kept beside as ``p_count``.
 
-A **robust plateau** (`robust_plateaus`) is a maximal run of ``>= MIN_RUN``
-consecutive grid points with one count ``k >= 2`` and, at every point,
-stability ``>= STABLE`` and rank p ``<= ALPHA``.
+A **robust plateau** (`robust_plateaus`; Blocked 16) is a run of ``>= MIN_RUN``
+consecutive admissible grid points (``k >= 2``, stability ``>= STABLE``, (b)
+informative and rank p ``<= ALPHA``) whose cuts all have ARI ``>= CONT_ARI`` to
+the run's first cut. (b) is informative where ``>= MIN_INFORMATIVE`` of the
+draws have a cluster of the arm's size.
 
 **The multi-scale synthetic** (`synthetic`; unit 4's row): 3 groups x 3
 sub-groups from von Mises–Fisher draws on S^1023 (two planted spreads, set
@@ -39,11 +41,13 @@ then T1 (position 0 dropped). The spreads are exact in expectation: for
 independent draws ``E[x·y] = E[x]·E[y]``, so two points of one sub-group
 have mean cosine ``ρ_f²`` and two of sibling sub-groups ``ρ_f² ρ_c²``.
 
-**First check** (`first_check`), per arm: in the centred frame, each planted
-scale (3 groups; 9 sub-groups) is found by a robust plateau whose ARI to the
-planted labels (planted tokens only) is ``>= ARI_BAR`` at every point, and at
-most ``MAX_GAUSSIAN_PLATEAUS`` of ``N_GAUSSIAN_CHECKS`` matched-covariance
-Gaussian clouds of the synthetic have a robust plateau.
+**First check** (`first_check`, design "The multi-seed run"): on each of
+``SEEDS``, in the centred frame, each planted scale (3 groups; 9 sub-groups
+plus the opening, `opening_extent`) is found by a main-arm robust plateau
+whose ARI to the planted labels is ``>= ARI_BAR`` at every point. Pass: on
+``>= MIN_SEEDS_PASS`` seeds, and at most ``MAX_GAUSSIAN_PLATEAUS`` of the
+``N_GAUSSIAN_PER_SEED`` x seeds matched-covariance Gaussian clouds have a
+main-arm plateau. The size-2 arm is reported beside.
 
 Tier 1: exploratory, unregistered.
 """
@@ -99,8 +103,14 @@ OPEN_K = 4
 LADDER_D_FINE = (0.20, 0.25, 0.30)
 
 ARI_BAR = 0.8
-N_GAUSSIAN_CHECKS = 50
-#: Pass bound (design "The re-run"; PLACED): at most this many Gaussian clouds with a plateau.
+#: Blocked 16 (design "The multi-seed run"; PLACED).
+CONT_ARI = 0.9
+MIN_INFORMATIVE_FRAC = 0.1
+GATING_ARM = "main"
+SEEDS = tuple(range(2, 12))
+N_GAUSSIAN_PER_SEED = 5
+MIN_SEEDS_PASS = 8
+#: At most this many of the len(SEEDS) x N_GAUSSIAN_PER_SEED Gaussian clouds with a plateau.
 MAX_GAUSSIAN_PLATEAUS = 2
 #: Seed offsets for independent streams within one seed.
 _SUB, _NULL, _GAUSS = 1, 2, 100
@@ -231,6 +241,32 @@ def construction_distances(Y: np.ndarray, fine: np.ndarray, frame: str = "centre
 
 
 
+def opening_extent(Y: np.ndarray, fine: np.ndarray) -> int:
+    """
+    J, the largest such that every prefix of kept positions 0..j-1 (2 <= j <= J) has
+    mean pairwise cosine distance (centred) at most the planted mean within-sub-group
+    distance (centred, same cloud); 0 if the first two positions already exceed it.
+    """
+    Z, _ = frame_vectors(Y, "centred")
+    D = 1.0 - Z @ Z.T
+    within = construction_distances(Y, fine, "centred")["within_sub"]
+    J = 0
+    for j in range(2, D.shape[0] + 1):
+        if D[:j, :j][np.triu_indices(j, 1)].mean() > within:
+            break
+        J = j
+    return J
+
+
+def planted_labels(syn: Dict) -> Dict[str, np.ndarray]:
+    """Coarse as planted; fine with one more label for the opening's positions 0..J-1."""
+    fine = syn["fine"].copy()
+    J = opening_extent(syn["Y"], syn["fine"])
+    if J >= 2:
+        fine[:J] = int(syn["fine"].max()) + 1
+    return {"coarse": syn["coarse"], "fine": fine}
+
+
 # ---------------------------------------------------------------------------
 # The spectrum
 # ---------------------------------------------------------------------------
@@ -328,7 +364,8 @@ def arm_rows(grid: np.ndarray, deltas: Sequence[float], labels: Sequence[np.ndar
     """
     One arm's rows. ``p`` / ``z`` is (b): the cut's stability against the draws'
     (``null_st``, NaN = no cluster of the arm's size, scored 0); ``p = 1`` where the
-    cut itself has none. ``p_count`` is the substantial count's rank p (higher tail),
+    cut itself has none; ``informative`` where at least ``MIN_INFORMATIVE_FRAC`` of the
+    draws have such a cluster. ``p_count`` is the substantial count's rank p (higher tail),
     the first check's failed (b), kept beside.
     """
     rows = []
@@ -341,6 +378,8 @@ def arm_rows(grid: np.ndarray, deltas: Sequence[float], labels: Sequence[np.ndar
                      "null_stab_mean": float(ref.mean()),
                      "null_stab_sd": float(ref.std(ddof=1)) if ref.size > 1 else 0.0,
                      "null_n_empty": int(np.isnan(null_st[:, g]).sum()),
+                     "informative": bool(np.sum(~np.isnan(null_st[:, g]))
+                                         >= math.ceil(MIN_INFORMATIVE_FRAC * null_st.shape[0])),
                      "z": None if stab is None else _z(stab, ref),
                      "p": 1.0 if stab is None else rank_p_higher(stab, ref),
                      "null_k_mean": float(null_k[:, g].mean()),
@@ -383,23 +422,42 @@ def spectrum(Y: np.ndarray, frame: str, seed: int, n_sub: int = N_SUBSAMPLES,
             "rows": rows, "_labels": labels, "_null": {a: (null_k[a], null_st[a]) for a in ARMS}}
 
 
-def robust_plateaus(rows: Sequence[Dict], use_p: bool = True, p_key: str = "p") -> List[Dict]:
-    """Maximal runs of ``>= MIN_RUN`` consecutive grid points with one ``k_sub >= MIN_K``,
-    stability ``>= STABLE`` and (if ``use_p``) ``rows[p_key] <= ALPHA`` at every point."""
-    def ok(row: Dict) -> bool:
-        return (row["k_sub"] >= MIN_K and row["stability"] is not None
-                and row["stability"] >= STABLE and (not use_p or row[p_key] <= ALPHA))
+def robust_plateaus(rows: Sequence[Dict], labels: Sequence[np.ndarray], use_p: bool = True,
+                    p_key: str = "p") -> List[Dict]:
+    """
+    Runs of ``>= MIN_RUN`` consecutive admissible grid points whose cuts (``labels``) all
+    have ARI ``>= CONT_ARI`` to the run's first cut, built left to right; at a break the
+    next run starts at the breaking point. Admissible: ``k_sub >= MIN_K``, stability
+    ``>= STABLE`` and, if ``use_p``, ``rows[p_key] <= ALPHA`` (and, for (b) itself,
+    ``informative``).
+    """
+    from sklearn.metrics import adjusted_rand_score
 
-    out, start = [], None
-    for g in range(len(rows) + 1):
-        cont = (g < len(rows) and ok(rows[g]) and start is not None
-                and rows[g]["k_sub"] == rows[start]["k_sub"])
-        if cont:
-            continue
-        if start is not None and g - start >= MIN_RUN:
-            out.append({"start": start, "end": g - 1, "k_sub": rows[start]["k_sub"],
-                        "r_lo": rows[start]["r"], "r_hi": rows[g - 1]["r"]})
-        start = g if g < len(rows) and ok(rows[g]) else None
+    def ok(row: Dict) -> bool:
+        b = (not use_p) or (row[p_key] <= ALPHA and (p_key != "p" or row["informative"]))
+        return row["k_sub"] >= MIN_K and row["stability"] is not None and row["stability"] >= STABLE and b
+
+    out: List[Dict] = []
+
+    def close(start: int, end: int) -> None:
+        if end - start + 1 >= MIN_RUN:
+            ks = [rows[g]["k_sub"] for g in range(start, end + 1)]
+            out.append({"start": start, "end": end, "k_sub": ks[0], "k_lo": min(ks), "k_hi": max(ks),
+                        "r_lo": rows[start]["r"], "r_hi": rows[end]["r"]})
+
+    start = None
+    for g in range(len(rows)):
+        if not ok(rows[g]):
+            if start is not None:
+                close(start, g - 1)
+            start = None
+        elif start is None:
+            start = g
+        elif adjusted_rand_score(labels[start], labels[g]) < CONT_ARI:
+            close(start, g - 1)
+            start = g
+    if start is not None:
+        close(start, len(rows) - 1)
     return out
 
 
@@ -449,21 +507,23 @@ def _public(spec: Dict, with_null: bool = False) -> Dict:
 
 
 def read_synthetic(syn: Dict, frame: str, seed: int) -> Dict:
-    """Per arm: robust plateaus with (b) and without, their ARI to the planted
-    labels, which scales are found, and the matched-count reading per plateau."""
+    """Per arm: robust plateaus with (b) and without, their ARI to the planted labels
+    (`planted_labels`), which scales are found, and the matched-count reading per plateau."""
     spec = spectrum(syn["Y"], frame, seed)
-    planted = {"coarse": syn["coarse"], "fine": syn["fine"]}
+    planted = planted_labels(syn)
+    labels = spec["_labels"]
     arms = {}
     for a in ARMS:
         rows = spec["rows"][a]
-        pl = planted_ari(spec, robust_plateaus(rows), planted)
-        wo = planted_ari(spec, robust_plateaus(rows, use_p=False), planted)
+        pl = planted_ari(spec, robust_plateaus(rows, labels), planted)
+        wo = planted_ari(spec, robust_plateaus(rows, labels, use_p=False), planted)
         ks, st = spec["_null"][a]
         arms[a] = {"plateaus": pl, "plateaus_without_b": wo, "found": found_scales(pl),
                    "found_without_b": found_scales(wo),
                    "matched_count": [matched_count(rows, ks, st, k)
                                      for k in sorted({p["k_sub"] for p in pl + wo})]}
-    return {"spectrum": _public(spec, with_null=True), "arms": arms}
+    return {"spectrum": _public(spec, with_null=True), "arms": arms,
+            "opening_extent": opening_extent(syn["Y"], syn["fine"])}
 
 
 def read_gaussian(Y: np.ndarray, frame: str, seed: int, i: int) -> Dict:
@@ -471,9 +531,10 @@ def read_gaussian(Y: np.ndarray, frame: str, seed: int, i: int) -> Dict:
     Z, _ = frame_vectors(Y, frame)
     G = gaussian_draw(span_coordinates(Z), np.random.default_rng([seed, _GAUSS + i]))
     spec = spectrum(G, frame, seed + 1000 * (i + 1))
+    labels = spec["_labels"]
     return {"draw": i, "spectrum": _public(spec),
-            "arms": {a: {"plateaus": robust_plateaus(spec["rows"][a]),
-                         "plateaus_without_b": robust_plateaus(spec["rows"][a], use_p=False)}
+            "arms": {a: {"plateaus": robust_plateaus(spec["rows"][a], labels),
+                         "plateaus_without_b": robust_plateaus(spec["rows"][a], labels, use_p=False)}
                      for a in ARMS}}
 
 
@@ -487,59 +548,142 @@ def _job(kind: str, *args):
 
 
 def _plateau_str(pls: Sequence[Dict]) -> str:
-    return str([(p["k_sub"], round(p["r_lo"], 3), round(p["r_hi"], 3)) for p in pls])
+    return str([((p["k_lo"], p["k_hi"]), round(p["r_lo"], 3), round(p["r_hi"], 3)) for p in pls])
 
 
-def first_check(seed: int, jobs: int = 1, log=print) -> Dict:
+def clopper_pearson_lower(x: int, n: int, level: float = 0.95) -> float:
+    """One-sided lower confidence bound on a success rate from x of n."""
+    from scipy.stats import beta
+    return 0.0 if x == 0 else float(beta.ppf(1 - level, x, n - x + 1))
+
+
+def first_check(seeds: Sequence[int] = SEEDS, jobs: int = 1, log=print) -> Dict:
     """
-    Design "The re-run": the synthetic (both frames), ``N_GAUSSIAN_CHECKS`` Gaussian
-    clouds per frame, and beside it the ``d_f`` ladder and t = 0 (centred). Each cloud
-    is one job; every job has its own seeded streams, so ``jobs`` does not change a number.
+    Design "The multi-seed run": per seed, the synthetic (both frames),
+    ``N_GAUSSIAN_PER_SEED`` Gaussian clouds per frame, and beside it the ``d_f`` ladder
+    and t = 0 (centred). Each cloud is one job with its own seeded streams, so ``jobs``
+    does not change a number.
     """
     t0 = time.time()
-    syn = synthetic(seed)
-    beside_syn = {f"d_fine={d}": synthetic(seed, d_fine=d) for d in LADDER_D_FINE}
-    beside_syn["open_t=0"] = synthetic(seed, open_t=0.0)
-    out: Dict = {"synthetic": syn["info"],
-                 "construction": {f: construction_distances(syn["Y"], syn["fine"], f) for f in FRAMES},
-                 "frames": {f: {"gaussians": [None] * N_GAUSSIAN_CHECKS} for f in FRAMES},
-                 "beside": {k: {"construction": construction_distances(s["Y"], s["fine"])}
-                            for k, s in beside_syn.items()}}
-    tasks = [("synthetic", syn, f, seed, ("main", f)) for f in FRAMES]
-    tasks += [("synthetic", s, "centred", seed, ("beside", k)) for k, s in beside_syn.items()]
-    tasks += [("gaussian", syn["Y"], f, seed, i, ("gauss", f, i))
-              for f in FRAMES for i in range(N_GAUSSIAN_CHECKS)]
+    out: Dict = {"seeds": {}}
+    tasks = []
+    for seed in seeds:
+        syn = synthetic(seed)
+        beside_syn = {f"d_fine={d}": synthetic(seed, d_fine=d) for d in LADDER_D_FINE}
+        beside_syn["open_t=0"] = synthetic(seed, open_t=0.0)
+        out["seeds"][seed] = {
+            "synthetic": syn["info"],
+            "construction": {f: construction_distances(syn["Y"], syn["fine"], f) for f in FRAMES},
+            "frames": {f: {"gaussians": [None] * N_GAUSSIAN_PER_SEED} for f in FRAMES},
+            "beside": {k: {"construction": construction_distances(s["Y"], s["fine"])}
+                       for k, s in beside_syn.items()}}
+        tasks += [("synthetic", syn, f, seed, (seed, "main", f)) for f in FRAMES]
+        tasks += [("synthetic", s, "centred", seed, (seed, "beside", k)) for k, s in beside_syn.items()]
+        tasks += [("gaussian", syn["Y"], f, seed, i, (seed, "gauss", f, i))
+                  for f in FRAMES for i in range(N_GAUSSIAN_PER_SEED)]
     done = 0
     with ProcessPoolExecutor(max_workers=max(1, int(jobs)), initializer=_one_thread) as ex:
         futs = [ex.submit(_job, *t) for t in tasks]
         for fut in as_completed(futs):
             kind, key, rec = fut.result()
             done += 1
-            if key[0] == "main":
-                out["frames"][key[1]].update(rec)
-            elif key[0] == "beside":
-                out["beside"][key[1]].update(rec)
+            rs = out["seeds"][key[0]]
+            if key[1] == "main":
+                rs["frames"][key[2]].update(rec)
+            elif key[1] == "beside":
+                rs["beside"][key[2]].update(rec)
             else:
-                out["frames"][key[1]]["gaussians"][key[2]] = rec
+                rs["frames"][key[2]]["gaussians"][key[3]] = rec
             msg = "; ".join(f"{a} {_plateau_str(r['plateaus'])}"
                             + (f" found {r['found']}" if "found" in r else "")
                             for a, r in rec["arms"].items())
             log(f"[{done}/{len(tasks)} {time.time() - t0:.0f}s] {' '.join(map(str, key))}: {msg}", flush=True)
+    summary: Dict = {}
     for f in FRAMES:
-        fr = out["frames"][f]
-        fr["gaussian_with_plateau"] = {a: sum(bool(g["arms"][a]["plateaus"]) for g in fr["gaussians"])
-                                       for a in ARMS}
-        fr["gaussian_with_plateau_without_b"] = {
-            a: sum(bool(g["arms"][a]["plateaus_without_b"]) for g in fr["gaussians"]) for a in ARMS}
-    c = out["frames"]["centred"]
-    out["pass"] = {a: bool(all(c["arms"][a]["found"].values())
-                           and c["gaussian_with_plateau"][a] <= MAX_GAUSSIAN_PLATEAUS) for a in ARMS}
-    for f in FRAMES:
-        log(f"{f}: found {[(a, out['frames'][f]['arms'][a]['found']) for a in ARMS]}; Gaussian clouds "
-            f"with a plateau {out['frames'][f]['gaussian_with_plateau']} of {N_GAUSSIAN_CHECKS} "
-            f"(without (b): {out['frames'][f]['gaussian_with_plateau_without_b']})", flush=True)
+        summary[f] = {}
+        for a in ARMS:
+            found = {sd: out["seeds"][sd]["frames"][f]["arms"][a]["found"] for sd in seeds}
+            both = [sd for sd in seeds if all(found[sd].values())]
+            gauss = [g for sd in seeds for g in out["seeds"][sd]["frames"][f]["gaussians"]]
+            summary[f][a] = {
+                "seeds_both_found": both, "n_both_found": len(both), "n_seeds": len(seeds),
+                "rate_lower_95": clopper_pearson_lower(len(both), len(seeds)),
+                "n_coarse_found": sum(found[sd]["coarse"] for sd in seeds),
+                "n_fine_found": sum(found[sd]["fine"] for sd in seeds),
+                "gaussian_with_plateau": sum(bool(g["arms"][a]["plateaus"]) for g in gauss),
+                "gaussian_with_plateau_without_b": sum(bool(g["arms"][a]["plateaus_without_b"]) for g in gauss),
+                "n_gaussian": len(gauss)}
+            log(f"{f} {a}: both scales on {len(both)} of {len(seeds)} seeds {both} "
+                f"(coarse {summary[f][a]['n_coarse_found']}, fine {summary[f][a]['n_fine_found']}; "
+                f"rate >= {summary[f][a]['rate_lower_95']:.2f} at 95 %); Gaussian clouds with a plateau "
+                f"{summary[f][a]['gaussian_with_plateau']} of {len(gauss)} "
+                f"(without (b): {summary[f][a]['gaussian_with_plateau_without_b']})", flush=True)
+    c = summary["centred"][GATING_ARM]
+    out["summary"] = summary
+    out["pass"] = bool(c["n_both_found"] >= MIN_SEEDS_PASS and c["gaussian_with_plateau"] <= MAX_GAUSSIAN_PLATEAUS)
     out["seconds"] = round(time.time() - t0, 1)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Planted windows: the positive control's margin in the instrument's units
+# ---------------------------------------------------------------------------
+
+#: Seeds for margin measurements only; never a first check's seeds.
+WINDOW_SEEDS = tuple(range(1000, 1040))
+
+
+def planted_window(seed: int, n_grid: int = 400, frame: str = "centred") -> Dict:
+    """
+    Trees only (no stability, no draws): over ``n_grid`` log-spaced r from ``GRID_LO`` to
+    ``GRID_HI``, the longest interval of consecutive r whose cut has ARI >= ``ARI_BAR`` to
+    each planted labelling (`planted_labels`), as its span ``r_hi / r_lo`` and its ends.
+    """
+    from sklearn.metrics import adjusted_rand_score
+    syn = synthetic(seed)
+    planted = planted_labels(syn)
+    Z, _ = frame_vectors(syn["Y"], frame)
+    data = LayerData.from_normed(span_coordinates(Z))
+    tree, med = _tree(data), _median_distance(data)
+    grid = np.geomspace(GRID_LO, GRID_HI, int(n_grid))
+    cuts = [labels_at_delta(tree, data.n, r * med) for r in grid]
+    out: Dict = {"seed": int(seed), "opening_extent": opening_extent(syn["Y"], syn["fine"])}
+    for name, lab in planted.items():
+        keep = lab >= 0
+        ok = [adjusted_rand_score(lab[keep], c[keep]) >= ARI_BAR for c in cuts]
+        best, start = (0, -1, -1), None
+        for g in range(len(ok) + 1):
+            if g < len(ok) and ok[g]:
+                start = g if start is None else start
+            elif start is not None:
+                best = max(best, (g - start, start, g - 1))
+                start = None
+        n, a, b = best
+        out[name] = ({"span": float(grid[b] / grid[a]), "r_lo": float(grid[a]), "r_hi": float(grid[b])}
+                     if n else {"span": 0.0, "r_lo": None, "r_hi": None})
+    return out
+
+
+def windows_cmd(argv: Sequence[str]) -> int:
+    ap = argparse.ArgumentParser(prog="scale_spectrum windows")
+    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--seeds", type=int, nargs="+", default=list(WINDOW_SEEDS))
+    ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    a = ap.parse_args(argv)
+    a.out.mkdir(parents=True, exist_ok=True)
+    git = _git_head()
+    with ProcessPoolExecutor(max_workers=a.jobs, initializer=_one_thread) as ex:
+        recs = sorted(ex.map(planted_window, a.seeds), key=lambda r: r["seed"])
+    summ = {}
+    for name in ("coarse", "fine"):
+        sp = np.array([r[name]["span"] for r in recs])
+        summ[name] = {"min": float(sp.min()), "p10": float(np.percentile(sp, 10)),
+                      "median": float(np.median(sp)), "n_below_1.3": int((sp < 1.3).sum())}
+        print(f"{name}: span min {sp.min():.3f} p10 {np.percentile(sp, 10):.3f} median "
+              f"{np.median(sp):.3f}; below 1.3: {(sp < 1.3).sum()} of {sp.size}")
+    (a.out / "windows.json").write_text(json.dumps({"git": git, "seeds": a.seeds, "summary": summ,
+                                                    "records": recs}, indent=1))
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -561,27 +705,29 @@ def _git_head() -> str:
 def synthetic_cmd(argv: Sequence[str]) -> int:
     ap = argparse.ArgumentParser(prog="scale_spectrum synthetic")
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--seed", type=int, required=True)
+    ap.add_argument("--seeds", type=int, nargs="+", default=list(SEEDS))
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
     git = _git_head()
-    rec = first_check(a.seed, a.jobs)
+    rec = first_check(a.seeds, a.jobs)
     rec["git"] = git
     rec["constants"] = {"grid": [GRID_LO, GRID_HI, GRID_N], "n_subsamples": N_SUBSAMPLES,
                         "subsample_frac": SUBSAMPLE_FRAC, "n_draws": N_DRAWS, "stable": STABLE,
                         "alpha": ALPHA, "min_run": MIN_RUN, "min_k": MIN_K, "arms": ARMS,
-                        "ari_bar": ARI_BAR, "n_gaussian_checks": N_GAUSSIAN_CHECKS,
+                        "ari_bar": ARI_BAR, "cont_ari": CONT_ARI,
+                        "min_informative_frac": MIN_INFORMATIVE_FRAC, "gating_arm": GATING_ARM,
+                        "n_gaussian_per_seed": N_GAUSSIAN_PER_SEED, "min_seeds_pass": MIN_SEEDS_PASS,
                         "max_gaussian_plateaus": MAX_GAUSSIAN_PLATEAUS}
     (a.out / "first_check.json").write_text(json.dumps(rec, indent=1))
-    verdict = ", ".join(f"{k} {'PASS' if v else 'FAIL'}" for k, v in rec["pass"].items())
-    print(f"first check: {verdict} ({rec['seconds']} s; {a.out / 'first_check.json'})")
-    return 0 if rec["pass"]["main"] else 1
+    print(f"first check ({GATING_ARM} arm, centred): {'PASS' if rec['pass'] else 'FAIL'} "
+          f"({rec['seconds']} s; {a.out / 'first_check.json'})")
+    return 0 if rec["pass"] else 1
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"synthetic": synthetic_cmd}
+    cmds = {"synthetic": synthetic_cmd, "windows": windows_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: scale_spectrum {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2

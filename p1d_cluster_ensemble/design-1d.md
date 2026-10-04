@@ -301,6 +301,25 @@ never holds for 3 grid points there. Fringe clusters that the opening pulls out 
 sub-groups cross the size bar or merge between cuts. The defect is in the "robust plateau"
 row's "same count". `status-1d.md` "Unit 3 re-run"; the choice is `STATE.md` Blocked 16.*
 
+**The multi-seed run: Blocked 16 decided (user, 2026-10-04: all five parts), fixed before any
+code.** Every row of "The re-run" holds except these:
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| robust plateau (i) | a run of ≥ 3 consecutive grid points, built left to right: it starts at the first admissible point and extends while the next point is admissible **and its cut has ARI ≥ `CONT_ARI` = 0.9 to the run's first cut** (all tokens); at a break the next run starts at the breaking point if it is admissible. Admissible: k ≥ 2 clusters of the arm's size, stability ≥ 0.75, (b) informative and p ≤ 0.05. The plateau's k is reported as its range | the partition held, not the count. **Rejected:** consecutive-cut ARI (lets a run drift, #135 finding 3); "same count" (moved by fringe clusters, seed 1). 0.9 was placed after seeing seed 1, hence fresh seeds |
+| arms (ii) | the **main arm alone gates**; the size-2 arm is computed and reported beside | ARI cannot see pairs; nothing small is planted. The size-2 arm waits for a per-cluster continuity rule and a planted small-group control |
+| the opening (iii) | the fine planted labels gain one **"opening" label** for the kept positions 0..J−1, J the largest such that every prefix 0..j−1 with 2 ≤ j ≤ J has mean pairwise cosine distance (centred) ≤ the planted mean within-sub-group distance (centred, measured on the same cloud); J < 2 means no opening label. Fixed from the construction alone, before any spectrum. The opening tokens are scored in the fine ARI whatever their planted origin (background included); the coarse labels are unchanged | the opening group forms by design (unit 4's row), so the cloud has 9 + 1 fine groups. Pairwise against pairwise, as the opening's `t` rule. **Rejected:** dropping those tokens from the ARI (cruder; keeps the opening's members scored as errors elsewhere) |
+| (b) informative (iv) | a grid point's (b) is informative only where **≥ 5 of the 50 draws** (10 %) have a cluster of the arm's size; elsewhere it is reported as uninformative, its point is not admissible, and on real input it is reported, not ranked | "zero" there passes any cluster the Gaussian lacks, e.g. one pair (#135 finding 5); on real input repeated tokens make such pairs |
+| seeds and pass (v) | **seeds 2–11** (unseen). Per seed: the synthetic in both frames, **5** Gaussian clouds per frame (seeds `[seed, 100 + i]`, i < 5), the `d_f` ladder and t = 0 beside. **Pass: the main arm, centred, finds both planted scales on ≥ 8 of 10 seeds, and ≤ 2 of the 50 centred Gaussian clouds have a main-arm plateau.** The success count is reported with its one-sided 95 % Clopper–Pearson lower bound | one seed was n = 1: the opening's tightness varies about 3× by seed (#135 finding 1). 50 Gaussians per seed: 10× the cost for the same bound |
+
+*Ran 2026-10-04 on seeds 2–11: **fails, 7 of 10** (needs 8); Gaussians 0 of 50. Coarse is
+lost when the background's merges near r 0.9 pull the all-token ARI below 0.9 (the planted
+partition holds); fine is lost at (b)'s edge (seed 7) or where its window is narrower than
+the grid resolves (seed 8). The defect is the "robust plateau (i)" row's all-token ARI; the
+"seeds and pass" row counts seeds where the synthetic offers no resolvable fine scale (3 of
+40 throwaway seeds). `status-1d.md` "Unit 3 on seeds 2–11"; the choice is `STATE.md`
+Blocked 17.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |
