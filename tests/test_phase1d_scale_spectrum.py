@@ -50,7 +50,8 @@ class TestSynthetic:
 
 def _rows(spec):
     """(k_sub, stability, p) triples to rows."""
-    return [{"r": float(i), "k_sub": k, "stability": s, "p": p} for i, (k, s, p) in enumerate(spec)]
+    return [{"r": float(i), "k_sub": k, "stability": s, "p": p, "informative": True}
+            for i, (k, s, p) in enumerate(spec)]
 
 
 _A = np.repeat([0, 1], 50)
@@ -250,6 +251,20 @@ class TestArmRows:
         assert rows[1]["p"] == pytest.approx(2 / 4)  # refs 0, 0.95, 0.5
         assert rows[1]["null_n_empty"] == 1
         assert rows[1]["p_count"] == pytest.approx(3 / 4)  # refs 0, 1, 1
+
+    def test_informative_needs_a_tenth_of_the_draws(self):
+        lab = [np.array([0, 0, 0, 0, 1, 2])]
+        for n_full, want in [(4, False), (5, True)]:
+            st = np.full((50, 1), np.nan)
+            st[:n_full] = 0.5
+            row = ss.arm_rows(np.array([0.1]), [0.01], lab, [0.9], np.zeros((50, 1), int), st, 4)[0]
+            assert row["informative"] is want
+
+    def test_a_row_without_the_flag_refuses(self):
+        rows = _rows([(3, .9, .01)] * 3)
+        del rows[1]["informative"]
+        with pytest.raises(KeyError):
+            _pl(rows)
 
     def test_matched_count(self):
         rows = [{"k_sub": 0, "stability": None}, {"k_sub": 3, "stability": 0.9}]

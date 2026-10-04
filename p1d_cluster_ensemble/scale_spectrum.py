@@ -434,7 +434,7 @@ def robust_plateaus(rows: Sequence[Dict], labels: Sequence[np.ndarray], use_p: b
     from sklearn.metrics import adjusted_rand_score
 
     def ok(row: Dict) -> bool:
-        b = (not use_p) or (row[p_key] <= ALPHA and (p_key != "p" or row.get("informative", True)))
+        b = (not use_p) or (row[p_key] <= ALPHA and (p_key != "p" or row["informative"]))
         return row["k_sub"] >= MIN_K and row["stability"] is not None and row["stability"] >= STABLE and b
 
     out: List[Dict] = []
@@ -626,6 +626,67 @@ def first_check(seeds: Sequence[int] = SEEDS, jobs: int = 1, log=print) -> Dict:
 
 
 # ---------------------------------------------------------------------------
+# Planted windows: the positive control's margin in the instrument's units
+# ---------------------------------------------------------------------------
+
+#: Seeds for margin measurements only; never a first check's seeds.
+WINDOW_SEEDS = tuple(range(1000, 1040))
+
+
+def planted_window(seed: int, n_grid: int = 400, frame: str = "centred") -> Dict:
+    """
+    Trees only (no stability, no draws): over ``n_grid`` log-spaced r from ``GRID_LO`` to
+    ``GRID_HI``, the longest interval of consecutive r whose cut has ARI >= ``ARI_BAR`` to
+    each planted labelling (`planted_labels`), as its span ``r_hi / r_lo`` and its ends.
+    """
+    from sklearn.metrics import adjusted_rand_score
+    syn = synthetic(seed)
+    planted = planted_labels(syn)
+    Z, _ = frame_vectors(syn["Y"], frame)
+    data = LayerData.from_normed(span_coordinates(Z))
+    tree, med = _tree(data), _median_distance(data)
+    grid = np.geomspace(GRID_LO, GRID_HI, int(n_grid))
+    cuts = [labels_at_delta(tree, data.n, r * med) for r in grid]
+    out: Dict = {"seed": int(seed), "opening_extent": opening_extent(syn["Y"], syn["fine"])}
+    for name, lab in planted.items():
+        keep = lab >= 0
+        ok = [adjusted_rand_score(lab[keep], c[keep]) >= ARI_BAR for c in cuts]
+        best, start = (0, -1, -1), None
+        for g in range(len(ok) + 1):
+            if g < len(ok) and ok[g]:
+                start = g if start is None else start
+            elif start is not None:
+                best = max(best, (g - start, start, g - 1))
+                start = None
+        n, a, b = best
+        out[name] = ({"span": float(grid[b] / grid[a]), "r_lo": float(grid[a]), "r_hi": float(grid[b])}
+                     if n else {"span": 0.0, "r_lo": None, "r_hi": None})
+    return out
+
+
+def windows_cmd(argv: Sequence[str]) -> int:
+    ap = argparse.ArgumentParser(prog="scale_spectrum windows")
+    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--seeds", type=int, nargs="+", default=list(WINDOW_SEEDS))
+    ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    a = ap.parse_args(argv)
+    a.out.mkdir(parents=True, exist_ok=True)
+    git = _git_head()
+    with ProcessPoolExecutor(max_workers=a.jobs, initializer=_one_thread) as ex:
+        recs = sorted(ex.map(planted_window, a.seeds), key=lambda r: r["seed"])
+    summ = {}
+    for name in ("coarse", "fine"):
+        sp = np.array([r[name]["span"] for r in recs])
+        summ[name] = {"min": float(sp.min()), "p10": float(np.percentile(sp, 10)),
+                      "median": float(np.median(sp)), "n_below_1.3": int((sp < 1.3).sum())}
+        print(f"{name}: span min {sp.min():.3f} p10 {np.percentile(sp, 10):.3f} median "
+              f"{np.median(sp):.3f}; below 1.3: {(sp < 1.3).sum()} of {sp.size}")
+    (a.out / "windows.json").write_text(json.dumps({"git": git, "seeds": a.seeds, "summary": summ,
+                                                    "records": recs}, indent=1))
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -666,7 +727,7 @@ def synthetic_cmd(argv: Sequence[str]) -> int:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"synthetic": synthetic_cmd}
+    cmds = {"synthetic": synthetic_cmd, "windows": windows_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: scale_spectrum {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2
