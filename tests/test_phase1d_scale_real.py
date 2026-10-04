@@ -27,9 +27,18 @@ class TestSeeds:
 
 
 class TestRefValues:
-    def test_no_cluster_is_below_undefined_is_dropped(self):
-        v = sr.ref_values([_row(1.5), _row(None, stability=None), _row(None, stability=0.8)])
-        assert v[0] == 1.5 and v[1] == -np.inf and np.isnan(v[2])
+    def test_no_cluster_is_below(self):
+        v = sr.ref_values([_row(1.5), _row(None, stability=None)])
+        assert v[0] == 1.5 and v[1] == -np.inf
+
+    def test_sd0_takes_the_sign_and_drops_only_a_tie(self):
+        # #139 finding 1: a reference with a cluster whose draws are all empty is the
+        # furthest above its covariance, not a reference to drop.
+        rows = [dict(_row(None, stability=0.8), null_stab_mean=0.0),
+                dict(_row(None, stability=0.8), null_stab_mean=1.0),
+                dict(_row(None, stability=1.0), null_stab_mean=1.0)]
+        v = sr.ref_values(rows)
+        assert v[0] == np.inf and v[1] == -np.inf and np.isnan(v[2])
 
 
 class TestRankRows:
@@ -130,6 +139,62 @@ class TestLoadSets:
         f.write_text(json.dumps({"comparison": [label(st, m) for st, m in comparison_models("trained")],
                                  "sets": sets}))
         assert sr.load_sets(f)["wiki_paragraph"] == [1, 2, 3]
+
+
+def _cloud(z, n_tok=10):
+    rows = [{"r": float(g), "k_sub": 2, "stability": 0.9, "z": z, "informative": True, "p": 0.5,
+             "null_stab_mean": 0.5} for g in range(ss.GRID_N)]
+    return {"rows": {a: rows for a in ss.ARMS}}, np.tile(np.repeat([0, 1], n_tok // 2), (ss.GRID_N, 1))
+
+
+class TestPlateauTable:
+    """#139 finding 4: the reference sets (real inits among all 40, each re-init among the other 39)."""
+
+    def _run(self, monkeypatch, high):
+        monkeypatch.setattr(sr, "V1_PASSAGES", ("wiki_paragraph",))
+        monkeypatch.setattr(sr, "LAYERS", (1,))
+        recs, labs = {}, {}
+        for m in INITS + REINITS:
+            rec, lab = _cloud(5.0 if m in high else 0.0)
+            recs[m] = {"wiki_paragraph": {1: rec}}
+            labs[m] = {"wiki_paragraph": {1: lab}}
+        return sr.plateau_table(recs, labs, "main", (3,))
+
+    def test_a_reinit_is_not_its_own_reference(self, monkeypatch):
+        # Two re-inits at z = 5: each sees one other at or above, p = 2/40 = 0.05 (a plateau);
+        # counted against itself it would be 3/41. A real init at z = 5 sees both: 3/41.
+        t = self._run(monkeypatch, high={"reinit:0", "reinit:1", "init:0"})
+        assert t["reinit"][3][("reinit:0", "wiki_paragraph", 1)]
+        assert not t["reinit"][3][("reinit:2", "wiki_paragraph", 1)]
+        assert not t["real_init"][3][("init:0", "wiki_paragraph", 1)]
+        assert t["n_ref_min"][("init:0", "wiki_paragraph", 1)] == 40
+        assert t["n_ref_min"][("reinit:0", "wiki_paragraph", 1)] == 39
+
+    def test_without_b_ignores_the_reference(self, monkeypatch):
+        t = self._run(monkeypatch, high=set())
+        assert all(t["without_b"].values())
+        assert not any(t["reinit"][3].values())
+
+
+class TestLoadRun:
+    def _write(self, out, mids, error=False):
+        for m in mids:
+            rec, lab = _cloud(0.0)
+            layer = {"layer": 1, "error": "refused"} if error else {"layer": 1, **rec}
+            sr._write(out, m, "wiki_paragraph", {1: (layer, None if error else lab)},
+                      {"git": "abc", "sets_sha256": "x"})
+
+    def test_refuses_missing_and_refused_trees(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(sr, "V1_PASSAGES", ("wiki_paragraph",))
+        self._write(tmp_path, INITS + REINITS[:-1])
+        with pytest.raises(SystemExit, match="missing"):
+            sr.load_run(tmp_path)
+        self._write(tmp_path, REINITS[-1:], error=True)
+        with pytest.raises(SystemExit, match="refused tree"):
+            sr.load_run(tmp_path)
+        self._write(tmp_path, REINITS[-1:])
+        recs, labs = sr.load_run(tmp_path)
+        assert len(recs) == 50 and labs["init:0"]["wiki_paragraph"][1].shape == (ss.GRID_N, 10)
 
 
 class TestReadCloud:

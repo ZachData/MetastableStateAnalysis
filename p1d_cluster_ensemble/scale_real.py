@@ -217,12 +217,23 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
 def ref_values(rows: Sequence[Dict]) -> np.ndarray:
     """
     One reference cloud's value per grid point: its ``z_G``; ``-inf`` where its cut has
-    no cluster of the arm's size (counts as below); NaN where ``z_G`` is undefined
-    because its draws' SD is 0 (dropped).
+    no cluster of the arm's size (counts as below). Where ``z_G`` is undefined because
+    its draws' SD is 0, the sign of (its stability − the draws' common value): ``+inf``
+    above (typically every draw empty, scored 0, while the reference has a cluster: the
+    reference furthest above its covariance), ``-inf`` below, NaN (dropped) only when
+    equal (e.g. every cut one cluster at stability 1). *Changed after `/challenge-pr`
+    on #139, finding 1:* the design row dropped every SD-0 reference, which drops the
+    strongest references and makes the check easier.
     """
     out = np.empty(len(rows))
     for g, r in enumerate(rows):
-        out[g] = -np.inf if r["stability"] is None else (np.nan if r["z"] is None else r["z"])
+        if r["stability"] is None:
+            out[g] = -np.inf
+        elif r["z"] is not None:
+            out[g] = r["z"]
+        else:
+            d = r["stability"] - r["null_stab_mean"]
+            out[g] = np.nan if abs(d) <= 1e-12 else np.inf if d > 0 else -np.inf
     return out
 
 
