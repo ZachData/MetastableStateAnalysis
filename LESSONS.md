@@ -926,6 +926,14 @@ a wrong premise, the check inherits it.
   which was 0.39. Both were written from memory of a file. A claim about a
   committed file's contents gets checked against the file in the same session
   it is written.
+- 2026-10-04 (#137): Blocked 17's continuity rule was checked before the run only
+  for what it was meant to fix (the synthetic's found scales on seeds 2–11: 8 of
+  10). The same seen seeds' Gaussian clouds give 29 of 50 plateaus without (b)
+  under it (0 under the old rule), so (b) became the only guard against false
+  structure; nobody looked, though the design reports that reading, and the user
+  chose without it. `/challenge-pr` found it. Rule: a rule change is replayed on
+  the seen seeds for **every** reported reading, the negatives included, before
+  the options table goes to the user.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

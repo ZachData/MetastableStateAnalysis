@@ -109,6 +109,29 @@ class TestRobustPlateaus:
         assert all(ari(labs[p["start"]], labs[g]) >= ss.CONT_ARI
                    for p in out for g in range(p["start"], p["end"] + 1))
 
+    # Blocked 17: continuity over the tokens in the arm's clusters at the run's first cut.
+    _FIRST = np.r_[[0] * 20, [1] * 20, np.arange(2, 22)]  # two clusters + 20 singletons
+    _JOINED = np.r_[[0] * 20, [1] * 20, [0] * 20]  # the singletons merge into cluster 0
+
+    def test_singletons_joining_later_do_not_break_a_run(self):
+        from sklearn.metrics import adjusted_rand_score as ari
+        assert ari(self._FIRST, self._JOINED) < ss.CONT_ARI  # all tokens: Blocked 16 broke here
+        out = _pl(_rows([(2, .9, .01)] * 4), [self._FIRST] * 2 + [self._JOINED] * 2)
+        assert [(p["start"], p["end"]) for p in out] == [(0, 3)]
+
+    def test_clustered_tokens_moving_still_break_it(self):
+        moved = self._JOINED.copy()
+        moved[:8] = 1  # 8 of cluster 0's tokens go to cluster 1
+        out = _pl(_rows([(2, .9, .01)] * 6), [self._FIRST] * 3 + [moved] * 3)
+        assert [(p["start"], p["end"]) for p in out] == [(0, 2), (3, 5)]
+
+    def test_the_arm_size_sets_which_tokens_count(self):
+        first = np.r_[[0] * 4, [1] * 4, np.repeat(np.arange(2, 22), 2)]  # + 20 pairs
+        later = np.r_[[0] * 4, [1] * 4, np.arange(2, 42)]  # the pairs split
+        rows, labs = _rows([(2, .9, .01)] * 3), [first] + [later] * 2
+        assert len(_pl(rows, labs, min_size=4)) == 1  # pairs are not in the main arm's clusters
+        assert _pl(rows, labs, min_size=2) == []  # in the size-2 arm they are, and they split
+
 
 class TestOpening:
     def test_extent_and_label(self):
@@ -130,6 +153,40 @@ class TestOpening:
     def test_no_opening_without_the_flow(self):
         s = ss.synthetic(0, open_t=0.0)
         assert ss.opening_extent(s["Y"], s["fine"]) == 0
+
+
+class TestPresence:
+    def test_span_is_three_grid_steps(self):
+        g = ss.relative_grid()
+        assert ss.PRESENT_SPAN == pytest.approx(150 ** (1 / 13))
+        assert ss.PRESENT_SPAN == pytest.approx(g[ss.MIN_RUN] / g[0])
+        assert g[ss.MIN_RUN - 1] / g[0] < 1.47 < ss.PRESENT_SPAN  # 3 points span less
+
+    @staticmethod
+    def _w(seed, coarse, fine):
+        return {"seed": seed, "opening_extent": 0,
+                "coarse": {"span": coarse}, "fine": {"span": fine}}
+
+    def test_both_scales_must_be_present(self):
+        s = ss.PRESENT_SPAN
+        assert ss.is_present(self._w(0, s, s))
+        assert not ss.is_present(self._w(0, s, s - 1e-6))
+        assert not ss.is_present(self._w(0, 0.0, 2.0))
+
+    def test_seeds_in_order_skipping_absent_and_refusing_short(self, monkeypatch):
+        absent = {13, 15}
+        calls = []
+
+        def fake(seed):
+            calls.append(seed)
+            return self._w(seed, 2.0, 1.0 if seed in absent else 2.0)
+
+        monkeypatch.setattr(ss, "planted_window", fake)
+        got = ss.present_seeds(12, 52, 3, log=lambda *a, **k: None)
+        assert got["seeds"] == [12, 14, 16] and [w["seed"] for w in got["absent"]] == [13, 15]
+        assert calls == [12, 13, 14, 15, 16]  # stops at the n-th present seed
+        with pytest.raises(RuntimeError):
+            ss.present_seeds(12, 16, 3, log=lambda *a, **k: None)
 
 
 def test_clopper_pearson_lower():
@@ -227,7 +284,13 @@ class TestOnAKnownClusteredCloud:
         rows = spec["rows"]["main"]
         labels = spec["_labels"]
         without = ss.planted_ari(spec, ss.robust_plateaus(rows, labels, use_p=False), planted)
-        assert ss.found_scales(without) == {"coarse": True, "fine": True}
+        # Blocked 17's continuity ignores tokens outside the first cut's clusters, so without
+        # (b) the fine run starts at r 0.19, where the sub-groups are still fragments (fine
+        # ARI 0.68), and absorbs the formed scale; "every point >= ARI_BAR" then misses it.
+        # With (b) that cut is not admissible (next test). `status-1d.md` "Unit 3 on fresh seeds".
+        assert ss.found_scales(without) == {"coarse": True, "fine": False}
+        fine_run = [p for p in without if p["r_lo"] < 0.2 < 0.4 < p["r_hi"]]
+        assert fine_run and fine_run[0]["ari_fine"][0] < ss.ARI_BAR <= min(fine_run[0]["ari_fine"][1:])
         count = ss.planted_ari(spec, ss.robust_plateaus(rows, labels, p_key="p_count"), planted)
         assert ss.found_scales(count)["coarse"] is False
 

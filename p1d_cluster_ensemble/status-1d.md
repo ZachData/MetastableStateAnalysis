@@ -2764,7 +2764,85 @@ have fine spans 1.385 (reviewer's measurement), under 1.47.
 | 3 | accept 7 of 10 as measured sensitivity | specificity 0 of 50 is what guards against false structure | moves the bar after the result |
 | 4 | widen the planted gap; an 80-point grid with an r-span bar | — | rejected: the first changes the synthetic until the instrument passes; the second is stricter than today's rule (#136, finding 2) |
 
-**Next: Blocked 17, then a first check on fresh seeds from 12; no real input until one passes.**
+*Decided 2026-10-04 (user): option 1. Ran: next section.*
+
+### Unit 3 on fresh seeds under Blocked 17 (2026-10-04; branch `claude/p1d-unit3-blocked17`)
+
+**Built, in this order:** the rules (`design-1d.md` "The fresh-seed run", `2d9e13b`, before
+code, with `tools/math_checks/grid_resolution_span.py`: `PRESENT_SPAN` = 150^(1/13) = 1.4703,
+the user's "1.47"); `scale_spectrum.py` (`eb0d761`: continuity over the first cut's clustered
+tokens, `present_seeds`, refusal past seed 51) and tests. Before the run, the new code on
+seeds 2–11 (seen; saved rows, trees recomputed) reproduced the post hoc above: 8 of 10, and
+presence drops exactly seeds 7 and 8 (fine spans 1.369 on the 400-point grid). **Input:** the
+synthetic only; presence read on seeds 12–22 (trees only); the spectrum on the first 10
+present, **13–22** (unseen), 50 draws × 50 subsamples per cloud, 160 clouds. Output
+`data/p1d/scale_fresh12_2026-10-04/` (`presence.json`, `first_check.json` at `eb0d761`,
+`run.log`); 546 s on 14 workers. **Re-run:** `python -m p1d_cluster_ensemble.scale_spectrum
+synthetic --out <dir> --jobs 14` from the worktree root.
+
+**Presence:** seed 12 absent (fine span 0: opening extent J = 24 destroys the fine scale;
+coarse 1.476); 13–22 present (coarse 1.72–2.10, fine 1.65–2.02).
+
+**Result: FAILS, 7 of 10 present seeds** (bar 8). Specificity holds.
+
+| | main arm, centred (gates) | size-2 arm, centred | main arm, raw |
+|---|---|---|---|
+| both planted scales | **7 of 10** (13, 15–20); rate ≥ 0.39 at 95 % | 4 of 10 | 0 of 10 |
+| coarse / fine alone | **10** / 7 | 10 / 4 | 10 / 0 |
+| Gaussian clouds with a plateau | **0 of 50** | 0 of 50 | 0 of 50 |
+| the same without (b) | **29 of 50** | 39 of 50 | 0 of 50 |
+
+The continuity change did what it was for: coarse 10 of 10 (7 under Blocked 16). **Every miss
+is fine, at (b)'s lower edge** (post hoc, trees recomputed, saved rows):
+
+| seed | the cut matches the fine labels (ARI ≥ 0.8) | (b) admits | why no run of 3 |
+|---|---|---|---|
+| 14 | r 0.28–0.47 | 0.32, 0.365, 0.47 (p 0.039, 0.039, 0.020); **0.415 p 0.059** | 2 points, then a gap |
+| 21 | r 0.25–0.47 | from **0.365** (0.25–0.32: p 0.12–0.53) | at 0.47 one sub-group merge: continuity 0.887 < 0.9; 2 points |
+| 22 | r 0.25–0.47 | from **0.365** (0.25–0.32: p 0.16–0.22) | the same, continuity 0.868; 2 points |
+
+From r 0.28 to 0.32 the matched Gaussian draws' mean stability rises from 0.58–0.70 to
+0.83–0.85 (the cloud's 0.88–0.94 at 0.32), so several draws reach the cloud there. (b) shortens the
+fine window from its lower end; presence is read on trees and does not see (b). p = 0.039 is
+1 of 50 draws at or above the cloud.
+
+**What else the run shows:** (1) **(b) now carries the specificity alone:** without it 29 of
+50 Gaussian clouds have a main-arm plateau (0 of 50 under Blocked 16's all-token continuity,
+which the change loosened). (2) **Without (b), fine is lost on 8 of 10:** the run anchors at a
+cut where the sub-groups are still fragments (only their ≥ 4-token pieces count), keeps the
+formed scale (the fragments' tokens stay together), and so fails "ARI ≥ 0.8 at every point" on
+its first point. Seen first on seed 0 at t = 0 (`tests/test_phase1d_scale_spectrum.py`, the
+count-tail test, changed to say so). With (b) the fragment cuts are not admissible, so the
+gating arm is not hit by it on these seeds; on real input it would be wherever (b) admits a
+fragment cut. (3) Seeds 2–11 (seen, post hoc) and 13–22 together: 15 of 18 present seeds,
+but only the second 10 are a check.
+
+**What `/challenge-pr` on #137 added (accept with changes; reviewer's checks, not re-run
+here):** (1) the new continuity rule cannot see clusters forming, only the first cut's
+clusters merging, so a Gaussian run can grow from k = 2 to 15; hence the 29 of 50. The
+synthetic's 0 of 50 is (b) **ranked among Gaussian draws**; on real input (b) is `z_G` ranked
+among unit 2's re-inits (`design-1d.md` "The re-run", row (b)), so the synthetic's specificity
+does not carry over by itself. A rule ending a run when a new cluster forms restores 0 of 50
+without (b) but drops fine to 5 of 10 with it: a trade-off. (2) The same 29 of 50 holds on
+seeds 2–11 under the new rule; the pre-run replay did not look (`LESSONS.md` 11). (3) Option 4
+as first written needed 17 of 20 (16 gives a bound of 0.599), which passes with probability
+0.41 at a true rate of 0.8, not easier than 8 of 10 (0.68): corrected below. (4) Every miss
+cuts the fine window from below, so on real input a found plateau's lower end is pushed up:
+**the partition is the claim, not its range of r.**
+
+**Options (`STATE.md` Blocked 18; the user's), revised after #137's review.** The number
+that should settle it: **the fine-scale sensitivity the real-input question needs.** Measured:
+7 of 10 (rate ≥ 0.39 at 95 %).
+
+| option | what | for | against |
+|---|---|---|---|
+| **1 (recommended)** | accept the sensitivity as measured, with its limits stated: coarse 10 of 10, fine 7 of 10 (rate ≥ 0.39 at 95 %), every miss at (b)'s lower edge; a scale narrower than a span of 1.47 may be missed; a found plateau's partition is the claim, not its r range. **A found plateau is the claim; a missing one is weak evidence of absence.** **Condition (#137 finding 1):** the real-input reader's first step is its own negative check, specificity of (b) as ranked among the re-inits (e.g. each re-init read as a cloud, ranked among the others), with a bound placed before it runs | misses are false negatives, the conservative direction; each fix since Blocked 15 met a new failure on fresh seeds; at a true rate near 0.8 the bar of 8 of 10 passes with p ≈ 0.68, so another run is close to a coin | moves the bar after the result (Blocked 17's option 3, rejected then); the synthetic's specificity is for the Gaussian-ranked (b) only |
+| 2 | (b) tolerates one inadmissible point inside a run, then seeds 23 up | one change | fixes seed 14 only; 21 and 22 end on continuity at r 0.47 |
+| 3 | more draws (200) so (b)'s p at the edge is resolved | p 0.039 is one draw | the edge is real (the Gaussians are stable there); 4× the cost; a true p near α stays near α |
+| 4 | a larger check: 20 present seeds, pass if the 95 % lower bound on the rate is ≥ 0.6, i.e. **≥ 17 of 20** | a bound on the rate, not a point count | *corrected after #137 finding 3:* **harder** than 8 of 10 (passes with probability 0.41 at a true rate of 0.8, against 0.68); 2× the cost; a new bar, placed after this result |
+| 5 (#137 finding 1) | continuity also ends a run when a new cluster of the arm's size forms | restores 0 of 50 Gaussians without (b) (reviewer) | fine drops to 5 of 10 with (b) (reviewer); another rule after a result |
+
+**Next: Blocked 18. No real input until it is decided.**
 
 ## Deleted and restored (was `FROZEN.md`)
 
