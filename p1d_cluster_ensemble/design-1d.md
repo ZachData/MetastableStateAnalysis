@@ -312,6 +312,12 @@ code.** Every row of "The re-run" holds except these:
 | (b) informative (iv) | a grid point's (b) is informative only where **≥ 5 of the 50 draws** (10 %) have a cluster of the arm's size; elsewhere it is reported as uninformative, its point is not admissible, and on real input it is reported, not ranked | "zero" there passes any cluster the Gaussian lacks, e.g. one pair (#135 finding 5); on real input repeated tokens make such pairs |
 | seeds and pass (v) | **seeds 2–11** (unseen). Per seed: the synthetic in both frames, **5** Gaussian clouds per frame (seeds `[seed, 100 + i]`, i < 5), the `d_f` ladder and t = 0 beside. **Pass: the main arm, centred, finds both planted scales on ≥ 8 of 10 seeds, and ≤ 2 of the 50 centred Gaussian clouds have a main-arm plateau.** The success count is reported with its one-sided 95 % Clopper–Pearson lower bound | one seed was n = 1: the opening's tightness varies about 3× by seed (#135 finding 1). 50 Gaussians per seed: 10× the cost for the same bound |
 
+*Ran 2026-10-04 on seeds 2–11: **fails, 7 of 10** (needs 8); Gaussians 0 of 50. Coarse is
+lost when the background's merges near r 0.9 pull the all-token ARI below 0.9 (the planted
+partition holds); fine is lost where its window is 2 grid points. The defect is the "robust
+plateau (i)" row's all-token ARI and the grid's resolution. `status-1d.md` "Unit 3 on seeds
+2–11"; the choice is `STATE.md` Blocked 17.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |

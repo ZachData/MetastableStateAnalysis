@@ -2008,7 +2008,7 @@ step 0, which does not yet separate learned content from learned position.
 | is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
 | the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; Phase 10 uses the set without it (user, 2026-10-04), the replicating set stays the cross-seed definition. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
-| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Fix is Blocked 16 | "Unit 3: the synthetic and its first check"; "Unit 3 re-run" |
+| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Fix is Blocked 17 | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -2694,7 +2694,60 @@ pair passes (b) and `z_G` is None; on real input repeated tokens make such pairs
 | rejected | a gentler opening (t = 1): changes the synthetic until the instrument passes | — |
 
 *Decided 2026-10-04 (user): all five parts as recommended. They go into `design-1d.md` before any code.*
-**Next: the multi-seed re-run under Blocked 16; no real input until a first check passes.**
+*Ran: next section.*
+
+### Unit 3 on seeds 2–11 under Blocked 16 (2026-10-04; branch `claude/p1d-unit3-seeds`)
+
+**Built, in this order:** the five parts (`design-1d.md` "The multi-seed run", `5644f90`, before
+code); `scale_spectrum.py` (`e6390fc`: anchored-ARI plateaus, informative (b), `opening_extent`
+/ `planted_labels`, the main arm gating, the 10-seed driver, the Clopper–Pearson bound) and
+tests, before the run. **Input:** the synthetic only, seeds 2–11 (unseen), 50 draws × 50
+subsamples per cloud, 160 clouds. Output `data/p1d/scale_seeds2-11_2026-10-04/`
+(`first_check.json` at `e6390fc`, `run.log`); 721 s on 14 workers. **Re-run:** `python -m
+p1d_cluster_ensemble.scale_spectrum synthetic --out <dir> --jobs 14` from the worktree root.
+
+**Result: FAILS, 7 of 10 seeds** (bar 8). Specificity holds.
+
+| | main arm, centred (gates) | size-2 arm, centred | main arm, raw |
+|---|---|---|---|
+| both planted scales | **7 of 10** (seeds 2–6, 10, 11); rate ≥ 0.39 at 95 % | 4 of 10 | 0 of 10 |
+| coarse / fine alone | 7 / 8 | 7 / 4 | 9 / 0 |
+| Gaussian clouds with a plateau | **0 of 50** (rate ≤ 0.058 at 95 %) | 0 of 50 | 0 of 50 |
+| the same without (b) | 0 of 50 | 1 of 50 | 0 of 50 |
+
+Opening extent J per seed (2–11): 5, 5, 3, 0, 9, 21, 0, 12, 6, 0; the opening's mean pairwise
+distance 0.09–0.46 against within 0.25–0.30.
+
+**Why the three seeds miss (post hoc, seeds 7–9, trees only):**
+
+| seed | coarse | fine |
+|---|---|---|
+| 7 | the planted partition holds from r 0.79 (planted-only consecutive ARI 1.00), but the background's merges at r 0.90 drop the all-token ARI to 0.73, leaving 2 points | (b) admits from 0.365; the run breaks at 0.42→0.47 (ARI 0.76): 2 points |
+| 8 | same, all-token ARI 0.75 at 0.90 | (b) admits from 0.365; fine ARI ≥ 0.8 only at 0.37–0.42: 2 points |
+| 9 | same, 0.75 at 0.90 | found (0.32–0.42) |
+
+So the planted ranges are 3–4 grid points wide after the opening (centred within ≈ 0.27,
+between ≈ 0.57, about 6 grid steps apart, of which the partition is exactly the planted one
+over 3–4). `MIN_RUN` = 3 sits at the instrument's resolution. The construction placed the
+spreads "so each plateau spans ≥ 4 grid points" by construction distances; that was never
+measured on the cuts.
+
+**Post hoc, not a pass** (seeds 2–11, seen; the same rows, trees recomputed): continuity over
+the tokens in the arm's clusters at the run's first cut (background singletons joining later
+do not count): **both scales on 8 of 10** (coarse 10, fine 8; seeds 7, 8 still lose fine),
+Gaussians 0 of 50. At the bar, not above it: at a true rate of 0.8, ≥ 8 of 10 fresh seeds
+happens with probability 0.68 (0.38 at 0.7, 0.93 at 0.9).
+
+**Options (`STATE.md` Blocked 17; the user's):**
+
+| option | what | for | against |
+|---|---|---|---|
+| **1 (recommended)** | (a) continuity over the tokens in the arm's clusters at the run's first cut; **and** (b) the grid at 80 points (same ends), `MIN_RUN` as a span in r (the run's `r_hi / r_lo` ≥ 1.3, about 3 of today's points); re-run on fresh seeds 12–21, everything else fixed | (a) measures what the plateau means (the clusters there hold), applies to real input (no planted labels); (b) addresses the fine misses, which are resolution, and the grid dependence #135 raised | two changes after seeing data; (b) doubles the per-scale cost (~25 min run); the 1.3 is placed now |
+| 2 | (a) alone, seeds 12–21 | one change | post hoc it reaches 8 of 10 exactly; a fresh run passes ~2 times in 3 even if that is its true rate |
+| 3 | accept 7 of 10 as the instrument's measured sensitivity and go to real input, reporting that a planted scale is missed in ≥ 1 of 10 seeds | specificity is the part that protects against false structure: 0 of 50 | moves the bar after the result; on real input a missed scale reads as "no structure there" |
+| 4 | widen the planted gap | — | rejected: changes the synthetic until the instrument passes |
+
+**Next: Blocked 17, then a first check on seeds 12–21; no real input until one passes.**
 
 ## Deleted and restored (was `FROZEN.md`)
 
