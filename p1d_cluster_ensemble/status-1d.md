@@ -2846,8 +2846,11 @@ that should settle it: **the fine-scale sensitivity the real-input question need
 on the condition. Limits and the specificity check's rules: `design-1d.md` "Blocked 18
 decided" (docs only, nothing run). **Next: the real-input reader, step 1**: specificity on
 the 50 step-0 models (10 real inits ranked among the 40 re-inits; each re-init among the
-other 39), centred, pass ≤ 5 % of clouds with a plateau in every band in both arms; ~13 h
-(estimate). The trained reading waits on it.
+other 39), centred; pass: ≤ 5 % of re-init clouds with a plateau in every band (else
+`MIN_RUN` raised, up to 5), and the real inits within the re-inits' 10-model subsets; ~2 h
+(estimate). The trained reading waits on it. Revised after `/challenge-pr` on #138 (all five
+findings taken: no-cluster references count below; rate gated on the re-inits, failure
+response placed; cost; sensitivity is the synthetic reader's, the real reader's is unit 4's).
 
 ## Deleted and restored (was `FROZEN.md`)
 
