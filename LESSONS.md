@@ -417,6 +417,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-04, 1d unit 3: the design's rule (b) read "more substantial clusters than the
+  matched Gaussian at the same relative cut" as lumpier. On the multi-scale synthetic the
+  Gaussian soon cuts into as many or more pieces (8–30) than the planted structure (3 or 10)
+  once past the scales where it has none, so (b) could not have accepted a planted plateau
+  at either scale. Caught by the
+  first check before any real input, as it was built to do; the cost was a design fixed
+  and reviewed (#129) with the tail never computed on a clustered cloud. Same rule as the
+  2026-10-02 instance below: **a tail ("higher = lumpier") is computed on a known clustered
+  cloud against its own Gaussian before a rule uses it.**
 - 2026-10-02, 1d's position-keeping null, 11‴ form: the fix ("fit and draw on the
   un-normalised rows") was recommended on a synthetic whose rows all have similar norms.
   On trained Pythia, token 0's massive activation (~45× the median norm at L6–18) is then

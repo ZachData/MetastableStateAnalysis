@@ -256,6 +256,32 @@ found at both planted scales (ARI ≥ 0.8 to the planted labels, **placed**) and
 plateau is found on a single Gaussian of the same covariance. Built in unit 3, before
 any real input.
 
+**The synthetic and the first check, fixed 2026-10-04 before any unit 3 reading**
+(`scale_spectrum.py`; one construction probe was run first, on the opening alone, and
+is the reason for `t` below: `status-1d.md` "Unit 3: the synthetic and its first check"):
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| planted groups | 3 group centres uniform on S^1023; 3 sub-group centres per group from vMF about its centre; 34 / 33 / 33 points per sub-group from vMF about the sub-group centre (300 planted); 100 background points uniform on S^1023 | the unit 4 row as written |
+| the two spreads | mean pairwise cosine distance **within a sub-group `d_f` = 0.15**, **between sub-groups of one group `d_c` = 0.40**, before the opening; κ set from the mean cosine to the centre, `ρ_f = √(1 − d_f)`, `ρ_c = √((1 − d_c) / (1 − d_f))` (exact in expectation: independent draws, `E[x·y] = E[x]·E[y]`) | **placed** so each planted plateau spans ≥ 4 grid points (fine `d_c / d_f` = 2.7, coarse from 0.40 to the background's first merges near 0.88) |
+| order | the 400 rows in one seeded random order; that order is the position | so the opening takes whichever rows come first |
+| opening | `identity_sim.integrate_converged` at β = 0, causal mask, **t = 2**; then T1 (position 0 dropped), n = 399 | t is the smallest of `identity_sim.TIMES` at which positions 1–4's mean pairwise distance (centred) is at most the planted between-sub-group mean. **Rejected:** t ≥ 4, which collapses the planted groups onto the prefix mean before the opening is tighter than a sub-group; the residual form `x + λ·mean(prefix)`, whose opening never gets tighter than a sub-group at any λ (probe) |
+| frames | centred primary, raw beside (`gaussian_null.frame_vectors`); T2 does not apply (unit rows) | as every unit |
+| scale grid | 40 log-spaced `r` from 0.01 to 1.5; δ = r × the cloud's median pairwise cosine distance (in its frame); δ stored | the Unit 3 row |
+| (a) stability | Hennig's: for each substantial cluster C of the cut at δ, over 50 subsamples of 80 % (without replacement), the best Jaccard of C ∩ S against any cluster of the subsample's own average-linkage tree cut at the **same absolute δ**; per scale, the mean over substantial clusters | the subsample is the same cloud, so it keeps its scale. Rejected: re-scaling by the subsample's own median (adds noise, changes nothing in expectation) |
+| (b) on the synthetic | the substantial count's rank p, higher tail, among **50 matched-covariance Gaussian draws** of the cloud (same frame, `span_coordinates` + `gaussian_draw`, as unit 2), each cut at the same `r` × its own median. `z_G` is stored (None when the draws' SD is 0) | a synthetic has no re-inits, so the rank among unit 2's re-inits' `z_G` is replaced by the rank among the Gaussian draws. On real input (b) is the design row's |
+| robust plateau | a maximal run of ≥ 3 consecutive grid points with the same substantial count **k ≥ 2**, and at **every** point of the run: stability ≥ 0.75 and rank p ≤ 0.05 | the Unit 3 row; k ≥ 2 is `merge_tree`'s existing rule (one blob plus outliers is not a candidate) |
+| a planted scale is found | some robust plateau has ARI ≥ 0.8 to the planted labels at **every** point of the run; ARI over the planted tokens left after T1 (background excluded), the cut's labels as they are (a planted token in a small cluster counts against it). Coarse: 3 labels; fine: 9 | every point, so a run cannot pass on its best point |
+| no plateau on a Gaussian | **5** matched-covariance Gaussian clouds of the synthetic (same frame, seeds apart from the null draws'), each read like the synthetic with its own 50 draws: **0 robust plateaus in all 5** | "a single Gaussian" taken 5 times so one lucky draw does not decide it |
+| **pass** | centred: both planted scales found and 0 plateaus on all 5 Gaussians | refuse rather than degrade: unit 3 reads no real input until it passes |
+| beside, not the pass | raw frame; the Gaussians' runs that meet the count and stability parts **without (b)** (if there are some, (b) carries the negative check, and that is said); a ladder `d_f` ∈ {0.20, 0.25, 0.30} at `d_c` = 0.40 (where it breaks); the same synthetic at t = 0 (what the opening costs) | |
+
+*Ran 2026-10-04: **fails**. (b), the substantial count against the Gaussian, has the wrong
+tail: past its smallest scales the matched Gaussian cuts into as many or more substantial
+pieces than the planted structure, so neither planted scale can pass (b). The defect is in
+the "per scale" (b) row above, not only here. Options and numbers: `status-1d.md` "Unit 3:
+the synthetic and its first check"; the choice is `STATE.md` Blocked 15.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |
