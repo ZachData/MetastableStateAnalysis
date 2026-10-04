@@ -2666,19 +2666,34 @@ move it while the partition barely changes. Real clouds have such a fringe too (
 neighbours, the opening), so the rule is not only the synthetic's problem.
 
 **Post hoc, not a pass** (seed 1, now seen; 3 of the 50 Gaussian clouds): the ARI between
-consecutive cuts (all tokens). Synthetic: 0.97, 1.00, 0.94, 0.90 at fine r 0.28–0.42; 0.96,
-0.99, 0.88 at coarse r 0.61–0.79. Gaussians: 0.37–0.82 at every r from 0.22 to 0.90.
+consecutive cuts (all tokens). Synthetic, steps from r 0.28 to 0.47: 0.965, 0.999, 0.943,
+**0.896**; from r 0.61 to 0.90: 0.964, 0.990, **0.879**. Gaussians: 0.37–0.82 at every r from
+0.22 to 0.90. *(First written as "0.90" for the fourth fine step; corrected after
+`/challenge-pr` on #135, finding 2: two steps in the planted ranges fall below 0.9, not one.)*
 
-**Options (`STATE.md` Blocked 16; the user's):**
+**What `/challenge-pr` on #135 added (accept with changes; reviewer's checks, not re-run here):**
+(1) the opening's tightness varies about 3× across seeds: 0.20–0.40 centred on 10 synthetic-only
+seeds (90001–90010; no spectrum read), seeds 0 and 1 near the ends, about 1 in 3 tighter than a
+sub-group, so one fresh seed is n = 1 either way. (3) consecutive-cut ARI is nearly blind to small
+clusters (30 new pairs move it by 0.004), depends on the grid spacing, and lets a run drift (one
+merge of two sub-groups scores 0.89 per step while the run's ends are 0.44 alike). (4) the largest
+"fringe" cluster at the fine scale (10–11 tokens, the earliest positions) is the opening group,
+which unit 4 says the synthetic forms; the planted labels leave it out, so the cloud really has
+12–13 groups there. (5) in the size-2 arm at r ≤ 0.13 none of the 50 draws has a pair, so any
+pair passes (b) and `z_G` is None; on real input repeated tokens make such pairs.
 
-| option | what | for | against |
-|---|---|---|---|
-| **1 (recommended)** | the plateau's "same count" := **consecutive-cut ARI ≥ 0.9** (all tokens) at every step of the run, k ≥ 2 at every point; stability and (b) unchanged; re-run on seed 2 | asks whether the partition holds, which is the plateau's meaning; post hoc it separates (synthetic ≥ 0.90 in both planted ranges except one step at 0.88, Gaussians ≤ 0.82) | 0.9 is placed after seeing seed 1 (the coarse range has one step at 0.88, so at 0.9 its run is 3 points, the minimum); a bar on ARI is one more placed number |
-| 2 | count only clusters whose own stability is ≥ 0.75 | keeps "a count" | fringe groups made by the opening are tight and may be stable: may not fix it |
-| 3 | count clusters of ≥ a fraction of n (e.g. 5 %) | removes fringe from the main arm | defeats the size-2 arm, which exists to see small groups |
-| 4 | a gentler opening (t = 1) | — | rejected: changes the synthetic until the instrument passes |
+**Options (`STATE.md` Blocked 16; the user's), revised after #135's review:**
 
-**Next: Blocked 16, then a re-run on seed 2; no real input until a first check passes.**
+| part | recommendation | alternatives, and why not |
+|---|---|---|
+| continuity, main arm | every cut of the run has **ARI ≥ 0.9 to the run's first cut** (all tokens), k ≥ 2 at every point; stability and (b) unchanged | consecutive-cut ARI (the first recommendation): allows drift (finding 3); count only stable clusters: the opening's fringe is tight, may not fix it; a relative size bar: defeats the size-2 arm. The 0.9 is placed after seeing seed 1 |
+| size-2 arm | **beside, not gating**, until a per-cluster continuity rule (each cluster's Jaccard across the run) and a planted small-group control are designed | ARI cannot see pairs (finding 3) |
+| the opening | the fine planted labels gain an **"opening" label** for the earliest kept positions whose distance to the prefix mean is below the planted within-sub-group spread, fixed per seed from the construction before any spectrum | leave it out (scores real structure as error); drop those tokens from the ARI |
+| (b) where the draws are empty | a grid point where fewer than 5 of 50 draws have a cluster of the arm's size has (b) **uninformative** and cannot be in a plateau; on real input such a scale is reported, not ranked (`z_G` None) | "zero" there (passes any pair, finding 5) |
+| seeds | **10 fresh seeds (2–11)**; pass: both scales found on **≥ 8 of 10**, and ≤ 2 of 50 Gaussian clouds with a plateau (5 per seed) | seed 2 alone (n = 1, finding 1); 50 Gaussians per seed (10× the cost, same bound) |
+| rejected | a gentler opening (t = 1): changes the synthetic until the instrument passes | — |
+
+**Next: Blocked 16, then the multi-seed re-run; no real input until a first check passes.**
 
 ## Deleted and restored (was `FROZEN.md`)
 

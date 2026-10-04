@@ -130,10 +130,22 @@ class TestSpectrum:
         out = ss.planted_ari(spec, pl, {"coarse": lab})
         assert ss.found_scales(out, ("coarse",)) == {"coarse": True}
 
-    def test_size2_arm_counts_at_least_the_main_arm(self):
+    def test_each_draw_has_its_own_tree_median_and_subsamples(self):
+        # (b)'s null: draw i is cut at r x its own median on its own tree, with
+        # subsamples from the stream [seed, _SUB, i] (design "The re-run").
+        from p1d_cluster_ensemble.gaussian_null import frame_vectors, gaussian_draw, span_coordinates
         X, _ = _two_blobs()
-        spec = ss.spectrum(X, "raw", 0, n_sub=3, n_draws=3)
-        assert all(a["k_sub"] >= m["k_sub"] for a, m in zip(spec["rows"]["size2"], spec["rows"]["main"]))
+        spec = ss.spectrum(X, "raw", 3, n_sub=4, n_draws=2)
+        Zs = span_coordinates(frame_vectors(X, "raw")[0])
+        rng = np.random.default_rng([3, ss._NULL])
+        for i in range(2):
+            G = LayerData.from_normed(gaussian_draw(Zs, rng))
+            dg = [r * ss._median_distance(G) for r in ss.relative_grid()]
+            lg = [labels_at_delta(ss._tree(G), G.n, d) for d in dg]
+            want = ss.hennig_stability(G, lg, dg, np.random.default_rng([3, ss._SUB, i]), n_sub=4)
+            got = spec["_null"]["main"][1][i]
+            assert np.array_equal(np.isnan(got), [v is None for v in want])
+            assert np.allclose(got[~np.isnan(got)], [v for v in want if v is not None])
 
 
 class TestOnAKnownClusteredCloud:
