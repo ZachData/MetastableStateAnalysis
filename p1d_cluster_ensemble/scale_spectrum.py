@@ -432,9 +432,10 @@ def spectrum(Y: np.ndarray, frame: str, seed: int, n_sub: int = N_SUBSAMPLES,
 
 
 def robust_plateaus(rows: Sequence[Dict], labels: Sequence[np.ndarray], use_p: bool = True,
-                    p_key: str = "p", min_size: int = SUBSTANTIAL_CLUSTER_SIZE) -> List[Dict]:
+                    p_key: str = "p", min_size: int = SUBSTANTIAL_CLUSTER_SIZE,
+                    min_run: int = MIN_RUN) -> List[Dict]:
     """
-    Runs of ``>= MIN_RUN`` consecutive admissible grid points whose cuts (``labels``) all
+    Runs of ``>= min_run`` (default ``MIN_RUN``) consecutive admissible grid points whose cuts (``labels``) all
     have ARI ``>= CONT_ARI`` to the run's first cut over the tokens that are, at that first
     cut, in clusters of ``>= min_size`` tokens (the arm's size; Blocked 17), built left to
     right; at a break the next run starts at the breaking point. Admissible: ``k_sub >= MIN_K``, stability
@@ -450,7 +451,7 @@ def robust_plateaus(rows: Sequence[Dict], labels: Sequence[np.ndarray], use_p: b
     out: List[Dict] = []
 
     def close(start: int, end: int) -> None:
-        if end - start + 1 >= MIN_RUN:
+        if end - start + 1 >= min_run:
             ks = [rows[g]["k_sub"] for g in range(start, end + 1)]
             out.append({"start": start, "end": end, "k_sub": ks[0], "k_lo": min(ks), "k_hi": max(ks),
                         "r_lo": rows[start]["r"], "r_hi": rows[end]["r"]})
