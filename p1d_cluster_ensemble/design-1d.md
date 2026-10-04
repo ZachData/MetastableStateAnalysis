@@ -330,6 +330,12 @@ code.** Every row of "The multi-seed run" holds except these:
 | seeds and pass (v′) | seeds **12, 13, …** in order, absent ones skipped, until **10 present**; **refuse** if seeds 12–51 do not hold 10 (the synthetic, not the instrument, is then the question). Per present seed as before: both frames, 5 Gaussian clouds per frame, the `d_f` ladder and t = 0 beside. **Pass: the main arm, centred, finds both planted scales on ≥ 8 of the 10 present seeds, and ≤ 2 of their 50 centred Gaussian clouds have a main-arm plateau.** Reported: the absent seeds and their spans, and the success count's one-sided 95 % Clopper–Pearson bound | the bar of Blocked 16, unchanged. At a true rate of 0.8 a fresh run passes with probability 0.68 |
 | after a pass | stop and report; the real-input reader is its own unit | the user's direction |
 
+*Ran 2026-10-04 on present seeds 13–22 (12 absent): **fails, 7 of 10** (needs 8); coarse
+10 of 10, Gaussians 0 of 50. Every miss is fine, at (b)'s lower edge, where the matched
+Gaussians are themselves stable; presence, read on trees, does not see (b). Without (b), 29
+of 50 Gaussians have a plateau, so (b) carries the specificity. `status-1d.md` "Unit 3 on
+fresh seeds"; the choice is `STATE.md` Blocked 18.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |

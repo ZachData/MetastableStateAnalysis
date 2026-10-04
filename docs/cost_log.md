@@ -228,3 +228,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-04 | 1d unit 3: multi-scale synthetic, merge-tree spectrum, first check (fails on (b)'s tail; before /challenge-pr) | 52 | 185k | 6.7M | 38k | #134 |
 | 2026-10-04 | 1d unit 3 re-run: Blocked 15 rules, option 1 + size-2 arm in scale_spectrum, seed 1 with 50 Gaussian clouds (fails on 'same count'; before /challenge-pr) | 39 | 153k | 4.1M | 32k | #135 |
 | 2026-10-04 | 1d decisions (8, 9 β, 14, 16) + unit 3 under Blocked 16 on seeds 2–11 (fails 7 of 10; before /challenge-pr). Same session as #135's row: this row is the increment (session total 93 calls, 14.7M) | 54 | 245k | 10.6M | 13k | #136 |
+| 2026-10-04 | 1d unit 3 under Blocked 17 on fresh seeds 13–22 (presence step; fails 7 of 10, all at (b)'s fine edge; before /challenge-pr) | 34 | 142k | 3.6M | 35k | #137 |
