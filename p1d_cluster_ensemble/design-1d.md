@@ -336,6 +336,42 @@ Gaussians are themselves stable; presence, read on trees, does not see (b). With
 of 50 Gaussians have a plateau, so (b) carries the specificity. `status-1d.md` "Unit 3 on
 fresh seeds"; the choice is `STATE.md` Blocked 18.*
 
+**Blocked 18 decided (user, 2026-10-04: option 1). Unit 3's first check closes as measured;
+its limits go with every unit 3 reading of real input:**
+
+| limit | reading |
+|---|---|
+| sensitivity | coarse 10 of 10, fine 7 of 10 present seeds (fine rate ≥ 0.39, one-sided 95 % Clopper–Pearson); every miss at (b)'s lower edge, where the matched Gaussians are themselves stable. **This is the synthetic reader's** ((b) among 50 Gaussian draws, n = 399); the real reader ((b) among ≤ 40 inits, n 123–271) has no sensitivity measured: its positive control is unit 4's designed-content prompts (*added after `/challenge-pr` on #138, finding 4*) |
+| resolution | a scale whose window spans less than `PRESENT_SPAN` ≈ 1.47 in `r` may be missed |
+| what a plateau claims | **its partition, not its range of `r`**: every miss cut the fine window from below, so a found plateau's lower end is pushed up |
+| absence | a found plateau is the claim; a missing one is weak evidence of absence |
+| specificity | the synthetic's 0 of 50 is (b) ranked among Gaussian draws; on real input (b) is ranked among re-inits, so it does not carry over: the check below comes first |
+| against (the user's call) | the bar moved after the result (Blocked 17's option 3, rejected then) |
+
+**The real-input reader, step 1: specificity on clouds with nothing learned** (placed
+2026-10-04, before any code; no unit 2 cloud has been read through unit 3). The trained
+reading does not start until this passes.
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| clouds | step 0 of unit 2's 50 models: the 40 float16 Pythia-σ re-inits (seeds 0–39) and the 10 real inits (`pythia-410m`, `pythia-410m-seed{1..9}`); the 7 deduped v1 prompts, first 512 tokens; L1–24; the kept tokens of unit 2's trained union (`data/p1d/arch_null_trained_2026-10-02/step0/token_sets.json`) | the clouds and token sets the trained reading is ranked against |
+| frame | **centred only** | raw found 0 of 10 on the synthetic, so a raw verdict cannot pass; half the cost. **Rejected:** both frames |
+| per cloud | the reader of "The fresh-seed run" (`scale_spectrum.spectrum`: grid, (a), 50 matched Gaussian draws, continuity (i′), informative (iv)), giving per grid point and arm the stability `z_G`. Then **(b) at each point: rank p, higher tail, of the cloud's `z_G` among a reference set's `z_G` at the same (prompt, layer, `r`, arm)** | the design's (b) on real input ("The re-run", row (b)) |
+| reference | **real inits:** the 40 re-inits, p = (1 + #{≥}) / 41. **Re-inits:** the other 39, p = (1 + #{≥}) / 40. Both reach p ≤ 0.05 with at most one reference at or above | the first is the trained reading's route; the second is what `/challenge-pr` on #137 asked for |
+| missing z | a point whose own `z_G` is None or whose (iv) is uninformative is not admissible. **A reference whose cut has no cluster of the arm's size counts as below the cloud**; a reference whose `z_G` is undefined because its draws' SD is 0 is dropped and the remaining N reported; a point with N < 30 is not admissible | *changed after `/challenge-pr` on #138, finding 1:* "drop every None" dropped the inits with no structure at that scale (`arm_rows` gives None there), Blocked 15's rejected "drop", which makes the strongest case unreadable and the check easier to pass |
+| draw seeds | the 50 Gaussian draws use the same seed for the same (prompt, layer) in every model (common random numbers, as unit 2) | the inits differ only by their weights |
+| plateau | "The fresh-seed run"'s robust plateau with (b) as above; the main arm gates, size 2 beside | unchanged |
+| statistic | per (reference arm, band L1–8 / 9–16 / 17–24): the share of clouds (model × prompt × layer) with ≥ 1 main-arm plateau; 560 clouds per band for the real inits, 2,240 for the re-inits | per band: pooled, one bad band could hide (`/challenge-pr` on #129, finding 2) |
+| **pass, rate (re-init arm)** | **≤ 5 % in every band** | a cloud with nothing learned should give a plateau no more often than one point's α. *Changed after `/challenge-pr` on #138, findings 2 and 5:* the rate is gated on the 2,240-cloud arm; the re-inits are one distribution with the real inits (unit 2), so both arms measure one rate and the 10-model arm is the noisy one. No headroom is claimed: the rule searches 40 points for a run of 3, and the synthetic's 0 of 50 (Gaussian clouds against draws from their own fitted covariance, not exchangeable) bounds only below 5.8 %. **Rejected:** 2× nominal (10 %, unit 2's first-check form) |
+| if the rate fails in a band (fixed now) | `MIN_RUN` is raised one step (3 → 4 → 5) until the band passes, on the re-init arm only; the real-init arm is then read at that `MIN_RUN`, and the synthetic's sensitivity re-read at it on seeds 13–22 (post hoc, reported beside the limits). At 5 still failing: the band refuses, and if every band does, unit 3 reads no real input (a Blocked item) | the response is placed before the result, not after (finding 2). **Rejected:** ranking one per-cloud statistic over the whole search (a new reader, not the one the synthetic checked) |
+| **pass, route (real-init arm)** | per band, its share ≤ the 95th percentile of the share over 1,000 random 10-of-40 subsets of the re-inits (their own readings, at the same `MIN_RUN`) | a gap test: the real inits behave as re-inits on this reader. Subsets keep the within-model correlation across prompts and layers, which a binomial on clouds would not (finding 5) |
+| a band that fails either pass | the trained reading refuses there (unit 2's fallback form) | |
+| what it does not test | re-inits ranked among each other are exchangeable, so each point's p is uniform by construction: that arm tests the plateau rule's multiplicity over the grid, not the reference. The real-init arm tests the route; unit 2 found the two kinds of init equal by construction (same σ, untruncated, float16), so neither arm tests a re-init that differs from Pythia's. Sensitivity of the real reader: not here (limits table) | |
+| beside, not the pass | the same without (b) (what (b) carries on real clouds); the size-2 arm; plateaus per prompt and their `r` ranges | |
+| inputs stored | each re-init cloud's `z_G` at every (`r`, arm), so the trained reading (10 × 7 × 24 = 1,680 clouds) ranks against them without recomputing | |
+| cost (estimate) | 50 × 7 × 24 = 8,400 clouds. The synthetic ran 160 clouds of n = 399 in 546 s on 14 workers; the kept sets hold 123–271 tokens (mean ≈ 200), so scaled by (n / 399)², **~2 h on 14 workers**; the forward passes take minutes | *corrected after finding 3:* first written at n ≈ 510 (13 h); the kept sets are the deduped v1 prompts after T2 |
+| order | build with tests; pilot one model × one prompt × L1–24 and open its output (`z_G` populated at every `r`) before the rest | the populated-not-present rule |
+
 ### Unit 4: positive controls
 
 | control | what | pass |
