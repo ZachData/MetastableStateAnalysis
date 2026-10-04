@@ -320,6 +320,16 @@ the grid resolves (seed 8). The defect is the "robust plateau (i)" row's all-tok
 40 throwaway seeds). `status-1d.md` "Unit 3 on seeds 2–11"; the choice is `STATE.md`
 Blocked 17.*
 
+**The fresh-seed run: Blocked 17 decided (user, 2026-10-04: option 1), fixed before any
+code.** Every row of "The multi-seed run" holds except these:
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| continuity (i′) | the run's anchor ARI (≥ `CONT_ARI` = 0.9 between each cut and the run's first cut) is computed **over the tokens in clusters of the arm's size at the run's first cut** (≥ 4 tokens in the main arm, ≥ 2 in the size-2 arm); tokens that are singletons or in smaller clusters there do not count, whatever they join later. The 40-point grid, `MIN_RUN` = 3 and the admissibility rule are unchanged | the plateau means the run's clusters held; background singletons merging in near r 0.9 are not the partition changing (seeds 7–9's coarse misses). Needs no planted labels, so it carries to real input. **Rejected:** all tokens (those misses). Placed after seeing seeds 2–11 (post hoc: 8 of 10), hence fresh seeds |
+| presence (vi) | a seed is **present** when `planted_window` (trees only, centred, 400 log-spaced r from 0.01 to 1.5, the longest interval whose cut has ARI ≥ 0.8 to the planted labelling, the opening label included) has span `r_hi / r_lo` ≥ **`PRESENT_SPAN` = (1.5 / 0.01)^(`MIN_RUN` / 39) = 150^(1/13) ≈ 1.470** for **both** coarse and fine. That is the smallest span sure to hold `MIN_RUN` points of the 40-point grid (`tools/math_checks/grid_resolution_span.py`). Computed from the seed's synthetic before any spectrum of that seed; an absent seed gets no spectrum and is reported with its spans | separates what the synthetic offers from what the instrument finds; for real input it states the instrument's resolution: **a scale whose window spans less than 1.47 may be missed**. **Against (the user's call):** placed after seeing seeds 7 and 8 (fine spans 1.385), which it would have dropped, though the number comes from the grid. Misses at (b)'s edge inside a present window still count against the instrument |
+| seeds and pass (v′) | seeds **12, 13, …** in order, absent ones skipped, until **10 present**; **refuse** if seeds 12–51 do not hold 10 (the synthetic, not the instrument, is then the question). Per present seed as before: both frames, 5 Gaussian clouds per frame, the `d_f` ladder and t = 0 beside. **Pass: the main arm, centred, finds both planted scales on ≥ 8 of the 10 present seeds, and ≤ 2 of their 50 centred Gaussian clouds have a main-arm plateau.** Reported: the absent seeds and their spans, and the success count's one-sided 95 % Clopper–Pearson bound | the bar of Blocked 16, unchanged. At a true rate of 0.8 a fresh run passes with probability 0.68 |
+| after a pass | stop and report; the real-input reader is its own unit | the user's direction |
+
 ### Unit 4: positive controls
 
 | control | what | pass |
