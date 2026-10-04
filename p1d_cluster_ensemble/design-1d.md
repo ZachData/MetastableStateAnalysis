@@ -203,6 +203,43 @@ was written; the step143000 norms were read for T2 only):
 | cloud replication | per (prompt, layer, frame, statistic): beyond in ≥ 8 of the 10 seeds |
 | opening | a replicating group with any member at offset < 8 is counted as in the opening (as unit 1) |
 
+### The candidates, and where each comes from (fixed 2026-10-02, before any run)
+
+Unit 2's outcome table names the candidate definition: unit 1's groups that move ∩ unit 2's
+learned groups. Unit 2 found that many replicating groups are lexical classes already at L1
+(`status-1d.md` "Unit 2: the trained cells"), so a per-layer **origin** is read beside each
+candidate, starting from L0 (the embedding output). That separates groups the embedding
+carries from groups formed with depth. Inputs: 410m seed 0 (`pythia-410m`), step143000 and
+step 0; the 7 v1 passages (first 512 tokens); L0–24; both frames; sizes 2 and 4.
+Code: `candidates.py`.
+
+| reading | value | why, and what was rejected |
+|---|---|---|
+| token set | **one per prompt: unit 2's trained union** (`arch_null_trained_2026-10-02/step0/token_sets.json`: position 0 and each prompt's first delimiter dropped). Unit 1 is **re-run on it** at both steps (`move_text run --kept-from`). A run refuses if its own T2 finds a passage offset that the given set keeps | T2 says one token set across every run compared, and this joins two comparisons. Unit 1's own set kept the first `.` in 5 prompts. Where the sets differ, ~13 % of groups differ by membership; where they agree (`hdbscan_code`, `latex_monograph`), 0 of 1,258 differ (probe, 2026-10-02). Rejected: matching across the two sets by Jaccard, which mixes "a different group" with "one token different" |
+| first checks | unit 1's step-0 check is **re-run on the new set**, and the trained step goes through `move_text`'s gate as before. The designed prompts are not in unit 2's comparison, so their set does not change; their records are copied in unchanged | as unit 2 re-ran its check after its union changed |
+| same group | a unit 1 P = 0 group and a unit 2 seed-0 group at the same (prompt, layer, frame, size) are the same group **only if their member sets are identical**. `read` refuses if any record's two group lists differ | same cloud, same token set, same level-set route. Any difference is a defect, not noise |
+| unit 1 class | `move_text.group_classes`: own floor `J0`, primary join (EOD). `unstable` and `floor 0` groups are not classified and are counted apart. Beside: the fixed bar 0.5 and the `\n\n` join | as unit 1 |
+| unit 2 status | `learned` and `replicates` (≥ 6 of 9 seeds at Jaccard ≥ 0.5), from `trained_rows.json` / `trained.json` | as unit 2 |
+| **candidate** | a seed-0 trained group that is **moves ∧ learned ∧ replicates**, and not bulk | the outcome table's definition, with replication added (a definition Phase 10 can use across seeds) |
+| bulk | a group holding ≥ 25 % of its prompt's kept tokens (`arch_null.BULK_SHARE`). Bulk groups are **reported apart in every count**, with their class and origin, and are never candidates | unit 2's 15 bulk groups (up to ~140 tokens) are not word classes |
+| cross table | per (frame, size, band): unit 1 class (moves, preamble-dependent, opening-bound, context-bound, unstable, floor 0) × unit 2 status (learned and replicating, learned only, not learned) | the candidates are one cell. The table shows whether moving and being learned go together |
+| L0 | `hidden_states[0]` (the embedding output, before any block; Pythia adds no position there), in the same frame and token set. Its level-set groups are computed for seed 0 at both steps. A consistency check (the same forward pass's L1 groups equal unit 1's re-run P = 0 groups) refuses on any difference | Pythia's embedding carries no position, so an L0 group is a class of token identities |
+| present at ℓ′ | the group's best Jaccard with a level-set group of the same (prompt, frame, size) at layer ℓ′ is ≥ **0.5** (**placed**; replication's bar). Beside: present as an identical member set | a fixed bar, so "present" means the same thing at every layer |
+| **origin** ℓ₀ | for a group at layer ℓ: the smallest ℓ₀ ≤ ℓ with the group present at **every** layer from ℓ₀ to ℓ. **Carried** if ℓ₀ = 0. **Formed at L1** if ℓ₀ = 1 (one attention and MLP block). **Formed later** if ℓ₀ ≥ 2 (ℓ₀ reported). Beside: the first layer present at all (not necessarily contiguous), and the last layer of the run forward from ℓ | contiguity back from ℓ asks whether this group came from L0, not whether a similar group existed once |
+| counts | per (frame, size, band of ℓ), pooled over prompts and layers (dependent: one group at many layers). Beside: **distinct** candidates, meaning distinct member sets per (prompt, frame, size) with each one's smallest ℓ₀ | the same group at L3–L8 is one finding, not six |
+| step 0 | the cross table and origin are also computed at step 0 and reported beside, not read as a verdict | at init the embedding can dominate the stream. If step 0's groups are all carried, "carried" alone is no sign of training |
+
+**Outcomes** (not registered; "most" = more than half of the distinct candidates in
+centred size 2, **placed**):
+
+| outcome | reading | consequence |
+|---|---|---|
+| most candidates carried (ℓ₀ = 0) | the definition picks out the embedding's word classes, carried through the stack | 1d says so. A cluster formed by the dynamics needs ℓ₀ ≥ 1. Phase 10's rows are re-read on the formed candidates apart from the carried ones |
+| most formed at L1 | one block makes them from the embedding | the formed ones are the candidates for the particle picture; L1's attention is the place to look |
+| most formed later (ℓ₀ ≥ 2) | the groups form over depth | the closest match to clustering over depth; unit 3 asks at what scale |
+| none of the three is more than half | mixed origins | each class reported with its count; no one reading |
+| few candidates (fewer than 20 distinct in centred size 2, **placed**) | moving, learned and replicating rarely coincide | the definition is narrow. The cross table shows which condition removes the rest |
+
 ### Unit 3: one family on a continuous scale
 
 | choice | value | why, and what was rejected |

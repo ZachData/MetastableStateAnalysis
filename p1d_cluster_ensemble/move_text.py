@@ -44,6 +44,10 @@ Token rules (`design-1d.md` "Token rules"), and how they are read here:
 - T3: the passage cloud keeps each string's first occurrence **within the
   passage**, so its token set does not change with the preamble; the
   whole-sequence cloud keeps first occurrences over the whole sequence.
+- ``--kept-from`` (v1 only) replaces the passage's token set with another
+  comparison's (`arch_null`'s ``token_sets.json``; `design-1d.md` "The
+  candidates"), refusing if it keeps an offset this run's own rules drop;
+  the whole-sequence cloud also drops that comparison's positions.
 
 **Operational rules for the first checks** (placed 2026-10-02, before any
 forward pass; `design-1d.md` states them in words):
@@ -205,6 +209,18 @@ def kept_offsets(tokens: Sequence[str], massive: Sequence[int]) -> np.ndarray:
     first = first_occurrences(tokens)
     bad = set(int(m) for m in massive) | {0}
     return np.asarray([o for o in first if o not in bad], dtype=int)
+
+
+def forced_kept(own_kept: Sequence[int], given: Sequence[int], passage: str) -> np.ndarray:
+    """
+    ``--kept-from``: another comparison's token set (`design-1d.md` "The
+    candidates"), refused if it keeps an offset this run's own T1–T3 drop.
+    """
+    extra = sorted(set(int(o) for o in given) - set(int(o) for o in own_kept))
+    if extra:
+        raise SystemExit(f"refusing: {passage}: the given token set keeps offsets {extra[:5]} "
+                         f"that this run's own token rules drop")
+    return np.asarray(sorted(int(o) for o in given), dtype=int)
 
 
 def whole_kept(tokens: Sequence[str], start: int, own_massive: Sequence[int],
@@ -397,7 +413,8 @@ def forward(model, ids: Sequence[int]) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def run_passage(model, tokenizer, step: str, passage: str, pinfo: Dict, conds: List[Dict],
-                workers: int, seed: int, passage_index: int, act_dir: Optional[Path]) -> Dict:
+                workers: int, seed: int, passage_index: int, act_dir: Optional[Path],
+                given: Optional[Dict] = None) -> Dict:
     hidden, norms, toks, t0 = {}, {}, {}, time.monotonic()
     for c in conds:
         H, N = forward(model, c["ids"])
@@ -421,7 +438,11 @@ def run_passage(model, tokenizer, step: str, passage: str, pinfo: Dict, conds: L
             if 0 <= o < n_pass and (o not in massive or r > massive[o]["ratio"]):
                 massive[o] = {"offset": o, "token": ptoks[o], "ratio": r, "layer": L, "condition": c["id"]}
     kept = kept_offsets(ptoks, list(massive))
-    whole = {c["id"]: whole_kept(toks[c["id"]], c["start"], list(own[c["id"]]), list(massive))
+    dropped = list(massive)
+    if given is not None:
+        kept = forced_kept(kept, given["kept"], passage)
+        dropped = sorted(set(dropped) | {int(m["position"]) for m in given["massive"]})
+    whole = {c["id"]: whole_kept(toks[c["id"]], c["start"], list(own[c["id"]]), dropped)
              for c in conds[1:]}
     _G.clear()
     _G.update(conds=conds, kept=kept, labels=pinfo["labels"], hidden=hidden, whole_kept=whole,
@@ -540,7 +561,20 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--torch-threads", type=int, default=None)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--override-first-checks", default=None, metavar="REASON")
+    ap.add_argument("--kept-from", type=Path, default=None, metavar="TOKEN_SETS_JSON",
+                    help="v1 only: take each passage's token set from `arch_null`'s token_sets.json")
     args = ap.parse_args(argv)
+    given, kept_from = None, None
+    if args.kept_from is not None:
+        if args.passages != "v1":
+            print("refusing: --kept-from is for the v1 passages", file=sys.stderr)
+            return 1
+        import hashlib
+        raw = args.kept_from.read_bytes()
+        ts = json.loads(raw)
+        given = ts["sets"]
+        kept_from = {"path": str(args.kept_from), "sha256": hashlib.sha256(raw).hexdigest()[:16],
+                     "comparison_size": len(ts["comparison"])}
 
     if args.passages == "v1" and args.step != "step0" and not args.override_first_checks:
         fc = args.out / "first_checks.json"
@@ -562,7 +596,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     conts, joins = continuations(tok), join_ids(tok)
     meta = {"git": _git_head(), "model": MODELS[args.step], "designed_hash": dp.designed_hash(),
             "long_prompts_hash": long_prompts_hash(), "seed": args.seed, "p0_only": args.p0_only,
-            "override_first_checks": args.override_first_checks,
+            "override_first_checks": args.override_first_checks, "kept_from": kept_from,
             "settings": {"P": P_VALUES, "joins": JOINS, "preambles": PREAMBLE_SOURCES,
                          "massive_ratio": MASSIVE_RATIO, "massive_layers": [MASSIVE_LAYERS[0], MASSIVE_LAYERS[-1]],
                          "n_subsamples": N_SUBSAMPLES, "subsample_fraction": SUBSAMPLE_FRACTION,
@@ -578,7 +612,7 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
             model, _ = load_model(MODELS[args.step])
         conds = conditions(k, pins[k]["ids"], conts, joins, p0_only=args.p0_only)
         rec = run_passage(model, tok, args.step, k, pins[k], conds, args.workers, args.seed,
-                          list(pins).index(k), args.act_out)
+                          list(pins).index(k), args.act_out, None if given is None else given[k])
         rec["meta"] = meta
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(json.dumps(rec) + "\n")
