@@ -50,7 +50,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `9646d48b48`
+- **Reviewed:** 2026-10-05 · body `c642168687`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -908,7 +908,7 @@ docstring.
 token_sets.json` (sha `b1eaa3ab`; corrected in `design-10.md`); Stage 0 through
 `stage0_index.json` only; learned from `candidates_2026-10-02/candidate_rows.json`. Code
 `be309f8` (every record's `meta.git`). Output `data/p10/reread_r0_2026-10-05/` (`unit1/`, 84 MB; `labels/`, 23 MB;
-`labels/summary.json` md5 `038c3cb3`, rebuilt with c0f at `76b84a9`; logs `run_*.log`). 18 × 7 × 115 = 14,490 forward passes
+`labels/summary.json` md5 `d9d41708`, rebuilt with c0f and record hashes at `ce37e1b`; logs `run_*.log`). 18 × 7 × 115 = 14,490 forward passes
 on CPU (14 workers), ~6.5 min per checkpoint, ~2 h in all.
 
 **Checks, all passed.**
@@ -970,7 +970,7 @@ an unknown column, and a column's positions outside its domain).
 worktree root (resumable; step 0 first, since its first checks gate the rest), then
 `python tools/run/p10_label_source.py summary --src <out>/labels --definitions
 data/p1d/candidates_2026-10-02/definitions.json --rows data/p1d/candidates_2026-10-02/candidate_rows.json`.
-Tests: `tests/test_p10_label_source.py` (12),
+Tests: `tests/test_p10_label_source.py` (13),
 `tests/test_phase1d_move_text.py`. **Next: R1** (§1.7 unique tokens, §1.9, §1.10), after
 this PR merges.
 
