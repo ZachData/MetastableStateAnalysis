@@ -24,7 +24,7 @@
   - Clustered unique tokens, against step 0: at init, clusters at depth already follow each token's own (random) embedding carried in the residual. Training adds their own class (Δ +0.20 over a random draw, by step 512) and moves them away from copy groups. Own-embedding similarity adds only +0.12, and adjacency a depth-only share. No null — `p10_cluster_function/status-10.md` §1.9
   - At step 512 the network computes that class effect (+0.20 beyond own-embedding similarity; a purely lexical cluster scores ≈ 0). Trained, it is mostly what the embedding already groups: L12 sits on the lexical control, L24 is +0.05 above it. The control was added post hoc. Clustered tokens keep less of their individual layer-0 direction. Context vs per-token feature is not separated. No null — `p10_cluster_function/status-10.md` §1.10
   - Lemma C.1's saturation is a formula for Phase 1's 50–55 carrying capacity — `p10_cluster_function/math-10.md` §5.4, §3.53
-  - The re-read's label source (R0, an instrument, nothing re-read yet): 1d's working definition and its ladder (c0 → c3, two arms) at all 18 checkpoints on the 7 v1 passages, every P = 0 pass ≤ 2.9e-7 from Stage 0, nothing refused, reproducing the definition's 62 / 810 records exactly. Steps 0–32 have too few readable c3 records and read on c2 — `p10_cluster_function/status-10.md` §1.14, `p10_cluster_function/design-10.md`
+  - The re-read's label source (R0, an instrument, nothing re-read yet): 1d's working definition and its ladder (c0 → c3, two arms) at all 18 checkpoints on the 7 v1 passages, every P = 0 pass ≤ 2.9e-7 from Stage 0, nothing refused, reproducing the definition's 62 / 810 records exactly, member set by member set. A float64 refit of the stored partition (c0f) is identical to it in 2,924 of 3,024 records. Steps 0–32 have too few readable c3 records and read on c2, so the c2 / c3 switch falls inside F1's 32–512 window — `p10_cluster_function/status-10.md` §1.14, `p10_cluster_function/design-10.md`
 - **Superseded / wrong:**
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
   - The Rényi packing law "as a function of `n`": the law is in β and dimension, not `n` — `p10_cluster_function/lit-10.md` §5, `docs/AXES.md` §7
@@ -50,7 +50,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `bf0e397a89`
+- **Reviewed:** 2026-10-05 · body `9646d48b48`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -899,7 +899,7 @@ cannot disagree.
 reading: no Phase 10 row is re-read yet. Unit 1 (`move_text`) ran at all 18 distinct Stage 0
 steps on unit 2's token set, and each P = 0 pass was checked against the stored Stage 0 run;
 then the label source (`tools/run/p10_label_source.py`) was built from it. Per (step, prompt,
-layer L1–24), the source holds c0 (stored labels, every position) and c1, c1c, c2a, c2b, c2,
+layer L1–24), the source holds c0 (stored labels, float32 distances) and c0f (the same call on float64; *added after `/challenge-pr` on #145*), both on every position, and c1, c1c, c2a, c2b, c2,
 c3, plus the arms c3_c4 (centred, size 4) and c3_r2 (raw, size 2), all on the kept positions.
 At step 143000 it also holds "learned" per c3 group. Its refusal rules are in the module
 docstring.
@@ -908,7 +908,7 @@ docstring.
 token_sets.json` (sha `b1eaa3ab`; corrected in `design-10.md`); Stage 0 through
 `stage0_index.json` only; learned from `candidates_2026-10-02/candidate_rows.json`. Code
 `be309f8` (every record's `meta.git`). Output `data/p10/reread_r0_2026-10-05/` (`unit1/`, 84 MB; `labels/`, 23 MB;
-`labels/summary.json` md5 `a4f5cd36`; logs `run_*.log`). 18 × 7 × 115 = 14,490 forward passes
+`labels/summary.json` md5 `038c3cb3`, rebuilt with c0f at `76b84a9`; logs `run_*.log`). 18 × 7 × 115 = 14,490 forward passes
 on CPU (14 workers), ~6.5 min per checkpoint, ~2 h in all.
 
 **Checks, all passed.**
@@ -920,6 +920,8 @@ on CPU (14 workers), ~6.5 min per checkpoint, ~2 h in all.
 | re-run against unit 1's stored records, steps 0 and 143000 | identical in 672 / 672 cells each (groups, floors, classes, best Jaccards) |
 | groups recomputed from Stage 0's activations against unit 1's (centred 2 and 4, raw 2) | equal at every (step, prompt, layer): 0 refused of 3,024 |
 | c3 against `candidates definitions`' "moves" (centred / 2) | step 0: 35 / 21 / 6 = 62; step 143000: 317 / 336 / 157 = 810; exact |
+| c3's member sets against `candidate_rows.json`'s non-bulk moving groups (*added after `/challenge-pr` on #145, finding 3*: counts alone cannot see a class on the wrong group) | 0 mismatched records at steps 0 and 143000 |
+| c0 (stored, float32 distances) against c0f (same call, float64), every position | identical in 2,924 of 3,024 records; ARI mean 0.9995, p5 1.000, min 0.92 (`latex_monograph` L14, step 0): precision moves little on these 7 prompts (as `status-1d.md` "Float64 distances" found for 7 of 8) |
 | learned at 143000 | 325 of c3's 810 records learned (= the moves ∧ learned set) |
 | first checks (step 0 opening, designed prompts) | pass, as unit 1 |
 
@@ -948,8 +950,10 @@ on CPU (14 workers), ~6.5 min per checkpoint, ~2 h in all.
 
 **What it means for R1–R3 (counts only; no row is read).** (1) Under `design-10.md`'s
 readability rule (half the records readable on c3), **steps 0–32 read on c2, not c3**: c3 has
-10–34 readable records of 168 there, and from step 64 on it has 95–140. F1's window opens at
-16 → 32, so R2's window edge sits on the c2 / c3 switch, and it must say so. (2) The step-0
+10–34 readable records of 168 there, and from step 64 on it has 95–140. The switch is at
+**32 → 64, inside F1's 32–512 window** (*corrected after `/challenge-pr` on #145, finding 2*;
+the first version put it at F1's 16 → 32 edge), so R2's design must say how a window that
+spans the switch is read. (2) The step-0
 floor holds through step 16 (55–96 records against 62) and rises from step 64. (3) c1c
 (shipped, centred) gives ~1.3–1.6× c2a's groups at most steps, the tie artefacts of
 `status-1d.md` "Admission" on this token set; the bulk filter (c2a → c2b) removes ≤ 4 % (most at step 64). (4) c2
@@ -965,7 +969,8 @@ an unknown column, and a column's positions outside its domain).
 **Re-run:** `data/p10/reread_r0_2026-10-05/run_r0.sh step0 step512 step54000 …` from the
 worktree root (resumable; step 0 first, since its first checks gate the rest), then
 `python tools/run/p10_label_source.py summary --src <out>/labels --definitions
-data/p1d/candidates_2026-10-02/definitions.json`. Tests: `tests/test_p10_label_source.py`,
+data/p1d/candidates_2026-10-02/definitions.json --rows data/p1d/candidates_2026-10-02/candidate_rows.json`.
+Tests: `tests/test_p10_label_source.py` (12),
 `tests/test_phase1d_move_text.py`. **Next: R1** (§1.7 unique tokens, §1.9, §1.10), after
 this PR merges.
 

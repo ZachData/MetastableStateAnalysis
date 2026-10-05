@@ -55,6 +55,7 @@ one column (tree, frame, stability, bulk) and dropped L0 inside c0 → c1.
 | col | partition | the one choice it adds |
 |---|---|---|
 | **c0** | the stored labels, the row's reader **re-run unchanged on the 7 prompts, Stage 0 dirs, L1–24** (F1: boundaries from L1 → L2) | none: the old reading on the re-read's inputs (the published number pooled 8 prompts, another sweep, or L0) |
+| c0f | the same shipped call on **float64** distances, every stored position (*added at R0 after `/challenge-pr` on #145, finding 1*: c0 was fitted on float32 distances in all 380 Stage 0 runs, so c0 → c1 moved two choices) | precision |
 | c1 | shipped `HDBSCAN(min_cluster_size=2)`, float64, kept tokens (T1–T3; A0 also T4), the stored (uncentred) frame | the token rules |
 | c1c | as c1, **centred** frame | the frame |
 | c2a | level-set groups, all of them, centred | the tie-free tree (`admit.layer_groups` returns c1c and c2a from the same distances) |
