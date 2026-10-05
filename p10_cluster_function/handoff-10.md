@@ -48,13 +48,10 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > adjacency's Δ turns on the step-0 baseline (`STATE.md` Blocked 24, which R2's F12 gap shares). **Next: R2** (F1 + F12's gap, then §1.5) after R1's
 > PR merges, with Blocked 24 answered and the 32 → 64 c2 / c3 switch handled inside F1's window.
 >
-> **R2 done, 2026-10-05 (`status-10.md` §1.16).** Blocked 24 answered by the user ((a) raw and
-> baseline beside every Δ; (b) c0–c2b on their own step 0). `transport.py` and
-> `p10_partition_function.py` take `--labels/--column` and refuse without it, one generator per
-> unit; `tools/run/p10_r2_ladder.py` reads the ladder and checks c0 against the published records
-> (identical at every unit). F1's 32–512 window holds on c3 and its late tail goes; F12's gap is
-> "below" at every step because c2's step 0 is +1.32 (`STATE.md` Blocked 25); §1.5's parked window
-> is 64–512. **Next: R3** (A0 under T4) after this PR merges; Blocked 25 does not gate it.
+> **R2 done, 2026-10-05 (`status-10.md` §1.16; its title is the summary).** Blocked 24 answered
+> by the user. `transport.py` and `p10_partition_function.py` take `--labels/--column`, one
+> generator per unit; `tools/run/p10_r2_ladder.py` reads the ladder. F12's gap waits on `STATE.md`
+> Blocked 25. **Next: R3** (A0 under T4) after this PR merges; Blocked 25 does not gate it.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`

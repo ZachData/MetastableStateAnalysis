@@ -841,6 +841,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-05, Phase 10 R2: the author read F1's labels going from "negative" (c0) to "none"
+  (c3) at 1000–54000 as "the late tail goes". The label is a p-value and c3's records hold a
+  fifth of c0's members (median 50 against 252); the effect sizes were the same (−0.02 to −0.13
+  against −0.01 to −0.15). `/challenge-pr` on #147 caught it from the records. Rule: when a
+  column changes the sample size, compare effect sizes before reading a significance label's
+  change as an effect's (`status-10.md` §1.16).
 - 2026-10-05, #142 (1d unit 4): the pass rule compared trained against step 0
   (seed 0's learned-content count above every step-0 init's), and the write-up
   read its pass as "the definition (moves ∧ learned) finds known content". The
