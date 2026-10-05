@@ -20,8 +20,10 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > **Hold lifted for a re-read, 2026-10-05 (`STATE.md` Blocked 22, option (a)).** 1d's
 > working definition: stable, non-bulk trained level-set groups (centred, size 2) that
 > **move** (`p1d_cluster_ensemble/design-1d.md` "The working definition"). Nothing has been
-> re-read on it. Every row below still reads the old partition until it is. **Next here:
-> the re-read design**, which fixes which checkpoints get unit 1's preamble passes (~1,000
+> re-read on it. Every row below still reads the old partition until it is. It cannot see
+> position 0, repeated strings (`repeated_tokens`), L0 or a full partition, so §1.6–§1.8,
+> A0, F12 and F1 cannot be re-read as they stand (design-1d "Scope"). **Next here:
+> the re-read design**, which fixes row by row what it can re-read, which checkpoints get unit 1's preamble passes (~1,000
 > forward passes for all 19), the prompts (v1 while v2 is held out), which rows go first,
 > and the step-0 floor and old-partition reading beside each row. A literature scan comes
 > before it freezes.
