@@ -392,6 +392,9 @@ pilot). Replaces the gate above; the rows above it not named here stand.
 | what it does not test | specificity on clouds with nothing learned (the step-0 clouds cannot test it at fine scales); below the re-inits' first cluster (main arm r ≈ 0.6) the rank carries nothing, so "learned" there is said with every reading | the option's "against" column |
 | cost | step-0 batch ~3 h (pilot); gate ≤ 10 forward passes + 50 clouds, minutes | |
 
+*Run 2026-10-04: passes, 0 of 50; on the main arm 0 of 50 without (b) too, so (b) is tested
+there only on size 2. Numbers: `status-1d.md` "The real-input reader, step 1 under option 4".*
+
 ### Unit 4: positive controls
 
 | control | what | pass |
