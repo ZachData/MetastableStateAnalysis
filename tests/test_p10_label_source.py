@@ -202,3 +202,29 @@ def test_c0f_is_the_shipped_call_on_float64():
     X = _planted()
     want = hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed").fit_predict(cosine_distance_matrix(X))
     assert ls.shipped_f64(X) == want.tolist()
+
+
+def test_build_resume_refuses_when_a_unit1_record_changed(tmp_path, capsys):
+    """CodeRabbit on #145: a step file is reused only if the unit 1 records it read are unchanged."""
+    u1, run, kept = _fixture(tmp_path)
+    ts = tmp_path / "token_sets.json"
+    ts.write_text(json.dumps({"sets": {"wiki_paragraph": {"kept": kept.tolist()}}}))
+    u1["meta"] = {"kept_from": {"sha256": ls._sha(ts)}}
+    rec = tmp_path / "unit1" / "step512" / "wiki_paragraph.json"
+    rec.parent.mkdir(parents=True)
+    rec.write_text(json.dumps(u1))
+    idx = tmp_path / "index.json"
+    idx.write_text(json.dumps({"runs": {"512|wiki_paragraph": str(run)}}))
+    rows = tmp_path / "rows.json"
+    rows.write_text("{}")
+    args = ["--unit1", str(tmp_path / "unit1"), "--token-sets", str(ts), "--rows", str(rows),
+            "--index", str(idx), "--steps", "step512", "--out", str(tmp_path / "labels"), "--workers", "1"]
+    ls.build(args)                                   # other passages absent: refused, file written
+    assert "wiki_paragraph" in json.loads((tmp_path / "labels" / "step512.json").read_text())["prompts"]
+    capsys.readouterr()
+    ls.build(args)
+    assert "already" in capsys.readouterr().out
+    u1["n_kept_note"] = "changed"
+    rec.write_text(json.dumps(u1))
+    assert ls.build(args) == 1
+    assert "refusing" in capsys.readouterr().err

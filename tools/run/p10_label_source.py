@@ -250,6 +250,13 @@ def _git_head() -> str:
         return "unknown"
 
 
+def unit1_hashes(unit1: Path, step: str) -> Dict[str, Optional[str]]:
+    """sha256 (16 hex) of each passage's unit 1 record at ``step``, None if absent: a step file
+    is reused on resume only if these are unchanged (CodeRabbit on #145)."""
+    return {p: (_sha(unit1 / step / f"{p}.json") if (unit1 / step / f"{p}.json").exists() else None)
+            for p in V1_PASSAGES}
+
+
 def learned_index(rows_path: Path) -> Dict[Tuple[str, int], Dict[frozenset, str]]:
     """``{(prompt, layer): {members: status}}`` of unit 2's seed-0 groups at step 143000, centred size 2."""
     rows = json.loads(rows_path.read_text())[LEARNED_STEP]
@@ -285,7 +292,8 @@ def build(argv: Optional[Sequence[str]] = None) -> int:
         if f.exists():
             m = json.loads(f.read_text())["meta"]
             same = (m["token_sets"]["sha256"] == ts_sha and m["index"]["sha256"] == _sha(args.index)
-                    and m["unit1"] == str(args.unit1) and tuple(m["columns"]) == COLUMNS)
+                    and m["unit1"] == str(args.unit1) and tuple(m["columns"]) == COLUMNS
+                    and m.get("unit1_records") == unit1_hashes(args.unit1, step))
             if not same:
                 print(f"refusing: {f} was built on other inputs or columns; move it aside to rebuild",
                       file=sys.stderr)
@@ -325,7 +333,8 @@ def build(argv: Optional[Sequence[str]] = None) -> int:
             else:
                 prompts[p] = rec
         res = {"meta": {"git": _git_head(), "step": step, "columns": COLUMNS,
-                        "unit1": str(args.unit1), "token_sets": {"path": str(args.token_sets), "sha256": ts_sha},
+                        "unit1": str(args.unit1), "unit1_records": unit1_hashes(args.unit1, step),
+                        "token_sets": {"path": str(args.token_sets), "sha256": ts_sha},
                         "index": {"path": str(args.index), "sha256": _sha(args.index)},
                         "rows": {"path": str(args.rows), "sha256": _sha(args.rows)} if step == LEARNED_STEP else None,
                         "bulk_share": BULK_SHARE, "readable_min": READABLE_MIN},
