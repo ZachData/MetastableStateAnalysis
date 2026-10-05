@@ -48,6 +48,10 @@ Token rules (`design-1d.md` "Token rules"), and how they are read here:
   comparison's (`arch_null`'s ``token_sets.json``; `design-1d.md` "The
   candidates"), refusing if it keeps an offset this run's own rules drop;
   the whole-sequence cloud also drops that comparison's positions.
+- ``--stage0-index`` (v1 only; the Phase 10 re-read, `design-10.md`) checks
+  each P = 0 pass against that (step, passage)'s Stage 0 ``activations.npz``
+  (`p0_match`, ``P0_MATCH_TOL``) right after it runs; a passage over the
+  tolerance refuses and writes no record. The match goes into the record.
 
 **Operational rules for the first checks** (placed 2026-10-02, before any
 forward pass; `design-1d.md` states them in words):
@@ -119,7 +123,14 @@ STABLE_MEDIAN = 0.5
 KEEP_P = (0, 1000)
 #: "Most of the 7 passages", placed.
 MOST = 4
-MODELS = {"step0": "pythia-410m-step0", "step143000": "pythia-410m-step143000"}
+#: Unit 1 ran steps 0 and 143000; the Phase 10 re-read (`p10_cluster_function/design-10.md`
+#: "Checkpoints: the cost") needs "moves" at every distinct Stage 0 step (step 1 = step 0's weights).
+P10_STEPS = (0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 54000, 143000)
+MODELS = {f"step{s}": f"pythia-410m-step{s}" for s in P10_STEPS}
+#: The P = 0 cloud against Stage 0's stored `activations.npz` (`design-10.md` "The check that
+#: joins the two passes"): max elementwise difference of the unit rows and max relative norm
+#: difference, over L0-24 and every position; above it the (step, passage) refuses. Placed.
+P0_MATCH_TOL = 1e-5
 ACT_ROOT = Path("/run/media/system/HDD_1TB/mets_data")
 CLASSES = ("moves", "preamble-dependent", "opening-bound", "context-bound")
 
@@ -229,6 +240,34 @@ def whole_kept(tokens: Sequence[str], start: int, own_massive: Sequence[int],
     first = first_occurrences(tokens)
     bad = set(int(m) for m in own_massive) | {0} | {start + int(o) for o in passage_dropped}
     return np.asarray([p for p in first if p not in bad], dtype=int)
+
+
+def p0_match(H: np.ndarray, run_dir: Path, tol: float = P0_MATCH_TOL) -> Dict:
+    """
+    The P = 0 hidden states ``H`` (25, n, d) against a Stage 0 run's stored
+    ``activations.npz`` (unit rows ``activations`` and ``norms``): the largest
+    elementwise difference of the unit rows and the largest relative norm
+    difference, and whether both are within ``tol``.
+    """
+    a = np.load(Path(run_dir) / "activations.npz")
+    U, N = a["activations"], a["norms"]
+    out = {"run_dir": str(run_dir), "tol": tol}
+    if U.shape != H.shape:
+        return out | {"ok": False, "shape": [list(H.shape), list(U.shape)]}
+    n = np.linalg.norm(H.astype(np.float64), axis=-1)
+    d = float(np.max(np.abs(H / n[..., None] - U)))
+    r = float(np.max(np.abs(n / N - 1.0)))
+    return out | {"direction_max": d, "rel_norm_max": r, "ok": bool(d <= tol and r <= tol)}
+
+
+def stage0_runs(index: Path) -> Dict[Tuple[int, str], Path]:
+    """``{(step, prompt): run_dir}`` from Stage 0's ``stage0_index.json``, the only selector."""
+    runs = json.loads(Path(index).read_text())["runs"]
+    return {(int(k.split("|")[0]), k.split("|")[1]): Path(v) for k, v in runs.items()}
+
+
+class P0Mismatch(RuntimeError):
+    """The P = 0 pass does not reproduce Stage 0's stored activations."""
 
 
 # ---------------------------------------------------------------------------
@@ -414,10 +453,15 @@ def forward(model, ids: Sequence[int]) -> Tuple[np.ndarray, np.ndarray]:
 
 def run_passage(model, tokenizer, step: str, passage: str, pinfo: Dict, conds: List[Dict],
                 workers: int, seed: int, passage_index: int, act_dir: Optional[Path],
-                given: Optional[Dict] = None) -> Dict:
+                given: Optional[Dict] = None, stage0: Optional[Path] = None) -> Dict:
     hidden, norms, toks, t0 = {}, {}, {}, time.monotonic()
+    match = None
     for c in conds:
         H, N = forward(model, c["ids"])
+        if c["id"] == "P0" and stage0 is not None:
+            match = p0_match(H, stage0)
+            if not match["ok"]:
+                raise P0Mismatch(f"{step}/{passage}: {json.dumps(match)}")
         hidden[c["id"]], norms[c["id"]] = H, N
         toks[c["id"]] = tokenizer.convert_ids_to_tokens(c["ids"])
         if act_dir is not None and c["P"] in KEEP_P and c["join"] in (None, PRIMARY_JOIN) and \
@@ -455,7 +499,7 @@ def run_passage(model, tokenizer, step: str, passage: str, pinfo: Dict, conds: L
     else:
         layers = [_layer_job(j) for j in jobs]
     _G.clear()
-    return {"step": step, "passage": passage, "n_passage": n_pass, "n_kept": int(kept.size),
+    return {"step": step, "passage": passage, "n_passage": n_pass, "n_kept": int(kept.size), "p0_match": match,
             "kept_offsets": kept.tolist(), "massive": sorted(massive.values(), key=lambda m: m["offset"]),
             "position0": {cid: {"ratio_max": float(max(norms[cid][L][0] / np.median(norms[cid][L])
                                                        for L in MASSIVE_LAYERS)),
@@ -563,7 +607,13 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--override-first-checks", default=None, metavar="REASON")
     ap.add_argument("--kept-from", type=Path, default=None, metavar="TOKEN_SETS_JSON",
                     help="v1 only: take each passage's token set from `arch_null`'s token_sets.json")
+    ap.add_argument("--stage0-index", type=Path, default=None, metavar="STAGE0_INDEX_JSON",
+                    help="v1 only: check each P = 0 pass against that (step, passage)'s Stage 0 "
+                         "activations; a passage over P0_MATCH_TOL refuses (no record)")
     args = ap.parse_args(argv)
+    if args.stage0_index is not None and args.passages != "v1":
+        print("refusing: --stage0-index is for the v1 passages", file=sys.stderr)
+        return 1
     given, kept_from = None, None
     if args.kept_from is not None:
         if args.passages != "v1":
@@ -597,12 +647,15 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
     meta = {"git": _git_head(), "model": MODELS[args.step], "designed_hash": dp.designed_hash(),
             "long_prompts_hash": long_prompts_hash(), "seed": args.seed, "p0_only": args.p0_only,
             "override_first_checks": args.override_first_checks, "kept_from": kept_from,
+            "stage0_index": None if args.stage0_index is None else str(args.stage0_index),
             "settings": {"P": P_VALUES, "joins": JOINS, "preambles": PREAMBLE_SOURCES,
                          "massive_ratio": MASSIVE_RATIO, "massive_layers": [MASSIVE_LAYERS[0], MASSIVE_LAYERS[-1]],
                          "n_subsamples": N_SUBSAMPLES, "subsample_fraction": SUBSAMPLE_FRACTION,
                          "floor_percentile": FLOOR_PERCENTILE, "stable_median": STABLE_MEDIAN,
                          "opening_offsets": OPENING_OFFSETS, "min_cluster_sizes": MIN_CLUSTER_SIZES}}
-    model = None
+    s0 = stage0_runs(args.stage0_index) if args.stage0_index is not None else None
+    step_n = int(args.step.removeprefix("step"))
+    model, refused = None, []
     for k in keys:
         f = _out_file(args.out, args.step, k, args.p0_only)
         if f.exists():
@@ -611,12 +664,28 @@ def run(argv: Optional[Sequence[str]] = None) -> int:
         if model is None:
             model, _ = load_model(MODELS[args.step])
         conds = conditions(k, pins[k]["ids"], conts, joins, p0_only=args.p0_only)
-        rec = run_passage(model, tok, args.step, k, pins[k], conds, args.workers, args.seed,
-                          list(pins).index(k), args.act_out, None if given is None else given[k])
+        stage0 = None
+        if s0 is not None:
+            stage0 = s0.get((step_n, k))
+            if stage0 is None:
+                print(f"refusing: {args.step}/{k} has no run in {args.stage0_index}", file=sys.stderr)
+                refused.append(k)
+                continue
+        try:
+            rec = run_passage(model, tok, args.step, k, pins[k], conds, args.workers, args.seed,
+                              list(pins).index(k), args.act_out, None if given is None else given[k],
+                              stage0)
+        except P0Mismatch as e:
+            print(f"refusing: {e}", file=sys.stderr)
+            refused.append(k)
+            continue
         rec["meta"] = meta
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(json.dumps(rec) + "\n")
         print(f"done {f} {rec['seconds']}", flush=True)
+    if refused:
+        print(f"refused (no record written): {refused}", file=sys.stderr)
+        return 1
     return 0
 
 
