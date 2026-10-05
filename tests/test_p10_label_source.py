@@ -92,7 +92,7 @@ def _fixture(tmp_path, n_tokens=40, kept_drop=(0, 5)):
                 groups = [{"offsets": o, "stable": i < 2, "J0": 0.5, "median": 0.9 if i < 2 else 0.1,
                            "opening": False} for i, o in enumerate(offs)]
                 bj = [1.0 if i == 0 else 0.0 for i in range(len(offs))]
-                conds = {f"{s}|{P}|{j}": {"best_jaccard": bj} for s in ("a", "b") for P in (50, 1000)
+                conds = {f"{s}|{P}|{j}": {"best_jaccard": list(bj)} for s in ("a", "b") for P in (50, 1000)
                          for j in mt.JOINS}
                 lay["mcs"][str(mcs)] = {"groups": groups, "opening_group": None, "c_holds": False,
                                         "conditions": conds}
@@ -108,7 +108,8 @@ def test_build_prompt_columns(tmp_path):
     assert not rec["refused_layers"] and set(rec["layers"]) == {str(L) for L in ls.LAYERS}
     cols = rec["layers"]["3"]
     assert set(cols) == set(ls.COLUMNS)
-    assert len(cols["c0"]) == 40 and all(len(cols[c]) == kept.size for c in ls.COLUMNS if c != "c0")
+    assert all(len(cols[c]) == 40 for c in ls.ALL_POSITIONS)
+    assert all(len(cols[c]) == kept.size for c in ls.COLUMNS if c not in ls.ALL_POSITIONS)
     c2a, c2, c3 = (np.asarray(cols[c]) for c in ("c2a", "c2", "c3"))
     assert len(set(c2a[c2a >= 0])) == 5                      # the 5 planted groups
     assert set(c2[c2 >= 0]) == {0, 1} and set(c3[c3 >= 0]) == {0}
@@ -160,3 +161,44 @@ def test_load_column_domain_and_refusals(tmp_path):
         ls.load_learned(tmp_path, "step512", "p", 3)
     s = ls.step_summary({"prompts": {"p": rec}, "refused": {"q": "x"}})
     assert s["columns"]["c3"]["groups"] == 23 and s["refused_layers"] == 1
+
+
+def test_classes_follow_their_groups_when_unit1_order_differs(tmp_path):
+    """/challenge-pr on #145, finding 3: a class must stay with its own group, whatever
+    order unit 1 lists the groups in."""
+    u1, run, kept = _fixture(tmp_path)
+    moving = None
+    for lay in u1["layers"]:
+        for m in lay["mcs"].values():
+            if lay["layer"] == 3 and lay["frame"] == "centred" and m is lay["mcs"]["2"]:
+                moving = set(m["groups"][0]["offsets"])
+            m["groups"].reverse()
+            for c in m["conditions"].values():
+                c["best_jaccard"].reverse()
+    rec = ls.build_prompt("step512", "p", u1, run, None)
+    assert not rec["refused_layers"]
+    c3 = np.asarray(rec["layers"]["3"]["c3"])
+    assert set(kept[c3 >= 0].tolist()) == moving and len(set(c3[c3 >= 0])) == 1
+
+
+def test_c3_member_mismatches(tmp_path):
+    u1, run, kept = _fixture(tmp_path)
+    rec = ls.build_prompt("step512", "p", u1, run, None)
+    d = {"prompts": {"p": rec}}
+    rows = []
+    for lay in u1["layers"]:
+        if lay["frame"] == "centred":
+            g = lay["mcs"]["2"]["groups"]
+            rows += [{"prompt": "p", "layer": lay["layer"], "frame": "centred", "size": 2, "bulk": False,
+                      "class": "moves" if i == 0 else "unstable", "members": x["offsets"]} for i, x in enumerate(g)]
+    assert ls.c3_member_mismatches(d, rows) == []
+    rows[0]["class"], rows[1]["class"] = "unstable", "moves"      # the class on the wrong group
+    assert ls.c3_member_mismatches(d, rows) == [("p", 1)]
+
+
+def test_c0f_is_the_shipped_call_on_float64():
+    import hdbscan
+    from core.metrics import cosine_distance_matrix
+    X = _planted()
+    want = hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed").fit_predict(cosine_distance_matrix(X))
+    assert ls.shipped_f64(X) == want.tolist()

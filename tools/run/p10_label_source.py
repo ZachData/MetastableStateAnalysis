@@ -18,7 +18,12 @@ not −1):
 
 ====== ==================================================================
 c0     the stored labels (`backfill_hdbscan.read_labels`), over **every**
-       stored position: the old partition, for readers re-run unchanged
+       stored position: the old partition, for readers re-run unchanged.
+       Stored from **float32** cosine distances (Phase 1's `clustering.py`)
+c0f    the same shipped call, ``HDBSCAN(min_cluster_size=2)``, on **float64**
+       distances (`core.metrics.cosine_distance_matrix`) over every stored
+       position: c0 → c0f is the precision alone, c0f → c1 the token rules
+       (`/challenge-pr` on #145, finding 1)
 c1     shipped ``HDBSCAN(min_cluster_size=2)``, float64, raw (stored) frame
 c1c    as c1, centred frame
 c2a    level-set groups, centred, size 2 (`admit.layer_groups`: the same
@@ -74,14 +79,15 @@ sys.path.insert(0, str(REPO))
 import numpy as np
 
 from core.holdout import HELD_OUT_PROMPT_KEYS
+from p1d_cluster_ensemble.arch_null import BULK_SHARE
 from p1d_cluster_ensemble.move_text import (FLOOR_ZERO, MODELS, V1_PASSAGES, band, group_classes,
                                             stage0_runs)
 
-COLUMNS = ("c0", "c1", "c1c", "c2a", "c2b", "c2", "c3", "c3_c4", "c3_r2")
+COLUMNS = ("c0", "c0f", "c1", "c1c", "c2a", "c2b", "c2", "c3", "c3_c4", "c3_r2")
 LAYERS = tuple(range(1, 25))
 LEARNED_STEP = "step143000"
-#: `arch_null.BULK_SHARE`, read not copied (checked at import by the tests).
-BULK_SHARE = 0.25
+#: Columns over every stored position; the rest are over the kept positions.
+ALL_POSITIONS = ("c0", "c0f")
 #: A record is readable with at least this many members and this many of the rest
 #: (`design-10.md` "Readable"), placed there.
 READABLE_MIN = 10
@@ -149,6 +155,14 @@ def _layer_groups(Y: np.ndarray, frame: str, mcs: int, shipped: bool):
     return [r["members"] for r in rows], None
 
 
+def shipped_f64(X: np.ndarray) -> List[int]:
+    """The stored partition's call (shipped HDBSCAN, size 2) on float64 cosine distances of every row."""
+    import hdbscan
+    from core.metrics import cosine_distance_matrix
+    return hdbscan.HDBSCAN(min_cluster_size=2, metric="precomputed").fit_predict(
+        cosine_distance_matrix(X)).astype(int).tolist()
+
+
 def build_prompt(step: str, prompt: str, u1: Dict, run_dir: Path, learned_rows: Optional[Dict]) -> Dict:
     """One (step, prompt): the columns per layer, or ``{"refused": why}``."""
     from tools.run.backfill_hdbscan import read_labels
@@ -170,7 +184,7 @@ def build_prompt(step: str, prompt: str, u1: Dict, run_dir: Path, learned_rows: 
             refused[str(L)] = "no stored c0 labels"
             continue
         Y = a[L][kept]
-        cols: Dict = {"c0": c0[L].astype(int).tolist()}
+        cols: Dict = {"c0": c0[L].astype(int).tolist(), "c0f": shipped_f64(a[L])}
         bad = []
         for col, frame, mcs in GROUP_CELLS:
             rec = by_cell[(L, frame)]["mcs"][str(mcs)]
@@ -269,7 +283,15 @@ def build(argv: Optional[Sequence[str]] = None) -> int:
     for step in args.steps:
         f = args.out / f"{step}.json"
         if f.exists():
-            print(f"already {f}", flush=True)
+            m = json.loads(f.read_text())["meta"]
+            same = (m["token_sets"]["sha256"] == ts_sha and m["index"]["sha256"] == _sha(args.index)
+                    and m["unit1"] == str(args.unit1) and tuple(m["columns"]) == COLUMNS)
+            if not same:
+                print(f"refusing: {f} was built on other inputs or columns; move it aside to rebuild",
+                      file=sys.stderr)
+                status = 1
+            else:
+                print(f"already {f}", flush=True)
             continue
         n = int(step.removeprefix("step"))
         jobs, refused = [], {}
@@ -344,7 +366,7 @@ def load_column(src, step: str, prompt: str, layer: int, column: str,
         raise LabelSourceError(f"{step}/{prompt}/L{layer} refused or absent: "
                                f"{p['refused_layers'].get(str(layer), 'absent')}")
     lab = np.asarray(p["layers"][str(layer)][column], dtype=int)
-    pos = np.arange(p["n_positions"]) if column == "c0" else np.asarray(p["kept"], dtype=int)
+    pos = np.arange(p["n_positions"]) if column in ALL_POSITIONS else np.asarray(p["kept"], dtype=int)
     if lab.size != pos.size:
         raise LabelSourceError(f"{step}/{prompt}/L{layer}/{column}: {lab.size} labels for {pos.size} positions")
     return pos, lab
@@ -370,8 +392,8 @@ def step_summary(d: Dict) -> Dict:
             kept_n = len(p["kept"])
             for L, cols in p["layers"].items():
                 lab = np.asarray(cols[col])
-                if col == "c0":
-                    lab = lab[np.asarray(p["kept"])]   # c0 read on the kept domain, for comparability
+                if col in ALL_POSITIONS:
+                    lab = lab[np.asarray(p["kept"])]   # read on the kept domain, for comparability
                 ids = set(lab[lab >= 0].tolist())
                 groups[band(int(L))] += len(ids)
                 n_rec += 1
@@ -382,11 +404,31 @@ def step_summary(d: Dict) -> Dict:
     return out
 
 
+def c3_member_mismatches(d: Dict, rows: Sequence[Dict]) -> List[Tuple[str, int]]:
+    """(prompt, layer) records whose c3 member sets are not the rows' non-bulk ``moves`` groups (centred, size 2)."""
+    want: Dict[Tuple[str, int], List] = {}
+    for r in rows:
+        if r["frame"] == "centred" and r["size"] == 2 and not r["bulk"] and r["class"] == "moves":
+            want.setdefault((r["prompt"], r["layer"]), []).append(r["members"])
+    out = []
+    for prompt, p in d["prompts"].items():
+        kept = np.asarray(p["kept"])
+        for L, cols in p["layers"].items():
+            lab = np.asarray(cols["c3"])
+            got = [kept[lab == i].tolist() for i in sorted(set(lab[lab >= 0].tolist()))]
+            if not same_groups(got, want.get((prompt, int(L)), [])):
+                out.append((prompt, int(L)))
+    return out
+
+
 def summary(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="p10_label_source summary")
     ap.add_argument("--src", type=Path, required=True)
     ap.add_argument("--definitions", type=Path, default=None,
                     help="`candidates definitions`' output: c3 at steps 0 / 143000 must give its 'moves' records")
+    ap.add_argument("--rows", type=Path, default=None,
+                    help="`candidates read`'s candidate_rows.json: c3's member sets at steps 0 / 143000 must be "
+                         "its non-bulk 'moves' rows (centred, size 2)")
     args = ap.parse_args(argv)
     res, status = {}, 0
     for step in MODELS:
@@ -405,11 +447,21 @@ def summary(argv: Optional[Sequence[str]] = None) -> int:
             ok = got["groups"] == want["records"] and got["by_band"] == want["records_by_band"]
             res["definitions_check"][step] = {"c3": got["by_band"], "definitions": want["records_by_band"], "ok": ok}
             status |= 0 if ok else 1
+    if args.rows is not None:
+        rows = json.loads(args.rows.read_text())
+        res["members_check"] = {}
+        for step in ("step0", LEARNED_STEP):
+            f = args.src / f"{step}.json"
+            if not f.exists():
+                continue
+            mism = c3_member_mismatches(json.loads(f.read_text()), rows[step])
+            res["members_check"][step] = {"mismatched_records": len(mism), "first": mism[:3], "ok": not mism}
+            status |= 0 if not mism else 1
     (args.src / "summary.json").write_text(json.dumps(res, indent=1) + "\n")
     print("group-layer records per column; then readable (prompt, layer) records on c2 / c3, of all")
     print(f"{'step':>11s} " + " ".join(f"{c:>6s}" for c in COLUMNS) + "   readable c2 / c3")
     for step, v in res.items():
-        if step == "definitions_check":
+        if step in ("definitions_check", "members_check"):
             continue
         c = v["columns"]
         print(f"{step:>11s} " + " ".join(f"{c[x]['groups']:6d}" for x in COLUMNS)
@@ -418,6 +470,8 @@ def summary(argv: Optional[Sequence[str]] = None) -> int:
                  if v["refused_prompts"] or v["refused_layers"] else ""))
     if "definitions_check" in res:
         print("definitions check: " + json.dumps(res["definitions_check"]))
+    if "members_check" in res:
+        print("members check: " + json.dumps(res["members_check"]))
     return status
 
 
