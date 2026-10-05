@@ -285,3 +285,16 @@ def test_reader_input_learned_split_and_refusals(tmp_path, monkeypatch):
     (src / "step512.json").write_text(json.dumps(d))
     with pytest.raises(ls.LabelSourceError, match="refused prompts"):
         ls.reader_input(src, "c2")
+
+
+def test_f1_and_f12_refuse_without_a_column(monkeypatch):
+    # R2: both readers take --labels/--column or --old-partition, else refuse (argparse exit)
+    import sys
+    from tools.run import p10_partition_function as pf, transport as tr
+    for mod, name in ((pf, "p10_partition_function.py"), (tr, "transport.py")):
+        monkeypatch.setattr(sys, "argv", [name, "--out", "x.json"])
+        with pytest.raises(SystemExit):
+            mod.main()
+        monkeypatch.setattr(sys, "argv", [name, "--old-partition", "--column", "c3"])
+        with pytest.raises(SystemExit):
+            mod.main()

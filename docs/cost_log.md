@@ -247,3 +247,6 @@ running median of the rows above it gets a line under the table saying why.
   Over 2× the median: full reads of the three readers (~1,200 lines) and their tests to wire
   them, two batches watched in-session (the first at `OMP_NUM_THREADS=1` did not reproduce c0
   and was re-run, 32 min; `LESSONS.md` 3), and wide ladder printouts to check each claim.
+| 2026-10-05 | Phase 10 re-read R2: F1, F12's gap, §1.5 down the ladder (before /challenge-pr) | 69 | 218k | 10.3M | 57k | #147 |
+  At 2× the median: a full read of both readers (~660 lines) and R1's ladder to reuse it, a
+  14-min batch watched in-session, and a published check that first matched nothing (`LESSONS.md` 2).

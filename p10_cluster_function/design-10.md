@@ -71,10 +71,12 @@ one column (tree, frame, stability, bulk) and dropped L0 inside c0 → c1.
 pass, against 810 of 926 trained), so a baseline on c3 at step 0 would be the few chance
 passes. Every "Δ vs step 0" and "vs baseline" below subtracts c2's step-0 value, at every
 column; c3 at step 0 is reported as the floor count only.
-*Departure at R1 (2026-10-05, flagged by `/challenge-pr` on #146; for the user, `STATE.md`
-Blocked 24 (b)):* the R1 ladder subtracts c2's step 0 from c3, the arms and the learned split,
-and each of c0–c2b's own step 0, so c0 stays the published reading. Read literally, "at every
-column" puts c2's step 0 under c0 too; `p10_r1_ladder.py` counts both (`status-10.md` §1.15).
+*Departure at R1 (2026-10-05, flagged by `/challenge-pr` on #146; **accepted by the user
+2026-10-05**, `STATE.md` Blocked 24 (b)):* the ladder subtracts c2's step 0 from c3, the arms and
+the learned split, and each of c0–c2b's own step 0, so c0 stays the published reading. Read
+literally, "at every column" puts c2's step 0 under c0 too; `p10_r1_ladder.py` counts both
+(`status-10.md` §1.15). *From R2 on (user, Blocked 24 (a)):* the raw value and the baseline are
+printed beside every Δ.
 
 **Readable.** A (prompt, layer) record is readable when it has **≥ 10 members and ≥ 10 of the
 rest** (placed). At a step where fewer than half its records are readable on c3, that step's
@@ -92,7 +94,7 @@ the column, a different population from HDBSCAN's −1.
 | **§1.7**, unique-token part (rank does nothing; class does, weakly) | clustered rate of unique tokens by rank bin and class (`p10_token_composition`) | **yes**, unique tokens only | member share among kept unique tokens by rank and class; §1.7's own rule. Its copy-count headline is out (T3 keeps one copy). Not in `design-1d.md` "Scope", which listed §1.6–§1.8 together |
 | **§1.9** co-membership | focal = clustered unique token at position > 0; co-members; 5 lifts against a random draw (`p10_comembership`) | **yes** | draw from kept tokens only; layers 12, 24 and the mean over L1–24 (L0 out); rule as written there: Δ vs step 0 above / as / below at ±0.05. `copy_share` now means "the co-member's string recurs later" (the copies are dropped); `adjacent` counts a ±1 neighbour only if kept. Δ subtracts c2's step-0 lift (above), so the rule does not change at layers where c3 has no step-0 focal token |
 | **§1.10** lexical carry | as §1.9, plus each token's layer-0 vector (`p10_lexical_carry`) | **yes** | layer 0 enters as a covariate (the frozen frame), not as a cloud, so the definition's L0 gap does not bite; rule as written there |
-| **F1** clustered − noise step (the 32–512 window) | binary labels at each layer boundary, permutation null (`tools/run/transport.py`) | **yes** (correcting `design-1d.md` "Scope", which said F1 needs a full partition: its labelled statistic reads clustered vs noise only) | members − rest, permuted among kept tokens, 2 000 draws. Label per step: **negative** (median p ≤ 0.05, sign −), **positive**, or **none**; with the readability rule above, so "none" at 0–16 is a reading on enough members, not an empty column. The identity-coupling result is partition-free and is not re-read |
+| **F1** clustered − noise step (the 32–512 window) | binary labels at each layer boundary, permutation null (`tools/run/transport.py`) | **yes** (correcting `design-1d.md` "Scope", which said F1 needs a full partition: its labelled statistic reads clustered vs noise only) | members − rest, permuted among kept tokens, 2 000 draws. Label per step: **negative** (median p ≤ 0.05, sign −), **positive**, or **none**; with the readability rule above, so "none" at 0–16 is a reading on enough members, not an empty column. The identity-coupling result is partition-free and is not re-read. *Found at R2:* the rule reads significance, not size; on c0 it is negative to 54000, so §1.3's 32–512 window was a magnitude reading (`status-10.md` §1.16) |
 | **F12** members − rest, **against its step-0 baseline** (§1.4's "vs baseline" column, the finding; the sign alone is "mostly definitional", §1.4) | binary labels, `Z` per token (`p10_partition_function`) | **that column only** | per step, the statistic minus c2's step-0 value; label **below / as / above** baseline at ±0.05 (placed, as §1.9's floor). c0's labels: below at 32–4000, as at 8000, above from 16000. *Rule replaced after `/challenge-pr` on #144, finding 1*: the first version tested the sign. Raw `log Z` (99.5 % position) and the sink results are out (T1 drops the sink) |
 | **§1.5** F1 + F12, "parked, not pinned" at 32–64 | the two above | follows them | read off F1 and F12's re-read; no reader of its own |
 | **A0** attention flip vs the causal mask | attention received, binary labels, mask baseline (`p10_attention_baseline`) | **yes, with T4** (sink columns dropped, rows renormalised) | members − rest. T4 changes the statistic itself, so **c3's labels are compared with c1's, not c0's**. Labels: mask share **≥ 0.9 or not** (0.9 placed, below c0's ~0.94); the step interval where the learned residual first appears (c0: 2000–4000); whether it persists to 143000 |

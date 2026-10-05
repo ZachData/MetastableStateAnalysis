@@ -195,13 +195,14 @@ RULE_CELLS = {
 }
 
 
-def holds(cols: Dict, prim: Dict[int, str], reader: str, keep=None) -> Dict:
+def holds(cols: Dict, prim: Dict[int, str], skip0: bool, keep=None) -> Dict:
     """Per (quantity, layer, step): primary vs c0, and the first column that changed it;
-    ``keep(quantity, layer, step)`` restricts the cells (`RULE_CELLS`)."""
+    ``skip0`` leaves out step 0 (a Δ row, 0 there by construction); ``keep(quantity, layer,
+    step)`` restricts the cells (`RULE_CELLS`)."""
     agree, cells, changed, settled = 0, [], Counter(), Counter()
     for q, by_step in cols["c0"].items():
         for s, (_, lab0) in by_step.items():
-            if (reader != "tc" and s == 0) or (keep is not None and not keep(q[0], q[1], s)):
+            if (skip0 and s == 0) or (keep is not None and not keep(q[0], q[1], s)):
                 continue
             pc = prim.get(s, "c3")
             lab = cols[pc].get(q, {}).get(s, (None, "absent"))[1]
@@ -277,10 +278,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
            "rows": {}}
     for reader, row in READERS.items():
         cols = row_cells(data, reader)
-        h = holds(cols, prim, reader)
+        skip0 = reader != "tc"
+        h = holds(cols, prim, skip0)
         lit = row_cells(data, reader, literal=True)
-        hr, hl, hlr = (holds(cols, prim, reader, RULE_CELLS[reader]), holds(lit, prim, reader),
-                       holds(lit, prim, reader, RULE_CELLS[reader]))
+        hr, hl, hlr = (holds(cols, prim, skip0, RULE_CELLS[reader]), holds(lit, prim, skip0),
+                       holds(lit, prim, skip0, RULE_CELLS[reader]))
         res["rows"][row] = {"holds": h, "holds_rule": hr, "holds_literal": hl, "holds_literal_rule": hlr,
                             "arms": arms_differ(cols, prim),
                             "columns": {c: {f"{q[0]}|{q[1]}": {s: list(v) for s, v in by.items()}

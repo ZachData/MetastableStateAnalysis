@@ -38,17 +38,17 @@ def test_holds_names_the_first_column_that_changed():
     lab = {c: "+" for c in lad.LADDER}
     lab["c2b"] = lab["c2"] = lab["c3"] = "0"
     cols = {c: {("freq", "all"): {0: (None, "+"), 64: (None, l)}} for c, l in lab.items()}
-    h = lad.holds(cols, {0: "c2", 64: "c3"}, "tc")
+    h = lad.holds(cols, {0: "c2", 64: "c3"}, False)
     assert (h["n"], h["agree"]) == (2, 1)
     assert h["first_changed_at"] == {"c2b": 1} and h["differ"][0]["step"] == 64
     # Δ rows skip step 0 (0 by construction)
-    assert lad.holds(cols, {0: "c2", 64: "c3"}, "cm")["n"] == 1
+    assert lad.holds(cols, {0: "c2", 64: "c3"}, True)["n"] == 1
 
 
 def test_settled_at_is_where_the_label_stays():
     lab = dict(zip(lad.LADDER, ["+", "+", "−", "+", "+", "+", "−", "−"]))   # c1 swings back; c2 sticks
     cols = {c: {("class", "all"): {64: (None, l)}} for c, l in lab.items()}
-    d = lad.holds(cols, {64: "c3"}, "tc")["differ"][0]
+    d = lad.holds(cols, {64: "c3"}, False)["differ"][0]
     assert (d["first_changed_at"], d["settled_at"]) == ("c1", "c2")
 
 
