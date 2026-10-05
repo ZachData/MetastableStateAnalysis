@@ -114,3 +114,29 @@ def test_non_finite_bar_refuses_its_cell_only_when_not_strict():
     assert bars[("p", 1, "raw", 4)] is None
     rows = an.group_rules([rec("init:0", 3.0)], bars, set())
     assert rows[0]["learned"] is None and rows[0]["bar"] is None
+
+
+def test_unit1_join_refuses_other_designed_prompts(tmp_path):
+    d = tmp_path / an.TRAINED_STEP
+    d.mkdir()
+    for k in dp.KEYS:
+        (d / f"{k}.json").write_text(json.dumps({"meta": {"designed_hash": "stale"}, "layers": []}))
+    with pytest.raises(SystemExit, match="designed prompts"):
+        pc.unit1_groups(tmp_path)
+
+
+def test_filter_ablation_shares():
+    k = dp.KEYS[0]
+    rows = [_g(0, k, [1, 2, 3], True), _g(0, k, [21, 22, 23], True), _g(0, k, [11, 12, 13], False)]
+    pc.annotate(rows, LABELS, {(k, 1, "centred", 2): [([11, 12, 13], "moves")]})
+    v = pc.filter_ablation(rows, [], "centred", 2)[k]
+    assert v["share_seed0"]["learned"] == 0.5 and v["share_seed0"]["not_learned"] == 1.0
+    assert v["share_seed0"]["moves"] == 1.0 and v["share_seed0"]["not_moves"] == 0.5
+    assert v["seed0_counts"] == {"content_moves": 1, "content_learned": 1, "content_both": 0}
+
+
+def test_recovery_and_clusters():
+    s = pc.score_partition([[0, 1, 2, 3], [10, 11, 12]], LABELS[dp.KEYS[0]], 20)
+    assert s["recovery"] == pytest.approx(7 / 20)
+    import numpy as np
+    assert pc._clusters(np.array([0, 0, 1, 2, 2, 2]), 2, [3, 5, 6, 8, 9, 11]) == [[3, 5], [8, 9, 11]]

@@ -78,6 +78,9 @@ def unit1_groups(move_dir: Path) -> Dict[Tuple[str, int, str, int], List[Tuple[L
         if not f.exists():
             raise SystemExit(f"refusing: unit 1's record {f} is missing")
         r = json.loads(f.read_text())
+        if r["meta"].get("designed_hash") != dp.designed_hash():
+            raise SystemExit(f"refusing: {f} was run on designed prompts {r['meta'].get('designed_hash')}, "
+                             f"not {dp.designed_hash()}")
         for lay in r["layers"]:
             for m, rec in lay["mcs"].items():
                 out[(k, lay["layer"], lay["frame"], int(m))] = [
@@ -147,6 +150,36 @@ def _by_label(rows: Sequence[Dict]) -> Dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def _share(rows: Sequence[Dict]) -> Optional[float]:
+    return round(float(np.mean([bool(r["content"]) for r in rows])), 3) if rows else None
+
+
+def filter_ablation(trained: Sequence[Dict], step0: Sequence[Dict], frame: str, size: int) -> Dict[str, Dict]:
+    """
+    Beside the verdict (added after `/challenge-pr` on #142, finding 1): per prompt,
+    the content share of seed 0's groups by filter (all, learned, not learned, moves,
+    not moves), over all 10 seeds for learned, and of the step-0 inits' groups; and
+    seed 0's counts of content ∧ moves, content ∧ learned, and both. A filter that
+    selects content has a share above its complement's.
+    """
+    out = {}
+    for k in dp.KEYS:
+        cell = [r for r in trained if r["prompt"] == k and r["frame"] == frame and r["size"] == size]
+        s0 = [r for r in cell if r["seed"] == 0]
+        z0 = [r for r in step0 if r["prompt"] == k and r["frame"] == frame and r["size"] == size]
+        out[k] = {"share_all_seeds": {"all": _share(cell), "learned": _share([r for r in cell if r["learned"]]),
+                                      "not_learned": _share([r for r in cell if r["learned"] is False])},
+                  "share_seed0": {"all": _share(s0), "learned": _share([r for r in s0 if r["learned"]]),
+                                  "not_learned": _share([r for r in s0 if r["learned"] is False]),
+                                  "moves": _share([r for r in s0 if r.get("moves")]),
+                                  "not_moves": _share([r for r in s0 if not r.get("moves")])},
+                  "share_step0_inits": _share(z0),
+                  "seed0_counts": {"content_moves": sum(bool(r["content"] and r.get("moves")) for r in s0),
+                                   "content_learned": sum(bool(r["content"] and r["learned"]) for r in s0),
+                                   "content_both": sum(bool(r["content"] and r["learned"] and r.get("moves")) for r in s0)}}
+    return out
+
+
 def verdict(per_prompt: Dict[str, Dict]) -> str:
     n = sum(v["pass"] for v in per_prompt.values())
     return f"{'pass' if n >= PASS_PROMPTS else 'fail'} ({n} of {len(per_prompt)} prompts)"
@@ -186,6 +219,7 @@ def groups_cmd(argv: Optional[Sequence[str]] = None) -> int:
     seeds = [int(m.split(":")[1]) for m in inits]
     cells = {f"{f}/{m}": prompt_verdicts(trained, step0, seeds, f, m) for f in FRAMES for m in MIN_CLUSTER_SIZES}
     primary = cells[f"{PRIMARY[0]}/{PRIMARY[1]}"]
+    ablation = {f"{f}/{m}": filter_ablation(trained, step0, f, m) for f in FRAMES for m in MIN_CLUSTER_SIZES}
     rep = replication(trained, seeds)
     cand = {(r["prompt"], r["layer"], tuple(r["members"])) for r in trained
             if r["seed"] == 0 and (r["frame"], r["size"]) == PRIMARY and r["content"] and r["learned"] and r["moves"]}
@@ -196,7 +230,7 @@ def groups_cmd(argv: Optional[Sequence[str]] = None) -> int:
     res = {"git": _git_head(), "records_git": sorted({r["meta"]["git"] for r in recs0 + rect}),
            "designed_hash": dp.designed_hash(), "arch": str(args.arch), "move": str(args.move),
            "failed_cells": sorted(failed), "nonfinite_bars": nonfinite, "move_jaccard": MOVE_JACCARD, "pass_prompts": PASS_PROMPTS,
-           "verdict": verdict(primary), "primary": primary, "cells": cells, "candidates_per_band": per_band,
+           "verdict": verdict(primary), "primary": primary, "cells": cells, "filter_ablation": ablation, "candidates_per_band": per_band,
            "candidate_replication": {"n": len(rep_c), "replicating": sum(r["replicates"] for r in rep_c),
                                      "rows": rep_c},
            "candidates": [{k: r[k] for k in ("prompt", "layer", "members", "s", "bar", "content", "unit1_jaccard")}
@@ -215,6 +249,13 @@ def groups_cmd(argv: Optional[Sequence[str]] = None) -> int:
     for c, t in cells.items():
         print(f"  {c:11s} " + " ".join(f"{k.split('_', 1)[1]} {v['content_learned']}/{v['step0_max']}"
                                        f"{'+' if v['pass'] else '-'}" for k, v in t.items()))
+    print("beside: content share by filter (a filter selects content if above its complement)")
+    for c, t in ablation.items():
+        for k, v in t.items():
+            a, z = v["share_all_seeds"], v["share_seed0"]
+            print(f"  {c:11s} {k.split('_', 1)[1]:13s} all seeds: all {a['all']} learned {a['learned']} not {a['not_learned']}"
+                  f" | seed 0: moves {z['moves']} not {z['not_moves']} | step-0 inits {v['share_step0_inits']} | "
+                  f"seed 0 content∧moves / ∧learned / both {list(v['seed0_counts'].values())}")
     print(f"seed-0 candidates replicating (unit 2's rule): {res['candidate_replication']['replicating']} "
           f"of {res['candidate_replication']['n']}; per band {per_band}")
     return 0
@@ -224,8 +265,14 @@ def groups_cmd(argv: Optional[Sequence[str]] = None) -> int:
 # Reader: unit 3's plateaus scored against the labels
 # ---------------------------------------------------------------------------
 
-def score_partition(clusters: Sequence[Sequence[int]], labels: Sequence[Optional[str]]) -> Dict:
-    """Rule 1 on each cluster (positions), and the ARI of cluster against label over the labelled tokens clustered."""
+def score_partition(clusters: Sequence[Sequence[int]], labels: Sequence[Optional[str]],
+                    n_labelled_kept: Optional[int] = None) -> Dict:
+    """
+    Rule 1 on each cluster (positions); the ARI of cluster against label over the
+    labelled tokens clustered (purity, not recovery); and ``recovery``, the share
+    of the prompt's labelled kept tokens that the cut clusters (added after
+    `/challenge-pr` on #142, finding 2).
+    """
     from sklearn.metrics import adjusted_rand_score
     content = [group_content(c, labels) for c in clusters]
     cid, lab = [], []
@@ -236,7 +283,8 @@ def score_partition(clusters: Sequence[Sequence[int]], labels: Sequence[Optional
                 lab.append(labels[p])
     ari = float(adjusted_rand_score(lab, cid)) if len(set(lab)) > 1 and len(cid) >= 2 else None
     return {"content": [c for c in content if c], "n_content": sum(bool(c) for c in content),
-            "ari": None if ari is None else round(ari, 3), "n_labelled": len(cid)}
+            "ari": None if ari is None else round(ari, 3), "n_labelled": len(cid),
+            "recovery": round(len(cid) / n_labelled_kept, 3) if n_labelled_kept else None}
 
 
 def _clusters(lab: np.ndarray, size: int, kept: Sequence[int]) -> List[List[int]]:
@@ -261,13 +309,15 @@ def reader_cmd(argv: Optional[Sequence[str]] = None) -> int:
         return 1
     kept = load_sets(Path(tj["records"]["sets"]), PROMPTS)
     labels = labels_of(_tok())
+    n_lab = {k: sum(labels[k][p] is not None for p in kept[k]) for k in keys}
     inits, reinits = model_ids("init"), model_ids("reinit")
     hits: Dict[str, Dict] = {}
     plats: List[Dict] = []
     for c in tj["cells"]:
         for a in ARMS:
             pl = c["plateaus"][a]["conjunction"]
-            sc = [score_partition([d["positions"] for d in p["partition"]], labels[c["prompt"]]) for p in pl]
+            sc = [score_partition([d["positions"] for d in p["partition"]], labels[c["prompt"]], n_lab[c["prompt"]])
+                  for p in pl]
             key = ("trained", a, c["band"])
             h = hits.setdefault(str(key), {"kind": "trained", "arm": a, "band": c["band"], "clouds": 0,
                                            "plateau": 0, "content": 0, "readable": 0, "per_prompt": {}})
@@ -284,7 +334,8 @@ def reader_cmd(argv: Optional[Sequence[str]] = None) -> int:
         tab = plateau_table(recs, labs, a, (MIN_RUN,))
         for kind in ("real_init", "reinit"):
             for (mid, k, L), pl in tab[kind][MIN_RUN].items():
-                sc = [score_partition(_clusters(labs[mid][k][L][p["start"]], size, kept[k]), labels[k]) for p in pl]
+                sc = [score_partition(_clusters(labs[mid][k][L][p["start"]], size, kept[k]), labels[k], n_lab[k])
+                      for p in pl]
                 key = (kind, a, band(L))
                 h = hits.setdefault(str(key), {"kind": f"step0_{kind}", "arm": a, "band": band(L), "clouds": 0,
                                                "plateau": 0, "content": 0, "per_prompt": {}})
@@ -311,7 +362,8 @@ def reader_cmd(argv: Optional[Sequence[str]] = None) -> int:
         if cp:
             aris = [p["ari"] for p in cp if p["ari"] is not None]
             print(f"  trained {a}: content plateaus at r {min(p['r_lo'] for p in cp):.2f}-{max(p['r_hi'] for p in cp):.2f}, "
-                  f"median ARI vs labels {np.median(aris) if aris else None}, L17-24 below r 0.6: "
+                  f"median ARI vs labels (purity) {np.median(aris) if aris else None}, recovery "
+                  f"{min(p['recovery'] for p in cp)}-{max(p['recovery'] for p in cp)}, L17-24 below r 0.6: "
                   f"{sum(p['layer'] >= 17 and p['r_lo'] < 0.6 for p in cp)}")
     return 0
 
