@@ -100,3 +100,17 @@ class TestReaderScoring:
 
     def test_one_label_has_no_ari(self):
         assert pc.score_partition([[0, 1, 2]], LABELS[dp.KEYS[0]])["ari"] is None
+
+
+def test_non_finite_bar_refuses_its_cell_only_when_not_strict():
+    def rec(model, s):
+        return {"model": model, "prompt": "p", "layers": [{"layer": 1, "frame": "raw", "arms": {
+            "4": {"groups": [{"members": [1, 2, 3, 4], "excess": 1.0, "s": s}]}}}]}
+    reinits = [f"reinit:{i}" for i in range(5)]
+    recs0 = [rec(m, None) for m in reinits]          # every re-init cloud's max s is inf
+    with pytest.raises(ValueError):
+        an.group_bars(recs0, reinits)
+    bars = an.group_bars(recs0, reinits, strict=False)
+    assert bars[("p", 1, "raw", 4)] is None
+    rows = an.group_rules([rec("init:0", 3.0)], bars, set())
+    assert rows[0]["learned"] is None and rows[0]["bar"] is None

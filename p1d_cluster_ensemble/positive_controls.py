@@ -176,7 +176,8 @@ def groups_cmd(argv: Optional[Sequence[str]] = None) -> int:
         print("refusing: the stored first check does not match these records", file=sys.stderr)
         return 1
     failed = failed_cells(check)
-    bars = group_bars(recs0, reinits)
+    bars = group_bars(recs0, reinits, strict=False)
+    nonfinite = sorted(k for k, v in bars.items() if v is None)
     trained = group_rules(rect, bars, failed)
     step0 = group_rules([r for r in recs0 if r["model"] in inits], bars, failed)
     labels = labels_of(_tok())
@@ -194,7 +195,7 @@ def groups_cmd(argv: Optional[Sequence[str]] = None) -> int:
                     for k in keys} for b in BANDS}
     res = {"git": _git_head(), "records_git": sorted({r["meta"]["git"] for r in recs0 + rect}),
            "designed_hash": dp.designed_hash(), "arch": str(args.arch), "move": str(args.move),
-           "failed_cells": sorted(failed), "move_jaccard": MOVE_JACCARD, "pass_prompts": PASS_PROMPTS,
+           "failed_cells": sorted(failed), "nonfinite_bars": nonfinite, "move_jaccard": MOVE_JACCARD, "pass_prompts": PASS_PROMPTS,
            "verdict": verdict(primary), "primary": primary, "cells": cells, "candidates_per_band": per_band,
            "candidate_replication": {"n": len(rep_c), "replicating": sum(r["replicates"] for r in rep_c),
                                      "rows": rep_c},
@@ -203,7 +204,7 @@ def groups_cmd(argv: Optional[Sequence[str]] = None) -> int:
                           and r["content"] and r["learned"] and r["moves"]]}
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "groups.json").write_text(json.dumps(res, indent=1) + "\n")
-    print(f"failed first-check cells: {sorted(failed) or 'none'}")
+    print(f"failed first-check cells: {sorted(failed) or 'none'}; non-finite bars (refused): {nonfinite or 'none'}")
     print(f"group route, seed 0, centred, size 2 (candidate = content ∧ learned ∧ moves): {res['verdict']}")
     for k, v in primary.items():
         print(f"  {k:24s} groups {v['groups']:3d} content {v['content']:3d} content∧learned {v['content_learned']:3d} "

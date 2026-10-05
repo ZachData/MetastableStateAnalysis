@@ -624,8 +624,13 @@ def _max_s(groups: Sequence[Dict]) -> float:
     return max((math.inf if g["s"] is None else g["s"] for g in groups), default=0.0)
 
 
-def group_bars(recs0: Sequence[Dict], reinits: Sequence[str]) -> Dict[Tuple, float]:
-    """``{(prompt, layer, frame, size): bar}``: the 95th percentile, over the re-inits, of each re-init cloud's largest ``s``."""
+def group_bars(recs0: Sequence[Dict], reinits: Sequence[str], strict: bool = True) -> Dict[Tuple, Optional[float]]:
+    """
+    ``{(prompt, layer, frame, size): bar}``: the 95th percentile, over the
+    re-inits, of each re-init cloud's largest ``s``. A non-finite bar raises;
+    with ``strict`` False it is None instead, and `group_rules` refuses that
+    cell alone (unit 4: three raw / size-4 cells of the short designed prompts).
+    """
     mx: Dict[Tuple, List[float]] = {}
     for r in recs0:
         if r["model"] not in reinits:
@@ -640,16 +645,16 @@ def group_bars(recs0: Sequence[Dict], reinits: Sequence[str]) -> Dict[Tuple, flo
     # 3+ infinite maxima make numpy's linear quantile NaN (inf - inf); NaN would mark every
     # group not learned without a word (`/challenge-pr` on #132, finding 3). Refuse instead.
     bad = [k for k, v in bars.items() if not np.isfinite(v)]
-    if bad:
+    if bad and strict:
         raise ValueError(f"refusing: a non-finite group bar at {bad[:3]} ({len(bad)} in all)")
-    return bars
+    return {k: (None if k in bad else v) for k, v in bars.items()}
 
 
 def group_rules(trained: Sequence[Dict], bars: Dict[Tuple, float], failed: set) -> List[Dict]:
     """
     Per trained level-set group: ``s``, ``s > 1`` (admission's verdict),
     and ``learned`` (``s`` > its bar). The rule refuses (``learned`` None)
-    where the size's ``hdb_k`` cell failed the first check.
+    where the size's ``hdb_k`` cell failed the first check, or the bar is None.
     """
     rows = []
     for r in trained:
@@ -658,12 +663,12 @@ def group_rules(trained: Sequence[Dict], bars: Dict[Tuple, float], failed: set) 
             L, f = lay["layer"], lay["frame"]
             for m, a in lay["arms"].items():
                 bar = bars[(r["prompt"], L, f, int(m))]
-                refuse = (f"hdb_k_{m}", f, band(L)) in failed
+                refuse = (f"hdb_k_{m}", f, band(L)) in failed or bar is None
                 for g in a["groups"]:
                     s = math.inf if g["s"] is None else g["s"]
                     rows.append({"seed": sd, "prompt": r["prompt"], "layer": L, "frame": f, "size": int(m),
                                  "members": g["members"], "s": None if g["s"] is None else round(s, 4),
-                                 "bar": round(bar, 4), "admitted": s > 1,
+                                 "bar": None if bar is None else round(bar, 4), "admitted": s > 1,
                                  "learned": None if refuse else bool(s > bar)})
     return rows
 
@@ -1017,7 +1022,8 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     failed = failed_cells(check)
     crows = cloud_rules(z_table(recs0), z_table(rect), reinits, inits, failed, keys)
     csum = cloud_summary(crows, seeds)
-    grows = group_rules(rect, group_bars(recs0, reinits), failed)
+    bars = group_bars(recs0, reinits, strict=args.prompts == "v1")
+    grows = group_rules(rect, bars, failed)
     rep = replication(grows, seeds)
     position_tightness([r for r in rep if r["replicates"]], {r["prompt"]: r["kept"] for r in rect})
     gsum = group_summary(grows, rep, seeds)
@@ -1028,7 +1034,8 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
         r["tokens"] = [strs[r["prompt"]][i] for i in r["members"]]
     res = {"git": _git_head(), "records_git": sorted({r["meta"]["git"] for r in recs0 + rect}),
            "inputs": input_names(ids),
-           "failed_cells": sorted(failed), "alpha": ALPHA, "tails": LUMPIER_TAIL,
+           "failed_cells": sorted(failed), "nonfinite_bars": sorted(k for k, v in bars.items() if v is None),
+           "alpha": ALPHA, "tails": LUMPIER_TAIL,
            "replicate": {"jaccard": REPLICATE_JACCARD, "group_seeds": REPLICATE_GROUP_SEEDS,
                          "cloud_seeds": REPLICATE_CLOUD_SEEDS}, "flagged_seeds": FLAGGED_SEEDS,
            # Reported beside the rules (added after the first read; rules unchanged): median z_G
