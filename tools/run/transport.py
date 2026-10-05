@@ -58,9 +58,20 @@ seconds per directory, and `--identity-only` skips it for a quick pass.
 **Tier 1, exploratory, unregistered.** `claims/registry.json` is untouched, and
 the merger is the arithmetic mean for the reason the other rows state.
 
+THE RE-READ (`p10_cluster_function/design-10.md`, R2; added 2026-10-05)
+----------------------------------------------------------------------
+As `p10_partition_function` "THE RE-READ": ``--labels <dir> --column <c>`` or
+refuse; ``--old-partition`` for the stored labels. Only the kinematic statistic
+is re-read (the couplings are partition-free): per readable record at layer
+L1–23, the boundary L → L+1, each particle's step over every stored position,
+and **members − rest** (`members_rest`) on the column's domain, permuted among
+the kept tokens, one generator per unit. L24 has no boundary. The per-step label
+(negative / positive / none) is `p10_r2_ladder.py`'s.
+
 Run:
-    python tools/run/transport.py --out data/analysis/p10_f1_transport.json
-    python tools/run/transport.py --identity-only --limit 8
+    python tools/run/transport.py --labels <dir> --column c3 --out <file>
+    python tools/run/transport.py --old-partition --out data/analysis/p10_f1_transport.json
+    python tools/run/transport.py --old-partition --identity-only --limit 8
 """
 import argparse
 import json
@@ -93,7 +104,8 @@ from core.evalues import (
 from core.nulls import label_permutation_null, p_from_null_tolerant
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
 from tools.run.p10_anchor import checkpoint_of
-from tools.run.p10_partition_function import standardised_difference
+from tools.run.p10_partition_function import (
+    members_rest, reread, reread_args, reread_by_step, standardised_difference, unit_rng)
 
 N_PERMUTATIONS = 2000
 
@@ -183,6 +195,23 @@ def measure_directory(run_dir: Path, rng, optimal: bool = True) -> dict:
     }
 
 
+def reread_run(run_dir: Path, labels: dict, step: int, prompt: str, seed: int) -> list:
+    """Per readable layer L1-23: the boundary L -> L+1, members - rest in step size on the
+    column's domain (docstring, "THE RE-READ")."""
+    acts = np.asarray(np.load(Path(run_dir) / "activations.npz")["activations"], dtype=np.float64)
+    rows = []
+    for layer, lab in sorted(labels.items()):
+        if layer + 1 >= acts.shape[0]:
+            continue
+        if len(lab) != acts.shape[1]:
+            raise ValueError(f"{run_dir}: layer {layer} has {len(lab)} labels, {acts.shape[1]} tokens")
+        r = members_rest(per_particle_step(acts[layer], acts[layer + 1]), lab,
+                         unit_rng(seed, step, prompt, layer))
+        if r is not None:
+            rows.append({"layer": int(layer), **r})
+    return rows
+
+
 def _summarise(rows: list, dirs: list) -> dict:
     def m(key, source=rows):
         v = np.array([r[key] for r in source
@@ -248,7 +277,22 @@ def main() -> None:
                          "number this row exists for")
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_f1_transport.json"))
     add_holdout_args(ap)
-    args = ap.parse_args()
+    args = reread_args(ap)
+    if args.labels:
+        rec = reread(args, reread_run, "transport")
+        record = {"schema": "p10_r2_f1/1",
+                  "row": "F1 re-read on one ladder column: members - rest in per-particle step",
+                  "tier": "1 (exploratory, unregistered)",
+                  "statistic": "standardised_difference of the step L -> L+1 (every stored position), "
+                               "members at L against the kept tokens in no group; two-sided permutation "
+                               "p among the kept tokens; boundaries from L1",
+                  "by_step": reread_by_step(rec["runs"]), **rec}
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps(record, indent=1))
+        print(f"wrote {args.out}")
+        for s, x in record["by_step"].items():
+            print(f"  step {s}: {x}")
+        return
 
     root = Path(args.root)
     candidates, holdout = refuse_held_out(

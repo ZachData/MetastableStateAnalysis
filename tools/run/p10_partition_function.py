@@ -75,14 +75,30 @@ about that beta.
 
 **Tier 1, exploratory, unregistered.** `claims/registry.json` is untouched.
 
+THE RE-READ (`p10_cluster_function/design-10.md`, R2; added 2026-10-05)
+----------------------------------------------------------------------
+``--labels <dir> --column <c>`` reads one column of the R0 label source, or the
+run refuses; ``--old-partition`` reads the stored labels (the published §1.4
+record). Under a column, ``Z`` is computed as before, over **every** stored
+position (the model's own context), so the column changes the partition and not
+the quantity; the statistic, **members − rest**, compares the column's members
+with the kept tokens in no group (`members_rest`), and the permutation runs
+among the kept tokens. Unreadable (prompt, layer) records are left out and
+counted. Each unit draws from its own generator (`unit_rng`), so a unit's p no
+longer depends on how many units ran before it (`status-10.md` §1.13). The
+reading (Δ against c2's step 0, below / as / above) is `p10_r2_ladder.py`'s.
+
 Run:
-    python tools/run/p10_partition_function.py --out data/analysis/p10_f12_z.json
+    python tools/run/p10_partition_function.py --labels <dir> --column c3 --out <file>
+    python tools/run/p10_partition_function.py --old-partition --out data/analysis/p10_f12_z.json
 """
 import argparse
+import hashlib
 import json
 import os
 import sys
 import time
+import zlib
 from collections import defaultdict
 from pathlib import Path
 
@@ -107,6 +123,7 @@ from core.parking import (
 )
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
 from tools.run.p10_anchor import checkpoint_of
+from tools.run.p10_token_composition import OUTSIDE
 
 N_PERMUTATIONS = 2000
 
@@ -239,6 +256,134 @@ def measure_directory(run_dir: Path, rng) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# The re-read (R2): one label-source column (docstring, "THE RE-READ")
+# ---------------------------------------------------------------------------
+
+def unit_rng(seed: int, *parts) -> np.random.Generator:
+    """One generator per unit, keyed by its identity (step, prompt, layer, beta)."""
+    return np.random.default_rng([int(seed), *(zlib.crc32(str(p).encode()) for p in parts)])
+
+
+def members_rest(values: np.ndarray, labels: np.ndarray, rng) -> dict:
+    """``standardised_difference`` of a column's members (label ≥ 0) against the rest
+    (−1), over the column's domain (``OUTSIDE`` dropped), with its two-sided
+    permutation p among the domain's tokens. ``None`` when it is undefined."""
+    lab = np.asarray(labels)
+    v = np.asarray(values, dtype=np.float64)
+    if lab.size != v.size:
+        raise ValueError(f"labels ({lab.size}) and values ({v.size}) disagree")
+    dom = lab != OUTSIDE
+    v, lab = v[dom], lab[dom]
+    diff = standardised_difference(v, lab)
+    if not np.isfinite(diff):
+        return None
+    draws = label_permutation_null(v, lab, standardised_difference,
+                                   n_permutations=N_PERMUTATIONS, rng=rng)
+    res = p_from_null_tolerant(diff, draws, alternative="two-sided")
+    return {"n_members": int((lab >= 0).sum()), "n_rest": int((lab == -1).sum()),
+            "stat": round(float(diff), 4), "p": float(res["p_value"]),
+            "degenerate": bool(res["degenerate_null"])}
+
+
+def reread_run(run_dir: Path, labels: dict, step: int, prompt: str, seed: int) -> list:
+    """Per readable layer and beta: corrected log Z over every stored position, members −
+    rest on the column's domain."""
+    acts = np.load(Path(run_dir) / "activations.npz")["activations"]
+    rows = []
+    for layer, lab in sorted(labels.items()):
+        if len(lab) != acts.shape[1]:
+            raise ValueError(f"{run_dir}: layer {layer} has {len(lab)} labels, {acts.shape[1]} tokens")
+        X = np.asarray(acts[layer], dtype=np.float64)
+        for beta in BETAS:
+            corrected = log_position_corrected_partition_function(
+                log_partition_function(X, beta, causal=True))
+            r = members_rest(corrected, lab, unit_rng(seed, step, prompt, layer, beta))
+            if r is not None:
+                rows.append({"layer": int(layer), "beta": float(beta), **r})
+    return rows
+
+
+def reread_summary(rows: list) -> dict:
+    """Mean statistic, median p and count over a set of units (a step, or a step and beta)."""
+    st = [r["stat"] for r in rows]
+    ps = [r["p"] for r in rows]
+    if not rows:
+        return {"n": 0, "mean": None, "median_p": None, "frac_below_05": None}
+    return {"n": len(rows), "mean": round(float(np.mean(st)), 4),
+            "median_p": round(float(np.median(ps)), 4),
+            "frac_below_05": round(float(np.mean(np.array(ps) < 0.05)), 4)}
+
+
+def reread_args(ap: argparse.ArgumentParser) -> argparse.Namespace:
+    """F1's and F12's arguments: ``--labels``/``--column`` or ``--old-partition``, else refuse."""
+    from tools.run.p10_label_source import add_reader_args
+    ap.add_argument("--old-partition", action="store_true",
+                    help="read the stored HDBSCAN labels (the published record), not the re-read")
+    ap.add_argument("--jobs", type=int, default=1, help="re-read only: runs in parallel")
+    add_reader_args(ap)
+    args = ap.parse_args()
+    if args.old_partition:
+        if args.labels or args.column:
+            ap.error("--old-partition reads the stored labels; drop --labels/--column")
+        return args
+    if args.labels is None or args.column is None:
+        ap.error("refusing: the re-read reads one label-source column, --labels <dir> --column <c> "
+                 "(p10_cluster_function/design-10.md); --old-partition reads the stored labels")
+    if args.root != ap.get_default("root") or args.pattern != ap.get_default("pattern") or args.limit \
+            or args.allow_holdout or args.v1_only or args.out == ap.get_default("out"):
+        ap.error("--labels fixes the input set (7 v1 passages, 18 steps): no --root, --pattern, --limit, "
+                 "--allow-holdout or --v1-only; --out must name a new file")
+    return args
+
+
+def reread(args, measure, context: str) -> dict:
+    """Run ``measure(run_dir, labels, step, prompt, seed) -> rows`` over one column, per
+    (step, prompt), in ``args.jobs`` processes; returns the record's common part."""
+    from concurrent.futures import ProcessPoolExecutor
+    from tools.run.p10_label_source import LEARNED_SPLIT, LEARNED_STEP, MODELS, reader_input
+    src = reader_input(args.labels, args.column)
+    # reader_input reads the step files that exist; the re-read promises every step (CodeRabbit, #147)
+    want = {LEARNED_STEP} if args.column in LEARNED_SPLIT else set(MODELS)
+    got = {f"step{s}" for s in src["records"]}
+    if got != want:
+        raise SystemExit(f"refusing: {args.labels} column {args.column} has steps {sorted(got ^ want)} "
+                         f"missing or extra; the re-read reads all {len(want)}")
+    refuse_held_out(sorted(set(src["runs"].values())), context=context)
+    print(f"column {args.column}: {len(src['runs'])} runs, readable records per step "
+          + " ".join(f"{s}:{r[1]}/{r[0]}" for s, r in src["records"].items()), flush=True)
+    keys = [k for k, lab in sorted(src["labels"].items()) if lab]
+    jobs = [(src["runs"][k], src["labels"][k], k[0], k[1], args.seed) for k in keys]
+    if args.jobs > 1:
+        with ProcessPoolExecutor(args.jobs) as ex:
+            out = list(ex.map(measure, *zip(*jobs)))
+    else:
+        out = [measure(*j) for j in jobs]
+    runs = dict(zip(keys, out))
+    inputs = sorted((f"{s}|{k}", str(p)) for (s, k), p in src["runs"].items())
+    return {"label_source": src["meta"], "column": args.column,
+            "records_readable": {s: {"n": r[0], "readable": r[1]} for s, r in src["records"].items()},
+            "inputs_sha256": hashlib.sha256(json.dumps(inputs).encode()).hexdigest()[:12],
+            "inputs": inputs, "seed": args.seed, "n_permutations": N_PERMUTATIONS,
+            "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "runs": {f"{s}|{k}": rows for (s, k), rows in runs.items()}}
+
+
+def reread_by_step(runs: dict, by_beta: bool = False) -> dict:
+    """Per step (and per beta), `reread_summary` over every unit of every prompt."""
+    by: dict = defaultdict(list)
+    for key, rows in runs.items():
+        s = int(key.split("|")[0])
+        for r in rows:
+            by[(s, r["beta"]) if by_beta else s].append(r)
+    if by_beta:
+        out: dict = {}
+        for (s, b), rs in sorted(by.items()):
+            out.setdefault(s, {})[str(b)] = reread_summary(rs)
+        return out
+    return {s: reread_summary(rs) for s, rs in sorted(by.items())}
+
+
 def _summarise(rows: list) -> dict:
     def m(key):
         v = np.array([r[key] for r in rows
@@ -296,7 +441,23 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_f12_z.json"))
     add_holdout_args(ap)
-    args = ap.parse_args()
+    args = reread_args(ap)
+    if args.labels:
+        rec = reread(args, reread_run, "p10_partition_function")
+        record = {"schema": "p10_r2_f12/1",
+                  "row": "F12 re-read on one ladder column: members − rest in corrected log Z",
+                  "tier": "1 (exploratory, unregistered)", "betas": BETAS,
+                  "statistic": "standardised_difference of corrected log Z (Z over every stored position), "
+                               "members against the kept tokens in no group; two-sided permutation p "
+                               "among the kept tokens",
+                  "by_step": reread_by_step(rec["runs"]),
+                  "by_step_beta": reread_by_step(rec["runs"], by_beta=True), **rec}
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps(record, indent=1))
+        print(f"wrote {args.out}")
+        for s, x in record["by_step"].items():
+            print(f"  step {s}: {x}")
+        return
 
     root = Path(args.root)
     candidates, holdout = refuse_held_out(

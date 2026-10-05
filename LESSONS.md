@@ -201,6 +201,12 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-05, Phase 10 R2: the ladder's check of c0 against the published F1 / F12 records
+  matched units by (timestamp, run dir) and printed "0 of 0 units identical", which reads as a
+  pass. The published records were made on the earlier WDS sweep, not Stage 0, so no key
+  matched. Caught on reading the line; matched by run-dir name, 11,936 of 11,936 identical.
+  Rule: a comparison reports how many units it compared, and zero compared is a failure
+  (`p10_r2_ladder.published_check` now refuses on zero).
 - 2026-10-02, a pool that hangs instead of failing: 1d unit 2's runner
   (`arch_null.py`) copied unit 1's fork pool, forked after torch's forward
   pass, and added KMeans (`ci2`). Every worker sat at load 0 for 10 minutes
@@ -449,6 +455,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-05, Phase 10 R2: `design-10.md` froze F1's re-read rule as "negative iff median p ≤
+  0.05 and the mean is negative" and stated §1.3's finding as "the 32–512 window". Applied to the
+  published record itself, the rule gives negative from 32 to 54000: the window was a magnitude
+  reading (−0.29 to −0.49 against −0.15 or smaller), so "does the row hold" was asked with a rule
+  that could not reproduce the row on its own data. It surfaced only when c0 disagreed with the
+  claim, after the run. Rule: before freezing a re-read rule, apply it to the published record
+  and check it returns the published label (`status-10.md` §1.16).
 - 2026-10-04, 1d unit 3, step 1 under option 4 (Blocked 19): the replacement gate (50
   Gaussians of trained clouds through (b) = `p_gauss` ∧ re-init rank) passed 0 of 50, but
   on the gating main arm it was also 0 of 50 **without** (b): no Gaussian held 3 stable
@@ -828,6 +841,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-05, Phase 10 R2: the author read F1's labels going from "negative" (c0) to "none"
+  (c3) at 1000–54000 as "the late tail goes". The label is a p-value and c3's records hold a
+  fifth of c0's members (median 50 against 252); the effect sizes were the same (−0.02 to −0.13
+  against −0.01 to −0.15). `/challenge-pr` on #147 caught it from the records. Rule: when a
+  column changes the sample size, compare effect sizes before reading a significance label's
+  change as an effect's (`status-10.md` §1.16).
 - 2026-10-05, #142 (1d unit 4): the pass rule compared trained against step 0
   (seed 0's learned-content count above every step-0 init's), and the write-up
   read its pass as "the definition (moves ∧ learned) finds known content". The

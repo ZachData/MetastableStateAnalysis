@@ -310,3 +310,21 @@ def test_none_absorbed_fractions_are_dropped_not_scored_as_zero():
     got = aggregate([d])
     assert got["mean_swap_absorbed_fraction"] == pytest.approx(0.0)
     assert got["n_boundaries"] == 2
+
+
+# --- the re-read (R2) ---------------------------------------------------------
+
+def test_reread_reads_boundary_l_with_layer_ls_labels_and_skips_the_last(tmp_path):
+    from tools.run.p10_partition_function import standardised_difference
+    from tools.run.transport import reread_run
+    n = 20
+    X = _unit(np.random.default_rng(5).normal(size=(3, n, 4)))
+    np.savez(tmp_path / "activations.npz", activations=X)
+    lab = np.full(n, -1)
+    lab[:6] = 0
+    lab[[18, 19]] = -2
+    rows = reread_run(tmp_path, {1: lab, 2: lab}, 64, "wiki", 0)
+    assert [r["layer"] for r in rows] == [1]          # layer 2 is the last: no boundary
+    step = per_particle_step(X[1], X[2])
+    assert rows[0]["stat"] == round(standardised_difference(step[:18], lab[:18]), 4)
+    assert (rows[0]["n_members"], rows[0]["n_rest"]) == (6, 12)

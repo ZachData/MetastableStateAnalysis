@@ -47,6 +47,11 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > and §1.10 keep their labels where quoted; c0's 64–512 embedding dip is the old partition's;
 > adjacency's Δ turns on the step-0 baseline (`STATE.md` Blocked 24, which R2's F12 gap shares). **Next: R2** (F1 + F12's gap, then §1.5) after R1's
 > PR merges, with Blocked 24 answered and the 32 → 64 c2 / c3 switch handled inside F1's window.
+>
+> **R2 done, 2026-10-05 (`status-10.md` §1.16; its title is the summary).** Blocked 24 answered
+> by the user. `transport.py` and `p10_partition_function.py` take `--labels/--column`, one
+> generator per unit; `tools/run/p10_r2_ladder.py` reads the ladder. F12's gap waits on `STATE.md`
+> Blocked 25. **Next: R3** (A0 under T4) after this PR merges; Blocked 25 does not gate it.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
@@ -713,7 +718,9 @@ before it.
   changed unit flips sign at step 32. Below-baseline `Z` lasts past 512 on both
   sweeps (§1.4's table now shows it).
 - **Per-directory seeds for the `p10_*` nulls** (discovery, `/challenge-pr` on
-  #97, 2026-09-25). `transport.py` and `p10_partition_function.py` seed one
+  #97, 2026-09-25). *Done for the re-read path of both readers at R2 (2026-10-05): one
+  generator per unit (`p10_partition_function.unit_rng`); `--old-partition` keeps the sweep-wide
+  one, so the published records reproduce.* `transport.py` and `p10_partition_function.py` seed one
   generator per sweep, so a unit's p depends on directory order and is not
   comparable across sweeps. Why: any per-unit p comparison between the two
   sweeps. Cost: seed from (seed, run_dir) in each runner; re-run changes every

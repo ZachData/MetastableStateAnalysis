@@ -285,3 +285,27 @@ def test_reader_input_learned_split_and_refusals(tmp_path, monkeypatch):
     (src / "step512.json").write_text(json.dumps(d))
     with pytest.raises(ls.LabelSourceError, match="refused prompts"):
         ls.reader_input(src, "c2")
+
+
+def test_f1_and_f12_refuse_without_a_column(monkeypatch):
+    # R2: both readers take --labels/--column or --old-partition, else refuse (argparse exit)
+    import sys
+    from tools.run import p10_partition_function as pf, transport as tr
+    for mod, name in ((pf, "p10_partition_function.py"), (tr, "transport.py")):
+        monkeypatch.setattr(sys, "argv", [name, "--out", "x.json"])
+        with pytest.raises(SystemExit):
+            mod.main()
+        monkeypatch.setattr(sys, "argv", [name, "--old-partition", "--column", "c3"])
+        with pytest.raises(SystemExit):
+            mod.main()
+
+
+def test_reread_refuses_a_label_source_missing_a_step(monkeypatch, tmp_path):
+    # reader_input reads the step files that exist; the R2 readers refuse unless all 18 are there
+    import argparse
+    from tools.run import p10_partition_function as pf
+    monkeypatch.setattr(ls, "reader_input", lambda src, col: {
+        "runs": {}, "labels": {}, "records": {0: [168, 15], 64: [168, 110]}, "meta": {}})
+    args = argparse.Namespace(labels=tmp_path, column="c3", jobs=1, seed=0)
+    with pytest.raises(SystemExit, match="missing or extra"):
+        pf.reread(args, pf.reread_run, "test")

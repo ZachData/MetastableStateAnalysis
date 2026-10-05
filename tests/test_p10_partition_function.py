@@ -313,3 +313,52 @@ def test_none_differences_are_dropped_not_scored_as_zero():
     assert got["n_units"] == 2
     assert got["clustered_minus_noise"]["n"] == 1
     assert got["mean_clustered_minus_noise"] == pytest.approx(0.2)
+
+
+# --- the re-read (R2): one label-source column -------------------------------
+
+from tools.run.p10_partition_function import members_rest, reread_by_step, reread_run, unit_rng  # noqa: E402
+from core.parking import log_partition_function, log_position_corrected_partition_function  # noqa: E402
+
+O = -2   # OUTSIDE
+
+
+def test_members_rest_reads_the_domain_only():
+    v = np.array([1.0, 2.0, 3.0, 4.0, 100.0, -100.0])
+    lab = np.array([0, 0, -1, -1, O, O])
+    r = members_rest(v, lab, _rng())
+    assert r["stat"] == round(standardised_difference(v[:4], lab[:4]), 4)
+    assert (r["n_members"], r["n_rest"]) == (2, 2)
+    # an OUTSIDE position is not "the rest": with no -1 the statistic is undefined
+    assert members_rest(v, np.array([0, 0, O, O, O, O]), _rng()) is None
+
+
+def test_unit_rng_is_keyed_by_the_unit_not_by_run_order():
+    a = unit_rng(0, 512, "wiki", 3, 1.0).random(3)
+    assert np.array_equal(a, unit_rng(0, 512, "wiki", 3, 1.0).random(3))
+    assert not np.array_equal(a, unit_rng(0, 512, "wiki", 4, 1.0).random(3))
+
+
+def test_reread_takes_z_over_every_position_and_the_statistic_on_the_domain(tmp_path):
+    n = 24
+    X = np.random.default_rng(3).normal(size=(2, n, 6))
+    X /= np.linalg.norm(X, axis=-1, keepdims=True)
+    np.savez(tmp_path / "activations.npz", activations=X)
+    lab = np.full(n, -1)
+    lab[2:8] = 0
+    lab[[0, 1]] = O          # position 0 and one more off the domain
+    rows = reread_run(tmp_path, {1: lab}, 512, "wiki", 0)
+    assert len(rows) == len(BETAS) and {r["layer"] for r in rows} == {1}
+    for r in rows:
+        corr = log_position_corrected_partition_function(log_partition_function(X[1], r["beta"], causal=True))
+        dom = lab != O
+        assert r["stat"] == round(standardised_difference(corr[dom], lab[dom]), 4)
+    assert rows == reread_run(tmp_path, {1: lab}, 512, "wiki", 0)   # same unit, same p
+
+
+def test_reread_by_step_pools_prompts_and_betas():
+    runs = {"0|a": [{"beta": 1.0, "stat": 0.2, "p": 0.01}, {"beta": 2.0, "stat": 0.4, "p": 0.5}],
+            "0|b": [{"beta": 1.0, "stat": 0.6, "p": 0.02}], "64|a": []}
+    by = reread_by_step(runs)
+    assert by[0]["n"] == 3 and by[0]["mean"] == pytest.approx(0.4) and by[0]["median_p"] == 0.02
+    assert reread_by_step(runs, by_beta=True)[0]["1.0"]["n"] == 2
