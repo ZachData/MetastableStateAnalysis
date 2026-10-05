@@ -699,12 +699,12 @@ def diagnose_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
     inits, reinits = model_ids("init"), model_ids("reinit")
-    keys = _keys(args.prompts)
-    recs, _ = load_run(args.out, inits, keys)
-    refs_recs, _ = load_run(args.ref, prompts=keys)
+    prompts = _keys(args.prompts)
+    recs, _ = load_run(args.out, inits, prompts)
+    refs_recs, _ = load_run(args.ref, prompts=prompts)
     keys = ("window", "rank_free", "k2", "stable", "gauss", "rank", "admissible")
     tab = {a: {b: {} for b in BANDS} for a in ARMS}
-    for k in keys:
+    for k in prompts:
         for L in LAYERS:
             refs = {a: np.stack([ref_values(refs_recs[m][k][L]["rows"][a]) for m in reinits]) for a in ARMS}
             for mid in inits:
