@@ -233,3 +233,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-04 | 1d unit 3 real-input reader step 1: built, pilot + resolution probe; step-0 clouds cannot fail the check (Blocked 19; batch not run; before /challenge-pr) | 38 | 175k | 4.6M | 47k | #139 |
 | 2026-10-04 | 1d Blocked 19 option 4: conjunction built, step-0 batch (117 min) + gate run, passes 0 of 50 (before /challenge-pr) | 46 | 164k | 5.3M | 36k | #140 |
 | 2026-10-05 | 1d Blocked 20 (a): trained reading run, 1 plateau in 1,680 clouds, grid resolution diagnosed (Blocked 21; before /challenge-pr) | 46 | 143k | 5.0M | 35k | #141 |
+| 2026-10-05 | 1d Blocked 21 decided (keep, (a)); unit 4 on the designed prompts: group route passes 2 of 3, reader 10 of 240 (before /challenge-pr) | 75 | 233k | 12.1M | 63k | #142 |
+  Over 2× the median: a decision, two runners parametrised, a new readout, two batches (~30 and
+  ~75 min) and two fixes found by the runs, in one session; ~12 calls were monitor milestones and
+  expiries. One end-of-batch watcher per batch would have done (as #131's note already says).

@@ -345,6 +345,17 @@ class TestTrainedReading:
         with pytest.raises(SystemExit, match="different token sets"):
             sr.trained_cmd(["--out", str(out), "--ref", str(ref)])
 
+    def test_diagnose_runs_on_a_finished_reading(self, tmp_path, monkeypatch):
+        # Unit 4 found `diagnose` iterating its condition names as prompts (no test ran it).
+        monkeypatch.setattr(sr, "V1_PASSAGES", ("wiki_paragraph",))
+        monkeypatch.setattr(sr, "LAYERS", (1,))
+        out, ref = tmp_path / "t", tmp_path / "r"
+        self._write(out, INITS, "step143000")
+        self._write(ref, INITS + REINITS, "step0")
+        assert sr.diagnose_cmd(["--out", str(out), "--ref", str(ref)]) == 0
+        tab = json.loads((out / "diagnose.json").read_text())["table"]
+        assert set(tab) == set(ss.ARMS) and set(tab["main"]) == set(sr.BANDS)
+
     def test_point_failures_flags_a_free_rank_term_and_each_condition(self):
         rows = [_row(1.0, p=0.01), _row(1.0, stability=0.5, p=0.01), _row(1.0, p=0.5)]
         refs = np.full((40, 3), -np.inf)
