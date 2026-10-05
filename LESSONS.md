@@ -953,6 +953,14 @@ a wrong premise, the check inherits it.
   chose without it. `/challenge-pr` found it. Rule: a rule change is replayed on
   the seen seeds for **every** reported reading, the negatives included, before
   the options table goes to the user.
+- 2026-10-05 (#141): the trained reading found 1 plateau in 1,680 clouds, and a
+  scratch script counting runs of admissible points (with no breakdown of which
+  condition failed) led the write-up to "the grid is why", which then shaped Blocked
+  21's options. `/challenge-pr` broke it down per point: the window's middle point (r ≈
+  0.9) fails because the re-inits match the trained clouds there, not because of
+  resolution. Rule: a diagnosis of *why* an instrument found nothing comes from a
+  committed per-condition breakdown (here `scale_real diagnose`), not from a count of
+  what passed.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

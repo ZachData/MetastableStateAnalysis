@@ -416,10 +416,10 @@ run). The reader is unchanged; every reading states its window.
 | order and cost | pilot `init:0` × one prompt × L1–24 and open it (rows populated, readable points present) before the rest; ~30 min on 14 workers (the gate: 50 clouds in 87 s). Then stop and report; unit 4 is next | the populated-not-present rule; the user's direction |
 
 *Ran 2026-10-05: 1 main-arm plateau in 1,680 clouds (L17–24, not replicated), 0 on size 2.
-Admissible points sit alone inside the ~3-point window: 9 clouds have 3 in a row, so at
-this grid the reader can almost never fire on trained clouds. No partition is claimed.
-`status-1d.md` "The trained reading"; whether unit 4 runs on this reader is `STATE.md`
-Blocked 21.*
+At the window's middle (r ≈ 0.90) the re-inits match or beat the trained clouds in all but
+6–12 of 560 per band: the "none" outcome, weak evidence of no large structure beyond the
+re-inits at r 0.79–1.02. The one plateau lies where the rank term is free, tested by
+`p_gauss` alone. `status-1d.md` "The trained reading"; next is `STATE.md` Blocked 21.*
 
 ### Unit 4: positive controls
 

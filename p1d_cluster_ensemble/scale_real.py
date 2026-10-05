@@ -658,6 +658,57 @@ def trained_summary(cells: Sequence[Dict]) -> Dict:
     return out
 
 
+def point_failures(rows: Sequence[Dict], refs: np.ndarray) -> List[Dict]:
+    """
+    Per grid point of one cloud and arm: whether it is in the `window`, whether the rank
+    term is **free** there (every reference without a cluster of the arm's size, so
+    ``p_rank`` = 1/(N + 1) whatever the cloud), and each admissibility condition alone.
+    """
+    win = set(window(rows, refs)["points"])
+    out = []
+    for g, r in enumerate(rank_rows(rows, refs)):
+        col = refs[:, g]
+        col = col[~np.isnan(col)]
+        out.append({"g": g, "r": r["r"], "window": g in win, "rank_free": bool(col.size and np.all(np.isneginf(col))),
+                    "k2": r["k_sub"] >= 2, "stable": r["stability"] is not None and r["stability"] >= 0.75,
+                    "gauss": r["p_gauss"] <= ALPHA, "rank": r["informative"] and r["p_rank"] <= ALPHA,
+                    "admissible": (r["k_sub"] >= 2 and r["stability"] is not None and r["stability"] >= 0.75
+                                   and r["informative"] and r["p"] <= ALPHA)})
+    return out
+
+
+def diagnose_cmd(argv: Optional[Sequence[str]] = None) -> int:
+    """Beside the trained reading: per arm, band and grid point, how many window clouds meet each condition."""
+    ap = argparse.ArgumentParser(prog="scale_real diagnose")
+    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--ref", type=Path, required=True)
+    args = ap.parse_args(argv)
+    inits, reinits = model_ids("init"), model_ids("reinit")
+    recs, _ = load_run(args.out, inits)
+    refs_recs, _ = load_run(args.ref)
+    keys = ("window", "rank_free", "k2", "stable", "gauss", "rank", "admissible")
+    tab = {a: {b: {} for b in BANDS} for a in ARMS}
+    for k in V1_PASSAGES:
+        for L in LAYERS:
+            refs = {a: np.stack([ref_values(refs_recs[m][k][L]["rows"][a]) for m in reinits]) for a in ARMS}
+            for mid in inits:
+                for a in ARMS:
+                    for pt in point_failures(recs[mid][k][L]["rows"][a], refs[a]):
+                        if not pt["window"]:
+                            continue
+                        row = tab[a][band(L)].setdefault(round(pt["r"], 3), {x: 0 for x in keys})
+                        for x in keys:
+                            row[x] += bool(pt[x])
+    (args.out / "diagnose.json").write_text(json.dumps({"git": _git_head(), "table": tab}, indent=1) + "\n")
+    print("per window point (clouds in the window at that r): " + ", ".join(keys[1:]))
+    for a in ARMS:
+        for b in BANDS:
+            for r, row in sorted(tab[a][b].items()):
+                print(f"  {a:5s} {b:7s} r {r:.3f}: window {row['window']:4d} | "
+                      + " ".join(f"{x} {row[x]:4d}" for x in keys[1:]))
+    return 0
+
+
 def _meta(out: Path, mid: str) -> Dict:
     return json.loads(_paths(out, mid, V1_PASSAGES[0])[0].read_text())["meta"]
 
@@ -774,7 +825,7 @@ def resolution_cmd(argv: Optional[Sequence[str]] = None) -> int:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"run": run_cmd, "read": read_cmd, "gate": gate_cmd, "trained": trained_cmd,
+    cmds = {"run": run_cmd, "read": read_cmd, "gate": gate_cmd, "trained": trained_cmd, "diagnose": diagnose_cmd,
             "resolution": resolution_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: scale_real {{{','.join(cmds)}}} ...", file=sys.stderr)

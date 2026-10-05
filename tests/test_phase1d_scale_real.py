@@ -344,3 +344,14 @@ class TestTrainedReading:
         self._write(out, INITS, "step143000", sha="y")
         with pytest.raises(SystemExit, match="different token sets"):
             sr.trained_cmd(["--out", str(out), "--ref", str(ref)])
+
+    def test_point_failures_flags_a_free_rank_term_and_each_condition(self):
+        rows = [_row(1.0, p=0.01), _row(1.0, stability=0.5, p=0.01), _row(1.0, p=0.5)]
+        refs = np.full((40, 3), -np.inf)
+        refs[:, 2] = 0.0
+        pts = sr.point_failures(rows, refs)
+        assert [p["rank_free"] for p in pts] == [True, True, False]
+        assert [p["stable"] for p in pts] == [True, False, True]
+        assert [p["gauss"] for p in pts] == [True, True, False]
+        assert [p["admissible"] for p in pts] == [True, False, False]
+        assert all(p["window"] for p in pts)

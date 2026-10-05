@@ -2008,7 +2008,7 @@ step 0, which does not yet separate learned content from learned position.
 | is it learned? | yes, beyond 40 re-inits and replicating across 10 seeds in every band; per group concentrated early (centred size 2, replicating: 170 / 41 / 17 by band), not runs (6 of 515 contiguous) but tighter in position than chance (31 % in the tightest 5 % of random spreads; position is unit 1's test), mostly lexical-semantic classes ({was, is, were}, {year, years, months}) present from L1, 15 bulk. Which exist at L0 (the embedding) and which form with depth is open | "Unit 2: the trained cells" |
 | the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; Phase 10 uses the set without it (user, 2026-10-04), the replicating set stays the cross-seed definition. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
-| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Under Blocked 17 on fresh present seeds: 7 of 10 again (coarse 10, fine 7). **Accepted as measured (Blocked 18, option 1):** a found plateau's partition is the claim, a missing one weak evidence; real input waits on a specificity check among the inits. **That check, built and piloted: step-0 clouds' merges all fall within r ≈ 0.5–1.0, so it cannot fail (Blocked 19)**. **Under option 4 ((b) = Gaussian p ∧ re-init rank; gate on 50 Gaussians of trained clouds): passes, 0 of 50; on the main arm the plateau rule rejects them before (b) (0 of 50 without it), so (b) is tested on size 2 only (29 → 0)**. **Trained reading (Blocked 20, (a)): 1 plateau in 1,680 clouds (main L17–24, unreplicated), 0 on size 2; admissible points sit alone in a ~3-point window, 9 clouds have 3 in a row: the grid, not evidence of absence (Blocked 21)** | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11"; "Unit 3 on fresh seeds"; "The real-input reader, step 1: built"; "… under option 4"; "The trained reading"; `design-1d.md` "Blocked 18 decided" |
+| does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Under Blocked 17 on fresh present seeds: 7 of 10 again (coarse 10, fine 7). **Accepted as measured (Blocked 18, option 1):** a found plateau's partition is the claim, a missing one weak evidence; real input waits on a specificity check among the inits. **That check, built and piloted: step-0 clouds' merges all fall within r ≈ 0.5–1.0, so it cannot fail (Blocked 19)**. **Under option 4 ((b) = Gaussian p ∧ re-init rank; gate on 50 Gaussians of trained clouds): passes, 0 of 50; on the main arm the plateau rule rejects them before (b) (0 of 50 without it), so (b) is tested on size 2 only (29 → 0)**. **Trained reading (Blocked 20, (a)): 1 plateau in 1,680 clouds (main L17–24, unreplicated), 0 on size 2; at the window's middle (r ≈ 0.90) the re-inits match or beat the trained clouds in all but 6–12 of 560 per band, so: weak evidence of no large structure beyond the re-inits at r 0.79–1.02; the one plateau is where the rank term is free (Blocked 21)** | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11"; "Unit 3 on fresh seeds"; "The real-input reader, step 1: built"; "… under option 4"; "The trained reading"; `design-1d.md` "Blocked 18 decided" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -2997,7 +2997,7 @@ specificity there if it were changed. (4) **Taken, code:** `read` wrote `pass_al
 p1d_cluster_ensemble.scale_real run --out <dir> --workers 14` (~2 h), then `... scale_real gate
 --out <dir> --workers 14` and `... scale_real read --out <dir>`.
 
-### The trained reading: one plateau in 1,680 clouds, and the grid is why (2026-10-05; branch `claude/p1d-trained-reading`)
+### The trained reading: one plateau in 1,680 clouds; at r ≈ 0.9 the re-inits match it (2026-10-05; branch `claude/p1d-trained-reading`)
 
 **Decided:** Blocked 20, option (a) (user, 2026-10-05). Rules: `design-1d.md` "The trained
 reading", committed (`fec4ff7`) before the run. **Built:** `run --step step143000`,
@@ -3019,38 +3019,39 @@ on 14 workers, 0 refused trees; pilot (`init:0`, `camus_letranger`) opened first
 
 The one plateau: `init:8`, `sullivan_ballou`, L21, r 0.37–0.47, k 3–4: two large mixed
 groups (37 and 26 tokens, content words vs function words and suffixes) and one of 4
-truncated word-starts (`fal`, `dishon`, `commun`, `dilig`). Replication: no (prompt, layer)
-cell has plateaus in two inits.
+truncated word-starts (`fal`, `dishon`, `commun`, `dilig`). It lies where every re-init has no
+main-arm cluster (the rank term is free, p = 1/41), so `p_gauss` alone tested it.
+Replication: no (prompt, layer) cell has plateaus in two inits.
 
-**Diagnosis (beside, not a rule; scratch re-read of the stored rows).** Admissible points
-(k ≥ 2, stability ≥ 0.75, both p ≤ α, informative) are not rare: 285 / 407 / 504 main-arm
-points by band. But they sit alone, mostly at r ≈ 0.79 or 1.02:
+**Per point (beside, not a rule; `scale_real diagnose`, `diagnose.{json,log}`):** window
+clouds at each `r`, and how many meet each condition. Main arm, the points every cloud has:
 
-| longest run of admissible points per cloud, continuity ignored | 0 | 1 | 2 | ≥ 3 |
-|---|---|---|---|---|
-| main L1–8 | 362 | 155 | 37 | 6 |
-| main L9–16 | 240 | 320 | 0 | 0 |
-| main L17–24 | 206 | 345 | 6 | 3 |
-| size 2 (all bands) | 1,136 | 535 | 9 | 0 |
+| main arm, r | window | rank term free | stable ≥ 0.75 | `p_gauss` ≤ α | rank ≤ α | admissible |
+|---|---|---|---|---|---|---|
+| L1–8: 0.79 / **0.90** / 1.02 | 440 / 560 / 260 | 110 / 0 / 0 | 432 / **174** / 225 | 221 / 559 / 220 | 187 / **12** / 243 | 112 / **12** / 96 |
+| L9–16: 0.79 / **0.90** / 1.02 | 560 / 560 / 460 | 0 / 0 / 0 | 490 / **66** / 397 | 281 / 541 / 363 | 289 / **6** / 390 | 224 / **1** / 167 |
+| L17–24: 0.79 / **0.90** / 1.02 | 560 / 560 / 540 | 0 / 0 / 0 | 248 / **97** / 451 | 360 / 470 / 323 | 416 / **10** / 307 | 207 / **4** / 216 |
+| L17–24: 0.19–0.54 (10 points) | 1–354 each | **all but 46** | most | 0–25 each | all | 0–25 each |
 
-Nine clouds reach `MIN_RUN` = 3; continuity (i′) removes 8. **At this grid the reader can
-almost never fire on trained clouds:** the window holds about 3 grid points (#140's review),
-and a plateau needs all 3 admissible in a row. Classified as a **confound of this reading**
-(the instrument's resolution, predicted by #140 finding 1 and now measured), not a defect: the
-rules ran as written. At L17–24 the binding term is `p_gauss`: rank alone gives a plateau in
-170 clouds, `p_gauss` alone in 6, the conjunction in 1.
+**What fails is the window's middle point, r ≈ 0.90, and not for resolution:** there the
+trained clouds' stability is below the re-inits' in all but 6–12 of 560 clouds per band, and
+below 0.75 in most. r ≈ 0.9 is where the re-inits' own merge structure sits ("step 1:
+built"), the one scale where the rank term tests something. So admissible points at 0.79
+and 1.02 cannot join. *Corrected after `/challenge-pr` on #141, finding 1:* the first write-up
+said "the grid is why"; a finer grid would add points in the same failing range. At
+L17–24, r 0.19–0.54 is readable only because the rank term is free there (finding 2); there
+(b) is `p_gauss` alone, and it passes 0–25 clouds per point.
 
-**What this means, under the outcomes written before the run.** "None in a band": weak
-evidence of no large structure beyond the re-inits inside the readable range, nothing finer;
-here even that is weaker than written, because a run of 3 admissible points is rare even
-where single points pass. No band is mostly unreadable on the main arm (L1–8 is 290 of 560,
-the lowest). **No partition is claimed** (the one plateau does not replicate). Unit 4's designed
-prompts would meet the same window; whether to run them on this reader is `STATE.md`
-Blocked 21.
+**What this means, under the outcomes written before the run.** "None in a band" holds for
+L1–8 and L9–16: **weak evidence of no large structure beyond the re-inits at r 0.79–1.02**,
+nothing finer. L17–24 has one plateau, and under the rules **its partition is the claim**
+(at r 0.37–0.47, tested by `p_gauss` alone, not replicated in any other init; replication is
+reported, not a rule). Whether that one plateau carries weight is the user's (`STATE.md`
+Blocked 21). No band is mostly unreadable (L1–8 main is 290 of 560, the lowest).
 
 **Re-run** (worktree root, local-box env): `python -m p1d_cluster_ensemble.scale_real run
 --step step143000 --out <dir> --workers 14` (~28 min), then `... scale_real trained --out
-<dir> --ref <step-0 batch dir>` (~2 min).
+<dir> --ref <step-0 batch dir>` (~2 min) and `... scale_real diagnose` (same arguments).
 
 ## Deleted and restored (was `FROZEN.md`)
 
