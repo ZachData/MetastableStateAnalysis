@@ -243,3 +243,7 @@ running median of the rows above it gets a line under the table saying why.
   Over 2× the median: a build, a ~2 h batch watched in-session (≈ 15 calls were waits and
   monitor events), the full reads of `move_text.py` (33 KB) and `design-10.md` that the build
   needed, and a GPU probe the user asked for mid-unit.
+| 2026-10-05 | Phase 10 re-read R1: §1.7/§1.9/§1.10 down the ladder (before /challenge-pr) | 85 | 282k | 16.5M | 74k | #146 |
+  Over 2× the median: full reads of the three readers (~1,200 lines) and their tests to wire
+  them, two batches watched in-session (the first at `OMP_NUM_THREADS=1` did not reproduce c0
+  and was re-run, 32 min; `LESSONS.md` 3), and wide ladder printouts to check each claim.

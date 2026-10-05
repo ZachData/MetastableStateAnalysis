@@ -228,3 +228,60 @@ def test_build_resume_refuses_when_a_unit1_record_changed(tmp_path, capsys):
     rec.write_text(json.dumps(u1))
     assert ls.build(args) == 1
     assert "refusing" in capsys.readouterr().err
+
+
+def test_outside_is_the_readers():
+    from tools.run import p10_token_composition as tc
+    assert ls.OUTSIDE == tc.OUTSIDE and ls.OUTSIDE < -1
+
+
+def _source(tmp_path, steps=("step512", ls.LEARNED_STEP)):
+    u1, run, kept = _fixture(tmp_path)
+    lr = {}
+    for lay in u1["layers"]:
+        if lay["frame"] == "centred":
+            lr[("p", lay["layer"])] = {frozenset(g["offsets"]): "learned only" for g in lay["mcs"]["2"]["groups"]}
+    src = tmp_path / "labels"
+    src.mkdir()
+    for step in steps:
+        rec = ls.build_prompt(step, "p", u1, run, lr)
+        (src / f"{step}.json").write_text(json.dumps({"meta": {"git": "x"}, "prompts": {"p": rec}, "refused": {}}))
+    return src, run, kept
+
+
+def test_reader_input_domain_and_readability(tmp_path):
+    src, run, kept = _source(tmp_path)
+    r = ls.reader_input(src, "c2")
+    assert r["runs"] == {(512, "p"): run, (143000, "p"): run}
+    lab = r["labels"][(512, "p")][3]
+    assert lab.size == 40 and set(np.flatnonzero(lab != ls.OUTSIDE)) == set(kept.tolist())
+    _, want = ls.load_column(src, "step512", "p", 3, "c2")
+    assert np.array_equal(lab[kept], want)
+    assert r["records"][512] == [24, 24]                  # c2: 12 members, 18 rest
+    c3 = ls.reader_input(src, "c3")                       # c3: 6 members, unreadable, counted
+    assert c3["records"][512] == [24, 0] and c3["labels"][(512, "p")] == {}
+    c0 = ls.reader_input(src, "c0")                       # every position in one cluster: no rest
+    assert c0["records"][512] == [24, 0]
+
+
+def test_reader_input_learned_split_and_refusals(tmp_path, monkeypatch):
+    src, _, kept = _source(tmp_path)
+    monkeypatch.setattr(ls, "readable", lambda lab: True)   # c3's one group has 6 members here
+    c3 = ls.load_column(src, ls.LEARNED_STEP, "p", 3, "c3")[1]
+    assert (c3 >= 0).sum() == 6
+    yes, no = (ls.reader_input(src, c) for c in ls.LEARNED_SPLIT)
+    assert set(yes["runs"]) == {(143000, "p")} and list(yes["records"]) == [143000]
+    assert np.array_equal(yes["labels"][(143000, "p")][3][kept], c3)          # learned: all of c3
+    assert (no["labels"][(143000, "p")][3][kept] == -1).all()
+    d = json.loads((src / f"{ls.LEARNED_STEP}.json").read_text())
+    d["prompts"]["p"]["layers"]["3"]["learned"] = {"0": False}
+    (src / f"{ls.LEARNED_STEP}.json").write_text(json.dumps(d))
+    yes, no = (ls.reader_input(src, c) for c in ls.LEARNED_SPLIT)
+    assert (yes["labels"][(143000, "p")][3][kept] == -1).all()                # members join the rest
+    assert np.array_equal(no["labels"][(143000, "p")][3][kept], c3)
+    with pytest.raises(ls.LabelSourceError):
+        ls.reader_input(src, "c9")
+    d["refused"] = {"q": "no match"}
+    (src / "step512.json").write_text(json.dumps(d))
+    with pytest.raises(ls.LabelSourceError, match="refused prompts"):
+        ls.reader_input(src, "c2")

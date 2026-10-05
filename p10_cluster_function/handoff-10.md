@@ -40,6 +40,13 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > on c2 (too few readable c3 records), 64 on c3. **Next: R1** after R0's PR merges: wire
 > `p10_token_composition` (unique tokens), `p10_comembership` and `p10_lexical_carry` to
 > `--labels <dir> --column <c>`, with the ladder per row.
+>
+> **R1 done, 2026-10-05 (`status-10.md` §1.15).** The three readers take `--labels/--column`
+> and refuse without it; `tools/run/p10_r1_ladder.py` reads the ladder. c0 reproduces the
+> published records exactly. No row holds at every cell; the quoted class claims of §1.7, §1.9
+> and §1.10 keep their labels where quoted; c0's 64–512 embedding dip is the old partition's;
+> adjacency's Δ turns on the step-0 baseline (`STATE.md` Blocked 24, which R2's F12 gap shares). **Next: R2** (F1 + F12's gap, then §1.5) after R1's
+> PR merges, with Blocked 24 answered and the 32 → 64 c2 / c3 switch handled inside F1's window.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
@@ -651,6 +658,13 @@ before it.
 
 ## Parked
 
+- **The Stage 1 readers' float32 Grams depend on BLAS threads** (defect in a reader, found at
+  R1, 2026-10-05). `layer0_gram` and `p10_lexical_carry`'s own Gram are float32; 1 vs 16
+  threads moves entries by 5e-7, which flips exact ties (copies are bit-identical at layer 0)
+  in the percentiles and the kNN control: up to 0.27 in one record, no reading label
+  (`status-10.md` §1.15). Why: any run on another box or thread count is not bit-reproducible.
+  Cost: float64 Grams, which changes the published records at that size; or record the thread
+  count. Changes: nothing read so far. Not taken: c0 must reproduce the published records.
 - **"Learned" off step 143000** (R0, 2026-10-05). The label source writes unit 2's learned
   at 143000 only. Unit 2's bars are stored, but each group's `s` needs the Gaussian draws at
   that step's clouds (CPU, no forward pass; cost unmeasured, unit 2's admission ran per

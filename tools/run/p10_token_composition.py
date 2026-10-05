@@ -93,8 +93,21 @@ the tokenizer.json sha256.
 `HDD_1TB`), keyed by each run's `manifest.json` and refused if it mixes
 batteries; ``--prompts`` keeps named keys. Comparison: `p10_s1_compare.py`.
 
+THE RE-READ (`p10_cluster_function/design-10.md`, R1; added 2026-10-05)
+----------------------------------------------------------------------
+The reader refuses to run without ``--labels <R0 label source> --column <c>``,
+the re-read's one input (7 v1 passages, 18 steps, L1-24); ``--old-partition``
+names the stored-label input above, kept to reproduce §1.7, §1.8 and §1.11.
+Under a column, a position outside its domain (``OUTSIDE``; c0 and c0f have
+every position, the rest the kept tokens) is in no cell, so the rates are member
+shares among kept tokens; ``copies`` still counts over the whole prompt.
+Unreadable (prompt, layer) records (`design-10.md` "Readable") are left out
+and counted per step. Only the unique-token contrasts and rates are read
+(`design-10.md` "Row by row"); the ladder is read by `p10_r1_ladder.py`.
+
 Run:
-    python tools/run/p10_token_composition.py --v1-only
+    python tools/run/p10_token_composition.py --labels <dir> --column c3 --out <file>
+    python tools/run/p10_token_composition.py --old-partition --v1-only
 """
 import argparse
 import hashlib
@@ -127,6 +140,13 @@ MERGE_OFFSET = 245
 CONTRAST_FLOOR = 0.05
 CONTRAST_SUBSETS = {"non_repeat": ("unique", "first"),   # pre-stated
                     "unique": ("unique",)}                # post hoc, see docstring
+OUTSIDE = -2   # = p10_label_source.OUTSIDE (a test holds them equal; that module needs hdbscan)
+
+
+CRITERION = ("per step, non-repeat (pre-stated) and unique (post hoc) tokens at position > 0, per-prompt-per-layer "
+             "rates averaged: freq_contrast = rate(rank<1k) - rate(rank>=20k), class_contrast = "
+             "rate(whitespace+punct) - rate(word_start); consistent iff both > "
+             f"{CONTRAST_FLOOR}, against iff both < -{CONTRAST_FLOOR}, else unclear")
 
 
 class CompositionError(RuntimeError):
@@ -253,24 +273,37 @@ def token_features(tokens: np.ndarray, vocab: dict, added: set = frozenset()) ->
     return out
 
 
-def measure_run(run_dir: Path, vocab: dict, added: set = frozenset()) -> dict:
-    """{layer: {(feature, level, repeat): [n, n_clustered]}} plus provenance."""
-    prov = labels_provenance(run_dir)
-    if prov != "native":
-        raise CompositionError(f"{run_dir.name}: labels are {prov}, not native")
-    labels = read_labels(run_dir)
+def measure_run(run_dir: Path, vocab: dict, added: set = frozenset(), labels: dict = None) -> dict:
+    """{layer: {(feature, level, repeat): [n, n_clustered]}} plus provenance.
+
+    ``labels``: a re-read column (`p10_label_source.reader_input`), ``OUTSIDE`` off its
+    domain; positions outside are in no cell, and its readable layers only. Default: the
+    run's stored labels, checked as the docstring's INPUT says.
+    """
+    if labels is None:
+        prov = labels_provenance(run_dir)
+        if prov != "native":
+            raise CompositionError(f"{run_dir.name}: labels are {prov}, not native")
+        labels = read_labels(run_dir)
+        if not labels:
+            raise CompositionError(f"{run_dir.name}: no labels")
+        if all((lab == -1).all() for lab in labels.values()):
+            raise CompositionError(f"{run_dir.name}: noise at every layer (an empty partition, not a result)")
+    else:
+        prov = "label source"
+        if not labels:
+            raise CompositionError(f"{run_dir.name}: no readable layer in this column")
     tokens = read_tokens(run_dir)
     feats = token_features(tokens, vocab, added)
-    if not labels:
-        raise CompositionError(f"{run_dir.name}: no labels")
-    if all((lab == -1).all() for lab in labels.values()):
-        raise CompositionError(f"{run_dir.name}: noise at every layer (an empty partition, not a result)")
     out = {}
     for layer, lab in sorted(labels.items()):
         if len(lab) != len(tokens):
             raise CompositionError(f"{run_dir.name} layer {layer}: {len(lab)} labels, {len(tokens)} tokens")
         cells = defaultdict(lambda: [0, 0])
-        for f, clustered in zip(feats, lab != -1):
+        for f, x in zip(feats, lab):
+            if x == OUTSIDE:
+                continue
+            clustered = x >= 0
             for feat in FEATURES:
                 c = cells[(feat, f[feat], f["copies"])]
                 c[0] += 1
@@ -283,8 +316,8 @@ def measure_run(run_dir: Path, vocab: dict, added: set = frozenset()) -> dict:
     for subset, allowed in CONTRAST_SUBSETS.items():
         contrast[subset] = {}
         for layer, lab in sorted(labels.items()):
-            keep = [(f, cl) for p, (f, cl) in enumerate(zip(feats, lab != -1))
-                    if f["copies"] in allowed and p > 0]
+            keep = [(f, x >= 0) for p, (f, x) in enumerate(zip(feats, lab))
+                    if f["copies"] in allowed and p > 0 and x != OUTSIDE]
             def rate(pred):
                 xs = [cl for f, cl in keep if pred(f)]
                 return (float(np.mean(xs)) if xs else None, len(xs))
@@ -299,7 +332,7 @@ def measure_run(run_dir: Path, vocab: dict, added: set = frozenset()) -> dict:
     n_rep_types = int((cnt >= 2).sum())
     counts = {"n_repeated_types": n_rep_types, "by_layer": {}}
     for layer, lab in sorted(labels.items()):
-        ks = sorted(set(lab.tolist()) - {-1})
+        ks = sorted(set(lab.tolist()) - {-1, OUTSIDE})
         member_ids = [ids[lab == k] for k in ks]
         counts["by_layer"][layer] = {
             "n_clusters": len(ks),
@@ -311,7 +344,7 @@ def measure_run(run_dir: Path, vocab: dict, added: set = frozenset()) -> dict:
     counts["max_alive_layers"] = [L for L, c in per_layer.items() if c == counts["max_alive"]]
     return {"cells": out, "contrast": contrast, "cluster_count": counts,
             "provenance": prov, "n_tokens": len(tokens),
-            "noise_rate": {layer: float((lab == -1).mean()) for layer, lab in labels.items()}}
+            "noise_rate": {layer: float((lab[lab != OUTSIDE] == -1).mean()) for layer, lab in labels.items()}}
 
 
 def _mean(xs):
@@ -353,8 +386,8 @@ def aggregate(results: dict) -> dict:
         for L in layers:
             pooled[s][L] = {}
             for ck in cell_keys:
-                n = sum(r["cells"][L].get(ck, (0, 0))[0] for r in runs.values())
-                nc = sum(r["cells"][L].get(ck, (0, 0))[1] for r in runs.values())
+                n = sum(r["cells"].get(L, {}).get(ck, (0, 0))[0] for r in runs.values())
+                nc = sum(r["cells"].get(L, {}).get(ck, (0, 0))[1] for r in runs.values())
                 if n:
                     pooled[s][L]["|".join(ck)] = [n, nc]
         # per-prompt rate, averaged over prompts then layers: no prompt carries a cell alone
@@ -362,12 +395,13 @@ def aggregate(results: dict) -> dict:
             per_layer = []
             for L in layers:
                 rates = [r["cells"][L][ck][1] / r["cells"][L][ck][0]
-                         for r in runs.values() if r["cells"][L].get(ck, (0, 0))[0]]
+                         for r in runs.values() if r["cells"].get(L, {}).get(ck, (0, 0))[0]]
                 per_layer.append(_mean(rates))
-            n_prompts = sum(1 for r in runs.values() if r["cells"][layers[0]].get(ck, (0, 0))[0])
+            # a token's cell is the same at every layer, so each run's first layer counts it
+            first = [r["cells"][min(r["cells"])] for r in runs.values()]
+            n_prompts = sum(1 for c in first if c.get(ck, (0, 0))[0])
             balanced[s]["|".join(ck)] = {"rate": _mean(per_layer), "n_prompts": n_prompts,
-                                         "n_tokens_layer0": sum(r["cells"][layers[0]].get(ck, (0, 0))[0]
-                                                                for r in runs.values())}
+                                         "n_tokens_layer0": sum(c.get(ck, (0, 0))[0] for c in first)}
         c = {subset: contrast_verdict([r["contrast"][subset] for r in runs.values()])
              for subset in CONTRAST_SUBSETS}
         c["noise_rate"] = _mean(x for r in runs.values() for x in r["noise_rate"].values())
@@ -400,16 +434,78 @@ def cluster_count_summary(runs: dict) -> dict:
     return out
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+def reader_args(ap: argparse.ArgumentParser, old_out: Path) -> argparse.Namespace:
+    """The three Stage 1 readers' arguments; refuses without ``--labels``/``--column``
+    unless ``--old-partition`` names the stored labels (docstring, "THE RE-READ")."""
+    from tools.run.p10_label_source import add_reader_args
     add_input_args(ap, DATA / "phase12" / "stage0_logs" / "stage0_index.json")
     ap.add_argument("--hf-home", default=os.environ.get("HF_HOME", str(DATA / "hf")))
-    ap.add_argument("--out", default=str(DATA / "analysis" / "p10_s1_token_composition.json"))
+    ap.add_argument("--out", default=None, help=f"required with --labels; --old-partition default {old_out}")
+    ap.add_argument("--old-partition", action="store_true",
+                    help="read the stored HDBSCAN labels (the published §1.7-§1.12 records), not the re-read")
+    add_reader_args(ap)
     add_holdout_args(ap)
     args = ap.parse_args()
+    if args.old_partition:
+        if args.labels or args.column:
+            ap.error("--old-partition reads the stored labels; drop --labels/--column")
+        args.out = args.out or str(old_out)
+        return args
+    if args.labels is None or args.column is None:
+        ap.error("refusing: the re-read reads one label-source column, --labels <dir> --column <c> "
+                 "(p10_cluster_function/design-10.md); --old-partition reads the stored labels")
+    if args.run_root or args.prompts or args.allow_holdout or args.v1_only or args.out is None:
+        ap.error("--labels fixes the input set (7 v1 passages, 18 steps): no --run-root, --prompts, "
+                 "--allow-holdout or --v1-only; --out is required")
+    return args
 
+
+def labels_input(args, context: str) -> dict:
+    """`p10_label_source.reader_input` for ``args.column``, screened by `core.holdout`."""
+    from tools.run.p10_label_source import reader_input
+    src = reader_input(args.labels, args.column)
+    refuse_held_out(sorted(set(src["runs"].values())), context=context)
+    print(f"column {args.column}: {len(src['runs'])} runs, readable records per step "
+          + " ".join(f"{s}:{r[1]}/{r[0]}" for s, r in src["records"].items()))
+    return src
+
+
+def labels_record(src: dict, tok_path: Path) -> dict:
+    """The provenance block every re-read record carries."""
+    inputs = sorted((f"{s}|{k}", str(p)) for (s, k), p in src["runs"].items())
+    return {"label_source": src["meta"], "column": src["meta"]["column"],
+            "records_readable": {s: {"n": r[0], "readable": r[1]} for s, r in src["records"].items()},
+            "inputs_sha256": hashlib.sha256(json.dumps(inputs).encode()).hexdigest()[:12],
+            "tokenizer_sha256": hashlib.sha256(tok_path.read_bytes()).hexdigest()[:12],
+            "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "inputs": inputs}
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    args = reader_args(ap, DATA / "analysis" / "p10_s1_token_composition.json")
     tok_path = find_tokenizer(Path(args.hf_home))
     vocab, added = load_vocab(tok_path)
+    if args.labels:
+        src = labels_input(args, "p10_token_composition")
+        results = {k: measure_run(src["runs"][k], vocab, added, labels=lab)
+                   for k, lab in sorted(src["labels"].items()) if lab}
+        summary = aggregate(results)
+        record = {"schema": "p10_r1_token_composition/1",
+                  "row": "§1.7 re-read (unique tokens) on one ladder column",
+                  "tier": "1 (exploratory, unregistered, descriptive; no null)",
+                  **labels_record(src, tok_path), "criterion": CRITERION, "summary": summary,
+                  "runs": {f"{s}|{k}": {"contrast": r["contrast"], "noise_rate": r["noise_rate"],
+                                        "cells": {L: {"|".join(ck): v for ck, v in cells.items()}
+                                                  for L, cells in r["cells"].items()}}
+                           for (s, k), r in sorted(results.items())}}
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps(record, indent=1))
+        print(f"wrote {args.out}")
+        for s, c in summary["by_step"].items():
+            u = c["unique"]
+            print(f"  step{s:>6}: unique freq {u['freq_contrast']} class {u['class_contrast']} -> {u['trash_collection']}")
+        return
     idx = load_input(args)
     kept, holdout = refuse_held_out(
         sorted(idx["runs"].values()), allow=args.allow_holdout, drop=args.v1_only,
@@ -445,10 +541,7 @@ def main() -> None:
         "holdout": holdout,
         "bins": {"rank": list(RANK_BINS), "count": list(COUNT_BINS), "pos": list(POS_BINS)},
         "rank_is": f"token id = BPE merge index + {MERGE_OFFSET}; a frequency proxy, not a count",
-        "criterion": "per step, non-repeat (pre-stated) and unique (post hoc) tokens at position > 0, per-prompt-per-layer rates "
-                     "averaged: freq_contrast = rate(rank<1k) - rate(rank>=20k), class_contrast = "
-                     "rate(whitespace+punct) - rate(word_start); consistent iff both > "
-                     f"{CONTRAST_FLOOR}, against iff both < -{CONTRAST_FLOOR}, else unclear",
+        "criterion": CRITERION,
         "cell_key": "feature|level|copies -> [n, n_clustered] (pooled); rate (balanced)",
         "summary": summary,
         "inputs": inputs,

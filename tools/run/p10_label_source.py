@@ -57,6 +57,11 @@ skipped if present), then ``summary`` (counts per column, the readable share,
 and, given ``--definitions``, c3's group-layer records at steps 0 and 143000
 against `candidates definitions`' "moves" counts).
 
+The re-read's readers take one column by ``--labels <dir> --column <c>`` (`add_reader_args`)
+and read it through `reader_input`: full-length labels with ``OUTSIDE`` off the domain,
+readable records only, and two more columns at step 143000, ``c3_learned`` / ``c3_unlearned``
+(c3 with the other groups' members moved to the rest).
+
 Tier 1: exploratory, unregistered.
 """
 
@@ -389,6 +394,76 @@ def load_learned(src, step: str, prompt: str, layer: int) -> Dict[int, bool]:
     if p is None or str(layer) not in p["layers"]:
         raise LabelSourceError(f"{step}/{prompt}/L{layer} refused or absent")
     return {int(k): v for k, v in p["layers"][str(layer)]["learned"].items()}
+
+
+# ---------------------------------------------------------------------------
+# For the readers (R1–R3): one column as full-length labels
+# ---------------------------------------------------------------------------
+
+#: A position outside a column's domain (not kept). −1 stays "kept, in no group".
+OUTSIDE = -2
+#: c3 split by unit 2's learned bar (step 143000 only): the other groups' members join the rest.
+LEARNED_SPLIT = ("c3_learned", "c3_unlearned")
+READER_COLUMNS = COLUMNS + LEARNED_SPLIT
+
+
+def add_reader_args(ap: argparse.ArgumentParser) -> None:
+    ap.add_argument("--labels", type=Path, default=None,
+                    help="the R0 label source (`p10_label_source build`'s --out): the re-read's only input")
+    ap.add_argument("--column", choices=READER_COLUMNS, default=None,
+                    help="the ladder column to read (`design-10.md` \"The ladder\")")
+
+
+def reader_input(src, column: str) -> Dict:
+    """
+    One column for a reader: ``runs`` {(step, prompt): Stage 0 run dir}, ``labels``
+    {(step, prompt): {layer: labels over every stored position}} with ``OUTSIDE`` off the
+    column's domain, and ``records`` {step: [n, n_readable]}. Only **readable** (prompt,
+    layer) records carry labels (`readable` on the column's own domain, `design-10.md`
+    "Readable"): an unreadable record is counted, never read as "no effect". Every step file
+    under ``src`` is read (a learned column: step 143000 only); a refused prompt or layer
+    refuses the whole read.
+    """
+    src = Path(src)
+    if column not in READER_COLUMNS:
+        raise LabelSourceError(f"unknown column {column!r}; one of {READER_COLUMNS}")
+    split = column in LEARNED_SPLIT
+    steps = [LEARNED_STEP] if split else sorted(
+        (s for s in MODELS if (src / f"{s}.json").exists()), key=lambda s: int(s.removeprefix("step")))
+    if not steps:
+        raise LabelSourceError(f"no label source step files in {src}")
+    runs, labels, records, gits = {}, {}, {}, {}
+    for step in steps:
+        cache: Dict = {}
+        d = load_step(src, step)
+        cache[step] = d
+        if d["refused"]:
+            raise LabelSourceError(f"{step}: refused prompts {sorted(d['refused'])}")
+        n_step = int(step.removeprefix("step"))
+        gits[step] = d["meta"]["git"]
+        rec = [0, 0]
+        for prompt in sorted(d["prompts"]):
+            p = d["prompts"][prompt]
+            runs[(n_step, prompt)] = Path(p["stage0_run"])
+            layers = {}
+            for L in LAYERS:
+                pos, lab = load_column(src, step, prompt, L, "c3" if split else column, cache)
+                if split:
+                    lrn = {int(k): v for k, v in p["layers"][str(L)]["learned"].items()}
+                    want = column == "c3_learned"
+                    lab = np.where([x >= 0 and lrn[int(x)] == want for x in lab], lab, -1)
+                full = np.full(p["n_positions"], OUTSIDE, dtype=int)
+                full[pos] = lab
+                rec[0] += 1
+                if readable(lab):
+                    rec[1] += 1
+                    layers[L] = full
+            labels[(n_step, prompt)] = layers
+        records[n_step] = rec
+    meta = {"labels": str(src), "column": column, "label_source_git": gits,
+            "summary_sha256": _sha(src / "summary.json") if (src / "summary.json").exists() else None,
+            "readable_min": READABLE_MIN, "outside": OUTSIDE}
+    return {"runs": runs, "labels": labels, "records": records, "meta": meta}
 
 
 def step_summary(d: Dict) -> Dict:
