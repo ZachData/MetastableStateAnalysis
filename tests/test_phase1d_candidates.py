@@ -89,6 +89,22 @@ def test_tables_dedupe_a_candidate_across_layers_and_set_bulk_apart():
     assert t["origin"]["centred/2/L1-8"]["candidates"] == {"formed at L1": 2}
 
 
+def test_definition_counts_filter_dedupe_and_drop_bulk():
+    row = dict(prompt="p", frame="centred", size=2, members=[3, 5], tokens=["a", "b"],
+               status="not learned", bulk=False, candidate=False, origin=2,
+               origin_class="formed later", **{"class": "moves"})
+    rows = [dict(row, layer=3), dict(row, layer=12, origin=0),
+            dict(row, layer=4, members=[7, 8], status="learned only"),
+            dict(row, layer=5, members=[9, 10], **{"class": "unstable"}),
+            dict(row, layer=6, members=list(range(40)), bulk=True)]
+    c = cd.definition_counts(rows)
+    assert c["moves"]["centred/2"] == {"records": 3, "records_by_band": {"L1-8": 2, "L9-16": 1},
+                                       "distinct": {"carried": 1, "formed later": 1}, "n_distinct": 2}
+    assert c["moves+learned"]["centred/2"]["n_distinct"] == 1
+    assert c["candidate"]["centred/2"]["records"] == 0
+    assert c["all"]["centred/2"]["records"] == 4
+
+
 def test_forced_kept_takes_the_given_set_and_refuses_an_extra_offset():
     own = np.array([1, 2, 3, 5, 8])
     assert mt.forced_kept(own, [8, 1, 3], "p").tolist() == [1, 3, 8]

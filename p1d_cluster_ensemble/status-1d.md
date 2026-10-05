@@ -2010,6 +2010,7 @@ step 0, which does not yet separate learned content from learned position.
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Under Blocked 17 on fresh present seeds: 7 of 10 again (coarse 10, fine 7). **Accepted as measured (Blocked 18, option 1):** a found plateau's partition is the claim, a missing one weak evidence; real input waits on a specificity check among the inits. **That check, built and piloted: step-0 clouds' merges all fall within r ≈ 0.5–1.0, so it cannot fail (Blocked 19)**. **Under option 4 ((b) = Gaussian p ∧ re-init rank; gate on 50 Gaussians of trained clouds): passes, 0 of 50; on the main arm the plateau rule rejects them before (b) (0 of 50 without it), so (b) is tested on size 2 only (29 → 0)**. **Trained reading (Blocked 20, (a)): 1 plateau in 1,680 clouds (main L17–24, unreplicated), 0 on size 2; at the window's middle (r ≈ 0.90) the re-inits match or beat the trained clouds in all but 6–12 of 560 per band, so: weak evidence of no large structure beyond the re-inits at r 0.79–1.02; the one plateau is where the rank term is free (Blocked 21)** | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11"; "Unit 3 on fresh seeds"; "The real-input reader, step 1: built"; "… under option 4"; "The trained reading"; `design-1d.md` "Blocked 18 decided" |
 | can the tools see known content? (unit 4, designed prompts) | **group route (moves ∧ learned): passes its rule, 2 of 3** (lexical classes, code / prose; not entities), but training supplies the content and "learned" does not select it (content share learned ≈ not learned); **reader: rarely** (category list 10 of 240 clouds, pure but partial; prose / code 0; step 0 none), none at L17–24 below r 0.6, so the kept v1 plateau (Blocked 21) rests on `p_gauss` alone | "Unit 4 on the designed prompts" |
+| what does Phase 10 read? | **(a), decided 2026-10-05**: stable, non-bulk trained level-set groups (centred, size 2) that move; learned beside. v1: 604 distinct (475 formed later); step 0's floor 62 of 810 records | "Blocked 22 decided" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -3148,6 +3149,46 @@ re-ordering row (`design-1d.md` "Unit 4", not in Blocked 21 (a)).
 min; `arch_null read` and `positive_controls groups` re-run after `ad4a1d8`), then
 `data/p1d/unit4_scale_2026-10-05/run_unit4_reader.sh` (~75 min; `diagnose` and `reader`
 re-run after `8eed5f6`). Tests: `tests/test_phase1d_positive_controls.py`.
+
+### Blocked 22 decided: the working definition is (a), groups that move (2026-10-05; branch `claude/p1d-blocked22`)
+
+**Decision** (2026-10-05: the user asked for "the best recommendations"; Claude took the
+recommended option): **(a)**. Phase 10's hold lifts
+for a re-read on trained level-set groups that **move**, with "learned" reported beside, not
+required. Rules: `design-1d.md` "The working definition". It replaces Blocked 14's set (moves
+∧ learned) as what Phase 10 reads. Rejected: (b), since the ablation shows "learned" does not
+select known content; (c), because the reader is not the definition in any option, so its
+diagnosis is a discovery (Parked in "Unit 4"), not a gate; (d), because writing 1d up does not
+lift the hold, and the write-up can still use unit 4 later.
+
+**What it gives on v1** (nothing run; a read of the stored rows). Input: `candidate_rows.json`
+of "The candidates" (md5 `f96e931a`), seed 0, centred size 2, not bulk. Producer: `candidates
+definitions` (new; output `data/p1d/candidates_2026-10-02/definitions.json`, md5 `f8fd33c9`).
+It reproduces that section's 120 / 21 / 79 / 24 candidates.
+
+| set | trained records (L1–8 / 9–16 / 17–24) | trained distinct (carried / L1 / later) | step-0 records | step-0 distinct |
+|---|---|---|---|---|
+| **(a) moves** | **810** (317 / 336 / 157) | **604** (104 / 25 / 475) | **62** (35 / 21 / 6) | 61 |
+| (b) moves ∧ learned (Blocked 14) | 325 (181 / 100 / 44) | 205 (81 / 8 / 116) | 0 | 0 |
+| moves ∧ learned ∧ replicates | 181 (130 / 38 / 13) | 120 (71 / 4 / 45) | 0 | 0 |
+| every non-bulk group | 2,209 (755 / 882 / 572) | 1,416 | 1,925 | 1,511 |
+
+(a) in the other arms, trained / step-0 distinct: centred size 4 190 / 1, raw size 2 242 / 22,
+raw size 4 92 / 0.
+
+**Reading.** (1) Under (a), **79 % of distinct groups formed later** (475 of 604): the origin
+outcome row is "most formed later", where the replicating set was "most carried". Caveat 1 of
+"The candidates" holds: "formed later" is an upper bound, since a carried class that gains
+members counts as formed. (2) **The floor at init is not zero**: 62 step-0 records pass, 11 /
+6 / 4 % of the trained count by band, so every Phase 10 row reports its step-0 count beside
+it. (3) "Moves" removes little among stable trained groups (810 of 926 classified records);
+the definition's work is done by the stability floor and bulk, plus unit 1's population
+result that step 0's groups do not move.
+
+**Re-run:** `python -m p1d_cluster_ensemble.candidates definitions --rows
+data/p1d/candidates_2026-10-02/candidate_rows.json --out <file>` (seconds). Test:
+`tests/test_phase1d_candidates.py::test_definition_counts_filter_dedupe_and_drop_bulk`.
+**Next:** the Phase 10 re-read design (`p10_cluster_function/handoff-10.md`, banner).
 
 ## Deleted and restored (was `FROZEN.md`)
 

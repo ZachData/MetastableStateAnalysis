@@ -16,6 +16,15 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > partition, and that is a confound. The work moved to Phase 1d
 > (`p1d_cluster_ensemble/status-1d.md`). Resume here once 1d says which
 > partition, or which graded membership, Phase 10's claims should be re-read on.
+>
+> **Hold lifted for a re-read, 2026-10-05 (`STATE.md` Blocked 22, option (a)).** 1d's
+> working definition: stable, non-bulk trained level-set groups (centred, size 2) that
+> **move** (`p1d_cluster_ensemble/design-1d.md` "The working definition"). Nothing has been
+> re-read on it. Every row below still reads the old partition until it is. **Next here:
+> the re-read design**, which fixes which checkpoints get unit 1's preamble passes (~1,000
+> forward passes for all 19), the prompts (v1 while v2 is held out), which rows go first,
+> and the step-0 floor and old-partition reading beside each row. A literature scan comes
+> before it freezes.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
