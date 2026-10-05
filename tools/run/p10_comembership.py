@@ -96,8 +96,20 @@ the index pin, battery hash, inputs sha256 and tokenizer sha256.
 ``--run-root DIR`` reads one flat run root instead (the pilot sweep on
 `HDD_1TB`), as `p10_ext_sem_threshold.load_input`; ``--prompts`` keeps named keys.
 
+THE RE-READ (`p10_cluster_function/design-10.md`, R1; added 2026-10-05)
+----------------------------------------------------------------------
+As `p10_token_composition` "THE RE-READ": ``--labels <dir> --column <c>`` or
+refuse; ``--old-partition`` for the stored labels. Under a column the draw (both
+pools), ``adjacent``'s neighbours and the focal set range over the column's
+domain only, so on the kept columns a ±1 neighbour counts only if kept, and
+``copy_share`` means "the co-member's string recurs later" (T3 keeps first
+occurrences). Unreadable records are left out. The record holds the summary
+only: Δ against step 0 takes another column's baseline (c2's step 0 for c3),
+so `p10_r1_ladder.py` reads it with `deltas` below.
+
 Run:
-    python tools/run/p10_comembership.py --v1-only
+    python tools/run/p10_comembership.py --labels <dir> --column c3 --out <file>
+    python tools/run/p10_comembership.py --old-partition --v1-only
 """
 import argparse
 import hashlib
@@ -117,7 +129,8 @@ from core.holdout import add_holdout_args, refuse_held_out
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
 from tools.run.p10_ext_sem_threshold import FROZEN_STEP, layer0_gram, add_input_args, load_input, read_tokens
 from tools.run.p10_token_composition import (
-    CompositionError, find_tokenizer, load_vocab, token_features)
+    OUTSIDE, CompositionError, find_tokenizer, labels_input, labels_record, load_vocab, reader_args,
+    token_features)
 
 PROPS = ("copy_share", "no_copy", "adjacent", "same_class", "emb_pct", "emb_pct_own")
 NOT_READ = {"emb_pct": "n/a (frozen frame)"}   # no valid step-0 baseline (docstring)
@@ -176,20 +189,25 @@ def focal_stats(f: int, members: np.ndarray, pool: np.ndarray, is_copy: np.ndarr
 
 
 def measure_run(run_dir: Path, vocab: dict, added: set, frozen_gram: np.ndarray,
-                frozen_tokens: np.ndarray, own_gram: np.ndarray = None) -> dict:
+                frozen_tokens: np.ndarray, own_gram: np.ndarray = None, labels: dict = None) -> dict:
     """{layer: {prop: [obs, exp, lift, obs_cl, exp_cl, lift_cl], 'k', 'n_focal', 'n_clusters'}}.
 
     `own_gram` defaults to the run's own layer-0 Gram (read from activations.npz).
+    `labels`: a re-read column, ``OUTSIDE`` off its domain (docstring, "THE RE-READ");
+    default the stored labels.
     """
-    prov = labels_provenance(run_dir)
-    if prov != "native":
-        raise CompositionError(f"{run_dir.name}: labels are {prov}, not native")
-    labels = read_labels(run_dir)
+    if labels is None:
+        prov = labels_provenance(run_dir)
+        if prov != "native":
+            raise CompositionError(f"{run_dir.name}: labels are {prov}, not native")
+        labels = read_labels(run_dir)
+        if not labels:
+            raise CompositionError(f"{run_dir.name}: no labels")
+        if all((lab == -1).all() for lab in labels.values()):
+            raise CompositionError(f"{run_dir.name}: noise at every layer (an empty partition, not a result)")
+    elif not labels:
+        raise CompositionError(f"{run_dir.name}: no readable layer in this column")
     tokens = read_tokens(run_dir)
-    if not labels:
-        raise CompositionError(f"{run_dir.name}: no labels")
-    if all((lab == -1).all() for lab in labels.values()):
-        raise CompositionError(f"{run_dir.name}: noise at every layer (an empty partition, not a result)")
     if len(frozen_tokens) != len(tokens) or (frozen_tokens != tokens).any():
         raise CompositionError(f"{run_dir.name}: tokens differ from the frozen frame's run")
     if own_gram is None:
@@ -205,16 +223,16 @@ def measure_run(run_dir: Path, vocab: dict, added: set, frozen_gram: np.ndarray,
     for layer, lab in sorted(labels.items()):
         if len(lab) != len(tokens):
             raise CompositionError(f"{run_dir.name} layer {layer}: {len(lab)} labels, {len(tokens)} tokens")
-        focal = [f for f in unique_pos if lab[f] != -1]
-        clustered = np.flatnonzero(lab != -1)
+        domain = np.flatnonzero(lab != OUTSIDE)
+        focal = [f for f in unique_pos if lab[f] >= 0]
+        clustered = np.flatnonzero(lab >= 0)
         rows = {pool: [] for pool in POOLS}
         for f in focal:
             members = np.flatnonzero(lab == lab[f])
             emb = {"emb_pct": frozen_gram[f], "emb_pct_own": own_gram[f]}
-            rows[""].append(focal_stats(f, members, np.delete(np.arange(len(tokens)), f),
-                                        is_copy, cls, emb))
+            rows[""].append(focal_stats(f, members, domain[domain != f], is_copy, cls, emb))
             rows["_cl"].append(focal_stats(f, members, clustered[clustered != f], is_copy, cls, emb))
-        rec = {"n_focal": len(focal), "n_unique": len(unique_pos),
+        rec = {"n_focal": len(focal), "n_unique": sum(1 for f in unique_pos if lab[f] != OUTSIDE),
                "n_clusters": len({int(lab[f]) for f in focal})}
         if focal:
             rec["k"] = float(np.mean([r["k"] for r in rows[""]]))
@@ -289,16 +307,37 @@ def deltas(summary: dict) -> dict:
     return out
 
 
+CRITERION = (f"delta = lift(step) - lift(step 0) per property; above/below step 0 iff "
+             f"|delta| > {DELTA_FLOOR}; lift = mean observed - mean expected under a "
+             "uniform draw of the same size from the prompt's other positions (*_cl: from its "
+             "other clustered positions); emb_pct (frozen frame) is not read against step 0")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    add_input_args(ap, DATA / "phase12" / "stage0_logs" / "stage0_index.json")
-    ap.add_argument("--hf-home", default=os.environ.get("HF_HOME", str(DATA / "hf")))
-    ap.add_argument("--out", default=str(DATA / "analysis" / "p10_s1_comembership.json"))
-    add_holdout_args(ap)
-    args = ap.parse_args()
-
+    args = reader_args(ap, DATA / "analysis" / "p10_s1_comembership.json")
     tok_path = find_tokenizer(Path(args.hf_home))
     vocab, added = load_vocab(tok_path)
+    if args.labels:
+        src = labels_input(args, "p10_comembership")
+        prompts = sorted({k for _, k in src["runs"]})
+        missing = [p for p in prompts if (FROZEN_STEP, p) not in src["runs"]]
+        if missing:
+            raise CompositionError(f"no step-{FROZEN_STEP} run (the frozen frame) for {missing}")
+        frozen = {p: (layer0_gram(src["runs"][(FROZEN_STEP, p)]), read_tokens(src["runs"][(FROZEN_STEP, p)]))
+                  for p in prompts}
+        results = {(s, k): measure_run(src["runs"][(s, k)], vocab, added, *frozen[k], labels=lab)
+                   for (s, k), lab in sorted(src["labels"].items()) if lab}
+        record = {"schema": "p10_r1_comembership/1",
+                  "row": "§1.9 re-read on one ladder column",
+                  "tier": "1 (exploratory, unregistered, descriptive; no null)",
+                  **labels_record(src, tok_path), "frozen_step": FROZEN_STEP, "criterion": CRITERION,
+                  "summary": summarise(results),
+                  "runs": {f"{s}|{k}": r for (s, k), r in sorted(results.items())}}
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps(record, indent=1))
+        print(f"wrote {args.out}")
+        return
     idx = load_input(args)
     kept, holdout = refuse_held_out(
         sorted(idx["runs"].values()), allow=args.allow_holdout, drop=args.v1_only,
@@ -339,10 +378,7 @@ def main() -> None:
         "prompts": prompts,
         "steps": sorted({s for s, _ in runs}),
         "holdout": holdout,
-        "criterion": f"delta = lift(step) - lift(step 0) per property; above/below step 0 iff "
-                     f"|delta| > {DELTA_FLOOR}; lift = mean observed - mean expected under a "
-                     "uniform draw of the same size from the prompt's other positions (*_cl: from its "
-                     "other clustered positions); emb_pct (frozen frame) is not read against step 0",
+        "criterion": CRITERION,
         "summary": summary,
         "reading": reading,
         "inputs": inputs,

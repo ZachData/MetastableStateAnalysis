@@ -25,6 +25,7 @@
   - At step 512 the network computes that class effect (+0.20 beyond own-embedding similarity; a purely lexical cluster scores ≈ 0). Trained, it is mostly what the embedding already groups: L12 sits on the lexical control, L24 is +0.05 above it. The control was added post hoc. Clustered tokens keep less of their individual layer-0 direction. Context vs per-token feature is not separated. No null — `p10_cluster_function/status-10.md` §1.10
   - Lemma C.1's saturation is a formula for Phase 1's 50–55 carrying capacity — `p10_cluster_function/math-10.md` §5.4, §3.53
   - The re-read's label source (R0, an instrument, nothing re-read yet): 1d's working definition and its ladder (c0 → c3, two arms) at all 18 checkpoints on the 7 v1 passages, every P = 0 pass ≤ 2.9e-7 from Stage 0, nothing refused, reproducing the definition's 62 / 810 records exactly, member set by member set. A float64 refit of the stored partition (c0f) is identical to it in 2,924 of 3,024 records. Steps 0–32 have too few readable c3 records and read on c2, so the c2 / c3 switch falls inside F1's 32–512 window — `p10_cluster_function/status-10.md` §1.14, `p10_cluster_function/design-10.md`
+  - R1, the token-composition (unique tokens), co-membership and lexical-carry rows re-read on the definition, c0 reproducing the published records exactly: the class findings hold (rank does nothing trained; class predicts against trash collection, from step 512 rather than 16000; class co-membership +0.21; step 512's class effect +0.15 beyond a matched lexical cluster, ~0 trained at L12). c0's 64–512 dip in the embedding lifts is the old partition's. Adjacency's Δ flips sign because stable step-0 groups are runs of neighbours (the c2 baseline) while c3's raw trained lift is larger than c0's. 41 / 54, 170 / 255 and 229 / 306 labels agree with c0 — `p10_cluster_function/status-10.md` §1.15
 - **Superseded / wrong:**
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
   - The Rényi packing law "as a function of `n`": the law is in β and dimension, not `n` — `p10_cluster_function/lit-10.md` §5, `docs/AXES.md` §7
@@ -50,7 +51,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `c642168687`
+- **Reviewed:** 2026-10-05 · body `954c3fd8c8`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -390,6 +391,8 @@ the non-repeat pairs of the same prompt. Base rate of cos > 0.2 in that frame: 0
 
 ### 1.7 Stage 1 step 2, the token-composition table — **copy count dominates at init and in shallow layers; among unique tokens rank does nothing**
 
+*Re-read on 1d's working definition (unique tokens): §1.15.*
+
 Tier 1, descriptive, no null. Reader `tools/run/p10_token_composition.py
 --v1-only`, record `data/analysis/p10_s1_token_composition.json` (full cells:
 feature × level × copies, per layer per step, pooled and prompt-balanced).
@@ -554,6 +557,8 @@ prompts other than `repeated_tokens` (59.7 repeated types per prompt):
 
 ### 1.9 What clustered unique tokens cluster with — **trained, their own class and away from copy groups; embedding similarity is mostly there at init**
 
+*Re-read on 1d's working definition: §1.15 (class holds; adjacency turns on the baseline).*
+
 Tier 1, descriptive, no null. Reader `tools/run/p10_comembership.py --v1-only`,
 record `data/analysis/p10_s1_comembership.json`. **Input:** the 152 v1 runs
 through `stage0_index.json` (pin `64a4087`, battery `06790b90dcfe`), inputs
@@ -629,6 +634,8 @@ the layer mean, so no single cluster carries a cell.
   The HDBSCAN floor (§3) applies. Stage 0's v1 runs; on the pilot sweep, §1.12.
 
 ### 1.10 §1.9's class effect, lexical or not — **early in training the network computes it; trained, it is mostly what the embedding already groups**
+
+*Re-read on 1d's working definition: §1.15 (the step-512 and trained readings hold).*
 
 Tier 1, descriptive, no null. Reader `tools/run/p10_lexical_carry.py --v1-only`,
 record `data/analysis/p10_s1_lexical_carry.json` (schema 4, after
@@ -962,8 +969,8 @@ found at the two ends.
 
 **Caveats.** "Learned" exists at step 143000 only: unit 2's bars are stored, but each group's
 `s` needs Gaussian draws at the step's clouds, which were not run (Parked in `handoff-10.md`).
-One passage set (7); one seed. The readers are not wired yet: each R-unit adds its reader's
-`--labels <dir> --column <c>` and refuses without it (`load_column` refuses a refused record,
+One passage set (7); one seed. Each R-unit adds its reader's `--labels <dir> --column <c>`
+and refuses without it (R1's three readers: §1.15) (`load_column` refuses a refused record,
 an unknown column, and a column's positions outside its domain).
 
 **Re-run:** `data/p10/reread_r0_2026-10-05/run_r0.sh step0 step512 step54000 …` from the
@@ -973,6 +980,110 @@ data/p1d/candidates_2026-10-02/definitions.json --rows data/p1d/candidates_2026-
 Tests: `tests/test_p10_label_source.py` (13),
 `tests/test_phase1d_move_text.py`. **Next: R1** (§1.7 unique tokens, §1.9, §1.10), after
 this PR merges.
+
+### 1.15 The re-read, R1: §1.7 (unique tokens), §1.9 and §1.10 down the ladder — **the class findings hold; adjacency and the 64–512 embedding dip do not, and adjacency turns on the step-0 baseline**
+
+**What ran** (`design-10.md` "Order" R1). The three readers take one column by `--labels
+<R0 source> --column <c>` and refuse without it (`--old-partition` reads the stored labels, to
+reproduce §1.7–§1.12). Under a column, the draw, `adjacent`'s neighbours, the kNN control and
+carry's reference set range over the column's domain (kept tokens; all positions for c0 / c0f),
+and unreadable (prompt, layer) records are left out and counted. Each column is one record;
+`tools/run/p10_r1_ladder.py` applies each row's own rule to every column, c3 taking c2's step-0
+baseline and c0–c2 their own, and names for each label that differs from c0 the first column
+that changed it and the column it **settled at** (the first from which every column through
+the primary carries the primary's label; added here because c1, the raw frame, swings and later
+columns swing back).
+
+**Inputs.** The R0 label source (`data/p10/reread_r0_2026-10-05/labels/`, `summary.json` md5
+`d9d41708`); 7 v1 passages × 18 steps, L1–24; 12 columns (the ladder, the two arms, and c3 split
+by learned at step 143000). Code at this PR. Output `data/p10/reread_r1_2026-10-05/` (36
+records, `ladder.json` md5 `ded1e081`), 32 min on 6 processes. **Primary column:** c2 at steps
+0–32, c3 from 64 (c3 readable in 15–34 of 168 records at 0–32). **Floor:** 62 c3 group-layer
+records at step 0, 15 of 168 records readable.
+
+**Checks, all passed.** c0 reproduces the published per-run records of all three readers
+exactly on the shared runs (3,015 readable of 3,024 records each; same 126 run dirs). c3's
+readable counts equal the label source's. **BLAS threads matter at the record level:** a first
+run at `OMP_NUM_THREADS=1` (kept in `omp1/`) differed from the published §1.9 records by ≤ 0.003
+and from §1.10's by up to 0.27 in one record's 40-bin kNN control, because the float32 layer-0
+Grams change with the thread count (5e-7 between 1 and 16) and copies sit on exact ties; at the
+default threads c0 is identical. **No reading label changes between the two runs** (0 of 648
+primary labels; `ladder.py --against`).
+
+**Holds (primary label = c0's).**
+
+| row | labels agree | the rest settled at |
+|---|---|---|
+| §1.7 (freq, class, verdict per step) | 41 of 54 | c1c 6, c2 5, c1 1, c2a 1 |
+| §1.9 (5 lifts × L12, L24, mean × 17 steps) | 170 of 255 | c2 38, c3 16, c1 16, c1c 7, c2a 7, c2b 1 |
+| §1.10 (6 readings × 3 layers × 17 steps) | 229 of 306 | c1 24, c2 21, c3 12, c1c 8, c2a 6, c2b 6 |
+
+**§1.7, unique tokens** (contrasts per step; ±0.05; c2 at ≤ 32):
+
+| step | 0 | 8 | 32 | 64 | 128 | 512 | 2000 | 8000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|
+| freq c0 / primary | −0.02 / −0.00 | −0.05 / −0.00 | −0.03 / +0.08 | +0.08 / +0.21 | +0.12 / +0.15 | +0.03 / +0.03 | −0.03 / −0.08 | +0.01 / −0.04 | −0.00 / +0.01 |
+| class c0 / primary | +0.09 / +0.29 | +0.01 / +0.27 | −0.03 / +0.32 | −0.02 / +0.02 | +0.02 / +0.02 | +0.07 / −0.11 | +0.01 / −0.11 | −0.03 / −0.13 | −0.13 / −0.07 |
+
+- **Rank does nothing, trained: holds** (within ±0.05 from 4000 on). On c3 rank matters at
+  64–256 (+0.21, +0.15, +0.07), where c0 already read "+" (+0.08, +0.12, +0.14), and at 1000–2000
+  (−0.10, −0.08).
+- **Class predicts, against trash collection: holds, and earlier.** c3's class contrast is
+  −0.07 to −0.14 at every step from 512 on but 1000 (−0.03); c0's turns only at 16000. At 0–32 (on c2)
+  unique punctuation is *more* often a member than word starts (+0.27 to +0.32). Verdict changes:
+  "consistent" at 32 (c2), "against" at 2000.
+
+**§1.9, Δ against step 0** (L12 / L24 / mean; c0 against its own step 0, c3 against c2's):
+
+| lift | 512 c0 | 512 c3 | 143000 c0 | 143000 c3 | c3 floor (step 0, mean) | 143000 learned / not |
+|---|---|---|---|---|---|---|
+| same_class | +0.25 / +0.31 / +0.28 | +0.22 / +0.20 / +0.24 | +0.19 / +0.21 / +0.20 | +0.17 / +0.16 / +0.21 | +0.01 | +0.27 / +0.16 |
+| copy_share | −0.17 / −0.21 / −0.14 | −0.11 / −0.05 / −0.09 | −0.17 / −0.08 / −0.12 | −0.08 / −0.19 / −0.12 | −0.10 | −0.13 / −0.09 |
+| no_copy | +0.14 / +0.09 / +0.11 | −0.04 / −0.04 / −0.00 | +0.16 / +0.00 / +0.13 | +0.04 / +0.25 / +0.14 | −0.06 | +0.13 / +0.07 |
+| adjacent | −0.05 / −0.00 / −0.02 | −0.18 / −0.21 / −0.16 | +0.10 / +0.09 / +0.05 | +0.10 / −0.14 / −0.11 | −0.28 | −0.14 / −0.09 |
+| emb_pct_own | −0.12 / −0.05 / −0.06 | −0.01 / +0.04 / +0.02 | +0.10 / +0.02 / +0.12 | +0.20 / +0.12 / +0.21 | +0.07 | +0.23 / +0.19 |
+
+- **Class: holds** (3 labels differ, all before step 64). Learned groups carry more of it (+0.27
+  against +0.16).
+- **Away from copy groups: holds at the layer mean** (−0.12 both); L12 and L24 trade places.
+  **Unique-only clusters: hold trained at the mean and L24** (+0.14, +0.25; L12 +0.04), but on c3
+  they rise at 2000, not 512.
+- **Own-embedding similarity: holds trained and is larger** (+0.21 against +0.12 at the mean);
+  **c0's dip at 64–512 is the old partition's** (as step 0 on c3; most settle at c2).
+- **Adjacency: does not hold as a Δ, and the reason is the baseline.** 29 of 51 cells differ,
+  23 settle at c2. c3's raw trained lift is *larger* than c0's (L12 0.44 observed against 0.05
+  expected, +0.39; c0 +0.20), but stable step-0 groups (c2) are runs of neighbours (lift +0.29 /
+  +0.37 at L12 / L24), while the few step-0 groups that move (c3's floor) have none (0.03 against
+  0.03). Against c2's step 0 the trained L24 reads "below"; against c3's floor it would read
+  "above" everywhere. `design-10.md` fixed c2 (`STATE.md` Blocked 24).
+
+**§1.10** (L12 / L24 / mean; the deciding reading first, a level; the rest Δ as §1.9):
+
+| reading | 512 c0 | 512 c3 | 143000 c0 | 143000 c3 |
+|---|---|---|---|---|
+| class beyond a lexical cluster, 40 bins (CGE40 − kNN) | +0.20 / +0.20 / +0.20 | +0.15 / +0.15 / +0.16 | −0.01 / +0.05 / +0.02 | +0.04 / +0.07 / +0.04 |
+| class_given_emb (10 bins) Δ | +0.24 / +0.27 / +0.25 | +0.21 / +0.19 / +0.23 | +0.11 / +0.15 / +0.13 | +0.09 / +0.11 / +0.12 |
+| emb_given_class Δ | −0.13 / −0.06 / −0.07 | −0.02 / +0.02 / +0.01 | +0.07 / −0.02 / +0.08 | +0.16 / +0.09 / +0.15 |
+| carry gap (focal − unclustered `self_pct`) | −0.00 / +0.01 / −0.01 | +0.01 / −0.02 / +0.00 | −0.04 / −0.10 / −0.04 | +0.00 / −0.06 / −0.01 |
+
+- **Step 512, the network computes the class grouping: holds** (+0.15 beyond the matched lexical
+  cluster at L12 and L24; c3's floor −0.02). **Trained, mostly what the embedding groups: holds
+  at L12** (+0.04); L24 is +0.07 on c3 against +0.05 on c0, one step above the floor.
+- **Within class, embedding neighbours: now at L12 and L24 trained** (+0.16 / +0.09; c0 only
+  L12). c0's 64–512 dip below step 0 (here and in `emb_same`, `emb_cross`) is the old
+  partition's.
+- **Clustered tokens keep less of their own layer-0 direction: L24 only, and smaller** (−0.06
+  against −0.10; L12's −0.04 is +0.00 on c3).
+
+**Arms** (where a label differs from c3's, steps read on c3): c3_c4 in 9 / 41 / 51 of 36 / 180
+/ 216 cells (§1.7 / §1.9 / §1.10), c3_r2 in 11 / 53 / 60; in `ladder.json`, not read here.
+
+**Caveats.** Tier 1, no null; ±0.05 placed. 7 prompts, one seed. The c2 / c3 switch at 32 → 64
+makes the step-64 Δs the first on c3 against a c2 baseline. "Settled at" is post hoc. Learned
+exists at 143000 only. **Re-run:** `data/p10/reread_r1_2026-10-05/run_r1.sh` from the worktree
+root (default BLAS threads), then `python tools/run/p10_r1_ladder.py --dir <out> --labels <R0
+labels> [--against <out>/omp1]`. Tests: `tests/test_p10_r1_ladder.py`, the readers' tests,
+`tests/test_p10_label_source.py`.
 
 ---
 

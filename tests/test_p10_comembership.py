@@ -157,3 +157,20 @@ def test_backfilled_labels_refused(tmp_path):
     (d / OUT_NAME).write_text(json.dumps({"0": [0, 0, 1, 1, 0, 0]}))
     with pytest.raises(CompositionError, match="not native"):
         measure_run(d, VOCAB, set(), _gram(), np.array(TOKENS, dtype=object), own_gram=_gram())
+
+
+def test_measure_run_on_a_column_domain(tmp_path):
+    # position 4 (cat's copy) outside the domain: the draw is over 0-3 and 5 less f
+    O = -2
+    d = _run(tmp_path, {"0": [0] * 6})
+    lab = {1: np.array([-1, 0, 0, 1, O, 1])}
+    r = measure_run(d, VOCAB, set(), _gram(), np.array(TOKENS, dtype=object), own_gram=_gram(), labels=lab)[1]
+    assert r["n_focal"] == 3 and r["n_unique"] == 3
+    # focal 3 ('.'): co-member dog(5); the pool {0, 1, 2, 5} holds one copy (cat at 1)
+    one = focal_stats(3, np.array([3, 5]), np.array([0, 1, 2, 5]), np.array([0, 1, 0, 0, 1, 0], bool),
+                      np.array(["word_start"] * 6, dtype=object), {})
+    assert one["copy_share"] == (0.0, 0.25)
+    # 3's neighbour 4 is outside, so only 2 counts as adjacent
+    assert one["adjacent"][1] == pytest.approx(1 - p_none(4, 1, 1))
+    with pytest.raises(CompositionError, match="no readable layer"):
+        measure_run(d, VOCAB, set(), _gram(), np.array(TOKENS, dtype=object), own_gram=_gram(), labels={})

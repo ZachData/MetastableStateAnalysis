@@ -100,8 +100,18 @@ TIER 1, EXPLORATORY, NOT REGISTERED. Nothing here touches `claims/registry.json`
 ``--run-root DIR`` reads one flat run root instead (the pilot sweep on
 `HDD_1TB`), as `p10_ext_sem_threshold.load_input`; ``--prompts`` keeps named keys.
 
+THE RE-READ (`p10_cluster_function/design-10.md`, R1; added 2026-10-05)
+----------------------------------------------------------------------
+As `p10_comembership` "THE RE-READ": ``--labels <dir> --column <c>`` or refuse;
+``--old-partition`` for the stored labels. Under a column, the focal and
+unclustered groups, the draw, the kNN control and carry's reference set (the j
+in ``self_pct``) range over the column's domain only. Layer 0 stays the
+covariate (the run's own ``activations[0]``), not a cloud. The record holds the
+summary; `p10_r1_ladder.py` reads it with `deltas` below.
+
 Run:
-    python tools/run/p10_lexical_carry.py --v1-only
+    python tools/run/p10_lexical_carry.py --labels <dir> --column c3 --out <file>
+    python tools/run/p10_lexical_carry.py --old-partition --v1-only
 """
 import argparse
 import hashlib
@@ -122,7 +132,8 @@ from tools.run.backfill_hdbscan import labels_provenance, read_labels
 from tools.run.p10_comembership import DELTA_FLOOR, PICK_LAYERS, _mean, midrank_pct
 from tools.run.p10_ext_sem_threshold import add_input_args, load_input, read_tokens
 from tools.run.p10_token_composition import (
-    CompositionError, find_tokenizer, load_vocab, token_features)
+    OUTSIDE, CompositionError, find_tokenizer, labels_input, labels_record, load_vocab, reader_args,
+    token_features)
 
 N_BINS = 10
 FINER_BINS = (20, 40)   # post hoc sensitivity (docstring, "CHANGED AFTER THE FIRST RUN")
@@ -183,31 +194,48 @@ def control_stats(f: int, k: int, pool: np.ndarray, own_row: np.ndarray, cls: np
     return out | ref
 
 
-def carry_stats(acts: np.ndarray, layer: int, positions: list) -> dict:
-    """Check A for `positions` at `layer`: mean self_cos, self_pct, self_top1 (None if empty)."""
+def carry_stats(acts: np.ndarray, layer: int, positions: list, ref: np.ndarray = None) -> dict:
+    """Check A for `positions` at `layer`: mean self_cos, self_pct, self_top1 (None if empty).
+
+    `ref`: the sorted positions j that self_pct ranks against (default every position);
+    it must hold `positions`.
+    """
     if not positions:
         return {c: None for c in CARRY} | {"n": 0}
+    col = np.asarray(positions)
     x0 = acts[0]
+    if ref is not None:
+        col = np.searchsorted(ref, positions)
+        if not np.array_equal(ref[np.minimum(col, len(ref) - 1)], positions):
+            raise CompositionError("carry: the reference set must hold every position")
+        x0 = x0[ref]
     xl = acts[layer][positions]
     cos = xl @ x0.T                                   # (m, n); rows are L2-normed
-    own = cos[np.arange(len(positions)), positions]
+    own = cos[np.arange(len(positions)), col]
     pct = [midrank_pct(cos[r], own[r:r + 1])[0] for r in range(len(positions))]
-    top1 = (cos.argmax(axis=1) == np.array(positions))
+    top1 = (cos.argmax(axis=1) == col)
     return {"self_cos": float(own.mean()), "self_pct": float(np.mean(pct)),
             "self_top1": float(top1.mean()), "n": len(positions)}
 
 
-def measure_run(run_dir: Path, vocab: dict, added: set, acts: np.ndarray = None) -> dict:
-    """{layer: {'focal': carry, 'unclustered': carry, split prop: lift, 'n_focal'}}."""
-    prov = labels_provenance(run_dir)
-    if prov != "native":
-        raise CompositionError(f"{run_dir.name}: labels are {prov}, not native")
-    labels = read_labels(run_dir)
+def measure_run(run_dir: Path, vocab: dict, added: set, acts: np.ndarray = None, labels: dict = None) -> dict:
+    """{layer: {'focal': carry, 'unclustered': carry, split prop: lift, 'n_focal'}}.
+
+    `labels`: a re-read column, ``OUTSIDE`` off its domain (docstring, "THE RE-READ");
+    default the stored labels.
+    """
+    if labels is None:
+        prov = labels_provenance(run_dir)
+        if prov != "native":
+            raise CompositionError(f"{run_dir.name}: labels are {prov}, not native")
+        labels = read_labels(run_dir)
+        if not labels:
+            raise CompositionError(f"{run_dir.name}: no labels")
+        if all((lab == -1).all() for lab in labels.values()):
+            raise CompositionError(f"{run_dir.name}: noise at every layer (an empty partition, not a result)")
+    elif not labels:
+        raise CompositionError(f"{run_dir.name}: no readable layer in this column")
     tokens = read_tokens(run_dir)
-    if not labels:
-        raise CompositionError(f"{run_dir.name}: no labels")
-    if all((lab == -1).all() for lab in labels.values()):
-        raise CompositionError(f"{run_dir.name}: noise at every layer (an empty partition, not a result)")
     if acts is None:
         acts = np.load(run_dir / "activations.npz")["activations"].astype(np.float32)
     if acts.shape[1] != len(tokens):
@@ -217,21 +245,22 @@ def measure_run(run_dir: Path, vocab: dict, added: set, acts: np.ndarray = None)
     is_copy = np.array([f["copies"] != "unique" for f in feats])
     cls = np.array([f["cls"] for f in feats], dtype=object)
     unique_pos = [p for p in range(1, len(tokens)) if not is_copy[p]]
-    everyone = np.arange(len(tokens))
     out = {}
     for layer, lab in sorted(labels.items()):
         if len(lab) != len(tokens):
             raise CompositionError(f"{run_dir.name} layer {layer}: {len(lab)} labels, {len(tokens)} tokens")
         if layer >= acts.shape[0]:
             raise CompositionError(f"{run_dir.name}: layer {layer} has labels but no activations")
-        focal = [f for f in unique_pos if lab[f] != -1]
+        domain = np.flatnonzero(lab != OUTSIDE)
+        ref = None if domain.size == len(tokens) else domain
+        focal = [f for f in unique_pos if lab[f] >= 0]
         rec = {"n_focal": len(focal),
-               "focal": carry_stats(acts, layer, focal),
-               "unclustered": carry_stats(acts, layer, [f for f in unique_pos if lab[f] == -1])}
+               "focal": carry_stats(acts, layer, focal, ref),
+               "unclustered": carry_stats(acts, layer, [f for f in unique_pos if lab[f] == -1], ref)}
         rows = []
         for f in focal:
             members = np.flatnonzero(lab == lab[f])
-            co, pool = members[members != f], np.delete(everyone, f)
+            co, pool = members[members != f], domain[domain != f]
             rows.append(split_stats(f, co, pool, own_gram[f], cls)
                         | control_stats(f, len(co), pool, own_gram[f], cls))
         for p in SPLIT:
@@ -297,14 +326,27 @@ def deltas(summary: dict) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    add_input_args(ap, DATA / "phase12" / "stage0_logs" / "stage0_index.json")
-    ap.add_argument("--hf-home", default=os.environ.get("HF_HOME", str(DATA / "hf")))
-    ap.add_argument("--out", default=str(DATA / "analysis" / "p10_s1_lexical_carry.json"))
-    add_holdout_args(ap)
-    args = ap.parse_args()
-
+    args = reader_args(ap, DATA / "analysis" / "p10_s1_lexical_carry.json")
     tok_path = find_tokenizer(Path(args.hf_home))
     vocab, added = load_vocab(tok_path)
+    if args.labels:
+        src = labels_input(args, "p10_lexical_carry")
+        results = {}
+        for n, ((s, k), lab) in enumerate(sorted((x for x in src["labels"].items() if x[1])), 1):
+            results[(s, k)] = measure_run(src["runs"][(s, k)], vocab, added, labels=lab)
+            if n == 1 and not any(r["n_focal"] and r["class_given_emb"] is not None
+                                  for r in results[(s, k)].values()):
+                raise CompositionError(f"first run {s}|{k}: no layer has a focal token with a lift")
+        record = {"schema": "p10_r1_lexical_carry/1",
+                  "row": "§1.10 re-read on one ladder column",
+                  "tier": "1 (exploratory, unregistered, descriptive; no null)",
+                  **labels_record(src, tok_path), "n_bins": N_BINS, "finer_bins": list(FINER_BINS),
+                  "summary": summarise(results),
+                  "runs": {f"{s}|{k}": r for (s, k), r in sorted(results.items())}}
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps(record, indent=1))
+        print(f"wrote {args.out}")
+        return
     idx = load_input(args)
     kept, holdout = refuse_held_out(
         sorted(idx["runs"].values()), allow=args.allow_holdout, drop=args.v1_only,

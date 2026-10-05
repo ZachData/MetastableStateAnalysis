@@ -12,7 +12,9 @@ import numpy as np
 import pytest
 
 from tools.run.p10_token_composition import (
+    OUTSIDE,
     CompositionError,
+    aggregate,
     cluster_count_summary,
     contrast_verdict,
     decode,
@@ -136,3 +138,21 @@ def test_cluster_count_summary_drops_repeated_tokens():
     assert s["without_repeated_tokens"][0]["ratio"] == pytest.approx(1.0)
     assert s["without_repeated_tokens"]["n_runs"] == 1
     assert s["all"]["max_alive_at_layer0"] == 2 and s["without_repeated_tokens"]["max_alive"] == 4
+
+
+def test_measure_run_on_a_column_domain(tmp_path):
+    # a re-read column: positions 0 and 4 outside the domain, in no cell; noise over the domain
+    O = OUTSIDE
+    d = _run(tmp_path, {"0": [0] * 5})
+    r = measure_run(d, VOCAB, ADDED, labels={1: np.array([O, 0, -1, -1, O]), 2: np.array([O, -1, 3, -1, O])})
+    assert set(r["cells"]) == {1, 2}
+    assert r["cells"][1][("all", "all", "first")] == [1, 1]          # cat(1) kept; its copy at 4 is not
+    assert ("all", "all", "repeat") not in r["cells"][1]
+    assert r["cells"][1][("all", "all", "unique")] == [2, 0]
+    assert r["noise_rate"][1] == pytest.approx(2 / 3)
+    assert r["cluster_count"]["by_layer"][2]["n_clusters"] == 1
+    with pytest.raises(CompositionError, match="no readable layer"):
+        measure_run(d, VOCAB, ADDED, labels={})
+    # a run without some layer (unreadable there) aggregates without it
+    agg = aggregate({(0, "a"): r, (0, "b"): measure_run(d, VOCAB, ADDED, labels={1: np.array([O, 0, -1, -1, O])})})
+    assert agg["pooled"][0][2]["all|all|unique"] == [2, 1]

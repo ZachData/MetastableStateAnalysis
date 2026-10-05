@@ -331,6 +331,14 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-05, Phase 10 R1: the batch driver set `OMP_NUM_THREADS=1` to run 14 readers in
+  parallel. §1.9's and §1.10's readers rank float32 Gram entries, and copies tie exactly at
+  layer 0, so the thread count (an environment setting, not an input anyone recorded) moved
+  one record's kNN control by 0.27 and the c0 column stopped reproducing the published
+  records. The c0 reproduction check caught it before anything was read; one 32-min re-run at
+  the default threads. No reading label changed. Rule: a result that ranks float32 values is
+  reproduced at the thread count it was made at, and a driver does not change BLAS threads
+  without checking a reproduction first (`handoff-10.md` Parked: float64 Grams).
 - 2026-10-05, 1d unit 4: two runners built for the 7 v1 prompts (512 tokens)
   were pointed at three short designed prompts (90–199 kept tokens). Unit 2's
   guard against a NaN group bar (#132) raised for the **whole run** when three

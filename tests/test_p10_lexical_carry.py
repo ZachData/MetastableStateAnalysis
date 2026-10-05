@@ -146,3 +146,31 @@ def test_measure_run_on_a_directory(tmp_path):
     assert out[1]["unclustered"]["n"] == 5
     with pytest.raises(CompositionError, match="activations hold"):
         measure_run(d, VOCAB, set(), acts=x[:, :4])
+
+
+def test_carry_reference_set_is_the_domain():
+    rng = np.random.default_rng(5)
+    x = rng.normal(size=(3, 9, 6))
+    x /= np.linalg.norm(x, axis=2, keepdims=True)
+    ref = np.array([1, 2, 4, 5, 7])
+    pos = [2, 5, 7]
+    sub = carry_stats(x[:, ref], 2, [1, 3, 4])            # the same, on the sub-cloud
+    assert carry_stats(x, 2, pos, ref) == sub
+    assert carry_stats(x, 2, pos, np.arange(9)) == carry_stats(x, 2, pos)
+    with pytest.raises(CompositionError, match="reference set"):
+        carry_stats(x, 2, [3], ref)
+
+
+def test_measure_run_on_a_column_domain(tmp_path):
+    rng = np.random.default_rng(3)
+    x = rng.normal(size=(2, len(TOKENS), 8))
+    x /= np.linalg.norm(x, axis=2, keepdims=True)
+    d = _run(tmp_path, {"0": [0] * len(TOKENS)})
+    lab = np.array([-1, 0, 0, 1, 0, 1])
+    lab_dom = lab.copy()
+    lab_dom[[0]] = -2                                       # position 0 outside the domain
+    full = measure_run(d, VOCAB, set(), acts=x, labels={1: lab})[1]
+    dom = measure_run(d, VOCAB, set(), acts=x, labels={1: lab_dom})[1]
+    assert dom["n_focal"] == full["n_focal"]
+    assert dom["focal"] == carry_stats(x, 1, [f for f in range(1, 6) if lab[f] >= 0 and TOKENS.count(TOKENS[f]) == 1],
+                                       np.arange(1, 6))
