@@ -298,3 +298,14 @@ def test_f1_and_f12_refuse_without_a_column(monkeypatch):
         monkeypatch.setattr(sys, "argv", [name, "--old-partition", "--column", "c3"])
         with pytest.raises(SystemExit):
             mod.main()
+
+
+def test_reread_refuses_a_label_source_missing_a_step(monkeypatch, tmp_path):
+    # reader_input reads the step files that exist; the R2 readers refuse unless all 18 are there
+    import argparse
+    from tools.run import p10_partition_function as pf
+    monkeypatch.setattr(ls, "reader_input", lambda src, col: {
+        "runs": {}, "labels": {}, "records": {0: [168, 15], 64: [168, 110]}, "meta": {}})
+    args = argparse.Namespace(labels=tmp_path, column="c3", jobs=1, seed=0)
+    with pytest.raises(SystemExit, match="missing or extra"):
+        pf.reread(args, pf.reread_run, "test")

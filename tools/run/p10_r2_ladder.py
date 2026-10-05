@@ -25,8 +25,9 @@ labelled so. A window that spans the switch (32 → 64) is read on the primary, 
 every step beside it. **A row holds** where the primary's label equals c0's at every step
 (`p10_r1_ladder.holds`: the first column that changed a label, and where it settled).
 
-Checks before any reading: every record names the same label source and summary sha256, and
-c3's readable counts equal the source's ``summary.json``. ``--published <dir>``: c0's per-unit
+Checks before any reading: every record names the same label source and summary sha256, holds
+every step of the source (the learned split: 143000 only), and c3's readable counts equal the
+source's ``summary.json``. ``--published <dir>``: c0's per-unit
 statistic against the published records (``p10_f1_transport.json``, ``p10_f12_z.json``) on the
 units both read (same run-dir name, layer, beta). Those records read the **earlier WDS sweep**
 (2026-08-31 dirs), not Stage 0, so this compares two sweeps of the same prompts and steps: a
@@ -76,7 +77,12 @@ def load(dirpath: Path, labels: Path) -> Dict:
                 "records": {int(s): x for s, x in d["records_readable"].items()},
                 "runs": d["runs"], "inputs": dict(d["inputs"])}
     summ = json.loads((labels / "summary.json").read_text())
+    steps = {int(k.removeprefix("step")) for k in summ if k.startswith("step")}
     for r in READERS:
+        for col, rec in recs[r].items():
+            want = {max(steps)} if col in LEARNED else steps
+            if set(rec["records"]) != want:
+                raise LadderError(f"{r}_{col}: steps {sorted(set(rec['records']) ^ want)} missing or extra")
         for s, rec in recs[r]["c3"]["records"].items():
             src = summ[f"step{s}"]["columns"]["c3"]
             if (rec["n"], rec["readable"]) != (src["records"], src["readable"]):

@@ -341,8 +341,14 @@ def reread(args, measure, context: str) -> dict:
     """Run ``measure(run_dir, labels, step, prompt, seed) -> rows`` over one column, per
     (step, prompt), in ``args.jobs`` processes; returns the record's common part."""
     from concurrent.futures import ProcessPoolExecutor
-    from tools.run.p10_label_source import reader_input
+    from tools.run.p10_label_source import LEARNED_SPLIT, LEARNED_STEP, MODELS, reader_input
     src = reader_input(args.labels, args.column)
+    # reader_input reads the step files that exist; the re-read promises every step (CodeRabbit, #147)
+    want = {LEARNED_STEP} if args.column in LEARNED_SPLIT else set(MODELS)
+    got = {f"step{s}" for s in src["records"]}
+    if got != want:
+        raise SystemExit(f"refusing: {args.labels} column {args.column} has steps {sorted(got ^ want)} "
+                         f"missing or extra; the re-read reads all {len(want)}")
     refuse_held_out(sorted(set(src["runs"].values())), context=context)
     print(f"column {args.column}: {len(src['runs'])} runs, readable records per step "
           + " ".join(f"{s}:{r[1]}/{r[0]}" for s, r in src["records"].items()), flush=True)

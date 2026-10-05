@@ -66,3 +66,19 @@ def test_published_check_refuses_when_nothing_matched(tmp_path):
     c0 = {"runs": {"0|a": [{"layer": 1, "stat": -0.1}]}, "inputs": {"0|a": "/x/Stage0/r"}}
     with pytest.raises(lad.LadderError, match="compared 0"):
         lad.published_check({"recs": {"f1": {"c0": c0}, "f12": {"c0": c0}}}, tmp_path)
+
+
+def test_load_refuses_a_record_missing_a_step(tmp_path):
+    labels = tmp_path / "labels"
+    labels.mkdir()
+    (labels / "summary.json").write_text(json.dumps(
+        {f"step{s}": {"columns": {"c3": {"records": 168, "readable": 100}}} for s in (0, 64, 143000)}))
+    for r in lad.READERS:
+        for c in lad.COLUMNS:
+            steps = [143000] if c in lad.LEARNED else [0, 64]          # 143000 missing
+            (tmp_path / f"{r}_{c}.json").write_text(json.dumps({
+                "label_source": {"labels": str(labels), "column": c, "summary_sha256": "x"},
+                "by_step": {str(s): {} for s in steps}, "runs": {}, "inputs": [],
+                "records_readable": {str(s): {"n": 168, "readable": 100} for s in steps}}))
+    with pytest.raises(lad.LadderError, match=r"steps \[143000\] missing"):
+        lad.load(tmp_path, labels)
