@@ -460,6 +460,55 @@ finding 1): "learned" keeps content at its base rate. Reader: content plateaus i
 category list's 240 trained clouds, 0 on the other two, none at step 0 or at L17–24 below r
 0.6. `status-1d.md` "Unit 4 on the designed prompts"; next is `STATE.md` Blocked 22.*
 
+### The working definition (Blocked 22, option (a), 2026-10-05; the user asked for the best recommendation and Claude took (a))
+
+Decided after unit 4 (`status-1d.md` "Unit 4 on the designed prompts", "Which filter carries
+it"). **This is what Phase 10's rows are re-read on.** It is a working definition: a set of
+groups with its controls stated, not the theory's cluster at a scale. Counts on v1:
+`status-1d.md` "Blocked 22 decided".
+
+| point | value | why, and what was rejected |
+|---|---|---|
+| cloud | one checkpoint of one model (Phase 10: `pythia-410m`), one prompt, layer ℓ ∈ L1–24, **centred** frame; T1–T3 | unit 0's token rules |
+| groups | admission's level-set HDBSCAN groups (`admit.layer_groups`), `min_cluster_size` **2**, float64 distances | the tie-free route ("Admission") |
+| not bulk | < 25 % of the prompt's kept tokens (`arch_null.BULK_SHARE`) | unit 2's bulk groups are not word classes |
+| stable | unit 1's own floor: median subsample Jaccard ≥ 0.5 and `J₀` > 0 | unit 1 classifies nothing else (on v1 most trained non-bulk records are `unstable` or `floor 0`) |
+| **cluster** | a stable, non-bulk group whose unit 1 class is **moves**: best-match Jaccard ≥ its own `J₀` at every P > 0 under every preamble, EOD join | the one filter shown to separate trained structure from the start of the context (unit 1: trained groups move, step 0's do not), and it enriches known content a little (unit 4: 0.78 vs 0.60, 0.77 vs 0.62) |
+| beside, per group | **learned** (unit 2's bar) and, where seeds exist, **replicates**; origin from L0 (carried / L1 / later); the `\n\n` join; the fixed bar 0.5 | learned does not select known content (unit 4: 0.73 vs 0.72, 0.61 vs 0.75) and drops about half the moving content groups. Rejected as a gate: (b), moves ∧ learned, Blocked 14's set |
+| beside, per row | the same reading at **step 0** (the definition's floor at init); size 4 and raw arms; the row as the old `HDBSCAN(min_cluster_size=2)` partition read it | 1d's question: how much each Phase 10 row depends on the choice |
+| not in it | the reader (unit 3): a large-scale instrument of measured low sensitivity (4 % of the clouds that plainly hold known content); the per-group Gaussian admission; the position nulls | in every option of Blocked 22 the reader stays an instrument |
+
+**Its null, scale and control** (1d's question asks for all three). Null: the same reading at
+step 0 and the passage moved behind preambles (unit 1); no constructed null. Scale: none
+claimed; `min_cluster_size` 2 on the level-set tree, the finest the tree offers, with size 4
+beside; unit 3's reader, the scale instrument, has low measured sensitivity. Controls: the
+start of the context (moves), init structure (step 0's floor), bulk, subsample instability.
+
+**Known weaknesses, stated with it** (counts: `status-1d.md` "Blocked 22 decided"). (1)
+"Moves" separates trained from init (most stable trained groups move, few at step 0) but
+removes little *among* trained groups, so within one checkpoint the definition is close to
+"stable, non-bulk level-set groups"; its position control is unit 1's population result, not
+a per-group test. (2) It is not empty at init; the step-0 groups that pass are almost never
+the trained ones, so they read as chance passes, and the step-0 count is reported beside
+every row as the floor. (3) "Moves" needs unit 1's preamble passes at every checkpoint read.
+(4) One seed; seven prompts. (5) It did not find entities (unit 4's third prompt).
+
+**Scope: what it cannot see** (*added after `/challenge-pr` on #143, finding 1*). T1–T3 drop
+position 0, the T2 tokens (each prompt's first delimiter, here) and every repeat of a string,
+so `repeated_tokens` has no cloud; layers are L1–24, so L0 is out; and it gives a set of groups,
+not a partition. Phase 10 rows about repeated tokens or L0 (§1.6–§1.8), position 0 or position
+(A0, F12), or needing a full partition (F1) cannot be re-read as they stand.
+
+**Not decided here; the Phase 10 re-read design fixes them:** row by row, which rows the
+definition can re-read (scope above), and for full-partition rows whether tokens outside every
+kept group are noise (HDBSCAN's −1) or assigned; the old partition read **on the same reduced
+token set** beside the definition, so a changed row says whether the token rules or the group
+filter changed it; which checkpoints get unit 1's passes (EOD join only: 7 + 3 P × 18
+(passage, preamble) pairs = 61 passes per checkpoint, ~17 checkpoints more than unit 1 ran,
+about 1,000 passes; unit 1 ran ~290 in under an hour, so a few hours on CPU, an estimate);
+prompts (v1 while the 12 v2 prompts are held out); which rows first. Opening it triggers a
+literature scan (`CLAUDE.md`).
+
 ### Order, and what is superseded
 
 Units run 1 → 2 → 3 → 4, each its own PR; unit 1 writes and runs the designed prompts

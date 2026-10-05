@@ -23,6 +23,9 @@ and the origin: the smallest ℓ₀ with the group present (best Jaccard ≥
 ``PRESENT_JACCARD``) at every layer from ℓ₀ to its own. **Candidate** =
 moves ∧ learned ∧ replicates ∧ not bulk.
 
+`definitions` counts, from `read`'s rows, each group set Phase 10 could be
+re-read on (``DEFINITIONS``; Blocked 22 decided (a), ``moves``), per step.
+
 Tier 1: exploratory, unregistered.
 """
 
@@ -192,6 +195,66 @@ def unit2_status(unit2: Path, step: str) -> Tuple[Dict[Tuple, Dict], int]:
     return out, sum(r["replicates"] for r in rep)
 
 
+def distinct_groups(rows) -> List[Dict]:
+    """One entry per member set per (prompt, frame, size), at its smallest origin."""
+    distinct: Dict[Tuple, Dict] = {}
+    for r in rows:
+        key = (r["prompt"], r["frame"], r["size"], tuple(sorted(r["members"])))
+        d = distinct.setdefault(key, {"prompt": r["prompt"], "frame": r["frame"], "size": r["size"],
+                                      "members": sorted(r["members"]), "tokens": r["tokens"],
+                                      "layers": [], "origin": r["origin"]})
+        d["layers"].append(r["layer"])
+        d["origin"] = min(d["origin"], r["origin"])
+    dist = list(distinct.values())
+    for d in dist:
+        d["origin_class"] = origin_class(d["origin"])
+    return dist
+
+
+#: The group sets Phase 10 could be re-read on (`STATE.md` Blocked 22), as filters
+#: on a non-bulk seed-0 row. (a) is the decided one (`design-1d.md` "The working
+#: definition"); the others are beside it.
+DEFINITIONS = {
+    "moves": lambda r: r["class"] == "moves",
+    "moves+learned": lambda r: r["class"] == "moves" and r["status"] in ("learned+replicates", "learned only"),
+    "candidate": lambda r: r["class"] == "moves" and r["status"] == "learned+replicates",
+    "all": lambda r: True,
+}
+
+
+def definition_counts(rows: Sequence[Dict]) -> Dict:
+    """Per definition and (frame, size): group-layer records by band, distinct groups by origin."""
+    out: Dict[str, Dict] = {}
+    for name, keep in DEFINITIONS.items():
+        for cell in sorted({(r["frame"], r["size"]) for r in rows}):
+            kept = [r for r in rows if (r["frame"], r["size"]) == cell and not r["bulk"] and keep(r)]
+            out.setdefault(name, {})[f"{cell[0]}/{cell[1]}"] = {
+                "records": len(kept),
+                "records_by_band": dict(sorted(Counter(band(r["layer"]) for r in kept).items())),
+                "distinct": dict(Counter(d["origin_class"] for d in distinct_groups(kept))),
+                "n_distinct": len(distinct_groups(kept))}
+    return out
+
+
+def definitions_cmd(argv: Optional[Sequence[str]] = None) -> int:
+    ap = argparse.ArgumentParser(prog="candidates definitions")
+    ap.add_argument("--rows", type=Path, required=True, help="`read`'s candidate_rows.json")
+    ap.add_argument("--out", type=Path, required=True)
+    args = ap.parse_args(argv)
+    rows = json.loads(args.rows.read_text())
+    if sorted(rows) != sorted(STEPS) or not all(rows.values()):
+        return _refuse(f"{args.rows} does not hold rows for both steps {STEPS}")
+    res = {"git": an._git_head(), "rows": {"path": str(args.rows), "sha256": _sha(args.rows)},
+           "steps": {s: definition_counts(rows[s]) for s in STEPS}}
+    args.out.write_text(json.dumps(res, indent=1) + "\n")
+    for s, v in res["steps"].items():
+        for name, cells in v.items():
+            for cell, c in cells.items():
+                print(f"{s:10s} {name:14s} {cell:10s} records {c['records']:5d} "
+                      f"{json.dumps(c['records_by_band'])} distinct {c['n_distinct']:5d} {json.dumps(c['distinct'])}")
+    return 0
+
+
 def tables(rows: Sequence[Dict]) -> Dict:
     """Cross table, origin tables and distinct candidates, per (frame, size, band)."""
     cross, bulk, orig = {}, {}, {}
@@ -209,19 +272,7 @@ def tables(rows: Sequence[Dict]) -> Dict:
         if r["candidate"]:
             o["candidates"][r["origin_class"]] += 1
             o["candidate_origin_hist"][r["origin"]] += 1
-    distinct: Dict[Tuple, Dict] = {}
-    for r in rows:
-        if not r["candidate"]:
-            continue
-        key = (r["prompt"], r["frame"], r["size"], tuple(sorted(r["members"])))
-        d = distinct.setdefault(key, {"prompt": r["prompt"], "frame": r["frame"], "size": r["size"],
-                                      "members": sorted(r["members"]), "tokens": r["tokens"],
-                                      "layers": [], "origin": r["origin"]})
-        d["layers"].append(r["layer"])
-        d["origin"] = min(d["origin"], r["origin"])
-    dist = list(distinct.values())
-    for d in dist:
-        d["origin_class"] = origin_class(d["origin"])
+    dist = distinct_groups(r for r in rows if r["candidate"])
     by_cell: Dict[str, Counter] = {}
     for d in dist:
         by_cell.setdefault(f"{d['frame']}/{d['size']}", Counter())[d["origin_class"]] += 1
@@ -335,7 +386,7 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"l0": l0_cmd, "read": read_cmd}
+    cmds = {"l0": l0_cmd, "read": read_cmd, "definitions": definitions_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: candidates {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2
