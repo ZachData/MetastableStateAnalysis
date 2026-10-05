@@ -3163,8 +3163,9 @@ lift the hold, and the write-up can still use unit 4 later.
 
 **What it gives on v1** (nothing run; a read of the stored rows). Input: `candidate_rows.json`
 of "The candidates" (md5 `f96e931a`), seed 0, centred size 2, not bulk. Producer: `candidates
-definitions` (new; output `data/p1d/candidates_2026-10-02/definitions.json`, md5 `f8fd33c9`).
-It reproduces that section's 120 / 21 / 79 / 24 candidates.
+definitions` (new; output `data/p1d/candidates_2026-10-02/definitions.json`, md5 `9db299fa`,
+written at `59d92e1`, clean). It reproduces that section's 120 / 21 / 79 / 24 candidates; that
+check is a run on untracked data, not a test (the test is on hand-built rows).
 
 | set | trained records (L1–8 / 9–16 / 17–24) | trained distinct (carried / L1 / later) | step-0 records | step-0 distinct |
 |---|---|---|---|---|
