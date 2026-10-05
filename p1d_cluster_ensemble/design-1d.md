@@ -430,6 +430,29 @@ re-inits at r 0.79–1.02. The one plateau lies where the rank term is free, tes
 
 The designed prompts are new text, not v2: whether they join a battery is the user's.
 
+**Unit 4 on the designed prompts** (Blocked 21, option (a), user, 2026-10-05; fixed before
+any code or record of unit 2 or 3 on them). Unit 1's records on them exist and were read
+(`status-1d.md` "Unit 1": category list and prose / code move; entities had no content group
+at P = 0), so the rules below are written knowing those, and nothing else. The synthetic's
+re-ordering row is not taken up here (Blocked 21 (a) names the designed prompts).
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| inputs | the 3 prompts of `designed_prompts.py` (hash `ae6a4312126c`), whole; unit 2's 60 models (step 0 of the 10 real inits and 40 re-inits, `step143000` of the 10 seeds); L1–24 | unit 2's comparison, unchanged |
+| token sets | T1–T3 as unit 2, T2 over the **trained** union of these 60 models on these prompts (`arch_null --prompts designed`); one file read by both routes | one token set per prompt across models and routes |
+| seeds | prompt index 7, 8, 9 after the 7 v1 prompts in every per-(prompt, layer) seed; v1 seeds unchanged | common random numbers across models, as unit 2 and 3 |
+| content group | `designed_prompts` rule 1 on the group's kept members (≥ 3 of one label, ≥ 0.75 of the labelled members) | unit 1's rule, unchanged |
+| **group route (units 1–2), per group** | at `step143000`, seed 0, centred, size 2, L1–24: a unit-2 level-set group is a **candidate** if it is a content group, **learned** (unit 2's rule: `s` above the re-inits' 95th percentile of each re-init cloud's largest `s`) and **moves**: its best-Jaccard group in unit 1's P = 0 record (same layer, frame, size) has Jaccard ≥ 0.5 and class `moves` | the design's pass, as a conjunction; 0.5 is unit 2's replication Jaccard. Seed 0 because unit 1 ran only seed 0 |
+| step-0 baseline | the same learned-content count on each of the 10 real inits at step 0, against the same bars | "at step 0, not". Moves cannot be read at step 0 (unit 1 ran the designed prompts there at P = 0 only) |
+| **pass, per prompt** | (i) ≥ 1 candidate, and (ii) seed 0's learned-content count over L1–24 exceeds the **maximum** of the 10 step-0 inits' counts | **placed**. The maximum of 10, not a quantile: with 10 inits a quantile is that maximum or below it |
+| **verdict** | the group route sees known content if **≥ 2 of 3** prompts pass. Written knowing entities had no content group in unit 1, so in practice both other prompts must pass | **placed**. Rejected: 3 of 3 (entities' failure is the prediction's, not the route's, `designed_prompts` rule 3) |
+| first check | unit 2's, on these records (30 medians per cell); a failed cell refuses the learned rule there, as unit 2 | unchanged |
+| beside, not the verdict | seeds 1–9's learned-content counts; seed-0 candidates' replication (unit 2's rule); size 4, raw frame; per label | replication across seeds, as unit 2 |
+| **reader (unit 3), beside: its measured sensitivity** | the reader as gated (`scale_real`, conjunction, `MIN_RUN` 3, main arm the reading, size 2 beside), on these prompts: a step-0 batch of the 50 models (the references), then `step143000` of the 10 inits, each cloud with its window. Per plateau, its first cut's clusters of the arm's size, each tested by rule 1 (**content cluster**), and the ARI of the cut against the labels over labelled tokens clustered in it | the instrument v1 was read with. Rule 1 per cluster, so a plateau that splits categories into finer pieces still counts |
+| sensitivity | per band and arm: trained clouds (10 inits × 3 prompts × 8 layers = 240) with ≥ 1 plateau holding ≥ 1 content cluster; the same for the step-0 real inits ranked among the 40 re-inits (`read`'s route); per prompt; the `r` ranges of content plateaus | no pass: a measurement, as Blocked 21 (a) asks |
+| outcomes, written before the run | **group route passes**: the candidate definition (moves ∩ learned) finds known content. **Learned fails where moves passed**: unit 2's bar cannot see known lexical classes, and v1's "not learned" is not evidence of absence. **Reader finds content plateaus, rarely at step 0**: it can see known content in those windows, and v1's "none" is read against that rate. If they fall at L17–24 below r 0.6, the v1 plateau kept as a claim (Blocked 21) is where the reader sees content. **Reader finds none**: it cannot see known lexical classes, so v1's "none" carries no weight and the kept plateau rests on `p_gauss` alone. **As many at step 0**: not specific on these prompts | placed so that none is a surprise |
+| order and cost | `arch_null` norms → run → check → read with `--prompts designed`, then `scale_real` step 0 → step143000 → `trained`; each first output opened (populated, not just present) before the rest. ~180 (model, prompt) pairs per route, prompts ≤ 394 tokens: about 1–2 h on 14 workers (estimate) | the populated-not-present rule |
+
 ### Order, and what is superseded
 
 Units run 1 → 2 → 3 → 4, each its own PR; unit 1 writes and runs the designed prompts
