@@ -953,3 +953,26 @@ Still open, and neither is now blocking a construction:
    model. §11 makes the second one cheap enough that the answer matters more,
    not less — `github.com/anthropics/jacobian-lens` and the two repos named
    above are reachable and are the fastest route.
+
+## 16. The re-read on 1d's working definition (added 2026-10-05)
+
+Scan for the Phase 10 re-read design (`CLAUDE.md` "Literature scans", trigger 1: `design-10.md`
+freezes after it). 10 web searches, 4 fetches (abstracts and method lines, nothing read whole).
+Marks: **[S]** = abstract or search summary, **[H]** = HTML method lines. No data opened, no
+forward pass.
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | *Features have life history* (`2605.18789`): SAE features on Pythia-160M and **410M** at steps 0, 1k, 10k, 40k, 80k, 120k, 143k, matched between adjacent checkpoints by Hungarian assignment on activation-profile correlation, **accepted at r ≥ 0.5**, unmatched = birth / death. Features emerge, die and reorganise ~40× faster in the first 1 % of training; the ~50-feature "carrier scaffold" is largely fixed by then | [H] | the early checkpoints are where the change is: read all 16 below 143000, not a thinned set. Precedent for the matcher (Parked in `handoff-10.md`): one-to-one assignment with a fixed bar, 0.5 as unit 1's fixed bar |
+| 2 | MONIC (Spiliopoulou et al. 2006) and its R package `clusTransition` (`10.1371/journal.pone.0278146`): transitions between two clusterings at successive times by overlap of content: survival, split, merge, birth, death | [S] | the taxonomy for the cross-checkpoint matcher; unit 1's best-match Jaccard against `J₀` already reads "survival" |
+| 3 | Pythia learns the unigram distribution first (some by step 1,000) and the bigram after ~8,000 (Belrose et al., `2402.04362`) | [S] | `status-10.md` §1.10's class effect at step 512 falls in the unigram stage. The re-read reads it at 512, 1000, 2000–8000 as it stands, without adding an n-gram control (Parked) |
+| 4 | SAE-Track (`2412.17626`): at init and warmup, token-level features form tight clusters; concept-level features cohere later | [S] | agrees in direction with §1.9–§1.10 (per-token first). No method transfers |
+| 5 | Self-similarity (Ethayarajh 2019, `1909.00512`): cosine between one word's representations across contexts, read against the anisotropy baseline; it falls in upper layers | [S] | the measure the context-shuffle test (Parked) would use; its anisotropy correction is what the centred frame does already |
+| 6 | Extreme tokens (`2410.13835`): in OLMo-7B the period becomes a second sink beside the first token; attention on extreme tokens rises fast early in training, then plateaus | [H] | T2 must be taken as the union over **every checkpoint read**, not per checkpoint, or the token set changes along the axis the rows read |
+| 7 | Multiverse analysis (Steegen et al. 2016, `10.1177/1745691616658637`) and specification curves: report one result over every reasonable choice, showing which choice moves it | [S] | the shape of the c0 → c3 ladder in `design-10.md`: one column per choice (token rules, group route, filter) |
+| 8 | Not found: a paper that re-reads cluster-level findings in a trained decoder's residual stream under a second cluster definition, or that asks whether clusters survive moving the text (2 searches here, 2 in `lit-1d.md` §10 row 7) | — | weak evidence of novelty, nothing to adopt |
+
+Sources: https://arxiv.org/abs/2605.18789 ; https://kbs.uni-hannover.de/~ntoutsi/papers/06.HDMS.pdf ;
+https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0278146 ; https://arxiv.org/abs/2402.04362 ;
+https://arxiv.org/abs/2412.17626 ; https://arxiv.org/abs/1909.00512 ; https://arxiv.org/html/2410.13835v1 ;
+https://journals.sagepub.com/doi/10.1177/1745691616658637

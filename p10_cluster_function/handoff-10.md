@@ -27,6 +27,12 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > forward passes for all 19), the prompts (v1 while v2 is held out), which rows go first,
 > and the step-0 floor and old-partition reading beside each row. A literature scan comes
 > before it freezes.
+>
+> **Re-read design proposed, 2026-10-05: `design-10.md`** (scan: `lit-10.md` §16). Not frozen
+> until the user accepts it (`STATE.md` Blocked 23). In short: 18 checkpoints, 7 v1 passages,
+> a c0 → c3 ladder per row (one choice per column, step-0 baselines on c2); re-read §1.7
+> (unique tokens), §1.9, §1.10, F1, F12 (its gap against step 0),
+> A0 (under T4); order R0 build (976 passes) → R1 §1.7/§1.9/§1.10 → R2 F1 + F12 → R3 A0.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`

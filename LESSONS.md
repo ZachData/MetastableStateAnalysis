@@ -166,6 +166,12 @@ world moves, nobody updates the line, and the next session acts on it.
   user's 2026-09-25 directions for 1d: a 150-line cap counted lines, not bytes.
   Moved to `status-1d.md`. Rule: a cost carried into a decision names the
   code path it was measured on.
+- 2026-10-05 (Phase 10 re-read design): `design-1d.md` "Scope" (#143,
+  written to answer a review finding) said F1 "needs a full partition" and
+  put A0 and F12 out as well. Opening the readers showed all three use only a
+  clustered / noise split (`label_permutation_null` over a binary label), so
+  they can be re-read. Nobody had opened the readers. Same rule as the cost
+  line above: a claim about what code needs names the function it read.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
