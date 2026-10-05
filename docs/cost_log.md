@@ -238,3 +238,4 @@ running median of the rows above it gets a line under the table saying why.
   ~75 min) and two fixes found by the runs, in one session; ~12 calls were monitor milestones and
   expiries. One end-of-batch watcher per batch would have done (as #131's note already says).
 | 2026-10-05 | 1d Blocked 22 decided (a): working definition = trained groups that move; Phase 10 hold lifted for a re-read (before /challenge-pr) | 23 | 119k | 1.9M | 32k | #143 |
+| 2026-10-05 | Phase 10 re-read design + lit scan §16 (before /challenge-pr) | 41 | 152k | 4.4M | 44k | #144 |

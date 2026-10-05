@@ -497,7 +497,10 @@ every row as the floor. (3) "Moves" needs unit 1's preamble passes at every chec
 position 0, the T2 tokens (each prompt's first delimiter, here) and every repeat of a string,
 so `repeated_tokens` has no cloud; layers are L1–24, so L0 is out; and it gives a set of groups,
 not a partition. Phase 10 rows about repeated tokens or L0 (§1.6–§1.8), position 0 or position
-(A0, F12), or needing a full partition (F1) cannot be re-read as they stand.
+(A0, F12), or needing a full partition (F1) cannot be re-read as they stand. *Narrowed by
+`p10_cluster_function/design-10.md` (2026-10-05, proposed):* F1, F12's corrected `Z` and A0 (under
+T4) read only a clustered / noise split, and §1.7's unique-token rows survive T3, so those are
+re-read there; "full partition" was not checked against the readers when this was written.
 
 **Not decided here; the Phase 10 re-read design fixes them:** row by row, which rows the
 definition can re-read (scope above), and for full-partition rows whether tokens outside every
