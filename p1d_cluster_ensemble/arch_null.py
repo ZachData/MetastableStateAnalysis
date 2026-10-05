@@ -69,6 +69,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
+from . import designed_prompts as dp
 from .admit import level_set_hdbscan
 from .gaussian_null import cluster_index_2, frame_vectors, gaussian_draw, span_coordinates
 from .move_text import (LAYERS, MASSIVE_LAYERS, MASSIVE_RATIO, V1_MAX_TOKENS, V1_PASSAGES,
@@ -105,6 +106,8 @@ REPLICATE_GROUP_SEEDS = 6
 REPLICATE_CLOUD_SEEDS = 8
 #: Offsets that count as the prompt's opening (as unit 1).
 OPENING = 8
+#: Prompt sets a run reads (`prompt_keys`): the 7 v1 passages, or unit 4's designed prompts.
+PROMPT_SETS = ("v1", "designed")
 BASE_REPO = "EleutherAI/pythia-410m"
 
 # Pythia's init (`lit-1d.md` §10 rows 2, 2a), by parameter name.
@@ -228,10 +231,24 @@ def check_config(model) -> None:
 # Prompts and token sets
 # ---------------------------------------------------------------------------
 
-def prompt_ids(tokenizer) -> Dict[str, List[int]]:
-    """The 7 v1 passages, truncated to ``V1_MAX_TOKENS`` as every v1 run read them."""
+def prompt_keys(which: str = "v1") -> Tuple[str, ...]:
+    """The prompts of a set: the 7 v1 passages, or the 3 designed prompts (`design-1d.md` "Unit 4")."""
+    if which == "v1":
+        return tuple(V1_PASSAGES)
+    if which == "designed":
+        return tuple(dp.KEYS)
+    raise ValueError(which)
+
+
+def prompt_index(prompt: str) -> int:
+    """A prompt's index in every per-(prompt, layer) seed: v1 0–6 (unchanged), designed 7–9."""
+    return (*V1_PASSAGES, *dp.KEYS).index(prompt)
+
+
+def prompt_ids(tokenizer, which: str = "v1") -> Dict[str, List[int]]:
+    """The 7 v1 passages, truncated to ``V1_MAX_TOKENS`` as every v1 run read them; or the designed prompts, whole."""
     from .move_text import passage_inputs
-    return {k: v["ids"] for k, v in passage_inputs("v1", tokenizer).items()}
+    return {k: v["ids"] for k, v in passage_inputs(which, tokenizer).items()}
 
 
 def massive_table(norms: Dict[str, np.ndarray]) -> Dict[str, Dict[int, Tuple[float, int]]]:
@@ -333,7 +350,7 @@ _ONE_THREAD = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 def _job(args: Tuple[str, int, str, np.ndarray, np.ndarray, int, int]) -> Tuple[str, Dict]:
     prompt, L, frame, Y, kept, seed, n_draws = args
-    rec = cloud_record(Y, frame, n_draws, [seed, V1_PASSAGES.index(prompt), L, FRAMES.index(frame)])
+    rec = cloud_record(Y, frame, n_draws, [seed, prompt_index(prompt), L, FRAMES.index(frame)])
     for a in rec["arms"].values():
         for g in a["groups"]:
             g["members"] = kept[g["members"]].tolist()
@@ -458,7 +475,8 @@ def layer_outer_share(z: Dict[Tuple, float], mids: Sequence[str], ref: Sequence[
 POWER_FOLDS = 4
 
 
-def power(recs: Sequence[Dict], reinits: Sequence[str], inits: Sequence[str]) -> List[Dict]:
+def power(recs: Sequence[Dict], reinits: Sequence[str], inits: Sequence[str],
+          prompts: Sequence[str] = V1_PASSAGES) -> List[Dict]:
     """
     How much the first check can see (`/challenge-pr` on #131, findings 1–2).
     Per fold, ``len(inits)`` re-inits are held out as pseudo-real and ranked
@@ -475,14 +493,15 @@ def power(recs: Sequence[Dict], reinits: Sequence[str], inits: Sequence[str]) ->
     cells: Dict[Tuple, Dict[str, List[float]]] = {}
     for f in folds:
         ref = [r for r in reinits if r not in f]
-        held = {(r["stat"], r["frame"], r["band"]): r["share_outer"] for r in first_check(recs, ref, f)}
-        real = {(r["stat"], r["frame"], r["band"]): r["share_outer"] for r in first_check(recs, ref, inits)}
+        held = {(r["stat"], r["frame"], r["band"]): r["share_outer"] for r in first_check(recs, ref, f, prompts)}
+        real = {(r["stat"], r["frame"], r["band"]): r["share_outer"]
+                for r in first_check(recs, ref, inits, prompts)}
         for key in held:
             c = cells.setdefault(key, {"held": [], "real": [], "held_layer": [], "real_layer": []})
             c["held"].append(held[key])
             c["real"].append(real[key])
-            c["held_layer"].append(layer_outer_share(z, f, ref, *key))
-            c["real_layer"].append(layer_outer_share(z, inits, ref, *key))
+            c["held_layer"].append(layer_outer_share(z, f, ref, *key, prompts=prompts))
+            c["real_layer"].append(layer_outer_share(z, inits, ref, *key, prompts=prompts))
     return [{"stat": s, "frame": fr, "band": b, "n_ref": len(reinits) - k,
              "median_share_heldout_mean": round(float(np.mean(c["held"])), 3),
              "median_share_heldout_max": round(float(np.max(c["held"])), 3),
@@ -766,9 +785,10 @@ def norms_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--step", default="step0")
     ap.add_argument("--models", choices=("init", "reinit", "all"), default="all")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
     tok = _tok()
-    ids = prompt_ids(tok)
+    ids = prompt_ids(tok, args.prompts)
     d = args.out / args.step / "norms"
     d.mkdir(parents=True, exist_ok=True)
     for mid in model_ids(args.models):
@@ -780,7 +800,7 @@ def norms_cmd(argv: Optional[Sequence[str]] = None) -> int:
         check_config(model)
         norms = {k: forward(model, ids[k])[1] for k in ids}
         tab = massive_table(norms)
-        rec = {"model": mid, "step": args.step, "init": init_summary(model),
+        rec = {"model": mid, "step": args.step, "prompts": args.prompts, "init": init_summary(model),
                "massive": {k: {str(p): list(v) for p, v in t.items()} for k, t in tab.items()},
                "position0_ratio_max": {k: float(max(n[L][0] / np.median(n[L]) for L in MASSIVE_LAYERS))
                                        for k, n in norms.items()},
@@ -840,6 +860,7 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--union", choices=UNIONS, default="first",
                     help="the T2 comparison (`comparison_models`)")
     ap.add_argument("--norms", type=Path, default=None, help="root of <step>/norms (default --out)")
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
     if args.step not in steps_of(args.union):
         raise SystemExit(f"refusing: step {args.step} is not in the {args.union!r} comparison")
@@ -847,11 +868,15 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     if args.torch_threads:
         torch.set_num_threads(args.torch_threads)
     tok = _tok()
-    ids = prompt_ids(tok)
+    ids = prompt_ids(tok, args.prompts)
     keys = args.keys or list(ids)
     pairs = comparison_models(args.union)
     comp = [label(st, m) for st, m in pairs]
     norms = _load_norms(args.norms or args.out, pairs)
+    # A norms file of another prompt set has no T2 table for these prompts: T2 would drop nothing, silently.
+    short = [m for m, n in norms.items() if set(ids) - set(n["massive"])]
+    if short:
+        raise SystemExit(f"refusing: norms of {short[:3]} ({len(short)} in all) lack prompts of set {args.prompts!r}")
     toks = {k: tok.convert_ids_to_tokens(ids[k]) for k in ids}
     sets = token_sets(toks, {m: {k: {int(p): tuple(v) for p, v in t.items()}
                                  for k, t in n["massive"].items()} for m, n in norms.items()})
@@ -861,7 +886,8 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     meta = {"git": _git_head(), "step": args.step, "seed": args.seed, "n_draws": args.n_draws,
             "settings": {"massive_ratio": MASSIVE_RATIO, "massive_layers": [MASSIVE_LAYERS[0], MASSIVE_LAYERS[-1]],
                          "frames": FRAMES, "min_cluster_sizes": MIN_CLUSTER_SIZES, "alpha": ALPHA,
-                         "v1_max_tokens": V1_MAX_TOKENS, "union": args.union, "comparison": comp}}
+                         "v1_max_tokens": V1_MAX_TOKENS, "union": args.union, "comparison": comp,
+                         "prompts": args.prompts}}
     mids = args.only or model_ids("init" if args.step != "step0" else args.models)
     pool = make_pool(args.workers)
     for mid in mids:
@@ -887,7 +913,8 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
-def load_records(out: Path, step: str, mids: Sequence[str], union: Optional[str] = None) -> List[Dict]:
+def load_records(out: Path, step: str, mids: Sequence[str], union: Optional[str] = None,
+                 prompts: Sequence[str] = V1_PASSAGES) -> List[Dict]:
     """
     Every existing record of ``mids`` at ``step``. With ``union``, refuses a
     record whose T2 comparison is not that union's (a record of the other
@@ -896,7 +923,7 @@ def load_records(out: Path, step: str, mids: Sequence[str], union: Optional[str]
     recs = []
     want = None if union is None else [label(st, m) for st, m in comparison_models(union)]
     for m in mids:
-        for k in V1_PASSAGES:
+        for k in prompts:
             f = out / step / _mfile(m) / f"{k}.json"
             if f.exists():
                 r = json.loads(f.read_text())
@@ -910,19 +937,22 @@ def check_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="arch_null check")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--union", choices=UNIONS, default="first")
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
     inits, reinits = model_ids("init"), model_ids("reinit")
-    recs = load_records(args.out, "step0", inits + reinits, args.union)
-    want = len(V1_PASSAGES) * (len(inits) + len(reinits))
+    keys = prompt_keys(args.prompts)
+    recs = load_records(args.out, "step0", inits + reinits, args.union, keys)
+    want = len(keys) * (len(inits) + len(reinits))
     if len(recs) != want:
         print(f"refusing: {len(recs)} of {want} step-0 records", file=sys.stderr)
         return 1
-    rows = first_check(recs, reinits, inits)
-    pw = power(recs, reinits, inits)
+    rows = first_check(recs, reinits, inits, keys)
+    pw = power(recs, reinits, inits, keys)
     (args.out / "first_check_power.json").write_text(json.dumps(pw, indent=1) + "\n")
     res = {"rows": rows, "raw": raw_table(recs), "git": sorted({r["meta"]["git"] for r in recs}),
            "n_draws": sorted({r["meta"]["n_draws"] for r in recs}),
-           "bound": FIRST_CHECK_BOUND, "outer": OUTER, "flagged_seeds": FLAGGED_SEEDS, "union": args.union}
+           "bound": FIRST_CHECK_BOUND, "outer": OUTER, "flagged_seeds": FLAGGED_SEEDS, "union": args.union,
+           "prompts": args.prompts}
     (args.out / "first_check.json").write_text(json.dumps(res, indent=1) + "\n")
     print(f"first check: share of (init, prompt) band-median ranks in the re-inits' outer "
           f"{OUTER:.0%}; pass <= {FIRST_CHECK_BOUND:.0%}")
@@ -962,33 +992,37 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     """The trained cells; refuses unless the first check was re-run on the trained union's records."""
     ap = argparse.ArgumentParser(prog="arch_null read")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
     fc_file = args.out / "first_check.json"
-    if not fc_file.exists() or json.loads(fc_file.read_text()).get("union") != "trained":
-        print("refusing: run `check --union trained` on the recomputed step-0 records first", file=sys.stderr)
+    fc = json.loads(fc_file.read_text()) if fc_file.exists() else {}
+    if fc.get("union") != "trained" or fc.get("prompts", "v1") != args.prompts:
+        print(f"refusing: run `check --union trained --prompts {args.prompts}` on the recomputed step-0 "
+              "records first", file=sys.stderr)
         return 1
     inits, reinits = model_ids("init"), model_ids("reinit")
     seeds = [int(m.split(":")[1]) for m in inits]
-    recs0 = load_records(args.out, "step0", inits + reinits, "trained")
-    rect = load_records(args.out, TRAINED_STEP, inits, "trained")
-    if len(recs0) != len(V1_PASSAGES) * (len(inits) + len(reinits)) or len(rect) != len(V1_PASSAGES) * len(inits):
+    keys = prompt_keys(args.prompts)
+    recs0 = load_records(args.out, "step0", inits + reinits, "trained", keys)
+    rect = load_records(args.out, TRAINED_STEP, inits, "trained", keys)
+    if len(recs0) != len(keys) * (len(inits) + len(reinits)) or len(rect) != len(keys) * len(inits):
         print(f"refusing: {len(recs0)} step-0 and {len(rect)} trained records", file=sys.stderr)
         return 1
-    check = first_check(recs0, reinits, inits)
+    check = first_check(recs0, reinits, inits, keys)
     stored = {(r["stat"], r["frame"], r["band"]): r["verdict"]
               for r in json.loads(fc_file.read_text())["rows"]}
     if stored != {(r["stat"], r["frame"], r["band"]): r["verdict"] for r in check}:
         print("refusing: the stored first check does not match these records", file=sys.stderr)
         return 1
     failed = failed_cells(check)
-    crows = cloud_rules(z_table(recs0), z_table(rect), reinits, inits, failed)
+    crows = cloud_rules(z_table(recs0), z_table(rect), reinits, inits, failed, keys)
     csum = cloud_summary(crows, seeds)
     grows = group_rules(rect, group_bars(recs0, reinits), failed)
     rep = replication(grows, seeds)
     position_tightness([r for r in rep if r["replicates"]], {r["prompt"]: r["kept"] for r in rect})
     gsum = group_summary(grows, rep, seeds)
     tok = _tok()
-    ids = prompt_ids(tok)
+    ids = prompt_ids(tok, args.prompts)
     strs = {k: tok.convert_ids_to_tokens(v) for k, v in ids.items()}
     for r in rep:
         r["tokens"] = [strs[r["prompt"]][i] for i in r["members"]]

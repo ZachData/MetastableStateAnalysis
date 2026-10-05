@@ -69,8 +69,9 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from .arch_null import (BANDS, TRAINED_STEP, _git_head, _mfile, _tok, check_config,
-                        comparison_models, label, load, make_pool, model_ids, prompt_ids)
+from .arch_null import (BANDS, PROMPT_SETS, TRAINED_STEP, _git_head, _mfile, _tok, check_config,
+                        comparison_models, label, load, make_pool, model_ids, prompt_ids, prompt_index,
+                        prompt_keys)
 from .gaussian_null import frame_vectors, gaussian_draw, span_coordinates
 from .move_text import LAYERS, V1_PASSAGES, band
 from .scale_spectrum import (ALPHA, ARMS, GATING_ARM, GRID_HI, GRID_LO, GRID_N, MAX_GAUSSIAN_PLATEAUS,
@@ -98,9 +99,14 @@ GATE_N = sum(GATE_PER_BAND)
 GATE_SEED = 20_000
 
 
+def _keys(which: str) -> Tuple[str, ...]:
+    """A prompt set's keys; v1 read from this module's global at call time."""
+    return tuple(V1_PASSAGES) if which == "v1" else prompt_keys(which)
+
+
 def cloud_seed(prompt: str, layer: int) -> int:
     """One seed per (prompt, layer), the same in every model (common random numbers)."""
-    return SEED_BASE + 100 * V1_PASSAGES.index(prompt) + int(layer)
+    return SEED_BASE + 100 * prompt_index(prompt) + int(layer)
 
 
 # ---------------------------------------------------------------------------
@@ -132,14 +138,14 @@ def _job(args: Tuple[str, str, int, np.ndarray]) -> Tuple[str, str, int, Dict, O
     return mid, prompt, L, rec, lab
 
 
-def load_sets(path: Path) -> Dict[str, List[int]]:
-    """The kept positions per prompt; refuses unless the file is the trained union's."""
+def load_sets(path: Path, which: str = "v1") -> Dict[str, List[int]]:
+    """The kept positions per prompt; refuses unless the file is the trained union's, on set ``which``."""
     d = json.loads(path.read_text())
     want = [label(st, m) for st, m in comparison_models("trained")]
     if d.get("comparison") != want:
         raise SystemExit(f"refusing: {path} is not unit 2's trained T2 union")
-    if set(d["sets"]) != set(V1_PASSAGES):
-        raise SystemExit(f"refusing: {path} prompts {sorted(d['sets'])} are not the 7 v1 prompts")
+    if set(d["sets"]) != set(_keys(which)):
+        raise SystemExit(f"refusing: {path} prompts {sorted(d['sets'])} are not the {which} prompts")
     return {k: v["kept"] for k, v in d["sets"].items()}
 
 
@@ -170,20 +176,23 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
                     help=f"step0: all 50 models (the references); {TRAINED_STEP}: the 10 inits (the trained reading)")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--torch-threads", type=int, default=2)
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
+    if args.prompts != "v1" and args.sets is None:
+        raise SystemExit("refusing: a prompt set other than v1 needs its own --sets (the default is v1's)")
     allowed = model_ids("all" if args.step == "step0" else "init")
     if args.only and set(args.only) - set(allowed):
         raise SystemExit(f"refusing: {sorted(set(args.only) - set(allowed))} do not exist at {args.step}")
     sets_path = args.sets or Path(os.environ["METS_DATA"]) / DEFAULT_SETS
-    kept = load_sets(sets_path)
+    kept = load_sets(sets_path, args.prompts)
     import torch
     torch.set_num_threads(args.torch_threads)
     from .move_text import forward
     tok = _tok()
-    ids = prompt_ids(tok)
-    keys = args.keys or list(V1_PASSAGES)
+    ids = prompt_ids(tok, args.prompts)
+    keys = args.keys or list(_keys(args.prompts))
     mids = args.only or allowed
-    meta = {"git": _git_head(), "step": args.step, "frame": FRAME,
+    meta = {"git": _git_head(), "step": args.step, "frame": FRAME, "prompts": args.prompts,
             "sets": str(sets_path), "sets_sha256": hashlib.sha256(sets_path.read_bytes()).hexdigest()[:16],
             "prompt_token_sha256": {k: hashlib.sha256(json.dumps(ids[k]).encode()).hexdigest()[:16]
                                     for k in keys},
@@ -279,18 +288,20 @@ def rank_rows(rows: Sequence[Dict], refs: np.ndarray) -> List[Dict]:
     return out
 
 
-def load_run(out: Path, mids: Optional[Sequence[str]] = None) -> Tuple[Dict, Dict]:
+def load_run(out: Path, mids: Optional[Sequence[str]] = None,
+             prompts: Optional[Sequence[str]] = None) -> Tuple[Dict, Dict]:
     """
     Every (model, prompt) record and its labels, over ``mids`` (default all 50):
     ``recs[mid][prompt][L]`` and ``labs[mid][prompt][L]`` (``(GRID_N, n)``). Refuses on
     a missing pair, a refused tree, a mixed git, or token sets that differ between records.
     """
     mids = list(mids or model_ids("all"))
+    prompts = V1_PASSAGES if prompts is None else prompts
     recs: Dict = {}
     labs: Dict = {}
     missing, errors, metas = [], [], set()
     for mid in mids:
-        for k in V1_PASSAGES:
+        for k in prompts:
             fj, fl = _paths(out, mid, k)
             if not fj.exists():
                 missing.append(f"{mid}/{k}")
@@ -304,7 +315,7 @@ def load_run(out: Path, mids: Optional[Sequence[str]] = None) -> Tuple[Dict, Dic
             recs.setdefault(mid, {})[k] = {r["layer"]: r for r in d["layers"]}
             labs.setdefault(mid, {})[k] = {int(n[1:]): z[n] for n in z.files}
     if missing:
-        raise SystemExit(f"refusing: {len(missing)} of {len(mids) * len(V1_PASSAGES)} records missing "
+        raise SystemExit(f"refusing: {len(missing)} of {len(mids) * len(prompts)} records missing "
                          f"(first {missing[:3]})")
     if errors:
         raise SystemExit(f"refusing: {len(errors)} clouds with a refused tree (first {errors[:3]})")
@@ -324,7 +335,7 @@ def plateau_table(recs: Dict, labs: Dict, arm: str, min_runs: Sequence[int]) -> 
     size = ARMS[arm]
     out = {"real_init": {m: {} for m in min_runs}, "reinit": {m: {} for m in min_runs},
            "without_b": {}, "n_ref_min": {}}
-    for k in V1_PASSAGES:
+    for k in recs[reinits[0]]:
         for L in LAYERS:
             ref = {m: ref_values(recs[m][k][L]["rows"][arm]) for m in reinits}
             for mid in inits + reinits:
@@ -401,21 +412,24 @@ def beside(tab: Dict, min_run: int = MIN_RUN) -> Dict:
                           for kind, mids in (("real_init", inits), ("reinit", reinits))},
             "per_prompt": {k: {kind: sum(bool(v) for key, v in tab[kind][min_run].items()
                                          if key[1] == k and band(key[2]) == bnd)
-                               for kind in ("real_init", "reinit")} for k in V1_PASSAGES}}
+                               for kind in ("real_init", "reinit")}
+                           for k in sorted({key[1] for key in tab["without_b"]})}}
     return out
 
 
 def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="scale_real read")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
-    recs, labs = load_run(args.out)
+    keys = _keys(args.prompts)
+    recs, labs = load_run(args.out, prompts=keys)
     min_runs = tuple(range(MIN_RUN, MAX_MIN_RUN + 1))
     tabs = {a: plateau_table(recs, labs, a, min_runs) for a in ARMS}
     main = tabs[GATING_ARM]
     rows = verdicts(main)
     raised = sorted({r["min_run"] for r in rows if r["min_run"] not in (None, MIN_RUN)})
-    meta = json.loads(_paths(args.out, model_ids("all")[0], V1_PASSAGES[0])[0].read_text())["meta"]
+    meta = _meta(args.out, model_ids("all")[0], keys[0])
     res = {"git": _git_head(), "records": meta, "alpha": ALPHA, "min_ref": MIN_REF, "max_rate": MAX_RATE,
            "n_subsets": N_SUBSETS, "route_quantile": ROUTE_QUANTILE, "b": "conjunction", "gated": False,
            "bands": rows, "beside_all_within": all(r["pass"] for r in rows),
@@ -682,13 +696,15 @@ def diagnose_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="scale_real diagnose")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--ref", type=Path, required=True)
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
     inits, reinits = model_ids("init"), model_ids("reinit")
-    recs, _ = load_run(args.out, inits)
-    refs_recs, _ = load_run(args.ref)
+    keys = _keys(args.prompts)
+    recs, _ = load_run(args.out, inits, keys)
+    refs_recs, _ = load_run(args.ref, prompts=keys)
     keys = ("window", "rank_free", "k2", "stable", "gauss", "rank", "admissible")
     tab = {a: {b: {} for b in BANDS} for a in ARMS}
-    for k in V1_PASSAGES:
+    for k in keys:
         for L in LAYERS:
             refs = {a: np.stack([ref_values(refs_recs[m][k][L]["rows"][a]) for m in reinits]) for a in ARMS}
             for mid in inits:
@@ -709,19 +725,21 @@ def diagnose_cmd(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
-def _meta(out: Path, mid: str) -> Dict:
-    return json.loads(_paths(out, mid, V1_PASSAGES[0])[0].read_text())["meta"]
+def _meta(out: Path, mid: str, prompt: Optional[str] = None) -> Dict:
+    return json.loads(_paths(out, mid, prompt or V1_PASSAGES[0])[0].read_text())["meta"]
 
 
 def trained_cmd(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="scale_real trained")
     ap.add_argument("--out", type=Path, required=True, help=f"a finished `run --step {TRAINED_STEP}` directory")
     ap.add_argument("--ref", type=Path, required=True, help="the finished step-0 batch (the re-inits' z_G)")
+    ap.add_argument("--prompts", choices=PROMPT_SETS, default="v1")
     args = ap.parse_args(argv)
     inits, reinits = model_ids("init"), model_ids("reinit")
-    recs, labs = load_run(args.out, inits)
-    refs_recs, _ = load_run(args.ref)
-    meta, ref_meta = _meta(args.out, inits[0]), _meta(args.ref, inits[0])
+    keys = _keys(args.prompts)
+    recs, labs = load_run(args.out, inits, keys)
+    refs_recs, _ = load_run(args.ref, prompts=keys)
+    meta, ref_meta = _meta(args.out, inits[0], keys[0]), _meta(args.ref, inits[0], keys[0])
     if meta["step"] != TRAINED_STEP or ref_meta["step"] != "step0":
         raise SystemExit(f"refusing: steps {meta['step']} / {ref_meta['step']}, want {TRAINED_STEP} / step0")
     if meta["sets_sha256"] != ref_meta["sets_sha256"]:
@@ -729,12 +747,12 @@ def trained_cmd(argv: Optional[Sequence[str]] = None) -> int:
     sets_path = Path(meta["sets"])
     if hashlib.sha256(sets_path.read_bytes()).hexdigest()[:16] != meta["sets_sha256"]:
         raise SystemExit(f"refusing: {sets_path} is not the token sets the run read")
-    kept = load_sets(sets_path)
+    kept = load_sets(sets_path, args.prompts)
     tok = _tok()
-    toks = {k: tok.convert_ids_to_tokens(v) for k, v in prompt_ids(tok).items()}
+    toks = {k: tok.convert_ids_to_tokens(v) for k, v in prompt_ids(tok, args.prompts).items()}
     cells = []
     for mid in inits:
-        for k in V1_PASSAGES:
+        for k in keys:
             for L in LAYERS:
                 rec, lab = recs[mid][k][L], labs[mid][k][L]
                 refs = {a: np.stack([ref_values(refs_recs[m][k][L]["rows"][a]) for m in reinits]) for a in ARMS}
