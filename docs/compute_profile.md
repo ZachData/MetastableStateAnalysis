@@ -19,3 +19,31 @@ How to measure: `/usr/bin/time -v <cmd> 2> time.log`, then read
 | 2026-09-26 | 1d merge tree (sub-experiment F), one prompt | 8 v1 prompts, step143000 | local box | ~1 s / prompt | unmeasured | — | `status-1d.md` |
 | 2026-09-28 | 1d attention nulls, `run_all.sh` (4 configurations, 100 draws, `--workers 14`) | 8 v1 prompts × step143000, step 0 × L0–23 | local box | `null` 6.5 h, `calibrate` 7.1 h, each deduped 1.4 h | unmeasured | 65 MB JSON + parts | `status-1d.md` "Attention communities…" |
 | — | Stage 0 (Phase 10), whole | 410m, 19 checkpoints | local box | unmeasured here | unmeasured | 57–100 GB | `STATE.md`; needs ≥ 100 GB ephemeral storage |
+| 2026-10-05 | `move_text run --kept-from … --stage0-index …` (Phase 10 R0), one checkpoint | 7 v1 passages, both joins, 115 passes | local box, CPU, 14 workers | ~6.5 min (forward ~2/3 of it) | unmeasured | ~4 MB JSON | `p10_cluster_function/status-10.md` §1.14 |
+| 2026-10-05 | one 410m forward, `homer_iliad` (512 tokens), float32, eager, TF32 off | step512, step54000 | local box, **RTX 3080 (10 GB)** | **40 ms** (CPU: ~2.7 s per pass inside `move_text`) | — | — | GPU probe below |
+
+## The GPU (local box)
+
+The local box has an **RTX 3080, 10 GB**, and the conda `mets` env's torch (2.10, cu130) sees
+it. Every run on disk is CPU because the scripts set `CUDA_VISIBLE_DEVICES=""` to match the
+runs already stored (`handoff-10.md` §0.2), not because there is no GPU. (`STATE.md`'s "no GPU"
+row is the cloud container.)
+
+**Probe (2026-10-05, Phase 10 R0, `homer_iliad`, float32, eager, TF32 off):** a GPU P = 0 pass
+against Stage 0's stored CPU activations gives a max unit-row difference of 2.0e-7 at step 512
+and **7.1e-6 at step 54000** (CPU against CPU: 2–3e-7), so the late checkpoints use most
+of `move_text.P0_MATCH_TOL` (1e-5). Even so, the level-set groups were identical to unit 1's
+CPU groups in 96 of 96 (layer, frame, size) cells at both steps: float64 distances absorb
+it here. One passage at two steps: not a guarantee for other passages or steps.
+
+**Rule until measured more widely:** a cloud compared with a stored CPU run (Stage 0, the 1d
+units' records) is produced on CPU. A new batch can use the GPU only if every cloud
+it compares comes from the same device, or if it carries a match check like
+`move_text --stage0-index`. The device goes in the record. `core/config.DEVICE` picks CUDA
+whenever it is visible, and `MODEL_DTYPE` must stay float32: "auto" means bfloat16 on CUDA.
+
+**Where it would pay:** forward passes only, ~65× per pass. `move_text` per checkpoint ~6.5 →
+~2.5 min (its HDBSCAN / level-set work stays on CPU); Phase-1 runs, `arch_null`'s re-inits and
+any new sweep likewise. Clustering, Gaussian nulls, permutation nulls and the label source are
+CPU-bound Python or small matrices (n ≤ 600) and gain nothing. Not built: a `--device` flag
+on `move_text` / `arch_null` that writes the device into the record.

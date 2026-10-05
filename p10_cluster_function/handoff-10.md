@@ -33,6 +33,13 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > a c0 → c3 ladder per row (one choice per column, step-0 baselines on c2); re-read §1.7
 > (unique tokens), §1.9, §1.10, F1, F12 (its gap against step 0),
 > A0 (under T4); order R0 build (976 passes) → R1 §1.7/§1.9/§1.10 → R2 F1 + F12 → R3 A0.
+>
+> **R0 done, 2026-10-05 (`status-10.md` §1.14; design frozen).** The label source exists at
+> all 18 steps (`data/p10/reread_r0_2026-10-05/labels/`, `tools/run/p10_label_source.py`).
+> Nothing was refused, and it reproduces the definition's 62 / 810 exactly. Steps 0–32 read
+> on c2 (too few readable c3 records), 64 on c3. **Next: R1** after R0's PR merges: wire
+> `p10_token_composition` (unique tokens), `p10_comembership` and `p10_lexical_carry` to
+> `--labels <dir> --column <c>`, with the ladder per row.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
@@ -643,6 +650,18 @@ the literature read this thread grew out of, and §3.51 the four rows that ran
 before it.
 
 ## Parked
+
+- **"Learned" off step 143000** (R0, 2026-10-05). The label source writes unit 2's learned
+  at 143000 only. Unit 2's bars are stored, but each group's `s` needs the Gaussian draws at
+  that step's clouds (CPU, no forward pass; cost unmeasured, unit 2's admission ran per
+  cloud). Why: `design-10.md` reports learned beside c3 at the other steps if this is cheap.
+  Changes: only the "learned" column of R1–R3's tables, which is beside, not a gate.
+- **The GPU** (discovery, 2026-10-05, the user asked). The local box has an RTX 3080. A GPU
+  P = 0 pass gives the same level-set groups as the CPU one in a probe, at ~65× the forward
+  speed, but uses 70 % of the 1e-5 match tolerance at step 54000. The rule, and where it
+  pays (forward passes only, not R1–R3), is in `docs/compute_profile.md` "The GPU". Cost:
+  a `--device` flag that writes the device into the record. Changes: wall time of the next
+  forward-heavy unit, nothing read.
 
 - **HDBSCAN's cluster count is nearly flat; a fixed-scale count is not**
   (discovery, 2026-09-25, a scratch read of stored labels, no null, not a

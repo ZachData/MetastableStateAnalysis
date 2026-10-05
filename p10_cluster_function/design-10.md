@@ -1,8 +1,9 @@
 <!-- p10_cluster_function/design-10.md -->
 # Phase 10 — the re-read design (on 1d's working definition)
 
-**Status: proposed 2026-10-05, not frozen.** It freezes when the user accepts it
-(`STATE.md` Blocked 23); nothing below has run. Tier 1, exploratory, unregistered:
+**Status: frozen 2026-10-05.** The user merged #144 and asked for R0, which Claude took as
+accepting it (`STATE.md` Blocked 23). R0 has run (`status-10.md` §1.14); its two corrections
+are marked in place below. Tier 1, exploratory, unregistered:
 `claims/registry.json` is untouched and no row here adjudicates anything.
 
 **What this is.** `handoff-10.md`'s banner lifts the hold for a re-read: every Phase 10 row
@@ -28,6 +29,13 @@ change the definition. Literature scan: `lit-10.md` §16 (done first).
 (`hdbscan_code` offset 34, `latex_monograph` offset 10, both above 10× from step 8000;
 read from Stage 0's stored norms by `/challenge-pr` on #144, no forward pass), so unit 1's
 records and the 62 / 810 counts are on the re-read's token set.
+*Corrected at R0 (2026-10-05):* the 62 / 810 counts are on **unit 2's** token set
+(`arch_null_trained_2026-10-02/step0/token_sets.json`, sha `b1eaa3ab`), the union over unit
+2's comparison (10 seeds at steps 0 and 143000, 40 re-inits). Beyond the two `\n` tokens it
+also drops each prose passage's first `.` (massive in seed 7's trained run). The re-read
+uses that set (`move_text run --kept-from`), so the counts, the "learned" join and the rows
+share one token set. The 18-checkpoint union is checked as a subset at every step:
+`--kept-from` refuses a checkpoint whose own massive tokens fall outside the set.
 
 **The check that joins the two passes.** "Moves" comes from unit 1's own P = 0 pass; the rows
 read Stage 0's stored activations. Per (step, prompt), the P = 0 cloud must match the stored
@@ -47,6 +55,7 @@ one column (tree, frame, stability, bulk) and dropped L0 inside c0 → c1.
 | col | partition | the one choice it adds |
 |---|---|---|
 | **c0** | the stored labels, the row's reader **re-run unchanged on the 7 prompts, Stage 0 dirs, L1–24** (F1: boundaries from L1 → L2) | none: the old reading on the re-read's inputs (the published number pooled 8 prompts, another sweep, or L0) |
+| c0f | the same shipped call on **float64** distances, every stored position (*added at R0 after `/challenge-pr` on #145, finding 1*: c0 was fitted on float32 distances in all 380 Stage 0 runs, so c0 → c1 moved two choices) | precision |
 | c1 | shipped `HDBSCAN(min_cluster_size=2)`, float64, kept tokens (T1–T3; A0 also T4), the stored (uncentred) frame | the token rules |
 | c1c | as c1, **centred** frame | the frame |
 | c2a | level-set groups, all of them, centred | the tie-free tree (`admit.layer_groups` returns c1c and c2a from the same distances) |
@@ -105,6 +114,11 @@ P = 1000 activations on `HDD_1TB` stay its own). **Gate before the batch:** run 
 checkpoints end to end, 512 and 54000 (the latest new one, where any drift in the P = 0
 match would show), open their records, and check they are populated (groups per layer,
 classes, the P = 0 match) before launching the other 14.
+
+*As run (R0, 2026-10-05):* `move_text` runs both joins (the `\n\n` join is "beside, per
+group" in the definition, and steps 0 and 143000 carry it), so 7 + 2 × 54 = 115 passes per
+checkpoint, and steps 0 and 143000 are re-run too, so one directory holds all 18 steps from
+one commit, each with its P = 0 match. Timings: `status-10.md` §1.14.
 
 Rejected: a thinned axis (e.g. 0, 32, 512, 4000, 143000), which saves ~45 min and loses the
 window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.

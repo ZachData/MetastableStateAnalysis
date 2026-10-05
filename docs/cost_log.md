@@ -239,3 +239,7 @@ running median of the rows above it gets a line under the table saying why.
   expiries. One end-of-batch watcher per batch would have done (as #131's note already says).
 | 2026-10-05 | 1d Blocked 22 decided (a): working definition = trained groups that move; Phase 10 hold lifted for a re-read (before /challenge-pr) | 23 | 119k | 1.9M | 32k | #143 |
 | 2026-10-05 | Phase 10 re-read design + lit scan §16 (before /challenge-pr) | 41 | 152k | 4.4M | 44k | #144 |
+| 2026-10-05 | Phase 10 re-read R0: label source at 18 checkpoints (before /challenge-pr) | 92 | 246k | 15.8M | 67k | #145 |
+  Over 2× the median: a build, a ~2 h batch watched in-session (≈ 15 calls were waits and
+  monitor events), the full reads of `move_text.py` (33 KB) and `design-10.md` that the build
+  needed, and a GPU probe the user asked for mid-unit.
