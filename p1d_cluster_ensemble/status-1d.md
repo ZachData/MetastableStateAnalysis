@@ -2009,7 +2009,7 @@ step 0, which does not yet separate learned content from learned position.
 | the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; Phase 10 uses the set without it (user, 2026-10-04), the replicating set stays the cross-seed definition. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Under Blocked 17 on fresh present seeds: 7 of 10 again (coarse 10, fine 7). **Accepted as measured (Blocked 18, option 1):** a found plateau's partition is the claim, a missing one weak evidence; real input waits on a specificity check among the inits. **That check, built and piloted: step-0 clouds' merges all fall within r ≈ 0.5–1.0, so it cannot fail (Blocked 19)**. **Under option 4 ((b) = Gaussian p ∧ re-init rank; gate on 50 Gaussians of trained clouds): passes, 0 of 50; on the main arm the plateau rule rejects them before (b) (0 of 50 without it), so (b) is tested on size 2 only (29 → 0)**. **Trained reading (Blocked 20, (a)): 1 plateau in 1,680 clouds (main L17–24, unreplicated), 0 on size 2; at the window's middle (r ≈ 0.90) the re-inits match or beat the trained clouds in all but 6–12 of 560 per band, so: weak evidence of no large structure beyond the re-inits at r 0.79–1.02; the one plateau is where the rank term is free (Blocked 21)** | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11"; "Unit 3 on fresh seeds"; "The real-input reader, step 1: built"; "… under option 4"; "The trained reading"; `design-1d.md` "Blocked 18 decided" |
-| can the tools see known content? (unit 4, designed prompts) | **group route (moves ∧ learned): yes, 2 of 3** (category list 23 candidates, prose / code 39; step 0 none above 8; entities none, as unit 1); **reader: rarely** (category list 10 of 240 clouds, ARI vs labels 0.83–1.0; prose / code 0; step 0 0 of 1,200), none at L17–24 below r 0.6, so the kept v1 plateau (Blocked 21) rests on `p_gauss` alone | "Unit 4 on the designed prompts" |
+| can the tools see known content? (unit 4, designed prompts) | **group route (moves ∧ learned): passes its rule, 2 of 3** (lexical classes, code / prose; not entities), but training supplies the content and "learned" does not select it (content share learned ≈ not learned); **reader: rarely** (category list 10 of 240 clouds, pure but partial; prose / code 0; step 0 none), none at L17–24 below r 0.6, so the kept v1 plateau (Blocked 21) rests on `p_gauss` alone | "Unit 4 on the designed prompts" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -3067,8 +3067,8 @@ unchanged, tested), `positive_controls.py` (`groups`, `reader`); records at `d61
 90 / 199 / 148); unit 2's 60 models; L1–24. T2 over the 60 (trained union) drops position 0,
 each prompt's first `.` and, in prose / code and entities, the first `\n`; token sets sha256
 prefix `9b15291f17eccf78`, read by both routes. Outputs `data/p1d/unit4_arch_null_2026-10-05/`
-(`groups.json` md5 `df86809a`, `read.log`, `check.log`) and `data/p1d/unit4_scale_2026-10-05/`
-(`reader.json` md5 `9d2a25c2`, `trained.log`, `diagnose.log`). Unit 1's records:
+(`groups.json` md5 `fcb94ce6`, `read.log`, `check.log`) and `data/p1d/unit4_scale_2026-10-05/`
+(`reader.json` md5 `554e8c00`, `trained.log`, `diagnose.log`). Unit 1's records:
 `data/p1d/move_text_2026-10-02/step143000/`.
 
 **First check (unit 2's, 30 medians per cell): passes in every primary cell** (`hdb_k_2`,
@@ -3090,6 +3090,23 @@ four, prose / code in three (not centred / 4, 2 against 3), entities in none. En
 as in unit 1 (names as a kind, not one group per person): the prediction's failure, not the
 route's (`designed_prompts` rule 3). No animal group is a seed-0 candidate.
 
+**Which filter carries it** (beside, added after `/challenge-pr` on #142, finding 1;
+`groups.json` `filter_ablation`, same records). Content share of the groups each filter keeps,
+against its complement, centred, size 2:
+
+| | category list | prose / code |
+|---|---|---|
+| trained (all seeds) vs step-0 inits | **0.72 vs 0.02** | **0.71 vs 0.30** |
+| learned vs not learned (all seeds) | 0.73 vs 0.72 | 0.61 vs 0.75 |
+| moves vs not (seed 0) | 0.78 vs 0.60 | 0.77 vs 0.62 |
+
+**Pass (ii) tests trained against step 0, not the filters.** Known content is in the trained
+model's groups at about their base rate; "moves" enriches it a little; **"learned" does not
+select it** in the primary cell (it does only in the raw frame on the category list, 0.62 vs
+0.25) and drops about half the content groups that move (55 → 23; 101 → 39). The designed
+labels cannot say what "learned" removes: on the category list the unlabelled groups are
+mostly the opening sentence's words, which are structure too.
+
 **Reader (unit 3), beside: its sensitivity.** Clouds with ≥ 1 conjunction plateau holding a
 content cluster (rule 1):
 
@@ -3101,15 +3118,22 @@ content cluster (rule 1):
 | size 2, every band | 0 (one mixed plateau, L23, ARI 0.003) | 0 | 0 | 230–240 |
 
 Every content plateau is the planted structure: animals / body parts / colours / the opening
-sentence's words (ARI against the labels 0.83–1.0, median 0.88), at r 0.61–0.90, in 5 of 10
-seeds (`init:6` 5 layers). No step-0 cloud has any plateau. **Sensitivity on the cleanest
+sentence's words, at r 0.61–0.90, in 5 of 10 seeds (`init:6` 5 layers). Its clusters are
+pure (ARI against the labels over the labelled tokens they hold: 0.83–1.0, median 0.88; none
+in the 2 plateaus with one labelled cluster) but recover **0.06–0.79** of the 72 labelled
+words (*recovery added after `/challenge-pr` on #142, finding 2: the ARI is purity*); the
+6 at L11–22 recover 0.6–0.8, the 4 at L1–4 one or two small clusters. No step-0 cloud has any plateau. **Sensitivity on the cleanest
 input: 10 of the category list's 240 clouds (4 %)**, where the group route finds learned
 category content in every seed; **0 on prose / code**, where it finds 39 candidates; **none at L17–24
 below r 0.6** (the window reaches 0.42 there).
 
-**What this means, under the outcomes written before the run.** (1) **Group route passes**:
-the candidate definition (moves ∧ learned) finds known lexical classes and code / prose, and
-step 0 does not; it does not find entities. (2) **The reader finds content plateaus, never
+**What this means, under the outcomes written before the run.** (1) **Group route passes**
+under its rule: the candidates (moves ∧ learned) hold known lexical classes and code / prose,
+and step 0's groups do not; no entities. *Reworded after `/challenge-pr` on #142, finding 1:*
+the first write-up said the definition "finds" known content; the ablation shows training
+supplies it and the conjunction keeps it, "moves" enriching it a little and "learned" not at
+all here. The pre-written outcome "learned fails where moves passed" is half true: learned
+keeps content at its base rate rather than missing it. (2) **The reader finds content plateaus, never
 at step 0**: it can see known content, but in 4 % of the clouds that hold it, so v1's "none"
 (1 in 1,680) is weak evidence, as written. (3) **The kept v1 plateau** (`init:8`, L21, r
 0.37–0.47) lies where the reader has not been shown to see content: it rests on `p_gauss`

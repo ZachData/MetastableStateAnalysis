@@ -807,6 +807,14 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-05, #142 (1d unit 4): the pass rule compared trained against step 0
+  (seed 0's learned-content count above every step-0 init's), and the write-up
+  read its pass as "the definition (moves ∧ learned) finds known content". The
+  review recomputed content share by filter: learned 0.73 vs not learned 0.72;
+  training supplies the content (0.72 vs 0.02 at step 0), not the filter. The
+  rule was fixed before the run and could not separate the two. Rule: a pass
+  says what its comparison compares; a conjunction's claim about one term needs
+  that term against its complement (the ablation, minutes on stored records).
 - 2026-10-02, #131 (1d unit 2's first check), two premises `/challenge-pr` broke:
   (1) the power reading ranked real inits against 40 re-inits and held-out ones
   against 30, then compared their outer-10 % shares, whose tie-driven baselines
