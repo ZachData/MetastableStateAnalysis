@@ -399,6 +399,28 @@ nearly orthogonal (median distance ≈ 1.005), so the gate tests r ≈ 0.4–1.0
 (iv) confines the trained reading's main arm to about r 0.79–1.02. Numbers: `status-1d.md`
 "The real-input reader, step 1 under option 4"; the choice is `STATE.md` Blocked 20.*
 
+**The trained reading** (Blocked 20, option (a), user, 2026-10-05; fixed before any code or
+run). The reader is unchanged; every reading states its window.
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| clouds | the 1,680 the gate drew from: `init:0..9` at `step143000` × 7 v1 prompts × L1–24, centred, the kept tokens of unit 2's trained union (same file, same sha256 as the step-0 batch), each read by `read_cloud` with the step-0 batch's `cloud_seed` (common random numbers with its references) | option (a): the reader as gated. **Rejected:** (b) (cloud side made to match the references; a reader change after a result) and (c) (unit 4 first) |
+| reference | the 40 re-inits' step-0 `z_G` from the step-0 batch (`data/p1d/scale_real_step0_2026-10-04/`), read, never recomputed; refuses on a missing record, a refused tree, or token sets that differ | the gate's reference |
+| (b) | the conjunction, as the gate (`rank_rows`); `MIN_RUN` 3; **main arm is the reading**, size 2 beside | unchanged |
+| **window** (every reading) | a grid point is **readable** where (b) could pass whatever the cloud's own value: the cloud's `z_G` defined, (iv) informative, N ≥ 30, and `(1 + #{references at +inf}) / (N + 1) ≤ α` (a finite `z_G` cannot beat a +inf reference). Per cloud and arm: the readable points, their `r` range, and the longest run of consecutive readable points; a cloud is **readable** when that run is ≥ `MIN_RUN` | `/challenge-pr` on #140, findings 1–2: (iv) cuts below, +inf references cut above. **A missing plateau says nothing outside the cloud's readable points**, and nothing at all in an unreadable cloud |
+| statistic | per band L1–8 / 9–16 / 17–24: clouds with ≥ 1 main-arm plateau, of 560 and of the band's readable clouds; the readable clouds per band and the median readable `r` range | per band, as every 1d reading |
+| per plateau | model, prompt, layer, `r` range, k range, and its partition at the run's first cut: each cluster of the arm's size as kept positions and decoded tokens | **a plateau's partition is the claim, not its `r` range** (Blocked 18 limits) |
+| beside, not the reading | per (prompt, layer): how many of the 10 inits hold a main-arm plateau, and for each pair that both do, the ARI between their first (lowest-`r`) plateaus' first cuts over the tokens clustered at the arm's size in both (median per band); each term alone (`p_gauss` only, rank only) and without (b); the size-2 arm the same | replication across seeds, as unit 2, reported, not a rule |
+| no pass | a reading, not a test: the gate (0 of 50) is its specificity, at r ≈ 0.4–1.0 only; its sensitivity is unmeasured (unit 4's designed prompts) | the limits table above goes with every number |
+| outcomes, written before the run | **plateaus in a band**: their partitions are the claim, at their windows; they become what unit 4's designed prompts must show the reader can find. **None in a band**: weak evidence of no large structure beyond the re-inits inside the readable range (about r 0.79–1.02, main arm), nothing finer. **Unreadable clouds in most of a band**: that band is not read by this instrument | placed so that none of the three is a surprise |
+| order and cost | pilot `init:0` × one prompt × L1–24 and open it (rows populated, readable points present) before the rest; ~30 min on 14 workers (the gate: 50 clouds in 87 s). Then stop and report; unit 4 is next | the populated-not-present rule; the user's direction |
+
+*Ran 2026-10-05: 1 main-arm plateau in 1,680 clouds (L17–24, not replicated), 0 on size 2.
+At the window's middle (r ≈ 0.90) the re-inits match or beat the trained clouds in all but
+6–12 of 560 per band: the "none" outcome, weak evidence of no large structure beyond the
+re-inits at r 0.79–1.02. The one plateau lies where the rank term is free, tested by
+`p_gauss` alone. `status-1d.md` "The trained reading"; next is `STATE.md` Blocked 21.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |

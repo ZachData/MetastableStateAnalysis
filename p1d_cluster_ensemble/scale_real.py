@@ -46,6 +46,13 @@ MAX_GAUSSIAN_PLATEAUS`` main-arm plateaus. A fail refuses the trained reading.
 Also beside: the same without (b), the size-2 arm, plateaus per prompt with
 their ``r`` ranges.
 
+**The trained reading** (`run --step step143000`, then `trained`; Blocked 20,
+option (a)): the 10 inits at ``step143000`` read through the conjunction
+against the step-0 batch's re-inits, each cloud with its **window** (`window`:
+the points where (b) could pass whatever the cloud's value); a missing plateau
+says nothing outside it. Per plateau, its partition (`partition`); beside,
+replication across the inits (`replication`).
+
 Tier 1: exploratory, unregistered.
 """
 
@@ -159,9 +166,14 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
                     help=f"token_sets.json (default $METS_DATA/{DEFAULT_SETS})")
     ap.add_argument("--only", nargs="*", default=None, help="a subset of model ids")
     ap.add_argument("--keys", nargs="*", default=None, help="a subset of prompts")
+    ap.add_argument("--step", choices=("step0", TRAINED_STEP), default="step0",
+                    help=f"step0: all 50 models (the references); {TRAINED_STEP}: the 10 inits (the trained reading)")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--torch-threads", type=int, default=2)
     args = ap.parse_args(argv)
+    allowed = model_ids("all" if args.step == "step0" else "init")
+    if args.only and set(args.only) - set(allowed):
+        raise SystemExit(f"refusing: {sorted(set(args.only) - set(allowed))} do not exist at {args.step}")
     sets_path = args.sets or Path(os.environ["METS_DATA"]) / DEFAULT_SETS
     kept = load_sets(sets_path)
     import torch
@@ -170,8 +182,8 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
     tok = _tok()
     ids = prompt_ids(tok)
     keys = args.keys or list(V1_PASSAGES)
-    mids = args.only or model_ids("all")
-    meta = {"git": _git_head(), "step": "step0", "frame": FRAME,
+    mids = args.only or allowed
+    meta = {"git": _git_head(), "step": args.step, "frame": FRAME,
             "sets": str(sets_path), "sets_sha256": hashlib.sha256(sets_path.read_bytes()).hexdigest()[:16],
             "prompt_token_sha256": {k: hashlib.sha256(json.dumps(ids[k]).encode()).hexdigest()[:16]
                                     for k in keys},
@@ -199,7 +211,7 @@ def run_cmd(argv: Optional[Sequence[str]] = None) -> int:
         if not todo:
             print(f"already {mid}", flush=True)
             continue
-        model = load(mid, "step0")
+        model = load(mid, args.step)
         check_config(model)
         jobs = []
         for k in todo:
@@ -267,16 +279,17 @@ def rank_rows(rows: Sequence[Dict], refs: np.ndarray) -> List[Dict]:
     return out
 
 
-def load_run(out: Path) -> Tuple[Dict, Dict]:
+def load_run(out: Path, mids: Optional[Sequence[str]] = None) -> Tuple[Dict, Dict]:
     """
-    Every (model, prompt) record and its labels: ``recs[mid][prompt][L]`` and
-    ``labs[mid][prompt][L]`` (``(GRID_N, n)``). Refuses on a missing pair, a refused
-    tree, a mixed git, or token sets that differ between records.
+    Every (model, prompt) record and its labels, over ``mids`` (default all 50):
+    ``recs[mid][prompt][L]`` and ``labs[mid][prompt][L]`` (``(GRID_N, n)``). Refuses on
+    a missing pair, a refused tree, a mixed git, or token sets that differ between records.
     """
+    mids = list(mids or model_ids("all"))
     recs: Dict = {}
     labs: Dict = {}
     missing, errors, metas = [], [], set()
-    for mid in model_ids("all"):
+    for mid in mids:
         for k in V1_PASSAGES:
             fj, fl = _paths(out, mid, k)
             if not fj.exists():
@@ -291,7 +304,7 @@ def load_run(out: Path) -> Tuple[Dict, Dict]:
             recs.setdefault(mid, {})[k] = {r["layer"]: r for r in d["layers"]}
             labs.setdefault(mid, {})[k] = {int(n[1:]): z[n] for n in z.files}
     if missing:
-        raise SystemExit(f"refusing: {len(missing)} of {50 * len(V1_PASSAGES)} records missing "
+        raise SystemExit(f"refusing: {len(missing)} of {len(mids) * len(V1_PASSAGES)} records missing "
                          f"(first {missing[:3]})")
     if errors:
         raise SystemExit(f"refusing: {len(errors)} clouds with a refused tree (first {errors[:3]})")
@@ -550,6 +563,209 @@ def gate_cmd(argv: Optional[Sequence[str]] = None) -> int:
 
 
 # ---------------------------------------------------------------------------
+# The trained reading (Blocked 20, option (a)): the reader as gated, with its window
+# ---------------------------------------------------------------------------
+
+def window(rows: Sequence[Dict], refs: np.ndarray) -> Dict:
+    """
+    The grid points where (b) could pass whatever the cloud's own value (`design-1d.md`
+    "The trained reading", row "window"): `rank_rows` informative (own ``z_G`` defined,
+    (iv), N ``>= MIN_REF``) and ``(1 + #{ref = +inf}) / (N + 1) <= ALPHA``. Returns the
+    points, their ``r`` range, the longest run of consecutive points, and ``readable``
+    (that run ``>= MIN_RUN``).
+    """
+    ranked = rank_rows(rows, refs)
+    pts = []
+    for g, r in enumerate(ranked):
+        col = refs[:, g]
+        col = col[~np.isnan(col)]
+        if r["informative"] and (1 + np.sum(np.isposinf(col))) / (col.size + 1) <= ALPHA:
+            pts.append(g)
+    longest, run = 0, 0
+    for g in range(len(rows)):
+        run = run + 1 if g in pts else 0
+        longest = max(longest, run)
+    return {"points": pts, "r_lo": rows[pts[0]]["r"] if pts else None,
+            "r_hi": rows[pts[-1]]["r"] if pts else None, "longest_run": longest,
+            "readable": longest >= MIN_RUN}
+
+
+def partition(lab: np.ndarray, size: int, kept: Sequence[int], tokens: Sequence[str]) -> List[Dict]:
+    """The clusters of ``>= size`` tokens of one cut, as kept positions and decoded tokens, largest first."""
+    ids, counts = np.unique(lab, return_counts=True)
+    out = []
+    for c in ids[counts >= size]:
+        idx = np.flatnonzero(lab == c)
+        out.append({"positions": [int(kept[i]) for i in idx], "tokens": [tokens[kept[i]] for i in idx]})
+    return sorted(out, key=lambda d: (-len(d["positions"]), d["positions"][0]))
+
+
+def pair_ari(lab_a: np.ndarray, lab_b: np.ndarray, size: int) -> Optional[float]:
+    """ARI between two cuts over the tokens in clusters of ``>= size`` in both; None under 2 such tokens."""
+    from sklearn.metrics import adjusted_rand_score
+
+    def clustered(lab):
+        _, inv, counts = np.unique(lab, return_inverse=True, return_counts=True)
+        return counts[inv] >= size
+    m = clustered(lab_a) & clustered(lab_b)
+    return float(adjusted_rand_score(lab_a[m], lab_b[m])) if m.sum() >= 2 else None
+
+
+def replication(cells: Sequence[Dict], labs: Dict, arm: str) -> Dict:
+    """
+    Per band: (prompt, layer) cells by how many of the inits hold a conjunction plateau on
+    ``arm``, and the median over pairs that both do of `pair_ari` between their first
+    (lowest-``r``) plateaus' first cuts.
+    """
+    by: Dict[Tuple[str, int], List[Tuple[str, int]]] = {}
+    for c in cells:
+        pl = c["plateaus"][arm]["conjunction"]
+        if pl:
+            by.setdefault((c["prompt"], c["layer"]), []).append((c["model"], pl[0]["start"]))
+    out = {}
+    for bnd in BANDS:
+        hist: Dict[int, int] = {}
+        aris: List[float] = []
+        for (k, L), hits in by.items():
+            if band(L) != bnd:
+                continue
+            hist[len(hits)] = hist.get(len(hits), 0) + 1
+            for i in range(len(hits)):
+                for j in range(i + 1, len(hits)):
+                    (ma, ga), (mb, gb) = hits[i], hits[j]
+                    a = pair_ari(labs[ma][k][L][ga], labs[mb][k][L][gb], ARMS[arm])
+                    if a is not None:
+                        aris.append(a)
+        out[bnd] = {"cells_by_n_inits": dict(sorted(hist.items())), "n_pairs": len(aris),
+                    "median_pair_ari": float(np.median(aris)) if aris else None}
+    return out
+
+
+def trained_summary(cells: Sequence[Dict]) -> Dict:
+    """Per arm and band: clouds, readable clouds, clouds with >= 1 plateau per reading, median readable r range."""
+    out: Dict = {}
+    for a in ARMS:
+        out[a] = {}
+        for bnd in BANDS:
+            cs = [c for c in cells if band(c["layer"]) == bnd]
+            rd = [c for c in cs if c["window"][a]["readable"]]
+            row = {"clouds": len(cs), "readable": len(rd),
+                   "median_r_lo": float(np.median([c["window"][a]["r_lo"] for c in rd])) if rd else None,
+                   "median_r_hi": float(np.median([c["window"][a]["r_hi"] for c in rd])) if rd else None}
+            for kind in ("conjunction", "gauss_only", "rank_only", "without_b"):
+                row[kind] = sum(bool(c["plateaus"][a][kind]) for c in cs)
+            out[a][bnd] = row
+    return out
+
+
+def point_failures(rows: Sequence[Dict], refs: np.ndarray) -> List[Dict]:
+    """
+    Per grid point of one cloud and arm: whether it is in the `window`, whether the rank
+    term is **free** there (every reference without a cluster of the arm's size, so
+    ``p_rank`` = 1/(N + 1) whatever the cloud), and each admissibility condition alone.
+    """
+    win = set(window(rows, refs)["points"])
+    out = []
+    for g, r in enumerate(rank_rows(rows, refs)):
+        col = refs[:, g]
+        col = col[~np.isnan(col)]
+        out.append({"g": g, "r": r["r"], "window": g in win, "rank_free": bool(col.size and np.all(np.isneginf(col))),
+                    "k2": r["k_sub"] >= 2, "stable": r["stability"] is not None and r["stability"] >= 0.75,
+                    "gauss": r["p_gauss"] <= ALPHA, "rank": r["informative"] and r["p_rank"] <= ALPHA,
+                    "admissible": (r["k_sub"] >= 2 and r["stability"] is not None and r["stability"] >= 0.75
+                                   and r["informative"] and r["p"] <= ALPHA)})
+    return out
+
+
+def diagnose_cmd(argv: Optional[Sequence[str]] = None) -> int:
+    """Beside the trained reading: per arm, band and grid point, how many window clouds meet each condition."""
+    ap = argparse.ArgumentParser(prog="scale_real diagnose")
+    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--ref", type=Path, required=True)
+    args = ap.parse_args(argv)
+    inits, reinits = model_ids("init"), model_ids("reinit")
+    recs, _ = load_run(args.out, inits)
+    refs_recs, _ = load_run(args.ref)
+    keys = ("window", "rank_free", "k2", "stable", "gauss", "rank", "admissible")
+    tab = {a: {b: {} for b in BANDS} for a in ARMS}
+    for k in V1_PASSAGES:
+        for L in LAYERS:
+            refs = {a: np.stack([ref_values(refs_recs[m][k][L]["rows"][a]) for m in reinits]) for a in ARMS}
+            for mid in inits:
+                for a in ARMS:
+                    for pt in point_failures(recs[mid][k][L]["rows"][a], refs[a]):
+                        if not pt["window"]:
+                            continue
+                        row = tab[a][band(L)].setdefault(round(pt["r"], 3), {x: 0 for x in keys})
+                        for x in keys:
+                            row[x] += bool(pt[x])
+    (args.out / "diagnose.json").write_text(json.dumps({"git": _git_head(), "table": tab}, indent=1) + "\n")
+    print("per window point (clouds in the window at that r): " + ", ".join(keys[1:]))
+    for a in ARMS:
+        for b in BANDS:
+            for r, row in sorted(tab[a][b].items()):
+                print(f"  {a:5s} {b:7s} r {r:.3f}: window {row['window']:4d} | "
+                      + " ".join(f"{x} {row[x]:4d}" for x in keys[1:]))
+    return 0
+
+
+def _meta(out: Path, mid: str) -> Dict:
+    return json.loads(_paths(out, mid, V1_PASSAGES[0])[0].read_text())["meta"]
+
+
+def trained_cmd(argv: Optional[Sequence[str]] = None) -> int:
+    ap = argparse.ArgumentParser(prog="scale_real trained")
+    ap.add_argument("--out", type=Path, required=True, help=f"a finished `run --step {TRAINED_STEP}` directory")
+    ap.add_argument("--ref", type=Path, required=True, help="the finished step-0 batch (the re-inits' z_G)")
+    args = ap.parse_args(argv)
+    inits, reinits = model_ids("init"), model_ids("reinit")
+    recs, labs = load_run(args.out, inits)
+    refs_recs, _ = load_run(args.ref)
+    meta, ref_meta = _meta(args.out, inits[0]), _meta(args.ref, inits[0])
+    if meta["step"] != TRAINED_STEP or ref_meta["step"] != "step0":
+        raise SystemExit(f"refusing: steps {meta['step']} / {ref_meta['step']}, want {TRAINED_STEP} / step0")
+    if meta["sets_sha256"] != ref_meta["sets_sha256"]:
+        raise SystemExit("refusing: the trained clouds and the references read different token sets")
+    sets_path = Path(meta["sets"])
+    if hashlib.sha256(sets_path.read_bytes()).hexdigest()[:16] != meta["sets_sha256"]:
+        raise SystemExit(f"refusing: {sets_path} is not the token sets the run read")
+    kept = load_sets(sets_path)
+    tok = _tok()
+    toks = {k: tok.convert_ids_to_tokens(v) for k, v in prompt_ids(tok).items()}
+    cells = []
+    for mid in inits:
+        for k in V1_PASSAGES:
+            for L in LAYERS:
+                rec, lab = recs[mid][k][L], labs[mid][k][L]
+                refs = {a: np.stack([ref_values(refs_recs[m][k][L]["rows"][a]) for m in reinits]) for a in ARMS}
+                pl = gate_plateaus(rec, lab, refs)
+                for a, size in ARMS.items():
+                    for p in pl[a]["conjunction"]:
+                        p["partition"] = partition(lab[p["start"]], size, kept[k], toks[k])
+                cells.append({"model": mid, "prompt": k, "layer": L, "band": band(L), "n": rec["n"],
+                              "median": rec["median"], "plateaus": pl,
+                              "window": {a: window(rec["rows"][a], refs[a]) for a in ARMS}})
+    summ = trained_summary(cells)
+    rep = {a: replication(cells, labs, a) for a in ARMS}
+    res = {"git": _git_head(), "records": meta, "ref_records": ref_meta, "ref": str(args.ref), "alpha": ALPHA,
+           "min_run": MIN_RUN, "min_ref": MIN_REF, "b": "conjunction", "reading_arm": GATING_ARM,
+           "summary": summ, "replication": rep, "cells": cells}
+    (args.out / "trained.json").write_text(json.dumps(res, indent=1) + "\n")
+    print(f"trained reading ({TRAINED_STEP}, centred, (b) the conjunction against {len(reinits)} step-0 re-inits; "
+          f"the {GATING_ARM} arm is the reading): clouds with >= 1 plateau")
+    for a in ARMS:
+        for bnd, r in summ[a].items():
+            w = (f"readable {r['readable']}/{r['clouds']}, median window r {r['median_r_lo']:.2f}-{r['median_r_hi']:.2f}"
+                 if r["readable"] else f"readable 0/{r['clouds']}")
+            rp = rep[a][bnd]
+            ari = "-" if rp["median_pair_ari"] is None else f"{rp['median_pair_ari']:.2f}"
+            print(f"  {a:5s} {bnd:7s} {r['conjunction']}/{r['clouds']} ({w}) | beside: gauss only "
+                  f"{r['gauss_only']}, rank only {r['rank_only']}, without (b) {r['without_b']} | cells by inits "
+                  f"{rp['cells_by_n_inits']}, pair ARI {ari} ({rp['n_pairs']} pairs)")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Resolution: how many grid points can hold a plateau (trees only)
 # ---------------------------------------------------------------------------
 
@@ -609,7 +825,8 @@ def resolution_cmd(argv: Optional[Sequence[str]] = None) -> int:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"run": run_cmd, "read": read_cmd, "gate": gate_cmd, "resolution": resolution_cmd}
+    cmds = {"run": run_cmd, "read": read_cmd, "gate": gate_cmd, "trained": trained_cmd, "diagnose": diagnose_cmd,
+            "resolution": resolution_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: scale_real {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2

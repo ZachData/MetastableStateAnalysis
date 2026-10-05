@@ -274,3 +274,84 @@ class TestGate:
             assert v["hits"] == n_hit and v["pass"] is ok
             assert v["counts"]["main"]["without_b"]["all"] == 50
             assert v["counts"]["main"]["conjunction"]["L1-8"] == n_hit
+
+
+class TestTrainedReading:
+    """Blocked 20, option (a): the window, partitions, replication, and the refusals."""
+
+    def test_window_drops_uninformative_and_unbeatable_points(self):
+        rows = [_row(1.0) for _ in range(6)]
+        rows[1] = _row(1.0, informative=False)
+        refs = np.zeros((40, 6))
+        refs[:2, 4] = np.inf  # two references a finite z cannot beat: 3/41 > 0.05
+        refs[:1, 5] = np.inf  # one: 2/41 <= 0.05, still readable
+        w = sr.window(rows, refs)
+        assert w["points"] == [0, 2, 3, 5] and w["longest_run"] == 2 and not w["readable"]
+        refs[:2, 4] = 0.0
+        w = sr.window(rows, refs)
+        assert w["points"] == [0, 2, 3, 4, 5] and w["longest_run"] == 4 and w["readable"]
+
+    def test_window_is_the_points_where_b_can_pass(self):
+        # Whatever the cloud's own z, a readable point with every reference below gives p_rank = 1/41.
+        rows = [_row(-3.0, p=0.01) for _ in range(4)]
+        refs = np.full((40, 4), -np.inf)
+        assert sr.window(rows, refs)["points"] == [0, 1, 2, 3]
+        assert all(r["p_rank"] <= ss.ALPHA for r in sr.rank_rows(rows, refs))
+
+    def test_partition_maps_kept_positions_to_tokens(self):
+        lab = np.array([0, 0, 1, 2, 2, 2])
+        kept = [3, 5, 6, 8, 9, 11]
+        tokens = [f"t{i}" for i in range(12)]
+        assert sr.partition(lab, 2, kept, tokens) == [
+            {"positions": [8, 9, 11], "tokens": ["t8", "t9", "t11"]},
+            {"positions": [3, 5], "tokens": ["t3", "t5"]}]
+        assert sr.partition(lab, 4, kept, tokens) == []
+
+    def test_pair_ari_over_tokens_clustered_in_both(self):
+        a = np.array([0, 0, 1, 1, 2])
+        assert sr.pair_ari(a, a, 2) == 1.0
+        assert sr.pair_ari(a, np.array([5, 5, 7, 7, 9]), 2) == 1.0  # labels are names
+        assert sr.pair_ari(a, np.arange(5), 2) is None
+
+    def test_replication_counts_inits_per_cell(self):
+        lab = np.tile(np.repeat([0, 1], 5), (ss.GRID_N, 1))
+        hit = {a: {"conjunction": [{"start": 0}]} for a in ss.ARMS}
+        miss = {a: {"conjunction": []} for a in ss.ARMS}
+        cells = [{"model": m, "prompt": "wiki_paragraph", "layer": 1, "plateaus": hit if i < 3 else miss}
+                 for i, m in enumerate(INITS)]
+        labs = {m: {"wiki_paragraph": {1: lab}} for m in INITS}
+        r = sr.replication(cells, labs, "main")
+        assert r["L1-8"] == {"cells_by_n_inits": {3: 1}, "n_pairs": 3, "median_pair_ari": 1.0}
+        assert r["L9-16"]["cells_by_n_inits"] == {} and r["L9-16"]["median_pair_ari"] is None
+
+    def test_run_refuses_reinits_when_trained(self):
+        with pytest.raises(SystemExit, match="do not exist"):
+            sr.run_cmd(["--out", "x", "--step", "step143000", "--only", "reinit:0"])
+
+    def _write(self, out, mids, step, sha="x"):
+        for m in mids:
+            rec, lab = _cloud(0.0)
+            sr._write(out, m, "wiki_paragraph", {1: ({"layer": 1, **rec}, lab)},
+                      {"git": "abc", "sets_sha256": sha, "step": step, "sets": "nowhere"})
+
+    def test_trained_refuses_wrong_steps_and_other_token_sets(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(sr, "V1_PASSAGES", ("wiki_paragraph",))
+        out, ref = tmp_path / "t", tmp_path / "r"
+        self._write(out, INITS, "step0")
+        self._write(ref, INITS + REINITS, "step0")
+        with pytest.raises(SystemExit, match="steps"):
+            sr.trained_cmd(["--out", str(out), "--ref", str(ref)])
+        self._write(out, INITS, "step143000", sha="y")
+        with pytest.raises(SystemExit, match="different token sets"):
+            sr.trained_cmd(["--out", str(out), "--ref", str(ref)])
+
+    def test_point_failures_flags_a_free_rank_term_and_each_condition(self):
+        rows = [_row(1.0, p=0.01), _row(1.0, stability=0.5, p=0.01), _row(1.0, p=0.5)]
+        refs = np.full((40, 3), -np.inf)
+        refs[:, 2] = 0.0
+        pts = sr.point_failures(rows, refs)
+        assert [p["rank_free"] for p in pts] == [True, True, False]
+        assert [p["stable"] for p in pts] == [True, False, True]
+        assert [p["gauss"] for p in pts] == [True, True, False]
+        assert [p["admissible"] for p in pts] == [True, False, False]
+        assert all(p["window"] for p in pts)
