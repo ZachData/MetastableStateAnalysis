@@ -231,3 +231,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-04 | 1d unit 3 under Blocked 17 on fresh seeds 13–22 (presence step; fails 7 of 10, all at (b)'s fine edge; before /challenge-pr) | 34 | 142k | 3.6M | 35k | #137 |
 | 2026-10-04 | 1d Blocked 18 decided (option 1): unit 3 accepted with limits, specificity check placed (docs only; before /challenge-pr) | 25 | 105k | 1.9M | 24k | #138 |
 | 2026-10-04 | 1d unit 3 real-input reader step 1: built, pilot + resolution probe; step-0 clouds cannot fail the check (Blocked 19; batch not run; before /challenge-pr) | 38 | 175k | 4.6M | 47k | #139 |
+| 2026-10-04 | 1d Blocked 19 option 4: conjunction built, step-0 batch (117 min) + gate run, passes 0 of 50 (before /challenge-pr) | 46 | 164k | 5.3M | 36k | #140 |
