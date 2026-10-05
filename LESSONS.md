@@ -417,6 +417,16 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-04, 1d unit 3, step 1 under option 4 (Blocked 19): the replacement gate (50
+  Gaussians of trained clouds through (b) = `p_gauss` ∧ re-init rank) passed 0 of 50, but
+  on the gating main arm it was also 0 of 50 **without** (b): no Gaussian held 3 stable
+  points in a row (max 2), so the pass tests the plateau rule there, not (b); only the
+  size-2 arm (29 → 0) tests (b). The option was written with the synthetic's 29 of 50
+  in mind and no Gaussian of a trained cloud read first; it also costed the gate at
+  "~1 min" before the batch, though its second term ranks against the batch's re-inits
+  (found while fixing the design, before any run). Same rule as the next instance,
+  applied to the replacement: **a gate placed to replace one that could not fail gets its
+  own one-cloud read (event room, and the "without" arm) before it is chosen.**
 - 2026-10-04, 1d unit 3, the real-input reader's step 1 (specificity on the step-0 inits):
   placed, reviewed (#138) and costed without looking at a step-0 cloud through the grid it
   would be read on. Step-0 tokens are nearly orthogonal (median cosine distance 1.006), so

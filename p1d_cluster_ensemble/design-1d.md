@@ -378,6 +378,27 @@ they have no cluster (b) admits any trained one. The "missing z" row's SD-0 drop
 after `/challenge-pr` on #139 (finding 1: such a reference takes its sign). `status-1d.md`
 "The real-input reader, step 1: built"; the choice is `STATE.md` Blocked 19.*
 
+**Step 1 under option 4** (Blocked 19, user, 2026-10-04; fixed before any run, after the
+pilot). Replaces the gate above; the rows above it not named here stand.
+
+| point | reading | why, and what was rejected |
+|---|---|---|
+| (b) on real input | **the conjunction**: a point is admissible for (b) only if `p_gauss` ≤ α (its stability against its own 50 draws, (iv) informative) **and** its rank p among the reference set ≤ α (own `z_G` defined, N ≥ 30); stored as `p = max(p_gauss, p_rank)` | where the re-inits have no cluster of the arm's size every reference counts below, `p_rank` = 1/41, and the reading is the reader the synthetic checked; where they have one, the rank still controls for the architecture (the pilot's re-init has `p_gauss` 0.02 at r ≈ 0.9 in all 24 layers). **Rejected:** options 1–3 (`status-1d.md` table) |
+| gate clouds | 50 of the trained reading's 1,680 clouds (`init:0..9` at `step143000` × 7 v1 × L1–24, the same kept tokens), **17 / 17 / 16** over L1–8 / 9–16 / 17–24, drawn without replacement (`scale_real.gate_cells`, seed 20,000); one matched-covariance Gaussian of each (centred span coordinates, `gaussian_draw`, as `scale_spectrum.read_gaussian`) | specificity at the trained clouds' own scales, which a step-0 cloud cannot reach (the pilot). **Rejected:** one band only; a Gaussian per step-0 cloud (same resolution defect) |
+| gate reference | each Gaussian's `z_G` ranked among the 40 re-inits' at the same (prompt, layer, `r`, arm), then the conjunction | the trained reading's route. **This needs the step-0 batch first**: #139's "~1 min" counted only the Gaussian term, and a `p_gauss`-only count is not an upper bound (a plateau anchors at its first admissible point, so removing points can create one) |
+| **gate pass** | **≤ 2 of 50 Gaussians with a main-arm plateau**, `MIN_RUN` 3, pooled | the synthetic's bound (`MAX_GAUSSIAN_PLATEAUS`) |
+| gate fails | the trained reading refuses in every band; a Blocked item. `MIN_RUN` is not raised | placed now; raising it would be a reader change the synthetic has not checked at the trained scales |
+| beside, not the gate | the Gaussians per band, the size-2 arm, and each term alone (`p_gauss` only, rank only, without (b)); the step-0 batch's rate (re-init arm) and route (real-init arm) under the conjunction, with the `MIN_RUN` ladder as above | option 4: the step-0 rate is reported, not gated |
+| what it does not test | specificity on clouds with nothing learned (the step-0 clouds cannot test it at fine scales); below the re-inits' first cluster (main arm r ≈ 0.6) the rank carries nothing, so "learned" there is said with every reading | the option's "against" column |
+| cost | step-0 batch ~3 h (pilot); gate ≤ 10 forward passes + 50 clouds, minutes | |
+
+*Run 2026-10-04: passes, 0 of 50; on the main arm 0 of 50 without (b) too, so (b) is tested
+there only on size 2. **Corrected after `/challenge-pr` on #140, finding 1:** the "gate clouds"
+row's "at the trained clouds' own scales" is wrong: a matched Gaussian of a trained cloud is
+nearly orthogonal (median distance ≈ 1.005), so the gate tests r ≈ 0.4–1.0 as step 0 did, and
+(iv) confines the trained reading's main arm to about r 0.79–1.02. Numbers: `status-1d.md`
+"The real-input reader, step 1 under option 4"; the choice is `STATE.md` Blocked 20.*
+
 ### Unit 4: positive controls
 
 | control | what | pass |

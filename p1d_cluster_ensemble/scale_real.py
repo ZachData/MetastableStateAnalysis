@@ -16,31 +16,35 @@ common random numbers, as unit 2). Stored per (model, prompt): every row's
 stability ``z_G`` per (``r``, arm), and the cuts' labels (the continuity rule
 needs them once (b) is known).
 
-**(b) on real input** (`read`): at each (prompt, layer, ``r``, arm), the
-cloud's ``z_G`` ranked (higher tail) among a reference set's (`rank_rows`):
+**(b) on real input** (option 4, Blocked 19): the **conjunction** of the
+cloud's own Gaussian p (``p_gauss``, against its 50 draws) and its ``z_G``
+ranked (higher tail) among a reference set's at the same (prompt, layer, ``r``,
+arm) (`rank_rows`; ``p = max`` of the two):
 
 - **real-init arm**: each real init among the 40 re-inits;
 - **re-init arm**: each re-init among the other 39.
 
 A reference whose cut has no cluster of the arm's size counts as below the
-cloud; one whose ``z_G`` is undefined (draws' SD 0) is dropped and N is
-reported; a point is admissible only with its own ``z_G`` defined, (iv)
-informative and N ``>= MIN_REF`` (`ref_values`, `rank_rows`). The plateau is
-`scale_spectrum.robust_plateaus` with that p; the main arm gates.
+cloud; one whose ``z_G`` is undefined (draws' SD 0) takes its sign (`ref_values`);
+a point is admissible only with its own ``z_G`` defined, (iv) informative and N
+``>= MIN_REF``. The plateau is `scale_spectrum.robust_plateaus` with that p; the
+main arm gates.
 
-**Pass** (`verdicts`), per band L1–8 / 9–16 / 17–24:
+**Gate** (`gate`; `design-1d.md` "Step 1 under option 4"): one matched-covariance
+Gaussian of each of ``GATE_N`` trained clouds (`gate_cells`), read through the
+conjunction against the re-inits of a finished `run`; passes with ``<=
+MAX_GAUSSIAN_PLATEAUS`` main-arm plateaus. A fail refuses the trained reading.
 
-- **rate**: the re-init arm's share of clouds with a main-arm plateau is
-  ``<= MAX_RATE``; where it is not, ``MIN_RUN`` is raised one step at a time
-  up to ``MAX_MIN_RUN``, re-init arm only; still failing, the band refuses;
-- **route**: the real-init arm's share, at the band's ``MIN_RUN``, is ``<=``
-  the 95th percentile of the share over ``N_SUBSETS`` random 10-of-40 subsets
-  of the re-inits' own readings.
+**Beside, not the gate** (`read`, `verdicts`), per band L1–8 / 9–16 / 17–24:
 
-A band that fails either refuses the trained reading there. Beside, not the
-pass: the same without (b), the size-2 arm, plateaus per prompt with their
-``r`` ranges. The synthetic's sensitivity re-read at a raised ``MIN_RUN`` (the
-design's post-hoc line) is not built here; `read` says when it is owed.
+- **rate**: the re-init arm's share of clouds with a main-arm plateau against
+  ``MAX_RATE``, ``MIN_RUN`` raised one step at a time up to ``MAX_MIN_RUN``;
+- **route**: the real-init arm's share, at that ``MIN_RUN``, against the 95th
+  percentile of the share over ``N_SUBSETS`` random 10-of-40 subsets of the
+  re-inits' own readings.
+
+Also beside: the same without (b), the size-2 arm, plateaus per prompt with
+their ``r`` ranges.
 
 Tier 1: exploratory, unregistered.
 """
@@ -58,11 +62,12 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from .arch_null import (BANDS, _git_head, _mfile, _tok, check_config, comparison_models, label,
-                        load, make_pool, model_ids, prompt_ids)
+from .arch_null import (BANDS, TRAINED_STEP, _git_head, _mfile, _tok, check_config,
+                        comparison_models, label, load, make_pool, model_ids, prompt_ids)
+from .gaussian_null import frame_vectors, gaussian_draw, span_coordinates
 from .move_text import LAYERS, V1_PASSAGES, band
-from .scale_spectrum import (ALPHA, ARMS, GATING_ARM, GRID_HI, GRID_LO, GRID_N, MIN_RUN, N_DRAWS,
-                             N_SUBSAMPLES, robust_plateaus, spectrum)
+from .scale_spectrum import (ALPHA, ARMS, GATING_ARM, GRID_HI, GRID_LO, GRID_N, MAX_GAUSSIAN_PLATEAUS,
+                             MIN_RUN, N_DRAWS, N_SUBSAMPLES, robust_plateaus, spectrum)
 
 FRAME = "centred"
 #: A point is admissible only with at least this many references left (design row "missing z").
@@ -79,6 +84,11 @@ SUBSET_SIZE = 10
 SEED_BASE = 10_000
 #: The token sets: unit 2's trained union (design row "clouds").
 DEFAULT_SETS = Path("p1d/arch_null_trained_2026-10-02/step0/token_sets.json")
+#: The gate (option 4): Gaussians of this many trained clouds, per band L1-8 / 9-16 / 17-24.
+GATE_PER_BAND = (17, 17, 16)
+GATE_N = sum(GATE_PER_BAND)
+#: Seed of the gate's cell draw; cell i's Gaussian is drawn from [GATE_SEED, i], read with seed GATE_SEED + 1 + i.
+GATE_SEED = 20_000
 
 
 def cloud_seed(prompt: str, layer: int) -> int:
@@ -240,19 +250,20 @@ def ref_values(rows: Sequence[Dict]) -> np.ndarray:
 def rank_rows(rows: Sequence[Dict], refs: np.ndarray) -> List[Dict]:
     """
     ``rows`` with (b) re-read against ``refs`` (``(n_ref, GRID_N)``, `ref_values`):
-    ``p = (1 + #{ref >= z}) / (N + 1)`` over the N references left at that point;
-    ``informative`` true only where the cloud's own ``z_G`` is defined, its draws
-    were informative and N ``>= MIN_REF`` (else ``p`` is 1). The Gaussian p is kept
-    as ``p_gauss``.
+    ``p_rank = (1 + #{ref >= z}) / (N + 1)`` over the N references left at that point,
+    and (b) the conjunction ``p = max(p_gauss, p_rank)`` (option 4, Blocked 19; the
+    Gaussian p is the row's own ``p``, kept as ``p_gauss``). ``informative`` true only
+    where the cloud's own ``z_G`` is defined, its draws were informative and N
+    ``>= MIN_REF`` (else ``p`` and ``p_rank`` are 1).
     """
     out = []
     for g, r in enumerate(rows):
         col = refs[:, g]
         col = col[~np.isnan(col)]
         ok = r["z"] is not None and r["informative"] and col.size >= MIN_REF
-        p = float((1 + np.sum(col >= r["z"])) / (col.size + 1)) if ok else 1.0
-        out.append({**r, "p_gauss": r["p"], "p": p, "n_ref": int(col.size),
-                    "informative_draws": r["informative"], "informative": bool(ok)})
+        p_rank = float((1 + np.sum(col >= r["z"])) / (col.size + 1)) if ok else 1.0
+        out.append({**r, "p_gauss": r["p"], "p_rank": p_rank, "p": max(r["p"], p_rank) if ok else 1.0,
+                    "n_ref": int(col.size), "informative_draws": r["informative"], "informative": bool(ok)})
     return out
 
 
@@ -393,17 +404,17 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     raised = sorted({r["min_run"] for r in rows if r["min_run"] not in (None, MIN_RUN)})
     meta = json.loads(_paths(args.out, model_ids("all")[0], V1_PASSAGES[0])[0].read_text())["meta"]
     res = {"git": _git_head(), "records": meta, "alpha": ALPHA, "min_ref": MIN_REF, "max_rate": MAX_RATE,
-           "n_subsets": N_SUBSETS, "route_quantile": ROUTE_QUANTILE,
-           "bands": rows, "pass_all": all(r["pass"] for r in rows),
+           "n_subsets": N_SUBSETS, "route_quantile": ROUTE_QUANTILE, "b": "conjunction", "gated": False,
+           "bands": rows, "beside_all_within": all(r["pass"] for r in rows),
            "synthetic_reread_owed_at_min_run": raised,
            "n_ref_min": int(min(main["n_ref_min"].values())),
            "beside": {a: beside(t) for a, t in tabs.items()},
            "plateaus": {a: {kind: _plist(t[kind][MIN_RUN]) for kind in ("real_init", "reinit")}
                         for a, t in tabs.items()}}
     (args.out / "specificity.json").write_text(json.dumps(res, indent=1) + "\n")
-    print(f"specificity ({GATING_ARM} arm, centred): share of clouds with >= 1 plateau; "
-          f"rate pass <= {MAX_RATE:.0%} on the re-inits, route pass <= q{ROUTE_QUANTILE:.2f} of "
-          f"{N_SUBSETS} 10-of-40 subsets")
+    print(f"step-0 specificity, beside, not gated (option 4; {GATING_ARM} arm, centred, (b) the conjunction): "
+          f"share of clouds with >= 1 plateau; rate <= {MAX_RATE:.0%} on the re-inits, route <= "
+          f"q{ROUTE_QUANTILE:.2f} of {N_SUBSETS} 10-of-40 subsets")
     for r in rows:
         rr = " ".join(f"MIN_RUN {m}: {v['hits']}/{v['n']} = {v['share']:.3f}"
                       for m, v in r["reinit_rate_by_min_run"].items())
@@ -416,8 +427,126 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
             print(f"  beside {a:5s} {bnd:7s} without (b): re-inits {wb['reinit']['hits']}/{wb['reinit']['n']}, "
                   f"real inits {wb['real_init']['hits']}/{wb['real_init']['n']}")
     if raised:
-        print(f"owed: the synthetic's sensitivity re-read at MIN_RUN {raised} on seeds 13-22 (post hoc, beside)")
-    return 0 if res["pass_all"] else 1
+        print(f"beside: MIN_RUN would be raised to {raised} in some band (not applied under option 4)")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Gate (option 4): Gaussians of trained clouds through the conjunction
+# ---------------------------------------------------------------------------
+
+def gate_cells(seed: int = GATE_SEED) -> List[Tuple[str, str, int]]:
+    """``GATE_N`` (model, prompt, layer) cells of the trained reading, ``GATE_PER_BAND`` per band, without replacement."""
+    rng = np.random.default_rng(seed)
+    cells: List[Tuple[str, str, int]] = []
+    for bnd, n in zip(BANDS, GATE_PER_BAND):
+        pool = [(m, k, L) for m in model_ids("init") for k in V1_PASSAGES for L in LAYERS if band(L) == bnd]
+        cells += [pool[i] for i in sorted(rng.choice(len(pool), size=n, replace=False))]
+    return cells
+
+
+def gate_cloud(Y: np.ndarray, i: int) -> Tuple[Dict, Optional[np.ndarray]]:
+    """Cell ``i``'s matched-covariance Gaussian (centred span coordinates, as `read_gaussian`), read by `read_cloud`."""
+    Z, _ = frame_vectors(Y, FRAME)
+    G = gaussian_draw(span_coordinates(Z), np.random.default_rng([GATE_SEED, i]))
+    return read_cloud(G, GATE_SEED + 1 + i)
+
+
+def _gate_job(args: Tuple[int, np.ndarray]) -> Tuple[int, Dict, Optional[np.ndarray]]:
+    i, Y = args
+    return (i, *gate_cloud(Y, i))
+
+
+def gate_plateaus(rec: Dict, lab: np.ndarray, refs_by_arm: Dict[str, np.ndarray]) -> Dict:
+    """Per arm: plateaus under the conjunction (the gate), and beside each term alone and without (b)."""
+    out = {}
+    for a, size in ARMS.items():
+        rows = rank_rows(rec["rows"][a], refs_by_arm[a])
+        labels = list(lab)
+        out[a] = {"conjunction": robust_plateaus(rows, labels, min_size=size),
+                  "gauss_only": rec["beside"][a]["plateaus_gauss"],
+                  "rank_only": robust_plateaus(rows, labels, p_key="p_rank", min_size=size),
+                  "without_b": rec["beside"][a]["plateaus_without_b"],
+                  "n_ref_min": min(r["n_ref"] for r in rows)}
+    return out
+
+
+def gate_verdict(cells: Sequence[Tuple[str, str, int]], plateaus: Sequence[Dict]) -> Dict:
+    """Counts of Gaussians with >= 1 plateau, per reading and arm, pooled and per band; the gate on the main arm's conjunction."""
+    counts = {a: {kind: {"all": 0, **{b: 0 for b in BANDS}}
+                  for kind in ("conjunction", "gauss_only", "rank_only", "without_b")} for a in ARMS}
+    for (_, _, L), pl in zip(cells, plateaus):
+        for a in ARMS:
+            for kind, c in counts[a].items():
+                if pl[a][kind]:
+                    c["all"] += 1
+                    c[band(L)] += 1
+    hits = counts[GATING_ARM]["conjunction"]["all"]
+    return {"n": len(cells), "max": MAX_GAUSSIAN_PLATEAUS, "hits": hits,
+            "pass": hits <= MAX_GAUSSIAN_PLATEAUS, "counts": counts}
+
+
+def gate_cmd(argv: Optional[Sequence[str]] = None) -> int:
+    ap = argparse.ArgumentParser(prog="scale_real gate")
+    ap.add_argument("--out", type=Path, required=True, help="a finished `run` directory (the re-inits' z_G)")
+    ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    ap.add_argument("--torch-threads", type=int, default=2)
+    args = ap.parse_args(argv)
+    recs, _ = load_run(args.out)
+    meta = json.loads(_paths(args.out, model_ids("all")[0], V1_PASSAGES[0])[0].read_text())["meta"]
+    sets_path = Path(meta["sets"])
+    if hashlib.sha256(sets_path.read_bytes()).hexdigest()[:16] != meta["sets_sha256"]:
+        raise SystemExit(f"refusing: {sets_path} is not the token sets the run read")
+    kept = load_sets(sets_path)
+    import torch
+    torch.set_num_threads(args.torch_threads)
+    from .move_text import forward
+    ids = prompt_ids(_tok())
+    cells = gate_cells()
+    pool = make_pool(args.workers)
+    t0 = time.monotonic()
+    res = []
+    for mid in sorted({c[0] for c in cells}, key=model_ids("init").index):
+        model = load(mid, TRAINED_STEP)
+        check_config(model)
+        for k in sorted({c[1] for c in cells if c[0] == mid}):
+            H, _ = forward(model, ids[k])
+            for i, c in enumerate(cells):
+                if c[0] == mid and c[1] == k:
+                    job = (i, H[c[2]][np.asarray(kept[k])])
+                    res.append(pool.apply_async(_gate_job, (job,)) if pool is not None else _gate_job(job))
+        del model
+    got = {}
+    for r in res:
+        i, rec, lab = r.get() if pool is not None else r
+        got[i] = (rec, lab)
+    if pool is not None:
+        pool.close()
+        pool.join()
+    errs = [i for i, (rec, _) in got.items() if "error" in rec]
+    if errs:
+        raise SystemExit(f"refusing: {len(errs)} gate clouds with a refused tree (cells {errs[:3]})")
+    reinits = model_ids("reinit")
+    plateaus = []
+    for i, (mid, k, L) in enumerate(cells):
+        refs = {a: np.stack([ref_values(recs[m][k][L]["rows"][a]) for m in reinits]) for a in ARMS}
+        plateaus.append(gate_plateaus(*got[i], refs))
+    v = gate_verdict(cells, plateaus)
+    res_json = {"git": _git_head(), "records": meta, "trained_step": TRAINED_STEP, "gate_seed": GATE_SEED,
+                "per_band": dict(zip(BANDS, GATE_PER_BAND)), **v,
+                "cells": [{"i": i, "model": m, "prompt": k, "layer": L, "band": band(L), "n": got[i][0]["n"],
+                           "median": got[i][0]["median"], "plateaus": pl}
+                          for i, ((m, k, L), pl) in enumerate(zip(cells, plateaus))]}
+    (args.out / "gate.json").write_text(json.dumps(res_json, indent=1) + "\n")
+    np.savez_compressed(args.out / "gate_labels.npz", **{f"c{i}": got[i][1] for i in sorted(got)})
+    (args.out / "gate_records.json").write_text(json.dumps([got[i][0] for i in sorted(got)]) + "\n")
+    print(f"gate (option 4): {v['hits']} of {v['n']} Gaussians of trained clouds with a {GATING_ARM}-arm plateau "
+          f"under the conjunction (pass <= {MAX_GAUSSIAN_PLATEAUS}): {'PASS' if v['pass'] else 'REFUSE'}; "
+          f"{time.monotonic() - t0:.0f} s")
+    for a, by in v["counts"].items():
+        print(f"  {a:5s} " + " | ".join(f"{kind} {c['all']}/{v['n']} (" + ", ".join(f"{b} {c[b]}" for b in BANDS) + ")"
+                                        for kind, c in by.items()))
+    return 0 if v["pass"] else 1
 
 
 # ---------------------------------------------------------------------------
@@ -480,7 +609,7 @@ def resolution_cmd(argv: Optional[Sequence[str]] = None) -> int:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"run": run_cmd, "read": read_cmd, "resolution": resolution_cmd}
+    cmds = {"run": run_cmd, "read": read_cmd, "gate": gate_cmd, "resolution": resolution_cmd}
     if not argv or argv[0] not in cmds:
         print(f"usage: scale_real {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2
