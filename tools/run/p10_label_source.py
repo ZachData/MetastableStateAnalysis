@@ -73,6 +73,7 @@ sys.path.insert(0, str(REPO))
 
 import numpy as np
 
+from core.holdout import HELD_OUT_PROMPT_KEYS
 from p1d_cluster_ensemble.move_text import (FLOOR_ZERO, MODELS, V1_PASSAGES, band, group_classes,
                                             stage0_runs)
 
@@ -255,6 +256,10 @@ def build(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--workers", type=int, default=7)
     args = ap.parse_args(argv)
+    held = sorted(set(V1_PASSAGES) & set(HELD_OUT_PROMPT_KEYS))
+    if held:   # the 12 v2 prompts stay held out on 410m (`core/holdout.py`)
+        print(f"refusing: held-out prompts in the passage list: {held}", file=sys.stderr)
+        return 1
     ts_sha = _sha(args.token_sets)
     sets = json.loads(args.token_sets.read_text())["sets"]
     runs = stage0_runs(args.index)

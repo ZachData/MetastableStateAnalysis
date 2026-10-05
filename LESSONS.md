@@ -172,6 +172,13 @@ world moves, nobody updates the line, and the next session acts on it.
   clustered / noise split (`label_permutation_null` over a binary label), so
   they can be re-read. Nobody had opened the readers. Same rule as the cost
   line above: a claim about what code needs names the function it read.
+- 2026-10-05 (Phase 10 re-read, R0): `design-10.md` (#144) said the
+  definition's 62 / 810 counts are on "T2's union over all 18 checkpoints".
+  They are on unit 2's token set (`token_sets.json`, the union over 10 seeds
+  and 40 re-inits), which also drops each prose passage's first `.`. Found by
+  opening the run script and a record's `kept_from` before the first pass. No
+  run was wasted. Rule: a claim about which input a number was computed on
+  names the file and hash it read.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
