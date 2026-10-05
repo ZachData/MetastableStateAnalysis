@@ -318,6 +318,17 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-05, 1d unit 4: two runners built for the 7 v1 prompts (512 tokens)
+  were pointed at three short designed prompts (90–199 kept tokens). Unit 2's
+  guard against a NaN group bar (#132) raised for the **whole run** when three
+  raw / size-4 cells, a beside arm, had re-init groups their Gaussians never
+  form (`s` = ∞): a refusal scoped wider than the defect. Now the cell refuses
+  alone, listed. The same parametrisation renamed a variable to `keys` inside
+  `scale_real diagnose`, which has its own `keys` (condition names), so the
+  loop iterated over condition names (`KeyError: 'window'`); no test runs that
+  command. Both found by the run, after the records, before any result was
+  read; ~5 min lost. Rule: a guard's scope is the cell it protects, and a
+  mechanical rename gets a grep for the new name in each function it enters.
 - 2026-09-23, #69: the PR said "2661 passed"; CI said 1 failed, and `main`
   went red on merge (no branch protection, lesson 5). The gate ran before
   `git add`, so `tools/rewrite_moved_refs.py` was untracked and its new test

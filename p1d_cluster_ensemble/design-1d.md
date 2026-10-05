@@ -454,6 +454,11 @@ re-ordering row is not taken up here (Blocked 21 (a) names the designed prompts)
 | outcomes, written before the run | **group route passes**: the candidate definition (moves ∩ learned) finds known content. **Learned fails where moves passed**: unit 2's bar cannot see known lexical classes, and v1's "not learned" is not evidence of absence. **Reader finds content plateaus, rarely at step 0**: it can see known content in those windows, and v1's "none" is read against that rate. If they fall at L17–24 below r 0.6, the v1 plateau kept as a claim (Blocked 21) is where the reader sees content. **Reader finds none**: it cannot see known lexical classes, so v1's "none" carries no weight and the kept plateau rests on `p_gauss` alone. **As many at step 0**: not specific on these prompts | placed so that none is a surprise |
 | order and cost | `arch_null` norms → run → check → read with `--prompts designed`, then `scale_real` step 0 → step143000 → `trained`; each first output opened (populated, not just present) before the rest. ~180 (model, prompt) pairs per route, prompts ≤ 394 tokens: about 1–2 h on 14 workers (estimate) | the populated-not-present rule |
 
+*Ran 2026-10-05: group route passes, 2 of 3 (category list, prose / code; entities none, as
+unit 1). Reader: content plateaus in 10 of the category list's 240 trained clouds (ARI vs
+labels 0.83–1.0), 0 on the other two, 0 of 1,200 step-0 clouds, none at L17–24 below r 0.6.
+`status-1d.md` "Unit 4 on the designed prompts"; next is `STATE.md` Blocked 22.*
+
 ### Order, and what is superseded
 
 Units run 1 → 2 → 3 → 4, each its own PR; unit 1 writes and runs the designed prompts

@@ -2009,6 +2009,7 @@ step 0, which does not yet separate learned content from learned position.
 | the candidates (moves ∧ learned ∧ replicating), and their origin | 120 distinct (centred size 2); **71 carried from L0** (the embedding's word classes, through L1–8), 4 formed at L1, 45 formed later (all candidates first seen at L9–24; an upper bound, since carried classes that gain members count as formed). **Without replication** (moves ∧ learned, the outcome table's words): 205, 116 formed later, so the verdict turns on replication; Phase 10 uses the set without it (user, 2026-10-04), the replicating set stays the cross-seed definition. Raw size 2 is the other way (54 of 79 formed). Carried groups are tighter in position than chance too, so position spread cannot tell an embedding class from a formed one. "Moves" barely filters: 181 of 190 classified learned, replicating groups move. Step 0: no candidates, and 2 of 647 groups carried | "The candidates, and where each comes from" |
 | does the definition recover known clusters? | partly: recall 0.39 on the identity-weights positive control (EOM finds cores) | "Identity-weights positive control" |
 | does unit 3's scale rule find planted scales? | not as designed: the first check fails on the multi-scale synthetic because (b), the substantial count against the Gaussian, has the wrong tail (the Gaussian has more pieces). Without (b) the centred frame finds both scales (post hoc); raw cannot at t = 2. Fix is Blocked 15. **Re-run under it (seed 1): fails again, both arms, on the plateau's "same count"** (fringe clusters move the count while the partition holds; Gaussians 0 of 50). Under Blocked 16 (anchored ARI, opening labelled, 10 seeds): **7 of 10, fails the 8 bar**; Gaussians 0 of 50. Under Blocked 17 on fresh present seeds: 7 of 10 again (coarse 10, fine 7). **Accepted as measured (Blocked 18, option 1):** a found plateau's partition is the claim, a missing one weak evidence; real input waits on a specificity check among the inits. **That check, built and piloted: step-0 clouds' merges all fall within r ≈ 0.5–1.0, so it cannot fail (Blocked 19)**. **Under option 4 ((b) = Gaussian p ∧ re-init rank; gate on 50 Gaussians of trained clouds): passes, 0 of 50; on the main arm the plateau rule rejects them before (b) (0 of 50 without it), so (b) is tested on size 2 only (29 → 0)**. **Trained reading (Blocked 20, (a)): 1 plateau in 1,680 clouds (main L17–24, unreplicated), 0 on size 2; at the window's middle (r ≈ 0.90) the re-inits match or beat the trained clouds in all but 6–12 of 560 per band, so: weak evidence of no large structure beyond the re-inits at r 0.79–1.02; the one plateau is where the rank term is free (Blocked 21)** | "Unit 3: the synthetic and its first check"; "Unit 3 re-run"; "Unit 3 on seeds 2–11"; "Unit 3 on fresh seeds"; "The real-input reader, step 1: built"; "… under option 4"; "The trained reading"; `design-1d.md` "Blocked 18 decided" |
+| can the tools see known content? (unit 4, designed prompts) | **group route (moves ∧ learned): yes, 2 of 3** (category list 23 candidates, prose / code 39; step 0 none above 8; entities none, as unit 1); **reader: rarely** (category list 10 of 240 clouds, ARI vs labels 0.83–1.0; prose / code 0; step 0 0 of 1,200), none at L17–24 below r 0.6, so the kept v1 plateau (Blocked 21) rests on `p_gauss` alone | "Unit 4 on the designed prompts" |
 | attention communities | weak, late (L17–23) against the position-keeping attention null B | "Attention communities" |
 | β (for C's scale) | 3.46 [1.55, 5.57]; the convention is Blocked 9 | "β refit" |
 
@@ -3052,6 +3053,77 @@ Blocked 21). No band is mostly unreadable (L1–8 main is 290 of 560, the lowest
 **Re-run** (worktree root, local-box env): `python -m p1d_cluster_ensemble.scale_real run
 --step step143000 --out <dir> --workers 14` (~28 min), then `... scale_real trained --out
 <dir> --ref <step-0 batch dir>` (~2 min) and `... scale_real diagnose` (same arguments).
+
+### Unit 4 on the designed prompts: the group route sees known content; the reader rarely does (2026-10-05; branch `claude/p1d-unit4`)
+
+**Decided:** Blocked 21 (user, 2026-10-05): **keep** the `init:8` plateau as a claim, at its
+weight (unreplicated, `p_gauss` only, rank term free); option **(a)**. Rules: `design-1d.md`
+"Unit 4 on the designed prompts", committed (`c758eef`) before any code or record of units 2–3
+on these prompts; one rule added at the run (non-finite bar refuses its cell, `ad4a1d8`).
+**Built:** `--prompts designed` on `arch_null` and `scale_real` (v1 seeds and outputs
+unchanged, tested), `positive_controls.py` (`groups`, `reader`); records at `d610486` (clean).
+
+**Inputs.** `designed_prompts.py` (hash `ae6a4312126c`), whole (162 / 394 / 277 tokens; kept
+90 / 199 / 148); unit 2's 60 models; L1–24. T2 over the 60 (trained union) drops position 0,
+each prompt's first `.` and, in prose / code and entities, the first `\n`; token sets sha256
+prefix `9b15291f17eccf78`, read by both routes. Outputs `data/p1d/unit4_arch_null_2026-10-05/`
+(`groups.json` md5 `df86809a`, `read.log`, `check.log`) and `data/p1d/unit4_scale_2026-10-05/`
+(`reader.json` md5 `9d2a25c2`, `trained.log`, `diagnose.log`). Unit 1's records:
+`data/p1d/move_text_2026-10-02/step143000/`.
+
+**First check (unit 2's, 30 medians per cell): passes in every primary cell** (`hdb_k_2`,
+both frames, all bands; largest share 0.10, `ci2` L17–24). `hdb_k_4` centred L9–24 fails on
+missing `z` (the short prompts' Gaussians form no size-4 group), so the learned rule refuses
+there; three raw / size-4 cells of the category list have a non-finite bar and refuse alone.
+
+**Group route (units 1–2), seed 0, centred, size 2: pass, 2 of 3.**
+
+| prompt | groups | content | content ∧ learned | content ∧ moves | **candidates** (∧ both) | step-0 inits, learned content (max) | seeds 0–9, learned content | verdict |
+|---|---|---|---|---|---|---|---|---|
+| category list | 106 | 76 | 26 | 55 | **23** (body 12, colour 11) | all 0 (0) | 13–37 | **pass** |
+| prose / code | 400 | 268 | 84 | 101 | **39** (code 28, prose 11) | 0–8 (8) | 65–90 | **pass** |
+| entities | 167 | 0 | 0 | 0 | 0 | 0–5 (5) | 0–1 | fail |
+
+Candidates by band (category / prose-code): L1–8 17 / 19, L9–16 6 / 14, L17–24 **0** / 6; 31
+of 62 replicate (unit 2's rule). Beside, every (frame, size): the category list passes in all
+four, prose / code in three (not centred / 4, 2 against 3), entities in none. Entities fails
+as in unit 1 (names as a kind, not one group per person): the prediction's failure, not the
+route's (`designed_prompts` rule 3). No animal group is a seed-0 candidate.
+
+**Reader (unit 3), beside: its sensitivity.** Clouds with ≥ 1 conjunction plateau holding a
+content cluster (rule 1):
+
+| arm, band | trained (240: 10 inits × 3 prompts × 8 layers) | step-0 real inits (240) | step-0 re-inits (960) | trained readable; median window `r` |
+|---|---|---|---|---|
+| main L1–8 | **4** (all category list) | 0 | 0 | 195; 0.69–1.02 |
+| main L9–16 | **4** (all category list) | 0 | 0 | 240; 0.79–1.02 |
+| main L17–24 | **2** (all category list) | 0 | 0 | 240; 0.42–1.02 |
+| size 2, every band | 0 (one mixed plateau, L23, ARI 0.003) | 0 | 0 | 230–240 |
+
+Every content plateau is the planted structure: animals / body parts / colours / the opening
+sentence's words (ARI against the labels 0.83–1.0, median 0.88), at r 0.61–0.90, in 5 of 10
+seeds (`init:6` 5 layers). No step-0 cloud has any plateau. **Sensitivity on the cleanest
+input: 10 of the category list's 240 clouds (4 %)**, where the group route finds learned
+category content in every seed; **0 on prose / code**, where it finds 39 candidates; **none at L17–24
+below r 0.6** (the window reaches 0.42 there).
+
+**What this means, under the outcomes written before the run.** (1) **Group route passes**:
+the candidate definition (moves ∧ learned) finds known lexical classes and code / prose, and
+step 0 does not; it does not find entities. (2) **The reader finds content plateaus, never
+at step 0**: it can see known content, but in 4 % of the clouds that hold it, so v1's "none"
+(1 in 1,680) is weak evidence, as written. (3) **The kept v1 plateau** (`init:8`, L21, r
+0.37–0.47) lies where the reader has not been shown to see content: it rests on `p_gauss`
+alone. Next is `STATE.md` Blocked 22.
+
+**Parked** (discoveries, not followed): why the reader misses the category list in 96 % of
+clouds where the 3 classes are plain (the diagnose table pools prompts; a per-prompt split
+would say whether it is stability or the rank term at r ≈ 0.9, as on v1); the synthetic's
+re-ordering row (`design-1d.md` "Unit 4", not in Blocked 21 (a)).
+
+**Re-run** (local-box env): `data/p1d/unit4_arch_null_2026-10-05/run_unit4_arch.sh` (~30
+min; `arch_null read` and `positive_controls groups` re-run after `ad4a1d8`), then
+`data/p1d/unit4_scale_2026-10-05/run_unit4_reader.sh` (~75 min; `diagnose` and `reader`
+re-run after `8eed5f6`). Tests: `tests/test_phase1d_positive_controls.py`.
 
 ## Deleted and restored (was `FROZEN.md`)
 
