@@ -43,9 +43,9 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 >
 > **R1 done, 2026-10-05 (`status-10.md` §1.15).** The three readers take `--labels/--column`
 > and refuse without it; `tools/run/p10_r1_ladder.py` reads the ladder. c0 reproduces the
-> published records exactly. The class findings of §1.7, §1.9 and §1.10 hold; c0's 64–512
-> embedding dip is the old partition's; adjacency's Δ turns on the step-0 baseline (`STATE.md`
-> Blocked 24, which R2's F12 gap shares). **Next: R2** (F1 + F12's gap, then §1.5) after R1's
+> published records exactly. No row holds at every cell; the quoted class claims of §1.7, §1.9
+> and §1.10 keep their labels where quoted; c0's 64–512 embedding dip is the old partition's;
+> adjacency's Δ turns on the step-0 baseline (`STATE.md` Blocked 24, which R2's F12 gap shares). **Next: R2** (F1 + F12's gap, then §1.5) after R1's
 > PR merges, with Blocked 24 answered and the 32 → 64 c2 / c3 switch handled inside F1's window.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**

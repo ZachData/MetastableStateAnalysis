@@ -71,6 +71,10 @@ one column (tree, frame, stability, bulk) and dropped L0 inside c0 → c1.
 pass, against 810 of 926 trained), so a baseline on c3 at step 0 would be the few chance
 passes. Every "Δ vs step 0" and "vs baseline" below subtracts c2's step-0 value, at every
 column; c3 at step 0 is reported as the floor count only.
+*Departure at R1 (2026-10-05, flagged by `/challenge-pr` on #146; for the user, `STATE.md`
+Blocked 24 (b)):* the R1 ladder subtracts c2's step 0 from c3, the arms and the learned split,
+and each of c0–c2b's own step 0, so c0 stays the published reading. Read literally, "at every
+column" puts c2's step 0 under c0 too; `p10_r1_ladder.py` counts both (`status-10.md` §1.15).
 
 **Readable.** A (prompt, layer) record is readable when it has **≥ 10 members and ≥ 10 of the
 rest** (placed). At a step where fewer than half its records are readable on c3, that step's

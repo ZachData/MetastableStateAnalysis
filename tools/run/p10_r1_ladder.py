@@ -31,7 +31,9 @@ column (c0f, c1, c1c, c2a, c2b, c2, c3) whose label differs from c0's is named, 
 beside it (added at R1: c1, the raw frame, swings and later columns swing back) the
 column the label **settled at**, the first from which every column through the primary
 carries the primary's label. Step 0 is not counted for the Δ rows, where it is 0 by
-construction in both.
+construction in both. Counted over every cell, and over the cells the row's own rule names
+(``RULE_CELLS``); and both again with every column against c2's step 0 (`design-10.md`'s
+wording read literally; added after `/challenge-pr` on #146).
 
 Checks before any reading: every record names the same label source and summary
 sha256, and c3's readable counts equal the label source's own ``summary.json``.
@@ -159,30 +161,47 @@ def delta_cells(reader: str, col_rec: Dict, base_rec: Dict) -> Dict:
             for L in LAYERS:
                 x = by.get(L, {})
                 gap = (x.get("carry_gap") or {}).get("self_pct")
-                out.setdefault(("carry_gap", L), {})[s] = (gap, sign(gap, LEVEL_FLOOR))
+                # rule 3 as written: > +0.05 "keeps more", else not (after /challenge-pr on #146)
+                word = "n/a" if gap is None else "keeps more" if gap > LEVEL_FLOOR else "not"
+                out.setdefault(("carry_gap", L), {})[s] = (gap, word)
                 o, k = x.get("class_given_emb_40"), x.get("class_given_emb_40_knn")
                 ex = None if o is None or k is None else o - k
                 out.setdefault(("cge40_over_knn", L), {})[s] = (ex, sign(ex, LEVEL_FLOOR))
     return out
 
 
-def row_cells(data: Dict, reader: str) -> Dict[str, Dict]:
+def row_cells(data: Dict, reader: str, literal: bool = False) -> Dict[str, Dict]:
+    """``literal``: every column against c2's step 0, `design-10.md`'s wording read literally;
+    default c0–c2 against their own step 0 (the docstring's THE BASELINE)."""
     recs = data["recs"][reader]
     cols = {}
     for col in (*LADDER, *ARMS, *LEARNED):
         if reader == "tc":
             cols[col] = tc_cells(recs[col])
         else:
-            cols[col] = delta_cells(reader, recs[col], recs["c2" if col in ON_C2_BASE else col])
+            base = "c2" if literal or col in ON_C2_BASE else col
+            cols[col] = delta_cells(reader, recs[col], recs[base])
     return cols
 
 
-def holds(cols: Dict, prim: Dict[int, str], reader: str) -> Dict:
-    """Per (quantity, layer, step): primary vs c0, and the first column that changed it."""
+#: The cells each row's own rule names (after /challenge-pr on #146): §1.7 its verdict per step;
+#: §1.9 every Δ it reads (per step, L12, L24, mean); §1.10 its pre-stated readings 1–3 at step
+#: 143000 and the deciding post hoc reading at the steps its table quotes.
+RULE_CELLS = {
+    "tc": lambda q, L, s: q == "verdict",
+    "cm": lambda q, L, s: True,
+    "lc": lambda q, L, s: (s == 143000 and q in ("class_given_emb", "emb_given_class", "carry_gap"))
+                          or (q == "cge40_over_knn" and s in (512, 2000, 143000)),
+}
+
+
+def holds(cols: Dict, prim: Dict[int, str], reader: str, keep=None) -> Dict:
+    """Per (quantity, layer, step): primary vs c0, and the first column that changed it;
+    ``keep(quantity, layer, step)`` restricts the cells (`RULE_CELLS`)."""
     agree, cells, changed, settled = 0, [], Counter(), Counter()
     for q, by_step in cols["c0"].items():
         for s, (_, lab0) in by_step.items():
-            if reader != "tc" and s == 0:
+            if (reader != "tc" and s == 0) or (keep is not None and not keep(q[0], q[1], s)):
                 continue
             pc = prim.get(s, "c3")
             lab = cols[pc].get(q, {}).get(s, (None, "absent"))[1]
@@ -259,11 +278,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for reader, row in READERS.items():
         cols = row_cells(data, reader)
         h = holds(cols, prim, reader)
-        res["rows"][row] = {"holds": h, "arms": arms_differ(cols, prim),
+        lit = row_cells(data, reader, literal=True)
+        hr, hl, hlr = (holds(cols, prim, reader, RULE_CELLS[reader]), holds(lit, prim, reader),
+                       holds(lit, prim, reader, RULE_CELLS[reader]))
+        res["rows"][row] = {"holds": h, "holds_rule": hr, "holds_literal": hl, "holds_literal_rule": hlr,
+                            "arms": arms_differ(cols, prim),
                             "columns": {c: {f"{q[0]}|{q[1]}": {s: list(v) for s, v in by.items()}
                                             for q, by in cc.items()} for c, cc in cols.items()}}
         print(f"\n{row}: {h['agree']} of {h['n']} labels agree, primary vs c0; the rest first changed at "
               f"{h['first_changed_at'] or 'none'}, settled at {h['settled_at'] or 'none'}")
+        print(f"  on the rule's own cells: {hr['agree']} of {hr['n']}; every column against c2's step 0 "
+              f"(design-10 literally): {hl['agree']} of {hl['n']}, rule cells {hlr['agree']} of {hlr['n']}")
         for a, x in res["rows"][row]["arms"].items():
             print(f"  arm {a}: differs from c3 in {len(x['differ'])} of {x['n']}")
     if args.against is not None:

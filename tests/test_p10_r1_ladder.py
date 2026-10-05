@@ -60,3 +60,15 @@ def test_against_counts_primary_labels_that_differ(monkeypatch):
     monkeypatch.setattr(lad, "row_cells", lambda data, reader: runs[data["tag"]])
     out = lad.against({"recs": rec, "tag": "a"}, {"recs": rec, "tag": "b"})
     assert out["§1.7"] == {"n": 2, "differ": ["freq|all|64"]}
+
+
+def test_rule_cells_and_literal_baseline():
+    assert lad.RULE_CELLS["lc"]("carry_gap", 24, 143000) and not lad.RULE_CELLS["lc"]("carry_gap", 24, 512)
+    assert lad.RULE_CELLS["lc"]("cge40_over_knn", 12, 512) and not lad.RULE_CELLS["lc"]("emb_same", 12, 143000)
+    assert lad.RULE_CELLS["tc"]("verdict", "all", 64) and not lad.RULE_CELLS["tc"]("freq", "all", 64)
+    recs = {c: _cm({0: 0.10, 512: 0.20}) for c in lad.LADDER + lad.ARMS + lad.LEARNED}
+    recs["c2"] = _cm({0: 0.0, 512: 0.20})
+    data = {"recs": {"cm": recs}}
+    q = ("same_class", 12)
+    assert lad.row_cells(data, "cm")["c0"][q][512][0] == pytest.approx(0.10)
+    assert lad.row_cells(data, "cm", literal=True)["c0"][q][512][0] == pytest.approx(0.20)
