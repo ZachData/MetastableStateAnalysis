@@ -393,7 +393,11 @@ pilot). Replaces the gate above; the rows above it not named here stand.
 | cost | step-0 batch ~3 h (pilot); gate ≤ 10 forward passes + 50 clouds, minutes | |
 
 *Run 2026-10-04: passes, 0 of 50; on the main arm 0 of 50 without (b) too, so (b) is tested
-there only on size 2. Numbers: `status-1d.md` "The real-input reader, step 1 under option 4".*
+there only on size 2. **Corrected after `/challenge-pr` on #140, finding 1:** the "gate clouds"
+row's "at the trained clouds' own scales" is wrong: a matched Gaussian of a trained cloud is
+nearly orthogonal (median distance ≈ 1.005), so the gate tests r ≈ 0.4–1.0 as step 0 did, and
+(iv) confines the trained reading's main arm to about r 0.79–1.02. Numbers: `status-1d.md`
+"The real-input reader, step 1 under option 4"; the choice is `STATE.md` Blocked 20.*
 
 ### Unit 4: positive controls
 

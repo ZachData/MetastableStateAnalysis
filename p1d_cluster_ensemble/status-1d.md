@@ -2951,7 +2951,8 @@ resolution). Gate: `gate_cells` (seed 20,000; 17 / 17 / 16 by band) of `init:0..
 | beside: step-0 real inits, conjunction | 0 / 0 / 0 of 560 | 0 / 0 / 0 |
 | beside: step 0 without (b), re-inits; real inits | 0; 0 in every band | 1, 14, 7 of 2,240; 0, 2, 24 of 560 |
 
-**What this means.** (1) **The gate passes: the trained reading opens in every band.** (2)
+**What this means.** (1) **The gate passes**; the trained reading waits on Blocked 20 (review
+below), not on the gate. (2)
 **On the main arm the pass does not test (b).** The Gaussians of trained clouds never hold a
 run: at most 2 consecutive grid points with ≥ 2 main-arm clusters at stability ≥ 0.75 (median
 1; median of each cloud's highest such stability 0.79), so (a) and continuity reject all 50
@@ -2973,6 +2974,24 @@ init equal by construction, with a small late lean it could not resolve; this ma
 ~15 min, the 24 clouds' plateaus and their tokens. *Decision it could change:* whether re-inits
 stand in for real inits at L17–24 on the size-2 arm. Under the conjunction it is 0 of 560, so
 not this gate.
+
+**`/challenge-pr` on #140 (accept with changes; answered on the PR).** (1) **Confirmed; it
+corrects the design's gate row:** the gate does not test "at the trained clouds' own scales".
+A matched Gaussian of a trained cloud is nearly orthogonal again (median distance 1.003–1.010,
+against the trained clouds' 1.019), so its structure sits where step 0's does. The same
+geometry bounds the trained reading: (iv) needs ≥ 10 % of a cloud's own draws to hold a
+cluster of the arm's size, and on the gate's draws that starts at r 0.37–0.79 (median 0.65)
+main arm, 0.25–0.61 size 2; with (2), a main-arm point can be admitted in 28 of 50 cells only
+at r 0.79–1.5, and the trained clouds' non-trivial cuts end at r ≈ 1.02 (pilot resolution), so
+about 3 grid points. The reviewer, using the gate's draws as a stand-in for a trained cloud's,
+finds 14 of 50 cells with no room for a main-arm plateau at all. (2) **Confirmed:** the rank
+term passes every point up to r ≈ 0.54 (every reference empty), fails at r ≈ 0.69 (about 21 of
+40 references +inf) and ranks only at r 0.79–1.02. (3) **For the user (Blocked 20):** a
+reference with a stable cluster and empty draws scores +inf, while the cloud under test in
+the same state is inadmissible ((iv)); that asymmetry is what drops fine-scale learned
+groups, and no null in hand (step 0, these Gaussians) has structure below r ≈ 0.3 to test
+specificity there if it were changed. (4) **Taken, code:** `read` wrote `pass_all` beside
+`"gated": false`; renamed `beside_all_within`, `specificity.json` re-written.
 
 **Re-run** (worktree root, local-box env, `STATE.md` "Machine"): `python -m
 p1d_cluster_ensemble.scale_real run --out <dir> --workers 14` (~2 h), then `... scale_real gate

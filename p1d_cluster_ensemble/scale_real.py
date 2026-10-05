@@ -405,7 +405,7 @@ def read_cmd(argv: Optional[Sequence[str]] = None) -> int:
     meta = json.loads(_paths(args.out, model_ids("all")[0], V1_PASSAGES[0])[0].read_text())["meta"]
     res = {"git": _git_head(), "records": meta, "alpha": ALPHA, "min_ref": MIN_REF, "max_rate": MAX_RATE,
            "n_subsets": N_SUBSETS, "route_quantile": ROUTE_QUANTILE, "b": "conjunction", "gated": False,
-           "bands": rows, "pass_all": all(r["pass"] for r in rows),
+           "bands": rows, "beside_all_within": all(r["pass"] for r in rows),
            "synthetic_reread_owed_at_min_run": raised,
            "n_ref_min": int(min(main["n_ref_min"].values())),
            "beside": {a: beside(t) for a, t in tabs.items()},
