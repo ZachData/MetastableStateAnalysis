@@ -2,10 +2,13 @@
 
 M1  E_beta = (1/2 beta) sum_i phi_beta(x_i), phi_beta(x) = sum_j exp(beta <x, x_j>); so the
     per-token deviations phi_beta(x_i) - mean_i phi_beta(x_i) sum to 0. Symbolic, n = 3, d = 2:
-    a full proof (an identity in the symbols).
+    a full proof (an identity in the symbols). Does NOT say which per-token quantity Pythia's
+    dynamics changes: with learned Q, K, V there is no single E_beta it must follow.
 M2  On the unit sphere the tangential gradient of log phi_beta at x is beta * P_x^perp m(x),
     m(x) = sum_j softmax_j(beta <x, x_j>) x_j: the mean-shift direction is the field's ascent
     direction. Symbolic in the ambient gradient, n = 3, d = 2; the projection is then linear algebra.
+    Does NOT show that a trained attention update points along it (that is U2's measurement) or
+    hold for the causal sum's per-token energies beyond replacing the sum's range.
 M3  For n <= d + 1 unit vectors, sum_{i != j} exp(beta <x_i, x_j>) >= n(n-1) exp(-beta/(n-1)),
     with equality at the regular simplex: the repulsive (V = -I) energy minimiser. The two steps
     (sum_{i != j} <x_i, x_j> = |sum x|^2 - n >= -n; Jensen on exp) are checked symbolically, and the
@@ -13,13 +16,19 @@ M3  For n <= d + 1 unit vectors, sum_{i != j} exp(beta <x_i, x_j>) >= n(n-1) exp
     -I and whose mask is causal (math-10.md sec 7.5).
 M4  As beta -> 0, m(x) -> the plain mean of the x_j, with first-order correction
     (beta/n) sum_j (<x, x_j> - mean_k <x, x_k>) x_j: at small beta the field only says "towards the
-    centroid", so its local part is m_beta - m_0. Series check, n = 3, d = 2.
+    centroid", so its local part is m_beta - m_0. Series check, n = 3, d = 2. Does NOT bound the
+    remainder at beta = 3.5, where the series is not used.
 M5  On the unit sphere exp(beta <x, y>) = exp(beta) exp(-(beta/2) |x - y|^2): log of the mean
     pairwise phi_beta is beta plus Wang & Isola's uniformity log E exp(-t |x - y|^2) at t = beta/2.
-M6  Critical points of phi_beta on the sphere lie in span(x_j): grad = beta P_x^perp sum_j w_j x_j
-    vanishes only where x is parallel to a vector in the span. So every well, crest and saddle of
-    the field lives in the <= n-dimensional subsphere of the data; "void everywhere else" carries no
-    structure. Checked numerically: a random critical-point search from off-span starts ends in the span.
+    Does NOT carry over their claims about what uniformity predicts (contrastive features, not LMs).
+M6  Critical points of phi_beta on the sphere lie in span(x_j) OR have m(x) = 0: grad = beta P_x^perp
+    m(x) vanishes only where m(x) is parallel to x (so x is in the span) or m(x) = 0. *Corrected after
+    /challenge-pr on #156, finding 4:* for x orthogonal to the span all weights are equal and m(x) is
+    the plain mean of the x_j, which is 0 in a cloud-centred frame: there the whole subsphere
+    orthogonal to the span is critical (the field's floor). Checked: (a) ascent from off-span starts
+    ends in the span (maxima); (b) on a centred cloud, a point orthogonal to the span has zero
+    gradient; (c) on uncentred rows with nonzero mean the same point does not. Does NOT locate
+    saddles (U3's job) or count wells.
 
 Run: python3 tools/math_checks/energy_field_1e.py
 """
@@ -115,7 +124,33 @@ for _ in range(50):
             break
         x = mm / np.linalg.norm(mm)
     in_span.append(np.linalg.norm(x - Q @ (Q.T @ x)) < 1e-8)
-record("M6 critical points reached from off-span starts lie in span(x_j)", all(in_span))
+record("M6 (a) maxima reached from off-span starts lie in span(x_j)", all(in_span))
+C = A - A.mean(0)                                # cloud-centred rows (the centred arm)
+C /= np.linalg.norm(C, axis=1, keepdims=True)
+Qc, _ = np.linalg.qr(C.T)
+z = rng.standard_normal(d6)
+z -= Qc @ (Qc.T @ z)
+z /= np.linalg.norm(z)                           # orthogonal to the centred span
+
+
+def tan_grad(rows, x):
+    wts = np.exp(b6 * (rows @ x - 1))
+    mm = wts @ rows / wts.sum()
+    return mm - (mm @ x) * x
+
+
+Cm = C - C.mean(0)                                # exact zero mean, then the check point
+zc = rng.standard_normal(d6)
+Qm, _ = np.linalg.qr(Cm.T)
+zc -= Qm @ (Qm.T @ zc)
+zc /= np.linalg.norm(zc)
+record("M6 (b) centred, zero-mean rows: a point orthogonal to the span is critical",
+       np.linalg.norm(tan_grad(Cm, zc)) < 1e-12, f"{np.linalg.norm(tan_grad(Cm, zc))}")
+z2 = rng.standard_normal(d6)
+z2 -= Q @ (Q.T @ z2)
+z2 /= np.linalg.norm(z2)
+record("M6 (c) uncentred unit rows: a point orthogonal to the span is not critical",
+       np.linalg.norm(tan_grad(A, z2)) > 1e-3, f"{np.linalg.norm(tan_grad(A, z2))}")
 
 print(f"\n{sum(results)}/{len(results)} passed")
 raise SystemExit(0 if all(results) else 1)
