@@ -284,6 +284,12 @@ on the entrants.
 step (R1 drops a record without one, so "readable" alone does not fix the population). A first
 run refused on a level with no such record (c3, L24 at 64–512). A level with none is now reported
 as "no records" and not read. Results: `status-10.md` §1.21.
+*After `/challenge-pr` on #152 (not part of the rule as fixed):* R1's own records per step read
+beside, with records readable at one end only as a **records** term, so the span sums to R1's
+change (check (e)); identical / changed links per boundary; an `opposing` flag; the runner's
+dirty state recorded. The reviewer's main point is now in the reading: for statistics measured
+in each step's own frame, a shift shared by every group lands wholly in "within", so "within"
+there means "not replacement", not "lineage carries it".
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint

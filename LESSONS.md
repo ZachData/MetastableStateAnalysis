@@ -865,6 +865,13 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-06, Phase 10 R6w (#152, `/challenge-pr`): the headline said the drift "happens inside
+  groups that persist". For statistics measured in each step's own layer 0, a shift shared by
+  every group lands wholly in "within", because the entry and exit terms compare groups at the
+  same step. So the result was "not replacement", not "lineage carries it". The same review found
+  that the first output recorded the rule commit as its git while the runner was uncommitted.
+  Rule: ask what a decomposition reads under "everything moved together"; record a dirty flag
+  beside git.
 - 2026-10-05, Phase 10 R6: the matcher's rule named 0 → 2 **and 2 → 4** as its no-learning
   floor ("weights barely move"), but R0's own table, read for that same rule, shows c1 at
   997 → 903 across 2 → 4; the run gave c2a stable 0.86 there. Caught at reading, before any

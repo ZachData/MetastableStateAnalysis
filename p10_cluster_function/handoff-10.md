@@ -96,8 +96,9 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > user's: §1.9–§1.10's drift split exactly into within-lineage change and replacement on R6's
 > links (Melitz–Polanec's form), rule in `design-10.md` "R6w". `tools/run/p10_r6w_drift.py`;
 > output `data/p10/reread_r6w_2026-10-06/r6w.json`. The Parked matcher question is answered for
-> 512 → 143000: the embedding-measured drifts happen inside persisting groups, much of it the
-> layer-0 frame moving. **Next, for the user:** Blocked 26 (c), (d), (e′), or Parked (R6w) below.
+> 512 → 143000: replacement does not carry the embedding-measured drifts (entrants sit where the
+> persisting groups do); the persisting groups move with the whole population, which a layer-0
+> frame shift would also give. `/challenge-pr` on #152: all five findings taken. **Next, for the user:** Blocked 26 (c), (d), (e′), or Parked (R6w) below.
 > *Parked (R6w):* **score every step's groups in one fixed layer 0** (step 512's and 143000's) to
 > split within into members against frame as terms, not per-link means. Why: §1.21's identical
 > links move as much as changed ones, which suggests the embedding comes to group what the depth
