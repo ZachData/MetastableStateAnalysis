@@ -250,3 +250,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-05 | Phase 10 re-read R2: F1, F12's gap, §1.5 down the ladder (before /challenge-pr) | 69 | 218k | 10.3M | 57k | #147 |
   At 2× the median: a full read of both readers (~660 lines) and R1's ladder to reuse it, a
   14-min batch watched in-session, and a published check that first matched nothing (`LESSONS.md` 2).
+| 2026-10-05 | Phase 10 re-read R3: A0 under T4 down the ladder (before /challenge-pr) | 74 | 242k | 12.0M | 66k | #148 |
+  Over 2× the median (5.2M): STATE's hook output persisted twice and printed stale (the main tree
+  lagged #147), the reader plus R2's plumbing and ladder read to reuse them, a confound split added
+  mid-unit (`p10_r3_sink_split.py`), a gate re-run after a pure-tier import, and this file read whole.

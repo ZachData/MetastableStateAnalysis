@@ -171,6 +171,57 @@ record("the two mask baselines are anti-aligned in position",
        "SMALLEST Z -- i.e. under a causal mask the 'high-Z = sink' identification REVERSES. "
        "It is an unmasked-model statement, and Pythia is masked")
 
+# ---------------------------------------------------------------------------
+# 5. The baseline under token rule T4 (Phase 10 re-read R3, 2026-10-05)
+# ---------------------------------------------------------------------------
+# T4 drops the columns of a set D of positions (the sink, massive tokens) and
+# renormalises each row over the keys left. Content-free, query i then spreads
+# 1/|V_i| over V_i = {j <= i, j not in D}, so for j not in D
+#
+#   received_T4(j) = sum_{i >= j, |V_i| > 0} 1/|V_i|
+#
+# (core.parking.t4_received_baseline). With D = {0}: |V_i| = i, so
+#   received_T4(j) = sum_{i=j}^{n-1} 1/i = H_{n-1} - H_{j-1}   (j >= 1).
+received_t4_0 = sp.harmonic(n - 1) - sp.harmonic(j - 1)
+ok = True
+for nn in (5, 12, 40):
+    for jj in range(1, nn):
+        explicit = sum(sp.Rational(1, ii) for ii in range(jj, nn))
+        if sp.simplify(explicit - received_t4_0.subs({n: nn, j: jj})) != 0:
+            ok = False
+record("T4, D = {0}: received(j) = H_{n-1} - H_{j-1}   [vs explicit sum, n in {5,12,40}]", ok)
+
+
+def t4_explicit(nn, D):
+    """received_T4 from the matrix itself: build, drop D's columns, renormalise rows."""
+    rows = []
+    for ii in range(nn):
+        keys = [jj for jj in range(ii + 1) if jj not in D]
+        rows.append({jj: sp.Rational(1, len(keys)) for jj in keys} if keys else {})
+    return {jj: sum(r.get(jj, 0) for r in rows) for jj in range(nn) if jj not in D}
+
+
+def t4_closed(nn, D):
+    vis = [sum(1 for jj in range(ii + 1) if jj not in D) for ii in range(nn)]
+    return {jj: sum(sp.Rational(1, vis[ii]) for ii in range(jj, nn) if vis[ii] > 0)
+            for jj in range(nn) if jj not in D}
+
+
+ok, mass_ok = True, True
+for nn, D in ((12, {0, 3}), (20, {0, 1, 7, 19}), (30, {5, 11}), (9, set())):
+    e, c = t4_explicit(nn, D), t4_closed(nn, D)
+    ok &= all(sp.simplify(e[k] - c[k]) == 0 for k in e)
+    # each non-empty row carries mass 1, so the kept positions share exactly that many
+    nonempty = sum(1 for ii in range(nn) if any(jj not in D for jj in range(ii + 1)))
+    mass_ok &= sp.simplify(sum(c.values()) - nonempty) == 0
+record("T4, general D: the closed form is the dropped-and-renormalised matrix's received", ok,
+       "exact rationals; D includes 0, interior and last positions, and none")
+record("T4: the kept positions' total is the number of rows with a key left", mass_ok,
+       "with D = {0} that is n - 1 rows over n - 1 kept positions, so the mean is 1, as before")
+# NOT proved here: that dropping D's columns is the right content-free model of a
+# network that routes the sink's mass elsewhere; it is the baseline of the rule as
+# stated, applied to uniform causal attention, nothing more.
+
 print()
 print(f"{sum(results)}/{len(results)} checks passed")
 raise SystemExit(0 if all(results) else 1)

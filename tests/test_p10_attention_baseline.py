@@ -343,7 +343,102 @@ def test_the_statistic_is_tested_unrounded():
 
     from tools.run import p10_attention_baseline as mod
 
-    src = inspect.getsource(mod.measure_layer)
+    # measure_layer and the re-read both score through score_populations
+    assert "score_populations(" in inspect.getsource(mod.measure_layer)
+    src = inspect.getsource(mod.score_populations)
     assert 'p_from_null_tolerant(raw_noise, raw_draws' in src
     assert 'p_from_null_tolerant(out["raw_noise"]' not in src
     assert 'p_from_null_tolerant(corrected_noise, draws' in src
+
+
+# --- the re-read (R3): T4 on a column's domain ------------------------------
+
+def _domain_labels(n, dropped, dup=()):
+    """Members late, rest early (the published confound), OUTSIDE at T1–T3."""
+    from tools.run.p10_token_composition import OUTSIDE
+    lab = np.where(np.arange(n) >= n // 2, 0, -1)
+    lab[list(dropped) + list(dup)] = OUTSIDE
+    return lab
+
+
+def test_under_t4_content_free_attention_corrects_to_no_gap_on_the_domain():
+    from tools.run.p10_attention_baseline import score_domain, t4_vectors
+    n, dropped = 60, [0, 9]
+    raw, corr = t4_vectors(_attn(n), dropped)
+    rec = score_domain(raw, corr, _domain_labels(n, dropped, dup=[20, 41]), _rng())
+    assert rec["corrected_noise"] == pytest.approx(1.0, abs=1e-4)
+    assert rec["corrected_clustered"] == pytest.approx(1.0, abs=1e-4)
+    assert rec["raw_noise"] > 1.5 > rec["raw_clustered"], "the raw flip is still the mask's tilt"
+    assert rec["n_tokens"] == n - 4 and rec["n_positions"] == n
+    assert rec["corrected_p"] > 0.5
+
+
+def test_score_domain_refuses_a_dropped_position_inside_the_domain():
+    from tools.run.p10_attention_baseline import score_domain, t4_vectors
+    n = 30
+    raw, corr = t4_vectors(_attn(n), [0, 5])
+    with pytest.raises(ValueError, match="T1–T2"):
+        score_domain(raw, corr, _domain_labels(n, [0]), _rng())
+
+
+def test_domain_position_bias_keeps_the_prompts_scale():
+    """A domain's bias is normalised by the prompt's n − 1, not the domain's."""
+    from tools.run.p10_attention_baseline import score_domain, t4_vectors
+    n = 40
+    raw, corr = t4_vectors(_attn(n), [0])
+    lab = _domain_labels(n, [0])
+    pos = np.arange(n)
+    dom = lab != -2
+    want = (pos[dom & (lab >= 0)].mean() - pos[dom & (lab == -1)].mean()) / (n - 1)
+    assert score_domain(raw, corr, lab, _rng())["position_bias"] == pytest.approx(want, abs=1e-4)
+
+
+def test_reread_run_reads_c0_as_published_and_c1_under_t4(tmp_path):
+    from tools.run.p10_attention_baseline import reread_run, score_domain, t4_vectors
+    from tools.run.p10_partition_function import unit_rng
+    n = 40
+    stack = np.stack([_attn(n), _attn(n)])  # 2 attention entries: partition layer 2 has none
+    m = stack[1, 0].copy()
+    m[:, 30] += 2.0
+    stack[1, 0] = m / m.sum(axis=1, keepdims=True)
+    np.savez(tmp_path / "attentions.npz", attentions=stack)
+    c0 = np.where(np.arange(n) % 3 == 0, -1, 0)
+    c1 = _domain_labels(n, [0])
+    got = reread_run(tmp_path, {"c0": {1: c0, 2: c0}, "c1": {1: c1}}, [0], 64, "wiki", 0)
+    assert [r["layer"] for r in got["c0"]] == [1], "layer 2 has no block above it"
+    want0 = measure_layer(stack[1], c0, unit_rng(0, 64, "wiki", 1))
+    assert {k: v for k, v in got["c0"][0].items() if k != "layer"} == want0
+    want1 = score_domain(*t4_vectors(stack[1], [0]), c1, unit_rng(0, 64, "wiki", 1))
+    assert {k: v for k, v in got["c1"][0].items() if k != "layer"} == want1
+
+
+def test_sink_split_all_arm_is_the_published_gap_and_drop_removes_a_sink(tmp_path):
+    """`p10_r3_sink_split`: "all" is measure_layer's raw / corrected gap; a planted sink in the
+    rest carries the raw flip, and taking it out of the means removes most of it."""
+    from tools.run.p10_r3_sink_split import run
+    n = 40
+    m = uniform_causal_attention(n).copy()
+    m[:, 0] += 5.0
+    m = np.tril(m)
+    m /= m.sum(axis=1, keepdims=True)
+    np.savez(tmp_path / "attentions.npz", attentions=np.stack([_attn(n, matrix=m)] * 2))
+    lab = np.where(np.arange(n) % 2 == 0, -1, 0)
+    rows = run(tmp_path, {1: lab}, [0], "64|wiki")
+    want = measure_layer(_attn(n, matrix=m), lab, _rng())
+    assert rows[0]["all"] == pytest.approx([want["raw_noise"] - want["raw_clustered"],
+                                            want["corrected_noise"] - want["corrected_clustered"]], abs=2e-4)
+    assert rows[0]["drop"][0] < rows[0]["all"][0] / 3
+
+
+def test_position_bins_remove_a_gap_that_is_position_alone():
+    """`p10_r3_position_bins.gaps`: a value that rises with position and members placed early
+    give a pooled gap; within position bins the gap is ~0."""
+    from tools.run.p10_r3_position_bins import gaps
+    from tools.run.p10_token_composition import OUTSIDE
+    n = 200
+    v = 1.0 + np.arange(n) / n
+    rng = np.random.default_rng(1)
+    lab = np.where(rng.random(n) < 0.7 - 0.5 * np.arange(n) / n, 0, -1)
+    lab[0] = OUTSIDE
+    pooled, binned = gaps(v, lab, n_bins=20)
+    assert pooled > 0.05 and abs(binned) < 0.01

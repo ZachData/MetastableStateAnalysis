@@ -52,6 +52,13 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > by the user. `transport.py` and `p10_partition_function.py` take `--labels/--column`, one
 > generator per unit; `tools/run/p10_r2_ladder.py` reads the ladder. F12's gap waits on `STATE.md`
 > Blocked 25. **Next: R3** (A0 under T4) after this PR merges; Blocked 25 does not gate it.
+>
+> **R3 done, 2026-10-05 (`status-10.md` §1.17; its title is the summary).** `p10_attention_baseline.py`
+> takes `--labels` (all columns on one load) or `--old-partition`; T4 and its baseline are in
+> `core/parking.py`; `tools/run/p10_r3_ladder.py` reads the ladder, `p10_r3_sink_split.py` splits
+> c0 → c1. **The re-read's order (R0–R3) is complete.** Every other Phase 10 row still reads the
+> old partition. **Next, for the user to pick** (`design-10.md` "Order": unlocked by R0): Blocked 25
+> (F12's baseline), the cross-checkpoint matcher, the context-shuffle test, Stage 2, F13.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
@@ -663,6 +670,12 @@ before it.
 
 ## Parked
 
+- **Does 5c's flip survive T1–T2 out of the means?** (discovery, R3, 2026-10-05.) On 410m the
+  trained flip and A0's residual are position 0 and one massive token per prompt (`status-10.md`
+  §1.17). 5c measured the flip on `gpt2-large` and ALBERT, which `PREDICTIONS.md` claim (a)
+  cites; whether the sink sat in its unclustered population there is unchecked. Why: claim (a)'s
+  reading. Cost: 5c's statistic with T1–T2 dropped, on its stored attention if any survives, else
+  a forward pass. Could change: claim (a), and whether A1–A8 (`attention-10.md`) are worth running.
 - **The Stage 1 readers' float32 Grams depend on BLAS threads** (defect in a reader, found at
   R1, 2026-10-05). `layer0_gram` and `p10_lexical_carry`'s own Gram are float32; 1 vs 16
   threads moves entries by 5e-7, which flips exact ties (copies are bit-identical at layer 0)

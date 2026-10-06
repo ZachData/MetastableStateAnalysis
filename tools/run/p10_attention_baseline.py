@@ -64,11 +64,34 @@ alternative is "greater", because that is what the existing claim says and it
 was said before this runner existed. `position_bias` is two-sided: both signs
 are informative and neither was predicted.
 
+THE RE-READ (`p10_cluster_function/design-10.md`, R3; added 2026-10-05)
+----------------------------------------------------------------------
+``--labels <dir>`` reads columns of the R0 label source (``--columns``, default
+all), or the run refuses; ``--old-partition`` reads the stored labels (the
+published record). Each (step, prompt) loads its attention once and reads every
+column on it:
+
+- **c0, c0f** run `measure_layer` unchanged: every position, the published
+  statistic, so c0 is the old reading on the re-read's inputs.
+- **c1 onward apply T4** (`design-1d.md` "Token rules"): the columns of the
+  prompt's T1–T2 positions (position 0 and the massive tokens of the token set
+  the label source names, hash checked) are dropped and rows renormalised
+  (`core.parking.t4_attention`), and the mask baseline is the content-free one
+  under the same rule (`t4_received_baseline`). The enrichments, the position
+  bias and their nulls are read on the column's **domain** (the kept tokens):
+  members against the rest, permuted among the domain. T3 duplicates stay in
+  the matrix as queries and keys (T4 drops T1–T2 only) and are outside the means.
+
+Each unit draws from its own generator (``unit_rng``, keyed by step, prompt and
+layer, the same in every column). The labels (mask share, where the residual
+appears, whether it persists) are `p10_r3_ladder.py`'s.
+
 Run:
-    python tools/run/p10_attention_baseline.py --limit 8
-    python tools/run/p10_attention_baseline.py --out data/analysis/p10_row_a0.json
+    python tools/run/p10_attention_baseline.py --old-partition --out data/analysis/p10_row_a0.json
+    python tools/run/p10_attention_baseline.py --labels <R0 labels> --out <file> --jobs 14
 """
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -92,11 +115,12 @@ from core.evalues import (
 from core.nulls import label_permutation_null, p_from_null_tolerant
 from core.holdout import add_holdout_args, refuse_held_out
 from core.parking import (
-    clustered_position_bias,
     mask_corrected_received,
     population_enrichment,
     received_attention,
     relative_to_layer_mean,
+    t4_attention,
+    t4_received_baseline,
 )
 from tools.run.backfill_hdbscan import labels_provenance, read_labels
 from tools.run.p10_anchor import checkpoint_of
@@ -155,6 +179,23 @@ def measure_layer(attn_layer, labels, rng) -> dict:
     raw = relative_to_layer_mean(received_attention(attn_layer, zero_diagonal=True))
     corrected = mask_corrected_received(attn_layer)
     positions = np.arange(n, dtype=np.float64)
+    return score_populations(raw, corrected, positions, labels, n - 1, rng)
+
+
+def score_populations(raw, corrected, positions, labels, scale: float, rng) -> dict:
+    """The enrichments, the position bias and their three p-values on one set of
+    tokens (every position for the published reading; a column's domain for the
+    re-read). ``positions`` are the tokens' positions and ``scale`` the length
+    they are normalised by (n − 1 of the whole prompt), so a domain's bias stays
+    in the published units. Draw order is the published one."""
+    labels = np.asarray(labels)
+    noise = labels == -1
+    n = labels.size
+
+    def bias_of(pos, lab):
+        # `clustered_position_bias`'s formula, with the prompt's own scale
+        pos, nz = np.asarray(pos, dtype=np.float64), np.asarray(lab) == -1
+        return float(pos[~nz].mean() / scale - pos[nz].mean() / scale)
 
     # Held UNROUNDED, and the rounding happens only on the way into the record.
     # Testing a statistic rounded to 4 dp against unrounded null draws puts a
@@ -163,7 +204,7 @@ def measure_layer(attn_layer, labels, rng) -> dict:
     # side the rounding sent it. Small, and wrong for no reason.
     raw_noise = noise_enrichment(raw, labels)
     corrected_noise = noise_enrichment(corrected, labels)
-    bias = clustered_position_bias(positions, labels)
+    bias = bias_of(positions, labels)
 
     out = {
         "n_tokens": int(n),
@@ -197,7 +238,7 @@ def measure_layer(attn_layer, labels, rng) -> dict:
                                               alternative="greater")["p_value"])
 
     # The confound, two-sided.
-    bias_draws = label_permutation_null(positions, labels, clustered_position_bias,
+    bias_draws = label_permutation_null(positions, labels, bias_of,
                                         n_permutations=N_PERMUTATIONS, rng=rng)
     out["position_bias_p"] = float(p_from_null_tolerant(
         bias, bias_draws, alternative="two-sided")["p_value"])
@@ -308,6 +349,159 @@ def aggregate(dirs: list) -> dict:
     return out
 
 
+# ---------------------------------------------------------------------------
+# The re-read (R3): columns of the R0 label source (docstring, "THE RE-READ")
+# ---------------------------------------------------------------------------
+
+#: Columns read by the published reader, unchanged: `p10_label_source.ALL_POSITIONS` (not imported
+#: here, which would pull sklearn into the pure tier; `test_old_reader_columns_are_the_sources`).
+OLD_READER = ("c0", "c0f")
+
+
+def t4_vectors(attn_layer, dropped) -> tuple:
+    """Raw received (diagonal zeroed, as published) and mask-corrected received
+    (diagonal kept, over `t4_received_baseline`) after T4; ``nan`` at ``dropped``."""
+    a4 = t4_attention(attn_layer, dropped)
+    n_heads, n = a4.shape[0], a4.shape[-1]
+    raw = received_attention(a4, zero_diagonal=True)
+    raw[list(dropped)] = np.nan
+    corrected = received_attention(a4, zero_diagonal=False) / t4_received_baseline(n, dropped, n_heads)
+    return raw, corrected
+
+
+def score_domain(raw, corrected, labels, rng) -> dict:
+    """`score_populations` on a column's domain (``OUTSIDE`` dropped); refuses a
+    domain that holds a T4-dropped position."""
+    from tools.run.p10_token_composition import OUTSIDE  # the label source's; this import stays pure
+    lab = np.asarray(labels)
+    dom = lab != OUTSIDE
+    if not (np.isfinite(raw[dom]).all() and np.isfinite(corrected[dom]).all()):
+        raise ValueError("a T1–T2 position is inside the column's domain")
+    out = score_populations(raw[dom], corrected[dom], np.flatnonzero(dom), lab[dom], lab.size - 1, rng)
+    out["n_positions"] = int(lab.size)
+    return out
+
+
+def reread_run(run_dir, labels_by_col: dict, dropped, step: int, prompt: str, seed: int) -> dict:
+    """One (step, prompt): ``{column: [unit, ...]}``, every column read on one load of
+    the attention. Layer ``l`` reads ``attn[l]`` as published (L24 has none)."""
+    from tools.run.p10_partition_function import unit_rng
+    attn = _load_attentions(Path(run_dir))
+    if attn is None:
+        raise FileNotFoundError(f"{run_dir}: no attentions.npz")
+    out = {c: [] for c in labels_by_col}
+    for layer in sorted({L for by in labels_by_col.values() for L in by}):
+        if layer >= attn.shape[0]:
+            continue
+        A = attn[layer]
+        t4 = None
+        for col, by in labels_by_col.items():
+            if layer not in by:
+                continue
+            lab = np.asarray(by[layer])
+            if lab.size != A.shape[-1]:
+                raise ValueError(f"{run_dir}: layer {layer} has {lab.size} labels, {A.shape[-1]} tokens")
+            rng = unit_rng(seed, step, prompt, layer)
+            if col in OLD_READER:
+                rec = measure_layer(A, lab, rng)
+            else:
+                t4 = t4 if t4 is not None else t4_vectors(A, dropped)
+                rec = score_domain(*t4, lab, rng)
+            if rec is not None:
+                rec["layer"] = int(layer)
+                out[col].append(rec)
+    return out
+
+
+def t1_t2_positions(labels_dir: Path) -> tuple:
+    """Per prompt, the positions T4 drops: 0 and the token set's massive tokens. The token
+    set is the one every step file of the label source names (path and hash checked), and
+    its kept positions must be the source's at every step."""
+    from tools.run.p10_label_source import MODELS
+    ts, kept = None, {}
+    for s in MODELS:
+        f = Path(labels_dir) / f"{s}.json"
+        if not f.exists():
+            continue
+        d = json.loads(f.read_text())
+        t = d["meta"]["token_sets"]
+        if ts is not None and t != ts:
+            raise SystemExit(f"refusing: {f.name} names another token set ({t}) than {ts}")
+        ts = t
+        for k, p in d["prompts"].items():
+            kept.setdefault(k, set()).add(tuple(p["kept"]))
+    if ts is None:
+        raise SystemExit(f"refusing: no label source step files in {labels_dir}")
+    raw = Path(ts["path"]).read_bytes()
+    if hashlib.sha256(raw).hexdigest()[:16] != ts["sha256"]:
+        raise SystemExit(f"refusing: {ts['path']} does not match the label source's hash {ts['sha256']}")
+    sets = json.loads(raw)["sets"]
+    dropped = {}
+    for k, ks in kept.items():
+        if ks != {tuple(sets[k]["kept"])}:
+            raise SystemExit(f"refusing: {k}'s kept positions differ from the token set's")
+        d = sorted({0} | {int(m["position"]) for m in sets[k]["massive"]})
+        if set(d) & set(sets[k]["kept"]):
+            raise SystemExit(f"refusing: {k}: a T1–T2 position {d} is kept")
+        dropped[k] = d
+    return dropped, ts
+
+
+def by_step(runs: dict) -> dict:
+    """`aggregate` over one column's units, per step and over the sweep."""
+    dirs = [{"checkpoint": int(k.split("|")[0]), "layers": rows} for k, rows in runs.items()]
+    return aggregate(dirs)
+
+
+def reread(args) -> dict:
+    from concurrent.futures import ProcessPoolExecutor
+    from tools.run.p10_label_source import LEARNED_SPLIT, LEARNED_STEP, MODELS, reader_input
+    dropped, ts = t1_t2_positions(args.labels)
+    srcs, records = {}, {}
+    for col in args.columns:
+        src = reader_input(args.labels, col)
+        want = {LEARNED_STEP} if col in LEARNED_SPLIT else set(MODELS)
+        got = {f"step{s}" for s in src["records"]}
+        if got != want:
+            raise SystemExit(f"refusing: {args.labels} column {col} has steps {sorted(got ^ want)} "
+                             f"missing or extra; the re-read reads all {len(want)}")
+        srcs[col] = src
+        records[col] = {s: {"n": r[0], "readable": r[1]} for s, r in src["records"].items()}
+    runs = {k: p for src in srcs.values() for k, p in src["runs"].items()}
+    for col, src in srcs.items():
+        if any(runs[k] != p for k, p in src["runs"].items()):
+            raise SystemExit(f"refusing: column {col} names another run dir for a (step, prompt)")
+    refuse_held_out(sorted(set(runs.values())), context="p10_attention_baseline")
+    keys = sorted(k for k in runs if any(srcs[c]["labels"].get(k) for c in srcs))
+    jobs = [(runs[k], {c: srcs[c]["labels"][k] for c in srcs if srcs[c]["labels"].get(k)},
+             dropped[k[1]], k[0], k[1], args.seed) for k in keys]
+    print(f"{len(jobs)} (step, prompt) runs, columns {list(srcs)}", flush=True)
+    t0 = time.time()
+    if args.jobs > 1:
+        with ProcessPoolExecutor(args.jobs) as ex:
+            out = list(ex.map(reread_run, *zip(*jobs)))
+    else:
+        out = [reread_run(*j) for j in jobs]
+    print(f"read in {time.time() - t0:.0f}s", flush=True)
+    per_col = {c: {f"{s}|{p}": res[c] for (s, p), res in zip(keys, out) if c in res} for c in srcs}
+    inputs = sorted((f"{s}|{k}", str(p)) for (s, k), p in runs.items())
+    first = next(iter(srcs.values()))["meta"]
+    return {
+        "schema": "p10_row_a0_reread/1",
+        "row": "A0 re-read on R0's label source: c0, c0f as published; c1 onward under T4",
+        "tier": "1 (exploratory, unregistered)",
+        "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "label_source": {"labels": first["labels"], "summary_sha256": first["summary_sha256"],
+                         "label_source_git": first["label_source_git"], "readable_min": first["readable_min"]},
+        "token_sets": ts, "t4_dropped": dropped,
+        "inputs": inputs, "inputs_sha256": hashlib.sha256(json.dumps(inputs).encode()).hexdigest()[:12],
+        "seed": args.seed, "n_permutations": N_PERMUTATIONS,
+        "alternatives": {"corrected_p": "greater", "raw_p": "greater", "position_bias_p": "two-sided"},
+        "columns": {c: {"records_readable": records[c], "summary": by_step(per_col[c]), "runs": per_col[c]}
+                    for c in srcs},
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--root", default=str(DATA / "phase12"))
@@ -315,8 +509,36 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_row_a0.json"))
+    ap.add_argument("--old-partition", action="store_true",
+                    help="read the stored HDBSCAN labels (the published record), not the re-read")
+    ap.add_argument("--labels", type=Path, default=None,
+                    help="the R0 label source (`p10_label_source build`'s --out): the re-read's only input")
+    ap.add_argument("--columns", nargs="+", default=None,
+                    help="re-read only: the ladder columns to read (default all)")
+    ap.add_argument("--jobs", type=int, default=1, help="re-read only: runs in parallel")
     add_holdout_args(ap)
     args = ap.parse_args()
+    if args.old_partition == (args.labels is not None):
+        ap.error("refusing: read one label-source --labels <dir> (p10_cluster_function/design-10.md), "
+                 "or --old-partition for the stored labels")
+    if args.old_partition and (args.columns or args.jobs != 1):
+        ap.error("--columns and --jobs are the re-read's; drop them with --old-partition")
+    if args.labels is not None:
+        from tools.run.p10_label_source import READER_COLUMNS
+        args.columns = args.columns or list(READER_COLUMNS)
+        bad = set(args.columns) - set(READER_COLUMNS)
+        if bad:
+            ap.error(f"unknown columns {sorted(bad)}; one of {READER_COLUMNS}")
+        if args.root != ap.get_default("root") or args.pattern != ap.get_default("pattern") or args.limit \
+                or args.allow_holdout or args.v1_only or args.out == ap.get_default("out"):
+            ap.error("--labels fixes the input set (7 v1 passages, 18 steps): no --root, --pattern, --limit, "
+                     "--allow-holdout or --v1-only; --out must name a new file")
+        record = reread(args)
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(record, indent=1))
+        print(f"wrote {out}")
+        return
 
     root = Path(args.root)
     candidates, holdout = refuse_held_out(
