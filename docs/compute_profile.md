@@ -42,6 +42,13 @@ it compares comes from the same device, or if it carries a match check like
 `move_text --stage0-index`. The device goes in the record. `core/config.DEVICE` picks CUDA
 whenever it is visible, and `MODEL_DTYPE` must stay float32: "auto" means bfloat16 on CUDA.
 
+**Default (user, 2026-10-06): use the GPU for forward passes wherever the rule above allows**
+(drop `CUDA_VISIBLE_DEVICES=""` from that run's script, keep float32, write the device into the
+record); a new batch that stays on CPU says why. R7 (`design-10.md` "R7") ran on CPU because its
+gate had already run there and its `orig` check compares with Stage 0 at 1e-5. Measured there,
+CPU only: at step 143000 a 2-token pass and the 512-token pass of the same prefix differ by
+1.5e-5 (relative norm), so late checkpoints already sit at the 1e-5 scale without a device change.
+
 **Where it would pay:** forward passes only, ~65× per pass. `move_text` per checkpoint ~6.5 →
 ~2.5 min (its HDBSCAN / level-set work stays on CPU); Phase-1 runs, `arch_null`'s re-inits and
 any new sweep likewise. Clustering, Gaussian nulls, permutation nulls and the label source are

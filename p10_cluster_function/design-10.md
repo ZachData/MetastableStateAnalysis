@@ -380,6 +380,10 @@ the count of groups whose `J0` is below it.
 J(g, `orig`) = 1; (c) each shuffled sequence is a permutation of the passage's ids with offset 0
 fixed, and each kept offset's token sits at its mapped position; (d) the `alone` state of the
 kept token at offset 1 equals `orig`'s position 1 (the same two tokens) within `P0_MATCH_TOL`.
+*Departure at the gate (2026-10-06): (d)'s tolerance is 1e-4.* `latex_monograph` at step
+143000 refused at 1.06e-5 (relative norm). An unbatched 2-token pass is 1.5e-5 from the
+passage's pass there too, so the gap is float32 sequence-length noise, not the batch;
+`P0_MATCH_TOL` was placed for re-running the same input. A wrong pairing or mask differs at O(1).
 Run steps 512 and 143000 first and open the output (groups per layer, Jaccards not all 0 or 1,
 the three shares) before the other 16.
 **It does not:** say what a group carries (token-borne is not "lexical" and order-borne is not
