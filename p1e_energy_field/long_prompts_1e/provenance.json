@@ -1,0 +1,69 @@
+{
+ "rule_commit": "6de234e",
+ "max_tokens": 2048,
+ "tokenizer": "EleutherAI/pythia-410m",
+ "prompts": {
+  "odyssey_butler_long": {
+   "key": "odyssey_butler_long",
+   "n_tokens": 2008,
+   "units_used": 15,
+   "units_available": 983,
+   "source_exhausted": false,
+   "source": {
+    "url": "https://www.gutenberg.org/cache/epub/1727/pg1727.txt",
+    "file": "/run/media/system/HDD_1TB/mets_data/long_prompts_sources_1e/pg1727.txt",
+    "sha256": "ffbdb29c3dda284b65c11243db1a98167826a70c81bca2ed4b6232f86c905fb9",
+    "gutenberg": [
+     "Release date: April 1, 1999 [eBook #1727]",
+     "Most recently updated: December 2, 2023"
+    ]
+   }
+  },
+  "horla_long": {
+   "key": "horla_long",
+   "n_tokens": 1960,
+   "units_used": 14,
+   "units_available": 231,
+   "source_exhausted": false,
+   "source": {
+    "url": "https://fr.wikisource.org/w/api.php?action=parse&page=Le_Horla_(recueil,_Ollendorff_1895)/Le_Horla&prop=text|revid&format=json&formatversion=2",
+    "file": "/run/media/system/HDD_1TB/mets_data/long_prompts_sources_1e/horla.json",
+    "sha256": "84ad9184521297a272150c6698d53d4b561cd3544641db673ab83d0d14d39f96",
+    "revision": 7351458,
+    "note": "fr.wikisource, validated; the 1887 text in Ollendorff's 1895 printing"
+   }
+  },
+  "darwin_origin_long": {
+   "key": "darwin_origin_long",
+   "n_tokens": 1949,
+   "units_used": 6,
+   "units_available": 1160,
+   "source_exhausted": false,
+   "source": {
+    "url": "https://www.gutenberg.org/cache/epub/1228/pg1228.txt",
+    "file": "/run/media/system/HDD_1TB/mets_data/long_prompts_sources_1e/pg1228.txt",
+    "sha256": "ededa9c0bf8761efed092c303b46c1c92de956838cba6249a33bedfd6d7363b4",
+    "gutenberg": [
+     "Release date: March 1, 1998 [eBook #1228]",
+     "Most recently updated: October 29, 2024"
+    ]
+   }
+  },
+  "hamlet_long": {
+   "key": "hamlet_long",
+   "n_tokens": 2041,
+   "units_used": 270,
+   "units_available": 6598,
+   "source_exhausted": false,
+   "source": {
+    "url": "https://www.gutenberg.org/cache/epub/1524/pg1524.txt",
+    "file": "/run/media/system/HDD_1TB/mets_data/long_prompts_sources_1e/pg1524.txt",
+    "sha256": "31584c19795779431b5933499a45b9cecb03e8c246b6ea7e245a2b6d65e8e784",
+    "gutenberg": [
+     "Release date: November 1, 1998 [eBook #1524]",
+     "Most recently updated: September 19, 2025"
+    ]
+   }
+  }
+ }
+}

@@ -56,3 +56,221 @@ rule predates the text. Nothing below is chosen after running a model on it.
 
 Tier 1: exploratory, unregistered.
 """
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from html.parser import HTMLParser
+from pathlib import Path
+from typing import Callable, Dict, List, Tuple
+
+MAX_TOKENS = 2048
+DATA_ROOT = "/run/media/system/HDD_1TB/mets_data"
+CACHE = Path(DATA_ROOT) / "long_prompts_sources_1e"
+HERE = Path(__file__).resolve().parent / "long_prompts_1e"
+UA = {"User-Agent": "Mets-research/1.0 (metastability study; Pythia)"}
+RULE_COMMIT = "6de234e"
+
+GUTENBERG = "https://www.gutenberg.org/cache/epub/{n}/pg{n}.txt"
+#: key: (eBook number, header lines that must be present, start heading lines, rule 2)
+PG = {
+    "odyssey_butler_long": (1727, ("Title: The Odyssey", "Author: Homer", "Translator: Samuel Butler"),
+                            ("BOOK VII", "RECEPTION OF ULYSSES AT THE PALACE OF KING ALCINOUS.")),
+    "darwin_origin_long": (1228, ("Title: On the Origin of Species By Means of Natural Selection",
+                                  "Author: Charles Darwin"),
+                           ("CHAPTER IV.", "NATURAL SELECTION.")),
+    "hamlet_long": (1524, ("Title: Hamlet", "Author: William Shakespeare"),
+                    ("SCENE I. Elsinore. A platform before the Castle.",)),
+}
+HORLA_PAGE = "Le_Horla_(recueil,_Ollendorff_1895)/Le_Horla"
+HORLA_API = ("https://fr.wikisource.org/w/api.php?action=parse&page=" + HORLA_PAGE
+             + "&prop=text|revid&format=json&formatversion=2")
+KEYS = ("odyssey_butler_long", "horla_long", "darwin_origin_long", "hamlet_long")
+#: Butler's footnote markers are digits glued to the word or stop before them ("god.57").
+FOOTNOTE = re.compile(r"(?<=[^\s\d])\d{1,3}(?=[\s’”)\]]|$)")
+HEADING = re.compile(r"^(BOOK [IVXL]+|CHAPTER [IVXL]+\.|ACT [IVX]+|SCENE [IVX]+\..*)$")
+
+
+def _get(url: str) -> bytes:
+    import urllib.request
+    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
+        return r.read()
+
+
+def fetch_sources(cache: Path = CACHE) -> Dict:
+    """Fetch (once) and describe every source (rule 5)."""
+    cache.mkdir(parents=True, exist_ok=True)
+    prov = {}
+    for key, (n, _, _) in PG.items():
+        f, url = cache / f"pg{n}.txt", GUTENBERG.format(n=n)
+        if not f.exists():
+            f.write_bytes(_get(url))
+        raw = f.read_text(encoding="utf-8")
+        dates = [ln.strip() for ln in raw[:3000].splitlines()
+                 if ln.strip().startswith(("Release date:", "Most recently updated:"))]
+        prov[key] = {"url": url, "file": str(f), "sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
+                     "gutenberg": dates}
+    f = cache / "horla.json"
+    if not f.exists():
+        f.write_bytes(_get(HORLA_API))
+    prov["horla_long"] = {"url": HORLA_API, "file": str(f), "sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
+                          "revision": json.loads(f.read_text())["parse"]["revid"],
+                          "note": "fr.wikisource, validated; the 1887 text in Ollendorff's 1895 printing"}
+    return prov
+
+
+class _Paras(HTMLParser):
+    """The text of every ``<p>`` in a Wikisource page, tags dropped."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.paras, self._cur = [], None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "p":
+            self._cur = []
+
+    def handle_endtag(self, tag):
+        if tag == "p" and self._cur is not None:
+            self.paras.append("".join(self._cur))
+            self._cur = None
+
+    def handle_data(self, data):
+        if self._cur is not None:
+            self._cur.append(data)
+
+
+def _gutenberg_units(key: str, cache: Path) -> List[str]:
+    n, header, heading = PG[key]
+    raw = (cache / f"pg{n}.txt").read_text(encoding="utf-8").replace("\r\n", "\n")
+    for h in header:
+        if h not in raw[:3000]:
+            raise ValueError(f"{key}: pg{n}.txt's header lacks {h!r}; refusing (rule 2)")
+    lines = raw.split("\n")
+    nonblank = [i for i, ln in enumerate(lines) if ln.strip()]
+    at = [nonblank[j] for j in range(len(nonblank) - len(heading) + 1)
+          if [lines[nonblank[j + k]].strip() for k in range(len(heading))] == list(heading)]
+    if len(at) != 1:
+        raise ValueError(f"{key}: start heading {heading[0]!r} found {len(at)} times; refusing (rule 2)")
+    i = at[0]
+    seen = 0
+    while seen < len(heading):          # skip the heading's own lines
+        seen += bool(lines[i].strip())
+        i += 1
+    body = "\n".join(lines[i:]).split("*** END OF THE PROJECT GUTENBERG")[0]
+    if key == "hamlet_long":
+        out = [ln.strip() + "\n" for ln in body.split("\n")]
+        while out and out[0] == "\n":
+            out.pop(0)
+        return [u for u in out if not HEADING.match(u.strip())]
+    paras = [" ".join(ln.strip() for ln in p.split("\n") if ln.strip()) for p in re.split(r"\n\s*\n", body)]
+    paras = [p for p in paras if p]
+    if key == "darwin_origin_long":
+        paras = paras[1:]               # the chapter's summary paragraph (rule 2)
+    if key == "odyssey_butler_long":
+        paras = [FOOTNOTE.sub("", p) for p in paras]
+    # a later book's / chapter's heading and its summary line are not text (rules 2-3)
+    out, skip = [], 0
+    for p in paras:
+        if HEADING.match(p):
+            skip = 1
+            continue
+        if skip:
+            skip -= 1
+            continue
+        out.append(p)
+    return out
+
+
+def _horla_units(cache: Path) -> List[str]:
+    d = json.loads((cache / "horla.json").read_text())["parse"]["text"]
+    p = _Paras()
+    p.feed(d)
+    # whitespace runs (a page break's span leaves several) as the page renders them: one space
+    paras = [re.sub(r"[ \t\n]+", " ", x).strip() for x in p.paras]
+    paras = [x for x in paras if x]
+    starts = [i for i, x in enumerate(paras) if x.startswith("8 mai.")]
+    if len(starts) != 1:
+        raise ValueError(f"horla_long: '8 mai.' opens {len(starts)} paragraphs; refusing (rule 2)")
+    return paras[starts[0]:]
+
+
+def units(key: str, cache: Path = CACHE) -> Tuple[str, List[str]]:
+    """(joiner, units in order) for one passage (rule 3)."""
+    if key == "horla_long":
+        return " ", _horla_units(cache)
+    u = _gutenberg_units(key, cache)
+    return ("", u) if key == "hamlet_long" else (" ", u)
+
+
+def build_one(key: str, tok: Callable[[str], List[int]], cache: Path = CACHE) -> Dict:
+    """Whole units while the passage fits MAX_TOKENS (rule 4)."""
+    joiner, us = units(key, cache)
+    text, used = "", 0
+    for u in us:
+        cand = (text + joiner + u) if text else u
+        if len(tok(cand)) > MAX_TOKENS:
+            break
+        text, used = cand, used + 1
+    if key == "hamlet_long":
+        text = text.rstrip("\n")
+    return {"key": key, "text": text, "n_tokens": len(tok(text)), "units_used": used,
+            "units_available": len(us), "source_exhausted": used == len(us)}
+
+
+def build_all(cache: Path = CACHE, out: Path = HERE) -> Dict:
+    """Build the four passages; write ``<key>.txt`` and ``provenance.json``."""
+    from transformers import AutoTokenizer
+    t = AutoTokenizer.from_pretrained("EleutherAI/pythia-410m")
+    prov = fetch_sources(cache)
+    out.mkdir(parents=True, exist_ok=True)
+    rec = {"rule_commit": RULE_COMMIT, "max_tokens": MAX_TOKENS, "tokenizer": "EleutherAI/pythia-410m",
+           "prompts": {}}
+    for k in KEYS:
+        r = build_one(k, lambda s: t(s)["input_ids"], cache)
+        (out / f"{k}.txt").write_text(r.pop("text"))
+        rec["prompts"][k] = {**r, "source": prov[k]}
+    (out / "provenance.json").write_text(json.dumps(rec, indent=1, ensure_ascii=False) + "\n")
+    return rec
+
+
+def load_provenance() -> Dict:
+    return json.loads((HERE / "provenance.json").read_text())
+
+
+def load() -> Dict[str, str]:
+    """The four built passages, ``{key: text}``."""
+    return {k: (HERE / f"{k}.txt").read_text() for k in load_provenance()["prompts"]}
+
+
+def load8() -> Dict[str, str]:
+    """1e's 8 long passages: 1d's 4 and these 4 (`design-1e.md` "Inputs")."""
+    from p1d_cluster_ensemble import long_prompts as lp1d
+    both = {**lp1d.load(), **load()}
+    if len(both) != 8:
+        raise ValueError(f"expected 8 long passages, have {sorted(both)}")
+    return both
+
+
+def expected_tokens() -> Dict[str, int]:
+    """Token count per long passage, as each provenance file recorded it."""
+    from p1d_cluster_ensemble import long_prompts as lp1d
+    return {k: v["n_tokens"] for src in (lp1d.load_provenance(), load_provenance())
+            for k, v in src["prompts"].items()}
+
+
+def long8_hash() -> str:
+    """Short hash of the 8 texts, recorded in every 1e long run (rule 6)."""
+    h = hashlib.sha256()
+    for k, v in sorted(load8().items()):
+        h.update(k.encode() + b"\0" + v.encode() + b"\0")
+    return h.hexdigest()[:12]
+
+
+if __name__ == "__main__":
+    r = build_all()
+    for k, v in r["prompts"].items():
+        print(k, v["n_tokens"], f"{v['units_used']}/{v['units_available']}", v["source_exhausted"])
+    print("LONG8_HASH", long8_hash())
