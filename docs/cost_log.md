@@ -258,3 +258,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-05 | Phase 10 R5c: 5c's flip on gpt2-large with the sink out (before /challenge-pr) | 58 | 154k | 6.3M | 41k | #150 |
 | 2026-10-05 | Phase 10 R6: cross-checkpoint matcher (before /challenge-pr) | 44 | 155k | 4.8M | 41k | #151 |
 | 2026-10-06 | Phase 10 R6w: §1.9–§1.10's drift within lineages (before /challenge-pr) | 53 | 199k | 7.3M | 54k | #152 |
+| 2026-10-06 | Phase 10 R6f: R6w's within split into members against frame (before /challenge-pr) | 35 | 141k | 3.5M | 35k | #153 |

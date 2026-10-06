@@ -1702,6 +1702,65 @@ c2a and c0, pooled: `emb_pct_own` +0.018 / +0.021 and +0.018 / +0.037; CGE40 −
 Re-run: `data/p10/reread_r6w_2026-10-06/run_r6w.sh` from the worktree root (default BLAS threads,
 as R1). It refuses on any first check. Tests: `tests/test_p10_r6w_drift.py` (10).
 
+### 1.22 R6f: R6w's within split into members against frame — **frame. Scored in one fixed layer 0, the definition's groups (c3) barely change what they hold from 512 to 143000: the members part of within is ≤ 0.03 in size for all three embedding statistics, in step 512's frame and in step 143000's, on both record sets. The rest of within (members share −0.20 to +0.16; Shapley −0.13 to +0.12) is layer 0 moving under them, mostly at 512 → 2000. So §1.10's "trained, mostly what the embedding groups" reads as the embedding coming to group what the groups already held, not the groups becoming lexical. Same label on c2a and c0, except c0's CGE40 − kNN40 (frame-dependent: members 0.34 / 0.26 of within)**
+
+**What ran** (`design-10.md` "R6f", rule committed at `6f73b39` before any output; `STATE.md`
+Blocked 26 (b″), user 2026-10-06). `tools/run/p10_r6f_frame.py`: every step's focal tokens
+re-scored with **frame F's layer-0 Gram** (F = 512, 143000; same prompt, tokens checked) and R6w's
+members, pools, weights and kinds unchanged; each R6w term T splits exactly into **members** = T in
+frame F and **frame** = T − that. Layer 0 here is the token embedding (GPT-NeoX's rotary positions
+add nothing there), so "frame" is the embedding matrix training under fixed groups. No forward pass.
+
+**Inputs.** R0's labels (summary sha256 `28498b12`), R1's records, R6's `r6.json` (md5
+`8a956856`), R6w's `r6w.json` (md5 `e53a1a2f`). Span 512 → 143000; c3 51 fixed records (R6w's
+set), R1's own records beside. Output `data/p10/reread_r6f_2026-10-06/r6f.json` (md5 `38d56c1d`),
+3 min on 8 processes, at `6d068d3`, runner clean.
+
+**First checks, all passed:** (a) own-frame per-record values equal R1's to 1.0e-15; (a′) in frame
+143000, each record's `emb_pct_own` equals R1's frozen-frame `emb_pct` to 4.4e-16; (b) at step F,
+frame F's values equal the own frame's exactly; (c) on identical stable links the three
+statistics' paired change in a fixed frame is exactly 0 (381 links on c3); (d) R6's stable counts;
+(e) the own-frame span terms equal `r6w.json`'s within 1e-9, both record sets, every column.
+
+**c3, layer mean, 512 → 143000, fixed set** (span sums of within; share = members / within; prompts
+= per-prompt labels members / both / frame among those with |within| ≥ 0.05):
+
+| statistic | within (R6w) | F = 512: members / frame (share) | prompts | F = 143000: members / frame (share) | prompts | label | Shapley |
+|---|---|---|---|---|---|---|---|
+| `emb_pct_own` | +0.163 | −0.009 / +0.173 (−0.06) | 0 / 0 / 7 | +0.010 / +0.154 (+0.06) | 2 / 2 / 3 | **frame** | 0.00 |
+| `emb_given_class` | +0.086 | −0.013 / +0.099 (−0.15) | 0 / 0 / 7 | −0.004 / +0.090 (−0.04) | 2 / 3 / 2 | **frame** | −0.09 |
+| CGE40 − kNN40 | −0.184 | −0.012 / −0.172 (+0.07) | 2 / 2 / 1 | −0.030 / −0.154 (+0.16) | 1 / 1 / 3 | **frame** | +0.12 |
+
+On R1's own records the c3 labels are the same (shares −0.20 to +0.03; members ≤ 0.023 in size).
+**c2a**: frame on all three, both sets (shares −0.19 to +0.24). **c0**: frame on `emb_pct_own` and
+`emb_given_class` (shares −0.32 to +0.18), but its members parts are larger (−0.06 at F = 512,
++0.03 at 143000); CGE40 − kNN40 is **frame-dependent** on the fixed set (0.34 both / 0.26 frame) and
+frame on R1's (0.32 / 0.26). The total splits the same way (c3 members part of the total ≤ 0.035).
+
+**Where** (c3, fixed set, within per boundary, members / frame): `emb_pct_own` in frame 512,
++0.002 / +0.072 at 512 → 1000 and −0.012 / +0.081 at 1000 → 2000; CGE40 − kNN40 −0.016 / −0.081
+at 1000 → 2000. From 4000 on, both parts ≤ 0.03 at every boundary in both frames. Changed stable
+links, pooled: members part −0.013 to −0.002 per link in either frame (1,369 links on c3).
+
+- **The groups did not become lexical after 512; the embedding came to hold the groups.** In a
+  frame that does not move, a step-143000 group sits where its step-512 lineage did on all three
+  statistics, while the same groups scored in each step's own layer 0 drift by 0.09–0.18. R6w's
+  identical links (whose whole change is frame by construction) were the visible edge of this.
+- **The two frames differ by the interaction** (share at 512 minus share at 143000: −0.10 to
+  −0.12 on c3), never enough to change a label on c3 or c2a. Per prompt, frame 512 reads frame in
+  all 7 prompts on the first two statistics; frame 143000 is mixed (2–3 prompts members or both),
+  so the pooled label is firmer than any one prompt's in the final frame.
+- **On the old partition (c0) a third of the class-beyond-lexical drift is membership**: its
+  groups did change toward what a fixed embedding calls "class beyond lexical" (−0.07 / −0.06
+  members). The definition's filters remove that part.
+- **Does not:** test anything (no null; 0.05, 2/3, 1/3 placed); say which frame is right; read
+  before 512 (c3's 64 → 512 is not readable, R6w), L12 / L24, or the composition lifts (no frame);
+  say why the embedding moved (gradient from the depth groups, or from unigram statistics, `design-10.md`
+  Parked n-gram control). One seed, 7 passages.
+
+Re-run: `data/p10/reread_r6f_2026-10-06/run_r6f.sh` from the worktree root (default BLAS threads,
+as R1). It refuses on any first check. Tests: `tests/test_p10_r6f_frame.py` (12).
+
 ---
 
 ## 2. The blocker that had to be cleared first
