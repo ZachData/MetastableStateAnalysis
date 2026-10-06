@@ -466,8 +466,9 @@ needs the user to enable it on GitHub.
   that shares a confound cannot test it. Rule: before calling a population statistic confirmed,
   re-read it with the few highest-leverage tokens (the sink, massive tokens) out of the means.
 - 2026-10-05, Phase 10 R5c: 5c's flip ("trained-specific in every model examined"), cited as
-  motivating evidence for the v2 redesign, rested on a random GPT-2 arm with no recorded run, and
-  the pipeline's `gpt2-large-random` could not load before 2026-09-17. On the arm that now exists
+  motivating evidence for the v2 redesign, rested on random GPT-2 and ALBERT arms with no recorded
+  run; neither `-random` entry could load through `run_1` before 2026-09-17 (`e191d77`). On the
+  GPT-2 arm that now exists
   the raw flip is as large under random weights (all causal mask), and the trained-only part is
   position 0 (`status-10.md` §1.19). A control with no recorded run cannot be re-run, so its
   verdict was never checkable. Rule: a trained-vs-random contrast is quoted only with the random

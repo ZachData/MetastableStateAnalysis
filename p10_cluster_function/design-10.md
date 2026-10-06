@@ -175,8 +175,9 @@ mean gap < 0. Otherwise **does not survive**. Beside: `all`'s enrichments agains
 units where every T1–T2 position is unclustered (the Parked question); means by third of depth;
 the corrected gap in R3's 8 position bins. It does not control token frequency
 (`archive/p5c_unclustered/lit-5c.md` §1), and the random arm is a default re-init, not
-norm-matched. **5c's own random GPT-2 arm cannot be this one:** the `gpt2-large-random` entry
-never loaded before 2026-09-17 (`core/config.py`), so 5c's random arm is of unknown provenance.
+norm-matched. **5c's own random arms cannot be this one:** neither `gpt2-large-random` nor
+`albert-base-v2-random` could load through `run_1` before 2026-09-17 (`e191d77`), so both are
+of unknown provenance (ALBERT's added after `/challenge-pr` on #150; not part of the rule).
 **ALBERT is not read here:** no run survives, and its sinks ([CLS], [SEP]; bidirectional; 60
 shared-weight iterations) need their own definition (`handoff-10.md` Parked).
 

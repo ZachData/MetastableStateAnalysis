@@ -39,7 +39,7 @@
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
   - `handoff-10.md` §1.1's reading that neighbourhoods go "lexical → contextual": on Stage 0's v1 runs they go from repeats to repeats plus embedding-similar tokens — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
-- **Depends on:** 1@30c0d54cc5, 5c@86e10133ba, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
+- **Depends on:** 1@30c0d54cc5, 5c@574eba0e4a, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
 - **Feeds:** 9
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
@@ -56,7 +56,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `d587c28b2a`
+- **Reviewed:** 2026-10-05 · body `4b90293248`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1416,8 +1416,9 @@ labels are scored on step 0's run, *after `/challenge-pr` on #149, finding 4*).
 (prompt, layer), with the prompt as the unit (mean over its 36 layers).
 
 **Inputs.** `gpt2-large` `data/phase12/2026-09-19_13-40-48/`, `gpt2-large-random`
-`…_15-47-26/` (CLAIM-C's arms; battery `1e47918ef77a` v1 plus the 12 v2 prompts, held out on
-410m only), 21 prompts × 36 layers = 756 units per arm, all readable; per-file sha256 in the
+`…_15-47-26/` (CLAIM-C's arms; battery v2 `06790b90dcfe`, the 8 v1 prompts, `short_heterogeneous`
+and the 12 v2 prompts held out on 410m only; numpy / torch seed 0, so one random draw; the
+battery corrected after `/challenge-pr` on #150, finding 4), 21 prompts × 36 layers = 756 units per arm, all readable; per-file sha256 in the
 output's `inputs`. The 9-prompt pair (10-51-00 / 11-52-10) is byte-identical on labels and tokens
 over its overlap. Output `data/p10/reread_r5c_2026-10-05/r5c.json` (md5 `b16433a1`, 388 KB),
 90 s on 6 processes. Code at this PR (base `a1f89b6`).
@@ -1443,9 +1444,11 @@ random): the Parked question's answer is yes, the sink sat in 5c's unclustered p
   unclustered 2.18×, clustered 0.61× (5c: ~1.6×, ~0.5×, same order); random 2.50× and 0.98×,
   not "near parity or clustered-favored". Random's gap is entirely mask (corrected +0.004; +0.004
   pooled, +0.004 in R3's position bins): its unclustered tokens sit early, where a causal mask
-  routes attention. 5c's random arm cannot have been this one (`gpt2-large-random` never loaded
-  before 2026-09-17, `core/config.py`), so its provenance is unknown and the disagreement is not
-  resolved here.
+  routes attention. 5c's random arm cannot have been this one: neither `gpt2-large-random` nor
+  `albert-base-v2-random` could load through `run_1` before 2026-09-17 (`e191d77`; the handler
+  skipped the model and the sweep finished without it). So **both of 5c's random arms have no
+  recorded run**, and the disagreement is not resolved here. *(ALBERT added after `/challenge-pr`
+  on #150, finding 1.)*
 - **What is trained-specific is the gap beyond the mask, and it is position 0.** With it in, the
   corrected gap is +0.23 against random's +0.00 (16 of 21 both ways); out, −0.02 (pooled) and
   −0.016 within position bins, 9 of 21. As on 410m (§1.17), where the trained part was position 0

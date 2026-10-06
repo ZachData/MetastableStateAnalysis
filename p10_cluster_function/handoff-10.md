@@ -699,7 +699,9 @@ before it.
   download (~45 MB) and Phase 1 forward passes for `albert-base-v2` and `-random` on the v1
   prompts, plus a sink definition for a bidirectional model ([CLS], [SEP] and massive tokens;
   the causal-mask correction does not apply), and the iteration count 5c read (unrecorded; the
-  pipeline runs 60). Could change: whether any trained-specific flip is left in 5c at all.
+  pipeline runs 60). Could change: whether any trained-specific flip is left in 5c at all. 5c's
+  ALBERT random arm has no recorded run either (`e191d77`), so the trained arm alone cannot
+  restore "trained-specific": both arms must be run (after `/challenge-pr` on #150, finding 1).
 - **The Stage 1 readers' float32 Grams depend on BLAS threads** (defect in a reader, found at
   R1, 2026-10-05). `layer0_gram` and `p10_lexical_carry`'s own Gram are float32; 1 vs 16
   threads moves entries by 5e-7, which flips exact ties (copies are bit-identical at layer 0)
