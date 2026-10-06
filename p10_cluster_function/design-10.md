@@ -329,6 +329,10 @@ exactly 0; (e) the own-frame span terms equal `r6w.json`'s within 1e-9.
 and frame, reported, not assigned); chain frames per boundary (one frame per run keeps "members"
 on one yardstick over the span); test anything; follow groups across layers; read the
 composition lifts, L12 / L24 or 64 → 512. One seed, 7 passages.
+*After `/challenge-pr` on #153 (not part of the rule as fixed):* per-prompt values stored; per
+prompt, the label is read on the two frames' mean (each fixed frame favours its own step's
+groups), with an `opposing` flag (members and frame both ≥ 0.05, opposite signs). The pooled
+labels and terms are unchanged. Results: `status-10.md` §1.22.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint

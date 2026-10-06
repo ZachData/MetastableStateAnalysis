@@ -104,9 +104,11 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the user's (was Parked (R6w) here): every step's groups re-scored in step 512's and step
 > 143000's layer 0, so each R6w term splits exactly into members (fixed frame) and frame (the
 > rest); rule in `design-10.md` "R6f". `tools/run/p10_r6f_frame.py`; output
-> `data/p10/reread_r6f_2026-10-06/r6f.json`. Answer: **frame**: c3's groups barely change what
-> they hold in a fixed embedding (members ≤ 0.03); the embedding moves under them, mostly
-> 512 → 2000. **Next, for the user:** Blocked 26 (c) (recommended), (d), (e′).
+> `data/p10/reread_r6f_2026-10-06/r6f.json`. Answer: **frame** for `emb_pct_own` and
+> `emb_given_class` (pooled and 5–7 of 7 prompts): the embedding moves under the groups, mostly
+> 512 → 2000; CGE40 − kNN40 splits by prompt, so the lexical question stays open.
+> `/challenge-pr` on #153: all five findings taken. **Next, for the user:** Blocked 26 (c)
+> (recommended), (d), (e′).
 > *Parked (R6f):* **the embedding's move at 512 → 2000 against the n-gram stage.** Why: §1.22
 > says the token embedding came to group what depth groups held; whether that is gradient from
 > the depth groups or unigram / bigram statistics is `design-10.md`'s Parked n-gram control.

@@ -32,7 +32,7 @@
   - R5c, 5c's flip on `gpt2-large` with the sink out (stored runs, 21 prompts, trained and random, 5c's partition). It does not survive. With position 0 in, random weights give the same raw gap as trained (+1.52 against +1.59), all causal mask, so the flip was never trained-specific on this random arm. Out of the means, trained's raw gap is −0.03 (7 of 21 prompts positive). The trained-only gap beyond the mask (+0.23, 16 of 21) is position 0. Position 0 is the only T1–T2 token and is unclustered in every trained unit. ALBERT not read — `p10_cluster_function/status-10.md` §1.19
   - R6, the cross-checkpoint matcher (an instrument: adjacent steps, same prompt and layer, containment ≥ 0.5, MONIC's kinds, on R0's labels). From 4000 to 54000, 56–67 % of the definition's groups survive each boundary, with changed members (median Jaccard 0.75–0.83). Few of its births and deaths are new groups: most are groups that persist in c2a and fail or pass a filter, or that c2a splits or merges. No 143000 group's unbroken lineage reaches back past 256, and 89 % start after 2000, though chains last about 3× longer than independent breaks would give. The old partition's 17 % of 143000 clusters traced back to step 0 lie off the definition's positions: the same call on the kept positions has none. Its null (permuted labels) only rules out chance overlap — `p10_cluster_function/status-10.md` §1.20
   - R6w, whether the co-membership and lexical-carry drift happens within lineages (each step's change split exactly into the persisting groups' change and entry / exit terms, on R6's links). On the definition, from 512 to 143000, replacement does not carry the drifts measured in the embedding: entering and leaving groups sit where the persisting ones do, and the persisting groups move, mostly by 2000 (class beyond a lexical cluster −0.12, own-embedding similarity +0.18). A shift of the layer-0 frame under every group would read the same way, and where the drift is, groups with identical members move at least as much as changed ones (few links). Same on the unfiltered groups and the old partition, and on both record sets. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.21
-  - R6f, R6w's within split into members against frame (every step's groups re-scored in one fixed layer 0, step 512's and step 143000's). It is the frame: in a fixed embedding the definition's groups barely change what they hold (members part ≤ 0.03 on all three statistics, both frames, both record sets), and the token embedding moves under them, mostly 512 → 2000. So "trained, mostly what the embedding groups" reads as the embedding coming to group what the groups already held. Same on the unfiltered groups; on the old partition about a third of the class-beyond-lexical drift is membership. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.22
+  - R6f, R6w's within split into members against frame (every step's groups re-scored in one fixed layer 0, step 512's and step 143000's). For own-embedding and within-class embedding similarity it is the frame, pooled and in 5–7 of 7 prompts: the token embedding moves under the definition's groups, mostly 512 → 2000, so there "trained, mostly what the embedding groups" reads as the embedding coming to group what the groups held. For class beyond a lexical cluster the prompts split, so whether the groups became lexical stays open (the pooled members part ≤ 0.03 is partly prompts cancelling). Same on the unfiltered groups; on the old partition about a third of the class-beyond-lexical drift is membership. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.22
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -59,7 +59,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-06 · body `6d7affa601`
+- **Reviewed:** 2026-10-06 · body `211c114f8c`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1703,7 +1703,7 @@ c2a and c0, pooled: `emb_pct_own` +0.018 / +0.021 and +0.018 / +0.037; CGE40 −
 Re-run: `data/p10/reread_r6w_2026-10-06/run_r6w.sh` from the worktree root (default BLAS threads,
 as R1). It refuses on any first check. Tests: `tests/test_p10_r6w_drift.py` (10).
 
-### 1.22 R6f: R6w's within split into members against frame — **frame. Scored in one fixed layer 0, the definition's groups (c3) barely change what they hold from 512 to 143000: the members part of within is ≤ 0.03 in size for all three embedding statistics, in step 512's frame and in step 143000's, on both record sets. The rest of within (members share −0.20 to +0.16; Shapley −0.13 to +0.12) is layer 0 moving under them, mostly at 512 → 2000. So §1.10's "trained, mostly what the embedding groups" reads as the embedding coming to group what the groups already held, not the groups becoming lexical. Same label on c2a and c0, except c0's CGE40 − kNN40 (frame-dependent: members 0.34 / 0.26 of within)**
+### 1.22 R6f: R6w's within split into members against frame — **frame on the two embedding-similarity statistics, pooled and per prompt; mixed per prompt on class beyond a lexical cluster. Scored in one fixed layer 0 (step 512's and step 143000's), the pooled members part of the definition's (c3) within is ≤ 0.03 on all three statistics, and the rest is layer 0 moving under the groups, mostly at 512 → 2000. Per prompt the members part is not that small (−0.12 to +0.07 on the two frames' mean), so the pooled 0.03 is partly prompts cancelling. Still, `emb_pct_own` and `emb_given_class` read frame in 5–7 of 7 prompts on both record sets. CGE40 − kNN40 splits (fixed set: 3 frame, 1 both, 1 members, 2 below the floor). So §1.10's "trained, mostly what the embedding groups" reads, for embedding similarity, as the embedding coming to group what the groups held; for class beyond a lexical cluster this does not decide it. c2a reads frame per prompt on all three; c0's class-beyond-lexical is frame-dependent (members about a third)**
 
 **What ran** (`design-10.md` "R6f", rule committed at `6f73b39` before any output; `STATE.md`
 Blocked 26 (b″), user 2026-10-06). `tools/run/p10_r6f_frame.py`: every step's focal tokens
@@ -1714,8 +1714,10 @@ add nothing there), so "frame" is the embedding matrix training under fixed grou
 
 **Inputs.** R0's labels (summary sha256 `28498b12`), R1's records, R6's `r6.json` (md5
 `8a956856`), R6w's `r6w.json` (md5 `e53a1a2f`). Span 512 → 143000; c3 51 fixed records (R6w's
-set), R1's own records beside. Output `data/p10/reread_r6f_2026-10-06/r6f.json` (md5 `38d56c1d`),
-3 min on 8 processes, at `6d068d3`, runner clean.
+set), R1's own records beside. Output `data/p10/reread_r6f_2026-10-06/r6f.json` (md5 `bae452e6`),
+3 min on 8 processes, at `269e88b`, runner clean. The first output (`6d068d3`, kept as
+`r6f_v1_6d068d3.json`) stored per-prompt labels only; its span terms and shares are identical to
+the re-run's, which adds per-prompt values (`/challenge-pr` on #153, finding 1).
 
 **First checks, all passed:** (a) own-frame per-record values equal R1's to 1.0e-15; (a′) in frame
 143000, each record's `emb_pct_own` equals R1's frozen-frame `emb_pct` to 4.4e-16; (b) at step F,
@@ -1732,6 +1734,25 @@ statistics' paired change in a fixed frame is exactly 0 (381 links on c3); (d) R
 | `emb_given_class` | +0.086 | −0.013 / +0.099 (−0.15) | 0 / 0 / 7 | −0.004 / +0.090 (−0.04) | 2 / 3 / 2 | **frame** | −0.09 |
 | CGE40 − kNN40 | −0.184 | −0.012 / −0.172 (+0.07) | 2 / 2 / 1 | −0.030 / −0.154 (+0.16) | 1 / 1 / 3 | **frame** | +0.12 |
 
+**Per prompt, on the two frames' mean** (*added after `/challenge-pr` on #153, findings 1–2*: each
+fixed frame favours its own step's groups, members mostly negative in frame 512 and positive in
+143000, so the per-frame prompt columns above are not support; label = members part of the
+two-frame mean against the prompt's own within; opposing = members and frame both ≥ 0.05 with
+opposite signs):
+
+| c3, statistic | record set | prompts' within | prompts' members (mean of frames) | members / both / frame / no drift | opposing |
+|---|---|---|---|---|---|
+| `emb_pct_own` | fixed | +0.11 to +0.30 | −0.12 to +0.07 | 0 / 1 / 6 / 0 | 2 |
+| | R1's | +0.06 to +0.25 | −0.06 to +0.03 | 0 / 0 / 7 / 0 | 2 |
+| `emb_given_class` | fixed | +0.06 to +0.29 | −0.11 to +0.07 | 0 / 2 / 5 / 0 | 1 |
+| | R1's | +0.06 to +0.24 | −0.06 to +0.04 | 0 / 0 / 7 / 0 | 1 |
+| CGE40 − kNN40 | fixed | −0.27 to +0.08 | −0.11 to +0.13 | 1 / 1 / 3 / 2 | 2 |
+| | R1's | −0.26 to +0.11 | −0.07 to +0.14 | 2 / 1 / 3 / 1 | 0 |
+
+c2a per prompt: frame in 6 of 6 drifting prompts on `emb_pct_own` and `emb_given_class`, both sets;
+CGE40 − kNN40 6 of 6 (fixed), 4 frame / 1 both of 5 (R1's). c0: frame in 7 of 7 on the first two;
+CGE40 − kNN40 1 / 2 / 3 / 1 on both sets.
+
 On R1's own records the c3 labels are the same (shares −0.20 to +0.03; members ≤ 0.023 in size).
 **c2a**: frame on all three, both sets (shares −0.19 to +0.24). **c0**: frame on `emb_pct_own` and
 `emb_given_class` (shares −0.32 to +0.18), but its members parts are larger (−0.06 at F = 512,
@@ -1743,14 +1764,19 @@ frame on R1's (0.32 / 0.26). The total splits the same way (c3 members part of t
 at 1000 → 2000. From 4000 on, both parts ≤ 0.03 at every boundary in both frames. Changed stable
 links, pooled: members part −0.013 to −0.002 per link in either frame (1,369 links on c3).
 
-- **The groups did not become lexical after 512; the embedding came to hold the groups.** In a
-  frame that does not move, a step-143000 group sits where its step-512 lineage did on all three
-  statistics, while the same groups scored in each step's own layer 0 drift by 0.09–0.18. R6w's
-  identical links (whose whole change is frame by construction) were the visible edge of this.
+- **For embedding similarity, the embedding came to hold the groups.** Summed over boundaries,
+  the groups persisting across each boundary change little in a frame that does not move, while in
+  each step's own layer 0 they drift by 0.09–0.18; per prompt this holds in 5–7 of 7. It is a sum
+  over persisting links, not one lineage followed from 512 (89 % of 143000's lineages start after
+  2000, §1.20; wording *corrected after `/challenge-pr` on #153, finding 3*). R6w's identical
+  links (whose whole change is frame by construction) were the visible edge of this.
+- **For class beyond a lexical cluster, undecided.** Pooled it reads frame, but per prompt the
+  members part runs −0.11 to +0.13 against withins of −0.27 to +0.08, and prompts split. This is
+  the statistic §1.10's "lexical or not" turns on, so §1.22 does not say the groups did or did not
+  become lexical.
 - **The two frames differ by the interaction** (share at 512 minus share at 143000: −0.10 to
-  −0.12 on c3), never enough to change a label on c3 or c2a. Per prompt, frame 512 reads frame in
-  all 7 prompts on the first two statistics; frame 143000 is mixed (2–3 prompts members or both),
-  so the pooled label is firmer than any one prompt's in the final frame.
+  −0.12 on c3), never enough to change a pooled label on c3 or c2a. Each frame favours its own
+  step's groups, so per-prompt labels are read on the two frames' mean (table above).
 - **On the old partition (c0) a third of the class-beyond-lexical drift is membership**: its
   groups did change toward what a fixed embedding calls "class beyond lexical" (−0.07 / −0.06
   members). The definition's filters remove that part.
@@ -1760,7 +1786,7 @@ links, pooled: members part −0.013 to −0.002 per link in either frame (1,369
   Parked n-gram control). One seed, 7 passages.
 
 Re-run: `data/p10/reread_r6f_2026-10-06/run_r6f.sh` from the worktree root (default BLAS threads,
-as R1). It refuses on any first check. Tests: `tests/test_p10_r6f_frame.py` (12).
+as R1). It refuses on any first check. Tests: `tests/test_p10_r6f_frame.py` (13).
 
 ---
 
