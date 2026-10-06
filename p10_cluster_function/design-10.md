@@ -140,6 +140,7 @@ window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.
 
 | R2m | F12 against a matched control, §1.5 again (below) | R2 | R2 left F12's label as the baseline's (`STATE.md` Blocked 25, (iv) taken by the user 2026-10-05) |
 | R6 | the cross-checkpoint matcher (below) | R0 | every later row that follows a group through training needs it (`STATE.md` Blocked 26 (b)) |
+| R6w | §1.9–§1.10's drift within lineages or by replacement (below) | R1, R6 | the question the matcher was parked for (`STATE.md` Blocked 26 (b′)) |
 
 **R2m, F12's matched control (rule fixed 2026-10-05, before any control output was read).**
 Each column's readable (prompt, layer) records at step s are scored on **step 0's stored
@@ -221,6 +222,74 @@ so c0's lineages compare on the same tokens); flips split into **kept** (c2a's c
 **restructured** (c2a split / merge / tangle); lineages read beside an independence baseline (the
 product of each crossed boundary's backward survival rate); a c2 / c3 id missing from c2a and a
 missing `summary.json` refuse.
+
+**R6w, §1.9–§1.10's drift within lineages (`STATE.md` Blocked 26 (b′), taken by the user
+2026-10-06; rule fixed before any output was read).** The question parked with the matcher: when
+a §1.9–§1.10 lift changes between checkpoints, do the groups that persist change, or do the groups
+that die differ from the ones born? Descriptive, tier 1, no null; it labels where the drift
+happens, not whether it is real (R1 read that).
+**Statistics** (per focal token, as R1's readers compute them, all-positions draw): §1.9's five
+lifts (`same_class`, `copy_share`, `no_copy`, `adjacent`, `emb_pct_own`; `emb_pct`, the frozen
+frame, out as in §1.9) and §1.10's `emb_given_class` (10 bins) and **CGE40 − kNN40** (the
+deciding reading, per focal token). Carry is out: it compares focal with unclustered tokens,
+which belong to no group.
+**Columns:** **c3** (primary), c2a (no filter) and c0 (the published partition) beside.
+**Spans:** primary **512 → 143000** (8 boundaries; on c3: §1.10's class beyond the lexical
+cluster +0.16 → +0.04, `emb_pct_own` and `emb_given_class` rising, `no_copy` rising at 2000;
+`same_class` flat, the row with no drift); secondary **64 → 512** (3 boundaries; c3 is primary
+from 64). **Records:** the (prompt, layer L1–24) records readable on the column at **every**
+step of the span (count reported), so each step's population is the same on both boundaries it
+borders and the sum over boundaries telescopes; R1's own change over the span (all readable
+records per step) is printed beside, and a label differing between the two is named.
+**Weights:** each focal token carries its R1 aggregation weight (1 / (records at its layer ×
+focal tokens in its record); for the layer mean also 1 / layers present), so the weighted mean
+is R1's value on this record set. **Kinds:** a focal token's group, from R6's `link` on the
+column's full labels (containment ≥ 0.5): at the earlier step **stable**, **restructured**
+(split / merge / tangle) or **death**; at the later step stable, restructured or **birth**. On
+c3, a birth or death splits by R6's `flips`: **flip kept** (c2a 1–1; the group was there and
+passed or failed a filter), **flip restructured**, **new / gone**.
+**Decomposition** (the form of Melitz & Polanec's dynamic Olley–Pakes decomposition, 2015,
+recalled, not re-read; exact): with M the weighted mean, S the stable tokens' mean, X_k and
+w_k a kind's mean and weight share, at the earlier step s and later step t,
+M_t − M_s = **(S_t − S_s)** [within] + Σ_k w_k,t (X_k,t − S_t) − Σ_k w_k,s (X_k,s − S_s)
+[one term per non-stable kind]. Within is the persisting groups' change; each other term is
+how far that kind of entry or exit moves the mean, measured against the persisting groups.
+Summed over the span's boundaries, per term. Read at L12, L24 and the layer mean, pooled; and
+per prompt (layer mean), for counts. A boundary with no stable focal token at a level has no
+S: the run reports it and that level's span is unlabelled.
+**Labels** (placed): only where |total over the span| ≥ 0.05 (§1.9's floor); otherwise "no
+drift" and the terms are reported unlabelled. Within share = within / total: **within** if
+≥ 2/3, **replacement** if ≤ 1/3, **both** between. Beside: the largest replacement term by
+size (on c3: flip kept, flip restructured, new / gone, restructured), and the prompts whose
+within term has their own total's sign, of those with |total| ≥ 0.05.
+**Beside, within only:** each stable link's paired change (the group's focal mean at t minus
+at s), split into **identical** links (Jaccard 1) and changed ones. On an identical link
+`same_class`, `copy_share`, `no_copy` and `adjacent` cannot move (the domain is one token set
+along the axis, so co-members and the draw are the same), and `emb_pct_own`, `emb_given_class`
+and CGE40 − kNN40 move only because each step's own layer 0 moves. So within on identical links
+is the embedding drifting under fixed members.
+**First checks (gate; refuse rather than degrade):** (a) every per-record mean reproduces R1's
+stored record for that column and step within 1e-6 (`data/p10/reread_r1_2026-10-05/cm_<c>.json`,
+`lc_<c>.json`); (b) the terms sum to the total within 1e-9 at every boundary and level; (c) on
+identical links the four composition lifts' paired change is exactly 0; (d) the matcher's
+stable components per boundary equal R6's `r6.json` for the column.
+**It does not:** test anything (no null; 0.05 and 2/3 are placed); follow a group across
+layers; separate a stable group's member turnover from its frame beyond the identical / changed
+split; say why. "Within" includes changed members (R6: median Jaccard 0.75–0.83), so a lineage
+that swaps a quarter of its members per step counts as within. The reference (the persisting
+groups) is one choice: entry and exit measured against the overall mean (Foster–Haltiwanger–
+Krizan's form) would move weight between the terms; rejected because it makes "within" depend
+on the entrants.
+*At build, before any output was read:* a record must also have **≥ 1 focal token** at every
+step (R1 drops a record without one, so "readable" alone does not fix the population). A first
+run refused on a level with no such record (c3, L24 at 64–512). A level with none is now reported
+as "no records" and not read. Results: `status-10.md` §1.21.
+*After `/challenge-pr` on #152 (not part of the rule as fixed):* R1's own records per step read
+beside, with records readable at one end only as a **records** term, so the span sums to R1's
+change (check (e)); identical / changed links per boundary; an `opposing` flag; the runner's
+dirty state recorded. The reviewer's main point is now in the reading: for statistics measured
+in each step's own frame, a shift shared by every group lands wholly in "within", so "within"
+there means "not replacement", not "lineage carries it".
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint

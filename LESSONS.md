@@ -205,6 +205,12 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-06, Phase 10 R6w: the rule named L12, L24 and the layer mean as readings and required
+  records readable at every step of a span, without counting how many such records exist. On c3
+  that leaves L12 with 5 and L24 with 2 over 512–143000, and L24 with none over 64–512. The first
+  run refused on the empty level (good). The thin levels would have printed labels, four of them
+  unlike R1's (`status-10.md` §1.21). Rule: when a design fixes a record set, count it per
+  reading level before the rule freezes, and name a minimum.
 - 2026-10-05, Phase 10 R2: the ladder's check of c0 against the published F1 / F12 records
   matched units by (timestamp, run dir) and printed "0 of 0 units identical", which reads as a
   pass. The published records were made on the earlier WDS sweep, not Stage 0, so no key
@@ -859,6 +865,13 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-06, Phase 10 R6w (#152, `/challenge-pr`): the headline said the drift "happens inside
+  groups that persist". For statistics measured in each step's own layer 0, a shift shared by
+  every group lands wholly in "within", because the entry and exit terms compare groups at the
+  same step. So the result was "not replacement", not "lineage carries it". The same review found
+  that the first output recorded the rule commit as its git while the runner was uncommitted.
+  Rule: ask what a decomposition reads under "everything moved together"; record a dirty flag
+  beside git.
 - 2026-10-05, Phase 10 R6: the matcher's rule named 0 → 2 **and 2 → 4** as its no-learning
   floor ("weights barely move"), but R0's own table, read for that same rule, shows c1 at
   997 → 903 across 2 → 4; the run gave c2a stable 0.86 there. Caught at reading, before any

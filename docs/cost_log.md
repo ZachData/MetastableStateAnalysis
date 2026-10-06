@@ -257,3 +257,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-05 | Phase 10 R2m: F12 against a matched control (before /challenge-pr) | 56 | 162k | 6.6M | 43k | #149 |
 | 2026-10-05 | Phase 10 R5c: 5c's flip on gpt2-large with the sink out (before /challenge-pr) | 58 | 154k | 6.3M | 41k | #150 |
 | 2026-10-05 | Phase 10 R6: cross-checkpoint matcher (before /challenge-pr) | 44 | 155k | 4.8M | 41k | #151 |
+| 2026-10-06 | Phase 10 R6w: §1.9–§1.10's drift within lineages (before /challenge-pr) | 53 | 199k | 7.3M | 54k | #152 |

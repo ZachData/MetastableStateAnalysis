@@ -91,6 +91,21 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > filtered column** (c2a 2020 → 865 groups, stable 0.21). Why: unexplained, and R0's counts
 > fall there too. Cost: per-prompt group sizes at 16 and 32. Could change: whether 32 belongs in
 > F1's window as a trained step.
+>
+> **R6w done, 2026-10-06 (`status-10.md` §1.21; its title is the summary).** Blocked 26 (b′), the
+> user's: §1.9–§1.10's drift split exactly into within-lineage change and replacement on R6's
+> links (Melitz–Polanec's form), rule in `design-10.md` "R6w". `tools/run/p10_r6w_drift.py`;
+> output `data/p10/reread_r6w_2026-10-06/r6w.json`. The Parked matcher question is answered for
+> 512 → 143000: replacement does not carry the embedding-measured drifts (entrants sit where the
+> persisting groups do); the persisting groups move with the whole population, which a layer-0
+> frame shift would also give. `/challenge-pr` on #152: all five findings taken. **Next, for the user:** Blocked 26 (c), (d), (e′), or Parked (R6w) below.
+> *Parked (R6w):* **score every step's groups in one fixed layer 0** (step 512's and 143000's) to
+> split within into members against frame as terms, not per-link means. Why: §1.21's identical
+> links move as much as changed ones, which suggests the embedding comes to group what the depth
+> groups held; the per-link means give no share. Cost: one reader pass over stored activations
+> (the frozen-frame `emb_pct` already does it for 143000), no forward pass. Could change: whether
+> §1.10's "trained, mostly what the embedding groups" reads as the groups becoming lexical or the
+> embedding becoming the groups.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
