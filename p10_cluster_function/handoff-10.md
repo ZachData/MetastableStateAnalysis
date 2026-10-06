@@ -139,6 +139,8 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > P = 0's partition, and P > 0 group counts differ by up to ×3 in a tenth of the conditions. Cost:
 > unit 1's P > 0 passes again with labels written, ~1 h on R0's scale, GPU allowed. Could change:
 > the rule's letter at 64–1000, error unmeasured.)*
+> *(Taken up 2026-10-06 as Phase 1e, `p1e_energy_field/design-1e.md`; the probe's frames are not
+> β's, so its numbers below are not used there.)*
 > *Parked (2026-10-06, the user's question in the R8 session):* **the theory's own smooth field,
 > `φ_β`'s wells at the measured β** (`lit-1d.md` §3; option C, waiting on Blocked 9 since
 > 2026-09-26; β decided 2026-10-04: 3.5 [1.6, 5.6]). Why: c3's knobs (`min_cluster_size` 2, `J0`'s

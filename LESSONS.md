@@ -349,6 +349,12 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-06, the `φ_β` probe (#155, `tools/run/p10_phi_wells_probe.py`): it applied the
+  measured β = 3.5 to raw and cloud-centred unit rows, but β was fitted on unit LN1 rows
+  (`status-1d.md` "β refit"), and its "2–4 wells" went into a merged handoff line. Found
+  while writing 1e's design, before anything was read on it; the number is marked as off-frame
+  and not used (`design-1e.md` "Inputs, fixed here"). Rule: a measured parameter carries the
+  frame it was measured in, and a reader that takes it reads in that frame or says it does not.
 - 2026-10-05, Phase 10 R1: the batch driver set `OMP_NUM_THREADS=1` to run 14 readers in
   parallel. §1.9's and §1.10's readers rank float32 Gram entries, and copies tie exactly at
   layer 0, so the thread count (an environment setting, not an input anyone recorded) moved

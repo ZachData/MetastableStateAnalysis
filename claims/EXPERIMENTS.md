@@ -163,6 +163,7 @@ would otherwise have to reconstruct from five files.
 | `10` | `p10_cluster_function/` | pre-design and deliberately unregistered. `notes-10.md` §13 states it: no construction frozen, no `P-*` id, `claims/registry.json` untouched. Its free rows (F0, F1, F11-A0, F12) have RUN, and their records under `data/analysis/` are tier 1, exploratory, and not quotable as adjudications. |
 | `1b` | `p1b_hemisphere/` | hemisphere geometry; its findings feed P-H1 and CLAIM-A rather than carrying a falsifier of their own. |
 | `1d` | `p1d_cluster_ensemble/` | code restored 2026-09-25 from its tag after a 2026-09-23 deletion; `P-C1`–`P-C4` written, never registered, and cannot be scored blind on the v1 runs already seen. `p1d_cluster_ensemble/status-1d.md`. |
+| `1e` | `p1e_energy_field/` | opened 2026-10-06, design proposed and not frozen, nothing run; tier 1 and deliberately unregistered, fenced off P-S1, P-γ1/P-γ2 and P-M1 (`p1e_energy_field/design-1e.md` "Fences"). |
 | `2b` | `p2b_imaginary/` | imaginary/rotational decomposition; measurement, feeding H-OPERATOR's P-M1 through `rotational_schur.py`. |
 | `5c` | `archive/p5c_unclustered/` | docs only, no code. Cited by `PREDICTIONS.md` claim (a). |
 | `7d` | `p7d_redundancy/` | UNEXPLAINED — active phase, see the section below. |
