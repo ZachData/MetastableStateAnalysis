@@ -264,3 +264,4 @@ running median of the rows above it gets a line under the table saying why.
   per-step monitor notifications during the 40-min run (each re-reads the context; one notice at
   the end would have done); the user's GPU question mid-unit; a tolerance probe after the gate
   refused; two gate re-runs (a card pointer, a pure-tier import).
+| 2026-10-06 | Phase 10 R8: the own-floor check on "moves", and the smooth-field question (before /challenge-pr) | 58 | 168k | 6.7M | 42k | #155 |

@@ -143,6 +143,7 @@ window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.
 | R6w | §1.9–§1.10's drift within lineages or by replacement (below) | R1, R6 | the question the matcher was parked for (`STATE.md` Blocked 26 (b′)) |
 | R6f | R6w's within split into members against frame, in one fixed layer 0 (below) | R6w | R6w's "within" cannot tell the groups moving from the frame moving under them (`STATE.md` Blocked 26 (b″)) |
 | R7 | the context-shuffle test: does a group need its context or only its tokens (below) | R0 | every row so far reads composition and the embedding; none asks whether a group survives losing its context (`STATE.md` Blocked 26 (c)) |
+| R8 | the own-floor check on "moves": does the definition's move filter pass groups by chance (below) | R0, R7 | R7 found `J0` below chance for 32–46 % of c3's groups, and "moves" uses the same `J0`; the one item that could change c3 itself (`STATE.md` Blocked 26 (f)) |
 
 **R2m, F12's matched control (rule fixed 2026-10-05, before any control output was read).**
 Each column's readable (prompt, layer) records at step s are scored on **step 0's stored
@@ -392,6 +393,30 @@ the three shares) before the other 16.
 c3's groups survive moved offsets by construction, so absolute position is controlled for the
 shuffles, not for `alone`); keep words whole at b = 1 (a word-level shuffle is Parked); use a
 foreign context (other passages' tokens change the token set); test anything. One seed, 7 passages.
+
+**R8, the own-floor check on "moves" (`STATE.md` Blocked 26 (f), taken 2026-10-06; rule fixed
+2026-10-06, before any chance level was computed).** **Question:** does unit 1's "moves" (best
+Jaccard ≥ the group's own `J0` at every P > 0 under every preamble, EOD join) pass c2 groups that a
+random set of the same size would pass as well? **Inputs:** R0's unit 1 records and labels, all 18
+steps, 7 v1 passages, centred, size 2, L1–24; no forward pass. **Chance level**, per (step, passage,
+layer) and group size s: N = 2000 random s-subsets of the kept offsets (seeded by step, passage,
+layer, s), each scored by best-match Jaccard against the **P = 0** partition (unit 1's stored
+groups, every group). `Jc` = the smallest drawn value v with share(J ≥ v) ≤ 0.05 (the discrete
+95 %; R7's interpolated 20-draw percentile is beside). *Proxy, stated:* unit 1 stored each P > 0
+condition's group count `k` but not its labels, so P = 0's partition stands in for every
+condition's; the median ratio of `k` to P = 0's count is reported to show how close they are.
+**Chance-aware moves:** every EOD condition's J ≥ max(`J0`, `Jc`), then unit 1's `classify`;
+**c3c** = c2 ∧ that class is `moves`. **Reading**, per step, c3's group-layer records pooled
+over prompts: the share with `J0` < `Jc`; the median share of random sets clearing `J0`; c3c / c3;
+by band and by size beside; step 0's floor (62 records) and 143000 (810) under both bars.
+**Decision (placed):** if c3c keeps ≥ 90 % of c3's records at every primary step (64 on), "moves"
+does not pass groups by chance at the definition's own grain and c3 stands; otherwise the
+definition needs a chance-aware bar, c3c is the candidate, and choosing it is the user's (it would
+change every re-read row's c3). **First checks (refuse rather than degrade):** (a) the stored P = 0
+groups are disjoint and equal R0's c2a labels at every layer; (b) the recomputed c2 and c3 equal
+R0's; (c) c3's totals match R0's (step 0: 62, 143000: 810). **It does not:** use the real P > 0
+partitions (the proxy above); ask whether the floor `J0` itself is the right yardstick (its 10th
+percentile is placed); test anything. Results: `status-10.md` §1.24.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
