@@ -313,9 +313,42 @@ def _md5(path: Path) -> str:
     return hashlib.md5(path.read_bytes()).hexdigest()[:8]
 
 
-def main(argv=None) -> int:
+def setup(labels: Path, r6: dict, spans: dict) -> tuple:
+    """
+    Steps per span, each column's readable records and runs at those steps, and every record's
+    link kinds and stable links per adjacent boundary; ``check_d`` sets the stable counts beside
+    R6's (the caller refuses on a mismatch).
+    """
     from tools.run.p10_label_source import reader_input
     from tools.run.p10_r6_matcher import link, load
+    full, axis = load(labels, columns=COLUMNS)           # every record, domain labels (R6's input)
+    sel = {name: [s for s in axis if a <= s <= b] for name, (a, b) in spans.items()}
+    steps_needed = sorted({s for v in sel.values() for s in v})
+    readable, runs = {}, {}
+    for c in COLUMNS:
+        src = reader_input(labels, c)
+        readable[c] = {k: v for k, v in src["labels"].items() if k[0] in steps_needed}
+        runs.update({k: v for k, v in src["runs"].items() if k[0] in steps_needed})
+
+    link_kinds, stable_links, check_d = {c: {} for c in COLUMNS}, {c: {} for c in COLUMNS}, []
+    bidx = {(b["from"], b["to"]): b for b in r6["boundaries"]}
+    for s, t in zip(steps_needed, steps_needed[1:]):
+        if axis.index(t) != axis.index(s) + 1:
+            continue
+        for c in COLUMNS:
+            n_stable = 0
+            for key, by_col in full.items():
+                L = link(by_col[c][s], by_col[c][t])
+                ref = link(by_col["c2a"][s], by_col["c2a"][t]) if c == "c3" else None
+                link_kinds[c][(key, s, t)] = kinds(L, ref)
+                stable_links[c][(key, s, t)] = L["stable"]
+                n_stable += L["counts"]["stable"]
+            check_d.append({"column": c, "from": s, "to": t, "ours": n_stable,
+                            "r6": bidx[(s, t)][c]["null"]["observed"]})
+    return sel, readable, runs, link_kinds, stable_links, check_d
+
+
+def main(argv=None) -> int:
     from tools.run.p10_token_composition import find_tokenizer, load_vocab
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--labels", type=Path, required=True, help="R0's label source")
@@ -334,34 +367,14 @@ def main(argv=None) -> int:
     r6 = json.loads(args.r6.read_text())
     span_steps = sorted({s for a, b in SPANS.values() for s in (a, b)})
 
-    full, axis = load(args.labels, columns=COLUMNS)           # every record, domain labels (R6's input)
-    sel = {name: [s for s in axis if a <= s <= b] for name, (a, b) in SPANS.items()}
-    steps_needed = sorted({s for v in sel.values() for s in v})
-    readable, runs = {}, {}
-    for c in COLUMNS:
-        src = reader_input(args.labels, c)
-        readable[c] = {k: v for k, v in src["labels"].items() if k[0] in steps_needed}
-        runs.update({k: v for k, v in src["runs"].items() if k[0] in steps_needed})
-
-    # links per (record, boundary) for every column; check (d) against R6 on the way
-    link_kinds, stable_links, check_d = {c: {} for c in COLUMNS}, {c: {} for c in COLUMNS}, []
-    bidx = {(b["from"], b["to"]): b for b in r6["boundaries"]}
-    for s, t in zip(steps_needed, steps_needed[1:]):
-        if axis.index(t) != axis.index(s) + 1:
-            continue
-        for c in COLUMNS:
-            n_stable = 0
-            for key, by_col in full.items():
-                L = link(by_col[c][s], by_col[c][t])
-                ref = link(by_col["c2a"][s], by_col["c2a"][t]) if c == "c3" else None
-                link_kinds[c][(key, s, t)] = kinds(L, ref)
-                stable_links[c][(key, s, t)] = L["stable"]
-                n_stable += L["counts"]["stable"]
-            want = bidx[(s, t)][c]["null"]["observed"]
-            check_d.append({"column": c, "from": s, "to": t, "ours": n_stable, "r6": want})
-            if n_stable != want:
-                print(f"check (d) fails: {c} {s}→{t} stable {n_stable}, R6 {want}; refusing", file=sys.stderr)
-                return 2
+    # links per (record, boundary) for every column; check (d) against R6
+    sel, readable, runs, link_kinds, stable_links, check_d = setup(args.labels, r6, SPANS)
+    bad_d = [d for d in check_d if d["ours"] != d["r6"]]
+    if bad_d:
+        d = bad_d[0]
+        print(f"check (d) fails: {d['column']} {d['from']}→{d['to']} stable {d['ours']}, R6 {d['r6']}; "
+              "refusing", file=sys.stderr)
+        return 2
 
     jobs = [(s, p, str(runs[(s, p)]), {c: readable[c].get((s, p), {}) for c in COLUMNS}, vocab, added)
             for s, p in sorted(runs)]
