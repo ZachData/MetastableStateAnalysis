@@ -141,6 +141,7 @@ window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.
 | R2m | F12 against a matched control, §1.5 again (below) | R2 | R2 left F12's label as the baseline's (`STATE.md` Blocked 25, (iv) taken by the user 2026-10-05) |
 | R6 | the cross-checkpoint matcher (below) | R0 | every later row that follows a group through training needs it (`STATE.md` Blocked 26 (b)) |
 | R6w | §1.9–§1.10's drift within lineages or by replacement (below) | R1, R6 | the question the matcher was parked for (`STATE.md` Blocked 26 (b′)) |
+| R6f | R6w's within split into members against frame, in one fixed layer 0 (below) | R6w | R6w's "within" cannot tell the groups moving from the frame moving under them (`STATE.md` Blocked 26 (b″)) |
 
 **R2m, F12's matched control (rule fixed 2026-10-05, before any control output was read).**
 Each column's readable (prompt, layer) records at step s are scored on **step 0's stored
@@ -290,6 +291,44 @@ change (check (e)); identical / changed links per boundary; an `opposing` flag; 
 dirty state recorded. The reviewer's main point is now in the reading: for statistics measured
 in each step's own frame, a shift shared by every group lands wholly in "within", so "within"
 there means "not replacement", not "lineage carries it".
+
+**R6f, R6w's within split into members against frame (`STATE.md` Blocked 26 (b″), taken by
+the user 2026-10-06; rule fixed before any output was read).** R6w measured each step's groups in
+that step's own layer 0, so "within" mixes two changes: the groups' members changing, and the
+embedding moving under them. Scoring every step's groups in **one fixed layer 0** holds the
+frame still. Descriptive, tier 1, no null; it decides how §1.10's "trained, mostly what the
+embedding groups" reads: the groups came to hold what the embedding groups (**members**), or the
+embedding came to group what the groups already held (**frame**).
+**Statistics:** R6w's three measured in the embedding: `emb_pct_own`, `emb_given_class` (10
+bins), CGE40 − kNN40, per focal token exactly as R6w computes them (same members, pool, class,
+weights, kinds) but with **frame F's layer-0 Gram** in place of the step's own. The four
+composition lifts have no frame and are out. **Frames:** F = **512** and F = **143000**, the
+span's two ends, for the same prompt (its `tokens.txt` must match, else refuse). **Span, records,
+columns:** R6w's primary span 512 → 143000 only (its 64 → 512 is not readable on c3); R6w's
+fixed record set (the rule) and R1's own records beside; c3 primary, c2a and c0 beside.
+**Split** (exact, each of R6w's terms is linear in the per-token values at fixed weights and
+kinds): for every term T (within, each replacement kind, records, the total), T = T_F + (T − T_F),
+where T is R6w's own-frame term and T_F the same term on frame-F values. **Members** = T_F: the
+change the groups' membership makes in a frame that does not move. **Frame** = T − T_F. Per
+boundary and summed over the span.
+**Labels** (placed, as R6w's): only where |within| ≥ 0.05 over the span (else "no drift");
+members share = within_F / within. Per frame: **members** if ≥ 2/3, **frame** if ≤ 1/3, **both**
+between. The row's label is the two frames' label where they agree, else **frame-dependent**
+with both shares. Read on c3, layer mean, fixed set (primary); L12 / L24 not read (R6w: too
+thin). Beside: the Shapley share (the mean of the two frames' shares, the two-factor split of
+the span between members and frame); the total's split; per boundary, where each part sits; per
+prompt (layer mean), the label count among prompts with |within| ≥ 0.05; on identical stable
+links, members is 0 by construction (check), so their whole change is frame.
+**First checks (gate; refuse rather than degrade):** (a) the own-frame per-record values
+reproduce R1's stored records within 1e-6 (R6w's check (a)); (a′) with F = 143000, each record's
+`emb_pct_own` equals R1's stored frozen-frame `emb_pct` within 1e-6 (`p10_comembership`, the same
+statistic in step 143000's layer 0); (b) at step F itself, the frame-F values equal the own-frame
+values exactly; (c) on identical stable links the three statistics' paired change in frame F is
+exactly 0; (e) the own-frame span terms equal `r6w.json`'s within 1e-9.
+**It does not:** say which frame is right (the two shares differ by the interaction of members
+and frame, reported, not assigned); chain frames per boundary (one frame per run keeps "members"
+on one yardstick over the span); test anything; follow groups across layers; read the
+composition lifts, L12 / L24 or 64 → 512. One seed, 7 passages.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
