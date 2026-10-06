@@ -215,7 +215,12 @@ floor on that column (no learning there; *corrected at reading: 2 → 4 already 
 0 → 2 is a floor*, `status-10.md` §1.20), and c3's step-0 groups are mostly chance passes
 (R0's floor), so c3 churn below 64 is the filter's, not the model's. **It does not:** follow
 a group across layers (`merge_tree` does, per step), read §1.9–§1.10's drift within
-lineages (the next row that needs this), or say why a group changed.
+lineages (the next row that needs this), or say why a group changed. *After `/challenge-pr` on
+#151 (not part of the rule as fixed):* columns c1 and c1c added (c0's call on the kept positions,
+so c0's lineages compare on the same tokens); flips split into **kept** (c2a's component 1–1) and
+**restructured** (c2a split / merge / tangle); lineages read beside an independence baseline (the
+product of each crossed boundary's backward survival rate); a c2 / c3 id missing from c2a and a
+missing `summary.json` refuse.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint

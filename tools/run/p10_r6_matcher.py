@@ -27,7 +27,7 @@ import numpy as np
 
 from p1d_cluster_ensemble.merge_tree import _KINDS, link_chain_null, link_layer_pair
 
-COLUMNS = ("c0", "c2a", "c2", "c3")
+COLUMNS = ("c0", "c1", "c1c", "c2a", "c2", "c3")  # c1, c1c: /challenge-pr on #151, finding 2
 FLIP_COLUMNS = ("c2", "c3")       # their group ids are c2a's (`p10_label_source` docstring)
 LAYERS = tuple(range(1, 25))
 MEASURE, MIN_OVERLAP = "containment", 0.5
@@ -54,14 +54,22 @@ def link(lab_a, lab_b) -> dict:
 
 
 def flips(col: dict, c2a: dict) -> dict:
-    """A column's births / deaths split by whether the same id is linked in c2a's matching."""
+    """
+    A column's births / deaths by the same id's fate in c2a's matching at that boundary: ``new`` /
+    ``gone`` (no c2a link), ``flip_kept`` (c2a's component is 1–1: the group persisted and passed
+    or failed a filter) or ``flip_restructured`` (c2a split, merged or tangled it). The last two
+    split after `/challenge-pr` on #151, finding 1. Refuses an id c2a does not hold.
+    """
     out = Counter()
-    for b, k in col["kind_b"].items():
-        if k == "birth":
-            out["birth_flip" if c2a["kind_b"].get(b, "birth") != "birth" else "birth_new"] += 1
-    for a, k in col["kind_a"].items():
-        if k == "death":
-            out["death_flip" if c2a["kind_a"].get(a, "death") != "death" else "death_gone"] += 1
+    for side, kinds, ref, none in (("birth", col["kind_b"], c2a["kind_b"], "birth_new"),
+                                   ("death", col["kind_a"], c2a["kind_a"], "death_gone")):
+        for g, k in kinds.items():
+            if k != side:
+                continue
+            if g not in ref:
+                raise ValueError(f"group {g} is not in c2a; c2/c3 ids must be c2a's")
+            out[none if ref[g] == side else f"{side}_flip_kept" if ref[g] == "stable"
+                else f"{side}_flip_restructured"] += 1
     return dict(out)
 
 
@@ -135,11 +143,29 @@ def pool(chains: list, steps: list, columns) -> dict:
             if c in FLIP_COLUMNS:
                 row[c]["flips"] = dict(fl)
         rows.append(row)
-    lineage = {}
+    lineage, independent = {}, {}
     for name in chains[0]["lineage"]:
         hist = Counter(o for ch in chains for o in ch["lineage"][name])
         lineage[name] = {str(s): hist.get(s, 0) for s in steps}
-    return {"boundaries": rows, "lineage_origin_at_last": lineage}
+    for c in columns:
+        independent[c] = independent_lineage(rows, steps, c)
+    return {"boundaries": rows, "lineage_origin_at_last": lineage,
+            "lineage_independent_cumulative": independent}
+
+
+def independent_lineage(rows: list, steps: list, column: str) -> dict:
+    """
+    The share of the last step's groups whose chain would reach back to step s or earlier if every
+    boundary broke chains independently at its own pooled rate: the product, over the boundaries
+    from s to the last step, of (stable components / later step's groups). A baseline for the
+    lineage table (`/challenge-pr` on #151, finding 3), not a null: it keeps each boundary's rate.
+    """
+    out, prod = {str(steps[-1]): 1.0}, 1.0
+    for j in range(len(rows) - 1, -1, -1):
+        r = rows[j][column]
+        prod *= r["null"]["observed"] / r["n_b"] if r["n_b"] else 0.0
+        out[str(steps[j])] = prod
+    return {s: out[str(s)] for s in map(str, steps)}
 
 
 def first_check(pooled: dict) -> dict:
@@ -193,8 +219,10 @@ def main(argv=None) -> int:
         chains = list(ex.map(chain, jobs))
     pooled = pool(chains, steps, COLUMNS)
     summary = args.labels / "summary.json"
-    meta = {"labels": str(args.labels), "summary_sha256": hashlib.sha256(summary.read_bytes()).hexdigest()
-            if summary.exists() else None, "columns": list(COLUMNS), "steps": steps, "prompts": prompts,
+    if not summary.exists():
+        raise SystemExit(f"no {summary}: the input would be unnamed")
+    meta = {"labels": str(args.labels), "summary_sha256": hashlib.sha256(summary.read_bytes()).hexdigest(),
+            "python": sys.version.split()[0], "numpy": np.__version__, "columns": list(COLUMNS), "steps": steps, "prompts": prompts,
             "layers": list(LAYERS), "measure": MEASURE, "min_overlap": MIN_OVERLAP,
             "same_jaccard": SAME_JACCARD, "n_draws": N_DRAWS, "seed": SEED,
             "git": subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],

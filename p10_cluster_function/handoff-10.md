@@ -83,10 +83,11 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > item below is built; its question (drift within or between clusters) is now a reading that
 > needs §1.9–§1.10's measure per lineage. **Next, for the user:** Blocked 26 (c), (d), (e′), or
 > that within-lineage reading.
-> *Parked (R6):* (1) **c0's 1,204 clusters at 143000 that trace back unbroken to step 0** (17 %;
-> the definition has none before 256). Why: the old partition may carry init structure
-> (same-token pairs?) that every c0 row read as trained. Cost: their member strings from R0's
-> labels, no pass. Could change: how much of c0's §1.7–§1.10 is init. (2) **16 → 32 breaks every
+> *Parked (R6):* (1) **c0's 1,204 clusters at 143000 that trace back unbroken to step 0** (17 %).
+> Mostly answered after `/challenge-pr` on #151: they lie off the kept positions (c1, the same call
+> on them, has 0), in early layers. Left: which positions (repeats, position 0, the delimiter).
+> Cost: their member strings from R0's labels, no pass. Could change: how much of c0's §1.7–§1.10
+> is init structure on repeats. (2) **16 → 32 breaks every
 > filtered column** (c2a 2020 → 865 groups, stable 0.21). Why: unexplained, and R0's counts
 > fall there too. Cost: per-prompt group sizes at 16 and 32. Could change: whether 32 belongs in
 > F1's window as a trained step.
