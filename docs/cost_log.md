@@ -259,3 +259,8 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-05 | Phase 10 R6: cross-checkpoint matcher (before /challenge-pr) | 44 | 155k | 4.8M | 41k | #151 |
 | 2026-10-06 | Phase 10 R6w: §1.9–§1.10's drift within lineages (before /challenge-pr) | 53 | 199k | 7.3M | 54k | #152 |
 | 2026-10-06 | Phase 10 R6f: R6w's within split into members against frame (before /challenge-pr) | 35 | 141k | 3.5M | 35k | #153 |
+| 2026-10-06 | Phase 10 R7: the context-shuffle test (before /challenge-pr) | 91 | 218k | 14.2M | 54k | #154 |
+  Over 2× the median (5.3M): a new rule, runner and forward-pass batch in one unit; ~20 calls were
+  per-step monitor notifications during the 40-min run (each re-reads the context; one notice at
+  the end would have done); the user's GPU question mid-unit; a tolerance probe after the gate
+  refused; two gate re-runs (a card pointer, a pure-tier import).
