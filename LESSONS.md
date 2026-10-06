@@ -411,6 +411,12 @@ not fixed).
 ## 4. Tests that assert a property of the machine, not of the code
 
 **Instances.**
+- 2026-10-06, Phase 10 R7: check (d) compared a 2-token pass with the passage's 512-token pass
+  at 1e-5, a tolerance borrowed from re-running the *same* input against Stage 0. At step 143000
+  float32 sequence-length noise is 1.5e-5 even unbatched, so the gate refused `latex_monograph`
+  (1.06e-5). Caught at the gate, fixed as a departure (1e-4, `design-10.md` "R7"). Rule: a
+  numeric tolerance is placed for one computation; reusing it for another (different shape,
+  length, batch or device) needs that computation's noise measured first, at the latest checkpoint.
 - 2026-09-22: two float32 tests compared roundoff at d=128 (itself ~1e-06)
   with a 1e-06 tolerance. Pass/fail was decided by the runner's CPU kernel;
   `main` was red from #57 to #60, and then went *green* on `086bdd1` without
@@ -842,6 +848,10 @@ re-reads the whole context. #131's cost row already said "one watcher on each ba
 would have done", and the next unit made the same choice. Rule: after checking the first
 output by hand, watch only the batch's end and its failure signatures (`refusing`,
 `Traceback`, `Killed`), not per-item progress.
+2026-10-06 (#154, R7): the same again, a third time: a `Monitor` matching each step's last
+passage gave 15 notifications over a 40-min batch, while the background `Bash` already notified
+on exit. The rule lived only here, and this file is not read at startup. ⚠️ Candidate: one line in
+`CLAUDE.md` "While working" ("one notification per batch: its exit").
 
 ## 10. Tangents: interesting findings that hijack the plan
 
@@ -867,6 +877,13 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-06, Phase 10 R7 (#154, `/challenge-pr`): the rule computed three yardsticks (each
+  group's own floor, the fixed bar 0.5, and the chance level as a count) and the headline gave the
+  own floor's label, "mixed", as the result. On the fixed bar the same records read "context", and
+  the own-floor share was lifted by floors below chance (68–91 % of them token-alone). The author
+  had chosen the own floor for comparability with "moves" and read the rest as "beside". Rule: when
+  a result's label changes across the yardsticks computed beside it, the headline gives the range,
+  not the primary's label.
 - 2026-10-06, Phase 10 R6w (#152, `/challenge-pr`): the headline said the drift "happens inside
   groups that persist". For statistics measured in each step's own layer 0, a shift shared by
   every group lands wholly in "within", because the entry and exit terms compare groups at the

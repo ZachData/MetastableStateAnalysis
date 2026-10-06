@@ -114,6 +114,27 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the depth groups or unigram / bigram statistics is `design-10.md`'s Parked n-gram control.
 > Cost: as that control. Could change: whether "the embedding came to hold the groups" says
 > anything about the groups.
+>
+> **R7 done, 2026-10-06 (`status-10.md` §1.23; its title is the summary).** Blocked 26 (c), the
+> user's: the context-shuffle test, rule in `design-10.md` "R7" (committed before any shuffled
+> pass). `tools/run/p10_r7_shuffle.py`; output `data/p10/reread_r7_2026-10-06/` (126 records, all
+> 18 steps, CPU, 40 min). Answer: **depends on the bar**: mixed from 512 on each group's own floor
+> (token-alone 39 % at 512, 48–61 % after), context on the fixed bar 0.5 (0.21–0.31); among floors
+> that clear chance, breaking under a shuffle leads (0.46–0.59); before 512 no shuffle moves the
+> groups. `/challenge-pr` on #154: findings 1–3 taken, 4 agreed. One departure at the gate:
+> check (d)'s tolerance 1e-5 → 1e-4 (float32 sequence-length noise at step 143000). **Next, for the
+> user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a Parked item below.
+> *Parked (R7):* **the own floor `J0` is below chance for 32–46 % of c3's groups from 512.** Why:
+> the definition's "moves" filter tests best Jaccard ≥ the same `J0`, so for those groups "moves"
+> may pass by chance as easily as R7's "survives". Cost: free, from unit 1's stored Jaccards and a
+> chance level per group (R7's `chance95`). Could change: the definition's move filter (Blocked 22
+> (a)), so every re-read row's c3.
+> *Parked (R7):* **`alone` at position 1.** Why: every token sits beside the sink, so a token-borne
+> miss can be position 1, not missing context. Cost: one more arm (the token after a neutral
+> filler at its own offset), ~5 min CPU. Could change: the token-borne share, upward.
+> *Parked (R7):* **a word-level shuffle.** Why: b = 1 splits multi-token words (`lit-10.md` §17
+> row 2), so some order-borne groups may be subword assembly. Cost: one more level. Could change:
+> whether order-borne means sentence order or word assembly.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
