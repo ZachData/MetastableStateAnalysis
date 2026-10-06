@@ -118,8 +118,10 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > **R7 done, 2026-10-06 (`status-10.md` §1.23; its title is the summary).** Blocked 26 (c), the
 > user's: the context-shuffle test, rule in `design-10.md` "R7" (committed before any shuffled
 > pass). `tools/run/p10_r7_shuffle.py`; output `data/p10/reread_r7_2026-10-06/` (126 records, all
-> 18 steps, CPU, 40 min). Answer: **mixed** from 512 at every step (token-borne 39 % at 512, 48–61 %
-> after; order-borne 31–39 %); before 512 no shuffle moves the groups. One departure at the gate:
+> 18 steps, CPU, 40 min). Answer: **depends on the bar**: mixed from 512 on each group's own floor
+> (token-alone 39 % at 512, 48–61 % after), context on the fixed bar 0.5 (0.21–0.31); among floors
+> that clear chance, breaking under a shuffle leads (0.46–0.59); before 512 no shuffle moves the
+> groups. `/challenge-pr` on #154: findings 1–3 taken, 4 agreed. One departure at the gate:
 > check (d)'s tolerance 1e-5 → 1e-4 (float32 sequence-length noise at step 143000). **Next, for the
 > user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a Parked item below.
 > *Parked (R7):* **the own floor `J0` is below chance for 32–46 % of c3's groups from 512.** Why:

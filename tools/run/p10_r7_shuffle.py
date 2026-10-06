@@ -390,6 +390,12 @@ def read_step(recs, column: str) -> dict:
                              for lv in [f"b{b}" for b in BLOCKS] + ["alone"]}
     out["token_borne_failing_b1"] = sum(r["token_fail_b1"] for r in rows)
     out["J0_below_chance"] = sum(bool(r["J0_below_chance"]) for r in rows)
+    # After `/challenge-pr` on #154 (finding 1), beside, not part of the rule: the labels split by
+    # whether the group's own floor clears its chance level; token-borne among token-borne's b = 1.
+    out["by_floor"] = {k: tally(r["label"] for r in rows if bool(r["J0_below_chance"]) == below)
+                       for k, below in (("J0_at_or_above_chance", False), ("J0_below_chance", True))}
+    nt = out["token-borne"]
+    out["token_borne_failing_b1_share"] = out["token_borne_failing_b1"] / nt if nt else None
     out["bands"] = {}
     for name, rng in BANDS.items():
         t = tally(r["label"] for r in rows if r["layer"] in rng)
