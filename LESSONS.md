@@ -455,6 +455,12 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-05, Phase 10 R3: A0's "~94 % mask, learned residual from 2000–4000" (§1.1) was
+  "confirmed" on a second sweep (§3.1). Both sweeps kept position 0 and one massive token per
+  prompt in the unclustered population, and from step 4000 those two tokens carry the flip and
+  the residual: out of the means, the late raw gap reverses (`status-10.md` §1.17). A replication
+  that shares a confound cannot test it. Rule: before calling a population statistic confirmed,
+  re-read it with the few highest-leverage tokens (the sink, massive tokens) out of the means.
 - 2026-10-05, Phase 10 R2: `design-10.md` froze F1's re-read rule as "negative iff median p ≤
   0.05 and the mean is negative" and stated §1.3's finding as "the 32–512 window". Applied to the
   published record itself, the rule gives negative from 32 to 54000: the window was a magnitude

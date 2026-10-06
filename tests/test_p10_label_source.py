@@ -309,3 +309,9 @@ def test_reread_refuses_a_label_source_missing_a_step(monkeypatch, tmp_path):
     args = argparse.Namespace(labels=tmp_path, column="c3", jobs=1, seed=0)
     with pytest.raises(SystemExit, match="missing or extra"):
         pf.reread(args, pf.reread_run, "test")
+
+
+def test_old_reader_columns_are_the_sources():
+    """A0's reader keeps its own copy (the pure tier cannot import this module)."""
+    from tools.run.p10_attention_baseline import OLD_READER
+    assert OLD_READER == ls.ALL_POSITIONS

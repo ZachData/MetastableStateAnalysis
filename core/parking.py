@@ -56,6 +56,8 @@ __all__ = [
     "received_baseline",
     "relative_to_layer_mean",
     "mask_corrected_received",
+    "t4_attention",
+    "t4_received_baseline",
     "population_enrichment",
     "cluster_nuclei",
     "mean_nucleus_position",
@@ -212,6 +214,58 @@ def mask_corrected_received(
     base = received_baseline(n, n_heads=n_heads, zero_diagonal=False)
     out = obs / base
     return relative_to_layer_mean(out) if renormalise else out
+
+
+def t4_attention(attn_layer: np.ndarray, dropped: Sequence[int]) -> np.ndarray:
+    """
+    Token rule T4 (`p1d_cluster_ensemble/design-1d.md` "Token rules"): the
+    columns of the ``dropped`` (T1–T2) positions set to 0 and every row
+    renormalised over the keys left. A row with no key left (query 0, which
+    sees only itself when position 0 is dropped) stays all 0: it routes no
+    attention, rather than an invented one.
+
+    Rows of dropped positions are kept as queries: T4 drops columns only.
+    """
+    a = np.asarray(attn_layer, dtype=np.float64)
+    if a.ndim != 3 or a.shape[-1] != a.shape[-2]:
+        raise ValueError(f"attn_layer must be (n_heads, n, n); got shape {a.shape}")
+    d = np.asarray(sorted(set(int(x) for x in dropped)), dtype=int)
+    if d.size and (d.min() < 0 or d.max() >= a.shape[-1]):
+        raise ValueError(f"dropped positions {d.tolist()} outside 0..{a.shape[-1] - 1}")
+    a = a.copy()
+    a[..., d] = 0.0
+    s = a.sum(axis=-1, keepdims=True)
+    return np.divide(a, s, out=np.zeros_like(a), where=s > 0)
+
+
+def t4_received_baseline(n: int, dropped: Sequence[int], n_heads: int = 1) -> np.ndarray:
+    """
+    `received_baseline` (diagonal kept) after `t4_attention`: the content-free
+    causal attention with the ``dropped`` columns removed and rows
+    renormalised. Query ``i`` then spreads 1 / |V_i| over
+    ``V_i = {j <= i, j not dropped}``, so::
+
+        received(j) = sum_{i >= j, |V_i| > 0} 1 / |V_i|     (j not dropped)
+
+    and ``nan`` at a dropped position (outside the statistic, not a measured
+    0). With nothing dropped it is ``H_n - H_j``; with position 0 dropped,
+    ``H_{n-1} - H_{j-1}`` (`tools/math_checks/causal_mask_attention_baseline.py`).
+    Positive wherever defined: the last kept position is seen by itself.
+    """
+    if n < 1:
+        raise ValueError(f"n must be >= 1; got {n}")
+    if n_heads < 1:
+        raise ValueError(f"n_heads must be >= 1; got {n_heads}")
+    drop = np.zeros(n, dtype=bool)
+    d = [int(x) for x in dropped]
+    if any(x < 0 or x >= n for x in d):
+        raise ValueError(f"dropped positions {sorted(d)} outside 0..{n - 1}")
+    drop[d] = True
+    visible = np.cumsum(~drop)                       # |V_i|
+    w = np.divide(1.0, visible, out=np.zeros(n), where=visible > 0)
+    out = np.cumsum(w[::-1])[::-1] * float(n_heads)  # sum over i >= j
+    out[drop] = np.nan
+    return out
 
 
 def population_enrichment(values: np.ndarray, mask: np.ndarray) -> float:

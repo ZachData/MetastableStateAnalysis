@@ -420,3 +420,44 @@ def test_partition_function_refuses_wrong_rank():
         partition_function(np.ones(5), 1.0)
     with pytest.raises(ValueError, match="1-D"):
         position_corrected_partition_function(np.ones((2, 2)))
+
+
+# --- T4: dropped columns, rows renormalised (design-10.md R3) ---------------
+
+def test_t4_rows_sum_to_one_or_route_nothing():
+    from core.parking import t4_attention, uniform_causal_attention
+    a = np.repeat(uniform_causal_attention(9)[None], 3, axis=0)
+    t = t4_attention(a, [0, 4])
+    assert np.allclose(t[..., [0, 4]], 0.0)
+    s = t.sum(axis=-1)
+    assert np.allclose(s[:, 0], 0.0), "query 0 sees only itself: no key left, no attention invented"
+    assert np.allclose(s[:, 1:], 1.0)
+
+
+@pytest.mark.parametrize("dropped", [[], [0], [0, 3], [0, 1, 2, 7], [5, 11]])
+def test_t4_baseline_is_the_explicit_matrix_received(dropped):
+    from core.parking import received_attention, t4_attention, t4_received_baseline, uniform_causal_attention
+    n, h = 12, 2
+    a = np.repeat(uniform_causal_attention(n)[None], h, axis=0)
+    explicit = received_attention(t4_attention(a, dropped), zero_diagonal=False)
+    base = t4_received_baseline(n, dropped, n_heads=h)
+    keep = np.setdiff1d(np.arange(n), dropped)
+    assert np.isnan(base[dropped]).all()
+    assert np.allclose(base[keep], explicit[keep])
+    assert (base[keep] > 0).all()
+
+
+def test_t4_baseline_reduces_to_the_published_one_and_to_its_shift():
+    from core.parking import harmonic, received_baseline, t4_received_baseline
+    n = 30
+    assert np.allclose(t4_received_baseline(n, []), received_baseline(n, zero_diagonal=False))
+    b = t4_received_baseline(n, [0])
+    assert all(b[j] == pytest.approx(harmonic(n - 1) - harmonic(j - 1)) for j in range(1, n))
+
+
+def test_t4_refuses_positions_off_the_prompt():
+    from core.parking import t4_attention, t4_received_baseline, uniform_causal_attention
+    with pytest.raises(ValueError):
+        t4_received_baseline(5, [5])
+    with pytest.raises(ValueError):
+        t4_attention(uniform_causal_attention(5)[None], [-1])
