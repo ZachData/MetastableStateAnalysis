@@ -398,3 +398,37 @@ def test_matched_runs_refuses_other_tokens_or_a_missing_prompt(tmp_path):
         matched_runs(src, {(512, "wiki"): r512}, 0)
     with pytest.raises(SystemExit, match="no step-0 run"):
         matched_runs(src, {(512, "iliad"): r512}, 0)
+
+
+def test_reread_scores_step_s_labels_on_step_0s_run_when_matched(tmp_path, monkeypatch):
+    """/challenge-pr on #149, finding 4: the step-0 Δ = 0 check cannot see a swap, so pin the pairing."""
+    import sys
+    import types
+    from argparse import Namespace
+    from tools.run.p10_partition_function import reread
+    runs = {}
+    for s in (0, 512):
+        r = tmp_path / f"s{s}"
+        r.mkdir()
+        (r / "tokens.txt").write_text("a\nb\n")
+        runs[(s, "wiki")] = r
+    src = tmp_path / "labels"
+    src.mkdir()
+    _step_file(src, 0, {"wiki": runs[(0, "wiki")]})
+    lab = {1: np.array([0, -1])}
+    fake = types.ModuleType("tools.run.p10_label_source")
+    fake.LEARNED_SPLIT, fake.LEARNED_STEP, fake.MODELS = (), "step143000", ("step0", "step512")
+    fake.reader_input = lambda labels, column: {
+        "runs": runs, "labels": {k: lab for k in runs}, "records": {0: [1, 1], 512: [1, 1]}, "meta": {}}
+    monkeypatch.setitem(sys.modules, "tools.run.p10_label_source", fake)
+    seen = {}
+
+    def measure(run_dir, labels, step, prompt, seed):
+        seen[step] = run_dir
+        return []
+    args = Namespace(labels=src, column="c3", jobs=1, seed=0)
+    rec = reread(args, measure, "test", acts_step=0)
+    assert seen == {0: runs[(0, "wiki")], 512: runs[(0, "wiki")]}
+    assert rec["activations_step"] == 0 and dict(rec["inputs"])["512|wiki"] == str(runs[(512, "wiki")])
+    reread(args, measure, "test")
+    assert seen[512] == runs[(512, "wiki")]

@@ -10,7 +10,9 @@ F12m   per unit (step, prompt, layer, beta), matched Δ = trained − control;
        per step, the mean over paired units: **below / as / above control**
        at ±``GAP_FLOOR``. Beside it: the raw sign (trained mean: members
        **below / as / above the rest** at ±``GAP_FLOOR``), the control's mean
-       and median p, and the prompts whose mean Δ is negative
+       and median p, and the prompts whose mean Δ is negative, with a two-sided
+       sign-test p over prompts (`sign_p`; beside, not a label: added after
+       `/challenge-pr` on #149)
 §1.5   per step, **parked** iff R2's F1 label is negative and F12m is below
        control, else **not**
 ====== ====================================================================
@@ -32,6 +34,7 @@ import json
 import os
 import sys
 from collections import defaultdict
+from math import comb
 from pathlib import Path
 from statistics import mean, median
 from typing import Dict, Optional, Sequence
@@ -95,6 +98,14 @@ def word(d: Optional[float], what: str) -> str:
             else f"below {what}" if d < -GAP_FLOOR else f"as {what}")
 
 
+def sign_p(k: int, n: int) -> float:
+    """Two-sided sign-test p for ``k`` of ``n`` prompts on one side (exact binomial, 1/2)."""
+    if n == 0:
+        return 1.0
+    m = min(k, n - k)
+    return min(1.0, 2 * sum(comb(n, i) for i in range(m + 1)) / 2 ** n)
+
+
 def step_cells(units: Dict[int, list]) -> Dict[int, Dict]:
     out = {}
     for s, us in units.items():
@@ -103,11 +114,13 @@ def step_cells(units: Dict[int, list]) -> Dict[int, Dict]:
         for p, a, b, _ in us:
             by_prompt[p].append(a - b)
         d = round(t - c, 4)
+        neg = sum(mean(v) < 0 for v in by_prompt.values())
+        pos = sum(mean(v) > 0 for v in by_prompt.values())   # a prompt at exactly 0 has no sign
         out[s] = {"n": len(us), "trained": round(t, 4), "control": round(c, 4), "delta": d,
                   "label": word(d, "control"), "raw": word(round(t, 4), "rest"),
                   "control_median_p": round(median(u[3] for u in us), 4),
-                  "prompts_negative": sum(mean(v) < 0 for v in by_prompt.values()),
-                  "prompts": len(by_prompt)}
+                  "prompts_negative": neg, "prompts": len(by_prompt),
+                  "sign_p": round(sign_p(neg, neg + pos), 4)}
     return out
 
 
@@ -161,7 +174,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         def f(c):
             x = cc[c].get(s)
             return "—" if x is None else (f"{_fmt(x['delta'])} = {_fmt(x['trained'])} − {_fmt(x['control'])} "
-                                          f"({x['prompts_negative']}/{x['prompts']}) p{x['control_median_p']:.3f}")
+                                          f"({x['prompts_negative']}/{x['prompts']}, sign p {x['sign_p']:.3f}) p{x['control_median_p']:.3f}")
         print(f"{s:>6} {pc:>3} | {f('c0')} | {f('c2')} | {f(pc)}")
     for row, w in res["windows"].items():
         print(f"window {row}: {w}")

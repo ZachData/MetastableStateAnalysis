@@ -35,6 +35,7 @@ def test_step_cells_label_the_gap_against_the_control_and_keep_the_raw_sign_besi
     assert x["delta"] == pytest.approx(-0.1667, abs=1e-4) and x["label"] == "below control"
     assert x["raw"] == "as rest"                    # trained mean 0: no raw sign
     assert (x["prompts_negative"], x["prompts"]) == (1, 2) and x["control_median_p"] == 0.03
+    assert lad.step_cells({0: [("a", 0.2, 0.2, 0.01), ("b", 0.1, 0.1, 0.01)]})[0]["sign_p"] == 1.0
     assert lad.word(0.06, "control") == "above control" and lad.word(None, "rest") == "unavailable"
 
 
@@ -68,3 +69,10 @@ def test_load_refuses_a_control_not_read_on_step_0(tmp_path):
         (m / f"f12m_{col}.json").write_text(json.dumps({**base, "activations_step": 0 if col != "c3" else 512}))
     with pytest.raises(LadderError, match="not 0"):
         lad.load(m, r2, labels)
+
+
+def test_sign_p_is_the_exact_two_sided_binomial():
+    assert lad.sign_p(0, 7) == pytest.approx(2 / 128)
+    assert lad.sign_p(1, 7) == pytest.approx(2 * 8 / 128)       # 0.125, /challenge-pr on #149
+    assert lad.sign_p(7, 7) == lad.sign_p(0, 7)
+    assert lad.sign_p(3, 6) == 1.0 and lad.sign_p(0, 0) == 1.0
