@@ -847,6 +847,14 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-05, Phase 10 R3: the author found that A0's flip was two tokens, then read the
+  definition's leftover corrected gap as "a residual that persists, mostly on learned groups".
+  The mask correction divides out uniform attention only, and the definition's members sit
+  earlier than the rest, so a trained model's recency is left in the "corrected" gap: within
+  position bins it is gone from 32000, and the learned groups' +0.18 goes to −0.05.
+  `/challenge-pr` on #148 caught it. Rule: a "corrected" statistic is corrected only for the
+  baseline it divides by; when the populations differ in the corrected axis (position bias ≠ 0),
+  compare them inside bins of it before reading a residual (`status-10.md` §1.17).
 - 2026-10-05, Phase 10 R2: the author read F1's labels going from "negative" (c0) to "none"
   (c3) at 1000–54000 as "the late tail goes". The label is a p-value and c3's records hold a
   fifth of c0's members (median 50 against 252); the effect sizes were the same (−0.02 to −0.13

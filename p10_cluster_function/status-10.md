@@ -27,7 +27,7 @@
   - The re-read's label source (R0, an instrument, nothing re-read yet): 1d's working definition and its ladder (c0 → c3, two arms) at all 18 checkpoints on the 7 v1 passages, every P = 0 pass ≤ 2.9e-7 from Stage 0, nothing refused, reproducing the definition's 62 / 810 records exactly, member set by member set. A float64 refit of the stored partition (c0f) is identical to it in 2,924 of 3,024 records. Steps 0–32 have too few readable c3 records and read on c2, so the c2 / c3 switch falls inside F1's 32–512 window — `p10_cluster_function/status-10.md` §1.14, `p10_cluster_function/design-10.md`
   - R1, the token-composition (unique tokens), co-membership and lexical-carry rows re-read on the definition, c0 reproducing the published records exactly. No row holds at every cell; the quoted class claims keep their labels where they were quoted (rank does nothing trained; class co-membership +0.21; step 512's class effect +0.15 beyond a matched lexical cluster, ~0 trained at L12), and class against trash collection comes earlier, from step 512 rather than 16000, which flips its sign at 512. c0's 64–512 dip in the embedding lifts is the old partition's. Adjacency's Δ flips because stable step-0 groups are runs of neighbours (the c2 baseline) while c3's raw trained lift is larger than c0's. On the rules' own cells 16 / 18, 170 / 255 and 16 / 18 labels agree with c0 — `p10_cluster_function/status-10.md` §1.15
   - R2, F1 and F12's gap re-read on the definition, c0 reproducing the published records at every unit. F1 does not hold by its per-step rule (9 of 18 steps): the strong 64–512 difference is there on c3, and the late tail keeps its size but drops to none on c3's smaller member sets; c0 under the rule stays negative to 54000, so the published window was a magnitude reading. F12's gap reads "below" at every step on c3 because its baseline, c2's step 0, is the densest population on the axis (+1.32); c3's raw sign keeps c0's shape (below 32–256, above from 4000) and its own step 0 shows no density confound (−0.15, 15 records). Every changed label first changes at the token rules or the centred frame. The parked window (F1 negative with F12 below) is 64–512 on the primary — `p10_cluster_function/status-10.md` §1.16
-  - R3, A0 re-read under T4 (the sink and massive-token columns dropped, rows renormalised), c0 reproducing the published record at every unit. A0 does not hold. Its raw flip is position 0 and one massive token per prompt: out of the means on the old labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from step 16000, and the late residual goes with them; T4's renormalisation adds little. Under T4 no column has a flip; on the definition a separate residual (rest above members by +0.07 to +0.12 beyond the mask) appears at 1000–2000 and persists, near its placed 0.05 floor, never significant per unit, mostly on learned groups — `p10_cluster_function/status-10.md` §1.17
+  - R3, A0 re-read under T4 (the sink and massive-token columns dropped, rows renormalised), c0 reproducing the published record at every unit. A0 does not hold. Its raw flip is position 0 and one massive token per prompt: out of the means on the old labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from step 16000, and the late residual goes with them; T4's renormalisation adds little. Under T4 the sweep-pooled raw gap is ≤ 0 in every column, and per step the mask explains under 0.4 of any flip from 1000 on. On the definition, members against the rest at the same positions leave a residual window, +0.05 to +0.09 at 2000–16000, gone from 32000 (the pooled late gap is position); never significant per unit — `p10_cluster_function/status-10.md` §1.17
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -54,7 +54,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `c902c0f1c7`
+- **Reviewed:** 2026-10-05 · body `e3baf79c15`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1200,7 +1200,7 @@ data/analysis`. Tests: `tests/test_p10_r2_ladder.py`, `tests/test_p10_transport.
 
 ---
 
-### 1.17 The re-read, R3: A0 under T4 down the ladder — **A0 does not hold: the raw flip (§1.1's "~94 % mask") is two tokens per prompt, position 0 and one massive token. Out of the means on c0's own labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from 16000 on; c0's late "learned residual" goes with them. Under T4 no column has a flip to apportion; on the definition a separate, smaller residual (+0.07 to +0.12) appears at 1000–2000 and persists, near the 0.05 floor and never significant per unit**
+### 1.17 The re-read, R3: A0 under T4 down the ladder — **A0 does not hold: the raw flip (§1.1's "~94 % mask") is two tokens per prompt, position 0 and one massive token. Out of the means on c0's own labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from 16000 on; c0's late "learned residual" goes with them. Under T4 the sweep-pooled raw gap is ≤ 0 in every column, and where a step has a flip the mask explains under 0.4 of it from 1000 on. On the definition a residual beyond the mask and beyond position (members against the rest in the same position bins) is a window, +0.05 to +0.09 at 2000–16000, gone from 32000; never significant per unit**
 
 **What ran** (`design-10.md` "Order" R3). `p10_attention_baseline.py --labels <R0 source>` reads
 all 12 columns on one load of each run's attention (`--old-partition` reads the stored labels; one
@@ -1270,16 +1270,43 @@ renormalisation changes little beside taking them out.
 Per-step residual labels: 13 of 18 agree with c1. The five that differ first change at c1c (512,
 1000: the centred frame), c2a (32000), c2 (54000) and c3 (143000).
 
-- **The flip.** On the definition there is none to apportion: c3's sweep raw gap is −0.06 and c2's
-  −0.48 (stable step-0 groups sit early, position bias −0.23, so the mask tilt alone hands members
-  more raw attention). §1.1's "~94 % mask" was a share of a gap that two tokens per prompt carried.
-- **The residual on the definition** is a different object from c0's: rest above members by +0.07
-  to +0.12 × layer average beyond the mask from 2000 on, against c0's sink-carried +0.10 to +0.15.
-  Its label sits 0.02–0.07 above the placed 0.05 floor, and the c2a–c2 columns flicker across it
-  after 4000 (none at 16000 on c2a / c2b, at 143000 on c2). Not significant per unit: median p
-  0.28–0.39 from 2000, merged E 2.7 over c3's sweep (2.2 on c0; rejection at 20).
-- **Arms** agree with c3 at all 12 steps read on c3. **Learned at 143000:** corrected gap +0.18 on
-  learned groups (79 units), +0.04 on the rest (108): the residual sits on learned groups.
+- **The flip.** The share label reads the sweep pooled over training (as §1.1 did), which
+  `aggregate`'s own docstring warns against; per step there are flips (*corrected after
+  `/challenge-pr` on #148, finding 1*; the first version said "no column has a flip"). c1's raw gap
+  is positive at 9 of 18 steps: the mask explains 0.98–1.00 of it at 8–32, 0.75–0.88 at 64–512,
+  0.22 at 2000 (+0.50 raw), and less than none at 1000 and 4000. The primary's is positive only at
+  1000–4000 (+0.02 to +0.11; shares 0.36 or below), and its pooled −0.48 is mostly c2's steps 0–32
+  (−1.18; stable step-0 groups sit early, position bias −0.23). c3 alone is positive at 0–16
+  (+0.05 to +0.21, share ≥ 0.96, on too few records to be primary). §1.1's "~94 % mask" was a share
+  of a gap that two tokens per prompt carried from 4000.
+- **The residual on the definition is mostly position after 16000** (*added after `/challenge-pr`
+  on #148, finding 2*). The mask correction divides out uniform attention only, so a trained
+  model's own position profile stays in it, and from 8000 the definition's members get *more* raw
+  attention than the rest while sitting earlier. `tools/run/p10_r3_position_bins.py` (sizes only)
+  reads the corrected gap inside 8 equal-count position bins of the domain (placed), members
+  against the rest at the same positions (`position_bins.json`, md5 `c3891a72`):
+
+  | corrected gap, pooled / binned | 2000 | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+  |---|---|---|---|---|---|---|---|
+  | c0 | +0.02 / +0.02 | +0.15 / +0.16 | +0.12 / +0.12 | +0.13 / +0.13 | +0.13 / +0.12 | +0.12 / +0.11 | +0.11 / +0.09 |
+  | c1 | +0.39 / +0.32 | +0.24 / +0.14 | +0.22 / +0.07 | +0.09 / −0.09 | +0.03 / −0.16 | −0.01 / −0.20 | −0.05 / −0.21 |
+  | c3 | +0.07 / +0.09 | +0.08 / +0.09 | +0.12 / +0.06 | +0.10 / +0.05 | +0.12 / +0.00 | +0.10 / −0.00 | +0.11 / +0.01 |
+
+  On c3 the binned residual is a window, +0.05 to +0.09 at 2000–16000, ≤ 0.014 from 32000: by the
+  rule on binned values, residual appears 1000–2000 and does **not** persist, at floors 0.03, 0.05
+  and 0.075. c0's residual is not position (binned ≈ pooled); it is the two tokens (split table
+  above). c1's large 1000–2000 gap (+0.39 at 2000, not position) is shipped HDBSCAN on the
+  uncentred kept tokens; its label drops at 1000 in c1c, the frame column (c2 pooled: +0.03 / +0.08 at 1000 / 2000).
+  Not significant per unit: median p 0.28–0.39 from 2000, merged E 2.7 over c3's sweep (2.2 on
+  c0; rejection at 20), and the permutation null does not hold position either.
+- **The 0.05 floor** (*finding 3*): "A0 does not hold" is the same at every floor from 0.024 to
+  0.105 (where c0 reproduces the published labels). The primary's pooled "appears" moves with it
+  (1000–2000 up to 0.06, 2000–4000 at 0.075, 4000–8000 from 0.09), so that interval is not a
+  finding; the binned one above is steadier.
+- **Arms** agree with c3 at all 12 steps read on c3. **Learned at 143000:** pooled corrected gap
+  +0.18 on learned groups (79 units), +0.04 on the rest (108), but binned −0.05 and +0.01: the
+  learned groups' gap is their position (the first version read it as "the residual sits on
+  learned groups").
 
 **Caveats.** Tier 1; the per-unit p is a permutation p and the merge is the mean. 7 prompts, one
 seed. The 0.05 floor and the 0.9 bar are placed. The split table is sizes only, on c0's labels,
@@ -1288,7 +1315,8 @@ of where a trained network sends the sink's mass. **Re-run:**
 `data/p10/reread_r3_2026-10-05/run_r3.sh` from the worktree root, then `python
 tools/run/p10_r3_ladder.py --record <out>/a0.json --labels <R0 labels> --published
 data/analysis/p10_row_a0.json` and `python tools/run/p10_r3_sink_split.py --labels <R0 labels>
---out <out>/sink_split.json --jobs 14`. Tests: `tests/test_p10_attention_baseline.py`,
+--out <out>/sink_split.json --jobs 14`, and `p10_r3_position_bins.py` the same way
+(`<out>/position_bins.json`). Tests: `tests/test_p10_attention_baseline.py`,
 `tests/test_p10_r3_ladder.py`, `tests/test_core_parking.py`.
 
 ---

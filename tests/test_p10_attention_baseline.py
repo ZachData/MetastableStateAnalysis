@@ -428,3 +428,17 @@ def test_sink_split_all_arm_is_the_published_gap_and_drop_removes_a_sink(tmp_pat
     assert rows[0]["all"] == pytest.approx([want["raw_noise"] - want["raw_clustered"],
                                             want["corrected_noise"] - want["corrected_clustered"]], abs=2e-4)
     assert rows[0]["drop"][0] < rows[0]["all"][0] / 3
+
+
+def test_position_bins_remove_a_gap_that_is_position_alone():
+    """`p10_r3_position_bins.gaps`: a value that rises with position and members placed early
+    give a pooled gap; within position bins the gap is ~0."""
+    from tools.run.p10_r3_position_bins import gaps
+    from tools.run.p10_token_composition import OUTSIDE
+    n = 200
+    v = 1.0 + np.arange(n) / n
+    rng = np.random.default_rng(1)
+    lab = np.where(rng.random(n) < 0.7 - 0.5 * np.arange(n) / n, 0, -1)
+    lab[0] = OUTSIDE
+    pooled, binned = gaps(v, lab, n_bins=20)
+    assert pooled > 0.05 and abs(binned) < 0.01
