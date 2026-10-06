@@ -26,7 +26,8 @@
   - Lemma C.1's saturation is a formula for Phase 1's 50–55 carrying capacity — `p10_cluster_function/math-10.md` §5.4, §3.53
   - The re-read's label source (R0, an instrument, nothing re-read yet): 1d's working definition and its ladder (c0 → c3, two arms) at all 18 checkpoints on the 7 v1 passages, every P = 0 pass ≤ 2.9e-7 from Stage 0, nothing refused, reproducing the definition's 62 / 810 records exactly, member set by member set. A float64 refit of the stored partition (c0f) is identical to it in 2,924 of 3,024 records. Steps 0–32 have too few readable c3 records and read on c2, so the c2 / c3 switch falls inside F1's 32–512 window — `p10_cluster_function/status-10.md` §1.14, `p10_cluster_function/design-10.md`
   - R1, the token-composition (unique tokens), co-membership and lexical-carry rows re-read on the definition, c0 reproducing the published records exactly. No row holds at every cell; the quoted class claims keep their labels where they were quoted (rank does nothing trained; class co-membership +0.21; step 512's class effect +0.15 beyond a matched lexical cluster, ~0 trained at L12), and class against trash collection comes earlier, from step 512 rather than 16000, which flips its sign at 512. c0's 64–512 dip in the embedding lifts is the old partition's. Adjacency's Δ flips because stable step-0 groups are runs of neighbours (the c2 baseline) while c3's raw trained lift is larger than c0's. On the rules' own cells 16 / 18, 170 / 255 and 16 / 18 labels agree with c0 — `p10_cluster_function/status-10.md` §1.15
-  - R2, F1 and F12's gap re-read on the definition, c0 reproducing the published records at every unit. F1 does not hold by its per-step rule (9 of 18 steps): the strong 64–512 difference is there on c3, and the late tail keeps its size but drops to none on c3's smaller member sets; c0 under the rule stays negative to 54000, so the published window was a magnitude reading. F12's gap reads "below" at every step on c3 because its baseline, c2's step 0, is the densest population on the axis (+1.32); c3's raw sign keeps c0's shape (below 32–256, above from 4000) and its own step 0 shows no density confound (−0.15, 15 records). Every changed label first changes at the token rules or the centred frame. The parked window (F1 negative with F12 below) is 64–512 on the primary — `p10_cluster_function/status-10.md` §1.16
+  - R2, F1 and F12's gap re-read on the definition, c0 reproducing the published records at every unit. F1 does not hold by its per-step rule (9 of 18 steps): the strong 64–512 difference is there on c3, and the late tail keeps its size but drops to none on c3's smaller member sets; c0 under the rule stays negative to 54000, so the published window was a magnitude reading. F12's gap reads "below" at every step on c3 because its baseline, c2's step 0, is the densest population on the axis (+1.32); c3's raw sign keeps c0's shape (below 32–256, above from 4000) and its own step 0 shows no density confound (−0.15, 15 records). Every changed label first changes at the token rules or the centred frame. The parked window (F1 negative with F12 below) is 64–512 on the primary. F12's label is replaced by R2m (next line) — `p10_cluster_function/status-10.md` §1.16
+  - R2m, F12 against a matched control (each step's member set scored on step 0's activations at the same positions). On the definition, members are less dense than the same tokens were at init at 8–256 (every prompt at 8–128), as dense at 512–1000, and denser from 2000 (+0.12 to +0.27, 6–7 of 7 prompts; mostly the learned groups at 143000). c3's tokens were not dense at init (control −0.08 to +0.13 from 256 on), so R2's "below at every step" was c2's step-0 baseline. On the old partition the control is +0.09 to +0.35, part of the old step-0 density confound, and the crossover moves to 1000–2000. The parked window is 64–256 on the primary; labels agree with c0 at 14 of 17 steps. No per-step test; context and norm not controlled — `p10_cluster_function/status-10.md` §1.18
   - R3, A0 re-read under T4 (the sink and massive-token columns dropped, rows renormalised), c0 reproducing the published record at every unit. A0 does not hold. Its raw flip is position 0 and one massive token per prompt: out of the means on the old labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from step 16000, and the late residual goes with them; T4's renormalisation adds little. Under T4 the sweep-pooled raw gap is ≤ 0 in every column, and per step the mask explains under 0.4 of any flip from 1000 on. On the definition, members against the rest at the same positions leave a residual window, +0.05 to +0.09 at 2000–16000, gone from 32000 (the pooled late gap is position); never significant per unit — `p10_cluster_function/status-10.md` §1.17
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
@@ -43,7 +44,7 @@
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
   - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
-  - No norm-matched random twin per checkpoint, so F12's density confound and the parked window are argued, not controlled — `p10_cluster_function/status-10.md` §5
+  - No norm-matched random twin per checkpoint. F12's density confound is now controlled for tokens and positions (R2m), not for norm or the init's context — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §1.18
   - Is the class grouping computed early in training context, or a per-token feature from an early layer? A context-shuffle test would separate them. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.10, `p10_cluster_function/handoff-10.md` Parked
   - Does the pilot's 27-checkpoint "50–55" `max_alive` also fall at layer 0? And what sets `repeated_tokens`' ~50 deep-layer clusters? (Its stored partitions are mostly float32 rounding at steps 32 / 512; float64 gives 24–30 clusters at L6–18, so re-ask after the fix) — `p10_cluster_function/status-10.md` §1.8, `p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
@@ -54,7 +55,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `e3baf79c15`
+- **Reviewed:** 2026-10-05 · body `d0b140480c`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1180,8 +1181,8 @@ definition's own filters (c2a–c3).
   p ≤ 0.043), at the rest at 512–2000, above from 4000 (+0.17 to +0.36); the β = 1, 2, 4 means differ by ≤ 0.16 (most at step 32).
   c3's own step 0 is −0.15 (median p 0.19, 15 records, 1–2 prompts per layer): **on the definition
   the step-0 density confound is not visible** (§1.4's +0.465 was c0's), but 15 records are the
-  floor, "a count, not a baseline" (`design-10.md`). For the user: `STATE.md` Blocked 25, where `/challenge-pr` on #147 (finding 3) added the
-  matched control: c3's members at each step, scored on step 0's activations at the same positions.
+  floor, "a count, not a baseline" (`design-10.md`). *Replaced by §1.18* (Blocked 25 (iv), user
+  2026-10-05): against a matched control the definition reads below at 8–256, above from 2000.
 - **§1.5: parked, not pinned, at 64–512 on the primary.** With F12 below at every step on c3, the
   parked window is F1's, so it inherits F1's power caveat. On the raw sign instead (members below the rest in Z by more
   than 0.05), it is 32–256 on c3: §1.5's 32–64 holds on both readings, and the raw window ends at
@@ -1318,6 +1319,74 @@ data/analysis/p10_row_a0.json` and `python tools/run/p10_r3_sink_split.py --labe
 --out <out>/sink_split.json --jobs 14`, and `p10_r3_position_bins.py` the same way
 (`<out>/position_bins.json`). Tests: `tests/test_p10_attention_baseline.py`,
 `tests/test_p10_r3_ladder.py`, `tests/test_core_parking.py`.
+
+### 1.18 The re-read, R2m: F12 against a matched control — **on the definition, members are less dense than the same tokens were at init at 8–256, as dense at 512–1000, and denser from 2000 (+0.12 to +0.27, 6–7 of 7 prompts); c3's members were not dense at init (control −0.08 to +0.13 from 256 on), so R2's "below at every step" was c2's step-0 baseline; §1.5's parked window on the primary is 64–256**
+
+**What ran** (`design-10.md` "R2m", rule fixed before any control output was read; `STATE.md`
+Blocked 25 (iv), user 2026-10-05). `p10_partition_function.py --activations-step 0` scores
+each column's labels at step s on step 0's activations of the same prompt (`matched_runs`
+refuses unless `tokens.txt` matches); everything else is R2's (statistic, β grid, unit
+generator, domain). `tools/run/p10_r2m_ladder.py` pairs every R2 unit with its control
+(refuses an unpaired unit, and any Δ ≠ 0 at step 0: none), labels the mean matched Δ below / as /
+above control at ±0.05, with the raw sign (Blocked 25 (ii)) and the control beside; §1.5 = R2's F1
+negative ∧ F12m below.
+
+**Inputs.** The R0 label source (`summary.json` md5 `d9d41708`); R2's records
+(`data/p10/reread_r2_2026-10-05/`, unchanged); 7 v1 passages × 18 steps; 12 columns. Output
+`data/p10/reread_r2m_2026-10-05/` (12 records + `ladder.json` md5 `84c29902`, 12 MB), 11 min on
+11 processes at one BLAS thread each. Code at this PR (base `f8672a8`).
+
+**Per step** (Δ = trained − control, mean over units; prompts with mean Δ < 0, of 7):
+
+| step | c0 Δ (trained, control) | primary | primary Δ (trained, control) | prompts Δ<0 | label |
+|---|---|---|---|---|---|
+| 0–4 | 0.00 (+0.35) | c2 | ≤ 0.01 (+1.32) | — | as |
+| 8 | +0.07 (+0.35, +0.28) | c2 | −0.22 (+1.14, +1.36) | 7 | below |
+| 16 | +0.12 (+0.33, +0.20) | c2 | −0.88 (+0.44, +1.33) | 7 | below |
+| 32 | −0.57 (−0.35, +0.22) | c2 | −0.99 (−0.10, +0.89) | 7 | below |
+| 64 | −0.64 (−0.38, +0.25) | c3 | −0.84 (−0.75, +0.10) | 7 | below |
+| 128 | −0.39 (−0.16, +0.23) | c3 | −0.44 (−0.38, +0.06) | 7 | below |
+| 256 | −0.23 (−0.05, +0.18) | c3 | −0.19 (−0.27, −0.08) | 6 | below |
+| 512 | −0.09 (+0.08, +0.17) | c3 | +0.04 (−0.01, −0.06) | 1 | as |
+| 1000 | +0.01 (+0.25, +0.23) | c3 | +0.01 (−0.03, −0.03) | 4 | as |
+| 2000 | +0.06 (+0.25, +0.19) | c3 | +0.12 (+0.06, −0.05) | 1 | above |
+| 4000 | +0.13 (+0.21, +0.09) | c3 | +0.18 (+0.17, −0.02) | 0 | above |
+| 16000 | +0.41 (+0.54, +0.13) | c3 | +0.27 (+0.31, +0.04) | 0 | above |
+| 143000 | +0.46 (+0.59, +0.12) | c3 | +0.18 (+0.24, +0.06) | 1 | above |
+
+| window (steps whose label is…) | c0 | c2 | c3 | primary |
+|---|---|---|---|---|
+| F12m below control | 32–512 | 8–256 | 32–256 | 8–256 |
+| F12 raw below the rest | 32–256 | 32, 64, 256 | 0–256 (thin at 0–32) | 32–256 |
+| §1.5 parked | 32–512 | 64–256 | 32–256 | 64–256 |
+
+Labels that agree with c0 (primary vs c0): **F12m 14 of 17, raw sign 15 of 17, §1.5 15 of 17.**
+F12m differs at 8 and 16 (c0 above, c2 below; changes at c1c, the centred frame) and at 512 (c0
+below, c3 as; settles at c2); §1.5 differs at 32 (c2's F1 is none there) and 512.
+
+- **The density confound, on the definition, is the baseline's, not the tokens'.** The control
+  (members' tokens on init activations) is +0.89 to +1.36 on c2 at 0–32, where c2's members are
+  step-0-like groups, but **−0.08 to +0.13 on c3 from 256 on** (median control p 0.17–0.25; +0.10
+  and +0.06 at 64–128, p 0.35), so
+  the tokens training puts in c3 were not denser at init. c0's control is +0.09 to +0.35 at every
+  step: part of the old partition's raw sign is token-level density present at init (§1.4).
+- **The late "above" is training's.** From 2000, c3's members are denser than the same tokens at
+  init by +0.12 to +0.27, in 6–7 of 7 prompts at every step; c0's crossover moves from 8000–16000
+  (§1.4, against its step-0 baseline) to 1000–2000.
+- **Learned at 143000:** Δ +0.37 (learned) against +0.07 (not), so the late excess is mostly the
+  learned groups'.
+- **Arms:** c3_r2 identical to c3 on every row; c3_c4 differs at 512 (below) and 1000 (above),
+  and is parked at 512.
+
+**Caveats.** Tier 1; no per-step test on Δ: the prompt count is the only spread quoted, and the
+units are not independent. c3 at 0–32 is thin (10–34 readable records), so the primary there is
+c2, whose members are a different population (step-0-like stable groups); the "below" at 8–32 is
+c2's. The control holds tokens and positions, not context: Z at init is computed from init
+activations everywhere, so a Δ is training's change in those positions' density, not in their
+neighbours'. No norm-matched random twin; one init. **Re-run:**
+`data/p10/reread_r2m_2026-10-05/run_r2m.sh` from the worktree root, then `python
+tools/run/p10_r2m_ladder.py --dir <out> --r2 <R2 out> --labels <R0 labels>`. Tests:
+`tests/test_p10_r2m_ladder.py`, `tests/test_p10_partition_function.py`.
 
 ---
 

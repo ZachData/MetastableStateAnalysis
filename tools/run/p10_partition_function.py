@@ -88,8 +88,14 @@ counted. Each unit draws from its own generator (`unit_rng`), so a unit's p no
 longer depends on how many units ran before it (`status-10.md` §1.13). The
 reading (Δ against c2's step 0, below / as / above) is `p10_r2_ladder.py`'s.
 
+``--activations-step 0`` is R2m's matched control (`design-10.md` "R2m"): each step's labels
+scored on step 0's activations of the same prompt (``matched_runs`` refuses unless the tokens
+match), so a step's statistic minus its control asks whether those tokens already differed at
+init. The reading is `p10_r2m_ladder.py`'s.
+
 Run:
     python tools/run/p10_partition_function.py --labels <dir> --column c3 --out <file>
+    python tools/run/p10_partition_function.py --labels <dir> --column c3 --activations-step 0 --out <file>
     python tools/run/p10_partition_function.py --old-partition --out data/analysis/p10_f12_z.json
 """
 import argparse
@@ -337,9 +343,28 @@ def reread_args(ap: argparse.ArgumentParser) -> argparse.Namespace:
     return args
 
 
-def reread(args, measure, context: str) -> dict:
+def matched_runs(labels_dir, runs: dict, acts_step: int) -> dict:
+    """``{(step, prompt): run dir at acts_step}`` for the matched control (`design-10.md`
+    "R2m"): the same prompt's run at ``acts_step``, refused unless its ``tokens.txt`` equals
+    the labelled run's, so the labels index the same tokens at the same positions."""
+    f = Path(labels_dir) / f"step{acts_step}.json"   # read directly: p10_label_source needs hdbscan
+    if not f.exists():
+        raise SystemExit(f"refusing: no label source for step {acts_step} in {labels_dir}")
+    ctrl = {p: Path(x["stage0_run"]) for p, x in json.loads(f.read_text())["prompts"].items()}
+    out = {}
+    for (s, prompt), run in runs.items():
+        if prompt not in ctrl:
+            raise SystemExit(f"refusing: no step-{acts_step} run for {prompt}")
+        if (Path(run) / "tokens.txt").read_bytes() != (ctrl[prompt] / "tokens.txt").read_bytes():
+            raise SystemExit(f"refusing: {run} and {ctrl[prompt]} hold different tokens")
+        out[(s, prompt)] = ctrl[prompt]
+    return out
+
+
+def reread(args, measure, context: str, acts_step: int = None) -> dict:
     """Run ``measure(run_dir, labels, step, prompt, seed) -> rows`` over one column, per
-    (step, prompt), in ``args.jobs`` processes; returns the record's common part."""
+    (step, prompt), in ``args.jobs`` processes; returns the record's common part.
+    ``acts_step``: score each step's labels on that step's activations (`matched_runs`)."""
     from concurrent.futures import ProcessPoolExecutor
     from tools.run.p10_label_source import LEARNED_SPLIT, LEARNED_STEP, MODELS, reader_input
     src = reader_input(args.labels, args.column)
@@ -353,7 +378,8 @@ def reread(args, measure, context: str) -> dict:
     print(f"column {args.column}: {len(src['runs'])} runs, readable records per step "
           + " ".join(f"{s}:{r[1]}/{r[0]}" for s, r in src["records"].items()), flush=True)
     keys = [k for k, lab in sorted(src["labels"].items()) if lab]
-    jobs = [(src["runs"][k], src["labels"][k], k[0], k[1], args.seed) for k in keys]
+    acts = src["runs"] if acts_step is None else matched_runs(args.labels, src["runs"], acts_step)
+    jobs = [(acts[k], src["labels"][k], k[0], k[1], args.seed) for k in keys]
     if args.jobs > 1:
         with ProcessPoolExecutor(args.jobs) as ex:
             out = list(ex.map(measure, *zip(*jobs)))
@@ -361,9 +387,14 @@ def reread(args, measure, context: str) -> dict:
         out = [measure(*j) for j in jobs]
     runs = dict(zip(keys, out))
     inputs = sorted((f"{s}|{k}", str(p)) for (s, k), p in src["runs"].items())
-    return {"label_source": src["meta"], "column": args.column,
+    extra, hashed = {}, inputs
+    if acts_step is not None:
+        extra = {"activations_step": acts_step,
+                 "activations_inputs": sorted((f"{s}|{k}", str(p)) for (s, k), p in acts.items())}
+        hashed = [inputs, extra["activations_inputs"]]
+    return {"label_source": src["meta"], "column": args.column, **extra,
             "records_readable": {s: {"n": r[0], "readable": r[1]} for s, r in src["records"].items()},
-            "inputs_sha256": hashlib.sha256(json.dumps(inputs).encode()).hexdigest()[:12],
+            "inputs_sha256": hashlib.sha256(json.dumps(hashed).encode()).hexdigest()[:12],
             "inputs": inputs, "seed": args.seed, "n_permutations": N_PERMUTATIONS,
             "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "runs": {f"{s}|{k}": rows for (s, k), rows in runs.items()}}
@@ -440,12 +471,20 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(DATA / "analysis" / "p10_f12_z.json"))
+    ap.add_argument("--activations-step", type=int, default=None,
+                    help="re-read only: score each step's labels on this step's activations "
+                         "(R2m's matched control: 0)")
     add_holdout_args(ap)
     args = reread_args(ap)
+    if args.activations_step is not None and not args.labels:
+        ap.error("--activations-step reads a label-source column: add --labels/--column")
     if args.labels:
-        rec = reread(args, reread_run, "p10_partition_function")
-        record = {"schema": "p10_r2_f12/1",
-                  "row": "F12 re-read on one ladder column: members − rest in corrected log Z",
+        rec = reread(args, reread_run, "p10_partition_function", acts_step=args.activations_step)
+        matched = args.activations_step is not None
+        record = {"schema": "p10_r2m_f12/1" if matched else "p10_r2_f12/1",
+                  "row": ("F12 matched control: each step's labels on step "
+                          f"{args.activations_step}'s activations" if matched else
+                          "F12 re-read on one ladder column: members − rest in corrected log Z"),
                   "tier": "1 (exploratory, unregistered)", "betas": BETAS,
                   "statistic": "standardised_difference of corrected log Z (Z over every stored position), "
                                "members against the kept tokens in no group; two-sided permutation p "

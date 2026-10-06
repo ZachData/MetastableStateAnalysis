@@ -111,6 +111,10 @@ world moves, nobody updates the line, and the next session acts on it.
   was in a PR and unit 1 next, when unit 1 had merged. Caught by Start step 1.
   **Sixth, 2026-10-02 (after #132):** 15 commits behind (#130–#132); the hook's `STATE.md`
   said unit 1 was next. Caught by Start step 1; the session worked from `origin/main`.
+  **Again 2026-10-05, three sessions running (after #146, #147, #148):** one merge behind
+  each time, so the hook printed the previous unit's in-PR `STATE.md`. Caught by Start step 1
+  each time. Every session fast-forwards the main tree at its start, never at its end, so the
+  next one always lags by the merge that came after. The hook fix is still the user's.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed
