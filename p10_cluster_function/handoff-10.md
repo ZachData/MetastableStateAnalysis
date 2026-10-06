@@ -98,14 +98,22 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > output `data/p10/reread_r6w_2026-10-06/r6w.json`. The Parked matcher question is answered for
 > 512 → 143000: replacement does not carry the embedding-measured drifts (entrants sit where the
 > persisting groups do); the persisting groups move with the whole population, which a layer-0
-> frame shift would also give. `/challenge-pr` on #152: all five findings taken. **Next, for the user:** Blocked 26 (c), (d), (e′), or Parked (R6w) below.
-> *Parked (R6w):* **score every step's groups in one fixed layer 0** (step 512's and 143000's) to
-> split within into members against frame as terms, not per-link means. Why: §1.21's identical
-> links move as much as changed ones, which suggests the embedding comes to group what the depth
-> groups held; the per-link means give no share. Cost: one reader pass over stored activations
-> (the frozen-frame `emb_pct` already does it for 143000), no forward pass. Could change: whether
-> §1.10's "trained, mostly what the embedding groups" reads as the groups becoming lexical or the
-> embedding becoming the groups.
+> frame shift would also give. `/challenge-pr` on #152: all five findings taken. Merged (#152).
+>
+> **R6f done, 2026-10-06 (`status-10.md` §1.22; its title is the summary).** Blocked 26 (b″),
+> the user's (was Parked (R6w) here): every step's groups re-scored in step 512's and step
+> 143000's layer 0, so each R6w term splits exactly into members (fixed frame) and frame (the
+> rest); rule in `design-10.md` "R6f". `tools/run/p10_r6f_frame.py`; output
+> `data/p10/reread_r6f_2026-10-06/r6f.json`. Answer: **frame** for `emb_pct_own` and
+> `emb_given_class` (pooled and 5–7 of 7 prompts): the embedding moves under the groups, mostly
+> 512 → 2000; CGE40 − kNN40 splits by prompt, so the lexical question stays open.
+> `/challenge-pr` on #153: all five findings taken. **Next, for the user:** Blocked 26 (c)
+> (recommended), (d), (e′).
+> *Parked (R6f):* **the embedding's move at 512 → 2000 against the n-gram stage.** Why: §1.22
+> says the token embedding came to group what depth groups held; whether that is gradient from
+> the depth groups or unigram / bigram statistics is `design-10.md`'s Parked n-gram control.
+> Cost: as that control. Could change: whether "the embedding came to hold the groups" says
+> anything about the groups.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
