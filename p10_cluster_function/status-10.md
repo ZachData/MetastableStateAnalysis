@@ -29,6 +29,7 @@
   - R2, F1 and F12's gap re-read on the definition, c0 reproducing the published records at every unit. F1 does not hold by its per-step rule (9 of 18 steps): the strong 64–512 difference is there on c3, and the late tail keeps its size but drops to none on c3's smaller member sets; c0 under the rule stays negative to 54000, so the published window was a magnitude reading. F12's gap reads "below" at every step on c3 because its baseline, c2's step 0, is the densest population on the axis (+1.32); c3's raw sign keeps c0's shape (below 32–256, above from 4000) and its own step 0 shows no density confound (−0.15, 15 records). Every changed label first changes at the token rules or the centred frame. The parked window (F1 negative with F12 below) is 64–512 on the primary. F12's label is replaced by R2m (next line) — `p10_cluster_function/status-10.md` §1.16
   - R2m, F12 against a matched control (each step's member set scored on step 0's activations at the same positions). On the definition (c3), members are less dense than the same tokens were at init at 32–256 (every prompt at 32–128), as dense at 512–1000, and denser from 2000 (+0.12 to +0.27, 6–7 of 7 prompts, sign p 0.016–0.125; mostly the learned groups at 143000); c2, the primary at 8–32, reads below from 8. c3's tokens were not dense at init (control −0.08 to +0.13 from 256 on), so R2's "below at every step" was c2's step-0 baseline. On the old partition the control is +0.09 to +0.35, part of the old step-0 density confound; its crossover lies between 1000–2000 and 8000–16000 (the control and the step-0 baseline bracket the selection effect). The parked window is 64–256 on the primary; c3 agrees with c0 at 16 of 17 steps (the primary at 14, two of them c2's). Selection, context and norm not controlled — `p10_cluster_function/status-10.md` §1.18
   - R3, A0 re-read under T4 (the sink and massive-token columns dropped, rows renormalised), c0 reproducing the published record at every unit. A0 does not hold. Its raw flip is position 0 and one massive token per prompt: out of the means on the old labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from step 16000, and the late residual goes with them; T4's renormalisation adds little. Under T4 the sweep-pooled raw gap is ≤ 0 in every column, and per step the mask explains under 0.4 of any flip from 1000 on. On the definition, members against the rest at the same positions leave a residual window, +0.05 to +0.09 at 2000–16000, gone from 32000 (the pooled late gap is position); never significant per unit — `p10_cluster_function/status-10.md` §1.17
+  - R5c, 5c's flip on `gpt2-large` with the sink out (stored runs, 21 prompts, trained and random, 5c's partition). It does not survive. With position 0 in, random weights give the same raw gap as trained (+1.52 against +1.59), all causal mask, so the flip was never trained-specific on this random arm. Out of the means, trained's raw gap is −0.03 (7 of 21 prompts positive). The trained-only gap beyond the mask (+0.23, 16 of 21) is position 0. Position 0 is the only T1–T2 token and is unclustered in every trained unit. ALBERT not read — `p10_cluster_function/status-10.md` §1.19
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -38,7 +39,7 @@
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
   - `handoff-10.md` §1.1's reading that neighbourhoods go "lexical → contextual": on Stage 0's v1 runs they go from repeats to repeats plus embedding-similar tokens — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
-- **Depends on:** 1@30c0d54cc5, 5c@e75b33ae46, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
+- **Depends on:** 1@30c0d54cc5, 5c@86e10133ba, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
 - **Feeds:** 9
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
@@ -55,7 +56,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `524eca1e31`
+- **Reviewed:** 2026-10-05 · body `d587c28b2a`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -177,7 +178,8 @@ v1 dirs beside the Phase 1 sweep (handoff Parked).
 
 *Re-read 2026-10-05 (§1.17): the step-0 reading stands; from step 4000 the flip and the residual
 below are position 0 and one massive token per prompt in the unclustered population. Out of the
-means, the raw gap reverses from 16000 and the residual goes.*
+means, the raw gap reverses from 16000 and the residual goes. On `gpt2-large` (§1.19, R5c) the
+flip does not survive the sink either, and its random arm already has it in full.*
 
 152 directories, **3 646 layer-units**. `math-10.md` §1's content-free baseline
 divided out per layer, with the partition/attention pairing matching
@@ -1405,6 +1407,58 @@ neighbours'. No norm-matched random twin; one init. **Re-run:**
 tools/run/p10_r2m_ladder.py --dir <out> --r2 <R2 out> --labels <R0 labels>`. Tests:
 `tests/test_p10_r2m_ladder.py`, `tests/test_p10_partition_function.py` (incl. that step s's
 labels are scored on step 0's run, *after `/challenge-pr` on #149, finding 4*).
+
+### 1.19 R5c: 5c's flip on `gpt2-large` with the sink out — **does not survive. On this random arm it was never trained-specific: with position 0 in, random weights give the same raw gap (+1.52 against trained +1.59; trained above random in 11 of 21 prompts). With position 0 out of the means, trained's raw gap is −0.03 (7 of 21 positive) and random's stays +1.44, all of it causal mask. The one trained-specific part, the gap beyond the mask (+0.23, 16 of 21), is position 0: out, −0.02 (9 of 21)**
+
+**What ran** (`design-10.md` "R5c", rule fixed before any output was read; `STATE.md` Blocked
+26 (e), user 2026-10-05). `tools/run/p10_r5c_gpt2_sink.py` applies R3's sink split
+(`p10_r3_sink_split.run`) to each stored run's own HDBSCAN labels (5c's partition), per
+(prompt, layer), with the prompt as the unit (mean over its 36 layers).
+
+**Inputs.** `gpt2-large` `data/phase12/2026-09-19_13-40-48/`, `gpt2-large-random`
+`…_15-47-26/` (CLAIM-C's arms; battery `1e47918ef77a` v1 plus the 12 v2 prompts, held out on
+410m only), 21 prompts × 36 layers = 756 units per arm, all readable; per-file sha256 in the
+output's `inputs`. The 9-prompt pair (10-51-00 / 11-52-10) is byte-identical on labels and tokens
+over its overlap. Output `data/p10/reread_r5c_2026-10-05/r5c.json` (md5 `b16433a1`, 388 KB),
+90 s on 6 processes. Code at this PR (base `a1f89b6`).
+
+**T1–T2 is position 0 alone, in every prompt.** At layers 2–32 trained position 0's norm is
+25.5–28.5× its layer median (min, median over prompts); no other position exceeds 2.03×, so the
+10× bar is not near a decision. In the random arm position 0 is 1.1–1.4×: there it is dropped by
+T1, not as a massive token. **Position 0 is unclustered in 756 of 756 trained units** (752 of 756
+random): the Parked question's answer is yes, the sink sat in 5c's unclustered population.
+
+| arm (gap = unclustered − clustered enrichment) | trained | random | trained > 0 | trained > random | reading |
+|---|---|---|---|---|---|
+| `all`, raw (5c as published) | +1.59 | +1.52 | 21 | 11 | does not survive |
+| `all`, mask-corrected | +0.23 | +0.00 | 16 (p 0.013) | 16 (p 0.013) | survives |
+| **`drop`, raw (primary)** | **−0.03** | **+1.44** | **7** | **4** | **does not survive** |
+| `drop`, mask-corrected | −0.02 | +0.00 | 9 | 9 | does not survive |
+| `drop+T4`, raw | +0.02 | +1.53 | 7 | 4 | does not survive |
+| `drop+T4`, mask-corrected | +0.01 | +0.00 | 11 | 11 | does not survive |
+
+(of 21 prompts; one-sided sign test.)
+
+- **5c's sign flip is not reproduced even with the sink in.** `all`'s enrichments: trained
+  unclustered 2.18×, clustered 0.61× (5c: ~1.6×, ~0.5×, same order); random 2.50× and 0.98×,
+  not "near parity or clustered-favored". Random's gap is entirely mask (corrected +0.004; +0.004
+  pooled, +0.004 in R3's position bins): its unclustered tokens sit early, where a causal mask
+  routes attention. 5c's random arm cannot have been this one (`gpt2-large-random` never loaded
+  before 2026-09-17, `core/config.py`), so its provenance is unknown and the disagreement is not
+  resolved here.
+- **What is trained-specific is the gap beyond the mask, and it is position 0.** With it in, the
+  corrected gap is +0.23 against random's +0.00 (16 of 21 both ways); out, −0.02 (pooled) and
+  −0.016 within position bins, 9 of 21. As on 410m (§1.17), where the trained part was position 0
+  and one massive token.
+- **By depth, `drop` raw (thirds of 12 layers):** trained +0.00, −0.09, +0.01; random +1.08,
+  +1.67, +1.57. No third holds a trained flip once position 0 is out.
+- **Does not control:** token frequency (`archive/p5c_unclustered/lit-5c.md` §1); a random arm
+  matched in norm (this one is HF's default re-init); ALBERT (no run survives; Parked in
+  `handoff-10.md`). One HDBSCAN partition (`min_cluster_size=2`), as 5c read: not 1d's
+  definition, which would need gpt2-large's own label source.
+
+Re-run: `python tools/run/p10_r5c_gpt2_sink.py --trained <…_13-40-48> --random <…_15-47-26>
+--out <file> --jobs 6` with `METS_DATA` set. Tests: `tests/test_p10_r5c_gpt2_sink.py`.
 
 ---
 

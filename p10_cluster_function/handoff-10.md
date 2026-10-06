@@ -69,6 +69,12 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > added after `/challenge-pr` on #149), e.g. more prompts or a paired permutation on prompt means.
 > Cost: one reader function, no new pass, but 7 prompts bound any prompt-level p. Could change:
 > whether 2000's and 143000's "above" (6 of 7, p 0.125) are distinguishable from 0.
+>
+> **R5c done, 2026-10-05 (`status-10.md` §1.19; its title is the summary).** Blocked 26 (e), the
+> user's, on `gpt2-large` only (stored CLAIM-C runs, no forward pass): 5c's flip does not survive
+> the sink, and its random arm already has the raw flip in full. `tools/run/p10_r5c_gpt2_sink.py`,
+> rule in `design-10.md` "R5c". Parked: ALBERT (below). **Next, for the user:** Blocked 26 (b)–(d),
+> or ALBERT.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
@@ -686,6 +692,14 @@ before it.
   cites; whether the sink sat in its unclustered population there is unchecked. Why: claim (a)'s
   reading. Cost: 5c's statistic with T1–T2 dropped, on its stored attention if any survives, else
   a forward pass. Could change: claim (a), and whether A1–A8 (`attention-10.md`) are worth running.
+  *Closed for `gpt2-large` by R5c (§1.19): does not survive; the sink was unclustered in every
+  trained unit.*
+- **5c's flip on ALBERT with the sink out** (split from the item above at R5c, 2026-10-05). No
+  ALBERT run survives on any drive. Why: 5c's "more extreme" flip (>2×) was ALBERT's. Cost: model
+  download (~45 MB) and Phase 1 forward passes for `albert-base-v2` and `-random` on the v1
+  prompts, plus a sink definition for a bidirectional model ([CLS], [SEP] and massive tokens;
+  the causal-mask correction does not apply), and the iteration count 5c read (unrecorded; the
+  pipeline runs 60). Could change: whether any trained-specific flip is left in 5c at all.
 - **The Stage 1 readers' float32 Grams depend on BLAS threads** (defect in a reader, found at
   R1, 2026-10-05). `layer0_gram` and `p10_lexical_carry`'s own Gram are float32; 1 vs 16
   threads moves entries by 5e-7, which flips exact ties (copies are bit-identical at layer 0)
