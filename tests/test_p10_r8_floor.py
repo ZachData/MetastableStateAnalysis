@@ -79,3 +79,46 @@ def test_pool_and_verdict():
     v = r.verdict({"step32": {"all": {"keep": 0.1}}, "step64": {"all": {"keep": 0.95}},
                    "step512": {"all": {"keep": 0.85}}})
     assert v["steps_below"] == ["step512"] and not v["c3_stands"] and v["min_keep"] == 0.85
+
+
+# ---------------------------------------------------------------- refusals (/challenge-pr on #155, finding 6)
+
+def _u1_and_labels():
+    """One layer, 40 kept offsets (no group is bulk), two stable groups that move intact under one preamble."""
+    from tools.run import p10_label_source as ls
+    kept = list(range(10, 50))
+    groups = [{"offsets": [10, 11, 12], "stable": True, "J0": 0.5, "opening": False},
+              {"offsets": [15, 16], "stable": True, "J0": 0.5, "opening": False}]
+    rec = {"groups": groups, "c_holds": False,
+           "conditions": {"a|50|eod": {"k": 2, "best_jaccard": [1.0, 1.0]}}}
+    u1 = {"kept_offsets": kept, "layers": [{"layer": 1, "frame": "centred", "mcs": {"2": rec}}]}
+    idx = [[0, 1, 2], [5, 6]]
+    cols = {"c2a": ls.labels_of(40, idx), "c2": ls.labels_of(40, idx), "c3": ls.labels_of(40, idx)}
+    return u1, {"layers": {"1": cols}}
+
+
+def test_read_prompt_reads_a_consistent_record():
+    u1, lp = _u1_and_labels()
+    out = r.read_prompt("step512", "p", u1, lp)
+    assert len(out["rows"]) == 2 and all(x["c3"] and x["c3c"] for x in out["rows"])
+
+
+def test_read_prompt_refuses_groups_that_are_not_c2a():
+    u1, lp = _u1_and_labels()
+    lp["layers"]["1"]["c2a"][3] = 0
+    with pytest.raises(r.FloorError, match="c2a"):
+        r.read_prompt("step512", "p", u1, lp)
+
+
+def test_read_prompt_refuses_a_c3_that_is_not_r0s():
+    u1, lp = _u1_and_labels()
+    lp["layers"]["1"]["c3"] = [-1] * 40
+    with pytest.raises(r.FloorError, match="c3"):
+        r.read_prompt("step512", "p", u1, lp)
+
+
+def test_read_prompt_refuses_overlapping_groups():
+    u1, lp = _u1_and_labels()
+    u1["layers"][0]["mcs"]["2"]["groups"][1]["offsets"] = [12, 16]
+    with pytest.raises(ValueError, match="overlap"):
+        r.read_prompt("step512", "p", u1, lp)

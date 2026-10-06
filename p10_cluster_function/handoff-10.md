@@ -129,21 +129,26 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > **R8 done, 2026-10-06 (`status-10.md` §1.24; its title is the summary).** Blocked 26 (f), the
 > user's: the own-floor check on "moves", rule in `design-10.md` "R8" (committed before any chance
 > level). `tools/run/p10_r8_floor.py`; output `data/p10/reread_r8_2026-10-06/r8.json` (no forward
-> pass, 8 min). Answer: **c3 does not stand by the placed rule**: a chance-aware bar keeps
-> 0.87–0.90 at 64, 128, 256, 1000, 0.91 at 512, 0.93–0.97 from 2000; step 0's floor 62 → 31.
-> **Next, for the user:** Blocked 27 (keep c3, take c3c, or run the exact check first).
-> *Parked (R8):* **the exact check, with P > 0 labels kept.** Why: `Jc` is against P = 0's
-> partition; P > 0 group counts differ by up to ×3 in a tenth of the conditions. Cost: unit 1's
-> P > 0 passes again with labels written (~1 h on R0's scale, GPU allowed). Could change: c3c's
-> size by a few points either way.
+> pass, 8 min). Answer: **at the bar, not resolved by it**: a chance-aware bar keeps 0.87–0.91 at
+> 64–1000 (prompt-bootstrap intervals straddle 0.90; `camus_letranger` carries 64–256), 0.93–0.97
+> from 2000; step 0's floor 62 → 31. `/challenge-pr` on #155: accept with changes, all six taken
+> (headline restated, proxy error called unmeasured, re-read scope all rows, a by-construction
+> line labelled a check, the probe committed as a script, refusal tests).
+> **Next, for the user:** Blocked 27 (recommended: the exact check first).
+> *(Parked (R8), the exact check with P > 0 labels kept: now Blocked 27 (c). Why: `Jc` is against
+> P = 0's partition, and P > 0 group counts differ by up to ×3 in a tenth of the conditions. Cost:
+> unit 1's P > 0 passes again with labels written, ~1 h on R0's scale, GPU allowed. Could change:
+> the rule's letter at 64–1000, error unmeasured.)*
 > *Parked (2026-10-06, the user's question in the R8 session):* **the theory's own smooth field,
 > `φ_β`'s wells at the measured β** (`lit-1d.md` §3; option C, waiting on Blocked 9 since
 > 2026-09-26; β decided 2026-10-04: 3.5 [1.6, 5.6]). Why: c3's knobs (`min_cluster_size` 2, `J0`'s
-> 10th percentile, 0.5, the bulk share) are placed; `φ_β` has one, measured. An unrecorded probe
-> (mean shift on frozen states, 2 passages × L4 / L12 / L20, steps 0 and 143000, scratchpad only):
-> raw frame, 1 well at β ≤ 5.6 at both steps; centred, step 143000 has **2–4 wells holding every
-> token at β = 3.5**, shattering to near-singletons by β = 5.6 (L4, L12) or 20 (L20), while step 0
-> already shatters at β = 3.5 (161–271 wells). Untested: what the wells are (position, the
+> 10th percentile, 0.5, the bulk share) are placed; `φ_β` has one, measured. A probe, not a
+> result (`tools/run/p10_phi_wells_probe.py` on R0's labels, its defaults: `homer_iliad`,
+> `wiki_paragraph` × L4 / L12 / L20 × steps 0, 143000; mean shift on frozen states; placed
+> tolerances; output printed, not stored): raw frame, 1 well at β ≤ 5.6 at both steps; centred, step
+> 143000 has **2–4 wells holding every token at β = 3.5**, shattering to near-singletons by β = 5.6
+> (L4, L12) or 20 (L20), while step 0 mostly shatters at β = 3.5 (34–271 wells, 4 of 6 cells
+> above 200). Untested: what the wells are (position, the
 > opening, a content split), the merge tolerance, every other cell, Pythia's 16 heads against the
 > idealised kernel. Cost: no forward pass, minutes per step. Could change: whether 1d's cluster is
 > a level-set group or a well of `φ_β`, an order of magnitude coarser than c3.

@@ -3369,4 +3369,4 @@ adjudications"`; removing the retired three is the cleanup Parked under
 
 ## Corrections received
 
-- 2026-10-06 · the working definition's "moves" (`design-1d.md` "The working definition") passes some groups at chance: with a chance-aware bar c3 keeps 0.87–0.97 of its records from 64 and step 0's floor halves (62 → 31); the stricter set c3c is a candidate, the choice the user's · `p10_cluster_function/status-10.md` §1.24, `STATE.md` Blocked 27
+- 2026-10-06 · the working definition's "moves" (`design-1d.md` "The working definition") passes some groups at chance: with a chance-aware bar c3 keeps 0.87–0.91 of its records at 64–1000 (at the placed 0.90, unresolved over 7 prompts), 0.93–0.97 after, and step 0's floor halves (62 → 31); the stricter set c3c is a candidate, the choice the user's · `p10_cluster_function/status-10.md` §1.24, `STATE.md` Blocked 27
