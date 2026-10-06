@@ -59,6 +59,16 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > c0 → c1. **The re-read's order (R0–R3) is complete.** Every other Phase 10 row still reads the
 > old partition. **Next, for the user to pick** (`design-10.md` "Order": unlocked by R0): Blocked 25
 > (F12's baseline), the cross-checkpoint matcher, the context-shuffle test, Stage 2, F13.
+>
+> **R2m done, 2026-10-05 (`status-10.md` §1.18; its title is the summary).** Blocked 26 (a), the
+> user's: Blocked 25 (iv), F12 against a matched control. `p10_partition_function.py
+> --activations-step 0`, read by `tools/run/p10_r2m_ladder.py`; rule in `design-10.md` "R2m". No
+> re-read row is left with an open label. **Next, recommended: Blocked 26 (e)**: does 5c's flip on
+> `gpt2-large` / ALBERT survive with the sink out of the means? The other unlocked items stand.
+> *Parked (R2m):* a per-step test stronger than the sign test over 7 prompts (minimum p 0.016;
+> added after `/challenge-pr` on #149), e.g. more prompts or a paired permutation on prompt means.
+> Cost: one reader function, no new pass, but 7 prompts bound any prompt-level p. Could change:
+> whether 2000's and 143000's "above" (6 of 7, p 0.125) are distinguishable from 0.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`

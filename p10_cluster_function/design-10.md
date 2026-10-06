@@ -138,6 +138,23 @@ window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.
 | R2 | F1 + F12 (its gap against step 0), then §1.5 | R0 | the phase's one dynamic finding, and its density confound was argued from step 0; the definition's step-0 floor is a stronger control than the old partition had |
 | R3 | A0 under T4 | R0 | last: T4 changes the statistic, so it is the least comparable |
 
+| R2m | F12 against a matched control, §1.5 again (below) | R2 | R2 left F12's label as the baseline's (`STATE.md` Blocked 25, (iv) taken by the user 2026-10-05) |
+
+**R2m, F12's matched control (rule fixed 2026-10-05, before any control output was read).**
+Each column's readable (prompt, layer) records at step s are scored on **step 0's stored
+activations** for the same prompt: same positions (`tokens.txt` must match, else refuse), same
+statistic (members − rest in corrected log Z over every stored position, on the column's
+domain at s), same β grid, same unit generator. Per unit, **matched Δ = trained − control**; per
+step, the mean over paired units, labelled **below / as / above control** at ±0.05 (F12's
+floor). Δ is 0 at step 0 by construction (a check, not a reading). Beside every Δ: the raw sign
+(Blocked 25 (ii); trained mean, below / as / above the rest at ±0.05), the control's mean and
+median p (did these tokens already differ at init?), and the prompts with mean Δ < 0, of 7.
+Primary column, "holds" and §1.5 (F1 negative ∧ matched below; F1 is R2's, unchanged) as R2.
+c0 is read on the same control, so c0's matched label is new too; R2's labels stay as recorded.
+It does not control: step 0's context (Z at init is computed from init activations at every
+position, so the control asks whether those positions were already dense at init, not whether
+training changed their neighbours), the norm (§1.5's random-twin hazard), or the init seed (one).
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

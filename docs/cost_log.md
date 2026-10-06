@@ -254,3 +254,4 @@ running median of the rows above it gets a line under the table saying why.
   Over 2× the median (5.2M): STATE's hook output persisted twice and printed stale (the main tree
   lagged #147), the reader plus R2's plumbing and ladder read to reuse them, a confound split added
   mid-unit (`p10_r3_sink_split.py`), a gate re-run after a pure-tier import, and this file read whole.
+| 2026-10-05 | Phase 10 R2m: F12 against a matched control (before /challenge-pr) | 56 | 162k | 6.6M | 43k | #149 |

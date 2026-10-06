@@ -12,6 +12,7 @@ proportional, so the `(i+1)` correction leaves a residual trend. The second is
 not a flaw in the construction; it is why the real sweep's corrected R^2 does
 not go to zero, and a test says so.
 """
+import json
 import math
 
 import numpy as np
@@ -362,3 +363,72 @@ def test_reread_by_step_pools_prompts_and_betas():
     by = reread_by_step(runs)
     assert by[0]["n"] == 3 and by[0]["mean"] == pytest.approx(0.4) and by[0]["median_p"] == 0.02
     assert reread_by_step(runs, by_beta=True)[0]["1.0"]["n"] == 2
+
+
+# --- R2m: the matched control (design-10.md "R2m") ---------------------------
+
+from tools.run.p10_partition_function import matched_runs  # noqa: E402
+
+
+def _step_file(src, step, runs):
+    (src / f"step{step}.json").write_text(json.dumps({"prompts": {p: {"stage0_run": str(r)} for p, r in runs.items()}}))
+
+
+def test_matched_runs_maps_every_step_to_the_same_prompts_step_0_run(tmp_path):
+    src = tmp_path / "labels"
+    src.mkdir()
+    r0, r512, other = (tmp_path / n for n in ("s0_wiki", "s512_wiki", "s0_iliad"))
+    for r, toks in ((r0, "a\nb\n"), (r512, "a\nb\n"), (other, "c\n")):
+        r.mkdir()
+        (r / "tokens.txt").write_text(toks)
+    _step_file(src, 0, {"wiki": r0, "iliad": other})
+    got = matched_runs(src, {(512, "wiki"): r512, (0, "wiki"): r0}, 0)
+    assert got == {(512, "wiki"): r0, (0, "wiki"): r0}
+
+
+def test_matched_runs_refuses_other_tokens_or_a_missing_prompt(tmp_path):
+    src = tmp_path / "labels"
+    src.mkdir()
+    r0, r512 = tmp_path / "s0", tmp_path / "s512"
+    for r, toks in ((r0, "a\nb\n"), (r512, "a\nX\n")):
+        r.mkdir()
+        (r / "tokens.txt").write_text(toks)
+    _step_file(src, 0, {"wiki": r0})
+    with pytest.raises(SystemExit, match="different tokens"):
+        matched_runs(src, {(512, "wiki"): r512}, 0)
+    with pytest.raises(SystemExit, match="no step-0 run"):
+        matched_runs(src, {(512, "iliad"): r512}, 0)
+
+
+def test_reread_scores_step_s_labels_on_step_0s_run_when_matched(tmp_path, monkeypatch):
+    """/challenge-pr on #149, finding 4: the step-0 Δ = 0 check cannot see a swap, so pin the pairing."""
+    import sys
+    import types
+    from argparse import Namespace
+    from tools.run.p10_partition_function import reread
+    runs = {}
+    for s in (0, 512):
+        r = tmp_path / f"s{s}"
+        r.mkdir()
+        (r / "tokens.txt").write_text("a\nb\n")
+        runs[(s, "wiki")] = r
+    src = tmp_path / "labels"
+    src.mkdir()
+    _step_file(src, 0, {"wiki": runs[(0, "wiki")]})
+    lab = {1: np.array([0, -1])}
+    fake = types.ModuleType("tools.run.p10_label_source")
+    fake.LEARNED_SPLIT, fake.LEARNED_STEP, fake.MODELS = (), "step143000", ("step0", "step512")
+    fake.reader_input = lambda labels, column: {
+        "runs": runs, "labels": {k: lab for k in runs}, "records": {0: [1, 1], 512: [1, 1]}, "meta": {}}
+    monkeypatch.setitem(sys.modules, "tools.run.p10_label_source", fake)
+    seen = {}
+
+    def measure(run_dir, labels, step, prompt, seed):
+        seen[step] = run_dir
+        return []
+    args = Namespace(labels=src, column="c3", jobs=1, seed=0)
+    rec = reread(args, measure, "test", acts_step=0)
+    assert seen == {0: runs[(0, "wiki")], 512: runs[(0, "wiki")]}
+    assert rec["activations_step"] == 0 and dict(rec["inputs"])["512|wiki"] == str(runs[(512, "wiki")])
+    reread(args, measure, "test")
+    assert seen[512] == runs[(512, "wiki")]
