@@ -33,6 +33,7 @@
   - R6, the cross-checkpoint matcher (an instrument: adjacent steps, same prompt and layer, containment ≥ 0.5, MONIC's kinds, on R0's labels). From 4000 to 54000, 56–67 % of the definition's groups survive each boundary, with changed members (median Jaccard 0.75–0.83). Few of its births and deaths are new groups: most are groups that persist in c2a and fail or pass a filter, or that c2a splits or merges. No 143000 group's unbroken lineage reaches back past 256, and 89 % start after 2000, though chains last about 3× longer than independent breaks would give. The old partition's 17 % of 143000 clusters traced back to step 0 lie off the definition's positions: the same call on the kept positions has none. Its null (permuted labels) only rules out chance overlap — `p10_cluster_function/status-10.md` §1.20
   - R6w, whether the co-membership and lexical-carry drift happens within lineages (each step's change split exactly into the persisting groups' change and entry / exit terms, on R6's links). On the definition, from 512 to 143000, replacement does not carry the drifts measured in the embedding: entering and leaving groups sit where the persisting ones do, and the persisting groups move, mostly by 2000 (class beyond a lexical cluster −0.12, own-embedding similarity +0.18). A shift of the layer-0 frame under every group would read the same way, and where the drift is, groups with identical members move at least as much as changed ones (few links). Same on the unfiltered groups and the old partition, and on both record sets. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.21
   - R6f, R6w's within split into members against frame (every step's groups re-scored in one fixed layer 0, step 512's and step 143000's). For own-embedding and within-class embedding similarity it is the frame, pooled and in 5–7 of 7 prompts: the token embedding moves under the definition's groups, mostly 512 → 2000, so there "trained, mostly what the embedding groups" reads as the embedding coming to group what the groups held. For class beyond a lexical cluster the prompts split, so whether the groups became lexical stays open (the pooled members part ≤ 0.03 is partly prompts cancelling). Same on the unfiltered groups; on the old partition about a third of the class-beyond-lexical drift is membership. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.22
+  - R7, the context-shuffle test (each group's tokens re-clustered with their passage block-shuffled at four grains, and each token alone after the sink). From 512 on, the definition's groups are a mix: about half survive with their token alone (39 % at 512, 48–61 % after), a third need their context's order, and the rest need only the other tokens present. Deeper groups need context more. Before 512 no shuffle moves any group much: the model starts using order between 256 and 1000. Against a fixed bar the token-alone share halves, and a third or more of the groups have their own floor below chance. At 512, groups that need order are as same-class as token-alone ones, so the class grouping there is not only a per-token feature. Descriptive, no null — `p10_cluster_function/status-10.md` §1.23
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -49,7 +50,7 @@
   - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint. F12's density confound is now controlled for tokens and positions (R2m), not for norm or the init's context — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §1.18
-  - Is the class grouping computed early in training context, or a per-token feature from an early layer? A context-shuffle test would separate them. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.10, `p10_cluster_function/handoff-10.md` Parked
+  - Is the class grouping computed early in training context, or a per-token feature from an early layer? R7 ran the context-shuffle test on the definition: at 512 not only per-token; the token-alone arm's position (every token at position 1) and a word-level shuffle are not controlled. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.23, `p10_cluster_function/handoff-10.md` "Parked"
   - Does the pilot's 27-checkpoint "50–55" `max_alive` also fall at layer 0? And what sets `repeated_tokens`' ~50 deep-layer clusters? (Its stored partitions are mostly float32 rounding at steps 32 / 512; float64 gives 24–30 clusters at L6–18, so re-ask after the fix) — `p10_cluster_function/status-10.md` §1.8, `p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
@@ -59,7 +60,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-06 · body `211c114f8c`
+- **Reviewed:** 2026-10-06 · body `8c537dae6f`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1787,6 +1788,91 @@ links, pooled: members part −0.013 to −0.002 per link in either frame (1,369
 
 Re-run: `data/p10/reread_r6f_2026-10-06/run_r6f.sh` from the worktree root (default BLAS threads,
 as R1). It refuses on any first check. Tests: `tests/test_p10_r6f_frame.py` (13).
+
+### 1.23 R7: the context-shuffle test — **mixed at every step from 512: neither a token-only nor a context account holds for the definition's groups as a whole. On the groups' own floors, 39 % of c3's group-layer records at 512 and 48–61 % from 1000 survive with their token alone (after the sink), 31–39 % need their context's order (break under a full token shuffle), and the rest (26 % at 512, 7–10 % from 4000) need the other tokens present but not their order. Deeper groups need context more (token-borne from 2000: L1–8 0.62–0.74, L17–24 0.34–0.46). Before 512 shuffling barely moves any group (survival 0.94–0.99 at every block size, 6–19 order-borne of 248–326): the model does not yet use order there. Against the fixed bar 0.5, token-borne is a minority (0.21–0.31 from 512), and 32–46 % of c3's groups have an own floor below the chance level, so the own-floor shares are the upper end. At step 512 order-borne groups are as same-class as token-borne ones (0.83 against 0.86), so §1.10's class grouping there is not only a per-token feature**
+
+**What ran** (`design-10.md` "R7", rule committed at `9949ed9` before any shuffled pass; `STATE.md`
+Blocked 26 (c), user 2026-10-06). `tools/run/p10_r7_shuffle.py`: per (step, passage), the passage
+as read (`orig`), its offsets 1 … n−1 block-shuffled (b = 64, 16, 4, 1; 5 permutations each, the
+same at every step; offset 0 fixed), and each kept token `alone` as [offset 0, token]; in each, the
+same kept tokens clustered (centred, level-set size 2, all groups), and each c2 group of R0 (c3 a
+subset) scored by best-match Jaccard against its own unit 1 floor `J0` (median over the 5
+permutations). **Token-borne** = survives `alone`; **bag-borne** = fails `alone`, survives b = 1;
+**order-borne** = fails both. 22 forward passes per (step, passage), CPU.
+
+**Inputs.** R0's labels and unit 1 records (`data/p10/reread_r0_2026-10-05/`; per-step label sha
+in each record's `meta`); Stage 0 index sha `b013ab4e371936ed`; 7 v1 passages × 18 steps = 126
+records, `data/p10/reread_r7_2026-10-06/records/`; reading `r7.json` (md5 `572cea82`). Runner at
+`233d67e`; ~17 s per (step, passage), 40 min in all.
+
+**First checks, all passed:** (a) `orig` against Stage 0, max 2.9e-7 (tolerance 1e-5); (b) `orig`'s
+groups are R0's c2a member sets at every layer (0 refused of 3,024) and R0's members are unit 1's;
+(c) every shuffle a permutation with offset 0 fixed, tokens at their mapped positions; (d) `alone`'s
+offset 1 against `orig`'s position 1, max 1.1e-5. *Departure at the gate:* (d)'s tolerance was
+borrowed from (a) at 1e-5 and refused `latex_monograph` at step 143000 (1.06e-5); an unbatched
+2-token pass is 1.5e-5 from the passage's pass there, so the gap is float32 sequence-length noise.
+(d) now uses 1e-4 (`design-10.md` "R7"). Steps 0–512 are at ≤ 1.3e-7. T2 drops under shuffles: 0
+before 1000, up to 240 token-conditions per passage at 143000 (`camus_letranger`).
+
+**c3 (c2 before 64, where c3 is not readable), pooled over prompts and L1–24, own floor:**
+
+| step | col | n | token / bag / order | label | survival b64 / b16 / b4 / b1 / alone | token share, fixed bar 0.5 | J0 < chance |
+|---|---|---|---|---|---|---|---|
+| 0 | c2 | 520 | 107 / 173 / 240 | context | 0.51 / 0.49 / 0.49 / 0.51 / 0.21 | 0.00 (c3) | 52 / 62 (c3) |
+| 2–16 | c2 | 505–527 | 103–117 / 144–181 / 214–248 | context | 0.47–0.58 at every b / 0.20–0.23 | 0.00–0.02 | |
+| 32 | c2 | 349 | 60 / 92 / 197 | context | 0.39 / 0.40 / 0.32 / 0.41 / 0.17 | 0.09 | |
+| 64 | c3 | 248 | 140 / 102 / 6 | mixed | 0.97 / 0.99 / 0.98 / 0.98 / 0.56 | 0.38 | 100 |
+| 128 | c3 | 307 | 133 / 157 / 17 | mixed | 0.94 / 0.95 / 0.96 / 0.94 / 0.43 | 0.19 | 110 |
+| 256 | c3 | 326 | 94 / 213 / 19 | context | 0.94 / 0.93 / 0.96 / 0.94 / 0.29 | 0.09 | 100 |
+| 512 | c3 | 598 | 235 / 157 / 206 | mixed | 0.94 / 0.84 / 0.70 / 0.61 / 0.39 | 0.23 | 190 |
+| 1000 | c3 | 670 | 343 / 98 / 229 | mixed | 0.91 / 0.82 / 0.69 / 0.55 / 0.51 | 0.21 | 307 |
+| 2000 | c3 | 817 | 390 / 125 / 302 | mixed | 0.91 / 0.77 / 0.62 / 0.53 / 0.48 | 0.24 | 307 |
+| 4000 | c3 | 849 | 491 / 59 / 299 | mixed | 0.92 / 0.78 / 0.66 / 0.56 / 0.58 | 0.29 | 331 |
+| 8000 | c3 | 872 | 463 / 71 / 338 | mixed | 0.92 / 0.80 / 0.63 / 0.54 / 0.53 | 0.25 | 328 |
+| 16000 | c3 | 932 | 532 / 73 / 327 | mixed | 0.93 / 0.84 / 0.67 / 0.55 / 0.57 | 0.28 | 372 |
+| 32000 | c3 | 967 | 516 / 100 / 351 | mixed | 0.94 / 0.85 / 0.68 / 0.54 / 0.53 | 0.23 | 368 |
+| 54000 | c3 | 934 | 484 / 98 / 352 | mixed | 0.95 / 0.80 / 0.63 / 0.52 / 0.52 | 0.24 | 360 |
+| 143000 | c3 | 810 | 498 / 58 / 254 | mixed | 0.93 / 0.82 / 0.69 / 0.54 / 0.61 | 0.31 | 309 |
+
+c2 beside, from 512: token share 0.33 (512), 0.45–0.59 (1000–143000), label context at 512, mixed
+after. Step 0's c2 baseline: 0.21 token-borne. Step 0's c3 floor (62 records) has 52 with `J0` below
+chance: its groups are near-chance to begin with, as unit 1 found.
+
+**Beside** (c3, from 512): per band, token share L1–8 / L9–16 / L17–24: 0.42 / 0.37 / 0.40 at 512,
+0.62–0.74 / 0.49–0.59 / 0.34–0.46 from 2000. Per prompt (≥ 5 records): mixed in 3–6 of 7, token in
+0–3, context in 0–2 at every step. Token-borne groups that break under b = 1: 25 at 512, 63–118
+from 1000 (7–15 % of records: a scrambled context breaks what no context keeps). Same-class share of
+member pairs, token / bag / order: 0.86 / 0.88 / 0.83 at 512; from 2000, 0.79–0.86 / 0.82–0.86 /
+0.67–0.73. Self-similarity (centred cosine to `orig`, median over records, members / rest): b = 1
+0.97–0.99 to 256, 0.82 / 0.80 at 512, 0.47–0.59 from 1000; `alone` 0.49–0.81, members ≈ rest
+throughout.
+
+- **The model starts using its context's order between 256 and 1000.** Before 512 every group
+  survives every shuffle and a full shuffle leaves each token's state at cosine ≥ 0.97 to its
+  original; at 512 the dose–response appears (0.94 → 0.61 from b = 64 to 1) and by 1000 a full shuffle
+  moves every token (0.58). From 1000 the curve barely changes. This fits Pythia's unigram-first stage
+  (`lit-10.md` §16 row 3) and puts the change in the window where R6f found the embedding moving
+  (512 → 2000, §1.22).
+- **A token-only account is ruled out for a large part of the groups.** From 512, 31–39 % break
+  under a full token shuffle on their own floor, and more on the fixed bar (order-borne 0.54–0.69 of
+  records from 512 at 0.5). Most of the rest survive alone, so the groups are a mix, not one kind.
+- **Token-borne is front-loaded in depth.** L1–8 groups are mostly token-borne from 2000, L17–24
+  mostly not. This agrees with early layers building tokens into words (`lit-10.md` §17 row 3).
+- **For §1.10's class question at 512 (the Parked question):** order-borne and token-borne groups are
+  equally same-class there (0.83, 0.86), so the class grouping at 512 is not only a per-token feature.
+  From 2000, order-borne groups are less same-class (0.67–0.73 against 0.79–0.86). Class is
+  orthographic: neither reading makes it semantic.
+- **The own floor is lenient.** 32–46 % of c3's groups from 512 have `J0` below the chance level of a
+  random same-size set; on the fixed bar the token share halves. The labels use the yardstick "moves"
+  used; the fixed-bar row is the stricter reading.
+- **Does not:** say what a group carries (token-borne ≠ lexical, order-borne ≠ semantic); control
+  position in `alone` (every token at position 1 beside the sink; a token-borne miss can be position
+  1, not context); keep words whole at b = 1 (Parked in `design-10.md`); test anything (no null; the
+  2/3 and 1/3 thresholds placed). One seed, 7 passages.
+
+Re-run: `data/p10/reread_r7_2026-10-06/run_r7.sh <steps>` from the worktree root (resumable; gate
+512 and 143000 first). It refuses a (step, passage) on any first check. Tests:
+`tests/test_p10_r7_shuffle.py` (12).
 
 ---
 

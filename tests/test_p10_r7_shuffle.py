@@ -7,8 +7,8 @@ import pytest
 from p1d_cluster_ensemble import move_text as mt
 from tools.run import p10_r7_shuffle as r
 
-# Tier: the module's top level imports numpy and unit 1's runner (torch loads inside `run` only).
-pytestmark = pytest.mark.pure
+# Tier: the module imports unit 1's runner, whose package imports scikit-learn (as move_text's tests).
+pytestmark = pytest.mark.deps
 
 
 def test_block_order_keeps_offset_0_first_and_is_a_permutation():

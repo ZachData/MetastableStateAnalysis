@@ -411,6 +411,12 @@ not fixed).
 ## 4. Tests that assert a property of the machine, not of the code
 
 **Instances.**
+- 2026-10-06, Phase 10 R7: check (d) compared a 2-token pass with the passage's 512-token pass
+  at 1e-5, a tolerance borrowed from re-running the *same* input against Stage 0. At step 143000
+  float32 sequence-length noise is 1.5e-5 even unbatched, so the gate refused `latex_monograph`
+  (1.06e-5). Caught at the gate, fixed as a departure (1e-4, `design-10.md` "R7"). Rule: a
+  numeric tolerance is placed for one computation; reusing it for another (different shape,
+  length, batch or device) needs that computation's noise measured first, at the latest checkpoint.
 - 2026-09-22: two float32 tests compared roundoff at d=128 (itself ~1e-06)
   with a 1e-06 tolerance. Pass/fail was decided by the runner's CPU kernel;
   `main` was red from #57 to #60, and then went *green* on `086bdd1` without

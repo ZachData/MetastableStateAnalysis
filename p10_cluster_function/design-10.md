@@ -384,6 +384,7 @@ kept token at offset 1 equals `orig`'s position 1 (the same two tokens) within `
 143000 refused at 1.06e-5 (relative norm). An unbatched 2-token pass is 1.5e-5 from the
 passage's pass there too, so the gap is float32 sequence-length noise, not the batch;
 `P0_MATCH_TOL` was placed for re-running the same input. A wrong pairing or mask differs at O(1).
+Results: `status-10.md` §1.23.
 Run steps 512 and 143000 first and open the output (groups per layer, Jaccards not all 0 or 1,
 the three shares) before the other 16.
 **It does not:** say what a group carries (token-borne is not "lexical" and order-borne is not
@@ -395,7 +396,7 @@ foreign context (other passages' tokens change the token set); test anything. On
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
-the context-shuffle test (§16 row 5), Stage 2, F13.
+the context-shuffle test (§16 row 5; run as R7), Stage 2, F13.
 
 ## Parked
 
