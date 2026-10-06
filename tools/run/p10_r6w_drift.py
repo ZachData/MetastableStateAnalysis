@@ -40,8 +40,10 @@ R1_TOL, SUM_TOL = 1e-6, 1e-9
 TERMS = {"restructured": ("restructured", "restructured"),
          "flip_kept": ("birth_flip_kept", "death_flip_kept"),
          "flip_restructured": ("birth_flip_restructured", "death_flip_restructured"),
-         "new_gone": ("birth_new", "death_gone")}
-REPLACEMENT = tuple(TERMS)
+         "new_gone": ("birth_new", "death_gone"),
+         # R1's own record set (after /challenge-pr on #152): a record readable at one end only
+         "records": ("record_entry", "record_exit")}
+REPLACEMENT = tuple(t for t in TERMS if t != "records")   # the model's kinds only
 
 
 class DriftError(RuntimeError):
@@ -211,15 +213,22 @@ def weighted(records: list, values: dict, step: int, level, prompt=None) -> list
     return out
 
 
-def read_span(c: str, steps: list, records: list, values: dict, link_kinds: dict, prompts: list) -> dict:
-    """Per level and statistic: per-boundary terms, the span's sums, the label; per prompt beside."""
+def read_span(c: str, steps: list, recs: dict, values: dict, link_kinds: dict, prompts: list) -> dict:
+    """
+    Per level and statistic: per-boundary terms, the span's sums, the label; per prompt beside.
+    ``recs`` {step: records}: one fixed set at every step (the rule), or R1's own set per step
+    (after `/challenge-pr` on #152), where a record readable at one end only is its own kind.
+    """
+    def tagged(step, other, side, level, stat, prompt):
+        there = set(recs[other])
+        s, t = (step, other) if side == 0 else (other, step)
+        return [(w, r[2][stat], link_kinds[(key, s, t)][side][r[1]] if key in there
+                 else ("record_exit" if side == 0 else "record_entry"))
+                for w, key, r in weighted(recs[step], values, step, level, prompt)]
+
     def boundary(level, stat, j, prompt=None):
         s, t = steps[j], steps[j + 1]
-        ea = [(w, r[2][stat], link_kinds[(key, s, t)][0][r[1]])
-              for w, key, r in weighted(records, values, s, level, prompt)]
-        la = [(w, r[2][stat], link_kinds[(key, s, t)][1][r[1]])
-              for w, key, r in weighted(records, values, t, level, prompt)]
-        d = decompose(ea, la)
+        d = decompose(tagged(s, t, 0, level, stat, prompt), tagged(t, s, 1, level, stat, prompt))
         parts = [d["within"], *(d[k] for k in TERMS)]
         if d["within"] is not None and abs(sum(parts) - d["total"]) > SUM_TOL:
             raise DriftError(f"{c} {level} {stat} {s}→{t}: terms sum to {sum(parts)}, total {d['total']}")
@@ -233,8 +242,8 @@ def read_span(c: str, steps: list, records: list, values: dict, link_kinds: dict
 
     res = {}
     for level in LEVELS:
-        if level != "mean" and not any(L == level for _, L in records):
-            res[str(level)] = None          # no record readable at every step of the span: counted, not read
+        if level != "mean" and not all(any(L == level for _, L in recs[s]) for s in steps):
+            res[str(level)] = None          # a step with no record at this layer: counted, not read
             continue
         res[str(level)] = {}
         for stat in STATS:
@@ -242,31 +251,45 @@ def read_span(c: str, steps: list, records: list, values: dict, link_kinds: dict
             tot = summed(per)
             lab = label(tot["total"], tot["within"])
             repl = {k: tot[k] for k in REPLACEMENT if tot[k] is not None}
+            rest = None if tot["within"] is None else tot["total"] - tot["within"]
             entry = {"boundaries": [{"from": steps[j], "to": steps[j + 1], **d} for j, d in enumerate(per)],
                      "span": tot, "label": lab,
                      "within_share": (tot["within"] / tot["total"]
                                       if tot["within"] is not None and tot["total"] else None),
-                     "largest_replacement": max(repl, key=lambda k: abs(repl[k])) if repl else None}
+                     "largest_replacement": max(repl, key=lambda k: abs(repl[k])) if repl else None,
+                     # within and the rest both past the floor with opposite signs (/challenge-pr on #152)
+                     "opposing": (rest is not None and abs(tot["within"]) >= FLOOR and abs(rest) >= FLOOR
+                                  and np.sign(tot["within"]) != np.sign(rest))}
             if level == "mean":
                 pp = {}
                 for p in prompts:
-                    if not any(q == p for q, _ in records):
+                    if not all(any(q == p for q, _ in recs[s]) for s in steps):
                         continue
                     pt = summed([boundary(level, stat, j, p) for j in range(len(steps) - 1)])
                     pp[p] = {"total": pt["total"], "within": pt["within"]}
                 big = {p: v for p, v in pp.items() if abs(v["total"]) >= FLOOR and v["within"] is not None}
                 entry["prompts"] = pp
-                entry["prompts_within_same_sign"] = [sum(np.sign(v["within"]) == np.sign(v["total"])
-                                                         for v in big.values()), len(big)]
+                entry["prompts_within_same_sign"] = [int(sum(np.sign(v["within"]) == np.sign(v["total"])
+                                                             for v in big.values())), len(big)]
             res[str(level)][stat] = entry
     return res
 
 
 def paired_links(steps: list, records: list, values: dict, stable_links: dict) -> dict:
-    """Each stable link's paired change in its group's focal mean, identical (J = 1) vs changed."""
+    """
+    Each stable link's paired change in its group's focal mean, identical (J = 1) vs changed, pooled
+    over the span and, after `/challenge-pr` on #152, per boundary (the drift is not spread evenly).
+    """
+    def summary(d):
+        return {"n_links": len(d[STATS[0]]),
+                **{st: {"mean": float(np.mean(x)) if x else None,
+                        "max_abs": float(np.max(np.abs(x))) if x else None} for st, x in d.items()}}
+
     acc = {kind: {s: [] for s in STATS} for kind in ("identical", "changed")}
+    per = []
     for j in range(len(steps) - 1):
         s, t = steps[j], steps[j + 1]
+        here = {kind: {st: [] for st in STATS} for kind in acc}
         for p, L in records:
             by_s, by_t = defaultdict(list), defaultdict(list)
             for _, g, v in values[(s, p)][L]:
@@ -277,11 +300,11 @@ def paired_links(steps: list, records: list, values: dict, stable_links: dict) -
                 if ga in by_s and gb in by_t:
                     kind = "identical" if jac == 1.0 else "changed"
                     for st in STATS:
-                        acc[kind][st].append(np.mean([v[st] for v in by_t[gb]]) - np.mean([v[st] for v in by_s[ga]]))
-    return {kind: {"n_links": len(acc[kind][STATS[0]]),
-                   **{st: {"mean": float(np.mean(x)) if x else None,
-                           "max_abs": float(np.max(np.abs(x))) if x else None} for st, x in d.items()}}
-            for kind, d in acc.items()}
+                        x = np.mean([v[st] for v in by_t[gb]]) - np.mean([v[st] for v in by_s[ga]])
+                        acc[kind][st].append(x)
+                        here[kind][st].append(x)
+        per.append({"from": s, "to": t, **{kind: summary(d) for kind, d in here.items()}})
+    return {**{kind: summary(d) for kind, d in acc.items()}, "boundaries": per}
 
 
 # ---------------------------------------------------------------- main
@@ -361,7 +384,8 @@ def main(argv=None) -> int:
         return 2
 
     prompts = sorted({p for _, p in runs})
-    out = {"checks": {"a_r1_max_abs": worst, "a_tol": R1_TOL, "b_sum_tol": SUM_TOL, "d_r6_stable": check_d},
+    out = {"checks": {"a_r1_max_abs": worst, "a_tol": R1_TOL, "b_sum_tol": SUM_TOL, "d_r6_stable": check_d,
+                      "e_r1_set_equals_r1_change_tol": SUM_TOL},
            "columns": {}}
     for c in COLUMNS:
         out["columns"][c] = {}
@@ -372,21 +396,35 @@ def main(argv=None) -> int:
             if bad:
                 print(f"check (c) fails: {c} {name}: identical links move {bad}; refusing", file=sys.stderr)
                 return 2
-            res = read_span(c, steps, recs, values[c], link_kinds[c], prompts)
+            res = read_span(c, steps, {s: recs for s in steps}, values[c], link_kinds[c], prompts)
+            # beside, after /challenge-pr on #152: R1's own records at each step (readable, ≥ 1 focal
+            # token); records at one end only are the "records" term, so the span sums to R1's change
+            own = {s: sorted((p, L) for (st, p), layers in values[c].items() if st == s
+                             for L, rows in layers.items() if rows) for s in steps}
+            res_r1 = read_span(c, steps, own, values[c], link_kinds[c], prompts)
             a, b = steps[0], steps[-1]
             for level in LEVELS:
-                if res[str(level)] is None:
-                    continue
                 va, vb = r1_level(r1, c, a, level), r1_level(r1, c, b, level)
                 for st in STATS:
-                    e = res[str(level)][st]
                     ch = None if va[st] is None or vb[st] is None else vb[st] - va[st]
-                    e["r1_change"] = ch
-                    e["r1_label_differs"] = (ch is not None and
-                                             (abs(ch) >= FLOOR) != (abs(e["span"]["total"]) >= FLOOR))
+                    if res[str(level)] is not None:
+                        e = res[str(level)][st]
+                        e["r1_change"] = ch
+                        e["r1_label_differs"] = (ch is not None and
+                                                 (abs(ch) >= FLOOR) != (abs(e["span"]["total"]) >= FLOOR))
+                    if res_r1[str(level)] is not None and ch is not None:
+                        gap = abs(res_r1[str(level)][st]["span"]["total"] - ch)
+                        if gap > SUM_TOL:
+                            print(f"check (e) fails: {c} {name} L{level} {st}: R1-set total differs from R1's "
+                                  f"change by {gap:.1e}; refusing", file=sys.stderr)
+                            return 2
+                        if res[str(level)] is not None:
+                            res_r1[str(level)][st]["label_differs_from_fixed"] = (
+                                res_r1[str(level)][st]["label"] != res[str(level)][st]["label"])
             out["columns"][c][name] = {"steps": steps, "n_records": len(recs),
                                        "records_per_level": {str(L): sum(1 for _, x in recs if x == L) for L in (12, 24)},
-                                       "paired_links": paired, "levels": res}
+                                       "r1_set_records": {str(s): len(v) for s, v in own.items()},
+                                       "paired_links": paired, "levels": res, "levels_r1_set": res_r1}
     out["meta"] = {"labels": str(args.labels), "summary_sha256": hashlib.sha256(summary.read_bytes()).hexdigest(),
                    "r1": {f"{r}_{c}.json": _md5(args.r1 / f"{r}_{c}.json") for c in COLUMNS for r in ("cm", "lc")},
                    "r6": {args.r6.name: _md5(args.r6)},
@@ -396,7 +434,11 @@ def main(argv=None) -> int:
                    "python": sys.version.split()[0], "numpy": np.__version__,
                    "omp_num_threads": os.environ.get("OMP_NUM_THREADS"),
                    "git": subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
-                                         capture_output=True, text=True).stdout.strip()}
+                                         capture_output=True, text=True).stdout.strip(),
+                   # uncommitted changes to this runner at run time (/challenge-pr on #152, finding 4)
+                   "runner_dirty": bool(subprocess.run(
+                       ["git", "-C", str(REPO), "status", "--porcelain", "--", "tools/run/p10_r6w_drift.py"],
+                       capture_output=True, text=True).stdout.strip())}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out, indent=1, default=float))
     print(f"wrote {args.out}; check (a) max |Δ| vs R1 {worst:.1e}")

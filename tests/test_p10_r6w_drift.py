@@ -85,3 +85,11 @@ def test_span_records_need_a_focal_token_at_every_step():
     readable = {(0, "a"): {1: 0, 2: 0}, (1, "a"): {1: 0, 2: 0}}
     values = {(0, "a"): {1: [(1, 0, {})], 2: [(1, 0, {})]}, (1, "a"): {1: [(1, 0, {})], 2: []}}
     assert w.span_records(readable, values, [0, 1]) == [("a", 1)]
+
+
+def test_a_record_readable_at_one_end_only_is_its_own_term_and_the_sum_stays_exact():
+    earlier = [(0.5, 0.2, "stable"), (0.5, 0.9, "record_exit")]
+    later = [(1.0, 0.3, "stable")]
+    d = w.decompose(earlier, later)
+    assert d["records"] == pytest.approx(-0.5 * 0.7) and _terms(d) == pytest.approx(d["total"])
+    assert "records" not in w.REPLACEMENT
