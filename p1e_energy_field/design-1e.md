@@ -1,7 +1,9 @@
 <!-- p1e_energy_field/design-1e.md -->
-# Phase 1e — the energy landscape: wells, crests and the force (design, PROPOSED 2026-10-06, not frozen)
+# Phase 1e — the energy landscape: wells, crests and the force (design, FROZEN 2026-10-06)
 
-**Status:** proposed; freezes when the user decides `STATE.md` Blocked 28. Opening scan:
+**Status:** frozen 2026-10-06 (user, Blocked 28, "follow your recommendations"): (a) as proposed;
+(b) U2's block arm first, then Phase 10's Blocked 27 (c) before U1; (c) U4 stays fenced until P-S1
+is scored; (d) U5 stays parked. Opening scan:
 `lit-1e.md`. Tier 1: exploratory, unregistered. Opened on the user's direction (2026-10-06): read the
 residual stream as a field, not as clusters of particles.
 
@@ -69,6 +71,23 @@ field" from any update component common to all tokens (shared anisotropy), so th
 a **within-passage token shuffle** (token i's field against token k's move, same layer and step),
 and the cosine is also reported with the **mean move across tokens subtracted**. The random
 direction stays beside as the floor.
+
+## U2's block arm: the rule (fixed 2026-10-06, before any output)
+
+| | |
+|---|---|
+| cells | 18 steps × 7 v1 passages × blocks ℓ = 0–22. **Block 23 refused**: the stored last hidden state is after `final_layer_norm` (HF GPT-NeoX; its norms ≈ 75–100 against ≈ 60–430 at L23), so its "move" is not the block's. Bands: L0 (beside; β there ≈ 0, `status-1d.md` "β refit"), L1–8, L9–16, L17–22 |
+| frame, move | as "Inputs": `u_i = unit(LN1_ℓ(x_i^ℓ))`, `u'_i = unit(LN1_ℓ(x_i^{ℓ+1}))`, stored rows × stored norms; `d_i = P^⊥_{u_i}(u'_i − u_i)` |
+| targets | R0's kept offsets (`data/p10/reread_r0_2026-10-05/labels`): position 0, massive tokens and repeats out |
+| sources | **causal, every stored position j ≤ i** (primary: the sink, massive tokens and repeats included, since attention reads them); beside: the sink out; the **full** sum over every stored position; the **local** part (causal, `m_β − m_0`, M4) |
+| force | `g_i = P^⊥_{u_i} m_β(u_i)`, `m_β` the softmax-weighted mean of the sources (M2). The self term changes only the length of `g_i`, not its direction |
+| per token | `a_i = cos(d_i, g_i)`; tokens with `‖d_i‖` or `‖g_i‖` < 1e-9 left out and counted |
+| per cell | `A` = mean `a_i` over targets. **Null: 1,000 within-passage permutations** of the moves among the targets (token i's force against token k's move projected onto i's tangent space: `d_k·g_i / (‖P^⊥_{u_i} d_k‖ ‖g_i‖)`, since `g_i ⊥ u_i`); excess `X = A − mean(A_null)` and two one-sided ranks. Beside: `Ã`, the cosine with the mean move across targets subtracted first (`P^⊥_{u_i}(d_i − d̄)`); the random-direction floor 1/√(D−1) ≈ 0.031; Spearman of `a_i` with log offset (position) |
+| label per (step, band) | each passage's `X` averaged over the band's blocks, 7 values. **ascends** if all 7 > 0 (sign test p = 1/128), **leans ascends** 6 of 7 (p = 0.0625); **descends** / **leans descends** the same below 0; else **mixed**. Beside: cells with rank ≤ 0.05 each way |
+| β | 3.5 primary; a label is **β-robust** if 1.6 and 5.6 give the same, otherwise β-dependent |
+| step 0 | read by the same rule beside every trained label; a trained label that step 0 also carries is not called learned |
+| first checks (refuse) | stored rows unit to 1e-4; each exported block's revision is the run manifest's; R0's kept offsets index the stored positions; the first cell (step143000, `homer_iliad`) opened and checked populated (finite `a_i` for ≥ 90 % of targets at every block) before the rest; a synthetic cloud moved one exact mean-shift step reads `A` ≈ +1 and the reversed step ≈ −1 (test) |
+| not computed | step lengths, or any sum of them over layers (P-γ fence); any pairwise ⟨·,·⟩ statistic of the cloud (P-S1 fence); per-head kernels (the per-head arm, its own PR) |
 
 ## Fences (registered predictions and the registry)
 
