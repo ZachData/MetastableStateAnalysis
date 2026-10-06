@@ -265,3 +265,7 @@ running median of the rows above it gets a line under the table saying why.
   the end would have done); the user's GPU question mid-unit; a tolerance probe after the gate
   refused; two gate re-runs (a card pointer, a pure-tier import).
 | 2026-10-06 | Phase 10 R8: the own-floor check on "moves", and the smooth-field question (before /challenge-pr) | 58 | 168k | 6.7M | 42k | #155 |
+| 2026-10-06 | Phase 1e opened: scan and proposed design (before /challenge-pr; whole-transcript figures, R8's row above is the same session's first part) | 110 | 284k | 18.3M | 69k | #156 |
+  Over 2× the median (5.3M): this unit ran in R8's session (the user chose to keep the context),
+  so every call re-read R8's ~170k; this unit alone is ~11.6M (18.3M − R8's 6.7M). Also a
+  12-search literature scan, and STATE's 1d cell read whole once to rewrite the Active row.
