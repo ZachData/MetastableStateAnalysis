@@ -139,6 +139,7 @@ window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.
 | R3 | A0 under T4 | R0 | last: T4 changes the statistic, so it is the least comparable |
 
 | R2m | F12 against a matched control, §1.5 again (below) | R2 | R2 left F12's label as the baseline's (`STATE.md` Blocked 25, (iv) taken by the user 2026-10-05) |
+| R6 | the cross-checkpoint matcher (below) | R0 | every later row that follows a group through training needs it (`STATE.md` Blocked 26 (b)) |
 
 **R2m, F12's matched control (rule fixed 2026-10-05, before any control output was read).**
 Each column's readable (prompt, layer) records at step s are scored on **step 0's stored
@@ -180,6 +181,41 @@ norm-matched. **5c's own random arms cannot be this one:** neither `gpt2-large-r
 of unknown provenance (ALBERT's added after `/challenge-pr` on #150; not part of the rule).
 **ALBERT is not read here:** no run survives, and its sinks ([CLS], [SEP]; bidirectional; 60
 shared-weight iterations) need their own definition (`handoff-10.md` Parked).
+
+**R6, the cross-checkpoint matcher (`STATE.md` Blocked 26 (b), taken by the user 2026-10-05;
+rule fixed before any matcher output was read).** An instrument with a first descriptive
+reading, not a re-read: no claim is labelled here. **Input:** R0's label source only; columns
+**c0** (stored, every position: the old partition), **c2a** (every level-set group, no filter),
+**c2** and **c3** (the definition), each over its own domain, which is the same at every step
+of a prompt (one token set). **Pairs:** the 17 adjacent steps of the 18, same (prompt, layer
+L1–24); every record is read (no readability bar: the matcher compares groups, not members
+against the rest; c3's 10–34 readable records at 0–32 are reported as counts, not as a
+reading). **Link:** `merge_tree.link_layer_pair`, **containment ≥ 0.5** (overlap over the
+smaller group), components classified stable / split / merge / tangle / birth / death: MONIC's
+taxonomy (`lit-10.md` §16 row 2), whose own overlap is relative to one cluster, not Jaccard.
+Rejected as the link: Jaccard (`STATE.md`'s wording), which records a piece leaving a group as
+a death plus a birth (`status-1d.md` "Merge tree", the withdrawn #104 headline); Hungarian
+one-to-one at r ≥ 0.5 (`lit-10.md` §16 row 1), which cannot report a split. **Beside:** on
+every stable link, the Jaccard (identical sets; ≥ 0.5, unit 1's and row 1's bar), so
+"survives" splits into "same group" and "changed members". **Filter flips** (c2 and c3): a
+birth or death in the column whose group id (shared with c2a) is linked in c2a's matching at the
+same boundary is a flip (the group was there and failed a filter), else **new / gone**.
+**Null:** `merge_tree.link_chain_null`, per (prompt, layer) chain and column, 200 draws (seed
+0), each step's labels permuted within its domain (sizes kept, which tokens share a group
+destroyed); per boundary, the pooled stable count against its draws (rank p). **Lineage:** for
+each group at 143000, the earliest step reached by an unbroken chain of stable links back from
+it, on its own column and on c2a (by id). **First check (gates the rest; refuse rather than
+degrade):** at 0 → 2 (weights barely move; R0's c1 counts 1000 → 997), c2a's stable share of
+step-0 groups ≥ 0.9 (**placed**); if it fails the run stops and the labels are checked.
+**Readouts:** per boundary and column, pooled over 7 prompts × 24 layers, with prompts beside:
+the share of the earlier step's groups in each kind, births, the stable links' Jaccard
+(median, share identical, share ≥ 0.5), flips against new / gone, and the null's p; per column,
+the lineage-origin histogram at 143000. The churn at 0 → 2 and 2 → 4 is the matcher's own
+floor on that column (no learning there; *corrected at reading: 2 → 4 already moves, so only
+0 → 2 is a floor*, `status-10.md` §1.20), and c3's step-0 groups are mostly chance passes
+(R0's floor), so c3 churn below 64 is the filter's, not the model's. **It does not:** follow
+a group across layers (`merge_tree` does, per step), read §1.9–§1.10's drift within
+lineages (the next row that needs this), or say why a group changed.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint

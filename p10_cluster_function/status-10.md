@@ -30,6 +30,7 @@
   - R2m, F12 against a matched control (each step's member set scored on step 0's activations at the same positions). On the definition (c3), members are less dense than the same tokens were at init at 32–256 (every prompt at 32–128), as dense at 512–1000, and denser from 2000 (+0.12 to +0.27, 6–7 of 7 prompts, sign p 0.016–0.125; mostly the learned groups at 143000); c2, the primary at 8–32, reads below from 8. c3's tokens were not dense at init (control −0.08 to +0.13 from 256 on), so R2's "below at every step" was c2's step-0 baseline. On the old partition the control is +0.09 to +0.35, part of the old step-0 density confound; its crossover lies between 1000–2000 and 8000–16000 (the control and the step-0 baseline bracket the selection effect). The parked window is 64–256 on the primary; c3 agrees with c0 at 16 of 17 steps (the primary at 14, two of them c2's). Selection, context and norm not controlled — `p10_cluster_function/status-10.md` §1.18
   - R3, A0 re-read under T4 (the sink and massive-token columns dropped, rows renormalised), c0 reproducing the published record at every unit. A0 does not hold. Its raw flip is position 0 and one massive token per prompt: out of the means on the old labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from step 16000, and the late residual goes with them; T4's renormalisation adds little. Under T4 the sweep-pooled raw gap is ≤ 0 in every column, and per step the mask explains under 0.4 of any flip from 1000 on. On the definition, members against the rest at the same positions leave a residual window, +0.05 to +0.09 at 2000–16000, gone from 32000 (the pooled late gap is position); never significant per unit — `p10_cluster_function/status-10.md` §1.17
   - R5c, 5c's flip on `gpt2-large` with the sink out (stored runs, 21 prompts, trained and random, 5c's partition). It does not survive. With position 0 in, random weights give the same raw gap as trained (+1.52 against +1.59), all causal mask, so the flip was never trained-specific on this random arm. Out of the means, trained's raw gap is −0.03 (7 of 21 prompts positive). The trained-only gap beyond the mask (+0.23, 16 of 21) is position 0. Position 0 is the only T1–T2 token and is unclustered in every trained unit. ALBERT not read — `p10_cluster_function/status-10.md` §1.19
+  - R6, the cross-checkpoint matcher (an instrument: adjacent steps, same prompt and layer, containment ≥ 0.5, MONIC's kinds, on R0's labels). From 4000 to 54000, 56–67 % of the definition's groups survive each boundary, with changed members (median Jaccard 0.75–0.83). Most of its births and deaths are filter flips, groups that exist and fail or pass a filter. No 143000 group's unbroken lineage reaches back past 256, and 89 % start after 2000. The old partition is the other way: 17 % of its 143000 clusters trace back unbroken to step 0. Its null (permuted labels) only rules out chance overlap — `p10_cluster_function/status-10.md` §1.20
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -56,7 +57,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `4b90293248`
+- **Reviewed:** 2026-10-05 · body `936cda2aac`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1462,6 +1463,81 @@ random): the Parked question's answer is yes, the sink sat in 5c's unclustered p
 
 Re-run: `python tools/run/p10_r5c_gpt2_sink.py --trained <…_13-40-48> --random <…_15-47-26>
 --out <file> --jobs 6` with `METS_DATA` set. Tests: `tests/test_p10_r5c_gpt2_sink.py`.
+
+### 1.20 R6: the cross-checkpoint matcher — **built; between adjacent checkpoints from 4000 to 54000, 56–67 % of the definition's groups (c3) survive into the next step (51 % over the long last step), mostly with changed members (median Jaccard 0.75–0.83, identical 22–30 %). Most of c3's births and deaths are filter flips: the group is there in c2a and fails or passes a filter (from 4000, 557–645 flips per boundary against 14–49 new or gone). Lineages are young: no 143000 c3 group traces an unbroken chain back past 256, and 89 % of them start after 2000 (83 % on c2a). The old partition (c0) is the other way: 17 % of its 143000 clusters trace back unbroken to step 0**
+
+**What ran** (`design-10.md` "R6", rule fixed before any matcher output was read; `STATE.md`
+Blocked 26 (b), user 2026-10-05). `tools/run/p10_r6_matcher.py` links each step's groups to the
+next step's at the same (prompt, layer) with `merge_tree.link_layer_pair` (containment ≥ 0.5;
+components stable / split / merge / tangle / birth / death), on columns c0, c2a, c2, c3. No
+forward pass.
+
+**Inputs.** R0's label source `data/p10/reread_r0_2026-10-05/labels/` (summary sha256
+`28498b12`); 7 v1 passages × L1–24 × 18 steps (17 boundaries); every record read, none refused;
+each column's domain identical at every step of a prompt (checked; the run refuses otherwise).
+Output `data/p10/reread_r6_2026-10-05/r6.json` (md5 `8b6ea599`, 64 KB), 54 s on 14 processes.
+Null: 200 draws, seed (0, prompt index, layer). Code at this PR (base `86bd460`).
+
+**First check passes:** c2a at 0 → 2, stable share 0.9995 (bar 0.9); 1,925 of 1,929 stable links
+identical. *Corrected at reading:* the rule called 0 → 2 **and 2 → 4** the matcher's floor; 2 → 4
+already moves (c2a stable 0.86, 82–89 % per prompt; R0's c1 count goes 997 → 903 there), so only
+0 → 2 is a floor.
+
+**Per boundary, pooled over 168 (prompt, layer) chains.** Stable = share of the earlier step's
+groups whose component is 1–1; death = share with no link; J = the stable links' Jaccard (median;
+share identical); flips / new = births + deaths whose id is / is not linked in c2a.
+
+| from → to | c3 groups | c3 stable | c3 death | c3 J (med; ident) | c3 flips / new | c2a stable | c2a merge | c2a J (med; ident) | c0 stable |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 → 2 | 62 → 61 | 0.97 | 0.03 | 1.00; 1.00 | 3 / 0 | 1.00 | 0.00 | 1.00; 0.99 | 0.94 |
+| 2 → 4 | 61 → 63 | 0.64 | 0.36 | 1.00; 0.92 | 45 / 1 | 0.86 | 0.06 | 1.00; 0.72 | 0.89 |
+| 4 → 8 | 63 → 55 | 0.29 | 0.71 | 1.00; 0.72 | 80 / 2 | 0.67 | 0.13 | 0.83; 0.44 | 0.84 |
+| 8 → 16 | 55 → 96 | 0.22 | 0.78 | 0.88; 0.33 | 113 / 14 | 0.54 | 0.13 | 0.67; 0.28 | 0.81 |
+| 16 → 32 | 96 → 67 | 0.06 | 0.94 | 0.30; 0.00 | 93 / 58 | 0.21 | 0.16 | 0.43; 0.19 | 0.78 |
+| 32 → 64 | 67 → 248 | 0.36 | 0.63 | 0.40; 0.08 | 179 / 85 | 0.41 | 0.19 | 0.42; 0.15 | 0.79 |
+| 64 → 128 | 248 → 307 | 0.35 | 0.62 | 0.65; 0.06 | 257 / 102 | 0.44 | 0.13 | 0.54; 0.12 | 0.77 |
+| 128 → 256 | 307 → 326 | 0.33 | 0.66 | 0.67; 0.10 | 381 / 44 | 0.54 | 0.19 | 0.64; 0.20 | 0.74 |
+| 256 → 512 | 326 → 598 | 0.40 | 0.55 | 0.62; 0.28 | 488 / 142 | 0.45 | 0.20 | 0.60; 0.20 | 0.59 |
+| 512 → 1000 | 598 → 670 | 0.39 | 0.54 | 0.52; 0.08 | 540 / 166 | 0.37 | **0.34** | 0.56; 0.15 | 0.64 |
+| 1000 → 2000 | 670 → 817 | 0.44 | 0.48 | 0.57; 0.08 | 698 / 79 | 0.43 | **0.30** | 0.60; 0.18 | 0.64 |
+| 2000 → 4000 | 817 → 849 | 0.50 | 0.43 | 0.67; 0.15 | 673 / 72 | 0.55 | 0.22 | 0.67; 0.23 | 0.66 |
+| 4000 → 8000 | 849 → 872 | 0.56 | 0.36 | 0.75; 0.22 | 612 / 19 | 0.57 | 0.23 | 0.75; 0.33 | 0.68 |
+| 8000 → 16000 | 872 → 932 | 0.62 | 0.33 | 0.78; 0.24 | 584 / 31 | 0.65 | 0.16 | 0.80; 0.36 | 0.68 |
+| 16000 → 32000 | 932 → 967 | 0.67 | 0.30 | 0.80; 0.26 | 557 / 32 | 0.68 | 0.14 | 0.80; 0.37 | 0.71 |
+| 32000 → 54000 | 967 → 934 | 0.64 | 0.32 | 0.83; 0.30 | 581 / 14 | 0.69 | 0.16 | 0.83; 0.41 | 0.73 |
+| 54000 → 143000 | 934 → 810 | 0.51 | 0.44 | 0.80; 0.28 | 645 / 49 | 0.55 | 0.24 | 0.80; 0.40 | 0.70 |
+
+**Lineage origin of the groups at 143000** (cumulative share whose unbroken stable chain starts at
+or before the step; c3 on its own links and, by id, on c2a's):
+
+| column (groups) | ≤ 16 | ≤ 256 | ≤ 2000 | ≤ 16000 | ≤ 54000 | none (born at 143000) |
+|---|---|---|---|---|---|---|
+| c0 (7161) | 0.18 (1,204 from step 0) | 0.22 | 0.38 | 0.53 | 0.71 | 0.29 |
+| c2a (2243) | 0.00 | 0.02 | 0.14 | 0.38 | 0.62 | 0.38 |
+| c3, own links (810) | 0.00 | 0.01 | 0.11 | 0.35 | 0.59 | 0.41 |
+| c3, by id on c2a (810) | 0.00 | 0.02 | 0.17 | 0.44 | 0.67 | 0.33 |
+
+- **The null is weak, as expected for small groups:** every boundary's stable count beats all
+  200 permuted chains in every column (p = 1/201, the floor); c3's draws average 0.2–30 stable
+  links against 6–620 observed. It rules out chance overlap and nothing more.
+- **c3's churn is mostly the filters, not the groups.** From 4000 on, flips outnumber new / gone
+  13–41 to 1; at 32–1000 new / gone is a larger share (44–166 per boundary), as c2a forms.
+  On c2a itself the groups that exist survive at 0.55–0.69 per boundary from 2000.
+- **Survival means changed members.** A stable link at 4000–54000 keeps a median 75–83 % of its
+  union; 22–30 % (c3) and 33–41 % (c2a) are identical sets. Over many steps this compounds: the lineage table.
+- **c2a's merges peak at 512 → 2000** (0.30–0.34 of groups absorbed), the coarsening window of
+  F1 (`status-10.md` §1.16: 64–512 strong difference, late tail).
+- **16 → 32 is a break in every filtered column** (c2a 2020 → 865 groups, stable 0.21; c3 0.06):
+  R0's group counts fall there too (§1.14 table). Not explained here.
+- **Spread over prompts** (stable share, c3): 0.44–0.78 per prompt at 8000–54000, 0.00–0.71 below
+  1000, where several prompts have under 10 c3 groups.
+- **Does not:** follow a group across layers, read §1.9–§1.10's drift within lineages (the
+  Parked question: from these numbers, adjacent steps keep most groups with changed members, and
+  over the whole axis lineages are replaced; which of the two carries the drift is that row's),
+  or say why a group changed. One seed, 7 passages, containment 0.5 placed.
+
+Re-run: `python tools/run/p10_r6_matcher.py --labels data/p10/reread_r0_2026-10-05/labels --out
+<file> --workers 14` with `METS_DATA` set (conda `mets`). Tests: `tests/test_p10_r6_matcher.py` (8).
 
 ---
 
