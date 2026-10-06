@@ -75,6 +75,22 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the sink, and its random arm already has the raw flip in full. `tools/run/p10_r5c_gpt2_sink.py`,
 > rule in `design-10.md` "R5c". Parked: ALBERT (below). **Next, for the user:** Blocked 26 (b)–(d),
 > or ALBERT.
+>
+> **R6 done, 2026-10-05 (`status-10.md` §1.20; its title is the summary).** Blocked 26 (b), the
+> user's: the cross-checkpoint matcher on R0's labels (c0, c2a, c2, c3), containment ≥ 0.5,
+> MONIC's kinds, rule in `design-10.md` "R6". `tools/run/p10_r6_matcher.py`; output
+> `data/p10/reread_r6_2026-10-05/r6.json`. The Parked "Matching clusters across checkpoints"
+> item below is built; its question (drift within or between clusters) is now a reading that
+> needs §1.9–§1.10's measure per lineage. **Next, for the user:** Blocked 26 (c), (d), (e′), or
+> that within-lineage reading.
+> *Parked (R6):* (1) **c0's 1,204 clusters at 143000 that trace back unbroken to step 0** (17 %).
+> Mostly answered after `/challenge-pr` on #151: they lie off the kept positions (c1, the same call
+> on them, has 0), in early layers. Left: which positions (repeats, position 0, the delimiter).
+> Cost: their member strings from R0's labels, no pass. Could change: how much of c0's §1.7–§1.10
+> is init structure on repeats. (2) **16 → 32 breaks every
+> filtered column** (c2a 2020 → 865 groups, stable 0.21). Why: unexplained, and R0's counts
+> fall there too. Cost: per-prompt group sizes at 16 and 32. Could change: whether 32 belongs in
+> F1's window as a trained step.
 
 **Last updated:** 2026-09-25 — Stage 0 complete (380/380 at pin `64a4087`). Stage 1 is done by the letter of its criterion (§1.3): steps 1, 2 and 3 are done, with both sweeps (`status-10.md` §1.6–§1.11). The per-layer §1.9–§1.10 hold on the pilot too (`status-10.md` §1.12), and so do F1/F12's 32–64 window (§1.13). **Next: the context-shuffle test (Parked), matching clusters across checkpoints (Parked), or Stage 2.**
 **Tier:** everything below is **exploratory and unregistered**. `claims/registry.json`
@@ -764,7 +780,8 @@ before it.
   comparable across sweeps. Why: any per-unit p comparison between the two
   sweeps. Cost: seed from (seed, run_dir) in each runner; re-run changes every
   stored p slightly. Changes: nothing on record (§1.13 compares values only).
-- **Matching clusters across checkpoints** (discovery, user's question,
+- *Built 2026-10-05 as R6 (`status-10.md` §1.20); the within-lineage drift reading is not done.*
+  **Matching clusters across checkpoints** (discovery, user's question,
   2026-09-25). Every Phase 10 row compares per-checkpoint statistics; none
   follows a cluster from one checkpoint to the next, so "a cluster changes
   meaning" cannot be told apart from "a new cluster replaces it". Why: the

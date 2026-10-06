@@ -256,3 +256,4 @@ running median of the rows above it gets a line under the table saying why.
   mid-unit (`p10_r3_sink_split.py`), a gate re-run after a pure-tier import, and this file read whole.
 | 2026-10-05 | Phase 10 R2m: F12 against a matched control (before /challenge-pr) | 56 | 162k | 6.6M | 43k | #149 |
 | 2026-10-05 | Phase 10 R5c: 5c's flip on gpt2-large with the sink out (before /challenge-pr) | 58 | 154k | 6.3M | 41k | #150 |
+| 2026-10-05 | Phase 10 R6: cross-checkpoint matcher (before /challenge-pr) | 44 | 155k | 4.8M | 41k | #151 |

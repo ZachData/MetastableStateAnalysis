@@ -859,6 +859,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-05, Phase 10 R6: the matcher's rule named 0 → 2 **and 2 → 4** as its no-learning
+  floor ("weights barely move"), but R0's own table, read for that same rule, shows c1 at
+  997 → 903 across 2 → 4; the run gave c2a stable 0.86 there. Caught at reading, before any
+  claim rested on it; the rule now says only 0 → 2. Rule: a "nothing changes here" premise in
+  a design is checked against a number already on record before it is written, not assumed
+  from step size (`status-10.md` §1.20).
 - 2026-10-05, Phase 10 R3: the author found that A0's flip was two tokens, then read the
   definition's leftover corrected gap as "a residual that persists, mostly on learned groups".
   The mask correction divides out uniform attention only, and the definition's members sit
