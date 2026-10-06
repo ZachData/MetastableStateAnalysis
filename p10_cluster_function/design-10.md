@@ -155,6 +155,32 @@ It does not control: step 0's context (Z at init is computed from init activatio
 position, so the control asks whether those positions were already dense at init, not whether
 training changed their neighbours), the norm (§1.5's random-twin hazard), or the init seed (one).
 
+**R5c, 5c's flip with the sink out (`STATE.md` Blocked 26 (e), taken by the user 2026-10-05;
+rule fixed before any output was read).** Inputs: `gpt2-large` and `gpt2-large-random`, 21
+prompts each, the stored runs `data/phase12/2026-09-19_13-40-48/` and `…_15-47-26/` (the
+9-prompt pair 10-51-00 / 11-52-10 is checked for identity on its overlap, not read twice). Labels:
+each run's own `hdbscan_labels.json`, the partition 5c read; attention block L paired with labels
+at L, L = 0–35, as `noise_importance_proxy`. **T1–T2** per prompt: position 0 ∪ every position
+whose residual norm exceeds 10× its layer's median at any hidden-state layer 2–32 (Pythia's 2–20
+of 24, the last four left out the same way), **union over both arms**, so trained and random drop
+the same positions. Arms as R3's sink split: `all` (5c as published), `drop` (T1–T2 out of the
+means, attention untouched), `drop+T4` (their columns also dropped, rows renormalised); each raw
+(diagonal zeroed, 5c's statistic) and causal-mask-corrected. Per unit, gap = unclustered −
+clustered enrichment; a prompt's gap is its mean over readable layers; **the prompt is the unit**
+(layers within a prompt are not independent). **Primary: `drop`, raw.** **Survives** iff the
+trained mean gap > 0 with ≥ 16 of 21 prompts positive **and** trained − random > 0 in ≥ 16 of 21
+(one-sided sign test, p = 0.013 at 16); **sign-flipped as 5c stated** if, in addition, the random
+mean gap < 0. Otherwise **does not survive**. Beside: `all`'s enrichments against 5c's 1.6× /
+0.5× (5c's prompts and date are unrecorded, so a mismatch is reported, not fixed); the share of
+units where every T1–T2 position is unclustered (the Parked question); means by third of depth;
+the corrected gap in R3's 8 position bins. It does not control token frequency
+(`archive/p5c_unclustered/lit-5c.md` §1), and the random arm is a default re-init, not
+norm-matched. **5c's own random arms cannot be this one:** neither `gpt2-large-random` nor
+`albert-base-v2-random` could load through `run_1` before 2026-09-17 (`e191d77`), so both are
+of unknown provenance (ALBERT's added after `/challenge-pr` on #150; not part of the rule).
+**ALBERT is not read here:** no run survives, and its sinks ([CLS], [SEP]; bidirectional; 60
+shared-weight iterations) need their own definition (`handoff-10.md` Parked).
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

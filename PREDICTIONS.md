@@ -172,6 +172,17 @@ refused — but neither touches what counts as reproduction.
 
 Recorded before any sweep exists, which is the only time it could be added honestly.
 
+### Addendum, 2026-10-05 — 5c's flip, one of the contrasts claim (a)'s failure reading names
+
+Claim (a)'s prediction and its adjudication (energy, rank, Fiedler at steps 0 and 8) are
+unchanged; nothing was adjudicated. Its failure reading names 5c among the trained-vs-random
+contrasts that are load-bearing. 5c's attention flip is no longer one of them on the models
+re-read so far. On `pythia-410m` its trained part is position 0 and one massive token
+(`p10_cluster_function/status-10.md` §1.17). On `gpt2-large` (§1.19) the default-re-init random
+arm shows the same raw flip, all causal mask, and with position 0 out of the means the trained
+flip is gone. 5c's own random arms (GPT-2 and ALBERT) have no recorded run: neither entry could
+load through `run_1` before 2026-09-17 (`e191d77`). ALBERT's trained arm is not re-read.
+
 ## Status
 
 Not yet adjudicated — the replication gate (item 6) has not run. This file exists to make

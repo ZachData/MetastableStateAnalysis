@@ -11,6 +11,7 @@
   - The energy plateau is carried by within-cluster pairs — `archive/p5c_unclustered/status-5c.md` "Preliminary findings (correlational, no interventions run)"
 - **Superseded / wrong:**
   - On `pythia-410m` the flip is about 94 % causal mask: dividing out a content-free baseline leaves about 6 % of the gap. A different model, so not a refutation of the GPT-2/ALBERT number — `p10_cluster_function/status-10.md` §1.1
+  - The flip on `gpt2-large` is not trained-specific: on stored runs (21 prompts), `gpt2-large-random` has the same raw flip, all causal mask. With position 0 out of the means, the trained flip is gone (−0.03, 7 of 21 prompts positive). Neither of 5c's random arms (GPT-2, ALBERT) has a recorded run: neither entry could load through `run_1` before 2026-09-17. ALBERT not re-read — `p10_cluster_function/status-10.md` §1.19
   - An ALBERT random-vs-trained ratio was misread as random weights resisting collapse more — `p5_single_mstate_analysis/math-5c.md` §2.2
   - Blockers 2 and 3 (GPT-2 hooks never fire; no model with an LM head) were closed by the `causal_tests.py` migration and `core/lm_loading.py` — `archive/p5_single_mstate_analysis/status-5.md` "v2 follow-up: causal_tests.py migration — DONE (item 3 aftermath, closed)"
 - **Registry:** none, because Groups C and D were designed and never registered (`claims/CLAIMS.md`)
@@ -25,7 +26,7 @@
   - The frequency regression on the 410m sweep, v1 prompt keys only (free)
   - Group C, the rank-budget test across populations (free: reuses effective-rank code)
   - Group D (forward pass: one per intervention × prompt × checkpoint)
-- **Reviewed:** 2026-09-24 · body `31eefb5696`
+- **Reviewed:** 2026-10-05 · body `d456a5d4d3`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -37,6 +38,7 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
 - 2026-08-23 · the ALBERT two-timescale ratio is plateau duration, not collapse resistance · `p5_single_mstate_analysis/math-5c.md` §2.2
 - 2026-09-16 · token frequency confounds both stories · `archive/p5c_unclustered/lit-5c.md` §1
 - 2026-09-20 · the flip on `pythia-410m` is ~94 % causal mask · `p10_cluster_function/status-10.md` §1.1
+- 2026-10-05 · the flip on `gpt2-large` (stored runs, 21 prompts) does not survive position 0 out of the means (raw gap −0.03, 7 of 21 prompts positive), and `gpt2-large-random` has the full raw flip (+1.52 against trained +1.59), all causal mask. 5c's random arms (GPT-2 and ALBERT) predate any loadable `-random` entry (`e191d77`). ALBERT not re-read · `p10_cluster_function/status-10.md` §1.19
 
 **v2 plan reframe — read this before anything below.** The transition plan's opening section
 ("Framing: particles first") elevates this phase's central object — the unclustered

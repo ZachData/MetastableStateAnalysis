@@ -465,6 +465,14 @@ needs the user to enable it on GitHub.
   the residual: out of the means, the late raw gap reverses (`status-10.md` §1.17). A replication
   that shares a confound cannot test it. Rule: before calling a population statistic confirmed,
   re-read it with the few highest-leverage tokens (the sink, massive tokens) out of the means.
+- 2026-10-05, Phase 10 R5c: 5c's flip ("trained-specific in every model examined"), cited as
+  motivating evidence for the v2 redesign, rested on random GPT-2 and ALBERT arms with no recorded
+  run; neither `-random` entry could load through `run_1` before 2026-09-17 (`e191d77`). On the
+  GPT-2 arm that now exists
+  the raw flip is as large under random weights (all causal mask), and the trained-only part is
+  position 0 (`status-10.md` §1.19). A control with no recorded run cannot be re-run, so its
+  verdict was never checkable. Rule: a trained-vs-random contrast is quoted only with the random
+  arm's run (model key, date, manifest); without one, it is a lead, not a result.
 - 2026-10-05, Phase 10 R2: `design-10.md` froze F1's re-read rule as "negative iff median p ≤
   0.05 and the mean is negative" and stated §1.3's finding as "the 32–512 window". Applied to the
   published record itself, the rule gives negative from 32 to 54000: the window was a magnitude
