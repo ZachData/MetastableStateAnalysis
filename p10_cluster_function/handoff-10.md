@@ -124,11 +124,29 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > groups. `/challenge-pr` on #154: findings 1–3 taken, 4 agreed. One departure at the gate:
 > check (d)'s tolerance 1e-5 → 1e-4 (float32 sequence-length noise at step 143000). **Next, for the
 > user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a Parked item below.
-> *Parked (R7):* **the own floor `J0` is below chance for 32–46 % of c3's groups from 512.** Why:
-> the definition's "moves" filter tests best Jaccard ≥ the same `J0`, so for those groups "moves"
-> may pass by chance as easily as R7's "survives". Cost: free, from unit 1's stored Jaccards and a
-> chance level per group (R7's `chance95`). Could change: the definition's move filter (Blocked 22
-> (a)), so every re-read row's c3.
+> *(Parked (R7), the own floor below chance: taken as R8, below.)*
+>
+> **R8 done, 2026-10-06 (`status-10.md` §1.24; its title is the summary).** Blocked 26 (f), the
+> user's: the own-floor check on "moves", rule in `design-10.md` "R8" (committed before any chance
+> level). `tools/run/p10_r8_floor.py`; output `data/p10/reread_r8_2026-10-06/r8.json` (no forward
+> pass, 8 min). Answer: **c3 does not stand by the placed rule**: a chance-aware bar keeps
+> 0.87–0.90 at 64, 128, 256, 1000, 0.91 at 512, 0.93–0.97 from 2000; step 0's floor 62 → 31.
+> **Next, for the user:** Blocked 27 (keep c3, take c3c, or run the exact check first).
+> *Parked (R8):* **the exact check, with P > 0 labels kept.** Why: `Jc` is against P = 0's
+> partition; P > 0 group counts differ by up to ×3 in a tenth of the conditions. Cost: unit 1's
+> P > 0 passes again with labels written (~1 h on R0's scale, GPU allowed). Could change: c3c's
+> size by a few points either way.
+> *Parked (2026-10-06, the user's question in the R8 session):* **the theory's own smooth field,
+> `φ_β`'s wells at the measured β** (`lit-1d.md` §3; option C, waiting on Blocked 9 since
+> 2026-09-26; β decided 2026-10-04: 3.5 [1.6, 5.6]). Why: c3's knobs (`min_cluster_size` 2, `J0`'s
+> 10th percentile, 0.5, the bulk share) are placed; `φ_β` has one, measured. An unrecorded probe
+> (mean shift on frozen states, 2 passages × L4 / L12 / L20, steps 0 and 143000, scratchpad only):
+> raw frame, 1 well at β ≤ 5.6 at both steps; centred, step 143000 has **2–4 wells holding every
+> token at β = 3.5**, shattering to near-singletons by β = 5.6 (L4, L12) or 20 (L20), while step 0
+> already shatters at β = 3.5 (161–271 wells). Untested: what the wells are (position, the
+> opening, a content split), the merge tolerance, every other cell, Pythia's 16 heads against the
+> idealised kernel. Cost: no forward pass, minutes per step. Could change: whether 1d's cluster is
+> a level-set group or a well of `φ_β`, an order of magnitude coarser than c3.
 > *Parked (R7):* **`alone` at position 1.** Why: every token sits beside the sink, so a token-borne
 > miss can be position 1, not missing context. Cost: one more arm (the token after a neutral
 > filler at its own offset), ~5 min CPU. Could change: the token-borne share, upward.

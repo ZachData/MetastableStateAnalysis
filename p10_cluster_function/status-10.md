@@ -34,6 +34,7 @@
   - R6w, whether the co-membership and lexical-carry drift happens within lineages (each step's change split exactly into the persisting groups' change and entry / exit terms, on R6's links). On the definition, from 512 to 143000, replacement does not carry the drifts measured in the embedding: entering and leaving groups sit where the persisting ones do, and the persisting groups move, mostly by 2000 (class beyond a lexical cluster −0.12, own-embedding similarity +0.18). A shift of the layer-0 frame under every group would read the same way, and where the drift is, groups with identical members move at least as much as changed ones (few links). Same on the unfiltered groups and the old partition, and on both record sets. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.21
   - R6f, R6w's within split into members against frame (every step's groups re-scored in one fixed layer 0, step 512's and step 143000's). For own-embedding and within-class embedding similarity it is the frame, pooled and in 5–7 of 7 prompts: the token embedding moves under the definition's groups, mostly 512 → 2000, so there "trained, mostly what the embedding groups" reads as the embedding coming to group what the groups held. For class beyond a lexical cluster the prompts split, so whether the groups became lexical stays open (the pooled members part ≤ 0.03 is partly prompts cancelling). Same on the unfiltered groups; on the old partition about a third of the class-beyond-lexical drift is membership. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.22
   - R7, the context-shuffle test (each group's tokens re-clustered with their passage block-shuffled at four grains, and each token alone after the sink). From 512 on, the label depends on the bar: on each group's own floor it is mixed (39 % at 512 and 48–61 % after survive with their token alone, a third break under a token shuffle); on a fixed bar, and among the groups whose floor clears chance, breaking under a shuffle is the largest share (about half to two thirds). The own floor is below chance for a third or more of the groups, and those come out token-alone. Deeper groups survive alone less. Before 512 no shuffle moves any group: the model starts using order between 256 and 1000. The token-alone input moves states even at init, and a shuffle also breaks some token-alone groups, so neither label is a pure reading of context. At 512, groups that break under a shuffle are as same-class as token-alone ones, so the class grouping there is not only a per-token feature. Descriptive, no null — `p10_cluster_function/status-10.md` §1.23
+  - R8, the own-floor check on the definition's "moves" filter (a chance level per group from 2000 random same-size sets against the passage's own partition, a proxy for the moved passages'). The definition does not stand by its placed rule: requiring every moved passage's match to beat chance as well as the group's own floor keeps 87–90 % of its records at steps 64, 128, 256 and 1000, 91 % at 512 and 93–97 % after. At init "moves" is mostly chance (step 0's 62 records halve). Most groups whose floor is below chance still pass, intact. The stricter set is a candidate; the choice is the user's — `p10_cluster_function/status-10.md` §1.24
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -51,6 +52,7 @@
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint. F12's density confound is now controlled for tokens and positions (R2m), not for norm or the init's context — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §1.18
   - Is the class grouping computed early in training context, or a per-token feature from an early layer? R7 ran the context-shuffle test on the definition: at 512 not only per-token; the token-alone arm's position (every token at position 1) and a word-level shuffle are not controlled. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.23, `p10_cluster_function/handoff-10.md` "Parked"
+  - Which set the re-read rows read after R8: c3, or c3c (its "moves" must also beat chance), which keeps 87–97 % of c3 from step 64 and half its step-0 floor; the user's call. Beside it, whether a well of the theory's own density at the measured β is a better cluster than a level-set group (an unrecorded probe only) — `p10_cluster_function/status-10.md` §1.24, `p10_cluster_function/handoff-10.md` "Parked"
   - Does the pilot's 27-checkpoint "50–55" `max_alive` also fall at layer 0? And what sets `repeated_tokens`' ~50 deep-layer clusters? (Its stored partitions are mostly float32 rounding at steps 32 / 512; float64 gives 24–30 clusters at L6–18, so re-ask after the fix) — `p10_cluster_function/status-10.md` §1.8, `p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"
   - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
@@ -60,7 +62,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-06 · body `1f3b134bab`
+- **Reviewed:** 2026-10-06 · body `e3533a84ac`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1887,6 +1889,59 @@ throughout.
 Re-run: `data/p10/reread_r7_2026-10-06/run_r7.sh <steps>` from the worktree root (resumable; gate
 512 and 143000 first). It refuses a (step, passage) on any first check. Tests:
 `tests/test_p10_r7_shuffle.py` (12).
+
+### 1.24 R8: the own-floor check on "moves" — **c3 does not stand by the rule: under a chance-aware bar (every EOD condition's best Jaccard ≥ max(`J0`, the 95 % chance level of a random same-size set)) c3 keeps 0.87–0.90 of its records at 64, 128, 256 and 1000 (rule: ≥ 0.90 at every step from 64), 0.91 at 512 and 0.93–0.97 from 2000; step 0's floor halves (62 → 31) and steps 0–16 keep about half, since a random set clears their `J0` in one condition 66–74 % of the time. Every dropped record is one whose `J0` is below chance (35–52 % of c3's records from 32), but most of those groups survive: they come through the preambles intact. The candidate is c3c; choosing it is the user's (Blocked 27)**
+
+**What.** `design-10.md` "R8" (rule fixed before any chance level was computed; Blocked 26 (f),
+user 2026-10-06). `tools/run/p10_r8_floor.py`: per (step, passage, layer), centred, size 2, a
+chance level `Jc` per group size from 2000 random same-size sets of the kept offsets, scored by
+best-match Jaccard against the P = 0 partition; c3c = c2 groups whose unit 1 class is still
+`moves` when every EOD condition's J must reach max(`J0`, `Jc`). No forward pass, 8 min CPU.
+
+**Inputs.** R0's labels (sha over the 18 step files in `r8.json`'s `meta`) and unit 1 records
+(`data/p10/reread_r0_2026-10-05/`); output `data/p10/reread_r8_2026-10-06/r8.json` (md5
+`95d915ec`), run on `fc1ab92` plus this PR's tool. **First checks, all passed:** the stored P = 0
+groups are R0's c2a at every layer; the recomputed c2 and c3 are R0's; c3's totals are R0's (step
+0: 62, 143000: 810). Beside: R7's 20-draw flag agrees with `J0` < `Jc` on 8,224 of 8,734 records.
+
+**c3's group-layer records, pooled over prompts and L1–24:**
+
+| step | c3 | c3c | keep | `J0` < `Jc` (share) | of those dropped | median share of random sets ≥ `J0` | `Jc` (median) |
+|---|---|---|---|---|---|---|---|
+| 0 | 62 | 31 | 0.50 | 55 (0.89) | 31 | 0.73 | 0.20 |
+| 2 / 4 / 8 / 16 | 61 / 63 / 55 / 96 | 30 / 31 / 29 / 58 | 0.49–0.60 | 0.83–0.90 | 26–38 | 0.66–0.74 | 0.20 |
+| 32 | 67 | 56 | 0.84 | 30 (0.45) | 11 | 0.005 | 0.18 |
+| **64** | 248 | 223 | **0.90** (0.899) | 108 (0.44) | 25 | 0.000 | 0.17 |
+| **128** | 307 | 268 | **0.87** | 135 (0.44) | 39 | 0.006 | 0.18 |
+| **256** | 326 | 288 | **0.88** | 125 (0.38) | 38 | 0.002 | 0.19 |
+| 512 | 598 | 545 | 0.91 | 211 (0.35) | 53 | 0.000 | 0.19 |
+| **1000** | 670 | 595 | **0.89** | 349 (0.52) | 75 | 0.047 | 0.20 |
+| 2000 | 817 | 757 | 0.93 | 351 (0.43) | 60 | 0.003 | 0.20 |
+| 4000–54000 | 849–967 | 812–931 | 0.95–0.96 | 0.42–0.47 | 36–43 | 0.005–0.016 | 0.20–0.21 |
+| 143000 | 810 | 789 | 0.97 | 364 (0.45) | 21 | 0.010 | 0.21 |
+
+**Reading.**
+- **By the placed rule, c3 does not stand** (four primary steps below 0.90, lowest 0.87 at 128).
+  The drop is small in the trained steps (3–13 %) and sits where F1's and F12's windows are
+  (64–1000); from 2000 it is 3–7 %.
+- **At init, "moves" is mostly chance.** Steps 0–16 keep about half: for the median c3 group a
+  random set clears `J0` in one condition 66–74 % of the time. Unit 1's "trained groups move, step
+  0's do not" stands, and c3c widens it (step 0 31 against 789 at 143000).
+- **A floor below chance is not a chance pass.** Of the 35–52 % of records whose `J0` is below
+  chance from 32, 6–25 % drop: most of those groups come through every preamble at J well above
+  `Jc`. R7's "lenient floor" matters for R7's labels, much less for "moves".
+- c3's groups are almost all larger than 2 (size-2 groups are ≤ 3 records at any step): the
+  definition's "size 2" is `min_cluster_size`, not the groups' size.
+- Band and prompt splits are in `r8.json`; from 64 no band keeps less than 0.76.
+
+**Does not.** Use the real P > 0 partitions: unit 1 stored their group count `k`, not labels, so
+P = 0's partition stands in. They agree in the median (`k` ratio 1.0) but not everywhere (p10 0.29,
+p90 1.4, over 23,328 condition-cells), so `Jc` is a proxy; the exact check needs unit 1's P > 0
+passes re-run with labels kept. Ask whether `J0` (a placed 10th percentile) is the right
+yardstick. Test anything. One seed, 7 passages.
+
+Re-run: `data/p10/reread_r8_2026-10-06/run_r8.sh [--steps …]` from the worktree root. Tests:
+`tests/test_p10_r8_floor.py` (9).
 
 ---
 
