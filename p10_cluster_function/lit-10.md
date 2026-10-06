@@ -976,3 +976,20 @@ Sources: https://arxiv.org/abs/2605.18789 ; https://kbs.uni-hannover.de/~ntoutsi
 https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0278146 ; https://arxiv.org/abs/2402.04362 ;
 https://arxiv.org/abs/2412.17626 ; https://arxiv.org/abs/1909.00512 ; https://arxiv.org/html/2410.13835v1 ;
 https://journals.sagepub.com/doi/10.1177/1745691616658637
+
+## 17. The context-shuffle test, R7 (added 2026-10-06)
+
+Scan before `design-10.md` "R7" was fixed (`CLAUDE.md` "Literature scans", trigger 1). 4 web
+searches, no fetch, nothing read whole: every mark is **[S]** (search summary). No data opened.
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | O'Connor & Andreas 2021 (`2106.08367`): shuffling words within sentences removes < 15 % of a transformer LM's usable information; shuffling all words removes 41 % (mid-range) to 84 % (long-range); models use local word identities and co-occurrence more than order | [S] | a full shuffle keeps co-occurrence, so surviving b = 1 does not mean "only its tokens": R7 adds the `alone` arm, and splits token-borne from bag-borne |
+| 2 | Abdou et al. 2022 (`2203.10995`), Sinha et al. 2021: shuffling after subword segmentation differs from before; shuffled-trained models keep order information through length–frequency statistics | [S] | R7's b = 1 breaks words into pieces; b ≥ 4 mostly keeps short words. A word-level shuffle is Parked, not run |
+| 3 | Stages of inference (Lad et al., `2406.19384`); detokenization (`2410.05864`, `2501.15754`): early layers combine the previous token(s) with the current one into words, in the first 6–30 % of layers | [S] | R7 reads by band (L1–8 first); an early group that needs only its previous token is order-borne at b = 1 and survives b ≥ 2, which the dose–response shows |
+| 4 | TIDE (`2605.06216`): a token-identity signal persists at every layer beside the contextual stream | [S] | agrees in direction with a token-borne outcome; nothing to adopt |
+| 5 | Not found: a paper that asks whether residual-stream clusters of a trained decoder survive shuffling their context (1 search) | — | weak evidence of novelty |
+
+Sources: https://arxiv.org/abs/2106.08367 ; https://arxiv.org/pdf/2203.10995 ;
+https://arxiv.org/html/2406.19384v3 ; https://arxiv.org/html/2410.05864v3 ; https://arxiv.org/pdf/2501.15754 ;
+https://arxiv.org/html/2605.06216

@@ -142,6 +142,7 @@ window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.
 | R6 | the cross-checkpoint matcher (below) | R0 | every later row that follows a group through training needs it (`STATE.md` Blocked 26 (b)) |
 | R6w | §1.9–§1.10's drift within lineages or by replacement (below) | R1, R6 | the question the matcher was parked for (`STATE.md` Blocked 26 (b′)) |
 | R6f | R6w's within split into members against frame, in one fixed layer 0 (below) | R6w | R6w's "within" cannot tell the groups moving from the frame moving under them (`STATE.md` Blocked 26 (b″)) |
+| R7 | the context-shuffle test: does a group need its context or only its tokens (below) | R0 | every row so far reads composition and the embedding; none asks whether a group survives losing its context (`STATE.md` Blocked 26 (c)) |
 
 **R2m, F12's matched control (rule fixed 2026-10-05, before any control output was read).**
 Each column's readable (prompt, layer) records at step s are scored on **step 0's stored
@@ -333,6 +334,59 @@ composition lifts, L12 / L24 or 64 → 512. One seed, 7 passages.
 prompt, the label is read on the two frames' mean (each fixed frame favours its own step's
 groups), with an `opposing` flag (members and frame both ≥ 0.05, opposite signs). The pooled
 labels and terms are unchanged. Results: `status-10.md` §1.22.
+
+**R7, the context-shuffle test (`STATE.md` Blocked 26 (c), taken 2026-10-06; rule fixed
+2026-10-06, before any shuffled pass ran).** Scan: `lit-10.md` §17 (and §12.2, §16 row 5).
+**Question:** does a definition group need its passage's context, or only its tokens? (`handoff-10.md`
+Parked, "Is the computed class grouping context, or a per-token feature?": §1.10 removes only
+the token's own layer-0 vector, so a per-token feature an early MLP computes would look the
+same as context.) **Inputs:** R0's labels and unit 1's records (each c2a group's member offsets
+and own floor `J0`, centred, size 2); the 7 v1 passages at their 512-token cap; **all 18 steps**
+(passes are cheap; the gate below runs first). **Conditions**, per (step, passage), position 0
+fixed (T1 drops it; the sink token is the same in every condition), offsets 1 … n−1 rearranged:
+- `orig`: the passage as read. Its pass must match Stage 0's `activations.npz` within
+  `P0_MATCH_TOL` (unit 1's `p0_match`), else the (step, passage) refuses.
+- `block b`, b ∈ {64, 16, 4, 1}: offsets 1 … n−1 cut into consecutive blocks of b tokens (the last
+  shorter), the blocks permuted uniformly (redrawn if the identity), **K = 5** permutations per
+  level, seeded by (passage, b, k) only, so every step sees the same permutations. A graded
+  disruption with the unigram set fixed (`lit-10.md` §12.2); b = 1 is a full token shuffle (a
+  bag of the passage's tokens); b ≥ 4 keeps most previous tokens and short words.
+- `alone`: each kept token t as the 2-token sequence [passage offset 0, t]; its state at
+  position 1 is the token with no context but the sink. One batched pass per (step, passage).
+**Clouds:** in each condition, the same kept offsets (R0's token set) at their new positions,
+layer ℓ ∈ L1–24, centred, level-set HDBSCAN size 2, **all** groups (no filter on the condition
+side, as unit 1's P > 0 conditions). A kept offset that T2's rule (`move_text.massive_positions`)
+marks massive in a condition is dropped from that condition's cloud and from the groups compared
+in it (as unit 1's subsample floor restricts a group); counted. **Per group** g of c3 (c2 beside;
+c2 at step 0 is the baseline, as the ladder), at each layer: J(g, condition) = best-match Jaccard
+on offsets (`move_text.best_jaccard`). **Survives** a level when the median of its K Jaccards is
+≥ g's own `J0` (unit 1's rule for "moves", the same yardstick); `alone` survives when J ≥ `J0`.
+Fixed bar 0.5 beside. **Group label:** **token-borne** = survives `alone`; **bag-borne** = fails
+`alone`, survives b = 1; **order-borne** = fails both. Beside: survival share at each b (the
+dose–response), and the token-borne groups that fail b = 1 (counted, not relabelled).
+**Reading**, per step, over c3's group-layer records pooled over prompts and L1–24: the three
+shares; the step's label **token** if token-borne ≥ 2/3, **context** if ≤ 1/3, **mixed** between
+(placed, as R6f's). Primary steps: those where c3 is readable (from 64, `status-10.md` §1.14);
+c2 at every step beside, and c2's step 0 as the baseline. Beside: per band (L1–8, L9–16,
+L17–24; detokenization sits in the first layers, `lit-10.md` §17 row 3); per prompt, the label
+on its own records (prompts with ≥ 5 records only); per token, the centred cosine between each
+kept token's state in a condition and in `orig` (Ethayarajh's self-similarity, `lit-10.md` §16
+row 5), members against the rest; the same-class share of member pairs (`p10_token_composition.token_class`,
+class from the **original** order) per label; a chance level per group (best-match Jaccard of 20
+random same-size sets of kept tokens against the condition's groups, its 95th percentile) and
+the count of groups whose `J0` is below it.
+**First checks (gate; refuse rather than degrade):** (a) `orig` matches Stage 0 (above); (b)
+`orig`'s groups are R0's c2a member sets at every layer (else that record refuses), so
+J(g, `orig`) = 1; (c) each shuffled sequence is a permutation of the passage's ids with offset 0
+fixed, and each kept offset's token sits at its mapped position; (d) the `alone` state of the
+kept token at offset 1 equals `orig`'s position 1 (the same two tokens) within `P0_MATCH_TOL`.
+Run steps 512 and 143000 first and open the output (groups per layer, Jaccards not all 0 or 1,
+the three shares) before the other 16.
+**It does not:** say what a group carries (token-borne is not "lexical" and order-borne is not
+"semantic": class is orthographic); control position inside `alone` (every token at position 1;
+c3's groups survive moved offsets by construction, so absolute position is controlled for the
+shuffles, not for `alone`); keep words whole at b = 1 (a word-level shuffle is Parked); use a
+foreign context (other passages' tokens change the token set); test anything. One seed, 7 passages.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
