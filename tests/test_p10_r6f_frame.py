@@ -50,3 +50,18 @@ def test_below_the_floor_is_no_drift_and_unshared():
 def test_frames_that_disagree_are_named():
     assert f.row_label(["members", "members"]) == "members"
     assert f.row_label(["members", "frame"]) == "frame-dependent"
+
+
+def test_a_frame_with_other_tokens_is_refused(monkeypatch):
+    # added after /challenge-pr on #153: the frame's run must hold the same tokens as the step's
+    import numpy as np
+    from tools.run import p10_ext_sem_threshold as ext
+    toks = {"step": np.array(["a", "b", "c"]), "frame": np.array(["a", "b", "d"])}
+    monkeypatch.setattr(ext, "read_tokens", lambda d: toks[d.name])
+    monkeypatch.setattr(ext, "layer0_gram", lambda d: np.eye(3))
+    monkeypatch.setattr(w, "focal_rows", lambda *a, **k: {})
+    with pytest.raises(f.FrameError, match="differ from frame 512"):
+        f._job((1000, "p", "/x/step", {"c3": {}}, {}, set(), {512: "/x/frame"}))
+    toks["frame"] = toks["step"]
+    (_, out) = f._job((1000, "p", "/x/step", {"c3": {}}, {}, set(), {512: "/x/frame"}))
+    assert set(out) == {"own", 512}

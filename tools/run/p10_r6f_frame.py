@@ -112,6 +112,22 @@ def read_split(res_own: dict, res_fixed: dict, prompts_floor=w.FLOOR) -> dict:
                   if v["within"] is not None and abs(v["within"]) >= prompts_floor}
             e["prompts"][F] = {"labels": pl, "counts": {k: list(pl.values()).count(k)
                                                        for k in ("members", "both", "frame")}}
+        # after /challenge-pr on #153: each prompt's values, its label on the two-frame mean (each fixed
+        # frame favours its own step's groups), and whether members and frame oppose (both past the floor)
+        pv = {}
+        for p, v in own["prompts"].items():
+            mem = {F: res["mean"][stat]["prompts"][p]["within"] for F, res in res_fixed.items()}
+            if v["within"] is None or None in mem.values():
+                continue
+            m = float(np.mean(list(mem.values())))
+            pv[p] = {"within": v["within"], "members": mem, "members_mean": m,
+                     "label_mean": share_label(v["within"], m)[1],
+                     "opposing": abs(m) >= w.FLOOR and abs(v["within"] - m) >= w.FLOOR
+                                 and np.sign(m) != np.sign(v["within"] - m)}
+        e["prompt_values"] = pv
+        e["prompt_counts_mean"] = {k: sum(x["label_mean"] == k for x in pv.values())
+                                   for k in ("members", "both", "frame", "no drift")}
+        e["prompts_opposing"] = sorted(p for p, x in pv.items() if x["opposing"])
         shares = [e["share"][F] for F in res_fixed]
         e["row_label"] = row_label(e["label"][F] for F in res_fixed)
         e["shapley_share"] = None if None in shares else float(np.mean(shares))
