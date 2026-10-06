@@ -31,6 +31,7 @@
   - R3, A0 re-read under T4 (the sink and massive-token columns dropped, rows renormalised), c0 reproducing the published record at every unit. A0 does not hold. Its raw flip is position 0 and one massive token per prompt: out of the means on the old labels, the sweep's raw gap falls from +0.49 to +0.06 and reverses from step 16000, and the late residual goes with them; T4's renormalisation adds little. Under T4 the sweep-pooled raw gap is ≤ 0 in every column, and per step the mask explains under 0.4 of any flip from 1000 on. On the definition, members against the rest at the same positions leave a residual window, +0.05 to +0.09 at 2000–16000, gone from 32000 (the pooled late gap is position); never significant per unit — `p10_cluster_function/status-10.md` §1.17
   - R5c, 5c's flip on `gpt2-large` with the sink out (stored runs, 21 prompts, trained and random, 5c's partition). It does not survive. With position 0 in, random weights give the same raw gap as trained (+1.52 against +1.59), all causal mask, so the flip was never trained-specific on this random arm. Out of the means, trained's raw gap is −0.03 (7 of 21 prompts positive). The trained-only gap beyond the mask (+0.23, 16 of 21) is position 0. Position 0 is the only T1–T2 token and is unclustered in every trained unit. ALBERT not read — `p10_cluster_function/status-10.md` §1.19
   - R6, the cross-checkpoint matcher (an instrument: adjacent steps, same prompt and layer, containment ≥ 0.5, MONIC's kinds, on R0's labels). From 4000 to 54000, 56–67 % of the definition's groups survive each boundary, with changed members (median Jaccard 0.75–0.83). Few of its births and deaths are new groups: most are groups that persist in c2a and fail or pass a filter, or that c2a splits or merges. No 143000 group's unbroken lineage reaches back past 256, and 89 % start after 2000, though chains last about 3× longer than independent breaks would give. The old partition's 17 % of 143000 clusters traced back to step 0 lie off the definition's positions: the same call on the kept positions has none. Its null (permuted labels) only rules out chance overlap — `p10_cluster_function/status-10.md` §1.20
+  - R6w, whether the co-membership and lexical-carry drift happens within lineages (each step's change split exactly into the persisting groups' change and entry / exit terms, on R6's links). On the definition, from 512 to 143000, the drifts measured in the embedding happen inside groups that persist, mostly by 2000: class beyond a lexical cluster falls 0.19, own-embedding similarity rises 0.19. Groups whose members did not change move about as much, so much of it is the layer-0 frame moving. Same on the unfiltered groups and the old partition. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.21
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -57,7 +58,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-05 · body `b6dadde72c`
+- **Reviewed:** 2026-10-06 · body `44272f87fa`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -646,7 +647,9 @@ the layer mean, so no single cluster carries a cell.
 
 ### 1.10 §1.9's class effect, lexical or not — **early in training the network computes it; trained, it is mostly what the embedding already groups**
 
-*Re-read on 1d's working definition: §1.15 (the step-512 and trained readings hold).*
+*Re-read on 1d's working definition: §1.15 (the step-512 and trained readings hold). Within
+lineages: §1.21 (the 512 → 143000 fall happens inside persisting groups, much of it the layer-0
+frame moving).*
 
 Tier 1, descriptive, no null. Reader `tools/run/p10_lexical_carry.py --v1-only`,
 record `data/analysis/p10_s1_lexical_carry.json` (schema 4, after
@@ -1564,6 +1567,97 @@ crossed; a baseline, not a null):
 Re-run: `python tools/run/p10_r6_matcher.py --labels data/p10/reread_r0_2026-10-05/labels --out
 <file> --workers 14` with `METS_DATA` set (conda `mets`); it refuses without the label source's
 `summary.json`. Tests: `tests/test_p10_r6_matcher.py` (11).
+
+### 1.21 R6w: §1.9–§1.10's drift within lineages — **on the definition (c3), from 512 to 143000, the three drifts measured in the embedding happen inside groups that persist, mostly at 512 → 2000: class beyond a lexical cluster falls −0.19 (within −0.18), own-embedding similarity rises +0.19 (within +0.16), within-class embedding similarity +0.11 (within +0.09); c2a and c0 agree. Groups whose members did not change move about as much as changed ones, so much of it is each step's own layer 0 moving under fixed groups. The composition drifts are mixed: unique-only clusters +0.18 "both", copy share −0.06 "replacement". `same_class` does not drift (the control). c3's single layers are too thin to read**
+
+**What ran** (`design-10.md` "R6w", rule committed at `1a96524` before any output; `STATE.md`
+Blocked 26 (b′), user 2026-10-06). `tools/run/p10_r6w_drift.py`: R1's per-token lifts, each focal
+token weighted as R1 aggregates it, each tagged with its group's kind from R6's `link` at every
+boundary it borders. Each boundary's change in the weighted mean is split exactly into **within**
+(the persisting groups' mean change) and one term per kind of entry and exit, measured against the
+persisting groups. On c3 those kinds are restructured, filter flip kept, filter flip restructured,
+and new / gone. Per term, the boundaries are summed over the span. No forward pass.
+
+**Inputs.** R0's labels (`data/p10/reread_r0_2026-10-05/labels/`, summary sha256 `28498b12`); R1's
+records `data/p10/reread_r1_2026-10-05/{cm,lc}_{c3,c2a,c0}.json`; R6's `r6.json` (md5 `8a956856`).
+Records: those readable **with ≥ 1 focal token at every step of the span**. The rule said
+"readable"; a record with no focal token has no value, so this is what "the same population on
+both boundaries" needs. c3 has 51 records over 512–143000 (L12 5, L24 2) and 39 over 64–512 (L12 3,
+L24 0); c2a 132 / 168; c0 160 / 168. Output `data/p10/reread_r6w_2026-10-06/r6w.json` (md5
+`789773ba`), 1 min on 8 processes, code at this PR.
+
+**First checks, all passed:**
+- (a) per-record values equal R1's stored records to 1.0e-15;
+- (b) the terms sum to the total within 1e-9 at every boundary and level;
+- (c) on identical links the four composition lifts' paired change is exactly 0 (381 links on c3);
+- (d) stable components per boundary equal R6's, every column.
+
+**512 → 143000, layer mean** (span sums; "share" = within / total; prompts = those whose within
+term has the sign of their own total, of those with |total| ≥ 0.05):
+
+| statistic | column | total | within | restr. | flip kept | flip restr. | new / gone | label (share) | prompts | R1's change |
+|---|---|---|---|---|---|---|---|---|---|---|
+| CGE40 − kNN40 (class beyond a lexical cluster) | **c3** | −0.192 | −0.184 | +0.010 | +0.009 | −0.034 | +0.008 | **within** (0.96) | 4 of 5 | −0.121 |
+| | c2a | −0.102 | −0.159 | +0.055 | | | +0.002 | within (1.57) | 4 of 4 | −0.093 |
+| | c0 | −0.189 | −0.217 | +0.028 | | | −0.000 | within (1.15) | 6 of 6 | −0.182 |
+| `emb_pct_own` | **c3** | +0.185 | +0.163 | +0.018 | −0.008 | +0.009 | +0.002 | **within** (0.88) | 6 of 6 | +0.184 |
+| | c2a | +0.167 | +0.172 | +0.002 | | | −0.008 | within (1.03) | 7 of 7 | +0.166 |
+| | c0 | +0.174 | +0.226 | −0.028 | | | −0.024 | within (1.30) | 7 of 7 | +0.177 |
+| `emb_given_class` | **c3** | +0.110 | +0.086 | +0.012 | −0.001 | +0.009 | +0.004 | **within** (0.78) | 6 of 6 | +0.148 |
+| | c2a | +0.144 | +0.141 | +0.008 | | | −0.004 | within (0.98) | 7 of 7 | +0.143 |
+| | c0 | +0.146 | +0.189 | −0.025 | | | −0.019 | within (1.30) | 7 of 7 | +0.150 |
+| `no_copy` | **c3** | +0.176 | +0.068 | +0.030 | +0.027 | +0.028 | +0.023 | **both** (0.38) | 3 of 5 | +0.144 |
+| `copy_share` | **c3** | −0.063 | +0.018 | −0.017 | −0.034 | −0.018 | −0.012 | **replacement** (−0.29) | 2 of 4 | −0.025 |
+| `same_class` | **c3** | −0.029 | −0.022 | +0.019 | −0.006 | −0.029 | +0.010 | no drift | | −0.027 |
+| `adjacent` | **c3** | +0.042 | +0.164 | −0.055 | −0.021 | −0.034 | −0.012 | no drift | | +0.050 |
+
+On c2a and c0, `no_copy` reads "replacement" (+0.092) and "no drift" (+0.019), and `copy_share`
+"no drift" on both; `same_class` is "no drift" on c2a and "within" on c0 (−0.077).
+
+**Where on the axis** (c3, layer mean, total / within per boundary): CGE40 − kNN40 −0.106 / −0.097
+at 1000 → 2000 and −0.049 / −0.045 at 2000 → 4000, ≤ 0.02 at every other boundary;
+`emb_pct_own` +0.074 / +0.074 at 512 → 1000 and +0.073 / +0.069 at 1000 → 2000, then ≤ 0.03 in size.
+
+**Identical against changed links** (c3, the mean paired change per stable link and boundary,
+pooled over layers and the span's 8 boundaries; 381 identical, 1,369 changed):
+
+| | `emb_pct_own` | `emb_given_class` | CGE40 − kNN40 |
+|---|---|---|---|
+| identical (Jaccard 1) | +0.013 | +0.007 | −0.014 |
+| changed | +0.015 | +0.013 | −0.025 |
+| c2a identical / changed | +0.018 / +0.021 | +0.015 / +0.019 | −0.016 / −0.017 |
+| c0 identical / changed | +0.018 / +0.037 | +0.017 / +0.033 | −0.001 / −0.030 |
+
+- **The drift §1.10 read as "trained, mostly what the embedding groups" is a within-lineage
+  change.** Persisting groups carry 0.96 of CGE40 − kNN40's fall and 0.88 of `emb_pct_own`'s rise on
+  c3, on all three columns, in most prompts. Entry and exit terms are each ≤ 0.04.
+- **Much of it is the frame, not the members.** These three statistics are measured in each
+  step's own layer 0. On a link whose members are identical, any change is that layer 0 moving
+  (the rule's construction). Such links move about as much per link as changed ones on c3 and
+  c2a. The reading this suggests, not tested here: the embedding comes to group what the depth
+  groups already held, so class *beyond* the embedding falls without the groups changing. The
+  per-link means are not decomposition terms, so they give no share.
+- **Unique-only clusters (`no_copy`) rise by both routes** on c3 (within 0.38 of +0.18, the
+  remainder spread over the four kinds); on c2a by replacement (restructured +0.068). Per prompt
+  the within term swings in sign (−0.57 to +0.30).
+- **The control holds:** `same_class` has no span drift on c3 (−0.03), matching R1 (−0.03).
+- **The fixed record set changes c3's single layers.** With L12 at 5 records and L24 at 2, four
+  c3 labels at L24 differ from R1's (e.g. `no_copy` +0.03 against R1's +0.29), so only the layer
+  mean is read on c3; c2a and c0 have 6–7 records per layer. At the mean one label differs:
+  `copy_share`'s −0.063 crosses the floor where R1's −0.025 does not, so its "replacement" is the
+  fixed set's.
+- **64 → 512 (secondary) is not readable on c3.** Its fixed set (39 records) does not reproduce
+  R1's change: `same_class` +0.05 against +0.12, CGE40 − kNN40 +0.04 against +0.09. On c0, the
+  rise of `same_class` (+0.16) reads "within" (0.67, at the bar), and `copy_share` and `no_copy`
+  read "replacement" by new / gone groups (−0.14 / +0.14). In the network's first 512 steps, the
+  old partition's copy-group drift is groups replaced.
+- **Does not:** test anything (no null; 0.05, 2/3 placed); separate member turnover from the
+  frame beyond the per-link split; follow groups across layers. "Within" includes changed members
+  (R6: median Jaccard 0.75–0.83). The reference (persisting groups) is one choice (`design-10.md`
+  "R6w"). One seed, 7 passages.
+
+Re-run: `data/p10/reread_r6w_2026-10-06/run_r6w.sh` from the worktree root (default BLAS threads,
+as R1). It refuses on any first check. Tests: `tests/test_p10_r6w_drift.py` (9).
 
 ---
 

@@ -280,6 +280,10 @@ that swaps a quarter of its members per step counts as within. The reference (th
 groups) is one choice: entry and exit measured against the overall mean (Foster–Haltiwanger–
 Krizan's form) would move weight between the terms; rejected because it makes "within" depend
 on the entrants.
+*At build, before any output was read:* a record must also have **≥ 1 focal token** at every
+step (R1 drops a record without one, so "readable" alone does not fix the population). A first
+run refused on a level with no such record (c3, L24 at 64–512). A level with none is now reported
+as "no records" and not read. Results: `status-10.md` §1.21.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
