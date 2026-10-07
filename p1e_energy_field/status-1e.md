@@ -19,7 +19,7 @@
 - **After Phase 10:**
   - U1, U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-07 · body `399b26892b`
+- **Reviewed:** 2026-10-07 · body `68b2b223db`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -59,16 +59,53 @@ float32, eager, TF32 off, activations and norms only (no attention maps; ~190 MB
 run). Each manifest records the device and `long8_hash`. The first outputs were checked populated
 before the batch (finite, rows unit to 3e-7, shape (25, n, 1024)).
 
-**GPU against CPU at 2,048 tokens** (step 143000, `wiki_paragraph_long`, against 1d's stored CPU
-run of the same text): tokens equal; unit rows differ by ≤ 1.4e-6 to L13, then 4e-6 to 7.2e-5 at
-L14–24; norms by ≤ 1.2e-4 relative. That is ~10× the 512-token probe's 7.1e-6
-(`docs/compute_profile.md` "The GPU"), so a long-passage cloud from this batch is **not**
-interchangeable with a CPU one at the 1e-5 scale. Every 1e unit reads this batch only, which the
-GPU rule allows.
+**GPU against CPU** (*measured on all 8 pairs after `/challenge-pr` on #157, finding 4; it
+corrects a one-pair reading that put the gap down to length*): this batch against 1d's stored CPU
+long runs, 4 passages × steps 0 and 143000, max |Δ| of unit rows per quarter of the positions
+(`p1e_energy_field/long8_targets.py`; output `targets_gpu_cpu.json` beside the runs). Tokens equal.
+
+| step | L0–13 | L14–24 |
+|---|---|---|
+| 0 | 1.7–4.0e-7, every quarter | 1.8–3.6e-7, every quarter |
+| 143000 | 0.8–2.2e-6 | **4.5e-5 to 1.8e-4**, already 4.5e-5–1.2e-4 in the first quarter |
+
+The gap is the trained checkpoint's deep layers, not the late positions: positions in the first
+quarter (the first 258–510) differ as much as the last. It is 6–25× the 512-token probe's 7.1e-6 at step
+54000 (`docs/compute_profile.md` "The GPU"), from one pass shape against another, not from
+position. So a long-passage cloud from this batch is **not** interchangeable with a CPU one at
+the 1e-5 scale. 1e's primary readings use this batch only, which the GPU rule allows; v1 beside
+is CPU, a continuity check (`design-1e.md` "Inputs").
 
 **The batch (2026-10-06): 144 of 144 runs, every one checked populated** (shape (25, n, 1024) with
 n the provenance count, finite, rows unit to 1e-4, norms > 0); all `cuda:0`, code `4f010a8`,
-`long8_hash` `ba605f4e14b5`; 6.1 s median per run, 24 GB on disk.
+`long8_hash` `ba605f4e14b5` (pinned as `LONG8_HASH`; `load8` refuses a text that no longer hashes
+to it); 6.1 s median per run, 24 GB on disk.
+
+### Targets on the long passages (before any field was read)
+
+Same producer and output. Massive tokens (`move_text.massive_positions`, union over the 18 steps)
+are only position 0 or one more per passage, so U2's primary target set T1 + T2 keeps all but
+1–2 positions. T1–T3 (R0's rule, beside) keeps:
+
+| passage | n | T1–T3 | share kept per quarter |
+|---|---|---|---|
+| `wiki_paragraph_long` | 1840 | 698 (38 %) | 0.46, 0.36, 0.30, 0.40 |
+| `sullivan_ballou_long` | 1032 | 417 (40 %) | 0.55, 0.39, 0.36, 0.31 |
+| `hdbscan_code_long` | 2025 | 337 (17 %) | 0.42, 0.11, 0.07, 0.06 |
+| `latex_monograph_long` | 2036 | 545 (27 %) | 0.41, 0.28, 0.21, 0.17 |
+| `odyssey_butler_long` | 2008 | 677 (34 %) | 0.46, 0.30, 0.34, 0.24 |
+| `horla_long` | 1960 | 683 (35 %) | 0.56, 0.34, 0.28, 0.21 |
+| `darwin_origin_long` | 1949 | 680 (35 %) | 0.49, 0.29, 0.29, 0.32 |
+| `hamlet_long` | 2041 | 653 (32 %) | 0.36, 0.27, 0.34, 0.31 |
+
+(The reviewer's own count, by first occurrence alone, was 1–2 higher per passage: T2 drops the
+massive tokens too.) Hence T1 + T2 primary for U2, T1–T3 beside (`design-1e.md` "U2's block arm:
+the rule", row *targets*).
+
+**Parked** (one line each: why / cost / the decision it could change):
+- Why GPU and CPU differ by ~1e-4 at 143000's deep layers and only 2e-7 at step 0 / free from the
+  stored runs, a GPU pass at 512 tokens of the same prefix would split pass shape from device /
+  whether a cross-device comparison is ever allowed for long passages.
 
 **How to re-run.** Texts: `python -m p1e_energy_field.long_prompts_1e` (reads the cached sources,
 fetches them if absent; a changed source changes the hash). Runs: the `run.sh` above

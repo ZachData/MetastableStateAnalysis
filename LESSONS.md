@@ -1093,6 +1093,12 @@ a wrong premise, the check inherits it.
   resolution. Rule: a diagnosis of *why* an instrument found nothing comes from a
   committed per-condition breakdown (here `scale_real diagnose`), not from a count of
   what passed.
+- 2026-10-07, #157: one GPU-against-CPU pair at 2,048 tokens (7.2e-5) was written up as
+  "~10× the 512-token gap", i.e. caused by length, and put into `compute_profile.md`.
+  `/challenge-pr` asked whether it was length; all 8 pairs split by position quarter show
+  the gap is step 143000's deep layers at every position (up to 1.8e-4) and absent at
+  step 0. Rule: a cause named for a measurement is checked on the split that would
+  separate it (here position), not inferred from one pair.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

@@ -9,7 +9,7 @@ import pytest
 from core.holdout import HELD_OUT_PROMPT_KEYS
 from p1e_energy_field import long_prompts_1e as lp
 
-# Tier: stdlib only (the 8-passage loader, which imports p1d's package, is not called here).
+# Tier: stdlib only (the module reads 1d's texts by path, without importing its package).
 pytestmark = pytest.mark.pure
 
 
@@ -89,3 +89,16 @@ def test_built_texts_match_provenance():
     assert sorted(prov["prompts"]) == sorted(lp.KEYS)
     assert all(0 < v["n_tokens"] <= lp.MAX_TOKENS for v in prov["prompts"].values())
     assert sorted(lp.load()) == sorted(lp.KEYS) and all(lp.load().values())
+
+
+def test_the_8_texts_hash_to_the_pinned_value():
+    assert lp.long8_hash() == lp.LONG8_HASH
+    assert len(lp.load8()) == 8 and set(lp.expected_tokens()) == set(lp.load8())
+
+
+def test_a_changed_text_is_refused(monkeypatch):
+    texts = lp._texts8()
+    texts["hamlet_long"] += " "
+    monkeypatch.setattr(lp, "_texts8", lambda: texts)
+    with pytest.raises(ValueError, match="pinned"):
+        lp.load8()

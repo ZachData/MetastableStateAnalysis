@@ -48,9 +48,9 @@ record); a new batch that stays on CPU says why. R7 (`design-10.md` "R7") ran on
 gate had already run there and its `orig` check compares with Stage 0 at 1e-5. Measured there,
 CPU only: at step 143000 a 2-token pass and the 512-token pass of the same prefix differ by
 1.5e-5 (relative norm), so late checkpoints already sit at the 1e-5 scale without a device change.
-**At 2,048 tokens the GPU / CPU gap is ~10× larger** (up to 7.2e-5 in unit rows from L14,
-step 143000; `p1e_energy_field/status-1e.md` "The 8 long passages"): long-passage clouds from
-different devices are not interchangeable. 1e's 144 long runs are all GPU, ~7 s each, and
+**In a 2,048-token pass the GPU / CPU gap is 6–25× larger** at step 143000's L14–24, at early
+positions as much as late ones (step 0: 2e-7; numbers in `p1e_energy_field/status-1e.md` "The 8
+long passages"): long-passage clouds from different devices are not interchangeable. 1e's 144 long runs are all GPU, ~7 s each, and
 `output_attentions=False` is needed at 2,048 tokens (with attention maps kept, 410m runs out of
 the 10 GB).
 

@@ -245,28 +245,45 @@ def load() -> Dict[str, str]:
     return {k: (HERE / f"{k}.txt").read_text() for k in load_provenance()["prompts"]}
 
 
+#: 1d's four long passages, read by path so this module needs nothing beyond the stdlib.
+P1D_HERE = Path(__file__).resolve().parents[1] / "p1d_cluster_ensemble" / "long_prompts"
+#: The 8 texts' hash, pinned (rule 6; `/challenge-pr` on #157, finding 2). Every run of the
+#: 2026-10-06 batch records it; `load8` refuses texts that do not hash to it.
+LONG8_HASH = "ba605f4e14b5"
+
+
+def _provenances() -> List[Dict]:
+    return [json.loads((d / "provenance.json").read_text()) for d in (P1D_HERE, HERE)]
+
+
+def _texts8() -> Dict[str, str]:
+    out = {k: (d / f"{k}.txt").read_text()
+           for d, prov in zip((P1D_HERE, HERE), _provenances()) for k in prov["prompts"]}
+    if len(out) != 8:
+        raise ValueError(f"expected 8 long passages, have {sorted(out)}")
+    return out
+
+
+def long8_hash() -> str:
+    """Short hash of the 8 texts on disk (compare with ``LONG8_HASH``)."""
+    h = hashlib.sha256()
+    for k, v in sorted(_texts8().items()):
+        h.update(k.encode() + b"\0" + v.encode() + b"\0")
+    return h.hexdigest()[:12]
+
+
 def load8() -> Dict[str, str]:
-    """1e's 8 long passages: 1d's 4 and these 4 (`design-1e.md` "Inputs")."""
-    from p1d_cluster_ensemble import long_prompts as lp1d
-    both = {**lp1d.load(), **load()}
-    if len(both) != 8:
-        raise ValueError(f"expected 8 long passages, have {sorted(both)}")
-    return both
+    """1e's 8 long passages: 1d's 4 and these 4 (`design-1e.md` "Inputs"); refuses a changed text."""
+    got = long8_hash()
+    if got != LONG8_HASH:
+        raise ValueError(f"the 8 long passages hash to {got}, not the pinned {LONG8_HASH}: a text "
+                         "changed after the runs (rule 7); refusing")
+    return _texts8()
 
 
 def expected_tokens() -> Dict[str, int]:
     """Token count per long passage, as each provenance file recorded it."""
-    from p1d_cluster_ensemble import long_prompts as lp1d
-    return {k: v["n_tokens"] for src in (lp1d.load_provenance(), load_provenance())
-            for k, v in src["prompts"].items()}
-
-
-def long8_hash() -> str:
-    """Short hash of the 8 texts, recorded in every 1e long run (rule 6)."""
-    h = hashlib.sha256()
-    for k, v in sorted(load8().items()):
-        h.update(k.encode() + b"\0" + v.encode() + b"\0")
-    return h.hexdigest()[:12]
+    return {k: v["n_tokens"] for prov in _provenances() for k, v in prov["prompts"].items()}
 
 
 if __name__ == "__main__":
