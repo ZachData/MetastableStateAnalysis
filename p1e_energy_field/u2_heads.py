@@ -78,6 +78,22 @@ def head_fields(A, U):
     return m, m - A[:, :1] * U[:1]
 
 
+#: A head's keys cell may leave out a token only if the head puts at least 1 − this on key 0 there.
+SINK_ONLY = 1e-4
+
+
+def left_out_keys(d, g, A, t) -> Dict:
+    """
+    The targets a head's keys cell leaves out (`u2_block.cell`'s ``TINY`` rule) and the largest
+    weight that head puts on keys 1…i at any of them, token 1 aside (its one key is itself).
+    """
+    if d is None:
+        return {"n_left": int(t.numel()), "left_max_keys_w": float("nan")}
+    out = (d[t].norm(dim=1) < ub.TINY) | (g[t].norm(dim=1) < ub.TINY)
+    w = A[t, 1:].sum(dim=1)[out & (t != 1)]
+    return {"n_left": int(out.sum()), "left_max_keys_w": float(w.max()) if w.numel() else 0.0}
+
+
 def head_parts(A, Vc, Wo_h):
     """Head h's keys part and sink part, each (n, d): ``W_O^h Σ_j A_ij (v_j − b_V)`` split at key 0."""
     z = A @ Vc
@@ -155,8 +171,7 @@ class HeadHooked(ua.Hooked):
             kh = keys_h[t]
             stats.append({"block": l, "head": h, "align_phi": align, "a0": float(A[t, 0].mean()),
                           "sharedness": float(kh.mean(0).norm() / kh.norm(dim=1).mean()),
-                          # targets whose weight on keys 1…i underflows to 0 (all on key 0)
-                          "sink_only": int((A[t, 1:].sum(dim=1) < ub.TINY).sum())})
+                          **left_out_keys(mv_k.get("r1out"), g_ns, A, t)})
             mk.append(keys_h[t].mean(0))
             ms.append(sink_h[t].mean(0))
             del A, m, mns, keys_h, sink_h, g_ns, g_k, mv_k, mv_h
@@ -238,16 +253,18 @@ def first_attn_check(rec: Dict, attn_out: Path) -> float:
 
 def explained(c: Dict, sink_only: Dict) -> bool:
     """
-    A head's keys cell short of targets only where that head puts all its weight on key 0 (no keys
-    part, no keys field), plus token 1 (its one key in 1…i is itself, so the field is 0).
+    A head's keys cell short of targets only where that head puts all but ``SINK_ONLY`` of its
+    weight on key 0 (no keys part or keys field above ``TINY``), plus token 1 (its one key in 1…i
+    is itself, so the field is 0).
     """
-    return (c["source"] == "kernns_h:keys_h:r1out"
-            and c["left_out"] <= sink_only[(c["block"], c["head"])] + 1)
+    s = sink_only[(c["block"], c["head"])]
+    return (c["source"] == "kernns_h:keys_h:r1out" and c["left_out"] == s["n_left"]
+            and s["left_max_keys_w"] <= SINK_ONLY)
 
 
 def check_populated(rec: Dict) -> None:
     n = rec["targets"]
-    sink_only = {(s["block"], s["head"]): s["sink_only"] for s in rec["heads"]}
+    sink_only = {(s["block"], s["head"]): s for s in rec["heads"]}
     bad = [c for c in rec["cells"] + rec["head_cells"] if not np.isfinite(c["X"]) or
            (c["n"] < 0.9 * n and not explained(c, sink_only))]
     seen = {(c["block"], c["source"]) for c in rec["cells"]}
