@@ -270,9 +270,11 @@ def run(a) -> int:
             print(f"have {path.name}", flush=True)
             continue
         if loaded != step:
-            if hk is not None:
+            if hk is not None:              # the hooks hold the model: drop both before loading
                 hk.close()
-            del model
+            hk = model = None
+            import gc
+            gc.collect()
             torch.cuda.empty_cache()
             model, _ = load_model(f"pythia-410m-step{step}")
             if next(model.parameters()).dtype != torch.float32:
