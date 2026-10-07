@@ -275,3 +275,8 @@ running median of the rows above it gets a line under the table saying why.
   U2's preparation as well as sourcing, building and extracting four passages. The stale main
   tree also made the start hook print the wrong STATE.md (33 KB), read again from `origin/main`.
 | 2026-10-07 | 1e U2 block arm (before /challenge-pr) | 71 | 190k | 9.3M | 48k | #158 |
+| 2026-10-07 | 1e U2 after /challenge-pr on #158 and #159: shared update, r1out, GPU reader (whole session, #158's row included) | 145 | 323k | 28.6M | 72k | #159 |
+  Over 2× the median (5.3M): one session for #158 and its follow-up, since #158 was merged
+  while its review was being answered; the follow-up added a statistic (four tries to find a
+  specific one, two of them after reviews), two more batches, and the GPU reader the user
+  asked for mid-unit. Should have been a fresh session after #158 (lesson 9).

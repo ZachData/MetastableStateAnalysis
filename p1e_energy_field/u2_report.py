@@ -24,6 +24,9 @@ from .u2_block import BANDS, BETAS, SOURCES
 
 PRIMARY = {"long": ("t12", "causal", 3.5), "v1": ("r0", "causal", 3.5)}
 TRAINED_BANDS = ("L1-8", "L9-16", "L17-22")
+SHARED_ROWS = (("causal:r1out", 3.5), ("causal:residout", 3.5), ("causal:resid", 3.5),
+               ("causal:ambout", 3.5), ("mean0:frozen", 0.0), ("mean0:r1out", 0.0),
+               ("mean0:residout", 0.0))
 SHORT = {"ascends": "ASC", "leans ascends": "asc", "descends": "DES", "leans descends": "des",
          "mixed": "·"}
 
@@ -53,9 +56,9 @@ def chance(n_passages: int, n_cells: int) -> Dict[str, float]:
     return {"ascends_or_descends": n_cells * full, "leans": n_cells * lean}
 
 
-def load(out: Path, kind: str) -> List[Dict]:
+def load(out: Path, kind: str, sub: str = "records") -> List[Dict]:
     recs = []
-    for p in sorted((out / "records" / kind).glob("*.json")):
+    for p in sorted((out / sub / kind).glob("*.json")):
         r = json.loads(p.read_text())
         for c in r["cells"]:
             recs.append({"step": int(r["step"]), "passage": r["passage"], **c})
@@ -98,8 +101,8 @@ def isolated(labs: Dict, k: tuple) -> bool:
                    for n in near)
 
 
-def summarise(out: Path, kind: str, nll: Dict = None) -> Dict:
-    recs = load(out, kind)
+def summarise(out: Path, kind: str, nll: Dict = None, sub: str = "records") -> Dict:
+    recs = load(out, kind, sub)
     if not recs:
         return {}
     n_pass = len({c["passage"] for c in recs})
@@ -109,7 +112,8 @@ def summarise(out: Path, kind: str, nll: Dict = None) -> Dict:
     rows = {}
     for k, lab in labs.items():
         t, s, b, step, band = k
-        robust = len({labs[(t, s, bb, step, band)] for bb in BETAS}) == 1
+        at_b = [labs[(t, s, bb, step, band)] for bb in BETAS if (t, s, bb, step, band) in labs]
+        robust = len(at_b) > 1 and len(set(at_b)) == 1
         at0 = labs.get((t, s, b, 0, band))
         rows["|".join(map(str, k))] = {
             "label": lab, "label_Xt": labst[k], "mean_X": float(np.mean(list(vals[k].values()))),
@@ -177,6 +181,20 @@ def report(out: Path) -> int:
             d = rec["drop_lowest_nll"]
             text.append(f"143000 without {d['passage']} (NLL {d['nll']:.2f}), {t}|{s}|{b}: " + ", ".join(
                 f"{band} {SHORT[d['labels'][f'{t}|{s}|{b}|143000|{band}']]}" for band in BANDS))
+    for kind in ("long", "v1"):
+        rec = summarise(out, kind, None, "records_shared")
+        if not rec:
+            continue
+        full[f"shared_{kind}"] = rec
+        t = PRIMARY[kind][0]
+        text += [f"== {kind}, beside after /challenge-pr on #158 (finding 1): the shared update",
+                 "   r1out: each token's residual update less its component along the shared "
+                 "direction; residout: the residual update's mean removed; resid: that mean "
+                 "alone; ambout: unit-frame mean move out (#158's review); mean0: the β = 0 field"]
+        for ss, bb in SHARED_ROWS:
+            text += [f"-- targets {t}, {ss}, β {bb}"] + table(rec, t, ss, bb)
+        for k in sorted(rec["counts"]):
+            text.append(f"  {k}: {rec['counts'][k]}")
     if "long" in full:
         diff = [k for k, r in full["long"]["rows"].items() if k.startswith("t12|")
                 and full["long"]["rows"]["t123|" + k[4:]]["label"] != r["label"]]

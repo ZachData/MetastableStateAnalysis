@@ -773,6 +773,16 @@ needs the user to enable it on GitHub.
   passed or failed on where grid points fell (seeds 2–11: 7 of 10). Rule: **a positive
   control's margin is measured in the instrument's own units (here, grid points over which
   the cut equals the planted partition) across seeds, before a run-length bar is placed**.
+- 2026-10-07 (1e U2, #158): the frozen rule's token-shuffle null and its `Xt` "mean move out"
+  were written as the control for "any update component common to all tokens", but neither
+  can see one: a shared vector's tangent projections track the field's mean term, so a pure
+  shift reads X = ±0.03–0.18, hundreds of null sds out. #158's headline (ascends 8–256,
+  "repulsive" descents) rested on it. The tests checked only that a field step reads ±1
+  (sensitivity), never that an unrelated move reads 0. Found by `/challenge-pr`; its own
+  fix (the unit-frame mean out) was also unspecific (ascends at step 0 everywhere), caught by
+  reading it at init. Rule: **every reading gets a specificity test (a move unrelated to the
+  quantity reads ≈ 0) beside its sensitivity test, and a proposed control is first read at
+  init, where the answer is known**.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
@@ -833,6 +843,11 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   "is added" there. The record was added at `bff93d7`, before battery v2. The
   hash happened to match at both. Found by `/challenge-pr`. On a shallow
   clone, ask the API for history (`/commits?path=`), not `git log`.
+- 2026-10-07 (#158): the PR was merged at its first commit while its `/challenge-pr`
+  findings were being answered, so `main` carried a headline the review had overturned and
+  the fixes went into a follow-up PR. Nothing on the PR said it was not ready. Rule: **open
+  the PR as a draft; mark it ready only after every `/challenge-pr` finding is answered on
+  it** (CLAUDE.md Stop steps 8–9).
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
