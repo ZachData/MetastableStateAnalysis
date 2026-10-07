@@ -364,6 +364,14 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-07, 1e U2's attention arm: the first check ran on the rule's first cell
+  (`wiki_paragraph_long`, 1,840 tokens) in a fresh process, and the batch died twice on the
+  next runs with CUDA out of memory: the hooks held the previous checkpoint's model, and the
+  captured key-0 column `w[..., 0]` was a view that kept every layer's (16, n, n) attention map
+  alive (6.4 GB at 2,041 tokens, 5.2 GB at 1,840, which just fit). Cost: two relaunches, ~5 min,
+  no record kept from the failed runs. Rule: a first check that also gates memory runs on the
+  **largest** input and on a **second** pass in the same process, and a captured slice of a
+  big tensor is cloned.
 - 2026-10-06, the `φ_β` probe (#155, `tools/run/p10_phi_wells_probe.py`): it applied the
   measured β = 3.5 to raw and cloud-centred unit rows, but β was fitted on unit LN1 rows
   (`status-1d.md` "β refit"), and its "2–4 wells" went into a merged handoff line. Found

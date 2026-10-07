@@ -72,6 +72,14 @@ a **within-passage token shuffle** (token i's field against token k's move, same
 and the cosine is also reported with the **mean move across tokens subtracted**. The random
 direction stays beside as the floor.
 
+**The 1e page** (*proposed 2026-10-07; the user asked where it belongs; theirs to move*): a
+findings artifact at **U1's close**, with U2's settled reading (Blocked 29 decided) as its first
+section and U1's per-token energy and wells as its centre, since U1 is the first output that is a
+picture rather than a table of signs; updated in place at U3's close (saddles between the same
+wells). Not at U2's close: U2 alone is sign tables, and its headline turns on Blocked 29.
+Rejected: one page per unit (1d had two pages that went stale); waiting for the phase's end (1d
+paused without one).
+
 ## U2's block arm: the rule (fixed 2026-10-06, before any output)
 
 | | |
