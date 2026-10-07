@@ -40,6 +40,9 @@ from .extract_long8 import STEPS
 
 BETAS = (1.6, 3.5, 5.6)
 SOURCES = ("causal", "nosink", "full", "local")
+#: The beside rows after `/challenge-pr` on #158: (field, reading of the move).
+SHARED_CELLS = (("causal", "ambout"), ("causal", "residout"), ("causal", "resid"),
+                ("mean0", "frozen"), ("mean0", "residout"))
 #: Block 23 is refused: the stored last hidden state is after ``final_layer_norm``.
 BLOCKS = tuple(range(23))
 BANDS = {"L0": (0,), "L1-8": tuple(range(1, 9)), "L9-16": tuple(range(9, 17)),
@@ -68,13 +71,19 @@ def tangent(U: np.ndarray, V: np.ndarray) -> np.ndarray:
     return V - np.sum(V * U, axis=1, keepdims=True) * U
 
 
-def forces(U: np.ndarray, beta: float, S: Optional[np.ndarray] = None) -> Dict[str, np.ndarray]:
-    """The tangential force ``g_i`` at every row of ``U`` under each source rule (M2, M4)."""
+def forces(U: np.ndarray, beta: float, S: Optional[np.ndarray] = None,
+           only: Sequence[str] = SOURCES) -> Dict[str, np.ndarray]:
+    """
+    The tangential force ``g_i`` at every row of ``U`` under each source rule in ``only``
+    (M2, M4); ``mean0`` is the causal β = 0 force, the plain mean of the sources.
+    """
     n = U.shape[0]
-    S = U @ U.T if S is None else S
     lower = np.tril(np.ones((n, n), dtype=bool))
     out = {}
     for src in ("causal", "nosink", "full"):
+        if src not in only and not (src == "causal" and "local" in only):
+            continue
+        S = U @ U.T if S is None else S
         mask = lower.copy() if src != "full" else np.ones((n, n), dtype=bool)
         if src == "nosink":
             mask[1:, 0] = False
@@ -83,8 +92,11 @@ def forces(U: np.ndarray, beta: float, S: Optional[np.ndarray] = None) -> Dict[s
         W /= W.sum(axis=1, keepdims=True)
         out[src] = W @ U
     m0 = np.cumsum(U, axis=0) / np.arange(1, n + 1)[:, None]
-    out["local"] = out["causal"] - m0
-    return {k: tangent(U, m) for k, m in out.items()}
+    if "local" in only:
+        out["local"] = out["causal"] - m0
+    if "mean0" in only:
+        out["mean0"] = m0
+    return {k: tangent(U, m) for k, m in out.items() if k in only}
 
 
 def null_cos(Dg: np.ndarray, Du: np.ndarray, dn2: np.ndarray, perms: np.ndarray) -> tuple:
@@ -137,9 +149,36 @@ def make_perms(key: str):
     return get
 
 
+def shared_cells(U: np.ndarray, U2: np.ndarray, X: np.ndarray, X2: np.ndarray, frame,
+                 t: np.ndarray, perms_for) -> List[Dict]:
+    """
+    Beside, after `/challenge-pr` on #158 (finding 1): an update ``c`` added to every token reads
+    as field-following, since ``P⊥_{u_i} c`` tracks ``P⊥_{u_i} m_0``; neither the shuffle nor
+    ``Xt`` (the mean taken *after* projection) removes it. Readings of the block's move, the
+    shared part estimated over the targets ``t``:
+
+    - ``ambout``: ``(u' − u) − mean_t(u' − u)`` before projection (the review's check, in the unit
+      frame; renormalising leaves part of a shared shift in it);
+    - ``residout``: the residual update less its mean, ``x'_i − c̄`` with ``c̄ = mean_t(x' − x)``,
+      through LN1 and onto the sphere: a shift shared in the residual stream is removed exactly;
+    - ``resid``: ``x_i + c̄`` alone, the shared update by itself;
+    - ``frozen``: the frozen move (with the β = 0 field only).
+
+    Fields: causal at β 3.5, and ``mean0`` (β = 0, the plain causal mean).
+    """
+    f = {"causal": forces(U, 3.5, only=("causal",))["causal"],
+         "mean0": forces(U, 0.0, only=("mean0",))["mean0"]}
+    M = U2 - U
+    cbar = (X2 - X)[t].mean(axis=0)
+    ds = {"frozen": tangent(U, M), "ambout": tangent(U, M - M[t].mean(axis=0)),
+          "residout": tangent(U, frame(X2 - cbar) - U), "resid": tangent(U, frame(X + cbar) - U)}
+    return [{"beta": 3.5 if src == "causal" else 0.0, "source": f"{src}:{rd}",
+             **cell(ds[rd], f[src], U, t, perms_for)} for src, rd in SHARED_CELLS]
+
+
 def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str,
-             blocks: Sequence[int] = BLOCKS) -> List[Dict]:
-    """Every block × β × source × target set of one stored run."""
+             blocks: Sequence[int] = BLOCKS, mode: str = "frozen") -> List[Dict]:
+    """Every block × β × source × target set of one stored run (``mode="shared"``: the beside rows)."""
     z = np.load(run_dir / "activations.npz")
     acts, norms = z["activations"], z["norms"]
     if acts.shape[0] != 25:
@@ -156,8 +195,15 @@ def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str,
         if L not in BLOCKS:
             raise ValueError(f"block {L} refused (`design-1e.md`: block 23's output is after final LN)")
         w, b, eps = ln1["w"][L], ln1["b"][L], ln1["eps"]
-        U = unit_rows(acts[L] * norms[L][:, None], w, b, eps)
-        U2 = unit_rows(acts[L + 1] * norms[L + 1][:, None], w, b, eps)
+        X, X2 = acts[L] * norms[L][:, None], acts[L + 1] * norms[L + 1][:, None]
+        U, U2 = unit_rows(X, w, b, eps), unit_rows(X2, w, b, eps)
+        if mode == "shared":
+            frame = lambda Y: unit_rows(Y, w, b, eps)          # noqa: E731
+            for name, t in targets.items():
+                out += [{"block": L, "targets": name, **c}
+                        for c in shared_cells(U, U2, X.astype(np.float64), X2.astype(np.float64),
+                                              frame, t, perms_for)]
+            continue
         d = tangent(U, U2 - U)
         S = U @ U.T
         for beta in BETAS:
@@ -226,17 +272,34 @@ def passage_nll(run_dirs: Dict[str, Path], revision: str, tok) -> Dict[str, floa
 
 # ---------------------------------------------------------------- one job
 
+def code_sha() -> str:
+    """HEAD of this checkout; refuses if ``p1e_energy_field`` has uncommitted changes."""
+    import subprocess
+    here = Path(__file__).resolve().parent
+    git = ["git", "-C", str(here)]
+    if subprocess.run(git + ["status", "--porcelain", "--", "."], capture_output=True,
+                      text=True, check=True).stdout.strip():
+        raise SystemExit("refusing: p1e_energy_field has uncommitted changes; commit first so "
+                         "each record names its producer")
+    return subprocess.run(git + ["rev-parse", "HEAD"], capture_output=True, text=True,
+                          check=True).stdout.strip()
+
+
 def _job(args) -> str:
-    kind, step, key, run_dir, ln1_path, tg, out = args
-    path = Path(out) / "records" / kind / f"step{step}_{key}.json"
+    kind, step, key, run_dir, ln1_path, tg, out, mode, code = args
+    path = Path(out) / ("records" if mode == "frozen" else f"records_{mode}") / kind / f"step{step}_{key}.json"
     if path.exists():
-        return f"have {path.name}"
+        had = json.loads(path.read_text()).get("code")
+        if had is not None and had != code:
+            raise SystemExit(f"refusing to resume: {path} was written by {had[:10]}, this is {code[:10]}")
+        return f"have {path.name}" + ("" if had else " (before provenance; see status-1e.md)")
     t0 = time.monotonic()
     targets = {k: np.asarray(v, dtype=int) for k, v in tg.items()}
-    recs = read_run(Path(run_dir), load_ln1(Path(ln1_path)), targets, key)
+    recs = read_run(Path(run_dir), load_ln1(Path(ln1_path)), targets, key, mode=mode)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps({"kind": kind, "step": step, "passage": key, "run": str(run_dir),
+                               "code": code, "mode": mode,
                                "targets": {k: len(v) for k, v in tg.items()}, "cells": recs}) + "\n")
     tmp.rename(path)
     return f"done {path.name} {time.monotonic() - t0:.0f}s"
@@ -263,7 +326,7 @@ def plan(runs: Path, r0: Optional[Path], out: Path) -> tuple:
     keys = sorted({d.name.split("_", 1)[1] for d in runs.glob("pythia-410m-step0_*")})
     if len(keys) != 8:
         raise SystemExit(f"refusing: {len(keys)} long passages in {runs}, expected 8")
-    jobs, revs, meta = [], set(), {"targets": {}, "v1": {}}
+    jobs, revs, meta = [], set(), {"long8_hash": LONG8_HASH, "targets": {}, "v1": {}}
     for key in keys:
         _, massive, t12, t123 = target_positions(runs, key)
         meta["targets"][key] = {"t12": int(t12.size), "t123": int(t123.size),
@@ -295,8 +358,9 @@ def plan(runs: Path, r0: Optional[Path], out: Path) -> tuple:
 
 
 def run(a) -> int:
-    out = a.out
+    out, code = a.out, code_sha()
     jobs, revs, meta = plan(a.runs, a.r0, out)
+    meta["code"], meta["mode"] = code, a.mode
     ln1_dir = out / "ln1"
     ln1 = {r: str(export_ln1(r, ln1_dir)) for r in revs}
     for r, p in ln1.items():
@@ -305,14 +369,18 @@ def run(a) -> int:
             raise SystemExit(f"refusing: {p} holds {z['revision']}, not {r}")
     meta["ln1"] = {r: load_ln1(Path(p))["snapshot"] for r, p in ln1.items()}
     out.mkdir(parents=True, exist_ok=True)
-    (out / "plan.json").write_text(json.dumps(meta, indent=1) + "\n")
-    args = [(k, s, key, rd, ln1[rev], tg, str(out)) for k, s, key, rd, rev, tg in jobs]
+    (out / ("plan.json" if a.mode == "frozen" else f"plan_{a.mode}.json")).write_text(
+        json.dumps(meta, indent=1) + "\n")
+    if a.mode == "shared":           # the primary target set only
+        jobs = [j[:5] + [{k: v for k, v in j[5].items() if k != "t123"}] for j in jobs]
+    args = [(k, s, key, rd, ln1[rev], tg, str(out), a.mode, code) for k, s, key, rd, rev, tg in jobs]
     first = [x for x in args if x[0] == "long" and (x[1], x[2]) == FIRST]
     rest = [x for x in args if x not in first]
     if a.steps:
         rest = [x for x in rest if x[1] in a.steps]
     print(_job(first[0]), flush=True)
-    check_first(out / "records" / "long" / f"step{FIRST[0]}_{FIRST[1]}.json")
+    check_first(out / ("records" if a.mode == "frozen" else f"records_{a.mode}") / "long"
+                / f"step{FIRST[0]}_{FIRST[1]}.json")
     if a.first_only:
         return 0
     with ProcessPoolExecutor(a.workers) as ex:
@@ -344,6 +412,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--workers", type=int, default=14)
     r.add_argument("--steps", nargs="*", default=None)
     r.add_argument("--first-only", action="store_true")
+    r.add_argument("--mode", choices=("frozen", "shared"), default="frozen",
+                   help="shared: the beside rows after /challenge-pr on #158 (finding 1)")
     n = sub.add_parser("nll")
     n.add_argument("--runs", type=Path, required=True)
     n.add_argument("--out", type=Path, required=True)

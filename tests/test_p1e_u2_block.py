@@ -119,3 +119,43 @@ def test_isolated_lean_needs_an_adjacent_step_in_the_same_direction():
     assert isolated(labs, k)
     labs[("t12", "causal", 3.5, 256, "L1-8")] = "ascends"
     assert not isolated(labs, k)
+
+
+def _concentrated(n=400, d=64, kappa=1.2, seed=4):
+    X = np.random.default_rng(seed).normal(size=(n, d))
+    X[:, 0] += kappa * np.sqrt(d) / 4
+    return X / np.linalg.norm(X, axis=1, keepdims=True)
+
+
+@pytest.mark.parametrize("sign", [1, -1])
+def test_an_update_shared_by_every_token_reads_as_the_field_on_the_frozen_statistic(sign):
+    """`/challenge-pr` on #158, finding 1: the frozen X and Xt cannot tell a shared update from
+    field-following; ``shared_cells``' ``residout`` reading removes it (up to the noise)."""
+    rng = np.random.default_rng(7)
+    X = 10 * _concentrated() + rng.normal(size=(400, 64))           # residual rows, LN-able
+    c = np.zeros(64)
+    c[0] = sign * 2.0
+    X2 = X + c + 0.05 * rng.normal(size=X.shape)                     # shared update + noise
+    w, b = np.ones(64), np.zeros(64)
+    frame = lambda Y: u2.unit_rows(Y, w, b, 1e-5)                    # noqa: E731
+    U, U2 = frame(X), frame(X2)
+    tgt = np.arange(1, 400)
+    g = u2.forces(U, 3.5)["causal"]
+    frozen = u2.cell(u2.tangent(U, U2 - U), g, U, tgt, u2.make_perms("s"))
+    assert sign * frozen["X"] > 0.02 and sign * frozen["Xt"] > 0.02      # the limitation
+    rows = {r["source"]: r for r in u2.shared_cells(U, U2, X, X2, frame, tgt, u2.make_perms("s"))}
+    assert abs(rows["causal:residout"]["X"]) < 0.2 * abs(frozen["X"])
+    assert abs(rows["mean0:residout"]["X"]) < 0.2 * abs(frozen["X"])
+    assert sign * rows["causal:resid"]["X"] > 0.02
+    assert rows["mean0:frozen"]["X"] == pytest.approx(
+        u2.cell(u2.tangent(U, U2 - U), u2.forces(U, 0.0, only=("mean0",))["mean0"], U, tgt,
+                u2.make_perms("s"))["X"])
+
+
+def test_forces_only_computes_what_is_asked():
+    U = _cloud()
+    assert set(u2.forces(U, 3.5, only=("mean0",))) == {"mean0"}
+    full = u2.forces(U, 3.5)
+    assert np.allclose(u2.forces(U, 3.5, only=("local",))["local"], full["local"])
+    m0 = np.cumsum(U, axis=0) / np.arange(1, len(U) + 1)[:, None]
+    assert np.allclose(u2.forces(U, 0.0, only=("causal",))["causal"], u2.tangent(U, m0))
