@@ -126,7 +126,8 @@ def report(out: Path) -> int:
                 tally[v["verdict"]] += 1
             text.append(f"  tally: {dict(tally)}")
         else:
-            text.append(f"(no block-arm report at {block_rep}: Blocked 29's table not built)")
+            raise SystemExit(f"refusing: no block-arm report at {block_rep}; Blocked 29's table "
+                             "needs its resid labels (`/challenge-pr` on #160, finding 5)")
     (out / "report.json").write_text(json.dumps(full, indent=1) + "\n")
     (out / "report.txt").write_text("\n".join(text) + "\n")
     print("\n".join(text))
