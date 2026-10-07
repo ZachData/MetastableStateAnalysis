@@ -24,8 +24,9 @@ from .u2_block import BANDS, BETAS, SOURCES
 
 PRIMARY = {"long": ("t12", "causal", 3.5), "v1": ("r0", "causal", 3.5)}
 TRAINED_BANDS = ("L1-8", "L9-16", "L17-22")
-SHARED_ROWS = (("causal:residout", 3.5), ("causal:resid", 3.5), ("causal:ambout", 3.5),
-               ("mean0:frozen", 0.0), ("mean0:residout", 0.0))
+SHARED_ROWS = (("causal:r1out", 3.5), ("causal:residout", 3.5), ("causal:resid", 3.5),
+               ("causal:ambout", 3.5), ("mean0:frozen", 0.0), ("mean0:r1out", 0.0),
+               ("mean0:residout", 0.0))
 SHORT = {"ascends": "ASC", "leans ascends": "asc", "descends": "DES", "leans descends": "des",
          "mixed": "·"}
 
@@ -187,9 +188,9 @@ def report(out: Path) -> int:
         full[f"shared_{kind}"] = rec
         t = PRIMARY[kind][0]
         text += [f"== {kind}, beside after /challenge-pr on #158 (finding 1): the shared update",
-                 "   ambout: unit-frame mean move out before projection (the review's check); "
-                 "residout: the residual update's mean removed; resid: that mean alone; "
-                 "mean0: the β = 0 field"]
+                 "   r1out: each token's residual update less its component along the shared "
+                 "direction; residout: the residual update's mean removed; resid: that mean "
+                 "alone; ambout: unit-frame mean move out (#158's review); mean0: the β = 0 field"]
         for ss, bb in SHARED_ROWS:
             text += [f"-- targets {t}, {ss}, β {bb}"] + table(rec, t, ss, bb)
         for k in sorted(rec["counts"]):

@@ -159,3 +159,38 @@ def test_forces_only_computes_what_is_asked():
     assert np.allclose(u2.forces(U, 3.5, only=("local",))["local"], full["local"])
     m0 = np.cumsum(U, axis=0) / np.arange(1, len(U) + 1)[:, None]
     assert np.allclose(u2.forces(U, 0.0, only=("causal",))["causal"], u2.tangent(U, m0))
+
+
+def _ln_cloud(n=400, d=64, seed=8):
+    """Residual rows that LN (gain 1, bias 0) maps to themselves: zero-mean, unit variance."""
+    U = _concentrated(n, d, seed=seed)
+    U = U - U.mean(axis=1, keepdims=True)
+    U /= np.linalg.norm(U, axis=1, keepdims=True)
+    return np.sqrt(d) * U, (lambda Y: u2.unit_rows(Y, np.ones(d), np.zeros(d), 1e-5))
+
+
+def test_a_field_step_with_uneven_sizes_still_ascends_under_r1out():
+    """`/challenge-pr` on #159, finding 1: ``residout`` reverses small movers' moves; ``r1out``
+    removes only each token's own component along the shared direction, so it cannot."""
+    X, frame = _ln_cloud()
+    U = frame(X)
+    g = u2.forces(U, 3.5)["causal"]
+    s = np.random.default_rng(9).lognormal(sigma=1.5, size=len(U))      # uneven step sizes
+    X2 = X + 0.02 * np.sqrt(X.shape[1]) * s[:, None] * g
+    tgt = np.arange(1, len(U))
+    rows = {r["source"]: r for r in u2.shared_cells(U, frame(X2), X, X2, frame, tgt, u2.make_perms("u"))}
+    assert rows["causal:r1out"]["X"] > 0.02
+    assert rows["causal:residout"]["X"] < rows["causal:r1out"]["X"]       # the reversal it fixes
+
+
+def test_a_shared_direction_at_per_token_weights_reads_zero_under_r1out():
+    """`/challenge-pr` on #159, finding 2: a sink-like update ``w_i c`` passes ``residout``."""
+    X, frame = _ln_cloud()
+    rng = np.random.default_rng(10)
+    c = rng.normal(size=X.shape[1])
+    c -= c.mean()
+    w = rng.uniform(0.2, 2.0, size=len(X))
+    X2 = X + 0.3 * w[:, None] * c + 0.01 * rng.normal(size=X.shape)
+    tgt = np.arange(1, len(X))
+    rows = {r["source"]: r for r in u2.shared_cells(frame(X), frame(X2), X, X2, frame, tgt, u2.make_perms("w"))}
+    assert abs(rows["causal:r1out"]["X"]) < 0.2 * abs(rows["mean0:frozen"]["X"])

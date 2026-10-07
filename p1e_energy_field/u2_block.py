@@ -42,7 +42,8 @@ BETAS = (1.6, 3.5, 5.6)
 SOURCES = ("causal", "nosink", "full", "local")
 #: The beside rows after `/challenge-pr` on #158: (field, reading of the move).
 SHARED_CELLS = (("causal", "ambout"), ("causal", "residout"), ("causal", "resid"),
-                ("mean0", "frozen"), ("mean0", "residout"))
+                ("causal", "r1out"), ("mean0", "frozen"), ("mean0", "residout"),
+                ("mean0", "r1out"))
 #: Block 23 is refused: the stored last hidden state is after ``final_layer_norm``.
 BLOCKS = tuple(range(23))
 BANDS = {"L0": (0,), "L1-8": tuple(range(1, 9)), "L9-16": tuple(range(9, 17)),
@@ -182,6 +183,10 @@ def shared_cells(U: np.ndarray, U2: np.ndarray, X: np.ndarray, X2: np.ndarray, f
     - ``residout``: the residual update less its mean, ``x'_i − c̄`` with ``c̄ = mean_t(x' − x)``,
       through LN1 and onto the sphere: a shift shared in the residual stream is removed exactly;
     - ``resid``: ``x_i + c̄`` alone, the shared update by itself;
+    - ``r1out`` (after `/challenge-pr` on #159, finding 1): each token's residual update less its
+      own component along ``ĉ = c̄ / |c̄|``. Removes a shared direction at any per-token weight
+      (the sink's value scaled by each token's attention to it), and cannot reverse a token's
+      move, which ``residout`` does to small movers when step sizes are uneven;
     - ``frozen``: the frozen move (with the β = 0 field only).
 
     Fields: causal at β 3.5, and ``mean0`` (β = 0, the plain causal mean).
@@ -189,10 +194,12 @@ def shared_cells(U: np.ndarray, U2: np.ndarray, X: np.ndarray, X2: np.ndarray, f
     Ut = ops.to(U)
     f = {"causal": ops.forces(Ut, 3.5, only=("causal",))["causal"],
          "mean0": ops.forces(Ut, 0.0, only=("mean0",))["mean0"]}
-    M = U2 - U
-    cbar = (X2 - X)[t].mean(axis=0)
+    M, D = U2 - U, X2 - X
+    cbar = D[t].mean(axis=0)
+    chat = cbar / np.linalg.norm(cbar)
     ds = {"frozen": tangent(U, M), "ambout": tangent(U, M - M[t].mean(axis=0)),
-          "residout": tangent(U, frame(X2 - cbar) - U), "resid": tangent(U, frame(X + cbar) - U)}
+          "residout": tangent(U, frame(X2 - cbar) - U), "resid": tangent(U, frame(X + cbar) - U),
+          "r1out": tangent(U, frame(X2 - np.outer(D @ chat, chat)) - U)}
     return [{"beta": 3.5 if src == "causal" else 0.0, "source": f"{src}:{rd}",
              **ops.cell(ops.to(ds[rd]), f[src], Ut, t, perms_for)} for src, rd in SHARED_CELLS]
 
@@ -294,7 +301,10 @@ def passage_nll(run_dirs: Dict[str, Path], revision: str, tok) -> Dict[str, floa
 # ---------------------------------------------------------------- one job
 
 def code_sha() -> str:
-    """HEAD of this checkout; refuses if ``p1e_energy_field`` has uncommitted changes."""
+    """
+    The git tree hash of ``p1e_energy_field`` at HEAD (`/challenge-pr` on #159, finding 3: it
+    survives rebases and commits elsewhere, unlike HEAD); refuses on uncommitted changes there.
+    """
     import subprocess
     here = Path(__file__).resolve().parent
     git = ["git", "-C", str(here)]
@@ -302,8 +312,8 @@ def code_sha() -> str:
                       text=True, check=True).stdout.strip():
         raise SystemExit("refusing: p1e_energy_field has uncommitted changes; commit first so "
                          "each record names its producer")
-    return subprocess.run(git + ["rev-parse", "HEAD"], capture_output=True, text=True,
-                          check=True).stdout.strip()
+    return "tree:" + subprocess.run(git + ["rev-parse", "HEAD:p1e_energy_field"], capture_output=True,
+                                    text=True, check=True).stdout.strip()
 
 
 def _job(args) -> str:
