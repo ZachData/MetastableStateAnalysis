@@ -246,7 +246,9 @@ def check_populated(rec: Dict) -> None:
               for s in ("kernns_h:keys_h:r1out", "kern_h:head_h:frozen")}
     if bad or seen != want or heads != want_h:
         raise SystemExit(f"refusing: first cell not populated ({len(bad)} bad cells, "
-                         f"{len(want - seen)} attention and {len(want_h - heads)} head cells missing)")
+                         f"{len(want - seen)} attention and {len(want_h - heads)} head cells missing): " +
+                         "; ".join(f"L{c['block']} h{c.get('head', '-')} {c['source']} n {c['n']} of {n}"
+                                   for c in bad[:10]))
 
 
 # ---------------------------------------------------------------- the batch
