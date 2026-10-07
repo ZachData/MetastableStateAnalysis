@@ -215,7 +215,7 @@ def check_heads(hs: np.ndarray, per: Dict) -> Dict:
     """Rows sum to 1, nothing above the diagonal, the heads add up to attention's output."""
     rowdev = max(v["rowdev"] for v in per.values())
     upper = max(v["upper"] for v in per.values())
-    headsum = max(v["headsum_abs"] / np.linalg.norm(hs[L + 1] - hs[L], axis=1).max()
+    headsum = max(float(v["headsum_abs"] / np.linalg.norm(hs[L + 1] - hs[L], axis=1).max())
                   for L, v in per.items())
     if rowdev > ROW_TOL or upper > 0:
         raise SystemExit(f"refusing: attention rows off 1 by {rowdev:.1e} or weight {upper:.1e} above the diagonal")
