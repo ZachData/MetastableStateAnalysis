@@ -78,19 +78,20 @@ def head_fields(A, U):
     return m, m - A[:, :1] * U[:1]
 
 
-#: A head's keys cell may leave out a token only if the head puts at least 1 − this on key 0 there.
+#: A head's keys cell may leave out a token only if the head puts at least 1 − this on key 0 and
+#: the token itself there (attending to yourself adds nothing to the ``V = I`` field).
 SINK_ONLY = 1e-4
 
 
 def left_out_keys(d, g, A, t) -> Dict:
     """
     The targets a head's keys cell leaves out (`u2_block.cell`'s ``TINY`` rule) and the largest
-    weight that head puts on keys 1…i at any of them, token 1 aside (its one key is itself).
+    weight that head puts on keys other than key 0 and the token itself at any of them.
     """
     if d is None:
         return {"n_left": int(t.numel()), "left_max_keys_w": float("nan")}
     out = (d[t].norm(dim=1) < ub.TINY) | (g[t].norm(dim=1) < ub.TINY)
-    w = A[t, 1:].sum(dim=1)[out & (t != 1)]
+    w = (A[t, 1:].sum(dim=1) - A[t, t])[out]
     return {"n_left": int(out.sum()), "left_max_keys_w": float(w.max()) if w.numel() else 0.0}
 
 
@@ -254,8 +255,7 @@ def first_attn_check(rec: Dict, attn_out: Path) -> float:
 def explained(c: Dict, sink_only: Dict) -> bool:
     """
     A head's keys cell short of targets only where that head puts all but ``SINK_ONLY`` of its
-    weight on key 0 (no keys part or keys field above ``TINY``), plus token 1 (its one key in 1…i
-    is itself, so the field is 0).
+    weight on key 0 and the token itself (no keys part or keys field above ``TINY``).
     """
     s = sink_only[(c["block"], c["head"])]
     return (c["source"] == "kernns_h:keys_h:r1out" and c["left_out"] == s["n_left"]
