@@ -149,8 +149,28 @@ def make_perms(key: str):
     return get
 
 
+class _NumpyOps:
+    """The reference backend (CPU, float64); `u2_torch.Ops` mirrors it on a torch device."""
+    name = "cpu:float64"
+    to = staticmethod(lambda a: np.asarray(a, dtype=np.float64))
+    forces = staticmethod(lambda *a, **k: forces(*a, **k))
+    cell = staticmethod(lambda *a, **k: cell(*a, **k))
+
+
+NUMPY = _NumpyOps()
+
+
+def get_ops(device: str):
+    """``cpu`` (reference), ``cuda`` (float64) or ``cuda32`` (float32)."""
+    if device == "cpu":
+        return NUMPY
+    import torch
+    from .u2_torch import Ops
+    return Ops("cuda", torch.float32 if device == "cuda32" else torch.float64)
+
+
 def shared_cells(U: np.ndarray, U2: np.ndarray, X: np.ndarray, X2: np.ndarray, frame,
-                 t: np.ndarray, perms_for) -> List[Dict]:
+                 t: np.ndarray, perms_for, ops=NUMPY) -> List[Dict]:
     """
     Beside, after `/challenge-pr` on #158 (finding 1): an update ``c`` added to every token reads
     as field-following, since ``P⊥_{u_i} c`` tracks ``P⊥_{u_i} m_0``; neither the shuffle nor
@@ -166,18 +186,19 @@ def shared_cells(U: np.ndarray, U2: np.ndarray, X: np.ndarray, X2: np.ndarray, f
 
     Fields: causal at β 3.5, and ``mean0`` (β = 0, the plain causal mean).
     """
-    f = {"causal": forces(U, 3.5, only=("causal",))["causal"],
-         "mean0": forces(U, 0.0, only=("mean0",))["mean0"]}
+    Ut = ops.to(U)
+    f = {"causal": ops.forces(Ut, 3.5, only=("causal",))["causal"],
+         "mean0": ops.forces(Ut, 0.0, only=("mean0",))["mean0"]}
     M = U2 - U
     cbar = (X2 - X)[t].mean(axis=0)
     ds = {"frozen": tangent(U, M), "ambout": tangent(U, M - M[t].mean(axis=0)),
           "residout": tangent(U, frame(X2 - cbar) - U), "resid": tangent(U, frame(X + cbar) - U)}
     return [{"beta": 3.5 if src == "causal" else 0.0, "source": f"{src}:{rd}",
-             **cell(ds[rd], f[src], U, t, perms_for)} for src, rd in SHARED_CELLS]
+             **ops.cell(ops.to(ds[rd]), f[src], Ut, t, perms_for)} for src, rd in SHARED_CELLS]
 
 
 def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str,
-             blocks: Sequence[int] = BLOCKS, mode: str = "frozen") -> List[Dict]:
+             blocks: Sequence[int] = BLOCKS, mode: str = "frozen", ops=NUMPY) -> List[Dict]:
     """Every block × β × source × target set of one stored run (``mode="shared"``: the beside rows)."""
     z = np.load(run_dir / "activations.npz")
     acts, norms = z["activations"], z["norms"]
@@ -202,15 +223,15 @@ def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str,
             for name, t in targets.items():
                 out += [{"block": L, "targets": name, **c}
                         for c in shared_cells(U, U2, X.astype(np.float64), X2.astype(np.float64),
-                                              frame, t, perms_for)]
+                                              frame, t, perms_for, ops)]
             continue
-        d = tangent(U, U2 - U)
-        S = U @ U.T
+        Ut, d = ops.to(U), ops.to(tangent(U, U2 - U))
+        S = Ut @ Ut.T
         for beta in BETAS:
-            for src, g in forces(U, beta, S).items():
+            for src, g in ops.forces(Ut, beta, S).items():
                 for name, t in targets.items():
                     out.append({"block": L, "beta": beta, "source": src, "targets": name,
-                                **cell(d, g, U, t, perms_for)})
+                                **ops.cell(d, g, Ut, t, perms_for)})
     return out
 
 
@@ -286,7 +307,7 @@ def code_sha() -> str:
 
 
 def _job(args) -> str:
-    kind, step, key, run_dir, ln1_path, tg, out, mode, code = args
+    kind, step, key, run_dir, ln1_path, tg, out, mode, code, device = args
     path = Path(out) / ("records" if mode == "frozen" else f"records_{mode}") / kind / f"step{step}_{key}.json"
     if path.exists():
         had = json.loads(path.read_text()).get("code")
@@ -295,11 +316,12 @@ def _job(args) -> str:
         return f"have {path.name}" + ("" if had else " (before provenance; see status-1e.md)")
     t0 = time.monotonic()
     targets = {k: np.asarray(v, dtype=int) for k, v in tg.items()}
-    recs = read_run(Path(run_dir), load_ln1(Path(ln1_path)), targets, key, mode=mode)
+    ops = get_ops(device)
+    recs = read_run(Path(run_dir), load_ln1(Path(ln1_path)), targets, key, mode=mode, ops=ops)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps({"kind": kind, "step": step, "passage": key, "run": str(run_dir),
-                               "code": code, "mode": mode,
+                               "code": code, "mode": mode, "device": ops.name,
                                "targets": {k: len(v) for k, v in tg.items()}, "cells": recs}) + "\n")
     tmp.rename(path)
     return f"done {path.name} {time.monotonic() - t0:.0f}s"
@@ -373,7 +395,8 @@ def run(a) -> int:
         json.dumps(meta, indent=1) + "\n")
     if a.mode == "shared":           # the primary target set only
         jobs = [j[:5] + [{k: v for k, v in j[5].items() if k != "t123"}] for j in jobs]
-    args = [(k, s, key, rd, ln1[rev], tg, str(out), a.mode, code) for k, s, key, rd, rev, tg in jobs]
+    args = [(k, s, key, rd, ln1[rev], tg, str(out), a.mode, code, a.device)
+            for k, s, key, rd, rev, tg in jobs]
     first = [x for x in args if x[0] == "long" and (x[1], x[2]) == FIRST]
     rest = [x for x in args if x not in first]
     if a.steps:
@@ -383,10 +406,61 @@ def run(a) -> int:
                 / f"step{FIRST[0]}_{FIRST[1]}.json")
     if a.first_only:
         return 0
+    if a.device != "cpu":            # one process owns the GPU
+        for x in rest:
+            print(_job(x), flush=True)
+        return 0
     with ProcessPoolExecutor(a.workers) as ex:
         for msg in ex.map(_job, rest):
             print(msg, flush=True)
     return 0
+
+
+#: Largest |Δ| in X / A accepted between a device's reading and the stored CPU record (placed).
+AGREE_TOL = 1e-5
+
+
+def agree(a) -> int:
+    """
+    Recompute stored records on ``--device`` and compare cell by cell: max |ΔX|, |ΔA|, |ΔXt|,
+    and how many one-sided ranks differ. Writes nothing into the records.
+    """
+    ops, out = get_ops(a.device), a.out
+    worst = {}
+    for spec in a.cells:
+        sub, kind, name = spec.split("/")
+        rec = json.loads((out / sub / kind / f"{name}.json").read_text())
+        mode = rec.get("mode", "frozen")
+        plan_meta = json.loads((out / ("plan.json" if mode == "frozen" else f"plan_{mode}.json")).read_text())
+        rd = Path(rec["run"])
+        rev = json.loads((rd / "manifest.json").read_text())["hf_revision"]
+        if kind == "long":
+            from .long8_targets import target_positions
+            _, _, t12, t123 = target_positions(a.runs, rec["passage"])
+            tg = {"t12": t12, "t123": t123} if mode == "frozen" else {"t12": t12}
+        else:
+            lab = json.loads((a.r0 / f"step{rec['step']}.json").read_text())
+            tg = {"r0": np.asarray(lab["prompts"][rec["passage"]]["kept"])}
+        if {k: len(v) for k, v in tg.items()} != rec["targets"]:
+            raise SystemExit(f"refusing: {spec}: target counts differ from the record's")
+        t0 = time.monotonic()
+        got = read_run(rd, load_ln1(out / "ln1" / f"{rev}.npz"), tg, rec["passage"], mode=mode, ops=ops)
+        dt = time.monotonic() - t0
+        key = lambda c: (c["block"], c["beta"], c["source"], c["targets"])   # noqa: E731
+        ref = {key(c): c for c in rec["cells"]}
+        if set(ref) != {key(c) for c in got}:
+            raise SystemExit(f"refusing: {spec}: cell sets differ")
+        w = {f: max(abs(c[f] - ref[key(c)][f]) for c in got) for f in ("X", "A", "Xt", "null_mean")}
+        w["ranks_differ"] = int(sum(c[f] != ref[key(c)][f] for c in got for f in ("p_hi", "p_lo")))
+        w["sign_X_differs"] = int(sum(np.sign(c["X"]) != np.sign(ref[key(c)]["X"]) for c in got))
+        w["cells"], w["seconds"] = len(got), round(dt, 1)
+        worst[spec] = w
+        print(spec, {k: (f"{v:.1e}" if isinstance(v, float) else v) for k, v in w.items()}, flush=True)
+    ok = all(w["X"] <= AGREE_TOL and w["sign_X_differs"] == 0 for w in worst.values())
+    (out / f"agree_{a.device}.json").write_text(json.dumps({"device": ops.name, "tol": AGREE_TOL,
+                                                             "pass": ok, "cells": worst}, indent=1) + "\n")
+    print("AGREE" if ok else "DISAGREE", f"(|ΔX| ≤ {AGREE_TOL}, no sign change)")
+    return 0 if ok else 1
 
 
 def nll(a) -> int:
@@ -414,6 +488,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--first-only", action="store_true")
     r.add_argument("--mode", choices=("frozen", "shared"), default="frozen",
                    help="shared: the beside rows after /challenge-pr on #158 (finding 1)")
+    r.add_argument("--device", choices=("cpu", "cuda", "cuda32"), default="cpu")
+    g = sub.add_parser("agree", help="recompute stored records on a device and compare")
+    g.add_argument("--runs", type=Path, required=True)
+    g.add_argument("--r0", type=Path, default=None)
+    g.add_argument("--out", type=Path, required=True)
+    g.add_argument("--device", choices=("cpu", "cuda", "cuda32"), default="cuda")
+    g.add_argument("cells", nargs="+", help="<records dir>/<kind>/<step…_passage>, e.g. records/long/step0_horla_long")
     n = sub.add_parser("nll")
     n.add_argument("--runs", type=Path, required=True)
     n.add_argument("--out", type=Path, required=True)
@@ -423,7 +504,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if a.cmd == "report":
         from .u2_report import report
         return report(a.out)
-    return {"run": run, "nll": nll}[a.cmd](a)
+    return {"run": run, "nll": nll, "agree": agree}[a.cmd](a)
 
 
 if __name__ == "__main__":
