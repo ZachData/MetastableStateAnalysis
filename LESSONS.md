@@ -364,6 +364,14 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-07, 1e U2's attention arm: the first check ran on the rule's first cell
+  (`wiki_paragraph_long`, 1,840 tokens) in a fresh process, and the batch died twice on the
+  next runs with CUDA out of memory: the hooks held the previous checkpoint's model, and the
+  captured key-0 column `w[..., 0]` was a view that kept every layer's (16, n, n) attention map
+  alive (6.4 GB at 2,041 tokens, 5.2 GB at 1,840, which just fit). Cost: two relaunches, ~5 min,
+  no record kept from the failed runs. Rule: a first check that also gates memory runs on the
+  **largest** input and on a **second** pass in the same process, and a captured slice of a
+  big tensor is cloned.
 - 2026-10-06, the `φ_β` probe (#155, `tools/run/p10_phi_wells_probe.py`): it applied the
   measured β = 3.5 to raw and cloud-centred unit rows, but β was fitted on unit LN1 rows
   (`status-1d.md` "β refit"), and its "2–4 wells" went into a merged handoff line. Found
@@ -456,6 +464,16 @@ not fixed).
   tie (1.0 vs 0.0, `test_phase2b_head_circuits.py`), a corrected R² 0.18 vs
   < 0.05 (`test_p10_partition_function.py`), and a refusal whose branch
   (ties vs draws) flips (`test_p_i1_attainable_floor.py`). CI has no ARM leg.
+- 2026-10-07: #160 and #161 were red in CI's deps tier from their first push.
+  `tests/test_p1e_u2_attn.py` and `test_p1e_u2_heads.py` build a tiny real
+  GPT-NeoX, marked `deps`. Outside `SMOKE_REAL_DEPS=1`, `conftest.py` makes transformers a
+  MagicMock, so the model had no layers ("stack expects a non-empty TensorList";
+  the parallel-residual refusal never raised). They had passed only with real
+  transformers 4.44 on the box. Under CI's 4.57 the hooks broke as well:
+  `GPTNeoXAttention._attn` no longer exists (it became the module-level
+  `eager_attention_forward`). Fixed: both modules marked `smoke`, and `u2_attn.Hooked`
+  supports both APIs. Rule: a test that needs a real model is `smoke`, and it is run
+  with `SMOKE_REAL_DEPS=1` against CI's transformers before the push.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to

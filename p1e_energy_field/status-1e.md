@@ -11,18 +11,19 @@
   - Four new long passages were built under a rule committed before their sources were fetched, and all 8 long passages were extracted at the 18 steps on the GPU (activations only) — `p1e_energy_field/status-1e.md` "The 8 long passages"
   - By the frozen rule, each block's update ascends the field in every band at steps 8–256 and 16000–54000 (35 of 54 cells, 0.42 by chance); the label is the field's β = 0 mean term, and the cosine excess is small (≤ 0.16) — `p1e_energy_field/status-1e.md` "U2's block arm"
   - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L1–16 only from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
+  - Splitting each block's update by a hooked pass, the MLP supplies most of the shared update and its shared part ascends too (24 of 31 windows by the rule fixed before output; the sink's value and the biases supply almost none); on the long passages attention's token-specific part never ascends the field in layers 1–22 and descends from step 256 on (v1 ascends at 8–32); the late token-specific ascent in L1–16 goes with the MLP's — `p1e_energy_field/status-1e.md` "U2's attention arm"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
 - **Depends on:** 1d@4168cdd237, 10@c159a02c9b
 - **Feeds:** none
 - **Open threads:**
-  - Whether an update every token shares counts as following the field is the user's decision, and it sets which reading the attention and per-head arms carry; the attention arm splits the shared part into attention and MLP — `STATE.md` Blocked 29
+  - Whether an update every token shares counts as following the field is the user's decision; the attention arm's pre-set reading says the MLP supplies most of the shared update, but not who supplies its ascent, and the per-head arm would test attention's descent against each head's real kernel — `STATE.md` Blocked 29
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence — `p1e_energy_field/design-1e.md` "Units"
 - **After Phase 10:**
   - U1, U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-07 · body `f023b5486b`
+- **Reviewed:** 2026-10-07 · body `df6a1384bb`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -261,10 +262,114 @@ Output `agree_cuda.json`, `agree_cuda32.json` beside the records; tests
 ~700 s each with 14 in parallel (memory bandwidth), 1 h 50 min for the 269 after the first.
 
 **Parked** (why / cost / the decision it could change):
-- The last two blocks at 143000 / the attention arm (GPU) / whether their shared update is the
-  sink's value or the MLP's bias (it is not token interaction: `residout` is mixed there).
+- ~~The last two blocks at 143000~~ *answered by the attention arm (below)*: neither the sink's
+  value (share −0.01) nor the biases (0.04); attention's move and the MLP's shared part both
+  descend there.
 - L9–16's descent at init / free / whether init carries a structural sign; it is shared
   (`residout` ≈ 0 at init), so the frozen rows carry it and `residout` does not.
+
+## U2's attention arm (2026-10-07): the MLP supplies most of the shared update, and its shared part ascends there too; on the long passages attention's token-specific part never ascends, and descends from step 256
+
+**Input.** The 144 long runs (`LONG8_HASH` `ba605f4e14b5`), each re-run as a hooked forward pass
+on the GPU (float32, eager, TF32 off), and v1's 7 at the 18 steps beside (R0's kept offsets).
+Rule: `design-1e.md` "U2's attention arm: the rule" (`2dee9b9`, before any output). Producer
+`p1e_energy_field/u2_attn.py`, report `u2_attn_report.py`; records name the producer as
+`p1e_energy_field`'s tree `tree:2b38ef2cb2` (commit `4d35c6a`); output
+`data/p1e/u2_attn_2026-10-07/` (`report.txt`, `report.json`, `records/`, `run.sh`).
+**Checks, all 270 runs:** the pass against the stored unit rows ≤ 1.2e-7 (long, same device) and
+≤ 7.9e-5 (v1, stored on the CPU; bound 1e-4); `x + attn + mlp = x'` exactly (0); the parts sum to
+the block to ≤ 7.5e-8; the first cell's `block` row equals the block arm's record to 2.8e-10, and
+the `block` row's labels reproduce the block arm's counts exactly (35 / 7 / 2 + 3 / 7). Test:
+the hooked split equals the explicit sum over keys on a tiny random GPT-NeoX
+(`tests/test_p1e_u2_attn.py`, smoke tier: `SMOKE_REAL_DEPS=1 pytest -m smoke`; passes on
+transformers 4.44 and 4.57, `LESSONS.md` 4). Two earlier launches died on GPU memory (`LESSONS.md` 3); no
+record from them was kept.
+
+**Blocked 29, by the rule's reading** (fixed before output: in each (step, band) where the
+block's `resid` ascends, the part with the largest share of the shared update whose own `resid`
+ascends too):
+
+*Reworded after `/challenge-pr` on #160, finding 1:* the rule picks the part supplying the
+largest share of the shared update's **length** whose own `resid` ascends; it does not measure
+who supplies the **ascent** (a cosine, blind to size). At 16000–32000 in L9–16 the MLP supplies
+0.57–0.67 of the update and its own shared part descends, yet the block's still ascends. So
+the table reads "the MLP supplies most of the shared update, and that part ascends too".
+
+| carrier | windows (long, 31) | where | v1 (29) |
+|---|---|---|---|
+| `mlpx` (the MLP less its bias, token by token) → (b) not interaction | **24** | every band at 8–512, L9–16 at 1000, L17–22 at 16000–54000 | 24 |
+| `keys` (attention to the other tokens) → (a) follows the field | 4 | L17–22 at 2000; L9–16 at 8000, 16000, 32000 | 2 |
+| tied (shares within 0.1) | 3 | L17–22 at 1000, 4000, 8000 | 3 |
+
+*After finding 2:* v1's tally matches in counts only. Its `keys` windows (L17–22 at 4000, L1–8
+at 32000) share none with the long passages', and in 4 of the 6 the MLP supplies more of the
+update than attention; attention is named there because the MLP's shared part does not ascend.
+The attention-carried windows are not a replicated finding.
+
+- **Shares of the block's shared update** (median over passages): the MLP 0.54–0.79 at every
+  step but 1000–8000, where the two are close (attention 0.41–0.58, MLP 0.40–0.52); **the sink ≤ 0.05 and the biases
+  ≤ 0.17 everywhere**, although attention to key 0 grows from ~0.004 (≤ 1000) to 0.09–0.48
+  (16000) and 0.17–0.62 (143000): the sink's value adds almost nothing to the shared update.
+- **Attention's shared part ascends too**, at a smaller share: `keys:resid` ascends in 37 of 54
+  cells (the same windows as the block's `resid`, descends at 256–512 in L1–16). Up to step 512
+  attention's output is nearly one vector for every token (sharedness 0.82–0.99): the mean pull.
+- **The MLP's shared part** (`mlpx:resid`) ascends at 8–256 in every band (L9–22 to 1000) and
+  descends in L1–16 from 2000 (as step 0 does, so not called learned there).
+
+**Token-specific parts** (`r1out`, causal, β 3.5; long, T1 + T2):
+
+| steps | attention (`attn`) L1–8 / L9–16 / L17–22 | MLP (`mlpx`) L1–8 / L9–16 / L17–22 |
+|---|---|---|
+| 0–8 | mixed / mixed / mixed | leans asc / leans des / mixed (step 0 the same) |
+| 16–128 | mixed / mixed / leans descends at 64–128 | descends at 32 (all bands) and L9–16 at 64; L1–8 ascends 64–128; L17–22 descends 16–128 |
+| 256–1000 | **descends** / **descends** / leans descends at 512–1000 | L1–8 descends 512–1000; L9–16 at 512; L17–22 at 1000 |
+| 2000–8000 | **descends** / leans des at 2000, then mixed / leans des at 2000, then mixed | L1–8 descends at 2000, leans ascends after; L9–16 ascends from 4000; L17–22 mixed |
+| 16000–143000 | **descends** / **descends** (lean at 143000) / **descends** (−0.013 to −0.031) | **ascends** in L1–16 (+0.016 to +0.049) / mixed |
+
+| count over 54 cells | ascends | descends | leans asc / des | mixed |
+|---|---|---|---|---|
+| `attn:r1out` | **0** | 20 | **0** / 8 | 26 |
+| `keys:r1out` | 0 | 20 | 0 / 10 | 24 |
+| `mlpx:r1out` | 12 | 12 | 9 / 3 | 18 |
+| `attn:frozen` (the frozen reading, shared part in) | 36 | 7 | 4 / 0 | 7 |
+| chance | 0.42 (either) | | 3.4 (either) | |
+
+- **On the long passages, attention's token-specific part never ascends the field in L1–22**
+  (0 of 54 cells, no lean; mixed at 0–128; v1 differs at 8–32, below) and descends from 256 on: L1–8 at every step from 256, L9–16 at 256–2000
+  and 16000–143000, L17–22 from 16000. It is attention to keys 1…i (`keys:r1out` the same); the
+  sink's own move is small and mixed. At β = 0 the same (`mean0:keys:r1out` 24 descend, 0 ascend).
+- **The block's late token-specific ascent in L1–16 (from 16000) goes with the MLP's**, not
+  attention's. *After finding 4:* each part's `r1out` removes that part's own shared direction,
+  not the block's, so the parts' readings do not add up to the block's; the signs are clear here,
+  so the attribution stands as a reading, not a decomposition.
+- **The last band at 143000** descends in both attention's move (`attn:frozen` −0.034) and the
+  MLP's shared part (`mlpx:resid` −0.045); sink and biases carry none of it.
+- **v1 (beside, CPU-stored, 7 passages):** the same Blocked 29 tally; `attn:r1out` descends in
+  L1–16 at 256–1000, L17–22 at 512–1000 (lean at 512) and L1–8 to 143000, but leans or ascends at 8–32 in L1–16 (4
+  ascend, 6 lean ascend of 54), which the long passages do not show.
+- **Size.** `|X|` ≤ 0.06 for the token-specific rows: attention's token-specific move is mostly
+  orthogonal to the field's force; "descends" is the sign of a small component shared by all 8
+  passages. The field is the idealised `φ_β` (one head, `Q = K = V = I`); whether the real
+  kernel says the same is the per-head arm.
+
+**How to re-run.** From the worktree root: `data/p1e/u2_attn_2026-10-07/run.sh` (resumes;
+`--first-only` for the first check; needs the block arm's records for that check). *After
+finding 5:* the producer hash is `p1e_energy_field`'s whole tree, docs included, so resuming
+these records needs a checkout of `4d35c6a`'s tree (later commits changed only docs and the
+report); kept as is, since changing the hash would orphan the block arm's records too. Then
+`python -m p1e_energy_field.u2_attn report --out <dir>` (reads the block arm's `report.json`
+beside it for Blocked 29's table). GPU: ~55–60 s per long run, 3.1 GB; 270 runs ≈ 3 h.
+
+**Parked** (why / cost / the decision it could change):
+- Who supplies the shared **ascent**, not the update's length (finding 1) / the next GPU pass
+  (the per-head arm) saves each part's mean update per block, then CPU only / Blocked 29: whether
+  the shared ascent is the MLP's or attention's mean pull.
+- v1's early attention ascent (8–32, L1–16) against the long passages' mixed / one GPU pass on
+  the v1 texts' long-passage prefixes is free / whether early attention's token-specific sign
+  depends on length or on the CPU-stored frame.
+- Why the sink's value carries ≤ 0.05 of the shared update while heads give it up to 0.6 of
+  their attention / free (its value norm, already in the pass) / whether "the sink" should
+  stay a separate source in U2's field (design "the sink").
 
 ## Corrections received
 

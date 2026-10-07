@@ -72,6 +72,14 @@ a **within-passage token shuffle** (token i's field against token k's move, same
 and the cosine is also reported with the **mean move across tokens subtracted**. The random
 direction stays beside as the floor.
 
+**The 1e page** (*proposed 2026-10-07; the user asked where it belongs; theirs to move*): a
+findings artifact at **U1's close**, with U2's settled reading (Blocked 29 decided) as its first
+section and U1's per-token energy and wells as its centre, since U1 is the first output that is a
+picture rather than a table of signs; updated in place at U3's close (saddles between the same
+wells). Not at U2's close: U2 alone is sign tables, and its headline turns on Blocked 29.
+Rejected: one page per unit (1d had two pages that went stale); waiting for the phase's end (1d
+paused without one).
+
 ## U2's block arm: the rule (fixed 2026-10-06, before any output)
 
 | | |
@@ -90,6 +98,23 @@ direction stays beside as the floor.
 | first checks (refuse) | stored rows unit to 1e-4; each exported block's revision is the run manifest's; every long run's manifest carries `LONG8_HASH`; R0's kept offsets index the stored positions; the first cell (step143000, `wiki_paragraph_long`) opened and checked populated (finite `a_i` for ≥ 90 % of targets at every block) before the rest; a synthetic cloud moved one exact mean-shift step reads `A` ≈ +1 and the reversed step ≈ −1 (test) |
 | shared update (beside) | *Added 2026-10-07 after the output (`/challenge-pr` on #158, finding 1); not part of the frozen label.* The shuffle null and `Ã` cannot see an update added to every token, so beside every U2 arm: `r1out` (each token's residual update less its component along the shared direction, through LN1; added after #159's review), `residout` (less the mean update), `resid` (the mean alone), and the β = 0 field. Which one is the headline is `STATE.md` Blocked 29 (`status-1e.md` "The shared update") |
 | not computed | step lengths, or any sum of them over layers (P-γ fence); any pairwise ⟨·,·⟩ statistic of the cloud (P-S1 fence); per-head kernels (the per-head arm, its own PR) |
+
+## U2's attention arm: the rule (fixed 2026-10-07, before any output)
+
+*Blocked 29 decided (c) (user, 2026-10-07): run this arm, carry `r1out` and `resid` beside the
+frozen label, and decide 29 on its output.* Everything not named here is the block arm's rule.
+
+| | |
+|---|---|
+| pass | one forward pass per (step, passage) on the GPU, the long batch's settings (float32, eager, TF32 off), with hooks: each layer's attention output, MLP output, attention weights to key 0 and the value at position 0. Nothing but the records is stored |
+| components | Pythia's residual is parallel, so block ℓ's update is exactly **attention + MLP**. Split further: **`sink`** = attention to key 0, `Σ_h A_h,i0 W_O^h (v_h0 − b_V^h)`; **`keys`** = attention to keys 1…i, the rest of attention less its constants (the mean pull); **`mlpx`** = the MLP less its output bias; **`bias`** = `b_O + W_O b_V + b_mlp`, one vector added to every token (`Σ_j A_ij = 1` makes `b_V`'s part constant). `attn` (sink + keys + its constants) and `mlp` whole are read too; `block` = attn + mlp is the check row. `sink + keys + mlpx + bias = block` exactly |
+| move per component | `c_i` added alone, in the block arm's frame: `u'_i = unit(LN1_ℓ(x_i + c_i))`, `d_i = P⊥_{u_i}(u'_i − u_i)`. Not additive across components (LN1 and the sphere); `block` is |
+| readings, per component | **frozen** (causal at β 1.6, 3.5, 5.6; the β = 0 field `mean0`), **`r1out`** (`c_i` less its component along its own shared direction `ĉ = unit(mean_t c)`; causal 3.5 and `mean0`), **`resid`** (`mean_t c` alone; causal 3.5), `residout` (`c_i − mean_t c`; causal 3.5). `bias` reads frozen only (causal 3.5, `mean0`: it is its own `resid`); `block` frozen causal 3.5 only |
+| shared shares (beside) | per (step, passage, block): the block's shared update `c̄ = mean_t(attn + mlp)` split by component, `share_k = (mean_t c_k)·ĉ / |c̄|` for sink, keys, mlpx, bias (sum to 1); each component's **sharedness** `|mean_t c_k| / mean_t |c_k|`; the mean attention to key 0 over targets and heads. Reported per band as the median over passages |
+| targets, cells, label, nulls, β, step 0 | the block arm's: T1 + T2 on the 8 long passages (v1's R0 kept offsets beside), blocks 0–22, bands, 1,000 within-passage permutations, the sign rule over passages with its chance counts and isolated leans, β-robust across 1.6 / 3.5 / 5.6 for the frozen reading |
+| **reading for Blocked 29** (fixed before output) | in each trained (step, band) where the block's `resid` ascends (`status-1e.md` "The shared update"), the component with the largest share of `c̄` whose own `resid` carries the same direction: **`keys`** → the shared ascent is attention to the other tokens, a mean-field pull through the cloud, so it **counts as following the field** (option (a) for that window); **`sink`, `bias` or `mlpx`** → a vector that does not depend on where the other tokens are, so **not** (option (b), `r1out` the headline there); none or tied (shares within 0.1) → said so, undecided. The verdict is per window, and 29 is the user's on that table |
+| first checks (refuse) | the pass's hidden states against the stored run's (unit rows × norms): long ≤ 1e-5 (same device and settings), v1 ≤ 1e-4 (stored on the CPU; the 512-token GPU gap was 7.1e-6); `x^ℓ + attn + mlp = x^{ℓ+1}` and `sink + keys + mlpx + bias = attn + mlp` to 1e-4 relative to the update's norm; the `block` row's `X` equals the block arm's stored frozen record (causal 3.5, `t12`) to 1e-6 on the first cell; the first cell (step143000, `wiki_paragraph_long`) populated (finite `a_i` for ≥ 90 % of targets, every block and component); a tiny random GPT-NeoX checks the hooked split against the explicit sum over keys (test) |
+| not computed | per-head kernels (the per-head arm); step lengths; pairwise ⟨·,·⟩ of the cloud (fences unchanged) |
 
 ## Fences (registered predictions and the registry)
 

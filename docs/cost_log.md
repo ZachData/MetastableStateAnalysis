@@ -280,3 +280,8 @@ running median of the rows above it gets a line under the table saying why.
   while its review was being answered; the follow-up added a statistic (four tries to find a
   specific one, two of them after reviews), two more batches, and the GPU reader the user
   asked for mid-unit. Should have been a fresh session after #158 (lesson 9).
+| 2026-10-07 | 1e U2 attention arm (+ 1d findings page) (measured before the /challenge-pr calls) | 94 | 295k | 19.0M | 81k | #160 |
+  Over 2× the median (5.7M): two units in one session on the user's request (the attention arm
+  and the 1d findings page, which read 1d's 3,400-line status and two artifact pages), two
+  out-of-memory relaunches (`LESSONS.md` 3), and a 37 KB start-hook print of a stale `STATE.md`.
+  Peak context 295k carries every later call.
