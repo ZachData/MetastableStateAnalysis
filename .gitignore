@@ -28,6 +28,9 @@
 !p1d_cluster_ensemble/long_prompts/*.txt
 !p1d_cluster_ensemble/long_prompts/*.tex
 !p1d_cluster_ensemble/long_prompts/provenance.json
+# Phase 1e's four new long passages and their provenance (p1e_energy_field/long_prompts_1e.py). Inputs, not run output.
+!p1e_energy_field/long_prompts_1e/*.txt
+!p1e_energy_field/long_prompts_1e/provenance.json
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
 !.claude/settings.json
 !*.sh

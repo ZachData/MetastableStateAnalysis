@@ -13,7 +13,7 @@ long-form record behind it.**
 | 1 | `p1_mstate_tracking/` | Complete |
 | 1b | `p1b_hemisphere/` | Complete |
 | 1d | `p1d_cluster_ensemble/` | What a cluster is, before Phase 10 resumes (active 2026-09-25 to 2026-10-06; its working definition is what Phase 10 re-reads on). Seven tuned clustering families, a graded consensus, `P-C1`–`P-C4` (never registered). Code restored from its tag; read `status-1d.md` "Revived 2026-09-25" first |
-| 1e | `p1e_energy_field/` | **Opened 2026-10-06, design proposed (not frozen)**: the residual stream as the theory's field `φ_β` at the measured β, its wells, crests and saddles, and whether each update ascends or descends it. Start at `design-1e.md`; scan `lit-1e.md` |
+| 1e | `p1e_energy_field/` | **Opened and frozen 2026-10-06**: the residual stream as the theory's field `φ_β` at the measured β, its wells, crests and saddles, and whether each update ascends or descends it, on 8 long passages (`long_prompts_1e.py`; extractor `extract_long8.py`). Start at `design-1e.md`; scan `lit-1e.md`; status `status-1e.md` |
 | 1c | `p1c_frames/` | Implemented and validated on synthetic data. **Audited 2026-09-19 (§3.40): E run against Pythia artifacts (`P-H1` measured), A/B/F blocked on inputs no run directory carries** |
 | 2 | `p2_eigenspectra/` | Complete; the Pythia rerun is done and the 19-step sweep is on disk |
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |

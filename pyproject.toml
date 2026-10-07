@@ -75,6 +75,7 @@ packages = [
     "p1b_hemisphere",
     "p1c_frames",
     "p1d_cluster_ensemble",
+    "p1e_energy_field",
     "p2_eigenspectra",
     "p2b_imaginary",
     "p2d_operator_activation",

@@ -117,6 +117,9 @@ world moves, nobody updates the line, and the next session acts on it.
   next one always lags by the merge that came after. The hook fix is still the user's.
   **Again 2026-10-06 (after #152):** 5 commits behind (`6abbcb8`, #151's merge); the hook
   printed R6's in-PR `STATE.md`. Caught by Start step 1 (read `git show origin/main:STATE.md`).
+  **Again 2026-10-06 (after #156):** still at `6abbcb8`, now 5 merges behind (#152–#156): the
+  five sessions in between each read `origin/main` and none fast-forwarded the main tree. The
+  hook printed R6's `STATE.md` again; Start step 1 caught it, and the main tree was fast-forwarded.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed
@@ -1090,6 +1093,12 @@ a wrong premise, the check inherits it.
   resolution. Rule: a diagnosis of *why* an instrument found nothing comes from a
   committed per-condition breakdown (here `scale_real diagnose`), not from a count of
   what passed.
+- 2026-10-07, #157: one GPU-against-CPU pair at 2,048 tokens (7.2e-5) was written up as
+  "~10× the 512-token gap", i.e. caused by length, and put into `compute_profile.md`.
+  `/challenge-pr` asked whether it was length; all 8 pairs split by position quarter show
+  the gap is step 143000's deep layers at every position (up to 1.8e-4) and absent at
+  step 0. Rule: a cause named for a measurement is checked on the split that would
+  separate it (here position), not inferred from one pair.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user
