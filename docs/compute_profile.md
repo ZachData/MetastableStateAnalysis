@@ -21,6 +21,7 @@ How to measure: `/usr/bin/time -v <cmd> 2> time.log`, then read
 | — | Stage 0 (Phase 10), whole | 410m, 19 checkpoints | local box | unmeasured here | unmeasured | 57–100 GB | `STATE.md`; needs ≥ 100 GB ephemeral storage |
 | 2026-10-05 | `move_text run --kept-from … --stage0-index …` (Phase 10 R0), one checkpoint | 7 v1 passages, both joins, 115 passes | local box, CPU, 14 workers | ~6.5 min (forward ~2/3 of it) | unmeasured | ~4 MB JSON | `p10_cluster_function/status-10.md` §1.14 |
 | 2026-10-05 | one 410m forward, `homer_iliad` (512 tokens), float32, eager, TF32 off | step512, step54000 | local box, **RTX 3080 (10 GB)** | **40 ms** (CPU: ~2.7 s per pass inside `move_text`) | — | — | GPU probe below |
+| 2026-10-07 | `p1e_energy_field.u2_block run` (1e U2 block arm), stored activations, no forward pass, CPU float64 | 8 long passages (1,032–2,041 tokens) × 18 steps + v1 × 18 | local box, CPU, 14 workers, 1 BLAS thread each | 143 s per long run alone; ~700 s each with 14 in parallel (memory bandwidth); 1 h 50 min for 269 runs | 14 GB total in use | 49 MB JSON | `p1e_energy_field/status-1e.md` "U2's block arm" |
 
 ## The GPU (local box)
 

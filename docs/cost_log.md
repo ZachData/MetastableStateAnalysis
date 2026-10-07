@@ -274,3 +274,4 @@ running median of the rows above it gets a line under the table saying why.
   were read before the user moved 1e to long passages mid-unit, so this one transcript carries
   U2's preparation as well as sourcing, building and extracting four passages. The stale main
   tree also made the start hook print the wrong STATE.md (33 KB), read again from `origin/main`.
+| 2026-10-07 | 1e U2 block arm (before /challenge-pr) | 71 | 190k | 9.3M | 48k | #158 |

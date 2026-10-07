@@ -188,6 +188,18 @@ world moves, nobody updates the line, and the next session acts on it.
   opening the run script and a record's `kept_from` before the first pass. No
   run was wasted. Rule: a claim about which input a number was computed on
   names the file and hash it read.
+- **2026-10-07, the start hook again printed an old `STATE.md`** (#156's, which
+  still said "Blocked 28 open, U2's rule unfixed"): the main tree was 8 merges
+  behind `origin/main`, and the hook prints the main tree's file. Caught at
+  Start step 1 by comparing with `git log origin/main`; read from
+  `git show origin/main:STATE.md`. Third instance; the fix (the hook printing
+  `origin/main`'s copy after a fetch) is a `.claude/settings.json` change, so
+  it is the user's (Blocked 4's reason).
+- **2026-10-07, a solo timing extrapolated to a pool** (1e U2): one long run
+  took 143 s alone, ~700 s each with 14 workers (memory-bound n × n float64
+  arrays), so the "~25 min" first estimate was 1 h 50 min. No run wasted.
+  Rule: time the first pool wave, not the solo first cell, before quoting a
+  wall time (`docs/compute_profile.md`).
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the

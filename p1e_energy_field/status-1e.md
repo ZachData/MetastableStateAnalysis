@@ -8,18 +8,19 @@
 - **Inputs:** `pythia-410m`, the 18 Stage 0 steps, **8 long passages (1,032–2,041 tokens; hash `ba605f4e14b5`) primary**, the 7 v1 passages beside, unit LN1 rows, β = 3.5 [1.6, 5.6] — `p1e_energy_field/design-1e.md` "Inputs, fixed here"
 - **Results:**
   - Opened 2026-10-06 with a literature scan; the design was frozen the same day as proposed, then its passages were changed to the long set before any output. The closed-form steps the design uses are checked (M6 corrected after review: in a cloud-centred frame the field also has a floor off the tokens' span) — `p1e_energy_field/design-1e.md` "The math", `p1e_energy_field/lit-1e.md`
-  - Four new long passages were built under a rule committed before their sources were fetched, and all 8 long passages were extracted at the 18 steps on the GPU (activations only); no field has been read yet — `p1e_energy_field/status-1e.md` "The 8 long passages"
+  - Four new long passages were built under a rule committed before their sources were fetched, and all 8 long passages were extracted at the 18 steps on the GPU (activations only) — `p1e_energy_field/status-1e.md` "The 8 long passages"
+  - Each block's update ascends the field at the measured β in every band at steps 8–256 and 16000–54000 (all 8 passages; 35 of 54 cells, 0.42 expected by chance), descends in L1–8 at 1000–8000 and in the last two blocks at 143000; the component is small (cosine excess ≤ 0.16) — `p1e_energy_field/status-1e.md` "U2's block arm"
 - **Superseded / wrong:** none
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
 - **Depends on:** 1d@4168cdd237, 10@c159a02c9b
 - **Feeds:** none
 - **Open threads:**
-  - U2's block arm on the 8 long passages is next, its rule already fixed — `p1e_energy_field/design-1e.md` "U2's block arm: the rule"
+  - Phase 10's exact floor check (Blocked 27 (c)) is next, then the field at the tokens (U1); U2's attention and per-head arms need a GPU pass — `p1e_energy_field/design-1e.md` "Units"
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence — `p1e_energy_field/design-1e.md` "Units"
 - **After Phase 10:**
   - U1, U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-07 · body `68b2b223db`
+- **Reviewed:** 2026-10-07 · body `4bb0fee14e`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -110,5 +111,71 @@ the rule", row *targets*).
 **How to re-run.** Texts: `python -m p1e_energy_field.long_prompts_1e` (reads the cached sources,
 fetches them if absent; a changed source changes the hash). Runs: the `run.sh` above
 (`--skip-existing` resumes).
+
+## U2's block arm (2026-10-07): the update ascends the field at 8–256 and from 16000; L1–8 descends at 1000–8000; the last two blocks descend at 143000
+
+**Input.** The 144 long runs above (`LONG8_HASH` `ba605f4e14b5`, GPU, code `4f010a8`) and v1's 7
+passages at the 18 steps beside (Stage 0 CPU runs, R0's kept offsets from
+`data/p10/reread_r0_2026-10-05/labels`); LN1 weights from each checkpoint's cached
+`model.safetensors` (snapshot ids in `plan.json`). Rule: `design-1e.md` "U2's block arm: the rule",
+unchanged. Producer `p1e_energy_field/u2_block.py` (`run`, `nll`), labels `u2_report.py`; output
+`data/p1e/u2_block_2026-10-07/` (`report.txt`, `report.json`, `records/`, `nll.json`, `run.sh`).
+First cell (step143000, `wiki_paragraph_long`) checked populated before the rest (552 of 552
+cells, every block, 1,839 of 1,839 targets finite). All 270 runs done, no refusal.
+
+**Labels, primary** (T1 + T2, causal field, β = 3.5; `X` = A − shuffle-null mean, band mean over
+the 8 passages; 54 cells in L1–22):
+
+| steps | L1–8 | L9–16 | L17–22 |
+|---|---|---|---|
+| 0–4 | mixed | **descends** at 0, 2 (−0.003, init; leans at 4) | mixed (leans ascends at 4) |
+| 8–256 | ascends, +0.007 to +0.048 | ascends, +0.018 to +0.065 (leans at 256) | ascends, +0.018 to +0.158 |
+| 512 | leans descends, −0.016 | leans descends (isolated) | ascends |
+| 1000–8000 | **descends**, −0.008 to −0.018, β-robust | mixed at 1000–2000, ascends 4000–8000 | ascends, +0.027 to +0.031 |
+| 16000–54000 | ascends | ascends | ascends |
+| 143000 | ascends, +0.023 | ascends, +0.021 | **descends**, −0.027 (leans at β 1.6) |
+
+| count over the 54 cells | ascends | descends | leans asc / des | mixed |
+|---|---|---|---|---|
+| observed | 35 | 7 | 2 / 3 | 7 |
+| expected by chance | 0.42 (either) | | 3.4 (either) | |
+
+- **Size.** `X` ≤ 0.16 everywhere: the block's move is mostly orthogonal to the field's force.
+  "Ascends" is the sign of a small component shared by all 8 passages, not a mean-shift step.
+- **143000, L17–22, by block:** blocks 17–18 ascend in 8 of 8 passages, 19 in 6, 20 in 3, and
+  **blocks 21 and 22 descend in 8 of 8** (`X` −0.16, −0.12). At 54000 only block 22 does (2 of 8).
+- **Mean move out (`Xt`)**: the same label in 71 of 72 primary-field cells (the other at L0).
+- **Sources.** Without the sink: the same labels. Full sum: nearly the same. **Local part**
+  (`m_β − m_0`): descends at 8–16 in every band, ascends in L1–16 from 32; in L1–8 it is mixed
+  from 2000, so L1–8's descent at 1000–8000 is in the field's mean term, not its local structure.
+- **β.** 1.6 and 5.6 give the same label in most cells (counts 33–36 ascends, 7 descends).
+- **Step 0.** Only L9–16's faint descent at init (steps 0–4, step 2 sharing it); no label from
+  step 8 on is also step 0's.
+- **T1–T3 against T1 + T2:** 14 of 72 primary-field cells differ (6 at L0), every one by a
+  degree (full, lean, mixed); none reverses a direction. Over all fields 149 of 864, 76 at L0.
+- **v1 (beside, CPU, 7 passages):** the same windows (ascends 8–256 and 16000–54000, L1–8
+  descends 1000–8000, L9–16 descends at init); at 143000 L17–22 is mixed (+0.001), not descends.
+- **Per-cell ranks** carry little: the shuffle null's sd is ~1e-3 at 1,000–2,000 targets, so
+  most cells sit at rank 0.001 one way or the other; the label is the cross-passage sign.
+- **Position:** median Spearman of `a_i` with log offset within ±0.1 in L1–22 at the six steps
+  read (0, 16, 128, 1000, 8000, 143000).
+- **Memorisation (beside):** mean NLL at 143000 is 1.31 (`hdbscan_code_long`) to 3.26 nats
+  (≈ ln 50304 = 10.8 at step 0); dropping the lowest leaves 143000's labels unchanged.
+- **Not tested, a coincidence of windows:** L1–8's descent (512–8000) overlaps the OV spectrum's
+  repulsive phase (1000–2000, `PROJECT.md` §3.12 A) and follows the energy break (128–512).
+  The frame itself moves over training (LN1's gain and bias), so a change across steps can be it.
+
+**How to re-run.** From the worktree root: `data/p1e/u2_block_2026-10-07/run.sh` (resumes;
+`--first-only` for the first check), then `python -m p1e_energy_field.u2_block nll --runs <long8>
+--out <dir>` and `... report --out <dir>`. CPU, float64, 14 workers: 143 s per long run alone,
+~700 s each with 14 in parallel (memory bandwidth), 1 h 50 min for the 269 after the first.
+
+**Parked** (why / cost / the decision it could change):
+- The last two blocks at 143000 / free, from the records / whether "the model ends by spreading
+  tokens" is a block-21–22 property to read in U4 (fenced) or in the attention arm.
+- L9–16's descent at init / free / whether init carries a structural sign the trained readings
+  must subtract (it is −0.003, below every trained label's size).
+- A GPU port of the per-run reader / ~30 min and an agreement check / only if a later arm
+  re-reads every cell; the attention arm needs a GPU pass anyway.
 
 ## Corrections received
