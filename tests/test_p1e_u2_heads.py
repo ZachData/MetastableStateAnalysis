@@ -2,6 +2,8 @@
 `p1e_energy_field/u2_heads.py` — the per-head arm on a tiny random GPT-NeoX (no download): each
 head's keys and sink parts add up to attention's output, the kernel fields are the explicit sums
 over keys, and every cell the rule names is read (`design-1e.md` "U2's per-head arm: the rule").
+
+Needs the real torch/transformers (the deps tier's are stubs): ``SMOKE_REAL_DEPS=1 pytest -m smoke``.
 """
 import numpy as np
 import pytest
@@ -10,7 +12,7 @@ from p1e_energy_field import u2_block as ub
 from p1e_energy_field import u2_heads as uh
 from test_p1e_u2_attn import _tiny
 
-pytestmark = pytest.mark.deps
+pytestmark = pytest.mark.smoke
 
 
 def _run(m, n=24):
@@ -41,7 +43,7 @@ def test_heads_add_up_and_kernels_are_the_explicit_sums():
     for L in range(3):
         layer = m.gpt_neox.layers[L]
         att = layer.attention
-        H, hd = att.num_attention_heads, att.head_size
+        H, hd = m.config.num_attention_heads, att.head_size
         A = full.attentions[L][0].double()                                   # (H, n, n)
         U = ub.unit_rows(hs[L], ln["w"][L], ln["b"][L], ln["eps"])
         x = layer.input_layernorm(full.hidden_states[L][0])

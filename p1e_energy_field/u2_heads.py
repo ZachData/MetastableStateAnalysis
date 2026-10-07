@@ -111,18 +111,14 @@ class HeadHooked(ua.Hooked):
         super().__init__(model)
         self.ops, self.ctx = ops, None
         for l, layer in enumerate(self.layers):
-            att = layer.attention
-
-            def wrapped(q, k, v, attention_mask=None, head_mask=None, _l=l, _f=att._attn):
-                out, w = _f(q, k, v, attention_mask, head_mask)
+            def capture(v, w, _l=l):
                 if self.ctx is not None and _l in self.ctx["blocks"]:
                     self.cap[("w", _l)], self.cap[("v", _l)] = w[0].detach(), v[0].detach()
-                return out, w
-            att._attn = wrapped
+            self.on_attn[l].append(capture)          # after the attention arm's own capture
             self.handles.append(layer.input_layernorm.register_forward_pre_hook(
                 lambda m, i, _l=l: self.cap.__setitem__(("x", _l), i[0][0].detach())
                 if self.ctx is not None and _l in self.ctx["blocks"] else None))
-            self.handles.append(att.register_forward_hook(
+            self.handles.append(layer.attention.register_forward_hook(
                 lambda m, i, o, _l=l: self._read(_l, o[0][0].detach())))
 
     def _read(self, l: int, attn_out) -> None:
@@ -132,8 +128,8 @@ class HeadHooked(ua.Hooked):
         ctx, ops = self.ctx, self.ops
         dt = ops.dtype
         att = self.layers[l].attention
-        H, hd = att.num_attention_heads, att.head_size
-        x, w, v = self.cap.pop(("x", l)), self.cap.pop(("w", l)), self.cap.pop(("v", l))
+        H, hd = self.n_heads, att.head_size
+        x, w, v =self.cap.pop(("x", l)), self.cap.pop(("w", l)), self.cap.pop(("v", l))
         lw, lb, eps = ctx["ln_w"][l], ctx["ln_b"][l], ctx["eps"]
         frame = lambda Y: unit_rows_t(Y, lw, lb, eps)            # noqa: E731
         X = x.to(dt)
