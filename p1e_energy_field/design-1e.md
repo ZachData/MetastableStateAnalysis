@@ -88,6 +88,7 @@ direction stays beside as the floor.
 | β | 3.5 primary; a label is **β-robust** if 1.6 and 5.6 give the same, otherwise β-dependent |
 | step 0 | read by the same rule beside every trained label; a trained label that step 0 also carries is not called learned |
 | first checks (refuse) | stored rows unit to 1e-4; each exported block's revision is the run manifest's; every long run's manifest carries `LONG8_HASH`; R0's kept offsets index the stored positions; the first cell (step143000, `wiki_paragraph_long`) opened and checked populated (finite `a_i` for ≥ 90 % of targets at every block) before the rest; a synthetic cloud moved one exact mean-shift step reads `A` ≈ +1 and the reversed step ≈ −1 (test) |
+| shared update (beside) | *Added 2026-10-07 after the output (`/challenge-pr` on #158, finding 1); not part of the frozen label.* The shuffle null and `Ã` cannot see an update added to every token, so beside every U2 arm: `residout` (the residual update less its mean over the targets, through LN1), `resid` (that mean alone), and the β = 0 field. Which one is the headline is `STATE.md` Blocked 29 (`status-1e.md` "The shared update") |
 | not computed | step lengths, or any sum of them over layers (P-γ fence); any pairwise ⟨·,·⟩ statistic of the cloud (P-S1 fence); per-head kernels (the per-head arm, its own PR) |
 
 ## Fences (registered predictions and the registry)
