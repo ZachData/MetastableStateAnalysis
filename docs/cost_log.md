@@ -285,3 +285,8 @@ running median of the rows above it gets a line under the table saying why.
   and the 1d findings page, which read 1d's 3,400-line status and two artifact pages), two
   out-of-memory relaunches (`LESSONS.md` 3), and a 37 KB start-hook print of a stale `STATE.md`.
   Peak context 295k carries every later call.
+| 2026-10-07 | 1e U2 per-head arm + Blocked 29 ascent shares (measured before /challenge-pr) | 95 | 251k | 16.5M | 50k | #161 |
+  Over 2× the median (5.7M): the start hook printed the main tree's stale 37 KB `STATE.md` and
+  `origin/main`'s had to be read too; the arm builds on three producers read whole (`u2_block`,
+  `u2_attn`, `u2_torch`, ~950 lines); three first-check refusals and a slow CPU step restarted
+  twice (`LESSONS.md` 3). Peak context 251k carries every later call.
