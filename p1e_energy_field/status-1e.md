@@ -10,7 +10,7 @@
   - Opened 2026-10-06 with a literature scan; the design was frozen the same day as proposed, then its passages were changed to the long set before any output. The closed-form steps the design uses are checked (M6 corrected after review: in a cloud-centred frame the field also has a floor off the tokens' span) — `p1e_energy_field/design-1e.md` "The math", `p1e_energy_field/lit-1e.md`
   - Four new long passages were built under a rule committed before their sources were fetched, and all 8 long passages were extracted at the 18 steps on the GPU (activations only) — `p1e_energy_field/status-1e.md` "The 8 long passages"
   - By the frozen rule, each block's update ascends the field in every band at steps 8–256 and 16000–54000 (35 of 54 cells, 0.42 by chance); the label is the field's β = 0 mean term, and the cosine excess is small (≤ 0.16) — `p1e_energy_field/status-1e.md` "U2's block arm"
-  - With the update every token shares removed (a null that reads 0 at init), the token-specific part descends the field at 32–2000 and ascends in L1–16 only from 16000; the early ascent and the descent at 143000's last blocks are the shared update — `p1e_energy_field/status-1e.md` "U2's block arm"
+  - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L1–16 only from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
@@ -22,7 +22,7 @@
 - **After Phase 10:**
   - U1, U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-07 · body `5e1eaa8a4a`
+- **Reviewed:** 2026-10-07 · body `f023b5486b`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -181,62 +181,79 @@ the 8 passages; 54 cells in L1–22):
 **Why.** If a block adds the same vector to every token's residual (the sink's value, an MLP
 bias), each token's tangent projection of it lines up with the field's mean term, so the frozen
 `X` reads it as ascending or descending, hundreds of null sds out; `Xt` does not remove it.
-Readings (`u2_block.shared_cells`; mean over the targets, causal field at β 3.5 and the β = 0
-field `mean0`): **`residout`**, the residual update less its mean over the targets, through LN1
-and onto the sphere (a shift shared in the residual is removed exactly; reads 0.000 at init in
-every band, so the row is specific); **`resid`**, that mean update alone; **`ambout`**, the
-review's check (the unit-frame move less its mean, before projection).
+Readings (`u2_block.shared_cells`; the shared part estimated over the targets; causal field at
+β 3.5 and the β = 0 field `mean0`):
 
-| steps (long, T1 + T2) | `residout` L1–8 | L9–16 | L17–22 | `resid` (shared alone) |
+| reading | what | at steps 0–8 (L1–22) |
+|---|---|---|
+| **`r1out`** (*after `/challenge-pr` on #159, finding 1*) | each token's residual update less its own component along the shared direction `ĉ = mean_t(x' − x)/|·|`, through LN1 | **mixed in every cell** (values ≤ 0.000) |
+| `residout` | the residual update less its mean over the targets | ≈ 0.000, but L9–16 leans descends at 0–2 |
+| `resid` | that mean update alone | L9–16 descends at 0–2 |
+| `ambout` | #158's review's check (unit-frame move less its mean) | **ascends in every band**: not specific |
+
+`r1out` is the token-specific reading: it removes a shared direction at any per-token weight (the
+sink's value scaled by each token's attention to it), and unlike `residout` it cannot reverse a
+small mover's move when step sizes are uneven (both tested, `tests/test_p1e_u2_block.py`; on our
+synthetic `residout` read below `r1out` but did not flip, as it did on the review's).
+
+| steps (long, T1 + T2) | `r1out` L1–8 | L9–16 | L17–22 | `resid` (shared alone) |
 |---|---|---|---|---|
-| 0–16 | ≈ 0, mixed | ≈ 0, mixed | ≈ 0 (leans descends at 16) | ascends from 8, every band |
-| 32 | **descends** | **descends**, −0.028 | **descends**, −0.042 | ascends |
-| 64–128 | ascends, +0.006 / +0.013 | descends at 64, leans asc at 128 | **descends**, −0.041 to −0.053 | ascends |
+| 0–8 | mixed | mixed | mixed | ascends from 8, every band |
+| 16 | mixed | mixed | descends, −0.002 | ascends |
+| 32 | **descends**, −0.009 | **descends**, −0.029 | **descends**, −0.043 | ascends |
+| 64–128 | ascends, +0.005 / +0.013 | descends at 64, leans asc at 128 (isolated) | **descends**, −0.049 to −0.060 | ascends |
 | 256 | mixed | mixed | mixed | ascends |
-| 512–1000 | **descends**, −0.024 / −0.026 | **descends**, −0.038 / −0.008 | mixed / lean | L1–8 mixed, else ascends |
-| 2000–8000 | descends to 4000, mixed 8000 | mixed, ascends from 4000 | mixed, ascends at 4000 | **L1–8 descends**, else ascends |
-| 16000–143000 | **ascends**, +0.009 to +0.030 | **ascends**, +0.013 to +0.034 | leans descends / mixed | 143000: L1–16 descend, L17–22 leans |
+| 512–1000 | **descends**, −0.026 / −0.024 | **descends**, −0.039 / −0.008 | leans / descends | L1–8 mixed, else ascends |
+| 2000–8000 | descends to 4000, mixed 8000 | mixed, ascends from 4000 | mixed | **L1–8 descends**, else ascends |
+| 16000–54000 | **ascends**, +0.009 to +0.029 | **ascends**, +0.013 to +0.028 | descends at 32000, leans at 16000 / 54000 | L1–8 leans, L9–16 ascends (mixed at 54000), L17–22 ascends |
+| 143000 | ascends, +0.030 | ascends, +0.036 | mixed, −0.002 | L1–16 descend, L17–22 leans (isolated) |
 
 | count over 54 cells | ascends | descends | leans asc / des | mixed |
 |---|---|---|---|---|
+| **`r1out`**, causal β 3.5 | 12 | 15 | 1 / 3 | 23 |
+| `r1out`, β = 0 | 9 | 28 | 1 / 0 | 16 |
 | `residout`, causal β 3.5 | 13 | 12 | 2 / 6 | 21 |
-| `residout`, β = 0 | 9 | 25 | 2 / 5 | 13 |
 | `resid` (shared alone) | 31 | 7 | 3 / 3 | 10 |
-| `ambout` (the review's) | 51 | 0 | 3 / 0 | 0 |
+| `ambout` (#158's review) | 51 | 0 | 3 / 0 | 0 |
 
-- **The 8–256 ascent is mostly the shared update**: `resid` ascends there, `residout` is ≈ 0 at
-  8–16 and descends at 32 (L1–8 alone ascends at 64–128). **143000's L17–22 descent is the shared update** (`residout` −0.001,
-  mixed; `resid` leans descends). **L1–8's descent at 1000–8000 is both**: token-specific at
-  512–4000 (`residout` descends), shared at 2000–8000 (`resid` descends).
-- **The review's `ambout` is not specific**: it reads ascends at step 0 in every band (the `0`
-  marks in `report.txt`), since renormalising leaves part of a shared shift in it. Its two
-  sign flips (#158's comment) are therefore not evidence; `residout` is the check.
-- **The field's local structure matters for the token-specific part**: at β = 0 `residout`
-  descends in 25 cells, at β 3.5 in 12 (`report.txt`).
-- **What removing the mean also removes:** a genuine pull of every token towards the cloud's
-  mean is largely shared too, so `residout` can remove real field-following; `resid` ascending
-  is what the theory's mean-field attraction would also do. The attention arm (hooks) splits
-  the shared update into attention's and the MLP's, which this arm cannot.
-- **v1 (beside):** `residout` the same windows: ≈ 0 at 0–16, descends in L9–22 at 32–256
-  (L9–16 mixed at 128), in L1–8 at 512–8000 and L9–16 at 512–2000, ascends in L1–16 from
-  8000 (L9–16) / 16000 (L1–8).
+- **The 8–256 ascent is mostly the shared update**: `resid` ascends there; `r1out` is mixed at
+  8–16 and descends at 32 in every band (L1–8 alone ascends at 64–128).
+- **143000's L17–22 descent is not token-specific** (`r1out` mixed, −0.002), but its shared
+  reading is only a lean, isolated (`resid`), so "shared" is the weaker half of that claim.
+- **L1–8's descent at 1000–8000 is both**: token-specific at 512–4000 (`r1out`), shared at
+  2000–8000 (`resid`).
+- **New with `r1out`:** L17–22's token-specific part descends late (32000; leans at 16000 and
+  54000), which the frozen label hid under an ascending shared update.
+- **`ambout` is not specific** (ascends at step 0 everywhere), so #158 review's two sign flips are
+  not evidence.
+- **The field's local structure matters for the token-specific part**: at β = 0 `r1out`
+  descends in 28 cells, at β 3.5 in 15.
+- **What removing the shared direction also removes:** a genuine pull of every token towards
+  the cloud's mean is largely along one direction too, so `r1out` can remove real
+  field-following; `resid` ascending is what the theory's mean-field attraction would also do.
+  The attention arm splits the shared update into attention's and the MLP's, and attention's
+  by key (position 0 against the rest; #159 review, finding 2).
+- **v1 (beside), `r1out`:** the same windows: mixed at 0–8, descends in L9–22 at 32–2000
+  (L9–16 mixed at 128), L1–8 at 512–8000; ascends in L1–16 from 8000 (L9–16) / 16000 (L1–8).
 
-**Provenance.** The shared records carry their producer (`code` d4a1ad9, rebased unchanged as
-0cd92be on `claude/p1e-u2-shared`; `device`, `mode`), and `run` now refuses to resume over a
-record from other code. The frozen `records/` predate this: they were written by #158's
-`u2_block.py` (7869cbd) less one comment line, all in one run on 2026-10-07 06:10–08:02.
-Run: `run.sh --mode shared` (CPU, 14 workers, ~250 s each in the pool, 47 min).
+**Provenance.** Records name their producer as the git tree hash of `p1e_energy_field`
+(`code` `tree:a03e3cd764`, survives rebases; #159 review, finding 3), with `device` and `mode`;
+`run` refuses to resume over another producer's record. The shared rows ran on the GPU (CUDA
+float64, 270 runs, ~25 min); the first cell matched the earlier CPU shared records (d4a1ad9,
+kept as `records_shared_d4a1ad9/`) to 1e-16 on every overlapping row. The frozen `records/`
+predate provenance: written by #158's `u2_block.py` (7869cbd) less one comment line, in one
+CPU run on 2026-10-07 06:10–08:02.
 
 ### GPU reading (2026-10-07)
 
 `p1e_energy_field/u2_torch.py` mirrors the numpy reader on a torch device; `u2_block run
 --device cuda` uses it, and `u2_block agree` recomputes stored records and compares. On 6 runs
-(long 143000 / 0 / 2000, v1 512, two shared), **CUDA float64 reproduces the CPU records to
-≤ 9e-13 in every field, ranks and signs identical**, at ~20 s per long run (shared mode 8 s):
-about 2.5× the 14-worker CPU pool, CPU left free. **Float32 fails** (`|ΔX|` up to 4e-4, 6
-ranks moved, against L0's `X` ≈ 1e-3), so `cuda32` is not used. Output `agree_cuda.json`,
-`agree_cuda32.json` beside the records; tests `tests/test_p1e_u2_torch.py` (torch on the CPU
-in float64 equals numpy to 1e-10).
+(long 143000 / 0 / 2000, v1 512, two shared), **CUDA float64 reproduces the CPU records: `X`,
+`A` and the null mean to ≤ 7e-16, `Xt` to ≤ 9e-13, ranks and signs identical**, at ~20 s per
+long run (shared mode 8–10 s): about 2.5× the 14-worker CPU pool, CPU left free. **Float32
+fails** (`|ΔX|` up to 4e-4, 6 ranks moved, against L0's `X` ≈ 1e-3), so `cuda32` is not used.
+Output `agree_cuda.json`, `agree_cuda32.json` beside the records; tests
+`tests/test_p1e_u2_torch.py` (torch on the CPU in float64 equals numpy to 1e-10).
 
 **How to re-run.** From the worktree root: `data/p1e/u2_block_2026-10-07/run.sh` (resumes;
 `--first-only` for the first check), then `python -m p1e_energy_field.u2_block nll --runs <long8>
@@ -255,4 +272,4 @@ in float64 equals numpy to 1e-10).
   at 8–256 and 16000–54000; L1–8 descends at 1000–8000; the last two blocks descend at 143000",
   and `STATE.md`'s "repulsive") read the frozen labels as token interactions. An update every
   token shares carries the early ascent and the 143000 descent; the token-specific part
-  (`residout`) is the table under "The shared update".
+  (`r1out`, after #159's review) is the table under "The shared update".
