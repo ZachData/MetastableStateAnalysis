@@ -12,18 +12,19 @@
   - By the frozen rule, each block's update ascends the field in every band at steps 8–256 and 16000–54000 (35 of 54 cells, 0.42 by chance); the label is the field's β = 0 mean term, and the cosine excess is small (≤ 0.16) — `p1e_energy_field/status-1e.md` "U2's block arm"
   - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L1–16 only from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
   - Splitting each block's update by a hooked pass, the MLP supplies most of the shared update and its shared part ascends too (24 of 31 windows by the rule fixed before output; the sink's value and the biases supply almost none); on the long passages attention's token-specific part never ascends the field in layers 1–22 and descends from step 256 on (v1 ascends at 8–32); the late token-specific ascent in L1–16 goes with the MLP's — `p1e_energy_field/status-1e.md` "U2's attention arm"
+  - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000 (most heads individually) and ascends from 4000–8000, so its late descent against the idealised field is that field being the wrong object; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
 - **Depends on:** 1d@4168cdd237, 10@c159a02c9b
 - **Feeds:** none
 - **Open threads:**
-  - Whether an update every token shares counts as following the field is the user's decision; the attention arm's pre-set reading says the MLP supplies most of the shared update, but not who supplies its ascent, and the per-head arm would test attention's descent against each head's real kernel — `STATE.md` Blocked 29
+  - Whether an update every token shares counts as following the field is the user's decision, now with who supplies its ascent measured; and whether the late split between heads and their sum is heads cooperating — `STATE.md` Blocked 29
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence — `p1e_energy_field/design-1e.md` "Units"
 - **After Phase 10:**
   - U1, U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-07 · body `13ac047c84`
+- **Reviewed:** 2026-10-07 · body `0ae0501f13`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -369,6 +370,112 @@ beside it for Blocked 29's table). GPU: ~55–60 s per long run, 3.1 GB; 270 run
 - Why the sink's value carries ≤ 0.05 of the shared update while heads give it up to 0.6 of
   their attention / free (its value norm, already in the pass) / whether "the sink" should
   stay a separate source in U2's field (design "the sink").
+
+## U2's per-head arm (2026-10-07): against its heads' own kernels, attention's token-specific move descends at 128–2000 and ascends from 4000–8000; the late descent against `φ_β` is `φ_β` being the wrong field
+
+**Input.** The 144 long runs (`LONG8_HASH` `ba605f4e14b5`) and v1's 7 at the 18 steps (R0's kept
+offsets), each re-run as a hooked forward pass on the GPU (float32, eager, TF32 off), every
+layer's full attention map read in its own hook (CUDA float64). Rule: `design-1e.md` "U2's
+per-head arm: the rule" (`8d6da34`, before any output; its populated check changed after the
+first check refused, before any reading: heads that put all their weight on key 0 and the token
+itself have no keys part or `V = I` field there). Producer `p1e_energy_field/u2_heads.py`, report
+`u2_heads_report.py`; records name `p1e_energy_field`'s tree `tree:23c3822134` (commit `3d571fa`);
+output `data/p1e/u2_heads_2026-10-07/` (`report.txt`, `report.json`, `records/`, `means/`,
+`ascent/`, `run.sh`). **Checks, all 270 runs:** the pass against the stored rows ≤ 1.2e-7 (long),
+within 1e-4 (v1); every attention row sums to 1 within 1e-6 with no weight above the diagonal;
+the heads add up to attention's output within 4.5e-7 of the update's norm; the saved means' parts
+sum to the block within 1e-6; the check row (`causal:keys:r1out`) equals the attention arm's
+band values to 2.5e-16. Tests: `tests/test_p1e_u2_heads.py` (per-head parts and kernel fields
+against explicit sums on a tiny random GPT-NeoX), `tests/test_p1e_u2_heads_pure.py` (Shapley).
+~52 s per long run, 2.2 h for the 270.
+
+**The reading** (fixed before output). In each trained window where the attention arm's
+`keys:r1out` descends `φ_β` (30 of 54 on the long passages): attention's token-specific move
+(`keys:r1out`) against `kernns`, the field its own heads' attention rows give with `V = I`:
+
+| verdict | windows (long, 30) | where | v1 (24) |
+|---|---|---|---|
+| descends its own kernel: **attention repels what its heads attend to** | **11** | L17–22 at 64–128; L1–8 and L9–16 at 256–1000; L17–22 at 512–1000; L9–16 at 2000 | 11 |
+| ascends its own kernel: **the descent was `φ_β` being the wrong field** | **13** | L1–8 at 4000–143000; L9–16 at 16000–143000; L17–22 at 8000, 16000, 54000 | 11 |
+| mixed: the real kernel does not sign it | 6 | L1–8 at 4 and 2000; L9–16 at 4000; L17–22 at 2000, 32000, 143000 | 2 |
+
+| `kernns:keys:r1out` (long) | L1–8 | L9–16 | L17–22 |
+|---|---|---|---|
+| 0–64 | mixed | mixed | mixed (leans descends at 64) |
+| 128–1000 | **descends** (lean at 128), −0.002 to −0.017 | **descends**, −0.008 to −0.035 | **descends** (lean at 512), −0.007 to −0.019 |
+| 2000 | mixed | descends, −0.016 | mixed |
+| 4000 | leans ascends | mixed | leans ascends |
+| 8000–143000 | **ascends**, +0.003 to +0.009 | **ascends**, +0.020 to +0.029 | ascends at 8000; leans at 16000, 54000; mixed at 32000, 143000 |
+
+Over 54 cells: 11 ascend, 11 descend, 4 / 3 lean, 25 mixed (chance 0.42 and 3.4); no label is
+carried by step 0. `kern:attn:r1out` (the whole of attention, key 0 in as a source) differs in
+verdict at 4 windows, all at the edges (4 L1–8 and 32000 L17–22 lean descends; 16000 and 54000
+L17–22 mixed). **v1** (CPU-stored, 7 passages): the same shape, descends at 128–2000, ascends from 8000
+in every band.
+
+- **Two regimes, split at 2000–4000.** Up to 2000, attention's token-specific move goes against
+  both `φ_β` and its own heads' kernels: the repulsive reading holds under the real kernel. From
+  4000–8000 it goes *with* its own kernels and still against `φ_β`. Attention to key 0 rises over
+  the same steps (head median in L9–22 ≤ 0.01 to 2000, 0.27–0.29 at 8000, 0.50–0.58 at 143000;
+  L1–8 stays ≈ 0), but `kernns` has key 0 out, so what changes is which other keys the heads read.
+- **Per head** (head h's keys part against its own field; a unit is one (block, head), labelled
+  over passages). Step 0 is the baseline, since passages are not independent given a head: at
+  step 0, 1–5 units per band are signed (chance 0.8–1.0) and 6–17 lean (chance 6–8). At 256–1000
+  **most heads descend individually**: 49 (L1–8) and 86 (L9–16) of 128 at 256, 81–122 of 128 in
+  L1–16 at 512–1000 (122 at 1000, L9–16), 67–79 of 96 in L17–22 at 512–1000. From 8000, while the
+  sum ascends, heads split: 143000 L1–8 29 ascend / 47 descend, L9–16 62 / 38. The sum against the
+  summed kernels also carries each head's move against every other head's field, so the late
+  ascent is not a count of heads.
+- **The real field points nearly where `φ_β` points.** Median per-head `cos(g^h, g)` 0.69–0.96 in
+  the windows (1.00 at 0–16, where heads attend near uniformly). The sign differs because the move
+  is nearly orthogonal to both: `|X|` ≤ 0.035 on the long passages (≤ 0.053 on v1), and a small
+  turn of the field flips the sign of a small projection. "Repels" and "wrong field" are both
+  statements about that small component.
+- **Sink-only heads.** At 143000 in L17–22, 10 of 96 units are short of 90 % of targets in some
+  passage (all weight on key 0 and the token itself) and are kept out of the counts; L18 head 3
+  is sink-only at 1,817 of 1,839 targets in `wiki_paragraph_long`.
+- **Whole heads, sink in** (`kern_h:head_h:frozen`, beside): 25–34 units ascend and 24–30 descend
+  per band at step 0 already (the frozen reading carries each head's shared part); read against
+  step 0, never chance.
+
+**Blocked 29 by ascent** (fixed before output: where the block's `resid` ascends, the part with
+the largest Shapley share of the shared move's projection on the force):
+
+| carrier of the ascent | windows (long, 31) | where | v1 (29) |
+|---|---|---|---|
+| `mlpx` (the MLP less its bias) → (b) not interaction | **19** | every band at 16–64 and 256; L9–16 at 8; L9–22 at 128 and 512–1000 (at 256 in L1–16 and 512 in L9–16 attention's shared part *descends*: keys −0.62 to −0.37) | 21 |
+| `keys` (attention to the other tokens) → (a) follows the field | **8** | L1–8 at 8 and 128 (128: F > 0 in only 2 of 8 passages, so its ratio is not read); L17–22 at 2000–8000; L9–16 at 8000–32000 (the MLP's share negative there: −0.85 to −2.76) | 5 |
+| tied (within 0.1) | 4 | L17–22 at 8, 16000, 32000, 54000 | 3 |
+
+- **Replicated on v1:** `keys` at 8 L1–8 and L17–22 at 2000, 4000, 8000 (4 windows). v1 adds
+  32000 L1–8; L9–16 at 8000–32000 are not v1 windows. Not replicated: 128 L1–8 (tied on v1, F > 0
+  in 1 of 7) and L9–16 at 8000–32000.
+- **Against the attention arm's length reading** (24 `mlpx`, 4 `keys`, 3 tied): the same 4 `keys`
+  windows plus 4 more. The verdict moves from "mostly the MLP" only after 2000: up to 1000 the
+  MLP supplies the shared ascent (and at 256–512 attention's shared part works against it); from
+  2000 in L17–22, and 8000–32000 in L9–16, attention's mean pull through the other tokens does.
+- The sink's value supplies −0.13 to +0.07 (−0.19 on v1 at 32000 L1–8); the biases ≤ 0.20,
+  except where the MLP's share is negative (0.46–0.85 at 8000–32000 L9–16; 1.22 on v1 at 32000
+  L1–8).
+- Shares are medians over passages of band-summed ratios, so they need not sum to 1; a share > 1
+  means another part's contribution is negative. A raw projection with no null: beside the
+  labels, not a label.
+
+**How to re-run.** From the worktree root: `data/p1e/u2_heads_2026-10-07/run.sh` (resumes;
+`--first-only` for the first check, which needs the attention arm's records), then
+`OMP_NUM_THREADS=1 python -m p1e_energy_field.u2_heads ascent --out <dir> --block-out <block arm
+dir> --workers 14` (CPU; multi-threaded BLAS in 12 workers was several times slower), then
+`python -m p1e_energy_field.u2_heads report --out <dir>` (reads the attention and block arms'
+`report.json` beside it). Resuming the records needs `3d571fa`'s `p1e_energy_field` tree.
+
+**Parked** (why / cost / the decision it could change):
+- The late split between heads and their sum (most heads descend their own field at 143000 L1–8,
+  the sum ascends) / one GPU pass at a few steps (per-token cross terms; the saved means are not
+  enough) / whether the late "follows its own kernel" is heads cooperating (one head moving
+  tokens to where another attends) or a few large heads.
+- Why the regime changes at 2000–4000, near where the OV spectrum turns repulsive (1000–2000,
+  `PROJECT.md` §3.12 A) / free, from the records / whether 1e's attention result and that turn are
+  one event.
 
 ## Corrections received
 

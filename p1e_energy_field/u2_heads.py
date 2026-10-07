@@ -47,7 +47,7 @@ SAVED = ("sink", "keys", "mlpx", "bias", "attn", "mlp", "block")
 ROW_TOL = 1e-5
 HEADSUM_TOL = 1e-4
 CHECK_TOL = 1e-6
-MEANS_TOL = 1e-6
+MEANS_TOL = 1e-6           # placed, not calibrated (as the three above)
 
 
 # ---------------------------------------------------------------- the frame on the device

@@ -364,6 +364,17 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-07, 1e U2's per-head arm: the rule's populated check (every cell finite on ≥ 90 % of
+  targets) assumed every head reads some key besides key 0 and the token itself. Trained heads
+  do not: at 143000 L18 head 3 puts all its weight on key 0 at 1,817 of 1,839 targets, and
+  other heads attend only to the token itself, so the head's keys part or `V = I` field is 0
+  there. The check refused three times on the first cell (~4 min); the rule was amended before
+  any reading to accept exactly those gaps, verified per head (≥ 0.9999 on key 0 and the token
+  itself), and still refuse any other. Also: the CPU ascent step ran 12 workers each with
+  multi-threaded BLAS (load 34) and crawled until restarted with `OMP_NUM_THREADS=1`, and a
+  `pgrep -f "<cmd>" | xargs kill` in the same shell line killed its own restart. Rule: a check
+  that "every unit is populated" names why a unit may legitimately be empty; a process pool
+  pins BLAS to one thread; never `pgrep -f` a pattern the killing command line contains.
 - 2026-10-07, 1e U2's attention arm: the first check ran on the rule's first cell
   (`wiki_paragraph_long`, 1,840 tokens) in a fresh process, and the batch died twice on the
   next runs with CUDA out of memory: the hooks held the previous checkpoint's model, and the
