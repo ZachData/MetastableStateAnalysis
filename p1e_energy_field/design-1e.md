@@ -110,6 +110,14 @@ direction stays beside as the floor.
 
 ## Worth challenging
 
+- **The passages** (changed after the freeze, before any output; user's direction and sources).
+  Long passages give each passage more tokens, but the passage stays the unit a label counts, so
+  8 is still few; and 8 is a mixed set: 1d's 4 continue v1 texts (so their first 242–482 tokens
+  are v1's), the new 4 do not. `sullivan_ballou_long` is half length. Two are verse / dialogue or
+  French, and v1's French passage was a different author. Rejected: more passages now (12, the
+  user chose 8); v1 primary; v2 (held out). The Gutenberg three are
+  probably in Pythia's training data (the Pile includes Project Gutenberg), as several v1 texts
+  are; not checked.
 - **The frame.** Settled after the review: layer ℓ's LN1 applied to both residuals ("Inputs").
   What it does not settle: LN1's gain and bias are learned per layer, so the frame itself moves
   over training; a step-to-step change in `a_i` can be the frame.

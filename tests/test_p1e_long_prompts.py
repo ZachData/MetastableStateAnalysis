@@ -9,6 +9,9 @@ import pytest
 from core.holdout import HELD_OUT_PROMPT_KEYS
 from p1e_energy_field import long_prompts_1e as lp
 
+# Tier: stdlib only (the 8-passage loader, which imports p1d's package, is not called here).
+pytestmark = pytest.mark.pure
+
 
 def _pg(tmp_path, n, header, body):
     (tmp_path / f"pg{n}.txt").write_text("\r\n".join(header + ["", "*** START", ""] + body
@@ -85,4 +88,4 @@ def test_built_texts_match_provenance():
     prov = lp.load_provenance()
     assert sorted(prov["prompts"]) == sorted(lp.KEYS)
     assert all(0 < v["n_tokens"] <= lp.MAX_TOKENS for v in prov["prompts"].values())
-    assert len(lp.load8()) == 8 and set(lp.expected_tokens()) == set(lp.load8())
+    assert sorted(lp.load()) == sorted(lp.KEYS) and all(lp.load().values())
