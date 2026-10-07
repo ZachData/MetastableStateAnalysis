@@ -33,7 +33,8 @@ def quarters(pos: np.ndarray, n: int) -> list:
     return [float(np.mean(np.isin(np.arange(a, b), pos))) for a, b in zip(edges[:-1], edges[1:])]
 
 
-def targets(runs: Path, key: str) -> dict:
+def target_positions(runs: Path, key: str) -> tuple:
+    """``(tokens, massive {position: [steps]}, T1 + T2, T1–T3)`` of one long passage."""
     massive, tokens = {}, None
     for s in STEPS:
         d = runs / f"pythia-410m-step{s}_{key}"
@@ -41,9 +42,13 @@ def targets(runs: Path, key: str) -> dict:
             massive.setdefault(p, []).append(s)
         if tokens is None:
             tokens = json.loads((d / "geometry.json").read_text())["tokens"]
+    t12 = np.asarray([p for p in range(len(tokens)) if p != 0 and p not in massive])
+    return tokens, massive, t12, kept_offsets(tokens, list(massive))
+
+
+def targets(runs: Path, key: str) -> dict:
+    tokens, massive, t12, t123 = target_positions(runs, key)
     n = len(tokens)
-    t12 = np.asarray([p for p in range(n) if p != 0 and p not in massive])
-    t123 = kept_offsets(tokens, list(massive))
     return {"n": n, "massive": {str(p): v for p, v in sorted(massive.items())},
             "t12": int(t12.size), "t12_quarters": quarters(t12, n),
             "t123": int(t123.size), "t123_quarters": quarters(t123, n)}
