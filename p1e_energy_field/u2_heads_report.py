@@ -16,7 +16,7 @@ import numpy as np
 
 from .extract_long8 import STEPS
 from .u2_block import BANDS
-from .u2_heads import ATTN_CELLS, PLAYERS
+from .u2_heads import ATTN_CELLS, PLAYERS, explained
 from .u2_report import SHORT, TRAINED_BANDS, direction, label, summarise, table
 
 PRIMARY_T = {"long": "t12", "v1": "r0"}
@@ -39,15 +39,23 @@ def head_labels(out: Path, kind: str) -> Dict:
     """Per (source, step, block, head): the sign label over passages, and whether any is short."""
     acc = defaultdict(dict)
     short = defaultdict(bool)
+    unexplained = []
     stats = defaultdict(lambda: defaultdict(list))
     n_pass = set()
     for p in sorted((out / "records" / kind).glob("*.json")):
         r = json.loads(p.read_text())
         n_pass.add(r["passage"])
+        heads = {(s["block"], s["head"]): s for s in r["heads"]}
         for c in r["head_cells"]:
             k = (c["source"], int(r["step"]), c["block"], c["head"])
             acc[k][r["passage"]] = c["X"]
-            short[k] |= c["n"] < 0.9 * r["targets"]
+            if c["n"] < 0.9 * r["targets"]:
+                short[k] = True
+                # the rule's explanation, checked on every record (`/challenge-pr` on #161, finding 2)
+                if not explained(c, heads):
+                    unexplained.append({"passage": r["passage"], "step": int(r["step"]), "block": c["block"],
+                                        "head": c["head"], "source": c["source"], "n": c["n"],
+                                        "targets": r["targets"]})
         for s in r["heads"]:
             for f in ("align_phi", "a0"):
                 stats[(int(r["step"]), s["block"], s["head"])][f].append(s[f])
@@ -56,7 +64,8 @@ def head_labels(out: Path, kind: str) -> Dict:
         if len(d) != len(n_pass):
             raise SystemExit(f"refusing: {k} has {len(d)} passages, expected {len(n_pass)}")
         labs[k] = label(list(d.values()))
-    return {"labels": labs, "short": dict(short), "stats": stats, "n_passages": len(n_pass)}
+    return {"labels": labs, "short": dict(short), "stats": stats, "n_passages": len(n_pass),
+            "unexplained": unexplained}
 
 
 def head_counts(h: Dict, src: str) -> Dict:
@@ -69,7 +78,7 @@ def head_counts(h: Dict, src: str) -> Dict:
             for (s, st, b, hh), lab in h["labels"].items():
                 if s != src or st != step or b not in BANDS[band]:
                     continue
-                if h["short"][(s, st, b, hh)]:
+                if h["short"].get((s, st, b, hh)):
                     c["short"] += 1
                     continue
                 c[lab] += 1
@@ -116,7 +125,10 @@ def blocked29_ascent(asc: Dict, block_rows: Dict, attn_b29: Dict, t: str) -> Dic
                 continue
             sh = asc[(step, band)]["share"]
             ranked = sorted(sh.items(), key=lambda kv: -kv[1])
-            if ranked[0][1] - ranked[1][1] < TIE:
+            npos, n = asc[(step, band)]["F_all_positive"], asc[(step, band)]["n"]
+            if npos <= n / 2:      # a ratio of a projection that is mostly ≤ 0 (#161 review, finding 3)
+                who, v = None, f"not read (F > 0 in {npos} of {n})"
+            elif ranked[0][1] - ranked[1][1] < TIE:
                 who, v = f"{ranked[0][0]}≈{ranked[1][0]}", "tied"
             else:
                 who = ranked[0][0]
@@ -158,6 +170,11 @@ def report(out: Path) -> int:
         text.append(f"check row against the attention arm's causal:keys:r1out: max |ΔX| {dev:.1e}")
         h = head_labels(out, kind)
         hc = {src: head_counts(h, src) for src in HEAD_ROWS}
+        full[kind]["unexplained_short"] = h["unexplained"]
+        text.append(f"short head cells not explained by the rule (sink-only), checked on every record: "
+                    f"{len(h['unexplained'])}" + "".join(
+                        f"\n  step {u['step']} {u['passage']} L{u['block']} h{u['head']} {u['source']} "
+                        f"n {u['n']} of {u['targets']}" for u in h["unexplained"]))
         full[kind]["heads"] = {src: {f"{s}|{b}": v for (s, b), v in d.items()} for src, d in hc.items()}
         # the reading, per window
         win, missing = {}, []
@@ -214,7 +231,7 @@ def report(out: Path) -> int:
             tally = defaultdict(int)
             for k, v in b29.items():
                 tally[v["verdict"]] += 1
-                text.append(f"  {k:>14s}: {v['carrier']:>12s} {v['verdict']:<22s} " +
+                text.append(f"  {k:>14s}: {str(v['carrier']):>12s} {v['verdict']:<22s} " +
                             ", ".join(f"{p} {v['shares'][p]:+.2f}" for p in PLAYERS) +
                             f"  (F > 0 in {v['F_all_positive']}; length: {v['length_carrier']})")
             text.append(f"  tally: {dict(tally)}")

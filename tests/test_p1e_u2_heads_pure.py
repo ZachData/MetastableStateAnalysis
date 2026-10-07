@@ -38,3 +38,18 @@ def test_ascent_block_sums_to_the_resid_move_on_the_force():
     dres = ub.tangent(U[t], frame(X[t] + sum(cbar.values())) - U[t])
     want = np.mean(np.sum(dres * g / np.linalg.norm(g, axis=1, keepdims=True), axis=1))
     assert r["F_all"] == pytest.approx(want)
+
+
+def test_a_short_head_cell_is_accepted_only_where_the_head_reads_key_0_and_itself():
+    """`/challenge-pr` on #161, finding 2: the amended refusal path has a test."""
+    c = {"source": "kernns_h:keys_h:r1out", "block": 3, "head": 1, "left_out": 40}
+    ok = {(3, 1): {"n_left": 40, "left_max_keys_w": 5e-5}}
+    assert uh.explained(c, ok)
+    assert not uh.explained(c, {(3, 1): {"n_left": 40, "left_max_keys_w": 0.999}})   # another sink
+    assert not uh.explained(c, {(3, 1): {"n_left": 39, "left_max_keys_w": 0.0}})      # counts differ
+    assert not uh.explained({**c, "source": "kern_h:head_h:frozen"}, ok)               # whole head: no gap
+    cell = {"n": 10, "X": 0.1, "left_out": 90, "block": 0, "source": "kernns_h:keys_h:r1out", "head": 0}
+    rec = {"targets": 100, "heads": [{"block": 0, "head": 0, "n_left": 90, "left_max_keys_w": 0.5}],
+           "cells": [], "head_cells": [cell]}
+    with pytest.raises(SystemExit, match="not populated"):
+        uh.check_populated(rec)
