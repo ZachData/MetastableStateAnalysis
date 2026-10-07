@@ -269,3 +269,8 @@ running median of the rows above it gets a line under the table saying why.
   Over 2× the median (5.3M): this unit ran in R8's session (the user chose to keep the context),
   so every call re-read R8's ~170k; this unit alone is ~11.6M (18.3M − R8's 6.7M). Also a
   12-search literature scan, and STATE's 1d cell read whole once to rewrite the Active row.
+| 2026-10-07 | 1e frozen; 8 long passages built + extracted (before /challenge-pr) | 93 | 216k | 13.8M | 52k | #157 |
+  Over 2× the median (5.3M): the session opened for U2's block arm, and its rule and loaders
+  were read before the user moved 1e to long passages mid-unit, so this one transcript carries
+  U2's preparation as well as sourcing, building and extracting four passages. The stale main
+  tree also made the start hook print the wrong STATE.md (33 KB), read again from `origin/main`.
