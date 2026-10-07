@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-10-07 (#159 merged; Blocked 29 decided (c): U2's attention arm run on the GPU, this unit in a PR; 1d's findings page rewritten) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-10-07 (#159 merged; Blocked 29 decided (c): U2's attention arm run on the GPU, this unit in a PR; 1d's findings page rewritten; CI's deps tier fixed: the hook tests are `smoke`, hooks run on transformers 4.44 and 4.57, `LESSONS.md` 4) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to
 `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 

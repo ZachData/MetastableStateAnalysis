@@ -74,27 +74,61 @@ class Hooked:
     def __init__(self, model):
         self.model, self.cap, self.handles, self.orig = model, {}, [], {}
         self.layers = getattr(model, "gpt_neox", model).layers    # the LM or the bare model
+        self.n_heads = model.config.num_attention_heads
+        if not getattr(model.config, "use_parallel_residual", False):
+            raise ValueError("refusing: the split needs a parallel residual (attn + mlp)")
+        #: per layer, what to call with the attention's values and weights (b, H, n, ·), in order
+        self.on_attn = {l: [] for l in range(len(self.layers))}
+        self._wrap_attention()
         for l, layer in enumerate(self.layers):
-            att = layer.attention
-            if not getattr(model.config, "use_parallel_residual", False):
-                raise ValueError("refusing: the split needs a parallel residual (attn + mlp)")
-            self.orig[l] = att._attn
-
-            def wrapped(q, k, v, attention_mask=None, head_mask=None, _l=l, _f=att._attn):
-                out, w = _f(q, k, v, attention_mask, head_mask)
+            def capture(v, w, _l=l):
                 # clone: a view would keep the whole (H, n, n) map alive (OOM at 2,041 tokens)
                 self.cap[("a0", _l)] = w[0, :, :, 0].detach().clone()
                 self.cap[("v0", _l)] = v[0, :, 0, :].detach().clone()
-                return out, w
-            att._attn = wrapped
-            self.handles.append(att.register_forward_hook(
+            self.on_attn[l].append(capture)
+            self.handles.append(layer.attention.register_forward_hook(
                 lambda m, i, o, _l=l: self.cap.__setitem__(("attn", _l), o[0][0].detach())))
             self.handles.append(layer.mlp.register_forward_hook(
                 lambda m, i, o, _l=l: self.cap.__setitem__(("mlp", _l), o[0].detach())))
 
+    def _wrap_attention(self) -> None:
+        """
+        Route every layer's attention values and weights to ``on_attn``. transformers < 4.48 has a
+        per-module ``_attn(q, k, v, mask, head_mask)``; later versions call the module-level
+        ``eager_attention_forward(module, q, k, v, mask, ...)``, which only the eager path uses.
+        """
+        if hasattr(self.layers[0].attention, "_attn"):
+            for l, layer in enumerate(self.layers):
+                att = layer.attention
+                self.orig[l] = att._attn
+
+                def wrapped(q, k, v, attention_mask=None, head_mask=None, _l=l, _f=att._attn):
+                    out, w = _f(q, k, v, attention_mask, head_mask)
+                    for f in self.on_attn[_l]:
+                        f(v, w)
+                    return out, w
+                att._attn = wrapped
+            return
+        from transformers.models.gpt_neox import modeling_gpt_neox as neox
+        if self.model.config._attn_implementation != "eager":
+            raise ValueError("refusing: the split reads attention weights; load with attn_implementation='eager'")
+        layer_of = {id(layer.attention): l for l, layer in enumerate(self.layers)}
+        _f = self.orig["eager"] = neox.eager_attention_forward
+
+        def wrapped(module, q, k, v, *args, **kwargs):
+            out, w = _f(module, q, k, v, *args, **kwargs)
+            for f in self.on_attn.get(layer_of.get(id(module)), ()):
+                f(v, w)
+            return out, w
+        neox.eager_attention_forward = wrapped
+
     def close(self):
         for h in self.handles:
             h.remove()
+        if "eager" in self.orig:
+            from transformers.models.gpt_neox import modeling_gpt_neox as neox
+            neox.eager_attention_forward = self.orig["eager"]
+            return
         for l, layer in enumerate(self.layers):
             layer.attention._attn = self.orig[l]
 
@@ -110,7 +144,7 @@ class Hooked:
             for l in layers:
                 layer = self.layers[l]
                 att = layer.attention
-                H, hd = att.num_attention_heads, att.head_size
+                H, hd = self.n_heads, att.head_size
                 b_V = att.query_key_value.bias.view(H, 3 * hd)[:, 2 * hd:]
                 parts = split_layer(self.cap[("attn", l)], self.cap[("mlp", l)], self.cap[("a0", l)],
                                     self.cap[("v0", l)], att.dense.weight, att.dense.bias, b_V,

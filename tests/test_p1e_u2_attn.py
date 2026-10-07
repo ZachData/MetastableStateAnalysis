@@ -2,13 +2,15 @@
 `p1e_energy_field/u2_attn.py` — the hooked split of a block's update on a tiny random GPT-NeoX
 (no download): sink + keys + mlpx + bias = the block's update, and ``sink`` / ``keys`` equal the
 explicit sums over key 0 and keys 1…i (`design-1e.md` "U2's attention arm: the rule", first checks).
+
+Needs the real torch/transformers (the deps tier's are stubs): ``SMOKE_REAL_DEPS=1 pytest -m smoke``.
 """
 import numpy as np
 import pytest
 
 from p1e_energy_field import u2_attn as ua
 
-pytestmark = pytest.mark.deps
+pytestmark = pytest.mark.smoke
 
 
 def _tiny(parallel=True):
@@ -45,7 +47,7 @@ def test_split_adds_up_and_matches_the_explicit_sum_over_keys():
         # explicit: per head, A[h] @ (V_h - b_V) through W_O, split at key 0
         layer = m.gpt_neox.layers[L]
         att = layer.attention
-        H, hd = att.num_attention_heads, att.head_size
+        H, hd = m.config.num_attention_heads, att.head_size
         x = layer.input_layernorm(full.hidden_states[L][0])
         qkv = att.query_key_value(x).view(-1, H, 3 * hd)
         bV = att.query_key_value.bias.view(H, 3 * hd)[:, 2 * hd:]
