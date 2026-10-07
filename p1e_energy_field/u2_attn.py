@@ -73,7 +73,8 @@ class Hooked:
 
     def __init__(self, model):
         self.model, self.cap, self.handles, self.orig = model, {}, [], {}
-        for l, layer in enumerate(model.gpt_neox.layers):
+        self.layers = getattr(model, "gpt_neox", model).layers    # the LM or the bare model
+        for l, layer in enumerate(self.layers):
             att = layer.attention
             if not getattr(model.config, "use_parallel_residual", False):
                 raise ValueError("refusing: the split needs a parallel residual (attn + mlp)")
@@ -93,7 +94,7 @@ class Hooked:
     def close(self):
         for h in self.handles:
             h.remove()
-        for l, layer in enumerate(self.model.gpt_neox.layers):
+        for l, layer in enumerate(self.layers):
             layer.attention._attn = self.orig[l]
 
     def run(self, ids: "torch.Tensor", layers: Sequence[int]) -> tuple:
@@ -106,7 +107,7 @@ class Hooked:
             hs = torch.stack([h[0] for h in out.hidden_states]).float().cpu()
             comps = {}
             for l in layers:
-                layer = self.model.gpt_neox.layers[l]
+                layer = self.layers[l]
                 att = layer.attention
                 H, hd = att.num_attention_heads, att.head_size
                 b_V = att.query_key_value.bias.view(H, 3 * hd)[:, 2 * hd:]
@@ -200,7 +201,7 @@ def check_pass(hs: np.ndarray, comps: Dict, run_dir: Path, kind: str) -> Dict:
 # ---------------------------------------------------------------- the batch
 
 def ln_from(model) -> Dict:
-    lay = model.gpt_neox.layers
+    lay = getattr(model, "gpt_neox", model).layers
     return {"w": np.stack([l.input_layernorm.weight.detach().double().cpu().numpy() for l in lay]),
             "b": np.stack([l.input_layernorm.bias.detach().double().cpu().numpy() for l in lay]),
             "eps": float(lay[0].input_layernorm.eps)}
