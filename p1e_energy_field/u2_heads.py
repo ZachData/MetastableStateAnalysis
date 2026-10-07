@@ -154,7 +154,9 @@ class HeadHooked(ua.Hooked):
             align = float(((gt[ok] / gt[ok].norm(dim=1, keepdim=True)) * gphi_hat[ok]).sum(1).mean())
             kh = keys_h[t]
             stats.append({"block": l, "head": h, "align_phi": align, "a0": float(A[t, 0].mean()),
-                          "sharedness": float(kh.mean(0).norm() / kh.norm(dim=1).mean())})
+                          "sharedness": float(kh.mean(0).norm() / kh.norm(dim=1).mean()),
+                          # targets whose weight on keys 1…i underflows to 0 (all on key 0)
+                          "sink_only": int((A[t, 1:].sum(dim=1) < ub.TINY).sum())})
             mk.append(keys_h[t].mean(0))
             ms.append(sink_h[t].mean(0))
             del A, m, mns, keys_h, sink_h, g_ns, g_k, mv_k, mv_h
@@ -234,10 +236,20 @@ def first_attn_check(rec: Dict, attn_out: Path) -> float:
     return dev
 
 
+def explained(c: Dict, sink_only: Dict) -> bool:
+    """
+    A head's keys cell short of targets only where that head puts all its weight on key 0 (no keys
+    part, no keys field), plus token 1 (its one key in 1…i is itself, so the field is 0).
+    """
+    return (c["source"] == "kernns_h:keys_h:r1out"
+            and c["left_out"] <= sink_only[(c["block"], c["head"])] + 1)
+
+
 def check_populated(rec: Dict) -> None:
     n = rec["targets"]
-    allc = rec["cells"] + rec["head_cells"]
-    bad = [c for c in allc if c["n"] < 0.9 * n or not np.isfinite(c["X"])]
+    sink_only = {(s["block"], s["head"]): s["sink_only"] for s in rec["heads"]}
+    bad = [c for c in rec["cells"] + rec["head_cells"] if not np.isfinite(c["X"]) or
+           (c["n"] < 0.9 * n and not explained(c, sink_only))]
     seen = {(c["block"], c["source"]) for c in rec["cells"]}
     want = {(b, f"{f}:{k}:{r}") for b in ub.BLOCKS for f, k, r in ATTN_CELLS}
     heads = {(c["block"], c["head"], c["source"]) for c in rec["head_cells"]}
