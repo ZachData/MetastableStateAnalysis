@@ -24,7 +24,7 @@
 - **After Phase 10:**
   - U1, U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-07 · body `d72c0c5c5a`
+- **Reviewed:** 2026-10-07 · body `d11664082f`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -282,7 +282,8 @@ Rule: `design-1e.md` "U2's attention arm: the rule" (`2dee9b9`, before any outpu
 the block to ≤ 7.5e-8; the first cell's `block` row equals the block arm's record to 2.8e-10, and
 the `block` row's labels reproduce the block arm's counts exactly (35 / 7 / 2 + 3 / 7). Test:
 the hooked split equals the explicit sum over keys on a tiny random GPT-NeoX
-(`tests/test_p1e_u2_attn.py`). Two earlier launches died on GPU memory (`LESSONS.md` 3); no
+(`tests/test_p1e_u2_attn.py`, smoke tier: `SMOKE_REAL_DEPS=1 pytest -m smoke`; passes on
+transformers 4.44 and 4.57, `LESSONS.md` 4). Two earlier launches died on GPU memory (`LESSONS.md` 3); no
 record from them was kept.
 
 **Blocked 29, by the rule's reading** (fixed before output: in each (step, band) where the

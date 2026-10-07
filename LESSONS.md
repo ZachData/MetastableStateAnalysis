@@ -479,6 +479,16 @@ not fixed).
   tie (1.0 vs 0.0, `test_phase2b_head_circuits.py`), a corrected R² 0.18 vs
   < 0.05 (`test_p10_partition_function.py`), and a refusal whose branch
   (ties vs draws) flips (`test_p_i1_attainable_floor.py`). CI has no ARM leg.
+- 2026-10-07: #160 and #161 were red in CI's deps tier from their first push.
+  `tests/test_p1e_u2_attn.py` and `test_p1e_u2_heads.py` build a tiny real
+  GPT-NeoX, marked `deps`. Outside `SMOKE_REAL_DEPS=1`, `conftest.py` makes transformers a
+  MagicMock, so the model had no layers ("stack expects a non-empty TensorList";
+  the parallel-residual refusal never raised). They had passed only with real
+  transformers 4.44 on the box. Under CI's 4.57 the hooks broke as well:
+  `GPTNeoXAttention._attn` no longer exists (it became the module-level
+  `eager_attention_forward`). Fixed: both modules marked `smoke`, and `u2_attn.Hooked`
+  supports both APIs. Rule: a test that needs a real model is `smoke`, and it is run
+  with `SMOKE_REAL_DEPS=1` against CI's transformers before the push.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
