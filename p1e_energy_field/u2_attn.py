@@ -82,8 +82,9 @@ class Hooked:
 
             def wrapped(q, k, v, attention_mask=None, head_mask=None, _l=l, _f=att._attn):
                 out, w = _f(q, k, v, attention_mask, head_mask)
-                self.cap[("a0", _l)] = w[0, :, :, 0].detach()
-                self.cap[("v0", _l)] = v[0, :, 0, :].detach()
+                # clone: a view would keep the whole (H, n, n) map alive (OOM at 2,041 tokens)
+                self.cap[("a0", _l)] = w[0, :, :, 0].detach().clone()
+                self.cap[("v0", _l)] = v[0, :, 0, :].detach().clone()
                 return out, w
             att._attn = wrapped
             self.handles.append(att.register_forward_hook(
