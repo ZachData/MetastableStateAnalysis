@@ -291,3 +291,4 @@ running median of the rows above it gets a line under the table saying why.
   `u2_attn`, `u2_torch`, ~950 lines); three first-check refusals and a slow CPU step restarted
   twice (`LESSONS.md` 3). Peak context 251k carries every later call.
 | 2026-10-07 | 1e U2 attn + heads: CI deps tier fix (smoke marker, transformers 4.57 hooks) | 53 | 117k | 4.5M | 25k | #160 #161 |
+| 2026-10-08 | Land #161 on main (stranded on #160's branch) | 17 | 86k | 1.2M | 22k | #162 |

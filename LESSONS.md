@@ -881,6 +881,14 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   the fixes went into a follow-up PR. Nothing on the PR said it was not ready. Rule: **open
   the PR as a draft; mark it ready only after every `/challenge-pr` finding is answered on
   it** (CLAUDE.md Stop steps 8–9).
+- 2026-10-07 (#161): #59 again. The per-head arm was stacked on #160 on the user's direction
+  (base `claude/p1e-u2-attn`). #160 merged at 22:01:29Z and #161 at 22:01:36Z, before GitHub
+  retargeted it, so #161 merged into #160's dead branch (`2e11613`) and its work never reached
+  `main`. `./scripts/status.sh` then said "open PRs: none" and `STATE.md` on the branch said
+  "#160 open". Found the next session by `git log origin/main..origin/claude/p1e-u2-heads`;
+  landed unchanged by #162. Rule: **a stacked PR stays a draft until its base has merged and
+  its base reads `main`**; after any merge, run `git merge-base --is-ancestor <tip> origin/main`
+  (already the rule; not run here).
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
