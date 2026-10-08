@@ -200,6 +200,17 @@ world moves, nobody updates the line, and the next session acts on it.
   arrays), so the "~25 min" first estimate was 1 h 50 min. No run wasted.
   Rule: time the first pool wave, not the solo first cell, before quoting a
   wall time (`docs/compute_profile.md`).
+- **2026-10-08, a card line simpler than its own table** (1e, building the
+  page): `status-1e.md`'s card said the token-specific part "ascends in L1–16
+  only from 16000"; the table beneath it (and `report.json`) has L9–16 from
+  4000 and L1–8 at 64–128 too. `STATE.md` repeated the card. Found only
+  because the page drew the grid from the report, not from the prose; and the
+  first fix was itself incomplete (it missed L1–8's 64–128) until
+  `/challenge-pr` on #165 counted the cells (finding 1). The same review found
+  "most heads" for "more heads than not" (2 of 13 windows had a majority) and
+  an R² range quoted from 6 of 18 steps. Rule: a summary line that names
+  windows is checked against the table it summarises, and a page reads the
+  report, never the card (`p1e_energy_field/page.py` refuses a count mismatch).
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the

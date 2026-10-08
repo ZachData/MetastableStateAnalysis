@@ -294,8 +294,9 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-08 | Land #161 on main (stranded on #160's branch) | 17 | 86k | 1.2M | 22k | #162 |
 | 2026-10-08 | R8x, the exact check (Blocked 27 (c)); Blocked 29 (c) | 60 | 160k | 6.9M | 41k | #163 |
 | 2026-10-08 | 1e U1, the field at the tokens | 93 | 231k | 15.3M | 54k | #164 |
+| 2026-10-08 | 1e: Blocked 30 (a), U3 closed; the 1e page | 42 | 165k | 5.0M | 40k | #165 |
 
-  Over 2× the running median (5.7M): a new producer, report and tests in one unit (93 calls at
+  #164 over 2× the running median (5.7M): a new producer, report and tests in one unit (93 calls at
   ~165k average); `STATE.md` is ~44 KB and was read twice at start (the hook printed the main
   tree's stale copy, 49 merges behind); an 85-min batch, restarted once after a rule amendment;
   and the post-PR fix (tolerance keys). Row taken before `/challenge-pr`.

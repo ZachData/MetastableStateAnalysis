@@ -1,0 +1,440 @@
+<title>Phase 1e Energy Landscape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column (68ch) with figure panels that widen to 1080px; label grids scroll sideways on phones inside their own box. */
+:root {
+  --bg: #f4f5f7; --surface: #fcfcfd; --ink: #14171c; --ink-2: #474d57; --muted: #767d88;
+  --rule: #dfe2e6; --axis: #c3c7cd; --accent: #3a4bb3;
+  --asc: #cf4440; --asc-lean: #f1aaa6; --desc: #2a72cf; --desc-lean: #a9c9f2; --mixed: #e6e7ea;
+  --st1: #b9b0ec; --st2: #8a7be0; --st3: #5a47c4; --st4: #2f2190;
+  --ly1: #7cc4b0; --ly2: #2a9a7c; --ly3: #0d5f4b;
+  --band: rgba(58,75,179,0.08);
+  --f-display: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #101216; --surface: #171a1f; --ink: #eef0f3; --ink-2: #bcc2cb; --muted: #8b929c;
+  --rule: #2a2e35; --axis: #3b4048; --accent: #95a2f2;
+  --asc: #e66767; --asc-lean: #7d3a39; --desc: #4a91e8; --desc-lean: #224a7c; --mixed: #2c3036;
+  --st1: #4a3f99; --st2: #6f61d6; --st3: #9a8ff0; --st4: #d4cefc;
+  --ly1: #2b7a64; --ly2: #3fae8f; --ly3: #95dfc9;
+  --band: rgba(149,162,242,0.10); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #101216; --surface: #171a1f; --ink: #eef0f3; --ink-2: #bcc2cb; --muted: #8b929c;
+  --rule: #2a2e35; --axis: #3b4048; --accent: #95a2f2;
+  --asc: #e66767; --asc-lean: #7d3a39; --desc: #4a91e8; --desc-lean: #224a7c; --mixed: #2c3036;
+  --st1: #4a3f99; --st2: #6f61d6; --st3: #9a8ff0; --st4: #d4cefc;
+  --ly1: #2b7a64; --ly2: #3fae8f; --ly3: #95dfc9;
+  --band: rgba(149,162,242,0.10); color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font: 400 1rem/1.6 var(--f-body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; display: grid; gap: 56px; }
+.col { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(1.9rem, 4.2vw, 2.7rem); letter-spacing: -0.01em; }
+h2 { font-size: 1.55rem; }
+h3 { font-size: 1.1rem; font-family: var(--f-body); font-weight: 600; }
+p { margin: 0; }
+.stack { display: grid; gap: 14px; }
+.eyebrow { font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.12rem; color: var(--ink-2); }
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: grid; gap: 18px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 400 0.82rem/1.4 var(--f-mono); color: var(--ink-2); }
+.facts span b { font-weight: 500; color: var(--ink); }
+
+.answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.answer { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 22px 22px 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.answer .k { font: 500 0.74rem/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.answer h3 { font-family: var(--f-display); font-size: 1.35rem; }
+.answer p { color: var(--ink-2); font-size: 0.95rem; }
+
+.decision { border-left: 3px solid var(--accent); padding: 4px 0 4px 18px; display: grid; gap: 6px; max-width: 76ch; }
+.decision .eyebrow { color: var(--accent); }
+
+.fig { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 22px; display: grid; gap: 16px; min-width: 0; }
+.fig-head { display: grid; gap: 6px; max-width: 76ch; }
+.fig-head p { color: var(--ink-2); font-size: 0.93rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.82rem; color: var(--ink-2); align-items: center; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legend i.line { height: 3px; border-radius: 2px; width: 16px; vertical-align: 3px; }
+.legend i.mixed { box-shadow: inset 0 0 0 1px var(--axis); }
+
+/* label grids */
+.grid-scroll { overflow-x: auto; }
+.grids { display: grid; gap: 22px; min-width: 620px; }
+.reading { display: grid; gap: 6px; }
+.reading-head { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.reading-head b { font-weight: 600; font-size: 0.95rem; }
+.reading-head span { color: var(--ink-2); font-size: 0.86rem; }
+.rows { display: grid; grid-template-columns: 56px repeat(18, minmax(0, 1fr)); gap: 2px; }
+.rows .bl { font: 400 0.74rem/1 var(--f-mono); color: var(--muted); align-self: center; }
+.cell { height: 20px; border-radius: 3px; background: var(--mixed); cursor: default; }
+.cell.split { box-shadow: -3px 0 0 -1px var(--surface), -4px 0 0 -1px var(--ink-2); }
+.c-A { background: var(--asc); } .c-a { background: var(--asc-lean); }
+.c-D { background: var(--desc); } .c-d { background: var(--desc-lean); }
+.steps-axis { display: grid; grid-template-columns: 56px repeat(18, minmax(0, 1fr)); gap: 2px; font: 400 0.66rem/1 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.steps-axis span { text-align: center; white-space: nowrap; }
+.stage-row { display: grid; grid-template-columns: 56px 11fr 7fr; gap: 2px; font: 500 0.7rem/1.3 var(--f-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.stage-row span:nth-child(2) { border-top: 1px solid var(--axis); padding-top: 5px; }
+.stage-row span:nth-child(3) { border-top: 1px solid var(--ink-2); padding-top: 5px; color: var(--ink-2); }
+
+/* charts */
+.charts-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.chart { min-width: 0; display: grid; gap: 6px; }
+.chart .ct { font: 500 0.78rem/1.2 var(--f-mono); color: var(--ink-2); }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--f-mono); font-size: 10.5px; fill: var(--muted); }
+svg .lbl { fill: var(--ink-2); font-size: 10.5px; }
+svg .grid line { stroke: var(--rule); stroke-width: 1; }
+svg .base { stroke: var(--axis); stroke-width: 1; }
+svg .series { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+svg .hit { fill: transparent; }
+svg .xh { stroke: var(--axis); stroke-width: 1; }
+
+.facts-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.fact { display: grid; gap: 4px; align-content: start; }
+.fact .v { font: 500 1.6rem/1.15 var(--f-display); }
+.fact p { font-size: 0.88rem; color: var(--ink-2); }
+.bar-track { height: 8px; border-radius: 4px; background: var(--mixed); position: relative; }
+.bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--ink-2); }
+.bar-base { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--accent); }
+
+table { border-collapse: collapse; font-size: 0.86rem; width: 100%; }
+th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 500 0.72rem/1.3 var(--f-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--f-mono); font-size: 0.82rem; }
+.table-scroll { overflow-x: auto; }
+
+.open { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; max-width: 76ch; }
+.open li { padding-left: 16px; position: relative; color: var(--ink-2); }
+.open li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 6px; height: 1px; background: var(--muted); }
+footer { font-size: 0.84rem; color: var(--muted); display: grid; gap: 8px; max-width: 80ch; border-top: 1px solid var(--rule); padding-top: 22px; }
+footer code { color: var(--ink-2); }
+
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px; font: 400 0.78rem/1.45 var(--f-mono); box-shadow: 0 4px 18px rgba(0,0,0,0.12); max-width: 280px; }
+#tip b { font-weight: 500; }
+@media (max-width: 520px) { .wrap { padding-inline: 16px; gap: 44px; } .fig { padding: 16px; } }
+@media (prefers-reduced-motion: no-preference) { .cell { transition: transform 0.08s; } .cell:hover { transform: scaleY(1.18); } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Phase 1e · exploratory, unregistered · 2026-10-08</div>
+    <h1>Does the residual stream climb its own energy field?</h1>
+    <p class="lede col">Phase 1e reads <code>pythia-410m</code>'s residual stream as the field of the particle picture, <code>φ<sub>β</sub>(x) = Σ<sub>j</sub> exp(β⟨x, u<sub>j</sub>⟩)</code> on unit LN1 rows, at the β the model was measured to have, instead of as clusters. It asks where the field's wells are (U1), and whether each token's update moves up the field (attraction) or down it (repulsion) (U2).</p>
+    <div class="facts">
+      <span><b>β</b> 3.5 [1.6, 5.6]</span>
+      <span><b>checkpoints</b> 18, step 0 → 143000</span>
+      <span><b>passages</b> 8 long, 1,032–2,041 tokens</span>
+      <span><b>battery</b> <code>ba605f4e14b5</code></span>
+      <span><b>v1</b> 7 short passages, beside</span>
+    </div>
+  </header>
+
+  <section class="answers" aria-label="The two answers">
+    <div class="answer">
+      <div class="k">U2 · the move against the field</div>
+      <h3>It depends on the training stage</h3>
+      <p>Up to step 1000, most of the climb is a shift every token shares, supplied by the MLP. Attention's part specific to each token goes down the field, and against each head's own kernel, head by head.</p>
+      <p>From step 2000, attention's mean pull in the last layers supplies the shared climb. From 4000, attention summed over heads climbs its heads' kernels while more single heads still go down their own kernel than up it.</p>
+    </div>
+    <div class="answer">
+      <div class="k">U1 · the field at the tokens</div>
+      <h3>One well</h3>
+      <p>At β 3.5, every trained layer band at every step has a single basin holding every token, except L1–8 at step 128. Across 1.6–5.6 the only exceptions are at step 128. A few wells appear near β 10 and many by β 20.</p>
+      <p>The field's density is lumpier than a matched Gaussian cloud's, already at step 0. It is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge.</p>
+    </div>
+  </section>
+
+  <section class="decision">
+    <div class="eyebrow">Blocked 30 · (a), recorded 2026-10-08 as recommended; the user to confirm</div>
+    <p><b>U3 is closed: there are no wells at the measured β.</b> U3 was to read the saddles between U1's wells. At β 1.6–5.6 there is one basin, so U1's result is U3's answer. Reading wells at β ≈ 10, or in the cloud-centred frame, would mean choosing a β or a frame in order to find wells, which is the placed-bar problem 1e was opened to avoid. U4 stays fenced until P-S1 is scored; U5 stays parked.</p>
+  </section>
+
+  <section class="stack">
+    <div class="col stack">
+      <div class="eyebrow">U2</div>
+      <h2>Up or down the field, by layer band and checkpoint</h2>
+      <p>Each cell is one layer band at one checkpoint. For each of the 8 passages, <code>X</code> is how far the update's direction lines up with the field's force beyond a token-shuffle null, averaged over the band's blocks. A cell <b>ascends</b> when all 8 passages are positive (sign test p = 1/256) and <b>leans</b> when 7 of 8 are (p = 0.035); descending is the same below zero. With no effect anywhere, chance gives 0.42 full labels and 3.4 leans per 54 cells. Hover a cell for <code>X</code>'s mean over the 8 passages.</p>
+    </div>
+    <div class="fig">
+      <div class="legend" aria-label="Cell colours">
+        <span><i class="c-A" style="background:var(--asc)"></i>ascends, 8 of 8</span>
+        <span><i style="background:var(--asc-lean)"></i>leans ascends, 7 of 8</span>
+        <span><i class="mixed" style="background:var(--mixed)"></i>mixed</span>
+        <span><i style="background:var(--desc-lean)"></i>leans descends</span>
+        <span><i style="background:var(--desc)"></i>descends</span>
+      </div>
+      <div class="grid-scroll"><div class="grids" id="grids"></div></div>
+    </div>
+  </section>
+
+  <section class="fig">
+    <div class="fig-head">
+      <h3>Head by head, attention goes against its own kernel even where the sum climbs it</h3>
+      <p>Each head (block × head) is labelled on its own: its token-specific keys part against the field its own attention rows give. The lines show the share of heads that descend or ascend (counting leans). The strip below each panel is the sum over heads, the last row of the grid above. Take the 13 windows where attention's token-specific move descends φ<sub>β</sub> but the sum over heads ascends its own heads' kernels (from step 4000). In 10 of them more heads descend their own kernel than ascend it, but a majority of all heads descends in only 2 (5 counting leans): the sum's ascent is not the heads' majority going either way. Sink-only heads are left out of the counts.</p>
+    </div>
+    <div class="legend">
+      <span><i class="line" style="background:var(--desc)"></i>share of heads descending</span>
+      <span><i class="line" style="background:var(--asc)"></i>share of heads ascending</span>
+    </div>
+    <div class="charts-3" id="heads"></div>
+  </section>
+
+  <section class="stack">
+    <div class="col stack">
+      <div class="eyebrow">U1</div>
+      <h2>At the measured β the field is one basin</h2>
+      <p>Wells are found by mean shift on <code>φ<sub>β</sub></code> from every token; a token's well is its basin. <code>k<sub>eff</sub> = exp(H)</code> of the basin shares counts wells weighted by the tokens they hold, so 1 means a single basin. The sweep runs at layers 4, 12 and 20, with the median over the 8 passages. The shaded band is β's measured interval.</p>
+    </div>
+    <div class="fig">
+      <div class="legend" id="sweep-legend"></div>
+      <div class="charts-3" id="sweep"></div>
+      <p style="font-size:0.86rem;color:var(--ink-2)">Over all 432 sweep cells (3 layers × 18 steps × 8 passages) at β 10, 196 have 2–20 wells, 111 have one and 125 more than 20. At β 20, 382 have more than 20. The merge tolerance does not change the count: at 1e-4 and 1e-2, 0 of 10,368 long-passage cells change.</p>
+    </div>
+  </section>
+
+  <section class="fig">
+    <div class="fig-head">
+      <h3>The density is lumpier than a Gaussian's, and step 0 already has it</h3>
+      <p><code>Xe′</code> is the spread of each token's log density, <code>sd(e)</code>, less that of a Gaussian cloud with the same moments, less that comparison's own bias on a structureless cloud. Above 0 is lumpier. β 3.5, median over the 8 passages. Since step 0 carries it, it is not called learned. By step 143000 the first two bands are less lumpy than at step 0, and only the last layers are more.</p>
+    </div>
+    <div class="legend" id="lump-legend"></div>
+    <div id="lump" class="chart" style="max-width:760px"></div>
+    <div class="facts-list">
+      <div class="fact"><div class="v">49 of 54</div><p>trained cells read lumpier after the bias correction at β 3.5 (42 + 5 leans at 1.6, 50 at 5.6).</p></div>
+      <div class="fact stack" style="gap:8px"><div class="v">R² 0.65–1.00</div><p>of each token's density on its closeness to the cloud's mean <code>⟨u<sub>i</sub>, ū⟩</code>, in every trained band at every step, except L1–8 at 64–256 (0.39, 0.33, 0.56; the two wells are at 128). Darker is higher:</p><div id="r2" class="rows" style="grid-template-columns:44px repeat(18,minmax(0,1fr))"></div></div>
+      <div class="fact stack" style="gap:8px">
+        <div class="v">Punctuation at the centre</div>
+        <p>Share of punctuation and whitespace among the densest tenth of tokens (L9–16), against 0.19 of all tokens:</p>
+        <div id="punct" class="stack" style="gap:8px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2>What is still open</h2>
+    <ul class="open">
+      <li><b>One well, as the theory expects?</b> Whether a single basin at β 3.5 is what the theory predicts for n ≈ 2,000 tokens in d = 1,024 is unread. A reading of the single-cluster thresholds in 2312.10794 would make this result the theory's expectation rather than a null.</li>
+      <li><b>The late split between heads and their sum.</b> It could be heads moving tokens towards where other heads attend, or a few large heads. The saved means cannot split them.</li>
+      <li><b>The two wells in L1–8 at step 128,</b> the one trained exception. They sit inside U2's 32–256 window and are free to read from the saved labels.</li>
+      <li><b>Wells at β ≈ 10</b>, the one range with a few, are parked and labelled off the measured β (1.8× its interval's top).</li>
+      <li><b>U4 (repulsive regions)</b> stays fenced until P-S1 is scored: its mean pairwise inner product is P-S1's degree-1 moment. <b>U5</b> (correlated against anti-correlated token pairs) needs a corpus for co-occurrence counts.</li>
+    </ul>
+    <p class="col" style="color:var(--ink-2)">Next in the project: Phase 10's re-read of every row on c3x, the definition chosen under Blocked 27 (a).</p>
+  </section>
+
+  <footer>
+    <div><b>Source of record:</b> <code>p1e_energy_field/status-1e.md</code> ("U2's block arm", "U2's attention arm", "U2's per-head arm", "U1, the field at the tokens"); design <code>p1e_energy_field/design-1e.md</code>. Merged in #156–#164.</div>
+    <div><b>Outputs:</b> <code>data/p1e/u2_block_2026-10-07/</code>, <code>u2_attn_2026-10-07/</code>, <code>u2_heads_2026-10-07/</code>, <code>u1_field_2026-10-08/</code> (with <code>calib/</code>). The charts read <code>report.json</code> and <code>labels.json</code> from these directories; the R² and punctuation figures are quoted from the status file.</div>
+    <div><b>Readings shown:</b> long passages (T1 + T2), causal field, β 3.5; the kernel rows use β-free kernels. U2's last band is L17–22 and U1's is L17–23, as in the status file.</div>
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const D = __DATA__;
+const STEPS = D.steps;
+const fmtStep = s => s >= 1000 ? (s % 1000 === 0 ? (s/1000) + 'k' : (s/1000).toFixed(1) + 'k') : String(s);
+const tip = document.getElementById('tip');
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; moveTip(e); }
+function moveTip(e) {
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { tip.hidden = true; }
+const CODE = {'ascends':'A','leans ascends':'a','descends':'D','leans descends':'d','mixed':'m'};
+const SPLIT = STEPS.indexOf(2000);
+
+/* ---------- label grids ---------- */
+const READINGS = [
+  ['block_whole', 'Whole block update vs φβ', 'Ascends at 8–256 and 16000–54000 in every band (35 of 54 cells). Most of this is the shared update in the next row.'],
+  ['block_shared', 'The shared update alone', 'The mean update every token shares: ascends at 8–256 in every band, and in L17–22 through 54000.'],
+  ['block_tok', 'Token-specific block update', 'Each token’s component along the shared direction removed (r1out). Mixed at 0–8; descends at 32 and 512–1000 in every band; L9–16 ascends from 4000, L1–8 at 64–128 and from 16000.'],
+  ['mlp_tok', 'MLP, token-specific', 'The late token-specific ascent in L1–16 goes with the MLP’s.'],
+  ['attn_tok', 'Attention, token-specific vs φβ', 'Never ascends in L1–22. Descends or leans descends in 30 of 54 cells, from 256 on in L1–16.'],
+  ['kern_tok', 'Attention, token-specific vs its heads’ own kernels', 'Descends at 128–1000 in every band (L9–16 to 2000). From 8000 the sum over heads ascends its heads’ kernels in L1–16.'],
+];
+const BANDS = ['L1-8', 'L9-16', 'L17-22'];
+const gridsEl = document.getElementById('grids');
+const stage = document.createElement('div');
+stage.className = 'stage-row';
+stage.innerHTML = '<span></span><span>steps 0–1000</span><span>from step 2000</span>';
+gridsEl.appendChild(stage);
+for (const [key, title, note] of READINGS) {
+  const r = document.createElement('div'); r.className = 'reading';
+  r.innerHTML = `<div class="reading-head"><b>${title.replace('φβ','φ<sub>β</sub>')}</b><span>${note}</span></div>`;
+  const rows = document.createElement('div'); rows.className = 'rows';
+  for (const b of BANDS) {
+    const bl = document.createElement('div'); bl.className = 'bl'; bl.textContent = b.replace('-', '–'); rows.appendChild(bl);
+    STEPS.forEach((s, i) => {
+      const v = D[key][s + '|' + b]; const c = document.createElement('div');
+      c.className = 'cell c-' + CODE[v[0]] + (i === SPLIT ? ' split' : '');
+      c.tabIndex = 0;
+      const html = `<b>${title.replace('φβ','φ<sub>β</sub>')}</b><br>${b.replace('-', '–')} · step ${s.toLocaleString()}<br>${v[0]} · mean X ${v[1] >= 0 ? '+' : ''}${v[1].toFixed(3)}`;
+      c.setAttribute('aria-label', `${title}, ${b}, step ${s}: ${v[0]}`);
+      c.addEventListener('pointerenter', e => showTip(e, html));
+      c.addEventListener('pointermove', moveTip);
+      c.addEventListener('pointerleave', hideTip);
+      c.addEventListener('focus', () => { const rc = c.getBoundingClientRect(); showTip({clientX: rc.right, clientY: rc.bottom}, html); });
+      c.addEventListener('blur', hideTip);
+      rows.appendChild(c);
+    });
+  }
+  r.appendChild(rows); gridsEl.appendChild(r);
+}
+const axis = document.createElement('div'); axis.className = 'steps-axis';
+axis.innerHTML = '<span></span>' + STEPS.map(s => `<span>${fmtStep(s)}</span>`).join('');
+gridsEl.appendChild(axis);
+
+/* ---------- small SVG helpers ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) {
+    const v = attrs[k];
+    if ((k === 'fill' || k === 'stroke') && String(v).startsWith('var(')) e.style[k] = v; else e.setAttribute(k, v);
+  }
+  if (parent) parent.appendChild(e); return e;
+}
+function txt(parent, x, y, s, attrs = {}) { const t = el('text', Object.assign({x, y}, attrs), parent); t.textContent = s; return t; }
+
+/* line chart on an ordinal or log x axis with crosshair tooltip */
+function lineChart(container, opts) {
+  const W = opts.W || 340, H = opts.H || 220, m = Object.assign({t: 12, r: 14, b: 30, l: 40}, opts.m || {});
+  const svg = el('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria}, container);
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const X = opts.x, Y = v => m.t + ih - (opts.y(v) * ih);
+  const g = el('g', {class: 'grid'}, svg);
+  if (opts.bandX) el('rect', {x: m.l + X(opts.bandX[0]) * iw, y: m.t, width: (X(opts.bandX[1]) - X(opts.bandX[0])) * iw, height: ih, fill: 'var(--band)'}, svg);
+  for (const t of opts.yTicks) { el('line', {x1: m.l, x2: m.l + iw, y1: Y(t), y2: Y(t)}, g); txt(svg, m.l - 6, Y(t) + 3.5, opts.yFmt(t), {'text-anchor': 'end'}); }
+  for (const t of opts.xTicks) txt(svg, m.l + X(t) * iw, H - m.b + 15, opts.xFmt(t), {'text-anchor': 'middle'});
+  if (opts.zero !== undefined) el('line', {class: 'base', x1: m.l, x2: m.l + iw, y1: Y(opts.zero), y2: Y(opts.zero)}, svg);
+  if (opts.markX) { el('line', {x1: m.l + X(opts.markX) * iw, x2: m.l + X(opts.markX) * iw, y1: m.t, y2: m.t + ih, stroke: 'var(--accent)', 'stroke-width': 1}, svg); }
+  for (const s of opts.series) {
+    const pts = s.pts.filter(p => p[1] != null);
+    el('path', {class: 'series', stroke: s.color, d: pts.map((p, i) => (i ? 'L' : 'M') + (m.l + X(p[0]) * iw).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join('')}, svg);
+    const last = pts[pts.length - 1];
+    el('circle', {cx: m.l + X(last[0]) * iw, cy: Y(last[1]), r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2}, svg);
+    if (s.label) txt(svg, m.l + X(last[0]) * iw + 7, Y(last[1]) + (s.dy || 0) + 3.5, s.label, {class: 'lbl'});
+  }
+  if (opts.after) opts.after(svg, {m, iw, ih, X, Y});
+  const xh = el('line', {class: 'xh', y1: m.t, y2: m.t + ih, visibility: 'hidden'}, svg);
+  const dots = opts.series.map(s => el('circle', {r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden'}, svg));
+  const hit = el('rect', {class: 'hit', x: m.l, y: m.t, width: iw, height: ih}, svg);
+  const xs = opts.xs;
+  hit.addEventListener('pointermove', e => {
+    const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    const loc = p.matrixTransform(svg.getScreenCTM().inverse());
+    const f = (loc.x - m.l) / iw;
+    let best = xs[0]; for (const x of xs) if (Math.abs(X(x) - f) < Math.abs(X(best) - f)) best = x;
+    const px = m.l + X(best) * iw;
+    xh.setAttribute('x1', px); xh.setAttribute('x2', px); xh.setAttribute('visibility', 'visible');
+    let rows = '';
+    opts.series.forEach((s, i) => {
+      const pt = s.pts.find(q => q[0] === best);
+      if (pt && pt[1] != null) { dots[i].setAttribute('cx', px); dots[i].setAttribute('cy', Y(pt[1])); dots[i].setAttribute('visibility', 'visible');
+        rows += `<br><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};margin-right:6px"></span>${s.name} ${opts.vFmt(pt[1], s, best)}`; }
+      else dots[i].setAttribute('visibility', 'hidden');
+    });
+    showTip(e, `<b>${opts.tipX(best)}</b>${rows}`);
+  });
+  hit.addEventListener('pointerleave', () => { hideTip(); xh.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); });
+  return svg;
+}
+const ordX = i => i / (STEPS.length - 1);
+const stepIdx = s => STEPS.indexOf(s);
+
+/* ---------- heads ---------- */
+const headsEl = document.getElementById('heads');
+for (const b of BANDS) {
+  const wrap = document.createElement('div'); wrap.className = 'chart';
+  wrap.innerHTML = `<div class="ct">${b.replace('-', '–')}</div>`;
+  headsEl.appendChild(wrap);
+  const rec = s => D.heads[s + '|' + b];
+  lineChart(wrap, {
+    aria: `Share of heads descending and ascending their own kernel, ${b}`, H: 236, m: {b: 52, r: 16},
+    x: v => ordX(stepIdx(v)), xs: STEPS, xTicks: [0, 64, 2000, 143000], xFmt: fmtStep,
+    y: v => v, yTicks: [0, 0.5, 1], yFmt: v => v === 0 ? '0' : v === 1 ? '100%' : '50%',
+    series: [
+      {name: 'descend', color: 'var(--desc)', pts: STEPS.map(s => [s, rec(s).desc / rec(s).units])},
+      {name: 'ascend', color: 'var(--asc)', pts: STEPS.map(s => [s, rec(s).asc / rec(s).units])},
+    ],
+    vFmt: (v, s, x) => `${Math.round(v * rec(x).units)} of ${rec(x).units}`,
+    tipX: s => `step ${s.toLocaleString()} · sum: ${D.kern_tok[s + '|' + b][0]}`,
+    after: (svg, {m, iw, ih}) => {
+      const y = m.t + ih + 24, cw = iw / STEPS.length;
+      STEPS.forEach((s, i) => {
+        const lab = D.kern_tok[s + '|' + b][0];
+        const col = {A: 'var(--asc)', a: 'var(--asc-lean)', D: 'var(--desc)', d: 'var(--desc-lean)', m: 'var(--mixed)'}[CODE[lab]];
+        el('rect', {x: m.l + ordX(i) * iw - cw / 2 + 1, y, width: cw - 2, height: 8, rx: 2, fill: col}, svg);
+      });
+      txt(svg, m.l - 6, y + 7, 'sum', {'text-anchor': 'end'});
+    }
+  });
+}
+
+/* ---------- sweep ---------- */
+const BETAS = [0.5, 1, 1.6, 2.5, 3.5, 5.6, 10, 20, 50, 100];
+const SW_STEPS = [[0, 'var(--st1)'], [128, 'var(--st2)'], [1000, 'var(--st3)'], [143000, 'var(--st4)']];
+document.getElementById('sweep-legend').innerHTML = SW_STEPS.map(([s, c]) => `<span><i class="line" style="background:${c}"></i>step ${s.toLocaleString()}</span>`).join('') + '<span><i style="background:var(--band)"></i>measured β, 1.6–5.6</span>';
+const lb = v => Math.log10(v), bx = v => (lb(v) - lb(0.5)) / (lb(100) - lb(0.5));
+const ky = v => lb(v) / lb(3000);
+const sweepEl = document.getElementById('sweep');
+for (const L of ['L4', 'L12', 'L20']) {
+  const wrap = document.createElement('div'); wrap.className = 'chart';
+  wrap.innerHTML = `<div class="ct">layer ${L.slice(1)}</div>`;
+  sweepEl.appendChild(wrap);
+  lineChart(wrap, {
+    aria: `Effective number of wells against beta, layer ${L.slice(1)}`, H: 220, m: {r: 18},
+    x: bx, xs: BETAS, xTicks: [0.5, 1, 3.5, 10, 20, 100], xFmt: v => 'β ' + v,
+    y: ky, yTicks: [1, 10, 100, 1000], yFmt: v => String(v), bandX: [1.6, 5.6], markX: 3.5,
+    series: SW_STEPS.map(([s, c]) => ({name: 'step ' + s.toLocaleString(), color: c, pts: BETAS.map(be => [be, Math.max(1, D.sweep[`${s}|${L}|${be}`])])})),
+    vFmt: v => 'k_eff ' + (v < 10 ? v.toFixed(2) : Math.round(v)),
+    tipX: be => 'β ' + be + (be >= 1.6 && be <= 5.6 ? ' (measured interval)' : ''),
+  });
+}
+
+/* ---------- lumpiness ---------- */
+const LB = [['L1-8', 'var(--ly1)'], ['L9-16', 'var(--ly2)'], ['L17-23', 'var(--ly3)']];
+document.getElementById('lump-legend').innerHTML = LB.map(([b, c]) => `<span><i class="line" style="background:${c}"></i>${b.replace('-', '–')}</span>`).join('') + '<span>0 = as lumpy as the matched Gaussian</span>';
+const lumpVals = LB.flatMap(([b]) => STEPS.map(s => D.lump['3.5'][s + '|' + b][1]));
+const lo = Math.min(-0.02, ...lumpVals), hi = Math.max(...lumpVals) + 0.01;
+lineChart(document.getElementById('lump'), {
+  aria: 'Calibrated lumpiness against checkpoint, by layer band', W: 680, H: 250, m: {l: 46, r: 56, b: 30},
+  x: v => ordX(stepIdx(v)), xs: STEPS, xTicks: [0, 16, 128, 1000, 8000, 143000], xFmt: fmtStep,
+  y: v => (v - lo) / (hi - lo), yTicks: [0, 0.05, 0.1, 0.15].filter(t => t <= hi), yFmt: v => v === 0 ? '0' : '+' + v.toFixed(2), zero: 0,
+  series: LB.map(([b, c], i) => ({name: b.replace('-', '–'), color: c, label: b.replace('-', '–'), dy: [0, 4, -2][i], pts: STEPS.map(s => [s, D.lump['3.5'][s + '|' + b][1]])})),
+  vFmt: (v, s, x) => { const r = D.lump['3.5'][x + '|' + s.name.replace('–', '-')]; return `${v >= 0 ? '+' : ''}${v.toFixed(3)} (${r[0]}; raw ${r[2].toFixed(3)})`; },
+  tipX: s => 'step ' + s.toLocaleString(),
+});
+
+/* ---------- R² on the centroid ---------- */
+const r2El = document.getElementById('r2');
+for (const b of ['L1-8', 'L9-16', 'L17-23']) {
+  const bl = document.createElement('div'); bl.className = 'bl'; bl.textContent = b.replace('-', '–'); r2El.appendChild(bl);
+  for (const s of STEPS) {
+    const v = D.r2[s + '|' + b], c = document.createElement('div');
+    c.className = 'cell'; c.style.height = '14px';
+    c.style.background = `color-mix(in srgb, var(--ly3) ${Math.round(Math.max(0, v) * 100)}%, var(--mixed))`;
+    const html = `<b>R² on the centroid</b><br>${b.replace('-', '–')} · step ${s.toLocaleString()}<br>${v.toFixed(2)}`;
+    c.addEventListener('pointerenter', e => showTip(e, html)); c.addEventListener('pointermove', moveTip); c.addEventListener('pointerleave', hideTip);
+    r2El.appendChild(c);
+  }
+}
+
+/* ---------- punctuation bars ---------- */
+document.getElementById('punct').innerHTML = [[0, 0.66], [1000, 0.51], [143000, 0.41]].map(([s, v]) =>
+  `<div style="display:grid;grid-template-columns:62px 1fr 36px;gap:8px;align-items:center;font:400 0.78rem/1 var(--f-mono);color:var(--ink-2)"><span>${fmtStep(s)}</span><div class="bar-track" title="all tokens: 0.19"><div class="bar-fill" style="width:${v * 100}%"></div><div class="bar-base" style="left:19%"></div></div><span>${v.toFixed(2)}</span></div>`).join('') +
+  '<div class="legend" style="font-size:0.78rem"><span><i style="background:var(--accent);width:2px;border-radius:0"></i>0.19, the share among all tokens</span></div>';
+</script>
