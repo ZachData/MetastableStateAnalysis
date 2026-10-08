@@ -38,13 +38,13 @@ def test_three_groups_give_two_deaths_with_nonnegative_persistence():
 
 
 @pytest.mark.pure
-def test_one_well_has_no_deaths_and_knn_doubles_until_joined():
+def test_one_well_has_no_deaths_and_apart_wells_are_bridged():
     X, _ = _groups([np.eye(8)[0]], d=8)
     ms = u1.mean_shift(X, 2.0, modes=True)
     assert u3.merge_tree(X, ms["wells"], u3.heights(ms["modes"], X, 2.0), 2.0)["deaths"] == []
     Y, lab = _groups(np.eye(8)[:2], n_per=30, kappa=5000.0, d=8)       # far apart: 15-NN splits them
-    t = u3.merge_tree(Y, lab, np.zeros(2), 10.0, k=2, k_max=60)
-    assert t["k_graph"] > 2 and len(t["deaths"]) == 1
+    t = u3.merge_tree(Y, lab, np.zeros(2), 10.0, k=2)
+    assert t["bridges"] == 1 and len(t["deaths"]) == 1
 
 
 def _plane_pass(X, m, beta=u3.BETA, iters=5000):

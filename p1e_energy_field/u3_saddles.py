@@ -6,8 +6,8 @@ Per (step, passage, layer ℓ = 0–23), in β's frame (unit LN1 rows, states fi
 
 - **wells**: U1 (b)'s mean shift, recomputed with its modes and refused unless the labels equal
   (b)'s saved ones; every well counts, singletons too;
-- **merge tree** (primary): a 15-nearest-neighbour graph over the targets (doubled to 120 until
-  it joins every well), edge height ``min(h(u_i), h(unit(u_i + u_j)), h(u_j))`` with
+- **merge tree** (primary): a 15-nearest-neighbour graph over the targets (where it leaves wells
+  apart, each apart component's targets also joined to their 15 nearest outside it), edge height ``min(h(u_i), h(unit(u_i + u_j)), h(u_j))`` with
   ``h = log φ_β``; edges from the highest down, and where an edge joins two components whose
   highest wells differ, the lower well dies (elder rule): persistence ``peak − edge height``;
 - **NEB** (beside): a climbing-image nudged elastic band on the cell's 8 most persistent deaths,
@@ -39,7 +39,7 @@ from .u2_block import code_sha, load_ln1, unit_rows
 
 BETA = 10.0
 #: Placed by the rule, not calibrated.
-KNN, KNN_MAX = 15, 120
+KNN, MAX_BRIDGE_ROUNDS = 15, 50
 NEB_IMAGES, NEB_ITERS, NEB_FTOL, NEB_TOP = 24, 3000, 1e-4, 8
 NEB_WARM = 200
 AGREE_MIN, NEB_CONV_MIN, P_TOL = 0.999, 0.9, 1e-9
@@ -84,24 +84,27 @@ class _UF:
 
 
 def merge_tree(U: np.ndarray, wells: np.ndarray, peaks: np.ndarray, beta: float,
-               k: int = KNN, k_max: int = KNN_MAX) -> Dict:
+               k: int = KNN) -> Dict:
     """
     The elder-rule merge tree of ``φ_β``'s wells on a k-NN graph over the rows ``U``, each basin
     contracted to one node (a basin is connected in the continuum; on the graph it may not be):
     two wells are joined at the highest token edge between their basins, and joins are taken from
-    the highest down. Returns ``deaths`` (one per well but the highest: the well, the well whose
+    the highest down. Where the k-NN graph leaves wells apart, each apart component's rows are
+    also joined to their ``k`` nearest rows outside it, until every well is joined (``bridges``
+    counts the rounds). Returns ``deaths`` (one per well but the highest: the well, the well whose
     component it joins, the saddle edge's ends with ``i`` in the dying basin, its height, the
-    persistence) and the ``k`` the graph needed to join every well.
+    persistence) and ``bridges``.
     """
     wells = np.asarray(wells, dtype=int)
     kw = int(wells.max()) + 1 if wells.size else 0
     h_tok = heights(U, U, beta)
+    E = knn_edges(U, k)
+    best: Dict = {}
+    bridges = 0
     while True:
-        E = knn_edges(U, k)
         E = E[wells[E[:, 0]] != wells[E[:, 1]]]
         h_mid = heights(unit(U[E[:, 0]] + U[E[:, 1]]), U, beta) if len(E) else np.zeros(0)
         eh = np.minimum(np.minimum(h_tok[E[:, 0]], h_mid), h_tok[E[:, 1]]) if len(E) else h_mid
-        best: Dict = {}
         for e in range(len(E)):
             a, b = int(E[e, 0]), int(E[e, 1])
             key = (min(wells[a], wells[b]), max(wells[a], wells[b]))
@@ -110,11 +113,22 @@ def merge_tree(U: np.ndarray, wells: np.ndarray, peaks: np.ndarray, beta: float,
         uf = _UF(kw)
         for wa, wb in best:
             uf.p[uf.find(wa)] = uf.find(wb)
-        if kw <= 1 or len({uf.find(w) for w in range(kw)}) == 1:
+        comp = np.asarray([uf.find(w) for w in range(kw)])
+        if kw <= 1 or len(set(comp.tolist())) == 1:
             break
-        if k >= min(k_max, len(U) - 1):
-            raise ValueError(f"the {k}-NN graph does not join every well")
-        k = min(2 * k, k_max)
+        if bridges >= MAX_BRIDGE_ROUNDS:
+            raise ValueError(f"wells still apart after {bridges} bridging rounds")
+        bridges += 1
+        tok = comp[wells]
+        new = []
+        for c in sorted(set(tok.tolist())):
+            inside, outside = np.flatnonzero(tok == c), np.flatnonzero(tok != c)
+            S = U[inside] @ U[outside].T
+            kk = min(k, outside.size)
+            nn = outside[np.argpartition(-S, kk - 1, axis=1)[:, :kk]]
+            ii = np.repeat(inside, kk)
+            new.append(np.stack([np.minimum(ii, nn.ravel()), np.maximum(ii, nn.ravel())], axis=1))
+        E = np.unique(np.concatenate(new), axis=0)
     uf, top = _UF(kw), {w: w for w in range(kw)}
     deaths = []
     for (wa, wb), (h, a, b) in sorted(best.items(), key=lambda kv: (-kv[1][0], kv[0])):
@@ -129,7 +143,7 @@ def merge_tree(U: np.ndarray, wells: np.ndarray, peaks: np.ndarray, beta: float,
         i, j = (a, b) if (die == ta) == (wells[a] == wa) else (b, a)
         deaths.append({"well": int(die), "into": int(keep), "i": int(i), "j": int(j), "h": h,
                        "p": float(peaks[die] - h)})
-    return {"deaths": deaths, "k_graph": int(k)}
+    return {"deaths": deaths, "bridges": bridges}
 
 
 # ---------------------------------------------------------------- NEB on the sphere
@@ -208,7 +222,7 @@ def read_cell(U: np.ndarray, beta: float, device: str, ref_wells: Optional[np.nd
     ds = tree["deaths"]
     ps = np.asarray([d["p"] for d in ds])
     rec = {"beta": beta, "n": int(len(U)), **well_stats(w), "unconverged": ms["unconverged"],
-           "agree_b": agree, "k_graph": tree["k_graph"], "deaths": len(ds),
+           "agree_b": agree, "bridges": tree["bridges"], "deaths": len(ds),
            "P": float(ps.sum()) if ps.size else 0.0, "p_max": float(ps.max()) if ps.size else 0.0,
            "deep": int((ps > DEEP).sum()), "p_min": float(ps.min()) if ps.size else 0.0}
     nebs = []
@@ -230,13 +244,14 @@ def read_cell(U: np.ndarray, beta: float, device: str, ref_wells: Optional[np.nd
     if draws:
         rng = np.random.default_rng(rng_key)
         gauss = [gaussian_draw(U, rng) for _ in range(N_DRAW)]   # U1's draws, in U1's order
-        PG, kG = [], []
+        PG, kG, bG = [], [], []
         for Y in gauss:
             mg = mean_shift(Y, beta, device, modes=True)
             tg = merge_tree(Y, mg["wells"], heights(mg["modes"], Y, beta), beta)
             PG.append(float(sum(d["p"] for d in tg["deaths"])))
+            bG.append(tg["bridges"])
             kG.append(well_stats(mg["wells"])["k"])
-        rec.update(P_G=PG, k_G=kG, Xp=float(np.log1p(rec["P"]) - np.mean(np.log1p(PG))))
+        rec.update(P_G=PG, k_G=kG, bridges_G=bG, Xp=float(np.log1p(rec["P"]) - np.mean(np.log1p(PG))))
     saved = {"wells": w.astype(np.int32),
              "deaths": np.asarray([[d["well"], d["into"], d["i"], d["j"]] for d in ds],
                                   dtype=np.int32).reshape(-1, 4),
