@@ -641,6 +641,29 @@ rendered look; the chart ramps were not run through the palette validator (no `n
 **How to re-run:** `python -m p1e_energy_field.page --data <main>/data/p1e --out <dir>`, then
 publish `<dir>/index.html` to the URL above.
 
+## Blocked 30 (b) and (c), beside (a): in flight (2026-10-08; no result yet)
+
+*User, 2026-10-08, after #165 merged: (a) confirmed, and "work on all three", so (b) and (c) run
+beside it.* Rules, fixed before output: `design-1e.md` "U1 beside" (`fecd694`) and "U3 at β 10"
+(`5f2959b`, amended before any reading `775a04c`, `3b55242`, `9d7d514`; the amendments say why).
+Nothing below has been read yet; first cells only, as populated checks.
+
+| run | output (`data/p1e/`) | code | state 2026-10-08 ~16:00 |
+|---|---|---|---|
+| (b) U1, β 10 (7, 14 beside) | `u1_beta10_2026-10-08/` | `fecd694` (`../Mets-work`) | first cell passed (GPU = CPU wells, 1.0000); ~32 / 144 long records; steps 512–2000 take ~15 min each (β 14 shatters, CPU float64 finish), so ~6–9 h more with v1 |
+| (c) U1, centred | `u1_centred_2026-10-08/` | `fecd694` | queued after (b), same chain |
+| (c′) U1, raw centred | `u1_rawcentred_2026-10-08/` | `fecd694` | queued after (c) |
+| U3, β 10 | `u3_beta10_2026-10-08/` | this branch (`../Mets-u3`) | first cell passed (wells = (b)'s, deaths = k − 1, NEB 11 / 11); `after_b.sh` starts the batch when (b)'s 144 long records exist (~62 s per record) |
+
+**To resume** (each run resumes, skipping done records; a refused or killed chain is restarted by
+its `run.sh`): wait for the four outputs, then `python -m p1e_energy_field.u1_field report --out
+<dir>` for each U1 run and `python -m p1e_energy_field.u3_saddles report --out <U3 dir>`; write the
+results here, then the Stop protocol for one PR (`claude/p1e-u3-b10` carries `claude/p1e-beside`'s
+commits). Defects found on the way: U1's well labels can skip an id (harmless to U1's counts,
+fatal to a merge tree; fixed in U3, `3b55242`); running R1's readers at default BLAS threads beside
+the GPU chain oversubscribed the CPU (load ~80 on 16 cores) and slowed (b) several-fold (both for
+`LESSONS.md` at the PR).
+
 ## Corrections received
 
 - 2026-10-07 (#158's follow-up, `/challenge-pr` on #158 finding 1): #158's headline ("ascends
