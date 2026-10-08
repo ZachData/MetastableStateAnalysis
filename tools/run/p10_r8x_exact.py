@@ -110,7 +110,10 @@ def verdict(by_step: dict) -> dict:
             if r8.step_num(s) >= r8.PRIMARY_FROM and v["all"]["keep_c3x"] is not None}
     low = sorted((s for s, k in keep.items() if k < r8.KEEP_MIN), key=r8.step_num)
     drop = [s for s in low if DECIDE[0] <= r8.step_num(s) <= DECIDE[1]]
-    return {"bar": r8.KEEP_MIN, "primary_from": r8.PRIMARY_FROM, "decide_window": list(DECIDE),
+    win = [v["all"] for s, v in by_step.items() if DECIDE[0] <= r8.step_num(s) <= DECIDE[1]]
+    n3 = sum(w["c3"] for w in win)
+    pooled = sum(w["c3x"] for w in win) / n3 if n3 else None     # beside, not the rule (/challenge-pr on #163)
+    return {"bar": r8.KEEP_MIN, "pooled_keep_64_1000": pooled, "primary_from": r8.PRIMARY_FROM, "decide_window": list(DECIDE),
             "min_keep": min(keep.values()) if keep else None, "steps_below": low,
             "drop_at_64_1000_holds": bool(drop), "c3_stands": not low,
             "recommend": "(a) c3x as the definition's column" if drop else
@@ -254,14 +257,18 @@ def run(argv=None) -> int:
 
 def summary(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="p10_r8x_exact summary")
+    ap.add_argument("--labels", type=Path, required=True, help="R0's labels (hashed into meta, as R8)")
+    ap.add_argument("--unit1", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
-    by_step, k_ratio, hashes = {}, [], hashlib.sha256()
+    by_step, k_ratio, hashes, run_meta = {}, [], hashlib.sha256(), set()
     steps = sorted((p.name for p in (a.out / "rows").iterdir()), key=r8.step_num)
     for step in steps:
         rows = []
         for f in sorted((a.out / "rows" / step).glob("*.json")):
-            rows += json.loads(f.read_text())["rows"]
+            body = json.loads(f.read_text())
+            rows += body["rows"]
+            run_meta.add(json.dumps(body["meta"], sort_keys=True))
             hashes.update((a.out / "labels" / step / f.name).read_bytes())
         k_ratio += [v for r in rows for v in r["k_ratio"].values()]
         prompts = sorted({r["prompt"] for r in rows})
@@ -278,7 +285,11 @@ def summary(argv=None) -> int:
     out = {"by_step": by_step, "verdict": verdict(by_step),
            "k_ratio": {"median": float(np.median(k_ratio)), "p10": float(np.percentile(k_ratio, 10)),
                        "p90": float(np.percentile(k_ratio, 90)), "n": len(k_ratio)},
-           "meta": {"labels_sha": hashes.hexdigest()[:16], "n_draws": r8.N_DRAWS, "alpha": r8.ALPHA,
+           "meta": {"run": [json.loads(m) for m in sorted(run_meta)], "summary_git": ls._git_head(),
+                    "labels": str(a.labels), "unit1": str(a.unit1),
+                    "r0_labels_sha": hashlib.sha256(b"".join((a.labels / f"{s}.json").read_bytes()
+                                                             for s in steps)).hexdigest()[:16],
+                    "exact_labels_sha": hashes.hexdigest()[:16], "n_draws": r8.N_DRAWS, "alpha": r8.ALPHA,
                     "n_boot": N_BOOT, "frame": r8.FRAME, "mcs": int(r8.MCS)}}
     (a.out / "r8x.json").write_text(json.dumps(out, indent=1))
     print("verdict", json.dumps(out["verdict"]), "k_ratio", json.dumps(out["k_ratio"]))

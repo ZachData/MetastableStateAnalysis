@@ -61,7 +61,32 @@ def test_boot_keep_is_seeded_and_bounded():
 
 
 def _step(keep):
-    return {"all": {"keep_c3x": keep}}
+    return {"all": {"keep_c3x": keep, "c3": 1000, "c3x": round(1000 * keep)}}
+
+
+def test_verdict_reports_the_pooled_window_beside():
+    v = r.verdict({"step64": _step(0.95), "step128": _step(0.85), "step2000": _step(0.5)})
+    assert v["pooled_keep_64_1000"] == pytest.approx(0.90) and v["drop_at_64_1000_holds"]
+
+
+def test_chance_level_is_drawn_against_each_conditions_own_partition(monkeypatch):
+    """Two conditions with different partitions of the same kept set get their own `Jc` and labels."""
+    kept = np.arange(40)
+    parts = {"fine": [np.array([2 * i, 2 * i + 1]) for i in range(20)], "coarse": [np.arange(20), np.arange(20, 40)]}
+    monkeypatch.setattr(r.mt, "groups_of", lambda Y, frame, mcs: (None, parts[Y]))
+    monkeypatch.setattr(r, "check_condition", lambda *a: None)
+    rec = {"groups": [{"offsets": [0, 1]}], "conditions": {"a|50|eod": {}, "b|50|eod": {}}}
+    r._G.clear()
+    r._G.update(kept=kept, recs={1: rec}, sizes={1: [2]}, step="s", prompt="p", where="w",
+                conds=[{"id": "a|50|eod"}, {"id": "b|50|eod"}],
+                hidden={"a|50|eod": ["fine"], "b|50|eod": ["coarse"]})
+    out = r._layer_job(1)
+    r._G.clear()
+    assert max(out["labels"]["a|50|eod"]) == 19 and max(out["labels"]["b|50|eod"]) == 1
+    assert out["k"] == {"a|50|eod": 20, "b|50|eod": 2}
+    want = {c: r8.chance_by_size(np.asarray(out["labels"][c]), [2], ("s", "p", 1, c))[2][0] for c in out["k"]}
+    assert out["jc"]["a|50|eod"][2] == want["a|50|eod"] and out["jc"]["b|50|eod"][2] == want["b|50|eod"]
+    assert want["a|50|eod"] != want["b|50|eod"]
 
 
 def test_verdict_decides_on_64_to_1000():
