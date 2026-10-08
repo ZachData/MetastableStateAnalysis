@@ -10,12 +10,12 @@
   - Opened 2026-10-06 with a literature scan; the design was frozen the same day as proposed, then its passages were changed to the long set before any output. The closed-form steps the design uses are checked (M6 corrected after review: in a cloud-centred frame the field also has a floor off the tokens' span) — `p1e_energy_field/design-1e.md` "The math", `p1e_energy_field/lit-1e.md`
   - Four new long passages were built under a rule committed before their sources were fetched, and all 8 long passages were extracted at the 18 steps on the GPU (activations only) — `p1e_energy_field/status-1e.md` "The 8 long passages"
   - By the frozen rule, each block's update ascends the field in every band at steps 8–256 and 16000–54000 (35 of 54 cells, 0.42 by chance); the label is the field's β = 0 mean term, and the cosine excess is small (≤ 0.16) — `p1e_energy_field/status-1e.md` "U2's block arm"
-  - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L9–16 from 4000 and L1–8 from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
+  - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L9–16 from 4000 and in L1–8 at 64–128 and from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
   - Splitting each block's update by a hooked pass, the MLP supplies most of the shared update and its shared part ascends too (24 of 31 windows by the rule fixed before output; the sink's value and the biases supply almost none); on the long passages attention's token-specific part never ascends the field in layers 1–22 and descends from step 256 on (v1 ascends at 8–32); the late token-specific ascent in L1–16 goes with the MLP's — `p1e_energy_field/status-1e.md` "U2's attention arm"
-  - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000, in the sum and head by head; from 4000–8000 the sum over heads ascends while most heads still descend their own kernel, so the late ascent is a property of the sum, not of the heads; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
-  - U2's reading is split by training stage (the user's decision): up to step 1000 the shared ascent is the MLP's and the token interactions descend their heads' kernels; from 2000 the shared ascent is attention's mean pull in the last layers, and from 4000 only the sum over heads follows its kernels, while most heads still descend their own — `p1e_energy_field/status-1e.md` "U2's per-head arm"
+  - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000, in the sum and head by head; from 4000–8000 the sum over heads ascends while more heads still descend their own kernel than ascend it (10 of 13 windows; a majority of heads in only 2), so the late ascent is a property of the sum, not of the heads; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
+  - U2's reading is split by training stage (the user's decision): up to step 1000 the shared ascent is the MLP's and the token interactions descend their heads' kernels; from 2000 the shared ascent is attention's mean pull in the last layers, and from 4000 only the sum over heads follows its kernels, while more heads still descend their own than ascend it — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - At the measured β the field over the tokens has a single well in every trained layer band and step (one exception, the early layers at step 128); a few wells appear only at about twice that β and many by four times, so the probe's few wells were another frame's. Its density is more uneven than a matched Gaussian cloud's at every step, init included, even after correcting that comparison's own bias, and is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge; by the end of training only the last layers are more uneven than at init — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
-  - The saddle unit is closed, since at the measured β there are no wells to find saddles between (the user's decision); the phase's results are on one page — `p1e_energy_field/status-1e.md` "Blocked 30 decided"
+  - The saddle unit is closed, since at the measured β there are no wells to find saddles between (the recommendation, recorded; the user to confirm); the phase's results are on one page — `p1e_energy_field/status-1e.md` "Blocked 30 decided"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
@@ -26,9 +26,9 @@
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence — `p1e_energy_field/design-1e.md` "Units"
   - Whether one well at the measured β is what the theory expects at this many tokens and dimensions is unread — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
 - **After Phase 10:**
-  - U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
+  - U4 from stored activations, once P-S1 is scored *(free)*; U3 closed at the measured β; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-08 · body `76b474e835`
+- **Reviewed:** 2026-10-08 · body `5e683283e7`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -120,7 +120,7 @@ the rule", row *targets*).
 fetches them if absent; a changed source changes the hash). Runs: the `run.sh` above
 (`--skip-existing` resumes).
 
-## U2's block arm (2026-10-07): the frozen labels are mostly an update every token shares; the token-specific part descends the field at 32–2000 and ascends in L9–16 from 4000, L1–8 from 16000
+## U2's block arm (2026-10-07): the frozen labels are mostly an update every token shares; the token-specific part descends the field at 32–2000 and ascends in L9–16 from 4000, L1–8 at 64–128 and from 16000
 
 **Read "The shared update" below first.** The frozen rule's labels (this table) stand as its
 output, but its shuffle null cannot see an update added to every token, and that update carries
@@ -376,7 +376,7 @@ beside it for Blocked 29's table). GPU: ~55–60 s per long run, 3.1 GB; 270 run
   their attention / free (its value norm, already in the pass) / whether "the sink" should
   stay a separate source in U2's field (design "the sink").
 
-## U2's per-head arm (2026-10-07): against its heads' own kernels, attention's token-specific move descends at 128–2000, head by head; from 4000–8000 the sum over heads ascends while most heads still descend their own
+## U2's per-head arm (2026-10-07): against its heads' own kernels, attention's token-specific move descends at 128–2000, head by head; from 4000–8000 the sum over heads ascends while more heads still descend their own than ascend it
 
 **Input.** The 144 long runs (`LONG8_HASH` `ba605f4e14b5`) and v1's 7 at the 18 steps (R0's kept
 offsets), each re-run as a hooked forward pass on the GPU (float32, eager, TF32 off), every
@@ -426,8 +426,9 @@ in every band.
 - **Two regimes, split at 2000–4000.** Up to 2000, attention's token-specific move goes against
   both `φ_β` and its own heads' kernels, in the sum and head by head: the repulsive reading holds
   under the real kernel. From 4000–8000 the **sum** goes *with* the summed kernels and still
-  against `φ_β`, **but most heads still descend their own** (more heads descend than ascend in 10
-  of the 13 windows, in L1–8 at every step from 128 to 143000; only L9–16 at 32000, 54000, 143000
+  against `φ_β`, **but more heads still descend their own than ascend it** (in 10 of the 13
+  windows; *after `/challenge-pr` on #165, finding 2:* a majority of all heads descends in only 2
+  of the 13, 5 counting leans, so "most heads" was wrong; in L1–8 at every step from 128 to 143000; only L9–16 at 32000, 54000, 143000
   lean the other way). So the late ascent is a property of the sum: either heads moving tokens
   towards where *other* heads attend (cross terms), or the shared pull leaking back, since `r1out`
   per head does not add up to `r1out` of the sum (#160's finding 4). This unit does not split them
@@ -494,13 +495,13 @@ readings change at 2000–4000, so neither (a) the frozen labels nor (b) `r1out`
 headline. Up to step 1000 the shared ascent is the MLP's (an update every token gets, mostly not
 interaction), and the token interactions descend their heads' own kernels (128–2000). From 2000
 the shared ascent is attention's mean pull (L17–22, and L9–16 at 8000–32000), and from 4000 only
-the sum over heads follows its kernels while most heads still descend their own. Numbers: the
+the sum over heads follows its kernels while more heads still descend their own than ascend it. Numbers: the
 "Blocked 29 by ascent" table and the per-head reading above; the frozen labels and `r1out` stay
 beside. This is the reading the 1e page opens with (`design-1e.md` "The 1e page").
 
 **Parked** (why / cost / the decision it could change):
-- The late split between heads and their sum (most heads descend their own field at 143000 L1–8,
-  the sum ascends) / one GPU pass at a few steps (per-token cross terms; the saved means are not
+- The late split between heads and their sum (at 143000 L1–8, 47 heads descend their own field
+  and 29 ascend, of 128; the sum ascends) / one GPU pass at a few steps (per-token cross terms; the saved means are not
   enough) / whether the late "follows its own kernel" is heads cooperating (one head moving
   tokens to where another attends) or a few large heads.
 - Why the regime changes at 2000–4000, and why ascending heads rise after 2000, next to the
@@ -575,8 +576,10 @@ lumpy than at init and only L17–23 more; the raw `Xe`'s "143000 +0.11 / +0.05 
 bias. Checks: the device's bias against CPU float64 on the first cell, max |Δ| 6.8e-9; test
 `test_calibrated_lumpiness_is_zero_on_a_structureless_cloud` (the bias predicts a structureless
 draw's score). **The density is the β → 0
-term:** R² of `e_i` on `⟨u_i, ū⟩` is 0.66–1.00 in every trained band at steps 0, 32, 128, 1000,
-8000, 143000, except L1–8 at 128 (0.33, where the two wells are). **Dense** tokens are
+term:** R² of `e_i` on `⟨u_i, ū⟩` (`beside` `r2_mean`) is 0.65–1.00 in every trained band at
+every step, except L1–8 at 64–256 (0.39, 0.33, 0.56; the two wells are at 128). *Corrected after
+`/challenge-pr` on #165, finding 3: the first text read six steps only (0.66–1.00 there, except
+128) and missed L1–8's 64 and 256.* **Dense** tokens are
 punctuation and whitespace, **void** are word starts and continuations (L9–16, pooled over
 passages and layers: punctuation is 0.66 / 0.51 / 0.41 of the densest decile at 0 / 1000 / 143000
 against 0.19 of all), at init too.
@@ -610,7 +613,8 @@ below.
 
 ## Blocked 30 decided (2026-10-08): U3 closed at the measured β; the 1e page
 
-**Decision** (the user, (a), as recommended): U3 ("saddles between U1's wells") is closed as
+**Decision** ((a), as recommended, recorded from the session prompt, which carried the
+alternatives "(a) [or (b)/(c)]"; **the user to confirm** on #165, as Blocked 27 (a) was): U3 ("saddles between U1's wells") is closed as
 "no wells at the measured β", U1's result standing as its answer. Reading wells at β ≈ 10 (b) or
 in the cloud-centred frame (c) would choose a β or a frame in order to find wells, the placed-bar
 problem 1e opened to avoid (`design-1e.md` "Why a new phase"); both stay in U1's Parked list.
@@ -644,3 +648,7 @@ publish `<dir>/index.html` to the URL above.
   and `STATE.md`'s "repulsive") read the frozen labels as token interactions. An update every
   token shares carries the early ascent and the 143000 descent; the token-specific part
   (`r1out`, after #159's review) is the table under "The shared update".
+- 2026-10-08 (#165, `/challenge-pr` on #165 findings 1–3): `r1out`'s summary now names L1–8's
+  ascent at 64–128 beside L9–16 from 4000 and L1–8 from 16000 (card, heading, `STATE.md`); #161's
+  "most heads still descend their own" is "more heads descend than ascend" (a majority in 2 of
+  13 windows); #164's R² range is read at all 18 steps (0.65–1.00, except L1–8 at 64–256).

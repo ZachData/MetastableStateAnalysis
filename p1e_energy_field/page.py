@@ -52,7 +52,9 @@ def build(data: Path) -> Dict:
         for k, v in sec["rows"].items():
             p = k.split("|")
             if "|".join(p[:3]) == fam:
-                g[p[3] + "|" + p[4]] = [v["label"], round(v.get("mean_X", 0.0), 4)]
+                if "mean_X" not in v:
+                    sys.exit(f"refuse: {key} {k} has no mean_X")
+                g[p[3] + "|" + p[4]] = [v["label"], round(v["mean_X"], 4)]
         out[key] = g
         trained = collections.Counter(v[0] for k, v in g.items() if k.split("|")[1] in TRAINED)
         printed = {k: n for k, n in sec["counts"][fam].items()}
@@ -77,6 +79,17 @@ def build(data: Path) -> Dict:
                 "desc_full": v.get("descends", 0), "asc_full": v.get("ascends", 0)}
     u1 = json.loads((data / U1 / "labels.json").read_text())["long"]
     out["sweep"] = {k: round(v, 3) for k, v in u1["sweep_k_eff"].items()}
+    # R² of e_i on <u_i, ū> (median over passages), β 3.5; the page's text quotes its range
+    out["r2"] = {}
+    for s in steps:
+        for b in ("L1-8", "L9-16", "L17-23"):
+            cell = u1["beside"].get(f"{s}|{b}|3.5", {})
+            if "r2_mean" not in cell:
+                sys.exit(f"refuse: r2_mean missing {s}|{b}")
+            out["r2"][f"{s}|{b}"] = round(cell["r2_mean"], 3)
+    low = sorted(k for k, v in out["r2"].items() if v < 0.645)
+    if low != ["128|L1-8", "256|L1-8", "64|L1-8"]:
+        sys.exit(f"refuse: the page says R² ≥ 0.65 except L1–8 at 64–256; below 0.645: {low}")
     calib = json.loads((data / U1 / "calib" / "labels.json").read_text())["long"]["3.5"]["table"]
     out["lump"] = {"3.5": {k: [v["label"], round(v["Xe_cal"], 4), round(v["Xe"], 4), round(v["bias"], 4)]
                            for k, v in calib.items()}}

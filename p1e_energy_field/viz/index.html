@@ -143,7 +143,7 @@ footer code { color: var(--ink-2); }
       <div class="k">U2 · the move against the field</div>
       <h3>It depends on the training stage</h3>
       <p>Up to step 1000, most of the climb is a shift every token shares, supplied by the MLP. Attention's part specific to each token goes down the field, and against each head's own kernel, head by head.</p>
-      <p>From step 2000, attention's mean pull in the last layers supplies the shared climb. From 4000, attention summed over heads climbs its heads' kernels while most single heads still go down their own.</p>
+      <p>From step 2000, attention's mean pull in the last layers supplies the shared climb. From 4000, attention summed over heads climbs its heads' kernels while more single heads still go down their own kernel than up it.</p>
     </div>
     <div class="answer">
       <div class="k">U1 · the field at the tokens</div>
@@ -154,7 +154,7 @@ footer code { color: var(--ink-2); }
   </section>
 
   <section class="decision">
-    <div class="eyebrow">Blocked 30 · decided (a), 2026-10-08</div>
+    <div class="eyebrow">Blocked 30 · (a), recorded 2026-10-08 as recommended; the user to confirm</div>
     <p><b>U3 is closed: there are no wells at the measured β.</b> U3 was to read the saddles between U1's wells. At β 1.6–5.6 there is one basin, so U1's result is U3's answer. Reading wells at β ≈ 10, or in the cloud-centred frame, would mean choosing a β or a frame in order to find wells, which is the placed-bar problem 1e was opened to avoid. U4 stays fenced until P-S1 is scored; U5 stays parked.</p>
   </section>
 
@@ -162,7 +162,7 @@ footer code { color: var(--ink-2); }
     <div class="col stack">
       <div class="eyebrow">U2</div>
       <h2>Up or down the field, by layer band and checkpoint</h2>
-      <p>Each cell is one layer band at one checkpoint. For each of the 8 passages, <code>X</code> is how far the update's direction lines up with the field's force beyond a token-shuffle null, averaged over the band's blocks. A cell <b>ascends</b> when all 8 passages are positive (sign test p = 1/256) and <b>leans</b> when 7 of 8 are (p = 0.035); descending is the same below zero. With no effect anywhere, chance gives 0.42 full labels and 3.4 leans per 54 cells. Hover a cell for its median <code>X</code>.</p>
+      <p>Each cell is one layer band at one checkpoint. For each of the 8 passages, <code>X</code> is how far the update's direction lines up with the field's force beyond a token-shuffle null, averaged over the band's blocks. A cell <b>ascends</b> when all 8 passages are positive (sign test p = 1/256) and <b>leans</b> when 7 of 8 are (p = 0.035); descending is the same below zero. With no effect anywhere, chance gives 0.42 full labels and 3.4 leans per 54 cells. Hover a cell for <code>X</code>'s mean over the 8 passages.</p>
     </div>
     <div class="fig">
       <div class="legend" aria-label="Cell colours">
@@ -179,7 +179,7 @@ footer code { color: var(--ink-2); }
   <section class="fig">
     <div class="fig-head">
       <h3>Head by head, attention goes against its own kernel even where the sum climbs it</h3>
-      <p>Each head (block × head) is labelled on its own: its token-specific keys part against the field its own attention rows give. The lines show the share of heads that descend or ascend (counting leans). The strip below each panel is the sum over heads, the last row of the grid above. In the 13 windows where the sum ascends its kernels, more heads descend than ascend in 10. Sink-only heads are left out of the counts.</p>
+      <p>Each head (block × head) is labelled on its own: its token-specific keys part against the field its own attention rows give. The lines show the share of heads that descend or ascend (counting leans). The strip below each panel is the sum over heads, the last row of the grid above. Take the 13 windows where attention's token-specific move descends φ<sub>β</sub> but the sum over heads ascends its own heads' kernels (from step 4000). In 10 of them more heads descend their own kernel than ascend it, but a majority of all heads descends in only 2 (5 counting leans): the sum's ascent is not the heads' majority going either way. Sink-only heads are left out of the counts.</p>
     </div>
     <div class="legend">
       <span><i class="line" style="background:var(--desc)"></i>share of heads descending</span>
@@ -210,7 +210,7 @@ footer code { color: var(--ink-2); }
     <div id="lump" class="chart" style="max-width:760px"></div>
     <div class="facts-list">
       <div class="fact"><div class="v">49 of 54</div><p>trained cells read lumpier after the bias correction at β 3.5 (42 + 5 leans at 1.6, 50 at 5.6).</p></div>
-      <div class="fact"><div class="v">R² 0.66–1.00</div><p>of each token's density on its closeness to the cloud's mean <code>⟨u<sub>i</sub>, ū⟩</code>, in every trained band at steps 0, 32, 128, 1000, 8000 and 143000. The exception is L1–8 at 128 (0.33), where the two wells are.</p></div>
+      <div class="fact stack" style="gap:8px"><div class="v">R² 0.65–1.00</div><p>of each token's density on its closeness to the cloud's mean <code>⟨u<sub>i</sub>, ū⟩</code>, in every trained band at every step, except L1–8 at 64–256 (0.39, 0.33, 0.56; the two wells are at 128). Darker is higher:</p><div id="r2" class="rows" style="grid-template-columns:44px repeat(18,minmax(0,1fr))"></div></div>
       <div class="fact stack" style="gap:8px">
         <div class="v">Punctuation at the centre</div>
         <p>Share of punctuation and whitespace among the densest tenth of tokens (L9–16), against 0.19 of all tokens:</p>
@@ -260,7 +260,7 @@ const SPLIT = STEPS.indexOf(2000);
 const READINGS = [
   ['block_whole', 'Whole block update vs φβ', 'Ascends at 8–256 and 16000–54000 in every band (35 of 54 cells). Most of this is the shared update in the next row.'],
   ['block_shared', 'The shared update alone', 'The mean update every token shares: ascends at 8–256 in every band, and in L17–22 through 54000.'],
-  ['block_tok', 'Token-specific block update', 'Each token’s component along the shared direction removed (r1out). Mixed at 0–8; descends at 32 and 512–1000 in every band; L9–16 ascends from 4000, L1–8 from 16000.'],
+  ['block_tok', 'Token-specific block update', 'Each token’s component along the shared direction removed (r1out). Mixed at 0–8; descends at 32 and 512–1000 in every band; L9–16 ascends from 4000, L1–8 at 64–128 and from 16000.'],
   ['mlp_tok', 'MLP, token-specific', 'The late token-specific ascent in L1–16 goes with the MLP’s.'],
   ['attn_tok', 'Attention, token-specific vs φβ', 'Never ascends in L1–22. Descends or leans descends in 30 of 54 cells, from 256 on in L1–16.'],
   ['kern_tok', 'Attention, token-specific vs its heads’ own kernels', 'Descends at 128–1000 in every band (L9–16 to 2000). From 8000 the sum over heads ascends its heads’ kernels in L1–16.'],
@@ -281,7 +281,7 @@ for (const [key, title, note] of READINGS) {
       const v = D[key][s + '|' + b]; const c = document.createElement('div');
       c.className = 'cell c-' + CODE[v[0]] + (i === SPLIT ? ' split' : '');
       c.tabIndex = 0;
-      const html = `<b>${title.replace('φβ','φ<sub>β</sub>')}</b><br>${b.replace('-', '–')} · step ${s.toLocaleString()}<br>${v[0]} · median X ${v[1] >= 0 ? '+' : ''}${v[1].toFixed(3)}`;
+      const html = `<b>${title.replace('φβ','φ<sub>β</sub>')}</b><br>${b.replace('-', '–')} · step ${s.toLocaleString()}<br>${v[0]} · mean X ${v[1] >= 0 ? '+' : ''}${v[1].toFixed(3)}`;
       c.setAttribute('aria-label', `${title}, ${b}, step ${s}: ${v[0]}`);
       c.addEventListener('pointerenter', e => showTip(e, html));
       c.addEventListener('pointermove', moveTip);
@@ -389,7 +389,7 @@ const BETAS = [0.5, 1, 1.6, 2.5, 3.5, 5.6, 10, 20, 50, 100];
 const SW_STEPS = [[0, 'var(--st1)'], [128, 'var(--st2)'], [1000, 'var(--st3)'], [143000, 'var(--st4)']];
 document.getElementById('sweep-legend').innerHTML = SW_STEPS.map(([s, c]) => `<span><i class="line" style="background:${c}"></i>step ${s.toLocaleString()}</span>`).join('') + '<span><i style="background:var(--band)"></i>measured β, 1.6–5.6</span>';
 const lb = v => Math.log10(v), bx = v => (lb(v) - lb(0.5)) / (lb(100) - lb(0.5));
-const ky = v => lb(v) / lb(300);
+const ky = v => lb(v) / lb(3000);
 const sweepEl = document.getElementById('sweep');
 for (const L of ['L4', 'L12', 'L20']) {
   const wrap = document.createElement('div'); wrap.className = 'chart';
@@ -398,7 +398,7 @@ for (const L of ['L4', 'L12', 'L20']) {
   lineChart(wrap, {
     aria: `Effective number of wells against beta, layer ${L.slice(1)}`, H: 220, m: {r: 18},
     x: bx, xs: BETAS, xTicks: [0.5, 1, 3.5, 10, 20, 100], xFmt: v => 'β ' + v,
-    y: ky, yTicks: [1, 10, 100], yFmt: v => String(v), bandX: [1.6, 5.6], markX: 3.5,
+    y: ky, yTicks: [1, 10, 100, 1000], yFmt: v => String(v), bandX: [1.6, 5.6], markX: 3.5,
     series: SW_STEPS.map(([s, c]) => ({name: 'step ' + s.toLocaleString(), color: c, pts: BETAS.map(be => [be, Math.max(1, D.sweep[`${s}|${L}|${be}`])])})),
     vFmt: v => 'k_eff ' + (v < 10 ? v.toFixed(2) : Math.round(v)),
     tipX: be => 'β ' + be + (be >= 1.6 && be <= 5.6 ? ' (measured interval)' : ''),
@@ -418,6 +418,20 @@ lineChart(document.getElementById('lump'), {
   vFmt: (v, s, x) => { const r = D.lump['3.5'][x + '|' + s.name.replace('–', '-')]; return `${v >= 0 ? '+' : ''}${v.toFixed(3)} (${r[0]}; raw ${r[2].toFixed(3)})`; },
   tipX: s => 'step ' + s.toLocaleString(),
 });
+
+/* ---------- R² on the centroid ---------- */
+const r2El = document.getElementById('r2');
+for (const b of ['L1-8', 'L9-16', 'L17-23']) {
+  const bl = document.createElement('div'); bl.className = 'bl'; bl.textContent = b.replace('-', '–'); r2El.appendChild(bl);
+  for (const s of STEPS) {
+    const v = D.r2[s + '|' + b], c = document.createElement('div');
+    c.className = 'cell'; c.style.height = '14px';
+    c.style.background = `color-mix(in srgb, var(--ly3) ${Math.round(Math.max(0, v) * 100)}%, var(--mixed))`;
+    const html = `<b>R² on the centroid</b><br>${b.replace('-', '–')} · step ${s.toLocaleString()}<br>${v.toFixed(2)}`;
+    c.addEventListener('pointerenter', e => showTip(e, html)); c.addEventListener('pointermove', moveTip); c.addEventListener('pointerleave', hideTip);
+    r2El.appendChild(c);
+  }
+}
 
 /* ---------- punctuation bars ---------- */
 document.getElementById('punct').innerHTML = [[0, 0.66], [1000, 0.51], [143000, 0.41]].map(([s, v]) =>
