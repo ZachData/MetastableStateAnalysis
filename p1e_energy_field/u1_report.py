@@ -20,7 +20,7 @@ from typing import Dict, List
 import numpy as np
 
 from .extract_long8 import STEPS
-from .u1_field import BANDS, BETAS, PRIMARY_BETA, SWEEP
+from .u1_field import BANDS, BETAS, MERGE_BESIDE, PRIMARY_BETA, SWEEP
 from .u2_report import chance
 
 TRAINED = ("L1-8", "L9-16", "L17-23")
@@ -29,6 +29,8 @@ NAMES = {"Xe": ("lumpier", "smoother"), "Xw": ("more wells", "fewer wells"),
 SHORT = {"lumpier": "LUM", "smoother": "SMO", "more wells": "MORE", "fewer wells": "FEW",
          "denser later": "LATE", "denser early": "EARLY", "position": "POS", "content": "CON"}
 MIN_READ = 7
+#: The record keys of the beside merge tolerances (`u1_field.mean_shift`).
+TOL_KEYS = tuple(f"k_{t:g}" for t in MERGE_BESIDE)
 
 
 def sign_label(xs, names) -> str:
@@ -117,12 +119,18 @@ def summarise(out: Path, kind: str) -> Dict:
     beside = {}
     for stat in ("k", "k2", "k_eff", "largest", "sd_e", "r2_pos", "r2_mean", "rho_pos_causal",
                  "ami_pos", "ami_cls", "open_share", "open_well_share", "purity", "purity_null",
-                 "unconverged", "k_1e-04", "k_0.01"):
+                 "unconverged", *TOL_KEYS):
         for beta in BETAS:
             vals = band_values(recs, stat, prim, beta)
             for k, d in vals.items():
                 beside.setdefault(f"{k[0]}|{k[1]}|{beta:g}", {})[stat] = float(np.median(list(d.values())))
     res["beside"] = beside
+    # the merge tolerance (placed): cells whose well count changes at 1e-4 or 1e-2 (the record's keys)
+    cells = [c for c in recs if not c.get("sweep") and c["targets"] == prim]
+    if any(t not in c for c in cells for t in TOL_KEYS):
+        raise SystemExit(f"refusing: a record lacks one of {TOL_KEYS}")
+    res["merge_tolerance"] = {"cells": len(cells),
+                              "k_changes": sum(any(c[t] != c["k"] for t in TOL_KEYS) for c in cells)}
     sweep = defaultdict(list)
     for c in recs:
         if c.get("sweep") or (c["targets"] == prim and c["layer"] in (4, 12, 20) and c["beta"] in BETAS):
@@ -174,5 +182,7 @@ def report(out: Path) -> int:
             for k in ("Xe", "Xw", "rho_pos", "ami_diff"):
                 print_table(res, f"t123|{k}|3.5", f"T1–T3 beside: {k}")
     (out / "labels.json").write_text(json.dumps(full, indent=1) + "\n")
+    for kind, r in full.items():
+        print(f"merge tolerance ({kind}): well count changes at 1e-4 or 1e-2 in {r['merge_tolerance']['k_changes']} of {r['merge_tolerance']['cells']} cells")
     print(f"\nwrote {out / 'labels.json'} (sweep β {SWEEP} at L4/12/20 in 'sweep_k_eff')")
     return 0

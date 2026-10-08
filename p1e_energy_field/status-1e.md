@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-08 · body `d644e33ee5`
+- **Reviewed:** 2026-10-08 · body `b5d64ff6cc`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -533,7 +533,9 @@ embedding) has a few wells at 3.5 on the long passages, 0–4000 (`k` 4, `k_eff`
 143000. The matched Gaussians have one well too, so label (2) reads `Xw = 0` (the rule's "mixed")
 in 52 of 54 trained cells (L1–8: more wells at 128, leans at 64); label (4) is **not read**
 except L1–8 at 64–128 ("content", from the cells that have two wells), and the c3x purity on v1
-is not read at all. **The sweep** (L4 / L12 / L20, median `k_eff`): one well up to β 5.6 at every
+is not read at all. The placed merge tolerance (1e-3) changes no count: at 1e-4 and 1e-2 every
+cell's well count is the same (0 of 10,368 long and 9,072 v1 cells; the report's beside medians
+missed these counts until the key names were fixed after #164 opened). **The sweep** (L4 / L12 / L20, median `k_eff`): one well up to β 5.6 at every
 step but 128; at β 10, 1–8 (79 at L4, step 128); at 20, tens to hundreds (L20 at 143000 still
 1.3); at 50–100, near one per token. The landscape goes from one basin to shattered between β ≈ 6
 and 20, with no range of a few wells. **The probe's "2–4 wells" were the cloud-centred frame's**
