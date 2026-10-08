@@ -418,6 +418,32 @@ R0's; (c) c3's totals match R0's (step 0: 62, 143000: 810). **It does not:** use
 partitions (the proxy above); ask whether the floor `J0` itself is the right yardstick (its 10th
 percentile is placed); test anything. Results: `status-10.md` §1.24.
 
+**R8x, the exact check (`STATE.md` Blocked 27 (c), the user's, 2026-10-08; rule fixed before
+any P > 0 label was written).** **Question:** with each P > 0 condition's own partition in place
+of R8's P = 0 proxy, does c3 keep ≥ 90 % of its records at every primary step, and how large was
+the proxy's error? **Inputs:** R8's (R0's unit 1 records and labels, 18 steps, 7 v1 passages,
+centred, size 2, L1–24), plus unit 1's EOD-join P > 0 passes re-run: `move_text.conditions`'
+EOD conditions (the preambles other than the passage, P 50 / 300 / 1000; 6 or 9 per passage),
+R0's environment (CPU, float32, 14 torch threads, `OMP_NUM_THREADS=1`), each condition's
+partition of R0's kept offsets by `move_text.groups_of` (centred, size 2), the labels written
+per (step, passage, condition, layer). **Chance level** per condition: R8's (N = 2000 random
+same-size subsets of the kept offsets, the discrete 95 %), against **that condition's** partition,
+seeded by (step, passage, layer, condition, s). **c3x** = c2 ∧ unit 1's class is `moves` when each
+EOD condition's J ≥ max(`J0`, that condition's `Jc`). **Reading:** R8's table with c3x beside
+c3c; c3x / c3 per step with a prompt bootstrap (5,000 draws, 95 %, as R8); per step the records
+where c3c and c3x disagree, each way; the proxy's error, `Jc` (exact) − `Jc` (proxy) per (record,
+condition), and the condition's group count over P = 0's; band and prompt beside. **Decision
+(placed; Blocked 27's "(c), then (a) if the drop at 64–1000 holds"):** the drop holds if c3x keeps
+< 0.90 at any step of 64–1000 (R8's letter, the proxy replaced); then (a), c3x as the definition's
+new column with every re-read row run again on it, is recommended to the user. If c3x keeps ≥ 0.90
+at every primary step, c3 stands and c3x goes beside. The bootstrap intervals are beside, not in
+the rule: R8 showed 7 prompts cannot resolve 0.90, and a rule that needed them to would not
+decide. **First checks (refuse rather than degrade):** R8's three; per (condition, layer) the
+recomputed partition reproduces unit 1's stored group count `k` and every stored best Jaccard
+exactly, so the labels written are the ones unit 1 classified on; the first step run (64) is
+opened and checked populated before the rest. **It does not:** re-examine `J0`; read the `\n\n`
+join (not part of "moves"); change any other column; test anything. Results: `status-10.md` §1.25.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

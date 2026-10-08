@@ -1167,6 +1167,13 @@ a wrong premise, the check inherits it.
   the gap is step 143000's deep layers at every position (up to 1.8e-4) and absent at
   step 0. Rule: a cause named for a measurement is checked on the split that would
   separate it (here position), not inferred from one pair.
+- 2026-10-08, R8x (#163, `/challenge-pr`): the write-up behind recommending (a) said "the
+  drop's size is resolved" when the bootstrap intervals were 5–21 % (only its existence was),
+  and "not one passage" when dropping `camus_letranger` lifts 128 over the bar. It also left
+  out the pooled 64–1000 keep (0.905, which clears 0.90). Each slip leaned toward the
+  recommendation already in `STATE.md`. Rule: a sentence supporting a recommendation states
+  its interval, and the strongest number against it (here the pooled window) goes beside
+  the verdict before the PR opens.
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user
