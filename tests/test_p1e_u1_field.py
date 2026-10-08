@@ -104,3 +104,21 @@ def test_report_sign_rule_and_not_read():
     assert rep.labels(vals, "ami_diff", 8)[(0, "L1-8")] == "not read"
     with pytest.raises(SystemExit):
         rep.labels(vals, "Xe", 8)
+
+
+@pytest.mark.parametrize("spec", [(6, 3), (20, 1)])
+def test_calibrated_lumpiness_is_zero_on_a_structureless_cloud(spec):
+    """(1′), `/challenge-pr` on #164 finding 2: the bias predicts the score of a cloud with no
+    structure beyond its moments (a matched-Gaussian draw scored as the data)."""
+    from p1e_energy_field import u1_calib as uc
+    rng = np.random.default_rng(0)
+    n, d = 300, 40
+    X = rng.standard_normal((n, d)) * np.r_[spec, np.ones(d - 2) * 0.5] + np.r_[np.zeros(d - 1), 4]
+    X /= np.linalg.norm(X, axis=1, keepdims=True)
+    bias = uc.bias_cell(X, [1, 2])[1.6]
+    raw = []
+    for _ in range(8):
+        U = u1.gaussian_draw(X, rng)
+        g = [u1.density((lambda Y: Y @ Y.T)(u1.gaussian_draw(U, rng)), 1.6).std() for _ in range(4)]
+        raw.append(u1.density(U @ U.T, 1.6).std() - np.mean(g))
+    assert abs(np.mean(raw) - bias) < 0.015
