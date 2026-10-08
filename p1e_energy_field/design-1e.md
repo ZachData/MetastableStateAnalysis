@@ -186,6 +186,26 @@ changed per run.
 
 U3 at β 10, if (b) finds wells to join, gets its own rule before its output.
 
+## U3 at β 10, crests and saddles: the rule (fixed 2026-10-08, before any U3 output and before (b)'s labels were read)
+
+*Blocked 30 (b), the user's. (b)'s first cell (step 143000, `wiki_paragraph_long`) was opened as
+its populated check: 1–31 wells at β 10, one holding 86–100 % of the targets.* The field is U1's
+(full, `φ_β` over the targets, unit LN1 rows, states fixed), at **β 10 only**; cells as (b): long
+passages, T1 + T2, L0–L23, 18 steps; v1 (R0's kept offsets) beside. The saddles live in the
+targets' span (M6): every path below starts and stays there.
+
+| | |
+|---|---|
+| wells | (b)'s, recomputed (same mean shift, its modes kept) and **refused unless they equal (b)'s saved labels** (agreement ≥ 0.999 per cell). Every well counts, singletons too (a lone token's bump is a maximum of `φ_β`); `k2` wells beside |
+| heights | `h(x) = log φ_β(x)`, the full sum, self term in (a path over a token crosses its bump); a well's peak is `h` at its mode |
+| merge tree (primary) | a graph over the targets: each target's **15** nearest neighbours by `⟨u_i, u_j⟩` (placed; doubled up to 120 until the graph joins every well, else refused), edge height `min(h(u_i), h(unit(u_i + u_j)), h(u_j))`; edges added from the highest (Kruskal), and when an edge joins two components whose highest wells differ, the lower one **dies** there (elder rule): its **persistence** `p = peak − edge height` (nats), its **saddle** that edge. `k − 1` deaths per cell |
+| NEB (beside; the cell's **8 most persistent deaths**, placed for cost: cells at β 10 reach hundreds of wells) | climbing-image nudged elastic band between the dying well's mode and the mode of the well across the edge, 24 images, started on the geodesic path mode → `u_i` → `u_j` → mode, on the sphere (forces projected to each image's tangent; ascent of `h` off the path, a spring along it); float32 to max force < 1e-4·β or 3,000 iterations, the path's heights then in float64. Reported: its saddle height against the graph's (`Δ_NEB = h_NEB − h_graph`, ≥ 0 when the band finds the higher pass) and unconverged bands. Beside, since a band from a graph start finds *a* pass, not provably the lowest |
+| per cell | `P = Σ p` over deaths, `p_max`, deaths with `p` > 1 nat; the token-class mix of the saddle edges' endpoints against all targets (the "interesting voids": who sits on the crests) |
+| null | U1's 4 matched Gaussians of the cell (U1's seeds, so the same draws (b) read), their wells and merge tree the same way (graph only, no NEB) |
+| label per (step, band) | U1's sign rule over the passages on **(5) `Xp = log(1 + P) − mean_draws log(1 + P_G)`**: > 0 *a deeper landscape than its Gaussian*, < 0 *shallower*; step 0 beside, a trained label step 0 also carries is not called learned. `p_max` and the NEB gap beside, no label |
+| first checks (refuse) | the first cell's wells equal (b)'s; its merge tree has `k − 1` deaths and every persistence ≥ 0; two planted vMF groups give one death at the pass the band also finds (test); the first cell's NEB on L4 / L12 / L20 converges for ≥ 90 % of the bands run |
+| not computed | inner products between well centres or any statistic of the modes' configuration (P-S1); U1's other fences. The modes are used as path endpoints only, never stored |
+
 ## Fences (registered predictions and the registry)
 
 | registered | what 1e will not compute before it is scored, or the user decides |

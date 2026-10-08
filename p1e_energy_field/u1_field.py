@@ -167,11 +167,13 @@ def dedup_t(Y, tol: float) -> tuple:
     return lab, np.asarray(reps, dtype=int)
 
 
-def mean_shift(X: np.ndarray, beta: float, device: str = "cpu", exact: bool = False) -> Dict:
+def mean_shift(X: np.ndarray, beta: float, device: str = "cpu", exact: bool = False,
+               modes: bool = False) -> Dict:
     """
     Basins of ``φ_β`` over unit rows ``X`` (float64), from every row. ``exact``: float64 from the
     start (the first check's reference). Returns each row's well (merged at ``MERGE``), the
-    counts at ``MERGE_BESIDE``, and how many rows' trajectories did not converge.
+    counts at ``MERGE_BESIDE``, and how many rows' trajectories did not converge; ``modes``:
+    also each well's converged point (U3's path ends; never stored).
     """
     X = np.asarray(X, dtype=np.float64)
     if exact:
@@ -195,10 +197,13 @@ def mean_shift(X: np.ndarray, beta: float, device: str = "cpu", exact: bool = Fa
         if exact and iters % 5 == 0:               # merge coincident rows in the reference too
             lab, reps = dedup(Y, MERGE_RUN)
             owner, Y, conv = lab[owner], Y[reps], conv[reps]
-    lab, _ = dedup(Y, MERGE)
+    lab, reps = dedup(Y, MERGE)
     wells = lab[owner]
     beside = {f"k_{t:g}": int(len(dedup(Y, t)[1])) for t in MERGE_BESIDE}
-    return {"wells": wells, "unconverged": int((~conv[owner]).sum()), "iters": iters, **beside}
+    out = {"wells": wells, "unconverged": int((~conv[owner]).sum()), "iters": iters, **beside}
+    if modes:
+        out["modes"] = Y[reps]
+    return out
 
 
 def well_stats(w: np.ndarray) -> Dict:
