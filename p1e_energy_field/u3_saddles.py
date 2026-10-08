@@ -2,7 +2,7 @@
 p1e_energy_field/u3_saddles.py — U3 at β 10, crests and saddles between U1 (b)'s wells
 (`design-1e.md` "U3 at β 10", fixed before any U3 output).
 
-Per (step, passage, layer ℓ = 0–23), in β's frame (unit LN1 rows, states fixed), at β 10:
+Per (step, long passage, layer ℓ ∈ {4, 12, 20}), in β's frame (unit LN1 rows, states fixed), at β 10:
 
 - **wells**: U1 (b)'s mean shift, recomputed with its modes and refused unless the labels equal
   (b)'s saved ones; every well counts, singletons too;
@@ -17,7 +17,7 @@ Per (step, passage, layer ℓ = 0–23), in β's frame (unit LN1 rows, states fi
 Not computed (fences): inner products between modes or any statistic of their configuration
 (P-S1); the modes are path ends only and are never stored. Tier 1: exploratory, unregistered.
     python -m p1e_energy_field.u3_saddles run --wells <U1 (b) dir> --runs <p1e_long8 dir> \
-        --r0 <R0 labels> --out <dir> [--device cuda|cpu] [--first-only]
+        --out <dir> [--device cuda|cpu] [--first-only]
     python -m p1e_energy_field.u3_saddles report --out <dir>
 """
 
@@ -33,15 +33,17 @@ from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 
-from .u1_field import (BANDS, FIRST, LAYERS, N_DRAW, SEED, agreement, gaussian_draw, mean_shift,
+from .u1_field import (BANDS, FIRST, N_DRAW, SEED, agreement, gaussian_draw, mean_shift,
                        plan, token_classes, well_stats)
 from .u2_block import code_sha, load_ln1, unit_rows
 
 BETA = 10.0
 #: Placed by the rule, not calibrated.
 KNN, MAX_BRIDGE_ROUNDS = 15, 50
-NEB_IMAGES, NEB_ITERS, NEB_FTOL, NEB_TOP = 24, 3000, 1e-4, 8
-NEB_WARM = 200
+NEB_IMAGES, NEB_ITERS, NEB_HTOL, NEB_TOP = 24, 3000, 1e-4, 8
+NEB_WARM, NEB_EVERY = 200, 500
+#: Amended after the first cell's check (`design-1e.md` "U3 at β 10"): one layer per trained band.
+U3_LAYERS = (4, 12, 20)
 AGREE_MIN, NEB_CONV_MIN, P_TOL = 0.999, 0.9, 1e-9
 CHECK_LAYERS = (4, 12, 20)
 DEEP = 1.0
@@ -166,19 +168,22 @@ def _slerp_path(points: np.ndarray, m: int) -> np.ndarray:
 
 
 def neb(a: np.ndarray, b: np.ndarray, via: Sequence[np.ndarray], U: np.ndarray, beta: float,
-        images: int = NEB_IMAGES, iters: int = NEB_ITERS, ftol: float = NEB_FTOL,
+        images: int = NEB_IMAGES, iters: int = NEB_ITERS, htol: float = NEB_HTOL,
         device: str = "cpu") -> Dict:
     """
     Climbing-image NEB for the pass of ``h = log φ_β`` between modes ``a`` and ``b`` (ascent of
     ``h`` off the path; the climbing image descends ``h`` along it), started on the geodesic
-    polyline ``a → via → b``. float32 iterations, the path's heights in float64.
+    polyline ``a → via → b``. float32 iterations, the path's heights in float64. Converged when
+    the climbing image's height moves < ``htol`` nats over ``NEB_EVERY`` iterations (amended after
+    the first cell: the largest force on the band oscillates over token spikes while the pass
+    height is fixed to 1e-4 by 500 iterations); the last largest true force is reported beside.
     """
     import torch
     dev = torch.device(device)
     Y = torch.as_tensor(_slerp_path([a, *via, b], images + 2), device=dev, dtype=torch.float32)
     Ut = torch.as_tensor(U, device=dev, dtype=torch.float32)
     eta, ks = 0.05 / beta, beta
-    conv, t = False, 0
+    conv, t, last, fmax = False, 0, None, float("nan")
     for t in range(1, iters + 1):
         S = beta * (Y @ Ut.T)
         W = torch.softmax(S, dim=1)
@@ -198,16 +203,19 @@ def neb(a: np.ndarray, b: np.ndarray, via: Sequence[np.ndarray], U: np.ndarray, 
         if t > NEB_WARM:
             ci = int(torch.argmin(h[1:-1]))
             F[ci] = gi[ci] - 2 * gt[ci] * tau[ci]
-            # convergence on the true forces only (the spring is the band's, not the field's)
-            Fp = gi - gt * tau
-            Fp[ci] = F[ci]
-            if float(Fp.norm(dim=1).max()) < ftol * beta:
-                conv = True
-                break
+            if t % NEB_EVERY == 0:
+                Fp = gi - gt * tau
+                Fp[ci] = F[ci]
+                fmax = float(Fp.norm(dim=1).max())
+                hc = float(h[1:-1].min())
+                if last is not None and abs(hc - last) < htol:
+                    conv = True
+                    break
+                last = hc
         Y = torch.cat([Y[:1], torch.nn.functional.normalize(y + eta * F, dim=1), Y[-1:]])
     path = Y.double().cpu().numpy()
     hp = heights(path, U, beta)
-    return {"h": float(hp[1:-1].min()), "converged": conv, "iters": t}
+    return {"h": float(hp[1:-1].min()), "converged": conv, "iters": t, "fmax": fmax}
 
 
 # ---------------------------------------------------------------- one cell
@@ -238,7 +246,7 @@ def read_cell(U: np.ndarray, beta: float, device: str, ref_wells: Optional[np.nd
     for d in sorted(ds, key=lambda d: -d["p"])[:neb_top]:
         r = neb(modes[d["well"]], modes[d["into"]], [U[d["i"]], U[d["j"]]], U, beta, device=dev)
         nebs.append({"well": d["well"], "graph_h": d["h"], "neb_h": r["h"], "gap": r["h"] - d["h"],
-                     "converged": r["converged"], "iters": r["iters"]})
+                     "converged": r["converged"], "iters": r["iters"], "fmax": r["fmax"]})
     if nebs:
         gaps = np.asarray([x["gap"] for x in nebs])
         rec.update(neb_n=len(nebs), neb_conv=int(sum(x["converged"] for x in nebs)),
@@ -269,7 +277,7 @@ def read_cell(U: np.ndarray, beta: float, device: str, ref_wells: Optional[np.nd
 
 def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str, step: str,
              ref: Optional[Dict[str, np.ndarray]], device: str,
-             layers: Sequence[int] = LAYERS) -> tuple:
+             layers: Sequence[int] = U3_LAYERS) -> tuple:
     z = np.load(run_dir / "activations.npz")
     acts, norms = z["activations"], z["norms"]
     tokens = json.loads((run_dir / "geometry.json").read_text())["tokens"]
@@ -298,7 +306,7 @@ def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str,
 
 def _primary_only(job):
     kind, step, key, rd, rev, tg, _ = job
-    return kind, step, key, rd, rev, {k: v for k, v in tg.items() if k in ("t12", "r0")}
+    return kind, step, key, rd, rev, {k: v for k, v in tg.items() if k == "t12"}
 
 
 def _job(job, wells_dir: Path, out: Path, code: str, device: str) -> str:
@@ -341,14 +349,14 @@ def check_first(path: Path) -> Dict:
           f"(min {min(c['agree_b'] for c in cells):.4f}), deaths = k − 1 except {bad}; NEB at "
           f"L{'/'.join(map(str, CHECK_LAYERS))}: {sum(x['converged'] for x in nb)} of {len(nb)} "
           f"converged", flush=True)
-    if bad or {c["layer"] for c in cells} != set(LAYERS) or conv < NEB_CONV_MIN:
+    if bad or {c["layer"] for c in cells} != set(U3_LAYERS) or conv < NEB_CONV_MIN:
         raise SystemExit(f"refusing: first cell not populated (layers {bad}, NEB conv {conv:.2f})")
     return {"neb_converged": conv, "neb_n": len(nb)}
 
 
 def run(a) -> int:
     out, code = a.out, code_sha()
-    jobs, _, meta = plan(a.runs, a.r0, None)
+    jobs, _, meta = plan(a.runs, None, None)       # long passages only (amended, cost)
     out.mkdir(parents=True, exist_ok=True)
     (out / "plan.json").write_text(json.dumps({**meta, "code": code, "device": a.device,
                                                "beta": BETA, "wells": str(a.wells)}, indent=1) + "\n")
@@ -430,7 +438,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r = sub.add_parser("run")
     r.add_argument("--wells", type=Path, required=True, help="U1 (b)'s output dir (β 10)")
     r.add_argument("--runs", type=Path, required=True)
-    r.add_argument("--r0", type=Path, default=None, help="R0's labels dir (v1 beside)")
     r.add_argument("--out", type=Path, required=True)
     r.add_argument("--steps", nargs="*", default=None)
     r.add_argument("--first-only", action="store_true")
