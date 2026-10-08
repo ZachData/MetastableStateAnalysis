@@ -99,3 +99,10 @@ def test_reproduce_names_the_records_that_differ():
     assert lad.reproduce(a, b) == []
     b["recs"]["cm"]["c2b"]["summary"] = {"x": 2}
     assert lad.reproduce(a, b) == ["cm_c2b"]
+
+
+@pytest.mark.parametrize("extra", [["--reproduce", "r1"], ["--reproduce-labels", "lab"]])
+def test_reproduce_needs_its_own_label_source(tmp_path, extra):
+    """CodeRabbit on #166: --reproduce without --reproduce-labels (or the reverse) refuses."""
+    with pytest.raises(SystemExit, match="go together"):
+        lad.main(["--dir", str(tmp_path), "--labels", str(tmp_path)] + extra)

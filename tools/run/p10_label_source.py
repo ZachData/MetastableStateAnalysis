@@ -604,8 +604,10 @@ def extend(argv: Optional[Sequence[str]] = None) -> int:
     args = ap.parse_args(argv)
     if args.out.resolve() == args.labels.resolve():
         raise SystemExit("refusing: --out is the source itself")
-    args.out.mkdir(parents=True, exist_ok=True)
+    if not (args.r8x / "r8x.json").exists():
+        raise SystemExit(f"refusing: no r8x.json in {args.r8x}")
     r8x_sha = _sha(args.r8x / "r8x.json")
+    args.out.mkdir(parents=True, exist_ok=True)
     missing = [s for s in MODELS if not (args.labels / f"{s}.json").exists()]
     if missing:
         raise SystemExit(f"refusing: no label source for {missing} in {args.labels}")

@@ -371,3 +371,12 @@ def test_c3x_layer_refuses_rows_that_are_not_c3s():
         ls.c3x_layer(cols, rows + [{"id": 2, "size": 1, "c3": False, "c3x": True}], "w")
     with pytest.raises(ls.LabelSourceError, match="R8x's size"):
         ls.c3x_layer(cols, [{"id": 0, "size": 5, "c3": True, "c3x": True}, rows[1]], "w")
+
+
+def test_extend_refuses_a_missing_r8x_before_writing(tmp_path):
+    """CodeRabbit on #166: a wrong --r8x refuses and leaves no empty --out behind."""
+    src, _, _ = _source(tmp_path)
+    out = tmp_path / "ext"
+    with pytest.raises(SystemExit, match="no r8x.json"):
+        ls.extend(["--labels", str(src), "--r8x", str(tmp_path / "nope"), "--out", str(out)])
+    assert not out.exists()

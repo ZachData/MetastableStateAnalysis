@@ -309,10 +309,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     help="refuse unless c0–c3's records equal that R1 run's (with --reproduce-labels)")
     ap.add_argument("--reproduce-labels", type=Path, default=None, help="the label source that run read")
     args = ap.parse_args(argv)
+    if (args.reproduce is None) != (args.reproduce_labels is None):
+        raise SystemExit("refusing: --reproduce and --reproduce-labels go together (the run it "
+                         "reproduces read its own label source)")
     data = load(args.dir, args.labels, args.lead)
     ladder, _ = LEADS[args.lead]
     if args.reproduce is not None:
-        bad = reproduce(data, load(args.reproduce, args.reproduce_labels or args.labels))
+        bad = reproduce(data, load(args.reproduce, args.reproduce_labels))
         if bad:
             raise LadderError(f"refusing: records differ from {args.reproduce}: {bad}")
         print(f"reproduces {args.reproduce}: every c0–c3 record summary equal")
