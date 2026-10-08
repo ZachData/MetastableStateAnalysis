@@ -90,3 +90,19 @@ def test_neb_finds_the_symmetric_pass():
     assert r["converged"]
     assert r["h"] == pytest.approx(_plane_pass(X, m), abs=1e-4)   # 12.8872 here, both ways
     assert r["h"] >= dd["h"]
+
+
+@pytest.mark.pure
+def test_skipped_well_ids_are_made_contiguous(monkeypatch):
+    X, lab = _groups(np.eye(8)[:2], d=8)
+    real = u1.mean_shift
+    def gappy(*a, **k):
+        r = real(*a, **k)
+        return {**r, "wells": np.where(r["wells"] == 1, 2, r["wells"]),
+                "modes": np.concatenate([r["modes"][:1], r["modes"][:1] * 0, r["modes"][1:]])}
+    monkeypatch.setattr(u3, "mean_shift", gappy)
+    ms = u3.wells_and_modes(X, u3.BETA, "cpu")
+    assert set(ms["wells"].tolist()) == {0, 1} and len(ms["modes"]) == 2
+    assert np.allclose(np.linalg.norm(ms["modes"], axis=1), 1)
+    t = u3.merge_tree(X, ms["wells"], u3.heights(ms["modes"], X, u3.BETA), u3.BETA)
+    assert len(t["deaths"]) == 1

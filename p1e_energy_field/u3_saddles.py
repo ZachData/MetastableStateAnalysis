@@ -212,9 +212,17 @@ def neb(a: np.ndarray, b: np.ndarray, via: Sequence[np.ndarray], U: np.ndarray, 
 
 # ---------------------------------------------------------------- one cell
 
+def wells_and_modes(X: np.ndarray, beta: float, device: str) -> Dict:
+    """U1's mean shift with its modes, the well labels made contiguous (U1's can skip an id when
+    merged rows leave a mode with no row; a skipped id would be a well no edge can join)."""
+    ms = mean_shift(X, beta, device, modes=True)
+    ids, w = np.unique(ms["wells"], return_inverse=True)
+    return {**ms, "wells": w, "modes": ms["modes"][ids]}
+
+
 def read_cell(U: np.ndarray, beta: float, device: str, ref_wells: Optional[np.ndarray],
               cls: np.ndarray, rng_key, neb_top: int = NEB_TOP, draws: bool = True) -> tuple:
-    ms = mean_shift(U, beta, device, modes=True)
+    ms = wells_and_modes(U, beta, device)
     w, modes = ms["wells"], ms["modes"]
     agree = None if ref_wells is None else agreement(w, ref_wells)
     peaks = heights(modes, U, beta)
@@ -246,7 +254,7 @@ def read_cell(U: np.ndarray, beta: float, device: str, ref_wells: Optional[np.nd
         gauss = [gaussian_draw(U, rng) for _ in range(N_DRAW)]   # U1's draws, in U1's order
         PG, kG, bG = [], [], []
         for Y in gauss:
-            mg = mean_shift(Y, beta, device, modes=True)
+            mg = wells_and_modes(Y, beta, device)
             tg = merge_tree(Y, mg["wells"], heights(mg["modes"], Y, beta), beta)
             PG.append(float(sum(d["p"] for d in tg["deaths"])))
             bG.append(tg["bridges"])
