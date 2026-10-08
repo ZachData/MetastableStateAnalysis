@@ -606,11 +606,13 @@ def extend(argv: Optional[Sequence[str]] = None) -> int:
         raise SystemExit("refusing: --out is the source itself")
     args.out.mkdir(parents=True, exist_ok=True)
     r8x_sha = _sha(args.r8x / "r8x.json")
+    missing = [s for s in MODELS if not (args.labels / f"{s}.json").exists()]
+    if missing:
+        raise SystemExit(f"refusing: no label source for {missing} in {args.labels}")
     for step in MODELS:
         f = args.labels / f"{step}.json"
-        if not f.exists():
-            continue
         d = json.loads(f.read_text())
+        rows_sha = hashlib.sha256()
         if d["refused"]:
             raise SystemExit(f"refusing: {step} has refused prompts {sorted(d['refused'])}")
         n = [0, 0]
@@ -618,6 +620,7 @@ def extend(argv: Optional[Sequence[str]] = None) -> int:
             rf = args.r8x / "rows" / step / f"{prompt}.json"
             if not rf.exists():
                 raise SystemExit(f"refusing: no R8x rows for {step}/{prompt}")
+            rows_sha.update(rf.read_bytes())
             by_layer: Dict[int, List[Dict]] = {}
             for r in json.loads(rf.read_text())["rows"]:
                 by_layer.setdefault(int(r["layer"]), []).append(r)
@@ -626,9 +629,18 @@ def extend(argv: Optional[Sequence[str]] = None) -> int:
                 lab = np.asarray(cols["c3x"])
                 n[0] += len(set(np.asarray(cols["c3"])[np.asarray(cols["c3"]) >= 0].tolist()))
                 n[1] += len(set(lab[lab >= 0].tolist()))
-        d["meta"]["extended"] = {"from": str(args.labels), "from_sha256": _sha(f), "r8x": str(args.r8x),
-                                 "r8x_sha256": r8x_sha, "git": _git_head(), "columns": list(EXTENDED)}
-        (args.out / f"{step}.json").write_text(json.dumps(d) + "\n")
+        # the readers name a source by meta.git: the commit that wrote these files (/challenge-pr on #166, finding 3)
+        d["meta"]["extended"] = {"from": str(args.labels), "from_sha256": _sha(f), "from_git": d["meta"]["git"],
+                                 "r8x": str(args.r8x), "r8x_sha256": r8x_sha,
+                                 "r8x_rows_sha256": rows_sha.hexdigest()[:16], "columns": list(EXTENDED)}
+        d["meta"]["git"] = _git_head()
+        out = args.out / f"{step}.json"
+        out.write_text(json.dumps(d) + "\n")
+        back, src = json.loads(out.read_text()), json.loads(f.read_text())
+        for prompt, p in src["prompts"].items():                # the copy check, on what was written
+            for L, cols in p["layers"].items():
+                if any(back["prompts"][prompt]["layers"][L][c] != v for c, v in cols.items()):
+                    raise SystemExit(f"refusing: {out} differs from {f} at {prompt}/L{L}")
         print(f"{step}: c3 {n[0]} group-layer records, c3x {n[1]}", flush=True)
     return 0
 

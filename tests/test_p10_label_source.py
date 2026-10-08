@@ -340,6 +340,9 @@ def test_extend_writes_c3x_as_c3_less_the_unmarked_groups(tmp_path, monkeypatch)
         rows = _r8x_rows(src, step, lambda L, i: L != 3)
         (r8x / "rows" / step / "p.json").write_text(json.dumps({"rows": rows}))
     out = tmp_path / "ext"
+    with pytest.raises(SystemExit, match="no label source"):        # every step of the axis, or refuse
+        ls.extend(["--labels", str(src), "--r8x", str(r8x), "--out", str(out)])
+    monkeypatch.setattr(ls, "MODELS", {"step512": None, ls.LEARNED_STEP: None})
     assert ls.extend(["--labels", str(src), "--r8x", str(r8x), "--out", str(out)]) == 0
     _, c3 = ls.load_column(out, "step512", "p", 4, "c3")
     _, c3x = ls.load_column(out, "step512", "p", 4, "c3x")
@@ -348,6 +351,8 @@ def test_extend_writes_c3x_as_c3_less_the_unmarked_groups(tmp_path, monkeypatch)
     for col in ls.COLUMNS:                                 # every other column unchanged
         assert np.array_equal(ls.load_column(out, "step512", "p", 5, col)[1],
                               ls.load_column(src, "step512", "p", 5, col)[1])
+    meta = json.loads((out / "step512.json").read_text())["meta"]
+    assert meta["extended"]["from_git"] == "x" and meta["extended"]["r8x_rows_sha256"]
     with pytest.raises(ls.LabelSourceError, match="written by `extend`"):
         ls.load_column(src, "step512", "p", 4, "c3x")
     monkeypatch.setattr(ls, "readable", lambda lab: True)

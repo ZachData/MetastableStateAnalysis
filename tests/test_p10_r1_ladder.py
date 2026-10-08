@@ -89,3 +89,13 @@ def test_lead_c3x_is_primary_and_last_on_the_ladder():
     assert h["first_changed_at"] == {"c3x": 1} and h["agree"] == 1
     x = lad.c3_to_c3x(cols, {64: "c3", 128: "c3"}, {64: "c3x", 128: "c2"}, False)
     assert x["n"] == 1 and x["differ"][0]["step"] == 64 and x["differ"][0]["c3x"] == "0"
+
+
+def test_reproduce_names_the_records_that_differ():
+    """R9's first check: a c0–c3 record summary that differs from the other run's is named."""
+    cols = (*lad.LADDER, *lad.ARMS, *lad.LEARNED)
+    a = {"recs": {r: {c: {"summary": {"x": 1}} for c in cols} for r in lad.READERS}}
+    b = {"recs": {r: {c: {"summary": {"x": 1}} for c in cols} for r in lad.READERS}}
+    assert lad.reproduce(a, b) == []
+    b["recs"]["cm"]["c2b"]["summary"] = {"x": 2}
+    assert lad.reproduce(a, b) == ["cm_c2b"]
