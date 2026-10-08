@@ -1,7 +1,7 @@
 """
 `p1e_energy_field/u1_field.py` — U1 on synthetic clouds (`design-1e.md` "U1: the rule", tests):
 three planted von Mises–Fisher groups give three wells and their labels; the leave-one-out
-density against an explicit loop; the Gaussian draw's covariance; AMI 0 under permutation.
+density against an explicit loop; the Gaussian draw's covariance; AMI 0 under permutation (in `test_p1e_u1_field_deps.py`, deps tier).
 """
 import numpy as np
 import pytest
@@ -74,20 +74,6 @@ def test_gaussian_draw_keeps_mean_and_covariance_before_the_sphere():
     np.testing.assert_allclose(np.linalg.norm(Y, axis=1), 1.0)
 
 
-def test_ami_and_purity_at_chance_under_permutation():
-    from sklearn.metrics import adjusted_mutual_info_score as ami
-    rng = np.random.default_rng(4)
-    w = rng.integers(0, 3, 600)
-    pos = np.arange(1, 601)
-    vals = [ami(u1.position_bins(pos), rng.permutation(w)) for _ in range(50)]
-    assert abs(np.mean(vals)) < 0.01
-    d = u1.describe(np.repeat([0, 1, 2], 200), pos, rng.permutation(np.repeat(list("abc"), 200)),
-                    [np.arange(0, 10), np.arange(300, 310)], rng)
-    assert d["ami_pos"] > 0.5 and abs(d["ami_cls"]) < 0.02
-    assert d["purity"] == 1.0 and d["purity_p"] < 0.01
-    assert d["open_share"] == 1.0 and abs(d["open_well_share"] - 1 / 3) < 1e-12
-
-
 def test_dedup_merges_only_within_tolerance():
     a = np.array([1.0, 0.0, 0.0])
     b = np.array([np.cos(1e-4), np.sin(1e-4), 0.0])
@@ -105,3 +91,16 @@ def test_hidden_state_24_refused(tmp_path):
     ln1 = {"w": np.ones((24, 4)), "b": np.zeros((24, 4)), "eps": 1e-5}
     with pytest.raises(ValueError, match="refused"):
         u1.read_run(tmp_path, ln1, {"t12": np.arange(1, n)}, "k", "0", layers=[24])
+
+
+def test_report_sign_rule_and_not_read():
+    from p1e_energy_field import u1_report as rep
+    names = rep.NAMES["Xe"]
+    assert rep.sign_label([1] * 8, names) == "lumpier"
+    assert rep.sign_label([1] * 7 + [-1], names) == "leans lumpier"
+    assert rep.sign_label([-1] * 8, names) == "smoother"
+    assert rep.sign_label([1] * 6 + [-1] * 2, names) == "mixed"
+    vals = {(0, "L1-8"): {f"p{i}": 0.1 for i in range(6)}}
+    assert rep.labels(vals, "ami_diff", 8)[(0, "L1-8")] == "not read"
+    with pytest.raises(SystemExit):
+        rep.labels(vals, "Xe", 8)

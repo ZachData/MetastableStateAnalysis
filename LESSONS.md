@@ -816,6 +816,15 @@ needs the user to enable it on GitHub.
   reading it at init. Rule: **every reading gets a specificity test (a move unrelated to the
   quantity reads ≈ 0) beside its sensitivity test, and a proposed control is first read at
   init, where the answer is known**.
+- 2026-10-08 (1e U1): the rule asked "what are the 2–4 wells" (labels (2) and (4), c3x purity)
+  from a probe the design itself said was on the wrong frame. In β's frame at β 1.6–5.6 the
+  field has **one** well in every trained band (and its Gaussian too), so (2) reads `Xw = 0`,
+  which the sign rule calls "mixed", indistinguishable from a real tie, and (4) and the purity
+  are not read. One mean shift per step in the right frame (seconds) would have shown it before
+  the rule was written. Also the rule asked β-robustness of a label whose null was drawn at one
+  β only (caught after the first check, before any reading). Rule: **before a rule labels an
+  object (wells, groups), check in the rule's own frame and parameters that the object exists,
+  and give "the null and the cloud agree exactly" its own label, not "mixed"**.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
