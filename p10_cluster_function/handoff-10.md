@@ -132,8 +132,10 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > partition now kept, `labels/`; ~50 min CPU). Every recomputed partition reproduces unit 1's
 > stored count and best Jaccards exactly. Answer: **the drop holds by the letter** (c3x keeps
 > 0.876 at 128, 0.893 at 1000; 64 / 256 / 512 clear 0.90); the proxy was close (exact in the
-> median, ≤ 11 records per step classified differently). **Next, for the user:** Blocked 27 (a)
-> (c3x as the definition's column, every re-read row again), recommended by the rule.
+> median, ≤ 11 records per step classified differently). **Blocked 27 decided (a), 2026-10-08**
+> (the user's prompt: "(a) [or (b)]"; (a) taken, to be confirmed): c3x as the definition's
+> column, every re-read row run again on it. **Next: that re-read** (not started; 1e's U1 ran
+> first, and finds no well to set against c3x at the measured β, `status-1e.md` "U1").
 >
 > **R8 done, 2026-10-06 (`status-10.md` §1.24; its title is the summary).** Blocked 26 (f), the
 > user's: the own-floor check on "moves", rule in `design-10.md` "R8" (committed before any chance
@@ -149,7 +151,9 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > unit 1's P > 0 passes again with labels written, ~1 h on R0's scale, GPU allowed. Could change:
 > the rule's letter at 64–1000, error unmeasured.)*
 > *(Taken up 2026-10-06 as Phase 1e, `p1e_energy_field/design-1e.md`; the probe's frames are not
-> β's, so its numbers below are not used there.)*
+> β's, so its numbers below are not used there. *1e's U1, 2026-10-08:* in β's frame the field
+> has one well at β 1.6–5.6 in every trained band; the "2–4 wells" below are the centred frame's,
+> `p1e_energy_field/status-1e.md` "U1".)*
 > *Parked (2026-10-06, the user's question in the R8 session):* **the theory's own smooth field,
 > `φ_β`'s wells at the measured β** (`lit-1d.md` §3; option C, waiting on Blocked 9 since
 > 2026-09-26; β decided 2026-10-04: 3.5 [1.6, 5.6]). Why: c3's knobs (`min_cluster_size` 2, `J0`'s
