@@ -36,6 +36,7 @@
   - R7, the context-shuffle test (each group's tokens re-clustered with their passage block-shuffled at four grains, and each token alone after the sink). From 512 on, the label depends on the bar: on each group's own floor it is mixed (39 % at 512 and 48–61 % after survive with their token alone, a third break under a token shuffle); on a fixed bar, and among the groups whose floor clears chance, breaking under a shuffle is the largest share (about half to two thirds). The own floor is below chance for a third or more of the groups, and those come out token-alone. Deeper groups survive alone less. Before 512 no shuffle moves any group: the model starts using order between 256 and 1000. The token-alone input moves states even at init, and a shuffle also breaks some token-alone groups, so neither label is a pure reading of context. At 512, groups that break under a shuffle are as same-class as token-alone ones, so the class grouping there is not only a per-token feature. Descriptive, no null — `p10_cluster_function/status-10.md` §1.23
   - R8, the own-floor check on the definition's "moves" filter (a chance level per group from 2000 random same-size sets against the passage's own partition, a proxy for the moved passages'). Requiring every moved passage's match to beat chance as well as the group's own floor keeps 87–91 % of the definition's records at steps 64–1000 and 93–97 % after: at the placed 90 % bar and not resolved by it (over 7 prompts the intervals straddle it; one passage carries 64–256). What holds: at init "moves" is mostly chance (step 0's 62 records halve), and the drop is about twice as large at 64–1000. Most groups whose floor is below chance still pass, intact. The stricter set is a candidate; the choice is the user's — `p10_cluster_function/status-10.md` §1.24
   - R8x, the exact check: the same test with each moved passage's own partition in place of the proxy. The proxy was close (exact in the median, a few records per step classified differently), and the stricter set keeps 0.88 and 0.89 of the definition's records at steps 128 and 1000, below the placed 90 % bar (93–98 % from 2000), so by the rule the drop holds and the stricter set is recommended as the definition; 7 prompts still cannot resolve the bar or the drop's size, and pooled over 64–1000 the stricter set keeps 0.905 — `p10_cluster_function/status-10.md` §1.25
+  - R9 / R1, the token-composition, co-membership and lexical-carry rows read again with the chance-aware definition (c3x) leading, c0–c3 reproducing R1's records exactly. R1 holds on it: 15 of 432 labels change from c3 to c3x, every one a value moving across the ±0.05 floor from within 0.04 of it, and the quoted claims keep their values to 0.01 (class co-membership +0.22, step 512's class effect beyond a lexical cluster +0.15). One rule cell changes: the trash-collection verdict reads against at 1000 as well as 2000 — `p10_cluster_function/status-10.md` §1.26
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -63,7 +64,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-08 · body `b1f07a07e9`
+- **Reviewed:** 2026-10-08 · body `4c952dff2a`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2027,6 +2028,72 @@ group could in principle differ, and the chance draws use it (*`/challenge-pr` o
 
 Re-run: `data/p10/reread_r8x_2026-10-08/run_r8x.sh [--steps …]` from the worktree root (CPU;
 resumes; `summary` at the end). Tests: `tests/test_p10_r8x_exact.py` (9).
+
+### 1.26 R9 / R1 on c3x — **R1 holds with c3x leading: 15 of 432 labels change from c3, each a value crossing the ±0.05 floor from within 0.04 of it; the quoted claims keep their values to 0.01; on the rules' own cells one label changes (§1.7's trash-collection verdict, "against" at 1000 as well as 2000)**
+
+**What.** `design-10.md` "R9" (rule `85c3e5e`, before any c3x reading; Blocked 27 (a), confirmed by
+the user 2026-10-08). `tools/run/p10_label_source.py extend` writes a new source,
+`data/p10/reread_r9_2026-10-08/labels/`: R0's step files plus **c3x** per layer (c3 with the groups
+R8x does not mark `c3x` moved to the rest) and the learned split at 143000. R1's three readers
+(`p10_token_composition`, `p10_comembership`, `p10_lexical_carry`) on all 15 columns of it
+(`r1/run_r1.sh`, CPU, BLAS threads at their default as R1, ~45 min under load);
+`tools/run/p10_r1_ladder.py --lead c3x --reproduce <R1 dir>` reads them.
+
+**Input.** R0's labels (`data/p10/reread_r0_2026-10-05/labels`), R8x's rows
+(`data/p10/reread_r8x_2026-10-08/rows`, `r8x.json` hash in each step file's `meta.extended`); 7 v1
+passages, 18 steps, L1–24. **First checks, all passed:** `extend` found R8x marking exactly c3's
+groups at every (step, passage, layer), every c3x group a c3 group of R8x's size; the new source's
+other columns equal R0's in all 30,408 (step, passage, layer, column) cells; c3x's counts are
+R8x's (step 0 29, 128 269 / 307 = 0.876, 1000 598 / 670 = 0.893); every c0–c3 record (and c3's arms
+and split) read on the new source has R1's summary exactly; the first c3x records were opened
+populated (readable 109 / 100 at 64 / 128, the source's) before the rest ran.
+
+**Primary.** c2 at steps 0–32 (as R1: c3x is readable on 8–34 of 168 records there), c3x from 64.
+Floor: 29 c3x records at step 0 (8 of 168 readable; c3: 62, 15).
+
+| row | primary = c0, all cells (R1 on c3) | rule's own cells (R1) | c3 → c3x labels changed (rule cells) |
+|---|---|---|---|
+| §1.7 | 39 / 54 (41) | 15 / 18 (16) | 2 of 36 (1) |
+| §1.9 | 169 / 255 (170) | 169 / 255 (170); literal 145 (144) | 7 of 180 (7) |
+| §1.10 | 230 / 306 (232) | 16 / 18 (16); literal 17 (17) | 6 of 216 (0) |
+
+**The 15 cells that change** (c3 → c3x, value; floor ±0.05, §1.10's levels ±0.05):
+
+| row | quantity, layer, step | c3 | c3x |
+|---|---|---|---|
+| §1.7 | class contrast, 1000 | 0 (−0.031) | − (−0.067) |
+| §1.7 | **verdict, 1000** (rule cell) | unclear | **against** |
+| §1.9 | copy_share L12 128 / L24 64 | above (+0.064) / as (+0.030) | as (+0.038) / above (+0.059) |
+| §1.9 | no_copy L12 16000 / 54000 | below (−0.072 / −0.056) | as (−0.016 / +0.003) |
+| §1.9 | adjacent L12 16000 / 54000 | above (+0.083) / as (+0.042) | as (+0.018) / above (+0.069) |
+| §1.9 | emb_pct_own L12 128 | below (−0.051) | as (−0.044) |
+| §1.10 | emb_given_class L12 128 | below (−0.051) | as (−0.045) |
+| §1.10 | emb_cross L24 128 / 1000 | above (+0.062) / as (+0.023) | as (+0.040) / above (+0.051) |
+| §1.10 | CGE40 − kNN40 L12 54000, L24 32000, mean 32000 | 0 (+0.040, +0.042, +0.047) | + (+0.058, +0.056, +0.051) |
+
+**The quoted claims (§1.15), on c3x:** class co-membership (same_class, mean over L1–24) +0.25 /
++0.27 / +0.22 at 512 / 2000 / 143000 (c3 +0.24 / +0.26 / +0.21); step 512's class effect beyond a
+matched lexical cluster +0.153 at L12, +0.170 mean (c3 +0.152, +0.164), ~0 trained at L12 (+0.035
+at 143000, both); rank does nothing trained (`freq` contrast within ±0.04 from 4000, both). The
+class contrast against trash collection is negative from 512 on both columns; the verdict reads
+"against" at 1000–2000 on c3x and at 2000 alone on c3.
+
+**Reading.** The chance-aware filter drops 2–12 % of c3's records at 64–1000 (R8x), and R1's rows
+barely notice: what changes is cells already near a placed floor, in both directions (8 cross
+outward, the verdict among them, 7 inward), and no quoted number moves by more than 0.01. So for R1 the c3 / c3x choice
+is immaterial; Blocked 27's question ("which column leads") does not change §1.15's reading.
+The one rule-cell change fills 1000 into the "against" window at 2000; it is a −0.031 → −0.067
+contrast, two placed floors apart only by being near one.
+
+**Does not.** Re-read R2–R7 on c3x (each its own PR, `design-10.md` "R9"); add a null for the
+c3 → c3x difference (the dropped groups are not random: R8x); read the arms on c3x (none built).
+7 passages, one seed.
+
+Re-run: `data/p10/reread_r9_2026-10-08/r1/run_r1.sh` from the worktree root (resumes), after
+`python tools/run/p10_label_source.py extend --labels <R0 labels> --r8x <R8x dir> --out <dir>/labels`
+and `summary --src <dir>/labels`; then `python tools/run/p10_r1_ladder.py --dir <dir>/r1 --labels
+<dir>/labels --lead c3x --reproduce <R1 dir> --reproduce-labels <R0 labels>`. Tests:
+`tests/test_p10_label_source.py` (c3x extend and refusals), `tests/test_p10_r1_ladder.py` (lead).
 
 ---
 

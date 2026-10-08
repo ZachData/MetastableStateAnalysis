@@ -126,6 +126,17 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a Parked item below.
 > *(Parked (R7), the own floor below chance: taken as R8, below.)*
 >
+> **R9 started, 2026-10-08: R1 on c3x done (`status-10.md` §1.26; its title is the summary).**
+> Blocked 27 (a), confirmed by the user ("Start Phase 10's c3x re-read"). Rule `design-10.md` "R9"
+> (`85c3e5e`, before any c3x reading): c3x appended to the ladder and primary, c2's step 0 its
+> baseline, each row's rule unchanged, the c3 → c3x cells beside. `p10_label_source extend` wrote
+> the c3x source (`data/p10/reread_r9_2026-10-08/labels`); R1's readers on all 15 columns
+> reproduce R1's c0–c3 records exactly. **R1 holds on c3x** (15 of 432 labels change, each a value
+> crossing a floor from within 0.04; quoted numbers move ≤ 0.01; §1.7's verdict "against" at 1000
+> too). **Next here: R9's R2 (F1, F12's gap, §1.5) on c3x**, then R2m, R3, R6 → R6w → R6f, R7, each
+> its own PR (`design-10.md` "R9"). The readers take `--labels <R9 labels> --column c3x`; each row's
+> ladder script needs R1's `--lead c3x` / `--reproduce` treatment.
+>
 > **R8x done, 2026-10-08 (`status-10.md` §1.25; its title is the summary).** Blocked 27 (c), the
 > user's: the exact check, rule `design-10.md` "R8x" (`ced45f5`, before any P > 0 label).
 > `tools/run/p10_r8x_exact.py`; output `data/p10/reread_r8x_2026-10-08/` (each EOD condition's
