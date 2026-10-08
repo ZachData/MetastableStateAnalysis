@@ -824,7 +824,11 @@ needs the user to enable it on GitHub.
   the rule was written. Also the rule asked β-robustness of a label whose null was drawn at one
   β only (caught after the first check, before any reading). Rule: **before a rule labels an
   object (wells, groups), check in the rule's own frame and parameters that the object exists,
-  and give "the null and the cloud agree exactly" its own label, not "mixed"**.
+  and give "the null and the cloud agree exactly" its own label, not "mixed"**. Same unit
+  (`/challenge-pr` on #164, finding 2): the matched Gaussian, put on the sphere after drawing,
+  scores a structureless cloud `Xe` up to +0.10 in trained cells, half the late raw value; the
+  previous instance's rule (a specificity test) was not applied to the new null. Rule unchanged,
+  applied: a structureless cloud reading ≈ 0 is now a test.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

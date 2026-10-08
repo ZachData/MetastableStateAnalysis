@@ -14,7 +14,7 @@
   - Splitting each block's update by a hooked pass, the MLP supplies most of the shared update and its shared part ascends too (24 of 31 windows by the rule fixed before output; the sink's value and the biases supply almost none); on the long passages attention's token-specific part never ascends the field in layers 1–22 and descends from step 256 on (v1 ascends at 8–32); the late token-specific ascent in L1–16 goes with the MLP's — `p1e_energy_field/status-1e.md` "U2's attention arm"
   - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000, in the sum and head by head; from 4000–8000 the sum over heads ascends while most heads still descend their own kernel, so the late ascent is a property of the sum, not of the heads; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - U2's reading is split by training stage (the user's decision): up to step 1000 the shared ascent is the MLP's and the token interactions descend their heads' kernels; from 2000 the shared ascent is attention's mean pull in the last layers, and from 4000 only the sum over heads follows its kernels, while most heads still descend their own — `p1e_energy_field/status-1e.md` "U2's per-head arm"
-  - At the measured β the field over the tokens has a single well in every trained layer band and step (one exception, the early layers at step 128); it breaks straight into many wells only at β ≈ 10–20, so the probe's few wells were another frame's. Its density is more uneven than a matched Gaussian cloud's at every step, init included, and is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
+  - At the measured β the field over the tokens has a single well in every trained layer band and step (one exception, the early layers at step 128); a few wells appear only at about twice that β and many by four times, so the probe's few wells were another frame's. Its density is more uneven than a matched Gaussian cloud's at every step, init included, even after correcting that comparison's own bias, and is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge; by the end of training only the last layers are more uneven than at init — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-08 · body `b5d64ff6cc`
+- **Reviewed:** 2026-10-08 · body `b0f4d26642`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -520,7 +520,9 @@ Gaussian's density at all three β). Producer `p1e_energy_field/u1_field.py`, re
 and wells as `.npz`, `run.sh`, `first_check.json`). **Checks:** stored rows unit, manifests
 carry the hash and step, targets and R8x's c3x rows index R0's labels (all 270 runs); first
 cell populated; its GPU float32 wells equal a CPU float64 run's at L4 / L12 / L20 (agreement
-1.0000); 0 unconverged trajectories in all 28,566 cells. Tests `tests/test_p1e_u1_field.py`
+1.0000), a check on one-well cells only (`/challenge-pr` on #164, finding 4), so repeated where
+there are several (`calib/wells_check.json`: 9, 312 and 4 wells at step 128 L4 β 5.6 / 10 and
+143000 L12 β 10, agreement 1.0 each); 0 unconverged trajectories in all 28,566 cells. Tests `tests/test_p1e_u1_field.py`
 (planted vMF groups → their wells; LOO and causal density against loops; the Gaussian draw's
 moments; AMI and purity at chance; the report's sign rule). ~35 s per long run, 85 min for the
 270 (GPU float32 mean shift, CPU float64 finish).
@@ -532,14 +534,20 @@ everywhere, L0 included. β 5.6: one, except L1–8 / L9–16 at 128 (`k_eff` 3.
 embedding) has a few wells at 3.5 on the long passages, 0–4000 (`k` 4, `k_eff` 1.8), one by
 143000. The matched Gaussians have one well too, so label (2) reads `Xw = 0` (the rule's "mixed")
 in 52 of 54 trained cells (L1–8: more wells at 128, leans at 64); label (4) is **not read**
-except L1–8 at 64–128 ("content", from the cells that have two wells), and the c3x purity on v1
-is not read at all. The placed merge tolerance (1e-3) changes no count: at 1e-4 and 1e-2 every
-cell's well count is the same (0 of 10,368 long and 9,072 v1 cells; the report's beside medians
-missed these counts until the key names were fixed after #164 opened). **The sweep** (L4 / L12 / L20, median `k_eff`): one well up to β 5.6 at every
-step but 128; at β 10, 1–8 (79 at L4, step 128); at 20, tens to hundreds (L20 at 143000 still
-1.3); at 50–100, near one per token. The landscape goes from one basin to shattered between β ≈ 6
-and 20, with no range of a few wells. **The probe's "2–4 wells" were the cloud-centred frame's**
-(`p10_cluster_function/handoff-10.md` Parked), not β's.
+except L1–8 at 64–128 ("content"; *weak, `/challenge-pr` on #164 finding 3:* its side wells hold
+2–4 % of the tokens, and a passage enters a band on any one layer with two wells), and the c3x
+purity on v1 is not read at all. The placed merge tolerance (1e-3) changes no count: at 1e-4 and
+1e-2 every cell's well count is the same (0 of 10,368 long and 9,072 v1 cells; the report's
+beside medians missed these counts until the key names were fixed after #164 opened). **The
+sweep** (L4 / L12 / L20 × 18 steps × 8 passages = 432 cells per β; no β between 5.6 and 10 or 10
+and 20): one well up to β 5.6 at every step but 128. **At β 10 a few wells is common:** 196 of
+432 cells have 2–20 (111 one, 125 more than 20; e.g. L12 2–6 at step 0, L20 2–26 at 512–1000,
+L12 1–14 at 143000), median `k_eff` 1–8 (79 at L4, step 128). At 20, 382 of 432 have more than 20
+(L20 at 143000 still `k_eff` 1.3); at 50–100, near one per token. *Corrected after `/challenge-pr`
+on #164, finding 1: the first text said "no range of a few wells".* So a few wells exist at
+β ≈ 10, 1.8× the measured interval's top (2.9× its 3.5), not at the measured β. **The probe's
+"2–4 wells" were the cloud-centred frame's** (`p10_cluster_function/handoff-10.md` Parked), not
+β's.
 
 **Density: lumpier than its Gaussian, and mostly the centroid.** Label (1), `sd(e) − sd(e_G)`:
 
@@ -550,9 +558,22 @@ and 20, with no range of a few wells. **The probe's "2–4 wells" were the cloud
 | 5.6 | 50 / 2 / 0 / 2 | lumpier in every band |
 
 β-robust; T1–T3 the same (53 of 54 at 3.5); v1 41 of 54 (smoother in 4). **Step 0 carries it, so
-it is not called learned** (the rule). Smoother only at step 16, L9–16 and L17–23. What training
-changes is the size (`Xe` median, β 3.5, L1–8 / L9–16 / L17–23): step 0 +0.10 / +0.04 / +0.02;
-32–256 up to +0.16 / +0.11 / +0.20; 143000 +0.11 / +0.05 / +0.19. **The density is the β → 0
+it is not called learned** (the rule). Smoother only at step 16, L9–16 and L17–23.
+
+**(1′), calibrated** (*`/challenge-pr` on #164, finding 2; rule `a809dc1` before it was computed;
+`p1e_energy_field/u1_calib.py`, output `calib/` beside the records, `calib/report.txt`*). Putting
+the matched Gaussian on the sphere biases `Xe` up once training concentrates the covariance: a
+structureless cloud (a null draw scored against its own Gaussians) reads `bias` ≈ 0 at steps
+0–16 and up to +0.04 / +0.03 / +0.10 (L1–8 / L9–16 / L17–23, β 3.5) at 143000, about half the raw
+`Xe` late in training. Against it, `Xe′ = Xe − bias` still reads **lumpier** in 42 + 5 leans /
+49 / 50 of 54 trained cells at β 1.6 / 3.5 / 5.6 (v1: 54 / 54 / 53 + 1), and step 0 still carries
+it (bias ≈ 0 there), so the label and "not learned" stand. **What the bias changes is the size
+after init** (`Xe′` median, β 3.5, L1–8 / L9–16 / L17–23): step 0 +0.10 / +0.04 / +0.02; a peak at
+32–256 up to +0.15 / +0.09 / +0.13; 143000 +0.06 / +0.03 / +0.09. So by the end L1–16 are *less*
+lumpy than at init and only L17–23 more; the raw `Xe`'s "143000 +0.11 / +0.05 / +0.19" was half
+bias. Checks: the device's bias against CPU float64 on the first cell, max |Δ| 6.8e-9; test
+`test_calibrated_lumpiness_is_zero_on_a_structureless_cloud` (the bias predicts a structureless
+draw's score). **The density is the β → 0
 term:** R² of `e_i` on `⟨u_i, ū⟩` is 0.66–1.00 in every trained band at steps 0, 32, 128, 1000,
 8000, 143000, except L1–8 at 128 (0.33, where the two wells are). **Dense** tokens are
 punctuation and whitespace, **void** are word starts and continuations (L9–16, pooled over
@@ -582,6 +603,9 @@ the other threads" in the design): a well is not a better unit than c3x at this 
   layers) / whether a well is a unit anywhere near β, and U3 there (Blocked 30 (b)).
 - The two wells in L1–8 at step 128, the one trained exception / free, from the saved labels /
   what they are, beside U2's 32–256 window.
+- Whether one well at β 3.5 is what the theory predicts at this n (~2,000) and d (1,024)
+  (`/challenge-pr` on #164, finding 5) / a reading of 2312.10794's single-cluster thresholds,
+  not done / would make Blocked 30 (a) the theory's expectation rather than a null result.
 
 ## Corrections received
 
