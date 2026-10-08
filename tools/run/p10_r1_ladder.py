@@ -38,6 +38,13 @@ wording read literally; added after `/challenge-pr` on #146).
 Checks before any reading: every record names the same label source and summary
 sha256, and c3's readable counts equal the label source's own ``summary.json``.
 
+``--lead c3x`` (R9, `design-10.md` "R9"): c3x is appended to the ladder after c3 and is the
+primary column (c2 where under half its records are readable), its learned split beside;
+its Δ rows take c2's step 0, as c3's. Beside, per row, the cells where c3x's label differs
+from c3's at steps both read on their own column (``c3_to_c3x``): what the column changed.
+``--reproduce <R1 dir>``: refuse unless every c0–c3 record (and c3's arms and split) read on
+this source has the same summary as that run's (R9's first check).
+
 Tier 1: exploratory, unregistered. Run:
     python tools/run/p10_r1_ladder.py --dir <R1 out> --labels <R0 labels>
 """
@@ -61,7 +68,9 @@ from tools.run.p10_token_composition import CONTRAST_FLOOR
 LADDER = ("c0", "c0f", "c1", "c1c", "c2a", "c2b", "c2", "c3")
 ARMS = ("c3_c4", "c3_r2")
 LEARNED = ("c3_learned", "c3_unlearned")
-ON_C2_BASE = ("c3", *ARMS, *LEARNED)
+ON_C2_BASE = ("c3", *ARMS, *LEARNED, "c3x", "c3x_learned", "c3x_unlearned")
+#: R9's lead column: the ladder gains it after c3, and its own learned split.
+LEADS = {"c3": (LADDER, LEARNED), "c3x": (LADDER + ("c3x",), LEARNED + ("c3x_learned", "c3x_unlearned"))}
 LAYERS = (12, 24, "mean")
 READERS = {"tc": "§1.7", "cm": "§1.9", "lc": "§1.10"}
 CM_READ = tuple(p for p in PROPS if p not in NOT_READ)
@@ -89,7 +98,7 @@ def delta_word(d: Optional[float]) -> str:
             else "below step 0" if d < -DELTA_FLOOR else "as step 0")
 
 
-def load(dirpath: Path, labels: Path) -> Dict:
+def load(dirpath: Path, labels: Path, lead: str = "c3") -> Dict:
     recs: Dict = {}
     want_sha = None
     for f in sorted(dirpath.glob("*_*.json")):
@@ -106,20 +115,46 @@ def load(dirpath: Path, labels: Path) -> Dict:
         recs.setdefault(r, {})[col] = {"summary": _keys(d["summary"]),
                                        "records": _keys(d["records_readable"])}
     for r in READERS:
-        miss = [c for c in (*LADDER, *ARMS, *LEARNED) if c not in recs.get(r, {})]
+        miss = [c for c in (*LEADS[lead][0], *ARMS, *LEADS[lead][1]) if c not in recs.get(r, {})]
         if miss:
             raise LadderError(f"{r}: no record for {miss}")
     summ = json.loads((labels / "summary.json").read_text())
     for r in READERS:
-        for s, rec in recs[r]["c3"]["records"].items():
-            src = summ[f"step{s}"]["columns"]["c3"]
-            if (rec["n"], rec["readable"]) != (src["records"], src["readable"]):
-                raise LadderError(f"{r} c3 step {s}: readable {rec} against the source's {src}")
-    return {"recs": recs, "summary": summ, "summary_sha256": want_sha}
+        for col in sorted({"c3", lead}):
+            for s, rec in recs[r][col]["records"].items():
+                src = summ[f"step{s}"]["columns"][col]
+                if (rec["n"], rec["readable"]) != (src["records"], src["readable"]):
+                    raise LadderError(f"{r} {col} step {s}: readable {rec} against the source's {src}")
+    return {"recs": recs, "summary": summ, "summary_sha256": want_sha, "lead": lead}
 
 
-def primary(recs: Dict) -> Dict[int, str]:
-    return {s: ("c3" if 2 * r["readable"] >= r["n"] else "c2") for s, r in recs["tc"]["c3"]["records"].items()}
+def primary(recs: Dict, lead: str = "c3") -> Dict[int, str]:
+    return {s: (lead if 2 * r["readable"] >= r["n"] else "c2") for s, r in recs["tc"][lead]["records"].items()}
+
+
+def reproduce(data: Dict, other: Dict) -> list:
+    """Columns whose record summaries differ from another run's (R9's first check); [] if none."""
+    bad = []
+    for r in READERS:
+        for col in (*LADDER, *ARMS, *LEARNED):
+            if data["recs"][r][col]["summary"] != other["recs"][r][col]["summary"]:
+                bad.append(f"{r}_{col}")
+    return bad
+
+
+def c3_to_c3x(cols: Dict, prim_c3: Dict[int, str], prim_x: Dict[int, str], skip0: bool) -> Dict:
+    """Cells where c3x's label differs from c3's, at steps both read on their own column."""
+    n, diff = 0, []
+    for q, by_step in cols["c3"].items():
+        for s, (v3, lab3) in by_step.items():
+            if (skip0 and s == 0) or prim_c3.get(s) != "c3" or prim_x.get(s) != "c3x":
+                continue
+            n += 1
+            vx, labx = cols["c3x"].get(q, {}).get(s, (None, "absent"))
+            if labx != lab3:
+                diff.append({"quantity": q[0], "layer": q[1], "step": s, "c3": lab3, "c3x": labx,
+                             "c3_value": v3, "c3x_value": vx})
+    return {"n": n, "differ": diff}
 
 
 # ---------------------------------------------------------------------------
@@ -174,8 +209,9 @@ def row_cells(data: Dict, reader: str, literal: bool = False) -> Dict[str, Dict]
     """``literal``: every column against c2's step 0, `design-10.md`'s wording read literally;
     default c0–c2 against their own step 0 (the docstring's THE BASELINE)."""
     recs = data["recs"][reader]
+    ladder, learned = LEADS[data.get("lead", "c3")]
     cols = {}
-    for col in (*LADDER, *ARMS, *LEARNED):
+    for col in (*ladder, *ARMS, *learned):
         if reader == "tc":
             cols[col] = tc_cells(recs[col])
         else:
@@ -195,7 +231,7 @@ RULE_CELLS = {
 }
 
 
-def holds(cols: Dict, prim: Dict[int, str], skip0: bool, keep=None) -> Dict:
+def holds(cols: Dict, prim: Dict[int, str], skip0: bool, keep=None, ladder=LADDER) -> Dict:
     """Per (quantity, layer, step): primary vs c0, and the first column that changed it;
     ``skip0`` leaves out step 0 (a Δ row, 0 there by construction); ``keep(quantity, layer,
     step)`` restricts the cells (`RULE_CELLS`)."""
@@ -204,20 +240,20 @@ def holds(cols: Dict, prim: Dict[int, str], skip0: bool, keep=None) -> Dict:
         for s, (_, lab0) in by_step.items():
             if (skip0 and s == 0) or (keep is not None and not keep(q[0], q[1], s)):
                 continue
-            pc = prim.get(s, "c3")
+            pc = prim.get(s, ladder[-1])
             lab = cols[pc].get(q, {}).get(s, (None, "absent"))[1]
             if lab == lab0:
                 agree += 1
                 continue
-            labs = [cols[c].get(q, {}).get(s, (None, "absent"))[1] for c in LADDER]
-            first = LADDER[next(i for i, x in enumerate(labs) if x != lab0)]
+            labs = [cols[c].get(q, {}).get(s, (None, "absent"))[1] for c in ladder]
+            first = ladder[next(i for i, x in enumerate(labs) if x != lab0)]
             # c0's label differs from the primary's, so some column at or before the primary does
-            stay = LADDER[1 + max(i for i in range(LADDER.index(pc) + 1) if labs[i] != lab)]
+            stay = ladder[1 + max(i for i in range(ladder.index(pc) + 1) if labs[i] != lab)]
             changed[first] += 1
             settled[stay] += 1
             cells.append({"quantity": q[0], "layer": q[1], "step": s, "primary": pc, "c0": lab0,
                           "label": lab, "first_changed_at": first, "settled_at": stay,
-                          "ladder": dict(zip(LADDER, labs))})
+                          "ladder": dict(zip(ladder, labs))})
     return {"n": agree + len(cells), "agree": agree, "first_changed_at": dict(changed),
             "settled_at": dict(settled), "differ": cells}
 
@@ -247,11 +283,11 @@ def primary_labels(cols: Dict, prim: Dict[int, str]) -> Dict:
 def against(data: Dict, other: Dict) -> Dict:
     """Per row, the primary labels that differ between two R1 runs on the same source
     (e.g. another BLAS thread count): the size of that run-to-run noise at the reading."""
-    prim = primary(data["recs"])
+    prim = primary(data["recs"], data.get("lead", "c3"))
     out = {}
     for reader, row in READERS.items():
         a = primary_labels(row_cells(data, reader), prim)
-        b = primary_labels(row_cells(other, reader), primary(other["recs"]))
+        b = primary_labels(row_cells(other, reader), primary(other["recs"], other.get("lead", "c3")))
         diff = sorted(f"{q[0]}|{q[1]}|{st}" for (q, st) in a if a[(q, st)] != b.get((q, st)))
         out[row] = {"n": len(a), "differ": diff}
     return out
@@ -268,23 +304,36 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--out", type=Path, default=None, help="default <dir>/ladder.json")
     ap.add_argument("--against", type=Path, default=None,
                     help="another R1 run's records on the same source: count primary labels that differ")
+    ap.add_argument("--lead", choices=tuple(LEADS), default="c3", help="the primary column (R9: c3x)")
+    ap.add_argument("--reproduce", type=Path, default=None, metavar="R1_DIR",
+                    help="refuse unless c0–c3's records equal that R1 run's (with --reproduce-labels)")
+    ap.add_argument("--reproduce-labels", type=Path, default=None, help="the label source that run read")
     args = ap.parse_args(argv)
-    data = load(args.dir, args.labels)
-    prim = primary(data["recs"])
-    floor = data["summary"]["step0"]["columns"]["c3"]
-    res = {"label_source": str(args.labels), "summary_sha256": data["summary_sha256"],
-           "primary": prim, "floor": {"c3_group_layer_records_step0": floor["groups"],
-                                      "c3_readable_step0": [floor["readable"], floor["records"]]},
+    data = load(args.dir, args.labels, args.lead)
+    ladder, _ = LEADS[args.lead]
+    if args.reproduce is not None:
+        bad = reproduce(data, load(args.reproduce, args.reproduce_labels or args.labels))
+        if bad:
+            raise LadderError(f"refusing: records differ from {args.reproduce}: {bad}")
+        print(f"reproduces {args.reproduce}: every c0–c3 record summary equal")
+    prim = primary(data["recs"], args.lead)
+    prim_c3 = primary(data["recs"], "c3")
+    floor = data["summary"]["step0"]["columns"][args.lead]
+    res = {"label_source": str(args.labels), "summary_sha256": data["summary_sha256"], "lead": args.lead,
+           "reproduces": str(args.reproduce) if args.reproduce else None,
+           "primary": prim, "floor": {f"{args.lead}_group_layer_records_step0": floor["groups"],
+                                      f"{args.lead}_readable_step0": [floor["readable"], floor["records"]]},
            "rows": {}}
     for reader, row in READERS.items():
         cols = row_cells(data, reader)
         skip0 = reader != "tc"
-        h = holds(cols, prim, skip0)
+        h = holds(cols, prim, skip0, ladder=ladder)
         lit = row_cells(data, reader, literal=True)
-        hr, hl, hlr = (holds(cols, prim, skip0, RULE_CELLS[reader]), holds(lit, prim, skip0),
-                       holds(lit, prim, skip0, RULE_CELLS[reader]))
+        hr, hl, hlr = (holds(cols, prim, skip0, RULE_CELLS[reader], ladder),
+                       holds(lit, prim, skip0, ladder=ladder),
+                       holds(lit, prim, skip0, RULE_CELLS[reader], ladder))
         res["rows"][row] = {"holds": h, "holds_rule": hr, "holds_literal": hl, "holds_literal_rule": hlr,
-                            "arms": arms_differ(cols, prim),
+                            "arms": arms_differ(cols, prim_c3),
                             "columns": {c: {f"{q[0]}|{q[1]}": {s: list(v) for s, v in by.items()}
                                             for q, by in cc.items()} for c, cc in cols.items()}}
         print(f"\n{row}: {h['agree']} of {h['n']} labels agree, primary vs c0; the rest first changed at "
@@ -293,14 +342,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
               f"(design-10 literally): {hl['agree']} of {hl['n']}, rule cells {hlr['agree']} of {hlr['n']}")
         for a, x in res["rows"][row]["arms"].items():
             print(f"  arm {a}: differs from c3 in {len(x['differ'])} of {x['n']}")
+        if args.lead == "c3x":
+            x = res["rows"][row]["c3_to_c3x"] = c3_to_c3x(cols, prim_c3, prim, skip0)
+            rule = [d for d in x["differ"] if RULE_CELLS[reader](d["quantity"], d["layer"], d["step"])]
+            res["rows"][row]["c3_to_c3x_rule"] = rule
+            print(f"  c3 → c3x: {len(x['differ'])} of {x['n']} labels change; on the rule's own cells {len(rule)}")
     if args.against is not None:
         res["against"] = {"dir": str(args.against), "rows": against(data, load(args.against, args.labels))}
         for row, x in res["against"]["rows"].items():
             print(f"against {args.against.name}: {row} {len(x['differ'])} of {x['n']} primary labels differ")
     out = args.out or args.dir / "ladder.json"
     out.write_text(json.dumps(res, indent=1) + "\n")
-    print(f"\nprimary: c2 at steps {[s for s, c in prim.items() if c == 'c2']}, c3 elsewhere; floor "
-          f"{floor['groups']} c3 records at step 0 ({floor['readable']} of {floor['records']} readable)")
+    print(f"\nprimary: c2 at steps {[s for s, c in prim.items() if c == 'c2']}, {args.lead} elsewhere; floor "
+          f"{floor['groups']} {args.lead} records at step 0 ({floor['readable']} of {floor['records']} readable)")
     print(f"wrote {out}")
     return 0
 

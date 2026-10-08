@@ -52,6 +52,13 @@ not the member sets of unit 1's P = 0 groups: the filters are unit 1's, so the
 groups must be its groups. `load_column` refuses a refused or missing record,
 an unknown column, and ``learned`` off step 143000.
 
+``extend`` (R9, `design-10.md` "R9"; Blocked 27 (a)) writes a new source: R0's step files with one
+more column per layer, **c3x** = c3 minus the groups R8x's rows (`p10_r8x_exact.py`) do not mark
+``c3x`` (each EOD condition's J >= max(J0, its own chance level)), every other column unchanged;
+``c3x_learned`` / ``c3x_unlearned`` at step 143000 as c3's split. It refuses unless R8x's rows
+mark exactly c3's groups ``c3``, every ``c3x`` row is a c3 group, and each such group's member
+count is the row's ``size``.
+
 Run ``build`` per step as unit 1's records arrive (resumable: a step's file is
 skipped if present), then ``summary`` (counts per column, the readable share,
 and, given ``--definitions``, c3's group-layer records at steps 0 and 143000
@@ -89,6 +96,9 @@ from p1d_cluster_ensemble.move_text import (FLOOR_ZERO, MODELS, V1_PASSAGES, ban
                                             stage0_runs)
 
 COLUMNS = ("c0", "c0f", "c1", "c1c", "c2a", "c2b", "c2", "c3", "c3_c4", "c3_r2")
+#: Columns ``extend`` adds to a built source (R9); absent from R0's own.
+EXTENDED = ("c3x",)
+ALL_COLUMNS = COLUMNS + EXTENDED
 LAYERS = tuple(range(1, 25))
 LEARNED_STEP = "step143000"
 #: Columns over every stored position; the rest are over the kept positions.
@@ -368,8 +378,8 @@ def load_column(src, step: str, prompt: str, layer: int, column: str,
     only (its domain). Refuses an unknown column, ``learned`` (read
     `load_learned`), and a refused or missing record.
     """
-    if column not in COLUMNS:
-        raise LabelSourceError(f"unknown column {column!r}; one of {COLUMNS}")
+    if column not in ALL_COLUMNS:
+        raise LabelSourceError(f"unknown column {column!r}; one of {ALL_COLUMNS}")
     d = (cache if cache is not None else {}).get(step) or load_step(src, step)
     if cache is not None:
         cache[step] = d
@@ -379,6 +389,8 @@ def load_column(src, step: str, prompt: str, layer: int, column: str,
     if str(layer) not in p["layers"]:
         raise LabelSourceError(f"{step}/{prompt}/L{layer} refused or absent: "
                                f"{p['refused_layers'].get(str(layer), 'absent')}")
+    if column not in p["layers"][str(layer)]:
+        raise LabelSourceError(f"{step}/{prompt}/L{layer}: no {column} in {src} (written by `extend`)")
     lab = np.asarray(p["layers"][str(layer)][column], dtype=int)
     pos = np.arange(p["n_positions"]) if column in ALL_POSITIONS else np.asarray(p["kept"], dtype=int)
     if lab.size != pos.size:
@@ -402,9 +414,12 @@ def load_learned(src, step: str, prompt: str, layer: int) -> Dict[int, bool]:
 
 #: A position outside a column's domain (not kept). −1 stays "kept, in no group".
 OUTSIDE = -2
-#: c3 split by unit 2's learned bar (step 143000 only): the other groups' members join the rest.
+#: c3 (and c3x, R9) split by unit 2's learned bar (step 143000 only): the other groups' members
+#: join the rest. ``learned`` is keyed by c3's ids, and c3x's groups are c3 groups.
+SPLITS = {"c3_learned": ("c3", True), "c3_unlearned": ("c3", False),
+          "c3x_learned": ("c3x", True), "c3x_unlearned": ("c3x", False)}
 LEARNED_SPLIT = ("c3_learned", "c3_unlearned")
-READER_COLUMNS = COLUMNS + LEARNED_SPLIT
+READER_COLUMNS = ALL_COLUMNS + tuple(SPLITS)
 
 
 def add_reader_args(ap: argparse.ArgumentParser) -> None:
@@ -427,7 +442,7 @@ def reader_input(src, column: str) -> Dict:
     src = Path(src)
     if column not in READER_COLUMNS:
         raise LabelSourceError(f"unknown column {column!r}; one of {READER_COLUMNS}")
-    split = column in LEARNED_SPLIT
+    split = column in SPLITS
     steps = [LEARNED_STEP] if split else sorted(
         (s for s in MODELS if (src / f"{s}.json").exists()), key=lambda s: int(s.removeprefix("step")))
     if not steps:
@@ -447,10 +462,10 @@ def reader_input(src, column: str) -> Dict:
             runs[(n_step, prompt)] = Path(p["stage0_run"])
             layers = {}
             for L in LAYERS:
-                pos, lab = load_column(src, step, prompt, L, "c3" if split else column, cache)
+                pos, lab = load_column(src, step, prompt, L, SPLITS[column][0] if split else column, cache)
                 if split:
                     lrn = {int(k): v for k, v in p["layers"][str(L)]["learned"].items()}
-                    want = column == "c3_learned"
+                    want = SPLITS[column][1]
                     lab = np.where([x >= 0 and lrn[int(x)] == want for x in lab], lab, -1)
                 full = np.full(p["n_positions"], OUTSIDE, dtype=int)
                 full[pos] = lab
@@ -470,7 +485,9 @@ def step_summary(d: Dict) -> Dict:
     """Per column: group-layer records by band, records (prompt, layer) readable, and refusals."""
     out = {"refused_prompts": sorted(d["refused"]),
            "refused_layers": sum(len(p["refused_layers"]) for p in d["prompts"].values()), "columns": {}}
-    for col in COLUMNS:
+    present = [c for c in ALL_COLUMNS
+               if all(c in cols for p in d["prompts"].values() for cols in p["layers"].values())]
+    for col in present:
         groups, n_rec, n_read = Counter(), 0, 0
         for p in d["prompts"].values():
             kept_n = len(p["kept"])
@@ -550,6 +567,7 @@ def summary(argv: Optional[Sequence[str]] = None) -> int:
         c = v["columns"]
         print(f"{step:>11s} " + " ".join(f"{c[x]['groups']:6d}" for x in COLUMNS)
               + f"   {c['c2']['readable']} / {c['c3']['readable']} of {c['c3']['records']}"
+              + (f"; c3x {c['c3x']['groups']} groups, {c['c3x']['readable']} readable" if "c3x" in c else "")
               + (f"  refused {v['refused_prompts']} layers {v['refused_layers']}"
                  if v["refused_prompts"] or v["refused_layers"] else ""))
     if "definitions_check" in res:
@@ -559,9 +577,65 @@ def summary(argv: Optional[Sequence[str]] = None) -> int:
     return status
 
 
+def c3x_layer(cols: Dict, rows: Sequence[Dict], where: str) -> List[int]:
+    """c3x over the kept positions: c3's labels with the groups R8x does not mark ``c3x`` moved to −1."""
+    lab = np.asarray(cols["c3"], dtype=int)
+    c3_ids = set(lab[lab >= 0].tolist())
+    marked = {r["id"] for r in rows if r["c3"]}
+    if marked != c3_ids:
+        raise LabelSourceError(f"{where}: R8x marks c3 groups {sorted(marked)}, the source's c3 holds {sorted(c3_ids)}")
+    keep = set()
+    for r in rows:
+        if r["c3x"]:
+            if r["id"] not in c3_ids:
+                raise LabelSourceError(f"{where}: R8x's c3x group {r['id']} is not a c3 group")
+            if int((lab == r["id"]).sum()) != r["size"]:
+                raise LabelSourceError(f"{where}: c3x group {r['id']} has {int((lab == r['id']).sum())} "
+                                       f"members here, R8x's size {r['size']}")
+            keep.add(r["id"])
+    return np.where(np.isin(lab, sorted(keep)), lab, -1).tolist()
+
+
+def extend(argv: Optional[Sequence[str]] = None) -> int:
+    ap = argparse.ArgumentParser(prog="p10_label_source extend")
+    ap.add_argument("--labels", type=Path, required=True, help="R0's label source")
+    ap.add_argument("--r8x", type=Path, required=True, help="R8x's output dir (rows/<step>/<prompt>.json)")
+    ap.add_argument("--out", type=Path, required=True)
+    args = ap.parse_args(argv)
+    if args.out.resolve() == args.labels.resolve():
+        raise SystemExit("refusing: --out is the source itself")
+    args.out.mkdir(parents=True, exist_ok=True)
+    r8x_sha = _sha(args.r8x / "r8x.json")
+    for step in MODELS:
+        f = args.labels / f"{step}.json"
+        if not f.exists():
+            continue
+        d = json.loads(f.read_text())
+        if d["refused"]:
+            raise SystemExit(f"refusing: {step} has refused prompts {sorted(d['refused'])}")
+        n = [0, 0]
+        for prompt, p in d["prompts"].items():
+            rf = args.r8x / "rows" / step / f"{prompt}.json"
+            if not rf.exists():
+                raise SystemExit(f"refusing: no R8x rows for {step}/{prompt}")
+            by_layer: Dict[int, List[Dict]] = {}
+            for r in json.loads(rf.read_text())["rows"]:
+                by_layer.setdefault(int(r["layer"]), []).append(r)
+            for L, cols in p["layers"].items():
+                cols["c3x"] = c3x_layer(cols, by_layer.get(int(L), []), f"{step}/{prompt}/L{L}")
+                lab = np.asarray(cols["c3x"])
+                n[0] += len(set(np.asarray(cols["c3"])[np.asarray(cols["c3"]) >= 0].tolist()))
+                n[1] += len(set(lab[lab >= 0].tolist()))
+        d["meta"]["extended"] = {"from": str(args.labels), "from_sha256": _sha(f), "r8x": str(args.r8x),
+                                 "r8x_sha256": r8x_sha, "git": _git_head(), "columns": list(EXTENDED)}
+        (args.out / f"{step}.json").write_text(json.dumps(d) + "\n")
+        print(f"{step}: c3 {n[0]} group-layer records, c3x {n[1]}", flush=True)
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    cmds = {"build": build, "summary": summary}
+    cmds = {"build": build, "summary": summary, "extend": extend}
     if not argv or argv[0] not in cmds:
         print(f"usage: p10_label_source {{{','.join(cmds)}}} ...", file=sys.stderr)
         return 2
