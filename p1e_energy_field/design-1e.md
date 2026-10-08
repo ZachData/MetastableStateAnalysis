@@ -161,6 +161,31 @@ dynamics). No forward pass. Everything not named here is the block arm's rule.
 | not computed | inner products between well centres or any design / Gegenbauer statistic of centres or cloud, `|ū|` or the mean pairwise inner product (P-S1 fence); step lengths (P-γ); per-head anything |
 | **(1′) calibrated lumpiness** (beside; *added 2026-10-08 after the output, `/challenge-pr` on #164, finding 2; fixed before it was computed*) | putting the matched Gaussian on the sphere shrinks its density spread once the covariance is concentrated, so `Xe` > 0 for a cloud with no structure beyond its moments. Per cell and β: 4 **null clouds** `Y_k` (matched Gaussians of the targets, seed `SEED + 1`), each scored as the data against 4 matched Gaussians of its own; `bias = mean_k [sd(e_{Y_k}) − mean_j sd(e_{G_j(Y_k)})]`; **`Xe′ = Xe − bias`**, labelled by the same sign rule (*lumpier / smoother than a structureless cloud*), step 0 beside. GPU float32 Grams; the first cell's `bias` against CPU float64 within 1e-4 (refuse). `Xe` and label (1) stay as recorded. *Finding 4, same commit:* the GPU-against-CPU wells check repeated where there are several wells (`wiki_paragraph_long`, step 128 L4 at β 5.6 and 10, step 143000 L12 at β 10), same ≥ 99.9 % bar |
 
+## U1 beside: β ≈ 10 and the cloud-centred frames, the rule (fixed 2026-10-08, before any output)
+
+*User, 2026-10-08, after #165 merged with Blocked 30 (a) confirmed: "work on all three", i.e. (a)
+stands and (b) and (c) are read **beside** it.* Both choose a β or a frame where wells were seen,
+the placed-bar problem "Blocked 30 decided" named, so neither replaces U1's reading at the
+measured β; each is labelled as chosen. Everything not named here is U1's rule (cells, tokens,
+targets, field, density, wells, what the wells are, nulls, labels, first checks), with one choice
+changed per run.
+
+| run | the one choice changed | β (primary; beside) | sweep |
+|---|---|---|---|
+| **(b) β 10** | β: **10**, the sweep's one value with a few wells in many cells (196 of 432 with 2–20); **7 and 14** beside (÷ and × √2, placed: no interval is measured here) | 10; 7, 14 | none (U1's sweep stands) |
+| **(c) centred** | frame: **`v_i = unit(u_i − ū)`**, `u_i` U1's unit LN1 rows, `ū` their mean over the target set (each set its own `ū`), applied to every stored position (the causal density's sources) | 3.5; 1.6, 5.6 | U1's, at L4 / 12 / 20 |
+| **(c′) raw centred** (beside (c)) | frame: **`unit(x_i − x̄)`** on the stored residual `x` (no LN1), `x̄` over the target set: the 2026-10-06 probe's frame, so its "2–4 wells" are read with U1's rule on every cell | 3.5; 1.6, 5.6 | U1's |
+
+| | |
+|---|---|
+| nulls | U1's matched Gaussians of the **rows read** (the centred rows in (c), (c′)); their wells at the run's primary β |
+| labels | U1's (1)–(4), read at the run's primary β where U1 reads 3.5; (1) and (3) β-robust if both beside β give the same label; the c3x purity on v1 at the primary β |
+| caveats, fixed now | (c), (c′): β is not measured in a centred frame, so 3.5 there is the measured value carried over, not measured. M6: in a centred frame the subsphere ⊥ span is a near-flat floor; mean shift from the targets stays in their span and does not see it. (b): `e_i` at β 10 is dominated by each token's nearest neighbours (M5: a Gaussian kernel of width `1/√10` ≈ 0.32 in chord) |
+| first checks | U1's, the first cell's GPU wells against CPU float64 in the run's frame at its primary β; records carry `opts` (frame, β set, primary β, sweep), and a resume refuses a record read with other `opts` |
+| not computed | (1′)'s calibration (U1's bias is for 3.5 in β's frame; not carried over); U1's fences |
+
+U3 at β 10, if (b) finds wells to join, gets its own rule before its output.
+
 ## Fences (registered predictions and the registry)
 
 | registered | what 1e will not compute before it is scored, or the user decides |

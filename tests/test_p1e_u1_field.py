@@ -122,3 +122,32 @@ def test_calibrated_lumpiness_is_zero_on_a_structureless_cloud(spec):
         g = [u1.density((lambda Y: Y @ Y.T)(u1.gaussian_draw(U, rng)), 1.6).std() for _ in range(4)]
         raw.append(u1.density(U @ U.T, 1.6).std() - np.mean(g))
     assert abs(np.mean(raw) - bias) < 0.015
+
+
+def test_frames_centre_on_the_target_set():
+    """`design-1e.md` "U1 beside": (c) centres U1's unit LN1 rows, (c′) the raw residual, on the targets."""
+    rng = np.random.default_rng(5)
+    X = rng.normal(size=(30, 12)) * 3 + 1.0
+    ln1 = {"w": np.ones((1, 12)), "b": np.zeros((1, 12)), "eps": 1e-5}
+    t = np.arange(4, 30)
+    U = u1.frame_rows(X, ln1, 0, t, "unit")
+    C = u1.frame_rows(X, ln1, 0, t, "centred")
+    R = u1.frame_rows(X, ln1, 0, t, "raw_centred")
+    ref = U - U[t].mean(axis=0)
+    assert np.allclose(C, ref / np.linalg.norm(ref, axis=1, keepdims=True))
+    ref = X - X[t].mean(axis=0)
+    assert np.allclose(R, ref / np.linalg.norm(ref, axis=1, keepdims=True))
+    assert np.allclose(np.linalg.norm(C, axis=1), 1) and np.allclose(np.linalg.norm(R, axis=1), 1)
+    with pytest.raises(ValueError):
+        u1.frame_rows(X, ln1, 0, t, "nope")
+
+
+def test_resume_refuses_a_record_read_with_other_options(tmp_path):
+    rec = tmp_path / "records" / "long" / "step0_p.json"
+    rec.parent.mkdir(parents=True)
+    rec.write_text('{"code": "c", "opts": {"frame": "centred", "betas": [3.5], "primary_beta": 3.5, "sweep": true}}')
+    job = ("long", "0", "p", tmp_path, "rev", {}, None)
+    assert u1._job(job, tmp_path, tmp_path, "c", "cpu",
+                   {"frame": "centred", "betas": [3.5], "primary_beta": 3.5, "sweep": True}).startswith("have")
+    with pytest.raises(SystemExit, match="read with"):
+        u1._job(job, tmp_path, tmp_path, "c", "cpu", u1.default_opts())

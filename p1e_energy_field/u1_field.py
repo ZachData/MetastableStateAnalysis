@@ -19,6 +19,8 @@ Not computed (fences): inner products between well centres, any design statistic
 mean pairwise inner product (P-S1); step lengths (P-γ). Tier 1: exploratory, unregistered.
     python -m p1e_energy_field.u1_field run --runs <p1e_long8 dir> --r0 <R0 labels> \
         --r8x <R8x dir> --out <dir> [--device cuda|cpu] [--first-only]
+        [--frame unit|centred|raw_centred] [--betas 7 10 14 --primary-beta 10] [--no-sweep]
+The frame and β options are the beside runs (`design-1e.md` "U1 beside"); the defaults are U1's.
     python -m p1e_energy_field.u1_field report --out <dir>
 """
 
@@ -53,6 +55,9 @@ MAX32, MAX64 = 2000, 5000
 POS_BINS, OPEN_K, N_PERM_PURITY = 8, 64, 200
 UNIT_TOL, CONVERGED_MIN, AGREE_MIN = 1e-4, 0.99, 0.999
 CHECK_LAYERS = (4, 12, 20)
+#: ``unit``: U1's unit LN1 rows; ``centred``: those rows less their mean over the target set, unit;
+#: ``raw_centred``: the stored residual less its mean over the target set, unit (the probe's).
+FRAMES = ("unit", "centred", "raw_centred")
 FIRST = ("143000", "wiki_paragraph_long")
 
 
@@ -247,7 +252,7 @@ def decile_mix(e: np.ndarray, cls: np.ndarray) -> Dict:
 # ---------------------------------------------------------------- one layer
 
 def read_layer(U_all: np.ndarray, pos: np.ndarray, cls: np.ndarray, groups, beta_set, rng_key,
-               device: str, sweep: bool, draws: bool) -> tuple:
+               device: str, sweep: bool, draws: bool, primary_beta: float = PRIMARY_BETA) -> tuple:
     """Records and saved arrays for one (run, layer, target set)."""
     U = U_all[pos]
     S = U @ U.T
@@ -269,10 +274,10 @@ def read_layer(U_all: np.ndarray, pos: np.ndarray, cls: np.ndarray, groups, beta
         st = well_stats(w)
         if st["k2"] >= 2:
             rec.update(describe(w, pos, cls, groups, rng))
-        if draws:              # the same draws at every β; their wells at β 3.5 only (the rule)
+        if draws:              # the same draws at every β; their wells at the primary β only
             g_sd = [float(density(S_g, beta).std()) for S_g in gram_g]
             rec.update(sd_e_G=g_sd, Xe=float(rec["sd_e"] - np.mean(g_sd)))
-        if beta == PRIMARY_BETA:
+        if beta == primary_beta:
             rec["mix"] = decile_mix(e, cls)
             ec = causal_density(U_all, pos, beta)
             rec["rho_pos_causal"] = float(spearmanr(ec, lpos).statistic)
@@ -298,9 +303,25 @@ def token_classes(tokens: Sequence[str]) -> np.ndarray:
     return np.asarray([token_class(t, texts[p - 1] if p else None, p) for p, t in enumerate(texts)])
 
 
+def frame_rows(X: np.ndarray, ln1: Dict, L: int, t: np.ndarray, frame: str) -> np.ndarray:
+    """Every stored position's row in ``frame`` at layer ``L`` (``X`` the residual), centred on ``t``."""
+    if frame == "raw_centred":
+        X = np.asarray(X, dtype=np.float64)
+        Y = X - X[t].mean(axis=0)
+        return Y / np.maximum(np.linalg.norm(Y, axis=1, keepdims=True), 1e-12)
+    U = unit_rows(X, ln1["w"][L], ln1["b"][L], ln1["eps"])
+    if frame == "unit":
+        return U
+    if frame != "centred":
+        raise ValueError(f"unknown frame {frame!r}; one of {FRAMES}")
+    Y = U - U[t].mean(axis=0)
+    return Y / np.maximum(np.linalg.norm(Y, axis=1, keepdims=True), 1e-12)
+
+
 def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str, step: str,
              c3x: Optional[Dict[int, List[np.ndarray]]] = None, device: str = "cpu",
-             layers: Sequence[int] = LAYERS) -> tuple:
+             layers: Sequence[int] = LAYERS, frame: str = "unit", betas: Sequence[float] = BETAS,
+             primary_beta: float = PRIMARY_BETA, sweep: bool = True) -> tuple:
     z = np.load(run_dir / "activations.npz")
     acts, norms = z["activations"], z["norms"]
     if acts.shape[0] != 25:
@@ -320,8 +341,9 @@ def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str,
     for L in layers:
         if L not in LAYERS:
             raise ValueError(f"layer {L} refused (hidden state 24 is after final LN)")
-        U_all = unit_rows(acts[L] * norms[L][:, None], ln1["w"][L], ln1["b"][L], ln1["eps"])
+        X = acts[L] * norms[L][:, None]
         for name, t in targets.items():
+            U_all = frame_rows(X, ln1, L, t, frame)
             primary = name in ("t12", "r0")
             groups = None
             if c3x is not None and L in c3x:
@@ -329,8 +351,9 @@ def read_run(run_dir: Path, ln1: Dict, targets: Dict[str, np.ndarray], key: str,
                 groups = [np.asarray([idx[int(p)] for p in g]) for g in c3x[L]]
             rng_key = [SEED, zlib.crc32(f"{key}|{step}|{L}|{name}".encode())]
             recs, sv = read_layer(U_all, t, cls_all[t], groups,
-                                  BETAS if primary else (PRIMARY_BETA,), rng_key, device,
-                                  sweep=primary and L in SWEEP_LAYERS, draws=True)
+                                  tuple(betas) if primary else (primary_beta,), rng_key, device,
+                                  sweep=sweep and primary and L in SWEEP_LAYERS, draws=True,
+                                  primary_beta=primary_beta)
             out += [{"layer": L, "targets": name, **r} for r in recs]
             for k, v in sv.items():
                 saved.setdefault(f"{name}/{k}", []).append(v)
@@ -399,29 +422,39 @@ def plan(runs: Path, r0: Optional[Path], r8x: Optional[Path]) -> tuple:
 
 # ---------------------------------------------------------------- run
 
-def _job(job, ln1_dir: Path, out: Path, code: str, device: str) -> str:
+def _job(job, ln1_dir: Path, out: Path, code: str, device: str, opts: Optional[Dict] = None) -> str:
     kind, step, key, rd, rev, tg, c3x = job
+    opts = opts or default_opts()
     path = out / "records" / kind / f"step{step}_{key}.json"
     if path.exists():
-        had = json.loads(path.read_text()).get("code")
+        rec = json.loads(path.read_text())
+        had = rec.get("code")
         if had != code:
             raise SystemExit(f"refusing to resume: {path} was written by {had}, this is {code}")
+        if rec.get("opts", default_opts()) != opts:
+            raise SystemExit(f"refusing to resume: {path} was read with {rec.get('opts')}, this is {opts}")
         return f"have {path.name}"
     t0 = time.monotonic()
-    recs, saved = read_run(rd, load_ln1(ln1_dir / f"{rev}.npz"), tg, key, step, c3x, device)
+    recs, saved = read_run(rd, load_ln1(ln1_dir / f"{rev}.npz"), tg, key, step, c3x, device,
+                           frame=opts["frame"], betas=opts["betas"],
+                           primary_beta=opts["primary_beta"], sweep=opts["sweep"])
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out / "records" / kind / f"step{step}_{key}.npz",
                         **saved, **{f"{k}/positions": v for k, v in tg.items()})
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps({"kind": kind, "step": step, "passage": key, "run": str(rd),
-                               "code": code, "device": device,
+                               "code": code, "device": device, "opts": opts,
                                "targets": {k: int(len(v)) for k, v in tg.items()},
                                "seconds": round(time.monotonic() - t0, 1), "cells": recs}) + "\n")
     tmp.rename(path)
     return f"done {path.name} {time.monotonic() - t0:.0f}s"
 
 
-def check_first(path: Path, job, ln1_dir: Path, device: str) -> Dict:
+def default_opts() -> Dict:
+    return {"frame": "unit", "betas": list(BETAS), "primary_beta": PRIMARY_BETA, "sweep": True}
+
+
+def check_first(path: Path, job, ln1_dir: Path, device: str, opts: Optional[Dict] = None) -> Dict:
     """Refuse unless the first cell is populated and its GPU wells equal a CPU float64 run's."""
     rec = json.loads(path.read_text())
     bad = []
@@ -440,14 +473,16 @@ def check_first(path: Path, job, ln1_dir: Path, device: str) -> Dict:
     if bad or layers != set(LAYERS):
         raise SystemExit(f"refusing: first cell {path.name} not populated: {bad[:5]}")
     kind, step, key, rd, rev, tg, _ = job
+    opts = opts or default_opts()
+    pb = opts["primary_beta"]
     ln1 = load_ln1(ln1_dir / f"{rev}.npz")
     acts = np.load(rd / "activations.npz")
     A, N = acts["activations"], acts["norms"]
     agree = {}
     for L in CHECK_LAYERS:
-        U = unit_rows(A[L] * N[L][:, None], ln1["w"][L], ln1["b"][L], ln1["eps"])[tg["t12"]]
-        ref = mean_shift(U, PRIMARY_BETA, exact=True)["wells"]
-        got = z[f"t12/wells_{PRIMARY_BETA:g}"][L]
+        U = frame_rows(A[L] * N[L][:, None], ln1, L, tg["t12"], opts["frame"])[tg["t12"]]
+        ref = mean_shift(U, pb, exact=True)["wells"]
+        got = z[f"t12/wells_{pb:g}"][L]
         agree[L] = agreement(got, ref)
     print(f"first cell populated: {path.name}; {device} against CPU float64 wells: "
           + ", ".join(f"L{L} {v:.4f}" for L, v in agree.items()), flush=True)
@@ -458,28 +493,33 @@ def check_first(path: Path, job, ln1_dir: Path, device: str) -> Dict:
 
 def run(a) -> int:
     out, code = a.out, code_sha()
+    betas = [float(b) for b in (a.betas or BETAS)]
+    pb = float(a.primary_beta if a.primary_beta is not None else PRIMARY_BETA)
+    if pb not in betas:
+        raise SystemExit(f"refusing: primary β {pb} not among {betas}")
+    opts = {"frame": a.frame, "betas": betas, "primary_beta": pb, "sweep": not a.no_sweep}
     jobs, revs, meta = plan(a.runs, a.r0, a.r8x)
     ln1_dir = out / "ln1"
     for r in revs:
         z = load_ln1(export_ln1(r, ln1_dir))
         if z["revision"] != r:
             raise SystemExit(f"refusing: LN1 for {r} holds {z['revision']}")
-    meta.update(code=code, device=a.device, ln1={r: load_ln1(ln1_dir / f"{r}.npz")["snapshot"]
+    meta.update(code=code, device=a.device, opts=opts, ln1={r: load_ln1(ln1_dir / f"{r}.npz")["snapshot"]
                                                  for r in revs},
                 inputs={"runs": str(a.runs), "r0": str(a.r0), "r8x": str(a.r8x)})
     out.mkdir(parents=True, exist_ok=True)
     (out / "plan.json").write_text(json.dumps(meta, indent=1) + "\n")
     first = next(j for j in jobs if j[0] == "long" and (j[1], j[2]) == FIRST)
-    print(_job(first, ln1_dir, out, code, a.device), flush=True)
+    print(_job(first, ln1_dir, out, code, a.device, opts), flush=True)
     path = out / "records" / "long" / f"step{FIRST[0]}_{FIRST[1]}.json"
-    chk = check_first(path, first, ln1_dir, a.device)
+    chk = check_first(path, first, ln1_dir, a.device, opts)
     (out / "first_check.json").write_text(json.dumps({"cell": path.name, "agreement": chk,
                                                       "min": AGREE_MIN}, indent=1) + "\n")
     if a.first_only:
         return 0
     for j in jobs:
         if j is not first and (not a.steps or j[1] in a.steps):
-            print(_job(j, ln1_dir, out, code, a.device), flush=True)
+            print(_job(j, ln1_dir, out, code, a.device, opts), flush=True)
     return 0
 
 
@@ -494,6 +534,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--steps", nargs="*", default=None)
     r.add_argument("--first-only", action="store_true")
     r.add_argument("--device", choices=("cpu", "cuda"), default="cuda")
+    r.add_argument("--frame", choices=FRAMES, default="unit")
+    r.add_argument("--betas", nargs="+", type=float, default=None, help=f"default {BETAS}")
+    r.add_argument("--primary-beta", type=float, default=None, help=f"default {PRIMARY_BETA}")
+    r.add_argument("--no-sweep", action="store_true")
     p = sub.add_parser("report")
     p.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
