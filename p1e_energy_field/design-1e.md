@@ -184,6 +184,21 @@ changed per run.
 | first checks | U1's, the first cell's GPU wells against CPU float64 in the run's frame at its primary β; records carry `opts` (frame, β set, primary β, sweep), and a resume refuses a record read with other `opts` |
 | not computed | (1′)'s calibration (U1's bias is for 3.5 in β's frame; not carried over); U1's fences |
 
+*Amended 2026-10-08, a defect, after (c)'s first check refused and U3 refused on (b), before any
+label of (b), (c) or U3 was read.* (c)'s first cell matched CPU float64 on 0.9984 of targets at
+L12 (bar 0.999). The cause is U1's float32 phase: it merged rows within `MERGE_RUN` (1e-6) by a
+float32 dot, and a CUDA float32 dot of 1024-d unit rows is off by up to ~1e-6. So a row still
+moving near a ridge could join a neighbour bound for another well. Without that merge the GPU
+equals the reference. (b)'s step 2000 `hdbscan_code_long` L12 had 185 wells against float64's
+189 (agreement 0.9886), and 8 targets sat above their own well's mode, which is U3's negative
+persistence. The first check passed on (a) and (b) because step 143000 has few wells. **Now:** merges
+compare in float64 (`dedup`, `dedup_t`; a test with pairs 1.5e-6 apart). (b), (c), (c′) and U3
+run on the fixed producer, and the first build of each is set aside unread. **Added check:** a run is
+read only if its audit (`python -m p1e_energy_field.u1_audit`; every record, its
+read-at-every-β target set, L4 / 12 / 20, the primary β) has its wells equal to CPU float64's on
+≥ 0.999 of targets in every cell; otherwise it is refused. U1 (a), merged in #165 on the old
+producer, gets the same audit; what it finds is a correction to (a) (`status-1e.md`).
+
 U3 at β 10, if (b) finds wells to join, gets its own rule before its output.
 
 ## U3 at β 10, crests and saddles: the rule (fixed 2026-10-08, before any U3 output and before (b)'s labels were read)

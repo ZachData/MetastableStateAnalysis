@@ -82,6 +82,38 @@ def test_dedup_merges_only_within_tolerance():
     assert lab.tolist() == [0, 0, 1] and reps.tolist() == [0, 2]
 
 
+def _pairs_at(dist: float, n: int = 300, d: int = 1024) -> np.ndarray:
+    """``n`` pairs of float32 unit rows, each pair ``dist`` apart in cosine distance (float64)."""
+    rng = np.random.default_rng(0)
+    A = rng.standard_normal((n, d))
+    A /= np.linalg.norm(A, axis=1, keepdims=True)
+    P = rng.standard_normal((n, d))
+    P -= (P * A).sum(1, keepdims=True) * A
+    P /= np.linalg.norm(P, axis=1, keepdims=True)
+    th = np.sqrt(2 * dist)
+    return np.concatenate([A, np.cos(th) * A + np.sin(th) * P]).astype(np.float32)
+
+
+@pytest.mark.parametrize("on_gpu", [False, True])
+def test_merges_compare_in_float64(on_gpu):
+    """A float32 GPU dot of 1024-d rows is off by up to ~1e-6, the merge tolerance: pairs 1.5e-6
+    apart were merged (3 of 300 before the fix). Merges are decided in float64 on both paths."""
+    if on_gpu:
+        torch = pytest.importorskip("torch")
+        if not torch.cuda.is_available():
+            pytest.skip("no CUDA")
+    for dist, merged in ((1.5e-6, False), (1e-7, True)):
+        Y = _pairs_at(dist)
+        Yd = Y.astype(np.float64)
+        true = 1.0 - np.sum(Yd[:300] * Yd[300:], axis=1)
+        assert ((true > u1.MERGE_RUN) if not merged else (true < u1.MERGE_RUN)).all()
+        if on_gpu:
+            lab, _ = u1.dedup_t(torch.as_tensor(Y, device="cuda"), u1.MERGE_RUN)
+        else:
+            lab, _ = u1.dedup(Y, u1.MERGE_RUN)
+        assert ((lab[:300] == lab[300:]) == merged).all()
+
+
 def test_hidden_state_24_refused(tmp_path):
     n = 5
     acts = np.zeros((25, n, 4), dtype=np.float32)

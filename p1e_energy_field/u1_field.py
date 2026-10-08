@@ -105,7 +105,13 @@ def gaussian_draw(U: np.ndarray, rng: np.random.Generator) -> np.ndarray:
 # ---------------------------------------------------------------- pure: wells
 
 def dedup(Y: np.ndarray, tol: float) -> tuple:
-    """Greedy merge of rows within ``tol`` cosine distance: ``(label per row, representative rows)``."""
+    """
+    Greedy merge of rows within ``tol`` cosine distance: ``(label per row, representative rows)``.
+    Compared in float64: a float32 dot of 1024-d unit rows is good only to ~2e-6, above
+    ``MERGE_RUN``, which merged rows still moving near a ridge into a neighbour's basin (centred
+    frame, first cell, L12: 3 of 1,839 rows; design-1e.md "U1 beside", 2026-10-08).
+    """
+    Y = np.asarray(Y, dtype=np.float64)
     close = (1.0 - Y @ Y.T) < tol
     lab = -np.ones(len(Y), dtype=int)
     reps = []
@@ -157,6 +163,7 @@ def _phase32_torch(X: np.ndarray, beta: float) -> tuple:
 
 
 def dedup_t(Y, tol: float) -> tuple:
+    Y = Y.double()                                 # float64, as in ``dedup``
     close = ((1.0 - Y @ Y.T) < tol).cpu().numpy()
     lab = -np.ones(close.shape[0], dtype=int)
     reps = []
