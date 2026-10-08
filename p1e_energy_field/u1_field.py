@@ -255,6 +255,8 @@ def read_layer(U_all: np.ndarray, pos: np.ndarray, cls: np.ndarray, groups, beta
     ubar = U.mean(axis=0)
     rng = np.random.default_rng(rng_key)
     recs, saved = [], {}
+    gauss = [gaussian_draw(U, rng) for _ in range(N_DRAW)] if draws else []
+    gram_g = [Y @ Y.T for Y in gauss]
     for beta in beta_set:
         e = density(S, beta)
         from scipy.stats import spearmanr
@@ -267,21 +269,18 @@ def read_layer(U_all: np.ndarray, pos: np.ndarray, cls: np.ndarray, groups, beta
         st = well_stats(w)
         if st["k2"] >= 2:
             rec.update(describe(w, pos, cls, groups, rng))
+        if draws:              # the same draws at every β; their wells at β 3.5 only (the rule)
+            g_sd = [float(density(S_g, beta).std()) for S_g in gram_g]
+            rec.update(sd_e_G=g_sd, Xe=float(rec["sd_e"] - np.mean(g_sd)))
         if beta == PRIMARY_BETA:
             rec["mix"] = decile_mix(e, cls)
             ec = causal_density(U_all, pos, beta)
             rec["rho_pos_causal"] = float(spearmanr(ec, lpos).statistic)
             saved["e"], saved["e_causal"] = e, ec
             if draws:
-                g_sd, g_k, g_keff = [], [], []
-                for _ in range(N_DRAW):
-                    Y = gaussian_draw(U, rng)
-                    g_sd.append(float(density(Y @ Y.T, beta).std()))
-                    gs = well_stats(mean_shift(Y, beta, device)["wells"])
-                    g_k.append(gs["k"])
-                    g_keff.append(gs["k_eff"])
-                rec.update(sd_e_G=g_sd, k_G=g_k, k_eff_G=g_keff,
-                           Xe=float(rec["sd_e"] - np.mean(g_sd)),
+                gs = [well_stats(mean_shift(Y, beta, device)["wells"]) for Y in gauss]
+                g_keff = [g["k_eff"] for g in gs]
+                rec.update(k_G=[g["k"] for g in gs], k_eff_G=g_keff,
                            Xw=float(np.log(rec["k_eff"]) - np.mean(np.log(g_keff))))
         saved[f"wells_{beta:g}"] = w
         recs.append(rec)
