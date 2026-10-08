@@ -47,6 +47,14 @@ def _draw(U, rng, xp):
     return Y / xp.linalg.norm(Y, axis=1, keepdims=True)
 
 
+def _sd_e_torch(S, beta: float) -> float:
+    """``density(S, β).std()`` on the device, float64 (`u1_field.density`: LOO, centred)."""
+    import torch
+    Z = beta * S
+    Z.fill_diagonal_(-float("inf"))
+    return float(torch.logsumexp(Z, dim=1).std(unbiased=False))
+
+
 def bias_cell(U: np.ndarray, rng_key, device: str = "cpu") -> Dict[float, float]:
     """``{β: bias}`` for one target cloud (unit rows, float64)."""
     rng = np.random.default_rng(rng_key)
@@ -57,16 +65,18 @@ def bias_cell(U: np.ndarray, rng_key, device: str = "cpu") -> Dict[float, float]
             asarray = staticmethod(lambda a, dtype: torch.as_tensor(a, device="cuda", dtype=dtype))
             linalg = torch.linalg
         xp, U0 = _X, torch.as_tensor(U, device="cuda", dtype=torch.float32)
-        gram = lambda Y: (Y @ Y.T).double().cpu().numpy()          # noqa: E731
+        gram = lambda Y: (Y @ Y.T).double()                        # noqa: E731
+        sd_e = _sd_e_torch
     else:
         xp, U0, gram = np, U, (lambda Y: Y @ Y.T)
+        sd_e = lambda S, b: float(density(S, b).std())             # noqa: E731
     sds = {b: [] for b in BETAS}
     for _ in range(N_NULL):
         Y = _draw(U0, rng, xp)
         Sy = gram(Y)
         Sg = [gram(_draw(Y, rng, xp)) for _ in range(N_DRAW)]
         for b in BETAS:
-            sds[b].append(density(Sy, b).std() - np.mean([density(S, b).std() for S in Sg]))
+            sds[b].append(sd_e(Sy, b) - np.mean([sd_e(S, b) for S in Sg]))
     return {b: float(np.mean(v)) for b, v in sds.items()}
 
 
