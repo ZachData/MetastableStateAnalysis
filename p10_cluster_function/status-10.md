@@ -35,7 +35,7 @@
   - R6f, R6w's within split into members against frame (every step's groups re-scored in one fixed layer 0, step 512's and step 143000's). For own-embedding and within-class embedding similarity it is the frame, pooled and in 5–7 of 7 prompts: the token embedding moves under the definition's groups, mostly 512 → 2000, so there "trained, mostly what the embedding groups" reads as the embedding coming to group what the groups held. For class beyond a lexical cluster the prompts split, so whether the groups became lexical stays open (the pooled members part ≤ 0.03 is partly prompts cancelling). Same on the unfiltered groups; on the old partition about a third of the class-beyond-lexical drift is membership. Layer mean only; descriptive, no null — `p10_cluster_function/status-10.md` §1.22
   - R7, the context-shuffle test (each group's tokens re-clustered with their passage block-shuffled at four grains, and each token alone after the sink). From 512 on, the label depends on the bar: on each group's own floor it is mixed (39 % at 512 and 48–61 % after survive with their token alone, a third break under a token shuffle); on a fixed bar, and among the groups whose floor clears chance, breaking under a shuffle is the largest share (about half to two thirds). The own floor is below chance for a third or more of the groups, and those come out token-alone. Deeper groups survive alone less. Before 512 no shuffle moves any group: the model starts using order between 256 and 1000. The token-alone input moves states even at init, and a shuffle also breaks some token-alone groups, so neither label is a pure reading of context. At 512, groups that break under a shuffle are as same-class as token-alone ones, so the class grouping there is not only a per-token feature. Descriptive, no null — `p10_cluster_function/status-10.md` §1.23
   - R8, the own-floor check on the definition's "moves" filter (a chance level per group from 2000 random same-size sets against the passage's own partition, a proxy for the moved passages'). Requiring every moved passage's match to beat chance as well as the group's own floor keeps 87–91 % of the definition's records at steps 64–1000 and 93–97 % after: at the placed 90 % bar and not resolved by it (over 7 prompts the intervals straddle it; one passage carries 64–256). What holds: at init "moves" is mostly chance (step 0's 62 records halve), and the drop is about twice as large at 64–1000. Most groups whose floor is below chance still pass, intact. The stricter set is a candidate; the choice is the user's — `p10_cluster_function/status-10.md` §1.24
-  - R8x, the exact check: the same test with each moved passage's own partition in place of the proxy. The proxy was close (exact in the median, a few records per step classified differently), and the stricter set keeps 0.88 and 0.89 of the definition's records at steps 128 and 1000, below the placed 90 % bar (93–98 % from 2000), so by the rule the drop holds and the stricter set is recommended as the definition; 7 prompts still cannot resolve the bar — `p10_cluster_function/status-10.md` §1.25
+  - R8x, the exact check: the same test with each moved passage's own partition in place of the proxy. The proxy was close (exact in the median, a few records per step classified differently), and the stricter set keeps 0.88 and 0.89 of the definition's records at steps 128 and 1000, below the placed 90 % bar (93–98 % from 2000), so by the rule the drop holds and the stricter set is recommended as the definition; 7 prompts still cannot resolve the bar or the drop's size, and pooled over 64–1000 the stricter set keeps 0.905 — `p10_cluster_function/status-10.md` §1.25
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -63,7 +63,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-08 · body `8b3b90a312`
+- **Reviewed:** 2026-10-08 · body `b1f07a07e9`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -1956,19 +1956,21 @@ Re-run: `data/p10/reread_r8_2026-10-06/run_r8.sh [--steps …]` from the worktre
 
 *The exact check has run (§1.25): the proxy was accurate, and the drop holds at 128 and 1000.*
 
-### 1.25 R8x: the exact check — **the drop at 64–1000 holds by the rule's letter: with each moved passage's own partition in place of R8's proxy, the chance-aware set (c3x) keeps 0.876 of c3 at step 128 and 0.893 at 1000, below the placed 0.90; 64, 256 and 512 clear it (0.927, 0.911, 0.921), and from 2000 it keeps 0.93–0.98. The proxy was close: its chance level is exact in the median, within ±0.03–0.05 (p10–p90), and c3c and c3x differ on ≤ 11 records per step. So R8's picture stands, one notch clearer: a ~10 % drop at 64–1000 (7–12 % at 128 and 1000), 2–7 % after, and at init "moves" is mostly chance**
+### 1.25 R8x: the exact check — **the drop at 64–1000 holds by the rule's letter: with each moved passage's own partition in place of R8's proxy, the chance-aware set (c3x) keeps 0.876 of c3 at step 128 and 0.893 at 1000, below the placed 0.90; 64, 256 and 512 clear it (0.927, 0.911, 0.921), and from 2000 it keeps 0.93–0.98. The proxy was close: its chance level is exact in the median, within ±0.03–0.05 (p10–p90), and c3c and c3x differ on ≤ 11 records per step. So R8's picture stands: a drop at 64–1000 that is there but whose size 7 prompts do not pin (point 7–12 % at 128 and 1000, intervals 5–21 %; pooled over 64–1000 c3x keeps 0.905, clearing the bar), 2–7 % after, and at init "moves" is mostly chance**
 
 **What.** `design-10.md` "R8x" (rule `ced45f5`, before any P > 0 label was written; Blocked 27
 (c), user 2026-10-08). `tools/run/p10_r8x_exact.py` (`a0af469`): unit 1's EOD-join P > 0 passes re-run in
 R0's environment (CPU, float32, 14 threads), each condition's partition of R0's kept offsets
 (centred, size 2) recomputed and written; per condition a chance level `Jc` from 2000 random
 same-size sets against **that** partition; c3x = c2 groups whose class is still `moves` when each
-EOD condition's J ≥ max(`J0`, its `Jc`). R8's proxy recomputed beside (c3c). 1,080 forward passes,
-~50 min CPU.
+EOD condition's J ≥ max(`J0`, its `Jc`). R8's proxy recomputed beside (c3c). 972 forward passes (6 EOD conditions for
+the three passages that are also preamble sources, 9 for the other four; × 18 steps), ~50 min
+CPU. *Corrected after `/challenge-pr` on #163 (finding 5): this line first said 1,080.*
 
 **Inputs.** R0's labels and unit 1 records (`data/p10/reread_r0_2026-10-05/`); output
 `data/p10/reread_r8x_2026-10-08/` (`labels/`: each condition's partition per (step, passage,
-layer); `rows/`; `r8x.json`, md5 `6242118e`; `run.log`). **First checks, all passed:** R8's three
+layer); `rows/`; `r8x.json`, md5 `8c8bdb91`, whose `meta` names the input paths, R0's labels hash
+`0d6da9cb` (R8's) and the run's git `a0af469` and environment; `run.log`). **First checks, all passed:** R8's three
 (P = 0 groups are R0's c2a, recomputed c2 and c3 are R0's); every condition's ids and start are
 unit 1's; at all 126 (step, passage) × 24 layers × 6–9 conditions the recomputed partition
 reproduces unit 1's stored group count and every stored best Jaccard exactly (none refused);
@@ -1998,20 +2000,33 @@ condition's group count over P = 0's, per (c2 record, condition): median 1.0, p1
 **Reading.**
 - **By the rule, the drop holds** (128 and 1000 below 0.90), so Blocked 27's recommendation applies:
   **(a), c3x as the definition's column, every re-read row run again on it.** The intervals still
-  straddle 0.90 at every step 64–1000, so this is the rule's letter, not a resolved share: what
-  is resolved is the size (7–12 % at 128 and 1000, 2–7 % from 2000).
-- **Not one passage this time.** Without `camus_letranger`, 128 keeps 0.906 and 1000 still 0.893;
-  1000's drop is L17–24 (0.83), 128's L1–16 (0.85).
+  straddle 0.90 at every step 64–1000, so this is the rule's letter, not a resolved share. What is
+  resolved is that a drop exists there (every upper bound below 1); its size is not (128: 7–21 %,
+  1000: 5–20 %). *Corrected after `/challenge-pr` on #163 (finding 1): the first version called
+  the size resolved.*
+- **The rule is fragile, and it chooses the headline, not the work** (*after `/challenge-pr` on
+  #163, finding 2*). It fires if any one of five steps falls below 0.90. Pooled over 64–1000 c3x
+  keeps 1945 / 2149 = 0.905, which clears it. Resampling prompts, the rule fires in 87 % of draws
+  on these data, and by the reviewer's simulation about half the time at a true 0.93 everywhere.
+  (a) and (b) both put c3x on every re-read row; the verdict decides only which column leads.
+- **Step 128's miss is one passage; step 1000's is not** (*corrected after `/challenge-pr` on #163,
+  finding 3*; the first version read "not one passage"). Without `camus_letranger`, 128 keeps
+  251 / 277 = 0.906 and clears the bar; 1000 keeps 584 / 654 = 0.893, five records short, so
+  without that passage the verdict rests on 1000 alone. 1000's drop is L17–24 (0.83), 128's L1–16
+  (0.85).
 - **The proxy was not the problem.** Exact and proxy chance levels agree in the median at every
   step, and the records they classify differently are ≤ 11 per step, mostly c3x keeping what the
   proxy dropped (64, 256, 512). R8's "proxy of unmeasured error" is now measured: small.
 - At init, "moves" is mostly chance: step 0's 62 records keep 29.
 
 **Does not.** Re-examine `J0` (a placed 10th percentile); read the `\n\n` join; re-read any row on
-c3x (that is (a)); test anything. One seed, 7 passages.
+c3x (that is (a)); test anything. Pin the whole P > 0 partition: the reproduction check fixes each
+condition's group count and every best Jaccard of a P = 0 group, so a group touching no P = 0
+group could in principle differ, and the chance draws use it (*`/challenge-pr` on #163, finding
+7*; at the same code, inputs and environment as R0, not expected). One seed, 7 passages.
 
 Re-run: `data/p10/reread_r8x_2026-10-08/run_r8x.sh [--steps …]` from the worktree root (CPU;
-resumes; `summary` at the end). Tests: `tests/test_p10_r8x_exact.py` (7).
+resumes; `summary` at the end). Tests: `tests/test_p10_r8x_exact.py` (9).
 
 ---
 
