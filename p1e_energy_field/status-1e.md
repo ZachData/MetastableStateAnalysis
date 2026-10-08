@@ -13,18 +13,19 @@
   - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L1–16 only from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
   - Splitting each block's update by a hooked pass, the MLP supplies most of the shared update and its shared part ascends too (24 of 31 windows by the rule fixed before output; the sink's value and the biases supply almost none); on the long passages attention's token-specific part never ascends the field in layers 1–22 and descends from step 256 on (v1 ascends at 8–32); the late token-specific ascent in L1–16 goes with the MLP's — `p1e_energy_field/status-1e.md` "U2's attention arm"
   - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000, in the sum and head by head; from 4000–8000 the sum over heads ascends while most heads still descend their own kernel, so the late ascent is a property of the sum, not of the heads; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
+  - U2's reading is split by training stage (the user's decision): up to step 1000 the shared ascent is the MLP's and the token interactions descend their heads' kernels; from 2000–4000 the shared ascent is attention's mean pull, and only the sum over heads follows its kernels — `p1e_energy_field/status-1e.md` "U2's per-head arm"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
 - **Depends on:** 1d@4168cdd237, 10@c159a02c9b
 - **Feeds:** none
 - **Open threads:**
-  - Whether an update every token shares counts as following the field is the user's decision, now with who supplies its ascent measured; and whether the late split between heads and their sum is heads cooperating — `STATE.md` Blocked 29
+  - Whether the late split between heads and their sum is heads cooperating or a few large heads (the saved means cannot split it) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence — `p1e_energy_field/design-1e.md` "Units"
 - **After Phase 10:**
   - U1, U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-07 · body `d11664082f`
+- **Reviewed:** 2026-10-08 · body `9e546070f3`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -484,6 +485,15 @@ the largest Shapley share of the shared move's projection on the force):
 dir> --workers 14` (CPU; multi-threaded BLAS in 12 workers was several times slower), then
 `python -m p1e_energy_field.u2_heads report --out <dir>` (reads the attention and block arms'
 `report.json` beside it). Resuming the records needs `3d571fa`'s `p1e_energy_field` tree.
+
+**Blocked 29 decided (c) (user, 2026-10-08): U2's headline is split by training stage.** Both
+readings change at 2000–4000, so neither (a) the frozen labels nor (b) `r1out` alone is the
+headline. Up to step 1000 the shared ascent is the MLP's (an update every token gets, mostly not
+interaction), and the token interactions descend their heads' own kernels (128–2000). From 2000
+the shared ascent is attention's mean pull (L17–22, and L9–16 at 8000–32000), and from 4000 only
+the sum over heads follows its kernels while most heads still descend their own. Numbers: the
+"Blocked 29 by ascent" table and the per-head reading above; the frozen labels and `r1out` stay
+beside. This is the reading the 1e page opens with (`design-1e.md` "The 1e page").
 
 **Parked** (why / cost / the decision it could change):
 - The late split between heads and their sum (most heads descend their own field at 143000 L1–8,

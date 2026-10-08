@@ -126,6 +126,15 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a Parked item below.
 > *(Parked (R7), the own floor below chance: taken as R8, below.)*
 >
+> **R8x done, 2026-10-08 (`status-10.md` §1.25; its title is the summary).** Blocked 27 (c), the
+> user's: the exact check, rule `design-10.md` "R8x" (`ced45f5`, before any P > 0 label).
+> `tools/run/p10_r8x_exact.py`; output `data/p10/reread_r8x_2026-10-08/` (each EOD condition's
+> partition now kept, `labels/`; ~50 min CPU). Every recomputed partition reproduces unit 1's
+> stored count and best Jaccards exactly. Answer: **the drop holds by the letter** (c3x keeps
+> 0.876 at 128, 0.893 at 1000; 64 / 256 / 512 clear 0.90); the proxy was close (exact in the
+> median, ≤ 11 records per step classified differently). **Next, for the user:** Blocked 27 (a)
+> (c3x as the definition's column, every re-read row again), recommended by the rule.
+>
 > **R8 done, 2026-10-06 (`status-10.md` §1.24; its title is the summary).** Blocked 26 (f), the
 > user's: the own-floor check on "moves", rule in `design-10.md` "R8" (committed before any chance
 > level). `tools/run/p10_r8_floor.py`; output `data/p10/reread_r8_2026-10-06/r8.json` (no forward
@@ -135,7 +144,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > (headline restated, proxy error called unmeasured, re-read scope all rows, a by-construction
 > line labelled a check, the probe committed as a script, refusal tests).
 > **Next, for the user:** Blocked 27 (recommended: the exact check first).
-> *(Parked (R8), the exact check with P > 0 labels kept: now Blocked 27 (c). Why: `Jc` is against
+> *(Parked (R8), the exact check with P > 0 labels kept: taken as R8x, above. Why: `Jc` is against
 > P = 0's partition, and P > 0 group counts differ by up to ×3 in a tenth of the conditions. Cost:
 > unit 1's P > 0 passes again with labels written, ~1 h on R0's scale, GPU allowed. Could change:
 > the rule's letter at 64–1000, error unmeasured.)*
