@@ -10,11 +10,12 @@
   - Opened 2026-10-06 with a literature scan; the design was frozen the same day as proposed, then its passages were changed to the long set before any output. The closed-form steps the design uses are checked (M6 corrected after review: in a cloud-centred frame the field also has a floor off the tokens' span) — `p1e_energy_field/design-1e.md` "The math", `p1e_energy_field/lit-1e.md`
   - Four new long passages were built under a rule committed before their sources were fetched, and all 8 long passages were extracted at the 18 steps on the GPU (activations only) — `p1e_energy_field/status-1e.md` "The 8 long passages"
   - By the frozen rule, each block's update ascends the field in every band at steps 8–256 and 16000–54000 (35 of 54 cells, 0.42 by chance); the label is the field's β = 0 mean term, and the cosine excess is small (≤ 0.16) — `p1e_energy_field/status-1e.md` "U2's block arm"
-  - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L1–16 only from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
+  - With each token's component along the shared update direction removed (mixed in every cell at init), the token-specific part descends the field at 32–2000 and ascends in L9–16 from 4000 and L1–8 from 16000; the early ascent is the shared update, and 143000's last-block descent is not token-specific — `p1e_energy_field/status-1e.md` "U2's block arm"
   - Splitting each block's update by a hooked pass, the MLP supplies most of the shared update and its shared part ascends too (24 of 31 windows by the rule fixed before output; the sink's value and the biases supply almost none); on the long passages attention's token-specific part never ascends the field in layers 1–22 and descends from step 256 on (v1 ascends at 8–32); the late token-specific ascent in L1–16 goes with the MLP's — `p1e_energy_field/status-1e.md` "U2's attention arm"
   - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000, in the sum and head by head; from 4000–8000 the sum over heads ascends while most heads still descend their own kernel, so the late ascent is a property of the sum, not of the heads; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - U2's reading is split by training stage (the user's decision): up to step 1000 the shared ascent is the MLP's and the token interactions descend their heads' kernels; from 2000 the shared ascent is attention's mean pull in the last layers, and from 4000 only the sum over heads follows its kernels, while most heads still descend their own — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - At the measured β the field over the tokens has a single well in every trained layer band and step (one exception, the early layers at step 128); a few wells appear only at about twice that β and many by four times, so the probe's few wells were another frame's. Its density is more uneven than a matched Gaussian cloud's at every step, init included, even after correcting that comparison's own bias, and is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge; by the end of training only the last layers are more uneven than at init — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
+  - The saddle unit is closed, since at the measured β there are no wells to find saddles between (the user's decision); the phase's results are on one page — `p1e_energy_field/status-1e.md` "Blocked 30 decided"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
@@ -23,11 +24,11 @@
 - **Open threads:**
   - Whether the late split between heads and their sum is heads cooperating or a few large heads (the saved means cannot split it) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence — `p1e_energy_field/design-1e.md` "Units"
-  - With one well at the measured β, what the saddle unit reads, if anything, is the user's decision — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
+  - Whether one well at the measured β is what the theory expects at this many tokens and dimensions is unread — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
 - **After Phase 10:**
   - U3, U4 from stored activations *(free)*; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-08 · body `b0f4d26642`
+- **Reviewed:** 2026-10-08 · body `76b474e835`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -119,7 +120,7 @@ the rule", row *targets*).
 fetches them if absent; a changed source changes the hash). Runs: the `run.sh` above
 (`--skip-existing` resumes).
 
-## U2's block arm (2026-10-07): the frozen labels are mostly an update every token shares; the token-specific part descends the field at 32–2000 and ascends in L1–16 from 16000
+## U2's block arm (2026-10-07): the frozen labels are mostly an update every token shares; the token-specific part descends the field at 32–2000 and ascends in L9–16 from 4000, L1–8 from 16000
 
 **Read "The shared update" below first.** The frozen rule's labels (this table) stand as its
 output, but its shuffle null cannot see an update added to every token, and that update carries
@@ -591,8 +592,8 @@ wells to call clusters, and U3's "saddles between U1's wells" has nothing to rea
 the field does carry is a density that is mostly each token's pull towards the cloud's mean (the
 same β = 0 term U2's frozen labels turned out to be, "U2's block arm"), with punctuation at the
 centre and content words at the edge, already at init. For Phase 10 (Blocked 27, "Relation to
-the other threads" in the design): a well is not a better unit than c3x at this β. Blocked 30
-(`STATE.md`): what U3 and the 1e page become.
+the other threads" in the design): a well is not a better unit than c3x at this β. Blocked 30 decided (a): "Blocked 30 decided"
+below.
 
 **How to re-run.** From the worktree root: `data/p1e/u1_field_2026-10-08/run.sh` (resumes;
 `--first-only` for the first check), then `python -m p1e_energy_field.u1_field report --out
@@ -606,6 +607,35 @@ the other threads" in the design): a well is not a better unit than c3x at this 
 - Whether one well at β 3.5 is what the theory predicts at this n (~2,000) and d (1,024)
   (`/challenge-pr` on #164, finding 5) / a reading of 2312.10794's single-cluster thresholds,
   not done / would make Blocked 30 (a) the theory's expectation rather than a null result.
+
+## Blocked 30 decided (2026-10-08): U3 closed at the measured β; the 1e page
+
+**Decision** (the user, (a), as recommended): U3 ("saddles between U1's wells") is closed as
+"no wells at the measured β", U1's result standing as its answer. Reading wells at β ≈ 10 (b) or
+in the cloud-centred frame (c) would choose a β or a frame in order to find wells, the placed-bar
+problem 1e opened to avoid (`design-1e.md` "Why a new phase"); both stay in U1's Parked list.
+U4 stays fenced until P-S1 is scored; U5 stays parked (no corpus). No unit of 1e is scheduled.
+
+**The page:** https://claude.ai/artifact/8ZqeVhbPrtTBxkDWGm4Hts (private until the user shares
+it). U2's labels as (step, band) grids for six readings (whole block, the shared update alone,
+token-specific block, MLP and attention parts, attention against its heads' own kernels), split
+at 1000 / 2000 as the user's Blocked 29 (c); per-head descend / ascend shares under the sum's
+label; U1's sweep (median `k_eff` against β at L4 / L12 / L20 for steps 0, 128, 1000, 143000)
+and the calibrated lumpiness `Xe′` at β 3.5. **Input:** long passages (`ba605f4e14b5`), T1 + T2,
+from `data/p1e/u2_block_2026-10-07/report.json` (`t12|causal|3.5`, `t12|causal:resid|3.5`,
+`t12|causal:r1out|3.5`), `u2_attn_2026-10-07/report.json` (`t12|causal:mlp:r1out|3.5`,
+`t12|causal:keys:r1out|3.5`), `u2_heads_2026-10-07/report.json` (`t12|kernns:keys:r1out|0.0`,
+per head `kernns_h:keys_h:r1out`), `u1_field_2026-10-08/labels.json` (`sweep_k_eff`) and
+`calib/labels.json` (β 3.5). The R² and punctuation figures are quoted from "U1" above, not
+recomputed. **Builder** `p1e_energy_field/page.py` (template `viz/index.html`): no
+computation of its own; refuses a missing cell, and refuses if a grid's label counts over the
+trained bands differ from its report's printed counts (all six match, e.g. the whole block 35
+ascend of 54, the kernel row 11 / 11 / 4 + 3 leans / 25). The published page is its output.
+Not checked: no browser or JS engine on this machine, so the page was published without a
+rendered look; the chart ramps were not run through the palette validator (no `node`).
+
+**How to re-run:** `python -m p1e_energy_field.page --data <main>/data/p1e --out <dir>`, then
+publish `<dir>/index.html` to the URL above.
 
 ## Corrections received
 
