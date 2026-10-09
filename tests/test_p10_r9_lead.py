@@ -55,3 +55,10 @@ def test_header_carries_the_leads_floor():
     h = lead_args.header("lab", "abc", "c3x", None, {0: "c2"}, summ)
     assert h["floor"] == {"c3x_group_layer_records_step0": 31, "c3x_readable_step0": [8, 161]}
     assert "floor 31 c3x records at step 0 (8 of 161 readable)" in lead_args.floor_line({0: "c2"}, summ, "c3x")
+
+
+def test_one_ladder_error_class():
+    """`/challenge-pr` on #171, finding 3: the helper owns LadderError, every ladder re-exports it."""
+    from tools.run import p10_r1_ladder, p10_r2_ladder, p10_r2m_ladder, p10_r3_ladder
+    assert {m.LadderError for m in (p10_r1_ladder, p10_r2_ladder, p10_r2m_ladder, p10_r3_ladder)} == {LadderError}
+    assert LadderError is lead_args.LadderError

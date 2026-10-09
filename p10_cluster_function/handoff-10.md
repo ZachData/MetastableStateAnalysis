@@ -147,8 +147,11 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > refusal, header with the floor; each ladder keeps its own `load` / `reproduce`, since record
 > shapes differ). R1 / R2 / R2m's ladders use it and re-run byte-identical to their stored R9
 > `ladder.json`s. `p10_r3_ladder.py` got `--lead` / `--reproduce`; `p10_r3_position_bins.py` got
-> `--columns`. c0–c3 reproduce R3's record; nothing changes; 2000's pooled residual on c3x sits
-> 0.001 above the floor. The sink split is not re-read (c0's own labels). **Next here: R6 →
+> `--columns`. c0–c3 reproduce R3's record; by the rule nothing changes, but 7 prompts do not
+> settle whether the residual starts at 2000 on either column (`p10_r3_ladder.prompt_resample`,
+> after `/challenge-pr` on #171; `LadderError` now lives in the helper). The sink split is not
+> re-read (c0's own labels). If R6–R7 filter stored c3 records rather than re-run, the helper's
+> `--lead` still applies to their ladders; `--reproduce` only where a row re-runs. **Next here: R6 →
 > R6w → R6f, R7 on c3x**, each its own PR (`design-10.md` "R9"), each ladder through
 > `p10_r9_lead.add_args`; first the user's call on the *Open* item below (re-run, or filter the
 > stored per-group c3 records). The readers take `--labels <R9 labels> --column c3x`.

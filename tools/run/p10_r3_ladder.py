@@ -78,6 +78,7 @@ SHARE_BAR = 0.9   # placed (design-10.md "Row by row", A0)
 RESIDUAL = 0.05   # placed, as F12's and §1.9's floors
 COLUMNS = (*LADDER, *ARMS, *LEARNED)
 RECORD_KEYS = ("records_readable", "summary", "runs")
+RESAMPLES = 2000  # prompt bootstrap draws beside c3 → c3x (`/challenge-pr` on #171, finding 1)
 PUBLISHED_FIELDS = ("raw_noise", "raw_clustered", "corrected_noise", "corrected_clustered",
                     "position_bias", "n_tokens", "noise_fraction")
 
@@ -222,6 +223,26 @@ def arms_and_learned(cols: Dict, prim: Dict[int, str], learned: Sequence[str] = 
     return out
 
 
+def prompt_resample(runs: Dict, steps: Sequence[int], n: int = RESAMPLES, seed: int = 0) -> Dict:
+    """Per step, how far 7 prompts settle the residual label: how many leave-one-prompt-out pools
+    flip it, and the share of prompt bootstrap pools (``n`` draws, seeded) that read residual."""
+    rng = np.random.default_rng(seed)
+    out = {}
+    for s in steps:
+        by: Dict[str, List[Dict]] = {}
+        for key, rows in runs.items():
+            st, prompt = key.split("|")
+            if int(st) == s and rows:
+                by.setdefault(prompt, []).extend(rows)
+        ps = sorted(by)
+        lab = residual_label(gaps([r for q in ps for r in by[q]]))
+        loo = sum(residual_label(gaps([r for q in ps if q != p for r in by[q]])) != lab for p in ps)
+        boot = [residual_label(gaps([r for q in rng.choice(ps, len(ps)) for r in by[q]])) == "residual"
+                for _ in range(n)]
+        out[s] = {"prompts": len(ps), "label": lab, "loo_flips": int(loo), "p_residual": round(float(np.mean(boot)), 2)}
+    return out
+
+
 def c3_to_c3x(cols: Dict, prim_c3: Dict[int, str], prim_x: Dict[int, str]) -> Dict:
     """What the column changed: the three labels on the primary (c3 leading against c3x leading)
     and on each column; per step, the residual labels and corrected gaps where both lead."""
@@ -286,7 +307,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
            "columns": {c: {**v, "per_step": {str(s): g for s, g in v["per_step"].items()},
                            "residual": {str(s): x for s, x in v["residual"].items()}} for c, v in cols.items()}}
     if lead == "c3x":
-        res["c3_to_c3x"] = c3_to_c3x(cols, prim_c3, prim)
+        x = res["c3_to_c3x"] = c3_to_c3x(cols, prim_c3, prim)
+        rec = data["record"]["columns"]
+        x["prompts"] = {c: prompt_resample(rec[c]["runs"], sorted(x["steps"])) for c in ("c3", "c3x")}
     print("column   | sweep raw / corrected gap, share → label | appears | persists")
     for c in (*columns_of(lead), "primary", *(("primary_c3",) if lead != "c3" else ())):
         v = cols[c]
@@ -316,6 +339,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"  per-step residual labels: {len(x['differ'])} of {x['n']} change"
               + "".join(f"; {d['step']} {d['c3']} → {d['c3x']} ({_fmt(d['c3_gap'])} → {_fmt(d['c3x_gap'])})"
                         for d in x["differ"]) + f"; corrected gaps move ≤ {x['max_gap_move']}")
+        for c, by in x["prompts"].items():
+            print(f"  {c} per step, leave-one-prompt-out flips / bootstrap P(residual): "
+                  + " ".join(f"{s}:{v['loo_flips']}/{v['prompts']},{v['p_residual']:.2f}" for s, v in by.items()))
         print(lead_args.floor_line(prim, data["summary"], lead))
     if args.published is not None:
         res["published_check"] = published_check(data["record"], args.published)

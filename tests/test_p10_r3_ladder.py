@@ -100,3 +100,33 @@ def test_reproduce_names_the_columns_that_differ():
 def test_reproduce_needs_its_own_label_source(tmp_path, extra):
     with pytest.raises(SystemExit, match="go together"):
         lad.main(["--record", str(tmp_path / "a0.json"), "--labels", str(tmp_path), *extra])
+
+
+def test_load_refuses_when_the_leads_readable_counts_are_not_the_sources(tmp_path):
+    """R9 (`/challenge-pr` on #171, finding 4): with c3x leading, c3x's counts are checked too."""
+    import hashlib
+    steps = (0, 143000)
+    src = {f"step{s}": {"columns": {c: {"records": 4, "readable": 2} for c in ("c3", "c3x")}} for s in steps}
+    (tmp_path / "summary.json").write_text(json.dumps(src))
+    sha = hashlib.sha256((tmp_path / "summary.json").read_bytes()).hexdigest()[:16]
+    cols = {c: {"records_readable": {str(s): {"n": 4, "readable": 2}
+                                     for s in ((143000,) if "learned" in c else steps)}}
+            for c in lad.columns_of("c3x")}
+    rec = {"label_source": {"labels": str(tmp_path), "summary_sha256": sha}, "columns": cols}
+    f = tmp_path / "a0.json"
+    f.write_text(json.dumps(rec))
+    assert lad.load(f, tmp_path, "c3x")["lead"] == "c3x"
+    cols["c3x"]["records_readable"]["143000"]["readable"] = 3
+    f.write_text(json.dumps(rec))
+    assert lad.load(f, tmp_path, "c3")["lead"] == "c3"          # c3 leading does not read c3x's counts
+    with pytest.raises(lad.LadderError, match="c3x step 143000"):
+        lad.load(f, tmp_path, "c3x")
+
+
+def test_prompt_resample_counts_leave_one_out_flips():
+    """`/challenge-pr` on #171, finding 1: one prompt carrying the residual flips it when left out."""
+    runs = {"2000|a": [_u(0.1, 0.2)], "2000|b": [_u(0.1, 0.0)], "2000|c": [_u(0.1, 0.0)],
+            "4000|a": [_u(0.1, 0.2)], "4000|b": [_u(0.1, 0.2)], "4000|c": [_u(0.1, 0.2)]}
+    r = lad.prompt_resample(runs, [2000, 4000], n=200)
+    assert r[2000]["label"] == "residual" and r[2000]["loo_flips"] == 1 and 0 < r[2000]["p_residual"] < 1
+    assert r[4000] == {"prompts": 3, "label": "residual", "loo_flips": 0, "p_residual": 1.0}

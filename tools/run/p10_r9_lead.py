@@ -15,15 +15,19 @@ import argparse
 from pathlib import Path
 from typing import Callable, Dict, Optional, Sequence, Tuple
 
-# `p10_r1_ladder` imports this module, so its LEADS and LadderError are imported where used.
+#: The columns that can lead (`p10_r1_ladder.LEADS` holds each one's ladder and learned split).
+LEAD_CHOICES = ("c3", "c3x")
+
+
+class LadderError(RuntimeError):
+    """A ladder refuses (re-exported by `p10_r1_ladder`, where the other ladders import it)."""
 
 
 def add_args(ap: argparse.ArgumentParser, row: str, also: Sequence[Tuple[str, str]] = ()) -> None:
     """``--lead``, ``--reproduce`` (metavar ``<row>_RECORD``), each ``also`` (flag, help) input
     the reproduced run read, and ``--reproduce-labels``."""
-    from tools.run.p10_r1_ladder import LEADS
     flags = ", ".join([f for f, _ in also] + ["--reproduce-labels"])
-    ap.add_argument("--lead", choices=tuple(LEADS), default="c3", help="the primary column (R9: c3x)")
+    ap.add_argument("--lead", choices=LEAD_CHOICES, default="c3", help="the primary column (R9: c3x)")
     ap.add_argument("--reproduce", type=Path, default=None, metavar=f"{row.upper()}_RECORD",
                     help=f"refuse unless c0–c3's records equal that {row} run's (with {flags})")
     for flag, help_ in also:
@@ -50,7 +54,6 @@ def check_reproduces(args: argparse.Namespace, data: Dict, load: Callable[..., D
                      also: Sequence[str] = ()) -> Optional[str]:
     """Refuse (``LadderError``) unless ``reproduce(data, load(*inputs))`` is empty; the reproduced
     record's path, or ``None`` without ``--reproduce``. ``load`` reads with the lead c3."""
-    from tools.run.p10_r1_ladder import LadderError
     inputs = reproduce_inputs(args, also)
     if inputs is None:
         return None

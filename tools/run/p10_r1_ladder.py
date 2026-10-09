@@ -63,6 +63,7 @@ REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[2])
 sys.path.insert(0, str(REPO))
 
 from tools.run import p10_r9_lead as lead_args
+from tools.run.p10_r9_lead import LadderError  # the ladders import it from here
 from tools.run.p10_comembership import DELTA_FLOOR, NOT_READ, PROPS
 from tools.run.p10_token_composition import CONTRAST_FLOOR
 
@@ -72,15 +73,12 @@ LEARNED = ("c3_learned", "c3_unlearned")
 ON_C2_BASE = ("c3", *ARMS, *LEARNED, "c3x", "c3x_learned", "c3x_unlearned")
 #: R9's lead column: the ladder gains it after c3, and its own learned split.
 LEADS = {"c3": (LADDER, LEARNED), "c3x": (LADDER + ("c3x",), LEARNED + ("c3x_learned", "c3x_unlearned"))}
+assert tuple(LEADS) == lead_args.LEAD_CHOICES
 LAYERS = (12, 24, "mean")
 READERS = {"tc": "§1.7", "cm": "§1.9", "lc": "§1.10"}
 CM_READ = tuple(p for p in PROPS if p not in NOT_READ)
 LC_DELTA = ("class_given_emb", "emb_given_class", "emb_same", "emb_cross")
 LEVEL_FLOOR = 0.05   # §1.10's carry gap and kNN excess, as its docstring and status-10 §1.10
-
-
-class LadderError(RuntimeError):
-    pass
 
 
 def _keys(x):
