@@ -76,3 +76,46 @@ def test_sign_p_is_the_exact_two_sided_binomial():
     assert lad.sign_p(1, 7) == pytest.approx(2 * 8 / 128)       # 0.125, /challenge-pr on #149
     assert lad.sign_p(7, 7) == lad.sign_p(0, 7)
     assert lad.sign_p(3, 6) == 1.0 and lad.sign_p(0, 0) == 1.0
+
+
+def test_lead_c3x_reads_its_columns_and_counts_c3_to_c3x():
+    """R9: with c3x leading its columns are paired too, and a c3 → c3x label change is counted."""
+    cols_x = lad.columns_of("c3x")
+    assert "c3x" in cols_x and "c3x_unlearned" in cols_x and "c3x" not in lad.COLUMNS
+
+    def rec(t, c):
+        return ({"runs": {"0|a": [_u(1, 1.0, 0.0)], "64|a": [_u(1, 1.0, t)]}},
+                {"runs": {"0|a": [_u(1, 1.0, 0.0)], "64|a": [_u(1, 1.0, c)]}})
+    t, c = rec(-0.4, 0.2)
+    f1 = {0: {"n": 1, "mean": 0.0, "median_p": 1.0}, 64: {"n": 1, "mean": -0.5, "median_p": 0.001}}
+    data = {"recs": {"f12": {k: t for k in cols_x}, "f12m": {k: c for k in cols_x},
+                     "f1": {k: f1 for k in cols_x}}, "lead": "c3x"}
+    data["recs"]["f12"]["c3x"], data["recs"]["f12m"]["c3x"] = rec(0.3, 0.1)
+    cols = lad.columns(data)
+    assert cols["F12m"]["c3x"][("F12m", "all")][64] == (pytest.approx(0.2), "above control")
+    x = lad.c3_to_c3x(cols["F12m"], {64: "c3"}, {64: "c3x"}, True)
+    assert x["n"] == 1 and (x["differ"][0]["c3"], x["differ"][0]["c3x"]) == ("below control", "above control")
+    assert lad.c3_to_c3x(cols["§1.5"], {64: "c3"}, {64: "c3x"}, True)["differ"][0]["c3x"] == "not"
+    assert lad.window(cols["F12m"], "above control", {0: "c2", 64: "c3x"}, col="c3x") == [64]
+
+
+def test_reproduce_names_the_records_that_differ():
+    """R9's first check: a c0–c3 control, trained or F1 record that differs from the other run's is named."""
+    def run():
+        r = {"runs": {"64|a": [_u(1, 1.0, 0.1)]}, "by_step": {"64": {}}, "records_readable": {"64": {}}}
+        return {"recs": {"f12": {c: json.loads(json.dumps(r)) for c in lad.COLUMNS},
+                         "f12m": {c: json.loads(json.dumps(r)) for c in lad.COLUMNS},
+                         "f1": {c: {64: {"mean": -0.1}} for c in lad.COLUMNS}}}
+    a, b = run(), run()
+    assert lad.reproduce(a, b) == []
+    b["recs"]["f12m"]["c2b"]["runs"]["64|a"][0]["stat"] = 0.2
+    b["recs"]["f12"]["c3_learned"]["records_readable"]["64"] = {"n": 1}
+    b["recs"]["f1"]["c0"][64]["mean"] = -0.2
+    assert lad.reproduce(a, b) == ["f12m_c2b", "f12_c3_learned", "f1_c0"]
+
+
+@pytest.mark.parametrize("extra", [["--reproduce", "m"], ["--reproduce", "m", "--reproduce-r2", "r2"],
+                                   ["--reproduce-labels", "lab"]])
+def test_reproduce_needs_its_own_r2_records_and_label_source(tmp_path, extra):
+    with pytest.raises(SystemExit, match="go together"):
+        lad.main(["--dir", str(tmp_path), "--r2", str(tmp_path), "--labels", str(tmp_path)] + extra)

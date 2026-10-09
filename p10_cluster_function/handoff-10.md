@@ -138,9 +138,15 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > labels per row** (F1, F12's gap, §1.5; c0–c3 reproduce R2's records per unit); only F1 is a
 > test: F12's gap label could not have moved (Δ ≈ −1 on both columns), so §1.5 is F1's.
 > *Parked (`/challenge-pr` on #169):* a shared `--lead` / `--reproduce` helper before R2m's copy. Fixed before any run: F1 / F12 / A0's readers would have
-> refused c3x's learned split (`9c387d4`; A0's reader is R3's, so R9 / R3 will not hit it). **Next here:
-> R9's R2m on c3x** (`p10_r2m_ladder.py` needs `--lead c3x` / `--reproduce`, as R1's and R2's
-> got), then R3, R6 → R6w → R6f, R7, each its own PR (`design-10.md` "R9"). The readers take
+> refused c3x's learned split (`9c387d4`; A0's reader is R3's, so R9 / R3 will not hit it).
+> **R9 / R2m done, 2026-10-09 (`status-10.md` §1.28; its title is the summary).** c0–c3
+> reproduce R2m's records. `p10_r2m_ladder.py` got `--lead` / `--reproduce` plus
+> `--reproduce-r2` (its reproduce reads R2's records too) and an "F12m above" window.
+> *The shared helper, parked here until R3:* the three ladders' reproduce checks take different
+> inputs (R2m a third directory) and compare different record shapes, so only the flag pairing
+> would be shared. `/challenge-pr` on #170 (finding 6) recommends building it at R3, the fourth
+> copy. **Next here: R9's R3 on c3x** (A0 under T4, `p10_r3_ladder.py`; build the helper first),
+> then R6 → R6w → R6f, R7, each its own PR (`design-10.md` "R9"). The readers take
 > `--labels <R9 labels> --column c3x`.
 > *Open (`/challenge-pr` on #166, finding 4):* R7, and likely R6w / R6f, could read c3x by
 > filtering their stored per-group c3 records instead of re-running; the user's call.
