@@ -175,7 +175,12 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > (`run_reference`: each draw is c3's rows less the dropped groups, links rebuilt; exact by check
 > (r1)). c3, c2a, c0 reproduce `r6f.json` exactly. Headline unchanged (6 of 6 frame, 0 of 100
 > draws move one); 6 of 60 per-passage cells change, within random drops (median 7, q95 10).
-> c3x drops smaller groups than the draws (6.0 against 7.2–7.7 members).
+> c3x drops smaller groups than the draws (6.0 against 7.2–7.7 members). `/challenge-pr` on #174,
+> finding 1: matching per record forces 185 of the 382 drops (72 records c3x empties), so 3 of
+> the 6 changed cells change in every draw and the reference cannot judge them; without them
+> c3x 3, draws median 4, q95 7. Check (r4) added. *Open for R7's rule, the user's:* match the
+> count per record (as here) or per (step, passage), which tests whether emptying whole records
+> is special to c3x. Recommended: per (step, passage) primary, per record beside.
 > **Next here: R7 on c3x**, its own PR (`design-10.md` "R9"), through `p10_r9_lead.add_args`,
 > with the random-drop reference in its rule before output (R6f's `drop_labels` /
 > `run_reference` pattern; R7 needs its own draw reader). *Open (`/challenge-pr`

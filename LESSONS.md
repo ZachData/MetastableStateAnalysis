@@ -873,6 +873,12 @@ needs the user to enable it on GitHub.
   read "learned" only because half its passages sat at the floor at init. Rules: **count the cells
   where the null sits at its floor before reading a signed difference against it; and where step
   0 carries a sign, read the paired difference to init beside the label.**
+- 2026-10-09, Phase 10 R9 / R6f: the random-drop reference matched c3x's drop count per record,
+  so in the 72 records c3x empties every draw had to drop the same groups (185 of 382 drops).
+  The 3 cells every draw changed were c3x's own changes, and the first write-up read them as
+  labels unstable to the set's edges (`status-10.md` §1.32; `/challenge-pr` on #174). Rule:
+  **before reading a reference, count what it holds fixed by construction (here: records where
+  the matched count is all of them), and set the cells it forces apart.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
