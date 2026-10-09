@@ -178,15 +178,29 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > c3x drops smaller groups than the draws (6.0 against 7.2–7.7 members). `/challenge-pr` on #174,
 > finding 1: matching per record forces 185 of the 382 drops (72 records c3x empties), so 3 of
 > the 6 changed cells change in every draw and the reference cannot judge them; without them
-> c3x 3, draws median 4, q95 7. Check (r4) added. *Open for R7's rule, the user's:* match the
-> count per record (as here) or per (step, passage), which tests whether emptying whole records
-> is special to c3x. Recommended: per (step, passage) primary, per record beside.
-> **Next here: R7 on c3x**, its own PR (`design-10.md` "R9"), through `p10_r9_lead.add_args`,
-> with the random-drop reference in its rule before output (R6f's `drop_labels` /
-> `run_reference` pattern; R7 needs its own draw reader). *Open (`/challenge-pr`
-> on #166, finding 4), now for R7 only:* re-run, or filter its stored per-group c3 records. The
-> user's "re-running" was given for R6w. R7 scores each group against its own floor, so
-> filtering may be exact there (not checked against its code).
+> c3x 3, draws median 4, q95 7. Check (r4) added.
+> **R9 / R7 done, 2026-10-09 (`status-10.md` §1.33; its title is the summary).** Rule
+> `design-10.md` "R9 / R7" (`a5be32d`, before any c3x R7 reading). The user's calls (2026-10-09):
+> **filter, after checking the code** (checked: the c3 set enters R7's run only through the
+> self-similarity split; every stored group's label reads its own members and the full
+> clustering, so the filter is exact; structure check 0 mismatches at 3 024 records), and the
+> reference **matched per (step, passage)**, per record beside. `p10_r7_shuffle.py reread`
+> (`f344ac3`); c3 and c2 reproduce `r7.json` exactly. 0 of 24 step labels change; 7 of 144
+> band / per-passage cells, all toward context, within random drops at the edge (q95 7, c3x 7,
+> p 0.08; none forced under this match; per record 5 of 7 forced). 98.5 % of c3x's drops have a
+> floor below chance (draws 53 %), but that is 14 % of such groups (460 of 3 182), label-blind
+> within them (token-alone 80 % against 82 %); so the own floor's token-alone share falls and
+> the fixed bar's rises (11 of 12 steps): c3x narrows the gap between the bars. `/challenge-pr`
+> on #175: accept with changes; 1 (the title's "c3 less the floor-below-chance groups" was
+> wrong), 2 (fixed bar), 4 (boundary test) taken; 3 (the floor-matched draw is answered by the
+> beside numbers) taken, so that Parked item is withdrawn. **R9 is complete:** every row the
+> rule lists is read. **If a later row quotes c3x's R7 shares,** quote both bars (they move
+> opposite ways). **Next, for the user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a
+> Parked item (the two parked for after R9: an all-attractive OV intervention under 1e, energy
+> against c3x's groups).
+> *Parked (R9 / R7):* **c3x's self-similarity** (members against the rest per condition). Why:
+> the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
+> storing per-token cosines. Decision: none (beside in R7's rule).
 >
 > **R8x done, 2026-10-08 (`status-10.md` §1.25; its title is the summary).** Blocked 27 (c), the
 > user's: the exact check, rule `design-10.md` "R8x" (`ced45f5`, before any P > 0 label).

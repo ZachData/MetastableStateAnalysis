@@ -18,6 +18,10 @@ Tier 1: exploratory, unregistered, descriptive. Run (METS_DATA set; see `run_r7.
     python tools/run/p10_r7_shuffle.py run --step step512 --labels <R0 labels> --unit1 <R0 unit1> \
         --index <stage0_index.json> --out <dir>
     python tools/run/p10_r7_shuffle.py read --src <dir> --labels <R0 labels> --out <r7.json>
+R9 / R7 (`design-10.md` "R9 / R7"): c3x beside c3 on the stored records (filtered, exact), with the
+random-drop reference matched per (step, passage) and per record:
+    python tools/run/p10_r7_shuffle.py reread --src <dir> --labels <R9 labels> --out <file> --lead c3x \
+        [--reproduce <r7.json> --reproduce-labels <R0 labels>] [--draws 100]
 """
 import argparse
 import hashlib
@@ -367,22 +371,31 @@ def primary_column(r0_step: dict) -> str:
     return "c3" if recs and ok / len(recs) >= 0.5 else "c2"
 
 
-def read_step(recs, column: str) -> dict:
-    """Labels pooled over prompts and layers for one step and column (c3 or c2)."""
+def step_rows(recs) -> list:
+    """Every stored c2 group-layer record of one step, labelled (its id, size and c3 flag kept, R9 / R7)."""
     rows = []
     for r in recs:
         for lay in r["layers"]:
             for g in lay.get("groups", []):
-                if column == "c3" and not g["c3"]:
-                    continue
                 gg = {"J0": g["J0"], "J": _block_js(g)}
                 own, fixed = group_label(gg), group_label(gg, FIXED_BAR)
                 ch = [g["chance95"][c] for c in g["chance95"]]
-                rows.append({"passage": r["passage"], "layer": lay["layer"], "label": own["label"],
+                rows.append({"passage": r["passage"], "layer": lay["layer"], "id": g["id"], "size": g["size"],
+                             "c3": g["c3"], "label": own["label"],
                              "label_fixed": fixed["label"], "surv": own["survives"],
                              "same_class": g["same_class"],
                              "J0_below_chance": bool(np.nanmedian(ch) > g["J0"]) if ch else None,
                              "token_fail_b1": own["label"] == "token-borne" and not own["survives"]["b1"]})
+    return rows
+
+
+def read_step(recs, column: str) -> dict:
+    """Labels pooled over prompts and layers for one step and column (c3 or c2)."""
+    return read_rows([r for r in step_rows(recs) if column != "c3" or r["c3"]])
+
+
+def read_rows(rows) -> dict:
+    """R7's reading of one step's rows: shares, step label, bands, prompts."""
     out = tally(r["label"] for r in rows)
     out["label"] = step_label(out["token_share"])
     out["fixed_bar"] = tally(r["label_fixed"] for r in rows)
@@ -425,25 +438,307 @@ def read_selfsim(recs, column_c3=True) -> dict:
     return {lv: {s: (float(np.median(x)) if x else None) for s, x in d.items()} for lv, d in acc.items()}
 
 
+def _step_n(step: str) -> int:
+    return int(step.removeprefix("step"))
+
+
+def records_by_step(src: Path) -> dict:
+    by_step = {}
+    for r in _records(src):
+        by_step.setdefault(r["step"], []).append(r)
+    return {s: by_step[s] for s in sorted(by_step, key=_step_n)}
+
+
+def read_steps(by_step: dict, labels: Path) -> dict:
+    """`read`'s per-step entries (c3 and c2 on the label source ``labels``)."""
+    out = {}
+    for step, recs in by_step.items():
+        out[step] = {"n_prompts": len(recs), "primary": primary_column(ls.load_step(labels, step)),
+                     "c3": read_step(recs, "c3"), "c2": read_step(recs, "c2"),
+                     "selfsim": read_selfsim(recs),
+                     "refused_layers": sum("refused" in lay for r in recs for lay in r["layers"]),
+                     "massive_dropped": sum(sum(lay.get("massive_dropped", {}).values())
+                                            for r in recs for lay in r["layers"])}
+    return out
+
+
+# ---------------------------------------------------------------- R9 / R7: c3x beside c3, filtered (pure)
+# `design-10.md` "R9 / R7". A group's stored label reads only its own members and each condition's
+# clustering of all kept offsets, so a column that is a subset of c3 is c3's rows less the others.
+
+N_DRAWS, QUANTILE = 100, 0.95
+MATCHES = ("step_passage", "record")    # the rule's match, then R6f's beside
+
+
+def domains(src: Path, steps) -> dict:
+    """{(step, passage, layer): {"c3", "c3x"} domain labels} from the R9 source."""
+    out = {}
+    for s in steps:
+        for p, pr in ls.load_step(src, s)["prompts"].items():
+            for L, lay in pr["layers"].items():
+                out[(s, p, int(L))] = {c: np.asarray(lay[c], dtype=int) for c in ("c3", "c3x")}
+    return out
+
+
+def ids_of(lab: np.ndarray) -> set:
+    return set(map(int, np.unique(lab[lab >= 0])))
+
+
+def check_structure(by_step: dict, src: Path) -> list:
+    """The rule's structure check: stored ids are the source's c2, stored c3 flags its c3, c3x ⊆ c3
+    with the same members. The mismatching (step, passage, layer)s."""
+    bad = []
+    for s, recs in by_step.items():
+        d = ls.load_step(src, s)
+        for r in recs:
+            for lay in r["layers"]:
+                if "refused" in lay:
+                    continue
+                src_lay = d["prompts"][r["passage"]]["layers"][str(lay["layer"])]
+                L = {c: np.asarray(src_lay[c], dtype=int) for c in ("c2", "c3", "c3x")}
+                c3, c3x = ids_of(L["c3"]), ids_of(L["c3x"])
+                if ({g["id"] for g in lay["groups"]} != ids_of(L["c2"])
+                        or {g["id"] for g in lay["groups"] if g["c3"]} != c3 or not c3x <= c3
+                        or any(not np.array_equal(L["c3"] == i, L["c3x"] == i) for i in c3x)):
+                    bad.append((s, r["passage"], lay["layer"]))
+    return bad
+
+
+def c3x_drops(dom: dict) -> dict:
+    """{key: the c3 group ids c3x drops there}."""
+    return {k: ids_of(d["c3"]) - ids_of(d["c3x"]) for k, d in dom.items()}
+
+
+def draw_drops(dom: dict, x_drops: dict, match: str, rng: np.random.Generator) -> dict:
+    """One draw: c3x's count of dropped c3 groups per record (``match`` "record") or pooled over the
+    layers of each (step, passage) ("step_passage"), uniformly without replacement. Keys sorted, so
+    the seed fixes the draw."""
+    out = {k: set() for k in dom}
+    if match == "record":
+        for k in sorted(dom):
+            if x_drops[k]:
+                out[k] = set(map(int, rng.choice(sorted(ids_of(dom[k]["c3"])), len(x_drops[k]), replace=False)))
+        return out
+    if match != "step_passage":
+        raise ValueError(match)
+    by_sp = {}
+    for k in sorted(dom):
+        by_sp.setdefault(k[:2], []).append(k)
+    for sp, keys in by_sp.items():
+        n = sum(len(x_drops[k]) for k in keys)
+        if n:
+            pool = [(k, g) for k in keys for g in sorted(ids_of(dom[k]["c3"]))]
+            for i in rng.choice(len(pool), n, replace=False):
+                out[pool[i][0]].add(pool[i][1])
+    return out
+
+
+def drop_labels(dom: dict, dropped: dict) -> dict:
+    """{key: c3 with the dropped groups' members → −1}."""
+    return {k: np.where(np.isin(d["c3"], sorted(dropped.get(k, ()))), -1, d["c3"]) for k, d in dom.items()}
+
+
+def read_column(rows: dict, labs: dict, keep, steps) -> dict:
+    """{step: {"primary": "own" or "c2", "read": read_rows of the kept c3 rows}}: own where at least
+    half the step's records are readable on ``labs`` (as `primary_column`)."""
+    out = {}
+    for s in steps:
+        recs = [lab for (st, _, _), lab in labs.items() if st == s]
+        ok = sum(ls.readable(lab) for lab in recs)
+        out[s] = {"primary": "own" if recs and ok / len(recs) >= 0.5 else "c2",
+                  "read": read_rows([r for r in rows[s] if r["c3"] and keep(s, r)])}
+    return out
+
+
+def cells(col: dict, steps) -> dict:
+    """{"step|cell": label} at ``steps``: the step label on the own floor and the fixed bar (the
+    headline), each band's and each prompt's. ``None``: the column reads on c2 there (not held)."""
+    out = {}
+    for s in steps:
+        held, t = col[s]["primary"] == "own", col[s]["read"]
+        out[f"{s}|step own"] = t["label"] if held else None
+        out[f"{s}|step fixed"] = step_label(t["fixed_bar"]["token_share"]) if held else None
+        for b in BANDS:
+            out[f"{s}|band {b}"] = t["bands"][b]["label"] if held else None
+        for p in mt.V1_PASSAGES:
+            out[f"{s}|prompt {p}"] = t["prompts"][p]["label"] if held else None
+    return out
+
+
+def is_headline(key: str) -> bool:
+    return "|step " in key
+
+
+def compare_cells(ref: dict, col: dict) -> dict:
+    """A cell is compared when either side holds a label, and changes when the two differ."""
+    keys = sorted(set(ref) | set(col))
+    compared = [k for k in keys if ref.get(k) is not None or col.get(k) is not None]
+    changed = [k for k in compared if ref.get(k) != col.get(k)]
+    return {"n_compared": len(compared), "n_changed": len(changed), "changed": changed,
+            "headline_changed": [k for k in changed if is_headline(k)]}
+
+
+def drop_profile(rows: dict, dropped: dict, steps) -> dict:
+    """The dropped group-layer records at ``steps``: count, mean size, own-floor label shares, the
+    share with `J0` below chance (what a count-matched draw does not match)."""
+    rs = [r for s in steps for r in rows[s] if r["c3"] and r["id"] in dropped.get((s, r["passage"], r["layer"]), ())]
+    n = len(rs)
+    return {"n": n, "mean_size": float(np.mean([r["size"] for r in rs])) if n else None,
+            "label_share": {lab: sum(r["label"] == lab for r in rs) / n if n else None for lab in LABELS},
+            "J0_below_chance": sum(bool(r["J0_below_chance"]) for r in rs) / n if n else None}
+
+
+def reference_reading(obs: int, counts: list) -> dict:
+    """Within random drops if ``obs`` ≤ the draws' 95th percentile, else beyond; the rank p beside."""
+    q = float(np.quantile(counts, QUANTILE, method="higher"))
+    return {"obs": obs, "q95": q, "median": float(np.median(counts)),
+            "reading": "within random drops" if obs <= q else "beyond random drops",
+            "rank_p": (1 + sum(x >= obs for x in counts)) / (len(counts) + 1)}
+
+
+def run_reference(rows, dom, x_drops, steps, compared, c3_cells, x_cmp, match, n_draws) -> dict:
+    """The random-drop reference under one match: (r3) the first draw is read and checked populated
+    before the rest; each count against c3x's."""
+    draws = []
+    for seed in range(n_draws):
+        dropped = draw_drops(dom, x_drops, match, np.random.default_rng(seed))
+        col = read_column(rows, drop_labels(dom, dropped),
+                          lambda s, r, d=dropped: r["id"] not in d[(s, r["passage"], r["layer"])], steps)
+        cmp = compare_cells(c3_cells, cells(col, compared))
+        n_rec = sum(col[s]["read"]["n"] for s in compared)
+        if seed == 0 and (not n_rec or not cmp["n_compared"]):
+            raise ShuffleError(f"check (r3): the first draw has {n_rec} records, {cmp['n_compared']} "
+                               "compared cells; refusing")
+        draws.append({"seed": seed, "n_records": n_rec, "n_changed": cmp["n_changed"],
+                      "n_headline_changed": len(cmp["headline_changed"]), "changed": cmp["changed"],
+                      "profile": drop_profile(rows, dropped, compared)})
+    counts, head = [d["n_changed"] for d in draws], [d["n_headline_changed"] for d in draws]
+    every = sorted({k for d in draws for k in d["changed"]} | set(x_cmp["changed"]))
+    always = sorted(k for k in every if all(k in d["changed"] for d in draws))
+    prof = [d["profile"] for d in draws]
+    q = lambda xs: {"median": float(np.median(xs)), "5_95": [float(np.quantile(xs, 0.05)), float(np.quantile(xs, 0.95))]}
+    return {"match": match, "n_draws": n_draws, "seeds": [0, n_draws - 1], "quantile": QUANTILE,
+            "quantile_method": "higher",
+            "all": reference_reading(x_cmp["n_changed"], counts),
+            "headline": reference_reading(len(x_cmp["headline_changed"]), head),
+            "cell_share": {k: sum(k in d["changed"] for d in draws) / n_draws for k in every},
+            "forced": {"cells_every_draw_changes": always,
+                       "all_without_them": reference_reading(sum(k not in always for k in x_cmp["changed"]),
+                                                             [sum(k not in always for k in d["changed"]) for d in draws])},
+            "draws_profile": {"mean_size": q([p["mean_size"] for p in prof]),
+                              "label_share": {lab: q([p["label_share"][lab] for p in prof]) for lab in LABELS},
+                              "J0_below_chance": q([p["J0_below_chance"] for p in prof])},
+            "draws": [{k: d[k] for k in ("seed", "n_records", "n_changed", "n_headline_changed")} for d in draws]}
+
+
+def reproduce(data: dict, stored: dict) -> list:
+    """The steps whose c3 / c2 entry read on the new source differs from the stored `r7.json`'s."""
+    return [s for s in stored["steps"] if data["steps"].get(s) != stored["steps"][s]]
+
+
+def reread(argv=None) -> int:
+    """R9 / R7: c3x beside c3 on the stored records, and the random-drop reference."""
+    from tools.run import p10_r9_lead as lead_args
+    ap = argparse.ArgumentParser(prog="p10_r7_shuffle reread")
+    ap.add_argument("--src", type=Path, required=True, help="R7's records dir")
+    ap.add_argument("--labels", type=Path, required=True, help="the R9 label source (with c3x)")
+    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--draws", type=int, default=N_DRAWS)
+    lead_args.add_args(ap, "R7")
+    a = ap.parse_args(argv)
+    lead_args.reproduce_inputs(a)
+    summary = a.labels / "summary.json"
+    if not summary.exists():
+        raise SystemExit(f"no {summary}: the input would be unnamed")
+    by_step = records_by_step(a.src)
+    steps = list(by_step)
+    bad = check_structure(by_step, a.labels)
+    if bad:
+        raise ShuffleError(f"structure check: stored groups are not the source's at {bad[:3]}; refusing")
+    print(f"structure check: {sum(len(r['layers']) for v in by_step.values() for r in v)} records match the source")
+    mine = json.loads(json.dumps(read_steps(by_step, a.labels)))
+
+    def load(rec: Path, labels: Path) -> dict:
+        stored = json.loads(Path(rec).read_text())
+        if stored["meta"]["labels"] != str(labels):
+            raise lead_args.LadderError(f"{rec} read {stored['meta']['labels']}, not {labels}")
+        return stored
+    reproduces = lead_args.check_reproduces(a, {"steps": mine}, load, reproduce, "c3 and c2, every step")
+
+    rows = {s: step_rows(recs) for s, recs in by_step.items()}
+    dom = domains(a.labels, steps)
+    c3 = read_column(rows, {k: d["c3"] for k, d in dom.items()}, lambda s, r: True, steps)
+    compared = [s for s in steps if c3[s]["primary"] == "own"]
+    if any(json.dumps(c3[s]["read"]) != json.dumps(mine[s]["c3"])
+           or (mine[s]["primary"] == "c3") != (s in compared) for s in steps):
+        raise ShuffleError("c3 through the column reader is not read_step's c3; refusing")
+    out = {"checks": {"structure": True}, "compared_steps": compared,
+           "columns": {"c3": json.loads(json.dumps(c3))}}
+    prim = {_step_n(s): ("c3" if s in compared else "c2") for s in steps}
+    if a.lead == "c3x":
+        x = read_column(rows, {k: d["c3x"] for k, d in dom.items()},
+                        lambda s, r: bool(np.any(dom[(s, r["passage"], r["layer"])]["c3x"] == r["id"])), steps)
+        if not x[compared[0]]["read"]["n"]:
+            raise ShuffleError(f"c3x has no records at {compared[0]}; refusing")
+        print(f"c3x at {compared[0]}: {x[compared[0]]['read']['n']} group-layer records")
+        prim = {_step_n(s): ("c3x" if x[s]["primary"] == "own" else "c2") for s in steps}
+        x_drops = c3x_drops(dom)
+        # check (r1): c3 less c3x's dropped groups is c3x, labels and cells (a valid draw under both
+        # matches: it has their counts by construction)
+        labs = drop_labels(dom, x_drops)
+        if any(not np.array_equal(labs[k], dom[k]["c3x"]) for k in dom):
+            raise ShuffleError("check (r1): c3 less c3x's drops is not c3x's labels; refusing")
+        xd = read_column(rows, labs, lambda s, r: r["id"] not in x_drops[(s, r["passage"], r["layer"])], steps)
+        if json.dumps(xd) != json.dumps(x):
+            raise ShuffleError("check (r1): c3 less c3x's drops is not c3x's reading; refusing")
+        none = read_column(rows, drop_labels(dom, {}), lambda s, r: True, steps)
+        if json.dumps(none) != json.dumps(c3):    # check (r2)
+            raise ShuffleError("check (r2): a draw dropping nothing is not c3; refusing")
+        out["checks"].update(r1_c3_less_drops_is_c3x=True, r2_no_drop_is_c3=True)
+        out["columns"]["c3x"] = json.loads(json.dumps(x))
+        c3_cells = cells(c3, compared)
+        x_cmp = compare_cells(c3_cells, cells(x, compared))
+        out["c3x_vs_c3"] = {**x_cmp, "c3_cells": c3_cells, "c3x_cells": cells(x, compared)}
+        sp = {}
+        for k in dom:
+            sp.setdefault(k[:2], []).append(k)
+        out["c3x_drops"] = {
+            "group_layer_records": sum(len(v) for v in x_drops.values()),
+            "records_emptied": sum(1 for k, d in dom.items() if x_drops[k] and not (d["c3x"] >= 0).any()),
+            "step_passages_emptied": sum(1 for ks in sp.values()
+                                         if any(x_drops[k] for k in ks) and not any((dom[k]["c3x"] >= 0).any() for k in ks)),
+            "profile_compared_steps": drop_profile(rows, x_drops, compared)}
+        if a.draws > 0:
+            out["reference"] = {m: run_reference(rows, dom, x_drops, steps, compared, c3_cells, x_cmp, m, a.draws)
+                                for m in MATCHES}
+    out["meta"] = {**lead_args.header(a.labels, hashlib.sha256(summary.read_bytes()).hexdigest(), a.lead,
+                                      reproduces, prim, json.loads(summary.read_text())),
+                   "src": str(a.src), "draws": a.draws if a.lead == "c3x" else 0, "matches": list(MATCHES),
+                   "git": _git_head(), "python": sys.version.split()[0], "numpy": np.__version__,
+                   "runner_dirty": bool(subprocess.run(
+                       ["git", "-C", str(REPO), "status", "--porcelain", "--", "tools/run/p10_r7_shuffle.py",
+                        "tools/run/p10_r9_lead.py"], capture_output=True, text=True).stdout.strip())}
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    a.out.write_text(json.dumps(out, indent=1) + "\n")
+    msg = f"wrote {a.out}; compared steps {compared[0]}–{compared[-1]}"
+    if a.lead == "c3x":
+        v = out["c3x_vs_c3"]
+        msg += f"; c3x vs c3: {v['n_changed']} of {v['n_compared']} cells change, headline {len(v['headline_changed'])}"
+        for m, ref in out.get("reference", {}).items():
+            msg += (f"; {m}: all {ref['all']['reading']} (q95 {ref['all']['q95']:g}, p {ref['all']['rank_p']:.2f}), "
+                    f"headline {ref['headline']['reading']} (q95 {ref['headline']['q95']:g})")
+    print(msg)
+    return 0
+
+
 def read(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="p10_r7_shuffle read")
     ap.add_argument("--src", type=Path, required=True)
     ap.add_argument("--labels", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
-    by_step = {}
-    for r in _records(a.src):
-        by_step.setdefault(r["step"], []).append(r)
-    res = {"meta": {"git": _git_head(), "src": str(a.src), "labels": str(a.labels)}, "steps": {}}
-    for step in sorted(by_step, key=lambda s: int(s.removeprefix("step"))):
-        recs = by_step[step]
-        col = primary_column(ls.load_step(a.labels, step))
-        res["steps"][step] = {"n_prompts": len(recs), "primary": col,
-                              "c3": read_step(recs, "c3"), "c2": read_step(recs, "c2"),
-                              "selfsim": read_selfsim(recs),
-                              "refused_layers": sum("refused" in lay for r in recs for lay in r["layers"]),
-                              "massive_dropped": sum(sum(lay.get("massive_dropped", {}).values())
-                                                     for r in recs for lay in r["layers"])}
+    res = {"meta": {"git": _git_head(), "src": str(a.src), "labels": str(a.labels)},
+           "steps": read_steps(records_by_step(a.src), a.labels)}
     a.out.write_text(json.dumps(res, indent=1) + "\n")
     print(f"{'step':>8} {'col':>3} {'n':>5} {'token':>6} {'bag':>5} {'order':>6} {'label':>8}  "
           + " ".join(f"{lv:>6}" for lv in [f"b{b}" for b in BLOCKS] + ["alone"]))
@@ -457,10 +752,11 @@ def read(argv=None) -> int:
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] not in ("run", "read"):
-        print("usage: p10_r7_shuffle.py {run,read} ...", file=sys.stderr)
+    cmds = {"run": run, "read": read, "reread": reread}
+    if not argv or argv[0] not in cmds:
+        print("usage: p10_r7_shuffle.py {run,read,reread} ...", file=sys.stderr)
         return 2
-    return (run if argv[0] == "run" else read)(argv[1:])
+    return cmds[argv[0]](argv[1:])
 
 
 if __name__ == "__main__":
