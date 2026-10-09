@@ -157,15 +157,28 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > §1.20's five headline clauses on c3x beside c3, each with a placed change condition. Re-run,
 > not filtered (a kind depends on every group at both steps). c0–c3 reproduce `r6.json` exactly;
 > none of the five clauses changes (stable within 0.009 from 4000; > 0.05 only at 2 → 16).
-> **Next here: R6w → R6f, R7 on c3x**, each its own PR (`design-10.md` "R9"), each ladder through
-> `p10_r9_lead.add_args`; first the user's call on the *Open* item below (re-run, or filter the
-> stored per-group c3 records). The readers take `--labels <R9 labels> --column c3x`.
-> *Open (`/challenge-pr` on #166, finding 4):* R7, and likely R6w / R6f, could read c3x by
-> filtering their stored per-group c3 records instead of re-running; the user's call. *Bearing
-> on it (from R9 / R6):* R6w's split (stable / entering / exiting) rests on link kinds, and a c3x
-> kind is not a filtered c3 kind (dropping one piece of a c3 split leaves a c3x stable link), so
-> filtering R6w's stored records would carry c3's kinds; R6w takes `--r6`, now on c3x at
-> `data/p10/reread_r9_2026-10-08/r6/r6.json`. R7 scores each group against its own floor, so filtering may be exact there (not checked against its code).
+> **R9 / R6w done, 2026-10-09 (`status-10.md` §1.31; its title is the summary).** Rule
+> `design-10.md` "R9 / R6w" (`67738b6`, before any c3x R6w output): R6w's 84 labels per column
+> on c3x beside c3, §1.21's headline = the 14 layer-mean primary-span cells. Re-run (the user,
+> 2026-10-09: "re-running"). `p10_r6w_drift.py` got `--lead` / `--reproduce` (helper) and
+> `c3x_vs_c3`; c3, c2a, c0 reproduce `r6w.json` exactly. By the rule the headline changes in 1
+> of 14 cells, at the floor (adjacency on R1's records, +0.0495 → +0.0595); what §1.21 quoted
+> holds (embedding drifts within, ≤ 0.012); 12 of 77 in all, 9 on single layers §1.21 did not
+> read. `/challenge-pr` on #173: 1–3 taken, 4 parked below for the user.
+> *Parked (`/challenge-pr` on #173, finding 4), the user's, before R6f / R7's rules freeze:*
+> "n of N labels change" has no reference. Either fix a margin at the floor (a crossing within
+> it is not a change) or add a random-drop reference (drop c3x's count of c3's groups at random,
+> re-read, count changed labels). Why: every R9 row so far reports changes at the floor. Cost:
+> a margin is a rule line; a reference is ~1–2 min per draw per row. Could change: whether R9's
+> "1 of 14" / "12 of 77" read as c3x or as noise.
+> **Next here: R6f, then R7 on c3x**, each its own PR (`design-10.md` "R9"), each through
+> `p10_r9_lead.add_args`. R6f re-scores R6w's terms in a fixed frame and checks them against
+> `r6w.json`, so on c3x it reads `data/p10/reread_r9_2026-10-08/r6w/r6w.json` and re-runs;
+> `p10_r6f_frame.py` takes `cols = w.COLUMNS` and calls `w.setup(...)` without columns, so it
+> needs `w.columns_of(lead)` passed through (setup now takes `columns`). *Open (`/challenge-pr`
+> on #166, finding 4), now for R7 only:* re-run, or filter its stored per-group c3 records. The
+> user's "re-running" was given for R6w. R7 scores each group against its own floor, so
+> filtering may be exact there (not checked against its code).
 >
 > **R8x done, 2026-10-08 (`status-10.md` §1.25; its title is the summary).** Blocked 27 (c), the
 > user's: the exact check, rule `design-10.md` "R8x" (`ced45f5`, before any P > 0 label).

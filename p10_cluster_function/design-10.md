@@ -486,6 +486,23 @@ c2a, c2 and c3 pooled on the R9 source equal R6's `r6.json` exactly (`--reproduc
 summary of the source it names); c3x holds groups at 143000 before any chain runs. Results:
 `status-10.md` §1.30.
 
+**R9 / R6w (fixed 2026-10-09, before any c3x R6w output).** R6w's rule unchanged, with c3x
+added as a column and leading (c3, c2a, c0 beside); c3x's births and deaths split by c2a's fate,
+as c3's (its ids are c2a's). **Re-run, not filtered** (the user, 2026-10-09: "re-running"; a
+c3x kind is not a filtered c3 kind, R9 / R6). Inputs: the R9 source, R9's R1 records (check (a)
+on c3x against `cm_c3x` / `lc_c3x`), R9's `r6.json` (check (d) on c3x). **Cells:** R6w's label
+(no drift / within / both / replacement / unlabelled) per span (512 → 143000, 64 → 512) × level
+(L12, L24, layer mean) × statistic (7), on the rule's fixed record set and on R1's own set
+beside: 84 per column. A cell **changes** when c3x's label differs from c3's; a level with no
+records on either column is reported and not compared. **§1.21's headline changes** when any of
+its 14 cells changes (layer mean, 512 → 143000, both record sets); the other 70 are counted
+beside. Beside whatever the labels say: c3x's total, within and largest replacement term next
+to c3's on every headline cell, and the identical / changed paired links. **First checks
+(refuse):** R6w's (a)–(e) on every column; c3, c2a and c0 read on the R9 source equal the
+stored `r6w.json` exactly (`--reproduce`, with the summary of the source it names); c3x's span
+records are non-empty at the primary span's layer mean before any span is read. **It does not:**
+change R6w's floor or bounds; read R6f (its own row, next). Results: `status-10.md` §1.31.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
