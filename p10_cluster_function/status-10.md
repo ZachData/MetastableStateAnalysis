@@ -40,6 +40,7 @@
   - R9 / R2, the transport row (F1), the corrected-density gap (F12) and their joint "parked" reading, again with c3x leading, c0–c3 reproducing R2's records exactly. Nothing changes: 0 of 12 labels per row, the windows are R2's (negative and parked at 64–512), and at 64–143000 means move by up to 0.03 (F1) and 0.07 (F12, at 1000). Only F1's is a test: F12's gap label could not have changed, since it sits about 1 below its baseline on both columns, so the joint reading here is F1's — `p10_cluster_function/status-10.md` §1.27
   - R9 / R2m, F12 against its matched control and the joint "parked" reading, again with c3x leading, c0–c3 reproducing R2m's records exactly. Unchanged: the windows are R2m's (below the control at 8–256, parked at 64–256) and the late "above" is the same (+0.12 to +0.28, 6–7 of 7 prompts). One label of 12 changes: step 512 moves from as to above the control, a value crossing the floor from within 0.005 with 2 of 7 prompts below. So on c3x the "as dense" stretch is 1000 alone. The raw sign beside it changes at 1000 and 2000, but the control moves with it, so the matched gap moves by at most 0.02; a shift that size could flip only 512 and 1000, and the steps that set the windows sat 0.07 or more from the floor — `p10_cluster_function/status-10.md` §1.28
   - R9 / R3, A0 under T4 again with c3x leading, c0–c3 reproducing R3's record at every unit. By the rule no label moves (no flip in the sweep, the residual appears 1000–2000 and persists on the primary, 0 of 12 per-step labels change), and the same-position residual is still a window at 2000–16000 (+0.06 to +0.12 on c3x), gone from 32000. Where the residual starts is not resolved by 7 prompts on either column: at 2000 it reads residual in 0.60 (c3) and 0.52 (c3x) of prompt resamples; from 8000 it is stable — `p10_cluster_function/status-10.md` §1.29
+  - R9 / R6, the cross-checkpoint matcher re-run with c3x as a column, c0–c3 reproducing R6's record exactly. None of R6's five headline readings changes by the rule fixed before the run: from 4000 the share of groups surviving each boundary is within 0.009 of c3's (0.56–0.67), survivors keep a median 75–83 % of their members, new births and deaths stay ≤ 7 %, no lineage at 143000 starts before 256, and chains still outlast independent breaks (10.9 % reach 2000 against 3.7 %). The columns differ by more than 0.05 only at 2–16, where c3's groups are mostly chance passes — `p10_cluster_function/status-10.md` §1.30
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -67,7 +68,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `659da2e6f6`
+- **Reviewed:** 2026-10-09 · body `c21bf40bd9`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2321,6 +2322,82 @@ tools/run/p10_r3_ladder.py --record <dir>/r3/a0.json --labels <dir>/labels --lea
 data/analysis/p10_row_a0.json --reproduce data/p10/reread_r3_2026-10-05/a0.json
 --reproduce-labels data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r3_ladder.py`
 (lead, c3 → c3x, reproduce, the flags together), `tests/test_p10_r9_lead.py` (the helper).
+
+### 1.30 R9 / R6 on c3x — **the matcher's reading is unchanged with c3x leading: none of §1.20's five headline clauses changes by the rule. From 4000 c3x's stable share is within 0.009 of c3's at every boundary (0.56–0.67 at 4000–54000, 0.52 over the last step), stable links keep a median 75–83 % of their union (identical 22–31 %), new births and deaths are ≤ 7 % of all of them, no 143000 lineage starts before 256 (89 % after 2000), and chains still outlast independent breaks (10.9 % reach 2000 against 3.7 %). Stable shares differ by more than 0.05 only at 2 → 16, where c3's groups are mostly chance passes (c3x's step-0 floor is 29 of c3's 62)**
+
+**What ran** (`design-10.md` "R9 / R6", fixed before any c3x matcher output, `a42a477`).
+`tools/run/p10_r6_matcher.py --lead c3x`: R6 unchanged, with c3x added as a column (flips and
+lineage by id against c2a, as c3) and `clauses` reading the rule's five change conditions on
+c3x beside c3. **Re-run, not filtered** (the handoff's *Open* item does not arise for this row):
+a kind depends on every group at both steps, so c3's stored links cannot be filtered into
+c3x's. No forward pass, 1.5 min on 14 processes.
+
+**Inputs.** R9's label source `data/p10/reread_r9_2026-10-08/labels/` (summary sha256
+`5b758a2c`); 7 v1 passages × L1–24 × 18 steps; every record read. Output
+`data/p10/reread_r9_2026-10-08/r6/r6.json` (md5 `1c1b9a1b`), log beside. The output's `git`
+reads `a42a477` (the rule commit): the matcher's changes were this PR's working tree, unchanged
+since the run. **First checks pass:** c2a at 0 → 2 stable 0.9995 (bar 0.9); c0, c1, c1c, c2a,
+c2 and c3 pooled on R9's source equal R6's `r6.json` exactly (every boundary row, both lineage
+histograms, the baselines; that record names R0's source by its summary); c3x holds 792
+group-layer records at 143000.
+
+**Per boundary** (pooled over 168 chains; columns as §1.20's table: groups, stable, death, the
+stable links' Jaccard (median; identical), births + deaths kept / restructured / new):
+
+| from → to | c3 groups | c3 stable | c3 death | c3 J | c3 flips | c3x groups | c3x stable | c3x death | c3x J | c3x flips |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 → 2 | 62 → 61 | 0.97 | 0.03 | 1.00; 1.00 | 3 / 0 / 0 | 29 → 28 | 0.97 | 0.03 | 1.00; 1.00 | 1 / 0 / 0 |
+| 2 → 4 | 61 → 63 | 0.64 | 0.36 | 1.00; 0.92 | 39 / 6 / 1 | 28 → 33 | 0.75 | 0.25 | 1.00; 0.95 | 16 / 3 / 0 |
+| 4 → 8 | 63 → 55 | 0.29 | 0.71 | 1.00; 0.72 | 55 / 25 / 2 | 33 → 29 | 0.36 | 0.64 | 1.00; 0.67 | 26 / 12 / 0 |
+| 8 → 16 | 55 → 96 | 0.22 | 0.78 | 0.88; 0.33 | 74 / 39 / 14 | 29 → 58 | 0.28 | 0.72 | 0.88; 0.25 | 38 / 24 / 9 |
+| 16 → 32 | 96 → 67 | 0.06 | 0.94 | 0.30; 0.00 | 56 / 37 / 58 | 58 → 56 | 0.09 | 0.91 | 0.33; 0.00 | 39 / 31 / 34 |
+| 32 → 64 | 67 → 248 | 0.36 | 0.63 | 0.40; 0.08 | 115 / 64 / 85 | 56 → 230 | 0.38 | 0.61 | 0.41; 0.05 | 108 / 60 / 73 |
+| 64 → 128 | 248 → 307 | 0.35 | 0.62 | 0.65; 0.06 | 136 / 121 / 102 | 230 → 269 | 0.34 | 0.63 | 0.67; 0.05 | 127 / 117 / 82 |
+| 128 → 256 | 307 → 326 | 0.33 | 0.66 | 0.67; 0.10 | 257 / 124 / 44 | 269 → 297 | 0.34 | 0.65 | 0.67; 0.09 | 237 / 113 / 29 |
+| 256 → 512 | 326 → 598 | 0.40 | 0.55 | 0.62; 0.28 | 252 / 236 / 142 | 297 → 551 | 0.41 | 0.55 | 0.61; 0.28 | 244 / 212 / 122 |
+| 512 → 1000 | 598 → 670 | 0.39 | 0.54 | 0.52; 0.08 | 267 / 273 / 166 | 551 → 598 | 0.39 | 0.55 | 0.53; 0.08 | 246 / 250 / 143 |
+| 1000 → 2000 | 670 → 817 | 0.44 | 0.48 | 0.57; 0.08 | 284 / 414 / 79 | 598 → 757 | 0.45 | 0.47 | 0.57; 0.08 | 273 / 375 / 63 |
+| 2000 → 4000 | 817 → 849 | 0.50 | 0.43 | 0.67; 0.15 | 388 / 285 / 72 | 757 → 810 | 0.52 | 0.42 | 0.67; 0.14 | 386 / 253 / 62 |
+| 4000 → 8000 | 849 → 872 | 0.56 | 0.36 | 0.75; 0.22 | 344 / 268 / 19 | 810 → 835 | 0.56 | 0.36 | 0.75; 0.22 | 343 / 252 / 17 |
+| 8000 → 16000 | 872 → 932 | 0.62 | 0.33 | 0.78; 0.24 | 367 / 217 / 31 | 835 → 896 | 0.63 | 0.33 | 0.78; 0.23 | 360 / 208 / 30 |
+| 16000 → 32000 | 932 → 967 | 0.67 | 0.30 | 0.80; 0.26 | 388 / 169 / 32 | 896 → 934 | 0.67 | 0.30 | 0.80; 0.26 | 389 / 161 / 28 |
+| 32000 → 54000 | 967 → 934 | 0.64 | 0.32 | 0.83; 0.30 | 384 / 197 / 14 | 934 → 894 | 0.63 | 0.33 | 0.83; 0.31 | 374 / 197 / 12 |
+| 54000 → 143000 | 934 → 810 | 0.51 | 0.44 | 0.80; 0.28 | 332 / 313 / 49 | 894 → 792 | 0.52 | 0.43 | 0.80; 0.27 | 334 / 292 / 46 |
+
+**The five clauses** (the rule's change conditions; `r6.json` `clauses`):
+
+| clause | condition for "changed" | c3 | c3x | changed |
+|---|---|---|---|---|
+| (i) survival, 4000 → 143000 | \|c3x − c3\| stable > 0.05 at a boundary | — | max 0.009 | no |
+| (ii) changed members | median J < 0.5 or identical > 0.5 | J ≥ 0.75, ident ≤ 0.30 | J ≥ 0.75, ident ≤ 0.31 | no |
+| (iii) few new, from 4000 | new ≥ ¼ of births + deaths | ≤ 0.071 | ≤ 0.068 | no |
+| (iv) none past 256; after 2000 | a lineage before 256; after-2000 share moves > 0.05 | 0; 0.885 | 0; 0.891 | no |
+| (v) outlast independence | reach ≤ 2000 not above its baseline | 0.115 vs 0.039 | 0.109 vs 0.037 | no |
+
+Lineage at 143000, cumulative (c3x, 792 groups; independence baseline in brackets): ≤ 256
+0.006 (0.001), ≤ 1000 0.053 (0.013), ≤ 2000 0.109 (0.037), ≤ 16000 0.350 (0.245), ≤ 54000
+0.585; by id on c2a 0.021 / 0.077 / 0.177 / 0.448 / 0.674 (c3's: §1.20). Per prompt, stable
+share at 8000–54000 is 0.44–0.78 on both columns.
+
+**Reading.** §1.20 reads the same on the definition with c3x leading. From 16 on the two
+columns' stable shares differ by ≤ 0.024 at every boundary (≤ 0.013 from 64); at 64–1000, where
+R8x's drop is, c3x holds 7–12 % fewer groups and they churn as c3's do. The only differences above 0.05 are at 2 → 4
+(0.64 → 0.75), 4 → 8 and 8 → 16, where c3's groups are mostly chance passes (§1.24: at init
+"moves" is mostly chance, and c3x halves the step-0 floor, 62 → 29). Below 32 is the filter's
+churn on both columns, as §1.20 said of c3.
+
+**Does not.** Add a null for the c3 → c3x difference; read R6w / R6f / R7 (each its own PR,
+and for those the user's call stands: re-run, or filter the stored per-group c3 records,
+`handoff-10.md` "R9"). 7 passages, one seed; containment 0.5 and the clause conditions placed;
+tier 1.
+
+Re-run: `data/p10/reread_r9_2026-10-08/r6/run_r6.sh` from the worktree root (under `data/`, so
+not committed; `data/` paths are the main tree's, `METS_DATA`). It runs `python
+tools/run/p10_r6_matcher.py --labels data/p10/reread_r9_2026-10-08/labels --out <file> --lead
+c3x --reproduce data/p10/reread_r6_2026-10-05/r6.json --reproduce-labels
+data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r6_matcher.py` (17: c3x's
+column, the clauses, reproduce, a record on another source and a half-given `--reproduce`
+refuse).
 
 ---
 

@@ -93,3 +93,61 @@ def test_chain_and_pool_on_a_toy_record(monkeypatch):
     assert out["lineage_origin_at_last"]["c3"] == {"0": 1, "2": 0, "4": 1}
     assert 0 < b0["null"]["p"] <= 1 and b0["null"]["observed"] == 2
     assert r6.first_check(out)["passes"]
+
+
+def _toy_pooled(monkeypatch, c3x_last):
+    """Steps 2000 → 4000 → 8000; c3x differs from c3 only in its last step."""
+    monkeypatch.setattr(r6, "N_DRAWS", 20)
+    steps = [2000, 4000, 8000]
+    lab = {2000: np.array([0, 0, 0, 1, 1, 1, -1, -1]), 4000: np.array([4, 4, 4, 5, 5, 5, -1, -1]),
+           8000: np.array([6, 6, 6, 8, 8, 8, -1, -1])}
+    by_col = {c: lab for c in r6.columns_of("c3x")}
+    by_col["c3x"] = {**lab, 8000: np.asarray(c3x_last)}
+    ch = r6.chain((("p", 1), steps, by_col, [0, 0, 1]))
+    return r6.jsonable(r6.pool([ch], steps, r6.columns_of("c3x")))
+
+
+def test_c3x_joins_the_columns_only_when_it_leads():
+    assert "c3x" not in r6.columns_of("c3") and r6.columns_of("c3x")[-1] == "c3x"
+    assert "c3x" in r6.FLIP_COLUMNS
+
+
+def test_clauses_unchanged_when_c3x_is_c3(monkeypatch):
+    pooled = _toy_pooled(monkeypatch, [6, 6, 6, 8, 8, 8, -1, -1])
+    cl = r6.clauses(pooled)
+    assert cl["i_survival"]["max_abs_diff"] == 0.0 and not cl["i_survival"]["changed"]
+    assert cl["iv_lineage"]["before_256"] == {"c3": 0, "c3x": 0}
+    # identical sets everywhere: "changed members" does not hold on the toy, on either column
+    assert "ii_changed_members" in cl["changed"] and "i_survival" not in cl["changed"]
+
+
+def test_clauses_name_a_drop_in_survival_and_a_new_death(monkeypatch):
+    pooled = _toy_pooled(monkeypatch, [6, 6, 6, -1, -1, -1, -1, -1])  # c3x drops group 8 at 8000
+    cl = r6.clauses(pooled)
+    assert cl["i_survival"]["max_abs_diff"] == 0.5 and cl["i_survival"]["changed"]
+    assert cl["iii_few_new"]["max_new_share"] == {"c3": 0.0, "c3x": 0.0}  # c2a links it: a kept flip
+    assert cl["rows"]["c3x"][0]["births_deaths"] == 1
+
+
+def test_reproduce_names_each_differing_column_and_ignores_the_new_one(monkeypatch):
+    a = _toy_pooled(monkeypatch, [6, 6, 6, 8, 8, 8, -1, -1])
+    stored = {"meta": {"columns": list(r6.COLUMNS)}, **a,
+              "lineage_origin_at_last": {k: v for k, v in a["lineage_origin_at_last"].items() if "c3x" not in k}}
+    b = _toy_pooled(monkeypatch, [6, 6, 6, -1, -1, -1, -1, -1])
+    assert r6.reproduce(b, stored) == []  # only c3x differs, and the stored run has no c3x
+    b["boundaries"][1]["c2"]["births"] += 1
+    b["lineage_origin_at_last"]["c3_by_c2a"]["2000"] += 1
+    assert r6.reproduce(b, stored) == ["4000/c2", "lineage/c3_by_c2a"]
+
+
+def test_load_record_refuses_a_run_on_another_label_source(tmp_path):
+    (tmp_path / "summary.json").write_text("{}")
+    rec = tmp_path / "r6.json"
+    rec.write_text('{"meta": {"summary_sha256": "0000"}}')
+    with pytest.raises(r6.lead_args.LadderError, match="read a label source"):
+        r6.load_record(rec, tmp_path)
+
+
+def test_main_refuses_a_half_given_reproduce(tmp_path):
+    with pytest.raises(SystemExit, match="go together"):
+        r6.main(["--labels", str(tmp_path), "--out", str(tmp_path / "o.json"), "--reproduce", "x.json"])
