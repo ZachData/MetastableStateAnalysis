@@ -31,7 +31,7 @@
 - **After Phase 10:**
   - U4 from stored activations, once P-S1 is scored *(free)*; U3 closed at the measured β; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-09 · body `9556ea3a09`
+- **Reviewed:** 2026-10-09 · body `d76c8b0199`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -650,8 +650,9 @@ publish `<dir>/index.html` to the URL above.
 read **beside** (a), not in place of it.* Rules fixed before output: `design-1e.md` "U1 beside"
 (`fecd694`) and "U3 at β 10" (`5f2959b`, amended before any reading in `775a04c`, `3b55242` and
 `9d7d514`). **A defect, found before any reading** (`2608db3`, the amendment under "U1 beside"):
-U1's GPU phase merged rows by a float32 dot whose error reaches its 1e-6 tolerance. Every run
-below is on the fixed producer (`p1e_energy_field` tree `752d284`). The first builds sit unread in
+U1's GPU phase merged rows by a float32 dot whose error reaches its 1e-6 tolerance. (b), (c), (c′)
+and U3 are on the fixed producer (`p1e_energy_field` tree `752d284`); (a) is #164's records on the
+old producer, audited with the fixed one (first row below). The first builds sit unread in
 `data/p1e/superseded_merge32/`. Each run is read only after its audit (`u1_audit`, below) passes.
 
 | run | output (`data/p1e/`) | audit: cells, differing from CPU float64, min agreement | state |
