@@ -206,10 +206,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             x = res["rows"][row]["c3_to_c3x"] = c3_to_c3x(cols[row], prim_c3, prim, skip0=True)
             print(f"  c3 → c3x: {len(x['differ'])} of {x['n']} step labels change"
                   + "".join(f"; {d['step']} {d['c3']} → {d['c3x']}" for d in x["differ"]))
+    # "F12m above": the late window the headline quotes, computed rather than read off the table
+    # (added after `/challenge-pr` on #170, finding 1)
     res["windows"] = {
-        row: {c: window(cols[row], want, col=c) for c in dict.fromkeys(("c0", "c2", "c3", lead))}
+        name: {c: window(cols[row], want, col=c) for c in dict.fromkeys(("c0", "c2", "c3", lead))}
         | {"primary": window(cols[row], want, prim, col=lead)}
-        for row, want in (("F12m", "below control"), ("F12 raw", "below rest"), ("§1.5", "parked"))}
+        for name, row, want in (("F12m", "F12m", "below control"), ("F12 raw", "F12 raw", "below rest"),
+                                ("§1.5", "§1.5", "parked"), ("F12m above", "F12m", "above control"))}
     cc = cols["cells"]
     print("\nstep prim | F12m Δ = trained − control (prompts Δ<0 of n), control median p: c0 / c2 / c3 / prim")
     for s, pc in prim.items():

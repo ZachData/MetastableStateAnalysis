@@ -38,7 +38,7 @@
   - R8x, the exact check: the same test with each moved passage's own partition in place of the proxy. The proxy was close (exact in the median, a few records per step classified differently), and the stricter set keeps 0.88 and 0.89 of the definition's records at steps 128 and 1000, below the placed 90 % bar (93–98 % from 2000), so by the rule the drop holds and the stricter set is recommended as the definition; 7 prompts still cannot resolve the bar or the drop's size, and pooled over 64–1000 the stricter set keeps 0.905 — `p10_cluster_function/status-10.md` §1.25
   - R9 / R1, the token-composition, co-membership and lexical-carry rows read again with the chance-aware definition (c3x) leading, c0–c3 reproducing R1's records exactly. R1's reading is unchanged on it (it held on neither column by the design's rule): 15 of 432 labels change from c3 to c3x, every one a value moving across the ±0.05 floor from within 0.04 of it, single-layer values move by up to 0.07 (median 0.002–0.003), and the quoted claims keep their values to 0.01 (class co-membership +0.22, step 512's class effect beyond a lexical cluster +0.15). One rule cell changes: the trash-collection verdict reads against at 1000 as well as 2000 — `p10_cluster_function/status-10.md` §1.26
   - R9 / R2, the transport row (F1), the corrected-density gap (F12) and their joint "parked" reading, again with c3x leading, c0–c3 reproducing R2's records exactly. Nothing changes: 0 of 12 labels per row, the windows are R2's (negative and parked at 64–512), and at 64–143000 means move by up to 0.03 (F1) and 0.07 (F12, at 1000). Only F1's is a test: F12's gap label could not have changed, since it sits about 1 below its baseline on both columns, so the joint reading here is F1's — `p10_cluster_function/status-10.md` §1.27
-  - R9 / R2m, F12 against its matched control and the joint "parked" reading, again with c3x leading, c0–c3 reproducing R2m's records exactly. Unchanged: the windows are R2m's (below the control at 8–256, parked at 64–256) and the late "above" is the same (+0.12 to +0.28, 6–7 of 7 prompts). One label of 12 changes: step 512 moves from as to above the control, a value crossing the floor from within 0.005 with 2 of 7 prompts below. The raw sign beside it changes at 1000 and 2000, but the control moves with it, so the matched gap moves by at most 0.02. Unlike R2's gap, this row could have moved — `p10_cluster_function/status-10.md` §1.28
+  - R9 / R2m, F12 against its matched control and the joint "parked" reading, again with c3x leading, c0–c3 reproducing R2m's records exactly. Unchanged: the windows are R2m's (below the control at 8–256, parked at 64–256) and the late "above" is the same (+0.12 to +0.28, 6–7 of 7 prompts). One label of 12 changes: step 512 moves from as to above the control, a value crossing the floor from within 0.005 with 2 of 7 prompts below. So on c3x the "as dense" stretch is 1000 alone. The raw sign beside it changes at 1000 and 2000, but the control moves with it, so the matched gap moves by at most 0.02; a shift that size could flip only 512 and 1000, and the steps that set the windows sat 0.07 or more from the floor — `p10_cluster_function/status-10.md` §1.28
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -66,7 +66,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `d18d29730a`
+- **Reviewed:** 2026-10-09 · body `2da13a03cc`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2176,7 +2176,7 @@ data/analysis --reproduce data/p10/reread_r2_2026-10-05 --reproduce-labels
 data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r2_ladder.py` (lead, reproduce),
 `tests/test_p10_partition_function.py` (every learned split at 143000).
 
-### 1.28 R9 / R2m on c3x — **R2m's reading is unchanged with c3x leading: the windows are R2m's (F12m below control 8–256 on the primary, 32–256 on c3x itself; §1.5 parked 64–256), and the late "above" from 2000 is the same (+0.12 to +0.28, 6–7 of 7 prompts at every step). One F12m label of 12 changes: 512, as → above control (+0.045 → +0.060, 5 of 7 prompts above, sign p 0.45). §1.5: none. The raw sign beside changes at 1000 (as → below the rest) and 2000 (above → as), R9 / R2's raw moves; the control moves with it (1000: trained −0.074, control −0.054), so the matched Δ moves ≤ 0.02 (median 0.007)**
+### 1.28 R9 / R2m on c3x — **R2m's below windows and its late "above" are unchanged with c3x leading (F12m below control 8–256 on the primary, 32–256 on c3x itself; §1.5 parked 64–256; above control at every step from 2000, +0.12 to +0.28, 6–7 of 7 prompts). One F12m label of 12 changes: 512, as → above control (+0.045 → +0.060, 5 of 7 prompts above, sign p 0.45), so on c3x the above window is 512 and 2000–143000, with 1000 as. §1.5: none. The raw sign beside changes at 1000 (as → below the rest) and 2000 (above → as), R9 / R2's raw moves; the control moves with it (1000: trained −0.074, control −0.054), so the matched Δ moves ≤ 0.02 (median 0.007), against margins of 0.07–0.79 at the steps that set the windows**
 
 **What.** `design-10.md` "R9" (rule `85c3e5e`), row R2m. `p10_partition_function.py
 --activations-step 0` on all 15 columns of the R9 source (`data/p10/reread_r9_2026-10-08/r2m/run_r2m.sh`,
@@ -2186,7 +2186,7 @@ records (`--lead`, `--reproduce`, `--reproduce-r2` added here, as R1's and R2's 
 
 **Input.** The R9 source (`summary.json` sha256 `5b758a2cd72abef5`); R9 / R2's records
 (`data/p10/reread_r9_2026-10-08/r2/`, unchanged); 7 v1 passages, 18 steps, L1–24 × β 1, 2, 4.
-Output `data/p10/reread_r9_2026-10-08/r2m/` (15 records, `ladder.json` md5 `440e6c42`,
+Output `data/p10/reread_r9_2026-10-08/r2m/` (15 records, `ladder.json` md5 `cc25d788`,
 `ladder.txt` the printed table, 13 MB).
 
 **First checks, all passed:** every c0–c3 record (control, trained and F1, and c3's arms and
@@ -2194,13 +2194,14 @@ split) read on the new source equals R2m's (`data/p10/reread_r2m_2026-10-05/`, w
 and R0's source) in its per-unit rows, per-step summary and readable counts; the first c3x control was
 opened before the rest ran: 4,524 units, as many as the trained record, none empty, the same
 readable records, every step-0 Δ exactly 0 (24 units). The edited ladder with `--lead c3`
-reproduces R2m's own `ladder.json` exactly (md5 `9300a087`, apart from the three new keys).
+reproduces R2m's own `ladder.json` exactly (md5 `9300a087`, apart from the three new keys and
+the new "F12m above" window).
 
 **Primary.** c2 at steps 0–32, c3x from 64 (R9 / R2's). Floor: 29 c3x records at step 0 (8 readable).
 
 | row | primary = c0 (R2m on c3) | c3 → c3x labels changed | windows on the primary (R2m) |
 |---|---|---|---|
-| F12m | 14 / 17 (14) | 1 of 12: 512 as → above control | below control 8–256 (8–256) |
+| F12m | 14 / 17 (14) | 1 of 12: 512 as → above control | below control 8–256 (8–256); above 512, 2000–143000 (2000–143000) |
 | F12 raw (beside) | 14 / 17 (15) | 2 of 12: 1000 as → below rest; 2000 above → as | below the rest 32–256, 1000 (32–256) |
 | §1.5 | 15 / 17 (15) | 0 of 12 | parked 64–256 (64–256) |
 
@@ -2213,20 +2214,31 @@ from 256: −0.11 to +0.11 (c3: −0.08 to +0.13), so c3x's members were not den
 **Learned at 143000:** c3x_learned is c3_learned (Δ +0.37, identical); not learned +0.06 (c3 +0.07).
 Arms quoted against c3, unchanged from R2m.
 
-**Reading.** R2m's reading does not depend on the c3 / c3x choice. The one F12m change, 512, is
-a value crossing +0.05 from within 0.005 on 2 of 7 prompts below, so "as" and "above" there are
-the same measurement; §1.18's "as dense at 512–1000" stands, with 512 at the floor on either
-column. Unlike R9 / R2's F12 gap (forced), this row could have moved: the matched Δ is within
-0.1 of the floor at 512–2000 on both columns. The raw-sign changes at 1000 and 2000 come from the
-groups R8x drops there being denser than the kept ones both trained and at init: the control
-falls with the trained value (1000: −0.054 against −0.074; 2000: −0.06 against −0.05), so the
-change is in the tokens, not in what training did to them.
+**Reading.** R2m's below windows and its late "above" do not depend on the c3 / c3x choice. By
+the rule, 512 reads above control on c3x, so §1.18's "as dense at 512–1000" becomes **above at
+512, as at 1000** on c3x; the change is a value crossing +0.05 from within 0.005 with 2 of 7
+prompts below (sign p 0.45), and the design has no tolerance that would let it read "as".
+*Margins (after `/challenge-pr` on #170, finding 4):* the c3 Δ's distance to the nearest ±0.05
+was 0.005 at 512, 0.04 at 1000, 0.07 at 2000, 0.14 at 256, 0.39–0.79 at 64–128 and 0.13–0.22
+from 4000; the largest c3 → c3x shift was 0.02. So only 512 and 1000 could have moved by a shift
+of this size, and the cells that set the windows needed 0.07 or more; unlike R9 / R2's F12 gap
+(forced), this row tested something only at 512–1000. The raw-sign changes at 1000 and 2000
+come from two parts that both move the control with the trained value (1000: −0.054 against
+−0.074; 2000: −0.05 against −0.05), so the change is in the tokens, not in what training did to
+them (*split after `/challenge-pr` on #170, finding 3*): **units dropped**, 27 at 1000 and 30
+at 2000 that have no readable c3x record and were dense both trained and at init (trained +0.35
+/ +0.19, control +0.28 / +0.15), taking −0.033 / −0.011 from the trained mean and −0.028 /
+−0.017 from the control; and **within the units kept**, the dropped groups' tokens join the
+rest (trained −0.040 / −0.038, control −0.026 / −0.036).
 
 **Does not.** Re-read R3–R7 on c3x (each its own PR); add a null for the c3 → c3x difference;
 read the arms on c3x. 7 passages, one seed; tier 1; the sign test over 7 prompts is the only
 per-step test (minimum p 0.016).
 
-Re-run: `data/p10/reread_r9_2026-10-08/r2m/run_r2m.sh` from the worktree root (resumes), then
+Re-run: `data/p10/reread_r9_2026-10-08/r2m/run_r2m.sh` from the worktree root (resumes; under
+`data/`, so not committed: per column it runs `tools/run/p10_partition_function.py --labels
+<dir>/labels --column <c> --activations-step 0 --jobs 1 --out <dir>/r2m/f12m_<c>.json` with
+`OMP_NUM_THREADS=1` and the env in `STATE.md` "Machine and environments", as §1.18), then
 `python tools/run/p10_r2m_ladder.py --dir <dir>/r2m --r2 <dir>/r2 --labels <dir>/labels --lead
 c3x --reproduce data/p10/reread_r2m_2026-10-05 --reproduce-r2 data/p10/reread_r2_2026-10-05
 --reproduce-labels data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r2m_ladder.py`
