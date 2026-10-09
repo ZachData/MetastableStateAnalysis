@@ -62,6 +62,8 @@ from typing import Dict, Optional, Sequence
 REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[2])))
 sys.path.insert(0, str(REPO))
 
+from tools.run import p10_r9_lead as lead_args
+from tools.run.p10_r9_lead import LadderError  # the ladders import it from here
 from tools.run.p10_comembership import DELTA_FLOOR, NOT_READ, PROPS
 from tools.run.p10_token_composition import CONTRAST_FLOOR
 
@@ -71,15 +73,12 @@ LEARNED = ("c3_learned", "c3_unlearned")
 ON_C2_BASE = ("c3", *ARMS, *LEARNED, "c3x", "c3x_learned", "c3x_unlearned")
 #: R9's lead column: the ladder gains it after c3, and its own learned split.
 LEADS = {"c3": (LADDER, LEARNED), "c3x": (LADDER + ("c3x",), LEARNED + ("c3x_learned", "c3x_unlearned"))}
+assert tuple(LEADS) == lead_args.LEAD_CHOICES
 LAYERS = (12, 24, "mean")
 READERS = {"tc": "§1.7", "cm": "§1.9", "lc": "§1.10"}
 CM_READ = tuple(p for p in PROPS if p not in NOT_READ)
 LC_DELTA = ("class_given_emb", "emb_given_class", "emb_same", "emb_cross")
 LEVEL_FLOOR = 0.05   # §1.10's carry gap and kNN excess, as its docstring and status-10 §1.10
-
-
-class LadderError(RuntimeError):
-    pass
 
 
 def _keys(x):
@@ -304,28 +303,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--out", type=Path, default=None, help="default <dir>/ladder.json")
     ap.add_argument("--against", type=Path, default=None,
                     help="another R1 run's records on the same source: count primary labels that differ")
-    ap.add_argument("--lead", choices=tuple(LEADS), default="c3", help="the primary column (R9: c3x)")
-    ap.add_argument("--reproduce", type=Path, default=None, metavar="R1_DIR",
-                    help="refuse unless c0–c3's records equal that R1 run's (with --reproduce-labels)")
-    ap.add_argument("--reproduce-labels", type=Path, default=None, help="the label source that run read")
+    lead_args.add_args(ap, "R1")
     args = ap.parse_args(argv)
-    if (args.reproduce is None) != (args.reproduce_labels is None):
-        raise SystemExit("refusing: --reproduce and --reproduce-labels go together (the run it "
-                         "reproduces read its own label source)")
+    lead_args.reproduce_inputs(args)
     data = load(args.dir, args.labels, args.lead)
     ladder, _ = LEADS[args.lead]
-    if args.reproduce is not None:
-        bad = reproduce(data, load(args.reproduce, args.reproduce_labels))
-        if bad:
-            raise LadderError(f"refusing: records differ from {args.reproduce}: {bad}")
-        print(f"reproduces {args.reproduce}: every c0–c3 record summary equal")
+    reproduces = lead_args.check_reproduces(args, data, load, reproduce, "record summaries")
     prim = primary(data["recs"], args.lead)
     prim_c3 = primary(data["recs"], "c3")
-    floor = data["summary"]["step0"]["columns"][args.lead]
-    res = {"label_source": str(args.labels), "summary_sha256": data["summary_sha256"], "lead": args.lead,
-           "reproduces": str(args.reproduce) if args.reproduce else None,
-           "primary": prim, "floor": {f"{args.lead}_group_layer_records_step0": floor["groups"],
-                                      f"{args.lead}_readable_step0": [floor["readable"], floor["records"]]},
+    res = {**lead_args.header(args.labels, data["summary_sha256"], args.lead, reproduces, prim, data["summary"]),
            "rows": {}}
     for reader, row in READERS.items():
         cols = row_cells(data, reader)
@@ -356,8 +342,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"against {args.against.name}: {row} {len(x['differ'])} of {x['n']} primary labels differ")
     out = args.out or args.dir / "ladder.json"
     out.write_text(json.dumps(res, indent=1) + "\n")
-    print(f"\nprimary: c2 at steps {[s for s, c in prim.items() if c == 'c2']}, {args.lead} elsewhere; floor "
-          f"{floor['groups']} {args.lead} records at step 0 ({floor['readable']} of {floor['records']} readable)")
+    print("\n" + lead_args.floor_line(prim, data["summary"], args.lead))
     print(f"wrote {out}")
     return 0
 

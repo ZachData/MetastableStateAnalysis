@@ -39,6 +39,7 @@
   - R9 / R1, the token-composition, co-membership and lexical-carry rows read again with the chance-aware definition (c3x) leading, c0–c3 reproducing R1's records exactly. R1's reading is unchanged on it (it held on neither column by the design's rule): 15 of 432 labels change from c3 to c3x, every one a value moving across the ±0.05 floor from within 0.04 of it, single-layer values move by up to 0.07 (median 0.002–0.003), and the quoted claims keep their values to 0.01 (class co-membership +0.22, step 512's class effect beyond a lexical cluster +0.15). One rule cell changes: the trash-collection verdict reads against at 1000 as well as 2000 — `p10_cluster_function/status-10.md` §1.26
   - R9 / R2, the transport row (F1), the corrected-density gap (F12) and their joint "parked" reading, again with c3x leading, c0–c3 reproducing R2's records exactly. Nothing changes: 0 of 12 labels per row, the windows are R2's (negative and parked at 64–512), and at 64–143000 means move by up to 0.03 (F1) and 0.07 (F12, at 1000). Only F1's is a test: F12's gap label could not have changed, since it sits about 1 below its baseline on both columns, so the joint reading here is F1's — `p10_cluster_function/status-10.md` §1.27
   - R9 / R2m, F12 against its matched control and the joint "parked" reading, again with c3x leading, c0–c3 reproducing R2m's records exactly. Unchanged: the windows are R2m's (below the control at 8–256, parked at 64–256) and the late "above" is the same (+0.12 to +0.28, 6–7 of 7 prompts). One label of 12 changes: step 512 moves from as to above the control, a value crossing the floor from within 0.005 with 2 of 7 prompts below. So on c3x the "as dense" stretch is 1000 alone. The raw sign beside it changes at 1000 and 2000, but the control moves with it, so the matched gap moves by at most 0.02; a shift that size could flip only 512 and 1000, and the steps that set the windows sat 0.07 or more from the floor — `p10_cluster_function/status-10.md` §1.28
+  - R9 / R3, A0 under T4 again with c3x leading, c0–c3 reproducing R3's record at every unit. By the rule no label moves (no flip in the sweep, the residual appears 1000–2000 and persists on the primary, 0 of 12 per-step labels change), and the same-position residual is still a window at 2000–16000 (+0.06 to +0.12 on c3x), gone from 32000. Where the residual starts is not resolved by 7 prompts on either column: at 2000 it reads residual in 0.60 (c3) and 0.52 (c3x) of prompt resamples; from 8000 it is stable — `p10_cluster_function/status-10.md` §1.29
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -66,7 +67,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `2da13a03cc`
+- **Reviewed:** 2026-10-09 · body `659da2e6f6`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2170,7 +2171,8 @@ could cross ±0.05. The c3x reading for F12 that could move is R2m's matched con
 **Does not.** Re-read R2m–R7 on c3x (each its own PR); add a null for the c3 → c3x difference
 (the dropped groups are not random: R8x); read the arms on c3x. 7 passages, one seed; tier 1.
 
-Re-run: `data/p10/reread_r9_2026-10-08/r2/run_r2.sh` from the worktree root (resumes), then
+Re-run: `data/p10/reread_r9_2026-10-08/r2/run_r2.sh` from the worktree root (resumes; every
+`data/` path here is the main tree's, `METS_DATA`, so prefix it from a worktree: `/challenge-pr` on #171), then
 `python tools/run/p10_r2_ladder.py --dir <dir>/r2 --labels <dir>/labels --lead c3x --published
 data/analysis --reproduce data/p10/reread_r2_2026-10-05 --reproduce-labels
 data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r2_ladder.py` (lead, reproduce),
@@ -2243,6 +2245,82 @@ Re-run: `data/p10/reread_r9_2026-10-08/r2m/run_r2m.sh` from the worktree root (r
 c3x --reproduce data/p10/reread_r2m_2026-10-05 --reproduce-r2 data/p10/reread_r2_2026-10-05
 --reproduce-labels data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r2m_ladder.py`
 (lead, reproduce, the three reproduce flags together).
+
+### 1.29 R9 / R3 on c3x — **A0 does not hold on either column, and by the rule no label changes with c3x leading (sweep share "no flip", residual appears 1000–2000 and persists, on the primary with c3 or c3x leading; 0 of 12 per-step residual labels change at 64–143000). Where the residual starts is not resolved by 7 prompts on either column: at 2000 the pooled gap reads residual in 0.60 of prompt resamples on c3 and 0.52 on c3x, where it clears the 0.05 floor by 0.001 and leaving out any one of 4 prompts flips it; from 4000 on c3x it is 0.81–0.92 (c3 0.70 at 4000). The binned residual beside is still a window, +0.06 to +0.12 at 2000–16000 on c3x (c3 +0.05 to +0.09), ≤ 0.012 from 32000**
+
+**What.** `design-10.md` "R9" (rule `85c3e5e`), row R3. `p10_attention_baseline.py --labels <R9
+source>` on all 15 reader columns in one load of each run's attention (`data/p10/reread_r9_2026-10-08/r3/run_r3.sh`,
+CPU, one BLAS thread per process, 14 processes, 290 s), then `p10_r3_position_bins.py` with c3x
+and its split added (`--columns`, new; ~1 min). `tools/run/p10_r3_ladder.py --lead c3x --reproduce`
+reads it. **The shared helper** (`tools/run/p10_r9_lead.py`, `/challenge-pr` on #170, finding 6):
+`--lead`, `--reproduce [extra inputs] --reproduce-labels` with the "go together" refusal, the
+refusal on a mismatch, and the output header with the lead's floor; R1's, R2's and R2m's ladders
+now use it and re-run byte-identical to their stored R9 `ladder.json`s (same commands, §1.26–§1.28).
+
+**Input.** The R9 source (`summary.json` sha256 `5b758a2cd72abef5`), 7 v1 passages × 18 steps,
+L1–23. Output `data/p10/reread_r9_2026-10-08/r3/` (`a0.json` md5 `63392d76`, `ladder.json`
+`7b7a295d`, `position_bins.json` `ae9f5e6f`, `ladder_log.txt` the printed table; 13 MB).
+
+**First checks, all passed:** every c0–c3 column (and c3's arms and split) equals R3's
+(`data/p10/reread_r3_2026-10-05/a0.json`, on R0's source) in readable counts, per-step summary
+and per-unit rows; c0 against the published A0 record, 2,891 of 2,891 units identical; the
+ladder with c3 leading on the new record equals R3's `ladder.json` in every reading field (only
+the provenance keys and the new `lead` / `floor` differ); R3's six position-bin columns reproduce
+exactly. c3x opened before reading: 1,444 units over 18 steps (c3 1,525), its learned split 79 / 105.
+
+**Primary.** c2 at 0–32, c3x from 64. Floor: 29 c3x records at step 0 (8 of 168 readable).
+
+| label (rule, against c1) | c1 | primary, c3 leading | primary, c3x leading | c3 / c3x as columns |
+|---|---|---|---|---|
+| sweep share | no flip | no flip (raw −0.48) | no flip (raw −0.48) | no flip / no flip |
+| residual appears | 256–512 | 1000–2000 | 1000–2000 | 1000–2000 / 1000–2000 |
+| persists | no | yes | yes | yes / yes |
+| per-step residual = c1 | | 13 of 18 | 13 of 18 (first changed at c1c, c2a, c2, c3) | |
+
+**Per step, corrected gap c3 → c3x at 64–143000:** 64 −0.042 → −0.043; 128 −0.042 → −0.044;
+256 −0.084 → −0.085; 512 −0.082 → −0.074; 1000 +0.022 → +0.026; **2000 +0.073 → +0.051**;
+**4000 +0.080 → +0.111**; 8000 +0.121 → +0.117; 16000 +0.096 → +0.096; 32000 +0.120 → +0.127;
+54000 +0.099 → +0.101; 143000 +0.109 → +0.113. Largest moves 2000 and 4000, and they go opposite
+ways. At 2000 the 10 units with no readable c3x record sit at +0.004, so dropping them lifts the
+gap (+0.006); within the 113 kept units the dropped groups' tokens join the rest, −0.028. At
+4000 the 8 dropped units sit at −0.32, and dropping them gives +0.025 of the +0.031.
+c3 margins to the 0.05 floor were 0.028 at 1000, 0.023 at 2000, 0.030 at 4000, ≥ 0.046
+elsewhere, so 1000, 2000 and 4000 could have moved by a shift of this size, and 2000 nearly did.
+**Learned at 143000:** c3x_learned is c3_learned (79 units, pooled +0.18, binned −0.05);
+not learned +0.034 (c3 +0.037). Arms quoted against c3, unchanged from R3.
+
+**Binned (position) beside, pooled / binned:** c3x 1000 +0.03 / +0.01; 2000 +0.05 / +0.07; 4000
++0.11 / +0.12; 8000 +0.12 / +0.06; 16000 +0.10 / +0.06; 32000 +0.13 / +0.01; 54000 +0.10 / +0.00;
+143000 +0.11 / +0.01. So §1.17's reading stands on c3x: from 32000 the pooled residual is position.
+At 2000–16000 there is a window, larger at 4000 than on c3, and on binned values at floor 0.05 it
+appears 1000–2000 and does not persist.
+
+**Prompt resamples** (`p10_r3_ladder.prompt_resample`, 2000 seeded draws; leave-one-prompt-out
+flips of 7 / P(residual); *added after `/challenge-pr` on #171, finding 1*): c3x 1000 1 / 0.31,
+**2000 4 / 0.52**, 4000 0 / 0.89, 8000–143000 0 / 0.81–0.92; c3 1000 1 / 0.30, **2000 1 / 0.60**,
+4000 1 / 0.70, 8000–143000 0 / 0.81–0.89; 64–512 0 / 0.00 on both.
+
+**Reading.** By the rule R3's verdict does not depend on the c3 / c3x choice: the flip is gone
+under T4 on both columns, and the residual's interval and its persistence are the same labels.
+What 7 prompts settle is narrower. No residual at 64–512, and a residual from 8000 (and from 4000
+on c3x), are stable under resampling. Whether it starts at 2000 is not settled on either column:
+c3 put it there in 0.60 of resamples, and c3x does so in 0.52, clearing the floor by 0.001. So
+"appears 1000–2000" is the point reading, and resampling gives it no more support than "2000–4000".
+That is the same reading §1.17 gave from the floor, now from the prompts. The binned window clears
+the floor at 2000 by 0.017 on c3x.
+
+**Does not.** Re-read the sink split (`p10_r3_sink_split.py`: c0's own labels, not a ladder column)
+or R6–R7 (each its own PR); add a null for the c3 → c3x difference. 7 passages, one seed; tier 1;
+significance beside only (primary median p 0.28–0.46 from 1000).
+
+Re-run: `data/p10/reread_r9_2026-10-08/r3/run_r3.sh` from the worktree root (under `data/`, so
+not committed; the env in `STATE.md` "Machine and environments"). Every `data/` path here is the
+**main tree's** (`METS_DATA`; a worktree has no `data/`), so from a worktree prefix them with it
+(*after `/challenge-pr` on #171, finding 2*). Then `python
+tools/run/p10_r3_ladder.py --record <dir>/r3/a0.json --labels <dir>/labels --lead c3x --published
+data/analysis/p10_row_a0.json --reproduce data/p10/reread_r3_2026-10-05/a0.json
+--reproduce-labels data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r3_ladder.py`
+(lead, c3 → c3x, reproduce, the flags together), `tests/test_p10_r9_lead.py` (the helper).
 
 ---
 

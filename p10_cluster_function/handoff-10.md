@@ -142,12 +142,19 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > **R9 / R2m done, 2026-10-09 (`status-10.md` §1.28; its title is the summary).** c0–c3
 > reproduce R2m's records. `p10_r2m_ladder.py` got `--lead` / `--reproduce` plus
 > `--reproduce-r2` (its reproduce reads R2's records too) and an "F12m above" window.
-> *The shared helper, parked here until R3:* the three ladders' reproduce checks take different
-> inputs (R2m a third directory) and compare different record shapes, so only the flag pairing
-> would be shared. `/challenge-pr` on #170 (finding 6) recommends building it at R3, the fourth
-> copy. **Next here: R9's R3 on c3x** (A0 under T4, `p10_r3_ladder.py`; build the helper first),
-> then R6 → R6w → R6f, R7, each its own PR (`design-10.md` "R9"). The readers take
-> `--labels <R9 labels> --column c3x`.
+> **R9 / R3 done, 2026-10-09 (`status-10.md` §1.29; its title is the summary).** The shared
+> helper is built first (`tools/run/p10_r9_lead.py`: flags, "go together" refusal, mismatch
+> refusal, header with the floor; each ladder keeps its own `load` / `reproduce`, since record
+> shapes differ). R1 / R2 / R2m's ladders use it and re-run byte-identical to their stored R9
+> `ladder.json`s. `p10_r3_ladder.py` got `--lead` / `--reproduce`; `p10_r3_position_bins.py` got
+> `--columns`. c0–c3 reproduce R3's record; by the rule nothing changes, but 7 prompts do not
+> settle whether the residual starts at 2000 on either column (`p10_r3_ladder.prompt_resample`,
+> after `/challenge-pr` on #171; `LadderError` now lives in the helper). The sink split is not
+> re-read (c0's own labels). If R6–R7 filter stored c3 records rather than re-run, the helper's
+> `--lead` still applies to their ladders; `--reproduce` only where a row re-runs. **Next here: R6 →
+> R6w → R6f, R7 on c3x**, each its own PR (`design-10.md` "R9"), each ladder through
+> `p10_r9_lead.add_args`; first the user's call on the *Open* item below (re-run, or filter the
+> stored per-group c3 records). The readers take `--labels <R9 labels> --column c3x`.
 > *Open (`/challenge-pr` on #166, finding 4):* R7, and likely R6w / R6f, could read c3x by
 > filtering their stored per-group c3 records instead of re-running; the user's call.
 >

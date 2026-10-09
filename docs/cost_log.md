@@ -316,3 +316,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-09 | 1e (c′): U1 raw centred read; #167's merge conflict fixed | 44 | 127k | 4.0M | 34k | #168 |
 | 2026-10-09 | Phase 10 R9 / R2 on c3x: unchanged; reader split defect fixed; 4 merged worktrees removed | 47 | 158k | 5.1M | 44k | #169 |
 | 2026-10-09 | Phase 10 R9 / R2m on c3x: unchanged (1 of 12 F12m labels, from within 0.005); #169's worktree removed | 44 | 151k | 4.5M | 43k | #170 |
+| 2026-10-09 | Phase 10 R9 / R3 on c3x: unchanged (0 of 12; 2000 on c3x 0.001 above the floor); shared `--lead` / `--reproduce` helper; #170's worktree removed | 52 | 175k | 6.1M | 48k | #171 |
