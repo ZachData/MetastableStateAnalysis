@@ -321,3 +321,9 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-09 | Phase 10 R9 / R6w on c3x: unchanged but 1 of 14 headline cells (adjacency at the floor); embedding drifts within; re-run on the user's call; #172's worktree removed | 41 | 140k | 3.9M | 37k | #173 |
 | 2026-10-09 | Phase 10 R9 / R6f on c3x: headline unchanged (6 of 6 frame); 6 of 60 per-passage cells, within the new random-drop reference (median 7, q95 10); #173 finding 4 decided; all-attractive OV and energy-vs-groups parked; #173's worktree removed | 55 | 204k | 7.3M | 54k | #174 |
 | 2026-10-09 | Phase 10 R9 / R7 on c3x, the last R9 row: step labels unchanged (0 of 24); 7 of 144 cells toward context, within random drops at the edge (per (step, passage), the user's match); filtered after checking the code (exact); #174's worktree removed | 49 | 186k | 5.3M | 51k | #175 |
+| 2026-10-09 | Phase 10 E1, energy against c3x's groups: attention pulls c3x's members together in L9–23 from 4000 (every passage, beyond nearness), pushes them apart at 256–512 in L9–16 where the MLP pulls; scan §18; one GPU batch (15 min); #175's worktree removed | 108 | 235k | 17.1M | 58k | #176 |
+  Over 2× the running median (~5M): a new unit, not a re-read (scan, rule, a new runner, tests and
+  report, read on top of 1e's `u2_attn` and the label source); the start hook printed the main
+  tree's stale `STATE.md` and the current 50 KB one was read too; the GPU batch was watched with a
+  per-step monitor, ~20 notifications each re-reading ~200k of context (a single completion wait
+  would have cost one). Rule for next time: wait on a batch with one completion notice.

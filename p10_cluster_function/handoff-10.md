@@ -202,6 +202,38 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **E1 done, 2026-10-09 (`status-10.md` §1.34; its title is the summary).** The user picked the
+> Parked "energy against c3x's groups" after R9 (2026-10-09). Scan `lit-10.md` §18. Rule
+> `design-10.md` "E1" (`fb4dee1`, before any pass). `tools/run/p10_e1_energy.py`; output
+> `data/p10/e1_energy_2026-10-09/` (one GPU pass per (step, passage), ~15 min, no refusal).
+> One departure at the gate: block 23 checked through `final_layer_norm` (`8094f44`). Answer:
+> **attention's token-specific move pulls c3x's members together in L9–23 from 4000** (every
+> passage), and holds them against the rest by the rule where 1e's attention descends (L17–23
+> at 32000–54000; full field against 1e's causal, finding 2). **At 256–512 in L9–16 it pushes them
+> apart and the MLP pulls them together**; the MLP leads to 2000 and in L1–8, then leans pushes in
+> L9–16 from 8000. Init: none (c2's step 0 mixed). Small (median `|X|` 0.03–0.05).
+> `/challenge-pr` on #176: accept with changes. Finding 1 taken: `X_knn` > 0 does not show
+> membership beyond nearness (members are nearer each other than the nearest non-members in 95–98
+> % of groups), so the late pull is "towards near tokens, the members among them"; findings 3–5
+> taken (chance line's assumption, two report fixes, wording); 2 stated, its row needs a run.
+> **Next, for the user:** `STATE.md` Blocked 31 (E1's re-run: a label-blind comparator and a
+> causal row), or Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or the all-attractive OV
+> intervention (Parked below; E1 gives the cut a predicted sign per window: attention pulls from
+> 4000 in L9–23, pushes at 256–512).
+> *Parked (E1, finding 1):* **membership against nearness.** A label-blind comparator: per
+> member, draws of non-members matched to its distances to its fellow members (or groups
+> re-drawn by a label-blind clustering of the same cloud), so a pull towards near tokens scores
+> 0. Why: the one claim E1 could not make. Cost: a re-run (~15 min GPU) with the comparator and
+> a causal-field row (finding 2). Could change: whether attention knows the groups or only
+> nearness. Blocked 31.
+> *Parked (E1):* **coherence against nearness-matched draws.** Members' moves are parallel
+> beyond random sets in 28–33 of 33 cells, but the draws are not matched for nearness, so a
+> shared tag (`lit-10.md` §18 row 1) and proximity are not separated. Cost: the stored records
+> do not hold per-token moves; a re-run with kNN-matched draws (~15 min GPU). Could change:
+> whether a group-shared tag holds the groups. *Parked (E1):* **the rule fixed no reading where
+> 1e's window is mixed** (most of 4000–16000). Why: the late pull mostly sits there. Cost: none
+> (a sentence, the user's). Could change: how 4000–16000 is quoted.
+>
 > **R8x done, 2026-10-08 (`status-10.md` §1.25; its title is the summary).** Blocked 27 (c), the
 > user's: the exact check, rule `design-10.md` "R8x" (`ced45f5`, before any P > 0 label).
 > `tools/run/p10_r8x_exact.py`; output `data/p10/reread_r8x_2026-10-08/` (each EOD condition's
@@ -873,7 +905,7 @@ before it.
   forward passes at the 18 steps per arm, an equal-norm random-cut control (later layers go off
   their input distribution), rank 64 per head (no per-head identity), a literature scan first.
   Could change: the triage's flagship (the anti-collapse force) from correlation to intervention.
-- **Energy against c3x's groups** (the user, 2026-10-09: after R9, order decided once R7 closes).
+- *Taken as E1 (2026-10-09), done: `status-10.md` §1.34.* **Energy against c3x's groups** (the user, 2026-10-09: after R9, order decided once R7 closes).
   Per c3x group, does attention's token-specific update (1e's `r1out`) pull members towards each
   other: ascend a field built from the group's own members, against the rest's? Why: the
   particle rows say who groups, not what holds them; R6f says the embedding moved under them.

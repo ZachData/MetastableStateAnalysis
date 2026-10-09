@@ -568,6 +568,73 @@ matches; (r2) a draw dropping nothing gives c3's cells; (r3) the first draw has 
 compared cells before the rest run. **It does not:** run a pass; change R7's bars, levels or
 labels; read c3x's self-similarity; test anything. Results: `status-10.md` §1.33.
 
+**E1, energy against c3x's groups (`handoff-10.md` Parked, taken by the user 2026-10-09 after
+R9; rule fixed 2026-10-09, before any pass or reading).** Scan: `lit-10.md` §18 (the field:
+`lit-1e.md` §1). **Question:** does attention's token-specific update pull a c3x group's members
+towards each other, towards the group's own members more than towards as many other tokens? (R6f:
+the embedding moved under the groups; the particle rows say who groups, not what holds them.)
+**Inputs:** the R9 source's c3x labels (c2 beside); the 7 v1 passages at the 18 steps; targets
+R0's kept offsets. One hooked GPU pass per (step, passage) (`p1e_energy_field.u2_attn.Hooked`,
+float32 eager, TF32 off), split as 1e's attention arm (`attn`, `keys`, `sink`, `mlpx`, `bias`,
+`block`); `u2_attn.check_pass` against Stage 0's `activations.npz` (v1 tolerance 1e-4) and the
+split's sum, else that (step, passage) refuses. *Departure at the gate (2026-10-09, before any
+reading): the first record refused at block 23 (`x + attn + mlp` off by 0.1), since `hs[24]` is
+after `final_layer_norm`; `check_pass` reads blocks 0–22, and block 23 is checked as
+`LN_f(x + attn + mlp)` against the pass's `hs[24]` and its parts' sum, both at `SPLIT_TOL`.*
+**Frame and move (1e U2's):** block ℓ's input `x_i = hs[ℓ]_i`, `u_i = unit(LN1_ℓ(x_i))`;
+component c's move `d_i = P⊥_{u_i}(unit(LN1_ℓ(x_i + c_i − (c_i·ĉ)ĉ)) − u_i)`, ĉ the unit mean
+of c over the passage's kept offsets (**`r1out`**, the token-specific part).
+**Group and block:** a c3x group g at layer L (labels on `hs[L]`, L = 1–23; L24 has no block) is
+read at **block L** (the update it goes through next). Beside: block L−1 (the update that
+brought it there; frame and field from the members' states at L−1).
+**Field:** for member i and a set S of kept offsets, `g^S_i = P⊥_{u_i} Σ_{j∈S∖{i}}
+softmax_j(β u_i·u_j) u_j`, every j in S (not causal: the question is geometric), β 3.5 (1.6,
+5.6 and β = 0, the plain mean of S's other members, beside). `a_i(S) = cos(d_i, g^S_i)`; `A(S)`
+the mean over g's members (a member with `|d_i|` or `|g^S_i|` < 1e-9 dropped, counted).
+**Null:** 200 draws S′ of |g| kept offsets outside g (uniform without replacement; one generator
+per group, seed crc32 of step, passage, layer and group id, the 200 drawn in order, so c3x and c2
+share a group's draws, and every block, component and β reads the same draws; S′ may hold noise
+and other groups' members); the members'
+own moves read against S′'s field. **`X_g = A(g) − mean A(S′)`**; one-sided ranks beside.
+**Beside, not labels:** `X_knn = A(g) − A(K)`, K the |g| kept non-members nearest g's mean `u`
+(the group against proximity: is it membership or nearness?); the members' **move coherence**
+`C(g)`, the mean pairwise cosine of their `d_i`, against the draws' sets' own (`lit-10.md` §18
+row 1: a shared tag holds a group without pointing at it).
+**Components:** primary `attn:r1out`; beside `keys:r1out` (no sink, no biases), `attn:frozen`
+(the shared update in), `mlpx:r1out`, `block:r1out`.
+**Label,** per (step, band) (L1–8, L9–16, L17–23), on the primary component at β 3.5: each
+passage's value the mean `X_g` over its c3x group-layer records in the band; a passage is
+**readable** with ≥ 3 records. With ≥ 6 readable passages: **pulls together** if every readable
+passage is > 0, **leans pulls** if all but one, **pushes apart** / **leans pushes** the same
+below 0, else **mixed**; fewer than 6 → **too few**. Chance (no effect, passages independent):
+`2/2^n` either way full, `2n/2^n` leans; the expected counts printed beside the table, a lean not
+shared by an adjacent step marked **isolated** (1e's). **β-robust** if 1.6 and 5.6 agree.
+**Primary steps 64–143000** (from the structure count before this rule, c3x has ≥ 6 passages with
+≥ 3 records in every band there, and too few at 0–32 in most bands). c2 by the same rule at every
+step beside; **c2's step 0 is the baseline**: a trained label c2's step 0 also carries is not
+called learned (c3x's step 0, 29 group-layer records, is too few in every band). Beside per
+(step, band): the share of group records with `X_g > 0` and with rank ≤ 0.05 (against 5 %), the
+median `|X_g|`, `X_knn` and `C(g)`'s shares the same way, and 1e's v1 `causal:attn:r1out` label
+for the window (`data/p1e/u2_attn_2026-10-07`), so a pull towards the group can be set against
+the move along the whole field.
+**Readings, fixed before output:** *pulls together* where 1e's window descends → attention pulls
+the members together while pushing them off the cloud: it holds the group against the rest;
+*pulls together* where 1e ascends → attention pulls towards everything, the members most (1e's
+v1 bands are blocks L1–8, L9–16, L17–22; E1's L17–23 is set against its L17–22); *mixed*
+or *pushes apart* → attention's token-specific move does not hold the group, and `C(g)` says
+whether a shared move (a tag) does; else the embedding or the MLP (R6f). `X_knn` ≤ 0 under a
+*pulls together* → the pull is nearness, not membership (said, not relabelled).
+**First checks (refuse):** the pass checks above; every c3x group at (step, passage, layer) is a
+c2 group with the same members, on R0's kept offsets; the first record (step 512,
+`wiki_paragraph`) populated before the rest: every c3x group at L1–23 has a finite `X_g` with
+≥ 90 % of its members kept, not all `X_g` equal. Tests: a planted move pointing at a group's
+members gives `X_g > 0`, pointing away `< 0`, a move independent of position ≈ 0; a draw never
+holds a member; adding i itself to S leaves `a_i` unchanged (the tangent drops `u_i`). Run step
+512 first and open it (records per band, `X_g` not all 0) before the other 17.
+**It does not:** use V's own kernel (`V = I`, 1e U2's idealised field; per-head kernels are 1e's
+per-head arm); read the long passages (c3x is defined on v1 only); say what a group carries; test
+anything. One seed, 7 passages, tier 1. Results: `status-10.md` §1.34.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
