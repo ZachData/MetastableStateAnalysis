@@ -445,9 +445,9 @@ def report(a) -> int:
                     c["isolated"] = not any(prim[f"{t}|{band}"]["label"] == c["label"] for t in nb)
                 c["u2_attn_1e"] = l1e.get((s, band))
                 res["shares"][f"{col}|{s}|{band}"] = group_shares(recs, s, band, col, "dep", "attn:r1out", 3.5)
-        n_read = [sum(np.isfinite(list(prim[f"{s}|{b}"]["values"].values()))) for s in PRIMARY_STEPS
+        n_read = [int(np.isfinite(list(prim[f"{s}|{b}"]["values"].values())).sum()) for s in PRIMARY_STEPS
                   if s in steps for b in BANDS]
-        res["chance"][col] = {"cells_read": sum(n >= MIN_PASSAGES for n in n_read),
+        res["chance"][col] = {"cells_read": int(sum(n >= MIN_PASSAGES for n in n_read)),
                               "expected_full_either": sum(chance(n)["full_either"] for n in n_read if n >= MIN_PASSAGES),
                               "expected_lean_either": sum(chance(n)["lean_either"] for n in n_read if n >= MIN_PASSAGES)}
     (a.out / "report.json").write_text(json.dumps(res, indent=1) + "\n")
