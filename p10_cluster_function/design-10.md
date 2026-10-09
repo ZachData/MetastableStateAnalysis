@@ -468,6 +468,24 @@ summaries the ladder reads, exactly), so a changed label is the column and not t
 first c3x record is opened and checked populated before the rest. **It does not:** re-examine
 "moves", `J0` or `Jc`; add a row; change a floor; test anything. Results: `status-10.md` §1.26.
 
+**R9 / R6 (fixed 2026-10-09, before any c3x matcher output).** R6 labels nothing (an
+instrument), so "the cells where c3x's label differs" reads here as **§1.20's headline clauses
+on c3x beside c3**. **Re-run, not filtered:** the matcher's kinds depend on every group at both
+steps (a c3 split whose second piece c3x drops is a c3x stable link), so c3's stored links
+cannot be filtered into c3x's. `p10_r6_matcher.py` with c3x added as a column (flips against
+c2a, as c3; lineage on its own links and by id on c2a), everything else R6's. **A clause
+changes when:** (i) survival: c3x's stable share differs from c3's by > 0.05 (R1–R3's floor,
+placed) at any boundary from 4000 → 8000 to 32000 → 54000, or at 54000 → 143000; (ii) "changed
+members": at any of those boundaries the stable links' median Jaccard < 0.5 or their identical
+share > 0.5; (iii) "few new": at any boundary from 4000 → 8000, new is ≥ ¼ of c3x's births +
+deaths (placed; c3's largest is 49 of 694); (iv) "none past 256": any c3x lineage at 143000
+starts before 256; "89 % after 2000" moves by > 0.05; (v) "longer than independent": c3x's
+share reaching ≤ 2000 is not above its independence baseline. Every boundary's c3x numbers sit
+beside c3's whatever the clauses say. **First checks (refuse):** R6's c2a gate; c0, c1, c1c,
+c2a, c2 and c3 pooled on the R9 source equal R6's `r6.json` exactly (`--reproduce`, with the
+summary of the source it names); c3x holds groups at 143000 before any chain runs. Results:
+`status-10.md` §1.30.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
