@@ -588,8 +588,10 @@ brought it there; frame and field from the members' states at L−1).
 softmax_j(β u_i·u_j) u_j`, every j in S (not causal: the question is geometric), β 3.5 (1.6,
 5.6 and β = 0, the plain mean of S's other members, beside). `a_i(S) = cos(d_i, g^S_i)`; `A(S)`
 the mean over g's members (a member with `|d_i|` or `|g^S_i|` < 1e-9 dropped, counted).
-**Null:** 200 draws S′ of |g| kept offsets outside g (uniform without replacement; seed crc32 of
-step, passage, layer, group id, draw; S′ may hold noise and other groups' members); the members'
+**Null:** 200 draws S′ of |g| kept offsets outside g (uniform without replacement; one generator
+per group, seed crc32 of step, passage, layer and group id, the 200 drawn in order, so c3x and c2
+share a group's draws, and every block, component and β reads the same draws; S′ may hold noise
+and other groups' members); the members'
 own moves read against S′'s field. **`X_g = A(g) − mean A(S′)`**; one-sided ranks beside.
 **Beside, not labels:** `X_knn = A(g) − A(K)`, K the |g| kept non-members nearest g's mean `u`
 (the group against proximity: is it membership or nearness?); the members' **move coherence**
@@ -614,7 +616,8 @@ for the window (`data/p1e/u2_attn_2026-10-07`), so a pull towards the group can 
 the move along the whole field.
 **Readings, fixed before output:** *pulls together* where 1e's window descends → attention pulls
 the members together while pushing them off the cloud: it holds the group against the rest;
-*pulls together* where 1e ascends → attention pulls towards everything, the members most; *mixed*
+*pulls together* where 1e ascends → attention pulls towards everything, the members most (1e's
+v1 bands are blocks L1–8, L9–16, L17–22; E1's L17–23 is set against its L17–22); *mixed*
 or *pushes apart* → attention's token-specific move does not hold the group, and `C(g)` says
 whether a shared move (a tag) does; else the embedding or the MLP (R6f). `X_knn` ≤ 0 under a
 *pulls together* → the pull is nearness, not membership (said, not relabelled).
