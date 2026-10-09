@@ -161,6 +161,71 @@ dynamics). No forward pass. Everything not named here is the block arm's rule.
 | not computed | inner products between well centres or any design / Gegenbauer statistic of centres or cloud, `|ū|` or the mean pairwise inner product (P-S1 fence); step lengths (P-γ); per-head anything |
 | **(1′) calibrated lumpiness** (beside; *added 2026-10-08 after the output, `/challenge-pr` on #164, finding 2; fixed before it was computed*) | putting the matched Gaussian on the sphere shrinks its density spread once the covariance is concentrated, so `Xe` > 0 for a cloud with no structure beyond its moments. Per cell and β: 4 **null clouds** `Y_k` (matched Gaussians of the targets, seed `SEED + 1`), each scored as the data against 4 matched Gaussians of its own; `bias = mean_k [sd(e_{Y_k}) − mean_j sd(e_{G_j(Y_k)})]`; **`Xe′ = Xe − bias`**, labelled by the same sign rule (*lumpier / smoother than a structureless cloud*), step 0 beside. GPU float32 Grams; the first cell's `bias` against CPU float64 within 1e-4 (refuse). `Xe` and label (1) stay as recorded. *Finding 4, same commit:* the GPU-against-CPU wells check repeated where there are several wells (`wiki_paragraph_long`, step 128 L4 at β 5.6 and 10, step 143000 L12 at β 10), same ≥ 99.9 % bar |
 
+## U1 beside: β ≈ 10 and the cloud-centred frames, the rule (fixed 2026-10-08, before any output)
+
+*User, 2026-10-08, after #165 merged with Blocked 30 (a) confirmed: "work on all three", i.e. (a)
+stands and (b) and (c) are read **beside** it.* Both choose a β or a frame where wells were seen,
+the placed-bar problem "Blocked 30 decided" named, so neither replaces U1's reading at the
+measured β; each is labelled as chosen. Everything not named here is U1's rule (cells, tokens,
+targets, field, density, wells, what the wells are, nulls, labels, first checks), with one choice
+changed per run.
+
+| run | the one choice changed | β (primary; beside) | sweep |
+|---|---|---|---|
+| **(b) β 10** | β: **10**, the sweep's one value with a few wells in many cells (196 of 432 with 2–20); **7 and 14** beside (÷ and × √2, placed: no interval is measured here) | 10; 7, 14 | none (U1's sweep stands) |
+| **(c) centred** | frame: **`v_i = unit(u_i − ū)`**, `u_i` U1's unit LN1 rows, `ū` their mean over the target set (each set its own `ū`), applied to every stored position (the causal density's sources) | 3.5; 1.6, 5.6 | U1's, at L4 / 12 / 20 |
+| **(c′) raw centred** (beside (c)) | frame: **`unit(x_i − x̄)`** on the stored residual `x` (no LN1), `x̄` over the target set: the 2026-10-06 probe's frame, so its "2–4 wells" are read with U1's rule on every cell | 3.5; 1.6, 5.6 | U1's |
+
+| | |
+|---|---|
+| nulls | U1's matched Gaussians of the **rows read** (the centred rows in (c), (c′)); their wells at the run's primary β |
+| labels | U1's (1)–(4), read at the run's primary β where U1 reads 3.5; (1) and (3) β-robust if both beside β give the same label; the c3x purity on v1 at the primary β |
+| caveats, fixed now | (c), (c′): β is not measured in a centred frame, so 3.5 there is the measured value carried over, not measured. M6: in a centred frame the subsphere ⊥ span is a near-flat floor; mean shift from the targets stays in their span and does not see it. (b): `e_i` at β 10 is dominated by each token's nearest neighbours (M5: a Gaussian kernel of width `1/√10` ≈ 0.32 in chord) |
+| first checks | U1's, the first cell's GPU wells against CPU float64 in the run's frame at its primary β; records carry `opts` (frame, β set, primary β, sweep), and a resume refuses a record read with other `opts` |
+| not computed | (1′)'s calibration (U1's bias is for 3.5 in β's frame; not carried over); U1's fences |
+
+*Amended 2026-10-08, a defect, after (c)'s first check refused and U3 refused on (b), before any
+label of (b), (c) or U3 was read.* (c)'s first cell matched CPU float64 on 0.9984 of targets at
+L12 (bar 0.999). The cause is U1's float32 phase: it merged rows within `MERGE_RUN` (1e-6) by a
+float32 dot, and a CUDA float32 dot of 1024-d unit rows is off by up to ~1e-6. So a row still
+moving near a ridge could join a neighbour bound for another well. Without that merge the GPU
+equals the reference. (b)'s step 2000 `hdbscan_code_long` L12 had 185 wells against float64's
+189 (agreement 0.9886), and 8 targets sat above their own well's mode, which is U3's negative
+persistence. The first check passed on (a) and (b) because step 143000 has few wells. **Now:** merges
+compare in float64 (`dedup`, `dedup_t`; a test with pairs 1.5e-6 apart). (b), (c), (c′) and U3
+run on the fixed producer, and the first build of each is set aside unread. **Added check:** a run is
+read only if its audit (`python -m p1e_energy_field.u1_audit`; every record, its
+read-at-every-β target set, L4 / 12 / 20, the primary β) has its wells equal to CPU float64's on
+≥ 0.999 of targets in every cell; otherwise it is refused. U1 (a), merged in #165 on the old
+producer, gets the same audit; what it finds is a correction to (a) (`status-1e.md`).
+
+U3 at β 10, if (b) finds wells to join, gets its own rule before its output.
+
+## U3 at β 10, crests and saddles: the rule (fixed 2026-10-08, before any U3 output and before (b)'s labels were read)
+
+*Blocked 30 (b), the user's. (b)'s first cell (step 143000, `wiki_paragraph_long`) was opened as
+its populated check: 1–31 wells at β 10, one holding 86–100 % of the targets.* The field is U1's
+(full, `φ_β` over the targets, unit LN1 rows, states fixed), at **β 10 only**; cells as (b): long
+passages, T1 + T2, L0–L23, 18 steps; v1 (R0's kept offsets) beside. The saddles live in the
+targets' span (M6): every path below starts and stays there. *Amended 2026-10-08 after the first
+cell's check, before any label was read (the check refused on NEB convergence; the cell took 648 s
+at 24 layers, ~45 h for the batch):* **layers 4, 12, 20 only** (U1's sweep layers, one per trained
+band, so a band's value is its one layer), **long passages only** (v1 not read). Every pass height
+below, graph or band, converged or not, is the lowest point of a feasible path between the two
+wells, so a **lower bound on the pass**, and each persistence an upper bound.
+
+| | |
+|---|---|
+| wells | (b)'s, recomputed (same mean shift, its modes kept) and **refused unless they equal (b)'s saved labels** (agreement ≥ 0.999 per cell). Every well counts, singletons too (a lone token's bump is a maximum of `φ_β`); `k2` wells beside |
+| heights | `h(x) = log φ_β(x)`, the full sum, self term in (a path over a token crosses its bump); a well's peak is `h` at its mode |
+| merge tree (primary) | a graph over the targets: each target's **15** nearest neighbours by `⟨u_i, u_j⟩` (placed). *Amended 2026-10-08 after the first cell refused, before any U3 output was written: the rule first doubled k up to 120 until the graph joined every well, and on one matched-Gaussian draw 120 did not. Now:* where the 15-NN graph leaves wells apart, each apart component's targets are also joined to their 15 nearest targets outside it, repeated until every well is joined (rounds counted, `bridges`; 50 rounds, else refused), edge height `min(h(u_i), h(unit(u_i + u_j)), h(u_j))`; edges added from the highest (Kruskal), and when an edge joins two components whose highest wells differ, the lower one **dies** there (elder rule): its **persistence** `p = peak − edge height` (nats), its **saddle** that edge. `k − 1` deaths per cell |
+| NEB (beside; the cell's **8 most persistent deaths**, placed for cost: cells at β 10 reach hundreds of wells) | climbing-image nudged elastic band between the dying well's mode and the mode of the well across the edge, 24 images, started on the geodesic path mode → `u_i` → `u_j` → mode, on the sphere (forces projected to each image's tangent; ascent of `h` off the path, a spring along it); float32 for up to 3,000 iterations, the path's heights then in float64. *Converged (amended after the first cell, as above): the climbing image's height moves < 1e-4 nats over 500 iterations;* the rule first asked the largest force on the band < 1e-4·β, which oscillates over token spikes (to 0.5–1.0 at 12,000 iterations) while the pass height is fixed to 1e-4 by iteration 500 (6 bands, step 143000 L4 / L12); the last largest force is reported beside. Reported: its saddle height against the graph's (`Δ_NEB = h_NEB − h_graph`, ≥ 0 when the band finds the higher pass) and unconverged bands. Beside, since a band from a graph start finds *a* pass, not provably the lowest |
+| per cell | `P = Σ p` over deaths, `p_max`, deaths with `p` > 1 nat; the token-class mix of the saddle edges' endpoints against all targets (the "interesting voids": who sits on the crests) |
+| null | U1's 4 matched Gaussians of the cell (U1's seeds, so the same draws (b) read), their wells and merge tree the same way (graph only, no NEB) |
+| label per (step, band) | U1's sign rule over the passages on **(5) `Xp = log(1 + P) − mean_draws log(1 + P_G)`**: > 0 *a deeper landscape than its Gaussian*, < 0 *shallower*; step 0 beside, a trained label step 0 also carries is not called learned. `p_max` and the NEB gap beside, no label |
+| first checks (refuse) | the first cell's wells equal (b)'s; its merge tree has `k − 1` deaths and every persistence ≥ 0; two planted vMF groups give one death at the pass the band also finds (test); the first cell's NEB on L4 / L12 / L20 converges for ≥ 90 % of the bands run |
+| not computed | inner products between well centres or any statistic of the modes' configuration (P-S1); U1's other fences. The modes are used as path endpoints only, never stored |
+
 ## Fences (registered predictions and the registry)
 
 | registered | what 1e will not compute before it is scored, or the user decides |

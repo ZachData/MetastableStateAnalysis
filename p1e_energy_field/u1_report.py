@@ -20,7 +20,7 @@ from typing import Dict, List
 import numpy as np
 
 from .extract_long8 import STEPS
-from .u1_field import BANDS, BETAS, MERGE_BESIDE, PRIMARY_BETA, SWEEP
+from .u1_field import BANDS, MERGE_BESIDE, SWEEP, default_opts
 from .u2_report import chance
 
 TRAINED = ("L1-8", "L9-16", "L17-23")
@@ -94,11 +94,20 @@ def isolated(labs: Dict, k: tuple, names) -> bool:
     return not any(_dir(labs.get((s, band), "mixed"), names) == _dir(labs[k], names) for s in near)
 
 
+def run_opts(out: Path) -> Dict:
+    """The run's frame and β set (`plan.json`; U1's own run predates them and is the default)."""
+    plan = out / "plan.json"
+    opts = json.loads(plan.read_text()).get("opts") if plan.exists() else None
+    return opts or default_opts()
+
+
 def summarise(out: Path, kind: str) -> Dict:
+    opts = run_opts(out)
+    BETAS, PRIMARY_BETA = tuple(opts["betas"]), opts["primary_beta"]
     recs = load(out, kind)
     n_pass = len({c["passage"] for c in recs})
     tsets = sorted({c["targets"] for c in recs})
-    res = {"n_passages": n_pass, "chance_per_54": chance(n_pass, 54), "tables": {}}
+    res = {"opts": opts, "n_passages": n_pass, "chance_per_54": chance(n_pass, 54), "tables": {}}
     for t in tsets:
         betas = BETAS if t in ("t12", "r0") else (PRIMARY_BETA,)
         for stat in ("Xe", "Xw", "rho_pos", "ami_diff"):
@@ -165,7 +174,12 @@ def print_table(res: Dict, key: str, title: str) -> None:
 
 
 def report(out: Path) -> int:
+    from .u1_audit import audit_passes
+    audit_passes(out)                        # read only behind a passing audit (design-1e.md)
     full = {}
+    opts = run_opts(out)
+    BETAS, pb = tuple(opts["betas"]), opts["primary_beta"]
+    print(f"frame {opts['frame']}, β {BETAS} (primary {pb:g}), sweep {opts['sweep']}")
     for kind in ("long", "v1"):
         if not (out / "records" / kind).exists():
             continue
@@ -174,15 +188,16 @@ def report(out: Path) -> int:
         prim = "t12" if kind == "long" else "r0"
         for beta in BETAS:
             print_table(res, f"{prim}|Xe|{beta:g}", f"(1) lumpy, β {beta:g}")
-        print_table(res, f"{prim}|Xw|3.5", "(2) wells against the Gaussian, β 3.5")
+        print_table(res, f"{prim}|Xw|{pb:g}", f"(2) wells against the Gaussian, β {pb:g}")
         for beta in BETAS:
             print_table(res, f"{prim}|rho_pos|{beta:g}", f"(3) density and position, β {beta:g}")
-        print_table(res, f"{prim}|ami_diff|3.5", "(4) what the wells are, β 3.5")
+        print_table(res, f"{prim}|ami_diff|{pb:g}", f"(4) what the wells are, β {pb:g}")
         if kind == "long":
             for k in ("Xe", "Xw", "rho_pos", "ami_diff"):
-                print_table(res, f"t123|{k}|3.5", f"T1–T3 beside: {k}")
+                print_table(res, f"t123|{k}|{pb:g}", f"T1–T3 beside: {k}")
     (out / "labels.json").write_text(json.dumps(full, indent=1) + "\n")
     for kind, r in full.items():
         print(f"merge tolerance ({kind}): well count changes at 1e-4 or 1e-2 in {r['merge_tolerance']['k_changes']} of {r['merge_tolerance']['cells']} cells")
-    print(f"\nwrote {out / 'labels.json'} (sweep β {SWEEP} at L4/12/20 in 'sweep_k_eff')")
+    print(f"\nwrote {out / 'labels.json'}" + (f" (sweep β {SWEEP} at L4/12/20 in 'sweep_k_eff')"
+                                               if opts["sweep"] else ""))
     return 0

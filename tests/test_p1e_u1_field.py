@@ -82,6 +82,38 @@ def test_dedup_merges_only_within_tolerance():
     assert lab.tolist() == [0, 0, 1] and reps.tolist() == [0, 2]
 
 
+def _pairs_at(dist: float, n: int = 300, d: int = 1024) -> np.ndarray:
+    """``n`` pairs of float32 unit rows, each pair ``dist`` apart in cosine distance (float64)."""
+    rng = np.random.default_rng(0)
+    A = rng.standard_normal((n, d))
+    A /= np.linalg.norm(A, axis=1, keepdims=True)
+    P = rng.standard_normal((n, d))
+    P -= (P * A).sum(1, keepdims=True) * A
+    P /= np.linalg.norm(P, axis=1, keepdims=True)
+    th = np.sqrt(2 * dist)
+    return np.concatenate([A, np.cos(th) * A + np.sin(th) * P]).astype(np.float32)
+
+
+@pytest.mark.parametrize("on_gpu", [False, True])
+def test_merges_compare_in_float64(on_gpu):
+    """A float32 GPU dot of 1024-d rows is off by up to ~1e-6, the merge tolerance: pairs 1.5e-6
+    apart were merged (3 of 300 before the fix). Merges are decided in float64 on both paths."""
+    if on_gpu:
+        torch = pytest.importorskip("torch")
+        if not torch.cuda.is_available():
+            pytest.skip("no CUDA")
+    for dist, merged in ((1.5e-6, False), (1e-7, True)):
+        Y = _pairs_at(dist)
+        Yd = Y.astype(np.float64)
+        true = 1.0 - np.sum(Yd[:300] * Yd[300:], axis=1)
+        assert ((true > u1.MERGE_RUN) if not merged else (true < u1.MERGE_RUN)).all()
+        if on_gpu:
+            lab, _ = u1.dedup_t(torch.as_tensor(Y, device="cuda"), u1.MERGE_RUN)
+        else:
+            lab, _ = u1.dedup(Y, u1.MERGE_RUN)
+        assert ((lab[:300] == lab[300:]) == merged).all()
+
+
 def test_hidden_state_24_refused(tmp_path):
     n = 5
     acts = np.zeros((25, n, 4), dtype=np.float32)
@@ -106,6 +138,29 @@ def test_report_sign_rule_and_not_read():
         rep.labels(vals, "Xe", 8)
 
 
+def test_reports_read_only_behind_a_passing_audit(tmp_path):
+    """`/challenge-pr` on #167, finding 4: no audit, a missed record or a cell below the gate refuses."""
+    import json
+    from p1e_energy_field.u1_audit import audit_passes
+    (tmp_path / "records" / "long").mkdir(parents=True)
+    for s in ("0", "143000"):
+        (tmp_path / "records" / "long" / f"step{s}_hamlet_long.json").write_text("{}")
+    with pytest.raises(SystemExit, match="no audit.json"):
+        audit_passes(tmp_path)
+    row = {"kind": "long", "step": "0", "passage": "hamlet_long", "agree_stored": 1.0}
+    audit = {"rows": [row], "summary": {"cells": 1}}
+    (tmp_path / "audit.json").write_text(json.dumps(audit))
+    with pytest.raises(SystemExit, match="misses 1 of 2"):
+        audit_passes(tmp_path)
+    audit["rows"].append({**row, "step": "143000", "agree_stored": 0.998})
+    (tmp_path / "audit.json").write_text(json.dumps(audit))
+    with pytest.raises(SystemExit, match="1 audited cells below"):
+        audit_passes(tmp_path)
+    audit["rows"][1]["agree_stored"] = 0.999
+    (tmp_path / "audit.json").write_text(json.dumps(audit))
+    assert audit_passes(tmp_path) == {"cells": 1}
+
+
 @pytest.mark.parametrize("spec", [(6, 3), (20, 1)])
 def test_calibrated_lumpiness_is_zero_on_a_structureless_cloud(spec):
     """(1′), `/challenge-pr` on #164 finding 2: the bias predicts the score of a cloud with no
@@ -122,3 +177,32 @@ def test_calibrated_lumpiness_is_zero_on_a_structureless_cloud(spec):
         g = [u1.density((lambda Y: Y @ Y.T)(u1.gaussian_draw(U, rng)), 1.6).std() for _ in range(4)]
         raw.append(u1.density(U @ U.T, 1.6).std() - np.mean(g))
     assert abs(np.mean(raw) - bias) < 0.015
+
+
+def test_frames_centre_on_the_target_set():
+    """`design-1e.md` "U1 beside": (c) centres U1's unit LN1 rows, (c′) the raw residual, on the targets."""
+    rng = np.random.default_rng(5)
+    X = rng.normal(size=(30, 12)) * 3 + 1.0
+    ln1 = {"w": np.ones((1, 12)), "b": np.zeros((1, 12)), "eps": 1e-5}
+    t = np.arange(4, 30)
+    U = u1.frame_rows(X, ln1, 0, t, "unit")
+    C = u1.frame_rows(X, ln1, 0, t, "centred")
+    R = u1.frame_rows(X, ln1, 0, t, "raw_centred")
+    ref = U - U[t].mean(axis=0)
+    assert np.allclose(C, ref / np.linalg.norm(ref, axis=1, keepdims=True))
+    ref = X - X[t].mean(axis=0)
+    assert np.allclose(R, ref / np.linalg.norm(ref, axis=1, keepdims=True))
+    assert np.allclose(np.linalg.norm(C, axis=1), 1) and np.allclose(np.linalg.norm(R, axis=1), 1)
+    with pytest.raises(ValueError):
+        u1.frame_rows(X, ln1, 0, t, "nope")
+
+
+def test_resume_refuses_a_record_read_with_other_options(tmp_path):
+    rec = tmp_path / "records" / "long" / "step0_p.json"
+    rec.parent.mkdir(parents=True)
+    rec.write_text('{"code": "c", "opts": {"frame": "centred", "betas": [3.5], "primary_beta": 3.5, "sweep": true}}')
+    job = ("long", "0", "p", tmp_path, "rev", {}, None)
+    assert u1._job(job, tmp_path, tmp_path, "c", "cpu",
+                   {"frame": "centred", "betas": [3.5], "primary_beta": 3.5, "sweep": True}).startswith("have")
+    with pytest.raises(SystemExit, match="read with"):
+        u1._job(job, tmp_path, tmp_path, "c", "cpu", u1.default_opts())
