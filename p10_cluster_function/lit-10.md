@@ -993,3 +993,19 @@ searches, no fetch, nothing read whole: every mark is **[S]** (search summary). 
 Sources: https://arxiv.org/abs/2106.08367 ; https://arxiv.org/pdf/2203.10995 ;
 https://arxiv.org/html/2406.19384v3 ; https://arxiv.org/html/2410.05864v3 ; https://arxiv.org/pdf/2501.15754 ;
 https://arxiv.org/html/2605.06216
+
+## 18. Energy against c3x's groups, E1 (added 2026-10-09)
+
+Scan before `design-10.md` "E1" was fixed (`CLAUDE.md` "Literature scans", trigger 1). 2 web
+searches, 1 abstract page fetched, nothing read whole: every mark is **[S]**. The field and its
+force are `lit-1e.md` §1 (not repeated). No data opened; c3x's group counts per (step, band,
+passage) were counted before the rule (structure, no statistic).
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | Zhang, Khan & Papyan, *Attention Sinks: a "Catch, Tag, Release" mechanism* (`2502.00919`): sinks catch a run of tokens, **tag them with a common direction** and release them into the residual stream; tagged tokens cluster by the sink they attended; probes read content (e.g. truth) off the tags | [S] | a group can be held by a **move its members share** (parallel), not only by members moving towards each other. E1's force reading cannot see such a tag (a tag does not point at the members), so E1 adds the members' **move coherence** beside, against the same draws |
+| 2 | Geshkovski et al. (NeurIPS 2023, `2305.05465`): which limit the particles cluster to depends on V's spectrum; cluster locations are set by the initial tokens | [S] | already `lit-1e.md` §1; E1 reads attraction against the idealised field (`V = I`), not V's own, as 1e's U2 |
+| 3 | Not found: a measurement, in a trained decoder, of whether attention's per-token update points at a residual-stream group's own members rather than at other tokens (2 searches) | — | weak evidence of novelty |
+
+Sources: https://arxiv.org/abs/2502.00919 ;
+https://proceedings.neurips.cc/paper_files/paper/2023/hash/b2b3e1d9840eba17ad9bbf073e009afe-Abstract.html
