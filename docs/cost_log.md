@@ -300,3 +300,9 @@ running median of the rows above it gets a line under the table saying why.
   ~165k average); `STATE.md` is ~44 KB and was read twice at start (the hook printed the main
   tree's stale copy, 49 merges behind); an 85-min batch, restarted once after a rule amendment;
   and the post-PR fix (tolerance keys). Row taken before `/challenge-pr`.
+| 2026-10-08 | R9 / R1 on c3x (session shared with 1e Blocked 30 (b) / (c) and U3, user: "work on all three"; row taken at this PR) | 108 | 274k | 18.7M | 62k | #166 |
+
+  #166 over 3× the running median (5.7M): three units in one session on the user's request (the
+  1e work's calls are in this row too; its PR will take the session's later rows), each with a rule,
+  producer or reader changes and tests; `STATE.md` read twice at start (the hook printed the main
+  tree's copy, 62 merges behind); U3's first cell refused three times (defects and an amendment).

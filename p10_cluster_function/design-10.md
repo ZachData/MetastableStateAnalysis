@@ -144,6 +144,7 @@ window edges (16 → 32, 512 → 1000) that F1's reading rule is stated on.
 | R6f | R6w's within split into members against frame, in one fixed layer 0 (below) | R6w | R6w's "within" cannot tell the groups moving from the frame moving under them (`STATE.md` Blocked 26 (b″)) |
 | R7 | the context-shuffle test: does a group need its context or only its tokens (below) | R0 | every row so far reads composition and the embedding; none asks whether a group survives losing its context (`STATE.md` Blocked 26 (c)) |
 | R8 | the own-floor check on "moves": does the definition's move filter pass groups by chance (below) | R0, R7 | R7 found `J0` below chance for 32–46 % of c3's groups, and "moves" uses the same `J0`; the one item that could change c3 itself (`STATE.md` Blocked 26 (f)) |
+| R9 | every re-read row again with c3x leading (below) | R8x | R8x's drop held by the rule's letter; the user took c3x as the definition's column (`STATE.md` Blocked 27 (a)) |
 
 **R2m, F12's matched control (rule fixed 2026-10-05, before any control output was read).**
 Each column's readable (prompt, layer) records at step s are scored on **step 0's stored
@@ -443,6 +444,29 @@ recomputed partition reproduces unit 1's stored group count `k` and every stored
 exactly, so the labels written are the ones unit 1 classified on; the first step run (64) is
 opened and checked populated before the rest. **It does not:** re-examine `J0`; read the `\n\n`
 join (not part of "moves"); change any other column; test anything. Results: `status-10.md` §1.25.
+
+**R9, the re-read on c3x (`STATE.md` Blocked 27 (a), confirmed by the user 2026-10-08: "Start
+Phase 10's c3x re-read"; rule fixed before any c3x reading).** **Question:** which re-read labels
+change when c3x, not c3, is the definition's column? **The column:** c3x = c3 minus the groups
+R8x's rows do not mark `c3x` (each EOD condition's J ≥ max(`J0`, that condition's `Jc`)); centred,
+size 2 only (R8x built no arm). Written by `p10_label_source extend` into a new source
+(`data/p10/reread_r9_2026-10-08/labels`): R0's step files with a `c3x` labelling per layer, every
+other column copied unchanged; `c3x_learned` / `c3x_unlearned` at step 143000 as c3's split.
+**The ladder:** c3x appended after c3 (the one choice it adds: the chance-aware move filter).
+**Primary per step: c3x**, read on c2 where fewer than half its records are readable (as before);
+its Δ rows take **c2's step 0**, as c3's; the floor is c3x's step-0 count. Each row's reading
+rule, floors and "holds" (primary against c0; A0 against c1) are unchanged. **Beside, the answer
+this re-read exists for:** per row, the cells where c3x's label differs from c3's, at steps both
+read on their own column. The arms stay c3's and are quoted against c3 as before. **Rows, in
+order, each its own PR:** R1 (§1.7, §1.9, §1.10); R2 (F1, F12's gap, §1.5); R2m; R3 (A0 under T4);
+R6 → R6w → R6f; R7. Not re-read: R5c (`gpt2-large`, 5c's own partition; c3x is not defined
+there), R8 and R8x (c3x's source). **First checks (refuse):** `extend` refuses unless every c3
+group at every (step, passage, layer) has an R8x row, every row R8x marks `c3x` is a c3 group, and
+each such group's member count is R8x's `size`; the new source's c0–c3 labels equal R0's exactly;
+each row's c0–c3 records read on the new source reproduce that row's stored R-records (the
+summaries the ladder reads, exactly), so a changed label is the column and not the run; the
+first c3x record is opened and checked populated before the rest. **It does not:** re-examine
+"moves", `J0` or `Jc`; add a row; change a floor; test anything. Results: `status-10.md` §1.26.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint

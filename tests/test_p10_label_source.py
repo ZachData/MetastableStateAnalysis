@@ -315,3 +315,68 @@ def test_old_reader_columns_are_the_sources():
     """A0's reader keeps its own copy (the pure tier cannot import this module)."""
     from tools.run.p10_attention_baseline import OLD_READER
     assert OLD_READER == ls.ALL_POSITIONS
+
+
+def _r8x_rows(src, step, flags):
+    """R8x-shaped rows for every c3 group of the source, ``c3x`` from ``flags(layer, id)``."""
+    d = json.loads((src / f"{step}.json").read_text())
+    rows = []
+    for L, cols in d["prompts"]["p"]["layers"].items():
+        lab = np.asarray(cols["c3"])
+        for i in sorted(set(lab[lab >= 0].tolist())):
+            rows.append({"layer": int(L), "id": i, "size": int((lab == i).sum()), "c3": True,
+                         "c3x": flags(int(L), i)})
+    return rows
+
+
+def test_extend_writes_c3x_as_c3_less_the_unmarked_groups(tmp_path, monkeypatch):
+    """R9 (`design-10.md` "R9"): c3x is c3 with R8x's non-c3x groups moved to the rest."""
+    src, _, kept = _source(tmp_path)
+    r8x = tmp_path / "r8x"
+    (r8x / "rows").mkdir(parents=True)
+    (r8x / "r8x.json").write_text("{}")
+    for step in ("step512", ls.LEARNED_STEP):
+        (r8x / "rows" / step).mkdir()
+        rows = _r8x_rows(src, step, lambda L, i: L != 3)
+        (r8x / "rows" / step / "p.json").write_text(json.dumps({"rows": rows}))
+    out = tmp_path / "ext"
+    with pytest.raises(SystemExit, match="no label source"):        # every step of the axis, or refuse
+        ls.extend(["--labels", str(src), "--r8x", str(r8x), "--out", str(out)])
+    monkeypatch.setattr(ls, "MODELS", {"step512": None, ls.LEARNED_STEP: None})
+    assert ls.extend(["--labels", str(src), "--r8x", str(r8x), "--out", str(out)]) == 0
+    _, c3 = ls.load_column(out, "step512", "p", 4, "c3")
+    _, c3x = ls.load_column(out, "step512", "p", 4, "c3x")
+    assert np.array_equal(c3, c3x) and (c3 >= 0).any()
+    assert (ls.load_column(out, "step512", "p", 3, "c3x")[1] == -1).all()
+    for col in ls.COLUMNS:                                 # every other column unchanged
+        assert np.array_equal(ls.load_column(out, "step512", "p", 5, col)[1],
+                              ls.load_column(src, "step512", "p", 5, col)[1])
+    meta = json.loads((out / "step512.json").read_text())["meta"]
+    assert meta["extended"]["from_git"] == "x" and meta["extended"]["r8x_rows_sha256"]
+    with pytest.raises(ls.LabelSourceError, match="written by `extend`"):
+        ls.load_column(src, "step512", "p", 4, "c3x")
+    monkeypatch.setattr(ls, "readable", lambda lab: True)
+    yes = ls.reader_input(out, "c3x_learned")
+    assert np.array_equal(yes["labels"][(143000, "p")][4][kept], c3)
+    assert (yes["labels"][(143000, "p")][3][kept] == -1).all()
+
+
+def test_c3x_layer_refuses_rows_that_are_not_c3s():
+    cols = {"c3": [0, 0, 1, 1, 1, -1]}
+    rows = [{"id": 0, "size": 2, "c3": True, "c3x": True}, {"id": 1, "size": 3, "c3": True, "c3x": False}]
+    assert ls.c3x_layer(cols, rows, "w") == [0, 0, -1, -1, -1, -1]
+    with pytest.raises(ls.LabelSourceError, match="marks c3 groups"):
+        ls.c3x_layer(cols, rows[:1], "w")                  # a c3 group without its row
+    with pytest.raises(ls.LabelSourceError, match="not a c3 group"):
+        ls.c3x_layer(cols, rows + [{"id": 2, "size": 1, "c3": False, "c3x": True}], "w")
+    with pytest.raises(ls.LabelSourceError, match="R8x's size"):
+        ls.c3x_layer(cols, [{"id": 0, "size": 5, "c3": True, "c3x": True}, rows[1]], "w")
+
+
+def test_extend_refuses_a_missing_r8x_before_writing(tmp_path):
+    """CodeRabbit on #166: a wrong --r8x refuses and leaves no empty --out behind."""
+    src, _, _ = _source(tmp_path)
+    out = tmp_path / "ext"
+    with pytest.raises(SystemExit, match="no r8x.json"):
+        ls.extend(["--labels", str(src), "--r8x", str(tmp_path / "nope"), "--out", str(out)])
+    assert not out.exists()
