@@ -82,3 +82,41 @@ def test_load_refuses_a_record_missing_a_step(tmp_path):
                 "records_readable": {str(s): {"n": 168, "readable": 100} for s in steps}}))
     with pytest.raises(lad.LadderError, match=r"steps \[143000\] missing"):
         lad.load(tmp_path, labels)
+
+
+def test_lead_c3x_is_primary_on_c2s_baseline_and_counts_c3_to_c3x():
+    """R9: c3x leads (c2 under half readable), its F12 Δ on c2's step 0, and c3 → c3x changes counted."""
+    summ = {"step0": {"columns": {"c3": {"records": 168, "readable": 15}, "c3x": {"records": 168, "readable": 8}}},
+            "step64": {"columns": {"c3": {"records": 168, "readable": 90}, "c3x": {"records": 168, "readable": 84}}},
+            "step128": {"columns": {"c3": {"records": 168, "readable": 90}, "c3x": {"records": 168, "readable": 80}}}}
+    assert lad.primary(summ, "c3x") == {0: "c2", 64: "c3x", 128: "c2"}
+    cols_x = lad.columns_of("c3x")
+    assert cols_x[:len(lad.LADDER) + 1] == (*lad.LADDER, "c3x") and "c3x_learned" in cols_x
+    m = {c: _rec({0: {"mean": 0.30}, 64: {"mean": 0.30}}) for c in cols_x}
+    m["c2"] = _rec({0: {"mean": 0.50}, 64: {"mean": 0.40}})
+    m["c3x"] = _rec({0: {"mean": 0.0}, 64: {"mean": 0.60}})
+    f1 = {c: _rec({0: {"n": 1, "mean": 0.0, "median_p": 1.0}, 64: {"n": 1, "mean": -0.4, "median_p": 0.001}})
+          for c in cols_x}
+    cols = lad.columns({"recs": {"f12": m, "f1": f1}, "lead": "c3x"})
+    assert cols["F12"]["c3x"][("F12", "all")][64] == (pytest.approx(0.10), "above baseline")
+    x = lad.c3_to_c3x(cols["F12"], {64: "c3"}, {64: "c3x"}, True)
+    assert x["n"] == 1 and x["differ"][0]["c3"] == "below baseline" and x["differ"][0]["c3x"] == "above baseline"
+    assert lad.window(cols["F12"], "above baseline", {0: "c2", 64: "c3x"}, col="c3x") == [64]
+
+
+def test_reproduce_names_the_records_that_differ():
+    """R9's first check: a c0–c3 record whose summary or unit rows differ from the other run's is named."""
+    def run():
+        return {"recs": {r: {c: {"by_step": {0: {"mean": 1}}, "runs": {"0|a": [{"stat": 1}]}, "records": {}}
+                             for c in lad.COLUMNS} for r in lad.READERS}}
+    a, b = run(), run()
+    assert lad.reproduce(a, b) == []
+    b["recs"]["f12"]["c2b"]["runs"]["0|a"][0]["stat"] = 2
+    b["recs"]["f1"]["c3"]["by_step"][0]["mean"] = 2
+    assert lad.reproduce(a, b) == ["f1_c3", "f12_c2b"]
+
+
+@pytest.mark.parametrize("extra", [["--reproduce", "r2"], ["--reproduce-labels", "lab"]])
+def test_reproduce_needs_its_own_label_source(tmp_path, extra):
+    with pytest.raises(SystemExit, match="go together"):
+        lad.main(["--dir", str(tmp_path), "--labels", str(tmp_path)] + extra)

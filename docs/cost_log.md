@@ -314,3 +314,4 @@ running median of the rows above it gets a line under the table saying why.
   turns; and two refusals led to a defect fix, an audit tool and four reruns. Row taken before
   `/challenge-pr`.
 | 2026-10-09 | 1e (c′): U1 raw centred read; #167's merge conflict fixed | 44 | 127k | 4.0M | 34k | #168 |
+| 2026-10-09 | Phase 10 R9 / R2 on c3x: unchanged; reader split defect fixed; 4 merged worktrees removed | 47 | 158k | 5.1M | 44k | #169 |

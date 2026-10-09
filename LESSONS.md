@@ -395,6 +395,11 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-09, Phase 10 R9 / R2: #166 added c3x's learned split to `p10_label_source.SPLITS`, but
+  F1's, F12's and A0's readers checked a split column's steps against the older `LEARNED_SPLIT`
+  (c3's two only), so `c3x_learned` would have been asked for all 18 steps and refused. Found by
+  reading the step check before launching (no run lost); fixed to `SPLITS` with a test. Rule: a
+  list of columns lives in one constant; a second, narrower tuple of the same thing is a stale copy.
 - 2026-10-07, 1e U2's per-head arm: the rule's populated check (every cell finite on ≥ 90 % of
   targets) assumed every head reads some key besides key 0 and the token itself. Trained heads
   do not: at 143000 L18 head 3 puts all its weight on key 0 at 1,817 of 1,839 targets, and

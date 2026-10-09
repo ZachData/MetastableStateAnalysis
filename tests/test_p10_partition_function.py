@@ -440,13 +440,14 @@ def test_reread_reads_every_learned_split_at_143000_only(tmp_path, monkeypatch, 
     import sys
     import types
     from argparse import Namespace
-    from tools.run import p10_label_source as ls
     from tools.run.p10_partition_function import reread
     r = tmp_path / "s143000"
     r.mkdir()
     (r / "tokens.txt").write_text("a\nb\n")
     fake = types.ModuleType("tools.run.p10_label_source")
-    fake.SPLITS, fake.LEARNED_STEP, fake.MODELS = ls.SPLITS, ls.LEARNED_STEP, ls.MODELS
+    # p10_label_source's SPLITS (importing it pulls sklearn, blocked in the pure tier)
+    fake.SPLITS = {c: None for c in ("c3_learned", "c3_unlearned", "c3x_learned", "c3x_unlearned")}
+    fake.LEARNED_STEP, fake.MODELS = "step143000", ("step0", "step143000")
     fake.reader_input = lambda labels, column: {
         "runs": {(143000, "wiki"): r}, "labels": {(143000, "wiki"): {1: np.array([0, -1])}},
         "records": {143000: [1, 1]}, "meta": {}}
