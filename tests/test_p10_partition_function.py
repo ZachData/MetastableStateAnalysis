@@ -417,7 +417,7 @@ def test_reread_scores_step_s_labels_on_step_0s_run_when_matched(tmp_path, monke
     _step_file(src, 0, {"wiki": runs[(0, "wiki")]})
     lab = {1: np.array([0, -1])}
     fake = types.ModuleType("tools.run.p10_label_source")
-    fake.LEARNED_SPLIT, fake.LEARNED_STEP, fake.MODELS = (), "step143000", ("step0", "step512")
+    fake.SPLITS, fake.LEARNED_STEP, fake.MODELS = {}, "step143000", ("step0", "step512")
     fake.reader_input = lambda labels, column: {
         "runs": runs, "labels": {k: lab for k in runs}, "records": {0: [1, 1], 512: [1, 1]}, "meta": {}}
     monkeypatch.setitem(sys.modules, "tools.run.p10_label_source", fake)
@@ -432,3 +432,30 @@ def test_reread_scores_step_s_labels_on_step_0s_run_when_matched(tmp_path, monke
     assert rec["activations_step"] == 0 and dict(rec["inputs"])["512|wiki"] == str(runs[(512, "wiki")])
     reread(args, measure, "test")
     assert seen[512] == runs[(512, "wiki")]
+
+
+@pytest.mark.parametrize("column", ["c3_learned", "c3x_learned", "c3x_unlearned"])
+def test_reread_reads_every_learned_split_at_143000_only(tmp_path, monkeypatch, column):
+    """R9 / R2: the step check took only c3's split as 143000-only, so c3x's split refused."""
+    import sys
+    import types
+    from argparse import Namespace
+    from tools.run.p10_partition_function import reread
+    r = tmp_path / "s143000"
+    r.mkdir()
+    (r / "tokens.txt").write_text("a\nb\n")
+    fake = types.ModuleType("tools.run.p10_label_source")
+    # p10_label_source's SPLITS (importing it pulls sklearn, blocked in the pure tier; the real
+    # one is pinned in test_p10_label_source). LEARNED_SPLIT is the narrower tuple the step check
+    # read before R9 / R2, kept here so code that reads it fails on the check, not on import.
+    fake.SPLITS = {c: None for c in ("c3_learned", "c3_unlearned", "c3x_learned", "c3x_unlearned")}
+    fake.LEARNED_SPLIT = ("c3_learned", "c3_unlearned")
+    fake.LEARNED_STEP, fake.MODELS = "step143000", ("step0", "step143000")
+    fake.reader_input = lambda labels, column: {
+        "runs": {(143000, "wiki"): r}, "labels": {(143000, "wiki"): {1: np.array([0, -1])}},
+        "records": {143000: [1, 1]}, "meta": {}}
+    monkeypatch.setitem(sys.modules, "tools.run.p10_label_source", fake)
+    seen = []
+    reread(Namespace(labels=tmp_path, column=column, jobs=1, seed=0),
+           lambda run_dir, labels, step, prompt, seed: seen.append(step) or [], "test")
+    assert seen == [143000]

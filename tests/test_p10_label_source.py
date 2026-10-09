@@ -269,14 +269,14 @@ def test_reader_input_learned_split_and_refusals(tmp_path, monkeypatch):
     monkeypatch.setattr(ls, "readable", lambda lab: True)   # c3's one group has 6 members here
     c3 = ls.load_column(src, ls.LEARNED_STEP, "p", 3, "c3")[1]
     assert (c3 >= 0).sum() == 6
-    yes, no = (ls.reader_input(src, c) for c in ls.LEARNED_SPLIT)
+    yes, no = (ls.reader_input(src, c) for c in ("c3_learned", "c3_unlearned"))
     assert set(yes["runs"]) == {(143000, "p")} and list(yes["records"]) == [143000]
     assert np.array_equal(yes["labels"][(143000, "p")][3][kept], c3)          # learned: all of c3
     assert (no["labels"][(143000, "p")][3][kept] == -1).all()
     d = json.loads((src / f"{ls.LEARNED_STEP}.json").read_text())
     d["prompts"]["p"]["layers"]["3"]["learned"] = {"0": False}
     (src / f"{ls.LEARNED_STEP}.json").write_text(json.dumps(d))
-    yes, no = (ls.reader_input(src, c) for c in ls.LEARNED_SPLIT)
+    yes, no = (ls.reader_input(src, c) for c in ("c3_learned", "c3_unlearned"))
     assert (yes["labels"][(143000, "p")][3][kept] == -1).all()                # members join the rest
     assert np.array_equal(no["labels"][(143000, "p")][3][kept], c3)
     with pytest.raises(ls.LabelSourceError):
@@ -380,3 +380,10 @@ def test_extend_refuses_a_missing_r8x_before_writing(tmp_path):
     with pytest.raises(SystemExit, match="no r8x.json"):
         ls.extend(["--labels", str(src), "--r8x", str(tmp_path / "nope"), "--out", str(out)])
     assert not out.exists()
+
+
+def test_splits_holds_both_definitions_learned_split_and_every_reader_column():
+    """R9 / R2 (/challenge-pr on #169, finding 1): the readers' step check reads ``SPLITS``, so it
+    must hold c3x's split as well as c3's, each a reader column."""
+    assert set(ls.SPLITS) == {"c3_learned", "c3_unlearned", "c3x_learned", "c3x_unlearned"}
+    assert set(ls.SPLITS) <= set(ls.READER_COLUMNS) and not hasattr(ls, "LEARNED_SPLIT")

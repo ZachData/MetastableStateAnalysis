@@ -134,9 +134,14 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > reproduce R1's c0–c3 records exactly. **R1's reading is unchanged on c3x** (by the rule's
 > "holds" it held on neither column; 15 of 432 labels change, each a value crossing a floor from
 > within 0.04; single-layer values move up to 0.07; quoted numbers move ≤ 0.01; §1.7's verdict
-> "against" at 1000 too). **Next here: R9's R2 (F1, F12's gap, §1.5) on c3x**, then R2m, R3, R6 →
-> R6w → R6f, R7, each its own PR (`design-10.md` "R9"). The readers take `--labels <R9 labels>
-> --column c3x`; each row's ladder script needs R1's `--lead c3x` / `--reproduce` treatment.
+> "against" at 1000 too). **R9 / R2 done, 2026-10-09 (`status-10.md` §1.27): unchanged, 0 of 12
+> labels per row** (F1, F12's gap, §1.5; c0–c3 reproduce R2's records per unit); only F1 is a
+> test: F12's gap label could not have moved (Δ ≈ −1 on both columns), so §1.5 is F1's.
+> *Parked (`/challenge-pr` on #169):* a shared `--lead` / `--reproduce` helper before R2m's copy. Fixed before any run: F1 / F12 / A0's readers would have
+> refused c3x's learned split (`9c387d4`; A0's reader is R3's, so R9 / R3 will not hit it). **Next here:
+> R9's R2m on c3x** (`p10_r2m_ladder.py` needs `--lead c3x` / `--reproduce`, as R1's and R2's
+> got), then R3, R6 → R6w → R6f, R7, each its own PR (`design-10.md` "R9"). The readers take
+> `--labels <R9 labels> --column c3x`.
 > *Open (`/challenge-pr` on #166, finding 4):* R7, and likely R6w / R6f, could read c3x by
 > filtering their stored per-group c3 records instead of re-running; the user's call.
 >
