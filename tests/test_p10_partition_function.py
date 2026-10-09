@@ -445,8 +445,11 @@ def test_reread_reads_every_learned_split_at_143000_only(tmp_path, monkeypatch, 
     r.mkdir()
     (r / "tokens.txt").write_text("a\nb\n")
     fake = types.ModuleType("tools.run.p10_label_source")
-    # p10_label_source's SPLITS (importing it pulls sklearn, blocked in the pure tier)
+    # p10_label_source's SPLITS (importing it pulls sklearn, blocked in the pure tier; the real
+    # one is pinned in test_p10_label_source). LEARNED_SPLIT is the narrower tuple the step check
+    # read before R9 / R2, kept here so code that reads it fails on the check, not on import.
     fake.SPLITS = {c: None for c in ("c3_learned", "c3_unlearned", "c3x_learned", "c3x_unlearned")}
+    fake.LEARNED_SPLIT = ("c3_learned", "c3_unlearned")
     fake.LEARNED_STEP, fake.MODELS = "step143000", ("step0", "step143000")
     fake.reader_input = lambda labels, column: {
         "runs": {(143000, "wiki"): r}, "labels": {(143000, "wiki"): {1: np.array([0, -1])}},

@@ -37,7 +37,7 @@
   - R8, the own-floor check on the definition's "moves" filter (a chance level per group from 2000 random same-size sets against the passage's own partition, a proxy for the moved passages'). Requiring every moved passage's match to beat chance as well as the group's own floor keeps 87–91 % of the definition's records at steps 64–1000 and 93–97 % after: at the placed 90 % bar and not resolved by it (over 7 prompts the intervals straddle it; one passage carries 64–256). What holds: at init "moves" is mostly chance (step 0's 62 records halve), and the drop is about twice as large at 64–1000. Most groups whose floor is below chance still pass, intact. The stricter set is a candidate; the choice is the user's — `p10_cluster_function/status-10.md` §1.24
   - R8x, the exact check: the same test with each moved passage's own partition in place of the proxy. The proxy was close (exact in the median, a few records per step classified differently), and the stricter set keeps 0.88 and 0.89 of the definition's records at steps 128 and 1000, below the placed 90 % bar (93–98 % from 2000), so by the rule the drop holds and the stricter set is recommended as the definition; 7 prompts still cannot resolve the bar or the drop's size, and pooled over 64–1000 the stricter set keeps 0.905 — `p10_cluster_function/status-10.md` §1.25
   - R9 / R1, the token-composition, co-membership and lexical-carry rows read again with the chance-aware definition (c3x) leading, c0–c3 reproducing R1's records exactly. R1's reading is unchanged on it (it held on neither column by the design's rule): 15 of 432 labels change from c3 to c3x, every one a value moving across the ±0.05 floor from within 0.04 of it, single-layer values move by up to 0.07 (median 0.002–0.003), and the quoted claims keep their values to 0.01 (class co-membership +0.22, step 512's class effect beyond a lexical cluster +0.15). One rule cell changes: the trash-collection verdict reads against at 1000 as well as 2000 — `p10_cluster_function/status-10.md` §1.26
-  - R9 / R2, the transport row (F1), the corrected-density gap (F12) and their joint "parked" reading, again with c3x leading, c0–c3 reproducing R2's records exactly. Nothing changes: 0 of 12 labels per row, the windows are R2's (negative and parked at 64–512), means move by up to 0.03 (F1) and 0.07 (F12, at 1000). F12's gap label could not have changed, since it sits about 1 below its baseline on both columns — `p10_cluster_function/status-10.md` §1.27
+  - R9 / R2, the transport row (F1), the corrected-density gap (F12) and their joint "parked" reading, again with c3x leading, c0–c3 reproducing R2's records exactly. Nothing changes: 0 of 12 labels per row, the windows are R2's (negative and parked at 64–512), and at 64–143000 means move by up to 0.03 (F1) and 0.07 (F12, at 1000). Only F1's is a test: F12's gap label could not have changed, since it sits about 1 below its baseline on both columns, so the joint reading here is F1's — `p10_cluster_function/status-10.md` §1.27
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -65,7 +65,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `b00ab7b33c`
+- **Reviewed:** 2026-10-09 · body `a48b374389`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2119,7 +2119,7 @@ and `summary --src <dir>/labels`; then `python tools/run/p10_r1_ladder.py --dir 
 <dir>/labels --lead c3x --reproduce <R1 dir> --reproduce-labels <R0 labels>`. Tests:
 `tests/test_p10_label_source.py` (c3x extend and refusals), `tests/test_p10_r1_ladder.py` (lead).
 
-### 1.27 R9 / R2 on c3x — **R2's reading is unchanged with c3x leading: no F1, F12-gap or §1.5 label changes from c3 to c3x at any of the 12 steps both read on their own column (64–143000). F1's per-step means move ≤ 0.029 and F12's raw values ≤ 0.073 (both largest at 128–1000, where R8x's drop is), and F12's label could not have moved: its Δ is −0.96 to −2.09 against c2's step 0. The windows are R2's: F1 negative and §1.5 parked at 64–512 on the primary, F12 below baseline at 8–143000**
+### 1.27 R9 / R2 on c3x — **R2's reading is unchanged with c3x leading: no F1, F12-gap or §1.5 label changes from c3 to c3x at any of the 12 steps both read on their own column (64–143000). Only F1's is a measured null: F12's label could not have moved (its Δ is −0.96 to −2.09 against c2's step 0), and with F12 below baseline at every step §1.5 is F1's label renamed. At 64–143000 F1's per-step means move ≤ 0.029 and F12's raw values ≤ 0.073 (both largest at 128–1000, where R8x's drop is). The windows are R2's: F1 negative and §1.5 parked at 64–512 on the primary, F12 below baseline at 8–143000**
 
 **What.** `design-10.md` "R9" (rule `85c3e5e`), row R2. `transport.py` (F1) and
 `p10_partition_function.py` (F12) on all 15 columns of the R9 source
@@ -2152,7 +2152,7 @@ records at step 0 (8 readable; c3: 62, 15).
 | F12's gap | 10 / 17 (10) | 0 of 12 | below baseline 8–143000 (8–143000) |
 | §1.5 | 13 / 17 (13) | 0 of 12 | parked 64–512 (64–512) |
 
-**Size, beside the labels** (c3 → c3x at 64–143000): F1 mean |Δ| median 0.005, max 0.029 (128:
+**Size, beside the labels** (c3 → c3x at 64–143000; at 0–8, read on c2, F1's mean moves up to 0.077 and F12's raw about 0.24, on 8–9 readable records): F1 mean |Δ| median 0.005, max 0.029 (128:
 −0.507 → −0.535); median p moves ≤ 0.02, none across 0.05 (512: 0.035 → 0.028; 1000: 0.065 → 0.084).
 F12 raw (members − rest, β-pooled) |Δ| median 0.018, max 0.073 (1000: −0.025 → −0.099; 2000:
 +0.062 → +0.013; 128: −0.383 → −0.432); from 4000 within 0.03. So dropping R8x's 2–12 % at 64–1000
@@ -2160,9 +2160,10 @@ makes members a little less dense there, and the late "above the rest" is the sa
 143000:** c3x_learned is c3_learned (F1 −0.079, F12 raw +0.434, identical), not learned F1 −0.059
 (c3 −0.064), F12 +0.086 (+0.094). Arms quoted against c3, unchanged from R2.
 
-**Reading.** R2's reading does not depend on the c3 / c3x choice. For F1 and §1.5 that is a
-measured result (median p near 0.05 at 512 and 1000, and neither crosses). For F12's gap it is
-forced: Δ against c2's step 0 (+1.32) is −0.96 to −2.09 on both columns, so no change of ≤ 0.07
+**Reading.** R2's reading does not depend on the c3 / c3x choice, but only F1's 12 cells test
+that: median p near 0.05 at 512 and 1000, and neither crosses. §1.5 adds nothing on these
+columns (F12 is below baseline at every step on both, so parked = F1 negative; *after
+`/challenge-pr` on #169, finding 2*). For F12's gap it is forced: Δ against c2's step 0 (+1.32) is −0.96 to −2.09 on both columns, so no change of ≤ 0.07
 could cross ±0.05. The c3x reading for F12 that could move is R2m's matched control (§1.18), the next row.
 
 **Does not.** Re-read R2m–R7 on c3x (each its own PR); add a null for the c3 → c3x difference

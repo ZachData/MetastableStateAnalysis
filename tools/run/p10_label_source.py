@@ -418,7 +418,6 @@ OUTSIDE = -2
 #: join the rest. ``learned`` is keyed by c3's ids, and c3x's groups are c3 groups.
 SPLITS = {"c3_learned": ("c3", True), "c3_unlearned": ("c3", False),
           "c3x_learned": ("c3x", True), "c3x_unlearned": ("c3x", False)}
-LEARNED_SPLIT = ("c3_learned", "c3_unlearned")
 READER_COLUMNS = ALL_COLUMNS + tuple(SPLITS)
 
 
