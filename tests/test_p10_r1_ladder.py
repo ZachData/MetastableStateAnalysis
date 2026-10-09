@@ -72,3 +72,37 @@ def test_rule_cells_and_literal_baseline():
     q = ("same_class", 12)
     assert lad.row_cells(data, "cm")["c0"][q][512][0] == pytest.approx(0.10)
     assert lad.row_cells(data, "cm", literal=True)["c0"][q][512][0] == pytest.approx(0.20)
+
+
+def test_lead_c3x_is_primary_and_last_on_the_ladder():
+    """R9: c3x leads (c2 under half readable), and c3 → c3x cells are counted where both lead."""
+    recs = {"tc": {"c3x": {"records": {64: {"n": 168, "readable": 84}, 128: {"n": 168, "readable": 80}}},
+                   "c3": {"records": {64: {"n": 168, "readable": 90}, 128: {"n": 168, "readable": 90}}}}}
+    assert lad.primary(recs, "c3x") == {64: "c3x", 128: "c2"}
+    ladder, learned = lad.LEADS["c3x"]
+    assert ladder[-1] == "c3x" and ladder[:-1] == lad.LADDER and "c3x_learned" in learned
+    assert "c3x" in lad.ON_C2_BASE
+    lab = {c: "+" for c in ladder}
+    lab["c3x"] = "0"
+    cols = {c: {("freq", "all"): {64: (0.1, l), 128: (0.1, l)}} for c, l in lab.items()}
+    h = lad.holds(cols, {64: "c3x", 128: "c2"}, False, ladder=ladder)
+    assert h["first_changed_at"] == {"c3x": 1} and h["agree"] == 1
+    x = lad.c3_to_c3x(cols, {64: "c3", 128: "c3"}, {64: "c3x", 128: "c2"}, False)
+    assert x["n"] == 1 and x["differ"][0]["step"] == 64 and x["differ"][0]["c3x"] == "0"
+
+
+def test_reproduce_names_the_records_that_differ():
+    """R9's first check: a c0–c3 record summary that differs from the other run's is named."""
+    cols = (*lad.LADDER, *lad.ARMS, *lad.LEARNED)
+    a = {"recs": {r: {c: {"summary": {"x": 1}} for c in cols} for r in lad.READERS}}
+    b = {"recs": {r: {c: {"summary": {"x": 1}} for c in cols} for r in lad.READERS}}
+    assert lad.reproduce(a, b) == []
+    b["recs"]["cm"]["c2b"]["summary"] = {"x": 2}
+    assert lad.reproduce(a, b) == ["cm_c2b"]
+
+
+@pytest.mark.parametrize("extra", [["--reproduce", "r1"], ["--reproduce-labels", "lab"]])
+def test_reproduce_needs_its_own_label_source(tmp_path, extra):
+    """CodeRabbit on #166: --reproduce without --reproduce-labels (or the reverse) refuses."""
+    with pytest.raises(SystemExit, match="go together"):
+        lad.main(["--dir", str(tmp_path), "--labels", str(tmp_path)] + extra)
