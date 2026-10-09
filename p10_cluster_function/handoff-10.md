@@ -165,17 +165,25 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > of 14 cells, at the floor (adjacency on R1's records, +0.0495 → +0.0595); what §1.21 quoted
 > holds (embedding drifts within, ≤ 0.012); 12 of 77 in all, 9 on single layers §1.21 did not
 > read. `/challenge-pr` on #173: 1–3 taken, 4 parked below for the user.
-> *Parked (`/challenge-pr` on #173, finding 4), the user's, before R6f / R7's rules freeze:*
-> "n of N labels change" has no reference. Either fix a margin at the floor (a crossing within
-> it is not a change) or add a random-drop reference (drop c3x's count of c3's groups at random,
-> re-read, count changed labels). Why: every R9 row so far reports changes at the floor. Cost:
-> a margin is a rule line; a reference is ~1–2 min per draw per row. Could change: whether R9's
-> "1 of 14" / "12 of 77" read as c3x or as noise.
-> **Next here: R6f, then R7 on c3x**, each its own PR (`design-10.md` "R9"), each through
-> `p10_r9_lead.add_args`. R6f re-scores R6w's terms in a fixed frame and checks them against
-> `r6w.json`, so on c3x it reads `data/p10/reread_r9_2026-10-08/r6w/r6w.json` and re-runs;
-> `p10_r6f_frame.py` takes `cols = w.COLUMNS` and calls `w.setup(...)` without columns, so it
-> needs `w.columns_of(lead)` passed through (setup now takes `columns`). *Open (`/challenge-pr`
+> *Decided by the user 2026-10-09 (`/challenge-pr` on #173, finding 4): the random-drop
+> reference*, in R6f's and R7's rules before output (drop c3x's count of c3's groups per record at
+> random, 100 draws, re-read, count changed cells; within if ≤ the draws' 95th percentile). R1–R6w
+> keep their labels; the reference on them is a later beside reading if wanted.
+> **R9 / R6f done, 2026-10-09 (`status-10.md` §1.32; its title is the summary).** Rule
+> `design-10.md` "R9 / R6f" (`131c8ab`, before any c3x R6f output), the first with the random-drop
+> reference. `p10_r6f_frame.py` got `--lead` / `--reproduce`, `c3x_vs_c3` and `--draws`
+> (`run_reference`: each draw is c3's rows less the dropped groups, links rebuilt; exact by check
+> (r1)). c3, c2a, c0 reproduce `r6f.json` exactly. Headline unchanged (6 of 6 frame, 0 of 100
+> draws move one); 6 of 60 per-passage cells change, within random drops (median 7, q95 10).
+> c3x drops smaller groups than the draws (6.0 against 7.2–7.7 members). `/challenge-pr` on #174,
+> finding 1: matching per record forces 185 of the 382 drops (72 records c3x empties), so 3 of
+> the 6 changed cells change in every draw and the reference cannot judge them; without them
+> c3x 3, draws median 4, q95 7. Check (r4) added. *Open for R7's rule, the user's:* match the
+> count per record (as here) or per (step, passage), which tests whether emptying whole records
+> is special to c3x. Recommended: per (step, passage) primary, per record beside.
+> **Next here: R7 on c3x**, its own PR (`design-10.md` "R9"), through `p10_r9_lead.add_args`,
+> with the random-drop reference in its rule before output (R6f's `drop_labels` /
+> `run_reference` pattern; R7 needs its own draw reader). *Open (`/challenge-pr`
 > on #166, finding 4), now for R7 only:* re-run, or filter its stored per-group c3 records. The
 > user's "re-running" was given for R6w. R7 scores each group against its own floor, so
 > filtering may be exact there (not checked against its code).
@@ -838,6 +846,26 @@ before it.
 
 ## Parked
 
+- **An all-attractive model: each head's OV cut to its positive-definite part** (discovery, the
+  user, 2026-10-09; parked by the user as a unit after R9, under 1e). Keep every trained weight;
+  replace each head's OV by the positive-eigenvalue part of its symmetric part (and the mirror,
+  repulsive only), then re-read c3x's groups. "Positive entries" is not the property: attraction
+  is `⟨x, Vx⟩ > 0`, the sign of V's symmetric part. 1d's identity control (`status-1d.md`
+  "Identity-weights positive control", `Q = K = V = I`, no MLP / LN) and 1e's `V = I` field
+  are the idealised version: from L0 both give one collapse / one well. Why: the OV spectrum goes
+  fully repulsive at 1000–2000 (`PROJECT.md` §3.12 A), where groups form and attention's
+  token-specific move descends `φ_β` (1e U2). If the attractive-only model merges the groups,
+  repulsion keeps them apart; if they survive, the embedding or MLP holds them. Cost: GPU
+  forward passes at the 18 steps per arm, an equal-norm random-cut control (later layers go off
+  their input distribution), rank 64 per head (no per-head identity), a literature scan first.
+  Could change: the triage's flagship (the anti-collapse force) from correlation to intervention.
+- **Energy against c3x's groups** (the user, 2026-10-09: after R9, order decided once R7 closes).
+  Per c3x group, does attention's token-specific update (1e's `r1out`) pull members towards each
+  other: ascend a field built from the group's own members, against the rest's? Why: the
+  particle rows say who groups, not what holds them; R6f says the embedding moved under them.
+  Cost: 1e's U2 readers on the stored long-passage activations (v1 for Phase 10's prompts needs a
+  hooked pass). Beside Blocked 30's open item (the centred well as a Phase 10 unit). Could
+  change: whether c3x's groups are held by attention at all (`|X|` ≤ 0.06 in 1e, so small).
 - **Does 5c's flip survive T1–T2 out of the means?** (discovery, R3, 2026-10-05.) On 410m the
   trained flip and A0's residual are position 0 and one massive token per prompt (`status-10.md`
   §1.17). 5c measured the flip on `gpt2-large` and ALBERT, which `PREDICTIONS.md` claim (a)

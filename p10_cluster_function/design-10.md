@@ -503,6 +503,36 @@ stored `r6w.json` exactly (`--reproduce`, with the summary of the source it name
 records are non-empty at the primary span's layer mean before any span is read. **It does not:**
 change R6w's floor or bounds; read R6f (its own row, next). Results: `status-10.md` §1.31.
 
+**R9 / R6f (fixed 2026-10-09, before any c3x R6f output).** R6f's rule unchanged, with c3x
+added as a column and leading (c3, c2a, c0 beside); c3x's births and deaths split by c2a's fate,
+as c3's. **Re-run, not filtered** (the user, 2026-10-09: "re-running"). Inputs: the R9 source,
+R9's R1 records, R9's `r6.json`, R9's `r6w.json`. **Cells,** per record set (fixed, R1's) ×
+statistic (3): the row label, each frame's label (512, 143000), and per prompt the label on the
+two frames' mean; up to 60 per column. A cell **changes** when c3x's label differs from c3's; a
+cell held on one column only is a change, on neither is not compared. **§1.22's headline
+changes** when any of its 6 row labels changes (both record sets); the rest are counted beside.
+Beside: c3x's within, members share per frame and Shapley share next to c3's on those 6.
+**The random-drop reference** (the user, 2026-10-09, `/challenge-pr` on #173 finding 4): what
+dropping c3x's number of groups at random does to the same cells. A draw drops, in every (step,
+passage, layer) of the span, as many c3 groups as c3x drops there, uniformly without replacement
+among that record's c3 groups (seed = draw index; dropped members → −1, as c3x's); readability,
+links (c2a's fate), and both record sets are rebuilt from the draw's labels; each token's values
+are c3's rows less the dropped groups' (exact: a token's values read only its own group, the
+domain and the frame; check (r1)). **100 draws** (placed, seeds 0–99). Per draw: the changed
+cells against c3, all and the headline's. **Reading:** c3x's count of changed cells is **within
+random drops** if it is ≤ the draws' 95th percentile, **beyond** otherwise; the same for the
+headline's count; the rank p = (1 + #{draws ≥ obs}) / 101 beside. Beside every changed c3x cell:
+the share of draws that change it. The draws match the count, not the dropped groups' size or
+J, so the dropped groups' sizes (c3x's against the draws') are given beside. **First checks
+(refuse):** R6f's (a)–(e) on every column (c3x's (a) against R9's `cm_c3x` / `lc_c3x`, (e)
+against R9's `r6w.json`); c3, c2a and c0 read on the R9 source equal the stored `r6f.json`
+exactly (`--reproduce`, with the summary of the source it names); c3x's span records are
+non-empty before any split is read; (r1) c3's rows less c3x's dropped groups equal c3x's own
+rows exactly, every record and frame; (r2) a draw dropping nothing gives c3's cells exactly;
+(r3) the first draw has records and compared cells before the rest run. **It does not:** change
+R6f's floor, bounds or frames; put the reference on R1–R6w's labels (a later beside reading if
+wanted); test anything. Results: `status-10.md` §1.32.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

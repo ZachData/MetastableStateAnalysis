@@ -319,3 +319,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-09 | Phase 10 R9 / R3 on c3x: unchanged (0 of 12; 2000 on c3x 0.001 above the floor); shared `--lead` / `--reproduce` helper; #170's worktree removed | 52 | 175k | 6.1M | 48k | #171 |
 | 2026-10-09 | Phase 10 R9 / R6 on c3x: unchanged (none of 5 clauses; stable within 0.009 from 4000); re-run, not filtered; #171's worktree removed | 33 | 128k | 3.1M | 32k | #172 |
 | 2026-10-09 | Phase 10 R9 / R6w on c3x: unchanged but 1 of 14 headline cells (adjacency at the floor); embedding drifts within; re-run on the user's call; #172's worktree removed | 41 | 140k | 3.9M | 37k | #173 |
+| 2026-10-09 | Phase 10 R9 / R6f on c3x: headline unchanged (6 of 6 frame); 6 of 60 per-passage cells, within the new random-drop reference (median 7, q95 10); #173 finding 4 decided; all-attractive OV and energy-vs-groups parked; #173's worktree removed | 55 | 204k | 7.3M | 54k | #174 |

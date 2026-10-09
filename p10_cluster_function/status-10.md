@@ -42,6 +42,7 @@
   - R9 / R3, A0 under T4 again with c3x leading, c0–c3 reproducing R3's record at every unit. By the rule no label moves (no flip in the sweep, the residual appears 1000–2000 and persists on the primary, 0 of 12 per-step labels change), and the same-position residual is still a window at 2000–16000 (+0.06 to +0.12 on c3x), gone from 32000. Where the residual starts is not resolved by 7 prompts on either column: at 2000 it reads residual in 0.60 (c3) and 0.52 (c3x) of prompt resamples; from 8000 it is stable — `p10_cluster_function/status-10.md` §1.29
   - R9 / R6, the cross-checkpoint matcher re-run with c3x as a column, c0–c3 reproducing R6's record exactly. None of R6's five headline readings changes by the rule fixed before the run: from 4000 the share of groups surviving each boundary is within 0.009 of c3's (0.56–0.67), survivors keep a median 75–83 % of their members, new births and deaths stay ≤ 7 %, no lineage at 143000 starts before 256, and chains still outlast independent breaks (10.9 % reach 2000 against 3.7 %). The columns differ by more than 0.05 only at 2–16; the groups c3x drops are less stable than those it keeps at almost every boundary, and too few from 4000 to move the pooled share. The clauses on survival, member change and new groups could hardly have failed; only the two lineage clauses had room to — `p10_cluster_function/status-10.md` §1.30
   - R9 / R6w, the drift-within-lineages split re-run with c3x as a column, c3, c2a and c0 reproducing R6w's record exactly. By the rule fixed before the run the headline changes in 1 of its 14 cells, at the floor: adjacency on R1's records, +0.050 → +0.060, its persisting groups' rise opposed by replacement on both columns, as on c3. What R6w quoted holds: the embedding drifts are carried by the persisting groups, not by replacement (on R1's records, 512 → 143000, layer mean, class beyond a lexical cluster −0.123, within −0.123; own-embedding similarity +0.185, within +0.165; within-class embedding similarity +0.150, within +0.115; each within 0.012 of c3), and `same_class` does not drift. 12 of 77 labels change in all, 9 of them on single layers R6w did not read; there is no reference for how many a random drop would move — `p10_cluster_function/status-10.md` §1.31
+  - R9 / R6f, the members-against-frame split re-run with c3x as a column, c3, c2a and c0 reproducing R6f's record exactly, with a random-drop reference (100 draws dropping c3x's number of groups at random). The headline is unchanged: all 6 row labels read frame on both columns, and no random drop moves one. 6 of 60 per-passage labels change, within what random drops do (median 7, 95th percentile 10). Three of them come from records c3x empties, which every draw must empty too, so the reference cannot judge them; the other three are within the draws. Embedding similarity still reads as the embedding moving under the groups; class beyond a lexical cluster stays undecided per passage — `p10_cluster_function/status-10.md` §1.32
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -69,7 +70,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `a49439a3ab`
+- **Reviewed:** 2026-10-09 · body `b015f4932d`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2494,6 +2495,104 @@ data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r6w_drift.py` (16:
 and flips, every cell compared and the headline's named, a level without records skipped,
 reproduce naming each differing key, numpy bools written as the stored record, a record on
 another source refused).
+
+### 1.32 R9 / R6f on c3x — **§1.22's headline is unchanged: all 6 row labels are frame on both columns (both record sets, all three statistics), and no random drop of c3x's size moves any of them (0 in 100 draws). 6 of the 60 cells change, all per-passage labels, within what random drops do (draws: median 7, 95th percentile 10; c3x 6, rank p 0.86). Three of the six are forced: every draw changes them because the reference matches c3x's count per record, and c3x empties 72 records (185 of its 382 dropped groups), which every draw must empty too. Without them c3x's 3 sit within the draws' (median 4, 95th percentile 7). Embedding similarity still reads frame in 5–7 of 7 passages; CGE40 − kNN40 stays mixed per passage, so "did the groups become lexical" stays open, as on c3**
+
+**What ran** (`design-10.md` "R9 / R6f", fixed before any c3x R6f output, `131c8ab`).
+`tools/run/p10_r6f_frame.py --lead c3x --draws 100`: R6f unchanged, with c3x added as a column
+(births and deaths split by c2a's fate, as c3's), `c3x_vs_c3` over the row, per-frame and
+per-passage cells, and the **random-drop reference** (the user's call on `/challenge-pr` #173,
+finding 4): 100 draws, each dropping in every (step, passage, layer) of 512 → 143000 as many c3
+groups as c3x drops there, uniformly at random, read through the same split. **Re-run, not
+filtered.** No forward pass, 4.5 min on 14 processes (the 100 draws ~1 min of it).
+
+**Inputs.** R9's label source `data/p10/reread_r9_2026-10-08/labels/` (summary sha256
+`5b758a2c`), R9's R1 records (`.../r1/`), R9's `r6.json` (md5 `a9bf59eb`), R9's `r6w.json`
+(md5 `3cf731de`); 7 v1 passages × L1–24; frames step 512's and step 143000's layer 0. Output
+`data/p10/reread_r9_2026-10-08/r6f/r6f.json` (md5 `10f2c6d7`; `git` `56145e4`, `runner_dirty`
+false; the first run, `e413e42`, md5 `d94f90c8`, gave the same cells and counts without check
+(r4) and the forced split), log beside. **First checks pass:** (a) every per-record mean on all four columns equals
+R9's R1 records (max 1.0e-15); (a′) frame 143000 reproduces R1's frozen `emb_pct` (4.4e-16); (b)
+each frame's own step is unchanged; (c) identical links do not move in either fixed frame; (d)
+stable counts equal R9's `r6.json` on all four columns; (e) own-frame span terms equal R9's
+`r6w.json`; c3, c2a and c0 on R9's source equal R6f's `r6f.json` exactly (every column entry;
+that record names R0's source by its summary); c3x has 48 span records (c3 51) before any split.
+The reference's: (r1) c3's rows less c3x's dropped groups are c3x's own rows exactly, every
+record and frame; (r2) a draw dropping nothing is c3 exactly; (r3) draw 0 has 48 records and 60
+compared cells; (r4, after `/challenge-pr` on #174, finding 3) c3x's own drops through the draw
+path give c3x's entry exactly.
+
+**The headline's 6 cells** (512 → 143000, layer mean; own-frame within, members share in frame
+512 / 143000):
+
+| statistic | set | c3 | c3x | label (both) |
+|---|---|---|---|---|
+| `emb_pct_own` | fixed | +0.163; −0.06 / +0.06 | +0.166; −0.04 / +0.07 | frame |
+| `emb_given_class` | fixed | +0.086; −0.15 / −0.04 | +0.084; −0.12 / −0.02 | frame |
+| CGE40 − kNN40 | fixed | −0.184; +0.07 / +0.16 | −0.189; +0.05 / +0.16 | frame |
+| `emb_pct_own` | R1's | +0.174; −0.12 / +0.03 | +0.165; −0.14 / +0.02 | frame |
+| `emb_given_class` | R1's | +0.121; −0.19 / −0.04 | +0.115; −0.20 / −0.00 | frame |
+| CGE40 − kNN40 | R1's | −0.112; −0.20 / −0.05 | −0.123; −0.09 / +0.01 | frame |
+
+Shapley members shares on c3x −0.10 to +0.10 (c3 −0.13 to +0.12).
+
+**The random-drop reference.** Changed cells per draw: 3 (1 draw), 4 (2), 5 (11), 6 (25), 7
+(22), 8 (16), 9 (13), 10 (8), 11 (2); headline 0 in all 100. By the rule, c3x's 6 are **within
+random drops** (≤ 10), and its headline 0 is within (≤ 0). The draws keep 46–48 span records
+(c3x 48). Caveat the rule named: c3x drops smaller groups than chance (mean 6.0 members over 382
+dropped group-records, against 7.2–7.7 in the draws, 5–95 %), so the draws match c3x's count,
+not what it drops.
+
+**The 6 changed cells** (all per passage, on the two frames' mean; c3 → c3x; share of draws
+changing the same cell):
+
+| set | statistic | passage | label | within → | share |
+|---|---|---|---|---|---|
+| fixed | CGE40 − kNN40 | `hdbscan_code` | both → members | −0.169 → −0.149 | 0.96 |
+| fixed | CGE40 − kNN40 | `sullivan_ballou` | frame → no drift | −0.055 → +0.001 | 1.00 |
+| fixed | `emb_given_class` | `hdbscan_code` | both → frame | +0.182 → +0.174 | 1.00 |
+| fixed | `emb_given_class` | `latex_monograph` | frame → both | +0.062 → +0.063 | 0.70 |
+| R1's | CGE40 − kNN40 | `homer_iliad` | members → no drift | +0.105 → −0.007 | 1.00 |
+| R1's | CGE40 − kNN40 | `sullivan_ballou` | frame → both | −0.069 → −0.069 | 0.52 |
+
+Per-passage counts on the two frames' mean (members / both / frame / no drift), c3 → c3x:
+`emb_pct_own` fixed 0/1/6/0 → same, R1's 0/0/7/0 → same; `emb_given_class` fixed 0/2/5/0 →
+same (two passages swap), R1's 0/0/7/0 → same; CGE40 − kNN40 fixed 1/1/3/2 → 2/0/2/3, R1's
+2/1/3/1 → 1/2/2/2.
+
+**Forced drops** (*after `/challenge-pr` on #174, finding 1*). The draws match c3x's count per
+record, so where c3x drops every c3 group in a record, every draw drops the same groups: 72
+records, **185 of the 382 dropped group-records** (48 %; 18 in `homer_iliad`, 15 each in
+`camus_letranger` and `paper_excerpt`, 14 in `sullivan_ballou`, 9 in `hdbscan_code`). c3x's 3
+lost fixed records (`hdbscan_code` L13 at 1000, `sullivan_ballou` L3 / L12 at 512 / 16000) are
+emptied this way, so every draw loses them too (no draw keeps more than 48). The 3 cells every
+draw changes (`sullivan_ballou` and `hdbscan_code` on the fixed set, `homer_iliad` on R1's) are
+therefore c3x's own changes, which the reference cannot judge. Without them (beside, not the
+rule): c3x 3 changed cells, draws median 4, 95th percentile 7, still within (rank p 0.86).
+Across draws, dropped-group size and the count correlate at −0.11 (the reviewer's check, recomputed from `r6f.json`'s draws), so the
+size caveat does not explain where c3x ranks.
+
+**Reading.** §1.22 holds on c3x as written: for embedding similarity the embedding moved under
+the groups (frame on both frames, both record sets, 5–7 of 7 passages); for class beyond a
+lexical cluster it does not decide, and per passage it is as split on c3x as on c3. Of the six
+per-passage changes, three come from records c3x empties (every draw empties them too), and the
+other three are within what random drops do. *Corrected after `/challenge-pr` on #174, finding
+1:* the first version read the cells every draw changes as labels unstable to the set's edges;
+they are forced by the per-record match.
+
+**Does not.** Test anything; compare c3x's drops by size or J (the reference matches the count
+only); put the reference on R1–R6w's labels (a later beside reading if wanted); change R6f's
+floor, bounds or frames. 7 passages, one seed; tier 1.
+
+Re-run: `data/p10/reread_r9_2026-10-08/r6f/run_r6f.sh` from the worktree root (under `data/`,
+so not committed; `data/` paths are the main tree's, `METS_DATA`). It runs `python
+tools/run/p10_r6f_frame.py --labels data/p10/reread_r9_2026-10-08/labels --r1
+data/p10/reread_r9_2026-10-08/r1 --r6 data/p10/reread_r9_2026-10-08/r6/r6.json --r6w
+data/p10/reread_r9_2026-10-08/r6w/r6w.json --out <file> --lead c3x --draws 100 --reproduce
+data/p10/reread_r6f_2026-10-06/r6f.json --reproduce-labels data/p10/reread_r0_2026-10-05/labels`.
+Tests: `tests/test_p10_r6f_frame.py` (5 new: cells and the headline's 6, a cell on one side
+only counted and on neither skipped, a draw dropping c3x's count of c3 groups per record and
+fixed by its seed, the 95th-percentile reading, reproduce naming each differing key).
 
 ---
 
