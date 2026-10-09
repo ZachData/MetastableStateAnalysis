@@ -41,7 +41,7 @@
   - R9 / R2m, F12 against its matched control and the joint "parked" reading, again with c3x leading, c0–c3 reproducing R2m's records exactly. Unchanged: the windows are R2m's (below the control at 8–256, parked at 64–256) and the late "above" is the same (+0.12 to +0.28, 6–7 of 7 prompts). One label of 12 changes: step 512 moves from as to above the control, a value crossing the floor from within 0.005 with 2 of 7 prompts below. So on c3x the "as dense" stretch is 1000 alone. The raw sign beside it changes at 1000 and 2000, but the control moves with it, so the matched gap moves by at most 0.02; a shift that size could flip only 512 and 1000, and the steps that set the windows sat 0.07 or more from the floor — `p10_cluster_function/status-10.md` §1.28
   - R9 / R3, A0 under T4 again with c3x leading, c0–c3 reproducing R3's record at every unit. By the rule no label moves (no flip in the sweep, the residual appears 1000–2000 and persists on the primary, 0 of 12 per-step labels change), and the same-position residual is still a window at 2000–16000 (+0.06 to +0.12 on c3x), gone from 32000. Where the residual starts is not resolved by 7 prompts on either column: at 2000 it reads residual in 0.60 (c3) and 0.52 (c3x) of prompt resamples; from 8000 it is stable — `p10_cluster_function/status-10.md` §1.29
   - R9 / R6, the cross-checkpoint matcher re-run with c3x as a column, c0–c3 reproducing R6's record exactly. None of R6's five headline readings changes by the rule fixed before the run: from 4000 the share of groups surviving each boundary is within 0.009 of c3's (0.56–0.67), survivors keep a median 75–83 % of their members, new births and deaths stay ≤ 7 %, no lineage at 143000 starts before 256, and chains still outlast independent breaks (10.9 % reach 2000 against 3.7 %). The columns differ by more than 0.05 only at 2–16; the groups c3x drops are less stable than those it keeps at almost every boundary, and too few from 4000 to move the pooled share. The clauses on survival, member change and new groups could hardly have failed; only the two lineage clauses had room to — `p10_cluster_function/status-10.md` §1.30
-  - R9 / R6w, the drift-within-lineages split re-run with c3x as a column, c3, c2a and c0 reproducing R6w's record exactly. The embedding drifts are still carried by the persisting groups, not by replacement: on R1's records, 512 → 143000, layer mean, class beyond a lexical cluster −0.123 (within −0.123), own-embedding similarity +0.185 (within +0.165), within-class embedding similarity +0.150 (within +0.115), each within 0.012 of c3; `same_class` still does not drift. By the rule, 1 of the 14 headline labels changes: adjacency on R1's records, +0.050 → +0.060, crossing the 0.05 floor, its persisting groups' rise opposed by replacement on both columns, as on c3. 12 of 77 labels change in all, 9 of them on single layers with 2–5 records — `p10_cluster_function/status-10.md` §1.31
+  - R9 / R6w, the drift-within-lineages split re-run with c3x as a column, c3, c2a and c0 reproducing R6w's record exactly. By the rule fixed before the run the headline changes in 1 of its 14 cells, at the floor: adjacency on R1's records, +0.050 → +0.060, its persisting groups' rise opposed by replacement on both columns, as on c3. What R6w quoted holds: the embedding drifts are carried by the persisting groups, not by replacement (on R1's records, 512 → 143000, layer mean, class beyond a lexical cluster −0.123, within −0.123; own-embedding similarity +0.185, within +0.165; within-class embedding similarity +0.150, within +0.115; each within 0.012 of c3), and `same_class` does not drift. 12 of 77 labels change in all, 9 of them on single layers R6w did not read; there is no reference for how many a random drop would move — `p10_cluster_function/status-10.md` §1.31
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -69,7 +69,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `1cac8d6014`
+- **Reviewed:** 2026-10-09 · body `a49439a3ab`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2418,7 +2418,7 @@ data/p10/reread_r0_2026-10-05/labels`. Tests: `tests/test_p10_r6_matcher.py` (22
 column, each clause firing, the kept / dropped split, reproduce, a record on another source and
 a half-given `--reproduce` refuse).
 
-### 1.31 R9 / R6w on c3x — **R6w's reading is unchanged with c3x leading: the drifts measured in the embedding are carried by the persisting groups on c3x as on c3 (on R1's records, 512 → 143000, layer mean: class beyond a lexical cluster −0.123, within −0.123; own-embedding similarity +0.185, within +0.165; within-class embedding similarity +0.150, within +0.115; each within 0.012 of c3's), and `same_class` does not drift. By the rule 1 of the 14 headline labels changes: adjacency on R1's records goes from no drift to within (+0.0495 → +0.0595, crossing the 0.05 floor), where on both columns the persisting groups' rise (+0.14 / +0.16) is opposed by replacement and record turnover. 12 of 77 labels change in all: 9 on single layers with 2–5 records, which §1.21 already called too thin to read, and 2 at 64 → 512 crossing the floor from within 0.004**
+### 1.31 R9 / R6w on c3x — **by the rule §1.21's headline changes in 1 of its 14 cells, at the floor: adjacency on R1's records goes from no drift to within (+0.0495 → +0.0595), where on both columns the persisting groups' rise (+0.14 / +0.16) is opposed by replacement and record turnover. What §1.21 quoted holds: the drifts measured in the embedding are carried by the persisting groups on c3x as on c3 (on R1's records, 512 → 143000, layer mean: class beyond a lexical cluster −0.123, within −0.123; own-embedding similarity +0.185, within +0.165; within-class embedding similarity +0.150, within +0.115; each within 0.012 of c3's), and `same_class` does not drift. 12 of 77 labels change in all: 9 on single layers, which §1.21 did not read (1 on the fixed set, 4 records; 8 on R1's records, 2–7 per step, where within and replacement have opposite signs in several rows), and 2 at 64 → 512 crossing the floor from within 0.004**
 
 **What ran** (`design-10.md` "R9 / R6w", fixed before any c3x R6w output, `67738b6`).
 `tools/run/p10_r6w_drift.py --lead c3x`: R6w unchanged, with c3x added as a column (births and
@@ -2428,8 +2428,11 @@ item for this row). No forward pass, 1.4 min on 12 processes.
 
 **Inputs.** R9's label source `data/p10/reread_r9_2026-10-08/labels/` (summary sha256
 `5b758a2c`), R9's R1 records (`.../r1/`), R9's `r6.json` (md5 `a9bf59eb`); 7 v1 passages × L1–24.
-Output `data/p10/reread_r9_2026-10-08/r6w/r6w.json` (md5 `f12c5975`; `git` `2b26e0c`,
-`runner_dirty` false), log beside. **First checks pass:** (a) every per-record mean on all four
+Output `data/p10/reread_r9_2026-10-08/r6w/r6w.json` (md5 `3cf731de`; `git` `793a123`,
+`runner_dirty` false), log beside. *After `/challenge-pr` on #173, finding 3:* the first run
+(`2b26e0c`, md5 `f12c5975`) skipped a level missing on *either* column; a level missing on one
+column only is now a change ("no records"), and the clean re-run gives the same 12 of 77 (the
+one skipped level has no records on both). **First checks pass:** (a) every per-record mean on all four
 columns equals R9's R1 records (max 1.0e-15); (b) terms sum to the total; (c) identical links
 leave the composition lifts unchanged; (d) stable counts equal R9's `r6.json` on all four
 columns; (e) R1's own set sums to R1's change; c3, c2a and c0 on R9's source equal R6w's
@@ -2456,9 +2459,12 @@ within has its total's sign in 5 of 7 (c3: 5 of 6).
 
 **The other 11 changes** (`r6w.json` `c3x_vs_c3.changed`): at 64 → 512, fixed records, layer
 mean, `same_class` no drift → within (+0.047 → +0.054) and `emb_pct_own` within → no drift
-(+0.051 → +0.047); the other 9 are L12 / L24 cells, on 2–5 records (fixed set: c3 L12 5 / 3,
-L24 2 / 0; c3x 4 / 3, 2 / 0), totals moving up to 0.084. Not compared: L24 at 64 → 512 on the
-fixed set (no records on either column).
+(+0.051 → +0.047); the other 9 are L12 / L24 cells, totals moving up to 0.084. One is on the
+fixed set (L12 `adjacent`, 512 → 143000, within → both; fixed records over 512 → 143000 / 64 →
+512: c3 L12 5 / 3, L24 2 / 0; c3x 4 / 3, 2 / 0). Eight are on R1's records, 2–7 per step at
+L12 / L24 (*corrected after `/challenge-pr` on #173, finding 2*: not "2–5 records"), cells §1.21
+did not read because within and replacement have opposite signs in several rows, not for
+thinness. Not compared: L24 at 64 → 512 on the fixed set (no records on both columns).
 
 **Beside.** The identical links where §1.21 saw the drift are the same links on c3x (17 at 512 →
 1000, 11 at 1000 → 2000, the same means: `emb_pct_own` +0.108 / +0.092, CGE40 − kNN40 −0.126 /
@@ -2468,9 +2474,11 @@ has 368 identical and 1,313 changed stable links (c3 381, 1,369). Within by boun
 −0.041 at 1000 → 2000 / 2000 → 4000). R1's own record set on c3x is 102–136 records per step
 (c3 111–140).
 
-**Reading.** §1.21 reads the same on the definition with c3x leading: c3x drops 2–8 % of c3's
-records per step, and the drops neither carry the embedding drift nor move its split. The
-one headline change is a total that sat 0.0005 under the floor on c3. Adjacency's within rise
+**Reading.** By the rule §1.21's headline changes (one cell); what it quoted reads the same with
+c3x leading: c3x drops 2–8 % of c3's records per step, and the drops neither carry the
+embedding drift nor move its split. The one headline change is a total that sat 0.0005 under
+the floor on c3; there is no reference for how many of 77 labels a random drop of this size
+would move (`/challenge-pr` on #173, finding 4; parked, the user's). Adjacency's within rise
 was already there on c3 (+0.14) and offset by the groups entering and leaving; it now clears
 the floor on R1's records only.
 

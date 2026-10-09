@@ -161,9 +161,16 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > `design-10.md` "R9 / R6w" (`67738b6`, before any c3x R6w output): R6w's 84 labels per column
 > on c3x beside c3, §1.21's headline = the 14 layer-mean primary-span cells. Re-run (the user,
 > 2026-10-09: "re-running"). `p10_r6w_drift.py` got `--lead` / `--reproduce` (helper) and
-> `c3x_vs_c3`; c3, c2a, c0 reproduce `r6w.json` exactly. 1 of 14 headline labels changes
-> (adjacency on R1's records, +0.0495 → +0.0595, across the floor); the embedding drifts stay
-> within, quoted numbers ≤ 0.012; 12 of 77 in all, 9 on 2–5-record single layers.
+> `c3x_vs_c3`; c3, c2a, c0 reproduce `r6w.json` exactly. By the rule the headline changes in 1
+> of 14 cells, at the floor (adjacency on R1's records, +0.0495 → +0.0595); what §1.21 quoted
+> holds (embedding drifts within, ≤ 0.012); 12 of 77 in all, 9 on single layers §1.21 did not
+> read. `/challenge-pr` on #173: 1–3 taken, 4 parked below for the user.
+> *Parked (`/challenge-pr` on #173, finding 4), the user's, before R6f / R7's rules freeze:*
+> "n of N labels change" has no reference. Either fix a margin at the floor (a crossing within
+> it is not a change) or add a random-drop reference (drop c3x's count of c3's groups at random,
+> re-read, count changed labels). Why: every R9 row so far reports changes at the floor. Cost:
+> a margin is a rule line; a reference is ~1–2 min per draw per row. Could change: whether R9's
+> "1 of 14" / "12 of 77" read as c3x or as noise.
 > **Next here: R6f, then R7 on c3x**, each its own PR (`design-10.md` "R9"), each through
 > `p10_r9_lead.add_args`. R6f re-scores R6w's terms in a fixed frame and checks them against
 > `r6w.json`, so on c3x it reads `data/p10/reread_r9_2026-10-08/r6w/r6w.json` and re-runs;
