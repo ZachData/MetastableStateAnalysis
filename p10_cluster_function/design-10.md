@@ -635,6 +635,62 @@ holds a member; adding i itself to S leaves `a_i` unchanged (the tangent drops `
 per-head arm); read the long passages (c3x is defined on v1 only); say what a group carries; test
 anything. One seed, 7 passages, tier 1. Results: `status-10.md` §1.34.
 
+**E1m, E1 against equally near non-members (STATE.md Blocked 31 (a), the user's start 2026-10-09;
+rule fixed 2026-10-09, before any move was scored).** **Question:** E1's late pull (attention's
+`r1out` towards a c3x group's members in L9–23 from 4000) is towards the group, or only towards
+near tokens, the members among them? (`/challenge-pr` on #176, findings 1–2: members are nearer each
+other than E1's nearest non-members in 95–98 % of groups; E1's field was full, 1e's is causal.)
+**Inputs, frame, moves, groups, passes:** E1's, unchanged (same R9 labels, 18 steps × 7 passages,
+`p10_e1_energy.block_frame` / `groups_at`, one GPU pass per (step, passage), the same checks), read at
+block L only (the arrival block is dropped: nothing in E1 hung on it). **Comparator (label-blind
+in the sense that it uses only similarity, and the group's membership to exclude):** per member i
+and visibility V_i (`full`: every other kept row; `causal`: the kept rows before i, 1e U2's rule on
+the kept rows), the fellows F_i = g ∩ V_i ∖ {i} and the non-members N_i = V_i ∖ g. Fellows, from the
+most similar to i (`u_i·u_f`, unit LN1 rows) down, each take the **unused non-member whose
+similarity to i is nearest its own, if within EPS = 0.02** (ties to the lower row); a fellow with
+none is unmatched and left out. Attention's weight on a token is a function of that similarity alone,
+so a pull towards near tokens gives the paired non-members the force it gives the matched fellows.
+**Score:** `a_i(S) = cos(d_i, g^S_i)` as E1 (`g^S_i = P⊥_{u_i} Σ_{j∈S} softmax_j(β u_i·u_j) u_j`,
+every member's own moves held fixed); per member with ≥ 1 pair `a_i^obs = a_i(its matched fellows)`
+and `a_i^cmp = a_i(their paired non-members)`; **`X_g = mean_i a_i^obs − mean_i a_i^cmp`** over the
+members where both are finite; **NaN under MIN_MEMBERS = 3 such members** (counted, never zero).
+Beside: `A_all` (all visible fellows, E1's A in this view) and the pairing's coverage (fellow
+relations paired, members paired, mean `|Δs|`). β 3.5 primary, 1.6, 5.6 and 0 beside.
+**Components:** E1's five (`attn:r1out` primary). **Label:** E1's per (step, band) on `attn:r1out`
+at β 3.5: each passage's value the mean `X_g` over its c3x group-layer records in the band, readable
+with ≥ 3 records, ≥ 6 readable passages else *too few*, E1's sign rule, chance line and
+isolated-lean mark, β-robust, c2's step 0 as the baseline. **Primary view: `causal`** (what a causal
+head sees, and 1e's); `full` beside, for continuity with E1. Steps 64–143000 primary. **Readings,
+fixed before output, per (step, band) on c3x:** *pulls together (causal)* → attention's move points
+at the members more than at equally near non-members: membership, not only nearness, **within what
+the pairing can reach** (the pairs are the fellows that have an equally near non-member; the
+unmatched, typically the nearest, are not read); where 1e's causal window *descends*, it holds the
+group against the rest (E1's reading, now earned); where 1e *ascends*, it pulls towards everything,
+the members most; where 1e is *mixed*, no reading added. *mixed* → no membership effect beyond
+similarity, and where E1 read *pulls together* the E1 pull was nearness; *pushes apart* → it pushes
+members off equally near non-members; *too few* (both views) → **not separable here**: members have
+no equally near non-members, and that is the answer, not a gap to fill. A `causal` *too few* with
+`full` readable is reported as such (the view loses the pairs), and `full` is not promoted.
+**Coverage probe (geometry only, similarities, no move and no score; step 512 `wiki_paragraph` and
+step 4000 `homer_iliad`, before this rule):** the pairing matches 40–68 % of fellow relations at
+EPS 0.02 (causal 0.49–0.63, full 0.50–0.68), 60–97 % of members have a pair, and 40–100 % of c3x
+groups have ≥ 3 paired members; EPS 0.01 loses ~10 points and 0.05 gains ~10. EPS 0.02 is placed at
+the middle: the weight ratio `exp(β·0.02)` is ≤ 1.1 at β 5.6. **First checks (refuse):** E1's pass
+checks; the first record (step 512, `wiki_paragraph`) has an `X_g` for ≥ 25 % of its c3x groups
+(primary component and β, both views) and not all equal; a producer hash on every record. Tests:
+the pairing never holds a member, a self or a reused non-member and stays within EPS; the cosines
+equal E1's `set_cosines`; a pull towards the members scores > 0 and away < 0; a pull towards each
+token's nearest tokens whatever they are scores about 0 where pairs exist; a group nearer than every
+non-member has no pairs and no `X`; the causal view is blind to later rows. Step 512 first and open
+it before the other 17. **It does not:** separate membership from nearness where members are
+nearer than every non-member (unpaired, not read); use V's own kernel (`V = I`); read the long
+passages; randomise the pairing (deterministic, no rank-test: signs only, as E1's labels); say what
+a group carries. **Rejected:** random draws matched on the group mean (E1's `X_knn`, which
+`/challenge-pr` showed cannot do it); a label-blind clustering of the same cloud to re-draw groups
+(a second grouping to defend); weights substituted onto the nearest non-members' directions
+(constructed to match distances the data cannot match, and a nearness-driven pull would still score
+> 0 since the members are the nearest). One seed, 7 passages, tier 1. Results: `status-10.md` §1.35.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
