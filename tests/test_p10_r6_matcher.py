@@ -95,14 +95,16 @@ def test_chain_and_pool_on_a_toy_record(monkeypatch):
     assert r6.first_check(out)["passes"]
 
 
-def _toy_pooled(monkeypatch, c3x_last):
-    """Steps 2000 → 4000 → 8000; c3x differs from c3 only in its last step."""
+def _toy_pooled(monkeypatch, c3x_last, c3x_mid=None):
+    """Steps 2000 → 4000 → 8000; c3x differs from c3 in its last step (and its middle one if given)."""
     monkeypatch.setattr(r6, "N_DRAWS", 20)
     steps = [2000, 4000, 8000]
     lab = {2000: np.array([0, 0, 0, 1, 1, 1, -1, -1]), 4000: np.array([4, 4, 4, 5, 5, 5, -1, -1]),
            8000: np.array([6, 6, 6, 8, 8, 8, -1, -1])}
     by_col = {c: lab for c in r6.columns_of("c3x")}
     by_col["c3x"] = {**lab, 8000: np.asarray(c3x_last)}
+    if c3x_mid is not None:
+        by_col["c3x"][4000] = np.asarray(c3x_mid)
     ch = r6.chain((("p", 1), steps, by_col, [0, 0, 1]))
     return r6.jsonable(r6.pool([ch], steps, r6.columns_of("c3x")))
 
@@ -151,3 +153,44 @@ def test_load_record_refuses_a_run_on_another_label_source(tmp_path):
 def test_main_refuses_a_half_given_reproduce(tmp_path):
     with pytest.raises(SystemExit, match="go together"):
         r6.main(["--labels", str(tmp_path), "--out", str(tmp_path / "o.json"), "--reproduce", "x.json"])
+
+
+def test_c3_kinds_split_by_whether_c3x_keeps_the_group(monkeypatch):
+    # c3x drops group 5 at 4000; under c3's links 5 → 8 is stable, so the dropped group is stable
+    pooled = _toy_pooled(monkeypatch, [6, 6, 6, 8, 8, 8, -1, -1], c3x_mid=[4, 4, 4, -1, -1, -1, -1, -1])
+    sp = pooled["boundaries"][1]["c3_by_c3x"]
+    assert sp["dropped"] == {"n": 1, "stable": 1.0} and sp["kept"] == {"n": 1, "stable": 1.0}
+    assert pooled["boundaries"][0]["c3_by_c3x"]["dropped"] == {"n": 0, "stable": None}
+
+
+def _pooled(c3x_flips=None, c3x_lineage=None, c3x_independent_2000=0.01):
+    """A hand-built pooled record, one late boundary, c3x equal to c3 unless overridden."""
+    col = {"share_a": {"stable": 0.6}, "stable_jaccard": {"median": 0.8, "identical": 0.2},
+           "flips": {"birth_flip_kept": 9, "death_gone": 1}}
+    lin = {"0": 0, "128": 0, "256": 1, "2000": 1, "143000": 8}
+    return {"boundaries": [{"from": 4000, "to": 8000, "c3": col,
+                            "c3x": {**col, "flips": c3x_flips or col["flips"]}}],
+            "lineage_origin_at_last": {"c3": lin, "c3x": c3x_lineage or lin},
+            "lineage_independent_cumulative": {"c3": {"2000": 0.01}, "c3x": {"2000": c3x_independent_2000}}}
+
+
+def test_clauses_on_a_hand_built_record_change_nothing():
+    assert r6.clauses(_pooled())["changed"] == []
+
+
+def test_clause_iii_fires_at_a_quarter_new():
+    cl = r6.clauses(_pooled(c3x_flips={"birth_new": 1, "birth_flip_kept": 3}))
+    assert cl["iii_few_new"]["max_new_share"]["c3x"] == 0.25 and cl["changed"] == ["iii_few_new"]
+
+
+def test_clause_iv_fires_on_a_lineage_before_256_or_a_moved_after_2000_share():
+    early = {"0": 0, "128": 1, "256": 0, "2000": 1, "143000": 8}
+    assert "iv_lineage" in r6.clauses(_pooled(c3x_lineage=early))["changed"]
+    late = {"0": 0, "128": 0, "256": 1, "2000": 2, "143000": 7}   # after 2000: 0.8 → 0.7
+    cl = r6.clauses(_pooled(c3x_lineage=late))
+    assert cl["iv_lineage"]["before_256"]["c3x"] == 0 and "iv_lineage" in cl["changed"]
+
+
+def test_clause_v_fires_when_chains_do_not_outlast_the_baseline():
+    cl = r6.clauses(_pooled(c3x_independent_2000=0.2))   # observed reach ≤ 2000 is 0.2
+    assert cl["v_outlast"]["c3x"] == {"observed": 0.2, "independent": 0.2} and cl["changed"] == ["v_outlast"]

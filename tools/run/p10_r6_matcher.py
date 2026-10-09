@@ -109,6 +109,11 @@ def chain(job) -> dict:
                       "jaccard": [jac for _, jac in L["stable"].values()]}
             if c in FLIP_COLUMNS:
                 row[c]["flips"] = flips(L, links["c2a"][j])
+        if "c3x" in by_col:  # c3's own kinds, split by whether c3x keeps the earlier group (ids are c3's)
+            keep = {int(x) for x in by_col["c3x"][steps[j]] if x >= 0}
+            ka = links["c3"][j]["kind_a"]
+            row["c3_by_c3x"] = {"dropped": Counter(k for g, k in ka.items() if g not in keep),
+                                "kept": Counter(k for g, k in ka.items() if g in keep)}
         out["boundaries"].append(row)
     for c in by_col:
         last = sorted({int(x) for x in by_col[c][steps[-1]] if x >= 0})
@@ -154,6 +159,14 @@ def pool(chains: list, steps: list, columns) -> dict:
             }
             if c in FLIP_COLUMNS:
                 row[c]["flips"] = dict(fl)
+        if "c3x" in columns:  # beside the clauses (`/challenge-pr` on #172, finding 2): not in any clause
+            row["c3_by_c3x"] = {}
+            for side in ("dropped", "kept"):
+                k = Counter()
+                for ch in chains:
+                    k.update(ch["boundaries"][j]["c3_by_c3x"][side])
+                n = sum(k.values())
+                row["c3_by_c3x"][side] = {"n": n, "stable": k.get("stable", 0) / n if n else None}
         rows.append(row)
     lineage, independent = {}, {}
     for name in chains[0]["lineage"]:
@@ -325,7 +338,11 @@ def main(argv=None) -> int:
             "layers": list(LAYERS), "measure": MEASURE, "min_overlap": MIN_OVERLAP,
             "same_jaccard": SAME_JACCARD, "n_draws": N_DRAWS, "seed": SEED,
             "git": subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
-                                  capture_output=True, text=True).stdout.strip()}
+                                  capture_output=True, text=True).stdout.strip(),
+            # the code that ran differs from `git` (`/challenge-pr` on #172, finding 1; #152, finding 4)
+            "runner_dirty": bool(subprocess.run(
+                ["git", "-C", str(REPO), "status", "--porcelain", "--", "tools/run/p10_r6_matcher.py",
+                 "tools/run/p10_r9_lead.py"], capture_output=True, text=True).stdout.strip())}
     out = {"meta": meta, "first_check": first_check(pooled), **pooled}
     if args.lead == "c3x":
         out["clauses"] = clauses(pooled)
