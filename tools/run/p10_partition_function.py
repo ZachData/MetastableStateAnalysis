@@ -366,10 +366,10 @@ def reread(args, measure, context: str, acts_step: int = None) -> dict:
     (step, prompt), in ``args.jobs`` processes; returns the record's common part.
     ``acts_step``: score each step's labels on that step's activations (`matched_runs`)."""
     from concurrent.futures import ProcessPoolExecutor
-    from tools.run.p10_label_source import LEARNED_SPLIT, LEARNED_STEP, MODELS, reader_input
+    from tools.run.p10_label_source import LEARNED_STEP, MODELS, SPLITS, reader_input
     src = reader_input(args.labels, args.column)
     # reader_input reads the step files that exist; the re-read promises every step (CodeRabbit, #147)
-    want = {LEARNED_STEP} if args.column in LEARNED_SPLIT else set(MODELS)
+    want = {LEARNED_STEP} if args.column in SPLITS else set(MODELS)
     got = {f"step{s}" for s in src["records"]}
     if got != want:
         raise SystemExit(f"refusing: {args.labels} column {args.column} has steps {sorted(got ^ want)} "

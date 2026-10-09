@@ -455,12 +455,12 @@ def by_step(runs: dict) -> dict:
 
 def reread(args) -> dict:
     from concurrent.futures import ProcessPoolExecutor
-    from tools.run.p10_label_source import LEARNED_SPLIT, LEARNED_STEP, MODELS, reader_input
+    from tools.run.p10_label_source import LEARNED_STEP, MODELS, SPLITS, reader_input
     dropped, ts = t1_t2_positions(args.labels)
     srcs, records = {}, {}
     for col in args.columns:
         src = reader_input(args.labels, col)
-        want = {LEARNED_STEP} if col in LEARNED_SPLIT else set(MODELS)
+        want = {LEARNED_STEP} if col in SPLITS else set(MODELS)
         got = {f"step{s}" for s in src["records"]}
         if got != want:
             raise SystemExit(f"refusing: {args.labels} column {col} has steps {sorted(got ^ want)} "
