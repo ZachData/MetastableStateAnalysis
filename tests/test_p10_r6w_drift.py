@@ -125,11 +125,14 @@ def test_compare_counts_every_cell_and_names_the_headline_ones():
     assert moved["n_changed"] == 2 * len(w.STATS) and len(moved["headline_changed"]) == 14
 
 
-def test_compare_skips_a_level_without_records_on_either_column():
+def test_compare_skips_a_level_without_records_on_both_columns_only():
+    both = w.compare(_cols())
+    assert [u["no_records"] for u in both["not_compared"]] == [["c3", "c3x"]] * 4   # L24, 2 sets × 2 spans
+    # a level c3x lost entirely is a change on every statistic, not "not compared" (#173, finding 3)
     d = w.compare(_cols(c3x_mean=False))
-    gone = [u for u in d["not_compared"] if u["level"] == "mean"]
-    assert len(gone) == 2 and all(u["no_records"] == ["c3x"] and u["span"] == "64-512" for u in gone)
-    assert d["n_compared"] == (2 * 2 * 2 - 2) * len(w.STATS)
+    lost = [x for x in d["changed"] if x["level"] == "mean"]
+    assert len(lost) == 2 * len(w.STATS) and all(x["c3x"] == w.NO_RECORDS and x["span"] == "64-512" for x in lost)
+    assert d["n_compared"] == both["n_compared"] and len(d["not_compared"]) == 4
 
 
 def test_reproduce_names_each_differing_key_and_a_missing_column():

@@ -39,6 +39,7 @@ from tools.run import p10_r9_lead as lead_args
 COLUMNS = ("c3", "c2a", "c0")                 # c3 primary; c2a (no filter), c0 (published) beside
 FLIP_COLUMNS = ("c3", "c3x")                  # their ids are c2a's: births and deaths by c2a's fate
 RECORD_SETS = ("levels", "levels_r1_set")     # the rule's fixed records; R1's own beside
+NO_RECORDS = "no records"                     # a level read on the other column only
 SPANS = {"512-143000": (512, 143000), "64-512": (64, 512)}
 PRIMARY_SPAN = "512-143000"
 COMPOSITION = ("same_class", "copy_share", "no_copy", "adjacent")
@@ -401,26 +402,33 @@ def headline(record_set: str, span: str, level: str) -> bool:
 def compare(cols: dict, col: str = "c3x", ref: str = "c3") -> dict:
     """
     Every cell's label on ``col`` against ``ref`` (`design-10.md` "R9 / R6w"): the changed cells,
-    the cells not compared (a level with no records on either column), and on the headline's cells
-    each column's total, within and largest replacement beside.
+    the cells not compared (a level with no records on both columns), and on the headline's cells
+    each column's total, within and largest replacement beside. A level read on one column only
+    is compared, its other side labelled "no records" (`/challenge-pr` on #173, finding 3).
     """
     changed, unread, n, rows = [], [], 0, []
+
+    def lab(x, st):
+        return NO_RECORDS if x is None else x[st]["label"]
+
+    def num(x, st, k):
+        return None if x is None else x[st]["largest_replacement"] if k == "largest" else x[st]["span"][k]
+
     for rs in RECORD_SETS:
         for span in cols[ref]:
             for level in map(str, LEVELS):
                 a, b = cols[ref][span][rs][level], cols[col][span][rs][level]
-                if a is None or b is None:
-                    unread.append({"set": rs, "span": span, "level": level,
-                                   "no_records": [c for c, x in ((ref, a), (col, b)) if x is None]})
+                if a is None and b is None:
+                    unread.append({"set": rs, "span": span, "level": level, "no_records": [ref, col]})
                     continue
                 for st in STATS:
                     n += 1
                     cell = {"set": rs, "span": span, "level": level, "stat": st,
-                            ref: a[st]["label"], col: b[st]["label"], "headline": headline(rs, span, level)}
-                    if a[st]["label"] != b[st]["label"]:
+                            ref: lab(a, st), col: lab(b, st), "headline": headline(rs, span, level)}
+                    if cell[ref] != cell[col]:
                         changed.append(cell)
                     if cell["headline"]:
-                        rows.append({**cell, **{f"{c}_{k}": x[st]["span"][k] if k != "largest" else x[st]["largest_replacement"]
+                        rows.append({**cell, **{f"{c}_{k}": num(x, st, k)
                                                 for c, x in ((ref, a), (col, b)) for k in ("total", "within", "largest")}})
     return {"n_compared": n, "changed": changed, "n_changed": len(changed),
             "headline_changed": [c for c in changed if c["headline"]], "not_compared": unread,
