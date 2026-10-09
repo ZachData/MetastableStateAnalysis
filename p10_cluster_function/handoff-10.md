@@ -151,12 +151,21 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > settle whether the residual starts at 2000 on either column (`p10_r3_ladder.prompt_resample`,
 > after `/challenge-pr` on #171; `LadderError` now lives in the helper). The sink split is not
 > re-read (c0's own labels). If R6–R7 filter stored c3 records rather than re-run, the helper's
-> `--lead` still applies to their ladders; `--reproduce` only where a row re-runs. **Next here: R6 →
-> R6w → R6f, R7 on c3x**, each its own PR (`design-10.md` "R9"), each ladder through
+> `--lead` still applies to their ladders; `--reproduce` only where a row re-runs.
+> **R9 / R6 done, 2026-10-09 (`status-10.md` §1.30; its title is the summary).** Rule
+> `design-10.md` "R9 / R6" (`a42a477`, before any c3x matcher output): R6 labels nothing, so
+> §1.20's five headline clauses on c3x beside c3, each with a placed change condition. Re-run,
+> not filtered (a kind depends on every group at both steps). c0–c3 reproduce `r6.json` exactly;
+> none of the five clauses changes (stable within 0.009 from 4000; > 0.05 only at 2 → 16).
+> **Next here: R6w → R6f, R7 on c3x**, each its own PR (`design-10.md` "R9"), each ladder through
 > `p10_r9_lead.add_args`; first the user's call on the *Open* item below (re-run, or filter the
 > stored per-group c3 records). The readers take `--labels <R9 labels> --column c3x`.
 > *Open (`/challenge-pr` on #166, finding 4):* R7, and likely R6w / R6f, could read c3x by
-> filtering their stored per-group c3 records instead of re-running; the user's call.
+> filtering their stored per-group c3 records instead of re-running; the user's call. *Bearing
+> on it (from R9 / R6):* R6w's split (stable / entering / exiting) rests on link kinds, and a c3x
+> kind is not a filtered c3 kind (dropping one piece of a c3 split leaves a c3x stable link), so
+> filtering R6w's stored records would carry c3's kinds; R6w takes `--r6`, now on c3x at
+> `data/p10/reread_r9_2026-10-08/r6/r6.json`. R7 scores each group against its own floor, so filtering may be exact there (not checked against its code).
 >
 > **R8x done, 2026-10-08 (`status-10.md` §1.25; its title is the summary).** Blocked 27 (c), the
 > user's: the exact check, rule `design-10.md` "R8x" (`ced45f5`, before any P > 0 label).
