@@ -577,7 +577,10 @@ the embedding moved under the groups; the particle rows say who groups, not what
 R0's kept offsets. One hooked GPU pass per (step, passage) (`p1e_energy_field.u2_attn.Hooked`,
 float32 eager, TF32 off), split as 1e's attention arm (`attn`, `keys`, `sink`, `mlpx`, `bias`,
 `block`); `u2_attn.check_pass` against Stage 0's `activations.npz` (v1 tolerance 1e-4) and the
-split's sum, else that (step, passage) refuses.
+split's sum, else that (step, passage) refuses. *Departure at the gate (2026-10-09, before any
+reading): the first record refused at block 23 (`x + attn + mlp` off by 0.1), since `hs[24]` is
+after `final_layer_norm`; `check_pass` reads blocks 0–22, and block 23 is checked as
+`LN_f(x + attn + mlp)` against the pass's `hs[24]` and its parts' sum, both at `SPLIT_TOL`.*
 **Frame and move (1e U2's):** block ℓ's input `x_i = hs[ℓ]_i`, `u_i = unit(LN1_ℓ(x_i))`;
 component c's move `d_i = P⊥_{u_i}(unit(LN1_ℓ(x_i + c_i − (c_i·ĉ)ĉ)) − u_i)`, ĉ the unit mean
 of c over the passage's kept offsets (**`r1out`**, the token-specific part).

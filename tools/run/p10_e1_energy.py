@@ -232,6 +232,25 @@ def code_sha() -> str:
                           text=True, check=True).stdout.strip()
 
 
+def check_last_block(hs: np.ndarray, C: Dict[str, np.ndarray], model) -> float:
+    """Block 23 (*departure at the gate*): the stored ``hs[24]`` is after ``final_layer_norm``, so
+    `u2_attn.check_pass` cannot compare ``x + attn + mlp`` with it; compare ``LN_f(x + attn + mlp)``
+    instead, and the parts' sum with the block, both relative, at `u2_attn.SPLIT_TOL`."""
+    from p1e_energy_field import u2_attn as ua
+    fl = getattr(model, "gpt_neox", model).final_layer_norm
+    w, b = (t.detach().double().cpu().numpy() for t in (fl.weight, fl.bias))
+    y = hs[23].astype(np.float64) + C["block"].astype(np.float64)
+    mu = y.mean(axis=1, keepdims=True)
+    ln = (y - mu) / np.sqrt(((y - mu) ** 2).mean(axis=1, keepdims=True) + fl.eps) * w + b
+    ref = hs[24].astype(np.float64)
+    rel = float(np.abs(ln - ref).max() / np.abs(ref).max())
+    d = np.linalg.norm(C["block"], axis=1).max()
+    split = float(np.abs(sum(C[k] for k in ua.PARTS) - C["block"]).max() / d)
+    if rel > ua.SPLIT_TOL or split > ua.SPLIT_TOL:
+        raise SystemExit(f"refusing: block 23: LN_f(x + attn + mlp) off by {rel:.1e}, parts off by {split:.1e}")
+    return rel
+
+
 def check_populated(recs: List[Dict]) -> None:
     """The rule's first-record check: every c3x group has a finite X_g with ≥ 90 % of members kept."""
     px = [r for r in recs if r["c3x"]]
@@ -287,7 +306,8 @@ def run(a) -> int:
             rd = Path(pr["stage0_run"])
             ids = torch.tensor([ua.token_ids(tok, rd)], device=next(model.parameters()).device)
             hs, comps = hk.run(ids, tuple(range(24)))
-            chk = ua.check_pass(hs, comps, rd, "v1")
+            chk = ua.check_pass(hs, {L: comps[L] for L in range(23)}, rd, "v1")
+            chk["last_block_rel"] = check_last_block(hs, comps[23], model)
             kept = np.asarray(pr["kept"], dtype=int)
             recs = read_passage(hs, comps, ln, src, step, p, cache, kept)
             rec = {"step": step, "passage": p, "run": str(rd), "code": code, "pass": "cuda:float32",
