@@ -56,6 +56,7 @@ from typing import Dict, Optional, Sequence
 REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[2])))
 sys.path.insert(0, str(REPO))
 
+from tools.run import p10_r9_lead as lead_args
 from tools.run.p10_r1_ladder import (ARMS, LADDER, LEADS, LEARNED, ON_C2_BASE, LadderError, _fmt, arms_differ,
                                      c3_to_c3x, holds)
 
@@ -212,29 +213,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--published", type=Path, default=None,
                     help="dir holding p10_f1_transport.json and p10_f12_z.json: check c0 against them")
     ap.add_argument("--out", type=Path, default=None, help="default <dir>/ladder.json")
-    ap.add_argument("--lead", choices=tuple(LEADS), default="c3", help="the primary column (R9: c3x)")
-    ap.add_argument("--reproduce", type=Path, default=None, metavar="R2_DIR",
-                    help="refuse unless c0–c3's records equal that R2 run's (with --reproduce-labels)")
-    ap.add_argument("--reproduce-labels", type=Path, default=None, help="the label source that run read")
+    lead_args.add_args(ap, "R2")
     args = ap.parse_args(argv)
-    if (args.reproduce is None) != (args.reproduce_labels is None):
-        raise SystemExit("refusing: --reproduce and --reproduce-labels go together (the run it "
-                         "reproduces read its own label source)")
+    lead_args.reproduce_inputs(args)
     lead = args.lead
     data = load(args.dir, args.labels, lead)
-    if args.reproduce is not None:
-        bad = reproduce(data, load(args.reproduce, args.reproduce_labels))
-        if bad:
-            raise LadderError(f"refusing: records differ from {args.reproduce}: {bad}")
-        print(f"reproduces {args.reproduce}: every c0–c3 record equal (per-step summary and per-unit rows)")
+    reproduces = lead_args.check_reproduces(args, data, load, reproduce, "per-step summary and per-unit rows")
     ladder = LEADS[lead][0]
     prim, prim_c3 = primary(data["summary"], lead), primary(data["summary"], "c3")
-    floor = data["summary"]["step0"]["columns"][lead]
     cols = columns(data)
-    res = {"label_source": str(args.labels), "summary_sha256": data["summary_sha256"], "lead": lead,
-           "reproduces": str(args.reproduce) if args.reproduce else None, "primary": prim,
-           "floor": {f"{lead}_group_layer_records_step0": floor["groups"],
-                     f"{lead}_readable_step0": [floor["readable"], floor["records"]]},
+    res = {**lead_args.header(args.labels, data["summary_sha256"], lead, reproduces, prim, data["summary"]),
            "rows": {}}
     for row, skip0 in (("F1", False), ("F12", True), ("§1.5", True)):
         h = holds(cols[row], prim, skip0, ladder=ladder)
@@ -278,8 +266,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                   f"{x['over_0.01']} differ by > 0.01, max |diff| {x['max_abs_diff']}")
     out = args.out or args.dir / "ladder.json"
     out.write_text(json.dumps(res, indent=1) + "\n")
-    print(f"\nprimary: c2 at steps {[s for s, c in prim.items() if c == 'c2']}, {lead} elsewhere; floor "
-          f"{floor['groups']} {lead} records at step 0 ({floor['readable']} of {floor['records']} readable)")
+    print("\n" + lead_args.floor_line(prim, data["summary"], lead))
     print(f"wrote {out}")
     return 0
 

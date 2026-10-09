@@ -50,6 +50,7 @@ from typing import Dict, Optional, Sequence
 REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[2])))
 sys.path.insert(0, str(REPO))
 
+from tools.run import p10_r9_lead as lead_args
 from tools.run.p10_r1_ladder import LEADS, LadderError, _fmt, arms_differ, c3_to_c3x, holds
 from tools.run.p10_r2_ladder import COLUMNS, GAP_FLOOR, columns_of, f1_label, primary
 
@@ -168,32 +169,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--r2", type=Path, required=True, help="the R2 records (f12_ and f1_<column>.json)")
     ap.add_argument("--labels", type=Path, required=True, help="the R0 label source both were read on")
     ap.add_argument("--out", type=Path, default=None, help="default <dir>/ladder.json")
-    ap.add_argument("--lead", choices=tuple(LEADS), default="c3", help="the primary column (R9: c3x)")
-    ap.add_argument("--reproduce", type=Path, default=None, metavar="R2M_DIR",
-                    help="refuse unless c0–c3's records equal that R2m run's (with --reproduce-r2, "
-                         "--reproduce-labels)")
-    ap.add_argument("--reproduce-r2", type=Path, default=None, help="the R2 records that run read")
-    ap.add_argument("--reproduce-labels", type=Path, default=None, help="the label source that run read")
+    lead_args.add_args(ap, "R2m", also=(("--reproduce-r2", "the R2 records that run read"),))
     args = ap.parse_args(argv)
-    given = [x is not None for x in (args.reproduce, args.reproduce_r2, args.reproduce_labels)]
-    if any(given) and not all(given):
-        raise SystemExit("refusing: --reproduce, --reproduce-r2 and --reproduce-labels go together (the "
-                         "run it reproduces read its own R2 records and label source)")
+    lead_args.reproduce_inputs(args, also=("--reproduce-r2",))
     lead = args.lead
     data = load(args.dir, args.r2, args.labels, lead)
-    if args.reproduce is not None:
-        bad = reproduce(data, load(args.reproduce, args.reproduce_r2, args.reproduce_labels))
-        if bad:
-            raise LadderError(f"refusing: records differ from {args.reproduce}: {bad}")
-        print(f"reproduces {args.reproduce}: every c0–c3 record equal (control, trained and F1)")
+    reproduces = lead_args.check_reproduces(args, data, load, reproduce, "control, trained and F1",
+                                            also=("--reproduce-r2",))
     ladder = LEADS[lead][0]
     prim, prim_c3 = primary(data["summary"], lead), primary(data["summary"], "c3")
-    floor = data["summary"]["step0"]["columns"][lead]
     cols = columns(data)
-    res = {"label_source": str(args.labels), "summary_sha256": data["summary_sha256"], "lead": lead,
-           "reproduces": str(args.reproduce) if args.reproduce else None, "primary": prim,
-           "floor": {f"{lead}_group_layer_records_step0": floor["groups"],
-                     f"{lead}_readable_step0": [floor["readable"], floor["records"]]},
+    res = {**lead_args.header(args.labels, data["summary_sha256"], lead, reproduces, prim, data["summary"]),
            "gap_floor": GAP_FLOOR, "cells": cols["cells"], "rows": {}}
     for row in ("F12m", "F12 raw", "§1.5"):
         h = holds(cols[row], prim, skip0=True, ladder=ladder)
@@ -225,8 +211,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"window {row}: {w}")
     out = args.out or args.dir / "ladder.json"
     out.write_text(json.dumps(res, indent=1) + "\n")
-    print(f"\nprimary: c2 at steps {[s for s, c in prim.items() if c == 'c2']}, {lead} elsewhere; floor "
-          f"{floor['groups']} {lead} records at step 0 ({floor['readable']} of {floor['records']} readable)")
+    print("\n" + lead_args.floor_line(prim, data["summary"], lead))
     print(f"wrote {out}")
     return 0
 

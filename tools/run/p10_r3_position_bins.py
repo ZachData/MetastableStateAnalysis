@@ -9,8 +9,9 @@ domain's mean) is read twice:
            weighted by n_members·n_rest / n_bin, bins without both left out
 
 so ``binned`` compares members with rest at the same positions. Sizes only, no permutations.
-Columns: c0 (published reader, all positions) and the T4 columns named. Run:
-    python tools/run/p10_r3_position_bins.py --labels <R0 labels> --out <file> [--jobs 14]
+Columns: c0 (published reader, all positions) and the T4 columns named (``--columns``; R9 adds
+c3x and its learned split on the c3x source). Run:
+    python tools/run/p10_r3_position_bins.py --labels <R0 labels> --out <file> [--jobs 14] [--columns ...]
 """
 import argparse
 import json
@@ -76,17 +77,19 @@ def main():
     ap.add_argument("--labels", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--jobs", type=int, default=1)
+    ap.add_argument("--columns", nargs="+", default=list(COLUMNS), help=f"default {' '.join(COLUMNS)}")
     a = ap.parse_args()
+    cols = tuple(a.columns)
     dropped, ts = t1_t2_positions(a.labels)
-    srcs = {c: reader_input(a.labels, c) for c in COLUMNS}
+    srcs = {c: reader_input(a.labels, c) for c in cols}
     runs = {k: p for s in srcs.values() for k, p in s["runs"].items()}
-    keys = sorted(k for k in runs if any(srcs[c]["labels"].get(k) for c in COLUMNS))
-    jobs = [(runs[k], {c: srcs[c]["labels"][k] for c in COLUMNS if srcs[c]["labels"].get(k)},
+    keys = sorted(k for k in runs if any(srcs[c]["labels"].get(k) for c in cols))
+    jobs = [(runs[k], {c: srcs[c]["labels"][k] for c in cols if srcs[c]["labels"].get(k)},
              dropped[k[1]], f"{k[0]}|{k[1]}") for k in keys]
     with ProcessPoolExecutor(a.jobs) as ex:
         rows = [r for rs in ex.map(run, *zip(*jobs)) for r in rs]
     summ = {}
-    for c in COLUMNS:
+    for c in cols:
         by = {}
         for r in rows:
             if r["column"] == c and r["binned"] is not None:
