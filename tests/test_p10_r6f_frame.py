@@ -65,3 +65,53 @@ def test_a_frame_with_other_tokens_is_refused(monkeypatch):
     toks["frame"] = toks["step"]
     (_, out) = f._job((1000, "p", "/x/step", {"c3": {}}, {}, set(), {512: "/x/frame"}))
     assert set(out) == {"own", 512}
+
+
+# ---------------------------------------------------------------- R9 / R6f (design-10.md "R9 / R6f")
+
+def _entry(row="frame", f512="frame", f143="frame", prompts=None):
+    e = {"row_label": row, "label": {"512": f512, "143000": f143},
+         "prompt_values": {p: {"label_mean": v} for p, v in (prompts or {}).items()}}
+    return {s: {st: e for st in f.EMB} for s, _ in f.RECORD_SETS}
+
+
+def test_cells_hold_the_row_each_frame_and_each_prompt():
+    c = f.cells(_entry(prompts={"a": "members"}))
+    assert len(c) == 2 * 3 * 4 and c["fixed_set|emb_pct_own|prompt a"] == "members"
+    assert sum(f.is_headline(k) for k in c) == 6
+
+
+def test_compare_counts_a_cell_held_on_one_side_only_and_skips_one_held_on_neither():
+    ref = {"x|row": "frame", "y|frame 512": None, "z|prompt p": None, "w|prompt q": "both"}
+    col = {"x|row": "members", "y|frame 512": None, "z|prompt p": "frame", "w|prompt q": "both"}
+    cmp = f.compare_cells(ref, col)
+    assert cmp["changed"] == ["x|row", "z|prompt p"] and cmp["n_compared"] == 3
+    assert cmp["headline_changed"] == ["x|row"] and cmp["not_compared"] == ["y|frame 512"]
+
+
+def test_a_draw_drops_c3xs_count_per_record_and_only_c3_groups():
+    import numpy as np
+    dom = {(512, "p", 1): {"c3": np.array([0, 0, 1, 1, 2, 2, -1]), "c3x": np.array([0, 0, -1, -1, -1, -1, -1])},
+           (512, "p", 2): {"c3": np.array([3, 3, -1]), "c3x": np.array([3, 3, -1])}}
+    labs, dropped = f.drop_labels(dom, np.random.default_rng(0))
+    assert len(dropped[(512, "p", 1)]) == 2 and dropped[(512, "p", 2)] == set()
+    kept = set(labs[(512, "p", 1)][labs[(512, "p", 1)] >= 0])
+    assert len(kept) == 1 and kept <= {0, 1, 2}
+    assert f.dropped_sizes(dom, dropped) == [2, 2]
+    again, _ = f.drop_labels(dom, np.random.default_rng(0))       # a seed fixes the draw
+    assert all((again[k] == labs[k]).all() for k in labs)
+    none, nd = f.drop_labels(dom)                                 # no rng: c3 itself
+    assert all((none[k] == dom[k]["c3"]).all() for k in dom) and not any(nd.values())
+
+
+def test_reference_reading_is_within_at_the_95th_percentile_and_beyond_above():
+    counts = list(range(100))                                     # 'higher' quantile: 95
+    assert f.reference_reading(95, counts)["reading"] == "within random drops"
+    r = f.reference_reading(96, counts)
+    assert r["reading"] == "beyond random drops" and r["rank_p"] == pytest.approx(5 / 101)
+
+
+def test_reproduce_names_each_differing_key_and_a_missing_column():
+    other = {"meta": {"columns": ["c3", "c0"]}, "columns": {"c3": {"n_records": 51, "steps": [1]}, "c0": {"n_records": 2}}}
+    data = {"columns": {"c3": {"n_records": 50, "steps": [1]}}}
+    assert f.reproduce(data, other) == ["c3/n_records", "c0: missing"]
