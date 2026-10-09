@@ -15,7 +15,8 @@
   - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000, in the sum and head by head; from 4000–8000 the sum over heads ascends while more heads still descend their own kernel than ascend it (10 of 13 windows; a majority of heads in only 2), so the late ascent is a property of the sum, not of the heads; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - U2's reading is split by training stage (the user's decision): up to step 1000 the shared ascent is the MLP's and the token interactions descend their heads' kernels; from 2000 the shared ascent is attention's mean pull in the last layers, and from 4000 only the sum over heads follows its kernels, while more heads still descend their own than ascend it — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - At the measured β the field over the tokens has a single well in every trained layer band and step (one exception, the early layers at step 128); a few wells appear only at about twice that β and many by four times, so the probe's few wells were another frame's. Its density is more uneven than a matched Gaussian cloud's at every step, init included, even after correcting that comparison's own bias, and is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge; by the end of training only the last layers are more uneven than at init — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
-  - The saddle unit is closed, since at the measured β there are no wells to find saddles between (the recommendation, recorded; the user to confirm); the phase's results are on one page — `p1e_energy_field/status-1e.md` "Blocked 30 decided"
+  - The saddle unit is closed at the measured β, since there are no wells there to find saddles between (the user confirmed); the phase's results are on one page — `p1e_energy_field/status-1e.md` "Blocked 30 decided"
+  - Read beside that, at a β about three times the measured one, and in a frame with the cloud's mean removed. Both find wells: a few to hundreds early in training and one dominant well late at the higher β, and 15–17 at init falling to 2–4 late in the centred frame (the probe's few wells). In both, the wells exist at init, sort by content and outnumber a matched Gaussian's. The one learned change is depth between wells in the last layers at steps 64–8000 at the higher β, gone by 16000. In the centred frame, Phase 10's groups sit inside single wells well above chance, partly because both group tokens by proximity. A defect in the well finder (a float32 merge) was found and fixed on the way, and the measured-β result was audited clean — `p1e_energy_field/status-1e.md` "Blocked 30 (b) and (c)"
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
@@ -25,10 +26,12 @@
   - Whether the late split between heads and their sum is heads cooperating or a few large heads (the saved means cannot split it) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence — `p1e_energy_field/design-1e.md` "Units"
   - Whether one well at the measured β is what the theory expects at this many tokens and dimensions is unread — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
+  - The same field read with the stored residual centred and no layer norm (the probe's own frame) is running and unread — `p1e_energy_field/status-1e.md` "Blocked 30 (b) and (c)"
+  - Whether Phase 10's groups agreeing with the centred frame's wells is more than two proximity groupings agreeing is unread — `p1e_energy_field/status-1e.md` "Blocked 30 (b) and (c)"
 - **After Phase 10:**
   - U4 from stored activations, once P-S1 is scored *(free)*; U3 closed at the measured β; U2 *(free for the block arm; forward pass per step and passage, GPU, for the attention and per-head arms)*
   - U5, after a corpus download and a co-occurrence count *(free)*
-- **Reviewed:** 2026-10-08 · body `5e683283e7`
+- **Reviewed:** 2026-10-09 · body `0bd383c29e`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -641,28 +644,147 @@ rendered look; the chart ramps were not run through the palette validator (no `n
 **How to re-run:** `python -m p1e_energy_field.page --data <main>/data/p1e --out <dir>`, then
 publish `<dir>/index.html` to the URL above.
 
-## Blocked 30 (b) and (c), beside (a): in flight (2026-10-08; no result yet)
+## Blocked 30 (b) and (c), beside (a) (2026-10-09): both find wells, and step 0 has them too; centred, a few (2–4 late) that c3x groups agree with; at β 10 the one learned change is depth in L17–23 at 64–8000
 
-*User, 2026-10-08, after #165 merged: (a) confirmed, and "work on all three", so (b) and (c) run
-beside it.* Rules, fixed before output: `design-1e.md` "U1 beside" (`fecd694`) and "U3 at β 10"
-(`5f2959b`, amended before any reading `775a04c`, `3b55242`, `9d7d514`; the amendments say why).
-Nothing below has been read yet; first cells only, as populated checks.
+*User, 2026-10-08, after #165 merged: (a) confirmed, and "work on all three", so (b) and (c) are
+read **beside** (a), not in place of it.* Rules fixed before output: `design-1e.md` "U1 beside"
+(`fecd694`) and "U3 at β 10" (`5f2959b`, amended before any reading in `775a04c`, `3b55242` and
+`9d7d514`). **A defect, found before any reading** (`2608db3`, the amendment under "U1 beside"):
+U1's GPU phase merged rows by a float32 dot whose error reaches its 1e-6 tolerance. Every run
+below is on the fixed producer (`p1e_energy_field` tree `752d284`). The first builds sit unread in
+`data/p1e/superseded_merge32/`. Each run is read only after its audit (`u1_audit`, below) passes.
 
-| run | output (`data/p1e/`) | code | state 2026-10-08 ~16:00 |
+| run | output (`data/p1e/`) | audit: cells, differing from CPU float64, min agreement | state |
 |---|---|---|---|
-| (b) U1, β 10 (7, 14 beside) | `u1_beta10_2026-10-08/` | `fecd694` (`../Mets-work`) | first cell passed (GPU = CPU wells, 1.0000); ~32 / 144 long records; steps 512–2000 take ~15 min each (β 14 shatters, CPU float64 finish), so ~6–9 h more with v1 |
-| (c) U1, centred | `u1_centred_2026-10-08/` | `fecd694` | queued after (b), same chain |
-| (c′) U1, raw centred | `u1_rawcentred_2026-10-08/` | `fecd694` | queued after (c) |
-| U3, β 10 | `u3_beta10_2026-10-08/` | this branch (`../Mets-u3`) | first cell passed (wells = (b)'s, deaths = k − 1, NEB 11 / 11); `after_b.sh` starts the batch when (b)'s 144 long records exist (~62 s per record) |
+| (a) U1 at 3.5 (#165, old producer) | `u1_field_2026-10-08/audit.json` | 810, **0**, 1.0000 (879,228 target rows; no `k`, `k_G` or `Xw` change) | stands; correction below |
+| (b) U1, β 10 (7, 14 beside) | `u1_beta10_2026-10-08/` | 810, 2, 0.9990 (3 rows; one singleton missed, `k` 10 against 11 at 8000 `odyssey_butler_long` L20; `Xw` ≤ 0.006) | read |
+| U3, β 10 | `u3_beta10_2026-10-08/` | its wells equal (b)'s in every cell (1.0000); 0 negative persistences | read |
+| (c) U1, centred | `u1_centred_2026-10-08/` | 810, 1, 0.9995 (1 row; `Xw` ≤ 0.004) | read |
+| (c′) U1, raw centred | `u1_rawcentred_2026-10-08/` | running (first cell passed, 1.0000); ~12 h | not read |
 
-**To resume** (each run resumes, skipping done records; a refused or killed chain is restarted by
-its `run.sh`): wait for the four outputs, then `python -m p1e_energy_field.u1_field report --out
-<dir>` for each U1 run and `python -m p1e_energy_field.u3_saddles report --out <U3 dir>`; write the
-results here, then the Stop protocol for one PR (`claude/p1e-u3-b10` carries `claude/p1e-beside`'s
-commits). Defects found on the way: U1's well labels can skip an id (harmless to U1's counts,
-fatal to a merge tree; fixed in U3, `3b55242`); running R1's readers at default BLAS threads beside
-the GPU chain oversubscribed the CPU (load ~80 on 16 cores) and slowed (b) several-fold (both for
-`LESSONS.md` at the PR).
+**(a)'s sweep, checked with (b)'s fixed cells:** at β 10, L4 / 12 / 20, 10 of 432 cells change
+(each by 1–7 wells, all in cells with more than 20 wells), and the bins "111 one, 196 with 2–20,
+125 more than 20" are unchanged. (a)'s β 1.6 and 5.6 wells and its β 20–100 sweep were not audited.
+
+### (b) U1 at β 10 (long passages, T1 + T2; labels at β 10)
+
+| label (trained cells of 54) | β 7 | β 10 | β 14 | step 0 |
+|---|---|---|---|---|
+| (1) lumpier / other | 51 / 3 | 50 + 1 lean / 3 | 50 / 4 | lumpier in every band |
+| (2) more wells than its Gaussian | (not read: the Gaussian's wells at 10 only) | **37 + 6 leans** / 11 mixed | — | more in L1–8, L9–16; leans more in L17–23 |
+| (3) density and position | mixed 50 | mixed 52 | mixed 52 | mixed |
+| (4) what the wells are | — | **content 43**, not read 8 | — | content in every band |
+
+Chance is 0.42 all-8 and 3.4 leans per 54. **Every label that departs from chance is carried by
+step 0, so none is called learned** (the rule). The wells (median over passages, β 10):
+
+| step | L1–8 `k` / `k_eff` / largest | L9–16 | L17–23 | L0 |
+|---|---|---|---|---|
+| 0 | 61 / 17.2 / 0.60 | 3 / 1.5 / 0.90 | 2 / 1.2 / 0.97 | 666 / 232 / 0.07 |
+| 128 | 265 / 110 / 0.22 | 18 / 5.9 / 0.49 | 7 / 2.8 / 0.68 | same |
+| 1000 | 47 / 11.4 / 0.48 | 29 / 5.7 / 0.57 | 22 / 3.5 / 0.64 | same |
+| 2000 | 112 / 26 / 0.39 | 139 / 22 / 0.45 | 27 / 3.4 / 0.72 | same |
+| 8000 | 41 / 4.4 / 0.74 | 64 / 9.4 / 0.57 | 13 / 1.6 / 0.92 | 646 / 227 / 0.07 |
+| 16000 | 3 / 1.2 / 0.97 | 5 / 1.3 / 0.95 | 2 / 1.0 / 1.00 | 574 / 216 / 0.07 |
+| 143000 | 13 / 2.2 / 0.89 | 3 / 1.1 / 0.98 | 2 / 1.1 / 0.97 | 551 / 201 / 0.07 |
+
+So a few to tens of wells at 64–8000, and from 16000 one well holding 89–100 % of targets with a
+handful of side wells. The merge tolerance changes the count in 148 of 10,368 long cells (at 1e-4
+or 1e-2), more than at 3.5 (0). **c3x purity on v1 (beside; the rule fixed no sign rule for it):**
+over trained cells with c3x groups and `k2 ≥ 2` (655), R0's c3x groups sit in one well more than
+under permuted well labels: median excess +0.09 / +0.12 / +0.11 (L1–8 / L9–16 / L17–23), and
+`p ≤ 0.05` in 59–69 % of cells. Step 0 has no c3x groups, so there is no init comparison. T1–T3
+beside: lumpier 54 / 54; wells read *fewer* than the Gaussian at 2000–8000 (the repeats co-locate).
+
+### U3 at β 10 (long passages, L4 / 12 / 20, β 10)
+
+Label (5), `Xp = log(1 + P) − mean_draws log(1 + P_G)`, `P` the cell's summed persistence:
+
+| step | L1–8 (L4) | L9–16 (L12) | L17–23 (L20) |
+|---|---|---|---|
+| 0 | deeper +3.41 | deeper +1.55 | mixed +0.45 |
+| 2–32 | deeper | deeper at 2–4, then mixed | mixed |
+| 64–1000 | deeper (leans at 128) | deeper (leans at 512) | **deeper** |
+| 2000–4000 | deeper | mixed | **deeper** |
+| 8000 | deeper | deeper | leans deeper |
+| 16000–54000 | mixed (≈ 0) | mixed / leans | mixed (≈ 0) |
+| 143000 | leans deeper | mixed | mixed (0.00) |
+
+Trained cells: deeper 28, leans 5, mixed 21, **shallower 0** (chance 0.42 / 3.4). L4 and L12
+carry "deeper" at step 0, so those are not called learned. **L20's at 64–8000 is not carried by
+step 0, so it is learned.** It goes again from 16000, where the Gaussians and mostly the data too
+have one well (`P` ≈ 0 both sides). Medians: `P` 29 / 4 / 0.7 nats at step 0 (L4 / 12 / 20), up to
+113 at L4 and 81 at L12 at 128–2000, and 0–4 at 143000; the deepest single death (`p_max`) is
+1.2–2.8 nats where a cell has deaths. **`Xp` follows `Xw`**: per (trained step, passage, layer)
+cell, Spearman 0.86 and the same sign in 98.5 % of 408 cells. A deeper landscape here is mostly
+more wells, each 1–3 nats deep, not a few deep ones.
+
+**NEB (beside):** 1,943 bands, 1,888 converged. The band's pass sits above the graph's by a median
+of +0.74 nats (quartiles +0.03, +1.59), so the graph's persistences are upper bounds by about that
+much. The Gaussians' trees are graph-only, so `Xp` compares like with like; the size of the bias in
+each is not measured. 156 bands (8 %) ended below the graph's pass (to −4.8): those are worse
+lower bounds, not passes. **Crests:** the token classes at saddle edges show no consistent
+enrichment against all targets (median ratios 0.2–1.5 by class and step group, noisy at few
+deaths). Not read further.
+
+### (c) U1 in the cloud-centred frame (`unit(u_i − ū)`; long passages, T1 + T2; labels at β 3.5)
+
+| label (trained cells of 54) | β 1.6 | β 3.5 | β 5.6 | step 0 (β 3.5) |
+|---|---|---|---|---|
+| (1) lumpier | 48 + 2 leans | 53 + 1 lean | 54 | lumpier in every band (+0.27–0.29) |
+| (2) more wells than its Gaussian | (not read) | **50 + 4 leans** | — | more in every band (+1.45–1.56) |
+| (3) density and position | mixed 52 | mixed 52 | mixed 53 | mixed |
+| (4) what the wells are | — | **content 53**, mixed 1 | — | content in every band |
+
+**Every label is carried by step 0, so none is called learned.** The wells (median over passages):
+
+| step | L1–8 `k` / `k_eff` / largest | L9–16 | L17–23 | L0 |
+|---|---|---|---|---|
+| 0 | 17 / 9.0 / 0.25 | 16 / 8.5 / 0.24 | 15 / 8.4 / 0.26 | 20 / 10.3 / 0.22 |
+| 128 | 9 / 5.1 / 0.46 | 3 / 2.8 / 0.48 | 3 / 2.6 / 0.49 | same |
+| 1000 | 9 / 5.8 / 0.37 | 4 / 3.3 / 0.40 | 3 / 2.9 / 0.45 | same |
+| 8000 | 4 / 3.1 / 0.45 | 4 / 3.5 / 0.41 | 4 / 3.3 / 0.43 | 18 / 9.7 / 0.24 |
+| 143000 | 3 / 2.5 / 0.52 | 3 / 2.6 / 0.54 | 2 / 1.9 / 0.69 | 6 / 3.6 / 0.55 |
+
+So with the cloud's mean removed, the field at the measured β has **a few wells (2–4 by 143000)**,
+which is the probe's "2–4 wells". It has more at init (15–17, `k_eff` ≈ 8.5), and training reduces
+them. Their excess over the matched Gaussian (`Xw`) also shrinks, from +1.5 at init to +0.1–0.4 at
+143000, while staying positive. AMI against token class is 0.10–0.15 at init and 0.16–0.35 in
+training, except L17–23 at 143000 (0.04, the one "mixed"), with position ≈ 0 throughout. The merge tolerance changes 4 of 10,368 long cells. **c3x
+purity on v1 (beside; no sign rule):** R0's c3x groups sit in one well well above the permuted
+labels, median excess +0.34 / +0.38 / +0.35 (L1–8 / L9–16 / L17–23) and `p ≤ 0.05` in 90–93 % of
+1,477 cells. *Caveat:* c3x groups and these wells both partition the same rows by proximity, so
+purity above a permutation is partly expected for any two such partitions. It says the two agree,
+not that the well is the better unit. β is not measured in this frame (3.5 carried over), and M6
+holds: mean shift from the targets stays in their span and does not see the frame's flat floor.
+
+**Reading.** Read beside (a), both choices find wells, and neither finds learned ones. At β 10
+(placed, 1.8× the measured interval's top), β's frame has tens of wells early in training and a
+dominant well with side wells late. In the centred frame at the measured β there are a few wells,
+2–4 by the end of training. In both, the wells exist at init, sort by content at init, and
+outnumber the matched Gaussian's at init. What training changes is how many there are: the
+centred frame goes from ~17 to 2–4, and β 10 peaks at 128–2000 before collapsing to one dominant
+well from 16000. It also adds depth between wells in the last layers at 64–8000 (U3, L20), gone by
+16000. For Phase 10 (Blocked 27): in the centred frame c3x groups agree with the wells (purity
++0.35), and that agreement is the one sign here that a well and a c3x group pick out the same
+tokens. Whether it is more than two proximity partitions agreeing is not read.
+
+**How to re-run.** From a checkout whose `p1e_energy_field` tree is `752d284` (`2608db3`, or
+`../Mets-u3`): each output's `run.sh` (resumes; it `cd`s to `../Mets-u3`), then
+`python -m p1e_energy_field.u1_audit --out <dir>` (resumes) and `... u1_field report` /
+`... u3_saddles report --out <dir>`. `data/p1e/audit.sh <dir>` runs the audit. **(c′) is still
+running** (`u1_rawcentred_2026-10-08/run.log`; then `audit.sh u1_rawcentred_2026-10-08`, chained);
+when it ends: audit ≥ 0.999 in every cell, then its report, then a short section here. Do not
+commit to `p1e_energy_field` in `../Mets-u3` until then (a resume and the audit refuse a new tree).
+
+**Parked** (why / cost / decision it could change):
+- Whether c3x purity in the centred frame beats any proximity partition / free, a k-means or
+  random-ball partition of the same `k` as the null in place of permuted labels / whether the
+  centred well is a candidate unit for Phase 10 (Blocked 27).
+- (a)'s β 1.6 / 5.6 wells and β 20–100 sweep, not audited / ~1 h, an audit flag / (a)'s beside
+  numbers only (its labels are at 3.5, audited clean).
+- The NEB bands that end below the graph / free, from the records / whether 24 images are too few
+  where a pass crosses a token's bump.
 
 ## Corrections received
 
@@ -675,3 +797,8 @@ the GPU chain oversubscribed the CPU (load ~80 on 16 cores) and slowed (b) sever
   ascent at 64–128 beside L9–16 from 4000 and L1–8 from 16000 (card, heading, `STATE.md`); #161's
   "most heads still descend their own" is "more heads descend than ascend" (a majority in 2 of
   13 windows); #164's R² range is read at all 18 steps (0.65–1.00, except L1–8 at 64–256).
+- 2026-10-09 (this PR; `design-1e.md` "U1 beside", amendment of 2026-10-08): U1's well finder
+  merged rows by a float32 dot whose error reaches its tolerance (fixed, `2608db3`). #164 / #165's
+  U1 at β 3.5 is audited clean (810 cells, 0 differ). Its β 10 sweep loses 1–7 wells in 10 of 432
+  cells with more than 20, and no quoted count changes. Its β 1.6 / 5.6 wells and β 20–100 sweep were
+  not audited ("Blocked 30 (b) and (c)").

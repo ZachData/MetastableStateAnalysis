@@ -300,3 +300,10 @@ running median of the rows above it gets a line under the table saying why.
   ~165k average); `STATE.md` is ~44 KB and was read twice at start (the hook printed the main
   tree's stale copy, 49 merges behind); an 85-min batch, restarted once after a rule amendment;
   and the post-PR fix (tolerance keys). Row taken before `/challenge-pr`.
+| 2026-10-09 | 1e Blocked 30 (b)/(c), U3 at β 10, U1 merge defect | 258 | 306k | 43.9M | 112k | this PR |
+
+  Over 2× the running median: one session ran this unit and #166 (the user asked for all three
+  at once), so the transcript's 43.9M **includes #166's 18.7M row** (this unit's part is ~25M).
+  Peak context 306k carried every call after the compaction; runs of 3–12 h were watched across
+  turns; and two refusals led to a defect fix, an audit tool and four reruns. Row taken before
+  `/challenge-pr`.

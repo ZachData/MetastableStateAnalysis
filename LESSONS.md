@@ -366,6 +366,26 @@ well-formed but empty/zero result. It looks exactly like a real result.
   `p7e` or `p8`, and `pyproject.toml` did not declare `p1d_cluster_ensemble`.
   Both lists are now checked against the directories with an `__init__.py`
   (rule `pyproject-packages`). A lint's scope is an input too.
+- 2026-10-08, 1e U1 (#165, Blocked 30 (b)/(c)): U1's GPU phase merged rows
+  within 1e-6 using a float32 dot, but a CUDA float32 dot of 1024-d unit rows
+  is only good to about 1e-6. So a row near a ridge could join another
+  basin. The first-cell check against CPU float64 passed on (a) and (b)
+  because step 143000 has few wells. (b) at step 2000 had 185 wells where
+  float64 has 189. It surfaced only when (c)'s check fell to 0.9984 and U3
+  refused on a negative persistence. Rules: a tolerance must sit well above
+  the precision it is compared at; a check against a reference runs on the
+  hardest cell too (most wells), not only the first; and a cheap full audit
+  (`u1_audit`, ~9 s a record) beats a one-cell gate. (a) is audited after
+  the fact.
+- 2026-10-08, 1e U1 → U3: U1's well labels can skip an id (merged rows
+  leave a mode with no row). U1's counts never noticed; U3's merge tree
+  read the skipped id as a well no edge could join and looped to its
+  bridge cap. A label array consumed downstream is made contiguous, or the
+  consumer checks it is.
+- 2026-10-08, 1e and 10 in one session: R1's ladder ran with default BLAS
+  threads (16) beside a GPU job whose float64 finish was also on the CPU,
+  and the load reached ~80 on 16 cores. Both slowed down. Concurrent jobs
+  set `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS` explicitly.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
