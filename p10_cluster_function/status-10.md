@@ -44,7 +44,7 @@
   - R9 / R6w, the drift-within-lineages split re-run with c3x as a column, c3, c2a and c0 reproducing R6w's record exactly. By the rule fixed before the run the headline changes in 1 of its 14 cells, at the floor: adjacency on R1's records, +0.050 → +0.060, its persisting groups' rise opposed by replacement on both columns, as on c3. What R6w quoted holds: the embedding drifts are carried by the persisting groups, not by replacement (on R1's records, 512 → 143000, layer mean, class beyond a lexical cluster −0.123, within −0.123; own-embedding similarity +0.185, within +0.165; within-class embedding similarity +0.150, within +0.115; each within 0.012 of c3), and `same_class` does not drift. 12 of 77 labels change in all, 9 of them on single layers R6w did not read; there is no reference for how many a random drop would move — `p10_cluster_function/status-10.md` §1.31
   - R9 / R6f, the members-against-frame split re-run with c3x as a column, c3, c2a and c0 reproducing R6f's record exactly, with a random-drop reference (100 draws dropping c3x's number of groups at random). The headline is unchanged: all 6 row labels read frame on both columns, and no random drop moves one. 6 of 60 per-passage labels change, within what random drops do (median 7, 95th percentile 10). Three of them come from records c3x empties, which every draw must empty too, so the reference cannot judge them; the other three are within the draws. Embedding similarity still reads as the embedding moving under the groups; class beyond a lexical cluster stays undecided per passage — `p10_cluster_function/status-10.md` §1.32
   - R9 / R7, the context-shuffle labels with c3x as a column, filtered exactly from R7's stored per-group records (no pass), c3 and c2 reproducing R7's record exactly, with the random-drop reference matched per (step, passage). The step labels are unchanged at every step (mixed on the own floor, context at 256; context on the fixed bar). 7 of 144 band and per-passage labels change, all toward context on the own floor, within what random drops do but at their 95th percentile (rank p 0.08). c3x is not a random drop: 98.5 % of what it drops has its own floor below chance, though that is only 14 % of such groups, chosen without regard to their label. So the own floor's token-alone share is 0.006–0.035 lower and the fixed bar's higher at 11 of 12 steps: c3x narrows the gap between the bars without moving a step label. Among groups whose floor clears chance it reads as c3 — `p10_cluster_function/status-10.md` §1.33
-  - E1, energy against c3x's groups (one GPU pass per (step, passage), 1e U2's frame, each group's own-member field against 200 size-matched draws of other kept tokens). From step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23, in every passage at 4000–54000 and in L9–16 at 143000, β-robust. It does so also against the members' nearest non-members, so the pull follows membership, not only nearness. Where 1e's attention descends the whole field (L17–23 at 32000–54000), attention by the rule holds the groups against the rest. At 256–512 in L9–16 (and 512 in L17–23, 1000 in L1–8) attention pushes members apart while the MLP pulls them together. The MLP pulls groups together through 2000 everywhere and in L1–8 throughout, and pushes them apart in L9–16 from 8000, where attention pulls. Init carries none of it. Small: the median group's `X` is 0.03–0.05 of a cosine — `p10_cluster_function/status-10.md` §1.34
+  - E1, energy against c3x's groups (one GPU pass per (step, passage), 1e U2's frame, each group's own-member field against 200 size-matched draws of other kept tokens). From step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23, in every passage at 4000–54000 and in L9–16 at 143000, β-robust. Whether it follows membership or only nearness is not separated (its nearness control cannot tell them apart; corrected after `/challenge-pr` on #176). Where 1e's attention descends the whole field (L17–23 at 32000–54000), attention by the rule holds the groups against the rest. At 256–512 in L9–16 (and 512 in L17–23, 1000 in L1–8) attention pushes members apart while the MLP pulls them together. The MLP pulls groups together through 2000 everywhere and in L1–8 throughout, and leans towards pushing them apart in L9–16 from 8000, where attention pulls. Init carries none of it. Small: the median group's `X` is 0.03–0.05 of a cosine — `p10_cluster_function/status-10.md` §1.34
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -72,7 +72,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `b65b62d39e`
+- **Reviewed:** 2026-10-09 · body `d2533b02c5`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2698,7 +2698,7 @@ data/p10/reread_r7_2026-10-06/r7.json --reproduce-labels data/p10/reread_r0_2026
 that the pooled match can move drops between layers, the seed, check (r1)'s labels, cells
 counted one-sided and the headline, the 95th-percentile reading, `read_step` as `read_rows`).
 
-### 1.34 E1, energy against c3x's groups — **from step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23 (every passage, 4000–54000, and at 143000 in L9–16; β-robust; also against the members' nearest non-members), and at 256–512 in L9–16 (and 512 in L17–23) it pushes them apart, while the MLP's pulls them together. Init carries none of it (c2's step 0 mixed in every band). Small: the median group's `X` is 0.03–0.05 of a cosine**
+### 1.34 E1, energy against c3x's groups — **from step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23 (every passage, 4000–54000, and at 143000 in L9–16; β-robust), and at 256–512 in L9–16 (and 512 in L17–23) it pushes them apart, while the MLP's pulls them together. Init carries none of it (c2's step 0 mixed in every band). Whether the late pull is towards the group or only towards near tokens is not separated (members are nearer each other than any comparator E1 used). Small: the median group's `X` is 0.03–0.05 of a cosine** *(Corrected after `/challenge-pr` on #176, finding 1: the first title said the pull holds against the members' nearest non-members, so membership, not only nearness; a pull towards near tokens gives that too.)*
 
 **What ran** (`design-10.md` "E1", rule `fb4dee1` before any pass; the draws' seeding `c64b7a8`
 and the block-23 check `8094f44`, a departure at the gate, both before any reading).
@@ -2746,7 +2746,10 @@ pushes apart / leans, . mixed, – too few; every one β-robust at 1.6 and 5.6 b
 | median `|X_g|` | 0.029–0.047 | 0.035–0.044 | 0.041–0.042 |
 
 Chance (no effect, passages independent): 0.75 full labels either way over the 33 primary cells
-read; observed 17 (13 pulls, 4 pushes). `keys:r1out` (attention without the sink and biases)
+read; observed 17 (13 pulls, 4 pushes). *It assumes each passage's sign is a fair coin and the
+cells independent; neither holds (a pull towards near tokens makes > 0 the expected sign, and
+adjacent steps and bands share weights), so it bounds nothing (`/challenge-pr` on #176, finding
+3).* `keys:r1out` (attention without the sink and biases)
 gives the same labels but two cells, each by a lean (13 / 4); block L−1 (arrival) the same late
 windows (13 / 3), but in L1–8 its push at 1000 is mixed. Steps 0–32: c3x is
 too few in every band but L1–8 at 32 (leans pushes); **c2's step 0 is mixed in all three bands**
@@ -2758,18 +2761,28 @@ where c3x is too few).
 **Readings, by the rule's fixed sentences:**
 - **L17–23 at 32000–54000: attention holds the group against the rest.** It pulls the members
   together where 1e's attention descends the whole field. L9–16 at 32000–54000 is the same with
-  1e at *leans* descends, which the rule's sentence does not name (said, not counted).
+  1e at *leans* descends, which the rule's sentence does not name (said, not counted). **The two
+  fields differ in kind** (`/challenge-pr` on #176, finding 2): E1's group field is full, 1e's
+  label is causal and 1e has no full-field attention row; c3x groups sit closer together in the
+  passage than random sets (0.57–0.76× their position spread, the reviewer's count), so the two
+  can differ systematically. This reading carries that mismatch.
 - **4000–16000 in L9–23 and L9–16 at 143000:** the rule fixed no reading where 1e is mixed or
   ascends weakly. What can be said: attention pulls members together more than towards as many
-  random kept tokens, and more than towards the members' nearest non-members (`X_knn`, same
-  labels), so it is **membership, not only nearness**.
+  random kept tokens, and more than towards the |g| non-members nearest the group's mean
+  (`X_knn`, the same labels). **That does not separate membership from nearness**
+  (`/challenge-pr` on #176, finding 1): members are nearer each other than those non-members in
+  95–98 % of c3x groups (the reviewer's check at 512, 8000 and 32000), and on planted clusters a
+  move that pulls towards near tokens and ignores groups gives `X_knn` > 0 in 94–100 % of groups.
+  The rule's sentence reads only `X_knn` ≤ 0 (nearness); `X_knn` > 0 was never a test of
+  membership. So the late result is: **attention's token-specific move pulls towards near
+  tokens, the members among them.** A label-blind comparator is Parked (`handoff-10.md` "E1").
 - **256–512 in L9–16, 512 in L17–23, 1000 in L1–8: attention's token-specific move does not
   hold the group.** It pushes members apart, where 1e's move descends the field (L17–23 at 512:
   1e *leans* descends). The MLP's
   move pulls them together in the same cells, and so does the block's. In this window **the MLP holds
   the groups, against attention**.
 - **The hand-over.** The MLP pulls groups together (or leans) at 64–2000 wherever read. From 8000 in L9–16
-  it pushes them apart (x / X) while attention pulls, and the block goes mixed there at
+  it leans pushes (one full push, at 32000) while attention pulls, and the block goes mixed there at
   32000–54000. In L1–8 attention never pulls after 128, and the MLP does throughout. This is the
   shape of 1e's Blocked 29 split (the MLP's shared ascent to 1000, attention's mean pull after
   2000; `status-1e.md` "U2's per-head arm"), here on the groups.

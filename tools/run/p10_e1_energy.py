@@ -392,7 +392,13 @@ def group_shares(recs: Dict, step: int, band: str, column: str, kind: str, read:
     xs, ps, ks, cs = map(np.asarray, (xs, ps, ks, cs))
     return {"n": int(xs.size), "share_pos": float((xs > 0).mean()), "share_p05": float((ps <= 0.05).mean()),
             "median_abs_X": float(np.median(np.abs(xs))), "median_X": float(np.median(xs)),
-            "share_knn_pos": float(np.nanmean(ks > 0)), "share_coh_pos": float(np.nanmean(cs > 0))}
+            "share_knn_pos": finite_share_pos(ks), "share_coh_pos": finite_share_pos(cs)}
+
+
+def finite_share_pos(v: np.ndarray) -> float:
+    """The share > 0 among finite values (a NaN is left out, not counted as ≤ 0)."""
+    v = v[np.isfinite(v)]
+    return float((v > 0).mean()) if v.size else float("nan")
 
 
 def load_records(out: Path) -> Dict:
@@ -417,6 +423,10 @@ def report(a) -> int:
     if len(codes) != 1:
         raise SystemExit(f"refusing: records from {len(codes)} producers {sorted(codes)}")
     steps = sorted({s for s, _ in recs})
+    missing = [(s, p) for s in steps for p in PASSAGES if (s, p) not in recs]
+    if missing:
+        raise SystemExit(f"refusing: {len(missing)} (step, passage) records missing, e.g. {missing[:3]}; "
+                         "a missing passage would be read as unreadable")
     l1e = labels_1e(a.u2_attn)
     res: Dict = {"code": codes.pop(), "steps": steps, "rows": {}, "shares": {}, "chance": {}}
     rows = [(k, f"{c}:{r}", b, f) for k in BLOCKS for c, r in READS for b in BETAS for f in ("X",)]

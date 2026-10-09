@@ -208,13 +208,24 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > `data/p10/e1_energy_2026-10-09/` (one GPU pass per (step, passage), ~15 min, no refusal).
 > One departure at the gate: block 23 checked through `final_layer_norm` (`8094f44`). Answer:
 > **attention's token-specific move pulls c3x's members together in L9–23 from 4000** (every
-> passage; also against the nearest non-members), and holds them against the rest by the rule
-> where 1e's attention descends (L17–23 at 32000–54000). **At 256–512 in L9–16 it pushes them
-> apart and the MLP pulls them together**; the MLP leads to 2000 and in L1–8, then pushes in
+> passage), and holds them against the rest by the rule where 1e's attention descends (L17–23
+> at 32000–54000; full field against 1e's causal, finding 2). **At 256–512 in L9–16 it pushes them
+> apart and the MLP pulls them together**; the MLP leads to 2000 and in L1–8, then leans pushes in
 > L9–16 from 8000. Init: none (c2's step 0 mixed). Small (median `|X|` 0.03–0.05).
-> **Next, for the user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or the all-attractive OV
-> intervention (Parked below; E1 now says where attention's pull on the groups is, 4000 on in
-> L9–23, and where it pushes, 256–512, so the cut has a predicted sign per window).
+> `/challenge-pr` on #176: accept with changes. Finding 1 taken: `X_knn` > 0 does not show
+> membership beyond nearness (members are nearer each other than the nearest non-members in 95–98
+> % of groups), so the late pull is "towards near tokens, the members among them"; findings 3–5
+> taken (chance line's assumption, two report fixes, wording); 2 stated, its row needs a run.
+> **Next, for the user:** `STATE.md` Blocked 31 (E1's re-run: a label-blind comparator and a
+> causal row), or Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or the all-attractive OV
+> intervention (Parked below; E1 gives the cut a predicted sign per window: attention pulls from
+> 4000 in L9–23, pushes at 256–512).
+> *Parked (E1, finding 1):* **membership against nearness.** A label-blind comparator: per
+> member, draws of non-members matched to its distances to its fellow members (or groups
+> re-drawn by a label-blind clustering of the same cloud), so a pull towards near tokens scores
+> 0. Why: the one claim E1 could not make. Cost: a re-run (~15 min GPU) with the comparator and
+> a causal-field row (finding 2). Could change: whether attention knows the groups or only
+> nearness. Blocked 31.
 > *Parked (E1):* **coherence against nearness-matched draws.** Members' moves are parallel
 > beyond random sets in 28–33 of 33 cells, but the draws are not matched for nearness, so a
 > shared tag (`lit-10.md` §18 row 1) and proximity are not separated. Cost: the stored records

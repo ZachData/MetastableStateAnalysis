@@ -142,3 +142,17 @@ def test_sign_rule():
     assert e.sign_label([-1, -2, -3, -4, -5, -6]) == "pushes apart"
     assert e.sign_label([1, 2, 3, 4, 5, float("nan"), float("nan")]) == "too few"
     assert e.sign_label([1, 2, 3, -4, -5, 6, 7]) == "mixed"
+
+
+def test_finite_share_leaves_nan_out():
+    assert e.finite_share_pos(np.array([1.0, -1.0, np.nan])) == 0.5
+    assert np.isnan(e.finite_share_pos(np.array([np.nan])))
+
+
+def test_report_refuses_a_missing_passage(tmp_path):
+    (tmp_path / "records").mkdir()
+    import json
+    rec = {"step": 512, "passage": "wiki_paragraph", "code": "x", "groups": []}
+    (tmp_path / "records" / "step512_wiki_paragraph.json").write_text(json.dumps(rec))
+    with pytest.raises(SystemExit, match="missing"):
+        e.main(["report", "--out", str(tmp_path)])
