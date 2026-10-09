@@ -21,8 +21,9 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from .u1_field import (CHECK_LAYERS, FIRST, N_DRAW, SEED, agreement, code_sha, default_opts,
-                       frame_rows, gaussian_draw, load_ln1, mean_shift, plan, well_stats)
+from .u1_field import (AGREE_MIN, CHECK_LAYERS, FIRST, N_DRAW, SEED, agreement, code_sha,
+                       default_opts, frame_rows, gaussian_draw, load_ln1, mean_shift, plan,
+                       well_stats)
 
 
 def audit_record(job, out: Path, opts, device: str) -> list:
@@ -77,6 +78,30 @@ def summary(rows: list) -> dict:
             "first_cell_draws_fixed": [x for r in rows for x in r.get("agree_fixed_G", [])]}
 
 
+def audit_passes(out: Path) -> dict:
+    """
+    Refuse unless ``out``'s audit covers every record and every cell is at ≥ ``AGREE_MIN`` (the
+    gate the reports read behind; `/challenge-pr` on #167, finding 4). Returns its summary.
+    """
+    dest = out / "audit.json"
+    if not dest.exists():
+        raise SystemExit(f"refusing: {out} has no audit.json; run `python -m "
+                         f"p1e_energy_field.u1_audit --out {out}` first")
+    done = json.loads(dest.read_text())
+    have = {(r["kind"], r["step"], r["passage"]) for r in done["rows"]}
+    want = set()
+    for kind in ("long", "v1"):
+        for f in (out / "records" / kind).glob("*.json"):
+            step, passage = f.stem[len("step"):].split("_", 1)
+            want.add((kind, step, passage))
+    if want - have:
+        raise SystemExit(f"refusing: {dest} misses {len(want - have)} of {len(want)} records")
+    below = [r for r in done["rows"] if r["agree_stored"] < AGREE_MIN]
+    if below:
+        raise SystemExit(f"refusing: {len(below)} audited cells below {AGREE_MIN} in {dest}")
+    return done["summary"]
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--out", type=Path, required=True, help="a finished U1 output dir")
@@ -104,6 +129,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         tmp.rename(dest)
         print(f"audited {j[0]} step{j[1]}_{j[2]}", flush=True)
     print(json.dumps(done.get("summary"), indent=1))
+    if any(r["agree_stored"] < AGREE_MIN for r in done["rows"]):
+        print(f"refusing: cells below {AGREE_MIN}; this run is not read", flush=True)
+        return 1
     return 0
 
 

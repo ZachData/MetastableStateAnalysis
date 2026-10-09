@@ -860,6 +860,14 @@ needs the user to enable it on GitHub.
   scores a structureless cloud `Xe` up to +0.10 in trained cells, half the late raw value; the
   previous instance's rule (a specificity test) was not applied to the new null. Rule unchanged,
   applied: a structureless cloud reading ≈ 0 is now a test.
+- 2026-10-09, 1e (b) and U3 at β 10 (`/challenge-pr` on #167, findings 1–2): `Xw` and `Xp` subtract
+  a matched Gaussian's log well count or log persistence, which is 0 wherever the Gaussian has one
+  well. That held in 2,504 of 3,128 and 336 of 408 cells, so "fewer" or "shallower" was nearly
+  impossible, and the first write-up read "shallower in none" as a finding. The step-0 rule compares
+  signs, so a stage that doubles a value already positive at init reads "not learned", while L20
+  read "learned" only because half its passages sat at the floor at init. Rules: **count the cells
+  where the null sits at its floor before reading a signed difference against it; and where step
+  0 carries a sign, read the paired difference to init beside the label.**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record

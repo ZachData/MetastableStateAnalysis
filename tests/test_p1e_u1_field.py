@@ -138,6 +138,29 @@ def test_report_sign_rule_and_not_read():
         rep.labels(vals, "Xe", 8)
 
 
+def test_reports_read_only_behind_a_passing_audit(tmp_path):
+    """`/challenge-pr` on #167, finding 4: no audit, a missed record or a cell below the gate refuses."""
+    import json
+    from p1e_energy_field.u1_audit import audit_passes
+    (tmp_path / "records" / "long").mkdir(parents=True)
+    for s in ("0", "143000"):
+        (tmp_path / "records" / "long" / f"step{s}_hamlet_long.json").write_text("{}")
+    with pytest.raises(SystemExit, match="no audit.json"):
+        audit_passes(tmp_path)
+    row = {"kind": "long", "step": "0", "passage": "hamlet_long", "agree_stored": 1.0}
+    audit = {"rows": [row], "summary": {"cells": 1}}
+    (tmp_path / "audit.json").write_text(json.dumps(audit))
+    with pytest.raises(SystemExit, match="misses 1 of 2"):
+        audit_passes(tmp_path)
+    audit["rows"].append({**row, "step": "143000", "agree_stored": 0.998})
+    (tmp_path / "audit.json").write_text(json.dumps(audit))
+    with pytest.raises(SystemExit, match="1 audited cells below"):
+        audit_passes(tmp_path)
+    audit["rows"][1]["agree_stored"] = 0.999
+    (tmp_path / "audit.json").write_text(json.dumps(audit))
+    assert audit_passes(tmp_path) == {"cells": 1}
+
+
 @pytest.mark.parametrize("spec", [(6, 3), (20, 1)])
 def test_calibrated_lumpiness_is_zero_on_a_structureless_cloud(spec):
     """(1′), `/challenge-pr` on #164 finding 2: the bias predicts the score of a cloud with no

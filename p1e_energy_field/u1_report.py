@@ -174,6 +174,8 @@ def print_table(res: Dict, key: str, title: str) -> None:
 
 
 def report(out: Path) -> int:
+    from .u1_audit import audit_passes
+    audit_passes(out)                        # read only behind a passing audit (design-1e.md)
     full = {}
     opts = run_opts(out)
     BETAS, pb = tuple(opts["betas"]), opts["primary_beta"]

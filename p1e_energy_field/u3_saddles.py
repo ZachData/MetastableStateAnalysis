@@ -376,6 +376,8 @@ def run(a) -> int:
 
 def report(out: Path) -> int:
     from .extract_long8 import STEPS
+    from .u1_audit import audit_passes
+    audit_passes(Path(json.loads((out / "plan.json").read_text())["wells"]))   # (b)'s audit gates U3
     from .u1_report import TRAINED, sign_label
     from .u2_report import chance
     full = {}
