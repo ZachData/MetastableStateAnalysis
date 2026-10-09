@@ -11,6 +11,12 @@ checks gate the output: R1's per-record values reproduce, the terms sum to the t
 stable links leave the composition lifts unchanged, and the matcher's stable counts are R6's.
 Tier 1: exploratory, unregistered, descriptive. Run (METS_DATA set, default BLAS threads as R1):
     python tools/run/p10_r6w_drift.py --labels <R0 labels> --r1 <R1 dir> --r6 <r6.json> --out <file>
+        [--lead c3x --reproduce <R6w r6w.json> --reproduce-labels <R0 labels>]
+
+``--lead c3x`` (R9 / R6w, `design-10.md` "R9 / R6w"): c3x joins the columns (births and deaths by
+c2a's fate, as c3), and ``c3x_vs_c3`` lists the cells whose label differs from c3's, the headline's
+14 (layer mean, primary span, both record sets) apart. ``--reproduce``: refuse unless c3, c2a and
+c0 equal that R6w run's (`p10_r9_lead`), and unless the run it names read ``--reproduce-labels``.
 """
 import argparse
 import hashlib
@@ -28,7 +34,11 @@ sys.path.insert(0, str(REPO))
 
 import numpy as np
 
+from tools.run import p10_r9_lead as lead_args
+
 COLUMNS = ("c3", "c2a", "c0")                 # c3 primary; c2a (no filter), c0 (published) beside
+FLIP_COLUMNS = ("c3", "c3x")                  # their ids are c2a's: births and deaths by c2a's fate
+RECORD_SETS = ("levels", "levels_r1_set")     # the rule's fixed records; R1's own beside
 SPANS = {"512-143000": (512, 143000), "64-512": (64, 512)}
 PRIMARY_SPAN = "512-143000"
 COMPOSITION = ("same_class", "copy_share", "no_copy", "adjacent")
@@ -313,7 +323,11 @@ def _md5(path: Path) -> str:
     return hashlib.md5(path.read_bytes()).hexdigest()[:8]
 
 
-def setup(labels: Path, r6: dict, spans: dict) -> tuple:
+def columns_of(lead: str) -> tuple:
+    return COLUMNS + (("c3x",) if lead == "c3x" else ())
+
+
+def setup(labels: Path, r6: dict, spans: dict, columns=COLUMNS) -> tuple:
     """
     Steps per span, each column's readable records and runs at those steps, and every record's
     link kinds and stable links per adjacent boundary; ``check_d`` sets the stable counts beside
@@ -321,31 +335,96 @@ def setup(labels: Path, r6: dict, spans: dict) -> tuple:
     """
     from tools.run.p10_label_source import reader_input
     from tools.run.p10_r6_matcher import link, load
-    full, axis = load(labels, columns=COLUMNS)           # every record, domain labels (R6's input)
+    full, axis = load(labels, columns=columns)           # every record, domain labels (R6's input)
     sel = {name: [s for s in axis if a <= s <= b] for name, (a, b) in spans.items()}
     steps_needed = sorted({s for v in sel.values() for s in v})
     readable, runs = {}, {}
-    for c in COLUMNS:
+    for c in columns:
         src = reader_input(labels, c)
         readable[c] = {k: v for k, v in src["labels"].items() if k[0] in steps_needed}
         runs.update({k: v for k, v in src["runs"].items() if k[0] in steps_needed})
 
-    link_kinds, stable_links, check_d = {c: {} for c in COLUMNS}, {c: {} for c in COLUMNS}, []
+    link_kinds, stable_links, check_d = {c: {} for c in columns}, {c: {} for c in columns}, []
     bidx = {(b["from"], b["to"]): b for b in r6["boundaries"]}
     for s, t in zip(steps_needed, steps_needed[1:]):
         if axis.index(t) != axis.index(s) + 1:
             continue
-        for c in COLUMNS:
+        for c in columns:
             n_stable = 0
             for key, by_col in full.items():
                 L = link(by_col[c][s], by_col[c][t])
-                ref = link(by_col["c2a"][s], by_col["c2a"][t]) if c == "c3" else None
+                ref = link(by_col["c2a"][s], by_col["c2a"][t]) if c in FLIP_COLUMNS else None
                 link_kinds[c][(key, s, t)] = kinds(L, ref)
                 stable_links[c][(key, s, t)] = L["stable"]
                 n_stable += L["counts"]["stable"]
             check_d.append({"column": c, "from": s, "to": t, "ours": n_stable,
                             "r6": bidx[(s, t)][c]["null"]["observed"]})
     return sel, readable, runs, link_kinds, stable_links, check_d
+
+
+# ---------------------------------------------------------------- R9 / R6w: c3x beside c3
+
+def jsonable(x):
+    """The output as it is written and read back (keys strings, numpy scalars as floats)."""
+    return json.loads(json.dumps(x, default=float))
+
+
+def load_record(record: Path, labels: Path) -> dict:
+    """A stored R6w run, refused unless it read ``labels`` (its summary's sha256)."""
+    d = json.loads(Path(record).read_text())
+    sha = hashlib.sha256((Path(labels) / "summary.json").read_bytes()).hexdigest()
+    if d["meta"]["summary_sha256"] != sha:
+        raise lead_args.LadderError(f"refusing: {record} read a label source whose summary is "
+                                    f"{d['meta']['summary_sha256'][:8]}, not {labels}'s {sha[:8]}")
+    return d
+
+
+def reproduce(data: dict, other: dict) -> list:
+    """Every (column, span) ``other`` holds, compared with ``data``'s whole entry (levels on both
+    record sets, paired links, record counts). The differing keys."""
+    bad = []
+    for c in other["meta"]["columns"]:
+        for name, entry in other["columns"][c].items():
+            mine = data["columns"].get(c, {}).get(name)
+            if mine is None:
+                bad.append(f"{c}/{name}: missing")
+                continue
+            bad += [f"{c}/{name}/{k}" for k in entry if mine.get(k) != entry[k]]
+    return bad
+
+
+def headline(record_set: str, span: str, level: str) -> bool:
+    """§1.21's 14 cells: layer mean, the primary span, either record set."""
+    return record_set in RECORD_SETS and span == PRIMARY_SPAN and level == "mean"
+
+
+def compare(cols: dict, col: str = "c3x", ref: str = "c3") -> dict:
+    """
+    Every cell's label on ``col`` against ``ref`` (`design-10.md` "R9 / R6w"): the changed cells,
+    the cells not compared (a level with no records on either column), and on the headline's cells
+    each column's total, within and largest replacement beside.
+    """
+    changed, unread, n, rows = [], [], 0, []
+    for rs in RECORD_SETS:
+        for span in cols[ref]:
+            for level in map(str, LEVELS):
+                a, b = cols[ref][span][rs][level], cols[col][span][rs][level]
+                if a is None or b is None:
+                    unread.append({"set": rs, "span": span, "level": level,
+                                   "no_records": [c for c, x in ((ref, a), (col, b)) if x is None]})
+                    continue
+                for st in STATS:
+                    n += 1
+                    cell = {"set": rs, "span": span, "level": level, "stat": st,
+                            ref: a[st]["label"], col: b[st]["label"], "headline": headline(rs, span, level)}
+                    if a[st]["label"] != b[st]["label"]:
+                        changed.append(cell)
+                    if cell["headline"]:
+                        rows.append({**cell, **{f"{c}_{k}": x[st]["span"][k] if k != "largest" else x[st]["largest_replacement"]
+                                                for c, x in ((ref, a), (col, b)) for k in ("total", "within", "largest")}})
+    return {"n_compared": n, "changed": changed, "n_changed": len(changed),
+            "headline_changed": [c for c in changed if c["headline"]], "not_compared": unread,
+            "headline_cells": rows}
 
 
 def main(argv=None) -> int:
@@ -357,18 +436,21 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--hf-home", default=os.environ.get("HF_HOME", str(DATA / "hf")))
     ap.add_argument("--workers", type=int, default=8)
+    lead_args.add_args(ap, "R6w")
     args = ap.parse_args(argv)
+    lead_args.reproduce_inputs(args)  # refuse a half-given --reproduce before the run
+    cols = columns_of(args.lead)
     summary = args.labels / "summary.json"
     if not summary.exists():
         raise SystemExit(f"no {summary}: the input would be unnamed")
     tok_path = find_tokenizer(Path(args.hf_home))
     vocab, added = load_vocab(tok_path)
-    r1 = {c: {r: json.loads((args.r1 / f"{r}_{c}.json").read_text()) for r in ("cm", "lc")} for c in COLUMNS}
+    r1 = {c: {r: json.loads((args.r1 / f"{r}_{c}.json").read_text()) for r in ("cm", "lc")} for c in cols}
     r6 = json.loads(args.r6.read_text())
     span_steps = sorted({s for a, b in SPANS.values() for s in (a, b)})
 
     # links per (record, boundary) for every column; check (d) against R6
-    sel, readable, runs, link_kinds, stable_links, check_d = setup(args.labels, r6, SPANS)
+    sel, readable, runs, link_kinds, stable_links, check_d = setup(args.labels, r6, SPANS, cols)
     bad_d = [d for d in check_d if d["ours"] != d["r6"]]
     if bad_d:
         d = bad_d[0]
@@ -376,15 +458,20 @@ def main(argv=None) -> int:
               "refusing", file=sys.stderr)
         return 2
 
-    jobs = [(s, p, str(runs[(s, p)]), {c: readable[c].get((s, p), {}) for c in COLUMNS}, vocab, added)
+    jobs = [(s, p, str(runs[(s, p)]), {c: readable[c].get((s, p), {}) for c in cols}, vocab, added)
             for s, p in sorted(runs)]
     with ProcessPoolExecutor(args.workers) as ex:
         got = dict(ex.map(_job, jobs))
-    values = {c: {k: v[c] for k, v in got.items()} for c in COLUMNS}
+    values = {c: {k: v[c] for k, v in got.items()} for c in cols}
+    if args.lead == "c3x":  # the lead opened and checked populated before any span is read
+        n_first = len(span_records(readable["c3x"], values["c3x"], sel[PRIMARY_SPAN]))
+        if not n_first:
+            raise SystemExit(f"refusing: c3x has no record with a focal token at every step of {PRIMARY_SPAN}")
+        print(f"c3x over {PRIMARY_SPAN}: {n_first} records with a focal token at every step")
 
     # check (a): every per-record mean reproduces R1's stored record
     worst = 0.0
-    for c in COLUMNS:
+    for c in cols:
         for (s, p), layers in values[c].items():
             for L, rows in layers.items():
                 if not rows:
@@ -400,7 +487,7 @@ def main(argv=None) -> int:
     out = {"checks": {"a_r1_max_abs": worst, "a_tol": R1_TOL, "b_sum_tol": SUM_TOL, "d_r6_stable": check_d,
                       "e_r1_set_equals_r1_change_tol": SUM_TOL},
            "columns": {}}
-    for c in COLUMNS:
+    for c in cols:
         out["columns"][c] = {}
         for name, steps in sel.items():
             recs = span_records(readable[c], values[c], steps)
@@ -438,11 +525,17 @@ def main(argv=None) -> int:
                                        "records_per_level": {str(L): sum(1 for _, x in recs if x == L) for L in (12, 24)},
                                        "r1_set_records": {str(s): len(v) for s, v in own.items()},
                                        "paired_links": paired, "levels": res, "levels_r1_set": res_r1}
+    out = jsonable(out)
+    reproduces = lead_args.check_reproduces(args, out, load_record, reproduce, "levels, paired links, records")
+    if args.lead == "c3x":
+        out["c3x_vs_c3"] = compare(out["columns"])
     out["meta"] = {"labels": str(args.labels), "summary_sha256": hashlib.sha256(summary.read_bytes()).hexdigest(),
-                   "r1": {f"{r}_{c}.json": _md5(args.r1 / f"{r}_{c}.json") for c in COLUMNS for r in ("cm", "lc")},
+                   "lead": args.lead, "reproduces": reproduces,
+                   "floor_step0": lead_args.floor(json.loads(summary.read_text()), args.lead),
+                   "r1": {f"{r}_{c}.json": _md5(args.r1 / f"{r}_{c}.json") for c in cols for r in ("cm", "lc")},
                    "r6": {args.r6.name: _md5(args.r6)},
                    "tokenizer_sha256": hashlib.sha256(tok_path.read_bytes()).hexdigest()[:12],
-                   "columns": list(COLUMNS), "spans": SPANS, "stats": list(STATS), "levels": list(map(str, LEVELS)),
+                   "columns": list(cols), "spans": SPANS, "stats": list(STATS), "levels": list(map(str, LEVELS)),
                    "floor": FLOOR, "within_bounds": [WITHIN_LO, WITHIN_HI], "prompts": prompts,
                    "python": sys.version.split()[0], "numpy": np.__version__,
                    "omp_num_threads": os.environ.get("OMP_NUM_THREADS"),
@@ -450,11 +543,14 @@ def main(argv=None) -> int:
                                          capture_output=True, text=True).stdout.strip(),
                    # uncommitted changes to this runner at run time (/challenge-pr on #152, finding 4)
                    "runner_dirty": bool(subprocess.run(
-                       ["git", "-C", str(REPO), "status", "--porcelain", "--", "tools/run/p10_r6w_drift.py"],
+                       ["git", "-C", str(REPO), "status", "--porcelain", "--", "tools/run/p10_r6w_drift.py",
+                        "tools/run/p10_r9_lead.py"],
                        capture_output=True, text=True).stdout.strip())}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out, indent=1, default=float))
-    print(f"wrote {args.out}; check (a) max |Δ| vs R1 {worst:.1e}")
+    print(f"wrote {args.out}; check (a) max |Δ| vs R1 {worst:.1e}"
+          + (f"; c3x vs c3: {out['c3x_vs_c3']['n_changed']} of {out['c3x_vs_c3']['n_compared']} labels "
+             f"change, headline {len(out['c3x_vs_c3']['headline_changed'])} of 14" if args.lead == "c3x" else ""))
     return 0
 
 

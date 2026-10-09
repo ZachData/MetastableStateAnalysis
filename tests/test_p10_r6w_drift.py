@@ -93,3 +93,61 @@ def test_a_record_readable_at_one_end_only_is_its_own_term_and_the_sum_stays_exa
     d = w.decompose(earlier, later)
     assert d["records"] == pytest.approx(-0.5 * 0.7) and _terms(d) == pytest.approx(d["total"])
     assert "records" not in w.REPLACEMENT
+
+
+# ---------------------------------------------------------------- R9 / R6w: c3x beside c3
+
+def _entry(label, total=0.1, within=0.09):
+    return {"label": label, "span": {"total": total, "within": within}, "largest_replacement": "new_gone"}
+
+
+def _cols(c3x_label="within", c3x_mean=True):
+    lv = lambda lab: {"12": {st: _entry("no drift") for st in w.STATS},
+                      "24": None,
+                      "mean": {st: _entry(lab) for st in w.STATS}}
+    span = lambda lab, mean: {rs: (lv(lab) if mean else {**lv(lab), "mean": None}) for rs in w.RECORD_SETS}
+    return {"c3": {w.PRIMARY_SPAN: span("within", True), "64-512": span("within", True)},
+            "c3x": {w.PRIMARY_SPAN: span(c3x_label, True), "64-512": span("within", c3x_mean)}}
+
+
+def test_lead_c3x_adds_the_column_and_splits_its_flips_by_c2a():
+    assert w.columns_of("c3") == w.COLUMNS and w.columns_of("c3x") == (*w.COLUMNS, "c3x")
+    assert "c3x" in w.FLIP_COLUMNS and "c2a" not in w.FLIP_COLUMNS
+
+
+def test_compare_counts_every_cell_and_names_the_headline_ones():
+    same = w.compare(_cols())
+    # 2 record sets × 2 spans × 2 read levels (L24 unread) × 7 statistics
+    assert same["n_compared"] == 2 * 2 * 2 * len(w.STATS) and same["n_changed"] == 0
+    assert len(same["headline_cells"]) == 2 * len(w.STATS) == 14
+    assert {u["level"] for u in same["not_compared"]} == {"24"}
+    moved = w.compare(_cols(c3x_label="both"))
+    assert moved["n_changed"] == 2 * len(w.STATS) and len(moved["headline_changed"]) == 14
+
+
+def test_compare_skips_a_level_without_records_on_either_column():
+    d = w.compare(_cols(c3x_mean=False))
+    gone = [u for u in d["not_compared"] if u["level"] == "mean"]
+    assert len(gone) == 2 and all(u["no_records"] == ["c3x"] and u["span"] == "64-512" for u in gone)
+    assert d["n_compared"] == (2 * 2 * 2 - 2) * len(w.STATS)
+
+
+def test_reproduce_names_each_differing_key_and_a_missing_column():
+    entry = {"n_records": 3, "levels": {"mean": 1}}
+    other = {"meta": {"columns": ["c3", "c0"]}, "columns": {"c3": {"a": entry}, "c0": {"a": entry}}}
+    data = {"columns": {"c3": {"a": dict(entry)}, "c3x": {"a": entry}}}
+    assert w.reproduce(data, other) == ["c0/a: missing"]
+    data["columns"]["c0"] = {"a": {**entry, "levels": {"mean": 2}}}
+    assert w.reproduce(data, other) == ["c0/a/levels"]
+
+
+def test_jsonable_writes_numpy_bools_as_the_stored_record_did():
+    assert w.jsonable({1: np.bool_(True), "x": np.float64(0.5)}) == {"1": 1.0, "x": 0.5}
+
+
+def test_load_record_refuses_a_run_on_another_source(tmp_path):
+    (tmp_path / "summary.json").write_text("{}")
+    rec = tmp_path / "r6w.json"
+    rec.write_text('{"meta": {"summary_sha256": "00"}}')
+    with pytest.raises(w.lead_args.LadderError):
+        w.load_record(rec, tmp_path)
