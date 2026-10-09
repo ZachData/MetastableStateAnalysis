@@ -533,6 +533,41 @@ rows exactly, every record and frame; (r2) a draw dropping nothing gives c3's ce
 R6f's floor, bounds or frames; put the reference on R1–R6w's labels (a later beside reading if
 wanted); test anything. Results: `status-10.md` §1.32.
 
+**R9 / R7 (fixed 2026-10-09, before any c3x R7 reading).** R7's rule unchanged, with c3x added
+as a column and leading (c3, c2 beside); primary per step c3x, read on c2 where fewer than half
+its records are readable (as before). **Filtered, not re-run** (the user, 2026-10-09: "filter,
+check first"). Exact: a group's Jaccards, `J0` and chance levels read only its own members and
+each condition's clustering of **all** kept offsets; the c3 set enters the run only through the
+self-similarity's members / rest split (`_layer_job`). Checked before this rule, structure only:
+at all 3 024 stored (step, passage, layer) records the stored group ids are the R9 source's c2,
+the stored `c3` flags its c3, and c3x ⊆ c3 with the same members (0 mismatches; 8 734 c3 and
+8 096 c3x group-layer records; c3x empties 197 records). **Not re-read:** the self-similarity on
+c3x (members against the rest needs the states; it stays c3's). **Cells,** at each step where
+c3 reads on its own column (64–143000): the step label on the own floor and on the fixed bar 0.5
+(**the headline**, §1.23's two step claims: 24 cells), each band's label (3) and each prompt's
+(7; "too few" is a label), on the own floor: up to 144. A cell **changes** when c3x's label
+differs from c3's; a step c3x reads on c2 holds no c3x labels, and a cell held on one column
+only is a change. **The random-drop reference** (#173 finding 4, R6f's), matched **per (step,
+passage)** (the user, 2026-10-09, after `/challenge-pr` on #174 finding 1): a draw drops, in
+each (step, passage), as many c3 group-layer records as c3x drops there pooled over L1–24,
+uniformly without replacement among that (step, passage)'s c3 group-layer records (seed = draw
+index; dropped members → −1). Each draw's labels are c3's stored labels less the dropped rows
+(exact, as above; check (r1)), readability (the primary column) rebuilt from the draw's labels.
+**100 draws** (seeds 0–99). **Beside:** matched **per record** (R6f's: per (step, passage,
+layer)). **Reading,** per match: c3x's count of changed cells, all and the headline's, is
+**within random drops** if ≤ the draws' 95th percentile, **beyond** otherwise; rank p beside;
+beside every changed c3x cell the share of draws that change it, the cells every draw changes and
+the count without them (R6f's forced split), and the records and (step, passage)s c3x empties.
+The draws match the count, not which groups, so beside: the dropped groups' size, own-floor label
+shares and share with `J0` below chance, c3x's against the draws'; and per compared step c3x's
+three shares, fixed-bar token share and `by_floor` split next to c3's. **First checks
+(refuse):** c3 and c2 read on the R9 source equal the stored `r7.json` exactly (`--reproduce`,
+with the R0 source it read); the structure check above; c3x's first compared step has records
+before the rest is read; (r1) dropping exactly c3x's groups gives c3x's cells, under both
+matches; (r2) a draw dropping nothing gives c3's cells; (r3) the first draw has records and
+compared cells before the rest run. **It does not:** run a pass; change R7's bars, levels or
+labels; read c3x's self-similarity; test anything. Results: `status-10.md` §1.33.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
