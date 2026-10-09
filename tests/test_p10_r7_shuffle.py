@@ -167,6 +167,15 @@ def test_reference_reading_within_and_beyond():
     assert r.reference_reading(99, counts)["reading"] == "beyond random drops"
 
 
+def test_reference_reading_at_the_95th_percentile_is_within():
+    # `/challenge-pr` on #175, finding 4: R9 / R7's c3x (7) sat exactly at its draws' q95 (7)
+    counts = [1] * 5 + [2] * 15 + [3] * 28 + [4] * 28 + [5] * 10 + [6] * 7 + [7] * 6 + [10]
+    out = r.reference_reading(7, counts)
+    assert out["q95"] == 7.0 and out["reading"] == "within random drops"
+    assert out["rank_p"] == (1 + 7) / 101
+    assert r.reference_reading(8, counts)["reading"] == "beyond random drops"
+
+
 def test_read_step_is_read_rows_of_the_flagged_rows():
     g = lambda i, c3, j: {"id": i, "size": 2, "c3": c3, "J0": 0.5, "same_class": 1.0, "chance95": {"alone": 0.1},
                           "J": {**{f"b{b}_k{k}": j for b in r.BLOCKS for k in range(r.K)}, "alone": j}}

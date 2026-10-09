@@ -187,17 +187,17 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > reference **matched per (step, passage)**, per record beside. `p10_r7_shuffle.py reread`
 > (`f344ac3`); c3 and c2 reproduce `r7.json` exactly. 0 of 24 step labels change; 7 of 144
 > band / per-passage cells, all toward context, within random drops at the edge (q95 7, c3x 7,
-> p 0.08; none forced under this match; per record 5 of 7 forced). c3x drops 98.5 %
-> floor-below-chance groups (draws 53 %). **R9 is complete:** every row the rule lists is read.
-> **Next, for the user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a Parked item (the two
-> parked for after R9: an all-attractive OV intervention under 1e, energy against c3x's groups).
-> *Parked (R9 / R7):* **a draw matched on the floor as well as the count.** Why: c3x's drops are
-> 98.5 % floor-below-chance, the draws' 53 %, and every changed cell moves toward context, the
-> way those groups lean (§1.23: token-alone 68–91 %); a count-matched draw cannot say whether
-> c3x does anything beyond removing below-chance floors. Cost: minutes (stored records; stratify
-> `draw_drops` by `J0_below_chance`). Decision it could change: none of R9's labels (the
-> headline is unchanged); only whether "c3x = c3 less its chance-floor groups" is the whole story,
-> which matters if c3x's R7 shares are quoted in a later row.
+> p 0.08; none forced under this match; per record 5 of 7 forced). 98.5 % of c3x's drops have a
+> floor below chance (draws 53 %), but that is 14 % of such groups (460 of 3 182), label-blind
+> within them (token-alone 80 % against 82 %); so the own floor's token-alone share falls and
+> the fixed bar's rises (11 of 12 steps): c3x narrows the gap between the bars. `/challenge-pr`
+> on #175: accept with changes; 1 (the title's "c3 less the floor-below-chance groups" was
+> wrong), 2 (fixed bar), 4 (boundary test) taken; 3 (the floor-matched draw is answered by the
+> beside numbers) taken, so that Parked item is withdrawn. **R9 is complete:** every row the
+> rule lists is read. **If a later row quotes c3x's R7 shares,** quote both bars (they move
+> opposite ways). **Next, for the user:** Blocked 26 (d) Stage 2 / F13, (e′) ALBERT, or a
+> Parked item (the two parked for after R9: an all-attractive OV intervention under 1e, energy
+> against c3x's groups).
 > *Parked (R9 / R7):* **c3x's self-similarity** (members against the rest per condition). Why:
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).

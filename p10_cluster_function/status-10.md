@@ -43,7 +43,7 @@
   - R9 / R6, the cross-checkpoint matcher re-run with c3x as a column, c0–c3 reproducing R6's record exactly. None of R6's five headline readings changes by the rule fixed before the run: from 4000 the share of groups surviving each boundary is within 0.009 of c3's (0.56–0.67), survivors keep a median 75–83 % of their members, new births and deaths stay ≤ 7 %, no lineage at 143000 starts before 256, and chains still outlast independent breaks (10.9 % reach 2000 against 3.7 %). The columns differ by more than 0.05 only at 2–16; the groups c3x drops are less stable than those it keeps at almost every boundary, and too few from 4000 to move the pooled share. The clauses on survival, member change and new groups could hardly have failed; only the two lineage clauses had room to — `p10_cluster_function/status-10.md` §1.30
   - R9 / R6w, the drift-within-lineages split re-run with c3x as a column, c3, c2a and c0 reproducing R6w's record exactly. By the rule fixed before the run the headline changes in 1 of its 14 cells, at the floor: adjacency on R1's records, +0.050 → +0.060, its persisting groups' rise opposed by replacement on both columns, as on c3. What R6w quoted holds: the embedding drifts are carried by the persisting groups, not by replacement (on R1's records, 512 → 143000, layer mean, class beyond a lexical cluster −0.123, within −0.123; own-embedding similarity +0.185, within +0.165; within-class embedding similarity +0.150, within +0.115; each within 0.012 of c3), and `same_class` does not drift. 12 of 77 labels change in all, 9 of them on single layers R6w did not read; there is no reference for how many a random drop would move — `p10_cluster_function/status-10.md` §1.31
   - R9 / R6f, the members-against-frame split re-run with c3x as a column, c3, c2a and c0 reproducing R6f's record exactly, with a random-drop reference (100 draws dropping c3x's number of groups at random). The headline is unchanged: all 6 row labels read frame on both columns, and no random drop moves one. 6 of 60 per-passage labels change, within what random drops do (median 7, 95th percentile 10). Three of them come from records c3x empties, which every draw must empty too, so the reference cannot judge them; the other three are within the draws. Embedding similarity still reads as the embedding moving under the groups; class beyond a lexical cluster stays undecided per passage — `p10_cluster_function/status-10.md` §1.32
-  - R9 / R7, the context-shuffle labels with c3x as a column, filtered exactly from R7's stored per-group records (no pass), c3 and c2 reproducing R7's record exactly, with the random-drop reference matched per (step, passage). The step labels are unchanged at every step (mixed on the own floor, context at 256; context on the fixed bar). 7 of 144 band and per-passage labels change, all toward context, within what random drops do but at their 95th percentile (rank p 0.08). c3x is not a random drop: 98.5 % of what it drops has its own floor below chance, and 80 % is token-alone, so its token-alone share is 0.006–0.035 lower at every step; among groups whose floor clears chance it reads as c3 — `p10_cluster_function/status-10.md` §1.33
+  - R9 / R7, the context-shuffle labels with c3x as a column, filtered exactly from R7's stored per-group records (no pass), c3 and c2 reproducing R7's record exactly, with the random-drop reference matched per (step, passage). The step labels are unchanged at every step (mixed on the own floor, context at 256; context on the fixed bar). 7 of 144 band and per-passage labels change, all toward context on the own floor, within what random drops do but at their 95th percentile (rank p 0.08). c3x is not a random drop: 98.5 % of what it drops has its own floor below chance, though that is only 14 % of such groups, chosen without regard to their label. So the own floor's token-alone share is 0.006–0.035 lower and the fixed bar's higher at 11 of 12 steps: c3x narrows the gap between the bars without moving a step label. Among groups whose floor clears chance it reads as c3 — `p10_cluster_function/status-10.md` §1.33
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -71,7 +71,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `cab53d5eb8`
+- **Reviewed:** 2026-10-09 · body `e23183ceb1`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2595,7 +2595,7 @@ Tests: `tests/test_p10_r6f_frame.py` (5 new: cells and the headline's 6, a cell 
 only counted and on neither skipped, a draw dropping c3x's count of c3 groups per record and
 fixed by its seed, the 95th-percentile reading, reproduce naming each differing key).
 
-### 1.33 R9 / R7 on c3x — **§1.23's step labels are unchanged: 0 of the 24 headline cells change (on its own floor every step from 64 reads mixed but 256, context; the fixed bar reads the same on both columns). 7 of 144 cells change, all band or per-passage labels and all toward context, within what random drops do but at the edge under the rule's match (draws per (step, passage): median 4, 95th percentile 7; c3x 7, rank p 0.08). c3x's drops are not random ones: 98.5 % have their own floor below chance (draws 53 %), 80 % are token-borne (draws 56 %), and they are smaller (5.9 members against 9.0). So c3x is c3 less the floor-below-chance groups that §1.23 already split out beside, and its token-alone share is 0.006–0.035 lower at every step; among groups whose floor clears chance it keeps all but 0–2 records per step and c3's shares to 0.008**
+### 1.33 R9 / R7 on c3x — **§1.23's step labels are unchanged: 0 of the 24 headline cells change (on its own floor every step from 64 reads mixed but 256, context; the fixed bar reads the same on both columns). 7 of 144 cells change, all band or per-passage labels and all toward context on the own floor, within what random drops do but at the edge under the rule's match (draws per (step, passage): median 4, 95th percentile 7; c3x 7, rank p 0.08). c3x's drops are not random ones: 98.5 % have their own floor below chance (draws 53 %), 80 % are token-alone (draws 56 %), and they are smaller (5.9 members against 9.0). It drops almost only such groups, but only 14 % of them (460 of 3 182 at 64–143000), and those it drops carry the same labels as the ones it keeps (token-alone 80 % against 82 %). So on c3x the own floor's token-alone share is 0.006–0.035 lower and the fixed bar's higher at 11 of 12 steps: c3x narrows the gap between the bars without moving a step label. Among groups whose floor clears chance it keeps all but 0–2 records per step and c3's shares to 0.008** *(Corrected after `/challenge-pr` on #175, finding 1: the first title said c3x is c3 less the floor-below-chance groups; it drops 14 % of them. Finding 2 added the fixed bar.)*
 
 **What ran** (`design-10.md` "R9 / R7", fixed before any c3x R7 reading, `a5be32d`).
 `tools/run/p10_r7_shuffle.py reread --lead c3x --draws 100`: R7's reading with c3x added as a
@@ -2669,12 +2669,21 @@ order-borne, mean size 5.9; the per-(step, passage) draws' are 53 % [49, 56], 56
 22 %, 21 %, size 9.0 [8.5, 9.4] (5–95 %); the per-record draws' 81 %, 74 %, 17 %, 9 %, size 7.5.
 
 **Reading.** §1.23 holds on c3x as written, at every step: mixed on the own floor from 512
-(context at 256), context on the fixed bar. c3x drops almost only the groups §1.23 flagged as
-having a floor below chance, which came out token-alone 68–91 %, so on c3x the token-alone
-share is lower by 0.006–0.035 and every changed cell moves toward context; the clause "among
-groups whose own floor clears chance" reads the same on both columns. By the count, c3x's changes
-are within what random drops of its size do, at the 95th percentile under the rule's match; by
-what it drops, it is not a random drop, and that is the direction the changes take.
+(context at 256), context on the fixed bar. c3x's drops are almost all groups §1.23 flagged as
+having a floor below chance (token-alone 68–91 % there), though it drops only 14 % of those
+(460 of 3 182) and keeps 71–336 per step. Within them its choice does not follow the label
+(token-alone 80 % of those dropped, 82 % of all; bag 15 % against 13 %, order 4 % against 5 %),
+so the direction comes from the floor, not from which below-chance groups it picks: a draw
+matched on the floor as well as the count would drop the same mix (read beside, from the
+stored rows; not a reference run, and not part of the rule). On the own floor the token-alone
+share is lower by 0.006–0.035 and every changed cell moves toward context. On the fixed bar it
+is higher at 11 of 12 steps (+0.002 to +0.019; 256 −0.005), because the dropped groups are
+9 % token-alone there against 25 % across c3. So c3x narrows §1.23's gap between the two bars
+without moving a step label. The clause "among groups whose own floor clears chance" reads the
+same on both columns. By the count, c3x's changes are within what random drops of its size do,
+at the 95th percentile under the rule's match; by what it drops, it is not a random drop, and
+that is the direction the changes take. *(Rewritten after `/challenge-pr` on #175, findings
+1–3.)*
 
 **Does not.** Re-run a pass; re-read the self-similarity on c3x (it needs the states); match the
 draws on size, floor or label (count only); test anything. 7 passages, one seed; tier 1.
