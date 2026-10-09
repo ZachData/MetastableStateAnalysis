@@ -115,3 +115,13 @@ def test_reproduce_names_each_differing_key_and_a_missing_column():
     other = {"meta": {"columns": ["c3", "c0"]}, "columns": {"c3": {"n_records": 51, "steps": [1]}, "c0": {"n_records": 2}}}
     data = {"columns": {"c3": {"n_records": 50, "steps": [1]}}}
     assert f.reproduce(data, other) == ["c3/n_records", "c0: missing"]
+
+
+def test_c3xs_own_drops_through_the_draw_give_c3x():
+    # check (r4), after /challenge-pr on #174: the draw path with c3x's drops is c3x
+    import numpy as np
+    dom = {(512, "p", 1): {"c3": np.array([0, 0, 1, 1, 2, 2, -1]), "c3x": np.array([0, 0, -1, -1, -1, -1, -1])}}
+    fixed = f.c3x_drops(dom)
+    assert fixed == {(512, "p", 1): {1, 2}}
+    labs, dropped = f.drop_labels(dom, fixed=fixed)
+    assert (labs[(512, "p", 1)] == dom[(512, "p", 1)]["c3x"]).all() and dropped == fixed

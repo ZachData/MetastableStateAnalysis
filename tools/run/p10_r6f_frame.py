@@ -198,19 +198,26 @@ def compare_cells(ref: dict, col: dict) -> dict:
             "not_compared": [k for k in keys if k not in compared]}
 
 
-def drop_labels(dom: dict, rng=None) -> tuple:
+def c3x_drops(dom: dict) -> dict:
+    """{key: the c3 group ids c3x drops there}."""
+    return {k: set(map(int, np.unique(d["c3"][d["c3"] >= 0]))) - set(map(int, np.unique(d["c3x"][d["c3x"] >= 0])))
+            for k, d in dom.items()}
+
+
+def drop_labels(dom: dict, rng=None, fixed: dict = None) -> tuple:
     """
     One draw over ``dom`` {(step, prompt, layer): {"c3", "c3x"}} (domain labels): in each record,
-    as many c3 groups as c3x drops there, uniformly without replacement (``rng`` None drops none);
-    dropped members → −1, as c3x's. ({key: labels}, {key: dropped ids}); keys in sorted order, so
-    a seed fixes the draw.
+    as many c3 groups as c3x drops there, uniformly without replacement (``rng`` None drops none;
+    ``fixed`` {key: ids} drops exactly those, check (r4)); dropped members → −1, as c3x's.
+    ({key: labels}, {key: dropped ids}); keys in sorted order, so a seed fixes the draw.
     """
     labs, dropped = {}, {}
     for key in sorted(dom):
         c3, c3x = dom[key]["c3"], dom[key]["c3x"]
         ids = np.unique(c3[c3 >= 0])
         k = len(ids) - len(np.unique(c3x[c3x >= 0]))
-        drop = rng.choice(ids, k, replace=False) if rng is not None and k else np.array([], dtype=int)
+        drop = (np.array(sorted(fixed[key]), dtype=int) if fixed is not None
+                else rng.choice(ids, k, replace=False) if rng is not None and k else np.array([], dtype=int))
         labs[key] = np.where(np.isin(c3, drop), -1, c3)
         dropped[key] = set(map(int, drop))
     return labs, dropped
@@ -251,12 +258,13 @@ def c3_domains(src: Path, steps: list) -> dict:
     return out
 
 
-def draw_entry(seed) -> tuple:
-    """One draw (``seed`` None: drop nothing) read as a column: (jsonable entry, dropped sizes)."""
+def draw_entry(seed, fixed: dict = None) -> tuple:
+    """One draw (``seed`` None: drop nothing; ``fixed``: those ids) read as a column: (jsonable
+    entry, dropped sizes)."""
     from tools.run.p10_label_source import readable as is_readable
     from tools.run.p10_r6_matcher import link
     dom, rows, c2a_links, steps = _G["dom"], _G["rows"], _G["c2a_links"], _G["steps"]
-    labs, dropped = drop_labels(dom, None if seed is None else np.random.default_rng(seed))
+    labs, dropped = drop_labels(dom, None if seed is None else np.random.default_rng(seed), fixed)
     readable_d, values_d = {}, {fr: {} for fr in ("own", *FRAMES)}
     for (s, p, L), lab in labs.items():
         if not is_readable(lab):
@@ -285,7 +293,7 @@ def _draw(seed):
             "changed": cmp["changed"], "dropped_mean_size": float(np.mean(sizes)) if sizes else None}
 
 
-def run_reference(n_draws: int, workers: int, c3x_cmp: dict, c3x_sizes: list) -> dict:
+def run_reference(n_draws: int, workers: int, c3x_cmp: dict, c3x_sizes: list, forced: dict) -> dict:
     """The random-drop reference (`design-10.md` "R9 / R6f"): (r3) the first draw is read alone,
     then the rest; each count against c3x's."""
     import multiprocessing
@@ -300,7 +308,13 @@ def run_reference(n_draws: int, workers: int, c3x_cmp: dict, c3x_sizes: list) ->
     head = [d["n_headline_changed"] for d in draws]
     every = sorted({k for d in draws for k in d["changed"]} | set(c3x_cmp["changed"]))
     sizes = [d["dropped_mean_size"] for d in draws if d["dropped_mean_size"] is not None]
-    return {"n_draws": n_draws, "seeds": [0, n_draws - 1], "quantile": QUANTILE, "quantile_method": "higher",
+    # beside, after /challenge-pr on #174 (finding 1): where c3x empties a record every draw drops
+    # the same groups, so the cells every draw changes are c3x's own; the count without them
+    always = sorted(k for k in every if all(k in d["changed"] for d in draws))
+    without = reference_reading(sum(k not in always for k in c3x_cmp["changed"]),
+                                [sum(k not in always for k in d["changed"]) for d in draws])
+    return {"forced": {**forced, "cells_every_draw_changes": always, "all_without_them": without},
+            "n_draws": n_draws, "seeds": [0, n_draws - 1], "quantile": QUANTILE, "quantile_method": "higher",
             "all": reference_reading(c3x_cmp["n_changed"], counts),
             "headline": reference_reading(len(c3x_cmp["headline_changed"]), head),
             "cell_share": {k: sum(k in d["changed"] for d in draws) / n_draws for k in every},
@@ -413,9 +427,11 @@ def main(argv=None) -> int:
         return 2
     c3x_sizes = []
     if reference:   # check (r1): c3's rows less c3x's dropped groups are c3x's own rows, every frame
-        x_dropped = {k: set(map(int, np.unique(d["c3"][d["c3"] >= 0]))) - set(map(int, np.unique(d["c3x"][d["c3x"] >= 0])))
-                     for k, d in dom.items()}
+        x_dropped = c3x_drops(dom)
         c3x_sizes = dropped_sizes(dom, x_dropped)
+        forced = {"records_emptied": sum(1 for k, d in dom.items() if x_dropped[k] and not (d["c3x"] >= 0).any()),
+                  "drops_forced": sum(len(x_dropped[k]) for k, d in dom.items() if not (d["c3x"] >= 0).any()),
+                  "drops": len(c3x_sizes)}
         bad_r1 = [(fr, s, p, L) for fr in ("own", *FRAMES) for (s, p), layers in values[fr]["c3x"].items()
                   for L, rows in layers.items()
                   if rows != [r for r in values[fr]["c3all"][(s, p)][L] if r[1] not in x_dropped[(s, p, L)]]]
@@ -467,7 +483,13 @@ def main(argv=None) -> int:
             print("check (r2) fails: a draw dropping nothing is not c3; refusing", file=sys.stderr)
             return 2
         out["checks"]["r2_no_drop_is_c3"] = True
-        out["reference"] = run_reference(args.draws, args.workers, out["c3x_vs_c3"], c3x_sizes)
+        own, _ = draw_entry(None, x_dropped)    # check (r4), after /challenge-pr on #174: c3x's drops are c3x
+        if {k: own[k] for k in ("n_records", "fixed_set", "r1_set")} != \
+                {k: out["columns"]["c3x"][k] for k in ("n_records", "fixed_set", "r1_set")}:
+            print("check (r4) fails: c3x's own drops through the draw are not c3x; refusing", file=sys.stderr)
+            return 2
+        out["checks"]["r4_c3x_drops_are_c3x"] = True
+        out["reference"] = run_reference(args.draws, args.workers, out["c3x_vs_c3"], c3x_sizes, forced)
     out["meta"] = {"labels": str(args.labels), "summary_sha256": hashlib.sha256(summary.read_bytes()).hexdigest(),
                    "lead": args.lead, "reproduces": reproduces,
                    "floor_step0": lead_args.floor(json.loads(summary.read_text()), args.lead),
