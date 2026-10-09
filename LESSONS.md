@@ -395,6 +395,13 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-09, Phase 10 E1: the rule borrowed 1e's `u2_attn.check_pass` for a pass read at
+  blocks 0–23, but that check was written for 1e's blocks 0–22: it compares `x + attn + mlp`
+  with the next stored hidden state, and `hs[24]` is after `final_layer_norm` (1e had refused
+  block 23 for exactly this). The first record refused (off by 0.1), ~1 min lost; block 23 is
+  now checked through the final norm, written into the rule as a departure before any reading.
+  Rule: a borrowed check's range is part of its input; when the new reader's range is wider,
+  read the check before writing "the check above" into a rule.
 - 2026-10-09, Phase 10 R9 / R2: #166 added c3x's learned split to `p10_label_source.SPLITS`, but
   F1's, F12's and A0's readers checked a split column's steps against the older `LEARNED_SPLIT`
   (c3's two only), so `c3x_learned` would have been asked for all 18 steps and refused. Found by

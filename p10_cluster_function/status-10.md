@@ -44,6 +44,7 @@
   - R9 / R6w, the drift-within-lineages split re-run with c3x as a column, c3, c2a and c0 reproducing R6w's record exactly. By the rule fixed before the run the headline changes in 1 of its 14 cells, at the floor: adjacency on R1's records, +0.050 → +0.060, its persisting groups' rise opposed by replacement on both columns, as on c3. What R6w quoted holds: the embedding drifts are carried by the persisting groups, not by replacement (on R1's records, 512 → 143000, layer mean, class beyond a lexical cluster −0.123, within −0.123; own-embedding similarity +0.185, within +0.165; within-class embedding similarity +0.150, within +0.115; each within 0.012 of c3), and `same_class` does not drift. 12 of 77 labels change in all, 9 of them on single layers R6w did not read; there is no reference for how many a random drop would move — `p10_cluster_function/status-10.md` §1.31
   - R9 / R6f, the members-against-frame split re-run with c3x as a column, c3, c2a and c0 reproducing R6f's record exactly, with a random-drop reference (100 draws dropping c3x's number of groups at random). The headline is unchanged: all 6 row labels read frame on both columns, and no random drop moves one. 6 of 60 per-passage labels change, within what random drops do (median 7, 95th percentile 10). Three of them come from records c3x empties, which every draw must empty too, so the reference cannot judge them; the other three are within the draws. Embedding similarity still reads as the embedding moving under the groups; class beyond a lexical cluster stays undecided per passage — `p10_cluster_function/status-10.md` §1.32
   - R9 / R7, the context-shuffle labels with c3x as a column, filtered exactly from R7's stored per-group records (no pass), c3 and c2 reproducing R7's record exactly, with the random-drop reference matched per (step, passage). The step labels are unchanged at every step (mixed on the own floor, context at 256; context on the fixed bar). 7 of 144 band and per-passage labels change, all toward context on the own floor, within what random drops do but at their 95th percentile (rank p 0.08). c3x is not a random drop: 98.5 % of what it drops has its own floor below chance, though that is only 14 % of such groups, chosen without regard to their label. So the own floor's token-alone share is 0.006–0.035 lower and the fixed bar's higher at 11 of 12 steps: c3x narrows the gap between the bars without moving a step label. Among groups whose floor clears chance it reads as c3 — `p10_cluster_function/status-10.md` §1.33
+  - E1, energy against c3x's groups (one GPU pass per (step, passage), 1e U2's frame, each group's own-member field against 200 size-matched draws of other kept tokens). From step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23, in every passage at 4000–54000 and in L9–16 at 143000, β-robust. It does so also against the members' nearest non-members, so the pull follows membership, not only nearness. Where 1e's attention descends the whole field (L17–23 at 32000–54000), attention by the rule holds the groups against the rest. At 256–512 in L9–16 (and 512 in L17–23, 1000 in L1–8) attention pushes members apart while the MLP pulls them together. The MLP pulls groups together through 2000 everywhere and in L1–8 throughout, and pushes them apart in L9–16 from 8000, where attention pulls. Init carries none of it. Small: the median group's `X` is 0.03–0.05 of a cosine — `p10_cluster_function/status-10.md` §1.34
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -53,7 +54,7 @@
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
   - `handoff-10.md` §1.1's reading that neighbourhoods go "lexical → contextual": on Stage 0's v1 runs they go from repeats to repeats plus embedding-similar tokens — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
-- **Depends on:** 1@30c0d54cc5, 5c@574eba0e4a, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
+- **Depends on:** 1@30c0d54cc5, 1e@02fc532205, 5c@574eba0e4a, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
 - **Feeds:** 9, 1e
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
@@ -71,7 +72,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `e23183ceb1`
+- **Reviewed:** 2026-10-09 · body `b65b62d39e`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2696,6 +2697,100 @@ data/p10/reread_r7_2026-10-06/r7.json --reproduce-labels data/p10/reread_r0_2026
 --draws 100`. Tests: `tests/test_p10_r7_shuffle.py` (8 new: c3x's drops, each match's counts and
 that the pooled match can move drops between layers, the seed, check (r1)'s labels, cells
 counted one-sided and the headline, the 95th-percentile reading, `read_step` as `read_rows`).
+
+### 1.34 E1, energy against c3x's groups — **from step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23 (every passage, 4000–54000, and at 143000 in L9–16; β-robust; also against the members' nearest non-members), and at 256–512 in L9–16 (and 512 in L17–23) it pushes them apart, while the MLP's pulls them together. Init carries none of it (c2's step 0 mixed in every band). Small: the median group's `X` is 0.03–0.05 of a cosine**
+
+**What ran** (`design-10.md` "E1", rule `fb4dee1` before any pass; the draws' seeding `c64b7a8`
+and the block-23 check `8094f44`, a departure at the gate, both before any reading).
+`tools/run/p10_e1_energy.py run`: one hooked GPU pass per (step, passage) (`u2_attn.Hooked`,
+float32 eager, TF32 off), 18 steps × 7 v1 passages, ~15 min. Per c2 group (c3x flagged) at
+L1–23, read at block L (departure; block L−1 beside): each component's move in 1e U2's frame
+(LN1, unit rows; `r1out` = less the passage's shared direction) against the field of the
+group's own members (full, β 3.5), less the mean over 200 size-matched draws of kept
+non-members (`X_g`). Label per (step, band): each passage's mean `X_g` (≥ 3 records), all
+readable passages (≥ 6) > 0 → *pulls together*, all but one → *leans*, the same below 0.
+
+**Inputs.** R9's label source `data/p10/reread_r9_2026-10-08/labels/` (summary sha256
+`5b758a2c`); Stage 0's v1 runs (`stage0_run` per prompt); targets R0's kept offsets. Output
+`data/p10/e1_energy_2026-10-09/` (`records/`, `report.json` md5 `b0b628e5`, `report.txt`,
+`plan.json`, `run.sh`, `run.log`); producer blob `d5947d68` (the runner at `8094f44`; the
+report fix `c0ccb6f` after it touches only `report`). 13 068 c2 group-layer records, 7 746 c3x.
+**First checks pass:** the pass against Stage 0's activations ≤ 7.9e-5 (step 143000; 1.5e-7 at
+512), the split sums to 1.4e-8, block 23 through `final_layer_norm` ≤ 2.3e-7; c3x ⊆ c2 with the
+same members at every record; the first record (512, `wiki_paragraph`: 175 c3x groups) populated,
+every member kept, `X_g` spread both ways. No refusal.
+
+**The labels** (c3x, block L, `attn:r1out`, β 3.5; P / p = pulls together / leans, X / x =
+pushes apart / leans, . mixed, – too few; every one β-robust at 1.6 and 5.6 but L1–8 at 4000):
+
+| row | band | 64 | 128 | 256 | 512 | 1000 | 2000 | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **attention** (primary) | L1–8 | . | P | – | . | X | x | . | . | . | . | . | x |
+| | L9–16 | p | P | X | X | – | p | P | P | P | P | P | P |
+| | L17–23 | . | p | . | X | – | p | P | P | P | P | P | . |
+| nearest non-members (`X_knn`) | L9–16 | p | P | x | X | – | . | P | P | P | P | p | P |
+| | L17–23 | . | p | . | . | – | P | P | P | P | P | P | . |
+| MLP (`mlpx:r1out`) | L1–8 | p | P | – | P | P | P | P | P | P | P | P | p |
+| | L9–16 | P | P | P | P | – | P | . | x | x | X | x | x |
+| | L17–23 | P | P | P | P | – | P | P | P | P | P | P | x |
+| block (`block:r1out`) | L1–8 | p | P | – | P | P | P | P | P | P | P | P | P |
+| | L9–16 | P | P | P | P | – | P | P | P | P | . | . | x |
+| | L17–23 | P | P | P | P | – | P | P | P | P | P | P | x |
+| 1e's v1 `causal:attn:r1out` | L9–16 | mixed | descends | descends | descends | descends | leans des | mixed | mixed | leans asc | leans des | leans des | mixed |
+| | L17–22 | mixed | mixed | mixed | leans des | descends | mixed | mixed | mixed | mixed | descends | descends | leans des |
+
+| c3x, attention, β 3.5 | L9–16 at 4000–143000 | L17–23 at 4000–54000 | L9–16 at 256–512 |
+|---|---|---|---|
+| group records with `X_g` > 0 | 0.75–0.85 | 0.77–0.81 | 0.26–0.29 |
+| … with rank ≤ 0.05 (5 % by chance) | 0.48–0.68 | 0.51–0.60 | 0.08–0.10 |
+| median `|X_g|` | 0.029–0.047 | 0.035–0.044 | 0.041–0.042 |
+
+Chance (no effect, passages independent): 0.75 full labels either way over the 33 primary cells
+read; observed 17 (13 pulls, 4 pushes). `keys:r1out` (attention without the sink and biases)
+gives the same labels but two cells, each by a lean (13 / 4); block L−1 (arrival) the same late
+windows (13 / 3), but in L1–8 its push at 1000 is mixed. Steps 0–32: c3x is
+too few in every band but L1–8 at 32 (leans pushes); **c2's step 0 is mixed in all three bands**
+(band means within ±0.002), so every trained label is "learned" by the rule. **c2 beside: the same
+shape** (L9–23 pulls together at 4000–54000; at 143000 L9–16 leans pulls, L17–23 mixed; pushes
+apart at 256–1000 in L9–16 and at 1000–2000 in L1–8; c2 also pulls together at 32 in L9–23,
+where c3x is too few).
+
+**Readings, by the rule's fixed sentences:**
+- **L17–23 at 32000–54000: attention holds the group against the rest.** It pulls the members
+  together where 1e's attention descends the whole field. L9–16 at 32000–54000 is the same with
+  1e at *leans* descends, which the rule's sentence does not name (said, not counted).
+- **4000–16000 in L9–23 and L9–16 at 143000:** the rule fixed no reading where 1e is mixed or
+  ascends weakly. What can be said: attention pulls members together more than towards as many
+  random kept tokens, and more than towards the members' nearest non-members (`X_knn`, same
+  labels), so it is **membership, not only nearness**.
+- **256–512 in L9–16, 512 in L17–23, 1000 in L1–8: attention's token-specific move does not
+  hold the group.** It pushes members apart, where 1e's move descends the field (L17–23 at 512:
+  1e *leans* descends). The MLP's
+  move pulls them together in the same cells, and so does the block's. In this window **the MLP holds
+  the groups, against attention**.
+- **The hand-over.** The MLP pulls groups together (or leans) at 64–2000 wherever read. From 8000 in L9–16
+  it pushes them apart (x / X) while attention pulls, and the block goes mixed there at
+  32000–54000. In L1–8 attention never pulls after 128, and the MLP does throughout. This is the
+  shape of 1e's Blocked 29 split (the MLP's shared ascent to 1000, attention's mean pull after
+  2000; `status-1e.md` "U2's per-head arm"), here on the groups.
+- **Coherence** (members' moves parallel) pulls together in 28 of 33 cells for attention and
+  in 33 for the MLP and the block. Its draws are not matched for nearness, and tokens near each
+  other get similar updates, so this does not separate a shared tag (`lit-10.md` §18 row 1) from
+  proximity. Beside, not read.
+- **The shared update** (`attn:frozen`) pushes apart in 12 cells (L1–8 from 2000, L17–23 at
+  64–256 and 2000), pulls in 3. Beside, not read: the rule's question is the token-specific part.
+
+**It does not say:** that attention *causes* the groups (a correlation of directions, no
+intervention: the parked OV cut is the intervention); anything under V's own kernel (`V = I`);
+anything on the long passages; how much of the group's tightness the pull buys (`X` is a cosine
+difference, small, as 1e's `|X|` ≤ 0.06). One seed, 7 passages, tier 1.
+
+Re-run: `data/p10/e1_energy_2026-10-09/run.sh` from the worktree root (under `data/`, not
+committed): `python tools/run/p10_e1_energy.py run --labels data/p10/reread_r9_2026-10-08/labels
+--out <dir>` (GPU; resumable), then `report --out <dir> --u2-attn data/p1e/u2_attn_2026-10-07`.
+Tests: `tests/test_p10_e1_energy.py` (12: the closed-form cosine against the vector field at four
+β, a member left out of its own field, a planted pull / push signs `X`, a position-free move ≈ 0,
+the draws, coherence, a parallel move is coherent but not a pull, the sign rule).
 
 ---
 
