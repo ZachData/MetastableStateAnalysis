@@ -7,6 +7,13 @@ Appended by the Stop protocol (`CLAUDE.md` step 7):
 - **peak ctx**: the largest single-call context (input + cache read + cache creation).
 - **total ctx**: that summed over calls. This is the number the 2× rule reads.
 - **tool out**: tool-result size, chars ÷ 4.
+- **runner batches, main calls** (suffix on the unit): per `runner` spawn, the
+  main session's calls from the launch through the call that reads its report,
+  other work done meanwhile included (`tools/session_cost.py` docstring).
+  Before the runner, a Monitor's per-step events cost the main session, from
+  the first event to the exit: E1 (#176) 67, E1p (#178) 18, OV1 (#179) 32
+  (measured 2026-10-10 on those transcripts; the window starts at the first
+  event, not the launch, so these undercount).
 
 **Rule (`LESSONS.md` lesson 9):** a row whose total ctx is more than 2× the
 running median of the rows above it gets a line under the table saying why.
@@ -344,3 +351,4 @@ running median of the rows above it gets a line under the table saying why.
   itself added ~10 calls. Next time: one background `until` with no per-step events. Row taken
   before `/challenge-pr`.
 | 2026-10-10 | Process: run-and-watch to a Haiku `runner` agent (≤ 3 mechanical fixes, then Sonnet, then the main session); `session_cost.py` counts subagents and models; tested on 2 scratch jobs (`claude -p --agent runner`, Haiku, < $0.01 each, separate sessions not in this row) | 31 | 90k | 2.2M | 12k | #180 |
+| 2026-10-10 | Process: main-session calls per runner batch on the cost row (`session_cost.py`), baseline from the last three Monitor-watched batches; `../Mets-runner` and `claude/runner-agent` removed (measured before the commit/PR calls) | 24 | 103k | 1.8M | 23k | #181 |

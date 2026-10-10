@@ -25,12 +25,20 @@ Stdlib only. The transcript is one JSON record per line. What is counted:
   reported by agent type and model. The `--row` columns stay the main
   session's, comparable with earlier rows; subagent totals go in the unit
   cell as a suffix.
+- **Runner batches**: for each `Agent` call with `subagent_type: runner`, the
+  main session's calls from the one that launched it through the first call
+  after its last completion notification (the call that reads the report).
+  These are the calls made *while* the batch ran, not only calls *caused* by
+  it: other work done in the meantime is counted too. A batch with no
+  notification yet is marked open and counted to the transcript's end. A
+  Sonnet escalation is its own spawn, so its own batch.
 
 What it does *not* see: tool-result size is in characters, not tokens; a
 subagent's own subagents, if any.
 """
 import argparse
 import json
+import re
 import statistics
 import sys
 from collections import Counter, defaultdict
@@ -59,8 +67,12 @@ def analyse(lines):
     tool_names = {}       # tool_use id -> tool name
     reads = []            # (file_path, offset, limit)
     results = []          # (chars, tool name, tool_use id)
+    first_pos = {}       # message.id -> position of its first record
+    launches = {}        # runner Agent tool_use id -> (launching message.id, model)
+    agent_of = {}        # that tool_use id -> agentId
+    end_pos = {}         # tool_use id or agentId -> position the batch ended
     bad_lines = 0
-    for line in lines:
+    for pos, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
@@ -75,12 +87,18 @@ def analyse(lines):
         content = msg.get("content")
         if rec.get("type") == "assistant":
             mid = msg.get("id")
+            if mid:
+                first_pos.setdefault(mid, pos)
             if mid and isinstance(msg.get("usage"), dict):
                 usage_by_id[mid] = msg["usage"]
                 model_by_id[mid] = msg.get("model", "?")
             for block in content if isinstance(content, list) else []:
                 if isinstance(block, dict) and block.get("type") == "tool_use":
                     tool_names[block.get("id")] = block.get("name", "?")
+                    inp = block.get("input") or {}
+                    if block.get("name") in ("Agent", "Task") \
+                            and inp.get("subagent_type") == "runner":
+                        launches[block.get("id")] = (mid, inp.get("model"))
                     if block.get("name") == "Read":
                         inp = block.get("input") or {}
                         reads.append((inp.get("file_path", "?"),
@@ -91,6 +109,19 @@ def analyse(lines):
                     tid = block.get("tool_use_id")
                     results.append((_result_chars(block.get("content")),
                                     tool_names.get(tid, "?"), tid))
+                    if tid in launches:
+                        tur = rec.get("toolUseResult")
+                        tur = tur if isinstance(tur, dict) else {}
+                        agent_of[tid] = tur.get("agentId")
+                        if tur.get("resolvedModel"):
+                            launches[tid] = (launches[tid][0], tur["resolvedModel"])
+                        if tur.get("status") != "async_launched":   # foreground: done here
+                            end_pos[tid] = pos
+        if rec.get("type") == "user":
+            text = content if isinstance(content, str) else " ".join(
+                b.get("text", "") for b in content or [] if isinstance(b, dict))
+            for aid in _TASK_ID.findall(text):
+                end_pos[aid] = pos      # the last notification wins (a resumed agent re-notifies)
 
     ctx_by_id = {mid: u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0)
                  + u.get("cache_creation_input_tokens", 0) for mid, u in usage_by_id.items()}
@@ -103,6 +134,15 @@ def analyse(lines):
     for chars, name, _ in results:
         per_tool[name][0] += 1
         per_tool[name][1] += chars
+    starts = sorted(first_pos[m] for m in usage_by_id)
+    batches = []
+    for tid, (mid, model) in launches.items():
+        start = first_pos.get(mid, 0)
+        end = end_pos.get(tid, end_pos.get(agent_of.get(tid)))
+        inside = [p for p in starts if p >= start and (end is None or p < end)]
+        after = [p for p in starts if end is not None and p > end][:1]
+        batches.append({"agent": agent_of.get(tid), "model": _short_model(model or "?"),
+                        "main_calls": len(inside) + len(after), "open": end is None})
     return {
         "calls": len(usage_by_id),
         "context_total": sum(ctx),
@@ -114,8 +154,18 @@ def analyse(lines):
         "per_tool": {k: {"calls": v[0], "chars": v[1]} for k, v in per_tool.items()},
         "largest_results": sorted(results, key=lambda r: -r[0])[:10],
         "reads": reads,
+        "batches": batches,
         "bad_lines": bad_lines,
     }
+
+
+_TASK_ID = re.compile(r"<task-notification>\s*<task-id>([^<]+)</task-id>")
+
+
+def _batches(r):
+    """'3 (haiku-4-5), 2 open (sonnet-5)': main-session calls per runner batch."""
+    return ", ".join(f"{b['main_calls']}{' open' if b['open'] else ''} ({b['model']})"
+                     for b in r["batches"])
 
 
 def _short_model(m):
@@ -172,6 +222,8 @@ def report(r, subs=()):
         out += ["", "subagents (type, model)   agents  calls  context"]
         out += [f"  {k:<14} {m:<12} {n:>4} {c:>6}  {_k(t)}"
                 for (k, m), (n, c, t) in sorted(_sub_totals(subs).items())]
+    if r["batches"]:
+        out += ["", f"runner batches, main-session calls: {_batches(r)}"]
     out += ["", "per tool           calls      chars"]
     for name, v in sorted(r["per_tool"].items(), key=lambda kv: -kv[1]["chars"]):
         out.append(f"  {name:<16} {v['calls']:>5} {v['chars']:>10,}")
@@ -188,10 +240,13 @@ def report(r, subs=()):
 
 
 def row(r, unit, pr, date, subs=()):
-    """One `docs/cost_log.md` table row; subagent totals as a suffix on the unit."""
+    """One `docs/cost_log.md` table row; subagent totals and runner batches as
+    suffixes on the unit."""
     if subs:
         unit += " · subagents: " + ", ".join(
             f"{k} {m} {_k(t)}" for (k, m), (_, _, t) in sorted(_sub_totals(subs).items()))
+    if r["batches"]:
+        unit += " · runner batches, main calls: " + _batches(r)
     return (f"| {date} | {unit} | {r['calls']} | {_k(r['context_peak'])} "
             f"| {_k(r['context_total'])} | {_k(r['tool_result_chars'] // 4)} | {pr} |")
 
