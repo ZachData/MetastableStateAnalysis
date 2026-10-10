@@ -866,6 +866,18 @@ Run step 512 first and open it before the other 17.
 followed, not re-defined; say what holds a group that survives; test anything. One seed, 7
 passages, tier 1. Results: `status-10.md` §1.37.
 
+**OV1 amendment (2026-10-10, after `/challenge-pr` on #179, after the output was read; the labels
+and records are untouched, the readings are reworded).** (i) The readings name `att` *merges*
+only; the runner had read *leans merges* as one too. A lean is now "a lean only (not a reading)"
+(`reading()`, report regenerated), so the rule's reading holds at 16000 in L9–16 and L17–24
+alone; 4000 L17–24 and 8000 L9–16 are leans (8000's against-passage, `homer_iliad`, at −0.78).
+(ii) `rep` *separates* means "merges less than its controls", not "separates": at 16000 L9–16
+`rep` still merges 0.26 of the records (controls 0.39; base 0). (iii) "Keeps **c3x's** groups
+apart" is not shown: at 16000 `att` leaves 2.5–3.4 groups per layer, so nearly any group set would
+read as merged, and only c3x's kinds are stored. The reading is "the OV's repulsive part keeps the
+stream from collapsing into a few groups, c3x's among them". (iv) The chance line assumes
+independent passages; all 7 at a step share the same 21 cut models, so it overstates the surprise.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

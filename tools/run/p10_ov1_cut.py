@@ -491,10 +491,12 @@ def mark_isolated(table: Dict) -> None:
 def reading(att: str, rep: str) -> str:
     """The rule's readings, per window."""
     a, r = att.split(" (")[0], rep.split(" (")[0]
-    if "merges" in a and "merges" not in r:
+    if a == "merges" and "merges" not in r:
         return "repulsion keeps them apart"
     if "merges" in a and "merges" in r:
         return "a sign-pure cut merges, either sign"
+    if a == "leans merges":     # the rule's readings name only "merges" (/challenge-pr on #179, 1)
+        return "a lean only (not a reading)"
     if a in ("too few",):
         return "too few"
     return "not OV repulsion"
