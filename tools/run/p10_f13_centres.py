@@ -56,7 +56,7 @@ BANDS = {"L1-8": tuple(range(1, 9)), "L9-16": tuple(range(9, 17)), "L17-23": tup
 COLUMNS = ("c3x", "c2")
 MIN_A, MIN_B = 3, 10                                        # A9: first set, second set (placed)
 MIN_LAYERS, MIN_PASSAGES = 3, 6
-NULL_SE, NULL_MAX_SHARE = 3.0, 0.01
+NULL_SE, NULL_RATE, NULL_Q = 3.0, 0.0027, 0.999          # a 3-SE miss's two-sided rate; the bar's quantile
 ATTN_ROW_TOL, ATTN_UPPER_TOL = 1e-3, 1e-6
 FIRST = (512, "wiki_paragraph")
 HOMER_MAX = 512
@@ -128,6 +128,13 @@ def ordinary_sets(D: np.ndarray, O: np.ndarray, deltas: Sequence[float]) -> np.n
         acc[:, rows, j] = a
         blocked |= a[..., None] & W[:, j, :]
     return acc
+
+
+def null_bar(total: int) -> int:
+    """The most 3-SE misses a correct null gives in ``total`` records: Binomial(total, 0.0027)'s 99.9th
+    percentile (amended: a 1 % share refused ~5 of 252 correct cells by chance)."""
+    from scipy.stats import binom
+    return int(binom.ppf(NULL_Q, total, NULL_RATE))
 
 
 def exact_null_strong(D: np.ndarray, kept: np.ndarray, delta: float) -> float:
@@ -268,7 +275,7 @@ def read_passage(step: int, passage: str, acts: np.ndarray, attn: np.ndarray, ln
                 ex = exact_null_strong(D, kept, dl)
                 mu, sd = Ns[k, 1:].mean(), Ns[k, 1:].std(ddof=1)
                 total += 1
-                if abs(mu - ex) > NULL_SE * max(sd / np.sqrt(N_PERM), 1e-12) + 1e-9:
+                if abs(mu - ex) > NULL_SE * max(sd, np.sqrt(ex)) / np.sqrt(N_PERM) + 1e-9:
                     outside += 1
                 lay["exact_Ns"].append(ex)
                 lay["null_Ns_mean"].append(float(mu))
@@ -303,7 +310,7 @@ def read_passage(step: int, passage: str, acts: np.ndarray, attn: np.ndarray, ln
                 lay["a9"] = a9
             F["layers"][str(L)] = lay
         rec["null_check"][frame] = {"outside": outside, "total": total}
-        if outside > NULL_MAX_SHARE * total:
+        if outside > null_bar(total):
             raise F13Error(f"{step} {passage} {frame}: the null's mean is off its exact value in "
                            f"{outside} of {total} records")
         # F15: L_def's centres followed through depth

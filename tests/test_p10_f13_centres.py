@@ -111,3 +111,8 @@ def test_sign_label_and_isolated_leans():
     assert f.sign_label([1, 2, None, None], "up", "down") == "too few"
     labs = f.mark_isolated({0: "mixed", 2: "leans up", 4: "mixed"})
     assert labs[2] == "leans up (isolated)"
+
+
+def test_null_bar_allows_chance_misses_only():
+    assert 2 <= f.null_bar(216) <= 5
+    assert f.null_bar(0) == 0

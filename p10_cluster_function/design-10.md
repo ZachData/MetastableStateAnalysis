@@ -1058,7 +1058,13 @@ within δ of it and `1/(a′_x + 1)` for the rest (`tools/math_checks/renyi_f13.
 enumerated). The 200 draws must give it within 3 standard errors in ≤ 1 % of records (0.27 %
 expected), pooled over every record of a (step, passage), else that (step, passage) refuses (a
 check of the null's code; *amended before any output: per record, the bar would refuse ~0.3 % of
-correct records by chance*). `D_N` uses the exact mean; the draws carry `I` and F15.
+correct records by chance*). *Amended again at the batch's refusal at (0, `homer_iliad`), before any
+statistic was read: where the exact mean is tiny (0.002–0.006 at c = 2.5, L8–10) all 200 draws are
+0, so their sd is 0 and the deviation was divided by a 1e-12 floor; 2000 draws agree with the exact
+mean (z 1.5–2.1). The standard error is now `max(sd, √exact)/√200` (a count's Poisson spread), and
+a (step, passage, frame) refuses only when its count outside 3 SE exceeds Binomial(records,
+0.0027)'s 99.9th percentile (the 1 % bar would refuse ~5 of 252 correct cells by chance).*
+`D_N` uses the exact mean; the draws carry `I` and F15.
 **F13** per (step, passage, layer, δ), on kept positions: `N_s`, `N_o` (strong, ordinary centres);
 `D_N = log((N + ½)/(mean N_null + ½))`; `I` the mean normalised index `s/(n−1)` of the kept strong
 centres, `D_I = I − mean I_null`. A record is **in range** at δ when 3 ≤ `N_s` ≤ kept/2 (else
