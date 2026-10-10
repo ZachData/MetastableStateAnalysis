@@ -891,6 +891,15 @@ needs the user to enable it on GitHub.
 of a design before running it, and print it on every record
 (`max_attainable_E`). Status: ✅ in the runners since §3.51; 📋 for new designs.
 
+- 2026-10-09 (E1m, `/challenge-pr` on #177): a comparator built to give "a pull towards near tokens
+  scores 0" was never shown to do so. Its test planted a nearest-8 pull and asserted |X| < 0.15,
+  ten times the headline cells' size; the planted X was +0.14 (and +0.24 for a pull towards the
+  cloud's mean). The pairing matched similarity to 0.005 and still was not a null: tokens at equal
+  similarity to i are not in the same direction from i. Found by the reviewer, after the run and
+  the PR text had called the cells "membership". Rule: **a comparator's rule lists its planted
+  null and the size of its bias (not a bound) before the run, and no label is worded as the effect
+  until a pseudo-group or placebo of the same pairing has been scored.**
+
 ## 7. Literature found after the construction was built
 
 **Instances.** §3.22's self-repair framing turned out to be CoAx (published
@@ -1248,6 +1257,17 @@ a wrong premise, the check inherits it.
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user
 settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
+
+- 2026-10-09 (E1m, `design-10.md` "E1m"): the reading function counted a *leans pulls* E1 label as
+  "E1's pull" where the rule said *pulls together*; found when the reading table first printed,
+  and fixed to the rule's letter before anything was quoted. The rule was also silent on *leans*
+  (E1's rule had been silent on 1e's mixed windows): the report marks both. Rule: write the
+  reading's code from the rule's sentences one at a time, and list in the rule which labels it
+  does not name. Also this unit: a causal-view test planted a clustered group, so a pull towards
+  *later* members legitimately scored > 0 (earlier members point the same way); the test, not the
+  code, was wrong, and was replaced by one that changes the invisible rows. And one tracked doc
+  (`status-10.md`, number fixes) was rewritten through a `python` heredoc against `CLAUDE.md`
+  "While working" (use Edit); the rule exists for the re-inject cost.
 
 ## 12. Deleted, then needed
 

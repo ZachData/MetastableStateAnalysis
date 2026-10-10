@@ -202,6 +202,37 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **E1m done, 2026-10-09 (`status-10.md` §1.35; its title is the summary).** Blocked 31 (a), the
+> user's start. Rule `design-10.md` "E1m" (`0a86400`, before any move was scored; a geometry-only
+> coverage probe set EPS 0.02 first). `tools/run/p10_e1m_match.py`; output
+> `data/p10/e1m_match_2026-10-09/` (~9 min GPU, no refusal). Each member's fellows are paired with
+> the non-members of the nearest similarity (within 0.02); causal view primary, full beside.
+> Answer, after `/challenge-pr` on #177 and its amendment (rows fixed before they were read):
+> **the pairing is not a null** (planted group-blind pulls toward neighbours / the cloud's mean
+> score X +0.14 / +0.24; the first test's bound of 0.15 had hidden it), so the labels are not read
+> as membership. Causal view: attention is more aligned with the members than the paired
+> non-members in L9–16 at every step from 4000 (2 pulls together, 4 leans; 4 of 6 at EPS 0.05;
+> X1 and position agree) and at 4000 in L17–23, and away from them in L1–8 from 4000. 5 of E1's 13
+> "pulls together" cells do not hold in the causal view (11 of 13 in the full); no cell has this
+> where 1e descends, so "holds the group against the rest" is **not confirmed under the matched
+> causal comparator**. MLP: aligned at 64–2000, away from 4000 in L9–16. Cell means 0.006–0.014;
+> ~half the fellow relations pair. EPS 0.02 re-run reproduces the records exactly.
+> **Next, for the user (STATE.md Blocked 31):** (b) the pseudo-group placebo below (recommended),
+> or (c) stop here and take (d) Stage 2 / F13, (e′) ALBERT, or the all-attractive OV intervention
+> (E1m's signs per window: attention aligned in L9–16 from 4000, away in L1–8 from 4000; the MLP
+> the reverse in L9–16).
+> *Parked (E1m):* **a pseudo-group placebo.** Score the same pairing on |g| non-members nearest an
+> anchor row outside g (pool without g), several anchors per group; a membership effect is X_g less
+> theirs. Why: it is the null the pairing lacks. Cost: ~1 h to build and run (a pass, CPU scoring).
+> Could change: whether any E1m label is membership. Limit: pseudo-groups are looser than c3x's
+> density-selected groups.
+> *Parked (E1m):* **the nearer, unmatched fellows.** Why: the half of fellow relations with no
+> equally near non-member is where nearness and membership coincide; E1m cannot read it. Cost: none
+> that a comparator removes; it needs a different design (e.g. groups of tokens whose neighbours
+> are not their group, or an intervention). Could change: whether attention's pull needs the group
+> at all. *Parked (E1m):* **the rule was silent on *leans* and on 1e's *leans* windows**; both were
+> read as the weaker form / no reading added, marked in the report. Cost: a sentence, the user's.
+>
 > **E1 done, 2026-10-09 (`status-10.md` §1.34; its title is the summary).** The user picked the
 > Parked "energy against c3x's groups" after R9 (2026-10-09). Scan `lit-10.md` §18. Rule
 > `design-10.md` "E1" (`fb4dee1`, before any pass). `tools/run/p10_e1_energy.py`; output
@@ -225,7 +256,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > re-drawn by a label-blind clustering of the same cloud), so a pull towards near tokens scores
 > 0. Why: the one claim E1 could not make. Cost: a re-run (~15 min GPU) with the comparator and
 > a causal-field row (finding 2). Could change: whether attention knows the groups or only
-> nearness. Blocked 31.
+> nearness. Blocked 31. **Taken as E1m, above.**
 > *Parked (E1):* **coherence against nearness-matched draws.** Members' moves are parallel
 > beyond random sets in 28–33 of 33 cells, but the draws are not matched for nearness, so a
 > shared tag (`lit-10.md` §18 row 1) and proximity are not separated. Cost: the stored records

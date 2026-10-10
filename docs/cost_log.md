@@ -327,3 +327,10 @@ running median of the rows above it gets a line under the table saying why.
   tree's stale `STATE.md` and the current 50 KB one was read too; the GPU batch was watched with a
   per-step monitor, ~20 notifications each re-reading ~200k of context (a single completion wait
   would have cost one). Rule for next time: wait on a batch with one completion notice.
+| 2026-10-09 | Phase 10 E1m (Blocked 31 (a)): the pairing is not a null (planted X +0.14 / +0.24); labels read as alignment not membership; amendment after /challenge-pr (X1, position, EPS); #176's worktree removed | 80 | 253k | 13.6M | 52k | #177 |
+
+  Over 2× the running median (~5M): the unit ran twice (the run and PR at ~5.3M, then a full
+  amendment after `/challenge-pr` found the comparator was not a null: new beside fields, three
+  more GPU batches, a test rebuilt, six docs reworded); two `grep`/`sed` calls printed `STATE.md`'s
+  20 KB table rows into context (~50k each re-read); the batches were waited on with 3 blocking
+  calls each timing out into the background. Row taken before `/challenge-pr`'s second round.
