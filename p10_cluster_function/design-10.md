@@ -1055,8 +1055,10 @@ position, context together), not content as such. The null's mean strong count i
 Lemma C.1 on the cloud's empirical measure: `Σ_x 1/(a_x + 1)`, `a_x` the other tokens within δ of
 x (x is strong iff it arrives first in its own δ-ball); with position 0 held first, 0 for tokens
 within δ of it and `1/(a′_x + 1)` for the rest (`tools/math_checks/renyi_f13.py` M3, every order
-enumerated). The 200 draws must give it within 3 standard errors per record (a check of the
-null's code), and `D_N` uses the exact mean; the draws carry `I` and F15.
+enumerated). The 200 draws must give it within 3 standard errors in ≤ 1 % of records (0.27 %
+expected), pooled over every record of a (step, passage), else that (step, passage) refuses (a
+check of the null's code; *amended before any output: per record, the bar would refuse ~0.3 % of
+correct records by chance*). `D_N` uses the exact mean; the draws carry `I` and F15.
 **F13** per (step, passage, layer, δ), on kept positions: `N_s`, `N_o` (strong, ordinary centres);
 `D_N = log((N + ½)/(mean N_null + ½))`; `I` the mean normalised index `s/(n−1)` of the kept strong
 centres, `D_I = I − mean I_null`. A record is **in range** at δ when 3 ≤ `N_s` ≤ kept/2 (else
@@ -1090,7 +1092,11 @@ c = 2. At each L > `L_def`, `cov(L)` = the share of kept non-centres within δ o
 order nulls' centres followed the same way; `D_F′` the same against 200 uniform draws of as many
 kept tokens as the observed centres (the order null's count can differ from the observed). Band
 mean over L in band. Labels **captures more / less than a random order**, only where `D_F` and
-`D_F′` give the same label (else **count-dependent**). Beside: per-centre capture at L 23
+`D_F′` give the same label (else **count-dependent**). *Amended at the first record (512,
+`wiki_paragraph`), before any statistic was read: at c = 2 every kept token is a strong centre at
+L0–3 (`N_s` 213 of 213 kept at L0–1, 203 at L2), so L1's centres leave nothing to cover. The
+primary `L_def` is each (step, passage, frame)'s first layer ≥ 1 where `N_s` is in range at c = 2;
+8 and 16 stay fixed beside; L1 is dropped.* Beside: per-centre capture at L 23
 (non-centres within δ per centre, the paper's §6: ω(1) per centre?) against both nulls, and `cov(L)
 − cov(L_def)`.
 **First checks (refuse):** per (step, passage): activations finite and (25, n, 1024); attentions
