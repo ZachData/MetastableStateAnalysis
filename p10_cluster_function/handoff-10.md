@@ -202,6 +202,14 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **OV thread closed, 2026-10-10 (`status-10.md` §1.40; Blocked 34 (b), the user's pick; writing
+> only).** Tier 1 at "the sign of `S₊` matters beyond distance at 8000 L17–24; not shown at 16000;
+> c3x not singled out". The full-cut question at 16000 closes unanswered. Every OV Parked item
+> below is dropped. **Next here: Stage 3, F13, the Rényi / strong-Rényi centre scan, with
+> the cross (A9) and F15** (the user's pick, 2026-10-10), on stored base activations. Stage 2
+> is skipped by this order: deferred or dropped is the user's call (#186 finding 3); the user also asked whether signed-V
+> models were tested (yes, OV1–OV1d; `V = ±I` in Pythia and F13 on the cut models, never).
+>
 > **OV1d done, 2026-10-10 (`status-10.md` §1.39; its title is the summary).** Blocked 33 (a), the
 > user's pick (#183 finding 4 and its open question). Rule `design-10.md` "OV1d" (`204806a`, before
 > any pass); math `tools/math_checks/ov_dose_ov1d.py` (4/4); `tools/run/p10_ov1d_dose.py`
@@ -213,14 +221,14 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > curve does too (not read); at 16000 (OV1's window) not shown (L17–24 mixed, L9–16 a lean):
 > scaled-up `−S₊` merges too. **Caveat:** every arm sits ~1 stream-size from base, and the matches
 > interpolate across t 0.5 → 1.
-> *Parked (OV1d):* **a finer dose between t = 0.5 and 1** (e.g. 0.6, 0.7, 0.8, 0.9 in `w`), with
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **a finer dose between t = 0.5 and 1** (e.g. 0.6, 0.7, 0.8, 0.9 in `w`), with
 > distance also measured from `w+0` (the OV removed), which spreads with the dose (#184 finding 3),
 > and the distance-only null as a refuse-condition. Why: most matches interpolate linearly across
 > that gap, where `m` rises 0.14–0.47. Cost: ~3 min GPU (4 arms × 3 steps), a rule amendment.
 > Could change: whether 4000 L17–24 reads, and whether 8000 L17–24 survives measured points.
-> *Parked (OV1d):* `--first-only` passes all 7 passages before checking the first (#184 finding
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* `--first-only` passes all 7 passages before checking the first (#184 finding
 > 4; ~100 s, no unchecked record written).
-> *Parked (OV1d):* **a matched death share.** At matched distance the negative arms also die more
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **a matched death share.** At matched distance the negative arms also die more
 > (8000 L17–24 `w-2`/`w-3` 0.55–0.58); M reads only merged share. Cost: report only. Could change:
 > whether "merges more" is "survives less as separate groups" in general.
 >
@@ -239,7 +247,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > **Caveat:** at the same weights `S₊` moves the stream 2–3× as far as `−S₊`.
 > *Parked (OV1s), taken as OV1d 2026-10-10, done (§1.39):* a dose curve at matched centred distance
 > with a position-0 arm.
-> *Parked (OV1s):* one block at a time at 16000 (OV1's, unchanged).
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* one block at a time at 16000 (OV1's, unchanged).
 >
 > **OV1 done, 2026-10-10 (`status-10.md` §1.37; its title is the summary).** Blocked 31 (f), the
 > user's pick, which closes E1 at "no membership effect shown". The user's calls: the whole model
@@ -258,10 +266,10 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > group's kind stored (finding 3). Why: changes only the sign at the same size, and sets c3x
 > against the rest. Cost: ~35 min GPU. Could change: whether 16000 is the sign, and whether it is
 > c3x's groups or the whole stream. (Recommended in STATE.md Blocked 32.)
-> *Parked (OV1):* **a control matched in effect** (random cuts rescaled until `‖Δhs‖` matches
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **a control matched in effect** (random cuts rescaled until `‖Δhs‖` matches
 > `att`'s, per step). Why: separates "the sign" from "moved further". Cost: ~35 min GPU plus a
 > per-step scale search. Risk: cuts that move the stream 3–7× dissolved the groups at ≥ 32000.
-> *Parked (OV1):* **one block at a time at 16000** (cut only block ℓ, read `hs[ℓ+1]`). Why: says
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **one block at a time at 16000** (cut only block ℓ, read `hs[ℓ+1]`). Why: says
 > whether the collapse builds across blocks or sits in a few; on distribution. Cost: 23× the
 > passes at one step (~30 min). Could change: which layers carry the repulsion.
 > Defect fixed on the way: the runner's step loop freed nothing on the GPU (the model sits in
