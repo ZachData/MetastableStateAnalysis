@@ -207,13 +207,13 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > any statistic was read: pooled null check, F15's `L_def`, the check's SE floor and binomial bar);
 > scan `lit-10.md` §20; math `tools/math_checks/renyi_f13.py` (8/8); `tools/run/p10_f13_centres.py`;
 > `data/p10/f13_centres_2026-10-10/`. No forward pass. No cell reads anchor and ballast; the strong
-> centres are attended more at 64–128 and 1000–8000 (deep) and less late. Stage 3's "done when"
+> centres are attended more at 64–128 and 1000–8000 (deep) and less late; ballast testable in 5 cells, read in none. `/challenge-pr` on #187: accept with changes, all five taken (`status-10.md` §1.41 "After"). Stage 3's "done when"
 > (a number and a direction on both sweeps) is met on Stage 0's v1 dirs only; the pilot sweep is
 > not run. **Next, for the user: STATE.md Blocked 35.**
 > *Parked (F13):* **a per-record δ** (each record's δ set to a fixed strong-centre share, e.g. 10 %
 > of kept). Why: at a fixed δ the count is near all-or-nothing in 1024 dimensions, so most F13 /
 > F15 cells are too few. Cost: the producer again with a δ rule, ~4 min CPU. Could change: F13's
-> count and F15's labels; A9's late "less" already holds over c 1.5–2 and both frames. **What the
+> count and F15's labels (A9's arc already holds at a fixed 10 % share, `/challenge-pr` on #187; its late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000). **What the
 > late "attended less" tokens are** (frequency, part of speech, place in the sentence). Why: a
 > token unlike everything before it may simply be rare, and rare tokens may be read less. Cost: a
 > join on the stored records, free. Could change: whether A9's late reading is about geometry at

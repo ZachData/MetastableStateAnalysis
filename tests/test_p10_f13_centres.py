@@ -116,3 +116,25 @@ def test_sign_label_and_isolated_leans():
 def test_null_bar_allows_chance_misses_only():
     assert 2 <= f.null_bar(216) <= 5
     assert f.null_bar(0) == 0
+
+
+def test_a9_reading_never_reads_an_unread_comparison():
+    assert f.a9_reading("attended more", "attended less", "mixed") == "anchor and ballast"
+    assert f.a9_reading("attended more", "too few", "too few") == "centres attended, ballast not read"
+    assert f.a9_reading("attended more", "mixed", "too few") == "centres attended, members not ballast"
+    assert f.a9_reading("attended less", "mixed", "too few") == "centres not sinks"
+    assert f.a9_reading("attended less", "mixed", "attended less") == "centres not sinks; H-ANCHOR/BALLAST does not hold"
+    assert f.a9_reading("too few", "mixed", "mixed") == "not read"
+
+
+def test_binned_diff_leakage_under_a_smooth_position_trend_is_bounded():
+    # #187 finding 5: a smooth within-bin trend with an early-skewed set leaks; measured, not zero
+    n = 400
+    kept = np.arange(1, n)
+    bins = f.bins_of(kept)
+    v = -np.log(np.arange(n) + 1.0)                            # steepest at the start, like log ρ's residual
+    A = kept[kept % 5 == 1][:20]                               # early-skewed: the first 100 positions
+    B = np.setdiff1d(kept, A)
+    leak = f.binned_diff(v, A, B, bins)
+    span = max(v[b].max() - v[b].min() for b in bins)
+    assert abs(leak) < span                                    # bounded by the widest bin's spread

@@ -1119,6 +1119,16 @@ two planted clusters by their first members.
 stationarity against index (Parked); freeze centres (F20); say why a centre is attended; test
 anything. One seed, 7 passages, tier 1. Results: `status-10.md` §1.41.
 
+**F13 amendment (2026-10-10, after `/challenge-pr` on #187, after the output was read; records
+untouched, report regenerated).** (i) The reading "centres attended, members not ballast" needs
+`S_b` read; where `S_b` is too few it reads **"centres attended, ballast not read"** (finding 1,
+the same fault the `S_cm` branch had). (ii) A9's readable bar is ≥ 3 centres and ≥ 10 others, not
+F13's in-range bar, so at 2000–8000 "centre" is most kept tokens (finding 3). **Post-hoc checks
+beside, not labels** (`tools/run/p10_f13_review.py`, findings 3–5): `S_c` with a fixed 10 % centre
+share; the rank correlation of log ρ with each token's nearest-predecessor distance, both
+residualised on a cubic in log position (threshold-free); predecessors restricted to kept tokens
+(the sinks cannot make a token a non-centre); 16 position bins, and 8 with the first dropped.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

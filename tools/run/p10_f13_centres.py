@@ -576,7 +576,11 @@ def a9_reading(sc: str, sb: str, scm: str) -> str:
     if "too few" in (sc,):
         return "not read"
     if sc == "attended more":
-        return "anchor and ballast" if sb == "attended less" else "centres attended, members not ballast"
+        if sb == "attended less":
+            return "anchor and ballast"
+        if sb == "too few":
+            return "centres attended, ballast not read"           # S_b unread (#187 finding 1)
+        return "centres attended, members not ballast"
     if scm in ("too few", "mixed") or scm.startswith("leans"):
         return "centres not sinks"                              # S_cm unread or unresolved: no falsifier
     if scm != "attended more":
