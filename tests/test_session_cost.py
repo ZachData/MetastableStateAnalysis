@@ -117,3 +117,111 @@ def test_subagents_followed_and_suffixed_on_the_row(tmp_path, capsys):
         "| 2026-01-01 | unit · subagents: runner haiku-4-5 3k | 3 | 5k | 8k | 225 | #1 |")
     session_cost.main([str(p)])
     assert "runner         haiku-4-5       1      1  3k" in capsys.readouterr().out
+
+
+def _launch(mid, tid, aid, status="async_launched", model="claude-haiku-4-5-20251001"):
+    use = _asst(mid, [{"type": "tool_use", "id": tid, "name": "Agent",
+                       "input": {"subagent_type": "runner", "prompt": "run it"}}], 0, 100, 0, 1)
+    res = _result(tid, "launched")
+    res["toolUseResult"] = {"agentId": aid, "resolvedModel": model}
+    if status:
+        res["toolUseResult"]["status"] = status
+    return [use, res]
+
+
+def _notify(aid):
+    return {"type": "user", "message": {"role": "user", "content":
+            f"<task-notification>\n<task-id>{aid}</task-id>\n<status>completed</status>"}}
+
+
+def _batch(r):
+    return [(b["main_calls"], b["model"], b["open"]) for b in r["batches"]]
+
+
+def test_runner_batch_counts_launch_through_the_reading_call():
+    recs = [_asst("m0", [], 0, 100, 0, 1),                  # before: not counted
+            *_launch("m1", "t1", "a1"),                     # 1: the launch
+            _asst("m2", [], 0, 100, 0, 1),                  # 2: other work meanwhile
+            _notify("a1"),
+            _asst("m3", [], 0, 100, 0, 1),                  # 3: reads the report
+            _asst("m4", [], 0, 100, 0, 1)]                  # after: not counted
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert _batch(r) == [(3, "haiku-4-5", False)]
+
+
+def test_runner_batch_open_and_other_agents_ignored():
+    other = _asst("m0", [{"type": "tool_use", "id": "t0", "name": "Agent",
+                          "input": {"subagent_type": "Explore", "prompt": "x"}}], 0, 100, 0, 1)
+    recs = [other, *_launch("m1", "t1", "a1"), _asst("m2", [], 0, 100, 0, 1),
+            _notify("zz")]                                   # someone else's notification
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert _batch(r) == [(2, "haiku-4-5", True)]
+
+
+def test_runner_batch_foreground_and_last_notification_wins():
+    fg = _launch("m1", "t1", "a1", status="completed")       # report in the tool result
+    recs = [*fg, _asst("m2", [], 0, 100, 0, 1), _asst("m3", [], 0, 100, 0, 1),
+            *_launch("m4", "t2", "a2"), _notify("a2"), _asst("m5", [], 0, 100, 0, 1),
+            _notify("a2"), _asst("m6", [], 0, 100, 0, 1)]   # resumed, notified again
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert _batch(r) == [(2, "haiku-4-5", False), (3, "haiku-4-5", False)]
+
+
+def test_runner_batches_suffixed_on_the_row():
+    recs = [*_launch("m1", "t1", "a1"), _notify("a1"), _asst("m2", [], 0, 100, 0, 1)]
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert session_cost.row(r, "unit", "#1", "2026-01-01").startswith(
+        "| 2026-01-01 | unit · runner batches, main calls: 2 (haiku-4-5) |")
+    assert "runner batches, main-session calls: 2 (haiku-4-5)" in session_cost.report(r)
+
+
+def _queued(aid):
+    """The shape a notification takes when it arrives mid-turn."""
+    return {"type": "attachment", "attachment": {
+        "type": "queued_command", "commandMode": "task-notification",
+        "prompt": f"<task-notification>\n<task-id>{aid}</task-id>\n<status>completed</status>"}}
+
+
+def test_runner_batch_ends_at_a_mid_turn_notification():
+    recs = [*_launch("m1", "t1", "a1"), _asst("m2", [], 0, 100, 0, 1), _queued("a1"),
+            _asst("m3", [], 0, 100, 0, 1), _asst("m4", [], 0, 100, 0, 1)]
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert _batch(r) == [(3, "haiku-4-5", False)]
+
+
+def test_runner_launch_without_status_is_open_not_foreground():
+    recs = [*_launch("m1", "t1", "a1", status=None), _asst("m2", [], 0, 100, 0, 1),
+            _asst("m3", [], 0, 100, 0, 1)]
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert _batch(r) == [(3, "haiku-4-5", True)]
+
+
+def test_escalation_launched_by_the_reading_call_is_one_batch():
+    recs = [*_launch("m1", "t1", "a1"), _notify("a1"),
+            *_launch("m2", "t2", "a2", model="claude-sonnet-5"),   # reads Haiku, launches Sonnet
+            _asst("m3", [], 0, 100, 0, 1), _notify("a2"),
+            _asst("m4", [], 0, 100, 0, 1), _asst("m5", [], 0, 100, 0, 1)]
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert _batch(r) == [(4, "haiku-4-5>sonnet-5", False)]
+
+
+def test_monitor_window_by_task_id_skips_the_expiry(tmp_path, capsys):
+    use = _asst("m1", [{"type": "tool_use", "id": "t1", "name": "Monitor",
+                        "input": {"command": "tail -f log"}}], 0, 100, 0, 1)
+    res = _result("t1", "armed")
+    res["toolUseResult"] = {"taskId": "b1", "timeoutMs": 1800000}
+    event = {"type": "user", "message": {"role": "user", "content":
+             "<task-notification>\n<task-id>b1</task-id>\n<event>step 1 done</event>"}}
+    expiry = {"type": "user", "message": {"role": "user", "content":
+              "<task-notification>\n<task-id>b1</task-id>\n"
+              "<event>[Monitor expired after 30m with 2 events delivered.]</event>"}}
+    recs = [use, res, _asst("m2", [], 0, 100, 0, 1), event, _queued("b1"),
+            _asst("m3", [], 0, 100, 0, 1), _asst("m4", [], 0, 100, 0, 1), expiry,
+            _asst("m5", [], 0, 100, 0, 1)]
+    p = tmp_path / "s.jsonl"
+    p.write_text("\n".join(json.dumps(x) for x in recs))
+    session_cost.main([str(p), "--task", "b1", "--task", "nope"])
+    assert capsys.readouterr().out.splitlines() == [
+        "b1: 3 main calls (Monitor)", "nope: no launch found"]
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert r["batches"] == []                   # a Monitor is not a runner batch

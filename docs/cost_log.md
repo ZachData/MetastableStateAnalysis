@@ -7,6 +7,20 @@ Appended by the Stop protocol (`CLAUDE.md` step 7):
 - **peak ctx**: the largest single-call context (input + cache read + cache creation).
 - **total ctx**: that summed over calls. This is the number the 2× rule reads.
 - **tool out**: tool-result size, chars ÷ 4.
+- **runner batches, main calls** (suffix on the unit): per runner batch (an
+  escalation chained in), the main session's calls from the launch through the
+  call that reads its report, other work done meanwhile included
+  (`tools/session_cost.py` docstring, "Task windows").
+  Before the runner, under the same window, on each batch's Monitor (`--task`):
+
+| batch | transcript | task id | main calls |
+|---|---|---|---|
+| E1 (#176) | `4f0e808b-07ea-4409-92b1-fe40dd483a51` | `b1qbccdt6` | 21 |
+| E1p (#178) | `09bdade4-480c-46a8-bb1b-6615001a888a` | `b8hrvjl6k` | 20 |
+| OV1 (#179) | `746e2f7a-246f-49bf-b937-b34665c66b28` | `bjr8uqu0c` | 36 |
+
+  Re-run: `python tools/session_cost.py ~/.claude/projects/-run-media-system-WDS-500-Mets/<transcript>.jsonl --task <id>`.
+
 
 **Rule (`LESSONS.md` lesson 9):** a row whose total ctx is more than 2× the
 running median of the rows above it gets a line under the table saying why.
@@ -344,3 +358,4 @@ running median of the rows above it gets a line under the table saying why.
   itself added ~10 calls. Next time: one background `until` with no per-step events. Row taken
   before `/challenge-pr`.
 | 2026-10-10 | Process: run-and-watch to a Haiku `runner` agent (≤ 3 mechanical fixes, then Sonnet, then the main session); `session_cost.py` counts subagents and models; tested on 2 scratch jobs (`claude -p --agent runner`, Haiku, < $0.01 each, separate sessions not in this row) | 31 | 90k | 2.2M | 12k | #180 |
+| 2026-10-10 | Process: main-session calls per runner batch on the cost row (`session_cost.py` task windows, both notification shapes, escalations chained), baseline from the last three Monitor-watched batches by the same function; `../Mets-runner` and `claude/runner-agent` removed (taken after /challenge-pr, before the fix commit) · subagents: general-purpose opus-5-5 509k | 39 | 125k | 3.5M | 28k | #181 |

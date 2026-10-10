@@ -36,7 +36,7 @@ below exists.
   in `.claude/agents/runner.md`). Read its report, not the log; `git diff`
   every edit it lists. `ESCALATE TO: sonnet` → `runner` with `model: sonnet`,
   report as PRIOR; `ESCALATE TO: main` → you. Watching yourself: one
-  notification, the exit.
+  notification, the exit. Main calls per batch go on the step 7 row.
 - **Name the input.** A recorded result states the exact input set (battery
   hash, key list, env) it ran on.
 - **Write once.** A number lives in one file; others point to it. Tables over

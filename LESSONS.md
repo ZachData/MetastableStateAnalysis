@@ -386,6 +386,15 @@ well-formed but empty/zero result. It looks exactly like a real result.
   threads (16) beside a GPU job whose float64 finish was also on the CPU,
   and the load reached ~80 on 16 cores. Both slowed down. Concurrent jobs
   set `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS` explicitly.
+- 2026-10-10, #181 (`/challenge-pr`): the runner-batch counter read only the
+  idle shape of a `<task-notification>` (a `user` record); a mid-turn one is
+  an `attachment` (146 of 308 tasks in this repo's transcripts), so half the
+  batches would have read "open" and counted to the transcript's end. The
+  hand-counted baseline beside it put E1 at 67 calls, its window running to
+  the Monitor's expiry notice 30 min after the batch; under one rule it is
+  21. Rule: a counter is tested on every record shape its event takes in real
+  transcripts, and a baseline comes from the same function as what it is
+  compared with.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
