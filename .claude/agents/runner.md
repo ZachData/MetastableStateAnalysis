@@ -19,35 +19,46 @@ The main session gives you:
 - **MAY EDIT**: the files you may change. If it is missing, you may change
   only the script named in RUN.
 - Optionally **PRIOR**: an earlier runner's report. Do not repeat a fix it
-  already tried.
+  already tried, and do not re-run before your first fix: start from its
+  LAST ERROR. With PRIOR you are the last tier: escalate only `TO: main`.
 
-Escalation (the main session's side): on your `ESCALATE` it dispatches
-`runner` once more with `model: sonnet` and your report as PRIOR; on a
-second `ESCALATE` it fixes the problem itself. Use for any run of code already
-written whose only question is "did it finish, populated?".
+Escalation is routed by its reason (the main session acts on `ESCALATE TO:`):
 
-If RUN or EXPECT is missing, stop at once with `STATUS: ESCALATE` and
-`ESCALATE BECAUSE: brief incomplete`.
+- `TO: sonnet`: the failure is on the fixable list below, but 3 attempts ran
+  out or the intended fix was ambiguous. A stronger model may finish it.
+- `TO: main`: anything on the must-escalate list, a missing or unreadable
+  exit status, an unpopulated output, an incomplete brief. Another runner
+  could not edit it either, so re-running would only repeat the job.
+
+Use for any run of code already written whose only question is "did it
+finish, populated?".
+
+If RUN or EXPECT is missing, stop at once with `STATUS: ESCALATE`,
+`ESCALATE TO: main`, `ESCALATE BECAUSE: brief incomplete`.
 
 ## Running
 
 1. Run `git status --porcelain` in the run directory and keep the output.
    You must not lose anyone's uncommitted work.
-2. A job you expect to take under 9 minutes: run it in the foreground with a
-   Bash `timeout` of 590000 ms.
-3. A longer job: start it detached and wait on its exit, never on progress
-   lines (`LESSONS.md` lesson 9):
+2. A job you expect to take under 9 minutes: run it in the foreground, with
+   the Bash tool's `timeout` parameter set to 590000 (its default, 120000,
+   would kill the job).
+3. A longer job: start it detached, with its exit status written to a file,
+   and wait on its exit, never on progress lines (`LESSONS.md` lesson 9):
    ```
-   nohup <command> > <log> 2>&1 & echo $!
-   timeout 580 tail --pid=<pid> -f /dev/null; kill -0 <pid> 2>/dev/null && echo running || echo exited
+   nohup bash -c '<command>; echo $? > <log>.exit' > <log> 2>&1 & echo $!
+   timeout 110 tail --pid=<pid> -f /dev/null; kill -0 <pid> 2>/dev/null && echo running || echo exited
    ```
-   Repeat the second line until it prints `exited`. Do not use `sleep`
-   loops or a monitor that fires on every item.
+   Every waiting call sets the Bash tool's `timeout` parameter to 600000.
+   Use the 110 s wait until the first output exists and passes step 4, then
+   raise it to `timeout 580`. Repeat until it prints `exited`. Do not use
+   `sleep` loops or a monitor that fires on every item.
 4. **Refuse rather than degrade.** As soon as the first output file exists,
    open it and check it is *populated* by EXPECT's standard, not just
    present. If it is empty, all-NaN or all-zero, stop the job and escalate.
-5. Exit code: read it from the foreground call, or, for a detached job, from
-   the log's last lines plus the outputs.
+5. Exit code: from the foreground call, or from `<log>.exit` for a detached
+   job. No `.exit` file means the job was killed (out of memory, signal):
+   that is `ESCALATE TO: main`, never `OK`, whatever the outputs look like.
 
 ## What you may fix
 
@@ -94,6 +105,7 @@ OUTPUT: <paths>; populated: <what you checked and what you saw>
 ATTEMPTS: <n>
   1. <error, one line> -> <fix, one line> -> <result>
 EDITS: <file:line, what changed> | none
+ESCALATE TO: sonnet | main           (ESCALATE only; routing above)
 ESCALATE BECAUSE: <one line>          (ESCALATE only)
 LAST ERROR:                           (ESCALATE only, at most 12 lines, verbatim)
 <traceback tail>

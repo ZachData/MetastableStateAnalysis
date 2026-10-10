@@ -34,8 +34,9 @@ below exists.
   output and check it is *populated*, not just present.
 - **Run-and-watch goes to the `runner` agent** (Haiku; brief and escalation
   in `.claude/agents/runner.md`). Read its report, not the log; `git diff`
-  every edit it lists. `ESCALATE` → `runner` with `model: sonnet`, report as
-  PRIOR → then you. Watching yourself: one notification, the exit.
+  every edit it lists. `ESCALATE TO: sonnet` → `runner` with `model: sonnet`,
+  report as PRIOR; `ESCALATE TO: main` → you. Watching yourself: one
+  notification, the exit.
 - **Name the input.** A recorded result states the exact input set (battery
   hash, key list, env) it ran on.
 - **Write once.** A number lives in one file; others point to it. Tables over
@@ -88,8 +89,8 @@ Do these without being asked, in this order, in the same commit as the work:
    disagreements; neither side's argument settles one.** From a terminal, the
    same review runs as a separate instance, from any checkout (it reads the PR
    via `pull/<N>/head`, not the working tree): `claude -p "/challenge-pr <N>"`.
-   Known gap: its tokens are in a subagent transcript that
-   `tools/session_cost.py` does not count.
+   Its tokens are a `general-purpose` subagent in `session_cost.py`, so
+   re-take the step 7 row after it returns.
 
 Sessions end abruptly (context, watchdog, sleep), so do not batch these to
 the end of the session.
