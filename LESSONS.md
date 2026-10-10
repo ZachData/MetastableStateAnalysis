@@ -241,6 +241,13 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-10, Phase 10 OV1d: the rule carried OV1's "dissolves" flag (kept share < 0.2) to every
+  arm of a dose curve. On a flipped or control arm, low kept meant death; on `w+1` / `z+1` it
+  means *merged* (death 0.09–0.26), so the report printed "dissolves" for the arms that collapse
+  the groups (`status-10.md` §1.39 (iii)). Also, the matched measure `dc` was frozen without one
+  probe of its spread: every arm sat at ~1 stream-size, so most matches became interpolations
+  across one dose gap. Rule: a flag reused in a new arm set names the kind it means (death, not
+  "not kept"); a matching axis gets one record's values before the rule freezes.
 - 2026-10-06, Phase 10 R6w: the rule named L12, L24 and the layer mean as readings and required
   records readable at every step of a span, without counting how many such records exist. On c3
   that leaves L12 with 5 and L24 with 2 over 512–143000, and L24 with none over 64–512. The first

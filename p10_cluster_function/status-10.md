@@ -49,6 +49,7 @@
   - E1p, E1m on each move less its projection on the idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6 and the nearest 8; 1–2 % of the move's squared length). E1m's late alignment with the members in L9–16 does not remain (7 of its 9 alignment cells go mixed): not separable from the group-blind pulls. A lean push in L1–8 from 4000 is left but not read, because where members are each other's nearest (the real geometry) planted group-blind pulls still keep up to +0.14 after the projection. No membership effect is shown by E1, E1m or E1p. The parked pseudo-group placebo failed its planted null and was replaced (the user's call) — `p10_cluster_function/status-10.md` §1.36
   - OV1, every head's OV cut to the attractive part of its folded symmetric part (`S₊`), against random cuts of the same rank and size. At 16000 in L9–24 the stream collapses to a few groups and c3x's merge in every passage; the repulsive-only cut merges fewer than its controls. So at 16000 the OV's repulsive part keeps the stream from collapsing, c3x's groups among the rest (not shown specific to c3x). 4000–8000 lean the same way, 64–2000 is mixed, and from 32000 every cut wrecks the stream. The controls match the cut's weights, not its effect: `att` moves the stream 2–3× as far. Tier 1 — `p10_cluster_function/status-10.md` §1.37
   - OV1s, OV1's cut against its exact sign flip (`−S₊`: same eigenvectors, same size), and removing only the repulsive part (`K + S₋`) against removing only the attractive part (`K − S₊`), with every stored group's kind kept. The sign does it at fixed size: `S₊` merges the groups more than `−S₊` at 4000 L17–24 and 8000–16000 L9–24, in every readable passage, while `−S₊` merges about as much as OV1's random cuts and mostly dissolves the groups (42–50 % die at 16000). Removing only the repulsive part merges more than removing only the attractive part at 8000–32000 in L9–24 (and in 5 other windows), but `S₋` is the larger part there, so that adds no sign evidence. c3x's groups are not singled out: they merge no more than the other stored groups by the rule (one exception, 143000 L9–16, not read as a finding). `S₊` still moves the stream 2–3× as far as `−S₊`, so "sign" and "moved further" are still not separated. Tier 1 — `p10_cluster_function/status-10.md` §1.38
+  - OV1d, a dose curve (`±t·S₊`, and the same with position 0's attention channel left at base) read at matched centred distance. At 4000 and 8000 in L17–24 `S₊` merges c3x's groups more than `−S₊` at the same distance, in 7 of 7 passages, and still does with position 0 at base: there the sign is not the distance moved and not one shift through the sink. At 16000, OV1's own window, it is not shown: scaled up, `−S₊` moves the stream as far and merges the groups too (L17–24 mixed, L9–16 a lean). Every arm, the OV removed included, sits about one stream-size from base, so the match is among far-moved arms, mostly interpolated between t = 0.5 and 1. Tier 1 — `p10_cluster_function/status-10.md` §1.39
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -76,7 +77,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-10 · body `84dcd9c1a7`
+- **Reviewed:** 2026-10-10 · body `1c8845c684`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3173,6 +3174,76 @@ c3x's groups merge more than the other stored groups by the rule: c3x's groups a
 out. **It does not:** match the effect (the positive sign moves the stream 2–3× further at the
 same weights, part of it possibly a common shift), hold the size in S2, re-define groups on the
 cut model, or test anything. One seed, 7 passages, tier 1.
+
+### 1.39 OV1d, a dose curve at matched centred distance — **at matched centred `‖Δhs‖`, `S₊` merges c3x's groups more than `−S₊` at 4000 and 8000 in L17–24 (7 of 7 passages), and still does with position 0's attention channel left at base, so there the sign is not the distance moved and not one shift through the sink. At 16000, where OV1 read "repulsion keeps the stream from collapsing", it is not shown: L17–24 is mixed (`−2·S₊` and `−3·S₊` move the stream as far and merge 0.38–0.57), L9–16 and 8000 L9–16 lean. Every arm of the curve, the OV removed included, sits about one stream-size from base, so the match is made among far-moved arms, mostly by interpolating between t = 0.5 and 1** *(`design-10.md` "OV1d"; rule `204806a` before any pass, producer `dbbd8ec`; STATE.md Blocked 33 (a), the user's pick 2026-10-10)*
+
+**What ran.** `tools/run/p10_ov1d_dose.py run`: per (step, passage) 15 GPU passes (float32, TF32
+off): `base`; family `w`, each head's map `t·S₊` in the weights, t ∈ {−3, −2, −1, −0.5, 0, 0.25,
+0.5, 1}; family `z`, OV1s's hook with `Δ = t·S₊ − K` and column 0 of each head's `P` zeroed in
+`Δ`'s term, t ∈ {−2, −1, 0, 0.25, 0.5, 1}. Steps 4000, 8000, 16000 × 7 v1 passages = 21 records,
+~6.5 min wall (`runner` agent, no edits). Math: `tools/math_checks/ov_dose_ov1d.py` (4/4: `t·S₊`'s
+form; `z` sends key 0 through `K` and leaves token 0 at base; centring removes a common shift; c2a's
+frame does not, so `dz` is beside).
+
+**Inputs.** R9's label source (summary sha256 `5b758a2c`), Stage 0's v1 runs, R0's kept offsets,
+OV1s's records for the reproduction check. Output `data/p10/ov1d_dose_2026-10-10/` (`records/`,
+`report.json`, `report.txt`, `plan.json`, `run.sh`, `run.log`, `run.log.exit`). **First checks
+pass:** every base pass matches Stage 0 and base's c2a equals the stored c2a at all 24 layers of all
+21 records; on the first record (16000, `wiki_paragraph`) the hook with column 0 kept matches `w+1`
+in the weights to 7.9e-7 of `‖hs‖` (465 / 465 kinds), `w+1` and `w-1` reproduce OV1s's `att` and
+`neg` for 465 / 465 records each, and every `z` arm is off its `w` partner (0.35 for `z+1`,
+0.74–1.20 for the rest). Re-run: `run.sh`.
+
+**Labels** (S1's five windows read; `D` per passage = c3x's merged share, positive side less
+negative, at matched `dc`):
+
+| window | M (`w`) | `D` per passage | M0 (`z`) | `D` per passage |
+|---|---|---|---|---|
+| 4000 L17–24 | **merges** | +0.09 to +0.49 (7) | **merges** | +0.13 to +0.62 (7) |
+| 8000 L9–16 | leans merges (not read) | −0.14, else +0.03 to +0.46 | leans merges | −0.12, else +0.06 to +0.60 |
+| 8000 L17–24 | **merges** | +0.06 to +0.55 (7) | **merges** | +0.10 to +0.47 (7) |
+| 16000 L9–16 | leans merges (not read) | −0.03, else +0.09 to +0.42 | **merges** | +0.22 to +0.61 (6) |
+| 16000 L17–24 | mixed | 4 of 7 positive (−0.08 to +0.53) | mixed | 5 of 7 positive |
+
+Matched points per passage: M 3–6, M0 1–3. Outside S1's windows (printed, not read): 4000 L9–16
+leans merges on both; L1–8 too few or mixed. Chance at n = 7: 1/64 full label per cell
+(passages share the step's cut models, so it overstates the surprise).
+
+**The curves** (passage means, `w` family; `m` merged / `dc` centred distance):
+
+| window | `w-3` | `w-2` | `w-1` | `w-0.5` | `w+0` | `w+0.25` | `w+0.5` | `w+1` |
+|---|---|---|---|---|---|---|---|---|
+| 4000 L17–24 | 0.19 / 1.10 | 0.13 / 1.11 | 0.18 / 1.06 | 0.27 / 1.03 | 0.30 / 1.00 | 0.35 / 0.98 | 0.37 / 0.98 | 0.62 / 1.25 |
+| 8000 L17–24 | 0.23 / 1.25 | 0.24 / 1.46 | 0.26 / 1.13 | 0.27 / 1.05 | 0.28 / 1.02 | 0.35 / 1.00 | 0.50 / 1.02 | 0.64 / 1.72 |
+| 16000 L9–16 | 0.41 / 1.92 | 0.61 / 3.73 | 0.27 / 1.85 | 0.25 / 0.96 | 0.26 / 0.93 | 0.31 / 0.97 | 0.42 / 1.07 | 0.89 / 3.74 |
+| 16000 L17–24 | 0.57 / 1.30 | 0.38 / 2.07 | 0.21 / 1.42 | 0.23 / 1.10 | 0.20 / 1.03 | 0.21 / 1.01 | 0.28 / 1.07 | 0.74 / 2.48 |
+
+The full table, `z` and kept / death / `rel` / `dz` included: `report.txt`.
+
+**Beside, not labels.** (i) ***`dc` barely spreads.*** Removing the OV (`w+0`) already moves the
+centred stream 0.9–1.0 of its own size, and every arm from `w-1` to `w+0.5` stays within 0.9–1.45
+(except `w-1` at 16000 L9–16, 1.85). So the curve does not pass near base, and most matches set a
+negative arm against the positive branch's segment from `w+0.5` to `w+1`, linear across a gap where
+`m` rises by 0.14–0.47. The direct pair at nearly equal `dc` agrees where M merges: `w+0.5` against
+`w-0.5`, 0.37 / 0.27 (4000 L17–24) and 0.50 / 0.27 (8000 L17–24). (ii) ***At 16000 a large negative
+dose merges too.*** `w-2` reaches `w+1`'s distance at 16000 L9–16 (`dc` 3.73 against 3.74) and merges
+0.61 against 0.89; at L17–24 `w-3` merges 0.57. Moving the stream far, in either sign, merges c3x's
+groups there, and that is what makes OV1's flagship window mixed. (iii) ***The rule's "dissolves"
+flag misfires on `w+1` / `z+1`:*** their kept share is < 0.2 because they *merge* (death 0.09–0.26).
+It was OV1's flag for a flipped or control arm. The arms that do dissolve are `w-2` / `w-3` at 8000
+L17–24 (death 0.55–0.58) and `w-1` / `z-1` at 16000 L17–24 (0.54 / 0.57). (iv) ***Position 0's
+channel.*** `z+1` is 0.35 off `w+1`, and `z+t` for t ≤ 0.5 is 0.74–1.20 off its partner: with the
+rest of the OV cut, position 0's base channel moves the stream a lot. But the sign effect survives
+with it at base (M0 merges wherever M does, and at 16000 L9–16, where M only leans; there the rule's
+"still merges" stands on M0 alone). (v) M0 rests on 1–3 matched points per passage.
+
+**What it says.** At 4000 and 8000 in L17–24 the attractive-only OV merges c3x's groups more than
+its sign flip at the same centred distance, and not through position 0: there, OV1s's "the sign"
+survives the effect match. At 16000, OV1's own window, it does not: scaled up, `−S₊` moves the stream
+as far and merges the groups too, so "the OV's repulsive part keeps the stream from collapsing" is
+not shown beyond the distance moved at 16000. **It does not:** match near base (every arm is far);
+check the interpolation between t = 0.5 and 1 (no point inside it); hold the death share; read steps
+other than 4000–16000; test anything. One seed, 7 passages, tier 1.
 
 ---
 
