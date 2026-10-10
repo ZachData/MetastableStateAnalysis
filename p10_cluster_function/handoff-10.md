@@ -202,6 +202,27 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **E1p done, 2026-10-09 (`status-10.md` §1.36; its title is the summary).** Blocked 31 (b), the
+> user's start; the parked pseudo-group placebo was built on planted clouds first and failed its
+> null (group-blind pulls +0.02 to +0.51), so the user switched to a projection null. Rule
+> `design-10.md` "E1p" (`361a4b5`, before any real move; test note `3796e53`).
+> `tools/run/p10_e1p_project.py`; output `data/p10/e1p_project_2026-10-09/` (~25 min GPU, no
+> refusal; E1m reproduced exactly in all 126 records). Each move loses its projection on the
+> idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6, nearest 8; 1–2 % of its squared
+> length), then E1m's pairing. Answer: **E1m's late L9–16 alignment is the group-blind part** (7 of
+> its 9 alignment cells go mixed; 4000 keeps an isolated lean; 143000 leans pushes). **L1–8's lean
+> push from 4000 survives** (5 of 6 steps, causal only, 1e descends at all five). No cell reads
+> membership. MLP: the 128–2000 pull in L9–16 mostly goes; L1–8 pull from 16000 stays.
+> **Next, for the user (STATE.md Blocked 31):** E1 is closed at "no membership effect beyond the
+> idealised group-blind pulls; a lean push in L1–8 from 4000". Then (d) Stage 2 / F13, (e′)
+> ALBERT, or the all-attractive OV intervention (whose predicted sign per window is now: L9–16 none,
+> L1–8 push from 4000).
+> *Parked (E1p):* **the L1–8 push against a real head's kernel.** Why: the one surviving signal is
+> only beyond the idealised kernels; a head's own QK / position could carry it. Cost: per-head
+> kernels in the basis (1e's per-head arm has them), ~1 h. Could change: whether any E1 reading is
+> about the group at all. *Parked (E1p):* **the +0.042 planted residual** (blobs, full, β 8): within
+> the bound, quoted beside, not modelled.
+>
 > **E1m done, 2026-10-09 (`status-10.md` §1.35; its title is the summary).** Blocked 31 (a), the
 > user's start. Rule `design-10.md` "E1m" (`0a86400`, before any move was scored; a geometry-only
 > coverage probe set EPS 0.02 first). `tools/run/p10_e1m_match.py`; output

@@ -899,6 +899,15 @@ of a design before running it, and print it on every record
   the PR text had called the cells "membership". Rule: **a comparator's rule lists its planted
   null and the size of its bias (not a bound) before the run, and no label is worded as the effect
   until a pseudo-group or placebo of the same pairing has been scored.**
+- 2026-10-09 (E1p, Blocked 31 (b)): the pseudo-group placebo that #177's write-up recommended as
+  "the only way the pairing's labels can be read as membership" was itself never calibrated. Built
+  on the planted clouds first, it scored group-blind pulls +0.15 to +0.51 (and +0.02 to +0.09 when
+  the group is a density blob): a nearest-neighbour ball sits off its cloud's centre where a group
+  need not. The user had picked it on that recommendation; it was replaced (the user's call) by a
+  projection null before any real move was scored. In the projection's own tests, a full-view pull
+  scored in the causal view gave +0.14 to +0.33, which is a wrong planted null for that view, not a
+  bias in the instrument. Rule: **a null proposed to the user is first run on planted geometry (at
+  least two shapes, each view's own pull) and its planted bias quoted beside the recommendation.**
 
 ## 7. Literature found after the construction was built
 

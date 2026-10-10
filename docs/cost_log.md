@@ -334,3 +334,4 @@ running median of the rows above it gets a line under the table saying why.
   more GPU batches, a test rebuilt, six docs reworded); two `grep`/`sed` calls printed `STATE.md`'s
   20 KB table rows into context (~50k each re-read); the batches were waited on with 3 blocking
   calls each timing out into the background. Row taken before `/challenge-pr`'s second round.
+| 2026-10-09 | Phase 10 E1p (Blocked 31 (b)): placebo calibrated and replaced, projection null run | 69 | 187k | 9.4M | 38k | #178 |
