@@ -42,8 +42,8 @@ LAYERS, BANDS, READS, TINY, BETAS = e1.LAYERS, e1.BANDS, e1.READS, e1.TINY, e1m.
 VIS, PRIMARY, COLUMNS, EPS, FIRST = e1m.VIS, e1m.PRIMARY, e1m.COLUMNS, e1m.EPS, e1m.FIRST
 BASIS_BETAS = (0.0, 1.6, 3.5, 5.6)                         # E1's βs; β 0 is the visible cloud's mean
 NN = 8                                                     # E1m's planted neighbour pull
-SV_TOL = 1e-8                                              # relative to the largest singular value
-REPRO_TOL = 1e-9
+SV_TOL = 1e-8                                              # placed: relative to the largest singular value
+REPRO_TOL = 1e-9                                           # placed: E1m amendment's reproduce bound
 MIN_READABLE_SHARE = e1m.MIN_READABLE_SHARE
 
 

@@ -20,7 +20,7 @@
 - **Superseded / wrong:**
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
-- **Depends on:** 1d@4168cdd237, 10@55c0535617
+- **Depends on:** 1d@4168cdd237, 10@17b3940976
 - **Feeds:** 10
 - **Open threads:**
   - Whether the late split between heads and their sum is heads cooperating or a few large heads (the saved means cannot split it) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
