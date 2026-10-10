@@ -713,6 +713,56 @@ position confound is "open" for that band; a primary label that changes between 
 comparator; retained in the full view (11 of E1's 13 cells), and the comparator is not a null"**,
 not "withdrawn".
 
+**E1p, E1m on the moves less their group-blind part (STATE.md Blocked 31 (b), the user's start
+2026-10-09; changed from the parked pseudo-group placebo by the user the same day, after the
+calibration below; rule fixed 2026-10-09, before any real move was scored).** **Question:** does
+attention's move point at c3x's members beyond equally near non-members once every group-blind
+pull of the idealised field is taken out of it? (E1m's pairing is not a null: a pull towards
+neighbours or the cloud's mean scores X > 0, amendment (ii).) **Why not the placebo.** The parked
+pseudo-group placebo (|g| non-members nearest an anchor, matched on mean within-similarity to 0.05,
+8 anchors, Jaccard < 0.5; `X_g` less the pseudo-groups' mean) was built on planted clouds first
+(E1m's test cloud and one with six density blobs, the group one blob, 20 seeds) and failed its own
+null: group-blind pulls scored Y = +0.15 to +0.51 (one cloud) and +0.02 to +0.09 (blobs), against
+E1m's cells of 0.006–0.014. A nearest-neighbour ball sits off its cloud's centre where a group need
+not, and no tightness match fixes that. **Inputs, frame, moves, groups, passes, pairing, views,
+score:** E1m's unchanged (block L, EPS 0.02, MIN_MEMBERS 3, causal primary, full beside, R9's
+labels, 18 steps × 7 passages, one GPU pass each). **The group-blind basis**, per token i and view
+(V_i: E1m's `visible`): the tangent at `u_i` of `f_β(i) = Σ_{j∈V_i} softmax_j(β u_i·u_j) u_j − u_i`
+for β ∈ {0, 1.6, 3.5, 5.6} (E1's βs; β 0 is the visible cloud's mean) and `n8(i)` = the mean of the
+min(8, |V_i|) most similar rows of V_i, less `u_i` (E1m's planted neighbour pull); orthonormalised by
+SVD (singular values under 1e-8 of the largest dropped; an empty V_i gives no basis). **Residual:**
+each component's move `d_i` less its projection on that basis; E1m's `score_group` on the residuals
+(same `S`, so the same pairs) gives `X_p`, `A_obs`, `A_cmp`, `A_all`, `X1`. Beside, per group, view
+and component: the **removed share** (mean over members of |projection|² / |d_i|²), and E1m's
+unprojected `X` recomputed in the same pass. **Label:** E1's sign rule on `X_p` per (step, band), c3x,
+`attn:r1out`, β 3.5, causal; readable, ≥ 6 passages, chance line, isolated lean, β-robust (1.6,
+5.6), c2's step 0 as the baseline, steps 64–143000 primary, as E1m. **Readings, fixed before
+output, per primary cell:** *pulls together* → attention's move, beyond every combination of the
+idealised group-blind pulls, points at the members more than at equally near non-members:
+**membership beyond LN1-cosine nearness, within what the pairing reaches** (not beyond a real
+head's own QK or position); with 1e's causal window *descends* it holds the group against the rest,
+with *ascends* it pulls towards everything, the members most, else no reading added (E1m's tail);
+*leans* the weaker form, said; *mixed* → no membership effect beyond those pulls, and where E1m read
+*pulls* or *leans pulls* that cell was the group-blind part; *pushes apart* → it pushes members off
+equally near non-members beyond those pulls; *too few* → not separable here. Every cell where E1p
+and E1m differ is listed. **Calibration (the tests, run before any real move):** on both planted
+geometries (E1m's cloud and six blobs; 20 seeds each), a group-blind pull **outside** the basis
+(field at β 8; the mean of the nearest 4) scores `|mean X_p|` < 0.05 and within 4 s.e. + 0.02; a
+pull towards the members scores > 0.3; a random move ≈ 0; a move inside the basis leaves a residual
+under `TINY` (no `X_p`, counted); the residual is orthogonal to every basis vector; the causal basis
+is blind to later rows; with an empty basis `X_p` equals E1m's `X`. **First checks (refuse):** E1m's
+pass checks; at the first record (512, `wiki_paragraph`) E1m's unprojected `X` reproduces the
+stored E1m record to 1e-9 for every group, view, component and β (`data/p10/e1m_match_2026-10-09`);
+`X_p` finite for ≥ 25 % of its c3x groups in each view and not all equal; the removed share < 1 for
+the primary component. Step 512 first and opened before the other 17; the report refuses unless
+every record's unprojected `X` reproduces E1m's. **It does not:** remove a real head's own kernel
+(QK, position, V; the per-head arm's kernels are 1e's) or the MLP's; read unmatched fellows; give
+`X_p` a null distribution (signs only, as E1m); say what a group carries. **Rejected:** the
+pseudo-group placebo (above); a regression of `X` on the removed share (a model of how bias scales,
+which the planted clouds show depends on geometry); per-head kernels in the basis (a second
+instrument per head, and the per-head arm's question, not this one). One seed, 7 passages, tier 1.
+Results: `status-10.md` §1.36.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
