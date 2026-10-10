@@ -937,6 +937,15 @@ the hook gives base back exactly. Math: `tools/math_checks/ov_sign_ov1s.py`.
 the size in S2; re-define groups on the cut model; test anything. One seed, 7 passages, tier 1.
 Results: `status-10.md` §1.38.
 
+**OV1s amendment (2026-10-10, after `/challenge-pr` on #183, after the output was read; labels and
+records untouched, readings reworded, report regenerated with an identical table).** (i) S2's
+reading carries "(the larger part: not the sign)": OV1's median head has `‖S₋‖` 0.57–0.62 of `‖K‖`
+at 4000–16000 against `‖S₊‖` 0.39–0.44, so `K + S₋` removes more of the OV than `K − S₊`. (ii)
+S3 *mixed* reads "c3x's groups not singled out", not "the stream, not c3x": *mixed* is the
+every-passage rule not met, not evidence that c3x and the rest behave alike, and the rest is a
+different population. (iii) `neg`'s deaths are said beside S1 (42–50 % at 16000): S1 is "`S₊`
+merges where `−S₊` mostly dissolves".
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

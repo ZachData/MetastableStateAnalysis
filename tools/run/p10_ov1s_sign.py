@@ -433,13 +433,16 @@ def reading(table: Dict, step: int, band: str) -> List[str]:
     elif (step, band) in OV1_READ:
         out.append("OV1's reading is not the sign at fixed size")
     if s2 == "merges":
-        out.append("removing only the repulsive part merges c3x more than removing only the attractive part")
+        # S₋ is the larger part where it reads, so not the sign (/challenge-pr on #183, finding 1)
+        out.append("removing only the repulsive part merges c3x more than removing only the attractive part "
+                   "(the larger part: not the sign)")
     for s, x in (("S1", "S3a"), ("S2", "S3b")):
         if table[(step, band, s)]["label"] != "merges":
             continue
         lx = table[(step, band, x)]["label"]
+        # mixed is the rule not met, not "the same" (/challenge-pr on #183, finding 2)
         out.append({"c3x more": f"{x}: specific to c3x's groups", "c3x less": f"{x}: c3x's groups merge less "
-                    "than the rest"}.get(lx, f"{x}: the stream, not c3x in particular ({lx})"))
+                    "than the rest"}.get(lx, f"{x}: c3x's groups not singled out ({lx})"))
     for s in ("S1", "S2"):
         c = table[(step, band, s)]
         if c["label"].startswith("leans"):

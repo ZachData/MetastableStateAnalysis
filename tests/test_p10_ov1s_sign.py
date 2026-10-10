@@ -74,7 +74,7 @@ def test_labels_read_partner_and_rest():
     r = sg.reading(table, 16000, "L9-16")
     assert "the sign does it, at fixed eigenvectors and size" in r
     assert "S3a: specific to c3x's groups" in r
-    assert any(x.startswith("S3b: the stream") for x in r)
+    assert any(x.startswith("S3b: c3x's groups not singled out") for x in r)
     assert "neg moves the stream as far as att: OV1's 'moved further' caveat does not apply" in r
 
 

@@ -209,15 +209,18 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > `data/p10/ov1s_sign_2026-10-10/` (709 s GPU, run by the `runner` agent, no edits, nothing
 > refused). `K + S₋` does not fit a 64-wide head (rank up to 128), so `norep` / `noatt` are a hook
 > on each block's attention output, checked on the real model against `att` in the weights (7.9e-7,
-> every kind the same). Answer: `S₊` merges more than `−S₊` at 4000 L17–24 and 8000–16000 L9–24
-> (the sign does it at fixed size); `K + S₋` more than `K − S₊` at 8000–32000 L9–24 and in 5 other
-> windows; the other stored groups merge as much as c3x's everywhere that reads (**the stream, not
-> c3x**). **Caveat:** at the same weights `S₊` moves the stream 2–3× as far as `−S₊`.
-> *Parked (OV1s):* **the effect-matched control** (OV1's parked item, Blocked 32 (a), now the only
-> open part of "sign against moved further"): e.g. `−S₊` scaled up until its `‖Δhs‖` matches
-> `att`'s. Why: the last confound on the 8000–16000 reading. Cost: a per-step scale search plus
-> ~10 min GPU. Risk: OV1's ≥ 32000 cuts dissolved the groups at 3–7×. Could change: whether
-> "the sign" is more than "moved further".
+> every kind the same). Answer, after `/challenge-pr` on #183 (accept with changes; findings 1–3
+> and 5 taken, readings reworded by the rule's amendment): `S₊` merges more than `−S₊` at 4000
+> L17–24 and 8000–16000 L9–24 (the sign does it at fixed size), where `−S₊` mostly dissolves the
+> groups (42–50 % die at 16000); `K + S₋` more than `K − S₊` at 8000–32000 L9–24 and in 5 other
+> windows, but `S₋` is the larger part, so no sign evidence; **c3x's groups are not singled out**.
+> **Caveat:** at the same weights `S₊` moves the stream 2–3× as far as `−S₊`.
+> *Parked (OV1s):* **a dose curve** (Blocked 33 (a); #183 finding 4 and its open question):
+> `±α·S₊` at a few α, read at matched centred `‖Δhs‖`, plus a hook arm with position 0's attention
+> column zeroed. Why: "sign against moved further" is the last confound on 4000–16000, and c2a
+> (centred) cannot see a common shift that `‖Δhs‖` counts. Cost: ~20–30 min GPU. Risk: a scaled
+> `−S₊` dissolves the groups (it already kills 42–50 % at α = 1). Could change: whether "the sign"
+> is more than "moved further", and whether the collapse goes through the sink.
 > *Parked (OV1s):* one block at a time at 16000 (OV1's, unchanged).
 >
 > **OV1 done, 2026-10-10 (`status-10.md` §1.37; its title is the summary).** Blocked 31 (f), the
