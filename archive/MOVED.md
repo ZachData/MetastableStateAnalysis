@@ -18,6 +18,7 @@ fetched readings, 18 arXiv ids `lit-8.md` lacks), so it stayed.
 | old | new | when |
 |---|---|---|
 | `UPDATE_PLAN.md` | `archive/UPDATE_PLAN.md` | 2026-09-22 |
+| `docs/TRIAGE_2026-09.md` | `docs/ROADMAP.md` (renamed and rebuilt; the triage text is `git show d50d2e5:docs/TRIAGE_2026-09.md`) | 2026-10-10 |
 | `core/CHANGES.md` | `archive/core/CHANGES.md` | 2026-09-22 |
 | `p1b_hemisphere/CHANGES-1b.md` | `archive/p1b_hemisphere/CHANGES-1b.md` | 2026-09-22 |
 | `p2b_imaginary/PLAN_2b.md` | `archive/p2b_imaginary/PLAN_2b.md` | 2026-09-22 |

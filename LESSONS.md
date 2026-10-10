@@ -20,6 +20,14 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
+  on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
+  and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
+  410m as a confirmation set (undecided, `docs/PHASE_REVIEW.md` "Open" 1–4): the docs are in
+  tension, and the proposal followed neither. Caught by reading the cards before writing the
+  plan; the roadmap's first draft then pinned the tension on `handoff-10.md`, which agrees with
+  the policy (`/challenge-pr` on #185, finding 3; `docs/ROADMAP.md` §10.3). Rule: before
+  proposing a registration, read the rung policy, the phase card and its standing constraints.
 - 2026-10-10 (OV1s): #182 merged with `STATE.md` "Open PRs" still calling
   itself open and listing worktrees and branches that were already gone. The
   correct line was in `../Mets-work` as an **uncommitted** edit made after the
@@ -1085,6 +1093,15 @@ the tangent's result lives only in prose.
 
 At each stage boundary, rank parked items by (chance it changes a decision) ÷
 cost, and pull the top one or two into the plan. Status: 📋 `CLAUDE.md`.
+
+**The same pattern one level up: phases.** 2026-10-10, named by the user ("we keep having
+this problem of running through a phase and then finding a problem and then building a new
+phase instead of just finishing the previous phase"). Phase 10 held for 1d; 1d paused while
+Phase 10 re-read its definition; 1e opened and paused; each left Blocked and Parked items open
+(over 20 Parked in `handoff-10.md`, 1e's U4 / U5, 1d's write-up), and Phase 10's own Stages 3–7
+never ran. Rule: a phase or thread opens with an exit condition and a unit budget, closes out
+(card, summary, every Parked item carried or dropped) before the next opens, and a mid-phase
+idea goes into `docs/ROADMAP.md` (`CLAUDE.md` "Phases and tests"). Status: 📋.
 
 ## 11. The author's own review cannot see what the author believes
 
