@@ -1031,6 +1031,13 @@ output by hand, watch only the batch's end and its failure signatures (`refusing
 passage gave 15 notifications over a 40-min batch, while the background `Bash` already notified
 on exit. The rule lived only here, and this file is not read at startup. ⚠️ Candidate: one line in
 `CLAUDE.md` "While working" ("one notification per batch: its exit").
+2026-10-09 (#176, E1): a fourth time, ~20 per-step notifications over a 15-min GPU batch, 17.1M
+context (3× the median). 2026-10-10: the candidate is in `CLAUDE.md`, and run-and-watch moves
+off the main session altogether: the `runner` agent (Haiku, small fresh context) runs, checks the
+first output, waits on exit only, fixes at most 3 mechanical bugs and escalates the rest. ✅
+Second gap, found while building it: `session_cost.py` did not read subagent transcripts, so
+every `/challenge-pr` was uncounted (one in session `6f6e18c3`: 26 Opus calls, 1.9M context).
+It now follows `<session>/subagents/` and splits context by model.
 
 ## 10. Tangents: interesting findings that hijack the plan
 

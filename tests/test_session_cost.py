@@ -91,3 +91,29 @@ def test_refuses_file_without_usage(tmp_path):
     p.write_text(json.dumps({"type": "user", "message": {"content": "x"}}) + "\n")
     with pytest.raises(SystemExit):
         session_cost.main([str(p)])
+
+
+def test_by_model_splits_calls_and_context():
+    recs = [_asst("a", [], 1, 100, 0, 1), _asst("b", [], 1, 200, 0, 1)]
+    recs[0]["message"]["model"] = "claude-opus-5-5"
+    recs[1]["message"]["model"] = "claude-haiku-4-5-20251001"
+    r = session_cost.analyse(json.dumps(x) for x in recs)
+    assert r["by_model"] == {"opus-5-5": {"calls": 1, "context_total": 101},
+                             "haiku-4-5": {"calls": 1, "context_total": 201}}
+
+
+def test_subagents_followed_and_suffixed_on_the_row(tmp_path, capsys):
+    p = tmp_path / "s.jsonl"
+    p.write_text("\n".join(_lines()))
+    sub = tmp_path / "s" / "subagents"
+    sub.mkdir(parents=True)
+    rec = _asst("h1", [], 0, 3000, 0, 5)
+    rec["message"]["model"] = "claude-haiku-4-5-20251001"
+    (sub / "agent-x.jsonl").write_text(json.dumps(rec))
+    (sub / "agent-x.meta.json").write_text(json.dumps({"agentType": "runner"}))
+    session_cost.main([str(p), "--row", "unit", "--pr", "#1", "--date", "2026-01-01"])
+    # main-session columns unchanged; the subagent's total rides on the unit cell
+    assert capsys.readouterr().out.strip() == (
+        "| 2026-01-01 | unit · subagents: runner haiku-4-5 3k | 3 | 5k | 8k | 225 | #1 |")
+    session_cost.main([str(p)])
+    assert "runner         haiku-4-5       1      1  3k" in capsys.readouterr().out
