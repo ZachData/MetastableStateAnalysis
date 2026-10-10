@@ -750,7 +750,15 @@ geometries (E1m's cloud and six blobs; 20 seeds each), a group-blind pull **outs
 (field at β 8; the mean of the nearest 4) scores `|mean X_p|` < 0.05 and within 4 s.e. + 0.02; a
 pull towards the members scores > 0.3; a random move ≈ 0; a move inside the basis leaves a residual
 under `TINY` (no `X_p`, counted); the residual is orthogonal to every basis vector; the causal basis
-is blind to later rows; with an empty basis `X_p` equals E1m's `X`. **First checks (refuse):** E1m's
+is blind to later rows; with an empty basis `X_p` equals E1m's `X`. *(Note at the tests, before any
+real move: the planted pull is each view's own; a full-view pull scored in the causal view reaches rows
+its basis cannot and scores +0.14 to +0.33, so it is not that view's null. The blob group sits after
+three blobs so the causal view has rows to pair. Calibration as run, `X_p` mean ± s.e. over 20 seeds,
+β 8 / nearest 4: one cloud full −0.009 ± 0.014 / −0.013 ± 0.018, causal −0.004 ± 0.017 / +0.022 ±
+0.021; blobs full +0.042 ± 0.016 / −0.018 ± 0.035, causal +0.015 ± 0.021 / −0.029 ± 0.026; members
++0.62 to +0.92; random ≤ 0.006. The blob full-view β 8 residual, +0.042 (2.6 s.e.), is within the
+bound but above E1m's real cell means; planted pulls are fully aligned with their field, the real moves
+~0.03, so it is quoted beside the labels, not used to rescale them.)* **First checks (refuse):** E1m's
 pass checks; at the first record (512, `wiki_paragraph`) E1m's unprojected `X` reproduces the
 stored E1m record to 1e-9 for every group, view, component and β (`data/p10/e1m_match_2026-10-09`);
 `X_p` finite for ≥ 25 % of its c3x groups in each view and not all equal; the removed share < 1 for
