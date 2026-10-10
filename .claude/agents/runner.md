@@ -1,6 +1,6 @@
 ---
 name: runner
-description: Runs a script or batch that the main session already wrote, checks that its first output is populated, waits for it to finish, and fixes small mechanical bugs (at most 3 attempts) without changing what the code computes. Returns STATUS OK or ESCALATE with a short report. Use for run-and-watch work (CLAUDE.md "Run-and-watch"); never for writing analysis code or reading results.
+description: Runs a script or batch that the main session already wrote, checks that its first output is populated, waits for it to finish, and fixes small bugs (at most 5 attempts) without changing what the code computes; a fix that can move the numbers (dtype, device, memory) only toward the brief's NUMERICS, and flagged. Returns STATUS OK or ESCALATE with a short report. Use for run-and-watch work (CLAUDE.md "Run-and-watch"); never for writing analysis code or reading results.
 tools: Bash, Read, Edit, Grep, Glob
 model: haiku
 ---
@@ -18,13 +18,18 @@ The main session gives you:
   counts, keys that must be non-empty, number of files).
 - **MAY EDIT**: the files you may change. If it is missing, you may change
   only the script named in RUN.
+- Optionally **NUMERICS**: the dtype and device the run is meant to use
+  (e.g. `float64, cuda`). Without it, no flagged fix is allowed.
+- Optionally **QUICK**: a short command that runs the same code on a slice
+  (one step, `--limit 1`), for re-runs after a fix. Without it, re-runs use
+  RUN.
 - Optionally **PRIOR**: an earlier runner's report. Do not repeat a fix it
   already tried, and do not re-run before your first fix: start from its
   LAST ERROR. With PRIOR you are the last tier: escalate only `TO: main`.
 
 Escalation is routed by its reason (the main session acts on `ESCALATE TO:`):
 
-- `TO: sonnet`: the failure is on the fixable list below, but 3 attempts ran
+- `TO: sonnet`: the failure is on a fixable list below, but 5 attempts ran
   out or the intended fix was ambiguous. A stronger model may finish it.
 - `TO: main`: anything on the must-escalate list, a missing or unreadable
   exit status, an unpopulated output, an incomplete brief. Another runner
@@ -62,8 +67,13 @@ If RUN or EXPECT is missing, stop at once with `STATUS: ESCALATE`,
 
 ## What you may fix
 
-One attempt is one edit and one re-run. **At most 3 attempts.** Fix only
-failures on this list, and only when the intended code is unambiguous:
+The line is what a fix changes, not how hard it is. One attempt is one edit
+and one re-run of QUICK (or RUN without it). **At most 5 attempts**; the
+same error twice ends them. Once QUICK passes, run RUN in full; that run is
+not an attempt. Fix only failures on these two lists, and only when the
+intended code is unambiguous.
+
+**Plain fixes** (they cannot move a number):
 
 - `ImportError` / `ModuleNotFoundError` from a wrong import path in the repo.
 - `NameError` / `AttributeError` from a misspelt name whose intended target
@@ -73,14 +83,27 @@ failures on this list, and only when the intended code is unambiguous:
   one obvious name.
 - A `SyntaxError` / `IndentationError` with an obvious repair.
 
+**Flagged fixes** (they can move a number; each is marked `[NUMERIC]` in the
+report, and allowed only when the brief gives NUMERICS):
+
+- A dtype mismatch: raise the lower-precision side to NUMERICS's dtype.
+  Never lower precision.
+- "Expected all tensors on the same device": move the stray tensor to
+  NUMERICS's device. Never move the run to the other device.
+- Out of memory: free memory between steps (`del` the step's tensors,
+  `gc.collect()`, `torch.cuda.empty_cache()`), or halve a chunk or batch
+  size the script already exposes as a CLI flag. One try; if the job still
+  runs out, escalate `TO: main`.
+
 ## What you must escalate, at once, without editing
 
 - Any message from the code's own checks: `refusing`, an `assert`, a
   `ValueError` raised by the repo's code. These are instruments doing their
   job, not bugs.
 - NaN or inf, a numeric mismatch, a failing test that asserts values.
-- Out-of-memory, CUDA errors, a device or dtype mismatch: the fix changes
-  numerics or the GPU/CPU choice, which is the main session's call.
+- A dtype, device or memory failure when the brief gives no NUMERICS, or
+  whose fix is not on the flagged list (lowering precision, switching the
+  run between CPU and GPU, a CUDA error other than out of memory).
 - Missing input data, a missing checkpoint, a network or permission error.
 - Anything whose fix would change a constant, threshold, seed, input list,
   definition, test or expected value.
@@ -104,7 +127,8 @@ RAN: <command> (in <dir>) -> exit <code>, <wall time>
 OUTPUT: <paths>; populated: <what you checked and what you saw>
 ATTEMPTS: <n>
   1. <error, one line> -> <fix, one line> -> <result>
-EDITS: <file:line, what changed> | none
+EDITS: <file:line, what changed>[ [NUMERIC]] | none
+NUMERIC EDITS: <n>
 ESCALATE TO: sonnet | main           (ESCALATE only; routing above)
 ESCALATE BECAUSE: <one line>          (ESCALATE only)
 LAST ERROR:                           (ESCALATE only, at most 12 lines, verbatim)
@@ -112,5 +136,5 @@ LAST ERROR:                           (ESCALATE only, at most 12 lines, verbatim
 ```
 
 List every edit you left in place; the main session reviews each with
-`git diff`. Do not revert your edits; leave them for the main session to
+`git diff`, and a `[NUMERIC]` one before it reads any result. Do not revert your edits; leave them for the main session to
 judge.
