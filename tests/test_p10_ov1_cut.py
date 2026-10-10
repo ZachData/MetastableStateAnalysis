@@ -5,8 +5,11 @@ one arm group links as merged, an unchanged partition as stable. The model tests
 `test_p10_ov1_cut_smoke.py`.
 """
 import numpy as np
+import pytest
 
 from tools.run import p10_ov1_cut as ov
+
+pytestmark = pytest.mark.deps                  # merge_tree / the label source, as E1's tests
 
 
 def dense_S(W_O, W_V, g):

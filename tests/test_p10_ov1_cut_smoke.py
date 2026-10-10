@@ -8,9 +8,13 @@ Needs the real torch/transformers: ``SMOKE_REAL_DEPS=1 pytest -m smoke``.
 import numpy as np
 import pytest
 
-from tools.run import p10_ov1_cut as ov
-
 pytestmark = pytest.mark.smoke
+
+
+@pytest.fixture
+def ov():
+    from tools.run import p10_ov1_cut                       # at use: other tiers block its deps
+    return p10_ov1_cut
 
 
 @pytest.fixture
@@ -41,7 +45,7 @@ def tiny_model(torch, seed=0):
 
 
 @pytest.mark.parametrize("arm", ["att", "rep", "ctl+3", "ctl-7"])
-def test_written_heads_are_the_target(torch64, arm):
+def test_written_heads_are_the_target(torch64, ov, arm):
     m = tiny_model(torch64)
     cut = ov.Cutter(m)
     info = cut.apply(arm, step=0)
@@ -68,7 +72,7 @@ def test_written_heads_are_the_target(torch64, arm):
                            cut.orig[l]["o_b"].numpy() + c_sum, atol=1e-12)
 
 
-def test_attention_output_is_the_cut_map(torch64):
+def test_attention_output_is_the_cut_map(torch64, ov):
     torch = torch64
     m = tiny_model(torch, 2)
     cut = ov.Cutter(m)
@@ -95,7 +99,7 @@ def test_attention_output_is_the_cut_map(torch64):
     assert np.allclose(got["o"][0].numpy(), want, atol=1e-9)
 
 
-def test_restore_is_exact(torch64):
+def test_restore_is_exact(torch64, ov):
     torch = torch64
     m = tiny_model(torch, 4)
     before = {k: v.clone() for k, v in m.state_dict().items()}

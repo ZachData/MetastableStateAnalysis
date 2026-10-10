@@ -17,6 +17,7 @@ c2a linked to it by R6's ``link_layer_pair`` (containment ≥ 0.5): each c3x gro
 from __future__ import annotations
 
 import argparse
+import gc
 import hashlib
 import json
 import os
@@ -405,7 +406,8 @@ def run(a) -> int:
                 return 0
         hk.close()
         del model, hk, cut, base, labels
-        torch.cuda.empty_cache()
+        gc.collect()                 # the model sits in reference cycles; without this the next
+        torch.cuda.empty_cache()     # step's load ran out of GPU memory (status-10 §1.37)
     return 0
 
 
