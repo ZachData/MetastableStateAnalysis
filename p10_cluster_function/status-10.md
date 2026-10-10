@@ -78,7 +78,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-10 · body `0f5da6b256`
+- **Reviewed:** 2026-10-10 · body `cf1965630c`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3261,6 +3261,7 @@ other than 4000–16000; test anything. One seed, 7 passages, tier 1.
 | cut to `S₊`, the stream collapses at 16000 L9–24 | measured; not separated from the distance moved | §1.37, §1.39 |
 | `S₊` merges more than `−S₊` at the same size | yes (4000 L17–24, 8000–16000 L9–24), but `S₊` moves the stream 2–3× as far | §1.38 |
 | the sign beyond distance (matched centred `‖Δhs‖`) | 8000 L17–24, also with position 0 at base; 4000 L17–24 not read; 16000 not shown | §1.39 |
+| what 8000 L17–24 rests on | one measured dose pair at nearly equal distance, `w+0.5` against `w-0.5` (`dc` 1.02 / 1.05, merged 0.50 / 0.27), positive in 7 of 7 passages, and no distance-only curve merges there; the interpolated matches agree. All 7 passages share one cut model per step | §1.39 "Labels", "Beside" (i) |
 | c3x's groups in particular | not shown in any of the three | §1.37–§1.39 |
 
 **Closes unanswered:** what removing the repulsive part does at 16000 beyond the distance moved

@@ -205,8 +205,9 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > **OV thread closed, 2026-10-10 (`status-10.md` §1.40; Blocked 34 (b), the user's pick; writing
 > only).** Tier 1 at "the sign of `S₊` matters beyond distance at 8000 L17–24; not shown at 16000;
 > c3x not singled out". The full-cut question at 16000 closes unanswered. Every OV Parked item
-> below is dropped. **Next here: F13, the Rényi / strong-Rényi centre scan** (Stage 3; the
-> user's pick, 2026-10-10), on stored base activations; the user also asked whether signed-V
+> below is dropped. **Next here: Stage 3, F13, the Rényi / strong-Rényi centre scan, with
+> the cross (A9) and F15** (the user's pick, 2026-10-10), on stored base activations. Stage 2
+> is skipped by this order: deferred or dropped is the user's call (#186 finding 3); the user also asked whether signed-V
 > models were tested (yes, OV1–OV1d; `V = ±I` in Pythia and F13 on the cut models, never).
 >
 > **OV1d done, 2026-10-10 (`status-10.md` §1.39; its title is the summary).** Blocked 33 (a), the
