@@ -202,6 +202,27 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **OV1s done, 2026-10-10 (`status-10.md` §1.38; its title is the summary).** Blocked 32 (a′),
+> the user's pick (OV1's parked "sign flips at a fixed subspace"). Rule `design-10.md` "OV1s"
+> (`6278c39`, before any pass); math `tools/math_checks/ov_sign_ov1s.py` (3/3);
+> `tools/run/p10_ov1s_sign.py` (`508573b`); tests `test_p10_ov1s_sign.py` and `_smoke.py`; output
+> `data/p10/ov1s_sign_2026-10-10/` (709 s GPU, run by the `runner` agent, no edits, nothing
+> refused). `K + S₋` does not fit a 64-wide head (rank up to 128), so `norep` / `noatt` are a hook
+> on each block's attention output, checked on the real model against `att` in the weights (7.9e-7,
+> every kind the same). Answer, after `/challenge-pr` on #183 (accept with changes; findings 1–3
+> and 5 taken, readings reworded by the rule's amendment): `S₊` merges more than `−S₊` at 4000
+> L17–24 and 8000–16000 L9–24 (the sign does it at fixed size), where `−S₊` mostly dissolves the
+> groups (42–50 % die at 16000); `K + S₋` more than `K − S₊` at 8000–32000 L9–24 and in 5 other
+> windows, but `S₋` is the larger part, so no sign evidence; **c3x's groups are not singled out**.
+> **Caveat:** at the same weights `S₊` moves the stream 2–3× as far as `−S₊`.
+> *Parked (OV1s):* **a dose curve** (Blocked 33 (a); #183 finding 4 and its open question):
+> `±α·S₊` at a few α, read at matched centred `‖Δhs‖`, plus a hook arm with position 0's attention
+> column zeroed. Why: "sign against moved further" is the last confound on 4000–16000, and c2a
+> (centred) cannot see a common shift that `‖Δhs‖` counts. Cost: ~20–30 min GPU. Risk: a scaled
+> `−S₊` dissolves the groups (it already kills 42–50 % at α = 1). Could change: whether "the sign"
+> is more than "moved further", and whether the collapse goes through the sink.
+> *Parked (OV1s):* one block at a time at 16000 (OV1's, unchanged).
+>
 > **OV1 done, 2026-10-10 (`status-10.md` §1.37; its title is the summary).** Blocked 31 (f), the
 > user's pick, which closes E1 at "no membership effect shown". The user's calls: the whole model
 > at once, each arm against a control of its own rank and size. Scan `lit-10.md` §19; rule
@@ -215,7 +236,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > among the rest** (not shown specific to c3x). 4000 L17–24 and 8000 L9–16 lean (not read); mixed
 > at 64–2000; from 32000 every cut wrecks the stream (no reading). **Caveat:** the controls match
 > weights, not effect; `att` moves the stream 2–3× as far as they do.
-> *Parked (OV1):* **sign flips at a fixed subspace** (#179 finding 4): `−S₊` and `K + S₋`, every
+> *Parked (OV1), taken as OV1s 2026-10-10, done (§1.38):* **sign flips at a fixed subspace** (#179 finding 4): `−S₊` and `K + S₋`, every
 > group's kind stored (finding 3). Why: changes only the sign at the same size, and sets c3x
 > against the rest. Cost: ~35 min GPU. Could change: whether 16000 is the sign, and whether it is
 > c3x's groups or the whole stream. (Recommended in STATE.md Blocked 32.)

@@ -878,6 +878,74 @@ read as merged, and only c3x's kinds are stored. The reading is "the OV's repuls
 stream from collapsing into a few groups, c3x's among them". (iv) The chance line assumes
 independent passages; all 7 at a step share the same 21 cut models, so it overstates the surprise.
 
+**OV1s, the sign at a fixed subspace (STATE.md Blocked 32 (a′), taken by the user 2026-10-10; from
+`/challenge-pr` on #179, findings 3–4; rule fixed 2026-10-10, before any pass).** No new scan: the
+same question as OV1 (`lit-10.md` §19), with new arms. **Questions:** (1) is OV1's 16000 reading
+the sign, or the subspace and size its random controls did not hold? (2) Does removing only the
+repulsive part, with the rest of `K` kept, merge the groups? (3) Is it c3x's groups or the whole
+stream? **Inputs, frame, base pass, readout:** as OV1, except that **every stored c2a group's kind
+is stored** (c3x's and the rest), and 5 arms, not 23:
+
+| arm | each head's `K` becomes | its form on the plane (`x̂ᵀ K' x̂`) | written by |
+|---|---|---|---|
+| `base` | unchanged | `S` | |
+| `att` | `S₊` (OV1's arm, re-run) | `S₊` | weights (OV1's write-back) |
+| `neg` | `−S₊` (`att`'s eigenvectors and size, sign reversed) | `−S₊` | weights |
+| `norep` | `K + S₋` (only the repulsive part removed; the antisymmetric and off-plane part `K − S` kept) | `S₊` | a hook |
+| `noatt` | `K − S₊` (only the attractive part removed; `norep`'s mirror) | `−S₋` | a hook |
+
+`K + S₋` has rank up to 128 and does not fit a 64-wide head, so `norep` and `noatt` keep the base
+weights and add, per block, `Σ_h Σ_j P^h_ij Δ_h x̂_j` to the attention output (`Δ_h` = `S₋` or
+`−S₊`; `P^h` the head's own attention weights in that pass, `x̂` LN1's normalised input). The
+pairs are `att`/`neg` (same eigenvectors, same size, opposite sign) and `norep`/`noatt` (each
+removes one sign's part; `‖S₊‖ ≠ ‖S₋‖`, so the size is not held there). No random controls: OV1's
+records hold them.
+**Labels,** per (step, band) by OV1's sign rule (≥ 3 records per passage, ≥ 6 passages, merges /
+leans / mixed / too few, chance and "isolated" as OV1), each passage's value:
+
+| label | value per passage | names |
+|---|---|---|
+| **S1**, the sign | c3x's merged share under `att` less under `neg` | merges / separates |
+| **S2**, removal near base | c3x's merged share under `norep` less under `noatt` | merges / separates |
+| **S3a**, c3x or the stream (S1's pair) | (c3x − rest merged share) under `att` less the same under `neg` | c3x more / c3x less |
+| **S3b** (S2's pair) | the same with `norep`, `noatt` | c3x more / c3x less |
+
+"Rest" = the stored c2a groups not in c3x, in the same layers; a passage is readable for S3 with
+≥ 3 records on each side. Kept shares by the same rule beside (keeps / loses). Primary 64–143000.
+**Readings, fixed before output,** per window: S1 *merges* → **the sign does it, at fixed
+eigenvectors and size**; S1 not *merges* where OV1 read "repulsion keeps them apart" (16000
+L9–16, L17–24) → **OV1's reading is not the sign at fixed size**. S2 *merges* → **removing only
+the repulsive part merges c3x's groups more than removing only the attractive part, the rest of
+the OV kept**. S3a / S3b *c3x more* in a window where S1 / S2 *merges* → **specific to c3x's
+groups there**; *mixed* → **the stream, not c3x in particular**; *c3x less* → **c3x's groups
+merge less than the rest**. Leans are named, not read (OV1's amendment). Beside: a window where
+`neg` (or `noatt`) keeps < 0.2 of c3x's records carries "the flipped cut dissolves the groups";
+`‖hs_arm − hs_base‖ / ‖hs_base‖` per arm, and where S1 *merges* with `neg`'s ≥ `att`'s, OV1's
+"moved further" caveat does not apply there; the S3 single differences (c3x − rest under `att`,
+under `norep`) and the rest's merged share (near 1 = no room to tell).
+**First checks (refuse):** OV1's base checks and read-back bound (`neg`: every written pair ⪯ 0).
+**The hook path on the real model:** at the first step, `att` written through the hook (base
+weights, `Δ_h = S₊ − K`) against `att` written in the weights: per-layer `‖Δhs‖ / ‖hs‖` ≤ 1e-3
+and the same kind for ≥ 0.98 of the stored records (both placed), else refuse. **Reproduction:**
+`att`'s c3x kinds at the first record equal OV1's stored ones for ≥ 0.98 of them (placed). The
+first record, **(16000, `wiki_paragraph`)**, before the rest: every arm finite and off base, every
+stored group a kind, c3x and the rest both present, `att`'s kinds not all stable. Tests (tiny
+GPT-NeoX, float64): `neg` writes `−S₊`; a hook arm's block attention output is
+`Σ_j P_ij (K + Δ) x̂_j + c` summed over heads; `att` by hook equals `att` by weights; removing
+the hook gives base back exactly. Math: `tools/math_checks/ov_sign_ov1s.py`.
+**It does not:** match the cut's effect (`‖Δhs‖` is beside, not matched; Blocked 32 (a)); hold
+the size in S2; re-define groups on the cut model; test anything. One seed, 7 passages, tier 1.
+Results: `status-10.md` §1.38.
+
+**OV1s amendment (2026-10-10, after `/challenge-pr` on #183, after the output was read; labels and
+records untouched, readings reworded, report regenerated with an identical table).** (i) S2's
+reading carries "(the larger part: not the sign)": OV1's median head has `‖S₋‖` 0.57–0.62 of `‖K‖`
+at 4000–16000 against `‖S₊‖` 0.39–0.44, so `K + S₋` removes more of the OV than `K − S₊`. (ii)
+S3 *mixed* reads "c3x's groups not singled out", not "the stream, not c3x": *mixed* is the
+every-passage rule not met, not evidence that c3x and the rest behave alike, and the rest is a
+different population. (iii) `neg`'s deaths are said beside S1 (42–50 % at 16000): S1 is "`S₊`
+merges where `−S₊` mostly dissolves".
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
