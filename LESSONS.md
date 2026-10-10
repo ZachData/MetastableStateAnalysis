@@ -22,10 +22,12 @@ world moves, nobody updates the line, and the next session acts on it.
 **Instances.**
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
-  and 7e cards) keeps 410m exploration-only, while `handoff-10.md` "Standing constraints" names
-  F14 as the one to register on 410m: two docs disagree, and the proposal followed neither.
-  Caught by reading the cards before writing the plan (`docs/ROADMAP.md` §10.2). Rule: before
-  proposing a registration, read the rung policy and the phase's standing constraints.
+  and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
+  410m as a confirmation set (undecided, `docs/PHASE_REVIEW.md` "Open" 1–4): the docs are in
+  tension, and the proposal followed neither. Caught by reading the cards before writing the
+  plan; the roadmap's first draft then pinned the tension on `handoff-10.md`, which agrees with
+  the policy (`/challenge-pr` on #185, finding 3; `docs/ROADMAP.md` §10.3). Rule: before
+  proposing a registration, read the rung policy, the phase card and its standing constraints.
 - 2026-10-10 (OV1s): #182 merged with `STATE.md` "Open PRs" still calling
   itself open and listing worktrees and branches that were already gone. The
   correct line was in `../Mets-work` as an **uncommitted** edit made after the

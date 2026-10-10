@@ -64,35 +64,28 @@ expectations: the paper's model is recurrent, tied, without MLPs.
 The repeated failure: a phase finds a problem, a new phase opens to go around it, and the old one
 is left with open Blocked and Parked items (Phase 10 held for 1d, 1d's definition re-read by
 Phase 10 while 1e opened and paused; over 20 Parked items in `handoff-10.md`; 1e's U4 / U5; 1d's
-write-up). `LESSONS.md` 10 records it. From now on
-(`CLAUDE.md` "Phases"):
+write-up). `LESSONS.md` 10 records it; the calibration gate exists because `LESSONS.md` 6 records
+the null built after the output, again and again (E1m, E1p, OV1d).
 
-1. A phase or thread opens with an **exit condition** and a **unit budget** in its design.
-   At the budget it closes at what it knows, or the user extends it on the record.
-2. It closes with a **close-out**: card current, a one-page "what this phase established", the
-   "not established" list current, every Parked item marked *carried to X* or *dropped (why)*,
-   no Blocked item left without a decision or a home.
-3. A new idea mid-phase goes into this file, not into a new phase.
-4. Every test passes a **calibration gate** before it reads real data: the full pipeline on a
-   planted null (reads nothing at the stated rate) and a planted effect (detected). `LESSONS.md`
-   6 records the gate built after the output instead, again and again (E1m, E1p, OV1d).
-5. **Exploration and confirmation are separate.** 410m and 70m are exploration rungs
-   (`p8_scale_ladder/design-8.md`); a confirmatory claim is registered on a named rung or held-out
-   set before its data is looked at, and every effect size is quoted against the positive
-   control's where one exists.
+**The rules live in one place: `CLAUDE.md` "Phases and tests"** (exit condition and unit budget,
+close-out before the next phase opens, the calibration gate, the named family and the
+exploration rungs). This file only applies them. A **unit** is one session and one PR, as
+`CLAUDE.md` "One session per unit" uses the word.
 
 ## 4. Step 1: finish Phase 10
 
 **Exit condition.** Phase 10 closes when (i) the OV thread is closed, (ii) the parking account has
 been tested on its own terms (F13 with the anchor/ballast cross), (iii) the one functional test
-the phase never ran (loss coupling) has a number, and (iv) the close-out in §3 is done.
-**Budget: 5 units.** At 5 it closes at what it has.
+the phase never ran (loss coupling) has a number, and (iv) the close-out is done.
+**Budget: 4 units for 10.1–10.4, each including its calibration gate, plus the close-out (10.5),
+which is never cut.** If 10.2 or 10.4 needs a second unit, the last of 10.3 / 10.4 drops, not the
+close-out.
 
 | # | unit | what | cost | home |
 |---|---|---|---|---|
-| 10.1 | close the OV thread | Blocked 34 (b): tier 1 at "the sign matters beyond distance at 8000 L17–24 on 7 exploration passages, not shown at 16000; c3x not singled out". Writing only | none | `status-10.md` §1.39, handoff |
+| 10.1 | close the OV thread | if the user takes Blocked 34 (b) (§10.1): tier 1 at "the sign matters beyond distance at 8000 L17–24 on 7 exploration passages, not shown at 16000; c3x not singled out". **The full-cut question (what removing the repulsive part does at 16000) closes unanswered; nothing below takes it over.** B0's weight-space nudges ask a different, local question (the sign of a small change at the trained weights). Writing only | none | `status-10.md` §1.39, handoff |
 | 10.2 | F13 + A9 + F15 | the Rényi / strong-Rényi centre scan swept in δ, geodesic and `⟨Qx, Ky⟩`, joined to received attention, `Z_i/(i+1)` and membership; the coverage curve (`handoff-10.md` Stage 3). Stored activations, no partition needed. **Falsifier:** centres and members receive indistinguishable attention once position is divided out | free (CPU, stored) | Stage 3 |
-| 10.3 | F14, if registered | observed strong-centre count against Lemma C.1 with an exact i.i.d. null; the handoff says "register before looking". **Conflict to settle first (§10.2):** the rung policy keeps 410m exploration-only, while `handoff-10.md` names F14 as the one to register on 410m | free | Stage 5 item 2 |
+| 10.3 | F14, if registered | observed strong-centre count against Lemma C.1 with an exact i.i.d. null; the handoff says "register before looking" and keeps 1b / 1.4b reserved until a prediction names them. **To settle first (§10.3):** the rung policy keeps 410m exploration-only, while `status-10.md`'s card holds the 12 v2 prompts out on 410m as a confirmation set (scoring set and order undecided, `docs/PHASE_REVIEW.md` "Open" 1–4). F14 either registers on a reserved rung, or runs exploratory on 410m | free | Stage 5 item 2 |
 | 10.4 | loss coupling | per-token surprisal against c3x membership, position as a covariate (`handoff-10.md` Stage 6 item 1); does the gap open where A0's residual and §1.1's window do? One forward pass per prompt per checkpoint (GPU) | ~1 GPU hour, a guess | Stage 6 item 1 |
 | 10.5 | close-out | one-page summary of 10 (and 1d, 1e as they bear on it); `status-10.md` §6; card; every Parked item in `handoff-10.md` marked carried or dropped; Blocked 26, 27, 30, 34 closed | writing | §3 rule 2 |
 
@@ -105,7 +98,7 @@ the phase never ran (loss coupling) has a number, and (iv) the close-out in §3 
 | Stage 6 items 2–4, the J-lens rows F2–F10 | dropped | they read a cluster object 1d and Phase 10 found weak |
 | Stage 7, the drive as an instrument | Phase 9 (parked), revisited after B4 | B gives a lever on a known mechanism first |
 | ALBERT (Blocked 26 (e′)) | B0′, optional | it is the theory's own regime (tied weights): the positive control for the clustering instruments |
-| The OV thread's parked refinements (finer dose, matched death share, effect-matched controls, one block at a time) and E1's (placebo, planted pulls, per-head kernels) | dropped with their threads | each refines a closed question; B0's nudge harness asks the sign question cleanly (§7) |
+| The OV thread's parked refinements (finer dose, matched death share, effect-matched controls, one block at a time) and E1's (placebo, planted pulls, per-head kernels) | dropped with their threads, if Blocked 34 closes at (b) | each refines a question being closed; the full-cut sign question goes with them (B0 asks only the local one) |
 
 ## 5. Step 2: other open ends (in parallel with Step 1 where free)
 
@@ -134,10 +127,14 @@ sink and bias at that β.
 | A2 | per-component dissipation at the measured β, then mean-ablation | which heads and MLPs push apart, from which step; ablate the top ones: does energy turn monotone, do tokens re-cluster, at what loss? (`PROJECT.md` §3.8.3's exact split) | "these N components carry the anti-collapse force" is supported or refused |
 | A3 | one timeline | the energy break, the OV repulsive phase, the induction formation window, n-gram milestones (triage M2) and weights-only D1 / D3 / D4 (`FUTURE_IDEAS.md`) on the same 18 checkpoints | the curves are side by side, with their alignment or misalignment stated |
 | A4 | claim (a) and the Blog 1 retests | §5 rows 3–5 | adjudicated or recorded as unadjudicable |
-| A5 | generality | register one prediction (e.g. "the energy break falls in [128, 512]") on the rung §10.6 picks or on PolyPythias seeds, then run it | the project's first adjudication |
+| A5 | generality | register one prediction (e.g. "the energy break falls in [128, 512]") on the rung §10.7 picks or on PolyPythias seeds, then run it | the project's first adjudication |
 
 Risks (from the triage, still open): Pythia's LR warmup overlaps 512 and 1000–2000; sink and
 compression prior art (`2510.06477`); literature trigger 1 before A2's design freezes.
+**Models on disk** (`/challenge-pr` on #185, finding 6): Hugging Face downloads are blocked from
+this machine, and the PolyPythias seeds are cached only at step 0 and 143000, so A5 on seeds
+needs steps 128–512 fetched elsewhere first; ALBERT (B0′) and the CRFM GPT-2 checkpoints (B6)
+are not cached at all.
 
 ## 7. Track B: particles in a known circuit
 
@@ -145,11 +142,14 @@ compression prior art (`2510.06477`); literature trigger 1 before A2's design fr
 particles' interaction graph ("a two-stage relay of attention forces, split into the value
 operator's sign channels"), with nine `H-BRIDGE` rows: `P-I1` ran (INSUFFICIENT); `P-ST1`,
 `P-AB1`, `P-I3` are built and calibrated but unrun. B's design reads `p7_motifs/` first and
-reuses what holds.
+reuses what holds. **A candidate first unit, B-pre (free):** check whether those three registered
+rows can still be scored as built (inputs on disk, rung, gates; `P-AB1` and `P-I3` have no
+known-answer dry run). If they can, they may be a cheaper first adjudication than A5 and a
+better start for B than B0 (§10.4).
 
 | # | unit | what | done when |
 |---|---|---|---|
-| B0 | the nudge harness | choose a direction (a head's eigenvector, a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass |
+| B0 | the nudge harness | choose a direction, in the weights (a head's OV moved to `K ± ε·S₊`, one eigenvector's weight) or in the activations (a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass |
 | B0′ | optional: ALBERT or random GPT-2 | the clustering instruments where the theory's collapse is vivid | large effects there, or the instruments are suspect |
 | B1 | positive control: `L5H2` | its particle signature (each token pulled toward its left neighbour inside `L5H2`'s output subspace) should switch on inside (512, 4000] | it does (the instruments see a real mechanism, and "small" has a yardstick) or it does not (fix the instruments first) |
 | B2 | spectra from the weights | each member's symmetrised OV and QK spectra across checkpoints; dominant negative eigenpairs (the d = 2 reduction); principal angles between members (7e's free item); 2d's gradient-flow regime test per member; Phase 6's `U_neg` / `U_A` split on the circuit's subspace | a per-member table across training |
@@ -180,22 +180,27 @@ triage M3), own small models (triage M1).
 | 2 | B0 + B1 (the harness and the positive control) | 2–3 | B1's verdict decides whether B continues on these instruments |
 | 3 | A1, A2 and B2, B3 interleaved | 4–6 | each unit's own "done when" |
 | 4 | A3 (the joint timeline), B4, B5 | 3–4 | — |
-| 5 | A5 (registration, generality), C1 / C2 | — | §10.6 |
+| 5 | A5 (registration, generality), C1 / C2 | — | §10.7 |
 
-**Trade-off to decide (§10.3).** The triage aimed C2 at arXiv in December. Putting Track B's
+**Trade-off to decide (§10.4).** The triage aimed C2 at arXiv in December. Putting Track B's
 first units before Track A's pushes that back. The order above puts B0–B1 first because the
-positive control also tells Track A whether "small" means small.
+positive control also tells Track A whether "small" means small. Against it (`/challenge-pr` on
+#185, finding 7): Track A's quantities are global and already large in places (§1), so A needs
+that yardstick less than the cluster rows did, and B-pre may give an adjudication sooner.
 
 ## 10. Decisions for the user, by leverage
 
-1. **F13 in Phase 10** (10.2). Recommended: yes; without it the parking account closes untested.
-2. **F14 and the rung policy** (10.3). The policy keeps 410m exploration-only; `handoff-10.md`
-   names F14 for registration on 410m. Either F14 runs exploratory, or it registers on another
-   rung, or the policy gets an exception on the record.
-3. **Track order after Phase 10**, and whether the December target for C2 stands (§9).
-4. **`L5H2` as the positive control and first anchor** (B1).
-5. **`P-I5`'s target** (`STATE.md` Blocked 2) before Track B registers anything.
-6. **Which rung carries the first registration** (`STATE.md` Blocked 7): A5, `P-I7` and F14
+1. **Blocked 34: close the OV thread at (b)** (10.1). Recommended: yes, knowing the full-cut
+   question then closes unanswered; (a) is a finer dose on the same far-from-base design.
+2. **F13 in Phase 10** (10.2). Recommended: yes; without it the parking account closes untested.
+3. **F14 and the rung policy** (10.3). The policy keeps 410m exploration-only; `status-10.md`'s
+   card holds 12 prompts out on 410m as a confirmation set. Either F14 runs exploratory on 410m,
+   or it registers on a reserved rung, or the policy gets an exception on the record.
+4. **Track order after Phase 10**: B0–B1 first (§9), B-pre first (§7), or A first; and whether
+   the December target for C2 stands.
+5. **`L5H2` as the positive control and first anchor** (B1).
+6. **`P-I5`'s target** (`STATE.md` Blocked 2) before Track B registers anything.
+7. **Which rung carries the first registration** (`STATE.md` Blocked 7): A5, `P-I7` and F14
    compete for it.
 
 ## 11. What each phase gives the plan
