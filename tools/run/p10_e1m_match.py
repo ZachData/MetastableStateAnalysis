@@ -5,9 +5,11 @@ members more than at as many random other tokens, and `/challenge-pr` on #176 sh
 nearer each other than the nearest non-members in 95-98 % of groups, so that cannot separate
 membership from nearness. Here, per member i, each fellow member f (a member of the group other than
 i, visible to i) is paired with a **non-member of the same similarity to i** (``|u_i·u_n − u_i·u_f| ≤
-EPS``, greedy, nearest first, without replacement). Attention's weight on a token is a function of
-that similarity alone, so a pull towards near tokens gives the paired set the same force as the
-members': ``X_g = mean_i [cos(d_i, field of i's matched fellows) − cos(d_i, field of the paired
+EPS``, greedy, nearest first, without replacement). In the idealised field (``V = I``, unit LN1 rows) the weight on a token is a function of that
+similarity alone (a real head scores by its own QK and position), so a pull towards near tokens in that
+field gives the paired set the same weight as the members'. **The pairing is not a null for a pull towards
+neighbours or the cloud's mean** (planted: X ≈ +0.14 / +0.24; `/challenge-pr` on #177, finding 2; the
+tests assert it): ``X_g = mean_i [cos(d_i, field of i's matched fellows) − cos(d_i, field of the paired
 non-members)]``. A fellow with no non-member of its similarity is unmatched and left out (counted:
 where members are nearer than every non-member, nothing can be matched, and that is a result).
 Two visibilities: ``full`` (E1's) and ``causal`` (rows before i: 1e U2's field, what a causal head can
@@ -48,8 +50,8 @@ BETAS = e1.BETAS                                           # 3.5 first (primary)
 VIS = ("causal", "full")
 PRIMARY = ("causal", "attn:r1out", 3.5)
 COLUMNS = ("c3x", "c2")
-EPS = 0.02                                                 # similarity tolerance of a pair (rule)
-MIN_MEMBERS = 3                                            # members with a pair for a group's X (rule)
+EPS = 0.02                                                 # placed (coverage probe, geometry only); 0.01 / 0.05 beside
+MIN_MEMBERS = 3                                            # placed: members with a pair for a group's X
 MIN_RECORDS, MIN_PASSAGES = e1.MIN_RECORDS, e1.MIN_PASSAGES
 FIRST = e1.FIRST
 
@@ -120,20 +122,32 @@ def visible(vis: str, n: int, i: int) -> np.ndarray:
     raise E1mError(f"unknown visibility {vis}")
 
 
-def score_group(blk: Dict, rows: np.ndarray, vis: str, eps: float = EPS) -> Dict:
+def single_cosines(S: np.ndarray, M: np.ndarray, dn: np.ndarray, i: int, idx: np.ndarray) -> np.ndarray:
+    """``a[c, k] = cos(d^c_i, P⊥_{u_i} u_{idx[k]})``: each token alone, no sum (the amendment's
+    dispersion-free reading); NaN where ``|d_i|`` or the tangent part of ``u_j`` is under ``TINY``."""
+    tl = np.sqrt(np.maximum(1.0 - S[i, idx] ** 2, 0.0))
+    with np.errstate(invalid="ignore", divide="ignore"):
+        a = M[:, i, idx] / (dn[:, i][:, None] * tl[None, :])
+    return np.where((dn[:, i][:, None] < TINY) | (tl[None, :] < TINY), np.nan, a)
+
+
+def score_group(blk: Dict, rows: np.ndarray, vis: str, eps: float = EPS,
+                pos: Optional[np.ndarray] = None) -> Dict:
     """
     One group at one block, one visibility: per reading and β, ``A_all`` (all visible fellows),
     ``A_obs`` / ``A_cmp`` (the matched fellows / their paired non-members, over the members with
     both) and ``X = A_obs − A_cmp`` (NaN under ``MIN_MEMBERS`` members); plus the pairing's coverage.
+    Amendment (beside, after `/challenge-pr` on #177): ``X1`` the same with each token's own cosine
+    (no sum), and the mean position distance of the paired fellows / non-members (``pos``).
     """
     S, M, dn = blk["S"], blk["M"], blk["dn"]
     n = S.shape[0]
     inside = np.zeros(n, dtype=bool)
     inside[rows] = True
     C, B = M.shape[0], len(BETAS)
-    A_all, A_obs, A_cmp = [], [], []
+    A_all, A_obs, A_cmp, D1 = [], [], [], []
     rel = paired_rel = n_paired_members = 0
-    ds = []
+    ds, dpf, dpn = [], [], []
     for i in rows:
         vis_rows = visible(vis, n, int(i))
         fell, oth = vis_rows[inside[vis_rows]], vis_rows[~inside[vis_rows]]
@@ -146,24 +160,34 @@ def score_group(blk: Dict, rows: np.ndarray, vis: str, eps: float = EPS) -> Dict
             n_paired_members += 1
             paired_rel += len(pf)
             ds.extend(np.abs(S[i, pf] - S[i, pn]).tolist())
+            if pos is not None:
+                dpf.extend(np.abs(pos[pf] - pos[i]).tolist())
+                dpn.extend(np.abs(pos[pn] - pos[i]).tolist())
+            D1.append(np.nanmean(single_cosines(S, M, dn, int(i), pf) - single_cosines(S, M, dn, int(i), pn),
+                                 axis=1) if len(pf) else np.full(C, np.nan))
             A_obs.append(pair_cosines(S, M, dn, int(i), pf, BETAS))
             A_cmp.append(pair_cosines(S, M, dn, int(i), pn, BETAS))
     out: Dict = {"reads": {}, "cover": {
         "members": int(rows.size), "members_visible": int(len(A_all)), "members_paired": n_paired_members,
         "relations": int(rel), "paired": int(paired_rel),
-        "mean_abs_ds": float(np.mean(ds)) if ds else float("nan")}}
+        "mean_abs_ds": float(np.mean(ds)) if ds else float("nan"),
+        "mean_dpos_fellow": float(np.mean(dpf)) if dpf else float("nan"),
+        "mean_dpos_nonmember": float(np.mean(dpn)) if dpn else float("nan")}}
     all_ = np.stack(A_all) if A_all else np.full((0, C, B), np.nan)
     obs = np.stack(A_obs) if A_obs else np.full((0, C, B), np.nan)
     cmp_ = np.stack(A_cmp) if A_cmp else np.full((0, C, B), np.nan)
     both = np.isfinite(obs) & np.isfinite(cmp_)
+    d1 = np.stack(D1) if D1 else np.full((0, C), np.nan)
     for c, (comp, rd) in enumerate(READS):
         cell = out["reads"].setdefault(f"{comp}:{rd}", {})
+        ok1 = np.isfinite(d1[:, c])
+        x1 = float(d1[ok1, c].mean()) if ok1.sum() >= MIN_MEMBERS else float("nan")
         for b, be in enumerate(BETAS):
             k = int(both[:, c, b].sum())
             ao, ac = obs[:, c, b][both[:, c, b]], cmp_[:, c, b][both[:, c, b]]
             cell[str(be)] = {
                 "A_all": _mean(all_[:, c, b]), "A_obs": _mean(ao), "A_cmp": _mean(ac), "members": k,
-                "X": (float(ao.mean() - ac.mean()) if k >= MIN_MEMBERS else float("nan"))}
+                "X": (float(ao.mean() - ac.mean()) if k >= MIN_MEMBERS else float("nan")), "X1": x1}
     return out
 
 
@@ -175,7 +199,7 @@ def _mean(v: np.ndarray) -> float:
 # ---------------------------------------------------------------- the pass
 
 def read_passage(hs: np.ndarray, comps: Dict, ln: Dict, src: Path, step: int, passage: str,
-                 cache: Dict, kept: np.ndarray) -> List[Dict]:
+                 cache: Dict, kept: np.ndarray, eps: float = EPS) -> List[Dict]:
     """Every c2 group (c3x flagged) at L1–23 of one pass, read at block L (departure), both visibilities."""
     if not np.all(np.diff(kept) > 0):
         raise E1mError("kept offsets are not increasing: the causal field would not be 'rows before'")
@@ -184,7 +208,7 @@ def read_passage(hs: np.ndarray, comps: Dict, ln: Dict, src: Path, step: int, pa
         blk = e1.block_frame(hs[L], comps[L], ln["w"][L], ln["b"][L], ln["eps"], kept)
         for g, (rows, inx) in e1.groups_at(src, step, passage, L, cache).items():
             recs.append({"layer": L, "group": g, "c3x": inx, "size": int(rows.size),
-                         "blocks": {v: score_group(blk, rows, v) for v in VIS}})
+                         "blocks": {v: score_group(blk, rows, v, eps, kept) for v in VIS}})
     return recs
 
 
@@ -214,7 +238,7 @@ def check_populated(recs: List[Dict]) -> None:
             raise SystemExit(f"refusing: first record, {v}: X all equal")
 
 
-MIN_READABLE_SHARE = 0.25                                  # of c3x groups at the first record (rule)
+MIN_READABLE_SHARE = 0.25                                  # placed: of c3x groups at the first record
 
 
 def run(a) -> int:
@@ -230,7 +254,7 @@ def run(a) -> int:
     src = Path(a.labels)
     meta = {"rule": "design-10.md \"E1m\"", "code": code, "labels": str(src),
             "summary_sha256": hashlib.sha256((src / "summary.json").read_bytes()).hexdigest()[:16],
-            "eps": EPS, "min_members": MIN_MEMBERS, "betas": BETAS, "reads": READS, "primary": PRIMARY}
+            "eps": a.eps, "min_members": MIN_MEMBERS, "betas": BETAS, "reads": READS, "primary": PRIMARY}
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "plan.json").write_text(json.dumps(meta, indent=1) + "\n")
     tok = AutoTokenizer.from_pretrained("EleutherAI/pythia-410m", revision="step143000")
@@ -258,7 +282,7 @@ def run(a) -> int:
             chk = ua.check_pass(hs, {L: comps[L] for L in range(23)}, rd, "v1")
             chk["last_block_rel"] = e1.check_last_block(hs, comps[23], model)
             kept = np.asarray(pr["kept"], dtype=int)
-            recs = read_passage(hs, comps, ln, src, step, p, cache, kept)
+            recs = read_passage(hs, comps, ln, src, step, p, cache, kept, a.eps)
             rec = {"step": step, "passage": p, "run": str(rd), "code": code, "pass": "cuda:float32",
                    "kept": int(kept.size), "checks": chk, "groups": recs}
             if (step, p) == FIRST and not first_done:
@@ -345,6 +369,7 @@ def shares(recs: Dict, step: int, band: str, column: str, vis: str, read: str, b
     coverage (relations paired, members paired) over the column's groups."""
     xs, rel, pair, mem, memp = [], 0, 0, 0, 0
     groups = 0
+    x1s, wf, wn, wt = [], 0.0, 0.0, 0
     for p in PASSAGES:
         for g in (recs.get((step, p)) or {"groups": []})["groups"]:
             if g["layer"] in BANDS[band] and (column == "c2" or g["c3x"]):
@@ -356,13 +381,22 @@ def shares(recs: Dict, step: int, band: str, column: str, vis: str, read: str, b
                 mem += cv["members_visible"]
                 memp += cv["members_paired"]
                 x = b["reads"][read][str(beta)]["X"]
+                x1 = b["reads"][read][str(beta)].get("X1", float("nan"))
+                if np.isfinite(x1):
+                    x1s.append(x1)
+                if np.isfinite(cv.get("mean_dpos_fellow", float("nan"))) and cv["paired"]:
+                    wf += cv["mean_dpos_fellow"] * cv["paired"]
+                    wn += cv["mean_dpos_nonmember"] * cv["paired"]
+                    wt += cv["paired"]
                 if np.isfinite(x):
                     xs.append(x)
     xs = np.asarray(xs)
     return {"groups": groups, "readable": int(xs.size), "share_pos": float((xs > 0).mean()) if xs.size else float("nan"),
             "median_abs_X": float(np.median(np.abs(xs))) if xs.size else float("nan"),
             "paired_relations": pair / rel if rel else float("nan"),
-            "paired_members": memp / mem if mem else float("nan")}
+            "paired_members": memp / mem if mem else float("nan"),
+            "dpos_fellow": wf / wt if wt else float("nan"), "dpos_nonmember": wn / wt if wt else float("nan"),
+            "X1_readable": len(x1s), "X1_share_pos": float(np.mean(np.asarray(x1s) > 0)) if x1s else float("nan")}
 
 
 def reading(c_lab: str, f_lab: str, e1_lab: Optional[str], l1e: Optional[str]) -> str:
@@ -406,6 +440,17 @@ def report(a) -> int:
                     for s in steps:
                         for band in BANDS:
                             v = e1.cell_values(recs, s, band, col, vis, f"{comp}:{rd}", be, "X")
+                            res["rows"][key][f"{s}|{band}"] = {"label": e1.sign_label(list(v.values())), "values": v}
+    if any("X1" in g["blocks"]["causal"]["reads"][PRIMARY[1]][str(PRIMARY[2])]
+           for r in recs.values() for g in r["groups"][:1]):
+        for col in COLUMNS:
+            for vis in VIS:
+                for comp, rd in READS:
+                    key = f"{col}|{vis}|{comp}:{rd}|3.5|X1"
+                    res["rows"][key] = {}
+                    for s in steps:
+                        for band in BANDS:
+                            v = e1.cell_values(recs, s, band, col, vis, f"{comp}:{rd}", 3.5, "X1")
                             res["rows"][key][f"{s}|{band}"] = {"label": e1.sign_label(list(v.values())), "values": v}
     for col in COLUMNS:
         for vis in VIS:
@@ -469,7 +514,70 @@ def report(a) -> int:
                 labs = [res["rows"][f"c3x|{vis}|{comp}:{rd}|{be}"][f"{s}|{b}"]["label"] for s in steps
                         if s in PRIMARY_STEPS for b in BANDS]
                 lines.append(f"{vis:6} {comp}:{rd:<10} β{be:<4} " + ", ".join(f"{k} {v}" for k, v in Counter(labs).most_common()))
+    if f"c3x|causal|{PRIMARY[1]}|3.5|X1" in res["rows"]:
+        lines.append("\n== amendment, beside (c3x, steps 64-143000): single-token cosines X1 (no sum) against X, "
+                     "and the paired tokens' mean |Δposition|")
+        for vis in VIS:
+            for b in BANDS:
+                x1 = [res["rows"][f"c3x|{vis}|{PRIMARY[1]}|3.5|X1"][f"{s}|{b}"]["label"] for s in steps if s in PRIMARY_STEPS]
+                x = [res["rows"][f"c3x|{vis}|{PRIMARY[1]}|{PRIMARY[2]}"][f"{s}|{b}"]["label"] for s in steps if s in PRIMARY_STEPS]
+                lines.append(f"{vis:6} {b:6} X : " + " ".join(f"{L_ABBR[l]}" for l in x))
+                lines.append(f"{vis:6} {b:6} X1: " + " ".join(f"{L_ABBR[l]}" for l in x1))
+                dp = [res["shares"][f"c3x|{vis}|{s}|{b}"] for s in steps if s in PRIMARY_STEPS]
+                lines.append(f"{vis:6} {b:6} dpos fellow/non-member: " + " ".join(
+                    f"{d['dpos_fellow']:.0f}/{d['dpos_nonmember']:.0f}" for d in dp))
     (a.out / "report.txt").write_text("\n".join(lines) + "\n")
+    print("\n".join(lines))
+    return 0
+
+
+L_ABBR = {"pulls together": "P", "leans pulls": "p", "pushes apart": "X", "leans pushes": "x", "mixed": ".", "too few": "-"}
+
+
+def reproduce(a) -> int:
+    """The amendment's check: a re-run at the rule's EPS reproduces the original records' scored fields exactly."""
+    old, new = e1.load_records(a.old), e1.load_records(a.out)
+    if set(old) != set(new):
+        raise SystemExit(f"refusing: {len(set(old) ^ set(new))} (step, passage) records differ in the set")
+    worst, n = 0.0, 0
+    for k in old:
+        go, gn = old[k]["groups"], new[k]["groups"]
+        if [(g["layer"], g["group"], g["c3x"]) for g in go] != [(g["layer"], g["group"], g["c3x"]) for g in gn]:
+            raise SystemExit(f"refusing: {k}: the group lists differ")
+        for x, y in zip(go, gn):
+            for v in VIS:
+                for rd, cells in x["blocks"][v]["reads"].items():
+                    for be, c in cells.items():
+                        for f in ("A_all", "A_obs", "A_cmp", "X", "members"):
+                            a_, b_ = c[f], y["blocks"][v]["reads"][rd][be][f]
+                            n += 1
+                            if not (np.isnan(a_) and np.isnan(b_)):
+                                worst = max(worst, abs(a_ - b_))
+    print(f"reproduce: {n} values over {len(old)} records, max |old − new| = {worst:.2e}")
+    if worst > 1e-9:
+        raise SystemExit("refusing: the re-run does not reproduce the original records")
+    return 0
+
+
+def compare(a) -> int:
+    """Primary labels (c3x, causal, attn:r1out, β 3.5) per EPS, side by side."""
+    reps = {str(d): json.loads((d / "report.json").read_text()) for d in a.dirs}
+    steps = [s for s in STEPS if s in PRIMARY_STEPS]
+    lines = ["EPS sensitivity: c3x, attn:r1out, β 3.5, steps " + " ".join(map(str, steps))]
+    changed = total = 0
+    for vis in VIS:
+        for b in BANDS:
+            labs = {d: [r["rows"][f"c3x|{vis}|{PRIMARY[1]}|{PRIMARY[2]}"][f"{s}|{b}"]["label"] for s in steps]
+                    for d, r in reps.items()}
+            for d, ls_ in labs.items():
+                lines.append(f"{vis:6} {b:6} {Path(d).name:<24} " + " ".join(L_ABBR[x] for x in ls_))
+            base = labs[str(a.dirs[a.base])]
+            for d, ls_ in labs.items():
+                if d != str(a.dirs[a.base]):
+                    total += len(ls_)
+                    changed += sum(x != y for x, y in zip(base, ls_))
+    lines.append(f"cells whose label differs from {a.dirs[a.base].name}: {changed} of {total}")
+    (a.dirs[a.base] / "eps_compare.txt").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
     return 0
 
@@ -486,13 +594,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--labels", type=Path, required=True, help="the R9 label source (c3x, c2)")
     r.add_argument("--out", type=Path, required=True)
     r.add_argument("--steps", type=int, nargs="*", default=None)
+    r.add_argument("--eps", type=float, default=EPS, help="pairing tolerance (the rule's 0.02; 0.01 and 0.05 are "
+                   "the amendment's sensitivity runs)")
     r.add_argument("--first-only", action="store_true", help="the first record only, then stop")
     q = sub.add_parser("report")
     q.add_argument("--out", type=Path, required=True)
     q.add_argument("--e1", type=Path, default=None, help="E1's output dir (its labels beside)")
     q.add_argument("--u2-attn", type=Path, default=None, help="1e's attention arm (its v1 labels beside)")
+    q2 = sub.add_parser("reproduce")
+    q2.add_argument("--out", type=Path, required=True, help="the re-run at the rule's EPS")
+    q2.add_argument("--old", type=Path, required=True, help="the original records")
+    q3 = sub.add_parser("compare")
+    q3.add_argument("dirs", type=Path, nargs="+", help="report dirs, one per EPS")
+    q3.add_argument("--base", type=int, default=0, help="index of the rule's EPS in dirs")
     a = ap.parse_args(argv)
-    return {"probe": probe, "run": run, "report": report}[a.cmd](a)
+    return {"probe": probe, "run": run, "report": report, "reproduce": reproduce, "compare": compare}[a.cmd](a)
 
 
 if __name__ == "__main__":

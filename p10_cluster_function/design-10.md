@@ -691,6 +691,28 @@ a group carries. **Rejected:** random draws matched on the group mean (E1's `X_k
 (constructed to match distances the data cannot match, and a nearness-driven pull would still score
 > 0 since the members are the nearest). One seed, 7 passages, tier 1. Results: `status-10.md` §1.35.
 
+**E1m amendment (2026-10-09, after `/challenge-pr` on #177, before any row below was read; the
+primary labels, the rule's readings and the records above are untouched).** (i) **Wording:** the
+pairing matches the idealised field's similarity (unit LN1 rows, `V = I`); a real head scores by its
+own QK and position, so "membership beyond nearness" is "beyond LN1-cosine nearness". (ii) **The
+pairing is not a null:** planted clouds (`tests/test_p10_e1m_match.py`) give X ≈ +0.14 for a pull
+towards each token's nearest 8 tokens and ≈ +0.24 for a pull towards the cloud's mean (single-token
+X1 +0.11 / +0.17), group-blind moves, with the matched similarity to 0.005: tokens at the same
+similarity to i are not in the same direction from i, and a pull towards the local centre favours
+the cluster side. The headline cells (means 0.006–0.014) are below those sizes, but real `A_obs` are
+also ~0.03, so the bias scales with an alignment we cannot calibrate: **E1m labels are not read as
+membership on their own.** (iii) **Beside rows, beside only (no label's reading changes):**
+`X1` (each paired token's own cosine, no sum: the dispersion check, finding 3), the paired tokens'
+mean `|Δposition|` against the fellows' (finding 1), and the primary row at **EPS 0.01 and 0.05**
+(finding 5); a re-run at 0.02 must reproduce the original records' `X` to 1e-9 (`reproduce`) or
+refuse. (iv) **Reading, fixed now:** where `X1` disagrees in sign with `X` on a pulls / pushes
+cell, the cell is "set-cosine only" (dispersion suspect); where the paired non-members are on
+average at a different position distance than the fellows (ratio outside 0.8–1.25 in a band), the
+position confound is "open" for that band; a primary label that changes between EPS 0.01, 0.02 and
+0.05 is "EPS-dependent". (v) The correction to §1.34 reads **"not confirmed under the matched causal
+comparator; retained in the full view (11 of E1's 13 cells), and the comparator is not a null"**,
+not "withdrawn".
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

@@ -87,20 +87,43 @@ def test_a_pull_towards_the_members_scores_positive_and_away_negative():
         assert out["cover"]["members_paired"] >= m.MIN_MEMBERS
 
 
-def test_a_pull_towards_near_tokens_whatever_they_are_scores_about_zero_where_the_pairs_exist():
-    """Each token moves towards its own nearest 8 tokens, member or not: the matched non-members are as
-    near as the matched fellows, so the pull does not separate them."""
-    U, rows = _group_cloud(2)
+def _nn8(U):
     S = U @ U.T
     D = np.zeros_like(U)
     for i in range(len(U)):
         nn = np.argsort(-S[i])[1:9]
         D[i] = U[nn].mean(axis=0) - U[i]
-    D = np.repeat(_tangent(U, D)[None], len(m.READS), axis=0)
-    out = m.score_group(_blk(U, D), rows, "full")
-    cell = out["reads"]["attn:r1out"]["3.5"]
-    assert cell["members"] >= m.MIN_MEMBERS
-    assert abs(cell["X"]) < 0.15 and abs(cell["X"]) < abs(cell["A_obs"])
+    return D
+
+
+def _mean_X(make_move, n=40, field="X"):
+    out = []
+    for seed in range(n):
+        U, rows = _group_cloud(seed)
+        D = np.repeat(_tangent(U, make_move(U, seed))[None], len(m.READS), axis=0)
+        out.append(m.score_group(_blk(U, D), rows, "full")["reads"]["attn:r1out"]["3.5"][field])
+    return np.nanmean(out), np.nanstd(out) / np.sqrt(np.isfinite(out).sum())
+
+
+def test_a_move_independent_of_the_cloud_scores_zero_within_its_error():
+    """The placebo: a random move is not a membership pull (mean over 40 planted clouds)."""
+    mean, se = _mean_X(lambda U, seed: np.random.default_rng(1000 + seed).standard_normal(U.shape))
+    assert abs(mean) < 0.05 and abs(mean) < 4 * se + 0.02
+    mean1, _ = _mean_X(lambda U, seed: np.random.default_rng(1000 + seed).standard_normal(U.shape), field="X1")
+    assert abs(mean1) < 0.05
+
+
+def test_the_pairing_is_not_a_null_for_a_pull_towards_neighbours_or_the_cloud():
+    """`/challenge-pr` on #177, finding 2: a pull that ignores the group (each token towards its nearest
+    8 tokens, or towards the cloud's mean) still scores X > 0 under the pairing, because tokens at the
+    same similarity to i are not in the same direction from it (planted clouds: X ≈ +0.14 and +0.24,
+    X1 ≈ +0.11 and +0.17). This asserts the property of the instrument: the headline cells (means
+    0.006–0.014) are an order below this, and no planted pull here calibrates them."""
+    near, _ = _mean_X(lambda U, seed: _nn8(U))
+    mean, _ = _mean_X(lambda U, seed: U.mean(axis=0)[None, :] - U)
+    assert near > 0.05 and mean > 0.1
+    near1, _ = _mean_X(lambda U, seed: _nn8(U), field="X1")
+    assert near1 > 0.05
 
 
 def test_a_group_nearer_than_every_non_member_has_no_X_and_says_so():
