@@ -48,6 +48,7 @@
   - E1m, E1 again with each member's fellows paired to non-members of the nearest similarity to it (within 0.02), in the causal view (1e's) and the full. The pairing is not a null: a group-blind pull towards neighbours or the cloud's mean scores X +0.14 / +0.24 in planted clouds, so the labels are not read as membership. In the causal view attention's late move is more aligned with the members than with the paired non-members in L9–16 at every step from 4000 (2 pulls together, 4 leans; 4 of 6 at EPS 0.05) and at 4000 in L17–23, and away from them in L1–8 from 4000; single-token cosines and position distance agree on 13 of 14 such cells. 5 of E1's 13 "pulls together" cells do not hold in the causal view (11 of 13 in the full), and no cell has attention aligned with the members where 1e's attention descends, so E1's "holds the group against the rest" is not confirmed under it. The MLP is aligned with them at 64–2000 in L9–23 and away from them from 4000 in L9–16. Cell means 0.006–0.014; only about half the fellow relations have a pair — `p10_cluster_function/status-10.md` §1.35
   - E1p, E1m on each move less its projection on the idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6 and the nearest 8; 1–2 % of the move's squared length). E1m's late alignment with the members in L9–16 does not remain (7 of its 9 alignment cells go mixed): not separable from the group-blind pulls. A lean push in L1–8 from 4000 is left but not read, because where members are each other's nearest (the real geometry) planted group-blind pulls still keep up to +0.14 after the projection. No membership effect is shown by E1, E1m or E1p. The parked pseudo-group placebo failed its planted null and was replaced (the user's call) — `p10_cluster_function/status-10.md` §1.36
   - OV1, every head's OV cut to the attractive part of its folded symmetric part (`S₊`), against random cuts of the same rank and size. At 16000 in L9–24 the stream collapses to a few groups and c3x's merge in every passage; the repulsive-only cut merges fewer than its controls. So at 16000 the OV's repulsive part keeps the stream from collapsing, c3x's groups among the rest (not shown specific to c3x). 4000–8000 lean the same way, 64–2000 is mixed, and from 32000 every cut wrecks the stream. The controls match the cut's weights, not its effect: `att` moves the stream 2–3× as far. Tier 1 — `p10_cluster_function/status-10.md` §1.37
+  - OV1s, OV1's cut against its exact sign flip (`−S₊`: same eigenvectors, same size), and removing only the repulsive part (`K + S₋`) against removing only the attractive part (`K − S₊`), with every stored group's kind kept. The sign does it at fixed size: `S₊` merges the groups more than `−S₊` at 4000 L17–24 and 8000–16000 L9–24, in every passage, and `−S₊` merges no more than OV1's random cuts. With the rest of the OV kept, removing only the repulsive part merges more than removing only the attractive part at 8000–32000 in L9–24 (and in 5 other windows). In every such window the other stored groups merge as much as c3x's: the stream, not c3x (one exception, 143000 L9–16, not read as a finding). `S₊` still moves the stream 2–3× as far as `−S₊`, so "sign" and "moved further" are still not separated. Tier 1 — `p10_cluster_function/status-10.md` §1.38
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -3093,6 +3094,73 @@ early (≤ 2000) the sign makes no consistent difference against random cuts, an
 the cuts wreck the stream. **It does not:** say what holds the groups where the cut is mixed;
 follow the cut model's own groups (stored groups are linked, not re-defined); read the loss; test
 anything. One seed, 7 passages, tier 1.
+
+### 1.38 OV1s, the sign at a fixed subspace — **against its exact sign flip (`−S₊`: the same eigenvectors, the same size), the attractive-only cut merges c3x's groups more at 4000 L17–24 and 8000–16000 in L9–24, in every passage: there the sign does it at fixed size. With the rest of the OV kept, removing only the repulsive part (`K + S₋`) merges more than removing only the attractive part (`K − S₊`) at 8000–32000 in L9–24 (and at 64 and 2000 L9–16, 54000 L9–16, 143000 L1–16). In every one of those windows the other stored groups merge as much as c3x's: it is the stream, not c3x (one exception, 143000 L9–16, not read as a finding). Beside the rule: `S₊` moves the stream 2–3× as far as `−S₊` (and `K + S₋` ~2× `K − S₊`), so "the sign" is still not separated from "moved further"** *(`design-10.md` "OV1s"; rule `6278c39` before any pass, producer `508573b`; STATE.md Blocked 32 (a′), the user's pick 2026-10-10)*
+
+**What ran.** `tools/run/p10_ov1s_sign.py run`: per (step, passage) 5 GPU passes (float32, TF32
+off): `base`; `att` (`S₊`) and `neg` (`−S₊`), written in the weights as OV1 writes them; `norep`
+(`K + S₋`) and `noatt` (`K − S₊`), which have rank up to 128 and do not fit a 64-wide head, so
+they keep the base weights and a hook adds `Σ_h Σ_j P^h_ij Δ_h x̂_j` to each block's attention
+output (each head's own attention weights in that pass; `x̂` off LN1's input). Every stored c2a
+group's kind is kept, not only c3x's. 18 steps × 7 v1 passages = 126 records, 709 s wall
+(`runner` agent, no edits). Math: `tools/math_checks/ov_sign_ov1s.py` (3/3: the arms' forms on the
+plane, `S₊` / `−S₋` / `−S₊`; the rank > k that forces the hook; the hook's term linear in `Δ`).
+
+**Inputs.** R9's label source (summary sha256 `5b758a2c`), Stage 0's v1 runs, R0's kept offsets,
+OV1's records for the reproduction check. Output `data/p10/ov1s_sign_2026-10-10/` (`records/`,
+`report.json`, `report.txt`, `plan.json`, `run.sh`, `run.log`, `run.log.exit`); producer blob
+`tools/run/p10_ov1s_sign.py` at `508573b` (`de75d7294f`). **First checks pass:** every base pass
+matches Stage 0 and base's c2a equals the stored c2a at all 24 layers of all 126 records; on the
+first record (16000, `wiki_paragraph`), `att` written through the hook (base weights,
+`Δ = S₊ − K`) matches `att` in the weights to 7.9e-7 of `‖hs‖` with the same kind for all 465
+stored records, and `att`'s c3x kinds equal OV1's stored record for all 213. Re-run: `run.sh`.
+
+**Labels** (primary 64–143000; values per passage; full labels only; the 7 passages share the
+step's cut models, so the chance line, 1/64 full label per cell at n = 7, overstates the
+surprise):
+
+| window | S1 `att` − `neg` | S2 `norep` − `noatt` | S3a / S3b, c3x − rest | merged `att` / `neg` | merged `norep` / `noatt` | rest merged `att` / `norep` | `‖Δhs‖/‖hs‖` `att` / `neg` / `norep` / `noatt` |
+|---|---|---|---|---|---|---|---|
+| 64–2000 | mixed (4000 L9–16 a lean) | **merges** at 64 and 2000 L9–16, else mixed | mixed | 0.10–0.44 / 0.09–0.36 | | | `att` 0.4–1.4 |
+| 4000 L17–24 | **merges** (+0.15 to +0.79) | mixed | mixed / mixed | 0.62 / 0.18 | 0.36 / 0.28 | 0.60 / 0.39 | 1.8 / 1.1 / 2.3 / 0.8 |
+| 8000 L9–16 | **merges** (+0.08 to +0.80) | **merges** (+0.31 to +0.76) | mixed / lean | 0.68 / 0.25 | 0.72 / 0.17 | 0.74 / 0.72 | 2.6 / 1.1 / 2.2 / 0.8 |
+| 8000 L17–24 | **merges** | **merges** | lean / mixed | 0.64 / 0.26 | 0.63 / 0.23 | 0.72 / 0.71 | 2.2 / 1.1 / 1.9 / 0.9 |
+| **16000 L9–16** | **merges** (+0.35 to +0.82) | **merges** (+0.16 to +0.81) | mixed / mixed | 0.89 / 0.27 | 0.65 / 0.22 | 0.91 / 0.68 | 3.1 / 1.4 / 2.1 / 1.1 |
+| **16000 L17–24** | **merges** (+0.17 to +0.70) | **merges** (+0.48 to +0.91) | mixed / mixed | 0.74 / 0.21 | 0.91 / 0.23 | 0.84 / 0.89 | 2.9 / 1.2 / 2.2 / 1.1 |
+| 32000 L9–24 | mixed (S3a *c3x less* at L9–16, not read: S1 mixed) | **merges**, ‡ at L17–24 | mixed | 0.39–0.46 / 0.32–0.39 | 0.70–0.76 / 0.28–0.29 | | 10–13 / 1.2–1.3 / 2.8 / 1.3–1.6 |
+| 54000–143000 | **separates** at 54000 L9–16 and 143000 L17–24 (`att` wrecks the stream) | **merges** at 54000 L9–16 ‡, 143000 L1–8 and L9–16 | 143000 L9–16 S3b **c3x more** (+0.05 to +0.24) | 0.29–0.34 / 0.41–0.59 | 0.42–0.80 / 0.20–0.45 | | 5–17 / 1.0–2.1 / 2.3–9.5 / 1.3–2.0 |
+| L1–8 | mixed (16000, 143000 leans) | mixed, but **merges** at 143000 | mixed | | | | |
+
+‡ the flipped arm (`neg` / `noatt`) keeps < 0.2 of c3x's records. 0–32 are too few in most bands
+(beside); so are 256 L1–8 and 1000 L9–24.
+
+**Beside, not labels.** (i) *`neg` sits with OV1's random controls:* at 16000 it merges 0.27 /
+0.21 of c3x's records (L9–16 / L17–24), OV1's `ctl+` 0.25 / 0.23, and it moves the stream about as
+far as they did (1.2–1.4 against 0.83–1.15). A fully repulsive symmetric OV of `att`'s size does
+not hold the groups together any better than a random one. (ii) **"Moved further" stands.** The
+rule's beside condition (`neg` moving the stream as far as `att` where S1 merges) holds in no
+window: `att` 1.8–3.1, `neg` 1.1–1.4. At the same weights the positive sign moves the stream 2–3×
+as far: that is what an attractive-only OV does, and it is now a fact about the sign, not about
+the controls, but whether the merging goes beyond what moving that far does still needs an
+effect-matched control (Blocked 32 (a)). S2 has the same shape (`norep` ~2× `noatt`), and it does
+not hold the size (`‖S₊‖ ≠ ‖S₋‖`). (iii) *The stream, not c3x:* at 16000 the rest of the stored
+groups merge 0.91 / 0.84 under `att` (c3x 0.89 / 0.74) and 0.68 / 0.89 under `norep` (c3x 0.65 /
+0.91); the single differences c3x − rest are −0.10 to +0.02 there. Under `att` at 16000 the rest
+is near 1, so S3a has little room; under `norep` it does not, and S3b is mixed too. (iv) *Late:*
+from 32000 `att` blows the stream up (10–17) as in OV1, so S1's late *separates* is `att`
+dissolving the groups, not a sign effect; `norep` moves it 2.8–9.5 there, so S2's late *merges*
+carry the same off-distribution caveat. (v) *143000 L9–16, S3b c3x more:* one of 2 full labels in the 66 S3
+cells read (the other, 32000 L9–16 S3a, sits where S1 is mixed), where `norep` moves the stream
+9.5×; about one is expected by chance across them. Named by the rule ("specific to c3x's groups there"), not taken as a finding.
+
+**What it says.** OV1's 16000 reading is the sign: at the same eigenvectors and size, `S₊`
+collapses the stream and `−S₊` does not, and that now holds at 4000 L17–24 and 8000 too, where OV1
+had only leans. Removing only the repulsive part, with the antisymmetric half kept, gives the same
+collapse at 8000–16000 (and on into 32000, off distribution). In none of those windows do c3x's
+groups go more than the other stored groups: the OV's repulsive part keeps the **stream** from
+collapsing, and c3x's groups are not singled out. **It does not:** match the effect (the positive
+sign moves the stream 2–3× further at the same weights), hold the size in S2, re-define groups on
+the cut model, or test anything. One seed, 7 passages, tier 1.
 
 ---
 

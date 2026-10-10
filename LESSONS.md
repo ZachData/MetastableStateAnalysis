@@ -20,6 +20,14 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-10 (OV1s): #182 merged with `STATE.md` "Open PRs" still calling
+  itself open and listing worktrees and branches that were already gone. The
+  correct line was in `../Mets-work` as an **uncommitted** edit made after the
+  PR's last commit (12:30, merge 12:34), so the merge never got it, and the
+  worktree could not be removed without losing it. Also, again: the printed
+  `STATE.md` was the main tree's, one merge behind. Rule: a Stop-protocol
+  doc edit made after the push is pushed before the merge, or the PR is
+  not ready; `git status` in the task worktree is part of "done".
 - 2026-09-25 (Stage 1 step 3): `handoff-10.md` §1.1's table, the number that
   launched Stage 1, said "mean over 8 prompts". It was 9: the pilot has
   `short_heterogeneous`, which Stage 0 does not. Nothing broke, because §1.6
