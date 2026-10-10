@@ -202,6 +202,29 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **E1p done, 2026-10-09 (`status-10.md` §1.36; its title is the summary).** Blocked 31 (b), the
+> user's start; the parked pseudo-group placebo was built on planted clouds first and failed its
+> null (group-blind pulls +0.02 to +0.51), so the user switched to a projection null. Rule
+> `design-10.md` "E1p" (`361a4b5`, before any real move; test note `3796e53`).
+> `tools/run/p10_e1p_project.py`; output `data/p10/e1p_project_2026-10-09/` (~25 min GPU, no
+> refusal; E1m reproduced exactly in all 126 records). Each move loses its projection on the
+> idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6, nearest 8; 1–2 % of its squared
+> length), then E1m's pairing. Answer, after `/challenge-pr` on #178 (accept with changes, all four
+> findings taken; readings reworded by the rule's amendment): E1m's late L9–16 alignment does not
+> remain (7 of its 9 alignment cells go mixed): **not separable from the group-blind pulls**. E1p's
+> own leans (a push in L1–8 from 4000) are **not read**: where members are each other's nearest, as
+> in the real groups, planted group-blind pulls keep `X_p` up to +0.14 after the projection (the
+> first calibration's clouds were looser). **E1 closes at: no membership effect shown by E1, E1m or
+> E1p**; the OV intervention gets no predicted sign from them.
+> **Next, for the user (STATE.md Blocked 31):** (f) close E1 there and take (d) Stage 2 / F13,
+> (e′) ALBERT or the OV intervention; or (h) plant group-blind pulls on the real frames first.
+> *Parked (E1p):* **group-blind pulls planted on the real frames.** Why: the only calibration in
+> the real geometry; it could put E1p's L1–8 lean back in play. Cost: a forward pass per passage
+> (~10 s), a few steps, ~1 h with the write-up. Could change: whether E1p reads anything.
+> *Parked (E1p):* **per-head kernels in the basis.** Why: "group-blind" here means the idealised
+> kernels only. Cost: ~1 h (1e's per-head arm has the kernels). Only worth it after the real-frame
+> calibration says E1p is a null.
+>
 > **E1m done, 2026-10-09 (`status-10.md` §1.35; its title is the summary).** Blocked 31 (a), the
 > user's start. Rule `design-10.md` "E1m" (`0a86400`, before any move was scored; a geometry-only
 > coverage probe set EPS 0.02 first). `tools/run/p10_e1m_match.py`; output
