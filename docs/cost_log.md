@@ -133,7 +133,7 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-09-29 | FUTURE_IDEAS.md: literature scan, how training selects weights (docs only) | 23 | 147k | 2.6M | 33k | #109 |
 | 2026-09-29 | 1d β refit: per-offset fixed effects + R² floor; #109 conflict resolution and merge; page read for explanation (whole transcript, before challenge-pr) | 49 | 165k | 5.3M | 44k | #110 |
 | 2026-09-29 | #110 follow-up: CodeRabbit guards (collinearity, reproduction coverage) + page reading guide (whole transcript incl. #110, before challenge-pr) | 99 | 246k | 15.6M | 56k | #111 |
-| 2026-09-29 | Triage of all phases, FUTURE_IDEAS tie-in, `docs/TRIAGE_2026-09.md` (docs only; before commit and challenge-pr) | 33 | 217k | 5.1M | 66k | #113 |
+| 2026-09-29 | Triage of all phases, FUTURE_IDEAS tie-in, `docs/TRIAGE_2026-09.md`, now `docs/ROADMAP.md` (docs only; before commit and challenge-pr) | 33 | 217k | 5.1M | 66k | #113 |
 | 2026-09-29 | CI: deps tier on every push, status.sh without gh, pyproject-packages rule (whole transcript incl. the planning survey, before challenge-pr) | 71 | 199k | 9.9M | 38k | #114 |
 | 2026-09-29 | P-I5 battery pin (whole transcript incl. #114 and its two review rounds, before challenge-pr) | 171 | 377k | 38.8M | 88k | #115 |
 | 2026-09-30 | Battery-consumer audit + run_7 token check (after #115's merge wake, before challenge-pr) | 72 | 208k | 10.8M | 49k | #116 |
@@ -364,3 +364,4 @@ running median of the rows above it gets a line under the table saying why.
   2.0× the running median (5.6M): one unit carried a new producer (a hook arm, since `K + S₋` does not fit a head), its tests and math check, a 126-record batch and two rounds of write-up (before and after `/challenge-pr`); the session's first ~10 calls re-read a 55 KB `STATE.md` twice through truncated tool output.
 | 2026-10-10 | OV1d, a dose curve at matched centred distance (rule, producer with a position-0 hook family, tests, math check, 21-record GPU batch, write-up, /challenge-pr findings 1–2 taken by an amendment; re-taken after /challenge-pr) · subagents: general-purpose opus-5-5 1.8M, runner haiku-5-5 104k · runner batches, main calls: 6 (haiku-5-5) | 96 | 239k | 14.4M | 58k | #184 |
   2.6× the running median (5.6M): 8.2M before `/challenge-pr` (1.5×); the rest is the review fork (1.8M, its first attempt lost to the session limit) and a second write-up round (a distance-only null in code, tests, five docs) at a main context near 240k, every call re-reading it.
+| 2026-10-10 | Roadmap: TRIAGE rebuilt as docs/ROADMAP.md, CLAUDE.md phases and tests (docs only; before commit and challenge-pr) | 50 | 219k | 7.1M | 53k | #185 |

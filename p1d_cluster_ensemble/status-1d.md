@@ -2022,7 +2022,7 @@ prompts"); whether L0 (token identity: 215 clusters = 215 distinct embedding vec
 1d is the user's call. 2026-09-26: the order of next items, (3) first (done). Not yet taken up:
 C's `δ` on the merge tree (Parked above), and the theory's own definitions (fixed-scale F13/F14,
 `p10_cluster_function/math-10.md` §7; persistence across layers). Open beside 11″: is 1d done
-enough to write up (`docs/TRIAGE_2026-09.md` §4.2)?
+enough to write up (`docs/ROADMAP.md` §8, C1; the triage's §4.2 before it)?
 
 ### Position-keeping null (Blocked 11‴; 2026-10-02; branch `claude/p1d-position-null-v1`)
 
