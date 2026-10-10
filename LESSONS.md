@@ -219,6 +219,15 @@ world moves, nobody updates the line, and the next session acts on it.
   an R² range quoted from 6 of 18 steps. Rule: a summary line that names
   windows is checked against the table it summarises, and a page reads the
   report, never the card (`p1e_energy_field/page.py` refuses a count mismatch).
+- **2026-10-10, the start hook's `STATE.md` five merges old again** (F13): the main tree sat at
+  #181 while `origin/main` had #182–#186; caught at Start step 1 as on 2026-10-07. Fourth
+  instance; the hook fix is still the user's (`.claude/settings.json`).
+- **2026-10-10, a frame named for what it is not** (F13): `handoff-10.md` Stage 3 and
+  `docs/readings/2411.04990.md` §8 said `core/ln_frame.py`'s Gram *is* the paper's `⟨Qx, Ky⟩`
+  geometry. It is `LN(x)·LN(y)`: no `W_Q`, `W_K`, and in Pythia rotary makes `⟨Qx_i, Kx_j⟩`
+  depend on `i − j`, so it is not a distance at all. Found by opening the module before writing
+  the rule; the rule does not run it (Parked). Rule: as the 2026-10-05 lines above, a claim that
+  a module computes X names the function and is checked against it.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -952,6 +961,16 @@ of a design before running it, and print it on every record
   and the write-up had read E1m's cells as "the group-blind part" and an L1–8 push as surviving
   (`/challenge-pr` on #178, finding 1). Rule: **measure the real data's statistic that drives the
   bias (here: fellows above every non-member) and plant at least one shape that matches it.**
+- 2026-10-10 (F13): three placed choices in the rule could not work on the real clouds, each
+  found by a refusal before any statistic was read. (1) F15's primary `L_def` = 1: the scale check
+  read every token's nearest-predecessor distance, repeats included, but the statistic reads the
+  kept (unique) tokens, and at c = 2 all 213 of them are strong centres at L0–1, leaving nothing
+  to cover. (2) A per-record 3-SE check on the null's mean, and then a 1 % pooled share: at
+  ~56k records the first refuses ~150 correct ones by chance, the second ~5 of 252 cells. (3) Its
+  SE floor of 1e-12: where the exact mean is 0.006, 200 draws are all 0 (sd 0) and a correct null
+  reads z ≈ −6e9. Rule: **a scale check reads the population the statistic reads, and a check run
+  many times sets its bar from its own false-refusal rate (a binomial quantile), with a floor
+  for counts whose draws can all be zero.**
 
 ## 7. Literature found after the construction was built
 

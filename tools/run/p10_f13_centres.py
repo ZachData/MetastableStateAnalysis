@@ -59,7 +59,7 @@ MIN_LAYERS, MIN_PASSAGES = 3, 6
 NULL_SE, NULL_RATE, NULL_Q = 3.0, 0.0027, 0.999          # a 3-SE miss's two-sided rate; the bar's quantile
 ATTN_ROW_TOL, ATTN_UPPER_TOL = 1e-3, 1e-6
 FIRST = (512, "wiki_paragraph")
-HOMER_MAX = 512
+HOMER_MAX = 512                                             # placed: the v1 runs read homer_iliad at its first 512 tokens (design-10.md "Inputs")
 
 
 class F13Error(RuntimeError):
@@ -577,6 +577,8 @@ def a9_reading(sc: str, sb: str, scm: str) -> str:
         return "not read"
     if sc == "attended more":
         return "anchor and ballast" if sb == "attended less" else "centres attended, members not ballast"
+    if scm in ("too few", "mixed") or scm.startswith("leans"):
+        return "centres not sinks"                              # S_cm unread or unresolved: no falsifier
     if scm != "attended more":
         return "centres not sinks; H-ANCHOR/BALLAST does not hold"
     return "centres not sinks"
