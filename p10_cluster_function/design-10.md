@@ -946,6 +946,72 @@ every-passage rule not met, not evidence that c3x and the rest behave alike, and
 different population. (iii) `neg`'s deaths are said beside S1 (42–50 % at 16000): S1 is "`S₊`
 merges where `−S₊` mostly dissolves".
 
+**OV1d, a dose curve at matched centred distance (STATE.md Blocked 33 (a), taken by the user
+2026-10-10; from `/challenge-pr` on #183, finding 4 and its open question; rule fixed 2026-10-10,
+before any pass).** No new scan: OV1's question (`lit-10.md` §19), new arms. **Questions:** (1)
+where S1 merged (4000 L17–24, 8000 L9–16 and L17–24, 16000 L9–16 and L17–24), does `S₊` merge
+c3x's groups more than `−S₊` when both have moved the stream the same **centred** distance, or was
+S1 the 2–3× further move? (2) Does it still, with position 0's attention channel left at base
+(is the collapse one shift through the sink, R3 §1.17)? **Inputs, frame, base pass, readout:** as
+OV1s (every stored c2a group's kind), at steps **4000, 8000, 16000** only (S1's windows), 7
+passages. **Arms** (every head of every block at once; QK, MLPs, LNs, each head's `c` unchanged):
+
+| family | arm | each head's map | written by |
+|---|---|---|---|
+| | `base` | `K` | |
+| **w** | `w±t`, t ∈ {−3, −2, −1, −0.5, 0, 0.25, 0.5, 1} | `t·S₊` (`w+1` = OV1s's `att`, `w-1` its `neg`, `w+0` the OV removed) | weights (OV1's write-back, `λ → tλ`) |
+| **z** | `z±t`, t ∈ {−2, −1, 0, 0.25, 0.5, 1} | `t·S₊` on keys j ≥ 1, `K` on key 0 | a hook: OV1s's, `Δ = t·S₊ − K`, with column 0 of each head's `P` zeroed in `Δ`'s term |
+
+In `z`, token i's head output is `Σ_j P_ij K x̂_j + Σ_{j≥1} P_ij (t·S₊ − K) x̂_j + c`: what the cut
+sends through position 0 is removed, and position 0 itself (which attends only to itself) stays at
+base, so its feedback through its own attention is shut too.
+**The distance** per (arm, layer): **`dc` = `‖C(H_arm) − C(H_base)‖_F / ‖C(H_base)‖_F`**, `H` the
+kept rows of `hs[L]` (position 0 is never kept), `C` subtracting the token mean: an exactly common
+shift has `dc` 0. Beside: OV1s's `rel` (every row, position 0 included) and **`dz`**, the same ratio
+on c2a's cosine-distance matrix of its frame vectors (c2a unit-normalises rows *before* centring,
+so a common shift is not exactly invisible to it; `dz` is partly the outcome, so it is not matched
+on). Per band, an arm's `d` = the mean of `dc` over the band's readable layers.
+**Label M (family w), M0 (family z),** per (step, band, passage): each arm a point (t, `d`, `m` =
+c3x's merged share in the band). The positive branch is t ≥ 0 by t, the negative t ≤ 0 by −t (t = 0
+on both). Each t > 0 point is matched onto the negative branch, and each t < 0 point onto the positive
+one, at the first segment outward from t = 0 whose end distances bracket its `d`, `m` linear in
+`d` there; unbracketed points are unmatched. The passage's value `D` = the mean over matched points
+of (`m` positive side − `m` negative side). Readable with ≥ 3 c3x records and ≥ 1 matched point.
+OV1's sign rule (≥ 6 readable passages; merges / leans / mixed / too few; chance and "isolated" as
+OV1).
+**Readings, fixed before output,** in S1's five windows only (the rest printed, not read): **M
+merges** → **at matched centred distance `S₊` merges more than `−S₊`: S1 is not the distance
+moved**; **M separates** → **at matched distance `−S₊` merges more: S1 was the distance moved**; M
+mixed → **S1 not shown beyond the distance moved**; M too few → **no matched distance** (Blocked
+33's fallback, (c)). **M0 merges** → **with position 0's channel at base the sign still merges at
+matched distance: not one shift through the sink**; M merges and M0 not → **not shown without
+position 0's channel** (the sink carries it, or `z` is too weak to read: its `d` beside). Leans
+named, not read. Beside: per arm and band, mean `m`, kept and death shares, `d`, `rel`, `dz` (the
+curves); an arm keeping < 0.2 of c3x's records carries "dissolves"; how many points matched.
+**First checks (refuse):** OV1s's base checks and read-back bound (`w` arms: pairs of t's sign;
+`w+0` writes none). At the first record **(16000, `wiki_paragraph`)**, before the rest: the hook
+path, `z+1` with column 0 kept (= OV1s's `att_hook`) against `w+1` by weights (per-layer `‖Δhs‖ /
+‖hs‖` ≤ 1e-3, kinds agree ≥ 0.98); **reproduction**, `w+1`'s and `w-1`'s kinds against OV1s's
+`att` and `neg` for ≥ 0.98 of all stored records; every arm finite and off base; every `z` arm off
+its `w` partner (max relative change > 1e-3, else zeroing did nothing); every stored group a kind;
+`w+1`'s kinds not all stable. Tests (tiny GPT-NeoX, float64): `w` writes `t·S₊` (t = 0.5, −2, 0);
+a `z` arm's block attention output is the sum above; with column 0 kept it is `w` by weights;
+`dc` is 0 for a common shift; the matching on planted curves (bracketed, first segment,
+unmatched). Math: `tools/math_checks/ov_dose_ov1d.py`.
+**It does not:** test anything; match on `dz` or `rel`; say that matching on `dc` is the only fair
+match (a shift scaled by each token's `P_i0` is not common, so it counts in `dc`); re-define groups
+on the cut model; read steps other than 4000–16000. One seed, 7 passages, tier 1. Results:
+`status-10.md` §1.39.
+
+**OV1d amendment (2026-10-10, after `/challenge-pr` on #184, after the output was read; labels and
+records untouched, readings narrowed, report regenerated; the first report kept as
+`report_before_amendment.txt`).** (i) **A distance-only null.** Each cell is also labelled with `m`
+replaced by a sign-blind convex curve of `dc` (`d²`, `exp(3d)`; placed) on the arms' own distances;
+where M (or M0) *merges* and a null *merges* too, the reading is "not read": linear interpolation
+over a convex `m(d)` overstates the far branch, so the label is reachable without any effect of sign
+(finding 1). (ii) **M0 is read only where M is read as *merges*** (finding 2); elsewhere M0's label is
+beside.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

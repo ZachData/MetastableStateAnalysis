@@ -241,6 +241,13 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-10, Phase 10 OV1d: the rule carried OV1's "dissolves" flag (kept share < 0.2) to every
+  arm of a dose curve. On a flipped or control arm, low kept meant death; on `w+1` / `z+1` it
+  means *merged* (death 0.09–0.26), so the report printed "dissolves" for the arms that collapse
+  the groups (`status-10.md` §1.39 (iii)). Also, the matched measure `dc` was frozen without one
+  probe of its spread: every arm sat at ~1 stream-size, so most matches became interpolations
+  across one dose gap. Rule: a flag reused in a new arm set names the kind it means (death, not
+  "not kept"); a matching axis gets one record's values before the rule freezes.
 - 2026-10-06, Phase 10 R6w: the rule named L12, L24 and the layer mean as readings and required
   records readable at every step of a span, without counting how many such records exist. On c3
   that leaves L12 with 5 and L24 with 2 over 512–143000, and L24 with none over 64–512. The first
@@ -595,6 +602,12 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-10, Phase 10 OV1d (`/challenge-pr` on #184, finding 1): the matched-distance label
+  interpolated `m` linearly along the far branch. Where `m` is convex in distance that line sits
+  above the true curve, so a sign-blind `m(d)` on the run's own distances gives *merges* 7/7 at 4000
+  L17–24; the rule had no null for its own matching. Taken by an amendment (distance-only curves
+  beside every label, `status-10.md` §1.39). Rule: a matching or interpolating statistic is run once
+  on a planted no-effect curve over the real design points before the rule freezes.
 - 2026-10-05, Phase 10 R3: A0's "~94 % mask, learned residual from 2000–4000" (§1.1) was
   "confirmed" on a second sweep (§3.1). Both sweeps kept position 0 and one massive token per
   prompt in the unclustered population, and from step 4000 those two tokens carry the flip and
