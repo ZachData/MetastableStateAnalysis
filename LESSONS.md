@@ -532,6 +532,14 @@ not fixed).
   `eager_attention_forward`). Fixed: both modules marked `smoke`, and `u2_attn.Hooked`
   supports both APIs. Rule: a test that needs a real model is `smoke`, and it is run
   with `SMOKE_REAL_DEPS=1` against CI's transformers before the push.
+- 2026-10-10, Phase 10 OV1: the same again, three days later. `tests/test_p10_ov1_cut.py` built a
+  tiny GPT-NeoX outside `smoke`; under the stub the cutter looped over zero layers and 4 of its
+  model tests **passed vacuously** (no assertion ran). Caught only because a fifth indexed
+  `cut.orig[0]`. Fixed: the model tests moved to `test_p10_ov1_cut_smoke.py`, which asserts the
+  model has its layers, and `Cutter` refuses a model with none. The box's transformers 4.57 env
+  cannot run the repo (no `hdbscan`, torch import fails), so the smoke tests ran on 4.44 only;
+  the nightly covers 4.57. Rule added: a test that builds a model asserts it is real (a layer
+  count) before asserting anything about it, so a stub fails instead of passing.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to

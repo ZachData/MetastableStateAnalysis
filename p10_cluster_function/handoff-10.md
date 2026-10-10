@@ -202,6 +202,33 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **OV1 done, 2026-10-10 (`status-10.md` §1.37; its title is the summary).** Blocked 31 (f), the
+> user's pick, which closes E1 at "no membership effect shown". The user's calls: the whole model
+> at once, each arm against a control of its own rank and size. Scan `lit-10.md` §19; rule
+> `design-10.md` "OV1" (`773c6f1`, before any cut-model pass); math `tools/math_checks/ov_cut_ov1.py`
+> (5/5); `tools/run/p10_ov1_cut.py` (`d23325b`); tests `test_p10_ov1_cut.py` and `_smoke.py`;
+> output `data/p10/ov1_cut_2026-10-10/` (~35 min GPU, nothing refused). Answer, after
+> `/challenge-pr` on #179 (accept with changes, all five findings taken; readings reworded by the
+> rule's amendment): cut to `S₊`, at 16000 in L9–24 the stream collapses to 2.5–3.4 groups per
+> layer and c3x's groups merge in every passage; cut to `−S₋`, fewer merge than under random cuts
+> (still 0.26): **at 16000 the OV's repulsive part keeps the stream from collapsing, c3x's groups
+> among the rest** (not shown specific to c3x). 4000 L17–24 and 8000 L9–16 lean (not read); mixed
+> at 64–2000; from 32000 every cut wrecks the stream (no reading). **Caveat:** the controls match
+> weights, not effect; `att` moves the stream 2–3× as far as they do.
+> *Parked (OV1):* **sign flips at a fixed subspace** (#179 finding 4): `−S₊` and `K + S₋`, every
+> group's kind stored (finding 3). Why: changes only the sign at the same size, and sets c3x
+> against the rest. Cost: ~35 min GPU. Could change: whether 16000 is the sign, and whether it is
+> c3x's groups or the whole stream. (Recommended in STATE.md Blocked 32.)
+> *Parked (OV1):* **a control matched in effect** (random cuts rescaled until `‖Δhs‖` matches
+> `att`'s, per step). Why: separates "the sign" from "moved further". Cost: ~35 min GPU plus a
+> per-step scale search. Risk: cuts that move the stream 3–7× dissolved the groups at ≥ 32000.
+> *Parked (OV1):* **one block at a time at 16000** (cut only block ℓ, read `hs[ℓ+1]`). Why: says
+> whether the collapse builds across blocks or sits in a few; on distribution. Cost: 23× the
+> passes at one step (~30 min). Could change: which layers carry the repulsion.
+> Defect fixed on the way: the runner's step loop freed nothing on the GPU (the model sits in
+> reference cycles; `del` without `gc.collect()`), so the eighth load ran out of memory; the run
+> finished one process per step, and `gc.collect()` is now in the loop (measured: 1452 MB → 0).
+>
 > **E1p done, 2026-10-09 (`status-10.md` §1.36; its title is the summary).** Blocked 31 (b), the
 > user's start; the parked pseudo-group placebo was built on planted clouds first and failed its
 > null (group-blind pulls +0.02 to +0.51), so the user switched to a projection null. Rule
@@ -946,7 +973,7 @@ before it.
 
 ## Parked
 
-- **An all-attractive model: each head's OV cut to its positive-definite part** (discovery, the
+- *Taken as OV1 (2026-10-10), done: `status-10.md` §1.37.* **An all-attractive model: each head's OV cut to its positive-definite part** (discovery, the
   user, 2026-10-09; parked by the user as a unit after R9, under 1e). Keep every trained weight;
   replace each head's OV by the positive-eigenvalue part of its symmetric part (and the mirror,
   repulsive only), then re-read c3x's groups. "Positive entries" is not the property: attraction

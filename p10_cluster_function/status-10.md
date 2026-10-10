@@ -47,6 +47,7 @@
   - E1, energy against c3x's groups (one GPU pass per (step, passage), 1e U2's frame, each group's own-member field against 200 size-matched draws of other kept tokens). From step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23, in every passage at 4000–54000 and in L9–16 at 143000, β-robust. Whether it follows membership or only nearness is not separated (its nearness control cannot tell them apart; corrected after `/challenge-pr` on #176). At 256–512 in L9–16 (and 512 in L17–23, 1000 in L1–8) attention pushes members apart while the MLP pulls them together. The MLP pulls groups together through 2000 everywhere and in L1–8 throughout, and leans towards pushing them apart in L9–16 from 8000, where attention pulls. Init carries none of it. Small: the median group's `X` is 0.03–0.05 of a cosine. E1's reading that attention "holds the groups against the rest" at L17–23, 32000–54000 did not survive E1m — `p10_cluster_function/status-10.md` §1.34
   - E1m, E1 again with each member's fellows paired to non-members of the nearest similarity to it (within 0.02), in the causal view (1e's) and the full. The pairing is not a null: a group-blind pull towards neighbours or the cloud's mean scores X +0.14 / +0.24 in planted clouds, so the labels are not read as membership. In the causal view attention's late move is more aligned with the members than with the paired non-members in L9–16 at every step from 4000 (2 pulls together, 4 leans; 4 of 6 at EPS 0.05) and at 4000 in L17–23, and away from them in L1–8 from 4000; single-token cosines and position distance agree on 13 of 14 such cells. 5 of E1's 13 "pulls together" cells do not hold in the causal view (11 of 13 in the full), and no cell has attention aligned with the members where 1e's attention descends, so E1's "holds the group against the rest" is not confirmed under it. The MLP is aligned with them at 64–2000 in L9–23 and away from them from 4000 in L9–16. Cell means 0.006–0.014; only about half the fellow relations have a pair — `p10_cluster_function/status-10.md` §1.35
   - E1p, E1m on each move less its projection on the idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6 and the nearest 8; 1–2 % of the move's squared length). E1m's late alignment with the members in L9–16 does not remain (7 of its 9 alignment cells go mixed): not separable from the group-blind pulls. A lean push in L1–8 from 4000 is left but not read, because where members are each other's nearest (the real geometry) planted group-blind pulls still keep up to +0.14 after the projection. No membership effect is shown by E1, E1m or E1p. The parked pseudo-group placebo failed its planted null and was replaced (the user's call) — `p10_cluster_function/status-10.md` §1.36
+  - OV1, every head's OV cut to the attractive part of its folded symmetric part (`S₊`), against random cuts of the same rank and size. At 16000 in L9–24 the stream collapses to a few groups and c3x's merge in every passage; the repulsive-only cut merges fewer than its controls. So at 16000 the OV's repulsive part keeps the stream from collapsing, c3x's groups among the rest (not shown specific to c3x). 4000–8000 lean the same way, 64–2000 is mixed, and from 32000 every cut wrecks the stream. The controls match the cut's weights, not its effect: `att` moves the stream 2–3× as far. Tier 1 — `p10_cluster_function/status-10.md` §1.37
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -74,7 +75,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `2eaab14f32`
+- **Reviewed:** 2026-10-10 · body `c1b0d1c778`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3016,6 +3017,82 @@ passages, tier 1. Group-blind pulls were not planted on the real frames (amendme
 residual orthogonal and in-span moves vanish, empty basis leaves E1m's score, the causal basis
 blind to later rows, **planted group-blind pulls outside the basis ≈ 0 in both views and both
 geometries**, members survive, the removed share).
+
+### 1.37 OV1, the OV cut — **with every head's OV cut to its attractive part (`S₊`, in LN1's folded frame), the residual stream collapses into a few groups at step 16000 in L9–24 (2.5–3.4 per layer against base's ~15), and c3x's groups merge in every passage there, against random cuts of the same rank and size; the repulsive-only cut merges fewer than its controls (16000 L9–16). By the rule, at 16000 the OV's repulsive part keeps the stream from collapsing, c3x's groups among the rest; that it is c3x's groups in particular is not shown. 4000 L17–24 and 8000 L9–16 lean the same way (not a reading). Mixed at 64–2000, where `S₋` carries the most energy. From 32000 random cuts dissolve the groups too: no reading. Beside the rule: `att` moves the stream 2–3× as far as its controls, so "the sign" is not separated from "moved further"** *(`design-10.md` "OV1" and its amendment after `/challenge-pr` on #179; rule `773c6f1` before any cut-model pass, producer `d23325b`; Blocked 31 (f), the user's pick 2026-10-10, which closes E1)* *(Corrected after `/challenge-pr` on #179, findings 1–3: the first title read 8000–16000 in L9–24, counted leans as readings, said the repulsive-only cut "separates" the groups (it merges fewer than its controls, still 0.26), and said "keeps c3x's groups apart" where the whole stream collapses.)*
+
+**What ran.** `tools/run/p10_ov1_cut.py run`: per (step, passage) 23 GPU passes (float32, TF32
+off): `base`, `att` (each head's `K = W_O W_V diag(γ)` replaced by `S₊`, the positive part of
+`S = sym(Π K Π)`), `rep` (`−S₋`), and 10 + 10 controls (`n₊` / `n₋` of `S`'s eigenpairs drawn at
+random, signs kept, scaled to `‖S₊‖` / `‖S₋‖`); every head of every block at once, QK, MLPs, LNs
+and each head's constant unchanged. c2a (level-set, centred, size 2) on each arm's `hs[L]` at R0's
+kept offsets, R9's stored c2a linked to it by R6's `link_layer_pair` (containment ≥ 0.5): each c3x
+group record kept (stable), merged (merge / tangle), split or dead. 18 steps × 7 v1 passages =
+126 records, ~35 min. Math: `tools/math_checks/ov_cut_ov1.py` (5/5: the folded map, the plane, the
+inertia bound by draws, the write-back, the split).
+
+**Inputs.** R9's label source (summary sha256 `5b758a2c`), Stage 0's v1 runs, R0's kept offsets.
+Output `data/p10/ov1_cut_2026-10-10/` (`records/`, `heads/`, `report.json`, `report.txt`,
+`plan.json`, `run.sh`, `run.log`); producer blob `tools/run/p10_ov1_cut.py` at `d23325b`
+(`b52f7b58aa`); every record carries `d23325b`. **First checks pass:** every base pass matches
+Stage 0 (E1's checks); base's c2a equals the stored c2a at all 24 layers of all 126 records (none
+refused); the worst written-map read-back is 7.0e-8 of `‖S'‖` (bound 1e-4); the first record
+(512, `wiki_paragraph`) was opened before the rest: 182 c3x records, every arm off base, none
+all-stable. *Departure, operational:* one process ran out of GPU memory loading step 64 after
+seven steps (earlier models not freed: they sit in reference cycles, and the loop called
+`empty_cache()` without `gc.collect()`); the remaining 11 steps ran one process per step (resume
+skips written records; `run.sh`). Fixed after the run (`gc.collect()` in the loop; the records'
+code is unchanged otherwise). Re-run: `run.sh`, then `report --out <dir>`.
+
+**The heads (median over 384, `heads/`).** Every head has `n₊ = n₋ = 64` at every step (full
+inertia both ways), so `ctl+` and `ctl−` both draw 64 of 128 pairs and differ only in norm.
+`‖K − S‖` ≈ 0.66–0.71 `‖K‖`: the antisymmetric and off-plane part, which every arm drops, carries
+about half of each head's energy. `‖S₊‖ / ‖K‖` 0.50 to 256, 0.45 at 512, **0.33–0.35 at
+1000–2000**, back to 0.49 by 143000 (`‖S₋‖` the mirror): §3.12 A's repulsive phase, much milder in
+`S` than in the eigenvalues (there the median head is 0.000 attractive at 1000–2000).
+
+**Labels** (primary 64–143000; `D` = the arm's merged share less its controls' mean, per passage;
+chance per arm over the 33 readable cells: 0.7 full labels and 4.7 leans expected, observed 4 and
+7 (`att`), 4 and 8 (`rep`); the chance line assumes independent passages, but all 7 at a step
+share the same 21 cut models, so it overstates the surprise (#179 finding 5)):
+
+| window | `att` vs `ctl+` | `rep` vs `ctl−` | reading (rule) | merged `att` / `ctl+` | kept `att` / `ctl+` |
+|---|---|---|---|---|---|
+| 64–2000, every band | mixed (2000 L1–8 an isolated lean *separates*) | mixed (256 L9–16, 2000 L17–24 isolated leans) | not OV repulsion | 0.10–0.44 / 0.02–0.49 | |
+| 4000 L17–24 | leans merges (isolated) | mixed | a lean only (not a reading) | 0.62 / 0.28 | 0.11 / 0.39 |
+| 8000 L9–16 | leans merges (`homer_iliad` D −0.78) | mixed | a lean only (not a reading) | 0.68 / 0.38 | 0.10 / 0.34 |
+| 8000 L17–24 | mixed (loses) | mixed (loses) | not OV repulsion | 0.64 / 0.35 | 0.12 / 0.34 |
+| **16000 L9–16** | **merges** (D +0.54 to +0.77) | separates: merges fewer than `ctl−` (0.26 / 0.39, D −0.05 to −0.20) | **repulsion keeps them apart** | 0.89 / 0.25 | 0.01 / 0.41 |
+| **16000 L17–24** | **merges** | mixed | **repulsion keeps them apart** | 0.74 / 0.23 | 0.08 / 0.35 |
+| 32000–143000 L9–24 | separates / leans separates | separates / leans separates | not OV repulsion, **‡ the random cut dissolves the groups too** | 0.29–0.46 / 0.57–0.76 | |
+| L1–8 from 4000 | mixed | mixed (32000 *separates*, 4000 and 54000 leans) | not OV repulsion | | |
+
+0–32 are too few (c3x has < 6 readable passages in most bands), beside only; so are 256 L1–8
+and 1000 L9–24.
+
+**Beside, not labels.** (i) *What "merges" is at 16000:* the `att` model has 2.5 (L9–16) and 3.4
+(L17–24) groups per layer against base's 14.5 and 15.9, the largest holding 0.55 / 0.47 of the
+kept tokens, noise 0.10 / 0.19 against 0.41 / 0.48: a collapse to a few groups, the theory's
+attractive end (`lit-10.md` §19 row 3). It starts earlier than the labels: at 4000 L17–24 `att`
+has 5.0 groups against 14.2. (ii) **The controls match the cut's weights, not its effect.**
+`‖hs_arm − hs_base‖ / ‖hs_base‖` (layer mean): `att` 1.3–1.4 at 2000, 1.8–1.9 at 4000, 2.2–3.2 at
+8000–16000, against the controls' 0.83–1.15. So where `att` merges, its stream is also 2–3× as far
+from base as the random cuts'; "the sign does it" is not separated from "the cut moved the stream
+further" (both are what an attractive-only OV does, but a control matched in effect would be
+needed to say which). From 32000 every cut blows the stream up (`att` 10–17, controls 3–7, `rep`
+~1.1): the model there is far off its input distribution under the cuts, which is why the controls
+dissolve the groups. (iii) The theory's stated direction (most merging at 512–4000, where `S₋`
+carries the most) does not hold: 512–2000 are mixed.
+
+**What it says.** At 16000, in the middle and late layers, the OV's repulsive part is what keeps
+the stream from collapsing into a few groups: cut to `S₊`, c3x's groups merge with the rest; cut
+to `−S₋`, fewer merge than under random cuts; random cuts of the same rank and size sit between.
+That is the parked item's "repulsion keeps them apart" at one step (4000–8000 lean the same way),
+with caveat (ii), and for the stream as a whole: whether c3x's groups go more than other groups
+is not measured (only c3x's kinds are stored; #179 finding 3). Elsewhere the cut does not read:
+early (≤ 2000) the sign makes no consistent difference against random cuts, and late (≥ 32000)
+the cuts wreck the stream. **It does not:** say what holds the groups where the cut is mixed;
+follow the cut model's own groups (stored groups are linked, not re-defined); read the loss; test
+anything. One seed, 7 passages, tier 1.
 
 ---
 

@@ -335,3 +335,11 @@ running median of the rows above it gets a line under the table saying why.
   20 KB table rows into context (~50k each re-read); the batches were waited on with 3 blocking
   calls each timing out into the background. Row taken before `/challenge-pr`'s second round.
 | 2026-10-09 | Phase 10 E1p (Blocked 31 (b)): placebo calibrated and replaced, projection null run | 69 | 187k | 9.4M | 38k | #178 |
+| 2026-10-10 | Phase 10 OV1 (Blocked 31 (f)): OV cut to its attractive / repulsive part against matched random cuts | 141 | 288k | 27.0M | 64k | #179 |
+
+  Over 2× the running median (~5M): a new unit end to end (scan, rule, math check, runner, two
+  test files, an 18-step batch, the write-up), and the ~35 min batch was watched by a monitor
+  whose ~30 per-step events each cost a turn re-reading ~200k (about 6M of the 27M); an OOM
+  resume, a stubbed-transformers test detour (`LESSONS.md` 4) and a `pgrep` loop that matched
+  itself added ~10 calls. Next time: one background `until` with no per-step events. Row taken
+  before `/challenge-pr`.
