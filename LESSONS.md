@@ -602,6 +602,12 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-10, Phase 10 OV1d (`/challenge-pr` on #184, finding 1): the matched-distance label
+  interpolated `m` linearly along the far branch. Where `m` is convex in distance that line sits
+  above the true curve, so a sign-blind `m(d)` on the run's own distances gives *merges* 7/7 at 4000
+  L17–24; the rule had no null for its own matching. Taken by an amendment (distance-only curves
+  beside every label, `status-10.md` §1.39). Rule: a matching or interpolating statistic is run once
+  on a planted no-effect curve over the real design points before the rule freezes.
 - 2026-10-05, Phase 10 R3: A0's "~94 % mask, learned residual from 2000–4000" (§1.1) was
   "confirmed" on a second sweep (§3.1). Both sweeps kept position 0 and one massive token per
   prompt in the unclustered population, and from step 4000 those two tokens carry the flip and

@@ -1003,6 +1003,15 @@ match (a shift scaled by each token's `P_i0` is not common, so it counts in `dc`
 on the cut model; read steps other than 4000–16000. One seed, 7 passages, tier 1. Results:
 `status-10.md` §1.39.
 
+**OV1d amendment (2026-10-10, after `/challenge-pr` on #184, after the output was read; labels and
+records untouched, readings narrowed, report regenerated; the first report kept as
+`report_before_amendment.txt`).** (i) **A distance-only null.** Each cell is also labelled with `m`
+replaced by a sign-blind convex curve of `dc` (`d²`, `exp(3d)`; placed) on the arms' own distances;
+where M (or M0) *merges* and a null *merges* too, the reading is "not read": linear interpolation
+over a convex `m(d)` overstates the far branch, so the label is reachable without any effect of sign
+(finding 1). (ii) **M0 is read only where M is read as *merges*** (finding 2); elsewhere M0's label is
+beside.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

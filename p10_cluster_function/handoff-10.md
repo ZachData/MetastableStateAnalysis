@@ -207,14 +207,19 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > any pass); math `tools/math_checks/ov_dose_ov1d.py` (4/4); `tools/run/p10_ov1d_dose.py`
 > (`dbbd8ec`); tests `test_p10_ov1d_dose.py` and `_smoke.py`; output `data/p10/ov1d_dose_2026-10-10/`
 > (~6.5 min GPU, `runner` agent, no edits, nothing refused; `w±1` reproduce OV1s 465 / 465). Answer:
-> the sign survives the matched centred distance at 4000 and 8000 L17–24, also with position 0's
-> channel at base; at 16000 (OV1's window) it does not (L17–24 mixed, L9–16 a lean): scaled-up
-> `−S₊` merges too. **Caveat:** every arm sits ~1 stream-size from base, and the matches interpolate
-> across t 0.5 → 1.
-> *Parked (OV1d):* **a finer dose between t = 0.5 and 1** (e.g. 0.6, 0.7, 0.8, 0.9 in `w`). Why:
-> most matches interpolate linearly across that gap, where `m` rises 0.14–0.47. Cost: ~3 min GPU
-> (4 arms × 3 steps), the same producer with a new grid (a rule amendment). Could change: whether
-> 4000–8000 L17–24's *merges* survives a measured point instead of an interpolated one.
+> after `/challenge-pr` on #184 (accept with changes; findings 1–2 taken by a rule amendment, 3 into
+> Blocked 34 (a), 4 answered), the sign survives the matched centred distance at **8000 L17–24**,
+> also with position 0's channel at base; 4000 L17–24 labels *merges* but a distance-only convex
+> curve does too (not read); at 16000 (OV1's window) not shown (L17–24 mixed, L9–16 a lean):
+> scaled-up `−S₊` merges too. **Caveat:** every arm sits ~1 stream-size from base, and the matches
+> interpolate across t 0.5 → 1.
+> *Parked (OV1d):* **a finer dose between t = 0.5 and 1** (e.g. 0.6, 0.7, 0.8, 0.9 in `w`), with
+> distance also measured from `w+0` (the OV removed), which spreads with the dose (#184 finding 3),
+> and the distance-only null as a refuse-condition. Why: most matches interpolate linearly across
+> that gap, where `m` rises 0.14–0.47. Cost: ~3 min GPU (4 arms × 3 steps), a rule amendment.
+> Could change: whether 4000 L17–24 reads, and whether 8000 L17–24 survives measured points.
+> *Parked (OV1d):* `--first-only` passes all 7 passages before checking the first (#184 finding
+> 4; ~100 s, no unchecked record written).
 > *Parked (OV1d):* **a matched death share.** At matched distance the negative arms also die more
 > (8000 L17–24 `w-2`/`w-3` 0.55–0.58); M reads only merged share. Cost: report only. Could change:
 > whether "merges more" is "survives less as separate groups" in general.

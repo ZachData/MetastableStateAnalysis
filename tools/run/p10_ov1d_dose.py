@@ -50,6 +50,8 @@ S1_WINDOWS = {(4000, "L17-24"), (8000, "L9-16"), (8000, "L17-24"), (16000, "L9-1
 FIRST = (16000, "wiki_paragraph")
 OV1S = {"w+1": "att", "w-1": "neg"}                      # reproduction against OV1s's arms
 DISSOLVE = 0.2                                           # an arm keeping < this of c3x's records (OV1's)
+NULLS = {"d²": lambda d: d ** 2, "exp(3d)": lambda d: float(np.exp(3 * d))}   # convex m(d), sign-blind (placed;
+                                                                             # amendment after #184's review)
 
 
 # ---------------------------------------------------------------- the arms
@@ -457,6 +459,7 @@ def matched(pts: Sequence[Tuple[float, float, float]]) -> List[Tuple[float, floa
 def cell(recs: Dict, step: int, band: str, label: str) -> Dict:
     fam = LABELS[label]
     vals, n_match = [], []
+    null_vals: Dict[str, List[float]] = {k: [] for k in NULLS}
     curve = {arm: {k: [] for k in ("m", "kept", "death", "dc", "rel", "dz")} for arm in FAMILY[fam]}
     for p in PASSAGES:
         r = recs.get((step, p))
@@ -473,27 +476,48 @@ def cell(recs: Dict, step: int, band: str, label: str) -> Dict:
             continue
         vals.append(float(np.mean([mp - mn for _, mp, mn in pairs])))
         n_match.append(len(pairs))
+        for k, f in NULLS.items():                          # the same distances, m a function of d alone
+            npairs = matched([(T[arm], s["dc"], f(s["dc"])) for arm, s in sh.items()])
+            null_vals[k].append(float(np.mean([mp - mn for _, mp, mn in npairs])))
     mean = {arm: {k: (float(np.nanmean(v)) if np.isfinite(v).any() else float("nan")) for k, v in c.items()}
             for arm, c in curve.items()}
     return {"label": ov.sign_label(vals, "merges", "separates"), "n_passages": len(vals), "values": vals,
             "matched_points": n_match, "curve": mean,
+            "null_labels": {k: ov.sign_label(v, "merges", "separates") for k, v in null_vals.items()},
             "dissolves": [arm for arm, c in mean.items() if np.isfinite(c["kept"]) and c["kept"] < DISSOLVE]}
 
 
+def null_merges(c: Dict) -> List[str]:
+    """The distance-only curves under which the cell's label would also read *merges*."""
+    return [k for k, lab in c.get("null_labels", {}).items() if lab == "merges"]
+
+
 def reading(table: Dict, step: int, band: str) -> List[str]:
-    """The rule's readings, in S1's five windows only."""
+    """The rule's readings, in S1's five windows only (with the amendment after `/challenge-pr` on
+    #184: a *merges* that a distance-only convex curve also gives is not read, finding 1; M0 is read
+    only where M is, finding 2)."""
     if (step, band) not in S1_WINDOWS:
         return []
-    m, m0 = table[(step, band, "M")]["label"], table[(step, band, "M0")]["label"]
-    out = [{"merges": "at matched centred distance S₊ merges more than −S₊: S1 is not the distance moved",
-            "separates": "at matched distance −S₊ merges more: S1 was the distance moved",
-            "too few": "no matched distance (Blocked 33's fallback, (c))"}.get(
-        m, "S1 not shown beyond the distance moved")]
-    if m0 == "merges":
-        out.append("with position 0's channel at base the sign still merges at matched distance: "
-                   "not one shift through the sink")
-    elif m == "merges":
-        out.append("not shown without position 0's channel (the sink carries it, or z is too weak to read: its d beside)")
+    cm, cz = table[(step, band, "M")], table[(step, band, "M0")]
+    m, m0 = cm["label"], cz["label"]
+    nm = null_merges(cm) if m == "merges" else []
+    if nm:
+        out = [f"M merges, but so does a merged share of distance alone ({', '.join(nm)}) on the same "
+               "distances: not read"]
+    else:
+        out = [{"merges": "at matched centred distance S₊ merges more than −S₊: S1 is not the distance moved",
+                "separates": "at matched distance −S₊ merges more: S1 was the distance moved",
+                "too few": "no matched distance (Blocked 33's fallback, (c))"}.get(
+            m, "S1 not shown beyond the distance moved")]
+    if m == "merges" and not nm:
+        if m0 == "merges" and not null_merges(cz):
+            out.append("with position 0's channel at base the sign still merges at matched distance: "
+                       "not one shift through the sink")
+        else:
+            out.append("not shown without position 0's channel (the sink carries it, or z is too weak to read: "
+                       "its d beside)")
+    elif m0 == "merges":
+        out.append(f"M0 merges where M is not read (beside, not read; distance-only: {null_merges(cz) or 'none'})")
     for lab in LABELS:
         c = table[(step, band, lab)]
         if c["label"].startswith("leans"):
@@ -510,7 +534,7 @@ def report(a) -> int:
     steps = sorted({s for s, _ in recs})
     table = {(s, b, lab): cell(recs, s, b, lab) for s in steps for b in BANDS for lab in LABELS}
     ov.mark_isolated(table)
-    lines = ["| step | band | M (w) | M0 (z) | n | matched / passage | read |", "|" + "---|" * 7]
+    lines = ["| step | band | M (w) | M0 (z) | distance-only M / M0 | n | matched / passage | read |", "|" + "---|" * 8]
     curves = ["| step | band | arm | t | m | kept | death | dc | rel | dz |", "|" + "---|" * 10]
     readings = {}
     for s in steps:
@@ -518,6 +542,7 @@ def report(a) -> int:
             c = {lab: table[(s, b, lab)] for lab in LABELS}
             readings[f"{s}|{b}"] = reading(table, s, b)
             lines.append(f"| {s} | {b} | {c['M']['label']} | {c['M0']['label']} "
+                         f"| {', '.join(null_merges(c['M'])) or '-'} / {', '.join(null_merges(c['M0'])) or '-'} "
                          f"| {c['M']['n_passages']} / {c['M0']['n_passages']} "
                          f"| {np.mean(c['M']['matched_points'] or [0]):.1f} / {np.mean(c['M0']['matched_points'] or [0]):.1f} "
                          f"| {'yes' if (s, b) in S1_WINDOWS else 'beside'} |")

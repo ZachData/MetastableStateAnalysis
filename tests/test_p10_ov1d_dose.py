@@ -133,3 +133,41 @@ def test_dissolves_beside():
     t = table_of(recs)
     assert set(t[(16000, "L9-16", "M")]["dissolves"]) == {"w-3", "w-2", "w-1", "w-0.5"}
     assert any(s.startswith("M: dissolves") for s in dd.reading(t, 16000, "L9-16"))
+
+
+def test_distance_only_null_blocks_a_merge():
+    # (/challenge-pr on #184, finding 1) m = (dc)² on asymmetric distances: positive arms far, negative
+    # near, so linear interpolation on the positive branch overstates m; the label merges, the null too
+    def dist(a):
+        if a == "base":
+            return 0.0
+        t = dd.T[a]
+        return 1.0 + (2.0 * t if t > 0 else 0.1 * abs(t))
+    recs = {}
+    for p in dd.PASSAGES:
+        r = rec(lambda a: "stable", dist, nx=900)             # fine shares: m tracks (dc)² closely
+        for c in r["layers"].values():
+            for a, arm in c["arms"].items():
+                share = min(1.0, dist(a) ** 2 / 9.0)
+                n_m = int(round(share * len(c["c3x"])))
+                arm["kind"] = {str(g): ("merge" if i < n_m else "stable") for i, g in enumerate(c["c3x"])}
+        recs[(16000, p)] = r
+    t = table_of(recs)
+    c = t[(16000, "L9-16", "M")]
+    assert c["label"] == "merges" and "d²" in dd.null_merges(c)
+    r = dd.reading(t, 16000, "L9-16")
+    assert r[0].startswith("M merges, but so does a merged share of distance alone")
+    assert not any("not one shift through the sink" in s for s in r)
+
+
+def test_m0_not_read_where_m_is_not():
+    # (/challenge-pr on #184, finding 2) z merges, w does not: M0's sentence is beside, not a reading
+    def kind(a):
+        return "merge" if a.startswith("z") and dd.T[a] > 0 else "stable"
+    recs = {(16000, p): rec(kind, lambda a: 0.0 if a == "base" else abs(dd.T[a]) + 1.0) for p in dd.PASSAGES}
+    t = table_of(recs)
+    assert t[(16000, "L9-16", "M")]["label"] == "mixed" and t[(16000, "L9-16", "M0")]["label"] == "merges"
+    r = dd.reading(t, 16000, "L9-16")
+    assert r[0] == "S1 not shown beyond the distance moved"
+    assert not any("still merges" in s for s in r)
+    assert any(s.startswith("M0 merges where M is not read") for s in r)
