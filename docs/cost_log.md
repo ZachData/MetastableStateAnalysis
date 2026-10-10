@@ -343,4 +343,4 @@ running median of the rows above it gets a line under the table saying why.
   resume, a stubbed-transformers test detour (`LESSONS.md` 4) and a `pgrep` loop that matched
   itself added ~10 calls. Next time: one background `until` with no per-step events. Row taken
   before `/challenge-pr`.
-| 2026-10-10 | Process: run-and-watch to a Haiku `runner` agent (≤ 3 mechanical fixes, then Sonnet, then the main session); `session_cost.py` counts subagents and models; tested on 2 scratch jobs (`claude -p --agent runner`, Haiku, < $0.01 each, separate sessions not in this row) | 31 | 90k | 2.2M | 12k | PR |
+| 2026-10-10 | Process: run-and-watch to a Haiku `runner` agent (≤ 3 mechanical fixes, then Sonnet, then the main session); `session_cost.py` counts subagents and models; tested on 2 scratch jobs (`claude -p --agent runner`, Haiku, < $0.01 each, separate sessions not in this row) | 31 | 90k | 2.2M | 12k | #180 |
