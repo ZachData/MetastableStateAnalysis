@@ -24,7 +24,7 @@
   - `plan-9.md` §8's E4 calls the 24.9-vs-13.2 ratio "measured": 24.9 is the chance ratio at ALBERT's shape from a planted construction, and the April run's per-layer dimensions were never reported — `claims/audits/p6_projector_labels.json`, `archive/p6_subspace/status-6.md`
   - `plan-9.md` §2.3's reason for the size-profile null: the ARI is already centred, the null is for its variance (amended inline) — `p10_cluster_function/math-10.md` §4
 - **Registry:** none, because nothing is designed: no `P-*` id names anything here. `plan-9.md` §9 marks E7 (sign test) and E8 (repair channel) as the only tier-2 candidates and bars reserved rungs (1b, 1.4b)
-- **Depends on:** 1c@7011a552cc, 2@5e9fc59e62, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 10@2683dfe664
+- **Depends on:** 1c@7011a552cc, 2@5e9fc59e62, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 10@55c0535617
 - **Feeds:** 10
 - **Open threads:**
   - β's unit convention gates every `gamma_beta` prediction the phase would make — `p9_metric_intervention/plan-9.md` §4.6. The factor of 8 is now computed, not open: the recorded 0.50 is `beta_raw` ÷ 8, a second division by the model's `1/√d_h` (`p1c_frames/status-1c.md` "Corrections received", 2026-09-26); adopting `beta_raw` (~4 on 410m) is still a decision (STATE Blocked 9)
