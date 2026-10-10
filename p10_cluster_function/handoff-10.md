@@ -202,6 +202,27 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **E1m done, 2026-10-09 (`status-10.md` §1.35; its title is the summary).** Blocked 31 (a), the
+> user's start. Rule `design-10.md` "E1m" (`0a86400`, before any move was scored; a geometry-only
+> coverage probe set EPS 0.02 first). `tools/run/p10_e1m_match.py`; output
+> `data/p10/e1m_match_2026-10-09/` (~9 min GPU, no refusal). Each member's fellows are paired with
+> the non-members of the nearest similarity (within 0.02); causal view primary, full beside.
+> Answer: **the late pull towards the members survives in L9–16 at every step from 4000** (causal:
+> 2 pulls together, 4 leans) **and at 4000 / 16000 in L17–23; 5 of E1's 13 "pulls together" cells
+> do not. No cell has attention pulling members where 1e descends**, so E1's "holds the group
+> against the rest" is not earned. New: L1–8 from 4000, attention pushes members apart (leans). The
+> early push is full-view only for c3x. MLP: pulls beyond nearness at 64–2000, pushes apart from
+> 4000 in L9–16. Small: median `|X_g|` 0.02–0.03; ~half the fellow relations pair.
+> **Next, for the user:** (d) Stage 2 / F13, (e′) ALBERT, the all-attractive OV intervention (E1m's
+> signs per window: attention pulls in L9–16 from 4000, pushes in L1–8 from 4000; the MLP the
+> reverse in L9–16), or the Parked item below.
+> *Parked (E1m):* **the nearer, unmatched fellows.** Why: the half of fellow relations with no
+> equally near non-member is where nearness and membership coincide; E1m cannot read it. Cost: none
+> that a comparator removes; it needs a different design (e.g. groups of tokens whose neighbours
+> are not their group, or an intervention). Could change: whether attention's pull needs the group
+> at all. *Parked (E1m):* **the rule was silent on *leans* and on 1e's *leans* windows**; both were
+> read as the weaker form / no reading added, marked in the report. Cost: a sentence, the user's.
+>
 > **E1 done, 2026-10-09 (`status-10.md` §1.34; its title is the summary).** The user picked the
 > Parked "energy against c3x's groups" after R9 (2026-10-09). Scan `lit-10.md` §18. Rule
 > `design-10.md` "E1" (`fb4dee1`, before any pass). `tools/run/p10_e1_energy.py`; output
@@ -225,7 +246,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > re-drawn by a label-blind clustering of the same cloud), so a pull towards near tokens scores
 > 0. Why: the one claim E1 could not make. Cost: a re-run (~15 min GPU) with the comparator and
 > a causal-field row (finding 2). Could change: whether attention knows the groups or only
-> nearness. Blocked 31.
+> nearness. Blocked 31. **Taken as E1m, above.**
 > *Parked (E1):* **coherence against nearness-matched draws.** Members' moves are parallel
 > beyond random sets in 28–33 of 33 cells, but the draws are not matched for nearness, so a
 > shared tag (`lit-10.md` §18 row 1) and proximity are not separated. Cost: the stored records

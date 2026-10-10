@@ -366,18 +366,21 @@ def shares(recs: Dict, step: int, band: str, column: str, vis: str, read: str, b
 
 
 def reading(c_lab: str, f_lab: str, e1_lab: Optional[str], l1e: Optional[str]) -> str:
-    """The rule's reading of one primary cell (c3x): see design-10.md "E1m"."""
+    """The rule's reading of one primary cell (c3x): see design-10.md "E1m". The rule is silent on a
+    *leans* label: it is read as the weaker form of the same reading and says so. "E1's pull was
+    nearness" only where E1 read *pulls together* (the rule's letter)."""
+    lean = "(leans) " if c_lab.startswith("leans") else ""
     if c_lab == "too few" and f_lab == "too few":
         return "not separable here (too few paired)"
     if c_lab in ("pulls together", "leans pulls"):
         tail = {"descends": "; holds the group against the rest (1e descends)",
                 "ascends": "; pulls towards everything, the members most (1e ascends)"}
         hit = next((v for k, v in tail.items() if l1e and l1e.startswith(k)), "; 1e's window is mixed: no reading added")
-        return "members beyond equally near non-members" + hit
+        return lean + "members beyond equally near non-members" + hit
     if c_lab in ("pushes apart", "leans pushes"):
-        return "pushes the members apart beyond equally near non-members"
+        return lean + "pushes the members apart beyond equally near non-members"
     if c_lab == "mixed":
-        return ("E1's pull was nearness" if e1_lab in ("pulls together", "leans pulls") else "no membership effect")
+        return "E1's pull was nearness" if e1_lab == "pulls together" else "no membership effect"
     return "causal row unreadable" + ("" if f_lab == "too few" else f"; full reads {f_lab}")
 
 

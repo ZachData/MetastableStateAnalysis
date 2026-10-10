@@ -327,3 +327,4 @@ running median of the rows above it gets a line under the table saying why.
   tree's stale `STATE.md` and the current 50 KB one was read too; the GPU batch was watched with a
   per-step monitor, ~20 notifications each re-reading ~200k of context (a single completion wait
   would have cost one). Rule for next time: wait on a batch with one completion notice.
+| 2026-10-09 | Phase 10 E1m (Blocked 31 (a)): against equally near non-members, the L9–16 late pull survives, 'holds the group' not earned; L1–8 pushes; #176's worktree removed | 42 | 183k | 5.3M | 40k | #177 |

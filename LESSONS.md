@@ -1249,6 +1249,17 @@ a wrong premise, the check inherits it.
 design, not lines) and the author answers each finding on the PR; the user
 settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
 
+- 2026-10-09 (E1m, `design-10.md` "E1m"): the reading function counted a *leans pulls* E1 label as
+  "E1's pull" where the rule said *pulls together*; found when the reading table first printed,
+  and fixed to the rule's letter before anything was quoted. The rule was also silent on *leans*
+  (E1's rule had been silent on 1e's mixed windows): the report marks both. Rule: write the
+  reading's code from the rule's sentences one at a time, and list in the rule which labels it
+  does not name. Also this unit: a causal-view test planted a clustered group, so a pull towards
+  *later* members legitimately scored > 0 (earlier members point the same way); the test, not the
+  code, was wrong, and was replaced by one that changes the invisible rows. And one tracked doc
+  (`status-10.md`, number fixes) was rewritten through a `python` heredoc against `CLAUDE.md`
+  "While working" (use Edit); the rule exists for the re-inject cost.
+
 ## 12. Deleted, then needed
 
 **What happens.** Something is deleted (a branch, a file, a run directory) and
