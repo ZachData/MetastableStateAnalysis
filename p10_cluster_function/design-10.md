@@ -1012,6 +1012,101 @@ over a convex `m(d)` overstates the far branch, so the label is reachable withou
 (finding 1). (ii) **M0 is read only where M is read as *merges*** (finding 2); elsewhere M0's label is
 beside.
 
+**F13, the centre scan, with the cross (A9) and the coverage curve (F15) (`handoff-10.md` Stage 3;
+STATE.md Blocked 34 (b), the user's pick 2026-10-10; rule fixed 2026-10-10, before any centre was
+computed).** Scan `lit-10.md` §20; the paper is `lit-10.md` §11 and `math-10.md` §7. Stage 2 is
+skipped by this order (deferred or dropped is the user's call). **Questions:** (1, F13) per layer,
+are the strong and the ordinary Rényi centres of the token sequence more or fewer, earlier or later,
+than the same cloud gives in a random arrival order? (2, A9) once position is divided out, are the
+strong centres attended (sinks), and are c3x's members that are not centres ignored (ballast)? This
+is H-ANCHOR/BALLAST (`questions-10.md` §1.1). (3, F15) do an early layer's centres capture tokens
+with depth more than the same rule's centres from a random arrival order?
+**Inputs:** Stage 0's stored `activations.npz` (25 × n × 1024) and `attentions.npz` (24 × 16 × n ×
+n) for the 7 v1 passages at the 18 steps, through `stage0_index.json` (`homer_iliad` its first 512);
+R0's kept offsets and the c3x / c2 labels from the R9 source (`data/p10/reread_r9_2026-10-08/labels`);
+LN1 weights per step (`p1e_energy_field.u2_block.export_ln1`). No forward pass; CPU.
+**Frame and distance:** primary **unit LN1 rows** (1e's frame, `u2_block.unit_rows`: block L's LN1
+on `hs[L]`, L 0–23), the frame where β 3.5 [1.6, 5.6] was measured, so `δ = cβ^{−1/2}` has a scale
+there; geodesic `arccos(u_i·u_j)`. Beside: the paper's particle, the γ-free centred sphere
+`unit(x − mean over channels)` (the paper absorbs the norm's diagonal into Q, K, V), L 0–24.
+**Not run: `⟨Qx, Ky⟩`.** `handoff-10.md` Stage 3 and the reading note call `core/ln_frame.py`'s Gram
+that geometry; it is `LN(x)·LN(y)`, with no `W_Q`, `W_K`. Pythia's rotary turns a quarter of each
+head's dimensions by position, so `⟨Qx_i, Kx_j⟩` depends on `i − j` and is not a distance; and it is
+16 frames per layer. Parked.
+**Sequence and rules:** acceptance runs over every stored position in order, position 0 and the
+T1–T3 tokens included (a predecessor is any token attention reads). **Strong:** j accepted iff
+`m_j = min_{i<j} dist(u_j, u_i) > δ`. **Ordinary:** greedy, j accepted iff its distance to every
+earlier accepted token is > δ. Position 0 is accepted by both by definition, so it is left out of
+every count and comparison and reported beside, with the T2 tokens (`hdbscan_code` 34,
+`latex_monograph` 10, each prose passage's first `.`): centre or not per layer, and their received
+attention.
+**Scale (read before this rule; no centre computed):** in `wiki_paragraph`'s γ-free centred frame at
+steps 0, 512 and 143000, the pairwise geodesic median is 1.0–1.6 rad; beyond L0 the
+nearest-predecessor distance is 0.01–0.45 (q10), 0.1–0.8 (median), 0.75–1.5 (q90); at L0 repeats
+sit at 0 and the rest are near-orthogonal. **`δ = c · 3.5^{−1/2}`, c ∈ {0.25, 0.5, 0.75, 1, 1.25,
+1.5, 1.75, 2, 2.5}** (0.13–1.34 rad); **primary c = 2 (δ 1.07)**, c = 1 and 1.5 read beside by the
+same rules, the rest a sweep. The paper's c = 4 (2.14 rad) is above almost every distance and would
+accept position 0 alone (not run). β's interval puts c = 2 at 0.85–1.58 rad.
+**The order null:** 200 permutations of positions 1..n−1 per (step, passage), position 0 first in
+every order as in every pass (seed crc32 of step and passage); the same 200 for every layer, frame
+and δ, so F15 follows each through depth. It keeps the cloud and changes only the arrival order: the
+paper's exchangeable case (Lemma C.1 assumes i.i.d.), so a gap is non-exchangeability (order,
+position, context together), not content as such. The null's mean strong count is exact and is
+Lemma C.1 on the cloud's empirical measure: `Σ_x 1/(a_x + 1)`, `a_x` the other tokens within δ of
+x (x is strong iff it arrives first in its own δ-ball); with position 0 held first, 0 for tokens
+within δ of it and `1/(a′_x + 1)` for the rest (`tools/math_checks/renyi_f13.py` M3, every order
+enumerated). The 200 draws must give it within 3 standard errors per record (a check of the
+null's code), and `D_N` uses the exact mean; the draws carry `I` and F15.
+**F13** per (step, passage, layer, δ), on kept positions: `N_s`, `N_o` (strong, ordinary centres);
+`D_N = log((N + ½)/(mean N_null + ½))`; `I` the mean normalised index `s/(n−1)` of the kept strong
+centres, `D_I = I − mean I_null`. A record is **in range** at δ when 3 ≤ `N_s` ≤ kept/2 (else
+counted, not read). Band value = mean over in-range layers (L1–8, L9–16, L17–23; L0 and L24 beside),
+≥ 3 layers. **Labels** per (step, band), E1's sign rule over passages (≥ 6 readable; all one sign
+full, all but one a lean, else mixed; chance `2/2^n` full and `2n/2^n` lean, either sign; a lean
+not shared by an adjacent step marked isolated): `D_N` **more / fewer centres than a random order**
+(strong and ordinary each), `D_I` **earlier / later**. Step 0 beside every step; a label step 0
+also has is marked **at init**.
+**A9, the cross,** at block L = 1–23 (centres on `hs[L]`; `attentions[L]` is the attention that
+reads it): received `r_j` = the head mean of `Σ_{i≥j} A[i, j]` over every query; `ρ_j = r_j /
+Σ_{i=j}^{n−1} 1/(i+1)` (what uniform causal attention gives, so position is divided out); read
+`log ρ`. Kept tokens fall into 8 equal-count position bins; a difference between two kept sets is
+the bin-wise difference of means, weighted by the first set's count, over bins holding both.
+**`S_c`**: strong centres against kept non-centres. **`S_b`**: c3x members that are not centres
+against kept non-members that are not centres (c2 at 0–32, beside). **`S_cm`**: strong centres
+against c3x members that are not centres (`handoff-10.md`'s falsifier). Readable: ≥ 3 in the first
+set, ≥ 10 in the second; `S_b` and `S_cm` on c3x-readable records only. Labels by the sign rule:
+`S_c` **centres attended more / less**, `S_b` **members attended less / more**, `S_cm` likewise.
+**Readings, fixed before output,** per (step, band) at c = 2: `S_c` *more* and `S_b` *less* →
+**anchor and ballast** there; `S_c` *more*, `S_b` not *less* → **centres attended, members not
+ballast**; `S_c` not *more* → **centres are not sinks** at this δ, and with `S_cm` not *more* too,
+the handoff's falsifier: H-ANCHOR/BALLAST does not hold there. Membership labels are read at
+64–143000 (c3x's steps); centre-only labels (F13, `S_c`, F15) at all 18, step 0 the floor.
+**`Z_i/(i+1)` is not crossed:** a strong centre is far from every predecessor by definition, so its
+causal density is low by construction and the sign is forced.
+**F15, coverage:** strong centres (ordinary beside) accepted at `L_def` = 1 (8 and 16 beside; at L0
+repeats sit at 0 and the rest are near-orthogonal, so nearly every new token is a centre there) at
+c = 2. At each L > `L_def`, `cov(L)` = the share of kept non-centres within δ of some centre at L
+(each centre's own state at L, same frame, L ≤ 23). `D_F(L)` = `cov(L)` − the mean over the 200
+order nulls' centres followed the same way; `D_F′` the same against 200 uniform draws of as many
+kept tokens as the observed centres (the order null's count can differ from the observed). Band
+mean over L in band. Labels **captures more / less than a random order**, only where `D_F` and
+`D_F′` give the same label (else **count-dependent**). Beside: per-centre capture at L 23
+(non-centres within δ per centre, the paper's §6: ω(1) per centre?) against both nulls, and `cov(L)
+− cov(L_def)`.
+**First checks (refuse):** per (step, passage): activations finite and (25, n, 1024); attentions
+(24, 16, n, n), rows summing to 1 within 1e-3, upper triangle ≤ 1e-6; the LN1 file's revision is the
+step; the kept offsets and the c3x domain from the R9 source agree (`load_column`); strong ⊂ ordinary
+in every record; the ordinary centres at `L_def` cover every kept non-centre (a check of the
+greedy). **The first record, (512, `wiki_paragraph`), before the rest:** at c = 2 `N_s` is in range
+in ≥ half of L1–23 in the primary frame, else refuse and amend the grid before any reading. Tests:
+a hand-built sequence's two sets; strong ⊂ ordinary on random clouds; i.i.d. uniform points on S¹,
+whose mean strong count approaches π/δ and whose `D_N` against the order null is ≈ 0; the
+bin-matched difference recovers a planted +1 and gives 0 on a position-only effect; coverage of
+two planted clusters by their first members.
+**It does not:** read `⟨Qx, Ky⟩` (Parked); test F14 (Lemma C.1 is beside only); read Lemma 5.1's
+stationarity against index (Parked); freeze centres (F20); say why a centre is attended; test
+anything. One seed, 7 passages, tier 1. Results: `status-10.md` §1.41.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
