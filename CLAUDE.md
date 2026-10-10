@@ -32,6 +32,10 @@ below exists.
   change). Do not follow a discovery without saying so to the user.
 - **Refuse rather than degrade.** Before launching a batch, open the first
   output and check it is *populated*, not just present.
+- **Run-and-watch goes to the `runner` agent** (Haiku; brief and escalation
+  in `.claude/agents/runner.md`). Read its report, not the log; `git diff`
+  every edit it lists. `ESCALATE` → `runner` with `model: sonnet`, report as
+  PRIOR → then you. Watching yourself: one notification, the exit.
 - **Name the input.** A recorded result states the exact input set (battery
   hash, key list, env) it ran on.
 - **Write once.** A number lives in one file; others point to it. Tables over
