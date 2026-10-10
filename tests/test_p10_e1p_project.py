@@ -171,3 +171,23 @@ def test_the_removed_share_is_one_inside_the_basis_and_small_for_a_random_move()
     inside = _scores(U, rows, _field(U, 1.6))["removed"]["attn:r1out"]
     rnd = _scores(U, rows, np.random.default_rng(2).standard_normal(U.shape))["removed"]["attn:r1out"]
     assert inside == pytest.approx(1.0, abs=1e-9) and rnd < 0.5
+
+
+def _tight(seed, spread=0.1, k=6):
+    """A group whose members are mostly each other's nearest (85 % of fellow relations above every
+    non-member; real c3x groups: nearer each other than the nearest non-members in 95–98 %)."""
+    rng = np.random.default_rng(seed)
+    U = _unit(rng.standard_normal((90, 24)))
+    c = _unit(rng.standard_normal(24))
+    U[30:60] = _unit(c + 0.3 * rng.standard_normal((30, 24)))
+    U[60:60 + k] = _unit(c + spread * rng.standard_normal((k, 24)))
+    return U, np.arange(60, 60 + k)
+
+
+def test_the_projection_is_not_a_null_in_a_tight_group():
+    """`/challenge-pr` on #178, finding 1: where members are each other's nearest (the real geometry),
+    a group-blind pull outside the basis keeps X_p > 0.05 in the full view (nearest 4: ≈ +0.14;
+    unprojected ≈ +0.30). The projection removes most of the bias, not all of it. This asserts the
+    property of the instrument; the L1–8 lean push (cell means −0.007 to −0.001) is not read."""
+    mean, _, k = _mean_Xp(_tight, lambda U, r, s: _nn(U, 4), "full", n=30)
+    assert k >= 20 and mean > 0.05

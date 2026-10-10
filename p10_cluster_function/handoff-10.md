@@ -209,19 +209,21 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > `tools/run/p10_e1p_project.py`; output `data/p10/e1p_project_2026-10-09/` (~25 min GPU, no
 > refusal; E1m reproduced exactly in all 126 records). Each move loses its projection on the
 > idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6, nearest 8; 1–2 % of its squared
-> length), then E1m's pairing. Answer: **E1m's late L9–16 alignment is the group-blind part** (7 of
-> its 9 alignment cells go mixed; 4000 keeps an isolated lean; 143000 leans pushes). **L1–8's lean
-> push from 4000 survives** (5 of 6 steps, causal only, 1e descends at all five). No cell reads
-> membership. MLP: the 128–2000 pull in L9–16 mostly goes; L1–8 pull from 16000 stays.
-> **Next, for the user (STATE.md Blocked 31):** E1 is closed at "no membership effect beyond the
-> idealised group-blind pulls; a lean push in L1–8 from 4000". Then (d) Stage 2 / F13, (e′)
-> ALBERT, or the all-attractive OV intervention (whose predicted sign per window is now: L9–16 none,
-> L1–8 push from 4000).
-> *Parked (E1p):* **the L1–8 push against a real head's kernel.** Why: the one surviving signal is
-> only beyond the idealised kernels; a head's own QK / position could carry it. Cost: per-head
-> kernels in the basis (1e's per-head arm has them), ~1 h. Could change: whether any E1 reading is
-> about the group at all. *Parked (E1p):* **the +0.042 planted residual** (blobs, full, β 8): within
-> the bound, quoted beside, not modelled.
+> length), then E1m's pairing. Answer, after `/challenge-pr` on #178 (accept with changes, all four
+> findings taken; readings reworded by the rule's amendment): E1m's late L9–16 alignment does not
+> remain (7 of its 9 alignment cells go mixed): **not separable from the group-blind pulls**. E1p's
+> own leans (a push in L1–8 from 4000) are **not read**: where members are each other's nearest, as
+> in the real groups, planted group-blind pulls keep `X_p` up to +0.14 after the projection (the
+> first calibration's clouds were looser). **E1 closes at: no membership effect shown by E1, E1m or
+> E1p**; the OV intervention gets no predicted sign from them.
+> **Next, for the user (STATE.md Blocked 31):** (f) close E1 there and take (d) Stage 2 / F13,
+> (e′) ALBERT or the OV intervention; or (h) plant group-blind pulls on the real frames first.
+> *Parked (E1p):* **group-blind pulls planted on the real frames.** Why: the only calibration in
+> the real geometry; it could put E1p's L1–8 lean back in play. Cost: a forward pass per passage
+> (~10 s), a few steps, ~1 h with the write-up. Could change: whether E1p reads anything.
+> *Parked (E1p):* **per-head kernels in the basis.** Why: "group-blind" here means the idealised
+> kernels only. Cost: ~1 h (1e's per-head arm has the kernels). Only worth it after the real-frame
+> calibration says E1p is a null.
 >
 > **E1m done, 2026-10-09 (`status-10.md` §1.35; its title is the summary).** Blocked 31 (a), the
 > user's start. Rule `design-10.md` "E1m" (`0a86400`, before any move was scored; a geometry-only

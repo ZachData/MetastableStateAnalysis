@@ -46,7 +46,7 @@
   - R9 / R7, the context-shuffle labels with c3x as a column, filtered exactly from R7's stored per-group records (no pass), c3 and c2 reproducing R7's record exactly, with the random-drop reference matched per (step, passage). The step labels are unchanged at every step (mixed on the own floor, context at 256; context on the fixed bar). 7 of 144 band and per-passage labels change, all toward context on the own floor, within what random drops do but at their 95th percentile (rank p 0.08). c3x is not a random drop: 98.5 % of what it drops has its own floor below chance, though that is only 14 % of such groups, chosen without regard to their label. So the own floor's token-alone share is 0.006–0.035 lower and the fixed bar's higher at 11 of 12 steps: c3x narrows the gap between the bars without moving a step label. Among groups whose floor clears chance it reads as c3 — `p10_cluster_function/status-10.md` §1.33
   - E1, energy against c3x's groups (one GPU pass per (step, passage), 1e U2's frame, each group's own-member field against 200 size-matched draws of other kept tokens). From step 4000, attention's token-specific move pulls c3x's members towards each other in L9–23, in every passage at 4000–54000 and in L9–16 at 143000, β-robust. Whether it follows membership or only nearness is not separated (its nearness control cannot tell them apart; corrected after `/challenge-pr` on #176). At 256–512 in L9–16 (and 512 in L17–23, 1000 in L1–8) attention pushes members apart while the MLP pulls them together. The MLP pulls groups together through 2000 everywhere and in L1–8 throughout, and leans towards pushing them apart in L9–16 from 8000, where attention pulls. Init carries none of it. Small: the median group's `X` is 0.03–0.05 of a cosine. E1's reading that attention "holds the groups against the rest" at L17–23, 32000–54000 did not survive E1m — `p10_cluster_function/status-10.md` §1.34
   - E1m, E1 again with each member's fellows paired to non-members of the nearest similarity to it (within 0.02), in the causal view (1e's) and the full. The pairing is not a null: a group-blind pull towards neighbours or the cloud's mean scores X +0.14 / +0.24 in planted clouds, so the labels are not read as membership. In the causal view attention's late move is more aligned with the members than with the paired non-members in L9–16 at every step from 4000 (2 pulls together, 4 leans; 4 of 6 at EPS 0.05) and at 4000 in L17–23, and away from them in L1–8 from 4000; single-token cosines and position distance agree on 13 of 14 such cells. 5 of E1's 13 "pulls together" cells do not hold in the causal view (11 of 13 in the full), and no cell has attention aligned with the members where 1e's attention descends, so E1's "holds the group against the rest" is not confirmed under it. The MLP is aligned with them at 64–2000 in L9–23 and away from them from 4000 in L9–16. Cell means 0.006–0.014; only about half the fellow relations have a pair — `p10_cluster_function/status-10.md` §1.35
-  - E1p, E1m on each move less its projection on the idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6 and the nearest 8; 1–2 % of the move's squared length; planted group-blind pulls outside them score ≈ 0, a members' pull +0.62 to +0.92). Attention's late alignment with the members in L9–16 is gone: 7 of E1m's 9 alignment cells were the group-blind part, one isolated lean is left at 4000, and 143000 leans the other way. What survives is a lean push in L1–8 from 4000 (5 of 6 steps, causal only). No cell reads membership. The parked pseudo-group placebo failed its planted null and was replaced (the user's call) — `p10_cluster_function/status-10.md` §1.36
+  - E1p, E1m on each move less its projection on the idealised field's group-blind pulls (β 0 / 1.6 / 3.5 / 5.6 and the nearest 8; 1–2 % of the move's squared length). E1m's late alignment with the members in L9–16 does not remain (7 of its 9 alignment cells go mixed): not separable from the group-blind pulls. A lean push in L1–8 from 4000 is left but not read, because where members are each other's nearest (the real geometry) planted group-blind pulls still keep up to +0.14 after the projection. No membership effect is shown by E1, E1m or E1p. The parked pseudo-group placebo failed its planted null and was replaced (the user's call) — `p10_cluster_function/status-10.md` §1.36
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -74,7 +74,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-09 · body `682d7e352d`
+- **Reviewed:** 2026-10-09 · body `2eaab14f32`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -2928,7 +2928,7 @@ gate) then `python tools/run/p10_e1m_match.py report --out <dir> --e1 data/p10/e
 E1's, planted pulls / pushes, a random move ≈ 0, **the pairing is not a null for a neighbour or
 cloud-mean pull**, an unpairable group is NaN, the causal view blind to later rows).
 
-### 1.36 E1p, E1m on the moves less their group-blind part — **with the idealised field's group-blind pulls taken out of each move (β 0 / 1.6 / 3.5 / 5.6 and the nearest 8, only 1–2 % of the move's squared length), attention's late alignment with c3x's members in L9–16 is gone: E1m's 2 *pulls together* and 4 *leans* at 4000–143000 become one isolated *leans pulls* (4000) and one *leans pushes* (143000). 7 of E1m's 9 alignment cells were the group-blind part. What survives is a lean the other way in L1–8 from 4000 (5 of 6 steps, causal only): attention pushes members off equally near non-members. No primary cell reads membership. The MLP's E1m pull in L9–23 at 128–2000 mostly goes too; its L1–8 pull from 16000 stays** *(`design-10.md` "E1p"; rule `361a4b5` before any real move was scored, test note `3796e53`; the user changed Blocked 31 (b) from the pseudo-group placebo, which failed its planted null, to this)*
+### 1.36 E1p, E1m on the moves less their group-blind part — **with the idealised field's group-blind pulls taken out of each move (β 0 / 1.6 / 3.5 / 5.6 and the nearest 8, only 1–2 % of the move's squared length), E1m's late alignment with c3x's members in L9–16 does not remain: 7 of its 9 alignment cells go mixed, 4000 keeps an isolated lean, 143000 leans the other way. That is "not separable from the group-blind pulls", not "was the group-blind part", and the lean push left in L1–8 from 4000 is not read: in a geometry like the real one (members each other's nearest) the projection is not a null either (planted group-blind pulls keep `X_p` up to +0.14). E1 closes at: no membership effect shown by any of E1, E1m, E1p** *(`design-10.md` "E1p" and its amendment after `/challenge-pr` on #178; rule `361a4b5` before any real move was scored, test note `3796e53`; the user changed Blocked 31 (b) from the pseudo-group placebo, which failed its planted null, to this)* *(Corrected after `/challenge-pr` on #178, findings 1–3: the first title read E1m's cells as "the group-blind part" and the L1–8 push as surviving, on a calibration whose clouds were looser than the real groups.)*
 
 **What ran.** `tools/run/p10_e1p_project.py run`: E1m's passes, frame, groups, pairing (EPS 0.02)
 and views, 18 steps × 7 v1 passages (126 records, ~25 min GPU). Per token and view, each move
@@ -2952,8 +2952,14 @@ outside the basis (field β 8 / nearest 4), each view's own: one cloud full −0
 −0.013 ± 0.018, causal −0.004 ± 0.017 / +0.022 ± 0.021; blobs full +0.042 ± 0.016 / −0.018 ±
 0.035, causal +0.015 ± 0.021 / −0.029 ± 0.026 (E1m's unprojected X on the same: +0.08 to +0.18 on
 one cloud, −0.07 to +0.01 on blobs). A pull towards the members +0.62 to +0.92; random ≤ 0.006;
-a move in the basis leaves nothing. The planted pulls are fully aligned with their field; real
-moves are ~0.03 aligned, so the +0.042 is a ceiling on a far smaller real bias, not a correction.
+a move in the basis leaves nothing. **Not the real geometry** (`/challenge-pr` on #178, finding 1):
+in these clouds 2–5 % of fellow similarities beat every non-member; real c3x members are nearer
+each other than the nearest non-members in 95–98 % of groups. In a planted group of 6 whose fellows
+beat every non-member in 69–85 % of relations (30 seeds), the same pulls keep `X_p` +0.02 to +0.14
+(full) and −0.05 to +0.09 (causal), unprojected +0.15 to +0.31: the projection removes most of the
+bias, not all. The first note here scaled that bias down by the moves' alignment with the members
+(~0.03); their alignment with group-blind directions is ~0.10–0.14 and outside the basis unknown
+(finding 2), so no scaling is claimed.
 
 **The labels** (c3x, causal, `attn:r1out`, β 3.5 unless named; P / p pulls together / leans, X / x
 pushes apart / leans, . mixed, – too few; every primary cell β-robust but 8000 L9–16):
@@ -2982,17 +2988,18 @@ band. **Removed share** (median over c3x records): attention 0.01–0.02 at most
 4000–143000): share of groups with `X_p` > 0 in L9–16 0.46–0.62, L1–8 0.34–0.50; median
 `|X_p|` 0.012–0.025 (E1m's 0.015–0.029). Cell means: L9–16 −0.003 to +0.007; L1–8 −0.007 to −0.001.
 
-**Readings, by the rule's fixed sentences** (`report.txt`, "reading per primary cell"):
-- **E1m's cell was the group-blind part** (E1m *pulls* or *leans pulls*, E1p mixed): L9–16 at
-  8000, 16000, 32000, 54000; L17–23 at 64, 4000, 16000. With 143000 L9–16 turning to *leans
-  pushes*, E1m's late L9–16 alignment is left only at 4000 (*leans pulls*, isolated, 1e mixed: no
-  reading added). §1.35's alignment, and so §1.34's "pulls the members together" in L9–23 from
-  4000, is in the span of pulls that ignore the group.
-- **Pushes the members off equally near non-members beyond the group-blind pulls** (*leans*):
-  L1–8 at 4000, 16000, 32000, 54000, 143000 (E1m had the same five), and 128 (new; isolated);
-  1e's window descends at the five from 4000 (mixed at 128). L9–16 at 512 and 143000, L17–23 at 512 and 2000 (new, all
-  isolated). The full view keeps L1–8 only at 512 and 16000.
-- **No membership effect beyond the group-blind pulls**: the other 20 mixed cells.
+**Readings** (the rule's sentences as reworded by its amendment after `/challenge-pr` on #178;
+`report.txt` prints the first wording):
+- **Not separable from the group-blind pulls** (E1m *pulls* or *leans pulls*, E1p mixed): L9–16 at
+  8000, 16000, 32000, 54000; L17–23 at 64, 4000, 16000. The projection lowers every L9–16 passage
+  by ~0.005–0.012, and a real-size membership pull can lose about half its mean under it, so
+  *mixed* here does not say the alignment was group-blind, only that it is not shown beyond those
+  pulls. E1m's late L9–16 alignment is left at 4000 (*leans pulls*, isolated, 1e mixed).
+- **A lean the instrument's leak can produce; not read** (*leans pushes*): L1–8 at 4000, 16000,
+  32000, 54000, 143000 (E1m had the same five) and 128; L9–16 at 512 and 143000; L17–23 at 512
+  and 2000. Cell means −0.007 to +0.001, inside the tight-group leak (either sign, up to 0.14 at
+  full alignment). The full view keeps L1–8 only at 512 and 16000.
+- **No membership effect shown**: the other 20 mixed cells.
 - **Not separable** (*too few*): 256 in L1–8, 64 and 1000 in L9–16, 1000 in L17–23, 64 in L1–8.
 - **The MLP**: E1m's causal L9–16 pull at 128–2000 (P at all four read) becomes mixed except 2000 (p); its late
   L9–16 push (x x X X X) keeps 16000 and 54000 (x); its L1–8 pull from 16000 is P P P p, stronger
@@ -3001,7 +3008,7 @@ band. **Removed share** (median over c3x records): attention 0.01–0.02 at most
 **What this does not say.** Only the idealised kernels (unit LN1 rows, `V = I`) are removed, not a
 real head's own QK, position or V: "beyond the group-blind pulls" means those five. Unmatched
 fellows (about half) are not read. Signs only, no null distribution for `X_p`. One seed, 7 v1
-passages, tier 1. The surviving L1–8 lean is a *lean* in every cell (one passage the other way).
+passages, tier 1. Group-blind pulls were not planted on the real frames (amendment (iv); parked).
 
 **Re-run.** `data/p10/e1p_project_2026-10-09/run.sh` (resumable; `--first-only` for the gate) then
 `python tools/run/p10_e1p_project.py report --out <dir> --e1m data/p10/e1m_match_2026-10-09
@@ -3239,4 +3246,4 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24 when the card was written.
 - 2026-09-26 · §3's floor is the float32-distance defect, not HDBSCAN: on float64 distances ARI p5 is 1.000 over the same 2 600 pairs. Stage 0's stored `repeated_tokens` labels are rounding (mean ARI 0.23 to float64), so every reader here that pools that prompt's stored labels carries one noise prompt in eight; not re-run · `p1d_cluster_ensemble/status-1d.md` "Float64 distances, and Phase 10 §3's floor re-run on them"
 - 2026-10-01 · the partition every row here reads, hdbscan `min_cluster_size=2`, orders tied mutual-reachability edges by processing order, and ties are the rule: on deduped v1 tokens 42 % of step143000's groups (53 % of step 0's) are never a connected component of the graph at any distance, two thirds of them pairs; median ARI to tie-merged (level-set) HDBSCAN 0.82, p10 −0.06. Deterministic for fixed input order, so §3's floor stands; group counts and group-level rows carry the artefacts; not re-run · `p1d_cluster_ensemble/status-1d.md` "Admission"
 - 2026-10-09 · §1.34 (E1): against non-members paired on similarity (E1m), attention's late alignment with the members holds in L9–16 from 4000 and at 4000 in L17–23, but 5 of E1's 13 "pulls together" cells do not hold in the causal view (128 in L1–8 and L9–16, L17–23 at 8000, 32000, 54000; 11 of 13 hold in the full view); "holds the group against the rest" at L17–23 32000–54000 is **not confirmed under the matched causal comparator** (retained in the full view), and the pairing is not a null (a group-blind neighbour or cloud-mean pull scores X +0.14 / +0.24), so none of it is read as membership; L1–8 from 4000 attention pushes away from the members, which E1 read mixed · §1.35, `design-10.md` "E1m" and its amendment
-- 2026-10-09 · §1.34–§1.35 (E1, E1m): with the idealised field's group-blind pulls removed from each move (E1p), attention's late alignment with c3x's members in L9–23 is not there: 7 of E1m's 9 alignment cells go mixed, 4000 L9–16 keeps an isolated lean, 143000 L9–16 turns to a lean push; the L1–8 lean push from 4000 survives. §1.34's "pulls the members together" and §1.35's "aligned with the members" are in the span of pulls that ignore the group · §1.36
+- 2026-10-09 · §1.34–§1.35 (E1, E1m): with the idealised field's group-blind pulls removed from each move (E1p), 7 of E1m's 9 attention alignment cells go mixed (4000 L9–16 keeps an isolated lean); after /challenge-pr on #178 that reads "not separable from the group-blind pulls", and E1p's own leans are not read (the projection is not a null where members are each other's nearest). §1.34's "pulls the members together" and §1.35's "aligned with the members" are not shown beyond pulls that ignore the group · §1.36

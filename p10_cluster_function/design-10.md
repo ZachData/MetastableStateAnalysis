@@ -771,6 +771,24 @@ which the planted clouds show depends on geometry); per-head kernels in the basi
 instrument per head, and the per-head arm's question, not this one). One seed, 7 passages, tier 1.
 Results: `status-10.md` §1.36.
 
+**E1p amendment (2026-10-09, after `/challenge-pr` on #178, after the output was read; the labels
+and records are untouched, the readings are reworded).** (i) **The calibration's geometry was not the
+real one:** in both planted clouds only 2–5 % of a member's fellow similarities beat every
+non-member; real c3x members are nearer each other than the nearest non-members in 95–98 % of groups.
+With a planted group of 6 whose fellows beat every non-member in 69–85 % of relations, group-blind
+pulls outside the basis keep `X_p` +0.06 to +0.14 (full) and −0.05 to +0.09 (causal), against the
+bound 0.05 (unprojected +0.15 to +0.31); `tests/test_p10_e1p_project.py` now asserts the full-view
+leak. **E1p is not a null in the real geometry.** (ii) The note's "real moves are ~0.03 aligned, so
+the bias is far smaller" scaled by the move's alignment with the members; its alignment with
+group-blind directions is ~0.10–0.14 (removed share 1–2 %), and with directions outside the basis
+unknown: withdrawn. (iii) **Readings, reworded:** *mixed* where E1m read *pulls* is "**not separable
+from the group-blind pulls**" (not "was the group-blind part": the projection lowers every L9–16
+passage by ~0.005–0.012, and a real-size membership pull can lose about half its mean under it);
+a *leans pushes* is "**a lean the instrument's leak can produce; not read**". No E1p cell is read as
+membership or as its absence, and the OV intervention gets no predicted sign from E1p. (iv) Not
+done: planting group-blind pulls on the real frames (a forward pass per passage); parked, the user's
+call (STATE.md Blocked 31).
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

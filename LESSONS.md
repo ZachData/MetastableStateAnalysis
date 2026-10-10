@@ -908,6 +908,12 @@ of a design before running it, and print it on every record
   scored in the causal view gave +0.14 to +0.33, which is a wrong planted null for that view, not a
   bias in the instrument. Rule: **a null proposed to the user is first run on planted geometry (at
   least two shapes, each view's own pull) and its planted bias quoted beside the recommendation.**
+  Then the projection's own calibration repeated the mistake one level down: both planted shapes
+  had 2–5 % of fellow similarities above every non-member, while real c3x groups are tighter than
+  their nearest non-members in 95–98 %. In that geometry the projection leaks (`X_p` up to +0.14),
+  and the write-up had read E1m's cells as "the group-blind part" and an L1–8 push as surviving
+  (`/challenge-pr` on #178, finding 1). Rule: **measure the real data's statistic that drives the
+  bias (here: fellows above every non-member) and plant at least one shape that matches it.**
 
 ## 7. Literature found after the construction was built
 
