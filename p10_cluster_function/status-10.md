@@ -50,6 +50,7 @@
   - OV1, every head's OV cut to the attractive part of its folded symmetric part (`S₊`), against random cuts of the same rank and size. At 16000 in L9–24 the stream collapses to a few groups and c3x's merge in every passage; the repulsive-only cut merges fewer than its controls. So at 16000 the OV's repulsive part keeps the stream from collapsing, c3x's groups among the rest (not shown specific to c3x). 4000–8000 lean the same way, 64–2000 is mixed, and from 32000 every cut wrecks the stream. The controls match the cut's weights, not its effect: `att` moves the stream 2–3× as far. Tier 1 — `p10_cluster_function/status-10.md` §1.37
   - OV1s, OV1's cut against its exact sign flip (`−S₊`: same eigenvectors, same size), and removing only the repulsive part (`K + S₋`) against removing only the attractive part (`K − S₊`), with every stored group's kind kept. The sign does it at fixed size: `S₊` merges the groups more than `−S₊` at 4000 L17–24 and 8000–16000 L9–24, in every readable passage, while `−S₊` merges about as much as OV1's random cuts and mostly dissolves the groups (42–50 % die at 16000). Removing only the repulsive part merges more than removing only the attractive part at 8000–32000 in L9–24 (and in 5 other windows), but `S₋` is the larger part there, so that adds no sign evidence. c3x's groups are not singled out: they merge no more than the other stored groups by the rule (one exception, 143000 L9–16, not read as a finding). `S₊` still moves the stream 2–3× as far as `−S₊`, so "sign" and "moved further" are still not separated. Tier 1 — `p10_cluster_function/status-10.md` §1.38
   - OV1d, a dose curve (`±t·S₊`, and the same with position 0's attention channel left at base) read at matched centred distance. At 8000 L17–24 `S₊` merges c3x's groups more than `−S₊` at the same distance, in 7 of 7 passages, and still does with position 0 at base: there the sign is not the distance moved and not one shift through the sink. 4000 L17–24 labels the same, but a merged share of distance alone reaches that label on its distances, so it is not read. At 16000, OV1's own window, it is not shown: scaled up, `−S₊` moves the stream as far and merges the groups too (L17–24 mixed, L9–16 a lean). Every arm, the OV removed included, sits about one stream-size from base, so the match is among far-moved arms, mostly interpolated between t = 0.5 and 1. Tier 1 — `p10_cluster_function/status-10.md` §1.39
+  - The OV thread (OV1, OV1s, OV1d), closed at tier 1: the sign of the OV's attractive part matters beyond the distance it moves the stream at 8000 L17–24; not shown at 16000, OV1's own window; c3x's groups are not singled out. What removing the repulsive part does at 16000 closes unanswered — `p10_cluster_function/status-10.md` §1.40
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -77,7 +78,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-10 · body `124a5d6580`
+- **Reviewed:** 2026-10-10 · body `cf1965630c`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3252,6 +3253,24 @@ as far and merges the groups too, so "the OV's repulsive part keeps the stream f
 not shown beyond the distance moved at 16000. **It does not:** match near base (every arm is far);
 check the interpolation between t = 0.5 and 1 (no point inside it); hold the death share; read steps
 other than 4000–16000; test anything. One seed, 7 passages, tier 1.
+
+### 1.40 The OV thread, closed — **at tier 1: the sign of the OV's attractive part matters beyond the distance it moves the stream at 8000 L17–24 (7 v1 passages); not shown at 16000; c3x's groups not singled out** *(`STATE.md` Blocked 34 (b), the user's pick 2026-10-10; writing only, no pass)*
+
+| claim | stands? | where |
+|---|---|---|
+| cut to `S₊`, the stream collapses at 16000 L9–24 | measured; not separated from the distance moved | §1.37, §1.39 |
+| `S₊` merges more than `−S₊` at the same size | yes (4000 L17–24, 8000–16000 L9–24), but `S₊` moves the stream 2–3× as far | §1.38 |
+| the sign beyond distance (matched centred `‖Δhs‖`) | 8000 L17–24, also with position 0 at base; 4000 L17–24 not read; 16000 not shown | §1.39 |
+| what 8000 L17–24 rests on | one measured dose pair at nearly equal distance, `w+0.5` against `w-0.5` (`dc` 1.02 / 1.05, merged 0.50 / 0.27), positive in 7 of 7 passages, and no distance-only curve merges there; the interpolated matches agree. All 7 passages share one cut model per step | §1.39 "Labels", "Beside" (i) |
+| c3x's groups in particular | not shown in any of the three | §1.37–§1.39 |
+
+**Closes unanswered:** what removing the repulsive part does at 16000 beyond the distance moved
+(the full-cut question). **Dropped with the thread:** the finer dose, the matched death share,
+`--first-only`, effect-matched controls, one block at a time (`handoff-10.md` "OV thread closed").
+**Never run:** `V = ±I` put into Pythia's heads (only the idealised synthetic controls have it);
+the Rényi-centre scan (F13) on the cut models (the user asked 2026-10-10; F13 starts on the stored
+base activations). Limits: one seed, 7 passages, 410m (an exploration rung), every arm ~1
+stream-size from base.
 
 ---
 
