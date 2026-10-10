@@ -1009,3 +1009,22 @@ passage) were counted before the rule (structure, no statistic).
 
 Sources: https://arxiv.org/abs/2502.00919 ;
 https://proceedings.neurips.cc/paper_files/paper/2023/hash/b2b3e1d9840eba17ad9bbf073e009afe-Abstract.html
+
+## 19. The OV cut, OV1 (added 2026-10-10)
+
+Scan before `design-10.md` "OV1" was fixed (`CLAUDE.md` "Literature scans", trigger 1). 3 web
+searches, 4 abstract or page fetches, nothing read whole: every mark is **[S]**. The prior S-flip
+work in this repo is `PROJECT.md` §3.12 D / F / G (not repeated). No cut-model output existed;
+one base pass at (512, `wiki_paragraph`) was run for timing and to confirm that a GPU pass
+reproduces R9's stored c2a (24 of 24 layers).
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | Pham et al., *Dynamical Properties of Tokens in Self-Attention and Effects of Positional Encoding* (`2512.03058`): tokens converge when the symmetric part of the value-side matrix is negative definite (their `A = W(Vᵀ)⁻¹`, `W = QKᵀ`) and diverge otherwise; the constraints are imposed **during training** (WikiText-103, EnWik8, DeiT, RoPE variants), and the convergence regime trains worse | [S] | closest prior art: definiteness of a symmetric part as the lever, but trained under the constraint, not cut post hoc from a trained checkpoint, and read on loss, not on token groups. OV1 cuts trained weights at each training step and reads groups; their sign convention differs from §3.12's (OV1 uses §3.12's: `⟨x, Vx⟩ > 0` attractive) |
+| 2 | Gao, Yang & Chen, *Nonequilibrium Phases of Repulsive Self-Attention* (`2609.28448`): idealised `V = −I` on normalised tokens; repulsion gives polygons, flips, chaos and attention condensation, not one cluster | [S] | the repulsive mirror arm (−S₋) need not separate tokens into a clean packing; a merged or dissolved label under −S₋ is possible and is read as the sign not mattering only if the controls agree |
+| 3 | Geshkovski et al. (`2305.05465`), already `lit-1e.md` §1: V's spectrum decides the limit (attractive → collapse) | [S] | the theory's prediction for the S₊ arm: merging, given enough depth |
+| 4 | Elhage et al.'s copying score (sum Re λ / sum \|λ\| of the OV circuit, found via the copy-suppression and antonym-head write-ups): positive eigenvalues read as copying | [S] | a cut to S₊ is also a cut to "copy-like" heads; OV1 says nothing about language-model behaviour and reads no loss |
+| 5 | Not found: a post-hoc cut of a trained decoder's OV to its attractive (or repulsive) part, read on residual-stream token groups (3 searches) | — | weak evidence of novelty |
+
+Sources: https://arxiv.org/abs/2512.03058 ; https://arxiv.org/abs/2609.28448 ;
+https://arxiv.org/pdf/2305.05465v2 ; https://arxiv.org/pdf/2310.04625

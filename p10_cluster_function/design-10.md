@@ -789,6 +789,83 @@ membership or as its absence, and the OV intervention gets no predicted sign fro
 done: planting group-blind pulls on the real frames (a forward pass per passage); parked, the user's
 call (STATE.md Blocked 31).
 
+**OV1, the OV cut (`handoff-10.md` Parked "An all-attractive model", taken by the user 2026-10-10
+as STATE.md Blocked 31 (f), which closes E1; rule fixed 2026-10-10, before any cut-model pass).**
+Scan: `lit-10.md` §19 (prior S-flip work: `PROJECT.md` §3.12 D / F / G). **Question:** with every
+attention head's OV cut to its attractive part, do c3x's groups merge (the OV's repulsive part
+keeps them apart) or survive (something else holds them: the embedding, the MLP, QK)? **The
+user's calls (2026-10-10):** the whole model at once, not one block at a time; each arm against a
+control of its own rank and size.
+**Inputs:** the R9 source's c3x labels (its c2a is side a of the link); the 7 v1 passages at the
+18 steps; R0's kept offsets. One GPU pass per (step, passage, arm), float32, TF32 off; the base
+pass through `p1e_energy_field.u2_attn.check_pass` (as E1, block 23 as E1's departure), else that
+(step, passage) refuses.
+**The head's map (the frame):** head h of block ℓ adds `o_i = Σ_j P_ij W_O(W_V y_j + b_V)`,
+`y_j = γ ⊙ x̂_j + β` (LN1; `x̂_j` the normalised row, in the plane `Π = I − 11ᵀ/d`). Since `P`'s
+rows sum to 1, `o_i = Σ_j P_ij K x̂_j + c`, with **`K = W_O W_V diag(γ)`** and `c = W_O(W_V β +
+b_V)`. Attraction is the form on the plane `x̂` lives in: **`S = sym(Π K Π)`**; `S` vanishes on a
+(d − 64)-dimensional subspace, so it has at most 64 positive and 64 negative eigenvalues
+(`tools/math_checks/ov_cut_ov1.py`). `S = S₊ − S₋`, both ⪰ 0. *Not* §3.12 A's object (the
+eigenvalues of the bare `W_O W_V`): at step 1000 the median head's eigenvalues are all repulsive
+while its `S` keeps 22 % of its energy positive; folding γ moves the median head's positive share
+by < 0.001 at steps 0, 1000, 143000 (probe before this rule, weights only).
+**Arms** (every head of every block at once; QK, the MLPs, the LNs and every `c` unchanged; only
+`K` is replaced):
+
+| arm | each head's `K` becomes |
+|---|---|
+| `base` | unchanged (the weights as loaded) |
+| `att` | `S₊` |
+| `rep` | `−S₋` |
+| `ctl+` × 10 | `n₊` of `S`'s nonzero eigenpairs drawn uniformly, signs as they are, scaled to `‖S₊‖_F` |
+| `ctl−` × 10 | the same with `n₋`, scaled to `‖S₋‖_F` |
+
+Nonzero: `|λ| > 1e-6 · max|λ|` (placed). Draw seed: crc32 of (step, arm, draw, layer, head), so
+every passage at a step reads the same 20 control models. The controls match each arm's rank, size
+and the antisymmetric part it drops; only the sign is not matched. **Write-back:** `S' = U Λ Uᵀ`
+(at most 64 pairs) → `W_V' = |Λ|^½ Uᵀ diag(γ)⁻¹`, `b_V' = −W_V' β`, `W_O' = U sign(Λ)|Λ|^½`, zero
+rows past the pairs, and the dense bias gains `Σ_h c_h`, so each head adds exactly
+`Σ_j P_ij S' x̂_j + c`. Per (step, layer, head) recorded beside: `n₊`, `n₋`, `‖S₊‖`, `‖S₋‖` and
+`‖K − ΠKΠ_sym‖` as shares of `‖K‖`.
+**Readout,** per (step, passage, layer L1–24, arm): c2a on the arm's `hs[L]` at R0's kept offsets
+(level-set groups, centred, size 2: `p10_label_source._layer_groups`). R9's stored c2a (side a) is
+linked to the arm's (side b) by R6's `merge_tree.link_layer_pair` (containment ≥ 0.5, MONIC's
+kinds). Each c3x group record takes its kind: **kept** = stable; **merged** = merge or tangle
+(it shares an arm group with another stored group); split; death. Beside: the stable links'
+Jaccard, the arm's group count, its largest group's share of the kept tokens, and the share in no
+group.
+**Label,** per (step, band: L1–8, L9–16, L17–24) and arm (`att` against `ctl+`, `rep` against
+`ctl−`): each passage's value `D` = the arm's merged share over its c3x group-layer records in the
+band less the mean over its 10 controls; a passage is readable with ≥ 3 records. With ≥ 6
+readable passages: **merges** if every readable `D` > 0, **leans merges** if all but one,
+**separates** / **leans separates** the same below 0, else **mixed**; fewer than 6 → **too few**.
+Chance as E1's (`2/2^n` full, `2n/2^n` leans), a lean not shared by an adjacent step marked
+**isolated**. The kept share by the same rule beside (**keeps** / **loses**). **Primary steps
+64–143000** (E1's structure count); 0–32 beside.
+**Readings, fixed before output,** per window: `att` *merges* and `rep` does not → **the OV's
+repulsive part keeps c3x's groups apart** there (the control matches the cut's size and rank, so
+the sign does it). `att` *mixed* or *separates* → **not OV repulsion**: the groups survive an
+attractive-only OV no worse than a random cut; the embedding, the MLP or QK hold them (R6f: the
+embedding moved under them). `att` and `rep` both *merges* → **a sign-pure cut merges, either
+sign**: not the repulsion account. A window where the controls keep < 0.2 of the records
+(placed) is reported with "the random cut dissolves the groups too" beside its label. The theory's
+direction (`lit-10.md` §19 row 3): `att` merges, most where `S₋` carries most of the energy
+(512–4000) and deepest (L17–24); stated, not tested.
+**First checks (refuse):** the base pass checks above; the base arm's c2a equals the stored c2a at
+every layer, else that layer refuses (listed); per head the written `S'` is ⪰ 0 for `att` (⪯ 0 for
+`rep`) and the folded map read back from the written float32 weights matches `S'` within 1e-4 of
+`‖S'‖` (placed), else the step refuses. The first record, (512, `wiki_paragraph`), before the
+rest: every arm's `hs` finite and off `base` (max relative change > 1e-3), every c3x record a
+kind, `att`'s and the controls' kinds not all stable. Tests: on a tiny random GPT-NeoX, each written
+head's folded map is `S'` and its constant `c` (float64, 1e-10), and the block's attention output
+equals `Σ_j P_ij S' x̂_j + c` summed over heads; a control has `n₊` pairs and `‖S₊‖`; a planted
+pair of stored groups joined in one arm group links as merged, an unchanged partition as stable.
+Run step 512 first and open it before the other 17.
+**It does not:** cut QK or the MLPs; read the loss or any behaviour; re-run c3x's own filters
+(stability, "moves") on the cut model, since those need its preamble passes, so a stored group is
+followed, not re-defined; say what holds a group that survives; test anything. One seed, 7
+passages, tier 1. Results: `status-10.md` §1.37.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
