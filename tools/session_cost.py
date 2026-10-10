@@ -25,13 +25,22 @@ Stdlib only. The transcript is one JSON record per line. What is counted:
   reported by agent type and model. The `--row` columns stay the main
   session's, comparable with earlier rows; subagent totals go in the unit
   cell as a suffix.
-- **Runner batches**: for each `Agent` call with `subagent_type: runner`, the
-  main session's calls from the one that launched it through the first call
-  after its last completion notification (the call that reads the report).
-  These are the calls made *while* the batch ran, not only calls *caused* by
-  it: other work done in the meantime is counted too. A batch with no
-  notification yet is marked open and counted to the transcript's end. A
-  Sonnet escalation is its own spawn, so its own batch.
+- **Task windows**: for each background launch (a tool result naming an
+  `agentId`, `taskId` or `backgroundTaskId`: an `Agent`, a `Monitor`, a
+  background `Bash`), the main session's calls from the one that launched it
+  through the first call after its last `<task-notification>` (the call that
+  reads it). Notifications come as a `user` record when the session is idle
+  and as an `attachment` (`queued_command`) when it is busy; both are read,
+  matched by task id or tool-use id. A Monitor's expiry notice is not an
+  event and is skipped. A foreground agent (status `completed`) ends at its
+  tool result. No notification and no such status: open, counted to the end.
+  These are the calls made *while* the task ran, not only calls *caused* by
+  it; other work done meanwhile is counted too. `--task ID` prints one.
+- **Runner batches**: the windows of `Agent` calls with `subagent_type:
+  runner`, chained when one is launched inside the last one's window (a
+  Sonnet escalation launched by the call that read Haiku's report is the same
+  batch, its models joined by `>`). Work escalated back to the main session
+  after the report is outside the window.
 
 What it does *not* see: tool-result size is in characters, not tokens; a
 subagent's own subagents, if any.
@@ -67,10 +76,10 @@ def analyse(lines):
     tool_names = {}       # tool_use id -> tool name
     reads = []            # (file_path, offset, limit)
     results = []          # (chars, tool name, tool_use id)
-    first_pos = {}       # message.id -> position of its first record
-    launches = {}        # runner Agent tool_use id -> (launching message.id, model)
-    agent_of = {}        # that tool_use id -> agentId
-    end_pos = {}         # tool_use id or agentId -> position the batch ended
+    first_pos = {}        # message.id -> position of its first record
+    uses = {}             # tool_use id -> (launching message.id, kind, model)
+    tasks = {}            # task id -> launch facts
+    notified = {}         # task id or tool_use id -> position of its last notification
     bad_lines = 0
     for pos, line in enumerate(lines):
         line = line.strip()
@@ -81,6 +90,8 @@ def analyse(lines):
         except json.JSONDecodeError:
             bad_lines += 1
             continue
+        if rec.get("type") == "attachment":      # a notification queued mid-turn
+            _notifications((rec.get("attachment") or {}).get("prompt"), pos, notified)
         msg = rec.get("message")
         if not isinstance(msg, dict):
             continue
@@ -96,9 +107,8 @@ def analyse(lines):
                 if isinstance(block, dict) and block.get("type") == "tool_use":
                     tool_names[block.get("id")] = block.get("name", "?")
                     inp = block.get("input") or {}
-                    if block.get("name") in ("Agent", "Task") \
-                            and inp.get("subagent_type") == "runner":
-                        launches[block.get("id")] = (mid, inp.get("model"))
+                    uses[block.get("id")] = (mid, inp.get("subagent_type") or block.get("name"),
+                                             inp.get("model"))
                     if block.get("name") == "Read":
                         inp = block.get("input") or {}
                         reads.append((inp.get("file_path", "?"),
@@ -109,19 +119,17 @@ def analyse(lines):
                     tid = block.get("tool_use_id")
                     results.append((_result_chars(block.get("content")),
                                     tool_names.get(tid, "?"), tid))
-                    if tid in launches:
-                        tur = rec.get("toolUseResult")
-                        tur = tur if isinstance(tur, dict) else {}
-                        agent_of[tid] = tur.get("agentId")
-                        if tur.get("resolvedModel"):
-                            launches[tid] = (launches[tid][0], tur["resolvedModel"])
-                        if tur.get("status") != "async_launched":   # foreground: done here
-                            end_pos[tid] = pos
+                    tur = rec.get("toolUseResult")
+                    tur = tur if isinstance(tur, dict) else {}
+                    task = tur.get("agentId") or tur.get("taskId") or tur.get("backgroundTaskId")
+                    if task and tid in uses:
+                        mid, kind, model = uses[tid]
+                        tasks[task] = {"tool_use": tid, "mid": mid, "kind": kind,
+                                       "model": tur.get("resolvedModel") or model,
+                                       "done": pos if tur.get("status") == "completed" else None}
         if rec.get("type") == "user":
-            text = content if isinstance(content, str) else " ".join(
-                b.get("text", "") for b in content or [] if isinstance(b, dict))
-            for aid in _TASK_ID.findall(text):
-                end_pos[aid] = pos      # the last notification wins (a resumed agent re-notifies)
+            _notifications(content if isinstance(content, str) else " ".join(
+                b.get("text", "") for b in content or [] if isinstance(b, dict)), pos, notified)
 
     ctx_by_id = {mid: u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0)
                  + u.get("cache_creation_input_tokens", 0) for mid, u in usage_by_id.items()}
@@ -135,14 +143,15 @@ def analyse(lines):
         per_tool[name][0] += 1
         per_tool[name][1] += chars
     starts = sorted(first_pos[m] for m in usage_by_id)
-    batches = []
-    for tid, (mid, model) in launches.items():
-        start = first_pos.get(mid, 0)
-        end = end_pos.get(tid, end_pos.get(agent_of.get(tid)))
-        inside = [p for p in starts if p >= start and (end is None or p < end)]
-        after = [p for p in starts if end is not None and p > end][:1]
-        batches.append({"agent": agent_of.get(tid), "model": _short_model(model or "?"),
-                        "main_calls": len(inside) + len(after), "open": end is None})
+    windows = {}
+    for task, t in tasks.items():
+        start = first_pos.get(t["mid"], 0)
+        ends = [x for x in (notified.get(task), notified.get(t["tool_use"])) if x is not None]
+        end = max(ends) if ends else t["done"]
+        calls = {p for p in starts if p >= start and (end is None or p < end)}
+        calls |= set([p for p in starts if end is not None and p > end][:1])
+        windows[task] = {"kind": t["kind"], "model": _short_model(t["model"] or "?"),
+                         "start": start, "calls": calls, "open": end is None}
     return {
         "calls": len(usage_by_id),
         "context_total": sum(ctx),
@@ -154,16 +163,43 @@ def analyse(lines):
         "per_tool": {k: {"calls": v[0], "chars": v[1]} for k, v in per_tool.items()},
         "largest_results": sorted(results, key=lambda r: -r[0])[:10],
         "reads": reads,
-        "batches": batches,
+        "tasks": {k: {"kind": w["kind"], "main_calls": len(w["calls"]), "open": w["open"]}
+                  for k, w in windows.items()},
+        "batches": _chain([w for w in windows.values() if w["kind"] == "runner"]),
         "bad_lines": bad_lines,
     }
 
 
-_TASK_ID = re.compile(r"<task-notification>\s*<task-id>([^<]+)</task-id>")
+_NOTE = re.compile(r"<task-notification>(.*?)(?:</task-notification>|$)", re.S)
+
+
+def _notifications(text, pos, notified):
+    """Record `pos` against each task id and tool-use id notified in `text`."""
+    for block in _NOTE.findall(text or ""):
+        if "[Monitor expired" in block:
+            continue
+        for tag in ("task-id", "tool-use-id"):
+            m = re.search(rf"<{tag}>([^<]+)</{tag}>", block)
+            if m:
+                notified[m.group(1)] = pos      # the last one wins (a resumed agent re-notifies)
+
+
+def _chain(ws):
+    """Merge runner windows launched inside the previous one's window."""
+    out = []
+    for w in sorted(ws, key=lambda w: w["start"]):
+        if out and out[-1]["calls"] and w["start"] <= max(out[-1]["calls"]):
+            b = out[-1]
+            b["calls"] |= w["calls"]
+            b["model"] += ">" + w["model"]
+            b["open"] = w["open"]
+        else:
+            out.append(dict(w, calls=set(w["calls"])))
+    return [{"model": b["model"], "main_calls": len(b["calls"]), "open": b["open"]} for b in out]
 
 
 def _batches(r):
-    """'3 (haiku-4-5), 2 open (sonnet-5)': main-session calls per runner batch."""
+    """'3 (haiku-4-5), 5 open (haiku-4-5>sonnet-5)': main calls per runner batch."""
     return ", ".join(f"{b['main_calls']}{' open' if b['open'] else ''} ({b['model']})"
                      for b in r["batches"])
 
@@ -257,6 +293,8 @@ def main(argv=None):
     ap.add_argument("--row", metavar="UNIT", help="print a cost_log.md row for this unit")
     ap.add_argument("--pr", default="—")
     ap.add_argument("--date", default=None, help="default: today")
+    ap.add_argument("--task", action="append", default=[], metavar="ID",
+                    help="print the main-session calls in this task's window (repeatable)")
     a = ap.parse_args(argv)
     if not a.transcript.is_file():
         sys.exit(f"no such transcript: {a.transcript}")
@@ -265,7 +303,12 @@ def main(argv=None):
     if r["calls"] == 0:
         sys.exit(f"{a.transcript}: no assistant usage records; not a transcript?")
     subs = subagents(a.transcript)
-    if a.row:
+    if a.task:
+        for task in a.task:
+            w = r["tasks"].get(task)
+            print(f"{task}: " + (f"{w['main_calls']}{' open' if w['open'] else ''} main calls "
+                                 f"({w['kind']})" if w else "no launch found"))
+    elif a.row:
         import datetime
         print(row(r, a.row, a.pr, a.date or datetime.date.today().isoformat(), subs))
     else:
