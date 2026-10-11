@@ -55,7 +55,7 @@
   - F13r: the late less-attended strong centres are rarer in the Pile (2–4× in L1–16) but are not rare tokens in effect: in L9–23 rare non-centres are attended more. The sign survives everywhere; in L1–8 frequency takes 14–24 % of the gap and all three covariates 24–51 % (a lean left), in L9–23 none — `p10_cluster_function/status-10.md` §1.42
   - Stage 3 (F13, A9, F15, F13r), closed at tier 1: H-ANCHOR/BALLAST has no cell; strong centres are attended more early and in a deep middle window and less late; token properties take part of the late "less" only in L1–8, its one robust band. Met on Stage 0's v1 dirs only (the pilot sweep dropped) — `p10_cluster_function/status-10.md` §1.43
   - LC, loss coupling, for next-token loss: no cell labels c3x's members lower than kept tokens at the same positions, so no gap opens with A0's residual; every labelled cell is the next token's. Calibrated first: no onset excludes a gap of ~20 % or more; the positive control (before a word continuation) reaches −0.41 to −0.56 trained. The members' own-token surprisal points the other way (read as LCo, the next line) — `p10_cluster_function/status-10.md` §1.44
-  - LCo, the members' own-token surprisal, adjusted for the token's own Pile frequency and class: early (64–256) the gap is that frequency and class; late, the members' own tokens are less surprising beyond them in L17–24 (full at 4000, leans 2000–54000, −0.15 to −0.28 log) and lean so in L9–16 from 16000. By the rule an onset at 4000, whose place the gate does not calibrate; not specific to c3x (c2 too); the trained step unlabelled. A full label needs all 7 passages (the sign rule's null is 3.1 % at 6) — `p10_cluster_function/status-10.md` §1.45
+  - LCo, the members' own-token surprisal, adjusted for the token's own Pile frequency and class: early (64–256) the gap is that frequency and class; late, the members' own tokens are less surprising beyond them in L17–24 (full at 4000, leans at 2000–16000 and 54000, 32000 mixed; −0.15 to −0.28 log) and lean so in L9–16 from 16000. By the rule an onset at 4000, whose place the gate does not calibrate; not specific to c3x (c2 too); the trained step unlabelled. A full label needs all 7 passages (the sign rule's null is 3.1 % at 6) — `p10_cluster_function/status-10.md` §1.45
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -3494,6 +3494,12 @@ frequency and class alone) 0.43 %: both pass. Power, cells lower full / full or 
 70 %, **0.3 27 % / 84 %**, 0.5 33 % / 86 %; full labels cap near a third. An onset's existence is
 powered (no gap 0.3 % at δ 0.3) and its place is not: planted from 2000 it reads co-locates 29 %,
 follows 68 %; from 256, precedes 26 %. Onsets that open at a 6-passage step are read late.
+*After `/challenge-pr` on #193 (findings 1–2; arms beside, no label moved):* a null with each
+record's real noise spread and step-to-step carry-over near the real one (r 0.59 planted, 0.64
+real) still passes (0.46 % full; a false onset in 1.5 % of bands, twice the fresh-noise rate).
+On the real spread, power at δ 0.3 is 97–99 % at 4000–54000 but **64 % at 143000** (49 % at δ
+0.2), so the trained step's unlabelled cells are underpowered, not a "no gap". The late support
+(L9–16, `O~`, `O_s`, c2 ⊇ c3x) re-reads the same 7 passages: not independent confirmation.
 
 | row (c3x) | reads | values (passage median) |
 |---|---|---|
@@ -3517,8 +3523,10 @@ predicted one. That is the own-token form of "park what is already resolved"
 (`questions-10.md` §4), from 4000 in the deep band. It is not specific to c3x (c2 shows the same),
 not yet at the trained step (143000 unlabelled, its medians −0.08 to −0.21), and its onset's
 category is not calibrated to place it. Limits: correlational (nothing ablated); frequency and class
-fitted linearly (lf, lf²); unigram frequency, not what the model learned of it by that step; one
-seed, 7 passages, 410m, tier 1, no test.
+fitted linearly (lf, lf²); unigram frequency, not what the model learned of it by that step;
+"beyond frequency and class" is not "beyond the token": a kind of token the three-way class does
+not separate (punctuation, function words, digits) could give the same late gap, unchecked
+(`/challenge-pr` on #193, finding 3); one seed, 7 passages, 410m, tier 1, no test.
 
 **Re-run:** `python tools/run/p10_lc_own.py calibrate|stats|report --labels
 data/p10/reread_r9_2026-10-08/labels --out data/p10/lc_own_2026-10-11` (`calibrate` with `--out

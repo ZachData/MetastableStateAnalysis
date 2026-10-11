@@ -1371,6 +1371,16 @@ Power on Nf, cells lower full / full or lean: δ 0.1 4 % / 34 %; 0.2 15 % / 70 %
 is not**: planted from 2000 (δ 0.3) it reads co-locates 29 %, follows 68 %; from 256, precedes 26 %,
 co-locates 27 %, follows 46 %. So an onset's category is read with these rates beside it, and only
 "an onset exists" carries the headline (reading (4) already reads it so).
+*After `/challenge-pr` on #193, the output read (no label moved; arms beside the gate, not new
+bars):* the planted noise was fresh per step with a fixed spread, while a real passage's `O` carries
+over between steps (r 0.64, pooled over bands and adjacent primary steps) and the real log residual's
+sd is 0.2–0.5 at 64–512 and 1.1–1.8 from 2000 (findings 1–2). Added: **Np**, Nf's scale with
+ln-noise of each record's real sd and a per-token part shared across steps (ρ 0.8: carry r 0.49;
+ρ 0.95: 0.59); **Ep(δ)** the same with members × (1 − δ). Np at ρ 0.95: 0.46 % full, onset no gap
+98.5 % (a false onset per band 1.5 %, against 0.7 % fresh): **passes**. Power by step on real
+spread (Ep, ρ 0.95, full or lean): δ 0.3 97–99 % at 4000–54000, **64 % at 143000** (L17–24 too
+few), 33 % at 1000; δ 0.2 76–88 % at 4000–54000, 49 % at 143000. So 143000's unlabelled cells are
+underpowered, not evidence of no gap.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint

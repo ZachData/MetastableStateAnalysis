@@ -47,6 +47,7 @@ N_DRAWS = 200
 DELTAS = (0.1, 0.2, 0.3, 0.5)
 K_CLS = {"continuation": 0.3, "word_start": 1.0, "rest": 0.7}
 LF_SCALE = 4.5
+RHO = 0.8                                      # placed: the persistent arms' per-token share (after #193)
 FULL_MIN = 7                                   # calibrated at the gate (amended): a full label's null rate ≤ 2 %
 
 
@@ -193,18 +194,30 @@ def planted_scale(dp: Dict, arm: str) -> np.ndarray:
     return base * (-ft["lf"] / LF_SCALE) * k
 
 
+def persistent_noise(dp: Dict, passage: str, step: int, arm: str, delta: float, draw: int) -> np.ndarray:
+    """ln-noise with the record's real spread (``dp["sigma"]``, the sd of its membership-blind log
+    residual) and a per-token part shared by every step of the passage (correlation RHO), so a
+    passage's gap carries over between steps as the real ones do (after `/challenge-pr` on #193,
+    findings 1–2)."""
+    u = np.random.default_rng([zlib.crc32(f"LCo|persist|{arm}|{delta}|{passage}".encode()), draw]).standard_normal(dp["n"])
+    v = np.random.default_rng([zlib.crc32(f"LCo|fresh|{arm}|{delta}|{passage}|{step}".encode()), draw]).standard_normal(dp["n"])
+    return np.exp(dp["sigma"] * (np.sqrt(RHO) * u + np.sqrt(1 - RHO) * v))
+
+
 def _cal_job(args) -> Dict:
-    """One planted (step, passage): s_own = scale·Exp(1); E / O scale each layer's members by (1 − δ)."""
+    """One planted (step, passage): s_own = scale·Exp(1) (Np / Ep: scale·persistent noise); E / O / Ep
+    scale each layer's members by (1 − δ)."""
     key, dp, arm, delta, start, draw = args
     step, passage = key
     rng = np.random.default_rng([zlib.crc32(f"LCo|{arm}|{delta}|{start}|{step}|{passage}".encode()), draw])
-    base = planted_scale(dp, "N0" if arm == "N0" else "Nf") * rng.exponential(1.0, dp["n"])
+    noise = persistent_noise(dp, passage, step, arm, delta, draw) if arm in ("Np", "Ep") else rng.exponential(1.0, dp["n"])
+    base = planted_scale(dp, "N0" if arm == "N0" else "Nf") * noise
     dom, ft = dp["dom"], dp["feat"]
     res0 = record_resids(base, dom, ft)
     out = {"c3x": {}}
     for L, lab in dp["cols"]["c3x"].items():
         so, res = base, res0
-        if arm in ("E", "O") and step >= start:
+        if arm in ("E", "O", "Ep") and step >= start:
             so = base.copy()
             mem = dom[lab >= 0]
             so[mem] = so[mem] * (1 - delta)
@@ -214,27 +227,66 @@ def _cal_job(args) -> Dict:
     return out
 
 
+def step_carry(vals: Dict, stat: str = "O") -> float:
+    """Pearson r of a passage's band value at one primary step with the same passage's at the next,
+    pooled over bands, passages and step pairs (the carry-over the persistent arms are matched to)."""
+    g = lc.label_grid(vals, PRIMARY_STEPS, stat, "c3x")
+    x, y = [], []
+    for b in BANDS:
+        for s0, s1 in zip(PRIMARY_STEPS, PRIMARY_STEPS[1:]):
+            row0, row1 = dict(zip(*_by_passage(vals, s0, b, stat))), dict(zip(*_by_passage(vals, s1, b, stat)))
+            for p in PASSAGES:
+                if row0.get(p) is not None and row1.get(p) is not None:
+                    x.append(row0[p]); y.append(row1[p])
+    return float(np.corrcoef(x, y)[0, 1]) if len(x) > 2 else float("nan")
+
+
+def _by_passage(vals: Dict, step: int, band: str, stat: str):
+    ps, vs = [], []
+    for p in PASSAGES:
+        rec = vals.get((step, p))
+        if rec is None:
+            continue
+        by = {L: rec["c3x"][str(L)][stat] if str(L) in rec["c3x"] else None for L in LAYERS}
+        ps.append(p); vs.append(f.band_mean(by, BANDS[band]))
+    return ps, vs
+
+
+def real_sigma(dps: Dict, records: Path, keys) -> Dict:
+    """Per (step, passage): the sd of the real membership-blind log residual r on the domain."""
+    out = {}
+    for k in keys:
+        z = np.load(Path(records) / f"step{k[0]}_{k[1]}.npz")
+        r = record_resids(lc.own(z["s"]), dps[k]["dom"], dps[k]["feat"])["r"]
+        out[k] = float(np.nanstd(r[dps[k]["dom"]]))
+    return out
+
+
 def calibrate(a) -> int:
     dps = design(a.labels, a.counts)
     arms = ([("N0", 0.0, 0), ("Nf", 0.0, 0)] + [("E", d, 0) for d in DELTAS]
-            + [("O", 0.3, 2000), ("O", 0.3, 256)])
+            + [("O", 0.3, 2000), ("O", 0.3, 256)]
+            + [("Np", 0.0, 0)] + [("Ep", d, 0) for d in DELTAS])           # after `/challenge-pr` on #193
     a.out.mkdir(parents=True, exist_ok=True)
     path = a.out / "calibration.json"
     res = json.loads(path.read_text()) if path.exists() else {}
     keys = [k for k in dps if k[0] in PRIMARY_STEPS]
+    sigma = real_sigma(dps, a.records, keys) if a.only and any(x.startswith(("Np", "Ep")) for x in a.only) else {}
     slim = {k: {"n": dps[k]["n"], "dom": dps[k]["dom"], "cols": {"c3x": dps[k]["cols"]["c3x"]},
-                "feat": dps[k]["feat"]} for k in keys}
+                "feat": dps[k]["feat"], "sigma": sigma.get(k)} for k in keys}
     with Pool(a.workers) as pool:
         for arm, delta, start in arms:
-            tag = arm + (f"_d{delta}" if arm in ("E", "O") else "") + (f"_from{start}" if arm == "O" else "")
+            tag = arm + (f"_d{delta}" if arm in ("E", "O", "Ep") else "") + (f"_from{start}" if arm == "O" else "")
+            tag += f"_rho{RHO}" if arm in ("Np", "Ep") and RHO != 0.8 else ""
             if a.only and tag not in a.only:
                 continue
             t0 = time.monotonic()
-            cells, cells0, onsets = [], [], []
+            cells, cells0, onsets, carry = [], [], [], []
             for draw in range(a.draws):
                 jobs = [(k, slim[k], arm, delta, start, draw) for k in keys]
                 vals = dict(zip(keys, pool.map(_cal_job, jobs, chunksize=4)))
                 labs, labs0 = (row_labels(vals, PRIMARY_STEPS, st, "c3x") for st in ("O", "O0"))
+                carry.append(step_carry(vals))
                 for b in BANDS:
                     for s in PRIMARY_STEPS:
                         cells.append(lc.core(labs[b][s]))
@@ -250,6 +302,10 @@ def calibrate(a) -> int:
                 "onset_categories": {c: sum(o[1] == c for o in onsets) / len(onsets)
                                      for c in ("precedes", "co-locates", "follows", "no gap")},
                 "onset_steps": {str(s): sum(o[0] == s for o in onsets) / len(onsets) for s in PRIMARY_STEPS},
+                "step_carry_r": float(np.nanmedian(carry)), "rho": RHO,
+                "lower_or_lean_by_step": {str(s): float(np.isin(ca.reshape(-1, len(BANDS), len(PRIMARY_STEPS))[:, :, j],
+                                                                ["lower", "leans lower"]).mean())
+                                          for j, s in enumerate(PRIMARY_STEPS)},
                 "seconds": round(time.monotonic() - t0, 1)}
             print(tag, json.dumps(res[tag]), flush=True)
             path.write_text(json.dumps(res, indent=1) + "\n")
@@ -329,13 +385,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if name != "report":
             p.add_argument("--labels", type=Path, required=True)
             p.add_argument("--counts", type=Path, default=DATA / "p10" / "pile_unigram_2026-10-10")
-        if name == "stats":
+        if name in ("stats", "calibrate"):
             p.add_argument("--records", type=Path, default=DATA / "p10" / "lc_loss_2026-10-11" / "records")
         if name == "calibrate":
             p.add_argument("--draws", type=int, default=N_DRAWS)
             p.add_argument("--workers", type=int, default=12)
             p.add_argument("--only", nargs="*", help="arm tags to run, merged into an existing calibration.json")
+            p.add_argument("--rho", type=float, help="the persistent arms' per-token share (default RHO)")
     a = ap.parse_args(argv)
+    if getattr(a, "rho", None) is not None:
+        global RHO
+        RHO = a.rho
     return {"calibrate": calibrate, "stats": stats, "report": report}[a.cmd](a)
 
 
