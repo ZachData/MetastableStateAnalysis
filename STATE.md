@@ -1,6 +1,6 @@
 # STATE — read this first, and only this, to start
 
-**Last updated:** 2026-10-11 (#189 merged; the nightly's first red (OV1s's hook test under transformers 4.57's float32 softmax) fixed in the tests, `claude/smoke-tf457`, this unit; the research state below is #189's:) 2026-10-10 (#188 merged, its worktree and branches removed; Blocked 36 (d), the user's pick: Stage 3 closed at tier 1, `status-10.md` §1.43, writing only; Blocked 37 opened (Stage 2 or Stage 4); `claude/p10-s3-close`) · **Cap:** 150 lines (tier-0 lint enforces it).
+**Last updated:** 2026-10-11 (#189 merged; the nightly's first red, OV1s's hook test, fixed in the tests (#191, `claude/smoke-tf457`); research state unchanged since #189: Stage 3 closed at tier 1, `status-10.md` §1.43; Blocked 37 open) · **Cap:** 150 lines (tier-0 lint enforces it).
 Overwrite, never append: this file says what is true *now*. History goes to `PROJECT.md` §3.x and `git log`; mistakes go to `LESSONS.md`.
 
 ## What this is
@@ -74,7 +74,7 @@ One solo researcher (the user) + Claude. Tier 1 = exploratory, unregistered.
 
 ## Open PRs and branches
 
-**Open: this unit's PR (`claude/smoke-tf457`, `../Mets-work`): the nightly's first red on OV1s's hook test, a float32-softmax tolerance under transformers 4.57 (`LESSONS.md` lesson 4). #185 (`claude/roadmap`, `../Mets-roadmap`): the roadmap.** All PRs through #189 merged; `claude/runner-tiers` (worktree, local and remote branch) removed 2026-10-11 after checking it is an ancestor of `origin/main` (its uncommitted `STATE.md` edit was superseded). Otherwise local and remote are `main` only. The main tree may lag `origin/main` (it was 8 merges behind on 2026-10-07, so the start hook printed #156's `STATE.md`); if it lags, read `git show origin/main:STATE.md`. Branch cleanup of 2026-09-23 (user asked; every branch but `main`, after checking each): `git log` of that date. Nightly smoke green 2026-09-30 to 10-10; red 2026-10-11 on OV1s's hook test, fixed by this unit's PR. Current state: `./scripts/status.sh` (without `gh` it reads the public API; exit 1 = could not see).
+**Open: this unit's PR (`claude/smoke-tf457`, `../Mets-work`): #191, the nightly's first red on OV1s's hook test: the test's bias term under transformers 4.57's float32 softmax (`LESSONS.md` lesson 4). #185 (`claude/roadmap`, `../Mets-roadmap`): the roadmap.** All PRs through #189 merged; `claude/runner-tiers` (worktree, local and remote branch) removed 2026-10-11 after checking it is an ancestor of `origin/main` (its uncommitted `STATE.md` edit was superseded). Otherwise local and remote are `main` only. The main tree may lag `origin/main` (it was 8 merges behind on 2026-10-07, so the start hook printed #156's `STATE.md`); if it lags, read `git show origin/main:STATE.md`. Branch cleanup of 2026-09-23 (user asked; every branch but `main`, after checking each): `git log` of that date. Nightly smoke green 2026-09-30 to 10-10; red 2026-10-11 on OV1s's hook test, fixed by this unit's PR. Current state: `./scripts/status.sh` (without `gh` it reads the public API; exit 1 = could not see).
 
 ## Where things stand (one line each; detail behind the pointer)
 
