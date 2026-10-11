@@ -381,8 +381,9 @@ def check_hidden(hs: np.ndarray, run_dir: Path) -> float:
 
 def run(a) -> int:
     import torch
-    from transformers import AutoTokenizer
-    from core.models import load_model
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from core.lm_loading import resolve_lm_entry
+    from core.models import from_pretrained_eager
     from p1e_energy_field import u2_attn as ua
     from tools.run import p10_label_source as ls
     torch.backends.cuda.matmul.allow_tf32 = False
@@ -404,7 +405,11 @@ def run(a) -> int:
             todo = sorted(todo, key=lambda p: p != FIRST[1])
         if not todo:
             continue
-        model, _ = load_model(f"pythia-410m-step{step}")
+        # the causal variant (core.models.load_model is the bare body, no head), same repo and pinned
+        # revision as the bare load, in float32: core.lm_loading.load_causal_lm would give bfloat16 on cuda
+        entry = resolve_lm_entry(f"pythia-410m-step{step}")
+        model = from_pretrained_eager(AutoModelForCausalLM, entry["repo_id"], revision=entry["revision"],
+                                      torch_dtype=torch.float32).to("cuda").eval()
         if next(model.parameters()).dtype != torch.float32:
             raise SystemExit("refusing: model is not float32")
         dev = next(model.parameters()).device
