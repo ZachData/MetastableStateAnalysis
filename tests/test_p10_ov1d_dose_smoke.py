@@ -75,8 +75,10 @@ def test_z_output_is_the_map_with_key_zero_at_base(torch64, dd, arm):
         Sp = U[:, lam > 0] @ np.diag(lam[lam > 0]) @ U[:, lam > 0].T
         P1 = P[hh].copy()
         P1[:, 0] = 0
-        want += P[hh] @ xh @ K.T + P1 @ xh @ (t * Sp - K).T + hd["c"]
-    assert np.allclose(got["o"][0].numpy(), want, atol=1e-9)
+        want += P[hh] @ xh @ K.T + P1 @ xh @ (t * Sp - K).T + P[hh].sum(-1)[:, None] * hd["c"]
+    # P's rows sum to 1 only to float32 under transformers >= 4.5x (its eager softmax runs in float32):
+    # each head's c enters as rowsum(P)·c, not c (1.7e-7 apart at 4.57.6 if taken as c)
+    assert np.allclose(got["o"][0].numpy(), want, rtol=0, atol=1e-9)
     assert np.allclose(got["o"][0, 0].numpy(), want[0])            # position 0's own row: base's map
 
 
