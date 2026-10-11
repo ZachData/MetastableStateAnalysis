@@ -11,6 +11,12 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
+> **2026-10-10: how this thread finishes is `docs/ROADMAP.md` §4** (exit condition, budget of
+> 5 units: 10.1 close OV, 10.2 F13 + A9 + F15, 10.3 F14 if registered, 10.4 loss coupling,
+> 10.5 close-out). The same section says where Stages 4–7 below go (Track A, dropped, or
+> Phase 9) and drops the OV and E1 threads' Parked refinements; 10.5 marks each Parked item
+> here *carried* or *dropped*.
+
 > **ON HOLD since 2026-09-25 (user):** no new Phase 10 experiments until the
 > project can say what a cluster is. Every row here reads one HDBSCAN
 > partition, and that is a confound. The work moved to Phase 1d

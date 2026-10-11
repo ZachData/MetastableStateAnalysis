@@ -2,9 +2,9 @@
 # How we work in this repo
 
 `STATE.md` is printed into context at session start (hook in
-`.claude/settings.json`). It is the only file to read before starting. Open
-anything else only when the task needs it. `LESSONS.md` explains why each rule
-below exists.
+`.claude/settings.json`). It is the only file to read before starting; it says
+what is true now, and `docs/ROADMAP.md` says what comes next. Open anything
+else only when the task needs it. `LESSONS.md` explains why each rule exists.
 
 ## Start (every session, before any work)
 
@@ -20,16 +20,13 @@ below exists.
 ## While working
 
 - **One session per unit of work.** After the Stop protocol, start a fresh
-  session; context re-read every call, not file size, is the cost driver
-  (`LESSONS.md` lesson 9).
-- **Batch independent checks** into one call (one shell command, or parallel
-  tool calls), not one call each.
-- **Edit tracked docs with the Edit tool**, not `sed`/heredoc rewrites: a
-  shell edit makes the harness re-inject the whole file into context.
+  session; context re-read every call is the cost driver (`LESSONS.md` 9).
+- **Batch independent checks** into one call (one command, or parallel calls).
+- **Edit tracked docs with the Edit tool**, not `sed`/heredoc (it re-injects the file).
 - **Tangent triage.** Classify every surprise as a defect (fix now), confound
-  (attach to the current item) or discovery (park one line under "Parked"
-  in the active thread's handoff, with why / cost / which decision it could
-  change). Do not follow a discovery without saying so to the user.
+  (attach to the current item) or discovery (park one line under "Parked" in
+  the thread's handoff: why / cost / which decision it could change). Do not
+  follow a discovery without saying so to the user.
 - **Refuse rather than degrade.** Before launching a batch, open the first
   output and check it is *populated*, not just present.
 - **Run-and-watch goes to the `runner` agent** (Haiku; brief, NUMERICS,
@@ -43,8 +40,22 @@ below exists.
   paragraphs, one claim per line. For `PROJECT.md` and `POPPER_PLAN.md`, open
   `docs/index/<name>.idx.md` and read one section by line range; never read them whole.
 - **Math.** Closed-form claims get a `sympy` check in `tools/math_checks/`,
-  noting what it does *not* prove. Empirical numbers get their producer re-run
-  (`PROJECT.md` §7).
+  noting what it does *not* prove. Empirical numbers get their producer re-run.
+
+## Phases and tests (`docs/ROADMAP.md` §3; `LESSONS.md` 6, 10)
+
+- **A phase or thread opens with an exit condition and a unit budget** in its
+  design. At the budget it closes at what it knows, unless the user extends it
+  on the record. A new idea mid-phase goes into `docs/ROADMAP.md`, not a new phase.
+- **Close out before the next opens:** card current, a one-page "what it
+  established", "not established" current, every Parked item *carried to X*
+  or *dropped (why)*, every Blocked item decided or given a home.
+- **Calibration gate.** Before a rule freezes, run the full pipeline on a
+  planted null and a planted effect over the real design points. Quote effect
+  sizes against a positive control where one exists.
+- **Name the family.** The cells and the statistic that count are fixed before
+  any output; leans are not readings. 410m and 70m are exploration rungs; a
+  confirmatory claim names its rung or held-out set when it is registered.
 
 ## Stop (when a unit of work closes: a result, a defect, a decision)
 
@@ -56,17 +67,15 @@ Do these without being asked, in this order, in the same commit as the work:
 2. **The phase's `status-N.md`**: numbers, caveats, how to re-run. If the
    unit corrects an *earlier* phase (a result, a definition, a citation),
    also add one line under that phase's `## Corrections received`: date,
-   what changed, pointer. Corrections flow backwards, and this line is what
-   makes the earlier phase's card go stale, and every card that reads that
-   phase (`docs/phase_card.md`).
+   what changed, pointer. That line stales the earlier phase's card and every
+   card that reads it (`docs/phase_card.md`).
 3. **The active thread's handoff** (e.g. `p10_cluster_function/handoff-10.md`):
    stage state, Parked items.
 4. **`LESSONS.md`**: if anything went wrong (a stale doc, a silent failure,
    a wrong assumption, a wasted run), add the instance under its pattern.
 5. **`PROJECT.md`** only for a project-wide result, as a new §3.x section.
-   Its old "Resume here" blocks are archived (`archive/PROJECT-start-here.md`);
-   `STATE.md` replaced them.
-6. **`INDEX.md`** only if a directory or phase was added or moved.
+6. **`INDEX.md`** only if a directory or phase was added or moved;
+   **`docs/ROADMAP.md`** if a phase closed, the order changed or a §10 decision was taken.
 7. **`docs/cost_log.md`**: `python tools/session_cost.py <transcript> --row
    "<unit>" --pr "#N"` and append the row (transcript:
    `~/.claude/projects/<project>/<session>.jsonl`). Over 2× the running median
@@ -75,9 +84,7 @@ Do these without being asked, in this order, in the same commit as the work:
    **open a PR** if the unit is coherent on its own. Put a **"Worth
    challenging"** section in its description: the choices you are least sure
    of and the alternatives you rejected. Then comment **`@coderabbitai
-   review`** on it: CodeRabbit does not review this repo automatically (fewer
-   than 10 stars), and it reviewed nothing between #50 and #68 while this
-   file assumed it did.
+   review`** on it (it does not review this repo on its own; `LESSONS.md` 5).
 9. **Invoke `/challenge-pr <N>`** on the PR you just opened. It runs in a
    forked subagent with no conversation history, reviews intent and design
    choices, and posts one PR comment naming the commit it reviewed. Pass it
@@ -86,11 +93,8 @@ Do these without being asked, in this order, in the same commit as the work:
    fix it (and push), or reply saying why not. Fixes pushed here re-open
    steps 1–3 if they change what those files say. Then tell the user the PR
    link, the verdict, and what is now blocked on them. **The user decides
-   disagreements; neither side's argument settles one.** From a terminal, the
-   same review runs as a separate instance, from any checkout (it reads the PR
-   via `pull/<N>/head`, not the working tree): `claude -p "/challenge-pr <N>"`.
-   Its tokens are a `general-purpose` subagent in `session_cost.py`, so
-   re-take the step 7 row after it returns.
+   disagreements; neither side's argument settles one.** Re-take the step 7
+   row after it returns (its tokens count). Terminal: `claude -p "/challenge-pr <N>"`.
 
 Sessions end abruptly (context, watchdog, sleep), so do not batch these to
 the end of the session.
@@ -107,14 +111,10 @@ the end of the session.
   and delete the branch.
 - Never `git add` under `data/`.
 
-## Literature scans: two triggers
+## Literature scans and the registry
 
-1. When a phase or subphase opens, before its `design-N.md` freezes.
-2. Before an entry lands in `claims/registry.json`.
-
-An end-of-phase scan is for a phase that produced something publishable.
-
-## Registry
-
-`claims/registry.json` is untouched unless the user deliberately registers
-something, **before** looking at the data it will be scored on.
+- Scan when a phase or subphase opens (before its `design-N.md` freezes) and
+  before an entry lands in `claims/registry.json`; at a phase's end only if it
+  produced something publishable.
+- `claims/registry.json` is untouched unless the user deliberately registers
+  something, **before** looking at the data it will be scored on.
