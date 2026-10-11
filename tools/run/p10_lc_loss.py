@@ -174,6 +174,13 @@ def control(s: np.ndarray, dom: np.ndarray, nx: Dict[str, np.ndarray]) -> Option
     return rel_binned_resid(s_full, dom, dom[ct], dom[~ct])
 
 
+def control_rank(s: np.ndarray, dom: np.ndarray, nx: Dict[str, np.ndarray]) -> Optional[float]:
+    """P_ct's rank gap (A's statistic), for its sign (after `/challenge-pr` on #192, finding 5)."""
+    s_full = np.append(s, np.nan)
+    ct = nx["ct"][dom] == 1
+    return rank_gap(s_full, dom, dom[ct], dom[~ct])
+
+
 # ---------------------------------------------------------------- labels and readings (pure)
 def label_grid(vals: Dict[Tuple[int, str], Dict], steps: Sequence[int], stat: str, column: str) -> Dict:
     """{band: {step: [passage band values]}} from per-record {column: {layer: stats}}."""
@@ -198,6 +205,8 @@ def floor_label(vals: Sequence[Optional[float]], sizes: Optional[Sequence[Option
     v = [x for x in (vals if sizes is None else sizes) if x is not None and np.isfinite(x)]
     if lab not in ("mixed", "too few") and abs(float(np.median(v))) < FLOOR:
         return f"{lab} (under the floor)"
+    if lab not in ("mixed", "too few") and (float(np.median(v)) < 0) != lab.endswith("lower"):
+        return f"{lab} (size disagrees)"                   # after `/challenge-pr` on #192, finding 5
     return lab
 
 
@@ -282,7 +291,7 @@ def design(labels_src: Path, counts_dir: Optional[Path]) -> Dict[Tuple[int, str]
 
 
 def record_stats(dp: Dict, s: np.ndarray, H: np.ndarray) -> Dict:
-    out = {"P_ct": control(s, dp["dom"], dp["nx"]), "mean_s": float(np.mean(s[dp["dom"]])),
+    out = {"P_ct": control(s, dp["dom"], dp["nx"]), "P_ct_A": control_rank(s, dp["dom"], dp["nx"]), "mean_s": float(np.mean(s[dp["dom"]])),
            "sd_over_mean": float(np.std(s[dp["dom"]]) / np.mean(s[dp["dom"]]))}
     for c in COLUMNS:
         out[c] = {str(L): layer_stats(s, H, dp["dom"], lab, dp["nx"]) for L, lab in dp["cols"][c].items()}
@@ -468,13 +477,16 @@ def readings(rep: Dict) -> Dict:
     """The rule's readings (1)–(4) on c3x at the primary steps."""
     labs, nx, d0 = rep["labels"]["c3x|D"], rep["labels"]["c3x|D~nx"], rep["labels"]["c3x|D~0"]
     out: Dict = {"trained": {b: labs[b][143000] for b in BANDS}, "onset": {}, "carried_by_next": [],
-                 "position_flag": []}
+                 "higher_carried_by_next": [], "position_flag": []}
     for b in BANDS:
         out["onset"][b] = onset(labs[b])
         for s in PRIMARY_STEPS:
             lab = core(labs[b][s])
             if lab in ("lower", "leans lower") and core(nx[b][s]) not in ("lower", "leans lower"):
                 out["carried_by_next"].append([b, s, labs[b][s], nx[b][s]])
+            # the same reading for "higher" (after `/challenge-pr` on #192, finding 1; after output)
+            if lab in ("higher", "leans higher") and core(nx[b][s]) not in ("higher", "leans higher"):
+                out["higher_carried_by_next"].append([b, s, labs[b][s], nx[b][s]])
             opp = {"lower": "higher", "higher": "lower"}.get(lab)
             if opp and core(d0[b][s]) == opp:
                 out["position_flag"].append([b, s, labs[b][s], d0[b][s]])
@@ -499,8 +511,9 @@ def report(a) -> int:
         rep["onset"][b] = onset(rep["labels"]["c3x|D"][b])
     rep["readings"] = readings(rep)
     pc = {s: [vals[(s, p)]["P_ct"] for p in PASSAGES if (s, p) in vals] for s in STEPS}
-    rep["P_ct"] = {str(s): {"label": floor_label(v), "median": float(np.median([x for x in v if x is not None]))}
-                   for s, v in pc.items()}
+    pa = {s: [vals[(s, p)].get("P_ct_A") for p in PASSAGES if (s, p) in vals] for s in STEPS}
+    rep["P_ct"] = {str(s): {"label": floor_label(v), "label_A_sign": floor_label(pa[s], v),
+                            "median": float(np.median([x for x in v if x is not None]))} for s, v in pc.items()}
     (a.out / "report.json").write_text(json.dumps(rep, indent=1) + "\n")
     lines = ["# LC report", "", "c3x, D (members − rest, binned, / mean s): label (median)", ""]
     hdr = "| band | " + " | ".join(str(s) for s in STEPS) + " |"

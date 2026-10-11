@@ -1293,6 +1293,12 @@ every "no gap"; a cell's mixed is not evidence of no gap below that. Onset: plan
 0.3, co-locates 95 %; from 256, precedes 93 % (co-locates 7 %); at δ 0.2, 68 % and 61 % (co-locates
 27 %, follows 30 % from 2000). So at δ ≤ 0.2 a true early onset reads "co-locates" about a quarter
 of the time, and **"co-locates" is read with that rate beside it**, not as a match by itself.
+*After `/challenge-pr` on #192, the output read (no label moved):* reading (3) is applied to the
+"higher" side too (a full or lean higher whose `D~nx` is not higher is carried by the next token;
+finding 1); a full or lean label whose `D` median has the other sign is marked "size disagrees"
+(fired nowhere; finding 5); `P_ct` gets the rank sign beside its own (finding 5). The headline is
+limited to next-token loss (finding 2), and the onset's power is quoted beside the cell's
+(finding 4).
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
