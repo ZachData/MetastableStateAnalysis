@@ -1190,6 +1190,14 @@ rare (while `S_c4` is negative).
 carries (length, content words, word starts); read c = 1.5 or the ordinary centres; use Pythia's
 own data order or the Pile's copyrighted parts (absent from the sample); test anything. One seed,
 7 passages, tier 1, post hoc on an output already read. Results: `status-10.md` §1.42.
+*Amended 2026-10-10, before any record was read, at the tests: terciles leave a tail.* With
+centres drawn from the rarest 8 % of 219 kept tokens and log ρ = lf + noise, `S_c|f` is −0.91
+(median of 20 draws; `S_c4` −1.95), negative in 20 of 20, so the rule as written would read
+**survives** from frequency alone, while a linear adjustment gives +0.01. Added: `S_c~x`, the centre
+coefficient of least squares of log ρ on centre, x (lf; sp; the class indicators) and a cubic in
+log position. **Survives x** now needs `S_c|x` **and** `S_c~x` *less*; **x carries** needs either
+of them not *less* and at most half `S_c4`'s median in size, with the same `C_x` / `R_x` condition;
+the rest is **unclear**.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
