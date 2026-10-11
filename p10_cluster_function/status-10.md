@@ -53,7 +53,7 @@
   - The OV thread (OV1, OV1s, OV1d), closed at tier 1: the sign of the OV's attractive part matters beyond the distance it moves the stream at 8000 L17–24; not shown at 16000, OV1's own window; c3x's groups are not singled out. What removing the repulsive part does at 16000 closes unanswered — `p10_cluster_function/status-10.md` §1.40
   - F13 with A9 and F15, the strong / ordinary Rényi centres per layer (unit LN1 rows, δ = 1.07 rad), crossed with position-divided received attention and c3x membership. No cell reads anchor and ballast (ballast testable in 5 cells): strong centres are attended more at 64–128 L1–16 and 1000–8000 L17–23 and less late (L1–8 from 8000, L9–16 from 32000, L17–23 from 54000), an arc that holds at a fixed 10 % centre share; the late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000. At a fixed δ in 1024 dimensions the centre count is near all-or-nothing, so F13's count and F15 read in few cells, and the ordinary rule's excess over a random order is there at init — `p10_cluster_function/status-10.md` §1.41
   - F13r: the late less-attended strong centres are rarer in the Pile (2–4× in L1–16) but are not rare tokens in effect: in L9–23 rare non-centres are attended more. The sign survives everywhere; in L1–8 frequency takes 14–24 % of the gap and all three covariates 24–51 % (a lean left), in L9–23 none — `p10_cluster_function/status-10.md` §1.42
-  - Stage 3 (F13, A9, F15, F13r), closed at tier 1: H-ANCHOR/BALLAST has no cell; strong centres are attended more early and in a deep middle window and less late, and the late "less" is not rarity. Met on Stage 0's v1 dirs only (the pilot sweep is not run) — `p10_cluster_function/status-10.md` §1.43
+  - Stage 3 (F13, A9, F15, F13r), closed at tier 1: H-ANCHOR/BALLAST has no cell; strong centres are attended more early and in a deep middle window and less late; token properties take part of the late "less" only in L1–8, its one robust band. Met on Stage 0's v1 dirs only (the pilot sweep dropped) — `p10_cluster_function/status-10.md` §1.43
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -67,7 +67,7 @@
 - **Feeds:** 9, 1e
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
-  - Stage 3 is closed at tier 1 and these stay parked, off the path: F13 ran on the stored base activations at a fixed δ grid; a per-record δ (a fixed centre share), `⟨Qx, Ky⟩`, F14 (count against Lemma C.1 as a test), F20 and the pilot sweep are not run; why a token far from every predecessor is attended less late is open (not rarity) — `p10_cluster_function/status-10.md` §1.43, `p10_cluster_function/handoff-10.md`
+  - Stage 3 is closed at tier 1 and these stay parked, off the path: `⟨Qx, Ky⟩`, F14 (count against Lemma C.1 as a test) and F20 are not run (a per-record δ and the pilot sweep dropped); why a token far from every predecessor is attended less late is open (rarity takes part of it in L1–8 only) — `p10_cluster_function/status-10.md` §1.43, `p10_cluster_function/handoff-10.md`
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint. F12's density confound is now controlled for tokens and positions (R2m), not for norm or the init's context — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §1.18
   - Is the class grouping computed early in training context, or a per-token feature from an early layer? R7 ran the context-shuffle test on the definition: at 512 not only per-token; the token-alone arm's position (every token at position 1) and a word-level shuffle are not controlled. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.23, `p10_cluster_function/handoff-10.md` "Parked"
@@ -81,7 +81,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-10 · body `e65bcfcd91`
+- **Reviewed:** 2026-10-10 · body `fc789ec881`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3402,21 +3402,27 @@ more", which no frequency result could change.
 python tools/run/p10_f13_rare.py run --out <dir> --workers 14` and `report --out <dir>`; tests
 `tests/test_p10_f13_rare.py` (9).
 
-### 1.43 Stage 3, closed — **at tier 1: H-ANCHOR/BALLAST has no cell (7 v1 passages, Stage 0's dirs). Strong Rényi centres are not attended as anchors with ignored ballast: c3x's non-centre members are not attended less, and late the centres themselves are attended less. Why a late centre is attended less stays open; it is not rarity** *(`STATE.md` Blocked 36 (d), the user's pick 2026-10-10; writing only, no pass)*
+### 1.43 Stage 3, closed — **at tier 1: H-ANCHOR/BALLAST has no cell (7 v1 passages, Stage 0's dirs). Strong Rényi centres are not attended as anchors with ignored ballast: c3x's non-centre members are not attended less, and late the centres themselves are attended less. Why a late centre is attended less stays open; frequency, class and place in the sentence take part of it in L1–8 only, its one robust band** *(`STATE.md` Blocked 36 (d), the user's pick 2026-10-10; writing only, no pass)*
+
+Each cell list is copied from the row named in "where"; read that row, not this one, for a quote.
 
 | claim | stands? | where |
 |---|---|---|
-| anchor plus ballast (`questions-10.md` §1.1) | no cell reads it; ballast testable in 5 cells, read in none | §1.41 |
-| strong centres attended more | early (64–128 L1–16) and in a deep window (1000–8000 L17–23); holds at a fixed 10 % centre share | §1.41 |
-| strong centres attended less late (the handoff's falsifier, in those cells) | L1–8 from 8000, L9–16 from 32000, L17–23 from 54000; shared across frames and c 1.5–2 only by L1–8 from 16000 | §1.41 |
-| the late "less" is rare tokens | no: the sign survives frequency, place in the sentence and class in every late cell; in L1–8 they take 24–51 % of the gap, in L9–23 none | §1.42 |
+| anchor plus ballast (`questions-10.md` §1.1) | no cell reads it; ballast testable in 5 cells, read in none | §1.41, A9 reading |
+| strong centres attended more than other kept tokens (`S_c`) | 64 L1–16; 128 and 2000 L9–16; 1000–8000 L17–23; the arc holds at a fixed 10 % centre share | §1.41, `S_c` |
+| strong centres attended less than other kept tokens, late (`S_c`) | 8000–143000 L1–8, 32000–143000 L9–16, 54000–143000 L17–23; shared across frames and c 1.5–2 only by L1–8 from 16000 | §1.41, `S_c`; "After" (2) |
+| the handoff's falsifier (centres attended less than c3x's members, `S_cm`) | 16000–143000 L1–8, 32000 and 143000 L9–16, 54000 L17–23 | §1.41, A9 reading |
+| the late "less" is rare tokens | no by sign: it survives frequency and place in the sentence in every late cell, class in all but 8000 L1–8 (*unclear*). In size: in L1–8 (the robust band) the three take 24–51 % of the gap, a lean left; in L9–23 none, where the "less" is not robust across frames and c | §1.42, `S_c4` / class / shrink rows |
 | F13's count and F15's coverage | read in few cells: at a fixed δ in 1024 dimensions the count is near all-or-nothing | §1.41 |
 
 **Stage 3's "done when"** (a number and a direction on both sweeps, `handoff-10.md` Stage 3) is met
-on one sweep: the pilot sweep is not run. **Open, parked, not on the path** (`handoff-10.md` "Stage 3
-closed"): what a late strong centre is instead, a per-record δ, the pilot sweep, `⟨Qx, Ky⟩`,
-Lemma 5.1's stationarity, F14 as a test (registering it is the user's), F20. Limits: one seed,
-7 passages, 410m (an exploration rung), no test.
+on one sweep. The pilot sweep is dropped, not deferred: it agrees with Stage 0 to ≤ 0.004 on Stage 1's
+statistics (§1.11), its partition question is moot (`design-10.md` "Row by row", the rows not re-read), and its
+14 extra steps are off Stage 0's axis (`/challenge-pr` on #189, finding 5). Also dropped: a per-record δ
+(a refinement; the arc already holds at a fixed share). **Open, parked, not on the path**
+(`handoff-10.md` "Stage 3 closed"): what a late strong centre is instead, `⟨Qx, Ky⟩` (the paper's
+second distance, in #185's definition of this row), Lemma 5.1's stationarity, F14 as a test
+(registering it is the user's), F20. Limits: one seed, 7 passages, 410m (an exploration rung), no test.
 
 ---
 
