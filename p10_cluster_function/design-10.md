@@ -1362,6 +1362,15 @@ cells have 6; the floor removes almost none on the log scale (3.03 %, 1.46 % aft
 passed (1.67 %) because its floor removed about a quarter on the s scale under planted Exp noise.
 **A full label now needs its null rate ≤ 2 %, so 7 readable passages; with 6, all one sign reads
 as a lean** (the onset and readings unchanged, so a 6-passage step cannot open an onset).
+**Calibration on the amended rule** (200 draws per arm, 7 200 cells; `calibration.json`): N0 0.49 %
+(onset no gap 99.3 %), Nf 0.43 % (98.7 %): **both pass**. On Nf the unadjusted `O0` fires 1.15 %
+(full) and 9.9 % (full or lean, N0 6.2 %): the planted confound barely reaches these members.
+Power on Nf, cells lower full / full or lean: δ 0.1 4 % / 34 %; 0.2 15 % / 70 %; 0.3 27 % / 84 %;
+0.5 33 % / 86 % (full labels cap near 33 %, the 7-passage cells' share). **The smallest δ with power
+≥ 0.8 is 0.3.** Whether there is an onset is powered (no gap 0.3 % at δ 0.3, 17 % at 0.2); **where
+is not**: planted from 2000 (δ 0.3) it reads co-locates 29 %, follows 68 %; from 256, precedes 26 %,
+co-locates 27 %, follows 46 %. So an onset's category is read with these rates beside it, and only
+"an onset exists" carries the headline (reading (4) already reads it so).
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
