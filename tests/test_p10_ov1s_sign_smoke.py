@@ -81,8 +81,10 @@ def test_hook_output_is_the_map(torch64, sg, arm):
         Sp = U[:, lam > 0] @ np.diag(lam[lam > 0]) @ U[:, lam > 0].T
         Sm = -U[:, lam < 0] @ np.diag(lam[lam < 0]) @ U[:, lam < 0].T
         Kp = K + Sm if arm == "norep" else K - Sp
-        want += P[hh] @ xh @ Kp.T + hd["c"]
-    assert np.allclose(got["o"][0].numpy(), want, atol=1e-9)
+        want += P[hh] @ xh @ Kp.T + P[hh].sum(-1)[:, None] * hd["c"]
+    # P's rows sum to 1 only to float32 under transformers >= 4.5x (its eager softmax runs in float32):
+    # each head's c enters as rowsum(P)·c, not c (1.7e-7 apart at 4.57.6 if taken as c)
+    assert np.allclose(got["o"][0].numpy(), want, rtol=0, atol=1e-9)
 
 
 def test_att_by_hook_is_att_by_weights_and_close_restores(torch64, sg):

@@ -591,6 +591,20 @@ not fixed).
   cannot run the repo (no `hdbscan`, torch import fails), so the smoke tests ran on 4.44 only;
   the nightly covers 4.57. Rule added: a test that builds a model asserts it is real (a layer
   count) before asserting anything about it, so a stub fails instead of passing.
+- 2026-10-11: the nightly went red on its first night with `test_p10_ov1s_sign_smoke.py`
+  (`test_hook_output_is_the_map[norep]`). Since 4.5x, transformers takes GPT-NeoX's eager softmax in
+  float32, so in a float64 tiny model P's rows sum to 1 only to ~1e-7, and the test's `want` added
+  each head's value-bias term `c` once instead of `rowsum(P)·c`: 1.7e-7 off at 4.57.6, 4e-15 at
+  4.44.2; `noatt` and OV1d's twin passed only through `allclose`'s default `rtol`. The hook and the
+  model use the same P (bit-identical); nothing in `DeltaHook` / `Hooked` was wrong. Fixed in the
+  tests: `rowsum(P)·c`, `rtol=0, atol=1e-9` (gap 5e-15 under both). OV1's cut test keeps `+ c`: the
+  cut moves `c` into the dense bias, where it enters once. The PR's first diagnosis ("the hook adds
+  with a float64 P") was a guess written as a cause, and its first fix loosened the tolerance to
+  1e-6; `/challenge-pr` on #191 measured the real cause. Rule: before loosening a tolerance, find
+  which term carries the gap. The runs on disk used 4.44.2 in float32, so no result moves. The rule's "against
+  CI's transformers" is now cheap on the box: `pip install --no-deps --target <scratch>/tf457
+  transformers==4.57.6 tokenizers==0.22.1 huggingface_hub==0.36.0 safetensors`, then run the
+  `mets` python with `PYTHONPATH=<scratch>/tf457 SMOKE_REAL_DEPS=1`.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
