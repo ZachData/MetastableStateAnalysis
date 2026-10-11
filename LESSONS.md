@@ -1123,6 +1123,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-10, Phase 10 F13r (#188, `/challenge-pr`): the write-up was drafted from a compact grid
+  the author printed for f, and it called 2000 L1–8 *unclear* though the report's cls column read
+  *carries* there (and at 512). It also measured the linear statistics' shrink against the binned
+  `S_c4`, a different estimator, so "keeps its size" in L1–8 was partly the switch. Rule: the
+  write-up quotes every reading the report prints for a cell, not the subset the author looked
+  at, and a shrink is measured against a reference computed by the same estimator.
 - 2026-10-06, Phase 10 R7 (#154, `/challenge-pr`): the rule computed three yardsticks (each
   group's own floor, the fixed bar 0.5, and the chance level as a count) and the headline gave the
   own floor's label, "mixed", as the result. On the fixed bar the same records read "context", and

@@ -16,6 +16,8 @@ Per (step, passage, layer 1–23, frame), on the kept tokens, centres = F13's st
                                 class (word_start, continuation, rest)
   S_c~f, S_c~sp, S_c~cls        the centre coefficient of least squares on centre, the covariate
                                 and a cubic in log position (amended: terciles leave a tail)
+  S_c~0                         the same with no covariate: the linear ones' own reference
+                                (added after /challenge-pr on #188, finding 3; beside, not in a reading)
   S_c|all                       the centre coefficient of least squares on centre, lf, the class
                                 indicators, sp and a cubic in log position (beside)
 
@@ -51,13 +53,13 @@ N_Q = 3                                                     # lf and sp terciles
 FIRST = (8000, "wiki_paragraph")
 CLASSES = ("word_start", "continuation")                    # the rest is the third class
 STATS = ("C_f", "C_id", "C_sp", "C_ws", "C_ct", "R_f", "R_sp", "S_c4", "S_c|f", "S_c|sp", "S_c|cls",
-         "S_c~f", "S_c~sp", "S_c~cls", "S_c|all")
+         "S_c~f", "S_c~sp", "S_c~cls", "S_c|all", "S_c~0")
 NAMES = {"C_f": ("centres commoner", "centres rarer"), "C_id": ("higher merge id", "lower merge id"),
          "C_sp": ("later in the sentence", "earlier in the sentence"),
          "C_ws": ("more word starts", "fewer word starts"), "C_ct": ("more continuations", "fewer continuations"),
          "R_f": ("commoner attended more", "commoner attended less"),
          "R_sp": ("later attended more", "later attended less")}
-for _s in ("S_c4", "S_c|f", "S_c|sp", "S_c|cls", "S_c~f", "S_c~sp", "S_c~cls", "S_c|all"):
+for _s in ("S_c4", "S_c|f", "S_c|sp", "S_c|cls", "S_c~f", "S_c~sp", "S_c~cls", "S_c|all", "S_c~0"):
     NAMES[_s] = ("attended more", "attended less")
 COVARIATES = {"f": ("S_c|f", "S_c~f", "C_f", "R_f"), "sp": ("S_c|sp", "S_c~sp", "C_sp", "R_sp"),
               "cls": ("S_c|cls", "S_c~cls", None, None)}
@@ -143,6 +145,7 @@ def layer_stats(lr: np.ndarray, kept: np.ndarray, cen: np.ndarray, feat: Dict[st
     out["S_c|sp"] = matched_diff(lr, cen, non, strata(kept, feat["sp_q"]))
     out["S_c|cls"] = matched_diff(lr, cen, non, strata(kept, feat["cls3"]))
     cmask = np.isin(kept, cen)
+    out["S_c~0"] = ols_centre(lr[kept], cmask, [], kept.astype(float))
     for x, cols in (("f", ("lf",)), ("sp", ("sp",)), ("cls", ("ws", "ct"))):
         out[f"S_c~{x}"] = ols_centre(lr[kept], cmask, [feat[k][kept] for k in cols], kept.astype(float))
     out["S_c|all"] = ols_centre(lr[kept], cmask, [feat[k][kept] for k in ("lf", "ws", "ct", "sp")], kept.astype(float))
@@ -295,13 +298,13 @@ def report(a) -> int:
         lines.append(f"\n==== frame {frame} (c = 2, stored strong centres) ====")
         for stat in STATS:
             lines += f.table(stat, labs[stat], f.STEPS)
-        lines.append("\nmedians S_c4 / S_c|f / S_c~f / S_c|sp / S_c~sp / S_c|cls / S_c|all (passage median of band values)")
+        lines.append("\nmedians S_c4 / S_c|f / S_c~0 / S_c~f / S_c|sp / S_c~sp / S_c|cls / S_c|all (passage median of band values)")
         for s in f.STEPS:
             cells = []
             for b in f.BANDS:
-                v = [meds[k][b][s] for k in ("S_c4", "S_c|f", "S_c~f", "S_c|sp", "S_c~sp", "S_c|cls", "S_c|all")]
+                v = [meds[k][b][s] for k in ("S_c4", "S_c|f", "S_c~0", "S_c~f", "S_c|sp", "S_c~sp", "S_c|cls", "S_c|all")]
                 cells.append(" ".join("   —  " if x is None else f"{x:+.2f}" for x in v))
-            lines.append(f"{s:<7} " + " | ".join(f"{c:<48}" for c in cells))
+            lines.append(f"{s:<7} " + " | ".join(f"{c:<55}" for c in cells))
         lines.append("\nreadings (cells where S_c4 is labelled; x = f primary, sp and cls beside)")
         rd = {}
         for b in f.BANDS:

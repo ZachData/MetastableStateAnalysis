@@ -209,7 +209,8 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > tokens, `data/p10/pile_unigram_2026-10-10/`), `tools/run/p10_f13_rare.py`, tests 9;
 > `data/p10/f13_rare_2026-10-10/`. No forward pass. Answer: **not rare tokens.** The late centres
 > are rarer, but the "less" survives frequency, place in the sentence and class in every late
-> cell; jointly they take about half of L1–8's gap and none of L9–23's. The Parked item "what the
+> cell (the sign); in L1–8 frequency takes 14–24 % of the gap and all three 24–51 %, in L9–23
+> none (`/challenge-pr` on #188: accept with changes, all four taken; `S_c~0` added). The Parked item "what the
 > late attended-less tokens are" is done. **Next, for the user: STATE.md Blocked 36.**
 > *Parked (F13r):* **what a late strong centre is instead.** Why: not rarity; L9–23's gap is
 > untouched by every token property tried. Cost: free joins on the same records (e.g. the

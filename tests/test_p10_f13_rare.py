@@ -123,3 +123,4 @@ def test_composition_skips_nan_feature_tokens():
     cen = np.array([5, 10, 20, 30])
     out = r.layer_stats(np.zeros(41), kept, cen, feat)
     assert out["C_id"] == pytest.approx(1.0)
+    assert out["S_c~0"] is not None                         # the covariate-free linear reference

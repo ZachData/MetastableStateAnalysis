@@ -1198,6 +1198,10 @@ coefficient of least squares of log ρ on centre, x (lf; sp; the class indicator
 log position. **Survives x** now needs `S_c|x` **and** `S_c~x` *less*; **x carries** needs either
 of them not *less* and at most half `S_c4`'s median in size, with the same `C_x` / `R_x` condition;
 the rest is **unclear**.
+*After `/challenge-pr` on #188, the output read (readings untouched):* `S_c~0`, the linear fit with
+centre and position alone, is reported beside as the `S_c~x`' own reference (a shrink against
+`S_c4` mixes estimators). The cls "carries" condition (some `C_ws` / `C_ct` label, no direction,
+no class pull) is too weak to read; its two "carries" are stated, not read.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
