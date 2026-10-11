@@ -11,6 +11,10 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > everything else — `CLAIM-C`, the e-value audit, the
 > registry, disk, and the branch state.
 
+> **CLOSED 2026-10-11 (10.5).** The phase on one page: `status-10.md` "The phase on one page
+> (10.5, closed 2026-10-11)". What became of every Parked item: "At close (10.5)" below. Nothing
+> here is next; `STATE.md` and `docs/ROADMAP.md` say what is.
+>
 > **2026-10-10: how this thread finishes is `docs/ROADMAP.md` §4** (exit condition, budget of
 > 5 units: 10.1 close OV, 10.2 F13 + A9 + F15, 10.3 F14 if registered, 10.4 loss coupling,
 > 10.5 close-out). The same section says where Stages 4–7 below go (Track A, dropped, or
@@ -1106,6 +1110,74 @@ the literature read this thread grew out of, and §3.51 the four rows that ran
 before it.
 
 ## Parked
+
+### At close (10.5)
+
+2026-10-11. Every Parked item in this file, in the journal above and the list below, carried to
+a home, dropped (with why), or already done. "C1" is `docs/ROADMAP.md` §8's null-model audit
+write-up; an item carried there is needed only if C1 quotes the reading it refines. The OV and E1
+refinements were dropped with their threads (`docs/ROADMAP.md` §4, Blocked 34 (b)).
+
+| item (where) | fate | why / where it goes |
+|---|---|---|
+| R2m: a per-step test stronger than the sign test (journal) | carried to C1 | 7 prompts bound any prompt-level p; more prompts means the held-out 12, a registration question |
+| R6 (1): c0's 1,204 clusters at 143000 back to step 0 | dropped | the old partition's; off the kept positions (c1 has 0); no reading rests on which positions they are |
+| R6 (2): 16 → 32 breaks every filtered column | carried to C1 | an instrument question (whether 32 is a trained step in F1's window); free, per-prompt group sizes |
+| R6f: the embedding's move at 512 → 2000 against the n-gram stage | carried to Track A (A3) | A3 lays n-gram milestones on the same 18 checkpoints; this is one more curve there |
+| `/challenge-pr` on #169: a shared `--lead` / `--reproduce` helper | done | `tools/run/p10_r9_lead.py` |
+| R9 / R7: c3x's self-similarity | dropped | R7's labels did not move on c3x; hours of passes for a beside reading no decision needs |
+| LCo: the sign rule's null rate at 6 passages | carried to C1, with the next item | the same audit |
+| LC: taken as LCo | done | §1.45 |
+| LC: the skew tilt in earlier rows' sign rule | carried to C1 | before C1 quotes a lean or a one-sided full label, re-label its records with a rank-gap sign and count 6-passage cells (CPU) |
+| F13r: what a late strong centre is instead | dropped | anchor/ballast has no cell, so no decision waits on it; the joins stay free on `data/p10/f13_centres_2026-10-10/` |
+| F13: a per-record δ; the pilot sweep | dropped | at Stage 3's close (§1.43) |
+| F13: `⟨Qx, Ky⟩` per head | carried to Track B (B2) | B2 reads each member's QK spectra; the rotary "distance" is defined there |
+| F13: Lemma 5.1's stationarity against index | dropped | a theory-fit check with no decision attached |
+| F13: F14 as a test | carried to the first-registration decision | `docs/ROADMAP.md` §10.3, §10.7; 10.3 dropped by the unit budget |
+| OV1, OV1s: sign flips, a dose curve | done | §1.38, §1.39 |
+| OV: an effect-matched control; one block at a time | dropped | with the OV thread, Blocked 34 (b) |
+| E1, E1m, E1p: membership against nearness | done | taken as E1m (§1.35) |
+| E1p: group-blind pulls planted on the real frames; per-head kernels | dropped | with E1 (no membership effect shown, §1.36) |
+| E1m: a pseudo-group placebo | dropped | it failed its planted null and was replaced (§1.36) |
+| E1m: the nearer, unmatched fellows; the rule's silence on leans | dropped | with E1; the first needs an intervention design, the OV cut was that |
+| E1: coherence against nearness-matched draws; no reading where 1e is mixed | dropped | with E1 |
+| R8: the exact check | done | R8x (§1.25) |
+| `φ_β`'s wells at the measured β (2026-10-06) | done | Phase 1e: one well at the measured β (`p1e_energy_field/status-1e.md` "U1, the field at the tokens") |
+| R7: `alone` at position 1; a word-level shuffle | carried to C1 | only if C1 quotes R7's shares (both bars) |
+| An all-attractive model (list) | done | OV1 (§1.37) |
+| Energy against c3x's groups | done | E1 (§1.34) |
+| 5c's flip with T1–T2 out | done | R5c on `gpt2-large` (§1.19) |
+| 5c's flip on ALBERT with the sink out | carried to B0′ | optional; both arms, after a download (`docs/ROADMAP.md` §6, models on disk) |
+| The Stage 1 readers' float32 Grams depend on BLAS threads | carried to C1 | a stated limit (record the thread count); no reading moves |
+| "Learned" off step 143000 | dropped | a beside column, not a gate; 1d's "learned" does not select known content |
+| The GPU | done | `docs/compute_profile.md` "The GPU"; used from E1 on |
+| HDBSCAN's count nearly flat | done | taken up by Phase 1d |
+| #90's review items; §1.9–§1.10 and §1.3 / §1.5 on the pilot | done | §1.8, §1.12, §1.13 |
+| Does the pilot's "50–55" sit at layer 0 | carried to C1 | the Blog 1 carrying-capacity retest; half-answered (§1.11) |
+| Per-directory seeds for the `p10_*` nulls | done for the re-read path; rest dropped | the old readers are not re-run |
+| Matching clusters across checkpoints | done | R6, R6w, R6f (§1.20–§1.22) |
+| What makes `repeated_tokens`' ~50 deep-layer clusters | carried to C1, with the "50–55" item | its stored labels are float32 rounding; re-ask on float64 |
+| §1.9's depth clusters, lexical or contextual | done | §1.10 |
+| Context or a per-token feature | done | R7 (§1.23); its two leftovers are the R7 row above |
+| The `p10_*` readers' default selection mixes sweeps | dropped | the old readers are not re-run; Stage 0's index and `core/holdout.py` are the fix if one is |
+| `lit-8.md` never cites `literature-8.md` | done | fixed at close (one line in `p8_scale_ladder/lit-8.md`) |
+| *Ladder rows never run (`status-10.md` §4):* F0b, the `beta_eff` slope | carried to Track A (A1) | β per head × checkpoint is A1 |
+| F2–F10, the J-lens and F5 | dropped | `docs/ROADMAP.md` §4: they read a cluster object 1d and Phase 10 found weak |
+| `attention-10.md` A1, A2 (the flip's distribution and checkpoint course) | dropped | moot: no trained flip is left (§1.17, §1.19) |
+| A3, per head joined to 7d's causal sweep | carried to Track B (B2, B3) | per head, on a known circuit |
+| A4, the population mass matrix; A5, paid against received | dropped | the populations they split carry no group-level effect (§1.36), and the flip they were for was position 0 |
+| A6, whether high `Z` is the sink | done | F12: the sink is raw `Z`'s minimum and corrected `Z`'s maximum (§1.4) |
+| A7, token frequency | done in part | F13r and LCo adjust for it (§1.42, §1.45) |
+| A8, cross-rung replication | dropped | nothing group-level to replicate; a rung is §10.7's decision |
+| F16 (intrinsic dimension), F19 (depth-axis merges) | dropped | Stage 5's rest goes with 10.3; F19 reads the weak cluster object |
+| F17, the graded block-shuffle null | dropped | R7's block shuffles at four grains are its nearest form (§1.23) |
+| F18, the `V`-spectrum atlas against Table 1 | carried to Track B (B2) | B2 reads each member's OV spectrum |
+| F20, the frozen-centre intervention | dropped | anchor/ballast has no cell, so there is no attracting centre to freeze |
+
+Stages not run: Stage 2 left the exit (Blocked 37 (c)); Stage 4 to Track A (A1, A2); Stage 5's rest
+dropped with 10.3; Stage 6 items 2–4 dropped; Stage 7 to Phase 9, after B4 (`docs/ROADMAP.md` §4).
+
+### The list as it stood
 
 - *Taken as OV1 (2026-10-10), done: `status-10.md` §1.37.* **An all-attractive model: each head's OV cut to its positive-definite part** (discovery, the
   user, 2026-10-09; parked by the user as a unit after R9, under 1e). Keep every trained weight;

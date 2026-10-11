@@ -56,6 +56,7 @@
   - Stage 3 (F13, A9, F15, F13r), closed at tier 1: H-ANCHOR/BALLAST has no cell; strong centres are attended more early and in a deep middle window and less late; token properties take part of the late "less" only in L1–8, its one robust band. Met on Stage 0's v1 dirs only (the pilot sweep dropped) — `p10_cluster_function/status-10.md` §1.43
   - LC, loss coupling, for next-token loss: no cell labels c3x's members lower than kept tokens at the same positions, so no gap opens with A0's residual; every labelled cell is the next token's. Calibrated first: no onset excludes a gap of ~20 % or more; the positive control (before a word continuation) reaches −0.41 to −0.56 trained. The members' own-token surprisal points the other way (read as LCo, the next line) — `p10_cluster_function/status-10.md` §1.44
   - LCo, the members' own-token surprisal, adjusted for the token's own Pile frequency and class: early (64–256) the gap is that frequency and class; late, the members' own tokens are less surprising beyond them in L17–24 (full at 4000, leans at 2000–16000 and 54000, 32000 mixed; −0.15 to −0.28 log) and lean so in L9–16 from 16000. By the rule an onset at 4000, whose place the gate does not calibrate; not specific to c3x (c2 too); the trained step unlabelled. A full label needs all 7 passages (the sign rule's null is 3.1 % at 6) — `p10_cluster_function/status-10.md` §1.45
+  - Phase 10 closed at tier 1 (10.5, 2026-10-11), its exit condition met with 10.3 (F14) dropped by the unit budget. On one page: the inherited headline numbers were the instrument's; the cluster object is weak and late; parked is a window; anchor and ballast have no cell; no membership effect is shown; the one large effect, the OV cut's collapse, is global; next-token loss has no gap. Every Parked item is carried or dropped — `p10_cluster_function/status-10.md` "The phase on one page (10.5, closed 2026-10-11)", `p10_cluster_function/handoff-10.md` "At close (10.5)"
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -64,27 +65,85 @@
   - `handoff-10.md` §0.4's "Stages 1–5 re-run on all 20 prompts for free", which contradicted registering on prompts chosen blind: the 12 are held out on 410m — `p10_cluster_function/handoff-10.md` §0.4, `docs/PHASE_REVIEW.md` "Decisions"
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
   - `handoff-10.md` §1.1's reading that neighbourhoods go "lexical → contextual": on Stage 0's v1 runs they go from repeats to repeats plus embedding-similar tokens — `p10_cluster_function/status-10.md` §1.6
-- **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4)
+- **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4). At close F14 goes to the first-registration decision, with A5 and `P-I7` (`docs/ROADMAP.md` §10, item 7)
 - **Depends on:** 1@30c0d54cc5, 1e@02fc532205, 5c@574eba0e4a, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
 - **Feeds:** 9, 1e
-- **Open threads:**
-  - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
-  - Stage 3 is closed at tier 1 and these stay parked, off the path: `⟨Qx, Ky⟩`, F14 (count against Lemma C.1 as a test) and F20 are not run (a per-record δ and the pilot sweep dropped); why a token far from every predecessor is attended less late is open (rarity takes part of it in L1–8 only) — `p10_cluster_function/status-10.md` §1.43, `p10_cluster_function/handoff-10.md`
-  - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
-  - No norm-matched random twin per checkpoint. F12's density confound is now controlled for tokens and positions (R2m), not for norm or the init's context — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §1.18
-  - Is the class grouping computed early in training context, or a per-token feature from an early layer? R7 ran the context-shuffle test on the definition: at 512 not only per-token; the token-alone arm's position (every token at position 1) and a word-level shuffle are not controlled. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.23, `p10_cluster_function/handoff-10.md` "Parked"
-  - Which set the re-read rows read after the exact check: c3, or c3x (its "moves" must also beat each moved passage's chance level), which keeps 88–98 % of c3 from step 64 and half its step-0 floor; by the rule the drop holds and c3x is recommended, the user's call. Beside it, whether a well of the theory's own density at the measured β is a better cluster than a level-set group (a probe only, `tools/run/p10_phi_wells_probe.py`, no stored result) — `p10_cluster_function/status-10.md` §1.24, `p10_cluster_function/handoff-10.md` "Parked"
-  - Does the pilot's 27-checkpoint "50–55" `max_alive` also fall at layer 0? And what sets `repeated_tokens`' ~50 deep-layer clusters? (Its stored partitions are mostly float32 rounding at steps 32 / 512; float64 gives 24–30 clusters at L6–18, so re-ask after the fix) — `p10_cluster_function/status-10.md` §1.8, `p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"
-  - Is 410m spent on the induction axis for any Phase 10 registration that joins 7d's causal sweep? — `docs/PHASE_REVIEW.md` "Parked"
-  - Position is a confound in every row here, with three separate corrections and no shared one in `core/` — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
-  - About two in five of the HDBSCAN groups every row reads exist only through hdbscan's tie order (never a component of the mutual-reachability graph; mostly pairs); 1d's level-set HDBSCAN is the tie-free version, and no row here is re-read on it — `p1d_cluster_ensemble/status-1d.md` "Admission"
-  - The `p10_*` readers' default glob now mixes the Phase 1 sweep with Stage 0's v1 dirs. The holdout guard (`core/holdout.py`) removes only the 12. Stage 1's reader selects through Stage 0's index; the older readers still glob — `p10_cluster_function/handoff-10.md` "Parked", `p10_cluster_function/status-10.md` §0
+- **Open threads:** at close each names its home; the full list, Parked items included, is `p10_cluster_function/handoff-10.md` "At close (10.5)"
+  - F5, the four-signature concordance (H-PARK against H-CAT), never ran; dropped at close with the J-lens rows F2–F10 (`docs/ROADMAP.md` §4) — `p10_cluster_function/status-10.md` §4
+  - Why a token far from every predecessor is attended less late is open (rarity takes part of it in L1–8 only); dropped at close (anchor/ballast has no cell, so no decision waits on it; the joins are free on the stored centre records). `⟨Qx, Ky⟩` per head is carried to Track B (B2) — `p10_cluster_function/status-10.md` §1.43
+  - `CLAIM-C`'s two HDBSCAN metrics against the reproducibility floor (the only item bearing on a registered prediction): carried to `CLAIM-C`'s deferred calibration (`docs/ROADMAP.md` §5); the floor is now float64's — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §3
+  - No norm-matched random twin per checkpoint, so F12's density confound is controlled for tokens and positions only: carried to C1 as a stated limit — `p10_cluster_function/status-10.md` §1.18
+  - Context or a per-token feature at 512: R7 says not only per-token; `alone` at its own offset and a word-level shuffle are carried to C1, needed only if C1 quotes R7's shares — `p10_cluster_function/status-10.md` §1.23
+  - Which set leads: decided, c3x (Blocked 27 (a)). Whether a well of `φ_β` is a better cluster went to 1e, which found one well at the measured β — `p10_cluster_function/status-10.md` §1.25, `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
+  - The pilot's "50–55" `max_alive` at layer 0, and what sets `repeated_tokens`' deep-layer clusters (re-ask on float64): carried to C1 as the Blog 1 carrying-capacity retest — `p10_cluster_function/status-10.md` §1.8, `p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"
+  - Whether 410m is spent on the induction axis for a registration that joins 7d's sweep: carried to the rung decision (`docs/ROADMAP.md` §10, item 7) — `docs/PHASE_REVIEW.md` "Parked"
+  - Position is a confound in every row, with three separate corrections and none shared in `core/`: carried to B0, the nudge harness — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
+  - HDBSCAN's tie order: answered by the re-read for c1–c3x, which are built on 1d's tie-free level-set tree; only c0, the old partition, carries it — `p1d_cluster_ensemble/status-1d.md` "Admission", `p10_cluster_function/design-10.md`
+  - The older `p10_*` readers' default glob mixes sweeps: dropped (they are not re-run; Stage 0's index and `core/holdout.py` are the fix if one is) — `p10_cluster_function/handoff-10.md` "Parked"
 - **After Phase 10:**
-  - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
+  - Rebuild a cluster ensemble (1d's intent), carried to C1 with 1d's write-up: drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
+  - F14, the strong-centre count against Lemma C.1, if it registers on a reserved rung (free: stored activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
-  - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-11 · body `2792476b9b`
+- **Reviewed:** 2026-10-11 · body `dcb42eb351`
 <!-- /phase-card -->
+
+## The phase on one page (10.5, closed 2026-10-11)
+
+Tier 1 throughout: nothing registered, nothing adjudicated. `pythia-410m`, 18 distinct
+checkpoints, the 7 v1 passages through Stage 0's index unless a row says otherwise; the 12 v2
+passages held out and never read on 410m. Numbers live in the section each line points to.
+
+**What it asked.** Is a metastable cluster a parking lot where particles are held cheaply ("trash
+collection", H-PARK), a category with a functional and causal role (H-CAT), or one attended
+anchor with ignored ballast (H-ANCHOR/BALLAST, the paper's strong Rényi centre)? And can the
+drive that forms clusters be used as an instrument? (`notes-10.md` §0, `questions-10.md` §0.)
+
+**What it established.**
+
+| # | finding | where |
+|---|---|---|
+| 1 | **Inherited headline numbers were the instrument's.** The attention flip toward unclustered tokens is the causal mask at init and, trained, position 0 plus one massive token per prompt, on 410m and on `gpt2-large`; the ~50-cluster carrying capacity is mostly a repeated-token count at layer 0; HDBSCAN's run-to-run floor was float32 distances; `pair_agreement` wrote zeros | §1.1, §1.17, §1.19, §1.8, §3, §2 |
+| 2 | **The cluster object is weak and late.** On 1d's working definition (level-set groups that move; c3x leads after R8x), 89 % of the trained step's lineages start after 2000 and none before 256; 56–67 % of groups survive each boundary from 4000 to 54000, with changed members. No headline moved between c3 and c3x | §1.14, §1.20, §1.25–§1.33 |
+| 3 | **What groups is class early, then what the embedding already groups.** At 512 the network computes a class grouping beyond own-embedding similarity; trained, the token embedding has moved under the groups (the frame, not the members). From 512 a group's dependence on context depends on the bar: mixed on its own floor, context on a fixed one | §1.10, §1.15, §1.21–§1.23 |
+| 4 | **"Parked, not pinned" is a window, not a state.** Against a matched control, members are less dense than the same tokens at init at 32–256, as dense at 512–1000, denser from 2000; transport and density read parked together at 64–256 only | §1.16, §1.18, §1.27, §1.28 |
+| 5 | **Anchor and ballast: no cell.** Strong Rényi centres are attended more at 64–128 (L1–16) and 1000–8000 (L17–23), less late; the late "less" is not rarity (token properties take part of it in L1–8 only) | §1.41–§1.43 |
+| 6 | **No membership effect.** Attention's late pull on c3x's members is not separable from pulls that ignore the group (E1 → E1m → E1p); the effects are small (median `|X|` 0.03–0.05 of a cosine) | §1.34–§1.36 |
+| 7 | **The one large effect is global.** Cutting every head's OV to its attractive part collapses the stream at 16000 (2.5–3.4 groups per layer); the sign matters beyond the distance moved at 8000 L17–24, is not shown at 16000, and c3x's groups are never singled out | §1.37–§1.40 |
+| 8 | **Loss.** For next-token loss, no gap between members and kept tokens at the same positions, so no onset (no onset excludes a gap of ~20 % or more). The members' own tokens are less surprising than their frequency and class predict, late in L17–24 from 4000; c2's groups too, so not c3x's | §1.44, §1.45 |
+
+**The reading.** On the training axis the strong signal is global: a stream that resists
+collapse, carried in part by the OV's repulsive part. Everything asked of particular clusters
+came out small, carried by position, token frequency or step 0, and no instrument singled out
+c3x's groups.
+
+**The hypotheses at close.**
+
+| hypothesis | at close | pointer |
+|---|---|---|
+| H-PARK | not confirmed: one window (64–256), and the flip that motivated it was the instrument's | #1, #4 |
+| H-CAT | not refuted, not tested as posed: F5 needs the J-lens (F2–F4), never run and dropped (`docs/ROADMAP.md` §4); the functional column has #8, the causal one OV1, which is global | #7, #8 |
+| H-ANCHOR/BALLAST | no cell | #5 |
+| `questions-10.md` §4, "is a clustered token a low-surprisal token?" | **two answers, the user's to pick:** next-token loss, no (§1.44); the token's own surprisal, late cells in L17–24, not specific to c3x (§1.45) | #8 |
+| the drive as an instrument (Stage 7) | not tested; carried to Phase 9, revisited after B4 | `docs/ROADMAP.md` §4 |
+| H-THERMOSTAT, H-WARP (Stage 4) | not tested here; carried to Track A (A1, A2) | `docs/ROADMAP.md` §4 |
+
+**1d and 1e as they bear on it.** 1d supplied the cluster every re-read row reads (level-set
+groups that move; `p1d_cluster_ensemble/status-1d.md` "Blocked 22 decided"), the float64
+distances behind #1, and the backdrop: at the theory's fixed scales the trained clouds show no
+large structure beyond re-initialised weights' (one plateau in 1,680 clouds; weak evidence,
+`p1d_cluster_ensemble/status-1d.md` "The trained reading"). 1e: at the measured β the field has
+one well in every trained band, and attention's token-specific move descends its heads' kernels
+at 128–2000 and ascends only as a sum over heads from 4000 (`p1e_energy_field/status-1e.md` "U1, the
+field at the tokens", "U2's per-head arm"); E1–E1p (#6) read c3x's groups in 1e's frame.
+
+**Exit condition** (`docs/ROADMAP.md` §4): (i) the OV thread is closed (§1.40); (ii) F13 with
+the anchor/ballast cross ran (§1.43); (iii) loss coupling has a number (§1.44, §1.45); (iv) this
+section. 10.3 (F14) did not run: 10.2 took three units and 10.4 two, so by §4's rule the last of
+10.3 / 10.4 drops; F14 goes to the first-registration decision (`docs/ROADMAP.md` §10.3, §10.7).
+Every Parked item's fate: `p10_cluster_function/handoff-10.md` "At close (10.5)". The card's open
+threads each name their home.
+
+---
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
 untouched and `claims/EXPERIMENTS.md` lists this phase as *pre-design and
@@ -3729,19 +3788,31 @@ construction is `2303.06562` (ContraNorm, before any Phase 9 spreading arm) and
 
 ## 6. What this phase has NOT established
 
-- **Nothing is registered and nothing is adjudicated.** Tier 1 throughout.
-- **H-PARK is not confirmed.** §1.5 reads parked rather than pinned in one
-  window, on an interpretation of `Z`, with the density confound argued rather
-  than controlled.
-- **H-CAT is not refuted.** The functional and causal columns are untouched.
-- **The attention flip is not refuted** — it is re-measured on a different
-  model from the one that produced the published number, and found to be mostly
-  structural there.
-- **F0 is not an adjudication of the parking account.** It is a tier-1
-  exploratory result that came back against the prediction, on a statistic
-  whose wording was never frozen — **and, since 2026-09-20, on a statistic that
-  is a proxy for the account's object rather than an instance of it**
-  (`lit-10.md` §11.4). F13 is the row that would adjudicate, and it has not run.
+*Rewritten at close (10.5, 2026-10-11); the first version (2026-09-20) is in `git log`.*
+
+- **Nothing is registered and nothing is adjudicated.** Tier 1 throughout, on one model
+  (`pythia-410m`, an exploration rung), one seed and 7 passages; the 12 held-out v2 passages
+  were never read on 410m, and the pilot sweep only up to Stage 1 (§1.11–§1.13).
+- **H-PARK is not confirmed.** Parked rather than pinned holds in one window (64–256), on `Z`
+  read as a metric, with density controlled for tokens and positions (R2m, §1.18) but not for
+  norm or the init's context (no norm-matched random twin).
+- **H-CAT is not refuted.** F5, its test, never ran (the J-lens rows F2–F10 were dropped,
+  `docs/ROADMAP.md` §4); the functional column has one row (§1.44–§1.45).
+- **No group-level mechanism is shown.** Neither attention (§1.36) nor the OV (§1.38–§1.40)
+  is shown to act on c3x's groups as groups; each group-level effect is also a nearness,
+  position, frequency or step-0 effect, or is not separated from one.
+- **The OV's role is shown only far from base.** The attractive-only cut collapses the stream
+  at 16000, but every arm sits about one stream-size from the trained model, the sign is not
+  shown at 16000 at matched distance, and what removing the repulsive part does there closes
+  unanswered (§1.40).
+- **No trained-specific attention flip is left anywhere it was checked** (410m §1.17,
+  `gpt2-large` §1.19); ALBERT, where 5c's flip was largest, was never re-read (carried to B0′).
+- **The late own-token surprisal cells are not the clusters'.** c2's groups show them too, the
+  trained step is unlabelled, and the gate does not calibrate where the onset sits (§1.45).
+  Which surprisal `questions-10.md` §4 meant is the user's.
+- **F0 is not an adjudication of the parking account**: it measured a proxy for the strong Rényi
+  centre (`lit-10.md` §11.4). F13, the real row, ran at tier 1 on one sweep and found no
+  anchor/ballast cell (§1.43); that is an exploratory answer, not an adjudication.
 - **Nothing in the five papers read on 2026-09-20 is a theorem about Pythia.**
   `2411.04990` ties weights across layers, omits the MLP, and proves its
   meta-stability results at `V = I`, `Q = K = I`, `d = 2`. The correspondence is
