@@ -51,6 +51,7 @@
   - OV1s, OV1's cut against its exact sign flip (`−S₊`: same eigenvectors, same size), and removing only the repulsive part (`K + S₋`) against removing only the attractive part (`K − S₊`), with every stored group's kind kept. The sign does it at fixed size: `S₊` merges the groups more than `−S₊` at 4000 L17–24 and 8000–16000 L9–24, in every readable passage, while `−S₊` merges about as much as OV1's random cuts and mostly dissolves the groups (42–50 % die at 16000). Removing only the repulsive part merges more than removing only the attractive part at 8000–32000 in L9–24 (and in 5 other windows), but `S₋` is the larger part there, so that adds no sign evidence. c3x's groups are not singled out: they merge no more than the other stored groups by the rule (one exception, 143000 L9–16, not read as a finding). `S₊` still moves the stream 2–3× as far as `−S₊`, so "sign" and "moved further" are still not separated. Tier 1 — `p10_cluster_function/status-10.md` §1.38
   - OV1d, a dose curve (`±t·S₊`, and the same with position 0's attention channel left at base) read at matched centred distance. At 8000 L17–24 `S₊` merges c3x's groups more than `−S₊` at the same distance, in 7 of 7 passages, and still does with position 0 at base: there the sign is not the distance moved and not one shift through the sink. 4000 L17–24 labels the same, but a merged share of distance alone reaches that label on its distances, so it is not read. At 16000, OV1's own window, it is not shown: scaled up, `−S₊` moves the stream as far and merges the groups too (L17–24 mixed, L9–16 a lean). Every arm, the OV removed included, sits about one stream-size from base, so the match is among far-moved arms, mostly interpolated between t = 0.5 and 1. Tier 1 — `p10_cluster_function/status-10.md` §1.39
   - The OV thread (OV1, OV1s, OV1d), closed at tier 1: the sign of the OV's attractive part matters beyond the distance it moves the stream at 8000 L17–24; not shown at 16000, OV1's own window; c3x's groups are not singled out. What removing the repulsive part does at 16000 closes unanswered — `p10_cluster_function/status-10.md` §1.40
+  - F13 with A9 and F15, the strong / ordinary Rényi centres per layer (unit LN1 rows, δ = 1.07 rad), crossed with position-divided received attention and c3x membership. No cell reads anchor and ballast (ballast testable in 5 cells): strong centres are attended more at 64–128 L1–16 and 1000–8000 L17–23 and less late (L1–8 from 8000, L9–16 from 32000, L17–23 from 54000), an arc that holds at a fixed 10 % centre share; the late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000. At a fixed δ in 1024 dimensions the centre count is near all-or-nothing, so F13's count and F15 read in few cells, and the ordinary rule's excess over a random order is there at init — `p10_cluster_function/status-10.md` §1.41
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -64,7 +65,7 @@
 - **Feeds:** 9, 1e
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
-  - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
+  - F13 ran on the stored base activations at a fixed δ grid; a per-record δ (a fixed centre share), what the late less-attended centres are, `⟨Qx, Ky⟩`, F14 (count against Lemma C.1 as a test) and F20 are not run (Parked in the handoff's Stage 3 entry) — `p10_cluster_function/status-10.md` §1.41, `p10_cluster_function/handoff-10.md`
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint. F12's density confound is now controlled for tokens and positions (R2m), not for norm or the init's context — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §1.18
   - Is the class grouping computed early in training context, or a per-token feature from an early layer? R7 ran the context-shuffle test on the definition: at 512 not only per-token; the token-alone arm's position (every token at position 1) and a word-level shuffle are not controlled. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.23, `p10_cluster_function/handoff-10.md` "Parked"
@@ -78,7 +79,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-10 · body `cf1965630c`
+- **Reviewed:** 2026-10-10 · body `c025fb308b`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3271,6 +3272,77 @@ other than 4000–16000; test anything. One seed, 7 passages, tier 1.
 the Rényi-centre scan (F13) on the cut models (the user asked 2026-10-10; F13 starts on the stored
 base activations). Limits: one seed, 7 passages, 410m (an exploration rung), every arm ~1
 stream-size from base.
+
+### 1.41 F13, the centre scan, with the cross (A9) and coverage (F15) — **no cell reads anchor and ballast: ballast is testable in 5 cells and none reads it. With position divided out and the sink left out, the strong Rényi centres (tokens farther than δ from every predecessor) receive more attention than other kept tokens at 64–128 in L1–16 and at 1000–8000 in L17–23, and less late (L1–8 from 8000, L9–16 from 32000, L17–23 from 54000); the arc holds with a fixed 10 % centre share (post hoc), the late "less" is a lean in a threshold-free rank correlation, and across frames and c 1.5–2 it is shared only by L1–8 from 16000. Late the centres are attended less than c3x's non-centre members too, the handoff's falsifier. At a fixed δ in 1024 dimensions the centre count is close to all-or-nothing, so F13's count and F15 read in few cells** *(rule `design-10.md` "F13", `9f1c525`, before any centre was computed; amended three times before any statistic was read, once after `/challenge-pr` on #187)*
+
+**Input.** Stage 0's stored activations and attentions (`stage0_index.json`), the 7 v1 passages at
+the 18 steps, R0's kept offsets and the R9 source's c3x / c2 labels
+(`data/p10/reread_r9_2026-10-08/labels`, its summary sha in `meta.json`), LN1 weights per step. No
+forward pass. Primary frame unit LN1 rows, δ = 2·3.5^−½ = 1.07 rad; the γ-free centred sphere and
+c = 1, 1.5 beside. 200 random arrival orders (position 0 first) per (step, passage); their mean
+strong count matches the exact `Σ 1/(a_x+1)` (`tools/math_checks/renyi_f13.py`, 8/8) within 3 SE in
+all but 4 of 55,566 records. Output `data/p10/f13_centres_2026-10-10/` (126 records, code
+`f0ce454c465c`, `report.txt`, `summary.json`); ~4 min on 14 CPU workers.
+
+**The scale sets what can be read.** The kept tokens are unique tokens, near-orthogonal in 1024
+dimensions, so at a fixed δ nearly all of them are strong centres or nearly none. At c = 2 the
+median share is 1.00 at L0–1 at every step, ~0 from L6 at steps 0–32, 0.4–0.8 at 1000–8000 and
+0.03–0.3 from 32000; c = 1 gives ~1.0 almost everywhere, c = 2.5 ~0 beyond L0. F13 reads a record
+only at 3 ≤ `N_s` ≤ kept/2; A9 reads ≥ 3 centres and ≥ 10 others, so at 2000–8000 "centre" is most
+kept tokens (at 8000 L1–8, 56 of 56 layer-records have more than half), and late a 3–30 % tail
+(`/challenge-pr` on #187, finding 3). Steps 0–32 have no cell at c = 2 beyond L1–8 (A9 *mixed*).
+
+| row (c = 2, unit LN1) | label | cells (band medians over passages) |
+|---|---|---|
+| A9 `S_c`: strong centres against other kept tokens, matched position bins | **attended more** | 64 L1–16; 128, 2000 L9–16; 1000–8000 L17–23 (+0.03 to +0.43 log units) |
+| | **attended less** | 8000–143000 L1–8; 32000–143000 L9–16; 54000–143000 L17–23 (−0.15 to −0.95) |
+| A9 `S_b`: c3x members that are not centres against non-members | **attended more** at 64 L9–16 and 512 L1–8; *mixed* or too few elsewhere; one *isolated lean less* (2000 L17–23) | 64–143000 |
+| A9 `S_cm`: centres against c3x members | attended more 2000–4000 L17–23; **attended less** 16000–143000 L1–8, 32000 and 143000 L9–16, 54000 L17–23 | |
+| A9 reading (the rule's, amended) | "centres attended, members not ballast" (ballast tested): 64 and 128 L9–16, 2000–8000 L17–23. "Centres attended, ballast not read" (`S_b` too few): 64 L1–8, 1000 L17–23, 2000 L9–16. "Centres not sinks" elsewhere; with the falsifier (H-ANCHOR/BALLAST does not hold) at 16000–143000 L1–8, 32000 and 143000 L9–16, 54000 L17–23 | |
+| F13 `D_N`, strong, against a random order | more centres at 64 L9–16, 256–512 L1–8, 16000 L1–8, 143000 L17–23; leans fewer at 32000–54000 L9–16; mixed or too few elsewhere | |
+| F13 `D_N`, ordinary | **more centres in every readable cell, step 0 included** (so "at init" from step 2) | the causal stream is not exchangeable before training |
+| F13 `D_I`, strong | later than a random order at 32000–143000 L9–16 (+0.05 to +0.10 of the passage); earlier at 143000 L17–23; mixed before 16000 | |
+| F15, strong centres of each record's first in-range layer, followed through depth | captures more at 64–128 L9–16 and 512 L17–23; less at 0–2 L9–16 (at init); *mixed* or count-dependent (the order null and the count-matched draws disagree) in most cells | |
+| F15, L8's centres | strong: captures more at 128 and 2000–8000, L9–23; ordinary: captures more in L9–16 at 4 and 64–143000, at init | |
+
+**Beside.** The γ-free sphere agrees on `S_c` (more at 64–128 L1–16 and 1000–8000 L17–23; less in
+L1–8 from 8000 and L9–16 from 32000) and on `S_b` (the same isolated lean only). At c = 1.5 `S_c` is
+more at 64 L9–23 and 1000–4000 L17–23, less in L1–8 from 16000 and at 143000 L17–23. On c2 `S_b`
+is attended more or leans more at 32–64, mixed after. **The T2 tokens** (each prose passage's first
+`.`, and the `\n` massive tokens) are strong centres in 50–86 % of L9–16 at 64–1000 and in none at
+2000–4000, where they become sinks (log ρ +3.1 to +3.3; position 0 +2.3 to +3.7 from 2000). At L12
+they then sit 0.20–0.57 rad from position 0, their nearest predecessor: the sink's direction
+(checked at 512, 2000, 4000, 143000; at 143000 only the two `\n` do). c3x's members are strong
+centres in 97 of 2,963 member-layers at 512 (L9–16), 983 of 2,026 at 4000, 263 of 2,488 at 143000.
+
+**What it says.** The theory's "strong centres serve as primary attractors" (`lit-10.md` §11.2)
+would have them attended. In the trained model, with the sink out and position divided out, a token
+far from every predecessor is attended more only early (64–128) and in a middle window in the deep
+layers (1000–8000), and less late, the reverse of the attractor reading. H-ANCHOR/BALLAST ("one
+attended anchor plus ignored members", `questions-10.md` §1.1) has no cell: c3x's non-centre
+members are not attended less. **What it does not say.** A strong centre at a fixed δ here is "a
+token unlike everything before it", not a cluster nucleus: c3x's members are rarely centres outside
+1000–8000. The order null keeps the cloud and moves the order, so `D_N`'s "more" is
+non-exchangeability (position, causal averaging), not content, and the ordinary rule's "more" is
+already at init. No test; one seed; 7 passages; tier 1. Not run: `⟨Qx, Ky⟩` (`design-10.md` "F13":
+it is not `core/ln_frame.py`'s Gram), F14, Lemma 5.1's stationarity, F20.
+
+**After `/challenge-pr` on #187 (accept with changes; post-hoc checks beside, not labels;
+`tools/run/p10_f13_review.py`, `review.txt`).** All at c = 2, unit LN1, by the same sign rule.
+
+| check (finding) | result |
+|---|---|
+| a fixed 10 % centre share, not a fixed δ (3) | the same arc: more at 32–128 L1–16 and 64–128 / 1000–8000 L17–23; less in L1–8 from 8000, L9–16 from 16000, L17–23 from 54000. The arc is not the fixed δ |
+| rank correlation of log ρ with the nearest-predecessor distance, position partialled out (3) | positive at 32–128 L1–23, 1000–4000 L9–23 and 8000 L17–23; late only *leans negative* (L1–8 from 8000, L9–16 at 32000–143000), L17–23 mixed: the late "less" sits in the far tail, not across the range |
+| predecessors restricted to kept tokens (4) | ≤ 2 % of non-centres have position 0 or a T-token as nearest predecessor at any step; `S_c` and the rank correlation keep their labels. Not the sinks' direction |
+| 16 position bins; 8 with the first dropped (5) | the same labels (drop-first: 32000 L17–23 mixed, 143000 L17–23 too few). A unit test bounds the leak under a smooth trend by the widest bin's spread |
+| robustness of the late "less" (2) | in ln1 c = 2, the γ-free sphere c = 2 and ln1 c = 1.5 together only L1–8 from 16000; L9–16 is mixed at c = 1.5 and L17–23 too few in the sphere frame |
+
+Stage 3 ran on Stage 0's v1 dirs only; the pilot sweep (its "both sweeps") is not run.
+
+**Re-run:** `OMP_NUM_THREADS=1 python tools/run/p10_f13_centres.py run --out <dir> --workers 14`, then
+`report --out <dir>`, then `python tools/run/p10_f13_review.py --out <dir>`; tests
+`tests/test_p10_f13_centres.py` (12).
 
 ---
 

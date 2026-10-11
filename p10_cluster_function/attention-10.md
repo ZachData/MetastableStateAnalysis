@@ -386,7 +386,7 @@ All rows read artifacts already on disk unless marked. Slots into
 | **A4** | **The population×population mass matrix**, per layer per head, beside 5c's inner-product decomposition. | free | §4.2. **The direct `H-PARK` vs `H-CAT` test on the attentional signature** |
 | **A5** | **Paid versus received 2×2.** | free | §4.3. Separates sink / parked / carrier |
 | **A6** | **`Z_beta,i` per token**, and whether high-`Z` is the sink. | free | §5 |
-| **A9** | **Are the strong Rényi centres the sinks?** `notes-10.md` §8's F13 produces the accepted index set; cross it with received attention, with `Z_i/(i+1)`, and with the §4.3 paid/received square. | free | **new 2026-09-20.** The theory says centres are attractors and §2.1 says position 0 is the sink; whether they are the same tokens has never been asked, and `2411.04990` Thm 4.1 makes `x_1(0)` the asymptotic attractor |
+| **A9** | **Are the strong Rényi centres the sinks?** `notes-10.md` §8's F13 produces the accepted index set; cross it with received attention, with `Z_i/(i+1)`, and with the §4.3 paid/received square. | free | **new 2026-09-20.** The theory says centres are attractors and §2.1 says position 0 is the sink; whether they are the same tokens has never been asked, and `2411.04990` Thm 4.1 makes `x_1(0)` the asymptotic attractor. **Run 2026-10-10: `status-10.md` §1.41** |
 | **A7** | **Token-frequency regression** on cluster membership and on received attention. | free | §2.5, the named unchecked confound |
 | **A8** | **Cross-rung replication**, threshold-free, on normalised depth. | cheap | §4.4, §7 |
 
