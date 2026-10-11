@@ -114,7 +114,13 @@ def rank_gap(v: np.ndarray, dom: np.ndarray, A: np.ndarray, B: np.ndarray) -> Op
     weighted by m·r / n_bin. Its null is symmetric, so the sign rule is not tilted by v's skew."""
     if A.size < MIN_A or B.size < MIN_B:
         return None
-    r = position_resid(v, dom)
+    return rank_gap_resid(position_resid(v, dom), dom, A, B)
+
+
+def rank_gap_resid(r: np.ndarray, dom: np.ndarray, A: np.ndarray, B: np.ndarray) -> Optional[float]:
+    """``rank_gap`` on a residual already taken (LCo's covariate residual)."""
+    if A.size < MIN_A or B.size < MIN_B:
+        return None
     sa, sb = set(A.tolist()), set(B.tolist())
     num = den = 0.0
     for b in f.bins_of(dom, N_BINS):

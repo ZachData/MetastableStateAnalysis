@@ -208,6 +208,19 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **LCo done, 2026-10-11: the members' own-token surprisal, adjusted (ROADMAP 10.4's second unit,
+> the user's extension; `status-10.md` §1.45, its title is the summary).** Blocked 38 (b). Rule
+> `design-10.md` "LCo" (`d8ef852`), amended at the gate before any real record (`07dbab2`: a full
+> label needs 7 passages); `tools/run/p10_lc_own.py`; `data/p10/lc_own_2026-10-11/`. LC's first
+> Parked item, taken: early the gap is the tokens' own frequency and class; late (L17–24 from 4000,
+> L9–16 leans from 16000) the members' own tokens are less surprising beyond them; c2 too. One unit.
+> Next: 10.5, the close-out (STATE Blocked 39).
+> *Parked (LCo), folded into LC's second item below:* **the sign rule's null rate at 6 passages**
+> (`LESSONS.md` 6, 2026-10-11, second instance). Why: all-one-sign over 6 passages fires 3.1 % under
+> the null, over the 2 % bars Phase 10's gates used; LC's N0 passed only because its floor removed
+> a quarter under planted noise. Cost: with the skew audit, per row, count the full labels that sit
+> on 6-passage cells (CPU). Decision it could change: a full label in an earlier row read as a lean.
+>
 > **LC done, 2026-10-11: loss coupling, ROADMAP 10.4, Stage 6 item 1 (`status-10.md` §1.44; its
 > title is the summary).** Blocked 37 (c), the user's start. Rule `design-10.md` "LC" (`ea4692e`),
 > amended at the calibration gate and frozen (`a8be8a8`) before any pass; scan `lit-10.md` §21;
@@ -215,7 +228,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > any band or step on c3x, so no onset to co-locate with A0's residual; every labelled cell is the
 > next token's (`/challenge-pr` on #192: accept with changes, all five taken). One unit, inside the
 > budget. Stage 6 items 2–4 are dropped by ROADMAP §4, so Stage 6 is closed for next-token loss.
-> *Parked (LC), recommended next (STATE Blocked 38 (b); the review's pick, finding 2):* **the
+> *Parked (LC), taken as LCo (§1.45, above), kept for its reasoning:* **the
 > members' own tokens are less surprising** (`D_own` lower at 64–512 in L1–8 and 64–128 in L9–16,
 > −0.07 to −0.21; leans lower late in L9–24; onsets precede A0's in all three bands). Why: if §4
 > meant the token's own surprisal, this row is the headline, and it is unread: signs from the

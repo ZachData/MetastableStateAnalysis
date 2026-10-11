@@ -1300,6 +1300,88 @@ finding 1); a full or lean label whose `D` median has the other sign is marked "
 limited to next-token loss (finding 2), and the onset's power is quoted beside the cell's
 (finding 4).
 
+**LCo, the members' own-token surprisal, adjusted (`STATE.md` Blocked 38 (b), the user's pick
+2026-10-11, "as a second 10.4 unit": ROADMAP §4's extension on the record; `handoff-10.md` "LC done",
+first Parked item; rule fixed 2026-10-11, before any statistic on a real record).** Scan: `lit-10.md`
+§21 (row 2 names the confound), no new search. Tier 1, unregistered, no forward pass.
+**Question:** LC's beside row `D_own` read c3x's members' own tokens as less surprising (§1.44), with
+its sign from the mean gap (the tilt the gate found) and nothing adjusted for the member token
+itself. Are the members' own tokens less surprising than the other kept tokens at the same
+positions **beyond their own Pile frequency and class**, and from which step (onset against A0's
+residual, as LC)? **Budget and exit:** one unit; it exits when every cell below has a number and a
+label, or a refusal; the close-out (10.5) follows and is never cut.
+**Inputs:** LC's records (`data/p10/lc_loss_2026-10-11/records`, code `e6ab408ec7a5`; `s_own[i] =
+s[i−1] = −log p(x_i | x_<i)`), R9's c3x and c2 labels, LC's domain (kept offsets 1 ≤ i ≤ n − 2),
+18 steps × 7 v1 passages × L1–24. The token's **own** features at i (not the next token's): `lf =
+log10((count + ½)/total)` from F13r's Pile counts and `token_class`'s word_start / continuation
+indicators.
+**Per (step, passage, layer), on the domain:** `y = ln s_own` (log scale: the noise in surprisal
+is closer to multiplicative, and frequency moves its scale), less a **membership-blind** least-squares
+fit over the domain on a cubic in log(i + 1), lf, lf², word_start and continuation: residual `r`.
+**`O`** = F13's `binned_diff` of r, members − rest, over 8 equal-count position bins (≥ 3 members,
+≥ 10 rest); a log ratio, so −0.05 is a member geometric mean ~5 % lower. **`O_A`** = LC's rank gap
+`A` on r (bin-weighted P(member's r > rest's) − 0.5): **labels take their sign from `O_A` and their
+size (floor 0.05) from `O`'s passage median**, as LC's `D`. Beside: **`O0`**, the same on `ln s_own`
+less the position cubic alone (the LC row with its tilt removed, nothing token-level adjusted);
+**`O~`**, the member coefficient of least squares of `ln s_own` on member and the same covariates
+(own sign); **`O_s`**, `O` on the s scale (s_own residualised, over the domain's mean s_own, LC's
+units; sign from its own rank gap); `D_own` as LC stored it (continuity).
+**Bands, labels, onset:** LC's (`BANDS`, F13's sign rule over ≥ 6 readable passages, `floor_label`,
+isolated and at-init marks, `onset` skipping too-few steps; precedes ≤ 512, co-locates 1000–4000,
+follows ≥ 8000).
+**Readings, fixed before output,** c3x at 64–143000: (1) **trained**: 143000's `O` label per band.
+(2) **onset** per band on `O`. (3) Per cell where `O0` reads lower (full or lean, at the floor):
+`O` lower (full or lean) → **beyond frequency and class**; otherwise → **carried by the token**
+(its own frequency or class). (4) **Headline:** "c3x's members are less surprising tokens beyond
+their frequency and class" if any band has an onset on `O`; **carried by the token** if `O0` has a
+full lower cell and `O` has no onset; **no own-token gap** if `O0` has no full lower cell (the
+tilt was the whole of `D_own`'s sign). `O~`, `O_s`, c2 and step 0 beside, by the same labels.
+**Calibration gate (before any real record is read; the real design points, the real tokens'
+lf and class, LC's `f(i) = 3 + 5(1 + i)^−0.4`, ε ~ Exp(1), 200 draws per arm), N0 first:**
+**N0** `s_own = f(i)·ε`; **Nf** (the confound) `s_own = f(i)·g·ε`, g = (−lf / 4.5)·k_cls, k 0.3
+continuation, 1 word_start, 0.7 the rest (so ln g is not linear in lf: the fit is misspecified on
+purpose); bar for both, on `O`: ≤ 2 % of (step, band) cells at 64–143000 full lower or higher, and
+onset "no gap" in ≥ 90 % of draws; `O0`'s rate on Nf is quoted (whether the confound would fire on
+these members). **E(δ)** Nf with members' s_own × (1 − δ), δ ∈ {0.1, 0.2, 0.3, 0.5}, every step →
+power (cells lower, full / full or lean); **O** δ 0.3 from 2000 and from 256 → onset shares. If N0
+or Nf fails its bar, amend before any real record is read. The smallest δ with power ≥ 0.8 is
+quoted with any "no own-token gap".
+**Tests:** own features unshifted (the token at i, not i + 1); `O` and `O_A` recover a planted
+member effect under a frequency-only s_own, and are ≈ 0 where s_own is a function of lf and class
+alone with members drawn frequent (while `O0` is not).
+**It does not:** say that members are parked because predictable (correlational, nothing
+ablated); separate frequency from what it carries (length, content); read the next token (LC did);
+read single tokens; use the held-out prompts, other models or the long passages; test anything.
+One seed, 7 passages, 410m, tier 1. Results: `status-10.md` §1.45.
+*Amended 2026-10-11 at the calibration gate, before any real record was read (records
+`data/p10/lc_own_2026-10-11/calibration/`, each version kept).* **N0 failed its bar as written:**
+2.08 % of cells full-labelled, even (lower 0.99 %, higher 1.10 %; onset "no gap" 98.7 %). The cause
+is the sign rule's own null rate, not `O`: by readable passages, full labels fire in 3.42 % of
+6-passage cells (2·2⁻⁶ = 3.13 %) and 1.50 % of 7-passage cells (1.56 %), and 53 % of c3x's primary
+cells have 6; the floor removes almost none on the log scale (3.03 %, 1.46 % after it). LC's N0
+passed (1.67 %) because its floor removed about a quarter on the s scale under planted Exp noise.
+**A full label now needs its null rate ≤ 2 %, so 7 readable passages; with 6, all one sign reads
+as a lean** (the onset and readings unchanged, so a 6-passage step cannot open an onset).
+**Calibration on the amended rule** (200 draws per arm, 7 200 cells; `calibration.json`): N0 0.49 %
+(onset no gap 99.3 %), Nf 0.43 % (98.7 %): **both pass**. On Nf the unadjusted `O0` fires 1.15 %
+(full) and 9.9 % (full or lean, N0 6.2 %): the planted confound barely reaches these members.
+Power on Nf, cells lower full / full or lean: δ 0.1 4 % / 34 %; 0.2 15 % / 70 %; 0.3 27 % / 84 %;
+0.5 33 % / 86 % (full labels cap near 33 %, the 7-passage cells' share). **The smallest δ with power
+≥ 0.8 is 0.3.** Whether there is an onset is powered (no gap 0.3 % at δ 0.3, 17 % at 0.2); **where
+is not**: planted from 2000 (δ 0.3) it reads co-locates 29 %, follows 68 %; from 256, precedes 26 %,
+co-locates 27 %, follows 46 %. So an onset's category is read with these rates beside it, and only
+"an onset exists" carries the headline (reading (4) already reads it so).
+*After `/challenge-pr` on #193, the output read (no label moved; arms beside the gate, not new
+bars):* the planted noise was fresh per step with a fixed spread, while a real passage's `O` carries
+over between steps (r 0.64, pooled over bands and adjacent primary steps) and the real log residual's
+sd is 0.2–0.5 at 64–512 and 1.1–1.8 from 2000 (findings 1–2). Added: **Np**, Nf's scale with
+ln-noise of each record's real sd and a per-token part shared across steps (ρ 0.8: carry r 0.49;
+ρ 0.95: 0.59); **Ep(δ)** the same with members × (1 − δ). Np at ρ 0.95: 0.46 % full, onset no gap
+98.5 % (a false onset per band 1.5 %, against 0.7 % fresh): **passes**. Power by step on real
+spread (Ep, ρ 0.95, full or lean): δ 0.3 97–99 % at 4000–54000, **64 % at 143000** (L17–24 too
+few), 33 % at 1000; δ 0.2 76–88 % at 4000–54000, 49 % at 143000. So 143000's unlabelled cells are
+underpowered, not evidence of no gap.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

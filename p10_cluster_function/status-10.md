@@ -54,7 +54,8 @@
   - F13 with A9 and F15, the strong / ordinary Rényi centres per layer (unit LN1 rows, δ = 1.07 rad), crossed with position-divided received attention and c3x membership. No cell reads anchor and ballast (ballast testable in 5 cells): strong centres are attended more at 64–128 L1–16 and 1000–8000 L17–23 and less late (L1–8 from 8000, L9–16 from 32000, L17–23 from 54000), an arc that holds at a fixed 10 % centre share; the late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000. At a fixed δ in 1024 dimensions the centre count is near all-or-nothing, so F13's count and F15 read in few cells, and the ordinary rule's excess over a random order is there at init — `p10_cluster_function/status-10.md` §1.41
   - F13r: the late less-attended strong centres are rarer in the Pile (2–4× in L1–16) but are not rare tokens in effect: in L9–23 rare non-centres are attended more. The sign survives everywhere; in L1–8 frequency takes 14–24 % of the gap and all three covariates 24–51 % (a lean left), in L9–23 none — `p10_cluster_function/status-10.md` §1.42
   - Stage 3 (F13, A9, F15, F13r), closed at tier 1: H-ANCHOR/BALLAST has no cell; strong centres are attended more early and in a deep middle window and less late; token properties take part of the late "less" only in L1–8, its one robust band. Met on Stage 0's v1 dirs only (the pilot sweep dropped) — `p10_cluster_function/status-10.md` §1.43
-  - LC, loss coupling, for next-token loss: no cell labels c3x's members lower than kept tokens at the same positions, so no gap opens with A0's residual; every labelled cell is the next token's. Calibrated first: no onset excludes a gap of ~20 % or more; the positive control (before a word continuation) reaches −0.41 to −0.56 trained. The members' own-token surprisal points the other way and is not yet read — `p10_cluster_function/status-10.md` §1.44
+  - LC, loss coupling, for next-token loss: no cell labels c3x's members lower than kept tokens at the same positions, so no gap opens with A0's residual; every labelled cell is the next token's. Calibrated first: no onset excludes a gap of ~20 % or more; the positive control (before a word continuation) reaches −0.41 to −0.56 trained. The members' own-token surprisal points the other way (read as LCo, the next line) — `p10_cluster_function/status-10.md` §1.44
+  - LCo, the members' own-token surprisal, adjusted for the token's own Pile frequency and class: early (64–256) the gap is that frequency and class; late, the members' own tokens are less surprising beyond them in L17–24 (full at 4000, leans at 2000–16000 and 54000, 32000 mixed; −0.15 to −0.28 log) and lean so in L9–16 from 16000. By the rule an onset at 4000, whose place the gate does not calibrate; not specific to c3x (c2 too); the trained step unlabelled. A full label needs all 7 passages (the sign rule's null is 3.1 % at 6) — `p10_cluster_function/status-10.md` §1.45
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -82,7 +83,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-11 · body `881fa13f9b`
+- **Reviewed:** 2026-10-11 · body `2792476b9b`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3425,7 +3426,7 @@ statistics (§1.11), its partition question is moot (`design-10.md` "Row by row"
 second distance, in #185's definition of this row), Lemma 5.1's stationarity, F14 as a test
 (registering it is the user's), F20. Limits: one seed, 7 passages, 410m (an exploration rung), no test.
 
-### 1.44 LC, loss coupling — **for next-token loss, no gap: no (step, band) cell labels c3x's members lower than the other kept tokens at the same positions, so there is no onset to co-locate with A0's residual (no onset excludes a gap of ~20 % or more; a single cell needs ~30 %). Trained (143000), L1–8 and L9–16 read mixed (L9–16's median −0.135, carried by a few passages), L17–24 has too few passages. Every labelled cell, the one "lower" (512 L9–16) and the "higher" leans in L17–24, is carried by the next token. The members' own tokens point the other way (less surprising, `D_own`, beside and not yet read), so "trash collection has no cell" holds for next-token loss only** *(Corrected after `/challenge-pr` on #192, findings 1, 2, 4: the first title read a "higher" lean in L17–24 that the next token carries, did not limit the claim to next-token loss, and quoted the weaker power.)* *(rule `design-10.md` "LC", `ea4692e`, before any pass; amended at the calibration gate before any pass, frozen `a8be8a8`; `docs/ROADMAP.md` §4 row 10.4; `STATE.md` Blocked 37 (c))*
+### 1.44 LC, loss coupling — **for next-token loss, no gap: no (step, band) cell labels c3x's members lower than the other kept tokens at the same positions, so there is no onset to co-locate with A0's residual (no onset excludes a gap of ~20 % or more; a single cell needs ~30 %). Trained (143000), L1–8 and L9–16 read mixed (L9–16's median −0.135, carried by a few passages), L17–24 has too few passages. Every labelled cell, the one "lower" (512 L9–16) and the "higher" leans in L17–24, is carried by the next token. The members' own tokens point the other way (less surprising, `D_own`, beside and not yet read), so "trash collection has no cell" holds for next-token loss only** *(Corrected after `/challenge-pr` on #192, findings 1, 2, 4: the first title read a "higher" lean in L17–24 that the next token carries, did not limit the claim to next-token loss, and quoted the weaker power.)* *(rule `design-10.md` "LC", `ea4692e`, before any pass; amended at the calibration gate before any pass, frozen `a8be8a8`; `docs/ROADMAP.md` §4 row 10.4; `STATE.md` Blocked 37 (c))* *(`D_own` read in §1.45, LCo: its early gap is the member tokens' own frequency and class; late, adjusted, members' own tokens are less surprising in L17–24 from 4000 and lean so in L9–16 from 16000.)*
 
 Producer `tools/run/p10_lc_loss.py` (code in `plan.json`; the causal-head fix `97dfd14` after the
 runner's refusal, before any record); records `data/p10/lc_loss_2026-10-11/` (126 passes, float32
@@ -3474,6 +3475,62 @@ correlational (no member is ablated), tier 1, no test.
 **Re-run:** `python tools/run/p10_lc_loss.py calibrate|run|stats|report --labels
 data/p10/reread_r9_2026-10-08/labels --out data/p10/lc_loss_2026-10-11` (`METS_DATA` set to the
 main tree's `data/`; `run` needs CUDA, ~2 min; `calibrate` ~6 min CPU, `--only <arm>` for one arm).
+
+### 1.45 LCo, the members' own-token surprisal, adjusted — **early, the members' own tokens are less surprising only because of their own frequency and class: LC's `D_own` gap at 64–256 (−0.08 to −0.30) goes to about 0 once the token's own Pile frequency and class are fitted out (every one of those cells is carried by the token). Late, adjusted, they are less surprising: in L17–24 a full "lower" at 4000 (7 of 7 passages, −0.21) and leans at 2000–16000 and 54000 (−0.15 to −0.28), so by the rule an onset at 4000 and the headline "beyond frequency and class"; in L9–16 leans at 16000–54000 (−0.29 to −0.36, 5 of 6 readable passages). "Co-locates" with A0's residual is the onset's category, but the gate places a planted onset in its true window only ~30 % of the time, so it is not a match. Trained (143000) has no label (L1–8 and L9–16 mixed, L17–24 too few). c2 shows the same late pattern, so it is not specific to c3x** *(rule `design-10.md` "LCo", `d8ef852`, before any statistic; amended at the calibration gate before any real record, `07dbab2`; calibration recorded `e298bbd`; `STATE.md` Blocked 38 (b), the user's pick, a second 10.4 unit)*
+
+Producer `tools/run/p10_lc_own.py` (CPU, no pass, ~1 min for `stats`); inputs LC's records
+(`data/p10/lc_loss_2026-10-11/records`, code `e6ab408ec7a5`), R9's c3x and c2 labels, F13r's Pile
+counts; outputs `data/p10/lc_own_2026-10-11/` (`stats.json`, `report.json`, `report.txt`,
+`calibration/`, each version kept). `y = ln s_own` (`s_own[i] = −log p(x_i | x_<i)`) over LC's
+domain, less a membership-blind fit on a cubic in log(i + 1), the token's own lf, lf², word_start
+and continuation; `O` = members − rest of that residual, binned on position (a log ratio: −0.2 is a
+geometric mean ~18 % lower); labels take their sign from its rank gap, a full label needs all 7
+passages (amended: at 6 the sign rule's own null rate is 3.1 %).
+
+**The gate (planted s_own on the real design points and tokens, 200 draws per arm):** N0 failed as
+first written (2.08 %, even): the sign rule fires in 3.4 % of 6-passage cells (2·2⁻⁶), and 53 % of
+c3x's cells have 6. After the amendment N0 0.49 %, Nf (s_own planted as a function of the token's
+frequency and class alone) 0.43 %: both pass. Power, cells lower full / full or lean: δ 0.2 15 % /
+70 %, **0.3 27 % / 84 %**, 0.5 33 % / 86 %; full labels cap near a third. An onset's existence is
+powered (no gap 0.3 % at δ 0.3) and its place is not: planted from 2000 it reads co-locates 29 %,
+follows 68 %; from 256, precedes 26 %. Onsets that open at a 6-passage step are read late.
+*After `/challenge-pr` on #193 (findings 1–2; arms beside, no label moved):* a null with each
+record's real noise spread and step-to-step carry-over near the real one (r 0.59 planted, 0.64
+real) still passes (0.46 % full; a false onset in 1.5 % of bands, twice the fresh-noise rate).
+On the real spread, power at δ 0.3 is 97–99 % at 4000–54000 but **64 % at 143000** (49 % at δ
+0.2), so the trained step's unlabelled cells are underpowered, not a "no gap". The late support
+(L9–16, `O~`, `O_s`, c2 ⊇ c3x) re-reads the same 7 passages: not independent confirmation.
+
+| row (c3x) | reads | values (passage median) |
+|---|---|---|
+| `O`, the primary | **L17–24:** lower 4000; leans lower 2000 (isolated), 8000, 16000, 54000 (isolated); 32000 mixed (−0.07); 143000 too few (−0.19). **L9–16:** leans lower 16000–54000 (`camus_letranger` has no members there; `hdbscan_code` the one positive); 512 lower under the floor (−0.05); 143000 mixed (−0.21, bootstrap share 0.99). **L1–8:** lower 8000 (−0.12), not followed (16000 under the floor), so no onset; else mixed. 64–128: higher under the floor in all three bands (+0.03 to +0.04) | −0.36 to +0.04 |
+| onset | L17–24 at 4000 (co-locates, with the place rates above); L1–8, L9–16 no gap | — |
+| bootstrap, share of passage resamples with median ≤ −0.05 | L17–24 0.88–0.91 at 2000–16000 and 54000; L9–16 0.96–0.99 at 16000–143000; 64–256 ≤ 0.09 in every band | — |
+| `O0`, position only (LC's row, rank sign) | lower or leans lower at 64–256 in every band (L9–16 128 full, −0.20); L17–24 also from 2000 (8000 and 54000 full); L1–8 late positive (+0.12 to +0.25, mixed) | −0.31 to +0.25 |
+| reading (3) | **carried by the token:** 10 cells, all at 64–512 but L17–24 32000. **Beyond frequency and class:** 8 cells, L17–24 2000–16000 and 54000, L9–16 16000–54000 | — |
+| `O~` (least squares) and `O_s` (the s scale) | the same late signs; `O~` L17–24 lower 4000; `O_s` L17–24 lower 4000, 8000, 54000 and L1–8 lower 8000 and 143000 (−0.10) | — |
+| c2, beside | the same late shape: L9–16 lower 2000 and 143000 (−0.20), leans 4000–54000; L17–24 lower 4000 and 54000; L1–8 lower 8000 | — |
+| `D_own` (LC's, mean sign) | as §1.44 | — |
+
+**What this says.** LC's beside row was two things. At 64–256 the members' own tokens are less
+surprising because they are commoner or of an easier class (the members are where those tokens are);
+fitting both out leaves nothing, and even a lean the other way under the floor. From 2000–4000 in
+L17–24, and from 16000 in L9–16, the members' own tokens are less surprising than kept tokens of the
+same frequency and class at the same positions, by about 14–30 % in geometric mean, mostly as leans
+(6 of 7 passages share the sign, the size sits in 4–5; `hdbscan_code` often goes the other way). Read with §1.44: a member's
+residual does not predict the *next* token better, but the token it carries was the better
+predicted one. That is the own-token form of "park what is already resolved"
+(`questions-10.md` §4), from 4000 in the deep band. It is not specific to c3x (c2 shows the same),
+not yet at the trained step (143000 unlabelled, its medians −0.08 to −0.21), and its onset's
+category is not calibrated to place it. Limits: correlational (nothing ablated); frequency and class
+fitted linearly (lf, lf²); unigram frequency, not what the model learned of it by that step;
+"beyond frequency and class" is not "beyond the token": a kind of token the three-way class does
+not separate (punctuation, function words, digits) could give the same late gap, unchecked
+(`/challenge-pr` on #193, finding 3); one seed, 7 passages, 410m, tier 1, no test.
+
+**Re-run:** `python tools/run/p10_lc_own.py calibrate|stats|report --labels
+data/p10/reread_r9_2026-10-08/labels --out data/p10/lc_own_2026-10-11` (`calibrate` with `--out
+<dir>/calibration`, ~8 min CPU, `--only <arm>`; `METS_DATA` the main tree's `data/`).
 
 ---
 
