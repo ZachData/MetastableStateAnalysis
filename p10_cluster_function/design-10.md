@@ -1353,6 +1353,15 @@ alone with members drawn frequent (while `O0` is not).
 ablated); separate frequency from what it carries (length, content); read the next token (LC did);
 read single tokens; use the held-out prompts, other models or the long passages; test anything.
 One seed, 7 passages, 410m, tier 1. Results: `status-10.md` §1.45.
+*Amended 2026-10-11 at the calibration gate, before any real record was read (records
+`data/p10/lc_own_2026-10-11/calibration/`, each version kept).* **N0 failed its bar as written:**
+2.08 % of cells full-labelled, even (lower 0.99 %, higher 1.10 %; onset "no gap" 98.7 %). The cause
+is the sign rule's own null rate, not `O`: by readable passages, full labels fire in 3.42 % of
+6-passage cells (2·2⁻⁶ = 3.13 %) and 1.50 % of 7-passage cells (1.56 %), and 53 % of c3x's primary
+cells have 6; the floor removes almost none on the log scale (3.03 %, 1.46 % after it). LC's N0
+passed (1.67 %) because its floor removed about a quarter on the s scale under planted Exp noise.
+**A full label now needs its null rate ≤ 2 %, so 7 readable passages; with 6, all one sign reads
+as a lean** (the onset and readings unchanged, so a 6-passage step cannot open an onset).
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
