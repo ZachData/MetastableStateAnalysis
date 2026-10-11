@@ -202,6 +202,21 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **F13r done, 2026-10-10 (`status-10.md` §1.42; its title is the summary).** STATE.md Blocked
+> 35 (a), the user's pick. Rule `design-10.md` "F13r" (`c370a1b`, before any feature was joined;
+> amended once at the tests, before any record was read: tercile strata leave a tail, so a linear
+> `S_c~x` must agree for "survives"); `tools/run/p10_pile_unigram.py` (the Pile's first 10^8
+> tokens, `data/p10/pile_unigram_2026-10-10/`), `tools/run/p10_f13_rare.py`, tests 9;
+> `data/p10/f13_rare_2026-10-10/`. No forward pass. Answer: **not rare tokens.** The late centres
+> are rarer, but the "less" survives frequency, place in the sentence and class in every late
+> cell; jointly they take about half of L1–8's gap and none of L9–23's. The Parked item "what the
+> late attended-less tokens are" is done. **Next, for the user: STATE.md Blocked 36.**
+> *Parked (F13r):* **what a late strong centre is instead.** Why: not rarity; L9–23's gap is
+> untouched by every token property tried. Cost: free joins on the same records (e.g. the
+> distance to position 0 / the sink's direction, the head that does the reading, whether the
+> token's own copy recurs later). Could change: whether A9's late "less" is the theory's geometry
+> or a learned reading rule.
+>
 > **Stage 3 run, 2026-10-10: F13 with A9 and F15 (`status-10.md` §1.41; its title is the
 > summary).** Rule `design-10.md` "F13" (`9f1c525`, before any centre; amended three times before
 > any statistic was read: pooled null check, F15's `L_def`, the check's SE floor and binomial bar);
@@ -213,11 +228,8 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > *Parked (F13):* **a per-record δ** (each record's δ set to a fixed strong-centre share, e.g. 10 %
 > of kept). Why: at a fixed δ the count is near all-or-nothing in 1024 dimensions, so most F13 /
 > F15 cells are too few. Cost: the producer again with a δ rule, ~4 min CPU. Could change: F13's
-> count and F15's labels (A9's arc already holds at a fixed 10 % share, `/challenge-pr` on #187; its late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000). **What the
-> late "attended less" tokens are** (frequency, part of speech, place in the sentence). Why: a
-> token unlike everything before it may simply be rare, and rare tokens may be read less. Cost: a
-> join on the stored records, free. Could change: whether A9's late reading is about geometry at
-> all. **`⟨Qx, Ky⟩` per head.** Why: the paper's own generalisation. Cost: W_Q, W_K per step and a
+> count and F15's labels (A9's arc already holds at a fixed 10 % share, `/challenge-pr` on #187; its late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000). *(What the late
+> "attended less" tokens are: done as F13r, §1.42, not rarity.)* **`⟨Qx, Ky⟩` per head.** Why: the paper's own generalisation. Cost: W_Q, W_K per step and a
 > position-dependent "distance" (rotary) to define first. **Lemma 5.1's stationarity against
 > index** from the stored centre lists (free, CPU). **F14 as a test** (the exact mean is computed;
 > registering it is the user's). **The pilot sweep** (Stage 3's "both sweeps").

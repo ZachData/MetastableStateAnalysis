@@ -5,6 +5,8 @@ import pytest
 from tools.run import p10_f13_rare as r
 from tools.run import p10_pile_unigram as u
 
+pytestmark = pytest.mark.deps
+
 
 def test_sentence_pos_hand_sequence():
     texts = ["The", " cat", " sat", ".", " It", " ran", "!\n", "x", None, " y?", "z"]
@@ -107,3 +109,17 @@ def test_reading_rules():
     labs = L(**{"S_c4": "attended less", "C_f": "centres commoner", "R_f": "commoner attended more"})
     assert r.reading(labs, M(-0.6, -0.1), "B", 1, "f") == "unclear"      # x moves the wrong way
     assert r.reading(L(), M(0, 0), "B", 1, "f") is None
+
+
+def test_composition_skips_nan_feature_tokens():
+    """C_id was 'too few' everywhere in the first batch: one NaN lid spoiled a bin's mean."""
+    kept = np.arange(1, 41)
+    feat = {k: np.zeros(41) for k in ("lf", "sp", "ws", "ct")}
+    feat["lid"] = np.ones(41)
+    feat["lid"][5] = np.nan
+    feat["lid"][[10, 20, 30]] = 2.0
+    for k in ("lf_q", "sp_q", "cls3"):
+        feat[k] = np.zeros(41, dtype=int)
+    cen = np.array([5, 10, 20, 30])
+    out = r.layer_stats(np.zeros(41), kept, cen, feat)
+    assert out["C_id"] == pytest.approx(1.0)

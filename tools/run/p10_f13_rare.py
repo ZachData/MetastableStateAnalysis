@@ -132,8 +132,10 @@ def ols_centre(y: np.ndarray, centre: np.ndarray, covs: Sequence[np.ndarray], po
 def layer_stats(lr: np.ndarray, kept: np.ndarray, cen: np.ndarray, feat: Dict[str, np.ndarray]) -> Dict:
     non = np.setdiff1d(kept, cen)
     b8, b4 = f.bins_of(kept, f.N_BINS), strata(kept, None)
-    out = {k: f.binned_diff(feat[v], cen, non, b8)
-           for k, v in (("C_f", "lf"), ("C_id", "lid"), ("C_sp", "sp"), ("C_ws", "ws"), ("C_ct", "ct"))}
+    out = {}
+    for k, v in (("C_f", "lf"), ("C_id", "lid"), ("C_sp", "sp"), ("C_ws", "ws"), ("C_ct", "ct")):
+        ok = np.isfinite(feat[v])                           # lid is NaN at the added (literal-space) tokens
+        out[k] = f.binned_diff(feat[v], cen[ok[cen]], non[ok[non]], b8)
     out["R_f"] = partial_rank_corr(feat["lf"][non], lr[non], non.astype(float))
     out["R_sp"] = partial_rank_corr(feat["sp"][non], lr[non], non.astype(float))
     out["S_c4"] = matched_diff(lr, cen, non, b4)
