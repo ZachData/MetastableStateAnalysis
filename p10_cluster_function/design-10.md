@@ -1269,6 +1269,30 @@ fails its bar, amend before any pass. The smallest δ with power ≥ 0.8 is quot
 (correlation only; no member is ablated); read single tokens or name them; use the 12 held-out
 prompts, other models or the long passages; test anything. One seed, 7 passages, tier 1.
 Results: `status-10.md` §1.44.
+*Amended 2026-10-11 at the calibration gate, before any pass (no surprisal computed; records
+`data/p10/lc_loss_2026-10-11/calibration/`, each version kept).* (1) **N0 failed its bar** as written:
+2.14 % of cells full-labelled, one-sided (lower 1.40 %, higher 0.74 %). Residualising s on
+position first did not fix it (2.09 %): the cause is skew, not position. With a right-tailed s the
+smaller set's mean is the more skewed, so a zero-mean gap has a negative median and "all passages
+negative" fires more often. **`D`'s labels now take their sign from `A`**, the bin-weighted
+P(member's position-residual s > rest's) − 0.5 (ties ½; weights m·r / n_bin), whose null is
+symmetric, and their floor from `D`'s passage median. **`D` itself is now binned on s less a
+membership-blind least-squares fit on a cubic in log(i + 1) over the domain**, still over the domain's
+mean s; the rule's first `D` is kept beside as `D8`. `P_ct`, `D_own`, `D_H` use the same residual;
+`D_own`, `D_H`, `D~0`, `D~nx` keep their own signs (beside). N0 now: 0.79 % lower, 0.88 % higher
+(1.67 %), onset "no gap" 98.8 %: **passes**. (2) **c3x is sparse:** some passages have no members
+in most layers at some steps, so 5 of the 36 primary (step, band) cells have < 6 readable
+passages (L1–8 at 256 and 2000, L9–16 at 1000, L17–24 at 1000 and **143000**, so L17–24 has no
+trained reading). The onset rule **skips too-few steps** (they neither confirm nor break an onset);
+as written it could never place an onset before a too-few step (no arm ever gave 1000).
+**Calibration on the amended rule** (200 draws per arm, 7 200 cells): N1 (a group-blind loss drop
+before continuations): `D` lower 0.43 %, `D~nx` 0.9 %, onset no gap 99.5 %. Power, the share of
+cells labelled lower (full / full or lean): δ 0.05 4 % / 17 %; 0.1 12 % / 39 %; 0.2 45 % / 74 %;
+0.3 72 % / 85 %. **The smallest δ with power ≥ 0.8 is 0.3** (members' loss 30 % lower), quoted with
+every "no gap"; a cell's mixed is not evidence of no gap below that. Onset: planted from 2000 at δ
+0.3, co-locates 95 %; from 256, precedes 93 % (co-locates 7 %); at δ 0.2, 68 % and 61 % (co-locates
+27 %, follows 30 % from 2000). So at δ ≤ 0.2 a true early onset reads "co-locates" about a quarter
+of the time, and **"co-locates" is read with that rate beside it**, not as a match by itself.
 
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
