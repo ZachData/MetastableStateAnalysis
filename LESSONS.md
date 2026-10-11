@@ -643,6 +643,14 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-11, Phase 10 LCo (caught by the calibration gate, before any real record): N0 failed at
+  2.08 %, even on both sides, and no change to the statistic could fix it: the sign rule's own
+  null rate is 2·2⁻ⁿ, 3.1 % with 6 readable passages, and 53 % of c3x's cells have 6. LC's N0 had
+  passed (1.67 %) only because its floor removed about a quarter of the false labels under planted
+  Exp noise, on the s scale; on the log scale the floor removes almost none. Rule: **a bar on
+  false labels is checked against the label rule's own null rate at each cell's passage count,
+  before any statistic is blamed**; here a full label now needs 7. Earlier rows' full labels on
+  6-passage cells are parked with the skew audit (`handoff-10.md` "LCo done").
 - 2026-10-11, Phase 10 LC (caught by the calibration gate, before any pass): F13's sign rule over
   passages (all same sign → a label) was run on a mean gap of a right-skewed quantity
   (surprisal). The smaller set's mean is the more skewed, so a zero-mean gap has a negative median

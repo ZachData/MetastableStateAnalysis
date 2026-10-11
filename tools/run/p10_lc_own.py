@@ -47,7 +47,7 @@ N_DRAWS = 200
 DELTAS = (0.1, 0.2, 0.3, 0.5)
 K_CLS = {"continuation": 0.3, "word_start": 1.0, "rest": 0.7}
 LF_SCALE = 4.5
-FULL_MIN = 7                                                # amended at the gate: a full label's null rate ≤ 2 %
+FULL_MIN = 7                                   # calibrated at the gate (amended): a full label's null rate ≤ 2 %
 
 
 class LCoError(RuntimeError):
