@@ -78,13 +78,13 @@
   - The pilot's "50–55" `max_alive` at layer 0, and what sets `repeated_tokens`' deep-layer clusters (re-ask on float64): carried to C1 as the Blog 1 carrying-capacity retest — `p10_cluster_function/status-10.md` §1.8, `p1d_cluster_ensemble/status-1d.md` "Matched k on `repeated_tokens`, and the float32 defect"
   - Whether 410m is spent on the induction axis for a registration that joins 7d's sweep: carried to the rung decision (`docs/ROADMAP.md` §10, item 7) — `docs/PHASE_REVIEW.md` "Parked"
   - Position is a confound in every row, with three separate corrections and none shared in `core/`: carried to B0, the nudge harness — `p10_cluster_function/handoff-10.md` "Standing constraints on all of it"
-  - HDBSCAN's tie order: answered by the re-read for c1–c3x, which are built on 1d's tie-free level-set tree; only c0, the old partition, carries it — `p1d_cluster_ensemble/status-1d.md` "Admission", `p10_cluster_function/design-10.md`
+  - HDBSCAN's tie order: answered by the re-read for c2a–c3x, the definition's columns, which are built on 1d's tie-free level-set tree; c0 (the old partition) and the ladder's c1 / c1c steps still carry it — `p1d_cluster_ensemble/status-1d.md` "Admission", `p10_cluster_function/design-10.md`
   - The older `p10_*` readers' default glob mixes sweeps: dropped (they are not re-run; Stage 0's index and `core/holdout.py` are the fix if one is) — `p10_cluster_function/handoff-10.md` "Parked"
 - **After Phase 10:**
   - Rebuild a cluster ensemble (1d's intent), carried to C1 with 1d's write-up: drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - F14, the strong-centre count against Lemma C.1, if it registers on a reserved rung (free: stored activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
-- **Reviewed:** 2026-10-11 · body `dcb42eb351`
+- **Reviewed:** 2026-10-11 · body `a23b465289`
 <!-- /phase-card -->
 
 ## The phase on one page (10.5, closed 2026-10-11)
@@ -132,14 +132,16 @@ groups that move; `p1d_cluster_ensemble/status-1d.md` "Blocked 22 decided"), the
 distances behind #1, and the backdrop: at the theory's fixed scales the trained clouds show no
 large structure beyond re-initialised weights' (one plateau in 1,680 clouds; weak evidence,
 `p1d_cluster_ensemble/status-1d.md` "The trained reading"). 1e: at the measured β the field has
-one well in every trained band, and attention's token-specific move descends its heads' kernels
+one well in every trained band (one exception, the early layers at step 128), and attention's token-specific move descends its heads' kernels
 at 128–2000 and ascends only as a sum over heads from 4000 (`p1e_energy_field/status-1e.md` "U1, the
 field at the tokens", "U2's per-head arm"); E1–E1p (#6) read c3x's groups in 1e's frame.
 
 **Exit condition** (`docs/ROADMAP.md` §4): (i) the OV thread is closed (§1.40); (ii) F13 with
 the anchor/ballast cross ran (§1.43); (iii) loss coupling has a number (§1.44, §1.45); (iv) this
 section. 10.3 (F14) did not run: 10.2 took three units and 10.4 two, so by §4's rule the last of
-10.3 / 10.4 drops; F14 goes to the first-registration decision (`docs/ROADMAP.md` §10.3, §10.7).
+10.3 / 10.4 drops; F14 goes to the first-registration decision (`docs/ROADMAP.md` §10.3, §10.7)
+with both of its paths: register on a reserved rung, or run exploratory on 410m (free, stored
+activations). Whether you meant 10.3 dropped or only after the close is yours (Blocked 40).
 Every Parked item's fate: `p10_cluster_function/handoff-10.md` "At close (10.5)". The card's open
 threads each name their home.
 

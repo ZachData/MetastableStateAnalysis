@@ -109,7 +109,7 @@ close-out.
 | Claim (a), step 0 against the random criteria | check first | Phase 2's steps 8–64 may already answer it; if so, write it up and adjudicate |
 | `P-gamma2` / `T_eff` | check first | 1c says no `beta_eff` in any run dir; β is now measured (Blocked 9). Goes to A1 if it needs a run |
 | Normed-rank re-report (Blog 1's ~250) | free | A, as a Blog 1 retest |
-| `CLAIM-C` calibration to 20 prompts | ~45 min | deferred by the user; stays deferred unless the registry write-up needs it |
+| `CLAIM-C` calibration to 20 prompts (with it, from Phase 10's card at close: its two HDBSCAN metrics against the reproducibility floor, now float64's, the only Phase 10 item bearing on a registered prediction) | ~45 min | deferred by the user; stays deferred unless the registry write-up needs it |
 | `P-S1` draws 500 → ≥ 1 600 | free | with A if P-S1 is ever scored (1e U4 waits on it) |
 | 5c frequency regression | free | only if a "what is in a cluster" claim is written (C1) |
 | Blocked 2 (`P-I5`'s target), Blocked 7 (which rung registers first) | the user's | both before Track B registers anything |
@@ -123,9 +123,9 @@ sink and bias at that β.
 
 | # | unit | what | done when |
 |---|---|---|---|
-| A1 | β per head × checkpoint; `T_eff` against `t*` (`P-gamma2`); H-WARP | does the trained net integrate far enough to collapse at all? | `P-gamma2` has a number, or a recorded reason it cannot |
-| A2 | per-component dissipation at the measured β, then mean-ablation | which heads and MLPs push apart, from which step; ablate the top ones: does energy turn monotone, do tokens re-cluster, at what loss? (`PROJECT.md` §3.8.3's exact split) | "these N components carry the anti-collapse force" is supported or refused |
-| A3 | one timeline | the energy break, the OV repulsive phase, the induction formation window, n-gram milestones (triage M2) and weights-only D1 / D3 / D4 (`FUTURE_IDEAS.md`) on the same 18 checkpoints | the curves are side by side, with their alignment or misalignment stated |
+| A1 | β per head × checkpoint; `T_eff` against `t*` (`P-gamma2`); H-WARP (from Phase 10 at close: F0b, the `beta_eff` slope) | does the trained net integrate far enough to collapse at all? | `P-gamma2` has a number, or a recorded reason it cannot |
+| A2 | per-component dissipation at the measured β, then mean-ablation (from Phase 10 at close: `attention-10.md`'s row A5, paid against received attention, the sink's part) | which heads and MLPs push apart, from which step; ablate the top ones: does energy turn monotone, do tokens re-cluster, at what loss? (`PROJECT.md` §3.8.3's exact split) | "these N components carry the anti-collapse force" is supported or refused |
+| A3 | one timeline (from Phase 10 at close: R6f's embedding move at 512 → 2000 against the n-gram stage) | the energy break, the OV repulsive phase, the induction formation window, n-gram milestones (triage M2) and weights-only D1 / D3 / D4 (`FUTURE_IDEAS.md`) on the same 18 checkpoints | the curves are side by side, with their alignment or misalignment stated |
 | A4 | claim (a) and the Blog 1 retests | §5 rows 3–5 | adjudicated or recorded as unadjudicable |
 | A5 | generality | register one prediction (e.g. "the energy break falls in [128, 512]") on the rung §10.7 picks or on PolyPythias seeds, then run it | the project's first adjudication |
 
@@ -149,11 +149,11 @@ better start for B than B0 (§10.4).
 
 | # | unit | what | done when |
 |---|---|---|---|
-| B0 | the nudge harness | choose a direction, in the weights (a head's OV moved to `K ± ε·S₊`, one eigenvector's weight) or in the activations (a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass |
-| B0′ | optional: ALBERT or random GPT-2 | the clustering instruments where the theory's collapse is vivid | large effects there, or the instruments are suspect |
+| B0 | the nudge harness (from Phase 10 at close: one shared position correction in `core/`, where Phase 10 had three) | choose a direction, in the weights (a head's OV moved to `K ± ε·S₊`, one eigenvector's weight) or in the activations (a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass |
+| B0′ | optional: ALBERT or random GPT-2 (from Phase 10 at close: 5c's flip on ALBERT with the sink out, both arms) | the clustering instruments where the theory's collapse is vivid | large effects there, or the instruments are suspect |
 | B1 | positive control: `L5H2` | its particle signature (each token pulled toward its left neighbour inside `L5H2`'s output subspace) should switch on inside (512, 4000] | it does (the instruments see a real mechanism, and "small" has a yardstick) or it does not (fix the instruments first) |
-| B2 | spectra from the weights | each member's symmetrised OV and QK spectra across checkpoints; dominant negative eigenpairs (the d = 2 reduction); principal angles between members (7e's free item); 2d's gradient-flow regime test per member; Phase 6's `U_neg` / `U_A` split on the circuit's subspace | a per-member table across training |
-| B3 | routing | effective attention partners and per-head β against the paper's condensation thresholds (does a head condense when it forms?); the light-cone test: nudge token j, does the response spread to tokens whose induction partner is j, against matched others? | both have a number and a direction |
+| B2 | spectra from the weights (from Phase 10 at close: `⟨Qx, Ky⟩` per head, F18's `V`-spectrum atlas, `attention-10.md`'s A3) | each member's symmetrised OV and QK spectra across checkpoints; dominant negative eigenpairs (the d = 2 reduction); principal angles between members (7e's free item); 2d's gradient-flow regime test per member; Phase 6's `U_neg` / `U_A` split on the circuit's subspace | a per-member table across training |
+| B3 | routing (from Phase 10 at close: `attention-10.md`'s A3, per head joined to 7d's causal sweep) | effective attention partners and per-head β against the paper's condensation thresholds (does a head condense when it forms?); the light-cone test: nudge token j, does the response spread to tokens whose induction partner is j, against matched others? | both have a number and a direction |
 | B4 | particles to function | nudge members' eigen-directions; read the induction loss on repeated tokens | a particle-level move is tied to the circuit's output, or not |
 | B5 | one head across training | `L5H2` or `L11H14` over the 18 checkpoints with B1's signature; onto A3's timeline | tracked, or a recorded reason it cannot be |
 | B6 | copy suppression | GPT-2 small `L10H7`, whose OV is dominated by negative diagonal values (`2310.04625`; `p2_eigenspectra/lit-2.md` §1.2): a trained head with a repulsive V, the real-model analogue of the paper's `V = −I`. On 410m, `L10H7` (same index, unrelated) interacts negatively with the induction set at every checkpoint (`PROJECT.md` "`L10H7` is the dissociation"). GPT-2 small training checkpoints exist from Stanford CRFM's Mistral runs (from memory; to verify) | B0–B4 repeated on it |
@@ -167,7 +167,7 @@ triage M3), own small models (triage M1).
 
 | # | paper | inputs | when |
 |---|---|---|---|
-| C1 | "What counts as a token cluster?", a null-model audit | 1d, Phase 10 §1, F13 (10.2) | after Phase 10 closes |
+| C1 | "What counts as a token cluster?", a null-model audit | 1d, Phase 10 §1, F13 (10.2); the 8 items carried to C1 at Phase 10's close, each needed only if C1 quotes the reading it refines (`p10_cluster_function/handoff-10.md` "At close (10.5)") | after Phase 10 closes |
 | C2 | the anti-collapse force along Pythia's training axis | Track A | after A2 and A5 |
 | C3 | particles in a known circuit | Track B | after B4 |
 

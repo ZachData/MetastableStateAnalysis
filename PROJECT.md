@@ -2904,7 +2904,9 @@ says why it is project-wide. Tier 1 throughout, `pythia-410m`, nothing registere
 - Three numbers the project inherited from Blog 1 and Phase 1 were the instrument's: the
   attention flip (the causal mask and position 0, on 410m and `gpt2-large`), the ~50-cluster
   carrying capacity (a repeated-token count at layer 0), and HDBSCAN's noise floor (float32
-  distances). Every later phase that quotes them quotes the corrected readings.
+  distances). Quote them corrected: `README.md`, `docs/AXES.md` and `docs/PHASE_SYNTHESIS.md`
+  still quoted the old readings and were corrected at close (`/challenge-pr` on #194, finding 4);
+  older dated sections of this file keep theirs as history.
 - Asked of particular clusters, every instrument came out small and carried by position,
   token frequency or step 0; the one large effect (an OV cut that collapses the stream at 16000)
   is global. This is the reading `docs/ROADMAP.md` §1 builds Tracks A and B on.

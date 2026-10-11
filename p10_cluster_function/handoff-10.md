@@ -1114,7 +1114,9 @@ before it.
 ### At close (10.5)
 
 2026-10-11. Every Parked item in this file, in the journal above and the list below, carried to
-a home, dropped (with why), or already done. "C1" is `docs/ROADMAP.md` §8's null-model audit
+a home, dropped (with why), or already done: 54 rows, 16 carried, 19 dropped, 17 done, 1 done in
+part, 1 split (done for the re-read path, the rest dropped). Each home's row in `docs/ROADMAP.md`
+names what it received (`/challenge-pr` on #194, finding 1). "C1" is `docs/ROADMAP.md` §8's null-model audit
 write-up; an item carried there is needed only if C1 quotes the reading it refines. The OV and E1
 refinements were dropped with their threads (`docs/ROADMAP.md` §4, Blocked 34 (b)).
 
@@ -1133,7 +1135,7 @@ refinements were dropped with their threads (`docs/ROADMAP.md` §4, Blocked 34 (
 | F13: a per-record δ; the pilot sweep | dropped | at Stage 3's close (§1.43) |
 | F13: `⟨Qx, Ky⟩` per head | carried to Track B (B2) | B2 reads each member's QK spectra; the rotary "distance" is defined there |
 | F13: Lemma 5.1's stationarity against index | dropped | a theory-fit check with no decision attached |
-| F13: F14 as a test | carried to the first-registration decision | `docs/ROADMAP.md` §10.3, §10.7; 10.3 dropped by the unit budget |
+| F13: F14 as a test | carried to the first-registration decision | both paths kept: register on a reserved rung, or run exploratory on 410m (free); `docs/ROADMAP.md` §10.3, §10.7; 10.3 dropped from Phase 10 by the unit budget |
 | OV1, OV1s: sign flips, a dose curve | done | §1.38, §1.39 |
 | OV: an effect-matched control; one block at a time | dropped | with the OV thread, Blocked 34 (b) |
 | E1, E1m, E1p: membership against nearness | done | taken as E1m (§1.35) |
@@ -1165,7 +1167,8 @@ refinements were dropped with their threads (`docs/ROADMAP.md` §4, Blocked 34 (
 | F2–F10, the J-lens and F5 | dropped | `docs/ROADMAP.md` §4: they read a cluster object 1d and Phase 10 found weak |
 | `attention-10.md` A1, A2 (the flip's distribution and checkpoint course) | dropped | moot: no trained flip is left (§1.17, §1.19) |
 | A3, per head joined to 7d's causal sweep | carried to Track B (B2, B3) | per head, on a known circuit |
-| A4, the population mass matrix; A5, paid against received | dropped | the populations they split carry no group-level effect (§1.36), and the flip they were for was position 0 |
+| `attention-10.md` A4, the population mass matrix | dropped | the populations it splits carry no group-level effect (§1.36), and the flip it was for was position 0 |
+| `attention-10.md` A5, paid against received | carried to Track A (A2) | Blocked 27 kept it because it asks about the sink, the one trained-specific part left; A2 splits the force by component, the sink among them (*corrected after `/challenge-pr` on #194, finding 6: first written as dropped*) |
 | A6, whether high `Z` is the sink | done | F12: the sink is raw `Z`'s minimum and corrected `Z`'s maximum (§1.4) |
 | A7, token frequency | done in part | F13r and LCo adjust for it (§1.42, §1.45) |
 | A8, cross-rung replication | dropped | nothing group-level to replicate; a rung is §10.7's decision |

@@ -192,7 +192,7 @@ the answers were.
 |---|---|---|---|
 | 1 | ~~Cluster count vs the Rényi packing law **as a function of `n`**~~ — **the premise was wrong.** The law is `Θ(β^((d−1)/2))`, in β and dimension, not in `n` (`lit-10.md` §5). What replaced it is the **anchor test**, and it **RAN**: nuclei are *late*, not early, against the prediction, under two nulls | free | `status-10.md` §1.2 |
 | 2 | **Where does attention actually go** — per head, per population, paid vs received, and the population×population mass matrix | free | `attention-10.md` §4. **Now unblocked** — A0 has cleared |
-| 3 | ~~The attention flip on the checkpoint axis~~ — **DONE.** It is **~94 % causal mask**, 100 % at initialisation, with a learned residual only from step ~2000 | free | `status-10.md` §1.1 |
+| 3 | ~~The attention flip on the checkpoint axis~~ — **DONE.** It is **~94 % causal mask**, 100 % at initialisation, with a learned residual only from step ~2000. *Superseded (R3, 2026-10-05): the trained flip and residual are position 0 and one massive token per prompt (`status-10.md` §1.17)* | free | `status-10.md` §1.1 |
 | 4 | ~~`Z_beta,i` per token~~ — **DONE.** Raw `log Z` is **99.5 % position**; the sink is the *minimum* of raw `Z` and the *maximum* of corrected `Z`, β-independently | free | `status-10.md` §1.4 |
 | 5 | ~~Transport~~ — **DONE.** The identity coupling is **exactly optimal in 99.5 %** of boundaries, so every displacement number on record is true `W_2` | free | `status-10.md` §1.3 |
 | 6 | **Turnover**: same particles cycling faster, or different particles clustering later | free | `math-5.md` §8.1. **Still the best unrun free row** |
