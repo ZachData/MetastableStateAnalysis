@@ -202,6 +202,18 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **Stage 3 closed, 2026-10-10 (`status-10.md` §1.43; Blocked 36 (d), the user's pick; writing
+> only).** Tier 1 at "H-ANCHOR/BALLAST has no cell; strong centres attended more early and in a
+> deep middle window, less late; token properties take part of the late 'less' only in L1–8, its
+> one robust band". Stage 3's "done when" is met on one sweep. `/challenge-pr` on #189: accept with
+> changes, all five taken (§1.43's cells copied from their source rows, the falsifier's own cells,
+> "not rarity" qualified, Blocked 37's recommendation now #185 first, two Parked items dropped).
+> **Dropped:** a per-record δ (a refinement) and the pilot sweep (§1.11: agrees to ≤ 0.004; its
+> partition question moot). **Stay parked, off the path** (open questions, not refinements): what
+> a late centre is instead, `⟨Qx, Ky⟩`, Lemma 5.1's stationarity, F14 as a test. **Next, for the
+> user: STATE.md Blocked 37** (#185 first, or Stage 2, or Stage 4; #185 sends Stage 4 to Track A,
+> does not mention Stage 2, and counts `⟨Qx, Ky⟩` in F13's row).
+>
 > **F13r done, 2026-10-10 (`status-10.md` §1.42; its title is the summary).** STATE.md Blocked
 > 35 (a), the user's pick. Rule `design-10.md` "F13r" (`c370a1b`, before any feature was joined;
 > amended once at the tests, before any record was read: tercile strata leave a tail, so a linear
@@ -226,6 +238,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > centres are attended more at 64–128 and 1000–8000 (deep) and less late; ballast testable in 5 cells, read in none. `/challenge-pr` on #187: accept with changes, all five taken (`status-10.md` §1.41 "After"). Stage 3's "done when"
 > (a number and a direction on both sweeps) is met on Stage 0's v1 dirs only; the pilot sweep is
 > not run. **Next, for the user: STATE.md Blocked 35.**
+> *Dropped 2026-10-10 at Stage 3's close (#189 finding 5): a per-record δ and the pilot sweep.*
 > *Parked (F13):* **a per-record δ** (each record's δ set to a fixed strong-centre share, e.g. 10 %
 > of kept). Why: at a fixed δ the count is near all-or-nothing in 1024 dimensions, so most F13 /
 > F15 cells are too few. Cost: the producer again with a δ rule, ~4 min CPU. Could change: F13's
