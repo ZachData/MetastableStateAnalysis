@@ -250,6 +250,11 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-10, Phase 10 F13r: `C_id` (merge rank, beside) read "too few" in every cell. The added
+  literal-space tokens have no merge rank (NaN), one kept in a record made its bin means NaN, and
+  `band_mean` drops non-finite values without a word. The runner's populated check named one
+  statistic (`C_f`), which was fine. Fixed (finite tokens only) and re-run before writing up.
+  Rule: a populated check counts non-null values for **every** statistic the report labels.
 - 2026-10-10, Phase 10 OV1d: the rule carried OV1's "dissolves" flag (kept share < 0.2) to every
   arm of a dose curve. On a flipped or control arm, low kept meant death; on `w+1` / `z+1` it
   means *merged* (death 0.09–0.26), so the report printed "dissolves" for the arms that collapse
@@ -971,6 +976,12 @@ of a design before running it, and print it on every record
   reads z ≈ −6e9. Rule: **a scale check reads the population the statistic reads, and a check run
   many times sets its bar from its own false-refusal rate (a binomial quantile), with a floor
   for counts whose draws can all be zero.**
+- 2026-10-10 (F13r): the rule froze "survives frequency" on `S_c` inside lf-tercile strata
+  without a planted no-effect case, the OV1d rule above. The tests ran one after the freeze: with
+  centres in the rarest 8 % and log ρ = lf alone, the strata gave −0.91 (negative in 20 of 20 draws)
+  and would have read **survives**. Amended before any record was read (a linear `S_c~x` must
+  agree). Rule: **the planted no-effect case for a matching statistic includes the covariate's
+  tail (the matched set concentrated in one extreme), and runs before the rule is committed.**
 
 ## 7. Literature found after the construction was built
 
@@ -1112,6 +1123,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-10, Phase 10 F13r (#188, `/challenge-pr`): the write-up was drafted from a compact grid
+  the author printed for f, and it called 2000 L1–8 *unclear* though the report's cls column read
+  *carries* there (and at 512). It also measured the linear statistics' shrink against the binned
+  `S_c4`, a different estimator, so "keeps its size" in L1–8 was partly the switch. Rule: the
+  write-up quotes every reading the report prints for a cell, not the subset the author looked
+  at, and a shrink is measured against a reference computed by the same estimator.
 - 2026-10-06, Phase 10 R7 (#154, `/challenge-pr`): the rule computed three yardsticks (each
   group's own floor, the fixed bar 0.5, and the chance level as a count) and the headline gave the
   own floor's label, "mixed", as the result. On the fixed bar the same records read "context", and
