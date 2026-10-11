@@ -1129,6 +1129,68 @@ share; the rank correlation of log ρ with each token's nearest-predecessor dist
 residualised on a cubic in log position (threshold-free); predecessors restricted to kept tokens
 (the sinks cannot make a token a non-centre); 16 position bins, and 8 with the first dropped.
 
+**F13r, what the late "attended less" centres are: token frequency, class and place in the
+sentence (STATE.md Blocked 35 (a), the user's pick 2026-10-10; rule fixed 2026-10-10, before any
+feature was joined to a centre).** Post hoc on F13's read output (§1.41), tier 1, no forward pass.
+**Question:** at c = 2 F13's strong centres are attended less than other kept tokens, position
+divided out, late (`S_c`: 8000–143000 L1–8, 32000–143000 L9–16, 54000–143000 L17–23). A token
+unlike everything before it may simply be rare. Are the centres rarer than position-matched other
+kept tokens, are rare tokens attended less anyway, and does `S_c` keep its sign inside a frequency
+stratum? The same for token class and place in the sentence.
+**Inputs:** F13's records (`data/p10/f13_centres_2026-10-10`, code `f0ce454c465c`): `centres_strong`
+at c = 2 per (frame, layer) as stored, no centre recomputed (c = 1.5's lists are not stored: not
+read); tokens from each run's `geometry.json` (`homer_iliad` its first 512); log ρ recomputed by
+F13's `log_rho` from the same attentions; R0's kept offsets from the R9 source.
+**Frequency:** unigram counts under Pythia's tokenizer (the local `tokenizer.json` that
+`p10_token_composition.find_tokenizer` checks) over the first 10^8 tokens of
+`monology/pile-uncopyrighted` `train/00.jsonl.zst` (the Pile, Pythia's corpus, less its
+copyrighted parts; each document tokenized whole, no separator), streamed; counts, total and the
+document count stored with their sha under `data/p10/pile_unigram_2026-10-10/`. `lf =
+log10((count + ½)/total)`. Beside: the merge rank `log10(id)` (`p10_token_composition`'s proxy, "no
+corpus unigram count on disk"), so the proxy is checked against a count. **Class:**
+`p10_token_composition.token_class`, read as three: word_start, continuation, the rest. **Place in
+the sentence:** `sp` = tokens since the last boundary, a boundary being a token whose text holds a
+newline or, stripped, ends in `.`, `!` or `?` (in code and LaTeX, lines); position 0 and the token
+after a boundary have `sp` 0.
+**Per (step, passage, layer 1–23, frame),** on kept tokens, centres = the stored strong centres:
+(1) **composition**, A9's bin-matched difference (8 position bins) centres − others: `C_f` of lf
+(**centres commoner / rarer**), `C_sp` of sp (**later / earlier in the sentence**), `C_ws`, `C_ct`
+of the word_start and continuation indicators (**more / fewer**); `C_id` (merge rank) beside.
+(2) **the covariate's own pull**, on kept non-centres only: `R_f`, the rank correlation of log ρ
+with lf, both residualised on a cubic in log position (`p10_f13_review.partial_rank_corr`)
+(**commoner attended more / less**); `R_sp` the same with sp.
+(3) **`S_c` matched**: log ρ's bin-matched difference, centres − others, over strata = 4
+equal-count position bins × the covariate: lf terciles of the record's kept tokens (`S_c|f`), the
+three classes (`S_c|cls`), sp terciles (`S_c|sp`). The reference is `S_c4`, the same with the 4
+position bins alone, so a change is the covariate's, not the bin count's. Beside: `S_c|all`, the
+centre coefficient of a least-squares fit of log ρ on centre, lf, the class indicators, sp and a
+cubic in log position.
+Readable: ≥ 3 centres and ≥ 10 others in strata holding both. Band values, sign-rule labels,
+isolated and at-init marks: F13's (`band_mean`, `labelled`).
+**Readings, fixed before output,** per (step, band), c = 2, unit LN1 frame, in every cell where
+`S_c4` is *attended less* (full or lean), for x ∈ {f, sp, cls}: **x carries the "less"** when
+`S_c|x` is not *less* (more, a lean more, mixed) **and** its passage median is at most half of
+`S_c4`'s in size, **and** (f, sp) `C_x` and `R_x` are both labelled (full or lean) with opposite
+signs, the direction that makes centres attended less (rarer and commoner attended more); for cls,
+some `C_ws` / `C_ct` label. **Survives x** when `S_c|x` is *less* (full or lean). **Unclear**
+otherwise (the matching thinned it, or x does not move the right way). f is primary, the question
+asked; sp and cls the same rule beside. §1.41's late cells are `S_c`'s (8 bins); if `S_c4`'s
+differ, say so. The early "more" cells (64–128 L1–16, 1000–8000 L17–23) get the same readings
+with signs flipped, beside; the γ-free sphere frame (its stored centres) beside.
+**First checks (refuse):** the counts cover the tokenizer's vocabulary and sum to the stored
+total, and the five commonest include `Ġthe`, `,` and `.`; every kept token is in the vocab; the
+recomputed log ρ at position 0 equals the record's stored value (1e-9) at every (step, passage,
+layer); every record's code is `f0ce454c465c` and its kept count R9's. **The first record (8000,
+`wiki_paragraph`), before the rest:** lf finite at every kept token and at least two of the three
+classes among its L1–8 centres, else refuse and amend before any statistic is read.
+**Tests:** sp on a hand sequence; the counter on a short text; `S_c|x` recovers a planted centre
+effect independent of x, and is ≈ 0 where log ρ is a function of x alone and the centres are drawn
+rare (while `S_c4` is negative).
+**It does not:** say why a rare token is attended less; separate frequency from what frequency
+carries (length, content words, word starts); read c = 1.5 or the ordinary centres; use Pythia's
+own data order or the Pile's copyrighted parts (absent from the sample); test anything. One seed,
+7 passages, tier 1, post hoc on an output already read. Results: `status-10.md` §1.42.
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),
