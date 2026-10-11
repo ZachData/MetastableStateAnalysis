@@ -1,7 +1,10 @@
 """LC (`design-10.md` "LC"): the surprisal indexing and the position-binned gap, on hand cases."""
 import numpy as np
+import pytest
 
 from tools.run import p10_lc_loss as lc
+
+pytestmark = pytest.mark.deps
 
 
 def test_s_reads_the_next_token_and_own_shifts_it():

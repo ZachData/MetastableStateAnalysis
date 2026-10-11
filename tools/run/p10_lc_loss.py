@@ -48,8 +48,8 @@ MIN_A, MIN_B = 3, 10
 FLOOR = 0.05                                               # A0's floor, R3's relative units
 N_BOOT = 1000
 FIRST = (512, "wiki_paragraph")
-HOMER_MAX = f.HOMER_MAX
-MATCH_TOL = 1e-4                                           # u2_attn.MATCH_TOL["v1"]
+HOMER_MAX = f.HOMER_MAX                       # placed: the v1 rows read homer_iliad at its first 512 tokens
+MATCH_TOL = 1e-4                                           # placed: u2_attn.MATCH_TOL["v1"]
 STATS = ("D", "A", "D8", "D~0", "D~nx", "D_own", "D_H")
 NAMES = ("higher", "lower")                                # F13's sign_label(pos, neg): value < 0 is lower
 CO_LOCATES = (1000, 2000, 4000)
@@ -464,6 +464,23 @@ def stats(a) -> int:
     return 0
 
 
+def readings(rep: Dict) -> Dict:
+    """The rule's readings (1)–(4) on c3x at the primary steps."""
+    labs, nx, d0 = rep["labels"]["c3x|D"], rep["labels"]["c3x|D~nx"], rep["labels"]["c3x|D~0"]
+    out: Dict = {"trained": {b: labs[b][143000] for b in BANDS}, "onset": {}, "carried_by_next": [],
+                 "position_flag": []}
+    for b in BANDS:
+        out["onset"][b] = onset(labs[b])
+        for s in PRIMARY_STEPS:
+            lab = core(labs[b][s])
+            if lab in ("lower", "leans lower") and core(nx[b][s]) not in ("lower", "leans lower"):
+                out["carried_by_next"].append([b, s, labs[b][s], nx[b][s]])
+            opp = {"lower": "higher", "higher": "lower"}.get(lab)
+            if opp and core(d0[b][s]) == opp:
+                out["position_flag"].append([b, s, labs[b][s], d0[b][s]])
+    return out
+
+
 def report(a) -> int:
     raw = json.loads((a.out / "stats.json").read_text())
     vals = {(int(k.split("|")[0]), k.split("|")[1]): v for k, v in raw.items()}
@@ -480,6 +497,7 @@ def report(a) -> int:
                                       for s, v in row.items()} for b, row in g.items()}
     for b in BANDS:
         rep["onset"][b] = onset(rep["labels"]["c3x|D"][b])
+    rep["readings"] = readings(rep)
     pc = {s: [vals[(s, p)]["P_ct"] for p in PASSAGES if (s, p) in vals] for s in STEPS}
     rep["P_ct"] = {str(s): {"label": floor_label(v), "median": float(np.median([x for x in v if x is not None]))}
                    for s, v in pc.items()}
@@ -494,8 +512,9 @@ def report(a) -> int:
                 cells = [f"{labs[s]} ({meds[str(s)]:+.3f})" if meds[str(s)] is not None else labs[s] for s in STEPS]
                 lines.append(f"| {c} {st} {b} | " + " | ".join(cells) + " |")
     lines += ["", "P_ct: " + "; ".join(f"{s} {v['label']} ({v['median']:+.3f})" for s, v in rep["P_ct"].items()),
-              "", "onset (c3x D): " + "; ".join(f"{b} {o}" for b, o in rep["onset"].items())]
-    (a.out / "report.md").write_text("\n".join(lines) + "\n")
+              "", "onset (c3x D): " + "; ".join(f"{b} {o}" for b, o in rep["onset"].items()),
+              "", "readings: " + json.dumps(rep["readings"])]
+    (a.out / "report.txt").write_text("\n".join(lines) + "\n")
     print("\n".join(lines[-3:]))
     return 0
 
