@@ -208,6 +208,28 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **LC done, 2026-10-11: loss coupling, ROADMAP 10.4, Stage 6 item 1 (`status-10.md` §1.44; its
+> title is the summary).** Blocked 37 (c), the user's start. Rule `design-10.md` "LC" (`ea4692e`),
+> amended at the calibration gate and frozen (`a8be8a8`) before any pass; scan `lit-10.md` §21;
+> `tools/run/p10_lc_loss.py`; `data/p10/lc_loss_2026-10-11/`. **For next-token loss, no gap** in
+> any band or step on c3x, so no onset to co-locate with A0's residual; every labelled cell is the
+> next token's (`/challenge-pr` on #192: accept with changes, all five taken). One unit, inside the
+> budget. Stage 6 items 2–4 are dropped by ROADMAP §4, so Stage 6 is closed for next-token loss.
+> *Parked (LC), recommended next (STATE Blocked 38 (b); the review's pick, finding 2):* **the
+> members' own tokens are less surprising** (`D_own` lower at 64–512 in L1–8 and 64–128 in L9–16,
+> −0.07 to −0.21; leans lower late in L9–24; onsets precede A0's in all three bands). Why: if §4
+> meant the token's own surprisal, this row is the headline, and it is unread: signs from the
+> mean gap (the gate's tilt), the member token's own frequency and class not adjusted (finding 3:
+> frequent, function-like members would give both beside rows). Cost: CPU, minutes, no pass (the
+> stored s; `A`'s sign; F13r's linear fit with the token's own lf and class; a short rule and the
+> gate's N0 on `D_own` first). Decision it could change: §1.44's headline, and whether "c3x's members
+> are predictable tokens" goes into 10.5's one page.
+> *Parked (LC):* **the skew tilt in earlier rows' sign rule** (`LESSONS.md` 6, 2026-10-11). Why:
+> F13's sign rule over passages tilts toward the smaller set's side when the quantity is
+> right-skewed and the sets are unequal; earlier rows that took labels from mean gaps were not
+> audited. Cost: per row, its stored records re-labelled with a rank-gap sign (CPU). Decision it
+> could change: a "lean" or a one-sided full label in an earlier row, at the bar's edge.
+>
 > **Stage 3 closed, 2026-10-10 (`status-10.md` §1.43; Blocked 36 (d), the user's pick; writing
 > only).** Tier 1 at "H-ANCHOR/BALLAST has no cell; strong centres attended more early and in a
 > deep middle window, less late; token properties take part of the late 'less' only in L1–8, its
@@ -1007,7 +1029,7 @@ first.
 
 First analysis stage that costs forward passes (Stage 0 aside). Everything above should be read first.
 
-1. **Loss coupling** (`questions-10.md` §4). Per-token surprisal against cluster
+1. **Loss coupling** — *done 2026-10-11 as LC on c3x: no gap for next-token loss; the own-token surprisal unread (`status-10.md` §1.44).* (`questions-10.md` §4). Per-token surprisal against cluster
    membership, **with position as a covariate**. One forward pass per prompt per
    checkpoint, no backward. **No logits are on disk** — checked.
    The developmental question is the prize: does the clustered/unclustered

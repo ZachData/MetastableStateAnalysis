@@ -1203,6 +1203,103 @@ centre and position alone, is reported beside as the `S_c~x`' own reference (a s
 `S_c4` mixes estimators). The cls "carries" condition (some `C_ws` / `C_ct` label, no direction,
 no class pull) is too weak to read; its two "carries" are stated, not read.
 
+**LC, loss coupling (`docs/ROADMAP.md` §4 row 10.4; `STATE.md` Blocked 37 (c), the user's start
+2026-10-11; `handoff-10.md` Stage 6 item 1, `questions-10.md` §4; rule fixed 2026-10-11, before any
+pass).** Scan `lit-10.md` §21. Tier 1, unregistered (F14 not registered, so 10.3 skipped).
+**Budget and exit:** one unit, calibration gate included (ROADMAP §4); it exits when every cell
+below has a number and a label, or a refusal, and the onset reading is stated; a second unit is
+not taken without the user (the close-out, 10.5, is never cut).
+**Question:** is the next-token loss lower at c3x's members than at the other kept tokens at the
+same positions (trash collection: park what is already resolved, `questions-10.md` §4)? And the
+developmental one: from which step does such a gap open, and is that where A0's residual opens on
+c3x (`status-10.md` §1.29: appears 1000–2000 and persists; its position-binned window 2000–16000)?
+**Inputs:** R9's labels (`data/p10/reread_r9_2026-10-08/labels`): c3x per (step, passage, layer
+L1–24) over R0's kept offsets (each token type's first occurrence, position 0 and the T2 token out:
+no kept token can be completed by copying, so induction copies are outside the domain by
+construction); c2 beside at all 18 steps. Tokens: each Stage 0 run's `geometry.json`, round-tripped
+through Pythia's tokenizer (`u2_attn.token_ids`). Pile unigram counts (`data/p10/pile_unigram_2026-10-10`,
+F13r's) and `p10_token_composition.token_class` for the beside fit.
+**The pass:** per (step, passage), `pythia-410m-step{s}` in float32 on CUDA (TF32 off), the stored
+tokens whole (`homer_iliad`'s run is longer; read at its first 512, as every v1 row), hidden states
+out. Per position i: `s[i] = −log p(x_{i+1} | x_≤i)` (**primary**, the loss the residual at i makes),
+`s_own[i] = s[i−1]` (the token's own surprisal) and the entropy `H[i]` of the prediction at i,
+float64 from the logits. Stored per record: s, H, the checks. **Checks (refuse):** the pass's 25
+hidden states against Stage 0's stored unit rows (≤ 1e-4, `u2_attn.MATCH_TOL["v1"]`); every s
+finite; the first record (512, `wiki_paragraph`), before the rest: mean s over the kept domain in
+(1, 11) nats and not constant.
+**Per (step, passage, layer), on the domain** (kept offsets i ≤ n − 2, n the read length; members =
+c3x ≥ 0, the rest = −1): **`D`** = F13's `binned_diff` of s, members − rest, over 8 equal-count
+position bins of the domain (weighted by the members' count; ≥ 3 members, ≥ 10 rest), divided by
+the domain's mean s. Negative = **members lower** loss. Beside, same units: `D~0`, the member
+coefficient of least squares of s on member and a cubic in log(i + 1) (F13r's `ols_centre`; the
+bins' own position check); `D~nx`, the same with the next token's lf and its word_start /
+continuation indicators added; `D_own` (s_own, i ≥ 1), `D_H` (entropy), both binned.
+**Positive control (layer-free, per record):** `P_ct`, the same binned difference with the
+positions whose next token is a continuation (`token_class`) in place of members: a known effect
+inside the domain (the rest of a word is easy once its start is seen), opening with bigram learning.
+Member gaps are quoted against it.
+**Bands and labels:** L1–8, L9–16, L17–24; band value = the mean of the readable layers (≥ 3; F13's
+`band_mean`); per (step, band), F13's sign rule over readable passages (≥ 6): **lower** / **higher**
+(all passages), **leans** (all but one), else mixed; a full or lean label whose passage median
+|value| is < 0.05 is **under the floor** (A0's floor, R3's relative units); isolated leans and
+labels shared with step 0 marked (F13's `labelled`). Beside: the share of 1000 passage resamples
+whose band median is ≤ −0.05.
+**Readings, fixed before output,** c3x at the primary steps 64–143000: (1) **trained**: 143000's
+label per band. (2) **onset** per band: the first step labelled **lower** (full, at the floor)
+whose next primary step is lower or leans lower (143000 alone counts); onset ≤ 512 **precedes**,
+1000–4000 **co-locates** with A0's residual, ≥ 8000 **follows**, none **no gap**. (3) Where `D`
+reads lower and `D~nx`'s label is not lower (mixed or higher), that cell's gap is **carried by the
+next token** (its frequency or class), stated beside its label. (4) Where `D~0` carries the full
+opposite label to `D`, the cell is flagged **position left in the bins**, not read. `D_own`, `D_H`,
+c2 and step 0 are beside, by the same labels.
+**Calibration gate (before this rule freezes; no pass, the real design points):** R9's kept offsets
+and c3x labels at every (step, passage, layer), planted `s = f(i)·ε`, `f(i) = 3 + 5(1 + i)^−0.4`,
+ε ~ Exp(1) (sd = mean, a right tail), 200 draws per arm, through the whole reading above: **N0**
+none → the bar: ≤ 2 % of (step, band) cells at 64–143000 labelled full lower or higher, and onset
+"no gap" in ≥ 90 % of draws; **N1** group-blind, s × 0.5 where the next token is a continuation
+(real tokens) → how often `D` reads lower and whether `D~nx` removes it; **E(δ)** members' s ×
+(1 − δ), δ ∈ {0.05, 0.1, 0.2, 0.3}, every step → the share of cells labelled lower (power);
+**O** δ 0.2 from 2000 only → onset 2000 ("co-locates") share, and from 256 → "precedes". If N0
+fails its bar, amend before any pass. The smallest δ with power ≥ 0.8 is quoted with every
+"no gap". **After the pass, before any `D` is read:** the real s's sd / mean in the domain per
+(step, passage) beside Exp's 1, so the planted noise is checked against the real.
+**Tests:** `D` on a hand case; the s indexing on a toy logits array (`s[i]` reads `x_{i+1}`,
+`s_own` shifts it); a planted member effect recovered; position alone ≈ 0.
+**It does not:** say whether members are parked because resolved or resolved because parked
+(correlation only; no member is ablated); read single tokens or name them; use the 12 held-out
+prompts, other models or the long passages; test anything. One seed, 7 passages, tier 1.
+Results: `status-10.md` §1.44.
+*Amended 2026-10-11 at the calibration gate, before any pass (no surprisal computed; records
+`data/p10/lc_loss_2026-10-11/calibration/`, each version kept).* (1) **N0 failed its bar** as written:
+2.14 % of cells full-labelled, one-sided (lower 1.40 %, higher 0.74 %). Residualising s on
+position first did not fix it (2.09 %): the cause is skew, not position. With a right-tailed s the
+smaller set's mean is the more skewed, so a zero-mean gap has a negative median and "all passages
+negative" fires more often. **`D`'s labels now take their sign from `A`**, the bin-weighted
+P(member's position-residual s > rest's) − 0.5 (ties ½; weights m·r / n_bin), whose null is
+symmetric, and their floor from `D`'s passage median. **`D` itself is now binned on s less a
+membership-blind least-squares fit on a cubic in log(i + 1) over the domain**, still over the domain's
+mean s; the rule's first `D` is kept beside as `D8`. `P_ct`, `D_own`, `D_H` use the same residual;
+`D_own`, `D_H`, `D~0`, `D~nx` keep their own signs (beside). N0 now: 0.79 % lower, 0.88 % higher
+(1.67 %), onset "no gap" 98.8 %: **passes**. (2) **c3x is sparse:** some passages have no members
+in most layers at some steps, so 5 of the 36 primary (step, band) cells have < 6 readable
+passages (L1–8 at 256 and 2000, L9–16 at 1000, L17–24 at 1000 and **143000**, so L17–24 has no
+trained reading). The onset rule **skips too-few steps** (they neither confirm nor break an onset);
+as written it could never place an onset before a too-few step (no arm ever gave 1000).
+**Calibration on the amended rule** (200 draws per arm, 7 200 cells): N1 (a group-blind loss drop
+before continuations): `D` lower 0.43 %, `D~nx` 0.9 %, onset no gap 99.5 %. Power, the share of
+cells labelled lower (full / full or lean): δ 0.05 4 % / 17 %; 0.1 12 % / 39 %; 0.2 45 % / 74 %;
+0.3 72 % / 85 %. **The smallest δ with power ≥ 0.8 is 0.3** (members' loss 30 % lower), quoted with
+every "no gap"; a cell's mixed is not evidence of no gap below that. Onset: planted from 2000 at δ
+0.3, co-locates 95 %; from 256, precedes 93 % (co-locates 7 %); at δ 0.2, 68 % and 61 % (co-locates
+27 %, follows 30 % from 2000). So at δ ≤ 0.2 a true early onset reads "co-locates" about a quarter
+of the time, and **"co-locates" is read with that rate beside it**, not as a match by itself.
+*After `/challenge-pr` on #192, the output read (no label moved):* reading (3) is applied to the
+"higher" side too (a full or lean higher whose `D~nx` is not higher is carried by the next token;
+finding 1); a full or lean label whose `D` median has the other sign is marked "size disagrees"
+(fired nowhere; finding 5); `P_ct` gets the rank sign beside its own (finding 5). The headline is
+limited to next-token loss (finding 2), and the onset's power is quoted beside the cell's
+(finding 4).
+
 Each of R0–R3 is its own PR, and none is re-read before the one ahead of it is merged. Unlocked
 by R0, not re-reads, for after R3 or for the user to bring forward: the cross-checkpoint
 matcher (MONIC's transitions on unit 1's Jaccard and its fixed bar, `lit-10.md` §16 rows 1–2),

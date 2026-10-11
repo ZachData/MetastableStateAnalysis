@@ -1048,3 +1048,22 @@ the rule; one passage's geodesic distance quantiles were read at 3 steps to plac
 Sources: https://arxiv.org/pdf/2411.04990 ; https://arxiv.org/html/2410.23228v2 ;
 https://www.alphaxiv.org/abs/2604.01978 ; https://projecteuclid.org/euclid.aoap/1015961164 ;
 https://arxiv.org/pdf/2504.02732 ; https://arxiv.org/abs/2510.06477 ; https://arxiv.org/pdf/2607.09279
+
+## 21. Loss coupling, LC (added 2026-10-11)
+
+Scan before `design-10.md` "LC" was fixed (`CLAUDE.md` "Literature scans", trigger 1). 8 web
+searches, nothing fetched or read whole: every new mark is **[S]**; `2501.10573` stays **[R]**
+(§9). No surprisal was computed before the rule.
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | `2501.10573` (v2, TMLR 2026): a prompt's layerwise log ID correlates with its **mean** surprisal, `−mean log p(x_i \| x_<i)`, over 2 244 prompts, four models (Pythia among them), from early layers; read per prompt, not per token | [R] | the only geometry–loss link found is per prompt and on ID; LC is per token and on group membership, inside a prompt. It names the token's own surprisal, so `s_own` is reported beside the primary `s` |
+| 2 | Chang, Tu & Bergen (TACL 2024, `2308.15419`): per-token surprisal over 222 checkpoints of their own runs; frequent tokens are learned earlier and reach lower surprisal; tokens show sudden, run-consistent drops | [S] | frequency moves surprisal and its course, so the beside fit `D~nx` adds the next token's lf; a member gap that opens at one step may be a token-level drop, not membership |
+| 3 | Olsson et al. (`2209.11895`): the in-context score (loss at token 500 − token 50) and induction heads form together in a phase change about 2.5–5 × 10^9 tokens in (Pythia step ~1200–2400) | [S] | (a) loss falls with position, so position is the mandatory covariate (`questions-10.md` §4); (b) A0's residual (1000–2000) sits in the induction window, so a co-located onset may be ICL's, not parking's. R0's kept set (first occurrences) has no exact copy to complete, which removes induction copies, not fuzzy ICL |
+| 4 | Hosseini & Fedorenko (NeurIPS 2023): trained models straighten sentence trajectories with depth, and straighter deep trajectories go with lower surprisal; King, Fedorenko & Hosseini (`2604.23985`): contextual curvature tracks next-token entropy, emerging in training (GPT-2 XL, Pythia-2.8B) | [S] | a trajectory geometry–loss link exists per token and develops in training; the entropy `H` is reported beside `s` for that reason |
+| 5 | Sink tokens: no measurement of their loss found; a vision result (`2503.03321`) has sink tokens contributing little to the output | [S] | position 0 and the T2 token are outside the domain already; nothing to add |
+| 6 | Not found (3 searches): group membership in the residual stream (clusters, metastable states) read against per-token loss in a trained LM | — | weak evidence of novelty; no published effect size to calibrate against, so the planted gate and the continuation control (`P_ct`) carry the scale |
+
+Sources: https://arxiv.org/pdf/2501.10573 ; https://arxiv.org/pdf/2308.15419 ;
+https://arxiv.org/abs/2209.11895 ; https://www.biorxiv.org/content/10.1101/2023.11.05.564832.full.pdf ;
+https://arxiv.org/pdf/2604.23985 ; https://arxiv.org/pdf/2503.03321

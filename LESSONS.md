@@ -643,6 +643,17 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-11, Phase 10 LC (caught by the calibration gate, before any pass): F13's sign rule over
+  passages (all same sign → a label) was run on a mean gap of a right-skewed quantity
+  (surprisal). The smaller set's mean is the more skewed, so a zero-mean gap has a negative median
+  and "all negative" fires about twice as often as "all positive": N0 gave 1.40 % lower against
+  0.74 % higher, failing the 2 % bar. Residualising on position did not move it; a rank gap (a
+  symmetric null) for the sign, the mean gap for the size, did (0.79 % / 0.88 %). Earlier rows
+  that ran the same sign rule on mean gaps were not audited for this (parked, `handoff-10.md`
+  "LC done"). Rule: **a sign rule takes its sign from a statistic whose null is symmetric; a
+  mean difference of a skewed quantity between sets of unequal size is not one.** Same unit, a
+  wrong assumption: the producer read `.logits` from `core.models.load_model`, which is the bare
+  body; the runner refused at the first pass (no record written).
 - 2026-10-10, Phase 10 OV1d (`/challenge-pr` on #184, finding 1): the matched-distance label
   interpolated `m` linearly along the far branch. Where `m` is convex in distance that line sits
   above the true curve, so a sign-blind `m(d)` on the run's own distances gives *merges* 7/7 at 4000
