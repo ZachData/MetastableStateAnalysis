@@ -583,6 +583,15 @@ not fixed).
   cannot run the repo (no `hdbscan`, torch import fails), so the smoke tests ran on 4.44 only;
   the nightly covers 4.57. Rule added: a test that builds a model asserts it is real (a layer
   count) before asserting anything about it, so a stub fails instead of passing.
+- 2026-10-11: the nightly went red on its first night with `test_p10_ov1s_sign_smoke.py`
+  (`test_hook_output_is_the_map[norep]`). Since 4.5x, transformers takes GPT-NeoX's eager softmax in
+  float32, so in a float64 tiny model the model's P is ~1e-7 from the float64 P that `DeltaHook` adds
+  with (1.7e-7 at 4.57.6, 4e-15 at 4.44.2), and `atol=1e-9` fails. `noatt` and OV1d's twin passed
+  only through `allclose`'s default `rtol`. Fixed: `rtol=0, atol=1e-6` in both, with the measured
+  margin noted. The runs on disk used 4.44.2 in float32, so no result moves. The rule's "against
+  CI's transformers" is now cheap on the box: `pip install --no-deps --target <scratch>/tf457
+  transformers==4.57.6 tokenizers==0.22.1 huggingface_hub==0.36.0 safetensors`, then run the
+  `mets` python with `PYTHONPATH=<scratch>/tf457 SMOKE_REAL_DEPS=1`.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to

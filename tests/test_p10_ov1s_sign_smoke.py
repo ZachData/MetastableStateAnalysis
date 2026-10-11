@@ -82,7 +82,9 @@ def test_hook_output_is_the_map(torch64, sg, arm):
         Sm = -U[:, lam < 0] @ np.diag(lam[lam < 0]) @ U[:, lam < 0].T
         Kp = K + Sm if arm == "norep" else K - Sp
         want += P[hh] @ xh @ Kp.T + hd["c"]
-    assert np.allclose(got["o"][0].numpy(), want, atol=1e-9)
+    # transformers >= 4.5x takes the eager softmax in float32 (`softmax(..., dtype=torch.float32)`), so the
+    # model's own P sits ~1e-7 from the float64 P the hook adds with: 1.7e-7 at 4.57.6, 4e-15 at 4.44.2
+    assert np.allclose(got["o"][0].numpy(), want, rtol=0, atol=1e-6)
 
 
 def test_att_by_hook_is_att_by_weights_and_close_restores(torch64, sg):

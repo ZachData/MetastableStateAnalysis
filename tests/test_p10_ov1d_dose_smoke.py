@@ -76,7 +76,9 @@ def test_z_output_is_the_map_with_key_zero_at_base(torch64, dd, arm):
         P1 = P[hh].copy()
         P1[:, 0] = 0
         want += P[hh] @ xh @ K.T + P1 @ xh @ (t * Sp - K).T + hd["c"]
-    assert np.allclose(got["o"][0].numpy(), want, atol=1e-9)
+    # transformers >= 4.5x takes the eager softmax in float32 (`softmax(..., dtype=torch.float32)`), so the
+    # model's own P sits ~1e-7 from the float64 P the hook adds with: 1.7e-7 at 4.57.6, 4e-15 at 4.44.2
+    assert np.allclose(got["o"][0].numpy(), want, rtol=0, atol=1e-6)
     assert np.allclose(got["o"][0, 0].numpy(), want[0])            # position 0's own row: base's map
 
 
