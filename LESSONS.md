@@ -20,6 +20,11 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-10 (Stage 3 closed): `STATE.md` Blocked 36 (d) offered "take Stage 2 or Stage 4"
+  from `handoff-10.md` alone, while the open roadmap #185 (same day) moves Stage 4 to Track A
+  and never mentions Stage 2. The user picked (d) on that text. Caught at the next unit's
+  start, by reading #185 before choosing. Rule: an option in Blocked names any open PR
+  that re-homes or drops it. Also, again: the start hook's `STATE.md` was 15 commits old.
 - 2026-10-10 (OV1s): #182 merged with `STATE.md` "Open PRs" still calling
   itself open and listing worktrees and branches that were already gone. The
   correct line was in `../Mets-work` as an **uncommitted** edit made after the

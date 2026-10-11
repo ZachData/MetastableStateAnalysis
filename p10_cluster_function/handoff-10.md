@@ -202,6 +202,15 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **Stage 3 closed, 2026-10-10 (`status-10.md` §1.43; Blocked 36 (d), the user's pick; writing
+> only).** Tier 1 at "H-ANCHOR/BALLAST has no cell; strong centres attended more early and in a
+> deep middle window, less late; the late 'less' not rarity". Stage 3's "done when" is met on one
+> sweep (the pilot sweep not run). The F13 and F13r Parked items below (what a late centre is
+> instead, a per-record δ, `⟨Qx, Ky⟩`, Lemma 5.1's stationarity, F14 as a test, the pilot sweep)
+> **stay parked, off the path**, not dropped: unlike the OV thread's, they ask open questions, not
+> refinements of a closed one. **Next, for the user: STATE.md Blocked 37** (Stage 2 or Stage 4;
+> the open roadmap #185 sends Stage 4 to Track A and does not mention Stage 2).
+>
 > **F13r done, 2026-10-10 (`status-10.md` §1.42; its title is the summary).** STATE.md Blocked
 > 35 (a), the user's pick. Rule `design-10.md` "F13r" (`c370a1b`, before any feature was joined;
 > amended once at the tests, before any record was read: tercile strata leave a tail, so a linear
