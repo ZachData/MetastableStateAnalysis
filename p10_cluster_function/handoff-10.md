@@ -208,6 +208,60 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > the one R7 reading filtering cannot give. Cost: R7's passes again (~hours, all 18 steps) or
 > storing per-token cosines. Decision: none (beside in R7's rule).
 >
+> **Stage 3 closed, 2026-10-10 (`status-10.md` §1.43; Blocked 36 (d), the user's pick; writing
+> only).** Tier 1 at "H-ANCHOR/BALLAST has no cell; strong centres attended more early and in a
+> deep middle window, less late; token properties take part of the late 'less' only in L1–8, its
+> one robust band". Stage 3's "done when" is met on one sweep. `/challenge-pr` on #189: accept with
+> changes, all five taken (§1.43's cells copied from their source rows, the falsifier's own cells,
+> "not rarity" qualified, Blocked 37's recommendation now #185 first, two Parked items dropped).
+> **Dropped:** a per-record δ (a refinement) and the pilot sweep (§1.11: agrees to ≤ 0.004; its
+> partition question moot). **Stay parked, off the path** (open questions, not refinements): what
+> a late centre is instead, `⟨Qx, Ky⟩`, Lemma 5.1's stationarity, F14 as a test. **Next, for the
+> user: STATE.md Blocked 37** (#185 first, or Stage 2, or Stage 4; #185 sends Stage 4 to Track A,
+> does not mention Stage 2, and counts `⟨Qx, Ky⟩` in F13's row).
+>
+> **F13r done, 2026-10-10 (`status-10.md` §1.42; its title is the summary).** STATE.md Blocked
+> 35 (a), the user's pick. Rule `design-10.md` "F13r" (`c370a1b`, before any feature was joined;
+> amended once at the tests, before any record was read: tercile strata leave a tail, so a linear
+> `S_c~x` must agree for "survives"); `tools/run/p10_pile_unigram.py` (the Pile's first 10^8
+> tokens, `data/p10/pile_unigram_2026-10-10/`), `tools/run/p10_f13_rare.py`, tests 9;
+> `data/p10/f13_rare_2026-10-10/`. No forward pass. Answer: **not rare tokens.** The late centres
+> are rarer, but the "less" survives frequency, place in the sentence and class in every late
+> cell (the sign); in L1–8 frequency takes 14–24 % of the gap and all three 24–51 %, in L9–23
+> none (`/challenge-pr` on #188: accept with changes, all four taken; `S_c~0` added). The Parked item "what the
+> late attended-less tokens are" is done. **Next, for the user: STATE.md Blocked 36.**
+> *Parked (F13r):* **what a late strong centre is instead.** Why: not rarity; L9–23's gap is
+> untouched by every token property tried. Cost: free joins on the same records (e.g. the
+> distance to position 0 / the sink's direction, the head that does the reading, whether the
+> token's own copy recurs later). Could change: whether A9's late "less" is the theory's geometry
+> or a learned reading rule.
+>
+> **Stage 3 run, 2026-10-10: F13 with A9 and F15 (`status-10.md` §1.41; its title is the
+> summary).** Rule `design-10.md` "F13" (`9f1c525`, before any centre; amended three times before
+> any statistic was read: pooled null check, F15's `L_def`, the check's SE floor and binomial bar);
+> scan `lit-10.md` §20; math `tools/math_checks/renyi_f13.py` (8/8); `tools/run/p10_f13_centres.py`;
+> `data/p10/f13_centres_2026-10-10/`. No forward pass. No cell reads anchor and ballast; the strong
+> centres are attended more at 64–128 and 1000–8000 (deep) and less late; ballast testable in 5 cells, read in none. `/challenge-pr` on #187: accept with changes, all five taken (`status-10.md` §1.41 "After"). Stage 3's "done when"
+> (a number and a direction on both sweeps) is met on Stage 0's v1 dirs only; the pilot sweep is
+> not run. **Next, for the user: STATE.md Blocked 35.**
+> *Dropped 2026-10-10 at Stage 3's close (#189 finding 5): a per-record δ and the pilot sweep.*
+> *Parked (F13):* **a per-record δ** (each record's δ set to a fixed strong-centre share, e.g. 10 %
+> of kept). Why: at a fixed δ the count is near all-or-nothing in 1024 dimensions, so most F13 /
+> F15 cells are too few. Cost: the producer again with a δ rule, ~4 min CPU. Could change: F13's
+> count and F15's labels (A9's arc already holds at a fixed 10 % share, `/challenge-pr` on #187; its late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000). *(What the late
+> "attended less" tokens are: done as F13r, §1.42, not rarity.)* **`⟨Qx, Ky⟩` per head.** Why: the paper's own generalisation. Cost: W_Q, W_K per step and a
+> position-dependent "distance" (rotary) to define first. **Lemma 5.1's stationarity against
+> index** from the stored centre lists (free, CPU). **F14 as a test** (the exact mean is computed;
+> registering it is the user's). **The pilot sweep** (Stage 3's "both sweeps").
+>
+> **OV thread closed, 2026-10-10 (`status-10.md` §1.40; Blocked 34 (b), the user's pick; writing
+> only).** Tier 1 at "the sign of `S₊` matters beyond distance at 8000 L17–24; not shown at 16000;
+> c3x not singled out". The full-cut question at 16000 closes unanswered. Every OV Parked item
+> below is dropped. **Next here: Stage 3, F13, the Rényi / strong-Rényi centre scan, with
+> the cross (A9) and F15** (the user's pick, 2026-10-10), on stored base activations. Stage 2
+> is skipped by this order: deferred or dropped is the user's call (#186 finding 3); the user also asked whether signed-V
+> models were tested (yes, OV1–OV1d; `V = ±I` in Pythia and F13 on the cut models, never).
+>
 > **OV1d done, 2026-10-10 (`status-10.md` §1.39; its title is the summary).** Blocked 33 (a), the
 > user's pick (#183 finding 4 and its open question). Rule `design-10.md` "OV1d" (`204806a`, before
 > any pass); math `tools/math_checks/ov_dose_ov1d.py` (4/4); `tools/run/p10_ov1d_dose.py`
@@ -219,14 +273,14 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > curve does too (not read); at 16000 (OV1's window) not shown (L17–24 mixed, L9–16 a lean):
 > scaled-up `−S₊` merges too. **Caveat:** every arm sits ~1 stream-size from base, and the matches
 > interpolate across t 0.5 → 1.
-> *Parked (OV1d):* **a finer dose between t = 0.5 and 1** (e.g. 0.6, 0.7, 0.8, 0.9 in `w`), with
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **a finer dose between t = 0.5 and 1** (e.g. 0.6, 0.7, 0.8, 0.9 in `w`), with
 > distance also measured from `w+0` (the OV removed), which spreads with the dose (#184 finding 3),
 > and the distance-only null as a refuse-condition. Why: most matches interpolate linearly across
 > that gap, where `m` rises 0.14–0.47. Cost: ~3 min GPU (4 arms × 3 steps), a rule amendment.
 > Could change: whether 4000 L17–24 reads, and whether 8000 L17–24 survives measured points.
-> *Parked (OV1d):* `--first-only` passes all 7 passages before checking the first (#184 finding
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* `--first-only` passes all 7 passages before checking the first (#184 finding
 > 4; ~100 s, no unchecked record written).
-> *Parked (OV1d):* **a matched death share.** At matched distance the negative arms also die more
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **a matched death share.** At matched distance the negative arms also die more
 > (8000 L17–24 `w-2`/`w-3` 0.55–0.58); M reads only merged share. Cost: report only. Could change:
 > whether "merges more" is "survives less as separate groups" in general.
 >
@@ -245,7 +299,7 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > **Caveat:** at the same weights `S₊` moves the stream 2–3× as far as `−S₊`.
 > *Parked (OV1s), taken as OV1d 2026-10-10, done (§1.39):* a dose curve at matched centred distance
 > with a position-0 arm.
-> *Parked (OV1s):* one block at a time at 16000 (OV1's, unchanged).
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* one block at a time at 16000 (OV1's, unchanged).
 >
 > **OV1 done, 2026-10-10 (`status-10.md` §1.37; its title is the summary).** Blocked 31 (f), the
 > user's pick, which closes E1 at "no membership effect shown". The user's calls: the whole model
@@ -264,10 +318,10 @@ as an instrument?* — the hypothesis set in **`questions-10.md`**, opened
 > group's kind stored (finding 3). Why: changes only the sign at the same size, and sets c3x
 > against the rest. Cost: ~35 min GPU. Could change: whether 16000 is the sign, and whether it is
 > c3x's groups or the whole stream. (Recommended in STATE.md Blocked 32.)
-> *Parked (OV1):* **a control matched in effect** (random cuts rescaled until `‖Δhs‖` matches
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **a control matched in effect** (random cuts rescaled until `‖Δhs‖` matches
 > `att`'s, per step). Why: separates "the sign" from "moved further". Cost: ~35 min GPU plus a
 > per-step scale search. Risk: cuts that move the stream 3–7× dissolved the groups at ≥ 32000.
-> *Parked (OV1):* **one block at a time at 16000** (cut only block ℓ, read `hs[ℓ+1]`). Why: says
+> *Dropped 2026-10-10 with the OV thread (Blocked 34 (b)):* **one block at a time at 16000** (cut only block ℓ, read `hs[ℓ+1]`). Why: says
 > whether the collapse builds across blocks or sits in a few; on distribution. Cost: 23× the
 > passes at one step (~30 min). Could change: which layers carry the repulsion.
 > Defect fixed on the way: the runner's step loop freed nothing on the GPU (the model sits in

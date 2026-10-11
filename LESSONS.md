@@ -28,6 +28,11 @@ world moves, nobody updates the line, and the next session acts on it.
   plan; the roadmap's first draft then pinned the tension on `handoff-10.md`, which agrees with
   the policy (`/challenge-pr` on #185, finding 3; `docs/ROADMAP.md` §10.3). Rule: before
   proposing a registration, read the rung policy, the phase card and its standing constraints.
+- 2026-10-10 (Stage 3 closed): `STATE.md` Blocked 36 (d) offered "take Stage 2 or Stage 4"
+  from `handoff-10.md` alone, while the open roadmap #185 (same day) moves Stage 4 to Track A
+  and never mentions Stage 2. The user picked (d) on that text. Caught at the next unit's
+  start, by reading #185 before choosing. Rule: an option in Blocked names any open PR
+  that re-homes or drops it. Also, again: the start hook's `STATE.md` was 15 commits old.
 - 2026-10-10 (OV1s): #182 merged with `STATE.md` "Open PRs" still calling
   itself open and listing worktrees and branches that were already gone. The
   correct line was in `../Mets-work` as an **uncommitted** edit made after the
@@ -227,6 +232,15 @@ world moves, nobody updates the line, and the next session acts on it.
   an R² range quoted from 6 of 18 steps. Rule: a summary line that names
   windows is checked against the table it summarises, and a page reads the
   report, never the card (`p1e_energy_field/page.py` refuses a count mismatch).
+- **2026-10-10, the start hook's `STATE.md` five merges old again** (F13): the main tree sat at
+  #181 while `origin/main` had #182–#186; caught at Start step 1 as on 2026-10-07. Fourth
+  instance; the hook fix is still the user's (`.claude/settings.json`).
+- **2026-10-10, a frame named for what it is not** (F13): `handoff-10.md` Stage 3 and
+  `docs/readings/2411.04990.md` §8 said `core/ln_frame.py`'s Gram *is* the paper's `⟨Qx, Ky⟩`
+  geometry. It is `LN(x)·LN(y)`: no `W_Q`, `W_K`, and in Pythia rotary makes `⟨Qx_i, Kx_j⟩`
+  depend on `i − j`, so it is not a distance at all. Found by opening the module before writing
+  the rule; the rule does not run it (Parked). Rule: as the 2026-10-05 lines above, a claim that
+  a module computes X names the function and is checked against it.
 
 **Why it keeps happening.** The same fact was written in 3–4 places
 (`PROJECT.md`, `status-N.md`, `handoff-N.md`, `INDEX.md`); updating one left the
@@ -249,6 +263,11 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-10, Phase 10 F13r: `C_id` (merge rank, beside) read "too few" in every cell. The added
+  literal-space tokens have no merge rank (NaN), one kept in a record made its bin means NaN, and
+  `band_mean` drops non-finite values without a word. The runner's populated check named one
+  statistic (`C_f`), which was fine. Fixed (finite tokens only) and re-run before writing up.
+  Rule: a populated check counts non-null values for **every** statistic the report labels.
 - 2026-10-10, Phase 10 OV1d: the rule carried OV1's "dissolves" flag (kept share < 0.2) to every
   arm of a dose curve. On a flipped or control arm, low kept meant death; on `w+1` / `z+1` it
   means *merged* (death 0.09–0.26), so the report printed "dissolves" for the arms that collapse
@@ -960,6 +979,22 @@ of a design before running it, and print it on every record
   and the write-up had read E1m's cells as "the group-blind part" and an L1–8 push as surviving
   (`/challenge-pr` on #178, finding 1). Rule: **measure the real data's statistic that drives the
   bias (here: fellows above every non-member) and plant at least one shape that matches it.**
+- 2026-10-10 (F13): three placed choices in the rule could not work on the real clouds, each
+  found by a refusal before any statistic was read. (1) F15's primary `L_def` = 1: the scale check
+  read every token's nearest-predecessor distance, repeats included, but the statistic reads the
+  kept (unique) tokens, and at c = 2 all 213 of them are strong centres at L0–1, leaving nothing
+  to cover. (2) A per-record 3-SE check on the null's mean, and then a 1 % pooled share: at
+  ~56k records the first refuses ~150 correct ones by chance, the second ~5 of 252 cells. (3) Its
+  SE floor of 1e-12: where the exact mean is 0.006, 200 draws are all 0 (sd 0) and a correct null
+  reads z ≈ −6e9. Rule: **a scale check reads the population the statistic reads, and a check run
+  many times sets its bar from its own false-refusal rate (a binomial quantile), with a floor
+  for counts whose draws can all be zero.**
+- 2026-10-10 (F13r): the rule froze "survives frequency" on `S_c` inside lf-tercile strata
+  without a planted no-effect case, the OV1d rule above. The tests ran one after the freeze: with
+  centres in the rarest 8 % and log ρ = lf alone, the strata gave −0.91 (negative in 20 of 20 draws)
+  and would have read **survives**. Amended before any record was read (a linear `S_c~x` must
+  agree). Rule: **the planted no-effect case for a matching statistic includes the covariate's
+  tail (the matched set concentrated in one extreme), and runs before the rule is committed.**
 
 ## 7. Literature found after the construction was built
 
@@ -1110,6 +1145,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-10, Phase 10 F13r (#188, `/challenge-pr`): the write-up was drafted from a compact grid
+  the author printed for f, and it called 2000 L1–8 *unclear* though the report's cls column read
+  *carries* there (and at 512). It also measured the linear statistics' shrink against the binned
+  `S_c4`, a different estimator, so "keeps its size" in L1–8 was partly the switch. Rule: the
+  write-up quotes every reading the report prints for a cell, not the subset the author looked
+  at, and a shrink is measured against a reference computed by the same estimator.
 - 2026-10-06, Phase 10 R7 (#154, `/challenge-pr`): the rule computed three yardsticks (each
   group's own floor, the fixed bar 0.5, and the chance level as a count) and the headline gave the
   own floor's label, "mixed", as the result. On the fixed bar the same records read "context", and

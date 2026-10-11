@@ -1028,3 +1028,23 @@ reproduces R9's stored c2a (24 of 24 layers).
 
 Sources: https://arxiv.org/abs/2512.03058 ; https://arxiv.org/abs/2609.28448 ;
 https://arxiv.org/pdf/2305.05465v2 ; https://arxiv.org/pdf/2310.04625
+
+## 20. The centre scan, F13 with A9 and F15 (added 2026-10-10)
+
+Scan before `design-10.md` "F13" was fixed (`CLAUDE.md` "Literature scans", trigger 1). 6 web
+searches, 1 abstract page fetched, nothing read whole: every mark is **[S]**. The paper itself is
+§11 and `docs/readings/2411.04990.md` (read in full, not repeated). No centre was computed before
+the rule; one passage's geodesic distance quantiles were read at 3 steps to place the `δ` grid
+(`design-10.md` "F13", "Scale").
+
+| # | finding | mark | changes |
+|---|---|---|---|
+| 1 | No follow-up of `2411.04990` tests Rényi or strong Rényi centres on a trained model; its own experiments are on the particle model (`d = 2`, `β = 64`). Citing work found is theory: mean-field metastability (Bruno, Pasqualotto & Agazzi, `2410.23228`), homogenised random-weight transformers (Koubbi, Geshkovski & Rigollet, `2604.01978`) | [S] | F13 has no empirical precedent to copy a `δ` or a null from: the grid is placed from the clouds' own scale and the null is the paper's own exchangeable case (a random arrival order), not a published reading |
+| 2 | Random sequential adsorption: Penrose & Yukich (`10.1214/aoap/1015961164`) give a law of large numbers for the number of packed balls in any dimension; the strong rule (separated from every predecessor) has no RSA name found | [S] | the ordinary rule is RSA's sequential packing; the strong rule's count is §11.3's Lemma C.1, used beside as the i.i.d. expectation, checked in `tools/math_checks/renyi_f13.py` |
+| 3 | Sinks: *Why do LLMs attend to the first token?* (`2504.02732`): sinks keep deep decoders from over-mixing; Queipo-de-Llano et al. (`2510.06477`, 410M–120B): the first token's massive norm in middle layers gives the sink and a near rank-one compression together | [S] | the first token is a strong centre by definition (no predecessors) and the sink by measurement (`status-10.md` §1.17), so A9 excludes position 0 from every comparison and reports it beside; the question is whether *other* centres are attended |
+| 4 | Massive activations sit on a few fixed residual channels and lead the sink in GPT-2 and Pythia (search summary of `2607.09279` and related) | [S] | R3's one massive token per prompt (T2, outside the kept set) is reported beside: is it a strong centre at the layers where it is a sink? |
+| 5 | Not found: received attention read against a geometric centrality (centre / non-centre) in a trained decoder (2 searches) | — | weak evidence of novelty for A9 |
+
+Sources: https://arxiv.org/pdf/2411.04990 ; https://arxiv.org/html/2410.23228v2 ;
+https://www.alphaxiv.org/abs/2604.01978 ; https://projecteuclid.org/euclid.aoap/1015961164 ;
+https://arxiv.org/pdf/2504.02732 ; https://arxiv.org/abs/2510.06477 ; https://arxiv.org/pdf/2607.09279

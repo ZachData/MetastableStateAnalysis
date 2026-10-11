@@ -50,6 +50,10 @@
   - OV1, every head's OV cut to the attractive part of its folded symmetric part (`S₊`), against random cuts of the same rank and size. At 16000 in L9–24 the stream collapses to a few groups and c3x's merge in every passage; the repulsive-only cut merges fewer than its controls. So at 16000 the OV's repulsive part keeps the stream from collapsing, c3x's groups among the rest (not shown specific to c3x). 4000–8000 lean the same way, 64–2000 is mixed, and from 32000 every cut wrecks the stream. The controls match the cut's weights, not its effect: `att` moves the stream 2–3× as far. Tier 1 — `p10_cluster_function/status-10.md` §1.37
   - OV1s, OV1's cut against its exact sign flip (`−S₊`: same eigenvectors, same size), and removing only the repulsive part (`K + S₋`) against removing only the attractive part (`K − S₊`), with every stored group's kind kept. The sign does it at fixed size: `S₊` merges the groups more than `−S₊` at 4000 L17–24 and 8000–16000 L9–24, in every readable passage, while `−S₊` merges about as much as OV1's random cuts and mostly dissolves the groups (42–50 % die at 16000). Removing only the repulsive part merges more than removing only the attractive part at 8000–32000 in L9–24 (and in 5 other windows), but `S₋` is the larger part there, so that adds no sign evidence. c3x's groups are not singled out: they merge no more than the other stored groups by the rule (one exception, 143000 L9–16, not read as a finding). `S₊` still moves the stream 2–3× as far as `−S₊`, so "sign" and "moved further" are still not separated. Tier 1 — `p10_cluster_function/status-10.md` §1.38
   - OV1d, a dose curve (`±t·S₊`, and the same with position 0's attention channel left at base) read at matched centred distance. At 8000 L17–24 `S₊` merges c3x's groups more than `−S₊` at the same distance, in 7 of 7 passages, and still does with position 0 at base: there the sign is not the distance moved and not one shift through the sink. 4000 L17–24 labels the same, but a merged share of distance alone reaches that label on its distances, so it is not read. At 16000, OV1's own window, it is not shown: scaled up, `−S₊` moves the stream as far and merges the groups too (L17–24 mixed, L9–16 a lean). Every arm, the OV removed included, sits about one stream-size from base, so the match is among far-moved arms, mostly interpolated between t = 0.5 and 1. Tier 1 — `p10_cluster_function/status-10.md` §1.39
+  - The OV thread (OV1, OV1s, OV1d), closed at tier 1: the sign of the OV's attractive part matters beyond the distance it moves the stream at 8000 L17–24; not shown at 16000, OV1's own window; c3x's groups are not singled out. What removing the repulsive part does at 16000 closes unanswered — `p10_cluster_function/status-10.md` §1.40
+  - F13 with A9 and F15, the strong / ordinary Rényi centres per layer (unit LN1 rows, δ = 1.07 rad), crossed with position-divided received attention and c3x membership. No cell reads anchor and ballast (ballast testable in 5 cells): strong centres are attended more at 64–128 L1–16 and 1000–8000 L17–23 and less late (L1–8 from 8000, L9–16 from 32000, L17–23 from 54000), an arc that holds at a fixed 10 % centre share; the late "less" is shared across frames and c 1.5–2 only by L1–8 from 16000. At a fixed δ in 1024 dimensions the centre count is near all-or-nothing, so F13's count and F15 read in few cells, and the ordinary rule's excess over a random order is there at init — `p10_cluster_function/status-10.md` §1.41
+  - F13r: the late less-attended strong centres are rarer in the Pile (2–4× in L1–16) but are not rare tokens in effect: in L9–23 rare non-centres are attended more. The sign survives everywhere; in L1–8 frequency takes 14–24 % of the gap and all three covariates 24–51 % (a lean left), in L9–23 none — `p10_cluster_function/status-10.md` §1.42
+  - Stage 3 (F13, A9, F15, F13r), closed at tier 1: H-ANCHOR/BALLAST has no cell; strong centres are attended more early and in a deep middle window and less late; token properties take part of the late "less" only in L1–8, its one robust band. Met on Stage 0's v1 dirs only (the pilot sweep dropped) — `p10_cluster_function/status-10.md` §1.43
 - **Superseded / wrong:**
   - Row A0's "~94 % causal mask, with a learned residual from ~2000–4000 that persists": from step 4000 both the flip and the residual are position 0 and one massive token per prompt in the unclustered population — `p10_cluster_function/status-10.md` §1.17
   - F0's reading as a test of the parking account: a density cluster's earliest member is not the paper's strong Rényi centre; F13 is the real row — `p10_cluster_function/lit-10.md` §11.4, `p10_cluster_function/status-10.md` §5.1
@@ -63,7 +67,7 @@
 - **Feeds:** 9, 1e
 - **Open threads:**
   - F5, the four-signature concordance, is the phase's central test. It needs the J-lens (F2 → F3 → F4), and F2 needs HF access — `p10_cluster_function/status-10.md` §4
-  - F13, the strong-Rényi centre scan, which F0 stood in for; it is free and needs no partition. F14 needs it, and so do F15 and F20 — `p10_cluster_function/status-10.md` §5.1
+  - Stage 3 is closed at tier 1 and these stay parked, off the path: `⟨Qx, Ky⟩`, F14 (count against Lemma C.1 as a test) and F20 are not run (a per-record δ and the pilot sweep dropped); why a token far from every predecessor is attended less late is open (rarity takes part of it in L1–8 only) — `p10_cluster_function/status-10.md` §1.43, `p10_cluster_function/handoff-10.md`
   - `CLAIM-C`'s two HDBSCAN metrics have never been compared against the reproducibility floor. This is the only open item here that bears on a registered prediction — `p10_cluster_function/status-10.md` §5
   - No norm-matched random twin per checkpoint. F12's density confound is now controlled for tokens and positions (R2m), not for norm or the init's context — `p10_cluster_function/status-10.md` §5, `p10_cluster_function/status-10.md` §1.18
   - Is the class grouping computed early in training context, or a per-token feature from an early layer? R7 ran the context-shuffle test on the definition: at 512 not only per-token; the token-alone arm's position (every token at position 1) and a word-level shuffle are not controlled. The pilot sweep is unread — `p10_cluster_function/status-10.md` §1.23, `p10_cluster_function/handoff-10.md` "Parked"
@@ -77,7 +81,7 @@
   - Rebuild a cluster ensemble (1d's intent): drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
   - F20, the frozen-centre intervention, as the phase's known-answer dry run (forward pass: 410m or 70m, needs F13)
-- **Reviewed:** 2026-10-10 · body `124a5d6580`
+- **Reviewed:** 2026-10-10 · body `fc789ec881`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none yet can be. `claims/registry.json` is
@@ -3252,6 +3256,173 @@ as far and merges the groups too, so "the OV's repulsive part keeps the stream f
 not shown beyond the distance moved at 16000. **It does not:** match near base (every arm is far);
 check the interpolation between t = 0.5 and 1 (no point inside it); hold the death share; read steps
 other than 4000–16000; test anything. One seed, 7 passages, tier 1.
+
+### 1.40 The OV thread, closed — **at tier 1: the sign of the OV's attractive part matters beyond the distance it moves the stream at 8000 L17–24 (7 v1 passages); not shown at 16000; c3x's groups not singled out** *(`STATE.md` Blocked 34 (b), the user's pick 2026-10-10; writing only, no pass)*
+
+| claim | stands? | where |
+|---|---|---|
+| cut to `S₊`, the stream collapses at 16000 L9–24 | measured; not separated from the distance moved | §1.37, §1.39 |
+| `S₊` merges more than `−S₊` at the same size | yes (4000 L17–24, 8000–16000 L9–24), but `S₊` moves the stream 2–3× as far | §1.38 |
+| the sign beyond distance (matched centred `‖Δhs‖`) | 8000 L17–24, also with position 0 at base; 4000 L17–24 not read; 16000 not shown | §1.39 |
+| what 8000 L17–24 rests on | one measured dose pair at nearly equal distance, `w+0.5` against `w-0.5` (`dc` 1.02 / 1.05, merged 0.50 / 0.27), positive in 7 of 7 passages, and no distance-only curve merges there; the interpolated matches agree. All 7 passages share one cut model per step | §1.39 "Labels", "Beside" (i) |
+| c3x's groups in particular | not shown in any of the three | §1.37–§1.39 |
+
+**Closes unanswered:** what removing the repulsive part does at 16000 beyond the distance moved
+(the full-cut question). **Dropped with the thread:** the finer dose, the matched death share,
+`--first-only`, effect-matched controls, one block at a time (`handoff-10.md` "OV thread closed").
+**Never run:** `V = ±I` put into Pythia's heads (only the idealised synthetic controls have it);
+the Rényi-centre scan (F13) on the cut models (the user asked 2026-10-10; F13 starts on the stored
+base activations). Limits: one seed, 7 passages, 410m (an exploration rung), every arm ~1
+stream-size from base.
+
+### 1.41 F13, the centre scan, with the cross (A9) and coverage (F15) — **no cell reads anchor and ballast: ballast is testable in 5 cells and none reads it. With position divided out and the sink left out, the strong Rényi centres (tokens farther than δ from every predecessor) receive more attention than other kept tokens at 64–128 in L1–16 and at 1000–8000 in L17–23, and less late (L1–8 from 8000, L9–16 from 32000, L17–23 from 54000); the arc holds with a fixed 10 % centre share (post hoc), the late "less" is a lean in a threshold-free rank correlation, and across frames and c 1.5–2 it is shared only by L1–8 from 16000. Late the centres are attended less than c3x's non-centre members too, the handoff's falsifier. At a fixed δ in 1024 dimensions the centre count is close to all-or-nothing, so F13's count and F15 read in few cells** *(rule `design-10.md` "F13", `9f1c525`, before any centre was computed; amended three times before any statistic was read, once after `/challenge-pr` on #187)*
+
+**Input.** Stage 0's stored activations and attentions (`stage0_index.json`), the 7 v1 passages at
+the 18 steps, R0's kept offsets and the R9 source's c3x / c2 labels
+(`data/p10/reread_r9_2026-10-08/labels`, its summary sha in `meta.json`), LN1 weights per step. No
+forward pass. Primary frame unit LN1 rows, δ = 2·3.5^−½ = 1.07 rad; the γ-free centred sphere and
+c = 1, 1.5 beside. 200 random arrival orders (position 0 first) per (step, passage); their mean
+strong count matches the exact `Σ 1/(a_x+1)` (`tools/math_checks/renyi_f13.py`, 8/8) within 3 SE in
+all but 4 of 55,566 records. Output `data/p10/f13_centres_2026-10-10/` (126 records, code
+`f0ce454c465c`, `report.txt`, `summary.json`); ~4 min on 14 CPU workers.
+
+**The scale sets what can be read.** The kept tokens are unique tokens, near-orthogonal in 1024
+dimensions, so at a fixed δ nearly all of them are strong centres or nearly none. At c = 2 the
+median share is 1.00 at L0–1 at every step, ~0 from L6 at steps 0–32, 0.4–0.8 at 1000–8000 and
+0.03–0.3 from 32000; c = 1 gives ~1.0 almost everywhere, c = 2.5 ~0 beyond L0. F13 reads a record
+only at 3 ≤ `N_s` ≤ kept/2; A9 reads ≥ 3 centres and ≥ 10 others, so at 2000–8000 "centre" is most
+kept tokens (at 8000 L1–8, 56 of 56 layer-records have more than half), and late a 3–30 % tail
+(`/challenge-pr` on #187, finding 3). Steps 0–32 have no cell at c = 2 beyond L1–8 (A9 *mixed*).
+
+| row (c = 2, unit LN1) | label | cells (band medians over passages) |
+|---|---|---|
+| A9 `S_c`: strong centres against other kept tokens, matched position bins | **attended more** | 64 L1–16; 128, 2000 L9–16; 1000–8000 L17–23 (+0.03 to +0.43 log units) |
+| | **attended less** | 8000–143000 L1–8; 32000–143000 L9–16; 54000–143000 L17–23 (−0.15 to −0.95) |
+| A9 `S_b`: c3x members that are not centres against non-members | **attended more** at 64 L9–16 and 512 L1–8; *mixed* or too few elsewhere; one *isolated lean less* (2000 L17–23) | 64–143000 |
+| A9 `S_cm`: centres against c3x members | attended more 2000–4000 L17–23; **attended less** 16000–143000 L1–8, 32000 and 143000 L9–16, 54000 L17–23 | |
+| A9 reading (the rule's, amended) | "centres attended, members not ballast" (ballast tested): 64 and 128 L9–16, 2000–8000 L17–23. "Centres attended, ballast not read" (`S_b` too few): 64 L1–8, 1000 L17–23, 2000 L9–16. "Centres not sinks" elsewhere; with the falsifier (H-ANCHOR/BALLAST does not hold) at 16000–143000 L1–8, 32000 and 143000 L9–16, 54000 L17–23 | |
+| F13 `D_N`, strong, against a random order | more centres at 64 L9–16, 256–512 L1–8, 16000 L1–8, 143000 L17–23; leans fewer at 32000–54000 L9–16; mixed or too few elsewhere | |
+| F13 `D_N`, ordinary | **more centres in every readable cell, step 0 included** (so "at init" from step 2) | the causal stream is not exchangeable before training |
+| F13 `D_I`, strong | later than a random order at 32000–143000 L9–16 (+0.05 to +0.10 of the passage); earlier at 143000 L17–23; mixed before 16000 | |
+| F15, strong centres of each record's first in-range layer, followed through depth | captures more at 64–128 L9–16 and 512 L17–23; less at 0–2 L9–16 (at init); *mixed* or count-dependent (the order null and the count-matched draws disagree) in most cells | |
+| F15, L8's centres | strong: captures more at 128 and 2000–8000, L9–23; ordinary: captures more in L9–16 at 4 and 64–143000, at init | |
+
+**Beside.** The γ-free sphere agrees on `S_c` (more at 64–128 L1–16 and 1000–8000 L17–23; less in
+L1–8 from 8000 and L9–16 from 32000) and on `S_b` (the same isolated lean only). At c = 1.5 `S_c` is
+more at 64 L9–23 and 1000–4000 L17–23, less in L1–8 from 16000 and at 143000 L17–23. On c2 `S_b`
+is attended more or leans more at 32–64, mixed after. **The T2 tokens** (each prose passage's first
+`.`, and the `\n` massive tokens) are strong centres in 50–86 % of L9–16 at 64–1000 and in none at
+2000–4000, where they become sinks (log ρ +3.1 to +3.3; position 0 +2.3 to +3.7 from 2000). At L12
+they then sit 0.20–0.57 rad from position 0, their nearest predecessor: the sink's direction
+(checked at 512, 2000, 4000, 143000; at 143000 only the two `\n` do). c3x's members are strong
+centres in 97 of 2,963 member-layers at 512 (L9–16), 983 of 2,026 at 4000, 263 of 2,488 at 143000.
+
+**What it says.** The theory's "strong centres serve as primary attractors" (`lit-10.md` §11.2)
+would have them attended. In the trained model, with the sink out and position divided out, a token
+far from every predecessor is attended more only early (64–128) and in a middle window in the deep
+layers (1000–8000), and less late, the reverse of the attractor reading. H-ANCHOR/BALLAST ("one
+attended anchor plus ignored members", `questions-10.md` §1.1) has no cell: c3x's non-centre
+members are not attended less. **What it does not say.** A strong centre at a fixed δ here is "a
+token unlike everything before it", not a cluster nucleus: c3x's members are rarely centres outside
+1000–8000. The order null keeps the cloud and moves the order, so `D_N`'s "more" is
+non-exchangeability (position, causal averaging), not content, and the ordinary rule's "more" is
+already at init. No test; one seed; 7 passages; tier 1. Not run: `⟨Qx, Ky⟩` (`design-10.md` "F13":
+it is not `core/ln_frame.py`'s Gram), F14, Lemma 5.1's stationarity, F20.
+
+**After `/challenge-pr` on #187 (accept with changes; post-hoc checks beside, not labels;
+`tools/run/p10_f13_review.py`, `review.txt`).** All at c = 2, unit LN1, by the same sign rule.
+
+| check (finding) | result |
+|---|---|
+| a fixed 10 % centre share, not a fixed δ (3) | the same arc: more at 32–128 L1–16 and 64–128 / 1000–8000 L17–23; less in L1–8 from 8000, L9–16 from 16000, L17–23 from 54000. The arc is not the fixed δ |
+| rank correlation of log ρ with the nearest-predecessor distance, position partialled out (3) | positive at 32–128 L1–23, 1000–4000 L9–23 and 8000 L17–23; late only *leans negative* (L1–8 from 8000, L9–16 at 32000–143000), L17–23 mixed: the late "less" sits in the far tail, not across the range |
+| predecessors restricted to kept tokens (4) | ≤ 2 % of non-centres have position 0 or a T-token as nearest predecessor at any step; `S_c` and the rank correlation keep their labels. Not the sinks' direction |
+| 16 position bins; 8 with the first dropped (5) | the same labels (drop-first: 32000 L17–23 mixed, 143000 L17–23 too few). A unit test bounds the leak under a smooth trend by the widest bin's spread |
+| robustness of the late "less" (2) | in ln1 c = 2, the γ-free sphere c = 2 and ln1 c = 1.5 together only L1–8 from 16000; L9–16 is mixed at c = 1.5 and L17–23 too few in the sphere frame |
+
+Stage 3 ran on Stage 0's v1 dirs only; the pilot sweep (its "both sweeps") is not run.
+
+**Re-run:** `OMP_NUM_THREADS=1 python tools/run/p10_f13_centres.py run --out <dir> --workers 14`, then
+`report --out <dir>`, then `python tools/run/p10_f13_review.py --out <dir>`; tests
+`tests/test_p10_f13_centres.py` (12).
+
+### 1.42 F13r, what the late "attended less" centres are — **not rare tokens. Late, the strong centres are rarer in the Pile than position-matched kept tokens, but `S_c`'s "less" keeps its sign under frequency strata and a linear frequency adjustment in every late cell, in both frames. In L9–23 it keeps its size too, because there rare non-centres are attended more and frequency pushes the other way. In L1–8 frequency alone takes 14–24 % of the gap (against a covariate-free linear reference) and frequency, class and place in the sentence together 24–51 %, leaving a lean** *(rule `design-10.md` "F13r", `c370a1b`, before any feature was joined to a centre; amended once at the tests, before any record was read)*
+
+**Input.** F13's records (`data/p10/f13_centres_2026-10-10`, code `f0ce454c465c`), their stored
+strong centres at c = 2 (unit LN1 primary, the γ-free sphere beside), log ρ recomputed from the
+same attentions (position 0 matches the record at every layer). Frequency: unigram counts under
+Pythia's tokenizer over the first 10^8 tokens (71,796 documents) of `monology/pile-uncopyrighted`
+`train/00.jsonl.zst` (`data/p10/pile_unigram_2026-10-10/`, counts sha `a306bfe95109`; 342 of
+50,277 ids never seen, none of them among the 25,236 kept tokens). Output
+`data/p10/f13_rare_2026-10-10/` (code `e4d95bf89a57`, `report.txt`, `summary.json`); ~20 s on 14
+CPU workers, the count ~1 min.
+
+| row (c = 2, unit LN1; band medians over passages) | late cells (`S_c4` *less*: 8000–143000 L1–8, 32000–143000 L9–16, 54000–143000 L17–23) |
+|---|---|
+| `C_f`, log10 frequency, centres − others | **centres rarer**: L1–8 and L9–16 at every late step (−0.29 to −0.59, i.e. 2–4× rarer); L17–23 leans rarer to 54000, mixed at 143000 |
+| `R_f`, log ρ against lf, non-centres only | L1–8 *leans commoner attended more* (+0.12 to +0.16); **L9–16 and L17–23 commoner attended less** (−0.15 to −0.27): there a rare token is attended more |
+| `S_c4` → `S_c\|f` / `S_c~f` | L1–8 −0.13…−0.34 → −0.18…−0.34 / −0.11…−0.25; L9–16 −0.35…−0.48 → −0.40…−0.54 / −0.37…−0.52; L17–23 −0.67, −1.05 → −0.66, −1.04 / −0.61, −0.95. **Survives f in every late cell** (the sign); in L1–8 `S_c~f` is a lean in 4 of 5 late cells |
+| linear shrink against `S_c~0` (centre and cubic log position only; added after `/challenge-pr` on #188) | L1–8, 8000–143000: f 10–24 %, sp 0–13 %, cls 9–28 %, all three 24–51 % (sphere 22–72 %). L9–16: f *widens* the gap 9–33 %. L17–23 at 54000–143000: −3 to +6 % |
+| place in the sentence | centres later in it at 8000–16000 L1–8 (+1.1 tokens), and later tokens are attended less in L1–8 from 256; **survives sp** in every late cell |
+| class | late L1–8 centres are more often continuations (+0.20 to +0.31) and from 32000 fewer word starts; **survives cls** except 8000 L1–8 (unclear) |
+| `S_c\|all` (lf, class, sp, cubic log position, jointly) | L1–8 *leans less* at 16000–143000 (−0.13 to −0.22), mixed at 8000; L9–16 and L17–23 *less*, the same size as `S_c~0` |
+| `C_id`, merge rank (the old proxy) | agrees with the count: late centres have higher ids (rarer) in L1–8 and L9–16 |
+
+**Beside.** The early "more" cells (64 L1–16, 128 L9–16, 1000–8000 L17–23) survive all three
+covariates too, except **cls "carries" at 512 L1–8** (an early "more" cell) **and at 2000 L1–8**
+(where `S_c4` only leans less; f and sp *unclear* there, as at 4000 L1–8 for all three), in both
+frames. These two are the run's only "carries"; the rule's cls condition asks only for some
+composition label, with no direction and no class pull on attention, so they are not read. The sphere frame
+gives the same readings, except sp and cls *unclear* at 54000 L9–16 (and sp at 16000 L9–16); its
+late L17–23 has too few centres, as in F13. `S_c4`'s late cells are §1.41's `S_c` cells, plus
+16000 L9–16 as an isolated lean.
+
+**What it says.** The reading that a late strong centre is just a rare token does not hold. The
+centres *are* rarer, so the hunch was right about who they are. In L9–23 a rare non-centre at
+the same position is attended *more*, and adjusting for frequency leaves the centre's gap as
+large or larger. In L1–8 rare non-centres lean attended less, and the covariates take a part:
+frequency a fifth, all three a quarter to a half, a lean left. That is also the one part of the
+late "less" F13 found shared across frames and c (§1.41), so its robust core is partly token
+properties. **What it does not say.** Why a token far
+from every predecessor is attended less late; anything frequency carries that the covariates
+miss (length, content words); c = 1.5 (its centre lists are not stored) or the ordinary centres.
+The Pile sample is the first 10^8 tokens of one shard, without the copyrighted parts. No test;
+one seed; 7 passages; tier 1; post hoc on F13's read output.
+
+**After `/challenge-pr` on #188 (accept with changes, all four taken).** (1) The first write-up
+called 2000–4000 L1–8 *unclear* and left out the two cls "carries" (512, 2000 L1–8): stated
+above, not read. (2) "Keeps its sign and size" overstated L1–8: the title now gives the shrink.
+(3) The linear statistics had no linear reference, so a shrink against the binned `S_c4` mixed
+estimators (at 16000 L17–23 `S_c4` −0.01, `S_c~0` +0.12): `S_c~0` added (output regenerated, code
+`e4d95bf89a57`, readings unchanged), shrinks above against it. (4) STATE's "turns on it" for
+Blocked 35 (a) was overstated: the anchor-and-ballast verdict needs only centres "not attended
+more", which no frequency result could change.
+
+**Re-run:** `python tools/run/p10_pile_unigram.py --out <counts dir>`, then `OMP_NUM_THREADS=1
+python tools/run/p10_f13_rare.py run --out <dir> --workers 14` and `report --out <dir>`; tests
+`tests/test_p10_f13_rare.py` (9).
+
+### 1.43 Stage 3, closed — **at tier 1: H-ANCHOR/BALLAST has no cell (7 v1 passages, Stage 0's dirs). Strong Rényi centres are not attended as anchors with ignored ballast: c3x's non-centre members are not attended less, and late the centres themselves are attended less. Why a late centre is attended less stays open; frequency, class and place in the sentence take part of it in L1–8 only, its one robust band** *(`STATE.md` Blocked 36 (d), the user's pick 2026-10-10; writing only, no pass)*
+
+Each cell list is copied from the row named in "where"; read that row, not this one, for a quote.
+
+| claim | stands? | where |
+|---|---|---|
+| anchor plus ballast (`questions-10.md` §1.1) | no cell reads it; ballast testable in 5 cells, read in none | §1.41, A9 reading |
+| strong centres attended more than other kept tokens (`S_c`) | 64 L1–16; 128 and 2000 L9–16; 1000–8000 L17–23; the arc holds at a fixed 10 % centre share | §1.41, `S_c` |
+| strong centres attended less than other kept tokens, late (`S_c`) | 8000–143000 L1–8, 32000–143000 L9–16, 54000–143000 L17–23; shared across frames and c 1.5–2 only by L1–8 from 16000 | §1.41, `S_c`; "After" (2) |
+| the handoff's falsifier (centres attended less than c3x's members, `S_cm`) | 16000–143000 L1–8, 32000 and 143000 L9–16, 54000 L17–23 | §1.41, A9 reading |
+| the late "less" is rare tokens | no by sign: it survives frequency and place in the sentence in every late cell, class in all but 8000 L1–8 (*unclear*). In size: in L1–8 (the robust band) the three take 24–51 % of the gap, a lean left; in L9–23 none, where the "less" is not robust across frames and c | §1.42, `S_c4` / class / shrink rows |
+| F13's count and F15's coverage | read in few cells: at a fixed δ in 1024 dimensions the count is near all-or-nothing | §1.41 |
+
+**Stage 3's "done when"** (a number and a direction on both sweeps, `handoff-10.md` Stage 3) is met
+on one sweep. The pilot sweep is dropped, not deferred: it agrees with Stage 0 to ≤ 0.004 on Stage 1's
+statistics (§1.11), its partition question is moot (`design-10.md` "Row by row", the rows not re-read), and its
+14 extra steps are off Stage 0's axis (`/challenge-pr` on #189, finding 5). Also dropped: a per-record δ
+(a refinement; the arc already holds at a fixed share). **Open, parked, not on the path**
+(`handoff-10.md` "Stage 3 closed"): what a late strong centre is instead, `⟨Qx, Ky⟩` (the paper's
+second distance, in #185's definition of this row), Lemma 5.1's stationarity, F14 as a test
+(registering it is the user's), F20. Limits: one seed, 7 passages, 410m (an exploration rung), no test.
 
 ---
 
