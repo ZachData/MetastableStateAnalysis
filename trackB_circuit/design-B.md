@@ -6,6 +6,9 @@ Opened 2026-10-13 by the user's Blocked 40 (c) ("do a, b, and c in one go"), aft
 Plan: `docs/ROADMAP.md` §7 (B0, B1), §9 (order 2). Scan: `trackB_circuit/lit-B.md`. Tier 1
 throughout: exploratory, unregistered; 410m is an exploration rung.
 
+**Frozen 2026-10-14** (Blocked 42, the user's: "Blocked 42 frozen; build B0"), as revised by
+`/challenge-pr` on #197. Choices B0 made where this text left one are in "B0 as built" below.
+
 **Taken with the user's (c):** ROADMAP §10.5, "`L5H2` as the positive control and first anchor",
 as ROADMAP wrote it. If the user meant otherwise, B1 is the unit to change.
 
@@ -62,6 +65,20 @@ Run on B1's design points (below), at all four ε:
 | G4b, structured null | `d = ∇ₓ L` of a token in **another prompt** (a structured, on-distribution direction unrelated to this token) | over 7 prompts × 32 positions, its rank among the K random directions on the loss's `|A|` rejects (rank 1) at ≤ 1/(K+1) + binomial 2σ at every c. *Changed after `/challenge-pr` on #197, finding 2: the first G4 drew one random direction against the others, which rejects at 1/33 whatever the harness does* |
 
 If any arm fails, B0 is not done and B1 does not run.
+
+### B0 as built (2026-10-14, fixed in `trackB_circuit/b0_gate.py`'s docstring before any output)
+
+| where the text left a choice | taken | why |
+|---|---|---|
+| the mechanism ("a forward pre-hook on block ℓ") | `core.nudge.Stack` runs the blocks in its own loop from a cached block input; the nudge is added to block ℓ's input there | one mechanism gives the nudge, truncation and block-only passes (G2's JVP, B1's cost); a hook on the HF forward gives only the first |
+| that loop is the model | **G0 (added):** the loop's logits against the HF forward, max \|Δ\| ≤ 1e-5 at every (step, prompt) | the loop replaces the forward, so it is gated too |
+| "base run twice" | every batch carries a base row; the four c's batches of one comparison are four same-shape base passes; floor = their max pairwise \|Δ\| | the floor costs no extra pass. Under deterministic algorithms it is expected to be 0, and then nothing is below floor; that is reported, not assumed away |
+| G1's tolerance | at j, ‖A − εd‖∞ and ‖S‖∞ ≤ 8·u₃₂·(‖x_j‖∞ + ε); off j, exactly 0; all 32 positions × 32 directions × 4 c | rounding of one add and one subtract |
+| G2's design points | positions J[0:4], direction R[0], tokens i ≥ j pooled over the 7 prompts | tokens before j have Jd = 0 exactly |
+| G3's "≥ 6 of 7" | both clauses (10 % at c = 0.01, rank 1 at every c ≥ 0.03) per prompt, at i = J[0] | |
+| G4b's "another prompt" | the next prompt in `V1_SCORED` (cyclic), same-index position | fixed, not chosen per pair |
+| loss-only reads | the sequence is cut at j + 1 tokens | causal: exact for every kept position (G4a checks it) |
+| B0's cost | ~10 GPU-minutes per step, ~3 h for 18 (G4b's 224 × 4 batches of 67 rows dominate); G2 on CPU beside it | the units table's "GPU minutes" was per step |
 
 ## B1, `L5H2` as positive control
 

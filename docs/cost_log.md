@@ -385,3 +385,4 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-13 | B-pre (Blocked 40 (b); /challenge-pr findings 1-5 taken; re-taken after /challenge-pr); cumulative from the #195 transcript · subagents: general-purpose opus-5-5 2.5M | 90 | 230k | 12.5M | 64k | #196 |
 | 2026-10-13 | Track B design (Blocked 40 (c), unit 1 of 3; /challenge-pr findings 1-6 taken; re-taken after /challenge-pr); cumulative from the #195 transcript · subagents: general-purpose opus-5-5 3.7M | 114 | 275k | 18.5M | 71k | #197 |
   Three units in one session at the user's request: the cumulative total is ~3× the running median, the cost "one session per unit" exists to avoid (LESSONS 9).
+| 2026-10-14 | B0, the harness and its gate's first step (Blocked 42 frozen; Track B unit 2 of 3; G4b fails, Blocked 43; before /challenge-pr) | 62 | 173k | 7.4M | 34k | #198 |
