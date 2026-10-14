@@ -136,7 +136,7 @@ Fixed before the re-gate's output (`a1a_gate.py` docstring is the spec):
   raw move `h·|Cx|·X` added to the raw residual, read back through the same LN1. The scale makes
   the affine-free frame G1 exactly (tested). The radial part a literal V = I head would add
   (`⟨U, ΣAU⟩U`) is left out, so G4 isolates LN1's w and b. Bar unchanged (T within 10 %), on block
-  5 at 143000 for all 42 cells **and** on every block 0–22 × step LN1 (432 frames, block 23
+  5 at 143000 for all 42 cells **and** on every block 0–22 × step LN1 (414 gated frames, 18 at block 23
   beside) for `latex_monograph`'s six (β, start) cells (the first G4's lowest prompt). The first
   G4 is kept beside as `G4raw`.
 - **Lift: log** (arc length, the continuous time t* counts); its leading bias ≈ |V|²/3, quoted

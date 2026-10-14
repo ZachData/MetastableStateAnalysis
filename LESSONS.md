@@ -1256,6 +1256,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-14, Track A A1a re-gate (#203, `/challenge-pr` finding 1): the write-up read "G4 fails at
+  blocks 20–22" as the reading's error there and recommended re-planting the start cosine. The
+  sweep runs all 23 planted steps through one frame; the reading takes one step per block's frame
+  and sums. The author never set the gate's statistic beside `block_steps`. Also miscounted (2,592
+  gated cells for 2,484; "6 of 7" orthogonal for 7 of 7). Rule: before reading a gate's failure,
+  write the reading's statistic and the gate's side by side; counts come from the record by code.
 - 2026-10-10, Phase 10 F13r (#188, `/challenge-pr`): the write-up was drafted from a compact grid
   the author printed for f, and it called 2000 L1–8 *unclear* though the report's cls column read
   *carries* there (and at 512). It also measured the linear statistics' shrink against the binned
