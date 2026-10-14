@@ -74,8 +74,9 @@ c: `gate.json`.)
 
 **The one mismatch is a near-tie.** Step 128, `camus_letranger` j = 82, d from
 `hdbscan_code`: linear |∇L·d| = 0.0725662 against the top random direction's 0.0725586 (k = 10),
-a relative margin of 1.05e-4; the nudged |A|/ε at c = 0.01 is 0.072468, 1.4e-3 below linear, so
-it ranks 2. Ten times the margin, and well inside G3's 10 %. This is the failure the amended
+a relative margin of 1.05e-4; the nudged |A|/ε at c = 0.01 is 0.072468, 9.8e-5 below linear
+(1.4e-3 of this projection, 13× the margin), so it ranks 2. In G3's unit (over ‖∇L‖ = 1.165)
+the error is 8.4e-5, under the largest G3 saw at step 128 (1.7e-4) and far inside its 10 %. This is the failure the amended
 rule's text named (a near-tie inside the linear error), at 1 arm of 4,032. Re-derived by
 `python trackB_circuit/b0_g4b_tie.py` (the arm alone on the GPU; ranks as in the record).
 
