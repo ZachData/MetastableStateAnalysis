@@ -46,17 +46,26 @@ P_I3_STEPS = (16000, 143000)
 HALF = 2  # N_CONTROLS_PER_INDUCTION_HEAD / 2
 
 
-def p_st1(data: Path) -> dict:
+def _one(pattern: str) -> Path:
+    hits = sorted(glob.glob(pattern))
+    if len(hits) != 1:
+        raise SystemExit(f"refuse: {len(hits)} files match {pattern}; need exactly one")
+    return Path(hits[0])
+
+
+def p_st1(data: Path, used: dict) -> dict:
     out = {}
     for st in STEPS:
-        proj = np.load(glob.glob(str(data / f"phase12/*/ov_projectors_pythia-410m-step{st}.npz"))[0])
+        pf = _one(str(data / f"phase12/*/ov_projectors_pythia-410m-step{st}.npz"))
+        used[str(st)] = str(pf.relative_to(data.parent))
+        proj = np.load(pf)
         cells = []
         for pr in V1_SCORED:
             act = np.load(data / f"phase12/{RUNS[st]}/pythia-410m-step{st}_{pr}/activations.npz")
             A = act["activations"].astype(np.float64)
             for L in range(1, A.shape[0]):
                 if f"schur_attract_layer_{L - 1}" not in proj:
-                    continue
+                    raise SystemExit(f"refuse: {pf} has no layer {L - 1}")
                 # activations[0] is the embedding; block L-1's input is activations[L-1]
                 X = A[L - 1]
                 er = effective_rank(X - X.mean(0), "raw")
@@ -102,12 +111,14 @@ def main(argv=None) -> int:
     ap.add_argument("--data", required=True, type=Path, help="the main tree's data/")
     ap.add_argument("--out", required=True, type=Path)
     a = ap.parse_args(argv)
+    used: dict = {}
+    st1 = p_st1(a.data, used)
     rec = {"what": "B-pre feasibility (docs/ROADMAP.md §7); no gate statistic computed",
-           "input": {"projectors": "data/phase12/*/ov_projectors_pythia-410m-step{0,1000,143000}.npz",
+           "input": {"projectors": used,
                      "activations": {str(k): f"data/phase12/{v}/" for k, v in RUNS.items()},
                      "prompts": list(V1_SCORED),
                      "behavioural": "data/analysis/behavioural_series.json (series_excl_repeated)"},
-           "P-ST1": p_st1(a.data), "P-I3": p_i3(a.data)}
+           "P-ST1": st1, "P-I3": p_i3(a.data)}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(rec, indent=1))
     for st, v in rec["P-ST1"].items():

@@ -244,12 +244,12 @@ Eleven requirements, none of which any existing sweep satisfies except
 | `CLAIM-B` | the registered sweep `(1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 54000)`, chosen 2026-08-28 from the computed set | which checkpoints it samples |
 | `CLAIM-B` | a σ/R and a change width that the chosen grid's retention curve still supports | how quiet the measurement is |
 | `CLAIM-C` | ≥ 23% of candidate cells dissenting in sign, and ≥ 5 prompts whose usable metrics do not split evenly | what the contrast looks like |
-| `P-ST1` | dim `U_pos` comparable to the dimension the population occupies — **checked 2026-10-13 (B-pre): on 410m's v1 sweep the ratio is above 2 at 499 of 504 cells** (`p7_motifs/status-7.md` "B-pre (2026-10-13)") | the projector's shape |
+| `P-ST1` | dim `U_pos` comparable to the dimension the population occupies — **checked 2026-10-13 (B-pre): on 410m's v1 sweep the ratio is 1.7–14 (above 3 at 449 of 504 cells); under the adjudicated subspace null a low informative rate costs pairs, not readability** (`p7_motifs/status-7.md` "B-pre (2026-10-13)") | the projector's shape |
 | `P-T1` / `P-M1` | enough heads, and enough layers or violations, for the design floor to clear α | how large the run is |
 | `P-S1` | both arms clustered to the same count — **unmet on disk: 25 of 175 kmeans layer-rows agree between `step143000` and `step0`, and no run directory carries the `kmeans_centroids_L*` the primary arm reads** (2026-09-19) | how the run is clustered |
 | `P-AB1` | six informative units, an ODD number of ablation points per prompt, and `n + W ≤ L` — **no producer writes its input (B-pre, 2026-10-13)** | the ablation grid |
 | `P-AB1` | an ablation magnitude and fit window keeping BOTH arms inside the power-law regime | the intervention itself |
-| `P-I3` | a head classification that is NOT a cutoff on the behavioural induction score — ≥ 2 induction heads with two control heads below and two above them, within their own layer — **checked 2026-10-13 (B-pre): 7d's causal set gives 0 of 4 at its +0.2 cut, 5 of 10 at +0.05** | how the two arms are defined |
+| `P-I3` | a head classification that is NOT a cutoff on the behavioural induction score — ≥ 2 induction heads with two control heads below and two above them, within their own layer — **checked 2026-10-13 (B-pre): met by 7d's causal set at its +0.05 cut (5 of 10, weak members only), not at +0.2 (0 of 4); on 410m `P-I1` already read the motif side** | how the two arms are defined |
 | `P-I1` | a relay-count null leaving ≥ 4 heads with a rising above-null excess, and among them no more than k sharing one change location (k tabulated in `POPPER_PLAN.md` §6t) — **met** | how aggressive the control may be |
 
 ## Construction log
