@@ -283,6 +283,14 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-14, Track B B1, the converse: the populated check refused any σ = 0, and the first step
+  (1000) was refused, rightly, but on a real zero. `L5H2`'s attention weight a few tokens back is
+  ~1e-7–1e-10, so the ± change there is under float32 resolution and A is exactly 0. (The first
+  write-up said "softmax underflow"; `/challenge-pr` on #200 asked, and the weights are not 0.) The rule then needed a
+  substitution (zeros held at the rounding floor), set after one record and before any verdict.
+  Rule: a populated check asserts what a dead pipeline gives (non-finite, or silent where the
+  readout cannot be silent: here the nudged token's own output), not a property the model may
+  legitimately have; any "> 0" in a check names why zero is impossible.
 - 2026-10-10, Phase 10 F13r: `C_id` (merge rank, beside) read "too few" in every cell. The added
   literal-space tokens have no merge rank (NaN), one kept in a record made its bin means NaN, and
   `band_mean` drops non-finite values without a word. The runner's populated check named one

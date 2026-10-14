@@ -1,17 +1,103 @@
 <!-- trackB_circuit/status-B.md -->
 # Track B — STATUS
 
-No card yet (`docs/phase_card.md`); one is added with B1's verdict.
+<!-- phase-card -->
+## Card
+
+- **Question:** Does a paired ± nudge of one token's residual, gated against planted effects and random directions (B0), see a known circuit's particle signature (each token pulled toward its left neighbour inside `L5H2`'s output, ranked against layer 5's other heads, B1) switch on over training, so that "small" has a yardstick before the harness reads unknown mechanisms?
+- **Inputs:** `pythia-410m`, the 18 Stage 0 steps, the 7 scored v1 prompts (B0's `prompts_hash`), `resid_pre` at layer 5, 32 seeded positions and K = 32 seeded random directions per prompt, c ∈ {0.01, 0.03, 0.1, 0.3}, GPU float32 — `trackB_circuit/design-B.md` "B1"
+- **Results:**
+  - Opened 2026-10-13 with a scan, a `sympy` check of the paired-pass algebra and a frozen design (3-unit budget) — `trackB_circuit/design-B.md` "Exit condition and budget"
+  - B0's harness passes its calibration gate at every step and arm but one near-tied G4b arm at step 128, waived by the user as that arm only (Blocked 44 (a)) — `trackB_circuit/status-B.md` "B0 over 18 steps"
+  - Loss gradients at layer 5 are aligned across prompts at every step, most at 64–512, so a structured direction ranked against random ones is biased upward by the model itself — `trackB_circuit/status-B.md` "Fences (from B0's gate)"
+  - B1 passes by its revised pass rule (off at 0, on at 1000–8000): `L5H2`'s signature reads off at steps 0–256 and on at every step from 512; the onset falls in (256, 512], inside the range recorded before the run and before ROADMAP's first window (512, 4000]; read from block 5 alone, on one head's output — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
+- **Superseded / wrong:** none
+- **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
+- **Depends on:** none
+- **Feeds:** none
+- **Open threads:**
+  - From step 1000 the statistic's size is a float32 detection limit, not a measurement, so only its rank is read — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
+  - B1 reads one head's output after block 5 alone; the multi-layer path and the residual and loss readouts B2–B4 use are covered only by B0's gate — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
+  - G4b's false-fail rate is not derived, and G2 was checked only at its four design positions — `trackB_circuit/status-B.md` "B0 over 18 steps"
+- **After Phase 10:**
+  - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
+  - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
+- **Reviewed:** 2026-10-14 · body `3b8b763281`
+<!-- /phase-card -->
 
 ## Units
 
 | unit | state | where |
 |---|---|---|
 | 1. design, scan, `sympy` check | **done 2026-10-13**; frozen by the user 2026-10-14 (Blocked 42) | `design-B.md`, `lit-B.md`, `tools/math_checks/b0_antisymmetric_nudge.py` |
-| 2. B0, the harness and its gate | **built; all 18 steps run under Blocked 43 (a)'s G4b: G0–G4a pass at every step, G4b fails at step 128 on one arm of 224, a near-tie; Blocked 44** | `core/nudge.py`, `core/position.py`, `trackB_circuit/b0_gate.py`; "B0 (2026-10-14)" below |
-| 3. B1, `L5H2` as positive control | not started; runs only after B0's gate passes | `design-B.md` "B1" |
+| 2. B0, the harness and its gate | **done 2026-10-14**: G0–G4a pass at every step; G4b at 17 of 18, failing at step 128 on one near-tied arm, **waived as that arm only** (Blocked 44 (a), the user's, 2026-10-14; `design-B.md` "If any arm fails") | `core/nudge.py`, `core/position.py`, `trackB_circuit/b0_gate.py`; "B0 over 18 steps" below |
+| 3. B1, `L5H2` as positive control | **done 2026-10-14: passes** ("sees") | `trackB_circuit/b1_prev_token.py`; "B1 (2026-10-14)" below |
 
-Budget: 3 units (`design-B.md` "Exit condition and budget").
+Budget: 3 units (`design-B.md` "Exit condition and budget"), all spent: Track B's opening is
+closed at its exit condition. What follows on these instruments (B2 onward) is `docs/ROADMAP.md`
+§7, after Track A (Blocked 40 (d)).
+
+## B1 (2026-10-14): `L5H2` as positive control
+
+**Input:** as the card; B0's records `2026-10-14c` (code `1e78e2be9d94`), accepted by
+`check_gate` under the waiver. Code `b1_prev_token.code_sha()` in every record. Records:
+`/run/media/system/HDD_1TB/mets_data/trackB_b1/2026-10-14b/b1_step*.json`, `b1.json`, `run.log`,
+on code `70b28da06186`; the first run (`2026-10-14/`, code `07b452b5a7c2`, a docstring apart)
+gives the same `b1.json` steps exactly.
+36 s per step on the RTX 3080, 11 min in all.
+
+**Verdict by the frozen rule: PASS: the instrument sees `L5H2`'s signature switch on**, by the
+pass rule as revised by `/challenge-pr` on #197, finding 1. The design's exit sentence and
+ROADMAP's first window, (512, 4000], are not met as written: the signature is already on at 512. Off at
+step 0, on at 1000, 2000, 4000 and 8000. The reading at c = 0.03 (s = log(σ₁ / median σ₂…σ₅),
+median over 32 positions; *on* = `L5H2` above ≥ 14 of layer 5's other 15 heads):
+
+| step | 0–8 | 16 | 32 | 64 | 128 | 256 | **512** | 1000 | 2000–54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| reading | off | off | off | off | off | off | **on** | on | on | on |
+| prompts on (of 7) | 2 | 2 | 2 | 1 | 1 | 3 | 7 | 7 | 7 | 7 |
+| `L5H2`'s s, median over prompts | 0.02–0.05 | 0.01 | −0.01 | 0.05 | 0.06 | 0.01 | 2.60 | 9.07 | 8.84–9.23 | 7.97 |
+| cos(A, OV-mapped nudge) at k = 1 | 0.98 | 0.99 | 0.98 | 0.97 | 0.97 | 0.97 | 0.85 | 0.99 | ≥ 0.997 | 0.997 |
+| ‖A‖ / r_out at k = 1 (the yardstick) | 1.1e-5 | 8.7e-6 | 8.8e-6 | 9.4e-6 | 1.1e-5 | 8.8e-6 | 6.8e-4 | 3.0e-3 | 3.2–3.6e-3 | 2.7e-3 |
+
+(Every step, per prompt and at the other three c: `b1.json`; the reading is the same at all
+four c at every step.)
+
+- **Onset in (256, 512].** Recorded before the run: (256, 1000]. Steps 2–512 were to be recorded,
+  not judged; 512 reads on at 7 of 7.
+- **The yardstick for "small"** (the one place this number lives): `L5H2`'s offset −1 response,
+  ‖A‖ / (c · r_out) with r_out block 5's RMS output norm, is **0.10–0.12** from 1000 to 54000
+  and 0.09 at 143000, against ~3e-4 before 512: a factor of ~300. It is linear in c up to 0.1
+  and 5–7 % lower at c = 0.3 (‖A‖/r_out at 4000: 1.2e-3, 3.6e-3, 1.2e-2, 3.3e-2 at the four c;
+  the table's row is c = 0.03), so the ratio, not a single ‖A‖, is the yardstick. The late fade (7d: 15 % of the causal effect left at 143000) is
+  ~25 % here (2.7e-3 against the 3.6e-3 peak at 4000–16000), by this measure.
+- **The response is the OV-mapped nudge.** cos ≥ 0.997 from 2000 on. At init it is 0.98 too,
+  since any head's response at k = 1 is its OV map of the nudge times its attention weight; the
+  cosine says the readout is the head's value path, not that the head attends back.
+- **`L5H9`** (the second previous-token head, the reason for "14 of 15") reaches s 0.9–2.2 from
+  1000 on, against `L5H2`'s 7.3–9.7; `L5H2` beats all 15 at every prompt from 1000.
+- **At step 0–256, 1–3 prompts of 7 read on by chance**: `L5H2` is one of 16 heads with s near 0,
+  so it tops ≥ 14 of 15 in about 2 of 16 draws.
+
+**The statistic's size from 1000 is a float32 detection limit.** `L5H2` is so sharp that its
+attention weight on token j from 3–5 tokens later is ~1e-7–1e-10 (step 1000, `hdbscan_code`:
+medians 3.6e-7, 4.8e-10, 3.5e-9; none exactly 0), so the ± change there is under float32
+resolution of the head's output and A cancels to exactly 0. 47–73 % of its σ₂…σ₅ are under the rounding floor from 1000 (2 % at 512, 0 before),
+and in s they are held at the floor. So s ≈ 9 says "under rounding", not e⁹. Without the
+substitution the heads beaten are the same at every step and prompt (checked), so the verdict
+does not rest on it. *The substitution was set after the first run (step 1000) refused on an
+exact zero, before any verdict was read; `b1_prev_token.py`'s docstring says so.*
+
+**Not established:** what B1 does not cover: it ranks one head's output against its layer's
+other heads, from block 5 alone, so the multi-layer path, the ranking against random directions
+and the residual and loss readouts B2–B4 read rest on B0's gate only (G2, G3, G4); the
+false-on rate of the rule (≈ 2/16 per prompt at chance, read off steps
+0–256, not derived); whether s's size tracks `L5H2`'s strength once rounding is not the floor
+(a float64 block pass would tell); any head other than `L5H2` as a target.
+
+**Re-run:** `python trackB_circuit/b1_prev_token.py run --out <dir> --gate
+/run/media/system/HDD_1TB/mets_data/trackB_b0/2026-10-14c && python
+trackB_circuit/b1_prev_token.py report --out <dir> --gate <same>`.
 
 ## B0 (2026-10-14): the gate at its first step
 
@@ -101,10 +187,10 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
   (`/challenge-pr` on #198, finding 3; carried from Parked.)
   Over the 18 steps the rank-1 rate of another prompt's gradient is 3–53 % against 3 % for a
   random direction ("B0 over 18 steps"), so the bias is largest at 64–512.
-- **B1's floor.** The same-shape base floor is exactly 0 under deterministic algorithms (it
-  measures repeatability, not rounding), so "below floor" never fires. B1's offsets k = 2…5 can
-  sit near float32 rounding; B1 fixes a rounding floor before its run (e.g. the same pass in
-  float64, or in another batch shape). (`/challenge-pr` on #198, risk 1.)
+- **B1's floor.** *(Resolved by B1: the floor is the base row in another batch shape, at
+  least one ulp of the readout; `design-B.md` "B1 as built". It does bind from 1000:
+  "B1 (2026-10-14)".)* The same-shape base floor is exactly 0 under deterministic algorithms, so
+  every later unit fixes a rounding floor of this kind before its run. (`/challenge-pr` on #198, risk 1.)
 
 ## Parked
 

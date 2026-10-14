@@ -16,7 +16,8 @@ as ROADMAP wrote it. If the user meant otherwise, B1 is the unit to change.
 
 - **Exit:** B1 has a verdict, "the instrument sees `L5H2`'s signature switch on inside
   (512, 4000]" or "it does not", with the signature's size recorded as the yardstick for "small"
-  (ROADMAP §7 B1). On "does not", Track B stops on these instruments and the next unit is fixing
+  (ROADMAP §7 B1). *The window is the first rule's; the pass rule below (revised after
+  `/challenge-pr` on #197, finding 1) is what B1 is judged by, and B1 read on at 512.* On "does not", Track B stops on these instruments and the next unit is fixing
   them (ROADMAP §9's gate).
 - **Budget: 3 units.** (1) this design, the scan and the `sympy` check; (2) B0, the harness and its
   calibration gate; (3) B1. At the budget the track's opening closes at what it knows.
@@ -64,7 +65,11 @@ Run on B1's design points (below), at all four ε:
 | G4a, structural null | nudge token j, read the loss and the state at every position i < j | `A = S = 0` exactly (causality): an arm that fails if the harness leaks across positions |
 | G4b, structured null | `d = ∇ₓ L` of a token in **another prompt** (a structured, on-distribution direction unrelated to this token) | over 7 prompts × 32 positions, its rank among the K random directions on the loss's `|A|` rejects (rank 1) at ≤ 1/(K+1) + binomial 2σ at every c. *Changed after `/challenge-pr` on #197, finding 2: the first G4 drew one random direction against the others, which rejects at 1/33 whatever the harness does* **Changed after output (Blocked 43 (a), the user's, 2026-10-14):** at step 143000 the rate failed (17/224) and the gradients alone gave the same 17, so the pass is now: at c = 0.01 the nudged rank-1 set equals the linear response's (\|∇ₓL_j·d\| among \|∇ₓL_j·R_k\|, no nudge), at every step; the rank-1 rate is reported, not judged (`status-B.md` "B0 (2026-10-14)") |
 
-If any arm fails, B0 is not done and B1 does not run.
+If any arm fails, B0 is not done and B1 does not run. **One named exception** (Blocked 44 (a),
+the user's, 2026-10-14): G4b's arm at step 128, `camus_letranger` j = 82, code `1e78e2be9d94`,
+records `2026-10-14c`, a near-tie (`status-B.md` "B0 over 18 steps"), is waived. The waiver is
+that arm only: B1 refuses any `gate.json` with another failure, another failing arm, or other code
+(`b1_prev_token.check_gate`). It is not a tie clause; the next gate on other code gets none.
 
 ### B0 as built (2026-10-14, fixed in `trackB_circuit/b0_gate.py`'s docstring before any output)
 
@@ -115,6 +120,16 @@ truncated after block 5. Per (step, prompt, i, k): `σ_k = median_d ‖A‖ / ε
   does not fail the pass; it is reported.
 - **Fail:** on or leaning at step 0 (the instrument reads something `L5H2` is not), or off or
   leaning anywhere in 1000–8000.
+
+### B1 as built (2026-10-14, fixed in `trackB_circuit/b1_prev_token.py`'s docstring before any output)
+
+| where the text left a choice | taken | why |
+|---|---|---|
+| "hooked inside block 5" | a pre-hook on block 5's `attention.dense` takes the merged heads; head h's output is its 64 columns times its slice of `W_O` (bias shared, cancels in A) | NeoX merges heads as [h, e], so the slice is exact |
+| the passes | per (prompt, j, c): one batch of 65 rows (base, ±ε·R_k at j), block 5 only, sequence cut at j + 6 | causal, exact for i ≤ j + 5; B0's design points (`b0_gate.site`), so the gate covers them |
+| the rounding floor (`status-B.md` Fences) | per (prompt, j): max(‖Δ‖ between the batch's base row and the base alone (batch 1), u₃₂·max‖y‖); σ_k below floor when median ‖A‖ ≤ 10× it; a prompt cannot count as on where `L5H2`'s σ₁ is below floor at > 16 of 32 j | another batch shape measures rounding where the same shape gives 0; one ulp is the minimum |
+| `W_OV d` | `W_O W_V` of `L5H2` applied to block 5's input LayerNorm's exact JVP at x_j along d | the head reads LN(x), not x |
+| the yardstick | median ‖A‖ of `L5H2`'s output at k = 1 over the RMS token norm of block 5's output, every c | the design's "residual units" |
 
 ## Units (each its own PR)
 
