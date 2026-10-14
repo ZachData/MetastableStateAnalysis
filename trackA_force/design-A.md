@@ -99,6 +99,33 @@ On synthetic clouds at the real design points (n of each v1 prompt, d = 1024, β
 If any arm fails, A1a is not done and A1b does not run. No positive control exists for real
 collapse on disk (ALBERT and random GPT-2 are B0′, not cached); recorded as a gap, not filled.
 
+### A1a as built (2026-10-14), where the text left a choice
+
+`trackA_force/a1a.py` (the batch), `a1a_gate.py` (the gate), `integration_time.unit_steps` (the
+per-token steps). Recorded here, before any real output:
+
+- **Inputs:** the one `data/phase12` directory per step that holds all 7 v1 prompts with
+  attentions (`a1a.RUNS`, checked: exactly one each). n = 242–512, so 241–511 tokens read.
+- **The bracket:** p10 / p50 / p90 over the 23 layer βs of blocks 0–22 (each the median over its
+  16 heads), per (step, prompt). The field at block l uses that block's own layer β.
+- **β's rows** come from the stored `activations.npz`, the steps from the GPU pass (checked against
+  the stored unit rows at 1e-4, `u2_attn.check_pass`); at 143000 `fe_full` must match 1d's refit
+  where the inputs coincide (1e-4) or the batch refuses.
+- **Block 23's end** is rebuilt as `x_23 + attn + mlp` (state 24 is post-final-LN); beside, as designed.
+- **`attn_proj`** (the projected step on attention's part) is recorded beside `h_attn` (= `attn_cal`).
+- **t\*:** `sa_sim` horizon 200 (an infinite t* is "not read"); `check_dt` on every cell.
+- **Gate:** the orthogonal start is exactly orthonormal (QR), the 0.3 start has every pairwise
+  cosine exactly 0.3; G3's ξ is ⊥ X exactly; 23 steps, h seeded per cell (`SEED` 20261014).
+- **The batch refuses** without a passing gate record for its code and lift (`a1a.check_gate`).
+
+### The gate's first run (2026-10-14): fails, G3 and G4 (STATE Blocked 46)
+
+The numbers are in `trackA_force/status-A.md` "A1a's gate (2026-10-14)" (one copy). G0–G2 pass.
+**G3** fails on its largest steps by the tangent lift's second-order bias, which this design did
+not compute before fixing its bar; the log lift passes. **G4** fails from orthogonal starts at high
+β, always low, with either lift; it plants raw-frame dynamics, while the reading's field is on
+LN1 rows (`/challenge-pr` on #202, finding 1). The real batch has not run; nothing real was read.
+
 ## A1b, the reading (unit 3)
 
 **The family, fixed before output:** 18 steps × 7 v1 prompts; the statistic is `T_proj`
@@ -133,8 +160,8 @@ against the causal t* from the measured cloud per (step, prompt).
 
 | unit | what | state |
 |---|---|---|
-| 1 | this design, `lit-A.md`, `a1_collapse_time.py`, `tstar_table.py`, `sa_sim.py` | this PR; freeze is Blocked 45 |
-| 2 | A1a: β over 18 steps (CPU, `attentions.npz`), the hooked pass for `h_attn` (GPU), `h_proj` in `integration_time.py`, the gate | after the freeze |
+| 1 | this design, `lit-A.md`, `a1_collapse_time.py`, `tstar_table.py`, `sa_sim.py` | done (#201); frozen 2026-10-14 (Blocked 45) |
+| 2 | A1a: β over 18 steps (CPU, `attentions.npz`), the hooked pass for `h_attn` (GPU), `h_proj` in `integration_time.py`, the gate | built 2026-10-14; **the gate fails (G3, G4)**, the batch not run; Blocked 46 |
 | 3 | A1b: the reading, H-WARP and 1e's question beside | after A1a's gate |
 
 ## Fences
@@ -151,6 +178,27 @@ against the causal t* from the measured cloud per (step, prompt).
   2): h0 says "T_eff comparable to t*, so non-collapse is explained by depth", but T_eff ≈ t*
   without collapse is resistance, the falsifier's own case. A1 reads the statement and the
   falsifier; amending h0 is a registry edit, so it is the user's (STATE Blocked 45).
+
+## Frozen 2026-10-14 (Blocked 45, the user's: as recommended)
+
+- **Frozen as revised**, with one row added beside the reading (not in it): **the layer's OV
+  attractive share**, per block and step, read off `data/analysis/ov_per_head_series.json`
+  (weights only, no new run): the median over the layer's 16 heads of
+  `attractive_energy_fraction_core`, and the share of heads at exactly 0 (`PROJECT.md` §3.12 A).
+  Why: t* assumes V = I (pure attraction), while at 1000–2000 62 % of heads have no attractive
+  part at all; the row shows where that assumption is furthest from the weights.
+- **`P-gamma2`'s h0 is left as registered** until A5 registers; A1 reads the statement and the
+  falsifier ("Fences").
+- **The 2D spike** (the user's question of 2026-10-14: can a head's dynamics be read in the
+  paper's d = 2 reduction, 2604.01978 §"General value maps and effective low-dimensional
+  dynamics"?) runs **after A1a**, which supplies its two inputs (β per head, the step γ): either
+  before A1b or as Track B's B2a after A1 closes, the slot picked at A1a's close. **Exit: a
+  faithful D per named head against the null** (the smallest subspace whose reduced dynamics
+  reproduce the head's real attention, for `L5H2`, the induction heads, `L10H7` and random
+  reference heads; 2D is the circle case). **Budget: 3 units** (weights only with a planted
+  positive control and a null; real tokens at 143000; the heads that pass over 18 steps). Prior,
+  before any output: 2D fails for the previous-token and induction heads (their attention reads
+  position or exact identity). `docs/ROADMAP.md` §7 B2a.
 
 ## Worth challenging (for the freeze)
 
